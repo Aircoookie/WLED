@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+	<title>Settings</title>
+	<script>
+		function GetCurrent()
+		{
+			nocache = "&nocache=" + Math.random() * 1000000;
+			var request = new XMLHttpRequest();
+			request.onreadystatechange = function()
+			{
+				if (this.readyState == 4) {
+					if (this.status == 200) {
+						if (this.responseXML != null) {
+							document.Settings_form.CSSID.value = this.responseXML.getElementsByTagName('cssid')[0].childNodes[0].nodeValue;
+							document.Settings_form.CPASS.value = this.responseXML.getElementsByTagName('cpass')[0].childNodes[0].nodeValue; //fake pass like ******
+							document.Settings_form.CSIP0.value = this.responseXML.getElementsByTagName('csips')[0].childNodes[0].nodeValue;
+							document.Settings_form.CSIP1.value = this.responseXML.getElementsByTagName('csips')[1].childNodes[0].nodeValue;
+							document.Settings_form.CSIP2.value = this.responseXML.getElementsByTagName('csips')[2].childNodes[0].nodeValue;
+							document.Settings_form.CSIP3.value = this.responseXML.getElementsByTagName('csips')[3].childNodes[0].nodeValue;
+							document.Settings_form.CSGW0.value = this.responseXML.getElementsByTagName('csgws')[0].childNodes[0].nodeValue;
+							document.Settings_form.CSGW1.value = this.responseXML.getElementsByTagName('csgws')[1].childNodes[0].nodeValue;
+							document.Settings_form.CSGW2.value = this.responseXML.getElementsByTagName('csgws')[2].childNodes[0].nodeValue;
+							document.Settings_form.CSGW3.value = this.responseXML.getElementsByTagName('csgws')[3].childNodes[0].nodeValue;
+							document.Settings_form.CSSN0.value = this.responseXML.getElementsByTagName('cssns')[0].childNodes[0].nodeValue;
+							document.Settings_form.CSSN1.value = this.responseXML.getElementsByTagName('cssns')[1].childNodes[0].nodeValue;
+							document.Settings_form.CSSN2.value = this.responseXML.getElementsByTagName('cssns')[2].childNodes[0].nodeValue;
+							document.Settings_form.CSSN3.value = this.responseXML.getElementsByTagName('cssns')[3].childNodes[0].nodeValue;
+							document.Settings_form.CMDNS.value = this.responseXML.getElementsByTagName('cmdns')[0].childNodes[0].nodeValue;
+							document.Settings_form.APSSID.value = this.responseXML.getElementsByTagName('apssid')[0].childNodes[0].nodeValue;
+							document.Settings_form.APHSSID.checked = (this.responseXML.getElementsByTagName('aphssid')[0].childNodes[0].nodeValue)!=0?true:false;
+							document.Settings_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].childNodes[0].nodeValue; //fake pass like ******
+							document.Settings_form.APCHAN.value = this.responseXML.getElementsByTagName('apchan')[0].childNodes[0].nodeValue;
+							document.Settings_form.LEDS.value = this.responseXML.getElementsByTagName('leds')[0].childNodes[0].nodeValue;
+							document.Settings_form.PWRLED.checked = (this.responseXML.getElementsByTagName('pwrled')[0].childNodes[0].nodeValue)!=0?true:false;
+							document.Settings_form.BTNP.value = this.responseXML.getElementsByTagName('btnp')[0].childNodes[0].nodeValue;
+							document.Settings_form.NOOTA.checked = (this.responseXML.getElementsByTagName('noota')[0].childNodes[0].nodeValue)!=0?true:false;
+							document.Settings_form.NORAP.checked = (this.responseXML.getElementsByTagName('norap')[0].childNodes[0].nodeValue)!=0?true:false;
+							document.getElementsByClassName("sip")[0].innerHTML = this.responseXML.getElementsByTagName('sip')[0].childNodes[0].nodeValue;
+							document.getElementsByClassName("sip")[1].innerHTML = this.responseXML.getElementsByTagName('sip')[1].childNodes[0].nodeValue;
+							document.getElementsByClassName("otastat")[0].innerHTML = this.responseXML.getElementsByTagName('otastat')[0].childNodes[0].nodeValue;
+							document.getElementsByClassName("msg")[0].innerHTML = this.responseXML.getElementsByTagName('msg')[0].childNodes[0].nodeValue;
+							if (Settings_form.NOOTA.checked) {document.Settings_form.NOOTA.disabled="disabled";}
+						}
+					}
+				}
+			}
+			// send HTTP request
+			request.open("GET", "get-settings/" + nocache, true);
+			request.send(null);
+		}
+		function OpenMain()
+		{
+			window.open("/","_self");
+		}
+	</script>
+	<style>
+	body {
+		line-height: 150%;
+	}
+	</style>
+</head>
+<body onload="GetCurrent()" class=" __plain_text_READY__">
+	<h1>WLED Settings</h1>
+	<form id="form_s" name="Settings_form" action="save-settings/" method="post" autocomplete="off">
+		<input type="submit" name="SUBM" value="Save">
+		<input type="button" name="BACK" value="Back" onclick="OpenMain()">
+		<h2>WiFi setup</h2>
+		<h3>Connect to existing network</h3>
+		Network SSID (leave empty to not connect): <br> <input type="text" name="CSSID" maxlength="32"> <br>
+		Network password: <br> <input type="password" name="CPASS" maxlength="63"> <br>
+		Static IP (leave at 0.0.0.0 for DHCP): <br>
+		<input type="text" name="CSIP0" maxlength="3" size="2"> .
+		<input type="text" name="CSIP1" maxlength="3" size="2"> .
+		<input type="text" name="CSIP2" maxlength="3" size="2"> .
+		<input type="text" name="CSIP3" maxlength="3" size="2"> <br>
+		Static gateway: <br>
+		<input type="text" name="CSGW0" maxlength="3" size="2"> .
+		<input type="text" name="CSGW1" maxlength="3" size="2"> .
+		<input type="text" name="CSGW2" maxlength="3" size="2"> .
+		<input type="text" name="CSGW3" maxlength="3" size="2"> <br>
+		Static subnet mask: <br>
+		<input type="text" name="CSSN0" maxlength="3" size="2"> .
+		<input type="text" name="CSSN1" maxlength="3" size="2"> .
+		<input type="text" name="CSSN2" maxlength="3" size="2"> .
+		<input type="text" name="CSSN3" maxlength="3" size="2"> <br>
+		mDNS address (leave empty for no mDNS): <br/>
+		http:// <input type="text" name="CMDNS" maxlength="32"> .local <br>
+		Client IP: <span class="sip"> Not connected </span> <br>
+		<h3>Configure Access Point</h3>
+		AP SSID (leave empty for no AP): <br> <input type="text" name="APSSID" maxlength="32"> <br>
+		Hide AP SSID: <input type="checkbox" name="APHSSID" value="0"> <br>
+		AP password (leave empty for open): <br> <input type="password" name="APPASS" maxlength="63"> <br>
+		AP channel: <input type="text" name="APCHAN" maxlength="2" size="2"> <br>
+		AP IP: <span class="sip"> Not active </span> <br>
+		
+		<h2>Application setup</h2>
+		<h3>LED setup</h3>
+		LED amount: <input type="text" name="LEDS" maxlength="3" size="2"> <br>
+		Disable Power LED: <input type="checkbox" name="PWRLED" value="0"> <br>
+		<h3>Button setup</h3>
+		Button pin: <input type="text" name="BTNP" maxlength="2" size="2"> <br>
+		Button function: Toggle on/off <br>
+		<h3>Toolbar</h3>
+		<i>Not implemented</i> <br>
+		<h3>Animations</h3>
+		<i>Not implemented</i> <br>
+		<h3>Daisy chain</h3>
+		<i>Not implemented</i> <br>
+		<h3>Security</h3>
+		Disable OTA: <input type="checkbox" name="NOOTA" value="0"> <br>
+		ArduinoOTA and the edit page will be inaccessible until a SPIFFS reflash! <br>
+		Checking this is advised for added security if you don't need software changes. <br> 
+		Current status: <span class="otastat"> Unknown </span> <br> <br>
+		Disable recovery AP: <input type="checkbox" name="NORAP" value="0"> <br>
+		In case of a connection error there will be no wireless recovery possible! <br>
+		Completely disables all Access Point functions. <br> <br>
+		Factory reset: <input type="checkbox" name="RESET" value="0"> <br>
+		All EEPROM content (settings) will be erased. <br> <br>
+		
+		HTTP traffic is not encrypted. An attacker in the same network could intercept form data!<br>
+		<h3>About</h3>
+		WLED version 0.1c <br>
+		Server message: <span class="msg"> XML response error! </span>
+		<br><br>
+		<input type="submit" name="SUBM" value="Save">
+		<input type="button" name="BACK" value="Back" onclick="OpenMain()">
+	</form>
+</body>
+</html>

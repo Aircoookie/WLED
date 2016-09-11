@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+	<title>WLED 0.1c</title>
+	<!--<meta name="viewport" content="width=device-width, initial-scale=1.5">-->
+	<script>
+	    strA = "";
+		strR = "";
+		strG = "";
+		strB = "";
+		
+		function Startup()
+		{
+			setInterval('GetArduinoIO()', 5000);
+			GetArduinoIO();
+		}
+		function GetArduinoIO()
+		{
+			nocache = "&nocache=" + Math.random() * 1000000;
+			var request = new XMLHttpRequest();
+			request.onreadystatechange = function()
+			{
+				if (this.readyState == 4) {
+					if (this.status == 200) {
+						if (this.responseXML != null) {
+							document.Ctrl_form.SA.value = this.responseXML.getElementsByTagName('act')[0].childNodes[0].nodeValue;
+							document.Ctrl_form.SR.value = this.responseXML.getElementsByTagName('cl')[0].childNodes[0].nodeValue;
+							document.Ctrl_form.SG.value = this.responseXML.getElementsByTagName('cl')[1].childNodes[0].nodeValue;
+							document.Ctrl_form.SB.value = this.responseXML.getElementsByTagName('cl')[2].childNodes[0].nodeValue;
+							UpdateVals();
+						}
+					}
+				}
+			}
+			// send HTTP request
+			request.open("GET", "ajax_in/" + strA + strR + strG + strB + nocache, true);
+			request.send(null);
+			strA = "";
+			strR = "";
+			strG = "";
+			strB = "";
+		}
+		function GetCheck()
+		{
+			
+			strA = "&A=" + Ctrl_form.SA.value;
+			strR = "&R=" + Ctrl_form.SR.value;
+			strG = "&G=" + Ctrl_form.SG.value;
+			strB = "&B=" + Ctrl_form.SB.value;
+			
+			UpdateVals();
+			GetArduinoIO();
+		}
+		function rgb2hex(red, green, blue) {
+			var rgb = blue | (green << 8) | (red << 16);
+			return '#' + (0x1000000 + rgb).toString(16).slice(1)
+		}
+		function lingrad(red, green, blue) {
+			return "linear-gradient(white, " + rgb2hex(red, green, blue) + ")";
+		}
+		function UpdateVals()
+		{
+			document.body.style.background = lingrad(Ctrl_form.SR.value, Ctrl_form.SG.value, Ctrl_form.SB.value);
+		}
+		function OpenSettings()
+		{
+			window.open("/settings","_self");
+		}
+	</script>
+	<style>
+		.ctrl_box {
+			border: 0.3ch solid grey;
+			margin: auto;
+			width: 80vw;
+			background-color: #B9B9B9;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+		}
+		.sliders {
+			width: 100%;
+		}
+		.sliderA {
+			margin-left: auto;
+			margin-right: auto;
+			width: 77vw;
+			background: linear-gradient(to right, black, yellow);
+		}
+		.sliderR {
+			margin-left: auto;
+			margin-right: auto;
+			width: 77vw;
+			background: linear-gradient(to right, black, red);
+		}
+		.sliderG {
+			margin-left: auto;
+			margin-right: auto;
+			width: 77vw;
+			background: linear-gradient(to right, black, green);
+		}
+		.sliderB {
+			margin-left: auto;
+			margin-right: auto;
+			width: 77vw;
+			background: linear-gradient(to right, black, blue);
+		}
+		body {
+			text-align: right;
+			background: linear-gradient(white, black);
+			height: 100%;
+			margin: 0;
+			background-repeat: no-repeat;
+			background-attachment: fixed;
+		}
+		html {
+			height: 100%;
+		}
+		.tool_box {
+			
+		}
+		.settingsbutton {
+			width: 1.5cm;
+			height: 1.5cm;
+			margin-top: 4px;
+			margin-right: 4px;
+		}
+		input[type=range] {
+		  -webkit-appearance: none;
+		  width: 100%;
+		  margin: -4px 0;
+		}
+		input[type=range]:focus {
+		  outline: none;
+		}
+		input[type=range]::-webkit-slider-runnable-track {
+		  width: 100%;
+		  height: 102px;
+		  cursor: pointer;
+		  background: #DDDDDD;
+		}
+		input[type=range]::-webkit-slider-thumb {
+		  height: 78px;
+		  width: 78px;
+		  background: #ffffff;
+		  cursor: pointer;
+		  -webkit-appearance: none;
+		  margin-top: 12px;
+		}
+		input[type=range]:focus::-webkit-slider-runnable-track {
+		  background: #DDDDDD;
+		}
+		input[type=range]::-moz-range-track {
+		  width: 100%;
+		  height: 102px;
+		  cursor: pointer;
+		  background: #DDDDDD;
+		}
+		input[type=range]::-moz-range-thumb {
+		  height: 78px;
+		  width: 78px;
+		  background: #ffffff;
+		  cursor: pointer;
+		}
+		input[type=range]::-ms-track {
+		  width: 100%;
+		  height: 102px;
+		  cursor: pointer;
+		  background: transparent;
+		  border-color: transparent;
+		  color: transparent;
+		}
+		input[type=range]::-ms-fill-lower {
+		  background: #DDDDDD;
+		}
+		input[type=range]::-ms-fill-upper {
+		  background: #DDDDDD;
+		}
+		input[type=range]::-ms-thumb {
+		  width: 78px;
+		  background: #ffffff;
+		  cursor: pointer;
+		  height: 78px;
+		}
+		input[type=range]:focus::-ms-fill-lower {
+		  background: #DDDDDD;
+		}
+		input[type=range]:focus::-ms-fill-upper {
+		  background: #DDDDDD;
+		}
+	</style>
+<style id="holderjs-style" type="text/css"></style></head>
+<body onload="Startup()" class=" __plain_text_READY__">
+	<div id="tbB" class="tool_box">
+		<input type="image" class="settingsbutton" src="/button.png" onclick="OpenSettings()"id="tool">
+	</div>
+	<div id="cdB" class="ctrl_box">
+		<form id="form_c" name="Ctrl_form">
+			<br>
+			<div id="slA" class="sliderA">
+			<input type="range" class="sliders" name="SA" value="0" min="0" max="255" step="1" onchange="GetCheck()"> </div> <br>
+			<div id="slR" class="sliderR">
+			<input type="range" class="sliders" name="SR" value="0" min="0" max="255" step="1" onchange="GetCheck()"> </div> <br>
+			<div id="slR" class="sliderG">
+			<input type="range" class="sliders" name="SG" value="0" min="0" max="255" step="1" onchange="GetCheck()"> </div> <br>
+			<div id="slR" class="sliderB">
+			<input type="range" class="sliders" name="SB" value="0" min="0" max="255" step="1" onchange="GetCheck()"> </div> <br>
+		</form>
+	</div>
+</div></body></html>
