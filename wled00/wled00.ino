@@ -30,7 +30,7 @@ boolean ota_lock = false;
 int led_amount = 16;
 int nopwrled = 1;
 
-char HTTP_req[150];
+char HTTP_req[350];
 
 ESP8266WebServer server(80);
 File fsUploadFile;
@@ -176,6 +176,7 @@ void XML_response_settings()
 {
   String resp;
   resp = resp + "<?xml version = \"1.0\" ?>";
+  resp = resp + "<vs>";
   resp = resp + "<cssid>";
   resp = resp + clientssid;
   resp = resp + "</cssid>";
@@ -231,23 +232,38 @@ void XML_response_settings()
   resp = resp + "<noota>0</noota>"; //NI
   resp = resp + "<norap>0</norap>"; //NI
   resp = resp + "<sip>";
-  if (!Wifi.localIP()[0] == 0)
+  if (!WiFi.localIP()[0] == 0)
   {
-    resp = resp + WiFi.localIP();
+    resp = resp + WiFi.localIP()[0];
+    resp = resp + ".";
+    resp = resp + WiFi.localIP()[1];
+    resp = resp + ".";
+    resp = resp + WiFi.localIP()[2];
+    resp = resp + ".";
+    resp = resp + WiFi.localIP()[3];
   } else
   {
     resp = resp + "Not connected";
   }
   resp = resp + "</sip>";
   resp = resp + "<sip>";
-   if (!Wifi.softAPIP()[0] == 0)
+  if (!WiFi.softAPIP()[0] == 0)
   {
-    resp = resp + WiFi.softAPIP();
+    resp = resp + WiFi.softAPIP()[0];
+    resp = resp + ".";
+    resp = resp + WiFi.softAPIP()[1];
+    resp = resp + ".";
+    resp = resp + WiFi.softAPIP()[2];
+    resp = resp + ".";
+    resp = resp + WiFi.softAPIP()[3];
   } else
   {
     resp = resp + "Not active";
   }
   resp = resp + "</sip>";
+  resp = resp + "<otastat>Not implemented</otastat>";
+  resp = resp + "<msg>WLED 0.1c OK</msg>";
+  resp = resp + "</vs>";
   server.send(200, "text/xml", resp);
 }
 
@@ -293,13 +309,27 @@ uint8_t getNumberAfterStringPos(char str[], char spos)
    return op.toInt();
 }
 
+void handleSettingsSet(char HTTP_req[])
+{
+  
+}
+
 boolean handleSet(String req)
 {
    Serial.println("handleSet:");
    Serial.println(req);
-   req.toCharArray(HTTP_req, 150, 0);
+   req.toCharArray(HTTP_req, 350, 0);
    if (!StrContains(HTTP_req, "ajax_in")) {
-        if (
+        if (StrContains(HTTP_req, "set-settings"))
+        {
+          handleSettingsSet(HTTP_req);
+          return true;
+        }
+        if (StrContains(HTTP_req, "get-settings"))
+        {
+          XML_response_settings();
+          return true;
+        }
         return false;
    }
    int pos = 0;
