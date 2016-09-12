@@ -309,9 +309,11 @@ uint8_t getNumberAfterStringPos(char str[], char spos)
    return op.toInt();
 }
 
-void handleSettingsSet(char HTTP_req[])
+void handleSettingsSet()
 {
-  
+  if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
+
+  saveSettingsToEEPROM();
 }
 
 boolean handleSet(String req)
@@ -320,11 +322,6 @@ boolean handleSet(String req)
    Serial.println(req);
    req.toCharArray(HTTP_req, 350, 0);
    if (!StrContains(HTTP_req, "ajax_in")) {
-        if (StrContains(HTTP_req, "set-settings"))
-        {
-          handleSettingsSet(HTTP_req);
-          return true;
-        }
         if (StrContains(HTTP_req, "get-settings"))
         {
           XML_response_settings();
@@ -555,6 +552,11 @@ void setup() {
     if(!handleFileRead("/index.htm")) server.send(404, "text/plain", "FileNotFound");
   });
   server.on("/reset", HTTP_GET, reset);
+  server.on("/set-settings", HTTP_POST, [](){
+    handleSettingsSet();
+    server.send(200, "text/plain", "Settings saved. Please wait a minute for module to reset...");
+    reset();
+  });
   if (!ota_lock){
     //load editor
     server.on("/edit", HTTP_GET, [](){

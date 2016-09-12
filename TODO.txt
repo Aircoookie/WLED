@@ -1,13 +1,13 @@
 switch dev enviroment to 100% git pc -- done
-fix current issues -- done
+fix current issues -- vip -- debug
 implement brightness slider -- vip -- done
 remove settings lock option -- done
 toolbar preparation
 add toolbar conf in settings
 additional color picker field
 change slider height to relative values
-fully implement EEPROM -- vip -- done
-implement settings getter/setter -- vip
+fully implement EEPROM -- vip -- done -- debug
+implement settings getter/setter -- vip -- done -- debug
 implement OTA
 implement OTA lock
 implement button
@@ -17,5 +17,3 @@ implement default color on boot
 
 
 FAILURE SOURCE?? --> non-null String
-
-+4917693264270
