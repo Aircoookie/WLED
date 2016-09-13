@@ -30,7 +30,7 @@ boolean ota_lock = false;
 int led_amount = 16;
 int nopwrled = 1;
 
-char HTTP_req[350];
+char HTTP_req[150];
 
 ESP8266WebServer server(80);
 File fsUploadFile;
@@ -53,12 +53,14 @@ void clearEEPROM()
   {
     EEPROM.write(i, 0);
   }
+  EEPROM.commit();
 }
 
 void saveSettingsToEEPROM()
 {
   if (EEPROM.read(233) != 233) //set no first boot flag
   {
+    clearEEPROM();
     EEPROM.write(233, 233);
   }
   for (int i = 0; i < 32; ++i)
@@ -67,19 +69,19 @@ void saveSettingsToEEPROM()
   }
   for (int i = 32; i < 96; ++i)
   {
-    EEPROM.write(i, clientpass.charAt(i));
+    EEPROM.write(i, clientpass.charAt(i-32));
   }
   for (int i = 96; i < 128; ++i)
   {
-    EEPROM.write(i, cmdns.charAt(i));
+    EEPROM.write(i, cmdns.charAt(i-96));
   }
   for (int i = 128; i < 160; ++i)
   {
-    EEPROM.write(i, apssid.charAt(i));
+    EEPROM.write(i, apssid.charAt(i-128));
   }
   for (int i = 160; i < 224; ++i)
   {
-    EEPROM.write(i, appass.charAt(i));
+    EEPROM.write(i, appass.charAt(i-160));
   }
   EEPROM.write(228, aphide);
   EEPROM.write(227, apchannel);
@@ -97,6 +99,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(243, staticsubnet[1]);
   EEPROM.write(244, staticsubnet[2]);
   EEPROM.write(245, staticsubnet[3]);
+
+  EEPROM.commit();
 }
 
 void loadSettingsFromEEPROM()
@@ -109,27 +113,32 @@ void loadSettingsFromEEPROM()
   clientssid = "";
   for (int i = 0; i < 32; ++i)
   {
-      clientssid += char(EEPROM.read(i));
+    if (EEPROM.read(i) == 0) break;
+    clientssid += char(EEPROM.read(i));
   }
   clientpass = "";
   for (int i = 32; i < 96; ++i)
   {
-      clientpass += char(EEPROM.read(i));
+    if (EEPROM.read(i) == 0) break;
+    clientpass += char(EEPROM.read(i));
   }
   cmdns = "";
   for (int i = 96; i < 128; ++i)
   {
-      cmdns += char(EEPROM.read(i));
+    if (EEPROM.read(i) == 0) break;
+    cmdns += char(EEPROM.read(i));
   }
   apssid = "";
   for (int i = 128; i < 160; ++i)
   {
-      apssid += char(EEPROM.read(i));
+    if (EEPROM.read(i) == 0) break;
+    apssid += char(EEPROM.read(i));
   }
   appass = "";
   for (int i = 160; i < 224; ++i)
   {
-      appass += char(EEPROM.read(i));
+    if (EEPROM.read(i) == 0) break;
+    appass += char(EEPROM.read(i));
   }
   aphide = EEPROM.read(228);
   if (aphide > 1) aphide = 1;
@@ -174,6 +183,7 @@ void XML_response()
 
 void XML_response_settings()
 {
+  Serial.println("XML settings response");
   String resp;
   resp = resp + "<?xml version = \"1.0\" ?>";
   resp = resp + "<vs>";
@@ -264,6 +274,7 @@ void XML_response_settings()
   resp = resp + "<otastat>Not implemented</otastat>";
   resp = resp + "<msg>WLED 0.1c OK</msg>";
   resp = resp + "</vs>";
+  Serial.println(resp);
   server.send(200, "text/xml", resp);
 }
 
@@ -312,7 +323,20 @@ uint8_t getNumberAfterStringPos(char str[], char spos)
 void handleSettingsSet()
 {
   if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
-
+  if (server.hasArg("CPASS"))
+  {
+    if (!server.arg("CPASS").indexOf('*') == 0)
+    {
+      Serial.println("Setting pass");
+      clientpass = server.arg("CPASS");
+    }
+  }
+  if (server.hasArg("APSSID")) apssid = server.arg("APSSID");
+  if (server.hasArg("APPASS"))
+  {
+    if (!server.arg("APPASS").indexOf('*') == 0) appass = server.arg("APPASS");
+  }
+  
   saveSettingsToEEPROM();
 }
 
@@ -320,7 +344,7 @@ boolean handleSet(String req)
 {
    Serial.println("handleSet:");
    Serial.println(req);
-   req.toCharArray(HTTP_req, 350, 0);
+   req.toCharArray(HTTP_req, 150, 0);
    if (!StrContains(HTTP_req, "ajax_in")) {
         if (StrContains(HTTP_req, "get-settings"))
         {
@@ -485,7 +509,6 @@ void setLeds() {
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("T123");
     Serial.println();
 
     for(uint8_t t = 4; t > 0; t--) {
@@ -508,6 +531,13 @@ void setup() {
   EEPROM.begin(256);
   loadSettingsFromEEPROM();
 
+  Serial.print("CC: SSID: ");
+  Serial.print(clientssid);
+  Serial.print(" PASS: ");
+  Serial.println(clientpass);
+
+  WiFi.disconnect(); //close old connections
+
   if (staticip[0] != 0)
   {
     WiFi.config(staticip, staticgateway, staticsubnet);
@@ -516,8 +546,9 @@ void setup() {
     WiFi.config(0U, 0U, 0U);
   }
 
-  if (useap)
+  if (apssid.length()>0)
   {
+    Serial.println(apssid.length());
     initAP();
   } else
   {
@@ -531,7 +562,7 @@ void setup() {
   Serial.println(WiFi.localIP());
   
   // Set up mDNS responder:
-  if (cmdns != NULL && !WL_CONNECTED && !MDNS.begin(cmdns.c_str())) {
+  if (cmdns != NULL && WL_CONNECTED && !MDNS.begin(cmdns.c_str())) {
     Serial.println("Error setting up MDNS responder!");
     down();
   }
@@ -554,7 +585,7 @@ void setup() {
   server.on("/reset", HTTP_GET, reset);
   server.on("/set-settings", HTTP_POST, [](){
     handleSettingsSet();
-    server.send(200, "text/plain", "Settings saved. Please wait a minute for module to reset...");
+    server.send(200, "text/html", "<html><head><script>alert(Settings saved. Please power cycle module to apply changes...);</script></head></html>");
     reset();
   });
   if (!ota_lock){
@@ -573,6 +604,8 @@ void setup() {
     server.on("/list", HTTP_GET, handleFileList);
     //kill module
     server.on("/down", HTTP_GET, down);
+    //clear eeprom
+    server.on("/cleareeprom", HTTP_GET, clearEEPROM);
   }
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](){
@@ -597,10 +630,6 @@ void setup() {
 
 void loop() {
     server.handleClient();
-    /*if (wasConnected && !WL_CONNECTED)
-    {
-      initCon();
-    }*/
 }
 
 void initAP(){
@@ -623,7 +652,6 @@ void initCon()
       return;
     }
   }
-  //wasConnected = true;
 }
 
 

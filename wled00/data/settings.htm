@@ -13,34 +13,34 @@
 				if (this.readyState == 4) {
 					if (this.status == 200) {
 						if (this.responseXML != null) {
-							document.Settings_form.CSSID.value = this.responseXML.getElementsByTagName('cssid')[0].childNodes[0].nodeValue;
-							document.Settings_form.CPASS.value = this.responseXML.getElementsByTagName('cpass')[0].childNodes[0].nodeValue; //fake pass like ******
-							document.Settings_form.CSIP0.value = this.responseXML.getElementsByTagName('csips')[0].childNodes[0].nodeValue;
-							document.Settings_form.CSIP1.value = this.responseXML.getElementsByTagName('csips')[1].childNodes[0].nodeValue;
-							document.Settings_form.CSIP2.value = this.responseXML.getElementsByTagName('csips')[2].childNodes[0].nodeValue;
-							document.Settings_form.CSIP3.value = this.responseXML.getElementsByTagName('csips')[3].childNodes[0].nodeValue;
-							document.Settings_form.CSGW0.value = this.responseXML.getElementsByTagName('csgws')[0].childNodes[0].nodeValue;
-							document.Settings_form.CSGW1.value = this.responseXML.getElementsByTagName('csgws')[1].childNodes[0].nodeValue;
-							document.Settings_form.CSGW2.value = this.responseXML.getElementsByTagName('csgws')[2].childNodes[0].nodeValue;
-							document.Settings_form.CSGW3.value = this.responseXML.getElementsByTagName('csgws')[3].childNodes[0].nodeValue;
-							document.Settings_form.CSSN0.value = this.responseXML.getElementsByTagName('cssns')[0].childNodes[0].nodeValue;
-							document.Settings_form.CSSN1.value = this.responseXML.getElementsByTagName('cssns')[1].childNodes[0].nodeValue;
-							document.Settings_form.CSSN2.value = this.responseXML.getElementsByTagName('cssns')[2].childNodes[0].nodeValue;
-							document.Settings_form.CSSN3.value = this.responseXML.getElementsByTagName('cssns')[3].childNodes[0].nodeValue;
-							document.Settings_form.CMDNS.value = this.responseXML.getElementsByTagName('cmdns')[0].childNodes[0].nodeValue;
-							document.Settings_form.APSSID.value = this.responseXML.getElementsByTagName('apssid')[0].childNodes[0].nodeValue;
-							document.Settings_form.APHSSID.checked = (this.responseXML.getElementsByTagName('aphssid')[0].childNodes[0].nodeValue)!=0?true:false;
-							document.Settings_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].childNodes[0].nodeValue; //fake pass like ******
-							document.Settings_form.APCHAN.value = this.responseXML.getElementsByTagName('apchan')[0].childNodes[0].nodeValue;
-							document.Settings_form.LEDS.value = this.responseXML.getElementsByTagName('leds')[0].childNodes[0].nodeValue;
-							document.Settings_form.PWRLED.checked = (this.responseXML.getElementsByTagName('pwrled')[0].childNodes[0].nodeValue)!=0?true:false;
-							document.Settings_form.BTNP.value = this.responseXML.getElementsByTagName('btnp')[0].childNodes[0].nodeValue;
-							document.Settings_form.NOOTA.checked = (this.responseXML.getElementsByTagName('noota')[0].childNodes[0].nodeValue)!=0?true:false;
-							document.Settings_form.NORAP.checked = (this.responseXML.getElementsByTagName('norap')[0].childNodes[0].nodeValue)!=0?true:false;
-							document.getElementsByClassName("sip")[0].innerHTML = this.responseXML.getElementsByTagName('sip')[0].childNodes[0].nodeValue;
-							document.getElementsByClassName("sip")[1].innerHTML = this.responseXML.getElementsByTagName('sip')[1].childNodes[0].nodeValue;
-							document.getElementsByClassName("otastat")[0].innerHTML = this.responseXML.getElementsByTagName('otastat')[0].childNodes[0].nodeValue;
-							document.getElementsByClassName("msg")[0].innerHTML = this.responseXML.getElementsByTagName('msg')[0].childNodes[0].nodeValue;
+							document.Settings_form.CSSID.value = this.responseXML.getElementsByTagName('cssid')[0].innerHTML;
+							document.Settings_form.CPASS.value = this.responseXML.getElementsByTagName('cpass')[0].innerHTML; //fake pass like ******
+							document.Settings_form.CSIP0.value = this.responseXML.getElementsByTagName('csips')[0].innerHTML;
+							document.Settings_form.CSIP1.value = this.responseXML.getElementsByTagName('csips')[1].innerHTML;
+							document.Settings_form.CSIP2.value = this.responseXML.getElementsByTagName('csips')[2].innerHTML;
+							document.Settings_form.CSIP3.value = this.responseXML.getElementsByTagName('csips')[3].innerHTML;
+							document.Settings_form.CSGW0.value = this.responseXML.getElementsByTagName('csgws')[0].innerHTML;
+							document.Settings_form.CSGW1.value = this.responseXML.getElementsByTagName('csgws')[1].innerHTML;
+							document.Settings_form.CSGW2.value = this.responseXML.getElementsByTagName('csgws')[2].innerHTML;
+							document.Settings_form.CSGW3.value = this.responseXML.getElementsByTagName('csgws')[3].innerHTML;
+							document.Settings_form.CSSN0.value = this.responseXML.getElementsByTagName('cssns')[0].innerHTML;
+							document.Settings_form.CSSN1.value = this.responseXML.getElementsByTagName('cssns')[1].innerHTML;
+							document.Settings_form.CSSN2.value = this.responseXML.getElementsByTagName('cssns')[2].innerHTML;
+							document.Settings_form.CSSN3.value = this.responseXML.getElementsByTagName('cssns')[3].innerHTML;
+							document.Settings_form.CMDNS.value = this.responseXML.getElementsByTagName('cmdns')[0].innerHTML;
+							document.Settings_form.APSSID.value = this.responseXML.getElementsByTagName('apssid')[0].innerHTML;
+							document.Settings_form.APHSSID.checked = (this.responseXML.getElementsByTagName('aphssid')[0].innerHTML)!=0?true:false;
+							document.Settings_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].innerHTML; //fake pass like ******
+							document.Settings_form.APCHAN.value = this.responseXML.getElementsByTagName('apchan')[0].innerHTML;
+							document.Settings_form.LEDS.value = this.responseXML.getElementsByTagName('leds')[0].innerHTML;
+							document.Settings_form.PWRLED.checked = (this.responseXML.getElementsByTagName('pwrled')[0].innerHTML)!=0?true:false;
+							document.Settings_form.BTNP.value = this.responseXML.getElementsByTagName('btnp')[0].innerHTML;
+							document.Settings_form.NOOTA.checked = (this.responseXML.getElementsByTagName('noota')[0].innerHTML)!=0?true:false;
+							document.Settings_form.NORAP.checked = (this.responseXML.getElementsByTagName('norap')[0].innerHTML)!=0?true:false;
+							document.getElementsByClassName("sip")[0].innerHTML = this.responseXML.getElementsByTagName('sip')[0].innerHTML;
+							document.getElementsByClassName("sip")[1].innerHTML = this.responseXML.getElementsByTagName('sip')[1].innerHTML;
+							document.getElementsByClassName("otastat")[0].innerHTML = this.responseXML.getElementsByTagName('otastat')[0].innerHTML;
+							document.getElementsByClassName("msg")[0].innerHTML = this.responseXML.getElementsByTagName('msg')[0].innerHTML;
 							if (Settings_form.NOOTA.checked) {document.Settings_form.NOOTA.disabled="disabled";}
 						}
 					}

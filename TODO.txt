@@ -15,5 +15,6 @@ implement LED Control (NeoPixelBus?) -- vip
 implement HSB slider option
 implement default color on boot
 
-
+Bugs:
 FAILURE SOURCE?? --> non-null String
+post req doesnt send checkboxes
