@@ -548,11 +548,13 @@ void setup() {
 
   if (apssid.length()>0)
   {
+    Serial.print("USING AP");
     Serial.println(apssid.length());
     initAP();
   } else
   {
-    WiFi.softAPdisconnect();
+    Serial.println("NO AP");
+    WiFi.softAPdisconnect(true);
   }
 
   initCon();
@@ -585,7 +587,7 @@ void setup() {
   server.on("/reset", HTTP_GET, reset);
   server.on("/set-settings", HTTP_POST, [](){
     handleSettingsSet();
-    server.send(200, "text/html", "<html><head><script>alert(Settings saved. Please power cycle module to apply changes...);</script></head></html>");
+    server.send(200, "text/plain", "Settings saved. Please wait a minute for module to reset, then go to main page...");
     reset();
   });
   if (!ota_lock){
