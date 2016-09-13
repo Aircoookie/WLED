@@ -7,7 +7,7 @@
 #include <NeoPixelBus.h>
 #include <FS.h>
 
-//NeoPixelBus strip = NeoPixelBus(pixelCount, 8, NEO_GRB | NEO_KHZ800);
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(16);
 
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
@@ -20,8 +20,6 @@ boolean useap = true;
 IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
-
-//boolean wasConnected = false;
 
 byte col[3];
 byte bri;
@@ -500,11 +498,10 @@ void handleFileList() {
 
 void setLeds() {
 
-  /*for (int i=0; i<pixelCount; i++) {
-    strip.SetPixelColor(i, black);
+  for (int i=0; i<16; i++) {
+    strip.SetPixelColor(i, RgbColor(col[0], col[1], col[2]));
   }
-  strip.SetPixelColor(pixel, color);
-  strip.Show();*/
+  strip.Show();
 }
 
 void setup() {

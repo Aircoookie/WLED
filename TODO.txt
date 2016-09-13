@@ -9,4 +9,6 @@ implement button
 implement LED Control (NeoPixelBus?) -- vip
 implement HSB slider option
 implement default color on boot
+change color submit from get to post, rewrite with args, requires no buffer
+change color submit from rgb to hex
 
