@@ -7,7 +7,7 @@
 #include <NeoPixelBus.h>
 #include <FS.h>
 
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(16);
+NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(16, 1);
 
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
@@ -21,8 +21,8 @@ IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
 
-byte col[3];
-byte bri;
+byte col[]{256, 128, 0};
+byte bri = 128;
 byte hue, sat;
 boolean ota_lock = false;
 int led_amount = 16;
@@ -329,6 +329,7 @@ void handleSettingsSet()
       clientpass = server.arg("CPASS");
     }
   }
+  if (server.hasArg("CMDNS")) cmdns = server.arg("CMDNS");
   if (server.hasArg("APSSID")) apssid = server.arg("APSSID");
   if (server.hasArg("APPASS"))
   {
@@ -371,6 +372,7 @@ boolean handleSet(String req)
 
    Serial.println(col[0]);
    XML_response();
+   setLeds();
    return true;
 }
 
@@ -498,8 +500,10 @@ void handleFileList() {
 
 void setLeds() {
 
+  double d = bri;
+  double val = d /256;
   for (int i=0; i<16; i++) {
-    strip.SetPixelColor(i, RgbColor(col[0], col[1], col[2]));
+    strip.SetPixelColor(i, RgbColor(col[0]*val, col[1]*val, col[2]*val));
   }
   strip.Show();
 }
@@ -618,13 +622,13 @@ void setup() {
 
   // Add service to MDNS
   MDNS.addService("http", "tcp", 80);
-  /*/ Initialize NeoPixel Strip
+  // Initialize NeoPixel Strip
   strip.Begin();
-  strip.Show();*/
-  if (nopwrled == 0)
+  setLeds();
+  /*if (nopwrled == 0)
   {
     pinMode(BUILTIN_LED, OUTPUT);
-  }
+  }*/
 }
 
 void loop() {
@@ -647,7 +651,10 @@ void initCon()
     {
       WiFi.disconnect();
       Serial.println("Can't connect to network. Opening AP...");
+      String save = apssid;
+      apssid = "WLED-RECOVERY";
       initAP();
+      apssid = save;
       return;
     }
   }
