@@ -21,10 +21,11 @@ IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
 
-byte col[]{256, 128, 0};
-byte bri = 128;
+byte col[]{255, 127, 0};
+byte bri = 127;
 byte hue, sat;
 boolean ota_lock = false;
+boolean only_ap = false;
 int led_amount = 16;
 int nopwrled = 1;
 
@@ -35,12 +36,16 @@ File fsUploadFile;
 
 void down()
 {
+  bri = 0;
+  setLeds();
   Serial.println("MODULE TERMINATED");
   while (1) {delay(1000);}
 }
 
 void reset()
 {
+  bri = 0;
+  setLeds();
   Serial.println("MODULE RESET");
   ESP.reset();
 }
@@ -97,6 +102,10 @@ void saveSettingsToEEPROM()
   EEPROM.write(243, staticsubnet[1]);
   EEPROM.write(244, staticsubnet[2]);
   EEPROM.write(245, staticsubnet[3]);
+  EEPROM.write(246, col[0]);
+  EEPROM.write(247, col[1]);
+  EEPROM.write(248, col[2]);
+  EEPROM.write(249, bri);
 
   EEPROM.commit();
 }
@@ -157,6 +166,10 @@ void loadSettingsFromEEPROM()
   staticsubnet[1] = EEPROM.read(243);
   staticsubnet[2] = EEPROM.read(244);
   staticsubnet[3] = EEPROM.read(245);
+  col[0] = EEPROM.read(246);
+  col[1] = EEPROM.read(247);
+  col[2] = EEPROM.read(248);
+  bri = EEPROM.read(249);
 }
 
 void XML_response()
@@ -270,7 +283,7 @@ void XML_response_settings()
   }
   resp = resp + "</sip>";
   resp = resp + "<otastat>Not implemented</otastat>";
-  resp = resp + "<msg>WLED 0.1c OK</msg>";
+  resp = resp + "<msg>WLED 0.2 OK</msg>";
   resp = resp + "</vs>";
   Serial.println(resp);
   server.send(200, "text/xml", resp);
@@ -331,9 +344,27 @@ void handleSettingsSet()
   }
   if (server.hasArg("CMDNS")) cmdns = server.arg("CMDNS");
   if (server.hasArg("APSSID")) apssid = server.arg("APSSID");
+  if (server.hasArg("APHSSID"))
+  {
+    aphide = 1;
+  } else
+  {
+    aphide = 0;
+  }
   if (server.hasArg("APPASS"))
   {
     if (!server.arg("APPASS").indexOf('*') == 0) appass = server.arg("APPASS");
+  }
+  if (server.hasArg("APCHAN"))
+  {
+    int chan = server.arg("APCHAN").toInt();
+    if (chan > 0 && chan < 14) apchannel = chan;
+  }
+  if (server.hasArg("RESET")) //might be dangerous in case arg is always sent
+  {
+    clearEEPROM();
+    server.send(200, "text/plain", "Settings erased. Please wait for light to turn back on, then go to main page...");
+    reset();
   }
   
   saveSettingsToEEPROM();
@@ -502,7 +533,7 @@ void setLeds() {
 
   double d = bri;
   double val = d /256;
-  for (int i=0; i<16; i++) {
+  for (int i=0; i < led_amount; i++) {
     strip.SetPixelColor(i, RgbColor(col[0]*val, col[1]*val, col[2]*val));
   }
   strip.Show();
@@ -534,8 +565,6 @@ void setup() {
 
   Serial.print("CC: SSID: ");
   Serial.print(clientssid);
-  Serial.print(" PASS: ");
-  Serial.println(clientpass);
 
   WiFi.disconnect(); //close old connections
 
@@ -565,7 +594,7 @@ void setup() {
   Serial.println(WiFi.localIP());
   
   // Set up mDNS responder:
-  if (cmdns != NULL && WL_CONNECTED && !MDNS.begin(cmdns.c_str())) {
+  if (cmdns != NULL && !only_ap && !MDNS.begin(cmdns.c_str())) {
     Serial.println("Error setting up MDNS responder!");
     down();
   }
@@ -588,7 +617,7 @@ void setup() {
   server.on("/reset", HTTP_GET, reset);
   server.on("/set-settings", HTTP_POST, [](){
     handleSettingsSet();
-    server.send(200, "text/plain", "Settings saved. Please wait a minute for module to reset, then go to main page...");
+    server.send(200, "text/plain", "Settings saved. Please wait for light to turn back on, then go to main page...");
     reset();
   });
   if (!ota_lock){
@@ -641,8 +670,9 @@ void initAP(){
 
 void initCon()
 {
+  int fail_count = 0;
+  if (clientssid.length() <1) fail_count = 33;
   WiFi.begin(clientssid.c_str(), clientpass.c_str());
-  int fail_count =0;
   while(WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.println("C_NC");
@@ -652,7 +682,8 @@ void initCon()
       WiFi.disconnect();
       Serial.println("Can't connect to network. Opening AP...");
       String save = apssid;
-      apssid = "WLED-RECOVERY";
+      only_ap = true;
+      if (apssid.length() <1) apssid = "WLED-AP";
       initAP();
       apssid = save;
       return;
