@@ -2,12 +2,14 @@ toolbar preparation
 add toolbar conf in settings
 additional color picker field
 change slider height to relative values
+improve firefox UI appearance
 implement all settings setters
 implement OTA
 implement OTA lock
 implement button
 implement HSB slider option
-implement default color on boot in settings
 change color submit from get to post, rewrite with args, requires no buffer
 change color submit from rgb to hex
 
+BUGS
+static ip disables mdns

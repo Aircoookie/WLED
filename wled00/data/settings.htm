@@ -15,14 +15,33 @@
 						if (this.responseXML != null) {
 							document.Settings_form.CSSID.value = this.responseXML.getElementsByTagName('cssid')[0].innerHTML;
 							document.Settings_form.CPASS.value = this.responseXML.getElementsByTagName('cpass')[0].innerHTML; //fake pass like ******
+							document.Settings_form.CSIP0.value = this.responseXML.getElementsByTagName('csips')[0].innerHTML;
+							document.Settings_form.CSIP1.value = this.responseXML.getElementsByTagName('csips')[1].innerHTML;
+							document.Settings_form.CSIP2.value = this.responseXML.getElementsByTagName('csips')[2].innerHTML;
+							document.Settings_form.CSIP3.value = this.responseXML.getElementsByTagName('csips')[3].innerHTML;
+							document.Settings_form.CSGW0.value = this.responseXML.getElementsByTagName('csgws')[0].innerHTML;
+							document.Settings_form.CSGW1.value = this.responseXML.getElementsByTagName('csgws')[1].innerHTML;
+							document.Settings_form.CSGW2.value = this.responseXML.getElementsByTagName('csgws')[2].innerHTML;
+							document.Settings_form.CSGW3.value = this.responseXML.getElementsByTagName('csgws')[3].innerHTML;
+							document.Settings_form.CSSN0.value = this.responseXML.getElementsByTagName('cssns')[0].innerHTML;
+							document.Settings_form.CSSN1.value = this.responseXML.getElementsByTagName('cssns')[1].innerHTML;
+							document.Settings_form.CSSN2.value = this.responseXML.getElementsByTagName('cssns')[2].innerHTML;
+							document.Settings_form.CSSN3.value = this.responseXML.getElementsByTagName('cssns')[3].innerHTML;
 							document.Settings_form.CMDNS.value = this.responseXML.getElementsByTagName('cmdns')[0].innerHTML;
 							document.Settings_form.APSSID.value = this.responseXML.getElementsByTagName('apssid')[0].innerHTML;
 							document.Settings_form.APHSSID.checked = (this.responseXML.getElementsByTagName('aphssid')[0].innerHTML)!=0?true:false;
 							document.Settings_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].innerHTML; //fake pass like ******
 							document.Settings_form.APCHAN.value = this.responseXML.getElementsByTagName('apchan')[0].innerHTML;
+							document.Settings_form.LEDS.value = this.responseXML.getElementsByTagName('leds')[0].innerHTML;
+							document.Settings_form.PWRLED.checked = (this.responseXML.getElementsByTagName('pwrled')[0].innerHTML)!=0?true:false;
+							document.Settings_form.BTNP.value = this.responseXML.getElementsByTagName('btnp')[0].innerHTML;
+							document.Settings_form.NOOTA.checked = (this.responseXML.getElementsByTagName('noota')[0].innerHTML)!=0?true:false;
+							document.Settings_form.NORAP.checked = (this.responseXML.getElementsByTagName('norap')[0].innerHTML)!=0?true:false;
 							document.getElementsByClassName("sip")[0].innerHTML = this.responseXML.getElementsByTagName('sip')[0].innerHTML;
 							document.getElementsByClassName("sip")[1].innerHTML = this.responseXML.getElementsByTagName('sip')[1].innerHTML;
+							document.getElementsByClassName("otastat")[0].innerHTML = this.responseXML.getElementsByTagName('otastat')[0].innerHTML;
 							document.getElementsByClassName("msg")[0].innerHTML = this.responseXML.getElementsByTagName('msg')[0].innerHTML;
+							if (Settings_form.NOOTA.checked) {document.Settings_form.NOOTA.disabled="disabled";}
 						}
 					}
 				}
@@ -43,7 +62,6 @@
 	</style>
 </head>
 <body onload="GetCurrent()" class=" __plain_text_READY__">
-	Und nein, ich mache die Einstellungsseite nicht Deutsch ;D <br>
 	<h1>WLED Settings</h1>
 	<form id="form_s" name="Settings_form" action="set-settings" method="post">
 		<input type="submit" name="SUBM" value="Save">
@@ -52,6 +70,21 @@
 		<h3>Connect to existing network</h3>
 		Network SSID (leave empty to not connect): <br> <input type="text" name="CSSID" maxlength="32"> <br>
 		Network password: <br> <input type="password" name="CPASS" maxlength="63"> <br>
+		Static IP (leave at 0.0.0.0 for DHCP): <br>
+		<input type="text" name="CSIP0" maxlength="3" size="2"> .
+		<input type="text" name="CSIP1" maxlength="3" size="2"> .
+		<input type="text" name="CSIP2" maxlength="3" size="2"> .
+		<input type="text" name="CSIP3" maxlength="3" size="2"> <br>
+		Static gateway: <br>
+		<input type="text" name="CSGW0" maxlength="3" size="2"> .
+		<input type="text" name="CSGW1" maxlength="3" size="2"> .
+		<input type="text" name="CSGW2" maxlength="3" size="2"> .
+		<input type="text" name="CSGW3" maxlength="3" size="2"> <br>
+		Static subnet mask: <br>
+		<input type="text" name="CSSN0" maxlength="3" size="2"> .
+		<input type="text" name="CSSN1" maxlength="3" size="2"> .
+		<input type="text" name="CSSN2" maxlength="3" size="2"> .
+		<input type="text" name="CSSN3" maxlength="3" size="2"> <br>
 		mDNS address (leave empty for no mDNS): <br/>
 		http:// <input type="text" name="CMDNS" maxlength="32"> .local <br>
 		Client IP: <span class="sip"> Not connected </span> <br>
@@ -65,13 +98,31 @@
 		<h2>Application setup</h2>
 		<h3>LED setup</h3>
 		The default boot LED color is the current color when settings are saved. <br>
+		LED amount: <input type="text" name="LEDS" maxlength="3" size="2"> <br>
+		Disable Power LED: <input type="checkbox" name="PWRLED" value="0"> <br>
+		<h3>Button setup</h3>
+		Button pin: <input type="text" name="BTNP" maxlength="2" size="2"> <br>
+		Button function: Toggle on/off <br>
+		<h3>Toolbar</h3>
+		<i>Not implemented</i> <br>
+		<h3>Animations</h3>
+		<i>Not implemented</i> <br>
+		<h3>Daisy chain</h3>
+		<i>Not implemented</i> <br>
 		<h3>Security</h3>
+		Disable OTA: <input type="checkbox" name="NOOTA" value="0"> <br>
+		ArduinoOTA and the edit page will be inaccessible until a SPIFFS reflash! <br>
+		Checking this is advised for added security if you don't need software changes. <br> 
+		Current status: <span class="otastat"> Unknown </span> <br> <br>
+		Disable recovery AP: <input type="checkbox" name="NORAP" value="0"> <br>
+		In case of a connection error there will be no wireless recovery possible! <br>
+		Completely disables all Access Point functions. <br> <br>
 		Factory reset: <input type="checkbox" name="RESET" value="0"> <br>
 		All EEPROM content (settings) will be erased. <br> <br>
 		
 		HTTP traffic is not encrypted. An attacker in the same network could intercept form data!<br>
 		<h3>About</h3>
-		WLED version 0.2 <br>
+		WLED version 0.3pd <br>
 		(c) 2016 Christian Schwinne <br>
 		Server message: <span class="msg"> XML response error! </span>
 		<br><br>

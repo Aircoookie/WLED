@@ -7,6 +7,12 @@
 #include <NeoPixelBus.h>
 #include <FS.h>
 
+/*
+ * @title WLED project sketch
+ * @version 0.3pd
+ * @author Christian Schwinne
+ */
+
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(16, 1);
 
 String clientssid = "Your_Network_Here";
@@ -283,7 +289,7 @@ void XML_response_settings()
   }
   resp = resp + "</sip>";
   resp = resp + "<otastat>Not implemented</otastat>";
-  resp = resp + "<msg>WLED 0.2 OK</msg>";
+  resp = resp + "<msg>WLED 0.3pd OK</msg>";
   resp = resp + "</vs>";
   Serial.println(resp);
   server.send(200, "text/xml", resp);
@@ -366,7 +372,66 @@ void handleSettingsSet()
     server.send(200, "text/plain", "Settings erased. Please wait for light to turn back on, then go to main page...");
     reset();
   }
-  
+  if (server.hasArg("CSIP0"))
+  {
+    int i = server.arg("CSIP0").toInt();
+    if (i >= 0 && i <= 255) staticip[0] = i;
+  }
+  if (server.hasArg("CSIP1"))
+  {
+    int i = server.arg("CSIP1").toInt();
+    if (i >= 0 && i <= 255) staticip[1] = i;
+  }
+  if (server.hasArg("CSIP2"))
+  {
+    int i = server.arg("CSIP2").toInt();
+    if (i >= 0 && i <= 255) staticip[2] = i;
+  }
+  if (server.hasArg("CSIP3"))
+  {
+    int i = server.arg("CSIP3").toInt();
+    if (i >= 0 && i <= 255) staticip[3] = i;
+  }
+  if (server.hasArg("CSGW0"))
+  {
+    int i = server.arg("CSGW0").toInt();
+    if (i >= 0 && i <= 255) staticgateway[0] = i;
+  }
+  if (server.hasArg("CSGW1"))
+  {
+    int i = server.arg("CSGW1").toInt();
+    if (i >= 0 && i <= 255) staticgateway[1] = i;
+  }
+  if (server.hasArg("CSGW2"))
+  {
+    int i = server.arg("CSGW2").toInt();
+    if (i >= 0 && i <= 255) staticgateway[2] = i;
+  }
+  if (server.hasArg("CSGW3"))
+  {
+    int i = server.arg("CSGW3").toInt();
+    if (i >= 0 && i <= 255) staticgateway[3] = i;
+  }
+  if (server.hasArg("CSSN0"))
+  {
+    int i = server.arg("CSSN0").toInt();
+    if (i >= 0 && i <= 255) staticsubnet[0] = i;
+  }
+  if (server.hasArg("CSSN1"))
+  {
+    int i = server.arg("CSSN1").toInt();
+    if (i >= 0 && i <= 255) staticsubnet[1] = i;
+  }
+  if (server.hasArg("CSSN2"))
+  {
+    int i = server.arg("CSSN2").toInt();
+    if (i >= 0 && i <= 255) staticsubnet[2] = i;
+  }
+  if (server.hasArg("CSSN3"))
+  {
+    int i = server.arg("CSSN3").toInt();
+    if (i >= 0 && i <= 255) staticsubnet[3] = i;
+  }
   saveSettingsToEEPROM();
 }
 
