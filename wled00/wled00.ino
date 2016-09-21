@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
 #include <Hash.h>
@@ -38,6 +39,8 @@ int nopwrled = 1;
 char HTTP_req[150];
 
 ESP8266WebServer server(80);
+ESP8266HTTPUpdateServer httpUpdater;
+
 File fsUploadFile;
 
 void down()
@@ -703,6 +706,8 @@ void setup() {
     server.on("/down", HTTP_GET, down);
     //clear eeprom
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
+    //init ota page
+    httpUpdater.setup(&server);
   }
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](){
