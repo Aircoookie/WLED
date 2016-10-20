@@ -9,12 +9,11 @@
 		
 		function Startup()
 		{
-			setInterval('GetArduinoIO()', 5000);
-			GetArduinoIO();
+			setInterval('GetColor()', 5000);
+			GetColor();
 		}
-		function GetArduinoIO()
+		function GetColor()
 		{
-			nocache = "&nocache=" + Math.random() * 1000000;
 			var request = new XMLHttpRequest();
 			request.onreadystatechange = function()
 			{
@@ -31,23 +30,13 @@
 				}
 			}
 			// send HTTP request
-			request.open("GET", "ajax_in/" + strA + strR + strG + strB + nocache, true);
+			request.open("GET", "/get", true);
 			request.send(null);
-			strA = "";
-			strR = "";
-			strG = "";
-			strB = "";
 		}
 		function GetCheck()
-		{
-			
-			strA = "&A=" + Ctrl_form.SA.value;
-			strR = "&R=" + Ctrl_form.SR.value;
-			strG = "&G=" + Ctrl_form.SG.value;
-			strB = "&B=" + Ctrl_form.SB.value;
-			
+		{	
 			UpdateVals();
-			GetArduinoIO();
+			post('/set', {'COL': rgb2hex(Ctrl_form.SR.value, Ctrl_form.SG.value, Ctrl_form.SB.value)});
 		}
 		function rgb2hex(red, green, blue) {
 			var rgb = blue | (green << 8) | (red << 16);
@@ -63,6 +52,26 @@
 		function OpenSettings()
 		{
 			window.open("/settings","_self");
+		}
+		function post(path, params, method) { //http://stackoverflow.com/questions/133925/
+			method = method || "post"; // Set method to post by default.
+			
+			var form = document.createElement("form");
+			form.setAttribute("method", method);
+			form.setAttribute("action", path);
+
+			for(var key in params) {
+				if(params.hasOwnProperty(key)) {
+					var hiddenField = document.createElement("input");
+					hiddenField.setAttribute("type", "hidden");
+					hiddenField.setAttribute("name", key);
+					hiddenField.setAttribute("value", params[key]);
+
+					form.appendChild(hiddenField);
+				 }
+			}
+			document.body.appendChild(form);
+			form.submit();
 		}
 	</script>
 	<style>

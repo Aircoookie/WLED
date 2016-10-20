@@ -6,7 +6,6 @@
 	<script>
 		function GetCurrent()
 		{
-			nocache = "&nocache=" + Math.random() * 1000000;
 			var request = new XMLHttpRequest();
 			request.onreadystatechange = function()
 			{
@@ -47,7 +46,7 @@
 				}
 			}
 			// send HTTP request
-			request.open("GET", "get-settings/" + nocache, true);
+			request.open("GET", "/get-settings", true);
 			request.send(null);
 		}
 		function OpenMain()
