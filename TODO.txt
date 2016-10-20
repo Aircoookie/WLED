@@ -5,8 +5,6 @@ fade transition
 simple slide transition
 add toolbar conf in settings
 additional color picker field
-change slider height to relative values
-improve firefox UI appearance
 implement all settings setters
 implement OTA lock / security
 implement button
@@ -14,11 +12,8 @@ implement HSB slider option
 implement ranges
 implement discrete range color setter
 implement discrete single color setter
-change color submit from get to post, rewrite with args, requires no buffer
-change color submit from rgb to hex
 do not reboot after settings set -> add reboot button
 svg icons in html
-(get rid of spiffs, use progmem for html??)
 
 BUGS
 static ip disables mdns

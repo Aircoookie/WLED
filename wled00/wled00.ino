@@ -36,6 +36,8 @@ boolean only_ap = false;
 int led_amount = 16;
 int nopwrled = 1;
 
+char HTTP_req[150];
+
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 
@@ -296,6 +298,48 @@ void XML_response_settings()
   server.send(200, "text/xml", resp);
 }
 
+char StrContains(char *str, char *sfind)
+{
+    char found = 0;
+    char index = 0;
+    char len;
+
+    len = strlen(str);
+    
+    if (strlen(sfind) > len) {
+        return 0;
+    }
+    while (index < len) {
+        if (str[index] == sfind[found]) {
+            found++;
+            if (strlen(sfind) == found) {
+                return index;
+            }
+        }
+        else {
+            found = 0;
+        }
+        index++;
+    }
+
+    return 0;
+}
+uint8_t getNumberAfterStringPos(char str[], char spos)
+{
+   String op;
+   boolean no_n = false;
+   int i = 0;
+   while (!no_n) {
+    if (str[spos + i + 1] > 47 && str[spos + i + 1] < 58)
+    {
+      op += str[spos + i + 1];
+    }
+    else {no_n = true;}
+    i++;
+   }
+   return op.toInt();
+}
+
 void handleSettingsSet()
 {
   if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
@@ -394,19 +438,41 @@ void handleSettingsSet()
   saveSettingsToEEPROM();
 }
 
-void handleSet()
+boolean handleSet(String req)
 {
-  if (server.hasArg("COL"))
-  {
-    String in = server.arg("COL");
-    // Get rid of '#' and convert it to integer
-    int num = (int) strtol( &in[1], NULL, 16);
-    col[0] = num >> 16;
-    col[1] = num >> 8 & 0xFF;
-    col[2] = num & 0xFF;
-  }
-  server.send(204);
-  setLeds();
+   Serial.println("handleSet:");
+   Serial.println(req);
+   req.toCharArray(HTTP_req, 150, 0);
+   if (!StrContains(HTTP_req, "ajax_in")) {
+        if (StrContains(HTTP_req, "get-settings"))
+        {
+          XML_response_settings();
+          return true;
+        }
+        return false;
+   }
+   int pos = 0;
+   pos = StrContains(HTTP_req, "A=");
+   if (pos > 0) {
+        bri = getNumberAfterStringPos(HTTP_req, pos);
+    }
+   pos = StrContains(HTTP_req, "R=");
+   if (pos > 0) {
+        col[0] = getNumberAfterStringPos(HTTP_req, pos);
+    }
+   pos = StrContains(HTTP_req, "G=");
+   if (pos > 0) {
+        col[1] = getNumberAfterStringPos(HTTP_req, pos);
+    }
+   pos = StrContains(HTTP_req, "B=");
+   if (pos > 0) {
+        col[2] = getNumberAfterStringPos(HTTP_req, pos);
+    }
+
+   Serial.println(col[0]);
+   XML_response();
+   setLeds();
+   return true;
 }
 
 //format bytes
@@ -622,26 +688,31 @@ void setup() {
     server.send(200, "text/plain", "Settings saved. Please wait for light to turn back on, then go to main page...");
     reset();
   });
-  server.on("/set", HTTP_POST, handleSet);
-  server.on("/get-settings", HTTP_GET, XML_response_settings);
   if (!ota_lock){
+    //load editor
     server.on("/edit", HTTP_GET, [](){
     if(!handleFileRead("/edit.htm")) server.send(404, "text/plain", "FileNotFound");
     });
+    //create file
     server.on("/edit", HTTP_PUT, handleFileCreate);
+    //delete file
     server.on("/edit", HTTP_DELETE, handleFileDelete);
+    //first callback is called after the request has ended with all parsed arguments
+    //second callback handles file uploads at that location
     server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
+    //list directory
     server.on("/list", HTTP_GET, handleFileList);
+    //kill module
     server.on("/down", HTTP_GET, down);
+    //clear eeprom
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
+    //init ota page
     httpUpdater.setup(&server);
   }
-  //called when the url is not defined
+  //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](){
-    if(server.uri().indexOf("get")<0){
+    if(!handleSet(server.uri())){
       server.send(404, "text/plain", "FileNotFound");
-    } else {
-      XML_response();
     }
   });
 

@@ -9,11 +9,12 @@
 		
 		function Startup()
 		{
-			setInterval('GetColor()', 5000);
-			GetColor();
+			setInterval('GetArduinoIO()', 5000);
+			GetArduinoIO();
 		}
-		function GetColor()
+		function GetArduinoIO()
 		{
+			nocache = "&nocache=" + Math.random() * 1000000;
 			var request = new XMLHttpRequest();
 			request.onreadystatechange = function()
 			{
@@ -30,13 +31,23 @@
 				}
 			}
 			// send HTTP request
-			request.open("GET", "/get", true);
+			request.open("GET", "ajax_in/" + strA + strR + strG + strB + nocache, true);
 			request.send(null);
+			strA = "";
+			strR = "";
+			strG = "";
+			strB = "";
 		}
 		function GetCheck()
-		{	
+		{
+			
+			strA = "&A=" + Ctrl_form.SA.value;
+			strR = "&R=" + Ctrl_form.SR.value;
+			strG = "&G=" + Ctrl_form.SG.value;
+			strB = "&B=" + Ctrl_form.SB.value;
+			
 			UpdateVals();
-			post('/set', {'COL': rgb2hex(Ctrl_form.SR.value, Ctrl_form.SG.value, Ctrl_form.SB.value)});
+			GetArduinoIO();
 		}
 		function rgb2hex(red, green, blue) {
 			var rgb = blue | (green << 8) | (red << 16);
@@ -53,26 +64,6 @@
 		{
 			window.open("/settings","_self");
 		}
-		function post(path, params, method) { //http://stackoverflow.com/questions/133925/
-			method = method || "post"; // Set method to post by default.
-			
-			var form = document.createElement("form");
-			form.setAttribute("method", method);
-			form.setAttribute("action", path);
-
-			for(var key in params) {
-				if(params.hasOwnProperty(key)) {
-					var hiddenField = document.createElement("input");
-					hiddenField.setAttribute("type", "hidden");
-					hiddenField.setAttribute("name", key);
-					hiddenField.setAttribute("value", params[key]);
-
-					form.appendChild(hiddenField);
-				 }
-			}
-			document.body.appendChild(form);
-			form.submit();
-		}
 	</script>
 	<style>
 		.ctrl_box {
@@ -87,6 +78,7 @@
 		}
 		.sliders {
 			width: 100%;
+			height: 12vh;
 		}
 		.sliderA {
 			margin-left: auto;
@@ -142,36 +134,34 @@
 		}
 		input[type=range]::-webkit-slider-runnable-track {
 		  width: 100%;
-		  height: 102px;
+		  height: 12vh;
 		  cursor: pointer;
 		  background: #DDDDDD;
 		}
 		input[type=range]::-webkit-slider-thumb {
-		  height: 78px;
-		  width: 78px;
+		  height: 10vh;
+		  width: 10vh;
 		  background: #ffffff;
 		  cursor: pointer;
 		  -webkit-appearance: none;
-		  margin-top: 12px;
-		}
-		input[type=range]:focus::-webkit-slider-runnable-track {
-		  background: #DDDDDD;
+		  margin-top: 1vh;
 		}
 		input[type=range]::-moz-range-track {
 		  width: 100%;
-		  height: 102px;
+		  height: 12vh;
 		  cursor: pointer;
 		  background: #DDDDDD;
 		}
 		input[type=range]::-moz-range-thumb {
-		  height: 78px;
-		  width: 78px;
+		  height: 10vh;
+		  width: 10vh;
 		  background: #ffffff;
 		  cursor: pointer;
+		  margin-top: 1vh;
 		}
 		input[type=range]::-ms-track {
 		  width: 100%;
-		  height: 102px;
+		  height: 12vh;
 		  cursor: pointer;
 		  background: transparent;
 		  border-color: transparent;
@@ -184,16 +174,10 @@
 		  background: #DDDDDD;
 		}
 		input[type=range]::-ms-thumb {
-		  width: 78px;
+		  width: 10vh;
 		  background: #ffffff;
 		  cursor: pointer;
-		  height: 78px;
-		}
-		input[type=range]:focus::-ms-fill-lower {
-		  background: #DDDDDD;
-		}
-		input[type=range]:focus::-ms-fill-upper {
-		  background: #DDDDDD;
+		  height: 10vh;
 		}
 	</style>
 <style id="holderjs-style" type="text/css"></style></head>
@@ -212,6 +196,6 @@
 			<input type="range" class="sliders" name="SG" value="0" min="0" max="255" step="1" onchange="GetCheck()"> </div> <br>
 			<div id="slR" class="sliderB">
 			<input type="range" class="sliders" name="SB" value="0" min="0" max="255" step="1" onchange="GetCheck()"> </div> <br>
-		</form>
+		</form>	
 	</div>
 </div></body></html>
