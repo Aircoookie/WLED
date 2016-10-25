@@ -13,9 +13,7 @@
  * @version 0.3pd
  * @author Christian Schwinne
  */
-
-NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(16, 1);
-
+//Default CONFIG
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
 String cmdns = "led";
@@ -27,14 +25,24 @@ boolean useap = true;
 IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
-
 byte col[]{255, 127, 0};
-byte bri = 127;
-byte hue, sat;
+boolean fadeTransition = true;
+boolean seqTransition = false;
+int transitionDelay = 1500;
 boolean ota_lock = false;
 boolean only_ap = false;
 int led_amount = 16;
-int nopwrled = 1;
+
+//Internal vars
+byte col_old[]{0, 0, 0};
+byte col_t[]{0, 0, 0};
+long transitionStartTime;
+byte bri = 127;
+byte bri_old = 0;
+byte bri_t = 0;
+boolean transitionActive = false;
+
+NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
 
 char HTTP_req[150];
 
@@ -45,16 +53,16 @@ File fsUploadFile;
 
 void down()
 {
-  bri = 0;
-  setLeds();
+  bri_t = 0;
+  setAllLeds();
   Serial.println("MODULE TERMINATED");
   while (1) {delay(1000);}
 }
 
 void reset()
 {
-  bri = 0;
-  setLeds();
+  bri_t = 0;
+  setAllLeds();
   Serial.println("MODULE RESET");
   ESP.reset();
 }
@@ -98,7 +106,6 @@ void saveSettingsToEEPROM()
   EEPROM.write(228, aphide);
   EEPROM.write(227, apchannel);
   EEPROM.write(229, led_amount);
-  EEPROM.write(231, nopwrled);
   EEPROM.write(234, staticip[0]);
   EEPROM.write(235, staticip[1]);
   EEPROM.write(236, staticip[2]);
@@ -161,8 +168,6 @@ void loadSettingsFromEEPROM()
   apchannel = EEPROM.read(227);
   if (apchannel > 13 || apchannel < 1) apchannel = 1;
   led_amount = EEPROM.read(229);
-  nopwrled = EEPROM.read(231);
-  if (nopwrled > 1) nopwrled = 1;
   staticip[0] = EEPROM.read(234);
   staticip[1] = EEPROM.read(235);
   staticip[2] = EEPROM.read(236);
@@ -255,9 +260,7 @@ void XML_response_settings()
   resp = resp + "<leds>";
   resp = resp + led_amount;
   resp = resp + "</leds>";
-  resp = resp + "<pwrled>";
-  resp = resp + nopwrled;
-  resp = resp + "</pwrled>";
+  resp = resp + "<pwrled>0</pwrled>";
   resp = resp + "<btnp>0</btnp>"; //NI
   resp = resp + "<noota>0</noota>"; //NI
   resp = resp + "<norap>0</norap>"; //NI
@@ -468,10 +471,8 @@ boolean handleSet(String req)
    if (pos > 0) {
         col[2] = getNumberAfterStringPos(HTTP_req, pos);
     }
-
-   Serial.println(col[0]);
    XML_response();
-   setLeds();
+   colorUpdated();
    return true;
 }
 
@@ -597,15 +598,76 @@ void handleFileList() {
   server.send(200, "text/json", output);
 }
 
-void setLeds() {
+void notify(){};
 
-  double d = bri;
+void setAllLeds() {
+  double d = bri_t;
   double val = d /256;
+  int r = col_t[0]*val;
+  int g = col_t[1]*val;
+  int b = col_t[2]*val;
   for (int i=0; i < led_amount; i++) {
-    strip.SetPixelColor(i, RgbColor(col[0]*val, col[1]*val, col[2]*val));
+    strip.SetPixelColor(i, RgbColor(r, g, b));
   }
   strip.Show();
 }
+
+void setLedsStandard()
+{
+  col_old[0] = col[0];
+  col_old[1] = col[1];
+  col_old[2] = col[2];
+  bri_old = bri;
+  col_t[0] = col[0];
+  col_t[1] = col[1];
+  col_t[2] = col[2];
+  bri_t = bri;
+  setAllLeds();
+}
+
+void colorUpdated()
+{
+  if (col[0] != col_old[0] && col[1] != col_old[1] && col[2] != col_old[2] && bri != bri_old)
+  {
+    return; //no change
+  }
+  notify();
+  if (fadeTransition || seqTransition)
+  {
+    transitionActive = true;
+    transitionStartTime = millis();
+  } else
+  {
+    setLedsStandard();
+  }
+}
+
+void handleTransitions()
+{
+  if (transitionActive)
+  {
+    float tper = (millis() - transitionStartTime)/transitionDelay;
+    if (tper >= 1.0)
+    {
+      transitionActive = false;
+      setLedsStandard();
+      return;
+    }
+    if (fadeTransition)
+    {
+      col_t[0] = col_old[0]+((col[0] - col_old[0])/tper);
+      col_t[1] = col_old[1]+((col[1] - col_old[1])/tper);
+      col_t[2] = col_old[2]+((col[2] - col_old[2])/tper);
+      bri_t = bri_old+((bri - bri_old)/tper);
+    }
+    if (seqTransition)
+    {
+      
+    } else setAllLeds();
+  }
+}
+
+void handleAnimations(){};
 
 void setup() {
     Serial.begin(115200);
@@ -723,15 +785,13 @@ void setup() {
   MDNS.addService("http", "tcp", 80);
   // Initialize NeoPixel Strip
   strip.Begin();
-  setLeds();
-  /*if (nopwrled == 0)
-  {
-    pinMode(BUILTIN_LED, OUTPUT);
-  }*/
+  colorUpdated();
 }
 
 void loop() {
     server.handleClient();
+    handleTransitions();
+    handleAnimations();
 }
 
 void initAP(){
