@@ -32,6 +32,8 @@ uint16_t transitionDelay = 1500;
 boolean ota_lock = false;
 boolean only_ap = false;
 int led_amount = 16;
+int buttonPin = 3; //needs pull-up
+boolean buttonEnabled = true;
 
 //Internal vars
 byte col_old[]{0, 0, 0};
@@ -40,7 +42,9 @@ long transitionStartTime;
 byte bri = 127;
 byte bri_old = 0;
 byte bri_t = 0;
+byte bri_last = 127;
 boolean transitionActive = false;
+boolean buttonPressedBefore = false;
 
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
 
@@ -106,6 +110,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(228, aphide);
   EEPROM.write(227, apchannel);
   EEPROM.write(229, led_amount);
+  EEPROM.write(232, buttonEnabled);
   EEPROM.write(234, staticip[0]);
   EEPROM.write(235, staticip[1]);
   EEPROM.write(236, staticip[2]);
@@ -170,6 +175,7 @@ void loadSettingsFromEEPROM()
   apchannel = EEPROM.read(227);
   if (apchannel > 13 || apchannel < 1) apchannel = 1;
   led_amount = EEPROM.read(229);
+  buttonEnabled = EEPROM.read(232);
   staticip[0] = EEPROM.read(234);
   staticip[1] = EEPROM.read(235);
   staticip[2] = EEPROM.read(236);
@@ -269,13 +275,14 @@ void XML_response_settings()
   resp = resp + "</apchan>";
   resp = resp + "<leds>";
   resp = resp + led_amount;
-  resp = resp + "</leds>";
-  resp = resp + "<btnp>0</btnp>"; //NI
-  resp = resp + "<tfade>";
+  resp = resp + "</leds><tfade>";
   resp = resp + bool2int(fadeTransition);
   resp = resp + "</tfade><tdlay>";
   resp = resp + transitionDelay;
-  resp = resp + "</tdlay><noota>0</noota>"; //NI
+  resp = resp + "</tdlay>";
+  resp = resp + "<btnon>";
+  resp = resp + bool2int(buttonEnabled);
+  resp = resp + "</btnon><noota>0</noota>"; //NI
   resp = resp + "<norap>0</norap>"; //NI
   resp = resp + "<sip>";
   if (!WiFi.localIP()[0] == 0)
@@ -454,6 +461,7 @@ void handleSettingsSet()
     int i = server.arg("LEDS").toInt();
     if (i > 0) led_amount = i;
   }
+  buttonEnabled = server.hasArg("BTNON");
   fadeTransition = server.hasArg("TFADE");
   if (server.hasArg("TDLAY"))
   {
@@ -652,6 +660,7 @@ void colorUpdated()
   {
     return; //no change
   }
+  if (bri > 0) bri_last = bri;
   notify();
   if (fadeTransition || seqTransition)
   {
@@ -696,6 +705,31 @@ void handleTransitions()
 }
 
 void handleAnimations(){};
+
+void handleButton()
+{
+  if (digitalRead(buttonPin) == LOW && !buttonPressedBefore)
+  {
+    buttonPressedBefore = true;
+    if (bri == 0)
+    {
+      bri = bri_last;
+    } else
+    {
+      bri_last = bri;
+      bri = 0;
+    }
+    colorUpdated();
+  }
+   else if (digitalRead(buttonPin) == HIGH && buttonPressedBefore)
+  {
+    delay(15);
+    if (digitalRead(buttonPin) == HIGH)
+    {
+      buttonPressedBefore = false;
+    }
+  }
+}
 
 void setup() {
     Serial.begin(115200);
@@ -779,22 +813,14 @@ void setup() {
     reset();
   });
   if (!ota_lock){
-    //load editor
     server.on("/edit", HTTP_GET, [](){
     if(!handleFileRead("/edit.htm")) server.send(404, "text/plain", "FileNotFound");
     });
-    //create file
     server.on("/edit", HTTP_PUT, handleFileCreate);
-    //delete file
     server.on("/edit", HTTP_DELETE, handleFileDelete);
-    //first callback is called after the request has ended with all parsed arguments
-    //second callback handles file uploads at that location
     server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
-    //list directory
     server.on("/list", HTTP_GET, handleFileList);
-    //kill module
     server.on("/down", HTTP_GET, down);
-    //clear eeprom
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
     //init ota page
     httpUpdater.setup(&server);
@@ -814,12 +840,14 @@ void setup() {
   // Initialize NeoPixel Strip
   strip.Begin();
   colorUpdated();
+  pinMode(buttonPin, INPUT_PULLUP);
 }
 
 void loop() {
     server.handleClient();
     handleTransitions();
     handleAnimations();
+    handleButton();
 }
 
 void initAP(){

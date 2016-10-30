@@ -64,6 +64,10 @@
 		{
 			window.open("/settings","_self");
 		}
+		function ToggleNightMode()
+		{
+		
+		}
 	</script>
 	<style>
 		.ctrl_box {
@@ -118,9 +122,9 @@
 		.tool_box {
 			
 		}
-		.settingsbutton {
-			width: 1.5cm;
-			height: 1.5cm;
+		input[type=image] {
+			width: 10vmin;
+			height: 10vmin;
 			margin-top: 4px;
 			margin-right: 4px;
 		}
@@ -184,6 +188,7 @@
 <body onload="Startup()" class=" __plain_text_READY__">
 	<div id="tbB" class="tool_box">
 		<input type="image" class="settingsbutton" src="/button.png" onclick="OpenSettings()"id="tool">
+		<input type="image" class="nightbutton" src="/moon.png" onclick="ToggleNightMode()"id="night">
 	</div>
 	<div id="cdB" class="ctrl_box">
 		<form id="form_c" name="Ctrl_form">

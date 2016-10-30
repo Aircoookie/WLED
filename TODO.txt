@@ -1,11 +1,9 @@
 color cycle
 sequence
 simple slide transition
-add toolbar conf in settings
 additional color picker field
 implement all settings setters
 implement OTA lock / security
-implement button
 implement HSB slider option
 implement ranges
 implement discrete range color setter
@@ -15,7 +13,9 @@ svg icons in html
 notifier function -> send get request
 nightlight function -> turns off after set time (+implement fading)
 (replace StrContains and num functions)
+add preferred colors to settings -> quickly t. UI, button select,
 
 BUGS
 static ip disables mdns
 XXX authentification for security relevant areas (/edit, /update (!!!), /list, /down, [/settings, /reset, /cleareeprom])
+(Unverified) led_amount does nothing (is always 16) because NeoPixelBus is initiated before EEPROM read

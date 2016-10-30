@@ -32,7 +32,7 @@
 							document.S_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].innerHTML; //fake pass like ******
 							document.S_form.APCHAN.value = this.responseXML.getElementsByTagName('apchan')[0].innerHTML;
 							document.S_form.LEDS.value = this.responseXML.getElementsByTagName('leds')[0].innerHTML;
-							document.S_form.BTNP.value = this.responseXML.getElementsByTagName('btnp')[0].innerHTML;
+							document.S_form.BTNON.checked = (this.responseXML.getElementsByTagName('btnon')[0].innerHTML)!=0?true:false;
 							document.S_form.TFADE.checked = (this.responseXML.getElementsByTagName('tfade')[0].innerHTML)!=0?true:false;
 							document.S_form.TDLAY.value = this.responseXML.getElementsByTagName('tdlay')[0].innerHTML;
 							document.S_form.NOOTA.checked = (this.responseXML.getElementsByTagName('noota')[0].innerHTML)!=0?true:false;
@@ -100,8 +100,7 @@
 		The default boot LED color is the current color when settings are saved. <br>
 		LED amount: <input type="text" name="LEDS" maxlength="3" size="2"> <br>
 		<h3>Button setup</h3>
-		Button pin: <input type="text" name="BTNP" maxlength="2" size="2"> <br>
-		Button function: Toggle on/off <br>
+		On/Off button enabled: <input type="checkbox" name="BTNON" value="0"> <br>
 		<h3>Transitions</h3>
 		Fade: <input type="checkbox" name="TFADE" value="0"> <br>
 		Transition Delay: <input type="text" name="TDLAY" maxlength="5" size="2"> ms <br>
