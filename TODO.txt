@@ -15,7 +15,6 @@ svg icons in html
 notifier function -> send get request
 nightlight function -> turns off after set time (+implement fading)
 (replace StrContains and num functions)
-settings getter/setter/html for fade transition
 
 BUGS
 static ip disables mdns

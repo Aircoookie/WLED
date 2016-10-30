@@ -28,7 +28,7 @@ IPAddress staticsubnet(255, 255, 255, 0);
 byte col[]{255, 127, 0};
 boolean fadeTransition = true;
 boolean seqTransition = false;
-int transitionDelay = 1500;
+uint16_t transitionDelay = 1500;
 boolean ota_lock = false;
 boolean only_ap = false;
 int led_amount = 16;
@@ -122,7 +122,9 @@ void saveSettingsToEEPROM()
   EEPROM.write(247, col[1]);
   EEPROM.write(248, col[2]);
   EEPROM.write(249, bri);
-
+  EEPROM.write(251, fadeTransition);
+  EEPROM.write(253, (transitionDelay >> 0) & 0xFF);
+  EEPROM.write(254, (transitionDelay >> 8) & 0xFF);
   EEPROM.commit();
 }
 
@@ -184,6 +186,14 @@ void loadSettingsFromEEPROM()
   col[1] = EEPROM.read(247);
   col[2] = EEPROM.read(248);
   bri = EEPROM.read(249);
+  fadeTransition = EEPROM.read(251);
+  transitionDelay = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
+}
+
+uint8_t bool2int(boolean value)
+{
+  if (value) return 1;
+  return 0;
 }
 
 void XML_response()
@@ -260,9 +270,12 @@ void XML_response_settings()
   resp = resp + "<leds>";
   resp = resp + led_amount;
   resp = resp + "</leds>";
-  resp = resp + "<pwrled>0</pwrled>";
   resp = resp + "<btnp>0</btnp>"; //NI
-  resp = resp + "<noota>0</noota>"; //NI
+  resp = resp + "<tfade>";
+  resp = resp + bool2int(fadeTransition);
+  resp = resp + "</tfade><tdlay>";
+  resp = resp + transitionDelay;
+  resp = resp + "</tdlay><noota>0</noota>"; //NI
   resp = resp + "<norap>0</norap>"; //NI
   resp = resp + "<sip>";
   if (!WiFi.localIP()[0] == 0)
@@ -278,8 +291,7 @@ void XML_response_settings()
   {
     resp = resp + "Not connected";
   }
-  resp = resp + "</sip>";
-  resp = resp + "<sip>";
+  resp = resp + "</sip><sip>";
   if (!WiFi.softAPIP()[0] == 0)
   {
     resp = resp + WiFi.softAPIP()[0];
@@ -293,8 +305,7 @@ void XML_response_settings()
   {
     resp = resp + "Not active";
   }
-  resp = resp + "</sip>";
-  resp = resp + "<otastat>Not implemented</otastat>";
+  resp = resp + "</sip><otastat>Not implemented</otastat>";
   resp = resp + "<msg>WLED 0.3pd OK</msg>";
   resp = resp + "</vs>";
   Serial.println(resp);
@@ -438,6 +449,17 @@ void handleSettingsSet()
     int i = server.arg("CSSN3").toInt();
     if (i >= 0 && i <= 255) staticsubnet[3] = i;
   }
+  if (server.hasArg("LEDS"))
+  {
+    int i = server.arg("LEDS").toInt();
+    if (i > 0) led_amount = i;
+  }
+  fadeTransition = server.hasArg("TFADE");
+  if (server.hasArg("TDLAY"))
+  {
+    int i = server.arg("TDLAY").toInt();
+    if (i > 0) transitionDelay = i;
+  }
   saveSettingsToEEPROM();
 }
 
@@ -476,7 +498,6 @@ boolean handleSet(String req)
    return true;
 }
 
-//format bytes
 String formatBytes(size_t bytes){
   if (bytes < 1024){
     return String(bytes)+"B";
