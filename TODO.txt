@@ -1,7 +1,5 @@
-toolbar preparation
 color cycle
 sequence
-fade transition
 simple slide transition
 add toolbar conf in settings
 additional color picker field
@@ -14,6 +12,10 @@ implement discrete range color setter
 implement discrete single color setter
 do not reboot after settings set -> add reboot button
 svg icons in html
+notifier function -> send get request
+nightlight function -> turns off after set time (+implement fading)
+(replace StrContains and num functions)
+settings getter/setter/html for fade transition
 
 BUGS
 static ip disables mdns

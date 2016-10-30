@@ -627,13 +627,20 @@ void setLedsStandard()
 
 void colorUpdated()
 {
-  if (col[0] != col_old[0] && col[1] != col_old[1] && col[2] != col_old[2] && bri != bri_old)
+  if (col[0] == col_old[0] && col[1] == col_old[1] && col[2] == col_old[2] && bri == bri_old)
   {
     return; //no change
   }
   notify();
   if (fadeTransition || seqTransition)
   {
+    if (transitionActive)
+    {
+      col_old[0] = col_t[0];
+      col_old[1] = col_t[1];
+      col_old[2] = col_t[2];
+      bri_old = bri_t;
+    }
     transitionActive = true;
     transitionStartTime = millis();
   } else
@@ -644,9 +651,9 @@ void colorUpdated()
 
 void handleTransitions()
 {
-  if (transitionActive)
+  if (transitionActive && transitionDelay > 0)
   {
-    float tper = (millis() - transitionStartTime)/transitionDelay;
+    float tper = (millis() - transitionStartTime)/(float)transitionDelay;
     if (tper >= 1.0)
     {
       transitionActive = false;
@@ -655,10 +662,10 @@ void handleTransitions()
     }
     if (fadeTransition)
     {
-      col_t[0] = col_old[0]+((col[0] - col_old[0])/tper);
-      col_t[1] = col_old[1]+((col[1] - col_old[1])/tper);
-      col_t[2] = col_old[2]+((col[2] - col_old[2])/tper);
-      bri_t = bri_old+((bri - bri_old)/tper);
+      col_t[0] = col_old[0]+((col[0] - col_old[0])*tper);
+      col_t[1] = col_old[1]+((col[1] - col_old[1])*tper);
+      col_t[2] = col_old[2]+((col[2] - col_old[2])*tper);
+      bri_t = bri_old+((bri - bri_old)*tper);
     }
     if (seqTransition)
     {
