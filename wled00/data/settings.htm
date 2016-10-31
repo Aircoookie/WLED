@@ -104,14 +104,25 @@
 		<h3>Transitions</h3>
 		Fade: <input type="checkbox" name="TFADE" value="0"> <br>
 		Transition Delay: <input type="text" name="TDLAY" maxlength="5" size="2"> ms <br>
+		<h3>Timed light</h3>
+		Turn off after: <input type="text" name="TLDUR" maxlength="3" size="2"> min <br>
+		Fade down: <input type="checkbox" name="TLFDE" value="0"> <br>
 		<h3>Daisy chain</h3>
-		<i>Not implemented</i> <br>
+		Receive notifications: <input type="checkbox" name="NRCVE" value="0"> <br>
+		Received brightness factor: <input type="text" name="NRBRI" maxlength="3" size="2"> % <br><br>
+		Send notifications on direct change: <input type="checkbox" name="NSDIR" value="0"> <br>
+		Send notifications on button press: <input type="checkbox" name="NSBTN" value="0"> <br>
+		Send received notifications: <input type="checkbox" name="NSRCV" value="0"> <br>
+		Hosts to send notifications to: (1 IP per line) <br>
+		<textarea name="NSIPS" rows="8" cols="16"></textarea>
 		<h3>Security</h3>
-		Disable OTA: <input type="checkbox" name="NOOTA" value="0"> <br>
-		ArduinoOTA and the edit page will be inaccessible until a SPIFFS reflash! <br>
-		Checking this is advised for added security if you don't need software changes. <br> 
+		OTA enabled: <input type="checkbox" name="NOOTA" value="0"> <br>
+		Passphrase: <input type="password" name="OPASS" maxlength="32"> <br>
+		To enable OTA, for security reasons you need to also enter the correct password! <br>
+		The password may/should be changed when OTA is enabled. <br>
+		Disable OTA when not in use, otherwise an attacker could reflash device software! <br>
 		Current status: <span class="otastat"> Unknown </span> <br> <br>
-		Disable recovery AP: <input type="checkbox" name="NORAP" value="0"> <br>
+		Disable recovery AP (<i>Not implemented</i>): <input type="checkbox" name="NORAP" value="0"> <br>
 		In case of a connection error there will be no wireless recovery possible! <br>
 		Completely disables all Access Point functions. <br> <br>
 		Factory reset: <input type="checkbox" name="RESET" value="0"> <br>

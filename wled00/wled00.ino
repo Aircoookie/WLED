@@ -48,8 +48,6 @@ boolean buttonPressedBefore = false;
 
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
 
-char HTTP_req[150];
-
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 
@@ -319,48 +317,6 @@ void XML_response_settings()
   server.send(200, "text/xml", resp);
 }
 
-char StrContains(char *str, char *sfind)
-{
-    char found = 0;
-    char index = 0;
-    char len;
-
-    len = strlen(str);
-    
-    if (strlen(sfind) > len) {
-        return 0;
-    }
-    while (index < len) {
-        if (str[index] == sfind[found]) {
-            found++;
-            if (strlen(sfind) == found) {
-                return index;
-            }
-        }
-        else {
-            found = 0;
-        }
-        index++;
-    }
-
-    return 0;
-}
-uint8_t getNumberAfterStringPos(char str[], char spos)
-{
-   String op;
-   boolean no_n = false;
-   int i = 0;
-   while (!no_n) {
-    if (str[spos + i + 1] > 47 && str[spos + i + 1] < 58)
-    {
-      op += str[spos + i + 1];
-    }
-    else {no_n = true;}
-    i++;
-   }
-   return op.toInt();
-}
-
 void handleSettingsSet()
 {
   if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
@@ -473,11 +429,8 @@ void handleSettingsSet()
 
 boolean handleSet(String req)
 {
-   Serial.println("handleSet:");
-   Serial.println(req);
-   req.toCharArray(HTTP_req, 150, 0);
-   if (!StrContains(HTTP_req, "ajax_in")) {
-        if (StrContains(HTTP_req, "get-settings"))
+   if (!(req.indexOf("ajax_in") >= 0)) {
+        if (req.indexOf("get-settings") >= 0)
         {
           XML_response_settings();
           return true;
@@ -485,22 +438,22 @@ boolean handleSet(String req)
         return false;
    }
    int pos = 0;
-   pos = StrContains(HTTP_req, "A=");
+   pos = req.indexOf("A=");
    if (pos > 0) {
-        bri = getNumberAfterStringPos(HTTP_req, pos);
-    }
-   pos = StrContains(HTTP_req, "R=");
+        bri = req.substring(pos + 2).toInt();
+   }
+   pos = req.indexOf("R=");
    if (pos > 0) {
-        col[0] = getNumberAfterStringPos(HTTP_req, pos);
-    }
-   pos = StrContains(HTTP_req, "G=");
+        col[0] = req.substring(pos + 2).toInt();
+   }
+   pos = req.indexOf("G=");
    if (pos > 0) {
-        col[1] = getNumberAfterStringPos(HTTP_req, pos);
-    }
-   pos = StrContains(HTTP_req, "B=");
+        col[1] = req.substring(pos + 2).toInt();
+   }
+   pos = req.indexOf("B=");
    if (pos > 0) {
-        col[2] = getNumberAfterStringPos(HTTP_req, pos);
-    }
+        col[2] = req.substring(pos + 2).toInt();
+   } 
    XML_response();
    colorUpdated();
    return true;
@@ -708,25 +661,28 @@ void handleAnimations(){};
 
 void handleButton()
 {
-  if (digitalRead(buttonPin) == LOW && !buttonPressedBefore)
+  if (buttonEnabled)
   {
-    buttonPressedBefore = true;
-    if (bri == 0)
+    if (digitalRead(buttonPin) == LOW && !buttonPressedBefore)
     {
-      bri = bri_last;
-    } else
-    {
-      bri_last = bri;
-      bri = 0;
+      buttonPressedBefore = true;
+      if (bri == 0)
+      {
+        bri = bri_last;
+      } else
+      {
+        bri_last = bri;
+        bri = 0;
+      }
+      colorUpdated();
     }
-    colorUpdated();
-  }
-   else if (digitalRead(buttonPin) == HIGH && buttonPressedBefore)
-  {
-    delay(15);
-    if (digitalRead(buttonPin) == HIGH)
+     else if (digitalRead(buttonPin) == HIGH && buttonPressedBefore)
     {
-      buttonPressedBefore = false;
+      delay(15);
+      if (digitalRead(buttonPin) == HIGH)
+      {
+        buttonPressedBefore = false;
+      }
     }
   }
 }

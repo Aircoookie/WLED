@@ -12,7 +12,6 @@ do not reboot after settings set -> add reboot button
 svg icons in html
 notifier function -> send get request
 nightlight function -> turns off after set time (+implement fading)
-(replace StrContains and num functions)
 add preferred colors to settings -> quickly t. UI, button select,
 
 BUGS
