@@ -35,6 +35,12 @@
 							document.S_form.BTNON.checked = (this.responseXML.getElementsByTagName('btnon')[0].innerHTML)!=0?true:false;
 							document.S_form.TFADE.checked = (this.responseXML.getElementsByTagName('tfade')[0].innerHTML)!=0?true:false;
 							document.S_form.TDLAY.value = this.responseXML.getElementsByTagName('tdlay')[0].innerHTML;
+							document.S_form.NRCVE.checked = (this.responseXML.getElementsByTagName('nrcve')[0].innerHTML)!=0?true:false;
+							document.S_form.NRBRI.value = this.responseXML.getElementsByTagName('nrbri')[0].innerHTML;
+							document.S_form.NSDIR.checked = (this.responseXML.getElementsByTagName('nsdir')[0].innerHTML)!=0?true:false;
+							document.S_form.NSBTN.checked = (this.responseXML.getElementsByTagName('nsbtn')[0].innerHTML)!=0?true:false;
+							document.S_form.NSFWD.checked = (this.responseXML.getElementsByTagName('nsfwd')[0].innerHTML)!=0?true:false;
+							document.S_form.NSIPS.innerHTML = this.responseXML.getElementsByTagName('nsips')[0].innerHTML;
 							document.S_form.NOOTA.checked = (this.responseXML.getElementsByTagName('noota')[0].innerHTML)!=0?true:false;
 							document.S_form.NORAP.checked = (this.responseXML.getElementsByTagName('norap')[0].innerHTML)!=0?true:false;
 							document.getElementsByClassName("sip")[0].innerHTML = this.responseXML.getElementsByTagName('sip')[0].innerHTML;
@@ -112,7 +118,7 @@
 		Received brightness factor: <input type="text" name="NRBRI" maxlength="3" size="2"> % <br><br>
 		Send notifications on direct change: <input type="checkbox" name="NSDIR" value="0"> <br>
 		Send notifications on button press: <input type="checkbox" name="NSBTN" value="0"> <br>
-		Send received notifications: <input type="checkbox" name="NSRCV" value="0"> <br>
+		Forward received notifications: <input type="checkbox" name="NSFWD" value="0"> <br>
 		Hosts to send notifications to: (1 IP per line) <br>
 		<textarea name="NSIPS" rows="8" cols="16"></textarea>
 		<h3>Security</h3>

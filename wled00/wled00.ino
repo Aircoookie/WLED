@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPClient.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
@@ -34,6 +35,10 @@ boolean only_ap = false;
 int led_amount = 16;
 int buttonPin = 3; //needs pull-up
 boolean buttonEnabled = true;
+String notifier_ips[]{"10.10.1.128","10.10.1.129"};
+boolean notifyDirect = true, notifyButton = true, notifyForward = true;
+boolean receiveNotifications = true;
+uint8_t bri_n = 100;
 
 //Internal vars
 byte col_old[]{0, 0, 0};
@@ -45,6 +50,7 @@ byte bri_t = 0;
 byte bri_last = 127;
 boolean transitionActive = false;
 boolean buttonPressedBefore = false;
+int notifier_ips_count = 2;
 
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
 
@@ -273,14 +279,32 @@ void XML_response_settings()
   resp = resp + "</apchan>";
   resp = resp + "<leds>";
   resp = resp + led_amount;
-  resp = resp + "</leds><tfade>";
+  resp = resp + "</leds>";
+  resp = resp + "<btnon>";
+  resp = resp + bool2int(buttonEnabled);
+  resp = resp + "</btnon><tfade>";
   resp = resp + bool2int(fadeTransition);
   resp = resp + "</tfade><tdlay>";
   resp = resp + transitionDelay;
   resp = resp + "</tdlay>";
-  resp = resp + "<btnon>";
-  resp = resp + bool2int(buttonEnabled);
-  resp = resp + "</btnon><noota>0</noota>"; //NI
+  resp = resp + "<nrcve>";
+  resp = resp + bool2int(receiveNotifications);
+  resp = resp + "</nrcve><nrbri>";
+  resp = resp + bri_n;
+  resp = resp + "</nrbri><nsdir>";
+  resp = resp + bool2int(notifyDirect);
+  resp = resp + "</nsdir><nsbtn>";
+  resp = resp + bool2int(notifyButton);
+  resp = resp + "</nsbtn><nsfwd>";
+  resp = resp + bool2int(notifyForward);
+  resp = resp + "</nsfwd><nsips>";
+  for (int i = 0; i < notifier_ips_count; i++)
+  {
+    resp = resp + notifier_ips[i];
+    resp = resp + "\n";
+  }
+  resp = resp + "</nsips>";
+  resp = resp + "<noota>0</noota>"; //NI
   resp = resp + "<norap>0</norap>"; //NI
   resp = resp + "<sip>";
   if (!WiFi.localIP()[0] == 0)
@@ -438,6 +462,8 @@ boolean handleSet(String req)
         return false;
    }
    int pos = 0;
+   boolean isNotification = false;
+   if (req.indexOf("N=") > 0) isNotification = true;
    pos = req.indexOf("A=");
    if (pos > 0) {
         bri = req.substring(pos + 2).toInt();
@@ -453,9 +479,20 @@ boolean handleSet(String req)
    pos = req.indexOf("B=");
    if (pos > 0) {
         col[2] = req.substring(pos + 2).toInt();
-   } 
+   }
+   if (isNotification)
+   {
+    if (receiveNotifications)
+    {
+      colorUpdated(3);
+      server.send(200, "text/plain", "");
+      return true;
+    }
+    server.send(202, "text/plain", "");
+    return true;
+   }
    XML_response();
-   colorUpdated();
+   colorUpdated(1);
    return true;
 }
 
@@ -580,7 +617,37 @@ void handleFileList() {
   server.send(200, "text/json", output);
 }
 
-void notify(){};
+void notify(int callMode)
+{
+  switch (callMode)
+  {
+    case 1: if (!notifyDirect) return; break;
+    case 2: if (!notifyButton) return; break;
+    case 3: if (!notifyForward) return; break;
+    default: return;
+  }
+  String snd = "/ajax_in&N=1&A=";
+  snd = snd + bri;
+  snd = snd + "&R=";
+  snd = snd + col[0];
+  snd = snd + "&G=";
+  snd = snd + col[1];
+  snd = snd + "&B=";
+  snd = snd + col[2];
+  
+  HTTPClient hclient;
+
+  for (int i = 0; i < notifier_ips_count; i++)
+  {
+    String url = "http://";
+    url = url + notifier_ips[i];
+    url = url + snd;
+
+    hclient.begin(url);
+    hclient.GET();
+    hclient.end();
+  }
+}
 
 void setAllLeds() {
   double d = bri_t;
@@ -607,14 +674,15 @@ void setLedsStandard()
   setAllLeds();
 }
 
-void colorUpdated()
+void colorUpdated(int callMode)
 {
+  //call for notifier -> 0: init 1: direct change 2: button 3: notification
   if (col[0] == col_old[0] && col[1] == col_old[1] && col[2] == col_old[2] && bri == bri_old)
   {
     return; //no change
   }
   if (bri > 0) bri_last = bri;
-  notify();
+  notify(callMode);
   if (fadeTransition || seqTransition)
   {
     if (transitionActive)
@@ -674,7 +742,7 @@ void handleButton()
         bri_last = bri;
         bri = 0;
       }
-      colorUpdated();
+      colorUpdated(2);
     }
      else if (digitalRead(buttonPin) == HIGH && buttonPressedBefore)
     {
@@ -795,7 +863,7 @@ void setup() {
   MDNS.addService("http", "tcp", 80);
   // Initialize NeoPixel Strip
   strip.Begin();
-  colorUpdated();
+  colorUpdated(0);
   pinMode(buttonPin, INPUT_PULLUP);
 }
 
