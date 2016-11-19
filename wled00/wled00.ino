@@ -20,8 +20,8 @@ String clientpass = "Dummy_Pass";
 String cmdns = "led";
 String apssid = "WLED-AP";
 String appass = "wled1234";
-int apchannel = 1;
-int aphide = 0;
+uint8_t apchannel = 1;
+uint8_t aphide = 0;
 boolean useap = true;
 IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
@@ -32,25 +32,34 @@ boolean seqTransition = false;
 uint16_t transitionDelay = 1500;
 boolean ota_lock = false;
 boolean only_ap = false;
-int led_amount = 16;
-int buttonPin = 3; //needs pull-up
+uint8_t led_amount = 16;
+uint8_t buttonPin = 3; //needs pull-up
 boolean buttonEnabled = true;
 String notifier_ips[]{"10.10.1.128","10.10.1.129"};
 boolean notifyDirect = true, notifyButton = true, notifyForward = true;
 boolean receiveNotifications = true;
 uint8_t bri_n = 100;
+uint8_t nightlightDelayMins = 60;
+boolean nightlightFade = true;
+
+double transitionResolution = 0.05;
 
 //Internal vars
 byte col_old[]{0, 0, 0};
 byte col_t[]{0, 0, 0};
 long transitionStartTime;
+long nightlightStartTime;
+float tper_last;
 byte bri = 127;
 byte bri_old = 0;
 byte bri_t = 0;
 byte bri_last = 127;
 boolean transitionActive = false;
 boolean buttonPressedBefore = false;
-int notifier_ips_count = 2;
+int notifier_ips_count = 0;
+String notifier_ips_raw = "";
+boolean nightlightActive = false;
+
 
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
 
@@ -448,6 +457,19 @@ void handleSettingsSet()
     int i = server.arg("TDLAY").toInt();
     if (i > 0) transitionDelay = i;
   }
+  receiveNotifications = server.hasArg("NRCVE");
+  if (server.hasArg("NRBRI"))
+  {
+    int i = server.arg("NRBRI").toInt();
+    if (i > 0) bri_n = i;
+  }
+  notifyDirect = server.hasArg("NSDIR");
+  notifyButton = server.hasArg("NSBTN");
+  notifyForward = server.hasArg("NSFWD");
+  if (server.hasArg("NSIPS"))
+  {
+    notifier_ips_raw = server.arg("NSIPS");
+  }
   saveSettingsToEEPROM();
 }
 
@@ -466,19 +488,29 @@ boolean handleSet(String req)
    if (req.indexOf("N=") > 0) isNotification = true;
    pos = req.indexOf("A=");
    if (pos > 0) {
-        bri = req.substring(pos + 2).toInt();
+      bri = req.substring(pos + 2).toInt();
    }
    pos = req.indexOf("R=");
    if (pos > 0) {
-        col[0] = req.substring(pos + 2).toInt();
+      col[0] = req.substring(pos + 2).toInt();
    }
    pos = req.indexOf("G=");
    if (pos > 0) {
-        col[1] = req.substring(pos + 2).toInt();
+      col[1] = req.substring(pos + 2).toInt();
    }
    pos = req.indexOf("B=");
    if (pos > 0) {
-        col[2] = req.substring(pos + 2).toInt();
+      col[2] = req.substring(pos + 2).toInt();
+   }
+   if (req.indexOf("NL=") > 0)
+   {
+      if (req.indexOf("NL=0") > 0)
+      {
+        nightlightActive = false;
+      } else {
+        nightlightActive = true;
+        nightlightStartTime = millis();
+      }
    }
    if (isNotification)
    {
@@ -592,31 +624,6 @@ void handleFileCreate(){
   path = String();
 }
 
-void handleFileList() {
-  if(!server.hasArg("dir")) {server.send(500, "text/plain", "BAD ARGS"); return;}
-  
-  String path = server.arg("dir");
-  Serial.println("handleFileList: " + path);
-  Dir dir = SPIFFS.openDir(path);
-  path = String();
-
-  String output = "[";
-  while(dir.next()){
-    File entry = dir.openFile("r");
-    if (output != "[") output += ',';
-    bool isDir = false;
-    output += "{\"type\":\"";
-    output += (isDir)?"dir":"file";
-    output += "\",\"name\":\"";
-    output += String(entry.name()).substring(1);
-    output += "\"}";
-    entry.close();
-  }
-  
-  output += "]";
-  server.send(200, "text/json", output);
-}
-
 void notify(int callMode)
 {
   switch (callMode)
@@ -711,6 +718,11 @@ void handleTransitions()
       setLedsStandard();
       return;
     }
+    if (tper - tper_last < transitionResolution)
+    {
+      return;
+    }
+    tper_last = tper;
     if (fadeTransition)
     {
       col_t[0] = col_old[0]+((col[0] - col_old[0])*tper);
@@ -722,6 +734,18 @@ void handleTransitions()
     {
       
     } else setAllLeds();
+  }
+}
+
+void handleNightlight()
+{
+  if (nightlightActive)
+  {
+    float nper = (millis() - nightlightStartTime)/(float)(((int)nightlightDelayMins)*60000);
+    if (nper >= 1)
+    {
+      
+    }
   }
 }
 
@@ -843,7 +867,6 @@ void setup() {
     server.on("/edit", HTTP_PUT, handleFileCreate);
     server.on("/edit", HTTP_DELETE, handleFileDelete);
     server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
-    server.on("/list", HTTP_GET, handleFileList);
     server.on("/down", HTTP_GET, down);
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
     //init ota page
@@ -870,6 +893,7 @@ void setup() {
 void loop() {
     server.handleClient();
     handleTransitions();
+    handleNightlight();
     handleAnimations();
     handleButton();
 }
