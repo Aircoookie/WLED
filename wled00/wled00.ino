@@ -35,28 +35,30 @@ boolean only_ap = false;
 uint8_t led_amount = 16;
 uint8_t buttonPin = 3; //needs pull-up
 boolean buttonEnabled = true;
-String notifier_ips[]{"10.10.1.128","10.10.1.129"};
+String notifier_ips[]{"10.10.1.191","10.10.1.129"};
 boolean notifyDirect = true, notifyButton = true, notifyForward = true;
 boolean receiveNotifications = true;
 uint8_t bri_n = 100;
 uint8_t nightlightDelayMins = 60;
 boolean nightlightFade = true;
 
-double transitionResolution = 0.01;
+double transitionResolution = 0.015;
 
 //Internal vars
 byte col_old[]{0, 0, 0};
 byte col_t[]{0, 0, 0};
+byte col_it[]{0, 0, 0};
 long transitionStartTime;
 long nightlightStartTime;
 float tper_last = 0;
 byte bri = 127;
 byte bri_old = 0;
 byte bri_t = 0;
+byte bri_it = 0;
 byte bri_last = 127;
 boolean transitionActive = false;
 boolean buttonPressedBefore = false;
-int notifier_ips_count = 0;
+int notifier_ips_count = 1;
 String notifier_ips_raw = "";
 boolean nightlightActive = false;
 

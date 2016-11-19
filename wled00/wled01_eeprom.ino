@@ -34,6 +34,8 @@ void saveSettingsToEEPROM()
   {
     EEPROM.write(i, appass.charAt(i-160));
   }
+  EEPROM.write(224, nightlightDelayMins);
+  EEPROM.write(225, nightlightFade);
   EEPROM.write(228, aphide);
   EEPROM.write(227, apchannel);
   EEPROM.write(229, led_amount);

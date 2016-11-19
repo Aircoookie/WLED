@@ -79,6 +79,12 @@ void XML_response_settings()
   resp = resp + "</tfade><tdlay>";
   resp = resp + transitionDelay;
   resp = resp + "</tdlay>";
+  resp = resp + "<tldur>";
+  resp = resp + nightlightDelayMins;
+  resp = resp + "</tldur>";
+  resp = resp + "<tlfde>";
+  resp = resp + bool2int(nightlightFade);
+  resp = resp + "</tlfde>";
   resp = resp + "<nrcve>";
   resp = resp + bool2int(receiveNotifications);
   resp = resp + "</nrcve><nrbri>";

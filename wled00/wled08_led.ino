@@ -26,10 +26,14 @@ void setLedsStandard()
 void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification
-  if (col[0] == col_old[0] && col[1] == col_old[1] && col[2] == col_old[2] && bri == bri_old)
+  if (col[0] == col_it[0] && col[1] == col_it[1] && col[2] == col_it[2] && bri == bri_it)
   {
     return; //no change
   }
+  col_it[0] = col[0];
+  col_it[1] = col[1];
+  col_it[2] = col[2];
+  bri_it = bri;
   if (bri > 0) bri_last = bri;
   notify(callMode);
   if (fadeTransition || seqTransition)
