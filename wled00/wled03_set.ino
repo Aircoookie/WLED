@@ -1,0 +1,177 @@
+void handleSettingsSet()
+{
+  if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
+  if (server.hasArg("CPASS"))
+  {
+    if (!server.arg("CPASS").indexOf('*') == 0)
+    {
+      Serial.println("Setting pass");
+      clientpass = server.arg("CPASS");
+    }
+  }
+  if (server.hasArg("CMDNS")) cmdns = server.arg("CMDNS");
+  if (server.hasArg("APSSID")) apssid = server.arg("APSSID");
+  if (server.hasArg("APHSSID"))
+  {
+    aphide = 1;
+  } else
+  {
+    aphide = 0;
+  }
+  if (server.hasArg("APPASS"))
+  {
+    if (!server.arg("APPASS").indexOf('*') == 0) appass = server.arg("APPASS");
+  }
+  if (server.hasArg("APCHAN"))
+  {
+    int chan = server.arg("APCHAN").toInt();
+    if (chan > 0 && chan < 14) apchannel = chan;
+  }
+  if (server.hasArg("RESET")) //might be dangerous in case arg is always sent
+  {
+    clearEEPROM();
+    server.send(200, "text/plain", "Settings erased. Please wait for light to turn back on, then go to main page...");
+    reset();
+  }
+  if (server.hasArg("CSIP0"))
+  {
+    int i = server.arg("CSIP0").toInt();
+    if (i >= 0 && i <= 255) staticip[0] = i;
+  }
+  if (server.hasArg("CSIP1"))
+  {
+    int i = server.arg("CSIP1").toInt();
+    if (i >= 0 && i <= 255) staticip[1] = i;
+  }
+  if (server.hasArg("CSIP2"))
+  {
+    int i = server.arg("CSIP2").toInt();
+    if (i >= 0 && i <= 255) staticip[2] = i;
+  }
+  if (server.hasArg("CSIP3"))
+  {
+    int i = server.arg("CSIP3").toInt();
+    if (i >= 0 && i <= 255) staticip[3] = i;
+  }
+  if (server.hasArg("CSGW0"))
+  {
+    int i = server.arg("CSGW0").toInt();
+    if (i >= 0 && i <= 255) staticgateway[0] = i;
+  }
+  if (server.hasArg("CSGW1"))
+  {
+    int i = server.arg("CSGW1").toInt();
+    if (i >= 0 && i <= 255) staticgateway[1] = i;
+  }
+  if (server.hasArg("CSGW2"))
+  {
+    int i = server.arg("CSGW2").toInt();
+    if (i >= 0 && i <= 255) staticgateway[2] = i;
+  }
+  if (server.hasArg("CSGW3"))
+  {
+    int i = server.arg("CSGW3").toInt();
+    if (i >= 0 && i <= 255) staticgateway[3] = i;
+  }
+  if (server.hasArg("CSSN0"))
+  {
+    int i = server.arg("CSSN0").toInt();
+    if (i >= 0 && i <= 255) staticsubnet[0] = i;
+  }
+  if (server.hasArg("CSSN1"))
+  {
+    int i = server.arg("CSSN1").toInt();
+    if (i >= 0 && i <= 255) staticsubnet[1] = i;
+  }
+  if (server.hasArg("CSSN2"))
+  {
+    int i = server.arg("CSSN2").toInt();
+    if (i >= 0 && i <= 255) staticsubnet[2] = i;
+  }
+  if (server.hasArg("CSSN3"))
+  {
+    int i = server.arg("CSSN3").toInt();
+    if (i >= 0 && i <= 255) staticsubnet[3] = i;
+  }
+  if (server.hasArg("LEDS"))
+  {
+    int i = server.arg("LEDS").toInt();
+    if (i > 0) led_amount = i;
+  }
+  buttonEnabled = server.hasArg("BTNON");
+  fadeTransition = server.hasArg("TFADE");
+  if (server.hasArg("TDLAY"))
+  {
+    int i = server.arg("TDLAY").toInt();
+    if (i > 0) transitionDelay = i;
+  }
+  receiveNotifications = server.hasArg("NRCVE");
+  if (server.hasArg("NRBRI"))
+  {
+    int i = server.arg("NRBRI").toInt();
+    if (i > 0) bri_n = i;
+  }
+  notifyDirect = server.hasArg("NSDIR");
+  notifyButton = server.hasArg("NSBTN");
+  notifyForward = server.hasArg("NSFWD");
+  if (server.hasArg("NSIPS"))
+  {
+    notifier_ips_raw = server.arg("NSIPS");
+  }
+  saveSettingsToEEPROM();
+}
+
+boolean handleSet(String req)
+{
+   if (!(req.indexOf("ajax_in") >= 0)) {
+        if (req.indexOf("get-settings") >= 0)
+        {
+          XML_response_settings();
+          return true;
+        }
+        return false;
+   }
+   int pos = 0;
+   boolean isNotification = false;
+   if (req.indexOf("N=") > 0) isNotification = true;
+   pos = req.indexOf("A=");
+   if (pos > 0) {
+      bri = req.substring(pos + 2).toInt();
+   }
+   pos = req.indexOf("R=");
+   if (pos > 0) {
+      col[0] = req.substring(pos + 2).toInt();
+   }
+   pos = req.indexOf("G=");
+   if (pos > 0) {
+      col[1] = req.substring(pos + 2).toInt();
+   }
+   pos = req.indexOf("B=");
+   if (pos > 0) {
+      col[2] = req.substring(pos + 2).toInt();
+   }
+   if (req.indexOf("NL=") > 0)
+   {
+      if (req.indexOf("NL=0") > 0)
+      {
+        nightlightActive = false;
+      } else {
+        nightlightActive = true;
+        nightlightStartTime = millis();
+      }
+   }
+   if (isNotification)
+   {
+    if (receiveNotifications)
+    {
+      colorUpdated(3);
+      server.send(200, "text/plain", "");
+      return true;
+    }
+    server.send(202, "text/plain", "");
+    return true;
+   }
+   XML_response();
+   colorUpdated(1);
+   return true;
+}
