@@ -3,19 +3,20 @@ sequence
 simple slide transition
 additional color picker field
 implement all settings setters
-implement OTA lock / security
 implement HSB slider option
 implement ranges
 implement discrete range color setter
 implement discrete single color setter
-do not reboot after settings set -> add reboot button
 svg icons in html
 notifier function -> send get request
 nightlight function -> turns off after set time (+implement fading)
 add preferred colors to settings -> quickly t. UI, button select,
 use iframe for settings, seperate tabs for wifi and application confg
+use iframe for all adv. features?
+/dumpeeprom and /pusheeprom
 
 BUGS
 static ip disables mdns
-XXX authentification for security relevant areas (/edit, /update (!!!), /list, /down, [/settings, /reset, /cleareeprom])
+? authentification for security relevant areas ([/settings, /reset])
 (Unverified) led_amount does nothing (is always 16) because NeoPixelBus is initiated before EEPROM read
+notifier wrong ips

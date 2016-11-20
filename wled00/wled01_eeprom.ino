@@ -1,6 +1,6 @@
 void clearEEPROM()
 {
-  for (int i = 0; i < 256; i++)
+  for (int i = 0; i < 1024; i++)
   {
     EEPROM.write(i, 0);
   }
@@ -36,10 +36,14 @@ void saveSettingsToEEPROM()
   }
   EEPROM.write(224, nightlightDelayMins);
   EEPROM.write(225, nightlightFade);
-  EEPROM.write(228, aphide);
+  EEPROM.write(226, notifyDirect);
   EEPROM.write(227, apchannel);
+  EEPROM.write(228, aphide);
   EEPROM.write(229, led_amount);
+  EEPROM.write(230, notifyButton);
+  EEPROM.write(231, notifyForward);
   EEPROM.write(232, buttonEnabled);
+  //233 reserved for first boot flag
   EEPROM.write(234, staticip[0]);
   EEPROM.write(235, staticip[1]);
   EEPROM.write(236, staticip[2]);
@@ -56,9 +60,17 @@ void saveSettingsToEEPROM()
   EEPROM.write(247, col[1]);
   EEPROM.write(248, col[2]);
   EEPROM.write(249, bri);
+  EEPROM.write(250, receiveNotifications);
   EEPROM.write(251, fadeTransition);
   EEPROM.write(253, (transitionDelay >> 0) & 0xFF);
   EEPROM.write(254, (transitionDelay >> 8) & 0xFF);
+  EEPROM.write(255, bri_n);
+  //255,250,231,230,226 notifier bytes
+  for (int i = 256; i < 288; ++i)
+  {
+    EEPROM.write(i, otapass.charAt(i-256));
+  }
+  EEPROM.write(289, ota_lock);
   EEPROM.commit();
 }
 
@@ -99,11 +111,16 @@ void loadSettingsFromEEPROM()
     if (EEPROM.read(i) == 0) break;
     appass += char(EEPROM.read(i));
   }
-  aphide = EEPROM.read(228);
-  if (aphide > 1) aphide = 1;
+  nightlightDelayMins = EEPROM.read(224);
+  nightlightFade = EEPROM.read(225);
+  notifyDirect = EEPROM.read(226);
   apchannel = EEPROM.read(227);
   if (apchannel > 13 || apchannel < 1) apchannel = 1;
+  aphide = EEPROM.read(228);
+  if (aphide > 1) aphide = 1;
   led_amount = EEPROM.read(229);
+  notifyButton = EEPROM.read(230);
+  notifyForward = EEPROM.read(231);
   buttonEnabled = EEPROM.read(232);
   staticip[0] = EEPROM.read(234);
   staticip[1] = EEPROM.read(235);
@@ -121,6 +138,14 @@ void loadSettingsFromEEPROM()
   col[1] = EEPROM.read(247);
   col[2] = EEPROM.read(248);
   bri = EEPROM.read(249);
+  receiveNotifications = EEPROM.read(250);
   fadeTransition = EEPROM.read(251);
   transitionDelay = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
+  bri_n = EEPROM.read(255);
+  for (int i = 256; i < 288; ++i)
+  {
+    if (EEPROM.read(i) == 0) break;
+    otapass += char(EEPROM.read(i));
+  }
+  ota_lock = EEPROM.read(289);
 }

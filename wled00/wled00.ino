@@ -30,7 +30,8 @@ byte col[]{255, 127, 0};
 boolean fadeTransition = true;
 boolean seqTransition = false;
 uint16_t transitionDelay = 1500;
-boolean ota_lock = false;
+boolean ota_lock = true;
+String otapass = "wledota";
 boolean only_ap = false;
 uint8_t led_amount = 16;
 uint8_t buttonPin = 3; //needs pull-up

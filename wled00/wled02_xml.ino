@@ -102,7 +102,9 @@ void XML_response_settings()
     resp = resp + "\n";
   }
   resp = resp + "</nsips>";
-  resp = resp + "<noota>0</noota>"; //NI
+  resp = resp + "<noota>";
+  resp = resp + bool2int(ota_lock);
+  resp = resp +"</noota>";
   resp = resp + "<norap>0</norap>"; //NI
   resp = resp + "<sip>";
   if (!WiFi.localIP()[0] == 0)
@@ -132,7 +134,7 @@ void XML_response_settings()
   {
     resp = resp + "Not active";
   }
-  resp = resp + "</sip><otastat>Not implemented</otastat>";
+  resp = resp + "</sip><otastat>LS</otastat>";
   resp = resp + "<msg>WLED 0.3pd OK</msg>";
   resp = resp + "</vs>";
   Serial.println(resp);

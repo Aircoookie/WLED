@@ -105,6 +105,12 @@ void handleSettingsSet()
     int i = server.arg("TDLAY").toInt();
     if (i > 0) transitionDelay = i;
   }
+  if (server.hasArg("TLDUR"))
+  {
+    int i = server.arg("TLDUR").toInt();
+    if (i > 0) nightlightDelayMins = i;
+  }
+  nightlightFade = server.hasArg("TLFDE");
   receiveNotifications = server.hasArg("NRCVE");
   if (server.hasArg("NRBRI"))
   {
@@ -118,6 +124,21 @@ void handleSettingsSet()
   {
     notifier_ips_raw = server.arg("NSIPS");
   }
+  if (server.hasArg("OPASS"))
+  {
+    if (!ota_lock)
+    {
+      if (server.arg("OPASS").length() > 0)
+      otapass = server.arg("OPASS");
+    } else if (!server.hasArg("NOOTA"))
+    {
+      if (otapass.equals(server.arg("OPASS")))
+      {
+        ota_lock = false;
+      }
+    }
+  }
+  if (server.hasArg("NOOTA")) ota_lock = true;
   saveSettingsToEEPROM();
 }
 

@@ -20,7 +20,7 @@ void wledInit()
     Serial.printf("\n");
   }
   Serial.println("Init EEPROM");
-  EEPROM.begin(256);
+  EEPROM.begin(1024);
   loadSettingsFromEEPROM();
 
   Serial.print("CC: SSID: ");
@@ -77,11 +77,13 @@ void wledInit()
   server.on("/", HTTP_GET, [](){
     if(!handleFileRead("/index.htm")) server.send(404, "text/plain", "FileNotFound");
   });
-  server.on("/reset", HTTP_GET, reset);
+  server.on("/reset", HTTP_GET, [](){
+    server.send(200, "text/plain", "Rebooting... Go to main page when lights turn on.");
+    reset();
+  });
   server.on("/set-settings", HTTP_POST, [](){
     handleSettingsSet();
-    server.send(200, "text/plain", "Settings saved. Please wait for light to turn back on, then go to main page...");
-    reset();
+    if(!handleFileRead("/settingssaved.htm")) server.send(404, "text/plain", "SettingsSaved");
   });
   if (!ota_lock){
     server.on("/edit", HTTP_GET, [](){
@@ -94,6 +96,20 @@ void wledInit()
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
     //init ota page
     httpUpdater.setup(&server);
+  } else
+  {
+    server.on("/edit", HTTP_GET, [](){
+    server.send(500, "text/plain", "OTA lock active");
+    });
+    server.on("/down", HTTP_GET, [](){
+    server.send(500, "text/plain", "OTA lock active");
+    });
+    server.on("/cleareeprom", HTTP_GET, [](){
+    server.send(500, "text/plain", "OTA lock active");
+    });
+    server.on("/update", HTTP_GET, [](){
+    server.send(500, "text/plain", "OTA lock active");
+    });
   }
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](){
