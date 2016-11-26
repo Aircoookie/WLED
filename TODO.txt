@@ -14,6 +14,8 @@ add preferred colors to settings -> quickly t. UI, button select,
 use iframe for settings, seperate tabs for wifi and application confg
 use iframe for all adv. features?
 /dumpeeprom and /pusheeprom
+aux trigger pin
+descriptive text
 
 BUGS
 static ip disables mdns

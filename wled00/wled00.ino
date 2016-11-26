@@ -37,7 +37,7 @@ uint8_t led_amount = 16;
 uint8_t buttonPin = 3; //needs pull-up
 boolean buttonEnabled = true;
 String notifier_ips[]{"10.10.1.191","10.10.1.129"};
-boolean notifyDirect = true, notifyButton = true, notifyForward = true;
+boolean notifyDirect = true, notifyButton = true, notifyForward = true, notifyNightlight = false;
 boolean receiveNotifications = true;
 uint8_t bri_n = 100;
 uint8_t nightlightDelayMins = 60;
@@ -62,6 +62,9 @@ boolean buttonPressedBefore = false;
 int notifier_ips_count = 1;
 String notifier_ips_raw = "";
 boolean nightlightActive = false;
+boolean nightlightFade_old = false;
+boolean nightlightActive_old = false;
+int transitionDelay_old;
 
 
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
@@ -97,10 +100,34 @@ void handleNightlight()
 {
   if (nightlightActive)
   {
-    float nper = (millis() - nightlightStartTime)/(float)(((int)nightlightDelayMins)*60000);
+    if (!nightlightActive_old) //init
+    {
+      nightlightActive_old = true;
+      if (nightlightFade)
+      {
+        transitionDelay_old = transitionDelay;
+        transitionDelay = (int)(nightlightDelayMins*60000);
+        transitionStartTime = nightlightStartTime;
+        transitionActive = true;
+      }
+    }
+    float nper = (millis() - nightlightStartTime)/(float)transitionDelay;
     if (nper >= 1)
     {
-      
+      nightlightActive = false;
+    }
+  }
+  } else if (nightlightActive_old) //de-init
+  {
+    nightlightActive_old = false;
+    if (nightlightFade)
+    {
+      transitionDelay = transitionDelay_old;
+      transitionActive = false;
+    } else
+    {
+      bri = 0;
+      colorUpdated(4);
     }
   }
 }

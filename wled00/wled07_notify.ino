@@ -5,6 +5,7 @@ void notify(int callMode)
     case 1: if (!notifyDirect) return; break;
     case 2: if (!notifyButton) return; break;
     case 3: if (!notifyForward) return; break;
+    case 4: if (!notifyNightlight) return; break;
     default: return;
   }
   String snd = "/ajax_inputs&N=1&A=";

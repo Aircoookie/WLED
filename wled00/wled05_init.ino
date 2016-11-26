@@ -22,7 +22,7 @@ void wledInit()
   Serial.println("Init EEPROM");
   EEPROM.begin(1024);
   loadSettingsFromEEPROM();
-
+  nightlightFade_old = nightlightFade;
   Serial.print("CC: SSID: ");
   Serial.print(clientssid);
 
@@ -94,6 +94,7 @@ void wledInit()
     server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
     server.on("/down", HTTP_GET, down);
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
+    server.on("/list", HTTP_GET, handleFileList);
     //init ota page
     httpUpdater.setup(&server);
   } else
@@ -108,6 +109,9 @@ void wledInit()
     server.send(500, "text/plain", "OTA lock active");
     });
     server.on("/update", HTTP_GET, [](){
+    server.send(500, "text/plain", "OTA lock active");
+    });
+    server.on("/list", HTTP_GET, [](){
     server.send(500, "text/plain", "OTA lock active");
     });
   }

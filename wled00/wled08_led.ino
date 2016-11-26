@@ -25,7 +25,7 @@ void setLedsStandard()
 
 void colorUpdated(int callMode)
 {
-  //call for notifier -> 0: init 1: direct change 2: button 3: notification
+  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight
   if (col[0] == col_it[0] && col[1] == col_it[1] && col[2] == col_it[2] && bri == bri_it)
   {
     return; //no change
@@ -47,6 +47,11 @@ void colorUpdated(int callMode)
     }
     transitionActive = true;
     transitionStartTime = millis();
+    if (nightlightActive)
+    {
+      nightlightFade_old = nightlightFade;
+      nightlightFade = false;
+    }
   } else
   {
     setLedsStandard();
@@ -62,6 +67,7 @@ void handleTransitions()
     {
       transitionActive = false;
       tper_last = 0;
+      nightlightFade = nightlightFade_old;
       setLedsStandard();
       return;
     }

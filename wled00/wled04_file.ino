@@ -76,6 +76,31 @@ void handleFileDelete(){
   path = String();
 }
 
+void handleFileList() {
+  if(!server.hasArg("dir")) {server.send(500, "text/plain", "BAD ARGS"); return;}
+  
+  String path = server.arg("dir");
+  Serial.println("handleFileList: " + path);
+  Dir dir = SPIFFS.openDir(path);
+  path = String();
+
+  String output = "[";
+  while(dir.next()){
+    File entry = dir.openFile("r");
+    if (output != "[") output += ',';
+    bool isDir = false;
+    output += "{\"type\":\"";
+    output += (isDir)?"dir":"file";
+    output += "\",\"name\":\"";
+    output += String(entry.name()).substring(1);
+    output += "\"}";
+    entry.close();
+  }
+  
+  output += "]";
+  server.send(200, "text/json", output);
+}
+
 void handleFileCreate(){
   if(server.args() == 0)
     return server.send(500, "text/plain", "BAD ARGS");

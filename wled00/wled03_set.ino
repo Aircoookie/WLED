@@ -111,6 +111,7 @@ void handleSettingsSet()
     if (i > 0) nightlightDelayMins = i;
   }
   nightlightFade = server.hasArg("TLFDE");
+  nightlightFade_old = nightlightFade;
   receiveNotifications = server.hasArg("NRCVE");
   if (server.hasArg("NRBRI"))
   {
