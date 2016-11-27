@@ -22,7 +22,6 @@ void wledInit()
   Serial.println("Init EEPROM");
   EEPROM.begin(1024);
   loadSettingsFromEEPROM();
-  nightlightFade_old = nightlightFade;
   Serial.print("CC: SSID: ");
   Serial.print(clientssid);
 

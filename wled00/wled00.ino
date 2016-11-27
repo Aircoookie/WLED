@@ -43,7 +43,7 @@ uint8_t bri_n = 100;
 uint8_t nightlightDelayMins = 60;
 boolean nightlightFade = true;
 
-double transitionResolution = 0.015;
+double transitionResolution = 0.011;
 
 //Internal vars
 byte col_old[]{0, 0, 0};
@@ -62,10 +62,10 @@ boolean buttonPressedBefore = false;
 int notifier_ips_count = 1;
 String notifier_ips_raw = "";
 boolean nightlightActive = false;
-boolean nightlightFade_old = false;
 boolean nightlightActive_old = false;
 int transitionDelay_old;
-
+long nightlightPassedTime = 0;
+int nightlightDelayMs;
 
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
 
@@ -96,42 +96,6 @@ uint8_t bool2int(boolean value)
   return 0;
 }
 
-void handleNightlight()
-{
-  if (nightlightActive)
-  {
-    if (!nightlightActive_old) //init
-    {
-      nightlightActive_old = true;
-      if (nightlightFade)
-      {
-        transitionDelay_old = transitionDelay;
-        transitionDelay = (int)(nightlightDelayMins*60000);
-        transitionStartTime = nightlightStartTime;
-        transitionActive = true;
-      }
-    }
-    float nper = (millis() - nightlightStartTime)/(float)transitionDelay;
-    if (nper >= 1)
-    {
-      nightlightActive = false;
-    }
-  }
-  } else if (nightlightActive_old) //de-init
-  {
-    nightlightActive_old = false;
-    if (nightlightFade)
-    {
-      transitionDelay = transitionDelay_old;
-      transitionActive = false;
-    } else
-    {
-      bri = 0;
-      colorUpdated(4);
-    }
-  }
-}
-
 void setup() {
     wledInit();
 }
@@ -140,7 +104,6 @@ void loop() {
     server.handleClient();
     handleTransitions();
     handleNightlight();
-    handleAnimations();
     handleButton();
 }
 

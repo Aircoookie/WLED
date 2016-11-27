@@ -103,7 +103,10 @@ void handleSettingsSet()
   if (server.hasArg("TDLAY"))
   {
     int i = server.arg("TDLAY").toInt();
-    if (i > 0) transitionDelay = i;
+    if (i > 0){
+      transitionDelay = i;
+      transitionDelay_old = transitionDelay;
+    }
   }
   if (server.hasArg("TLDUR"))
   {
@@ -111,7 +114,6 @@ void handleSettingsSet()
     if (i > 0) nightlightDelayMins = i;
   }
   nightlightFade = server.hasArg("TLFDE");
-  nightlightFade_old = nightlightFade;
   receiveNotifications = server.hasArg("NRCVE");
   if (server.hasArg("NRBRI"))
   {

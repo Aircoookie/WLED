@@ -141,6 +141,7 @@ void loadSettingsFromEEPROM()
   receiveNotifications = EEPROM.read(250);
   fadeTransition = EEPROM.read(251);
   transitionDelay = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
+  transitionDelay_old = transitionDelay;
   bri_n = EEPROM.read(255);
   for (int i = 256; i < 288; ++i)
   {

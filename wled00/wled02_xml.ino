@@ -4,7 +4,13 @@ void XML_response()
    resp = resp + "<?xml version = \"1.0\" ?>";
    resp = resp + "<vs>";
    resp = resp + "<act>";
-   resp = resp + bri;
+   if (nightlightActive && nightlightFade)
+   {
+     resp = resp + bri_t;
+   } else
+   {
+    resp = resp + bri;
+   }
    resp = resp + "</act>";
 
    for (int i = 0; i < 3; i++)

@@ -47,11 +47,7 @@ void colorUpdated(int callMode)
     }
     transitionActive = true;
     transitionStartTime = millis();
-    if (nightlightActive)
-    {
-      nightlightFade_old = nightlightFade;
-      nightlightFade = false;
-    }
+    transitionDelay = transitionDelay_old;
   } else
   {
     setLedsStandard();
@@ -67,8 +63,11 @@ void handleTransitions()
     {
       transitionActive = false;
       tper_last = 0;
-      nightlightFade = nightlightFade_old;
       setLedsStandard();
+      if (nightlightActive && nightlightFade)
+      {
+        initNightlightFade();
+      }
       return;
     }
     if (tper - tper_last < transitionResolution)
@@ -90,4 +89,53 @@ void handleTransitions()
   }
 }
 
-void handleAnimations(){};
+void initNightlightFade()
+{
+  float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
+  nightlightDelayMs = nightlightDelayMs*(1-nper);
+  if (nper >= 1)
+  {
+    return;
+  }
+  bri = 0;
+  bri_it = 0;
+  transitionDelay = (int)(nightlightDelayMins*60000);
+  transitionStartTime = nightlightStartTime;
+  transitionActive = true;
+  nightlightStartTime = millis();
+}
+
+void handleNightlight()
+{
+  if (nightlightActive)
+  {
+    if (!nightlightActive_old) //init
+    {
+      nightlightDelayMs = (int)(nightlightDelayMins*60000);
+      nightlightActive_old = true;
+      if (nightlightFade)
+      {
+        initNightlightFade();
+      }
+    }
+    float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
+    Serial.println(nper);
+    if (nper >= 1)
+    {
+      nightlightActive = false;
+    }
+  } else if (nightlightActive_old) //de-init
+  {
+    nightlightPassedTime = 0;
+    nightlightActive_old = false;
+    if (nightlightFade)
+    {
+      transitionDelay = transitionDelay_old;
+      transitionActive = false;
+    } else
+    {
+      bri = 0;
+      colorUpdated(4);
+    }
+  }
+}
