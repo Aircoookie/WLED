@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266HTTPClient.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
 #include <Hash.h>
 #include <NeoPixelBus.h>
 #include <FS.h>
+#include <WiFiUDP.h>
 
 /*
  * @title WLED project sketch
@@ -36,12 +36,12 @@ boolean only_ap = false;
 uint8_t led_amount = 16;
 uint8_t buttonPin = 3; //needs pull-up
 boolean buttonEnabled = true;
-String notifier_ips[]{"10.10.1.191","10.10.1.129"};
 boolean notifyDirect = true, notifyButton = true, notifyForward = true, notifyNightlight = false;
 boolean receiveNotifications = true;
 uint8_t bri_n = 100;
 uint8_t nightlightDelayMins = 60;
 boolean nightlightFade = true;
+unsigned int udpPort = 21324;
 
 double transitionResolution = 0.011;
 
@@ -59,18 +59,19 @@ byte bri_it = 0;
 byte bri_last = 127;
 boolean transitionActive = false;
 boolean buttonPressedBefore = false;
-int notifier_ips_count = 1;
-String notifier_ips_raw = "";
 boolean nightlightActive = false;
 boolean nightlightActive_old = false;
 int transitionDelay_old;
 long nightlightPassedTime = 0;
 int nightlightDelayMs;
+boolean udpConnected = false;
+byte notifierBuffer[16];
 
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
+WiFiUDP notifierUdp;
 
 File fsUploadFile;
 
@@ -102,6 +103,7 @@ void setup() {
 
 void loop() {
     server.handleClient();
+    handleNotifications();
     handleTransitions();
     handleNightlight();
     handleButton();

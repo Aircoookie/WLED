@@ -1,4 +1,4 @@
-void notify(int callMode)
+void notify(uint8_t callMode)
 {
   switch (callMode)
   {
@@ -8,35 +8,49 @@ void notify(int callMode)
     case 4: if (!notifyNightlight) return; break;
     default: return;
   }
-  String snd = "/ajax_inputs&N=1&A=";
-  snd = snd + bri;
-  snd = snd + "&R=";
-  snd = snd + col[0];
-  snd = snd + "&G=";
-  snd = snd + col[1];
-  snd = snd + "&B=";
-  snd = snd + col[2];
-  //snd = snd + " HTTP/1.1";
+  byte udpOut[16];
+  udpOut[0] = 0; //reserved for future "port" feature
+  udpOut[1] = callMode;
+  udpOut[2] = bri;
+  udpOut[3] = col[0];
+  udpOut[4] = col[1];
+  udpOut[5] = col[2];
+  udpOut[6] = nightlightActive;
   
-  WiFiClient hclient;
-  hclient.setTimeout(50);
+  IPAddress broadcastIp;
+  broadcastIp = ~WiFi.subnetMask() | WiFi.gatewayIP();
 
-  for (int i = 0; i < notifier_ips_count; i++)
-  {
-    
-    Serial.println("NCON...");
-    if (hclient.connect(notifier_ips[i].c_str(), 80))
+  notifierUdp.beginPacket(broadcastIp, udpPort);
+  notifierUdp.write(udpOut, 16);
+  notifierUdp.endPacket();
+}
+
+void handleNotifications()
+{
+  if(udpConnected && receiveNotifications){
+    int packetSize = notifierUdp.parsePacket();
+    if(packetSize && notifierUdp.remoteIP() != WiFi.localIP())
     {
-      Serial.println("CON!");
-      Serial.println(snd);
-      hclient.print(String("GET ") + snd + " HTTP/1.1\r\n" +
-               "Host: " + notifier_ips[i] + "\r\n" + 
-               "Connection: close\r\n\r\n");
-      
-    } else
-    {
-      Serial.println("NO CONNECTION");
-      hclient.stop();
+      notifierUdp.read(notifierBuffer, 16);
+      int bri_r = notifierBuffer[2]*(((float)bri_n)/100);
+      if (bri_r < 256)
+      {
+        bri_n = bri_r;
+      } else
+      {
+        bri_n = 255;
+      }
+      col[0] = notifierBuffer[3]
+      col[1] = notifierBuffer[4];
+      col[2] = notifierBuffer[5];
+      if (notifierBuffer[6])
+      {
+        nightlightActive = true;
+      } else {
+        colorUpdated(3);
+      }
     }
   }
 }
+
+

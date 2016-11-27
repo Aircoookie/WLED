@@ -123,10 +123,6 @@ void handleSettingsSet()
   notifyDirect = server.hasArg("NSDIR");
   notifyButton = server.hasArg("NSBTN");
   notifyForward = server.hasArg("NSFWD");
-  if (server.hasArg("NSIPS"))
-  {
-    notifier_ips_raw = server.arg("NSIPS");
-  }
   if (server.hasArg("OPASS"))
   {
     if (!ota_lock)
@@ -156,8 +152,6 @@ boolean handleSet(String req)
         return false;
    }
    int pos = 0;
-   boolean isNotification = false;
-   if (req.indexOf("N=") > 0) isNotification = true;
    pos = req.indexOf("A=");
    if (pos > 0) {
       bri = req.substring(pos + 2).toInt();
@@ -183,17 +177,6 @@ boolean handleSet(String req)
         nightlightActive = true;
         nightlightStartTime = millis();
       }
-   }
-   if (isNotification)
-   {
-    if (receiveNotifications)
-    {
-      colorUpdated(3);
-      server.send(200, "text/plain", "");
-      return true;
-    }
-    server.send(202, "text/plain", "");
-    return true;
    }
    XML_response();
    colorUpdated(1);

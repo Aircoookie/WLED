@@ -2,13 +2,12 @@ color cycle
 sequence
 simple slide transition
 additional color picker field
-implement all settings setters
+implement all settings setters (notifyNightlight \n udpPort)
 implement HSB slider option
 implement ranges
 implement discrete range color setter
 implement discrete single color setter
 svg icons in html
-notifier function -> send get request
 add preferred colors to settings -> quickly t. UI, button select,
 use iframe for settings, seperate tabs for wifi and application confg
 use iframe for all adv. features?
@@ -20,4 +19,3 @@ BUGS
 static ip disables mdns
 ? authentification for security relevant areas ([/settings, /reset])
 (Unverified) led_amount does nothing (is always 16) because NeoPixelBus is initiated before EEPROM read
-notifier wrong ips

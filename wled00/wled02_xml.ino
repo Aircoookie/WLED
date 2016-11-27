@@ -101,13 +101,7 @@ void XML_response_settings()
   resp = resp + bool2int(notifyButton);
   resp = resp + "</nsbtn><nsfwd>";
   resp = resp + bool2int(notifyForward);
-  resp = resp + "</nsfwd><nsips>";
-  for (int i = 0; i < notifier_ips_count; i++)
-  {
-    resp = resp + notifier_ips[i];
-    resp = resp + "\n";
-  }
-  resp = resp + "</nsips>";
+  resp = resp + "</nsfwd><nsips>Legacy</nsips>";
   resp = resp + "<noota>";
   resp = resp + bool2int(ota_lock);
   resp = resp +"</noota>";

@@ -57,7 +57,9 @@ void wledInit()
     Serial.println("Error setting up MDNS responder!");
     down();
   }
-    Serial.println("mDNS responder started");
+  Serial.println("mDNS responder started");
+
+  udpConnected = notifierUdp.begin(udpPort);
 
   //SERVER INIT
   //settings page
@@ -123,15 +125,12 @@ void wledInit()
 
   server.begin();
   Serial.println("HTTP server started");
-
   // Add service to MDNS
   MDNS.addService("http", "tcp", 80);
   // Initialize NeoPixel Strip
   strip.Begin();
   colorUpdated(0);
   pinMode(buttonPin, INPUT_PULLUP);
-
-  Serial.println(otapass);
 }
 
 void initAP(){

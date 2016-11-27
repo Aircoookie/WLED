@@ -111,6 +111,7 @@ void handleNightlight()
   {
     if (!nightlightActive_old) //init
     {
+      notify(4);
       nightlightDelayMs = (int)(nightlightDelayMins*60000);
       nightlightActive_old = true;
       if (nightlightFade)
