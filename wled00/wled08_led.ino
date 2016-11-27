@@ -119,7 +119,6 @@ void handleNightlight()
       }
     }
     float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
-    Serial.println(nper);
     if (nper >= 1)
     {
       nightlightActive = false;

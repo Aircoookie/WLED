@@ -130,6 +130,8 @@ void wledInit()
   strip.Begin();
   colorUpdated(0);
   pinMode(buttonPin, INPUT_PULLUP);
+
+  Serial.println(otapass);
 }
 
 void initAP(){

@@ -143,6 +143,7 @@ void loadSettingsFromEEPROM()
   transitionDelay = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
   transitionDelay_old = transitionDelay;
   bri_n = EEPROM.read(255);
+  otapass = "";
   for (int i = 256; i < 288; ++i)
   {
     if (EEPROM.read(i) == 0) break;
