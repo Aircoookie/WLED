@@ -14,7 +14,11 @@
  * @version 0.3pd
  * @author Christian Schwinne
  */
+//Hardware-settings (only changeble via code)
+uint8_t led_amount = 16;
+uint8_t buttonPin = 0; //needs pull-up
 //Default CONFIG
+String serverDescription = "WLED 0.3pd";
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
 String cmdns = "led";
@@ -27,21 +31,20 @@ IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
 byte col[]{255, 127, 0};
+uint8_t bri_nl = 0;
 boolean fadeTransition = true;
 boolean seqTransition = false;
 uint16_t transitionDelay = 1500;
 boolean ota_lock = true;
 String otapass = "wledota";
 boolean only_ap = false;
-uint8_t led_amount = 16;
-uint8_t buttonPin = 3; //needs pull-up
 boolean buttonEnabled = true;
-boolean notifyDirect = true, notifyButton = true, notifyForward = true, notifyNightlight = false;
+boolean notifyDirect = true, notifyButton = true, notifyNightlight = false;
 boolean receiveNotifications = true;
 uint8_t bri_n = 100;
 uint8_t nightlightDelayMins = 60;
 boolean nightlightFade = true;
-unsigned int udpPort = 21324;
+uint16_t udpPort = 21324;
 
 double transitionResolution = 0.011;
 
@@ -62,7 +65,6 @@ boolean buttonPressedBefore = false;
 boolean nightlightActive = false;
 boolean nightlightActive_old = false;
 int transitionDelay_old;
-long nightlightPassedTime = 0;
 int nightlightDelayMs;
 boolean udpConnected = false;
 byte notifierBuffer[16];

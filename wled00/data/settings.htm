@@ -31,18 +31,19 @@
 							document.S_form.APHSSID.checked = (this.responseXML.getElementsByTagName('aphssid')[0].innerHTML)!=0?true:false;
 							document.S_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].innerHTML; //fake pass like ******
 							document.S_form.APCHAN.value = this.responseXML.getElementsByTagName('apchan')[0].innerHTML;
-							document.S_form.LEDS.value = this.responseXML.getElementsByTagName('leds')[0].innerHTML;
+							document.S_form.DESC.value = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
 							document.S_form.BTNON.checked = (this.responseXML.getElementsByTagName('btnon')[0].innerHTML)!=0?true:false;
 							document.S_form.TFADE.checked = (this.responseXML.getElementsByTagName('tfade')[0].innerHTML)!=0?true:false;
 							document.S_form.TDLAY.value = this.responseXML.getElementsByTagName('tdlay')[0].innerHTML;
+							document.S_form.TLBRI.value = this.responseXML.getElementsByTagName('tlbri')[0].innerHTML;
 							document.S_form.TLDUR.value = this.responseXML.getElementsByTagName('tldur')[0].innerHTML;
 							document.S_form.TLFDE.checked = (this.responseXML.getElementsByTagName('tlfde')[0].innerHTML)!=0?true:false;
+							document.S_form.NUDPP.value = this.responseXML.getElementsByTagName('nudpp')[0].innerHTML;
 							document.S_form.NRCVE.checked = (this.responseXML.getElementsByTagName('nrcve')[0].innerHTML)!=0?true:false;
 							document.S_form.NRBRI.value = this.responseXML.getElementsByTagName('nrbri')[0].innerHTML;
 							document.S_form.NSDIR.checked = (this.responseXML.getElementsByTagName('nsdir')[0].innerHTML)!=0?true:false;
 							document.S_form.NSBTN.checked = (this.responseXML.getElementsByTagName('nsbtn')[0].innerHTML)!=0?true:false;
 							document.S_form.NSFWD.checked = (this.responseXML.getElementsByTagName('nsfwd')[0].innerHTML)!=0?true:false;
-							document.S_form.NSIPS.innerHTML = this.responseXML.getElementsByTagName('nsips')[0].innerHTML;
 							document.S_form.NOOTA.checked = (this.responseXML.getElementsByTagName('noota')[0].innerHTML)!=0?true:false;
 							document.S_form.NORAP.checked = (this.responseXML.getElementsByTagName('norap')[0].innerHTML)!=0?true:false;
 							document.getElementsByClassName("sip")[0].innerHTML = this.responseXML.getElementsByTagName('sip')[0].innerHTML;
@@ -102,25 +103,26 @@
 		AP IP: <span class="sip"> Not active </span> <br>
 		
 		<h2>Application setup</h2>
+		<h3>Web setup</h3>
+		Server description: <input type="text" name="DESC" maxlength="32"> <br>
 		<h3>LED setup</h3>
 		The default boot LED color is the current color when settings are saved. <br>
-		LED amount: <input type="text" name="LEDS" maxlength="3" size="2"> <br>
+		Brightness factor: <input type="text" name="NRBRI" maxlength="3" size="2"> % <br>
 		<h3>Button setup</h3>
 		On/Off button enabled: <input type="checkbox" name="BTNON" value="0"> <br>
 		<h3>Transitions</h3>
 		Fade: <input type="checkbox" name="TFADE" value="0"> <br>
 		Transition Delay: <input type="text" name="TDLAY" maxlength="5" size="2"> ms <br>
 		<h3>Timed light</h3>
-		Turn off after: <input type="text" name="TLDUR" maxlength="3" size="2"> min <br>
-		Fade down: <input type="checkbox" name="TLFDE" value="0"> <br>
+		Target brightness: <input type="text" name="TLBRI" maxlength="3" size="2"> (0-255) <br>
+		Change after: <input type="text" name="TLDUR" maxlength="3" size="2"> min <br>
+		Fade: <input type="checkbox" name="TLFDE" value="0"> <br>
 		<h3>Daisy chain</h3>
+		UDP Port: <input type="text" name="NUDPP" maxlength="5" size="2"><br>
 		Receive notifications: <input type="checkbox" name="NRCVE" value="0"> <br>
-		Received brightness factor: <input type="text" name="NRBRI" maxlength="3" size="2"> % <br><br>
 		Send notifications on direct change: <input type="checkbox" name="NSDIR" value="0"> <br>
 		Send notifications on button press: <input type="checkbox" name="NSBTN" value="0"> <br>
-		Forward received notifications: <input type="checkbox" name="NSFWD" value="0"> <br>
-		Hosts to send notifications to: (1 IP per line) <br>
-		<textarea name="NSIPS" rows="8" cols="16"></textarea>
+		Send nightlight notifications: <input type="checkbox" name="NSFWD" value="0"> <br>
 		<h3>Security</h3>
 		OTA locked: <input type="checkbox" name="NOOTA" value="0"> <br>
 		Passphrase: <input type="password" name="OPASS" maxlength="32"> <br>

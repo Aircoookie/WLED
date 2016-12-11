@@ -93,11 +93,7 @@ void handleSettingsSet()
     int i = server.arg("CSSN3").toInt();
     if (i >= 0 && i <= 255) staticsubnet[3] = i;
   }
-  if (server.hasArg("LEDS"))
-  {
-    int i = server.arg("LEDS").toInt();
-    if (i > 0) led_amount = i;
-  }
+  if (server.hasArg("DESC")) serverDescription = server.arg("DESC");
   buttonEnabled = server.hasArg("BTNON");
   fadeTransition = server.hasArg("TFADE");
   if (server.hasArg("TDLAY"))
@@ -108,12 +104,20 @@ void handleSettingsSet()
       transitionDelay_old = transitionDelay;
     }
   }
+  if (server.hasArg("TLBRI"))
+  {
+    bri_nl = server.arg("TLBRI").toInt();
+  }
   if (server.hasArg("TLDUR"))
   {
     int i = server.arg("TLDUR").toInt();
     if (i > 0) nightlightDelayMins = i;
   }
   nightlightFade = server.hasArg("TLFDE");
+  if (server.hasArg("NUDPP"))
+  {
+    udpPort = server.arg("NUDPP").toInt();
+  }
   receiveNotifications = server.hasArg("NRCVE");
   if (server.hasArg("NRBRI"))
   {
@@ -122,7 +126,7 @@ void handleSettingsSet()
   }
   notifyDirect = server.hasArg("NSDIR");
   notifyButton = server.hasArg("NSBTN");
-  notifyForward = server.hasArg("NSFWD");
+  notifyNightlight = server.hasArg("NSFWD");
   if (server.hasArg("OPASS"))
   {
     if (!ota_lock)
@@ -173,6 +177,7 @@ boolean handleSet(String req)
       if (req.indexOf("NL=0") > 0)
       {
         nightlightActive = false;
+        bri = bri_t;
       } else {
         nightlightActive = true;
         nightlightStartTime = millis();

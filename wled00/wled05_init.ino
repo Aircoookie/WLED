@@ -59,7 +59,10 @@ void wledInit()
   }
   Serial.println("mDNS responder started");
 
-  udpConnected = notifierUdp.begin(udpPort);
+  if (udpPort > 0)
+  {
+    udpConnected = notifierUdp.begin(udpPort);
+  }
 
   //SERVER INIT
   //settings page

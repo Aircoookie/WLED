@@ -1,8 +1,8 @@
 color cycle
+other vfx (fire...)
 sequence
 simple slide transition
 additional color picker field
-implement all settings setters (notifyNightlight \n udpPort)
 implement HSB slider option
 implement ranges
 implement discrete range color setter
@@ -11,11 +11,32 @@ svg icons in html
 add preferred colors to settings -> quickly t. UI, button select,
 use iframe for settings, seperate tabs for wifi and application confg
 use iframe for all adv. features?
-/dumpeeprom and /pusheeprom
+/dumpeeprom and /pusheeprom (ota lock!)
 aux trigger pin
-descriptive text
+randomizer
+
+clock functions:
+analog clock on range (dots)
+5 min lines
+slider clock on range (track)
+get time from ntp
+time zones + dst
+adjustable chimes
+timed light activation
+alarm clock
+countdown (= NL with seq. trans)
+
+more button functions (hold for bri select, double click, etc.):
+hold
+single click
+double click
+triple click
+quad click
+funcs: toggle on/off
+toggle nightlight
+toggle notifier
+var. brightness
 
 BUGS
 static ip disables mdns
 ? authentification for security relevant areas ([/settings, /reset])
-(Unverified) led_amount does nothing (is always 16) because NeoPixelBus is initiated before EEPROM read

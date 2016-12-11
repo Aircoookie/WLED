@@ -1,6 +1,10 @@
 void setAllLeds() {
-  double d = bri_t;
-  double val = d /256;
+  double d = bri_t*bri_n;
+  double val = d/25600;
+  if (val > 1.0)
+  {
+    val = 1.0;
+  }
   int r = col_t[0]*val;
   int g = col_t[1]*val;
   int b = col_t[2]*val;
@@ -25,7 +29,7 @@ void setLedsStandard()
 
 void colorUpdated(int callMode)
 {
-  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight
+  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (no not.)
   if (col[0] == col_it[0] && col[1] == col_it[1] && col[2] == col_it[2] && bri == bri_it)
   {
     return; //no change
@@ -97,8 +101,8 @@ void initNightlightFade()
   {
     return;
   }
-  bri = 0;
-  bri_it = 0;
+  bri = bri_nl;
+  bri_it = bri_nl;
   transitionDelay = (int)(nightlightDelayMins*60000);
   transitionStartTime = nightlightStartTime;
   transitionActive = true;
@@ -111,6 +115,7 @@ void handleNightlight()
   {
     if (!nightlightActive_old) //init
     {
+      nightlightStartTime = millis();
       notify(4);
       nightlightDelayMs = (int)(nightlightDelayMins*60000);
       nightlightActive_old = true;
@@ -123,19 +128,19 @@ void handleNightlight()
     if (nper >= 1)
     {
       nightlightActive = false;
+      if (!nightlightFade)
+      {
+        bri = bri_nl;
+        colorUpdated(5);
+      }
     }
-  } else if (nightlightActive_old) //de-init
+  } else if (nightlightActive_old) //early de-init
   {
-    nightlightPassedTime = 0;
     nightlightActive_old = false;
     if (nightlightFade)
     {
       transitionDelay = transitionDelay_old;
       transitionActive = false;
-    } else
-    {
-      bri = 0;
-      colorUpdated(4);
     }
   }
 }

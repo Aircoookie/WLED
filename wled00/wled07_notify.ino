@@ -1,15 +1,16 @@
 void notify(uint8_t callMode)
 {
+  if (!udpConnected) return;
   switch (callMode)
   {
     case 1: if (!notifyDirect) return; break;
     case 2: if (!notifyButton) return; break;
-    case 3: if (!notifyForward) return; break;
+    case 3: return;
     case 4: if (!notifyNightlight) return; break;
     default: return;
   }
   byte udpOut[16];
-  udpOut[0] = 0; //reserved for future "port" feature
+  udpOut[0] = 0; //reserved
   udpOut[1] = callMode;
   udpOut[2] = bri;
   udpOut[3] = col[0];
@@ -32,21 +33,13 @@ void handleNotifications()
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP())
     {
       notifierUdp.read(notifierBuffer, 16);
-      int bri_r = notifierBuffer[2]*(((float)bri_n)/100);
-      if (bri_r < 256)
-      {
-        bri_n = bri_r;
-      } else
-      {
-        bri_n = 255;
-      }
-      col[0] = notifierBuffer[3]
+      col[0] = notifierBuffer[3];
       col[1] = notifierBuffer[4];
       col[2] = notifierBuffer[5];
-      if (notifierBuffer[6])
+      nightlightActive = notifierBuffer[6];
+      if (!notifierBuffer[6])
       {
-        nightlightActive = true;
-      } else {
+        bri = notifierBuffer[2];
         colorUpdated(3);
       }
     }

@@ -19,6 +19,12 @@ void XML_response()
      resp = resp + col[i];
      resp = resp + "</cl>";
    }
+   resp = resp + "<nl>";
+   resp = resp + nightlightActive;
+   resp = resp + "</nl>";
+   resp = resp + "<desc>";
+   resp = resp + serverDescription;
+   resp = resp + "</desc>";
    //enable toolbar here
    resp = resp + "</vs>";
    server.send(200, "text/xml", resp);
@@ -75,9 +81,9 @@ void XML_response_settings()
   resp = resp + "<apchan>";
   resp = resp + apchannel;
   resp = resp + "</apchan>";
-  resp = resp + "<leds>";
-  resp = resp + led_amount;
-  resp = resp + "</leds>";
+  resp = resp + "<desc>";
+   resp = resp + serverDescription;
+   resp = resp + "</desc>";
   resp = resp + "<btnon>";
   resp = resp + bool2int(buttonEnabled);
   resp = resp + "</btnon><tfade>";
@@ -85,12 +91,18 @@ void XML_response_settings()
   resp = resp + "</tfade><tdlay>";
   resp = resp + transitionDelay;
   resp = resp + "</tdlay>";
+  resp = resp + "<tlbri>";
+  resp = resp + bri_nl;
+  resp = resp + "</tlbri>";
   resp = resp + "<tldur>";
   resp = resp + nightlightDelayMins;
   resp = resp + "</tldur>";
   resp = resp + "<tlfde>";
   resp = resp + bool2int(nightlightFade);
   resp = resp + "</tlfde>";
+  resp = resp + "<nudpp>";
+  resp = resp + udpPort;
+  resp = resp + "</nudpp>";
   resp = resp + "<nrcve>";
   resp = resp + bool2int(receiveNotifications);
   resp = resp + "</nrcve><nrbri>";
@@ -100,8 +112,8 @@ void XML_response_settings()
   resp = resp + "</nsdir><nsbtn>";
   resp = resp + bool2int(notifyButton);
   resp = resp + "</nsbtn><nsfwd>";
-  resp = resp + bool2int(notifyForward);
-  resp = resp + "</nsfwd><nsips>Legacy</nsips>";
+  resp = resp + bool2int(notifyNightlight);
+  resp = resp + "</nsfwd>";
   resp = resp + "<noota>";
   resp = resp + bool2int(ota_lock);
   resp = resp +"</noota>";
@@ -134,7 +146,7 @@ void XML_response_settings()
   {
     resp = resp + "Not active";
   }
-  resp = resp + "</sip><otastat>LS</otastat>";
+  resp = resp + "</sip>";
   resp = resp + "<msg>WLED 0.3pd OK</msg>";
   resp = resp + "</vs>";
   Serial.println(resp);

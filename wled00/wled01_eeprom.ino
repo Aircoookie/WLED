@@ -41,7 +41,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(228, aphide);
   EEPROM.write(229, led_amount);
   EEPROM.write(230, notifyButton);
-  EEPROM.write(231, notifyForward);
+  EEPROM.write(231, notifyNightlight);
   EEPROM.write(232, buttonEnabled);
   //233 reserved for first boot flag
   EEPROM.write(234, staticip[0]);
@@ -70,7 +70,14 @@ void saveSettingsToEEPROM()
   {
     EEPROM.write(i, otapass.charAt(i-256));
   }
+  EEPROM.write(288, bri_nl);
   EEPROM.write(289, ota_lock);
+  EEPROM.write(290, (udpPort >> 0) & 0xFF);
+  EEPROM.write(291, (udpPort >> 8) & 0xFF);
+  for (int i = 292; i < 324; ++i)
+  {
+    EEPROM.write(i, serverDescription.charAt(i-292));
+  }
   EEPROM.commit();
 }
 
@@ -120,7 +127,7 @@ void loadSettingsFromEEPROM()
   if (aphide > 1) aphide = 1;
   led_amount = EEPROM.read(229);
   notifyButton = EEPROM.read(230);
-  notifyForward = EEPROM.read(231);
+  notifyNightlight = EEPROM.read(231);
   buttonEnabled = EEPROM.read(232);
   staticip[0] = EEPROM.read(234);
   staticip[1] = EEPROM.read(235);
@@ -149,5 +156,13 @@ void loadSettingsFromEEPROM()
     if (EEPROM.read(i) == 0) break;
     otapass += char(EEPROM.read(i));
   }
+  bri_nl = EEPROM.read(288);
   ota_lock = EEPROM.read(289);
+  udpPort = ((EEPROM.read(290) << 0) & 0xFF) + ((EEPROM.read(291) << 8) & 0xFF00);
+  serverDescription = "";
+  for (int i = 292; i < 324; ++i)
+  {
+    if (EEPROM.read(i) == 0) break;
+    serverDescription += char(EEPROM.read(i));
+  }
 }
