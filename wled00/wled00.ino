@@ -5,7 +5,6 @@
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
 #include <Hash.h>
-//#include <NeoPixelBus.h>
 #include <WS2812FX.h>
 #include <FS.h>
 #include <WiFiUDP.h>
@@ -16,7 +15,7 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-uint8_t led_amount = 16;
+uint8_t led_amount = 9;
 uint8_t buttonPin = 0; //needs pull-up
 //Default CONFIG
 String serverDescription = "WLED 0.3pd";
@@ -72,11 +71,11 @@ int nightlightDelayMs;
 boolean udpConnected = false;
 byte udpIn[16];
 
-NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
-
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp;
+
+WS2812FX strip = WS2812FX(led_amount, 2, NEO_GRB + NEO_KHZ800);
 
 File fsUploadFile;
 
@@ -112,6 +111,7 @@ void loop() {
     handleTransitions();
     handleNightlight();
     handleButton();
+    strip.service();
 }
 
 

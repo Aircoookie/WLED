@@ -148,6 +148,7 @@ void handleSettingsSet()
 
 boolean handleSet(String req)
 {
+   boolean effectUpdated = false;
    if (!(req.indexOf("ajax_in") >= 0)) {
         if (req.indexOf("get-settings") >= 0)
         {
@@ -176,10 +177,14 @@ boolean handleSet(String req)
    pos = req.indexOf("FX=");
    if (pos > 0) {
       effectCurrent = req.substring(pos + 3).toInt();
+      strip.setMode(effectCurrent);
+      effectUpdated = true;
    }
    pos = req.indexOf("XS=");
    if (pos > 0) {
       effectSpeed = req.substring(pos + 3).toInt();
+      strip.setSpeed(effectSpeed);
+      effectUpdated = true;
    }
    if (req.indexOf("NS=") > 0)
    {
@@ -209,6 +214,12 @@ boolean handleSet(String req)
       }
    }
    XML_response();
-   colorUpdated(1);
+   if (effectUpdated)
+   {
+      colorUpdated(6);
+   } else
+   {
+      colorUpdated(1);
+   }
    return true;
 }

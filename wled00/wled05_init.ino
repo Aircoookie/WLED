@@ -131,7 +131,12 @@ void wledInit()
   // Add service to MDNS
   MDNS.addService("http", "tcp", 80);
   // Initialize NeoPixel Strip
-  strip.Begin();
+  strip.init();
+  strip.setMode(0);
+  strip.setColor(0);
+  strip.setSpeed(effectSpeed);
+  strip.setBrightness(255);
+  strip.start();
   colorUpdated(0);
   pinMode(buttonPin, INPUT_PULLUP);
 }

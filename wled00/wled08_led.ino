@@ -1,17 +1,8 @@
 void setAllLeds() {
   double d = bri_t*bri_n;
-  double val = d/25600;
-  if (val > 1.0)
-  {
-    val = 1.0;
-  }
-  int r = col_t[0]*val;
-  int g = col_t[1]*val;
-  int b = col_t[2]*val;
-  for (int i=0; i < led_amount; i++) {
-    strip.SetPixelColor(i, RgbColor(r, g, b));
-  }
-  strip.Show();
+  int val = d/100;
+  strip.setBrightness(val);
+  strip.setColor(col_t[0], col_t[1], col_t[2]);
 }
 
 void setLedsStandard()
@@ -32,6 +23,7 @@ void colorUpdated(int callMode)
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (no not.)
   if (col[0] == col_it[0] && col[1] == col_it[1] && col[2] == col_it[2] && bri == bri_it)
   {
+    if (callMode == 6) notify(6);
     return; //no change
   }
   col_it[0] = col[0];

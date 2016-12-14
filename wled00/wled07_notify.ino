@@ -7,6 +7,7 @@ void notify(uint8_t callMode)
     case 2: if (!notifyButton) return; break;
     case 3: return;
     case 4: if (!notifyNightlight) return; break;
+    case 6: if (!notifyDirect) return; break; //fx change
     default: return;
   }
   byte udpOut[16];
@@ -39,11 +40,10 @@ void handleNotifications()
       col[0] = udpIn[3];
       col[1] = udpIn[4];
       col[2] = udpIn[5];
-      if (true) //always receive effects?
-      {
-        effectCurrent = udpIn[8];
-        effectSpeed = udpIn[9];
-      }
+      effectCurrent = udpIn[8];
+      strip.setMode(effectCurrent);
+      effectSpeed = udpIn[9];
+      strip.setSpeed(effectSpeed);
       nightlightActive = udpIn[6];
       if (!udpIn[6])
       {
