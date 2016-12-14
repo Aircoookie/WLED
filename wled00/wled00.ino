@@ -5,7 +5,8 @@
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
 #include <Hash.h>
-#include <NeoPixelBus.h>
+//#include <NeoPixelBus.h>
+#include <WS2812FX.h>
 #include <FS.h>
 #include <WiFiUDP.h>
 
@@ -39,12 +40,14 @@ boolean ota_lock = true;
 String otapass = "wledota";
 boolean only_ap = false;
 boolean buttonEnabled = true;
-boolean notifyDirect = true, notifyButton = true, notifyNightlight = false;
-boolean receiveNotifications = true;
+boolean notifyDirect = true, notifyButton = true, notifyNightlight = false, notifyMaster = true;
+boolean receiveNotifications = true, receiveNotificationsDefault = true;
 uint8_t bri_n = 100;
 uint8_t nightlightDelayMins = 60;
 boolean nightlightFade = true;
 uint16_t udpPort = 21324;
+uint8_t effectCurrent = 0;
+uint8_t effectSpeed = 75;
 
 double transitionResolution = 0.011;
 
@@ -67,7 +70,7 @@ boolean nightlightActive_old = false;
 int transitionDelay_old;
 int nightlightDelayMs;
 boolean udpConnected = false;
-byte notifierBuffer[16];
+byte udpIn[16];
 
 NeoPixelBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> strip(led_amount, 1);
 

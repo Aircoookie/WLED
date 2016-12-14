@@ -19,9 +19,21 @@ void XML_response()
      resp = resp + col[i];
      resp = resp + "</cl>";
    }
+   resp = resp + "<ns>";
+   resp = resp + notifyMaster;
+   resp = resp + "</ns>";
+   resp = resp + "<nr>";
+   resp = resp + receiveNotifications;
+   resp = resp + "</nr>";
    resp = resp + "<nl>";
    resp = resp + nightlightActive;
    resp = resp + "</nl>";
+   resp = resp + "<fx>";
+   resp = resp + effectCurrent;
+   resp = resp + "</fx>";
+   resp = resp + "<fx>";
+   resp = resp + effectSpeed;
+   resp = resp + "</fx>";
    resp = resp + "<desc>";
    resp = resp + serverDescription;
    resp = resp + "</desc>";
@@ -104,7 +116,7 @@ void XML_response_settings()
   resp = resp + udpPort;
   resp = resp + "</nudpp>";
   resp = resp + "<nrcve>";
-  resp = resp + bool2int(receiveNotifications);
+  resp = resp + bool2int(receiveNotificationsDefault);
   resp = resp + "</nrcve><nrbri>";
   resp = resp + bri_n;
   resp = resp + "</nrbri><nsdir>";

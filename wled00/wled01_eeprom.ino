@@ -60,7 +60,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(247, col[1]);
   EEPROM.write(248, col[2]);
   EEPROM.write(249, bri);
-  EEPROM.write(250, receiveNotifications);
+  EEPROM.write(250, receiveNotificationsDefault);
   EEPROM.write(251, fadeTransition);
   EEPROM.write(253, (transitionDelay >> 0) & 0xFF);
   EEPROM.write(254, (transitionDelay >> 8) & 0xFF);
@@ -146,6 +146,7 @@ void loadSettingsFromEEPROM()
   col[2] = EEPROM.read(248);
   bri = EEPROM.read(249);
   receiveNotifications = EEPROM.read(250);
+  receiveNotificationsDefault = receiveNotifications;
   fadeTransition = EEPROM.read(251);
   transitionDelay = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
   transitionDelay_old = transitionDelay;

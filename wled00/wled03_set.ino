@@ -119,6 +119,7 @@ void handleSettingsSet()
     udpPort = server.arg("NUDPP").toInt();
   }
   receiveNotifications = server.hasArg("NRCVE");
+  receiveNotificationsDefault = receiveNotifications;
   if (server.hasArg("NRBRI"))
   {
     int i = server.arg("NRBRI").toInt();
@@ -171,6 +172,30 @@ boolean handleSet(String req)
    pos = req.indexOf("B=");
    if (pos > 0) {
       col[2] = req.substring(pos + 2).toInt();
+   }
+   pos = req.indexOf("FX=");
+   if (pos > 0) {
+      effectCurrent = req.substring(pos + 3).toInt();
+   }
+   pos = req.indexOf("XS=");
+   if (pos > 0) {
+      effectSpeed = req.substring(pos + 3).toInt();
+   }
+   if (req.indexOf("NS=") > 0)
+   {
+      notifyMaster = true;
+      if (req.indexOf("NS=0") > 0)
+      {
+        notifyMaster = false;
+      }
+   }
+   if (req.indexOf("NR=") > 0)
+   {
+      receiveNotifications = true;
+      if (req.indexOf("NR=0") > 0)
+      {
+        receiveNotifications = false;
+      }
    }
    if (req.indexOf("NL=") > 0)
    {

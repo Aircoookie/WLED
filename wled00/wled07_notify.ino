@@ -1,6 +1,6 @@
 void notify(uint8_t callMode)
 {
-  if (!udpConnected) return;
+  if (!udpConnected || !notifyMaster) return;
   switch (callMode)
   {
     case 1: if (!notifyDirect) return; break;
@@ -17,6 +17,9 @@ void notify(uint8_t callMode)
   udpOut[4] = col[1];
   udpOut[5] = col[2];
   udpOut[6] = nightlightActive;
+  udpOut[7] = nightlightDelayMins;
+  udpOut[8] = effectCurrent;
+  udpOut[9] = effectSpeed;
   
   IPAddress broadcastIp;
   broadcastIp = ~WiFi.subnetMask() | WiFi.gatewayIP();
@@ -32,14 +35,19 @@ void handleNotifications()
     int packetSize = notifierUdp.parsePacket();
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP())
     {
-      notifierUdp.read(notifierBuffer, 16);
-      col[0] = notifierBuffer[3];
-      col[1] = notifierBuffer[4];
-      col[2] = notifierBuffer[5];
-      nightlightActive = notifierBuffer[6];
-      if (!notifierBuffer[6])
+      notifierUdp.read(udpIn, 16);
+      col[0] = udpIn[3];
+      col[1] = udpIn[4];
+      col[2] = udpIn[5];
+      if (true) //always receive effects?
       {
-        bri = notifierBuffer[2];
+        effectCurrent = udpIn[8];
+        effectSpeed = udpIn[9];
+      }
+      nightlightActive = udpIn[6];
+      if (!udpIn[6])
+      {
+        bri = udpIn[2];
         colorUpdated(3);
       }
     }
