@@ -5,7 +5,7 @@
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
 #include <Hash.h>
-#include <WS2812FX.h>
+#include "WS2812FX.h"
 #include <FS.h>
 #include <WiFiUDP.h>
 
@@ -15,7 +15,7 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-uint8_t led_amount = 9;
+uint8_t led_amount = 84;
 uint8_t buttonPin = 0; //needs pull-up
 //Default CONFIG
 String serverDescription = "WLED 0.3pd";

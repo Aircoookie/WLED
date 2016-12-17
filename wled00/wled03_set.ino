@@ -176,15 +176,35 @@ boolean handleSet(String req)
    }
    pos = req.indexOf("FX=");
    if (pos > 0) {
-      effectCurrent = req.substring(pos + 3).toInt();
-      strip.setMode(effectCurrent);
-      effectUpdated = true;
+      if (effectCurrent != req.substring(pos + 3).toInt())
+      {
+        effectCurrent = req.substring(pos + 3).toInt();
+        strip.setMode(effectCurrent);
+        effectUpdated = true;
+      }
    }
    pos = req.indexOf("XS=");
    if (pos > 0) {
-      effectSpeed = req.substring(pos + 3).toInt();
-      strip.setSpeed(effectSpeed);
-      effectUpdated = true;
+      if (effectSpeed != req.substring(pos + 3).toInt())
+      {
+        effectSpeed = req.substring(pos + 3).toInt();
+        strip.setSpeed(effectSpeed);
+        effectUpdated = true;
+      }
+   }
+   pos = req.indexOf("I=");
+   if (pos > 0){
+      if (strip.getMode() != 47) strip.setMode(47);
+      effectCurrent = 47;
+      int index = req.substring(pos + 2).toInt();
+      pos = req.indexOf("I2=");
+      if (pos > 0){
+        int index2 = req.substring(pos + 3).toInt();
+        strip.setRange(index, index2);
+      } else
+      {
+        strip.setIndividual(index);
+      }
    }
    if (req.indexOf("NS=") > 0)
    {
