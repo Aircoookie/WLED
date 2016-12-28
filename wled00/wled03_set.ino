@@ -94,6 +94,46 @@ void handleSettingsSet()
     if (i >= 0 && i <= 255) staticsubnet[3] = i;
   }
   if (server.hasArg("DESC")) serverDescription = server.arg("DESC");
+  if (server.hasArg("CBEOR"))
+  {
+    col_s[0] = col[0];
+    col_s[1] = col[1];
+    col_s[2] = col[2];
+    bri_s = bri;
+    effectDefault = effectCurrent;
+    effectSpeedDefault = effectSpeed;
+  } else {
+    if (server.hasArg("CLDFR"))
+    {
+      int i = server.arg("CLDFR").toInt();
+      if (i >= 0 && i <= 255) col_s[0] = i;
+    }
+    if (server.hasArg("CLDFG"))
+    {
+      int i = server.arg("CLDFG").toInt();
+      if (i >= 0 && i <= 255) col_s[1] = i;
+    }
+    if (server.hasArg("CLDFB"))
+    {
+      int i = server.arg("CLDFB").toInt();
+      if (i >= 0 && i <= 255) col_s[2] = i;
+    }
+    if (server.hasArg("CLDFA"))
+    {
+      int i = server.arg("CLDFA").toInt();
+      if (i >= 0 && i <= 255) bri_s = i;
+    }
+    if (server.hasArg("FXDEF"))
+    {
+      int i = server.arg("FXDEF").toInt();
+      if (i >= 0 && i <= 255) effectDefault = i;
+    }
+    if (server.hasArg("SXDEF"))
+    {
+      int i = server.arg("SXDEF").toInt();
+      if (i >= 0 && i <= 255) effectSpeedDefault = i;
+    }
+  }
   buttonEnabled = server.hasArg("BTNON");
   fadeTransition = server.hasArg("TFADE");
   if (server.hasArg("TDLAY"))
@@ -128,6 +168,7 @@ void handleSettingsSet()
   notifyDirect = server.hasArg("NSDIR");
   notifyButton = server.hasArg("NSBTN");
   notifyNightlight = server.hasArg("NSFWD");
+  ntpEnabled = server.hasArg("NTPON");
   if (server.hasArg("OPASS"))
   {
     if (!ota_lock)

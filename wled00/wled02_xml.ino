@@ -31,9 +31,9 @@ void XML_response()
    resp = resp + "<fx>";
    resp = resp + effectCurrent;
    resp = resp + "</fx>";
-   resp = resp + "<fx>";
+   resp = resp + "<sx>";
    resp = resp + effectSpeed;
-   resp = resp + "</fx>";
+   resp = resp + "</sx>";
    resp = resp + "<desc>";
    resp = resp + serverDescription;
    resp = resp + "</desc>";
@@ -94,8 +94,23 @@ void XML_response_settings()
   resp = resp + apchannel;
   resp = resp + "</apchan>";
   resp = resp + "<desc>";
-   resp = resp + serverDescription;
-   resp = resp + "</desc>";
+  resp = resp + serverDescription;
+  resp = resp + "</desc>";
+  for (int i = 0; i < 3; i++)
+  {
+    resp = resp + "<cldef>";
+    resp = resp + col_s[i];
+    resp = resp + "</cldef>";
+  }
+  resp = resp + "<cldfa>";
+  resp = resp + bri_s;
+  resp = resp + "</cldfa>";
+  resp = resp + "<fxdef>";
+  resp = resp + effectDefault;
+  resp = resp + "</fxdef>";
+  resp = resp + "<sxdef>";
+  resp = resp + effectSpeedDefault;
+  resp = resp + "</sxdef>";
   resp = resp + "<btnon>";
   resp = resp + bool2int(buttonEnabled);
   resp = resp + "</btnon><tfade>";
@@ -126,6 +141,14 @@ void XML_response_settings()
   resp = resp + "</nsbtn><nsfwd>";
   resp = resp + bool2int(notifyNightlight);
   resp = resp + "</nsfwd>";
+  resp = resp + "<ntpon>";
+  resp = resp + bool2int(ntpEnabled);
+  resp = resp + "</ntpon>";
+  Serial.println("pretime");
+  resp = resp + "<times>";
+  resp = resp + getTimeString();
+  resp = resp + "</times>";
+  Serial.println("posttime");
   resp = resp + "<noota>";
   resp = resp + bool2int(ota_lock);
   resp = resp +"</noota>";

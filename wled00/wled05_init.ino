@@ -1,13 +1,6 @@
 void wledInit()
 {
   Serial.begin(115200);
-    Serial.println();
-
-    for(uint8_t t = 4; t > 0; t--) {
-        Serial.printf("[SETUP] BOOT WAIT %d...\n", t);
-        Serial.flush();
-        delay(1000);
-    }
 
   SPIFFS.begin();
   {
@@ -59,9 +52,13 @@ void wledInit()
   }
   Serial.println("mDNS responder started");
 
-  if (udpPort > 0)
+  if (udpPort > 0 && udpPort != 123)
   {
     udpConnected = notifierUdp.begin(udpPort);
+  }
+  if (ntpEnabled && !only_ap)
+  {
+    ntpConnected = ntpUdp.begin(123);
   }
 
   //SERVER INIT
@@ -132,7 +129,7 @@ void wledInit()
   MDNS.addService("http", "tcp", 80);
   // Initialize NeoPixel Strip
   strip.init();
-  strip.setMode(0);
+  strip.setMode(effectCurrent);
   strip.setColor(0);
   strip.setSpeed(effectSpeed);
   strip.setBrightness(255);

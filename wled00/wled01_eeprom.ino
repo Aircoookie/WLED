@@ -56,10 +56,10 @@ void saveSettingsToEEPROM()
   EEPROM.write(243, staticsubnet[1]);
   EEPROM.write(244, staticsubnet[2]);
   EEPROM.write(245, staticsubnet[3]);
-  EEPROM.write(246, col[0]);
-  EEPROM.write(247, col[1]);
-  EEPROM.write(248, col[2]);
-  EEPROM.write(249, bri);
+  EEPROM.write(246, col_s[0]);
+  EEPROM.write(247, col_s[1]);
+  EEPROM.write(248, col_s[2]);
+  EEPROM.write(249, bri_s);
   EEPROM.write(250, receiveNotificationsDefault);
   EEPROM.write(251, fadeTransition);
   EEPROM.write(253, (transitionDelay >> 0) & 0xFF);
@@ -78,6 +78,12 @@ void saveSettingsToEEPROM()
   {
     EEPROM.write(i, serverDescription.charAt(i-292));
   }
+  EEPROM.write(324, effectDefault);
+  EEPROM.write(325, effectSpeedDefault);
+  //326 reserved for effectIntensity
+  EEPROM.write(327, ntpEnabled);
+  //328 reserved for timezone setting
+  //329 reserved for dst setting
   EEPROM.commit();
 }
 
@@ -141,10 +147,10 @@ void loadSettingsFromEEPROM()
   staticsubnet[1] = EEPROM.read(243);
   staticsubnet[2] = EEPROM.read(244);
   staticsubnet[3] = EEPROM.read(245);
-  col[0] = EEPROM.read(246);
-  col[1] = EEPROM.read(247);
-  col[2] = EEPROM.read(248);
-  bri = EEPROM.read(249);
+  col_s[0] = EEPROM.read(246); col[0] = col_s[0];
+  col_s[1] = EEPROM.read(247); col[1] = col_s[1];
+  col_s[2] = EEPROM.read(248); col[2] = col_s[2];
+  bri_s = EEPROM.read(249); bri = bri_s;
   receiveNotifications = EEPROM.read(250);
   receiveNotificationsDefault = receiveNotifications;
   fadeTransition = EEPROM.read(251);
@@ -166,4 +172,7 @@ void loadSettingsFromEEPROM()
     if (EEPROM.read(i) == 0) break;
     serverDescription += char(EEPROM.read(i));
   }
+  effectDefault = EEPROM.read(324); effectCurrent = effectDefault;
+  effectSpeedDefault = EEPROM.read(325); effectSpeed = effectSpeedDefault;
+  ntpEnabled = EEPROM.read(327);
 }

@@ -32,6 +32,12 @@
 							document.S_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].innerHTML; //fake pass like ******
 							document.S_form.APCHAN.value = this.responseXML.getElementsByTagName('apchan')[0].innerHTML;
 							document.S_form.DESC.value = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
+							document.S_form.CLDFR.value = this.responseXML.getElementsByTagName('cldef')[0].innerHTML;
+							document.S_form.CLDFG.value = this.responseXML.getElementsByTagName('cldef')[1].innerHTML;
+							document.S_form.CLDFB.value = this.responseXML.getElementsByTagName('cldef')[2].innerHTML;
+							document.S_form.CLDFA.value = this.responseXML.getElementsByTagName('cldfa')[0].innerHTML;
+							document.S_form.FXDEF.value = this.responseXML.getElementsByTagName('fxdef')[0].innerHTML;
+							document.S_form.SXDEF.value = this.responseXML.getElementsByTagName('sxdef')[0].innerHTML;
 							document.S_form.BTNON.checked = (this.responseXML.getElementsByTagName('btnon')[0].innerHTML)!=0?true:false;
 							document.S_form.TFADE.checked = (this.responseXML.getElementsByTagName('tfade')[0].innerHTML)!=0?true:false;
 							document.S_form.TDLAY.value = this.responseXML.getElementsByTagName('tdlay')[0].innerHTML;
@@ -44,6 +50,8 @@
 							document.S_form.NSDIR.checked = (this.responseXML.getElementsByTagName('nsdir')[0].innerHTML)!=0?true:false;
 							document.S_form.NSBTN.checked = (this.responseXML.getElementsByTagName('nsbtn')[0].innerHTML)!=0?true:false;
 							document.S_form.NSFWD.checked = (this.responseXML.getElementsByTagName('nsfwd')[0].innerHTML)!=0?true:false;
+							document.S_form.NTPON.checked = (this.responseXML.getElementsByTagName('ntpon')[0].innerHTML)!=0?true:false;
+							document.getElementsByClassName("times")[0].innerHTML = this.responseXML.getElementsByTagName('times')[0].innerHTML;
 							document.S_form.NOOTA.checked = (this.responseXML.getElementsByTagName('noota')[0].innerHTML)!=0?true:false;
 							document.S_form.NORAP.checked = (this.responseXML.getElementsByTagName('norap')[0].innerHTML)!=0?true:false;
 							document.getElementsByClassName("sip")[0].innerHTML = this.responseXML.getElementsByTagName('sip')[0].innerHTML;
@@ -75,54 +83,64 @@
 		<input type="button" name="BACK" value="Back" onclick="OpenMain()">
 		<h2>WiFi setup</h2>
 		<h3>Connect to existing network</h3>
-		Network SSID (leave empty to not connect): <br> <input type="text" name="CSSID" maxlength="32"> <br>
+		Network SSID (leave empty to not connect): <br> <input name="CSSID" maxlength="32"> <br>
 		Network password: <br> <input type="password" name="CPASS" maxlength="63"> <br>
 		Static IP (leave at 0.0.0.0 for DHCP): <br>
-		<input type="text" name="CSIP0" maxlength="3" size="2"> .
-		<input type="text" name="CSIP1" maxlength="3" size="2"> .
-		<input type="text" name="CSIP2" maxlength="3" size="2"> .
-		<input type="text" name="CSIP3" maxlength="3" size="2"> <br>
+		<input name="CSIP0" maxlength="3" size="2"> .
+		<input name="CSIP1" maxlength="3" size="2"> .
+		<input name="CSIP2" maxlength="3" size="2"> .
+		<input name="CSIP3" maxlength="3" size="2"> <br>
 		Static gateway: <br>
-		<input type="text" name="CSGW0" maxlength="3" size="2"> .
-		<input type="text" name="CSGW1" maxlength="3" size="2"> .
-		<input type="text" name="CSGW2" maxlength="3" size="2"> .
-		<input type="text" name="CSGW3" maxlength="3" size="2"> <br>
+		<input name="CSGW0" maxlength="3" size="2"> .
+		<input name="CSGW1" maxlength="3" size="2"> .
+		<input name="CSGW2" maxlength="3" size="2"> .
+		<input name="CSGW3" maxlength="3" size="2"> <br>
 		Static subnet mask: <br>
-		<input type="text" name="CSSN0" maxlength="3" size="2"> .
-		<input type="text" name="CSSN1" maxlength="3" size="2"> .
-		<input type="text" name="CSSN2" maxlength="3" size="2"> .
-		<input type="text" name="CSSN3" maxlength="3" size="2"> <br>
+		<input name="CSSN0" maxlength="3" size="2"> .
+		<input name="CSSN1" maxlength="3" size="2"> .
+		<input name="CSSN2" maxlength="3" size="2"> .
+		<input name="CSSN3" maxlength="3" size="2"> <br>
 		mDNS address (leave empty for no mDNS): <br/>
-		http:// <input type="text" name="CMDNS" maxlength="32"> .local <br>
+		http:// <input name="CMDNS" maxlength="32"> .local <br>
 		Client IP: <span class="sip"> Not connected </span> <br>
 		<h3>Configure Access Point</h3>
-		AP SSID (leave empty for no AP): <br> <input type="text" name="APSSID" maxlength="32"> <br>
+		AP SSID (leave empty for no AP): <br> <input name="APSSID" maxlength="32"> <br>
 		Hide AP SSID: <input type="checkbox" name="APHSSID" value="0"> <br>
 		AP password (leave empty for open): <br> <input type="password" name="APPASS" maxlength="63"> <br>
-		AP channel: <input type="text" name="APCHAN" maxlength="2" size="2"> <br>
+		AP channel: <input name="APCHAN" maxlength="2" size="2"> <br>
 		AP IP: <span class="sip"> Not active </span> <br>
 		
 		<h2>Application setup</h2>
 		<h3>Web setup</h3>
-		Server description: <input type="text" name="DESC" maxlength="32"> <br>
+		Server description: <input name="DESC" maxlength="32"> <br>
 		<h3>LED setup</h3>
-		The default boot LED color is the current color when settings are saved. <br>
-		Brightness factor: <input type="text" name="NRBRI" maxlength="3" size="2"> % <br>
+		Default RGB color:
+		<input name="CLDFR" maxlength="3" size="2">
+		<input name="CLDFG" maxlength="3" size="2">
+		<input name="CLDFB" maxlength="3" size="2"> <br>
+		Default brightness: <input name="CLDFA" maxlength="3" size="2"> (0-255) <br>
+		Default effect ID: <input name="FXDEF" maxlength="3" size="2"> <br>
+		Default effect speed: <input name="SXDEF" maxlength="3" size="2"> <br>
+		Ignore and use current color, brightness and effects: <input type="checkbox" name="CBEOR" value="0"> <br>
+		Brightness factor: <input name="NRBRI" maxlength="3" size="2"> % <br>
 		<h3>Button setup</h3>
 		On/Off button enabled: <input type="checkbox" name="BTNON" value="0"> <br>
 		<h3>Transitions</h3>
 		Fade: <input type="checkbox" name="TFADE" value="0"> <br>
-		Transition Delay: <input type="text" name="TDLAY" maxlength="5" size="2"> ms <br>
+		Transition Delay: <input name="TDLAY" maxlength="5" size="2"> ms <br>
 		<h3>Timed light</h3>
-		Target brightness: <input type="text" name="TLBRI" maxlength="3" size="2"> (0-255) <br>
-		Change after: <input type="text" name="TLDUR" maxlength="3" size="2"> min <br>
+		Target brightness: <input name="TLBRI" maxlength="3" size="2"> (0-255) <br>
+		Change after: <input name="TLDUR" maxlength="3" size="2"> min <br>
 		Fade: <input type="checkbox" name="TLFDE" value="0"> <br>
 		<h3>Daisy chain</h3>
-		UDP Port: <input type="text" name="NUDPP" maxlength="5" size="2"><br>
+		UDP Port: <input name="NUDPP" maxlength="5" size="2"><br>
 		Receive notifications: <input type="checkbox" name="NRCVE" value="0"> <br>
 		Send notifications on direct change: <input type="checkbox" name="NSDIR" value="0"> <br>
 		Send notifications on button press: <input type="checkbox" name="NSBTN" value="0"> <br>
 		Send nightlight notifications: <input type="checkbox" name="NSFWD" value="0"> <br>
+		<h3>Time</h3>
+		Get time from NTP server: <input type="checkbox" name="NTPON" value="0"> <br>
+		Current local time is <span class="times">unknown</span> <br>
 		<h3>Security</h3>
 		OTA locked: <input type="checkbox" name="NOOTA" value="0"> <br>
 		Passphrase: <input type="password" name="OPASS" maxlength="32"> <br>

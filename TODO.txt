@@ -1,6 +1,3 @@
-color cycle
-other vfx (fire...)
-sequence
 simple slide transition
 additional color picker field
 implement HSB slider option
@@ -14,6 +11,8 @@ use iframe for all adv. features?
 /dumpeeprom and /pusheeprom (ota lock!)
 aux trigger pin
 randomizer
+ir, touch, pin input
+Automations
 
 clock functions:
 analog clock on range (dots)

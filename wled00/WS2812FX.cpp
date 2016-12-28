@@ -1171,7 +1171,7 @@ void WS2812FX::mode_fire_flicker_soft(void) {
 
 void WS2812FX::mode_fire_flicker_int(int rev_intensity)
 {
-  byte p_r = (_color & 0x00FF0000) >> 16;
+    byte p_r = (_color & 0x00FF0000) >> 16;
     byte p_g = (_color & 0x0000FF00) >>  8;
     byte p_b = (_color & 0x000000FF) >>  0;
     byte flicker_val = max(p_r,max(p_g, p_b))/rev_intensity;
