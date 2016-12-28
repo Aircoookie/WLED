@@ -18,8 +18,7 @@ clock functions:
 analog clock on range (dots)
 5 min lines
 slider clock on range (track)
-get time from ntp
-time zones + dst
+time zones + dst (other than CE)
 adjustable chimes
 timed light activation
 alarm clock
