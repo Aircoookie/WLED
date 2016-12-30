@@ -1,3 +1,7 @@
+/*
+ * LED methods
+ */
+
 void setAllLeds() {
   double d = bri_t*bri_n;
   int val = d/100;

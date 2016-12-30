@@ -1,3 +1,7 @@
+/*
+ * Methods to handle saving and loading to non-volatile memory
+ */
+
 void clearEEPROM()
 {
   for (int i = 0; i < 1024; i++)

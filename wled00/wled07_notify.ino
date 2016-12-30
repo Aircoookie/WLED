@@ -1,3 +1,7 @@
+/*
+ * UDP notifier
+ */
+
 void notify(uint8_t callMode)
 {
   if (!udpConnected || !notifyMaster) return;
@@ -40,10 +44,16 @@ void handleNotifications()
       col[0] = udpIn[3];
       col[1] = udpIn[4];
       col[2] = udpIn[5];
-      effectCurrent = udpIn[8];
-      strip.setMode(effectCurrent);
-      effectSpeed = udpIn[9];
-      strip.setSpeed(effectSpeed);
+      if (udpIn[8] != effectCurrent)
+      {
+        effectCurrent = udpIn[8];
+        strip.setMode(effectCurrent);
+      }
+      if (udpIn[9] != effectSpeed)
+      {
+        effectSpeed = udpIn[9];
+        strip.setSpeed(effectSpeed);
+      }
       nightlightActive = udpIn[6];
       if (!udpIn[6])
       {

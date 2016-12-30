@@ -1,3 +1,7 @@
+/*
+ * Setup code
+ */
+
 void wledInit()
 {
   Serial.begin(115200);

@@ -1,3 +1,7 @@
+/*
+ * Receives client input
+ */
+
 void handleSettingsSet()
 {
   if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
@@ -224,7 +228,7 @@ boolean handleSet(String req)
         effectUpdated = true;
       }
    }
-   pos = req.indexOf("XS=");
+   pos = req.indexOf("SX=");
    if (pos > 0) {
       if (effectSpeed != req.substring(pos + 3).toInt())
       {
@@ -235,8 +239,6 @@ boolean handleSet(String req)
    }
    pos = req.indexOf("I=");
    if (pos > 0){
-      if (strip.getMode() != 47) strip.setMode(47);
-      effectCurrent = 47;
       int index = req.substring(pos + 2).toInt();
       pos = req.indexOf("I2=");
       if (pos > 0){

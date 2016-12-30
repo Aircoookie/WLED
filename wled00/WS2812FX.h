@@ -50,7 +50,7 @@
 #define BRIGHTNESS_MIN 0
 #define BRIGHTNESS_MAX 255
 
-#define MODE_COUNT 48
+#define MODE_COUNT 47
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -99,7 +99,6 @@
 #define FX_MODE_MERRY_CHRISTMAS         44
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_FIRE_FLICKER_SOFT       46
-#define FX_MODE_INDIVIDUAL_CONTROL      47
 
 class WS2812FX : public Adafruit_NeoPixel {
 
@@ -155,7 +154,6 @@ class WS2812FX : public Adafruit_NeoPixel {
       _mode[FX_MODE_MERRY_CHRISTMAS]       = &WS2812FX::mode_merry_christmas;
       _mode[FX_MODE_FIRE_FLICKER]          = &WS2812FX::mode_fire_flicker;
       _mode[FX_MODE_FIRE_FLICKER_SOFT]     = &WS2812FX::mode_fire_flicker_soft;
-      _mode[FX_MODE_INDIVIDUAL_CONTROL]    = &WS2812FX::mode_individual_control;
 
       _name[FX_MODE_STATIC]                = "Static";
       _name[FX_MODE_BLINK]                 = "Blink";
@@ -204,7 +202,6 @@ class WS2812FX : public Adafruit_NeoPixel {
       _name[FX_MODE_MERRY_CHRISTMAS]       = "Merry Christmas";
       _name[FX_MODE_FIRE_FLICKER]          = "Fire Flicker";
       _name[FX_MODE_FIRE_FLICKER_SOFT]     = "Fire Flicker (soft)";
-      _name[FX_MODE_INDIVIDUAL_CONTROL]    = "Individual Pixel Control";
 
       _mode_index = DEFAULT_MODE;
       _speed = DEFAULT_SPEED;
@@ -217,6 +214,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       _mode_color = DEFAULT_COLOR;
       _counter_mode_call = 0;
       _counter_mode_step = 0;
+      _locked = new boolean[n];
     }
 
     void
@@ -234,10 +232,19 @@ class WS2812FX : public Adafruit_NeoPixel {
       increaseBrightness(uint8_t s),
       decreaseBrightness(uint8_t s),
       setIndividual(int i),
-      setRange(int i, int i2);
+      setIndividual(int i, uint32_t col),
+      setRange(int i, int i2),
+      setRange(int i, int i2, uint32_t col),
+      lock(int i),
+      lockRange(int i, int i2),
+      lockAll(void),
+      unlock(int i),
+      unlockRange(int i, int i2),
+      unlockAll(void);
 
     boolean 
-      isRunning(void);
+      isRunning(void),
+      isLocked(int i);
 
     uint8_t
       getMode(void),
@@ -255,6 +262,7 @@ class WS2812FX : public Adafruit_NeoPixel {
 
     void
       strip_off(void),
+      strip_off_respectLock(void),
       mode_static(void),
       mode_blink(void),
       mode_color_wipe(void),
@@ -307,6 +315,9 @@ class WS2812FX : public Adafruit_NeoPixel {
 
     boolean
       _running;
+
+    boolean*
+      _locked;
 
     uint8_t
       get_random_wheel_index(uint8_t),

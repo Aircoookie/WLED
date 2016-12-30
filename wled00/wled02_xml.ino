@@ -1,3 +1,7 @@
+/*
+ * Sending XML status files to client
+ */
+
 void XML_response()
 {
    String resp;

@@ -1,3 +1,7 @@
+/*
+ * Acquires time from NTP server
+ */
+
 void handleNetworkTime()
 {
   if (ntpEnabled && ntpConnected)
@@ -53,6 +57,7 @@ bool getNtpTime()
 
 void sendNTPpacket()
 {
+    while (ntpUdp.parsePacket()>0);
     Serial.println("Sending NTP packet");
     memset(ntpBuffer, 0, 48);
     ntpBuffer[0] = 0b11100011;   // LI, Version, Mode
@@ -70,7 +75,7 @@ void sendNTPpacket()
 
 String getTimeString()
 {
-  local = CE.toLocal(now(), &tcr);
+  local = TZ.toLocal(now(), &tcr);
   String ret = monthStr(month(local));
   ret = ret + " ";
   ret = ret + day(local);

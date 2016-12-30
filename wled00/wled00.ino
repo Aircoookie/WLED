@@ -1,3 +1,7 @@
+/*
+ * Main sketch
+ */
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -18,12 +22,12 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-uint8_t led_amount = 9;
+uint8_t led_amount = 84;
 uint8_t buttonPin = 0; //needs pull-up
 
 TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};     //Central European Summer Time
 TimeChangeRule CET = {"CET ", Last, Sun, Oct, 3, 60};       //Central European Standard Time
-Timezone CE(CEST, CET);
+Timezone TZ(CEST, CET);
 TimeChangeRule *tcr;        //pointer to the time change rule, use to get the TZ abbrev
 time_t local;
 
@@ -62,6 +66,10 @@ boolean ntpEnabled = true;
 const char* ntpServerName = "time.nist.gov";
 long ntpRetryMs = 20000;
 long ntpResyncMs = 72000000;
+int overlayMin = 0, overlayMax = 79;
+int analogClock12pixel = 25;
+boolean analogClockSecondsTrail = false;
+boolean analogClock5MinuteMarks = true;
 
 double transitionResolution = 0.011;
 
@@ -94,6 +102,9 @@ boolean ntpConnected = false;
 boolean ntpSyncNeeded = true;
 boolean ntpPacketSent = false;
 long ntpPacketSentTime, ntpSyncTime;
+uint8_t overlayCurrent = 2;
+long overlayRefreshMs = 200;
+long overlayRefreshedTime;
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
@@ -137,6 +148,7 @@ void loop() {
     handleNightlight();
     handleButton();
     handleNetworkTime();
+    handleOverlays();
     strip.service();
 }
 
