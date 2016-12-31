@@ -99,6 +99,7 @@
 #define FX_MODE_MERRY_CHRISTMAS         44
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_FIRE_FLICKER_SOFT       46
+#define FX_MODE_FADE_DOWN               47
 
 class WS2812FX : public Adafruit_NeoPixel {
 
@@ -215,6 +216,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       _counter_mode_call = 0;
       _counter_mode_step = 0;
       _locked = new boolean[n];
+      _fade_amt = 0;
     }
 
     void
@@ -240,7 +242,8 @@ class WS2812FX : public Adafruit_NeoPixel {
       lockAll(void),
       unlock(int i),
       unlockRange(int i, int i2),
-      unlockAll(void);
+      unlockAll(void),
+      setFade(int sp);
 
     boolean 
       isRunning(void),
@@ -261,6 +264,7 @@ class WS2812FX : public Adafruit_NeoPixel {
   private:
 
     void
+      dofade(void),
       strip_off(void),
       strip_off_respectLock(void),
       mode_static(void),
@@ -310,8 +314,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       mode_merry_christmas(void),
       mode_fire_flicker(void),
       mode_fire_flicker_soft(void),
-      mode_fire_flicker_int(int),
-      mode_individual_control(void);
+      mode_fire_flicker_int(int);
 
     boolean
       _running;
@@ -334,7 +337,8 @@ class WS2812FX : public Adafruit_NeoPixel {
       _counter_mode_call,
       _counter_mode_step,
       _mode_color,
-      _mode_delay;
+      _mode_delay,
+      _fade_amt;
 
     unsigned long
       _mode_last_call_time;

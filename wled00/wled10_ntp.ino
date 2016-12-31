@@ -27,6 +27,11 @@ void handleNetworkTime()
       } else
       {
         WiFi.hostByName(ntpServerName, ntpIp);
+        if (ntpIp[0] == 0)
+        {
+          Serial.println("DNS f!");
+          ntpIp = ntpBackupIp;
+        }
         sendNTPpacket();
         ntpPacketSent = true;
         ntpPacketSentTime = millis();
