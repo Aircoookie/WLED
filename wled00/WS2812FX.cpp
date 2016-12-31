@@ -50,7 +50,6 @@ void WS2812FX::service() {
     if(now - _mode_last_call_time > _mode_delay) {
       CALL_MODE(_mode_index);
       _counter_mode_call++;
-      dofade();
       _mode_last_call_time = now;
     }
   }
@@ -1303,11 +1302,9 @@ void WS2812FX::mode_fire_flicker_int(int rev_intensity)
     _mode_delay = 10 + ((500 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
 }
 
-void WS2812FX::dofade(void)
+void WS2812FX::mode_fade_down(void)
 {
-  if (_fade_amt > 0)
-  {
-    for(uint16_t i=0; i < _led_count; i++) {
+   for(uint16_t i=0; i < _led_count; i++) {
       uint32_t px_rgb = Adafruit_NeoPixel::getPixelColor(i);
   
       byte px_r = (px_rgb & 0x00FF0000) >> 16;
@@ -1315,19 +1312,15 @@ void WS2812FX::dofade(void)
       byte px_b = (px_rgb & 0x000000FF) >>  0;
   
       // fade out (divide by 2)
-      px_r = (double)px_r *((double)_fade_amt/256);
-      px_g = (double)px_g *((double)_fade_amt/256);
-      px_b = (double)px_b *((double)_fade_amt/256);
+      px_r = px_r >> 1;
+      px_g = px_g >> 1;
+      px_b = px_b >> 1;
       if (!_locked[i])
       Adafruit_NeoPixel::setPixelColor(i, px_r, px_g, px_b);
     } 
     Adafruit_NeoPixel::show();
-  }
-}
 
-void WS2812FX::setFade(int sp)
-{
-  _fade_amt = sp;
+    _mode_delay = 100 + ((100 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
 }
 
 void WS2812FX::setIndividual(int i)

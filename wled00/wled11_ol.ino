@@ -1,3 +1,105 @@
+void nixieDisplay(int num[], int dur[], int pausedur[], int cnt)
+{
+  strip.setRange(overlayMin, overlayMax, 0);
+  if (num[nixieClockI] >= 0 && !nixiePause)
+  {
+    strip.setIndividual(num[nixieClockI], ((uint32_t)col_t[0] << 16) | ((uint32_t)col_t[1] << 8) | col_t[2]);
+    strip.unlock(num[nixieClockI]);
+  }
+  if (!nixiePause)
+  {
+    overlayRefreshMs = dur[nixieClockI];
+  } else
+  {
+    overlayRefreshMs = pausedur[nixieClockI];
+  }
+  if (pausedur[nixieClockI] > 0 && !nixiePause)
+  {
+    nixiePause = true;
+  } else {
+    if (nixieClockI < cnt -1)
+    {
+      nixieClockI++;
+    } else
+    {
+      nixieClockI = -1;
+    }
+    nixiePause = false;
+  }
+}
+
+void nixieNumber(int number, int dur) 
+{
+  if (nixieClockI < 0)
+  {
+    Serial.print(number);
+    int digitCnt = -1;
+    int digits[4];
+    digits[3] = number/1000;
+    digits[2] = (number/100)%10;
+    digits[1] = (number/10)%10;
+    digits[0] = number%10;
+    if (number > 999) //four digits
+    {
+      digitCnt = 4;
+    } else if (number > 99) //three digits
+    {
+      digitCnt = 3;
+    } else if (number > 9) //two digits
+    {
+      digitCnt = 2;
+    } else { //single digit
+      digitCnt = 1;
+    }
+    Serial.print(" ");
+    for (int i = 0; i < digitCnt; i++)
+    {
+      Serial.print(digits[i]);
+      overlayArr[digitCnt-1-i] = digits[i];
+      overlayDur[digitCnt-1-i] = ((dur/4)*3)/digitCnt;
+      overlayPauseDur[digitCnt-1-i] = 0;
+    }
+    Serial.println(" ");
+    for (int i = 1; i < digitCnt; i++)
+    {
+      if (overlayArr[i] == overlayArr[i-1])
+      {
+        overlayPauseDur[i-1] = dur/12;
+        overlayDur[i-1] = overlayDur[i-1]-dur/12;
+      }
+    }
+    for (int i = digitCnt; i < 6; i++)
+    {
+      overlayArr[i] = -1;
+      overlayDur[i] = 0;
+      overlayPauseDur[i] = 0;
+    }
+    overlayPauseDur[5] = dur/4;
+    for (int i = 0; i < 6; i++)
+    {
+      if (overlayArr[i] != -1)
+      {
+        overlayArr[i] = overlayArr[i] + overlayMin;
+        if (overlayReverse)
+          overlayArr[i] = overlayMax - overlayArr[i];
+      }
+    }
+    for (int i = 0; i <6; i++)
+    {
+      Serial.print(overlayArr[i]);
+      Serial.print(" ");
+      Serial.print(overlayDur[i]);
+      Serial.print(" ");
+      Serial.print(overlayPauseDur[i]);
+      Serial.print(" ");
+    }
+    Serial.println(" ");
+    nixieClockI = 0;
+  } else {
+    nixieDisplay(overlayArr, overlayDur, overlayPauseDur, 6);
+  }
+}
+
 void handleOverlays()
 {
   //properties: range, (color)
@@ -49,10 +151,8 @@ void handleOverlays()
         overlayRefreshMs = 998; break;
       }
       case 3: {
-        switch (nixieClockI)
+        if (nixieClockI < 0)
         {
-          case 0: 
-            strip.setFade(99);
             local = TZ.toLocal(now(), &tcr);
             overlayArr[0] = hour(local);
             if (nixieClock12HourFormat && overlayArr[0] > 12)
@@ -84,119 +184,89 @@ void handleOverlays()
                 if (overlayReverse)
                   overlayArr[i] = overlayMax - overlayArr[i];
               }
-              Serial.print(overlayArr[i]);
-              Serial.print(" ");
             }
-            Serial.println(" ");
-            if (overlayBackgroundBlack) {
-              strip.setRange(overlayMin, overlayMax, 0);
-              strip.setIndividual(overlayArr[0], ((uint32_t)col_t[0] << 16) | ((uint32_t)col_t[1] << 8) | col_t[2]);
-              strip.unlock(overlayArr[0]);
+            overlayDur[0] = 12 + 12*(255 - overlaySpeed);
+            if (overlayArr[1] == overlayArr[0])
+            {
+              overlayPauseDur[0] = 3 + 3*(255 - overlaySpeed);
             } else
             {
-              strip.unlockAll();
-              strip.setIndividual(overlayArr[0], overlayColor);
-            }
-            overlayRefreshMs = 10 + 10*(255 - overlaySpeed);
-            nixieClockI++;
-            break;
-          case 1:
-            if (overlayBackgroundBlack) {
-              if (overlayArr[1] != -1)
-              {
-                strip.setRange(overlayMin, overlayMax, 0);
-                strip.setIndividual(overlayArr[1], ((uint32_t)col_t[0] << 16) | ((uint32_t)col_t[1] << 8) | col_t[2]);
-                strip.unlock(overlayArr[1]);
-              }
-            } else
-            { 
-              if (overlayArr[1] != -1)
-              {
-                strip.unlockAll();
-                strip.setIndividual(overlayArr[1], overlayColor);
-              }
+              overlayPauseDur[0] = 0;
             }
             if (overlayArr[1] == -1)
             {
-              overlayRefreshMs = 10 + 10*(255 - overlaySpeed);
+              overlayDur[1] = 0;
             } else
             {
-              overlayRefreshMs = 20 + 20*(255 - overlaySpeed);
+              overlayDur[1] = 12 + 12*(255 - overlaySpeed);
             }
-            nixieClockI++;
-            break;
-          case 2:
-            if (overlayBackgroundBlack) {
-                strip.setRange(overlayMin, overlayMax, 0);
-                strip.setIndividual(overlayArr[2], ((uint32_t)col_t[0] << 16) | ((uint32_t)col_t[1] << 8) | col_t[2]);
-                strip.unlock(overlayArr[2]);
+            overlayPauseDur[1] = 9 + 9*(255 - overlaySpeed);
+
+            overlayDur[2] = 12 + 12*(255 - overlaySpeed);
+            if (overlayArr[2] == overlayArr[3])
+            {
+              overlayPauseDur[2] = 3 + 3*(255 - overlaySpeed);
             } else
-            { 
-                strip.unlockAll();
-                strip.setIndividual(overlayArr[2], overlayColor);
+            {
+              overlayPauseDur[2] = 0;
             }
-            overlayRefreshMs = 10 + 10*(255 - overlaySpeed);
-            nixieClockI++;
-            break;
-          case 3:
-            if (overlayBackgroundBlack) {
-                strip.setRange(overlayMin, overlayMax, 0);
-                strip.setIndividual(overlayArr[3], ((uint32_t)col_t[0] << 16) | ((uint32_t)col_t[1] << 8) | col_t[2]);
-                strip.unlock(overlayArr[3]);
-            } else
-            { 
-                strip.unlockAll();
-                strip.setIndividual(overlayArr[3], overlayColor);
-            }
-            overlayRefreshMs = 20 + 20*(255 - overlaySpeed);
-            nixieClockI++;
-            break;
-          case 4:
-            if (overlayBackgroundBlack) {
-              if (overlayArr[4] != -1)
-              {
-                strip.setRange(overlayMin, overlayMax, 0);
-                strip.setIndividual(overlayArr[4], ((uint32_t)col_t[0] << 16) | ((uint32_t)col_t[1] << 8) | col_t[2]);
-                strip.unlock(overlayArr[4]);
-              }
-            } else
-            { 
-              if (overlayArr[4] != -1)
-              {
-                strip.unlockAll();
-                strip.setIndividual(overlayArr[4], overlayColor);
-              }
-            }
+            overlayDur[3] = 12 + 12*(255 - overlaySpeed);
+            overlayPauseDur[3] = 9 + 9*(255 - overlaySpeed);
+            
             if (overlayArr[4] == -1)
             {
-              overlayRefreshMs = 0;
+              overlayDur[4] = 0;
+              overlayPauseDur[4] = 0;
+              overlayDur[5] = 0;
             } else
             {
-              overlayRefreshMs = 10 + 10*(255 - overlaySpeed);
-            }
-            nixieClockI++;
-            break;
-          case 5:
-            if (overlayBackgroundBlack) {
-              if (overlayArr[5] != -1)
+              overlayDur[4] = 12 + 12*(255 - overlaySpeed);
+              if (overlayArr[5] == overlayArr[4])
               {
-                strip.setRange(overlayMin, overlayMax, 0);
-                strip.setIndividual(overlayArr[5], ((uint32_t)col_t[0] << 16) | ((uint32_t)col_t[1] << 8) | col_t[2]);
-                strip.unlock(overlayArr[5]);
-              }
-            } else
-            { 
-              if (overlayArr[5] != -1)
+                overlayPauseDur[4] = 3 + 3*(255 - overlaySpeed);
+              } else
               {
-                strip.unlockAll();
-                strip.setIndividual(overlayArr[5], overlayColor);
+                overlayPauseDur[4] = 0;
               }
+              overlayDur[5] = 12 + 12*(255 - overlaySpeed);
             }
-            overlayRefreshMs = 30 + 30*(255 - overlaySpeed);
-            nixieClockI = 0;
-            break;
-          }
+            overlayPauseDur[5] = 22 + 22*(255 - overlaySpeed);
+            
+            nixieClockI = 0;   
+        } else
+        {
+          nixieDisplay(overlayArr, overlayDur, overlayPauseDur, 6);
         }
+      }
+    case 5: {//countdown
+        if (now() >= countdownTime)
+        {
+          if (effectCurrent != 8){
+            effectCurrent = 8;
+            strip.setMode(8);
+            strip.setSpeed(255);
+          }
+          
+          nixieNumber(2017, 2017);
+        } else
+        {
+          long diff = countdownTime - now();
+          if (diff > 86313600L) //display in years if more than 999 days
+          {
+            diff = diff/31557600L;
+          } else if (diff > 3596400) //display in days if more than 999 hours
+          {
+            diff = diff/86400;
+          } else if (diff > 59940) //display in hours if more than 999 minutes
+          {
+            diff = diff/1440;
+          } else if (diff > 999) //display in minutes if more than 999 seconds
+          {
+            diff = diff/60;
+          }
+          nixieNumber(diff, 800);
+        }
+      }
     }
   }
 }

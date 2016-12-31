@@ -22,7 +22,7 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-uint8_t led_amount = 9;
+uint8_t led_amount = 10;
 uint8_t buttonPin = 0; //needs pull-up
 
 TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};     //Central European Summer Time
@@ -64,19 +64,16 @@ uint8_t effectDefault = 0;
 uint8_t effectSpeedDefault = 75;
 boolean ntpEnabled = true;
 const char* ntpServerName = "time.nist.gov";
-long ntpRetryMs = 20000;
+long ntpRetryMs = 12000;
 long ntpResyncMs = 72000000;
 int overlayMin = 0, overlayMax = 9;
 int analogClock12pixel = 25;
 boolean analogClockSecondsTrail = false;
 boolean analogClock5MinuteMarks = true;
-boolean overlayBackgroundBlack = true;
 boolean nixieClockDisplaySeconds = true;
 boolean nixieClock12HourFormat = false;
 boolean overlayReverse = true;
 uint8_t overlaySpeed = 200;
-
-uint32_t overlayColor = 0x0000FF00;
 
 double transitionResolution = 0.011;
 
@@ -110,11 +107,15 @@ boolean ntpConnected = false;
 boolean ntpSyncNeeded = true;
 boolean ntpPacketSent = false;
 long ntpPacketSentTime, ntpSyncTime;
-uint8_t overlayCurrent = 0;
+uint8_t overlayCurrent = 5;
 long overlayRefreshMs = 200;
 long overlayRefreshedTime;
 int overlayArr[6];
-int nixieClockI = 0;
+int overlayDur[6];
+int overlayPauseDur[6];
+int nixieClockI = -1;
+boolean nixiePause;
+long countdownTime = 1483225200L;
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;

@@ -237,6 +237,11 @@ boolean handleSet(String req)
         effectUpdated = true;
       }
    }
+   pos = req.indexOf("OL=");
+   if (pos > 0) {
+        overlayCurrent = req.substring(pos + 3).toInt();
+        strip.unlockAll();
+   }
    pos = req.indexOf("I=");
    if (pos > 0){
       int index = req.substring(pos + 2).toInt();
