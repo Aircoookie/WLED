@@ -12,15 +12,17 @@ void wledInit()
     while (dir.next()) {    
       String fileName = dir.fileName();
       size_t fileSize = dir.fileSize();
+      #ifdef DEBUG
       Serial.printf("FS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
+      #endif
     }
-    Serial.printf("\n");
+    DEBUG_PRINTF("\n");
   }
-  Serial.println("Init EEPROM");
+  DEBUG_PRINTLN("Init EEPROM");
   EEPROM.begin(1024);
   loadSettingsFromEEPROM();
-  Serial.print("CC: SSID: ");
-  Serial.print(clientssid);
+  DEBUG_PRINT("CC: SSID: ");
+  DEBUG_PRINT(clientssid);
 
   WiFi.disconnect(); //close old connections
 
@@ -34,27 +36,27 @@ void wledInit()
 
   if (apssid.length()>0)
   {
-    Serial.print("USING AP");
-    Serial.println(apssid.length());
+    DEBUG_PRINT("USING AP");
+    DEBUG_PRINTLN(apssid.length());
     initAP();
   } else
   {
-    Serial.println("NO AP");
+    DEBUG_PRINTLN("NO AP");
     WiFi.softAPdisconnect(true);
   }
 
   initCon();
 
-  Serial.println("");
-  Serial.print("Connected! IP address: ");
-  Serial.println(WiFi.localIP());
+  DEBUG_PRINTLN("");
+  DEBUG_PRINT("Connected! IP address: ");
+  DEBUG_PRINTLN(WiFi.localIP());
   
   // Set up mDNS responder:
   if (cmdns != NULL && !only_ap && !MDNS.begin(cmdns.c_str())) {
-    Serial.println("Error setting up MDNS responder!");
+    DEBUG_PRINTLN("Error setting up MDNS responder!");
     down();
   }
-  Serial.println("mDNS responder started");
+  DEBUG_PRINTLN("mDNS responder started");
 
   if (udpPort > 0 && udpPort != 123)
   {
@@ -128,7 +130,7 @@ void wledInit()
   });
 
   server.begin();
-  Serial.println("HTTP server started");
+  DEBUG_PRINTLN("HTTP server started");
   // Add service to MDNS
   MDNS.addService("http", "tcp", 80);
   // Initialize NeoPixel Strip
@@ -153,12 +155,12 @@ void initCon()
   WiFi.begin(clientssid.c_str(), clientpass.c_str());
   while(WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.println("C_NC");
+    DEBUG_PRINTLN("C_NC");
     fail_count++;
     if (fail_count > 32)
     {
       WiFi.disconnect();
-      Serial.println("Can't connect to network. Opening AP...");
+      DEBUG_PRINTLN("Can't connect to network. Opening AP...");
       String save = apssid;
       only_ap = true;
       if (apssid.length() <1) apssid = "WLED-AP";

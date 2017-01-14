@@ -32,7 +32,7 @@ void nixieNumber(int number, int dur)
 {
   if (nixieClockI < 0)
   {
-    Serial.print(number);
+    DEBUG_PRINT(number);
     int digitCnt = -1;
     int digits[4];
     digits[3] = number/1000;
@@ -51,15 +51,15 @@ void nixieNumber(int number, int dur)
     } else { //single digit
       digitCnt = 1;
     }
-    Serial.print(" ");
+    DEBUG_PRINT(" ");
     for (int i = 0; i < digitCnt; i++)
     {
-      Serial.print(digits[i]);
+      DEBUG_PRINT(digits[i]);
       overlayArr[digitCnt-1-i] = digits[i];
       overlayDur[digitCnt-1-i] = ((dur/4)*3)/digitCnt;
       overlayPauseDur[digitCnt-1-i] = 0;
     }
-    Serial.println(" ");
+    DEBUG_PRINTLN(" ");
     for (int i = 1; i < digitCnt; i++)
     {
       if (overlayArr[i] == overlayArr[i-1])
@@ -86,14 +86,14 @@ void nixieNumber(int number, int dur)
     }
     for (int i = 0; i <6; i++)
     {
-      Serial.print(overlayArr[i]);
-      Serial.print(" ");
-      Serial.print(overlayDur[i]);
-      Serial.print(" ");
-      Serial.print(overlayPauseDur[i]);
-      Serial.print(" ");
+      DEBUG_PRINT(overlayArr[i]);
+      DEBUG_PRINT(" ");
+      DEBUG_PRINT(overlayDur[i]);
+      DEBUG_PRINT(" ");
+      DEBUG_PRINT(overlayPauseDur[i]);
+      DEBUG_PRINT(" ");
     }
-    Serial.println(" ");
+    DEBUG_PRINTLN(" ");
     nixieClockI = 0;
   } else {
     nixieDisplay(overlayArr, overlayDur, overlayPauseDur, 6);
@@ -237,7 +237,7 @@ void handleOverlays()
         {
           nixieDisplay(overlayArr, overlayDur, overlayPauseDur, 6);
         }
-      }
+      } break;
     case 5: {//countdown
         if (now() >= countdownTime)
         {

@@ -48,7 +48,7 @@ void XML_response()
 
 void XML_response_settings()
 {
-  Serial.println("XML settings response");
+  DEBUG_PRINTLN("XML settings response");
   String resp;
   resp = resp + "<?xml version = \"1.0\" ?>";
   resp = resp + "<vs>";
@@ -148,11 +148,11 @@ void XML_response_settings()
   resp = resp + "<ntpon>";
   resp = resp + bool2int(ntpEnabled);
   resp = resp + "</ntpon>";
-  Serial.println("pretime");
+  DEBUG_PRINTLN("pretime");
   resp = resp + "<times>";
   resp = resp + getTimeString();
   resp = resp + "</times>";
-  Serial.println("posttime");
+  DEBUG_PRINTLN("posttime");
   resp = resp + "<noota>";
   resp = resp + bool2int(ota_lock);
   resp = resp +"</noota>";
@@ -188,6 +188,6 @@ void XML_response_settings()
   resp = resp + "</sip>";
   resp = resp + "<msg>WLED 0.3pd OK</msg>";
   resp = resp + "</vs>";
-  Serial.println(resp);
+  DEBUG_PRINTLN(resp);
   server.send(200, "text/xml", resp);
 }

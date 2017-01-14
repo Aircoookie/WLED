@@ -9,7 +9,7 @@ void handleSettingsSet()
   {
     if (!server.arg("CPASS").indexOf('*') == 0)
     {
-      Serial.println("Setting pass");
+      DEBUG_PRINTLN("Setting pass");
       clientpass = server.arg("CPASS");
     }
   }

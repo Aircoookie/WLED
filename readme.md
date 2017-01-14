@@ -16,3 +16,67 @@ Additions for V0.3 (nearly complete!)
 - Support for power pushbutton
 - Full OTA software update capability
 - Password protected OTA page for added security (OTA lock)
+
+Compile settings:
+Board: WeMos D1 mini
+CPU frequency: 80 MHz
+Flash size : 4MB (1MB settings)
+Upload speed: 115200
+
+
+Quick start guide:
+
+1. Make sure your ESP module has a min. 4MB SPI flash module. (currently working on supporting 1MB modules)
+Connect a  WS2812B RGB led strip to GPIO2. Optionally connect a NO-pushbutton to GPIO0 (internal pull-up) and ground.
+
+2. Follow a guide to setup your Arduino client (I am using version 1.6.9) with the ESP8266 libraries.
+For current compiles I use an old version from 15th August 2016.
+
+3. You will also need the ESP8266 SPIFFS sketch data uploader. (currently working on making this step unnecessary)
+
+4. In file "wled00.ino", change the LED count to the amount you connected. Proceed to flash the sketch and the SPIFFS data.
+You should also change the access point and OTA update passphrases for added security (you can change them later, this is just the "factory default").
+
+5. Connect to automatically started WiFi access point "WLED-AP" using default passwort "wled1234". Go to the IP "192.168.4.1".
+
+6. Click on the wrench icon to edit settings like connecting the module to your home WiFi.
+
+7. Have fun with the software!
+
+
+Advanced module control via HTTP requests:
+
+Base URL scheme: "<moduleip>/ajax_in". This will return a XML file with some current values.
+Add one or multiple of the following parameters after the base url to change values:
+"&A=<0-255>" set LED brightness (yellow slider)
+"&R=<0-255>" set LED red value (red slider)
+"&G=<0-255>" set LED green value (green slider)
+"&B=<0-255>" set LED blue value (blue slider)
+"&FX=<0-47>" set LED effect (refer to WS2812FX library)
+"&SX=<0-255>" set LED effect speed (refer to WS2812FX library)
+"&NR=<0 or 1>" receive notifications on or off
+"&NS=<0 or 1>" send (direct) notifications on or off
+"&NL=<0 or 1>" turns nightlight function on or off
+("&OL=<0, 1, 3 or 5>" experimental clock overlays)
+("&I=<0-255>" experimental individual LED control)
+("&I=<0-255>&I2=<0-255>" experimental individual LED range control)
+
+
+Software update procedure:
+
+Method 1: Reflash the new update source via USB.
+
+Method 2: The software has an integrated OTA software update capability.
+First you have to enable it by typing in the correct OTA passphrase (default: "wledota") in the settings menu.
+Remove the tick in the checkbox "OTA locked". Then save settings and reboot the ESP.
+Now you can go to "<moduleip>/update" to update binary firmware.
+To edit flash content (images and HTML), go to "<moduleip>/edit".
+After you are done, it is recommended to lock the OTA function again.
+To do so, tick the checkbox again (you can change the passphrase by typing in a new one now). Reboot.
+If you try to access the update page now, you should see the message "OTA lock active".
+
+
+
+
+
+

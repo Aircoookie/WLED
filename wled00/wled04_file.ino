@@ -32,7 +32,7 @@ String getContentType(String filename){
 }
 
 bool handleFileRead(String path){
-  Serial.println("handleFileRead: " + path);
+  DEBUG_PRINTLN("handleFileRead: " + path);
   if(path.endsWith("/")) path += "index.htm";
   String contentType = getContentType(path);
   String pathWithGz = path + ".gz";
@@ -53,24 +53,24 @@ void handleFileUpload(){
   if(upload.status == UPLOAD_FILE_START){
     String filename = upload.filename;
     if(!filename.startsWith("/")) filename = "/"+filename;
-    Serial.print("handleFileUpload Name: "); Serial.println(filename);
+    DEBUG_PRINT("handleFileUpload Name: "); DEBUG_PRINTLN(filename);
     fsUploadFile = SPIFFS.open(filename, "w");
     filename = String();
   } else if(upload.status == UPLOAD_FILE_WRITE){
-    //Serial.print("handleFileUpload Data: "); Serial.println(upload.currentSize);
+    //DEBUG_PRINT("handleFileUpload Data: "); DEBUG_PRINTLN(upload.currentSize);
     if(fsUploadFile)
       fsUploadFile.write(upload.buf, upload.currentSize);
   } else if(upload.status == UPLOAD_FILE_END){
     if(fsUploadFile)
       fsUploadFile.close();
-    Serial.print("handleFileUpload Size: "); Serial.println(upload.totalSize);
+    DEBUG_PRINT("handleFileUpload Size: "); DEBUG_PRINTLN(upload.totalSize);
   }
 }
 
 void handleFileDelete(){
   if(server.args() == 0) return server.send(500, "text/plain", "BAD ARGS");
   String path = server.arg(0);
-  Serial.println("handleFileDelete: " + path);
+  DEBUG_PRINTLN("handleFileDelete: " + path);
   if(path == "/")
     return server.send(500, "text/plain", "BAD PATH");
   if(!SPIFFS.exists(path))
@@ -84,7 +84,7 @@ void handleFileList() {
   if(!server.hasArg("dir")) {server.send(500, "text/plain", "BAD ARGS"); return;}
   
   String path = server.arg("dir");
-  Serial.println("handleFileList: " + path);
+  DEBUG_PRINTLN("handleFileList: " + path);
   Dir dir = SPIFFS.openDir(path);
   path = String();
 
@@ -109,7 +109,7 @@ void handleFileCreate(){
   if(server.args() == 0)
     return server.send(500, "text/plain", "BAD ARGS");
   String path = server.arg(0);
-  Serial.println("handleFileCreate: " + path);
+  DEBUG_PRINTLN("handleFileCreate: " + path);
   if(path == "/")
     return server.send(500, "text/plain", "BAD PATH");
   if(SPIFFS.exists(path))

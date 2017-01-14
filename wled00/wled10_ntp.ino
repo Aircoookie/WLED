@@ -15,8 +15,8 @@ void handleNetworkTime()
           ntpSyncNeeded = false;
           ntpPacketSent = false;
           ntpSyncTime = millis();
-          Serial.print("Time: ");
-          Serial.println(now());
+          DEBUG_PRINT("Time: ");
+          DEBUG_PRINTLN(now());
         } else
         {
           if (millis() - ntpPacketSentTime > ntpRetryMs)
@@ -29,7 +29,7 @@ void handleNetworkTime()
         WiFi.hostByName(ntpServerName, ntpIp);
         if (ntpIp[0] == 0)
         {
-          Serial.println("DNS f!");
+          DEBUG_PRINTLN("DNS f!");
           ntpIp = ntpBackupIp;
         }
         sendNTPpacket();
@@ -45,9 +45,25 @@ void handleNetworkTime()
 
 bool getNtpTime()
 {
-    int size = ntpUdp.parsePacket();
-    if (size >= 48) {
+    if (ntpUdp.parsePacket()) {
         ntpUdp.read(ntpBuffer, 48);  // read packet into the buffer
+        
+        #ifdef DEBUG
+        int i= 0;
+        while (i < 48)
+        {
+          Serial.print(ntpBuffer[i], HEX);
+          Serial.print(".");
+          i++;
+          if ((i % 4) ==0) Serial.println();
+        }
+        #endif
+        if (ntpBuffer[40] == 0 && ntpBuffer[41] == 0 && ntpBuffer[42] == 0 && ntpBuffer[43] == 0)
+        {
+          DEBUG_PRINTLN("Bad NTP response!");
+          return false;
+        }
+        
         unsigned long secsSince1900;
         // convert four bytes starting at location 40 to a long integer
         secsSince1900 = (unsigned long)ntpBuffer[40] << 24;
@@ -63,7 +79,8 @@ bool getNtpTime()
 void sendNTPpacket()
 {
     while (ntpUdp.parsePacket()>0);
-    Serial.println("Sending NTP packet");
+    ntpUdp.flush(); //discard old packets
+    DEBUG_PRINTLN("Sending NTP packet");
     memset(ntpBuffer, 0, 48);
     ntpBuffer[0] = 0b11100011;   // LI, Version, Mode
     ntpBuffer[1] = 0;     // Stratum, or type of clock
