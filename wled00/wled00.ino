@@ -17,7 +17,7 @@
 #include <Timezone.h>
 
 //to toggle usb serial debug (un)comment following line
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
@@ -35,7 +35,7 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-uint8_t led_amount = 84;
+#define LEDCOUNT 84
 uint8_t buttonPin = 0; //needs pull-up
 
 //AP and OTA default passwords (change them!)
@@ -114,7 +114,7 @@ int nightlightDelayMs;
 uint8_t effectCurrent = 0;
 uint8_t effectSpeed = 75;
 boolean udpConnected = false;
-byte udpIn[16];
+byte udpIn[LEDCOUNT*4+2];
 IPAddress ntpIp;
 IPAddress ntpBackupIp(134,130,5,17);
 byte ntpBuffer[48];
@@ -131,13 +131,15 @@ int overlayPauseDur[6];
 int nixieClockI = -1;
 boolean nixiePause;
 long countdownTime = 1483225200L;
+boolean arlsTimeout = false;
+long arlsTimeoutTime;
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp;
 WiFiUDP ntpUdp;
 
-WS2812FX strip = WS2812FX(led_amount, 2, NEO_GRB + NEO_KHZ800);
+WS2812FX strip = WS2812FX(LEDCOUNT, 2, NEO_GRB + NEO_KHZ800);
 
 File fsUploadFile;
 

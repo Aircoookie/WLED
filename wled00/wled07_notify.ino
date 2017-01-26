@@ -15,7 +15,7 @@ void notify(uint8_t callMode)
     default: return;
   }
   byte udpOut[16];
-  udpOut[0] = 0; //reserved
+  udpOut[0] = 0; //0: wled notifier protocol 1: WARLS protocol
   udpOut[1] = callMode;
   udpOut[2] = bri;
   udpOut[3] = col[0];
@@ -40,26 +40,50 @@ void handleNotifications()
     int packetSize = notifierUdp.parsePacket();
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP())
     {
-      notifierUdp.read(udpIn, 16);
-      col[0] = udpIn[3];
-      col[1] = udpIn[4];
-      col[2] = udpIn[5];
-      if (udpIn[8] != effectCurrent)
+      notifierUdp.read(udpIn, packetSize);
+      if (udpIn[0] == 0) //wled notifier
       {
-        effectCurrent = udpIn[8];
-        strip.setMode(effectCurrent);
-      }
-      if (udpIn[9] != effectSpeed)
+        col[0] = udpIn[3];
+        col[1] = udpIn[4];
+        col[2] = udpIn[5];
+        if (udpIn[8] != effectCurrent)
+        {
+          effectCurrent = udpIn[8];
+          strip.setMode(effectCurrent);
+        }
+        if (udpIn[9] != effectSpeed)
+        {
+          effectSpeed = udpIn[9];
+          strip.setSpeed(effectSpeed);
+        }
+        nightlightActive = udpIn[6];
+        if (!udpIn[6])
+        {
+          bri = udpIn[2];
+          colorUpdated(3);
+        }
+      }  else if (udpIn[0] == 1) //warls
       {
-        effectSpeed = udpIn[9];
-        strip.setSpeed(effectSpeed);
+        if (packetSize > 1) {
+          if (udpIn[1] == 0)
+          {
+            arlsTimeout = false;
+          } else {
+            arlsTimeout = true;
+            arlsTimeoutTime = millis() + 1000*udpIn[1];
+          }
+          for (int i = 2; i < packetSize -3; i += 4)
+          {
+            if (udpIn[i] < LEDCOUNT)
+            strip.setIndividual(udpIn[i], ((uint32_t)udpIn[i+1] << 16) | ((uint32_t)udpIn[i+2] << 8) | udpIn[i+3]);
+          }
+        }
       }
-      nightlightActive = udpIn[6];
-      if (!udpIn[6])
-      {
-        bri = udpIn[2];
-        colorUpdated(3);
-      }
+    }
+    if (arlsTimeout && millis() > arlsTimeoutTime)
+    {
+      strip.unlockAll();
+      arlsTimeout = false;
     }
   }
 }

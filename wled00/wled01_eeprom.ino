@@ -43,7 +43,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(226, notifyDirect);
   EEPROM.write(227, apchannel);
   EEPROM.write(228, aphide);
-  EEPROM.write(229, led_amount);
+  EEPROM.write(229, LEDCOUNT);
   EEPROM.write(230, notifyButton);
   EEPROM.write(231, notifyNightlight);
   EEPROM.write(232, buttonEnabled);
@@ -135,7 +135,7 @@ void loadSettingsFromEEPROM()
   if (apchannel > 13 || apchannel < 1) apchannel = 1;
   aphide = EEPROM.read(228);
   if (aphide > 1) aphide = 1;
-  led_amount = EEPROM.read(229);
+  //LEDCOUNT = EEPROM.read(229);
   notifyButton = EEPROM.read(230);
   notifyNightlight = EEPROM.read(231);
   buttonEnabled = EEPROM.read(232);
