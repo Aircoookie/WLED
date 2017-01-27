@@ -281,6 +281,12 @@ boolean handleSet(String req)
         nightlightStartTime = millis();
       }
    }
+   pos = req.indexOf("AX=");
+   if (pos > 0) {
+        auxTime = req.substring(pos + 3).toInt();
+        auxActive = true;
+        if (auxTime == 0) auxActive = false;
+   }
    XML_response();
    if (effectUpdated)
    {

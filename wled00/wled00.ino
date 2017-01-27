@@ -37,6 +37,9 @@
 //Hardware-settings (only changeble via code)
 #define LEDCOUNT 84
 uint8_t buttonPin = 0; //needs pull-up
+uint8_t auxPin = 16; //use e.g. for external relay
+uint8_t auxDefaultState = 0; //0: input 1: high 2: low
+uint8_t auxTriggeredState = 0; //0: input 1: high 2: low
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -133,6 +136,9 @@ boolean nixiePause;
 long countdownTime = 1483225200L;
 boolean arlsTimeout = false;
 long arlsTimeoutTime;
+uint8_t auxTime = 0;
+long auxStartTime;
+boolean auxActive, auxActiveBefore;
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
