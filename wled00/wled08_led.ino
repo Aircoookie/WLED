@@ -5,8 +5,18 @@
 void setAllLeds() {
   double d = bri_t*bri_n;
   int val = d/100;
-  strip.setBrightness(val);
-  strip.setColor(col_t[0], col_t[1], col_t[2]);
+  if (useGammaCorrectionBri)
+  {
+    strip.setBrightness(gamma8[val]);
+  } else {
+    strip.setBrightness(val);
+  }
+  if (useGammaCorrectionBri)
+  {
+    strip.setColor(gamma8[col_t[0]], gamma8[col_t[1]], gamma8[col_t[2]]);
+  } else {
+    strip.setColor(col_t[0], col_t[1], col_t[2]);
+  }
 }
 
 void setLedsStandard()

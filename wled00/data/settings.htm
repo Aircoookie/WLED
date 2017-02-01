@@ -38,6 +38,8 @@
 							document.S_form.CLDFA.value = this.responseXML.getElementsByTagName('cldfa')[0].innerHTML;
 							document.S_form.FXDEF.value = this.responseXML.getElementsByTagName('fxdef')[0].innerHTML;
 							document.S_form.SXDEF.value = this.responseXML.getElementsByTagName('sxdef')[0].innerHTML;
+							document.S_form.GCBRI.checked = (this.responseXML.getElementsByTagName('gcbri')[0].innerHTML)!=0?true:false;
+							document.S_form.GCRGB.checked = (this.responseXML.getElementsByTagName('gcrgb')[0].innerHTML)!=0?true:false;
 							document.S_form.BTNON.checked = (this.responseXML.getElementsByTagName('btnon')[0].innerHTML)!=0?true:false;
 							document.S_form.TFADE.checked = (this.responseXML.getElementsByTagName('tfade')[0].innerHTML)!=0?true:false;
 							document.S_form.TDLAY.value = this.responseXML.getElementsByTagName('tdlay')[0].innerHTML;
@@ -122,6 +124,8 @@
 		Default effect ID: <input name="FXDEF" maxlength="3" size="2"> <br>
 		Default effect speed: <input name="SXDEF" maxlength="3" size="2"> <br>
 		Ignore and use current color, brightness and effects: <input type="checkbox" name="CBEOR" value="0"> <br>
+		Use Gamma correction for brightness: <input type="checkbox" name="GCBRI" value="0"> <br>
+		Use Gamma correction for color: <input type="checkbox" name="GCRGB" value="0"> <br>
 		Brightness factor: <input name="NRBRI" maxlength="3" size="2"> % <br>
 		<h3>Button setup</h3>
 		On/Off button enabled: <input type="checkbox" name="BTNON" value="0"> <br>

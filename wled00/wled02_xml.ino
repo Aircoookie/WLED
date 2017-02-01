@@ -115,6 +115,11 @@ void XML_response_settings()
   resp = resp + "<sxdef>";
   resp = resp + effectSpeedDefault;
   resp = resp + "</sxdef>";
+  resp = resp + "<gcbri>";
+  resp = resp + bool2int(useGammaCorrectionBri);
+  resp = resp + "</gcbri><gcrgb>";
+  resp = resp + bool2int(useGammaCorrectionRGB);
+  resp = resp + "</gcrgb>";
   resp = resp + "<btnon>";
   resp = resp + bool2int(buttonEnabled);
   resp = resp + "</btnon><tfade>";

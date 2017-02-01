@@ -75,7 +75,12 @@ void handleNotifications()
           for (int i = 2; i < packetSize -3; i += 4)
           {
             if (udpIn[i] < LEDCOUNT)
-            strip.setIndividual(udpIn[i], ((uint32_t)udpIn[i+1] << 16) | ((uint32_t)udpIn[i+2] << 8) | udpIn[i+3]);
+            if (useGammaCorrectionRGB)
+            {
+              strip.setIndividual(udpIn[i], ((uint32_t)gamma8[udpIn[i+1]] << 16) | ((uint32_t)gamma8[udpIn[i+2]] << 8) | gamma8[udpIn[i+3]]);
+            } else {
+              strip.setIndividual(udpIn[i], ((uint32_t)udpIn[i+1] << 16) | ((uint32_t)udpIn[i+2] << 8) | udpIn[i+3]);
+            }
           }
         }
       }

@@ -88,6 +88,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(327, ntpEnabled);
   //328 reserved for timezone setting
   //329 reserved for dst setting
+  EEPROM.write(330, useGammaCorrectionBri);
+  EEPROM.write(331, useGammaCorrectionRGB);
   EEPROM.commit();
 }
 
@@ -179,4 +181,6 @@ void loadSettingsFromEEPROM()
   effectDefault = EEPROM.read(324); effectCurrent = effectDefault;
   effectSpeedDefault = EEPROM.read(325); effectSpeed = effectSpeedDefault;
   ntpEnabled = EEPROM.read(327);
+  useGammaCorrectionBri = EEPROM.read(330);
+  useGammaCorrectionRGB = EEPROM.read(331);
 }

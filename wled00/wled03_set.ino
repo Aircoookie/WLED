@@ -138,6 +138,8 @@ void handleSettingsSet()
       if (i >= 0 && i <= 255) effectSpeedDefault = i;
     }
   }
+  useGammaCorrectionBri = server.hasArg("GCBRI");
+  useGammaCorrectionRGB = server.hasArg("GCRGB");
   buttonEnabled = server.hasArg("BTNON");
   fadeTransition = server.hasArg("TFADE");
   if (server.hasArg("TDLAY"))
@@ -194,7 +196,7 @@ void handleSettingsSet()
 boolean handleSet(String req)
 {
    boolean effectUpdated = false;
-   if (!(req.indexOf("ajax_in") >= 0)) {
+   if (!(req.indexOf("win") >= 0)) {
         if (req.indexOf("get-settings") >= 0)
         {
           XML_response_settings();

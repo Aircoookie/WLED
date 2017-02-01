@@ -9,7 +9,14 @@ add preferred colors to settings -> quickly t. UI, button select,
 use iframe for settings, seperate tabs for wifi and application confg
 use iframe for all adv. features?
 /dumpeeprom and /pusheeprom (ota lock!)
-aux trigger pin
+(aux trigger pin) partially impl.
+get NTP working
+audioWLED
+	Broadcast
+	Less traffic (distr. and scroll proc. on module)
+	Make webserver accessible while receiving
+	More modes?
+
 randomizer
 ir, touch, pin input
 Automations
@@ -36,5 +43,6 @@ toggle notifier
 var. brightness
 
 BUGS
+NTP crash (1-48h)
 static ip disables mdns
 ? authentification for security relevant areas ([/settings, /reset])
