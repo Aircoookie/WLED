@@ -29,10 +29,12 @@ Quick start guide:
 1. Make sure your ESP module has a min. 4MB SPI flash module. (currently working on supporting 1MB modules)
 Connect a  WS2812B RGB led strip to GPIO2. Optionally connect a NO-pushbutton to GPIO0 (internal pull-up) and ground.
 
-2. Follow a guide to setup your Arduino client (I am using version 1.6.9) with the ESP8266 libraries.
+2. Follow a guide to setup your Arduino client (I am using version 1.8.1) with the ESP8266 libraries.
 For current compiles I use an old version from 15th August 2016.
 
 3. You will also need the ESP8266 SPIFFS sketch data uploader. (currently working on making this step unnecessary)
+-> In the newest commit this step is not essential (HTML included in sketch), but recommended, since otherwise you have to upload the pictures manually to /edit SPIFFS
+-> The software will always use the HTML files in SPIFFS. If they are not existing, it will fallback to the sketch embedded HTML files.
 
 4. In file "wled00.ino", change the LED count to the amount you connected. Proceed to flash the sketch and the SPIFFS data.
 You should also change the access point and OTA update passphrases for added security (you can change them later, this is just the "factory default").

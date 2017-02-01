@@ -15,6 +15,8 @@
 #include <Time.h>
 #include <TimeLib.h>
 #include <Timezone.h>
+#include "htmls00.h"
+#include "htmls01.h"
 
 //to toggle usb serial debug (un)comment following line
 //#define DEBUG

@@ -70,7 +70,7 @@ void wledInit()
   //SERVER INIT
   //settings page
   server.on("/settings", HTTP_GET, [](){
-    if(!handleFileRead("/settings.htm")) server.send(404, "text/plain", "FileNotFound");
+    if(!handleFileRead("/settings.htm")) server.send(200, "text/html", PAGE_settings);
   });
   server.on("/button.png", HTTP_GET, [](){
     if(!handleFileRead("/button.png")) server.send(404, "text/plain", "FileNotFound");
@@ -82,7 +82,7 @@ void wledInit()
     if(!handleFileRead("/favicon.ico")) server.send(404, "text/plain", "FileNotFound");
   });
   server.on("/", HTTP_GET, [](){
-    if(!handleFileRead("/index.htm")) server.send(404, "text/plain", "FileNotFound");
+    if(!handleFileRead("/index.htm")) server.send(200, "text/html", PAGE_index);
   });
   server.on("/reset", HTTP_GET, [](){
     server.send(200, "text/plain", "Rebooting... Go to main page when lights turn on.");
@@ -90,11 +90,11 @@ void wledInit()
   });
   server.on("/set-settings", HTTP_POST, [](){
     handleSettingsSet();
-    if(!handleFileRead("/settingssaved.htm")) server.send(404, "text/plain", "SettingsSaved");
+    if(!handleFileRead("/settingssaved.htm")) server.send(200, "text/html", PAGE_settingssaved);
   });
   if (!ota_lock){
     server.on("/edit", HTTP_GET, [](){
-    if(!handleFileRead("/edit.htm")) server.send(404, "text/plain", "FileNotFound");
+    if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);
     });
     server.on("/edit", HTTP_PUT, handleFileCreate);
     server.on("/edit", HTTP_DELETE, handleFileDelete);
