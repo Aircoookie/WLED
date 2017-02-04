@@ -37,7 +37,7 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-#define LEDCOUNT 84
+#define LEDCOUNT 9
 uint8_t buttonPin = 0; //needs pull-up
 uint8_t auxPin = 16; //use e.g. for external relay
 uint8_t auxDefaultState = 0; //0: input 1: high 2: low
@@ -138,6 +138,7 @@ int overlayPauseDur[6];
 int nixieClockI = -1;
 boolean nixiePause;
 long countdownTime = 1483225200L;
+int arlsTimeoutMillis = 2500;
 boolean arlsTimeout = false;
 long arlsTimeoutTime;
 uint8_t auxTime = 0;

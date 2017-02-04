@@ -44,15 +44,20 @@ void WS2812FX::init() {
 }
 
 void WS2812FX::service() {
-  if(_running) {
+  if(_running || _triggered) {
     unsigned long now = millis();
 
-    if(now - _mode_last_call_time > _mode_delay) {
+    if(now - _mode_last_call_time > _mode_delay || _triggered) {
       CALL_MODE(_mode_index);
       _counter_mode_call++;
       _mode_last_call_time = now;
+      _triggered = false;
     }
   }
+}
+
+void WS2812FX::trigger() {
+  _triggered = true;
 }
 
 void WS2812FX::start() {

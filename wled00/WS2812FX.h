@@ -244,6 +244,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       unlock(int i),
       unlockRange(int i, int i2),
       unlockAll(void),
+      trigger(void),
       setFade(int sp);
 
     boolean 
@@ -319,6 +320,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       mode_fade_down(void);
 
     boolean
+      _triggered,
       _running;
 
     boolean*
