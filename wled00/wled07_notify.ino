@@ -15,7 +15,7 @@ void notify(uint8_t callMode)
     default: return;
   }
   byte udpOut[16];
-  udpOut[0] = 233; //233: wled notifier protocol 0-7: ARLS8 protocol 253: IRGB protocol 254: RGB protocol
+  udpOut[0] = 0; //0: wled notifier protocol 1: WARLS protocol
   udpOut[1] = callMode;
   udpOut[2] = bri;
   udpOut[3] = col[0];
@@ -41,7 +41,7 @@ void handleNotifications()
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP())
     {
       notifierUdp.read(udpIn, packetSize);
-      if (udpIn[0] == 233) //wled notifier
+      if (udpIn[0] == 0) //wled notifier
       {
         col[0] = udpIn[3];
         col[1] = udpIn[4];
@@ -62,44 +62,38 @@ void handleNotifications()
           bri = udpIn[2];
           colorUpdated(3);
         }
-      }  else if (udpIn[0] == 253) //irgb
+      }  else if (udpIn[0] == 1) //warls
       {
-        arlsTimeout = true;
-        arlsTimeoutTime = millis() + arlsTimeoutMillis;
-        for (int i = 1; i < packetSize -3; i += 4)
-        {
-          if (udpIn[i] < LEDCOUNT)
-          if (useGammaCorrectionRGB)
+        if (packetSize > 1) {
+          if (udpIn[1] == 0)
           {
-            strip.setIndividual(udpIn[i], ((uint32_t)gamma8[udpIn[i+1]] << 16) | ((uint32_t)gamma8[udpIn[i+2]] << 8) | gamma8[udpIn[i+3]]);
+            arlsTimeout = false;
           } else {
-            strip.setIndividual(udpIn[i], ((uint32_t)udpIn[i+1] << 16) | ((uint32_t)udpIn[i+2] << 8) | udpIn[i+3]);
+            if (!arlsTimeout){
+              strip.setRange(0, LEDCOUNT-1, 0);
+              strip.setMode(0);
+            }
+            arlsTimeout = true;
+            arlsTimeoutTime = millis() + 1000*udpIn[1];
+          }
+          for (int i = 2; i < packetSize -3; i += 4)
+          {
+            if (udpIn[i] < LEDCOUNT)
+            if (useGammaCorrectionRGB)
+            {
+              strip.setIndividual(udpIn[i], ((uint32_t)gamma8[udpIn[i+1]] << 16) | ((uint32_t)gamma8[udpIn[i+2]] << 8) | gamma8[udpIn[i+3]]);
+            } else {
+              strip.setIndividual(udpIn[i], ((uint32_t)udpIn[i+1] << 16) | ((uint32_t)udpIn[i+2] << 8) | udpIn[i+3]);
+            }
           }
         }
-      } else if (udpIn[0] == 254) //rgb
-      {
-        arlsTimeout = true;
-        arlsTimeoutTime = millis() + arlsTimeoutMillis;
-        for (int i = 1; i < packetSize -3; i += 3)
-        {
-          strip.setIndividual(udpIn[i/3], ((uint32_t)gamma8[udpIn[i]] << 16) | ((uint32_t)gamma8[udpIn[i]] << 8) | gamma8[udpIn[i]]);
-        }
-      } else //ARLS8 for now
-      {
-        if (useGammaCorrectionRGB)
-        {
-          strip.setColor(gamma8[udpIn[13]], gamma8[udpIn[14]], gamma8[udpIn[15]]);
-        } else
-        {
-          strip.setColor(udpIn[13], udpIn[14], udpIn[15]);
-        }
-        strip.trigger();
       }
     }
     if (arlsTimeout && millis() > arlsTimeoutTime)
     {
       strip.unlockAll();
       arlsTimeout = false;
+      strip.setMode(effectCurrent);
     }
   }
 }
