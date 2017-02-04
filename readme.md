@@ -48,7 +48,7 @@ You should also change the access point and OTA update passphrases for added sec
 
 Advanced module control via HTTP requests:
 
-Base URL scheme: "<moduleip>/ajax_in". This will return a XML file with some current values.
+Base URL scheme: "<moduleip>/win". This will return a XML file with some current values.
 Add one or multiple of the following parameters after the base url to change values:
 "&A=<0-255>" set LED brightness (yellow slider)
 "&R=<0-255>" set LED red value (red slider)
@@ -76,6 +76,20 @@ To edit flash content (images and HTML), go to "<moduleip>/edit".
 After you are done, it is recommended to lock the OTA function again.
 To do so, tick the checkbox again (you can change the passphrase by typing in a new one now). Reboot.
 If you try to access the update page now, you should see the message "OTA lock active".
+
+
+The software now supports audio-reactive-led-strip!
+
+1. Download [audio-reactive-led-strip](https://github.com/scottlawsonbc/audio-reactive-led-strip) and follow its installation instruction. Use python 3!
+2. Insert the following code in led.py after line 66:
+    m.append(1);
+    m.append(2);
+3. In config.py set your led amount, ESP IP and WLED UDP notifier port. For FPS, a setting between 15-30 is recommended.
+4. Run visualization.py! If you have a low amount of LEDS (e.g. 10) try lowering the sigma values in line 129-131.
+Note that there is currently an issue preventing you from accessing the control web page while the script is running. HTTP requests work.
+
+
+Uses [WS2812FX](https://github.com/kitesurfer1404/WS2812FX)!
 
 
 
