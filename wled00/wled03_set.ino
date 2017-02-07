@@ -285,9 +285,25 @@ boolean handleSet(String req)
    }
    pos = req.indexOf("AX=");
    if (pos > 0) {
-        auxTime = req.substring(pos + 3).toInt();
-        auxActive = true;
-        if (auxTime == 0) auxActive = false;
+      auxTime = req.substring(pos + 3).toInt();
+      auxActive = true;
+      if (auxTime == 0) auxActive = false;
+   }
+   pos = req.indexOf("T=");
+   if (pos > 0) {
+      switch (req.substring(pos + 2).toInt())
+      {
+        case 0: if (bri != 0){bri_last = bri; bri = 0;} break; //off
+        case 1: bri = bri_last; break; //on
+        default: if (bri == 0) //toggle
+        {
+          bri = bri_last;
+        } else
+        {
+          bri_last = bri;
+          bri = 0;
+        }
+      }
    }
    XML_response();
    if (effectUpdated)

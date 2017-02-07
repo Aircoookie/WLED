@@ -54,6 +54,7 @@ Add one or multiple of the following parameters after the base url to change val
 "&R=<0-255>" set LED red value (red slider)
 "&G=<0-255>" set LED green value (green slider)
 "&B=<0-255>" set LED blue value (blue slider)
+"&T=<0 or 1 or 2-255>" 0: switch off, on, toggle
 "&FX=<0-47>" set LED effect (refer to WS2812FX library)
 "&SX=<0-255>" set LED effect speed (refer to WS2812FX library)
 "&NR=<0 or 1>" receive notifications on or off

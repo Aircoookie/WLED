@@ -4,7 +4,7 @@
 
 void handleNetworkTime()
 {
-  if (ntpEnabled && ntpConnected)
+  if (ntpEnabled && udpConnected)
   {
     if (ntpSyncNeeded)
     {
@@ -27,11 +27,6 @@ void handleNetworkTime()
       } else
       {
         WiFi.hostByName(ntpServerName, ntpIp);
-        if (ntpIp[0] == 0)
-        {
-          DEBUG_PRINTLN("DNS f!");
-          ntpIp = ntpBackupIp;
-        }
         sendNTPpacket();
         ntpPacketSent = true;
         ntpPacketSentTime = millis();
@@ -45,8 +40,8 @@ void handleNetworkTime()
 
 bool getNtpTime()
 {
-    if (ntpUdp.parsePacket()) {
-        ntpUdp.read(ntpBuffer, 48);  // read packet into the buffer
+    if (notifierUdp.parsePacket()) {
+        notifierUdp.read(ntpBuffer, 48);  // read packet into the buffer
         
         #ifdef DEBUG
         int i= 0;
@@ -78,8 +73,8 @@ bool getNtpTime()
 
 void sendNTPpacket()
 {
-    while (ntpUdp.parsePacket()>0);
-    ntpUdp.flush(); //discard old packets
+    while (notifierUdp.parsePacket()>0);
+    notifierUdp.flush(); //discard old packets
     DEBUG_PRINTLN("Sending NTP packet");
     memset(ntpBuffer, 0, 48);
     ntpBuffer[0] = 0b11100011;   // LI, Version, Mode
@@ -90,9 +85,9 @@ void sendNTPpacket()
     ntpBuffer[13] = 0x4E;
     ntpBuffer[14] = 49;
     ntpBuffer[15] = 52;
-    ntpUdp.beginPacket(ntpIp, 123); //NTP requests are to port 123
-    ntpUdp.write(ntpBuffer, 48);
-    ntpUdp.endPacket();
+    notifierUdp.beginPacket(ntpIp, 123); //NTP requests are to port 123
+    notifierUdp.write(ntpBuffer, 48);
+    notifierUdp.endPacket();
 }
 
 String getTimeString()

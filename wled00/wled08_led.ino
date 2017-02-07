@@ -34,7 +34,7 @@ void setLedsStandard()
 
 void colorUpdated(int callMode)
 {
-  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (no not.)
+  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (no not.) 6: fx changed
   if (col[0] == col_it[0] && col[1] == col_it[1] && col[2] == col_it[2] && bri == bri_it)
   {
     if (callMode == 6) notify(6);

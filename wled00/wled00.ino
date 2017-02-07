@@ -19,7 +19,7 @@
 #include "htmls01.h"
 
 //to toggle usb serial debug (un)comment following line
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
@@ -123,7 +123,6 @@ uint8_t effectSpeed = 75;
 boolean udpConnected = false;
 byte udpIn[LEDCOUNT*4+2];
 IPAddress ntpIp;
-IPAddress ntpBackupIp(134,130,5,17);
 byte ntpBuffer[48];
 boolean ntpConnected = false;
 boolean ntpSyncNeeded = true;
@@ -148,7 +147,6 @@ boolean auxActive, auxActiveBefore;
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp;
-WiFiUDP ntpUdp;
 
 WS2812FX strip = WS2812FX(LEDCOUNT, 2, NEO_GRB + NEO_KHZ800);
 
@@ -223,6 +221,7 @@ void loop() {
       DEBUG_PRINTLN("---MODULE DEBUG INFO---");
       DEBUG_PRINT("Runtime: "); DEBUG_PRINTLN(millis());
       DEBUG_PRINT("Unix time: "); DEBUG_PRINTLN(now());
+      DEBUG_PRINT("Free heap: "); DEBUG_PRINTLN(ESP.getFreeHeap());
       DEBUG_PRINT("Wifi state: "); DEBUG_PRINTLN(WiFi.status());
       if (WiFi.status() != lastWifiState)
       {
