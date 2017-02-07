@@ -147,8 +147,7 @@ const char PAGE_settings[] PROGMEM = R"=====(
     Send notifications on button press: <input type="checkbox" name="NSBTN" value="0"> <br>
     Send nightlight notifications: <input type="checkbox" name="NSFWD" value="0"> <br>
     <h3>Time</h3>
-    <b>Warning! Using NTP usually results in a complete system crash after 1-48 hours. <br>
-    Please only enable it if you are willing to experiment with it. </b> <br>
+    Warning! NTP was updated but could still cause crashes. Requires reboot. <br>
     Get time from NTP server: <input type="checkbox" name="NTPON" value="0"> <br>
     Current local time is <span class="times">unknown</span> <br>
     <h3>Security</h3>

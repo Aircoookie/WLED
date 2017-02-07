@@ -58,10 +58,12 @@ void wledInit()
   }
   DEBUG_PRINTLN("mDNS responder started");
 
-  if (udpPort > 0)
+  if (udpPort > 0 && udpPort != ntpLocalPort)
   {
     udpConnected = notifierUdp.begin(udpPort);
   }
+  if (ntpEnabled)
+  ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   //SERVER INIT
   //settings page

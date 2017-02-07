@@ -84,6 +84,8 @@ uint8_t effectDefault = 0;
 uint8_t effectSpeedDefault = 75;
 //NTP stuff
 boolean ntpEnabled = false;
+IPAddress ntpServerIP;
+const char* ntpServerName = "time.nist.gov";
 
 //overlay stuff
 int overlayMin = 0, overlayMax = 9;
@@ -104,8 +106,8 @@ byte col[]{0, 0, 0};
 byte col_old[]{0, 0, 0};
 byte col_t[]{0, 0, 0};
 byte col_it[]{0, 0, 0};
-long transitionStartTime;
-long nightlightStartTime;
+unsigned long transitionStartTime;
+unsigned long nightlightStartTime;
 float tper_last = 0;
 byte bri = 0;
 byte bri_old = 0;
@@ -123,27 +125,35 @@ uint8_t effectSpeed = 75;
 boolean udpConnected = false;
 byte udpIn[LEDCOUNT*4+2];
 //NTP stuff
+boolean ntpConnected = false;
+unsigned int ntpLocalPort = 2390;
+const int NTP_PACKET_SIZE = 48; 
+byte ntpPacketBuffer[NTP_PACKET_SIZE];
+unsigned long ntpLastSyncTime = 999000000L;
+unsigned long ntpPacketSentTime = 999000000L;
+const unsigned long seventyYears = 2208988800UL;
 
 //overlay stuff
 uint8_t overlayCurrent = 0;
 long overlayRefreshMs = 200;
-long overlayRefreshedTime;
+unsigned long overlayRefreshedTime;
 int overlayArr[6];
 int overlayDur[6];
 int overlayPauseDur[6];
 int nixieClockI = -1;
 boolean nixiePause;
-long countdownTime = 1483225200L;
+unsigned long countdownTime = 1483225200L;
 int arlsTimeoutMillis = 2500;
 boolean arlsTimeout = false;
 long arlsTimeoutTime;
 uint8_t auxTime = 0;
-long auxStartTime;
+unsigned long auxStartTime;
 boolean auxActive, auxActiveBefore;
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp;
+WiFiUDP ntpUdp;
 
 WS2812FX strip = WS2812FX(LEDCOUNT, 2, NEO_GRB + NEO_KHZ800);
 
@@ -226,7 +236,7 @@ void loop() {
       }
       lastWifiState = WiFi.status();
       DEBUG_PRINT("Wifi state: "); DEBUG_PRINTLN(wifiStateChangedTime);
-      //DEBUG_PRINT("NTP sync needed: "); DEBUG_PRINTLN(ntpSyncNeeded);
+      DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
       DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP()); 
     }
     #endif

@@ -1,7 +1,7 @@
 WLED is a basic, fast and (relatively) (ok, VERY relatively) secure implementation of a ESP8266 webserver to control Neopixel (WS2812B) leds
 
 Uses ESP8266 Arduino libraries from 15th August 2016! Untested with newer version!
-Contents in the /data directory need to be uploaded to SPIFFS.
+Contents in the /data directory may be uploaded to SPIFFS.
 
 Features: (V0.2)
 - RGB and brightness sliders
@@ -16,11 +16,12 @@ Additions for V0.3 (nearly complete!)
 - Support for power pushbutton
 - Full OTA software update capability
 - Password protected OTA page for added security (OTA lock)
+- NTP and experimental analog clock function
 
 Compile settings:
 Board: WeMos D1 mini
 CPU frequency: 80 MHz
-Flash size : 4MB (1MB settings)
+Flash size : 4MB (1MB SPIFFS)
 Upload speed: 115200
 
 

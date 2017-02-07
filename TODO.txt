@@ -1,3 +1,4 @@
+captive portal for ap
 simple slide transition
 additional color picker field
 implement HSB slider option
