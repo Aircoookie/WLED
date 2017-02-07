@@ -82,10 +82,10 @@ boolean nightlightFade = true;
 uint16_t udpPort = 21324;
 uint8_t effectDefault = 0;
 uint8_t effectSpeedDefault = 75;
+//NTP stuff
 boolean ntpEnabled = false;
-const char* ntpServerName = "time.nist.gov";
-long ntpRetryMs = 9600;
-long ntpResyncMs = 72000000L;
+
+//overlay stuff
 int overlayMin = 0, overlayMax = 9;
 int analogClock12pixel = 25;
 boolean analogClockSecondsTrail = false;
@@ -122,12 +122,9 @@ uint8_t effectCurrent = 0;
 uint8_t effectSpeed = 75;
 boolean udpConnected = false;
 byte udpIn[LEDCOUNT*4+2];
-IPAddress ntpIp;
-byte ntpBuffer[48];
-boolean ntpConnected = false;
-boolean ntpSyncNeeded = true;
-boolean ntpPacketSent = false;
-long ntpPacketSentTime, ntpSyncTime;
+//NTP stuff
+
+//overlay stuff
 uint8_t overlayCurrent = 0;
 long overlayRefreshMs = 200;
 long overlayRefreshedTime;
@@ -229,7 +226,7 @@ void loop() {
       }
       lastWifiState = WiFi.status();
       DEBUG_PRINT("Wifi state: "); DEBUG_PRINTLN(wifiStateChangedTime);
-      DEBUG_PRINT("NTP sync needed: "); DEBUG_PRINTLN(ntpSyncNeeded);
+      //DEBUG_PRINT("NTP sync needed: "); DEBUG_PRINTLN(ntpSyncNeeded);
       DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP()); 
     }
     #endif
