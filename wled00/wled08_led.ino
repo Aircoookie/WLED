@@ -5,6 +5,7 @@
 void setAllLeds() {
   double d = bri_t*bri_n;
   int val = d/100;
+  if (val > 255) val = 255;
   if (useGammaCorrectionBri)
   {
     strip.setBrightness(gamma8[val]);

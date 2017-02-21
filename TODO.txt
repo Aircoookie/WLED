@@ -1,4 +1,7 @@
 captive portal for ap
+alexa support
+ntp bug
+bri bug
 simple slide transition
 additional color picker field
 implement HSB slider option

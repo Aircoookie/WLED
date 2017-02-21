@@ -37,9 +37,10 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-#define LEDCOUNT 9
+#define LEDCOUNT 11
+#define MAXDIRECT 52 //for direct access like arls, should be >= LEDCOUNT
 uint8_t buttonPin = 0; //needs pull-up
-uint8_t auxPin = 16; //use e.g. for external relay
+uint8_t auxPin = 15; //use e.g. for external relay
 uint8_t auxDefaultState = 0; //0: input 1: high 2: low
 uint8_t auxTriggeredState = 0; //0: input 1: high 2: low
 
@@ -98,6 +99,8 @@ boolean overlayReverse = true;
 uint8_t overlaySpeed = 200;
 boolean useGammaCorrectionBri = true;
 boolean useGammaCorrectionRGB = true;
+int arlsOffset = -21; //10: -22 assuming arls52
+boolean realtimeEnabled = true;
 
 double transitionResolution = 0.011;
 
@@ -123,7 +126,7 @@ int nightlightDelayMs;
 uint8_t effectCurrent = 0;
 uint8_t effectSpeed = 75;
 boolean udpConnected = false;
-byte udpIn[LEDCOUNT*4+2];
+byte udpIn[MAXDIRECT*4+2];
 //NTP stuff
 boolean ntpConnected = false;
 unsigned int ntpLocalPort = 2390;
