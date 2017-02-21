@@ -16,7 +16,8 @@ Additions for V0.3 (nearly complete!)
 - Support for power pushbutton
 - Full OTA software update capability
 - Password protected OTA page for added security (OTA lock)
-- NTP and experimental analog clock function
+- Alexa smart home device server
+- (not working) NTP and experimental analog clock function
 
 Compile settings:
 Board: WeMos D1 mini
@@ -64,6 +65,14 @@ Add one or multiple of the following parameters after the base url to change val
 ("&OL=<0, 1, 3 or 5>" experimental clock overlays)
 ("&I=<0-255>" experimental individual LED control)
 ("&I=<0-255>&I2=<0-255>" experimental individual LED range control)
+
+
+Licensed under the MIT license 
+Uses libraries: 
+ESP8266 Arduino Core 
+WS2812FX by kitesurfer1404 (Aircoookie fork) 
+Timezone library by JChristensen
+arduino-esp8266-alexa-multiple-wemo-switch by kakopappa
 
 
 Software update procedure:

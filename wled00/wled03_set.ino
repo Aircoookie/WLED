@@ -305,7 +305,17 @@ boolean handleSet(String req)
         }
       }
    }
-   XML_response();
+   pos = req.indexOf("IN");
+   if (pos < 1)
+   {
+      XML_response();
+   }
+   pos = req.indexOf("NN");
+   if (pos > 0)
+   {
+      colorUpdated(5);
+      return true;
+   }
    if (effectUpdated)
    {
       colorUpdated(6);

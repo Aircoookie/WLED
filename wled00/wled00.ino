@@ -17,6 +17,9 @@
 #include <Timezone.h>
 #include "htmls00.h"
 #include "htmls01.h"
+#include "switch.h"
+#include "UpnpBroadcastResponder.h"
+#include "CallbackFunction.h"
 
 //to toggle usb serial debug (un)comment following line
 #define DEBUG
@@ -37,7 +40,7 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-#define LEDCOUNT 11
+#define LEDCOUNT 9
 #define MAXDIRECT 52 //for direct access like arls, should be >= LEDCOUNT
 uint8_t buttonPin = 0; //needs pull-up
 uint8_t auxPin = 15; //use e.g. for external relay
@@ -99,8 +102,13 @@ boolean overlayReverse = true;
 uint8_t overlaySpeed = 200;
 boolean useGammaCorrectionBri = true;
 boolean useGammaCorrectionRGB = true;
-int arlsOffset = -21; //10: -22 assuming arls52
+int arlsOffset = -22; //10: -22 assuming arls52
 boolean realtimeEnabled = true;
+
+//alexa
+boolean alexaEnabled = true;
+String alexaInvocationName = "Schloss";
+boolean alexaNotify = false;
 
 double transitionResolution = 0.011;
 
@@ -152,6 +160,10 @@ long arlsTimeoutTime;
 uint8_t auxTime = 0;
 unsigned long auxStartTime;
 boolean auxActive, auxActiveBefore;
+
+//alexa
+Switch *alexa = NULL;
+UpnpBroadcastResponder upnpBroadcastResponder;
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;
@@ -220,6 +232,7 @@ void loop() {
     handleButton();
     handleNetworkTime();
     handleOverlays();
+    handleAlexa();
     strip.service();
 
     //DEBUG
