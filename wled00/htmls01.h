@@ -36,6 +36,7 @@ const char PAGE_settings[] PROGMEM = R"=====(
               document.S_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].innerHTML; //fake pass like ******
               document.S_form.APCHAN.value = this.responseXML.getElementsByTagName('apchan')[0].innerHTML;
               document.S_form.DESC.value = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
+              document.S_form.LEDCN.value = this.responseXML.getElementsByTagName('ledcn')[0].innerHTML;
               document.S_form.CLDFR.value = this.responseXML.getElementsByTagName('cldef')[0].innerHTML;
               document.S_form.CLDFG.value = this.responseXML.getElementsByTagName('cldef')[1].innerHTML;
               document.S_form.CLDFB.value = this.responseXML.getElementsByTagName('cldef')[2].innerHTML;
@@ -56,8 +57,14 @@ const char PAGE_settings[] PROGMEM = R"=====(
               document.S_form.NSDIR.checked = (this.responseXML.getElementsByTagName('nsdir')[0].innerHTML)!=0?true:false;
               document.S_form.NSBTN.checked = (this.responseXML.getElementsByTagName('nsbtn')[0].innerHTML)!=0?true:false;
               document.S_form.NSFWD.checked = (this.responseXML.getElementsByTagName('nsfwd')[0].innerHTML)!=0?true:false;
+              document.S_form.ALEXA.checked = (this.responseXML.getElementsByTagName('alexa')[0].innerHTML)!=0?true:false;
+              document.S_form.AINVN.value = this.responseXML.getElementsByTagName('ainvn')[0].innerHTML;
+              document.S_form.NSALX.checked = (this.responseXML.getElementsByTagName('nsalx')[0].innerHTML)!=0?true:false;
               document.S_form.NTPON.checked = (this.responseXML.getElementsByTagName('ntpon')[0].innerHTML)!=0?true:false;
               document.getElementsByClassName("times")[0].innerHTML = this.responseXML.getElementsByTagName('times')[0].innerHTML;
+              document.S_form.OLDEF.value = this.responseXML.getElementsByTagName('oldef')[0].innerHTML;
+              document.S_form.WOFFS.value = this.responseXML.getElementsByTagName('woffs')[0].innerHTML;
+              document.S_form.WOFFN.checked = (this.responseXML.getElementsByTagName('woffn')[0].innerHTML)!=0?true:false;
               document.S_form.NOOTA.checked = (this.responseXML.getElementsByTagName('noota')[0].innerHTML)!=0?true:false;
               document.S_form.NORAP.checked = (this.responseXML.getElementsByTagName('norap')[0].innerHTML)!=0?true:false;
               document.getElementsByClassName("sip")[0].innerHTML = this.responseXML.getElementsByTagName('sip')[0].innerHTML;
@@ -120,6 +127,7 @@ const char PAGE_settings[] PROGMEM = R"=====(
     <h3>Web setup</h3>
     Server description: <input name="DESC" maxlength="32"> <br>
     <h3>LED setup</h3>
+    LED count (max. 255): <input name="LEDCN" maxlength="3" size="2"> <br>
     Default RGB color:
     <input name="CLDFR" maxlength="3" size="2">
     <input name="CLDFG" maxlength="3" size="2">
@@ -146,10 +154,18 @@ const char PAGE_settings[] PROGMEM = R"=====(
     Send notifications on direct change: <input type="checkbox" name="NSDIR" value="0"> <br>
     Send notifications on button press: <input type="checkbox" name="NSBTN" value="0"> <br>
     Send nightlight notifications: <input type="checkbox" name="NSFWD" value="0"> <br>
-    <h3>Time</h3>
-    Warning! NTP was updated but could still cause crashes. Requires reboot. <br>
+    <h3>Interfaces</h3>
+    Emulate Alexa device: <input type="checkbox" name="ALEXA" value="0"> <br>
+    Alexa invocation name: <input name="AINVN" maxlength="32"><br>
+    Send Alexa notifications: <input type="checkbox" name="NSALX" value="0"> <br>
+    <h3>Time (highly experimental!)</h3>
+    <b> Warning! </b>NTP was updated but still causes crashes. Requires reboot. <br>
+    It is really not recommended to use this! <br>
     Get time from NTP server: <input type="checkbox" name="NTPON" value="0"> <br>
     Current local time is <span class="times">unknown</span> <br>
+    <h3>Advanced</h3>
+    Default overlay ID: <input name="OLDEF" maxlength="3" size="2"> <br>
+    WARLS offset: <input name="WOFFS" maxlength="3" size="2"> negative <input type="checkbox" name="WOFFN" value="0"><br>
     <h3>Security</h3>
     OTA locked: <input type="checkbox" name="NOOTA" value="0"> <br>
     Passphrase: <input type="password" name="OPASS" maxlength="32"> <br>
@@ -171,6 +187,7 @@ const char PAGE_settings[] PROGMEM = R"=====(
     <i>ESP8266 Arduino Core</i> <br>
     <i>WS2812FX by kitesurfer1404 (Aircoookie fork)</i> <br>
     <i>Timezone library by JChristensen</i> <br>
+    <i>arduino-esp8266-alexa-multiple-wemo-switch by kakopappa</i> <br>
     Server message: <span class="msg"> XML response error! </span>
     <br><br>
     <input type="submit" name="SUBM" value="Save">

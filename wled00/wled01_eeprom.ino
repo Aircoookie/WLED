@@ -43,7 +43,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(226, notifyDirect);
   EEPROM.write(227, apchannel);
   EEPROM.write(228, aphide);
-  EEPROM.write(229, LEDCOUNT);
+  EEPROM.write(229, ledcount);
   EEPROM.write(230, notifyButton);
   EEPROM.write(231, notifyNightlight);
   EEPROM.write(232, buttonEnabled);
@@ -90,6 +90,15 @@ void saveSettingsToEEPROM()
   //329 reserved for dst setting
   EEPROM.write(330, useGammaCorrectionBri);
   EEPROM.write(331, useGammaCorrectionRGB);
+  EEPROM.write(332, overlayDefault);
+  EEPROM.write(333, alexaEnabled);
+  for (int i = 334; i < 366; ++i)
+  {
+    EEPROM.write(i, alexaInvocationName.charAt(i-334));
+  }
+  EEPROM.write(366, alexaNotify);
+  EEPROM.write(367, arlsSign);
+  EEPROM.write(368, abs(arlsOffset));
   EEPROM.commit();
 }
 
@@ -137,7 +146,7 @@ void loadSettingsFromEEPROM()
   if (apchannel > 13 || apchannel < 1) apchannel = 1;
   aphide = EEPROM.read(228);
   if (aphide > 1) aphide = 1;
-  //LEDCOUNT = EEPROM.read(229);
+  ledcount = EEPROM.read(229);
   notifyButton = EEPROM.read(230);
   notifyNightlight = EEPROM.read(231);
   buttonEnabled = EEPROM.read(232);
@@ -183,4 +192,16 @@ void loadSettingsFromEEPROM()
   ntpEnabled = EEPROM.read(327);
   useGammaCorrectionBri = EEPROM.read(330);
   useGammaCorrectionRGB = EEPROM.read(331);
+  overlayDefault = EEPROM.read(332);
+  alexaEnabled = EEPROM.read(333);
+  alexaInvocationName = "";
+  for (int i = 334; i < 366; ++i)
+  {
+    if (EEPROM.read(i) == 0) break;
+    alexaInvocationName += char(EEPROM.read(i));
+  }
+  alexaNotify = EEPROM.read(366);
+  arlsSign = EEPROM.read(367);
+  arlsOffset = EEPROM.read(368);
+  if (!arlsSign) arlsOffset = -arlsOffset;
 }

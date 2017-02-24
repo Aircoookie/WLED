@@ -28,6 +28,10 @@ Upload speed: 115200
 
 Quick start guide:
 
+-If you do not plan to change the software, you can use the supplied binary files instead-
+Just flash a basic HTTP OTA updater sketch and upload the bin!
+
+
 1. Make sure your ESP module has a min. 4MB SPI flash module. (currently working on supporting 1MB modules)
 Connect a  WS2812B RGB led strip to GPIO2. Optionally connect a NO-pushbutton to GPIO0 (internal pull-up) and ground.
 

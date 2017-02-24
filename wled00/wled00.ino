@@ -22,7 +22,7 @@
 #include "CallbackFunction.h"
 
 //to toggle usb serial debug (un)comment following line
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
@@ -40,8 +40,8 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-#define LEDCOUNT 9
-#define MAXDIRECT 52 //for direct access like arls, should be >= LEDCOUNT
+#define LEDCOUNT 255 //maximum, exact count set-able via settings
+#define MAXDIRECT 255 //for direct access like arls, should be >= LEDCOUNT
 uint8_t buttonPin = 0; //needs pull-up
 uint8_t auxPin = 15; //use e.g. for external relay
 uint8_t auxDefaultState = 0; //0: input 1: high 2: low
@@ -58,6 +58,7 @@ TimeChangeRule *tcr;        //pointer to the time change rule, use to get the TZ
 time_t local;
 
 //Default CONFIG
+uint8_t ledcount = 255;
 String serverDescription = "WLED 0.3pd";
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
@@ -92,6 +93,7 @@ IPAddress ntpServerIP;
 const char* ntpServerName = "time.nist.gov";
 
 //overlay stuff
+uint8_t overlayDefault = 0;
 int overlayMin = 0, overlayMax = 9;
 int analogClock12pixel = 25;
 boolean analogClockSecondsTrail = false;
@@ -107,7 +109,7 @@ boolean realtimeEnabled = true;
 
 //alexa
 boolean alexaEnabled = true;
-String alexaInvocationName = "Schloss";
+String alexaInvocationName = "Light";
 boolean alexaNotify = false;
 
 double transitionResolution = 0.011;
@@ -157,6 +159,7 @@ unsigned long countdownTime = 1483225200L;
 int arlsTimeoutMillis = 2500;
 boolean arlsTimeout = false;
 long arlsTimeoutTime;
+boolean arlsSign = true;
 uint8_t auxTime = 0;
 unsigned long auxStartTime;
 boolean auxActive, auxActiveBefore;

@@ -98,6 +98,12 @@ void handleSettingsSet()
     if (i >= 0 && i <= 255) staticsubnet[3] = i;
   }
   if (server.hasArg("DESC")) serverDescription = server.arg("DESC");
+  if (server.hasArg("LEDCN"))
+  {
+    int i = server.arg("LEDCN").toInt();
+    if (i >= 0 && i <= 255) ledcount = i;
+    strip.setLedCount(ledcount);
+  }
   if (server.hasArg("CBEOR"))
   {
     col_s[0] = col[0];
@@ -174,7 +180,26 @@ void handleSettingsSet()
   notifyDirect = server.hasArg("NSDIR");
   notifyButton = server.hasArg("NSBTN");
   notifyNightlight = server.hasArg("NSFWD");
+  alexaEnabled = server.hasArg("ALEXA");
+  if (server.hasArg("AINVN")) alexaInvocationName = server.arg("AINVN");
+  alexaNotify = server.hasArg("NSALX");
   ntpEnabled = server.hasArg("NTPON");
+  if (server.hasArg("OLDEF"))
+  {
+    int i = server.arg("OLDEF").toInt();
+    if (i >= 0  && i <= 255) overlayDefault = i;
+  }
+  if (server.hasArg("WOFFS"))
+  {
+    int i = server.arg("WOFFS").toInt();
+    if (i >= 0  && i <= 255) arlsOffset = i;
+    arlsSign = true;
+    if (server.hasArg("WOFFN"))
+    {
+      arlsSign = false;
+      arlsOffset = -arlsOffset;
+    }
+  }
   if (server.hasArg("OPASS"))
   {
     if (!ota_lock)

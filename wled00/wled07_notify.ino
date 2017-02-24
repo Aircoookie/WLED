@@ -70,7 +70,7 @@ void handleNotifications()
             arlsTimeout = false;
           } else {
             if (!arlsTimeout){
-              strip.setRange(0, LEDCOUNT-1, 0);
+              strip.setRange(0, ledcount-1, 0);
               strip.setMode(0);
             }
             arlsTimeout = true;
@@ -78,7 +78,7 @@ void handleNotifications()
           }
           for (int i = 2; i < packetSize -3; i += 4)
           {
-            if (udpIn[i] + arlsOffset < LEDCOUNT && udpIn[i] + arlsOffset >= 0)
+            if (udpIn[i] + arlsOffset < ledcount && udpIn[i] + arlsOffset >= 0)
             if (useGammaCorrectionRGB)
             {
               strip.setIndividual(udpIn[i] + arlsOffset, ((uint32_t)gamma8[udpIn[i+1]] << 16) | ((uint32_t)gamma8[udpIn[i+2]] << 8) | gamma8[udpIn[i+3]]);

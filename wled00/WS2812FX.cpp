@@ -1458,5 +1458,10 @@ void WS2812FX::unlockAll()
     _locked[x] = false;
 }
 
+void WS2812FX::setLedCount(uint16_t i)
+{
+  _led_count = i;
+}
+
 
 

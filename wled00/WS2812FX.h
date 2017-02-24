@@ -245,6 +245,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       unlockRange(int i, int i2),
       unlockAll(void),
       trigger(void),
+      setLedCount(uint16_t i),
       setFade(int sp);
 
     boolean 

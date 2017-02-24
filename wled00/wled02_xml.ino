@@ -100,6 +100,9 @@ void XML_response_settings()
   resp = resp + "<desc>";
   resp = resp + serverDescription;
   resp = resp + "</desc>";
+  resp = resp + "<ledcn>";
+  resp = resp + ledcount;
+  resp = resp + "</ledcn>";
   for (int i = 0; i < 3; i++)
   {
     resp = resp + "<cldef>";
@@ -153,11 +156,26 @@ void XML_response_settings()
   resp = resp + "<ntpon>";
   resp = resp + bool2int(ntpEnabled);
   resp = resp + "</ntpon>";
+  resp = resp + "<alexa>";
+  resp = resp + bool2int(alexaEnabled);
+  resp = resp + "</alexa><ainvn>";
+  resp = resp + alexaInvocationName;
+  resp = resp + "</ainvn><nsalx>";
+  resp = resp + bool2int(alexaNotify);
+  resp = resp + "</nsalx>";
   DEBUG_PRINTLN("pretime");
   resp = resp + "<times>";
   resp = resp + getTimeString();
   resp = resp + "</times>";
-  DEBUG_PRINTLN("posttime");
+  resp = resp + "<oldef>";
+  resp = resp + overlayDefault;
+  resp = resp + "</oldef>";
+  resp = resp + "<woffs>";
+  resp = resp + abs(arlsOffset);
+  resp = resp + "</woffs>";
+  resp = resp + "<woffn>";
+  resp = resp + bool2int(!arlsSign);
+  resp = resp + "</woffn>";
   resp = resp + "<noota>";
   resp = resp + bool2int(ota_lock);
   resp = resp +"</noota>";

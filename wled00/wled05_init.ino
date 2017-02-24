@@ -133,8 +133,11 @@ void wledInit()
   MDNS.addService("http", "tcp", 80);
   //Init alexa service
   alexaInit();
+  
+  overlayCurrent = overlayDefault;
   // Initialize NeoPixel Strip
   strip.init();
+  strip.setLedCount(ledcount);
   strip.setMode(effectCurrent);
   strip.setColor(0);
   strip.setSpeed(effectSpeed);
