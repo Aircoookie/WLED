@@ -70,6 +70,7 @@ boolean useap = true;
 IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
+boolean turnOnAtBoot = true;
 byte col_s[]{255, 127, 0};
 byte bri_s = 127;
 uint8_t bri_nl = 0;

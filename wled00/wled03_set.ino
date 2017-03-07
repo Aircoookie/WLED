@@ -133,6 +133,7 @@ void handleSettingsSet()
       int i = server.arg("CLDFA").toInt();
       if (i >= 0 && i <= 255) bri_s = i;
     }
+    turnOnAtBoot = server.hasArg("BOOTN");
     if (server.hasArg("FXDEF"))
     {
       int i = server.arg("FXDEF").toInt();

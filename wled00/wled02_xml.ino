@@ -112,6 +112,9 @@ void XML_response_settings()
   resp = resp + "<cldfa>";
   resp = resp + bri_s;
   resp = resp + "</cldfa>";
+  resp = resp + "<bootn>";
+  resp = resp + bool2int(turnOnAtBoot);
+  resp = resp + "</bootn>";
   resp = resp + "<fxdef>";
   resp = resp + effectDefault;
   resp = resp + "</fxdef>";

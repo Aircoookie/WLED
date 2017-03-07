@@ -99,6 +99,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(366, alexaNotify);
   EEPROM.write(367, arlsSign);
   EEPROM.write(368, abs(arlsOffset));
+  EEPROM.write(369, turnOnAtBoot);
   EEPROM.commit();
 }
 
@@ -166,6 +167,10 @@ void loadSettingsFromEEPROM()
   col_s[1] = EEPROM.read(247); col[1] = col_s[1];
   col_s[2] = EEPROM.read(248); col[2] = col_s[2];
   bri_s = EEPROM.read(249); bri = bri_s;
+  if (!EEPROM.read(369))
+  {
+    bri = 0; bri_last = bri_s;
+  }
   receiveNotifications = EEPROM.read(250);
   receiveNotificationsDefault = receiveNotifications;
   fadeTransition = EEPROM.read(251);
@@ -204,4 +209,5 @@ void loadSettingsFromEEPROM()
   arlsSign = EEPROM.read(367);
   arlsOffset = EEPROM.read(368);
   if (!arlsSign) arlsOffset = -arlsOffset;
+  turnOnAtBoot = EEPROM.read(369);
 }

@@ -101,6 +101,9 @@ The software now supports audio-reactive-led-strip!
     m.append(2);
 3. In config.py set your led amount, ESP IP and WLED UDP notifier port. For FPS, a setting between 15-30 is recommended.
 4. Run visualization.py! If you have a low amount of LEDS (e.g. 10) try lowering the sigma values in line 129-131.
+5. If you have multiple WLED devices, you can sync them all with music.
+Use the led count of your largest device and set the IP to X.X.X.255 (UDP broadcast).
+You can adjust the position of the amplitude with the WARLS offset setting.
 Note that there is currently an issue preventing you from accessing the control web page while the script is running. HTTP requests work.
 
 

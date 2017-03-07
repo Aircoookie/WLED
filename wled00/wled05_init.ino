@@ -83,7 +83,7 @@ void wledInit()
     if(!handleFileRead("/index.htm")) server.send(200, "text/html", PAGE_index);
   });
   server.on("/reset", HTTP_GET, [](){
-    server.send(200, "text/plain", "Rebooting... Go to main page when lights turn on.");
+    server.send(200, "text/plain", "Rebooting... Please wait a few seconds and refresh page.");
     reset();
   });
   server.on("/set-settings", HTTP_POST, [](){
