@@ -1,5 +1,4 @@
 captive portal for ap
-alexa settings
 ntp bug
 simple slide transition
 additional color picker field
@@ -46,6 +45,7 @@ toggle notifier
 var. brightness
 
 BUGS
+general forced reset (usually around 48h)
 NTP crash (1-48h)
 static ip disables mdns
 ? authentification for security relevant areas ([/settings, /reset])

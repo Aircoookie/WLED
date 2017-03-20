@@ -150,7 +150,7 @@ const char PAGE_settings[] PROGMEM = R"=====(
     Target brightness: <input name="TLBRI" maxlength="3" size="2"> (0-255) <br>
     Change after: <input name="TLDUR" maxlength="3" size="2"> min <br>
     Fade: <input type="checkbox" name="TLFDE"> <br>
-    <h3>Daisy chain</h3>
+    <h3>Broadcast</h3>
     UDP Port: <input name="NUDPP" maxlength="5" size="2"><br>
     Receive notifications: <input type="checkbox" name="NRCVE"> <br>
     Send notifications on direct change: <input type="checkbox" name="NSDIR"> <br>

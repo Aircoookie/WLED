@@ -21,8 +21,11 @@
 #include "UpnpBroadcastResponder.h"
 #include "CallbackFunction.h"
 
+//version in format yymmddb (b = daily build)
+#define VERSION 1703202
+
 //to toggle usb serial debug (un)comment following line
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
@@ -40,8 +43,8 @@
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-#define LEDCOUNT 255 //maximum, exact count set-able via settings
-#define MAXDIRECT 255 //for direct access like arls, should be >= LEDCOUNT
+#define LEDCOUNT 93 //maximum, exact count set-able via settings
+#define MAXDIRECT 93 //for direct access like arls, should be >= LEDCOUNT
 uint8_t buttonPin = 0; //needs pull-up
 uint8_t auxPin = 15; //use e.g. for external relay
 uint8_t auxDefaultState = 0; //0: input 1: high 2: low
@@ -179,7 +182,7 @@ WS2812FX strip = WS2812FX(LEDCOUNT, 2, NEO_GRB + NEO_KHZ800);
 File fsUploadFile;
 
 #ifdef DEBUG
-int debugIndex = 0;
+long debugTime = 0;
 int lastWifiState = 3;
 long wifiStateChangedTime = 0;
 #endif
@@ -241,8 +244,7 @@ void loop() {
 
     //DEBUG
     #ifdef DEBUG
-    debugIndex ++;
-    if (debugIndex > 99999)
+    if (millis() - debugTime > 5000)
     {
       debugIndex = 0;
       DEBUG_PRINTLN("---MODULE DEBUG INFO---");
@@ -257,7 +259,8 @@ void loop() {
       lastWifiState = WiFi.status();
       DEBUG_PRINT("Wifi state: "); DEBUG_PRINTLN(wifiStateChangedTime);
       DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
-      DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP()); 
+      DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP());
+      debugTime = millis(); 
     }
     #endif
 }
