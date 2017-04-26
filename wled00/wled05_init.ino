@@ -90,6 +90,9 @@ void wledInit()
     handleSettingsSet();
     if(!handleFileRead("/settingssaved.htm")) server.send(200, "text/html", PAGE_settingssaved);
   });
+  server.on("/version", HTTP_GET, [](){
+    server.send(200, "text/plain", (String)VERSION);
+    });
   if (!ota_lock){
     server.on("/edit", HTTP_GET, [](){
     if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);

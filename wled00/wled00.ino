@@ -22,7 +22,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1703251
+#define VERSION 1704263
 
 //to toggle usb serial debug (un)comment following line
 #define DEBUG
@@ -76,9 +76,8 @@ IPAddress staticsubnet(255, 255, 255, 0);
 boolean turnOnAtBoot = true;
 byte col_s[]{255, 127, 0};
 byte bri_s = 127;
-uint8_t bri_nl = 0;
+uint8_t bri_nl = 0, bri_nls;
 boolean fadeTransition = true;
-boolean seqTransition = false;
 uint16_t transitionDelay = 1500;
 boolean ota_lock = true;
 boolean only_ap = false;
@@ -135,7 +134,6 @@ boolean transitionActive = false;
 boolean buttonPressedBefore = false;
 boolean nightlightActive = false;
 boolean nightlightActive_old = false;
-int transitionDelay_old;
 int nightlightDelayMs;
 uint8_t effectCurrent = 0;
 uint8_t effectSpeed = 75;

@@ -154,7 +154,6 @@ void handleSettingsSet()
     int i = server.arg("TDLAY").toInt();
     if (i > 0){
       transitionDelay = i;
-      transitionDelay_old = transitionDelay;
     }
   }
   if (server.hasArg("TLBRI"))

@@ -1,15 +1,13 @@
 WLED is a basic, fast and (relatively) (ok, VERY relatively) secure implementation of a ESP8266 webserver to control Neopixel (WS2812B) leds
 
-Uses ESP8266 Arduino libraries from 15th August 2016! Untested with newer version!
+Uses ESP arduino version 2.3.0 (latest as of April 2017).
 Contents in the /data directory may be uploaded to SPIFFS.
 
-Features: (V0.2)
+Features: (V0.3pd)
 - RGB and brightness sliders
 - Settings page - configuration over network
 - Access Point and station mode - automatic failsafe AP
 - Edit page. Change html and other files via OTA.
-
-Additions for V0.3 (nearly complete!)
 - WS2812FX library integrated for nearly 50 special effects!
 - Nightlight function (gradually dims down)
 - Notifier function (multiple ESPs sync color via UDP broadcast)
@@ -17,10 +15,11 @@ Additions for V0.3 (nearly complete!)
 - Full OTA software update capability
 - Password protected OTA page for added security (OTA lock)
 - Alexa smart home device server
-- (not working) NTP and experimental analog clock function
+- (unstable) NTP and experimental analog clock function
+- better client HTML page (not yet implemented)
 
 Compile settings:
-Board: WeMos D1 mini
+Board: WeMos D1 mini (untested with other HW, should work if it has 4MB flash)
 CPU frequency: 80 MHz
 Flash size : 4MB (1MB SPIFFS)
 Upload speed: 115200
@@ -36,7 +35,7 @@ Just flash a basic HTTP OTA updater sketch and upload the bin!
 Connect a  WS2812B RGB led strip to GPIO2. Optionally connect a NO-pushbutton to GPIO0 (internal pull-up) and ground.
 
 2. Follow a guide to setup your Arduino client (I am using version 1.8.1) with the ESP8266 libraries.
-For current compiles I use an old version from 15th August 2016.
+For current compiles I use version 2.3.0.
 
 3. You will also need the ESP8266 SPIFFS sketch data uploader. (currently working on making this step unnecessary)
 -> In the newest commit this step is not essential (HTML included in sketch), but recommended, since otherwise you have to upload the pictures manually to /edit SPIFFS

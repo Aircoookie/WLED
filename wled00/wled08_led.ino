@@ -41,13 +41,19 @@ void colorUpdated(int callMode)
     if (callMode == 6) notify(6);
     return; //no change
   }
+  if (callMode != 5 && nightlightActive && nightlightFade)
+  {
+    bri_nls = bri;
+    nightlightDelayMs -= (millis() - nightlightStartTime);
+    nightlightStartTime = millis();
+  }
   col_it[0] = col[0];
   col_it[1] = col[1];
   col_it[2] = col[2];
   bri_it = bri;
   if (bri > 0) bri_last = bri;
   notify(callMode);
-  if (fadeTransition || seqTransition)
+  if (fadeTransition)
   {
     if (transitionActive)
     {
@@ -55,10 +61,10 @@ void colorUpdated(int callMode)
       col_old[1] = col_t[1];
       col_old[2] = col_t[2];
       bri_old = bri_t;
+      tper_last = 0;
     }
     transitionActive = true;
     transitionStartTime = millis();
-    transitionDelay = transitionDelay_old;
   } else
   {
     setLedsStandard();
@@ -75,10 +81,6 @@ void handleTransitions()
       transitionActive = false;
       tper_last = 0;
       setLedsStandard();
-      if (nightlightActive && nightlightFade)
-      {
-        initNightlightFade();
-      }
       return;
     }
     if (tper - tper_last < transitionResolution)
@@ -93,27 +95,8 @@ void handleTransitions()
       col_t[2] = col_old[2]+((col[2] - col_old[2])*tper);
       bri_t = bri_old+((bri - bri_old)*tper);
     }
-    if (seqTransition)
-    {
-      
-    } else setAllLeds();
+    setAllLeds();
   }
-}
-
-void initNightlightFade()
-{
-  float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
-  nightlightDelayMs = nightlightDelayMs*(1-nper);
-  if (nper >= 1)
-  {
-    return;
-  }
-  bri = bri_nl;
-  bri_it = bri_nl;
-  transitionDelay = (int)(nightlightDelayMins*60000);
-  transitionStartTime = nightlightStartTime;
-  transitionActive = true;
-  nightlightStartTime = millis();
 }
 
 void handleNightlight()
@@ -126,12 +109,14 @@ void handleNightlight()
       notify(4);
       nightlightDelayMs = (int)(nightlightDelayMins*60000);
       nightlightActive_old = true;
-      if (nightlightFade)
-      {
-        initNightlightFade();
-      }
+      bri_nls = bri;
     }
     float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
+    if (nightlightFade)
+    {
+      bri = bri_nls+((bri_nl - bri_nls)*nper);
+      colorUpdated(5);
+    }
     if (nper >= 1)
     {
       nightlightActive = false;
@@ -140,14 +125,10 @@ void handleNightlight()
         bri = bri_nl;
         colorUpdated(5);
       }
+      if (bri == 0) bri_last = bri_nls;
     }
   } else if (nightlightActive_old) //early de-init
   {
     nightlightActive_old = false;
-    if (nightlightFade)
-    {
-      transitionDelay = transitionDelay_old;
-      transitionActive = false;
-    }
   }
 }

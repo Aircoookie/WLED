@@ -42,6 +42,10 @@ toggle nightlight
 toggle notifier
 var. brightness
 
+auto update (get from server)
+
+ifLed feature -> set triggers for reqs.?
+
 BUGS
 general forced reset (usually around 48h)
 NTP crash (1-48h)
