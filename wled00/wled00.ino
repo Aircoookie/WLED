@@ -22,7 +22,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1703202
+#define VERSION 1703251
 
 //to toggle usb serial debug (un)comment following line
 #define DEBUG
@@ -246,7 +246,6 @@ void loop() {
     #ifdef DEBUG
     if (millis() - debugTime > 5000)
     {
-      debugIndex = 0;
       DEBUG_PRINTLN("---MODULE DEBUG INFO---");
       DEBUG_PRINT("Runtime: "); DEBUG_PRINTLN(millis());
       DEBUG_PRINT("Unix time: "); DEBUG_PRINTLN(now());

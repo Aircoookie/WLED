@@ -4,7 +4,7 @@
 
 void handleNetworkTime()
 {
-  if (ntpEnabled && ntpConnected && millis() - ntpLastSyncTime > 50000000L)
+  if (ntpEnabled && ntpConnected && millis() - ntpLastSyncTime > 50000000L && WiFi.status() == WL_CONNECTED)
   {
     if (millis() - ntpPacketSentTime > 10000)
     {

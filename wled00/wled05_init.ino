@@ -5,7 +5,7 @@
 void wledInit()
 {
   Serial.begin(115200);
-
+  
   SPIFFS.begin();
   {
     Dir dir = SPIFFS.openDir("/");

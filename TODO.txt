@@ -1,5 +1,4 @@
 captive portal for ap
-ntp bug
 simple slide transition
 additional color picker field
 implement HSB slider option
@@ -12,7 +11,6 @@ use iframe for settings, seperate tabs for wifi and application confg
 use iframe for all adv. features?
 /dumpeeprom and /pusheeprom (ota lock!)
 (aux trigger pin) partially impl.
-get NTP working
 audioWLED
 	Broadcast
 	Less traffic (distr. and scroll proc. on module)
@@ -47,5 +45,9 @@ var. brightness
 BUGS
 general forced reset (usually around 48h)
 NTP crash (1-48h)
+losing connectivity
+Nightlight function
+off after forced reset (system query?)
+udp notifier doesn't work all the time
 static ip disables mdns
 ? authentification for security relevant areas ([/settings, /reset])
