@@ -98,6 +98,8 @@ void handleSettingsSet()
     if (i >= 0 && i <= 255) staticsubnet[3] = i;
   }
   if (server.hasArg("DESC")) serverDescription = server.arg("DESC");
+  useHSBDefault = server.hasArg("COLMD");
+  useHSB = useHSBDefault;
   if (server.hasArg("LEDCN"))
   {
     int i = server.arg("LEDCN").toInt();
@@ -264,6 +266,10 @@ boolean handleSet(String req)
         effectUpdated = true;
       }
    }
+   pos = req.indexOf("MD=");
+   if (pos > 0) {
+      useHSB = req.substring(pos + 3).toInt();
+   }
    pos = req.indexOf("OL=");
    if (pos > 0) {
         overlayCurrent = req.substring(pos + 3).toInt();
@@ -281,18 +287,18 @@ boolean handleSet(String req)
         strip.setIndividual(index);
       }
    }
-   if (req.indexOf("NS=") > 0)
+   if (req.indexOf("SN=") > 0)
    {
       notifyMaster = true;
-      if (req.indexOf("NS=0") > 0)
+      if (req.indexOf("SN=0") > 0)
       {
         notifyMaster = false;
       }
    }
-   if (req.indexOf("NR=") > 0)
+   if (req.indexOf("RN=") > 0)
    {
       receiveNotifications = true;
-      if (req.indexOf("NR=0") > 0)
+      if (req.indexOf("RN=0") > 0)
       {
         receiveNotifications = false;
       }

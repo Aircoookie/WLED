@@ -29,9 +29,10 @@
 							document.S_form.CMDNS.value = this.responseXML.getElementsByTagName('cmdns')[0].innerHTML;
 							document.S_form.APSSID.value = this.responseXML.getElementsByTagName('apssid')[0].innerHTML;
 							document.S_form.APHSSID.checked = (this.responseXML.getElementsByTagName('aphssid')[0].innerHTML)!=0?true:false;
-							document.S_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].innerHTML; //fake pass like ******
+							document.S_form.APPASS.value = this.responseXML.getElementsByTagName('appass')[0].innerHTML; //fake pass
 							document.S_form.APCHAN.value = this.responseXML.getElementsByTagName('apchan')[0].innerHTML;
 							document.S_form.DESC.value = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
+							document.S_form.COLMD.checked = (this.responseXML.getElementsByTagName('colmd')[0].innerHTML)!=0?true:false;
 							document.S_form.LEDCN.value = this.responseXML.getElementsByTagName('ledcn')[0].innerHTML;
 							document.S_form.CLDFR.value = this.responseXML.getElementsByTagName('cldef')[0].innerHTML;
 							document.S_form.CLDFG.value = this.responseXML.getElementsByTagName('cldef')[1].innerHTML;
@@ -75,10 +76,6 @@
 			request.open("GET", "/get-settings", true);
 			request.send(null);
 		}
-		function OpenMain()
-		{
-			window.open("/","_self");
-		}
 	</script>
 	<style>
 	body {
@@ -87,13 +84,13 @@
 	</style>
 </head>
 <body onload="GetCurrent()" class=" __plain_text_READY__">
-	<h1>WLED Settings</h1>
+	<h1 style="text-align:center">WLED Settings</h1>
 	<form id="form_s" name="S_form" action="set-settings" method="post">
-		<input type="submit" name="SUBM" value="Save">
-		<input type="button" name="BACK" value="Back" onclick="OpenMain()">
+		<div align="center"><input type="submit" name="SUBM" value="Save"></div>
+		<hr>
 		<h2>WiFi setup</h2>
 		<h3>Connect to existing network</h3>
-		Network SSID (leave empty to not connect): <br> <input name="CSSID" maxlength="32"> <br>
+		Network SSID (leave empty to not connect): <input name="CSSID" maxlength="32"> <br>
 		Network password: <br> <input type="password" name="CPASS" maxlength="63"> <br>
 		Static IP (leave at 0.0.0.0 for DHCP): <br>
 		<input name="CSIP0" maxlength="3" size="2"> .
@@ -119,10 +116,11 @@
 		AP password (leave empty for open): <br> <input type="password" name="APPASS" maxlength="63"> <br>
 		AP channel: <input name="APCHAN" maxlength="2" size="2"> <br>
 		AP IP: <span class="sip"> Not active </span> <br>
-		
+		<hr>
 		<h2>Application setup</h2>
 		<h3>Web setup</h3>
 		Server description: <input name="DESC" maxlength="32"> <br>
+		Use HSB sliders instead of RGB by default: <input type="checkbox" name="COLMD"> <br>
 		<h3>LED setup</h3>
 		LED count (max. 255): <input name="LEDCN" maxlength="3" size="2"> <br>
 		Default RGB color:
@@ -187,9 +185,8 @@
 		<i>Timezone library by JChristensen</i> <br>
 		<i>arduino-esp8266-alexa-multiple-wemo-switch by kakopappa</i> <br>
 		Server message: <span class="msg"> XML response error! </span>
-		<br><br>
-		<input type="submit" name="SUBM" value="Save">
-		<input type="button" name="BACK" value="Back" onclick="OpenMain()">
+		<br><br><hr>
+		<div align="center"><input type="submit" name="SUBM" value="Save"></div>
 	</form>
 </body>
 </html>

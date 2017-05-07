@@ -62,9 +62,10 @@ Add one or multiple of the following parameters after the base url to change val
 "&T=<0 or 1 or 2-255>" 0: switch off, on, toggle
 "&FX=<0-47>" set LED effect (refer to WS2812FX library)
 "&SX=<0-255>" set LED effect speed (refer to WS2812FX library)
-"&NR=<0 or 1>" receive notifications on or off
-"&NS=<0 or 1>" send (direct) notifications on or off
+"&RN=<0 or 1>" receive notifications on or off
+"&SN=<0 or 1>" send (direct) notifications on or off
 "&NL=<0 or 1>" turns nightlight function on or off
+"&MD=<0 or 1>" sets client color picker mode (RGB/HSB)
 ("&OL=<0, 1, 3 or 5>" experimental clock overlays)
 ("&I=<0-255>" experimental individual LED control)
 ("&I=<0-255>&I2=<0-255>" experimental individual LED range control)

@@ -25,20 +25,18 @@ void XML_response()
    }
    resp = resp + "<ns>";
    resp = resp + notifyMaster;
-   resp = resp + "</ns>";
-   resp = resp + "<nr>";
+   resp = resp + "</ns><nr>";
    resp = resp + receiveNotifications;
-   resp = resp + "</nr>";
-   resp = resp + "<nl>";
+   resp = resp + "</nr><nl>";
    resp = resp + nightlightActive;
-   resp = resp + "</nl>";
-   resp = resp + "<fx>";
+   resp = resp + "</nl><fx>";
    resp = resp + effectCurrent;
-   resp = resp + "</fx>";
-   resp = resp + "<sx>";
+   resp = resp + "</fx><sx>";
    resp = resp + effectSpeed;
    resp = resp + "</sx>";
-   resp = resp + "<desc>";
+   resp = resp + "<md>";
+   resp = resp + bool2int(useHSB);
+   resp = resp + "</md><desc>";
    resp = resp + serverDescription;
    resp = resp + "</desc>";
    //enable toolbar here
@@ -100,6 +98,9 @@ void XML_response_settings()
   resp = resp + "<desc>";
   resp = resp + serverDescription;
   resp = resp + "</desc>";
+  resp = resp + "<colmd>";
+  resp = resp + useHSBDefault;
+  resp = resp + "</colmd>";
   resp = resp + "<ledcn>";
   resp = resp + ledcount;
   resp = resp + "</ledcn>";

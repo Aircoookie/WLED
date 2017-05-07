@@ -22,7 +22,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1704263
+#define VERSION 1705071
 
 //to toggle usb serial debug (un)comment following line
 #define DEBUG
@@ -73,6 +73,7 @@ boolean useap = true;
 IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
+boolean useHSB = false, useHSBDefault = false;
 boolean turnOnAtBoot = true;
 byte col_s[]{255, 127, 0};
 byte bri_s = 127;

@@ -100,6 +100,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(367, arlsSign);
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
+  EEPROM.write(370, useHSBDefault);
   EEPROM.commit();
 }
 
@@ -209,4 +210,6 @@ void loadSettingsFromEEPROM()
   arlsOffset = EEPROM.read(368);
   if (!arlsSign) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
+  useHSBDefault = EEPROM.read(370);
+  useHSB = useHSBDefault;
 }

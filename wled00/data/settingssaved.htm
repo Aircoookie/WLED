@@ -3,10 +3,6 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
 	<title>Saved Settings</title>
 	<script>
-		function OpenMain()
-		{
-			window.open("/","_self");
-		}
 		function OpenReboot()
 		{
 			window.open("/reset","_self");
@@ -16,8 +12,7 @@
 	<div align="center">
 		<h2>Settings saved.</h2>
 		<p>If you made changes to WiFi configuration, please reboot.</p><br>
-		<input type="button" name="BACK" value="Close" onclick="OpenMain()">
-		<input type="button" name="BACK" value="Reboot" onclick="OpenReboot()">
+		<input type="button" value="Reboot" onclick="OpenReboot()">
 	</div></body>
 </html>
 	
