@@ -212,7 +212,7 @@ void XML_response_settings()
     resp = resp + "Not active";
   }
   resp = resp + "</sip>";
-  resp = resp + "<msg>WLED 0.3pd (build";
+  resp = resp + "<msg>WLED 0.3pd (build ";
   resp = resp + VERSION;
   resp = resp + ") OK</msg>";
   resp = resp + "</vs>";

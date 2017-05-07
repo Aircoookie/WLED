@@ -6,6 +6,8 @@
 		strR = "";
 		strG = "";
 		strB = "";
+		strNL = "";
+		var nla = false;
 		
 		function Startup()
 		{
@@ -25,22 +27,24 @@
 							document.Ctrl_form.SR.value = this.responseXML.getElementsByTagName('cl')[0].childNodes[0].nodeValue;
 							document.Ctrl_form.SG.value = this.responseXML.getElementsByTagName('cl')[1].childNodes[0].nodeValue;
 							document.Ctrl_form.SB.value = this.responseXML.getElementsByTagName('cl')[2].childNodes[0].nodeValue;
+							nla = (this.responseXML.getElementsByTagName('nl')[0].innerHTML)!=0?true:false;
+							document.getElementsByClassName("desc")[0].innerHTML = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
 							UpdateVals();
 						}
 					}
 				}
 			}
 			// send HTTP request
-			request.open("GET", "win/" + strA + strR + strG + strB + nocache, true);
+			request.open("GET", "win/" + strA + strR + strG + strB + strNL + nocache, true);
 			request.send(null);
 			strA = "";
 			strR = "";
 			strG = "";
 			strB = "";
+			strNL = "";
 		}
 		function GetCheck()
 		{
-			
 			strA = "&A=" + Ctrl_form.SA.value;
 			strR = "&R=" + Ctrl_form.SR.value;
 			strG = "&G=" + Ctrl_form.SG.value;
@@ -59,24 +63,42 @@
 		function UpdateVals()
 		{
 			document.body.style.background = lingrad(Ctrl_form.SR.value, Ctrl_form.SG.value, Ctrl_form.SB.value);
+			if (nla) {
+				nlb.style.fill="white";
+			} else {
+				nlb.style.fill="black";
+			}
 		}
 		function OpenSettings()
 		{
 			window.open("/settings","_self");
 		}
-		function ToggleNightMode()
+		function ToggleNl()
 		{
-		
+			nla = !nla;
+			if (nla) {
+				strNL="&NL=1";
+			} else {
+				strNL="&NL=0";
+			}
+			UpdateVals();
+			GetArduinoIO();
 		}
 	</script>
 	<style>
+		.tool_box {
+			border: 0.3ch solid grey;
+			margin: auto;
+			width: 80vw;
+			background-color: #B9B9B9;
+		}
 		.ctrl_box {
 			border: 0.3ch solid grey;
 			margin: auto;
 			width: 80vw;
 			background-color: #B9B9B9;
 			position: absolute;
-			top: 50%;
+			top: 60%;
 			left: 50%;
 			transform: translate(-50%, -50%);
 		}
@@ -109,7 +131,7 @@
 			background: linear-gradient(to right, black, blue);
 		}
 		body {
-			text-align: right;
+			text-align: center;
 			background: linear-gradient(white, black);
 			height: 100%;
 			margin: 0;
@@ -119,14 +141,10 @@
 		html {
 			height: 100%;
 		}
-		.tool_box {
-			
-		}
-		input[type=image] {
-			width: 10vmin;
+		svg {
+			width: 11vw;
 			height: 10vmin;
-			margin-top: 4px;
-			margin-right: 4px;
+			margin: 4px;
 		}
 		input[type=range] {
 		  -webkit-appearance: none;
@@ -186,9 +204,14 @@
 	</style>
 <style id="holderjs-style" type="text/css"></style></head>
 <body onload="Startup()" class=" __plain_text_READY__">
+	<span class="desc"> Loading... </span>
 	<div id="tbB" class="tool_box">
-		<input type="image" class="settingsbutton" src="/button.png" onclick="OpenSettings()"id="tool">
-		<!--<input type="image" class="nightbutton" src="/moon.png" onclick="ToggleNightMode()"id="night">-->
+		<svg><use xlink:href="#icon-equalizer"></use></svg>
+		<svg><use xlink:href="#icon-star-full"></use></svg>
+		<svg id="nlb" onclick="ToggleNl()"><use xlink:href="#icon-clock"></use></svg>
+		<svg><use xlink:href="#icon-download"></use></svg>
+		<svg><use xlink:href="#icon-upload"></use></svg>
+		<svg onclick="OpenSettings()"><use xlink:href="#icon-cog"></use></svg>
 	</div>
 	<div id="cdB" class="ctrl_box">
 		<form id="form_c" name="Ctrl_form">
@@ -203,4 +226,37 @@
 			<input type="range" class="sliders" name="SB" value="0" min="0" max="255" step="1" onchange="GetCheck()"> </div> <br>
 		</form>	
 	</div>
-</div></body></html>
+</body>
+<svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<symbol id="icon-clock" viewBox="0 0 32 32">
+<title>clock</title>
+<path d="M20.586 23.414l-6.586-6.586v-8.828h4v7.172l5.414 5.414zM16 0c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16zM16 28c-6.627 0-12-5.373-12-12s5.373-12 12-12c6.627 0 12 5.373 12 12s-5.373 12-12 12z"></path>
+</symbol>
+<symbol id="icon-clock2" viewBox="0 0 32 32">
+<title>clock2</title>
+<path d="M16 0c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16zM20.586 23.414l-6.586-6.586v-8.828h4v7.172l5.414 5.414-2.829 2.829z"></path>
+</symbol>
+<symbol id="icon-download" viewBox="0 0 32 32">
+<title>download</title>
+<path d="M16 18l8-8h-6v-8h-4v8h-6zM23.273 14.727l-2.242 2.242 8.128 3.031-13.158 4.907-13.158-4.907 8.127-3.031-2.242-2.242-8.727 3.273v8l16 6 16-6v-8z"></path>
+</symbol>
+<symbol id="icon-upload" viewBox="0 0 32 32">
+<title>upload</title>
+<path d="M14 18h4v-8h6l-8-8-8 8h6zM20 13.5v3.085l9.158 3.415-13.158 4.907-13.158-4.907 9.158-3.415v-3.085l-12 4.5v8l16 6 16-6v-8z"></path>
+</symbol>
+<symbol id="icon-equalizer" viewBox="0 0 32 32">
+<title>equalizer</title>
+<path d="M14 4v-0.5c0-0.825-0.675-1.5-1.5-1.5h-5c-0.825 0-1.5 0.675-1.5 1.5v0.5h-6v4h6v0.5c0 0.825 0.675 1.5 1.5 1.5h5c0.825 0 1.5-0.675 1.5-1.5v-0.5h18v-4h-18zM8 8v-4h4v4h-4zM26 13.5c0-0.825-0.675-1.5-1.5-1.5h-5c-0.825 0-1.5 0.675-1.5 1.5v0.5h-18v4h18v0.5c0 0.825 0.675 1.5 1.5 1.5h5c0.825 0 1.5-0.675 1.5-1.5v-0.5h6v-4h-6v-0.5zM20 18v-4h4v4h-4zM14 23.5c0-0.825-0.675-1.5-1.5-1.5h-5c-0.825 0-1.5 0.675-1.5 1.5v0.5h-6v4h6v0.5c0 0.825 0.675 1.5 1.5 1.5h5c0.825 0 1.5-0.675 1.5-1.5v-0.5h18v-4h-18v-0.5zM8 28v-4h4v4h-4z"></path>
+</symbol>
+<symbol id="icon-cog" viewBox="0 0 32 32">
+<title>cog</title>
+<path d="M29.181 19.070c-1.679-2.908-0.669-6.634 2.255-8.328l-3.145-5.447c-0.898 0.527-1.943 0.829-3.058 0.829-3.361 0-6.085-2.742-6.085-6.125h-6.289c0.008 1.044-0.252 2.103-0.811 3.070-1.679 2.908-5.411 3.897-8.339 2.211l-3.144 5.447c0.905 0.515 1.689 1.268 2.246 2.234 1.676 2.903 0.672 6.623-2.241 8.319l3.145 5.447c0.895-0.522 1.935-0.82 3.044-0.82 3.35 0 6.067 2.725 6.084 6.092h6.289c-0.003-1.034 0.259-2.080 0.811-3.038 1.676-2.903 5.399-3.894 8.325-2.219l3.145-5.447c-0.899-0.515-1.678-1.266-2.232-2.226zM16 22.479c-3.578 0-6.479-2.901-6.479-6.479s2.901-6.479 6.479-6.479c3.578 0 6.479 2.901 6.479 6.479s-2.901 6.479-6.479 6.479z"></path>
+</symbol>
+<symbol id="icon-star-full" viewBox="0 0 32 32">
+<title>star-full</title>
+<path d="M32 12.408l-11.056-1.607-4.944-10.018-4.944 10.018-11.056 1.607 8 7.798-1.889 11.011 9.889-5.199 9.889 5.199-1.889-11.011 8-7.798z"></path>
+</symbol>
+</defs>
+</svg>
+</html>
