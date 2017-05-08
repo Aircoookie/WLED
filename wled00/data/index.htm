@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<html>
+<head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
 	<title>WLED 0.3pd</title>
 	<script>
 	    strA = "";
@@ -9,14 +10,25 @@
 		strNL = "";
 		strNR = "";
 		strNS = "";
+		strMD = "";
+		strFX = "";
+		strSX = "";
 		var nla = false;
 		var nra = false;
 		var nsa = false;
 		var sto = false;
 		var hsb = false;
+		var fxa = false;
+		var lastsx = 0;
 		
 		function Startup()
 		{
+			document.getElementById("fxI").addEventListener("keypress", function(event) {
+				if (event.keyCode == 13) {
+					event.preventDefault();
+					GetFX();
+				}
+			});
 			setInterval('GetArduinoIO()', 5000);
 			GetArduinoIO();
 		}
@@ -33,9 +45,12 @@
 							document.Ctrl_form.SR.value = this.responseXML.getElementsByTagName('cl')[0].childNodes[0].nodeValue;
 							document.Ctrl_form.SG.value = this.responseXML.getElementsByTagName('cl')[1].childNodes[0].nodeValue;
 							document.Ctrl_form.SB.value = this.responseXML.getElementsByTagName('cl')[2].childNodes[0].nodeValue;
+							if (document.activeElement != document.getElementById("fxI")) document.Ctrl_form.TF.value = this.responseXML.getElementsByTagName('fx')[0].childNodes[0].nodeValue;
+							document.Ctrl_form.SX.value = this.responseXML.getElementsByTagName('sx')[0].childNodes[0].nodeValue;
 							nla = (this.responseXML.getElementsByTagName('nl')[0].innerHTML)!=0?true:false;
 							nra = (this.responseXML.getElementsByTagName('nr')[0].innerHTML)!=0?true:false;
 							nsa = (this.responseXML.getElementsByTagName('ns')[0].innerHTML)!=0?true:false;
+							hsb = (this.responseXML.getElementsByTagName('md')[0].innerHTML)!=0?true:false;
 							document.getElementsByClassName("desc")[0].innerHTML = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
 							UpdateVals();
 						}
@@ -43,7 +58,7 @@
 				}
 			}
 			// send HTTP request
-			request.open("GET", "win/" + strA + strR + strG + strB + strNL + strNR + strNS + nocache, true);
+			request.open("GET", "win/" + strA + strR + strG + strB + strNL + strNR + strNS + strMD + strFX + strSX +nocache, true);
 			request.send(null);
 			strA = "";
 			strR = "";
@@ -52,6 +67,9 @@
 			strNL = "";
 			strNR = "";
 			strNS = "";
+			strMD = "";
+			strFX = "";
+			strSX = "";
 		}
 		function GetCheck()
 		{
@@ -59,7 +77,13 @@
 			strR = "&R=" + Ctrl_form.SR.value;
 			strG = "&G=" + Ctrl_form.SG.value;
 			strB = "&B=" + Ctrl_form.SB.value;
-			
+			UpdateVals();
+			GetArduinoIO();
+		}
+		function GetFX()
+		{
+			strFX = "&FX=" + Ctrl_form.TF.value;
+			strSX = "&SX=" + Ctrl_form.SX.value;
 			UpdateVals();
 			GetArduinoIO();
 		}
@@ -74,6 +98,7 @@
 		{
 			document.body.style.background = lingrad(Ctrl_form.SR.value, Ctrl_form.SG.value, Ctrl_form.SB.value);
 			setHS(Ctrl_form.SR.value, Ctrl_form.SG.value, Ctrl_form.SB.value);
+			SetHSB();
 			if (nla) {
 				nlb.style.fill="green";
 			} else {
@@ -90,10 +115,42 @@
 				nsb.style.fill="black";
 			}
 		}
-		function ToggleHSB()
+		function ToggleFX()
 		{
-			cdB.style.display="none";
-			hsb = !hsb;
+			fxa = !fxa;
+			if (sto) CloseSettings();
+			SetFX();
+		}
+		function SwitchFX(s)
+		{
+			document.Ctrl_form.TF.value = parseInt(document.Ctrl_form.TF.value) +s;
+			if (document.Ctrl_form.TF.value < 0) document.Ctrl_form.TF.value = 0;
+			if (document.Ctrl_form.TF.value > 47) document.Ctrl_form.TF.value = 47;
+			GetFX();
+		}
+		function SetFX()
+		{
+			if (fxa) {
+				fxb.style.fill="green";
+				document.getElementById("slA").style.display="none";
+				document.getElementById("slR").style.display="none";
+				document.getElementById("slG").style.display="none";
+				document.getElementById("slB").style.display="none";
+				document.getElementById("slH").style.display="none";
+				document.getElementById("slS").style.display="none";
+				document.getElementById("slX").style.display="block";
+				document.getElementById("tlX").style.display="block";
+			} else {
+				fxb.style.fill="black";
+				document.getElementById("slA").style.display="block";
+				document.getElementById("slX").style.display="none";
+				document.getElementById("tlX").style.display="none";
+				SetHSB();
+			}
+		}
+		function SetHSB()
+		{
+			if (fxa) return;
 			if (hsb)
 			{
 				document.getElementById("slR").style.display="none";
@@ -110,7 +167,23 @@
 				document.getElementById("slS").style.display="none";
 				mdb.style.fill="black";
 			}
-			cdB.style.display="inline";
+		}
+		function ToggleHSB()
+		{
+			if (fxa)
+			{
+				fxa = false;
+				SetFX();
+			}
+			if (sto) CloseSettings();
+			hsb = !hsb;
+			if (hsb)
+			{
+				strMD="&MD=1";
+			} else {
+				strMD="&MD=0";
+			}
+			SetHSB();
 		}
 		function OpenSettings()
 		{
@@ -287,6 +360,21 @@
 			width: 77vw;
 			background: linear-gradient(to right, grey, green);
 		}
+		.toolsFX {
+			display:none;
+			margin-left: auto;
+			margin-right: auto;
+			margin-top: 2vh;
+			width: 77vw;
+		}
+		.sliderX {
+			display:none;
+			margin-left: auto;
+			margin-right: auto;
+			margin-top: 2vh;
+			width: 77vw;
+			background: linear-gradient(to right, black, white);
+		}
 		body {
 			text-align: center;
 			background: linear-gradient(white, black);
@@ -370,35 +458,22 @@
 <style id="holderjs-style" type="text/css"></style></head>
 <body onload="Startup()" class=" __plain_text_READY__">
 	<span class="desc"> Loading... </span>
-	<div id="tbB" class="tool_box">
-		<svg id="mdb" onclick="ToggleHSB()"><use xlink:href="#icon-equalizer"></use></svg>
-		<svg><use xlink:href="#icon-star-full"></use></svg>
-		<svg id="nlb" onclick="ToggleNl()"><use xlink:href="#icon-clock"></use></svg>
-		<svg id="nrb" onclick="ToggleNr()"><use xlink:href="#icon-download"></use></svg>
-		<svg id="nsb" onclick="ToggleNs()"><use xlink:href="#icon-upload"></use></svg>
-		<svg id="stb" onclick="ToggleSettings()"><use xlink:href="#icon-cog"></use></svg>
-	</div>
-	<div id="cdB" class="ctrl_box">
-		<form id="form_c" name="Ctrl_form">
-			<br>
-			<div id="slA" class="sliderA">
-			<input type="range" title="Brightness" class="sliders" name="SA" value="0" min="0" max="255" step="1" onchange="GetCheck()">  </div>
-			<div id="slR" class="sliderR">
-			<input type="range" title="Red Value" class="sliders" name="SR" value="0" min="0" max="255" step="1" onchange="GetCheck()">  </div>
-			<div id="slG" class="sliderG">
-			<input type="range" title="Green Value" class="sliders" name="SG" value="0" min="0" max="255" step="1" onchange="GetCheck()">  </div>
-			<div id="slB" class="sliderB">
-			<input type="range" title="Blue Value" class="sliders" name="SB" value="0" min="0" max="255" step="1" onchange="GetCheck()">  </div>
-			<div id="slH" class="sliderH">
-			<input type="range" title="Hue" class="sliders" name="SH" value="0" min="0" max="1" step="0.025" onchange="GetRGB()">  </div>
-			<div id="slS" class="sliderS">
-			<input type="range" title="Saturation" class="sliders" name="SS" value="0" min="0" max="1" step="0.025" onchange="GetRGB()">  </div> <br>
-		</form>	
-	</div>
-	<iframe id="stf" src="about:blank"></iframe>
-</body>
 <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
 <defs>
+<symbol id="icon-backward2" viewBox="0 0 32 32">
+<path d="M18 5v10l10-10v22l-10-10v10l-11-11z"></path>
+</symbol>
+<symbol id="icon-forward3" viewBox="0 0 32 32">
+<path d="M16 27v-10l-10 10v-22l10 10v-10l11 11z"></path>
+</symbol>
+<symbol id="icon-circle-right" viewBox="0 0 32 32">
+<path d="M16 0c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16zM16 29c-7.18 0-13-5.82-13-13s5.82-13 13-13 13 5.82 13 13-5.82 13-13 13z"></path>
+<path d="M11.086 22.086l2.829 2.829 8.914-8.914-8.914-8.914-2.828 2.828 6.086 6.086z"></path>
+</symbol>
+<symbol id="icon-circle-left" viewBox="0 0 32 32">
+<path d="M16 32c8.837 0 16-7.163 16-16s-7.163-16-16-16-16 7.163-16 16 7.163 16 16 16zM16 3c7.18 0 13 5.82 13 13s-5.82 13-13 13-13-5.82-13-13 5.82-13 13-13z"></path>
+<path d="M20.914 9.914l-2.829-2.829-8.914 8.914 8.914 8.914 2.828-2.828-6.086-6.086z"></path>
+</symbol>
 <symbol id="icon-equalizer" viewBox="0 0 32 32">
 <path d="M14 4v-0.5c0-0.825-0.675-1.5-1.5-1.5h-5c-0.825 0-1.5 0.675-1.5 1.5v0.5h-6v4h6v0.5c0 0.825 0.675 1.5 1.5 1.5h5c0.825 0 1.5-0.675 1.5-1.5v-0.5h18v-4h-18zM8 8v-4h4v4h-4zM26 13.5c0-0.825-0.675-1.5-1.5-1.5h-5c-0.825 0-1.5 0.675-1.5 1.5v0.5h-18v4h18v0.5c0 0.825 0.675 1.5 1.5 1.5h5c0.825 0 1.5-0.675 1.5-1.5v-0.5h6v-4h-6v-0.5zM20 18v-4h4v4h-4zM14 23.5c0-0.825-0.675-1.5-1.5-1.5h-5c-0.825 0-1.5 0.675-1.5 1.5v0.5h-6v4h6v0.5c0 0.825 0.675 1.5 1.5 1.5h5c0.825 0 1.5-0.675 1.5-1.5v-0.5h18v-4h-18v-0.5zM8 28v-4h4v4h-4z"></path>
 </symbol>
@@ -419,4 +494,40 @@
 </symbol>
 </defs>
 </svg>
+	<div id="tbB" class="tool_box">
+		<svg id="mdb" onclick="ToggleHSB()"><use xlink:href="#icon-equalizer"></use></svg>
+		<svg id="fxb" onclick="ToggleFX()"><use xlink:href="#icon-star-full"></use></svg>
+		<svg id="nlb" onclick="ToggleNl()"><use xlink:href="#icon-clock"></use></svg>
+		<svg id="nrb" onclick="ToggleNr()"><use xlink:href="#icon-download"></use></svg>
+		<svg id="nsb" onclick="ToggleNs()"><use xlink:href="#icon-upload"></use></svg>
+		<svg id="stb" onclick="ToggleSettings()"><use xlink:href="#icon-cog"></use></svg>
+	</div>
+	<div id="cdB" class="ctrl_box">
+		<form id="form_c" name="Ctrl_form">
+			<br>
+			<div id="slA" class="sliderA">
+			<input type="range" title="Brightness" class="sliders" name="SA" value="0" min="0" max="255" step="1" onchange="GetCheck()">  </div>
+			<div id="slR" class="sliderR">
+			<input type="range" title="Red Value" class="sliders" name="SR" value="0" min="0" max="255" step="1" onchange="GetCheck()">  </div>
+			<div id="slG" class="sliderG">
+			<input type="range" title="Green Value" class="sliders" name="SG" value="0" min="0" max="255" step="1" onchange="GetCheck()">  </div>
+			<div id="slB" class="sliderB">
+			<input type="range" title="Blue Value" class="sliders" name="SB" value="0" min="0" max="255" step="1" onchange="GetCheck()">  </div>
+			<div id="slH" class="sliderH">
+			<input type="range" title="Hue" class="sliders" name="SH" value="0" min="0" max="1" step="0.025" onchange="GetRGB()">  </div>
+			<div id="slS" class="sliderS">
+			<input type="range" title="Saturation" class="sliders" name="SS" value="0" min="0" max="1" step="0.025" onchange="GetRGB()">  </div>
+			<div id="tlX" class = "toolsFX">
+			<svg id="fmr" onclick="SwitchFX(-10)"><use xlink:href="#icon-backward2"></use></svg>
+			<svg id="for" onclick="SwitchFX(-1)"><use xlink:href="#icon-circle-left"></use></svg>
+			<svg id="fmf" onclick="SwitchFX(1)"><use xlink:href="#icon-circle-right"></use></svg>
+			<svg id="fof" onclick="SwitchFX(10)"><use xlink:href="#icon-forward3"></use></svg>
+			<br><input id="fxI" name = "TF" type="number" value="0" min="0" max="47" step="1" onchange="GetFX()">
+			</div>
+			<div id="slX" class="sliderX">
+			<input type="range" title="Effect Speed" class="sliders" name="SX" value="0" min="0" max="255" step="1" onchange="GetFX()">  </div> <br>
+		</form>	
+	</div>
+	<iframe id="stf" src="about:blank"></iframe>
+</body>
 </html>
