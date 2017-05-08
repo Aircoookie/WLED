@@ -24,7 +24,7 @@ void XML_response()
      resp = resp + "</cl>";
    }
    resp = resp + "<ns>";
-   resp = resp + notifyMaster;
+   resp = resp + notifyDirect;
    resp = resp + "</ns><nr>";
    resp = resp + receiveNotifications;
    resp = resp + "</nr><nl>";
@@ -35,7 +35,7 @@ void XML_response()
    resp = resp + effectSpeed;
    resp = resp + "</sx>";
    resp = resp + "<md>";
-   resp = resp + bool2int(useHSB);
+   resp = resp + useHSB;
    resp = resp + "</md><desc>";
    resp = resp + serverDescription;
    resp = resp + "</desc>";
@@ -114,7 +114,7 @@ void XML_response_settings()
   resp = resp + bri_s;
   resp = resp + "</cldfa>";
   resp = resp + "<bootn>";
-  resp = resp + bool2int(turnOnAtBoot);
+  resp = resp + turnOnAtBoot;
   resp = resp + "</bootn>";
   resp = resp + "<fxdef>";
   resp = resp + effectDefault;
@@ -123,14 +123,14 @@ void XML_response_settings()
   resp = resp + effectSpeedDefault;
   resp = resp + "</sxdef>";
   resp = resp + "<gcbri>";
-  resp = resp + bool2int(useGammaCorrectionBri);
+  resp = resp + useGammaCorrectionBri;
   resp = resp + "</gcbri><gcrgb>";
-  resp = resp + bool2int(useGammaCorrectionRGB);
+  resp = resp + useGammaCorrectionRGB;
   resp = resp + "</gcrgb>";
   resp = resp + "<btnon>";
-  resp = resp + bool2int(buttonEnabled);
+  resp = resp + buttonEnabled;
   resp = resp + "</btnon><tfade>";
-  resp = resp + bool2int(fadeTransition);
+  resp = resp + fadeTransition;
   resp = resp + "</tfade><tdlay>";
   resp = resp + transitionDelay;
   resp = resp + "</tdlay>";
@@ -141,31 +141,29 @@ void XML_response_settings()
   resp = resp + nightlightDelayMins;
   resp = resp + "</tldur>";
   resp = resp + "<tlfde>";
-  resp = resp + bool2int(nightlightFade);
+  resp = resp + nightlightFade;
   resp = resp + "</tlfde>";
   resp = resp + "<nudpp>";
   resp = resp + udpPort;
   resp = resp + "</nudpp>";
   resp = resp + "<nrcve>";
-  resp = resp + bool2int(receiveNotificationsDefault);
+  resp = resp + receiveNotificationsDefault;
   resp = resp + "</nrcve><nrbri>";
   resp = resp + bri_n;
   resp = resp + "</nrbri><nsdir>";
-  resp = resp + bool2int(notifyDirect);
+  resp = resp + notifyDirectDefault;
   resp = resp + "</nsdir><nsbtn>";
-  resp = resp + bool2int(notifyButton);
-  resp = resp + "</nsbtn><nsfwd>";
-  resp = resp + bool2int(notifyNightlight);
-  resp = resp + "</nsfwd>";
+  resp = resp + notifyButton;
+  resp = resp + "</nsbtn><nsfwd>0</nsfwd>"; //legacy
   resp = resp + "<ntpon>";
-  resp = resp + bool2int(ntpEnabled);
+  resp = resp + ntpEnabled;
   resp = resp + "</ntpon>";
   resp = resp + "<alexa>";
-  resp = resp + bool2int(alexaEnabled);
+  resp = resp + alexaEnabled;
   resp = resp + "</alexa><ainvn>";
   resp = resp + alexaInvocationName;
   resp = resp + "</ainvn><nsalx>";
-  resp = resp + bool2int(alexaNotify);
+  resp = resp + alexaNotify;
   resp = resp + "</nsalx>";
   DEBUG_PRINTLN("pretime");
   resp = resp + "<times>";
@@ -178,10 +176,10 @@ void XML_response_settings()
   resp = resp + abs(arlsOffset);
   resp = resp + "</woffs>";
   resp = resp + "<woffn>";
-  resp = resp + bool2int(!arlsSign);
+  resp = resp + !arlsSign;
   resp = resp + "</woffn>";
   resp = resp + "<noota>";
-  resp = resp + bool2int(ota_lock);
+  resp = resp + ota_lock;
   resp = resp +"</noota>";
   resp = resp + "<norap>0</norap>"; //NI
   resp = resp + "<sip>";
@@ -213,7 +211,7 @@ void XML_response_settings()
     resp = resp + "Not active";
   }
   resp = resp + "</sip>";
-  resp = resp + "<msg>WLED 0.3pd (build ";
+  resp = resp + "<msg>WLED 0.3 (build ";
   resp = resp + VERSION;
   resp = resp + ") OK</msg>";
   resp = resp + "</vs>";

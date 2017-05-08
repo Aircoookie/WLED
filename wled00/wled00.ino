@@ -22,7 +22,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1705082
+#define VERSION 1705085
 
 //to toggle usb serial debug (un)comment following line
 //#define DEBUG
@@ -42,7 +42,7 @@
 
 /*
  * @title WLED project sketch
- * @version 0.3pd
+ * @version 0.3
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
@@ -86,7 +86,7 @@ uint16_t transitionDelay = 1500;
 boolean ota_lock = true;
 boolean only_ap = false;
 boolean buttonEnabled = true;
-boolean notifyDirect = true, notifyButton = true, notifyNightlight = false, notifyMaster = true;
+boolean notifyDirect = true, notifyButton = true, notifyDirectDefault = true;
 boolean receiveNotifications = true, receiveNotificationsDefault = true;
 uint8_t bri_n = 100;
 uint8_t nightlightDelayMins = 60;
@@ -221,12 +221,6 @@ void reset()
   setAllLeds();
   DEBUG_PRINTLN("MODULE RESET");
   ESP.reset();
-}
-
-uint8_t bool2int(boolean value)
-{
-  if (value) return 1;
-  return 0;
 }
 
 void setup() {

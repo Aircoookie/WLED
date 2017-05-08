@@ -40,12 +40,12 @@ void saveSettingsToEEPROM()
   }
   EEPROM.write(224, nightlightDelayMins);
   EEPROM.write(225, nightlightFade);
-  EEPROM.write(226, notifyDirect);
+  EEPROM.write(226, notifyDirectDefault);
   EEPROM.write(227, apchannel);
   EEPROM.write(228, aphide);
   EEPROM.write(229, ledcount);
   EEPROM.write(230, notifyButton);
-  EEPROM.write(231, notifyNightlight);
+  //231 was notifyNightlight
   EEPROM.write(232, buttonEnabled);
   //233 reserved for first boot flag
   EEPROM.write(234, staticip[0]);
@@ -143,14 +143,15 @@ void loadSettingsFromEEPROM()
   }
   nightlightDelayMins = EEPROM.read(224);
   nightlightFade = EEPROM.read(225);
-  notifyDirect = EEPROM.read(226);
+  notifyDirectDefault = EEPROM.read(226);
+  notifyDirect = notifyDirectDefault;
   apchannel = EEPROM.read(227);
   if (apchannel > 13 || apchannel < 1) apchannel = 1;
   aphide = EEPROM.read(228);
   if (aphide > 1) aphide = 1;
   ledcount = EEPROM.read(229);
   notifyButton = EEPROM.read(230);
-  notifyNightlight = EEPROM.read(231);
+  //231 was notifyNightlight
   buttonEnabled = EEPROM.read(232);
   staticip[0] = EEPROM.read(234);
   staticip[1] = EEPROM.read(235);

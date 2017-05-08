@@ -179,9 +179,9 @@ void handleSettingsSet()
     int i = server.arg("NRBRI").toInt();
     if (i > 0) bri_n = i;
   }
-  notifyDirect = server.hasArg("NSDIR");
+  notifyDirectDefault = server.hasArg("NSDIR");
+  notifyDirect = notifyDirectDefault;
   notifyButton = server.hasArg("NSBTN");
-  notifyNightlight = server.hasArg("NSFWD");
   alexaEnabled = server.hasArg("ALEXA");
   if (server.hasArg("AINVN")) alexaInvocationName = server.arg("AINVN");
   alexaNotify = server.hasArg("NSALX");
@@ -289,10 +289,10 @@ boolean handleSet(String req)
    }
    if (req.indexOf("SN=") > 0)
    {
-      notifyMaster = true;
+      notifyDirect = true;
       if (req.indexOf("SN=0") > 0)
       {
-        notifyMaster = false;
+        notifyDirect = false;
       }
    }
    if (req.indexOf("RN=") > 0)

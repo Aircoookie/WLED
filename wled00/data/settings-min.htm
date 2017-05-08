@@ -1,7 +1,3 @@
-/*
- * Settings html
- */
-const char PAGE_settings[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html>
 <head>
@@ -115,26 +111,3 @@ Server message: <span class=msg> XML response error! </span>
 </form>
 </body>
 </html>
-)=====";
-/*
- * Settings set html
- */
-const char PAGE_settingssaved[] PROGMEM = R"=====(
-<!DOCTYPE html>
-<html><head>
-  <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
-  <title>Saved Settings</title>
-  <script>
-    function OpenReboot()
-    {
-      window.open("/reset","_self");
-    }
-  </script>
-  </head><body>
-  <div align="center">
-    <h2>Settings saved.</h2>
-    <p>If you made changes to WiFi configuration, please reboot.</p><br>
-    <input type="button" value="Reboot" onclick="OpenReboot()">
-  </div></body>
-</html>
-)=====";

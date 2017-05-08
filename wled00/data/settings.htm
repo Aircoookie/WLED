@@ -54,7 +54,6 @@
 							document.S_form.NRBRI.value = this.responseXML.getElementsByTagName('nrbri')[0].innerHTML;
 							document.S_form.NSDIR.checked = (this.responseXML.getElementsByTagName('nsdir')[0].innerHTML)!=0?true:false;
 							document.S_form.NSBTN.checked = (this.responseXML.getElementsByTagName('nsbtn')[0].innerHTML)!=0?true:false;
-							document.S_form.NSFWD.checked = (this.responseXML.getElementsByTagName('nsfwd')[0].innerHTML)!=0?true:false;
 							document.S_form.ALEXA.checked = (this.responseXML.getElementsByTagName('alexa')[0].innerHTML)!=0?true:false;
 							document.S_form.AINVN.value = this.responseXML.getElementsByTagName('ainvn')[0].innerHTML;
 							document.S_form.NSALX.checked = (this.responseXML.getElementsByTagName('nsalx')[0].innerHTML)!=0?true:false;
@@ -149,7 +148,6 @@
 		Receive notifications: <input type="checkbox" name="NRCVE"> <br>
 		Send notifications on direct change: <input type="checkbox" name="NSDIR"> <br>
 		Send notifications on button press: <input type="checkbox" name="NSBTN"> <br>
-		Send nightlight notifications: <input type="checkbox" name="NSFWD"> <br>
 		<h3>Interfaces</h3>
 		Emulate Alexa device: <input type="checkbox" name="ALEXA"> <br>
 		Alexa invocation name: <input name="AINVN" maxlength="32"><br>
@@ -176,7 +174,7 @@
 		
 		HTTP traffic is not encrypted. An attacker in the same network could intercept form data!<br>
 		<h3>About</h3>
-		WLED version 0.3pd <br>
+		WLED version 0.3 <br>
 		(c) 2016-2017 Christian Schwinne <br>
 		<i>Licensed under the MIT license</i> <br>
 		<i>Uses libraries:</i> <br>

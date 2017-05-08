@@ -126,8 +126,4 @@ void handleFileCreate(){
 
 #else
 bool handleFileRead(String path){return false;}
-void handleFileList(){}
-void handleFileCreate(){}
-void handleFileDelete(){}
-void handleFileUpload(){}
 #endif

@@ -100,12 +100,14 @@ void wledInit()
     server.on("/edit", HTTP_GET, [](){
     if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);
     });
+    #ifdef USEFS
     server.on("/edit", HTTP_PUT, handleFileCreate);
     server.on("/edit", HTTP_DELETE, handleFileDelete);
     server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
+    server.on("/list", HTTP_GET, handleFileList);
+    #endif
     server.on("/down", HTTP_GET, down);
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
-    server.on("/list", HTTP_GET, handleFileList);
     //init ota page
     httpUpdater.setup(&server);
   } else

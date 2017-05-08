@@ -3,8 +3,8 @@ WLED is a basic, fast and (relatively) (ok, VERY relatively) secure implementati
 Uses ESP arduino version 2.3.0 (latest as of May 2017).
 Contents in the /data directory may be uploaded to SPIFFS.
 
-Features: (V0.3pd)
-- RGB and brightness sliders
+Features: (V0.3)
+- RGB, HSB, and brightness sliders
 - Settings page - configuration over network
 - Access Point and station mode - automatic failsafe AP
 - WS2812FX library integrated for nearly 50 special effects!
@@ -15,7 +15,7 @@ Features: (V0.3pd)
 - Password protected OTA page for added security (OTA lock)
 - Alexa smart home device server
 - (unstable) NTP and experimental analog clock function
-- better client HTML page (not yet implemented)
+- client HTML controlled
 - Edit page. Change html and other files via OTA. (needs to be enabled in source)
 
 Compile settings:
