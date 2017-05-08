@@ -5,7 +5,8 @@
 void wledInit()
 {
   Serial.begin(115200);
-  
+
+  #ifdef USEFS
   SPIFFS.begin();
   {
     Dir dir = SPIFFS.openDir("/");
@@ -18,6 +19,8 @@ void wledInit()
     }
     DEBUG_PRINTF("\n");
   }
+  #endif
+  
   DEBUG_PRINTLN("Init EEPROM");
   EEPROM.begin(1024);
   loadSettingsFromEEPROM();

@@ -22,10 +22,13 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1705081
+#define VERSION 1705082
 
 //to toggle usb serial debug (un)comment following line
-#define DEBUG
+//#define DEBUG
+
+//spiffs FS only useful for debug
+//#define USEFS
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)

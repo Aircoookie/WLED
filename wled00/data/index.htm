@@ -114,6 +114,25 @@
 			} else {
 				nsb.style.fill="black";
 			}
+			if (Ctrl_form.SA.value > 0)
+			{
+				tgb.style.fill="green";
+			} else {
+				tgb.style.fill="black";
+			}
+		}
+		function ToggleT()
+		{
+			if (Ctrl_form.SA.value > 0)
+			{
+				strA = "&T=0";
+				Ctrl_form.SA.value = 0;
+			} else
+			{
+				strA = "&T=2";
+			}
+			UpdateVals();
+			GetArduinoIO();
 		}
 		function ToggleFX()
 		{
@@ -397,7 +416,7 @@
 			transform: translate(-50%, -50%);
 		}
 		svg {
-			width: 15vw;
+			width: 12vw;
 			height: 10vmin;
 		}
 		input[type=range] {
@@ -474,6 +493,9 @@
 <path d="M16 32c8.837 0 16-7.163 16-16s-7.163-16-16-16-16 7.163-16 16 7.163 16 16 16zM16 3c7.18 0 13 5.82 13 13s-5.82 13-13 13-13-5.82-13-13 5.82-13 13-13z"></path>
 <path d="M20.914 9.914l-2.829-2.829-8.914 8.914 8.914 8.914 2.828-2.828-6.086-6.086z"></path>
 </symbol>
+<symbol id="icon-switch" viewBox="0 0 32 32">
+<path d="M20 4.581v4.249c1.131 0.494 2.172 1.2 3.071 2.099 1.889 1.889 2.929 4.4 2.929 7.071s-1.040 5.182-2.929 7.071c-1.889 1.889-4.4 2.929-7.071 2.929s-5.182-1.040-7.071-2.929c-1.889-1.889-2.929-4.4-2.929-7.071s1.040-5.182 2.929-7.071c0.899-0.899 1.94-1.606 3.071-2.099v-4.249c-5.783 1.721-10 7.077-10 13.419 0 7.732 6.268 14 14 14s14-6.268 14-14c0-6.342-4.217-11.698-10-13.419zM14 0h4v16h-4z"></path>
+</symbol>
 <symbol id="icon-equalizer" viewBox="0 0 32 32">
 <path d="M14 4v-0.5c0-0.825-0.675-1.5-1.5-1.5h-5c-0.825 0-1.5 0.675-1.5 1.5v0.5h-6v4h6v0.5c0 0.825 0.675 1.5 1.5 1.5h5c0.825 0 1.5-0.675 1.5-1.5v-0.5h18v-4h-18zM8 8v-4h4v4h-4zM26 13.5c0-0.825-0.675-1.5-1.5-1.5h-5c-0.825 0-1.5 0.675-1.5 1.5v0.5h-18v4h18v0.5c0 0.825 0.675 1.5 1.5 1.5h5c0.825 0 1.5-0.675 1.5-1.5v-0.5h6v-4h-6v-0.5zM20 18v-4h4v4h-4zM14 23.5c0-0.825-0.675-1.5-1.5-1.5h-5c-0.825 0-1.5 0.675-1.5 1.5v0.5h-6v4h6v0.5c0 0.825 0.675 1.5 1.5 1.5h5c0.825 0 1.5-0.675 1.5-1.5v-0.5h18v-4h-18v-0.5zM8 28v-4h4v4h-4z"></path>
 </symbol>
@@ -495,6 +517,7 @@
 </defs>
 </svg>
 	<div id="tbB" class="tool_box">
+		<svg id="tgb" onclick="ToggleT()"><use xlink:href="#icon-switch"></use></svg>
 		<svg id="mdb" onclick="ToggleHSB()"><use xlink:href="#icon-equalizer"></use></svg>
 		<svg id="fxb" onclick="ToggleFX()"><use xlink:href="#icon-star-full"></use></svg>
 		<svg id="nlb" onclick="ToggleNl()"><use xlink:href="#icon-clock"></use></svg>

@@ -1,6 +1,7 @@
 /*
  * Utility for SPIFFS filesystem
  */
+#ifdef USEFS
 
 String formatBytes(size_t bytes){
   if (bytes < 1024){
@@ -122,3 +123,11 @@ void handleFileCreate(){
   server.send(200, "text/plain", "");
   path = String();
 }
+
+#else
+bool handleFileRead(String path){return false;}
+void handleFileList(){}
+void handleFileCreate(){}
+void handleFileDelete(){}
+void handleFileUpload(){}
+#endif

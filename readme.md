@@ -1,13 +1,12 @@
 WLED is a basic, fast and (relatively) (ok, VERY relatively) secure implementation of a ESP8266 webserver to control Neopixel (WS2812B) leds
 
-Uses ESP arduino version 2.3.0 (latest as of April 2017).
+Uses ESP arduino version 2.3.0 (latest as of May 2017).
 Contents in the /data directory may be uploaded to SPIFFS.
 
 Features: (V0.3pd)
 - RGB and brightness sliders
 - Settings page - configuration over network
 - Access Point and station mode - automatic failsafe AP
-- Edit page. Change html and other files via OTA.
 - WS2812FX library integrated for nearly 50 special effects!
 - Nightlight function (gradually dims down)
 - Notifier function (multiple ESPs sync color via UDP broadcast)
@@ -17,9 +16,10 @@ Features: (V0.3pd)
 - Alexa smart home device server
 - (unstable) NTP and experimental analog clock function
 - better client HTML page (not yet implemented)
+- Edit page. Change html and other files via OTA. (needs to be enabled in source)
 
 Compile settings:
-Board: WeMos D1 mini (untested with other HW, should work if it has 4MB flash)
+Board: WeMos D1 mini (untested with other HW, should work though)
 CPU frequency: 80 MHz
 Flash size : 4MB (1MB SPIFFS)
 Upload speed: 115200
@@ -31,22 +31,17 @@ Quick start guide:
 Just flash a basic HTTP OTA updater sketch and upload the bin!
 
 
-1. Make sure your ESP module has a min. 4MB SPI flash module. (currently working on supporting 1MB modules)
+1. Make sure your ESP module has a min. 4MB SPI flash module. (SHOULD now support 1MB modules, untested)
 Connect a  WS2812B RGB led strip to GPIO2. Optionally connect a NO-pushbutton to GPIO0 (internal pull-up) and ground.
 
 2. Follow a guide to setup your Arduino client (I am using version 1.8.1) with the ESP8266 libraries.
 For current compiles I use version 2.3.0.
 
-3. You will also need the ESP8266 SPIFFS sketch data uploader. (currently working on making this step unnecessary)
--> In the newest commit this step is not essential (HTML included in sketch), but recommended, since otherwise you have to upload the pictures manually to /edit SPIFFS
--> The software will always use the HTML files in SPIFFS. If they are not existing, it will fallback to the sketch embedded HTML files.
-
-4. In file "wled00.ino", change the LED count to the amount you connected. Proceed to flash the sketch and the SPIFFS data.
-You should also change the access point and OTA update passphrases for added security (you can change them later, this is just the "factory default").
+3. In file "wled00.ino", you should change the access point and OTA update passphrases for added security (you can change them later, this is just the "factory default"). Flash the sketch.
 
 5. Connect to automatically started WiFi access point "WLED-AP" using default passwort "wled1234". Go to the IP "192.168.4.1".
 
-6. Click on the wrench icon to edit settings like connecting the module to your home WiFi.
+6. Click on the cog icon to edit settings like connecting the module to your home WiFi.
 
 7. Have fun with the software!
 
@@ -87,7 +82,7 @@ Method 2: The software has an integrated OTA software update capability.
 First you have to enable it by typing in the correct OTA passphrase (default: "wledota") in the settings menu.
 Remove the tick in the checkbox "OTA locked". Then save settings and reboot the ESP.
 Now you can go to "<moduleip>/update" to update binary firmware.
-To edit flash content (images and HTML), go to "<moduleip>/edit".
+To edit flash content (images and HTML), go to "<moduleip>/edit". (only if USEFS was uncommented in source)
 After you are done, it is recommended to lock the OTA function again.
 To do so, tick the checkbox again (you can change the passphrase by typing in a new one now). Reboot.
 If you try to access the update page now, you should see the message "OTA lock active".
