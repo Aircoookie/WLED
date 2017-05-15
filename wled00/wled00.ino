@@ -8,9 +8,7 @@
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
-#include <Hash.h>
 #include "WS2812FX.h"
-#include <FS.h>
 #include <WiFiUDP.h>
 #include <Time.h>
 #include <TimeLib.h>
@@ -22,13 +20,17 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1705085
+#define VERSION 1705090
 
 //to toggle usb serial debug (un)comment following line
 //#define DEBUG
 
 //spiffs FS only useful for debug
 //#define USEFS
+
+#ifdef USEFS
+#include <FS.h>
+#endif
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
@@ -181,7 +183,9 @@ WiFiUDP ntpUdp;
 
 WS2812FX strip = WS2812FX(LEDCOUNT, 2, NEO_GRB + NEO_KHZ800);
 
+#ifdef USEFS
 File fsUploadFile;
+#endif
 
 #ifdef DEBUG
 long debugTime = 0;
@@ -232,6 +236,7 @@ void loop() {
     handleNotifications();
     handleTransitions();
     handleNightlight();
+    yield();
     handleButton();
     handleNetworkTime();
     handleOverlays();

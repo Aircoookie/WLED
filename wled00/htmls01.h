@@ -17,8 +17,8 @@ const char PAGE_settings[] PROGMEM = R"=====(
 <hr>
 <h2>WiFi setup</h2>
 <h3>Connect to existing network</h3>
-Network SSID (leave empty to not connect): <input name=CSSID maxlength=32> <br>
-Network password: <br> <input type=password name=CPASS maxlength=63> <br>
+Network SSID (leave empty to not connect):<br><input name=CSSID maxlength=32> <br>
+Network password:<br> <input type=password name=CPASS maxlength=63> <br>
 Static IP (leave at 0.0.0.0 for DHCP): <br>
 <input name=CSIP0 maxlength=3 size=2> .
 <input name=CSIP1 maxlength=3 size=2> .

@@ -73,12 +73,6 @@ void wledInit()
   server.on("/settings", HTTP_GET, [](){
     if(!handleFileRead("/settings.htm")) server.send(200, "text/html", PAGE_settings);
   });
-  server.on("/button.png", HTTP_GET, [](){
-    if(!handleFileRead("/button.png")) server.send(404, "text/plain", "FileNotFound");
-  });
-  server.on("/moon.png", HTTP_GET, [](){
-    if(!handleFileRead("/moon.png")) server.send(404, "text/plain", "FileNotFound");
-  });
   server.on("/favicon.ico", HTTP_GET, [](){
     if(!handleFileRead("/favicon.ico")) server.send(200, "image/x-icon", favicon);
   });
