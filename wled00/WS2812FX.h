@@ -27,10 +27,7 @@
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-  CHANGELOG
-  2016-05-28   Initial beta release
-  2016-06-03   Code cleanup, minor improvements, new modes
-  2016-06-04   2 new fx, fixed setColor (now also resets _mode_color)
+  Modified to work with WLED - differs from Github WS2812FX
 */
 
 #ifndef WS2812FX_h
@@ -50,7 +47,7 @@
 #define BRIGHTNESS_MIN 0
 #define BRIGHTNESS_MAX 255
 
-#define MODE_COUNT 48
+#define MODE_COUNT 53
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -100,6 +97,11 @@
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_FIRE_FLICKER_SOFT       46
 #define FX_MODE_FADE_DOWN               47
+#define FX_MODE_DUAL_COLOR_WIPE_IN_OUT  48
+#define FX_MODE_DUAL_COLOR_WIPE_IN_IN   49
+#define FX_MODE_DUAL_COLOR_WIPE_OUT_OUT 50
+#define FX_MODE_DUAL_COLOR_WIPE_OUT_IN  51
+#define FX_MODE_CIRCUS_COMBUSTUS        52
 
 class WS2812FX : public Adafruit_NeoPixel {
 
@@ -156,6 +158,11 @@ class WS2812FX : public Adafruit_NeoPixel {
       _mode[FX_MODE_FIRE_FLICKER]          = &WS2812FX::mode_fire_flicker;
       _mode[FX_MODE_FIRE_FLICKER_SOFT]     = &WS2812FX::mode_fire_flicker_soft;
       _mode[FX_MODE_FADE_DOWN]             = &WS2812FX::mode_fade_down;
+      _mode[FX_MODE_DUAL_COLOR_WIPE_IN_OUT]  = &WS2812FX::mode_dual_color_wipe_in_out;
+      _mode[FX_MODE_DUAL_COLOR_WIPE_IN_IN]   = &WS2812FX::mode_dual_color_wipe_in_in;
+      _mode[FX_MODE_DUAL_COLOR_WIPE_OUT_OUT] = &WS2812FX::mode_dual_color_wipe_out_out;
+      _mode[FX_MODE_DUAL_COLOR_WIPE_OUT_IN]  = &WS2812FX::mode_dual_color_wipe_out_in;
+      _mode[FX_MODE_CIRCUS_COMBUSTUS]        = &WS2812FX::mode_circus_combustus;
 
       _name[FX_MODE_STATIC]                = "Static";
       _name[FX_MODE_BLINK]                 = "Blink";
@@ -205,6 +212,11 @@ class WS2812FX : public Adafruit_NeoPixel {
       _name[FX_MODE_FIRE_FLICKER]          = "Fire Flicker";
       _name[FX_MODE_FIRE_FLICKER_SOFT]     = "Fire Flicker (soft)";
       _name[FX_MODE_FADE_DOWN]             = "Fade (Internal)";
+      _name[FX_MODE_DUAL_COLOR_WIPE_IN_OUT]    = "Dual Color Wipe In to Out";
+      _name[FX_MODE_DUAL_COLOR_WIPE_IN_IN]     = "Dual Color Wipe In to In";
+      _name[FX_MODE_DUAL_COLOR_WIPE_OUT_OUT]   = "Dual Color Wipe Out to Out";
+      _name[FX_MODE_DUAL_COLOR_WIPE_OUT_IN]    = "Dual Color Wipe Out to In";
+      _name[FX_MODE_CIRCUS_COMBUSTUS]          = "Circus Combustus";
 
       _mode_index = DEFAULT_MODE;
       _speed = DEFAULT_SPEED;
@@ -318,7 +330,12 @@ class WS2812FX : public Adafruit_NeoPixel {
       mode_fire_flicker(void),
       mode_fire_flicker_soft(void),
       mode_fire_flicker_int(int),
-      mode_fade_down(void);
+      mode_fade_down(void),
+      mode_dual_color_wipe_in_out(void),
+      mode_dual_color_wipe_in_in(void),
+      mode_dual_color_wipe_out_out(void),
+      mode_dual_color_wipe_out_in(void),
+      mode_circus_combustus(void);
 
     boolean
       _triggered,
