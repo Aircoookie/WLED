@@ -28,6 +28,9 @@
 //spiffs FS only useful for debug
 //#define USEFS
 
+//overlays, needed for clocks etc.
+//#define USEOVERLAYS
+
 #ifdef USEFS
 #include <FS.h>
 #endif
@@ -101,21 +104,6 @@ boolean ntpEnabled = false;
 IPAddress ntpServerIP;
 const char* ntpServerName = "time.nist.gov";
 
-//overlay stuff
-uint8_t overlayDefault = 0;
-int overlayMin = 0, overlayMax = 9;
-int analogClock12pixel = 25;
-boolean analogClockSecondsTrail = false;
-boolean analogClock5MinuteMarks = true;
-boolean nixieClockDisplaySeconds = false;
-boolean nixieClock12HourFormat = false;
-boolean overlayReverse = true;
-uint8_t overlaySpeed = 200;
-boolean useGammaCorrectionBri = true;
-boolean useGammaCorrectionRGB = true;
-int arlsOffset = -22; //10: -22 assuming arls52
-boolean realtimeEnabled = true;
-
 //alexa
 boolean alexaEnabled = true;
 String alexaInvocationName = "Light";
@@ -155,7 +143,17 @@ unsigned long ntpPacketSentTime = 999000000L;
 const unsigned long seventyYears = 2208988800UL;
 
 //overlay stuff
+uint8_t overlayDefault = 0;
 uint8_t overlayCurrent = 0;
+#ifdef USEOVERLAYS
+int overlayMin = 0, overlayMax = 9;
+int analogClock12pixel = 25;
+boolean analogClockSecondsTrail = false;
+boolean analogClock5MinuteMarks = true;
+boolean nixieClockDisplaySeconds = false;
+boolean nixieClock12HourFormat = false;
+boolean overlayReverse = true;
+uint8_t overlaySpeed = 200;
 long overlayRefreshMs = 200;
 unsigned long overlayRefreshedTime;
 int overlayArr[6];
@@ -164,6 +162,8 @@ int overlayPauseDur[6];
 int nixieClockI = -1;
 boolean nixiePause;
 unsigned long countdownTime = 1483225200L;
+#endif
+
 int arlsTimeoutMillis = 2500;
 boolean arlsTimeout = false;
 long arlsTimeoutTime;
@@ -171,6 +171,11 @@ boolean arlsSign = true;
 uint8_t auxTime = 0;
 unsigned long auxStartTime;
 boolean auxActive, auxActiveBefore;
+
+boolean useGammaCorrectionBri = true;
+boolean useGammaCorrectionRGB = true;
+int arlsOffset = -22; //10: -22 assuming arls52
+boolean realtimeEnabled = true;
 
 //alexa
 Switch *alexa = NULL;
@@ -239,7 +244,9 @@ void loop() {
     yield();
     handleButton();
     handleNetworkTime();
+    #ifdef USEOVERLAYS
     handleOverlays();
+    #endif
     handleAlexa();
     strip.service();
 

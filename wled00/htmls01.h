@@ -80,9 +80,8 @@ Send notifications on button press: <input type=checkbox name=NSBTN> <br>
 Emulate Alexa device: <input type=checkbox name=ALEXA> <br>
 Alexa invocation name: <input name=AINVN maxlength=32><br>
 Send Alexa notifications: <input type=checkbox name=NSALX> <br>
-<h3>Time (highly experimental!)</h3>
-<b> Warning! </b>NTP was updated but still causes crashes. Requires reboot. <br>
-It is really not recommended to use this! <br>
+<h3>Time (experimental!)</h3>
+Could still cause crashes. Requires reboot. <br>
 Get time from NTP server: <input type=checkbox name=NTPON> <br>
 Current local time is <span class=times>unknown</span> <br>
 <h3>Advanced</h3>

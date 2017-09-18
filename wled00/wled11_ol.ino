@@ -1,3 +1,4 @@
+#ifdef USEOVERLAYS
 void nixieDisplay(int num[], int dur[], int pausedur[], int cnt)
 {
   strip.setRange(overlayMin, overlayMax, 0);
@@ -270,4 +271,4 @@ void handleOverlays()
     }
   }
 }
-
+#endif
