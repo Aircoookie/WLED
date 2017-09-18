@@ -12,7 +12,7 @@ void setAllLeds() {
   } else {
     strip.setBrightness(val);
   }
-  if (useGammaCorrectionBri)
+  if (useGammaCorrectionRGB)
   {
     strip.setColor(gamma8[col_t[0]], gamma8[col_t[1]], gamma8[col_t[2]]);
   } else {

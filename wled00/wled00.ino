@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1709181
+#define VERSION 1709183
 
 //to toggle usb serial debug (un)comment following line
 //#define DEBUG
@@ -186,7 +186,7 @@ ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp;
 WiFiUDP ntpUdp;
 
-WS2812FX strip = WS2812FX(LEDCOUNT, 2, NEO_GRB + NEO_KHZ800);
+WS2812FX strip = WS2812FX(LEDCOUNT);
 
 #ifdef USEFS
 File fsUploadFile;

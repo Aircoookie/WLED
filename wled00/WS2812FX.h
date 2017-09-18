@@ -34,7 +34,7 @@
 #define WS2812FX_h
 
 #include "Arduino.h"
-#include <Adafruit_NeoPixel.h>
+#include <NeoPixelBrightnessBus.h>
 
 #define DEFAULT_BRIGHTNESS 50
 #define DEFAULT_MODE 0
@@ -103,13 +103,13 @@
 #define FX_MODE_DUAL_COLOR_WIPE_OUT_IN  51
 #define FX_MODE_CIRCUS_COMBUSTUS        52
 
-class WS2812FX : public Adafruit_NeoPixel {
+class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> {
 
   typedef void (WS2812FX::*mode_ptr)(void);
 
   public:
 
-    WS2812FX(uint16_t n, uint8_t p, neoPixelType t) : Adafruit_NeoPixel(n, p, t) {
+    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod>(n) {
       _mode[FX_MODE_STATIC]                = &WS2812FX::mode_static;
       _mode[FX_MODE_BLINK]                 = &WS2812FX::mode_blink;
       _mode[FX_MODE_BREATH]                = &WS2812FX::mode_breath;
@@ -279,6 +279,11 @@ class WS2812FX : public Adafruit_NeoPixel {
   private:
 
     void
+      begin(void),
+      show(void),
+      clear(void),
+      setPixelColor(uint16_t i, uint32_t c),
+      setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b),
       dofade(void),
       strip_off(void),
       strip_off_respectLock(void),
@@ -345,6 +350,8 @@ class WS2812FX : public Adafruit_NeoPixel {
       _locked;
 
     uint8_t
+      minval(uint8_t v, uint8_t w),
+      maxval(uint8_t v, uint8_t w),
       get_random_wheel_index(uint8_t),
       _mode_index,
       _speed,
@@ -354,6 +361,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       _led_count;
 
     uint32_t
+      getPixelColor(uint16_t i),
       color_wheel(uint8_t),
       _color,
       _counter_mode_call,
