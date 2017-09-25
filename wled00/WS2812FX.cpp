@@ -365,7 +365,7 @@ void WS2812FX::mode_breath(void) {
     setPixelColor(i, _color);           // set all LEDs to selected color
   }
   int b = map(breath_brightness, 0, 255, 0, _brightness);  // keep brightness below brightness set by user
-  setBrightness(b);                     // set new brightness to leds
+  NeoPixelBrightnessBus::SetBrightness(b);                     // set new brightness to leds
   show();
 
   _mode_color = breath_brightness;                         // we use _mode_color to store the brightness
@@ -385,7 +385,7 @@ void WS2812FX::mode_fade(void) {
   int b = _counter_mode_step - 127;
   b = 255 - (abs(b) * 2);
   b = map(b, 0, 255, minval(25, _brightness), _brightness);
-  setBrightness(b);
+  NeoPixelBrightnessBus::SetBrightness(b);
   show();
 
   _counter_mode_step = (_counter_mode_step + 1) % 256;
