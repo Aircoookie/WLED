@@ -101,6 +101,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
   EEPROM.write(370, useHSBDefault);
+  EEPROM.write(371, white_s);
+  EEPROM.write(372, rgbwEnabled);
   EEPROM.commit();
 }
 
@@ -212,5 +214,7 @@ void loadSettingsFromEEPROM()
   if (!arlsSign) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
   useHSBDefault = EEPROM.read(370);
+  white_s = EEPROM.read(371);
+  rgbwEnabled = EEPROM.read(372);
   useHSB = useHSBDefault;
 }

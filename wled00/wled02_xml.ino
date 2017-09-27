@@ -33,8 +33,10 @@ void XML_response()
    resp = resp + effectCurrent;
    resp = resp + "</fx><sx>";
    resp = resp + effectSpeed;
-   resp = resp + "</sx>";
-   resp = resp + "<md>";
+   resp = resp + "</sx><wv>";
+   if (rgbwEnabled) {resp = resp + whiteVal;}
+   else {resp = resp + "-1";}
+   resp = resp + "</wv><md>";
    resp = resp + useHSB;
    resp = resp + "</md><desc>";
    resp = resp + serverDescription;

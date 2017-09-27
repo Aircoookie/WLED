@@ -22,6 +22,9 @@
 //version in format yymmddb (b = daily build)
 #define VERSION 1709251
 
+//uncomment if you have an RGBW strip
+#define RGBW
+
 //to toggle usb serial debug (un)comment following line
 //#define DEBUG
 
@@ -84,6 +87,7 @@ IPAddress staticsubnet(255, 255, 255, 0);
 boolean useHSB = false, useHSBDefault = false;
 boolean turnOnAtBoot = true;
 byte col_s[]{255, 159, 0};
+byte white_s = 0;
 byte bri_s = 127;
 uint8_t bri_nl = 0, bri_nls;
 boolean fadeTransition = true;
@@ -111,11 +115,14 @@ boolean alexaNotify = false;
 
 double transitionResolution = 0.011;
 
+boolean rgbwEnabled = false;
+
 //Internal vars
 byte col[]{0, 0, 0};
 byte col_old[]{0, 0, 0};
 byte col_t[]{0, 0, 0};
 byte col_it[]{0, 0, 0};
+byte whiteVal;
 unsigned long transitionStartTime;
 unsigned long nightlightStartTime;
 float tper_last = 0;

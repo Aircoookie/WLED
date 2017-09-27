@@ -103,13 +103,19 @@
 #define FX_MODE_DUAL_COLOR_WIPE_OUT_IN  51
 #define FX_MODE_CIRCUS_COMBUSTUS        52
 
+#ifdef RGBW
+class WS2812FX : public NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Uart800KbpsMethod> {
+#else
 class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> {
-
+#endif
   typedef void (WS2812FX::*mode_ptr)(void);
 
   public:
-
+#ifdef RGBW
+    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Uart800KbpsMethod>(n) {
+#else
     WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod>(n) {
+#endif
       _mode[FX_MODE_STATIC]                = &WS2812FX::mode_static;
       _mode[FX_MODE_BLINK]                 = &WS2812FX::mode_blink;
       _mode[FX_MODE_BREATH]                = &WS2812FX::mode_breath;
@@ -242,6 +248,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       increaseSpeed(uint8_t s),
       decreaseSpeed(uint8_t s),
       setColor(uint8_t r, uint8_t g, uint8_t b),
+      setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w),
       setColor(uint32_t c),
       setBrightness(uint8_t b),
       increaseBrightness(uint8_t s),
@@ -284,6 +291,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       clear(void),
       setPixelColor(uint16_t i, uint32_t c),
       setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b),
+      setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
       dofade(void),
       strip_off(void),
       strip_off_respectLock(void),

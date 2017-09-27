@@ -104,6 +104,11 @@ void WS2812FX::setColor(uint8_t r, uint8_t g, uint8_t b) {
   setColor(((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }
 
+
+void WS2812FX::setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+  setColor(((uint32_t)w << 24)|((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
+}
+
 void WS2812FX::setColor(uint32_t c) {
   _color = c;
   _mode_color = _color;
@@ -1684,6 +1689,13 @@ void WS2812FX::setLedCount(uint16_t i)
 void WS2812FX::setPixelColor(uint16_t i, uint32_t c)
 {
   NeoPixelBrightnessBus::SetPixelColor(i, RgbColor((c>>16) & 0xFF, (c>>8) & 0xFF, (c) & 0xFF));
+}
+
+void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
+{
+  #ifdef RGBW
+  
+  NeoPixelBrightnessBus::SetPixelColor(i, RgbColor(r,g,b));
 }
 
 void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b)
