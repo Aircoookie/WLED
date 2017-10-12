@@ -133,7 +133,14 @@ void handleSettingsSet()
     if (server.hasArg("CLDFW"))
     {
       int i = server.arg("CLDFW").toInt();
-      if (i >= 0 && i <= 255) white_s = i;
+      if (i >= 0 && i <= 255)
+      {
+        useRGBW = true;
+        white_s = i;
+      } else {
+        useRGBW = false;
+        white_s = 0;
+      }
     }
     if (server.hasArg("CLDFA"))
     {

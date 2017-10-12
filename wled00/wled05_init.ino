@@ -90,6 +90,12 @@ void wledInit()
   server.on("/version", HTTP_GET, [](){
     server.send(200, "text/plain", (String)VERSION);
     });
+  server.on("/uptime", HTTP_GET, [](){
+    server.send(200, "text/plain", (String)millis());
+    });
+  server.on("/freeheap", HTTP_GET, [](){
+    server.send(200, "text/plain", (String)ESP.getFreeHeap());
+    });
   if (!ota_lock){
     server.on("/edit", HTTP_GET, [](){
     if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);

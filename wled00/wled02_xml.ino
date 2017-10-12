@@ -34,11 +34,11 @@ void XML_response()
    resp = resp + "</fx><sx>";
    resp = resp + effectSpeed;
    resp = resp + "</sx><wv>";
-   #ifdef RGBW
-   resp = resp + white;
-   #else
-   resp = resp + "-1";
-   #endif
+   if (useRGBW) {
+     resp = resp + white;
+   } else {
+     resp = resp + "-1";
+   }
    resp = resp + "</wv><md>";
    resp = resp + useHSB;
    resp = resp + "</md><desc>";
@@ -116,7 +116,11 @@ void XML_response_settings()
     resp = resp + "</cldef>";
   }
   resp = resp + "<cldfw>";
-  resp = resp + white_s;
+  if (useRGBW) {
+     resp = resp + white_s;
+   } else {
+     resp = resp + "-1";
+   }
   resp = resp + "</cldfw><cldfa>";
   resp = resp + bri_s;
   resp = resp + "</cldfa>";
@@ -218,7 +222,7 @@ void XML_response_settings()
     resp = resp + "Not active";
   }
   resp = resp + "</sip>";
-  resp = resp + "<msg>WLED 0.3 (build ";
+  resp = resp + "<msg>WLED 0.4p (build ";
   resp = resp + VERSION;
   resp = resp + ") OK</msg>";
   resp = resp + "</vs>";

@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1710120
+#define VERSION 1710121
 
 //uncomment if you have an RGBW strip
 #define RGBW
@@ -50,7 +50,7 @@
 
 /*
  * @title WLED project sketch
- * @version 0.3
+ * @version 0.4p
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
@@ -87,6 +87,7 @@ IPAddress staticsubnet(255, 255, 255, 0);
 boolean useHSB = false, useHSBDefault = false;
 boolean turnOnAtBoot = true;
 byte col_s[]{255, 159, 0};
+boolean useRGBW = false;
 byte white_s = 0;
 byte bri_s = 127;
 uint8_t bri_nl = 0, bri_nls;

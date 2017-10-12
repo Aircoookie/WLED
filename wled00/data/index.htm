@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
-	<title>WLED 0.3</title>
+	<title>WLED 0.4p</title>
 	<script>
 	    strA = "";
 		strR = "";
 		strG = "";
 		strB = "";
+		strW = "";
 		strNL = "";
 		strNR = "";
 		strNS = "";
@@ -19,6 +20,7 @@
 		var sto = false;
 		var hsb = false;
 		var fxa = false;
+		var uwv = false;
 		var lastsx = 0;
 		
 		function Startup()
@@ -45,6 +47,14 @@
 							document.Ctrl_form.SR.value = this.responseXML.getElementsByTagName('cl')[0].childNodes[0].nodeValue;
 							document.Ctrl_form.SG.value = this.responseXML.getElementsByTagName('cl')[1].childNodes[0].nodeValue;
 							document.Ctrl_form.SB.value = this.responseXML.getElementsByTagName('cl')[2].childNodes[0].nodeValue;
+							if (this.responseXML.getElementsByTagName('wv')[0].childNodes[0].nodeValue >= 0) {
+								document.Ctrl_form.SW.value = this.responseXML.getElementsByTagName('wv')[0].childNodes[0].nodeValue;
+								if (!uwv) document.getElementById("slW").style.display="block";
+								uwv = true;
+							} else {
+								document.getElementById("slW").style.display="none";
+								uwv = false;
+							}
 							if (document.activeElement != document.getElementById("fxI")) document.Ctrl_form.TF.value = this.responseXML.getElementsByTagName('fx')[0].childNodes[0].nodeValue;
 							document.Ctrl_form.SX.value = this.responseXML.getElementsByTagName('sx')[0].childNodes[0].nodeValue;
 							nla = (this.responseXML.getElementsByTagName('nl')[0].innerHTML)!=0?true:false;
@@ -58,12 +68,13 @@
 				}
 			}
 			// send HTTP request
-			request.open("GET", "win/" + strA + strR + strG + strB + strNL + strNR + strNS + strMD + strFX + strSX +nocache, true);
+			request.open("GET", "win/" + strA + strR + strG + strB + strW + strNL + strNR + strNS + strMD + strFX + strSX +nocache, true);
 			request.send(null);
 			strA = "";
 			strR = "";
 			strG = "";
 			strB = "";
+			strW = "";
 			strNL = "";
 			strNR = "";
 			strNS = "";
@@ -77,6 +88,7 @@
 			strR = "&R=" + Ctrl_form.SR.value;
 			strG = "&G=" + Ctrl_form.SG.value;
 			strB = "&B=" + Ctrl_form.SB.value;
+			if (uwv) strW = "&W=" + Ctrl_form.SW.value;
 			UpdateVals();
 			GetArduinoIO();
 		}
@@ -144,7 +156,7 @@
 		{
 			document.Ctrl_form.TF.value = parseInt(document.Ctrl_form.TF.value) +s;
 			if (document.Ctrl_form.TF.value < 0) document.Ctrl_form.TF.value = 0;
-			if (document.Ctrl_form.TF.value > 47) document.Ctrl_form.TF.value = 47;
+			if (document.Ctrl_form.TF.value > 52) document.Ctrl_form.TF.value = 52;
 			GetFX();
 		}
 		function SetFX()
@@ -157,6 +169,7 @@
 				document.getElementById("slB").style.display="none";
 				document.getElementById("slH").style.display="none";
 				document.getElementById("slS").style.display="none";
+				document.getElementById("slW").style.display="none";
 				document.getElementById("slX").style.display="block";
 				document.getElementById("tlX").style.display="block";
 			} else {
@@ -164,6 +177,7 @@
 				document.getElementById("slA").style.display="block";
 				document.getElementById("slX").style.display="none";
 				document.getElementById("tlX").style.display="none";
+				if (uwv) document.getElementById("slW").style.display="block";
 				SetHSB();
 			}
 		}
@@ -363,6 +377,14 @@
 			width: 77vw;
 			background: linear-gradient(to right, black, blue);
 		}
+		.sliderW {
+			display:none;
+			margin-left: auto;
+			margin-right: auto;
+			margin-top: 2vh;
+			width: 77vw;
+			background: linear-gradient(to right, black, white);
+		}
 		.sliderH {
 			display:none;
 			margin-left: auto;
@@ -540,6 +562,8 @@
 			<input type="range" title="Hue" class="sliders" name="SH" value="0" min="0" max="1" step="0.025" onchange="GetRGB()">  </div>
 			<div id="slS" class="sliderS">
 			<input type="range" title="Saturation" class="sliders" name="SS" value="0" min="0" max="1" step="0.025" onchange="GetRGB()">  </div>
+			<div id="slW" class="sliderW">
+			<input type="range" title="White Value" class="sliders" name="SW" value="0" min="0" max="255" step="1" onchange="GetCheck()">  </div>
 			<div id="tlX" class = "toolsFX">
 			<svg id="fmr" onclick="SwitchFX(-10)"><use xlink:href="#icon-backward2"></use></svg>
 			<svg id="for" onclick="SwitchFX(-1)"><use xlink:href="#icon-circle-left"></use></svg>

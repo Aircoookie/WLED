@@ -38,6 +38,7 @@
 							document.S_form.CLDFG.value = this.responseXML.getElementsByTagName('cldef')[1].innerHTML;
 							document.S_form.CLDFB.value = this.responseXML.getElementsByTagName('cldef')[2].innerHTML;
 							document.S_form.CLDFA.value = this.responseXML.getElementsByTagName('cldfa')[0].innerHTML;
+							document.S_form.CLDFW.value = this.responseXML.getElementsByTagName('cldfw')[0].innerHTML;
 							document.S_form.FXDEF.value = this.responseXML.getElementsByTagName('fxdef')[0].innerHTML;
 							document.S_form.SXDEF.value = this.responseXML.getElementsByTagName('sxdef')[0].innerHTML;
 							document.S_form.BOOTN.checked = (this.responseXML.getElementsByTagName('bootn')[0].innerHTML)!=0?true:false;
@@ -127,6 +128,7 @@
 		<input name="CLDFG" maxlength="3" size="2">
 		<input name="CLDFB" maxlength="3" size="2"> <br>
 		Default brightness: <input name="CLDFA" maxlength="3" size="2"> (0-255) <br>
+		Default white value (only RGBW, -1 to disable): <input name="CLDFW" maxlength="3" size="2"> <br>
 		Default effect ID: <input name="FXDEF" maxlength="3" size="2"> <br>
 		Default effect speed: <input name="SXDEF" maxlength="3" size="2"> <br>
 		Ignore and use current color, brightness and effects: <input type="checkbox" name="CBEOR"> <br>
@@ -152,9 +154,8 @@
 		Emulate Alexa device: <input type="checkbox" name="ALEXA"> <br>
 		Alexa invocation name: <input name="AINVN" maxlength="32"><br>
 		Send Alexa notifications: <input type="checkbox" name="NSALX"> <br>
-		<h3>Time (highly experimental!)</h3>
-		<b> Warning! </b>NTP was updated but still causes crashes. Requires reboot. <br>
-		It is really not recommended to use this! <br>
+		<h3>Time (experimental!)</h3>
+		NTP was updated but still causes crashes. Requires reboot. <br>
 		Get time from NTP server: <input type="checkbox" name="NTPON"> <br>
 		Current local time is <span class="times">unknown</span> <br>
 		<h3>Advanced</h3>
@@ -174,7 +175,7 @@
 		
 		HTTP traffic is not encrypted. An attacker in the same network could intercept form data!<br>
 		<h3>About</h3>
-		WLED version 0.3 <br>
+		WLED version 0.4p <br>
 		(c) 2016-2017 Christian Schwinne <br>
 		<i>Licensed under the MIT license</i> <br>
 		<i>Uses libraries:</i> <br>
