@@ -130,6 +130,11 @@ void handleSettingsSet()
       int i = server.arg("CLDFB").toInt();
       if (i >= 0 && i <= 255) col_s[2] = i;
     }
+    if (server.hasArg("CLDFW"))
+    {
+      int i = server.arg("CLDFW").toInt();
+      if (i >= 0 && i <= 255) white_s = i;
+    }
     if (server.hasArg("CLDFA"))
     {
       int i = server.arg("CLDFA").toInt();
@@ -247,6 +252,10 @@ boolean handleSet(String req)
    pos = req.indexOf("B=");
    if (pos > 0) {
       col[2] = req.substring(pos + 2).toInt();
+   }
+   pos = req.indexOf("W=");
+   if (pos > 0) {
+      white = req.substring(pos + 2).toInt();
    }
    pos = req.indexOf("FX=");
    if (pos > 0) {

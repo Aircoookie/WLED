@@ -12,12 +12,21 @@ void setAllLeds() {
   } else {
     strip.setBrightness(val);
   }
+  #ifdef RGBW
+  if (useGammaCorrectionRGB)
+  {
+    strip.setColor(gamma8[col_t[0]], gamma8[col_t[1]], gamma8[col_t[2]], gamma8[white_t]);
+  } else {
+    strip.setColor(col_t[0], col_t[1], col_t[2], white_t);
+  }
+  #else
   if (useGammaCorrectionRGB)
   {
     strip.setColor(gamma8[col_t[0]], gamma8[col_t[1]], gamma8[col_t[2]]);
   } else {
     strip.setColor(col_t[0], col_t[1], col_t[2]);
   }
+  #endif
 }
 
 void setLedsStandard()
@@ -25,10 +34,12 @@ void setLedsStandard()
   col_old[0] = col[0];
   col_old[1] = col[1];
   col_old[2] = col[2];
+  white_old = white;
   bri_old = bri;
   col_t[0] = col[0];
   col_t[1] = col[1];
   col_t[2] = col[2];
+  white_t = white;
   bri_t = bri;
   setAllLeds();
 }
@@ -36,7 +47,7 @@ void setLedsStandard()
 void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (no not.) (NN)6: fx changed
-  if (col[0] == col_it[0] && col[1] == col_it[1] && col[2] == col_it[2] && bri == bri_it)
+  if (col[0] == col_it[0] && col[1] == col_it[1] && col[2] == col_it[2] && white == white_it && bri == bri_it)
   {
     if (callMode == 6) notify(6);
     return; //no change
@@ -50,6 +61,7 @@ void colorUpdated(int callMode)
   col_it[0] = col[0];
   col_it[1] = col[1];
   col_it[2] = col[2];
+  white_it = white;
   bri_it = bri;
   if (bri > 0) bri_last = bri;
   notify(callMode);
@@ -60,6 +72,7 @@ void colorUpdated(int callMode)
       col_old[0] = col_t[0];
       col_old[1] = col_t[1];
       col_old[2] = col_t[2];
+      white_old = white_t;
       bri_old = bri_t;
       tper_last = 0;
     }
@@ -93,7 +106,8 @@ void handleTransitions()
       col_t[0] = col_old[0]+((col[0] - col_old[0])*tper);
       col_t[1] = col_old[1]+((col[1] - col_old[1])*tper);
       col_t[2] = col_old[2]+((col[2] - col_old[2])*tper);
-      bri_t = bri_old+((bri - bri_old)*tper);
+      white_t  = white_old +((white  - white_old )*tper);
+      bri_t    = bri_old   +((bri    - bri_old   )*tper);
     }
     setAllLeds();
   }

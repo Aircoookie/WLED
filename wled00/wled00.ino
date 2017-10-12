@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1709251
+#define VERSION 1710120
 
 //uncomment if you have an RGBW strip
 #define RGBW
@@ -115,14 +115,12 @@ boolean alexaNotify = false;
 
 double transitionResolution = 0.011;
 
-boolean rgbwEnabled = false;
-
 //Internal vars
 byte col[]{0, 0, 0};
 byte col_old[]{0, 0, 0};
 byte col_t[]{0, 0, 0};
 byte col_it[]{0, 0, 0};
-byte whiteVal;
+byte white, white_old, white_t, white_it;
 unsigned long transitionStartTime;
 unsigned long nightlightStartTime;
 float tper_last = 0;

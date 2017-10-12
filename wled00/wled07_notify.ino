@@ -25,7 +25,7 @@ void notify(uint8_t callMode)
   udpOut[7] = nightlightDelayMins;
   udpOut[8] = effectCurrent;
   udpOut[9] = effectSpeed;
-  udpOut[10] = whiteVal;
+  udpOut[10] = white;
   
   IPAddress broadcastIp;
   broadcastIp = ~WiFi.subnetMask() | WiFi.gatewayIP();
@@ -47,7 +47,7 @@ void handleNotifications()
         col[0] = udpIn[3];
         col[1] = udpIn[4];
         col[2] = udpIn[5];
-        whiteVal = udpIn[10];
+        white = udpIn[10];
         if (udpIn[8] != effectCurrent)
         {
           effectCurrent = udpIn[8];

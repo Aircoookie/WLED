@@ -34,8 +34,11 @@ void XML_response()
    resp = resp + "</fx><sx>";
    resp = resp + effectSpeed;
    resp = resp + "</sx><wv>";
-   if (rgbwEnabled) {resp = resp + whiteVal;}
-   else {resp = resp + "-1";}
+   #ifdef RGBW
+   resp = resp + white;
+   #else
+   resp = resp + "-1";
+   #endif
    resp = resp + "</wv><md>";
    resp = resp + useHSB;
    resp = resp + "</md><desc>";
@@ -112,7 +115,9 @@ void XML_response_settings()
     resp = resp + col_s[i];
     resp = resp + "</cldef>";
   }
-  resp = resp + "<cldfa>";
+  resp = resp + "<cldfw>";
+  resp = resp + white_s;
+  resp = resp + "</cldfw><cldfa>";
   resp = resp + bri_s;
   resp = resp + "</cldfa>";
   resp = resp + "<bootn>";

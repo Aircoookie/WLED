@@ -228,7 +228,6 @@ void WS2812FX::mode_static(void) {
     setPixelColor(i, _color);
   }
   show();
-
   _mode_delay = 25;
 }
 
@@ -1688,24 +1687,40 @@ void WS2812FX::setLedCount(uint16_t i)
 
 void WS2812FX::setPixelColor(uint16_t i, uint32_t c)
 {
+  #ifdef RGBW
+  NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor((c>>16) & 0xFF, (c>>8) & 0xFF, (c) & 0xFF, (c>>24) & 0xFF));
+  #else
   NeoPixelBrightnessBus::SetPixelColor(i, RgbColor((c>>16) & 0xFF, (c>>8) & 0xFF, (c) & 0xFF));
+  #endif
 }
 
 void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
 {
   #ifdef RGBW
-  
+  NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor(r,g,b,w));
+  #else
   NeoPixelBrightnessBus::SetPixelColor(i, RgbColor(r,g,b));
+  #endif
 }
 
 void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b)
 {
+  #ifdef RGBW
+  NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor(r,g,b,0));
+  #else
   NeoPixelBrightnessBus::SetPixelColor(i, RgbColor(r,g,b));
+  #endif
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  return NeoPixelBrightnessBus::GetPixelColor(i).R*65536 + NeoPixelBrightnessBus::GetPixelColor(i).G*256 + NeoPixelBrightnessBus::GetPixelColor(i).B;
+  #ifdef RGBW
+  RgbwColor lColor = NeoPixelBrightnessBus::GetPixelColor(i);
+  return lColor.W*16777216 + lColor.R*65536 + lColor.G*256 + lColor.B;
+  #else
+  RgbColor lColor = NeoPixelBrightnessBus::GetPixelColor(i);
+  return lColor.R*65536 + lColor.G*256 + lColor.B;
+  #endif
 }
 
 void WS2812FX::setBrightness(uint8_t b)
@@ -1722,7 +1737,11 @@ void WS2812FX::show()
 
 void WS2812FX::clear()
 {
+  #ifdef RGBW
+  NeoPixelBrightnessBus::ClearTo(RgbwColor(0));
+  #else
   NeoPixelBrightnessBus::ClearTo(RgbColor(0));
+  #endif
 }
 
 void WS2812FX::begin()
