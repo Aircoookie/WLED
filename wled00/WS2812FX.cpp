@@ -172,9 +172,14 @@ void WS2812FX::strip_off() {
 }
 
 void WS2812FX::strip_off_respectLock() {
-  for(uint16_t i=0; i < _led_count; i++) {
-    if (!_locked[i])
-    setPixelColor(i, 0);
+  if (_none_locked)
+  {
+    clear();
+  } else {
+    for(uint16_t i=0; i < _led_count; i++) {
+      if (!_locked[i])
+      setPixelColor(i, 0);
+    }
   }
   show();
 }
@@ -223,9 +228,14 @@ uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
  * No blinking. Just plain old static light.
  */
 void WS2812FX::mode_static(void) {
-  for(uint16_t i=0; i < _led_count; i++) {
-    if (!_locked[i])
-    setPixelColor(i, _color);
+  if (_none_locked)
+  {
+    setAllPixelColor(_color);
+  } else {
+    for(uint16_t i=0; i < _led_count; i++) {
+      if (!_locked[i])
+      setPixelColor(i, _color);
+    }
   }
   show();
   _mode_delay = 25;
@@ -237,9 +247,14 @@ void WS2812FX::mode_static(void) {
  */
 void WS2812FX::mode_blink(void) {
   if(_counter_mode_call % 2 == 1) {
-    for(uint16_t i=0; i < _led_count; i++) {
-      if (!_locked[i])
-      setPixelColor(i, _color);
+    if (_none_locked)
+    {
+      setAllPixelColor(_color);
+    } else {
+      for(uint16_t i=0; i < _led_count; i++) {
+        if (!_locked[i])
+        setPixelColor(i, _color);
+      }
     }
     show();
   } else {
@@ -1639,7 +1654,10 @@ void WS2812FX::setRange(int i, int i2, uint32_t col)
 void WS2812FX::lock(int i)
 {
   if (i >= 0 && i < _led_count)
-  _locked[i] = true;
+  {
+    _locked[i] = true;
+    _none_locked = false;
+  }
 }
 
 void WS2812FX::lockRange(int i, int i2)
@@ -1647,7 +1665,10 @@ void WS2812FX::lockRange(int i, int i2)
   for (int x = i; x < i2; x++)
   {
     if (x >= 0 && x < _led_count)
+    {
       _locked[x] = true;
+      _none_locked = false;
+    }
   }
 }
 
@@ -1655,12 +1676,16 @@ void WS2812FX::lockAll()
 {
   for (int x = 0; x < _led_count; x++)
     _locked[x] = true;
+  _none_locked = false;
 }
 
 void WS2812FX::unlock(int i)
 {
   if (i >= 0 && i < _led_count)
   _locked[i] = false;
+  //lock check
+  _none_locked = true;
+  for (int x = 0; x < _led_count; x++) if (_locked[x]) _none_locked = false;
 }
 
 void WS2812FX::unlockRange(int i, int i2)
@@ -1670,12 +1695,16 @@ void WS2812FX::unlockRange(int i, int i2)
     if (x >= 0 && x < _led_count)
       _locked[x] = false;
   }
+  //lock check
+  _none_locked = true;
+  for (int x = 0; x < _led_count; x++) if (_locked[x]) _none_locked = false;
 }
 
 void WS2812FX::unlockAll()
 {
   for (int x = 0; x < _led_count; x++)
     _locked[x] = false;
+    _none_locked = true;
 }
 
 void WS2812FX::setLedCount(uint16_t i)
@@ -1741,6 +1770,33 @@ void WS2812FX::clear()
   NeoPixelBrightnessBus::ClearTo(RgbwColor(0));
   #else
   NeoPixelBrightnessBus::ClearTo(RgbColor(0));
+  #endif
+}
+
+void WS2812FX::setAllPixelColor(uint32_t c)
+{
+  #ifdef RGBW
+  NeoPixelBrightnessBus::ClearTo(RgbwColor((c>>16) & 0xFF, (c>>8) & 0xFF, (c) & 0xFF, (c>>24) & 0xFF));
+  #else
+  NeoPixelBrightnessBus::ClearTo(RgbColor((c>>16) & 0xFF, (c>>8) & 0xFF, (c) & 0xFF));
+  #endif
+}
+
+void WS2812FX::setAllPixelColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w)
+{
+  #ifdef RGBW
+  NeoPixelBrightnessBus::ClearTo(RgbwColor(r,g,b,w));
+  #else
+  NeoPixelBrightnessBus::ClearTo(RgbColor(r,g,b));
+  #endif
+}
+
+void WS2812FX::setAllPixelColor(uint8_t r, uint8_t g, uint8_t b)
+{
+  #ifdef RGBW
+  NeoPixelBrightnessBus::ClearTo(RgbwColor(r,g,b,0));
+  #else
+  NeoPixelBrightnessBus::ClearTo(RgbColor(r,g,b));
   #endif
 }
 

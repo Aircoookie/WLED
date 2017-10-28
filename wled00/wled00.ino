@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1710121
+#define VERSION 1710280
 
 //uncomment if you have an RGBW strip
 #define RGBW

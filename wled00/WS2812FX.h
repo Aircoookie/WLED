@@ -236,6 +236,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _counter_mode_call = 0;
       _counter_mode_step = 0;
       _locked = new boolean[n];
+      _none_locked = true;
     }
 
     void
@@ -292,6 +293,9 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       setPixelColor(uint16_t i, uint32_t c),
       setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b),
       setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
+      setAllPixelColor(uint32_t c),
+      setAllPixelColor(uint8_t r, uint8_t g, uint8_t b),
+      setAllPixelColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w),
       dofade(void),
       strip_off(void),
       strip_off_respectLock(void),
@@ -352,6 +356,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
 
     boolean
       _triggered,
+      _none_locked,
       _running;
 
     boolean*
