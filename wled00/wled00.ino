@@ -20,10 +20,9 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1710283
+#define VERSION 1710284
 
-//uncomment if you have an RGBW strip
-#define RGBW
+//If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
 //to toggle usb serial debug (un)comment following line
 //#define DEBUG

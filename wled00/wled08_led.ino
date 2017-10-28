@@ -12,21 +12,12 @@ void setAllLeds() {
   } else {
     strip.setBrightness(val);
   }
-  #ifdef RGBW
   if (useGammaCorrectionRGB)
   {
     strip.setColor(gamma8[col_t[0]], gamma8[col_t[1]], gamma8[col_t[2]], gamma8[white_t]);
   } else {
     strip.setColor(col_t[0], col_t[1], col_t[2], white_t);
   }
-  #else
-  if (useGammaCorrectionRGB)
-  {
-    strip.setColor(gamma8[col_t[0]], gamma8[col_t[1]], gamma8[col_t[2]]);
-  } else {
-    strip.setColor(col_t[0], col_t[1], col_t[2]);
-  }
-  #endif
 }
 
 void setLedsStandard()
@@ -67,7 +58,7 @@ void colorUpdated(int callMode)
   notify(callMode);
   if (fadeTransition || sweepTransition)
   {
-    if (transitionActive && fadeTransition)
+    if (transitionActive)
     {
       col_old[0] = col_t[0];
       col_old[1] = col_t[1];
