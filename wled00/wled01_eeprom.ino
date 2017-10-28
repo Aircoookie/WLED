@@ -103,6 +103,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(370, useHSBDefault);
   EEPROM.write(371, white_s);
   EEPROM.write(372, useRGBW);
+  EEPROM.write(373, sweepTransition);
+  EEPROM.write(374, sweepDirection);
   EEPROM.commit();
 }
 
@@ -216,5 +218,7 @@ void loadSettingsFromEEPROM()
   useHSBDefault = EEPROM.read(370);
   white_s = EEPROM.read(371);
   useRGBW = EEPROM.read(372);
+  sweepTransition = EEPROM.read(373);
+  sweepDirection = EEPROM.read(374);
   useHSB = useHSBDefault;
 }

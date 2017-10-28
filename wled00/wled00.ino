@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1710280
+#define VERSION 1710283
 
 //uncomment if you have an RGBW strip
 #define RGBW
@@ -72,8 +72,8 @@ TimeChangeRule *tcr;        //pointer to the time change rule, use to get the TZ
 time_t local;
 
 //Default CONFIG
-uint8_t ledcount = 255;
-String serverDescription = "WLED 0.3pd";
+uint8_t ledcount = 93;
+String serverDescription = "WLED 0.4p";
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
 String cmdns = "led";
@@ -92,6 +92,7 @@ byte white_s = 0;
 byte bri_s = 127;
 uint8_t bri_nl = 0, bri_nls;
 boolean fadeTransition = true;
+boolean sweepTransition = false; boolean sweepDirection = true;
 uint16_t transitionDelay = 1200;
 boolean ota_lock = true;
 boolean only_ap = false;

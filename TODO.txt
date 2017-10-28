@@ -43,10 +43,11 @@ auto update (get from server)
 ifLed feature -> set triggers for reqs.?
 
 BUGS
-general forced reset (usually around 48h)
-NTP crash (1-48h)
+opening settings causes crash after long runtime
+flashing random (fixed?)
+general forced reset (usually around 48h) (fixed?)
+NTP crash (1-48h) (fixed?)
 losing connectivity
-off after forced reset (system query?)
 udp notifier doesn't work all the time
 static ip disables mdns
 ? authentification for security relevant areas ([/settings, /reset])

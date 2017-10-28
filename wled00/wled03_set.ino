@@ -163,6 +163,8 @@ void handleSettingsSet()
   useGammaCorrectionRGB = server.hasArg("GCRGB");
   buttonEnabled = server.hasArg("BTNON");
   fadeTransition = server.hasArg("TFADE");
+  sweepTransition = server.hasArg("TSWEE");
+  sweepDirection = !server.hasArg("TSDIR");
   if (server.hasArg("TDLAY"))
   {
     int i = server.arg("TDLAY").toInt();

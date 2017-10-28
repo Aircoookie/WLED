@@ -144,8 +144,11 @@ void XML_response_settings()
   resp = resp + fadeTransition;
   resp = resp + "</tfade><tdlay>";
   resp = resp + transitionDelay;
-  resp = resp + "</tdlay>";
-  resp = resp + "<tlbri>";
+  resp = resp + "</tdlay><tswee>";
+  resp = resp + sweepTransition;
+  resp = resp + "</tswee><tsdir>";
+  resp = resp + !sweepDirection;
+  resp = resp + "</tsdir><tlbri>";
   resp = resp + bri_nl;
   resp = resp + "</tlbri>";
   resp = resp + "<tldur>";

@@ -65,9 +65,9 @@ void colorUpdated(int callMode)
   bri_it = bri;
   if (bri > 0) bri_last = bri;
   notify(callMode);
-  if (fadeTransition)
+  if (fadeTransition || sweepTransition)
   {
-    if (transitionActive)
+    if (transitionActive && fadeTransition)
     {
       col_old[0] = col_t[0];
       col_old[1] = col_t[1];
@@ -93,6 +93,7 @@ void handleTransitions()
     {
       transitionActive = false;
       tper_last = 0;
+      if (sweepTransition) strip.unlockAll();
       setLedsStandard();
       return;
     }
@@ -109,7 +110,22 @@ void handleTransitions()
       white_t  = white_old +((white  - white_old )*tper);
       bri_t    = bri_old   +((bri    - bri_old   )*tper);
     }
-    setAllLeds();
+    if (sweepTransition)
+    {
+      strip.lockAll();
+      if (sweepDirection)
+      {
+        strip.unlockRange(0, (int)(tper*(double)ledcount));
+      } else
+      {
+        strip.unlockRange(ledcount - (int)(tper*(double)ledcount), ledcount);
+      }
+      if (!fadeTransition)
+      {
+        setLedsStandard();
+      }
+    }
+    if (fadeTransition) setAllLeds();
   }
 }
 

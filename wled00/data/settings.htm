@@ -46,6 +46,8 @@
 							document.S_form.GCRGB.checked = (this.responseXML.getElementsByTagName('gcrgb')[0].innerHTML)!=0?true:false;
 							document.S_form.BTNON.checked = (this.responseXML.getElementsByTagName('btnon')[0].innerHTML)!=0?true:false;
 							document.S_form.TFADE.checked = (this.responseXML.getElementsByTagName('tfade')[0].innerHTML)!=0?true:false;
+							document.S_form.TSWEE.checked = (this.responseXML.getElementsByTagName('tswee')[0].innerHTML)!=0?true:false;
+							document.S_form.TSDIR.checked = (this.responseXML.getElementsByTagName('tsdir')[0].innerHTML)!=0?true:false;
 							document.S_form.TDLAY.value = this.responseXML.getElementsByTagName('tdlay')[0].innerHTML;
 							document.S_form.TLBRI.value = this.responseXML.getElementsByTagName('tlbri')[0].innerHTML;
 							document.S_form.TLDUR.value = this.responseXML.getElementsByTagName('tldur')[0].innerHTML;
@@ -140,6 +142,7 @@
 		On/Off button enabled: <input type="checkbox" name="BTNON"> <br>
 		<h3>Transitions</h3>
 		Fade: <input type="checkbox" name="TFADE"> <br>
+		Sweep: <input type="checkbox" name="TSWEE">  Invert direction: <input type="checkbox" name="TSDIR"><br>
 		Transition Delay: <input name="TDLAY" maxlength="5" size="2"> ms <br>
 		<h3>Timed light</h3>
 		Target brightness: <input name="TLBRI" maxlength="3" size="2"> (0-255) <br>

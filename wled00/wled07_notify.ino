@@ -26,6 +26,7 @@ void notify(uint8_t callMode)
   udpOut[8] = effectCurrent;
   udpOut[9] = effectSpeed;
   udpOut[10] = white;
+  udpOut[11] = 1; //boolean byte, lowest bit to confirm white value compatibility
   
   IPAddress broadcastIp;
   broadcastIp = ~WiFi.subnetMask() | WiFi.gatewayIP();
@@ -47,7 +48,7 @@ void handleNotifications()
         col[0] = udpIn[3];
         col[1] = udpIn[4];
         col[2] = udpIn[5];
-        white = udpIn[10];
+        if (udpIn[11] %2 == 1) white = udpIn[10]; //check if sending modules white val is inteded
         if (udpIn[8] != effectCurrent)
         {
           effectCurrent = udpIn[8];

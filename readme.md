@@ -1,13 +1,14 @@
-WLED is a basic, fast and (relatively) (ok, VERY relatively) secure implementation of a ESP8266 webserver to control Neopixel (WS2812B) leds
+WLED is a basic, fast and (relatively) secure implementation of a ESP8266 webserver to control Neopixel (WS2812B) leds
 
-Uses ESP arduino version 2.3.0 (latest as of May 2017).
+Uses ESP arduino version 2.3.0 (latest as of October 2017).
 Contents in the /data directory may be uploaded to SPIFFS.
 
-Features: (V0.3)
+Features: (V0.4)
 - RGB, HSB, and brightness sliders
 - Settings page - configuration over network
 - Access Point and station mode - automatic failsafe AP
 - WS2812FX library integrated for nearly 50 special effects!
+- Support for RGBW strips
 - Nightlight function (gradually dims down)
 - Notifier function (multiple ESPs sync color via UDP broadcast)
 - Support for power pushbutton
@@ -21,8 +22,8 @@ Features: (V0.3)
 Compile settings:
 Board: WeMos D1 mini (untested with other HW, should work though)
 CPU frequency: 80 MHz
-Flash size : 4MB (1MB SPIFFS)
-Upload speed: 115200
+Flash size : 4MB (3MB SPIFFS)
+Upload speed: 921600
 
 
 Quick start guide:
@@ -54,6 +55,7 @@ Add one or multiple of the following parameters after the base url to change val
 "&R=<0-255>" set LED red value (red slider)
 "&G=<0-255>" set LED green value (green slider)
 "&B=<0-255>" set LED blue value (blue slider)
+"&W=<0-255>" set LED white value (white slider) (only when RGBW enabled)
 "&T=<0 or 1 or 2-255>" 0: switch off, on, toggle
 "&FX=<0-47>" set LED effect (refer to WS2812FX library)
 "&SX=<0-255>" set LED effect speed (refer to WS2812FX library)
