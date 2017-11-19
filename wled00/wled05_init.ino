@@ -55,7 +55,7 @@ void wledInit()
   DEBUG_PRINTLN(WiFi.localIP());
   
   // Set up mDNS responder:
-  if (cmdns != NULL && !only_ap && !MDNS.begin(cmdns.c_str())) {
+  if (cmdns != NULL && !onlyAP && !MDNS.begin(cmdns.c_str())) {
     DEBUG_PRINTLN("Error setting up MDNS responder!");
     down();
   }
@@ -71,7 +71,12 @@ void wledInit()
   //SERVER INIT
   //settings page
   server.on("/settings", HTTP_GET, [](){
-    if(!handleFileRead("/settings.htm")) server.send(200, "text/html", PAGE_settings);
+    String settingsBuffer = getSettings();
+    server.setContentLength(strlen_P(PAGE_settings0) + strlen_P(PAGE_settings1) + settingsBuffer.length());
+    server.send(200, "text/html", "");
+    server.sendContent_P(PAGE_settings0); 
+    server.sendContent(settingsBuffer); 
+    server.sendContent_P(PAGE_settings1);
   });
   server.on("/favicon.ico", HTTP_GET, [](){
     if(!handleFileRead("/favicon.ico")) server.send(200, "image/x-icon", favicon);
@@ -80,7 +85,7 @@ void wledInit()
     if(!handleFileRead("/index.htm")) server.send(200, "text/html", PAGE_index);
   });
   server.on("/reset", HTTP_GET, [](){
-    server.send(200, "text/plain", "Rebooting... Please wait a few seconds and refresh page.");
+    server.send(200, "text/plain", "Rebooting...");
     reset();
   });
   server.on("/set-settings", HTTP_POST, [](){
@@ -96,7 +101,7 @@ void wledInit()
   server.on("/freeheap", HTTP_GET, [](){
     server.send(200, "text/plain", (String)ESP.getFreeHeap());
     });
-  if (!ota_lock){
+  if (!otaLock){
     server.on("/edit", HTTP_GET, [](){
     if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);
     });
@@ -168,12 +173,12 @@ void initCon()
     delay(500);
     DEBUG_PRINTLN("C_NC");
     fail_count++;
-    if (fail_count > 32)
+    if (!recoveryAPDisabled && fail_count > apWaitTimeSecs*2)
     {
       WiFi.disconnect();
-      DEBUG_PRINTLN("Can't connect to network. Opening AP...");
+      DEBUG_PRINTLN("Can't connect. Opening AP...");
       String save = apssid;
-      only_ap = true;
+      onlyAP = true;
       if (apssid.length() <1) apssid = "WLED-AP";
       initAP();
       apssid = save;

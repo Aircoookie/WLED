@@ -14,14 +14,13 @@ void handleSettingsSet()
     }
   }
   if (server.hasArg("CMDNS")) cmdns = server.arg("CMDNS");
-  if (server.hasArg("APSSID")) apssid = server.arg("APSSID");
-  if (server.hasArg("APHSSID"))
+  if (server.hasArg("APWTM"))
   {
-    aphide = 1;
-  } else
-  {
-    aphide = 0;
+      int i = server.arg("APWTM").toInt();
+      if (i >= 0 && i <= 255) apWaitTimeSecs = i;
   }
+  if (server.hasArg("APSSID")) apssid = server.arg("APSSID");
+  aphide = server.hasArg("APHSSID");
   if (server.hasArg("APPASS"))
   {
     if (!server.arg("APPASS").indexOf('*') == 0) appass = server.arg("APPASS");
@@ -34,7 +33,7 @@ void handleSettingsSet()
   if (server.hasArg("RESET")) //might be dangerous in case arg is always sent
   {
     clearEEPROM();
-    server.send(200, "text/plain", "Settings erased. Please wait for light to turn back on, then go to main page...");
+    server.send(200, "text/plain", "Settings erased. Rebooting...");
     reset();
   }
   if (server.hasArg("CSIP0"))
@@ -218,7 +217,7 @@ void handleSettingsSet()
   }
   if (server.hasArg("OPASS"))
   {
-    if (!ota_lock)
+    if (!otaLock)
     {
       if (server.arg("OPASS").length() > 0)
       otapass = server.arg("OPASS");
@@ -226,11 +225,16 @@ void handleSettingsSet()
     {
       if (otapass.equals(server.arg("OPASS")))
       {
-        ota_lock = false;
+        otaLock = false;
       }
     }
   }
-  if (server.hasArg("NOOTA")) ota_lock = true;
+  if (server.hasArg("NOOTA")) otaLock = true;
+  if (server.hasArg("NORAP")) {
+    if (!otaLock) recoveryAPDisabled = true;
+  } else {
+    recoveryAPDisabled = false;
+  }
   saveSettingsToEEPROM();
 }
 
@@ -238,11 +242,6 @@ boolean handleSet(String req)
 {
    boolean effectUpdated = false;
    if (!(req.indexOf("win") >= 0)) {
-        if (req.indexOf("get-settings") >= 0)
-        {
-          XML_response_settings();
-          return true;
-        }
         return false;
    }
    int pos = 0;

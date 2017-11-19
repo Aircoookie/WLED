@@ -1,18 +1,23 @@
 /*
- * Settings html
+ * Settings html (part 1)
  */
-const char PAGE_settings[] PROGMEM = R"=====(
+const char PAGE_settings0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html>
 <head>
 <meta http-equiv=Content-Type content="text/html; charset=windows-1252">
 <title>Settings</title>
-<script>function GetCurrent(){var a=new XMLHttpRequest();a.onreadystatechange=function(){if(this.readyState==4){if(this.status==200){if(this.responseXML!=null){document.S_form.CSSID.value=this.responseXML.getElementsByTagName("cssid")[0].innerHTML;document.S_form.CPASS.value=this.responseXML.getElementsByTagName("cpass")[0].innerHTML;document.S_form.CSIP0.value=this.responseXML.getElementsByTagName("csips")[0].innerHTML;document.S_form.CSIP1.value=this.responseXML.getElementsByTagName("csips")[1].innerHTML;document.S_form.CSIP2.value=this.responseXML.getElementsByTagName("csips")[2].innerHTML;document.S_form.CSIP3.value=this.responseXML.getElementsByTagName("csips")[3].innerHTML;document.S_form.CSGW0.value=this.responseXML.getElementsByTagName("csgws")[0].innerHTML;document.S_form.CSGW1.value=this.responseXML.getElementsByTagName("csgws")[1].innerHTML;document.S_form.CSGW2.value=this.responseXML.getElementsByTagName("csgws")[2].innerHTML;document.S_form.CSGW3.value=this.responseXML.getElementsByTagName("csgws")[3].innerHTML;document.S_form.CSSN0.value=this.responseXML.getElementsByTagName("cssns")[0].innerHTML;document.S_form.CSSN1.value=this.responseXML.getElementsByTagName("cssns")[1].innerHTML;document.S_form.CSSN2.value=this.responseXML.getElementsByTagName("cssns")[2].innerHTML;document.S_form.CSSN3.value=this.responseXML.getElementsByTagName("cssns")[3].innerHTML;document.S_form.CMDNS.value=this.responseXML.getElementsByTagName("cmdns")[0].innerHTML;document.S_form.APSSID.value=this.responseXML.getElementsByTagName("apssid")[0].innerHTML;document.S_form.APHSSID.checked=(this.responseXML.getElementsByTagName("aphssid")[0].innerHTML)!=0?true:false;document.S_form.APPASS.value=this.responseXML.getElementsByTagName("appass")[0].innerHTML;document.S_form.APCHAN.value=this.responseXML.getElementsByTagName("apchan")[0].innerHTML;document.S_form.DESC.value=this.responseXML.getElementsByTagName("desc")[0].innerHTML;document.S_form.COLMD.checked=(this.responseXML.getElementsByTagName("colmd")[0].innerHTML)!=0?true:false;document.S_form.LEDCN.value=this.responseXML.getElementsByTagName("ledcn")[0].innerHTML;document.S_form.CLDFR.value=this.responseXML.getElementsByTagName("cldef")[0].innerHTML;document.S_form.CLDFG.value=this.responseXML.getElementsByTagName("cldef")[1].innerHTML;document.S_form.CLDFB.value=this.responseXML.getElementsByTagName("cldef")[2].innerHTML;document.S_form.CLDFA.value=this.responseXML.getElementsByTagName("cldfa")[0].innerHTML;document.S_form.CLDFW.value=this.responseXML.getElementsByTagName("cldfw")[0].innerHTML;document.S_form.FXDEF.value=this.responseXML.getElementsByTagName("fxdef")[0].innerHTML;document.S_form.SXDEF.value=this.responseXML.getElementsByTagName("sxdef")[0].innerHTML;document.S_form.BOOTN.checked=(this.responseXML.getElementsByTagName("bootn")[0].innerHTML)!=0?true:false;document.S_form.GCBRI.checked=(this.responseXML.getElementsByTagName("gcbri")[0].innerHTML)!=0?true:false;document.S_form.GCRGB.checked=(this.responseXML.getElementsByTagName("gcrgb")[0].innerHTML)!=0?true:false;document.S_form.BTNON.checked=(this.responseXML.getElementsByTagName("btnon")[0].innerHTML)!=0?true:false;document.S_form.TFADE.checked=(this.responseXML.getElementsByTagName("tfade")[0].innerHTML)!=0?true:false;document.S_form.TSWEE.checked=(this.responseXML.getElementsByTagName("tswee")[0].innerHTML)!=0?true:false;document.S_form.TSDIR.checked=(this.responseXML.getElementsByTagName("tsdir")[0].innerHTML)!=0?true:false;document.S_form.TDLAY.value=this.responseXML.getElementsByTagName("tdlay")[0].innerHTML;document.S_form.TLBRI.value=this.responseXML.getElementsByTagName("tlbri")[0].innerHTML;document.S_form.TLDUR.value=this.responseXML.getElementsByTagName("tldur")[0].innerHTML;document.S_form.TLFDE.checked=(this.responseXML.getElementsByTagName("tlfde")[0].innerHTML)!=0?true:false;document.S_form.NUDPP.value=this.responseXML.getElementsByTagName("nudpp")[0].innerHTML;document.S_form.NRCVE.checked=(this.responseXML.getElementsByTagName("nrcve")[0].innerHTML)!=0?true:false;document.S_form.NRBRI.value=this.responseXML.getElementsByTagName("nrbri")[0].innerHTML;document.S_form.NSDIR.checked=(this.responseXML.getElementsByTagName("nsdir")[0].innerHTML)!=0?true:false;document.S_form.NSBTN.checked=(this.responseXML.getElementsByTagName("nsbtn")[0].innerHTML)!=0?true:false;document.S_form.ALEXA.checked=(this.responseXML.getElementsByTagName("alexa")[0].innerHTML)!=0?true:false;document.S_form.AINVN.value=this.responseXML.getElementsByTagName("ainvn")[0].innerHTML;document.S_form.NSALX.checked=(this.responseXML.getElementsByTagName("nsalx")[0].innerHTML)!=0?true:false;document.S_form.NTPON.checked=(this.responseXML.getElementsByTagName("ntpon")[0].innerHTML)!=0?true:false;document.getElementsByClassName("times")[0].innerHTML=this.responseXML.getElementsByTagName("times")[0].innerHTML;document.S_form.OLDEF.value=this.responseXML.getElementsByTagName("oldef")[0].innerHTML;document.S_form.WOFFS.value=this.responseXML.getElementsByTagName("woffs")[0].innerHTML;document.S_form.WOFFN.checked=(this.responseXML.getElementsByTagName("woffn")[0].innerHTML)!=0?true:false;document.S_form.NOOTA.checked=(this.responseXML.getElementsByTagName("noota")[0].innerHTML)!=0?true:false;document.S_form.NORAP.checked=(this.responseXML.getElementsByTagName("norap")[0].innerHTML)!=0?true:false;document.getElementsByClassName("sip")[0].innerHTML=this.responseXML.getElementsByTagName("sip")[0].innerHTML;document.getElementsByClassName("sip")[1].innerHTML=this.responseXML.getElementsByTagName("sip")[1].innerHTML;document.getElementsByClassName("msg")[0].innerHTML=this.responseXML.getElementsByTagName("msg")[0].innerHTML}}}};a.open("GET","/get-settings",true);a.send(null)};</script>
+<script>function GetCurrent(){
+var d=document;
+)=====";
+
+const char PAGE_settings1[] PROGMEM = R"=====(
+}</script>
 <style>body{line-height:150%}</style>
 </head>
 <body onload=GetCurrent() class=__plain_text_READY__>
 <h1 style=text-align:center>WLED Settings</h1>
-<form id=form_s name=S_form action=set-settings method=post>
+<form id=form_s name=Sf action=set-settings method=post>
 <div align=center><input type=submit name=SUBM value=Save></div>
 <hr>
 <h2>WiFi setup</h2>
@@ -36,6 +41,7 @@ Static subnet mask: <br>
 <input name=CSSN3 maxlength=3 size=2> <br>
 mDNS address (leave empty for no mDNS): <br/>
 http:// <input name=CMDNS maxlength=32> .local <br>
+Try connecting before opening AP for: <input name="APWTM" maxlength="3" size="2"> s <br>
 Client IP: <span class=sip> Not connected </span> <br>
 <h3>Configure Access Point</h3>
 AP SSID (leave empty for no AP): <br> <input name=APSSID maxlength=32> <br>
@@ -95,9 +101,10 @@ Passphrase: <input type=password name=OPASS maxlength=32> <br>
 To enable OTA, for security reasons you need to also enter the correct password! <br>
 The password may/should be changed when OTA is enabled. <br>
 Disable OTA when not in use, otherwise an attacker could reflash device software! <br> <br>
-Disable recovery AP (<i>Not implemented</i>): <input type=checkbox name=NORAP> <br>
+Disable recovery AP: <input type=checkbox name=NORAP> <br>
 In case of a connection error there will be no wireless recovery possible! <br>
-Completely disables all Access Point functions. <br> <br>
+Completely disables all Access Point functions. <br>
+Setting only changable if OTA is enabled! <br><br>
 Factory reset: <input type=checkbox name=RESET> <br>
 All EEPROM content (settings) will be erased. <br> <br>
 HTTP traffic is not encrypted. An attacker in the same network could intercept form data!<br>
@@ -117,6 +124,7 @@ Server message: <span class=msg> XML response error! </span>
 </body>
 </html>
 )=====";
+
 /*
  * Settings set html
  */

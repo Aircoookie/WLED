@@ -49,186 +49,119 @@ void XML_response()
    server.send(200, "text/xml", resp);
 }
 
-void XML_response_settings()
+String getSettings()
 {
-  DEBUG_PRINTLN("XML settings response");
-  String resp;
-  resp = resp + "<?xml version = \"1.0\" ?>";
-  resp = resp + "<vs>";
-  resp = resp + "<cssid>";
-  resp = resp + clientssid;
-  resp = resp + "</cssid>";
-  resp = resp + "<cpass>";
+  DEBUG_PRINTLN("settings resp");
+  
+  String resp = "";
+  String ds = "d.Sf.";
+  String dg = "d.getElementsByClassName";
+  String v = ".value=";
+  String c = ".checked=";
+  String ih = ".innerHTML=";
+  
+  resp += ds + "CSSID" + v + "\"" + clientssid + "\";";
+  resp += ds + "CPASS" + v + "\"";
   for (int i = 0; i < clientpass.length(); i++)
   {
-    resp = resp + "*";
+    resp += "*";
   }
-  resp = resp + "</cpass>";
-  for (int i = 0; i < 4; i++)
+  resp += "\";";
+  resp += ds + "CSIP0" + v + staticip[0] +";";
+  resp += ds + "CSIP1" + v + staticip[1] +";";
+  resp += ds + "CSIP2" + v + staticip[2] +";";
+  resp += ds + "CSIP3" + v + staticip[3] +";";
+  resp += ds + "CSGW0" + v + staticgateway[0] +";";
+  resp += ds + "CSGW1" + v + staticgateway[1] +";";
+  resp += ds + "CSGW2" + v + staticgateway[2] +";";
+  resp += ds + "CSGW3" + v + staticgateway[3] +";";
+  resp += ds + "CSSN0" + v + staticsubnet[0] +";";
+  resp += ds + "CSSN1" + v + staticsubnet[1] +";";
+  resp += ds + "CSSN2" + v + staticsubnet[2] +";";
+  resp += ds + "CSSN3" + v + staticsubnet[3] +";";
+  resp += ds + "CMDNS" + v + "\"" + cmdns + "\";";
+  resp += ds + "APWTM" + v + apWaitTimeSecs +";";
+  resp += ds + "APSSID" + v + "\"" + apssid + "\";";
+  resp += ds + "APHSSID" + c + aphide + ";";
+  resp += ds + "APPASS" + v + "\"";
+  for (int i = 0; i < clientpass.length(); i++)
   {
-    resp = resp + "<csips>";
-    resp = resp + staticip[i];
-    resp = resp + "</csips>";
+    resp += "*";
   }
-  for (int i = 0; i < 4; i++)
-  {
-    resp = resp + "<csgws>";
-    resp = resp + staticgateway[i];
-    resp = resp + "</csgws>";
-  }
-  for (int i = 0; i < 4; i++)
-  {
-    resp = resp + "<cssns>";
-    resp = resp + staticsubnet[i];
-    resp = resp + "</cssns>";
-  }
-  resp = resp + "<cmdns>";
-  resp = resp + cmdns;
-  resp = resp + "</cmdns>";
-  resp = resp + "<apssid>";
-  resp = resp + apssid;
-  resp = resp + "</apssid>";
-  resp = resp + "<aphssid>";
-  resp = resp + aphide;
-  resp = resp + "</aphssid>";
-  resp = resp + "<appass>";
-  for (int i = 0; i < appass.length(); i++)
-  {
-    resp = resp + "*";
-  }
-  resp = resp + "</appass>";
-  resp = resp + "<apchan>";
-  resp = resp + apchannel;
-  resp = resp + "</apchan>";
-  resp = resp + "<desc>";
-  resp = resp + serverDescription;
-  resp = resp + "</desc>";
-  resp = resp + "<colmd>";
-  resp = resp + useHSBDefault;
-  resp = resp + "</colmd>";
-  resp = resp + "<ledcn>";
-  resp = resp + ledcount;
-  resp = resp + "</ledcn>";
-  for (int i = 0; i < 3; i++)
-  {
-    resp = resp + "<cldef>";
-    resp = resp + col_s[i];
-    resp = resp + "</cldef>";
-  }
-  resp = resp + "<cldfw>";
+  resp += "\";";
+  resp += ds + "APCHAN" + v + apchannel +";";
+
+  resp += ds + "DESC" + v + "\"" + serverDescription + "\";";
+  resp += ds + "COLMD" + c + useHSBDefault + ";";
+  resp += ds + "LEDCN" + v + ledcount +";";
+  resp += ds + "CLDFR" + v + col_s[0] +";";
+  resp += ds + "CLDFG" + v + col_s[1] +";";
+  resp += ds + "CLDFB" + v + col_s[2] +";";
+  resp += ds + "CLDFA" + v + bri_s +";";
   if (useRGBW) {
-     resp = resp + white_s;
-   } else {
-     resp = resp + "-1";
-   }
-  resp = resp + "</cldfw><cldfa>";
-  resp = resp + bri_s;
-  resp = resp + "</cldfa>";
-  resp = resp + "<bootn>";
-  resp = resp + turnOnAtBoot;
-  resp = resp + "</bootn>";
-  resp = resp + "<fxdef>";
-  resp = resp + effectDefault;
-  resp = resp + "</fxdef>";
-  resp = resp + "<sxdef>";
-  resp = resp + effectSpeedDefault;
-  resp = resp + "</sxdef>";
-  resp = resp + "<gcbri>";
-  resp = resp + useGammaCorrectionBri;
-  resp = resp + "</gcbri><gcrgb>";
-  resp = resp + useGammaCorrectionRGB;
-  resp = resp + "</gcrgb>";
-  resp = resp + "<btnon>";
-  resp = resp + buttonEnabled;
-  resp = resp + "</btnon><tfade>";
-  resp = resp + fadeTransition;
-  resp = resp + "</tfade><tdlay>";
-  resp = resp + transitionDelay;
-  resp = resp + "</tdlay><tswee>";
-  resp = resp + sweepTransition;
-  resp = resp + "</tswee><tsdir>";
-  resp = resp + !sweepDirection;
-  resp = resp + "</tsdir><tlbri>";
-  resp = resp + bri_nl;
-  resp = resp + "</tlbri>";
-  resp = resp + "<tldur>";
-  resp = resp + nightlightDelayMins;
-  resp = resp + "</tldur>";
-  resp = resp + "<tlfde>";
-  resp = resp + nightlightFade;
-  resp = resp + "</tlfde>";
-  resp = resp + "<nudpp>";
-  resp = resp + udpPort;
-  resp = resp + "</nudpp>";
-  resp = resp + "<nrcve>";
-  resp = resp + receiveNotificationsDefault;
-  resp = resp + "</nrcve><nrbri>";
-  resp = resp + bri_n;
-  resp = resp + "</nrbri><nsdir>";
-  resp = resp + notifyDirectDefault;
-  resp = resp + "</nsdir><nsbtn>";
-  resp = resp + notifyButton;
-  resp = resp + "</nsbtn><nsfwd>0</nsfwd>"; //legacy
-  resp = resp + "<ntpon>";
-  resp = resp + ntpEnabled;
-  resp = resp + "</ntpon>";
-  resp = resp + "<alexa>";
-  resp = resp + alexaEnabled;
-  resp = resp + "</alexa><ainvn>";
-  resp = resp + alexaInvocationName;
-  resp = resp + "</ainvn><nsalx>";
-  resp = resp + alexaNotify;
-  resp = resp + "</nsalx>";
-  DEBUG_PRINTLN("pretime");
-  resp = resp + "<times>";
-  resp = resp + getTimeString();
-  resp = resp + "</times>";
-  resp = resp + "<oldef>";
-  resp = resp + overlayDefault;
-  resp = resp + "</oldef>";
-  resp = resp + "<woffs>";
-  resp = resp + abs(arlsOffset);
-  resp = resp + "</woffs>";
-  resp = resp + "<woffn>";
-  resp = resp + !arlsSign;
-  resp = resp + "</woffn>";
-  resp = resp + "<noota>";
-  resp = resp + ota_lock;
-  resp = resp +"</noota>";
-  resp = resp + "<norap>0</norap>"; //NI
-  resp = resp + "<sip>";
+    resp += ds + "CLDFW" + v + white_s +";";
+  } else {
+    resp += ds + "CLDFW" + v + "-1;";
+  }
+  resp += ds + "BOOTN" + c + turnOnAtBoot +";";
+  resp += ds + "FXDEF" + v + effectDefault +";";
+  resp += ds + "FXDEF" + v + effectDefault +";";
+  resp += ds + "GCBRI" + c + useGammaCorrectionBri +";";
+  resp += ds + "GCRGB" + c + useGammaCorrectionRGB +";";
+  resp += ds + "BTNON" + c + buttonEnabled +";";
+  resp += ds + "TFADE" + c + fadeTransition +";";
+  resp += ds + "TSWEE" + c + sweepTransition +";";
+  resp += ds + "TSDIR" + c + !sweepDirection +";";
+  resp += ds + "TDLAY" + v + transitionDelay +";";
+  resp += ds + "TLBRI" + v + bri_nl +";";
+  resp += ds + "TLDUR" + v + nightlightDelayMins +";";
+  resp += ds + "TLFDE" + c + nightlightFade +";";
+  resp += ds + "NUDPP" + v + udpPort +";";
+  resp += ds + "NRBRI" + v + bri_n +";";
+  resp += ds + "NRCVE" + c + receiveNotificationsDefault +";";
+  resp += ds + "NSDIR" + c + notifyDirectDefault +";";
+  resp += ds + "NSBTN" + c + notifyButton +";";
+  resp += ds + "NTPON" + c + ntpEnabled +";";
+  resp += ds + "ALEXA" + c + alexaEnabled +";";
+  resp += ds + "AINVN" + v + "\"" + alexaInvocationName + "\";";
+  resp += ds + "NSALX" + c + alexaNotify +";";
+  resp += dg + "(\"times\")[0]" + ih + "\"" + getTimeString() + "\";";
+  resp += ds + "OLDEF" + v + overlayDefault +";";
+  resp += ds + "WOFFS" + v + abs(arlsOffset) +";";
+  resp += ds + "WOFFN" + c + !arlsSign +";";
+  resp += ds + "NOOTA" + c + otaLock +";";
+  resp += ds + "NORAP" + c + recoveryAPDisabled +";";
+  resp += dg + "(\"sip\")[0]" + ih + "\"";
   if (!WiFi.localIP()[0] == 0)
   {
-    resp = resp + WiFi.localIP()[0];
-    resp = resp + ".";
-    resp = resp + WiFi.localIP()[1];
-    resp = resp + ".";
-    resp = resp + WiFi.localIP()[2];
-    resp = resp + ".";
-    resp = resp + WiFi.localIP()[3];
+    resp += WiFi.localIP()[0];
+    resp += + ".";
+    resp += WiFi.localIP()[1];
+    resp += ".";
+    resp += WiFi.localIP()[2];
+    resp += ".";
+    resp += WiFi.localIP()[3];
   } else
   {
-    resp = resp + "Not connected";
+    resp += "Not connected";
   }
-  resp = resp + "</sip><sip>";
+  resp += "\";";
+  resp += dg + "(\"sip\")[1]" + ih + "\"";
   if (!WiFi.softAPIP()[0] == 0)
   {
-    resp = resp + WiFi.softAPIP()[0];
-    resp = resp + ".";
-    resp = resp + WiFi.softAPIP()[1];
-    resp = resp + ".";
-    resp = resp + WiFi.softAPIP()[2];
-    resp = resp + ".";
-    resp = resp + WiFi.softAPIP()[3];
+    resp += WiFi.softAPIP()[0];
+    resp += + ".";
+    resp += WiFi.softAPIP()[1];
+    resp += ".";
+    resp += WiFi.softAPIP()[2];
+    resp += ".";
+    resp += WiFi.softAPIP()[3];
   } else
   {
-    resp = resp + "Not active";
+    resp += "Not active";
   }
-  resp = resp + "</sip>";
-  resp = resp + "<msg>WLED 0.4p (build ";
-  resp = resp + VERSION;
-  resp = resp + ") OK</msg>";
-  resp = resp + "</vs>";
-  DEBUG_PRINTLN(resp);
-  server.send(200, "text/xml", resp);
+  resp += "\";";
+  resp += dg + "(\"msg\")[0]" + ih + "\"WLED 0.4p (build " + VERSION + ") OK\";";
+  
+  return resp;
 }

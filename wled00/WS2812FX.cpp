@@ -1548,6 +1548,10 @@ void WS2812FX::mode_circus_combustus(void) {
   _mode_delay = 100 + ((100 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
 }
 
+
+
+//WLED specific methods
+
 void WS2812FX::setIndividual(int i)
 {
   if (i >= 0 && i < _led_count)

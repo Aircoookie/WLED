@@ -75,7 +75,7 @@ void saveSettingsToEEPROM()
     EEPROM.write(i, otapass.charAt(i-256));
   }
   EEPROM.write(288, bri_nl);
-  EEPROM.write(289, ota_lock);
+  EEPROM.write(289, otaLock);
   EEPROM.write(290, (udpPort >> 0) & 0xFF);
   EEPROM.write(291, (udpPort >> 8) & 0xFF);
   for (int i = 292; i < 324; ++i)
@@ -105,6 +105,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(372, useRGBW);
   EEPROM.write(373, sweepTransition);
   EEPROM.write(374, sweepDirection);
+  EEPROM.write(375, apWaitTimeSecs);
+  EEPROM.write(376, recoveryAPDisabled);
   EEPROM.commit();
 }
 
@@ -189,7 +191,7 @@ void loadSettingsFromEEPROM()
     otapass += char(EEPROM.read(i));
   }
   bri_nl = EEPROM.read(288);
-  ota_lock = EEPROM.read(289);
+  otaLock = EEPROM.read(289);
   udpPort = ((EEPROM.read(290) << 0) & 0xFF) + ((EEPROM.read(291) << 8) & 0xFF00);
   serverDescription = "";
   for (int i = 292; i < 324; ++i)
@@ -220,5 +222,7 @@ void loadSettingsFromEEPROM()
   useRGBW = EEPROM.read(372);
   sweepTransition = EEPROM.read(373);
   sweepDirection = EEPROM.read(374);
+  apWaitTimeSecs = EEPROM.read(375);
+  recoveryAPDisabled = EEPROM.read(376);
   useHSB = useHSBDefault;
 }

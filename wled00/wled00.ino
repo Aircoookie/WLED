@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1711191
+#define VERSION 1711200
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -79,7 +79,8 @@ String cmdns = "led";
 String apssid = "WLED-AP";
 uint8_t apchannel = 1;
 uint8_t aphide = 0;
-boolean useap = true;
+uint8_t apWaitTimeSecs = 32;
+boolean recoveryAPDisabled = false;
 IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
@@ -93,8 +94,8 @@ uint8_t bri_nl = 0, bri_nls;
 boolean fadeTransition = true;
 boolean sweepTransition = false; boolean sweepDirection = true;
 uint16_t transitionDelay = 1200;
-boolean ota_lock = true;
-boolean only_ap = false;
+boolean otaLock = true;
+boolean onlyAP = false;
 boolean buttonEnabled = true;
 boolean notifyDirect = true, notifyButton = true, notifyDirectDefault = true;
 boolean receiveNotifications = true, receiveNotificationsDefault = true;
@@ -178,7 +179,7 @@ uint8_t auxTime = 0;
 unsigned long auxStartTime;
 boolean auxActive, auxActiveBefore;
 
-boolean useGammaCorrectionBri = true;
+boolean useGammaCorrectionBri = false;
 boolean useGammaCorrectionRGB = true;
 int arlsOffset = -22; //10: -22 assuming arls52
 boolean realtimeEnabled = true;
