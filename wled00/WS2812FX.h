@@ -1,4 +1,4 @@
-//#define RGBW
+#define RGBW
 
 /*
   WS2812FX.h - Library for WS2812 LED effects.
@@ -237,6 +237,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _mode_color = DEFAULT_COLOR;
       _counter_mode_call = 0;
       _counter_mode_step = 0;
+      _fastStandard = false;
       _locked = new boolean[n];
     }
 
@@ -265,6 +266,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       unlock(int i),
       unlockRange(int i, int i2),
       unlockAll(void),
+      setFastUpdateMode(bool b),
       trigger(void),
       setLedCount(uint16_t i),
       setFade(int sp);
@@ -354,6 +356,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
 
     boolean
       _triggered,
+      _fastStandard,
       _running;
 
     boolean*

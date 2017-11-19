@@ -228,7 +228,7 @@ void WS2812FX::mode_static(void) {
     setPixelColor(i, _color);
   }
   show();
-  _mode_delay = 25;
+  _mode_delay = (_fastStandard) ? 25 : 500;
 }
 
 
@@ -1681,6 +1681,12 @@ void WS2812FX::unlockAll()
 void WS2812FX::setLedCount(uint16_t i)
 {
   _led_count = i;
+}
+
+void WS2812FX::setFastUpdateMode(bool y)
+{
+  _fastStandard = y;
+  if (_mode_index == 0) _mode_delay = 20;
 }
 
 //Added for quick NeoPixelBus compatibility with Adafruit syntax

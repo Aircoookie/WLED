@@ -216,7 +216,7 @@ void loadSettingsFromEEPROM()
   if (!arlsSign) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
   useHSBDefault = EEPROM.read(370);
-  white_s = EEPROM.read(371);
+  white_s = EEPROM.read(371); white = white_s;
   useRGBW = EEPROM.read(372);
   sweepTransition = EEPROM.read(373);
   sweepDirection = EEPROM.read(374);

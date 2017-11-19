@@ -69,9 +69,11 @@ void colorUpdated(int callMode)
     }
     transitionActive = true;
     transitionStartTime = millis();
+    strip.setFastUpdateMode(true);
   } else
   {
     setLedsStandard();
+    strip.trigger();
   }
 }
 
@@ -86,6 +88,7 @@ void handleTransitions()
       tper_last = 0;
       if (sweepTransition) strip.unlockAll();
       setLedsStandard();
+      strip.setFastUpdateMode(false);
       return;
     }
     if (tper - tper_last < transitionResolution)

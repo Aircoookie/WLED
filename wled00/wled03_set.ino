@@ -246,26 +246,32 @@ boolean handleSet(String req)
         return false;
    }
    int pos = 0;
+   //set brigthness
    pos = req.indexOf("A=");
    if (pos > 0) {
       bri = req.substring(pos + 2).toInt();
    }
+   //set red value
    pos = req.indexOf("R=");
    if (pos > 0) {
       col[0] = req.substring(pos + 2).toInt();
    }
+   //set green value
    pos = req.indexOf("G=");
    if (pos > 0) {
       col[1] = req.substring(pos + 2).toInt();
    }
+   //set blue value
    pos = req.indexOf("B=");
    if (pos > 0) {
       col[2] = req.substring(pos + 2).toInt();
    }
+   //set white value
    pos = req.indexOf("W=");
    if (pos > 0) {
       white = req.substring(pos + 2).toInt();
    }
+   //set current effect index
    pos = req.indexOf("FX=");
    if (pos > 0) {
       if (effectCurrent != req.substring(pos + 3).toInt())
@@ -275,6 +281,7 @@ boolean handleSet(String req)
         effectUpdated = true;
       }
    }
+   //set effect speed
    pos = req.indexOf("SX=");
    if (pos > 0) {
       if (effectSpeed != req.substring(pos + 3).toInt())
@@ -284,15 +291,18 @@ boolean handleSet(String req)
         effectUpdated = true;
       }
    }
+   //set default control mode (0 - RGB, 1 - HSB)
    pos = req.indexOf("MD=");
    if (pos > 0) {
       useHSB = req.substring(pos + 3).toInt();
    }
+   //set advanced overlay
    pos = req.indexOf("OL=");
    if (pos > 0) {
         overlayCurrent = req.substring(pos + 3).toInt();
         strip.unlockAll();
    }
+   //set individual pixel (range) to current color
    pos = req.indexOf("I=");
    if (pos > 0){
       int index = req.substring(pos + 2).toInt();
@@ -305,6 +315,32 @@ boolean handleSet(String req)
         strip.setIndividual(index);
       }
    }
+   //(un)lock pixel (ranges)
+   pos = req.indexOf("L=");
+   if (pos > 0){
+      int index = req.substring(pos + 2).toInt();
+      pos = req.indexOf("L2=");
+      if (pos > 0){
+        int index2 = req.substring(pos + 3).toInt();
+        if (req.indexOf("UL=") > 0)
+        {
+          strip.unlockRange(index, index2);
+        } else
+        {
+          strip.lockRange(index, index2);
+        }
+      } else
+      {
+        if (req.indexOf("UL=") > 0)
+        {
+          strip.unlock(index);
+        } else
+        {
+          strip.lock(index);
+        }
+      }
+   }
+   //toggle send UDP direct notifications
    if (req.indexOf("SN=") > 0)
    {
       notifyDirect = true;
@@ -313,6 +349,7 @@ boolean handleSet(String req)
         notifyDirect = false;
       }
    }
+   //toggle receive UDP direct notifications
    if (req.indexOf("RN=") > 0)
    {
       receiveNotifications = true;
@@ -321,6 +358,7 @@ boolean handleSet(String req)
         receiveNotifications = false;
       }
    }
+   //toggle nightlight mode
    if (req.indexOf("NL=") > 0)
    {
       if (req.indexOf("NL=0") > 0)
@@ -332,12 +370,14 @@ boolean handleSet(String req)
         nightlightStartTime = millis();
       }
    }
+   //toggle general purpose output
    pos = req.indexOf("AX=");
    if (pos > 0) {
       auxTime = req.substring(pos + 3).toInt();
       auxActive = true;
       if (auxTime == 0) auxActive = false;
    }
+   //main toggle on/off
    pos = req.indexOf("T=");
    if (pos > 0) {
       switch (req.substring(pos + 2).toInt())
@@ -354,11 +394,13 @@ boolean handleSet(String req)
         }
       }
    }
+   //internal call, does not send XML response
    pos = req.indexOf("IN");
    if (pos < 1)
    {
       XML_response();
    }
+   //do not send UDP notifications this time
    pos = req.indexOf("NN");
    if (pos > 0)
    {
