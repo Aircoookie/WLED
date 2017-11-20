@@ -105,7 +105,7 @@ String getSettings()
   }
   resp += ds + "BOOTN" + c + turnOnAtBoot +";";
   resp += ds + "FXDEF" + v + effectDefault +";";
-  resp += ds + "FXDEF" + v + effectDefault +";";
+  resp += ds + "SXDEF" + v + effectSpeedDefault +";";
   resp += ds + "GCBRI" + c + useGammaCorrectionBri +";";
   resp += ds + "GCRGB" + c + useGammaCorrectionRGB +";";
   resp += ds + "BTNON" + c + buttonEnabled +";";
