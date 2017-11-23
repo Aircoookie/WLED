@@ -530,6 +530,7 @@ void WS2812FX::mode_theater_chase_rainbow(void) {
  * Running lights effect with smooth sine transition.
  */
 void WS2812FX::mode_running_lights(void) {
+  uint8_t w = ((_color >> 24) & 0xFF);
   uint8_t r = ((_color >> 16) & 0xFF);
   uint8_t g = ((_color >> 8) & 0xFF);
   uint8_t b = (_color & 0xFF);
@@ -537,7 +538,7 @@ void WS2812FX::mode_running_lights(void) {
   for(uint16_t i=0; i < _led_count; i++) {
     int s = (sin(i+_counter_mode_call) * 127) + 128;
     if (!_locked[i])
-    setPixelColor(i, (((uint32_t)(r * s)) / 255), (((uint32_t)(g * s)) / 255), (((uint32_t)(b * s)) / 255));
+    setPixelColor(i, (((uint32_t)(r * s)) / 255), (((uint32_t)(g * s)) / 255), (((uint32_t)(b * s)) / 255), (((uint32_t)(w * s)) / 255));
   }
 
   show();
@@ -585,16 +586,18 @@ void WS2812FX::mode_twinkle_fade(void) {
   for(uint16_t i=0; i < _led_count; i++) {
     uint32_t px_rgb = getPixelColor(i);
 
+    byte px_w = (px_rgb & 0xFF000000) >> 24;
     byte px_r = (px_rgb & 0x00FF0000) >> 16;
     byte px_g = (px_rgb & 0x0000FF00) >>  8;
     byte px_b = (px_rgb & 0x000000FF) >>  0;
 
     // fade out (divide by 2)
+    px_w = px_w >> 1;
     px_r = px_r >> 1;
     px_g = px_g >> 1;
     px_b = px_b >> 1;
     if (!_locked[i])
-    setPixelColor(i, px_r, px_g, px_b);
+    setPixelColor(i, px_r, px_g, px_b, px_w);
   }
 
   if(random(3) == 0) {
@@ -648,7 +651,7 @@ void WS2812FX::mode_flash_sparkle(void) {
   if(random(10) == 7) {
     int ran = random(_led_count);
     if (!_locked[ran])
-    setPixelColor(ran , 255, 255, 255);
+    setPixelColor(ran , 255, 255, 255, 255);
     _mode_delay = 20;
   } else {
     _mode_delay = 20 + ((200 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
@@ -672,7 +675,7 @@ void WS2812FX::mode_hyper_sparkle(void) {
     for(uint16_t i=0; i < maxval(1, _led_count/3); i++) {
       int ran = random(_led_count);
       if (!_locked[ran])
-      setPixelColor(ran , 255, 255, 255);
+      setPixelColor(ran , 255, 255, 255, 255);
     }
     _mode_delay = 20;
   } else {
@@ -777,7 +780,7 @@ void WS2812FX::mode_blink_rainbow(void) {
 void WS2812FX::mode_chase_white(void) {
   for(uint16_t i=0; i < _led_count; i++) {
     if (!_locked[i])
-    setPixelColor(i, 255, 255, 255);
+    setPixelColor(i, 255, 255, 255, 255);
   }
 
   uint16_t n = _counter_mode_step;
@@ -805,9 +808,9 @@ void WS2812FX::mode_chase_color(void) {
   uint16_t n = _counter_mode_step;
   uint16_t m = (_counter_mode_step + 1) % _led_count;
   if (!_locked[n])
-  setPixelColor(n, 255, 255, 255);
+  setPixelColor(n, 255, 255, 255, 255);
   if (!_locked[m])
-  setPixelColor(m, 255, 255, 255);
+  setPixelColor(m, 255, 255, 255, 255);
   show();
 
   _counter_mode_step = (_counter_mode_step + 1) % _led_count;
@@ -833,9 +836,9 @@ void WS2812FX::mode_chase_random(void) {
   uint16_t n = _counter_mode_step;
   uint16_t m = (_counter_mode_step + 1) % _led_count;
   if (!_locked[n])
-  setPixelColor(n, 255, 255, 255);
+  setPixelColor(n, 255, 255, 255, 255);
   if (!_locked[m])
-  setPixelColor(m, 255, 255, 255);
+  setPixelColor(m, 255, 255, 255, 255);
 
   show();
 
@@ -856,9 +859,9 @@ void WS2812FX::mode_chase_rainbow(void) {
   uint16_t n = _counter_mode_step;
   uint16_t m = (_counter_mode_step + 1) % _led_count;
   if (!_locked[n])
-  setPixelColor(n, 255, 255, 255);
+  setPixelColor(n, 255, 255, 255, 255);
   if (!_locked[m])
-  setPixelColor(m, 255, 255, 255);
+  setPixelColor(m, 255, 255, 255, 255);
   show();
 
   _counter_mode_step = (_counter_mode_step + 1) % _led_count;
@@ -883,9 +886,9 @@ void WS2812FX::mode_chase_flash(void) {
       uint16_t n = _counter_mode_step;
       uint16_t m = (_counter_mode_step + 1) % _led_count;
       if (!_locked[n])
-      setPixelColor(n, 255, 255, 255);
+      setPixelColor(n, 255, 255, 255, 255);
       if (!_locked[m])
-      setPixelColor(m, 255, 255, 255);
+      setPixelColor(m, 255, 255, 255, 255);
       _mode_delay = 20;
     } else {
       _mode_delay = 30;
@@ -916,9 +919,9 @@ void WS2812FX::mode_chase_flash_random(void) {
     uint16_t m = (_counter_mode_step + 1) % _led_count;
     if(flash_step % 2 == 0) {
       if (!_locked[n])
-      setPixelColor(n, 255, 255, 255);
+      setPixelColor(n, 255, 255, 255, 255);
       if (!_locked[m])
-      setPixelColor(m, 255, 255, 255);
+      setPixelColor(m, 255, 255, 255, 255);
       _mode_delay = 20;
     } else {
       if (!_locked[n])
@@ -946,7 +949,7 @@ void WS2812FX::mode_chase_flash_random(void) {
 void WS2812FX::mode_chase_rainbow_white(void) {
   for(uint16_t i=0; i < _led_count; i++) {
     if (!_locked[i])
-    setPixelColor(i, 255, 255, 255);
+    setPixelColor(i, 255, 255, 255, 255);
   }
 
   uint16_t n = _counter_mode_step;
@@ -1038,7 +1041,7 @@ void WS2812FX::mode_running_color(void) {
       setPixelColor(i, _mode_color);
     } else {
       if (!_locked[i])
-      setPixelColor(i, 255, 255, 255);
+      setPixelColor(i, 255, 255, 255, 255);
     }
   }
   show();
@@ -1285,21 +1288,24 @@ void WS2812FX::mode_fire_flicker_soft(void) {
 
 void WS2812FX::mode_fire_flicker_int(int rev_intensity)
 {
+    byte p_w = (_color & 0xFF000000) >> 24;
     byte p_r = (_color & 0x00FF0000) >> 16;
     byte p_g = (_color & 0x0000FF00) >>  8;
     byte p_b = (_color & 0x000000FF) >>  0;
-    byte flicker_val = maxval(p_r,maxval(p_g, p_b))/rev_intensity;
+    byte flicker_val = maxval(p_r,maxval(p_g, maxval(p_b, p_w)))/rev_intensity;
     for(uint16_t i=0; i < _led_count; i++)
     {
       int flicker = random(0,flicker_val);
       int r1 = p_r-flicker;
       int g1 = p_g-flicker;
       int b1 = p_b-flicker;
+      int w1 = p_w-flicker;
       if(g1<0) g1=0;
       if(r1<0) r1=0;
       if(b1<0) b1=0;
+      if(w1<0) w1=0;
       if (!_locked[i])
-      setPixelColor(i,r1,g1, b1);
+      setPixelColor(i,r1,g1,b1,w1);
     }
     show();
     _mode_delay = 10 + ((500 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
@@ -1536,7 +1542,7 @@ void WS2812FX::mode_circus_combustus(void) {
       setPixelColor(i, 255, 0, 0);
     } else if((i + _counter_mode_step) % 6 < 4){
       if (!_locked[i])
-      setPixelColor(i, 255, 255, 255);
+      setPixelColor(i, 255, 255, 255, 255);
     } else {
       if (!_locked[i])
       setPixelColor(i, 0, 0, 0);
