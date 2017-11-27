@@ -20,7 +20,8 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1711201
+#define VERSION 1711271
+
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -46,6 +47,11 @@
  #define DEBUG_PRINTLN(x)
  #define DEBUG_PRINTF(x)
 #endif
+
+//eeprom Version code, enables default settings instead of 0 init on update
+#define EEPVER 1
+//0 -> old version, default
+//1 -> 0.4p 1711271 and up
 
 /*
  * @title WLED project sketch

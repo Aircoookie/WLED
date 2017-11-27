@@ -18,6 +18,7 @@ void saveSettingsToEEPROM()
     clearEEPROM();
     EEPROM.write(233, 233);
   }
+  
   for (int i = 0; i < 32; ++i)
   {
     EEPROM.write(i, clientssid.charAt(i));
@@ -107,6 +108,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(374, sweepDirection);
   EEPROM.write(375, apWaitTimeSecs);
   EEPROM.write(376, recoveryAPDisabled);
+  EEPROM.write(377, EEPVER); //eeprom was updated to latest
   EEPROM.commit();
 }
 
@@ -117,6 +119,8 @@ void loadSettingsFromEEPROM()
     saveSettingsToEEPROM();
     return;
   }
+  int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
+  
   clientssid = "";
   for (int i = 0; i < 32; ++i)
   {
@@ -222,7 +226,37 @@ void loadSettingsFromEEPROM()
   useRGBW = EEPROM.read(372);
   sweepTransition = EEPROM.read(373);
   sweepDirection = EEPROM.read(374);
-  apWaitTimeSecs = EEPROM.read(375);
-  recoveryAPDisabled = EEPROM.read(376);
+  if (lastEEPROMversion > 0) { 
+    apWaitTimeSecs = EEPROM.read(375);
+    recoveryAPDisabled = EEPROM.read(376);
+  }
+
+  //favorite setting memory (25 slots/ each 20byte)
+  //400 - 899 reserved
+  
   useHSB = useHSBDefault;
 }
+
+//PRESET PROTOCOL 20 bytes
+//0: multipurpose byte, bit 0: brightness is valid, 1: col valid, 2: ecol valid, 5: cc valid, 6: ccFromStart, 7: ccFromEnd
+//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:pStart 15-20:undefinded
+
+void loadPreset(uint8_t index, uint8_t data[])
+{
+  if (index > 24) return;
+  uint8_t temp[20];
+  for (int i = 0; i < 20; i++)
+  {
+    data[i] = EEPROM.read(400 + index*20 + i);
+  }
+}
+
+void savePreset(uint8_t index, uint8_t data[])
+{
+  if (index > 24) return;
+  for (int i = 0; i < 20; i++)
+  {
+     EEPROM.write(400 + index*20 + i, data[i]);
+  }
+}
+
