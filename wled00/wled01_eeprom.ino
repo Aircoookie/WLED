@@ -230,6 +230,7 @@ void loadSettingsFromEEPROM()
     apWaitTimeSecs = EEPROM.read(375);
     recoveryAPDisabled = EEPROM.read(376);
   }
+  //377-380 reserved for second color default
 
   //favorite setting memory (25 slots/ each 20byte)
   //400 - 899 reserved

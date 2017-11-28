@@ -15,8 +15,10 @@ void setAllLeds() {
   if (useGammaCorrectionRGB)
   {
     strip.setColor(gamma8[col_t[0]], gamma8[col_t[1]], gamma8[col_t[2]], gamma8[white_t]);
+    strip.setSecondaryColor(gamma8[col_sec[0]], gamma8[col_sec[1]], gamma8[col_sec[2]], gamma8[white_sec]);
   } else {
     strip.setColor(col_t[0], col_t[1], col_t[2], white_t);
+    strip.setSecondaryColor(col_sec[0], col_sec[1], col_sec[2], white_sec);
   }
 }
 
@@ -35,10 +37,22 @@ void setLedsStandard()
   setAllLeds();
 }
 
+bool colorChanged()
+{
+  for (int i = 0; i < 3; i++)
+  {
+    if (col[i] != col_it[i]) return true;
+    if (col_sec[i] != col_sec_it[i]) return true;
+  }
+  if (white != white_it || white_sec != white_sec_it) return true;
+  if (bri != bri_it) return true;
+  return false;
+}
+
 void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (no not.) (NN)6: fx changed
-  if (col[0] == col_it[0] && col[1] == col_it[1] && col[2] == col_it[2] && white == white_it && bri == bri_it)
+  if (!colorChanged())
   {
     if (callMode == 6) notify(6);
     return; //no change
@@ -52,7 +66,11 @@ void colorUpdated(int callMode)
   col_it[0] = col[0];
   col_it[1] = col[1];
   col_it[2] = col[2];
+  col_sec_it[0] = col_sec[0];
+  col_sec_it[1] = col_sec[1];
+  col_sec_it[2] = col_sec[2];
   white_it = white;
+  white_sec_it = white_sec;
   bri_it = bri;
   if (bri > 0) bri_last = bri;
   notify(callMode);

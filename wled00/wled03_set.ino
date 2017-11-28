@@ -270,6 +270,26 @@ boolean handleSet(String req)
    if (pos > 0) {
       white = req.substring(pos + 2).toInt();
    }
+   //set 2nd red value
+   pos = req.indexOf("R2=");
+   if (pos > 0) {
+      col_sec[0] = req.substring(pos + 3).toInt();
+   }
+   //set 2nd green value
+   pos = req.indexOf("G2=");
+   if (pos > 0) {
+      col_sec[1] = req.substring(pos + 3).toInt();
+   }
+   //set 2nd blue value
+   pos = req.indexOf("B2=");
+   if (pos > 0) {
+      col_sec[2] = req.substring(pos + 3).toInt();
+   }
+   //set 2nd white value
+   pos = req.indexOf("W2=");
+   if (pos > 0) {
+      white_sec = req.substring(pos + 3).toInt();
+   }
    //set current effect index
    pos = req.indexOf("FX=");
    if (pos > 0) {

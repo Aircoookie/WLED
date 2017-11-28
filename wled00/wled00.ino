@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1711271
+#define VERSION 1711281
 
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
@@ -128,7 +128,10 @@ byte col[]{0, 0, 0};
 byte col_old[]{0, 0, 0};
 byte col_t[]{0, 0, 0};
 byte col_it[]{0, 0, 0};
+byte col_sec[]{0, 0, 0};
+byte col_sec_it[]{0, 0, 0};
 byte white, white_old, white_t, white_it;
+byte white_sec, white_sec_it;
 unsigned long transitionStartTime;
 unsigned long nightlightStartTime;
 float tper_last = 0;
