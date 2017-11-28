@@ -235,6 +235,8 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _mode_delay = 0;
       _color = DEFAULT_COLOR;
       _mode_color = DEFAULT_COLOR;
+      _color_sec = 0;
+      _mode_color_sec = 0;
       _counter_mode_call = 0;
       _counter_mode_step = 0;
       _fastStandard = false;
@@ -247,12 +249,16 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       start(void),
       stop(void),
       setMode(uint8_t m),
+      setCustomChase(uint8_t i1, uint8_t i2, uint8_t sp, uint8_t np, uint8_t ns, uint8_t stp, uint8_t stpps, bool fs, bool fe),
       setSpeed(uint8_t s),
       increaseSpeed(uint8_t s),
       decreaseSpeed(uint8_t s),
       setColor(uint8_t r, uint8_t g, uint8_t b),
       setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w),
       setColor(uint32_t c),
+      setSecondaryColor(uint8_t r, uint8_t g, uint8_t b),
+      setSecondaryColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w),
+      setSecondaryColor(uint32_t c),
       setBrightness(uint8_t b),
       increaseBrightness(uint8_t s),
       decreaseBrightness(uint8_t s),
@@ -377,9 +383,11 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       getPixelColor(uint16_t i),
       color_wheel(uint8_t),
       _color,
+      _color_sec,
       _counter_mode_call,
       _counter_mode_step,
       _mode_color,
+      _mode_color_sec,
       _mode_delay;
 
     unsigned long
