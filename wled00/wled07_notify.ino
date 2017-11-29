@@ -26,7 +26,7 @@ void notify(uint8_t callMode)
   udpOut[8] = effectCurrent;
   udpOut[9] = effectSpeed;
   udpOut[10] = white;
-  udpOut[11] = 1; //boolean byte, lowest bit to confirm white value compatibility
+  udpOut[11] = 2; //compatibilityVersionByte: 0: old 1: supports white 2: supports secondary color
   udpOut[12] = col_sec[0];
   udpOut[13] = col_sec[1];
   udpOut[14] = col_sec[2];
@@ -52,13 +52,16 @@ void handleNotifications()
         col[0] = udpIn[3];
         col[1] = udpIn[4];
         col[2] = udpIn[5];
-        col_sec[0] = udpIn[12];
-        col_sec[1] = udpIn[13];
-        col_sec[2] = udpIn[14];
-        if (udpIn[11] %2 == 1) //check if sending modules white val is inteded
+        if (udpIn[11] > 1)
+        {
+          col_sec[0] = udpIn[12];
+          col_sec[1] = udpIn[13];
+          col_sec[2] = udpIn[14];
+          white_sec = udpIn[15];
+        }
+        if (udpIn[11] > 0) //check if sending modules white val is inteded
         {
           white = udpIn[10];
-          white_sec = udpIn[15];
         }
         if (udpIn[8] != effectCurrent)
         {

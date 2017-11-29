@@ -402,8 +402,8 @@ void WS2812FX::mode_breath(void) {
 void WS2812FX::mode_fade(void) {
 
   int y = _counter_mode_step - 127;
-  y = 255 - (abs(y) * 2);
-  double z = (double)y/255;
+  y = 256 - (abs(y) * 2);
+  double z = (double)y/256;
   uint8_t w = ((_color >> 24) & 0xFF), ws = ((_color_sec >> 24) & 0xFF);
   uint8_t r = ((_color >> 16) & 0xFF), rs = ((_color_sec >> 16) & 0xFF);
   uint8_t g = ((_color >> 8) & 0xFF), gs = ((_color_sec >> 8) & 0xFF);
@@ -794,14 +794,13 @@ void WS2812FX::mode_blink_rainbow(void) {
       if (!_locked[i])
       setPixelColor(i, color_wheel(_counter_mode_call % 256));
     }
-    show();
   } else {
     for(uint16_t i=0; i < _led_count; i++) {
       if (!_locked[i])
       setPixelColor(i, _color_sec);
     }
   }
-
+  show();
   _mode_delay = 100 + ((1986 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
 }
 
@@ -1545,7 +1544,7 @@ void WS2812FX::mode_circus_combustus(void) {
   for(uint16_t i=0; i < _led_count; i++) {
     if((i + _counter_mode_step) % 6 < 2) {
       if (!_locked[i])
-      setPixelColor(i, 255, 0, 0);
+      setPixelColor(i, _color);
     } else if((i + _color) % 6 < 4){
       if (!_locked[i])
       setPixelColor(i, _color_sec);

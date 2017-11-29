@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1711281
+#define VERSION 1711282
 
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
