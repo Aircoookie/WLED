@@ -41,7 +41,7 @@
 #define DEFAULT_BRIGHTNESS 50
 #define DEFAULT_MODE 0
 #define DEFAULT_SPEED 150
-#define DEFAULT_COLOR 0xFF0000
+#define DEFAULT_COLOR 0xFFAA00
 
 #define SPEED_MIN 0
 #define SPEED_MAX 255
@@ -49,7 +49,7 @@
 #define BRIGHTNESS_MIN 0
 #define BRIGHTNESS_MAX 255
 
-#define MODE_COUNT 53
+#define MODE_COUNT 58
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -104,6 +104,11 @@
 #define FX_MODE_DUAL_COLOR_WIPE_OUT_OUT 50
 #define FX_MODE_DUAL_COLOR_WIPE_OUT_IN  51
 #define FX_MODE_CIRCUS_COMBUSTUS        52
+#define FX_MODE_CUSTOM_CHASE            53
+#define FX_MODE_CC_ON_RAINBOW           54
+#define FX_MODE_CC_ON_RAINBOW_CYCLE     55
+#define FX_MODE_CC_BLINK                56
+#define FX_MODE_CC_RANDOM               57
 
 #ifdef RGBW
 class WS2812FX : public NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Uart800KbpsMethod> {
@@ -171,60 +176,11 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _mode[FX_MODE_DUAL_COLOR_WIPE_OUT_OUT] = &WS2812FX::mode_dual_color_wipe_out_out;
       _mode[FX_MODE_DUAL_COLOR_WIPE_OUT_IN]  = &WS2812FX::mode_dual_color_wipe_out_in;
       _mode[FX_MODE_CIRCUS_COMBUSTUS]        = &WS2812FX::mode_circus_combustus;
-
-      _name[FX_MODE_STATIC]                = "Static";
-      _name[FX_MODE_BLINK]                 = "Blink";
-      _name[FX_MODE_BREATH]                = "Breath";
-      _name[FX_MODE_COLOR_WIPE]            = "Color Wipe";
-      _name[FX_MODE_COLOR_WIPE_RANDOM]     = "Color Wipe R";
-      _name[FX_MODE_RANDOM_COLOR]          = "R Color";
-      _name[FX_MODE_SINGLE_DYNAMIC]        = "Dynamic";
-      _name[FX_MODE_MULTI_DYNAMIC]         = "M Dynamic";
-      _name[FX_MODE_RAINBOW]               = "Rainbow";
-      _name[FX_MODE_RAINBOW_CYCLE]         = "Cycle";
-      _name[FX_MODE_SCAN]                  = "Scan";
-      _name[FX_MODE_DUAL_SCAN]             = "2x Scan";
-      _name[FX_MODE_FADE]                  = "Fade";
-      _name[FX_MODE_THEATER_CHASE]         = "T Chase";
-      _name[FX_MODE_THEATER_CHASE_RAINBOW] = "T Chase Rainbow";
-      _name[FX_MODE_RUNNING_LIGHTS]        = "Running";
-      _name[FX_MODE_TWINKLE]               = "Twinkle";
-      _name[FX_MODE_TWINKLE_RANDOM]        = "Twinkle R";
-      _name[FX_MODE_TWINKLE_FADE]          = "Twinkle F";
-      _name[FX_MODE_TWINKLE_FADE_RANDOM]   = "Twinkle F R";
-      _name[FX_MODE_SPARKLE]               = "Sparkle";
-      _name[FX_MODE_FLASH_SPARKLE]         = "Flash Sparkle";
-      _name[FX_MODE_HYPER_SPARKLE]         = "Hyper Sparkle";
-      _name[FX_MODE_STROBE]                = "Strobe";
-      _name[FX_MODE_STROBE_RAINBOW]        = "Strobe Rainbow";
-      _name[FX_MODE_MULTI_STROBE]          = "Multi Strobe";
-      _name[FX_MODE_BLINK_RAINBOW]         = "Blink Rainbow";
-      _name[FX_MODE_CHASE_WHITE]           = "Chase White";
-      _name[FX_MODE_CHASE_COLOR]           = "Chase Color";
-      _name[FX_MODE_CHASE_RANDOM]          = "Chase R";
-      _name[FX_MODE_CHASE_RAINBOW]         = "Chase Rainbow";
-      _name[FX_MODE_CHASE_FLASH]           = "Chase Flash";
-      _name[FX_MODE_CHASE_FLASH_RANDOM]    = "Chase Flash R";
-      _name[FX_MODE_CHASE_RAINBOW_WHITE]   = "Chase Rainbow White";
-      _name[FX_MODE_CHASE_BLACKOUT]        = "Chase Black";
-      _name[FX_MODE_CHASE_BLACKOUT_RAINBOW]= "Chase Black Rainbow";
-      _name[FX_MODE_COLOR_SWEEP_RANDOM]    = "Color Sweep Random";
-      _name[FX_MODE_RUNNING_COLOR]         = "Running Color";
-      _name[FX_MODE_RUNNING_RED_BLUE]      = "Running Red Blue";
-      _name[FX_MODE_RUNNING_RANDOM]        = "Running R";
-      _name[FX_MODE_LARSON_SCANNER]        = "Scanner";
-      _name[FX_MODE_COMET]                 = "Comet";
-      _name[FX_MODE_FIREWORKS]             = "Fireworks";
-      _name[FX_MODE_FIREWORKS_RANDOM]      = "Fireworks R";
-      _name[FX_MODE_MERRY_CHRISTMAS]       = "Christmas";
-      _name[FX_MODE_FIRE_FLICKER]          = "Flicker";
-      _name[FX_MODE_FIRE_FLICKER_SOFT]     = "Flicker (soft)";
-      _name[FX_MODE_FADE_DOWN]             = "Fade (Internal)";
-      _name[FX_MODE_DUAL_COLOR_WIPE_IN_OUT]    = "Wipe In Out";
-      _name[FX_MODE_DUAL_COLOR_WIPE_IN_IN]     = "Wipe In In";
-      _name[FX_MODE_DUAL_COLOR_WIPE_OUT_OUT]   = "Wipe Out Out";
-      _name[FX_MODE_DUAL_COLOR_WIPE_OUT_IN]    = "Wipe Out In";
-      _name[FX_MODE_CIRCUS_COMBUSTUS]          = "Circus";
+      _mode[FX_MODE_CUSTOM_CHASE]            = &WS2812FX::mode_cc_standard;
+      _mode[FX_MODE_CC_ON_RAINBOW]           = &WS2812FX::mode_cc_rainbow;
+      _mode[FX_MODE_CC_ON_RAINBOW_CYCLE]     = &WS2812FX::mode_cc_cycle;
+      _mode[FX_MODE_CC_BLINK]                = &WS2812FX::mode_cc_blink;
+      _mode[FX_MODE_CC_RANDOM]               = &WS2812FX::mode_cc_random;
 
       _mode_index = DEFAULT_MODE;
       _speed = DEFAULT_SPEED;
@@ -237,8 +193,17 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _mode_color = DEFAULT_COLOR;
       _color_sec = 0;
       _mode_color_sec = 0;
+      _cc_fs = true;
+      _cc_fe = false;
+      _cc_is = 0;
+      _cc_i1 = 0;
+      _cc_i2 = n-1;
+      _cc_num1 = 5;
+      _cc_num2 = 5;
+      _cc_step = 1;
       _counter_mode_call = 0;
       _counter_mode_step = 0;
+      _counter_cc_step = 0;
       _fastStandard = false;
       _locked = new boolean[n];
     }
@@ -249,7 +214,15 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       start(void),
       stop(void),
       setMode(uint8_t m),
-      setCustomChase(uint8_t i1, uint8_t i2, uint8_t sp, uint8_t np, uint8_t ns, uint8_t stp, uint8_t stpps, bool fs, bool fe),
+      setCustomChase(uint8_t i1, uint8_t i2, uint8_t is, uint8_t np, uint8_t ns, uint8_t stp, bool fs, bool fe),
+      setCCIndex1(uint8_t i1),
+      setCCIndex2(uint8_t i2),
+      setCCStart(uint8_t is),
+      setCCNum1(uint8_t np),
+      setCCNum2(uint8_t ns),
+      setCCStep(uint8_t stp),
+      setCCFS(bool fs),
+      setCCFE(bool fe),
       setSpeed(uint8_t s),
       increaseSpeed(uint8_t s),
       decreaseSpeed(uint8_t s),
@@ -289,9 +262,6 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
 
     uint32_t
       getColor(void);
-
-    const char*
-      getModeName(uint8_t m);
 
   private:
 
@@ -358,11 +328,19 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       mode_dual_color_wipe_in_in(void),
       mode_dual_color_wipe_out_out(void),
       mode_dual_color_wipe_out_in(void),
-      mode_circus_combustus(void);
+      mode_circus_combustus(void),
+      mode_cc_core(void),
+      mode_cc_standard(void),
+      mode_cc_rainbow(void),
+      mode_cc_cycle(void),
+      mode_cc_blink(void),
+      mode_cc_random(void);
 
     boolean
       _triggered,
       _fastStandard,
+      _cc_fs,
+      _cc_fe,
       _running;
 
     boolean*
@@ -374,6 +352,12 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       get_random_wheel_index(uint8_t),
       _mode_index,
       _speed,
+      _cc_i1,
+      _cc_i2,
+      _cc_is,
+      _cc_num1,
+      _cc_num2,
+      _cc_step,
       _brightness;
 
     uint16_t
@@ -386,15 +370,13 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _color_sec,
       _counter_mode_call,
       _counter_mode_step,
+      _counter_cc_step,
       _mode_color,
       _mode_color_sec,
       _mode_delay;
 
     unsigned long
       _mode_last_call_time;
-
-    const char*
-      _name[MODE_COUNT];
 
     mode_ptr
       _mode[MODE_COUNT];

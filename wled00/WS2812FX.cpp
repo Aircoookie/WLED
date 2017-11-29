@@ -164,14 +164,6 @@ uint32_t WS2812FX::getColor(void) {
   return _color; 
 }
 
-const char* WS2812FX::getModeName(uint8_t m) {
-  if(m < MODE_COUNT) {
-    return _name[m];
-  } else {
-    return "";
-  }
-}
-
 /* #####################################################
 #
 #  Color and Blinken Functions
@@ -1559,6 +1551,41 @@ void WS2812FX::mode_circus_combustus(void) {
   _mode_delay = 100 + ((100 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
 }
 
+void WS2812FX::mode_cc_core()
+{
+  for(uint16_t i=_cc_i1; i <= _cc_i2; i++)
+  {
+    if(i % (_cc_num1 + _cc_num2) == _counter_cc_step)
+    {
+      for (uint16_t j=i; j < _cc_num1 +i; j++)
+      {
+        if (j > _cc_i2) j = (j % _cc_i2) + _cc_i1;
+        if (_cc_fs) setPixelColor(j, _color);
+        if (_cc_fe) setPixelColor(_cc_i2 - (j-_cc_i1), _color);
+      }
+    }
+  }
+  show();
+  _counter_cc_step = (_counter_cc_step + _cc_step) % (_cc_num1 + _cc_num2);
+}
+
+void WS2812FX::mode_cc_standard()
+{
+  for(uint16_t i=0; i < _led_count; i++)
+  {
+    setPixelColor(i, (_cc_i1 <= i && i <= _cc_i2) ? _color_sec : _color);
+  }
+  mode_cc_core();
+  _mode_delay = 20 + ((50 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
+}
+
+void WS2812FX::mode_cc_rainbow(){}
+
+void WS2812FX::mode_cc_cycle(){}
+
+void WS2812FX::mode_cc_blink(){}
+
+void WS2812FX::mode_cc_random(){}
 
 
 //WLED specific methods
@@ -1704,9 +1731,67 @@ void WS2812FX::setFastUpdateMode(bool y)
   if (_mode_index == 0) _mode_delay = 20;
 }
 
-void WS2812FX::setCustomChase(uint8_t i1, uint8_t i2, uint8_t sp, uint8_t np, uint8_t ns, uint8_t stp, uint8_t stpps, bool fs, bool fe)
+void WS2812FX::setCCIndex1(uint8_t i1)
 {
-  //NI
+  if (i1 < _led_count-1) _cc_i1 = i1;
+  if (_cc_i2 <= i1) _cc_i2 = i1+1;
+  _counter_cc_step = 0;
+}
+
+void WS2812FX::setCCIndex2(uint8_t i2)
+{
+  if (i2 < _led_count && i2 > _cc_i1) _cc_i2 = i2;
+  _counter_cc_step = 0;
+}
+
+void WS2812FX::setCCStart(uint8_t is)
+{
+  _cc_is = (is < _cc_i1 || is > _cc_i2) ? _cc_i1 : is;
+  _counter_cc_step = 0;
+}
+
+void WS2812FX::setCCNum1(uint8_t np)
+{
+  _cc_num1 = np;
+  _counter_cc_step = 0;
+}
+
+void WS2812FX::setCCNum2(uint8_t ns)
+{
+  _cc_num2 = ns;
+  _counter_cc_step = 0;
+}
+
+void WS2812FX::setCCStep(uint8_t stp)
+{
+  _cc_step = stp;
+  _counter_cc_step = 0;
+}
+
+void WS2812FX::setCCFS(bool fs)
+{
+  _cc_fs = fs;
+  _cc_fe = (fs) ? _cc_fe : true;
+  _counter_cc_step = 0;
+}
+
+void WS2812FX::setCCFE(bool fe)
+{
+  _cc_fe = fe;
+  _cc_fs = (fe) ? _cc_fs : true;
+  _counter_cc_step = 0;
+}
+
+void WS2812FX::setCustomChase(uint8_t i1, uint8_t i2, uint8_t is, uint8_t np, uint8_t ns, uint8_t stp, bool fs, bool fe)
+{
+  setCCIndex1(i1);
+  setCCIndex2(i2);
+  setCCStart(is);
+  _cc_num1 = np;
+  _cc_num2 = ns;
+  _cc_step = stp;
+  setCCFS(fs);
+  setCCFE(fe);
 }
 
 //Added for quick NeoPixelBus compatibility with Adafruit syntax

@@ -335,9 +335,9 @@ boolean handleSet(String req)
       }
    }
    //(un)lock pixel (ranges)
-   pos = req.indexOf("L=");
+   pos = req.indexOf("&L=");
    if (pos > 0){
-      int index = req.substring(pos + 2).toInt();
+      int index = req.substring(pos + 3).toInt();
       pos = req.indexOf("L2=");
       if (pos > 0){
         int index2 = req.substring(pos + 3).toInt();
@@ -413,6 +413,15 @@ boolean handleSet(String req)
         }
       }
    }
+   pos = req.indexOf("C0="); if (pos > 0) { strip.setCCStart(req.substring(pos + 3).toInt()); }
+   pos = req.indexOf("C1="); if (pos > 0) { strip.setCCIndex1(req.substring(pos + 3).toInt()); }
+   pos = req.indexOf("C2="); if (pos > 0) { strip.setCCIndex2(req.substring(pos + 3).toInt()); }
+   pos = req.indexOf("CP="); if (pos > 0) { strip.setCCNum1(req.substring(pos + 3).toInt()); }
+   pos = req.indexOf("CS="); if (pos > 0) { strip.setCCNum2(req.substring(pos + 3).toInt()); }
+   pos = req.indexOf("CM="); if (pos > 0) { strip.setCCStep(req.substring(pos + 3).toInt()); }
+   pos = req.indexOf("CF="); if (pos > 0) { strip.setCCFS(req.substring(pos + 3).toInt()); }
+   pos = req.indexOf("CE="); if (pos > 0) { strip.setCCFE(req.substring(pos + 3).toInt()); }
+   
    //internal call, does not send XML response
    pos = req.indexOf("IN");
    if (pos < 1)
