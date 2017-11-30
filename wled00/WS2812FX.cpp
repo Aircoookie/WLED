@@ -1553,20 +1553,19 @@ void WS2812FX::mode_circus_combustus(void) {
 
 void WS2812FX::mode_cc_core()
 {
-  for(uint16_t i=_cc_i1; i <= _cc_i2; i++)
+  for (int k = _cc_i1; k <= _cc_i2; k = k + _cc_num1 + _cc_num2)
   {
-    if(i % (_cc_num1 + _cc_num2) == _counter_cc_step)
+    for (int i = 0; i < _cc_num1; i++)
     {
-      for (uint16_t j=i; j < _cc_num1 +i; j++)
-      {
-        if (j > _cc_i2) j = (j % _cc_i2) + _cc_i1;
-        if (_cc_fs) setPixelColor(j, _color);
-        if (_cc_fe) setPixelColor(_cc_i2 - (j-_cc_i1), _color);
-      }
+      int num = 0;
+      num = ((k + i + _counter_cc_step) % _cc_i2) +_cc_i1;
+      if (_cc_fs) setPixelColor(num, _color);
+      if (_cc_fe) setPixelColor(_cc_i2 - num, _color);
     }
   }
   show();
-  _counter_cc_step = (_counter_cc_step + _cc_step) % (_cc_num1 + _cc_num2);
+  _counter_cc_step = (_counter_cc_step + _cc_step) % (_cc_i2 - _cc_i1);
+  _mode_delay = 10 + ((250 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
 }
 
 void WS2812FX::mode_cc_standard()
@@ -1576,16 +1575,54 @@ void WS2812FX::mode_cc_standard()
     setPixelColor(i, (_cc_i1 <= i && i <= _cc_i2) ? _color_sec : _color);
   }
   mode_cc_core();
-  _mode_delay = 20 + ((50 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
 }
 
-void WS2812FX::mode_cc_rainbow(){}
+void WS2812FX::mode_cc_rainbow()
+{
+  uint32_t color = color_wheel(_counter_mode_step);
+  for(uint16_t i=0; i < _led_count; i++) {
+    if (!_locked[i])
+    setPixelColor(i, color);
+  }
+  mode_cc_core();
+  _counter_mode_step = (_counter_mode_step + 1) % 256;
+}
 
-void WS2812FX::mode_cc_cycle(){}
+void WS2812FX::mode_cc_cycle()
+{
+  for(uint16_t i=0; i < _led_count; i++) {
+    if (!_locked[i])
+    setPixelColor(i, color_wheel(((i * 256 / _led_count) + _counter_mode_step) % 256));
+  }
+  mode_cc_core();
+  _counter_mode_step = (_counter_mode_step + 1) % 256;
+}
 
-void WS2812FX::mode_cc_blink(){}
+void WS2812FX::mode_cc_blink()
+{
+  for(uint16_t i=0; i < _led_count; i++)
+  {
+    setPixelColor(i, (_cc_i1 <= i && i <= _cc_i2) ? _color_sec : _color);
+  }
+  if (_counter_mode_step)
+  {
+    mode_cc_core();
+    _counter_mode_step = 0;
+  } else {
+    show();
+    _counter_mode_step = 1;
+    _mode_delay = 10 + ((250 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
+  }
+}
 
-void WS2812FX::mode_cc_random(){}
+void WS2812FX::mode_cc_random()
+{
+  for(uint16_t i=0; i < _led_count; i++) {
+    if (!_locked[i])
+    setPixelColor(i, color_wheel(random(256)));
+  }
+  mode_cc_core();
+}
 
 
 //WLED specific methods
@@ -1740,7 +1777,8 @@ void WS2812FX::setCCIndex1(uint8_t i1)
 
 void WS2812FX::setCCIndex2(uint8_t i2)
 {
-  if (i2 < _led_count && i2 > _cc_i1) _cc_i2 = i2;
+  if (i2 > _cc_i1) _cc_i2 = i2;
+  if (_cc_i2 >= _led_count) _cc_i2 = _led_count-1;
   _counter_cc_step = 0;
 }
 

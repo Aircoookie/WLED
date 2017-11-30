@@ -413,14 +413,26 @@ boolean handleSet(String req)
         }
       }
    }
-   pos = req.indexOf("C0="); if (pos > 0) { strip.setCCStart(req.substring(pos + 3).toInt()); }
-   pos = req.indexOf("C1="); if (pos > 0) { strip.setCCIndex1(req.substring(pos + 3).toInt()); }
-   pos = req.indexOf("C2="); if (pos > 0) { strip.setCCIndex2(req.substring(pos + 3).toInt()); }
-   pos = req.indexOf("CP="); if (pos > 0) { strip.setCCNum1(req.substring(pos + 3).toInt()); }
-   pos = req.indexOf("CS="); if (pos > 0) { strip.setCCNum2(req.substring(pos + 3).toInt()); }
-   pos = req.indexOf("CM="); if (pos > 0) { strip.setCCStep(req.substring(pos + 3).toInt()); }
-   pos = req.indexOf("CF="); if (pos > 0) { strip.setCCFS(req.substring(pos + 3).toInt()); }
-   pos = req.indexOf("CE="); if (pos > 0) { strip.setCCFE(req.substring(pos + 3).toInt()); }
+   //set custom chase data
+   bool _cc_updated = false;
+   pos = req.indexOf("C0="); if (pos > 0) {cc_start =  (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("C1="); if (pos > 0) {cc_index1 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("C2="); if (pos > 0) {cc_index2 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CP="); if (pos > 0) {cc_numPrimary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CS="); if (pos > 0) {cc_numSecondary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CM="); if (pos > 0) {cc_step = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CF="); if (pos > 0) {cc_fromStart = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CE="); if (pos > 0) {cc_fromEnd = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   if (_cc_updated) strip.setCustomChase(cc_index1, cc_index2, cc_start, cc_numPrimary, cc_numSecondary, cc_step, cc_fromStart, cc_fromEnd);
+   //set presets
+   pos = req.indexOf("PS="); //saves current in preset
+   if (pos > 0) {
+      savePreset(req.substring(pos + 3).toInt(), 0); //CHANGE!!!
+   }
+   pos = req.indexOf("PL="); //applies preset
+   if (pos > 0) {
+      applyPreset(req.substring(pos + 3).toInt());
+   }
    
    //internal call, does not send XML response
    pos = req.indexOf("IN");

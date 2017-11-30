@@ -20,8 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1711292
-
+#define VERSION 1711302
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -49,9 +48,10 @@
 #endif
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 1
+#define EEPVER 2
 //0 -> old version, default
-//1 -> 0.4p 1711271 and up
+//1 -> 0.4p 1711272 and up
+//2 -> 0.4p 1711302 and up
 
 /*
  * @title WLED project sketch
@@ -93,8 +93,10 @@ IPAddress staticsubnet(255, 255, 255, 0);
 boolean useHSB = false, useHSBDefault = false;
 boolean turnOnAtBoot = true;
 byte col_s[]{255, 159, 0};
+byte col_sec_s[]{0, 0, 0};
 boolean useRGBW = false;
 byte white_s = 0;
+byte white_sec_s = 0;
 byte bri_s = 127;
 uint8_t bri_nl = 0, bri_nls;
 boolean fadeTransition = true;
@@ -115,6 +117,14 @@ uint8_t effectSpeedDefault = 75;
 boolean ntpEnabled = false;
 IPAddress ntpServerIP;
 const char* ntpServerName = "time.nist.gov";
+//custom chase
+uint8_t cc_numPrimary = 2;
+uint8_t cc_numSecondary = 4;
+uint8_t cc_index1 = 0;
+uint8_t cc_index2 = ledcount -1;
+bool cc_fromStart = true, cc_fromEnd = false;
+uint8_t cc_step = 1;
+uint8_t cc_start = 0;
 
 //alexa
 boolean alexaEnabled = true;

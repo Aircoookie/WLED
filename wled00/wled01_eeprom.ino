@@ -109,6 +109,17 @@ void saveSettingsToEEPROM()
   EEPROM.write(375, apWaitTimeSecs);
   EEPROM.write(376, recoveryAPDisabled);
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
+  EEPROM.write(378, col_sec_s[0]);
+  EEPROM.write(379, col_sec_s[1]);
+  EEPROM.write(380, col_sec_s[2]);
+  EEPROM.write(381, white_sec_s);
+  EEPROM.write(382, cc_index1);
+  EEPROM.write(383, cc_index2);
+  EEPROM.write(384, cc_numPrimary);
+  EEPROM.write(385, cc_numSecondary);
+  EEPROM.write(386, cc_fromStart);
+  EEPROM.write(387, cc_fromEnd);
+  EEPROM.write(388, cc_step);
   EEPROM.commit();
 }
 
@@ -230,7 +241,21 @@ void loadSettingsFromEEPROM()
     apWaitTimeSecs = EEPROM.read(375);
     recoveryAPDisabled = EEPROM.read(376);
   }
-  //377-380 reserved for second color default
+  //377 = lastEEPROMversion
+  if (lastEEPROMversion > 1) {
+    col_sec_s[0] = EEPROM.read(378);
+    col_sec_s[1] = EEPROM.read(379);
+    col_sec_s[2] = EEPROM.read(380);
+    white_sec_s = EEPROM.read(381);
+    cc_index1 = EEPROM.read(382);
+    cc_index2 = EEPROM.read(383);
+    cc_numPrimary = EEPROM.read(384);
+    cc_numSecondary = EEPROM.read(385);
+    cc_fromStart = EEPROM.read(386);
+    cc_fromEnd = EEPROM.read(387);
+    cc_step = EEPROM.read(388);
+  }
+  
 
   //favorite setting memory (25 slots/ each 20byte)
   //400 - 899 reserved
@@ -239,25 +264,46 @@ void loadSettingsFromEEPROM()
 }
 
 //PRESET PROTOCOL 20 bytes
-//0: multipurpose byte, bit 0: brightness is valid, 1: col valid, 2: ecol valid, 5: cc valid, 6: ccFromStart, 7: ccFromEnd
-//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:pStart 15-20:undefinded
+//0: (0:invalid 1: just bri 2: just col 3: just fx 4: bri/col 5: bri/fx 6: col/fx 7: all 8:i_like_pancakes >8:invalid)
+//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:fe 2:both) 15:step 16-19:Zeros
 
-void loadPreset(uint8_t index, uint8_t data[])
+void applyPreset(uint8_t index)
 {
   if (index > 24) return;
-  uint8_t temp[20];
-  for (int i = 0; i < 20; i++)
+  uint16_t i = 400 + index*20;
+  uint8_t m = EEPROM.read(i);
+  if (m == 7 || m == 1 || m == 4 || m == 5) bri = EEPROM.read(i+1);
+  if (m == 7 || m == 2 || m == 4 || m == 6)
   {
-    data[i] = EEPROM.read(400 + index*20 + i);
+    col[0] = EEPROM.read(i+2);
+    col[1] = EEPROM.read(i+3);
+    col[2] = EEPROM.read(i+4);
+    white = EEPROM.read(i+5);
+    col_sec[0] = EEPROM.read(i+6);
+    col_sec[1] = EEPROM.read(i+7);
+    col_sec[2] = EEPROM.read(i+8);
+    white_sec = EEPROM.read(i+9);
+  }
+  if (m == 3 || (m > 4 && m < 8))
+  {
+    effectCurrent = EEPROM.read(i+10);
+    effectSpeed = EEPROM.read(i+11);
+    cc_numPrimary = EEPROM.read(i+12);
+    cc_numSecondary = EEPROM.read(i+13);
+    cc_fromEnd = EEPROM.read(i+14);
+    cc_fromStart = (EEPROM.read(i+14)<2);
+    cc_step = EEPROM.read(i+15);
+    strip.setCustomChase(cc_index1, cc_index2, cc_start, cc_numPrimary, cc_numSecondary, cc_step, cc_fromStart, cc_fromEnd);
   }
 }
 
-void savePreset(uint8_t index, uint8_t data[])
+void savePreset(uint8_t index, uint8_t m)
 {
   if (index > 24) return;
   for (int i = 0; i < 20; i++)
   {
-     EEPROM.write(400 + index*20 + i, data[i]);
+     EEPROM.write(400 + index*20 + i, 0); //CHANGE!!!
   }
+  EEPROM.commit();
 }
 
