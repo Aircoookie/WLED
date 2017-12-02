@@ -254,6 +254,7 @@ void loadSettingsFromEEPROM()
     cc_fromStart = EEPROM.read(386);
     cc_fromEnd = EEPROM.read(387);
     cc_step = EEPROM.read(388);
+    strip.setCustomChase(cc_index1, cc_index2, cc_start, cc_numPrimary, cc_numSecondary, cc_step, cc_fromStart, cc_fromEnd);
   }
   
 
@@ -264,16 +265,17 @@ void loadSettingsFromEEPROM()
 }
 
 //PRESET PROTOCOL 20 bytes
-//0: (0:invalid 1: just bri 2: just col 3: just fx 4: bri/col 5: bri/fx 6: col/fx 7: all 8:i_like_pancakes >8:invalid)
-//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:fe 2:both) 15:step 16-19:Zeros
+//0: preset purpose byte 0:invalid 1:valid preset 1.0
+//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16-19:Zeros
 
-void applyPreset(uint8_t index)
+void applyPreset(uint8_t index, bool loadBri, bool loadCol, bool loadFX)
 {
+  if (index == 255) loadSettingsFromEEPROM();//load boot defaults
   if (index > 24) return;
   uint16_t i = 400 + index*20;
-  uint8_t m = EEPROM.read(i);
-  if (m == 7 || m == 1 || m == 4 || m == 5) bri = EEPROM.read(i+1);
-  if (m == 7 || m == 2 || m == 4 || m == 6)
+  if (EEPROM.read(i) == 0) return;
+  if (loadBri) bri = EEPROM.read(i+1);
+  if (loadCol)
   {
     col[0] = EEPROM.read(i+2);
     col[1] = EEPROM.read(i+3);
@@ -284,7 +286,7 @@ void applyPreset(uint8_t index)
     col_sec[2] = EEPROM.read(i+8);
     white_sec = EEPROM.read(i+9);
   }
-  if (m == 3 || (m > 4 && m < 8))
+  if (loadFX)
   {
     effectCurrent = EEPROM.read(i+10);
     effectSpeed = EEPROM.read(i+11);
@@ -294,16 +296,34 @@ void applyPreset(uint8_t index)
     cc_fromStart = (EEPROM.read(i+14)<2);
     cc_step = EEPROM.read(i+15);
     strip.setCustomChase(cc_index1, cc_index2, cc_start, cc_numPrimary, cc_numSecondary, cc_step, cc_fromStart, cc_fromEnd);
+    strip.setMode(effectCurrent);
+    strip.setSpeed(effectSpeed);
   }
 }
 
-void savePreset(uint8_t index, uint8_t m)
+void savePreset(uint8_t index)
 {
   if (index > 24) return;
-  for (int i = 0; i < 20; i++)
-  {
-     EEPROM.write(400 + index*20 + i, 0); //CHANGE!!!
-  }
+  uint16_t i = 400 + index*20;
+  EEPROM.write(i, 1);
+  EEPROM.write(i+1, bri);
+  EEPROM.write(i+2, col[0]);
+  EEPROM.write(i+3, col[1]);
+  EEPROM.write(i+4, col[2]);
+  EEPROM.write(i+5, white);
+  EEPROM.write(i+6, col_sec[0]);
+  EEPROM.write(i+7, col_sec[1]);
+  EEPROM.write(i+8, col_sec[2]);
+  EEPROM.write(i+9, white_sec);
+  EEPROM.write(i+10, effectCurrent);
+  EEPROM.write(i+11, effectSpeed);
+  EEPROM.write(i+12, cc_numPrimary);
+  EEPROM.write(i+13, cc_numSecondary);
+  uint8_t m = 1;
+  if (!cc_fromStart) m = 2;
+  if (!cc_fromEnd) m = 0;
+  EEPROM.write(i+14, m);
+  EEPROM.write(i+15, cc_step);
   EEPROM.commit();
 }
 

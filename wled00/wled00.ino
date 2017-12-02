@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1711302
+#define VERSION 1712022
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -31,7 +31,7 @@
 //#define USEFS
 
 //overlays, needed for clocks etc.
-//#define USEOVERLAYS
+#define USEOVERLAYS
 
 #ifdef USEFS
 #include <FS.h>
@@ -172,7 +172,7 @@ const unsigned long seventyYears = 2208988800UL;
 uint8_t overlayDefault = 0;
 uint8_t overlayCurrent = 0;
 #ifdef USEOVERLAYS
-int overlayMin = 0, overlayMax = 9;
+int overlayMin = 0, overlayMax = 79;
 int analogClock12pixel = 25;
 boolean analogClockSecondsTrail = false;
 boolean analogClock5MinuteMarks = true;
@@ -187,7 +187,7 @@ int overlayDur[6];
 int overlayPauseDur[6];
 int nixieClockI = -1;
 boolean nixiePause;
-unsigned long countdownTime = 1483225200L;
+unsigned long countdownTime = 1514764800L;
 #endif
 
 int arlsTimeoutMillis = 2500;

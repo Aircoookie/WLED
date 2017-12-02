@@ -246,9 +246,9 @@ boolean handleSet(String req)
    }
    int pos = 0;
    //set brigthness
-   pos = req.indexOf("A=");
+   pos = req.indexOf("&A=");
    if (pos > 0) {
-      bri = req.substring(pos + 2).toInt();
+      bri = req.substring(pos + 3).toInt();
    }
    //set red value
    pos = req.indexOf("R=");
@@ -424,14 +424,29 @@ boolean handleSet(String req)
    pos = req.indexOf("CF="); if (pos > 0) {cc_fromStart = (req.substring(pos + 3).toInt()); _cc_updated = true;}
    pos = req.indexOf("CE="); if (pos > 0) {cc_fromEnd = (req.substring(pos + 3).toInt()); _cc_updated = true;}
    if (_cc_updated) strip.setCustomChase(cc_index1, cc_index2, cc_start, cc_numPrimary, cc_numSecondary, cc_step, cc_fromStart, cc_fromEnd);
+   
    //set presets
    pos = req.indexOf("PS="); //saves current in preset
    if (pos > 0) {
-      savePreset(req.substring(pos + 3).toInt(), 0); //CHANGE!!!
+      savePreset(req.substring(pos + 3).toInt());
    }
-   pos = req.indexOf("PL="); //applies preset
+   pos = req.indexOf("PL="); //applies entire preset
    if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt());
+      applyPreset(req.substring(pos + 3).toInt(), true, true, true);
+      effectUpdated = true;
+   }
+   pos = req.indexOf("PA="); //applies brightness from preset
+   if (pos > 0) {
+      applyPreset(req.substring(pos + 3).toInt(), true, false, false);
+   }
+   pos = req.indexOf("PC="); //applies color from preset
+   if (pos > 0) {
+      applyPreset(req.substring(pos + 3).toInt(), false, true, false);
+   }
+   pos = req.indexOf("PX="); //applies effects from preset
+   if (pos > 0) {
+      applyPreset(req.substring(pos + 3).toInt(), false, false, true);
+      effectUpdated = true;
    }
    
    //internal call, does not send XML response
