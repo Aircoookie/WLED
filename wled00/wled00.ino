@@ -20,7 +20,7 @@
 #include "CallbackFunction.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712022
+#define VERSION 1712090
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -31,7 +31,7 @@
 //#define USEFS
 
 //overlays, needed for clocks etc.
-#define USEOVERLAYS
+//#define USEOVERLAYS
 
 #ifdef USEFS
 #include <FS.h>

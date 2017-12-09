@@ -82,7 +82,13 @@ void wledInit()
     if(!handleFileRead("/favicon.ico")) server.send(200, "image/x-icon", favicon);
   });
   server.on("/", HTTP_GET, [](){
-    if(!handleFileRead("/index.htm")) server.send(200, "text/html", PAGE_index);
+    if(!handleFileRead("/index.htm")) {
+      server.setContentLength(strlen_P(PAGE_index0) + strlen_P(PAGE_index1) + strlen_P(PAGE_index2));
+      server.send(200, "text/html", "");
+      server.sendContent_P(PAGE_index0); 
+      server.sendContent_P(PAGE_index1); 
+      server.sendContent_P(PAGE_index2); 
+    }
   });
   server.on("/reset", HTTP_GET, [](){
     server.send(200, "text/plain", "Rebooting...");
