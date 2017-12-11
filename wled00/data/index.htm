@@ -103,12 +103,12 @@
 			setHS(Cf.SR.value,Cf.SG.value,Cf.SB.value);
 			SetHSB();
 			nlb.style.fill=(nla)?bCol:dC;
-			switch (nState)
+			switch(nState)
 			{
-				case 0: gId("path1").style.fill = dC; gId("path2").style.fill = dC; break;
-				case 1: gId("path1").style.fill = bCol; gId("path2").style.fill = dC; break;
-				case 2: gId("path1").style.fill = dC;gId("path2").style.fill = bCol; break;
-				case 3: gId("path1").style.fill = bCol; gId("path2").style.fill = bCol; break;
+				case 0: gId("path1").style.fill = dC; gId("path2").style.fill = dC;break;
+				case 1: gId("path1").style.fill = bCol; gId("path2").style.fill = dC;break;
+				case 2: gId("path1").style.fill = dC;gId("path2").style.fill = bCol;break;
+				case 3: gId("path1").style.fill = bCol; gId("path2").style.fill = bCol;
 			}
 			tgb.style.fill=(Cf.SA.value>0)?bCol:dC;
 			ccX.style.display=(Cf.TF.value>52)?"block":"none";
@@ -255,6 +255,7 @@
 					if(d.Cf.FC.checked){resp+="&PX=";resp+=d.Cf.FF.value;}
 				}
 			}
+			GIO();
 		}
 		function OpenSettings()
 		{
@@ -293,16 +294,16 @@
 			if (nState>3) nState=0;
 			switch (nState)
 			{
-				case 0: resp+="&SN=0&RN=0"; break;
-				case 1: resp+="&SN=0&RN=1"; break;
-				case 2: resp+="&SN=1&RN=0"; break;
-				case 3: resp+="&SN=1&RN=1"; break;
+				case 0: resp+="&SN=0&RN=0";break;
+				case 1: resp+="&SN=0&RN=1";break;
+				case 2: resp+="&SN=1&RN=0";break;
+				case 3: resp+="&SN=1&RN=1";
 			}
 			UV();
 			GIO();
 		}
 		function setHS() {
-			var rr, gg, bb,
+			var rr,gg,bb,
 			r=arguments[0]/255,
 			g=arguments[1]/255,
 			b=arguments[2]/255,
@@ -351,7 +352,7 @@
 				case 2: r=p,g=v,b=t;break;
 				case 3: r=p,g=q,b=v;break;
 				case 4: r=t,g=p,b=v;break;
-				case 5: r=v,g=p,b=q;break;
+				case 5: r=v,g=p,b=q;
 			}
 			d.Cf.SR.value=r;
 			d.Cf.SG.value=g;
@@ -368,7 +369,19 @@
 			resp+=d.Cf.HF.value;
 			resp+=(d.Cf.SC.checked)?"&CF=1":"&CF=0";
 			resp+=(d.Cf.EC.checked)?"&CE=1":"&CE=0";
-			UV();
+			GIO();
+		}
+		function ColSec(i)
+		{
+			switch(i)
+			{
+				case 0: resp+="&SW";break;
+				case 1: resp+="&SB";break;
+				case 2: resp+="&SR=1";break;
+				case 3: resp+="&SP";break;
+				case 4: resp+="&SC";break;
+				case 5: resp+="&SR=0";
+			}
 			GIO();
 		}
 	</script>
@@ -601,11 +614,12 @@
 			<svg id="fof" onclick="SwitchFX(100)"><use xlink:href="#lnr-rocket"></use></svg>
 			<br><input id="fxI" name = "TF" type="number" value="0" min="0" max="57" step="1" onchange="GetFX()"><br><br>
 			Set secondary color to 
-			<button type="button" onclick="colSec(0)">White</button>
-			<button type="button" onclick="colSec(1)">Black</button>
-			<button type="button" onclick="colSec(2)">Random</button>
-			<button type="button" onclick="colSec(3)">Primary</button>
-			<button type="button" onclick="colSec(4)">Swap P/S</button>
+			<button type="button" onclick="ColSec(0)">White</button>
+			<button type="button" onclick="ColSec(1)">Black</button>
+			<button type="button" onclick="ColSec(2)">Random</button>
+			<button type="button" onclick="ColSec(3)">Primary</button>
+			<button type="button" onclick="ColSec(4)">Swap P/S</button>
+			or <button type="button" onclick="ColSec(5)">Set Primary to Random</button>
 				<div id="ccX" class = "toolsCC">
 				<br>Custom Theater Chase<br>
 				using <input id="ccP" name = "PF" type="number" value="2" min="0" max="255" step="1" onchange="GetCC()"> primary and 
@@ -620,8 +634,9 @@
 			<svg id="psp" onclick="SwitchPS(-1)"><use xlink:href="#lnr-arrow-left-circle"></use></svg>
 			<svg id="psn" onclick="SwitchPS(1)"><use xlink:href="#lnr-arrow-right-circle"></use></svg>
 			<svg id="pss" onclick="PSIO(true)"><use xlink:href="#lnr-arrow-down-circle"></use></svg>
-			<br><input id="psI" name = "FF" type="number" value="0" min="0" max="24" step="1"><br><br>
-			Click checkmark to apply <input type="checkbox" checked="true" name="BC"> brightness, <input type="checkbox" checked="true" name="CC"> color and <input type="checkbox" checked="true" name="FC"> effects.
+			<br><input id="psI" name = "FF" type="number" value="0" min="0" max="25" step="1"><br><br>
+			Click checkmark to apply <input type="checkbox" checked="true" name="BC"> brightness, <input type="checkbox" checked="true" name="CC"> color and <input type="checkbox" checked="true" name="FC"> effects.<br>
+			Effect 0 is the configuration when the light is powered up.
 			</div>
 			<div id="slX" class="sliderX">
 			<input type="range" title="Effect Speed" class="sliders" name="SX" value="0" min="0" max="255" step="1" onchange="GetFX()">  </div> <br>

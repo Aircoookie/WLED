@@ -8,19 +8,19 @@
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266mDNS.h>
 #include <EEPROM.h>
-#include "WS2812FX.h"
 #include <WiFiUDP.h>
-#include <Time.h>
-#include <TimeLib.h>
-#include <Timezone.h>
+#include "src/dependencies/time/Time.h"
+#include "src/dependencies/time/TimeLib.h"
+#include "src/dependencies/timezone/Timezone.h"
+#include "src/dependencies/alexa-multiple/switch.h"
+#include "src/dependencies/alexa-multiple/UpnpBroadcastResponder.h"
+#include "src/dependencies/alexa-multiple/CallbackFunction.h"
 #include "htmls00.h"
 #include "htmls01.h"
-#include "switch.h"
-#include "UpnpBroadcastResponder.h"
-#include "CallbackFunction.h"
+#include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712090
+#define VERSION 1712111
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -142,6 +142,7 @@ byte col_sec[]{0, 0, 0};
 byte col_sec_it[]{0, 0, 0};
 byte white, white_old, white_t, white_it;
 byte white_sec, white_sec_it;
+uint8_t lastRandomIndex = 0;
 unsigned long transitionStartTime;
 unsigned long nightlightStartTime;
 float tper_last = 0;

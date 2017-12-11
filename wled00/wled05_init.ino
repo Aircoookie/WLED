@@ -23,7 +23,7 @@ void wledInit()
   
   DEBUG_PRINTLN("Init EEPROM");
   EEPROM.begin(1024);
-  loadSettingsFromEEPROM();
+  loadSettingsFromEEPROM(true);
   DEBUG_PRINT("CC: SSID: ");
   DEBUG_PRINT(clientssid);
 
@@ -153,7 +153,6 @@ void wledInit()
   //Init alexa service
   alexaInit();
   
-  overlayCurrent = overlayDefault;
   // Initialize NeoPixel Strip
   strip.init();
   strip.setLedCount(ledcount);

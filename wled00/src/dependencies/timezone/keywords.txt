@@ -1,0 +1,8 @@
+TimeChangeRule	KEYWORD1
+Timezone	KEYWORD1
+toLocal	KEYWORD2
+toUTC	KEYWORD2
+utcIsDST	KEYWORD2
+locIsDST	KEYWORD2
+readRules	KEYWORD2
+writeRules	KEYWORD2

@@ -2,6 +2,23 @@
  * Receives client input
  */
 
+void _setRandomColor(bool _sec)
+{
+  lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
+  uint32_t _color = strip.color_wheel(lastRandomIndex);
+  if (_sec){
+    white_sec = ((_color >> 24) & 0xFF);
+    col_sec[0] = ((_color >> 16) & 0xFF);
+    col_sec[1] = ((_color >> 8) & 0xFF);
+    col_sec[2] = (_color & 0xFF);
+  } else {
+    white = ((_color >> 24) & 0xFF);
+    col[0] = ((_color >> 16) & 0xFF);
+    col[1] = ((_color >> 8) & 0xFF);
+    col[2] = (_color & 0xFF);
+  }
+}
+
 void handleSettingsSet()
 {
   if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
@@ -251,24 +268,24 @@ boolean handleSet(String req)
       bri = req.substring(pos + 3).toInt();
    }
    //set red value
-   pos = req.indexOf("R=");
+   pos = req.indexOf("&R=");
    if (pos > 0) {
-      col[0] = req.substring(pos + 2).toInt();
+      col[0] = req.substring(pos + 3).toInt();
    }
    //set green value
-   pos = req.indexOf("G=");
+   pos = req.indexOf("&G=");
    if (pos > 0) {
-      col[1] = req.substring(pos + 2).toInt();
+      col[1] = req.substring(pos + 3).toInt();
    }
    //set blue value
-   pos = req.indexOf("B=");
+   pos = req.indexOf("&B=");
    if (pos > 0) {
-      col[2] = req.substring(pos + 2).toInt();
+      col[2] = req.substring(pos + 3).toInt();
    }
    //set white value
-   pos = req.indexOf("W=");
+   pos = req.indexOf("&W=");
    if (pos > 0) {
-      white = req.substring(pos + 2).toInt();
+      white = req.substring(pos + 3).toInt();
    }
    //set 2nd red value
    pos = req.indexOf("R2=");
@@ -289,6 +306,55 @@ boolean handleSet(String req)
    pos = req.indexOf("W2=");
    if (pos > 0) {
       white_sec = req.substring(pos + 3).toInt();
+   }
+   //set 2nd to white
+   pos = req.indexOf("SW");
+   if (pos > 0) {
+      if(useRGBW) {
+        white_sec = 255;
+        col_sec[0] = 0;
+        col_sec[1] = 0;
+        col_sec[2] = 0;
+      } else {
+        col_sec[0] = 255;
+        col_sec[1] = 255;
+        col_sec[2] = 255;
+      }
+   }
+   //set 2nd to black
+   pos = req.indexOf("SB");
+   if (pos > 0) {
+      white_sec = 0;
+      col_sec[0] = 0;
+      col_sec[1] = 0;
+      col_sec[2] = 0;
+   }
+   //set to random hue SR=0->1st SR=1->2nd
+   pos = req.indexOf("SR");
+   if (pos > 0) {
+      _setRandomColor(req.substring(pos + 3).toInt());
+   }
+   //set 2nd to 1st
+   pos = req.indexOf("SP");
+   if (pos > 0) {
+      col_sec[0] = col[0];
+      col_sec[1] = col[1];
+      col_sec[2] = col[2];
+      white_sec = white;
+   }
+   //swap 2nd & 1st
+   pos = req.indexOf("SC");
+   if (pos > 0) {
+      uint8_t _temp[4];
+      for (int i = 0; i<3; i++)
+      {
+        _temp[i] = col[i];
+        col[i] = col_sec[i];
+        col_sec[i] = _temp[i];
+      }
+      _temp[3] = white;
+      white = white_sec;
+      white_sec = _temp[3];
    }
    //set current effect index
    pos = req.indexOf("FX=");
@@ -322,9 +388,9 @@ boolean handleSet(String req)
         strip.unlockAll();
    }
    //set individual pixel (range) to current color
-   pos = req.indexOf("I=");
+   pos = req.indexOf("&I=");
    if (pos > 0){
-      int index = req.substring(pos + 2).toInt();
+      int index = req.substring(pos + 3).toInt();
       pos = req.indexOf("I2=");
       if (pos > 0){
         int index2 = req.substring(pos + 3).toInt();
@@ -397,9 +463,9 @@ boolean handleSet(String req)
       if (auxTime == 0) auxActive = false;
    }
    //main toggle on/off
-   pos = req.indexOf("T=");
+   pos = req.indexOf("&T=");
    if (pos > 0) {
-      switch (req.substring(pos + 2).toInt())
+      switch (req.substring(pos + 3).toInt())
       {
         case 0: if (bri != 0){bri_last = bri; bri = 0;} break; //off
         case 1: bri = bri_last; break; //on
@@ -412,6 +478,11 @@ boolean handleSet(String req)
           bri = 0;
         }
       }
+   }
+   //set time (unix timestamp)
+   pos = req.indexOf("ST=");
+   if (pos > 0) {
+      setTime(req.substring(pos+3).toInt());
    }
    //set custom chase data
    bool _cc_updated = false;

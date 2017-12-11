@@ -1,6 +1,18 @@
 #include "UpnpBroadcastResponder.h"
 #include "Switch.h"
 #include <functional>
+
+//#define DEBUG
+
+#ifdef DEBUG
+ #define DEBUG_PRINT(x)  Serial.print (x)
+ #define DEBUG_PRINTLN(x) Serial.println (x)
+ #define DEBUG_PRINTF(x) Serial.printf (x)
+#else
+ #define DEBUG_PRINT(x)
+ #define DEBUG_PRINTLN(x)
+ #define DEBUG_PRINTF(x)
+#endif
  
 // Multicast declarations
 IPAddress ipMulti(239, 255, 255, 250);
@@ -24,18 +36,18 @@ UpnpBroadcastResponder::~UpnpBroadcastResponder(){/*nothing to destruct*/}
 bool UpnpBroadcastResponder::beginUdpMulticast(){
   boolean state = false;
   
-  Serial.println("Begin multicast ..");
+  DEBUG_PRINTLN("Begin multicast ..");
   
   if(UDP.beginMulticast(WiFi.localIP(), ipMulti, portMulti)) {
-    Serial.print("Udp multicast server started at ");
-    Serial.print(ipMulti);
-    Serial.print(":");
-    Serial.println(portMulti);
+    DEBUG_PRINT("Udp multicast server started at ");
+    DEBUG_PRINT(ipMulti);
+    DEBUG_PRINT(":");
+    DEBUG_PRINTLN(portMulti);
 
     state = true;
   }
   else{
-    Serial.println("Connection failed");
+    DEBUG_PRINTLN("Connection failed");
   }
   
   return state;
@@ -44,10 +56,10 @@ bool UpnpBroadcastResponder::beginUdpMulticast(){
 //Switch *ptrArray;
 
 void UpnpBroadcastResponder::addDevice(Switch& device) {
-  Serial.print("Adding switch : ");
-  Serial.print(device.getAlexaInvokeName());
-  Serial.print(" index : ");
-  Serial.println(numOfSwitchs);
+  DEBUG_PRINT("Adding switch : ");
+  DEBUG_PRINT(device.getAlexaInvokeName());
+  DEBUG_PRINT(" index : ");
+  DEBUG_PRINTLN(numOfSwitchs);
   
   switches[numOfSwitchs] = device;
   numOfSwitchs++;
@@ -69,7 +81,7 @@ void UpnpBroadcastResponder::serverLoop(){
 
   if(request.indexOf('M-SEARCH') > 0) {
       if(request.indexOf("urn:Belkin:device:**") > 0) {
-        Serial.println("Got UDP Belkin Request..");
+        DEBUG_PRINTLN("Got UDP Belkin Request..");
         
         // int arrSize = sizeof(switchs) / sizeof(Switch);
       

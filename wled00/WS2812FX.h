@@ -255,12 +255,14 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       isLocked(int i);
 
     uint8_t
+      get_random_wheel_index(uint8_t),
       getMode(void),
       getSpeed(void),
       getBrightness(void),
       getModeCount(void);
 
     uint32_t
+      color_wheel(uint8_t),
       getColor(void);
 
   private:
@@ -349,7 +351,6 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
     uint8_t
       minval(uint8_t v, uint8_t w),
       maxval(uint8_t v, uint8_t w),
-      get_random_wheel_index(uint8_t),
       _mode_index,
       _speed,
       _cc_i1,
@@ -365,7 +366,6 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
 
     uint32_t
       getPixelColor(uint16_t i),
-      color_wheel(uint8_t),
       _color,
       _color_sec,
       _counter_mode_call,

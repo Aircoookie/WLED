@@ -1,11 +1,21 @@
 #include "Switch.h"
 #include "CallbackFunction.h"
 
+//#define DEBUG
 
+#ifdef DEBUG
+ #define DEBUG_PRINT(x)  Serial.print (x)
+ #define DEBUG_PRINTLN(x) Serial.println (x)
+ #define DEBUG_PRINTF(x) Serial.printf (x)
+#else
+ #define DEBUG_PRINT(x)
+ #define DEBUG_PRINTLN(x)
+ #define DEBUG_PRINTF(x)
+#endif
         
 //<<constructor>>
 Switch::Switch(){
-    Serial.println("default constructor called");
+    DEBUG_PRINTLN("default constructor called");
 }
 //Switch::Switch(String alexaInvokeName,unsigned int port){
 Switch::Switch(String alexaInvokeName, unsigned int port, CallbackFunction oncb, CallbackFunction offcb){
@@ -62,12 +72,12 @@ void Switch::startWebServer(){
   //server->onNotFound(handleNotFound);
   server->begin();
 
-  Serial.println("WebServer started on port: ");
-  Serial.println(localPort);
+  DEBUG_PRINTLN("WebServer started on port: ");
+  DEBUG_PRINTLN(localPort);
 }
  
 void Switch::handleEventservice(){
-  Serial.println(" ########## Responding to eventservice.xml ... ########\n");
+  DEBUG_PRINTLN(" ########## Responding to eventservice.xml ... ########\n");
   
   String eventservice_xml = "<?scpd xmlns=\"urn:Belkin:service-1-0\"?>"
         "<actionList>"
@@ -101,23 +111,23 @@ void Switch::handleEventservice(){
 }
  
 void Switch::handleUpnpControl(){
-  Serial.println("########## Responding to  /upnp/control/basicevent1 ... ##########");      
+  DEBUG_PRINTLN("########## Responding to  /upnp/control/basicevent1 ... ##########");      
   
   //for (int x=0; x <= HTTP.args(); x++) {
-  //  Serial.println(HTTP.arg(x));
+  //  DEBUG_PRINTLN(HTTP.arg(x));
   //}
 
   String request = server->arg(0);      
-  Serial.print("request:");
-  Serial.println(request);
+  DEBUG_PRINT("request:");
+  DEBUG_PRINTLN(request);
 
   if(request.indexOf("<BinaryState>1</BinaryState>") > 0) {
-      Serial.println("Got Turn on request");
+      DEBUG_PRINTLN("Got Turn on request");
       onCallback();
   }
 
   if(request.indexOf("<BinaryState>0</BinaryState>") > 0) {
-      Serial.println("Got Turn off request");
+      DEBUG_PRINTLN("Got Turn off request");
       offCallback();
   }
   
@@ -129,7 +139,7 @@ void Switch::handleRoot(){
 }
 
 void Switch::handleSetupXml(){
-  Serial.println(" ########## Responding to setup.xml ... ########\n");
+  DEBUG_PRINTLN(" ########## Responding to setup.xml ... ########\n");
   
   IPAddress localIP = WiFi.localIP();
   char s[16];
@@ -161,8 +171,8 @@ void Switch::handleSetupXml(){
         
     server->send(200, "text/xml", setup_xml.c_str());
     
-    Serial.print("Sending :");
-    Serial.println(setup_xml);
+    DEBUG_PRINT("Sending :");
+    DEBUG_PRINTLN(setup_xml);
 }
 
 String Switch::getAlexaInvokeName() {
@@ -170,11 +180,11 @@ String Switch::getAlexaInvokeName() {
 }
 
 void Switch::respondToSearch(IPAddress& senderIP, unsigned int senderPort) {
-  Serial.println("");
-  Serial.print("Sending response to ");
-  Serial.println(senderIP);
-  Serial.print("Port : ");
-  Serial.println(senderPort);
+  DEBUG_PRINTLN("");
+  DEBUG_PRINT("Sending response to ");
+  DEBUG_PRINTLN(senderIP);
+  DEBUG_PRINT("Port : ");
+  DEBUG_PRINTLN(senderPort);
 
   IPAddress localIP = WiFi.localIP();
   char s[16];
@@ -197,5 +207,5 @@ void Switch::respondToSearch(IPAddress& senderIP, unsigned int senderPort) {
   UDP.write(response.c_str());
   UDP.endPacket();                    
 
-   Serial.println("Response sent !");
+   DEBUG_PRINTLN("Response sent !");
 }

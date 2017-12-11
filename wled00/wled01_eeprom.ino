@@ -123,7 +123,7 @@ void saveSettingsToEEPROM()
   EEPROM.commit();
 }
 
-void loadSettingsFromEEPROM()
+void loadSettingsFromEEPROM(bool first)
 {
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
@@ -190,7 +190,7 @@ void loadSettingsFromEEPROM()
   col_s[1] = EEPROM.read(247); col[1] = col_s[1];
   col_s[2] = EEPROM.read(248); col[2] = col_s[2];
   bri_s = EEPROM.read(249); bri = bri_s;
-  if (!EEPROM.read(369))
+  if (!EEPROM.read(369) && first)
   {
     bri = 0; bri_last = bri_s;
   }
@@ -262,6 +262,10 @@ void loadSettingsFromEEPROM()
   //400 - 899 reserved
   
   useHSB = useHSBDefault;
+
+  strip.setMode(effectCurrent);
+  strip.setSpeed(effectSpeed);
+  overlayCurrent = overlayDefault;
 }
 
 //PRESET PROTOCOL 20 bytes
@@ -270,9 +274,9 @@ void loadSettingsFromEEPROM()
 
 void applyPreset(uint8_t index, bool loadBri, bool loadCol, bool loadFX)
 {
-  if (index == 255) loadSettingsFromEEPROM();//load boot defaults
-  if (index > 24) return;
-  uint16_t i = 400 + index*20;
+  if (index == 255 || index == 0) loadSettingsFromEEPROM(false);//load boot defaults
+  if (index > 25 || index < 1) return;
+  uint16_t i = 380 + index*20;
   if (EEPROM.read(i) == 0) return;
   if (loadBri) bri = EEPROM.read(i+1);
   if (loadCol)
@@ -303,8 +307,9 @@ void applyPreset(uint8_t index, bool loadBri, bool loadCol, bool loadFX)
 
 void savePreset(uint8_t index)
 {
-  if (index > 24) return;
-  uint16_t i = 400 + index*20;
+  if (index > 25) return;
+  if (index < 1) {saveSettingsToEEPROM();return;}
+  uint16_t i = 380 + index*20;//min400
   EEPROM.write(i, 1);
   EEPROM.write(i+1, bri);
   EEPROM.write(i+2, col[0]);
