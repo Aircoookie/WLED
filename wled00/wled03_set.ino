@@ -412,7 +412,7 @@ boolean handleSet(String req)
       pos = req.indexOf("L2=");
       if (pos > 0){
         int index2 = req.substring(pos + 3).toInt();
-        if (req.indexOf("UL=") > 0)
+        if (req.indexOf("UL") > 0)
         {
           strip.unlockRange(index, index2);
         } else
@@ -421,7 +421,7 @@ boolean handleSet(String req)
         }
       } else
       {
-        if (req.indexOf("UL=") > 0)
+        if (req.indexOf("UL") > 0)
         {
           strip.unlock(index);
         } else

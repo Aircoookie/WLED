@@ -50,22 +50,7 @@ You will need to install the NeoPixelBus library by Makuna. All other dependenci
 
 ### Advanced module control via HTTP requests API:
 
-Base URL scheme: "<moduleip>/win". This will return a XML file with some current values.
-Add one or multiple of the following parameters after the base url to change values:
-- "&A=<0-255>" set LED brightness (yellow slider)
-- "&R=<0-255>" set LED red value (red slider)
-- "&G=<0-255>" set LED green value (green slider)
-- "&B=<0-255>" set LED blue value (blue slider)
-- "&W=<0-255>" set LED white value (white slider) (only when RGBW enabled)
-- "&T=<0 or 1 or 2-255>" 0: switch off, on, toggle
-- "&FX=<0-47>" set LED effect (refer to WS2812FX library)
-- "&SX=<0-255>" set LED effect speed (refer to WS2812FX library)
-- "&RN=<0 or 1>" receive notifications on or off
-- "&SN=<0 or 1>" send (direct) notifications on or off
-- "&NL=<0 or 1>" turns nightlight function on or off
-- "&MD=<0 or 1>" sets client color picker mode (RGB/HSB)
-
-(this list is incomplete, will be available in wiki)
+See the [wiki](https://github.com/Aircoookie/WLED/wiki/HTTP-request-API)!
 
 ### Other
 
