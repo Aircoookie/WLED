@@ -1,4 +1,4 @@
-#define RGBW
+//#define RGBW
 
 /*
   WS2812FX.h - Library for WS2812 LED effects.

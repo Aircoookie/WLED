@@ -20,7 +20,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712121
+#define VERSION 1712122
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -96,7 +96,7 @@ boolean turnOnAtBoot = true;
 uint8_t bootPreset = 0;
 byte col_s[]{255, 159, 0};
 byte col_sec_s[]{0, 0, 0};
-boolean useRGBW = true;
+boolean useRGBW = false;
 byte white_s = 0;
 byte white_sec_s = 0;
 byte bri_s = 127;

@@ -59,8 +59,8 @@
 							d.Cf.SX.value = this.responseXML.getElementsByTagName('sx')[0].childNodes[0].nodeValue;
 							nla = (this.responseXML.getElementsByTagName('nl')[0].innerHTML)!=0?true:false;
 							nState = 0;
-							nState = (this.responseXML.getElementsByTagName('nr')[0].innerHTML)!=0?true:false;
-							nState += 2*(this.responseXML.getElementsByTagName('ns')[0].innerHTML)!=0?true:false;
+							nState = (this.responseXML.getElementsByTagName('nr')[0].innerHTML)!=0?1:0;
+							nState += (this.responseXML.getElementsByTagName('ns')[0].innerHTML)!=0?2:0;
 							hsb = (this.responseXML.getElementsByTagName('md')[0].innerHTML)!=0?true:false;
 							d.getElementsByClassName("desc")[0].innerHTML = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
 							UV();
@@ -68,7 +68,6 @@
 					}
 				}
 			}
-			// send HTTP request
 			request.open("GET", "win/" +resp +nocache, true);
 			request.send(null);
 			resp="";
