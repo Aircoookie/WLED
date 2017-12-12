@@ -104,6 +104,7 @@ String getSettings()
     resp += ds + "CLDFW" + v + "-1;";
   }
   resp += ds + "BOOTN" + c + turnOnAtBoot +";";
+  resp += ds + "BOOTP" + v + bootPreset +";";
   resp += ds + "FXDEF" + v + effectDefault +";";
   resp += ds + "SXDEF" + v + effectSpeedDefault +";";
   resp += ds + "GCBRI" + c + useGammaCorrectionBri +";";
@@ -161,7 +162,7 @@ String getSettings()
     resp += "Not active";
   }
   resp += "\";";
-  resp += dg + "(\"msg\")[0]" + ih + "\"WLED 0.4p (build " + VERSION + ") OK\";";
+  resp += dg + "(\"msg\")[0]" + ih + "\"WLED 0.4 (build " + VERSION + ") OK\";";
   
   return resp;
 }

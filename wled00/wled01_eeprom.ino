@@ -120,6 +120,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(386, cc_fromStart);
   EEPROM.write(387, cc_fromEnd);
   EEPROM.write(388, cc_step);
+  EEPROM.write(389, bootPreset);
   EEPROM.commit();
 }
 
@@ -256,7 +257,7 @@ void loadSettingsFromEEPROM(bool first)
     cc_step = EEPROM.read(388);
     strip.setCustomChase(cc_index1, cc_index2, cc_start, cc_numPrimary, cc_numSecondary, cc_step, cc_fromStart, cc_fromEnd);
   }
-  
+  bootPreset = EEPROM.read(389);
 
   //favorite setting memory (25 slots/ each 20byte)
   //400 - 899 reserved

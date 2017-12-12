@@ -164,6 +164,11 @@ void handleSettingsSet()
       if (i >= 0 && i <= 255) bri_s = i;
     }
     turnOnAtBoot = server.hasArg("BOOTN");
+    if (server.hasArg("BOOTP"))
+    {
+      int i = server.arg("BOOTP").toInt();
+      if (i >= 0 && i <= 25) bootPreset = i;
+    }
     if (server.hasArg("FXDEF"))
     {
       int i = server.arg("FXDEF").toInt();

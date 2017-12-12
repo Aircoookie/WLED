@@ -20,7 +20,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712111
+#define VERSION 1712121
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -48,19 +48,20 @@
 #endif
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 2
+#define EEPVER 3
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
+//3 -> 0.4  1712121 and up
 
 /*
  * @title WLED project sketch
- * @version 0.4p
+ * @version 0.4
  * @author Christian Schwinne
  */
 //Hardware-settings (only changeble via code)
-#define LEDCOUNT 93 //maximum, exact count set-able via settings
-#define MAXDIRECT 93 //for direct access like arls, should be >= LEDCOUNT
+#define LEDCOUNT 255 //maximum, exact count set-able via settings
+#define MAXDIRECT 255 //for direct access like arls, should be >= LEDCOUNT
 uint8_t buttonPin = 0; //needs pull-up
 uint8_t auxPin = 15; //use e.g. for external relay
 uint8_t auxDefaultState = 0; //0: input 1: high 2: low
@@ -78,7 +79,7 @@ time_t local;
 
 //Default CONFIG
 uint8_t ledcount = 93;
-String serverDescription = "WLED 0.4p";
+String serverDescription = "WLED 0.4";
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
 String cmdns = "led";
@@ -92,9 +93,10 @@ IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
 boolean useHSB = false, useHSBDefault = false;
 boolean turnOnAtBoot = true;
+uint8_t bootPreset = 0;
 byte col_s[]{255, 159, 0};
 byte col_sec_s[]{0, 0, 0};
-boolean useRGBW = false;
+boolean useRGBW = true;
 byte white_s = 0;
 byte white_sec_s = 0;
 byte bri_s = 127;
@@ -116,7 +118,7 @@ uint8_t effectSpeedDefault = 75;
 //NTP stuff
 boolean ntpEnabled = false;
 IPAddress ntpServerIP;
-const char* ntpServerName = "time.nist.gov";
+const char* ntpServerName = "pool.ntp.org";
 //custom chase
 uint8_t cc_numPrimary = 2;
 uint8_t cc_numSecondary = 4;

@@ -161,6 +161,7 @@ void wledInit()
   strip.setSpeed(effectSpeed);
   strip.setBrightness(255);
   strip.start();
+  if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
   pinMode(buttonPin, INPUT_PULLUP);
 }
