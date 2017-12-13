@@ -53,7 +53,7 @@
 		AP SSID (leave empty for no AP): <br> <input name="APSSID" maxlength="32"> <br>
 		Hide AP SSID: <input type="checkbox" name="APHSSID"> <br>
 		AP password (leave empty for open): <br> <input type="password" name="APPASS" maxlength="63"> <br>
-		AP channel: <input name="APCHAN" maxlength="2" size="2"> <br>
+		AP channel: <input name="APCHAN" type="number" min="1" max="13" required> <br>
 		AP IP: <span class="sip"> Not active </span> <br>
 		<hr>
 		<h2>Application setup</h2>
@@ -70,7 +70,7 @@
 		<input name="CLDFB" type="number" min="0" max="255" required> <br>
 		Default brightness: <input name="CLDFA" type="number" min="0" max="255" required> (0-255) <br>
 		Default white value (only RGBW, -1 to disable): <input name="CLDFW" type="number" min="-1" max="255" required> <br>
-		Default effect ID: <input name="FXDEF" type="number" min="0" max="255" required> <br>
+		Default effect ID: <input name="FXDEF" type="number" min="0" max="57" required> <br>
 		Default effect speed: <input name="SXDEF" type="number" min="0" max="255" required> <br>
 		Ignore and use current color, brightness and effects: <input type="checkbox" name="CBEOR"> <br>
 		Turn on after power up/reset: <input type="checkbox" name="BOOTN"> <br>

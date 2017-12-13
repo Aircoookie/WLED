@@ -1,6 +1,11 @@
 /*
  * Main sketch
  */
+/*
+ * @title WLED project sketch
+ * @version 0.5dev
+ * @author Christian Schwinne
+ */
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
@@ -20,7 +25,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712122
+#define VERSION 1712132
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -31,7 +36,10 @@
 //#define USEFS
 
 //overlays, needed for clocks etc.
-//#define USEOVERLAYS
+#define USEOVERLAYS
+
+//support for the CRONIXIE clock by Diamex
+//#define CRONIXIE
 
 #ifdef USEFS
 #include <FS.h>
@@ -54,11 +62,6 @@
 //2 -> 0.4p 1711302 and up
 //3 -> 0.4  1712121 and up
 
-/*
- * @title WLED project sketch
- * @version 0.4
- * @author Christian Schwinne
- */
 //Hardware-settings (only changeble via code)
 #define LEDCOUNT 255 //maximum, exact count set-able via settings
 #define MAXDIRECT 255 //for direct access like arls, should be >= LEDCOUNT
@@ -77,13 +80,28 @@ Timezone TZ(CEST, CET);
 TimeChangeRule *tcr;        //pointer to the time change rule, use to get the TZ abbrev
 time_t local;
 
+//cronixie defaults
+#ifdef CRONIXIE
+#undef LEDCOUNT
+#define LEDCOUNT 120
+#undef MAXDIRECT
+#define MAXDIRECT 48
+uint8_t ledcount = 6;
+String apssid = "CRONIXIE-AP";
+String alexaInvocationName = "Clock";
+long cronixieRefreshMs = 99;
+unsigned long cronixieRefreshedTime;
+#endif
+
 //Default CONFIG
-uint8_t ledcount = 93;
-String serverDescription = "WLED 0.4";
+String serverDescription = "WLED 0.5dev";
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
 String cmdns = "led";
+#ifndef CRONIXIE
+uint8_t ledcount = 100;
 String apssid = "WLED-AP";
+#endif
 uint8_t apchannel = 1;
 uint8_t aphide = 0;
 uint8_t apWaitTimeSecs = 32;
@@ -130,7 +148,9 @@ uint8_t cc_start = 0;
 
 //alexa
 boolean alexaEnabled = true;
+#ifndef CRONIXIE
 String alexaInvocationName = "Light";
+#endif
 boolean alexaNotify = false;
 
 double transitionResolution = 0.011;
@@ -275,6 +295,9 @@ void loop() {
     handleNetworkTime();
     #ifdef USEOVERLAYS
     handleOverlays();
+    #endif
+    #ifdef CRONIXIE
+    handleCronixie();
     #endif
     handleAlexa();
     strip.service();

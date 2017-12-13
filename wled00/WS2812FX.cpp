@@ -127,6 +127,7 @@ void WS2812FX::setColor(uint32_t c) {
 void WS2812FX::setSecondaryColor(uint32_t c) {
   _color_sec = c;
   _mode_color_sec = _color;
+  if (_cronixieMode) _cronixieSecMultiplier = getSafePowerMultiplier(1000, 60, c, _brightness);
   setBrightness(_brightness);
 }
 
@@ -989,18 +990,67 @@ void WS2812FX::mode_chase_rainbow_white(void) {
 
 
 /*
- * _color_sec running on _color. REDUNDANT!!!
+ * Eye (broken)
  */
-void WS2812FX::mode_chase_blackout(void) {
-  mode_chase_color();
+void WS2812FX::mode_icu(void) {
+  uint16_t dest = _counter_mode_step & 0xFFFF;
+ 
+  setPixelColor(dest, _color);
+  setPixelColor(dest + _led_count/2, _color);
+
+  if(_mode_color == dest) { // pause between eye movements
+    if(random(6) == 0) { // blink once in a while
+      setPixelColor(dest, _color_sec);
+      setPixelColor(dest + _led_count/2, _color_sec);
+      show();
+      _mode_delay = 200;
+      return;
+    }
+    _mode_color = random(_led_count/2);
+    _mode_delay = 1000 + random(2000);
+    return;
+  }
+
+  setPixelColor(dest, _color_sec);
+  setPixelColor(dest + _led_count/2, _color_sec);
+
+  if(_mode_color > _counter_mode_step) {
+    _counter_mode_step++;
+    dest++;
+  } else if (_mode_color < _counter_mode_step) {
+    _counter_mode_step--;
+    dest--;
+  }
+
+  setPixelColor(dest, _color);
+  setPixelColor(dest + _led_count/2, _color);
+  show();
+
+  _mode_delay = 100 + ((100 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
 }
 
 
 /*
- * _color_sec running on rainbow. REDUNDANT!!!
+ * Emulates a traffic light.
  */
-void WS2812FX::mode_chase_blackout_rainbow(void) {
-  mode_chase_rainbow();
+void WS2812FX::mode_traffic_light(void) {
+  for(uint16_t i=0; i < _led_count; i++) {
+    if (!_locked[i])
+    setPixelColor(i, _color_sec);
+  }
+  for (int i = 0; i < _led_count-2 ; i+=3)
+  {
+    switch (_counter_mode_step)
+    {
+      case 0: if(!_locked[i])setPixelColor(i, 0x00FF0000); _mode_delay = 150 + (100 * (uint32_t)(SPEED_MAX - _speed));break;
+      case 1: if(!_locked[i])setPixelColor(i, 0x00FF0000); _mode_delay = 150 + (20 * (uint32_t)(SPEED_MAX - _speed)); if(!_locked[i+1])setPixelColor(i+1, 0x00EECC00); break;
+      case 2: if(!_locked[i+2])setPixelColor(i+2, 0x0000FF00); _mode_delay = 150 + (100 * (uint32_t)(SPEED_MAX - _speed));break;
+      case 3: if(!_locked[i+1])setPixelColor(i+1, 0x00EECC00); _mode_delay = 150 + (20 * (uint32_t)(SPEED_MAX - _speed));break;
+    }
+  }
+  show();
+  _counter_mode_step++;
+  if (_counter_mode_step >3) _counter_mode_step = 0;
 }
 
 
@@ -1768,6 +1818,49 @@ void WS2812FX::setFastUpdateMode(bool y)
   if (_mode_index == 0) _mode_delay = 20;
 }
 
+void WS2812FX::driverModeCronixie(bool b)
+{
+  _cronixieMode = b;
+}
+
+void WS2812FX::setCronixieDigits(uint8_t d[])
+{
+  for (int i = 0; i<6; i++)
+  {
+    _cronixieDigits[i] = d[i];
+  }
+}
+
+double WS2812FX::getPowerEstimate(uint8_t leds, uint32_t c, uint8_t b)
+{
+  double _mARequired = 100; //ESP power
+  double _mul = (double)b/255;
+  double _sum = ((c & 0xFF000000) >> 24) + ((c & 0x00FF0000) >> 16) + ((c & 0x0000FF00) >>  8) + ((c & 0x000000FF) >>  0);
+  #ifdef RGBW
+  _sum /= 1024;
+  #else
+  _sum /= 768;
+  #endif
+  double _mAPerLed = 50*(_mul*_sum);
+  _mARequired += leds*_mAPerLed;
+  return _mARequired;
+}
+
+//DISCLAIMER
+//This is just a helper function for huge amounts of LEDs.
+//It is NOT guaranteed to stay within the safeAmps margin.
+//Stay safe with high amperage and have a reasonable safety margin!
+//I am NOT to be held liable for burned down garages!
+double WS2812FX::getSafePowerMultiplier(double safeMilliAmps, uint8_t leds, uint32_t c, uint8_t b)
+{
+  double _mARequired = getPowerEstimate(leds,c,b);
+  if (_mARequired > safeMilliAmps)
+  {
+    return safeMilliAmps/_mARequired;
+  }
+  return 1.0;
+}
+
 void WS2812FX::setCCIndex1(uint8_t i1)
 {
   if (i1 < _led_count-1) _cc_i1 = i1;
@@ -1833,32 +1926,55 @@ void WS2812FX::setCustomChase(uint8_t i1, uint8_t i2, uint8_t is, uint8_t np, ui
 }
 
 //Added for quick NeoPixelBus compatibility with Adafruit syntax
-
-void WS2812FX::setPixelColor(uint16_t i, uint32_t c)
+void WS2812FX::setPixelColorRaw(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
 {
   #ifdef RGBW
-  NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor((c>>16) & 0xFF, (c>>8) & 0xFF, (c) & 0xFF, (c>>24) & 0xFF));
-  #else
-  NeoPixelBrightnessBus::SetPixelColor(i, RgbColor((c>>16) & 0xFF, (c>>8) & 0xFF, (c) & 0xFF));
-  #endif
+    NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor(r,g,b,w));
+    #else
+    NeoPixelBrightnessBus::SetPixelColor(i, RgbColor(r,g,b));
+    #endif
 }
 
 void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
 {
-  #ifdef RGBW
-  NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor(r,g,b,w));
-  #else
-  NeoPixelBrightnessBus::SetPixelColor(i, RgbColor(r,g,b));
-  #endif
+  if (!_cronixieMode)
+  {
+    #ifdef RGBW
+    NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor(r,g,b,w));
+    #else
+    NeoPixelBrightnessBus::SetPixelColor(i, RgbColor(r,g,b));
+    #endif
+  } else {
+    if(i>6)return;
+    uint8_t o = 20*i;
+    for (int j=o; j< o+19; j++)
+    {
+      setPixelColorRaw(j,0,0,0,0);
+    }
+    switch(_cronixieDigits[i])
+    {
+      case 0: setPixelColorRaw(o+5,r,g,b,w); setPixelColorRaw(o+15,r,g,b,w); break;
+      case 1: setPixelColorRaw(o+0,r,g,b,w); setPixelColorRaw(o+10,r,g,b,w); break;
+      case 2: setPixelColorRaw(o+6,r,g,b,w); setPixelColorRaw(o+16,r,g,b,w); break;
+      case 3: setPixelColorRaw(o+1,r,g,b,w); setPixelColorRaw(o+11,r,g,b,w); break;
+      case 4: setPixelColorRaw(o+7,r,g,b,w); setPixelColorRaw(o+17,r,g,b,w); break;
+      case 5: setPixelColorRaw(o+2,r,g,b,w); setPixelColorRaw(o+12,r,g,b,w); break;
+      case 6: setPixelColorRaw(o+8,r,g,b,w); setPixelColorRaw(o+18,r,g,b,w); break;
+      case 7: setPixelColorRaw(o+3,r,g,b,w); setPixelColorRaw(o+13,r,g,b,w); break;
+      case 8: setPixelColorRaw(o+9,r,g,b,w); setPixelColorRaw(o+19,r,g,b,w); break;
+      case 9: setPixelColorRaw(o+4,r,g,b,w); setPixelColorRaw(o+14,r,g,b,w); break;
+    }
+  }
 }
 
 void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b)
 {
-  #ifdef RGBW
-  NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor(r,g,b,0));
-  #else
-  NeoPixelBrightnessBus::SetPixelColor(i, RgbColor(r,g,b));
-  #endif
+  setPixelColor(i,r,g,b,0);
+}
+
+void WS2812FX::setPixelColor(uint16_t i, uint32_t c)
+{
+  setPixelColor(i,(c>>16) & 0xFF,(c>>8) & 0xFF,(c) & 0xFF,(c>>24) & 0xFF);
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)

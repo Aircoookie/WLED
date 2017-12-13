@@ -107,6 +107,11 @@ void wledInit()
   server.on("/freeheap", HTTP_GET, [](){
     server.send(200, "text/plain", (String)ESP.getFreeHeap());
     });
+  server.on("/power", HTTP_GET, [](){
+    String val = (String)(int)strip.getPowerEstimate(ledcount,strip.getColor(),strip.getBrightness());
+    val += "mA currently\nNotice: This is just an estimate which does not take into account several factors (like effects and wire resistance). It is NOT an accurate measurement!";
+    server.send(200, "text/plain", val);
+    });
   if (!otaLock){
     server.on("/edit", HTTP_GET, [](){
     if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);
@@ -161,6 +166,9 @@ void wledInit()
   strip.setSpeed(effectSpeed);
   strip.setBrightness(255);
   strip.start();
+  #ifdef CRONIXIE
+  strip.driverModeCronixie(true);
+  #endif
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
   pinMode(buttonPin, INPUT_PULLUP);
@@ -185,7 +193,11 @@ void initCon()
       DEBUG_PRINTLN("Can't connect. Opening AP...");
       String save = apssid;
       onlyAP = true;
-      if (apssid.length() <1) apssid = "WLED-AP";
+      #ifdef CRONIXIE
+        if (apssid.length() <1) apssid = "CRONIXIE-AP";
+      #else
+        if (apssid.length() <1) apssid = "WLED-AP";
+      #endif
       initAP();
       apssid = save;
       return;

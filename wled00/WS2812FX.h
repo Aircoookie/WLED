@@ -85,8 +85,8 @@
 #define FX_MODE_CHASE_FLASH             31
 #define FX_MODE_CHASE_FLASH_RANDOM      32
 #define FX_MODE_CHASE_RAINBOW_WHITE     33
-#define FX_MODE_CHASE_BLACKOUT          34
-#define FX_MODE_CHASE_BLACKOUT_RAINBOW  35
+#define FX_MODE_ICU                     34
+#define FX_MODE_TRAFFIC_LIGHT           35
 #define FX_MODE_COLOR_SWEEP_RANDOM      36
 #define FX_MODE_RUNNING_COLOR           37
 #define FX_MODE_RUNNING_RED_BLUE        38
@@ -157,8 +157,8 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _mode[FX_MODE_CHASE_FLASH]           = &WS2812FX::mode_chase_flash;
       _mode[FX_MODE_CHASE_FLASH_RANDOM]    = &WS2812FX::mode_chase_flash_random;
       _mode[FX_MODE_CHASE_RAINBOW_WHITE]   = &WS2812FX::mode_chase_rainbow_white;
-      _mode[FX_MODE_CHASE_BLACKOUT]        = &WS2812FX::mode_chase_blackout;
-      _mode[FX_MODE_CHASE_BLACKOUT_RAINBOW]= &WS2812FX::mode_chase_blackout_rainbow;
+      _mode[FX_MODE_ICU]                   = &WS2812FX::mode_icu;
+      _mode[FX_MODE_TRAFFIC_LIGHT]         = &WS2812FX::mode_traffic_light;
       _mode[FX_MODE_COLOR_SWEEP_RANDOM]    = &WS2812FX::mode_color_sweep_random;
       _mode[FX_MODE_RUNNING_COLOR]         = &WS2812FX::mode_running_color;
       _mode[FX_MODE_RUNNING_RED_BLUE]      = &WS2812FX::mode_running_red_blue;
@@ -206,6 +206,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _counter_cc_step = 0;
       _fastStandard = false;
       _locked = new boolean[n];
+      _cronixieDigits = new uint8_t[6];
     }
 
     void
@@ -235,6 +236,8 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       setBrightness(uint8_t b),
       increaseBrightness(uint8_t s),
       decreaseBrightness(uint8_t s),
+      driverModeCronixie(bool b),
+      setCronixieDigits(uint8_t* d),
       setIndividual(int i),
       setIndividual(int i, uint32_t col),
       setRange(int i, int i2),
@@ -265,6 +268,10 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       color_wheel(uint8_t),
       getColor(void);
 
+    double
+      getPowerEstimate(uint8_t leds, uint32_t c, uint8_t b),
+      getSafePowerMultiplier(double safeMilliAmps, uint8_t leds, uint32_t c, uint8_t b);
+
   private:
 
     void
@@ -274,6 +281,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       setPixelColor(uint16_t i, uint32_t c),
       setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b),
       setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
+      setPixelColorRaw(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
       dofade(void),
       strip_off(void),
       strip_off_respectLock(void),
@@ -311,8 +319,8 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       mode_chase_flash(void),
       mode_chase_flash_random(void),
       mode_chase_rainbow_white(void),
-      mode_chase_blackout(void),
-      mode_chase_blackout_rainbow(void),
+      mode_icu(void),
+      mode_traffic_light(void),
       mode_color_sweep_random(void),
       mode_running_color(void),
       mode_running_red_blue(void),
@@ -341,6 +349,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
     boolean
       _triggered,
       _fastStandard,
+      _cronixieMode,
       _cc_fs,
       _cc_fe,
       _running;
@@ -361,6 +370,9 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _cc_step,
       _brightness;
 
+    uint8_t*
+      _cronixieDigits;
+
     uint16_t
       _led_count;
 
@@ -374,6 +386,9 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _mode_color,
       _mode_color_sec,
       _mode_delay;
+
+    double
+      _cronixieSecMultiplier;
 
     unsigned long
       _mode_last_call_time;

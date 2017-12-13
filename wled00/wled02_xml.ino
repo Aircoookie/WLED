@@ -162,7 +162,7 @@ String getSettings()
     resp += "Not active";
   }
   resp += "\";";
-  resp += dg + "(\"msg\")[0]" + ih + "\"WLED 0.4 (build " + VERSION + ") OK\";";
+  resp += dg + "(\"msg\")[0]" + ih + "\"WLED 0.5dev (build " + VERSION + ") OK\";";
   
   return resp;
 }

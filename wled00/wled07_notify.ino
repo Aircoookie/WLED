@@ -9,7 +9,6 @@ void notify(uint8_t callMode)
   {
     case 1: if (!notifyDirect) return; break;
     case 2: if (!notifyButton) return; break;
-    case 3: return;
     case 4: if (!notifyDirect) return; break;
     case 6: if (!notifyDirect) return; break; //fx change
     default: return;
