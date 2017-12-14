@@ -25,7 +25,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712132
+#define VERSION 1712141
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
@@ -224,7 +224,6 @@ boolean auxActive, auxActiveBefore;
 boolean useGammaCorrectionBri = false;
 boolean useGammaCorrectionRGB = true;
 int arlsOffset = -22; //10: -22 assuming arls52
-boolean realtimeEnabled = true;
 
 //alexa
 Switch *alexa = NULL;
@@ -286,21 +285,25 @@ void setup() {
 }
 
 void loop() {
-    server.handleClient();
     handleNotifications();
     handleTransitions();
     handleNightlight();
     yield();
     handleButton();
     handleNetworkTime();
-    #ifdef USEOVERLAYS
-    handleOverlays();
-    #endif
     #ifdef CRONIXIE
     handleCronixie();
     #endif
     handleAlexa();
-    strip.service();
+    if (!arlsTimeout)
+    {
+      handleNetworkTime();
+    #ifdef USEOVERLAYS
+      handleOverlays();
+    #endif
+      strip.service();
+      server.handleClient();
+    }
 
     //DEBUG
     #ifdef DEBUG

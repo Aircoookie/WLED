@@ -78,7 +78,7 @@ void handleNotifications()
           bri = udpIn[2];
           colorUpdated(3);
         }
-      }  else if (udpIn[0] == 1 && realtimeEnabled) //warls
+      }  else if (udpIn[0] == 1) //warls
       {
         if (packetSize > 1) {
           if (udpIn[1] == 0)
@@ -97,11 +97,12 @@ void handleNotifications()
             if (udpIn[i] + arlsOffset < ledcount && udpIn[i] + arlsOffset >= 0)
             if (useGammaCorrectionRGB)
             {
-              strip.setIndividual(udpIn[i] + arlsOffset, ((uint32_t)gamma8[udpIn[i+1]] << 16) | ((uint32_t)gamma8[udpIn[i+2]] << 8) | gamma8[udpIn[i+3]]);
+              strip.setPixelColor(udpIn[i] + arlsOffset, gamma8[udpIn[i+1]], gamma8[udpIn[i+2]], gamma8[udpIn[i+3]]);
             } else {
-              strip.setIndividual(udpIn[i], ((uint32_t)udpIn[i+1] << 16) | ((uint32_t)udpIn[i+2] << 8) | udpIn[i+3]);
+              strip.setPixelColor(udpIn[i] + arlsOffset, udpIn[i+1], udpIn[i+2], udpIn[i+3]);
             }
           }
+          strip.show();
         }
       }
     }

@@ -210,6 +210,8 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
     }
 
     void
+      show(void),
+      setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b),
       init(void),
       service(void),
       start(void),
@@ -276,10 +278,8 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
 
     void
       begin(void),
-      show(void),
       clear(void),
       setPixelColor(uint16_t i, uint32_t c),
-      setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b),
       setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
       setPixelColorRaw(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
       dofade(void),
