@@ -128,8 +128,7 @@ String getSettings()
   resp += ds + "NSALX" + c + alexaNotify +";";
   resp += dg + "(\"times\")[0]" + ih + "\"" + getTimeString() + "\";";
   resp += ds + "OLDEF" + v + overlayDefault +";";
-  resp += ds + "WOFFS" + v + abs(arlsOffset) +";";
-  resp += ds + "WOFFN" + c + !arlsSign +";";
+  resp += ds + "WOFFS" + v + arlsOffset +";";
   resp += ds + "NOOTA" + c + otaLock +";";
   resp += ds + "NORAP" + c + recoveryAPDisabled +";";
   resp += dg + "(\"sip\")[0]" + ih + "\"";

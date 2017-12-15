@@ -25,42 +25,25 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712141
+#define VERSION 1712152
+
+//AP and OTA default passwords (change them!)
+String appass = "wled1234";
+String otapass = "wledota";
 
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
-//to toggle usb serial debug (un)comment following line
-//#define DEBUG
+//overlays, needed for clocks etc.
+//#define USEOVERLAYS
+
+//support for the CRONIXIE clock by Diamex
+#define CRONIXIE
 
 //spiffs FS only useful for debug
 //#define USEFS
 
-//overlays, needed for clocks etc.
-#define USEOVERLAYS
-
-//support for the CRONIXIE clock by Diamex
-//#define CRONIXIE
-
-#ifdef USEFS
-#include <FS.h>
-#endif
-
-#ifdef DEBUG
- #define DEBUG_PRINT(x)  Serial.print (x)
- #define DEBUG_PRINTLN(x) Serial.println (x)
- #define DEBUG_PRINTF(x) Serial.printf (x)
-#else
- #define DEBUG_PRINT(x)
- #define DEBUG_PRINTLN(x)
- #define DEBUG_PRINTF(x)
-#endif
-
-//eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 3
-//0 -> old version, default
-//1 -> 0.4p 1711272 and up
-//2 -> 0.4p 1711302 and up
-//3 -> 0.4  1712121 and up
+//to toggle usb serial debug (un)comment following line
+//#define DEBUG
 
 //Hardware-settings (only changeble via code)
 #define LEDCOUNT 255 //maximum, exact count set-able via settings
@@ -69,10 +52,6 @@ uint8_t buttonPin = 0; //needs pull-up
 uint8_t auxPin = 15; //use e.g. for external relay
 uint8_t auxDefaultState = 0; //0: input 1: high 2: low
 uint8_t auxTriggeredState = 0; //0: input 1: high 2: low
-
-//AP and OTA default passwords (change them!)
-String appass = "wled1234";
-String otapass = "wledota";
 
 TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};     //Central European Summer Time
 TimeChangeRule CET = {"CET ", Last, Sun, Oct, 3, 60};       //Central European Standard Time
@@ -83,14 +62,18 @@ time_t local;
 //cronixie defaults
 #ifdef CRONIXIE
 #undef LEDCOUNT
-#define LEDCOUNT 120
+#define LEDCOUNT 60
 #undef MAXDIRECT
 #define MAXDIRECT 48
 uint8_t ledcount = 6;
 String apssid = "CRONIXIE-AP";
 String alexaInvocationName = "Clock";
-long cronixieRefreshMs = 99;
+char cronixieDefault[] = "HHMMSS";
+long cronixieRefreshMs = 497;
 unsigned long cronixieRefreshedTime;
+byte dP[]{0,0,0,0,0,0};
+bool cronixieUseAMPM = false;
+boolean ntpEnabled = true;
 #endif
 
 //Default CONFIG
@@ -134,7 +117,9 @@ uint16_t udpPort = 21324;
 uint8_t effectDefault = 0;
 uint8_t effectSpeedDefault = 75;
 //NTP stuff
+#ifndef CRONIXIE
 boolean ntpEnabled = false;
+#endif
 IPAddress ntpServerIP;
 const char* ntpServerName = "pool.ntp.org";
 //custom chase
@@ -236,7 +221,25 @@ WiFiUDP ntpUdp;
 
 WS2812FX strip = WS2812FX(LEDCOUNT);
 
+//eeprom Version code, enables default settings instead of 0 init on update
+#define EEPVER 3
+//0 -> old version, default
+//1 -> 0.4p 1711272 and up
+//2 -> 0.4p 1711302 and up
+//3 -> 0.4  1712121 and up
+
+#ifdef DEBUG
+ #define DEBUG_PRINT(x)  Serial.print (x)
+ #define DEBUG_PRINTLN(x) Serial.println (x)
+ #define DEBUG_PRINTF(x) Serial.printf (x)
+#else
+ #define DEBUG_PRINT(x)
+ #define DEBUG_PRINTLN(x)
+ #define DEBUG_PRINTF(x)
+#endif
+
 #ifdef USEFS
+#include <FS.h>;
 File fsUploadFile;
 #endif
 

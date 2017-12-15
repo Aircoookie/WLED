@@ -168,6 +168,7 @@ void wledInit()
   strip.start();
   #ifdef CRONIXIE
   strip.driverModeCronixie(true);
+  setCronixie(cronixieDefault);
   #endif
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);

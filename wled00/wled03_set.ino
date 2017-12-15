@@ -229,13 +229,8 @@ void handleSettingsSet()
   if (server.hasArg("WOFFS"))
   {
     int i = server.arg("WOFFS").toInt();
-    if (i >= 0  && i <= 255) arlsOffset = i;
-    arlsSign = true;
-    if (server.hasArg("WOFFN"))
-    {
-      arlsSign = false;
-      arlsOffset = -arlsOffset;
-    }
+    if (i >= -255  && i <= 255) arlsOffset = i;
+    arlsSign = (i>=0)?true:false;
   }
   if (server.hasArg("OPASS"))
   {
@@ -524,7 +519,12 @@ boolean handleSet(String req)
       applyPreset(req.substring(pos + 3).toInt(), false, false, true);
       effectUpdated = true;
    }
-   
+   #ifdef CRONIXIE
+   pos = req.indexOf("NX="); //sets digits to code
+   if (pos > 0) {
+      setCronixie(req.substring(pos + 3, pos + 9).c_str());
+   }
+   #endif
    //internal call, does not send XML response
    pos = req.indexOf("IN");
    if (pos < 1)

@@ -1,3 +1,6 @@
+/*
+ * The Overlay function is over a year old, largely untested and not configurable during runtime. Consider it as deprecated for now, it might get either removed/simplified/reworked.
+ */
 #ifdef USEOVERLAYS
 void _nixieDisplay(int num[], int dur[], int pausedur[], int cnt)
 {

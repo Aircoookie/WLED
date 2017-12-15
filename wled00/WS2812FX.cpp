@@ -1946,23 +1946,24 @@ void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_
     #endif
   } else {
     if(i>6)return;
-    uint8_t o = 20*i;
+    uint8_t o = 10*i;
     for (int j=o; j< o+19; j++)
     {
       setPixelColorRaw(j,0,0,0,0);
     }
     switch(_cronixieDigits[i])
     {
-      case 0: setPixelColorRaw(o+5,r,g,b,w); setPixelColorRaw(o+15,r,g,b,w); break;
-      case 1: setPixelColorRaw(o+0,r,g,b,w); setPixelColorRaw(o+10,r,g,b,w); break;
-      case 2: setPixelColorRaw(o+6,r,g,b,w); setPixelColorRaw(o+16,r,g,b,w); break;
-      case 3: setPixelColorRaw(o+1,r,g,b,w); setPixelColorRaw(o+11,r,g,b,w); break;
-      case 4: setPixelColorRaw(o+7,r,g,b,w); setPixelColorRaw(o+17,r,g,b,w); break;
-      case 5: setPixelColorRaw(o+2,r,g,b,w); setPixelColorRaw(o+12,r,g,b,w); break;
-      case 6: setPixelColorRaw(o+8,r,g,b,w); setPixelColorRaw(o+18,r,g,b,w); break;
-      case 7: setPixelColorRaw(o+3,r,g,b,w); setPixelColorRaw(o+13,r,g,b,w); break;
-      case 8: setPixelColorRaw(o+9,r,g,b,w); setPixelColorRaw(o+19,r,g,b,w); break;
-      case 9: setPixelColorRaw(o+4,r,g,b,w); setPixelColorRaw(o+14,r,g,b,w); break;
+      case 0: setPixelColorRaw(o+5,r,g,b,w); break;
+      case 1: setPixelColorRaw(o+0,r,g,b,w); break;
+      case 2: setPixelColorRaw(o+6,r,g,b,w); break;
+      case 3: setPixelColorRaw(o+1,r,g,b,w); break;
+      case 4: setPixelColorRaw(o+7,r,g,b,w); break;
+      case 5: setPixelColorRaw(o+2,r,g,b,w); break;
+      case 6: setPixelColorRaw(o+8,r,g,b,w); break;
+      case 7: setPixelColorRaw(o+3,r,g,b,w); break;
+      case 8: setPixelColorRaw(o+9,r,g,b,w); break;
+      case 9: setPixelColorRaw(o+4,r,g,b,w); break;
+      default: break;
     }
   }
 }
@@ -1979,6 +1980,25 @@ void WS2812FX::setPixelColor(uint16_t i, uint32_t c)
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
+  if (_cronixieMode)
+  {
+    if(i>6)return 0;
+    uint8_t o = 10*i;
+    switch(_cronixieDigits[i])
+    {
+      case 0: i=o+5; break;
+      case 1: i=o+0; break;
+      case 2: i=o+6; break;
+      case 3: i=o+1; break;
+      case 4: i=o+7; break;
+      case 5: i=o+2; break;
+      case 6: i=o+8; break;
+      case 7: i=o+3; break;
+      case 8: i=o+9; break;
+      case 9: i=o+4; break;
+      default: return 0;
+    }
+  }
   #ifdef RGBW
   RgbwColor lColor = NeoPixelBrightnessBus::GetPixelColor(i);
   return lColor.W*16777216 + lColor.R*65536 + lColor.G*256 + lColor.B;
