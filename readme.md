@@ -19,7 +19,8 @@ Uses ESP Arduino core version 2.3.0 (latest as of December 2017).
 - Full OTA software update capability
 - Password protected OTA page for added security (OTA lock)
 - Alexa smart home device server
-- (unstable) NTP and experimental analog clock function
+- NTP and experimental analog clock function
+- Realtime UDP Packet Control (WARLS) possible
 - client HTML controlled
 - Edit page. Change html and other files via OTA. (needs to be enabled in source)
 
@@ -48,7 +49,7 @@ You will need to install the NeoPixelBus library by Makuna. All other dependenci
 
 7. Have fun with the software!
 
-### Advanced module control via HTTP requests API:
+### Advanced module control via HTTP requests API or UDP:
 
 See the [wiki](https://github.com/Aircoookie/WLED/wiki/HTTP-request-API)!
 
@@ -64,34 +65,6 @@ Timezone library by JChristensen
 arduino-esp8266-alexa-multiple-wemo-switch by kakopappa
 
 Uses Linearicons by Perxis! (link in settings page)
-
-#### This information will be moved to the wiki soon:
-
-Software update procedure:
-
-Method 1: Reflash the new update source via USB.
-
-Method 2: The software has an integrated OTA software update capability.
-First you have to enable it by typing in the correct OTA passphrase (default: "wledota") in the settings menu.
-Remove the tick in the checkbox "OTA locked". Then save settings and reboot the ESP.
-Now you can go to "<moduleip>/update" to update binary firmware.
-After you are done, it is recommended to lock the OTA function again.
-To do so, tick the checkbox again (you can change the passphrase by typing in a new one now). Reboot.
-If you try to access the update page now, you should see the message "OTA lock active".
-
-
-The software now supports audio-reactive-led-strip!
-
-1. Download [audio-reactive-led-strip](https://github.com/scottlawsonbc/audio-reactive-led-strip) and follow its installation instruction. Use python 3!
-2. Insert the following code in led.py after line 66:
-    m.append(1);
-    m.append(2);
-3. In config.py set your led amount, ESP IP and WLED UDP notifier port. For FPS, a setting between 15-30 is recommended.
-4. Run visualization.py! If you have a low amount of LEDS (e.g. 10) try lowering the sigma values in line 129-131.
-5. If you have multiple WLED devices, you can sync them all with music.
-Use the led count of your largest device and set the IP to X.X.X.255 (UDP broadcast).
-You can adjust the position of the amplitude with the WARLS offset setting.
-Note that there is currently an issue preventing you from accessing the control web page while the script is running. HTTP requests work.
 
 
 

@@ -82,26 +82,30 @@ void setCronixie(char const digits[])
 
   DEBUG_PRINT("cset ");
   DEBUG_PRINTLN(digits);
+
+  cronixieRefreshMs = 1997; //Only refresh every 2secs if no seconds are displayed
   
   for (int i = 0; i < 6; i++)
   {
     dP[i] = 10;
     switch (digits[i])
     {
+      case '_': dP[i] = 10;
+      case '-': dP[i] = 11;
       case 'r': dP[i] = random(1,7); break; //random btw. 1-6
       case 'R': dP[i] = random(0,10); break; //random btw. 0-9
       case 't': break; //Test upw.
       case 'T': break; //Test dnw.
-      case 'b': break; 
-      case 'B': break;
+      case 'b': dP[i] = 14 + getSameCodeLength('b',i,digits); i = i+dP[i]-14; break; 
+      case 'B': dP[i] = 14 + getSameCodeLength('B',i,digits); i = i+dP[i]-14; break;
       case 'h': dP[i] = 70 + getSameCodeLength('h',i,digits); i = i+dP[i]-70; break;
       case 'H': dP[i] = 20 + getSameCodeLength('H',i,digits); i = i+dP[i]-20; break;
       case 'A': dP[i] = 108; i++; break;
       case 'a': dP[i] = 58; i++; break;
       case 'm': dP[i] = 74 + getSameCodeLength('m',i,digits); i = i+dP[i]-74; break;
       case 'M': dP[i] = 24 + getSameCodeLength('M',i,digits); i = i+dP[i]-24; break;
-      case 's': dP[i] = 80 + getSameCodeLength('s',i,digits); i = i+dP[i]-80; break;break;
-      case 'S': dP[i] = 30 + getSameCodeLength('S',i,digits); i = i+dP[i]-30; break;
+      case 's': dP[i] = 80 + getSameCodeLength('s',i,digits); i = i+dP[i]-80; cronixieRefreshMs = 497; break; //refresh more often bc. of secs
+      case 'S': dP[i] = 30 + getSameCodeLength('S',i,digits); i = i+dP[i]-30; cronixieRefreshMs = 497; break;
       case 'Y': break;
       case 'y': break;
       case 'I': break; //Month. Don't ask me why month and minute both start with M.
@@ -131,6 +135,8 @@ void setCronixie(char const digits[])
     DEBUG_PRINT(" ");
   }
   DEBUG_PRINTLN((int)dP[5]);
+
+  cronixieRefreshedTime = 0; //refresh immediately
 }
 
 void handleCronixie()
@@ -140,8 +146,12 @@ void handleCronixie()
     cronixieRefreshedTime = millis();
     local = TZ.toLocal(now(), &tcr);
     uint8_t h = hour(local);
+    uint8_t h0 = h;
     uint8_t m = minute(local);
     uint8_t s = second(local);
+    uint8_t d = day(local);
+    uint8_t mi = month(local);
+    uint16_t y = year(local);
     if (cronixieUseAMPM)
     {
       if (h>12) h-=12;
@@ -159,6 +169,13 @@ void handleCronixie()
             case 21: _digitOut[i] = h/10; _digitOut[i+1] = h- _digitOut[i]*10; i++; break; //HH
             case 25: _digitOut[i] = m/10; _digitOut[i+1] = m- _digitOut[i]*10; i++; break; //MM
             case 31: _digitOut[i] = s/10; _digitOut[i+1] = s- _digitOut[i]*10; i++; break; //SS
+
+            case 20: _digitOut[i] = h- (h/10)*10; break; //H
+            case 24: _digitOut[i] = m/10; break; //M
+            case 30: _digitOut[i] = s/10; break; //S
+            case 16: _digitOut[i+2] = ((h0/3)&1)?1:0; i++; //BBB (BBBB NI)
+            case 15: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:0; i++; //BB
+            case 14: _digitOut[i] = (h0>11)?1:0; break; //B
           }
         } else
         {

@@ -240,6 +240,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       decreaseBrightness(uint8_t s),
       driverModeCronixie(bool b),
       setCronixieDigits(uint8_t* d),
+      setCronixieBacklight(bool b),
       setIndividual(int i),
       setIndividual(int i, uint32_t col),
       setRange(int i, int i2),
@@ -350,6 +351,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _triggered,
       _fastStandard,
       _cronixieMode,
+      _cronixieBacklightEnabled,
       _cc_fs,
       _cc_fe,
       _running;

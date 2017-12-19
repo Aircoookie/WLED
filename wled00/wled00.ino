@@ -25,7 +25,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712152
+#define VERSION 1712192
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -73,6 +73,7 @@ long cronixieRefreshMs = 497;
 unsigned long cronixieRefreshedTime;
 byte dP[]{0,0,0,0,0,0};
 bool cronixieUseAMPM = false;
+bool cronixieBacklight = true;
 boolean ntpEnabled = true;
 #endif
 
@@ -288,9 +289,9 @@ void setup() {
 }
 
 void loop() {
+    server.handleClient();
     handleNotifications();
     handleTransitions();
-    handleNightlight();
     yield();
     handleButton();
     handleNetworkTime();
@@ -298,14 +299,13 @@ void loop() {
     handleCronixie();
     #endif
     handleAlexa();
-    if (!arlsTimeout)
+    if (!arlsTimeout) //block stuff if WARLS is enabled
     {
-      handleNetworkTime();
+      handleNightlight();
     #ifdef USEOVERLAYS
       handleOverlays();
     #endif
       strip.service();
-      server.handleClient();
     }
 
     //DEBUG

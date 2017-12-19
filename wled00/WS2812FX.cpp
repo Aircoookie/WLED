@@ -127,7 +127,7 @@ void WS2812FX::setColor(uint32_t c) {
 void WS2812FX::setSecondaryColor(uint32_t c) {
   _color_sec = c;
   _mode_color_sec = _color;
-  if (_cronixieMode) _cronixieSecMultiplier = getSafePowerMultiplier(1000, 60, c, _brightness);
+  if (_cronixieMode) _cronixieSecMultiplier = getSafePowerMultiplier(900, 100, c, _brightness);
   setBrightness(_brightness);
 }
 
@@ -1823,6 +1823,11 @@ void WS2812FX::driverModeCronixie(bool b)
   _cronixieMode = b;
 }
 
+void WS2812FX::setCronixieBacklight(bool b)
+{
+  _cronixieBacklightEnabled = b;
+}
+
 void WS2812FX::setCronixieDigits(uint8_t d[])
 {
   for (int i = 0; i<6; i++)
@@ -1947,9 +1952,22 @@ void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_
   } else {
     if(i>6)return;
     uint8_t o = 10*i;
-    for (int j=o; j< o+19; j++)
+    if (_cronixieBacklightEnabled && _cronixieDigits[i] <11)
     {
-      setPixelColorRaw(j,0,0,0,0);
+      uint8_t rCorr = (int)(((double)((_color_sec>>16) & 0xFF))*_cronixieSecMultiplier);
+      uint8_t gCorr = (int)(((double)((_color_sec>>8) & 0xFF))*_cronixieSecMultiplier);
+      uint8_t bCorr = (int)(((double)((_color_sec) & 0xFF))*_cronixieSecMultiplier);
+      uint8_t wCorr = (int)(((double)((_color_sec>>24) & 0xFF))*_cronixieSecMultiplier);
+      for (int j=o; j< o+19; j++)
+      {
+        setPixelColorRaw(j,rCorr,gCorr,bCorr,wCorr);
+      }
+    } else
+    {
+      for (int j=o; j< o+19; j++)
+      {
+        setPixelColorRaw(j,0,0,0,0);
+      }
     }
     switch(_cronixieDigits[i])
     {

@@ -455,6 +455,29 @@ boolean handleSet(String req)
         nightlightStartTime = millis();
       }
    }
+   //set nightlight delay
+   pos = req.indexOf("ND=");
+   if (pos > 0) {
+      nightlightDelayMins = req.substring(pos + 3).toInt();
+      nightlightActive_old = false; //re-init
+   }
+   //set nightlight target brightness
+   pos = req.indexOf("NT=");
+   if (pos > 0) {
+      bri_nl = req.substring(pos + 3).toInt();
+      nightlightActive_old = false; //re-init
+   }
+   //toggle nightlight fade
+   if (req.indexOf("NF=") > 0)
+   {
+      if (req.indexOf("NF=0") > 0)
+      {
+        nightlightFade = false;
+      } else {
+        nightlightFade = true;
+      }
+      nightlightActive_old = false; //re-init
+   }
    //toggle general purpose output
    pos = req.indexOf("AX=");
    if (pos > 0) {
@@ -523,6 +546,20 @@ boolean handleSet(String req)
    pos = req.indexOf("NX="); //sets digits to code
    if (pos > 0) {
       setCronixie(req.substring(pos + 3, pos + 9).c_str());
+   }
+   pos = req.indexOf("NM="); //mode, NI
+   if (pos > 0) {
+      
+   }
+   if (req.indexOf("NB=") > 0) //sets backlight
+   {
+      cronixieBacklight = true;
+      if (req.indexOf("NB=0") > 0)
+      {
+        cronixieBacklight = false;
+      }
+      strip.setCronixieBacklight(cronixieBacklight);
+      cronixieRefreshedTime = 0;
    }
    #endif
    //internal call, does not send XML response

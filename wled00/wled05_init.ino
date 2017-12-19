@@ -71,23 +71,33 @@ void wledInit()
   //SERVER INIT
   //settings page
   server.on("/settings", HTTP_GET, [](){
-    String settingsBuffer = getSettings();
-    server.setContentLength(strlen_P(PAGE_settings0) + strlen_P(PAGE_settings1) + settingsBuffer.length());
-    server.send(200, "text/html", "");
-    server.sendContent_P(PAGE_settings0); 
-    server.sendContent(settingsBuffer); 
-    server.sendContent_P(PAGE_settings1);
+    if (!arlsTimeout) //do not serve while receiving realtime
+    {
+      String settingsBuffer = getSettings();
+      server.setContentLength(strlen_P(PAGE_settings0) + strlen_P(PAGE_settings1) + settingsBuffer.length());
+      server.send(200, "text/html", "");
+      server.sendContent_P(PAGE_settings0); 
+      server.sendContent(settingsBuffer); 
+      server.sendContent_P(PAGE_settings1);
+    } else {
+        server.send(200, "text/plain", "The settings are not available while receiving real-time data.");
+    }
   });
   server.on("/favicon.ico", HTTP_GET, [](){
     if(!handleFileRead("/favicon.ico")) server.send(200, "image/x-icon", favicon);
   });
   server.on("/", HTTP_GET, [](){
     if(!handleFileRead("/index.htm")) {
-      server.setContentLength(strlen_P(PAGE_index0) + strlen_P(PAGE_index1) + strlen_P(PAGE_index2));
-      server.send(200, "text/html", "");
-      server.sendContent_P(PAGE_index0); 
-      server.sendContent_P(PAGE_index1); 
-      server.sendContent_P(PAGE_index2); 
+      if (!arlsTimeout) //do not serve while receiving realtime
+      {
+        server.setContentLength(strlen_P(PAGE_index0) + strlen_P(PAGE_index1) + strlen_P(PAGE_index2));
+        server.send(200, "text/html", "");
+        server.sendContent_P(PAGE_index0); 
+        server.sendContent_P(PAGE_index1); 
+        server.sendContent_P(PAGE_index2);
+      } else {
+        server.send(200, "text/plain", "The WLED UI is not available while receiving real-time data.");
+      }
     }
   });
   server.on("/reset", HTTP_GET, [](){
@@ -168,6 +178,7 @@ void wledInit()
   strip.start();
   #ifdef CRONIXIE
   strip.driverModeCronixie(true);
+  strip.setCronixieBacklight(cronixieBacklight);
   setCronixie(cronixieDefault);
   #endif
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
