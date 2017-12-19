@@ -25,7 +25,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712192
+#define VERSION 1712200
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -34,10 +34,10 @@ String otapass = "wledota";
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
 //overlays, needed for clocks etc.
-//#define USEOVERLAYS
+#define USEOVERLAYS
 
 //support for the CRONIXIE clock by Diamex
-#define CRONIXIE
+//#define CRONIXIE
 
 //spiffs FS only useful for debug
 //#define USEFS
@@ -74,7 +74,7 @@ unsigned long cronixieRefreshedTime;
 byte dP[]{0,0,0,0,0,0};
 bool cronixieUseAMPM = false;
 bool cronixieBacklight = true;
-boolean ntpEnabled = true;
+bool ntpEnabled = true;
 #endif
 
 //Default CONFIG

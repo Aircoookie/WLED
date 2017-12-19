@@ -90,8 +90,8 @@ void setCronixie(char const digits[])
     dP[i] = 10;
     switch (digits[i])
     {
-      case '_': dP[i] = 10;
-      case '-': dP[i] = 11;
+      case '_': dP[i] = 10; break; 
+      case '-': dP[i] = 11; break; 
       case 'r': dP[i] = random(1,7); break; //random btw. 1-6
       case 'R': dP[i] = random(0,10); break; //random btw. 0-9
       case 't': break; //Test upw.
@@ -106,14 +106,14 @@ void setCronixie(char const digits[])
       case 'M': dP[i] = 24 + getSameCodeLength('M',i,digits); i = i+dP[i]-24; break;
       case 's': dP[i] = 80 + getSameCodeLength('s',i,digits); i = i+dP[i]-80; cronixieRefreshMs = 497; break; //refresh more often bc. of secs
       case 'S': dP[i] = 30 + getSameCodeLength('S',i,digits); i = i+dP[i]-30; cronixieRefreshMs = 497; break;
-      case 'Y': break;
-      case 'y': break;
-      case 'I': break; //Month. Don't ask me why month and minute both start with M.
-      case 'i': break;
+      case 'Y': dP[i] = 36 + getSameCodeLength('Y',i,digits); i = i+dP[i]-36; break; 
+      case 'y': dP[i] = 86 + getSameCodeLength('y',i,digits); i = i+dP[i]-86; break; 
+      case 'I': dP[i] = 39 + getSameCodeLength('I',i,digits); i = i+dP[i]-39; break;  //Month. Don't ask me why month and minute both start with M.
+      case 'i': dP[i] = 89 + getSameCodeLength('i',i,digits); i = i+dP[i]-89; break; 
       case 'W': break;
       case 'w': break;
-      case 'D': break;
-      case 'd': break;
+      case 'D': dP[i] = 43 + getSameCodeLength('D',i,digits); i = i+dP[i]-43; break;
+      case 'd': dP[i] = 93 + getSameCodeLength('d',i,digits); i = i+dP[i]-93; break;
       case '0': dP[i] = 0; break;
       case '1': dP[i] = 1; break;
       case '2': dP[i] = 2; break;
@@ -151,7 +151,11 @@ void handleCronixie()
     uint8_t s = second(local);
     uint8_t d = day(local);
     uint8_t mi = month(local);
-    uint16_t y = year(local);
+    int y = year(local);
+    uint8_t woy = 
+    //this has to be changed in time for 22nd century
+    y -= 2000; if (y<0) y = 99;
+
     if (cronixieUseAMPM)
     {
       if (h>12) h-=12;
@@ -173,6 +177,13 @@ void handleCronixie()
             case 20: _digitOut[i] = h- (h/10)*10; break; //H
             case 24: _digitOut[i] = m/10; break; //M
             case 30: _digitOut[i] = s/10; break; //S
+            
+            case 43: _digitOut[i] = weekday(local); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //D
+            case 44: _digitOut[i] = d/10; _digitOut[i+1] = d- _digitOut[i]*10; i++; break; //DD
+            case 40: _digitOut[i] = mi/10; _digitOut[i+1] = mi- _digitOut[i]*10; i++; break; //II
+            case 37: _digitOut[i] = y/10; _digitOut[i+1] = y- _digitOut[i]*10; i++; break; //YY
+            case 39: _digitOut[i] = 2; _digitOut[i+1] = 0; _digitOut[i+2] = y/10; _digitOut[i+3] = y- _digitOut[i+2]*10; i+=3; break; //YYYY
+            
             case 16: _digitOut[i+2] = ((h0/3)&1)?1:0; i++; //BBB (BBBB NI)
             case 15: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:0; i++; //BB
             case 14: _digitOut[i] = (h0>11)?1:0; break; //B
@@ -184,6 +195,15 @@ void handleCronixie()
             case 71: _digitOut[i] = h/10; _digitOut[i+1] = h- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //hh
             case 75: _digitOut[i] = m/10; _digitOut[i+1] = m- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //mm
             case 81: _digitOut[i] = s/10; _digitOut[i+1] = s- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //ss
+            case 66: _digitOut[i+2] = ((h0/3)&1)?1:10; i++; //bbb (bbbb NI)
+            case 65: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:10; i++; //bb
+            case 64: _digitOut[i] = (h0>11)?1:10; break; //b
+
+            case 93: _digitOut[i] = weekday(local); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //d
+            case 94: _digitOut[i] = d/10; _digitOut[i+1] = d- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //dd
+            case 90: _digitOut[i] = mi/10; _digitOut[i+1] = mi- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //ii
+            case 87: _digitOut[i] = y/10; _digitOut[i+1] = y- _digitOut[i]*10; i++; break; //yy
+            case 89: _digitOut[i] = 2; _digitOut[i+1] = 0; _digitOut[i+2] = y/10; _digitOut[i+3] = y- _digitOut[i+2]*10; i+=3; break; //yyyy
           }
         }
       }
