@@ -22,7 +22,7 @@ void wledInit()
   #endif
   
   DEBUG_PRINTLN("Init EEPROM");
-  EEPROM.begin(1024);
+  EEPROM.begin(EEPSIZE);
   loadSettingsFromEEPROM(true);
   DEBUG_PRINT("CC: SSID: ");
   DEBUG_PRINT(clientssid);

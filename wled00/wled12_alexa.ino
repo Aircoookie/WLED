@@ -1,5 +1,6 @@
 void alexaOn();
 void alexaOff();
+void alexaDim();
 
 void alexaInit()
 {
@@ -22,23 +23,30 @@ void handleAlexa()
 
 void alexaOn()
 {
-  if (alexaNotify)
+  if (alexaOnMacro == 255)
   {
-    handleSet("win&T=1&IN");
+    handleSet((alexaNotify)?"win&T=1&IN":"win&T=1&NN&IN");
   } else
   {
-    handleSet("win&T=1&NN&IN");
+    applyMacro(alexaOnMacro);
   }
 }
 
 void alexaOff()
 {
-  if (alexaNotify)
+  if (alexaOffMacro == 255)
   {
-    handleSet("win&T=0&IN");
+    handleSet((alexaNotify)?"win&T=0&IN":"win&T=0&NN&IN");
   } else
   {
-    handleSet("win&T=0&NN&IN");
+    applyMacro(alexaOffMacro);
   }
+}
+
+void alexaDim(uint8_t bri)
+{
+  String ct = (alexaNotify)?"win&IN&A=":"win&NN&IN&A=";
+  ct = ct + bri;
+  handleSet(ct);
 }
 

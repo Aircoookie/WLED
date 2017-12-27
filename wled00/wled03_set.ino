@@ -262,6 +262,25 @@ boolean handleSet(String req)
         return false;
    }
    int pos = 0;
+   
+   //save macro, requires &MS=<slot>,"<macro>" format
+   pos = req.indexOf("&MS=");
+   if (pos > 0) {
+      int i = req.substring(pos + 4).toInt();
+      pos = req.substring(pos + 4).indexOf('"') +1;
+      if (pos > 0) { 
+        int en = pos+ req.substring(pos).indexOf('"');
+        String mc = req.substring(pos);
+        if (en > 0) mc = req.substring(pos, en);
+        saveMacro(i, mc); 
+      }
+      
+      pos = req.indexOf("IN");
+      if (pos < 1) XML_response();
+      return true;
+      //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
+   }
+   
    //set brigthness
    pos = req.indexOf("&A=");
    if (pos > 0) {
@@ -425,6 +444,11 @@ boolean handleSet(String req)
         }
       }
    }
+   //apply macro
+   pos = req.indexOf("&M=");
+   if (pos > 0) {
+      applyMacro(req.substring(pos + 3).toInt());
+   }
    //toggle send UDP direct notifications
    if (req.indexOf("SN=") > 0)
    {
@@ -507,6 +531,12 @@ boolean handleSet(String req)
    if (pos > 0) {
       setTime(req.substring(pos+3).toInt());
    }
+   //set countdown goal (unix timestamp)
+   pos = req.indexOf("CT=");
+   if (pos > 0) {
+      countdownTime = req.substring(pos+3).toInt();
+      countdownOverTriggered = false;
+   }
    //set custom chase data
    bool _cc_updated = false;
    pos = req.indexOf("C0="); if (pos > 0) {cc_start =  (req.substring(pos + 3).toInt()); _cc_updated = true;}
@@ -547,9 +577,13 @@ boolean handleSet(String req)
    if (pos > 0) {
       setCronixie(req.substring(pos + 3, pos + 9).c_str());
    }
-   pos = req.indexOf("NM="); //mode, NI
+   pos = req.indexOf("NM="); //mode, 1 countdown
    if (pos > 0) {
-      
+      cronixieCountdown = true;
+      if (req.indexOf("NM=0") > 0)
+      {
+        cronixieCountdown = false;
+      }
    }
    if (req.indexOf("NB=") > 0) //sets backlight
    {
@@ -564,10 +598,7 @@ boolean handleSet(String req)
    #endif
    //internal call, does not send XML response
    pos = req.indexOf("IN");
-   if (pos < 1)
-   {
-      XML_response();
-   }
+   if (pos < 1) XML_response();
    //do not send UDP notifications this time
    pos = req.indexOf("NN");
    if (pos > 0)

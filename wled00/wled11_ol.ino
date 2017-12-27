@@ -131,17 +131,23 @@ void _overlayAnalogClock()
 {
   int overlaySize = overlayMax - overlayMin +1;
   strip.unlockAll();
+  if (overlayDimBg)
+  {
+    uint32_t ct = (white>>1)*16777216 + (col[0]>>1)*65536 + (col[1]>>1)*256 + (col[2]>>1);
+    if (useGammaCorrectionRGB) ct = (gamma8[white]>>1)*16777216 + (gamma8[col[0]]>>1)*65536 + (gamma8[col[1]]>>1)*256 + (gamma8[col[2]]>>1);
+    strip.setRange(overlayMin, overlayMax, ct);
+  }
   local = TZ.toLocal(now(), &tcr);
   double hourP = ((double)(hour(local)%12))/12;
   double minuteP = ((double)minute(local))/60;
   hourP = hourP + minuteP/12;
   double secondP = ((double)second(local))/60;
-  int hourPixel = floor(overlayMin + analogClock12pixel + overlaySize*hourP);
-  if (hourPixel > overlayMax) hourPixel = hourPixel - overlayMax;
-  int minutePixel = floor(overlayMin + analogClock12pixel + overlaySize*minuteP);
-  if (minutePixel > overlayMax) minutePixel = minutePixel - overlayMax; 
-  int secondPixel = floor(overlayMin + analogClock12pixel + overlaySize*secondP);
-  if (secondPixel > overlayMax) secondPixel = secondPixel - overlayMax;
+  int hourPixel = floor(analogClock12pixel + overlaySize*hourP);
+  if (hourPixel > overlayMax) hourPixel = overlayMin -1 + hourPixel - overlayMax;
+  int minutePixel = floor(analogClock12pixel + overlaySize*minuteP);
+  if (minutePixel > overlayMax) minutePixel = overlayMin -1 + minutePixel - overlayMax; 
+  int secondPixel = floor(analogClock12pixel + overlaySize*secondP);
+  if (secondPixel > overlayMax) secondPixel = overlayMin -1 + secondPixel - overlayMax;
   if (analogClock5MinuteMarks)
   {
     int pix;
@@ -154,13 +160,13 @@ void _overlayAnalogClock()
   }
   if (analogClockSecondsTrail)
   {
-    strip.setRange(analogClock12pixel, secondPixel, 0x0000FF);
+    strip.setRange(analogClock12pixel, secondPixel, 0x00FF00);
   } else
   {
-    strip.setIndividual(secondPixel, 0x0000FF);
+    strip.setIndividual(secondPixel, 0x00FF00);
   }
-  strip.setIndividual(minutePixel, 0x00FF00);
-  strip.setIndividual(hourPixel, 0xFF0000);
+  strip.setIndividual(minutePixel, 0xEEEEEE);
+  strip.setIndividual(hourPixel, 0x0000FF);
   overlayRefreshMs = 998;
 }
 

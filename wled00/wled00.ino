@@ -25,7 +25,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712200
+#define VERSION 1712272
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -34,10 +34,10 @@ String otapass = "wledota";
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
 //overlays, needed for clocks etc.
-#define USEOVERLAYS
+//#define USEOVERLAYS
 
-//support for the CRONIXIE clock by Diamex
-//#define CRONIXIE
+//support for the CRONIXIE clock by Diamex (disable overlays!)
+#define CRONIXIE
 
 //spiffs FS only useful for debug
 //#define USEFS
@@ -74,6 +74,7 @@ unsigned long cronixieRefreshedTime;
 byte dP[]{0,0,0,0,0,0};
 bool cronixieUseAMPM = false;
 bool cronixieBacklight = true;
+bool cronixieCountdown = false;
 bool ntpEnabled = true;
 #endif
 
@@ -109,7 +110,7 @@ uint16_t transitionDelay = 1200;
 boolean otaLock = true;
 boolean onlyAP = false;
 boolean buttonEnabled = true;
-boolean notifyDirect = true, notifyButton = true, notifyDirectDefault = true;
+boolean notifyDirect = true, notifyButton = true, notifyDirectDefault = true, alexaNotify = false, macroNotify = false;
 boolean receiveNotifications = true, receiveNotificationsDefault = true;
 uint8_t bri_n = 100;
 uint8_t nightlightDelayMins = 60;
@@ -137,7 +138,10 @@ boolean alexaEnabled = true;
 #ifndef CRONIXIE
 String alexaInvocationName = "Light";
 #endif
-boolean alexaNotify = false;
+uint8_t alexaOnMacro = 255, alexaOffMacro = 255;
+uint8_t buttonMacro = 255, countdownMacro = 255;
+
+unsigned long countdownTime = 1514764800L;
 
 double transitionResolution = 0.011;
 
@@ -183,8 +187,9 @@ uint8_t overlayCurrent = 0;
 #ifdef USEOVERLAYS
 int overlayMin = 0, overlayMax = 79;
 int analogClock12pixel = 25;
+bool overlayDimBg = true;
 boolean analogClockSecondsTrail = false;
-boolean analogClock5MinuteMarks = true;
+boolean analogClock5MinuteMarks = false;
 boolean nixieClockDisplaySeconds = false;
 boolean nixieClock12HourFormat = false;
 boolean overlayReverse = true;
@@ -196,8 +201,8 @@ int overlayDur[6];
 int overlayPauseDur[6];
 int nixieClockI = -1;
 boolean nixiePause;
-unsigned long countdownTime = 1514764800L;
 #endif
+bool countdownOverTriggered = true;
 
 int arlsTimeoutMillis = 2500;
 boolean arlsTimeout = false;

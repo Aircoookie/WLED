@@ -145,6 +145,16 @@ void handleCronixie()
   {
     cronixieRefreshedTime = millis();
     local = TZ.toLocal(now(), &tcr);
+    if (cronixieCountdown)
+    {
+      long diff = countdownTime - now();
+      local = abs(diff);
+      if (diff <0 && !countdownOverTriggered)
+      {
+        applyMacro(countdownMacro);
+        countdownOverTriggered = true;
+      }
+    }
     uint8_t h = hour(local);
     uint8_t h0 = h;
     uint8_t m = minute(local);
@@ -152,9 +162,8 @@ void handleCronixie()
     uint8_t d = day(local);
     uint8_t mi = month(local);
     int y = year(local);
-    uint8_t woy = 
     //this has to be changed in time for 22nd century
-    y -= 2000; if (y<0) y = 99;
+    y -= 2000; if (y<0) y += 30; //makes countdown work
 
     if (cronixieUseAMPM)
     {

@@ -2,9 +2,11 @@
  * Methods to handle saving and loading to non-volatile memory
  */
 
+#define EEPSIZE 2048
+
 void clearEEPROM()
 {
-  for (int i = 0; i < 1024; i++)
+  for (int i = 0; i < EEPSIZE; i++)
   {
     EEPROM.write(i, 0);
   }
@@ -261,6 +263,9 @@ void loadSettingsFromEEPROM(bool first)
 
   //favorite setting memory (25 slots/ each 20byte)
   //400 - 899 reserved
+
+  //custom macro memory (16 slots/ each 64byte)
+  //1024-2047 reserved
   
   useHSB = useHSBDefault;
 
@@ -330,6 +335,38 @@ void savePreset(uint8_t index)
   if (!cc_fromEnd) m = 0;
   EEPROM.write(i+14, m);
   EEPROM.write(i+15, cc_step);
+  EEPROM.commit();
+}
+
+void applyMacro(uint8_t index)
+{
+  if (index > 15) return;
+  String mc="win&";
+  for (int i = 1024+64*index; i < 1088+64*index; i++)
+  {
+    if (EEPROM.read(i) == 0) break;
+    mc += char(EEPROM.read(i));
+  }
+  mc += "&IN"; //internal, no XML response
+  if (!macroNotify) mc += "&NN";
+  String forbidden = "&M="; //dont apply if called by the macro itself to prevent loop
+  /*
+   * NOTE: loop is still possible if you call a different macro from a macro, which then calls the first macro again. 
+   * To prevent that, but also disable calling macros within macros, comment the next line out.
+   */
+  forbidden = forbidden + index;
+  if (mc.indexOf(forbidden) >= 0) return;
+  handleSet(mc);
+}
+
+void saveMacro(uint8_t index, String mc)
+{
+  if (index > 15) return;
+  int s = 1024+index*64;
+  for (int i = s; i < s+64; i++)
+  {
+    EEPROM.write(i, mc.charAt(i-s));
+  }
   EEPROM.commit();
 }
 
