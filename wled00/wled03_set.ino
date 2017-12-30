@@ -262,14 +262,16 @@ boolean handleSet(String req)
         return false;
    }
    int pos = 0;
+   DEBUG_PRINT("API req: ");
+   DEBUG_PRINTLN(req);
    
-   //save macro, requires &MS=<slot>,"<macro>" format
+   //save macro, requires &MS=<slot>(<macro>) format
    pos = req.indexOf("&MS=");
    if (pos > 0) {
       int i = req.substring(pos + 4).toInt();
-      pos = req.substring(pos + 4).indexOf('"') +1;
+      pos = req.indexOf('(') +1;
       if (pos > 0) { 
-        int en = pos+ req.substring(pos).indexOf('"');
+        int en = req.indexOf(')');
         String mc = req.substring(pos);
         if (en > 0) mc = req.substring(pos, en);
         saveMacro(i, mc); 

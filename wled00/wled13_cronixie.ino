@@ -147,7 +147,7 @@ void handleCronixie()
     local = TZ.toLocal(now(), &tcr);
     if (cronixieCountdown)
     {
-      long diff = countdownTime - now();
+      long diff = countdownTime - local;
       local = abs(diff);
       if (diff <0 && !countdownOverTriggered)
       {
@@ -165,7 +165,7 @@ void handleCronixie()
     //this has to be changed in time for 22nd century
     y -= 2000; if (y<0) y += 30; //makes countdown work
 
-    if (cronixieUseAMPM)
+    if (cronixieUseAMPM && !cronixieCountdown)
     {
       if (h>12) h-=12;
       else if (h==0) h+=12;
@@ -217,13 +217,6 @@ void handleCronixie()
         }
       }
     }
-    DEBUG_PRINT("out ");
-    for (int i = 0; i < 5; i++)
-    {
-      DEBUG_PRINT((int)_digitOut[i]);
-      DEBUG_PRINT(" ");
-    }
-    DEBUG_PRINTLN((int)_digitOut[5]);
     strip.setCronixieDigits(_digitOut);
     //strip.trigger(); //this has a drawback, no effects slower than RefreshMs. advantage: Quick update, not dependant on effect time
   }

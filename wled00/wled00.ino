@@ -25,7 +25,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712272
+#define VERSION 1712300
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
