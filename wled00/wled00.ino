@@ -17,15 +17,12 @@
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
-#include "src/dependencies/alexa-multiple/switch.h"
-#include "src/dependencies/alexa-multiple/UpnpBroadcastResponder.h"
-#include "src/dependencies/alexa-multiple/CallbackFunction.h"
 #include "htmls00.h"
 #include "htmls01.h"
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1712300
+#define VERSION 1712310
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -34,10 +31,10 @@ String otapass = "wledota";
 //If you have an RGBW strip, uncomment first line in WS2812FX.h!
 
 //overlays, needed for clocks etc.
-//#define USEOVERLAYS
+#define USEOVERLAYS
 
 //support for the CRONIXIE clock by Diamex (disable overlays!)
-#define CRONIXIE
+//#define CRONIXIE
 
 //spiffs FS only useful for debug
 //#define USEFS
@@ -217,8 +214,12 @@ boolean useGammaCorrectionRGB = true;
 int arlsOffset = -22; //10: -22 assuming arls52
 
 //alexa
-Switch *alexa = NULL;
-UpnpBroadcastResponder upnpBroadcastResponder;
+WiFiUDP UDP;
+IPAddress ipMulti(239, 255, 255, 250);
+unsigned int portMulti = 1900;
+unsigned int localPort = 1900;
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
+String escapedMac;
 
 ESP8266WebServer server(80);
 ESP8266HTTPUpdateServer httpUpdater;

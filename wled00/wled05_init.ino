@@ -160,6 +160,7 @@ void wledInit()
       server.send(404, "text/plain", "FileNotFound");
     }
   });
+  alexaInit();
 
   server.begin();
   DEBUG_PRINTLN("HTTP server started");

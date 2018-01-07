@@ -46,7 +46,7 @@ void handleNotifications()
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP())
     {
       notifierUdp.read(udpIn, packetSize);
-      if (udpIn[0] == 0) //wled notifier
+      if (udpIn[0] == 0 && !arlsTimeout) //wled notifier, block if realtime packets active
       {
         col[0] = udpIn[3];
         col[1] = udpIn[4];
