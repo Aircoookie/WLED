@@ -135,7 +135,13 @@ void wledInit()
     server.on("/down", HTTP_GET, down);
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
     //init ota page
-    httpUpdater.setup(&server);
+    #ifndef ARDUINO_ARCH_ESP32
+    httpUpdater.setup(&server); //only for ESP8266
+    #else
+    server.on("/update", HTTP_GET, [](){
+    server.send(200, "text/plain", "OTA update is not supported on ESP32 at this time.");
+    });
+    #endif
   } else
   {
     server.on("/edit", HTTP_GET, [](){

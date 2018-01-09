@@ -2035,7 +2035,14 @@ void WS2812FX::setBrightness(uint8_t b)
 
 void WS2812FX::show()
 {
+  #ifdef ARDUINO_ARCH_ESP32
+  portDISABLE_INTERRUPTS();
   NeoPixelBrightnessBus::Show();
+  delay(1);
+  portENABLE_INTERRUPTS();
+  #else
+  NeoPixelBrightnessBus::Show();
+  #endif
 }
 
 void WS2812FX::clear()

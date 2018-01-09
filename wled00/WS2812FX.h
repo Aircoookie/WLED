@@ -1,4 +1,5 @@
 //#define RGBW
+#define PIN 2 //strip pin. Only for ESP32
 
 /*
   WS2812FX.h - Library for WS2812 LED effects.
@@ -110,6 +111,21 @@
 #define FX_MODE_CC_BLINK                56
 #define FX_MODE_CC_RANDOM               57
 
+#ifdef ARDUINO_ARCH_ESP32
+#ifdef RGBW
+class WS2812FX : public NeoPixelBrightnessBus<NeoGrbwFeature, Neo800KbpsMethod> {
+#else
+class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, Neo800KbpsMethod> {
+#endif
+  typedef void (WS2812FX::*mode_ptr)(void);
+
+  public:
+#ifdef RGBW
+    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbwFeature, Neo800KbpsMethod>(n, PIN) {
+#else
+    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbFeature, Neo800KbpsMethod>(n, PIN) {
+#endif
+#else //ESP8266
 #ifdef RGBW
 class WS2812FX : public NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Uart800KbpsMethod> {
 #else
@@ -122,6 +138,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
     WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Uart800KbpsMethod>(n) {
 #else
     WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod>(n) {
+#endif
 #endif
       _mode[FX_MODE_STATIC]                = &WS2812FX::mode_static;
       _mode[FX_MODE_BLINK]                 = &WS2812FX::mode_blink;

@@ -5,7 +5,7 @@
  * https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch
  * https://github.com/probonopd/ESP8266HueEmulator
  */
-
+#ifndef TEST//ARDUINO_ARCH_ESP32
 void alexaInit()
 {
   if (alexaEnabled && WiFi.status() == WL_CONNECTED)
@@ -25,7 +25,7 @@ void handleAlexa()
     if(udpConnected){    
     // if there’s data available, read a packet
     int packetSize = UDP.parsePacket();
-      if(packetSize) {
+      if(packetSize>0) {
         IPAddress remote = UDP.remoteIP();
         int len = UDP.read(packetBuffer, 255);
         if (len > 0) {
@@ -120,7 +120,11 @@ void respondToSearch() {
       "\r\n";
 
     UDP.beginPacket(UDP.remoteIP(), UDP.remotePort());
+    #ifdef ARDUINO_ARCH_ESP32
+    UDP.write((uint8_t*)response.c_str(), response.length());
+    #else
     UDP.write(response.c_str());
+    #endif
     UDP.endPacket();                    
 
      DEBUG_PRINTLN("Response sent!");
@@ -240,18 +244,10 @@ boolean handleAlexaApiCall(String req, String body) //basic implementation of Ph
 
     return true;
   }
-  /*if (req.indexOf("lights/2") > 0) //client wants pointless light info
-  {
-    DEBUG_PRINTLN("l2");
-    server.send(200, "application/json", "{\"manufacturername\":\"OpenSource\",\"modelid\":\"LST001\",\"name\":\""+ alexaInvocationName +"\",\"state\":{\"on\":"+ boolString(bri) +",\"hue\":0,\"bri\":"+ briForHue(bri) +",\"sat\":0,\"xy\":[0.00000,0.00000],\"ct\":500,\"alert\":\"none\",\"effect\":\"none\",\"colormode\":\"hs\",\"reachable\":true},\"swversion\":\"0.1\",\"type\":\"Extended color light\",\"uniqueid\":\"3\"}");
-
-    return true;
-  }*/
   if (req.indexOf("lights") > 0) //client wants all lights
   {
     DEBUG_PRINTLN("lAll");
-    server.send(200, "application/json", "{\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-2\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}}}"); //,\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-2\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}}}");
-
+    server.send(200, "application/json", "{\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-2\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}}}");
     return true;
   }
 
@@ -265,8 +261,13 @@ boolean connectUDP(){
   
   DEBUG_PRINTLN("");
   DEBUG_PRINTLN("Con UDP");
-  
-  if(UDP.beginMulticast(WiFi.localIP(), ipMulti, portMulti)) {
+
+  #ifdef ARDUINO_ARCH_ESP32
+  if(UDP.beginMulticast(ipMulti, portMulti))
+  #else
+  if(UDP.beginMulticast(WiFi.localIP(), ipMulti, portMulti))
+  #endif
+  {
     DEBUG_PRINTLN("Con success");
     state = true;
   }
@@ -276,4 +277,8 @@ boolean connectUDP(){
   
   return state;
 }
-
+#else
+void handleAlexa(){};
+bool handleAlexaApiCall(String u, String b){return false;};
+void alexaInit(){};
+#endif

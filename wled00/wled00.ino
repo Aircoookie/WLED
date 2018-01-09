@@ -8,10 +8,16 @@
  */
 
 #include <Arduino.h>
+#ifdef ARDUINO_ARCH_ESP32
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#include "src/dependencies/webserver/WebServer.h"
+#else
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
-#include <ESP8266mDNS.h>
+#endif
 #include <EEPROM.h>
 #include <WiFiUDP.h>
 #include "src/dependencies/time/Time.h"
@@ -22,7 +28,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1801092
+#define VERSION 1801095
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -218,11 +224,15 @@ WiFiUDP UDP;
 IPAddress ipMulti(239, 255, 255, 250);
 unsigned int portMulti = 1900;
 unsigned int localPort = 1900;
-char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
+char packetBuffer[255];
 String escapedMac;
 
+#ifdef ARDUINO_ARCH_ESP32
+WebServer server(80);
+#else
 ESP8266WebServer server(80);
-ESP8266HTTPUpdateServer httpUpdater;
+ESP8266HTTPUpdateServer httpUpdater; //only for ESP8266
+#endif
 WiFiUDP notifierUdp;
 WiFiUDP ntpUdp;
 
@@ -287,7 +297,7 @@ void reset()
   bri_t = 0;
   setAllLeds();
   DEBUG_PRINTLN("MODULE RESET");
-  ESP.reset();
+  ESP.restart();
 }
 
 void setup() {
