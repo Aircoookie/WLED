@@ -164,14 +164,13 @@ void wledInit()
       server.send(404, "text/plain", "FileNotFound");
     }
   });
-  alexaInit();
+  //init Alexa hue emulation
+  if (alexaEnabled) alexaInit();
 
   server.begin();
   DEBUG_PRINTLN("HTTP server started");
   // Add service to MDNS
   MDNS.addService("http", "tcp", 80);
-  //Init alexa service
-  alexaInit();
   
   // Initialize NeoPixel Strip
   strip.init();

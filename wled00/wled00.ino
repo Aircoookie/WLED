@@ -22,7 +22,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1801091
+#define VERSION 1801092
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -40,7 +40,7 @@ String otapass = "wledota";
 //#define USEFS
 
 //to toggle usb serial debug (un)comment following line
-#define DEBUG
+//#define DEBUG
 
 //Hardware-settings (only changeble via code)
 #define LEDCOUNT 255 //maximum, exact count set-able via settings

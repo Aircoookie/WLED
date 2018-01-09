@@ -1,6 +1,10 @@
-void alexaOn();
-void alexaOff();
-void alexaDim();
+/*
+ * Alexa Voice On/Off/Brightness Control. Emulates a Philips Hue bridge to Alexa.
+ * 
+ * This was put together from these two excellent projects:
+ * https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch
+ * https://github.com/probonopd/ESP8266HueEmulator
+ */
 
 void alexaInit()
 {
@@ -31,7 +35,7 @@ void handleAlexa()
         
         if(request.indexOf("M-SEARCH") >= 0) {
           if(request.indexOf("upnp:rootdevice") > 0) {
-              Serial.println("Responding search req...");
+              DEBUG_PRINTLN("Responding search req...");
               respondToSearch();
           }
         }
@@ -54,8 +58,8 @@ void alexaOn()
 
   server.send(200, "text/xml", body.c_str());
         
-  Serial.print("Sending :");
-  Serial.println(body);
+  DEBUG_PRINT("Sending :");
+  DEBUG_PRINTLN(body);
 }
 
 void alexaOff()
@@ -72,8 +76,8 @@ void alexaOff()
 
   server.send(200, "application/json", body.c_str());
         
-  Serial.print("Sending:");
-  Serial.println(body);
+  DEBUG_PRINT("Sending:");
+  DEBUG_PRINTLN(body);
 }
 
 void alexaDim(uint8_t briL)
@@ -94,11 +98,11 @@ void prepareIds() {
 }
 
 void respondToSearch() {
-    Serial.println("");
-    Serial.print("Send resp to ");
-    Serial.println(UDP.remoteIP());
-    Serial.print("Port : ");
-    Serial.println(UDP.remotePort());
+    DEBUG_PRINTLN("");
+    DEBUG_PRINT("Send resp to ");
+    DEBUG_PRINTLN(UDP.remoteIP());
+    DEBUG_PRINT("Port : ");
+    DEBUG_PRINTLN(UDP.remotePort());
 
     IPAddress localIP = WiFi.localIP();
     char s[16];
@@ -119,13 +123,13 @@ void respondToSearch() {
     UDP.write(response.c_str());
     UDP.endPacket();                    
 
-     Serial.println("Response sent!");
+     DEBUG_PRINTLN("Response sent!");
 }
 
 void alexaInitPages() {
     
     server.on("/description.xml", HTTP_GET, [](){
-      Serial.println(" # Responding to description.xml ... #\n");
+      DEBUG_PRINTLN(" # Responding to description.xml ... #\n");
 
       IPAddress localIP = WiFi.localIP();
       char s[16];
@@ -168,25 +172,25 @@ void alexaInitPages() {
             
         server.send(200, "text/xml", setup_xml.c_str());
         
-        Serial.print("Sending :");
-        Serial.println(setup_xml);
+        DEBUG_PRINT("Sending :");
+        DEBUG_PRINTLN(setup_xml);
     });
 
     // openHAB support
     server.on("/on.html", HTTP_GET, [](){
-         Serial.println("on req");
+         DEBUG_PRINTLN("on req");
          server.send(200, "text/plain", "turned on");
          alexaOn();
        });
  
      server.on("/off.html", HTTP_GET, [](){
-        Serial.println("off req");
+        DEBUG_PRINTLN("off req");
         server.send(200, "text/plain", "turned off");
         alexaOff();
        });
  
       server.on("/status.html", HTTP_GET, [](){
-        Serial.println("Got status request");
+        DEBUG_PRINTLN("Got status request");
  
         String statrespone = "0"; 
         if (bri > 0) {
@@ -236,17 +240,17 @@ boolean handleAlexaApiCall(String req, String body) //basic implementation of Ph
 
     return true;
   }
-  if (req.indexOf("lights/2") > 0) //client wants pointless light info
+  /*if (req.indexOf("lights/2") > 0) //client wants pointless light info
   {
     DEBUG_PRINTLN("l2");
     server.send(200, "application/json", "{\"manufacturername\":\"OpenSource\",\"modelid\":\"LST001\",\"name\":\""+ alexaInvocationName +"\",\"state\":{\"on\":"+ boolString(bri) +",\"hue\":0,\"bri\":"+ briForHue(bri) +",\"sat\":0,\"xy\":[0.00000,0.00000],\"ct\":500,\"alert\":\"none\",\"effect\":\"none\",\"colormode\":\"hs\",\"reachable\":true},\"swversion\":\"0.1\",\"type\":\"Extended color light\",\"uniqueid\":\"3\"}");
 
     return true;
-  }
+  }*/
   if (req.indexOf("lights") > 0) //client wants all lights
   {
     DEBUG_PRINTLN("lAll");
-    server.send(200, "application/json", "{\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-1\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}},\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-2\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}}}");
+    server.send(200, "application/json", "{\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-2\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}}}"); //,\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-2\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}}}");
 
     return true;
   }
@@ -259,15 +263,15 @@ boolean handleAlexaApiCall(String req, String body) //basic implementation of Ph
 boolean connectUDP(){
   boolean state = false;
   
-  Serial.println("");
-  Serial.println("Con UDP");
+  DEBUG_PRINTLN("");
+  DEBUG_PRINTLN("Con UDP");
   
   if(UDP.beginMulticast(WiFi.localIP(), ipMulti, portMulti)) {
-    Serial.println("Con success");
+    DEBUG_PRINTLN("Con success");
     state = true;
   }
   else{
-    Serial.println("Con failed");
+    DEBUG_PRINTLN("Con failed");
   }
   
   return state;

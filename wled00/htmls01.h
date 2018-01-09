@@ -96,7 +96,7 @@ Emulate Alexa device: <input type="checkbox" name="ALEXA"> <br>
 Alexa invocation name: <input name="AINVN" maxlength="32"><br>
 Send Alexa notifications: <input type="checkbox" name="NSALX"> <br>
 <h3>Time (experimental!)</h3>
-NTP was updated but still causes crashes. Requires reboot. <br>
+Requires reboot. <br>
 Get time from NTP server: <input type="checkbox" name="NTPON"> <br>
 Current local time is <span class="times">unknown</span> <br>
 <h3>Advanced</h3>
@@ -116,8 +116,8 @@ Factory reset: <input type="checkbox" name="RESET"> <br>
 All EEPROM content (settings) will be erased. <br> <br>
 HTTP traffic is not encrypted. An attacker in the same network could intercept form data!<br>
 <h3>About</h3>
-WLED version 0.4p <br>
-(c) 2016-2017 Christian Schwinne <br>
+WLED version 0.5dev <br>
+(c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i> <br><br>
 <i>Uses libraries:</i> <br>
 <i>ESP8266 Arduino Core</i> <br>
