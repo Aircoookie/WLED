@@ -122,6 +122,50 @@ void wledInit()
     val += "mA currently\nNotice: This is just an estimate which does not take into account several factors (like effects and wire resistance). It is NOT an accurate measurement!";
     server.send(200, "text/plain", val);
     });
+  server.on("/build", HTTP_GET, [](){
+    String info = "hard-coded build info:\r\n\n";
+    #ifdef ARDUINO_ARCH_ESP32
+    info += "platform: esp32\r\n";
+    #else
+    info += "platform: esp8266\r\n";
+    #endif
+    info += "name: " + versionName + "\r\n";
+    info += "version: " + (String)VERSION + "\r\n";
+    #ifdef RGBW
+    info += "rgbw: true\r\n";
+    #else
+    info += "rgbw: false\r\n";
+    #endif
+    info += "max-leds: " + (String)LEDCOUNT + "\r\n";
+    info += "max-direct: " + (String)MAXDIRECT + "\r\n";
+    #ifdef USEOVERLAYS
+    info += "overlays: true\r\n";
+    #else
+    info += "overlays: false\r\n";
+    #endif
+    #ifdef CRONIXIE
+    info += "cronixie: true\r\n";
+    #else
+    info += "cronixie: false\r\n";
+    #endif
+    #ifdef USEFS
+    info += "spiffs: true\r\n";
+    #else
+    info += "spiffs: false\r\n";
+    #endif
+    #ifdef DEBUG
+    info += "debug: true\r\n";
+    #else
+    info += "debug: false\r\n";
+    #endif
+    info += "button-pin: gpio" + String(buttonPin) + "\r\n";
+    #ifdef ARDUINO_ARCH_ESP32
+    info += "strip-pin: gpio" + String(PIN) + "\r\n";
+    #else
+    info += "strip-pin: gpio2\r\n";
+    #endif
+    server.send(200, "text/plain", info);
+    });
   if (!otaLock){
     server.on("/edit", HTTP_GET, [](){
     if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);

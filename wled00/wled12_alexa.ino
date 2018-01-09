@@ -5,7 +5,7 @@
  * https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch
  * https://github.com/probonopd/ESP8266HueEmulator
  */
-#ifndef TEST//ARDUINO_ARCH_ESP32
+
 void alexaInit()
 {
   if (alexaEnabled && WiFi.status() == WL_CONNECTED)
@@ -277,8 +277,3 @@ boolean connectUDP(){
   
   return state;
 }
-#else
-void handleAlexa(){};
-bool handleAlexaApiCall(String u, String b){return false;};
-void alexaInit(){};
-#endif
