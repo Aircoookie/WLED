@@ -156,7 +156,11 @@ void wledInit()
   }
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](){
+    DEBUG_PRINTLN("Not-Found HTTP call:");
+    DEBUG_PRINTLN("URI: " + server.uri());
+    DEBUG_PRINTLN("Body: " + server.arg(0));
     if(!handleSet(server.uri())){
+      if(!handleAlexaApiCall(server.uri(),server.arg(0)))
       server.send(404, "text/plain", "FileNotFound");
     }
   });

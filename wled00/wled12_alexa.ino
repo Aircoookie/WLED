@@ -30,8 +30,8 @@ void handleAlexa()
         String request = packetBuffer;
         
         if(request.indexOf("M-SEARCH") >= 0) {
-          if((request.indexOf("urn:Belkin:device:**") > 0) || (request.indexOf("ssdp:all") > 0) || (request.indexOf("upnp:rootdevice") > 0)) {
-              Serial.println("Responding to search request ...");
+          if(request.indexOf("upnp:rootdevice") > 0) {
+              Serial.println("Responding search req...");
               respondToSearch();
           }
         }
@@ -50,12 +50,7 @@ void alexaOn()
     applyMacro(alexaOnMacro);
   }
 
-  String body = 
-      "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body>\r\n"
-      "<u:SetBinaryStateResponse xmlns:u=\"urn:Belkin:service:basicevent:1\">\r\n"
-      "<BinaryState>1</BinaryState>\r\n"
-      "</u:SetBinaryStateResponse>\r\n"
-      "</s:Body> </s:Envelope>";
+  String body = "[{\"success\":{\"/lights/1/state/on\":true}}]";
 
   server.send(200, "text/xml", body.c_str());
         
@@ -73,23 +68,22 @@ void alexaOff()
     applyMacro(alexaOffMacro);
   }
 
-  String body = 
-      "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body>\r\n"
-      "<u:SetBinaryStateResponse xmlns:u=\"urn:Belkin:service:basicevent:1\">\r\n"
-      "<BinaryState>0</BinaryState>\r\n"
-      "</u:SetBinaryStateResponse>\r\n"
-      "</s:Body> </s:Envelope>";
+  String body = "[{\"success\":{\"/lights/1/state/on\":false}}]";
 
-  server.send(200, "text/xml", body.c_str());
+  server.send(200, "application/json", body.c_str());
         
-  Serial.print("Sending :");
+  Serial.print("Sending:");
   Serial.println(body);
 }
 
-void alexaDim(uint8_t bri)
+void alexaDim(uint8_t briL)
 {
+  String body = "[{\"success\":{\"/lights/1/state/bri\":"+ String(briL) +"}}]";
+
+  server.send(200, "application/json", body.c_str());
+  
   String ct = (alexaNotify)?"win&IN&A=":"win&NN&IN&A=";
-  ct = ct + bri;
+  ct = ct + (briL+1);
   handleSet(ct);
 }
 
@@ -101,7 +95,7 @@ void prepareIds() {
 
 void respondToSearch() {
     Serial.println("");
-    Serial.print("Sending response to ");
+    Serial.print("Send resp to ");
     Serial.println(UDP.remoteIP());
     Serial.print("Port : ");
     Serial.println(UDP.remotePort());
@@ -113,7 +107,7 @@ void respondToSearch() {
     String response = 
       "HTTP/1.1 200 OK\r\n"
       "EXT:\r\n"
-      "CACHE-CONTROL: max-age=%u\r\n" // SSDP_INTERVAL
+      "CACHE-CONTROL: max-age=100\r\n" // SSDP_INTERVAL
       "LOCATION: http://"+ String(s) +":80/description.xml\r\n"
       "SERVER: FreeRTOS/6.0.5, UPnP/1.0, IpBridge/1.17.0\r\n" // _modelName, _modelNumber
       "hue-bridgeid: "+ escapedMac +"\r\n"
@@ -125,85 +119,13 @@ void respondToSearch() {
     UDP.write(response.c_str());
     UDP.endPacket();                    
 
-     Serial.println("Response sent !");
+     Serial.println("Response sent!");
 }
 
 void alexaInitPages() {
-    server.on("/upnp/control/basicevent1", HTTP_POST, []() {
-      Serial.println("########## Responding to  /upnp/control/basicevent1 ... ##########");
-  
-      String request = server.arg(0);      
-      Serial.print("request:");
-      Serial.println(request);
- 
-      if(request.indexOf("SetBinaryState") >= 0) {
-        if(request.indexOf("<BinaryState>1</BinaryState>") >= 0) {
-            Serial.println("Got Turn on request");
-            alexaOn();
-        }
-  
-        if(request.indexOf("<BinaryState>0</BinaryState>") >= 0) {
-            Serial.println("Got Turn off request");
-            alexaOff();
-        }
-      }
-
-      if(request.indexOf("GetBinaryState") >= 0) {
-        Serial.println("Got binary state request");
-        sendState();
-      }
-            
-      server.send(200, "text/plain", "");
-    });
-
-    server.on("/eventservice.xml", HTTP_GET, [](){
-      Serial.println(" ########## Responding to eventservice.xml ... ########\n");
-      
-      String eventservice_xml = "<scpd xmlns=\"urn:Belkin:service-1-0\">"
-        "<actionList>"
-          "<action>"
-            "<name>SetBinaryState</name>"
-            "<argumentList>"
-              "<argument>"
-                "<retval/>"
-                "<name>BinaryState</name>"
-                "<relatedStateVariable>BinaryState</relatedStateVariable>"
-                "<direction>in</direction>"
-                "</argument>"
-            "</argumentList>"
-          "</action>"
-          "<action>"
-            "<name>GetBinaryState</name>"
-            "<argumentList>"
-              "<argument>"
-                "<retval/>"
-                "<name>BinaryState</name>"
-                "<relatedStateVariable>BinaryState</relatedStateVariable>"
-                "<direction>out</direction>"
-                "</argument>"
-            "</argumentList>"
-          "</action>"
-      "</actionList>"
-        "<serviceStateTable>"
-          "<stateVariable sendEvents=\"yes\">"
-            "<name>BinaryState</name>"
-            "<dataType>Boolean</dataType>"
-            "<defaultValue>0</defaultValue>"
-           "</stateVariable>"
-           "<stateVariable sendEvents=\"yes\">"
-              "<name>level</name>"
-              "<dataType>string</dataType>"
-              "<defaultValue>0</defaultValue>"
-           "</stateVariable>"
-        "</serviceStateTable>"
-        "</scpd>\r\n"
-        "\r\n";
-            
-      server.send(200, "text/plain", eventservice_xml.c_str());
-    });
     
     server.on("/description.xml", HTTP_GET, [](){
-      Serial.println(" ########## Responding to setup.xml ... ########\n");
+      Serial.println(" # Responding to description.xml ... #\n");
 
       IPAddress localIP = WiFi.localIP();
       char s[16];
@@ -275,6 +197,64 @@ void alexaInitPages() {
     });
 }
 
+String boolString(bool st)
+{
+  return (st)?"true":"false";
+}
+
+String briForHue(int realBri)
+{
+  realBri--;
+  if (realBri < 0) realBri = 0;
+  return String(realBri);
+}
+
+boolean handleAlexaApiCall(String req, String body) //basic implementation of Philips hue api functions needed for basic Alexa control
+{
+  DEBUG_PRINTLN("AlexaApiCall");
+  if (req.indexOf("api") <0) return false;
+  DEBUG_PRINTLN("ok");
+  if (body.indexOf("devicetype") > 0) //client wants a hue api username, we dont care and give static
+  {
+    DEBUG_PRINTLN("devType");
+    server.send(200, "application/json", "[{\"success\":{\"username\": \"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]");
+    return true;
+  }
+  if (req.indexOf("state") > 0) //client wants to control light
+  {
+    DEBUG_PRINTLN("ls");
+    if (body.indexOf("bri")>0) {alexaDim(body.substring(body.indexOf("bri") +5).toInt()); return true;}
+    if (body.indexOf("false")>0) {alexaOff(); return true;}
+    alexaOn();
+    
+    return true;
+  }
+  if (req.indexOf("lights/1") > 0) //client wants light info
+  {
+    DEBUG_PRINTLN("l1");
+    server.send(200, "application/json", "{\"manufacturername\":\"OpenSource\",\"modelid\":\"LST001\",\"name\":\""+ alexaInvocationName +"\",\"state\":{\"on\":"+ boolString(bri) +",\"hue\":0,\"bri\":"+ briForHue(bri) +",\"sat\":0,\"xy\":[0.00000,0.00000],\"ct\":500,\"alert\":\"none\",\"effect\":\"none\",\"colormode\":\"hs\",\"reachable\":true},\"swversion\":\"0.1\",\"type\":\"Extended color light\",\"uniqueid\":\"2\"}");
+
+    return true;
+  }
+  if (req.indexOf("lights/2") > 0) //client wants pointless light info
+  {
+    DEBUG_PRINTLN("l2");
+    server.send(200, "application/json", "{\"manufacturername\":\"OpenSource\",\"modelid\":\"LST001\",\"name\":\""+ alexaInvocationName +"\",\"state\":{\"on\":"+ boolString(bri) +",\"hue\":0,\"bri\":"+ briForHue(bri) +",\"sat\":0,\"xy\":[0.00000,0.00000],\"ct\":500,\"alert\":\"none\",\"effect\":\"none\",\"colormode\":\"hs\",\"reachable\":true},\"swversion\":\"0.1\",\"type\":\"Extended color light\",\"uniqueid\":\"3\"}");
+
+    return true;
+  }
+  if (req.indexOf("lights") > 0) //client wants all lights
+  {
+    DEBUG_PRINTLN("lAll");
+    server.send(200, "application/json", "{\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-1\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}},\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-2\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}}}");
+
+    return true;
+  }
+
+  //we dont care about other api commands at this time and send empty JSON
+  server.send(200, "application/json", "{}");
+  return true;
+}
 
 boolean connectUDP(){
   boolean state = false;
@@ -291,21 +271,5 @@ boolean connectUDP(){
   }
   
   return state;
-}
-
-void sendState() {
-  
-  String body = 
-      "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body>\r\n"
-      "<u:GetBinaryStateResponse xmlns:u=\"urn:Belkin:service:basicevent:1\">\r\n"
-      "<BinaryState>";
-      
-  body += ((bri>0) ? "1" : "0");
-  
-  body += "</BinaryState>\r\n"
-      "</u:GetBinaryStateResponse>\r\n"
-      "</s:Body> </s:Envelope>\r\n";
- 
-   server.send(200, "text/xml", body.c_str());
 }
 
