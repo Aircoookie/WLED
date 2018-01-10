@@ -173,7 +173,7 @@ void loadSettingsFromEEPROM(bool first)
   if (apchannel > 13 || apchannel < 1) apchannel = 1;
   aphide = EEPROM.read(228);
   if (aphide > 1) aphide = 1;
-  ledcount = EEPROM.read(229);
+  ledcount = EEPROM.read(229); if (ledcount > LEDCOUNT) ledcount = LEDCOUNT;
   notifyButton = EEPROM.read(230);
   //231 was notifyNightlight
   buttonEnabled = EEPROM.read(232);

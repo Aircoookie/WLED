@@ -119,7 +119,7 @@ void handleSettingsSet()
   if (server.hasArg("LEDCN"))
   {
     int i = server.arg("LEDCN").toInt();
-    if (i >= 0 && i <= 255) ledcount = i;
+    if (i >= 0 && i <= LEDCOUNT) ledcount = i;
     strip.setLedCount(ledcount);
   }
   if (server.hasArg("CBEOR"))

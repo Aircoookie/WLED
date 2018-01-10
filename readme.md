@@ -3,8 +3,6 @@
 WLED is a fast and (relatively) secure implementation of an ESP8266 webserver to control NeoPixel (WS2812B) LEDs!
 Now also with experimental ESP32 support.
 
-Uses ESP Arduino core version 2.3.0 (latest as of December 2017).
-
 ### Features: (V0.5dev)
 - RGB, HSB, and brightness sliders
 - Settings page - configuration over network
@@ -24,12 +22,6 @@ Uses ESP Arduino core version 2.3.0 (latest as of December 2017).
 - Support for the Cronixie Clock kit by Diamex
 - Realtime UDP Packet Control (WARLS) possible
 - Client HTML UI controlled
-
-### Compile settings:
-- Board: WeMos D1 mini (untested with other HW, should work though)
-- CPU frequency: 80 MHz
-- Flash size : 4MB (3MB SPIFFS)
-- Upload speed: 921600
 
 ### Quick start guide and documentation:
 
