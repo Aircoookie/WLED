@@ -1,10 +1,11 @@
 ## Welcome to my project WLED!
 
-WLED is a basic, fast and (relatively) secure implementation of a ESP8266 webserver to control Neopixel (WS2812B) leds
+WLED is a fast and (relatively) secure implementation of an ESP8266 webserver to control NeoPixel (WS2812B) LEDs!
+Now also with experimental ESP32 support.
 
 Uses ESP Arduino core version 2.3.0 (latest as of December 2017).
 
-### Features: (V0.4)
+### Features: (V0.5dev)
 - RGB, HSB, and brightness sliders
 - Settings page - configuration over network
 - Access Point and station mode - automatic failsafe AP
@@ -16,13 +17,13 @@ Uses ESP Arduino core version 2.3.0 (latest as of December 2017).
 - Notifier function (multiple ESPs sync color via UDP broadcast)
 - Support for power pushbutton
 - Custom Theater Chase
-- Full OTA software update capability
+- Full OTA software update capability (only ESP8266)
 - Password protected OTA page for added security (OTA lock)
-- Alexa smart home device server
+- Alexa smart home device server (including dimming)
 - NTP and experimental analog clock function
+- Support for the Cronixie Clock kit by Diamex
 - Realtime UDP Packet Control (WARLS) possible
-- client HTML controlled
-- Edit page. Change html and other files via OTA. (needs to be enabled in source)
+- Client HTML UI controlled
 
 ### Compile settings:
 - Board: WeMos D1 mini (untested with other HW, should work though)
@@ -30,39 +31,20 @@ Uses ESP Arduino core version 2.3.0 (latest as of December 2017).
 - Flash size : 4MB (3MB SPIFFS)
 - Upload speed: 921600
 
-### Quick start guide:
+### Quick start guide and documentation:
 
-- If you do not plan to change the software, you can use the supplied binary files instead-
-Just flash a [basic HTTP OTA updater](https://github.com/Aircoookie/ESP8266MinimalHTTPUpdater) sketch and upload the bin!
-
-1. Connect a  WS2812B RGB led strip to GPIO2. Optionally connect a NO-pushbutton to GPIO0 (internal pull-up) and ground.
-
-2. Follow a guide to setup your Arduino client (I am using version 1.8.1) with the ESP8266 libraries.
-For current compiles I use version 2.3.0.
-
-3. In file "wled00.ino", you should change the access point and OTA update passphrases for added security (you can change them later, this is just the "factory default"). Flash the sketch.
-You will need to install the NeoPixelBus library by Makuna. All other dependencies are included with WLED for convenience.
-
-5. Connect to automatically started WiFi access point "WLED-AP" using default passwort "wled1234". Go to the IP "192.168.4.1".
-
-6. Click on the cog icon to edit settings like connecting the module to your home WiFi.
-
-7. Have fun with the software!
-
-### Advanced module control via HTTP requests API or UDP:
-
-See the [wiki](https://github.com/Aircoookie/WLED/wiki/HTTP-request-API)!
+See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
 
 ### Other
 
 Licensed under the MIT license 
 Uses libraries: 
-ESP8266 Arduino Core
+ESP8266/ESP32 Arduino Core
 NeoPixelBus by Makuna
 [WS2812FX](https://github.com/kitesurfer1404/WS2812FX) by kitesurfer1404 (Aircoookie fork)
 Time library
 Timezone library by JChristensen
-arduino-esp8266-alexa-multiple-wemo-switch by kakopappa
+Alexa code based on arduino-esp8266-alexa-multiple-wemo-switch by kakopappa
 
 Uses Linearicons by Perxis! (link in settings page)
 

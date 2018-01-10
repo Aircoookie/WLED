@@ -990,43 +990,38 @@ void WS2812FX::mode_chase_rainbow_white(void) {
 
 
 /*
- * Eye (broken)
+ * Red - Amber - Green - Blue lights running
  */
-void WS2812FX::mode_icu(void) {
-  uint16_t dest = _counter_mode_step & 0xFFFF;
- 
-  setPixelColor(dest, _color);
-  setPixelColor(dest + _led_count/2, _color);
-
-  if(_mode_color == dest) { // pause between eye movements
-    if(random(6) == 0) { // blink once in a while
-      setPixelColor(dest, _color_sec);
-      setPixelColor(dest + _led_count/2, _color_sec);
-      show();
-      _mode_delay = 200;
-      return;
+void WS2812FX::mode_colorful(void) {
+  uint32_t cols[]{0x00FF0000,0x00EEBB00,0x0000EE00,0x000077CC,0x00FF0000,0x00EEBB00,0x0000EE00};
+  int i = 0;
+  for (i; i < _led_count-3 ; i+=4)
+  {
+    if(!_locked[i])setPixelColor(i, cols[_counter_mode_step]);
+    if(!_locked[i+1])setPixelColor(i+1, cols[_counter_mode_step+1]);
+    if(!_locked[i+2])setPixelColor(i+2, cols[_counter_mode_step+2]);
+    if(!_locked[i+3])setPixelColor(i+3, cols[_counter_mode_step+3]);
+  }
+  i+=4;
+  if(i < _led_count && !_locked[i])
+  {
+    setPixelColor(i, cols[_counter_mode_step]);
+    
+    if(i+1 < _led_count && !_locked[i+1])
+    {
+      setPixelColor(i+1, cols[_counter_mode_step+1]);
+      
+      if(i+2 < _led_count && !_locked[i+2])
+      {
+        setPixelColor(i+2, cols[_counter_mode_step+2]);
+      }
     }
-    _mode_color = random(_led_count/2);
-    _mode_delay = 1000 + random(2000);
-    return;
   }
-
-  setPixelColor(dest, _color_sec);
-  setPixelColor(dest + _led_count/2, _color_sec);
-
-  if(_mode_color > _counter_mode_step) {
-    _counter_mode_step++;
-    dest++;
-  } else if (_mode_color < _counter_mode_step) {
-    _counter_mode_step--;
-    dest--;
-  }
-
-  setPixelColor(dest, _color);
-  setPixelColor(dest + _led_count/2, _color);
+  
   show();
-
-  _mode_delay = 100 + ((100 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
+  if (_speed > SPEED_MIN) _counter_mode_step++; //static if lowest speed
+  if (_counter_mode_step >3) _counter_mode_step = 0;
+  _mode_delay = 100 + (25 * (uint32_t)(SPEED_MAX - _speed));
 }
 
 
@@ -2037,8 +2032,8 @@ void WS2812FX::show()
 {
   #ifdef ARDUINO_ARCH_ESP32
   portDISABLE_INTERRUPTS();
-  NeoPixelBrightnessBus::Show();
   delay(1);
+  NeoPixelBrightnessBus::Show();
   portENABLE_INTERRUPTS();
   #else
   NeoPixelBrightnessBus::Show();

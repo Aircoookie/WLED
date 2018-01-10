@@ -28,7 +28,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1801101
+#define VERSION 1801102
 const String versionName = "WLED 0.5dev";
 
 //AP and OTA default passwords (change them!)

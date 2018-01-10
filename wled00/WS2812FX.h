@@ -1,5 +1,19 @@
 //#define RGBW
-#define PIN 2 //strip pin. Only for ESP32
+#define PIN 2 //strip pin. Only change for ESP32
+
+//automatically uses the right driver method for each platform
+#ifdef ARDUINO_ARCH_ESP32
+#define PIXELMETHOD NeoWs2813Method
+#else
+#define PIXELMETHOD NeoEsp8266Uart800KbpsMethod
+#endif
+
+//selects correct feature for RGB/RGBW
+#ifdef RGBW
+#define PIXELFEATURE NeoGrbwFeature
+#else
+#define PIXELFEATURE NeoGrbFeature
+#endif
 
 /*
   WS2812FX.h - Library for WS2812 LED effects.
@@ -86,7 +100,7 @@
 #define FX_MODE_CHASE_FLASH             31
 #define FX_MODE_CHASE_FLASH_RANDOM      32
 #define FX_MODE_CHASE_RAINBOW_WHITE     33
-#define FX_MODE_ICU                     34
+#define FX_MODE_COLORFUL                34
 #define FX_MODE_TRAFFIC_LIGHT           35
 #define FX_MODE_COLOR_SWEEP_RANDOM      36
 #define FX_MODE_RUNNING_COLOR           37
@@ -111,35 +125,12 @@
 #define FX_MODE_CC_BLINK                56
 #define FX_MODE_CC_RANDOM               57
 
-#ifdef ARDUINO_ARCH_ESP32
-#ifdef RGBW
-class WS2812FX : public NeoPixelBrightnessBus<NeoGrbwFeature, Neo800KbpsMethod> {
-#else
-class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, Neo800KbpsMethod> {
-#endif
-  typedef void (WS2812FX::*mode_ptr)(void);
 
-  public:
-#ifdef RGBW
-    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbwFeature, Neo800KbpsMethod>(n, PIN) {
-#else
-    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbFeature, Neo800KbpsMethod>(n, PIN) {
-#endif
-#else //ESP8266
-#ifdef RGBW
-class WS2812FX : public NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Uart800KbpsMethod> {
-#else
-class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod> {
-#endif
+class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
   typedef void (WS2812FX::*mode_ptr)(void);
-
   public:
-#ifdef RGBW
-    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbwFeature, NeoEsp8266Uart800KbpsMethod>(n) {
-#else
-    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800KbpsMethod>(n) {
-#endif
-#endif
+    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD>(n,PIN) {
+
       _mode[FX_MODE_STATIC]                = &WS2812FX::mode_static;
       _mode[FX_MODE_BLINK]                 = &WS2812FX::mode_blink;
       _mode[FX_MODE_BREATH]                = &WS2812FX::mode_breath;
@@ -174,7 +165,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       _mode[FX_MODE_CHASE_FLASH]           = &WS2812FX::mode_chase_flash;
       _mode[FX_MODE_CHASE_FLASH_RANDOM]    = &WS2812FX::mode_chase_flash_random;
       _mode[FX_MODE_CHASE_RAINBOW_WHITE]   = &WS2812FX::mode_chase_rainbow_white;
-      _mode[FX_MODE_ICU]                   = &WS2812FX::mode_icu;
+      _mode[FX_MODE_COLORFUL]              = &WS2812FX::mode_colorful;
       _mode[FX_MODE_TRAFFIC_LIGHT]         = &WS2812FX::mode_traffic_light;
       _mode[FX_MODE_COLOR_SWEEP_RANDOM]    = &WS2812FX::mode_color_sweep_random;
       _mode[FX_MODE_RUNNING_COLOR]         = &WS2812FX::mode_running_color;
@@ -337,7 +328,7 @@ class WS2812FX : public NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart800Kb
       mode_chase_flash(void),
       mode_chase_flash_random(void),
       mode_chase_rainbow_white(void),
-      mode_icu(void),
+      mode_colorful(void),
       mode_traffic_light(void),
       mode_color_sweep_random(void),
       mode_running_color(void),
