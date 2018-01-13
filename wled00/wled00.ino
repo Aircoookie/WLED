@@ -19,6 +19,7 @@
 #include <ESP8266HTTPUpdateServer.h>
 #endif
 #include <EEPROM.h>
+#include <ArduinoOTA.h>
 #include <WiFiUDP.h>
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
@@ -28,7 +29,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1801102
+#define VERSION 1801140
 const String versionName = "WLED 0.5dev";
 
 //AP and OTA default passwords (change them!)
@@ -98,6 +99,7 @@ boolean recoveryAPDisabled = false;
 IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
+IPAddress staticdns(8, 8, 8, 8); //only for NTP
 boolean useHSB = false, useHSBDefault = false;
 boolean turnOnAtBoot = true;
 uint8_t bootPreset = 0;
@@ -189,8 +191,8 @@ const unsigned long seventyYears = 2208988800UL;
 uint8_t overlayDefault = 0;
 uint8_t overlayCurrent = 0;
 #ifdef USEOVERLAYS
-int overlayMin = 0, overlayMax = 79;
-int analogClock12pixel = 25;
+int overlayMin = 0, overlayMax = 79; //bb: 35, 46, t: 0, 79
+int analogClock12pixel = 25; //bb: 41, t: 25
 bool overlayDimBg = true;
 boolean analogClockSecondsTrail = false;
 boolean analogClock5MinuteMarks = false;
@@ -312,6 +314,7 @@ void loop() {
     yield();
     handleButton();
     handleNetworkTime();
+    if (!otaLock) ArduinoOTA.handle();
     #ifdef CRONIXIE
     handleCronixie();
     #endif
@@ -324,7 +327,7 @@ void loop() {
     #endif
       strip.service();
     }
-
+    
     //DEBUG
     #ifdef DEBUG
     if (millis() - debugTime > 5000)

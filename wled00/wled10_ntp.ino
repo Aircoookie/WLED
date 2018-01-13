@@ -21,7 +21,7 @@ void handleNetworkTime()
 void sendNTPPacket()
 {
   WiFi.hostByName(ntpServerName, ntpServerIP);
-  Serial.println("sending NTP packet...");
+  DEBUG_PRINTLN("send NTP packet");
 
   memset(ntpPacketBuffer, 0, NTP_PACKET_SIZE);
 
@@ -59,6 +59,7 @@ boolean checkNTPResponse()
     unsigned long epoch = secsSince1900 - seventyYears;
     setTime(epoch);
     DEBUG_PRINTLN(epoch);
+    if (countdownTime - now() > 0) countdownOverTriggered = false;
     return true;
   }
   return false;

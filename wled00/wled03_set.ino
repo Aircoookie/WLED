@@ -537,7 +537,7 @@ boolean handleSet(String req)
    pos = req.indexOf("CT=");
    if (pos > 0) {
       countdownTime = req.substring(pos+3).toInt();
-      countdownOverTriggered = false;
+      if (countdownTime - now() > 0) countdownOverTriggered = false;
    }
    //set custom chase data
    bool _cc_updated = false;

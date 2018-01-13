@@ -31,7 +31,7 @@ void wledInit()
 
   if (staticip[0] != 0)
   {
-    WiFi.config(staticip, staticgateway, staticsubnet);
+    WiFi.config(staticip, staticgateway, staticsubnet, staticdns);
   } else
   {
     WiFi.config(0U, 0U, 0U);
@@ -183,9 +183,11 @@ void wledInit()
     httpUpdater.setup(&server); //only for ESP8266
     #else
     server.on("/update", HTTP_GET, [](){
-    server.send(200, "text/plain", "OTA update is not supported on ESP32 at this time.");
+    server.send(200, "text/plain", "OTA update is not supported on ESP32 at this time. You may want to use ArduinoOTA.");
     });
     #endif
+    //init ArduinoOTA
+    ArduinoOTA.begin();
   } else
   {
     server.on("/edit", HTTP_GET, [](){
@@ -221,7 +223,7 @@ void wledInit()
   DEBUG_PRINTLN("HTTP server started");
   // Add service to MDNS
   MDNS.addService("http", "tcp", 80);
-  
+
   // Initialize NeoPixel Strip
   strip.init();
   strip.setLedCount(ledcount);
@@ -230,6 +232,8 @@ void wledInit()
   strip.setSpeed(effectSpeed);
   strip.setBrightness(255);
   strip.start();
+
+  
   #ifdef CRONIXIE
   strip.driverModeCronixie(true);
   strip.setCronixieBacklight(cronixieBacklight);

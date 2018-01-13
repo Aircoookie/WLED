@@ -160,12 +160,12 @@ void _overlayAnalogClock()
   }
   if (analogClockSecondsTrail)
   {
-    strip.setRange(analogClock12pixel, secondPixel, 0x00FF00);
+    strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
   } else
   {
-    strip.setIndividual(secondPixel, 0x00FF00);
+    strip.setIndividual(secondPixel, 0xFF0000);
   }
-  strip.setIndividual(minutePixel, 0xEEEEEE);
+  strip.setIndividual(minutePixel, 0x00FF00);
   strip.setIndividual(hourPixel, 0x0000FF);
   overlayRefreshMs = 998;
 }

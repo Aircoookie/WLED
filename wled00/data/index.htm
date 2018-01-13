@@ -13,6 +13,7 @@
 		var fxa=false;
 		var psa=false;
 		var uwv=false;
+		var firstload=true;
 		var lastsx = 0;
 		var nState = 0;
 		bCol = "DarkTurquoise";
@@ -61,7 +62,7 @@
 							nState = 0;
 							nState = (this.responseXML.getElementsByTagName('nr')[0].innerHTML)!=0?1:0;
 							nState += (this.responseXML.getElementsByTagName('ns')[0].innerHTML)!=0?2:0;
-							hsb = (this.responseXML.getElementsByTagName('md')[0].innerHTML)!=0?true:false;
+							if(firstload)hsb = (this.responseXML.getElementsByTagName('md')[0].innerHTML)!=0?true:false;
 							d.getElementsByClassName("desc")[0].innerHTML = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
 							UV();
 						}
@@ -71,6 +72,7 @@
 			request.open("GET", "win/" +resp +nocache, true);
 			request.send(null);
 			resp="";
+			firstload=false;
 		}
 		function GetCheck()
 		{

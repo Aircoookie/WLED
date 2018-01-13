@@ -1,3 +1,6 @@
+/*
+ * Support for the Cronixie clock
+ */
 #ifdef CRONIXIE
 uint8_t getSameCodeLength(char code, int index, char const digits[])
 {

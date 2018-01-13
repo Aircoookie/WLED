@@ -60,7 +60,7 @@ AP IP: <span class="sip"> Not active </span> <br>
 Server description: <input name="DESC" maxlength="32"> <br>
 Use HSB sliders instead of RGB by default: <input type="checkbox" name="COLMD"> <br>
 <h3>LED setup</h3>
-LED count (max. 255): <input name="LEDCN" type="number" min="0" max="255" required> <br>
+LED count (max. 255): <input name="LEDCN" type="number" min="1" max="255" required> <br>
 <i>The default boot color is saved in preset slot 0.</i><br>
 Alternatively, apply preset <input name="BOOTP" type="number" min="0" max="25" required> at boot<br>
 Default RGB color:
