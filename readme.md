@@ -15,7 +15,7 @@ Now also with experimental ESP32 support.
 - Notifier function (multiple ESPs sync color via UDP broadcast)
 - Support for power pushbutton
 - Custom Theater Chase
-- Full OTA software update capability (only ESP8266)
+- Full OTA software update capability (HTTP and ArduinoOTA)
 - Password protected OTA page for added security (OTA lock)
 - Alexa smart home device server (including dimming)
 - NTP and experimental analog clock function

@@ -122,6 +122,9 @@ void wledInit()
     val += "mA currently\nNotice: This is just an estimate which does not take into account several factors (like effects and wire resistance). It is NOT an accurate measurement!";
     server.send(200, "text/plain", val);
     });
+  server.on("/teapot", HTTP_GET, [](){
+    server.send(418, "text/plain", "418. I'm a teapot. (Tangible Embedded Advanced Project Of Twinkling)");
+    });
   server.on("/build", HTTP_GET, [](){
     String info = "hard-coded build info:\r\n\n";
     #ifdef ARDUINO_ARCH_ESP32
@@ -166,6 +169,7 @@ void wledInit()
     #endif
     server.send(200, "text/plain", info);
     });
+  //if OTA is allowed
   if (!otaLock){
     server.on("/edit", HTTP_GET, [](){
     if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);
@@ -179,14 +183,14 @@ void wledInit()
     server.on("/down", HTTP_GET, down);
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
     //init ota page
-    #ifndef ARDUINO_ARCH_ESP32
     httpUpdater.setup(&server); //only for ESP8266
-    #else
-    server.on("/update", HTTP_GET, [](){
-    server.send(200, "text/plain", "OTA update is not supported on ESP32 at this time. You may want to use ArduinoOTA.");
-    });
-    #endif
     //init ArduinoOTA
+    ArduinoOTA.onStart([]() {
+      #ifndef ARDUINO_ARCH_ESP32
+      wifi_set_sleep_type(NONE_SLEEP_T);
+      #endif
+      DEBUG_PRINTLN("Start ArduinoOTA");
+    });
     ArduinoOTA.begin();
   } else
   {
@@ -233,7 +237,7 @@ void wledInit()
   strip.setBrightness(255);
   strip.start();
 
-  
+  pinMode(buttonPin, INPUT_PULLUP);
   #ifdef CRONIXIE
   strip.driverModeCronixie(true);
   strip.setCronixieBacklight(cronixieBacklight);
@@ -241,11 +245,18 @@ void wledInit()
   #endif
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
-  pinMode(buttonPin, INPUT_PULLUP);
+  if(digitalRead(buttonPin) == LOW) buttonEnabled = false; //disable button if it is "pressed" unintentionally
 }
 
 void initAP(){
+  String save = apssid;
+  #ifdef CRONIXIE
+    if (apssid.length() <1) apssid = "CRONIXIE-AP";
+  #else
+    if (apssid.length() <1) apssid = "WLED-AP";
+  #endif
   WiFi.softAP(apssid.c_str(), appass.c_str(), apchannel, aphide);
+  apssid = save;
 }
 
 void initCon()
@@ -261,15 +272,8 @@ void initCon()
     {
       WiFi.disconnect();
       DEBUG_PRINTLN("Can't connect. Opening AP...");
-      String save = apssid;
       onlyAP = true;
-      #ifdef CRONIXIE
-        if (apssid.length() <1) apssid = "CRONIXIE-AP";
-      #else
-        if (apssid.length() <1) apssid = "WLED-AP";
-      #endif
       initAP();
-      apssid = save;
       return;
     }
   }

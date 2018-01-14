@@ -8,6 +8,7 @@ void handleButton()
   {
     if (digitalRead(buttonPin) == LOW && !buttonPressedBefore)
     {
+      buttonPressedTime = millis();
       buttonPressedBefore = true;
       if (buttonMacro == 255)
       {
@@ -29,6 +30,7 @@ void handleButton()
       delay(15); //debounce
       if (digitalRead(buttonPin) == HIGH)
       {
+        if (millis() - buttonPressedTime > 7000) initAP();
         buttonPressedBefore = false;
       }
     }

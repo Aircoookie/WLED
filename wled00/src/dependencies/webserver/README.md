@@ -1,3 +1,5 @@
+Notice by Aircoookie: Port of the ESP8266HTTPUpdateServer for ESP32 is also included in this directory.
+
 # WebServer
 ESP8266/ESP32 WebServer library
 

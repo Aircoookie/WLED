@@ -16,11 +16,11 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266HTTPUpdateServer.h>
 #endif
 #include <EEPROM.h>
 #include <ArduinoOTA.h>
 #include <WiFiUDP.h>
+#include "src/dependencies/webserver/ESP8266HTTPUpdateServer.h"
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
@@ -29,7 +29,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1801140
+#define VERSION 1801150
 const String versionName = "WLED 0.5dev";
 
 //AP and OTA default passwords (change them!)
@@ -171,6 +171,7 @@ byte bri_it = 0;
 byte bri_last = 127;
 boolean transitionActive = false;
 boolean buttonPressedBefore = false;
+long buttonPressedTime = 0;
 boolean nightlightActive = false;
 boolean nightlightActive_old = false;
 int nightlightDelayMs;
@@ -234,8 +235,8 @@ String escapedMac;
 WebServer server(80);
 #else
 ESP8266WebServer server(80);
-ESP8266HTTPUpdateServer httpUpdater; //only for ESP8266
 #endif
+ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp;
 WiFiUDP ntpUdp;
 
