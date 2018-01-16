@@ -29,14 +29,15 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1801150
+#define VERSION 1801162
 const String versionName = "WLED 0.5dev";
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
 String otapass = "wledota";
 
-//If you have an RGBW strip, uncomment first line in WS2812FX.h!
+//If you have an RGBW strip, also uncomment first line in WS2812FX.h!
+boolean useRGBW = false;
 
 //overlays, needed for clocks etc.
 #define USEOVERLAYS
@@ -105,7 +106,6 @@ boolean turnOnAtBoot = true;
 uint8_t bootPreset = 0;
 byte col_s[]{255, 159, 0};
 byte col_sec_s[]{0, 0, 0};
-boolean useRGBW = false;
 byte white_s = 0;
 byte white_sec_s = 0;
 byte bri_s = 127;

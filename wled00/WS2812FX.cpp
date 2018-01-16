@@ -38,6 +38,7 @@
 #define CALL_MODE(n) (this->*_mode[n])();
 
 void WS2812FX::init() {
+  for (int i=0; i < _led_count; i++) _locked[i] = false;
   begin();
   WS2812FX::setBrightness(_brightness);
   show();
@@ -2034,6 +2035,7 @@ void WS2812FX::show()
   portDISABLE_INTERRUPTS();
   delay(1);
   NeoPixelBrightnessBus::Show();
+  delay(1);
   portENABLE_INTERRUPTS();
   #else
   NeoPixelBrightnessBus::Show();

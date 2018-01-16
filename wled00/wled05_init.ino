@@ -183,7 +183,7 @@ void wledInit()
     server.on("/down", HTTP_GET, down);
     server.on("/cleareeprom", HTTP_GET, clearEEPROM);
     //init ota page
-    httpUpdater.setup(&server); //only for ESP8266
+    httpUpdater.setup(&server);
     //init ArduinoOTA
     ArduinoOTA.onStart([]() {
       #ifndef ARDUINO_ARCH_ESP32

@@ -3,7 +3,7 @@
 
 //automatically uses the right driver method for each platform
 #ifdef ARDUINO_ARCH_ESP32
-#define PIXELMETHOD NeoWs2813Method
+#define PIXELMETHOD NeoEsp32BitBangWs2813Method
 #else
 #define PIXELMETHOD NeoEsp8266Uart800KbpsMethod
 #endif
