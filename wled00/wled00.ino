@@ -29,7 +29,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1801162
+#define VERSION 1801164
 const String versionName = "WLED 0.5dev";
 
 //AP and OTA default passwords (change them!)
@@ -326,7 +326,7 @@ void loop() {
     #ifdef USEOVERLAYS
       handleOverlays();
     #endif
-      strip.service();
+      if (bri_t) strip.service(); //do not update strip if off, prevents flicker on ESP32
     }
     
     //DEBUG
