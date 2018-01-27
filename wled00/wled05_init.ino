@@ -87,19 +87,18 @@ void wledInit()
     if(!handleFileRead("/favicon.ico")) server.send(200, "image/x-icon", favicon);
   });
   server.on("/", HTTP_GET, [](){
-    if(!handleFileRead("/index.htm")) {
-      if (!arlsTimeout) //do not serve while receiving realtime
-      {
-        server.setContentLength(strlen_P(PAGE_index0) + strlen_P(PAGE_index1) + strlen_P(PAGE_index2));
-        server.send(200, "text/html", "");
-        server.sendContent_P(PAGE_index0); 
-        server.sendContent_P(PAGE_index1); 
-        server.sendContent_P(PAGE_index2);
-      } else {
-        server.send(200, "text/plain", "The WLED UI is not available while receiving real-time data.");
+    if (!initialBoot){
+      if(!handleFileRead("/index.htm")) {
+        serveIndex();
+      }
+    }else{
+      if(!handleFileRead("/welcome.htm")) {
+        serveWelcomePage();
       }
     }
   });
+  server.on("/sliders", HTTP_GET, serveIndex)
+  server.on("/welcome", HTTP_GET, serveWelcomePage)
   server.on("/reset", HTTP_GET, [](){
     server.send(200, "text/plain", "Rebooting...");
     reset();
@@ -134,13 +133,13 @@ void wledInit()
     #endif
     info += "name: " + versionName + "\r\n";
     info += "version: " + (String)VERSION + "\r\n";
+    info += "eepver: " + String(EEPVER) + "\r\n";
     #ifdef RGBW
     info += "rgbw: true\r\n";
     #else
     info += "rgbw: false\r\n";
     #endif
     info += "max-leds: " + (String)LEDCOUNT + "\r\n";
-    info += "max-direct: " + (String)MAXDIRECT + "\r\n";
     #ifdef USEOVERLAYS
     info += "overlays: true\r\n";
     #else
@@ -231,9 +230,7 @@ void wledInit()
   // Initialize NeoPixel Strip
   strip.init();
   strip.setLedCount(ledcount);
-  strip.setMode(effectCurrent);
   strip.setColor(0);
-  strip.setSpeed(effectSpeed);
   strip.setBrightness(255);
   strip.start();
 
@@ -278,4 +275,47 @@ void initCon()
     }
   }
 }
+
+void buildCssColorString()
+{
+  cssColorString=":root{--aCol:";
+  cssColorString+=cssCol[0];
+  cssColorString+=";--bCol:";
+  cssColorString+=cssCol[1];
+  cssColorString+=";--cCol:";
+  cssColorString+=cssCol[2];
+  cssColorString+=";--dCol:";
+  cssColorString+=cssCol[3];
+  cssColorString+=";--sCol:";
+  cssColorString+=cssCol[4];
+  cssColorString+=";}";
+}
+
+void serveIndex()
+{
+  if (!arlsTimeout) //do not serve while receiving realtime
+  {
+    server.setContentLength(strlen_P(PAGE_index0) + cssColorString.length() + strlen_P(PAGE_index1) + strlen_P(PAGE_index2) + strlen_P(PAGE_index3));
+    server.send(200, "text/html", "");
+    server.sendContent_P(PAGE_index0);
+    server.sendContent(cssColorString); 
+    server.sendContent_P(PAGE_index1); 
+    server.sendContent_P(PAGE_index2);
+    server.sendContent_P(PAGE_index3);
+  } else {
+    server.send(200, "text/plain", "The WLED UI is not available while receiving real-time data.");
+  }
+}
+
+void serveWelcomePage()
+{
+  String resp = "";
+  resp += PAGE_welcome0;
+  resp += cssColorString;
+  resp += PAGE_welcome1;
+  server.send(200, "text/html", resp);
+}
+
+
+
 

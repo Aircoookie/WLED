@@ -29,7 +29,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1801164
+#define VERSION 1801180
 const String versionName = "WLED 0.5dev";
 
 //AP and OTA default passwords (change them!)
@@ -45,7 +45,7 @@ boolean useRGBW = false;
 //support for the CRONIXIE clock by Diamex (disable overlays!)
 //#define CRONIXIE
 
-//spiffs FS only useful for debug
+//spiffs FS only useful for debug (only ESP8266)
 //#define USEFS
 
 //to toggle usb serial debug (un)comment following line
@@ -53,7 +53,6 @@ boolean useRGBW = false;
 
 //Hardware-settings (only changeble via code)
 #define LEDCOUNT 255 //maximum, exact count set-able via settings
-#define MAXDIRECT 255 //for direct access like arls, should be >= LEDCOUNT
 uint8_t buttonPin = 0; //needs pull-up
 uint8_t auxPin = 15; //use e.g. for external relay
 uint8_t auxDefaultState = 0; //0: input 1: high 2: low
@@ -69,8 +68,6 @@ time_t local;
 #ifdef CRONIXIE
 #undef LEDCOUNT
 #define LEDCOUNT 60
-#undef MAXDIRECT
-#define MAXDIRECT 48
 uint8_t ledcount = 6;
 String apssid = "CRONIXIE-AP";
 String alexaInvocationName = "Clock";
@@ -124,6 +121,7 @@ boolean nightlightFade = true;
 uint16_t udpPort = 21324;
 uint8_t effectDefault = 0;
 uint8_t effectSpeedDefault = 75;
+uint8_t effectIntensityDefault = 128;
 //NTP stuff
 #ifndef CRONIXIE
 boolean ntpEnabled = false;
@@ -177,8 +175,9 @@ boolean nightlightActive_old = false;
 int nightlightDelayMs;
 uint8_t effectCurrent = 0;
 uint8_t effectSpeed = 75;
+uint8_t effectIntensity = 128;
 boolean udpConnected = false;
-byte udpIn[MAXDIRECT*4+2];
+byte udpIn[1026];
 //NTP stuff
 boolean ntpConnected = false;
 unsigned int ntpLocalPort = 2390;
@@ -218,6 +217,7 @@ boolean arlsSign = true;
 uint8_t auxTime = 0;
 unsigned long auxStartTime;
 boolean auxActive, auxActiveBefore;
+boolean initialBoot = false;
 
 boolean useGammaCorrectionBri = false;
 boolean useGammaCorrectionRGB = true;
@@ -243,11 +243,12 @@ WiFiUDP ntpUdp;
 WS2812FX strip = WS2812FX(LEDCOUNT);
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 3
+#define EEPVER 4
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
 //3 -> 0.4  1712121 and up
+//4 -> 0.5dev 1801271 and up
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)

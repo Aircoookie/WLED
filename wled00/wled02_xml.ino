@@ -33,7 +33,9 @@ void XML_response()
    resp = resp + effectCurrent;
    resp = resp + "</fx><sx>";
    resp = resp + effectSpeed;
-   resp = resp + "</sx><wv>";
+   resp = resp + "</sx><ix>";
+   resp = resp + effectIntensity;
+   resp = resp + "</ix><wv>";
    if (useRGBW) {
      resp = resp + white;
    } else {
@@ -49,9 +51,11 @@ void XML_response()
    server.send(200, "text/xml", resp);
 }
 
-String getSettings()
+String getSettings(uint8_t subPage)
 {
-  DEBUG_PRINTLN("settings resp");
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
+  DEBUG_PRINT("settings resp");
+  DEBUG_PRINTLN(subPage);
   
   String resp = "";
   String ds = "d.Sf.";
@@ -103,6 +107,10 @@ String getSettings()
   } else {
     resp += ds + "CLDFW" + v + "-1;";
   }
+  resp += ds + "CSECR" + v + col_sec_s[0] +";";
+  resp += ds + "CSECG" + v + col_sec_s[1] +";";
+  resp += ds + "CSECB" + v + col_sec_s[2] +";";
+  resp += ds + "CSECW" + v + white_s +";";
   resp += ds + "BOOTN" + c + turnOnAtBoot +";";
   resp += ds + "BOOTP" + v + bootPreset +";";
   resp += ds + "FXDEF" + v + effectDefault +";";

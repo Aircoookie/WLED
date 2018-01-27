@@ -2,6 +2,8 @@
  * UDP notifier
  */
 
+#define WLEDPACKETSIZE 24
+
 void notify(uint8_t callMode)
 {
   if (!udpConnected) return;
@@ -13,7 +15,7 @@ void notify(uint8_t callMode)
     case 6: if (!notifyDirect) return; break; //fx change
     default: return;
   }
-  byte udpOut[16];
+  byte udpOut[WLEDPACKETSIZE];
   udpOut[0] = 0; //0: wled notifier protocol 1: WARLS protocol
   udpOut[1] = callMode;
   udpOut[2] = bri;
@@ -25,17 +27,18 @@ void notify(uint8_t callMode)
   udpOut[8] = effectCurrent;
   udpOut[9] = effectSpeed;
   udpOut[10] = white;
-  udpOut[11] = 2; //compatibilityVersionByte: 0: old 1: supports white 2: supports secondary color
+  udpOut[11] = 3; //compatibilityVersionByte: 0: old 1: supports white 2: supports secondary color 3: supports FX intensity, 24 byte packet
   udpOut[12] = col_sec[0];
   udpOut[13] = col_sec[1];
   udpOut[14] = col_sec[2];
   udpOut[15] = white_sec;
+  udpOut[16] = effectIntensity;
   
   IPAddress broadcastIp;
   broadcastIp = ~WiFi.subnetMask() | WiFi.gatewayIP();
 
   notifierUdp.beginPacket(broadcastIp, udpPort);
-  notifierUdp.write(udpOut, 16);
+  notifierUdp.write(udpOut, WLEDPACKETSIZE);
   notifierUdp.endPacket();
 }
 
@@ -71,6 +74,11 @@ void handleNotifications()
         {
           effectSpeed = udpIn[9];
           strip.setSpeed(effectSpeed);
+        }
+        if (udpIn[11] > 3 && udpIn[16] != effectIntensity)
+        {
+          effectSpeed = udpIn[16];
+          strip.setIntensity(effectIntensity);
         }
         nightlightActive = udpIn[6];
         if (!nightlightActive)

@@ -235,6 +235,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       setCCFS(bool fs),
       setCCFE(bool fe),
       setSpeed(uint8_t s),
+      setIntensity(uint8_t in),
       increaseSpeed(uint8_t s),
       decreaseSpeed(uint8_t s),
       setColor(uint8_t r, uint8_t g, uint8_t b),
@@ -272,6 +273,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       get_random_wheel_index(uint8_t),
       getMode(void),
       getSpeed(void),
+      getIntensity(void),
       getBrightness(void),
       getModeCount(void);
 
@@ -372,6 +374,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       maxval(uint8_t v, uint8_t w),
       _mode_index,
       _speed,
+      _intensity,
       _cc_i1,
       _cc_i2,
       _cc_is,

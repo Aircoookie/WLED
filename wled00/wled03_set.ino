@@ -122,11 +122,12 @@ void handleSettingsSet()
     if (i >= 0 && i <= LEDCOUNT) ledcount = i;
     strip.setLedCount(ledcount);
   }
-  if (server.hasArg("CBEOR"))
+  if (server.hasArg("CBEOR")) //ignore settings and save current brightness, colors and fx as default
   {
     col_s[0] = col[0];
     col_s[1] = col[1];
     col_s[2] = col[2];
+    if (useRGBW) white_s = white;
     bri_s = bri;
     effectDefault = effectCurrent;
     effectSpeedDefault = effectSpeed;
@@ -146,6 +147,26 @@ void handleSettingsSet()
       int i = server.arg("CLDFB").toInt();
       if (i >= 0 && i <= 255) col_s[2] = i;
     }
+    if (server.hasArg("CSECR"))
+    {
+      int i = server.arg("CSECR").toInt();
+      if (i >= 0 && i <= 255) col_sec_s[0] = i;
+    }
+    if (server.hasArg("CSECG"))
+    {
+      int i = server.arg("CSECG").toInt();
+      if (i >= 0 && i <= 255) col_sec_s[1] = i;
+    }
+    if (server.hasArg("CSECB"))
+    {
+      int i = server.arg("CSECB").toInt();
+      if (i >= 0 && i <= 255) col_sec_s[2] = i;
+    }
+    if (server.hasArg("CSECW"))
+    {
+      int i = server.arg("CSECW").toInt();
+      if (i >= 0 && i <= 255) white_sec_s = i;
+    }
     if (server.hasArg("CLDFW"))
     {
       int i = server.arg("CLDFW").toInt();
@@ -163,12 +184,6 @@ void handleSettingsSet()
       int i = server.arg("CLDFA").toInt();
       if (i >= 0 && i <= 255) bri_s = i;
     }
-    turnOnAtBoot = server.hasArg("BOOTN");
-    if (server.hasArg("BOOTP"))
-    {
-      int i = server.arg("BOOTP").toInt();
-      if (i >= 0 && i <= 25) bootPreset = i;
-    }
     if (server.hasArg("FXDEF"))
     {
       int i = server.arg("FXDEF").toInt();
@@ -179,6 +194,12 @@ void handleSettingsSet()
       int i = server.arg("SXDEF").toInt();
       if (i >= 0 && i <= 255) effectSpeedDefault = i;
     }
+  }
+  turnOnAtBoot = server.hasArg("BOOTN");
+  if (server.hasArg("BOOTP"))
+  {
+    int i = server.arg("BOOTP").toInt();
+    if (i >= 0 && i <= 25) bootPreset = i;
   }
   useGammaCorrectionBri = server.hasArg("GCBRI");
   useGammaCorrectionRGB = server.hasArg("GCRGB");

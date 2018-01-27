@@ -101,6 +101,10 @@ void WS2812FX::decreaseSpeed(uint8_t s) {
   setSpeed(s);
 }
 
+void WS2812FX::setIntensity(uint8_t in) {
+  _intensity=in;
+}
+
 void WS2812FX::setColor(uint8_t r, uint8_t g, uint8_t b) {
   setColor(((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }

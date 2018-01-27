@@ -87,7 +87,7 @@ void saveSettingsToEEPROM()
   }
   EEPROM.write(324, effectDefault);
   EEPROM.write(325, effectSpeedDefault);
-  //326 reserved for effectIntensity
+  EEPROM.write(326, effectIntensityDefault);
   EEPROM.write(327, ntpEnabled);
   //328 reserved for timezone setting
   //329 reserved for dst setting
@@ -246,10 +246,10 @@ void loadSettingsFromEEPROM(bool first)
   }
   //377 = lastEEPROMversion
   if (lastEEPROMversion > 1) {
-    col_sec_s[0] = EEPROM.read(378);
-    col_sec_s[1] = EEPROM.read(379);
-    col_sec_s[2] = EEPROM.read(380);
-    white_sec_s = EEPROM.read(381);
+    col_sec_s[0] = EEPROM.read(378); col_sec[0] = col_sec_s[0];
+    col_sec_s[1] = EEPROM.read(379); col_sec[1] = col_sec_s[1];
+    col_sec_s[2] = EEPROM.read(380); col_sec[2] = col_sec_s[2];
+    white_sec_s = EEPROM.read(381); white_sec = white_sec_s; 
     cc_index1 = EEPROM.read(382);
     cc_index2 = EEPROM.read(383);
     cc_numPrimary = EEPROM.read(384);
@@ -258,6 +258,9 @@ void loadSettingsFromEEPROM(bool first)
     cc_fromEnd = EEPROM.read(387);
     cc_step = EEPROM.read(388);
     strip.setCustomChase(cc_index1, cc_index2, cc_start, cc_numPrimary, cc_numSecondary, cc_step, cc_fromStart, cc_fromEnd);
+  }
+  if (lastEEPROMversion > 3) {
+    effectIntensityDefault = EEPROM.read(326); effectIntensity = effectIntensityDefault; 
   }
   bootPreset = EEPROM.read(389);
 
@@ -271,12 +274,13 @@ void loadSettingsFromEEPROM(bool first)
 
   strip.setMode(effectCurrent);
   strip.setSpeed(effectSpeed);
+  strip.setIntensity(effectIntensity);
   overlayCurrent = overlayDefault;
 }
 
 //PRESET PROTOCOL 20 bytes
 //0: preset purpose byte 0:invalid 1:valid preset 1.0
-//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16-19:Zeros
+//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17-19:Zeros
 
 void applyPreset(uint8_t index, bool loadBri, bool loadCol, bool loadFX)
 {
@@ -300,6 +304,7 @@ void applyPreset(uint8_t index, bool loadBri, bool loadCol, bool loadFX)
   {
     effectCurrent = EEPROM.read(i+10);
     effectSpeed = EEPROM.read(i+11);
+    effectIntensity = EEPROM.read(i+16);
     cc_numPrimary = EEPROM.read(i+12);
     cc_numSecondary = EEPROM.read(i+13);
     cc_fromEnd = EEPROM.read(i+14);
@@ -308,6 +313,7 @@ void applyPreset(uint8_t index, bool loadBri, bool loadCol, bool loadFX)
     strip.setCustomChase(cc_index1, cc_index2, cc_start, cc_numPrimary, cc_numSecondary, cc_step, cc_fromStart, cc_fromEnd);
     strip.setMode(effectCurrent);
     strip.setSpeed(effectSpeed);
+    strip.setIntensity(effectIntensity);
   }
 }
 
@@ -335,6 +341,7 @@ void savePreset(uint8_t index)
   if (!cc_fromEnd) m = 0;
   EEPROM.write(i+14, m);
   EEPROM.write(i+15, cc_step);
+  EEPROM.write(i+16, effectIntensity);
   EEPROM.commit();
 }
 
