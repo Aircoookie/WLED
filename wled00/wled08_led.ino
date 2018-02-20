@@ -3,7 +3,7 @@
  */
 
 void setAllLeds() {
-  double d = bri_t*bri_n;
+  double d = bri_t*briMultiplier;
   int val = d/100;
   if (val > 255) val = 255;
   if (useGammaCorrectionBri)
@@ -59,7 +59,7 @@ void colorUpdated(int callMode)
   }
   if (callMode != 5 && nightlightActive && nightlightFade)
   {
-    bri_nls = bri;
+    bri_nl_t = bri;
     nightlightDelayMs -= (millis() - nightlightStartTime);
     nightlightStartTime = millis();
   }
@@ -151,12 +151,12 @@ void handleNightlight()
       notify(4);
       nightlightDelayMs = (int)(nightlightDelayMins*60000);
       nightlightActive_old = true;
-      bri_nls = bri;
+      bri_nl_t = bri;
     }
     float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
     if (nightlightFade)
     {
-      bri = bri_nls+((bri_nl - bri_nls)*nper);
+      bri = bri_nl_t+((nightlightTargetBri - bri_nl_t)*nper);
       colorUpdated(5);
     }
     if (nper >= 1)
@@ -164,10 +164,10 @@ void handleNightlight()
       nightlightActive = false;
       if (!nightlightFade)
       {
-        bri = bri_nl;
+        bri = nightlightTargetBri;
         colorUpdated(5);
       }
-      if (bri == 0) bri_last = bri_nls;
+      if (bri == 0) bri_last = bri_nl_t;
     }
   } else if (nightlightActive_old) //early de-init
   {

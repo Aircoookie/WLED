@@ -34,7 +34,7 @@ void handleAlexa()
         String request = packetBuffer;
         
         if(request.indexOf("M-SEARCH") >= 0) {
-          if(request.indexOf("upnp:rootdevice") > 0) {
+          if(request.indexOf("upnp:rootdevice") > 0 || request.indexOf("device:basic:1") > 0) {
               DEBUG_PRINTLN("Responding search req...");
               respondToSearch();
           }
@@ -87,7 +87,13 @@ void alexaDim(uint8_t briL)
   server.send(200, "application/json", body.c_str());
   
   String ct = (alexaNotify)?"win&IN&A=":"win&NN&IN&A=";
-  ct = ct + (briL+1);
+  if (briL < 255)
+  {
+    ct = ct + (briL+1);
+  } else
+  {
+    ct = ct + (255);
+  }
   handleSet(ct);
 }
 

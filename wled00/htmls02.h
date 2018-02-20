@@ -1,6 +1,44 @@
 /*
  * Various
  */
+const char PAGE_msg0[] PROGMEM = R"=====(
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<title>WLED Message</title>
+<script>function B(){window.history.back()};</script>
+)=====";
+const char PAGE_msg1[] PROGMEM = R"=====(
+button{background:var(--bCol);color:var(--dCol);border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}body{font-family:Verdana,Helvetica,sans-serif;text-align:center;background:var(--cCol);color:var(--dCol);line-height:200%;margin:0;background-attachment:fixed}</style>
+</head>
+<body>
+)=====";
+
+const char PAGE_welcome0[] PROGMEM = R"=====(
+<!DOCTYPE html>
+<html><head>
+<title>WLED Welcome!</title>
+)=====";
+const char PAGE_welcome1[] PROGMEM = R"=====(
+body{font-family:Verdana, Helvetica, sans-serif;text-align:center;background:linear-gradient(var(--bCol),black);height:100%;margin:0;background-repeat:no-repeat;background-attachment: fixed;color: var(--dCol);}svg {fill: var(--dCol);}
+</style></head>
+<body>
+<svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<symbol id="lnr-smile" viewBox="0 0 1024 1024"><path d="M486.4 1024c-129.922 0-252.067-50.594-343.936-142.464s-142.464-214.014-142.464-343.936c0-129.923 50.595-252.067 142.464-343.936s214.013-142.464 343.936-142.464c129.922 0 252.067 50.595 343.936 142.464s142.464 214.014 142.464 343.936-50.594 252.067-142.464 343.936c-91.869 91.87-214.014 142.464-343.936 142.464zM486.4 102.4c-239.97 0-435.2 195.23-435.2 435.2s195.23 435.2 435.2 435.2 435.2-195.23 435.2-435.2-195.23-435.2-435.2-435.2z"></path><path d="M332.8 409.6c-42.347 0-76.8-34.453-76.8-76.8s34.453-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.453 76.8-76.8 76.8zM332.8 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M640 409.6c-42.349 0-76.8-34.453-76.8-76.8s34.451-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.451 76.8-76.8 76.8zM640 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M486.4 870.4c-183.506 0-332.8-149.294-332.8-332.8 0-14.139 11.462-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 155.275 126.325 281.6 281.6 281.6s281.6-126.325 281.6-281.6c0-14.139 11.461-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 183.506-149.294 332.8-332.8 332.8z"></path></symbol>
+</defs></svg>
+<br><br>
+<svg><use xlink:href="#lnr-smile"></use></svg>
+<h1>Welcome to WLED!</h1>
+<h3>Thank you for installing my application!</h3>
+Take a quick look at the <a href="https://github.com/Aircoookie/WLED/wiki" target="_blank">wiki</a>!<br>
+If you encounter a bug or have a question/feature suggestion, feel free to open a GitHub issue!<br><br>
+<b>Next steps:</b><br><br>
+Connect the module to your local WiFi <a href="/settings/wifi">here</a>!<br><br>
+<i>Just trying this out in AP mode?</i> <a href="/sliders">Here are the controls.</a><br>
+</body></html>
+)=====";
+
 /*
  * SPIFFS editor html
  */
@@ -11,7 +49,7 @@ eval(function(p,a,c,k,e,r){e=function(c){return(c<a?'':e(parseInt(c/a)))+((c=c%a
 </script><script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/ace.js" type="text/javascript" charset="utf-8"></script></head><body onload="onBodyLoad();"><div id="uploader"></div><div id="tree"></div><div id="editor"></div><div id="preview" style="display:none;"></div><iframe id=download-frame style='display:none;'></iframe></body></html>
 )=====";
 #else
-const char PAGE_edit[] PROGMEM = R"=====(SPIFFS disabled by firmware)=====";
+const char PAGE_edit[] PROGMEM = R"=====(SPIFFS disabled)=====";
 #endif
 /*
  * favicon

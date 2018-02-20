@@ -265,7 +265,7 @@ void _overlayAnalogCountdown()
   strip.unlockAll();
   if (now() >= countdownTime)
   {
-    //what to do if countdown finished
+    checkCountdown();
   } else
   {
     long diff = countdownTime - now();
@@ -309,13 +309,10 @@ void _overlayNixieCountdown()
 {
   if (now() >= countdownTime)
   {
-    if (effectCurrent != 8){
-      effectCurrent = 8;
-      strip.setMode(8);
-      strip.setSpeed(255);
+    if (checkCountdown())
+    {
+      _nixieNumber(2019, 2019);
     }
-    
-    _nixieNumber(2018, 2018);
   } else
   {
     long diff = countdownTime - now();

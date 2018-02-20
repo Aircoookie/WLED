@@ -26,10 +26,11 @@
 #include "src/dependencies/timezone/Timezone.h"
 #include "htmls00.h"
 #include "htmls01.h"
+#include "htmls02.h"
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1801180
+#define VERSION 1802193
 const String versionName = "WLED 0.5dev";
 
 //AP and OTA default passwords (change them!)
@@ -37,7 +38,7 @@ String appass = "wled1234";
 String otapass = "wledota";
 
 //If you have an RGBW strip, also uncomment first line in WS2812FX.h!
-boolean useRGBW = false;
+bool useRGBW = false;
 
 //overlays, needed for clocks etc.
 #define USEOVERLAYS
@@ -82,7 +83,8 @@ bool ntpEnabled = true;
 #endif
 
 //Default CONFIG
-String serverDescription = "WLED 0.5dev";
+String serverDescription = versionName;
+uint8_t currentTheme = 0;
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
 String cmdns = "led";
@@ -98,26 +100,27 @@ IPAddress staticip(0, 0, 0, 0);
 IPAddress staticgateway(0, 0, 0, 0);
 IPAddress staticsubnet(255, 255, 255, 0);
 IPAddress staticdns(8, 8, 8, 8); //only for NTP
-boolean useHSB = false, useHSBDefault = false;
-boolean turnOnAtBoot = true;
+bool useHSB = false, useHSBDefault = false;
+bool turnOnAtBoot = true;
 uint8_t bootPreset = 0;
 byte col_s[]{255, 159, 0};
 byte col_sec_s[]{0, 0, 0};
 byte white_s = 0;
 byte white_sec_s = 0;
 byte bri_s = 127;
-uint8_t bri_nl = 0, bri_nls;
-boolean fadeTransition = true;
-boolean sweepTransition = false; boolean sweepDirection = true;
+uint8_t nightlightTargetBri = 0, bri_nl_t;
+bool fadeTransition = true;
+bool sweepTransition = false, sweepDirection = true;
 uint16_t transitionDelay = 1200;
-boolean otaLock = true;
-boolean onlyAP = false;
-boolean buttonEnabled = true;
-boolean notifyDirect = true, notifyButton = true, notifyDirectDefault = true, alexaNotify = false, macroNotify = false;
-boolean receiveNotifications = true, receiveNotificationsDefault = true;
-uint8_t bri_n = 100;
+bool otaLock = true;
+bool aOtaEnabled = true;
+bool onlyAP = false;
+bool buttonEnabled = true;
+bool notifyDirect = true, notifyButton = true, notifyDirectDefault = true, alexaNotify = false, macroNotify = false;
+bool receiveNotifications = true, receiveNotificationBrightness = true, receiveNotificlationColor = true, receiveNotificationEffects = true;
+uint8_t briMultiplier = 100;
 uint8_t nightlightDelayMins = 60;
-boolean nightlightFade = true;
+bool nightlightFade = true;
 uint16_t udpPort = 21324;
 uint8_t effectDefault = 0;
 uint8_t effectSpeedDefault = 75;
@@ -178,6 +181,8 @@ uint8_t effectSpeed = 75;
 uint8_t effectIntensity = 128;
 boolean udpConnected = false;
 byte udpIn[1026];
+String cssCol[]={"","","","","",""};
+String cssColorString="";
 //NTP stuff
 boolean ntpConnected = false;
 unsigned int ntpLocalPort = 2390;
@@ -217,17 +222,16 @@ boolean arlsSign = true;
 uint8_t auxTime = 0;
 unsigned long auxStartTime;
 boolean auxActive, auxActiveBefore;
-boolean initialBoot = false;
+boolean showWelcomePage = false;
 
 boolean useGammaCorrectionBri = false;
 boolean useGammaCorrectionRGB = true;
 int arlsOffset = -22; //10: -22 assuming arls52
 
-//alexa
+//alexa udp
 WiFiUDP UDP;
 IPAddress ipMulti(239, 255, 255, 250);
 unsigned int portMulti = 1900;
-unsigned int localPort = 1900;
 char packetBuffer[255];
 String escapedMac;
 
@@ -289,6 +293,10 @@ const uint8_t gamma8[] = {
   177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
 
+String txd = "Please disable OTA Lock in security settings!";
+
+void serveMessage(int,String,String,bool=false);
+
 void down()
 {
   bri_t = 0;
@@ -316,7 +324,7 @@ void loop() {
     yield();
     handleButton();
     handleNetworkTime();
-    if (!otaLock) ArduinoOTA.handle();
+    if (!otaLock && aOtaEnabled) ArduinoOTA.handle();
     #ifdef CRONIXIE
     handleCronixie();
     #endif

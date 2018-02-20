@@ -19,6 +19,10 @@ void saveSettingsToEEPROM()
   {
     clearEEPROM();
     EEPROM.write(233, 233);
+    showWelcomePage = true;
+  } else
+  {
+    showWelcomePage = false;
   }
   
   for (int i = 0; i < 32; ++i)
@@ -67,17 +71,17 @@ void saveSettingsToEEPROM()
   EEPROM.write(247, col_s[1]);
   EEPROM.write(248, col_s[2]);
   EEPROM.write(249, bri_s);
-  EEPROM.write(250, receiveNotificationsDefault);
+  EEPROM.write(250, receiveNotificationBrightness);
   EEPROM.write(251, fadeTransition);
   EEPROM.write(253, (transitionDelay >> 0) & 0xFF);
   EEPROM.write(254, (transitionDelay >> 8) & 0xFF);
-  EEPROM.write(255, bri_n);
+  EEPROM.write(255, briMultiplier);
   //255,250,231,230,226 notifier bytes
   for (int i = 256; i < 288; ++i)
   {
     EEPROM.write(i, otapass.charAt(i-256));
   }
-  EEPROM.write(288, bri_nl);
+  EEPROM.write(288, nightlightTargetBri);
   EEPROM.write(289, otaLock);
   EEPROM.write(290, (udpPort >> 0) & 0xFF);
   EEPROM.write(291, (udpPort >> 8) & 0xFF);
@@ -123,6 +127,19 @@ void saveSettingsToEEPROM()
   EEPROM.write(387, cc_fromEnd);
   EEPROM.write(388, cc_step);
   EEPROM.write(389, bootPreset);
+  EEPROM.write(390, aOtaEnabled);
+  EEPROM.write(391, receiveNotificationColor);
+  EEPROM.write(392, receiveNotificationEffects);
+  if (currentTheme == 15)
+  {
+    for (int k=0;k<6;k++){
+    for (int i = 900+k*8; i < (908+k*8); ++i)
+    {
+      EEPROM.write(i, cssCol[k].charAt(i-900));
+    }}
+  }
+  EEPROM.write(948,currentTheme);
+  
   EEPROM.commit();
 }
 
@@ -197,18 +214,17 @@ void loadSettingsFromEEPROM(bool first)
   {
     bri = 0; bri_last = bri_s;
   }
-  receiveNotifications = EEPROM.read(250);
-  receiveNotificationsDefault = receiveNotifications;
+  receiveNotificationBrightness = EEPROM.read(250);
   fadeTransition = EEPROM.read(251);
   transitionDelay = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
-  bri_n = EEPROM.read(255);
+  briMultiplier = EEPROM.read(255);
   otapass = "";
   for (int i = 256; i < 288; ++i)
   {
     if (EEPROM.read(i) == 0) break;
     otapass += char(EEPROM.read(i));
   }
-  bri_nl = EEPROM.read(288);
+  nightlightTargetBri = EEPROM.read(288);
   otaLock = EEPROM.read(289);
   udpPort = ((EEPROM.read(290) << 0) & 0xFF) + ((EEPROM.read(291) << 8) & 0xFF00);
   serverDescription = "";
@@ -261,11 +277,27 @@ void loadSettingsFromEEPROM(bool first)
   }
   if (lastEEPROMversion > 3) {
     effectIntensityDefault = EEPROM.read(326); effectIntensity = effectIntensityDefault; 
+    aOtaEnabled = EEPROM.read(390);
+    receiveNotificationColor = EEPROM.read(391);
+    receiveNotificationEffects = EEPROM.read(392);
   }
+  receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+  
   bootPreset = EEPROM.read(389);
 
   //favorite setting memory (25 slots/ each 20byte)
   //400 - 899 reserved
+
+  currentTheme = EEPROM.read(948);
+  if (currentTheme == 15)
+  {
+    for (int k=0;k<6;k++){
+    for (int i = 900+k*8; i < (908+k*8); ++i)
+    {
+      if (EEPROM.read(i) == 0) break;
+      cssCol[k] += char(EEPROM.read(i));
+    }}
+  }
 
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved

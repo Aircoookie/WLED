@@ -19,260 +19,302 @@ void _setRandomColor(bool _sec)
   }
 }
 
-void handleSettingsSet()
+void handleSettingsSet(uint8_t subPage)
 {
-  if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
-  if (server.hasArg("CPASS"))
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
+  if (subPage <1 || subPage >6) return;
+  
+  //WIFI SETTINGS
+  if (subPage == 1)
   {
-    if (!server.arg("CPASS").indexOf('*') == 0)
+    if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
+    if (server.hasArg("CPASS"))
     {
-      DEBUG_PRINTLN("Setting pass");
-      clientpass = server.arg("CPASS");
-    }
-  }
-  if (server.hasArg("CMDNS")) cmdns = server.arg("CMDNS");
-  if (server.hasArg("APWTM"))
-  {
-      int i = server.arg("APWTM").toInt();
-      if (i >= 0 && i <= 255) apWaitTimeSecs = i;
-  }
-  if (server.hasArg("APSSID")) apssid = server.arg("APSSID");
-  aphide = server.hasArg("APHSSID");
-  if (server.hasArg("APPASS"))
-  {
-    if (!server.arg("APPASS").indexOf('*') == 0) appass = server.arg("APPASS");
-  }
-  if (server.hasArg("APCHAN"))
-  {
-    int chan = server.arg("APCHAN").toInt();
-    if (chan > 0 && chan < 14) apchannel = chan;
-  }
-  if (server.hasArg("RESET")) //might be dangerous in case arg is always sent
-  {
-    clearEEPROM();
-    server.send(200, "text/plain", "Settings erased. Rebooting...");
-    reset();
-  }
-  if (server.hasArg("CSIP0"))
-  {
-    int i = server.arg("CSIP0").toInt();
-    if (i >= 0 && i <= 255) staticip[0] = i;
-  }
-  if (server.hasArg("CSIP1"))
-  {
-    int i = server.arg("CSIP1").toInt();
-    if (i >= 0 && i <= 255) staticip[1] = i;
-  }
-  if (server.hasArg("CSIP2"))
-  {
-    int i = server.arg("CSIP2").toInt();
-    if (i >= 0 && i <= 255) staticip[2] = i;
-  }
-  if (server.hasArg("CSIP3"))
-  {
-    int i = server.arg("CSIP3").toInt();
-    if (i >= 0 && i <= 255) staticip[3] = i;
-  }
-  if (server.hasArg("CSGW0"))
-  {
-    int i = server.arg("CSGW0").toInt();
-    if (i >= 0 && i <= 255) staticgateway[0] = i;
-  }
-  if (server.hasArg("CSGW1"))
-  {
-    int i = server.arg("CSGW1").toInt();
-    if (i >= 0 && i <= 255) staticgateway[1] = i;
-  }
-  if (server.hasArg("CSGW2"))
-  {
-    int i = server.arg("CSGW2").toInt();
-    if (i >= 0 && i <= 255) staticgateway[2] = i;
-  }
-  if (server.hasArg("CSGW3"))
-  {
-    int i = server.arg("CSGW3").toInt();
-    if (i >= 0 && i <= 255) staticgateway[3] = i;
-  }
-  if (server.hasArg("CSSN0"))
-  {
-    int i = server.arg("CSSN0").toInt();
-    if (i >= 0 && i <= 255) staticsubnet[0] = i;
-  }
-  if (server.hasArg("CSSN1"))
-  {
-    int i = server.arg("CSSN1").toInt();
-    if (i >= 0 && i <= 255) staticsubnet[1] = i;
-  }
-  if (server.hasArg("CSSN2"))
-  {
-    int i = server.arg("CSSN2").toInt();
-    if (i >= 0 && i <= 255) staticsubnet[2] = i;
-  }
-  if (server.hasArg("CSSN3"))
-  {
-    int i = server.arg("CSSN3").toInt();
-    if (i >= 0 && i <= 255) staticsubnet[3] = i;
-  }
-  if (server.hasArg("DESC")) serverDescription = server.arg("DESC");
-  useHSBDefault = server.hasArg("COLMD");
-  useHSB = useHSBDefault;
-  if (server.hasArg("LEDCN"))
-  {
-    int i = server.arg("LEDCN").toInt();
-    if (i >= 0 && i <= LEDCOUNT) ledcount = i;
-    strip.setLedCount(ledcount);
-  }
-  if (server.hasArg("CBEOR")) //ignore settings and save current brightness, colors and fx as default
-  {
-    col_s[0] = col[0];
-    col_s[1] = col[1];
-    col_s[2] = col[2];
-    if (useRGBW) white_s = white;
-    bri_s = bri;
-    effectDefault = effectCurrent;
-    effectSpeedDefault = effectSpeed;
-  } else {
-    if (server.hasArg("CLDFR"))
-    {
-      int i = server.arg("CLDFR").toInt();
-      if (i >= 0 && i <= 255) col_s[0] = i;
-    }
-    if (server.hasArg("CLDFG"))
-    {
-      int i = server.arg("CLDFG").toInt();
-      if (i >= 0 && i <= 255) col_s[1] = i;
-    }
-    if (server.hasArg("CLDFB"))
-    {
-      int i = server.arg("CLDFB").toInt();
-      if (i >= 0 && i <= 255) col_s[2] = i;
-    }
-    if (server.hasArg("CSECR"))
-    {
-      int i = server.arg("CSECR").toInt();
-      if (i >= 0 && i <= 255) col_sec_s[0] = i;
-    }
-    if (server.hasArg("CSECG"))
-    {
-      int i = server.arg("CSECG").toInt();
-      if (i >= 0 && i <= 255) col_sec_s[1] = i;
-    }
-    if (server.hasArg("CSECB"))
-    {
-      int i = server.arg("CSECB").toInt();
-      if (i >= 0 && i <= 255) col_sec_s[2] = i;
-    }
-    if (server.hasArg("CSECW"))
-    {
-      int i = server.arg("CSECW").toInt();
-      if (i >= 0 && i <= 255) white_sec_s = i;
-    }
-    if (server.hasArg("CLDFW"))
-    {
-      int i = server.arg("CLDFW").toInt();
-      if (i >= 0 && i <= 255)
+      if (!server.arg("CPASS").indexOf('*') == 0)
       {
-        useRGBW = true;
-        white_s = i;
-      } else {
-        useRGBW = false;
-        white_s = 0;
+        DEBUG_PRINTLN("Setting pass");
+        clientpass = server.arg("CPASS");
       }
     }
-    if (server.hasArg("CLDFA"))
+    if (server.hasArg("CMDNS")) cmdns = server.arg("CMDNS");
+    if (server.hasArg("APWTM"))
     {
-      int i = server.arg("CLDFA").toInt();
-      if (i >= 0 && i <= 255) bri_s = i;
+        int i = server.arg("APWTM").toInt();
+        if (i >= 0 && i <= 255) apWaitTimeSecs = i;
     }
-    if (server.hasArg("FXDEF"))
+    if (server.hasArg("APSSID")) apssid = server.arg("APSSID");
+    aphide = server.hasArg("APHSSID");
+    if (server.hasArg("APPASS"))
     {
-      int i = server.arg("FXDEF").toInt();
-      if (i >= 0 && i <= 255) effectDefault = i;
+      if (!server.arg("APPASS").indexOf('*') == 0) appass = server.arg("APPASS");
     }
-    if (server.hasArg("SXDEF"))
+    if (server.hasArg("APCHAN"))
     {
-      int i = server.arg("SXDEF").toInt();
-      if (i >= 0 && i <= 255) effectSpeedDefault = i;
+      int chan = server.arg("APCHAN").toInt();
+      if (chan > 0 && chan < 14) apchannel = chan;
+    }
+    if (server.hasArg("CSIP0"))
+    {
+      int i = server.arg("CSIP0").toInt();
+      if (i >= 0 && i <= 255) staticip[0] = i;
+    }
+    if (server.hasArg("CSIP1"))
+    {
+      int i = server.arg("CSIP1").toInt();
+      if (i >= 0 && i <= 255) staticip[1] = i;
+    }
+    if (server.hasArg("CSIP2"))
+    {
+      int i = server.arg("CSIP2").toInt();
+      if (i >= 0 && i <= 255) staticip[2] = i;
+    }
+    if (server.hasArg("CSIP3"))
+    {
+      int i = server.arg("CSIP3").toInt();
+      if (i >= 0 && i <= 255) staticip[3] = i;
+    }
+    if (server.hasArg("CSGW0"))
+    {
+      int i = server.arg("CSGW0").toInt();
+      if (i >= 0 && i <= 255) staticgateway[0] = i;
+    }
+    if (server.hasArg("CSGW1"))
+    {
+      int i = server.arg("CSGW1").toInt();
+      if (i >= 0 && i <= 255) staticgateway[1] = i;
+    }
+    if (server.hasArg("CSGW2"))
+    {
+      int i = server.arg("CSGW2").toInt();
+      if (i >= 0 && i <= 255) staticgateway[2] = i;
+    }
+    if (server.hasArg("CSGW3"))
+    {
+      int i = server.arg("CSGW3").toInt();
+      if (i >= 0 && i <= 255) staticgateway[3] = i;
+    }
+    if (server.hasArg("CSSN0"))
+    {
+      int i = server.arg("CSSN0").toInt();
+      if (i >= 0 && i <= 255) staticsubnet[0] = i;
+    }
+    if (server.hasArg("CSSN1"))
+    {
+      int i = server.arg("CSSN1").toInt();
+      if (i >= 0 && i <= 255) staticsubnet[1] = i;
+    }
+    if (server.hasArg("CSSN2"))
+    {
+      int i = server.arg("CSSN2").toInt();
+      if (i >= 0 && i <= 255) staticsubnet[2] = i;
+    }
+    if (server.hasArg("CSSN3"))
+    {
+      int i = server.arg("CSSN3").toInt();
+      if (i >= 0 && i <= 255) staticsubnet[3] = i;
     }
   }
-  turnOnAtBoot = server.hasArg("BOOTN");
-  if (server.hasArg("BOOTP"))
+
+  //LED SETTINGS
+  if (subPage == 2)
   {
-    int i = server.arg("BOOTP").toInt();
-    if (i >= 0 && i <= 25) bootPreset = i;
-  }
-  useGammaCorrectionBri = server.hasArg("GCBRI");
-  useGammaCorrectionRGB = server.hasArg("GCRGB");
-  buttonEnabled = server.hasArg("BTNON");
-  fadeTransition = server.hasArg("TFADE");
-  sweepTransition = server.hasArg("TSWEE");
-  sweepDirection = !server.hasArg("TSDIR");
-  if (server.hasArg("TDLAY"))
-  {
-    int i = server.arg("TDLAY").toInt();
-    if (i > 0){
-      transitionDelay = i;
+    if (server.hasArg("LEDCN"))
+    {
+      int i = server.arg("LEDCN").toInt();
+      if (i >= 0 && i <= LEDCOUNT) ledcount = i;
+      strip.setLedCount(ledcount);
+    }
+    if (server.hasArg("CBEOR")) //ignore settings and save current brightness, colors and fx as default
+    {
+      col_s[0] = col[0];
+      col_s[1] = col[1];
+      col_s[2] = col[2];
+      if (useRGBW) white_s = white;
+      bri_s = bri;
+      effectDefault = effectCurrent;
+      effectSpeedDefault = effectSpeed;
+    } else {
+      if (server.hasArg("CLDFR"))
+      {
+        int i = server.arg("CLDFR").toInt();
+        if (i >= 0 && i <= 255) col_s[0] = i;
+      }
+      if (server.hasArg("CLDFG"))
+      {
+        int i = server.arg("CLDFG").toInt();
+        if (i >= 0 && i <= 255) col_s[1] = i;
+      }
+      if (server.hasArg("CLDFB"))
+      {
+        int i = server.arg("CLDFB").toInt();
+        if (i >= 0 && i <= 255) col_s[2] = i;
+      }
+      if (server.hasArg("CSECR"))
+      {
+        int i = server.arg("CSECR").toInt();
+        if (i >= 0 && i <= 255) col_sec_s[0] = i;
+      }
+      if (server.hasArg("CSECG"))
+      {
+        int i = server.arg("CSECG").toInt();
+        if (i >= 0 && i <= 255) col_sec_s[1] = i;
+      }
+      if (server.hasArg("CSECB"))
+      {
+        int i = server.arg("CSECB").toInt();
+        if (i >= 0 && i <= 255) col_sec_s[2] = i;
+      }
+      if (server.hasArg("CSECW"))
+      {
+        int i = server.arg("CSECW").toInt();
+        if (i >= 0 && i <= 255) white_sec_s = i;
+      }
+      if (server.hasArg("CLDFW"))
+      {
+        int i = server.arg("CLDFW").toInt();
+        if (i >= 0 && i <= 255)
+        {
+          useRGBW = true;
+          white_s = i;
+        } else {
+          useRGBW = false;
+          white_s = 0;
+        }
+      }
+      if (server.hasArg("CLDFA"))
+      {
+        int i = server.arg("CLDFA").toInt();
+        if (i >= 0 && i <= 255) bri_s = i;
+      }
+      if (server.hasArg("FXDEF"))
+      {
+        int i = server.arg("FXDEF").toInt();
+        if (i >= 0 && i <= 255) effectDefault = i;
+      }
+      if (server.hasArg("SXDEF"))
+      {
+        int i = server.arg("SXDEF").toInt();
+        if (i >= 0 && i <= 255) effectSpeedDefault = i;
+      }
+    }
+    turnOnAtBoot = server.hasArg("BOOTN");
+    if (server.hasArg("BOOTP"))
+    {
+      int i = server.arg("BOOTP").toInt();
+      if (i >= 0 && i <= 25) bootPreset = i;
+    }
+    useGammaCorrectionBri = server.hasArg("GCBRI");
+    useGammaCorrectionRGB = server.hasArg("GCRGB");
+    buttonEnabled = server.hasArg("BTNON");
+    fadeTransition = server.hasArg("TFADE");
+    sweepTransition = server.hasArg("TSWEE");
+    sweepDirection = !server.hasArg("TSDIR");
+    if (server.hasArg("TDLAY"))
+    {
+      int i = server.arg("TDLAY").toInt();
+      if (i > 0){
+        transitionDelay = i;
+      }
+    }
+    if (server.hasArg("TLBRI"))
+    {
+      nightlightTargetBri = server.arg("TLBRI").toInt();
+    }
+    if (server.hasArg("TLDUR"))
+    {
+      int i = server.arg("TLDUR").toInt();
+      if (i > 0) nightlightDelayMins = i;
+    }
+    nightlightFade = server.hasArg("TLFDE");
+    if (server.hasArg("OLDEF"))
+    {
+      int i = server.arg("OLDEF").toInt();
+      if (i >= 0  && i <= 255) overlayDefault = i;
+    }
+    if (server.hasArg("WOFFS"))
+    {
+      int i = server.arg("WOFFS").toInt();
+      if (i >= -255  && i <= 255) arlsOffset = i;
+      arlsSign = (i>=0)?true:false;
+    }
+    if (server.hasArg("NRBRI"))
+    {
+      int i = server.arg("NRBRI").toInt();
+      if (i > 0) briMultiplier = i;
     }
   }
-  if (server.hasArg("TLBRI"))
+
+  //UI
+  if (subPage == 3)
   {
-    bri_nl = server.arg("TLBRI").toInt();
+    if (server.hasArg("DESC")) serverDescription = server.arg("DESC");
+    useHSBDefault = server.hasArg("COLMD");
+    useHSB = useHSBDefault;
+    if (server.hasArg("THEME")) currentTheme = server.arg("THEME").toInt();
+    for(int i=0;i<5;i++)
+    {
+      if (server.hasArg(("CCOL"+i))) cssCol[i] = server.arg(("CCOL"+i));
+    }
+    buildCssColorString();
   }
-  if (server.hasArg("TLDUR"))
+
+  //SYNC
+  if (subPage == 4)
   {
-    int i = server.arg("TLDUR").toInt();
-    if (i > 0) nightlightDelayMins = i;
+    if (server.hasArg("NUDPP"))
+    {
+      udpPort = server.arg("NUDPP").toInt();
+    }
+    receiveNotificationBrightness = server.hasArg("NRCBR");
+    receiveNotificationColor = server.hasArg("NRCCL");
+    receiveNotificationEffects = server.hasArg("NRCFX");
+    receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+    notifyDirectDefault = server.hasArg("NSDIR");
+    notifyDirect = notifyDirectDefault;
+    notifyButton = server.hasArg("NSBTN");
+    alexaEnabled = server.hasArg("ALEXA");
+    if (server.hasArg("AINVN")) alexaInvocationName = server.arg("AINVN");
+    alexaNotify = server.hasArg("NSALX");
   }
-  nightlightFade = server.hasArg("TLFDE");
-  if (server.hasArg("NUDPP"))
+
+  //TIME
+  if (subPage == 5)
   {
-    udpPort = server.arg("NUDPP").toInt();
+    ntpEnabled = server.hasArg("NTPON");
   }
-  receiveNotifications = server.hasArg("NRCVE");
-  receiveNotificationsDefault = receiveNotifications;
-  if (server.hasArg("NRBRI"))
+
+  //SECURITY
+  if (subPage == 6)
   {
-    int i = server.arg("NRBRI").toInt();
-    if (i > 0) bri_n = i;
-  }
-  notifyDirectDefault = server.hasArg("NSDIR");
-  notifyDirect = notifyDirectDefault;
-  notifyButton = server.hasArg("NSBTN");
-  alexaEnabled = server.hasArg("ALEXA");
-  if (server.hasArg("AINVN")) alexaInvocationName = server.arg("AINVN");
-  alexaNotify = server.hasArg("NSALX");
-  ntpEnabled = server.hasArg("NTPON");
-  if (server.hasArg("OLDEF"))
-  {
-    int i = server.arg("OLDEF").toInt();
-    if (i >= 0  && i <= 255) overlayDefault = i;
-  }
-  if (server.hasArg("WOFFS"))
-  {
-    int i = server.arg("WOFFS").toInt();
-    if (i >= -255  && i <= 255) arlsOffset = i;
-    arlsSign = (i>=0)?true:false;
-  }
-  if (server.hasArg("OPASS"))
-  {
+    if (server.hasArg("RESET"))
+    {
+      clearEEPROM();
+      serveMessage(200, "All Settings erased.", "Rebooting...");
+      reset();
+    }
+  
+    if (server.hasArg("OPASS"))
+    {
+      if (!otaLock)
+      {
+        if (server.arg("OPASS").length() > 0)
+        otapass = server.arg("OPASS");
+      } else if (!server.hasArg("NOOTA"))
+      {
+        if (otapass.equals(server.arg("OPASS")))
+        {
+          otaLock = false;
+        }
+      }
+    }
+    if (server.hasArg("NOOTA")) otaLock = true;
     if (!otaLock)
     {
-      if (server.arg("OPASS").length() > 0)
-      otapass = server.arg("OPASS");
-    } else if (!server.hasArg("NOOTA"))
-    {
-      if (otapass.equals(server.arg("OPASS")))
-      {
-        otaLock = false;
-      }
+      recoveryAPDisabled = server.hasArg("NORAP");
+      aOtaEnabled = server.hasArg("AROTA");
     }
   }
-  if (server.hasArg("NOOTA")) otaLock = true;
-  if (server.hasArg("NORAP")) {
-    if (!otaLock) recoveryAPDisabled = true;
-  } else {
-    recoveryAPDisabled = false;
-  }
+
   saveSettingsToEEPROM();
 }
 
@@ -329,6 +371,7 @@ boolean handleSet(String req)
    if (pos > 0) {
       white = req.substring(pos + 3).toInt();
    }
+   
    //set 2nd red value
    pos = req.indexOf("R2=");
    if (pos > 0) {
@@ -349,6 +392,7 @@ boolean handleSet(String req)
    if (pos > 0) {
       white_sec = req.substring(pos + 3).toInt();
    }
+   
    //set 2nd to white
    pos = req.indexOf("SW");
    if (pos > 0) {
@@ -398,6 +442,7 @@ boolean handleSet(String req)
       white = white_sec;
       white_sec = _temp[3];
    }
+   
    //set current effect index
    pos = req.indexOf("FX=");
    if (pos > 0) {
@@ -418,6 +463,17 @@ boolean handleSet(String req)
         effectUpdated = true;
       }
    }
+   //set effect intensity
+   pos = req.indexOf("IX=");
+   if (pos > 0) {
+      if (effectIntensity != req.substring(pos + 3).toInt())
+      {
+        effectIntensity = req.substring(pos + 3).toInt();
+        strip.setIntensity(effectIntensity);
+        effectUpdated = true;
+      }
+   }
+   
    //set default control mode (0 - RGB, 1 - HSB)
    pos = req.indexOf("MD=");
    if (pos > 0) {
@@ -511,7 +567,7 @@ boolean handleSet(String req)
    //set nightlight target brightness
    pos = req.indexOf("NT=");
    if (pos > 0) {
-      bri_nl = req.substring(pos + 3).toInt();
+      nightlightTargetBri = req.substring(pos + 3).toInt();
       nightlightActive_old = false; //re-init
    }
    //toggle nightlight fade
@@ -560,6 +616,7 @@ boolean handleSet(String req)
       countdownTime = req.substring(pos+3).toInt();
       if (countdownTime - now() > 0) countdownOverTriggered = false;
    }
+   
    //set custom chase data
    bool _cc_updated = false;
    pos = req.indexOf("C0="); if (pos > 0) {cc_start =  (req.substring(pos + 3).toInt()); _cc_updated = true;}

@@ -1,0 +1,20 @@
+6. Amber:
+--aCol: #f7c331;
+--bCol: #dcc7aa;
+--cCol: #6b7a8f;
+--dCol: #f7882f;
+--sCol: #0007;
+
+7. Club
+--aCol: #fc3;
+--bCol: #124;
+--cCol: #334;
+--dCol: #f1d;
+--sCol: #f00;
+
+8: Air:
+--aCol: #0ac;
+--bCol: #124;
+--cCol: #334;
+--dCol: #00ced1;
+--sCol: #003eff;

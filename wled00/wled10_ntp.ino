@@ -84,3 +84,17 @@ String getTimeString()
   return ret;
 }
 
+//returns true if countdown just over
+bool checkCountdown()
+{
+  long diff = countdownTime - local;
+  local = abs(diff);
+  if (diff <0 && !countdownOverTriggered)
+  {
+    applyMacro(countdownMacro);
+    countdownOverTriggered = true;
+    return true;
+  }
+  return false;
+}
+

@@ -246,7 +246,7 @@ void WS2812FX::mode_static(void) {
 
 
 /*
- * Normal blinking. 50% on/off time.
+ * Normal blinking. on/off duty time set by FX intensity.
  */
 void WS2812FX::mode_blink(void) {
   if(_counter_mode_call % 2 == 1) {
@@ -254,16 +254,15 @@ void WS2812FX::mode_blink(void) {
       if (!_locked[i])
       setPixelColor(i, _color);
     }
-    show();
+    _mode_delay = (100 + ((1986 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX))*(float)(_intensity/128.0);
   } else {
     for(uint16_t i=0; i < _led_count; i++) {
       if (!_locked[i])
       setPixelColor(i, _color_sec);
     }
-    show();
+    _mode_delay = (100 + ((1986 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX))*(float)(2.0-(_intensity/128.0));
   }
-
-  _mode_delay = 100 + ((1986 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
+  show();
 }
 
 
@@ -342,12 +341,11 @@ void WS2812FX::mode_single_dynamic(void) {
 
 
 /*
- * Lights every LED in a random color. Changes all LED at the same time
- * to new random colors.
+ * Lights multiple random leds in a random color (higher intensity, more updates)
  */
 void WS2812FX::mode_multi_dynamic(void) {
   for(uint16_t i=0; i < _led_count; i++) {
-    if (!_locked[i])
+    if (!_locked[i] && random(256)<=_intensity)
     setPixelColor(i, color_wheel(random(256)));
   }
   show();
@@ -493,7 +491,7 @@ void WS2812FX::mode_rainbow(void) {
 void WS2812FX::mode_rainbow_cycle(void) {
   for(uint16_t i=0; i < _led_count; i++) {
     if (!_locked[i])
-    setPixelColor(i, color_wheel(((i * 256 / _led_count) + _counter_mode_step) % 256));
+    setPixelColor(i, color_wheel(((i * 256 / ((uint16_t)(_led_count*(float)(_intensity/128.0))+1)) + _counter_mode_step) % 256));
   }
   show();
 

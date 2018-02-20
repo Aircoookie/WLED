@@ -148,16 +148,7 @@ void handleCronixie()
   {
     cronixieRefreshedTime = millis();
     local = TZ.toLocal(now(), &tcr);
-    if (cronixieCountdown)
-    {
-      long diff = countdownTime - local;
-      local = abs(diff);
-      if (diff <0 && !countdownOverTriggered)
-      {
-        applyMacro(countdownMacro);
-        countdownOverTriggered = true;
-      }
-    }
+    if (cronixieCountdown) checkCountdown();
     uint8_t h = hour(local);
     uint8_t h0 = h;
     uint8_t m = minute(local);

@@ -56,10 +56,12 @@
 							} else {
 								uwv = false;
 							}
-							if (d.activeElement != Cf.TX) Cf.TX.selectedIndex = this.responseXML.getElementsByTagName('fx')[0].childNodes[0].nodeValue;
+							Cf.TX.selectedIndex = this.responseXML.getElementsByTagName('fx')[0].childNodes[0].nodeValue;
 							d.Cf.SX.value = this.responseXML.getElementsByTagName('sx')[0].childNodes[0].nodeValue;
 							d.Cf.IX.value = this.responseXML.getElementsByTagName('ix')[0].childNodes[0].nodeValue;
 							nla = (this.responseXML.getElementsByTagName('nl')[0].innerHTML)!=0?true:false;
+							d.Cf.SN.value = this.responseXML.getElementsByTagName('nd')[0].childNodes[0].nodeValue;
+							d.Cf.ST.value = this.responseXML.getElementsByTagName('nt')[0].childNodes[0].nodeValue;
 							nState = 0;
 							nState = (this.responseXML.getElementsByTagName('nr')[0].innerHTML)!=0?1:0;
 							nState += (this.responseXML.getElementsByTagName('ns')[0].innerHTML)!=0?2:0;
@@ -332,11 +334,11 @@
 	</script>
 	<style>
 		:root {
-			--aCol: #D9B310;
-			--bCol: #0B3C5D;
-			--cCol: #1D2731;
-			--dCol: #328CC1;
-			--sCol: #000;
+			--aCol: #0ac;
+			--bCol: #124;
+			--cCol: #334;
+			--dCol: #288;
+			--sCol: #003eff;
 		}
 		.ctrl_box {
 			margin: auto;
