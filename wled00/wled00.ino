@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.5dev
+ * @version 0.5.0
  * @author Christian Schwinne
  */
 
@@ -30,8 +30,8 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1802193
-const String versionName = "WLED 0.5dev";
+#define VERSION 1802221
+const String versionString = "0.5.0";
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -83,7 +83,7 @@ bool ntpEnabled = true;
 #endif
 
 //Default CONFIG
-String serverDescription = versionName;
+String serverDescription = versionString;
 uint8_t currentTheme = 0;
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
@@ -112,12 +112,12 @@ uint8_t nightlightTargetBri = 0, bri_nl_t;
 bool fadeTransition = true;
 bool sweepTransition = false, sweepDirection = true;
 uint16_t transitionDelay = 1200;
-bool otaLock = true;
+bool otaLock = false, wifiLock = false;
 bool aOtaEnabled = true;
 bool onlyAP = false;
 bool buttonEnabled = true;
 bool notifyDirect = true, notifyButton = true, notifyDirectDefault = true, alexaNotify = false, macroNotify = false;
-bool receiveNotifications = true, receiveNotificationBrightness = true, receiveNotificlationColor = true, receiveNotificationEffects = true;
+bool receiveNotifications = true, receiveNotificationBrightness = true, receiveNotificationColor = true, receiveNotificationEffects = true;
 uint8_t briMultiplier = 100;
 uint8_t nightlightDelayMins = 60;
 bool nightlightFade = true;
@@ -182,6 +182,7 @@ uint8_t effectIntensity = 128;
 boolean udpConnected = false;
 byte udpIn[1026];
 String cssCol[]={"","","","","",""};
+String cssFont="Verdana";
 String cssColorString="";
 //NTP stuff
 boolean ntpConnected = false;
@@ -252,7 +253,7 @@ WS2812FX strip = WS2812FX(LEDCOUNT);
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
 //3 -> 0.4  1712121 and up
-//4 -> 0.5dev 1801271 and up
+//4 -> 0.5.0 and up
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
@@ -295,7 +296,7 @@ const uint8_t gamma8[] = {
 
 String txd = "Please disable OTA Lock in security settings!";
 
-void serveMessage(int,String,String,bool=false);
+void serveMessage(int,String,String,int=255);
 
 void down()
 {

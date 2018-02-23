@@ -2,7 +2,7 @@
  * Settings html
  */
 const char PAGE_settingsCss[] PROGMEM = R"=====(
-body{font-family:Verdana,Helvetica,sans-serif;text-align:center;background:var(--cCol);color:var(--dCol);line-height:200%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--dCol);border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--dCol);border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:3em}select{background:var(--bCol);color:var(--dCol);border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}</style>
+body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:3em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}</style>
 )=====";
 
 const char PAGE_settings0[] PROGMEM = R"=====(
@@ -13,7 +13,7 @@ const char PAGE_settings0[] PROGMEM = R"=====(
 )=====";
 
 const char PAGE_settings1[] PROGMEM = R"=====(
-body{font-family:Verdana,Helvetica,sans-serif;text-align:center;background:var(--cCol);height:100%;margin:0;background-attachment:fixed}button{background:var(--bCol);color:var(--dCol);border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:9vmin;width:95%;margin-top:2.4vh}</style>
+body{text-align:center;background:var(--cCol);height:100%;margin:0;background-attachment:fixed}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:8vmin;height:13.86vh;width:95%;margin-top:2.4vh}</style>
 </head>
 <body>
 <form action=/settings/wifi><button type=submit>WiFi Setup</button></form>
@@ -37,7 +37,7 @@ const char PAGE_settings_wifi1[] PROGMEM = R"=====(
 <body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button><hr>
+<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save & Reboot</button><hr>
 <h2>WiFi setup</h2>
 <h3>Connect to existing network</h3>
 Network name (SSID, empty to not connect): <br><input name="CSSID" maxlength="32"> <br>
@@ -67,7 +67,7 @@ Hide AP name: <input type="checkbox" name="APHSSID"> <br>
 AP password (leave empty for open): <br> <input type="password" name="APPASS" maxlength="63"> <br>
 Access Point WiFi channel: <input name="APCHAN" type="number" min="1" max="13" required> <br>
 AP IP: <span class="sip"> Not active </span> <hr>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
+<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save & Reboot</button>
 </form>
 </body>
 </html>
@@ -152,21 +152,24 @@ Color Theme:
 <option value="6">Amber</option>
 <option value="7">Club</option>
 <option value="8">Air</option>
-<option value="9">Coookie</option>
-<option value="10">Unused</option>
-<option value="11">Unused</option>
-<option value="12">Unused</option>
-<option value="13">Unused</option>
+<option value="9">Nixie</option>
+<option value="10">Terminal</option>
+<option value="11">Placeholder</option>
+<option value="12">Placeholder</option>
+<option value="13">Placeholder</option>
 <option value="14">The End</option>
 <option value="15" id="co">Custom</option>
 </select><br>
 <div id="cth">
-Please specify your custom hex colors (e.g. #FF0000 for red)<br>
+Please specify your custom hex colors (e.g. FF0000 for red)<br>
 Custom accent color: <input maxlength=9 name="CCOL0"><br>
 Custom background: <input maxlength=9 name="CCOL1"><br>
 Custom panel color: <input maxlength=9 name="CCOL2"><br>
-Custom text color: <input maxlength=9 name="CCOL3"><br>
-Custom shadow: <input maxlength=9 name="CCOL4"><br></div>
+Custom icon color: <input maxlength=9 name="CCOL3"><br>
+Custom shadow: <input maxlength=9 name="CCOL4"><br>
+Custom text color: <input maxlength=9 name="CCOL5"><br></div>
+Use font: <input maxlength=32 name="CFONT"><br>
+Make sure the font you use is installed on your system!<br>
 <hr><button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
 </form>
 </body>
@@ -233,9 +236,8 @@ const char PAGE_settings_time1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button><hr>
 <h2>Time setup</h2>
-Requires reboot. <br>
 Get time from NTP server: <input type="checkbox" name="NTPON"><br>
-NTP server: <input name="NTPSR" maxlength="32"><br>
+<!--NTP server: <input name="NTPSR" maxlength="32"><br>
 Time zone: 
 <select name="TZONE">
 <option value="1" selected>GMT(UTC)</option>
@@ -252,7 +254,7 @@ Time zone:
 <option value="12">AEST/AEDT</option>
 <option value="13">NZST/NZDT</option>
 </select><br>
-Hour/Min offset: <input name="TOFSH" type="number" min="-255" max="255" required> <input name="TOFSM" type="number" min="-255" max="255" required><br>
+Hour/Min offset: <input name="TOFSH" type="number" min="-255" max="255" required> <input name="TOFSM" type="number" min="-255" max="255" required><br>-->
 Current local time is <span class="times">unknown</span>.
 <h3>Weather</h3>
 Coming soon! Not yet implemented!
@@ -264,7 +266,8 @@ Reverse (turns on at sunset): <input type="checkbox" name="WREVL"><br>
 Fade duration: <input name="WSDUR" type="number" min="0" max="255" required><br> 
 Sunrise/Sunset Offset: <input name="WSOFS" type="number" min="-255" max="255" required>-->
 <h3>Advanced Macros</h3>
-Define API macros here:<br>
+Coming soon! Not yet implemented!
+<!--Define API macros here:<br>
 0: <input name="MCR00" maxlength="64"><br>
 1: <input name="MCR01" maxlength="64"><br>
 2: <input name="MCR02" maxlength="64"><br>
@@ -283,19 +286,21 @@ Define API macros here:<br>
 15: <input name="MCR15" maxlength="64"><br>
 <br>
 <i>Use -1 to use the default action instead of a macro</i><br>
-<!--1st Time-Controlled Macro:-->
+<--1st Time-Controlled Macro:
 Alexa On/Off Macros: <input name="MCA0I" type="number" min="-1" max="15" required> <input name="MCA0O" type="number" min="-1" max="15" required><br>
-<!--Emulate 2nd Alexa device:
-Emulate 3rd Alexa device:-->
+<--Emulate 2nd Alexa device:
+
+Emulate 3rd Alexa device:
 Button Macro: <input name="MCBT0" type="number" min="-1" max="15" required><br>
 Button Long Press Macro: <input name="MCBT1" type="number" min="-1" max="15" required><br>
-<!--Sunrise Macro
-Sunset Macro-->
-Countdown-Over Macro: <input name="MCNTD" type="number" min="-1" max="15" required><br>
+<--Sunrise Macro
+Sunset Macro
+Countdown-Over Macro: <input name="MCNTD" type="number" min="-1" max="15" required><br>-->
 <hr>
 <button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
 </form>
-</body></html>
+</body>
+</html>
 )=====";
 
 const char PAGE_settings_sec0[] PROGMEM = R"=====(
@@ -309,7 +314,7 @@ const char PAGE_settings_sec1[] PROGMEM = R"=====(
 <body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button><hr>
+<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save & Reboot</button><hr>
 <h2>Security & Update setup</h2>
 Enable OTA lock: <input type="checkbox" name="NOOTA"><br>
 Passphrase: <input type="password" name="OPASS" maxlength="32"><br>
@@ -328,7 +333,7 @@ HTTP traffic is not encrypted. An attacker in the same network could intercept f
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AROTA"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.5dev<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.5.0<br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
 <i>Uses libraries:</i><br>
@@ -339,7 +344,7 @@ Enable ArduinoOTA: <input type="checkbox" name="AROTA"><br>
 <i><a href="https://github.com/Aircoookie/Espalexa">Espalexa</a> by Aircoookie (modified)</i><br><br>
 <i>UI icons by <a href="https://linearicons.com">Linearicons</a> created by <a href="https://perxis.com">Perxis</a>! (CC-BY-SA 4.0)</i> <br><br>
 Server message: <span class="msg"> Response error! </span><hr>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
+<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save & Reboot</button>
 </form>
 </body>
 </html>

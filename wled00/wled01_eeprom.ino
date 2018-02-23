@@ -19,7 +19,6 @@ void saveSettingsToEEPROM()
   {
     clearEEPROM();
     EEPROM.write(233, 233);
-    showWelcomePage = true;
   } else
   {
     showWelcomePage = false;
@@ -130,15 +129,20 @@ void saveSettingsToEEPROM()
   EEPROM.write(390, aOtaEnabled);
   EEPROM.write(391, receiveNotificationColor);
   EEPROM.write(392, receiveNotificationEffects);
-  if (currentTheme == 15)
-  {
-    for (int k=0;k<6;k++){
-    for (int i = 900+k*8; i < (908+k*8); ++i)
+  EEPROM.write(393, wifiLock);
+
+  for (int k=0;k<6;k++){
+    int in = 900+k*8;
+    for (int i=in; i < in+8; ++i)
     {
-      EEPROM.write(i, cssCol[k].charAt(i-900));
+      EEPROM.write(i, cssCol[k].charAt(i-in));
     }}
-  }
+
   EEPROM.write(948,currentTheme);
+  for (int i = 950; i < 982; ++i)
+  {
+    EEPROM.write(i, cssFont.charAt(i-950));
+  }
   
   EEPROM.commit();
 }
@@ -147,6 +151,7 @@ void loadSettingsFromEEPROM(bool first)
 {
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
+    showWelcomePage=true;
     saveSettingsToEEPROM();
     return;
   }
@@ -280,24 +285,29 @@ void loadSettingsFromEEPROM(bool first)
     aOtaEnabled = EEPROM.read(390);
     receiveNotificationColor = EEPROM.read(391);
     receiveNotificationEffects = EEPROM.read(392);
+    cssFont = "";
+    for (int i = 950; i < 982; ++i)
+    {
+      if (EEPROM.read(i) == 0) break;
+      cssFont += char(EEPROM.read(i));
+    }
   }
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
   
   bootPreset = EEPROM.read(389);
+  wifiLock = EEPROM.read(393);
 
   //favorite setting memory (25 slots/ each 20byte)
   //400 - 899 reserved
 
   currentTheme = EEPROM.read(948);
-  if (currentTheme == 15)
-  {
-    for (int k=0;k<6;k++){
-    for (int i = 900+k*8; i < (908+k*8); ++i)
+  for (int k=0;k<6;k++){
+    int in=900+k*8;
+    for (int i=in; i < in+8; ++i)
     {
       if (EEPROM.read(i) == 0) break;
       cssCol[k] += char(EEPROM.read(i));
     }}
-  }
 
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved

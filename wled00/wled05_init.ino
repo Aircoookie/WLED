@@ -75,7 +75,12 @@ void wledInit()
     serveSettings(0);
   });
   server.on("/settings/wifi", HTTP_GET, [](){
-    serveSettings(1);
+    if (!(wifiLock && otaLock))
+    {
+      serveSettings(1);
+    }else{
+      serveMessage(500, "Access Denied", txd, 254);
+    }
   });
   server.on("/settings/leds", HTTP_GET, [](){
     serveSettings(2);
@@ -94,7 +99,10 @@ void wledInit()
   });
   
   server.on("/favicon.ico", HTTP_GET, [](){
-    if(!handleFileRead("/favicon.ico")) server.send(200, "image/x-icon", favicon);
+    if(!handleFileRead("/favicon.ico"))
+    {
+      server.send_P(200, "image/x-icon", favicon, 156);
+    }
   });
   
   server.on("/", HTTP_GET, [](){
@@ -116,39 +124,39 @@ void wledInit()
   });
   
   server.on("/reset", HTTP_GET, [](){
-    serveMessage(200,"Rebooting now...","(takes ~15 seconds)");
+    serveMessage(200,"Rebooting now...","(takes ~20 seconds, wait for auto-redirect)",139);
     reset();
   });
   
   server.on("/settings/wifi", HTTP_POST, [](){
-    handleSettingsSet(1);
-    serveMessage(200,"WiFi settings saved.","Rebooting now...");
+    if (!(wifiLock && otaLock)) handleSettingsSet(1);
+    serveMessage(200,"WiFi settings saved.","Rebooting now... (takes ~20 seconds, wait for auto-redirect)",139);
     reset();
   });
 
   server.on("/settings/leds", HTTP_POST, [](){
     handleSettingsSet(2);
-    serveMessage(200,"LED settings saved.","",true);
+    serveMessage(200,"LED settings saved.","Redirecting...",1);
   });
 
   server.on("/settings/ui", HTTP_POST, [](){
     handleSettingsSet(3);
-    serveMessage(200,"UI settings saved.","",true);
+    serveMessage(200,"UI settings saved.","Reloading to apply theme...",122);
   });
 
   server.on("/settings/sync", HTTP_POST, [](){
     handleSettingsSet(4);
-    serveMessage(200,"Sync settings saved.","",true);
+    serveMessage(200,"Sync settings saved.","Redirecting...",1);
   });
 
   server.on("/settings/time", HTTP_POST, [](){
     handleSettingsSet(5);
-    serveMessage(200,"Time settings saved.","If you made changes to NTP, please reboot.",true);
+    serveMessage(200,"Time settings saved.","Redirecting...",1);
   });
 
   server.on("/settings/sec", HTTP_POST, [](){
     handleSettingsSet(6);
-    serveMessage(200,"Security settings saved.","Rebooting now...");
+    serveMessage(200,"Security settings saved.","Rebooting now... (takes ~20 seconds, wait for auto-redirect)",139);
     reset();
   });
   
@@ -166,12 +174,12 @@ void wledInit()
     
   server.on("/power", HTTP_GET, [](){
     String val = (String)(int)strip.getPowerEstimate(ledcount,strip.getColor(),strip.getBrightness());
-    val += "mA currently\nNotice: This is just an estimate which does not take into account several factors (like effects and wire resistance). It is NOT an accurate measurement!";
-    server.send(200, "text/plain", val);
+    val += "mA currently";
+    serveMessage(200,val,"This is just an estimate (does not take into account several factors like effects and wire resistance). It is NOT an accurate measurement!",254);
     });
     
   server.on("/teapot", HTTP_GET, [](){
-    serveMessage(418, "418. I'm a teapot.","(Tangible Embedded Advanced Project Of Twinkling)");
+    serveMessage(418, "418. I'm a teapot.","(Tangible Embedded Advanced Project Of Twinkling)",254);
     });
     
   server.on("/build", HTTP_GET, [](){
@@ -181,8 +189,8 @@ void wledInit()
     #else
     info += "platform: esp8266\r\n";
     #endif
-    info += "name: " + versionName + "\r\n";
-    info += "version: " + (String)VERSION + "\r\n";
+    info += "version: " + versionString + "\r\n";
+    info += "build: " + (String)VERSION + "\r\n";
     info += "eepver: " + String(EEPVER) + "\r\n";
     #ifdef RGBW
     info += "rgbw: true\r\n";
@@ -236,19 +244,19 @@ void wledInit()
   } else
   {
     server.on("/edit", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd);
+    serveMessage(500, "Access Denied", txd, 254);
     });
     server.on("/down", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd);
+    serveMessage(500, "Access Denied", txd, 254);
     });
     server.on("/cleareeprom", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd);
+    serveMessage(500, "Access Denied", txd, 254);
     });
     server.on("/update", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd);
+    serveMessage(500, "Access Denied", txd, 254);
     });
     server.on("/list", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd);
+    serveMessage(500, "Access Denied", txd, 254);
     });
   }
   //called when the url is not defined here, ajax-in; get-settings
@@ -313,7 +321,7 @@ void initAP(){
 void initCon()
 {
   int fail_count = 0;
-  if (clientssid.length() <1) fail_count = 33;
+  if (clientssid.length() <1 || clientssid.equals("Your_Network_Here")) fail_count = apWaitTimeSecs*2;
   WiFi.begin(clientssid.c_str(), clientpass.c_str());
   while(WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -332,31 +340,37 @@ void initCon()
 
 void buildCssColorString()
 {
+  String cs[]={"","","","","",""};
   switch (currentTheme)
   {
-    default: cssCol[0]="D9B310"; cssCol[1]="0B3C5D"; cssCol[2]="1D2731"; cssCol[3]="328CC1"; cssCol[4]="000"; break; //night
-    case 1: cssCol[0]="eee"; cssCol[1]="ddd"; cssCol[2]="b9b9b9"; cssCol[3]="049"; cssCol[4]="777"; break; //modern
-    case 2: cssCol[0]="abc"; cssCol[1]="fff"; cssCol[2]="ddd"; cssCol[3]="000"; cssCol[4]="0004"; break; //bright
-    case 3: cssCol[0]="c09f80"; cssCol[1]="d7cec7"; cssCol[2]="76323f"; cssCol[3]="888"; cssCol[4]="3334"; break; //wine
-    case 4: cssCol[0]="3cc47c"; cssCol[1]="828081"; cssCol[2]="d9a803"; cssCol[3]="1e392a"; cssCol[4]="000a"; break; //electric
-    case 5: cssCol[0]="57bc90"; cssCol[1]="a5a5af"; cssCol[2]="015249"; cssCol[3]="88c9d4"; cssCol[4]="0004"; break; //mint
-    case 6: cssCol[0]="f7c331"; cssCol[1]="dcc7aa"; cssCol[2]="6b7a8f"; cssCol[3]="f7882f"; cssCol[4]="0007"; break; //amber
-    case 7: cssCol[0]="fc3"; cssCol[1]="124"; cssCol[2]="334"; cssCol[3]="f1d"; cssCol[4]="f00"; break; //club
-    case 14: cssCol[0]="fc7"; cssCol[1]="49274a"; cssCol[2]="94618e"; cssCol[3]="f4decb"; cssCol[4]="0008"; break; //end
-    //case 15 do nothing since custom vals are already loaded
+    default: cs[0]="D9B310"; cs[1]="0B3C5D"; cs[2]="1D2731"; cs[3]="328CC1"; cs[4]="000"; cs[5]="328CC1"; break; //night
+    case 1: cs[0]="eee"; cs[1]="ddd"; cs[2]="b9b9b9"; cs[3]="049"; cs[4]="777"; cs[5]="049"; break; //modern
+    case 2: cs[0]="abc"; cs[1]="fff"; cs[2]="ddd"; cs[3]="000"; cs[4]="0004"; cs[5]="000"; break; //bright
+    case 3: cs[0]="c09f80"; cs[1]="d7cec7"; cs[2]="76323f"; cs[3]="888"; cs[4]="3334"; cs[5]="888"; break; //wine
+    case 4: cs[0]="3cc47c"; cs[1]="828081"; cs[2]="d9a803"; cs[3]="1e392a"; cs[4]="000a"; cs[5]="1e392a"; break; //electric
+    case 5: cs[0]="57bc90"; cs[1]="a5a5af"; cs[2]="015249"; cs[3]="88c9d4"; cs[4]="0004"; cs[5]="88c9d4"; break; //mint
+    case 6: cs[0]="f7c331"; cs[1]="dcc7aa"; cs[2]="6b7a8f"; cs[3]="f7882f"; cs[4]="0007"; cs[5]="f7882f"; break; //amber
+    case 7: cs[0]="fc3"; cs[1]="124"; cs[2]="334"; cs[3]="f1d"; cs[4]="f00"; cs[5]="f1d"; break;//club
+    case 8: cs[0]="0ac"; cs[1]="124"; cs[2]="224"; cs[3]="003eff"; cs[4]="003eff"; cs[5]="003eff"; break;//air
+    case 9: cs[0]="f70"; cs[1]="421"; cs[2]="221"; cs[3]="a50"; cs[4]="f70"; cs[5]="f70"; break;//nixie
+    case 10: cs[0]="2d2"; cs[1]="010"; cs[2]="121"; cs[3]="060"; cs[4]="040"; cs[5]="3f3"; break; //terminal
+    case 14: cs[0]="fc7"; cs[1]="49274a"; cs[2]="94618e"; cs[3]="f4decb"; cs[4]="0008"; cs[5]="f4decb"; break; //end
+    case 15: for (int i=0;i<6;i++)cs[i]=cssCol[i];//custom
   }
   cssColorString="<style>:root{--aCol:#";
-  cssColorString+=cssCol[0];
+  cssColorString+=cs[0];
   cssColorString+=";--bCol:#";
-  cssColorString+=cssCol[1];
+  cssColorString+=cs[1];
   cssColorString+=";--cCol:#";
-  cssColorString+=cssCol[2];
+  cssColorString+=cs[2];
   cssColorString+=";--dCol:#";
-  cssColorString+=cssCol[3];
+  cssColorString+=cs[3];
   cssColorString+=";--sCol:#";
-  cssColorString+=cssCol[4];
+  cssColorString+=cs[4];
   cssColorString+=";--tCol:#";
-  cssColorString+=cssCol[5];
+  cssColorString+=cs[5];
+  cssColorString+=";--cFn:";
+  cssColorString+=cssFont;
   cssColorString+=";}";
 }
 
@@ -376,18 +390,27 @@ void serveIndex()
   }
 }
 
-void serveMessage(int code, String headl, String subl="", bool backToSettings)
+void serveMessage(int code, String headl, String subl="", int optionType)
 {
   String messageBody = "<h2>";
   messageBody += headl;
   messageBody += "</h2>";
   messageBody += subl;
-  if (backToSettings)
+  switch(optionType)
   {
-    messageBody += "<form action=/settings><button type=submit>Back</button></form>";
-  }else
+    case 255: break; //simple message
+    case 254: messageBody += "<br><br><button type=\"button\" onclick=\"B()\">Back</button>"; break; //back button
+    case 253: messageBody += "<br><br><form action=/settings><button type=submit>Back</button></form>"; //button to settings
+  }
+  if (optionType < 60) //redirect to settings after optionType seconds
   {
-    messageBody += "<br><br><button type=\"button\" onclick=\"B()\">Back</button>";
+    messageBody += "<script>setTimeout(RS," + String(optionType*1000) + ")</script>";
+  } else if (optionType < 120) //redirect back after optionType-60 seconds
+  {
+    messageBody += "<script>setTimeout(B," + String((optionType-60)*1000) + ")</script>";
+  } else if (optionType < 180) //reload parent after optionType-120 seconds
+  {
+    messageBody += "<script>setTimeout(RP," + String((optionType-120)*1000) + ")</script>";
   }
   messageBody += "</body></html>";
   server.setContentLength(strlen_P(PAGE_msg0) + cssColorString.length() + strlen_P(PAGE_msg1) + messageBody.length());

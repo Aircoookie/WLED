@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <html><head>
-	<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
 	<title>WLED Message</title>
 	<script>
 	function B() {
 		window.history.back();
+	}
+	function RS() {
+		window.location = "/settings";
+	}
+	function RP() {
+		top.location.href=top.location.href;
 	}
 	</script>
 	<style>
@@ -14,22 +19,25 @@
 			--cCol: #1D2731;
 			--dCol: #328CC1;
 			--sCol: #000;
+			--tCol: #328CC1;
+			--cFn: Verdana;
 		}
 		button {
 			background: var(--bCol);
-			color: var(--dCol);
+			color: var(--tCol);
 			border: 0.3ch solid var(--bCol);
 			display: inline-block;
 			filter: drop-shadow( -5px -5px 5px var(--sCol) );
+			font-family: var(--cFn), sans-serif;
 			font-size: 20px;
 			margin: 8px;
 			margin-top: 12px;
 		}
 		body {
-			font-family: Verdana, Helvetica, sans-serif;
+			font-family: var(--cFn), sans-serif;
 			text-align: center;
 			background: var(--cCol);
-			color: var(--dCol);
+			color: var(--tCol);
 			line-height: 200%;
 			margin: 0;
 			background-attachment: fixed;

@@ -12,16 +12,17 @@
 
 
 const char* ESP8266HTTPUpdateServer::_serverIndex =
-R"(<html><body><h2>WLED Software Update</h2><br>Get the latest binaries on the <a href="https://github.com/Aircoookie/WLED/tree/master/bin">project GitHub page</a>!<br>
-	<i>Unsure which binary is correct? Go to the <a href="./build">/build subpage</a> to find the details of this version.</i><br>
-	<b>Double check to be sure to upload a valid .bin firmware file for your ESP! Otherwise you'll need USB recovery!</b><br><br>
-				<form method='POST' action='' enctype='multipart/form-data'>
-                  <input type='file' name='update'>
-                  <input type='submit' value='Update!'>
-               </form>
-         </body></html>)";
+R"(<html><head><script>function B(){window.history.back()}</script></head><body><h2>WLED Software Update</h2><br>Get the latest binaries on the <a href="https://github.com/Aircoookie/WLED/tree/master/bin">project GitHub page</a>!<br>
+<i>Unsure which binary is correct? Go to the <a href="./build">/build subpage</a> for the details of this version.</i><br>
+<b>Be sure to upload a valid .bin file for your ESP! Otherwise you'll need USB recovery!</b><br>
+<br><br><button onclick="B()\">Back</button><br><br>
+<form method='POST' action='' enctype='multipart/form-data'>
+<input type='file' name='update'>
+<input type='submit' value='Update!'>
+</form>
+</body></html>)";
 const char* ESP8266HTTPUpdateServer::_failedResponse = R"(Update Failed!)";
-const char* ESP8266HTTPUpdateServer::_successResponse = "<META http-equiv=\"refresh\" content=\"15;URL=./\">Update Successful! Rebooting, please wait for redirect...";
+const char* ESP8266HTTPUpdateServer::_successResponse = R"(<script>setTimeout(function(){top.location.href="/";},20000);</script>Update Successful! Rebooting, please wait for redirect...)";
 
 ESP8266HTTPUpdateServer::ESP8266HTTPUpdateServer(bool serial_debug)
 {

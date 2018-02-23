@@ -153,6 +153,7 @@ String getSettings(uint8_t subPage)
     resp += ds + "BOOTP" + v + bootPreset +";";
     resp += ds + "FXDEF" + v + effectDefault +";";
     resp += ds + "SXDEF" + v + effectSpeedDefault +";";
+    resp += ds + "IXDEF" + v + effectIntensityDefault +";";
     resp += ds + "GCBRI" + c + useGammaCorrectionBri +";";
     resp += ds + "GCRGB" + c + useGammaCorrectionRGB +";";
     resp += ds + "TFADE" + c + fadeTransition +";";
@@ -172,8 +173,9 @@ String getSettings(uint8_t subPage)
     resp += ds + "DESC" + v + "\"" + serverDescription + "\";";
     resp += ds + "COLMD" + c + useHSBDefault + ";";
     resp += ds + "THEME.selectedIndex=" + String(currentTheme) + ";";
-    for(int i=0;i<5;i++)
+    for(int i=0;i<6;i++)
     resp += ds + "CCOL" + i + v + "\"" + cssCol[i] + "\";";
+    resp += ds + "CFONT" + v + "\"" + cssFont + "\";";
   }
 
   if (subPage == 4)
@@ -199,9 +201,10 @@ String getSettings(uint8_t subPage)
   if (subPage == 6)
   {
     resp += ds + "NOOTA" + c + otaLock +";";
+    resp += ds + "OWIFI" + c + wifiLock +";";
     resp += ds + "AROTA" + c + aOtaEnabled +";";
     resp += ds + "NORAP" + c + recoveryAPDisabled +";";
-    resp += dg + "(\"msg\")[0]" + ih + "\""+ versionName +" (build " + VERSION + ") OK\";";
+    resp += dg + "(\"msg\")[0]" + ih + "\"WLED "+ versionString +" (build " + VERSION + ") OK\";";
   }
   resp += "}</script>";
   

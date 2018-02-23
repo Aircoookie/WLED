@@ -46,36 +46,39 @@ void handleNotifications()
 {
   if(udpConnected && receiveNotifications){
     int packetSize = notifierUdp.parsePacket();
-    if(packetSize && notifierUdp.remoteIP() != WiFi.localIP())
+    if(packetSize && notifierUdp.remoteIP() != WiFi.localIP()) //don't process broadcasts we send ourselves
     {
       notifierUdp.read(udpIn, packetSize);
       if (udpIn[0] == 0 && !arlsTimeout) //wled notifier, block if realtime packets active
       {
+        if (receiveNotificationColor)
+        {
         col[0] = udpIn[3];
         col[1] = udpIn[4];
         col[2] = udpIn[5];
-        if (udpIn[11] > 1)
-        {
-          col_sec[0] = udpIn[12];
-          col_sec[1] = udpIn[13];
-          col_sec[2] = udpIn[14];
-          white_sec = udpIn[15];
         }
-        if (udpIn[11] > 0) //check if sending modules white val is inteded
+        if (udpIn[11] > 0 && receiveNotificationColor) //check if sending modules white val is inteded
         {
           white = udpIn[10];
+          if (udpIn[11] > 1 )
+          {
+            col_sec[0] = udpIn[12];
+            col_sec[1] = udpIn[13];
+            col_sec[2] = udpIn[14];
+            white_sec = udpIn[15];
+          }
         }
-        if (udpIn[8] != effectCurrent)
+        if (udpIn[8] != effectCurrent && receiveNotificationEffects)
         {
           effectCurrent = udpIn[8];
           strip.setMode(effectCurrent);
         }
-        if (udpIn[9] != effectSpeed)
+        if (udpIn[9] != effectSpeed && receiveNotificationEffects)
         {
           effectSpeed = udpIn[9];
           strip.setSpeed(effectSpeed);
         }
-        if (udpIn[11] > 3 && udpIn[16] != effectIntensity)
+        if (udpIn[11] > 3 && udpIn[16] != effectIntensity && receiveNotificationEffects)
         {
           effectSpeed = udpIn[16];
           strip.setIntensity(effectIntensity);
@@ -83,7 +86,7 @@ void handleNotifications()
         nightlightActive = udpIn[6];
         if (!nightlightActive)
         {
-          bri = udpIn[2];
+          if (receiveNotificationBrightness) bri = udpIn[2];
           colorUpdated(3);
         }
       }  else if (udpIn[0] == 1) //warls

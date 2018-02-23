@@ -4,12 +4,11 @@
 const char PAGE_msg0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
-<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
 <title>WLED Message</title>
-<script>function B(){window.history.back()};</script>
+<script>function B(){window.history.back()};function RS(){window.location = "/settings";}function RP(){top.location.href=top.location.href;}</script>
 )=====";
 const char PAGE_msg1[] PROGMEM = R"=====(
-button{background:var(--bCol);color:var(--dCol);border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}body{font-family:Verdana,Helvetica,sans-serif;text-align:center;background:var(--cCol);color:var(--dCol);line-height:200%;margin:0;background-attachment:fixed}</style>
+button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}</style>
 </head>
 <body>
 )=====";
@@ -20,7 +19,7 @@ const char PAGE_welcome0[] PROGMEM = R"=====(
 <title>WLED Welcome!</title>
 )=====";
 const char PAGE_welcome1[] PROGMEM = R"=====(
-body{font-family:Verdana, Helvetica, sans-serif;text-align:center;background:linear-gradient(var(--bCol),black);height:100%;margin:0;background-repeat:no-repeat;background-attachment: fixed;color: var(--dCol);}svg {fill: var(--dCol);}
+body{font-family:var(--cFn),sans-serif;text-align:center;background:linear-gradient(var(--bCol),black);height:100%;margin:0;background-repeat:no-repeat;background-attachment: fixed;color: var(--tCol);}svg {fill: var(--dCol);}
 </style></head>
 <body>
 <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -54,7 +53,7 @@ const char PAGE_edit[] PROGMEM = R"=====(SPIFFS disabled)=====";
 /*
  * favicon
  */
-const char favicon[156] PROGMEM = {
+const char favicon[] PROGMEM = {
   0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, 0x10, 0x00, 0x00, 0x01, 0x00,
   0x18, 0x00, 0x86, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00, 0x89, 0x50,
   0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,

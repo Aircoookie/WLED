@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
-<head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<head><meta charset="utf-8">
 	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico'/>
-	<title>WLED 0.5dev</title>
+	<title>WLED 0.5.0</title>
 	<script>
 		var d=document;
 		var w=window.getComputedStyle(d.querySelector("html"));
@@ -12,6 +12,7 @@
 		var nsa=false;
 		var sto=false;
 		var uwv=false;
+		var sbf=true;
 		var firstload=true;
 		var lastsx = 0;
 		var nState = 0;
@@ -31,7 +32,6 @@
 			var w=window.getComputedStyle(d.querySelector("html"));
 			aC = w.getPropertyValue("--aCol");
 			bC = w.getPropertyValue("--bCol");
-			cC = w.getPropertyValue("--cCol");
 			dC = w.getPropertyValue("--dCol");
 			CV(0);
 			setInterval('GIO()', 5000);
@@ -60,12 +60,15 @@
 							d.Cf.SX.value = this.responseXML.getElementsByTagName('sx')[0].childNodes[0].nodeValue;
 							d.Cf.IX.value = this.responseXML.getElementsByTagName('ix')[0].childNodes[0].nodeValue;
 							nla = (this.responseXML.getElementsByTagName('nl')[0].innerHTML)!=0?true:false;
+							if(firstload){
+							d.Cf.NC.checked = (this.responseXML.getElementsByTagName('nf')[0].innerHTML)!=0?true:false;
 							d.Cf.SN.value = this.responseXML.getElementsByTagName('nd')[0].childNodes[0].nodeValue;
 							d.Cf.ST.value = this.responseXML.getElementsByTagName('nt')[0].childNodes[0].nodeValue;
+							CV(parseInt(this.responseXML.getElementsByTagName('md')[0].childNodes[0].nodeValue));
+							}firstload=false;
 							nState = 0;
 							nState = (this.responseXML.getElementsByTagName('nr')[0].innerHTML)!=0?1:0;
 							nState += (this.responseXML.getElementsByTagName('ns')[0].innerHTML)!=0?2:0;
-							if(firstload)CV(this.responseXML.getElementsByTagName('md')[0].childNodes[0].nodeValue);
 							d.getElementsByClassName("desc")[0].innerHTML = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
 							UV();
 						}
@@ -75,7 +78,6 @@
 			request.open("GET", "win/" +resp +nocache, true);
 			request.send(null);
 			resp="";
-			firstload=false;
 		}
 		function GC()
 		{
@@ -174,7 +176,7 @@
 				case 2: gId("path1").style.fill = dC;gId("path2").style.fill = aC;break;
 				case 3: gId("path1").style.fill = aC; gId("path2").style.fill = aC;
 			}
-			tgb.style.fill=(Cf.SA.selectedIndex>0)?aC:dC;
+			tgb.style.fill=(Cf.SA.value>0)?aC:dC;
 			ccX.style.display=(Cf.TX.selectedIndex>52)?"block":"none";
 			fof.style.fill=(Cf.TX.selectedIndex>52)?aC:dC;
 			fmr.style.fill=(Cf.TX.selectedIndex<1)?aC:dC;
@@ -239,7 +241,8 @@
 			stb.style.fill=aC;
 			cdB.style.display="none";
 			stf.style.display="inline";
-			stf.src="/settings";
+			if(sbf)stf.src="/settings";
+			sbf=false;
 		}
 		function CloseSettings()
 		{
@@ -263,6 +266,7 @@
 			if(nla){
 				resp+="&NL="+d.Cf.SN.value;
 				resp+="&NT="+d.Cf.ST.value;
+				resp+=(d.Cf.NC.checked)?"&NF=1":"&NF=0";
 			}else{
 				resp+="&NL=0";
 			}
@@ -338,7 +342,8 @@
 			--bCol: #124;
 			--cCol: #334;
 			--dCol: #288;
-			--sCol: #003eff;
+			--sCol: #FF00FF;
+			--cFn: Verdana;
 		}
 		.ctrl_box {
 			margin: auto;
@@ -402,14 +407,14 @@
 			background: linear-gradient(to right, black, red);
 		}
 		body {
-			font-family: Verdana, Helvetica, sans-serif;
+			font-family: var(--cFn), Helvetica, sans-serif;
 			text-align: center;
 			background: linear-gradient(var(--bCol),black);
 			height: 100%;
 			margin: 0;
 			background-repeat: no-repeat;
 			background-attachment: fixed;
-			color: var(--dCol);
+			color: var(--tCol);
 		}
 		html {
 			height: 100%;
@@ -431,10 +436,10 @@
 			width: 12vw;
 			height: 10vmin;
 			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-
 		}
 		input {
 			filter: drop-shadow( -5px -5px 5px var(--sCol) );
+			font-family: var(--cFn), sans-serif;
 		}
 		button {
 			background: var(--bCol);
@@ -442,16 +447,18 @@
 			border: 0.5ch solid var(--bCol);
 			margin-bottom: 1vh;
 			filter: drop-shadow( -5px -5px 5px var(--sCol) );
+			font-family: var(--cFn), sans-serif;
 		}
 		select {
 			background: var(--bCol);
-			color: var(--dCol);
+			color: var(--tCol);
 			border: 0.5ch solid var(--bCol);
 			filter: drop-shadow( -5px -5px 5px var(--sCol) );
+			font-family: var(--cFn), sans-serif;
 		}
 		input[type=number] {
 			background: var(--bCol);
-			color: var(--dCol);
+			color: var(--tCol);
 			border: 0.5ch solid var(--bCol);
 			width: 3em;
 		}

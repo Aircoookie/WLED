@@ -9,9 +9,10 @@
 			--cCol: #1D2731;
 			--dCol: #328CC1;
 			--sCol: #000;
+			--tCol: #328CC1;
+			--cFn: Verdana;
 		}
 		body {
-			font-family: Verdana, Helvetica, sans-serif;
 			text-align: center;
 			background: var(--cCol);
 			height: 100%;
@@ -20,11 +21,13 @@
 		}
 		button {
 			background: var(--bCol);
-			color: var(--dCol);
+			color: var(--tCol);
+			font-family: var(--cFn), Helvetica, sans-serif;
 			border: 0.3ch solid var(--bCol);
 			display: inline-block;
 			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-size: 9vmin;
+			font-size: 8vmin;
+			height:13.86vh;
 			width: 95%;
 			margin-top: 2.4vh;
 		}

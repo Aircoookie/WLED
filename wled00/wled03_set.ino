@@ -196,6 +196,11 @@ void handleSettingsSet(uint8_t subPage)
         int i = server.arg("SXDEF").toInt();
         if (i >= 0 && i <= 255) effectSpeedDefault = i;
       }
+      if (server.hasArg("IXDEF"))
+      {
+        int i = server.arg("IXDEF").toInt();
+        if (i >= 0 && i <= 255) effectIntensityDefault = i;
+      }
     }
     turnOnAtBoot = server.hasArg("BOOTN");
     if (server.hasArg("BOOTP"))
@@ -251,10 +256,11 @@ void handleSettingsSet(uint8_t subPage)
     useHSBDefault = server.hasArg("COLMD");
     useHSB = useHSBDefault;
     if (server.hasArg("THEME")) currentTheme = server.arg("THEME").toInt();
-    for(int i=0;i<5;i++)
+    for(int i=0;i<6;i++)
     {
-      if (server.hasArg(("CCOL"+i))) cssCol[i] = server.arg(("CCOL"+i));
+      if (server.hasArg("CCOL"+String(i))) cssCol[i] = server.arg("CCOL"+String(i));
     }
+    if (server.hasArg("CFONT")) cssFont = server.arg("CFONT");
     buildCssColorString();
   }
 
@@ -281,6 +287,7 @@ void handleSettingsSet(uint8_t subPage)
   if (subPage == 5)
   {
     ntpEnabled = server.hasArg("NTPON");
+    if (ntpEnabled && WiFi.status() == WL_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort); //start if not already connected
   }
 
   //SECURITY
@@ -289,27 +296,27 @@ void handleSettingsSet(uint8_t subPage)
     if (server.hasArg("RESET"))
     {
       clearEEPROM();
-      serveMessage(200, "All Settings erased.", "Rebooting...");
+      serveMessage(200, "All Settings erased.", "Connect to WLED-AP to setup again...",255);
       reset();
     }
-  
+
+    bool pwdCorrect = !otaLock; //always allow access if ota not locked
     if (server.hasArg("OPASS"))
     {
-      if (!otaLock)
+      if (otaLock && otapass.equals(server.arg("OPASS")))
       {
-        if (server.arg("OPASS").length() > 0)
+        pwdCorrect = true;
+      }
+      if (!otaLock && server.arg("OPASS").length() > 0)
+      {
         otapass = server.arg("OPASS");
-      } else if (!server.hasArg("NOOTA"))
-      {
-        if (otapass.equals(server.arg("OPASS")))
-        {
-          otaLock = false;
-        }
       }
     }
-    if (server.hasArg("NOOTA")) otaLock = true;
-    if (!otaLock)
+    
+    if (pwdCorrect) //allow changes if correct pwd or no ota active
     {
+      otaLock = server.hasArg("NOOTA");
+      wifiLock = server.hasArg("OWIFI");
       recoveryAPDisabled = server.hasArg("NORAP");
       aOtaEnabled = server.hasArg("AROTA");
     }
@@ -547,7 +554,8 @@ boolean handleSet(String req)
       }
    }
    //toggle nightlight mode
-   if (req.indexOf("NL=") > 0)
+   pos = req.indexOf("NL=");
+   if (pos > 0)
    {
       if (req.indexOf("NL=0") > 0)
       {
@@ -555,14 +563,9 @@ boolean handleSet(String req)
         bri = bri_t;
       } else {
         nightlightActive = true;
+        nightlightDelayMins = req.substring(pos + 3).toInt();
         nightlightStartTime = millis();
       }
-   }
-   //set nightlight delay
-   pos = req.indexOf("ND=");
-   if (pos > 0) {
-      nightlightDelayMins = req.substring(pos + 3).toInt();
-      nightlightActive_old = false; //re-init
    }
    //set nightlight target brightness
    pos = req.indexOf("NT=");
