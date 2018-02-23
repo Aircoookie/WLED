@@ -1,3 +1,7 @@
+### Where are the new binaries?
+
+From v0.5.0 on forward, the GitHub [releases](https://github.com/Aircoookie/WLED/releases) system will be used for binaries.
+
 ### What binary should I choose?
 
 Currently WLED supports the ESP8266 and a very early, experimental version of ESP32 support.
