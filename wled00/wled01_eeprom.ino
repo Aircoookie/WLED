@@ -291,6 +291,10 @@ void loadSettingsFromEEPROM(bool first)
       if (EEPROM.read(i) == 0) break;
       cssFont += char(EEPROM.read(i));
     }
+  } else //keep receiving notification behavior from pre0.5.0 after update
+  {
+    receiveNotificationColor = receiveNotificationBrightness;
+    receiveNotificationEffects = receiveNotificationBrightness;
   }
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
   

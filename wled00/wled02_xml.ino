@@ -148,7 +148,7 @@ String getSettings(uint8_t subPage)
     resp += ds + "CSECR" + v + col_sec_s[0] +";";
     resp += ds + "CSECG" + v + col_sec_s[1] +";";
     resp += ds + "CSECB" + v + col_sec_s[2] +";";
-    resp += ds + "CSECW" + v + white_s +";";
+    resp += ds + "CSECW" + v + white_sec_s +";";
     resp += ds + "BOOTN" + c + turnOnAtBoot +";";
     resp += ds + "BOOTP" + v + bootPreset +";";
     resp += ds + "FXDEF" + v + effectDefault +";";
