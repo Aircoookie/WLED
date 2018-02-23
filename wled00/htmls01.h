@@ -191,7 +191,7 @@ const char PAGE_settings_sync1[] PROGMEM = R"=====(
 <h3>Button setup</h3>
 On/Off button enabled: <input type="checkbox" name="BTNON">
 <h3>WLED Broadcast</h3>
-UDP Port: <input name="NUDPP" maxlength="5" size="2"><br>
+UDP Port: <input name="NUDPP" maxlength="5" size="4"><br>
 Receive <input type="checkbox" name="NRCBR">Brightness, <input type="checkbox" name="NRCCL">Color, and <input type="checkbox" name="NRCFX">Effects<br>
 Send notifications on direct change: <input type="checkbox" name="NSDIR"> <br>
 Send notifications on button press: <input type="checkbox" name="NSBTN"> <br>

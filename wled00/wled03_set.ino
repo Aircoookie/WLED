@@ -210,7 +210,6 @@ void handleSettingsSet(uint8_t subPage)
     }
     useGammaCorrectionBri = server.hasArg("GCBRI");
     useGammaCorrectionRGB = server.hasArg("GCRGB");
-    buttonEnabled = server.hasArg("BTNON");
     fadeTransition = server.hasArg("TFADE");
     sweepTransition = server.hasArg("TSWEE");
     sweepDirection = !server.hasArg("TSDIR");
@@ -267,6 +266,7 @@ void handleSettingsSet(uint8_t subPage)
   //SYNC
   if (subPage == 4)
   {
+    buttonEnabled = server.hasArg("BTNON");
     if (server.hasArg("NUDPP"))
     {
       udpPort = server.arg("NUDPP").toInt();

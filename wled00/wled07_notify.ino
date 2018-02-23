@@ -78,9 +78,9 @@ void handleNotifications()
           effectSpeed = udpIn[9];
           strip.setSpeed(effectSpeed);
         }
-        if (udpIn[11] > 3 && udpIn[16] != effectIntensity && receiveNotificationEffects)
+        if (udpIn[11] > 2 && udpIn[16] != effectIntensity && receiveNotificationEffects)
         {
-          effectSpeed = udpIn[16];
+          effectIntensity = udpIn[16];
           strip.setIntensity(effectIntensity);
         }
         nightlightActive = udpIn[6];
