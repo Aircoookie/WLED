@@ -27,6 +27,7 @@ void wledInit()
   DEBUG_PRINT("CC: SSID: ");
   DEBUG_PRINT(clientssid);
   buildCssColorString();
+  userBeginPreConnection();
 
   WiFi.disconnect(); //close old connections
 
@@ -288,6 +289,8 @@ void wledInit()
     });
     ArduinoOTA.begin();
   }
+
+  userBegin();
 
   // Initialize NeoPixel Strip
   strip.init();

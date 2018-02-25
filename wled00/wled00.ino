@@ -30,7 +30,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1802231
+#define VERSION 1802251
 const String versionString = "0.5.0";
 
 //AP and OTA default passwords (change them!)
@@ -322,6 +322,7 @@ void loop() {
     server.handleClient();
     handleNotifications();
     handleTransitions();
+    userLoop();
     yield();
     handleButton();
     handleNetworkTime();
