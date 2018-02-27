@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.5.0
+ * @version 0.5.1
  * @author Christian Schwinne
  */
 
@@ -12,10 +12,12 @@
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include "src/dependencies/webserver/WebServer.h"
+#include <HTTPClient.h>
 #else
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPClient.h>
 #endif
 #include <EEPROM.h>
 #include <ArduinoOTA.h>
@@ -30,8 +32,8 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1802251
-const String versionString = "0.5.0";
+#define VERSION 1802273
+const String versionString = "0.5.1";
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -152,6 +154,22 @@ unsigned long countdownTime = 1514764800L;
 
 double transitionResolution = 0.011;
 
+//hue
+long hueLastRequestSent = 0;
+bool huePollingEnabled = false, hueAttempt = false;
+uint16_t huePollIntervalMs = 2500;
+uint32_t huePollIntervalMsTemp = 2500;
+String hueApiKey = "api";
+uint8_t huePollLightId = 1;
+IPAddress hueIP = (0,0,0,0);
+bool notifyHue = true;
+bool hueApplyOnOff = true, hueApplyBri = true, hueApplyColor = true;
+String hueError = "Inactive";
+uint16_t hueFailCount = 0;
+float hueXLast=0, hueYLast=0;
+uint16_t hueHueLast=0, hueCtLast=0;
+uint8_t hueSatLast=0, hueBriLast=0;
+
 //Internal vars
 byte col[]{0, 0, 0};
 byte col_old[]{0, 0, 0};
@@ -241,19 +259,12 @@ WebServer server(80);
 #else
 ESP8266WebServer server(80);
 #endif
+HTTPClient hueClient;
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp;
 WiFiUDP ntpUdp;
 
 WS2812FX strip = WS2812FX(LEDCOUNT);
-
-//eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 4
-//0 -> old version, default
-//1 -> 0.4p 1711272 and up
-//2 -> 0.4p 1711302 and up
-//3 -> 0.4  1712121 and up
-//4 -> 0.5.0 and up
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
@@ -333,6 +344,7 @@ void loop() {
     handleAlexa();
     if (!arlsTimeout) //block stuff if WARLS is enabled
     {
+      handleHue();
       handleNightlight();
     #ifdef USEOVERLAYS
       handleOverlays();

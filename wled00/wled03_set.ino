@@ -281,6 +281,37 @@ void handleSettingsSet(uint8_t subPage)
     alexaEnabled = server.hasArg("ALEXA");
     if (server.hasArg("AINVN")) alexaInvocationName = server.arg("AINVN");
     alexaNotify = server.hasArg("NSALX");
+    notifyHue = server.hasArg("NSHUE");
+    for (int i=0;i<4;i++){
+      String a = "HUIP"+String(i);
+      if (server.hasArg(a))
+      {
+        int j = server.arg(a).toInt();
+        if (j >= 0 && j <= 255) hueIP[i] = j;
+      }
+    }
+    if (server.hasArg("HUELI"))
+    {
+      int i = server.arg("HUELI").toInt();
+      if (i > 0) huePollLightId = i;
+    }
+    if (server.hasArg("HUEPI"))
+    {
+      int i = server.arg("HUEPI").toInt();
+      if (i > 50) huePollIntervalMs = i;
+    }
+    hueApplyOnOff = server.hasArg("HURIO");
+    hueApplyBri = server.hasArg("HURBR");
+    hueApplyColor = server.hasArg("HURCL");
+    if (server.hasArg("HUEPL"))
+    {
+      if (!huePollingEnabled) hueAttempt = true;
+      if (!setupHue()) hueAttempt = true;
+    } else
+    {
+      huePollingEnabled = false;
+      hueError = "Inactive";
+    }
   }
 
   //TIME
@@ -358,6 +389,19 @@ boolean handleSet(String req)
    if (pos > 0) {
       bri = req.substring(pos + 3).toInt();
    }
+
+   //set hue
+   pos = req.indexOf("HU=");
+   if (pos > 0) {
+      uint16_t temphue = req.substring(pos + 3).toInt();
+      uint8_t tempsat = 255;
+      pos = req.indexOf("SA=");
+      if (pos > 0) {
+        tempsat = req.substring(pos + 3).toInt();
+      }
+      colorHStoRGB(temphue,tempsat,(req.indexOf("H2")>0)? col_sec:col);
+   }
+   
    //set red value
    pos = req.indexOf("&R=");
    if (pos > 0) {
@@ -478,6 +522,19 @@ boolean handleSet(String req)
         effectIntensity = req.substring(pos + 3).toInt();
         strip.setIntensity(effectIntensity);
         effectUpdated = true;
+      }
+   }
+
+   //set hue polling light: 0 -off
+   pos = req.indexOf("HP=");
+   if (pos > 0) {
+      int id = req.substring(pos + 3).toInt();
+      if (id > 0)
+      {
+        if (id < 100) huePollLightId = id;
+        setupHue();
+      } else {
+        huePollingEnabled = false;
       }
    }
    

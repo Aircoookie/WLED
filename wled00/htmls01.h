@@ -196,27 +196,25 @@ Receive <input type="checkbox" name="NRCBR">Brightness, <input type="checkbox" n
 Send notifications on direct change: <input type="checkbox" name="NSDIR"> <br>
 Send notifications on button press: <input type="checkbox" name="NSBTN"> <br>
 Send Alexa notifications: <input type="checkbox" name="NSALX"> <br>
-<!--Send Philips Hue change notifications: <input type="checkbox" name="NSHUE">-->
+Send Philips Hue change notifications: <input type="checkbox" name="NSHUE">
 <h3>Alexa Voice Assistant</h3>
 Emulate Alexa device: <input type="checkbox" name="ALEXA"> <br>
 Alexa invocation name: <input name="AINVN" maxlength="32"><br>
 <h3>Philips Hue</h3>
-Coming soon! Not yet implemented!
-<!--<i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
+<i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
 Hue Bridge IP:<br>
 <input name="HUIP0" type="number" min="0" max="255" required> .
 <input name="HUIP1" type="number" min="0" max="255" required> .
 <input name="HUIP2" type="number" min="0" max="255" required> .
 <input name="HUIP3" type="number" min="0" max="255" required> <br>
-<b>For successful pairing, press the pushlink button on the bridge, then save this page!</b><br>
+<b>Press the pushlink button on the bridge, after that save this page!</b><br>
 (when first connecting)<br>
-<i> Use 0 for group and light to turn off sending/receiving </i><br>
-Update Hue group <input name="HUEGR" type="number" min="0" max="99" required> <br>
-Send <input type="checkbox" name="HUEIO"> On/Off, <input type="checkbox" name="HUEBR"> Brightness, and <input type="checkbox" name="HUECL"> Color<br>
-Poll Hue light <input name="HUELI" type="number" min="0" max="99" required> every <input name="HUEPL" type="number" min="100" max="62000" required> ms<br>
+<!--Update Hue group <input name="HUEGR" type="number" min="0" max="99" required> <br>
+Send <input type="checkbox" name="HUEIO"> On/Off, <input type="checkbox" name="HUEBR"> Brightness, and <input type="checkbox" name="HUECL"> Color<br>-->
+Poll Hue light <input name="HUELI" type="number" min="1" max="99" required> every <input name="HUEPI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HUEPL"><br>
 Then, receive <input type="checkbox" name="HURIO"> On/Off, <input type="checkbox" name="HURBR"> Brightness, and <input type="checkbox" name="HURCL"> Color<br>
-After device color update, ignore Hue updates for <input name="HUELI" type="number" min="0" max="255" required> minutes<br>
-Hue status: <span class="hms"> Internal ESP error! </span>-->
+<!--After device color update, ignore Hue updates for <input name="HUELI" type="number" min="0" max="255" required> minutes<br>-->
+Hue status: <span class="hms"> Internal ESP Error! </span>
 <hr>
 <button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
 </form>
@@ -333,7 +331,7 @@ HTTP traffic is not encrypted. An attacker in the same network could intercept f
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AROTA"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.5.0<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.5.1<br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
 <i>Uses libraries:</i><br>

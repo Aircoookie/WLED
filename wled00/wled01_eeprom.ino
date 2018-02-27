@@ -1,8 +1,18 @@
 /*
  * Methods to handle saving and loading to non-volatile memory
+ * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
 
-#define EEPSIZE 2048
+#define EEPSIZE 3072
+
+//eeprom Version code, enables default settings instead of 0 init on update
+#define EEPVER 5
+//0 -> old version, default
+//1 -> 0.4p 1711272 and up
+//2 -> 0.4p 1711302 and up
+//3 -> 0.4  1712121 and up
+//4 -> 0.5.0 and up
+//5 -> 0.5.1 and up
 
 void clearEEPROM()
 {
@@ -143,6 +153,24 @@ void saveSettingsToEEPROM()
   {
     EEPROM.write(i, cssFont.charAt(i-950));
   }
+
+  EEPROM.write(2048, huePollingEnabled);
+  //EEPROM.write(2049, hueUpdatingEnabled);
+  for (int i = 2050; i < 2054; ++i)
+  {
+    EEPROM.write(i, hueIP[i-2050]);
+  }
+  for (int i = 2054; i < 2100; ++i)
+  {
+    EEPROM.write(i, hueApiKey.charAt(i-2054));
+  }
+  EEPROM.write(2100, (huePollIntervalMs >> 0) & 0xFF);
+  EEPROM.write(2101, (huePollIntervalMs >> 8) & 0xFF);
+  EEPROM.write(2102, notifyHue);
+  EEPROM.write(2103, hueApplyOnOff);
+  EEPROM.write(2104, hueApplyBri);
+  EEPROM.write(2105, hueApplyColor);
+  EEPROM.write(2106, huePollLightId);
   
   EEPROM.commit();
 }
@@ -297,6 +325,26 @@ void loadSettingsFromEEPROM(bool first)
     receiveNotificationEffects = receiveNotificationBrightness;
   }
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+  if (lastEEPROMversion > 4) {
+    huePollingEnabled = EEPROM.read(2048);
+    //hueUpdatingEnabled = EEPROM.read(2049);
+    for (int i = 2050; i < 2054; ++i)
+    {
+      hueIP[i-2050] = EEPROM.read(i);
+    }
+    hueApiKey = "";
+    for (int i = 2054; i < 2100; ++i)
+    {
+      if (EEPROM.read(i) == 0) break;
+      hueApiKey += char(EEPROM.read(i));
+    }
+    huePollIntervalMs = ((EEPROM.read(2100) << 0) & 0xFF) + ((EEPROM.read(2101) << 8) & 0xFF00);
+    notifyHue = EEPROM.read(2102);
+    hueApplyOnOff = EEPROM.read(2103);
+    hueApplyBri = EEPROM.read(2104);
+    hueApplyColor = EEPROM.read(2105);
+    huePollLightId = EEPROM.read(2106);
+  }
   
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
@@ -315,6 +363,9 @@ void loadSettingsFromEEPROM(bool first)
 
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
+
+  //user MOD memory
+  //2944 - 3071 reserved
   
   useHSB = useHSBDefault;
 

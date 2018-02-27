@@ -51,7 +51,7 @@ bool colorChanged()
 
 void colorUpdated(int callMode)
 {
-  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (no not.) (NN)6: fx changed
+  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (NN)6: fx changed 7: hue
   if (!colorChanged())
   {
     if (callMode == 6) notify(6);

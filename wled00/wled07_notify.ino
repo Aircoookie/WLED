@@ -13,6 +13,7 @@ void notify(uint8_t callMode)
     case 2: if (!notifyButton) return; break;
     case 4: if (!notifyDirect) return; break;
     case 6: if (!notifyDirect) return; break; //fx change
+    case 7: if (!notifyHue) return; break;
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];

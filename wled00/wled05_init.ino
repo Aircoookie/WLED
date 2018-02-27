@@ -55,6 +55,13 @@ void wledInit()
   DEBUG_PRINTLN("");
   DEBUG_PRINT("Connected! IP address: ");
   DEBUG_PRINTLN(WiFi.localIP());
+
+  if (hueIP[0] == 0)
+  {
+    hueIP[0] = WiFi.localIP()[0];
+    hueIP[1] = WiFi.localIP()[1];
+    hueIP[2] = WiFi.localIP()[2];
+  }
   
   // Set up mDNS responder:
   if (cmdns != NULL && !onlyAP && !MDNS.begin(cmdns.c_str())) {
@@ -147,7 +154,13 @@ void wledInit()
 
   server.on("/settings/sync", HTTP_POST, [](){
     handleSettingsSet(4);
-    serveMessage(200,"Sync settings saved.","Redirecting...",1);
+    if (hueAttempt)
+    {
+      serveMessage(200,"Hue setup result",hueError,253);
+    } else {
+      serveMessage(200,"Sync settings saved.","Redirecting...",1);
+    }
+    hueAttempt = false;
   });
 
   server.on("/settings/time", HTTP_POST, [](){

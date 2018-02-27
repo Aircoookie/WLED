@@ -187,9 +187,21 @@ String getSettings(uint8_t subPage)
     resp += ds + "NRCFX" + c + receiveNotificationEffects +";";
     resp += ds + "NSDIR" + c + notifyDirectDefault +";";
     resp += ds + "NSBTN" + c + notifyButton +";";
+    resp += ds + "NSHUE" + c + notifyHue +";";
     resp += ds + "ALEXA" + c + alexaEnabled +";";
     resp += ds + "AINVN" + v + "\"" + alexaInvocationName + "\";";
     resp += ds + "NSALX" + c + alexaNotify +";";
+    resp += ds + "HUIP0" + v + hueIP[0] +";";
+    resp += ds + "HUIP1" + v + hueIP[1] +";";
+    resp += ds + "HUIP2" + v + hueIP[2] +";";
+    resp += ds + "HUIP3" + v + hueIP[3] +";";
+    resp += ds + "HUELI" + v + huePollLightId +";";
+    resp += ds + "HUEPI" + v + huePollIntervalMs +";";
+    resp += ds + "HUEPL" + c + huePollingEnabled +";";
+    resp += ds + "HURIO" + c + hueApplyOnOff +";";
+    resp += ds + "HURBR" + c + hueApplyBri +";";
+    resp += ds + "HURCL" + c + hueApplyColor +";";
+    resp += dg + "(\"hms\")[0]" + ih + "\"" + hueError + "\";";
   }
 
   if (subPage == 5)
