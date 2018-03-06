@@ -1816,6 +1816,11 @@ void WS2812FX::setFastUpdateMode(bool y)
   if (_mode_index == 0) _mode_delay = 20;
 }
 
+void WS2812FX::setReverseMode(bool b)
+{
+  _reverseMode = b;
+}
+
 void WS2812FX::driverModeCronixie(bool b)
 {
   _cronixieMode = b;
@@ -1940,6 +1945,7 @@ void WS2812FX::setPixelColorRaw(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uin
 
 void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
 {
+  if (_reverseMode) i = _led_count - 1 -i;
   if (!_cronixieMode)
   {
     #ifdef RGBW

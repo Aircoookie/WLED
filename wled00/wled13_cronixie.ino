@@ -1,7 +1,6 @@
 /*
  * Support for the Cronixie clock
  */
-#ifdef CRONIXIE
 uint8_t getSameCodeLength(char code, int index, char const digits[])
 {
   uint8_t counter = 0;
@@ -18,8 +17,9 @@ uint8_t getSameCodeLength(char code, int index, char const digits[])
   return counter;
 }
 
-void setCronixie(char const digits[])
+void setCronixie()
 {
+  char digits[] = cronixieDisplay.substring(0,6);
   /*
    * digit purpose index
    * 0-9 | 0-9 (incl. random)
@@ -86,7 +86,7 @@ void setCronixie(char const digits[])
   DEBUG_PRINT("cset ");
   DEBUG_PRINTLN(digits);
 
-  cronixieRefreshMs = 1997; //Only refresh every 2secs if no seconds are displayed
+  overlayRefreshMs = 1997; //Only refresh every 2secs if no seconds are displayed
   
   for (int i = 0; i < 6; i++)
   {
@@ -107,8 +107,8 @@ void setCronixie(char const digits[])
       case 'a': dP[i] = 58; i++; break;
       case 'm': dP[i] = 74 + getSameCodeLength('m',i,digits); i = i+dP[i]-74; break;
       case 'M': dP[i] = 24 + getSameCodeLength('M',i,digits); i = i+dP[i]-24; break;
-      case 's': dP[i] = 80 + getSameCodeLength('s',i,digits); i = i+dP[i]-80; cronixieRefreshMs = 497; break; //refresh more often bc. of secs
-      case 'S': dP[i] = 30 + getSameCodeLength('S',i,digits); i = i+dP[i]-30; cronixieRefreshMs = 497; break;
+      case 's': dP[i] = 80 + getSameCodeLength('s',i,digits); i = i+dP[i]-80; overlayRefreshMs = 497; break; //refresh more often bc. of secs
+      case 'S': dP[i] = 30 + getSameCodeLength('S',i,digits); i = i+dP[i]-30; overlayRefreshMs = 497; break;
       case 'Y': dP[i] = 36 + getSameCodeLength('Y',i,digits); i = i+dP[i]-36; break; 
       case 'y': dP[i] = 86 + getSameCodeLength('y',i,digits); i = i+dP[i]-86; break; 
       case 'I': dP[i] = 39 + getSameCodeLength('I',i,digits); i = i+dP[i]-39; break;  //Month. Don't ask me why month and minute both start with M.
@@ -139,16 +139,12 @@ void setCronixie(char const digits[])
   }
   DEBUG_PRINTLN((int)dP[5]);
 
-  cronixieRefreshedTime = 0; //refresh immediately
+  _overlayCronixie(); //refresh
 }
 
-void handleCronixie()
+void _overlayCronixie()
 {
-  if (millis() - cronixieRefreshedTime > cronixieRefreshMs)
-  {
-    cronixieRefreshedTime = millis();
-    local = TZ.toLocal(now(), &tcr);
-    if (cronixieCountdown) checkCountdown();
+    if (overlayCountdown) checkCountdown();
     uint8_t h = hour(local);
     uint8_t h0 = h;
     uint8_t m = minute(local);
@@ -159,7 +155,7 @@ void handleCronixie()
     //this has to be changed in time for 22nd century
     y -= 2000; if (y<0) y += 30; //makes countdown work
 
-    if (cronixieUseAMPM && !cronixieCountdown)
+    if (useAMPM && !overlayCountdown)
     {
       if (h>12) h-=12;
       else if (h==0) h+=12;
@@ -213,6 +209,4 @@ void handleCronixie()
     }
     strip.setCronixieDigits(_digitOut);
     //strip.trigger(); //this has a drawback, no effects slower than RefreshMs. advantage: Quick update, not dependant on effect time
-  }
 }
-#endif

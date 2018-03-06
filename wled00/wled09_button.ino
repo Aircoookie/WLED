@@ -10,27 +10,34 @@ void handleButton()
     {
       buttonPressedTime = millis();
       buttonPressedBefore = true;
-      if (buttonMacro == 255)
-      {
-        if (bri == 0)
-        {
-          bri = bri_last;
-        } else
-        {
-          bri_last = bri;
-          bri = 0;
-        }
-        colorUpdated(2);
-      } else {
-        applyMacro(buttonMacro);
-      }
     }
      else if (digitalRead(buttonPin) == HIGH && buttonPressedBefore)
     {
       delay(15); //debounce
       if (digitalRead(buttonPin) == HIGH)
       {
-        if (millis() - buttonPressedTime > 7000) initAP();
+        if (millis() - buttonPressedTime > 7000) {initAP();}
+        else if (millis() - buttonPressedTime > 700) 
+        {
+          if (buttonLongPressMacro != 0) {applyMacro(buttonLongPressMacro);}
+          else _setRandomColor(false);
+        }
+        else {
+          if (buttonMacro == 0)
+          {
+            if (bri == 0)
+            {
+              bri = bri_last;
+            } else
+            {
+              bri_last = bri;
+              bri = 0;
+            }
+            colorUpdated(2);
+          } else {
+            applyMacro(buttonMacro);
+          }
+        }
         buttonPressedBefore = false;
       }
     }

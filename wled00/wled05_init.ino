@@ -212,16 +212,6 @@ void wledInit()
     info += "rgbw: false\r\n";
     #endif
     info += "max-leds: " + (String)LEDCOUNT + "\r\n";
-    #ifdef USEOVERLAYS
-    info += "overlays: true\r\n";
-    #else
-    info += "overlays: false\r\n";
-    #endif
-    #ifdef CRONIXIE
-    info += "cronixie: true\r\n";
-    #else
-    info += "cronixie: false\r\n";
-    #endif
     #ifdef USEFS
     info += "spiffs: true\r\n";
     #else
@@ -308,16 +298,13 @@ void wledInit()
   // Initialize NeoPixel Strip
   strip.init();
   strip.setLedCount(ledcount);
+  strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
   strip.start();
 
   pinMode(buttonPin, INPUT_PULLUP);
-  #ifdef CRONIXIE
-  strip.driverModeCronixie(true);
-  strip.setCronixieBacklight(cronixieBacklight);
-  setCronixie(cronixieDefault);
-  #endif
+
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
   if(digitalRead(buttonPin) == LOW) buttonEnabled = false; //disable button if it is "pressed" unintentionally
@@ -325,11 +312,7 @@ void wledInit()
 
 void initAP(){
   String save = apssid;
-  #ifdef CRONIXIE
-    if (apssid.length() <1) apssid = "CRONIXIE-AP";
-  #else
-    if (apssid.length() <1) apssid = "WLED-AP";
-  #endif
+  if (apssid.length() <1) apssid = "WLED-AP";
   WiFi.softAP(apssid.c_str(), appass.c_str(), apchannel, aphide);
   apssid = save;
 }
@@ -370,6 +353,7 @@ void buildCssColorString()
     case 8: cs[0]="0ac"; cs[1]="124"; cs[2]="224"; cs[3]="003eff"; cs[4]="003eff"; cs[5]="003eff"; break;//air
     case 9: cs[0]="f70"; cs[1]="421"; cs[2]="221"; cs[3]="a50"; cs[4]="f70"; cs[5]="f70"; break;//nixie
     case 10: cs[0]="2d2"; cs[1]="010"; cs[2]="121"; cs[3]="060"; cs[4]="040"; cs[5]="3f3"; break; //terminal
+    case 11: cs[0]="867ADE"; cs[1]="4033A3"; cs[2]="483AAA"; cs[3]="483AAA"; cs[4]=""; cs[5]="867ADE"; break; //c64
     case 14: cs[0]="fc7"; cs[1]="49274a"; cs[2]="94618e"; cs[3]="f4decb"; cs[4]="0008"; cs[5]="f4decb"; break; //end
     case 15: for (int i=0;i<6;i++)cs[i]=cssCol[i];//custom
   }

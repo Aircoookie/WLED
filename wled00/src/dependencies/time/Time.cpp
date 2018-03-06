@@ -281,9 +281,9 @@ void setTime(time_t t) {
   nextSyncTime = (uint32_t)t + syncInterval;
   Status = timeSet;
   prevMillis = millis();  // restart counting from now (thanks to Korman for this fix)
-} 
+}
 
-void setTime(int hr,int min,int sec,int dy, int mnth, int yr){
+time_t getUnixTime(int hr,int min,int sec,int dy, int mnth, int yr){
  // year can be given as full four digit year or two digts (2010 or 10 for 2010);  
  //it is converted to years since 1970
   if( yr > 99)
@@ -296,7 +296,11 @@ void setTime(int hr,int min,int sec,int dy, int mnth, int yr){
   tm.Hour = hr;
   tm.Minute = min;
   tm.Second = sec;
-  setTime(makeTime(tm));
+  return makeTime(tm);
+}
+
+void setTime(int hr,int min,int sec,int dy, int mnth, int yr){
+ setTime(getUnixTime(hr,min,sec,dy,mnth,yr));
 }
 
 void adjustTime(long adjustment) {

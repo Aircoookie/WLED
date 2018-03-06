@@ -70,6 +70,7 @@ String getSettings(uint8_t subPage)
   String v = ".value=";
   String c = ".checked=";
   String ih = ".innerHTML=";
+  String si = ".selectedIndex=";
 
   if (subPage == 1) {
     resp += ds + "CSSID" + v + "\"" + clientssid + "\";";
@@ -164,7 +165,7 @@ String getSettings(uint8_t subPage)
     resp += ds + "TLBRI" + v + nightlightTargetBri +";";
     resp += ds + "TLDUR" + v + nightlightDelayMins +";";
     resp += ds + "TLFDE" + c + nightlightFade +";";
-    resp += ds + "OLDEF" + v + overlayDefault +";";
+    resp += ds + "LEDRV" + c + reverseMode +";";
     resp += ds + "WOFFS" + v + arlsOffset +";";
   }
 
@@ -172,7 +173,7 @@ String getSettings(uint8_t subPage)
   { 
     resp += ds + "DESC" + v + "\"" + serverDescription + "\";";
     resp += ds + "COLMD" + c + useHSBDefault + ";";
-    resp += ds + "THEME.selectedIndex=" + String(currentTheme) + ";";
+    resp += ds + "THEME" + si + String(currentTheme) + ";";
     for(int i=0;i<6;i++)
     resp += ds + "CCOL" + i + v + "\"" + cssCol[i] + "\";";
     resp += ds + "CFONT" + v + "\"" + cssFont + "\";";
@@ -188,6 +189,7 @@ String getSettings(uint8_t subPage)
     resp += ds + "NSDIR" + c + notifyDirectDefault +";";
     resp += ds + "NSBTN" + c + notifyButton +";";
     resp += ds + "NSHUE" + c + notifyHue +";";
+    resp += ds + "NS2XS" + c + notifyTwice +";";
     resp += ds + "ALEXA" + c + alexaEnabled +";";
     resp += ds + "AINVN" + v + "\"" + alexaInvocationName + "\";";
     resp += ds + "NSALX" + c + alexaNotify +";";
@@ -207,7 +209,36 @@ String getSettings(uint8_t subPage)
   if (subPage == 5)
   {
     resp += ds + "NTPON" + c + ntpEnabled +";";
+    resp += ds + "CL24H" + c + !useAMPM +";";
+    resp += ds + "TZONE" + si + String(currentTimezone) + ";";
+    resp += ds + "UTCOS" + v + utcOffsetSecs +";";
     resp += dg + "(\"times\")[0]" + ih + "\"" + getTimeString() + "\";";
+    resp += ds + "OLMDE" + si + String(currentOverlay) + ";";
+    resp += ds + "OLIN1" + v + overlayMin +";";
+    resp += ds + "OLIN2" + v + overlayMax +";";
+    resp += ds + "OLINM" + v + analogClock12pixel +";";
+    resp += ds + "OLSTR" + c + analogClockSecondsTrail +";";
+    resp += ds + "OL5MI" + c + analogClock5MinuteMarks +";";
+    resp += ds + "CRONX" + v + "\"" + cronixieDisplay + "\";";
+    resp += ds + "CROBL" + c + cronixieBacklight +";";
+    resp += ds + "CLCND" + c + overlayCountdown +";";
+    resp += ds + "CDGYR" + v + countdownYear +";";
+    resp += ds + "CDGMN" + v + countdownMonth +";";
+    resp += ds + "CDGDY" + v + countdownDay +";";
+    resp += ds + "CDGHR" + v + countdownHours +";";
+    resp += ds + "CDGMI" + v + countdownMin +";";
+    resp += ds + "CDGSC" + v + countdownSec +";";
+    for (int i=1;i<17;i++)
+    {
+      resp += ds + "MC" + String(i) + v + "\"" + loadMacro(i) + "\";";
+    }
+    resp += ds + "MCRBT" + v + macroBoot +";";
+    resp += ds + "MCA0I" + v + macroAlexaOn +";";
+    resp += ds + "MCA0O" + v + macroAlexaOff +";";
+    resp += ds + "MCB0D" + v + macroButton +";";
+    resp += ds + "MCB0L" + v + macroLongPress +";";
+    resp += ds + "MCNTD" + v + macroCountdown +";";
+    resp += ds + "MCLNO" + v + macroNightlight +";";
   }
 
   if (subPage == 6)

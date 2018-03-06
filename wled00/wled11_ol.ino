@@ -1,7 +1,21 @@
 /*
- * The Overlay function is over a year old, largely untested and not configurable during runtime. Consider it as deprecated for now, it might get either removed/simplified/reworked.
+ * Used to draw clock overlays over the strip
  */
-#ifdef USEOVERLAYS
+void initCronixie()
+{
+  if (overlayCurrent == 7 && !cronixieInit)
+  {
+    strip.driverModeCronixie(true);
+    strip.setCronixieBacklight(cronixieBacklight);
+    setCronixie(cronixieDefault);
+    cronixieInit = true;
+  } else if (cronixieInit && overlayCurrent != 7)
+  {
+    strip.driverModeCronixie(false);
+    cronixieInit = false; 
+  }
+}
+
 void _nixieDisplay(int num[], int dur[], int pausedur[], int cnt)
 {
   strip.setRange(overlayMin, overlayMax, 0);
@@ -84,8 +98,6 @@ void _nixieNumber(int number, int dur)
       if (overlayArr[i] != -1)
       {
         overlayArr[i] = overlayArr[i] + overlayMin;
-        if (overlayReverse)
-          overlayArr[i] = overlayMax - overlayArr[i];
       }
     }
     for (int i = 0; i <6; i++)
@@ -106,38 +118,39 @@ void _nixieNumber(int number, int dur)
 
 void handleOverlays()
 {
-  //properties: range, (color)
-  //0 no overlay
-  //1 solid color (NI)
-  //2 analog clock
-  //3 digital nixie-style clock one digit
-  //4 just static hour (NI)
-  //5 analog countdown
-  //6 digital one digit countdown
+  if (overlayCurrent == 0) return;
+
   if (millis() - overlayRefreshedTime > overlayRefreshMs)
   {
-    overlayRefreshedTime = millis();
+    initCronixie();
+    updateLocalTime();
     switch (overlayCurrent)
     {
+      case 1: _overlaySolid(); break;//solid secondary color
       case 2: _overlayAnalogClock(); break;//2 analog clock
       case 3: _overlayNixieClock(); break;//nixie 1-digit
-      case 5: _overlayAnalogCountdown(); break;//a.countdown 
-      case 6: _overlayNixieCountdown(); break;//d.
+      case 4: _overlayCronixie();//Diamex cronixie clock kit
     }
+    overlayRefreshedTime = millis();
   }
+}
+
+void _overlaySolid()
+{
+  uint32_t cls = (useGammaCorrectionRGB)? gamma8[white*16777216] + gamma8[col[0]]*65536 + gamma8[col[1]]*256 + gamma8[col[2]]:white*16777216 + col[0]*65536 + col[1]*256 + col[2];
+  strip.setRange(overlayMin,overlayMax,cls);
+  overlayRefreshMs = 1902;
 }
 
 void _overlayAnalogClock()
 {
   int overlaySize = overlayMax - overlayMin +1;
   strip.unlockAll();
-  if (overlayDimBg)
+  if (overlayCountdown)
   {
-    uint32_t ct = (white>>1)*16777216 + (col[0]>>1)*65536 + (col[1]>>1)*256 + (col[2]>>1);
-    if (useGammaCorrectionRGB) ct = (gamma8[white]>>1)*16777216 + (gamma8[col[0]]>>1)*65536 + (gamma8[col[1]]>>1)*256 + (gamma8[col[2]]>>1);
-    strip.setRange(overlayMin, overlayMax, ct);
+    _overlayAnalogCountdown(); return;
   }
-  local = TZ.toLocal(now(), &tcr);
+  _overlaySolid();
   double hourP = ((double)(hour(local)%12))/12;
   double minuteP = ((double)minute(local))/60;
   hourP = hourP + minuteP/12;
@@ -160,7 +173,14 @@ void _overlayAnalogClock()
   }
   if (analogClockSecondsTrail)
   {
-    strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
+    if (secondPixel < analogClock12pixel)
+    {
+      strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
+      strip.setRange(secondPixel, overlayMax, 0xFF0000);
+    } else
+    {
+      strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
+    }
   } else
   {
     strip.setIndividual(secondPixel, 0xFF0000);
@@ -172,14 +192,14 @@ void _overlayAnalogClock()
 
 void _overlayNixieClock()
 {
+  if (overlayCountdown)
+  {
+    _overlayNixieCountdown(); return;
+  }
   if (nixieClockI < 0)
   {
-      local = TZ.toLocal(now(), &tcr);
       overlayArr[0] = hour(local);
-      if (nixieClock12HourFormat && overlayArr[0] > 12)
-      {
-        overlayArr[0] = overlayArr[0]%12;
-      }
+      if (useAMPM) overlayArr[0] = overlayArr[0]%12;
       overlayArr[1] = -1;
       if (overlayArr[0] > 9)
       {
@@ -191,7 +211,7 @@ void _overlayNixieClock()
       overlayArr[2] = overlayArr[2]/10;
       overlayArr[4] = -1;
       overlayArr[5] = -1;
-      if (nixieClockDisplaySeconds)
+      if (analogClockSecondsTrail)
       {
         overlayArr[4] = second(local);
         overlayArr[5] = overlayArr[4]%10;
@@ -202,8 +222,6 @@ void _overlayNixieClock()
         if (overlayArr[i] != -1)
         {
           overlayArr[i] = overlayArr[i] + overlayMin;
-          if (overlayReverse)
-            overlayArr[i] = overlayMax - overlayArr[i];
         }
       }
       overlayDur[0] = 12 + 12*(255 - overlaySpeed);
@@ -331,5 +349,5 @@ void _overlayNixieCountdown()
     }
     _nixieNumber(diff, 800);
   }
+  overlayRefreshMs = 998;
 }
-#endif

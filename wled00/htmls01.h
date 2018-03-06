@@ -116,7 +116,7 @@ Default Duration: <input name="TLDUR" type="number" min="1" max="255" required> 
 Default Target brightness: <input name="TLBRI" type="number" min="0" max="255" required><br>
 Fade down: <input type="checkbox" name="TLFDE"><br>
 <h3>Advanced</h3>
-Default overlay ID: <input name="OLDEF" type="number" min="0" max="255" required> <br>
+Reverse LED order (rotate 180): <input type="checkbox" name="LEDRV"><br>
 WARLS offset: <input name="WOFFS" type="number" min="-255" max="255" required><hr>
 <button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
 </form>
@@ -154,7 +154,7 @@ Color Theme:
 <option value="8">Air</option>
 <option value="9">Nixie</option>
 <option value="10">Terminal</option>
-<option value="11">Placeholder</option>
+<option value="11">C64</option>
 <option value="12">Placeholder</option>
 <option value="13">Placeholder</option>
 <option value="14">The End</option>
@@ -193,12 +193,13 @@ On/Off button enabled: <input type="checkbox" name="BTNON">
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="NUDPP" maxlength="5" size="4"><br>
 Receive <input type="checkbox" name="NRCBR">Brightness, <input type="checkbox" name="NRCCL">Color, and <input type="checkbox" name="NRCFX">Effects<br>
-Send notifications on direct change: <input type="checkbox" name="NSDIR"> <br>
-Send notifications on button press: <input type="checkbox" name="NSBTN"> <br>
-Send Alexa notifications: <input type="checkbox" name="NSALX"> <br>
+Send notifications on direct change: <input type="checkbox" name="NSDIR"><br>
+Send notifications on button press: <input type="checkbox" name="NSBTN"><br>
+Send Alexa notifications: <input type="checkbox" name="NSALX"><br>
 Send Philips Hue change notifications: <input type="checkbox" name="NSHUE">
+Send notifications twice: <input type="checkbox" name="NS2XS">
 <h3>Alexa Voice Assistant</h3>
-Emulate Alexa device: <input type="checkbox" name="ALEXA"> <br>
+Emulate Alexa device: <input type="checkbox" name="ALEXA"><br>
 Alexa invocation name: <input name="AINVN" maxlength="32"><br>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
@@ -239,9 +240,9 @@ Get time from NTP server: <input type="checkbox" name="NTPON"><br>
 Time zone: 
 <select name="TZONE">
 <option value="1" selected>GMT(UTC)</option>
-<option value="2">GMT/BST</option>
+<!--<option value="2">GMT/BST</option>-->
 <option value="3">CET/CEST</option>
-<option value="4">EET/EEST</option>
+<!--<option value="4">EET/EEST</option>
 <option value="5">US-EST/EDT</option>
 <option value="6">US-CST/CDT</option>
 <option value="7">US-MST/MDT</option>
@@ -250,7 +251,7 @@ Time zone:
 <option value="10">CST(AWST)</option>
 <option value="11">JST(KST)</option>
 <option value="12">AEST/AEDT</option>
-<option value="13">NZST/NZDT</option>
+<option value="13">NZST/NZDT</option>-->
 </select><br>
 Hour/Min offset: <input name="TOFSH" type="number" min="-255" max="255" required> <input name="TOFSM" type="number" min="-255" max="255" required><br>-->
 Current local time is <span class="times">unknown</span>.
@@ -331,7 +332,7 @@ HTTP traffic is not encrypted. An attacker in the same network could intercept f
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AROTA"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.5.1<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.0_dev<br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
 <i>Uses libraries:</i><br>

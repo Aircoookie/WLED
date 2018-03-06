@@ -4,7 +4,7 @@
 
 #define WLEDPACKETSIZE 24
 
-void notify(uint8_t callMode)
+void notify(uint8_t callMode, bool followUp=false)
 {
   if (!udpConnected) return;
   switch (callMode)
@@ -41,10 +41,17 @@ void notify(uint8_t callMode)
   notifierUdp.beginPacket(broadcastIp, udpPort);
   notifierUdp.write(udpOut, WLEDPACKETSIZE);
   notifierUdp.endPacket();
+  notificationSentCallMode = callMode;
+  notificationSentTime = millis();
+  notificationTwoRequired = (followUp)? false:notifyTwice;
 }
 
 void handleNotifications()
 {
+  if(udpConnected && notificationTwoRequired && millis()-notificationSentTime > 250){
+    notify(notificationSentCallMode,true);
+  }
+  
   if(udpConnected && receiveNotifications){
     int packetSize = notifierUdp.parsePacket();
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP()) //don't process broadcasts we send ourselves

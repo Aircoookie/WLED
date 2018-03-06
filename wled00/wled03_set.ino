@@ -230,11 +230,7 @@ void handleSettingsSet(uint8_t subPage)
       if (i > 0) nightlightDelayMins = i;
     }
     nightlightFade = server.hasArg("TLFDE");
-    if (server.hasArg("OLDEF"))
-    {
-      int i = server.arg("OLDEF").toInt();
-      if (i >= 0  && i <= 255) overlayDefault = i;
-    }
+    reverseMode = server.hasArg("LEDRV");
     if (server.hasArg("WOFFS"))
     {
       int i = server.arg("WOFFS").toInt();
@@ -278,6 +274,7 @@ void handleSettingsSet(uint8_t subPage)
     notifyDirectDefault = server.hasArg("NSDIR");
     notifyDirect = notifyDirectDefault;
     notifyButton = server.hasArg("NSBTN");
+    notifyTwice = server.hasArg("NS2XS");
     alexaEnabled = server.hasArg("ALEXA");
     if (server.hasArg("AINVN")) alexaInvocationName = server.arg("AINVN");
     alexaNotify = server.hasArg("NSALX");
@@ -319,6 +316,11 @@ void handleSettingsSet(uint8_t subPage)
   {
     ntpEnabled = server.hasArg("NTPON");
     if (ntpEnabled && WiFi.status() == WL_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort); //start if not already connected
+    if (server.hasArg("OLDEF"))
+    {
+      int i = server.arg("OLDEF").toInt();
+      if (i >= 0  && i <= 255) overlayDefault = i;
+    }
   }
 
   //SECURITY
@@ -712,17 +714,19 @@ boolean handleSet(String req)
       applyPreset(req.substring(pos + 3).toInt(), false, false, true);
       effectUpdated = true;
    }
-   #ifdef CRONIXIE
+
+   //cronixie
    pos = req.indexOf("NX="); //sets digits to code
    if (pos > 0) {
-      setCronixie(req.substring(pos + 3, pos + 9).c_str());
+      cronixieDisplay = req.substring(pos + 3, pos + 9);
+      setCronixie();
    }
    pos = req.indexOf("NM="); //mode, 1 countdown
    if (pos > 0) {
-      cronixieCountdown = true;
+      overlayCountdown = true;
       if (req.indexOf("NM=0") > 0)
       {
-        cronixieCountdown = false;
+        overlayCountdown = false;
       }
    }
    if (req.indexOf("NB=") > 0) //sets backlight
@@ -732,10 +736,10 @@ boolean handleSet(String req)
       {
         cronixieBacklight = false;
       }
-      strip.setCronixieBacklight(cronixieBacklight);
-      cronixieRefreshedTime = 0;
+      if (overlayCurrent == 4) strip.setCronixieBacklight(cronixieBacklight);
+      overlayRefreshedTime = 0;
    }
-   #endif
+
    //internal call, does not send XML response
    pos = req.indexOf("IN");
    if (pos < 1) XML_response();

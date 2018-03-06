@@ -120,6 +120,7 @@ int     year(time_t t);    // the year for the given time
 time_t now();              // return the current time as seconds since Jan 1 1970 
 void    setTime(time_t t);
 void    setTime(int hr,int min,int sec,int day, int month, int yr);
+void	getUnixTime(int hr,int min,int sec,int day, int month, int yr); //added by Aircoookie to get epoch time
 void    adjustTime(long adjustment);
 
 /* date strings */ 

@@ -45,7 +45,7 @@ bool sendHuePoll(bool sAuth)
 {
   bool st;
   hueClient.setReuse(true);
-  hueClient.setTimeout(250);
+  hueClient.setTimeout(450);
   String hueURL = "http://";
   hueURL += hueIP.toString();
   hueURL += "/api/";

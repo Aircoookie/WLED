@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.5.1
+ * @version 0.6.0_dev
  * @author Christian Schwinne
  */
 
@@ -32,8 +32,8 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1802273
-const String versionString = "0.5.1";
+#define VERSION 1803061
+const String versionString = "0.6.0_dev";
 
 //AP and OTA default passwords (change them!)
 String appass = "wled1234";
@@ -42,16 +42,10 @@ String otapass = "wledota";
 //If you have an RGBW strip, also uncomment first line in WS2812FX.h!
 bool useRGBW = false;
 
-//overlays, needed for clocks etc.
-#define USEOVERLAYS
-
-//support for the CRONIXIE clock by Diamex (disable overlays!)
-//#define CRONIXIE
-
 //spiffs FS only useful for debug (only ESP8266)
 //#define USEFS
 
-//to toggle usb serial debug (un)comment following line
+//to toggle usb serial debug (un)comment following line(s)
 //#define DEBUG
 
 //Hardware-settings (only changeble via code)
@@ -61,39 +55,14 @@ uint8_t auxPin = 15; //use e.g. for external relay
 uint8_t auxDefaultState = 0; //0: input 1: high 2: low
 uint8_t auxTriggeredState = 0; //0: input 1: high 2: low
 
-TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};     //Central European Summer Time
-TimeChangeRule CET = {"CET ", Last, Sun, Oct, 3, 60};       //Central European Standard Time
-Timezone TZ(CEST, CET);
-TimeChangeRule *tcr;        //pointer to the time change rule, use to get the TZ abbrev
-time_t local;
-
-//cronixie defaults
-#ifdef CRONIXIE
-#undef LEDCOUNT
-#define LEDCOUNT 60
-uint8_t ledcount = 6;
-String apssid = "CRONIXIE-AP";
-String alexaInvocationName = "Clock";
-char cronixieDefault[] = "HHMMSS";
-long cronixieRefreshMs = 497;
-unsigned long cronixieRefreshedTime;
-byte dP[]{0,0,0,0,0,0};
-bool cronixieUseAMPM = false;
-bool cronixieBacklight = true;
-bool cronixieCountdown = false;
-bool ntpEnabled = true;
-#endif
-
 //Default CONFIG
 String serverDescription = versionString;
 uint8_t currentTheme = 0;
 String clientssid = "Your_Network_Here";
 String clientpass = "Dummy_Pass";
 String cmdns = "led";
-#ifndef CRONIXIE
-uint8_t ledcount = 100;
-String apssid = "WLED-AP";
-#endif
+uint8_t ledcount = 10; //lowered to prevent accidental overcurrent
+String apssid = ""; //AP off by default (unless setup)
 uint8_t apchannel = 1;
 uint8_t aphide = 0;
 uint8_t apWaitTimeSecs = 32;
@@ -114,11 +83,12 @@ uint8_t nightlightTargetBri = 0, bri_nl_t;
 bool fadeTransition = true;
 bool sweepTransition = false, sweepDirection = true;
 uint16_t transitionDelay = 1200;
+bool reverseMode = false;
 bool otaLock = false, wifiLock = false;
 bool aOtaEnabled = true;
 bool onlyAP = false;
 bool buttonEnabled = true;
-bool notifyDirect = true, notifyButton = true, notifyDirectDefault = true, alexaNotify = false, macroNotify = false;
+bool notifyDirect = true, notifyButton = true, notifyDirectDefault = true, alexaNotify = false, macroNotify = false, notifyTwice = false;
 bool receiveNotifications = true, receiveNotificationBrightness = true, receiveNotificationColor = true, receiveNotificationEffects = true;
 uint8_t briMultiplier = 100;
 uint8_t nightlightDelayMins = 60;
@@ -128,9 +98,7 @@ uint8_t effectDefault = 0;
 uint8_t effectSpeedDefault = 75;
 uint8_t effectIntensityDefault = 128;
 //NTP stuff
-#ifndef CRONIXIE
 boolean ntpEnabled = false;
-#endif
 IPAddress ntpServerIP;
 const char* ntpServerName = "pool.ntp.org";
 //custom chase
@@ -144,11 +112,10 @@ uint8_t cc_start = 0;
 
 //alexa
 boolean alexaEnabled = true;
-#ifndef CRONIXIE
 String alexaInvocationName = "Light";
-#endif
-uint8_t alexaOnMacro = 255, alexaOffMacro = 255;
-uint8_t buttonMacro = 255, countdownMacro = 255;
+uint8_t alexaOnMacro = 0, alexaOffMacro = 0;
+uint8_t buttonMacro = 0, countdownMacro = 0;
+uint8_t bootMacro = 0;
 
 unsigned long countdownTime = 1514764800L;
 
@@ -191,6 +158,9 @@ byte bri_last = 127;
 boolean transitionActive = false;
 boolean buttonPressedBefore = false;
 long buttonPressedTime = 0;
+long notificationSentTime = 0;
+uint8_t notificationSentCallMode = 0;
+bool notificationTwoRequired = false;
 boolean nightlightActive = false;
 boolean nightlightActive_old = false;
 int nightlightDelayMs;
@@ -209,30 +179,34 @@ const int NTP_PACKET_SIZE = 48;
 byte ntpPacketBuffer[NTP_PACKET_SIZE];
 unsigned long ntpLastSyncTime = 999000000L;
 unsigned long ntpPacketSentTime = 999000000L;
-const unsigned long seventyYears = 2208988800UL;
+uint8_t currentTimezone = 0;
+time_t local;
+int utcOffsetSecs = 0;
 
 //overlay stuff
 uint8_t overlayDefault = 0;
 uint8_t overlayCurrent = 0;
-#ifdef USEOVERLAYS
 int overlayMin = 0, overlayMax = 79; //bb: 35, 46, t: 0, 79
 int analogClock12pixel = 25; //bb: 41, t: 25
-bool overlayDimBg = true;
 boolean analogClockSecondsTrail = false;
 boolean analogClock5MinuteMarks = false;
-boolean nixieClockDisplaySeconds = false;
-boolean nixieClock12HourFormat = false;
-boolean overlayReverse = true;
 uint8_t overlaySpeed = 200;
 long overlayRefreshMs = 200;
 unsigned long overlayRefreshedTime;
 int overlayArr[6];
-int overlayDur[6];
-int overlayPauseDur[6];
+uint16_t overlayDur[6];
+uint16_t overlayPauseDur[6];
 int nixieClockI = -1;
 boolean nixiePause;
-#endif
+uint8_t countdownYear=19, countdownMonth=1, countdownDay=1, countdownHour=0, countdownMin=0, countdownSec=0; //year is actual year -2000
 bool countdownOverTriggered = true;
+//cronixie
+String cronixieDisplay = "HHMMSS";
+byte dP[]{0,0,0,0,0,0};
+bool useAMPM = false;
+bool cronixieBacklight = true;
+bool overlayCountdown = false;
+bool cronixieInit = false;
 
 int arlsTimeoutMillis = 2500;
 boolean arlsTimeout = false;
@@ -338,17 +312,12 @@ void loop() {
     handleButton();
     handleNetworkTime();
     if (!otaLock && aOtaEnabled) ArduinoOTA.handle();
-    #ifdef CRONIXIE
-    handleCronixie();
-    #endif
     handleAlexa();
+    handleOverlays();
     if (!arlsTimeout) //block stuff if WARLS is enabled
     {
       handleHue();
       handleNightlight();
-    #ifdef USEOVERLAYS
-      handleOverlays();
-    #endif
       if (bri_t) strip.service(); //do not update strip if off, prevents flicker on ESP32
     }
     

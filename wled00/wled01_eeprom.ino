@@ -12,7 +12,7 @@
 //2 -> 0.4p 1711302 and up
 //3 -> 0.4  1712121 and up
 //4 -> 0.5.0 and up
-//5 -> 0.5.1 and up
+//5 -> 0.6.0_dev and up
 
 void clearEEPROM()
 {
@@ -61,7 +61,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(228, aphide);
   EEPROM.write(229, ledcount);
   EEPROM.write(230, notifyButton);
-  //231 was notifyNightlight
+  EEPROM.write(231, notifyTwice);
   EEPROM.write(232, buttonEnabled);
   //233 reserved for first boot flag
   EEPROM.write(234, staticip[0]);
@@ -82,6 +82,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(249, bri_s);
   EEPROM.write(250, receiveNotificationBrightness);
   EEPROM.write(251, fadeTransition);
+  EEPROM.write(252, reverseMode);
   EEPROM.write(253, (transitionDelay >> 0) & 0xFF);
   EEPROM.write(254, (transitionDelay >> 8) & 0xFF);
   EEPROM.write(255, briMultiplier);
@@ -102,8 +103,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(325, effectSpeedDefault);
   EEPROM.write(326, effectIntensityDefault);
   EEPROM.write(327, ntpEnabled);
-  //328 reserved for timezone setting
-  //329 reserved for dst setting
+  EEPROM.write(328, currentTimezone);
+  EEPROM.write(329, useAMPM);
   EEPROM.write(330, useGammaCorrectionBri);
   EEPROM.write(331, useGammaCorrectionRGB);
   EEPROM.write(332, overlayDefault);
@@ -140,6 +141,9 @@ void saveSettingsToEEPROM()
   EEPROM.write(391, receiveNotificationColor);
   EEPROM.write(392, receiveNotificationEffects);
   EEPROM.write(393, wifiLock);
+  EEPROM.write(394, (abs(utcOffsetSecs) >> 0) & 0xFF);
+  EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
+  EEPROM.write(396, (utcOffsetSecs<0)); //is negative
 
   for (int k=0;k<6;k++){
     int in = 900+k*8;
@@ -225,7 +229,7 @@ void loadSettingsFromEEPROM(bool first)
   if (aphide > 1) aphide = 1;
   ledcount = EEPROM.read(229); if (ledcount > LEDCOUNT) ledcount = LEDCOUNT;
   notifyButton = EEPROM.read(230);
-  //231 was notifyNightlight
+  notifyTwice = EEPROM.read(231);
   buttonEnabled = EEPROM.read(232);
   staticip[0] = EEPROM.read(234);
   staticip[1] = EEPROM.read(235);
@@ -249,6 +253,7 @@ void loadSettingsFromEEPROM(bool first)
   }
   receiveNotificationBrightness = EEPROM.read(250);
   fadeTransition = EEPROM.read(251);
+  reverseMode = EEPROM.read(252);
   transitionDelay = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
   briMultiplier = EEPROM.read(255);
   otapass = "";
@@ -269,6 +274,8 @@ void loadSettingsFromEEPROM(bool first)
   effectDefault = EEPROM.read(324); effectCurrent = effectDefault;
   effectSpeedDefault = EEPROM.read(325); effectSpeed = effectSpeedDefault;
   ntpEnabled = EEPROM.read(327);
+  currentTimezone = EEPROM.read(328);
+  useAMPM = EEPROM.read(329);
   useGammaCorrectionBri = EEPROM.read(330);
   useGammaCorrectionRGB = EEPROM.read(331);
   overlayDefault = EEPROM.read(332);
@@ -348,6 +355,8 @@ void loadSettingsFromEEPROM(bool first)
   
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
+  utcOffsetSecs = ((EEPROM.read(394) << 0) & 0xFF) + ((EEPROM.read(395) << 8) & 0xFF00);
+  if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
 
   //favorite setting memory (25 slots/ each 20byte)
   //400 - 899 reserved
@@ -442,15 +451,25 @@ void savePreset(uint8_t index)
   EEPROM.commit();
 }
 
-void applyMacro(uint8_t index)
+String loadMacro(uint8_t index)
 {
-  if (index > 15) return;
-  String mc="win&";
+  index-=1;
+  String m="";
+  if (index > 15) return m;
   for (int i = 1024+64*index; i < 1088+64*index; i++)
   {
     if (EEPROM.read(i) == 0) break;
-    mc += char(EEPROM.read(i));
+    m += char(EEPROM.read(i));
   }
+  return m;
+}
+
+void applyMacro(uint8_t index)
+{
+  index-=1;
+  if (index > 15) return;
+  String mc="win&";
+  mc += loadMacro(index+1);
   mc += "&IN"; //internal, no XML response
   if (!macroNotify) mc += "&NN";
   String forbidden = "&M="; //dont apply if called by the macro itself to prevent loop
@@ -465,6 +484,7 @@ void applyMacro(uint8_t index)
 
 void saveMacro(uint8_t index, String mc)
 {
+  index-=1;
   if (index > 15) return;
   int s = 1024+index*64;
   for (int i = s; i < s+64; i++)

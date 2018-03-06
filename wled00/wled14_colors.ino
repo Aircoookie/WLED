@@ -86,16 +86,14 @@ void colorXYtoRGB(float x, float y, uint8_t* rgb) //coordinates to rgb (https://
           b = b / r;
           r = 1.0f;
       }
-  }
-  else if (g > b && g > r) {
+  } else if (g > b && g > r) {
       // green is biggest
       if (g > 1.0f) {
           r = r / g;
           b = b / g;
           g = 1.0f;
       }
-  }
-  else if (b > r && b > g) {
+  } else if (b > r && b > g) {
       // blue is biggest
       if (b > 1.0f) {
           r = r / b;
@@ -117,4 +115,25 @@ void colorRGBtoXY(uint8_t* rgb, float* xy) //rgb to coordinates (https://www.dev
   xy[1] = Y / (X + Y + Z);
 }
 
-void colorRGBtoRGBW(uint8_t* rgb, uint8_t* rgbw){} //rgb to rgbw, not imlemented yet
+/*//For some reason min and max are not declared here
+
+float minf (float v, float w)
+{
+  if (w > v) return v;
+  return w;
+}
+
+float maxf (float v, float w)
+{
+  if (w > v) return w;
+  return v;
+}
+
+void colorRGBtoRGBW(uint8_t* rgb, uint8_t* wht) //rgb to rgbw, untested and currently unused
+{
+  *wht = (float)minf(rgb[0],minf(rgb[1],rgb[2]))*0.95;
+  rgb[0]-=wht;
+  rgb[1]-=wht;
+  rgb[2]-=wht;
+}*/
+

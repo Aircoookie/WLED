@@ -213,6 +213,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _counter_mode_step = 0;
       _counter_cc_step = 0;
       _fastStandard = false;
+      _reverseMode = false;
       _locked = new boolean[n];
       _cronixieDigits = new uint8_t[6];
     }
@@ -247,6 +248,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       setBrightness(uint8_t b),
       increaseBrightness(uint8_t s),
       decreaseBrightness(uint8_t s),
+      setReverseMode(bool b),
       driverModeCronixie(bool b),
       setCronixieDigits(uint8_t* d),
       setCronixieBacklight(bool b),
@@ -360,6 +362,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
     boolean
       _triggered,
       _fastStandard,
+      _reverseMode,
       _cronixieMode,
       _cronixieBacklightEnabled,
       _cc_fs,

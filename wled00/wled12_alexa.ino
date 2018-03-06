@@ -46,7 +46,7 @@ void handleAlexa()
 
 void alexaOn()
 {
-  if (alexaOnMacro == 255)
+  if (alexaOnMacro == 0)
   {
     handleSet((alexaNotify)?"win&T=1&IN":"win&T=1&NN&IN");
   } else
@@ -64,7 +64,7 @@ void alexaOn()
 
 void alexaOff()
 {
-  if (alexaOffMacro == 255)
+  if (alexaOffMacro == 0)
   {
     handleSet((alexaNotify)?"win&T=0&IN":"win&T=0&NN&IN");
   } else
