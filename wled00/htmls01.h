@@ -37,7 +37,7 @@ const char PAGE_settings_wifi1[] PROGMEM = R"=====(
 <body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save & Reboot</button><hr>
+<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
 <h2>WiFi setup</h2>
 <h3>Connect to existing network</h3>
 Network name (SSID, empty to not connect): <br><input name="CSSID" maxlength="32"> <br>
@@ -67,7 +67,7 @@ Hide AP name: <input type="checkbox" name="APHSSID"> <br>
 AP password (leave empty for open): <br> <input type="password" name="APPASS" maxlength="63"> <br>
 Access Point WiFi channel: <input name="APCHAN" type="number" min="1" max="13" required> <br>
 AP IP: <span class="sip"> Not active </span> <hr>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save & Reboot</button>
+<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 </form>
 </body>
 </html>
@@ -83,7 +83,7 @@ const char PAGE_settings_leds1[] PROGMEM = R"=====(
 <body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button><hr>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>LED setup</h2>
 LED count (max. 255): <input name="LEDCN" type="number" min="1" max="255" required> <br>
 <i>The default boot color is always saved in preset slot 0.</i><br>
@@ -118,7 +118,7 @@ Fade down: <input type="checkbox" name="TLFDE"><br>
 <h3>Advanced</h3>
 Reverse LED order (rotate 180): <input type="checkbox" name="LEDRV"><br>
 WARLS offset: <input name="WOFFS" type="number" min="-255" max="255" required><hr>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
 </html>
@@ -137,7 +137,7 @@ const char PAGE_settings_ui1[] PROGMEM = R"=====(
 <body onload="S()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button><hr>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Web Setup</h2>
 Server description: <input name="DESC" maxlength="32"><br>
 Use HSB sliders instead of RGB by default: <input type="checkbox" name="COLMD"><br>
@@ -170,7 +170,7 @@ Custom shadow: <input maxlength=9 name="CCOL4"><br>
 Custom text color: <input maxlength=9 name="CCOL5"><br></div>
 Use font: <input maxlength=32 name="CFONT"><br>
 Make sure the font you use is installed on your system!<br>
-<hr><button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
+<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
 </html>
@@ -186,7 +186,7 @@ const char PAGE_settings_sync1[] PROGMEM = R"=====(
 <body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button><hr>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
 On/Off button enabled: <input type="checkbox" name="BTNON">
@@ -217,7 +217,7 @@ Then, receive <input type="checkbox" name="HURIO"> On/Off, <input type="checkbox
 <!--After device color update, ignore Hue updates for <input name="HUELI" type="number" min="0" max="255" required> minutes<br>-->
 Hue status: <span class="hms"> Internal ESP Error! </span>
 <hr>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
 </html>
@@ -226,77 +226,86 @@ Hue status: <span class="hms"> Internal ESP Error! </span>
 const char PAGE_settings_time0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head><title>Time Settings</title>
-<script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function GetV(){var d = document;
+<script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function S(){GetV();Cs();}function gId(s){return document.getElementById(s);}function Cs(){gId("cac").style.display="none";gId("coc").style.display="block";gId("ccc").style.display="none";if (gId("ca").selected){gId("cac").style.display="block";}if (gId("cc").selected){gId("coc").style.display="none";gId("ccc").style.display="block";}if (gId("cn").selected){gId("coc").style.display="none";}}function GetV(){var d = document;
 )=====";
 const char PAGE_settings_time1[] PROGMEM = R"=====(
 </head>
-<body onload="GetV()">
+<body onload="S()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button><hr>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Time setup</h2>
 Get time from NTP server: <input type="checkbox" name="NTPON"><br>
-<!--NTP server: <input name="NTPSR" maxlength="32"><br>
+Use 24h format: <input type="checkbox" name="CL24H"><br>
 Time zone: 
 <select name="TZONE">
-<option value="1" selected>GMT(UTC)</option>
-<!--<option value="2">GMT/BST</option>-->
-<option value="3">CET/CEST</option>
-<!--<option value="4">EET/EEST</option>
-<option value="5">US-EST/EDT</option>
-<option value="6">US-CST/CDT</option>
-<option value="7">US-MST/MDT</option>
-<option value="8">US-AZ</option>
-<option value="9">US-PST/PDT</option>
-<option value="10">CST(AWST)</option>
-<option value="11">JST(KST)</option>
-<option value="12">AEST/AEDT</option>
-<option value="13">NZST/NZDT</option>-->
+<option value="0" selected>GMT(UTC)</option>
+<option value="1">GMT/BST</option>
+<option value="2">CET/CEST</option>
+<option value="3">EET/EEST</option>
+<option value="4">US-EST/EDT</option>
+<option value="5">US-CST/CDT</option>
+<option value="6">US-MST/MDT</option>
+<option value="7">US-AZ</option>
+<option value="8">US-PST/PDT</option>
+<option value="9">CST(AWST)</option>
+<option value="10">JST(KST)</option>
+<option value="11">AEST/AEDT</option>
+<option value="12">NZST/NZDT</option>
 </select><br>
-Hour/Min offset: <input name="TOFSH" type="number" min="-255" max="255" required> <input name="TOFSM" type="number" min="-255" max="255" required><br>-->
+UTC offset: <input name="UTCOS" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 Current local time is <span class="times">unknown</span>.
-<h3>Weather</h3>
-Coming soon! Not yet implemented!
-<!--Get yours on open weather API.<br>
-City code: <input name="WCITY" maxlength="32"><br>
-Change color depending on weather: <input type="checkbox" name="WCCOL"><br>
-Daylight Emulation: <input type="checkbox" name="WDAYL"><br>
-Reverse (turns on at sunset): <input type="checkbox" name="WREVL"><br>
-Fade duration: <input name="WSDUR" type="number" min="0" max="255" required><br> 
-Sunrise/Sunset Offset: <input name="WSOFS" type="number" min="-255" max="255" required>-->
+<h3>Clock</h3>
+Clock Overlay:
+<select name="OLMDE" onchange="Cs()">
+<option value="0" id="cn" selected>None</option>
+<option value="1">Static color</option>
+<option value="2" id="ca">Analog Clock</option>
+<option value="3">Single Digit Clock</option>
+<option value="4" id="cc">Cronixie Clock</option>
+</select><br>
+<div id="coc">
+First LED: <input name="OLIN1" type="number" min="0" max="255" required> Last LED: <input name="OLIN2" type="number" min="0" max="255" required><br>
+<div id="cac">
+12h LED: <input name="OLINM" type="number" min="0" max="255" required><br>
+Show 5min marks: <input type="checkbox" name="OL5MI"><br></div>
+Seconds (as trail): <input type="checkbox" name="OLSTR"><br>
+</div>
+<div id="ccc">
+Cronixie Display: <input name="CRONX" maxlength="6"><br>
+Cronixie Backlight: <input type="checkbox" name="CROBL"><br>
+</div>
+Countdown Mode: <input type="checkbox" name="CLCND"><br>
+Countdown Goal: Year: 20 <input name="CDGYR" type="number" min="0" max="99" required> Month: <input name="CDGMN" type="number" min="1" max="12" required> Day: <input name="CDGDY" type="number" min="1" max="31" required><br>
+Hour: <input name="CDGHR" type="number" min="0" max="23" required> Minute: <input name="CDGMI" type="number" min="0" max="59" required> Second: <input name="CDGSC" type="number" min="0" max="59" required><br>
 <h3>Advanced Macros</h3>
-Coming soon! Not yet implemented!
-<!--Define API macros here:<br>
-0: <input name="MCR00" maxlength="64"><br>
-1: <input name="MCR01" maxlength="64"><br>
-2: <input name="MCR02" maxlength="64"><br>
-3: <input name="MCR03" maxlength="64"><br>
-4: <input name="MCR04" maxlength="64"><br>
-5: <input name="MCR05" maxlength="64"><br>
-6: <input name="MCR06" maxlength="64"><br>
-7: <input name="MCR07" maxlength="64"><br>
-8: <input name="MCR08" maxlength="64"><br>
-9: <input name="MCR09" maxlength="64"><br>
-10: <input name="MCR10" maxlength="64"><br>
-11: <input name="MCR11" maxlength="64"><br>
-12: <input name="MCR12" maxlength="64"><br>
-13: <input name="MCR13" maxlength="64"><br>
-14: <input name="MCR14" maxlength="64"><br>
-15: <input name="MCR15" maxlength="64"><br>
+Define API macros here:<br>
+1: <input name="MC1" maxlength="64"><br>
+2: <input name="MC2" maxlength="64"><br>
+3: <input name="MC3" maxlength="64"><br>
+4: <input name="MC4" maxlength="64"><br>
+5: <input name="MC5" maxlength="64"><br>
+6: <input name="MC6" maxlength="64"><br>
+7: <input name="MC7" maxlength="64"><br>
+8: <input name="MC8" maxlength="64"><br>
+9: <input name="MC9" maxlength="64"><br>
+10: <input name="MC10" maxlength="64"><br>
+11: <input name="MC11" maxlength="64"><br>
+12: <input name="MC12" maxlength="64"><br>
+13: <input name="MC13" maxlength="64"><br>
+14: <input name="MC14" maxlength="64"><br>
+15: <input name="MC15" maxlength="64"><br>
+16: <input name="MC16" maxlength="64"><br>
 <br>
-<i>Use -1 to use the default action instead of a macro</i><br>
-<--1st Time-Controlled Macro:
-Alexa On/Off Macros: <input name="MCA0I" type="number" min="-1" max="15" required> <input name="MCA0O" type="number" min="-1" max="15" required><br>
-<--Emulate 2nd Alexa device:
-
-Emulate 3rd Alexa device:
-Button Macro: <input name="MCBT0" type="number" min="-1" max="15" required><br>
-Button Long Press Macro: <input name="MCBT1" type="number" min="-1" max="15" required><br>
-<--Sunrise Macro
-Sunset Macro
-Countdown-Over Macro: <input name="MCNTD" type="number" min="-1" max="15" required><br>-->
+<i>Use 0 for the default action instead of a macro</i><br>
+Time controlled macros coming soon!<br>
+Boot Macro: <input name="MCRBT" type="number" min="0" max="16" required><br>
+Alexa On/Off Macros: <input name="MCA0I" type="number" min="0" max="16" required> <input name="MCA0O" type="number" min="0" max="16" required><br>
+Button Macro: <input name="MCB0D" type="number" min="0" max="16" required> Long Press: <input name="MCB0L" type="number" min="0" max="16" required><br>
+Countdown-Over Macro: <input name="MCNTD" type="number" min="0" max="16" required><br>
+Timed-Light-Over Macro: <input name="MCNLO" type="number" min="0" max="16" required><br>
 <hr>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save</button>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
 </html>
@@ -313,7 +322,7 @@ const char PAGE_settings_sec1[] PROGMEM = R"=====(
 <body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save & Reboot</button><hr>
+<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
 <h2>Security & Update setup</h2>
 Enable OTA lock: <input type="checkbox" name="NOOTA"><br>
 Passphrase: <input type="password" name="OPASS" maxlength="32"><br>
@@ -343,7 +352,7 @@ Enable ArduinoOTA: <input type="checkbox" name="AROTA"><br>
 <i><a href="https://github.com/Aircoookie/Espalexa">Espalexa</a> by Aircoookie (modified)</i><br><br>
 <i>UI icons by <a href="https://linearicons.com">Linearicons</a> created by <a href="https://perxis.com">Perxis</a>! (CC-BY-SA 4.0)</i> <br><br>
 Server message: <span class="msg"> Response error! </span><hr>
-<button type="button" onclick="B()">Back</button><button type="submit" name="SUBM">Save & Reboot</button>
+<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 </form>
 </body>
 </html>

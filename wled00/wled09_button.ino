@@ -19,11 +19,11 @@ void handleButton()
         if (millis() - buttonPressedTime > 7000) {initAP();}
         else if (millis() - buttonPressedTime > 700) 
         {
-          if (buttonLongPressMacro != 0) {applyMacro(buttonLongPressMacro);}
+          if (macroLongPress != 0) {applyMacro(macroLongPress);}
           else _setRandomColor(false);
         }
         else {
-          if (buttonMacro == 0)
+          if (macroButton == 0)
           {
             if (bri == 0)
             {
@@ -35,7 +35,7 @@ void handleButton()
             }
             colorUpdated(2);
           } else {
-            applyMacro(buttonMacro);
+            applyMacro(macroButton);
           }
         }
         buttonPressedBefore = false;

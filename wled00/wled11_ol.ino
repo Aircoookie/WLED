@@ -3,20 +3,20 @@
  */
 void initCronixie()
 {
-  if (overlayCurrent == 7 && !cronixieInit)
+  if (overlayCurrent == 4 && !cronixieInit)
   {
     strip.driverModeCronixie(true);
     strip.setCronixieBacklight(cronixieBacklight);
-    setCronixie(cronixieDefault);
+    setCronixie();
     cronixieInit = true;
-  } else if (cronixieInit && overlayCurrent != 7)
+  } else if (cronixieInit && overlayCurrent != 4)
   {
     strip.driverModeCronixie(false);
     cronixieInit = false; 
   }
 }
 
-void _nixieDisplay(int num[], int dur[], int pausedur[], int cnt)
+void _nixieDisplay(int num[], uint16_t dur[], uint16_t pausedur[], uint8_t cnt)
 {
   strip.setRange(overlayMin, overlayMax, 0);
   if (num[nixieClockI] >= 0 && !nixiePause)
@@ -146,7 +146,7 @@ void _overlayAnalogClock()
 {
   int overlaySize = overlayMax - overlayMin +1;
   strip.unlockAll();
-  if (overlayCountdown)
+  if (countdownMode)
   {
     _overlayAnalogCountdown(); return;
   }
@@ -192,7 +192,7 @@ void _overlayAnalogClock()
 
 void _overlayNixieClock()
 {
-  if (overlayCountdown)
+  if (countdownMode)
   {
     _overlayNixieCountdown(); return;
   }

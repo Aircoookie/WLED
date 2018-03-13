@@ -282,10 +282,7 @@ void handleSettingsSet(uint8_t subPage)
     for (int i=0;i<4;i++){
       String a = "HUIP"+String(i);
       if (server.hasArg(a))
-      {
-        int j = server.arg(a).toInt();
-        if (j >= 0 && j <= 255) hueIP[i] = j;
-      }
+        hueIP[i] = server.arg(a).toInt();
     }
     if (server.hasArg("HUELI"))
     {
@@ -315,12 +312,49 @@ void handleSettingsSet(uint8_t subPage)
   if (subPage == 5)
   {
     ntpEnabled = server.hasArg("NTPON");
+    useAMPM = !server.hasArg("CL24H");
+    if (server.hasArg("TZONE")) currentTimezone = server.arg("TZONE").toInt();
+    if (server.hasArg("UTCOS")) utcOffsetSecs = server.arg("UTCOS").toInt();
     if (ntpEnabled && WiFi.status() == WL_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort); //start if not already connected
-    if (server.hasArg("OLDEF"))
-    {
-      int i = server.arg("OLDEF").toInt();
-      if (i >= 0  && i <= 255) overlayDefault = i;
+    
+    if (server.hasArg("OLMDE")){
+      overlayDefault = server.arg("OLMDE").toInt();
+      overlayCurrent = overlayDefault;
+      strip.unlockAll();
     }
+    if (server.hasArg("OLIN1")) overlayMin = server.arg("OLIN1").toInt();
+    if (server.hasArg("OLIN2")) overlayMax = server.arg("OLIN2").toInt();
+    if (server.hasArg("OLINM")) analogClock12pixel = server.arg("OLINM").toInt();
+    analogClock5MinuteMarks = server.hasArg("OL5MI");
+    analogClockSecondsTrail = server.hasArg("OLSTR");
+    
+    if (server.hasArg("CRONX")) cronixieDisplay = server.arg("CRONX");
+    bool cbOld = cronixieBacklight;
+    cronixieBacklight = server.hasArg("CROBL");
+    if (cbOld != cronixieBacklight && overlayCurrent == 4)
+    {
+      strip.setCronixieBacklight(cronixieBacklight); overlayRefreshedTime = 0;
+    }
+    countdownMode = server.hasArg("CLCND");
+    if (server.hasArg("CDGYR")) countdownYear = server.arg("CDGYR").toInt();
+    if (server.hasArg("CDGMN")) countdownMonth = server.arg("CDGMN").toInt();
+    if (server.hasArg("CDGDY")) countdownDay = server.arg("CDGDY").toInt();
+    if (server.hasArg("CDGHR")) countdownHour = server.arg("CDGHR").toInt();
+    if (server.hasArg("CDGMI")) countdownMin = server.arg("CDGMI").toInt();
+    if (server.hasArg("CDGSC")) countdownSec = server.arg("CDGSC").toInt();
+    
+    for (int i=1;i<17;i++)
+    {
+      String a = "MC"+String(i);
+      if (server.hasArg(a)) saveMacro(i,server.arg(a),false);
+    }
+    if (server.hasArg("MCRBT")) macroBoot = server.arg("MCRBT").toInt();
+    if (server.hasArg("MCA0I")) macroAlexaOn = server.arg("MCA0I").toInt();
+    if (server.hasArg("MCA0O")) macroAlexaOff = server.arg("MCA0O").toInt();
+    if (server.hasArg("MCB0D")) macroButton = server.arg("MCB0D").toInt();
+    if (server.hasArg("MCB0L")) macroLongPress = server.arg("MCB0L").toInt();
+    if (server.hasArg("MCNTD")) macroCountdown = server.arg("MCNTD").toInt();
+    if (server.hasArg("MCNLO")) macroNl = server.arg("MCNLO").toInt();
   }
 
   //SECURITY
@@ -723,10 +757,10 @@ boolean handleSet(String req)
    }
    pos = req.indexOf("NM="); //mode, 1 countdown
    if (pos > 0) {
-      overlayCountdown = true;
+      countdownMode = true;
       if (req.indexOf("NM=0") > 0)
       {
-        overlayCountdown = false;
+        countdownMode = false;
       }
    }
    if (req.indexOf("NB=") > 0) //sets backlight

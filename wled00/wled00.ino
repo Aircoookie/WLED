@@ -32,7 +32,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1803061
+#define VERSION 1803141
 const String versionString = "0.6.0_dev";
 
 //AP and OTA default passwords (change them!)
@@ -100,7 +100,7 @@ uint8_t effectIntensityDefault = 128;
 //NTP stuff
 boolean ntpEnabled = false;
 IPAddress ntpServerIP;
-const char* ntpServerName = "pool.ntp.org";
+const char* ntpServerName = "0.wled.pool.ntp.org";
 //custom chase
 uint8_t cc_numPrimary = 2;
 uint8_t cc_numSecondary = 4;
@@ -113,9 +113,10 @@ uint8_t cc_start = 0;
 //alexa
 boolean alexaEnabled = true;
 String alexaInvocationName = "Light";
-uint8_t alexaOnMacro = 0, alexaOffMacro = 0;
-uint8_t buttonMacro = 0, countdownMacro = 0;
-uint8_t bootMacro = 0;
+
+uint8_t macroBoot = 0, macroNl = 0;
+uint8_t macroAlexaOn = 0, macroAlexaOff = 0;
+uint8_t macroButton = 0, macroCountdown = 0, macroLongPress = 0;
 
 unsigned long countdownTime = 1514764800L;
 
@@ -186,8 +187,8 @@ int utcOffsetSecs = 0;
 //overlay stuff
 uint8_t overlayDefault = 0;
 uint8_t overlayCurrent = 0;
-int overlayMin = 0, overlayMax = 79; //bb: 35, 46, t: 0, 79
-int analogClock12pixel = 25; //bb: 41, t: 25
+uint8_t overlayMin = 0, overlayMax = ledcount-1;
+uint8_t analogClock12pixel = 0;
 boolean analogClockSecondsTrail = false;
 boolean analogClock5MinuteMarks = false;
 uint8_t overlaySpeed = 200;
@@ -205,7 +206,7 @@ String cronixieDisplay = "HHMMSS";
 byte dP[]{0,0,0,0,0,0};
 bool useAMPM = false;
 bool cronixieBacklight = true;
-bool overlayCountdown = false;
+bool countdownMode = false;
 bool cronixieInit = false;
 
 int arlsTimeoutMillis = 2500;

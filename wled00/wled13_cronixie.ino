@@ -19,7 +19,7 @@ uint8_t getSameCodeLength(char code, int index, char const digits[])
 
 void setCronixie()
 {
-  char digits[] = cronixieDisplay.substring(0,6);
+  char digits[6]; for (int a=0;a<6;a++) digits[a]=cronixieDisplay.charAt(a);
   /*
    * digit purpose index
    * 0-9 | 0-9 (incl. random)
@@ -144,7 +144,7 @@ void setCronixie()
 
 void _overlayCronixie()
 {
-    if (overlayCountdown) checkCountdown();
+    if (countdownMode) checkCountdown();
     uint8_t h = hour(local);
     uint8_t h0 = h;
     uint8_t m = minute(local);
@@ -155,7 +155,7 @@ void _overlayCronixie()
     //this has to be changed in time for 22nd century
     y -= 2000; if (y<0) y += 30; //makes countdown work
 
-    if (useAMPM && !overlayCountdown)
+    if (useAMPM && !countdownMode)
     {
       if (h>12) h-=12;
       else if (h==0) h+=12;

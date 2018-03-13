@@ -306,6 +306,7 @@ void wledInit()
   pinMode(buttonPin, INPUT_PULLUP);
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
+  if (macroBoot>0) applyMacro(macroBoot);
   colorUpdated(0);
   if(digitalRead(buttonPin) == LOW) buttonEnabled = false; //disable button if it is "pressed" unintentionally
 }

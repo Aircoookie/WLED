@@ -14,6 +14,7 @@
 //4 -> 0.5.0 and up
 //5 -> 0.6.0_dev and up
 
+//todo add settings
 void clearEEPROM()
 {
   for (int i = 0; i < EEPSIZE; i++)
@@ -175,6 +176,35 @@ void saveSettingsToEEPROM()
   EEPROM.write(2104, hueApplyBri);
   EEPROM.write(2105, hueApplyColor);
   EEPROM.write(2106, huePollLightId);
+
+  EEPROM.write(2150, overlayMin);
+  EEPROM.write(2151, overlayMax);
+  EEPROM.write(2152, analogClock12pixel);
+  EEPROM.write(2153, analogClock5MinuteMarks);
+  EEPROM.write(2154, analogClockSecondsTrail);
+  EEPROM.write(2155, countdownMode);
+  EEPROM.write(2156, countdownYear);
+  EEPROM.write(2157, countdownMonth);
+  EEPROM.write(2158, countdownDay);
+  EEPROM.write(2159, countdownHour);
+  EEPROM.write(2160, countdownMin);
+  EEPROM.write(2161, countdownSec);
+  setCountdown();
+
+  for (int i = 2165; i < 2171; ++i)
+  {
+    EEPROM.write(i, cronixieDisplay.charAt(i-2165));
+  }
+  EEPROM.write(2171, cronixieBacklight);
+  setCronixie();
+  
+  EEPROM.write(2175, macroBoot);
+  EEPROM.write(2176, macroAlexaOn);
+  EEPROM.write(2177, macroAlexaOff);
+  EEPROM.write(2178, macroButton);
+  EEPROM.write(2179, macroLongPress);
+  EEPROM.write(2180, macroCountdown);
+  EEPROM.write(2181, macroNl);
   
   EEPROM.commit();
 }
@@ -351,6 +381,35 @@ void loadSettingsFromEEPROM(bool first)
     hueApplyBri = EEPROM.read(2104);
     hueApplyColor = EEPROM.read(2105);
     huePollLightId = EEPROM.read(2106);
+    overlayMin = EEPROM.read(2150);
+    overlayMax = EEPROM.read(2151);
+    analogClock12pixel = EEPROM.read(2152);
+    analogClock5MinuteMarks = EEPROM.read(2153);
+    analogClockSecondsTrail = EEPROM.read(2154);
+    countdownMode = EEPROM.read(2155);
+    countdownYear = EEPROM.read(2156);
+    countdownMonth = EEPROM.read(2157);
+    countdownDay = EEPROM.read(2158);
+    countdownHour = EEPROM.read(2159);
+    countdownMin = EEPROM.read(2160);
+    countdownSec = EEPROM.read(2161);
+    setCountdown();
+
+    cronixieDisplay = "";
+    for (int i = 2165; i < 2171; ++i)
+    {
+      if (EEPROM.read(i) == 0) break;
+      cronixieDisplay += char(EEPROM.read(i));
+    }
+    cronixieBacklight = EEPROM.read(2171);
+    
+    macroBoot = EEPROM.read(2175);
+    macroAlexaOn = EEPROM.read(2176);
+    macroAlexaOff = EEPROM.read(2177);
+    macroButton = EEPROM.read(2178);
+    macroLongPress = EEPROM.read(2179);
+    macroCountdown = EEPROM.read(2180);
+    macroNl = EEPROM.read(2181);
   }
   
   bootPreset = EEPROM.read(389);
@@ -482,7 +541,7 @@ void applyMacro(uint8_t index)
   handleSet(mc);
 }
 
-void saveMacro(uint8_t index, String mc)
+void saveMacro(uint8_t index, String mc, bool sing=true) //only commit on single save, not in settings
 {
   index-=1;
   if (index > 15) return;
@@ -491,6 +550,6 @@ void saveMacro(uint8_t index, String mc)
   {
     EEPROM.write(i, mc.charAt(i-s));
   }
-  EEPROM.commit();
+  if (sing) EEPROM.commit();
 }
 

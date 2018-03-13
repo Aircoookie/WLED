@@ -213,7 +213,7 @@ String getSettings(uint8_t subPage)
     resp += ds + "TZONE" + si + String(currentTimezone) + ";";
     resp += ds + "UTCOS" + v + utcOffsetSecs +";";
     resp += dg + "(\"times\")[0]" + ih + "\"" + getTimeString() + "\";";
-    resp += ds + "OLMDE" + si + String(currentOverlay) + ";";
+    resp += ds + "OLMDE" + si + String(overlayCurrent) + ";";
     resp += ds + "OLIN1" + v + overlayMin +";";
     resp += ds + "OLIN2" + v + overlayMax +";";
     resp += ds + "OLINM" + v + analogClock12pixel +";";
@@ -221,11 +221,11 @@ String getSettings(uint8_t subPage)
     resp += ds + "OL5MI" + c + analogClock5MinuteMarks +";";
     resp += ds + "CRONX" + v + "\"" + cronixieDisplay + "\";";
     resp += ds + "CROBL" + c + cronixieBacklight +";";
-    resp += ds + "CLCND" + c + overlayCountdown +";";
+    resp += ds + "CLCND" + c + countdownMode +";";
     resp += ds + "CDGYR" + v + countdownYear +";";
     resp += ds + "CDGMN" + v + countdownMonth +";";
     resp += ds + "CDGDY" + v + countdownDay +";";
-    resp += ds + "CDGHR" + v + countdownHours +";";
+    resp += ds + "CDGHR" + v + countdownHour +";";
     resp += ds + "CDGMI" + v + countdownMin +";";
     resp += ds + "CDGSC" + v + countdownSec +";";
     for (int i=1;i<17;i++)
@@ -238,7 +238,7 @@ String getSettings(uint8_t subPage)
     resp += ds + "MCB0D" + v + macroButton +";";
     resp += ds + "MCB0L" + v + macroLongPress +";";
     resp += ds + "MCNTD" + v + macroCountdown +";";
-    resp += ds + "MCLNO" + v + macroNightlight +";";
+    resp += ds + "MCNLO" + v + macroNl +";";
   }
 
   if (subPage == 6)

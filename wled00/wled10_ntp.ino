@@ -116,7 +116,7 @@ boolean checkNTPResponse()
 
 void updateLocalTime()
 {
-  unsigned long tmc = now()+ (utcOffsetSign)? -utcOffsetSecs:utcOffsetSecs;
+  unsigned long tmc = now()+ utcOffsetSecs;
   local = timezones[currentTimezone]->toLocal(tmc);
 }
 
@@ -152,11 +152,11 @@ void setCountdown()
 //returns true if countdown just over
 bool checkCountdown()
 {
-  long diff = countdownTime - local;
+  long diff = countdownTime - now();
   local = abs(diff);
   if (diff <0 && !countdownOverTriggered)
   {
-    if (countdownMacro != 0) applyMacro(countdownMacro);
+    if (macroCountdown != 0) applyMacro(macroCountdown);
     countdownOverTriggered = true;
     return true;
   }

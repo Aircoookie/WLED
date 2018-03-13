@@ -46,12 +46,12 @@ void handleAlexa()
 
 void alexaOn()
 {
-  if (alexaOnMacro == 0)
+  if (macroAlexaOn == 0)
   {
     handleSet((alexaNotify)?"win&T=1&IN":"win&T=1&NN&IN");
   } else
   {
-    applyMacro(alexaOnMacro);
+    applyMacro(macroAlexaOn);
   }
 
   String body = "[{\"success\":{\"/lights/1/state/on\":true}}]";
@@ -64,12 +64,12 @@ void alexaOn()
 
 void alexaOff()
 {
-  if (alexaOffMacro == 0)
+  if (macroAlexaOff == 0)
   {
     handleSet((alexaNotify)?"win&T=0&IN":"win&T=0&NN&IN");
   } else
   {
-    applyMacro(alexaOffMacro);
+    applyMacro(macroAlexaOff);
   }
 
   String body = "[{\"success\":{\"/lights/1/state/on\":false}}]";
