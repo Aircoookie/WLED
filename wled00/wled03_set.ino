@@ -231,6 +231,7 @@ void handleSettingsSet(uint8_t subPage)
     }
     nightlightFade = server.hasArg("TLFDE");
     reverseMode = server.hasArg("LEDRV");
+    strip.setReverseMode(reverseMode);
     if (server.hasArg("WOFFS"))
     {
       int i = server.arg("WOFFS").toInt();

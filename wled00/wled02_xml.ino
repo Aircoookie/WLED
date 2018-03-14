@@ -97,7 +97,7 @@ String getSettings(uint8_t subPage)
     resp += ds + "APSSID" + v + "\"" + apssid + "\";";
     resp += ds + "APHSSID" + c + aphide + ";";
     resp += ds + "APPASS" + v + "\"";
-    for (int i = 0; i < clientpass.length(); i++)
+    for (int i = 0; i < appass.length(); i++)
     {
       resp += "*";
     }

@@ -77,6 +77,14 @@ void wledInit()
   if (ntpEnabled && WiFi.status() == WL_CONNECTED)
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
+  //start captive portal
+  if (onlyAP || apssid.length() > 0)
+  {
+    dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+    dnsServer.start(53, "*", WiFi.softAPIP());
+    dnsActive = true;
+  }
+
   //SERVER INIT
   //settings page
   server.on("/settings", HTTP_GET, [](){
@@ -114,15 +122,15 @@ void wledInit()
   });
   
   server.on("/", HTTP_GET, [](){
-    if (!showWelcomePage){
-      if(!handleFileRead("/index.htm")) {
-        serveIndex();
-      }
-    }else{
-      if(!handleFileRead("/welcome.htm")) {
-        serveSettings(255);
-      }
-    }
+    serveIndexOrWelcome();
+  });
+
+  server.on("/generate_204", HTTP_GET, [](){
+    serveIndexOrWelcome();
+  });
+
+  server.on("/fwlink", HTTP_GET, [](){
+    serveIndexOrWelcome();
   });
   
   server.on("/sliders", HTTP_GET, serveIndex);
@@ -373,6 +381,19 @@ void buildCssColorString()
   cssColorString+=";--cFn:";
   cssColorString+=cssFont;
   cssColorString+=";}";
+}
+
+void serveIndexOrWelcome()
+{
+  if (!showWelcomePage){
+    if(!handleFileRead("/index.htm")) {
+      serveIndex();
+    }
+  }else{
+    if(!handleFileRead("/welcome.htm")) {
+      serveSettings(255);
+    }
+  }
 }
 
 void serveIndex()

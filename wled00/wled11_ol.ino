@@ -137,7 +137,8 @@ void handleOverlays()
 
 void _overlaySolid()
 {
-  uint32_t cls = (useGammaCorrectionRGB)? gamma8[white*16777216] + gamma8[col[0]]*65536 + gamma8[col[1]]*256 + gamma8[col[2]]:white*16777216 + col[0]*65536 + col[1]*256 + col[2];
+  strip.unlockAll();
+  uint32_t cls = (useGammaCorrectionRGB)? gamma8[white_sec*16777216] + gamma8[col_sec[0]]*65536 + gamma8[col_sec[1]]*256 + gamma8[col_sec[2]]:white_sec*16777216 + col_sec[0]*65536 + col_sec[1]*256 + col_sec[2];
   strip.setRange(overlayMin,overlayMax,cls);
   overlayRefreshMs = 1902;
 }
@@ -161,6 +162,17 @@ void _overlayAnalogClock()
   if (minutePixel > overlayMax) minutePixel = overlayMin -1 + minutePixel - overlayMax; 
   int secondPixel = floor(analogClock12pixel + overlaySize*secondP);
   if (secondPixel > overlayMax) secondPixel = overlayMin -1 + secondPixel - overlayMax;
+  if (analogClockSecondsTrail)
+  {
+    if (secondPixel < analogClock12pixel)
+    {
+      strip.setRange(analogClock12pixel, overlayMax, 0xFF0000);
+      strip.setRange(overlayMin, secondPixel, 0xFF0000);
+    } else
+    {
+      strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
+    }
+  }
   if (analogClock5MinuteMarks)
   {
     int pix;
@@ -168,23 +180,10 @@ void _overlayAnalogClock()
     {
       pix = overlayMin + analogClock12pixel + (overlaySize/12)*i;
       if (pix > overlayMax) pix = pix - overlayMax;
-      strip.setIndividual(pix, 0xAAAAAA);
+      strip.setIndividual(pix,0x00FFAA);
     }
   }
-  if (analogClockSecondsTrail)
-  {
-    if (secondPixel < analogClock12pixel)
-    {
-      strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
-      strip.setRange(secondPixel, overlayMax, 0xFF0000);
-    } else
-    {
-      strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
-    }
-  } else
-  {
-    strip.setIndividual(secondPixel, 0xFF0000);
-  }
+  if (!analogClockSecondsTrail) strip.setIndividual(secondPixel, 0xFF0000);
   strip.setIndividual(minutePixel, 0x00FF00);
   strip.setIndividual(hourPixel, 0x0000FF);
   overlayRefreshMs = 998;

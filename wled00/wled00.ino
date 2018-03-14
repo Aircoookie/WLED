@@ -22,6 +22,7 @@
 #include <EEPROM.h>
 #include <ArduinoOTA.h>
 #include <WiFiUDP.h>
+#include <DNSServer.h>
 #include "src/dependencies/webserver/ESP8266HTTPUpdateServer.h"
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
@@ -32,7 +33,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1803141
+#define VERSION 1803142
 const String versionString = "0.6.0_dev";
 
 //AP and OTA default passwords (change them!)
@@ -59,7 +60,7 @@ uint8_t auxTriggeredState = 0; //0: input 1: high 2: low
 String serverDescription = versionString;
 uint8_t currentTheme = 0;
 String clientssid = "Your_Network_Here";
-String clientpass = "Dummy_Pass";
+String clientpass = "";
 String cmdns = "led";
 uint8_t ledcount = 10; //lowered to prevent accidental overcurrent
 String apssid = ""; //AP off by default (unless setup)
@@ -229,6 +230,10 @@ unsigned int portMulti = 1900;
 char packetBuffer[255];
 String escapedMac;
 
+//dns server
+DNSServer dnsServer;
+bool dnsActive = false;
+
 #ifdef ARDUINO_ARCH_ESP32
 WebServer server(80);
 #else
@@ -317,6 +322,7 @@ void loop() {
     handleOverlays();
     if (!arlsTimeout) //block stuff if WARLS is enabled
     {
+      if (dnsActive) dnsServer.processNextRequest();
       handleHue();
       handleNightlight();
       if (bri_t) strip.service(); //do not update strip if off, prevents flicker on ESP32
