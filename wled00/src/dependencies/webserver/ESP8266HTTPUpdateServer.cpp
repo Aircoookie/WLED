@@ -15,7 +15,7 @@ const char* ESP8266HTTPUpdateServer::_serverIndex =
 R"(<html><head><script>function B(){window.history.back()}</script></head><body><h2>WLED Software Update</h2><br>Get the latest binaries on the <a href="https://github.com/Aircoookie/WLED/tree/master/bin">project GitHub page</a>!<br>
 <i>Unsure which binary is correct? Go to the <a href="./build">/build subpage</a> for the details of this version.</i><br>
 <b>Be sure to upload a valid .bin file for your ESP! Otherwise you'll need USB recovery!</b><br>
-<br><br><button onclick="B()\">Back</button><br><br>
+<br><br><button onclick='B()'>Back</button><br><br>
 <form method='POST' action='' enctype='multipart/form-data'>
 <input type='file' name='update'>
 <input type='submit' value='Update!'>

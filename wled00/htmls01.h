@@ -40,33 +40,33 @@ const char PAGE_settings_wifi1[] PROGMEM = R"=====(
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
 <h2>WiFi setup</h2>
 <h3>Connect to existing network</h3>
-Network name (SSID, empty to not connect): <br><input name="CSSID" maxlength="32"> <br>
-Network password: <br> <input type="password" name="CPASS" maxlength="63"> <br>
-Static IP (leave at 0.0.0.0 for DHCP): <br>
-<input name="CSIP0" type="number" min="0" max="255" required> .
-<input name="CSIP1" type="number" min="0" max="255" required> .
-<input name="CSIP2" type="number" min="0" max="255" required> .
-<input name="CSIP3" type="number" min="0" max="255" required> <br>
-Static gateway: <br>
-<input name="CSGW0" type="number" min="0" max="255" required> .
-<input name="CSGW1" type="number" min="0" max="255" required> .
-<input name="CSGW2" type="number" min="0" max="255" required> .
-<input name="CSGW3" type="number" min="0" max="255" required> <br>
-Static subnet mask: <br>
-<input name="CSSN0" type="number" min="0" max="255" required> .
-<input name="CSSN1" type="number" min="0" max="255" required> .
-<input name="CSSN2" type="number" min="0" max="255" required> .
-<input name="CSSN3" type="number" min="0" max="255" required> <br>
-mDNS address (leave empty for no mDNS): <br/>
-http:// <input name="CMDNS" maxlength="32"> .local <br>
-Try connecting before opening AP for: <input name="APWTM" type="number" min="0" max="255" required> s <br>
-Client IP: <span class="sip"> Not connected </span> <br>
+Network name (SSID, empty to not connect): <br><input name="CS" maxlength="32"><br>
+Network password: <br> <input type="password" name="CP" maxlength="63"><br>
+Static IP (leave at 0.0.0.0 for DHCP):<br>
+<input name="I0" type="number" min="0" max="255" required> .
+<input name="I1" type="number" min="0" max="255" required> .
+<input name="I2" type="number" min="0" max="255" required> .
+<input name="I3" type="number" min="0" max="255" required><br>
+Static gateway:<br>
+<input name="G0" type="number" min="0" max="255" required> .
+<input name="G1" type="number" min="0" max="255" required> .
+<input name="G2" type="number" min="0" max="255" required> .
+<input name="G3" type="number" min="0" max="255" required><br>
+Static subnet mask:<br>
+<input name="S0" type="number" min="0" max="255" required> .
+<input name="S1" type="number" min="0" max="255" required> .
+<input name="S2" type="number" min="0" max="255" required> .
+<input name="S3" type="number" min="0" max="255" required><br>
+mDNS address (leave empty for no mDNS):<br/>
+http:// <input name="CM" maxlength="32"> .local<br>
+Try connecting before opening AP for: <input name="AT" type="number" min="0" max="255" required> s <br>
+Client IP: <span class="sip"> Not connected </span><br>
 <h3>Configure Access Point</h3>
-AP SSID (leave empty for no AP): <br> <input name="APSSID" maxlength="32"> <br>
-Hide AP name: <input type="checkbox" name="APHSSID"> <br>
-AP password (leave empty for open): <br> <input type="password" name="APPASS" maxlength="63"> <br>
-Access Point WiFi channel: <input name="APCHAN" type="number" min="1" max="13" required> <br>
-AP IP: <span class="sip"> Not active </span> <hr>
+AP SSID (leave empty for no AP):<br> <input name="AS" maxlength="32"><br>
+Hide AP name: <input type="checkbox" name="AH"><br>
+AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63"> <br>
+Access Point WiFi channel: <input name="AC" type="number" min="1" max="13" required><br>
+AP IP: <span class="sip"> Not active </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 </form>
 </body>
@@ -85,44 +85,43 @@ const char PAGE_settings_leds1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>LED setup</h2>
-LED count (max. 255): <input name="LEDCN" type="number" min="1" max="255" required> <br>
+LED count (max. 255): <input name="LC" type="number" min="1" max="255" required><br>
 <i>The default boot color is always saved in preset slot 0.</i><br>
-Alternatively, apply preset <input name="BOOTP" type="number" min="0" max="25" required> at boot<br>
+Alternatively, apply preset <input name="BP" type="number" min="0" max="25" required> at boot<br>
 Default RGB color:
-<input name="CLDFR" type="number" min="0" max="255" required>
-<input name="CLDFG" type="number" min="0" max="255" required>
-<input name="CLDFB" type="number" min="0" max="255" required> <br>
-Default brightness: <input name="CLDFA" type="number" min="0" max="255" required> (0-255) <br>
-Default white value (only RGBW, -1 to disable): <input name="CLDFW" type="number" min="-1" max="255" required> <br>
-Default effect ID: <input name="FXDEF" type="number" min="0" max="57" required> <br>
-Default effect speed: <input name="SXDEF" type="number" min="0" max="255" required> <br>
-Default effect intensity: <input name="IXDEF" type="number" min="0" max="255" required> <br>
+<input name="CR" type="number" min="0" max="255" required>
+<input name="CG" type="number" min="0" max="255" required>
+<input name="CB" type="number" min="0" max="255" required><br>
+Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br>
+Default white value (only RGBW, -1 to disable): <input name="CW" type="number" min="-1" max="255" required><br>
+Default effect ID: <input name="FX" type="number" min="0" max="57" required> <br>
+Default effect speed: <input name="SX" type="number" min="0" max="255" required> <br>
+Default effect intensity: <input name="IX" type="number" min="0" max="255" required> <br>
 Default secondary RGB(W):<br>
-<input name="CSECR" type="number" min="0" max="255" required>
-<input name="CSECG" type="number" min="0" max="255" required>
-<input name="CSECB" type="number" min="0" max="255" required>
-<input name="CSECW" type="number" min="0" max="255" required><br>
-Ignore and use current color, brightness and effects: <input type="checkbox" name="CBEOR"> <br>
-Turn on after power up/reset: <input type="checkbox" name="BOOTN"> <br>
-Use Gamma correction for brightness: <input type="checkbox" name="GCBRI"> <br>
-Use Gamma correction for color: <input type="checkbox" name="GCRGB"> <br>
-Brightness factor: <input name="NRBRI" type="number" min="0" max="255" required> %
+<input name="SR" type="number" min="0" max="255" required>
+<input name="SG" type="number" min="0" max="255" required>
+<input name="SB" type="number" min="0" max="255" required>
+<input name="SW" type="number" min="0" max="255" required><br>
+Ignore and use current color, brightness and effects: <input type="checkbox" name="IS"><br>
+Turn on after power up/reset: <input type="checkbox" name="BO"><br>
+Use Gamma correction for brightness: <input type="checkbox" name="GB"><br>
+Use Gamma correction for color: <input type="checkbox" name="GC"><br>
+Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
-Fade: <input type="checkbox" name="TFADE"><br>
-Sweep: <input type="checkbox" name="TSWEE">  Invert direction: <input type="checkbox" name="TSDIR"><br>
-Transition Delay: <input name="TDLAY" maxlength="5" size="2"> ms
+Fade: <input type="checkbox" name="TF"><br>
+Sweep: <input type="checkbox" name="TS">  Invert direction: <input type="checkbox" name="TI"><br>
+Transition Delay: <input name="TD" maxlength="5" size="2"> ms
 <h3>Timed light</h3>
-Default Duration: <input name="TLDUR" type="number" min="1" max="255" required> min<br>
-Default Target brightness: <input name="TLBRI" type="number" min="0" max="255" required><br>
-Fade down: <input type="checkbox" name="TLFDE"><br>
+Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
+Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
+Fade down: <input type="checkbox" name="TW"><br>
 <h3>Advanced</h3>
-Reverse LED order (rotate 180): <input type="checkbox" name="LEDRV"><br>
-WARLS offset: <input name="WOFFS" type="number" min="-255" max="255" required><hr>
+Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
+WARLS offset: <input name="WO" type="number" min="-255" max="255" required><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
 </html>
-
 )=====";
 
 const char PAGE_settings_ui0[] PROGMEM = R"=====(
@@ -139,10 +138,10 @@ const char PAGE_settings_ui1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Web Setup</h2>
-Server description: <input name="DESC" maxlength="32"><br>
-Use HSB sliders instead of RGB by default: <input type="checkbox" name="COLMD"><br>
+Server description: <input name="DS" maxlength="32"><br>
+Use HSB sliders instead of RGB by default: <input type="checkbox" name="MD"><br>
 Color Theme:
-<select name="THEME" onchange="Ct()">
+<select name="TH" onchange="Ct()">
 <option value="0" selected>Night</option>
 <option value="1">Modern</option>
 <option value="2">Bright</option>
@@ -162,13 +161,13 @@ Color Theme:
 </select><br>
 <div id="cth">
 Please specify your custom hex colors (e.g. FF0000 for red)<br>
-Custom accent color: <input maxlength=9 name="CCOL0"><br>
-Custom background: <input maxlength=9 name="CCOL1"><br>
-Custom panel color: <input maxlength=9 name="CCOL2"><br>
-Custom icon color: <input maxlength=9 name="CCOL3"><br>
-Custom shadow: <input maxlength=9 name="CCOL4"><br>
-Custom text color: <input maxlength=9 name="CCOL5"><br></div>
-Use font: <input maxlength=32 name="CFONT"><br>
+Custom accent color: <input maxlength=9 name="C0"><br>
+Custom background: <input maxlength=9 name="C1"><br>
+Custom panel color: <input maxlength=9 name="C2"><br>
+Custom icon color: <input maxlength=9 name="C3"><br>
+Custom shadow: <input maxlength=9 name="C4"><br>
+Custom text color: <input maxlength=9 name="C5"><br></div>
+Use font: <input maxlength=32 name="CF"><br>
 Make sure the font you use is installed on your system!<br>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
@@ -189,34 +188,30 @@ const char PAGE_settings_sync1[] PROGMEM = R"=====(
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
-On/Off button enabled: <input type="checkbox" name="BTNON">
+On/Off button enabled: <input type="checkbox" name="BT">
 <h3>WLED Broadcast</h3>
-UDP Port: <input name="NUDPP" maxlength="5" size="4"><br>
-Receive <input type="checkbox" name="NRCBR">Brightness, <input type="checkbox" name="NRCCL">Color, and <input type="checkbox" name="NRCFX">Effects<br>
-Send notifications on direct change: <input type="checkbox" name="NSDIR"><br>
-Send notifications on button press: <input type="checkbox" name="NSBTN"><br>
-Send Alexa notifications: <input type="checkbox" name="NSALX"><br>
-Send Philips Hue change notifications: <input type="checkbox" name="NSHUE">
-Send notifications twice: <input type="checkbox" name="NS2XS">
+UDP Port: <input name="UP" maxlength="5" size="4"><br>
+Receive <input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects<br>
+Send notifications on direct change: <input type="checkbox" name="SD"><br>
+Send notifications on button press: <input type="checkbox" name="SB"><br>
+Send Alexa notifications: <input type="checkbox" name="SA"><br>
+Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
+Send notifications twice: <input type="checkbox" name="S2">
 <h3>Alexa Voice Assistant</h3>
-Emulate Alexa device: <input type="checkbox" name="ALEXA"><br>
-Alexa invocation name: <input name="AINVN" maxlength="32"><br>
+Emulate Alexa device: <input type="checkbox" name="AL"><br>
+Alexa invocation name: <input name="AI" maxlength="32"><br>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
 Hue Bridge IP:<br>
-<input name="HUIP0" type="number" min="0" max="255" required> .
-<input name="HUIP1" type="number" min="0" max="255" required> .
-<input name="HUIP2" type="number" min="0" max="255" required> .
-<input name="HUIP3" type="number" min="0" max="255" required> <br>
+<input name="H0" type="number" min="0" max="255" required> .
+<input name="H1" type="number" min="0" max="255" required> .
+<input name="H2" type="number" min="0" max="255" required> .
+<input name="H3" type="number" min="0" max="255" required><br>
 <b>Press the pushlink button on the bridge, after that save this page!</b><br>
 (when first connecting)<br>
-<!--Update Hue group <input name="HUEGR" type="number" min="0" max="99" required> <br>
-Send <input type="checkbox" name="HUEIO"> On/Off, <input type="checkbox" name="HUEBR"> Brightness, and <input type="checkbox" name="HUECL"> Color<br>-->
-Poll Hue light <input name="HUELI" type="number" min="1" max="99" required> every <input name="HUEPI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HUEPL"><br>
-Then, receive <input type="checkbox" name="HURIO"> On/Off, <input type="checkbox" name="HURBR"> Brightness, and <input type="checkbox" name="HURCL"> Color<br>
-<!--After device color update, ignore Hue updates for <input name="HUELI" type="number" min="0" max="255" required> minutes<br>-->
-Hue status: <span class="hms"> Internal ESP Error! </span>
-<hr>
+Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
+Then, receive <input type="checkbox" name="HO"> On/Off, <input type="checkbox" name="HB"> Brightness, and <input type="checkbox" name="HC"> Color<br>
+Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
@@ -235,10 +230,10 @@ const char PAGE_settings_time1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Time setup</h2>
-Get time from NTP server: <input type="checkbox" name="NTPON"><br>
-Use 24h format: <input type="checkbox" name="CL24H"><br>
+Get time from NTP server: <input type="checkbox" name="NT"><br>
+Use 24h format: <input type="checkbox" name="CF"><br>
 Time zone: 
-<select name="TZONE">
+<select name="TZ">
 <option value="0" selected>GMT(UTC)</option>
 <option value="1">GMT/BST</option>
 <option value="2">CET/CEST</option>
@@ -253,11 +248,11 @@ Time zone:
 <option value="11">AEST/AEDT</option>
 <option value="12">NZST/NZDT</option>
 </select><br>
-UTC offset: <input name="UTCOS" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
+UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 Current local time is <span class="times">unknown</span>.
 <h3>Clock</h3>
 Clock Overlay:
-<select name="OLMDE" onchange="Cs()">
+<select name="OL" onchange="Cs()">
 <option value="0" id="cn" selected>None</option>
 <option value="1">Static color</option>
 <option value="2" id="ca">Analog Clock</option>
@@ -265,46 +260,44 @@ Clock Overlay:
 <option value="4" id="cc">Cronixie Clock</option>
 </select><br>
 <div id="coc">
-First LED: <input name="OLIN1" type="number" min="0" max="255" required> Last LED: <input name="OLIN2" type="number" min="0" max="255" required><br>
+First LED: <input name="O1" type="number" min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" required><br>
 <div id="cac">
-12h LED: <input name="OLINM" type="number" min="0" max="255" required><br>
-Show 5min marks: <input type="checkbox" name="OL5MI"><br></div>
-Seconds (as trail): <input type="checkbox" name="OLSTR"><br>
+12h LED: <input name="OM" type="number" min="0" max="255" required><br>
+Show 5min marks: <input type="checkbox" name="O5"><br></div>
+Seconds (as trail): <input type="checkbox" name="OS"><br>
 </div>
 <div id="ccc">
-Cronixie Display: <input name="CRONX" maxlength="6"><br>
-Cronixie Backlight: <input type="checkbox" name="CROBL"><br>
+Cronixie Display: <input name="CX" maxlength="6"><br>
+Cronixie Backlight: <input type="checkbox" name="CB"><br>
 </div>
-Countdown Mode: <input type="checkbox" name="CLCND"><br>
-Countdown Goal: Year: 20 <input name="CDGYR" type="number" min="0" max="99" required> Month: <input name="CDGMN" type="number" min="1" max="12" required> Day: <input name="CDGDY" type="number" min="1" max="31" required><br>
-Hour: <input name="CDGHR" type="number" min="0" max="23" required> Minute: <input name="CDGMI" type="number" min="0" max="59" required> Second: <input name="CDGSC" type="number" min="0" max="59" required><br>
+Countdown Mode: <input type="checkbox" name="CE"><br>
+Countdown Goal: Year: 20 <input name="CY" type="number" min="0" max="99" required> Month: <input name="CI" type="number" min="1" max="12" required> Day: <input name="CD" type="number" min="1" max="31" required><br>
+Hour: <input name="CH" type="number" min="0" max="23" required> Minute: <input name="CM" type="number" min="0" max="59" required> Second: <input name="CS" type="number" min="0" max="59" required><br>
 <h3>Advanced Macros</h3>
 Define API macros here:<br>
-1: <input name="MC1" maxlength="64"><br>
-2: <input name="MC2" maxlength="64"><br>
-3: <input name="MC3" maxlength="64"><br>
-4: <input name="MC4" maxlength="64"><br>
-5: <input name="MC5" maxlength="64"><br>
-6: <input name="MC6" maxlength="64"><br>
-7: <input name="MC7" maxlength="64"><br>
-8: <input name="MC8" maxlength="64"><br>
-9: <input name="MC9" maxlength="64"><br>
-10: <input name="MC10" maxlength="64"><br>
-11: <input name="MC11" maxlength="64"><br>
-12: <input name="MC12" maxlength="64"><br>
-13: <input name="MC13" maxlength="64"><br>
-14: <input name="MC14" maxlength="64"><br>
-15: <input name="MC15" maxlength="64"><br>
-16: <input name="MC16" maxlength="64"><br>
-<br>
+1: <input name="M1" maxlength="64"><br>
+2: <input name="M2" maxlength="64"><br>
+3: <input name="M3" maxlength="64"><br>
+4: <input name="M4" maxlength="64"><br>
+5: <input name="M5" maxlength="64"><br>
+6: <input name="M6" maxlength="64"><br>
+7: <input name="M7" maxlength="64"><br>
+8: <input name="M8" maxlength="64"><br>
+9: <input name="M9" maxlength="64"><br>
+10: <input name="M10" maxlength="64"><br>
+11: <input name="M11" maxlength="64"><br>
+12: <input name="M12" maxlength="64"><br>
+13: <input name="M13" maxlength="64"><br>
+14: <input name="M14" maxlength="64"><br>
+15: <input name="M15" maxlength="64"><br>
+16: <input name="M16" maxlength="64"><br><br>
 <i>Use 0 for the default action instead of a macro</i><br>
 Time controlled macros coming soon!<br>
-Boot Macro: <input name="MCRBT" type="number" min="0" max="16" required><br>
-Alexa On/Off Macros: <input name="MCA0I" type="number" min="0" max="16" required> <input name="MCA0O" type="number" min="0" max="16" required><br>
-Button Macro: <input name="MCB0D" type="number" min="0" max="16" required> Long Press: <input name="MCB0L" type="number" min="0" max="16" required><br>
-Countdown-Over Macro: <input name="MCNTD" type="number" min="0" max="16" required><br>
-Timed-Light-Over Macro: <input name="MCNLO" type="number" min="0" max="16" required><br>
-<hr>
+Boot Macro: <input name="MB" type="number" min="0" max="16" required><br>
+Alexa On/Off Macros: <input name="A0" type="number" min="0" max="16" required> <input name="A1" type="number" min="0" max="16" required><br>
+Button Macro: <input name="MP" type="number" min="0" max="16" required> Long Press: <input name="ML" type="number" min="0" max="16" required><br>
+Countdown-Over Macro: <input name="MC" type="number" min="0" max="16" required><br>
+Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
@@ -324,22 +317,22 @@ const char PAGE_settings_sec1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
 <h2>Security & Update setup</h2>
-Enable OTA lock: <input type="checkbox" name="NOOTA"><br>
-Passphrase: <input type="password" name="OPASS" maxlength="32"><br>
+Enable OTA lock: <input type="checkbox" name="NO"><br>
+Passphrase: <input type="password" name="OP" maxlength="32"><br>
 To enable OTA, for security reasons you need to also enter the correct password!<br>
-The password may/should be changed when OTA is enabled.<br>
-<b>Disable OTA when not in use, otherwise an attacker could reflash device software!</b><br>
+The password should be changed when OTA is enabled.<br>
+<b>Disable OTA when not in use, otherwise an attacker can reflash device software!</b><br>
 <i>Settings on this page are only changable if OTA lock is disabled!</i><br>
-Deny access to WiFi settings if locked: <input type="checkbox" name="OWIFI"><br><br>
-Disable recovery AP: <input type="checkbox" name="NORAP"><br>
-In case of a connection error there will be no wireless recovery possible!<br>
+Deny access to WiFi settings if locked: <input type="checkbox" name="OW"><br><br>
+Disable recovery AP: <input type="checkbox" name="NA"><br>
+In case of an error there will be no wireless recovery possible!<br>
 Completely disables all Access Point functions.<br><br>
-Factory reset: <input type="checkbox" name="RESET"><br>
+Factory reset: <input type="checkbox" name="RS"><br>
 All EEPROM content (settings) will be erased.<br><br>
-HTTP traffic is not encrypted. An attacker in the same network could intercept form data!
+HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
 <h3>Software Update</h3>
 <button type="button" onclick="U()">Manual OTA Update</button><br>
-Enable ArduinoOTA: <input type="checkbox" name="AROTA"><br>
+Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
 <a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.0<br>
 (c) 2016-2018 Christian Schwinne <br>

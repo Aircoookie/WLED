@@ -27,90 +27,90 @@ void handleSettingsSet(byte subPage)
   //WIFI SETTINGS
   if (subPage == 1)
   {
-    if (server.hasArg("CSSID")) clientSSID = server.arg("CSSID");
-    if (server.hasArg("CPASS"))
+    if (server.hasArg("CS")) clientSSID = server.arg("CS");
+    if (server.hasArg("CP"))
     {
-      if (!server.arg("CPASS").indexOf('*') == 0)
+      if (!server.arg("CP").indexOf('*') == 0)
       {
         DEBUG_PRINTLN("Setting pass");
-        clientPass = server.arg("CPASS");
+        clientPass = server.arg("CP");
       }
     }
-    if (server.hasArg("CMDNS")) cmDNS = server.arg("CMDNS");
-    if (server.hasArg("APWTM"))
+    if (server.hasArg("CM")) cmDNS = server.arg("CM");
+    if (server.hasArg("AT"))
     {
-        int i = server.arg("APWTM").toInt();
+        int i = server.arg("AT").toInt();
         if (i >= 0 && i <= 255) apWaitTimeSecs = i;
     }
-    if (server.hasArg("APSSID")) apSSID = server.arg("APSSID");
-    apHide = server.hasArg("APHSSID");
-    if (server.hasArg("APPASS"))
+    if (server.hasArg("AS")) apSSID = server.arg("AS");
+    apHide = server.hasArg("AH");
+    if (server.hasArg("AP"))
     {
-      if (!server.arg("APPASS").indexOf('*') == 0) apPass = server.arg("APPASS");
+      if (!server.arg("AP").indexOf('*') == 0) apPass = server.arg("AP");
     }
-    if (server.hasArg("APCHAN"))
+    if (server.hasArg("AC"))
     {
-      int chan = server.arg("APCHAN").toInt();
+      int chan = server.arg("AC").toInt();
       if (chan > 0 && chan < 14) apChannel = chan;
     }
-    if (server.hasArg("CSIP0"))
+    if (server.hasArg("I0"))
     {
-      int i = server.arg("CSIP0").toInt();
+      int i = server.arg("I0").toInt();
       if (i >= 0 && i <= 255) staticIP[0] = i;
     }
-    if (server.hasArg("CSIP1"))
+    if (server.hasArg("I1"))
     {
-      int i = server.arg("CSIP1").toInt();
+      int i = server.arg("I1").toInt();
       if (i >= 0 && i <= 255) staticIP[1] = i;
     }
-    if (server.hasArg("CSIP2"))
+    if (server.hasArg("I2"))
     {
-      int i = server.arg("CSIP2").toInt();
+      int i = server.arg("I2").toInt();
       if (i >= 0 && i <= 255) staticIP[2] = i;
     }
-    if (server.hasArg("CSIP3"))
+    if (server.hasArg("I3"))
     {
-      int i = server.arg("CSIP3").toInt();
+      int i = server.arg("I3").toInt();
       if (i >= 0 && i <= 255) staticIP[3] = i;
     }
-    if (server.hasArg("CSGW0"))
+    if (server.hasArg("G0"))
     {
-      int i = server.arg("CSGW0").toInt();
+      int i = server.arg("G0").toInt();
       if (i >= 0 && i <= 255) staticGateway[0] = i;
     }
-    if (server.hasArg("CSGW1"))
+    if (server.hasArg("G1"))
     {
-      int i = server.arg("CSGW1").toInt();
+      int i = server.arg("G1").toInt();
       if (i >= 0 && i <= 255) staticGateway[1] = i;
     }
-    if (server.hasArg("CSGW2"))
+    if (server.hasArg("G2"))
     {
-      int i = server.arg("CSGW2").toInt();
+      int i = server.arg("G2").toInt();
       if (i >= 0 && i <= 255) staticGateway[2] = i;
     }
-    if (server.hasArg("CSGW3"))
+    if (server.hasArg("G3"))
     {
-      int i = server.arg("CSGW3").toInt();
+      int i = server.arg("G3").toInt();
       if (i >= 0 && i <= 255) staticGateway[3] = i;
     }
-    if (server.hasArg("CSSN0"))
+    if (server.hasArg("S0"))
     {
-      int i = server.arg("CSSN0").toInt();
+      int i = server.arg("S0").toInt();
       if (i >= 0 && i <= 255) staticSubnet[0] = i;
     }
-    if (server.hasArg("CSSN1"))
+    if (server.hasArg("S1"))
     {
-      int i = server.arg("CSSN1").toInt();
+      int i = server.arg("S1").toInt();
       if (i >= 0 && i <= 255) staticSubnet[1] = i;
     }
-    if (server.hasArg("CSSN2"))
+    if (server.hasArg("S2"))
     {
-      int i = server.arg("CSSN2").toInt();
+      int i = server.arg("S2").toInt();
       if (i >= 0 && i <= 255) staticSubnet[2] = i;
     }
-    if (server.hasArg("CSSN3"))
+    if (server.hasArg("S3"))
     {
-      int i = server.arg("CSSN3").toInt();
+      int i = server.arg("S3").toInt();
       if (i >= 0 && i <= 255) staticSubnet[3] = i;
     }
   }
@@ -118,13 +118,13 @@ void handleSettingsSet(byte subPage)
   //LED SETTINGS
   if (subPage == 2)
   {
-    if (server.hasArg("LEDCN"))
+    if (server.hasArg("LC"))
     {
-      int i = server.arg("LEDCN").toInt();
+      int i = server.arg("LC").toInt();
       if (i >= 0 && i <= LEDCOUNT) ledCount = i;
       strip.setLedCount(ledCount);
     }
-    if (server.hasArg("CBEOR")) //ignore settings and save current brightness, colors and fx as default
+    if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
     {
       colS[0] = col[0];
       colS[1] = col[1];
@@ -134,44 +134,44 @@ void handleSettingsSet(byte subPage)
       effectDefault = effectCurrent;
       effectSpeedDefault = effectSpeed;
     } else {
-      if (server.hasArg("CLDFR"))
+      if (server.hasArg("CR"))
       {
-        int i = server.arg("CLDFR").toInt();
+        int i = server.arg("CR").toInt();
         if (i >= 0 && i <= 255) colS[0] = i;
       }
-      if (server.hasArg("CLDFG"))
+      if (server.hasArg("CG"))
       {
-        int i = server.arg("CLDFG").toInt();
+        int i = server.arg("CG").toInt();
         if (i >= 0 && i <= 255) colS[1] = i;
       }
-      if (server.hasArg("CLDFB"))
+      if (server.hasArg("CB"))
       {
-        int i = server.arg("CLDFB").toInt();
+        int i = server.arg("CB").toInt();
         if (i >= 0 && i <= 255) colS[2] = i;
       }
-      if (server.hasArg("CSECR"))
+      if (server.hasArg("SR"))
       {
-        int i = server.arg("CSECR").toInt();
+        int i = server.arg("SR").toInt();
         if (i >= 0 && i <= 255) colSecS[0] = i;
       }
-      if (server.hasArg("CSECG"))
+      if (server.hasArg("SG"))
       {
-        int i = server.arg("CSECG").toInt();
+        int i = server.arg("SG").toInt();
         if (i >= 0 && i <= 255) colSecS[1] = i;
       }
-      if (server.hasArg("CSECB"))
+      if (server.hasArg("SB"))
       {
-        int i = server.arg("CSECB").toInt();
+        int i = server.arg("SB").toInt();
         if (i >= 0 && i <= 255) colSecS[2] = i;
       }
-      if (server.hasArg("CSECW"))
+      if (server.hasArg("SW"))
       {
-        int i = server.arg("CSECW").toInt();
+        int i = server.arg("SW").toInt();
         if (i >= 0 && i <= 255) whiteSecS = i;
       }
-      if (server.hasArg("CLDFW"))
+      if (server.hasArg("CW"))
       {
-        int i = server.arg("CLDFW").toInt();
+        int i = server.arg("CW").toInt();
         if (i >= 0 && i <= 255)
         {
           useRGBW = true;
@@ -181,65 +181,65 @@ void handleSettingsSet(byte subPage)
           whiteS = 0;
         }
       }
-      if (server.hasArg("CLDFA"))
+      if (server.hasArg("CA"))
       {
-        int i = server.arg("CLDFA").toInt();
+        int i = server.arg("CA").toInt();
         if (i >= 0 && i <= 255) briS = i;
       }
-      if (server.hasArg("FXDEF"))
+      if (server.hasArg("FX"))
       {
-        int i = server.arg("FXDEF").toInt();
+        int i = server.arg("FX").toInt();
         if (i >= 0 && i <= 255) effectDefault = i;
       }
-      if (server.hasArg("SXDEF"))
+      if (server.hasArg("SX"))
       {
-        int i = server.arg("SXDEF").toInt();
+        int i = server.arg("SX").toInt();
         if (i >= 0 && i <= 255) effectSpeedDefault = i;
       }
-      if (server.hasArg("IXDEF"))
+      if (server.hasArg("IX"))
       {
-        int i = server.arg("IXDEF").toInt();
+        int i = server.arg("IX").toInt();
         if (i >= 0 && i <= 255) effectIntensityDefault = i;
       }
     }
-    turnOnAtBoot = server.hasArg("BOOTN");
-    if (server.hasArg("BOOTP"))
+    turnOnAtBoot = server.hasArg("BO");
+    if (server.hasArg("BP"))
     {
-      int i = server.arg("BOOTP").toInt();
+      int i = server.arg("BP").toInt();
       if (i >= 0 && i <= 25) bootPreset = i;
     }
-    useGammaCorrectionBri = server.hasArg("GCBRI");
-    useGammaCorrectionRGB = server.hasArg("GCRGB");
-    fadeTransition = server.hasArg("TFADE");
-    sweepTransition = server.hasArg("TSWEE");
-    sweepDirection = !server.hasArg("TSDIR");
-    if (server.hasArg("TDLAY"))
+    useGammaCorrectionBri = server.hasArg("GB");
+    useGammaCorrectionRGB = server.hasArg("GC");
+    fadeTransition = server.hasArg("TF");
+    sweepTransition = server.hasArg("TS");
+    sweepDirection = !server.hasArg("TI");
+    if (server.hasArg("TD"))
     {
-      int i = server.arg("TDLAY").toInt();
+      int i = server.arg("TD").toInt();
       if (i > 0){
         transitionDelay = i;
       }
     }
-    if (server.hasArg("TLBRI"))
+    if (server.hasArg("TB"))
     {
-      nightlightTargetBri = server.arg("TLBRI").toInt();
+      nightlightTargetBri = server.arg("TB").toInt();
     }
-    if (server.hasArg("TLDUR"))
+    if (server.hasArg("TL"))
     {
-      int i = server.arg("TLDUR").toInt();
+      int i = server.arg("TL").toInt();
       if (i > 0) nightlightDelayMins = i;
     }
-    nightlightFade = server.hasArg("TLFDE");
-    reverseMode = server.hasArg("LEDRV");
+    nightlightFade = server.hasArg("TW");
+    reverseMode = server.hasArg("RV");
     strip.setReverseMode(reverseMode);
-    if (server.hasArg("WOFFS"))
+    if (server.hasArg("WO"))
     {
-      int i = server.arg("WOFFS").toInt();
+      int i = server.arg("WO").toInt();
       if (i >= -255  && i <= 255) arlsOffset = i;
     }
-    if (server.hasArg("NRBRI"))
+    if (server.hasArg("BF"))
     {
-      int i = server.arg("NRBRI").toInt();
+      int i = server.arg("BF").toInt();
       if (i > 0) briMultiplier = i;
     }
   }
@@ -247,57 +247,57 @@ void handleSettingsSet(byte subPage)
   //UI
   if (subPage == 3)
   {
-    if (server.hasArg("DESC")) serverDescription = server.arg("DESC");
-    useHSBDefault = server.hasArg("COLMD");
+    if (server.hasArg("DS")) serverDescription = server.arg("DS");
+    useHSBDefault = server.hasArg("MD");
     useHSB = useHSBDefault;
-    if (server.hasArg("THEME")) currentTheme = server.arg("THEME").toInt();
+    if (server.hasArg("TH")) currentTheme = server.arg("TH").toInt();
     for(int i=0;i<6;i++)
     {
-      if (server.hasArg("CCOL"+String(i))) cssCol[i] = server.arg("CCOL"+String(i));
+      if (server.hasArg("C"+String(i))) cssCol[i] = server.arg("C"+String(i));
     }
-    if (server.hasArg("CFONT")) cssFont = server.arg("CFONT");
+    if (server.hasArg("CF")) cssFont = server.arg("CF");
     buildCssColorString();
   }
 
   //SYNC
   if (subPage == 4)
   {
-    buttonEnabled = server.hasArg("BTNON");
-    if (server.hasArg("NUDPP"))
+    buttonEnabled = server.hasArg("BT");
+    if (server.hasArg("UP"))
     {
-      udpPort = server.arg("NUDPP").toInt();
+      udpPort = server.arg("UP").toInt();
     }
-    receiveNotificationBrightness = server.hasArg("NRCBR");
-    receiveNotificationColor = server.hasArg("NRCCL");
-    receiveNotificationEffects = server.hasArg("NRCFX");
+    receiveNotificationBrightness = server.hasArg("RB");
+    receiveNotificationColor = server.hasArg("RC");
+    receiveNotificationEffects = server.hasArg("RX");
     receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
-    notifyDirectDefault = server.hasArg("NSDIR");
+    notifyDirectDefault = server.hasArg("SD");
     notifyDirect = notifyDirectDefault;
-    notifyButton = server.hasArg("NSBTN");
-    notifyTwice = server.hasArg("NS2XS");
-    alexaEnabled = server.hasArg("ALEXA");
-    if (server.hasArg("AINVN")) alexaInvocationName = server.arg("AINVN");
-    alexaNotify = server.hasArg("NSALX");
-    notifyHue = server.hasArg("NSHUE");
+    notifyButton = server.hasArg("SB");
+    notifyTwice = server.hasArg("S2");
+    alexaEnabled = server.hasArg("AL");
+    if (server.hasArg("AI")) alexaInvocationName = server.arg("AI");
+    alexaNotify = server.hasArg("SA");
+    notifyHue = server.hasArg("SH");
     for (int i=0;i<4;i++){
-      String a = "HUIP"+String(i);
+      String a = "H"+String(i);
       if (server.hasArg(a))
         hueIP[i] = server.arg(a).toInt();
     }
-    if (server.hasArg("HUELI"))
+    if (server.hasArg("HL"))
     {
-      int i = server.arg("HUELI").toInt();
+      int i = server.arg("HL").toInt();
       if (i > 0) huePollLightId = i;
     }
-    if (server.hasArg("HUEPI"))
+    if (server.hasArg("HI"))
     {
-      int i = server.arg("HUEPI").toInt();
+      int i = server.arg("HI").toInt();
       if (i > 50) huePollIntervalMs = i;
     }
-    hueApplyOnOff = server.hasArg("HURIO");
-    hueApplyBri = server.hasArg("HURBR");
-    hueApplyColor = server.hasArg("HURCL");
-    if (server.hasArg("HUEPL"))
+    hueApplyOnOff = server.hasArg("HO");
+    hueApplyBri = server.hasArg("HB");
+    hueApplyColor = server.hasArg("HC");
+    if (server.hasArg("HP"))
     {
       if (!huePollingEnabled) hueAttempt = true;
       if (!setupHue()) hueAttempt = true;
@@ -311,56 +311,56 @@ void handleSettingsSet(byte subPage)
   //TIME
   if (subPage == 5)
   {
-    ntpEnabled = server.hasArg("NTPON");
-    useAMPM = !server.hasArg("CL24H");
-    if (server.hasArg("TZONE")) currentTimezone = server.arg("TZONE").toInt();
-    if (server.hasArg("UTCOS")) utcOffsetSecs = server.arg("UTCOS").toInt();
+    ntpEnabled = server.hasArg("NT");
+    useAMPM = !server.hasArg("CF");
+    if (server.hasArg("TZ")) currentTimezone = server.arg("TZ").toInt();
+    if (server.hasArg("UO")) utcOffsetSecs = server.arg("UO").toInt();
     if (ntpEnabled && WiFi.status() == WL_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort); //start if not already connected
     
-    if (server.hasArg("OLMDE")){
-      overlayDefault = server.arg("OLMDE").toInt();
+    if (server.hasArg("OL")){
+      overlayDefault = server.arg("OL").toInt();
       overlayCurrent = overlayDefault;
       strip.unlockAll();
     }
-    if (server.hasArg("OLIN1")) overlayMin = server.arg("OLIN1").toInt();
-    if (server.hasArg("OLIN2")) overlayMax = server.arg("OLIN2").toInt();
-    if (server.hasArg("OLINM")) analogClock12pixel = server.arg("OLINM").toInt();
-    analogClock5MinuteMarks = server.hasArg("OL5MI");
-    analogClockSecondsTrail = server.hasArg("OLSTR");
+    if (server.hasArg("O1")) overlayMin = server.arg("O1").toInt();
+    if (server.hasArg("O2")) overlayMax = server.arg("O2").toInt();
+    if (server.hasArg("OM")) analogClock12pixel = server.arg("OM").toInt();
+    analogClock5MinuteMarks = server.hasArg("O5");
+    analogClockSecondsTrail = server.hasArg("OS");
     
-    if (server.hasArg("CRONX")) cronixieDisplay = server.arg("CRONX");
+    if (server.hasArg("CX")) cronixieDisplay = server.arg("CX");
     bool cbOld = cronixieBacklight;
-    cronixieBacklight = server.hasArg("CROBL");
+    cronixieBacklight = server.hasArg("CB");
     if (cbOld != cronixieBacklight && overlayCurrent == 4)
     {
       strip.setCronixieBacklight(cronixieBacklight); overlayRefreshedTime = 0;
     }
-    countdownMode = server.hasArg("CLCND");
-    if (server.hasArg("CDGYR")) countdownYear = server.arg("CDGYR").toInt();
-    if (server.hasArg("CDGMN")) countdownMonth = server.arg("CDGMN").toInt();
-    if (server.hasArg("CDGDY")) countdownDay = server.arg("CDGDY").toInt();
-    if (server.hasArg("CDGHR")) countdownHour = server.arg("CDGHR").toInt();
-    if (server.hasArg("CDGMI")) countdownMin = server.arg("CDGMI").toInt();
-    if (server.hasArg("CDGSC")) countdownSec = server.arg("CDGSC").toInt();
+    countdownMode = server.hasArg("CE");
+    if (server.hasArg("CY")) countdownYear = server.arg("CY").toInt();
+    if (server.hasArg("CI")) countdownMonth = server.arg("CI").toInt();
+    if (server.hasArg("CD")) countdownDay = server.arg("CD").toInt();
+    if (server.hasArg("CH")) countdownHour = server.arg("CH").toInt();
+    if (server.hasArg("CM")) countdownMin = server.arg("CM").toInt();
+    if (server.hasArg("CS")) countdownSec = server.arg("CS").toInt();
     
     for (int i=1;i<17;i++)
     {
-      String a = "MC"+String(i);
+      String a = "M"+String(i);
       if (server.hasArg(a)) saveMacro(i,server.arg(a),false);
     }
-    if (server.hasArg("MCRBT")) macroBoot = server.arg("MCRBT").toInt();
-    if (server.hasArg("MCA0I")) macroAlexaOn = server.arg("MCA0I").toInt();
-    if (server.hasArg("MCA0O")) macroAlexaOff = server.arg("MCA0O").toInt();
-    if (server.hasArg("MCB0D")) macroButton = server.arg("MCB0D").toInt();
-    if (server.hasArg("MCB0L")) macroLongPress = server.arg("MCB0L").toInt();
-    if (server.hasArg("MCNTD")) macroCountdown = server.arg("MCNTD").toInt();
-    if (server.hasArg("MCNLO")) macroNl = server.arg("MCNLO").toInt();
+    if (server.hasArg("MB")) macroBoot = server.arg("MB").toInt();
+    if (server.hasArg("A0")) macroAlexaOn = server.arg("A0").toInt();
+    if (server.hasArg("A1")) macroAlexaOff = server.arg("A1").toInt();
+    if (server.hasArg("MP")) macroButton = server.arg("MP").toInt();
+    if (server.hasArg("ML")) macroLongPress = server.arg("ML").toInt();
+    if (server.hasArg("MC")) macroCountdown = server.arg("MC").toInt();
+    if (server.hasArg("MN")) macroNl = server.arg("MN").toInt();
   }
 
   //SECURITY
   if (subPage == 6)
   {
-    if (server.hasArg("RESET"))
+    if (server.hasArg("RS"))
     {
       clearEEPROM();
       serveMessage(200, "All Settings erased.", "Connect to WLED-AP to setup again...",255);
@@ -368,24 +368,24 @@ void handleSettingsSet(byte subPage)
     }
 
     bool pwdCorrect = !otaLock; //always allow access if ota not locked
-    if (server.hasArg("OPASS"))
+    if (server.hasArg("OP"))
     {
-      if (otaLock && otaPass.equals(server.arg("OPASS")))
+      if (otaLock && otaPass.equals(server.arg("OP")))
       {
         pwdCorrect = true;
       }
-      if (!otaLock && server.arg("OPASS").length() > 0)
+      if (!otaLock && server.arg("OP").length() > 0)
       {
-        otaPass = server.arg("OPASS");
+        otaPass = server.arg("OP");
       }
     }
     
     if (pwdCorrect) //allow changes if correct pwd or no ota active
     {
-      otaLock = server.hasArg("NOOTA");
-      wifiLock = server.hasArg("OWIFI");
-      recoveryAPDisabled = server.hasArg("NORAP");
-      aOtaEnabled = server.hasArg("AROTA");
+      otaLock = server.hasArg("NO");
+      wifiLock = server.hasArg("OW");
+      recoveryAPDisabled = server.hasArg("NA");
+      aOtaEnabled = server.hasArg("AO");
     }
   }
 

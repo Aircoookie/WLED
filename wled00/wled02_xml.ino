@@ -7,7 +7,7 @@ void XML_response()
    String resp;
    resp = resp + "<?xml version = \"1.0\" ?>";
    resp = resp + "<vs>";
-   resp = resp + "<act>";
+   resp = resp + "<ac>";
    if (nightlightActive && nightlightFade)
    {
      resp = resp + briT;
@@ -15,7 +15,7 @@ void XML_response()
    {
     resp = resp + bri;
    }
-   resp = resp + "</act>";
+   resp = resp + "</ac>";
 
    for (int i = 0; i < 3; i++)
    {
@@ -49,9 +49,9 @@ void XML_response()
    }
    resp = resp + "</wv><md>";
    resp = resp + useHSB;
-   resp = resp + "</md><desc>";
+   resp = resp + "</md><ds>";
    resp = resp + serverDescription;
-   resp = resp + "</desc>";
+   resp = resp + "</ds>";
    resp = resp + "</vs>";
    server.send(200, "text/xml", resp);
 }
@@ -73,36 +73,36 @@ String getSettings(byte subPage)
   String si = ".selectedIndex=";
 
   if (subPage == 1) {
-    resp += ds + "CSSID" + v + "\"" + clientSSID + "\";";
-    resp += ds + "CPASS" + v + "\"";
+    resp += ds + "CS" + v + "\"" + clientSSID + "\";";
+    resp += ds + "CP" + v + "\"";
     for (int i = 0; i < clientPass.length(); i++)
     {
       resp += "*";
     }
     resp += "\";";
-    resp += ds + "CSIP0" + v + staticIP[0] +";";
-    resp += ds + "CSIP1" + v + staticIP[1] +";";
-    resp += ds + "CSIP2" + v + staticIP[2] +";";
-    resp += ds + "CSIP3" + v + staticIP[3] +";";
-    resp += ds + "CSGW0" + v + staticGateway[0] +";";
-    resp += ds + "CSGW1" + v + staticGateway[1] +";";
-    resp += ds + "CSGW2" + v + staticGateway[2] +";";
-    resp += ds + "CSGW3" + v + staticGateway[3] +";";
-    resp += ds + "CSSN0" + v + staticSubnet[0] +";";
-    resp += ds + "CSSN1" + v + staticSubnet[1] +";";
-    resp += ds + "CSSN2" + v + staticSubnet[2] +";";
-    resp += ds + "CSSN3" + v + staticSubnet[3] +";";
-    resp += ds + "CMDNS" + v + "\"" + cmDNS + "\";";
-    resp += ds + "APWTM" + v + apWaitTimeSecs +";";
-    resp += ds + "APSSID" + v + "\"" + apSSID + "\";";
-    resp += ds + "APHSSID" + c + apHide + ";";
-    resp += ds + "APPASS" + v + "\"";
+    resp += ds + "I0" + v + staticIP[0] +";";
+    resp += ds + "I1" + v + staticIP[1] +";";
+    resp += ds + "I2" + v + staticIP[2] +";";
+    resp += ds + "I3" + v + staticIP[3] +";";
+    resp += ds + "G0" + v + staticGateway[0] +";";
+    resp += ds + "G1" + v + staticGateway[1] +";";
+    resp += ds + "G2" + v + staticGateway[2] +";";
+    resp += ds + "G3" + v + staticGateway[3] +";";
+    resp += ds + "S0" + v + staticSubnet[0] +";";
+    resp += ds + "S1" + v + staticSubnet[1] +";";
+    resp += ds + "S2" + v + staticSubnet[2] +";";
+    resp += ds + "S3" + v + staticSubnet[3] +";";
+    resp += ds + "CM" + v + "\"" + cmDNS + "\";";
+    resp += ds + "AT" + v + apWaitTimeSecs +";";
+    resp += ds + "AS" + v + "\"" + apSSID + "\";";
+    resp += ds + "AH" + c + apHide + ";";
+    resp += ds + "AP" + v + "\"";
     for (int i = 0; i < apPass.length(); i++)
     {
       resp += "*";
     }
     resp += "\";";
-    resp += ds + "APCHAN" + v + apChannel +";";
+    resp += ds + "AC" + v + apChannel +";";
     resp += dg + "(\"sip\")[0]" + ih + "\"";
     if (!WiFi.localIP()[0] == 0)
     {
@@ -136,117 +136,117 @@ String getSettings(byte subPage)
   }
   
   if (subPage == 2) {
-    resp += ds + "LEDCN" + v + ledCount +";";
-    resp += ds + "CLDFR" + v + colS[0] +";";
-    resp += ds + "CLDFG" + v + colS[1] +";";
-    resp += ds + "CLDFB" + v + colS[2] +";";
-    resp += ds + "CLDFA" + v + briS +";";
+    resp += ds + "LC" + v + ledCount +";";
+    resp += ds + "CR" + v + colS[0] +";";
+    resp += ds + "CG" + v + colS[1] +";";
+    resp += ds + "CB" + v + colS[2] +";";
+    resp += ds + "CA" + v + briS +";";
     if (useRGBW) {
-      resp += ds + "CLDFW" + v + whiteS +";";
+      resp += ds + "CW" + v + whiteS +";";
     } else {
-      resp += ds + "CLDFW" + v + "-1;";
+      resp += ds + "CW" + v + "-1;";
     }
-    resp += ds + "CSECR" + v + colSecS[0] +";";
-    resp += ds + "CSECG" + v + colSecS[1] +";";
-    resp += ds + "CSECB" + v + colSecS[2] +";";
-    resp += ds + "CSECW" + v + whiteSecS +";";
-    resp += ds + "BOOTN" + c + turnOnAtBoot +";";
-    resp += ds + "BOOTP" + v + bootPreset +";";
-    resp += ds + "FXDEF" + v + effectDefault +";";
-    resp += ds + "SXDEF" + v + effectSpeedDefault +";";
-    resp += ds + "IXDEF" + v + effectIntensityDefault +";";
-    resp += ds + "GCBRI" + c + useGammaCorrectionBri +";";
-    resp += ds + "GCRGB" + c + useGammaCorrectionRGB +";";
-    resp += ds + "TFADE" + c + fadeTransition +";";
-    resp += ds + "TSWEE" + c + sweepTransition +";";
-    resp += ds + "TSDIR" + c + !sweepDirection +";";
-    resp += ds + "TDLAY" + v + transitionDelay +";";
-    resp += ds + "NRBRI" + v + briMultiplier +";";
-    resp += ds + "TLBRI" + v + nightlightTargetBri +";";
-    resp += ds + "TLDUR" + v + nightlightDelayMins +";";
-    resp += ds + "TLFDE" + c + nightlightFade +";";
-    resp += ds + "LEDRV" + c + reverseMode +";";
-    resp += ds + "WOFFS" + v + arlsOffset +";";
+    resp += ds + "SR" + v + colSecS[0] +";";
+    resp += ds + "SG" + v + colSecS[1] +";";
+    resp += ds + "SB" + v + colSecS[2] +";";
+    resp += ds + "SW" + v + whiteSecS +";";
+    resp += ds + "BO" + c + turnOnAtBoot +";";
+    resp += ds + "BP" + v + bootPreset +";";
+    resp += ds + "FX" + v + effectDefault +";";
+    resp += ds + "SX" + v + effectSpeedDefault +";";
+    resp += ds + "IX" + v + effectIntensityDefault +";";
+    resp += ds + "GB" + c + useGammaCorrectionBri +";";
+    resp += ds + "GC" + c + useGammaCorrectionRGB +";";
+    resp += ds + "TF" + c + fadeTransition +";";
+    resp += ds + "TS" + c + sweepTransition +";";
+    resp += ds + "TI" + c + !sweepDirection +";";
+    resp += ds + "TD" + v + transitionDelay +";";
+    resp += ds + "BF" + v + briMultiplier +";";
+    resp += ds + "TB" + v + nightlightTargetBri +";";
+    resp += ds + "TL" + v + nightlightDelayMins +";";
+    resp += ds + "TW" + c + nightlightFade +";";
+    resp += ds + "RV" + c + reverseMode +";";
+    resp += ds + "WO" + v + arlsOffset +";";
   }
 
   if (subPage == 3)
   { 
-    resp += ds + "DESC" + v + "\"" + serverDescription + "\";";
-    resp += ds + "COLMD" + c + useHSBDefault + ";";
-    resp += ds + "THEME" + si + String(currentTheme) + ";";
+    resp += ds + "DS" + v + "\"" + serverDescription + "\";";
+    resp += ds + "MD" + c + useHSBDefault + ";";
+    resp += ds + "TH" + si + String(currentTheme) + ";";
     for(int i=0;i<6;i++)
-    resp += ds + "CCOL" + i + v + "\"" + cssCol[i] + "\";";
-    resp += ds + "CFONT" + v + "\"" + cssFont + "\";";
+    resp += ds + "C" + i + v + "\"" + cssCol[i] + "\";";
+    resp += ds + "CF" + v + "\"" + cssFont + "\";";
   }
 
   if (subPage == 4)
   {
-    resp += ds + "BTNON" + c + buttonEnabled +";";
-    resp += ds + "NUDPP" + v + udpPort +";";
-    resp += ds + "NRCBR" + c + receiveNotificationBrightness +";";
-    resp += ds + "NRCCL" + c + receiveNotificationColor +";";
-    resp += ds + "NRCFX" + c + receiveNotificationEffects +";";
-    resp += ds + "NSDIR" + c + notifyDirectDefault +";";
-    resp += ds + "NSBTN" + c + notifyButton +";";
-    resp += ds + "NSHUE" + c + notifyHue +";";
-    resp += ds + "NS2XS" + c + notifyTwice +";";
-    resp += ds + "ALEXA" + c + alexaEnabled +";";
-    resp += ds + "AINVN" + v + "\"" + alexaInvocationName + "\";";
-    resp += ds + "NSALX" + c + alexaNotify +";";
-    resp += ds + "HUIP0" + v + hueIP[0] +";";
-    resp += ds + "HUIP1" + v + hueIP[1] +";";
-    resp += ds + "HUIP2" + v + hueIP[2] +";";
-    resp += ds + "HUIP3" + v + hueIP[3] +";";
-    resp += ds + "HUELI" + v + huePollLightId +";";
-    resp += ds + "HUEPI" + v + huePollIntervalMs +";";
-    resp += ds + "HUEPL" + c + huePollingEnabled +";";
-    resp += ds + "HURIO" + c + hueApplyOnOff +";";
-    resp += ds + "HURBR" + c + hueApplyBri +";";
-    resp += ds + "HURCL" + c + hueApplyColor +";";
+    resp += ds + "BT" + c + buttonEnabled +";";
+    resp += ds + "UP" + v + udpPort +";";
+    resp += ds + "RB" + c + receiveNotificationBrightness +";";
+    resp += ds + "RC" + c + receiveNotificationColor +";";
+    resp += ds + "RX" + c + receiveNotificationEffects +";";
+    resp += ds + "SD" + c + notifyDirectDefault +";";
+    resp += ds + "SB" + c + notifyButton +";";
+    resp += ds + "SH" + c + notifyHue +";";
+    resp += ds + "S2" + c + notifyTwice +";";
+    resp += ds + "AL" + c + alexaEnabled +";";
+    resp += ds + "AI" + v + "\"" + alexaInvocationName + "\";";
+    resp += ds + "SA" + c + alexaNotify +";";
+    resp += ds + "H0" + v + hueIP[0] +";";
+    resp += ds + "H1" + v + hueIP[1] +";";
+    resp += ds + "H2" + v + hueIP[2] +";";
+    resp += ds + "H3" + v + hueIP[3] +";";
+    resp += ds + "HL" + v + huePollLightId +";";
+    resp += ds + "HI" + v + huePollIntervalMs +";";
+    resp += ds + "HP" + c + huePollingEnabled +";";
+    resp += ds + "HO" + c + hueApplyOnOff +";";
+    resp += ds + "HB" + c + hueApplyBri +";";
+    resp += ds + "HC" + c + hueApplyColor +";";
     resp += dg + "(\"hms\")[0]" + ih + "\"" + hueError + "\";";
   }
 
   if (subPage == 5)
   {
-    resp += ds + "NTPON" + c + ntpEnabled +";";
-    resp += ds + "CL24H" + c + !useAMPM +";";
-    resp += ds + "TZONE" + si + String(currentTimezone) + ";";
-    resp += ds + "UTCOS" + v + utcOffsetSecs +";";
+    resp += ds + "NT" + c + ntpEnabled +";";
+    resp += ds + "CF" + c + !useAMPM +";";
+    resp += ds + "TZ" + si + String(currentTimezone) + ";";
+    resp += ds + "UO" + v + utcOffsetSecs +";";
     resp += dg + "(\"times\")[0]" + ih + "\"" + getTimeString() + "\";";
-    resp += ds + "OLMDE" + si + String(overlayCurrent) + ";";
-    resp += ds + "OLIN1" + v + overlayMin +";";
-    resp += ds + "OLIN2" + v + overlayMax +";";
-    resp += ds + "OLINM" + v + analogClock12pixel +";";
-    resp += ds + "OLSTR" + c + analogClockSecondsTrail +";";
-    resp += ds + "OL5MI" + c + analogClock5MinuteMarks +";";
-    resp += ds + "CRONX" + v + "\"" + cronixieDisplay + "\";";
-    resp += ds + "CROBL" + c + cronixieBacklight +";";
-    resp += ds + "CLCND" + c + countdownMode +";";
-    resp += ds + "CDGYR" + v + countdownYear +";";
-    resp += ds + "CDGMN" + v + countdownMonth +";";
-    resp += ds + "CDGDY" + v + countdownDay +";";
-    resp += ds + "CDGHR" + v + countdownHour +";";
-    resp += ds + "CDGMI" + v + countdownMin +";";
-    resp += ds + "CDGSC" + v + countdownSec +";";
+    resp += ds + "OL" + si + String(overlayCurrent) + ";";
+    resp += ds + "O1" + v + overlayMin +";";
+    resp += ds + "O2" + v + overlayMax +";";
+    resp += ds + "OM" + v + analogClock12pixel +";";
+    resp += ds + "OS" + c + analogClockSecondsTrail +";";
+    resp += ds + "O5" + c + analogClock5MinuteMarks +";";
+    resp += ds + "CX" + v + "\"" + cronixieDisplay + "\";";
+    resp += ds + "CB" + c + cronixieBacklight +";";
+    resp += ds + "CE" + c + countdownMode +";";
+    resp += ds + "CY" + v + countdownYear +";";
+    resp += ds + "CI" + v + countdownMonth +";";
+    resp += ds + "CD" + v + countdownDay +";";
+    resp += ds + "CH" + v + countdownHour +";";
+    resp += ds + "CM" + v + countdownMin +";";
+    resp += ds + "CS" + v + countdownSec +";";
     for (int i=1;i<17;i++)
     {
-      resp += ds + "MC" + String(i) + v + "\"" + loadMacro(i) + "\";";
+      resp += ds + "M" + String(i) + v + "\"" + loadMacro(i) + "\";";
     }
-    resp += ds + "MCRBT" + v + macroBoot +";";
-    resp += ds + "MCA0I" + v + macroAlexaOn +";";
-    resp += ds + "MCA0O" + v + macroAlexaOff +";";
-    resp += ds + "MCB0D" + v + macroButton +";";
-    resp += ds + "MCB0L" + v + macroLongPress +";";
-    resp += ds + "MCNTD" + v + macroCountdown +";";
-    resp += ds + "MCNLO" + v + macroNl +";";
+    resp += ds + "MB" + v + macroBoot +";";
+    resp += ds + "A0" + v + macroAlexaOn +";";
+    resp += ds + "A1" + v + macroAlexaOff +";";
+    resp += ds + "MP" + v + macroButton +";";
+    resp += ds + "ML" + v + macroLongPress +";";
+    resp += ds + "MC" + v + macroCountdown +";";
+    resp += ds + "MN" + v + macroNl +";";
   }
 
   if (subPage == 6)
   {
-    resp += ds + "NOOTA" + c + otaLock +";";
-    resp += ds + "OWIFI" + c + wifiLock +";";
-    resp += ds + "AROTA" + c + aOtaEnabled +";";
-    resp += ds + "NORAP" + c + recoveryAPDisabled +";";
+    resp += ds + "NO" + c + otaLock +";";
+    resp += ds + "OW" + c + wifiLock +";";
+    resp += ds + "AO" + c + aOtaEnabled +";";
+    resp += ds + "NA" + c + recoveryAPDisabled +";";
     resp += dg + "(\"msg\")[0]" + ih + "\"WLED "+ versionString +" (build " + VERSION + ") OK\";";
   }
   resp += "}</script>";
