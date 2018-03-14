@@ -89,7 +89,7 @@ void sendNTPPacket()
   ntpUdp.endPacket();
 }
 
-boolean checkNTPResponse()
+bool checkNTPResponse()
 {
   int cb = ntpUdp.parsePacket();
   if (cb) {

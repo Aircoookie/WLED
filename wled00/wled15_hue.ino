@@ -103,7 +103,7 @@ bool handleHueResponse(String hueResp, bool isAuth)
 
   float hueX=0, hueY=0;
   uint16_t hueHue=0, hueCt=0;
-  uint8_t hueBri=0, hueSat=0, hueColormode=0;
+  byte hueBri=0, hueSat=0, hueColormode=0;
   
   if (getJsonValue(&hueResp,"on").charAt(0) == 't')
   {
@@ -149,7 +149,7 @@ bool handleHueResponse(String hueResp, bool isAuth)
       }
     } else //On/Off device
     {
-      hueBri = bri_last;
+      hueBri = briLast;
     }
   } else
   {
@@ -165,7 +165,7 @@ bool handleHueResponse(String hueResp, bool isAuth)
     if (hueApplyOnOff)
     {
       if (hueBri==0) {bri = 0;}
-      else if (bri==0 && hueBri>0) bri = bri_last;
+      else if (bri==0 && hueBri>0) bri = briLast;
     }
     if (hueApplyBri)
     {

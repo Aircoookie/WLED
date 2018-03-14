@@ -25,24 +25,24 @@ void wledInit()
   EEPROM.begin(EEPSIZE);
   loadSettingsFromEEPROM(true);
   DEBUG_PRINT("CC: SSID: ");
-  DEBUG_PRINT(clientssid);
+  DEBUG_PRINT(clientSSID);
   buildCssColorString();
   userBeginPreConnection();
 
   WiFi.disconnect(); //close old connections
 
-  if (staticip[0] != 0)
+  if (staticIP[0] != 0)
   {
-    WiFi.config(staticip, staticgateway, staticsubnet, staticdns);
+    WiFi.config(staticIP, staticGateway, staticSubnet, staticDNS);
   } else
   {
     WiFi.config(0U, 0U, 0U);
   }
 
-  if (apssid.length()>0)
+  if (apSSID.length()>0)
   {
     DEBUG_PRINT("USING AP");
-    DEBUG_PRINTLN(apssid.length());
+    DEBUG_PRINTLN(apSSID.length());
     initAP();
   } else
   {
@@ -64,7 +64,7 @@ void wledInit()
   }
   
   // Set up mDNS responder:
-  if (cmdns != NULL && !onlyAP && !MDNS.begin(cmdns.c_str())) {
+  if (cmDNS != NULL && !onlyAP && !MDNS.begin(cmDNS.c_str())) {
     DEBUG_PRINTLN("Error setting up MDNS responder!");
     down();
   }
@@ -78,7 +78,7 @@ void wledInit()
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   //start captive portal
-  if (onlyAP || apssid.length() > 0)
+  if (onlyAP || apSSID.length() > 0)
   {
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
@@ -195,7 +195,7 @@ void wledInit()
     });
     
   server.on("/power", HTTP_GET, [](){
-    String val = (String)(int)strip.getPowerEstimate(ledcount,strip.getColor(),strip.getBrightness());
+    String val = (String)(int)strip.getPowerEstimate(ledCount,strip.getColor(),strip.getBrightness());
     val += "mA currently";
     serveMessage(200,val,"This is just an estimate (does not take into account several factors like effects and wire resistance). It is NOT an accurate measurement!",254);
     });
@@ -305,7 +305,7 @@ void wledInit()
 
   // Initialize NeoPixel Strip
   strip.init();
-  strip.setLedCount(ledcount);
+  strip.setLedCount(ledCount);
   strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
@@ -320,17 +320,17 @@ void wledInit()
 }
 
 void initAP(){
-  String save = apssid;
-  if (apssid.length() <1) apssid = "WLED-AP";
-  WiFi.softAP(apssid.c_str(), appass.c_str(), apchannel, aphide);
-  apssid = save;
+  String save = apSSID;
+  if (apSSID.length() <1) apSSID = "WLED-AP";
+  WiFi.softAP(apSSID.c_str(), apPass.c_str(), apChannel, apHide);
+  apSSID = save;
 }
 
 void initCon()
 {
   int fail_count = 0;
-  if (clientssid.length() <1 || clientssid.equals("Your_Network_Here")) fail_count = apWaitTimeSecs*2;
-  WiFi.begin(clientssid.c_str(), clientpass.c_str());
+  if (clientSSID.length() <1 || clientSSID.equals("Your_Network")) fail_count = apWaitTimeSecs*2;
+  WiFi.begin(clientSSID.c_str(), clientPass.c_str());
   while(WiFi.status() != WL_CONNECTED) {
     delay(500);
     DEBUG_PRINTLN("C_NC");
@@ -443,7 +443,7 @@ void serveMessage(int code, String headl, String subl="", int optionType)
   server.sendContent(messageBody);
 }
 
-void serveSettings(uint8_t subPage)
+void serveSettings(byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 255: welcomepage
   if (!arlsTimeout) //do not serve while receiving realtime

@@ -80,7 +80,7 @@ void alexaOff()
   DEBUG_PRINTLN(body);
 }
 
-void alexaDim(uint8_t briL)
+void alexaDim(byte briL)
 {
   String body = "[{\"success\":{\"/lights/1/state/bri\":"+ String(briL) +"}}]";
 
@@ -127,7 +127,7 @@ void respondToSearch() {
 
     UDP.beginPacket(UDP.remoteIP(), UDP.remotePort());
     #ifdef ARDUINO_ARCH_ESP32
-    UDP.write((uint8_t*)response.c_str(), response.length());
+    UDP.write((byte*)response.c_str(), response.length());
     #else
     UDP.write(response.c_str());
     #endif
@@ -223,7 +223,7 @@ String briForHue(int realBri)
   return String(realBri);
 }
 
-boolean handleAlexaApiCall(String req, String body) //basic implementation of Philips hue api functions needed for basic Alexa control
+bool handleAlexaApiCall(String req, String body) //basic implementation of Philips hue api functions needed for basic Alexa control
 {
   DEBUG_PRINTLN("AlexaApiCall");
   if (req.indexOf("api") <0) return false;
@@ -262,8 +262,8 @@ boolean handleAlexaApiCall(String req, String body) //basic implementation of Ph
   return true;
 }
 
-boolean connectUDP(){
-  boolean state = false;
+bool connectUDP(){
+  bool state = false;
   
   DEBUG_PRINTLN("");
   DEBUG_PRINTLN("Con UDP");

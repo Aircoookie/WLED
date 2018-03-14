@@ -341,7 +341,7 @@ HTTP traffic is not encrypted. An attacker in the same network could intercept f
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AROTA"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.0_dev<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.0<br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
 <i>Uses libraries:</i><br>

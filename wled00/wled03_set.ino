@@ -7,10 +7,10 @@ void _setRandomColor(bool _sec)
   lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
   uint32_t _color = strip.color_wheel(lastRandomIndex);
   if (_sec){
-    white_sec = ((_color >> 24) & 0xFF);
-    col_sec[0] = ((_color >> 16) & 0xFF);
-    col_sec[1] = ((_color >> 8) & 0xFF);
-    col_sec[2] = (_color & 0xFF);
+    whiteSec = ((_color >> 24) & 0xFF);
+    colSec[0] = ((_color >> 16) & 0xFF);
+    colSec[1] = ((_color >> 8) & 0xFF);
+    colSec[2] = (_color & 0xFF);
   } else {
     white = ((_color >> 24) & 0xFF);
     col[0] = ((_color >> 16) & 0xFF);
@@ -19,7 +19,7 @@ void _setRandomColor(bool _sec)
   }
 }
 
-void handleSettingsSet(uint8_t subPage)
+void handleSettingsSet(byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   if (subPage <1 || subPage >6) return;
@@ -27,91 +27,91 @@ void handleSettingsSet(uint8_t subPage)
   //WIFI SETTINGS
   if (subPage == 1)
   {
-    if (server.hasArg("CSSID")) clientssid = server.arg("CSSID");
+    if (server.hasArg("CSSID")) clientSSID = server.arg("CSSID");
     if (server.hasArg("CPASS"))
     {
       if (!server.arg("CPASS").indexOf('*') == 0)
       {
         DEBUG_PRINTLN("Setting pass");
-        clientpass = server.arg("CPASS");
+        clientPass = server.arg("CPASS");
       }
     }
-    if (server.hasArg("CMDNS")) cmdns = server.arg("CMDNS");
+    if (server.hasArg("CMDNS")) cmDNS = server.arg("CMDNS");
     if (server.hasArg("APWTM"))
     {
         int i = server.arg("APWTM").toInt();
         if (i >= 0 && i <= 255) apWaitTimeSecs = i;
     }
-    if (server.hasArg("APSSID")) apssid = server.arg("APSSID");
-    aphide = server.hasArg("APHSSID");
+    if (server.hasArg("APSSID")) apSSID = server.arg("APSSID");
+    apHide = server.hasArg("APHSSID");
     if (server.hasArg("APPASS"))
     {
-      if (!server.arg("APPASS").indexOf('*') == 0) appass = server.arg("APPASS");
+      if (!server.arg("APPASS").indexOf('*') == 0) apPass = server.arg("APPASS");
     }
     if (server.hasArg("APCHAN"))
     {
       int chan = server.arg("APCHAN").toInt();
-      if (chan > 0 && chan < 14) apchannel = chan;
+      if (chan > 0 && chan < 14) apChannel = chan;
     }
     if (server.hasArg("CSIP0"))
     {
       int i = server.arg("CSIP0").toInt();
-      if (i >= 0 && i <= 255) staticip[0] = i;
+      if (i >= 0 && i <= 255) staticIP[0] = i;
     }
     if (server.hasArg("CSIP1"))
     {
       int i = server.arg("CSIP1").toInt();
-      if (i >= 0 && i <= 255) staticip[1] = i;
+      if (i >= 0 && i <= 255) staticIP[1] = i;
     }
     if (server.hasArg("CSIP2"))
     {
       int i = server.arg("CSIP2").toInt();
-      if (i >= 0 && i <= 255) staticip[2] = i;
+      if (i >= 0 && i <= 255) staticIP[2] = i;
     }
     if (server.hasArg("CSIP3"))
     {
       int i = server.arg("CSIP3").toInt();
-      if (i >= 0 && i <= 255) staticip[3] = i;
+      if (i >= 0 && i <= 255) staticIP[3] = i;
     }
     if (server.hasArg("CSGW0"))
     {
       int i = server.arg("CSGW0").toInt();
-      if (i >= 0 && i <= 255) staticgateway[0] = i;
+      if (i >= 0 && i <= 255) staticGateway[0] = i;
     }
     if (server.hasArg("CSGW1"))
     {
       int i = server.arg("CSGW1").toInt();
-      if (i >= 0 && i <= 255) staticgateway[1] = i;
+      if (i >= 0 && i <= 255) staticGateway[1] = i;
     }
     if (server.hasArg("CSGW2"))
     {
       int i = server.arg("CSGW2").toInt();
-      if (i >= 0 && i <= 255) staticgateway[2] = i;
+      if (i >= 0 && i <= 255) staticGateway[2] = i;
     }
     if (server.hasArg("CSGW3"))
     {
       int i = server.arg("CSGW3").toInt();
-      if (i >= 0 && i <= 255) staticgateway[3] = i;
+      if (i >= 0 && i <= 255) staticGateway[3] = i;
     }
     if (server.hasArg("CSSN0"))
     {
       int i = server.arg("CSSN0").toInt();
-      if (i >= 0 && i <= 255) staticsubnet[0] = i;
+      if (i >= 0 && i <= 255) staticSubnet[0] = i;
     }
     if (server.hasArg("CSSN1"))
     {
       int i = server.arg("CSSN1").toInt();
-      if (i >= 0 && i <= 255) staticsubnet[1] = i;
+      if (i >= 0 && i <= 255) staticSubnet[1] = i;
     }
     if (server.hasArg("CSSN2"))
     {
       int i = server.arg("CSSN2").toInt();
-      if (i >= 0 && i <= 255) staticsubnet[2] = i;
+      if (i >= 0 && i <= 255) staticSubnet[2] = i;
     }
     if (server.hasArg("CSSN3"))
     {
       int i = server.arg("CSSN3").toInt();
-      if (i >= 0 && i <= 255) staticsubnet[3] = i;
+      if (i >= 0 && i <= 255) staticSubnet[3] = i;
     }
   }
 
@@ -121,53 +121,53 @@ void handleSettingsSet(uint8_t subPage)
     if (server.hasArg("LEDCN"))
     {
       int i = server.arg("LEDCN").toInt();
-      if (i >= 0 && i <= LEDCOUNT) ledcount = i;
-      strip.setLedCount(ledcount);
+      if (i >= 0 && i <= LEDCOUNT) ledCount = i;
+      strip.setLedCount(ledCount);
     }
     if (server.hasArg("CBEOR")) //ignore settings and save current brightness, colors and fx as default
     {
-      col_s[0] = col[0];
-      col_s[1] = col[1];
-      col_s[2] = col[2];
-      if (useRGBW) white_s = white;
-      bri_s = bri;
+      colS[0] = col[0];
+      colS[1] = col[1];
+      colS[2] = col[2];
+      if (useRGBW) whiteS = white;
+      briS = bri;
       effectDefault = effectCurrent;
       effectSpeedDefault = effectSpeed;
     } else {
       if (server.hasArg("CLDFR"))
       {
         int i = server.arg("CLDFR").toInt();
-        if (i >= 0 && i <= 255) col_s[0] = i;
+        if (i >= 0 && i <= 255) colS[0] = i;
       }
       if (server.hasArg("CLDFG"))
       {
         int i = server.arg("CLDFG").toInt();
-        if (i >= 0 && i <= 255) col_s[1] = i;
+        if (i >= 0 && i <= 255) colS[1] = i;
       }
       if (server.hasArg("CLDFB"))
       {
         int i = server.arg("CLDFB").toInt();
-        if (i >= 0 && i <= 255) col_s[2] = i;
+        if (i >= 0 && i <= 255) colS[2] = i;
       }
       if (server.hasArg("CSECR"))
       {
         int i = server.arg("CSECR").toInt();
-        if (i >= 0 && i <= 255) col_sec_s[0] = i;
+        if (i >= 0 && i <= 255) colSecS[0] = i;
       }
       if (server.hasArg("CSECG"))
       {
         int i = server.arg("CSECG").toInt();
-        if (i >= 0 && i <= 255) col_sec_s[1] = i;
+        if (i >= 0 && i <= 255) colSecS[1] = i;
       }
       if (server.hasArg("CSECB"))
       {
         int i = server.arg("CSECB").toInt();
-        if (i >= 0 && i <= 255) col_sec_s[2] = i;
+        if (i >= 0 && i <= 255) colSecS[2] = i;
       }
       if (server.hasArg("CSECW"))
       {
         int i = server.arg("CSECW").toInt();
-        if (i >= 0 && i <= 255) white_sec_s = i;
+        if (i >= 0 && i <= 255) whiteSecS = i;
       }
       if (server.hasArg("CLDFW"))
       {
@@ -175,16 +175,16 @@ void handleSettingsSet(uint8_t subPage)
         if (i >= 0 && i <= 255)
         {
           useRGBW = true;
-          white_s = i;
+          whiteS = i;
         } else {
           useRGBW = false;
-          white_s = 0;
+          whiteS = 0;
         }
       }
       if (server.hasArg("CLDFA"))
       {
         int i = server.arg("CLDFA").toInt();
-        if (i >= 0 && i <= 255) bri_s = i;
+        if (i >= 0 && i <= 255) briS = i;
       }
       if (server.hasArg("FXDEF"))
       {
@@ -236,7 +236,6 @@ void handleSettingsSet(uint8_t subPage)
     {
       int i = server.arg("WOFFS").toInt();
       if (i >= -255  && i <= 255) arlsOffset = i;
-      arlsSign = (i>=0)?true:false;
     }
     if (server.hasArg("NRBRI"))
     {
@@ -371,13 +370,13 @@ void handleSettingsSet(uint8_t subPage)
     bool pwdCorrect = !otaLock; //always allow access if ota not locked
     if (server.hasArg("OPASS"))
     {
-      if (otaLock && otapass.equals(server.arg("OPASS")))
+      if (otaLock && otaPass.equals(server.arg("OPASS")))
       {
         pwdCorrect = true;
       }
       if (!otaLock && server.arg("OPASS").length() > 0)
       {
-        otapass = server.arg("OPASS");
+        otaPass = server.arg("OPASS");
       }
     }
     
@@ -393,9 +392,9 @@ void handleSettingsSet(uint8_t subPage)
   saveSettingsToEEPROM();
 }
 
-boolean handleSet(String req)
+bool handleSet(String req)
 {
-   boolean effectUpdated = false;
+   bool effectUpdated = false;
    if (!(req.indexOf("win") >= 0)) {
         return false;
    }
@@ -431,12 +430,12 @@ boolean handleSet(String req)
    pos = req.indexOf("HU=");
    if (pos > 0) {
       uint16_t temphue = req.substring(pos + 3).toInt();
-      uint8_t tempsat = 255;
+      byte tempsat = 255;
       pos = req.indexOf("SA=");
       if (pos > 0) {
         tempsat = req.substring(pos + 3).toInt();
       }
-      colorHStoRGB(temphue,tempsat,(req.indexOf("H2")>0)? col_sec:col);
+      colorHStoRGB(temphue,tempsat,(req.indexOf("H2")>0)? colSec:col);
    }
    
    //set red value
@@ -463,45 +462,45 @@ boolean handleSet(String req)
    //set 2nd red value
    pos = req.indexOf("R2=");
    if (pos > 0) {
-      col_sec[0] = req.substring(pos + 3).toInt();
+      colSec[0] = req.substring(pos + 3).toInt();
    }
    //set 2nd green value
    pos = req.indexOf("G2=");
    if (pos > 0) {
-      col_sec[1] = req.substring(pos + 3).toInt();
+      colSec[1] = req.substring(pos + 3).toInt();
    }
    //set 2nd blue value
    pos = req.indexOf("B2=");
    if (pos > 0) {
-      col_sec[2] = req.substring(pos + 3).toInt();
+      colSec[2] = req.substring(pos + 3).toInt();
    }
    //set 2nd white value
    pos = req.indexOf("W2=");
    if (pos > 0) {
-      white_sec = req.substring(pos + 3).toInt();
+      whiteSec = req.substring(pos + 3).toInt();
    }
    
    //set 2nd to white
    pos = req.indexOf("SW");
    if (pos > 0) {
       if(useRGBW) {
-        white_sec = 255;
-        col_sec[0] = 0;
-        col_sec[1] = 0;
-        col_sec[2] = 0;
+        whiteSec = 255;
+        colSec[0] = 0;
+        colSec[1] = 0;
+        colSec[2] = 0;
       } else {
-        col_sec[0] = 255;
-        col_sec[1] = 255;
-        col_sec[2] = 255;
+        colSec[0] = 255;
+        colSec[1] = 255;
+        colSec[2] = 255;
       }
    }
    //set 2nd to black
    pos = req.indexOf("SB");
    if (pos > 0) {
-      white_sec = 0;
-      col_sec[0] = 0;
-      col_sec[1] = 0;
-      col_sec[2] = 0;
+      whiteSec = 0;
+      colSec[0] = 0;
+      colSec[1] = 0;
+      colSec[2] = 0;
    }
    //set to random hue SR=0->1st SR=1->2nd
    pos = req.indexOf("SR");
@@ -511,24 +510,24 @@ boolean handleSet(String req)
    //set 2nd to 1st
    pos = req.indexOf("SP");
    if (pos > 0) {
-      col_sec[0] = col[0];
-      col_sec[1] = col[1];
-      col_sec[2] = col[2];
-      white_sec = white;
+      colSec[0] = col[0];
+      colSec[1] = col[1];
+      colSec[2] = col[2];
+      whiteSec = white;
    }
    //swap 2nd & 1st
    pos = req.indexOf("SC");
    if (pos > 0) {
-      uint8_t _temp[4];
+      byte _temp[4];
       for (int i = 0; i<3; i++)
       {
         _temp[i] = col[i];
-        col[i] = col_sec[i];
-        col_sec[i] = _temp[i];
+        col[i] = colSec[i];
+        colSec[i] = _temp[i];
       }
       _temp[3] = white;
-      white = white_sec;
-      white_sec = _temp[3];
+      white = whiteSec;
+      whiteSec = _temp[3];
    }
    
    //set current effect index
@@ -654,7 +653,7 @@ boolean handleSet(String req)
       if (req.indexOf("NL=0") > 0)
       {
         nightlightActive = false;
-        bri = bri_t;
+        bri = briT;
       } else {
         nightlightActive = true;
         nightlightDelayMins = req.substring(pos + 3).toInt();
@@ -665,7 +664,7 @@ boolean handleSet(String req)
    pos = req.indexOf("NT=");
    if (pos > 0) {
       nightlightTargetBri = req.substring(pos + 3).toInt();
-      nightlightActive_old = false; //re-init
+      nightlightActiveOld = false; //re-init
    }
    //toggle nightlight fade
    if (req.indexOf("NF=") > 0)
@@ -676,7 +675,7 @@ boolean handleSet(String req)
       } else {
         nightlightFade = true;
       }
-      nightlightActive_old = false; //re-init
+      nightlightActiveOld = false; //re-init
    }
    //toggle general purpose output
    pos = req.indexOf("AX=");
@@ -690,14 +689,14 @@ boolean handleSet(String req)
    if (pos > 0) {
       switch (req.substring(pos + 3).toInt())
       {
-        case 0: if (bri != 0){bri_last = bri; bri = 0;} break; //off
-        case 1: bri = bri_last; break; //on
+        case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off
+        case 1: bri = briLast; break; //on
         default: if (bri == 0) //toggle
         {
-          bri = bri_last;
+          bri = briLast;
         } else
         {
-          bri_last = bri;
+          briLast = bri;
           bri = 0;
         }
       }
@@ -716,15 +715,15 @@ boolean handleSet(String req)
    
    //set custom chase data
    bool _cc_updated = false;
-   pos = req.indexOf("C0="); if (pos > 0) {cc_start =  (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("C1="); if (pos > 0) {cc_index1 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("C2="); if (pos > 0) {cc_index2 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CP="); if (pos > 0) {cc_numPrimary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CS="); if (pos > 0) {cc_numSecondary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CM="); if (pos > 0) {cc_step = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CF="); if (pos > 0) {cc_fromStart = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CE="); if (pos > 0) {cc_fromEnd = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   if (_cc_updated) strip.setCustomChase(cc_index1, cc_index2, cc_start, cc_numPrimary, cc_numSecondary, cc_step, cc_fromStart, cc_fromEnd);
+   pos = req.indexOf("C0="); if (pos > 0) {ccStart =  (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("C1="); if (pos > 0) {ccIndex1 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("C2="); if (pos > 0) {ccIndex2 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CP="); if (pos > 0) {ccNumPrimary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CS="); if (pos > 0) {ccNumSecondary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CM="); if (pos > 0) {ccStep = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CF="); if (pos > 0) {ccFromStart = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   pos = req.indexOf("CE="); if (pos > 0) {ccFromEnd = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   if (_cc_updated) strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
    
    //set presets
    pos = req.indexOf("PS="); //saves current in preset

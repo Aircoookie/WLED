@@ -27,10 +27,10 @@ void handleButton()
           {
             if (bri == 0)
             {
-              bri = bri_last;
+              bri = briLast;
             } else
             {
-              bri_last = bri;
+              briLast = bri;
               bri = 0;
             }
             colorUpdated(2);

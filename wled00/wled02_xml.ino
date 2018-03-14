@@ -10,7 +10,7 @@ void XML_response()
    resp = resp + "<act>";
    if (nightlightActive && nightlightFade)
    {
-     resp = resp + bri_t;
+     resp = resp + briT;
    } else
    {
     resp = resp + bri;
@@ -56,7 +56,7 @@ void XML_response()
    server.send(200, "text/xml", resp);
 }
 
-String getSettings(uint8_t subPage)
+String getSettings(byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   DEBUG_PRINT("settings resp");
@@ -73,36 +73,36 @@ String getSettings(uint8_t subPage)
   String si = ".selectedIndex=";
 
   if (subPage == 1) {
-    resp += ds + "CSSID" + v + "\"" + clientssid + "\";";
+    resp += ds + "CSSID" + v + "\"" + clientSSID + "\";";
     resp += ds + "CPASS" + v + "\"";
-    for (int i = 0; i < clientpass.length(); i++)
+    for (int i = 0; i < clientPass.length(); i++)
     {
       resp += "*";
     }
     resp += "\";";
-    resp += ds + "CSIP0" + v + staticip[0] +";";
-    resp += ds + "CSIP1" + v + staticip[1] +";";
-    resp += ds + "CSIP2" + v + staticip[2] +";";
-    resp += ds + "CSIP3" + v + staticip[3] +";";
-    resp += ds + "CSGW0" + v + staticgateway[0] +";";
-    resp += ds + "CSGW1" + v + staticgateway[1] +";";
-    resp += ds + "CSGW2" + v + staticgateway[2] +";";
-    resp += ds + "CSGW3" + v + staticgateway[3] +";";
-    resp += ds + "CSSN0" + v + staticsubnet[0] +";";
-    resp += ds + "CSSN1" + v + staticsubnet[1] +";";
-    resp += ds + "CSSN2" + v + staticsubnet[2] +";";
-    resp += ds + "CSSN3" + v + staticsubnet[3] +";";
-    resp += ds + "CMDNS" + v + "\"" + cmdns + "\";";
+    resp += ds + "CSIP0" + v + staticIP[0] +";";
+    resp += ds + "CSIP1" + v + staticIP[1] +";";
+    resp += ds + "CSIP2" + v + staticIP[2] +";";
+    resp += ds + "CSIP3" + v + staticIP[3] +";";
+    resp += ds + "CSGW0" + v + staticGateway[0] +";";
+    resp += ds + "CSGW1" + v + staticGateway[1] +";";
+    resp += ds + "CSGW2" + v + staticGateway[2] +";";
+    resp += ds + "CSGW3" + v + staticGateway[3] +";";
+    resp += ds + "CSSN0" + v + staticSubnet[0] +";";
+    resp += ds + "CSSN1" + v + staticSubnet[1] +";";
+    resp += ds + "CSSN2" + v + staticSubnet[2] +";";
+    resp += ds + "CSSN3" + v + staticSubnet[3] +";";
+    resp += ds + "CMDNS" + v + "\"" + cmDNS + "\";";
     resp += ds + "APWTM" + v + apWaitTimeSecs +";";
-    resp += ds + "APSSID" + v + "\"" + apssid + "\";";
-    resp += ds + "APHSSID" + c + aphide + ";";
+    resp += ds + "APSSID" + v + "\"" + apSSID + "\";";
+    resp += ds + "APHSSID" + c + apHide + ";";
     resp += ds + "APPASS" + v + "\"";
-    for (int i = 0; i < appass.length(); i++)
+    for (int i = 0; i < apPass.length(); i++)
     {
       resp += "*";
     }
     resp += "\";";
-    resp += ds + "APCHAN" + v + apchannel +";";
+    resp += ds + "APCHAN" + v + apChannel +";";
     resp += dg + "(\"sip\")[0]" + ih + "\"";
     if (!WiFi.localIP()[0] == 0)
     {
@@ -136,20 +136,20 @@ String getSettings(uint8_t subPage)
   }
   
   if (subPage == 2) {
-    resp += ds + "LEDCN" + v + ledcount +";";
-    resp += ds + "CLDFR" + v + col_s[0] +";";
-    resp += ds + "CLDFG" + v + col_s[1] +";";
-    resp += ds + "CLDFB" + v + col_s[2] +";";
-    resp += ds + "CLDFA" + v + bri_s +";";
+    resp += ds + "LEDCN" + v + ledCount +";";
+    resp += ds + "CLDFR" + v + colS[0] +";";
+    resp += ds + "CLDFG" + v + colS[1] +";";
+    resp += ds + "CLDFB" + v + colS[2] +";";
+    resp += ds + "CLDFA" + v + briS +";";
     if (useRGBW) {
-      resp += ds + "CLDFW" + v + white_s +";";
+      resp += ds + "CLDFW" + v + whiteS +";";
     } else {
       resp += ds + "CLDFW" + v + "-1;";
     }
-    resp += ds + "CSECR" + v + col_sec_s[0] +";";
-    resp += ds + "CSECG" + v + col_sec_s[1] +";";
-    resp += ds + "CSECB" + v + col_sec_s[2] +";";
-    resp += ds + "CSECW" + v + white_sec_s +";";
+    resp += ds + "CSECR" + v + colSecS[0] +";";
+    resp += ds + "CSECG" + v + colSecS[1] +";";
+    resp += ds + "CSECB" + v + colSecS[2] +";";
+    resp += ds + "CSECW" + v + whiteSecS +";";
     resp += ds + "BOOTN" + c + turnOnAtBoot +";";
     resp += ds + "BOOTP" + v + bootPreset +";";
     resp += ds + "FXDEF" + v + effectDefault +";";

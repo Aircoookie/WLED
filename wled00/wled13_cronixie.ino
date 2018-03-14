@@ -1,9 +1,9 @@
 /*
  * Support for the Cronixie clock
  */
-uint8_t getSameCodeLength(char code, int index, char const digits[])
+byte getSameCodeLength(char code, int index, char const digits[])
 {
-  uint8_t counter = 0;
+  byte counter = 0;
   
   for (int i = index+1; i < 6; i++)
   {
@@ -145,12 +145,12 @@ void setCronixie()
 void _overlayCronixie()
 {
     if (countdownMode) checkCountdown();
-    uint8_t h = hour(local);
-    uint8_t h0 = h;
-    uint8_t m = minute(local);
-    uint8_t s = second(local);
-    uint8_t d = day(local);
-    uint8_t mi = month(local);
+    byte h = hour(local);
+    byte h0 = h;
+    byte m = minute(local);
+    byte s = second(local);
+    byte d = day(local);
+    byte mi = month(local);
     int y = year(local);
     //this has to be changed in time for 22nd century
     y -= 2000; if (y<0) y += 30; //makes countdown work

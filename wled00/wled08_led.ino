@@ -3,7 +3,7 @@
  */
 
 void setAllLeds() {
-  double d = bri_t*briMultiplier;
+  double d = briT*briMultiplier;
   int val = d/100;
   if (val > 255) val = 255;
   if (useGammaCorrectionBri)
@@ -14,26 +14,26 @@ void setAllLeds() {
   }
   if (useGammaCorrectionRGB)
   {
-    strip.setColor(gamma8[col_t[0]], gamma8[col_t[1]], gamma8[col_t[2]], gamma8[white_t]);
-    strip.setSecondaryColor(gamma8[col_sec[0]], gamma8[col_sec[1]], gamma8[col_sec[2]], gamma8[white_sec]);
+    strip.setColor(gamma8[colT[0]], gamma8[colT[1]], gamma8[colT[2]], gamma8[whiteT]);
+    strip.setSecondaryColor(gamma8[colSec[0]], gamma8[colSec[1]], gamma8[colSec[2]], gamma8[whiteSec]);
   } else {
-    strip.setColor(col_t[0], col_t[1], col_t[2], white_t);
-    strip.setSecondaryColor(col_sec[0], col_sec[1], col_sec[2], white_sec);
+    strip.setColor(colT[0], colT[1], colT[2], whiteT);
+    strip.setSecondaryColor(colSec[0], colSec[1], colSec[2], whiteSec);
   }
 }
 
 void setLedsStandard()
 {
-  col_old[0] = col[0];
-  col_old[1] = col[1];
-  col_old[2] = col[2];
-  white_old = white;
-  bri_old = bri;
-  col_t[0] = col[0];
-  col_t[1] = col[1];
-  col_t[2] = col[2];
-  white_t = white;
-  bri_t = bri;
+  colOld[0] = col[0];
+  colOld[1] = col[1];
+  colOld[2] = col[2];
+  whiteOld = white;
+  briOld = bri;
+  colT[0] = col[0];
+  colT[1] = col[1];
+  colT[2] = col[2];
+  whiteT = white;
+  briT = bri;
   setAllLeds();
 }
 
@@ -41,11 +41,11 @@ bool colorChanged()
 {
   for (int i = 0; i < 3; i++)
   {
-    if (col[i] != col_it[i]) return true;
-    if (col_sec[i] != col_sec_it[i]) return true;
+    if (col[i] != colIT[i]) return true;
+    if (colSec[i] != colSecIT[i]) return true;
   }
-  if (white != white_it || white_sec != white_sec_it) return true;
-  if (bri != bri_it) return true;
+  if (white != whiteIT || whiteSec != whiteSecIT) return true;
+  if (bri != briIT) return true;
   return false;
 }
 
@@ -59,31 +59,31 @@ void colorUpdated(int callMode)
   }
   if (callMode != 5 && nightlightActive && nightlightFade)
   {
-    bri_nl_t = bri;
+    briNlT = bri;
     nightlightDelayMs -= (millis() - nightlightStartTime);
     nightlightStartTime = millis();
   }
-  col_it[0] = col[0];
-  col_it[1] = col[1];
-  col_it[2] = col[2];
-  col_sec_it[0] = col_sec[0];
-  col_sec_it[1] = col_sec[1];
-  col_sec_it[2] = col_sec[2];
-  white_it = white;
-  white_sec_it = white_sec;
-  bri_it = bri;
-  if (bri > 0) bri_last = bri;
+  colIT[0] = col[0];
+  colIT[1] = col[1];
+  colIT[2] = col[2];
+  colSecIT[0] = colSec[0];
+  colSecIT[1] = colSec[1];
+  colSecIT[2] = colSec[2];
+  whiteIT = white;
+  whiteSecIT = whiteSec;
+  briIT = bri;
+  if (bri > 0) briLast = bri;
   notify(callMode);
   if (fadeTransition || sweepTransition)
   {
     if (transitionActive)
     {
-      col_old[0] = col_t[0];
-      col_old[1] = col_t[1];
-      col_old[2] = col_t[2];
-      white_old = white_t;
-      bri_old = bri_t;
-      tper_last = 0;
+      colOld[0] = colT[0];
+      colOld[1] = colT[1];
+      colOld[2] = colT[2];
+      whiteOld = whiteT;
+      briOld = briT;
+      tperLast = 0;
     }
     transitionActive = true;
     transitionStartTime = millis();
@@ -103,34 +103,34 @@ void handleTransitions()
     if (tper >= 1.0)
     {
       transitionActive = false;
-      tper_last = 0;
+      tperLast = 0;
       if (sweepTransition) strip.unlockAll();
       setLedsStandard();
       strip.setFastUpdateMode(false);
       return;
     }
-    if (tper - tper_last < transitionResolution)
+    if (tper - tperLast < transitionResolution)
     {
       return;
     }
-    tper_last = tper;
+    tperLast = tper;
     if (fadeTransition)
     {
-      col_t[0] = col_old[0]+((col[0] - col_old[0])*tper);
-      col_t[1] = col_old[1]+((col[1] - col_old[1])*tper);
-      col_t[2] = col_old[2]+((col[2] - col_old[2])*tper);
-      white_t  = white_old +((white  - white_old )*tper);
-      bri_t    = bri_old   +((bri    - bri_old   )*tper);
+      colT[0] = colOld[0]+((col[0] - colOld[0])*tper);
+      colT[1] = colOld[1]+((col[1] - colOld[1])*tper);
+      colT[2] = colOld[2]+((col[2] - colOld[2])*tper);
+      whiteT  = whiteOld +((white  - whiteOld )*tper);
+      briT    = briOld   +((bri    - briOld   )*tper);
     }
     if (sweepTransition)
     {
       strip.lockAll();
       if (sweepDirection)
       {
-        strip.unlockRange(0, (int)(tper*(double)ledcount));
+        strip.unlockRange(0, (int)(tper*(double)ledCount));
       } else
       {
-        strip.unlockRange(ledcount - (int)(tper*(double)ledcount), ledcount);
+        strip.unlockRange(ledCount - (int)(tper*(double)ledCount), ledCount);
       }
       if (!fadeTransition)
       {
@@ -145,18 +145,18 @@ void handleNightlight()
 {
   if (nightlightActive)
   {
-    if (!nightlightActive_old) //init
+    if (!nightlightActiveOld) //init
     {
       nightlightStartTime = millis();
       notify(4);
       nightlightDelayMs = (int)(nightlightDelayMins*60000);
-      nightlightActive_old = true;
-      bri_nl_t = bri;
+      nightlightActiveOld = true;
+      briNlT = bri;
     }
     float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
     if (nightlightFade)
     {
-      bri = bri_nl_t+((nightlightTargetBri - bri_nl_t)*nper);
+      bri = briNlT+((nightlightTargetBri - briNlT)*nper);
       colorUpdated(5);
     }
     if (nper >= 1)
@@ -167,10 +167,10 @@ void handleNightlight()
         bri = nightlightTargetBri;
         colorUpdated(5);
       }
-      if (bri == 0) bri_last = bri_nl_t;
+      if (bri == 0) briLast = briNlT;
     }
-  } else if (nightlightActive_old) //early de-init
+  } else if (nightlightActiveOld) //early de-init
   {
-    nightlightActive_old = false;
+    nightlightActiveOld = false;
   }
 }

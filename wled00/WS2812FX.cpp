@@ -73,7 +73,7 @@ void WS2812FX::stop() {
   strip_off();
 }
 
-void WS2812FX::setMode(uint8_t m) {
+void WS2812FX::setMode(byte m) {
   _counter_mode_call = 0;
   _counter_mode_step = 0;
   _mode_last_call_time = 0;
@@ -83,7 +83,7 @@ void WS2812FX::setMode(uint8_t m) {
   strip_off_respectLock();
 }
 
-void WS2812FX::setSpeed(uint8_t s) {
+void WS2812FX::setSpeed(byte s) {
   _counter_mode_call = 0;
   _counter_mode_step = 0;
   _mode_last_call_time = 0;
@@ -91,35 +91,35 @@ void WS2812FX::setSpeed(uint8_t s) {
   strip_off_respectLock();
 }
 
-void WS2812FX::increaseSpeed(uint8_t s) {
+void WS2812FX::increaseSpeed(byte s) {
   s = constrain(_speed + s, SPEED_MIN, SPEED_MAX);
   setSpeed(s);
 }
 
-void WS2812FX::decreaseSpeed(uint8_t s) {
+void WS2812FX::decreaseSpeed(byte s) {
   s = constrain(_speed - s, SPEED_MIN, SPEED_MAX);
   setSpeed(s);
 }
 
-void WS2812FX::setIntensity(uint8_t in) {
+void WS2812FX::setIntensity(byte in) {
   _intensity=in;
 }
 
-void WS2812FX::setColor(uint8_t r, uint8_t g, uint8_t b) {
+void WS2812FX::setColor(byte r, byte g, byte b) {
   setColor(((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }
 
 
-void WS2812FX::setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+void WS2812FX::setColor(byte r, byte g, byte b, byte w) {
   setColor(((uint32_t)w << 24)|((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }
 
-void WS2812FX::setSecondaryColor(uint8_t r, uint8_t g, uint8_t b) {
+void WS2812FX::setSecondaryColor(byte r, byte g, byte b) {
   setSecondaryColor(((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }
 
 
-void WS2812FX::setSecondaryColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+void WS2812FX::setSecondaryColor(byte r, byte g, byte b, byte w) {
   setSecondaryColor(((uint32_t)w << 24)|((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }
 
@@ -136,33 +136,33 @@ void WS2812FX::setSecondaryColor(uint32_t c) {
   setBrightness(_brightness);
 }
 
-void WS2812FX::increaseBrightness(uint8_t s) {
+void WS2812FX::increaseBrightness(byte s) {
   s = constrain(_brightness + s, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
   setBrightness(s);
 }
 
-void WS2812FX::decreaseBrightness(uint8_t s) {
+void WS2812FX::decreaseBrightness(byte s) {
   s = constrain(_brightness - s, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
   setBrightness(s);
 }
 
-boolean WS2812FX::isRunning() {
+bool WS2812FX::isRunning() {
   return _running; 
 }
 
-uint8_t WS2812FX::getMode(void) {
+byte WS2812FX::getMode(void) {
   return _mode_index;
 }
 
-uint8_t WS2812FX::getSpeed(void) {
+byte WS2812FX::getSpeed(void) {
   return _speed;
 }
 
-uint8_t WS2812FX::getBrightness(void) {
+byte WS2812FX::getBrightness(void) {
   return _brightness;
 }
 
-uint8_t WS2812FX::getModeCount(void) {
+byte WS2812FX::getModeCount(void) {
   return MODE_COUNT;
 }
 
@@ -198,7 +198,7 @@ void WS2812FX::strip_off_respectLock() {
  * The colours are a transition r -> g -> b -> back to r
  * Inspired by the Adafruit examples.
  */
-uint32_t WS2812FX::color_wheel(uint8_t pos) {
+uint32_t WS2812FX::color_wheel(byte pos) {
   pos = 255 - pos;
   if(pos < 85) {
     return ((uint32_t)(255 - pos * 3) << 16) | ((uint32_t)(0) << 8) | (pos * 3);
@@ -215,11 +215,11 @@ uint32_t WS2812FX::color_wheel(uint8_t pos) {
 /*
  * Returns a new, random wheel index with a minimum distance of 42 from pos.
  */
-uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
-  uint8_t r = 0;
-  uint8_t x = 0;
-  uint8_t y = 0;
-  uint8_t d = 0;
+byte WS2812FX::get_random_wheel_index(byte pos) {
+  byte r = 0;
+  byte x = 0;
+  byte y = 0;
+  byte d = 0;
 
   while(d < 42) {
     r = random(256);
@@ -360,13 +360,13 @@ void WS2812FX::mode_multi_dynamic(void) {
 void WS2812FX::mode_breath(void) {
   //                                      0    1    2   3   4   5   6    7   8   9  10  11   12   13   14   15   16    // step
   uint16_t breath_delay_steps[] =     {   7,   9,  13, 15, 16, 17, 18, 930, 19, 18, 15, 13,   9,   7,   4,   5,  10 }; // magic numbers for breathing LED
-  uint8_t breath_brightness_steps[] = { 150, 125, 100, 75, 50, 25, 16,  15, 16, 25, 50, 75, 100, 125, 150, 220, 255 }; // even more magic numbers!
+  byte breath_brightness_steps[] = { 150, 125, 100, 75, 50, 25, 16,  15, 16, 25, 50, 75, 100, 125, 150, 220, 255 }; // even more magic numbers!
 
   if(_counter_mode_call == 0) {
     _mode_color = breath_brightness_steps[0] + 1;
   }
 
-  uint8_t breath_brightness = _mode_color; // we use _mode_color to store the brightness
+  byte breath_brightness = _mode_color; // we use _mode_color to store the brightness
 
   if(_counter_mode_step < 8) {
     breath_brightness--;
@@ -376,7 +376,7 @@ void WS2812FX::mode_breath(void) {
 
   // update index of current delay when target brightness is reached, start over after the last step
   if(breath_brightness == breath_brightness_steps[_counter_mode_step]) {
-    _counter_mode_step = (_counter_mode_step + 1) % (sizeof(breath_brightness_steps)/sizeof(uint8_t));
+    _counter_mode_step = (_counter_mode_step + 1) % (sizeof(breath_brightness_steps)/sizeof(byte));
   }
   
   for(uint16_t i=0; i < _led_count; i++) {
@@ -400,10 +400,10 @@ void WS2812FX::mode_fade(void) {
   int y = _counter_mode_step - 127;
   y = 256 - (abs(y) * 2);
   double z = (double)y/256;
-  uint8_t w = ((_color >> 24) & 0xFF), ws = ((_color_sec >> 24) & 0xFF);
-  uint8_t r = ((_color >> 16) & 0xFF), rs = ((_color_sec >> 16) & 0xFF);
-  uint8_t g = ((_color >> 8) & 0xFF), gs = ((_color_sec >> 8) & 0xFF);
-  uint8_t b = (_color & 0xFF), bs = (_color_sec & 0xFF);
+  byte w = ((_color >> 24) & 0xFF), ws = ((_color_sec >> 24) & 0xFF);
+  byte r = ((_color >> 16) & 0xFF), rs = ((_color_sec >> 16) & 0xFF);
+  byte g = ((_color >> 8) & 0xFF), gs = ((_color_sec >> 8) & 0xFF);
+  byte b = (_color & 0xFF), bs = (_color_sec & 0xFF);
   w = w+((ws - w)*z);
   r = r+((rs - r)*z);
   g = g+((gs - g)*z);
@@ -506,7 +506,7 @@ void WS2812FX::mode_rainbow_cycle(void) {
  * Inspired by the Adafruit examples.
  */
 void WS2812FX::mode_theater_chase(void) {
-  uint8_t j = _counter_mode_call % 6;
+  byte j = _counter_mode_call % 6;
   if(j % 2 == 0) {
     for(uint16_t i=0; i < _led_count; i=i+3) {
       if (!_locked[i+(j/2)])
@@ -529,7 +529,7 @@ void WS2812FX::mode_theater_chase(void) {
  * Inspired by the Adafruit examples.
  */
 void WS2812FX::mode_theater_chase_rainbow(void) {
-  uint8_t j = _counter_mode_call % 6;
+  byte j = _counter_mode_call % 6;
   if(j % 2 == 0) {
     for(uint16_t i=0; i < _led_count; i=i+3) {
       if (!_locked[i+(j/2)])
@@ -552,10 +552,10 @@ void WS2812FX::mode_theater_chase_rainbow(void) {
  * Running lights effect with smooth sine transition.
  */
 void WS2812FX::mode_running_lights(void) {
-  uint8_t w = ((_color >> 24) & 0xFF);
-  uint8_t r = ((_color >> 16) & 0xFF);
-  uint8_t g = ((_color >> 8) & 0xFF);
-  uint8_t b = (_color & 0xFF);
+  byte w = ((_color >> 24) & 0xFF);
+  byte r = ((_color >> 16) & 0xFF);
+  byte g = ((_color >> 8) & 0xFF);
+  byte b = (_color & 0xFF);
 
   for(uint16_t i=0; i < _led_count; i++) {
     int s = (sin(i+_counter_mode_call) * 127) + 128;
@@ -900,8 +900,8 @@ void WS2812FX::mode_chase_rainbow(void) {
  * _color_sec flashes running on _color.
  */
 void WS2812FX::mode_chase_flash(void) {
-  const static uint8_t flash_count = 4;
-  uint8_t flash_step = _counter_mode_call % ((flash_count * 2) + 1);
+  const static byte flash_count = 4;
+  byte flash_step = _counter_mode_call % ((flash_count * 2) + 1);
 
   for(uint16_t i=0; i < _led_count; i++) {
     if (!_locked[i])
@@ -933,8 +933,8 @@ void WS2812FX::mode_chase_flash(void) {
  * _color_sec flashes running, followed by random color.
  */
 void WS2812FX::mode_chase_flash_random(void) {
-  const static uint8_t flash_count = 4;
-  uint8_t flash_step = _counter_mode_call % ((flash_count * 2) + 1);
+  const static byte flash_count = 4;
+  byte flash_step = _counter_mode_call % ((flash_count * 2) + 1);
 
   for(uint16_t i=0; i < _counter_mode_step; i++) {
     if (!_locked[i])
@@ -1606,13 +1606,13 @@ void WS2812FX::mode_cc_core()
     for (int i = 0; i < _cc_num1; i++)
     {
       int num = 0;
-      num = ((k + i + _counter_cc_step) % _cc_i2) +_cc_i1;
+      num = ((k + i + _counter_ccStep) % _cc_i2) +_cc_i1;
       if (_cc_fs) setPixelColor(num, _color);
       if (_cc_fe) setPixelColor(_cc_i2 - num, _color);
     }
   }
   show();
-  _counter_cc_step = (_counter_cc_step + _cc_step) % (_cc_i2 - _cc_i1);
+  _counter_ccStep = (_counter_ccStep + _ccStep) % (_cc_i2 - _cc_i1);
   _mode_delay = 10 + ((250 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
 }
 
@@ -1831,7 +1831,7 @@ void WS2812FX::setCronixieBacklight(bool b)
   _cronixieBacklightEnabled = b;
 }
 
-void WS2812FX::setCronixieDigits(uint8_t d[])
+void WS2812FX::setCronixieDigits(byte d[])
 {
   for (int i = 0; i<6; i++)
   {
@@ -1839,7 +1839,7 @@ void WS2812FX::setCronixieDigits(uint8_t d[])
   }
 }
 
-double WS2812FX::getPowerEstimate(uint8_t leds, uint32_t c, uint8_t b)
+double WS2812FX::getPowerEstimate(byte leds, uint32_t c, byte b)
 {
   double _mARequired = 100; //ESP power
   double _mul = (double)b/255;
@@ -1859,7 +1859,7 @@ double WS2812FX::getPowerEstimate(uint8_t leds, uint32_t c, uint8_t b)
 //It is NOT guaranteed to stay within the safeAmps margin.
 //Stay safe with high amperage and have a reasonable safety margin!
 //I am NOT to be held liable for burned down garages!
-double WS2812FX::getSafePowerMultiplier(double safeMilliAmps, uint8_t leds, uint32_t c, uint8_t b)
+double WS2812FX::getSafePowerMultiplier(double safeMilliAmps, byte leds, uint32_t c, byte b)
 {
   double _mARequired = getPowerEstimate(leds,c,b);
   if (_mARequired > safeMilliAmps)
@@ -1869,72 +1869,72 @@ double WS2812FX::getSafePowerMultiplier(double safeMilliAmps, uint8_t leds, uint
   return 1.0;
 }
 
-void WS2812FX::setCCIndex1(uint8_t i1)
+void WS2812FX::setCCIndex1(byte i1)
 {
   if (i1 < _led_count-1) _cc_i1 = i1;
   if (_cc_i2 <= i1) _cc_i2 = i1+1;
-  _counter_cc_step = 0;
+  _counter_ccStep = 0;
 }
 
-void WS2812FX::setCCIndex2(uint8_t i2)
+void WS2812FX::setCCIndex2(byte i2)
 {
   if (i2 > _cc_i1) _cc_i2 = i2;
   if (_cc_i2 >= _led_count) _cc_i2 = _led_count-1;
-  _counter_cc_step = 0;
+  _counter_ccStep = 0;
 }
 
-void WS2812FX::setCCStart(uint8_t is)
+void WS2812FX::setCCStart(byte is)
 {
   _cc_is = (is < _cc_i1 || is > _cc_i2) ? _cc_i1 : is;
-  _counter_cc_step = 0;
+  _counter_ccStep = 0;
 }
 
-void WS2812FX::setCCNum1(uint8_t np)
+void WS2812FX::setCCNum1(byte np)
 {
   _cc_num1 = np;
-  _counter_cc_step = 0;
+  _counter_ccStep = 0;
 }
 
-void WS2812FX::setCCNum2(uint8_t ns)
+void WS2812FX::setCCNum2(byte ns)
 {
   _cc_num2 = ns;
-  _counter_cc_step = 0;
+  _counter_ccStep = 0;
 }
 
-void WS2812FX::setCCStep(uint8_t stp)
+void WS2812FX::setCCStep(byte stp)
 {
-  _cc_step = stp;
-  _counter_cc_step = 0;
+  _ccStep = stp;
+  _counter_ccStep = 0;
 }
 
 void WS2812FX::setCCFS(bool fs)
 {
   _cc_fs = fs;
   _cc_fe = (fs) ? _cc_fe : true;
-  _counter_cc_step = 0;
+  _counter_ccStep = 0;
 }
 
 void WS2812FX::setCCFE(bool fe)
 {
   _cc_fe = fe;
   _cc_fs = (fe) ? _cc_fs : true;
-  _counter_cc_step = 0;
+  _counter_ccStep = 0;
 }
 
-void WS2812FX::setCustomChase(uint8_t i1, uint8_t i2, uint8_t is, uint8_t np, uint8_t ns, uint8_t stp, bool fs, bool fe)
+void WS2812FX::setCustomChase(byte i1, byte i2, byte is, byte np, byte ns, byte stp, bool fs, bool fe)
 {
   setCCIndex1(i1);
   setCCIndex2(i2);
   setCCStart(is);
   _cc_num1 = np;
   _cc_num2 = ns;
-  _cc_step = stp;
+  _ccStep = stp;
   setCCFS(fs);
   setCCFE(fe);
 }
 
 //Added for quick NeoPixelBus compatibility with Adafruit syntax
-void WS2812FX::setPixelColorRaw(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
+void WS2812FX::setPixelColorRaw(uint16_t i, byte r, byte g, byte b, byte w)
 {
   #ifdef RGBW
     NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor(r,g,b,w));
@@ -1943,7 +1943,7 @@ void WS2812FX::setPixelColorRaw(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uin
     #endif
 }
 
-void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w)
+void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   if (_reverseMode) i = _led_count - 1 -i;
   if (!_cronixieMode)
@@ -1955,13 +1955,13 @@ void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_
     #endif
   } else {
     if(i>6)return;
-    uint8_t o = 10*i;
+    byte o = 10*i;
     if (_cronixieBacklightEnabled && _cronixieDigits[i] <11)
     {
-      uint8_t rCorr = (int)(((double)((_color_sec>>16) & 0xFF))*_cronixieSecMultiplier);
-      uint8_t gCorr = (int)(((double)((_color_sec>>8) & 0xFF))*_cronixieSecMultiplier);
-      uint8_t bCorr = (int)(((double)((_color_sec) & 0xFF))*_cronixieSecMultiplier);
-      uint8_t wCorr = (int)(((double)((_color_sec>>24) & 0xFF))*_cronixieSecMultiplier);
+      byte rCorr = (int)(((double)((_color_sec>>16) & 0xFF))*_cronixieSecMultiplier);
+      byte gCorr = (int)(((double)((_color_sec>>8) & 0xFF))*_cronixieSecMultiplier);
+      byte bCorr = (int)(((double)((_color_sec) & 0xFF))*_cronixieSecMultiplier);
+      byte wCorr = (int)(((double)((_color_sec>>24) & 0xFF))*_cronixieSecMultiplier);
       for (int j=o; j< o+19; j++)
       {
         setPixelColorRaw(j,rCorr,gCorr,bCorr,wCorr);
@@ -1990,7 +1990,7 @@ void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_
   }
 }
 
-void WS2812FX::setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b)
+void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b)
 {
   setPixelColor(i,r,g,b,0);
 }
@@ -2005,7 +2005,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   if (_cronixieMode)
   {
     if(i>6)return 0;
-    uint8_t o = 10*i;
+    byte o = 10*i;
     switch(_cronixieDigits[i])
     {
       case 0: i=o+5; break;
@@ -2030,7 +2030,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   #endif
 }
 
-void WS2812FX::setBrightness(uint8_t b)
+void WS2812FX::setBrightness(byte b)
 {
   _brightness = constrain(b, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
   NeoPixelBrightnessBus::SetBrightness(_brightness);
@@ -2065,13 +2065,13 @@ void WS2812FX::begin()
 
 //For some reason min and max are not declared here
 
-uint8_t WS2812FX::minval (uint8_t v, uint8_t w)
+byte WS2812FX::minval (byte v, byte w)
 {
   if (w > v) return v;
   return w;
 }
 
-uint8_t WS2812FX::maxval (uint8_t v, uint8_t w)
+byte WS2812FX::maxval (byte v, byte w)
 {
   if (w > v) return w;
   return v;

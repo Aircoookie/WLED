@@ -1,7 +1,7 @@
 /*
  * Color conversion methods
  */
-void colorCTtoRGB(uint16_t mired, uint8_t* rgb) //white spectrum to rgb
+void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
 {
   //this is only an approximation using WS2812B with gamma correction enabled
   if (mired > 475)
@@ -31,11 +31,11 @@ void colorCTtoRGB(uint16_t mired, uint8_t* rgb) //white spectrum to rgb
   }
 }
 
-void colorHStoRGB(uint16_t hue, uint8_t sat, uint8_t* rgb) //hue, sat to rgb
+void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
 {
   float h = ((float)hue)/65535.0;
   float s = ((float)sat)/255.0;
-  uint8_t i = floor(h*6);
+  byte i = floor(h*6);
   float f = h * 6-i;
   float p = 255 * (1-s);
   float q = 255 * (1-f*s);
@@ -50,7 +50,7 @@ void colorHStoRGB(uint16_t hue, uint8_t sat, uint8_t* rgb) //hue, sat to rgb
   }
 }
 
-void colorXYtoRGB(float x, float y, uint8_t* rgb) //coordinates to rgb (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
+void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
 {
   float z = 1.0f - x - y;
   float X = (1.0f / y) * x;
@@ -106,7 +106,7 @@ void colorXYtoRGB(float x, float y, uint8_t* rgb) //coordinates to rgb (https://
   rgb[2] = 255.0*b;
 }
 
-void colorRGBtoXY(uint8_t* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
+void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
 {
   float X = rgb[0] * 0.664511f + rgb[1] * 0.154324f + rgb[2] * 0.162028f;
   float Y = rgb[0] * 0.283881f + rgb[1] * 0.668433f + rgb[2] * 0.047685f;
@@ -129,7 +129,7 @@ float maxf (float v, float w)
   return v;
 }
 
-void colorRGBtoRGBW(uint8_t* rgb, uint8_t* wht) //rgb to rgbw, untested and currently unused
+void colorRGBtoRGBW(byte* rgb, byte* wht) //rgb to rgbw, untested and currently unused
 {
   *wht = (float)minf(rgb[0],minf(rgb[1],rgb[2]))*0.95;
   rgb[0]-=wht;

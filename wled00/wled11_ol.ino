@@ -16,12 +16,12 @@ void initCronixie()
   }
 }
 
-void _nixieDisplay(int num[], uint16_t dur[], uint16_t pausedur[], uint8_t cnt)
+void _nixieDisplay(int num[], uint16_t dur[], uint16_t pausedur[], byte cnt)
 {
   strip.setRange(overlayMin, overlayMax, 0);
   if (num[nixieClockI] >= 0 && !nixiePause)
   {
-    strip.setIndividual(num[nixieClockI],((uint32_t)white << 24)| ((uint32_t)col_t[0] << 16) | ((uint32_t)col_t[1] << 8) | col_t[2]);
+    strip.setIndividual(num[nixieClockI],((uint32_t)white << 24)| ((uint32_t)colT[0] << 16) | ((uint32_t)colT[1] << 8) | colT[2]);
     strip.unlock(num[nixieClockI]);
   }
   if (!nixiePause)
@@ -138,7 +138,7 @@ void handleOverlays()
 void _overlaySolid()
 {
   strip.unlockAll();
-  uint32_t cls = (useGammaCorrectionRGB)? gamma8[white_sec*16777216] + gamma8[col_sec[0]]*65536 + gamma8[col_sec[1]]*256 + gamma8[col_sec[2]]:white_sec*16777216 + col_sec[0]*65536 + col_sec[1]*256 + col_sec[2];
+  uint32_t cls = (useGammaCorrectionRGB)? gamma8[whiteSec*16777216] + gamma8[colSec[0]]*65536 + gamma8[colSec[1]]*256 + gamma8[colSec[2]]:whiteSec*16777216 + colSec[0]*65536 + colSec[1]*256 + colSec[2];
   strip.setRange(overlayMin,overlayMax,cls);
   overlayRefreshMs = 1902;
 }
@@ -309,14 +309,14 @@ void _overlayAnalogCountdown()
     int overlaySize = overlayMax - overlayMin +1;
     double perc = (pval-(double)diff)/pval;
     if (perc > 1.0) perc = 1.0;
-    uint8_t pixelCnt = perc*overlaySize;
+    byte pixelCnt = perc*overlaySize;
     if (analogClock12pixel + pixelCnt > overlayMax)
     {
-      strip.setRange(analogClock12pixel, overlayMax, ((uint32_t)white_sec << 24)| ((uint32_t)col_sec[0] << 16) | ((uint32_t)col_sec[1] << 8) | col_sec[2]);
-      strip.setRange(overlayMin, overlayMin +pixelCnt -(1+ overlayMax -analogClock12pixel), ((uint32_t)white_sec << 24)| ((uint32_t)col_sec[0] << 16) | ((uint32_t)col_sec[1] << 8) | col_sec[2]);
+      strip.setRange(analogClock12pixel, overlayMax, ((uint32_t)whiteSec << 24)| ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
+      strip.setRange(overlayMin, overlayMin +pixelCnt -(1+ overlayMax -analogClock12pixel), ((uint32_t)whiteSec << 24)| ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
     } else
     {
-      strip.setRange(analogClock12pixel, analogClock12pixel + pixelCnt, ((uint32_t)white_sec << 24)| ((uint32_t)col_sec[0] << 16) | ((uint32_t)col_sec[1] << 8) | col_sec[2]);
+      strip.setRange(analogClock12pixel, analogClock12pixel + pixelCnt, ((uint32_t)whiteSec << 24)| ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
     }
   }
   overlayRefreshMs = 998;

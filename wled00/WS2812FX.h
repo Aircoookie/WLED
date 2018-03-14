@@ -208,49 +208,49 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _cc_i2 = n-1;
       _cc_num1 = 5;
       _cc_num2 = 5;
-      _cc_step = 1;
+      _ccStep = 1;
       _counter_mode_call = 0;
       _counter_mode_step = 0;
-      _counter_cc_step = 0;
+      _counter_ccStep = 0;
       _fastStandard = false;
       _reverseMode = false;
-      _locked = new boolean[n];
-      _cronixieDigits = new uint8_t[6];
+      _locked = new bool[n];
+      _cronixieDigits = new byte[6];
     }
 
     void
       show(void),
-      setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b),
+      setPixelColor(uint16_t i, byte r, byte g, byte b),
       init(void),
       service(void),
       start(void),
       stop(void),
-      setMode(uint8_t m),
-      setCustomChase(uint8_t i1, uint8_t i2, uint8_t is, uint8_t np, uint8_t ns, uint8_t stp, bool fs, bool fe),
-      setCCIndex1(uint8_t i1),
-      setCCIndex2(uint8_t i2),
-      setCCStart(uint8_t is),
-      setCCNum1(uint8_t np),
-      setCCNum2(uint8_t ns),
-      setCCStep(uint8_t stp),
+      setMode(byte m),
+      setCustomChase(byte i1, byte i2, byte is, byte np, byte ns, byte stp, bool fs, bool fe),
+      setCCIndex1(byte i1),
+      setCCIndex2(byte i2),
+      setCCStart(byte is),
+      setCCNum1(byte np),
+      setCCNum2(byte ns),
+      setCCStep(byte stp),
       setCCFS(bool fs),
       setCCFE(bool fe),
-      setSpeed(uint8_t s),
-      setIntensity(uint8_t in),
-      increaseSpeed(uint8_t s),
-      decreaseSpeed(uint8_t s),
-      setColor(uint8_t r, uint8_t g, uint8_t b),
-      setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w),
+      setSpeed(byte s),
+      setIntensity(byte in),
+      increaseSpeed(byte s),
+      decreaseSpeed(byte s),
+      setColor(byte r, byte g, byte b),
+      setColor(byte r, byte g, byte b, byte w),
       setColor(uint32_t c),
-      setSecondaryColor(uint8_t r, uint8_t g, uint8_t b),
-      setSecondaryColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w),
+      setSecondaryColor(byte r, byte g, byte b),
+      setSecondaryColor(byte r, byte g, byte b, byte w),
       setSecondaryColor(uint32_t c),
-      setBrightness(uint8_t b),
-      increaseBrightness(uint8_t s),
-      decreaseBrightness(uint8_t s),
+      setBrightness(byte b),
+      increaseBrightness(byte s),
+      decreaseBrightness(byte s),
       setReverseMode(bool b),
       driverModeCronixie(bool b),
-      setCronixieDigits(uint8_t* d),
+      setCronixieDigits(byte* d),
       setCronixieBacklight(bool b),
       setIndividual(int i),
       setIndividual(int i, uint32_t col),
@@ -267,12 +267,12 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       setLedCount(uint16_t i),
       setFade(int sp);
 
-    boolean 
+    bool 
       isRunning(void),
       isLocked(int i);
 
-    uint8_t
-      get_random_wheel_index(uint8_t),
+    byte
+      get_random_wheel_index(byte),
       getMode(void),
       getSpeed(void),
       getIntensity(void),
@@ -280,12 +280,12 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       getModeCount(void);
 
     uint32_t
-      color_wheel(uint8_t),
+      color_wheel(byte),
       getColor(void);
 
     double
-      getPowerEstimate(uint8_t leds, uint32_t c, uint8_t b),
-      getSafePowerMultiplier(double safeMilliAmps, uint8_t leds, uint32_t c, uint8_t b);
+      getPowerEstimate(byte leds, uint32_t c, byte b),
+      getSafePowerMultiplier(double safeMilliAmps, byte leds, uint32_t c, byte b);
 
   private:
 
@@ -293,8 +293,8 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       begin(void),
       clear(void),
       setPixelColor(uint16_t i, uint32_t c),
-      setPixelColor(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
-      setPixelColorRaw(uint16_t i, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
+      setPixelColor(uint16_t i, byte r, byte g, byte b, byte w),
+      setPixelColorRaw(uint16_t i, byte r, byte g, byte b, byte w),
       dofade(void),
       strip_off(void),
       strip_off_respectLock(void),
@@ -359,7 +359,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       mode_cc_blink(void),
       mode_cc_random(void);
 
-    boolean
+    bool
       _triggered,
       _fastStandard,
       _reverseMode,
@@ -369,12 +369,12 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _cc_fe,
       _running;
 
-    boolean*
+    bool*
       _locked;
 
-    uint8_t
-      minval(uint8_t v, uint8_t w),
-      maxval(uint8_t v, uint8_t w),
+    byte
+      minval(byte v, byte w),
+      maxval(byte v, byte w),
       _mode_index,
       _speed,
       _intensity,
@@ -383,10 +383,10 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _cc_is,
       _cc_num1,
       _cc_num2,
-      _cc_step,
+      _ccStep,
       _brightness;
 
-    uint8_t*
+    byte*
       _cronixieDigits;
 
     uint16_t
@@ -398,7 +398,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _color_sec,
       _counter_mode_call,
       _counter_mode_step,
-      _counter_cc_step,
+      _counter_ccStep,
       _mode_color,
       _mode_color_sec,
       _mode_delay;

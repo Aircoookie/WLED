@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.6.0_dev
+ * @version 0.6.0
  * @author Christian Schwinne
  */
 
@@ -33,12 +33,12 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1803142
-const String versionString = "0.6.0_dev";
+#define VERSION 1803143
+const String versionString = "0.6.0";
 
 //AP and OTA default passwords (change them!)
-String appass = "wled1234";
-String otapass = "wledota";
+String apPass = "wled1234";
+String otaPass = "wledota";
 
 //If you have an RGBW strip, also uncomment first line in WS2812FX.h!
 bool useRGBW = false;
@@ -51,73 +51,72 @@ bool useRGBW = false;
 
 //Hardware-settings (only changeble via code)
 #define LEDCOUNT 255 //maximum, exact count set-able via settings
-uint8_t buttonPin = 0; //needs pull-up
-uint8_t auxPin = 15; //use e.g. for external relay
-uint8_t auxDefaultState = 0; //0: input 1: high 2: low
-uint8_t auxTriggeredState = 0; //0: input 1: high 2: low
+byte buttonPin = 0; //needs pull-up
+byte auxPin = 15; //use e.g. for external relay
+byte auxDefaultState = 0; //0: input 1: high 2: low
+byte auxTriggeredState = 0; //0: input 1: high 2: low
 
 //Default CONFIG
 String serverDescription = versionString;
-uint8_t currentTheme = 0;
-String clientssid = "Your_Network_Here";
-String clientpass = "";
-String cmdns = "led";
-uint8_t ledcount = 10; //lowered to prevent accidental overcurrent
-String apssid = ""; //AP off by default (unless setup)
-uint8_t apchannel = 1;
-uint8_t aphide = 0;
-uint8_t apWaitTimeSecs = 32;
-boolean recoveryAPDisabled = false;
-IPAddress staticip(0, 0, 0, 0);
-IPAddress staticgateway(0, 0, 0, 0);
-IPAddress staticsubnet(255, 255, 255, 0);
-IPAddress staticdns(8, 8, 8, 8); //only for NTP
+byte currentTheme = 0;
+String clientSSID = "Your_Network";
+String clientPass = "";
+String cmDNS = "led";
+byte ledCount = 10; //lowered to prevent accidental overcurrent
+String apSSID = ""; //AP off by default (unless setup)
+byte apChannel = 1;
+byte apHide = 0;
+byte apWaitTimeSecs = 32;
+bool recoveryAPDisabled = false;
+IPAddress staticIP(0, 0, 0, 0);
+IPAddress staticGateway(0, 0, 0, 0);
+IPAddress staticSubnet(255, 255, 255, 0);
+IPAddress staticDNS(8, 8, 8, 8); //only for NTP
 bool useHSB = false, useHSBDefault = false;
 bool turnOnAtBoot = true;
-uint8_t bootPreset = 0;
-byte col_s[]{255, 159, 0};
-byte col_sec_s[]{0, 0, 0};
-byte white_s = 0;
-byte white_sec_s = 0;
-byte bri_s = 127;
-uint8_t nightlightTargetBri = 0, bri_nl_t;
+byte bootPreset = 0;
+byte colS[]{255, 159, 0};
+byte colSecS[]{0, 0, 0};
+byte whiteS = 0;
+byte whiteSecS = 0;
+byte briS = 127;
+byte nightlightTargetBri = 0;
 bool fadeTransition = true;
 bool sweepTransition = false, sweepDirection = true;
 uint16_t transitionDelay = 1200;
 bool reverseMode = false;
 bool otaLock = false, wifiLock = false;
 bool aOtaEnabled = true;
-bool onlyAP = false;
 bool buttonEnabled = true;
 bool notifyDirect = true, notifyButton = true, notifyDirectDefault = true, alexaNotify = false, macroNotify = false, notifyTwice = false;
 bool receiveNotifications = true, receiveNotificationBrightness = true, receiveNotificationColor = true, receiveNotificationEffects = true;
-uint8_t briMultiplier = 100;
-uint8_t nightlightDelayMins = 60;
+byte briMultiplier = 100;
+byte nightlightDelayMins = 60;
 bool nightlightFade = true;
 uint16_t udpPort = 21324;
-uint8_t effectDefault = 0;
-uint8_t effectSpeedDefault = 75;
-uint8_t effectIntensityDefault = 128;
+byte effectDefault = 0;
+byte effectSpeedDefault = 75;
+byte effectIntensityDefault = 128;
 //NTP stuff
-boolean ntpEnabled = false;
+bool ntpEnabled = false;
 IPAddress ntpServerIP;
 const char* ntpServerName = "0.wled.pool.ntp.org";
 //custom chase
-uint8_t cc_numPrimary = 2;
-uint8_t cc_numSecondary = 4;
-uint8_t cc_index1 = 0;
-uint8_t cc_index2 = ledcount -1;
-bool cc_fromStart = true, cc_fromEnd = false;
-uint8_t cc_step = 1;
-uint8_t cc_start = 0;
+byte ccNumPrimary = 2;
+byte ccNumSecondary = 4;
+byte ccIndex1 = 0;
+byte ccIndex2 = ledCount -1;
+bool ccFromStart = true, ccFromEnd = false;
+byte ccStep = 1;
+byte ccStart = 0;
 
 //alexa
-boolean alexaEnabled = true;
+bool alexaEnabled = true;
 String alexaInvocationName = "Light";
 
-uint8_t macroBoot = 0, macroNl = 0;
-uint8_t macroAlexaOn = 0, macroAlexaOff = 0;
-uint8_t macroButton = 0, macroCountdown = 0, macroLongPress = 0;
+byte macroBoot = 0, macroNl = 0;
+byte macroAlexaOn = 0, macroAlexaOff = 0;
+byte macroButton = 0, macroCountdown = 0, macroLongPress = 0;
 
 unsigned long countdownTime = 1514764800L;
 
@@ -129,7 +128,7 @@ bool huePollingEnabled = false, hueAttempt = false;
 uint16_t huePollIntervalMs = 2500;
 uint32_t huePollIntervalMsTemp = 2500;
 String hueApiKey = "api";
-uint8_t huePollLightId = 1;
+byte huePollLightId = 1;
 IPAddress hueIP = (0,0,0,0);
 bool notifyHue = true;
 bool hueApplyOnOff = true, hueApplyBri = true, hueApplyColor = true;
@@ -137,70 +136,71 @@ String hueError = "Inactive";
 uint16_t hueFailCount = 0;
 float hueXLast=0, hueYLast=0;
 uint16_t hueHueLast=0, hueCtLast=0;
-uint8_t hueSatLast=0, hueBriLast=0;
+byte hueSatLast=0, hueBriLast=0;
 
 //Internal vars
 byte col[]{0, 0, 0};
-byte col_old[]{0, 0, 0};
-byte col_t[]{0, 0, 0};
-byte col_it[]{0, 0, 0};
-byte col_sec[]{0, 0, 0};
-byte col_sec_it[]{0, 0, 0};
-byte white, white_old, white_t, white_it;
-byte white_sec, white_sec_it;
-uint8_t lastRandomIndex = 0;
+byte colOld[]{0, 0, 0};
+byte colT[]{0, 0, 0};
+byte colIT[]{0, 0, 0};
+byte colSec[]{0, 0, 0};
+byte colSecIT[]{0, 0, 0};
+byte white, whiteOld, whiteT, whiteIT;
+byte whiteSec, whiteSecIT;
+byte lastRandomIndex = 0;
 unsigned long transitionStartTime;
 unsigned long nightlightStartTime;
-float tper_last = 0;
+float tperLast = 0;
 byte bri = 0;
-byte bri_old = 0;
-byte bri_t = 0;
-byte bri_it = 0;
-byte bri_last = 127;
-boolean transitionActive = false;
-boolean buttonPressedBefore = false;
-long buttonPressedTime = 0;
-long notificationSentTime = 0;
-uint8_t notificationSentCallMode = 0;
+byte briOld = 0;
+byte briT = 0;
+byte briIT = 0;
+byte briLast = 127;
+bool transitionActive = false;
+bool buttonPressedBefore = false;
+unsigned long buttonPressedTime = 0;
+unsigned long notificationSentTime = 0;
+byte notificationSentCallMode = 0;
 bool notificationTwoRequired = false;
-boolean nightlightActive = false;
-boolean nightlightActive_old = false;
-int nightlightDelayMs;
-uint8_t effectCurrent = 0;
-uint8_t effectSpeed = 75;
-uint8_t effectIntensity = 128;
-boolean udpConnected = false;
-byte udpIn[1026];
+bool nightlightActive = false;
+bool nightlightActiveOld = false;
+uint32_t nightlightDelayMs;
+byte briNlT;
+byte effectCurrent = 0;
+byte effectSpeed = 75;
+byte effectIntensity = 128;
+bool onlyAP = false;
+bool udpConnected = false;
 String cssCol[]={"","","","","",""};
 String cssFont="Verdana";
 String cssColorString="";
 //NTP stuff
-boolean ntpConnected = false;
+bool ntpConnected = false;
 unsigned int ntpLocalPort = 2390;
-const int NTP_PACKET_SIZE = 48; 
+const uint16_t NTP_PACKET_SIZE = 48; 
 byte ntpPacketBuffer[NTP_PACKET_SIZE];
 unsigned long ntpLastSyncTime = 999000000L;
 unsigned long ntpPacketSentTime = 999000000L;
-uint8_t currentTimezone = 0;
+byte currentTimezone = 0;
 time_t local;
 int utcOffsetSecs = 0;
 
 //overlay stuff
-uint8_t overlayDefault = 0;
-uint8_t overlayCurrent = 0;
-uint8_t overlayMin = 0, overlayMax = ledcount-1;
-uint8_t analogClock12pixel = 0;
-boolean analogClockSecondsTrail = false;
-boolean analogClock5MinuteMarks = false;
-uint8_t overlaySpeed = 200;
-long overlayRefreshMs = 200;
+byte overlayDefault = 0;
+byte overlayCurrent = 0;
+byte overlayMin = 0, overlayMax = ledCount-1;
+byte analogClock12pixel = 0;
+bool analogClockSecondsTrail = false;
+bool analogClock5MinuteMarks = false;
+byte overlaySpeed = 200;
+unsigned long overlayRefreshMs = 200;
 unsigned long overlayRefreshedTime;
 int overlayArr[6];
 uint16_t overlayDur[6];
 uint16_t overlayPauseDur[6];
 int nixieClockI = -1;
-boolean nixiePause;
-uint8_t countdownYear=19, countdownMonth=1, countdownDay=1, countdownHour=0, countdownMin=0, countdownSec=0; //year is actual year -2000
+bool nixiePause;
+byte countdownYear=19, countdownMonth=1, countdownDay=1, countdownHour=0, countdownMin=0, countdownSec=0; //year is actual year -2000
 bool countdownOverTriggered = true;
 //cronixie
 String cronixieDisplay = "HHMMSS";
@@ -210,17 +210,16 @@ bool cronixieBacklight = true;
 bool countdownMode = false;
 bool cronixieInit = false;
 
-int arlsTimeoutMillis = 2500;
-boolean arlsTimeout = false;
-long arlsTimeoutTime;
-boolean arlsSign = true;
-uint8_t auxTime = 0;
+uint32_t arlsTimeoutMillis = 2500;
+bool arlsTimeout = false;
+unsigned long arlsTimeoutTime;
+byte auxTime = 0;
 unsigned long auxStartTime;
-boolean auxActive, auxActiveBefore;
-boolean showWelcomePage = false;
+bool auxActive, auxActiveBefore;
+bool showWelcomePage = false;
 
-boolean useGammaCorrectionBri = false;
-boolean useGammaCorrectionRGB = true;
+bool useGammaCorrectionBri = false;
+bool useGammaCorrectionRGB = true;
 int arlsOffset = -22; //10: -22 assuming arls52
 
 //alexa udp
@@ -267,7 +266,7 @@ int lastWifiState = 3;
 long wifiStateChangedTime = 0;
 #endif
 
-const uint8_t gamma8[] = {
+const byte gamma8[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -291,7 +290,7 @@ void serveMessage(int,String,String,int=255);
 
 void down()
 {
-  bri_t = 0;
+  briT = 0;
   setAllLeds();
   DEBUG_PRINTLN("MODULE TERMINATED");
   while (1) {delay(1000);}
@@ -299,7 +298,7 @@ void down()
 
 void reset()
 {
-  bri_t = 0;
+  briT = 0;
   setAllLeds();
   DEBUG_PRINTLN("MODULE RESET");
   ESP.restart();
@@ -325,7 +324,7 @@ void loop() {
       if (dnsActive) dnsServer.processNextRequest();
       handleHue();
       handleNightlight();
-      if (bri_t) strip.service(); //do not update strip if off, prevents flicker on ESP32
+      if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
     }
     
     //DEBUG

@@ -4,7 +4,7 @@
 
 #define WLEDPACKETSIZE 24
 
-void notify(uint8_t callMode, bool followUp=false)
+void notify(byte callMode, bool followUp=false)
 {
   if (!udpConnected) return;
   switch (callMode)
@@ -29,10 +29,10 @@ void notify(uint8_t callMode, bool followUp=false)
   udpOut[9] = effectSpeed;
   udpOut[10] = white;
   udpOut[11] = 3; //compatibilityVersionByte: 0: old 1: supports white 2: supports secondary color 3: supports FX intensity, 24 byte packet
-  udpOut[12] = col_sec[0];
-  udpOut[13] = col_sec[1];
-  udpOut[14] = col_sec[2];
-  udpOut[15] = white_sec;
+  udpOut[12] = colSec[0];
+  udpOut[13] = colSec[1];
+  udpOut[14] = colSec[2];
+  udpOut[15] = whiteSec;
   udpOut[16] = effectIntensity;
   
   IPAddress broadcastIp;
@@ -53,9 +53,11 @@ void handleNotifications()
   }
   
   if(udpConnected && receiveNotifications){
-    int packetSize = notifierUdp.parsePacket();
+    uint16_t packetSize = notifierUdp.parsePacket();
+    if (packetSize > 1026) return;
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP()) //don't process broadcasts we send ourselves
     {
+      byte udpIn[packetSize];
       notifierUdp.read(udpIn, packetSize);
       if (udpIn[0] == 0 && !arlsTimeout) //wled notifier, block if realtime packets active
       {
@@ -70,10 +72,10 @@ void handleNotifications()
           white = udpIn[10];
           if (udpIn[11] > 1 )
           {
-            col_sec[0] = udpIn[12];
-            col_sec[1] = udpIn[13];
-            col_sec[2] = udpIn[14];
-            white_sec = udpIn[15];
+            colSec[0] = udpIn[12];
+            colSec[1] = udpIn[13];
+            colSec[2] = udpIn[14];
+            whiteSec = udpIn[15];
           }
         }
         if (udpIn[8] != effectCurrent && receiveNotificationEffects)
@@ -105,7 +107,7 @@ void handleNotifications()
             arlsTimeout = false;
           } else {
             if (!arlsTimeout){
-              strip.setRange(0, ledcount-1, 0);
+              strip.setRange(0, ledCount-1, 0);
               strip.setMode(0);
             }
             arlsTimeout = true;
@@ -113,7 +115,7 @@ void handleNotifications()
           }
           for (int i = 2; i < packetSize -3; i += 4)
           {
-            if (udpIn[i] + arlsOffset < ledcount && udpIn[i] + arlsOffset >= 0)
+            if (udpIn[i] + arlsOffset < ledCount && udpIn[i] + arlsOffset >= 0)
             if (useGammaCorrectionRGB)
             {
               strip.setPixelColor(udpIn[i] + arlsOffset, gamma8[udpIn[i+1]], gamma8[udpIn[i+2]], gamma8[udpIn[i+3]]);
