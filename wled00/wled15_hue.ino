@@ -161,7 +161,6 @@ bool handleHueResponse(String hueResp, bool isAuth)
   //applying vals
   if (hueBri != hueBriLast)
   {
-    bri = hueBri;
     if (hueApplyOnOff)
     {
       if (hueBri==0) {bri = 0;}

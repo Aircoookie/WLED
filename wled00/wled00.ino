@@ -33,7 +33,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1803151
+#define VERSION 1803152
 const String versionString = "0.6.0";
 
 //AP and OTA default passwords (change them!)
