@@ -33,7 +33,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1803146
+#define VERSION 1803151
 const String versionString = "0.6.0";
 
 //AP and OTA default passwords (change them!)
@@ -141,6 +141,7 @@ byte colSecIT[]{0, 0, 0};
 byte white, whiteOld, whiteT, whiteIT;
 byte whiteSec, whiteSecIT;
 byte lastRandomIndex = 0;
+uint16_t transitionDelayTemp = transitionDelay;
 unsigned long transitionStartTime;
 unsigned long nightlightStartTime;
 float tperLast = 0;

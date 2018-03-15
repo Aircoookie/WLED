@@ -2,21 +2,15 @@
  * Receives client input
  */
 
-void _setRandomColor(bool _sec)
+void _setRandomColor(bool _sec,bool fromButton=false)
 {
   lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
-  uint32_t _color = strip.color_wheel(lastRandomIndex);
   if (_sec){
-    whiteSec = ((_color >> 24) & 0xFF);
-    colSec[0] = ((_color >> 16) & 0xFF);
-    colSec[1] = ((_color >> 8) & 0xFF);
-    colSec[2] = (_color & 0xFF);
+    colorHStoRGB(lastRandomIndex*256,255,colSec);
   } else {
-    white = ((_color >> 24) & 0xFF);
-    col[0] = ((_color >> 16) & 0xFF);
-    col[1] = ((_color >> 8) & 0xFF);
-    col[2] = (_color & 0xFF);
+    colorHStoRGB(lastRandomIndex*256,255,col);
   }
+  if (fromButton) colorUpdated(2);
 }
 
 void handleSettingsSet(byte subPage)

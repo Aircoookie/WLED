@@ -95,6 +95,10 @@ void handleNotifications()
           effectIntensity = udpIn[16];
           strip.setIntensity(effectIntensity);
         }
+        if (udpIn[11] > 3)
+        {
+          transitionDelayTemp = ((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00);
+        }
         nightlightActive = udpIn[6];
         if (!nightlightActive)
         {

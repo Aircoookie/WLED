@@ -76,6 +76,9 @@ void colorUpdated(int callMode)
   notify(callMode);
   if (fadeTransition || sweepTransition)
   {
+    //set correct delay if not using notification delay
+    if (callMode != 3) transitionDelayTemp = transitionDelay;
+    
     if (transitionActive)
     {
       colOld[0] = colT[0];
@@ -97,9 +100,9 @@ void colorUpdated(int callMode)
 
 void handleTransitions()
 {
-  if (transitionActive && transitionDelay > 0)
+  if (transitionActive && transitionDelayTemp > 0)
   {
-    float tper = (millis() - transitionStartTime)/(float)transitionDelay;
+    float tper = (millis() - transitionStartTime)/(float)transitionDelayTemp;
     if (tper >= 1.0)
     {
       transitionActive = false;

@@ -46,7 +46,7 @@
 				if (this.readyState == 4) {
 					if (this.status == 200) {
 						if (this.responseXML != null) {
-							d.Cf.SA.value = this.responseXML.getElementsByTagName('act')[0].childNodes[0].nodeValue;
+							d.Cf.SA.value = this.responseXML.getElementsByTagName('ac')[0].childNodes[0].nodeValue;
 							d.Cf.SR.value = this.responseXML.getElementsByTagName('cl')[0].childNodes[0].nodeValue;
 							d.Cf.SG.value = this.responseXML.getElementsByTagName('cl')[1].childNodes[0].nodeValue;
 							d.Cf.SB.value = this.responseXML.getElementsByTagName('cl')[2].childNodes[0].nodeValue;
@@ -69,7 +69,7 @@
 							nState = 0;
 							nState = (this.responseXML.getElementsByTagName('nr')[0].innerHTML)!=0?1:0;
 							nState += (this.responseXML.getElementsByTagName('ns')[0].innerHTML)!=0?2:0;
-							d.getElementsByClassName("desc")[0].innerHTML = this.responseXML.getElementsByTagName('desc')[0].innerHTML;
+							d.getElementsByClassName("desc")[0].innerHTML = this.responseXML.getElementsByTagName('ds')[0].innerHTML;
 							UV();
 						}
 					}

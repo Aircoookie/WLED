@@ -20,7 +20,7 @@ void handleButton()
         else if (millis() - buttonPressedTime > 700) 
         {
           if (macroLongPress != 0) {applyMacro(macroLongPress);}
-          else _setRandomColor(false);
+          else _setRandomColor(false,true);
         }
         else {
           if (macroButton == 0)
