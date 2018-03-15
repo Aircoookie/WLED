@@ -64,7 +64,7 @@ bool sendHuePoll(bool sAuth)
     st = false;
   }
   if (!st){ //error
-    if (hueFailCount<7) huePollIntervalMsTemp*=2; // only poll every 5min when unable to connect
+    if (huePollIntervalMsTemp<300000) huePollIntervalMsTemp*=2; // only poll every ~5min when unable to connect
     hueFailCount++;
     if (hueFailCount > 150) huePollingEnabled = false; //disable after many hours offline
   }

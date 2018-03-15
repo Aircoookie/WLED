@@ -4,27 +4,19 @@
 
 void wledInit()
 {
+  EEPROM.begin(EEPSIZE);
+  if (!EEPROM.read(397)) strip.init(); //quick init
+  
   Serial.begin(115200);
-
+  
   #ifdef USEFS
   SPIFFS.begin();
-  {
-    Dir dir = SPIFFS.openDir("/");
-    while (dir.next()) {    
-      String fileName = dir.fileName();
-      size_t fileSize = dir.fileSize();
-      #ifdef DEBUG
-      Serial.printf("FS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
-      #endif
-    }
-    DEBUG_PRINTF("\n");
-  }
   #endif
   
-  DEBUG_PRINTLN("Init EEPROM");
-  EEPROM.begin(EEPSIZE);
+  DEBUG_PRINTLN("Load EEPROM");
   loadSettingsFromEEPROM(true);
-  DEBUG_PRINT("CC: SSID: ");
+  if (!initLedsLast) initStrip();
+  DEBUG_PRINT("C-SSID: ");
   DEBUG_PRINT(clientSSID);
   buildCssColorString();
   userBeginPreConnection();
@@ -140,7 +132,7 @@ void wledInit()
   });
   
   server.on("/reset", HTTP_GET, [](){
-    serveMessage(200,"Rebooting now...","(takes ~20 seconds, wait for auto-redirect)",139);
+    serveMessage(200,"Rebooting now...","(takes ~20 seconds, wait for auto-redirect)",79);
     reset();
   });
   
@@ -301,10 +293,15 @@ void wledInit()
     ArduinoOTA.begin();
   }
 
+  if (initLedsLast) initStrip();
   userBegin();
+  if (macroBoot>0) applyMacro(macroBoot);
+}
 
-  // Initialize NeoPixel Strip
-  strip.init();
+void initStrip()
+{
+  // Initialize NeoPixel Strip and button
+  if (initLedsLast) strip.init();
   strip.setLedCount(ledCount);
   strip.setReverseMode(reverseMode);
   strip.setColor(0);
@@ -314,7 +311,6 @@ void wledInit()
   pinMode(buttonPin, INPUT_PULLUP);
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
-  if (macroBoot>0) applyMacro(macroBoot);
   colorUpdated(0);
   if(digitalRead(buttonPin) == LOW) buttonEnabled = false; //disable button if it is "pressed" unintentionally
 }
@@ -331,17 +327,32 @@ void initCon()
   int fail_count = 0;
   if (clientSSID.length() <1 || clientSSID.equals("Your_Network")) fail_count = apWaitTimeSecs*2;
   WiFi.begin(clientSSID.c_str(), clientPass.c_str());
-  while(WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    DEBUG_PRINTLN("C_NC");
-    fail_count++;
-    if (!recoveryAPDisabled && fail_count > apWaitTimeSecs*2)
+  unsigned long lastTry = 0;
+  bool con = false;
+  while(!con)
+  {
+    yield();
+    if (!initLedsLast)
     {
-      WiFi.disconnect();
-      DEBUG_PRINTLN("Can't connect. Opening AP...");
-      onlyAP = true;
-      initAP();
-      return;
+      handleTransitions();
+      handleButton();
+      handleOverlays();
+      if (briT) strip.service();
+    }
+    if (millis()-lastTry > 499) {
+      con = (WiFi.status() == WL_CONNECTED);
+      if (con) DEBUG_PRINTLN("rofl");
+      lastTry = millis();
+      DEBUG_PRINTLN("C_NC");
+      if (!recoveryAPDisabled && fail_count > apWaitTimeSecs*2)
+      {
+        WiFi.disconnect();
+        DEBUG_PRINTLN("Can't connect. Opening AP...");
+        onlyAP = true;
+        initAP();
+        return;
+      }
+      fail_count++;
     }
   }
 }

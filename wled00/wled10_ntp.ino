@@ -69,7 +69,8 @@ void handleNetworkTime()
 
 void sendNTPPacket()
 {
-  WiFi.hostByName(ntpServerName, ntpServerIP);
+  const char* ntpsrv = ntpServerName.c_str();
+  WiFi.hostByName(ntpsrv, ntpServerIP);
   DEBUG_PRINTLN("send NTP packet");
 
   memset(ntpPacketBuffer, 0, NTP_PACKET_SIZE);

@@ -2040,12 +2040,17 @@ void WS2812FX::setBrightness(byte b)
 void WS2812FX::show()
 {
   #ifdef ARDUINO_ARCH_ESP32
+  #ifdef WORKAROUND_ESP32_BITBANG
   delay(1);
   portDISABLE_INTERRUPTS(); //this is a workaround to prevent flickering (see https://github.com/adafruit/Adafruit_NeoPixel/issues/139)
+  #endif
+  #endif
   NeoPixelBrightnessBus::Show();
+
+  #ifdef ARDUINO_ARCH_ESP32
+  #ifdef WORKAROUND_ESP32_BITBANG
   portENABLE_INTERRUPTS();
-  #else
-  NeoPixelBrightnessBus::Show();
+  #endif
   #endif
 }
 

@@ -33,7 +33,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1803144
+#define VERSION 1803146
 const String versionString = "0.6.0";
 
 //AP and OTA default passwords (change them!)
@@ -74,6 +74,7 @@ IPAddress staticSubnet(255, 255, 255, 0);
 IPAddress staticDNS(8, 8, 8, 8); //only for NTP
 bool useHSB = false, useHSBDefault = false;
 bool turnOnAtBoot = true;
+bool initLedsLast = false;
 byte bootPreset = 0;
 byte colS[]{255, 159, 0};
 byte colSecS[]{0, 0, 0};
@@ -99,8 +100,7 @@ byte effectSpeedDefault = 75;
 byte effectIntensityDefault = 128;
 //NTP stuff
 bool ntpEnabled = false;
-IPAddress ntpServerIP;
-const char* ntpServerName = "0.wled.pool.ntp.org";
+String ntpServerName = "0.wled.pool.ntp.org";
 //custom chase
 byte ccNumPrimary = 2;
 byte ccNumSecondary = 4;
@@ -123,20 +123,13 @@ unsigned long countdownTime = 1514764800L;
 double transitionResolution = 0.011;
 
 //hue
-long hueLastRequestSent = 0;
 bool huePollingEnabled = false, hueAttempt = false;
 uint16_t huePollIntervalMs = 2500;
-uint32_t huePollIntervalMsTemp = 2500;
 String hueApiKey = "api";
 byte huePollLightId = 1;
 IPAddress hueIP = (0,0,0,0);
 bool notifyHue = true;
 bool hueApplyOnOff = true, hueApplyBri = true, hueApplyColor = true;
-String hueError = "Inactive";
-uint16_t hueFailCount = 0;
-float hueXLast=0, hueYLast=0;
-uint16_t hueHueLast=0, hueCtLast=0;
-byte hueSatLast=0, hueBriLast=0;
 
 //Internal vars
 byte col[]{0, 0, 0};
@@ -176,14 +169,18 @@ String cssFont="Verdana";
 String cssColorString="";
 //NTP stuff
 bool ntpConnected = false;
-unsigned int ntpLocalPort = 2390;
-const uint16_t NTP_PACKET_SIZE = 48; 
-byte ntpPacketBuffer[NTP_PACKET_SIZE];
-unsigned long ntpLastSyncTime = 999000000L;
-unsigned long ntpPacketSentTime = 999000000L;
 byte currentTimezone = 0;
 time_t local;
 int utcOffsetSecs = 0;
+
+//hue
+String hueError = "Inactive";
+uint16_t hueFailCount = 0;
+float hueXLast=0, hueYLast=0;
+uint16_t hueHueLast=0, hueCtLast=0;
+byte hueSatLast=0, hueBriLast=0;
+long hueLastRequestSent = 0;
+uint32_t huePollIntervalMsTemp = huePollIntervalMs;
 
 //overlay stuff
 byte overlayDefault = 0;
@@ -242,6 +239,12 @@ HTTPClient hueClient;
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp;
 WiFiUDP ntpUdp;
+IPAddress ntpServerIP;
+unsigned int ntpLocalPort = 2390;
+const uint16_t NTP_PACKET_SIZE = 48; 
+byte ntpPacketBuffer[NTP_PACKET_SIZE];
+unsigned long ntpLastSyncTime = 999000000L;
+unsigned long ntpPacketSentTime = 999000000L;
 
 WS2812FX strip = WS2812FX(LEDCOUNT);
 

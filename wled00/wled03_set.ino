@@ -231,6 +231,7 @@ void handleSettingsSet(byte subPage)
     }
     nightlightFade = server.hasArg("TW");
     reverseMode = server.hasArg("RV");
+    initLedsLast = server.hasArg("EI");
     strip.setReverseMode(reverseMode);
     if (server.hasArg("WO"))
     {

@@ -118,19 +118,19 @@ void _nixieNumber(int number, int dur)
 
 void handleOverlays()
 {
-  if (overlayCurrent == 0) return;
-
   if (millis() - overlayRefreshedTime > overlayRefreshMs)
   {
     initCronixie();
     updateLocalTime();
     switch (overlayCurrent)
     {
+      case 0: break;//no overlay
       case 1: _overlaySolid(); break;//solid secondary color
       case 2: _overlayAnalogClock(); break;//2 analog clock
       case 3: _overlayNixieClock(); break;//nixie 1-digit
       case 4: _overlayCronixie();//Diamex cronixie clock kit
     }
+    if (!countdownMode || overlayCurrent < 2) checkCountdown(); //countdown macro activation must work
     overlayRefreshedTime = millis();
   }
 }

@@ -6,13 +6,14 @@
 #define EEPSIZE 3072
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 5
+#define EEPVER 6
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
 //3 -> 0.4  1712121 and up
 //4 -> 0.5.0 and up
-//5 -> 0.6.0 and up
+//5 -> 0.5.1 and up
+//6 -> 0.6.0 and up
 
 //todo add settings
 void clearEEPROM()
@@ -145,6 +146,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(394, (abs(utcOffsetSecs) >> 0) & 0xFF);
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
+  EEPROM.write(397, initLedsLast);
 
   for (int k=0;k<6;k++){
     int in = 900+k*8;
@@ -380,6 +382,8 @@ void loadSettingsFromEEPROM(bool first)
     hueApplyBri = EEPROM.read(2104);
     hueApplyColor = EEPROM.read(2105);
     huePollLightId = EEPROM.read(2106);
+  }
+  if (lastEEPROMversion > 5) {
     overlayMin = EEPROM.read(2150);
     overlayMax = EEPROM.read(2151);
     analogClock12pixel = EEPROM.read(2152);
@@ -415,6 +419,7 @@ void loadSettingsFromEEPROM(bool first)
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = ((EEPROM.read(394) << 0) & 0xFF) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
+  initLedsLast = EEPROM.read(397);
 
   //favorite setting memory (25 slots/ each 20byte)
   //400 - 899 reserved
@@ -519,6 +524,7 @@ String loadMacro(byte index)
     if (EEPROM.read(i) == 0) break;
     m += char(EEPROM.read(i));
   }
+  if (m.charAt(0) < 65 || m.charAt(0) > 90) return ""; //do simple check if macro is valid (capital first letter)
   return m;
 }
 

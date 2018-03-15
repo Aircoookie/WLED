@@ -1,9 +1,15 @@
 //#define RGBW
 #define PIN 2 //strip pin. Only change for ESP32
+#define WORKAROUND_ESP32_BITBANG
+//see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
 
 //automatically uses the right driver method for each platform
 #ifdef ARDUINO_ARCH_ESP32
+#ifdef WORKAROUND_ESP32_BITBANG
 #define PIXELMETHOD NeoEsp32BitBangWs2813Method
+#else
+#define PIXELMETHOD NeoEsp32RmtWS2813_V3Method
+#endif
 #else
 #define PIXELMETHOD NeoEsp8266Uart800KbpsMethod
 #endif

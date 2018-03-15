@@ -117,6 +117,7 @@ Default Target brightness: <input name="TB" type="number" min="0" max="255" requ
 Fade down: <input type="checkbox" name="TW"><br>
 <h3>Advanced</h3>
 Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
+Init LEDs after WiFi: <input type="checkbox" name="EI"><br>
 WARLS offset: <input name="WO" type="number" min="-255" max="255" required><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>

@@ -28,12 +28,14 @@ void notify(byte callMode, bool followUp=false)
   udpOut[8] = effectCurrent;
   udpOut[9] = effectSpeed;
   udpOut[10] = white;
-  udpOut[11] = 3; //compatibilityVersionByte: 0: old 1: supports white 2: supports secondary color 3: supports FX intensity, 24 byte packet
+  udpOut[11] = 4; //compatibilityVersionByte: 0: old 1: supports white 2: supports secondary color 3: supports FX intensity, 24 byte packet 4: supports transitionDelay
   udpOut[12] = colSec[0];
   udpOut[13] = colSec[1];
   udpOut[14] = colSec[2];
   udpOut[15] = whiteSec;
   udpOut[16] = effectIntensity;
+  udpOut[17] = (transitionDelay >> 0) & 0xFF;
+  udpOut[18] = (transitionDelay >> 8) & 0xFF;
   
   IPAddress broadcastIp;
   broadcastIp = ~WiFi.subnetMask() | WiFi.gatewayIP();

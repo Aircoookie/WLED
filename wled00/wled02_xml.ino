@@ -166,6 +166,7 @@ String getSettings(byte subPage)
     resp += ds + "TL" + v + nightlightDelayMins +";";
     resp += ds + "TW" + c + nightlightFade +";";
     resp += ds + "RV" + c + reverseMode +";";
+    resp += ds + "EI" + c + initLedsLast +";";
     resp += ds + "WO" + v + arlsOffset +";";
   }
 
