@@ -79,6 +79,7 @@ void WS2812FX::setMode(byte m) {
   _mode_last_call_time = 0;
   _mode_index = constrain(m, 0, MODE_COUNT-1);
   _mode_color = _color;
+  _mode_var1 = 0;
   setBrightness(_brightness);
   strip_off_respectLock();
 }
@@ -131,7 +132,6 @@ void WS2812FX::setColor(uint32_t c) {
 
 void WS2812FX::setSecondaryColor(uint32_t c) {
   _color_sec = c;
-  _mode_color_sec = _color;
   if (_cronixieMode) _cronixieSecMultiplier = getSafePowerMultiplier(900, 100, c, _brightness);
   setBrightness(_brightness);
 }
@@ -625,7 +625,7 @@ void WS2812FX::mode_twinkle_fade(void) {
     setPixelColor(i, px_r, px_g, px_b, px_w);
   }
 
-  if(random(3) == 0) {
+  if(random(256) < _intensity) {
     int ran = random(_led_count);
     if (!_locked[ran])
     setPixelColor(ran, _mode_color);
@@ -673,7 +673,7 @@ void WS2812FX::mode_flash_sparkle(void) {
     setPixelColor(i, _color);
   }
 
-  if(random(10) == 7) {
+  if(random(256) <= _intensity) {
     int ran = random(_led_count);
     if (!_locked[ran])
     setPixelColor(ran , _color_sec);
@@ -696,7 +696,7 @@ void WS2812FX::mode_hyper_sparkle(void) {
     setPixelColor(i, _color);
   }
 
-  if(random(10) < 4) {
+  if(random(256) <= _intensity) {
     for(uint16_t i=0; i < maxval(1, _led_count/3); i++) {
       int ran = random(_led_count);
       if (!_locked[ran])
@@ -802,9 +802,64 @@ void WS2812FX::mode_blink_rainbow(void) {
 
 
 /*
- * _color running on _color_sec.
+ * Android loading circle
  */
-void WS2812FX::mode_chase_white(void) {
+void WS2812FX::mode_android(void) {
+  if (_counter_mode_call == 0) _mode_color = 0; //we use modecolor as bool
+  for(uint16_t i=0; i < _led_count; i++) {
+    if (!_locked[i])
+    setPixelColor(i, _color_sec);
+  }
+
+  uint16_t a = _counter_mode_step;
+  if (_mode_var1 > ((float)_intensity/255.0)*(float)_led_count)
+  {
+    _mode_color = 1;
+  } else
+  {
+    if (_mode_var1 < 2) _mode_color = 0;
+  }
+  
+  if (_mode_color == 0)
+  {
+    if (_counter_mode_call %3 == 1) {a++;}
+    else {_mode_var1++;}
+  } else
+  {
+    a++;
+    if (_counter_mode_call %3 != 1) _mode_var1--;
+  }
+  
+  if (a >= _led_count) a = 0;
+
+  if (a +_mode_var1  <= _led_count)
+  {
+    for(int i = a; i < a+_mode_var1; i++) {
+      if (!_locked[i])
+      setPixelColor(i, _color);
+    }
+  } else
+  {
+    for(int i = a; i < _led_count; i++) {
+      if (!_locked[i])
+      setPixelColor(i, _color);
+    }
+    for(int i = 0; i < _mode_var1 - (_led_count - a); i++) {
+      if (!_locked[i])
+      setPixelColor(i, _color);
+    }
+  }
+  _counter_mode_step = a;
+  
+  show();
+  _mode_delay = 3 + ((8 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
+}
+
+
+/*
+ * _color_sec running on _color.
+ */
+void WS2812FX::mode_chase_color(void) {
   for(uint16_t i=0; i < _led_count; i++) {
     if (!_locked[i])
     setPixelColor(i, _color_sec);
@@ -816,28 +871,6 @@ void WS2812FX::mode_chase_white(void) {
   setPixelColor(n, _color);
   if (!_locked[m])
   setPixelColor(m, _color);
-  show();
-
-  _counter_mode_step = (_counter_mode_step + 1) % _led_count;
-  _mode_delay = 10 + ((30 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
-}
-
-
-/*
- * _color_sec running on _color.
- */
-void WS2812FX::mode_chase_color(void) {
-  for(uint16_t i=0; i < _led_count; i++) {
-    if (!_locked[i])
-    setPixelColor(i, _color);
-  }
-
-  uint16_t n = _counter_mode_step;
-  uint16_t m = (_counter_mode_step + 1) % _led_count;
-  if (!_locked[n])
-  setPixelColor(n, _color_sec);
-  if (!_locked[m])
-  setPixelColor(m, _color_sec);
   show();
 
   _counter_mode_step = (_counter_mode_step + 1) % _led_count;
@@ -1315,27 +1348,17 @@ void WS2812FX::mode_merry_christmas(void) {
   _mode_delay = 50 + ((75 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
 }
 
+
 /*
  * Random flickering.
  */
-void WS2812FX::mode_fire_flicker(void) {
-   mode_fire_flicker_int(3);
-}
-
-/*
- * Random flickering, less intesity.
- */
-void WS2812FX::mode_fire_flicker_soft(void) {
-   mode_fire_flicker_int(6);
-}
-
-void WS2812FX::mode_fire_flicker_int(int rev_intensity)
+void WS2812FX::mode_fire_flicker(void)
 {
     byte p_w = (_color & 0xFF000000) >> 24;
     byte p_r = (_color & 0x00FF0000) >> 16;
     byte p_g = (_color & 0x0000FF00) >>  8;
     byte p_b = (_color & 0x000000FF) >>  0;
-    byte flicker_val = maxval(p_r,maxval(p_g, maxval(p_b, p_w)))/rev_intensity;
+    byte flicker_val = maxval(p_r,maxval(p_g, maxval(p_b, p_w)))/(((256-_intensity)/16)+1);
     for(uint16_t i=0; i < _led_count; i++)
     {
       int flicker = random(0,flicker_val);
@@ -1351,30 +1374,90 @@ void WS2812FX::mode_fire_flicker_int(int rev_intensity)
       setPixelColor(i,r1,g1,b1,w1);
     }
     show();
-    _mode_delay = 10 + ((500 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
+    _mode_delay = 10 + ((400 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
 }
 
-void WS2812FX::mode_fade_down(void)
-{
-   for(uint16_t i=0; i < _led_count; i++) {
-      uint32_t px_rgb = getPixelColor(i);
+/*
+ * Gradient run
+ */
+void WS2812FX::mode_gradient(void) {
+   byte p_w = (_color & 0xFF000000) >> 24;
+   byte p_r = (_color & 0x00FF0000) >> 16;
+   byte p_g = (_color & 0x0000FF00) >>  8;
+   byte p_b = (_color & 0x000000FF) >>  0;
+   byte p_w2 = (_color_sec & 0xFF000000) >> 24;
+   byte p_r2 = (_color_sec & 0x00FF0000) >> 16;
+   byte p_g2 = (_color_sec & 0x0000FF00) >>  8;
+   byte p_b2 = (_color_sec & 0x000000FF) >>  0;
+   byte nw,nr,ng,nb;
+   float per,val; //0.0 = sec 1.0 = pri
+   float brd = _intensity/2; if (brd <1.0) brd = 1.0;
+   int pp = _counter_mode_step;
+   int p1 = pp-_led_count;
+   int p2 = pp+_led_count;
 
-      byte px_w = (px_rgb & 0xFF000000) >> 24;
-      byte px_r = (px_rgb & 0x00FF0000) >> 16;
-      byte px_g = (px_rgb & 0x0000FF00) >>  8;
-      byte px_b = (px_rgb & 0x000000FF) >>  0;
-  
-      // fade out (divide by 2)
-      px_w = px_w >> 1;
-      px_r = px_r >> 1;
-      px_g = px_g >> 1;
-      px_b = px_b >> 1;
-      if (!_locked[i])
-      setPixelColor(i, px_r, px_g, px_b, px_w);
-    } 
-    show();
+   for(uint16_t i=0; i < _led_count; i++)
+   {
+     if (!_locked[i])
+     {
+       val = minval(abs(pp-i),minval(abs(p1-i),abs(p2-i)));
+       per = val/brd;
+       if (per >1.0) per = 1.0;
+       nw = p_w+((p_w2 - p_w)*per);
+       nr = p_r+((p_r2 - p_r)*per);
+       ng = p_g+((p_g2 - p_g)*per);
+       nb = p_b+((p_b2 - p_b)*per);
+       setPixelColor(i,nr,ng,nb,nw);
+     }
+   }
 
-    _mode_delay = 100 + ((100 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
+   show();
+   _counter_mode_step++;
+   if (_counter_mode_step >= _led_count) _counter_mode_step = 0;
+   if (_speed == 0) _counter_mode_step = _led_count >> 1;
+   _mode_delay = 7 + ((25 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
+}
+
+/*
+ * Gradient run with hard transition
+ */
+void WS2812FX::mode_loading(void) {
+   byte p_w = (_color & 0xFF000000) >> 24;
+   byte p_r = (_color & 0x00FF0000) >> 16;
+   byte p_g = (_color & 0x0000FF00) >>  8;
+   byte p_b = (_color & 0x000000FF) >>  0;
+   byte p_w2 = (_color_sec & 0xFF000000) >> 24;
+   byte p_r2 = (_color_sec & 0x00FF0000) >> 16;
+   byte p_g2 = (_color_sec & 0x0000FF00) >>  8;
+   byte p_b2 = (_color_sec & 0x000000FF) >>  0;
+   byte nw,nr,ng,nb;
+   float per,val; //0.0 = sec 1.0 = pri
+   float brd = _intensity; if (brd <1.0) brd = 1.0;
+   int pp = _counter_mode_step;
+   int p1 = pp+_led_count;
+
+   for(uint16_t i=0; i < _led_count; i++)
+   {
+     if (!_locked[i])
+     {
+       pp = _counter_mode_step;
+       if (i > pp) pp+=_led_count;
+       val = abs(pp-i);
+       per = val/brd;
+       if (per >1.0) per = 1.0;
+       nw = p_w+((p_w2 - p_w)*per);
+       nr = p_r+((p_r2 - p_r)*per);
+       ng = p_g+((p_g2 - p_g)*per);
+       nb = p_b+((p_b2 - p_b)*per);
+       setPixelColor(i,nr,ng,nb,nw);
+     }
+   }
+
+   show();
+   _counter_mode_step++;
+   if (_counter_mode_step >= _led_count) _counter_mode_step = 0;
+   if (_speed == 0) _counter_mode_step = _led_count -1;
+   _mode_delay = 7 + ((25 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
 }
 
 /*

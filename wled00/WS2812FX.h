@@ -99,7 +99,7 @@
 #define FX_MODE_STROBE_RAINBOW          24
 #define FX_MODE_MULTI_STROBE            25
 #define FX_MODE_BLINK_RAINBOW           26
-#define FX_MODE_CHASE_WHITE             27
+#define FX_MODE_ANDROID                 27
 #define FX_MODE_CHASE_COLOR             28
 #define FX_MODE_CHASE_RANDOM            29
 #define FX_MODE_CHASE_RAINBOW           30
@@ -118,8 +118,8 @@
 #define FX_MODE_FIREWORKS_RANDOM        43
 #define FX_MODE_MERRY_CHRISTMAS         44
 #define FX_MODE_FIRE_FLICKER            45
-#define FX_MODE_FIRE_FLICKER_SOFT       46
-#define FX_MODE_FADE_DOWN               47
+#define FX_MODE_GRADIENT                46
+#define FX_MODE_LOADING                 47
 #define FX_MODE_DUAL_COLOR_WIPE_IN_OUT  48
 #define FX_MODE_DUAL_COLOR_WIPE_IN_IN   49
 #define FX_MODE_DUAL_COLOR_WIPE_OUT_OUT 50
@@ -164,7 +164,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _mode[FX_MODE_STROBE_RAINBOW]        = &WS2812FX::mode_strobe_rainbow;
       _mode[FX_MODE_MULTI_STROBE]          = &WS2812FX::mode_multi_strobe;
       _mode[FX_MODE_BLINK_RAINBOW]         = &WS2812FX::mode_blink_rainbow;
-      _mode[FX_MODE_CHASE_WHITE]           = &WS2812FX::mode_chase_white;
+      _mode[FX_MODE_ANDROID]               = &WS2812FX::mode_android;
       _mode[FX_MODE_CHASE_COLOR]           = &WS2812FX::mode_chase_color;
       _mode[FX_MODE_CHASE_RANDOM]          = &WS2812FX::mode_chase_random;
       _mode[FX_MODE_CHASE_RAINBOW]         = &WS2812FX::mode_chase_rainbow;
@@ -183,8 +183,8 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _mode[FX_MODE_FIREWORKS_RANDOM]      = &WS2812FX::mode_fireworks_random;
       _mode[FX_MODE_MERRY_CHRISTMAS]       = &WS2812FX::mode_merry_christmas;
       _mode[FX_MODE_FIRE_FLICKER]          = &WS2812FX::mode_fire_flicker;
-      _mode[FX_MODE_FIRE_FLICKER_SOFT]     = &WS2812FX::mode_fire_flicker_soft;
-      _mode[FX_MODE_FADE_DOWN]             = &WS2812FX::mode_fade_down;
+      _mode[FX_MODE_GRADIENT]              = &WS2812FX::mode_gradient;
+      _mode[FX_MODE_LOADING]               = &WS2812FX::mode_loading;
       _mode[FX_MODE_DUAL_COLOR_WIPE_IN_OUT]  = &WS2812FX::mode_dual_color_wipe_in_out;
       _mode[FX_MODE_DUAL_COLOR_WIPE_IN_IN]   = &WS2812FX::mode_dual_color_wipe_in_in;
       _mode[FX_MODE_DUAL_COLOR_WIPE_OUT_OUT] = &WS2812FX::mode_dual_color_wipe_out_out;
@@ -206,7 +206,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _color = DEFAULT_COLOR;
       _mode_color = DEFAULT_COLOR;
       _color_sec = 0;
-      _mode_color_sec = 0;
+      _mode_var1 = 0;
       _cc_fs = true;
       _cc_fe = false;
       _cc_is = 0;
@@ -331,7 +331,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       mode_strobe_rainbow(void),
       mode_multi_strobe(void),
       mode_blink_rainbow(void),
-      mode_chase_white(void),
+      mode_android(void),
       mode_chase_color(void),
       mode_chase_random(void),
       mode_chase_rainbow(void),
@@ -350,9 +350,8 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       mode_fireworks_random(void),
       mode_merry_christmas(void),
       mode_fire_flicker(void),
-      mode_fire_flicker_soft(void),
-      mode_fire_flicker_int(int),
-      mode_fade_down(void),
+      mode_gradient(void),
+      mode_loading(void),
       mode_dual_color_wipe_in_out(void),
       mode_dual_color_wipe_in_in(void),
       mode_dual_color_wipe_out_out(void),
@@ -405,8 +404,8 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _counter_mode_call,
       _counter_mode_step,
       _counter_ccStep,
+      _mode_var1,
       _mode_color,
-      _mode_color_sec,
       _mode_delay;
 
     double

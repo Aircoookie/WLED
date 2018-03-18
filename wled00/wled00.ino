@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.6.0
+ * @version 0.6.1
  * @author Christian Schwinne
  */
 
@@ -33,8 +33,8 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1803152
-const String versionString = "0.6.0";
+#define VERSION 1803182
+const String versionString = "0.6.1";
 
 //AP and OTA default passwords (change them!)
 String apPass = "wled1234";
