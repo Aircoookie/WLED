@@ -155,7 +155,7 @@ Color Theme:
 <option value="9">Nixie</option>
 <option value="10">Terminal</option>
 <option value="11">C64</option>
-<option value="12">Placeholder</option>
+<option value="12">Easter</option>
 <option value="13">Placeholder</option>
 <option value="14">The End</option>
 <option value="15" id="co">Custom</option>
@@ -248,6 +248,7 @@ Time zone:
 <option value="10">JST(KST)</option>
 <option value="11">AEST/AEDT</option>
 <option value="12">NZST/NZDT</option>
+<option value="13">North Korea</option>
 </select><br>
 UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 Current local time is <span class="times">unknown</span>.
@@ -335,7 +336,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.1<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.2<br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
 <i>Uses libraries:</i><br>

@@ -21,27 +21,6 @@ void wledInit()
   buildCssColorString();
   userBeginPreConnection();
 
-  WiFi.disconnect(); //close old connections
-
-  if (staticIP[0] != 0)
-  {
-    WiFi.config(staticIP, staticGateway, staticSubnet, staticDNS);
-  } else
-  {
-    WiFi.config(0U, 0U, 0U);
-  }
-
-  if (apSSID.length()>0)
-  {
-    DEBUG_PRINT("USING AP");
-    DEBUG_PRINTLN(apSSID.length());
-    initAP();
-  } else
-  {
-    DEBUG_PRINTLN("NO AP");
-    WiFi.softAPdisconnect(true);
-  }
-
   initCon();
 
   DEBUG_PRINTLN("");
@@ -78,6 +57,26 @@ void wledInit()
   }
 
   //SERVER INIT
+  //seasonal greetings
+  server.on("/easter", HTTP_GET, [](){
+    if (currentTheme == 12)
+    {
+      effectCurrent = 6;
+      strip.setMode(effectCurrent);
+      effectSpeed = 200;
+      strip.setSpeed(effectSpeed);
+      uint8_t chance = random(255);
+      if (chance > 250) {serveMessage(200, "&#x1F423;&#x1F423;&#x1F423;&#x1F423;&#x1F423;", "You are super special! Here are 5 chicks for you!", 254);}
+      else if (chance > 230) {serveMessage(200, "&#x1F423;&#x1F423;&#x1F423;&#x1F423;", "You are genuinely special! Here are 4 chicks for you!", 254);}
+      else if (chance > 200) {serveMessage(200, "&#x1F423;&#x1F423;&#x1F423;", "You are very special! Here are 3 chicks for you!", 254);}
+      else if (chance > 140) {serveMessage(200, "&#x1F423;&#x1F423;", "You are quite special! Here are 2 chicks for you!", 254);}
+      else if (chance > 1) {serveMessage(200, "&#x1F423;", "Happy Easter to you! Here's your personal chick!", 254);}
+      else {serveMessage(200, "&#x1F430;My basket is empty!&#x1F430;", "So sorry you always have bad luck... Why not try again?", 254);}
+    } else
+    {
+      serveMessage(200, "&#x1F608;April Fools!&#x1F608;", "You could try to <a href=\"/settings/ui\">decorate</a> for Easter first!", 254);
+    }
+  });
   //settings page
   server.on("/settings", HTTP_GET, [](){
     serveSettings(0);
@@ -324,6 +323,26 @@ void initAP(){
 
 void initCon()
 {
+  WiFi.disconnect(); //close old connections
+
+  if (staticIP[0] != 0)
+  {
+    WiFi.config(staticIP, staticGateway, staticSubnet, staticDNS);
+  } else
+  {
+    WiFi.config(0U, 0U, 0U);
+  }
+
+  if (apSSID.length()>0)
+  {
+    DEBUG_PRINT("USING AP");
+    DEBUG_PRINTLN(apSSID.length());
+    initAP();
+  } else
+  {
+    DEBUG_PRINTLN("NO AP");
+    WiFi.softAPdisconnect(true);
+  }
   int fail_count = 0;
   if (clientSSID.length() <1 || clientSSID.equals("Your_Network")) fail_count = apWaitTimeSecs*2;
   WiFi.begin(clientSSID.c_str(), clientPass.c_str());
@@ -341,7 +360,6 @@ void initCon()
     }
     if (millis()-lastTry > 499) {
       con = (WiFi.status() == WL_CONNECTED);
-      if (con) DEBUG_PRINTLN("rofl");
       lastTry = millis();
       DEBUG_PRINTLN("C_NC");
       if (!recoveryAPDisabled && fail_count > apWaitTimeSecs*2)
@@ -374,6 +392,7 @@ void buildCssColorString()
     case 9: cs[0]="f70"; cs[1]="421"; cs[2]="221"; cs[3]="a50"; cs[4]="f70"; cs[5]="f70"; break;//nixie
     case 10: cs[0]="2d2"; cs[1]="010"; cs[2]="121"; cs[3]="060"; cs[4]="040"; cs[5]="3f3"; break; //terminal
     case 11: cs[0]="867ADE"; cs[1]="4033A3"; cs[2]="483AAA"; cs[3]="483AAA"; cs[4]=""; cs[5]="867ADE"; break; //c64
+    case 12: cs[0]="fbe8a6"; cs[1]="d2fdff"; cs[2]="b4dfe5"; cs[3]="f4976c"; cs[4]=""; cs[5]="303c6c"; break; //c64
     case 14: cs[0]="fc7"; cs[1]="49274a"; cs[2]="94618e"; cs[3]="f4decb"; cs[4]="0008"; cs[5]="f4decb"; break; //end
     case 15: for (int i=0;i<6;i++)cs[i]=cssCol[i];//custom
   }

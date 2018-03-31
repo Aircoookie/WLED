@@ -322,31 +322,35 @@ void WS2812FX::mode_random_color(void) {
 
 
 /*
- * Lights every LED in a random color. Changes one random LED after the other
- * to another random color.
+ * Lights some pastel colors
  */
-void WS2812FX::mode_single_dynamic(void) {
-  if(_counter_mode_call == 0) {
-    for(uint16_t i=0; i < _led_count; i++) {
-      if (!_locked[i])
-      setPixelColor(i, color_wheel(random(256)));
-    }
-  }
-  int ran = random(_led_count);
-  if (!_locked[ran])
-  setPixelColor(ran, color_wheel(random(256)));
-  show();
-  _mode_delay = 10 + ((5000 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
+void WS2812FX::mode_easter(void) {
+  //uint32_t cols[]{0x00F7ECC5,0x00F8D5C7,0x00F9E2E7,0x00BED9D4,0x00F7ECC5,0x00F8D5C7,0x00F9E2E7};
+  uint32_t cols[]{0x00FF8040,0x00E5D241,0x0077FF77,0x0077F0F0,0x00FF8040,0x00E5D241,0x0077FF77};
+  mode_colorful_internal(cols);
 }
 
 
 /*
  * Lights multiple random leds in a random color (higher intensity, more updates)
  */
-void WS2812FX::mode_multi_dynamic(void) {
-  for(uint16_t i=0; i < _led_count; i++) {
-    if (!_locked[i] && random(256)<=_intensity)
-    setPixelColor(i, color_wheel(random(256)));
+void WS2812FX::mode_dynamic(void) {
+  if(_counter_mode_call == 0) {
+    for(uint16_t i=0; i < _led_count; i++) {
+      if (!_locked[i])
+      setPixelColor(i, color_wheel(random(256)));
+    }
+  }
+  if (_intensity > 0) //multi dynamic
+  {
+    for(uint16_t i=0; i < _led_count; i++) {
+      if (!_locked[i] && random(256)<_intensity)
+      setPixelColor(i, color_wheel(random(256)));
+    }
+  } else { //single dynamic
+    int ran = random(_led_count);
+    if (!_locked[ran])
+    setPixelColor(ran, color_wheel(random(256)));
   }
   show();
   _mode_delay = 100 + ((5000 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
@@ -1024,14 +1028,20 @@ void WS2812FX::mode_chase_rainbow_white(void) {
   _mode_delay = 10 + ((30 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
 }
 
-
 /*
  * Red - Amber - Green - Blue lights running
  */
 void WS2812FX::mode_colorful(void) {
   uint32_t cols[]{0x00FF0000,0x00EEBB00,0x0000EE00,0x000077CC,0x00FF0000,0x00EEBB00,0x0000EE00};
+  mode_colorful_internal(cols);
+}
+
+/*
+ * Common function for 4-color-running (Colorful, easter)
+ */
+void WS2812FX::mode_colorful_internal(uint32_t cols[]) {
   int i = 0;
-  for (i; i < _led_count-3 ; i+=4)
+  for (i; i < _led_count ; i+=4)
   {
     if(!_locked[i])setPixelColor(i, cols[_counter_mode_step]);
     if(!_locked[i+1])setPixelColor(i+1, cols[_counter_mode_step+1]);
@@ -1057,7 +1067,7 @@ void WS2812FX::mode_colorful(void) {
   show();
   if (_speed > SPEED_MIN) _counter_mode_step++; //static if lowest speed
   if (_counter_mode_step >3) _counter_mode_step = 0;
-  _mode_delay = 100 + (25 * (uint32_t)(SPEED_MAX - _speed));
+  _mode_delay = 50 + (15 * (uint32_t)(SPEED_MAX - _speed));
 }
 
 

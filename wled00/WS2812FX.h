@@ -78,8 +78,8 @@
 #define FX_MODE_COLOR_WIPE               3
 #define FX_MODE_COLOR_WIPE_RANDOM        4
 #define FX_MODE_RANDOM_COLOR             5
-#define FX_MODE_SINGLE_DYNAMIC           6
-#define FX_MODE_MULTI_DYNAMIC            7
+#define FX_MODE_EASTER                   6
+#define FX_MODE_DYNAMIC                  7
 #define FX_MODE_RAINBOW                  8
 #define FX_MODE_RAINBOW_CYCLE            9
 #define FX_MODE_SCAN                    10
@@ -143,8 +143,8 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _mode[FX_MODE_COLOR_WIPE]            = &WS2812FX::mode_color_wipe;
       _mode[FX_MODE_COLOR_WIPE_RANDOM]     = &WS2812FX::mode_color_wipe_random;
       _mode[FX_MODE_RANDOM_COLOR]          = &WS2812FX::mode_random_color;
-      _mode[FX_MODE_SINGLE_DYNAMIC]        = &WS2812FX::mode_single_dynamic;
-      _mode[FX_MODE_MULTI_DYNAMIC]         = &WS2812FX::mode_multi_dynamic;
+      _mode[FX_MODE_EASTER]                = &WS2812FX::mode_easter;
+      _mode[FX_MODE_DYNAMIC]               = &WS2812FX::mode_dynamic;
       _mode[FX_MODE_RAINBOW]               = &WS2812FX::mode_rainbow;
       _mode[FX_MODE_RAINBOW_CYCLE]         = &WS2812FX::mode_rainbow_cycle;
       _mode[FX_MODE_SCAN]                  = &WS2812FX::mode_scan;
@@ -309,8 +309,8 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       mode_color_wipe(void),
       mode_color_wipe_random(void),
       mode_random_color(void),
-      mode_single_dynamic(void),
-      mode_multi_dynamic(void),
+      mode_easter(void),
+      mode_dynamic(void),
       mode_breath(void),
       mode_fade(void),
       mode_scan(void),
@@ -339,6 +339,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       mode_chase_flash_random(void),
       mode_chase_rainbow_white(void),
       mode_colorful(void),
+      mode_colorful_internal(uint32_t*),
       mode_traffic_light(void),
       mode_color_sweep_random(void),
       mode_running_color(void),
