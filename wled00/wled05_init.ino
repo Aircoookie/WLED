@@ -8,6 +8,7 @@ void wledInit()
   if (!EEPROM.read(397)) strip.init(); //quick init
   
   Serial.begin(115200);
+  Serial.setTimeout(50);
   
   #ifdef USEFS
   SPIFFS.begin();
@@ -16,7 +17,7 @@ void wledInit()
   DEBUG_PRINTLN("Load EEPROM");
   loadSettingsFromEEPROM(true);
   if (!initLedsLast) initStrip();
-  DEBUG_PRINT("C-SSID: ");
+  DEBUG_PRINT("CSSID: ");
   DEBUG_PRINT(clientSSID);
   buildCssColorString();
   userBeginPreConnection();
@@ -55,28 +56,8 @@ void wledInit()
     dnsServer.start(53, "*", WiFi.softAPIP());
     dnsActive = true;
   }
-
+  if (!initLedsLast) strip.service();
   //SERVER INIT
-  //seasonal greetings
-  server.on("/easter", HTTP_GET, [](){
-    if (currentTheme == 12)
-    {
-      effectCurrent = 6;
-      strip.setMode(effectCurrent);
-      effectSpeed = 200;
-      strip.setSpeed(effectSpeed);
-      uint8_t chance = random(255);
-      if (chance > 250) {serveMessage(200, "&#x1F423;&#x1F423;&#x1F423;&#x1F423;&#x1F423;", "You are super special! Here are 5 chicks for you!", 254);}
-      else if (chance > 230) {serveMessage(200, "&#x1F423;&#x1F423;&#x1F423;&#x1F423;", "You are genuinely special! Here are 4 chicks for you!", 254);}
-      else if (chance > 200) {serveMessage(200, "&#x1F423;&#x1F423;&#x1F423;", "You are very special! Here are 3 chicks for you!", 254);}
-      else if (chance > 140) {serveMessage(200, "&#x1F423;&#x1F423;", "You are quite special! Here are 2 chicks for you!", 254);}
-      else if (chance > 1) {serveMessage(200, "&#x1F423;", "Happy Easter to you! Here's your personal chick!", 254);}
-      else {serveMessage(200, "&#x1F430;My basket is empty!&#x1F430;", "So sorry you always have bad luck... Why not try again?", 254);}
-    } else
-    {
-      serveMessage(200, "&#x1F608;April Fools!&#x1F608;", "You could try to <a href=\"/settings/ui\">decorate</a> for Easter first!", 254);
-    }
-  });
   //settings page
   server.on("/settings", HTTP_GET, [](){
     serveSettings(0);
@@ -184,6 +165,10 @@ void wledInit()
   server.on("/freeheap", HTTP_GET, [](){
     server.send(200, "text/plain", (String)ESP.getFreeHeap());
     });
+
+  server.on("/pdebug", HTTP_GET, [](){
+    server.send(200, "text/plain", (String)presetCycleTime);
+    });
     
   server.on("/power", HTTP_GET, [](){
     String val = (String)(int)strip.getPowerEstimate(ledCount,strip.getColor(),strip.getBrightness());
@@ -196,38 +181,7 @@ void wledInit()
     });
     
   server.on("/build", HTTP_GET, [](){
-    String info = "hard-coded build info:\r\n\n";
-    #ifdef ARDUINO_ARCH_ESP32
-    info += "platform: esp32\r\n";
-    #else
-    info += "platform: esp8266\r\n";
-    #endif
-    info += "version: " + versionString + "\r\n";
-    info += "build: " + (String)VERSION + "\r\n";
-    info += "eepver: " + String(EEPVER) + "\r\n";
-    #ifdef RGBW
-    info += "rgbw: true\r\n";
-    #else
-    info += "rgbw: false\r\n";
-    #endif
-    info += "max-leds: " + (String)LEDCOUNT + "\r\n";
-    #ifdef USEFS
-    info += "spiffs: true\r\n";
-    #else
-    info += "spiffs: false\r\n";
-    #endif
-    #ifdef DEBUG
-    info += "debug: true\r\n";
-    #else
-    info += "debug: false\r\n";
-    #endif
-    info += "button-pin: gpio" + String(buttonPin) + "\r\n";
-    #ifdef ARDUINO_ARCH_ESP32
-    info += "strip-pin: gpio" + String(PIN) + "\r\n";
-    #else
-    info += "strip-pin: gpio2\r\n";
-    #endif
-    server.send(200, "text/plain", info);
+    server.send(200, "text/plain", getBuildInfo());
     });
   //if OTA is allowed
   if (!otaLock){
@@ -272,6 +226,7 @@ void wledInit()
       server.send(404, "text/plain", "Not Found");
     }
   });
+  if (!initLedsLast) strip.service();
   //init Alexa hue emulation
   if (alexaEnabled) alexaInit();
 
@@ -295,6 +250,7 @@ void wledInit()
   if (initLedsLast) initStrip();
   userBegin();
   if (macroBoot>0) applyMacro(macroBoot);
+  Serial.println("Ada");
 }
 
 void initStrip()
@@ -527,6 +483,42 @@ void serveSettings(byte subPage)
     }
 }
 
+String getBuildInfo()
+{
+  String info = "hard-coded build info:\r\n\n";
+  #ifdef ARDUINO_ARCH_ESP32
+  info += "platform: esp32\r\n";
+  #else
+  info += "platform: esp8266\r\n";
+  #endif
+  info += "version: " + versionString + "\r\n";
+  info += "build: " + (String)VERSION + "\r\n";
+  info += "eepver: " + String(EEPVER) + "\r\n";
+  #ifdef RGBW
+  info += "rgbw: true\r\n";
+  #else
+  info += "rgbw: false\r\n";
+  #endif
+  info += "max-leds: " + (String)LEDCOUNT + "\r\n";
+  #ifdef USEFS
+  info += "spiffs: true\r\n";
+  #else
+  info += "spiffs: false\r\n";
+  #endif
+  #ifdef DEBUG
+  info += "debug: true\r\n";
+  #else
+  info += "debug: false\r\n";
+  #endif
+  info += "button-pin: gpio" + String(buttonPin) + "\r\n";
+  #ifdef ARDUINO_ARCH_ESP32
+  info += "strip-pin: gpio" + String(PIN) + "\r\n";
+  #else
+  info += "strip-pin: gpio2\r\n";
+  #endif
+  info += "build-type: src\r\n";
+  return info;
+}
 
 
 

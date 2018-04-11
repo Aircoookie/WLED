@@ -110,7 +110,7 @@ Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
 Fade: <input type="checkbox" name="TF"><br>
 Sweep: <input type="checkbox" name="TS">  Invert direction: <input type="checkbox" name="TI"><br>
-Transition Delay: <input name="TD" maxlength="5" size="2"> ms
+Transition Time: <input name="TD" maxlength="5" size="2"> ms
 <h3>Timed light</h3>
 Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
 Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
@@ -336,7 +336,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.2<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.3<br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
 <i>Uses libraries:</i><br>

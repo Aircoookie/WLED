@@ -51,7 +51,7 @@ bool colorChanged()
 
 void colorUpdated(int callMode)
 {
-  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (NN)6: fx changed 7: hue
+  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (NN)6: fx changed 7: hue 8: preset cycle
   if (!colorChanged())
   {
     if (callMode == 6) notify(6);
@@ -78,6 +78,7 @@ void colorUpdated(int callMode)
   {
     //set correct delay if not using notification delay
     if (callMode != 3) transitionDelayTemp = transitionDelay;
+    if (transitionDelayTemp == 0) {setLedsStandard();strip.trigger();return;}
     
     if (transitionActive)
     {
@@ -112,7 +113,7 @@ void handleTransitions()
       strip.setFastUpdateMode(false);
       return;
     }
-    if (tper - tperLast < transitionResolution)
+    if (tper - tperLast < 0.004)
     {
       return;
     }
@@ -175,5 +176,15 @@ void handleNightlight()
   } else if (nightlightActiveOld) //early de-init
   {
     nightlightActiveOld = false;
+  }
+
+  //also handle preset cycle here
+  if (presetCyclingEnabled && (millis() - presetCycledTime > presetCycleTime))
+  {
+    applyPreset(presetCycCurr,presetCycleBri,presetCycleCol,presetCycleFx);
+    presetCycCurr++; if (presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
+    if (presetCycCurr > 25) presetCycCurr = 1;
+    colorUpdated(8);
+    presetCycledTime = millis();
   }
 }

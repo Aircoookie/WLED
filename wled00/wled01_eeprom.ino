@@ -85,8 +85,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(250, receiveNotificationBrightness);
   EEPROM.write(251, fadeTransition);
   EEPROM.write(252, reverseMode);
-  EEPROM.write(253, (transitionDelay >> 0) & 0xFF);
-  EEPROM.write(254, (transitionDelay >> 8) & 0xFF);
+  EEPROM.write(253, (transitionDelayDefault >> 0) & 0xFF);
+  EEPROM.write(254, (transitionDelayDefault >> 8) & 0xFF);
   EEPROM.write(255, briMultiplier);
   //255,250,231,230,226 notifier bytes
   for (int i = 256; i < 288; ++i)
@@ -286,7 +286,8 @@ void loadSettingsFromEEPROM(bool first)
   receiveNotificationBrightness = EEPROM.read(250);
   fadeTransition = EEPROM.read(251);
   reverseMode = EEPROM.read(252);
-  transitionDelay = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
+  transitionDelayDefault = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
+  transitionDelay = transitionDelayDefault;
   briMultiplier = EEPROM.read(255);
   otaPass = "";
   for (int i = 256; i < 288; ++i)
@@ -471,6 +472,7 @@ void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
   }
   if (loadFX)
   {
+    byte lastfx = effectCurrent;
     effectCurrent = EEPROM.read(i+10);
     effectSpeed = EEPROM.read(i+11);
     effectIntensity = EEPROM.read(i+16);
@@ -480,7 +482,7 @@ void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
     ccFromStart = (EEPROM.read(i+14)<2);
     ccStep = EEPROM.read(i+15);
     strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
-    strip.setMode(effectCurrent);
+    if (lastfx != effectCurrent) strip.setMode(effectCurrent);
     strip.setSpeed(effectSpeed);
     strip.setIntensity(effectIntensity);
   }

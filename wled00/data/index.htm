@@ -2,7 +2,7 @@
 <html>
 <head><meta charset="utf-8">
 	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico'/>
-	<title>WLED 0.6.2</title>
+	<title>WLED 0.6.3</title>
 	<script>
 		var d=document;
 		var w=window.getComputedStyle(d.querySelector("html"));
@@ -75,7 +75,7 @@
 					}
 				}
 			}
-			request.open("GET", "win/" +resp +nocache, true);
+			request.open("GET", "win" +resp +nocache, true);
 			request.send(null);
 			resp="";
 		}
@@ -214,8 +214,8 @@
 		function SwitchPS(x)
 		{
 			d.Cf.FF.value = parseInt(d.Cf.FF.value) +x;
-			if (d.Cf.FF.value < 0) d.Cf.FF.value = 0;
-			if (d.Cf.FF.value > 24) d.Cf.FF.value = 24;
+			if (d.Cf.FF.value < 1) d.Cf.FF.value = 1;
+			if (d.Cf.FF.value > 25) d.Cf.FF.value = 25;
 		}
 		function PSIO(sv)
 		{
@@ -334,6 +334,21 @@
 				case 5: resp+="&SR=0";
 			}
 			GIO();
+		}
+		function uCY()
+		{
+			resp+=(d.Cf.CY.checked)?"&CY=1":"&CY=0";
+			resp+="&P1=" + Cf.P1.value;
+			resp+="&P2=" + Cf.P2.value;
+			resp+="&PT=" + Cf.PT.value;
+			if(d.Cf.BC.checked){resp+="&PA";}
+			if(d.Cf.CC.checked){resp+="&PC";}
+			if(d.Cf.FC.checked){resp+="&PX";}
+			GIO();
+		}
+		function R()
+		{
+			resp+="&PL=0";GIO();
 		}
 	</script>
 	<style>
@@ -659,9 +674,10 @@
 				<svg id="psp" onclick="SwitchPS(-1)"><use xlink:href="#lnr-arrow-left-circle"></use></svg>
 				<svg id="psn" onclick="SwitchPS(1)"><use xlink:href="#lnr-arrow-right-circle"></use></svg>
 				<svg id="pss" onclick="PSIO(true)"><use xlink:href="#lnr-arrow-down-circle"></use></svg>
-				<br><input id="psI" name = "FF" type="number" value="0" min="0" max="25" step="1"><br><br>
-				Click checkmark to apply <input type="checkbox" checked="true" name="BC"> brightness, <input type="checkbox" checked="true" name="CC"> color and <input type="checkbox" checked="true" name="FC"> effects.<br>
-				Effect 0 is the configuration when the light is powered up.
+				<br><input id="psI" name = "FF" type="number" value="1" min="1" max="25" step="1"><br><br>
+				Click checkmark to apply <input type="checkbox" checked="true" name="BC"> brightness, <input type="checkbox" checked="true" name="CC"> color and <input type="checkbox" checked="true" name="FC"> effects.<br><br>
+				Cycle through presets <input id="cy1" name="P1" type="number" value="1" min="1" max="25" step="1"> to <input id="cy2" name="P2" type="number" value="5" min="1" max="25" step="1">, keep each for <input id="cyT" name="PT" type="number" value="1250" min="50" max="65501" step="1">ms: <input type="checkbox" name="CY" onclick="uCY()"><br><br>
+				<button type="button" onclick="R()">Apply boot config</button><br>
 			</div>
 			<div id="tlN" class="tools">
 				Timed Light<br><br>

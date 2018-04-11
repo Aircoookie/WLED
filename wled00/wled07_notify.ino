@@ -9,11 +9,13 @@ void notify(byte callMode, bool followUp=false)
   if (!udpConnected) return;
   switch (callMode)
   {
+    case 0: return;
     case 1: if (!notifyDirect) return; break;
     case 2: if (!notifyButton) return; break;
     case 4: if (!notifyDirect) return; break;
     case 6: if (!notifyDirect) return; break; //fx change
     case 7: if (!notifyHue) return; break;
+    case 8: if (!notifyDirect) return; break;
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];
@@ -54,14 +56,14 @@ void handleNotifications()
     notify(notificationSentCallMode,true);
   }
   
-  if(udpConnected && receiveNotifications){
+  if(udpConnected && (receiveNotifications || receiveDirect)){
     uint16_t packetSize = notifierUdp.parsePacket();
     if (packetSize > 1026) return;
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP()) //don't process broadcasts we send ourselves
     {
       byte udpIn[packetSize];
       notifierUdp.read(udpIn, packetSize);
-      if (udpIn[0] == 0 && !arlsTimeout) //wled notifier, block if realtime packets active
+      if (udpIn[0] == 0 && !arlsTimeout && receiveNotifications) //wled notifier, block if realtime packets active
       {
         if (receiveNotificationColor)
         {
@@ -105,7 +107,7 @@ void handleNotifications()
           if (receiveNotificationBrightness) bri = udpIn[2];
           colorUpdated(3);
         }
-      }  else if (udpIn[0] == 1) //warls
+      }  else if (udpIn[0] > 0 && udpIn[0] < 4) //1 warls //2 drgb //3 drgbw
       {
         if (packetSize > 1) {
           if (udpIn[1] == 0)
@@ -119,26 +121,56 @@ void handleNotifications()
             arlsTimeout = true;
             arlsTimeoutTime = millis() + 1000*udpIn[1];
           }
-          for (int i = 2; i < packetSize -3; i += 4)
+          if (udpIn[0] == 1) //warls
           {
-            if (udpIn[i] + arlsOffset < ledCount && udpIn[i] + arlsOffset >= 0)
-            if (useGammaCorrectionRGB)
+            for (int i = 2; i < packetSize -3; i += 4)
             {
-              strip.setPixelColor(udpIn[i] + arlsOffset, gamma8[udpIn[i+1]], gamma8[udpIn[i+2]], gamma8[udpIn[i+3]]);
-            } else {
-              strip.setPixelColor(udpIn[i] + arlsOffset, udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+              if (udpIn[i] + arlsOffset < ledCount && udpIn[i] + arlsOffset >= 0)
+              if (useGammaCorrectionRGB)
+              {
+                strip.setPixelColor(udpIn[i] + arlsOffset, gamma8[udpIn[i+1]], gamma8[udpIn[i+2]], gamma8[udpIn[i+3]]);
+              } else {
+                strip.setPixelColor(udpIn[i] + arlsOffset, udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+              }
+            }
+          } else if (udpIn[0] == 2 && receiveDirect) //drgb
+          {
+            int id = 0;
+            for (int i = 2; i < packetSize -2; i += 3)
+            {
+              if (useGammaCorrectionRGB)
+              {
+                strip.setPixelColor(id, gamma8[udpIn[i]], gamma8[udpIn[i+1]], gamma8[udpIn[i+2]]);
+              } else {
+                strip.setPixelColor(id, udpIn[i+0], udpIn[i+1], udpIn[i+2]);
+              }
+              id++; if (id >= ledCount) break;
+            }
+          } else if (udpIn[0] == 3 && receiveDirect) //drgbw
+          {
+            int id = 0;
+            for (int i = 2; i < packetSize -3; i += 4)
+            {
+              if (useGammaCorrectionRGB)
+              {
+                strip.setPixelColor(id, gamma8[udpIn[i]], gamma8[udpIn[i+1]], gamma8[udpIn[i+2]], gamma8[udpIn[i+3]]);
+              } else {
+                strip.setPixelColor(id, udpIn[i+0], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+              }
+              id++; if (id >= ledCount) break;
             }
           }
           strip.show();
         }
       }
     }
-    if (arlsTimeout && millis() > arlsTimeoutTime)
-    {
-      strip.unlockAll();
-      arlsTimeout = false;
-      strip.setMode(effectCurrent);
-    }
+  }
+  if (arlsTimeout && millis() > arlsTimeoutTime)
+  {
+    strip.unlockAll();
+    if (bri == 0) strip.setBrightness(0);
+    arlsTimeout = false;
+    strip.setMode(effectCurrent);
   }
 }
 

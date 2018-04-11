@@ -227,6 +227,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
     void
       show(void),
       setPixelColor(uint16_t i, byte r, byte g, byte b),
+      setPixelColor(uint16_t i, byte r, byte g, byte b, byte w),
       init(void),
       service(void),
       start(void),
@@ -299,7 +300,6 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       begin(void),
       clear(void),
       setPixelColor(uint16_t i, uint32_t c),
-      setPixelColor(uint16_t i, byte r, byte g, byte b, byte w),
       setPixelColorRaw(uint16_t i, byte r, byte g, byte b, byte w),
       dofade(void),
       strip_off(void),

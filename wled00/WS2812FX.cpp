@@ -66,6 +66,7 @@ void WS2812FX::start() {
   _counter_mode_step = 0;
   _mode_last_call_time = 0;
   _running = true;
+  show();
 }
 
 void WS2812FX::stop() {
@@ -85,11 +86,8 @@ void WS2812FX::setMode(byte m) {
 }
 
 void WS2812FX::setSpeed(byte s) {
-  _counter_mode_call = 0;
-  _counter_mode_step = 0;
   _mode_last_call_time = 0;
   _speed = constrain(s, SPEED_MIN, SPEED_MAX);
-  strip_off_respectLock();
 }
 
 void WS2812FX::increaseSpeed(byte s) {
@@ -2127,7 +2125,7 @@ void WS2812FX::setBrightness(byte b)
 {
   _brightness = constrain(b, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
   NeoPixelBrightnessBus::SetBrightness(_brightness);
-  show();
+  if (_mode_last_call_time + _mode_delay > millis()+50 || b == 0) show(); //only update right away if long time until next refresh
 }
 
 void WS2812FX::show()

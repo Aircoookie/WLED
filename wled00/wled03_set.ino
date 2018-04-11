@@ -651,7 +651,7 @@ bool handleSet(String req)
         bri = briT;
       } else {
         nightlightActive = true;
-        nightlightDelayMins = req.substring(pos + 3).toInt();
+        if (req.indexOf("&ND") <= 0) nightlightDelayMins = req.substring(pos + 3).toInt();
         nightlightStartTime = millis();
       }
    }
@@ -678,6 +678,10 @@ bool handleSet(String req)
       auxTime = req.substring(pos + 3).toInt();
       auxActive = true;
       if (auxTime == 0) auxActive = false;
+   }
+   pos = req.indexOf("TT=");
+   if (pos > 0) {
+      transitionDelay = req.substring(pos + 3).toInt();
    }
    //main toggle on/off
    pos = req.indexOf("&T=");
@@ -721,6 +725,47 @@ bool handleSet(String req)
    if (_cc_updated) strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
    
    //set presets
+   if (req.indexOf("CY=") > 0) //preset cycle
+   {
+      presetCyclingEnabled = true;
+      if (req.indexOf("CY=0") > 0)
+      {
+        presetCyclingEnabled = false;
+      }
+      bool all = true;
+      if (req.indexOf("&PA") > 0)
+      {
+        presetCycleBri = true;
+        all = false;
+      }
+      if (req.indexOf("&PC") > 0)
+      {
+        presetCycleCol = true;
+        all = false;
+      }
+      if (req.indexOf("&PX") > 0)
+      {
+        presetCycleFx = true;
+        all = false;
+      }
+      if (all)
+      {
+        presetCycleBri = true;
+        presetCycleCol = true;
+        presetCycleFx = true;
+      }
+   }
+   pos = req.indexOf("PT="); //sets cycle time in ms
+   if (pos > 0) {
+      int v = req.substring(pos + 3).toInt();
+      if (v > 49) presetCycleTime = v;
+   }
+   pos = req.indexOf("P1="); //sets first preset for cycle
+   if (pos > 0) presetCycleMin = req.substring(pos + 3).toInt();
+
+   pos = req.indexOf("P2="); //sets last preset for cycle
+   if (pos > 0) presetCycleMax = req.substring(pos + 3).toInt();
+   
    pos = req.indexOf("PS="); //saves current in preset
    if (pos > 0) {
       savePreset(req.substring(pos + 3).toInt());

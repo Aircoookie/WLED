@@ -109,7 +109,7 @@ bool checkNTPResponse()
     unsigned long secsSince1900 = highWord << 16 | lowWord;
  
     DEBUG_PRINT("Unix time = ");
-    unsigned long epoch = secsSince1900 - 2208988800UL; //subtract 70 years
+    unsigned long epoch = secsSince1900 - 2208988799UL; //subtract 70 years -1sec (on avg. more precision)
     setTime(epoch);
     DEBUG_PRINTLN(epoch);
     if (countdownTime - now() > 0) countdownOverTriggered = false;

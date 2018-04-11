@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.6.2
+ * @version 0.6.3
  * @author Christian Schwinne
  */
 
@@ -33,8 +33,8 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1804011
-const String versionString = "0.6.2";
+#define VERSION 1804111
+const String versionString = "0.6.3";
 
 //AP and OTA default passwords (change them!)
 String apPass = "wled1234";
@@ -84,7 +84,7 @@ byte briS = 127;
 byte nightlightTargetBri = 0;
 bool fadeTransition = true;
 bool sweepTransition = false, sweepDirection = true;
-uint16_t transitionDelay = 1200;
+uint16_t transitionDelay = 1200, transitionDelayDefault = transitionDelay;
 bool reverseMode = false;
 bool otaLock = false, wifiLock = false;
 bool aOtaEnabled = true;
@@ -119,8 +119,6 @@ byte macroAlexaOn = 0, macroAlexaOff = 0;
 byte macroButton = 0, macroCountdown = 0, macroLongPress = 0;
 
 unsigned long countdownTime = 1514764800L;
-
-double transitionResolution = 0.011;
 
 //hue
 bool huePollingEnabled = false, hueAttempt = false;
@@ -208,8 +206,15 @@ bool cronixieBacklight = true;
 bool countdownMode = false;
 bool cronixieInit = false;
 
+bool presetCyclingEnabled = false;
+byte presetCycleMin = 1, presetCycleMax = 5;
+uint16_t presetCycleTime = 1250;
+unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
+bool presetCycleBri, presetCycleCol, presetCycleFx;
+
 uint32_t arlsTimeoutMillis = 2500;
 bool arlsTimeout = false;
+bool receiveDirect = true;
 unsigned long arlsTimeoutTime;
 byte auxTime = 0;
 unsigned long auxStartTime;
@@ -314,6 +319,7 @@ void setup() {
 
 void loop() {
     server.handleClient();
+    handleSerial();
     handleNotifications();
     handleTransitions();
     userLoop();
@@ -323,7 +329,7 @@ void loop() {
     if (!otaLock && aOtaEnabled) ArduinoOTA.handle();
     handleAlexa();
     handleOverlays();
-    if (!arlsTimeout) //block stuff if WARLS is enabled
+    if (!arlsTimeout) //block stuff if WARLS/Adalight is enabled
     {
       if (dnsActive) dnsServer.processNextRequest();
       handleHue();
