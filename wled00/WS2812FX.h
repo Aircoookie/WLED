@@ -1,25 +1,4 @@
-//#define RGBW
-#define PIN 2 //strip pin. Only change for ESP32
-#define WORKAROUND_ESP32_BITBANG
-//see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
-
-//automatically uses the right driver method for each platform
-#ifdef ARDUINO_ARCH_ESP32
-#ifdef WORKAROUND_ESP32_BITBANG
-#define PIXELMETHOD NeoEsp32BitBangWs2813Method
-#else
-#define PIXELMETHOD NeoEsp32RmtWS2813_V3Method
-#endif
-#else
-#define PIXELMETHOD NeoEsp8266Uart800KbpsMethod
-#endif
-
-//selects correct feature for RGB/RGBW
-#ifdef RGBW
-#define PIXELFEATURE NeoGrbwFeature
-#else
-#define PIXELFEATURE NeoGrbFeature
-#endif
+//pixelmethod now in NpbWrapper.h
 
 /*
   WS2812FX.h - Library for WS2812 LED effects.
@@ -50,14 +29,14 @@
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-  Modified to work with WLED - differs from Github WS2812FX
+  Heavily modified to work with WLED - differs from Github WS2812FX
 */
 
 #ifndef WS2812FX_h
 #define WS2812FX_h
 
 #include "Arduino.h"
-#include <NeoPixelBrightnessBus.h>
+#include "NpbWrapper.h"
 
 #define DEFAULT_BRIGHTNESS 50
 #define DEFAULT_MODE 0
@@ -132,10 +111,10 @@
 #define FX_MODE_CC_RANDOM               57
 
 
-class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
+class WS2812FX {
   typedef void (WS2812FX::*mode_ptr)(void);
   public:
-    WS2812FX(uint16_t n) : NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD>(n,PIN) {
+    WS2812FX(){
 
       _mode[FX_MODE_STATIC]                = &WS2812FX::mode_static;
       _mode[FX_MODE_BLINK]                 = &WS2812FX::mode_blink;
@@ -200,7 +179,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _speed = DEFAULT_SPEED;
       _brightness = DEFAULT_BRIGHTNESS;
       _running = false;
-      _led_count = n;
+      _led_count = 255;
       _mode_last_call_time = 0;
       _mode_delay = 0;
       _color = DEFAULT_COLOR;
@@ -211,7 +190,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _cc_fe = false;
       _cc_is = 0;
       _cc_i1 = 0;
-      _cc_i2 = n-1;
+      _cc_i2 = 254;
       _cc_num1 = 5;
       _cc_num2 = 5;
       _ccStep = 1;
@@ -220,15 +199,16 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       _counter_ccStep = 0;
       _fastStandard = false;
       _reverseMode = false;
-      _locked = new bool[n];
+      _locked = NULL;
       _cronixieDigits = new byte[6];
+      bus = new NeoPixelWrapper();
     }
 
     void
       show(void),
       setPixelColor(uint16_t i, byte r, byte g, byte b),
       setPixelColor(uint16_t i, byte r, byte g, byte b, byte w),
-      init(void),
+      init(bool supportWhite, uint16_t countPixels, uint8_t pin),
       service(void),
       start(void),
       stop(void),
@@ -271,7 +251,6 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       unlockAll(void),
       setFastUpdateMode(bool b),
       trigger(void),
-      setLedCount(uint16_t i),
       setFade(int sp);
 
     bool 
@@ -295,9 +274,10 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
       getSafePowerMultiplier(double safeMilliAmps, byte leds, uint32_t c, byte b);
 
   private:
+    NeoPixelWrapper *bus;
 
     void
-      begin(void),
+      begin(bool supportWhite, uint16_t countPixels, uint8_t pin),
       clear(void),
       setPixelColor(uint16_t i, uint32_t c),
       setPixelColorRaw(uint16_t i, byte r, byte g, byte b, byte w),
@@ -367,6 +347,7 @@ class WS2812FX : public NeoPixelBrightnessBus<PIXELFEATURE, PIXELMETHOD> {
 
     bool
       _triggered,
+      _rgbwMode,
       _fastStandard,
       _reverseMode,
       _cronixieMode,

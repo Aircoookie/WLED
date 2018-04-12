@@ -115,8 +115,7 @@ void handleSettingsSet(byte subPage)
     if (server.hasArg("LC"))
     {
       int i = server.arg("LC").toInt();
-      if (i >= 0 && i <= LEDCOUNT) ledCount = i;
-      strip.setLedCount(ledCount);
+      if (i >= 0 && i <= 1200) ledCount = i;
     }
     if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
     {
@@ -383,7 +382,7 @@ void handleSettingsSet(byte subPage)
       aOtaEnabled = server.hasArg("AO");
     }
   }
-
+  strip.init(useRGBW,ledCount,PIN);
   saveSettingsToEEPROM();
 }
 

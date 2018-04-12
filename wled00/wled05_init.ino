@@ -5,7 +5,7 @@
 void wledInit()
 {
   EEPROM.begin(EEPSIZE);
-  if (!EEPROM.read(397)) strip.init(); //quick init
+  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),EEPROM.read(229),PIN); //quick init
   
   Serial.begin(115200);
   Serial.setTimeout(50);
@@ -256,8 +256,7 @@ void wledInit()
 void initStrip()
 {
   // Initialize NeoPixel Strip and button
-  if (initLedsLast) strip.init();
-  strip.setLedCount(ledCount);
+  if (initLedsLast) strip.init(useRGBW,ledCount,PIN);
   strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
@@ -494,12 +493,6 @@ String getBuildInfo()
   info += "version: " + versionString + "\r\n";
   info += "build: " + (String)VERSION + "\r\n";
   info += "eepver: " + String(EEPVER) + "\r\n";
-  #ifdef RGBW
-  info += "rgbw: true\r\n";
-  #else
-  info += "rgbw: false\r\n";
-  #endif
-  info += "max-leds: " + (String)LEDCOUNT + "\r\n";
   #ifdef USEFS
   info += "spiffs: true\r\n";
   #else

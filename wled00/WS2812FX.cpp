@@ -37,9 +37,9 @@
 
 #define CALL_MODE(n) (this->*_mode[n])();
 
-void WS2812FX::init() {
+void WS2812FX::init(bool supportWhite, uint16_t countPixels, uint8_t pin) {
   for (int i=0; i < _led_count; i++) _locked[i] = false;
-  begin();
+  begin(supportWhite,countPixels,pin);
   WS2812FX::setBrightness(_brightness);
   show();
 }
@@ -386,7 +386,7 @@ void WS2812FX::mode_breath(void) {
     setPixelColor(i, _color);           // set all LEDs to selected color
   }
   int b = map(breath_brightness, 0, 255, 0, _brightness);  // keep brightness below brightness set by user
-  NeoPixelBrightnessBus::SetBrightness(b);                     // set new brightness to leds
+  bus->SetBrightness(b);                     // set new brightness to leds
   show();
 
   _mode_color = breath_brightness;                         // we use _mode_color to store the brightness
@@ -1896,11 +1896,6 @@ void WS2812FX::unlockAll()
     _locked[x] = false;
 }
 
-void WS2812FX::setLedCount(uint16_t i)
-{
-  _led_count = i;
-}
-
 void WS2812FX::setFastUpdateMode(bool y)
 {
   _fastStandard = y;
@@ -1935,11 +1930,7 @@ double WS2812FX::getPowerEstimate(byte leds, uint32_t c, byte b)
   double _mARequired = 100; //ESP power
   double _mul = (double)b/255;
   double _sum = ((c & 0xFF000000) >> 24) + ((c & 0x00FF0000) >> 16) + ((c & 0x0000FF00) >>  8) + ((c & 0x000000FF) >>  0);
-  #ifdef RGBW
-  _sum /= 1024;
-  #else
-  _sum /= 768;
-  #endif
+  _sum /= (_rgbwMode)? 1024:768;
   double _mAPerLed = 50*(_mul*_sum);
   _mARequired += leds*_mAPerLed;
   return _mARequired;
@@ -2027,11 +2018,13 @@ void WS2812FX::setCustomChase(byte i1, byte i2, byte is, byte np, byte ns, byte 
 //Added for quick NeoPixelBus compatibility with Adafruit syntax
 void WS2812FX::setPixelColorRaw(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  #ifdef RGBW
-    NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor(r,g,b,w));
-    #else
-    NeoPixelBrightnessBus::SetPixelColor(i, RgbColor(r,g,b));
-    #endif
+  if (_rgbwMode)
+  {
+    bus->SetPixelColor(i, RgbwColor(r,g,b,w));
+  } else
+  {
+    bus->SetPixelColor(i, RgbColor(r,g,b));
+  }
 }
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
@@ -2039,11 +2032,13 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   if (_reverseMode) i = _led_count - 1 -i;
   if (!_cronixieMode)
   {
-    #ifdef RGBW
-    NeoPixelBrightnessBus::SetPixelColor(i, RgbwColor(r,g,b,w));
-    #else
-    NeoPixelBrightnessBus::SetPixelColor(i, RgbColor(r,g,b));
-    #endif
+    if (_rgbwMode)
+    {
+      bus->SetPixelColor(i, RgbwColor(r,g,b,w));
+    } else
+    {
+      bus->SetPixelColor(i, RgbColor(r,g,b));
+    }
   } else {
     if(i>6)return;
     byte o = 10*i;
@@ -2112,51 +2107,44 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
       default: return 0;
     }
   }
-  #ifdef RGBW
-  RgbwColor lColor = NeoPixelBrightnessBus::GetPixelColor(i);
-  return lColor.W*16777216 + lColor.R*65536 + lColor.G*256 + lColor.B;
-  #else
-  RgbColor lColor = NeoPixelBrightnessBus::GetPixelColor(i);
-  return lColor.R*65536 + lColor.G*256 + lColor.B;
-  #endif
+  if (_rgbwMode)
+  {
+    RgbwColor lColor = bus->GetPixelColorRgbw(i);
+    return lColor.W*16777216 + lColor.R*65536 + lColor.G*256 + lColor.B;
+  } else {
+    RgbColor lColor = bus->GetPixelColor(i);
+    return lColor.R*65536 + lColor.G*256 + lColor.B;
+  }
 }
 
 void WS2812FX::setBrightness(byte b)
 {
   _brightness = constrain(b, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
-  NeoPixelBrightnessBus::SetBrightness(_brightness);
+  bus->SetBrightness(_brightness);
   if (_mode_last_call_time + _mode_delay > millis()+50 || b == 0) show(); //only update right away if long time until next refresh
 }
 
 void WS2812FX::show()
 {
-  #ifdef ARDUINO_ARCH_ESP32
-  #ifdef WORKAROUND_ESP32_BITBANG
-  delay(1);
-  portDISABLE_INTERRUPTS(); //this is a workaround to prevent flickering (see https://github.com/adafruit/Adafruit_NeoPixel/issues/139)
-  #endif
-  #endif
-  NeoPixelBrightnessBus::Show();
-
-  #ifdef ARDUINO_ARCH_ESP32
-  #ifdef WORKAROUND_ESP32_BITBANG
-  portENABLE_INTERRUPTS();
-  #endif
-  #endif
+  bus->Show();
 }
 
 void WS2812FX::clear()
 {
-  #ifdef RGBW
-  NeoPixelBrightnessBus::ClearTo(RgbwColor(0));
-  #else
-  NeoPixelBrightnessBus::ClearTo(RgbColor(0));
-  #endif
+  bus->ClearTo(RgbColor(0));
 }
 
-void WS2812FX::begin()
+void WS2812FX::begin(bool supportWhite, uint16_t countPixels, uint8_t pin)
 {
-  NeoPixelBrightnessBus::Begin();
+  if (supportWhite == _rgbwMode && countPixels == _led_count && _locked != NULL) return;
+  _rgbwMode = supportWhite;
+  _led_count = countPixels;
+  _cc_i2 = _led_count -1;
+  uint8_t ty = 1;
+  if (supportWhite) ty =2;
+  bus->Begin((NeoPixelType)ty, countPixels, pin);
+  if (_locked != NULL) delete _locked;
+  _locked = new bool[countPixels];
 }
 
 //For some reason min and max are not declared here

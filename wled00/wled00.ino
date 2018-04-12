@@ -33,7 +33,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1804111
+#define VERSION 1804121
 const String versionString = "0.6.3";
 
 //AP and OTA default passwords (change them!)
@@ -50,7 +50,7 @@ bool useRGBW = false;
 //#define DEBUG
 
 //Hardware-settings (only changeble via code)
-#define LEDCOUNT 255 //maximum, exact count set-able via settings
+#define PIN 2 //strip pin. Only change for ESP32
 byte buttonPin = 0; //needs pull-up
 byte auxPin = 15; //use e.g. for external relay
 byte auxDefaultState = 0; //0: input 1: high 2: low
@@ -252,7 +252,7 @@ byte ntpPacketBuffer[NTP_PACKET_SIZE];
 unsigned long ntpLastSyncTime = 999000000L;
 unsigned long ntpPacketSentTime = 999000000L;
 
-WS2812FX strip = WS2812FX(LEDCOUNT);
+WS2812FX strip = WS2812FX();
 
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
