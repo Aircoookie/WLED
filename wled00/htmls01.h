@@ -86,18 +86,17 @@ const char PAGE_settings_leds1[] PROGMEM = R"=====(
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>LED setup</h2>
 LED count (max. 255): <input name="LC" type="number" min="1" max="255" required><br>
-<i>The default boot color is always saved in preset slot 0.</i><br>
-Alternatively, apply preset <input name="BP" type="number" min="0" max="25" required> at boot<br>
+LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW"><br>
+Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)<br>
 Default RGB color:
 <input name="CR" type="number" min="0" max="255" required>
 <input name="CG" type="number" min="0" max="255" required>
 <input name="CB" type="number" min="0" max="255" required><br>
+Default white value (only RGBW): <input name="CW" type="number" min="0" max="255" required><br>
 Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br>
-Default white value (only RGBW, -1 to disable): <input name="CW" type="number" min="-1" max="255" required><br>
-Default effect ID: <input name="FX" type="number" min="0" max="57" required> <br>
-Default effect speed: <input name="SX" type="number" min="0" max="255" required> <br>
-Default effect intensity: <input name="IX" type="number" min="0" max="255" required> <br>
-Default secondary RGB(W):<br>
+Default effect ID: <input name="FX" type="number" min="0" max="57" required><br>
+Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
+Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br>
 <input name="SR" type="number" min="0" max="255" required>
 <input name="SG" type="number" min="0" max="255" required>
 <input name="SB" type="number" min="0" max="255" required>

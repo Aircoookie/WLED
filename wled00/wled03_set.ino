@@ -117,6 +117,7 @@ void handleSettingsSet(byte subPage)
       int i = server.arg("LC").toInt();
       if (i >= 0 && i <= 1200) ledCount = i;
     }
+    useRGBW = server.hasArg("EW");
     if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
     {
       colS[0] = col[0];
@@ -165,14 +166,7 @@ void handleSettingsSet(byte subPage)
       if (server.hasArg("CW"))
       {
         int i = server.arg("CW").toInt();
-        if (i >= 0 && i <= 255)
-        {
-          useRGBW = true;
-          whiteS = i;
-        } else {
-          useRGBW = false;
-          whiteS = 0;
-        }
+        if (i >= 0 && i <= 255) whiteS = i;
       }
       if (server.hasArg("CA"))
       {
@@ -236,6 +230,7 @@ void handleSettingsSet(byte subPage)
       int i = server.arg("BF").toInt();
       if (i > 0) briMultiplier = i;
     }
+    strip.init(useRGBW,ledCount,PIN);
   }
 
   //UI
@@ -382,7 +377,6 @@ void handleSettingsSet(byte subPage)
       aOtaEnabled = server.hasArg("AO");
     }
   }
-  strip.init(useRGBW,ledCount,PIN);
   saveSettingsToEEPROM();
 }
 

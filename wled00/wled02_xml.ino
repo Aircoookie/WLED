@@ -141,11 +141,8 @@ String getSettings(byte subPage)
     resp += ds + "CG" + v + colS[1] +";";
     resp += ds + "CB" + v + colS[2] +";";
     resp += ds + "CA" + v + briS +";";
-    if (useRGBW) {
-      resp += ds + "CW" + v + whiteS +";";
-    } else {
-      resp += ds + "CW" + v + "-1;";
-    }
+    resp += ds + "EW" + c + useRGBW +";";
+    resp += ds + "CW" + v + whiteS +";";
     resp += ds + "SR" + v + colSecS[0] +";";
     resp += ds + "SG" + v + colSecS[1] +";";
     resp += ds + "SB" + v + colSecS[2] +";";

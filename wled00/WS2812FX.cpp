@@ -38,8 +38,8 @@
 #define CALL_MODE(n) (this->*_mode[n])();
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, uint8_t pin) {
-  for (int i=0; i < _led_count; i++) _locked[i] = false;
   begin(supportWhite,countPixels,pin);
+  for (int i=0; i < _led_count; i++) _locked[i] = false;
   WS2812FX::setBrightness(_brightness);
   show();
 }

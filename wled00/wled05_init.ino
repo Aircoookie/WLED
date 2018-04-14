@@ -4,11 +4,13 @@
 
 void wledInit()
 {
-  EEPROM.begin(EEPSIZE);
-  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),EEPROM.read(229),PIN); //quick init
-  
   Serial.begin(115200);
   Serial.setTimeout(50);
+  
+  EEPROM.begin(EEPSIZE);
+  Serial.println("PreStripInit");
+  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),EEPROM.read(229),PIN); //quick init
+  Serial.println("PostStripInit");
   
   #ifdef USEFS
   SPIFFS.begin();
