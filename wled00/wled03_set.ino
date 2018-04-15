@@ -115,7 +115,11 @@ void handleSettingsSet(byte subPage)
     if (server.hasArg("LC"))
     {
       int i = server.arg("LC").toInt();
-      if (i >= 0 && i <= 1200) ledCount = i;
+      if (i > 0 && i <= 1200) ledCount = i;
+      //RMT eats up too much RAM
+      #ifdef ARDUINO_ARCH_ESP32
+      if (ledCount > 600) ledCount = 600;
+      #endif
     }
     useRGBW = server.hasArg("EW");
     if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
@@ -230,7 +234,6 @@ void handleSettingsSet(byte subPage)
       int i = server.arg("BF").toInt();
       if (i > 0) briMultiplier = i;
     }
-    strip.init(useRGBW,ledCount,PIN);
   }
 
   //UI
@@ -378,6 +381,7 @@ void handleSettingsSet(byte subPage)
     }
   }
   saveSettingsToEEPROM();
+  if (subPage == 2) strip.init(useRGBW,ledCount,PIN);
 }
 
 bool handleSet(String req)
@@ -635,6 +639,8 @@ bool handleSet(String req)
       }
    }
    //toggle nightlight mode
+   bool aNlDef = false;
+   if (req.indexOf("&ND") > 0) aNlDef = true;
    pos = req.indexOf("NL=");
    if (pos > 0)
    {
@@ -644,9 +650,13 @@ bool handleSet(String req)
         bri = briT;
       } else {
         nightlightActive = true;
-        if (req.indexOf("&ND") <= 0) nightlightDelayMins = req.substring(pos + 3).toInt();
+        if (!aNlDef) nightlightDelayMins = req.substring(pos + 3).toInt();
         nightlightStartTime = millis();
       }
+   } else if (aNlDef)
+   {
+      nightlightActive = true;
+      nightlightStartTime = millis();
    }
    //set nightlight target brightness
    pos = req.indexOf("NT=");
@@ -715,6 +725,7 @@ bool handleSet(String req)
    pos = req.indexOf("CM="); if (pos > 0) {ccStep = (req.substring(pos + 3).toInt()); _cc_updated = true;}
    pos = req.indexOf("CF="); if (pos > 0) {ccFromStart = (req.substring(pos + 3).toInt()); _cc_updated = true;}
    pos = req.indexOf("CE="); if (pos > 0) {ccFromEnd = (req.substring(pos + 3).toInt()); _cc_updated = true;}
+   if (ccIndex2 == 255) ccIndex2 = ledCount-1;
    if (_cc_updated) strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
    
    //set presets

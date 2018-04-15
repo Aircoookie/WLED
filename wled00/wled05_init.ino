@@ -3,14 +3,17 @@
  */
 
 void wledInit()
-{
+{ 
+  EEPROM.begin(EEPSIZE);
+  ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200) ledCount = 10;
+  //RMT eats up too much RAM
+  #ifdef ARDUINO_ARCH_ESP32
+  if (ledCount > 600) ledCount = 600;
+  #endif
+  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,PIN); //quick init
+
   Serial.begin(115200);
   Serial.setTimeout(50);
-  
-  EEPROM.begin(EEPSIZE);
-  Serial.println("PreStripInit");
-  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),EEPROM.read(229),PIN); //quick init
-  Serial.println("PostStripInit");
   
   #ifdef USEFS
   SPIFFS.begin();

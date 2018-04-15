@@ -61,7 +61,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(226, notifyDirectDefault);
   EEPROM.write(227, apChannel);
   EEPROM.write(228, apHide);
-  EEPROM.write(229, ledCount);
+  EEPROM.write(229, (ledCount >> 0) & 0xFF);
   EEPROM.write(230, notifyButton);
   EEPROM.write(231, notifyTwice);
   EEPROM.write(232, buttonEnabled);
@@ -147,6 +147,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
   EEPROM.write(397, initLedsLast);
+  EEPROM.write(398, (ledCount >> 8) & 0xFF);
 
   for (int k=0;k<6;k++){
     int in = 900+k*8;
@@ -259,7 +260,7 @@ void loadSettingsFromEEPROM(bool first)
   if (apChannel > 13 || apChannel < 1) apChannel = 1;
   apHide = EEPROM.read(228);
   if (apHide > 1) apHide = 1;
-  ledCount = EEPROM.read(229);
+  ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200) ledCount = 10;
   notifyButton = EEPROM.read(230);
   notifyTwice = EEPROM.read(231);
   buttonEnabled = EEPROM.read(232);

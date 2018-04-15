@@ -85,7 +85,7 @@ const char PAGE_settings_leds1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>LED setup</h2>
-LED count (max. 255): <input name="LC" type="number" min="1" max="255" required><br>
+LED count: <input name="LC" type="number" min="1" max="1200" required><br>
 LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW"><br>
 Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)<br>
 Default RGB color:
@@ -335,7 +335,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.3<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.4<br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
 <i>Uses libraries:</i><br>

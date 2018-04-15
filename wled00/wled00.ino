@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.6.3
+ * @version 0.6.4
  * @author Christian Schwinne
  */
 
@@ -33,15 +33,12 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1804141
-const String versionString = "0.6.3";
+#define VERSION 1804151
+const String versionString = "0.6.4";
 
 //AP and OTA default passwords (change them!)
 String apPass = "wled1234";
 String otaPass = "wledota";
-
-//If you have an RGBW strip, also uncomment first line in WS2812FX.h!
-bool useRGBW = false;
 
 //spiffs FS only useful for debug (only ESP8266)
 //#define USEFS
@@ -62,7 +59,7 @@ byte currentTheme = 0;
 String clientSSID = "Your_Network";
 String clientPass = "";
 String cmDNS = "led";
-byte ledCount = 10; //lowered to prevent accidental overcurrent
+uint16_t ledCount = 10; //lowered to prevent accidental overcurrent
 String apSSID = ""; //AP off by default (unless setup)
 byte apChannel = 1;
 byte apHide = 0;
@@ -72,7 +69,7 @@ IPAddress staticIP(0, 0, 0, 0);
 IPAddress staticGateway(0, 0, 0, 0);
 IPAddress staticSubnet(255, 255, 255, 0);
 IPAddress staticDNS(8, 8, 8, 8); //only for NTP
-bool useHSB = true, useHSBDefault = true;
+bool useHSB = true, useHSBDefault = true, useRGBW = false;
 bool turnOnAtBoot = true;
 bool initLedsLast = false;
 byte bootPreset = 0;
@@ -105,7 +102,7 @@ String ntpServerName = "0.wled.pool.ntp.org";
 byte ccNumPrimary = 2;
 byte ccNumSecondary = 4;
 byte ccIndex1 = 0;
-byte ccIndex2 = ledCount -1;
+uint16_t ccIndex2 = ledCount -1;
 bool ccFromStart = true, ccFromEnd = false;
 byte ccStep = 1;
 byte ccStart = 0;

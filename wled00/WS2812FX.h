@@ -213,9 +213,9 @@ class WS2812FX {
       start(void),
       stop(void),
       setMode(byte m),
-      setCustomChase(byte i1, byte i2, byte is, byte np, byte ns, byte stp, bool fs, bool fe),
+      setCustomChase(byte i1, uint16_t i2, byte is, byte np, byte ns, byte stp, bool fs, bool fe),
       setCCIndex1(byte i1),
-      setCCIndex2(byte i2),
+      setCCIndex2(uint16_t i2),
       setCCStart(byte is),
       setCCNum1(byte np),
       setCCNum2(byte ns),
@@ -270,8 +270,8 @@ class WS2812FX {
       getColor(void);
 
     double
-      getPowerEstimate(byte leds, uint32_t c, byte b),
-      getSafePowerMultiplier(double safeMilliAmps, byte leds, uint32_t c, byte b);
+      getPowerEstimate(uint16_t leds, uint32_t c, byte b),
+      getSafePowerMultiplier(double safeMilliAmps, uint16_t leds, uint32_t c, byte b);
 
   private:
     NeoPixelWrapper *bus;
@@ -360,13 +360,10 @@ class WS2812FX {
       _locked;
 
     byte
-      minval(byte v, byte w),
-      maxval(byte v, byte w),
       _mode_index,
       _speed,
       _intensity,
       _cc_i1,
-      _cc_i2,
       _cc_is,
       _cc_num1,
       _cc_num2,
@@ -377,6 +374,9 @@ class WS2812FX {
       _cronixieDigits;
 
     uint16_t
+      minval(uint16_t v, uint16_t w),
+      maxval(uint16_t v, uint16_t w),
+      _cc_i2,
       _led_count;
 
     uint32_t

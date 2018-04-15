@@ -1925,7 +1925,7 @@ void WS2812FX::setCronixieDigits(byte d[])
   }
 }
 
-double WS2812FX::getPowerEstimate(byte leds, uint32_t c, byte b)
+double WS2812FX::getPowerEstimate(uint16_t leds, uint32_t c, byte b)
 {
   double _mARequired = 100; //ESP power
   double _mul = (double)b/255;
@@ -1941,7 +1941,7 @@ double WS2812FX::getPowerEstimate(byte leds, uint32_t c, byte b)
 //It is NOT guaranteed to stay within the safeAmps margin.
 //Stay safe with high amperage and have a reasonable safety margin!
 //I am NOT to be held liable for burned down garages!
-double WS2812FX::getSafePowerMultiplier(double safeMilliAmps, byte leds, uint32_t c, byte b)
+double WS2812FX::getSafePowerMultiplier(double safeMilliAmps, uint16_t leds, uint32_t c, byte b)
 {
   double _mARequired = getPowerEstimate(leds,c,b);
   if (_mARequired > safeMilliAmps)
@@ -1958,7 +1958,7 @@ void WS2812FX::setCCIndex1(byte i1)
   _counter_ccStep = 0;
 }
 
-void WS2812FX::setCCIndex2(byte i2)
+void WS2812FX::setCCIndex2(uint16_t i2)
 {
   if (i2 > _cc_i1) _cc_i2 = i2;
   if (_cc_i2 >= _led_count) _cc_i2 = _led_count-1;
@@ -2003,7 +2003,7 @@ void WS2812FX::setCCFE(bool fe)
   _counter_ccStep = 0;
 }
 
-void WS2812FX::setCustomChase(byte i1, byte i2, byte is, byte np, byte ns, byte stp, bool fs, bool fe)
+void WS2812FX::setCustomChase(byte i1, uint16_t i2, byte is, byte np, byte ns, byte stp, bool fs, bool fe)
 {
   setCCIndex1(i1);
   setCCIndex2(i2);
@@ -2149,13 +2149,13 @@ void WS2812FX::begin(bool supportWhite, uint16_t countPixels, uint8_t pin)
 
 //For some reason min and max are not declared here
 
-byte WS2812FX::minval (byte v, byte w)
+uint16_t WS2812FX::minval (uint16_t v, uint16_t w)
 {
   if (w > v) return v;
   return w;
 }
 
-byte WS2812FX::maxval (byte v, byte w)
+uint16_t WS2812FX::maxval (uint16_t v, uint16_t w)
 {
   if (w > v) return w;
   return v;
