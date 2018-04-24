@@ -817,7 +817,16 @@ bool handleSet(String req)
       if (overlayCurrent == 4) strip.setCronixieBacklight(cronixieBacklight);
       overlayRefreshedTime = 0;
    }
-
+   pos = req.indexOf("U0="); //user var 0
+   if (pos > 0) {
+      userVar0 = req.substring(pos + 3).toInt();
+   }
+   pos = req.indexOf("U1="); //user var 1
+   if (pos > 0) {
+      userVar1 = req.substring(pos + 3).toInt();
+   }
+   //you can add more if you need
+   
    //internal call, does not send XML response
    pos = req.indexOf("IN");
    if (pos < 1) XML_response();

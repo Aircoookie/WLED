@@ -33,7 +33,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1804151
+#define VERSION 1804221
 const String versionString = "0.6.4";
 
 //AP and OTA default passwords (change them!)
@@ -125,6 +125,8 @@ byte huePollLightId = 1;
 IPAddress hueIP = (0,0,0,0);
 bool notifyHue = true;
 bool hueApplyOnOff = true, hueApplyBri = true, hueApplyColor = true;
+
+uint16_t userVar0 = 0, userVar1 = 0;
 
 //Internal vars
 byte col[]{0, 0, 0};

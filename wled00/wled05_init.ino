@@ -180,6 +180,10 @@ void wledInit()
     val += "mA currently";
     serveMessage(200,val,"This is just an estimate (does not take into account several factors like effects and wire resistance). It is NOT an accurate measurement!",254);
     });
+
+  server.on("/u", HTTP_GET, [](){
+    if(!handleFileRead("/user.htm")) serveUserPage();
+    });
     
   server.on("/teapot", HTTP_GET, [](){
     serveMessage(418, "418. I'm a teapot.","(Tangible Embedded Advanced Project Of Twinkling)",254);
