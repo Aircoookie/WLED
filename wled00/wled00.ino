@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.6.4
+ * @version 0.6.5
  * @author Christian Schwinne
  */
 
@@ -33,8 +33,8 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1804221
-const String versionString = "0.6.4";
+#define VERSION 1805061
+const String versionString = "0.6.5";
 
 //AP and OTA default passwords (change them!)
 String apPass = "wled1234";
@@ -54,7 +54,7 @@ byte auxDefaultState = 0; //0: input 1: high 2: low
 byte auxTriggeredState = 0; //0: input 1: high 2: low
 
 //Default CONFIG
-String serverDescription = versionString;
+String serverDescription = "WLED Light";
 byte currentTheme = 0;
 String clientSSID = "Your_Network";
 String clientPass = "";
@@ -81,6 +81,7 @@ byte briS = 127;
 byte nightlightTargetBri = 0;
 bool fadeTransition = true;
 bool sweepTransition = false, sweepDirection = true;
+bool disableSecTransition = true;
 uint16_t transitionDelay = 1200, transitionDelayDefault = transitionDelay;
 bool reverseMode = false;
 bool otaLock = false, wifiLock = false;
@@ -134,9 +135,11 @@ byte colOld[]{0, 0, 0};
 byte colT[]{0, 0, 0};
 byte colIT[]{0, 0, 0};
 byte colSec[]{0, 0, 0};
+byte colSecT[]{0, 0, 0};
+byte colSecOld[]{0, 0, 0};
 byte colSecIT[]{0, 0, 0};
 byte white, whiteOld, whiteT, whiteIT;
-byte whiteSec, whiteSecIT;
+byte whiteSec, whiteSecOld, whiteSecT, whiteSecIT;
 byte lastRandomIndex = 0;
 uint16_t transitionDelayTemp = transitionDelay;
 unsigned long transitionStartTime;
@@ -209,11 +212,11 @@ bool presetCyclingEnabled = false;
 byte presetCycleMin = 1, presetCycleMax = 5;
 uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
-bool presetCycleBri, presetCycleCol, presetCycleFx;
+bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
 
 uint32_t arlsTimeoutMillis = 2500;
 bool arlsTimeout = false;
-bool receiveDirect = true;
+bool receiveDirect = true, enableRealtimeUI = false;
 unsigned long arlsTimeoutTime;
 byte auxTime = 0;
 unsigned long auxStartTime;
@@ -242,7 +245,7 @@ ESP8266WebServer server(80);
 #endif
 HTTPClient hueClient;
 ESP8266HTTPUpdateServer httpUpdater;
-WiFiUDP notifierUdp;
+WiFiUDP notifierUdp;//, rgbUdp;
 WiFiUDP ntpUdp;
 IPAddress ntpServerIP;
 unsigned int ntpLocalPort = 2390;
@@ -325,7 +328,7 @@ void loop() {
     yield();
     handleButton();
     handleNetworkTime();
-    if (!otaLock && aOtaEnabled) ArduinoOTA.handle();
+    if (aOtaEnabled) ArduinoOTA.handle();
     handleAlexa();
     handleOverlays();
     if (!arlsTimeout) //block stuff if WARLS/Adalight is enabled

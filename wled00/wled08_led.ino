@@ -12,28 +12,39 @@ void setAllLeds() {
   } else {
     strip.setBrightness(val);
   }
+  if (disableSecTransition)
+  {
+    for (byte i = 0; i<3; i++)
+    {
+      colSecT[i] = colSec[i];
+    }
+    whiteSecT = whiteSec;
+  }
   if (useGammaCorrectionRGB)
   {
     strip.setColor(gamma8[colT[0]], gamma8[colT[1]], gamma8[colT[2]], gamma8[whiteT]);
-    strip.setSecondaryColor(gamma8[colSec[0]], gamma8[colSec[1]], gamma8[colSec[2]], gamma8[whiteSec]);
+    strip.setSecondaryColor(gamma8[colSecT[0]], gamma8[colSecT[1]], gamma8[colSecT[2]], gamma8[whiteSecT]);
   } else {
     strip.setColor(colT[0], colT[1], colT[2], whiteT);
-    strip.setSecondaryColor(colSec[0], colSec[1], colSec[2], whiteSec);
+    strip.setSecondaryColor(colSecT[0], colSecT[1], colSecT[2], whiteSecT);
   }
 }
 
 void setLedsStandard()
 {
-  colOld[0] = col[0];
-  colOld[1] = col[1];
-  colOld[2] = col[2];
+  for (byte i = 0; i<3; i++)
+  {
+    colOld[i] = col[i];
+    colT[i] = col[i];
+    colSecOld[i] = colSec[i];
+    colSecT[i] = colSec[i];
+  }
   whiteOld = white;
   briOld = bri;
-  colT[0] = col[0];
-  colT[1] = col[1];
-  colT[2] = col[2];
+  whiteSecOld = whiteSec;
   whiteT = white;
   briT = bri;
+  whiteSecT = whiteSec;
   setAllLeds();
 }
 
@@ -86,6 +97,10 @@ void colorUpdated(int callMode)
       colOld[1] = colT[1];
       colOld[2] = colT[2];
       whiteOld = whiteT;
+      colSecOld[0] = colSecT[0];
+      colSecOld[1] = colSecT[1];
+      colSecOld[2] = colSecT[2];
+      whiteSecOld = whiteSecT;
       briOld = briT;
       tperLast = 0;
     }
@@ -120,10 +135,13 @@ void handleTransitions()
     tperLast = tper;
     if (fadeTransition)
     {
-      colT[0] = colOld[0]+((col[0] - colOld[0])*tper);
-      colT[1] = colOld[1]+((col[1] - colOld[1])*tper);
-      colT[2] = colOld[2]+((col[2] - colOld[2])*tper);
+      for (byte i = 0; i<3; i++)
+      {
+        colT[i] = colOld[i]+((col[i] - colOld[i])*tper);
+        colSecT[i] = colSecOld[i]+((colSec[i] - colSecOld[i])*tper);
+      }
       whiteT  = whiteOld +((white  - whiteOld )*tper);
+      whiteSecT = whiteSecOld +((whiteSec  - whiteSecOld )*tper);
       briT    = briOld   +((bri    - briOld   )*tper);
     }
     if (sweepTransition)
@@ -181,7 +199,7 @@ void handleNightlight()
   //also handle preset cycle here
   if (presetCyclingEnabled && (millis() - presetCycledTime > presetCycleTime))
   {
-    applyPreset(presetCycCurr,presetCycleBri,presetCycleCol,presetCycleFx);
+    applyPreset(presetCycCurr,presetApplyBri,presetApplyCol,presetApplyFx);
     presetCycCurr++; if (presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
     if (presetCycCurr > 25) presetCycCurr = 1;
     colorUpdated(8);

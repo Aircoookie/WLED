@@ -158,6 +158,7 @@ String getSettings(byte subPage)
     resp += ds + "TS" + c + sweepTransition +";";
     resp += ds + "TI" + c + !sweepDirection +";";
     resp += ds + "TD" + v + transitionDelay +";";
+    resp += ds + "T2" + c + !disableSecTransition +";";
     resp += ds + "BF" + v + briMultiplier +";";
     resp += ds + "TB" + v + nightlightTargetBri +";";
     resp += ds + "TL" + v + nightlightDelayMins +";";
@@ -188,6 +189,8 @@ String getSettings(byte subPage)
     resp += ds + "SB" + c + notifyButton +";";
     resp += ds + "SH" + c + notifyHue +";";
     resp += ds + "S2" + c + notifyTwice +";";
+    resp += ds + "RD" + c + receiveDirect +";";
+    resp += ds + "RU" + c + enableRealtimeUI +";";
     resp += ds + "AL" + c + alexaEnabled +";";
     resp += ds + "AI" + v + "\"" + alexaInvocationName + "\";";
     resp += ds + "SA" + c + alexaNotify +";";

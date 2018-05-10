@@ -4,9 +4,11 @@
  * EEPROM bytes 2944 to 3071 are reserved for your custom use case.
  */
 
+//Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
+
 void userBeginPreConnection()
 {
-
+  
 }
 
 void userBegin()
@@ -18,14 +20,3 @@ void userLoop()
 {
   
 }
-
-//USER HTML
-const char PAGE_usermod[] PROGMEM = R"=====(
-<html><body>There is no usermod installed or it doesn't specify a custom web page.</body></html>
-)=====";
-
-void serveUserPage()
-{
-  server.send(200, PAGE_usermod);
-}
-

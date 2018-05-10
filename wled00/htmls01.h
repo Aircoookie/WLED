@@ -109,7 +109,8 @@ Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
 Fade: <input type="checkbox" name="TF"><br>
 Sweep: <input type="checkbox" name="TS">  Invert direction: <input type="checkbox" name="TI"><br>
-Transition Time: <input name="TD" maxlength="5" size="2"> ms
+Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
+Enable transition for secondary color: <input type="checkbox" name="T2"><br>
 <h3>Timed light</h3>
 Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
 Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
@@ -196,7 +197,9 @@ Send notifications on direct change: <input type="checkbox" name="SD"><br>
 Send notifications on button press: <input type="checkbox" name="SB"><br>
 Send Alexa notifications: <input type="checkbox" name="SA"><br>
 Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
-Send notifications twice: <input type="checkbox" name="S2">
+Send notifications twice: <input type="checkbox" name="S2"><br>
+Receive UDP realtime: <input type="checkbox" name="RD"><br>
+Enable UI access during realtime: <input type="checkbox" name="RU"> (can cause issues)
 <h3>Alexa Voice Assistant</h3>
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
 Alexa invocation name: <input name="AI" maxlength="32"><br>
@@ -318,7 +321,7 @@ const char PAGE_settings_sec1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
 <h2>Security & Update setup</h2>
-Enable OTA lock: <input type="checkbox" name="NO"><br>
+Lock wireless (OTA) software update: <input type="checkbox" name="NO"><br>
 Passphrase: <input type="password" name="OP" maxlength="32"><br>
 To enable OTA, for security reasons you need to also enter the correct password!<br>
 The password should be changed when OTA is enabled.<br>
@@ -335,7 +338,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.4<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.5<br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
 <i>Uses libraries:</i><br>

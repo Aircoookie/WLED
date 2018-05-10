@@ -211,6 +211,7 @@ void handleSettingsSet(byte subPage)
         transitionDelay = i;
       }
     }
+    disableSecTransition = !server.hasArg("T2");
     if (server.hasArg("TB"))
     {
       nightlightTargetBri = server.arg("TB").toInt();
@@ -267,6 +268,8 @@ void handleSettingsSet(byte subPage)
     notifyDirect = notifyDirectDefault;
     notifyButton = server.hasArg("SB");
     notifyTwice = server.hasArg("S2");
+    receiveDirect = server.hasArg("RD");
+    enableRealtimeUI = server.hasArg("RU");
     alexaEnabled = server.hasArg("AL");
     if (server.hasArg("AI")) alexaInvocationName = server.arg("AI");
     alexaNotify = server.hasArg("SA");
@@ -729,6 +732,12 @@ bool handleSet(String req)
    if (_cc_updated) strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
    
    //set presets
+    pos = req.indexOf("P1="); //sets first preset for cycle
+   if (pos > 0) presetCycleMin = req.substring(pos + 3).toInt();
+
+   pos = req.indexOf("P2="); //sets last preset for cycle
+   if (pos > 0) presetCycleMax = req.substring(pos + 3).toInt();
+   
    if (req.indexOf("CY=") > 0) //preset cycle
    {
       presetCyclingEnabled = true;
@@ -736,61 +745,36 @@ bool handleSet(String req)
       {
         presetCyclingEnabled = false;
       }
-      bool all = true;
-      if (req.indexOf("&PA") > 0)
-      {
-        presetCycleBri = true;
-        all = false;
-      }
-      if (req.indexOf("&PC") > 0)
-      {
-        presetCycleCol = true;
-        all = false;
-      }
-      if (req.indexOf("&PX") > 0)
-      {
-        presetCycleFx = true;
-        all = false;
-      }
-      if (all)
-      {
-        presetCycleBri = true;
-        presetCycleCol = true;
-        presetCycleFx = true;
-      }
+      presetCycCurr = presetCycleMin;
    }
    pos = req.indexOf("PT="); //sets cycle time in ms
    if (pos > 0) {
       int v = req.substring(pos + 3).toInt();
       if (v > 49) presetCycleTime = v;
    }
-   pos = req.indexOf("P1="); //sets first preset for cycle
-   if (pos > 0) presetCycleMin = req.substring(pos + 3).toInt();
-
-   pos = req.indexOf("P2="); //sets last preset for cycle
-   if (pos > 0) presetCycleMax = req.substring(pos + 3).toInt();
-   
+   if (req.indexOf("PA=") > 0) //apply brightness from preset
+   {
+      presetApplyBri = true;
+      if (req.indexOf("PA=0") > 0) presetApplyBri = false;
+   }
+   if (req.indexOf("PC=") > 0) //apply color from preset
+   {
+      presetApplyCol = true;
+      if (req.indexOf("PC=0") > 0) presetApplyCol = false;
+   }
+   if (req.indexOf("PX=") > 0) //apply effects from preset
+   {
+      presetApplyFx = true;
+      if (req.indexOf("PX=0") > 0) presetApplyFx = false;
+   }
    pos = req.indexOf("PS="); //saves current in preset
    if (pos > 0) {
       savePreset(req.substring(pos + 3).toInt());
    }
    pos = req.indexOf("PL="); //applies entire preset
    if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt(), true, true, true);
-      effectUpdated = true;
-   }
-   pos = req.indexOf("PA="); //applies brightness from preset
-   if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt(), true, false, false);
-   }
-   pos = req.indexOf("PC="); //applies color from preset
-   if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt(), false, true, false);
-   }
-   pos = req.indexOf("PX="); //applies effects from preset
-   if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt(), false, false, true);
-      effectUpdated = true;
+      applyPreset(req.substring(pos + 3).toInt(), presetApplyBri, presetApplyCol, presetApplyFx);
+      if (presetApplyFx) effectUpdated = true;
    }
 
    //cronixie

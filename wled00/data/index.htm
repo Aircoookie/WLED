@@ -2,7 +2,7 @@
 <html>
 <head><meta charset="utf-8">
 	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico'/>
-	<title>WLED 0.6.4</title>
+	<title>WLED 0.6.5</title>
 	<script>
 		var d=document;
 		var w=window.getComputedStyle(d.querySelector("html"));
@@ -217,21 +217,22 @@
 			if (d.Cf.FF.value < 1) d.Cf.FF.value = 1;
 			if (d.Cf.FF.value > 25) d.Cf.FF.value = 25;
 		}
+		function PAt()
+		{
+			resp+=(d.Cf.BC.checked)?"&PA=1":"&PA=0";
+			resp+=(d.Cf.CC.checked)?"&PC=1":"&PC=0";
+			resp+=(d.Cf.FC.checked)?"&PX=1":"&PX=0";
+		}
 		function PSIO(sv)
 		{
+			PAt();
 			if(sv)
 			{
 				resp+="&PS=";
 				resp+=d.Cf.FF.value;
 			} else
 			{
-				if (d.Cf.BC.checked&&d.Cf.CC.checked&&d.Cf.FC.checked)
-				{resp+="&PL=";resp+=d.Cf.FF.value;}
-				else {
-					if(d.Cf.BC.checked){resp+="&PA=";resp+=d.Cf.FF.value;}
-					if(d.Cf.CC.checked){resp+="&PC=";resp+=d.Cf.FF.value;}
-					if(d.Cf.FC.checked){resp+="&PX=";resp+=d.Cf.FF.value;}
-				}
+				resp+="&PL=";resp+=d.Cf.FF.value;
 			}
 			GIO();
 		}
@@ -337,13 +338,11 @@
 		}
 		function uCY()
 		{
+			PAt();
 			resp+=(d.Cf.CY.checked)?"&CY=1":"&CY=0";
 			resp+="&P1=" + Cf.P1.value;
 			resp+="&P2=" + Cf.P2.value;
 			resp+="&PT=" + Cf.PT.value;
-			if(d.Cf.BC.checked){resp+="&PA";}
-			if(d.Cf.CC.checked){resp+="&PC";}
-			if(d.Cf.FC.checked){resp+="&PX";}
 			GIO();
 		}
 		function R()
