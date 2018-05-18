@@ -43,7 +43,7 @@ void wledInit()
   if (udpPort > 0 && udpPort != ntpLocalPort && WiFi.status() == WL_CONNECTED)
   {
     udpConnected = notifierUdp.begin(udpPort);
-    //if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
+    if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
   }
   if (ntpEnabled && WiFi.status() == WL_CONNECTED)
   ntpConnected = ntpUdp.begin(ntpLocalPort);

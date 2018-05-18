@@ -33,7 +33,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1805061
+#define VERSION 1805181
 const String versionString = "0.6.5";
 
 //AP and OTA default passwords (change them!)
@@ -92,7 +92,7 @@ bool receiveNotifications = true, receiveNotificationBrightness = true, receiveN
 byte briMultiplier = 100;
 byte nightlightDelayMins = 60;
 bool nightlightFade = true;
-uint16_t udpPort = 21324;
+uint16_t udpPort = 21324, udpRgbPort = 19446;
 byte effectDefault = 0;
 byte effectSpeedDefault = 75;
 byte effectIntensityDefault = 128;
@@ -158,20 +158,20 @@ byte notificationSentCallMode = 0;
 bool notificationTwoRequired = false;
 bool nightlightActive = false;
 bool nightlightActiveOld = false;
-uint32_t nightlightDelayMs;
-byte briNlT;
+uint32_t nightlightDelayMs = 10;
+byte briNlT = 0;
 byte effectCurrent = 0;
 byte effectSpeed = 75;
 byte effectIntensity = 128;
 bool onlyAP = false;
-bool udpConnected = false;
+bool udpConnected = false, udpRgbConnected = false;
 String cssCol[]={"","","","","",""};
 String cssFont="Verdana";
 String cssColorString="";
 //NTP stuff
 bool ntpConnected = false;
 byte currentTimezone = 0;
-time_t local;
+time_t local = 0;
 int utcOffsetSecs = 0;
 
 //hue
@@ -217,10 +217,10 @@ bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
 uint32_t arlsTimeoutMillis = 2500;
 bool arlsTimeout = false;
 bool receiveDirect = true, enableRealtimeUI = false;
-unsigned long arlsTimeoutTime;
+unsigned long arlsTimeoutTime = 0;
 byte auxTime = 0;
-unsigned long auxStartTime;
-bool auxActive, auxActiveBefore;
+unsigned long auxStartTime = 0;
+bool auxActive = false, auxActiveBefore = false;
 bool showWelcomePage = false;
 
 bool useGammaCorrectionBri = false;
@@ -245,7 +245,7 @@ ESP8266WebServer server(80);
 #endif
 HTTPClient hueClient;
 ESP8266HTTPUpdateServer httpUpdater;
-WiFiUDP notifierUdp;//, rgbUdp;
+WiFiUDP notifierUdp, rgbUdp;
 WiFiUDP ntpUdp;
 IPAddress ntpServerIP;
 unsigned int ntpLocalPort = 2390;

@@ -50,14 +50,58 @@ void notify(byte callMode, bool followUp=false)
   notificationTwoRequired = (followUp)? false:notifyTwice;
 }
 
+void arlsLock(uint32_t timeoutMs)
+{
+  if (!arlsTimeout){
+     strip.setRange(0, ledCount-1, 0);
+     strip.setMode(0);
+  }
+  arlsTimeout = true;
+  arlsTimeoutTime = millis() + timeoutMs;
+}
+
 void handleNotifications()
 {
+  //send second notification if enabled
   if(udpConnected && notificationTwoRequired && millis()-notificationSentTime > 250){
     notify(notificationSentCallMode,true);
   }
-  
+
+  //unlock strip when realtime UDP times out
+  if (arlsTimeout && millis() > arlsTimeoutTime)
+  {
+    strip.unlockAll();
+    if (bri == 0) strip.setBrightness(0);
+    arlsTimeout = false;
+    strip.setMode(effectCurrent);
+  }
+
+  //receive UDP notifications
   if(udpConnected && (receiveNotifications || receiveDirect)){
     uint16_t packetSize = notifierUdp.parsePacket();
+
+    //hyperion / raw RGB
+    if (!packetSize && receiveDirect && udpRgbConnected) {
+      packetSize = rgbUdp.parsePacket();
+      if (packetSize > 1026 || packetSize < 3) return;
+      byte udpIn[packetSize];
+      rgbUdp.read(udpIn, packetSize);
+      arlsLock(5200);
+      uint16_t id = 0;
+      for (uint16_t i = 0; i < packetSize -2; i += 3)
+      {
+        if (useGammaCorrectionRGB)
+        {
+          strip.setPixelColor(id, gamma8[udpIn[i]], gamma8[udpIn[i+1]], gamma8[udpIn[i+2]]);
+        } else {
+          strip.setPixelColor(id, udpIn[i], udpIn[i+1], udpIn[i+2]);
+        }
+        id++; if (id >= ledCount) break;
+      }
+      strip.show();
+      return;
+    }
+    
     if (packetSize > 1026) return;
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP()) //don't process broadcasts we send ourselves
     {
@@ -107,23 +151,18 @@ void handleNotifications()
           if (receiveNotificationBrightness) bri = udpIn[2];
           colorUpdated(3);
         }
-      }  else if (udpIn[0] > 0 && udpIn[0] < 4) //1 warls //2 drgb //3 drgbw
+      }  else if (udpIn[0] > 0 && udpIn[0] < 4 && receiveDirect) //1 warls //2 drgb //3 drgbw
       {
         if (packetSize > 1) {
           if (udpIn[1] == 0)
           {
             arlsTimeout = false;
           } else {
-            if (!arlsTimeout){
-              strip.setRange(0, ledCount-1, 0);
-              strip.setMode(0);
-            }
-            arlsTimeout = true;
-            arlsTimeoutTime = millis() + 1000*udpIn[1];
+            arlsLock(udpIn[1]*1000);
           }
           if (udpIn[0] == 1) //warls
           {
-            for (int i = 2; i < packetSize -3; i += 4)
+            for (uint16_t i = 2; i < packetSize -3; i += 4)
             {
               if (udpIn[i] + arlsOffset < ledCount && udpIn[i] + arlsOffset >= 0)
               if (useGammaCorrectionRGB)
@@ -133,10 +172,10 @@ void handleNotifications()
                 strip.setPixelColor(udpIn[i] + arlsOffset, udpIn[i+1], udpIn[i+2], udpIn[i+3]);
               }
             }
-          } else if (udpIn[0] == 2 && receiveDirect) //drgb
+          } else if (udpIn[0] == 2) //drgb
           {
-            int id = 0;
-            for (int i = 2; i < packetSize -2; i += 3)
+            uint16_t id = 0;
+            for (uint16_t i = 2; i < packetSize -2; i += 3)
             {
               if (useGammaCorrectionRGB)
               {
@@ -146,10 +185,10 @@ void handleNotifications()
               }
               id++; if (id >= ledCount) break;
             }
-          } else if (udpIn[0] == 3 && receiveDirect) //drgbw
+          } else if (udpIn[0] == 3) //drgbw
           {
-            int id = 0;
-            for (int i = 2; i < packetSize -3; i += 4)
+            uint16_t id = 0;
+            for (uint16_t i = 2; i < packetSize -3; i += 4)
             {
               if (useGammaCorrectionRGB)
               {
@@ -164,13 +203,6 @@ void handleNotifications()
         }
       }
     }
-  }
-  if (arlsTimeout && millis() > arlsTimeoutTime)
-  {
-    strip.unlockAll();
-    if (bri == 0) strip.setBrightness(0);
-    arlsTimeout = false;
-    strip.setMode(effectCurrent);
   }
 }
 
