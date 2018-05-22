@@ -231,6 +231,9 @@ void wledInit()
       server.send(404, "text/plain", "Not Found");
     }
   });
+  const char * headerkeys[] = {"User-Agent"};
+  server.collectHeaders(headerkeys,sizeof(char*));
+  
   if (!initLedsLast) strip.service();
   //init Alexa hue emulation
   if (alexaEnabled) alexaInit();
@@ -399,15 +402,27 @@ void serveIndexOrWelcome()
 
 void serveIndex()
 {
+  bool serveMobile = false;
+  if (uiConfiguration == 0) serveMobile = checkClientIsMobile(server.header("User-Agent"));
+  else if (uiConfiguration == 2) serveMobile = true;
+
   if (!arlsTimeout || enableRealtimeUI) //do not serve while receiving realtime
   {
-    server.setContentLength(strlen_P(PAGE_index0) + cssColorString.length() + strlen_P(PAGE_index1) + strlen_P(PAGE_index2) + strlen_P(PAGE_index3));
-    server.send(200, "text/html", "");
-    server.sendContent_P(PAGE_index0);
-    server.sendContent(cssColorString); 
-    server.sendContent_P(PAGE_index1); 
-    server.sendContent_P(PAGE_index2);
-    server.sendContent_P(PAGE_index3);
+    if (serveMobile)
+    {
+      server.setContentLength(strlen_P(PAGE_indexM));
+      server.send(200, "text/html", "");
+      server.sendContent_P(PAGE_indexM);
+    } else
+    {
+      server.setContentLength(strlen_P(PAGE_index0) + cssColorString.length() + strlen_P(PAGE_index1) + strlen_P(PAGE_index2) + strlen_P(PAGE_index3));
+      server.send(200, "text/html", "");
+      server.sendContent_P(PAGE_index0);
+      server.sendContent(cssColorString); 
+      server.sendContent_P(PAGE_index1); 
+      server.sendContent_P(PAGE_index2);
+      server.sendContent_P(PAGE_index3);
+    }
   } else {
     server.send(200, "text/plain", "The WLED UI is not available while receiving real-time data.");
   }
@@ -527,6 +542,15 @@ String getBuildInfo()
   #endif
   info += "build-type: dev\r\n";
   return info;
+}
+
+bool checkClientIsMobile(String useragent)
+{
+  //to save complexity this function is not comprehensive
+  if (useragent.indexOf("Android") >= 0) return true;
+  if (useragent.indexOf("iPhone") >= 0) return true;
+  if (useragent.indexOf("iPod") >= 0) return true;
+  return false;
 }
 
 

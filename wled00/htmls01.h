@@ -139,6 +139,13 @@ const char PAGE_settings_ui1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Web Setup</h2>
+User Interface Mode:
+<select name="UI">
+<option value="0" selected>Auto</option>
+<option value="1">Classic</option>
+<option value="2">Mobile</option>
+</select><br><br>
+<i>The following options are for the classic UI!</i><br>
 Server description: <input name="DS" maxlength="32"><br>
 Use HSB sliders instead of RGB by default: <input type="checkbox" name="MD"><br>
 Color Theme:
@@ -338,10 +345,12 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.5<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.5<br><br>
+<b>Contributors:</b><br>
+StormPie <i>(Mobile HTML UI)</i><br><br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
-<i>Uses libraries:</i><br>
+<b>Uses libraries:</b><br>
 <i>ESP8266/ESP32 Arduino Core</i><br>
 <i>(ESP32) <a href="https://github.com/bbx10/WebServer_tng">WebServer_tng</a> by bbx10</i><br>
 <i><a href="https://github.com/kitesurfer1404/WS2812FX">WS2812FX</a> by kitesurfer1404 (modified)</i><br>

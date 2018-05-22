@@ -33,7 +33,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1805181
+#define VERSION 1805222
 const String versionString = "0.6.5";
 
 //AP and OTA default passwords (change them!)
@@ -56,6 +56,7 @@ byte auxTriggeredState = 0; //0: input 1: high 2: low
 //Default CONFIG
 String serverDescription = "WLED Light";
 byte currentTheme = 0;
+byte uiConfiguration = 0; //0: auto 1: classic 2: mobile
 String clientSSID = "Your_Network";
 String clientPass = "";
 String cmDNS = "led";

@@ -240,6 +240,7 @@ void handleSettingsSet(byte subPage)
   //UI
   if (subPage == 3)
   {
+    if (server.hasArg("UI")) uiConfiguration = server.arg("UI").toInt();
     if (server.hasArg("DS")) serverDescription = server.arg("DS");
     useHSBDefault = server.hasArg("MD");
     useHSB = useHSBDefault;

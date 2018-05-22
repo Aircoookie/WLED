@@ -170,6 +170,7 @@ String getSettings(byte subPage)
 
   if (subPage == 3)
   { 
+    resp += ds + "UI" + si + String(uiConfiguration) + ";";
     resp += ds + "DS" + v + "\"" + serverDescription + "\";";
     resp += ds + "MD" + c + useHSBDefault + ";";
     resp += ds + "TH" + si + String(currentTheme) + ";";
