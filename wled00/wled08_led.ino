@@ -20,6 +20,11 @@ void setAllLeds() {
     }
     whiteSecT = whiteSec;
   }
+  if (autoRGBtoRGBW)
+  {
+    colorRGBtoRGBW(colT,&whiteT);
+    colorRGBtoRGBW(colSecT,&whiteSecT);
+  }
   if (useGammaCorrectionRGB)
   {
     strip.setColor(gamma8[colT[0]], gamma8[colT[1]], gamma8[colT[2]], gamma8[whiteT]);

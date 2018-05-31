@@ -213,6 +213,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(2200,!receiveDirect);
   EEPROM.write(2201,enableRealtimeUI);
   EEPROM.write(2202,uiConfiguration);
+  EEPROM.write(2203,autoRGBtoRGBW);
   
   EEPROM.commit();
 }
@@ -424,6 +425,7 @@ void loadSettingsFromEEPROM(bool first)
   receiveDirect = !EEPROM.read(2200);
   enableRealtimeUI = EEPROM.read(2201);
   uiConfiguration = EEPROM.read(2202);
+  autoRGBtoRGBW = EEPROM.read(2203);
   
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);

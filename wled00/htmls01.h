@@ -93,10 +93,12 @@ Default RGB color:
 <input name="CG" type="number" min="0" max="255" required>
 <input name="CB" type="number" min="0" max="255" required><br>
 Default white value (only RGBW): <input name="CW" type="number" min="0" max="255" required><br>
+Auto-calculate white from RGB instead: <input type="checkbox" name="AW"><br>
 Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br>
 Default effect ID: <input name="FX" type="number" min="0" max="57" required><br>
 Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
 Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br>
+Default secondary RGB(W):<br>
 <input name="SR" type="number" min="0" max="255" required>
 <input name="SG" type="number" min="0" max="255" required>
 <input name="SB" type="number" min="0" max="255" required>
@@ -345,7 +347,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.5<br><br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.7.0<br><br>
 <b>Contributors:</b><br>
 StormPie <i>(Mobile HTML UI)</i><br><br>
 (c) 2016-2018 Christian Schwinne <br>

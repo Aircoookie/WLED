@@ -122,6 +122,7 @@ void handleSettingsSet(byte subPage)
       #endif
     }
     useRGBW = server.hasArg("EW");
+    autoRGBtoRGBW = server.hasArg("AW");
     if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
     {
       colS[0] = col[0];
@@ -707,6 +708,8 @@ bool handleSet(String req)
         }
       }
    }
+   //deactivate nightlight if target brightness is reached
+   if (bri == nightlightTargetBri) nightlightActive = false;
    //set time (unix timestamp)
    pos = req.indexOf("ST=");
    if (pos > 0) {

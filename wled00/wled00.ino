@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.6.5
+ * @version 0.7.0
  * @author Christian Schwinne
  */
 
@@ -33,8 +33,8 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1805222
-const String versionString = "0.6.5";
+#define VERSION 1805311
+const String versionString = "0.7.0";
 
 //AP and OTA default passwords (change them!)
 String apPass = "wled1234";
@@ -70,7 +70,7 @@ IPAddress staticIP(0, 0, 0, 0);
 IPAddress staticGateway(0, 0, 0, 0);
 IPAddress staticSubnet(255, 255, 255, 0);
 IPAddress staticDNS(8, 8, 8, 8); //only for NTP
-bool useHSB = true, useHSBDefault = true, useRGBW = false;
+bool useHSB = true, useHSBDefault = true, useRGBW = false, autoRGBtoRGBW = false;
 bool turnOnAtBoot = true;
 bool initLedsLast = false;
 byte bootPreset = 0;

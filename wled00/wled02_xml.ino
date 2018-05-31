@@ -142,6 +142,7 @@ String getSettings(byte subPage)
     resp += ds + "CB" + v + colS[2] +";";
     resp += ds + "CA" + v + briS +";";
     resp += ds + "EW" + c + useRGBW +";";
+    resp += ds + "AW" + c + autoRGBtoRGBW +";";
     resp += ds + "CW" + v + whiteS +";";
     resp += ds + "SR" + v + colSecS[0] +";";
     resp += ds + "SG" + v + colSecS[1] +";";
