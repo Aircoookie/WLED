@@ -121,7 +121,9 @@ void handleSettingsSet(byte subPage)
       if (ledCount > 600) ledCount = 600;
       #endif
     }
+    ccIndex2 = ledCount -1;
     useRGBW = server.hasArg("EW");
+    autoRGBtoRGBW = server.hasArg("AW");
     if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
     {
       colS[0] = col[0];
@@ -193,6 +195,7 @@ void handleSettingsSet(byte subPage)
         if (i >= 0 && i <= 255) effectIntensityDefault = i;
       }
     }
+    saveCurrPresetCycConf = server.hasArg("PC");
     turnOnAtBoot = server.hasArg("BO");
     if (server.hasArg("BP"))
     {
@@ -211,6 +214,7 @@ void handleSettingsSet(byte subPage)
         transitionDelay = i;
       }
     }
+    disableSecTransition = !server.hasArg("T2");
     if (server.hasArg("TB"))
     {
       nightlightTargetBri = server.arg("TB").toInt();
@@ -229,6 +233,7 @@ void handleSettingsSet(byte subPage)
       int i = server.arg("WO").toInt();
       if (i >= -255  && i <= 255) arlsOffset = i;
     }
+    skipFirstLed = server.hasArg("SL");
     if (server.hasArg("BF"))
     {
       int i = server.arg("BF").toInt();
@@ -239,6 +244,7 @@ void handleSettingsSet(byte subPage)
   //UI
   if (subPage == 3)
   {
+    if (server.hasArg("UI")) uiConfiguration = server.arg("UI").toInt();
     if (server.hasArg("DS")) serverDescription = server.arg("DS");
     useHSBDefault = server.hasArg("MD");
     useHSB = useHSBDefault;
@@ -267,6 +273,8 @@ void handleSettingsSet(byte subPage)
     notifyDirect = notifyDirectDefault;
     notifyButton = server.hasArg("SB");
     notifyTwice = server.hasArg("S2");
+    receiveDirect = server.hasArg("RD");
+    enableRealtimeUI = server.hasArg("RU");
     alexaEnabled = server.hasArg("AL");
     if (server.hasArg("AI")) alexaInvocationName = server.arg("AI");
     alexaNotify = server.hasArg("SA");
@@ -381,7 +389,7 @@ void handleSettingsSet(byte subPage)
     }
   }
   saveSettingsToEEPROM();
-  if (subPage == 2) strip.init(useRGBW,ledCount,PIN);
+  if (subPage == 2) strip.init(useRGBW,ledCount,PIN,skipFirstLed);
 }
 
 bool handleSet(String req)
@@ -703,6 +711,8 @@ bool handleSet(String req)
         }
       }
    }
+   //deactivate nightlight if target brightness is reached
+   if (bri == nightlightTargetBri) nightlightActive = false;
    //set time (unix timestamp)
    pos = req.indexOf("ST=");
    if (pos > 0) {
@@ -729,6 +739,12 @@ bool handleSet(String req)
    if (_cc_updated) strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
    
    //set presets
+    pos = req.indexOf("P1="); //sets first preset for cycle
+   if (pos > 0) presetCycleMin = req.substring(pos + 3).toInt();
+
+   pos = req.indexOf("P2="); //sets last preset for cycle
+   if (pos > 0) presetCycleMax = req.substring(pos + 3).toInt();
+   
    if (req.indexOf("CY=") > 0) //preset cycle
    {
       presetCyclingEnabled = true;
@@ -736,61 +752,36 @@ bool handleSet(String req)
       {
         presetCyclingEnabled = false;
       }
-      bool all = true;
-      if (req.indexOf("&PA") > 0)
-      {
-        presetCycleBri = true;
-        all = false;
-      }
-      if (req.indexOf("&PC") > 0)
-      {
-        presetCycleCol = true;
-        all = false;
-      }
-      if (req.indexOf("&PX") > 0)
-      {
-        presetCycleFx = true;
-        all = false;
-      }
-      if (all)
-      {
-        presetCycleBri = true;
-        presetCycleCol = true;
-        presetCycleFx = true;
-      }
+      presetCycCurr = presetCycleMin;
    }
    pos = req.indexOf("PT="); //sets cycle time in ms
    if (pos > 0) {
       int v = req.substring(pos + 3).toInt();
       if (v > 49) presetCycleTime = v;
    }
-   pos = req.indexOf("P1="); //sets first preset for cycle
-   if (pos > 0) presetCycleMin = req.substring(pos + 3).toInt();
-
-   pos = req.indexOf("P2="); //sets last preset for cycle
-   if (pos > 0) presetCycleMax = req.substring(pos + 3).toInt();
-   
+   if (req.indexOf("PA=") > 0) //apply brightness from preset
+   {
+      presetApplyBri = true;
+      if (req.indexOf("PA=0") > 0) presetApplyBri = false;
+   }
+   if (req.indexOf("PC=") > 0) //apply color from preset
+   {
+      presetApplyCol = true;
+      if (req.indexOf("PC=0") > 0) presetApplyCol = false;
+   }
+   if (req.indexOf("PX=") > 0) //apply effects from preset
+   {
+      presetApplyFx = true;
+      if (req.indexOf("PX=0") > 0) presetApplyFx = false;
+   }
    pos = req.indexOf("PS="); //saves current in preset
    if (pos > 0) {
       savePreset(req.substring(pos + 3).toInt());
    }
    pos = req.indexOf("PL="); //applies entire preset
    if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt(), true, true, true);
-      effectUpdated = true;
-   }
-   pos = req.indexOf("PA="); //applies brightness from preset
-   if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt(), true, false, false);
-   }
-   pos = req.indexOf("PC="); //applies color from preset
-   if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt(), false, true, false);
-   }
-   pos = req.indexOf("PX="); //applies effects from preset
-   if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt(), false, false, true);
-      effectUpdated = true;
+      applyPreset(req.substring(pos + 3).toInt(), presetApplyBri, presetApplyCol, presetApplyFx);
+      if (presetApplyFx) effectUpdated = true;
    }
 
    //cronixie
@@ -817,7 +808,16 @@ bool handleSet(String req)
       if (overlayCurrent == 4) strip.setCronixieBacklight(cronixieBacklight);
       overlayRefreshedTime = 0;
    }
-
+   pos = req.indexOf("U0="); //user var 0
+   if (pos > 0) {
+      userVar0 = req.substring(pos + 3).toInt();
+   }
+   pos = req.indexOf("U1="); //user var 1
+   if (pos > 0) {
+      userVar1 = req.substring(pos + 3).toInt();
+   }
+   //you can add more if you need
+   
    //internal call, does not send XML response
    pos = req.indexOf("IN");
    if (pos < 1) XML_response();

@@ -142,6 +142,7 @@ String getSettings(byte subPage)
     resp += ds + "CB" + v + colS[2] +";";
     resp += ds + "CA" + v + briS +";";
     resp += ds + "EW" + c + useRGBW +";";
+    resp += ds + "AW" + c + autoRGBtoRGBW +";";
     resp += ds + "CW" + v + whiteS +";";
     resp += ds + "SR" + v + colSecS[0] +";";
     resp += ds + "SG" + v + colSecS[1] +";";
@@ -158,6 +159,7 @@ String getSettings(byte subPage)
     resp += ds + "TS" + c + sweepTransition +";";
     resp += ds + "TI" + c + !sweepDirection +";";
     resp += ds + "TD" + v + transitionDelay +";";
+    resp += ds + "T2" + c + !disableSecTransition +";";
     resp += ds + "BF" + v + briMultiplier +";";
     resp += ds + "TB" + v + nightlightTargetBri +";";
     resp += ds + "TL" + v + nightlightDelayMins +";";
@@ -165,10 +167,12 @@ String getSettings(byte subPage)
     resp += ds + "RV" + c + reverseMode +";";
     resp += ds + "EI" + c + initLedsLast +";";
     resp += ds + "WO" + v + arlsOffset +";";
+    resp += ds + "SL" + c + skipFirstLed +";";
   }
 
   if (subPage == 3)
   { 
+    resp += ds + "UI" + si + String(uiConfiguration) + ";";
     resp += ds + "DS" + v + "\"" + serverDescription + "\";";
     resp += ds + "MD" + c + useHSBDefault + ";";
     resp += ds + "TH" + si + String(currentTheme) + ";";
@@ -188,6 +192,8 @@ String getSettings(byte subPage)
     resp += ds + "SB" + c + notifyButton +";";
     resp += ds + "SH" + c + notifyHue +";";
     resp += ds + "S2" + c + notifyTwice +";";
+    resp += ds + "RD" + c + receiveDirect +";";
+    resp += ds + "RU" + c + enableRealtimeUI +";";
     resp += ds + "AL" + c + alexaEnabled +";";
     resp += ds + "AI" + v + "\"" + alexaInvocationName + "\";";
     resp += ds + "SA" + c + alexaNotify +";";

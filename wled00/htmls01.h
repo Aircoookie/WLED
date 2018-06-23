@@ -7,15 +7,15 @@ body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);
 
 const char PAGE_settings0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html>
-<head>
-<title>WLED Settings</title>
+<html><head><title>WLED Settings</title>
 )=====";
 
 const char PAGE_settings1[] PROGMEM = R"=====(
-body{text-align:center;background:var(--cCol);height:100%;margin:0;background-attachment:fixed}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:8vmin;height:13.86vh;width:95%;margin-top:2.4vh}</style>
+body{text-align:center;background:var(--cCol);height:100%;margin:0;background-attachment:fixed}html{--h:11.55vh}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),Helvetica,sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:8vmin;height:var(--h);width:95%;margin-top:2.4vh}</style>
+<script>function BB(){if(window.frameElement){document.getElementById("b").style.display="none";document.documentElement.style.setProperty("--h","13.86vh")}};</script>
 </head>
-<body>
+<body onload=BB()>
+<form action=/><button type=submit id=b>Back</button></form>
 <form action=/settings/wifi><button type=submit>WiFi Setup</button></form>
 <form action=/settings/leds><button type=submit>LED Preferences</button></form>
 <form action=/settings/ui><button type=submit>User Interface</button></form>
@@ -28,8 +28,7 @@ body{text-align:center;background:var(--cCol);height:100%;margin:0;background-at
 
 const char PAGE_settings_wifi0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html>
-<head>
+<html><head>
 <title>WiFi Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");}function B(){window.history.back();}function GetV(){var d = document;
 )=====";
 const char PAGE_settings_wifi1[] PROGMEM = R"=====(
@@ -93,15 +92,18 @@ Default RGB color:
 <input name="CG" type="number" min="0" max="255" required>
 <input name="CB" type="number" min="0" max="255" required><br>
 Default white value (only RGBW): <input name="CW" type="number" min="0" max="255" required><br>
+Auto-calculate white from RGB instead: <input type="checkbox" name="AW"><br>
 Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br>
 Default effect ID: <input name="FX" type="number" min="0" max="57" required><br>
 Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
 Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br>
+Default secondary RGB(W):<br>
 <input name="SR" type="number" min="0" max="255" required>
 <input name="SG" type="number" min="0" max="255" required>
 <input name="SB" type="number" min="0" max="255" required>
 <input name="SW" type="number" min="0" max="255" required><br>
 Ignore and use current color, brightness and effects: <input type="checkbox" name="IS"><br>
+Save current preset cycle configuration as boot default: <input type="checkbox" name="PC"><br>
 Turn on after power up/reset: <input type="checkbox" name="BO"><br>
 Use Gamma correction for brightness: <input type="checkbox" name="GB"><br>
 Use Gamma correction for color: <input type="checkbox" name="GC"><br>
@@ -109,7 +111,8 @@ Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
 Fade: <input type="checkbox" name="TF"><br>
 Sweep: <input type="checkbox" name="TS">  Invert direction: <input type="checkbox" name="TI"><br>
-Transition Time: <input name="TD" maxlength="5" size="2"> ms
+Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
+Enable transition for secondary color: <input type="checkbox" name="T2"><br>
 <h3>Timed light</h3>
 Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
 Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
@@ -117,7 +120,8 @@ Fade down: <input type="checkbox" name="TW"><br>
 <h3>Advanced</h3>
 Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
 Init LEDs after WiFi: <input type="checkbox" name="EI"><br>
-WARLS offset: <input name="WO" type="number" min="-255" max="255" required><hr>
+WARLS offset: <input name="WO" type="number" min="-255" max="255" required><br>
+Skip first LED: <input type="checkbox" name="SL"><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
@@ -126,8 +130,7 @@ WARLS offset: <input name="WO" type="number" min="-255" max="255" required><hr>
 
 const char PAGE_settings_ui0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html>
-<head>
+<html><head>
 <title>UI Settings</title><script>
 function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d = document;
 )=====";
@@ -138,7 +141,14 @@ const char PAGE_settings_ui1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Web Setup</h2>
-Server description: <input name="DS" maxlength="32"><br>
+User Interface Mode:
+<select name="UI">
+<option value="0" selected>Auto</option>
+<option value="1">Classic</option>
+<option value="2">Mobile</option>
+</select><br>
+Server description: <input name="DS" maxlength="32"><br><br>
+<i>The following options are for the classic UI!</i><br>
 Use HSB sliders instead of RGB by default: <input type="checkbox" name="MD"><br>
 Color Theme:
 <select name="TH" onchange="Ct()">
@@ -196,12 +206,16 @@ Send notifications on direct change: <input type="checkbox" name="SD"><br>
 Send notifications on button press: <input type="checkbox" name="SB"><br>
 Send Alexa notifications: <input type="checkbox" name="SA"><br>
 Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
-Send notifications twice: <input type="checkbox" name="S2">
+Send notifications twice: <input type="checkbox" name="S2"><br>
+Receive UDP realtime: <input type="checkbox" name="RD"><br>
+Enable UI access during realtime: <input type="checkbox" name="RU"> (can cause issues)
 <h3>Alexa Voice Assistant</h3>
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
 Alexa invocation name: <input name="AI" maxlength="32"><br>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
+Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
+Then, receive <input type="checkbox" name="HO"> On/Off, <input type="checkbox" name="HB"> Brightness, and <input type="checkbox" name="HC"> Color<br>
 Hue Bridge IP:<br>
 <input name="H0" type="number" min="0" max="255" required> .
 <input name="H1" type="number" min="0" max="255" required> .
@@ -209,8 +223,6 @@ Hue Bridge IP:<br>
 <input name="H3" type="number" min="0" max="255" required><br>
 <b>Press the pushlink button on the bridge, after that save this page!</b><br>
 (when first connecting)<br>
-Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
-Then, receive <input type="checkbox" name="HO"> On/Off, <input type="checkbox" name="HB"> Brightness, and <input type="checkbox" name="HC"> Color<br>
 Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
@@ -318,7 +330,7 @@ const char PAGE_settings_sec1[] PROGMEM = R"=====(
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
 <h2>Security & Update setup</h2>
-Enable OTA lock: <input type="checkbox" name="NO"><br>
+Lock wireless (OTA) software update: <input type="checkbox" name="NO"><br>
 Passphrase: <input type="password" name="OP" maxlength="32"><br>
 To enable OTA, for security reasons you need to also enter the correct password!<br>
 The password should be changed when OTA is enabled.<br>
@@ -335,10 +347,12 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.6.4<br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.7.0<br><br>
+<b>Contributors:</b><br>
+StormPie <i>(Mobile HTML UI)</i><br><br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
-<i>Uses libraries:</i><br>
+<b>Uses libraries:</b><br>
 <i>ESP8266/ESP32 Arduino Core</i><br>
 <i>(ESP32) <a href="https://github.com/bbx10/WebServer_tng">WebServer_tng</a> by bbx10</i><br>
 <i><a href="https://github.com/kitesurfer1404/WS2812FX">WS2812FX</a> by kitesurfer1404 (modified)</i><br>

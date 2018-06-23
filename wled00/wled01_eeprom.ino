@@ -148,6 +148,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
   EEPROM.write(397, initLedsLast);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
+  EEPROM.write(399, disableSecTransition);
 
   for (int k=0;k<6;k++){
     int in = 900+k*8;
@@ -208,6 +209,25 @@ void saveSettingsToEEPROM()
   EEPROM.write(2179, macroLongPress);
   EEPROM.write(2180, macroCountdown);
   EEPROM.write(2181, macroNl);
+
+  EEPROM.write(2200,!receiveDirect);
+  EEPROM.write(2201,enableRealtimeUI);
+  EEPROM.write(2202,uiConfiguration);
+  EEPROM.write(2203,autoRGBtoRGBW);
+  EEPROM.write(2204,skipFirstLed);
+
+  if (saveCurrPresetCycConf)
+  {
+    EEPROM.write(2205,presetCyclingEnabled);
+    EEPROM.write(2206,(presetCycleTime >> 0) & 0xFF);
+    EEPROM.write(2207,(presetCycleTime >> 8) & 0xFF);
+    EEPROM.write(2208,presetCycleMin);
+    EEPROM.write(2209,presetCycleMax);
+    EEPROM.write(2210,presetApplyBri);
+    EEPROM.write(2211,presetApplyCol);
+    EEPROM.write(2212,presetApplyFx);
+    saveCurrPresetCycConf = false;
+  }
   
   EEPROM.commit();
 }
@@ -260,7 +280,7 @@ void loadSettingsFromEEPROM(bool first)
   if (apChannel > 13 || apChannel < 1) apChannel = 1;
   apHide = EEPROM.read(228);
   if (apHide > 1) apHide = 1;
-  ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200) ledCount = 10;
+  ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
   notifyButton = EEPROM.read(230);
   notifyTwice = EEPROM.read(231);
   buttonEnabled = EEPROM.read(232);
@@ -416,14 +436,37 @@ void loadSettingsFromEEPROM(bool first)
     macroCountdown = EEPROM.read(2180);
     macroNl = EEPROM.read(2181);
   }
+  receiveDirect = !EEPROM.read(2200);
+  enableRealtimeUI = EEPROM.read(2201);
+  uiConfiguration = EEPROM.read(2202);
+  
+  #ifdef WLED_FLASH_512K_MODE
+  uiConfiguration = 1;
+  //force default UI since mobile is unavailable
+  #endif
+  
+  autoRGBtoRGBW = EEPROM.read(2203);
+  skipFirstLed = EEPROM.read(2204);
+
+  if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))
+  {
+    presetCyclingEnabled = EEPROM.read(2205);
+    presetCycleTime = ((EEPROM.read(2206) << 0) & 0xFF) + ((EEPROM.read(2207) << 8) & 0xFF00);
+    presetCycleMin = EEPROM.read(2208);
+    presetCycleMax = EEPROM.read(2209);
+    presetApplyBri = EEPROM.read(2210);
+    presetApplyCol = EEPROM.read(2211);
+    presetApplyFx = EEPROM.read(2212);
+  }
   
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = ((EEPROM.read(394) << 0) & 0xFF) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
   initLedsLast = EEPROM.read(397);
+  disableSecTransition = EEPROM.read(399);
 
-  //favorite setting memory (25 slots/ each 20byte)
+  //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved
 
   currentTheme = EEPROM.read(948);

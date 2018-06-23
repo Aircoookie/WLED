@@ -115,8 +115,6 @@ void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.develo
   xy[1] = Y / (X + Y + Z);
 }
 
-/*//For some reason min and max are not declared here
-
 float minf (float v, float w)
 {
   if (w > v) return v;
@@ -129,11 +127,12 @@ float maxf (float v, float w)
   return v;
 }
 
-void colorRGBtoRGBW(byte* rgb, byte* wht) //rgb to rgbw, untested and currently unused
+void colorRGBtoRGBW(byte* rgb, byte* wht) //rgb to rgbw (http://codewelt.com/rgbw)
 {
-  *wht = (float)minf(rgb[0],minf(rgb[1],rgb[2]))*0.95;
-  rgb[0]-=wht;
-  rgb[1]-=wht;
-  rgb[2]-=wht;
-}*/
+  float low = minf(rgb[0],minf(rgb[1],rgb[2]));
+  float high = maxf(rgb[0],maxf(rgb[1],rgb[2]));
+  if (high < 0.1f) return;
+  float sat = 255.0f * ((high - low) / high);
+  *wht = (byte)((255.0f - sat) / 255.0f * (rgb[0] + rgb[1] + rgb[2]) / 3);
+}
 

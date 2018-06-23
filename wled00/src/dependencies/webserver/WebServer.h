@@ -105,7 +105,7 @@ public:
   String argName(int i);          // get request argument name by number
   int args();                     // get arguments count
   bool hasArg(String name);       // check if argument exists
-  void collectHeaders(const char* headerKeys[], const size_t headerKeysCount); // set the request headers to collect
+  void collectHeaders(String headerKey); // set the request headers to collect
   String header(String name);      // get request header value by name
   String header(int i);              // get request header value by number
   String headerName(int i);          // get request header name by number

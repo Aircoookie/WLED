@@ -3,9 +3,13 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.6.4
+ * @version 0.7.0
  * @author Christian Schwinne
  */
+
+//ESP8266-01 got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
+//Uncomment the following line to disable some features (currently Mobile UI) to compile for ESP8266-01
+//#define WLED_FLASH_512K_MODE
 
 #include <Arduino.h>
 #ifdef ARDUINO_ARCH_ESP32
@@ -33,8 +37,8 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1804151
-const String versionString = "0.6.4";
+#define VERSION 1806240
+const String versionString = "0.7.0";
 
 //AP and OTA default passwords (change them!)
 String apPass = "wled1234";
@@ -54,8 +58,9 @@ byte auxDefaultState = 0; //0: input 1: high 2: low
 byte auxTriggeredState = 0; //0: input 1: high 2: low
 
 //Default CONFIG
-String serverDescription = versionString;
+String serverDescription = "WLED Light";
 byte currentTheme = 0;
+byte uiConfiguration = 0; //0: auto 1: classic 2: mobile
 String clientSSID = "Your_Network";
 String clientPass = "";
 String cmDNS = "led";
@@ -69,9 +74,9 @@ IPAddress staticIP(0, 0, 0, 0);
 IPAddress staticGateway(0, 0, 0, 0);
 IPAddress staticSubnet(255, 255, 255, 0);
 IPAddress staticDNS(8, 8, 8, 8); //only for NTP
-bool useHSB = true, useHSBDefault = true, useRGBW = false;
+bool useHSB = true, useHSBDefault = true, useRGBW = false, autoRGBtoRGBW = false;
 bool turnOnAtBoot = true;
-bool initLedsLast = false;
+bool initLedsLast = false, skipFirstLed = false;
 byte bootPreset = 0;
 byte colS[]{255, 159, 0};
 byte colSecS[]{0, 0, 0};
@@ -81,6 +86,7 @@ byte briS = 127;
 byte nightlightTargetBri = 0;
 bool fadeTransition = true;
 bool sweepTransition = false, sweepDirection = true;
+bool disableSecTransition = true;
 uint16_t transitionDelay = 1200, transitionDelayDefault = transitionDelay;
 bool reverseMode = false;
 bool otaLock = false, wifiLock = false;
@@ -91,7 +97,7 @@ bool receiveNotifications = true, receiveNotificationBrightness = true, receiveN
 byte briMultiplier = 100;
 byte nightlightDelayMins = 60;
 bool nightlightFade = true;
-uint16_t udpPort = 21324;
+uint16_t udpPort = 21324, udpRgbPort = 19446;
 byte effectDefault = 0;
 byte effectSpeedDefault = 75;
 byte effectIntensityDefault = 128;
@@ -126,15 +132,19 @@ IPAddress hueIP = (0,0,0,0);
 bool notifyHue = true;
 bool hueApplyOnOff = true, hueApplyBri = true, hueApplyColor = true;
 
+uint16_t userVar0 = 0, userVar1 = 0;
+
 //Internal vars
 byte col[]{0, 0, 0};
 byte colOld[]{0, 0, 0};
 byte colT[]{0, 0, 0};
 byte colIT[]{0, 0, 0};
 byte colSec[]{0, 0, 0};
+byte colSecT[]{0, 0, 0};
+byte colSecOld[]{0, 0, 0};
 byte colSecIT[]{0, 0, 0};
 byte white, whiteOld, whiteT, whiteIT;
-byte whiteSec, whiteSecIT;
+byte whiteSec, whiteSecOld, whiteSecT, whiteSecIT;
 byte lastRandomIndex = 0;
 uint16_t transitionDelayTemp = transitionDelay;
 unsigned long transitionStartTime;
@@ -153,20 +163,20 @@ byte notificationSentCallMode = 0;
 bool notificationTwoRequired = false;
 bool nightlightActive = false;
 bool nightlightActiveOld = false;
-uint32_t nightlightDelayMs;
-byte briNlT;
+uint32_t nightlightDelayMs = 10;
+byte briNlT = 0;
 byte effectCurrent = 0;
 byte effectSpeed = 75;
 byte effectIntensity = 128;
 bool onlyAP = false;
-bool udpConnected = false;
+bool udpConnected = false, udpRgbConnected = false;
 String cssCol[]={"","","","","",""};
 String cssFont="Verdana";
 String cssColorString="";
 //NTP stuff
 bool ntpConnected = false;
 byte currentTimezone = 0;
-time_t local;
+time_t local = 0;
 int utcOffsetSecs = 0;
 
 //hue
@@ -207,15 +217,17 @@ bool presetCyclingEnabled = false;
 byte presetCycleMin = 1, presetCycleMax = 5;
 uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
-bool presetCycleBri, presetCycleCol, presetCycleFx;
+bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
+bool saveCurrPresetCycConf = false;
 
 uint32_t arlsTimeoutMillis = 2500;
 bool arlsTimeout = false;
-bool receiveDirect = true;
-unsigned long arlsTimeoutTime;
+bool receiveDirect = true, enableRealtimeUI = false;
+IPAddress realtimeIP = (0,0,0,0);
+unsigned long arlsTimeoutTime = 0;
 byte auxTime = 0;
-unsigned long auxStartTime;
-bool auxActive, auxActiveBefore;
+unsigned long auxStartTime = 0;
+bool auxActive = false, auxActiveBefore = false;
 bool showWelcomePage = false;
 
 bool useGammaCorrectionBri = false;
@@ -240,7 +252,7 @@ ESP8266WebServer server(80);
 #endif
 HTTPClient hueClient;
 ESP8266HTTPUpdateServer httpUpdater;
-WiFiUDP notifierUdp;
+WiFiUDP notifierUdp, rgbUdp;
 WiFiUDP ntpUdp;
 IPAddress ntpServerIP;
 unsigned int ntpLocalPort = 2390;
@@ -294,14 +306,6 @@ String txd = "Please disable OTA Lock in security settings!";
 
 void serveMessage(int,String,String,int=255);
 
-void down()
-{
-  briT = 0;
-  setAllLeds();
-  DEBUG_PRINTLN("MODULE TERMINATED");
-  while (1) {delay(1000);}
-}
-
 void reset()
 {
   briT = 0;
@@ -323,7 +327,7 @@ void loop() {
     yield();
     handleButton();
     handleNetworkTime();
-    if (!otaLock && aOtaEnabled) ArduinoOTA.handle();
+    if (aOtaEnabled) ArduinoOTA.handle();
     handleAlexa();
     handleOverlays();
     if (!arlsTimeout) //block stuff if WARLS/Adalight is enabled

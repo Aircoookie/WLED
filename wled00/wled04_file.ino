@@ -13,7 +13,7 @@ void handleSerial()
         strip.setMode(0);
       }
       arlsTimeout = true;
-      arlsTimeoutTime = millis() + 4900;
+      arlsTimeoutTime = millis() + 5200;
       delay(1);
       byte hi = Serial.read();
       byte ledc = Serial.read();

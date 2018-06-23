@@ -5,12 +5,12 @@
 void wledInit()
 { 
   EEPROM.begin(EEPSIZE);
-  ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200) ledCount = 10;
+  ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
   //RMT eats up too much RAM
   #ifdef ARDUINO_ARCH_ESP32
   if (ledCount > 600) ledCount = 600;
   #endif
-  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,PIN); //quick init
+  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,PIN,EEPROM.read(2204)); //quick init
 
   Serial.begin(115200);
   Serial.setTimeout(50);
@@ -39,17 +39,11 @@ void wledInit()
     hueIP[1] = WiFi.localIP()[1];
     hueIP[2] = WiFi.localIP()[2];
   }
-  
-  // Set up mDNS responder:
-  if (cmDNS != NULL && !onlyAP && !MDNS.begin(cmDNS.c_str())) {
-    DEBUG_PRINTLN("Error setting up MDNS responder!");
-    down();
-  }
-  DEBUG_PRINTLN("mDNS responder started");
 
   if (udpPort > 0 && udpPort != ntpLocalPort && WiFi.status() == WL_CONNECTED)
   {
     udpConnected = notifierUdp.begin(udpPort);
+    if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
   }
   if (ntpEnabled && WiFi.status() == WL_CONNECTED)
   ntpConnected = ntpUdp.begin(ntpLocalPort);
@@ -170,15 +164,17 @@ void wledInit()
   server.on("/freeheap", HTTP_GET, [](){
     server.send(200, "text/plain", (String)ESP.getFreeHeap());
     });
-
-  server.on("/pdebug", HTTP_GET, [](){
-    server.send(200, "text/plain", (String)presetCycleTime);
-    });
     
   server.on("/power", HTTP_GET, [](){
     String val = (String)(int)strip.getPowerEstimate(ledCount,strip.getColor(),strip.getBrightness());
     val += "mA currently";
     serveMessage(200,val,"This is just an estimate (does not take into account several factors like effects and wire resistance). It is NOT an accurate measurement!",254);
+    });
+
+  server.on("/u", HTTP_GET, [](){
+    server.setContentLength(strlen_P(PAGE_usermod));
+    server.send(200, "text/html", "");
+    server.sendContent_P(PAGE_usermod);
     });
     
   server.on("/teapot", HTTP_GET, [](){
@@ -199,19 +195,11 @@ void wledInit()
     server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
     server.on("/list", HTTP_GET, handleFileList);
     #endif
-    server.on("/down", HTTP_GET, down);
-    server.on("/cleareeprom", HTTP_GET, clearEEPROM);
     //init ota page
     httpUpdater.setup(&server);
   } else
   {
     server.on("/edit", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd, 254);
-    });
-    server.on("/down", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd, 254);
-    });
-    server.on("/cleareeprom", HTTP_GET, [](){
     serveMessage(500, "Access Denied", txd, 254);
     });
     server.on("/update", HTTP_GET, [](){
@@ -231,14 +219,21 @@ void wledInit()
       server.send(404, "text/plain", "Not Found");
     }
   });
+  
+  #ifndef ARDUINO_ARCH_ESP32
+  const char * headerkeys[] = {"User-Agent"};
+  server.collectHeaders(headerkeys,sizeof(char*));
+  #else
+  String ua = "User-Agent";
+  server.collectHeaders(ua);
+  #endif
+  
   if (!initLedsLast) strip.service();
   //init Alexa hue emulation
   if (alexaEnabled) alexaInit();
 
   server.begin();
   DEBUG_PRINTLN("HTTP server started");
-  // Add service to MDNS
-  MDNS.addService("http", "tcp", 80);
 
   //init ArduinoOTA
   if (aOtaEnabled)
@@ -249,8 +244,19 @@ void wledInit()
       #endif
       DEBUG_PRINTLN("Start ArduinoOTA");
     });
+    if (cmDNS.length() > 0) ArduinoOTA.setHostname(cmDNS.c_str());
     ArduinoOTA.begin();
   }
+
+  if (!initLedsLast) strip.service();
+  // Set up mDNS responder:
+  if (cmDNS.length() > 0 && !onlyAP)
+  {
+    MDNS.begin(cmDNS.c_str());
+    DEBUG_PRINTLN("mDNS responder started");
+    // Add service to MDNS
+    MDNS.addService("http", "tcp", 80);
+  } 
 
   if (initLedsLast) initStrip();
   userBegin();
@@ -261,13 +267,15 @@ void wledInit()
 void initStrip()
 {
   // Initialize NeoPixel Strip and button
-  if (initLedsLast) strip.init(useRGBW,ledCount,PIN);
+  if (initLedsLast) strip.init(useRGBW,ledCount,PIN,skipFirstLed);
   strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
   strip.start();
 
   pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(4,OUTPUT); //this is only needed in special cases
+  digitalWrite(4,LOW);
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
@@ -305,7 +313,13 @@ void initCon()
   }
   int fail_count = 0;
   if (clientSSID.length() <1 || clientSSID.equals("Your_Network")) fail_count = apWaitTimeSecs*2;
+  #ifndef ARDUINO_ARCH_ESP32
+  WiFi.hostname(serverDescription);
+  #endif
   WiFi.begin(clientSSID.c_str(), clientPass.c_str());
+  #ifdef ARDUINO_ARCH_ESP32
+  WiFi.setHostname(serverDescription.c_str());
+  #endif
   unsigned long lastTry = 0;
   bool con = false;
   while(!con)
@@ -386,19 +400,46 @@ void serveIndexOrWelcome()
   }
 }
 
+void serveRealtimeError(bool settings)
+{
+  String mesg = "The ";
+  mesg += (settings)?"settings":"WLED";
+  mesg += " UI is not available while receiving real-time data (UDP from ";
+  mesg += realtimeIP[0];
+  for (int i = 1; i < 4; i++)
+  {
+    mesg += ".";
+    mesg += realtimeIP[i];
+  }
+  mesg += ").";
+  server.send(200, "text/plain", mesg);
+}
+
 void serveIndex()
 {
-  if (!arlsTimeout) //do not serve while receiving realtime
+  bool serveMobile = false;
+  if (uiConfiguration == 0) serveMobile = checkClientIsMobile(server.header("User-Agent"));
+  else if (uiConfiguration == 2) serveMobile = true;
+
+  if (!arlsTimeout || enableRealtimeUI) //do not serve while receiving realtime
   {
-    server.setContentLength(strlen_P(PAGE_index0) + cssColorString.length() + strlen_P(PAGE_index1) + strlen_P(PAGE_index2) + strlen_P(PAGE_index3));
-    server.send(200, "text/html", "");
-    server.sendContent_P(PAGE_index0);
-    server.sendContent(cssColorString); 
-    server.sendContent_P(PAGE_index1); 
-    server.sendContent_P(PAGE_index2);
-    server.sendContent_P(PAGE_index3);
+    if (serveMobile)
+    {
+      server.setContentLength(strlen_P(PAGE_indexM));
+      server.send(200, "text/html", "");
+      server.sendContent_P(PAGE_indexM);
+    } else
+    {
+      server.setContentLength(strlen_P(PAGE_index0) + cssColorString.length() + strlen_P(PAGE_index1) + strlen_P(PAGE_index2) + strlen_P(PAGE_index3));
+      server.send(200, "text/html", "");
+      server.sendContent_P(PAGE_index0);
+      server.sendContent(cssColorString); 
+      server.sendContent_P(PAGE_index1); 
+      server.sendContent_P(PAGE_index2);
+      server.sendContent_P(PAGE_index3);
+    }
   } else {
-    server.send(200, "text/plain", "The WLED UI is not available while receiving real-time data.");
+    serveRealtimeError(false);
   }
 }
 
@@ -436,7 +477,7 @@ void serveMessage(int code, String headl, String subl="", int optionType)
 void serveSettings(byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 255: welcomepage
-  if (!arlsTimeout) //do not serve while receiving realtime
+  if (!arlsTimeout || enableRealtimeUI) //do not serve while receiving realtime
     {
       int pl0, pl1;
       switch (subPage)
@@ -483,7 +524,7 @@ void serveSettings(byte subPage)
         default: server.sendContent_P(PAGE_settings1); 
       }
     } else {
-        server.send(200, "text/plain", "The settings are not available while receiving real-time data.");
+        serveRealtimeError(true);
     }
 }
 
@@ -516,6 +557,15 @@ String getBuildInfo()
   #endif
   info += "build-type: src\r\n";
   return info;
+}
+
+bool checkClientIsMobile(String useragent)
+{
+  //to save complexity this function is not comprehensive
+  if (useragent.indexOf("Android") >= 0) return true;
+  if (useragent.indexOf("iPhone") >= 0) return true;
+  if (useragent.indexOf("iPod") >= 0) return true;
+  return false;
 }
 
 

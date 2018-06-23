@@ -4,9 +4,11 @@
  * EEPROM bytes 2944 to 3071 are reserved for your custom use case.
  */
 
+//Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
+
 void userBeginPreConnection()
 {
-
+  
 }
 
 void userBegin()
@@ -18,4 +20,3 @@ void userLoop()
 {
   
 }
-

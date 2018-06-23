@@ -19,6 +19,9 @@
 			margin: 0;
 			background-attachment: fixed;
 		}
+		html {
+			--h:11.55vh;
+		}
 		button {
 			background: var(--bCol);
 			color: var(--tCol);
@@ -27,13 +30,23 @@
 			display: inline-block;
 			filter: drop-shadow( -5px -5px 5px var(--sCol) );
 			font-size: 8vmin;
-			height:13.86vh;
+			height:var(--h);
 			width: 95%;
 			margin-top: 2.4vh;
 		}
 	</style>
+	<script>
+	function BB()
+	{
+		if (window.frameElement) {
+			document.getElementById("b").style.display = "none";
+			document.documentElement.style.setProperty('--h',"13.86vh");
+		}
+	}
+	</script>
 </head>
-<body>
+<body onload="BB()">
+<form action="/"><button type=submit id="b">Back</button></form>
 <form action="/settings/wifi"><button type="submit">WiFi Setup</button></form>
 <form action="/settings/leds"><button type="submit">LED Preferences</button></form>
 <form action="/settings/ui"><button type="submit">User Interface</button></form>
