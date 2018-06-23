@@ -90,8 +90,8 @@ WebServer::~WebServer() {
 void WebServer::begin() {
   _currentStatus = HC_NONE;
   _server.begin();
-  if(!_headerKeysCount)
-    collectHeaders(0, 0);
+  //if(!_headerKeysCount)
+    //collectHeaders(0, 0);
 }
 
 bool WebServer::authenticate(const char * username, const char * password){
@@ -408,15 +408,13 @@ String WebServer::header(String name) {
   return String();
 }
 
-void WebServer::collectHeaders(const char* headerKeys[], const size_t headerKeysCount) {
-  _headerKeysCount = headerKeysCount + 1;
-  if (_currentHeaders)
-     delete[]_currentHeaders;
-  _currentHeaders = new RequestArgument[_headerKeysCount];
+//Modified by Aircoookie to work for WLED
+void WebServer::collectHeaders(String headerKey) {
+  _headerKeysCount = 2;
+  if (_currentHeaders) delete[]_currentHeaders;
+  _currentHeaders = new RequestArgument[2];
   _currentHeaders[0].key = AUTHORIZATION_HEADER;
-  for (int i = 1; i < _headerKeysCount; i++){
-    _currentHeaders[i].key = headerKeys[i-1];
-  }
+  _currentHeaders[1].key = headerKey;
 }
 
 String WebServer::header(int i) {

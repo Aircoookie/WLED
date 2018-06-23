@@ -167,6 +167,7 @@ String getSettings(byte subPage)
     resp += ds + "RV" + c + reverseMode +";";
     resp += ds + "EI" + c + initLedsLast +";";
     resp += ds + "WO" + v + arlsOffset +";";
+    resp += ds + "SL" + c + skipFirstLed +";";
   }
 
   if (subPage == 3)

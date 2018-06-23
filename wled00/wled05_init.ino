@@ -10,7 +10,7 @@ void wledInit()
   #ifdef ARDUINO_ARCH_ESP32
   if (ledCount > 600) ledCount = 600;
   #endif
-  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,PIN); //quick init
+  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,PIN,EEPROM.read(2204)); //quick init
 
   Serial.begin(115200);
   Serial.setTimeout(50);
@@ -164,10 +164,6 @@ void wledInit()
   server.on("/freeheap", HTTP_GET, [](){
     server.send(200, "text/plain", (String)ESP.getFreeHeap());
     });
-
-  server.on("/pdebug", HTTP_GET, [](){
-    server.send(200, "text/plain", (String)presetCycleTime);
-    });
     
   server.on("/power", HTTP_GET, [](){
     String val = (String)(int)strip.getPowerEstimate(ledCount,strip.getColor(),strip.getBrightness());
@@ -199,19 +195,11 @@ void wledInit()
     server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
     server.on("/list", HTTP_GET, handleFileList);
     #endif
-    server.on("/down", HTTP_GET, down);
-    server.on("/cleareeprom", HTTP_GET, clearEEPROM);
     //init ota page
     httpUpdater.setup(&server);
   } else
   {
     server.on("/edit", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd, 254);
-    });
-    server.on("/down", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd, 254);
-    });
-    server.on("/cleareeprom", HTTP_GET, [](){
     serveMessage(500, "Access Denied", txd, 254);
     });
     server.on("/update", HTTP_GET, [](){
@@ -231,8 +219,14 @@ void wledInit()
       server.send(404, "text/plain", "Not Found");
     }
   });
+  
+  #ifndef ARDUINO_ARCH_ESP32
   const char * headerkeys[] = {"User-Agent"};
   server.collectHeaders(headerkeys,sizeof(char*));
+  #else
+  String ua = "User-Agent";
+  server.collectHeaders(ua);
+  #endif
   
   if (!initLedsLast) strip.service();
   //init Alexa hue emulation
@@ -273,7 +267,7 @@ void wledInit()
 void initStrip()
 {
   // Initialize NeoPixel Strip and button
-  if (initLedsLast) strip.init(useRGBW,ledCount,PIN);
+  if (initLedsLast) strip.init(useRGBW,ledCount,PIN,skipFirstLed);
   strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
@@ -319,7 +313,13 @@ void initCon()
   }
   int fail_count = 0;
   if (clientSSID.length() <1 || clientSSID.equals("Your_Network")) fail_count = apWaitTimeSecs*2;
+  #ifndef ARDUINO_ARCH_ESP32
+  WiFi.hostname(serverDescription);
+  #endif
   WiFi.begin(clientSSID.c_str(), clientPass.c_str());
+  #ifdef ARDUINO_ARCH_ESP32
+  WiFi.setHostname(serverDescription.c_str());
+  #endif
   unsigned long lastTry = 0;
   bool con = false;
   while(!con)
@@ -400,6 +400,21 @@ void serveIndexOrWelcome()
   }
 }
 
+void serveRealtimeError(bool settings)
+{
+  String mesg = "The ";
+  mesg += (settings)?"settings":"WLED";
+  mesg += " UI is not available while receiving real-time data (UDP from ";
+  mesg += realtimeIP[0];
+  for (int i = 1; i < 4; i++)
+  {
+    mesg += ".";
+    mesg += realtimeIP[i];
+  }
+  mesg += ").";
+  server.send(200, "text/plain", mesg);
+}
+
 void serveIndex()
 {
   bool serveMobile = false;
@@ -424,7 +439,7 @@ void serveIndex()
       server.sendContent_P(PAGE_index3);
     }
   } else {
-    server.send(200, "text/plain", "The WLED UI is not available while receiving real-time data.");
+    serveRealtimeError(false);
   }
 }
 
@@ -509,7 +524,7 @@ void serveSettings(byte subPage)
         default: server.sendContent_P(PAGE_settings1); 
       }
     } else {
-        server.send(200, "text/plain", "The settings are not available while receiving real-time data.");
+        serveRealtimeError(true);
     }
 }
 
@@ -540,7 +555,7 @@ String getBuildInfo()
   #else
   info += "strip-pin: gpio2\r\n";
   #endif
-  info += "build-type: dev\r\n";
+  info += "build-type: src\r\n";
   return info;
 }
 

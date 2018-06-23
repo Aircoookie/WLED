@@ -37,8 +37,8 @@
 
 #define CALL_MODE(n) (this->*_mode[n])();
 
-void WS2812FX::init(bool supportWhite, uint16_t countPixels, uint8_t pin) {
-  begin(supportWhite,countPixels,pin);
+void WS2812FX::init(bool supportWhite, uint16_t countPixels, uint8_t pin,bool skipFirst) {
+  begin(supportWhite,countPixels,pin,skipFirst);
   for (int i=0; i < _led_count; i++) _locked[i] = false;
   WS2812FX::setBrightness(_brightness);
   show();
@@ -2032,6 +2032,7 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   if (_reverseMode) i = _led_count - 1 -i;
   if (!_cronixieMode)
   {
+    if (_skipFirstMode) {i++;if(i==1)setPixelColorRaw(0,0,0,0,0);}
     if (_rgbwMode)
     {
       bus->SetPixelColor(i, RgbwColor(r,g,b,w));
@@ -2050,27 +2051,27 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       byte wCorr = (int)(((double)((_color_sec>>24) & 0xFF))*_cronixieSecMultiplier);
       for (int j=o; j< o+19; j++)
       {
-        setPixelColorRaw(j,rCorr,gCorr,bCorr,wCorr);
+        setPixelColorRaw((_skipFirstMode)?j+1:j,rCorr,gCorr,bCorr,wCorr);
       }
     } else
     {
       for (int j=o; j< o+19; j++)
       {
-        setPixelColorRaw(j,0,0,0,0);
+        setPixelColorRaw((_skipFirstMode)?j+1:j,0,0,0,0);
       }
     }
     switch(_cronixieDigits[i])
     {
-      case 0: setPixelColorRaw(o+5,r,g,b,w); break;
-      case 1: setPixelColorRaw(o+0,r,g,b,w); break;
-      case 2: setPixelColorRaw(o+6,r,g,b,w); break;
-      case 3: setPixelColorRaw(o+1,r,g,b,w); break;
-      case 4: setPixelColorRaw(o+7,r,g,b,w); break;
-      case 5: setPixelColorRaw(o+2,r,g,b,w); break;
-      case 6: setPixelColorRaw(o+8,r,g,b,w); break;
-      case 7: setPixelColorRaw(o+3,r,g,b,w); break;
-      case 8: setPixelColorRaw(o+9,r,g,b,w); break;
-      case 9: setPixelColorRaw(o+4,r,g,b,w); break;
+      case 0: setPixelColorRaw((_skipFirstMode)?o+6:o+5,r,g,b,w); break;
+      case 1: setPixelColorRaw((_skipFirstMode)?o+1:o+0,r,g,b,w); break;
+      case 2: setPixelColorRaw((_skipFirstMode)?o+7:o+6,r,g,b,w); break;
+      case 3: setPixelColorRaw((_skipFirstMode)?o+2:o+1,r,g,b,w); break;
+      case 4: setPixelColorRaw((_skipFirstMode)?o+8:o+7,r,g,b,w); break;
+      case 5: setPixelColorRaw((_skipFirstMode)?o+3:o+2,r,g,b,w); break;
+      case 6: setPixelColorRaw((_skipFirstMode)?o+9:o+8,r,g,b,w); break;
+      case 7: setPixelColorRaw((_skipFirstMode)?o+4:o+3,r,g,b,w); break;
+      case 8: setPixelColorRaw((_skipFirstMode)?o+10:o+9,r,g,b,w); break;
+      case 9: setPixelColorRaw((_skipFirstMode)?o+5:o+4,r,g,b,w); break;
       default: break;
     }
   }
@@ -2134,17 +2135,19 @@ void WS2812FX::clear()
   bus->ClearTo(RgbColor(0));
 }
 
-void WS2812FX::begin(bool supportWhite, uint16_t countPixels, uint8_t pin)
+void WS2812FX::begin(bool supportWhite, uint16_t countPixels, uint8_t pin, bool skipFirst)
 {
   if (supportWhite == _rgbwMode && countPixels == _led_count && _locked != NULL) return;
   _rgbwMode = supportWhite;
+  _skipFirstMode = skipFirst;
   _led_count = countPixels;
   _cc_i2 = _led_count -1;
+  if (_skipFirstMode) _led_count++;
   uint8_t ty = 1;
   if (supportWhite) ty =2;
-  bus->Begin((NeoPixelType)ty, countPixels, pin);
+  bus->Begin((NeoPixelType)ty, _led_count, pin);
   if (_locked != NULL) delete _locked;
-  _locked = new bool[countPixels];
+  _locked = new bool[_led_count];
 }
 
 //For some reason min and max are not declared here

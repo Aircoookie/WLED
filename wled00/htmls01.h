@@ -7,15 +7,15 @@ body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);
 
 const char PAGE_settings0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html>
-<head>
-<title>WLED Settings</title>
+<html><head><title>WLED Settings</title>
 )=====";
 
 const char PAGE_settings1[] PROGMEM = R"=====(
-body{text-align:center;background:var(--cCol);height:100%;margin:0;background-attachment:fixed}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:8vmin;height:13.86vh;width:95%;margin-top:2.4vh}</style>
+body{text-align:center;background:var(--cCol);height:100%;margin:0;background-attachment:fixed}html{--h:11.55vh}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),Helvetica,sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:8vmin;height:var(--h);width:95%;margin-top:2.4vh}</style>
+<script>function BB(){if(window.frameElement){document.getElementById("b").style.display="none";document.documentElement.style.setProperty("--h","13.86vh")}};</script>
 </head>
-<body>
+<body onload=BB()>
+<form action=/><button type=submit id=b>Back</button></form>
 <form action=/settings/wifi><button type=submit>WiFi Setup</button></form>
 <form action=/settings/leds><button type=submit>LED Preferences</button></form>
 <form action=/settings/ui><button type=submit>User Interface</button></form>
@@ -28,8 +28,7 @@ body{text-align:center;background:var(--cCol);height:100%;margin:0;background-at
 
 const char PAGE_settings_wifi0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html>
-<head>
+<html><head>
 <title>WiFi Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");}function B(){window.history.back();}function GetV(){var d = document;
 )=====";
 const char PAGE_settings_wifi1[] PROGMEM = R"=====(
@@ -104,6 +103,7 @@ Default secondary RGB(W):<br>
 <input name="SB" type="number" min="0" max="255" required>
 <input name="SW" type="number" min="0" max="255" required><br>
 Ignore and use current color, brightness and effects: <input type="checkbox" name="IS"><br>
+Save current preset cycle configuration as boot default: <input type="checkbox" name="PC"><br>
 Turn on after power up/reset: <input type="checkbox" name="BO"><br>
 Use Gamma correction for brightness: <input type="checkbox" name="GB"><br>
 Use Gamma correction for color: <input type="checkbox" name="GC"><br>
@@ -120,7 +120,8 @@ Fade down: <input type="checkbox" name="TW"><br>
 <h3>Advanced</h3>
 Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
 Init LEDs after WiFi: <input type="checkbox" name="EI"><br>
-WARLS offset: <input name="WO" type="number" min="-255" max="255" required><hr>
+WARLS offset: <input name="WO" type="number" min="-255" max="255" required><br>
+Skip first LED: <input type="checkbox" name="SL"><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
@@ -129,8 +130,7 @@ WARLS offset: <input name="WO" type="number" min="-255" max="255" required><hr>
 
 const char PAGE_settings_ui0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html>
-<head>
+<html><head>
 <title>UI Settings</title><script>
 function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d = document;
 )=====";
@@ -146,9 +146,9 @@ User Interface Mode:
 <option value="0" selected>Auto</option>
 <option value="1">Classic</option>
 <option value="2">Mobile</option>
-</select><br><br>
+</select><br>
+Server description: <input name="DS" maxlength="32"><br><br>
 <i>The following options are for the classic UI!</i><br>
-Server description: <input name="DS" maxlength="32"><br>
 Use HSB sliders instead of RGB by default: <input type="checkbox" name="MD"><br>
 Color Theme:
 <select name="TH" onchange="Ct()">
@@ -214,6 +214,8 @@ Emulate Alexa device: <input type="checkbox" name="AL"><br>
 Alexa invocation name: <input name="AI" maxlength="32"><br>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
+Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
+Then, receive <input type="checkbox" name="HO"> On/Off, <input type="checkbox" name="HB"> Brightness, and <input type="checkbox" name="HC"> Color<br>
 Hue Bridge IP:<br>
 <input name="H0" type="number" min="0" max="255" required> .
 <input name="H1" type="number" min="0" max="255" required> .
@@ -221,8 +223,6 @@ Hue Bridge IP:<br>
 <input name="H3" type="number" min="0" max="255" required><br>
 <b>Press the pushlink button on the bridge, after that save this page!</b><br>
 (when first connecting)<br>
-Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
-Then, receive <input type="checkbox" name="HO"> On/Off, <input type="checkbox" name="HB"> Brightness, and <input type="checkbox" name="HC"> Color<br>
 Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>

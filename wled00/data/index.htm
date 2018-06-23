@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8">
+<head><meta charset="utf-8"><meta name="theme-color" content="#fff">
 	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico'/>
 	<title>WLED 0.7.0</title>
 	<script>
@@ -33,6 +33,7 @@
 			aC = w.getPropertyValue("--aCol");
 			bC = w.getPropertyValue("--bCol");
 			dC = w.getPropertyValue("--dCol");
+			d.querySelector("meta[name=theme-color]").setAttribute("content",bC);
 			CV(0);
 			setInterval('GIO()', 5000);
 			GIO();
@@ -197,6 +198,7 @@
 		function SwFX(s)
 		{
 			var n=Cf.TX.selectedIndex+s;
+			if (n==-1||n==58) return;
 			Cf.TX.selectedIndex =n;
 			if (n < 0) Cf.TX.selectedIndex = 0;
 			if (n > 57) Cf.TX.selectedIndex = 53;
@@ -352,11 +354,12 @@
 	</script>
 	<style>
 		:root {
-			--aCol: #0ac;
-			--bCol: #124;
-			--cCol: #334;
-			--dCol: #288;
-			--sCol: #FF00FF;
+			--aCol: #D9B310;
+			--bCol: #0B3C5D;
+			--cCol: #1D2731;
+			--dCol: #328CC1;
+			--sCol: #000;
+			--tCol: #328CC1;
 			--cFn: Verdana;
 		}
 		.ctrl_box {

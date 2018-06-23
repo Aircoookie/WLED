@@ -9,7 +9,7 @@ const char PAGE_msg0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>WLED Message</title>
-<script>function B(){window.history.back()};function RS(){window.location = "/settings";}function RP(){top.location.href=top.location.href;}</script>
+<script>function B(){window.history.back()};function RS(){window.location = "/settings";}function RP(){top.location.href="/";}</script>
 )=====";
 const char PAGE_msg1[] PROGMEM = R"=====(
 button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}</style>

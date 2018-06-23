@@ -199,6 +199,7 @@ class WS2812FX {
       _counter_ccStep = 0;
       _fastStandard = false;
       _reverseMode = false;
+      _skipFirstMode = false;
       _locked = NULL;
       _cronixieDigits = new byte[6];
       bus = new NeoPixelWrapper();
@@ -208,7 +209,7 @@ class WS2812FX {
       show(void),
       setPixelColor(uint16_t i, byte r, byte g, byte b),
       setPixelColor(uint16_t i, byte r, byte g, byte b, byte w),
-      init(bool supportWhite, uint16_t countPixels, uint8_t pin),
+      init(bool supportWhite, uint16_t countPixels, uint8_t pin, bool skipFirst),
       service(void),
       start(void),
       stop(void),
@@ -277,7 +278,7 @@ class WS2812FX {
     NeoPixelWrapper *bus;
 
     void
-      begin(bool supportWhite, uint16_t countPixels, uint8_t pin),
+      begin(bool supportWhite, uint16_t countPixels, uint8_t pin, bool skipFirst),
       clear(void),
       setPixelColor(uint16_t i, uint32_t c),
       setPixelColorRaw(uint16_t i, byte r, byte g, byte b, byte w),
@@ -348,6 +349,7 @@ class WS2812FX {
     bool
       _triggered,
       _rgbwMode,
+      _skipFirstMode,
       _fastStandard,
       _reverseMode,
       _cronixieMode,

@@ -7,6 +7,10 @@
  * @author Christian Schwinne
  */
 
+//ESP8266-01 got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
+//Uncomment the following line to disable some features (currently Mobile UI) to compile for ESP8266-01
+//#define WLED_FLASH_512K_MODE
+
 #include <Arduino.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <WiFi.h>
@@ -33,7 +37,7 @@
 #include "WS2812FX.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1805311
+#define VERSION 1806240
 const String versionString = "0.7.0";
 
 //AP and OTA default passwords (change them!)
@@ -72,7 +76,7 @@ IPAddress staticSubnet(255, 255, 255, 0);
 IPAddress staticDNS(8, 8, 8, 8); //only for NTP
 bool useHSB = true, useHSBDefault = true, useRGBW = false, autoRGBtoRGBW = false;
 bool turnOnAtBoot = true;
-bool initLedsLast = false;
+bool initLedsLast = false, skipFirstLed = false;
 byte bootPreset = 0;
 byte colS[]{255, 159, 0};
 byte colSecS[]{0, 0, 0};
@@ -214,10 +218,12 @@ byte presetCycleMin = 1, presetCycleMax = 5;
 uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
 bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
+bool saveCurrPresetCycConf = false;
 
 uint32_t arlsTimeoutMillis = 2500;
 bool arlsTimeout = false;
 bool receiveDirect = true, enableRealtimeUI = false;
+IPAddress realtimeIP = (0,0,0,0);
 unsigned long arlsTimeoutTime = 0;
 byte auxTime = 0;
 unsigned long auxStartTime = 0;
@@ -299,14 +305,6 @@ const byte gamma8[] = {
 String txd = "Please disable OTA Lock in security settings!";
 
 void serveMessage(int,String,String,int=255);
-
-void down()
-{
-  briT = 0;
-  setAllLeds();
-  DEBUG_PRINTLN("MODULE TERMINATED");
-  while (1) {delay(1000);}
-}
 
 void reset()
 {

@@ -214,6 +214,20 @@ void saveSettingsToEEPROM()
   EEPROM.write(2201,enableRealtimeUI);
   EEPROM.write(2202,uiConfiguration);
   EEPROM.write(2203,autoRGBtoRGBW);
+  EEPROM.write(2204,skipFirstLed);
+
+  if (saveCurrPresetCycConf)
+  {
+    EEPROM.write(2205,presetCyclingEnabled);
+    EEPROM.write(2206,(presetCycleTime >> 0) & 0xFF);
+    EEPROM.write(2207,(presetCycleTime >> 8) & 0xFF);
+    EEPROM.write(2208,presetCycleMin);
+    EEPROM.write(2209,presetCycleMax);
+    EEPROM.write(2210,presetApplyBri);
+    EEPROM.write(2211,presetApplyCol);
+    EEPROM.write(2212,presetApplyFx);
+    saveCurrPresetCycConf = false;
+  }
   
   EEPROM.commit();
 }
@@ -425,7 +439,25 @@ void loadSettingsFromEEPROM(bool first)
   receiveDirect = !EEPROM.read(2200);
   enableRealtimeUI = EEPROM.read(2201);
   uiConfiguration = EEPROM.read(2202);
+  
+  #ifdef WLED_FLASH_512K_MODE
+  uiConfiguration = 1;
+  //force default UI since mobile is unavailable
+  #endif
+  
   autoRGBtoRGBW = EEPROM.read(2203);
+  skipFirstLed = EEPROM.read(2204);
+
+  if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))
+  {
+    presetCyclingEnabled = EEPROM.read(2205);
+    presetCycleTime = ((EEPROM.read(2206) << 0) & 0xFF) + ((EEPROM.read(2207) << 8) & 0xFF00);
+    presetCycleMin = EEPROM.read(2208);
+    presetCycleMax = EEPROM.read(2209);
+    presetApplyBri = EEPROM.read(2210);
+    presetApplyCol = EEPROM.read(2211);
+    presetApplyFx = EEPROM.read(2212);
+  }
   
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);

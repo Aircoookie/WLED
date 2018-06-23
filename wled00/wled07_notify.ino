@@ -81,8 +81,10 @@ void handleNotifications()
     uint16_t packetSize = notifierUdp.parsePacket();
 
     //hyperion / raw RGB
-    if (!packetSize && receiveDirect && udpRgbConnected) {
+    if (!packetSize && udpRgbConnected) {
       packetSize = rgbUdp.parsePacket();
+      if (!receiveDirect) return;
+      realtimeIP = rgbUdp.remoteIP();
       if (packetSize > 1026 || packetSize < 3) return;
       byte udpIn[packetSize];
       rgbUdp.read(udpIn, packetSize);
@@ -153,6 +155,7 @@ void handleNotifications()
         }
       }  else if (udpIn[0] > 0 && udpIn[0] < 4 && receiveDirect) //1 warls //2 drgb //3 drgbw
       {
+        realtimeIP = notifierUdp.remoteIP();
         if (packetSize > 1) {
           if (udpIn[1] == 0)
           {

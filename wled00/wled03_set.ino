@@ -121,6 +121,7 @@ void handleSettingsSet(byte subPage)
       if (ledCount > 600) ledCount = 600;
       #endif
     }
+    ccIndex2 = ledCount -1;
     useRGBW = server.hasArg("EW");
     autoRGBtoRGBW = server.hasArg("AW");
     if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
@@ -194,6 +195,7 @@ void handleSettingsSet(byte subPage)
         if (i >= 0 && i <= 255) effectIntensityDefault = i;
       }
     }
+    saveCurrPresetCycConf = server.hasArg("PC");
     turnOnAtBoot = server.hasArg("BO");
     if (server.hasArg("BP"))
     {
@@ -231,6 +233,7 @@ void handleSettingsSet(byte subPage)
       int i = server.arg("WO").toInt();
       if (i >= -255  && i <= 255) arlsOffset = i;
     }
+    skipFirstLed = server.hasArg("SL");
     if (server.hasArg("BF"))
     {
       int i = server.arg("BF").toInt();
@@ -386,7 +389,7 @@ void handleSettingsSet(byte subPage)
     }
   }
   saveSettingsToEEPROM();
-  if (subPage == 2) strip.init(useRGBW,ledCount,PIN);
+  if (subPage == 2) strip.init(useRGBW,ledCount,PIN,skipFirstLed);
 }
 
 bool handleSet(String req)
