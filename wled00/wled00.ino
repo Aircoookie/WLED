@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.7.0
+ * @version 0.7.1
  * @author Christian Schwinne
  */
 
@@ -35,10 +35,11 @@
 #include "htmls01.h"
 #include "htmls02.h"
 #include "WS2812FX.h"
+#include "src/dependencies/blynk/BlynkSimpleEsp.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1806240
-const String versionString = "0.7.0";
+#define VERSION 1807122
+const String versionString = "0.7.1";
 
 //AP and OTA default passwords (change them!)
 String apPass = "wled1234";
@@ -143,8 +144,8 @@ byte colSec[]{0, 0, 0};
 byte colSecT[]{0, 0, 0};
 byte colSecOld[]{0, 0, 0};
 byte colSecIT[]{0, 0, 0};
-byte white, whiteOld, whiteT, whiteIT;
-byte whiteSec, whiteSecOld, whiteSecT, whiteSecIT;
+byte white = 0, whiteOld, whiteT, whiteIT;
+byte whiteSec = 0, whiteSecOld, whiteSecT, whiteSecIT;
 byte lastRandomIndex = 0;
 uint16_t transitionDelayTemp = transitionDelay;
 unsigned long transitionStartTime;
@@ -187,6 +188,10 @@ uint16_t hueHueLast=0, hueCtLast=0;
 byte hueSatLast=0, hueBriLast=0;
 long hueLastRequestSent = 0;
 uint32_t huePollIntervalMsTemp = huePollIntervalMs;
+
+//blynk
+String blynkApiKey = "";
+bool blynkEnabled = false;
 
 //overlay stuff
 byte overlayDefault = 0;
@@ -335,8 +340,12 @@ void loop() {
       if (dnsActive) dnsServer.processNextRequest();
       handleHue();
       handleNightlight();
+      handleBlynk();
       if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
     }
+    /*#ifdef ARDUINO_ARCH_ESP32
+    delay(1);
+    #endif*/
     
     //DEBUG
     #ifdef DEBUG

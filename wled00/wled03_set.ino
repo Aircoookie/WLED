@@ -278,6 +278,7 @@ void handleSettingsSet(byte subPage)
     alexaEnabled = server.hasArg("AL");
     if (server.hasArg("AI")) alexaInvocationName = server.arg("AI");
     alexaNotify = server.hasArg("SA");
+    if (server.hasArg("BK") && !server.arg("BK").equals("Hidden")) {blynkApiKey = server.arg("BK"); initBlynk(blynkApiKey.c_str());}
     notifyHue = server.hasArg("SH");
     for (int i=0;i<4;i++){
       String a = "H"+String(i);

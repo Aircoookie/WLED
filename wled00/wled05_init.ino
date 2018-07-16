@@ -256,7 +256,9 @@ void wledInit()
     DEBUG_PRINTLN("mDNS responder started");
     // Add service to MDNS
     MDNS.addService("http", "tcp", 80);
-  } 
+  }
+
+  initBlynk(blynkApiKey.c_str());
 
   if (initLedsLast) initStrip();
   userBegin();
@@ -555,7 +557,7 @@ String getBuildInfo()
   #else
   info += "strip-pin: gpio2\r\n";
   #endif
-  info += "build-type: src\r\n";
+  info += "build-type: dev\r\n";
   return info;
 }
 

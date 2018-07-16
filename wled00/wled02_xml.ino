@@ -42,7 +42,7 @@ void XML_response()
    resp = resp + "</sx><ix>";
    resp = resp + effectIntensity;
    resp = resp + "</ix><wv>";
-   if (useRGBW) {
+   if (useRGBW && !autoRGBtoRGBW) {
      resp = resp + white;
    } else {
      resp = resp + "-1";
@@ -64,7 +64,8 @@ String getSettings(byte subPage)
   
   String resp = "";
   if (subPage <1 || subPage >6) return resp;
-  
+
+  resp.reserve(1000);
   String ds = "d.Sf.";
   String dg = "d.getElementsByClassName";
   String v = ".value=";
@@ -197,6 +198,7 @@ String getSettings(byte subPage)
     resp += ds + "AL" + c + alexaEnabled +";";
     resp += ds + "AI" + v + "\"" + alexaInvocationName + "\";";
     resp += ds + "SA" + c + alexaNotify +";";
+    resp += ds + "BK" + v + "\"" + ((blynkEnabled)?"Hidden":"") + "\";";
     resp += ds + "H0" + v + hueIP[0] +";";
     resp += ds + "H1" + v + hueIP[1] +";";
     resp += ds + "H2" + v + hueIP[2] +";";

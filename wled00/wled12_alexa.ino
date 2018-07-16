@@ -27,7 +27,7 @@ void handleAlexa()
     int packetSize = UDP.parsePacket();
       if(packetSize>0) {
         IPAddress remote = UDP.remoteIP();
-        int len = UDP.read(packetBuffer, 255);
+        int len = UDP.read(packetBuffer, 254);
         if (len > 0) {
             packetBuffer[len] = 0;
         }

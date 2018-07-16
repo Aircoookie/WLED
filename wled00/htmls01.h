@@ -211,7 +211,10 @@ Receive UDP realtime: <input type="checkbox" name="RD"><br>
 Enable UI access during realtime: <input type="checkbox" name="RU"> (can cause issues)
 <h3>Alexa Voice Assistant</h3>
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
-Alexa invocation name: <input name="AI" maxlength="32"><br>
+Alexa invocation name: <input name="AI" maxlength="32">
+<h3>Blynk</h3>
+Device Auth token: <input name="BK" maxlength="33"><br>
+<i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk">Setup info</a>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
 Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
@@ -347,7 +350,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.7.0<br><br>
+<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.7.1<br><br>
 <b>Contributors:</b><br>
 StormPie <i>(Mobile HTML UI)</i><br><br>
 (c) 2016-2018 Christian Schwinne <br>

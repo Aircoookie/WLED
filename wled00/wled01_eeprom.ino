@@ -228,6 +228,11 @@ void saveSettingsToEEPROM()
     EEPROM.write(2212,presetApplyFx);
     saveCurrPresetCycConf = false;
   }
+
+  for (int i = 2220; i < 2255; ++i)
+  {
+    EEPROM.write(i, blynkApiKey.charAt(i-2220));
+  }
   
   EEPROM.commit();
 }
@@ -457,6 +462,13 @@ void loadSettingsFromEEPROM(bool first)
     presetApplyBri = EEPROM.read(2210);
     presetApplyCol = EEPROM.read(2211);
     presetApplyFx = EEPROM.read(2212);
+  }
+
+  blynkApiKey = "";
+  for (int i = 2220; i < 2255; ++i)
+  {
+    if (EEPROM.read(i) == 0) break;
+    blynkApiKey += char(EEPROM.read(i));
   }
   
   bootPreset = EEPROM.read(389);
