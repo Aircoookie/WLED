@@ -182,7 +182,8 @@ void wledInit()
     });
     
   server.on("/build", HTTP_GET, [](){
-    server.send(200, "text/plain", getBuildInfo());
+    getBuildInfo();
+    server.send(200, "text/plain", obuf);
     });
   //if OTA is allowed
   if (!otaLock){
@@ -494,10 +495,10 @@ void serveSettings(byte subPage)
         default: pl0 = strlen_P(PAGE_settings0); pl1 = strlen_P(PAGE_settings1);
       }
       
-      String settingsBuffer = getSettings(subPage);
+      getSettingsJS(subPage);
       int sCssLength = (subPage >0 && subPage <7)?strlen_P(PAGE_settingsCss):0;
       
-      server.setContentLength(pl0 + cssColorString.length() + settingsBuffer.length() + sCssLength + pl1);
+      server.setContentLength(pl0 + cssColorString.length() + olen + sCssLength + pl1);
       server.send(200, "text/html", "");
       
       switch (subPage)
@@ -511,7 +512,7 @@ void serveSettings(byte subPage)
         case 255: server.sendContent_P(PAGE_welcome0); break;
         default: server.sendContent_P(PAGE_settings0); 
       }
-      server.sendContent(settingsBuffer);
+      server.sendContent(obuf);
       server.sendContent(cssColorString);
       if (subPage >0 && subPage <7) server.sendContent_P(PAGE_settingsCss);
       switch (subPage)
@@ -530,35 +531,42 @@ void serveSettings(byte subPage)
     }
 }
 
-String getBuildInfo()
+void getBuildInfo()
 {
-  String info = "hard-coded build info:\r\n\n";
+  //fill string buffer with build info
+  olen = 0;
+  oappend("hard-coded build info:\r\n\n");
   #ifdef ARDUINO_ARCH_ESP32
-  info += "platform: esp32\r\n";
+  oappend("platform: esp32");
   #else
-  info += "platform: esp8266\r\n";
+  oappend("platform: esp8266");
   #endif
-  info += "version: " + versionString + "\r\n";
-  info += "build: " + (String)VERSION + "\r\n";
-  info += "eepver: " + String(EEPVER) + "\r\n";
+  oappend("\r\nversion: ");
+  oappend(versionString);
+  oappend("\r\nbuild: ");
+  oappendi(VERSION);
+  oappend("\r\neepver: ");
+  oappendi(EEPVER);
   #ifdef USEFS
-  info += "spiffs: true\r\n";
+  oappend("\r\nspiffs: true\r\n");
   #else
-  info += "spiffs: false\r\n";
+  oappend("\r\nspiffs: false\r\n");
   #endif
   #ifdef DEBUG
-  info += "debug: true\r\n";
+  oappend("debug: true\r\n");
   #else
-  info += "debug: false\r\n";
+  oappend("debug: false\r\n");
   #endif
-  info += "button-pin: gpio" + String(buttonPin) + "\r\n";
+  oappend("button-pin: gpio");
+  oappendi(buttonPin);
+  oappend("\r\n");
   #ifdef ARDUINO_ARCH_ESP32
-  info += "strip-pin: gpio" + String(PIN) + "\r\n";
+  oappend("strip-pin: gpio");
+  oappendi(PIN);
   #else
-  info += "strip-pin: gpio2\r\n";
+  oappend("strip-pin: gpio2");
   #endif
-  info += "build-type: dev\r\n";
-  return info;
+  oappend("\r\nbuild-type: dev\r\n");
 }
 
 bool checkClientIsMobile(String useragent)

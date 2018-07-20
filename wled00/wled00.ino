@@ -38,12 +38,12 @@
 #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1807122
-const String versionString = "0.7.1";
+#define VERSION 1807201
+char versionString[] = "0.7.1";
 
 //AP and OTA default passwords (change them!)
-String apPass = "wled1234";
-String otaPass = "wledota";
+String apPass[65] = "wled1234";
+String otaPass[33] = "wledota";
 
 //spiffs FS only useful for debug (only ESP8266)
 //#define USEFS
@@ -224,7 +224,6 @@ uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
 bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
 bool saveCurrPresetCycConf = false;
-
 uint32_t arlsTimeoutMillis = 2500;
 bool arlsTimeout = false;
 bool receiveDirect = true, enableRealtimeUI = false;
@@ -249,6 +248,11 @@ String escapedMac;
 //dns server
 DNSServer dnsServer;
 bool dnsActive = false;
+
+//string temp buffer
+#define OMAX 1750
+char obuf[OMAX];
+uint16_t olen = 0;
 
 #ifdef ARDUINO_ARCH_ESP32
 WebServer server(80);
@@ -319,7 +323,25 @@ void reset()
   ESP.restart();
 }
 
+bool oappend(char* txt) //append new c string to temp buffer efficiently
+{
+  uint16_t len = strlen(txt);
+  if (olen + len >= OMAX) return false; //buffer full
+  strcpy(obuf + olen, txt);
+  olen += len;
+  return true;
+}
+
+bool oappendi(int i) //append new number to temp buffer efficiently
+{
+  char s[11]; 
+  sprintf(s,"%ld", i);
+  return oappend(s);
+}
+
 void setup() {
+    //init strings to defaults
+    
     wledInit();
 }
 
