@@ -17,18 +17,18 @@ bool setupHue()
 {
   if (WiFi.status() == WL_CONNECTED) //setup needed
   {
-    if (hueApiKey.length()>20) //api key is probably ok
+    if (strlen(hueApiKey)>20) //api key is probably ok
     {
       if (sendHuePoll(false))
       {
         huePollingEnabled = true;
         return true;
       }
-      if (hueError.charAt(0) == 'R' || hueError.charAt(0) == 'I') return false; //can't connect
+      if (hueError[0] == 'R' || hueError[0] == 'I') return false; //can't connect
       delay(20);
     }
     sendHuePoll(true); //new API key
-    if (hueError.charAt(0) != 'C') return false; //still some error
+    if (hueError[0] != 'C') return false; //still some error
     delay(20);
     if (sendHuePoll(false))
     {
@@ -60,7 +60,7 @@ bool sendHuePoll(bool sAuth)
   if (httpCode>0){
     st = handleHueResponse(hueClient.getString(),sAuth);
   } else {
-    hueError = "Request timed out";
+    strcpy(hueError,"Request timed out");
     st = false;
   }
   if (!st){ //error
@@ -81,10 +81,13 @@ bool handleHueResponse(String hueResp, bool isAuth)
     int hueErrorCode = getJsonValue(&hueResp,"type").toInt();
     switch (hueErrorCode)
     {
-      case 1: hueError = "Unauthorized"; break;
-      case 3: hueError = "Invalid light ID"; break;
-      case 101: hueError = "Link button not pressed"; break;
-      default: hueError = "Bridge Error " + String(hueErrorCode);
+      case 1: strcpy(hueError,"Unauthorized"); break;
+      case 3: strcpy(hueError,"Invalid light ID"); break;
+      case 101: strcpy(hueError,"Link button not pressed"); break;
+      default:
+        char coerr[18];
+        sprintf(coerr,"Bridge Error %i",hueErrorCode);
+        strcpy(hueError,coerr);
     }
     return false;
   }
@@ -94,10 +97,10 @@ bool handleHueResponse(String hueResp, bool isAuth)
     String tempApi = getJsonValue(&hueResp,"username");
     if (tempApi.length()>0)
     {
-      hueApiKey = tempApi;
+      strcpy(hueApiKey,tempApi.c_str());
       return true;
     }
-    hueError = "Invalid response";
+    strcpy(hueError,"Invalid response");
     return false;
   }
 
@@ -157,7 +160,7 @@ bool handleHueResponse(String hueResp, bool isAuth)
   }
   hueFailCount = 0;
   huePollIntervalMsTemp = huePollIntervalMs;
-  hueError = "Connected";
+  strcpy(hueError,"Connected");
   //applying vals
   if (hueBri != hueBriLast)
   {

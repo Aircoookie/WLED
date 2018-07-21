@@ -27,14 +27,13 @@ void handleAlexa()
     int packetSize = UDP.parsePacket();
       if(packetSize>0) {
         IPAddress remote = UDP.remoteIP();
-        int len = UDP.read(packetBuffer, 254);
+        int len = UDP.read(obuf, 254);
         if (len > 0) {
-            packetBuffer[len] = 0;
+            obuf[len] = 0;
         }
-        String request = packetBuffer;
         
-        if(request.indexOf("M-SEARCH") >= 0) {
-          if(request.indexOf("upnp:rootdevice") > 0 || request.indexOf("device:basic:1") > 0) {
+        if(strstr(obuf,"M-SEARCH") > 0) {
+          if(strstr(obuf,"upnp:rootdevice") > 0 || strstr(obuf,"device:basic:1") > 0) {
               DEBUG_PRINTLN("Responding search req...");
               respondToSearch();
           }
@@ -246,14 +245,14 @@ bool handleAlexaApiCall(String req, String body) //basic implementation of Phili
   if (req.indexOf("lights/1") > 0) //client wants light info
   {
     DEBUG_PRINTLN("l1");
-    server.send(200, "application/json", "{\"manufacturername\":\"OpenSource\",\"modelid\":\"LST001\",\"name\":\""+ alexaInvocationName +"\",\"state\":{\"on\":"+ boolString(bri) +",\"hue\":0,\"bri\":"+ briForHue(bri) +",\"sat\":0,\"xy\":[0.00000,0.00000],\"ct\":500,\"alert\":\"none\",\"effect\":\"none\",\"colormode\":\"hs\",\"reachable\":true},\"swversion\":\"0.1\",\"type\":\"Extended color light\",\"uniqueid\":\"2\"}");
+    server.send(200, "application/json", "{\"manufacturername\":\"OpenSource\",\"modelid\":\"LST001\",\"name\":\""+ String(alexaInvocationName) +"\",\"state\":{\"on\":"+ boolString(bri) +",\"hue\":0,\"bri\":"+ briForHue(bri) +",\"sat\":0,\"xy\":[0.00000,0.00000],\"ct\":500,\"alert\":\"none\",\"effect\":\"none\",\"colormode\":\"hs\",\"reachable\":true},\"swversion\":\"0.1\",\"type\":\"Extended color light\",\"uniqueid\":\"2\"}");
 
     return true;
   }
   if (req.indexOf("lights") > 0) //client wants all lights
   {
     DEBUG_PRINTLN("lAll");
-    server.send(200, "application/json", "{\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ alexaInvocationName +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-2\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}}}");
+    server.send(200, "application/json", "{\"1\":{\"type\":\"Extended color light\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\""+ String(alexaInvocationName) +"\",\"uniqueid\":\""+ WiFi.macAddress() +"-2\",\"modelid\":\"LST001\",\"state\":{\"on\":"+ boolString(bri) +",\"bri\":"+ briForHue(bri) +",\"xy\":[0.00000,0.00000],\"colormode\":\"hs\",\"effect\":\"none\",\"ct\":500,\"hue\":0,\"sat\":0,\"alert\":\"none\",\"reachable\":true}}}");
     return true;
   }
 

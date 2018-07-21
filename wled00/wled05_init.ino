@@ -49,7 +49,7 @@ void wledInit()
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   //start captive portal
-  if (onlyAP || apSSID.length() > 0)
+  if (onlyAP || strlen(apSSID) > 0)
   {
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
@@ -245,21 +245,21 @@ void wledInit()
       #endif
       DEBUG_PRINTLN("Start ArduinoOTA");
     });
-    if (cmDNS.length() > 0) ArduinoOTA.setHostname(cmDNS.c_str());
+    if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
     ArduinoOTA.begin();
   }
 
   if (!initLedsLast) strip.service();
   // Set up mDNS responder:
-  if (cmDNS.length() > 0 && !onlyAP)
+  if (strlen(cmDNS) > 0 && !onlyAP)
   {
-    MDNS.begin(cmDNS.c_str());
+    MDNS.begin(cmDNS);
     DEBUG_PRINTLN("mDNS responder started");
     // Add service to MDNS
     MDNS.addService("http", "tcp", 80);
   }
 
-  initBlynk(blynkApiKey.c_str());
+  initBlynk(blynkApiKey);
 
   if (initLedsLast) initStrip();
   userBegin();
@@ -286,10 +286,10 @@ void initStrip()
 }
 
 void initAP(){
-  String save = apSSID;
-  if (apSSID.length() <1) apSSID = "WLED-AP";
-  WiFi.softAP(apSSID.c_str(), apPass.c_str(), apChannel, apHide);
-  apSSID = save;
+  bool set = apSSID[0];
+  if (!set) strcpy(apSSID,"WLED-AP");
+  WiFi.softAP(apSSID, apPass, apChannel, apHide);
+  if (!set) apSSID[0] = 0;
 }
 
 void initCon()
@@ -304,10 +304,10 @@ void initCon()
     WiFi.config(0U, 0U, 0U);
   }
 
-  if (apSSID.length()>0)
+  if (strlen(apSSID)>0)
   {
     DEBUG_PRINT("USING AP");
-    DEBUG_PRINTLN(apSSID.length());
+    DEBUG_PRINTLN(strlen(apSSID));
     initAP();
   } else
   {
@@ -315,13 +315,13 @@ void initCon()
     WiFi.softAPdisconnect(true);
   }
   int fail_count = 0;
-  if (clientSSID.length() <1 || clientSSID.equals("Your_Network")) fail_count = apWaitTimeSecs*2;
+  if (strlen(clientSSID) <1 || strcmp(clientSSID,"Your_Network") == 0) fail_count = apWaitTimeSecs*2; //instantly go to ap mode
   #ifndef ARDUINO_ARCH_ESP32
   WiFi.hostname(serverDescription);
   #endif
-  WiFi.begin(clientSSID.c_str(), clientPass.c_str());
+  WiFi.begin(clientSSID, clientPass);
   #ifdef ARDUINO_ARCH_ESP32
-  WiFi.setHostname(serverDescription.c_str());
+  WiFi.setHostname(serverDescription);
   #endif
   unsigned long lastTry = 0;
   bool con = false;

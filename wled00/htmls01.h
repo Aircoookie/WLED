@@ -353,6 +353,7 @@ Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.7.1<br><br>
 <b>Contributors:</b><br>
 StormPie <i>(Mobile HTML UI)</i><br><br>
+Thank you so much!<br><br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
 <b>Uses libraries:</b><br>
@@ -360,6 +361,7 @@ StormPie <i>(Mobile HTML UI)</i><br><br>
 <i>(ESP32) <a href="https://github.com/bbx10/WebServer_tng">WebServer_tng</a> by bbx10</i><br>
 <i><a href="https://github.com/kitesurfer1404/WS2812FX">WS2812FX</a> by kitesurfer1404 (modified)</i><br>
 <i><a href="https://github.com/JChristensen/Timezone">Timezone</a> library by JChristensen</i><br>
+<i><a href="https://github.com/blynkkk/blynk-library">Blynk</a> library (compacted)</i><br>
 <i><a href="https://github.com/Aircoookie/Espalexa">Espalexa</a> by Aircoookie (modified)</i><br><br>
 <i>UI icons by <a href="https://linearicons.com">Linearicons</a> created by <a href="https://perxis.com">Perxis</a>! (CC-BY-SA 4.0)</i> <br><br>
 Server message: <span class="msg"> Response error! </span><hr>

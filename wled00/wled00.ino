@@ -38,12 +38,12 @@
 #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1807201
+#define VERSION 1807211
 char versionString[] = "0.7.1";
 
 //AP and OTA default passwords (change them!)
-String apPass[65] = "wled1234";
-String otaPass[33] = "wledota";
+char apPass[65] = "wled1234";
+char otaPass[33] = "wledota";
 
 //spiffs FS only useful for debug (only ESP8266)
 //#define USEFS
@@ -59,14 +59,14 @@ byte auxDefaultState = 0; //0: input 1: high 2: low
 byte auxTriggeredState = 0; //0: input 1: high 2: low
 
 //Default CONFIG
-String serverDescription = "WLED Light";
+char serverDescription[33] = "WLED Light";
 byte currentTheme = 0;
 byte uiConfiguration = 0; //0: auto 1: classic 2: mobile
-String clientSSID = "Your_Network";
-String clientPass = "";
-String cmDNS = "led";
+char clientSSID[33] = "Your_Network";
+char clientPass[65] = "";
+char cmDNS[33] = "led";
 uint16_t ledCount = 10; //lowered to prevent accidental overcurrent
-String apSSID = ""; //AP off by default (unless setup)
+char apSSID[65] = ""; //AP off by default (unless setup)
 byte apChannel = 1;
 byte apHide = 0;
 byte apWaitTimeSecs = 32;
@@ -104,7 +104,7 @@ byte effectSpeedDefault = 75;
 byte effectIntensityDefault = 128;
 //NTP stuff
 bool ntpEnabled = false;
-String ntpServerName = "0.wled.pool.ntp.org";
+char ntpServerName[] = "0.wled.pool.ntp.org";
 //custom chase
 byte ccNumPrimary = 2;
 byte ccNumSecondary = 4;
@@ -116,7 +116,7 @@ byte ccStart = 0;
 
 //alexa
 bool alexaEnabled = true;
-String alexaInvocationName = "Light";
+char alexaInvocationName[33] = "Light";
 
 byte macroBoot = 0, macroNl = 0;
 byte macroAlexaOn = 0, macroAlexaOff = 0;
@@ -127,7 +127,7 @@ unsigned long countdownTime = 1514764800L;
 //hue
 bool huePollingEnabled = false, hueAttempt = false;
 uint16_t huePollIntervalMs = 2500;
-String hueApiKey = "api";
+char hueApiKey[65] = "api";
 byte huePollLightId = 1;
 IPAddress hueIP = (0,0,0,0);
 bool notifyHue = true;
@@ -171,8 +171,8 @@ byte effectSpeed = 75;
 byte effectIntensity = 128;
 bool onlyAP = false;
 bool udpConnected = false, udpRgbConnected = false;
-String cssCol[]={"","","","","",""};
-String cssFont="Verdana";
+char cssCol[9][5]={"","","","","",""};
+char cssFont[33]="Verdana";
 String cssColorString="";
 //NTP stuff
 bool ntpConnected = false;
@@ -181,7 +181,7 @@ time_t local = 0;
 int utcOffsetSecs = 0;
 
 //hue
-String hueError = "Inactive";
+char hueError[25] = "Inactive";
 uint16_t hueFailCount = 0;
 float hueXLast=0, hueYLast=0;
 uint16_t hueHueLast=0, hueCtLast=0;
@@ -190,7 +190,7 @@ long hueLastRequestSent = 0;
 uint32_t huePollIntervalMsTemp = huePollIntervalMs;
 
 //blynk
-String blynkApiKey = "";
+char blynkApiKey[36] = "";
 bool blynkEnabled = false;
 
 //overlay stuff
@@ -211,7 +211,7 @@ bool nixiePause;
 byte countdownYear=19, countdownMonth=1, countdownDay=1, countdownHour=0, countdownMin=0, countdownSec=0; //year is actual year -2000
 bool countdownOverTriggered = true;
 //cronixie
-String cronixieDisplay = "HHMMSS";
+char cronixieDisplay[] = "HHMMSS";
 byte dP[]{0,0,0,0,0,0};
 bool useAMPM = false;
 bool cronixieBacklight = true;
@@ -242,7 +242,6 @@ int arlsOffset = -22; //10: -22 assuming arls52
 WiFiUDP UDP;
 IPAddress ipMulti(239, 255, 255, 250);
 unsigned int portMulti = 1900;
-char packetBuffer[255];
 String escapedMac;
 
 //dns server

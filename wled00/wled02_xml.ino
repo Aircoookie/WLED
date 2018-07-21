@@ -48,7 +48,7 @@ void XML_response()
    oappend("</wv><md>");
    oappendi(useHSB);
    oappend("</md><ds>");
-   oappend((char*)serverDescription.c_str());
+   oappend(serverDescription);
    oappend("</ds></vs>");
    server.send(200, "text/xml", obuf);
 }
@@ -107,9 +107,9 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
   if (subPage <1 || subPage >6) return;
 
   if (subPage == 1) {
-    sappend('s',"CS",(int)clientSSID.c_str());
+    sappend('s',"CS",(int)clientSSID);
 
-    byte l = clientPass.length();
+    byte l = strlen(clientPass);
     char fpass[l+1]; //fill password field with ***
     fpass[l] = 0;
     memset(fpass,'*',l); 
@@ -124,12 +124,12 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
       k[0] = 'S'; sappend('v',k,staticSubnet[i]);
     }
 
-    sappend('s',"CM",(int)cmDNS.c_str());
+    sappend('s',"CM",(int)cmDNS);
     sappend('v',"AT",apWaitTimeSecs);
-    sappend('s',"AS",(int)apSSID.c_str());
+    sappend('s',"AS",(int)apSSID);
     sappend('c',"AH",apHide);
     
-    l = apPass.length();
+    l = strlen(apPass);
     char fapass[l+1]; //fill password field with ***
     fapass[l] = 0;
     memset(fapass,'*',l); 
@@ -139,7 +139,10 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
 
     if (WiFi.localIP()[0] != 0) //is connected
     {
-      sappend('m',"(\"sip\")[0]",(int)WiFi.localIP().toString().c_str());
+      char s[16];
+      IPAddress localIP = WiFi.localIP();
+      sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+      sappend('m',"(\"sip\")[0]",(int)s);
     } else
     {
       sappend('m',"(\"sip\")[0]",(int)"Not connected");
@@ -147,7 +150,10 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     
     if (WiFi.softAPIP()[0] != 0) //is active
     {
-      sappend('m',"(\"sip\")[1]",(int)WiFi.softAPIP().toString().c_str());
+      char s[16];
+      IPAddress apIP = WiFi.softAPIP();
+      sprintf(s, "%d.%d.%d.%d", apIP[0], apIP[1], apIP[2], apIP[3]);
+      sappend('m',"(\"sip\")[1]",(int)apIP);
     } else
     {
       sappend('m',"(\"sip\")[1]",(int)"Not active");
@@ -192,16 +198,16 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
   if (subPage == 3)
   { 
     sappend('i',"UI",uiConfiguration);
-    sappend('s',"DS",(int)serverDescription.c_str());
+    sappend('s',"DS",(int)serverDescription);
     sappend('c',"MD",useHSBDefault);
     sappend('i',"TH",currentTheme);
     char k[3]; k[0] = 'C'; k[2] = 0; //keys
     for (int i=0; i<6; i++)
     {
       k[1] = 48+i; //ascii 0,1,2,3,4,5
-      sappend('s',k,(int)cssCol[i].c_str());
+      sappend('s',k,(int)cssCol[i]);
     }
-    sappend('s',"CF",(int)cssFont.c_str());
+    sappend('s',"CF",(int)cssFont);
   }
 
   if (subPage == 4)
@@ -218,7 +224,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"RD",receiveDirect);
     sappend('c',"RU",enableRealtimeUI);
     sappend('c',"AL",alexaEnabled);
-    sappend('s',"AI",(int)alexaInvocationName.c_str());
+    sappend('s',"AI",(int)alexaInvocationName);
     sappend('c',"SA",alexaNotify);
     sappend('s',"BK",(int)((blynkEnabled)?"Hidden":""));
     sappend('v',"H0",hueIP[0]);
@@ -231,7 +237,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"HO",hueApplyOnOff);
     sappend('c',"HB",hueApplyBri);
     sappend('c',"HC",hueApplyColor);
-    sappend('m',"(\"hms\")[0]",(int)hueError.c_str());
+    sappend('m',"(\"hms\")[0]",(int)hueError);
   }
 
   if (subPage == 5)
@@ -247,7 +253,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('v',"OM",analogClock12pixel);
     sappend('c',"OS",analogClockSecondsTrail);
     sappend('c',"O5",analogClock5MinuteMarks);
-    sappend('s',"CX",(int)cronixieDisplay.c_str());
+    sappend('s',"CX",(int)cronixieDisplay);
     sappend('c',"CB",cronixieBacklight);
     sappend('c',"CE",countdownMode);
     sappend('v',"CY",countdownYear);
