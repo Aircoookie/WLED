@@ -73,13 +73,6 @@ void sappend(char stype, char* key, int val) //append a setting to string buffer
       oappendi(val);
       oappend(";");
       break;
-    case 's': //string (we can interpret val as char*)
-      oappend(ds);
-      oappend(key);
-      oappend(".value=\"");
-      oappend((char*)val);
-      oappend("\";");
-      break;
     case 'i': //selectedIndex
       oappend(ds);
       oappend(key);
@@ -87,13 +80,27 @@ void sappend(char stype, char* key, int val) //append a setting to string buffer
       oappendi(val);
       oappend(";");
       break;
+  }
+}
+
+void sappends(char stype, char* key, char* val) //append a string setting
+{
+  switch(stype)
+  {
+    case 's': //string (we can interpret val as char*)
+        oappend("d.Sf.");
+        oappend(key);
+        oappend(".value=\"");
+        oappend(val);
+        oappend("\";");
+        break;
     case 'm': //message
-      oappend("d.getElementsByClassName");
-      oappend(key);
-      oappend(".innerHTML=\"");
-      oappend((char*)val);
-      oappend("\";");
-      break;
+        oappend("d.getElementsByClassName");
+        oappend(key);
+        oappend(".innerHTML=\"");
+        oappend(val);
+        oappend("\";");
+        break;
   }
 }
 
@@ -107,13 +114,13 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
   if (subPage <1 || subPage >6) return;
 
   if (subPage == 1) {
-    sappend('s',"CS",(int)clientSSID);
+    sappends('s',"CS",clientSSID);
 
     byte l = strlen(clientPass);
     char fpass[l+1]; //fill password field with ***
     fpass[l] = 0;
     memset(fpass,'*',l); 
-    sappend('s',"CP",(int)fpass);
+    sappends('s',"CP",fpass);
 
     char k[3]; k[2] = 0; //IP addresses
     for (int i = 0; i<4; i++)
@@ -124,16 +131,16 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
       k[0] = 'S'; sappend('v',k,staticSubnet[i]);
     }
 
-    sappend('s',"CM",(int)cmDNS);
+    sappends('s',"CM",cmDNS);
     sappend('v',"AT",apWaitTimeSecs);
-    sappend('s',"AS",(int)apSSID);
+    sappends('s',"AS",apSSID);
     sappend('c',"AH",apHide);
     
     l = strlen(apPass);
     char fapass[l+1]; //fill password field with ***
     fapass[l] = 0;
     memset(fapass,'*',l); 
-    sappend('s',"AP",(int)fapass);
+    sappends('s',"AP",fapass);
     
     sappend('v',"AC",apChannel);
 
@@ -142,10 +149,10 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
       char s[16];
       IPAddress localIP = WiFi.localIP();
       sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
-      sappend('m',"(\"sip\")[0]",(int)s);
+      sappends('m',"(\"sip\")[0]",s);
     } else
     {
-      sappend('m',"(\"sip\")[0]",(int)"Not connected");
+      sappends('m',"(\"sip\")[0]","Not connected");
     }
     
     if (WiFi.softAPIP()[0] != 0) //is active
@@ -153,10 +160,10 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
       char s[16];
       IPAddress apIP = WiFi.softAPIP();
       sprintf(s, "%d.%d.%d.%d", apIP[0], apIP[1], apIP[2], apIP[3]);
-      sappend('m',"(\"sip\")[1]",(int)apIP);
+      sappends('m',"(\"sip\")[1]",s);
     } else
     {
-      sappend('m',"(\"sip\")[1]",(int)"Not active");
+      sappends('m',"(\"sip\")[1]","Not active");
     }
   }
   
@@ -198,16 +205,16 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
   if (subPage == 3)
   { 
     sappend('i',"UI",uiConfiguration);
-    sappend('s',"DS",(int)serverDescription);
+    sappends('s',"DS",serverDescription);
     sappend('c',"MD",useHSBDefault);
     sappend('i',"TH",currentTheme);
     char k[3]; k[0] = 'C'; k[2] = 0; //keys
     for (int i=0; i<6; i++)
     {
       k[1] = 48+i; //ascii 0,1,2,3,4,5
-      sappend('s',k,(int)cssCol[i]);
+      sappends('s',k,cssCol[i]);
     }
-    sappend('s',"CF",(int)cssFont);
+    sappends('s',"CF",cssFont);
   }
 
   if (subPage == 4)
@@ -224,9 +231,9 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"RD",receiveDirect);
     sappend('c',"RU",enableRealtimeUI);
     sappend('c',"AL",alexaEnabled);
-    sappend('s',"AI",(int)alexaInvocationName);
+    sappends('s',"AI",alexaInvocationName);
     sappend('c',"SA",alexaNotify);
-    sappend('s',"BK",(int)((blynkEnabled)?"Hidden":""));
+    sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
     sappend('v',"H0",hueIP[0]);
     sappend('v',"H1",hueIP[1]);
     sappend('v',"H2",hueIP[2]);
@@ -237,7 +244,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"HO",hueApplyOnOff);
     sappend('c',"HB",hueApplyBri);
     sappend('c',"HC",hueApplyColor);
-    sappend('m',"(\"hms\")[0]",(int)hueError);
+    sappends('m',"(\"hms\")[0]",hueError);
   }
 
   if (subPage == 5)
@@ -246,14 +253,14 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"CF",!useAMPM);
     sappend('i',"TZ",currentTimezone);
     sappend('v',"UO",utcOffsetSecs);
-    sappend('m',"(\"times\")[0]",(int)getTimeString().c_str());
+    sappends('m',"(\"times\")[0]",(char*)getTimeString().c_str());
     sappend('i',"OL",overlayCurrent);
     sappend('v',"O1",overlayMin);
     sappend('v',"O2",overlayMax);
     sappend('v',"OM",analogClock12pixel);
     sappend('c',"OS",analogClockSecondsTrail);
     sappend('c',"O5",analogClock5MinuteMarks);
-    sappend('s',"CX",(int)cronixieDisplay);
+    sappends('s',"CX",cronixieDisplay);
     sappend('c',"CB",cronixieBacklight);
     sappend('c',"CE",countdownMode);
     sappend('v',"CY",countdownYear);
@@ -267,7 +274,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     for (int i=1;i<17;i++)
     {
       sprintf(k+1,"%i",i);
-      sappend('s',k,(int)loadMacro(i).c_str());
+      sappends('s',k,(char*)loadMacro(i).c_str());
     }
     
     sappend('v',"MB",macroBoot);
@@ -285,7 +292,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"OW",wifiLock);
     sappend('c',"AO",aOtaEnabled);
     sappend('c',"NA",recoveryAPDisabled);
-    sappend('m',"(\"msg\")[0]",(int)"WLED ");
+    sappends('m',"(\"msg\")[0]","WLED ");
     olen -= 2; //delete ";
     oappend(versionString);
     oappend(" (build ");
