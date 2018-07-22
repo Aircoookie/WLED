@@ -264,8 +264,7 @@ WiFiUDP notifierUdp, rgbUdp;
 WiFiUDP ntpUdp;
 IPAddress ntpServerIP;
 unsigned int ntpLocalPort = 2390;
-const uint16_t NTP_PACKET_SIZE = 48; 
-byte ntpPacketBuffer[NTP_PACKET_SIZE];
+#define NTP_PACKET_SIZE 48
 unsigned long ntpLastSyncTime = 999000000L;
 unsigned long ntpPacketSentTime = 999000000L;
 
@@ -364,9 +363,6 @@ void loop() {
       handleBlynk();
       if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
     }
-    /*#ifdef ARDUINO_ARCH_ESP32
-    delay(1);
-    #endif*/
     
     //DEBUG
     #ifdef DEBUG

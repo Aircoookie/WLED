@@ -53,12 +53,7 @@ void alexaOn()
     applyMacro(macroAlexaOn);
   }
 
-  String body = "[{\"success\":{\"/lights/1/state/on\":true}}]";
-
-  server.send(200, "text/xml", body.c_str());
-        
-  DEBUG_PRINT("Sending :");
-  DEBUG_PRINTLN(body);
+  server.send(200, "application/json", "[{\"success\":{\"/lights/1/state/on\":true}}]");
 }
 
 void alexaOff()
@@ -71,19 +66,17 @@ void alexaOff()
     applyMacro(macroAlexaOff);
   }
 
-  String body = "[{\"success\":{\"/lights/1/state/on\":false}}]";
-
-  server.send(200, "application/json", body.c_str());
-        
-  DEBUG_PRINT("Sending:");
-  DEBUG_PRINTLN(body);
+  server.send(200, "application/json", "[{\"success\":{\"/lights/1/state/on\":false}}]");
 }
 
 void alexaDim(byte briL)
 {
-  String body = "[{\"success\":{\"/lights/1/state/bri\":"+ String(briL) +"}}]";
+  olen = 0;
+  oappend("[{\"success\":{\"/lights/1/state/bri\":");
+  oappendi(briL);
+  oappend("}}]");
 
-  server.send(200, "application/json", body.c_str());
+  server.send(200, "application/json", obuf);
   
   String ct = (alexaNotify)?"win&IN&A=":"win&NN&IN&A=";
   if (briL < 255)
@@ -113,22 +106,29 @@ void respondToSearch() {
     char s[16];
     sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
 
-    String response = 
+    olen = 0;
+    oappend(
       "HTTP/1.1 200 OK\r\n"
       "EXT:\r\n"
       "CACHE-CONTROL: max-age=100\r\n" // SSDP_INTERVAL
-      "LOCATION: http://"+ String(s) +":80/description.xml\r\n"
+      "LOCATION: http://");
+    oappend(s);
+    oappend(":80/description.xml\r\n"
       "SERVER: FreeRTOS/6.0.5, UPnP/1.0, IpBridge/1.17.0\r\n" // _modelName, _modelNumber
-      "hue-bridgeid: "+ escapedMac +"\r\n"
+      "hue-bridgeid: ");
+    oappend((char*)escapedMac.c_str());
+    oappend("\r\n"
       "ST: urn:schemas-upnp-org:device:basic:1\r\n"  // _deviceType
-      "USN: uuid:2f402f80-da50-11e1-9b23-"+ escapedMac +"::upnp:rootdevice\r\n" // _uuid::_deviceType
-      "\r\n";
+      "USN: uuid:2f402f80-da50-11e1-9b23-");
+    oappend((char*)escapedMac.c_str());
+    oappend("::upnp:rootdevice\r\n" // _uuid::_deviceType
+      "\r\n");
 
     UDP.beginPacket(UDP.remoteIP(), UDP.remotePort());
     #ifdef ARDUINO_ARCH_ESP32
-    UDP.write((byte*)response.c_str(), response.length());
+    UDP.write((byte*)obuf, olen);
     #else
-    UDP.write(response.c_str());
+    UDP.write(obuf);
     #endif
     UDP.endPacket();                    
 
@@ -143,22 +143,31 @@ void alexaInitPages() {
       IPAddress localIP = WiFi.localIP();
       char s[16];
       sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
-    
-      String setup_xml = "<?xml version=\"1.0\" ?>"
+
+      olen = 0;
+      oappend("<?xml version=\"1.0\" ?>"
           "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
           "<specVersion><major>1</major><minor>0</minor></specVersion>"
-          "<URLBase>http://"+ String(s) +":80/</URLBase>"
+          "<URLBase>http://");
+      oappend(s);
+      oappend(":80/</URLBase>"
           "<device>"
             "<deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>"
-            "<friendlyName>Philips hue ("+ String(s) +")</friendlyName>"
+            "<friendlyName>Philips hue (");
+      oappend(s);
+      oappend(")</friendlyName>"
             "<manufacturer>Royal Philips Electronics</manufacturer>"
             "<manufacturerURL>http://www.philips.com</manufacturerURL>"
             "<modelDescription>Philips hue Personal Wireless Lighting</modelDescription>"
             "<modelName>Philips hue bridge 2012</modelName>"
             "<modelNumber>929000226503</modelNumber>"
             "<modelURL>http://www.meethue.com</modelURL>"
-            "<serialNumber>"+ escapedMac +"</serialNumber>"
-            "<UDN>uuid:2f402f80-da50-11e1-9b23-"+ escapedMac +"</UDN>"
+            "<serialNumber>");
+      oappend((char*)escapedMac.c_str());
+      oappend("</serialNumber>"
+            "<UDN>uuid:2f402f80-da50-11e1-9b23-");
+      oappend((char*)escapedMac.c_str());
+      oappend("</UDN>"
             "<presentationURL>index.html</presentationURL>"
             "<iconList>"
             "  <icon>"
@@ -177,9 +186,9 @@ void alexaInitPages() {
             "  </icon>"
             "</iconList>"
           "</device>"
-          "</root>";
+          "</root>");
             
-        server.send(200, "text/xml", setup_xml.c_str());
+        server.send(200, "text/xml", obuf);
         
         DEBUG_PRINT("Sending :");
         DEBUG_PRINTLN(setup_xml);
@@ -201,9 +210,9 @@ void alexaInitPages() {
       server.on("/status.html", HTTP_GET, [](){
         DEBUG_PRINTLN("Got status request");
  
-        String statrespone = "0"; 
+        char statrespone[] = "0"; 
         if (bri > 0) {
-          statrespone = "1"; 
+          statrespone[0] = '1'; 
         }
         server.send(200, "text/plain", statrespone);
       
