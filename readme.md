@@ -2,11 +2,12 @@
 
 WLED is a fast and (relatively) secure implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
 
-### Features: (V0.7.0)
+### Features: (V0.7.1)
 - RGB, HSB, and brightness sliders
 - All new, mobile-friendly web UI!
 - Settings page - configuration over network
 - Access Point and station mode - automatic failsafe AP
+- Support of Blynk IoT cloud
 - WS2812FX library integrated for over 50 special effects (+Custom Theater Chase)!
 - Secondary color support lets you use even more effect combinations
 - Alexa smart home device server (including dimming)

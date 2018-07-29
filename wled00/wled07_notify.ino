@@ -16,6 +16,7 @@ void notify(byte callMode, bool followUp=false)
     case 6: if (!notifyDirect) return; break; //fx change
     case 7: if (!notifyHue) return; break;
     case 8: if (!notifyDirect) return; break;
+    case 9: if (!notifyDirect) return; break;
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];

@@ -18,24 +18,36 @@ void handleBlynk()
   Blynk.run();
 }
 
+void updateBlynk()
+{
+  Blynk.virtualWrite(V0,bri);
+  //we need a RGB -> HSB convert here
+  Blynk.virtualWrite(V3,bri);
+  Blynk.virtualWrite(V4,effectCurrent);
+  Blynk.virtualWrite(V5,effectSpeed);
+  Blynk.virtualWrite(V6,effectIntensity);
+  Blynk.virtualWrite(V7,nightlightActive);
+  Blynk.virtualWrite(V8,notifyDirect);
+}
+
 BLYNK_WRITE(V0)
 {
  bri = param.asInt();//bri
- colorUpdated(1);
+ colorUpdated(9);
 }
 
 BLYNK_WRITE(V1)
 {
  blHue = param.asInt();//hue
  colorHStoRGB(blHue*10,blSat,(false)? colSec:col);
- colorUpdated(1);
+ colorUpdated(9);
 }
 
 BLYNK_WRITE(V2)
 {
  blSat = param.asInt();//sat
  colorHStoRGB(blHue*10,blSat,(false)? colSec:col);
- colorUpdated(1);
+ colorUpdated(9);
 }
 
 BLYNK_WRITE(V3)
@@ -46,7 +58,7 @@ BLYNK_WRITE(V3)
 BLYNK_WRITE(V4)
 {
  effectCurrent = param.asInt()-1;//fx
- colorUpdated(6);
+ colorUpdated(9);
 }
 
 BLYNK_WRITE(V5)
