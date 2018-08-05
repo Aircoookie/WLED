@@ -38,7 +38,7 @@
 #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1807291
+#define VERSION 1808051
 char versionString[] = "0.7.1";
 
 //AP and OTA default passwords (change them!)

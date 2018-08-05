@@ -223,7 +223,7 @@ void wledInit()
   
   #ifndef ARDUINO_ARCH_ESP32
   const char * headerkeys[] = {"User-Agent"};
-  server.collectHeaders(headerkeys,sizeof(char*));
+  server.collectHeaders(headerkeys,sizeof(headerkeys)/sizeof(char*));
   #else
   String ua = "User-Agent";
   server.collectHeaders(ua);
