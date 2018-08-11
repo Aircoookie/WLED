@@ -16,6 +16,7 @@ void notify(byte callMode, bool followUp=false)
     case 6: if (!notifyDirect) return; break; //fx change
     case 7: if (!notifyHue) return; break;
     case 8: if (!notifyDirect) return; break;
+    case 9: if (!notifyDirect) return; break;
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];
@@ -58,6 +59,16 @@ void arlsLock(uint32_t timeoutMs)
   }
   arlsTimeout = true;
   arlsTimeoutTime = millis() + timeoutMs;
+  if (arlsForceMaxBri) strip.setBrightness(255);
+}
+
+void initE131(){
+  if (WiFi.status() == WL_CONNECTED && e131Enabled)
+  {
+    e131.begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST , e131Universe);
+  } else {
+    e131Enabled = false;
+  }
 }
 
 void handleNotifications()
@@ -67,13 +78,29 @@ void handleNotifications()
     notify(notificationSentCallMode,true);
   }
 
+  //E1.31 protocol support
+  if(e131Enabled) {
+    uint16_t len = e131.parsePacket();
+    if (len && e131.universe == e131Universe) {
+      arlsLock(arlsTimeoutMillis);
+      if (len > ledCount) len = ledCount;
+      for (uint16_t i = 0; i < len; i++) {
+        int j = i * 3;
+        
+        setRealtimePixel(i, e131.data[j], e131.data[j+1], e131.data[j+2], 0);
+      }
+      strip.show();
+    }
+  }
+
   //unlock strip when realtime UDP times out
   if (arlsTimeout && millis() > arlsTimeoutTime)
   {
     strip.unlockAll();
-    if (bri == 0) strip.setBrightness(0);
+    strip.setBrightness(bri);
     arlsTimeout = false;
     strip.setMode(effectCurrent);
+    realtimeIP[0] = 0;
   }
 
   //receive UDP notifications
@@ -88,16 +115,12 @@ void handleNotifications()
       if (packetSize > 1026 || packetSize < 3) return;
       byte udpIn[packetSize];
       rgbUdp.read(udpIn, packetSize);
-      arlsLock(5200);
+      arlsLock(arlsTimeoutMillis);
       uint16_t id = 0;
       for (uint16_t i = 0; i < packetSize -2; i += 3)
       {
-        if (useGammaCorrectionRGB)
-        {
-          strip.setPixelColor(id, gamma8[udpIn[i]], gamma8[udpIn[i+1]], gamma8[udpIn[i+2]]);
-        } else {
-          strip.setPixelColor(id, udpIn[i], udpIn[i+1], udpIn[i+2]);
-        }
+        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+        
         id++; if (id >= ledCount) break;
       }
       strip.show();
@@ -167,25 +190,15 @@ void handleNotifications()
           {
             for (uint16_t i = 2; i < packetSize -3; i += 4)
             {
-              if (udpIn[i] + arlsOffset < ledCount && udpIn[i] + arlsOffset >= 0)
-              if (useGammaCorrectionRGB)
-              {
-                strip.setPixelColor(udpIn[i] + arlsOffset, gamma8[udpIn[i+1]], gamma8[udpIn[i+2]], gamma8[udpIn[i+3]]);
-              } else {
-                strip.setPixelColor(udpIn[i] + arlsOffset, udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-              }
+              setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
             }
           } else if (udpIn[0] == 2) //drgb
           {
             uint16_t id = 0;
             for (uint16_t i = 2; i < packetSize -2; i += 3)
             {
-              if (useGammaCorrectionRGB)
-              {
-                strip.setPixelColor(id, gamma8[udpIn[i]], gamma8[udpIn[i+1]], gamma8[udpIn[i+2]]);
-              } else {
-                strip.setPixelColor(id, udpIn[i+0], udpIn[i+1], udpIn[i+2]);
-              }
+              setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+
               id++; if (id >= ledCount) break;
             }
           } else if (udpIn[0] == 3) //drgbw
@@ -193,18 +206,27 @@ void handleNotifications()
             uint16_t id = 0;
             for (uint16_t i = 2; i < packetSize -3; i += 4)
             {
-              if (useGammaCorrectionRGB)
-              {
-                strip.setPixelColor(id, gamma8[udpIn[i]], gamma8[udpIn[i+1]], gamma8[udpIn[i+2]], gamma8[udpIn[i+3]]);
-              } else {
-                strip.setPixelColor(id, udpIn[i+0], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-              }
+              setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+              
               id++; if (id >= ledCount) break;
             }
           }
           strip.show();
         }
       }
+    }
+  }
+}
+
+void setRealtimePixel(int i, byte r, byte g, byte b, byte w)
+{
+  if (i + arlsOffset < ledCount && i + arlsOffset >= 0)
+  {
+    if (!arlsDisableGammaCorrection && useGammaCorrectionRGB)
+    {
+      strip.setPixelColor(i + arlsOffset, gamma8[r], gamma8[g], gamma8[b], gamma8[w]);
+    } else {
+      strip.setPixelColor(i + arlsOffset, r, g, b, w);
     }
   }
 }

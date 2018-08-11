@@ -1,13 +1,13 @@
 /*
  * Support for the Cronixie clock
  */
-byte getSameCodeLength(char code, int index, char const digits[])
+byte getSameCodeLength(char code, int index, char const cronixieDisplay[])
 {
   byte counter = 0;
   
   for (int i = index+1; i < 6; i++)
   {
-    if (digits[i] == code)
+    if (cronixieDisplay[i] == code)
     {
       counter++;
     } else {
@@ -19,7 +19,6 @@ byte getSameCodeLength(char code, int index, char const digits[])
 
 void setCronixie()
 {
-  char digits[6]; for (int a=0;a<6;a++) digits[a]=cronixieDisplay.charAt(a);
   /*
    * digit purpose index
    * 0-9 | 0-9 (incl. random)
@@ -84,14 +83,14 @@ void setCronixie()
   //D Day of Week | DD Day Of Month | DDD Day Of Year
 
   DEBUG_PRINT("cset ");
-  DEBUG_PRINTLN(digits);
+  DEBUG_PRINTLN(cronixieDisplay);
 
   overlayRefreshMs = 1997; //Only refresh every 2secs if no seconds are displayed
   
   for (int i = 0; i < 6; i++)
   {
     dP[i] = 10;
-    switch (digits[i])
+    switch (cronixieDisplay[i])
     {
       case '_': dP[i] = 10; break; 
       case '-': dP[i] = 11; break; 
@@ -99,24 +98,24 @@ void setCronixie()
       case 'R': dP[i] = random(0,10); break; //random btw. 0-9
       case 't': break; //Test upw.
       case 'T': break; //Test dnw.
-      case 'b': dP[i] = 14 + getSameCodeLength('b',i,digits); i = i+dP[i]-14; break; 
-      case 'B': dP[i] = 14 + getSameCodeLength('B',i,digits); i = i+dP[i]-14; break;
-      case 'h': dP[i] = 70 + getSameCodeLength('h',i,digits); i = i+dP[i]-70; break;
-      case 'H': dP[i] = 20 + getSameCodeLength('H',i,digits); i = i+dP[i]-20; break;
+      case 'b': dP[i] = 14 + getSameCodeLength('b',i,cronixieDisplay); i = i+dP[i]-14; break; 
+      case 'B': dP[i] = 14 + getSameCodeLength('B',i,cronixieDisplay); i = i+dP[i]-14; break;
+      case 'h': dP[i] = 70 + getSameCodeLength('h',i,cronixieDisplay); i = i+dP[i]-70; break;
+      case 'H': dP[i] = 20 + getSameCodeLength('H',i,cronixieDisplay); i = i+dP[i]-20; break;
       case 'A': dP[i] = 108; i++; break;
       case 'a': dP[i] = 58; i++; break;
-      case 'm': dP[i] = 74 + getSameCodeLength('m',i,digits); i = i+dP[i]-74; break;
-      case 'M': dP[i] = 24 + getSameCodeLength('M',i,digits); i = i+dP[i]-24; break;
-      case 's': dP[i] = 80 + getSameCodeLength('s',i,digits); i = i+dP[i]-80; overlayRefreshMs = 497; break; //refresh more often bc. of secs
-      case 'S': dP[i] = 30 + getSameCodeLength('S',i,digits); i = i+dP[i]-30; overlayRefreshMs = 497; break;
-      case 'Y': dP[i] = 36 + getSameCodeLength('Y',i,digits); i = i+dP[i]-36; break; 
-      case 'y': dP[i] = 86 + getSameCodeLength('y',i,digits); i = i+dP[i]-86; break; 
-      case 'I': dP[i] = 39 + getSameCodeLength('I',i,digits); i = i+dP[i]-39; break;  //Month. Don't ask me why month and minute both start with M.
-      case 'i': dP[i] = 89 + getSameCodeLength('i',i,digits); i = i+dP[i]-89; break; 
+      case 'm': dP[i] = 74 + getSameCodeLength('m',i,cronixieDisplay); i = i+dP[i]-74; break;
+      case 'M': dP[i] = 24 + getSameCodeLength('M',i,cronixieDisplay); i = i+dP[i]-24; break;
+      case 's': dP[i] = 80 + getSameCodeLength('s',i,cronixieDisplay); i = i+dP[i]-80; overlayRefreshMs = 497; break; //refresh more often bc. of secs
+      case 'S': dP[i] = 30 + getSameCodeLength('S',i,cronixieDisplay); i = i+dP[i]-30; overlayRefreshMs = 497; break;
+      case 'Y': dP[i] = 36 + getSameCodeLength('Y',i,cronixieDisplay); i = i+dP[i]-36; break; 
+      case 'y': dP[i] = 86 + getSameCodeLength('y',i,cronixieDisplay); i = i+dP[i]-86; break; 
+      case 'I': dP[i] = 39 + getSameCodeLength('I',i,cronixieDisplay); i = i+dP[i]-39; break;  //Month. Don't ask me why month and minute both start with M.
+      case 'i': dP[i] = 89 + getSameCodeLength('i',i,cronixieDisplay); i = i+dP[i]-89; break; 
       case 'W': break;
       case 'w': break;
-      case 'D': dP[i] = 43 + getSameCodeLength('D',i,digits); i = i+dP[i]-43; break;
-      case 'd': dP[i] = 93 + getSameCodeLength('d',i,digits); i = i+dP[i]-93; break;
+      case 'D': dP[i] = 43 + getSameCodeLength('D',i,cronixieDisplay); i = i+dP[i]-43; break;
+      case 'd': dP[i] = 93 + getSameCodeLength('d',i,cronixieDisplay); i = i+dP[i]-93; break;
       case '0': dP[i] = 0; break;
       case '1': dP[i] = 1; break;
       case '2': dP[i] = 2; break;

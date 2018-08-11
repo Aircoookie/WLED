@@ -4,256 +4,305 @@
 
 void XML_response()
 {
-   String resp;
-   resp = resp + "<?xml version = \"1.0\" ?>";
-   resp = resp + "<vs>";
-   resp = resp + "<ac>";
+   olen = 0;
+   oappend("<?xml version = \"1.0\" ?><vs><ac>");
    if (nightlightActive && nightlightFade)
    {
-     resp = resp + briT;
+     oappendi(briT);
    } else
    {
-    resp = resp + bri;
+     oappendi(bri);
    }
-   resp = resp + "</ac>";
+   oappend("</ac>");
 
    for (int i = 0; i < 3; i++)
    {
-     resp = resp + "<cl>";
-     resp = resp + col[i];
-     resp = resp + "</cl>";
+     oappend("<cl>");
+     oappendi(col[i]);
+     oappend("</cl>");
    }
-   resp = resp + "<ns>";
-   resp = resp + notifyDirect;
-   resp = resp + "</ns><nr>";
-   resp = resp + receiveNotifications;
-   resp = resp + "</nr><nl>";
-   resp = resp + nightlightActive;
-   resp = resp + "</nl><nf>";
-   resp = resp + nightlightFade;
-   resp = resp + "</nf><nd>";
-   resp = resp + nightlightDelayMins;
-   resp = resp + "</nd><nt>";
-   resp = resp + nightlightTargetBri;
-   resp = resp + "</nt><fx>";
-   resp = resp + effectCurrent;
-   resp = resp + "</fx><sx>";
-   resp = resp + effectSpeed;
-   resp = resp + "</sx><ix>";
-   resp = resp + effectIntensity;
-   resp = resp + "</ix><wv>";
-   if (useRGBW) {
-     resp = resp + white;
+   oappend("<ns>");
+   oappendi(notifyDirect);
+   oappend("</ns><nr>");
+   oappendi(receiveNotifications);
+   oappend("</nr><nl>");
+   oappendi(nightlightActive);
+   oappend("</nl><nf>");
+   oappendi(nightlightFade);
+   oappend("</nf><nd>");
+   oappendi(nightlightDelayMins);
+   oappend("</nd><nt>");
+   oappendi(nightlightTargetBri);
+   oappend("</nt><fx>");
+   oappendi(effectCurrent);
+   oappend("</fx><sx>");
+   oappendi(effectSpeed);
+   oappend("</sx><ix>");
+   oappendi(effectIntensity);
+   oappend("</ix><wv>");
+   if (useRGBW && !autoRGBtoRGBW) {
+     oappendi(white);
    } else {
-     resp = resp + "-1";
+     oappend("-1");
    }
-   resp = resp + "</wv><md>";
-   resp = resp + useHSB;
-   resp = resp + "</md><ds>";
-   resp = resp + serverDescription;
-   resp = resp + "</ds>";
-   resp = resp + "</vs>";
-   server.send(200, "text/xml", resp);
+   oappend("</wv><md>");
+   oappendi(useHSB);
+   oappend("</md><ds>");
+   oappend(serverDescription);
+   oappend("</ds></vs>");
+   server.send(200, "text/xml", obuf);
 }
 
-String getSettings(byte subPage)
+void sappend(char stype, char* key, int val) //append a setting to string buffer
+{
+  char ds[] = "d.Sf.";
+  
+  switch(stype)
+  {
+    case 'c': //checkbox
+      oappend(ds);
+      oappend(key);
+      oappend(".checked=");
+      oappendi(val);
+      oappend(";");
+      break;
+    case 'v': //numeric
+      oappend(ds);
+      oappend(key);
+      oappend(".value=");
+      oappendi(val);
+      oappend(";");
+      break;
+    case 'i': //selectedIndex
+      oappend(ds);
+      oappend(key);
+      oappend(".selectedIndex=");
+      oappendi(val);
+      oappend(";");
+      break;
+  }
+}
+
+void sappends(char stype, char* key, char* val) //append a string setting
+{
+  switch(stype)
+  {
+    case 's': //string (we can interpret val as char*)
+        oappend("d.Sf.");
+        oappend(key);
+        oappend(".value=\"");
+        oappend(val);
+        oappend("\";");
+        break;
+    case 'm': //message
+        oappend("d.getElementsByClassName");
+        oappend(key);
+        oappend(".innerHTML=\"");
+        oappend(val);
+        oappend("\";");
+        break;
+  }
+}
+
+void getSettingsJS(byte subPage) //get values for settings form in javascript
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   DEBUG_PRINT("settings resp");
   DEBUG_PRINTLN(subPage);
   
-  String resp = "";
-  if (subPage <1 || subPage >6) return resp;
-  
-  String ds = "d.Sf.";
-  String dg = "d.getElementsByClassName";
-  String v = ".value=";
-  String c = ".checked=";
-  String ih = ".innerHTML=";
-  String si = ".selectedIndex=";
+  olen = 0; obuf[0] = 0; //clear buffer
+  if (subPage <1 || subPage >6) return;
 
   if (subPage == 1) {
-    resp += ds + "CS" + v + "\"" + clientSSID + "\";";
-    resp += ds + "CP" + v + "\"";
-    for (int i = 0; i < clientPass.length(); i++)
+    sappends('s',"CS",clientSSID);
+
+    byte l = strlen(clientPass);
+    char fpass[l+1]; //fill password field with ***
+    fpass[l] = 0;
+    memset(fpass,'*',l); 
+    sappends('s',"CP",fpass);
+
+    char k[3]; k[2] = 0; //IP addresses
+    for (int i = 0; i<4; i++)
     {
-      resp += "*";
+      k[1] = 48+i; //ascii 0,1,2,3
+      k[0] = 'I'; sappend('v',k,staticIP[i]);
+      k[0] = 'G'; sappend('v',k,staticGateway[i]);
+      k[0] = 'S'; sappend('v',k,staticSubnet[i]);
     }
-    resp += "\";";
-    resp += ds + "I0" + v + staticIP[0] +";";
-    resp += ds + "I1" + v + staticIP[1] +";";
-    resp += ds + "I2" + v + staticIP[2] +";";
-    resp += ds + "I3" + v + staticIP[3] +";";
-    resp += ds + "G0" + v + staticGateway[0] +";";
-    resp += ds + "G1" + v + staticGateway[1] +";";
-    resp += ds + "G2" + v + staticGateway[2] +";";
-    resp += ds + "G3" + v + staticGateway[3] +";";
-    resp += ds + "S0" + v + staticSubnet[0] +";";
-    resp += ds + "S1" + v + staticSubnet[1] +";";
-    resp += ds + "S2" + v + staticSubnet[2] +";";
-    resp += ds + "S3" + v + staticSubnet[3] +";";
-    resp += ds + "CM" + v + "\"" + cmDNS + "\";";
-    resp += ds + "AT" + v + apWaitTimeSecs +";";
-    resp += ds + "AS" + v + "\"" + apSSID + "\";";
-    resp += ds + "AH" + c + apHide + ";";
-    resp += ds + "AP" + v + "\"";
-    for (int i = 0; i < apPass.length(); i++)
+
+    sappends('s',"CM",cmDNS);
+    sappend('v',"AT",apWaitTimeSecs);
+    sappends('s',"AS",apSSID);
+    sappend('c',"AH",apHide);
+    
+    l = strlen(apPass);
+    char fapass[l+1]; //fill password field with ***
+    fapass[l] = 0;
+    memset(fapass,'*',l); 
+    sappends('s',"AP",fapass);
+    
+    sappend('v',"AC",apChannel);
+
+    if (WiFi.localIP()[0] != 0) //is connected
     {
-      resp += "*";
-    }
-    resp += "\";";
-    resp += ds + "AC" + v + apChannel +";";
-    resp += dg + "(\"sip\")[0]" + ih + "\"";
-    if (!WiFi.localIP()[0] == 0)
-    {
-      resp += WiFi.localIP()[0];
-      resp += + ".";
-      resp += WiFi.localIP()[1];
-      resp += ".";
-      resp += WiFi.localIP()[2];
-      resp += ".";
-      resp += WiFi.localIP()[3];
+      char s[16];
+      IPAddress localIP = WiFi.localIP();
+      sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+      sappends('m',"(\"sip\")[0]",s);
     } else
     {
-      resp += "Not connected";
+      sappends('m',"(\"sip\")[0]","Not connected");
     }
-    resp += "\";";
-    resp += dg + "(\"sip\")[1]" + ih + "\"";
-    if (!WiFi.softAPIP()[0] == 0)
+    
+    if (WiFi.softAPIP()[0] != 0) //is active
     {
-      resp += WiFi.softAPIP()[0];
-      resp += + ".";
-      resp += WiFi.softAPIP()[1];
-      resp += ".";
-      resp += WiFi.softAPIP()[2];
-      resp += ".";
-      resp += WiFi.softAPIP()[3];
+      char s[16];
+      IPAddress apIP = WiFi.softAPIP();
+      sprintf(s, "%d.%d.%d.%d", apIP[0], apIP[1], apIP[2], apIP[3]);
+      sappends('m',"(\"sip\")[1]",s);
     } else
     {
-      resp += "Not active";
+      sappends('m',"(\"sip\")[1]","Not active");
     }
-    resp += "\";";
   }
   
   if (subPage == 2) {
-    resp += ds + "LC" + v + ledCount +";";
-    resp += ds + "CR" + v + colS[0] +";";
-    resp += ds + "CG" + v + colS[1] +";";
-    resp += ds + "CB" + v + colS[2] +";";
-    resp += ds + "CA" + v + briS +";";
-    resp += ds + "EW" + c + useRGBW +";";
-    resp += ds + "AW" + c + autoRGBtoRGBW +";";
-    resp += ds + "CW" + v + whiteS +";";
-    resp += ds + "SR" + v + colSecS[0] +";";
-    resp += ds + "SG" + v + colSecS[1] +";";
-    resp += ds + "SB" + v + colSecS[2] +";";
-    resp += ds + "SW" + v + whiteSecS +";";
-    resp += ds + "BO" + c + turnOnAtBoot +";";
-    resp += ds + "BP" + v + bootPreset +";";
-    resp += ds + "FX" + v + effectDefault +";";
-    resp += ds + "SX" + v + effectSpeedDefault +";";
-    resp += ds + "IX" + v + effectIntensityDefault +";";
-    resp += ds + "GB" + c + useGammaCorrectionBri +";";
-    resp += ds + "GC" + c + useGammaCorrectionRGB +";";
-    resp += ds + "TF" + c + fadeTransition +";";
-    resp += ds + "TS" + c + sweepTransition +";";
-    resp += ds + "TI" + c + !sweepDirection +";";
-    resp += ds + "TD" + v + transitionDelay +";";
-    resp += ds + "T2" + c + !disableSecTransition +";";
-    resp += ds + "BF" + v + briMultiplier +";";
-    resp += ds + "TB" + v + nightlightTargetBri +";";
-    resp += ds + "TL" + v + nightlightDelayMins +";";
-    resp += ds + "TW" + c + nightlightFade +";";
-    resp += ds + "RV" + c + reverseMode +";";
-    resp += ds + "EI" + c + initLedsLast +";";
-    resp += ds + "WO" + v + arlsOffset +";";
-    resp += ds + "SL" + c + skipFirstLed +";";
+    sappend('v',"LC",ledCount);
+    sappend('v',"CR",colS[0]);
+    sappend('v',"CG",colS[1]);
+    sappend('v',"CB",colS[2]);
+    sappend('v',"CA",briS);
+    sappend('c',"EW",useRGBW);
+    sappend('c',"AW",autoRGBtoRGBW);
+    sappend('v',"CW",whiteS);
+    sappend('v',"SR",colSecS[0]);
+    sappend('v',"SG",colSecS[1]);
+    sappend('v',"SB",colSecS[2]);
+    sappend('v',"SW",whiteSecS);
+    sappend('c',"BO",turnOnAtBoot);
+    sappend('v',"BP",bootPreset);
+    sappend('v',"FX",effectDefault);
+    sappend('v',"SX",effectSpeedDefault);
+    sappend('v',"IX",effectIntensityDefault);
+    sappend('c',"GB",useGammaCorrectionBri);
+    sappend('c',"GC",useGammaCorrectionRGB);
+    sappend('c',"TF",fadeTransition);
+    sappend('c',"TS",sweepTransition);
+    sappend('c',"TI",!sweepDirection);
+    sappend('v',"TD",transitionDelay);
+    sappend('c',"T2",!disableSecTransition);
+    sappend('v',"BF",briMultiplier);
+    sappend('v',"TB",nightlightTargetBri);
+    sappend('v',"TL",nightlightDelayMins);
+    sappend('c',"TW",nightlightFade);
+    sappend('c',"RV",reverseMode);
+    sappend('c',"EI",initLedsLast);
+    sappend('c',"SL",skipFirstLed);
   }
 
   if (subPage == 3)
   { 
-    resp += ds + "UI" + si + String(uiConfiguration) + ";";
-    resp += ds + "DS" + v + "\"" + serverDescription + "\";";
-    resp += ds + "MD" + c + useHSBDefault + ";";
-    resp += ds + "TH" + si + String(currentTheme) + ";";
-    for(int i=0;i<6;i++)
-    resp += ds + "C" + i + v + "\"" + cssCol[i] + "\";";
-    resp += ds + "CF" + v + "\"" + cssFont + "\";";
+    sappend('i',"UI",uiConfiguration);
+    sappends('s',"DS",serverDescription);
+    sappend('c',"MD",useHSBDefault);
+    sappend('i',"TH",currentTheme);
+    char k[3]; k[0] = 'C'; k[2] = 0; //keys
+    for (int i=0; i<6; i++)
+    {
+      k[1] = 48+i; //ascii 0,1,2,3,4,5
+      sappends('s',k,cssCol[i]);
+    }
+    sappends('s',"CF",cssFont);
   }
 
   if (subPage == 4)
   {
-    resp += ds + "BT" + c + buttonEnabled +";";
-    resp += ds + "UP" + v + udpPort +";";
-    resp += ds + "RB" + c + receiveNotificationBrightness +";";
-    resp += ds + "RC" + c + receiveNotificationColor +";";
-    resp += ds + "RX" + c + receiveNotificationEffects +";";
-    resp += ds + "SD" + c + notifyDirectDefault +";";
-    resp += ds + "SB" + c + notifyButton +";";
-    resp += ds + "SH" + c + notifyHue +";";
-    resp += ds + "S2" + c + notifyTwice +";";
-    resp += ds + "RD" + c + receiveDirect +";";
-    resp += ds + "RU" + c + enableRealtimeUI +";";
-    resp += ds + "AL" + c + alexaEnabled +";";
-    resp += ds + "AI" + v + "\"" + alexaInvocationName + "\";";
-    resp += ds + "SA" + c + alexaNotify +";";
-    resp += ds + "H0" + v + hueIP[0] +";";
-    resp += ds + "H1" + v + hueIP[1] +";";
-    resp += ds + "H2" + v + hueIP[2] +";";
-    resp += ds + "H3" + v + hueIP[3] +";";
-    resp += ds + "HL" + v + huePollLightId +";";
-    resp += ds + "HI" + v + huePollIntervalMs +";";
-    resp += ds + "HP" + c + huePollingEnabled +";";
-    resp += ds + "HO" + c + hueApplyOnOff +";";
-    resp += ds + "HB" + c + hueApplyBri +";";
-    resp += ds + "HC" + c + hueApplyColor +";";
-    resp += dg + "(\"hms\")[0]" + ih + "\"" + hueError + "\";";
+    sappend('c',"BT",buttonEnabled);
+    sappend('v',"UP",udpPort);
+    sappend('c',"RB",receiveNotificationBrightness);
+    sappend('c',"RC",receiveNotificationColor);
+    sappend('c',"RX",receiveNotificationEffects);
+    sappend('c',"SD",notifyDirectDefault);
+    sappend('c',"SB",notifyButton);
+    sappend('c',"SH",notifyHue);
+    sappend('c',"S2",notifyTwice);
+    sappend('c',"RD",receiveDirect);
+    sappend('c',"EM",e131Multicast);
+    sappend('v',"EU",e131Universe);
+    sappend('v',"ET",arlsTimeoutMillis);
+    sappend('c',"FB",arlsForceMaxBri);
+    sappend('c',"RG",arlsDisableGammaCorrection);
+    sappend('v',"WO",arlsOffset);
+    sappend('c',"RU",enableRealtimeUI);
+    sappend('c',"AL",alexaEnabled);
+    sappends('s',"AI",alexaInvocationName);
+    sappend('c',"SA",alexaNotify);
+    sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
+    sappend('v',"H0",hueIP[0]);
+    sappend('v',"H1",hueIP[1]);
+    sappend('v',"H2",hueIP[2]);
+    sappend('v',"H3",hueIP[3]);
+    sappend('v',"HL",huePollLightId);
+    sappend('v',"HI",huePollIntervalMs);
+    sappend('c',"HP",huePollingEnabled);
+    sappend('c',"HO",hueApplyOnOff);
+    sappend('c',"HB",hueApplyBri);
+    sappend('c',"HC",hueApplyColor);
+    sappends('m',"(\"hms\")[0]",hueError);
   }
 
   if (subPage == 5)
   {
-    resp += ds + "NT" + c + ntpEnabled +";";
-    resp += ds + "CF" + c + !useAMPM +";";
-    resp += ds + "TZ" + si + String(currentTimezone) + ";";
-    resp += ds + "UO" + v + utcOffsetSecs +";";
-    resp += dg + "(\"times\")[0]" + ih + "\"" + getTimeString() + "\";";
-    resp += ds + "OL" + si + String(overlayCurrent) + ";";
-    resp += ds + "O1" + v + overlayMin +";";
-    resp += ds + "O2" + v + overlayMax +";";
-    resp += ds + "OM" + v + analogClock12pixel +";";
-    resp += ds + "OS" + c + analogClockSecondsTrail +";";
-    resp += ds + "O5" + c + analogClock5MinuteMarks +";";
-    resp += ds + "CX" + v + "\"" + cronixieDisplay + "\";";
-    resp += ds + "CB" + c + cronixieBacklight +";";
-    resp += ds + "CE" + c + countdownMode +";";
-    resp += ds + "CY" + v + countdownYear +";";
-    resp += ds + "CI" + v + countdownMonth +";";
-    resp += ds + "CD" + v + countdownDay +";";
-    resp += ds + "CH" + v + countdownHour +";";
-    resp += ds + "CM" + v + countdownMin +";";
-    resp += ds + "CS" + v + countdownSec +";";
+    sappend('c',"NT",ntpEnabled);
+    sappend('c',"CF",!useAMPM);
+    sappend('i',"TZ",currentTimezone);
+    sappend('v',"UO",utcOffsetSecs);
+    sappends('m',"(\"times\")[0]",(char*)getTimeString().c_str());
+    sappend('i',"OL",overlayCurrent);
+    sappend('v',"O1",overlayMin);
+    sappend('v',"O2",overlayMax);
+    sappend('v',"OM",analogClock12pixel);
+    sappend('c',"OS",analogClockSecondsTrail);
+    sappend('c',"O5",analogClock5MinuteMarks);
+    sappends('s',"CX",cronixieDisplay);
+    sappend('c',"CB",cronixieBacklight);
+    sappend('c',"CE",countdownMode);
+    sappend('v',"CY",countdownYear);
+    sappend('v',"CI",countdownMonth);
+    sappend('v',"CD",countdownDay);
+    sappend('v',"CH",countdownHour);
+    sappend('v',"CM",countdownMin);
+    sappend('v',"CS",countdownSec);
+
+    char k[4]; k[0]= 'M';
     for (int i=1;i<17;i++)
     {
-      resp += ds + "M" + String(i) + v + "\"" + loadMacro(i) + "\";";
+      sprintf(k+1,"%i",i);
+      sappends('s',k,(char*)loadMacro(i).c_str());
     }
-    resp += ds + "MB" + v + macroBoot +";";
-    resp += ds + "A0" + v + macroAlexaOn +";";
-    resp += ds + "A1" + v + macroAlexaOff +";";
-    resp += ds + "MP" + v + macroButton +";";
-    resp += ds + "ML" + v + macroLongPress +";";
-    resp += ds + "MC" + v + macroCountdown +";";
-    resp += ds + "MN" + v + macroNl +";";
+    
+    sappend('v',"MB",macroBoot);
+    sappend('v',"A0",macroAlexaOn);
+    sappend('v',"A1",macroAlexaOff);
+    sappend('v',"MP",macroButton);
+    sappend('v',"ML",macroLongPress);
+    sappend('v',"MC",macroCountdown);
+    sappend('v',"MN",macroNl);
   }
 
   if (subPage == 6)
   {
-    resp += ds + "NO" + c + otaLock +";";
-    resp += ds + "OW" + c + wifiLock +";";
-    resp += ds + "AO" + c + aOtaEnabled +";";
-    resp += ds + "NA" + c + recoveryAPDisabled +";";
-    resp += dg + "(\"msg\")[0]" + ih + "\"WLED "+ versionString +" (build " + VERSION + ") OK\";";
+    sappend('c',"NO",otaLock);
+    sappend('c',"OW",wifiLock);
+    sappend('c',"AO",aOtaEnabled);
+    sappend('c',"NA",recoveryAPDisabled);
+    sappends('m',"(\"msg\")[0]","WLED ");
+    olen -= 2; //delete ";
+    oappend(versionString);
+    oappend(" (build ");
+    oappendi(VERSION);
+    oappend(") OK\";");
   }
-  resp += "}</script>";
-  
-  return resp;
+  oappend("}</script>");
 }

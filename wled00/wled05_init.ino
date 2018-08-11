@@ -5,6 +5,7 @@
 void wledInit()
 { 
   EEPROM.begin(EEPSIZE);
+  showWelcomePage = (EEPROM.read(233) != 233);
   ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
   //RMT eats up too much RAM
   #ifdef ARDUINO_ARCH_ESP32
@@ -40,7 +41,7 @@ void wledInit()
     hueIP[2] = WiFi.localIP()[2];
   }
 
-  if (udpPort > 0 && udpPort != ntpLocalPort && WiFi.status() == WL_CONNECTED)
+  if (udpPort > 0 && udpPort != ntpLocalPort)
   {
     udpConnected = notifierUdp.begin(udpPort);
     if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
@@ -49,7 +50,7 @@ void wledInit()
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   //start captive portal
-  if (onlyAP || apSSID.length() > 0)
+  if (onlyAP || strlen(apSSID) > 0)
   {
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
@@ -182,7 +183,8 @@ void wledInit()
     });
     
   server.on("/build", HTTP_GET, [](){
-    server.send(200, "text/plain", getBuildInfo());
+    getBuildInfo();
+    server.send(200, "text/plain", obuf);
     });
   //if OTA is allowed
   if (!otaLock){
@@ -222,7 +224,7 @@ void wledInit()
   
   #ifndef ARDUINO_ARCH_ESP32
   const char * headerkeys[] = {"User-Agent"};
-  server.collectHeaders(headerkeys,sizeof(char*));
+  server.collectHeaders(headerkeys,sizeof(headerkeys)/sizeof(char*));
   #else
   String ua = "User-Agent";
   server.collectHeaders(ua);
@@ -244,19 +246,23 @@ void wledInit()
       #endif
       DEBUG_PRINTLN("Start ArduinoOTA");
     });
-    if (cmDNS.length() > 0) ArduinoOTA.setHostname(cmDNS.c_str());
+    if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
     ArduinoOTA.begin();
   }
 
   if (!initLedsLast) strip.service();
   // Set up mDNS responder:
-  if (cmDNS.length() > 0 && !onlyAP)
+  if (strlen(cmDNS) > 0 && !onlyAP)
   {
-    MDNS.begin(cmDNS.c_str());
+    MDNS.begin(cmDNS);
     DEBUG_PRINTLN("mDNS responder started");
     // Add service to MDNS
     MDNS.addService("http", "tcp", 80);
-  } 
+  }
+
+  initBlynk(blynkApiKey);
+  
+  initE131();
 
   if (initLedsLast) initStrip();
   userBegin();
@@ -283,10 +289,10 @@ void initStrip()
 }
 
 void initAP(){
-  String save = apSSID;
-  if (apSSID.length() <1) apSSID = "WLED-AP";
-  WiFi.softAP(apSSID.c_str(), apPass.c_str(), apChannel, apHide);
-  apSSID = save;
+  bool set = apSSID[0];
+  if (!set) strcpy(apSSID,"WLED-AP");
+  WiFi.softAP(apSSID, apPass, apChannel, apHide);
+  if (!set) apSSID[0] = 0;
 }
 
 void initCon()
@@ -301,10 +307,10 @@ void initCon()
     WiFi.config(0U, 0U, 0U);
   }
 
-  if (apSSID.length()>0)
+  if (strlen(apSSID)>0)
   {
     DEBUG_PRINT("USING AP");
-    DEBUG_PRINTLN(apSSID.length());
+    DEBUG_PRINTLN(strlen(apSSID));
     initAP();
   } else
   {
@@ -312,13 +318,13 @@ void initCon()
     WiFi.softAPdisconnect(true);
   }
   int fail_count = 0;
-  if (clientSSID.length() <1 || clientSSID.equals("Your_Network")) fail_count = apWaitTimeSecs*2;
+  if (strlen(clientSSID) <1 || strcmp(clientSSID,"Your_Network") == 0) fail_count = apWaitTimeSecs*2; //instantly go to ap mode
   #ifndef ARDUINO_ARCH_ESP32
   WiFi.hostname(serverDescription);
   #endif
-  WiFi.begin(clientSSID.c_str(), clientPass.c_str());
+  WiFi.begin(clientSSID, clientPass);
   #ifdef ARDUINO_ARCH_ESP32
-  WiFi.setHostname(serverDescription.c_str());
+  WiFi.setHostname(serverDescription);
   #endif
   unsigned long lastTry = 0;
   bool con = false;
@@ -397,6 +403,7 @@ void serveIndexOrWelcome()
     if(!handleFileRead("/welcome.htm")) {
       serveSettings(255);
     }
+    showWelcomePage = false;
   }
 }
 
@@ -404,12 +411,18 @@ void serveRealtimeError(bool settings)
 {
   String mesg = "The ";
   mesg += (settings)?"settings":"WLED";
-  mesg += " UI is not available while receiving real-time data (UDP from ";
-  mesg += realtimeIP[0];
-  for (int i = 1; i < 4; i++)
+  mesg += " UI is not available while receiving real-time data (";
+  if (realtimeIP[0] == 0)
   {
-    mesg += ".";
-    mesg += realtimeIP[i];
+    mesg += "E1.31";
+  } else {
+    mesg += "UDP from ";
+    mesg += realtimeIP[0];
+    for (int i = 1; i < 4; i++)
+    {
+      mesg += ".";
+      mesg += realtimeIP[i];
+    }
   }
   mesg += ").";
   server.send(200, "text/plain", mesg);
@@ -492,10 +505,10 @@ void serveSettings(byte subPage)
         default: pl0 = strlen_P(PAGE_settings0); pl1 = strlen_P(PAGE_settings1);
       }
       
-      String settingsBuffer = getSettings(subPage);
+      getSettingsJS(subPage);
       int sCssLength = (subPage >0 && subPage <7)?strlen_P(PAGE_settingsCss):0;
       
-      server.setContentLength(pl0 + cssColorString.length() + settingsBuffer.length() + sCssLength + pl1);
+      server.setContentLength(pl0 + cssColorString.length() + olen + sCssLength + pl1);
       server.send(200, "text/html", "");
       
       switch (subPage)
@@ -509,7 +522,7 @@ void serveSettings(byte subPage)
         case 255: server.sendContent_P(PAGE_welcome0); break;
         default: server.sendContent_P(PAGE_settings0); 
       }
-      server.sendContent(settingsBuffer);
+      server.sendContent(obuf);
       server.sendContent(cssColorString);
       if (subPage >0 && subPage <7) server.sendContent_P(PAGE_settingsCss);
       switch (subPage)
@@ -528,35 +541,42 @@ void serveSettings(byte subPage)
     }
 }
 
-String getBuildInfo()
+void getBuildInfo()
 {
-  String info = "hard-coded build info:\r\n\n";
+  //fill string buffer with build info
+  olen = 0;
+  oappend("hard-coded build info:\r\n\n");
   #ifdef ARDUINO_ARCH_ESP32
-  info += "platform: esp32\r\n";
+  oappend("platform: esp32");
   #else
-  info += "platform: esp8266\r\n";
+  oappend("platform: esp8266");
   #endif
-  info += "version: " + versionString + "\r\n";
-  info += "build: " + (String)VERSION + "\r\n";
-  info += "eepver: " + String(EEPVER) + "\r\n";
+  oappend("\r\nversion: ");
+  oappend(versionString);
+  oappend("\r\nbuild: ");
+  oappendi(VERSION);
+  oappend("\r\neepver: ");
+  oappendi(EEPVER);
   #ifdef USEFS
-  info += "spiffs: true\r\n";
+  oappend("\r\nspiffs: true\r\n");
   #else
-  info += "spiffs: false\r\n";
+  oappend("\r\nspiffs: false\r\n");
   #endif
   #ifdef DEBUG
-  info += "debug: true\r\n";
+  oappend("debug: true\r\n");
   #else
-  info += "debug: false\r\n";
+  oappend("debug: false\r\n");
   #endif
-  info += "button-pin: gpio" + String(buttonPin) + "\r\n";
+  oappend("button-pin: gpio");
+  oappendi(buttonPin);
+  oappend("\r\n");
   #ifdef ARDUINO_ARCH_ESP32
-  info += "strip-pin: gpio" + String(PIN) + "\r\n";
+  oappend("strip-pin: gpio");
+  oappendi(PIN);
   #else
-  info += "strip-pin: gpio2\r\n";
+  oappend("strip-pin: gpio2");
   #endif
-  info += "build-type: src\r\n";
-  return info;
+  oappend("\r\nbuild-type: src\r\n");
 }
 
 bool checkClientIsMobile(String useragent)

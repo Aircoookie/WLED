@@ -3,14 +3,17 @@
  */
 
 void setAllLeds() {
-  double d = briT*briMultiplier;
-  int val = d/100;
-  if (val > 255) val = 255;
-  if (useGammaCorrectionBri)
+  if (!arlsTimeout || !arlsForceMaxBri)
   {
-    strip.setBrightness(gamma8[val]);
-  } else {
-    strip.setBrightness(val);
+    double d = briT*briMultiplier;
+    int val = d/100;
+    if (val > 255) val = 255;
+    if (useGammaCorrectionBri)
+    {
+      strip.setBrightness(gamma8[val]);
+    } else {
+      strip.setBrightness(val);
+    }
   }
   if (disableSecTransition)
   {
@@ -67,7 +70,7 @@ bool colorChanged()
 
 void colorUpdated(int callMode)
 {
-  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (NN)6: fx changed 7: hue 8: preset cycle
+  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (NN)6: fx changed 7: hue 8: preset cycle 9: blynk
   if (!colorChanged())
   {
     if (callMode == 6) notify(6);
@@ -117,6 +120,7 @@ void colorUpdated(int callMode)
     setLedsStandard();
     strip.trigger();
   }
+  if (callMode != 9 && callMode != 5 && callMode != 8) updateBlynk();
 }
 
 void handleTransitions()
@@ -194,6 +198,7 @@ void handleNightlight()
         bri = nightlightTargetBri;
         colorUpdated(5);
       }
+      updateBlynk();
       if (bri == 0) briLast = briNlT;
     }
   } else if (nightlightActiveOld) //early de-init

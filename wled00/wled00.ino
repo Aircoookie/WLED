@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.7.0
+ * @version 0.7.1
  * @author Christian Schwinne
  */
 
@@ -35,14 +35,16 @@
 #include "htmls01.h"
 #include "htmls02.h"
 #include "WS2812FX.h"
+#include "src/dependencies/blynk/BlynkSimpleEsp.h"
+#include "src/dependencies/e131/E131.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1806240
-const String versionString = "0.7.0";
+#define VERSION 1808111
+char versionString[] = "0.7.1";
 
 //AP and OTA default passwords (change them!)
-String apPass = "wled1234";
-String otaPass = "wledota";
+char apPass[65] = "wled1234";
+char otaPass[33] = "wledota";
 
 //spiffs FS only useful for debug (only ESP8266)
 //#define USEFS
@@ -58,14 +60,14 @@ byte auxDefaultState = 0; //0: input 1: high 2: low
 byte auxTriggeredState = 0; //0: input 1: high 2: low
 
 //Default CONFIG
-String serverDescription = "WLED Light";
+char serverDescription[33] = "WLED Light";
 byte currentTheme = 0;
 byte uiConfiguration = 0; //0: auto 1: classic 2: mobile
-String clientSSID = "Your_Network";
-String clientPass = "";
-String cmDNS = "led";
+char clientSSID[33] = "Your_Network";
+char clientPass[65] = "";
+char cmDNS[33] = "led";
 uint16_t ledCount = 10; //lowered to prevent accidental overcurrent
-String apSSID = ""; //AP off by default (unless setup)
+char apSSID[65] = ""; //AP off by default (unless setup)
 byte apChannel = 1;
 byte apHide = 0;
 byte apWaitTimeSecs = 32;
@@ -103,7 +105,7 @@ byte effectSpeedDefault = 75;
 byte effectIntensityDefault = 128;
 //NTP stuff
 bool ntpEnabled = false;
-String ntpServerName = "0.wled.pool.ntp.org";
+char ntpServerName[] = "0.wled.pool.ntp.org";
 //custom chase
 byte ccNumPrimary = 2;
 byte ccNumSecondary = 4;
@@ -115,7 +117,7 @@ byte ccStart = 0;
 
 //alexa
 bool alexaEnabled = true;
-String alexaInvocationName = "Light";
+char alexaInvocationName[33] = "Light";
 
 byte macroBoot = 0, macroNl = 0;
 byte macroAlexaOn = 0, macroAlexaOff = 0;
@@ -126,7 +128,7 @@ unsigned long countdownTime = 1514764800L;
 //hue
 bool huePollingEnabled = false, hueAttempt = false;
 uint16_t huePollIntervalMs = 2500;
-String hueApiKey = "api";
+char hueApiKey[65] = "api";
 byte huePollLightId = 1;
 IPAddress hueIP = (0,0,0,0);
 bool notifyHue = true;
@@ -143,8 +145,8 @@ byte colSec[]{0, 0, 0};
 byte colSecT[]{0, 0, 0};
 byte colSecOld[]{0, 0, 0};
 byte colSecIT[]{0, 0, 0};
-byte white, whiteOld, whiteT, whiteIT;
-byte whiteSec, whiteSecOld, whiteSecT, whiteSecIT;
+byte white = 0, whiteOld, whiteT, whiteIT;
+byte whiteSec = 0, whiteSecOld, whiteSecT, whiteSecIT;
 byte lastRandomIndex = 0;
 uint16_t transitionDelayTemp = transitionDelay;
 unsigned long transitionStartTime;
@@ -170,8 +172,8 @@ byte effectSpeed = 75;
 byte effectIntensity = 128;
 bool onlyAP = false;
 bool udpConnected = false, udpRgbConnected = false;
-String cssCol[]={"","","","","",""};
-String cssFont="Verdana";
+char cssCol[9][5]={"","","","","",""};
+char cssFont[33]="Verdana";
 String cssColorString="";
 //NTP stuff
 bool ntpConnected = false;
@@ -180,13 +182,22 @@ time_t local = 0;
 int utcOffsetSecs = 0;
 
 //hue
-String hueError = "Inactive";
+char hueError[25] = "Inactive";
 uint16_t hueFailCount = 0;
 float hueXLast=0, hueYLast=0;
 uint16_t hueHueLast=0, hueCtLast=0;
 byte hueSatLast=0, hueBriLast=0;
 long hueLastRequestSent = 0;
 uint32_t huePollIntervalMsTemp = huePollIntervalMs;
+
+//blynk
+char blynkApiKey[36] = "";
+bool blynkEnabled = false;
+
+//e1.31
+bool e131Enabled = true;
+byte e131Universe = 1;
+bool e131Multicast = false;
 
 //overlay stuff
 byte overlayDefault = 0;
@@ -206,7 +217,7 @@ bool nixiePause;
 byte countdownYear=19, countdownMonth=1, countdownDay=1, countdownHour=0, countdownMin=0, countdownSec=0; //year is actual year -2000
 bool countdownOverTriggered = true;
 //cronixie
-String cronixieDisplay = "HHMMSS";
+char cronixieDisplay[] = "HHMMSS";
 byte dP[]{0,0,0,0,0,0};
 bool useAMPM = false;
 bool cronixieBacklight = true;
@@ -219,10 +230,10 @@ uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
 bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
 bool saveCurrPresetCycConf = false;
-
-uint32_t arlsTimeoutMillis = 2500;
+uint16_t arlsTimeoutMillis = 2500;
 bool arlsTimeout = false;
 bool receiveDirect = true, enableRealtimeUI = false;
+bool arlsDisableGammaCorrection = true, arlsForceMaxBri = false;
 IPAddress realtimeIP = (0,0,0,0);
 unsigned long arlsTimeoutTime = 0;
 byte auxTime = 0;
@@ -232,32 +243,36 @@ bool showWelcomePage = false;
 
 bool useGammaCorrectionBri = false;
 bool useGammaCorrectionRGB = true;
-int arlsOffset = -22; //10: -22 assuming arls52
+int arlsOffset = 0;
 
 //alexa udp
 WiFiUDP UDP;
 IPAddress ipMulti(239, 255, 255, 250);
 unsigned int portMulti = 1900;
-char packetBuffer[255];
 String escapedMac;
 
 //dns server
 DNSServer dnsServer;
 bool dnsActive = false;
 
+//string temp buffer
+#define OMAX 1750
+char obuf[OMAX];
+uint16_t olen = 0;
+
 #ifdef ARDUINO_ARCH_ESP32
 WebServer server(80);
 #else
 ESP8266WebServer server(80);
 #endif
+E131 e131;
 HTTPClient hueClient;
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp, rgbUdp;
 WiFiUDP ntpUdp;
 IPAddress ntpServerIP;
 unsigned int ntpLocalPort = 2390;
-const uint16_t NTP_PACKET_SIZE = 48; 
-byte ntpPacketBuffer[NTP_PACKET_SIZE];
+#define NTP_PACKET_SIZE 48
 unsigned long ntpLastSyncTime = 999000000L;
 unsigned long ntpPacketSentTime = 999000000L;
 
@@ -314,6 +329,22 @@ void reset()
   ESP.restart();
 }
 
+bool oappend(char* txt) //append new c string to temp buffer efficiently
+{
+  uint16_t len = strlen(txt);
+  if (olen + len >= OMAX) return false; //buffer full
+  strcpy(obuf + olen, txt);
+  olen += len;
+  return true;
+}
+
+bool oappendi(int i) //append new number to temp buffer efficiently
+{
+  char s[11]; 
+  sprintf(s,"%ld", i);
+  return oappend(s);
+}
+
 void setup() {
     wledInit();
 }
@@ -335,6 +366,7 @@ void loop() {
       if (dnsActive) dnsServer.processNextRequest();
       handleHue();
       handleNightlight();
+      handleBlynk();
       if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
     }
     

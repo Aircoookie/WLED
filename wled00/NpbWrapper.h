@@ -1,6 +1,6 @@
 //this code is a modified version of https://github.com/Makuna/NeoPixelBus/issues/103
 
-#define WORKAROUND_ESP32_BITBANG
+//#define WORKAROUND_ESP32_BITBANG
 //see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
 
 //uncomment this if red and green are swapped

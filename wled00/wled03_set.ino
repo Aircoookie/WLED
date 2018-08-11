@@ -21,91 +21,44 @@ void handleSettingsSet(byte subPage)
   //WIFI SETTINGS
   if (subPage == 1)
   {
-    if (server.hasArg("CS")) clientSSID = server.arg("CS");
+    if (server.hasArg("CS")) strcpy(clientSSID,server.arg("CS").c_str());
     if (server.hasArg("CP"))
     {
       if (!server.arg("CP").indexOf('*') == 0)
       {
-        DEBUG_PRINTLN("Setting pass");
-        clientPass = server.arg("CP");
+        strcpy(clientPass,server.arg("CP").c_str());
       }
     }
-    if (server.hasArg("CM")) cmDNS = server.arg("CM");
+    if (server.hasArg("CM")) strcpy(cmDNS,server.arg("CM").c_str());
     if (server.hasArg("AT"))
     {
         int i = server.arg("AT").toInt();
         if (i >= 0 && i <= 255) apWaitTimeSecs = i;
     }
-    if (server.hasArg("AS")) apSSID = server.arg("AS");
+    if (server.hasArg("AS")) strcpy(apSSID,server.arg("AS").c_str());
     apHide = server.hasArg("AH");
     if (server.hasArg("AP"))
     {
-      if (!server.arg("AP").indexOf('*') == 0) apPass = server.arg("AP");
+      if (server.arg("AP").charAt(0) != '*') strcpy(apPass,server.arg("AP").c_str());
     }
     if (server.hasArg("AC"))
     {
       int chan = server.arg("AC").toInt();
       if (chan > 0 && chan < 14) apChannel = chan;
     }
-    if (server.hasArg("I0"))
+    char k[3]; k[2] = 0; int j = 0;
+    for (int i = 0; i<4; i++)
     {
-      int i = server.arg("I0").toInt();
-      if (i >= 0 && i <= 255) staticIP[0] = i;
-    }
-    if (server.hasArg("I1"))
-    {
-      int i = server.arg("I1").toInt();
-      if (i >= 0 && i <= 255) staticIP[1] = i;
-    }
-    if (server.hasArg("I2"))
-    {
-      int i = server.arg("I2").toInt();
-      if (i >= 0 && i <= 255) staticIP[2] = i;
-    }
-    if (server.hasArg("I3"))
-    {
-      int i = server.arg("I3").toInt();
-      if (i >= 0 && i <= 255) staticIP[3] = i;
-    }
-    if (server.hasArg("G0"))
-    {
-      int i = server.arg("G0").toInt();
-      if (i >= 0 && i <= 255) staticGateway[0] = i;
-    }
-    if (server.hasArg("G1"))
-    {
-      int i = server.arg("G1").toInt();
-      if (i >= 0 && i <= 255) staticGateway[1] = i;
-    }
-    if (server.hasArg("G2"))
-    {
-      int i = server.arg("G2").toInt();
-      if (i >= 0 && i <= 255) staticGateway[2] = i;
-    }
-    if (server.hasArg("G3"))
-    {
-      int i = server.arg("G3").toInt();
-      if (i >= 0 && i <= 255) staticGateway[3] = i;
-    }
-    if (server.hasArg("S0"))
-    {
-      int i = server.arg("S0").toInt();
-      if (i >= 0 && i <= 255) staticSubnet[0] = i;
-    }
-    if (server.hasArg("S1"))
-    {
-      int i = server.arg("S1").toInt();
-      if (i >= 0 && i <= 255) staticSubnet[1] = i;
-    }
-    if (server.hasArg("S2"))
-    {
-      int i = server.arg("S2").toInt();
-      if (i >= 0 && i <= 255) staticSubnet[2] = i;
-    }
-    if (server.hasArg("S3"))
-    {
-      int i = server.arg("S3").toInt();
-      if (i >= 0 && i <= 255) staticSubnet[3] = i;
+      k[1] = i+48;
+      k[0] = 'I'; //static IP
+      if (server.hasArg(k)) j = server.arg(k).toInt();
+      if (j >= 0 && j <= 255) staticIP[i] = j;
+      k[0] = 'G'; //gateway
+      if (server.hasArg(k)) j = server.arg(k).toInt();
+      if (j >= 0 && j <= 255) staticGateway[i] = j;
+      k[0] = 'S'; //subnet
+      if (server.hasArg(k)) j = server.arg(k).toInt();
+      if (j >= 0 && j <= 255) staticSubnet[i] = j;
     }
   }
 
@@ -228,11 +181,6 @@ void handleSettingsSet(byte subPage)
     reverseMode = server.hasArg("RV");
     initLedsLast = server.hasArg("EI");
     strip.setReverseMode(reverseMode);
-    if (server.hasArg("WO"))
-    {
-      int i = server.arg("WO").toInt();
-      if (i >= -255  && i <= 255) arlsOffset = i;
-    }
     skipFirstLed = server.hasArg("SL");
     if (server.hasArg("BF"))
     {
@@ -245,15 +193,17 @@ void handleSettingsSet(byte subPage)
   if (subPage == 3)
   {
     if (server.hasArg("UI")) uiConfiguration = server.arg("UI").toInt();
-    if (server.hasArg("DS")) serverDescription = server.arg("DS");
+    if (server.hasArg("DS")) strcpy(serverDescription,server.arg("DS").c_str());
     useHSBDefault = server.hasArg("MD");
     useHSB = useHSBDefault;
     if (server.hasArg("TH")) currentTheme = server.arg("TH").toInt();
+    char k[3]; k[0]='C'; k[2]=0;
     for(int i=0;i<6;i++)
     {
-      if (server.hasArg("C"+String(i))) cssCol[i] = server.arg("C"+String(i));
+      k[1] = i+48;
+      if (server.hasArg(k)) strcpy(cssCol[i],server.arg(k).c_str());
     }
-    if (server.hasArg("CF")) cssFont = server.arg("CF");
+    if (server.hasArg("CF")) strcpy(cssFont,server.arg("CF").c_str());
     buildCssColorString();
   }
 
@@ -274,10 +224,28 @@ void handleSettingsSet(byte subPage)
     notifyButton = server.hasArg("SB");
     notifyTwice = server.hasArg("S2");
     receiveDirect = server.hasArg("RD");
+    if (server.hasArg("EU"))
+    {
+      int i = server.arg("EU").toInt();
+      if (i > 0  && i <= 63999) arlsTimeoutMillis = i;
+    }
+    if (server.hasArg("ET"))
+    {
+      int i = server.arg("ET").toInt();
+      if (i > 99  && i <= 65000) arlsTimeoutMillis = i;
+    }
+    arlsForceMaxBri = server.hasArg("FB");
+    arlsDisableGammaCorrection = server.hasArg("RG");
+    if (server.hasArg("WO"))
+    {
+      int i = server.arg("WO").toInt();
+      if (i >= -255  && i <= 255) arlsOffset = i;
+    }
     enableRealtimeUI = server.hasArg("RU");
     alexaEnabled = server.hasArg("AL");
-    if (server.hasArg("AI")) alexaInvocationName = server.arg("AI");
+    if (server.hasArg("AI")) strcpy(alexaInvocationName,server.arg("AI").c_str());
     alexaNotify = server.hasArg("SA");
+    if (server.hasArg("BK") && !server.arg("BK").equals("Hidden")) {strcpy(blynkApiKey,server.arg("BK").c_str()); initBlynk(blynkApiKey);}
     notifyHue = server.hasArg("SH");
     for (int i=0;i<4;i++){
       String a = "H"+String(i);
@@ -304,7 +272,7 @@ void handleSettingsSet(byte subPage)
     } else
     {
       huePollingEnabled = false;
-      hueError = "Inactive";
+      strcpy(hueError,"Inactive");
     }
   }
 
@@ -328,7 +296,7 @@ void handleSettingsSet(byte subPage)
     analogClock5MinuteMarks = server.hasArg("O5");
     analogClockSecondsTrail = server.hasArg("OS");
     
-    if (server.hasArg("CX")) cronixieDisplay = server.arg("CX");
+    if (server.hasArg("CX")) strcpy(cronixieDisplay,server.arg("CX").c_str());
     bool cbOld = cronixieBacklight;
     cronixieBacklight = server.hasArg("CB");
     if (cbOld != cronixieBacklight && overlayCurrent == 4)
@@ -370,13 +338,13 @@ void handleSettingsSet(byte subPage)
     bool pwdCorrect = !otaLock; //always allow access if ota not locked
     if (server.hasArg("OP"))
     {
-      if (otaLock && otaPass.equals(server.arg("OP")))
+      if (otaLock && strcmp(otaPass,server.arg("OP").c_str()) == 0)
       {
         pwdCorrect = true;
       }
       if (!otaLock && server.arg("OP").length() > 0)
       {
-        otaPass = server.arg("OP");
+        strcpy(otaPass,server.arg("OP").c_str());
       }
     }
     
@@ -787,7 +755,7 @@ bool handleSet(String req)
    //cronixie
    pos = req.indexOf("NX="); //sets digits to code
    if (pos > 0) {
-      cronixieDisplay = req.substring(pos + 3, pos + 9);
+      strcpy(cronixieDisplay,req.substring(pos + 3, pos + 9).c_str());
       setCronixie();
    }
    pos = req.indexOf("NM="); //mode, 1 countdown
