@@ -5,6 +5,7 @@
 void wledInit()
 { 
   EEPROM.begin(EEPSIZE);
+  showWelcomePage = (EEPROM.read(233) != 233);
   ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
   //RMT eats up too much RAM
   #ifdef ARDUINO_ARCH_ESP32
@@ -40,7 +41,7 @@ void wledInit()
     hueIP[2] = WiFi.localIP()[2];
   }
 
-  if (udpPort > 0 && udpPort != ntpLocalPort && WiFi.status() == WL_CONNECTED)
+  if (udpPort > 0 && udpPort != ntpLocalPort)
   {
     udpConnected = notifierUdp.begin(udpPort);
     if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
@@ -260,6 +261,8 @@ void wledInit()
   }
 
   initBlynk(blynkApiKey);
+  
+  initE131();
 
   if (initLedsLast) initStrip();
   userBegin();
@@ -400,6 +403,7 @@ void serveIndexOrWelcome()
     if(!handleFileRead("/welcome.htm")) {
       serveSettings(255);
     }
+    showWelcomePage = false;
   }
 }
 
@@ -407,12 +411,18 @@ void serveRealtimeError(bool settings)
 {
   String mesg = "The ";
   mesg += (settings)?"settings":"WLED";
-  mesg += " UI is not available while receiving real-time data (UDP from ";
-  mesg += realtimeIP[0];
-  for (int i = 1; i < 4; i++)
+  mesg += " UI is not available while receiving real-time data (";
+  if (realtimeIP[0] == 0)
   {
-    mesg += ".";
-    mesg += realtimeIP[i];
+    mesg += "E1.31";
+  } else {
+    mesg += "UDP from ";
+    mesg += realtimeIP[0];
+    for (int i = 1; i < 4; i++)
+    {
+      mesg += ".";
+      mesg += realtimeIP[i];
+    }
   }
   mesg += ").";
   server.send(200, "text/plain", mesg);
@@ -566,7 +576,7 @@ void getBuildInfo()
   #else
   oappend("strip-pin: gpio2");
   #endif
-  oappend("\r\nbuild-type: dev\r\n");
+  oappend("\r\nbuild-type: src\r\n");
 }
 
 bool checkClientIsMobile(String useragent)

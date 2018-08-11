@@ -12,8 +12,7 @@ void handleSerial()
         strip.setRange(0, ledCount-1, 0);
         strip.setMode(0);
       }
-      arlsTimeout = true;
-      arlsTimeoutTime = millis() + 5200;
+      arlsLock(arlsTimeoutMillis);
       delay(1);
       byte hi = Serial.read();
       byte ledc = Serial.read();
@@ -34,7 +33,7 @@ void handleSerial()
           to = 0;
           sc[j] = Serial.read();
         }
-        strip.setPixelColor(i,sc[0],sc[1],sc[2],0);
+        setRealtimePixel(i,sc[0],sc[1],sc[2],0);
       }
       strip.show();
     }

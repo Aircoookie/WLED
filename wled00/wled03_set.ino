@@ -181,11 +181,6 @@ void handleSettingsSet(byte subPage)
     reverseMode = server.hasArg("RV");
     initLedsLast = server.hasArg("EI");
     strip.setReverseMode(reverseMode);
-    if (server.hasArg("WO"))
-    {
-      int i = server.arg("WO").toInt();
-      if (i >= -255  && i <= 255) arlsOffset = i;
-    }
     skipFirstLed = server.hasArg("SL");
     if (server.hasArg("BF"))
     {
@@ -229,6 +224,23 @@ void handleSettingsSet(byte subPage)
     notifyButton = server.hasArg("SB");
     notifyTwice = server.hasArg("S2");
     receiveDirect = server.hasArg("RD");
+    if (server.hasArg("EU"))
+    {
+      int i = server.arg("EU").toInt();
+      if (i > 0  && i <= 63999) arlsTimeoutMillis = i;
+    }
+    if (server.hasArg("ET"))
+    {
+      int i = server.arg("ET").toInt();
+      if (i > 99  && i <= 65000) arlsTimeoutMillis = i;
+    }
+    arlsForceMaxBri = server.hasArg("FB");
+    arlsDisableGammaCorrection = server.hasArg("RG");
+    if (server.hasArg("WO"))
+    {
+      int i = server.arg("WO").toInt();
+      if (i >= -255  && i <= 255) arlsOffset = i;
+    }
     enableRealtimeUI = server.hasArg("RU");
     alexaEnabled = server.hasArg("AL");
     if (server.hasArg("AI")) strcpy(alexaInvocationName,server.arg("AI").c_str());

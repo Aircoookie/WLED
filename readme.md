@@ -24,7 +24,7 @@ WLED is a fast and (relatively) secure implementation of an ESP8266/ESP32 webser
 - Password protected OTA page for added security (OTA lock)
 - NTP and configurable analog clock function
 - Support for the Cronixie Clock kit by Diamex
-- Realtime UDP Packet Control (Hyperion, WARLS, DRGB, DRGBW)
+- Realtime UDP Packet Control (E1.31, Hyperion, WARLS, DRGB, DRGBW)
 
 ### Quick start guide and documentation:
 

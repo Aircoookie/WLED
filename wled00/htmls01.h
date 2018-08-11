@@ -120,7 +120,6 @@ Fade down: <input type="checkbox" name="TW"><br>
 <h3>Advanced</h3>
 Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
 Init LEDs after WiFi: <input type="checkbox" name="EI"><br>
-WARLS offset: <input name="WO" type="number" min="-255" max="255" required><br>
 Skip first LED: <input type="checkbox" name="SL"><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
@@ -207,14 +206,23 @@ Send notifications on button press: <input type="checkbox" name="SB"><br>
 Send Alexa notifications: <input type="checkbox" name="SA"><br>
 Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
 Send notifications twice: <input type="checkbox" name="S2"><br>
-Receive UDP realtime: <input type="checkbox" name="RD"><br>
+<h3>Realtime</h3>
+Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
+<i>E1.31 (sACN)</i><br>
+Use E1.31 multicast: <input type="checkbox" name="EM"><br>
+E1.31 universe: <input name="EU" type="number" min="1" max="63999" required><br>
+<i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br><br>
+Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
+Force max brightness: <input type="checkbox" name="FB"><br>
+Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
+Realtime LED offset: <input name="WO" type="number" min="-255" max="255" required><br>
 Enable UI access during realtime: <input type="checkbox" name="RU"> (can cause issues)
 <h3>Alexa Voice Assistant</h3>
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
 Alexa invocation name: <input name="AI" maxlength="32">
 <h3>Blynk</h3>
 Device Auth token: <input name="BK" maxlength="33"><br>
-<i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk">Setup info</a>
+<i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
 Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
@@ -350,7 +358,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED">WLED</a> version 0.7.1<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.7.1<br><br>
 <b>Contributors:</b><br>
 StormPie <i>(Mobile HTML UI)</i><br><br>
 Thank you so much!<br><br>
@@ -358,12 +366,13 @@ Thank you so much!<br><br>
 <i>Licensed under the MIT license</i><br><br>
 <b>Uses libraries:</b><br>
 <i>ESP8266/ESP32 Arduino Core</i><br>
-<i>(ESP32) <a href="https://github.com/bbx10/WebServer_tng">WebServer_tng</a> by bbx10</i><br>
-<i><a href="https://github.com/kitesurfer1404/WS2812FX">WS2812FX</a> by kitesurfer1404 (modified)</i><br>
-<i><a href="https://github.com/JChristensen/Timezone">Timezone</a> library by JChristensen</i><br>
-<i><a href="https://github.com/blynkkk/blynk-library">Blynk</a> library (compacted)</i><br>
-<i><a href="https://github.com/Aircoookie/Espalexa">Espalexa</a> by Aircoookie (modified)</i><br><br>
-<i>UI icons by <a href="https://linearicons.com">Linearicons</a> created by <a href="https://perxis.com">Perxis</a>! (CC-BY-SA 4.0)</i> <br><br>
+<i>(ESP32) <a href="https://github.com/bbx10/WebServer_tng" target="_blank">WebServer_tng</a> by bbx10</i><br>
+<i><a href="https://github.com/kitesurfer1404/WS2812FX" target="_blank">WS2812FX</a> by kitesurfer1404 (modified)</i><br>
+<i><a href="https://github.com/JChristensen/Timezone" target="_blank">Timezone</a> library by JChristensen</i><br>
+<i><a href="https://github.com/blynkkk/blynk-library" target="_blank">Blynk</a> library (compacted)</i><br>
+<i><a href="https://github.com/forkineye/E131" target="_blank">E1.31</a> library by forkineye (modified)</i><br>
+<i><a href="https://github.com/Aircoookie/Espalexa" target="_blank">Espalexa</a> by Aircoookie (modified)</i><br><br>
+<i>UI icons by <a href="https://linearicons.com" target="_blank">Linearicons</a> created by <a href="https://perxis.com" target="_blank">Perxis</a>! (CC-BY-SA 4.0)</i> <br><br>
 Server message: <span class="msg"> Response error! </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 </form>

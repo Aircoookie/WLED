@@ -36,9 +36,10 @@
 #include "htmls02.h"
 #include "WS2812FX.h"
 #include "src/dependencies/blynk/BlynkSimpleEsp.h"
+#include "src/dependencies/e131/E131.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1808051
+#define VERSION 1808111
 char versionString[] = "0.7.1";
 
 //AP and OTA default passwords (change them!)
@@ -193,6 +194,11 @@ uint32_t huePollIntervalMsTemp = huePollIntervalMs;
 char blynkApiKey[36] = "";
 bool blynkEnabled = false;
 
+//e1.31
+bool e131Enabled = true;
+byte e131Universe = 1;
+bool e131Multicast = false;
+
 //overlay stuff
 byte overlayDefault = 0;
 byte overlayCurrent = 0;
@@ -224,9 +230,10 @@ uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
 bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
 bool saveCurrPresetCycConf = false;
-uint32_t arlsTimeoutMillis = 2500;
+uint16_t arlsTimeoutMillis = 2500;
 bool arlsTimeout = false;
 bool receiveDirect = true, enableRealtimeUI = false;
+bool arlsDisableGammaCorrection = true, arlsForceMaxBri = false;
 IPAddress realtimeIP = (0,0,0,0);
 unsigned long arlsTimeoutTime = 0;
 byte auxTime = 0;
@@ -236,7 +243,7 @@ bool showWelcomePage = false;
 
 bool useGammaCorrectionBri = false;
 bool useGammaCorrectionRGB = true;
-int arlsOffset = -22; //10: -22 assuming arls52
+int arlsOffset = 0;
 
 //alexa udp
 WiFiUDP UDP;
@@ -258,6 +265,7 @@ WebServer server(80);
 #else
 ESP8266WebServer server(80);
 #endif
+E131 e131;
 HTTPClient hueClient;
 ESP8266HTTPUpdateServer httpUpdater;
 WiFiUDP notifierUdp, rgbUdp;
@@ -338,8 +346,6 @@ bool oappendi(int i) //append new number to temp buffer efficiently
 }
 
 void setup() {
-    //init strings to defaults
-    
     wledInit();
 }
 

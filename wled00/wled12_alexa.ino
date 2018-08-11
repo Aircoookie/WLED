@@ -190,8 +190,7 @@ void alexaInitPages() {
             
         server.send(200, "text/xml", obuf);
         
-        DEBUG_PRINT("Sending :");
-        DEBUG_PRINTLN(setup_xml);
+        DEBUG_PRINTLN("Sending setup_xml");
     });
 
     // openHAB support

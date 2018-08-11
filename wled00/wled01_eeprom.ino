@@ -6,7 +6,7 @@
 #define EEPSIZE 3072
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 6
+#define EEPVER 7
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -14,8 +14,11 @@
 //4 -> 0.5.0 and up
 //5 -> 0.5.1 and up
 //6 -> 0.6.0 and up
+//7 -> 0.7.1 and up
 
-//todo add settings
+/*
+ * Erase all configuration data
+ */
 void clearEEPROM()
 {
   for (int i = 0; i < EEPSIZE; i++)
@@ -25,15 +28,15 @@ void clearEEPROM()
   EEPROM.commit();
 }
 
+/*
+ * Write configuration to flash
+ */
 void saveSettingsToEEPROM()
 {
   if (EEPROM.read(233) != 233) //set no first boot flag
   {
     clearEEPROM();
     EEPROM.write(233, 233);
-  } else
-  {
-    showWelcomePage = false;
   }
   
   for (int i = 0; i < 32; ++i)
@@ -204,6 +207,14 @@ void saveSettingsToEEPROM()
   EEPROM.write(2180, macroCountdown);
   EEPROM.write(2181, macroNl);
 
+  EEPROM.write(2190, (e131Universe >> 0) & 0xFF);
+  EEPROM.write(2191, (e131Universe >> 8) & 0xFF);
+  EEPROM.write(2192, e131Multicast);
+  EEPROM.write(2193, (arlsTimeoutMillis >> 0) & 0xFF);
+  EEPROM.write(2194, (arlsTimeoutMillis >> 8) & 0xFF);
+  EEPROM.write(2195, arlsForceMaxBri);
+  EEPROM.write(2196, arlsDisableGammaCorrection);
+
   EEPROM.write(2200,!receiveDirect);
   EEPROM.write(2201,enableRealtimeUI);
   EEPROM.write(2202,uiConfiguration);
@@ -231,11 +242,13 @@ void saveSettingsToEEPROM()
   EEPROM.commit();
 }
 
+/*
+ * Read all configuration from flash
+ */
 void loadSettingsFromEEPROM(bool first)
 {
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
-    showWelcomePage=true;
     saveSettingsToEEPROM();
     return;
   }
@@ -432,6 +445,16 @@ void loadSettingsFromEEPROM(bool first)
     macroCountdown = EEPROM.read(2180);
     macroNl = EEPROM.read(2181);
   }
+
+  if (lastEEPROMversion > 6)
+  {
+    e131Universe = ((EEPROM.read(2190) << 0) & 0xFF) + ((EEPROM.read(2191) << 8) & 0xFF00);
+    e131Multicast = EEPROM.read(2192);
+    arlsTimeoutMillis = ((EEPROM.read(2193) << 0) & 0xFF) + ((EEPROM.read(2194) << 8) & 0xFF00);
+    arlsForceMaxBri = EEPROM.read(2195);
+    arlsDisableGammaCorrection = EEPROM.read(2196);
+  }
+  
   receiveDirect = !EEPROM.read(2200);
   enableRealtimeUI = EEPROM.read(2201);
   uiConfiguration = EEPROM.read(2202);

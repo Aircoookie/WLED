@@ -198,7 +198,6 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"TW",nightlightFade);
     sappend('c',"RV",reverseMode);
     sappend('c',"EI",initLedsLast);
-    sappend('v',"WO",arlsOffset);
     sappend('c',"SL",skipFirstLed);
   }
 
@@ -229,6 +228,12 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"SH",notifyHue);
     sappend('c',"S2",notifyTwice);
     sappend('c',"RD",receiveDirect);
+    sappend('c',"EM",e131Multicast);
+    sappend('v',"EU",e131Universe);
+    sappend('v',"ET",arlsTimeoutMillis);
+    sappend('c',"FB",arlsForceMaxBri);
+    sappend('c',"RG",arlsDisableGammaCorrection);
+    sappend('v',"WO",arlsOffset);
     sappend('c',"RU",enableRealtimeUI);
     sappend('c',"AL",alexaEnabled);
     sappends('s',"AI",alexaInvocationName);

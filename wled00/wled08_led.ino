@@ -3,14 +3,17 @@
  */
 
 void setAllLeds() {
-  double d = briT*briMultiplier;
-  int val = d/100;
-  if (val > 255) val = 255;
-  if (useGammaCorrectionBri)
+  if (!arlsTimeout || !arlsForceMaxBri)
   {
-    strip.setBrightness(gamma8[val]);
-  } else {
-    strip.setBrightness(val);
+    double d = briT*briMultiplier;
+    int val = d/100;
+    if (val > 255) val = 255;
+    if (useGammaCorrectionBri)
+    {
+      strip.setBrightness(gamma8[val]);
+    } else {
+      strip.setBrightness(val);
+    }
   }
   if (disableSecTransition)
   {
