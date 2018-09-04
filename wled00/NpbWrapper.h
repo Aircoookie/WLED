@@ -1,7 +1,11 @@
 //this code is a modified version of https://github.com/Makuna/NeoPixelBus/issues/103
+#ifndef NpbWrapper_h
+#define NpbWrapper_h
 
 //#define WORKAROUND_ESP32_BITBANG
 //see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
+
+#define LEDPIN 2 //strip pin. Only effective for ESP32, ESP8266 must use gpio2
 
 //uncomment this if red and green are swapped
 //#define SWAPRG
@@ -13,9 +17,12 @@
 #else
 #define PIXELMETHOD NeoEsp32RmtWS2813_V3Method
 #endif
-#else
+#else //esp8266
+//you may change to DMA method on pin GPIO3 here
 #define PIXELMETHOD NeoEsp8266Uart800KbpsMethod
+//#define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
 #endif
+
 //handle swapping Red and Green automatically
 #ifdef SWAPRG
 #define PIXELFEATURE3 NeoRgbFeature
@@ -52,7 +59,7 @@ public:
     cleanup();
   }
 
-  void Begin(NeoPixelType type, uint16_t countPixels, uint8_t pin)
+  void Begin(NeoPixelType type, uint16_t countPixels)
   {
     cleanup();
     _type = type;
@@ -60,12 +67,12 @@ public:
     switch (_type) {
 
       case NeoPixelType_Grb:
-        _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, pin);
+        _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, LEDPIN);
         _pGrb->Begin();
       break;
 
       case NeoPixelType_Grbw:
-        _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, pin);
+        _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, LEDPIN);
         _pGrbw->Begin();
       break;
     }
@@ -110,7 +117,7 @@ public:
     void SetPixelColor(uint16_t indexPixel, RgbwColor color)
     {
       switch (_type) {
-        case NeoPixelType_Grb:  _pGrbw->SetPixelColor(indexPixel, color);   break;
+        case NeoPixelType_Grb:  _pGrb->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));   break;
         case NeoPixelType_Grbw: _pGrbw->SetPixelColor(indexPixel, color);   break;
       }
     }
@@ -174,3 +181,4 @@ private:
     }
   }
 };
+#endif

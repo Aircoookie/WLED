@@ -93,7 +93,7 @@ void colorUpdated(int callMode)
   briIT = bri;
   if (bri > 0) briLast = bri;
   notify(callMode);
-  if (fadeTransition || sweepTransition)
+  if (fadeTransition)
   {
     //set correct delay if not using notification delay
     if (callMode != 3) transitionDelayTemp = transitionDelay;
@@ -114,7 +114,6 @@ void colorUpdated(int callMode)
     }
     transitionActive = true;
     transitionStartTime = millis();
-    strip.setFastUpdateMode(true);
   } else
   {
     setLedsStandard();
@@ -132,9 +131,7 @@ void handleTransitions()
     {
       transitionActive = false;
       tperLast = 0;
-      if (sweepTransition) strip.unlockAll();
       setLedsStandard();
-      strip.setFastUpdateMode(false);
       return;
     }
     if (tper - tperLast < 0.004)
@@ -153,21 +150,7 @@ void handleTransitions()
       whiteSecT = whiteSecOld +((whiteSec  - whiteSecOld )*tper);
       briT    = briOld   +((bri    - briOld   )*tper);
     }
-    if (sweepTransition)
-    {
-      strip.lockAll();
-      if (sweepDirection)
-      {
-        strip.unlockRange(0, (int)(tper*(double)ledCount));
-      } else
-      {
-        strip.unlockRange(ledCount - (int)(tper*(double)ledCount), ledCount);
-      }
-      if (!fadeTransition)
-      {
-        setLedsStandard();
-      }
-    }
+    //TODO: properly remove sweep transition
     if (fadeTransition) setAllLeds();
   }
 }

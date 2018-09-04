@@ -11,7 +11,7 @@ void wledInit()
   #ifdef ARDUINO_ARCH_ESP32
   if (ledCount > 600) ledCount = 600;
   #endif
-  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,PIN,EEPROM.read(2204)); //quick init
+  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //quick init
 
   Serial.begin(115200);
   Serial.setTimeout(50);
@@ -273,11 +273,10 @@ void wledInit()
 void initStrip()
 {
   // Initialize NeoPixel Strip and button
-  if (initLedsLast) strip.init(useRGBW,ledCount,PIN,skipFirstLed);
+  if (initLedsLast) strip.init(useRGBW,ledCount,skipFirstLed);
   strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
-  strip.start();
 
   pinMode(buttonPin, INPUT_PULLUP);
   pinMode(4,OUTPUT); //this is only needed in special cases
@@ -572,11 +571,11 @@ void getBuildInfo()
   oappend("\r\n");
   #ifdef ARDUINO_ARCH_ESP32
   oappend("strip-pin: gpio");
-  oappendi(PIN);
+  oappendi(LEDPIN);
   #else
   oappend("strip-pin: gpio2");
   #endif
-  oappend("\r\nbuild-type: src\r\n");
+  oappend("\r\nbuild-type: dev\r\n");
 }
 
 bool checkClientIsMobile(String useragent)

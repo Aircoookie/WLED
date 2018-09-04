@@ -110,7 +110,6 @@ Use Gamma correction for color: <input type="checkbox" name="GC"><br>
 Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
 Fade: <input type="checkbox" name="TF"><br>
-Sweep: <input type="checkbox" name="TS">  Invert direction: <input type="checkbox" name="TI"><br>
 Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
 Enable transition for secondary color: <input type="checkbox" name="T2"><br>
 <h3>Timed light</h3>
@@ -278,10 +277,9 @@ Current local time is <span class="times">unknown</span>.
 Clock Overlay:
 <select name="OL" onchange="Cs()">
 <option value="0" id="cn" selected>None</option>
-<option value="1">Static color</option>
-<option value="2" id="ca">Analog Clock</option>
-<option value="3">Single Digit Clock</option>
-<option value="4" id="cc">Cronixie Clock</option>
+<option value="1" id="ca">Analog Clock</option>
+<option value="2">Single Digit Clock</option>
+<option value="3" id="cc">Cronixie Clock</option>
 </select><br>
 <div id="coc">
 First LED: <input name="O1" type="number" min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" required><br>
@@ -358,7 +356,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.7.1<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.0-a<br><br>
 <b>Contributors:</b><br>
 StormPie <i>(Mobile HTML UI)</i><br><br>
 Thank you so much!<br><br>

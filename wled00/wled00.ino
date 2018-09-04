@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.7.1
+ * @version 0.8.0-a
  * @author Christian Schwinne
  */
 
@@ -39,8 +39,8 @@
 #include "src/dependencies/e131/E131.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1808111
-char versionString[] = "0.7.1";
+#define VERSION 1809041
+char versionString[] = "0.8.0-a";
 
 //AP and OTA default passwords (change them!)
 char apPass[65] = "wled1234";
@@ -53,7 +53,7 @@ char otaPass[33] = "wledota";
 //#define DEBUG
 
 //Hardware-settings (only changeble via code)
-#define PIN 2 //strip pin. Only change for ESP32
+//strip pin changeable in NpbWrapper.h. Only change for ESP32
 byte buttonPin = 0; //needs pull-up
 byte auxPin = 15; //use e.g. for external relay
 byte auxDefaultState = 0; //0: input 1: high 2: low
@@ -87,7 +87,6 @@ byte whiteSecS = 0;
 byte briS = 127;
 byte nightlightTargetBri = 0;
 bool fadeTransition = true;
-bool sweepTransition = false, sweepDirection = true;
 bool disableSecTransition = true;
 uint16_t transitionDelay = 1200, transitionDelayDefault = transitionDelay;
 bool reverseMode = false;
@@ -103,17 +102,10 @@ uint16_t udpPort = 21324, udpRgbPort = 19446;
 byte effectDefault = 0;
 byte effectSpeedDefault = 75;
 byte effectIntensityDefault = 128;
+byte effectPaletteDefault = 0;
 //NTP stuff
 bool ntpEnabled = false;
 char ntpServerName[] = "0.wled.pool.ntp.org";
-//custom chase
-byte ccNumPrimary = 2;
-byte ccNumSecondary = 4;
-byte ccIndex1 = 0;
-uint16_t ccIndex2 = ledCount -1;
-bool ccFromStart = true, ccFromEnd = false;
-byte ccStep = 1;
-byte ccStart = 0;
 
 //alexa
 bool alexaEnabled = true;
@@ -170,6 +162,7 @@ byte briNlT = 0;
 byte effectCurrent = 0;
 byte effectSpeed = 75;
 byte effectIntensity = 128;
+byte effectPalette = 0;
 bool onlyAP = false;
 bool udpConnected = false, udpRgbConnected = false;
 char cssCol[9][5]={"","","","","",""};

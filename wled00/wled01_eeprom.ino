@@ -15,6 +15,7 @@
 //5 -> 0.5.1 and up
 //6 -> 0.6.0 and up
 //7 -> 0.7.1 and up
+//8 -> 0.8.0 and up
 
 /*
  * Erase all configuration data
@@ -119,8 +120,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(370, useHSBDefault);
   EEPROM.write(371, whiteS);
   EEPROM.write(372, useRGBW);
-  EEPROM.write(373, sweepTransition);
-  EEPROM.write(374, sweepDirection);
+
   EEPROM.write(375, apWaitTimeSecs);
   EEPROM.write(376, recoveryAPDisabled);
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
@@ -128,13 +128,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(379, colSecS[1]);
   EEPROM.write(380, colSecS[2]);
   EEPROM.write(381, whiteSecS);
-  EEPROM.write(382, ccIndex1);
-  EEPROM.write(383, ccIndex2);
-  EEPROM.write(384, ccNumPrimary);
-  EEPROM.write(385, ccNumSecondary);
-  EEPROM.write(386, ccFromStart);
-  EEPROM.write(387, ccFromEnd);
-  EEPROM.write(388, ccStep);
+
   EEPROM.write(389, bootPreset);
   EEPROM.write(390, aOtaEnabled);
   EEPROM.write(391, receiveNotificationColor);
@@ -344,6 +338,8 @@ void loadSettingsFromEEPROM(bool first)
   useGammaCorrectionBri = EEPROM.read(330);
   useGammaCorrectionRGB = EEPROM.read(331);
   overlayDefault = EEPROM.read(332);
+  if (lastEEPROMversion < 8 && overlayDefault > 0) overlayDefault--; //overlay mode 1 (solid) was removed
+  
   alexaEnabled = EEPROM.read(333);
 
   for (int i = 334; i < 366; ++i)
@@ -358,8 +354,7 @@ void loadSettingsFromEEPROM(bool first)
   useHSBDefault = EEPROM.read(370);
   whiteS = EEPROM.read(371); white = whiteS;
   useRGBW = EEPROM.read(372);
-  sweepTransition = EEPROM.read(373);
-  sweepDirection = EEPROM.read(374);
+
   if (lastEEPROMversion > 0) { 
     apWaitTimeSecs = EEPROM.read(375);
     recoveryAPDisabled = EEPROM.read(376);
@@ -369,15 +364,7 @@ void loadSettingsFromEEPROM(bool first)
     colSecS[0] = EEPROM.read(378); colSec[0] = colSecS[0];
     colSecS[1] = EEPROM.read(379); colSec[1] = colSecS[1];
     colSecS[2] = EEPROM.read(380); colSec[2] = colSecS[2];
-    whiteSecS = EEPROM.read(381); whiteSec = whiteSecS; 
-    ccIndex1 = EEPROM.read(382);
-    ccIndex2 = EEPROM.read(383);
-    ccNumPrimary = EEPROM.read(384);
-    ccNumSecondary = EEPROM.read(385);
-    ccFromStart = EEPROM.read(386);
-    ccFromEnd = EEPROM.read(387);
-    ccStep = EEPROM.read(388);
-    strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
+    whiteSecS = EEPROM.read(381); whiteSec = whiteSecS;
   }
   if (lastEEPROMversion > 3) {
     effectIntensityDefault = EEPROM.read(326); effectIntensity = effectIntensityDefault; 
@@ -545,12 +532,6 @@ void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
     effectCurrent = EEPROM.read(i+10);
     effectSpeed = EEPROM.read(i+11);
     effectIntensity = EEPROM.read(i+16);
-    ccNumPrimary = EEPROM.read(i+12);
-    ccNumSecondary = EEPROM.read(i+13);
-    ccFromEnd = EEPROM.read(i+14);
-    ccFromStart = (EEPROM.read(i+14)<2);
-    ccStep = EEPROM.read(i+15);
-    strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
     if (lastfx != effectCurrent) strip.setMode(effectCurrent);
     strip.setSpeed(effectSpeed);
     strip.setIntensity(effectIntensity);
@@ -574,13 +555,7 @@ void savePreset(byte index)
   EEPROM.write(i+9, whiteSec);
   EEPROM.write(i+10, effectCurrent);
   EEPROM.write(i+11, effectSpeed);
-  EEPROM.write(i+12, ccNumPrimary);
-  EEPROM.write(i+13, ccNumSecondary);
-  byte m = 1;
-  if (!ccFromStart) m = 2;
-  if (!ccFromEnd) m = 0;
-  EEPROM.write(i+14, m);
-  EEPROM.write(i+15, ccStep);
+  
   EEPROM.write(i+16, effectIntensity);
   EEPROM.commit();
 }

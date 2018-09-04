@@ -74,7 +74,6 @@ void handleSettingsSet(byte subPage)
       if (ledCount > 600) ledCount = 600;
       #endif
     }
-    ccIndex2 = ledCount -1;
     useRGBW = server.hasArg("EW");
     autoRGBtoRGBW = server.hasArg("AW");
     if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
@@ -158,8 +157,6 @@ void handleSettingsSet(byte subPage)
     useGammaCorrectionBri = server.hasArg("GB");
     useGammaCorrectionRGB = server.hasArg("GC");
     fadeTransition = server.hasArg("TF");
-    sweepTransition = server.hasArg("TS");
-    sweepDirection = !server.hasArg("TI");
     if (server.hasArg("TD"))
     {
       int i = server.arg("TD").toInt();
@@ -288,7 +285,7 @@ void handleSettingsSet(byte subPage)
     if (server.hasArg("OL")){
       overlayDefault = server.arg("OL").toInt();
       overlayCurrent = overlayDefault;
-      strip.unlockAll();
+      ;
     }
     if (server.hasArg("O1")) overlayMin = server.arg("O1").toInt();
     if (server.hasArg("O2")) overlayMax = server.arg("O2").toInt();
@@ -357,7 +354,7 @@ void handleSettingsSet(byte subPage)
     }
   }
   saveSettingsToEEPROM();
-  if (subPage == 2) strip.init(useRGBW,ledCount,PIN,skipFirstLed);
+  if (subPage == 2) strip.init(useRGBW,ledCount,skipFirstLed);
 }
 
 bool handleSet(String req)
@@ -462,6 +459,7 @@ bool handleSet(String req)
         colSec[2] = 255;
       }
    }
+   
    //set 2nd to black
    pos = req.indexOf("SB");
    if (pos > 0) {
@@ -470,6 +468,7 @@ bool handleSet(String req)
       colSec[1] = 0;
       colSec[2] = 0;
    }
+   
    //set to random hue SR=0->1st SR=1->2nd
    pos = req.indexOf("SR");
    if (pos > 0) {
@@ -553,19 +552,6 @@ bool handleSet(String req)
         overlayCurrent = req.substring(pos + 3).toInt();
         strip.unlockAll();
    }
-   //set individual pixel (range) to current color
-   pos = req.indexOf("&I=");
-   if (pos > 0){
-      int index = req.substring(pos + 3).toInt();
-      pos = req.indexOf("I2=");
-      if (pos > 0){
-        int index2 = req.substring(pos + 3).toInt();
-        strip.setRange(index, index2);
-      } else
-      {
-        strip.setIndividual(index);
-      }
-   }
    //(un)lock pixel (ranges)
    pos = req.indexOf("&L=");
    if (pos > 0){
@@ -591,6 +577,7 @@ bool handleSet(String req)
         }
       }
    }
+
    //apply macro
    pos = req.indexOf("&M=");
    if (pos > 0) {
@@ -605,6 +592,7 @@ bool handleSet(String req)
         notifyDirect = false;
       }
    }
+   
    //toggle receive UDP direct notifications
    if (req.indexOf("RN=") > 0)
    {
@@ -614,6 +602,7 @@ bool handleSet(String req)
         receiveNotifications = false;
       }
    }
+   
    //toggle nightlight mode
    bool aNlDef = false;
    if (req.indexOf("&ND") > 0) aNlDef = true;
@@ -634,12 +623,14 @@ bool handleSet(String req)
       nightlightActive = true;
       nightlightStartTime = millis();
    }
+   
    //set nightlight target brightness
    pos = req.indexOf("NT=");
    if (pos > 0) {
       nightlightTargetBri = req.substring(pos + 3).toInt();
       nightlightActiveOld = false; //re-init
    }
+   
    //toggle nightlight fade
    if (req.indexOf("NF=") > 0)
    {
@@ -651,6 +642,7 @@ bool handleSet(String req)
       }
       nightlightActiveOld = false; //re-init
    }
+   
    //toggle general purpose output
    pos = req.indexOf("AX=");
    if (pos > 0) {
@@ -662,6 +654,7 @@ bool handleSet(String req)
    if (pos > 0) {
       transitionDelay = req.substring(pos + 3).toInt();
    }
+   
    //main toggle on/off
    pos = req.indexOf("&T=");
    if (pos > 0) {
@@ -679,6 +672,7 @@ bool handleSet(String req)
         }
       }
    }
+   
    //deactivate nightlight if target brightness is reached
    if (bri == nightlightTargetBri) nightlightActive = false;
    //set time (unix timestamp)
@@ -686,25 +680,13 @@ bool handleSet(String req)
    if (pos > 0) {
       setTime(req.substring(pos+3).toInt());
    }
+   
    //set countdown goal (unix timestamp)
    pos = req.indexOf("CT=");
    if (pos > 0) {
       countdownTime = req.substring(pos+3).toInt();
       if (countdownTime - now() > 0) countdownOverTriggered = false;
    }
-   
-   //set custom chase data
-   bool _cc_updated = false;
-   pos = req.indexOf("C0="); if (pos > 0) {ccStart =  (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("C1="); if (pos > 0) {ccIndex1 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("C2="); if (pos > 0) {ccIndex2 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CP="); if (pos > 0) {ccNumPrimary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CS="); if (pos > 0) {ccNumSecondary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CM="); if (pos > 0) {ccStep = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CF="); if (pos > 0) {ccFromStart = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CE="); if (pos > 0) {ccFromEnd = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   if (ccIndex2 == 255) ccIndex2 = ledCount-1;
-   if (_cc_updated) strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
    
    //set presets
     pos = req.indexOf("P1="); //sets first preset for cycle
