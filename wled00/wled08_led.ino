@@ -112,6 +112,7 @@ void colorUpdated(int callMode)
       briOld = briT;
       tperLast = 0;
     }
+    strip.setTransitionMode(true);
     transitionActive = true;
     transitionStartTime = millis();
   } else
@@ -129,6 +130,7 @@ void handleTransitions()
     float tper = (millis() - transitionStartTime)/(float)transitionDelayTemp;
     if (tper >= 1.0)
     {
+      strip.setTransitionMode(false);
       transitionActive = false;
       tperLast = 0;
       setLedsStandard();

@@ -99,7 +99,7 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   if (_reverseMode) i = _length - 1 -i;
   if (_locked[i] && SEGMENT.mode != FX_MODE_FIRE_2012) return;
-  if (IS_REVERSE) i = SEGMENT.stop - (i - SEGMENT.start); //reverse just individual segment
+  if (IS_REVERSE)   i = SEGMENT.stop - (i - SEGMENT.start); //reverse just individual segment
   if (!_cronixieMode)
   {
     if (_skipFirstMode) {i++;if(i==1)bus->SetPixelColor(i, RgbwColor(0,0,0,0));}
@@ -191,6 +191,10 @@ void WS2812FX::setIntensity(uint8_t in) {
   _segments[0].intensity = in;
 }
 
+void WS2812FX::setPalette(uint8_t p) {
+  _segments[0].palette = p;
+}
+
 void WS2812FX::setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
   setColor(((uint32_t)w << 24) |((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }
@@ -201,13 +205,11 @@ void WS2812FX::setSecondaryColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
 
 void WS2812FX::setColor(uint32_t c) {
   _segments[0].colors[0] = c;
-  _triggered = true;
 }
 
 void WS2812FX::setSecondaryColor(uint32_t c) {
   _segments[0].colors[1] = c;
   if (_cronixieMode) _cronixieSecMultiplier = getSafePowerMultiplier(900, 100, c, _brightness);
-  _triggered = true;
 }
 
 void WS2812FX::setBrightness(uint8_t b) {
@@ -369,6 +371,14 @@ void WS2812FX::unlockAll()
   for (int i=0; i < _length; i++) _locked[i] = false;
 }
 
+void WS2812FX::setTransitionMode(bool t)
+{
+  SEGMENT_RUNTIME.trans_act = (t) ? 1:2;
+  if (!t) return;
+  unsigned long waitMax = millis() + 20; //refresh after 20 seconds if transition enabled
+  if (SEGMENT.mode == FX_MODE_STATIC && SEGMENT_RUNTIME.next_time > waitMax) SEGMENT_RUNTIME.next_time = waitMax;
+}
+
 /*
  * color blend function
  */
@@ -483,7 +493,7 @@ uint16_t WS2812FX::mode_static(void) {
   for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
     setPixelColor(i, SEGMENT.colors[0]);
   }
-  return 500;
+  return (SEGMENT_RUNTIME.trans_act == 1) ? 20 : 500;
 }
 
 
@@ -1864,6 +1874,44 @@ uint16_t WS2812FX::mode_oscillate(void)
 }
 
 
+uint16_t WS2812FX::mode_lightning(void)
+{
+  uint16_t ledstart = SEGMENT.start + random8(SEGMENT_LENGTH);                               // Determine starting location of flash
+  uint16_t ledlen = random8(SEGMENT.stop - ledstart);                      // Determine length of flash (not to go beyond NUM_LEDS-1)
+  uint8_t bri = 255/random8(1, 3);   
+
+  if (SEGMENT_RUNTIME.counter_mode_step == 0)
+  {
+    SEGMENT_RUNTIME.aux_param = random8(3, 3 + SEGMENT.intensity/20); //number of flashes
+    bri = 52; 
+    SEGMENT_RUNTIME.aux_param2 = 1;
+  }
+
+  for (int i = SEGMENT.start; i <= SEGMENT.stop; i++)
+  {
+    setPixelColor(i,SEGMENT.colors[1]);
+  }
+  
+  if (SEGMENT_RUNTIME.aux_param2) {
+    for (int i = ledstart; i < ledstart + ledlen; i++)
+    {
+      setPixelColor(i,bri,bri,bri,bri);
+    }
+    SEGMENT_RUNTIME.aux_param2 = 0;
+    SEGMENT_RUNTIME.counter_mode_step++;
+    return random8(4, 10);                                    // each flash only lasts 4-10 milliseconds
+  }
+
+  SEGMENT_RUNTIME.aux_param2 = 1;
+  if (SEGMENT_RUNTIME.counter_mode_step == 1) return (200);                       // longer delay until next flash after the leader
+
+  if (SEGMENT_RUNTIME.counter_mode_step <= SEGMENT_RUNTIME.aux_param) return (50 + random8(100));  // shorter delay between strokes
+
+  SEGMENT_RUNTIME.counter_mode_step = 0;
+  return (random8(255 - SEGMENT.speed) * 100);                            // delay between strikes
+}
+
+
 // WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
 // Fire2012 by Mark Kriegsman, July 2012
 // as part of "Five Elements" shown here: http://youtu.be/knWiGsmgycY
@@ -1925,21 +1973,6 @@ uint16_t WS2812FX::mode_fire_2012(void)
 }
 
 
-uint16_t WS2812FX::mode_bpm(void)
-{
-  CRGB fastled_col;
-  CRGBPalette16 palette = PartyColors_p;
-  uint8_t beat = beatsin8(SEGMENT.speed, 64, 255);
-  for ( int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
-    fastled_col = ColorFromPalette(palette, SEGMENT_RUNTIME.counter_mode_step + (i * 2), beat - SEGMENT_RUNTIME.counter_mode_step + (i * 10));
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
-  }
-  SEGMENT_RUNTIME.counter_mode_step++;
-  if (SEGMENT_RUNTIME.counter_mode_step >= 255) SEGMENT_RUNTIME.counter_mode_step = 0;
-  return 20;
-}
-
-
 uint16_t WS2812FX::mode_juggle(void){
   fade_out((255-SEGMENT.intensity) / 32);
   CRGB fastled_col;
@@ -1957,22 +1990,134 @@ uint16_t WS2812FX::mode_juggle(void){
   return 10 + (uint16_t)(255 - SEGMENT.speed)/4;
 }
 
-
+/*
+ * FastLED palette modes helper function. Limitation: Due to memory reasons, multiple active segments with FastLED will disable the Palette transitions
+ */
 CRGBPalette16 currentPalette(CRGB::Black);
 CRGBPalette16 targetPalette(CloudColors_p);
+
+void WS2812FX::handle_palette(void)
+{
+  bool singleSegmentMode = (_segment_index == _segment_index_palette_last);
+  _segment_index_palette_last = _segment_index;
+  
+  switch (SEGMENT.palette)
+  {
+    case 0: {//periodically replace palette with a random one. Doesn't work with multiple FastLED segments
+      if (!singleSegmentMode)
+      {
+        targetPalette = PartyColors_p; break; //fallback
+      }
+      if (millis() - _lastPaletteChange > 1000 + ((uint32_t)(255-SEGMENT.intensity))*100)
+      {
+        targetPalette = CRGBPalette16(
+                        CHSV(random8(), 255, random8(128, 255)),
+                        CHSV(random8(), 255, random8(128, 255)),
+                        CHSV(random8(), 192, random8(128, 255)),
+                        CHSV(random8(), 255, random8(128, 255)));
+        _lastPaletteChange = millis();
+      } break;}
+    case 1: {//primary color only
+      CRGB prim;
+      prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
+      prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
+      prim.blue  = (SEGMENT.colors[0]       & 0xFF);
+      targetPalette = CRGBPalette16(prim); break;}
+    case 2: {//based on primary
+      //considering performance implications
+      CRGB prim;
+      prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
+      prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
+      prim.blue  = (SEGMENT.colors[0]       & 0xFF);
+      CHSV prim_hsv = rgb2hsv_approximate(prim);
+      targetPalette = CRGBPalette16(
+                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
+                      CHSV(prim_hsv.h, max(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
+                      CHSV(prim_hsv.h, prim_hsv.s, max(prim_hsv.h - 50,0)), //darker
+                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v)); //color itself
+      break;}
+    case 3: {//primary + secondary
+      CRGB prim;
+      prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
+      prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
+      prim.blue  = (SEGMENT.colors[0]       & 0xFF);
+      CRGB sec;
+      sec.red    = (SEGMENT.colors[1] >> 16 & 0xFF);
+      sec.green  = (SEGMENT.colors[1] >> 8  & 0xFF);
+      sec.blue   = (SEGMENT.colors[1]       & 0xFF);
+      targetPalette = CRGBPalette16(prim,sec,prim); break;}
+    case 4: {//based on primary + secondary
+      CRGB prim;
+      prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
+      prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
+      prim.blue  = (SEGMENT.colors[0]       & 0xFF);
+      CRGB sec;
+      sec.red    = (SEGMENT.colors[1] >> 16 & 0xFF);
+      sec.green  = (SEGMENT.colors[1] >> 8  & 0xFF);
+      sec.blue   = (SEGMENT.colors[1]       & 0xFF);
+      CHSV prim_hsv = rgb2hsv_approximate(prim);
+      CHSV sec_hsv  = rgb2hsv_approximate(sec );
+      targetPalette = CRGBPalette16(
+                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
+                      CHSV(prim_hsv.h, max(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
+                      CHSV(sec_hsv.h, sec_hsv.s, max(sec_hsv.v - 50,0)), //darker
+                      CHSV(sec_hsv.h, sec_hsv.s, sec_hsv.v)); //color itself
+      break;}
+    case 5: //Party colors
+      targetPalette = PartyColors_p; break;
+    case 6: //Cloud colors
+      targetPalette = CloudColors_p; break;
+    case 7: //Lava colors
+      targetPalette = LavaColors_p; break;
+    case 8: //Ocean colors
+      targetPalette = OceanColors_p; break;
+    case 9: //Forest colors
+      targetPalette = ForestColors_p; break;
+    case 10: //Rainbow colors
+      targetPalette = RainbowColors_p; break;
+    case 11: //Rainbow stripe colors
+      targetPalette = RainbowStripeColors_p; break;
+    default: //fallback for illegal values
+      targetPalette = PartyColors_p; break;
+  }
+  
+  if (singleSegmentMode) //only blend if just one segment uses FastLED mode
+  {
+    nblendPaletteTowardPalette(currentPalette, targetPalette, 42);
+  } else
+  {
+    currentPalette = targetPalette;
+  }
+}
 
 
 uint16_t WS2812FX::mode_palette(void)
 {
+  handle_palette();
   CRGB fastled_col;
-
   for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++)
   {
-    uint8_t colorIndex = map(i,SEGMENT.start,SEGMENT.stop,0,255) + (SEGMENT_RUNTIME.counter_mode_step >> 8 & 0xFF);
-    fastled_col = ColorFromPalette( PartyColors_p, colorIndex, 255, LINEARBLEND);
+    uint8_t colorIndex = map(i,SEGMENT.start,SEGMENT.stop,0,255) + (SEGMENT_RUNTIME.counter_mode_step >> 6 & 0xFF);
+    fastled_col = ColorFromPalette( currentPalette, colorIndex, 255, LINEARBLEND);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
   SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed;
+  if (SEGMENT.speed == 0) SEGMENT_RUNTIME.counter_mode_step = 0;
+  return 20;
+}
+
+
+uint16_t WS2812FX::mode_bpm(void)
+{
+  handle_palette();
+  CRGB fastled_col;
+  uint8_t beat = beatsin8(SEGMENT.speed, 64, 255);
+  for ( int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+    fastled_col = ColorFromPalette(currentPalette, SEGMENT_RUNTIME.counter_mode_step + (i * 2), beat - SEGMENT_RUNTIME.counter_mode_step + (i * 10));
+    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+  }
+  SEGMENT_RUNTIME.counter_mode_step++;
+  if (SEGMENT_RUNTIME.counter_mode_step >= 255) SEGMENT_RUNTIME.counter_mode_step = 0;
   return 20;
 }
 
@@ -1980,33 +2125,23 @@ uint16_t WS2812FX::mode_palette(void)
 uint16_t WS2812FX::mode_fillnoise8(void)
 {
   if (SEGMENT_RUNTIME.counter_mode_call == 0) SEGMENT_RUNTIME.counter_mode_step = random(12345);
+  handle_palette();
   CRGB fastled_col;
-  nblendPaletteTowardPalette(currentPalette, targetPalette, 42);
   for (int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
     uint8_t index = inoise8(i * SEGMENT_LENGTH, SEGMENT_RUNTIME.counter_mode_step + i * SEGMENT_LENGTH) % 255;
     fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
-  SEGMENT_RUNTIME.counter_mode_step += beatsin8(10, 1, 4);
+  SEGMENT_RUNTIME.counter_mode_step += beatsin8(SEGMENT.speed, 1, 4); //10,1,4
 
-  if (SEGMENT_RUNTIME.counter_mode_call >= 20 + (255 - SEGMENT.intensity) *4) //swap to new random palette
-  {
-     targetPalette = CRGBPalette16(
-                     CHSV(random8(), 255, random8(128, 255)),
-                     CHSV(random8(), 255, random8(128, 255)),
-                     CHSV(random8(), 192, random8(128, 255)),
-                     CHSV(random8(), 255, random8(128, 255)));
-     SEGMENT_RUNTIME.counter_mode_call = 1;
-  }
-
-  return 15 + (uint16_t)(255 - SEGMENT.speed);
+  return 20;
 }
 
 
 uint16_t WS2812FX::mode_noise16_1(void)
 {
-  uint16_t scale = 100 + SEGMENT.intensity*7;                                      // the "zoom factor" for the noise
-  CRGBPalette16 palette = OceanColors_p;
+  uint16_t scale = 750;                                      // the "zoom factor" for the noise
+  handle_palette();
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += (1 + SEGMENT.speed/16);
 
@@ -2024,7 +2159,7 @@ uint16_t WS2812FX::mode_noise16_1(void)
 
     uint8_t index = sin8(noise * 3);                         // map LED color based on noise data
 
-    fastled_col = ColorFromPalette(palette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
@@ -2034,8 +2169,8 @@ uint16_t WS2812FX::mode_noise16_1(void)
 
 uint16_t WS2812FX::mode_noise16_2(void)
 {
-  uint8_t scale = 100 + SEGMENT.intensity*7;                                       // the "zoom factor" for the noise
-  CRGBPalette16 palette = LavaColors_p;
+  uint8_t scale = 750;                                       // the "zoom factor" for the noise
+  handle_palette();
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += (1 + SEGMENT.speed);
 
@@ -2052,7 +2187,7 @@ uint16_t WS2812FX::mode_noise16_2(void)
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 
-    fastled_col = ColorFromPalette(palette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
@@ -2062,8 +2197,8 @@ uint16_t WS2812FX::mode_noise16_2(void)
 
 uint16_t WS2812FX::mode_noise16_3(void)
 {
-  uint8_t scale = 100 + SEGMENT.intensity*7;                                       // the "zoom factor" for the noise
-  CRGBPalette16 palette = CloudColors_p;
+  uint8_t scale = 750;                                       // the "zoom factor" for the noise
+  handle_palette();
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += (1 + SEGMENT.speed);
 
@@ -2080,7 +2215,7 @@ uint16_t WS2812FX::mode_noise16_3(void)
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 
-    fastled_col = ColorFromPalette(palette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
@@ -2091,53 +2226,15 @@ uint16_t WS2812FX::mode_noise16_3(void)
 //https://github.com/aykevl/ledstrip-spark/blob/master/ledstrip.ino
 uint16_t WS2812FX::mode_noise16_4(void)
 {
-  CRGBPalette16 palette = OceanColors_p;
+  handle_palette();
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed;
   for (int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
     int16_t index = inoise16(uint32_t(i - SEGMENT.start) << 12, SEGMENT_RUNTIME.counter_mode_step/8);
-    fastled_col = ColorFromPalette(palette, index);
+    fastled_col = ColorFromPalette(currentPalette, index);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
   return 20;
-}
-
-
-uint16_t WS2812FX::mode_lightning(void)
-{
-  uint16_t ledstart = SEGMENT.start + random8(SEGMENT_LENGTH);                               // Determine starting location of flash
-  uint16_t ledlen = random8(SEGMENT.stop - ledstart);                      // Determine length of flash (not to go beyond NUM_LEDS-1)
-  uint8_t bri = 255/random8(1, 3);   
-
-  if (SEGMENT_RUNTIME.counter_mode_step == 0)
-  {
-    SEGMENT_RUNTIME.aux_param = random8(3, 3 + SEGMENT.intensity/20); //number of flashes
-    bri = 52; 
-    SEGMENT_RUNTIME.aux_param2 = 1;
-  }
-
-  for (int i = SEGMENT.start; i <= SEGMENT.stop; i++)
-  {
-    setPixelColor(i,SEGMENT.colors[1]);
-  }
-  
-  if (SEGMENT_RUNTIME.aux_param2) {
-    for (int i = ledstart; i < ledstart + ledlen; i++)
-    {
-      setPixelColor(i,bri,bri,bri,bri);
-    }
-    SEGMENT_RUNTIME.aux_param2 = 0;
-    SEGMENT_RUNTIME.counter_mode_step++;
-    return random8(4, 10);                                    // each flash only lasts 4-10 milliseconds
-  }
-
-  SEGMENT_RUNTIME.aux_param2 = 1;
-  if (SEGMENT_RUNTIME.counter_mode_step == 1) return (200);                       // longer delay until next flash after the leader
-
-  if (SEGMENT_RUNTIME.counter_mode_step <= SEGMENT_RUNTIME.aux_param) return (50 + random8(100));  // shorter delay between strokes
-
-  SEGMENT_RUNTIME.counter_mode_step = 0;
-  return (random8(255 - SEGMENT.speed) * 100);                            // delay between strikes
 }
 
 

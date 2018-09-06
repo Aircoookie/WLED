@@ -120,7 +120,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(370, useHSBDefault);
   EEPROM.write(371, whiteS);
   EEPROM.write(372, useRGBW);
-
+  EEPROM.write(373, effectPaletteDefault);
+  
   EEPROM.write(375, apWaitTimeSecs);
   EEPROM.write(376, recoveryAPDisabled);
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
@@ -354,6 +355,7 @@ void loadSettingsFromEEPROM(bool first)
   useHSBDefault = EEPROM.read(370);
   whiteS = EEPROM.read(371); white = whiteS;
   useRGBW = EEPROM.read(372);
+  effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
 
   if (lastEEPROMversion > 0) { 
     apWaitTimeSecs = EEPROM.read(375);
@@ -501,12 +503,13 @@ void loadSettingsFromEEPROM(bool first)
   strip.setMode(effectCurrent);
   strip.setSpeed(effectSpeed);
   strip.setIntensity(effectIntensity);
+  strip.setPalette(effectPalette);
   overlayCurrent = overlayDefault;
 }
 
 //PRESET PROTOCOL 20 bytes
 //0: preset purpose byte 0:invalid 1:valid preset 1.0
-//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17-19:Zeros
+//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17: fp 18-19:Zeros
 
 void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
 {
@@ -535,6 +538,7 @@ void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
     if (lastfx != effectCurrent) strip.setMode(effectCurrent);
     strip.setSpeed(effectSpeed);
     strip.setIntensity(effectIntensity);
+    strip.setPalette(effectPalette);
   }
 }
 
@@ -557,6 +561,7 @@ void savePreset(byte index)
   EEPROM.write(i+11, effectSpeed);
   
   EEPROM.write(i+16, effectIntensity);
+  EEPROM.write(i+17, effectPalette);
   EEPROM.commit();
 }
 

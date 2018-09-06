@@ -39,7 +39,9 @@ void XML_response()
    oappendi(effectSpeed);
    oappend("</sx><ix>");
    oappendi(effectIntensity);
-   oappend("</ix><wv>");
+   oappend("</ix><fp>");
+   oappendi(effectPalette);
+   oappend("</fp><wv>");
    if (useRGBW && !autoRGBtoRGBW) {
      oappendi(white);
    } else {
@@ -185,6 +187,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('v',"FX",effectDefault);
     sappend('v',"SX",effectSpeedDefault);
     sappend('v',"IX",effectIntensityDefault);
+    sappend('v',"FP",effectPaletteDefault);
     sappend('c',"GB",useGammaCorrectionBri);
     sappend('c',"GC",useGammaCorrectionRGB);
     sappend('c',"TF",fadeTransition);

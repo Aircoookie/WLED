@@ -51,7 +51,7 @@
 
 /* each segment uses 38 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
-#define MAX_NUM_SEGMENTS 12
+#define MAX_NUM_SEGMENTS 10
 #define NUM_COLORS        3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
 #define SEGMENT_RUNTIME  _segment_runtimes[_segment_index]
@@ -162,11 +162,12 @@ class WS2812FX {
   
   // segment parameters
   public:
-    typedef struct Segment { // 20 bytes
+    typedef struct Segment { // 21 bytes
       uint16_t start;
       uint16_t stop;
       uint8_t speed;
       uint8_t intensity;
+      uint8_t palette;
       uint8_t  mode;
       uint8_t  options;
       uint32_t colors[NUM_COLORS];
@@ -179,7 +180,7 @@ class WS2812FX {
       uint32_t counter_mode_call;
       uint16_t aux_param;
       uint16_t aux_param2;
-      bool trans_act;
+      uint8_t trans_act;
     } segment_runtime;
 
     WS2812FX() {
@@ -280,6 +281,7 @@ class WS2812FX {
       setMode(uint8_t m),
       setSpeed(uint8_t s),
       setIntensity(uint8_t i),
+      setPalette(uint8_t p),
       setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setSecondaryColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint32_t c),
@@ -296,6 +298,7 @@ class WS2812FX {
       unlock(uint16_t i),
       unlockRange(uint16_t i, uint16_t i2),
       unlockAll(void),
+      setTransitionMode(bool t),
       trigger(void),
       setNumSegments(uint8_t n),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t mode, uint32_t color,   uint8_t speed, uint8_t intensity, bool reverse),
@@ -427,6 +430,8 @@ class WS2812FX {
     uint16_t _rand16seed;
     uint8_t _brightness;
 
+    void handle_palette(void);
+
     double
       _cronixieSecMultiplier;
 
@@ -444,7 +449,11 @@ class WS2812FX {
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
 
+    
+    uint32_t _lastPaletteChange = 0;
+    
     uint8_t _segment_index = 0;
+    uint8_t _segment_index_palette_last = 99;
     uint8_t _num_segments = 1;
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 20 bytes per element
       // start, stop, speed, intensity, mode, options, color[]

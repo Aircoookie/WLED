@@ -97,6 +97,7 @@ Default brightness: <input name="CA" type="number" min="0" max="255" required> (
 Default effect ID: <input name="FX" type="number" min="0" max="57" required><br>
 Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
 Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br>
+Default effect palette: <input name="FP" type="number" min="0" max="255" required><br>
 Default secondary RGB(W):<br>
 <input name="SR" type="number" min="0" max="255" required>
 <input name="SG" type="number" min="0" max="255" required>

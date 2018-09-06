@@ -85,6 +85,8 @@ void handleSettingsSet(byte subPage)
       briS = bri;
       effectDefault = effectCurrent;
       effectSpeedDefault = effectSpeed;
+      effectIntensityDefault = effectIntensity;
+      effectPaletteDefault = effectPalette;
     } else {
       if (server.hasArg("CR"))
       {
@@ -145,6 +147,11 @@ void handleSettingsSet(byte subPage)
       {
         int i = server.arg("IX").toInt();
         if (i >= 0 && i <= 255) effectIntensityDefault = i;
+      }
+      if (server.hasArg("FP"))
+      {
+        int i = server.arg("FP").toInt();
+        if (i >= 0 && i <= 255) effectPaletteDefault = i;
       }
     }
     saveCurrPresetCycConf = server.hasArg("PC");
@@ -524,6 +531,16 @@ bool handleSet(String req)
       {
         effectIntensity = req.substring(pos + 3).toInt();
         strip.setIntensity(effectIntensity);
+        effectUpdated = true;
+      }
+   }
+   //set effect palette (only for FastLED effects)
+   pos = req.indexOf("FP=");
+   if (pos > 0) {
+      if (effectPalette != req.substring(pos + 3).toInt())
+      {
+        effectPalette = req.substring(pos + 3).toInt();
+        strip.setPalette(effectPalette);
         effectUpdated = true;
       }
    }

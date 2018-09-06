@@ -98,11 +98,11 @@ void wledInit()
   });
 
   server.on("/generate_204", HTTP_GET, [](){
-    serveIndexOrWelcome();
+    serveIndex();
   });
 
   server.on("/fwlink", HTTP_GET, [](){
-    serveIndexOrWelcome();
+    serveIndex();
   });
   
   server.on("/sliders", HTTP_GET, serveIndex);
@@ -189,7 +189,7 @@ void wledInit()
   //if OTA is allowed
   if (!otaLock){
     server.on("/edit", HTTP_GET, [](){
-    if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);
+    server.send(200, "text/html", PAGE_edit);
     });
     #ifdef USEFS
     server.on("/edit", HTTP_PUT, handleFileCreate);
@@ -395,13 +395,9 @@ void buildCssColorString()
 void serveIndexOrWelcome()
 {
   if (!showWelcomePage){
-    if(!handleFileRead("/index.htm")) {
-      serveIndex();
-    }
+    serveIndex();
   }else{
-    if(!handleFileRead("/welcome.htm")) {
-      serveSettings(255);
-    }
+    serveSettings(255);
     showWelcomePage = false;
   }
 }

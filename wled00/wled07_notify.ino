@@ -31,7 +31,7 @@ void notify(byte callMode, bool followUp=false)
   udpOut[8] = effectCurrent;
   udpOut[9] = effectSpeed;
   udpOut[10] = white;
-  udpOut[11] = 4; //compatibilityVersionByte: 0: old 1: supports white 2: supports secondary color 3: supports FX intensity, 24 byte packet 4: supports transitionDelay
+  udpOut[11] = 5; //compatibilityVersionByte: 0: old 1: supports white 2: supports secondary color 3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   udpOut[12] = colSec[0];
   udpOut[13] = colSec[1];
   udpOut[14] = colSec[2];
@@ -39,6 +39,7 @@ void notify(byte callMode, bool followUp=false)
   udpOut[16] = effectIntensity;
   udpOut[17] = (transitionDelay >> 0) & 0xFF;
   udpOut[18] = (transitionDelay >> 8) & 0xFF;
+  udpOut[19] = effectPalette;
   
   IPAddress broadcastIp;
   broadcastIp = ~WiFi.subnetMask() | WiFi.gatewayIP();
@@ -169,6 +170,11 @@ void handleNotifications()
         if (udpIn[11] > 3)
         {
           transitionDelayTemp = ((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00);
+        }
+        if (udpIn[11] > 4 && udpIn[19] != effectPalette && receiveNotificationEffects)
+        {
+          effectPalette = udpIn[19];
+          strip.setPalette(effectPalette);
         }
         nightlightActive = udpIn[6];
         if (!nightlightActive)
