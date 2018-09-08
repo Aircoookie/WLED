@@ -1667,6 +1667,11 @@ uint16_t WS2812FX::mode_circus_combustus(void) {
  */
 uint16_t WS2812FX::mode_icu(void) {
   uint16_t dest = SEGMENT_RUNTIME.counter_mode_step & 0xFFFF;
+
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++)
+  {
+    setPixelColor(i, SEGMENT.colors[1]);
+  }
  
   setPixelColor(SEGMENT.start + dest, SEGMENT.colors[0]);
   setPixelColor(SEGMENT.start + dest + SEGMENT_LENGTH/2, SEGMENT.colors[0]);
@@ -1973,12 +1978,62 @@ uint16_t WS2812FX::mode_fire_2012(void)
 }
 
 
+// Pride2015
+// Animated, ever-changing rainbows.
+// by Mark Kriegsman: https://gist.github.com/kriegsman/964de772d64c502760e5
+uint16_t WS2812FX::mode_pride_2015(void)
+{
+  uint16_t duration = 10 + SEGMENT.speed;
+  uint16_t sPseudotime = SEGMENT_RUNTIME.counter_mode_step;
+  uint16_t sHue16 = SEGMENT_RUNTIME.aux_param;
+ 
+  uint8_t sat8 = beatsin88( 87, 220, 250);
+  uint8_t brightdepth = beatsin88( 341, 96, 224);
+  uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 256), (40 * 256));
+  uint8_t msmultiplier = beatsin88(147, 23, 60);
+
+  uint16_t hue16 = sHue16;//gHue * 256;
+  uint16_t hueinc16 = beatsin88(113, 1, 3000);
+  
+  sPseudotime += duration * msmultiplier;
+  sHue16 += duration * beatsin88( 400, 5,9);
+  uint16_t brightnesstheta16 = sPseudotime;
+  CRGB fastled_col;
+  
+  for( uint16_t i = SEGMENT.start ; i <= SEGMENT.stop; i++) {
+    hue16 += hueinc16;
+    uint8_t hue8 = hue16 >> 8;
+
+    brightnesstheta16  += brightnessthetainc16;
+    uint16_t b16 = sin16( brightnesstheta16  ) + 32768;
+
+    uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
+    uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
+    bri8 += (255 - brightdepth);
+    
+    CRGB newcolor = CHSV( hue8, sat8, bri8);
+
+    uint32_t color = getPixelColor(i);
+    fastled_col.red = (color >> 16 & 0xFF);
+    fastled_col.green = (color >> 8  & 0xFF);
+    fastled_col.blue = (color       & 0xFF);
+    
+    nblend( fastled_col, newcolor, 64);
+    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+  }
+  SEGMENT_RUNTIME.counter_mode_step = sPseudotime;
+  SEGMENT_RUNTIME.aux_param = sHue16;
+  return 20;
+}
+
+
+// eight colored dots, weaving in and out of sync with each other
 uint16_t WS2812FX::mode_juggle(void){
   fade_out((255-SEGMENT.intensity) / 32);
   CRGB fastled_col;
   byte dothue = 0;
   for ( byte i = 0; i < 8; i++) {
-    uint16_t index = SEGMENT.start + beatsin16(i + 7, 0, SEGMENT_LENGTH);
+    uint16_t index = SEGMENT.start + beatsin16(i + 7, 0, SEGMENT_LENGTH -1);
     uint32_t color = getPixelColor(index);
     fastled_col.red = (color >> 16 & 0xFF);
     fastled_col.green = (color >> 8  & 0xFF);
@@ -1989,6 +2044,7 @@ uint16_t WS2812FX::mode_juggle(void){
   }
   return 10 + (uint16_t)(255 - SEGMENT.speed)/4;
 }
+
 
 /*
  * FastLED palette modes helper function. Limitation: Due to memory reasons, multiple active segments with FastLED will disable the Palette transitions
@@ -2081,7 +2137,7 @@ void WS2812FX::handle_palette(void)
       targetPalette = PartyColors_p; break;
   }
   
-  if (singleSegmentMode) //only blend if just one segment uses FastLED mode
+  if (singleSegmentMode && paletteFade) //only blend if just one segment uses FastLED mode
   {
     nblendPaletteTowardPalette(currentPalette, targetPalette, 42);
   } else
@@ -2107,6 +2163,66 @@ uint16_t WS2812FX::mode_palette(void)
 }
 
 
+// ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
+// This function draws color waves with an ever-changing,
+// widely-varying set of parameters, using a color palette.
+uint16_t WS2812FX::mode_colorwaves(void)
+{
+  handle_palette();
+  uint16_t duration = 10 + SEGMENT.speed;
+  uint16_t sPseudotime = SEGMENT_RUNTIME.counter_mode_step;
+  uint16_t sHue16 = SEGMENT_RUNTIME.aux_param;
+
+  uint8_t brightdepth = beatsin88( 341, 96, 224);
+  uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 256), (40 * 256));
+  uint8_t msmultiplier = beatsin88(147, 23, 60);
+
+  uint16_t hue16 = sHue16;//gHue * 256;
+  uint16_t hueinc16 = beatsin88(113, 300, 1500);
+
+  sPseudotime += duration * msmultiplier;
+  sHue16 += duration * beatsin88( 400, 5, 9);
+  uint16_t brightnesstheta16 = sPseudotime;
+  CRGB fastled_col;
+
+  for ( uint16_t i = SEGMENT.start ; i <= SEGMENT.stop; i++) {
+    hue16 += hueinc16;
+    uint8_t hue8 = hue16 / 256;
+    uint16_t h16_128 = hue16 >> 7;
+    if ( h16_128 & 0x100) {
+      hue8 = 255 - (h16_128 >> 1);
+    } else {
+      hue8 = h16_128 >> 1;
+    }
+
+    brightnesstheta16  += brightnessthetainc16;
+    uint16_t b16 = sin16( brightnesstheta16  ) + 32768;
+
+    uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
+    uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
+    bri8 += (255 - brightdepth);
+
+    uint8_t index = hue8;
+    //index = triwave8( index);
+    index = scale8( index, 240);
+
+    CRGB newcolor = ColorFromPalette(currentPalette, index, bri8);
+
+    uint32_t color = getPixelColor(i);
+    fastled_col.red = (color >> 16 & 0xFF);
+    fastled_col.green = (color >> 8  & 0xFF);
+    fastled_col.blue = (color       & 0xFF);
+
+    nblend(fastled_col, newcolor, 128);
+    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+  }
+  SEGMENT_RUNTIME.counter_mode_step = sPseudotime;
+  SEGMENT_RUNTIME.aux_param = sHue16;
+  return 20;
+}
+
+
+// colored stripes pulsing at a defined Beats-Per-Minute (BPM)
 uint16_t WS2812FX::mode_bpm(void)
 {
   handle_palette();
@@ -2137,23 +2253,22 @@ uint16_t WS2812FX::mode_fillnoise8(void)
   return 20;
 }
 
-
 uint16_t WS2812FX::mode_noise16_1(void)
 {
-  uint16_t scale = 750;                                      // the "zoom factor" for the noise
+  uint16_t scale = 320;                                      // the "zoom factor" for the noise
   handle_palette();
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += (1 + SEGMENT.speed/16);
 
   for (int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
 
-    uint16_t shift_x = beatsin8(5);                           // the x position of the noise field swings @ 17 bpm
-    uint16_t shift_y = SEGMENT_RUNTIME.counter_mode_step/50;             // the y position becomes slowly incremented
+    uint16_t shift_x = beatsin8(11);                           // the x position of the noise field swings @ 17 bpm
+    uint16_t shift_y = SEGMENT_RUNTIME.counter_mode_step/42;             // the y position becomes slowly incremented
 
 
     uint16_t real_x = (i + shift_x) * scale;                  // the x position of the noise field swings @ 17 bpm
     uint16_t real_y = (i + shift_y) * scale;                  // the y position becomes slowly incremented
-    uint32_t real_z = SEGMENT_RUNTIME.counter_mode_step*2;                          // the z position becomes quickly incremented
+    uint32_t real_z = SEGMENT_RUNTIME.counter_mode_step;                          // the z position becomes quickly incremented
 
     uint8_t noise = inoise16(real_x, real_y, real_z) >> 8;   // get the noise data and scale it down
 
@@ -2169,21 +2284,21 @@ uint16_t WS2812FX::mode_noise16_1(void)
 
 uint16_t WS2812FX::mode_noise16_2(void)
 {
-  uint8_t scale = 750;                                       // the "zoom factor" for the noise
+  uint16_t scale = 1000;                                       // the "zoom factor" for the noise
   handle_palette();
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += (1 + SEGMENT.speed);
 
   for (int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
 
-    uint16_t shift_x = SEGMENT_RUNTIME.counter_mode_step/64;                         // x as a function of time
-    uint16_t shift_y = 0;
+    uint16_t shift_x = SEGMENT_RUNTIME.counter_mode_step >> 6;                         // x as a function of time
+    uint16_t shift_y = SEGMENT_RUNTIME.counter_mode_step/42;
 
     uint32_t real_x = (i + shift_x) * scale;                  // calculate the coordinates within the noise field
     uint32_t real_y = (i + shift_y) * scale;                  // based on the precalculated positions
     uint32_t real_z = 4223;
 
-    uint8_t noise = inoise16(real_x, real_y, real_z) >> 8;    // get the noise data and scale it down
+    uint8_t noise = inoise16(real_x, 0, 4223) >> 8;    // get the noise data and scale it down
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 
@@ -2197,7 +2312,7 @@ uint16_t WS2812FX::mode_noise16_2(void)
 
 uint16_t WS2812FX::mode_noise16_3(void)
 {
-  uint8_t scale = 750;                                       // the "zoom factor" for the noise
+  uint16_t scale = 800;                                       // the "zoom factor" for the noise
   handle_palette();
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += (1 + SEGMENT.speed);
@@ -2209,9 +2324,9 @@ uint16_t WS2812FX::mode_noise16_3(void)
 
     uint32_t real_x = (i + shift_x) * scale;                  // calculate the coordinates within the noise field
     uint32_t real_y = (i + shift_y) * scale;                  // based on the precalculated positions
-    uint32_t real_z = SEGMENT_RUNTIME.counter_mode_step/16;  
+    uint32_t real_z = SEGMENT_RUNTIME.counter_mode_step*8;  
 
-    uint8_t noise = inoise16(real_x, real_y, real_z) >> 7;    // get the noise data and scale it down
+    uint8_t noise = inoise16(real_x, real_y, real_z) >> 8;    // get the noise data and scale it down
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 

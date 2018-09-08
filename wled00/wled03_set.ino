@@ -171,6 +171,7 @@ void handleSettingsSet(byte subPage)
         transitionDelay = i;
       }
     }
+    strip.paletteFade = server.hasArg("PF");
     disableSecTransition = !server.hasArg("T2");
     if (server.hasArg("TB"))
     {

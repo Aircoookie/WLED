@@ -112,7 +112,8 @@ Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
 Fade: <input type="checkbox" name="TF"><br>
 Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
-Enable transition for secondary color: <input type="checkbox" name="T2"><br>
+Enable transition for secondary color: <input type="checkbox" name="T2">
+Enable Palette transitions: <input type="checkbox" name="PF"><br>
 <h3>Timed light</h3>
 Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
 Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>

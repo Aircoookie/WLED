@@ -82,7 +82,7 @@
 #define REVERSE      (uint8_t)0x80
 #define IS_REVERSE   ((SEGMENT.options & REVERSE) == REVERSE)
 
-#define MODE_COUNT  72
+#define MODE_COUNT  74
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -147,15 +147,18 @@
 #define FX_MODE_DUAL_LARSON_SCANNER     60
 #define FX_MODE_RANDOM_CHASE            61
 #define FX_MODE_OSCILLATE               62
+//Modes that use FastLED -->
 #define FX_MODE_FIRE_2012               63
-#define FX_MODE_JUGGLE                  64
-#define FX_MODE_PALETTE                 65
-#define FX_MODE_BPM                     66
-#define FX_MODE_FILLNOISE8              67
-#define FX_MODE_NOISE16_1               68
-#define FX_MODE_NOISE16_2               69
-#define FX_MODE_NOISE16_3               70
-#define FX_MODE_NOISE16_4               71
+#define FX_MODE_PRIDE_2015              64
+#define FX_MODE_JUGGLE                  65
+#define FX_MODE_PALETTE                 66
+#define FX_MODE_COLORWAVES              67
+#define FX_MODE_BPM                     68
+#define FX_MODE_FILLNOISE8              69
+#define FX_MODE_NOISE16_1               70
+#define FX_MODE_NOISE16_2               71
+#define FX_MODE_NOISE16_3               72
+#define FX_MODE_NOISE16_4               73
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -248,9 +251,11 @@ class WS2812FX {
       _mode[FX_MODE_RANDOM_CHASE]            = &WS2812FX::mode_random_chase;
       _mode[FX_MODE_OSCILLATE]               = &WS2812FX::mode_oscillate;
       _mode[FX_MODE_FIRE_2012]               = &WS2812FX::mode_fire_2012;
+      _mode[FX_MODE_PRIDE_2015]              = &WS2812FX::mode_pride_2015;
       _mode[FX_MODE_BPM]                     = &WS2812FX::mode_bpm;
       _mode[FX_MODE_JUGGLE]                  = &WS2812FX::mode_juggle;
       _mode[FX_MODE_PALETTE]                 = &WS2812FX::mode_palette;
+      _mode[FX_MODE_COLORWAVES]              = &WS2812FX::mode_colorwaves;
       _mode[FX_MODE_FILLNOISE8]              = &WS2812FX::mode_fillnoise8;
       _mode[FX_MODE_NOISE16_1]               = &WS2812FX::mode_noise16_1;
       _mode[FX_MODE_NOISE16_2]               = &WS2812FX::mode_noise16_2;
@@ -325,6 +330,8 @@ class WS2812FX {
     double
       getPowerEstimate(uint16_t leds, uint32_t c, byte b),
       getSafePowerMultiplier(double safeMilliAmps, uint16_t leds, uint32_t c, byte b);
+
+    bool paletteFade;
 
     WS2812FX::Segment
       getSegment(void);
@@ -413,9 +420,11 @@ class WS2812FX {
       mode_random_chase(void),
       mode_oscillate(void),
       mode_fire_2012(void),
+      mode_pride_2015(void),
       mode_bpm(void),
       mode_juggle(void),
       mode_palette(void),
+      mode_colorwaves(void),
       mode_fillnoise8(void),
       mode_noise16_1(void),
       mode_noise16_2(void),

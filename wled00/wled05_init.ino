@@ -5,7 +5,7 @@
 void wledInit()
 { 
   EEPROM.begin(EEPSIZE);
-  showWelcomePage = (EEPROM.read(233) != 233);
+  if (EEPROM.read(233) != 233) showWelcomePage = true;
   ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
   //RMT eats up too much RAM
   #ifdef ARDUINO_ARCH_ESP32

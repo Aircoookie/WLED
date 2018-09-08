@@ -192,6 +192,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"GC",useGammaCorrectionRGB);
     sappend('c',"TF",fadeTransition);
     sappend('v',"TD",transitionDelay);
+    sappend('c',"PF",strip.paletteFade);
     sappend('c',"T2",!disableSecTransition);
     sappend('v',"BF",briMultiplier);
     sappend('v',"TB",nightlightTargetBri);

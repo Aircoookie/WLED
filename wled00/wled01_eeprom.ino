@@ -121,7 +121,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(371, whiteS);
   EEPROM.write(372, useRGBW);
   EEPROM.write(373, effectPaletteDefault);
-  
+  EEPROM.write(374, strip.paletteFade);
   EEPROM.write(375, apWaitTimeSecs);
   EEPROM.write(376, recoveryAPDisabled);
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
@@ -356,6 +356,7 @@ void loadSettingsFromEEPROM(bool first)
   whiteS = EEPROM.read(371); white = whiteS;
   useRGBW = EEPROM.read(372);
   effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
+  strip.paletteFade = EEPROM.read(374);
 
   if (lastEEPROMversion > 0) { 
     apWaitTimeSecs = EEPROM.read(375);
