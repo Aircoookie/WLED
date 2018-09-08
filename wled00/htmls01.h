@@ -112,8 +112,8 @@ Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
 Fade: <input type="checkbox" name="TF"><br>
 Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
-Enable transition for secondary color: <input type="checkbox" name="T2">
-Enable Palette transitions: <input type="checkbox" name="PF"><br>
+Enable transition for secondary color: <input type="checkbox" name="T2"><br>
+Enable Palette transitions: <input type="checkbox" name="PF">
 <h3>Timed light</h3>
 Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
 Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
@@ -366,6 +366,8 @@ Thank you so much!<br><br>
 <i>Licensed under the MIT license</i><br><br>
 <b>Uses libraries:</b><br>
 <i>ESP8266/ESP32 Arduino Core</i><br>
+<i><a href="https://github.com/svenihoney/NeoPixelBus" target="_blank">NeoPixelBus</a> by Makuna (svenihoney fork)</i><br>
+<i><a href="https://github.com/FastLED/FastLED/" target="_blank">FastLED</a> library</i><br>
 <i>(ESP32) <a href="https://github.com/bbx10/WebServer_tng" target="_blank">WebServer_tng</a> by bbx10</i><br>
 <i><a href="https://github.com/kitesurfer1404/WS2812FX" target="_blank">WS2812FX</a> by kitesurfer1404 (modified)</i><br>
 <i><a href="https://github.com/JChristensen/Timezone" target="_blank">Timezone</a> library by JChristensen</i><br>

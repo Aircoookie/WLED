@@ -40,6 +40,7 @@
 
 #include "WS2812FX.h"
 #include "FastLED.h"
+#include "palettes.h";
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
@@ -2133,8 +2134,8 @@ void WS2812FX::handle_palette(void)
       targetPalette = RainbowColors_p; break;
     case 11: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
-    default: //fallback for illegal values
-      targetPalette = PartyColors_p; break;
+    default: //progmem palettes
+      targetPalette = gGradientPalettes[constrain(SEGMENT.palette -12, 0, gGradientPaletteCount -1)];
   }
   
   if (singleSegmentMode && paletteFade) //only blend if just one segment uses FastLED mode

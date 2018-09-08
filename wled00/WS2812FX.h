@@ -271,6 +271,7 @@ class WS2812FX {
       _segments[0].speed = DEFAULT_SPEED;
       _reverseMode = false;
       _skipFirstMode = false;
+      paletteFade = true;
       _locked = NULL;
       _cronixieDigits = new byte[6];
       bus = new NeoPixelWrapper();

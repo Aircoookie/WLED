@@ -333,7 +333,7 @@ void handleSettingsSet(byte subPage)
   //SECURITY
   if (subPage == 6)
   {
-    if (server.hasArg("RS"))
+    if (server.hasArg("RS")) //complete factory reset
     {
       clearEEPROM();
       serveMessage(200, "All Settings erased.", "Connect to WLED-AP to setup again...",255);

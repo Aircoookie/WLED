@@ -39,7 +39,7 @@
 #include "src/dependencies/e131/E131.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1809081
+#define VERSION 1809084
 char versionString[] = "0.8.0-a";
 
 //AP and OTA default passwords (change them!)
@@ -129,7 +129,7 @@ bool hueApplyOnOff = true, hueApplyBri = true, hueApplyColor = true;
 uint16_t userVar0 = 0, userVar1 = 0;
 
 //Internal vars
-byte col[]{0, 0, 0};
+byte col[]{255, 159, 0};
 byte colOld[]{0, 0, 0};
 byte colT[]{0, 0, 0};
 byte colIT[]{0, 0, 0};
@@ -144,7 +144,7 @@ uint16_t transitionDelayTemp = transitionDelay;
 unsigned long transitionStartTime;
 unsigned long nightlightStartTime;
 float tperLast = 0;
-byte bri = 0;
+byte bri = 127;
 byte briOld = 0;
 byte briT = 0;
 byte briIT = 0;

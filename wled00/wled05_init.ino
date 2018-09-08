@@ -5,7 +5,6 @@
 void wledInit()
 { 
   EEPROM.begin(EEPSIZE);
-  if (EEPROM.read(233) != 233) showWelcomePage = true;
   ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
   //RMT eats up too much RAM
   #ifdef ARDUINO_ARCH_ESP32
@@ -27,6 +26,7 @@ void wledInit()
   DEBUG_PRINT(clientSSID);
   buildCssColorString();
   userBeginPreConnection();
+  if (strcmp(clientSSID,"Your_Network") == 0) showWelcomePage = true;
 
   initCon();
 
@@ -398,7 +398,6 @@ void serveIndexOrWelcome()
     serveIndex();
   }else{
     serveSettings(255);
-    showWelcomePage = false;
   }
 }
 
