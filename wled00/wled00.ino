@@ -39,8 +39,8 @@
 #include "src/dependencies/e131/E131.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1808311
-char versionString[] = "0.7.1";
+#define VERSION 1809084
+char versionString[] = "0.8.0-a";
 
 //AP and OTA default passwords (change them!)
 char apPass[65] = "wled1234";
