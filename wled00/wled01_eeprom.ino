@@ -6,7 +6,7 @@
 #define EEPSIZE 3072
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 7
+#define EEPVER 8
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -129,7 +129,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(379, colSecS[1]);
   EEPROM.write(380, colSecS[2]);
   EEPROM.write(381, whiteSecS);
-
+  EEPROM.write(382, strip.paletteBlend);
+  
   EEPROM.write(389, bootPreset);
   EEPROM.write(390, aOtaEnabled);
   EEPROM.write(391, receiveNotificationColor);
@@ -356,7 +357,7 @@ void loadSettingsFromEEPROM(bool first)
   whiteS = EEPROM.read(371); white = whiteS;
   useRGBW = EEPROM.read(372);
   effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
-  strip.paletteFade = EEPROM.read(374);
+  //374 - strip.paletteFade
 
   if (lastEEPROMversion > 0) { 
     apWaitTimeSecs = EEPROM.read(375);
@@ -443,6 +444,12 @@ void loadSettingsFromEEPROM(bool first)
     arlsTimeoutMillis = ((EEPROM.read(2193) << 0) & 0xFF) + ((EEPROM.read(2194) << 8) & 0xFF00);
     arlsForceMaxBri = EEPROM.read(2195);
     arlsDisableGammaCorrection = EEPROM.read(2196);
+  }
+
+  if (lastEEPROMversion > 7)
+  {
+    strip.paletteFade = EEPROM.read(374);
+    strip.paletteBlend = EEPROM.read(382);
   }
   
   receiveDirect = !EEPROM.read(2200);

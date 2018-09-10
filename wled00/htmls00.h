@@ -15,8 +15,7 @@ const char PAGE_indexM[] PROGMEM = R"=====(
 <input class="oos-chk oos-chk-cy" id=myoos-cy name=oos-cy onclick=tC() type=checkbox> <label class=oos-label for=myoos-cy></label></div></div><p style=padding:15px;padding-bottom:0>Cycle Range</p>
 <section class=range-slider>
 <span class=rangeValues style=font-size:20px></span> <input max=16 min=1 step=1 type=range value=1> <input max=16 min=1 step=1 type=range value=2>
-</section><div class="row segment cyclebtns" style=height:240px;padding-top:10px><ul style=padding:0px><li onclick="EC('/win&PC=1&PX=0')">Color</li><li onclick="EC('/win&PX=1&PC=0')">Effects</li><li onclick="EC('/win&PX=1&PC=1')">Both</li></ul><div style=padding-top:50px><p id=PSDurL style=margin-bottom:-4px>Preset Duration</p><input id=cycsxs max=65000 min=50 type=range step=50 value=5000></div><div><p id=CDurL style=margin-bottom:-4px>Color Transition</p><input id=cycts max=65000 min=0 step=50 type=range value=500></div></div><div><p style=margin-bottom:-4px>FX Speed</p><input id=sxs max=255 min=0 type=range value=128></div><div><p style=margin-bottom:-4px>FX Intensity</p><input id=ixs max=255 min=0 type=range value=128></div><ul id=mode style=margin-top:20px><li onclick=X(0)>Solid</li><li onclick=X(1)>Blink</li><li onclick=X(2)>Breathe</li><li onclick=X(3)>Wipe</li><li onclick=X(4)>Wipe Random</li><li onclick=X(5)>Random Colors</li><li onclick=X(6)>Sweep</li><li onclick=X(7)>Dynamic</li><li onclick=X(8)>Colorloop</li><li onclick=X(9)>Rainbow</li><li onclick=X(10)>Scan</li><li onclick=X(11)>Double Scan</li><li onclick=X(12)>Fade</li><li onclick=X(13)>Chase</li><li onclick=X(14)>Chase Rainbow</li><li onclick=X(15)>Running</li><li onclick=X(16)>Twinkle</li><li onclick=X(17)>Twinkle Random</li><li onclick=X(18)>Twinkle Fade</li><li onclick=X(19)>Twinkle Random Fade</li><li onclick=X(20)>Sparkle</li><li onclick=X(21)>Dark Sparkle</li><li onclick=X(22)>Dark Sparkle+</li><li onclick=X(23)>Strobe</li><li onclick=X(24)>Strobe Rainbow</li><li onclick=X(25)>Double Strobe</li><li onclick=X(26)>Blink Rainbow</li><li onclick=X(27)>Android</li><li onclick=X(28)>Dark Chase</li><li onclick=X(29)>Dark Chase Random</li><li onclick=X(30)>Dark Chase Rainbow</li><li onclick=X(31)>Chase Flash</li><li onclick=X(32)>Dark Chase Random</li><li onclick=X(33)>Rainbow Runner</li><li onclick=X(34)>Colorful</li><li onclick=X(35)>Traffic Light</li><li onclick=X(36)>Sweep Random</li><li onclick=X(37)>Running 2</li><li onclick=X(38)>Red & Blue</li><li onclick=X(39)>Running 2 Random</li><li onclick=X(40)>Scanner</li><li onclick=X(41)>Lighthouse</li><li onclick=X(42)>Fireworks</li><li onclick=X(43)>Fireworks Random</li><li onclick=X(44)>Merry Christmas</li><li onclick=X(45)>Fire Flicker</li><li onclick=X(46)>Gradient</li><li onclick=X(47)>Loading</li><li onclick=X(48)>In Out</li><li onclick=X(49)>In In</li><li onclick=X(50)>Out Out</li><li onclick=X(51)>Out In</li><li onclick=X(52)>Circus</li><li onclick=X(53)>Halloween</li><li onclick=X(54)>Tri Chase</li><li onclick=X(55)>Tri Wipe</li><li onclick=X(56)>Tri Fade</li><li onclick=X(57)>Lightning</li><li onclick=X(58)>ICU</li><li onclick=X(59)>Multi Comet</li><li onclick=X(60)>Dual Scanner</li><li onclick=X(61)>Random Chase</li><li onclick=X(62)>Oscillate</li><li onclick=X(63)>Fire 2012</li>
-<li onclick=X(64)>Juggle</li><li onclick=X(65)>Palette</li><li onclick=X(66)>BPM</li><li onclick=X(67)>Fill Noise 8</li><li onclick=X(68)>Noise 16 1</li><li onclick=X(69)>Noise 16 2</li><li onclick=X(70)>Noise 16 3</li><li onclick=X(71)>Noise 16 4</li><li onclick="X(64)">Pride 2015</li><li onclick="X(65)">Juggle</li><li onclick="X(66)">Palette</li><li onclick="X(67)">Colorwaves</li><li onclick="X(68)">BPM</li><li onclick="X(69)">Fill Noise 8</li><li onclick="X(70)">Noise 16 1</li><li onclick="X(71)">Noise 16 2</li><li onclick="X(72)">Noise 16 3</li><li onclick="X(73)">Noise 16 4</li>&nbsp;<p style=margin-left:-37px>FastLED Palette (Effects 55-71)</p><li onclick=P(0)>Random Change</li><li onclick=P(1)>Primary Only</li><li onclick=P(2)>Based on Primary</li><li onclick=P(3)>Set Colors Only</li><li onclick=P(4)>Based on Set</li><li onclick=P(5)>Party</li><li onclick=P(6)>Cloud</li><li onclick=P(7)>Lava</li><li onclick=P(8)>Ocean</li><li onclick=P(9)>Forest</li><li onclick=P(10)>Rainbow</li><li onclick=P(11)>Rainbow Stripe</li>
+</section><div class="row segment cyclebtns" style=height:240px;padding-top:10px><ul style=padding:0px><li onclick="EC('/win&PC=1&PX=0')">Color</li><li onclick="EC('/win&PX=1&PC=0')">Effects</li><li onclick="EC('/win&PX=1&PC=1')">Both</li></ul><div style=padding-top:50px><p id=PSDurL style=margin-bottom:-4px>Preset Duration</p><input id=cycsxs max=65000 min=50 type=range step=50 value=5000></div><div><p id=CDurL style=margin-bottom:-4px>Color Transition</p><input id=cycts max=65000 min=0 step=50 type=range value=500></div></div><div><p style=margin-bottom:-4px>FX Speed</p><input id=sxs max=255 min=0 type=range value=128></div><div><p style=margin-bottom:-4px>FX Intensity</p><input id=ixs max=255 min=0 type=range value=128></div><ul id=mode style=margin-top:20px><li onclick=X(0)>Solid</li><li onclick=X(1)>Blink</li><li onclick=X(2)>Breathe</li><li onclick=X(3)>Wipe</li><li onclick=X(4)>Wipe Random</li><li onclick=X(5)>Random Colors</li><li onclick=X(6)>Sweep</li><li onclick=X(7)>Dynamic</li><li onclick=X(8)>Colorloop</li><li onclick=X(9)>Rainbow</li><li onclick=X(10)>Scan</li><li onclick=X(11)>Double Scan</li><li onclick=X(12)>Fade</li><li onclick=X(13)>Chase</li><li onclick=X(14)>Chase Rainbow</li><li onclick=X(15)>Running</li><li onclick=X(16)>Twinkle</li><li onclick=X(17)>Twinkle Random</li><li onclick=X(18)>Twinkle Fade</li><li onclick=X(19)>Twinkle Random Fade</li><li onclick=X(20)>Sparkle</li><li onclick=X(21)>Dark Sparkle</li><li onclick=X(22)>Dark Sparkle+</li><li onclick=X(23)>Strobe</li><li onclick=X(24)>Strobe Rainbow</li><li onclick=X(25)>Double Strobe</li><li onclick=X(26)>Blink Rainbow</li><li onclick=X(27)>Android</li><li onclick=X(28)>Dark Chase</li><li onclick=X(29)>Dark Chase Random</li><li onclick=X(30)>Dark Chase Rainbow</li><li onclick=X(31)>Chase Flash</li><li onclick=X(32)>Dark Chase Random</li><li onclick=X(33)>Rainbow Runner</li><li onclick=X(34)>Colorful</li><li onclick=X(35)>Traffic Light</li><li onclick=X(36)>Sweep Random</li><li onclick=X(37)>Running 2</li><li onclick=X(38)>Red & Blue</li><li onclick=X(39)>Running 2 Random</li><li onclick=X(40)>Scanner</li><li onclick=X(41)>Lighthouse</li><li onclick=X(42)>Fireworks</li><li onclick=X(43)>Fireworks Random</li><li onclick=X(44)>Merry Christmas</li><li onclick=X(45)>Fire Flicker</li><li onclick=X(46)>Gradient</li><li onclick=X(47)>Loading</li><li onclick=X(48)>In Out</li><li onclick=X(49)>In In</li><li onclick=X(50)>Out Out</li><li onclick=X(51)>Out In</li><li onclick=X(52)>Circus</li><li onclick=X(53)>Halloween</li><li onclick=X(54)>Tri Chase</li><li onclick=X(55)>Tri Wipe</li><li onclick=X(56)>Tri Fade</li><li onclick=X(57)>Lightning</li><li onclick=X(58)>ICU</li><li onclick=X(59)>Multi Comet</li><li onclick=X(60)>Dual Scanner</li><li onclick=X(61)>Random Chase</li><li onclick=X(62)>Oscillate</li><li onclick=X(63)>Pride 2015</li><li onclick=X(64)>Juggle</li><li onclick=X(65)>Palette</li><li onclick=X(66)>Fire 2012</li><li onclick=X(67)>Colorwaves</li><li onclick=X(68)>BPM</li><li onclick=X(69)>Fill Noise 8</li><li onclick=X(70)>Noise 16 1</li><li onclick=X(71)>Noise 16 2</li><li onclick=X(72)>Noise 16 3</li><li onclick=X(73)>Noise 16 4</li>&nbsp;<li><a href=#>Go to top</a></li>&nbsp;<p style=margin-left:-37px>FastLED Palette (Effects 56-73)</p><li onclick=P(0)>Default</li><li onclick=P(1)>Random Cycle</li><li onclick=P(2)>Primary Color Only</li><li onclick=P(3)>Based on Primary</li><li onclick=P(4)>Set Colors Only</li><li onclick=P(5)>Based on Set Colors</li><li onclick=P(6)>Party</li><li onclick=P(7)>Cloud</li><li onclick=P(8)>Lava</li><li onclick=P(9)>Ocean</li><li onclick=P(10)>Forest</li><li onclick=P(11)>Rainbow</li><li onclick=P(12)>Rainbow Stripe</li><li onclick=P(13)>Sunset</li><li onclick=P(14)>Rivendell</li><li onclick=P(15)>Breeze</li><li onclick=P(16)>Red & Blue</li><li onclick=P(17)>Yellowout</li><li onclick=P(18)>Analogous</li><li onclick=P(19)>Splash</li><li onclick=P(20)>Pastel</li><li onclick=P(21)>Sunset2</li><li onclick=P(22)>Beech</li><li onclick=P(23)>Vintage</li><li onclick=P(24)>Departure</li><li onclick=P(25)>Landscape</li><li onclick=P(26)>Beach</li><li onclick=P(27)>Sherbet</li><li onclick=P(28)>Hult</li><li onclick=P(29)>Hult64</li><li onclick=P(30)>Drywet</li><li onclick=P(31)>Jul</li><li onclick=P(32)>Grintage</li><li onclick=P(33)>Rewhi</li><li onclick=P(34)>Tertiary</li><li onclick=P(35)>Fire</li><li onclick=P(36)>Icefire</li><li onclick=P(37)>Cyane</li><li onclick=P(38)>Light Pink</li><li onclick=P(39)>Autumn</li><li onclick=P(40)>Magenta</li><li onclick=P(41)>Magred</li><li onclick=P(42)>Yelmag</li><li onclick=P(43)>Yelblu</li><li onclick=P(44)>Orange & Teal</li>
 &nbsp;<li><a href=#>Go to top</a></li></div>
 <iframe id=stf onload=feedback() style=display:none></iframe>
 </main>
@@ -74,10 +73,8 @@ The Mobile UI is not supported due to limited flash storage. Please go to IP/set
  */
 //head0 (js)
 const char PAGE_index0[] PROGMEM = R"=====(
-<!DOCTYPE html>
-<html><head><meta charset=utf-8><meta name=theme-color content=#fff>
-<link rel='shortcut icon' type=image/x-icon href='/favicon.ico'/><title>WLED 0.8.0-a</title>
-<script>var d=document;var w=window.getComputedStyle(d.querySelector("html"));resp="";var nla=false;var nra=false;var nsa=false;var sto=false;var uwv=false;var sbf=true;var firstload=true;var lastsx=0;var nState=0;var cv=0;var lm=0;aC="";bC="";dC="";function gId(a){return d.getElementById(a)}function Startup(){var a=window.getComputedStyle(d.querySelector("html"));aC=a.getPropertyValue("--aCol");bC=a.getPropertyValue("--bCol");dC=a.getPropertyValue("--dCol");d.querySelector("meta[name=theme-color]").setAttribute("content",bC);CV(0);setInterval("GIO()",5000);GIO()}function GIO(){nocache="&nocache="+Math.random()*1000000;var a=new XMLHttpRequest();a.onreadystatechange=function(){if(this.readyState==4){if(this.status==200){if(this.responseXML!=null){d.Cf.SA.value=this.responseXML.getElementsByTagName("ac")[0].childNodes[0].nodeValue;d.Cf.SR.value=this.responseXML.getElementsByTagName("cl")[0].childNodes[0].nodeValue;d.Cf.SG.value=this.responseXML.getElementsByTagName("cl")[1].childNodes[0].nodeValue;d.Cf.SB.value=this.responseXML.getElementsByTagName("cl")[2].childNodes[0].nodeValue;if(this.responseXML.getElementsByTagName("wv")[0].childNodes[0].nodeValue>=0){d.Cf.SW.value=this.responseXML.getElementsByTagName("wv")[0].childNodes[0].nodeValue;uwv=true}else{uwv=false}Cf.TX.selectedIndex=this.responseXML.getElementsByTagName("fx")[0].childNodes[0].nodeValue;d.Cf.SX.value=this.responseXML.getElementsByTagName("sx")[0].childNodes[0].nodeValue;d.Cf.IX.value=this.responseXML.getElementsByTagName("ix")[0].childNodes[0].nodeValue;nla=(this.responseXML.getElementsByTagName("nl")[0].innerHTML)!=0?true:false;if(firstload){d.Cf.NC.checked=(this.responseXML.getElementsByTagName("nf")[0].innerHTML)!=0?true:false;d.Cf.SN.value=this.responseXML.getElementsByTagName("nd")[0].childNodes[0].nodeValue;d.Cf.ST.value=this.responseXML.getElementsByTagName("nt")[0].childNodes[0].nodeValue;CV(parseInt(this.responseXML.getElementsByTagName("md")[0].childNodes[0].nodeValue))}firstload=false;nState=0;nState=(this.responseXML.getElementsByTagName("nr")[0].innerHTML)!=0?1:0;nState+=(this.responseXML.getElementsByTagName("ns")[0].innerHTML)!=0?2:0;d.getElementsByClassName("desc")[0].innerHTML=this.responseXML.getElementsByTagName("ds")[0].innerHTML;UV()}}}};a.open("GET","win"+resp+nocache,true);a.send(null);resp=""}function GC(){resp+="&A="+Cf.SA.value;resp+="&R="+Cf.SR.value;resp+="&G="+Cf.SG.value;resp+="&B="+Cf.SB.value;if(uwv){resp+="&W="+Cf.SW.value}UV();GIO()}function GX(){resp+="&FX="+Cf.TX.selectedIndex;resp+="&SX="+Cf.SX.value;resp+="&IX="+Cf.IX.value;UV();GIO()}function GetRGB(){var a,l,n,j,m,e,c,u;var k=d.Cf.SH.value,x=d.Cf.SS.value,o=255;j=Math.floor(k*6);m=k*6-j;e=o*(1-x);c=o*(1-m*x);u=o*(1-(1-m)*x);switch(j%6){case 0:a=o,l=u,n=e;break;case 1:a=c,l=o,n=e;break;case 2:a=e,l=o,n=u;break;case 3:a=e,l=c,n=o;break;case 4:a=u,l=e,n=o;break;case 5:a=o,l=e,n=c}d.Cf.SR.value=a;d.Cf.SG.value=l;d.Cf.SB.value=n;GC()}function GP(){resp+="&FP="+Cf.FP.selectedIndex;GIO()}function CV(a){if(sto){CloseSettings()}gId("slA").style.display="none";gId("srgb").style.display="none";gId("shs").style.display="none";gId("slW").style.display="none";gId("tlX").style.display="none";gId("tlP").style.display="none";gId("tlN").style.display="none";if(a<2){if(uwv){gId("slW").style.display="block"}gId("slA").style.display="block"}switch(a){case 0:gId("srgb").style.display="block";lm=0;break;case 1:gId("shs").style.display="block";lm=1;break;case 2:gId("tlP").style.display="block";break;case 3:gId("tlX").style.display="block";break;case 4:gId("tlN").style.display="block"}cv=a;mdb.style.fill=(lm>0)?aC:dC}function rgb2hex(e,c,a){var b=a|(c<<8)|(e<<16);return"#"+(16777216+b).toString(16).slice(1)}function lingrad(e,c,a){return"linear-gradient("+bC+","+rgb2hex(e,c,a)+")"}function UV(){d.body.style.background=lingrad(Cf.SR.value,Cf.SG.value,Cf.SB.value);setHS(Cf.SR.value,Cf.SG.value,Cf.SB.value);fxb.style.fill=(d.Cf.TX.selectedIndex>0)?aC:dC;nlb.style.fill=(nla)?aC:dC;ntb.style.fill=(nla)?aC:dC;switch(nState){case 0:gId("path1").style.fill=dC;gId("path2").style.fill=dC;break;case 1:gId("path1").style.fill=aC;gId("path2").style.fill=dC;break;case 2:gId("path1").style.fill=dC;gId("path2").style.fill=aC;break;case 3:gId("path1").style.fill=aC;gId("path2").style.fill=aC}tgb.style.fill=(Cf.SA.value>0)?aC:dC;fpX.style.display=(Cf.TX.selectedIndex>65)?"block":"none";fof.style.fill=(Cf.TX.selectedIndex>65)?aC:dC;fmr.style.fill=(Cf.TX.selectedIndex<1)?aC:dC}function TgT(){if(Cf.SA.value>0){resp+="&T=0";Cf.SA.value=0}else{resp+="&T=2"}UV();GIO()}function SwFX(a){var b=Cf.TX.selectedIndex+a;if(b==-1||b==74){return}Cf.TX.selectedIndex=b;if(b<0){Cf.TX.selectedIndex=0}if(b>73){Cf.TX.selectedIndex=66}GX()}function TgHSB(){if(cv<2){(cv)?CV(0):CV(1)}else{CV(lm)}}function SwitchPS(a){d.Cf.FF.value=parseInt(d.Cf.FF.value)+a;if(d.Cf.FF.value<1){d.Cf.FF.value=1}if(d.Cf.FF.value>25){d.Cf.FF.value=25}}function PAt(){resp+=(d.Cf.BC.checked)?"&PA=1":"&PA=0";resp+=(d.Cf.CC.checked)?"&PC=1":"&PC=0";resp+=(d.Cf.FC.checked)?"&PX=1":"&PX=0"}function PSIO(a){PAt();if(a){resp+="&PS=";resp+=d.Cf.FF.value}else{resp+="&PL=";resp+=d.Cf.FF.value}GIO()}function OpenSettings(){sto=true;stb.style.fill=aC;cdB.style.display="none";stf.style.display="inline";if(sbf){stf.src="/settings"}sbf=false}function CloseSettings(){sto=false;stb.style.fill=dC;cdB.style.display="inline";stf.style.display="none"}function TgS(){if(sto){CloseSettings()}else{OpenSettings()}}function TgNl(){nla=!nla;if(nla){resp+="&NL="+d.Cf.SN.value;resp+="&NT="+d.Cf.ST.value;resp+=(d.Cf.NC.checked)?"&NF=1":"&NF=0"}else{resp+="&NL=0"}UV();GIO()}function TgN(){nState++;if(nState>3){nState=0}switch(nState){case 0:resp+="&SN=0&RN=0";break;case 1:resp+="&SN=0&RN=1";break;case 2:resp+="&SN=1&RN=0";break;case 3:resp+="&SN=1&RN=1"}UV();GIO()}function setHS(){var e,k,j,a=arguments[0]/255,i=arguments[1]/255,l=arguments[2]/255,f,o,n=Math.max(a,i,l),m=n-Math.min(a,i,l),c=function(b){return(n-b)/6/m+1/2};if(m==0){f=o=0}else{o=m/n;e=c(a);k=c(i);j=c(l);if(a===n){f=j-k}else{if(i===n){f=(1/3)+e-j}else{if(l===n){f=(2/3)+k-e}}}if(f<0){f+=1}else{if(f>1){f-=1}}}if(o>0){d.Cf.SH.value=f}d.Cf.SS.value=o}function CS(a){switch(a){case 0:resp+="&SW";break;case 1:resp+="&SB";break;case 2:resp+="&SR=1";break;case 3:resp+="&SP";break;case 4:resp+="&SC";break;case 5:resp+="&SR=0"}GIO()}function uCY(){PAt();resp+=(d.Cf.CY.checked)?"&CY=1":"&CY=0";resp+="&P1="+Cf.P1.value;resp+="&P2="+Cf.P2.value;resp+="&PT="+Cf.PT.value;GIO()}function R(){resp+="&PL=0";GIO()};</script>
+<!DOCTYPE html><html><head><meta charset=utf-8><meta name=theme-color content=#fff><link rel='shortcut icon' type=image/x-icon href='/favicon.ico'/><title>WLED 0.8.0-a</title>
+<script>var d=document;var w=window.getComputedStyle(d.querySelector("html"));resp="";var nla=false;var nra=false;var nsa=false;var sto=false;var uwv=false;var sbf=true;var firstload=true;var lastsx=0;var nState=0;var cv=0;var lm=0;aC="";bC="";dC="";function gId(a){return d.getElementById(a)}function Startup(){var a=window.getComputedStyle(d.querySelector("html"));aC=a.getPropertyValue("--aCol");bC=a.getPropertyValue("--bCol");dC=a.getPropertyValue("--dCol");d.querySelector("meta[name=theme-color]").setAttribute("content",bC);CV(0);setInterval("GIO()",5000);GIO()}function GIO(){nocache="&nocache="+Math.random()*1000000;var a=new XMLHttpRequest();a.onreadystatechange=function(){if(this.readyState==4){if(this.status==200){if(this.responseXML!=null){d.Cf.SA.value=this.responseXML.getElementsByTagName("ac")[0].childNodes[0].nodeValue;d.Cf.SR.value=this.responseXML.getElementsByTagName("cl")[0].childNodes[0].nodeValue;d.Cf.SG.value=this.responseXML.getElementsByTagName("cl")[1].childNodes[0].nodeValue;d.Cf.SB.value=this.responseXML.getElementsByTagName("cl")[2].childNodes[0].nodeValue;if(this.responseXML.getElementsByTagName("wv")[0].childNodes[0].nodeValue>=0){d.Cf.SW.value=this.responseXML.getElementsByTagName("wv")[0].childNodes[0].nodeValue;uwv=true}else{uwv=false}Cf.TX.selectedIndex=this.responseXML.getElementsByTagName("fx")[0].childNodes[0].nodeValue;Cf.FP.selectedIndex=this.responseXML.getElementsByTagName("fp")[0].childNodes[0].nodeValue;d.Cf.SX.value=this.responseXML.getElementsByTagName("sx")[0].childNodes[0].nodeValue;d.Cf.IX.value=this.responseXML.getElementsByTagName("ix")[0].childNodes[0].nodeValue;nla=(this.responseXML.getElementsByTagName("nl")[0].innerHTML)!=0?true:false;if(firstload){d.Cf.NC.checked=(this.responseXML.getElementsByTagName("nf")[0].innerHTML)!=0?true:false;d.Cf.SN.value=this.responseXML.getElementsByTagName("nd")[0].childNodes[0].nodeValue;d.Cf.ST.value=this.responseXML.getElementsByTagName("nt")[0].childNodes[0].nodeValue;CV(parseInt(this.responseXML.getElementsByTagName("md")[0].childNodes[0].nodeValue))}firstload=false;nState=0;nState=(this.responseXML.getElementsByTagName("nr")[0].innerHTML)!=0?1:0;nState+=(this.responseXML.getElementsByTagName("ns")[0].innerHTML)!=0?2:0;d.getElementsByClassName("desc")[0].innerHTML=this.responseXML.getElementsByTagName("ds")[0].innerHTML;UV()}}}};a.open("GET","win"+resp+nocache,true);a.send(null);resp=""}function GC(){resp+="&A="+Cf.SA.value;resp+="&R="+Cf.SR.value;resp+="&G="+Cf.SG.value;resp+="&B="+Cf.SB.value;if(uwv){resp+="&W="+Cf.SW.value}UV();GIO()}function GX(){resp+="&FX="+Cf.TX.selectedIndex;resp+="&SX="+Cf.SX.value;resp+="&IX="+Cf.IX.value;UV();GIO()}function GetRGB(){var a,l,n,j,m,e,c,u;var k=d.Cf.SH.value,x=d.Cf.SS.value,o=255;j=Math.floor(k*6);m=k*6-j;e=o*(1-x);c=o*(1-m*x);u=o*(1-(1-m)*x);switch(j%6){case 0:a=o,l=u,n=e;break;case 1:a=c,l=o,n=e;break;case 2:a=e,l=o,n=u;break;case 3:a=e,l=c,n=o;break;case 4:a=u,l=e,n=o;break;case 5:a=o,l=e,n=c}d.Cf.SR.value=a;d.Cf.SG.value=l;d.Cf.SB.value=n;GC()}function GP(){resp+="&FP="+Cf.FP.selectedIndex;GIO()}function CV(a){if(sto){CloseSettings()}gId("slA").style.display="none";gId("srgb").style.display="none";gId("shs").style.display="none";gId("slW").style.display="none";gId("tlX").style.display="none";gId("tlP").style.display="none";gId("tlN").style.display="none";if(a<2){if(uwv){gId("slW").style.display="block"}gId("slA").style.display="block"}switch(a){case 0:gId("srgb").style.display="block";lm=0;break;case 1:gId("shs").style.display="block";lm=1;break;case 2:gId("tlP").style.display="block";break;case 3:gId("tlX").style.display="block";break;case 4:gId("tlN").style.display="block"}cv=a;mdb.style.fill=(lm>0)?aC:dC}function rgb2hex(e,c,a){var b=a|(c<<8)|(e<<16);return"#"+(16777216+b).toString(16).slice(1)}function lingrad(e,c,a){return"linear-gradient("+bC+","+rgb2hex(e,c,a)+")"}function UV(){d.body.style.background=lingrad(Cf.SR.value,Cf.SG.value,Cf.SB.value);setHS(Cf.SR.value,Cf.SG.value,Cf.SB.value);fxb.style.fill=(d.Cf.TX.selectedIndex>0)?aC:dC;nlb.style.fill=(nla)?aC:dC;ntb.style.fill=(nla)?aC:dC;switch(nState){case 0:gId("path1").style.fill=dC;gId("path2").style.fill=dC;break;case 1:gId("path1").style.fill=aC;gId("path2").style.fill=dC;break;case 2:gId("path1").style.fill=dC;gId("path2").style.fill=aC;break;case 3:gId("path1").style.fill=aC;gId("path2").style.fill=aC}tgb.style.fill=(Cf.SA.value>0)?aC:dC;fpX.style.display=(Cf.TX.selectedIndex>64)?"block":"none";fof.style.fill=(Cf.TX.selectedIndex>64)?aC:dC;fmr.style.fill=(Cf.TX.selectedIndex<1)?aC:dC}function TgT(){if(Cf.SA.value>0){resp+="&T=0";Cf.SA.value=0}else{resp+="&T=2"}UV();GIO()}function SwFX(a){var b=Cf.TX.selectedIndex+a;if(b==-1||b==74){return}Cf.TX.selectedIndex=b;if(b<0){Cf.TX.selectedIndex=0}if(b>73){Cf.TX.selectedIndex=65}GX()}function TgHSB(){if(cv<2){(cv)?CV(0):CV(1)}else{CV(lm)}}function SwitchPS(a){d.Cf.FF.value=parseInt(d.Cf.FF.value)+a;if(d.Cf.FF.value<1){d.Cf.FF.value=1}if(d.Cf.FF.value>25){d.Cf.FF.value=25}}function PAt(){resp+=(d.Cf.BC.checked)?"&PA=1":"&PA=0";resp+=(d.Cf.CC.checked)?"&PC=1":"&PC=0";resp+=(d.Cf.FC.checked)?"&PX=1":"&PX=0"}function PSIO(a){PAt();if(a){resp+="&PS=";resp+=d.Cf.FF.value}else{resp+="&PL=";resp+=d.Cf.FF.value}GIO()}function OpenSettings(){sto=true;stb.style.fill=aC;cdB.style.display="none";stf.style.display="inline";if(sbf){stf.src="/settings"}sbf=false}function CloseSettings(){sto=false;stb.style.fill=dC;cdB.style.display="inline";stf.style.display="none"}function TgS(){if(sto){CloseSettings()}else{OpenSettings()}}function TgNl(){nla=!nla;if(nla){resp+="&NL="+d.Cf.SN.value;resp+="&NT="+d.Cf.ST.value;resp+=(d.Cf.NC.checked)?"&NF=1":"&NF=0"}else{resp+="&NL=0"}UV();GIO()}function TgN(){nState++;if(nState>3){nState=0}switch(nState){case 0:resp+="&SN=0&RN=0";break;case 1:resp+="&SN=0&RN=1";break;case 2:resp+="&SN=1&RN=0";break;case 3:resp+="&SN=1&RN=1"}UV();GIO()}function setHS(){var e,k,j,a=arguments[0]/255,i=arguments[1]/255,l=arguments[2]/255,f,o,n=Math.max(a,i,l),m=n-Math.min(a,i,l),c=function(b){return(n-b)/6/m+1/2};if(m==0){f=o=0}else{o=m/n;e=c(a);k=c(i);j=c(l);if(a===n){f=j-k}else{if(i===n){f=(1/3)+e-j}else{if(l===n){f=(2/3)+k-e}}}if(f<0){f+=1}else{if(f>1){f-=1}}}if(o>0){d.Cf.SH.value=f}d.Cf.SS.value=o}function CS(a){switch(a){case 0:resp+="&SW";break;case 1:resp+="&SB";break;case 2:resp+="&SR=1";break;case 3:resp+="&SP";break;case 4:resp+="&SC";break;case 5:resp+="&SR=0"}GIO()}function uCY(){PAt();resp+=(d.Cf.CY.checked)?"&CY=1":"&CY=0";resp+="&P1="+Cf.P1.value;resp+="&P2="+Cf.P2.value;resp+="&PT="+Cf.PT.value;GIO()}function R(){resp+="&PL=0";GIO()};</script>
 )=====";
 
 //head1 (css)
@@ -119,108 +116,21 @@ const char PAGE_index3[] PROGMEM = R"=====(
 <svg id=fxb onclick=CV(3)><use xlink:href=#lnr-star></use></svg>
 <svg id=nlb onclick=CV(4)><use xlink:href=#lnr-moon></use></svg>
 <svg id=nsb onclick=TgN()><use xlink:href=#lnr-sync></use></svg>
-<svg id=stb onclick=TgS()><use xlink:href=#lnr-cog></use></svg>
-</div>
-<div id=cdB class=ctrl_box>
-<form id=form_c name=Cf>
-<br>
-<div id=slA class=sl>
-<input type=range title=Brightness class=sds name=SA value=0 min=0 max=255 step=1 onchange=GC()></div>
-<div id=srgb>
-<div id=slR class=sl>
-<input type=range title="Red Value" class=sds name=SR value=0 min=0 max=255 step=1 onchange=GC()></div>
-<div id=slG class=sl>
-<input type=range title="Green Value" class=sds name=SG value=0 min=0 max=255 step=1 onchange=GC()></div>
-<div id=slB class=sl>
-<input type=range title="Blue Value" class=sds name=SB value=0 min=0 max=255 step=1 onchange=GC()></div></div>
-<div id=shs>
-<div id=slH class=sl>
-<input type=range title=Hue class=sds name=SH value=0 min=0 max=1 step=0.025 onchange=GetRGB()></div>
-<div id=slS class=sl>
-<input type=range title=Saturation class=sds name=SS value=0 min=0 max=1 step=0.025 onchange=GetRGB()></div></div>
-<div id=slW class=sl>
-<input type=range title="White Value" class=sds name=SW value=0 min=0 max=255 step=1 onchange=GC()></div>
-<div id=tlX class=tools>
+<svg id=stb onclick=TgS()><use xlink:href=#lnr-cog></use></svg></div><div id=cdB class=ctrl_box><form id=form_c name=Cf>
+<br><div id=slA class=sl>
+<input type=range title=Brightness class=sds name=SA value=0 min=0 max=255 step=1 onchange=GC()></div><div id=srgb><div id=slR class=sl>
+<input type=range title="Red Value" class=sds name=SR value=0 min=0 max=255 step=1 onchange=GC()></div><div id=slG class=sl>
+<input type=range title="Green Value" class=sds name=SG value=0 min=0 max=255 step=1 onchange=GC()></div><div id=slB class=sl>
+<input type=range title="Blue Value" class=sds name=SB value=0 min=0 max=255 step=1 onchange=GC()></div></div><div id=shs><div id=slH class=sl>
+<input type=range title=Hue class=sds name=SH value=0 min=0 max=1 step=0.025 onchange=GetRGB()></div><div id=slS class=sl>
+<input type=range title=Saturation class=sds name=SS value=0 min=0 max=1 step=0.025 onchange=GetRGB()></div></div><div id=slW class=sl>
+<input type=range title="White Value" class=sds name=SW value=0 min=0 max=255 step=1 onchange=GC()></div><div id=tlX class=tools>
 Effect Panel<br><br>
 <svg id=fmr onclick=SwFX(-99)><use xlink:href=#lnr-cross></use></svg>
 <svg id=for onclick=SwFX(-1)><use xlink:href=#lnr-arrow-left-circle></use></svg>
 <svg id=fmf onclick=SwFX(1)><use xlink:href=#lnr-arrow-right-circle></use></svg>
 <svg id=fof onclick=SwFX(99)><use xlink:href=#lnr-rocket></use></svg><br><br>
-<select name=TX onchange=GX()>
-<option value=0 selected>Solid (0)</option>
-<option value=1>Blink (1)</option>
-<option value=2>Breath (2)</option>
-<option value=3>Wipe (3)</option>
-<option value=4>Wipe Random (4)</option>
-<option value=5>Color R (5)</option>
-<option value=6>Sweep (6)</option>
-<option value=7>Dynamic (7)</option>
-<option value=8>Colorloop (8)</option>
-<option value=9>Rainbow (9)</option>
-<option value=10>Scan (10)</option>
-<option value=11>Scan x2 (11)</option>
-<option value=12>Fade (12)</option>
-<option value=13>Chase (13)</option>
-<option value=14>Chase Cl (14)</option>
-<option value=15>Running (15)</option>
-<option value=16>Twinkle (16)</option>
-<option value=17>Twinkle R (17)</option>
-<option value=18>Twinkle Fade (18)</option>
-<option value=19>Twinkle RF (19)</option>
-<option value=20>Sparkle (20)</option>
-<option value=21>Sparkle Inv (21)</option>
-<option value=22>Sparkle Inv+ (22)</option>
-<option value=23>Strobe (23)</option>
-<option value=24>Strobe Cl (24)</option>
-<option value=25>Strobe + (25)</option>
-<option value=26>Blink Cl (26)</option>
-<option value=27>Android (27)</option>
-<option value=28>Chase (28)</option>
-<option value=29>Chase R (29)</option>
-<option value=30>Chase Rainbow (30)</option>
-<option value=31>Chase Flash (31)</option>
-<option value=32>Chase RF (32)</option>
-<option value=33>Chase Cl Inv (33)</option>
-<option value=34>Colorful (34)</option>
-<option value=35>Traffic Light (35)</option>
-<option value=36>Sweep R(36)</option>
-<option value=37>Running 2 (37)</option>
-<option value=38>Red/Blue (38)</option>
-<option value=39>Running R (39)</option>
-<option value=40>Scanner (40)</option>
-<option value=41>Lighthouse (41)</option>
-<option value=42>Fireworks (42)</option>
-<option value=43>Fireworks R (43)</option>
-<option value=44>Christmas (44)</option>
-<option value=45>Fire Flicker (45)</option>
-<option value=46>Gradient (46)</option>
-<option value=47>Loading (47)</option>
-<option value=48>Wipe IO (48)</option>
-<option value=49>Wipe II (49)</option>
-<option value=50>Wipe OO (50)</option>
-<option value=51>Wipe OI (51)</option>
-<option value=52>Circus (52)</option>
-<option value=53>Halloween (53)</option>
-<option value=54>Tricolor Chase (54)</option>
-<option value=55>Tricolor Wipe (55)</option>
-<option value=56>Tricolor Fade (56)</option>
-<option value=57>Lighting (57)</option>
-<option value=58>ICU (58)</option>
-<option value=59>Multi Comet (59)</option>
-<option value=60>Scanner x2 (60)</option>
-<option value=61>Random Chase (61)</option>
-<option value=62>Oscillate (62)</option>
-<option value=63>Fire 2012 (63)</option>
-<option value=64>Pride 2015 (64)</option>
-<option value=65>Juggle (65)</option>
-<option value=66>Palette (66)</option>
-<option value=67>Colorwaves (67)</option>
-<option value=68>BPM (68)</option>
-<option value=69>Fill Noise 8 (69)</option>
-<option value=70>Noise 16 1 (70)</option>
-<option value=71>Noise 16 2 (71)</option>
-<option value=72>Noise 16 3 (72)</option>
-<option value=73>Noise 16 4 (73)</option>
+<select name=TX onchange=GX()><option value=0 selected>Solid (0)</option><option value=1>Blink (1)</option><option value=2>Breath (2)</option><option value=3>Wipe (3)</option><option value=4>Wipe Random (4)</option><option value=5>Color R (5)</option><option value=6>Sweep (6)</option><option value=7>Dynamic (7)</option><option value=8>Colorloop (8)</option><option value=9>Rainbow (9)</option><option value=10>Scan (10)</option><option value=11>Scan x2 (11)</option><option value=12>Fade (12)</option><option value=13>Chase (13)</option><option value=14>Chase Cl (14)</option><option value=15>Running (15)</option><option value=16>Twinkle (16)</option><option value=17>Twinkle R (17)</option><option value=18>Twinkle Fade (18)</option><option value=19>Twinkle RF (19)</option><option value=20>Sparkle (20)</option><option value=21>Sparkle Inv (21)</option><option value=22>Sparkle Inv+ (22)</option><option value=23>Strobe (23)</option><option value=24>Strobe Cl (24)</option><option value=25>Strobe + (25)</option><option value=26>Blink Cl (26)</option><option value=27>Android (27)</option><option value=28>Chase (28)</option><option value=29>Chase R (29)</option><option value=30>Chase Rainbow (30)</option><option value=31>Chase Flash (31)</option><option value=32>Chase RF (32)</option><option value=33>Chase Cl Inv (33)</option><option value=34>Colorful (34)</option><option value=35>Traffic Light (35)</option><option value=36>Sweep R(36)</option><option value=37>Running 2 (37)</option><option value=38>Red/Blue (38)</option><option value=39>Running R (39)</option><option value=40>Scanner (40)</option><option value=41>Lighthouse (41)</option><option value=42>Fireworks (42)</option><option value=43>Fireworks R (43)</option><option value=44>Christmas (44)</option><option value=45>Fire Flicker (45)</option><option value=46>Gradient (46)</option><option value=47>Loading (47)</option><option value=48>Wipe IO (48)</option><option value=49>Wipe II (49)</option><option value=50>Wipe OO (50)</option><option value=51>Wipe OI (51)</option><option value=52>Circus (52)</option><option value=53>Halloween (53)</option><option value=54>Tricolor Chase (54)</option><option value=55>Tricolor Wipe (55)</option><option value=56>Tricolor Fade (56)</option><option value=57>Lighting (57)</option><option value=58>ICU (58)</option><option value=59>Multi Comet (59)</option><option value=60>Scanner x2 (60)</option><option value=61>Random Chase (61)</option><option value=62>Oscillate (62)</option><option value=63>Pride 2015 (63)</option><option value=64>Juggle (64)</option><option value=65>Palette (65)</option><option value=66>Fire 2012 (66)</option><option value=67>Colorwaves (67)</option><option value=68>BPM (68)</option><option value=69>Fill Noise 8 (69)</option><option value=70>Noise 16 1 (70)</option><option value=71>Noise 16 2 (71)</option><option value=72>Noise 16 3 (72)</option><option value=73>Noise 16 4 (73)</option>
 </select><br><br>
 Set secondary color to
 <button type=button onclick=CS(0)>White</button>
@@ -228,30 +138,12 @@ Set secondary color to
 <button type=button onclick=CS(2)>Random</button>
 <button type=button onclick=CS(3)>Primary</button>
 <button type=button onclick=CS(4)>Swap P/S</button>
-or <button type=button onclick=CS(5)>Set Primary to Random</button>
-<div id=fpX>
+or <button type=button onclick=CS(5)>Set Primary to Random</button><div id=fpX>
 <br>FastLED Palette<br><br>
-<select name=FP onchange=GP()>
-<option value=0 selected>Random Cycle</option>
-<option value=1>Primary Color Only</option>
-<option value=2>Based on Primary</option>
-<option value=3>Set Colors Only</option>
-<option value=4>Based on Set Colors</option>
-<option value=5>Party Colors</option>
-<option value=6>Cloud Colors</option>
-<option value=7>Lava Colors</option>
-<option value=8>Ocean Colors</option>
-<option value=9>Forest Colors</option>
-<option value=10>Rainbow</option>
-<option value=11>Rainbow Stripe</option>
-</select>
-</div>
-<div id=slX class=sl>
-<input type=range title="Effect Speed" class=sds name=SX value=0 min=0 max=255 step=1 onchange=GX()></div>
-<div id=slI class=sl>
-<input type=range title="Effect Intensity" class=sds name=IX value=0 min=0 max=255 step=1 onchange=GX()></div>
-</div>
-<div id=tlP class=tools>
+<select name=FP onchange=GP()><option value=0 selected>Default</option><option value=1>Random Cycle</option><option value=2>Primary Color Only</option><option value=3>Based on Primary</option><option value=4>Set Colors Only</option><option value=5>Based on Set Colors</option><option value=6>Party</option><option value=7>Cloud</option><option value=8>Lava</option><option value=9>Ocean</option><option value=10>Forest</option><option value=11>Rainbow</option><option value=12>Rainbow Stripe</option><option value=13>Sunset</option><option value=14>Rivendell</option><option value=15>Breeze</option><option value=16>Red & Blue</option><option value=17>Yellowout</option><option value=18>Analogous</option><option value=19>Splash</option><option value=20>Pastel</option><option value=21>Sunset2</option><option value=22>Beech</option><option value=23>Vintage</option><option value=24>Departure</option><option value=25>Landscape</option><option value=26>Beach</option><option value=27>Sherbet</option><option value=28>Hult</option><option value=29>Hult64</option><option value=30>Drywet</option><option value=31>Jul</option><option value=32>Grintage</option><option value=33>Rewhi</option><option value=34>Tertiary</option><option value=35>Fire</option><option value=36>Icefire</option><option value=37>Cyane</option><option value=38>Light Pink</option><option value=39>Autumn</option><option value=40>Magenta</option><option value=41>Magred</option><option value=42>Yelmag</option><option value=43>Yelblu</option><option value=44>Orange & Teal</option>
+</select></div><div id=slX class=sl>
+<input type=range title="Effect Speed" class=sds name=SX value=0 min=0 max=255 step=1 onchange=GX()></div><div id=slI class=sl>
+<input type=range title="Effect Intensity" class=sds name=IX value=0 min=0 max=255 step=1 onchange=GX()></div></div><div id=tlP class=tools>
 Favorite Presets<br><br>
 <svg id=psl onclick=PSIO(false)><use xlink:href=#lnr-checkmark-circle></use></svg>
 <svg id=psp onclick=SwitchPS(-1)><use xlink:href=#lnr-arrow-left-circle></use></svg>
@@ -260,21 +152,13 @@ Favorite Presets<br><br>
 <br><input id=psI name=FF type=number value=1 min=1 max=25 step=1><br><br>
 Click checkmark to apply <input type=checkbox checked=true name=BC> brightness, <input type=checkbox checked=true name=CC> color and <input type=checkbox checked=true name=FC> effects.<br><br>
 Cycle through presets <input id=cy1 name=P1 type=number value=1 min=1 max=25 step=1> to <input id=cy2 name=P2 type=number value=5 min=1 max=25 step=1>, keep each for <input id=cyT name=PT type=number value=1250 min=50 max=65501 step=1>ms: <input type=checkbox name=CY onclick=uCY()><br><br>
-<button type=button onclick=R()>Apply boot config</button><br>
-</div>
-<div id=tlN class=tools>
+<button type=button onclick=R()>Apply boot config</button><br></div><div id=tlN class=tools>
 Timed Light<br><br>
 <svg id=ntb onclick=TgNl()><use xlink:href=#lnr-power-switch></use></svg><br><br>
 Gradually dim down <input type=checkbox checked=true name=NC><br>
-1st slider sets duration (1-255min), 2nd sets target brightness.
-<div id=slN class=sl>
-<input type=range title=Duration class=sds name=SN value=60 min=1 max=255 step=1></div>
-<div id=slT class=sl>
-<input type=range title="Target Brightness" class=sds name=ST value=0 min=0 max=255 step=1></div>
-</div>
-<br>
-</form>
-</div>
-<iframe id=stf src=about:blank></iframe>
-</body></html>
+1st slider sets duration (1-255min), 2nd sets target brightness.<div id=slN class=sl>
+<input type=range title=Duration class=sds name=SN value=60 min=1 max=255 step=1></div><div id=slT class=sl>
+<input type=range title="Target Brightness" class=sds name=ST value=0 min=0 max=255 step=1></div></div>
+<br></form></div>
+<iframe id=stf src=about:blank></iframe></body></html>
 )=====";

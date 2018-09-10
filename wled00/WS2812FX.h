@@ -148,10 +148,10 @@
 #define FX_MODE_RANDOM_CHASE            61
 #define FX_MODE_OSCILLATE               62
 //Modes that use FastLED -->
-#define FX_MODE_FIRE_2012               63
-#define FX_MODE_PRIDE_2015              64
-#define FX_MODE_JUGGLE                  65
-#define FX_MODE_PALETTE                 66
+#define FX_MODE_PRIDE_2015              63
+#define FX_MODE_JUGGLE                  64
+#define FX_MODE_PALETTE                 65
+#define FX_MODE_FIRE_2012               66
 #define FX_MODE_COLORWAVES              67
 #define FX_MODE_BPM                     68
 #define FX_MODE_FILLNOISE8              69
@@ -271,7 +271,8 @@ class WS2812FX {
       _segments[0].speed = DEFAULT_SPEED;
       _reverseMode = false;
       _skipFirstMode = false;
-      paletteFade = true;
+      paletteFade = 0;
+      paletteBlend = 0;
       _locked = NULL;
       _cronixieDigits = new byte[6];
       bus = new NeoPixelWrapper();
@@ -316,6 +317,8 @@ class WS2812FX {
       show(void);
 
     uint8_t
+      paletteFade,
+      paletteBlend,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
@@ -331,8 +334,6 @@ class WS2812FX {
     double
       getPowerEstimate(uint16_t leds, uint32_t c, byte b),
       getSafePowerMultiplier(double safeMilliAmps, uint16_t leds, uint32_t c, byte b);
-
-    bool paletteFade;
 
     WS2812FX::Segment
       getSegment(void);

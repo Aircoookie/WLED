@@ -39,7 +39,7 @@
 #include "src/dependencies/e131/E131.h"
 
 //version in format yymmddb (b = daily build)
-#define VERSION 1809084
+#define VERSION 1809103
 char versionString[] = "0.8.0-a";
 
 //AP and OTA default passwords (change them!)

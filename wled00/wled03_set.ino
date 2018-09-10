@@ -184,6 +184,13 @@ void handleSettingsSet(byte subPage)
     }
     nightlightFade = server.hasArg("TW");
     reverseMode = server.hasArg("RV");
+    if (server.hasArg("PB"))
+    {
+      int i = server.arg("PB").toInt();
+      if (i >= 0){
+        strip.paletteBlend = i;
+      }
+    }
     initLedsLast = server.hasArg("EI");
     strip.setReverseMode(reverseMode);
     skipFirstLed = server.hasArg("SL");

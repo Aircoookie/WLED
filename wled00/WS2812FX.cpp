@@ -1918,67 +1918,6 @@ uint16_t WS2812FX::mode_lightning(void)
 }
 
 
-// WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
-// Fire2012 by Mark Kriegsman, July 2012
-// as part of "Five Elements" shown here: http://youtu.be/knWiGsmgycY
-//// 
-// This basic one-dimensional 'fire' simulation works roughly as follows:
-// There's a underlying array of 'heat' cells, that model the temperature
-// at each point along the line.  Every cycle through the simulation, 
-// four steps are performed:
-//  1) All cells cool down a little bit, losing heat to the air
-//  2) The heat from each cell drifts 'up' and diffuses a little
-//  3) Sometimes randomly new 'sparks' of heat are added at the bottom
-//  4) The heat from each cell is rendered as a color into the leds array
-//     The heat-to-color mapping uses a black-body radiation approximation.
-//
-// Temperature is in arbitrary units from 0 (cold black) to 255 (white hot).
-//
-// This simulation scales it self a bit depending on NUM_LEDS; it should look
-// "OK" on anywhere from 20 to 100 LEDs without too much tweaking. 
-//
-// I recommend running this simulation at anywhere from 30-100 frames per second,
-// meaning an interframe delay of about 10-35 milliseconds.
-//
-// Looks best on a high-density LED setup (60+ pixels/meter).
-//
-//
-// There are two main parameters you can play with to control the look and
-// feel of your fire: COOLING (used in step 1 above), and SPARKING (used
-// in step 3 above) (Effect Intensity = Sparking).
-//
-// COOLING: How much does the air cool as it rises?
-// Less cooling = taller flames.  More cooling = shorter flames.
-// Default 50, suggested range 20-100 
-#define COOLING  75
-
-uint16_t WS2812FX::mode_fire_2012(void)
-{
-  // Step 1.  Cool down every cell a little
-  for( int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
-    _locked[i] = qsub8(_locked[i],  random8(0, ((COOLING * 10) / SEGMENT_LENGTH) + 2));
-  }
-
-  // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-  for( int k= SEGMENT.stop; k >= SEGMENT.start + 2; k--) {
-    _locked[k] = (_locked[k - 1] + _locked[k - 2] + _locked[k - 2] ) / 3;
-  }
-  
-  // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-  if( random8() <= SEGMENT.intensity ) {
-    int y = SEGMENT.start + random8(7);
-    if (y <= SEGMENT.stop) _locked[y] = qadd8(_locked[y], random8(160,255) );
-  }
-
-  // Step 4.  Map from heat cells to LED colors
-  for( int j = SEGMENT.start; j <= SEGMENT.stop; j++) {
-    CRGB color = HeatColor(_locked[j]);
-    setPixelColor(j, color.red, color.green, color.blue);
-  }
-  return 10 + (uint16_t)(255 - SEGMENT.speed)/6;
-}
-
-
 // Pride2015
 // Animated, ever-changing rainbows.
 // by Mark Kriegsman: https://gist.github.com/kriegsman/964de772d64c502760e5
@@ -2060,7 +1999,21 @@ void WS2812FX::handle_palette(void)
   
   switch (SEGMENT.palette)
   {
-    case 0: {//periodically replace palette with a random one. Doesn't work with multiple FastLED segments
+    case 0: {//default palette. Differs depending on effect
+      switch (SEGMENT.mode)
+      {
+        case FX_MODE_FIRE_2012  : targetPalette = gGradientPalettes[22]; break;//heat palette
+        case FX_MODE_COLORWAVES : targetPalette = gGradientPalettes[13]; break;//landscape 33
+        case FX_MODE_FILLNOISE8 : targetPalette = OceanColors_p;         break;
+        case FX_MODE_NOISE16_1  : targetPalette = gGradientPalettes[17]; break;//Drywet
+        case FX_MODE_NOISE16_2  : targetPalette = gGradientPalettes[30]; break;//Blue cyan yellow
+        case FX_MODE_NOISE16_3  : targetPalette = gGradientPalettes[22]; break;//heat palette
+        case FX_MODE_NOISE16_4  : targetPalette = gGradientPalettes[13]; break;//landscape 33
+        
+        default: targetPalette = PartyColors_p; break;//palette, bpm
+      }
+      break;}
+    case 1: {//periodically replace palette with a random one. Doesn't work with multiple FastLED segments
       if (!singleSegmentMode)
       {
         targetPalette = PartyColors_p; break; //fallback
@@ -2074,13 +2027,13 @@ void WS2812FX::handle_palette(void)
                         CHSV(random8(), 255, random8(128, 255)));
         _lastPaletteChange = millis();
       } break;}
-    case 1: {//primary color only
+    case 2: {//primary color only
       CRGB prim;
       prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
       prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
       prim.blue  = (SEGMENT.colors[0]       & 0xFF);
       targetPalette = CRGBPalette16(prim); break;}
-    case 2: {//based on primary
+    case 3: {//based on primary
       //considering performance implications
       CRGB prim;
       prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
@@ -2090,10 +2043,10 @@ void WS2812FX::handle_palette(void)
       targetPalette = CRGBPalette16(
                       CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
                       CHSV(prim_hsv.h, max(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
-                      CHSV(prim_hsv.h, prim_hsv.s, max(prim_hsv.h - 50,0)), //darker
+                      CHSV(prim_hsv.h, prim_hsv.s, max(prim_hsv.v - 50,0)), //darker
                       CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v)); //color itself
       break;}
-    case 3: {//primary + secondary
+    case 4: {//primary + secondary
       CRGB prim;
       prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
       prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
@@ -2102,8 +2055,8 @@ void WS2812FX::handle_palette(void)
       sec.red    = (SEGMENT.colors[1] >> 16 & 0xFF);
       sec.green  = (SEGMENT.colors[1] >> 8  & 0xFF);
       sec.blue   = (SEGMENT.colors[1]       & 0xFF);
-      targetPalette = CRGBPalette16(prim,sec,prim); break;}
-    case 4: {//based on primary + secondary
+      targetPalette = CRGBPalette16(sec,prim); break;}
+    case 5: {//based on primary + secondary
       CRGB prim;
       prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
       prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
@@ -2112,35 +2065,28 @@ void WS2812FX::handle_palette(void)
       sec.red    = (SEGMENT.colors[1] >> 16 & 0xFF);
       sec.green  = (SEGMENT.colors[1] >> 8  & 0xFF);
       sec.blue   = (SEGMENT.colors[1]       & 0xFF);
-      CHSV prim_hsv = rgb2hsv_approximate(prim);
-      CHSV sec_hsv  = rgb2hsv_approximate(sec );
-      targetPalette = CRGBPalette16(
-                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
-                      CHSV(prim_hsv.h, max(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
-                      CHSV(sec_hsv.h, sec_hsv.s, max(sec_hsv.v - 50,0)), //darker
-                      CHSV(sec_hsv.h, sec_hsv.s, sec_hsv.v)); //color itself
-      break;}
-    case 5: //Party colors
+      targetPalette = CRGBPalette16(sec,prim,CRGB::White); break;}
+    case 6: //Party colors
       targetPalette = PartyColors_p; break;
-    case 6: //Cloud colors
+    case 7: //Cloud colors
       targetPalette = CloudColors_p; break;
-    case 7: //Lava colors
+    case 8: //Lava colors
       targetPalette = LavaColors_p; break;
-    case 8: //Ocean colors
+    case 9: //Ocean colors
       targetPalette = OceanColors_p; break;
-    case 9: //Forest colors
+    case 10: //Forest colors
       targetPalette = ForestColors_p; break;
-    case 10: //Rainbow colors
+    case 11: //Rainbow colors
       targetPalette = RainbowColors_p; break;
-    case 11: //Rainbow stripe colors
+    case 12: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
     default: //progmem palettes
-      targetPalette = gGradientPalettes[constrain(SEGMENT.palette -12, 0, gGradientPaletteCount -1)];
+      targetPalette = gGradientPalettes[constrain(SEGMENT.palette -13, 0, gGradientPaletteCount -1)];
   }
   
   if (singleSegmentMode && paletteFade) //only blend if just one segment uses FastLED mode
   {
-    nblendPaletteTowardPalette(currentPalette, targetPalette, 42);
+    nblendPaletteTowardPalette(currentPalette, targetPalette, 48);
   } else
   {
     currentPalette = targetPalette;
@@ -2152,15 +2098,81 @@ uint16_t WS2812FX::mode_palette(void)
 {
   handle_palette();
   CRGB fastled_col;
+  bool noWrap = (paletteBlend == 2 || (paletteBlend == 0 && SEGMENT.speed == 0));
   for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++)
   {
-    uint8_t colorIndex = map(i,SEGMENT.start,SEGMENT.stop,0,255) + (SEGMENT_RUNTIME.counter_mode_step >> 6 & 0xFF);
-    fastled_col = ColorFromPalette( currentPalette, colorIndex, 255, LINEARBLEND);
+    uint8_t colorIndex = map(i,SEGMENT.start,SEGMENT.stop,0,255) - (SEGMENT_RUNTIME.counter_mode_step >> 6 & 0xFF);
+    
+    if (noWrap) colorIndex = map(colorIndex, 0, 255, 0, 240); //cut off blend at palette "end"
+    
+    fastled_col = ColorFromPalette( currentPalette, colorIndex, 255, (paletteBlend == 3)? NOBLEND:LINEARBLEND);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
-  SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed;
+  SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed *2;
   if (SEGMENT.speed == 0) SEGMENT_RUNTIME.counter_mode_step = 0;
   return 20;
+}
+
+
+// WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
+// Fire2012 by Mark Kriegsman, July 2012
+// as part of "Five Elements" shown here: http://youtu.be/knWiGsmgycY
+//// 
+// This basic one-dimensional 'fire' simulation works roughly as follows:
+// There's a underlying array of 'heat' cells, that model the temperature
+// at each point along the line.  Every cycle through the simulation, 
+// four steps are performed:
+//  1) All cells cool down a little bit, losing heat to the air
+//  2) The heat from each cell drifts 'up' and diffuses a little
+//  3) Sometimes randomly new 'sparks' of heat are added at the bottom
+//  4) The heat from each cell is rendered as a color into the leds array
+//     The heat-to-color mapping uses a black-body radiation approximation.
+//
+// Temperature is in arbitrary units from 0 (cold black) to 255 (white hot).
+//
+// This simulation scales it self a bit depending on NUM_LEDS; it should look
+// "OK" on anywhere from 20 to 100 LEDs without too much tweaking. 
+//
+// I recommend running this simulation at anywhere from 30-100 frames per second,
+// meaning an interframe delay of about 10-35 milliseconds.
+//
+// Looks best on a high-density LED setup (60+ pixels/meter).
+//
+//
+// There are two main parameters you can play with to control the look and
+// feel of your fire: COOLING (used in step 1 above), and SPARKING (used
+// in step 3 above) (Effect Intensity = Sparking).
+//
+// COOLING: How much does the air cool as it rises?
+// Less cooling = taller flames.  More cooling = shorter flames.
+// Default 50, suggested range 20-100 
+#define COOLING  75
+
+uint16_t WS2812FX::mode_fire_2012(void)
+{
+  handle_palette();
+  // Step 1.  Cool down every cell a little
+  for( int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+    _locked[i] = qsub8(_locked[i],  random8(0, ((COOLING * 10) / SEGMENT_LENGTH) + 2));
+  }
+
+  // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+  for( int k= SEGMENT.stop; k >= SEGMENT.start + 2; k--) {
+    _locked[k] = (_locked[k - 1] + _locked[k - 2] + _locked[k - 2] ) / 3;
+  }
+  
+  // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+  if( random8() <= SEGMENT.intensity ) {
+    int y = SEGMENT.start + random8(7);
+    if (y <= SEGMENT.stop) _locked[y] = qadd8(_locked[y], random8(160,255) );
+  }
+
+  // Step 4.  Map from heat cells to LED colors
+  for( int j = SEGMENT.start; j <= SEGMENT.stop; j++) {
+    CRGB color = ColorFromPalette( currentPalette, min(_locked[j],240), 255, LINEARBLEND);
+    setPixelColor(j, color.red, color.green, color.blue);
+  }
+  return 10 + (uint16_t)(255 - SEGMENT.speed)/6;
 }
 
 
@@ -2229,7 +2241,7 @@ uint16_t WS2812FX::mode_bpm(void)
   handle_palette();
   CRGB fastled_col;
   uint8_t beat = beatsin8(SEGMENT.speed, 64, 255);
-  for ( int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
     fastled_col = ColorFromPalette(currentPalette, SEGMENT_RUNTIME.counter_mode_step + (i * 2), beat - SEGMENT_RUNTIME.counter_mode_step + (i * 10));
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
@@ -2244,12 +2256,12 @@ uint16_t WS2812FX::mode_fillnoise8(void)
   if (SEGMENT_RUNTIME.counter_mode_call == 0) SEGMENT_RUNTIME.counter_mode_step = random(12345);
   handle_palette();
   CRGB fastled_col;
-  for (int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
     uint8_t index = inoise8(i * SEGMENT_LENGTH, SEGMENT_RUNTIME.counter_mode_step + i * SEGMENT_LENGTH) % 255;
     fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
-  SEGMENT_RUNTIME.counter_mode_step += beatsin8(SEGMENT.speed, 1, 4); //10,1,4
+  SEGMENT_RUNTIME.counter_mode_step += beatsin8(SEGMENT.speed, 1, 6); //10,1,4
 
   return 20;
 }
@@ -2261,7 +2273,7 @@ uint16_t WS2812FX::mode_noise16_1(void)
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += (1 + SEGMENT.speed/16);
 
-  for (int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
 
     uint16_t shift_x = beatsin8(11);                           // the x position of the noise field swings @ 17 bpm
     uint16_t shift_y = SEGMENT_RUNTIME.counter_mode_step/42;             // the y position becomes slowly incremented
@@ -2290,7 +2302,7 @@ uint16_t WS2812FX::mode_noise16_2(void)
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += (1 + SEGMENT.speed);
 
-  for (int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
 
     uint16_t shift_x = SEGMENT_RUNTIME.counter_mode_step >> 6;                         // x as a function of time
     uint16_t shift_y = SEGMENT_RUNTIME.counter_mode_step/42;
@@ -2318,7 +2330,7 @@ uint16_t WS2812FX::mode_noise16_3(void)
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += (1 + SEGMENT.speed);
 
-  for (int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
 
     uint16_t shift_x = 4223;                                  // no movement along x and y
     uint16_t shift_y = 1234;
@@ -2345,7 +2357,7 @@ uint16_t WS2812FX::mode_noise16_4(void)
   handle_palette();
   CRGB fastled_col;
   SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed;
-  for (int i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
     int16_t index = inoise16(uint32_t(i - SEGMENT.start) << 12, SEGMENT_RUNTIME.counter_mode_step/8);
     fastled_col = ColorFromPalette(currentPalette, index);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);

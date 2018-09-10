@@ -86,7 +86,10 @@ const char PAGE_settings_leds1[] PROGMEM = R"=====(
 <h2>LED setup</h2>
 LED count: <input name="LC" type="number" min="1" max="1200" required><br>
 LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW"><br>
+<br>
 Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)<br>
+Turn on after power up/reset: <input type="checkbox" name="BO"><br>
+<br>
 Default RGB color:
 <input name="CR" type="number" min="0" max="255" required>
 <input name="CG" type="number" min="0" max="255" required>
@@ -105,12 +108,12 @@ Default secondary RGB(W):<br>
 <input name="SW" type="number" min="0" max="255" required><br>
 Ignore and use current color, brightness and effects: <input type="checkbox" name="IS"><br>
 Save current preset cycle configuration as boot default: <input type="checkbox" name="PC"><br>
-Turn on after power up/reset: <input type="checkbox" name="BO"><br>
-Use Gamma correction for brightness: <input type="checkbox" name="GB"><br>
-Use Gamma correction for color: <input type="checkbox" name="GC"><br>
+<br>
+Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
+Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br>
 Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
-Fade: <input type="checkbox" name="TF"><br>
+Crossfade: <input type="checkbox" name="TF"><br>
 Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
 Enable transition for secondary color: <input type="checkbox" name="T2"><br>
 Enable Palette transitions: <input type="checkbox" name="PF">
@@ -119,6 +122,13 @@ Default Duration: <input name="TL" type="number" min="1" max="255" required> min
 Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
 Fade down: <input type="checkbox" name="TW"><br>
 <h3>Advanced</h3>
+Palette blending:
+<select name="PB">
+<option value="0">Linear (wrap if moving)</option>
+<option value="1">Linear (always wrap)</option>
+<option value="2">Linear (never wrap)</option>
+<option value="3">None (not recommended)</option>
+</select><br>
 Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
 Init LEDs after WiFi: <input type="checkbox" name="EI"><br>
 Skip first LED: <input type="checkbox" name="SL"><hr>

@@ -58,6 +58,7 @@
 								uwv = false;
 							}
 							Cf.TX.selectedIndex = this.responseXML.getElementsByTagName('fx')[0].childNodes[0].nodeValue;
+							Cf.FP.selectedIndex = this.responseXML.getElementsByTagName('fp')[0].childNodes[0].nodeValue;
 							d.Cf.SX.value = this.responseXML.getElementsByTagName('sx')[0].childNodes[0].nodeValue;
 							d.Cf.IX.value = this.responseXML.getElementsByTagName('ix')[0].childNodes[0].nodeValue;
 							nla = (this.responseXML.getElementsByTagName('nl')[0].innerHTML)!=0?true:false;
@@ -171,8 +172,8 @@
 				case 3: gId("path1").style.fill = aC; gId("path2").style.fill = aC;
 			}
 			tgb.style.fill=(Cf.SA.value>0)?aC:dC;
-			fpX.style.display=(Cf.TX.selectedIndex>65)?"block":"none";
-			fof.style.fill=(Cf.TX.selectedIndex>65)?aC:dC;
+			fpX.style.display=(Cf.TX.selectedIndex>64)?"block":"none";
+			fof.style.fill=(Cf.TX.selectedIndex>64)?aC:dC;
 			fmr.style.fill=(Cf.TX.selectedIndex<1)?aC:dC;
 		}
 		function TgT()
@@ -194,7 +195,7 @@
 			if (n==-1||n==74) return;
 			Cf.TX.selectedIndex =n;
 			if (n < 0) Cf.TX.selectedIndex = 0;
-			if (n > 73) Cf.TX.selectedIndex = 66;
+			if (n > 73) Cf.TX.selectedIndex = 65;
 			GX();
 		}
 		function TgHSB()
@@ -648,10 +649,10 @@
 				<option value="60">Scanner x2 (60)</option>
 				<option value="61">Random Chase (61)</option>
 				<option value="62">Oscillate (62)</option>
-				<option value="63">Fire 2012 (63)</option>
-				<option value="64">Pride 2015 (64)</option>
-				<option value="65">Juggle (65)</option>
-				<option value="66">Palette (66)</option>
+				<option value="63">Pride 2015 (63)</option>
+				<option value="64">Juggle (64)</option>
+				<option value="65">Palette (65)</option>
+				<option value="66">Fire 2012 (66)</option>
 				<option value="67">Colorwaves (67)</option>
 				<option value="68">BPM (68)</option>
 				<option value="69">Fill Noise 8 (69)</option>
@@ -670,18 +671,51 @@
 				<div id="fpX">
 				<br>FastLED Palette<br><br>
 				<select name="FP" onchange="GP()">
-					<option value="0" selected>Random Cycle</option>
-					<option value="1">Primary Color Only</option>
-					<option value="2">Based on Primary</option>
-					<option value="3">Set Colors Only</option>
-					<option value="4">Based on Set Colors</option>
-					<option value="5">Party Colors</option>
-					<option value="6">Cloud Colors</option>
-					<option value="7">Lava Colors</option>
-					<option value="8">Ocean Colors</option>
-					<option value="9">Forest Colors</option>
-					<option value="10">Rainbow</option>
-					<option value="11">Rainbow Stripe</option>
+					<option value="0" selected>Default</option>
+					<option value="1">Random Cycle</option>
+					<option value="2">Primary Color Only</option>
+					<option value="3">Based on Primary</option>
+					<option value="4">Set Colors Only</option>
+					<option value="5">Based on Set Colors</option>
+					<option value="6">Party</option>
+					<option value="7">Cloud</option>
+					<option value="8">Lava</option>
+					<option value="9">Ocean</option>
+					<option value="10">Forest</option>
+					<option value="11">Rainbow</option>
+					<option value="12">Rainbow Stripe</option>
+					<option value="13">Sunset</option>
+					<option value="14">Rivendell</option>
+					<option value="15">Breeze</option>
+					<option value="16">Red & Blue</option>
+					<option value="17">Yellowout</option>
+					<option value="18">Analogous</option>
+					<option value="19">Splash</option>
+					<option value="20">Pastel</option>
+					<option value="21">Sunset2</option>
+					<option value="22">Beech</option>
+					<option value="23">Vintage</option>
+					<option value="24">Departure</option>
+					<option value="25">Landscape</option>
+					<option value="26">Beach</option>
+					<option value="27">Sherbet</option>
+					<option value="28">Hult</option>
+					<option value="29">Hult64</option>
+					<option value="30">Drywet</option>
+					<option value="31">Jul</option>
+					<option value="32">Grintage</option>
+					<option value="33">Rewhi</option>
+					<option value="34">Tertiary</option>
+					<option value="35">Fire</option>
+					<option value="36">Icefire</option>
+					<option value="37">Cyane</option>
+					<option value="38">Light Pink</option>
+					<option value="39">Autumn</option>
+					<option value="40">Magenta</option>
+					<option value="41">Magred</option>
+					<option value="42">Yelmag</option>
+					<option value="43">Yelblu</option>
+					<option value="44">Orange & Teal</option>
 				</select>
 				</div>
 				<div id="slX" class="sl">

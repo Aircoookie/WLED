@@ -198,6 +198,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('v',"TB",nightlightTargetBri);
     sappend('v',"TL",nightlightDelayMins);
     sappend('c',"TW",nightlightFade);
+    sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",reverseMode);
     sappend('c',"EI",initLedsLast);
     sappend('c',"SL",skipFirstLed);
