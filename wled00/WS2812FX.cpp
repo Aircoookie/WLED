@@ -1835,7 +1835,7 @@ uint16_t WS2812FX::mode_random_chase(void)
   int b = random(6) != 0 ? (color       & 0xFF) : random(256);
   setPixelColor(SEGMENT.start, r, g, b);
 
-  return 15 + (15 * (uint32_t)(255 - SEGMENT.speed));
+  return 15 + 2*(uint16_t)(255 - SEGMENT.speed);
 }
 
 typedef struct Oscillator {

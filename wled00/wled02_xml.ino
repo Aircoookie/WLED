@@ -193,7 +193,7 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"TF",fadeTransition);
     sappend('v',"TD",transitionDelay);
     sappend('c',"PF",strip.paletteFade);
-    sappend('c',"T2",!disableSecTransition);
+    sappend('c',"T2",enableSecTransition);
     sappend('v',"BF",briMultiplier);
     sappend('v',"TB",nightlightTargetBri);
     sappend('v',"TL",nightlightDelayMins);
@@ -233,14 +233,14 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"RD",receiveDirect);
     sappend('c',"EM",e131Multicast);
     sappend('v',"EU",e131Universe);
-    sappend('v',"ET",arlsTimeoutMillis);
+    sappend('v',"ET",realtimeTimeoutMs);
     sappend('c',"FB",arlsForceMaxBri);
     sappend('c',"RG",arlsDisableGammaCorrection);
     sappend('v',"WO",arlsOffset);
     sappend('c',"RU",enableRealtimeUI);
     sappend('c',"AL",alexaEnabled);
     sappends('s',"AI",alexaInvocationName);
-    sappend('c',"SA",alexaNotify);
+    sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
     sappend('v',"H0",hueIP[0]);
     sappend('v',"H1",hueIP[1]);

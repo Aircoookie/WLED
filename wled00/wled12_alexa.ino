@@ -47,7 +47,7 @@ void alexaOn()
 {
   if (macroAlexaOn == 0)
   {
-    handleSet((alexaNotify)?"win&T=1&IN":"win&T=1&NN&IN");
+    handleSet((notifyAlexa)?"win&T=1&IN":"win&T=1&NN&IN");
   } else
   {
     applyMacro(macroAlexaOn);
@@ -60,7 +60,7 @@ void alexaOff()
 {
   if (macroAlexaOff == 0)
   {
-    handleSet((alexaNotify)?"win&T=0&IN":"win&T=0&NN&IN");
+    handleSet((notifyAlexa)?"win&T=0&IN":"win&T=0&NN&IN");
   } else
   {
     applyMacro(macroAlexaOff);
@@ -78,7 +78,7 @@ void alexaDim(byte briL)
 
   server.send(200, "application/json", obuf);
   
-  String ct = (alexaNotify)?"win&IN&A=":"win&NN&IN&A=";
+  String ct = (notifyAlexa)?"win&IN&A=":"win&NN&IN&A=";
   if (briL < 255)
   {
     ct = ct + (briL+1);

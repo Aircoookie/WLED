@@ -52,7 +52,7 @@ void wledInit()
   //start captive portal
   if (onlyAP || strlen(apSSID) > 0)
   {
-    dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+    //dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
     dnsActive = true;
   }
@@ -260,9 +260,11 @@ void wledInit()
     MDNS.addService("http", "tcp", 80);
   }
 
-  initBlynk(blynkApiKey);
-  
-  initE131();
+  if (!onlyAP)
+  {
+     initBlynk(blynkApiKey);
+     initE131();
+  }
 
   if (initLedsLast) initStrip();
   userBegin();
@@ -428,7 +430,7 @@ void serveIndex()
   if (uiConfiguration == 0) serveMobile = checkClientIsMobile(server.header("User-Agent"));
   else if (uiConfiguration == 2) serveMobile = true;
 
-  if (!arlsTimeout || enableRealtimeUI) //do not serve while receiving realtime
+  if (!realtimeActive || enableRealtimeUI) //do not serve while receiving realtime
   {
     if (serveMobile)
     {
@@ -484,7 +486,7 @@ void serveMessage(int code, String headl, String subl="", int optionType)
 void serveSettings(byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 255: welcomepage
-  if (!arlsTimeout || enableRealtimeUI) //do not serve while receiving realtime
+  if (!realtimeActive || enableRealtimeUI) //do not serve while receiving realtime
     {
       int pl0, pl1;
       switch (subPage)

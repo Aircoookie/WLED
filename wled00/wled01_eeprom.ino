@@ -113,7 +113,7 @@ void saveSettingsToEEPROM()
   {
     EEPROM.write(i, alexaInvocationName[i-334]);
   }
-  EEPROM.write(366, alexaNotify);
+  EEPROM.write(366, notifyAlexa);
   EEPROM.write(367, (arlsOffset>=0));
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
@@ -141,7 +141,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
   EEPROM.write(397, initLedsLast);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
-  EEPROM.write(399, disableSecTransition);
+  EEPROM.write(399, !enableSecTransition);
 
   for (int k=0;k<6;k++){
     int in = 900+k*8;
@@ -206,8 +206,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(2190, (e131Universe >> 0) & 0xFF);
   EEPROM.write(2191, (e131Universe >> 8) & 0xFF);
   EEPROM.write(2192, e131Multicast);
-  EEPROM.write(2193, (arlsTimeoutMillis >> 0) & 0xFF);
-  EEPROM.write(2194, (arlsTimeoutMillis >> 8) & 0xFF);
+  EEPROM.write(2193, (realtimeTimeoutMs >> 0) & 0xFF);
+  EEPROM.write(2194, (realtimeTimeoutMs >> 8) & 0xFF);
   EEPROM.write(2195, arlsForceMaxBri);
   EEPROM.write(2196, arlsDisableGammaCorrection);
 
@@ -349,7 +349,7 @@ void loadSettingsFromEEPROM(bool first)
     alexaInvocationName[i-334] = EEPROM.read(i);
     if (alexaInvocationName[i-334] == 0) break;
   }
-  alexaNotify = EEPROM.read(366);
+  notifyAlexa = EEPROM.read(366);
   arlsOffset = EEPROM.read(368);
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
@@ -441,7 +441,7 @@ void loadSettingsFromEEPROM(bool first)
   {
     e131Universe = ((EEPROM.read(2190) << 0) & 0xFF) + ((EEPROM.read(2191) << 8) & 0xFF00);
     e131Multicast = EEPROM.read(2192);
-    arlsTimeoutMillis = ((EEPROM.read(2193) << 0) & 0xFF) + ((EEPROM.read(2194) << 8) & 0xFF00);
+    realtimeTimeoutMs = ((EEPROM.read(2193) << 0) & 0xFF) + ((EEPROM.read(2194) << 8) & 0xFF00);
     arlsForceMaxBri = EEPROM.read(2195);
     arlsDisableGammaCorrection = EEPROM.read(2196);
   }
@@ -486,7 +486,7 @@ void loadSettingsFromEEPROM(bool first)
   utcOffsetSecs = ((EEPROM.read(394) << 0) & 0xFF) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
   initLedsLast = EEPROM.read(397);
-  disableSecTransition = EEPROM.read(399);
+  enableSecTransition = !EEPROM.read(399);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved
@@ -594,7 +594,7 @@ void applyMacro(byte index)
   String mc="win&";
   mc += loadMacro(index+1);
   mc += "&IN"; //internal, no XML response
-  if (!macroNotify) mc += "&NN";
+  if (!notifyMacro) mc += "&NN";
   String forbidden = "&M="; //dont apply if called by the macro itself to prevent loop
   /*
    * NOTE: loop is still possible if you call a different macro from a macro, which then calls the first macro again. 

@@ -3,7 +3,7 @@
  */
 
 void setAllLeds() {
-  if (!arlsTimeout || !arlsForceMaxBri)
+  if (!realtimeActive || !arlsForceMaxBri)
   {
     double d = briT*briMultiplier;
     int val = d/100;
@@ -15,7 +15,7 @@ void setAllLeds() {
       strip.setBrightness(val);
     }
   }
-  if (disableSecTransition)
+  if (!enableSecTransition)
   {
     for (byte i = 0; i<3; i++)
     {
@@ -152,7 +152,6 @@ void handleTransitions()
       whiteSecT = whiteSecOld +((whiteSec  - whiteSecOld )*tper);
       briT    = briOld   +((bri    - briOld   )*tper);
     }
-    //TODO: properly remove sweep transition
     if (fadeTransition) setAllLeds();
   }
 }

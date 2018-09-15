@@ -1,5 +1,5 @@
 /*
- * Main sketch
+ * Main sketch, global variable declarations
  */
 /*
  * @title WLED project sketch
@@ -10,7 +10,10 @@
 //ESP8266-01 got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
 //Uncomment the following line to disable some features (currently Mobile UI) to compile for ESP8266-01
 //#define WLED_FLASH_512K_MODE
+//NOT SUPPORTED IN CURRENT VERSION
 
+
+//library inclusions
 #include <Arduino.h>
 #ifdef ARDUINO_ARCH_ESP32
 #include <WiFi.h>
@@ -23,6 +26,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPClient.h>
 #endif
+
 #include <EEPROM.h>
 #include <ArduinoOTA.h>
 #include <WiFiUDP.h>
@@ -38,141 +42,234 @@
 #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #include "src/dependencies/e131/E131.h"
 
-//version in format yymmddb (b = daily build)
-#define VERSION 1809103
+
+//version code in format yymmddb (b = daily build)
+#define VERSION 1809151
 char versionString[] = "0.8.0-a";
 
-//AP and OTA default passwords (change them!)
+
+//AP and OTA default passwords (for maximum change them!)
 char apPass[65] = "wled1234";
 char otaPass[33] = "wledota";
+
 
 //spiffs FS only useful for debug (only ESP8266)
 //#define USEFS
 
+
 //to toggle usb serial debug (un)comment following line(s)
-//#define DEBUG
+#define DEBUG
 
-//Hardware-settings (only changeble via code)
-//strip pin changeable in NpbWrapper.h. Only change for ESP32
-byte buttonPin = 0; //needs pull-up
-byte auxPin = 15; //use e.g. for external relay
-byte auxDefaultState = 0; //0: input 1: high 2: low
-byte auxTriggeredState = 0; //0: input 1: high 2: low
 
-//Default CONFIG
-char serverDescription[33] = "WLED Light";
-byte currentTheme = 0;
-byte uiConfiguration = 0; //0: auto 1: classic 2: mobile
+//Hardware CONFIG (only changeble HERE, not at runtime)
+//LED strip pin changeable in NpbWrapper.h. Only change for ESP32
+byte buttonPin = 0;                           //needs pull-up
+byte auxPin = 15;                             //debug feature, use e.g. for external relay with API call AX=
+byte auxDefaultState   = 0;                   //0: input 1: high 2: low
+byte auxTriggeredState = 0;                   //0: input 1: high 2: low
+char ntpServerName[] = "0.wled.pool.ntp.org"; //NTP server to use
+
+
+//WiFi CONFIG (all these can be changed via web UI, no need to set them here)
 char clientSSID[33] = "Your_Network";
 char clientPass[65] = "";
-char cmDNS[33] = "led";
-uint16_t ledCount = 10; //lowered to prevent accidental overcurrent
-char apSSID[65] = ""; //AP off by default (unless setup)
-byte apChannel = 1;
-byte apHide = 0;
-byte apWaitTimeSecs = 32;
-bool recoveryAPDisabled = false;
-IPAddress staticIP(0, 0, 0, 0);
-IPAddress staticGateway(0, 0, 0, 0);
-IPAddress staticSubnet(255, 255, 255, 0);
-IPAddress staticDNS(8, 8, 8, 8); //only for NTP
-bool useHSB = true, useHSBDefault = true, useRGBW = false, autoRGBtoRGBW = false;
-bool turnOnAtBoot = true;
-bool initLedsLast = false, skipFirstLed = false;
-byte bootPreset = 0;
-byte colS[]{255, 159, 0};
-byte colSecS[]{0, 0, 0};
-byte whiteS = 0;
-byte whiteSecS = 0;
-byte briS = 127;
-byte nightlightTargetBri = 0;
-bool fadeTransition = true;
-bool disableSecTransition = true;
-uint16_t transitionDelay = 1200, transitionDelayDefault = transitionDelay;
-bool reverseMode = false;
-bool otaLock = false, wifiLock = false;
-bool aOtaEnabled = true;
-bool buttonEnabled = true;
-bool notifyDirect = true, notifyButton = true, notifyDirectDefault = true, alexaNotify = false, macroNotify = false, notifyTwice = false;
-bool receiveNotifications = true, receiveNotificationBrightness = true, receiveNotificationColor = true, receiveNotificationEffects = true;
-byte briMultiplier = 100;
-byte nightlightDelayMins = 60;
-bool nightlightFade = true;
-uint16_t udpPort = 21324, udpRgbPort = 19446;
-byte effectDefault = 0;
+char cmDNS[33] = "led";                       //mDNS address (x.local), only for Apple and Windows, if Bonjour installed
+char apSSID[65] = "";                         //AP off by default (unless setup)
+byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
+byte apHide = 0;                              //hidden AP SSID
+byte apWaitTimeSecs = 32;                     //time to wait for connection before opening AP
+bool recoveryAPDisabled = false;              //never open AP (not recommended)
+IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
+IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
+IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home networks
+IPAddress staticDNS(8, 8, 8, 8);              //only for NTP, google DNS server
+
+
+//LED CONFIG
+uint16_t ledCount = 10;                       //lowered to prevent accidental overcurrent                      
+bool useRGBW = false;                         //SK6812 strips can contain an extra White channel
+bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White channel from RGB
+bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
+byte bootPreset = 0;                          //save preset to load after power-up
+
+byte colS[]{255, 159, 0};                     //default RGB color
+byte colSecS[]{0, 0, 0};                      //default RGB secondary color
+byte whiteS = 0;                              //default White channel
+byte whiteSecS = 0;                           //default secondary White channel
+byte briS = 127;                              //default brightness
+byte effectDefault = 0;                   
 byte effectSpeedDefault = 75;
-byte effectIntensityDefault = 128;
-byte effectPaletteDefault = 0;
-//NTP stuff
-bool ntpEnabled = false;
-char ntpServerName[] = "0.wled.pool.ntp.org";
+byte effectIntensityDefault = 128;            //intensity is supported on some effects as an additional parameter (e.g. for blink you can change the duty cycle)
+byte effectPaletteDefault = 0;                //palette is supported on the FastLED effects, otherwise it has no effect
 
-//alexa
-bool alexaEnabled = true;
-char alexaInvocationName[33] = "Light";
+bool useGammaCorrectionBri = false;           //gamma correct brightness (not recommended)
+bool useGammaCorrectionRGB = true;            //gamma correct colors (strongly recommended)
 
-byte macroBoot = 0, macroNl = 0;
+byte nightlightTargetBri = 0;                 //brightness after nightlight is over
+byte nightlightDelayMins = 60;
+bool nightlightFade = true;                   //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
+bool fadeTransition = true;                   //enable crossfading color transition
+bool enableSecTransition = true;              //also enable transition for secondary color
+uint16_t transitionDelay = 1200;              //default crossfade duration in ms
+
+bool reverseMode  = false;                    //flip entire LED strip (reverses all effect directions)
+bool initLedsLast = false;                    //turn on LEDs only after WiFi connected/AP open
+bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
+byte briMultiplier =  100;                    //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
+
+
+//User Interface CONFIG
+char serverDescription[33] = "WLED Light";    //Name of module
+byte currentTheme = 0;                        //UI theme index for settings and classic UI
+byte uiConfiguration = 0;                     //0: automatic (depends on user-agent) 1: classic UI 2: mobile UI
+bool useHSB = true;                           //classic UI: use HSB sliders instead of RGB by default
+char cssFont[33] = "Verdana";                 //font to use in classic UI
+
+bool useHSBDefault = useHSB;
+
+
+//Sync CONFIG
+bool buttonEnabled = true;
+
+uint16_t udpPort    = 21324;                  //WLED notifier default port
+uint16_t udpRgbPort = 19446;                  //Hyperion port
+
+bool receiveNotificationBrightness = true;    //apply brightness from incoming notifications
+bool receiveNotificationColor      = true;    //apply color
+bool receiveNotificationEffects    = true;    //apply effects setup
+bool notifyDirect =  true;                    //send notification if change via UI or HTTP API
+bool notifyButton =  true;                     
+bool notifyAlexa  = false;                    //send notification if updated via Alexa
+bool notifyMacro  = false;                    //send notification for macro
+bool notifyHue    =  true;                    //send notification if Hue light changes
+bool notifyTwice  = false;                    //notifications use UDP: enable if devices don't sync reliably
+
+bool alexaEnabled = true;                     //enable device discovery by Amazon Echo
+char alexaInvocationName[33] = "Light";       //speech control name of device. Choose something voice-to-text can understand
+
+char blynkApiKey[36] = "";                    //Auth token for Blynk server. If empty, no connection will be made
+
+uint16_t realtimeTimeoutMs = 2500;            //ms timeout of realtime mode before returning to normal mode
+int  arlsOffset = 0;                          //realtime LED offset
+bool receiveDirect    =  true;                //receive UDP realtime
+bool enableRealtimeUI = false;                //web UI accessible during realtime mode (works on ESP32, lags out ESP8266)
+bool arlsDisableGammaCorrection = true;       //activate if gamma correction is handled by the source
+bool arlsForceMaxBri = false;                 //enable to force max brightness if source has very dark colors that would be black
+
+bool e131Enabled = true;                      //settings for E1.31 (sACN) protocol
+byte e131Universe = 1;
+bool e131Multicast = false;
+
+bool huePollingEnabled = false;               //poll hue bridge for light state
+uint16_t huePollIntervalMs = 2500;            //low values (< 1sec) may cause lag but offer quicker response
+char hueApiKey[65] = "api";                   //key token will be obtained from bridge
+byte huePollLightId = 1;                      //ID of hue lamp to sync to. Find the ID in the hue app ("about" section)
+IPAddress hueIP = (0,0,0,0);                  //IP address of the bridge
+bool hueApplyOnOff = true;
+bool hueApplyBri   = true;
+bool hueApplyColor = true;
+
+
+//Time CONFIG
+bool ntpEnabled = false;                      //get internet time. Only required if you use clock overlays or time-activated macros
+bool useAMPM = false;                         //12h/24h clock format
+byte currentTimezone = 0;                     //Timezone ID. Refer to timezones array in wled10_ntp.ino
+int  utcOffsetSecs   = 0;                     //Seconds to offset from UTC before timzone calculation
+
+byte overlayDefault = 0;                      //0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
+byte overlayMin = 0, overlayMax = ledCount-1; //boundaries of overlay mode
+
+byte analogClock12pixel = 0;                  //The pixel in your strip where "midnight" would be
+bool analogClockSecondsTrail = false;         //Display seconds as trail of LEDs instead of a single pixel
+bool analogClock5MinuteMarks = false;         //Light pixels at every 5-minute position
+
+char cronixieDisplay[] = "HHMMSS";            //Cronixie Display mask. See wled13_cronixie.ino
+bool cronixieBacklight = true;                //Allow digits to be back-illuminated
+
+bool countdownMode = false;                   //Clock will count down towards date
+byte countdownYear = 19, countdownMonth = 1;  //Countdown target date, year is last two digits
+byte countdownDay  =  1, countdownHour  = 0;
+byte countdownMin  =  0, countdownSec   = 0;
+
+
+byte macroBoot = 0;                           //macro loaded after startup
+byte macroNl = 0;                             //after nightlight delay over
+byte macroCountdown = 0;                      
 byte macroAlexaOn = 0, macroAlexaOff = 0;
-byte macroButton = 0, macroCountdown = 0, macroLongPress = 0;
+byte macroButton = 0, macroLongPress = 0;
 
-unsigned long countdownTime = 1514764800L;
 
-//hue
-bool huePollingEnabled = false, hueAttempt = false;
-uint16_t huePollIntervalMs = 2500;
-char hueApiKey[65] = "api";
-byte huePollLightId = 1;
-IPAddress hueIP = (0,0,0,0);
-bool notifyHue = true;
-bool hueApplyOnOff = true, hueApplyBri = true, hueApplyColor = true;
+//Security CONFIG
+bool otaLock = false;                         //prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
+bool wifiLock = false;                        //prevents access to WiFi settings when OTA lock is enabled
+bool aOtaEnabled = true;                      //ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
+
 
 uint16_t userVar0 = 0, userVar1 = 0;
 
-//Internal vars
-byte col[]{255, 159, 0};
-byte colOld[]{0, 0, 0};
-byte colT[]{0, 0, 0};
-byte colIT[]{0, 0, 0};
+
+
+//internal global variable declarations
+//color
+byte col[]{255, 159, 0};                      //target RGB color
+byte colOld[]{0, 0, 0};                       //color before transition
+byte colT[]{0, 0, 0};                         //current color
+byte colIT[]{0, 0, 0};                        //color that was last sent to LEDs
 byte colSec[]{0, 0, 0};
 byte colSecT[]{0, 0, 0};
 byte colSecOld[]{0, 0, 0};
 byte colSecIT[]{0, 0, 0};
-byte white = 0, whiteOld, whiteT, whiteIT;
-byte whiteSec = 0, whiteSecOld, whiteSecT, whiteSecIT;
-byte lastRandomIndex = 0;
+byte white = whiteS, whiteOld, whiteT, whiteIT;
+byte whiteSec = whiteSecS, whiteSecOld, whiteSecT, whiteSecIT;
+
+byte lastRandomIndex = 0;                     //used to save last random color so the new one is not the same
+
+//transitions
+bool transitionActive = false;
+uint16_t transitionDelayDefault = transitionDelay;
 uint16_t transitionDelayTemp = transitionDelay;
 unsigned long transitionStartTime;
-unsigned long nightlightStartTime;
-float tperLast = 0;
-byte bri = 127;
-byte briOld = 0;
-byte briT = 0;
-byte briIT = 0;
-byte briLast = 127;
-bool transitionActive = false;
-bool buttonPressedBefore = false;
-unsigned long buttonPressedTime = 0;
-unsigned long notificationSentTime = 0;
-byte notificationSentCallMode = 0;
-bool notificationTwoRequired = false;
+float tperLast = 0;                           //crossfade transition progress, 0.0f - 1.0f
+
+//nightlight
 bool nightlightActive = false;
 bool nightlightActiveOld = false;
 uint32_t nightlightDelayMs = 10;
-byte briNlT = 0;
-byte effectCurrent = 0;
-byte effectSpeed = 75;
-byte effectIntensity = 128;
-byte effectPalette = 0;
-bool onlyAP = false;
+unsigned long nightlightStartTime;
+byte briNlT = 0;                              //current nightlight brightness
+
+//brightness
+byte bri = briS;
+byte briOld = 0;
+byte briT = 0;
+byte briIT = 0;
+byte briLast = 127;                           //brightness before turned off. Used for toggle function
+
+//button
+bool buttonPressedBefore = false;
+unsigned long buttonPressedTime = 0;
+
+//notifications
+bool notifyDirectDefault = notifyDirect;
+bool receiveNotifications = true;
+unsigned long notificationSentTime = 0;
+byte notificationSentCallMode = 0;
+bool notificationTwoRequired = false;
+
+//effects
+byte effectCurrent = effectDefault;
+byte effectSpeed = effectSpeedDefault;
+byte effectIntensity = effectIntensityDefault;
+byte effectPalette = effectPaletteDefault;
+
+//network
+bool onlyAP = false;                          //only Access Point active, no connection to home network
 bool udpConnected = false, udpRgbConnected = false;
+
+//ui style
 char cssCol[9][5]={"","","","","",""};
-char cssFont[33]="Verdana";
 String cssColorString="";
-//NTP stuff
-bool ntpConnected = false;
-byte currentTimezone = 0;
-time_t local = 0;
-int utcOffsetSecs = 0;
+bool showWelcomePage = false;
 
 //hue
 char hueError[25] = "Inactive";
@@ -180,25 +277,12 @@ uint16_t hueFailCount = 0;
 float hueXLast=0, hueYLast=0;
 uint16_t hueHueLast=0, hueCtLast=0;
 byte hueSatLast=0, hueBriLast=0;
-long hueLastRequestSent = 0;
-uint32_t huePollIntervalMsTemp = huePollIntervalMs;
+unsigned long hueLastRequestSent = 0;
+unsigned long huePollIntervalMsTemp = huePollIntervalMs;
+bool hueAttempt = false;
 
-//blynk
-char blynkApiKey[36] = "";
-bool blynkEnabled = false;
-
-//e1.31
-bool e131Enabled = true;
-byte e131Universe = 1;
-bool e131Multicast = false;
-
-//overlay stuff
-byte overlayDefault = 0;
-byte overlayCurrent = 0;
-byte overlayMin = 0, overlayMax = ledCount-1;
-byte analogClock12pixel = 0;
-bool analogClockSecondsTrail = false;
-bool analogClock5MinuteMarks = false;
+//overlays
+byte overlayCurrent = overlayDefault;
 byte overlaySpeed = 200;
 unsigned long overlayRefreshMs = 200;
 unsigned long overlayRefreshedTime;
@@ -206,37 +290,36 @@ int overlayArr[6];
 uint16_t overlayDur[6];
 uint16_t overlayPauseDur[6];
 int nixieClockI = -1;
-bool nixiePause;
-byte countdownYear=19, countdownMonth=1, countdownDay=1, countdownHour=0, countdownMin=0, countdownSec=0; //year is actual year -2000
-bool countdownOverTriggered = true;
+bool nixiePause = false;
+
 //cronixie
-char cronixieDisplay[] = "HHMMSS";
 byte dP[]{0,0,0,0,0,0};
-bool useAMPM = false;
-bool cronixieBacklight = true;
-bool countdownMode = false;
 bool cronixieInit = false;
 
+//countdown
+unsigned long countdownTime = 1514764800L;
+bool countdownOverTriggered = true;
+
+//blynk
+bool blynkEnabled = false;
+
+//preset cycling
 bool presetCyclingEnabled = false;
 byte presetCycleMin = 1, presetCycleMax = 5;
 uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
 bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
 bool saveCurrPresetCycConf = false;
-uint16_t arlsTimeoutMillis = 2500;
-bool arlsTimeout = false;
-bool receiveDirect = true, enableRealtimeUI = false;
-bool arlsDisableGammaCorrection = true, arlsForceMaxBri = false;
+
+//realtime
+bool realtimeActive = false;
 IPAddress realtimeIP = (0,0,0,0);
-unsigned long arlsTimeoutTime = 0;
+unsigned long realtimeTimeout = 0;
+
+//auxiliary debug pin
 byte auxTime = 0;
 unsigned long auxStartTime = 0;
 bool auxActive = false, auxActiveBefore = false;
-bool showWelcomePage = false;
-
-bool useGammaCorrectionBri = false;
-bool useGammaCorrectionRGB = true;
-int arlsOffset = 0;
 
 //alexa udp
 WiFiUDP UDP;
@@ -248,50 +331,58 @@ String escapedMac;
 DNSServer dnsServer;
 bool dnsActive = false;
 
+//network time
+bool ntpConnected = false;
+time_t local = 0;
+unsigned long ntpLastSyncTime = 999000000L;
+unsigned long ntpPacketSentTime = 999000000L;
+IPAddress ntpServerIP;
+unsigned int ntpLocalPort = 2390;
+#define NTP_PACKET_SIZE 48
+
 //string temp buffer
 #define OMAX 1750
 char obuf[OMAX];
 uint16_t olen = 0;
 
+//server library objects
 #ifdef ARDUINO_ARCH_ESP32
 WebServer server(80);
 #else
 ESP8266WebServer server(80);
 #endif
-E131 e131;
 HTTPClient hueClient;
 ESP8266HTTPUpdateServer httpUpdater;
+
+//udp interface objects
 WiFiUDP notifierUdp, rgbUdp;
 WiFiUDP ntpUdp;
-IPAddress ntpServerIP;
-unsigned int ntpLocalPort = 2390;
-#define NTP_PACKET_SIZE 48
-unsigned long ntpLastSyncTime = 999000000L;
-unsigned long ntpPacketSentTime = 999000000L;
+E131 e131;
 
+//led fx library object
 WS2812FX strip = WS2812FX();
 
+//debug macros
 #ifdef DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
  #define DEBUG_PRINTLN(x) Serial.println (x)
  #define DEBUG_PRINTF(x) Serial.printf (x)
+ unsigned long debugTime = 0;
+ int lastWifiState = 3;
+ unsigned long wifiStateChangedTime = 0;
 #else
  #define DEBUG_PRINT(x)
  #define DEBUG_PRINTLN(x)
  #define DEBUG_PRINTF(x)
 #endif
 
+//filesystem
 #ifdef USEFS
 #include <FS.h>;
 File fsUploadFile;
 #endif
 
-#ifdef DEBUG
-long debugTime = 0;
-int lastWifiState = 3;
-long wifiStateChangedTime = 0;
-#endif
-
+//gamma 2.4 lookup table used for color correction
 const byte gamma8[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
@@ -312,8 +403,11 @@ const byte gamma8[] = {
 
 String txd = "Please disable OTA Lock in security settings!";
 
+//function prototypes
 void serveMessage(int,String,String,int=255);
 
+
+//turns all LEDs off and restarts ESP
 void reset()
 {
   briT = 0;
@@ -322,7 +416,9 @@ void reset()
   ESP.restart();
 }
 
-bool oappend(char* txt) //append new c string to temp buffer efficiently
+
+//append new c string to temp buffer efficiently
+bool oappend(char* txt)
 {
   uint16_t len = strlen(txt);
   if (olen + len >= OMAX) return false; //buffer full
@@ -331,30 +427,38 @@ bool oappend(char* txt) //append new c string to temp buffer efficiently
   return true;
 }
 
-bool oappendi(int i) //append new number to temp buffer efficiently
+
+//append new number to temp buffer efficiently
+bool oappendi(int i)
 {
   char s[11]; 
   sprintf(s,"%ld", i);
   return oappend(s);
 }
 
+
+//boot starts here
 void setup() {
     wledInit();
 }
 
+
+//main program loop
 void loop() {
     server.handleClient();
     handleSerial();
     handleNotifications();
     handleTransitions();
     userLoop();
+    
     yield();
     handleButton();
     handleNetworkTime();
     if (aOtaEnabled) ArduinoOTA.handle();
     handleAlexa();
     handleOverlays();
-    if (!arlsTimeout) //block stuff if WARLS/Adalight is enabled
+    
+    if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
     {
       if (dnsActive) dnsServer.processNextRequest();
       handleHue();
@@ -363,7 +467,7 @@ void loop() {
       if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
     }
     
-    //DEBUG
+    //DEBUG serial logging
     #ifdef DEBUG
     if (millis() - debugTime > 5000)
     {
@@ -377,7 +481,7 @@ void loop() {
         wifiStateChangedTime = millis();
       }
       lastWifiState = WiFi.status();
-      DEBUG_PRINT("Wifi state: "); DEBUG_PRINTLN(wifiStateChangedTime);
+      DEBUG_PRINT("State time: "); DEBUG_PRINTLN(wifiStateChangedTime);
       DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
       DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP());
       debugTime = millis(); 

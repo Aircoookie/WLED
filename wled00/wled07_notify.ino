@@ -54,12 +54,12 @@ void notify(byte callMode, bool followUp=false)
 
 void arlsLock(uint32_t timeoutMs)
 {
-  if (!arlsTimeout){
+  if (!realtimeActive){
      strip.setRange(0, ledCount-1, 0);
      strip.setMode(0);
   }
-  arlsTimeout = true;
-  arlsTimeoutTime = millis() + timeoutMs;
+  realtimeActive = true;
+  realtimeTimeout = millis() + timeoutMs;
   if (arlsForceMaxBri) strip.setBrightness(255);
 }
 
@@ -83,7 +83,7 @@ void handleNotifications()
   if(e131Enabled) {
     uint16_t len = e131.parsePacket();
     if (len && e131.universe == e131Universe) {
-      arlsLock(arlsTimeoutMillis);
+      arlsLock(realtimeTimeoutMs);
       if (len > ledCount) len = ledCount;
       for (uint16_t i = 0; i < len; i++) {
         int j = i * 3;
@@ -95,11 +95,11 @@ void handleNotifications()
   }
 
   //unlock strip when realtime UDP times out
-  if (arlsTimeout && millis() > arlsTimeoutTime)
+  if (realtimeActive && millis() > realtimeTimeout)
   {
     strip.unlockAll();
     strip.setBrightness(bri);
-    arlsTimeout = false;
+    realtimeActive = false;
     strip.setMode(effectCurrent);
     realtimeIP[0] = 0;
   }
@@ -116,7 +116,7 @@ void handleNotifications()
       if (packetSize > 1026 || packetSize < 3) return;
       byte udpIn[packetSize];
       rgbUdp.read(udpIn, packetSize);
-      arlsLock(arlsTimeoutMillis);
+      arlsLock(realtimeTimeoutMs);
       uint16_t id = 0;
       for (uint16_t i = 0; i < packetSize -2; i += 3)
       {
@@ -133,7 +133,7 @@ void handleNotifications()
     {
       byte udpIn[packetSize];
       notifierUdp.read(udpIn, packetSize);
-      if (udpIn[0] == 0 && !arlsTimeout && receiveNotifications) //wled notifier, block if realtime packets active
+      if (udpIn[0] == 0 && !realtimeActive && receiveNotifications) //wled notifier, block if realtime packets active
       {
         if (receiveNotificationColor)
         {
@@ -188,7 +188,7 @@ void handleNotifications()
         if (packetSize > 1) {
           if (udpIn[1] == 0)
           {
-            arlsTimeout = false;
+            realtimeActive = false;
           } else {
             arlsLock(udpIn[1]*1000);
           }

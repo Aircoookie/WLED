@@ -172,7 +172,7 @@ void handleSettingsSet(byte subPage)
       }
     }
     strip.paletteFade = server.hasArg("PF");
-    disableSecTransition = !server.hasArg("T2");
+    enableSecTransition = server.hasArg("T2");
     if (server.hasArg("TB"))
     {
       nightlightTargetBri = server.arg("TB").toInt();
@@ -239,12 +239,12 @@ void handleSettingsSet(byte subPage)
     if (server.hasArg("EU"))
     {
       int i = server.arg("EU").toInt();
-      if (i > 0  && i <= 63999) arlsTimeoutMillis = i;
+      if (i > 0  && i <= 63999) realtimeTimeoutMs = i;
     }
     if (server.hasArg("ET"))
     {
       int i = server.arg("ET").toInt();
-      if (i > 99  && i <= 65000) arlsTimeoutMillis = i;
+      if (i > 99  && i <= 65000) realtimeTimeoutMs = i;
     }
     arlsForceMaxBri = server.hasArg("FB");
     arlsDisableGammaCorrection = server.hasArg("RG");
@@ -256,7 +256,7 @@ void handleSettingsSet(byte subPage)
     enableRealtimeUI = server.hasArg("RU");
     alexaEnabled = server.hasArg("AL");
     if (server.hasArg("AI")) strcpy(alexaInvocationName,server.arg("AI").c_str());
-    alexaNotify = server.hasArg("SA");
+    notifyAlexa = server.hasArg("SA");
     if (server.hasArg("BK") && !server.arg("BK").equals("Hidden")) {strcpy(blynkApiKey,server.arg("BK").c_str()); initBlynk(blynkApiKey);}
     notifyHue = server.hasArg("SH");
     for (int i=0;i<4;i++){
