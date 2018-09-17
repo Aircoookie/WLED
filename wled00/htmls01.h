@@ -1,10 +1,14 @@
 /*
  * Settings html
  */
+ 
+//common CSS of settings pages
 const char PAGE_settingsCss[] PROGMEM = R"=====(
 body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:3em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}</style>
 )=====";
 
+
+//settings menu
 const char PAGE_settings0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head><title>WLED Settings</title>
@@ -26,11 +30,14 @@ body{text-align:center;background:var(--cCol);height:100%;margin:0;background-at
 </html>
 )=====";
 
+
+//wifi settings
 const char PAGE_settings_wifi0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>WiFi Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");}function B(){window.history.back();}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_wifi1[] PROGMEM = R"=====(
 </head>
 <body onload="GetV()">
@@ -72,11 +79,14 @@ AP IP: <span class="sip"> Not active </span><hr>
 </html>
 )=====";
 
+
+//LED settings
 const char PAGE_settings_leds0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>LED Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}function B(){window.history.back();}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_leds1[] PROGMEM = R"=====(
 </head>
 <body onload="GetV()">
@@ -138,12 +148,15 @@ Skip first LED: <input type="checkbox" name="SL"><hr>
 </html>
 )=====";
 
+
+//User Interface settings
 const char PAGE_settings_ui0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>UI Settings</title><script>
 function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_ui1[] PROGMEM = R"=====(
 </head>
 <body onload="S()">
@@ -195,11 +208,14 @@ Make sure the font you use is installed on your system!<br>
 </html>
 )=====";
 
+
+//sync settings
 const char PAGE_settings_sync0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head><title>Sync Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_sync1[] PROGMEM = R"=====(
 </head>
 <body onload="GetV()">
@@ -252,11 +268,14 @@ Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 </html>
 )=====";
 
+
+//time and macro settings
 const char PAGE_settings_time0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head><title>Time Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function S(){GetV();Cs();}function gId(s){return document.getElementById(s);}function Cs(){gId("cac").style.display="none";gId("coc").style.display="block";gId("ccc").style.display="none";if (gId("ca").selected){gId("cac").style.display="block";}if (gId("cc").selected){gId("coc").style.display="none";gId("ccc").style.display="block";}if (gId("cn").selected){gId("coc").style.display="none";}}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_time1[] PROGMEM = R"=====(
 </head>
 <body onload="S()">
@@ -338,12 +357,15 @@ Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required
 </html>
 )=====";
 
+
+//security settings and about
 const char PAGE_settings_sec0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>Misc Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings");}function B(){window.open("/settings","_self");}function U(){window.open("/update","_self");}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_sec1[] PROGMEM = R"=====(
 </head>
 <body onload="GetV()">

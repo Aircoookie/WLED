@@ -64,9 +64,10 @@ var displayElement=pr.getElementsByClassName("rangeValues")[0];displayElement.in
 )=====";
 #else
 const char PAGE_indexM[] PROGMEM = R"=====(
-The Mobile UI is not supported due to limited flash storage. Please go to IP/settings/ui and change the UI mode to "Classic".
+Mobile UI is unsupported (limited storage). Go to /settings/ui and change UI mode to "Classic".
 )=====";
 #endif
+
 
 /*
  * Classic UI Index html

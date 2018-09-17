@@ -118,7 +118,7 @@ void wledInit()
   
   server.on("/settings/wifi", HTTP_POST, [](){
     if (!(wifiLock && otaLock)) handleSettingsSet(1);
-    serveMessage(200,"WiFi settings saved.","Rebooting now... (takes ~20 seconds, wait for auto-redirect)",139);
+    serveMessage(200,"WiFi settings saved.","Rebooting now...",255);
     reset();
   });
 
@@ -488,6 +488,10 @@ void serveSettings(byte subPage)
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 255: welcomepage
   if (!realtimeActive || enableRealtimeUI) //do not serve while receiving realtime
     {
+      #ifdef WLED_FLASH_512K_MODE //disable welcome page if not enough storage
+      if (subPage == 255) {serveIndex(); return;}
+      #endif
+      
       int pl0, pl1;
       switch (subPage)
       {

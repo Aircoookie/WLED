@@ -8,9 +8,8 @@
  */
 
 //ESP8266-01 got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
-//Uncomment the following line to disable some features (currently Mobile UI) to compile for ESP8266-01
-//#define WLED_FLASH_512K_MODE
-//NOT SUPPORTED IN CURRENT VERSION
+//Uncomment the following line to disable some features (currently Mobile UI, welcome page and single digit + cronixie overlays) to compile for ESP8266-01
+#define WLED_FLASH_512K_MODE
 
 
 //library inclusions
@@ -44,7 +43,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1809151
+#define VERSION 1809162
 char versionString[] = "0.8.0-a";
 
 
@@ -58,7 +57,7 @@ char otaPass[33] = "wledota";
 
 
 //to toggle usb serial debug (un)comment following line(s)
-#define DEBUG
+//#define DEBUG
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
@@ -157,7 +156,7 @@ bool arlsDisableGammaCorrection = true;       //activate if gamma correction is 
 bool arlsForceMaxBri = false;                 //enable to force max brightness if source has very dark colors that would be black
 
 bool e131Enabled = true;                      //settings for E1.31 (sACN) protocol
-byte e131Universe = 1;
+uint16_t e131Universe = 1;
 bool e131Multicast = false;
 
 bool huePollingEnabled = false;               //poll hue bridge for light state

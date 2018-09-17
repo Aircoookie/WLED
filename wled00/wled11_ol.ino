@@ -16,6 +16,7 @@ void initCronixie()
   }
 }
 
+
 void _nixieDisplay(int num[], uint16_t dur[], uint16_t pausedur[], byte cnt)
 {
   strip.setRange(overlayMin, overlayMax, 0);
@@ -116,6 +117,7 @@ void _nixieNumber(int number, int dur)
   }
 }
 
+
 void handleOverlays()
 {
   if (millis() - overlayRefreshedTime > overlayRefreshMs)
@@ -181,6 +183,10 @@ void _overlayAnalogClock()
 
 void _overlayNixieClock()
 {
+  #ifdef WLED_FLASH_512K_MODE
+  if (countdownMode) checkCountdown();
+  #else
+  
   if (countdownMode)
   {
     _overlayNixieCountdown(); return;
@@ -265,6 +271,7 @@ void _overlayNixieClock()
   {
     _nixieDisplay(overlayArr, overlayDur, overlayPauseDur, 6);
   }
+  #endif
 }
 
 void _overlayAnalogCountdown()
@@ -311,6 +318,7 @@ void _overlayAnalogCountdown()
   }
   overlayRefreshMs = 998;
 }
+
 
 void _overlayNixieCountdown()
 {
