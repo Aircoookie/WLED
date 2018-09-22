@@ -292,6 +292,15 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('v',"ML",macroLongPress);
     sappend('v',"MC",macroCountdown);
     sappend('v',"MN",macroNl);
+
+    k[2] = 0; //Time macros
+    for (int i = 0; i<8; i++)
+    {
+      k[1] = 48+i; //ascii 0,1,2,3
+      k[0] = 'H'; sappend('v',k,timerHours[i]);
+      k[0] = 'N'; sappend('v',k,timerMinutes[i]);
+      k[0] = 'T'; sappend('v',k,timerMacro[i]);
+    }
   }
 
   if (subPage == 6)

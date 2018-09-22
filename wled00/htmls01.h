@@ -345,12 +345,28 @@ Define API macros here:<br>
 15: <input name="M15" maxlength="64"><br>
 16: <input name="M16" maxlength="64"><br><br>
 <i>Use 0 for the default action instead of a macro</i><br>
-Time controlled macros coming soon!<br>
 Boot Macro: <input name="MB" type="number" min="0" max="16" required><br>
 Alexa On/Off Macros: <input name="A0" type="number" min="0" max="16" required> <input name="A1" type="number" min="0" max="16" required><br>
 Button Macro: <input name="MP" type="number" min="0" max="16" required> Long Press: <input name="ML" type="number" min="0" max="16" required><br>
 Countdown-Over Macro: <input name="MC" type="number" min="0" max="16" required><br>
-Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required><hr>
+Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required><br>
+Time-Controlled Macros (Hours/Minutes &gt; Macro):<br>
+<input name="H0" type="number" min="0" max="24"> <input name="N0" type="number" min="0" max="59">
+&gt; <input name="T0" type="number" min="0" max="16"><br>
+<input name="H1" type="number" min="0" max="24"> <input name="N1" type="number" min="0" max="59">
+&gt; <input name="T1" type="number" min="0" max="16"><br>
+<input name="H2" type="number" min="0" max="24"> <input name="N2" type="number" min="0" max="59">
+&gt; <input name="T2" type="number" min="0" max="16"><br>
+<input name="H3" type="number" min="0" max="24"> <input name="N3" type="number" min="0" max="59">
+&gt; <input name="T3" type="number" min="0" max="16"><br>
+<input name="H4" type="number" min="0" max="24"> <input name="N4" type="number" min="0" max="59">
+&gt; <input name="T4" type="number" min="0" max="16"><br>
+<input name="H5" type="number" min="0" max="24"> <input name="N5" type="number" min="0" max="59">
+&gt; <input name="T5" type="number" min="0" max="16"><br>
+<input name="H6" type="number" min="0" max="24"> <input name="N6" type="number" min="0" max="59">
+&gt; <input name="T6" type="number" min="0" max="16"><br>
+<input name="H7" type="number" min="0" max="24"> <input name="N7" type="number" min="0" max="59">
+&gt; <input name="T7" type="number" min="0" max="16"><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>

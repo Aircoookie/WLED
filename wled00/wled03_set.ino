@@ -219,7 +219,7 @@ void handleSettingsSet(byte subPage)
     strcpy(cronixieDisplay,server.arg("CX").c_str());
     bool cbOld = cronixieBacklight;
     cronixieBacklight = server.hasArg("CB");
-    if (cbOld != cronixieBacklight && overlayCurrent == 4)
+    if (cbOld != cronixieBacklight && overlayCurrent == 3)
     {
       strip.setCronixieBacklight(cronixieBacklight); overlayRefreshedTime = 0;
     }
@@ -236,6 +236,7 @@ void handleSettingsSet(byte subPage)
       String a = "M"+String(i);
       if (server.hasArg(a)) saveMacro(i,server.arg(a),false);
     }
+    
     macroBoot = server.arg("MB").toInt();
     macroAlexaOn = server.arg("A0").toInt();
     macroAlexaOff = server.arg("A1").toInt();
@@ -243,6 +244,21 @@ void handleSettingsSet(byte subPage)
     macroLongPress = server.arg("ML").toInt();
     macroCountdown = server.arg("MC").toInt();
     macroNl = server.arg("MN").toInt();
+
+    char k[3]; k[2] = 0;
+    for (int i = 0; i<8; i++)
+    {
+      k[1] = i+48;//ascii 0,1,2,3
+      
+      k[0] = 'H'; //timer hours
+      timerHours[i] = server.arg(k).toInt();
+      
+      k[0] = 'N'; //minutes
+      timerMinutes[i] = server.arg(k).toInt();
+      
+      k[0] = 'T'; //macros
+      timerMacro[i] = server.arg(k).toInt();
+    }
   }
 
   //SECURITY
@@ -687,7 +703,7 @@ bool handleSet(String req)
       {
         cronixieBacklight = false;
       }
-      if (overlayCurrent == 4) strip.setCronixieBacklight(cronixieBacklight);
+      if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
       overlayRefreshedTime = 0;
    }
    pos = req.indexOf("U0="); //user var 0

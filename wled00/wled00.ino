@@ -9,7 +9,8 @@
 
 //ESP8266-01 got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
 //Uncomment the following line to disable some features (currently Mobile UI, welcome page and single digit + cronixie overlays) to compile for ESP8266-01
-#define WLED_FLASH_512K_MODE
+//#define WLED_FLASH_512K_MODE
+//CURRENTLY NOT WORKING
 
 
 //library inclusions
@@ -43,7 +44,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1809162
+#define VERSION 1809222
 char versionString[] = "0.8.0-a";
 
 
@@ -298,6 +299,14 @@ bool cronixieInit = false;
 //countdown
 unsigned long countdownTime = 1514764800L;
 bool countdownOverTriggered = true;
+
+//timer
+byte lastTimerMinute = 0;
+byte timerHours[]   = {0,0,0,0,0,0,0,0};
+byte timerMinutes[] = {0,0,0,0,0,0,0,0};
+byte timerMacro[]   = {0,0,0,0,0,0,0,0};
+byte timerWeekday[] = {255,255,255,255,255,255,255,255}; //weekdays to activate on
+//bit pattern of arr elem: 0b11111111: sat,fri,thu,wed,tue,mon,sun,validity
 
 //blynk
 bool blynkEnabled = false;

@@ -3,13 +3,13 @@
  */
 void initCronixie()
 {
-  if (overlayCurrent == 4 && !cronixieInit)
+  if (overlayCurrent == 3 && !cronixieInit)
   {
     strip.driverModeCronixie(true);
     strip.setCronixieBacklight(cronixieBacklight);
     setCronixie();
     cronixieInit = true;
-  } else if (cronixieInit && overlayCurrent != 4)
+  } else if (cronixieInit && overlayCurrent != 3)
   {
     strip.driverModeCronixie(false);
     cronixieInit = false; 
@@ -124,6 +124,7 @@ void handleOverlays()
   {
     initCronixie();
     updateLocalTime();
+    checkTimers();
     switch (overlayCurrent)
     {
       case 0: break;//no overlay

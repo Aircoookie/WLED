@@ -137,7 +137,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       case 7: bus->SetPixelColor((_skipFirstMode)?o+4:o+3,RgbwColor(r,g,b,w)); break;
       case 8: bus->SetPixelColor((_skipFirstMode)?o+10:o+9,RgbwColor(r,g,b,w)); break;
       case 9: bus->SetPixelColor((_skipFirstMode)?o+5:o+4,RgbwColor(r,g,b,w)); break;
-      default: break;
     }
   }
 }
@@ -150,7 +149,7 @@ void WS2812FX::setReverseMode(bool b)
 void WS2812FX::driverModeCronixie(bool b)
 {
   _cronixieMode = b;
-  if (b) _segments[0].stop = 5;
+  _segments[0].stop = (b) ? 5 : _length-1;
 }
 
 void WS2812FX::setCronixieBacklight(bool b)

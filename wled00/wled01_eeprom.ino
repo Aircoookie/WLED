@@ -234,6 +234,14 @@ void saveSettingsToEEPROM()
   {
     EEPROM.write(i, blynkApiKey[i-2220]);
   }
+
+  for (int i = 0; i < 8; ++i)
+  {
+    EEPROM.write(2260 + i, timerHours[i]  );
+    EEPROM.write(2270 + i, timerMinutes[i]);
+    EEPROM.write(2280 + i, timerWeekday[i]);
+    EEPROM.write(2290 + i, timerMacro[i]  );
+  }
   
   EEPROM.commit();
 }
@@ -448,8 +456,17 @@ void loadSettingsFromEEPROM(bool first)
 
   if (lastEEPROMversion > 7)
   {
-    strip.paletteFade = EEPROM.read(374);
+    strip.paletteFade  = EEPROM.read(374);
     strip.paletteBlend = EEPROM.read(382);
+
+    for (int i = 0; i < 8; ++i)
+    {
+      timerHours[i]   = EEPROM.read(2260 + i);
+      timerMinutes[i] = EEPROM.read(2270 + i);
+      timerWeekday[i] = EEPROM.read(2280 + i);
+      if (timerWeekday[i] == 0) timerWeekday[i] = 255;
+      timerMacro[i]  = EEPROM.read(2290 + i);
+    }
   }
   
   receiveDirect = !EEPROM.read(2200);
