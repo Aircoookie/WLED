@@ -2,7 +2,7 @@
  * Sending XML status files to client
  */
 
-void XML_response()
+void XML_response(bool isHTTP)
 {
    olen = 0;
    oappend("<?xml version = \"1.0\" ?><vs><ac>");
@@ -52,7 +52,7 @@ void XML_response()
    oappend("</md><ds>");
    oappend(serverDescription);
    oappend("</ds></vs>");
-   server.send(200, "text/xml", obuf);
+   if (isHTTP) server.send(200, "text/xml", obuf);
 }
 
 void sappend(char stype, char* key, int val) //append a setting to string buffer

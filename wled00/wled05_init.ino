@@ -56,6 +56,10 @@ void wledInit()
     dnsServer.start(53, "*", WiFi.softAPIP());
     dnsActive = true;
   }
+  
+  prepareIds(); //UUID from MAC (for Alexa and MQTT)
+  if (mqttTopic0[0] == 0) strcpy(mqttTopic0, strcat("wled/", escapedMac.c_str()));
+  
   if (!initLedsLast) strip.service();
   //SERVER INIT
   //settings page
@@ -264,6 +268,7 @@ void wledInit()
   {
      initBlynk(blynkApiKey);
      initE131();
+     mqttInit = initMQTT();
   }
 
   if (initLedsLast) initStrip();

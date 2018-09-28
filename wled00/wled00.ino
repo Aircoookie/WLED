@@ -35,16 +35,17 @@
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
+#include "src/dependencies/blynk/BlynkSimpleEsp.h"
+#include "src/dependencies/e131/E131.h"
+#include "src/dependencies/pubsubclient/PubSubClient.h"
 #include "htmls00.h"
 #include "htmls01.h"
 #include "htmls02.h"
 #include "WS2812FX.h"
-#include "src/dependencies/blynk/BlynkSimpleEsp.h"
-#include "src/dependencies/e131/E131.h"
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1809222
+#define VERSION 1809281
 char versionString[] = "0.8.0-a";
 
 
@@ -159,6 +160,10 @@ bool arlsForceMaxBri = false;                 //enable to force max brightness i
 bool e131Enabled = true;                      //settings for E1.31 (sACN) protocol
 uint16_t e131Universe = 1;
 bool e131Multicast = false;
+
+char mqttTopic0[33] = "";                     //main MQTT topic (individual per device, default is wled/mac)
+char mqttTopic1[33] = "wled/all";             //second MQTT topic (for example to group devices)
+char mqttServer[33] = "37.187.106.16";                     //both domains and IPs should work (no SSL) 37.187.106.16
 
 bool huePollingEnabled = false;               //poll hue bridge for light state
 uint16_t huePollIntervalMs = 2500;            //low values (< 1sec) may cause lag but offer quicker response
@@ -324,13 +329,17 @@ bool realtimeActive = false;
 IPAddress realtimeIP = (0,0,0,0);
 unsigned long realtimeTimeout = 0;
 
+//mqtt
+bool mqttInit = false;
+long lastMQTTReconnectAttempt = 0;
+
 //auxiliary debug pin
 byte auxTime = 0;
 unsigned long auxStartTime = 0;
 bool auxActive = false, auxActiveBefore = false;
 
 //alexa udp
-WiFiUDP UDP;
+WiFiUDP alexaUDP;
 IPAddress ipMulti(239, 255, 255, 250);
 unsigned int portMulti = 1900;
 String escapedMac;
@@ -360,6 +369,9 @@ WebServer server(80);
 ESP8266WebServer server(80);
 #endif
 HTTPClient hueClient;
+WiFiClient mqttTCPClient;
+PubSubClient mqtt(mqttTCPClient);
+
 ESP8266HTTPUpdateServer httpUpdater;
 
 //udp interface objects
@@ -465,6 +477,9 @@ void loop() {
     if (aOtaEnabled) ArduinoOTA.handle();
     handleAlexa();
     handleOverlays();
+
+    yield();
+    handleMQTT();
     
     if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
     {

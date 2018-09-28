@@ -101,6 +101,7 @@ void handleSettingsSet(byte subPage)
     fadeTransition = server.hasArg("TF");
     t = server.arg("TD").toInt();
     if (t > 0) transitionDelay = t;
+    transitionDelayDefault = t;
     strip.paletteFade = server.hasArg("PF");
     enableSecTransition = server.hasArg("T2");
     
@@ -318,7 +319,7 @@ bool handleSet(String req)
       }
       
       pos = req.indexOf("IN");
-      if (pos < 1) XML_response();
+      if (pos < 1) XML_response(true);
       return true;
       //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
    }
@@ -381,6 +382,16 @@ bool handleSet(String req)
    pos = req.indexOf("W2=");
    if (pos > 0) {
       whiteSec = req.substring(pos + 3).toInt();
+   }
+   
+   //set color from HEX or 32bit DEC
+   pos = req.indexOf("CL=");
+   if (pos > 0) {
+      colorFromDecOrHexString(col, &white, (char*)req.substring(pos + 3).c_str());
+   }
+   pos = req.indexOf("C2=");
+   if (pos > 0) {
+      colorFromDecOrHexString(colSec, &whiteSec, (char*)req.substring(pos + 3).c_str());
    }
    
    //set 2nd to white
@@ -718,7 +729,7 @@ bool handleSet(String req)
    
    //internal call, does not send XML response
    pos = req.indexOf("IN");
-   if (pos < 1) XML_response();
+   if (pos < 1) XML_response(true);
    //do not send UDP notifications this time
    pos = req.indexOf("NN");
    if (pos > 0)

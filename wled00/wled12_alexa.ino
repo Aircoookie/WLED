@@ -10,8 +10,6 @@ void alexaInit()
 {
   if (alexaEnabled && WiFi.status() == WL_CONNECTED)
   {
-    prepareIds();
-    
     udpConnected = connectUDP();
     
     if (udpConnected) alexaInitPages();
@@ -24,10 +22,10 @@ void handleAlexa()
   {
     if(udpConnected){    
     // if there’s data available, read a packet
-    int packetSize = UDP.parsePacket();
+    int packetSize = alexaUDP.parsePacket();
       if(packetSize>0) {
-        IPAddress remote = UDP.remoteIP();
-        int len = UDP.read(obuf, 254);
+        IPAddress remote = alexaUDP.remoteIP();
+        int len = alexaUDP.read(obuf, 254);
         if (len > 0) {
             obuf[len] = 0;
         }
@@ -98,9 +96,9 @@ void prepareIds() {
 void respondToSearch() {
     DEBUG_PRINTLN("");
     DEBUG_PRINT("Send resp to ");
-    DEBUG_PRINTLN(UDP.remoteIP());
+    DEBUG_PRINTLN(alexaUDP.remoteIP());
     DEBUG_PRINT("Port : ");
-    DEBUG_PRINTLN(UDP.remotePort());
+    DEBUG_PRINTLN(alexaUDP.remotePort());
 
     IPAddress localIP = WiFi.localIP();
     char s[16];
@@ -124,13 +122,13 @@ void respondToSearch() {
     oappend("::upnp:rootdevice\r\n" // _uuid::_deviceType
       "\r\n");
 
-    UDP.beginPacket(UDP.remoteIP(), UDP.remotePort());
+    alexaUDP.beginPacket(alexaUDP.remoteIP(), alexaUDP.remotePort());
     #ifdef ARDUINO_ARCH_ESP32
-    UDP.write((byte*)obuf, olen);
+    alexaUDP.write((byte*)obuf, olen);
     #else
-    UDP.write(obuf);
+    alexaUDP.write(obuf);
     #endif
-    UDP.endPacket();                    
+    alexaUDP.endPacket();                    
 
      DEBUG_PRINTLN("Response sent!");
 }
@@ -276,9 +274,9 @@ bool connectUDP(){
   DEBUG_PRINTLN("Con UDP");
 
   #ifdef ARDUINO_ARCH_ESP32
-  if(UDP.beginMulticast(ipMulti, portMulti))
+  if(alexaUDP.beginMulticast(ipMulti, portMulti))
   #else
-  if(UDP.beginMulticast(WiFi.localIP(), ipMulti, portMulti))
+  if(alexaUDP.beginMulticast(WiFi.localIP(), ipMulti, portMulti))
   #endif
   {
     DEBUG_PRINTLN("Con success");
