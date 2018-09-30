@@ -2,41 +2,43 @@
  * MQTT communication protocol for home automation
  */
 
-void callbackMQTT(char* topic, byte* payload, unsigned int length) {
-  
-  if (strcmp(topic, mqttTopic0) == 0 ||
-      strcmp(topic, mqttTopic1) == 0) 
-  {
-    if      (strcmp((char*)payload, "ON") == 0) {bri = briLast;}
-    else if (strcmp((char*)payload, "T" ) == 0) {handleSet("win&T=2");}
-    else {
-      uint8_t in = strtoul((char*)payload, NULL, 10);
-      if (in == 0 && bri > 0) briLast = bri;
-      bri = in;
-    }
+void parseMQTTBriPayload(char* payload)
+{
+  if      (strcmp(payload, "ON") == 0) {bri = briLast; colorUpdated(1);}
+  else if (strcmp(payload, "T" ) == 0) {handleSet("win&T=2");}
+  else {
+    uint8_t in = strtoul(payload, NULL, 10);
+    if (in == 0 && bri > 0) briLast = bri;
+    bri = in;
     colorUpdated(1);
-    return; 
   }
-  
-  if (strcmp(topic, strcat(mqttTopic0, "/col")) == 0 ||
-      strcmp(topic, strcat(mqttTopic1, "/col")) == 0) 
+}
+
+void callbackMQTT(char* topic, byte* payload, unsigned int length) {
+
+  DEBUG_PRINT("MQTT callb rec: ");
+  DEBUG_PRINTLN(topic);
+  DEBUG_PRINTLN((char*)payload);
+
+  //no need to check the topic because we only get topics we are subscribed to
+
+  if (strstr(topic, "/col"))
   {
     colorFromDecOrHexString(col, &white, (char*)payload);
     colorUpdated(1);
-    return; 
-  }
-  
-  if (strcmp(topic, strcat(mqttTopic0, "/api")) == 0 ||
-      strcmp(topic, strcat(mqttTopic1, "/api")) == 0) 
+  } else if (strstr(topic, "/api"))
   {
     handleSet(String((char*)payload));
-    return; 
+  } else
+  {
+    parseMQTTBriPayload((char*)payload);
   }
 }
 
 void publishStatus()
 {
   if (!mqtt.connected()) return;
+  DEBUG_PRINTLN("Publish MQTT");
 
   char s[4];
   sprintf(s,"%ld", bri);
@@ -50,19 +52,29 @@ bool reconnectMQTT()
   if (mqtt.connect(escapedMac.c_str()))
   {
     //re-subscribe to required topics
+    char subuf[38];
+    strcpy(subuf, mqttTopic0);
     
     if (mqttTopic0[0] != 0)
     {
-      mqtt.subscribe(mqttTopic0);
-      mqtt.subscribe(strcat(mqttTopic0, "/col"));
-      mqtt.subscribe(strcat(mqttTopic0, "/api"));
+      strcpy(subuf, mqttTopic0);
+      mqtt.subscribe(subuf);
+      strcat(subuf, "/col");
+      mqtt.subscribe(subuf);
+      strcpy(subuf, mqttTopic0);
+      strcat(subuf, "/api");
+      mqtt.subscribe(subuf);
     }
 
     if (mqttTopic1[0] != 0)
     {
-      mqtt.subscribe(mqttTopic1);
-      mqtt.subscribe(strcat(mqttTopic1, "/col"));
-      mqtt.subscribe(strcat(mqttTopic1, "/api"));
+      strcpy(subuf, mqttTopic1);
+      mqtt.subscribe(subuf);
+      strcat(subuf, "/col");
+      mqtt.subscribe(subuf);
+      strcpy(subuf, mqttTopic1);
+      strcat(subuf, "/api");
+      mqtt.subscribe(subuf);
     }
   }
   return mqtt.connected();
@@ -81,6 +93,7 @@ bool initMQTT()
     mqtt.setServer(mqttServer,1883);
   }
   mqtt.setCallback(callbackMQTT);
+  DEBUG_PRINTLN("MQTT ready.");
   return true;
 }
 
@@ -89,8 +102,10 @@ void handleMQTT()
   if (WiFi.status() != WL_CONNECTED || !mqttInit) return;
   if (!mqtt.connected() && millis() - lastMQTTReconnectAttempt > 5000)
   {
+    DEBUG_PRINTLN("Attempting to connect MQTT...");
     lastMQTTReconnectAttempt = millis();
     if (!reconnectMQTT()) return;
+    DEBUG_PRINTLN("MQTT con!");
   }
   mqtt.loop();
 }

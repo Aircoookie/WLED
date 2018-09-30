@@ -318,7 +318,7 @@ boolean PubSubClient::loop() {
                         char *topic = (char*) buffer+llen+2;
 						
                         // make sure payload can be interpreted as 'C' string
-						buffer[(len < MQTT_MAX_PACKET_SIZE) ? len -1 : MQTT_MAX_PACKET_SIZE -1] = 0;
+						buffer[(len < MQTT_MAX_PACKET_SIZE) ? len : MQTT_MAX_PACKET_SIZE -1] = 0;
 						
 						// msgId only present for QOS>0
                         if ((buffer[0]&0x06) == MQTTQOS1) {

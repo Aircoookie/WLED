@@ -45,7 +45,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1809281
+#define VERSION 1809292
 char versionString[] = "0.8.0-a";
 
 
@@ -59,7 +59,7 @@ char otaPass[33] = "wledota";
 
 
 //to toggle usb serial debug (un)comment following line(s)
-//#define DEBUG
+#define DEBUG
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
