@@ -45,7 +45,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1809292
+#define VERSION 1810011
 char versionString[] = "0.8.0-a";
 
 
@@ -474,7 +474,6 @@ void loop() {
     yield();
     handleButton();
     handleNetworkTime();
-    if (aOtaEnabled) ArduinoOTA.handle();
     handleAlexa();
     handleOverlays();
 
@@ -484,6 +483,7 @@ void loop() {
     if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
     {
       if (dnsActive) dnsServer.processNextRequest();
+      if (aOtaEnabled) ArduinoOTA.handle();
       handleHue();
       handleNightlight();
       handleBlynk();

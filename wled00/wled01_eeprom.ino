@@ -560,6 +560,7 @@ void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
     effectCurrent = EEPROM.read(i+10);
     effectSpeed = EEPROM.read(i+11);
     effectIntensity = EEPROM.read(i+16);
+    effectPalette = EEPROM.read(i+17);
     if (lastfx != effectCurrent) strip.setMode(effectCurrent);
     strip.setSpeed(effectSpeed);
     strip.setIntensity(effectIntensity);

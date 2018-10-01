@@ -55,7 +55,10 @@ void notify(byte callMode, bool followUp=false)
 void arlsLock(uint32_t timeoutMs)
 {
   if (!realtimeActive){
-     strip.setRange(0, ledCount-1, 0);
+     for (uint16_t i = 0; i < ledCount; i++)
+     {
+       strip.setPixelColor(i,0,0,0,0);
+     }
      strip.setMode(0);
   }
   realtimeActive = true;
@@ -112,8 +115,9 @@ void handleNotifications()
     if (!packetSize && udpRgbConnected) {
       packetSize = rgbUdp.parsePacket();
       if (!receiveDirect) return;
-      realtimeIP = rgbUdp.remoteIP();
       if (packetSize > 1026 || packetSize < 3) return;
+      realtimeIP = rgbUdp.remoteIP();
+      DEBUG_PRINTLN(rgbUdp.remoteIP());
       byte udpIn[packetSize];
       rgbUdp.read(udpIn, packetSize);
       arlsLock(realtimeTimeoutMs);
@@ -185,6 +189,7 @@ void handleNotifications()
       }  else if (udpIn[0] > 0 && udpIn[0] < 4 && receiveDirect) //1 warls //2 drgb //3 drgbw
       {
         realtimeIP = notifierUdp.remoteIP();
+        DEBUG_PRINTLN(notifierUdp.remoteIP());
         if (packetSize > 1) {
           if (udpIn[1] == 0)
           {
@@ -224,15 +229,16 @@ void handleNotifications()
   }
 }
 
-void setRealtimePixel(int i, byte r, byte g, byte b, byte w)
+void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  if (i + arlsOffset < ledCount && i + arlsOffset >= 0)
+  uint16_t pix = i + arlsOffset;
+  if (pix < ledCount)
   {
     if (!arlsDisableGammaCorrection && useGammaCorrectionRGB)
     {
-      strip.setPixelColor(i + arlsOffset, gamma8[r], gamma8[g], gamma8[b], gamma8[w]);
+      strip.setPixelColor(pix, gamma8[r], gamma8[g], gamma8[b], gamma8[w]);
     } else {
-      strip.setPixelColor(i + arlsOffset, r, g, b, w);
+      strip.setPixelColor(pix, r, g, b, w);
     }
   }
 }
