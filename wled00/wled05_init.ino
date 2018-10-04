@@ -49,18 +49,24 @@ void wledInit()
   if (ntpEnabled && WiFi.status() == WL_CONNECTED)
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
-  //start captive portal
-  if (onlyAP || strlen(apSSID) > 0)
+  //start captive portal if AP active
+  if (onlyAP || strlen(apSSID) > 0) 
   {
-    //dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
     dnsActive = true;
   }
-  
+
   prepareIds(); //UUID from MAC (for Alexa and MQTT)
   if (mqttDeviceTopic[0] == 0) strcpy(mqttDeviceTopic, strcat("wled/", escapedMac.c_str()));
-  if (!onlyAP) mqttInit = initMQTT();
-  
+
+  //smartInit, we only init some resources when connected
+  if (!onlyAP && WiFi.status() == WL_CONNECTED)
+  {
+    mqttTCPClient = new WiFiClient();
+    mqtt = new PubSubClient(*mqttTCPClient);
+    mqttInit = initMQTT();
+  }
+   
   if (!initLedsLast) strip.service();
 
   //HTTP server page init
@@ -68,38 +74,42 @@ void wledInit()
   
   if (!initLedsLast) strip.service();
   //init Alexa hue emulation
-  if (alexaEnabled) alexaInit();
+  if (alexaEnabled && !onlyAP) alexaInit();
 
   server.begin();
   DEBUG_PRINTLN("HTTP server started");
 
   //init ArduinoOTA
-  if (aOtaEnabled)
-  {
-    ArduinoOTA.onStart([]() {
-      #ifndef ARDUINO_ARCH_ESP32
-      wifi_set_sleep_type(NONE_SLEEP_T);
-      #endif
-      DEBUG_PRINTLN("Start ArduinoOTA");
-    });
-    if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
-    ArduinoOTA.begin();
-  }
+  if (!onlyAP) {
+    if (aOtaEnabled)
+    {
+      ArduinoOTA.onStart([]() {
+        #ifndef ARDUINO_ARCH_ESP32
+        wifi_set_sleep_type(NONE_SLEEP_T);
+        #endif
+        DEBUG_PRINTLN("Start ArduinoOTA");
+      });
+      if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
+      ArduinoOTA.begin();
+    }
+  
+    if (!initLedsLast) strip.service();
+    // Set up mDNS responder:
+    if (strlen(cmDNS) > 0 && !onlyAP)
+    {
+      MDNS.begin(cmDNS);
+      DEBUG_PRINTLN("mDNS responder started");
+      // Add service to MDNS
+      MDNS.addService("http", "tcp", 80);
+    }
+    if (!initLedsLast) strip.service();
 
-  if (!initLedsLast) strip.service();
-  // Set up mDNS responder:
-  if (strlen(cmDNS) > 0 && !onlyAP)
-  {
-    MDNS.begin(cmDNS);
-    DEBUG_PRINTLN("mDNS responder started");
-    // Add service to MDNS
-    MDNS.addService("http", "tcp", 80);
-  }
+    initBlynk(blynkApiKey);
+    initE131();
 
-  if (!onlyAP)
-  {
-     initBlynk(blynkApiKey);
-     initE131();
+    hueClient = new HTTPClient();
+  } else {
+    e131Enabled = false;
   }
 
   if (initLedsLast) initStrip();
@@ -146,12 +156,12 @@ void initCon()
 
   if (strlen(apSSID)>0)
   {
-    DEBUG_PRINT("USING AP");
+    DEBUG_PRINT(" USING AP");
     DEBUG_PRINTLN(strlen(apSSID));
     initAP();
   } else
   {
-    DEBUG_PRINTLN("NO AP");
+    DEBUG_PRINTLN(" NO AP");
     WiFi.softAPdisconnect(true);
   }
   int fail_count = 0;

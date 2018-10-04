@@ -59,7 +59,7 @@ char otaPass[33] = "wledota";
 
 
 //to toggle usb serial debug (un)comment following line(s)
-//#define DEBUG
+#define DEBUG
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
@@ -371,16 +371,16 @@ WebServer server(80);
 #else
 ESP8266WebServer server(80);
 #endif
-HTTPClient hueClient;
-WiFiClient mqttTCPClient;
-PubSubClient mqtt(mqttTCPClient);
+HTTPClient* hueClient = NULL;
+WiFiClient* mqttTCPClient = NULL;
+PubSubClient* mqtt = NULL;
 
 ESP8266HTTPUpdateServer httpUpdater;
 
 //udp interface objects
 WiFiUDP notifierUdp, rgbUdp;
 WiFiUDP ntpUdp;
-E131 e131;
+E131* e131;
 
 //led fx library object
 WS2812FX strip = WS2812FX();
@@ -477,19 +477,26 @@ void loop() {
     yield();
     handleButton();
     handleNetworkTime();
-    handleAlexa();
+    if (!onlyAP)
+    {
+      handleAlexa();
+      handleMQTT();
+    }
+    
     handleOverlays();
 
     yield();
-    handleMQTT();
+    
     
     if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
     {
       if (dnsActive) dnsServer.processNextRequest();
       if (aOtaEnabled) ArduinoOTA.handle();
-      handleHue();
       handleNightlight();
-      handleBlynk();
+      if (!onlyAP) {
+        handleHue();
+        handleBlynk();
+      }
       if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
     }
     

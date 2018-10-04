@@ -69,7 +69,8 @@ void arlsLock(uint32_t timeoutMs)
 void initE131(){
   if (WiFi.status() == WL_CONNECTED && e131Enabled)
   {
-    e131.begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST , e131Universe);
+    e131 = new E131();
+    e131->begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST , e131Universe);
   } else {
     e131Enabled = false;
   }
@@ -84,14 +85,14 @@ void handleNotifications()
 
   //E1.31 protocol support
   if(e131Enabled) {
-    uint16_t len = e131.parsePacket();
-    if (len && e131.universe == e131Universe) {
+    uint16_t len = e131->parsePacket();
+    if (len && e131->universe == e131Universe) {
       arlsLock(realtimeTimeoutMs);
       if (len > ledCount) len = ledCount;
       for (uint16_t i = 0; i < len; i++) {
         int j = i * 3;
         
-        setRealtimePixel(i, e131.data[j], e131.data[j+1], e131.data[j+2], 0);
+        setRealtimePixel(i, e131->data[j], e131->data[j+1], e131->data[j+2], 0);
       }
       strip.show();
     }

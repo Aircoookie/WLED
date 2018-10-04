@@ -4,7 +4,7 @@
 
 void handleHue()
 {
-  if (huePollingEnabled && WiFi.status() == WL_CONNECTED)
+  if (huePollingEnabled && WiFi.status() == WL_CONNECTED && hueClient != NULL)
   {
     if (millis() - hueLastRequestSent > huePollIntervalMsTemp)
     {
@@ -44,8 +44,8 @@ bool setupHue()
 bool sendHuePoll(bool sAuth)
 {
   bool st;
-  hueClient.setReuse(true);
-  hueClient.setTimeout(450);
+  hueClient->setReuse(true);
+  hueClient->setTimeout(450);
   String hueURL = "http://";
   hueURL += hueIP.toString();
   hueURL += "/api/";
@@ -53,12 +53,12 @@ bool sendHuePoll(bool sAuth)
     hueURL += hueApiKey;
     hueURL += "/lights/" + String(huePollLightId);
   }
-  hueClient.begin(hueURL);
-  int httpCode = (sAuth)? hueClient.POST("{\"devicetype\":\"wled#esp\"}"):hueClient.GET();
+  hueClient->begin(hueURL);
+  int httpCode = (sAuth)? hueClient->POST("{\"devicetype\":\"wled#esp\"}"):hueClient->GET();
   //TODO this request may block operation for ages
   
   if (httpCode>0){
-    st = handleHueResponse(hueClient.getString(),sAuth);
+    st = handleHueResponse(hueClient->getString(),sAuth);
   } else {
     strcpy(hueError,"Request timed out");
     st = false;

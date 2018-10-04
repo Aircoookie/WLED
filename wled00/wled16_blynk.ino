@@ -20,6 +20,7 @@ void handleBlynk()
 
 void updateBlynk()
 {
+  if (onlyAP) return;
   Blynk.virtualWrite(V0,bri);
   //we need a RGB -> HSB convert here
   Blynk.virtualWrite(V3,bri);
