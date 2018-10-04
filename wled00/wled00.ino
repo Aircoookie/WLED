@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.0-a
+ * @version 0.8.0
  * @author Christian Schwinne
  */
 
@@ -45,8 +45,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1810011
-char versionString[] = "0.8.0-a";
+#define VERSION 1810031
+char versionString[] = "0.8.0";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -59,7 +59,7 @@ char otaPass[33] = "wledota";
 
 
 //to toggle usb serial debug (un)comment following line(s)
-#define DEBUG
+//#define DEBUG
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
@@ -111,7 +111,7 @@ byte nightlightDelayMins = 60;
 bool nightlightFade = true;                   //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
 bool fadeTransition = true;                   //enable crossfading color transition
 bool enableSecTransition = true;              //also enable transition for secondary color
-uint16_t transitionDelay = 1200;              //default crossfade duration in ms
+uint16_t transitionDelay = 900;              //default crossfade duration in ms
 
 bool reverseMode  = false;                    //flip entire LED strip (reverses all effect directions)
 bool initLedsLast = false;                    //turn on LEDs only after WiFi connected/AP open
@@ -161,9 +161,9 @@ bool e131Enabled = true;                      //settings for E1.31 (sACN) protoc
 uint16_t e131Universe = 1;
 bool e131Multicast = false;
 
-char mqttTopic0[33] = "";                     //main MQTT topic (individual per device, default is wled/mac)
-char mqttTopic1[33] = "wled/all";             //second MQTT topic (for example to group devices)
-char mqttServer[33] = "37.187.106.16";                     //both domains and IPs should work (no SSL) 37.187.106.16
+char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
+char mqttGroupTopic[33] = "wled/all";         //second MQTT topic (for example to group devices)
+char mqttServer[33] = "";                     //both domains and IPs should work (no SSL)
 
 bool huePollingEnabled = false;               //poll hue bridge for light state
 uint16_t huePollIntervalMs = 2500;            //low values (< 1sec) may cause lag but offer quicker response
@@ -272,7 +272,7 @@ bool onlyAP = false;                          //only Access Point active, no con
 bool udpConnected = false, udpRgbConnected = false;
 
 //ui style
-char cssCol[9][5]={"","","","","",""};
+char cssCol[6][9]={"","","","","",""};
 String cssColorString="";
 bool showWelcomePage = false;
 
@@ -332,6 +332,9 @@ unsigned long realtimeTimeout = 0;
 //mqtt
 bool mqttInit = false;
 long lastMQTTReconnectAttempt = 0;
+long lastInterfaceUpdate = 0;
+byte interfaceUpdateCallMode = 0;
+uint32_t mqttFailedConAttempts = 0;
 
 //auxiliary debug pin
 byte auxTime = 0;

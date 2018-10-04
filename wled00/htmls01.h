@@ -250,6 +250,11 @@ Alexa invocation name: <input name="AI" maxlength="32">
 <h3>Blynk</h3>
 Device Auth token: <input name="BK" maxlength="33"><br>
 <i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
+<h3>MQTT</h3>
+Broker: <input name="MS" maxlength="32"><br>
+Device Topic: <input name="MD" maxlength="32"><br>
+Group Topic: <input name="MG" maxlength="32"><br>
+<i>Reboot required to apply changes. </i><a href="https://github.com/Aircoookie/WLED/wiki/MQTT" target="_blank">MQTT info</a>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
 Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
@@ -406,7 +411,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.0-a<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.0<br><br>
 <b>Contributors:</b><br>
 StormPie <i>(Mobile HTML UI)</i><br><br>
 Thank you so much!<br><br>
@@ -421,6 +426,7 @@ Thank you so much!<br><br>
 <i><a href="https://github.com/JChristensen/Timezone" target="_blank">Timezone</a> library by JChristensen</i><br>
 <i><a href="https://github.com/blynkkk/blynk-library" target="_blank">Blynk</a> library (compacted)</i><br>
 <i><a href="https://github.com/forkineye/E131" target="_blank">E1.31</a> library by forkineye (modified)</i><br>
+<i><a href="https://github.com/knolleary/pubsubclient" target="_blank">PubSubClient</a> by knolleary (modified)</i><br>
 <i><a href="https://github.com/Aircoookie/Espalexa" target="_blank">Espalexa</a> by Aircoookie (modified)</i><br><br>
 <i>UI icons by <a href="https://linearicons.com" target="_blank">Linearicons</a> created by <a href="https://perxis.com" target="_blank">Perxis</a>! (CC-BY-SA 4.0)</i> <br><br>
 Server message: <span class="msg"> Response error! </span><hr>

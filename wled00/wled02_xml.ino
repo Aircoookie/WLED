@@ -241,7 +241,9 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"AL",alexaEnabled);
     sappends('s',"AI",alexaInvocationName);
     sappend('c',"SA",notifyAlexa);
-    sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
+    sappends('s',"MS",mqttServer);
+    sappends('s',"MD",mqttDeviceTopic);
+    sappends('s',"MG",mqttGroupTopic);
     sappend('v',"H0",hueIP[0]);
     sappend('v',"H1",hueIP[1]);
     sappend('v',"H2",hueIP[2]);

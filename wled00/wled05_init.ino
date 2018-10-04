@@ -58,7 +58,7 @@ void wledInit()
   }
   
   prepareIds(); //UUID from MAC (for Alexa and MQTT)
-  if (mqttTopic0[0] == 0) strcpy(mqttTopic0, strcat("wled/", escapedMac.c_str()));
+  if (mqttDeviceTopic[0] == 0) strcpy(mqttDeviceTopic, strcat("wled/", escapedMac.c_str()));
   if (!onlyAP) mqttInit = initMQTT();
   
   if (!initLedsLast) strip.service();

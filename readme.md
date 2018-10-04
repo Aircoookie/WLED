@@ -1,17 +1,20 @@
+![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/master/wled_logo.png)
+
 ## Welcome to my project WLED!
 
-WLED is a fast and (relatively) secure implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
+WLED is a fast, advanced and (relatively) secure implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
 
-### Features: (V0.7.1)
+### Features: (v0.8.0)
 - RGB, HSB, and brightness sliders
 - All new, mobile-friendly web UI!
 - Settings page - configuration over network
 - Access Point and station mode - automatic failsafe AP
-- Support of Blynk IoT cloud
-- WS2812FX library integrated for over 50 special effects (+Custom Theater Chase)!
+- Support of Blynk IoT cloud and MQTT
+- WS2812FX library integrated for over 70 special effects (with FastLED palettes)!
 - Secondary color support lets you use even more effect combinations
 - Alexa smart home device server (including dimming)
 - Beta syncronization to Philips hue lights
+- Realtime UDP Packet Control (E1.31, Hyperion, WARLS, DRGB, DRGBW)
 - Support for RGBW strips
 - 25 user presets! Save colors and effects and apply them easily! Supports cycling through them.
 - HTTP request API for simple integration
@@ -24,7 +27,6 @@ WLED is a fast and (relatively) secure implementation of an ESP8266/ESP32 webser
 - Password protected OTA page for added security (OTA lock)
 - NTP and configurable analog clock function
 - Support for the Cronixie Clock kit by Diamex
-- Realtime UDP Packet Control (E1.31, Hyperion, WARLS, DRGB, DRGBW)
 
 ### Quick start guide and documentation:
 
@@ -32,16 +34,14 @@ See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
 
 ### Other
 
-Licensed under the MIT license 
-Uses libraries: 
-ESP8266/ESP32 Arduino Core
-NeoPixelBus by Makuna
-[WS2812FX](https://github.com/kitesurfer1404/WS2812FX) by kitesurfer1404 (Aircoookie fork)
-Time library
-Timezone library by JChristensen
-Alexa code based on arduino-esp8266-alexa-multiple-wemo-switch by kakopappa
+Licensed under the MIT license  
+Credits in About page!
 
-Uses Linearicons by Perxis! (link in settings page)
+Uses Linearicons by Perxis!
+
+Join the Discord [server](https://discord.gg/KuqP7NE) to discuss everything about WLED!  
+You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com).
+If you insist that you just love WLED too much, you can [send me a gift](https://paypal.me/aircoookie)
 
 
 

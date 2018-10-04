@@ -6,7 +6,7 @@
 #define EEPSIZE 3072
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 8
+#define EEPVER 9
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -15,7 +15,8 @@
 //5 -> 0.5.1 and up
 //6 -> 0.6.0 and up
 //7 -> 0.7.1 and up
-//8 -> 0.8.0 and up
+//8 -> 0.8.0-a and up
+//9 -> 0.8.0
 
 /*
  * Erase all configuration data
@@ -147,7 +148,7 @@ void saveSettingsToEEPROM()
     int in = 900+k*8;
     for (int i=in; i < in+8; ++i)
     {
-      EEPROM.write(i, cssCol[i-in][k]);
+      EEPROM.write(i, cssCol[k][i-in]);
     }}
 
   EEPROM.write(948,currentTheme);
@@ -241,6 +242,19 @@ void saveSettingsToEEPROM()
     EEPROM.write(2270 + i, timerMinutes[i]);
     EEPROM.write(2280 + i, timerWeekday[i]);
     EEPROM.write(2290 + i, timerMacro[i]  );
+  }
+
+  for (int i = 2300; i < 2333; ++i)
+  {
+    EEPROM.write(i, mqttServer[i-2300]);
+  }
+  for (int i = 2333; i < 2366; ++i)
+  {
+    EEPROM.write(i, mqttDeviceTopic[i-2333]);
+  }
+  for (int i = 2366; i < 2399; ++i)
+  {
+    EEPROM.write(i, mqttGroupTopic[i-2366]);
   }
   
   EEPROM.commit();
@@ -468,6 +482,25 @@ void loadSettingsFromEEPROM(bool first)
       timerMacro[i]  = EEPROM.read(2290 + i);
     }
   }
+
+  if (lastEEPROMversion > 8)
+  {
+    for (int i = 2300; i < 2333; ++i)
+    {
+      mqttServer[i-2300] = EEPROM.read(i);
+      if (mqttServer[i-2300] == 0) break;
+    }
+    for (int i = 2333; i < 2366; ++i)
+    {
+      mqttDeviceTopic[i-2333] = EEPROM.read(i);
+      if (mqttDeviceTopic[i-2333] == 0) break;
+    }
+    for (int i = 2366; i < 2399; ++i)
+    {
+      mqttGroupTopic[i-2366] = EEPROM.read(i);
+      if (mqttGroupTopic[i-2366] == 0) break;
+    }
+  }
   
   receiveDirect = !EEPROM.read(2200);
   enableRealtimeUI = EEPROM.read(2201);
@@ -491,12 +524,6 @@ void loadSettingsFromEEPROM(bool first)
     presetApplyCol = EEPROM.read(2211);
     presetApplyFx = EEPROM.read(2212);
   }
-
-  for (int i = 2220; i < 2255; ++i)
-  {
-    blynkApiKey[i-2220] = EEPROM.read(i);
-    if (blynkApiKey[i-2220] == 0) break;
-  }
   
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
@@ -514,11 +541,17 @@ void loadSettingsFromEEPROM(bool first)
     for (int i=in; i < in+8; ++i)
     {
       if (EEPROM.read(i) == 0) break;
-      cssCol[i-in][k] =EEPROM.read(i);
+      cssCol[k][i-in] =EEPROM.read(i);
     }}
 
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
+
+  for (int i = 2220; i < 2255; ++i)
+    {
+      blynkApiKey[i-2220] = EEPROM.read(i);
+      if (blynkApiKey[i-2220] == 0) break;
+    }
 
   //user MOD memory
   //2944 - 3071 reserved

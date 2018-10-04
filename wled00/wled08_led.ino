@@ -92,12 +92,14 @@ void colorUpdated(int callMode)
   whiteSecIT = whiteSec;
   briIT = bri;
   if (bri > 0) briLast = bri;
+  
   notify(callMode);
+  
   if (fadeTransition)
   {
     //set correct delay if not using notification delay
     if (callMode != 3) transitionDelayTemp = transitionDelay;
-    if (transitionDelayTemp == 0) {setLedsStandard();strip.trigger();return;}
+    if (transitionDelayTemp == 0) {setLedsStandard(); strip.trigger(); return;}
     
     if (transitionActive)
     {
@@ -120,11 +122,33 @@ void colorUpdated(int callMode)
     setLedsStandard();
     strip.trigger();
   }
-  if (callMode != 9 && callMode != 5 && callMode != 8) updateBlynk();
+
+  if (callMode == 8) return;
+  //only update Blynk and mqtt every 2 seconds to reduce lag
+  if (millis() - lastInterfaceUpdate <= 2000)
+  {
+    interfaceUpdateCallMode = callMode;
+    return;
+  }
+  updateInterfaces(callMode);
+}
+
+void updateInterfaces(uint8_t callMode)
+{
+  if (callMode != 9 && callMode != 5) updateBlynk();
+  publishMQTT();
+  lastInterfaceUpdate = millis();
 }
 
 void handleTransitions()
 {
+  //handle still pending interface update
+  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > 2000)
+  {
+    updateInterfaces(interfaceUpdateCallMode);
+    interfaceUpdateCallMode = 0; //disable
+  }
+  
   if (transitionActive && transitionDelayTemp > 0)
   {
     float tper = (millis() - transitionStartTime)/(float)transitionDelayTemp;

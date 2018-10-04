@@ -170,6 +170,10 @@ void handleSettingsSet(byte subPage)
     notifyAlexa = server.hasArg("SA");
     
     if (server.hasArg("BK") && !server.arg("BK").equals("Hidden")) {strcpy(blynkApiKey,server.arg("BK").c_str()); initBlynk(blynkApiKey);}
+
+    strcpy(mqttServer, server.arg("MS").c_str());
+    strcpy(mqttDeviceTopic, server.arg("MD").c_str());
+    strcpy(mqttGroupTopic, server.arg("MG").c_str());
     
     notifyHue = server.hasArg("SH");
     for (int i=0;i<4;i++){
