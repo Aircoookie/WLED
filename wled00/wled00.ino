@@ -45,7 +45,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1810031
+#define VERSION 1810041
 char versionString[] = "0.8.0";
 
 
@@ -54,12 +54,12 @@ char apPass[65] = "wled1234";
 char otaPass[33] = "wledota";
 
 
+//to toggle usb serial debug (un)comment following line(s)
+//#define DEBUG
+
+
 //spiffs FS only useful for debug (only ESP8266)
 //#define USEFS
-
-
-//to toggle usb serial debug (un)comment following line(s)
-#define DEBUG
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)

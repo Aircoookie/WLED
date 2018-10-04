@@ -7,11 +7,7 @@ void handleSerial()
   {
     if (Serial.find("Ada"))
     {
-      if (!realtimeActive){
-        if (bri == 0) strip.setBrightness(briLast);
-        strip.setRange(0, ledCount-1, 0);
-        strip.setMode(0);
-      }
+      if (!realtimeActive && bri == 0) strip.setBrightness(briLast);
       arlsLock(realtimeTimeoutMs);
       delay(1);
       byte hi = Serial.read();

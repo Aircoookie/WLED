@@ -57,8 +57,12 @@ void wledInit()
   }
 
   prepareIds(); //UUID from MAC (for Alexa and MQTT)
-  if (mqttDeviceTopic[0] == 0) strcpy(mqttDeviceTopic, strcat("wled/", escapedMac.c_str()));
-
+  if (mqttDeviceTopic[0] == 0)
+  {
+    strcpy(mqttDeviceTopic, "wled/");
+    strcat(mqttDeviceTopic, escapedMac.c_str());
+  }
+  
   //smartInit, we only init some resources when connected
   if (!onlyAP && WiFi.status() == WL_CONNECTED)
   {
