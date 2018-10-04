@@ -1,32 +1,34 @@
 ![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/development/wled_logo.png)
 
-## Welcome to my project WLED!
+## Welcome to my project WLED! (v0.8.0)
 
-WLED is a fast, advanced and (relatively) secure implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
+A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
 
-### Features: (v0.8.0)
-- RGB, HSB, and brightness sliders
-- All new, mobile-friendly web UI!
+### Features:
+- WS2812FX library integrated for over 70 special effects
+- FastLED noise effects and palettes
+- Customizable Mobile and desktop UI with color and effect controls
 - Settings page - configuration over network
 - Access Point and station mode - automatic failsafe AP
-- Support of Blynk IoT cloud and MQTT
-- WS2812FX library integrated for over 70 special effects (with FastLED palettes)!
-- Secondary color support lets you use even more effect combinations
-- Alexa smart home device server (including dimming)
-- Beta syncronization to Philips hue lights
-- Realtime UDP Packet Control (E1.31, Hyperion, WARLS, DRGB, DRGBW)
 - Support for RGBW strips
-- 25 user presets! Save colors and effects and apply them easily! Supports cycling through them.
-- HTTP request API for simple integration
+- 25 user presets to save and load colors/effects easily, supports cycling through them.
 - Macro functions to automatically execute API calls
 - Nightlight function (gradually dims down)
-- Notifier function (multiple ESPs sync color via UDP broadcast)
-- Support for power pushbutton
-- Support for the Adalight serial ambilight protocol!
-- Full OTA software update capability (HTTP and ArduinoOTA)
-- Password protected OTA page for added security (OTA lock)
-- NTP and configurable analog clock function
-- Support for the Cronixie Clock kit by Diamex
+- Full OTA software updatability (HTTP + ArduinoOTA), password protectable
+- Configurable analog clock + support for the Cronixie kit by Diamex
+
+### Supported light control interfaces:
+- HTTP request API
+- Blynk IoT
+- MQTT
+- E1.31
+- Hyperion
+- UDP realtime
+- Alexa smart device (including dimming)
+- Sync to Philips hue lights
+- Adalight (PC ambilight via serial)
+- Sync color of multiple WLED devices (UDP notifier)
+- Simple timers/schedules (time from NTP, timezones/DST supported)
 
 ### Quick start guide and documentation:
 
@@ -40,8 +42,8 @@ Credits in About page!
 Uses Linearicons by Perxis!
 
 Join the Discord [server](https://discord.gg/KuqP7NE) to discuss everything about WLED!  
-You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com).
-If you insist that you just love WLED too much, you can [send me a gift](https://paypal.me/aircoookie)
+You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com).  
+If you insist that you just love WLED too much, you can [send me a gift](https://paypal.me/aircoookie)!
 
 
 
