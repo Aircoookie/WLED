@@ -1,4 +1,4 @@
-![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/master/wled_logo.png)
+![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/development/wled_logo.png)
 
 ## Welcome to my project WLED!
 
