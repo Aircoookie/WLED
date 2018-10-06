@@ -621,6 +621,7 @@ bool handleSet(String req)
    //main toggle on/off
    pos = req.indexOf("&T=");
    if (pos > 0) {
+      nightlightActive = false; //always disable nightlight when toggling
       switch (req.substring(pos + 3).toInt())
       {
         case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off
