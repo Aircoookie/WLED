@@ -52,7 +52,8 @@ void wledInit()
   //start captive portal if AP active
   if (onlyAP || strlen(apSSID) > 0) 
   {
-    dnsServer.start(53, "*", WiFi.softAPIP());
+    dnsServer.setErrorReplyCode(DNSReplyCode::ServerFailure);
+    dnsServer.start(53, "wled.me", WiFi.softAPIP());
     dnsActive = true;
   }
 

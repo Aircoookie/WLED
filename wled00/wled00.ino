@@ -45,7 +45,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1810061
+#define VERSION 1810064 
 char versionString[] = "0.8.0";
 
 
@@ -167,7 +167,7 @@ char mqttServer[33] = "";                     //both domains and IPs should work
 
 bool huePollingEnabled = false;               //poll hue bridge for light state
 uint16_t huePollIntervalMs = 2500;            //low values (< 1sec) may cause lag but offer quicker response
-char hueApiKey[65] = "api";                   //key token will be obtained from bridge
+char hueApiKey[47] = "api";                   //key token will be obtained from bridge
 byte huePollLightId = 1;                      //ID of hue lamp to sync to. Find the ID in the hue app ("about" section)
 IPAddress hueIP = (0,0,0,0);                  //IP address of the bridge
 bool hueApplyOnOff = true;
@@ -188,7 +188,7 @@ byte analogClock12pixel = 0;                  //The pixel in your strip where "m
 bool analogClockSecondsTrail = false;         //Display seconds as trail of LEDs instead of a single pixel
 bool analogClock5MinuteMarks = false;         //Light pixels at every 5-minute position
 
-char cronixieDisplay[] = "HHMMSS";            //Cronixie Display mask. See wled13_cronixie.ino
+char cronixieDisplay[7] = "HHMMSS";           //Cronixie Display mask. See wled13_cronixie.ino
 bool cronixieBacklight = true;                //Allow digits to be back-illuminated
 
 bool countdownMode = false;                   //Clock will count down towards date

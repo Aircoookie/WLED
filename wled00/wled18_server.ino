@@ -38,14 +38,6 @@ void initServer()
       server.send_P(200, "image/x-icon", favicon, 156);
     }
   });
-
-  server.on("/generate_204", HTTP_GET, [](){
-    serveIndex();
-  });
-
-  server.on("/fwlink", HTTP_GET, [](){
-    serveIndex();
-  });
   
   server.on("/sliders", HTTP_GET, serveIndex);
   
