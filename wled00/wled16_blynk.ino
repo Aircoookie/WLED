@@ -21,14 +21,14 @@ void handleBlynk()
 void updateBlynk()
 {
   if (onlyAP) return;
-  Blynk.virtualWrite(V0,bri);
+  Blynk.virtualWrite(V0, bri);
   //we need a RGB -> HSB convert here
-  Blynk.virtualWrite(V3,bri);
-  Blynk.virtualWrite(V4,effectCurrent);
-  Blynk.virtualWrite(V5,effectSpeed);
-  Blynk.virtualWrite(V6,effectIntensity);
-  Blynk.virtualWrite(V7,nightlightActive);
-  Blynk.virtualWrite(V8,notifyDirect);
+  Blynk.virtualWrite(V3, bri? 1:0);
+  Blynk.virtualWrite(V4, effectCurrent);
+  Blynk.virtualWrite(V5, effectSpeed);
+  Blynk.virtualWrite(V6, effectIntensity);
+  Blynk.virtualWrite(V7, nightlightActive);
+  Blynk.virtualWrite(V8, notifyDirect);
 }
 
 BLYNK_WRITE(V0)
