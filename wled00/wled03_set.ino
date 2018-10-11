@@ -155,6 +155,7 @@ void handleSettingsSet(byte subPage)
     notifyTwice = server.hasArg("S2");
     
     receiveDirect = server.hasArg("RD");
+    e131Multicast = server.hasArg("EM");
     t = server.arg("EU").toInt();
     if (t > 0  && t <= 63999) e131Universe = t;
     t = server.arg("ET").toInt();
