@@ -243,7 +243,7 @@ void getBuildInfo()
   #else
   oappend("strip-pin: gpio2");
   #endif
-  oappend("\r\nbuild-type: dev\r\n");
+  oappend("\r\nbuild-type: src\r\n");
 }
 
 
