@@ -3,7 +3,7 @@
  */
 
 void setAllLeds() {
-  if (!arlsTimeout || !arlsForceMaxBri)
+  if (!realtimeActive || !arlsForceMaxBri)
   {
     double d = briT*briMultiplier;
     int val = d/100;
@@ -15,7 +15,7 @@ void setAllLeds() {
       strip.setBrightness(val);
     }
   }
-  if (disableSecTransition)
+  if (!enableSecTransition)
   {
     for (byte i = 0; i<3; i++)
     {
@@ -92,12 +92,14 @@ void colorUpdated(int callMode)
   whiteSecIT = whiteSec;
   briIT = bri;
   if (bri > 0) briLast = bri;
+  
   notify(callMode);
-  if (fadeTransition || sweepTransition)
+  
+  if (fadeTransition)
   {
     //set correct delay if not using notification delay
     if (callMode != 3) transitionDelayTemp = transitionDelay;
-    if (transitionDelayTemp == 0) {setLedsStandard();strip.trigger();return;}
+    if (transitionDelayTemp == 0) {setLedsStandard(); strip.trigger(); return;}
     
     if (transitionActive)
     {
@@ -112,29 +114,50 @@ void colorUpdated(int callMode)
       briOld = briT;
       tperLast = 0;
     }
+    strip.setTransitionMode(true);
     transitionActive = true;
     transitionStartTime = millis();
-    strip.setFastUpdateMode(true);
   } else
   {
     setLedsStandard();
     strip.trigger();
   }
-  if (callMode != 9 && callMode != 5 && callMode != 8) updateBlynk();
+
+  if (callMode == 8) return;
+  //only update Blynk and mqtt every 2 seconds to reduce lag
+  if (millis() - lastInterfaceUpdate <= 2000)
+  {
+    interfaceUpdateCallMode = callMode;
+    return;
+  }
+  updateInterfaces(callMode);
+}
+
+void updateInterfaces(uint8_t callMode)
+{
+  if (callMode != 9 && callMode != 5) updateBlynk();
+  publishMQTT();
+  lastInterfaceUpdate = millis();
 }
 
 void handleTransitions()
 {
+  //handle still pending interface update
+  if (interfaceUpdateCallMode && millis() - lastInterfaceUpdate > 2000)
+  {
+    updateInterfaces(interfaceUpdateCallMode);
+    interfaceUpdateCallMode = 0; //disable
+  }
+  
   if (transitionActive && transitionDelayTemp > 0)
   {
     float tper = (millis() - transitionStartTime)/(float)transitionDelayTemp;
     if (tper >= 1.0)
     {
+      strip.setTransitionMode(false);
       transitionActive = false;
       tperLast = 0;
-      if (sweepTransition) strip.unlockAll();
       setLedsStandard();
-      strip.setFastUpdateMode(false);
       return;
     }
     if (tper - tperLast < 0.004)
@@ -152,21 +175,6 @@ void handleTransitions()
       whiteT  = whiteOld +((white  - whiteOld )*tper);
       whiteSecT = whiteSecOld +((whiteSec  - whiteSecOld )*tper);
       briT    = briOld   +((bri    - briOld   )*tper);
-    }
-    if (sweepTransition)
-    {
-      strip.lockAll();
-      if (sweepDirection)
-      {
-        strip.unlockRange(0, (int)(tper*(double)ledCount));
-      } else
-      {
-        strip.unlockRange(ledCount - (int)(tper*(double)ledCount), ledCount);
-      }
-      if (!fadeTransition)
-      {
-        setLedsStandard();
-      }
     }
     if (fadeTransition) setAllLeds();
   }

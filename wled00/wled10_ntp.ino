@@ -166,3 +166,21 @@ bool checkCountdown()
   return false;
 }
 
+void checkTimers()
+{
+  if (lastTimerMinute != minute(local)) //only check once a new minute begins
+  {
+    lastTimerMinute = minute(local);
+    for (uint8_t i = 0; i < 8; i++)
+    {
+      if (timerMacro[i] != 0
+          && (timerHours[i] == hour(local) || timerHours[i] == 24) //if hour is set to 24, activate every hour 
+          && timerMinutes[i] == minute(local)
+          && timerWeekday[i] >> weekday(local) & 0x01) //timer should activate at current day of week
+      {
+        applyMacro(timerMacro[i]);
+      }
+    }
+  }
+}
+

@@ -13,6 +13,8 @@ void _setRandomColor(bool _sec,bool fromButton=false)
   if (fromButton) colorUpdated(2);
 }
 
+
+//called upon POST settings form submit
 void handleSettingsSet(byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
@@ -21,60 +23,42 @@ void handleSettingsSet(byte subPage)
   //WIFI SETTINGS
   if (subPage == 1)
   {
-    if (server.hasArg("CS")) strcpy(clientSSID,server.arg("CS").c_str());
-    if (server.hasArg("CP"))
-    {
-      if (!server.arg("CP").indexOf('*') == 0)
-      {
-        strcpy(clientPass,server.arg("CP").c_str());
-      }
-    }
-    if (server.hasArg("CM")) strcpy(cmDNS,server.arg("CM").c_str());
-    if (server.hasArg("AT"))
-    {
-        int i = server.arg("AT").toInt();
-        if (i >= 0 && i <= 255) apWaitTimeSecs = i;
-    }
-    if (server.hasArg("AS")) strcpy(apSSID,server.arg("AS").c_str());
+    strcpy(clientSSID,server.arg("CS").c_str());
+    if (server.arg("CP").charAt(0) != '*') strcpy(clientPass, server.arg("CP").c_str());
+
+    strcpy(cmDNS, server.arg("CM").c_str());
+    
+    int t = server.arg("AT").toInt(); if (t > 9 && t <= 255) apWaitTimeSecs = t;
+    strcpy(apSSID, server.arg("AS").c_str());
     apHide = server.hasArg("AH");
-    if (server.hasArg("AP"))
-    {
-      if (server.arg("AP").charAt(0) != '*') strcpy(apPass,server.arg("AP").c_str());
-    }
-    if (server.hasArg("AC"))
-    {
-      int chan = server.arg("AC").toInt();
-      if (chan > 0 && chan < 14) apChannel = chan;
-    }
-    char k[3]; k[2] = 0; int j = 0;
+    if (server.arg("AP").charAt(0) != '*') strcpy(apPass, server.arg("AP").c_str());
+    t = server.arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
+    
+    char k[3]; k[2] = 0;
     for (int i = 0; i<4; i++)
     {
-      k[1] = i+48;
+      k[1] = i+48;//ascii 0,1,2,3
+      
       k[0] = 'I'; //static IP
-      if (server.hasArg(k)) j = server.arg(k).toInt();
-      if (j >= 0 && j <= 255) staticIP[i] = j;
+      staticIP[i] = server.arg(k).toInt();
+      
       k[0] = 'G'; //gateway
-      if (server.hasArg(k)) j = server.arg(k).toInt();
-      if (j >= 0 && j <= 255) staticGateway[i] = j;
+      staticGateway[i] = server.arg(k).toInt();
+      
       k[0] = 'S'; //subnet
-      if (server.hasArg(k)) j = server.arg(k).toInt();
-      if (j >= 0 && j <= 255) staticSubnet[i] = j;
+      staticSubnet[i] = server.arg(k).toInt();
     }
   }
 
   //LED SETTINGS
   if (subPage == 2)
   {
-    if (server.hasArg("LC"))
-    {
-      int i = server.arg("LC").toInt();
-      if (i > 0 && i <= 1200) ledCount = i;
-      //RMT eats up too much RAM
-      #ifdef ARDUINO_ARCH_ESP32
-      if (ledCount > 600) ledCount = 600;
-      #endif
-    }
-    ccIndex2 = ledCount -1;
+    int t = server.arg("LC").toInt();
+    if (t > 0 && t <= 1200) ledCount = t;
+    //RMT eats up too much RAM
+    #ifdef ARDUINO_ARCH_ESP32
+    if (ledCount > 600) ledCount = 600;
+    #endif
     useRGBW = server.hasArg("EW");
     autoRGBtoRGBW = server.hasArg("AW");
     if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
@@ -82,128 +66,76 @@ void handleSettingsSet(byte subPage)
       colS[0] = col[0];
       colS[1] = col[1];
       colS[2] = col[2];
-      if (useRGBW) whiteS = white;
+      colSecS[0] = colSec[0];
+      colSecS[1] = colSec[1];
+      colSecS[2] = colSec[2];
+      whiteS = white;
+      whiteSecS = whiteSec;
       briS = bri;
       effectDefault = effectCurrent;
       effectSpeedDefault = effectSpeed;
+      effectIntensityDefault = effectIntensity;
+      effectPaletteDefault = effectPalette;
     } else {
-      if (server.hasArg("CR"))
-      {
-        int i = server.arg("CR").toInt();
-        if (i >= 0 && i <= 255) colS[0] = i;
-      }
-      if (server.hasArg("CG"))
-      {
-        int i = server.arg("CG").toInt();
-        if (i >= 0 && i <= 255) colS[1] = i;
-      }
-      if (server.hasArg("CB"))
-      {
-        int i = server.arg("CB").toInt();
-        if (i >= 0 && i <= 255) colS[2] = i;
-      }
-      if (server.hasArg("SR"))
-      {
-        int i = server.arg("SR").toInt();
-        if (i >= 0 && i <= 255) colSecS[0] = i;
-      }
-      if (server.hasArg("SG"))
-      {
-        int i = server.arg("SG").toInt();
-        if (i >= 0 && i <= 255) colSecS[1] = i;
-      }
-      if (server.hasArg("SB"))
-      {
-        int i = server.arg("SB").toInt();
-        if (i >= 0 && i <= 255) colSecS[2] = i;
-      }
-      if (server.hasArg("SW"))
-      {
-        int i = server.arg("SW").toInt();
-        if (i >= 0 && i <= 255) whiteSecS = i;
-      }
-      if (server.hasArg("CW"))
-      {
-        int i = server.arg("CW").toInt();
-        if (i >= 0 && i <= 255) whiteS = i;
-      }
-      if (server.hasArg("CA"))
-      {
-        int i = server.arg("CA").toInt();
-        if (i >= 0 && i <= 255) briS = i;
-      }
-      if (server.hasArg("FX"))
-      {
-        int i = server.arg("FX").toInt();
-        if (i >= 0 && i <= 255) effectDefault = i;
-      }
-      if (server.hasArg("SX"))
-      {
-        int i = server.arg("SX").toInt();
-        if (i >= 0 && i <= 255) effectSpeedDefault = i;
-      }
-      if (server.hasArg("IX"))
-      {
-        int i = server.arg("IX").toInt();
-        if (i >= 0 && i <= 255) effectIntensityDefault = i;
-      }
+      colS[0] = server.arg("CR").toInt();
+      colS[1] = server.arg("CG").toInt();
+      colS[2] = server.arg("CB").toInt();
+      colSecS[0] = server.arg("SR").toInt();
+      colSecS[1] = server.arg("SG").toInt();
+      colSecS[2] = server.arg("SB").toInt();
+      whiteS = server.arg("CW").toInt();
+      whiteSecS = server.arg("SW").toInt();
+      briS = server.arg("CA").toInt();
+      effectDefault = server.arg("FX").toInt();
+      effectSpeedDefault = server.arg("SX").toInt();
+      effectIntensityDefault = server.arg("IX").toInt();
+      effectPaletteDefault = server.arg("FP").toInt();
     }
     saveCurrPresetCycConf = server.hasArg("PC");
     turnOnAtBoot = server.hasArg("BO");
-    if (server.hasArg("BP"))
-    {
-      int i = server.arg("BP").toInt();
-      if (i >= 0 && i <= 25) bootPreset = i;
-    }
+    t = server.arg("BP").toInt();
+    if (t <= 25) bootPreset = t;
     useGammaCorrectionBri = server.hasArg("GB");
     useGammaCorrectionRGB = server.hasArg("GC");
+    
     fadeTransition = server.hasArg("TF");
-    sweepTransition = server.hasArg("TS");
-    sweepDirection = !server.hasArg("TI");
-    if (server.hasArg("TD"))
-    {
-      int i = server.arg("TD").toInt();
-      if (i > 0){
-        transitionDelay = i;
-      }
-    }
-    disableSecTransition = !server.hasArg("T2");
-    if (server.hasArg("TB"))
-    {
-      nightlightTargetBri = server.arg("TB").toInt();
-    }
-    if (server.hasArg("TL"))
-    {
-      int i = server.arg("TL").toInt();
-      if (i > 0) nightlightDelayMins = i;
-    }
+    t = server.arg("TD").toInt();
+    if (t > 0) transitionDelay = t;
+    transitionDelayDefault = t;
+    strip.paletteFade = server.hasArg("PF");
+    enableSecTransition = server.hasArg("T2");
+    
+    nightlightTargetBri = server.arg("TB").toInt();
+    t = server.arg("TL").toInt();
+    if (t > 0) nightlightDelayMins = t;
     nightlightFade = server.hasArg("TW");
-    reverseMode = server.hasArg("RV");
+    
+    t = server.arg("PB").toInt();
+    if (t >= 0 && t < 4) strip.paletteBlend = t;
     initLedsLast = server.hasArg("EI");
+    reverseMode = server.hasArg("RV");
     strip.setReverseMode(reverseMode);
     skipFirstLed = server.hasArg("SL");
-    if (server.hasArg("BF"))
-    {
-      int i = server.arg("BF").toInt();
-      if (i > 0) briMultiplier = i;
-    }
+    t = server.arg("BF").toInt();
+    if (t > 0) briMultiplier = t;
   }
 
   //UI
   if (subPage == 3)
   {
-    if (server.hasArg("UI")) uiConfiguration = server.arg("UI").toInt();
-    if (server.hasArg("DS")) strcpy(serverDescription,server.arg("DS").c_str());
+    int t = server.arg("UI").toInt();
+    if (t >= 0 && t < 3) uiConfiguration = t;
+    strcpy(serverDescription, server.arg("DS").c_str());
     useHSBDefault = server.hasArg("MD");
     useHSB = useHSBDefault;
-    if (server.hasArg("TH")) currentTheme = server.arg("TH").toInt();
+    currentTheme = server.arg("TH").toInt();
     char k[3]; k[0]='C'; k[2]=0;
     for(int i=0;i<6;i++)
     {
       k[1] = i+48;
-      if (server.hasArg(k)) strcpy(cssCol[i],server.arg(k).c_str());
+      strcpy(cssCol[i],server.arg(k).c_str());
     }
-    if (server.hasArg("CF")) strcpy(cssFont,server.arg("CF").c_str());
+    strcpy(cssFont,server.arg("CF").c_str());
     buildCssColorString();
   }
 
@@ -211,10 +143,8 @@ void handleSettingsSet(byte subPage)
   if (subPage == 4)
   {
     buttonEnabled = server.hasArg("BT");
-    if (server.hasArg("UP"))
-    {
-      udpPort = server.arg("UP").toInt();
-    }
+    int t = server.arg("UP").toInt();
+    if (t > 0) udpPort = t;
     receiveNotificationBrightness = server.hasArg("RB");
     receiveNotificationColor = server.hasArg("RC");
     receiveNotificationEffects = server.hasArg("RX");
@@ -223,45 +153,41 @@ void handleSettingsSet(byte subPage)
     notifyDirect = notifyDirectDefault;
     notifyButton = server.hasArg("SB");
     notifyTwice = server.hasArg("S2");
+    
     receiveDirect = server.hasArg("RD");
-    if (server.hasArg("EU"))
-    {
-      int i = server.arg("EU").toInt();
-      if (i > 0  && i <= 63999) arlsTimeoutMillis = i;
-    }
-    if (server.hasArg("ET"))
-    {
-      int i = server.arg("ET").toInt();
-      if (i > 99  && i <= 65000) arlsTimeoutMillis = i;
-    }
+    e131Multicast = server.hasArg("EM");
+    t = server.arg("EU").toInt();
+    if (t > 0  && t <= 63999) e131Universe = t;
+    t = server.arg("ET").toInt();
+    if (t > 99  && t <= 65000) realtimeTimeoutMs = t;
     arlsForceMaxBri = server.hasArg("FB");
     arlsDisableGammaCorrection = server.hasArg("RG");
-    if (server.hasArg("WO"))
-    {
-      int i = server.arg("WO").toInt();
-      if (i >= -255  && i <= 255) arlsOffset = i;
-    }
+    t = server.arg("WO").toInt();
+    if (t >= -255  && t <= 255) arlsOffset = t;
     enableRealtimeUI = server.hasArg("RU");
+    
     alexaEnabled = server.hasArg("AL");
-    if (server.hasArg("AI")) strcpy(alexaInvocationName,server.arg("AI").c_str());
-    alexaNotify = server.hasArg("SA");
+    strcpy(alexaInvocationName, server.arg("AI").c_str());
+    notifyAlexa = server.hasArg("SA");
+    
     if (server.hasArg("BK") && !server.arg("BK").equals("Hidden")) {strcpy(blynkApiKey,server.arg("BK").c_str()); initBlynk(blynkApiKey);}
+
+    strcpy(mqttServer, server.arg("MS").c_str());
+    strcpy(mqttDeviceTopic, server.arg("MD").c_str());
+    strcpy(mqttGroupTopic, server.arg("MG").c_str());
+    
     notifyHue = server.hasArg("SH");
     for (int i=0;i<4;i++){
       String a = "H"+String(i);
-      if (server.hasArg(a))
-        hueIP[i] = server.arg(a).toInt();
+      hueIP[i] = server.arg(a).toInt();
     }
-    if (server.hasArg("HL"))
-    {
-      int i = server.arg("HL").toInt();
-      if (i > 0) huePollLightId = i;
-    }
-    if (server.hasArg("HI"))
-    {
-      int i = server.arg("HI").toInt();
-      if (i > 50) huePollIntervalMs = i;
-    }
+
+    t = server.arg("HL").toInt();
+    if (t > 0) huePollLightId = t;
+
+    t = server.arg("HI").toInt();
+    if (t > 50) huePollIntervalMs = t;
+
     hueApplyOnOff = server.hasArg("HO");
     hueApplyBri = server.hasArg("HB");
     hueApplyColor = server.hasArg("HC");
@@ -281,54 +207,70 @@ void handleSettingsSet(byte subPage)
   {
     ntpEnabled = server.hasArg("NT");
     useAMPM = !server.hasArg("CF");
-    if (server.hasArg("TZ")) currentTimezone = server.arg("TZ").toInt();
-    if (server.hasArg("UO")) utcOffsetSecs = server.arg("UO").toInt();
+    currentTimezone = server.arg("TZ").toInt();
+    utcOffsetSecs = server.arg("UO").toInt();
     if (ntpEnabled && WiFi.status() == WL_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort); //start if not already connected
     
     if (server.hasArg("OL")){
       overlayDefault = server.arg("OL").toInt();
       overlayCurrent = overlayDefault;
-      strip.unlockAll();
     }
-    if (server.hasArg("O1")) overlayMin = server.arg("O1").toInt();
-    if (server.hasArg("O2")) overlayMax = server.arg("O2").toInt();
-    if (server.hasArg("OM")) analogClock12pixel = server.arg("OM").toInt();
+    
+    overlayMin = server.arg("O1").toInt();
+    overlayMax = server.arg("O2").toInt();
+    analogClock12pixel = server.arg("OM").toInt();
     analogClock5MinuteMarks = server.hasArg("O5");
     analogClockSecondsTrail = server.hasArg("OS");
     
-    if (server.hasArg("CX")) strcpy(cronixieDisplay,server.arg("CX").c_str());
+    strcpy(cronixieDisplay,server.arg("CX").c_str());
     bool cbOld = cronixieBacklight;
     cronixieBacklight = server.hasArg("CB");
-    if (cbOld != cronixieBacklight && overlayCurrent == 4)
+    if (cbOld != cronixieBacklight && overlayCurrent == 3)
     {
       strip.setCronixieBacklight(cronixieBacklight); overlayRefreshedTime = 0;
     }
     countdownMode = server.hasArg("CE");
-    if (server.hasArg("CY")) countdownYear = server.arg("CY").toInt();
-    if (server.hasArg("CI")) countdownMonth = server.arg("CI").toInt();
-    if (server.hasArg("CD")) countdownDay = server.arg("CD").toInt();
-    if (server.hasArg("CH")) countdownHour = server.arg("CH").toInt();
-    if (server.hasArg("CM")) countdownMin = server.arg("CM").toInt();
-    if (server.hasArg("CS")) countdownSec = server.arg("CS").toInt();
+    countdownYear = server.arg("CY").toInt();
+    countdownMonth = server.arg("CI").toInt();
+    countdownDay = server.arg("CD").toInt();
+    countdownHour = server.arg("CH").toInt();
+    countdownMin = server.arg("CM").toInt();
+    countdownSec = server.arg("CS").toInt();
     
     for (int i=1;i<17;i++)
     {
       String a = "M"+String(i);
       if (server.hasArg(a)) saveMacro(i,server.arg(a),false);
     }
-    if (server.hasArg("MB")) macroBoot = server.arg("MB").toInt();
-    if (server.hasArg("A0")) macroAlexaOn = server.arg("A0").toInt();
-    if (server.hasArg("A1")) macroAlexaOff = server.arg("A1").toInt();
-    if (server.hasArg("MP")) macroButton = server.arg("MP").toInt();
-    if (server.hasArg("ML")) macroLongPress = server.arg("ML").toInt();
-    if (server.hasArg("MC")) macroCountdown = server.arg("MC").toInt();
-    if (server.hasArg("MN")) macroNl = server.arg("MN").toInt();
+    
+    macroBoot = server.arg("MB").toInt();
+    macroAlexaOn = server.arg("A0").toInt();
+    macroAlexaOff = server.arg("A1").toInt();
+    macroButton = server.arg("MP").toInt();
+    macroLongPress = server.arg("ML").toInt();
+    macroCountdown = server.arg("MC").toInt();
+    macroNl = server.arg("MN").toInt();
+
+    char k[3]; k[2] = 0;
+    for (int i = 0; i<8; i++)
+    {
+      k[1] = i+48;//ascii 0,1,2,3
+      
+      k[0] = 'H'; //timer hours
+      timerHours[i] = server.arg(k).toInt();
+      
+      k[0] = 'N'; //minutes
+      timerMinutes[i] = server.arg(k).toInt();
+      
+      k[0] = 'T'; //macros
+      timerMacro[i] = server.arg(k).toInt();
+    }
   }
 
   //SECURITY
   if (subPage == 6)
   {
-    if (server.hasArg("RS"))
+    if (server.hasArg("RS")) //complete factory reset
     {
       clearEEPROM();
       serveMessage(200, "All Settings erased.", "Connect to WLED-AP to setup again...",255);
@@ -357,15 +299,14 @@ void handleSettingsSet(byte subPage)
     }
   }
   saveSettingsToEEPROM();
-  if (subPage == 2) strip.init(useRGBW,ledCount,PIN,skipFirstLed);
+  if (subPage == 2) strip.init(useRGBW,ledCount,skipFirstLed);
 }
 
 bool handleSet(String req)
 {
    bool effectUpdated = false;
-   if (!(req.indexOf("win") >= 0)) {
-        return false;
-   }
+   if (!(req.indexOf("win") >= 0)) return false;
+
    int pos = 0;
    DEBUG_PRINT("API req: ");
    DEBUG_PRINTLN(req);
@@ -383,7 +324,7 @@ bool handleSet(String req)
       }
       
       pos = req.indexOf("IN");
-      if (pos < 1) XML_response();
+      if (pos < 1) XML_response(true);
       return true;
       //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
    }
@@ -448,6 +389,16 @@ bool handleSet(String req)
       whiteSec = req.substring(pos + 3).toInt();
    }
    
+   //set color from HEX or 32bit DEC
+   pos = req.indexOf("CL=");
+   if (pos > 0) {
+      colorFromDecOrHexString(col, &white, (char*)req.substring(pos + 3).c_str());
+   }
+   pos = req.indexOf("C2=");
+   if (pos > 0) {
+      colorFromDecOrHexString(colSec, &whiteSec, (char*)req.substring(pos + 3).c_str());
+   }
+   
    //set 2nd to white
    pos = req.indexOf("SW");
    if (pos > 0) {
@@ -462,6 +413,7 @@ bool handleSet(String req)
         colSec[2] = 255;
       }
    }
+   
    //set 2nd to black
    pos = req.indexOf("SB");
    if (pos > 0) {
@@ -470,6 +422,7 @@ bool handleSet(String req)
       colSec[1] = 0;
       colSec[2] = 0;
    }
+   
    //set to random hue SR=0->1st SR=1->2nd
    pos = req.indexOf("SR");
    if (pos > 0) {
@@ -528,6 +481,16 @@ bool handleSet(String req)
         effectUpdated = true;
       }
    }
+   //set effect palette (only for FastLED effects)
+   pos = req.indexOf("FP=");
+   if (pos > 0) {
+      if (effectPalette != req.substring(pos + 3).toInt())
+      {
+        effectPalette = req.substring(pos + 3).toInt();
+        strip.setPalette(effectPalette);
+        effectUpdated = true;
+      }
+   }
 
    //set hue polling light: 0 -off
    pos = req.indexOf("HP=");
@@ -552,19 +515,6 @@ bool handleSet(String req)
    if (pos > 0) {
         overlayCurrent = req.substring(pos + 3).toInt();
         strip.unlockAll();
-   }
-   //set individual pixel (range) to current color
-   pos = req.indexOf("&I=");
-   if (pos > 0){
-      int index = req.substring(pos + 3).toInt();
-      pos = req.indexOf("I2=");
-      if (pos > 0){
-        int index2 = req.substring(pos + 3).toInt();
-        strip.setRange(index, index2);
-      } else
-      {
-        strip.setIndividual(index);
-      }
    }
    //(un)lock pixel (ranges)
    pos = req.indexOf("&L=");
@@ -591,6 +541,7 @@ bool handleSet(String req)
         }
       }
    }
+
    //apply macro
    pos = req.indexOf("&M=");
    if (pos > 0) {
@@ -605,6 +556,7 @@ bool handleSet(String req)
         notifyDirect = false;
       }
    }
+   
    //toggle receive UDP direct notifications
    if (req.indexOf("RN=") > 0)
    {
@@ -614,6 +566,7 @@ bool handleSet(String req)
         receiveNotifications = false;
       }
    }
+   
    //toggle nightlight mode
    bool aNlDef = false;
    if (req.indexOf("&ND") > 0) aNlDef = true;
@@ -634,12 +587,14 @@ bool handleSet(String req)
       nightlightActive = true;
       nightlightStartTime = millis();
    }
+   
    //set nightlight target brightness
    pos = req.indexOf("NT=");
    if (pos > 0) {
       nightlightTargetBri = req.substring(pos + 3).toInt();
       nightlightActiveOld = false; //re-init
    }
+   
    //toggle nightlight fade
    if (req.indexOf("NF=") > 0)
    {
@@ -651,6 +606,7 @@ bool handleSet(String req)
       }
       nightlightActiveOld = false; //re-init
    }
+   
    //toggle general purpose output
    pos = req.indexOf("AX=");
    if (pos > 0) {
@@ -662,9 +618,11 @@ bool handleSet(String req)
    if (pos > 0) {
       transitionDelay = req.substring(pos + 3).toInt();
    }
+   
    //main toggle on/off
    pos = req.indexOf("&T=");
    if (pos > 0) {
+      nightlightActive = false; //always disable nightlight when toggling
       switch (req.substring(pos + 3).toInt())
       {
         case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off
@@ -679,6 +637,7 @@ bool handleSet(String req)
         }
       }
    }
+   
    //deactivate nightlight if target brightness is reached
    if (bri == nightlightTargetBri) nightlightActive = false;
    //set time (unix timestamp)
@@ -686,25 +645,13 @@ bool handleSet(String req)
    if (pos > 0) {
       setTime(req.substring(pos+3).toInt());
    }
+   
    //set countdown goal (unix timestamp)
    pos = req.indexOf("CT=");
    if (pos > 0) {
       countdownTime = req.substring(pos+3).toInt();
       if (countdownTime - now() > 0) countdownOverTriggered = false;
    }
-   
-   //set custom chase data
-   bool _cc_updated = false;
-   pos = req.indexOf("C0="); if (pos > 0) {ccStart =  (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("C1="); if (pos > 0) {ccIndex1 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("C2="); if (pos > 0) {ccIndex2 = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CP="); if (pos > 0) {ccNumPrimary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CS="); if (pos > 0) {ccNumSecondary = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CM="); if (pos > 0) {ccStep = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CF="); if (pos > 0) {ccFromStart = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   pos = req.indexOf("CE="); if (pos > 0) {ccFromEnd = (req.substring(pos + 3).toInt()); _cc_updated = true;}
-   if (ccIndex2 == 255) ccIndex2 = ledCount-1;
-   if (_cc_updated) strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
    
    //set presets
     pos = req.indexOf("P1="); //sets first preset for cycle
@@ -773,7 +720,7 @@ bool handleSet(String req)
       {
         cronixieBacklight = false;
       }
-      if (overlayCurrent == 4) strip.setCronixieBacklight(cronixieBacklight);
+      if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
       overlayRefreshedTime = 0;
    }
    pos = req.indexOf("U0="); //user var 0
@@ -788,7 +735,7 @@ bool handleSet(String req)
    
    //internal call, does not send XML response
    pos = req.indexOf("IN");
-   if (pos < 1) XML_response();
+   if (pos < 1) XML_response(true);
    //do not send UDP notifications this time
    pos = req.indexOf("NN");
    if (pos > 0)

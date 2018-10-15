@@ -1,10 +1,14 @@
 /*
  * Settings html
  */
+ 
+//common CSS of settings pages
 const char PAGE_settingsCss[] PROGMEM = R"=====(
 body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:3em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}</style>
 )=====";
 
+
+//settings menu
 const char PAGE_settings0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head><title>WLED Settings</title>
@@ -26,11 +30,14 @@ body{text-align:center;background:var(--cCol);height:100%;margin:0;background-at
 </html>
 )=====";
 
+
+//wifi settings
 const char PAGE_settings_wifi0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>WiFi Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");}function B(){window.history.back();}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_wifi1[] PROGMEM = R"=====(
 </head>
 <body onload="GetV()">
@@ -72,11 +79,14 @@ AP IP: <span class="sip"> Not active </span><hr>
 </html>
 )=====";
 
+
+//LED settings
 const char PAGE_settings_leds0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>LED Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}function B(){window.history.back();}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_leds1[] PROGMEM = R"=====(
 </head>
 <body onload="GetV()">
@@ -86,7 +96,10 @@ const char PAGE_settings_leds1[] PROGMEM = R"=====(
 <h2>LED setup</h2>
 LED count: <input name="LC" type="number" min="1" max="1200" required><br>
 LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW"><br>
+<br>
 Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)<br>
+Turn on after power up/reset: <input type="checkbox" name="BO"><br>
+<br>
 Default RGB color:
 <input name="CR" type="number" min="0" max="255" required>
 <input name="CG" type="number" min="0" max="255" required>
@@ -97,6 +110,7 @@ Default brightness: <input name="CA" type="number" min="0" max="255" required> (
 Default effect ID: <input name="FX" type="number" min="0" max="57" required><br>
 Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
 Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br>
+Default effect palette: <input name="FP" type="number" min="0" max="255" required><br>
 Default secondary RGB(W):<br>
 <input name="SR" type="number" min="0" max="255" required>
 <input name="SG" type="number" min="0" max="255" required>
@@ -104,20 +118,27 @@ Default secondary RGB(W):<br>
 <input name="SW" type="number" min="0" max="255" required><br>
 Ignore and use current color, brightness and effects: <input type="checkbox" name="IS"><br>
 Save current preset cycle configuration as boot default: <input type="checkbox" name="PC"><br>
-Turn on after power up/reset: <input type="checkbox" name="BO"><br>
-Use Gamma correction for brightness: <input type="checkbox" name="GB"><br>
-Use Gamma correction for color: <input type="checkbox" name="GC"><br>
+<br>
+Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
+Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br>
 Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
-Fade: <input type="checkbox" name="TF"><br>
-Sweep: <input type="checkbox" name="TS">  Invert direction: <input type="checkbox" name="TI"><br>
+Crossfade: <input type="checkbox" name="TF"><br>
 Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
 Enable transition for secondary color: <input type="checkbox" name="T2"><br>
+Enable Palette transitions: <input type="checkbox" name="PF">
 <h3>Timed light</h3>
 Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
 Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
 Fade down: <input type="checkbox" name="TW"><br>
 <h3>Advanced</h3>
+Palette blending:
+<select name="PB">
+<option value="0">Linear (wrap if moving)</option>
+<option value="1">Linear (always wrap)</option>
+<option value="2">Linear (never wrap)</option>
+<option value="3">None (not recommended)</option>
+</select><br>
 Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
 Init LEDs after WiFi: <input type="checkbox" name="EI"><br>
 Skip first LED: <input type="checkbox" name="SL"><hr>
@@ -127,12 +148,15 @@ Skip first LED: <input type="checkbox" name="SL"><hr>
 </html>
 )=====";
 
+
+//User Interface settings
 const char PAGE_settings_ui0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>UI Settings</title><script>
 function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_ui1[] PROGMEM = R"=====(
 </head>
 <body onload="S()">
@@ -184,11 +208,14 @@ Make sure the font you use is installed on your system!<br>
 </html>
 )=====";
 
+
+//sync settings
 const char PAGE_settings_sync0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head><title>Sync Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_sync1[] PROGMEM = R"=====(
 </head>
 <body onload="GetV()">
@@ -223,6 +250,11 @@ Alexa invocation name: <input name="AI" maxlength="32">
 <h3>Blynk</h3>
 Device Auth token: <input name="BK" maxlength="33"><br>
 <i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
+<h3>MQTT</h3>
+Broker: <input name="MS" maxlength="32"><br>
+Device Topic: <input name="MD" maxlength="32"><br>
+Group Topic: <input name="MG" maxlength="32"><br>
+<i>Reboot required to apply changes. </i><a href="https://github.com/Aircoookie/WLED/wiki/MQTT" target="_blank">MQTT info</a>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
 Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
@@ -241,11 +273,14 @@ Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 </html>
 )=====";
 
+
+//time and macro settings
 const char PAGE_settings_time0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head><title>Time Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function S(){GetV();Cs();}function gId(s){return document.getElementById(s);}function Cs(){gId("cac").style.display="none";gId("coc").style.display="block";gId("ccc").style.display="none";if (gId("ca").selected){gId("cac").style.display="block";}if (gId("cc").selected){gId("coc").style.display="none";gId("ccc").style.display="block";}if (gId("cn").selected){gId("coc").style.display="none";}}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_time1[] PROGMEM = R"=====(
 </head>
 <body onload="S()">
@@ -278,10 +313,9 @@ Current local time is <span class="times">unknown</span>.
 Clock Overlay:
 <select name="OL" onchange="Cs()">
 <option value="0" id="cn" selected>None</option>
-<option value="1">Static color</option>
-<option value="2" id="ca">Analog Clock</option>
-<option value="3">Single Digit Clock</option>
-<option value="4" id="cc">Cronixie Clock</option>
+<option value="1" id="ca">Analog Clock</option>
+<option value="2">Single Digit Clock</option>
+<option value="3" id="cc">Cronixie Clock</option>
 </select><br>
 <div id="coc">
 First LED: <input name="O1" type="number" min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" required><br>
@@ -316,24 +350,43 @@ Define API macros here:<br>
 15: <input name="M15" maxlength="64"><br>
 16: <input name="M16" maxlength="64"><br><br>
 <i>Use 0 for the default action instead of a macro</i><br>
-Time controlled macros coming soon!<br>
 Boot Macro: <input name="MB" type="number" min="0" max="16" required><br>
 Alexa On/Off Macros: <input name="A0" type="number" min="0" max="16" required> <input name="A1" type="number" min="0" max="16" required><br>
 Button Macro: <input name="MP" type="number" min="0" max="16" required> Long Press: <input name="ML" type="number" min="0" max="16" required><br>
 Countdown-Over Macro: <input name="MC" type="number" min="0" max="16" required><br>
-Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required><hr>
+Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required><br>
+Time-Controlled Macros (Hours/Minutes &gt; Macro):<br>
+<input name="H0" type="number" min="0" max="24"> <input name="N0" type="number" min="0" max="59">
+&gt; <input name="T0" type="number" min="0" max="16"><br>
+<input name="H1" type="number" min="0" max="24"> <input name="N1" type="number" min="0" max="59">
+&gt; <input name="T1" type="number" min="0" max="16"><br>
+<input name="H2" type="number" min="0" max="24"> <input name="N2" type="number" min="0" max="59">
+&gt; <input name="T2" type="number" min="0" max="16"><br>
+<input name="H3" type="number" min="0" max="24"> <input name="N3" type="number" min="0" max="59">
+&gt; <input name="T3" type="number" min="0" max="16"><br>
+<input name="H4" type="number" min="0" max="24"> <input name="N4" type="number" min="0" max="59">
+&gt; <input name="T4" type="number" min="0" max="16"><br>
+<input name="H5" type="number" min="0" max="24"> <input name="N5" type="number" min="0" max="59">
+&gt; <input name="T5" type="number" min="0" max="16"><br>
+<input name="H6" type="number" min="0" max="24"> <input name="N6" type="number" min="0" max="59">
+&gt; <input name="T6" type="number" min="0" max="16"><br>
+<input name="H7" type="number" min="0" max="24"> <input name="N7" type="number" min="0" max="59">
+&gt; <input name="T7" type="number" min="0" max="16"><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
 </html>
 )=====";
 
+
+//security settings and about
 const char PAGE_settings_sec0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>Misc Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings");}function B(){window.open("/settings","_self");}function U(){window.open("/update","_self");}function GetV(){var d = document;
 )=====";
+
 const char PAGE_settings_sec1[] PROGMEM = R"=====(
 </head>
 <body onload="GetV()">
@@ -358,7 +411,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.7.1<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.0<br><br>
 <b>Contributors:</b><br>
 StormPie <i>(Mobile HTML UI)</i><br><br>
 Thank you so much!<br><br>
@@ -366,11 +419,14 @@ Thank you so much!<br><br>
 <i>Licensed under the MIT license</i><br><br>
 <b>Uses libraries:</b><br>
 <i>ESP8266/ESP32 Arduino Core</i><br>
+<i><a href="https://github.com/svenihoney/NeoPixelBus" target="_blank">NeoPixelBus</a> by Makuna (svenihoney fork)</i><br>
+<i><a href="https://github.com/FastLED/FastLED/" target="_blank">FastLED</a> library</i><br>
 <i>(ESP32) <a href="https://github.com/bbx10/WebServer_tng" target="_blank">WebServer_tng</a> by bbx10</i><br>
 <i><a href="https://github.com/kitesurfer1404/WS2812FX" target="_blank">WS2812FX</a> by kitesurfer1404 (modified)</i><br>
 <i><a href="https://github.com/JChristensen/Timezone" target="_blank">Timezone</a> library by JChristensen</i><br>
 <i><a href="https://github.com/blynkkk/blynk-library" target="_blank">Blynk</a> library (compacted)</i><br>
 <i><a href="https://github.com/forkineye/E131" target="_blank">E1.31</a> library by forkineye (modified)</i><br>
+<i><a href="https://github.com/knolleary/pubsubclient" target="_blank">PubSubClient</a> by knolleary (modified)</i><br>
 <i><a href="https://github.com/Aircoookie/Espalexa" target="_blank">Espalexa</a> by Aircoookie (modified)</i><br><br>
 <i>UI icons by <a href="https://linearicons.com" target="_blank">Linearicons</a> created by <a href="https://perxis.com" target="_blank">Perxis</a>! (CC-BY-SA 4.0)</i> <br><br>
 Server message: <span class="msg"> Response error! </span><hr>

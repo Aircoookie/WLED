@@ -1,27 +1,36 @@
-//USER HTML
+/*
+ * Various pages
+ */
+
+//USER HTML HERE (/u subpage)
 const char PAGE_usermod[] PROGMEM = R"=====(
 <html><body>There is no usermod installed or it doesn't specify a custom web page.</body></html>
 )=====";
-/*
- * Various
- */
+
+
+//server message
 const char PAGE_msg0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>WLED Message</title>
 <script>function B(){window.history.back()};function RS(){window.location = "/settings";}function RP(){top.location.href="/";}</script>
 )=====";
+
 const char PAGE_msg1[] PROGMEM = R"=====(
 button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}</style>
 </head>
 <body>
 )=====";
 
+
+//new user welcome page
+#ifndef WLED_FLASH_512K_MODE
 const char PAGE_welcome0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>
 <title>WLED Welcome!</title>
 )=====";
+
 const char PAGE_welcome1[] PROGMEM = R"=====(
 body{font-family:var(--cFn),sans-serif;text-align:center;background:linear-gradient(var(--bCol),black);height:100%;margin:0;background-repeat:no-repeat;background-attachment: fixed;color: var(--tCol);}svg {fill: var(--dCol);}
 </style></head>
@@ -41,6 +50,11 @@ Connect the module to your local WiFi <a href="/settings/wifi">here</a>!<br><br>
 <i>Just trying this out in AP mode?</i> <a href="/sliders">Here are the controls.</a><br>
 </body></html>
 )=====";
+#else
+const char PAGE_welcome0[] PROGMEM = "";
+const char PAGE_welcome1[] PROGMEM = "";
+#endif
+
 
 /*
  * SPIFFS editor html
@@ -54,6 +68,8 @@ eval(function(p,a,c,k,e,r){e=function(c){return(c<a?'':e(parseInt(c/a)))+((c=c%a
 #else
 const char PAGE_edit[] PROGMEM = R"=====(SPIFFS disabled)=====";
 #endif
+
+
 /*
  * favicon
  */

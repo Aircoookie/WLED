@@ -2,7 +2,7 @@
  * Sending XML status files to client
  */
 
-void XML_response()
+void XML_response(bool isHTTP)
 {
    olen = 0;
    oappend("<?xml version = \"1.0\" ?><vs><ac>");
@@ -39,7 +39,9 @@ void XML_response()
    oappendi(effectSpeed);
    oappend("</sx><ix>");
    oappendi(effectIntensity);
-   oappend("</ix><wv>");
+   oappend("</ix><fp>");
+   oappendi(effectPalette);
+   oappend("</fp><wv>");
    if (useRGBW && !autoRGBtoRGBW) {
      oappendi(white);
    } else {
@@ -50,7 +52,7 @@ void XML_response()
    oappend("</md><ds>");
    oappend(serverDescription);
    oappend("</ds></vs>");
-   server.send(200, "text/xml", obuf);
+   if (isHTTP) server.send(200, "text/xml", obuf);
 }
 
 void sappend(char stype, char* key, int val) //append a setting to string buffer
@@ -185,17 +187,18 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('v',"FX",effectDefault);
     sappend('v',"SX",effectSpeedDefault);
     sappend('v',"IX",effectIntensityDefault);
+    sappend('v',"FP",effectPaletteDefault);
     sappend('c',"GB",useGammaCorrectionBri);
     sappend('c',"GC",useGammaCorrectionRGB);
     sappend('c',"TF",fadeTransition);
-    sappend('c',"TS",sweepTransition);
-    sappend('c',"TI",!sweepDirection);
     sappend('v',"TD",transitionDelay);
-    sappend('c',"T2",!disableSecTransition);
+    sappend('c',"PF",strip.paletteFade);
+    sappend('c',"T2",enableSecTransition);
     sappend('v',"BF",briMultiplier);
     sappend('v',"TB",nightlightTargetBri);
     sappend('v',"TL",nightlightDelayMins);
     sappend('c',"TW",nightlightFade);
+    sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",reverseMode);
     sappend('c',"EI",initLedsLast);
     sappend('c',"SL",skipFirstLed);
@@ -230,15 +233,18 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('c',"RD",receiveDirect);
     sappend('c',"EM",e131Multicast);
     sappend('v',"EU",e131Universe);
-    sappend('v',"ET",arlsTimeoutMillis);
+    sappend('v',"ET",realtimeTimeoutMs);
     sappend('c',"FB",arlsForceMaxBri);
     sappend('c',"RG",arlsDisableGammaCorrection);
     sappend('v',"WO",arlsOffset);
     sappend('c',"RU",enableRealtimeUI);
     sappend('c',"AL",alexaEnabled);
     sappends('s',"AI",alexaInvocationName);
-    sappend('c',"SA",alexaNotify);
+    sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
+    sappends('s',"MS",mqttServer);
+    sappends('s',"MD",mqttDeviceTopic);
+    sappends('s',"MG",mqttGroupTopic);
     sappend('v',"H0",hueIP[0]);
     sappend('v',"H1",hueIP[1]);
     sappend('v',"H2",hueIP[2]);
@@ -289,6 +295,15 @@ void getSettingsJS(byte subPage) //get values for settings form in javascript
     sappend('v',"ML",macroLongPress);
     sappend('v',"MC",macroCountdown);
     sappend('v',"MN",macroNl);
+
+    k[2] = 0; //Time macros
+    for (int i = 0; i<8; i++)
+    {
+      k[1] = 48+i; //ascii 0,1,2,3
+      k[0] = 'H'; sappend('v',k,timerHours[i]);
+      k[0] = 'N'; sappend('v',k,timerMinutes[i]);
+      k[0] = 'T'; sappend('v',k,timerMacro[i]);
+    }
   }
 
   if (subPage == 6)

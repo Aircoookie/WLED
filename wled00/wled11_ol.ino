@@ -3,18 +3,19 @@
  */
 void initCronixie()
 {
-  if (overlayCurrent == 4 && !cronixieInit)
+  if (overlayCurrent == 3 && !cronixieInit)
   {
     strip.driverModeCronixie(true);
     strip.setCronixieBacklight(cronixieBacklight);
     setCronixie();
     cronixieInit = true;
-  } else if (cronixieInit && overlayCurrent != 4)
+  } else if (cronixieInit && overlayCurrent != 3)
   {
     strip.driverModeCronixie(false);
     cronixieInit = false; 
   }
 }
+
 
 void _nixieDisplay(int num[], uint16_t dur[], uint16_t pausedur[], byte cnt)
 {
@@ -116,31 +117,24 @@ void _nixieNumber(int number, int dur)
   }
 }
 
+
 void handleOverlays()
 {
   if (millis() - overlayRefreshedTime > overlayRefreshMs)
   {
     initCronixie();
     updateLocalTime();
+    checkTimers();
     switch (overlayCurrent)
     {
       case 0: break;//no overlay
-      case 1: _overlaySolid(); break;//solid secondary color
-      case 2: _overlayAnalogClock(); break;//2 analog clock
-      case 3: _overlayNixieClock(); break;//nixie 1-digit
-      case 4: _overlayCronixie();//Diamex cronixie clock kit
+      case 1: _overlayAnalogClock(); break;//2 analog clock
+      case 2: _overlayNixieClock(); break;//nixie 1-digit
+      case 3: _overlayCronixie();//Diamex cronixie clock kit
     }
     if (!countdownMode || overlayCurrent < 2) checkCountdown(); //countdown macro activation must work
     overlayRefreshedTime = millis();
   }
-}
-
-void _overlaySolid()
-{
-  strip.unlockAll();
-  uint32_t cls = (useGammaCorrectionRGB)? gamma8[whiteSec*16777216] + gamma8[colSec[0]]*65536 + gamma8[colSec[1]]*256 + gamma8[colSec[2]]:whiteSec*16777216 + colSec[0]*65536 + colSec[1]*256 + colSec[2];
-  strip.setRange(overlayMin,overlayMax,cls);
-  overlayRefreshMs = 1902;
 }
 
 void _overlayAnalogClock()
@@ -151,7 +145,6 @@ void _overlayAnalogClock()
   {
     _overlayAnalogCountdown(); return;
   }
-  _overlaySolid();
   double hourP = ((double)(hour(local)%12))/12;
   double minuteP = ((double)minute(local))/60;
   hourP = hourP + minuteP/12;
@@ -191,6 +184,10 @@ void _overlayAnalogClock()
 
 void _overlayNixieClock()
 {
+  #ifdef WLED_FLASH_512K_MODE
+  if (countdownMode) checkCountdown();
+  #else
+  
   if (countdownMode)
   {
     _overlayNixieCountdown(); return;
@@ -275,6 +272,7 @@ void _overlayNixieClock()
   {
     _nixieDisplay(overlayArr, overlayDur, overlayPauseDur, 6);
   }
+  #endif
 }
 
 void _overlayAnalogCountdown()
@@ -321,6 +319,7 @@ void _overlayAnalogCountdown()
   }
   overlayRefreshMs = 998;
 }
+
 
 void _overlayNixieCountdown()
 {

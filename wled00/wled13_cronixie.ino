@@ -19,6 +19,7 @@ byte getSameCodeLength(char code, int index, char const cronixieDisplay[])
 
 void setCronixie()
 {
+  #ifndef WLED_FLASH_512K_MODE
   /*
    * digit purpose index
    * 0-9 | 0-9 (incl. random)
@@ -139,11 +140,14 @@ void setCronixie()
   DEBUG_PRINTLN((int)dP[5]);
 
   _overlayCronixie(); //refresh
+  #endif
 }
 
 void _overlayCronixie()
 {
     if (countdownMode) checkCountdown();
+    #ifndef WLED_FLASH_512K_MODE
+    
     byte h = hour(local);
     byte h0 = h;
     byte m = minute(local);
@@ -208,4 +212,6 @@ void _overlayCronixie()
     }
     strip.setCronixieDigits(_digitOut);
     //strip.trigger(); //this has a drawback, no effects slower than RefreshMs. advantage: Quick update, not dependant on effect time
+    #endif
 }
+

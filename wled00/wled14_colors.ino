@@ -106,6 +106,26 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   rgb[2] = 255.0*b;
 }
 
+void colorFromDecOrHexString(byte* rgb, byte* wht, char* in)
+{
+  if (in[0] == 0) return;
+  char first = in[0];
+  uint32_t c = 0;
+  
+  if (first == '#' || first == 'h' || first == 'H') //is HEX encoded
+  {
+    c = strtoul(in +1, NULL, 16);
+  } else
+  {
+    c = strtoul(in, NULL, 10);
+  }
+
+  *wht   = (c >> 24) & 0xFF;
+  rgb[0] = (c >> 16) & 0xFF;
+  rgb[1] = (c >>  8) & 0xFF;
+  rgb[2] =  c        & 0xFF;
+}
+
 void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
 {
   float X = rgb[0] * 0.664511f + rgb[1] * 0.154324f + rgb[2] * 0.162028f;

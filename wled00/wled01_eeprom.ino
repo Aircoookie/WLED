@@ -6,7 +6,7 @@
 #define EEPSIZE 3072
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 7
+#define EEPVER 9
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -15,6 +15,8 @@
 //5 -> 0.5.1 and up
 //6 -> 0.6.0 and up
 //7 -> 0.7.1 and up
+//8 -> 0.8.0-a and up
+//9 -> 0.8.0
 
 /*
  * Erase all configuration data
@@ -28,6 +30,25 @@ void clearEEPROM()
   EEPROM.commit();
 }
 
+void writeStringToEEPROM(uint16_t pos, char* str, uint16_t len)
+{
+  for (int i = 0; i < len; ++i)
+  {
+    EEPROM.write(pos + i, str[i]);
+    if (str[i] == 0) return;
+  }
+}
+
+void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
+{
+  for (int i = 0; i < len; ++i)
+  {
+    str[i] = EEPROM.read(pos + i);
+    if (str[i] == 0) return;
+  }
+  str[len] = 0; //make sure every string is properly terminated. str must be at least len +1 big.
+}
+
 /*
  * Write configuration to flash
  */
@@ -39,26 +60,12 @@ void saveSettingsToEEPROM()
     EEPROM.write(233, 233);
   }
   
-  for (int i = 0; i < 32; ++i)
-  {
-    EEPROM.write(i, clientSSID[i]);
-  }
-  for (int i = 32; i < 96; ++i)
-  {
-    EEPROM.write(i, clientPass[i-32]);
-  }
-  for (int i = 96; i < 128; ++i)
-  {
-    EEPROM.write(i, cmDNS[i-96]);
-  }
-  for (int i = 128; i < 160; ++i)
-  {
-    EEPROM.write(i, apSSID[i-128]);
-  }
-  for (int i = 160; i < 224; ++i)
-  {
-    EEPROM.write(i, apPass[i-160]);
-  }
+  writeStringToEEPROM(  0, clientSSID, 32);
+  writeStringToEEPROM( 32, clientPass, 64);
+  writeStringToEEPROM( 96,      cmDNS, 32);
+  writeStringToEEPROM(128,     apSSID, 32);
+  writeStringToEEPROM(160,     apPass, 64);
+
   EEPROM.write(224, nightlightDelayMins);
   EEPROM.write(225, nightlightFade);
   EEPROM.write(226, notifyDirectDefault);
@@ -69,96 +76,92 @@ void saveSettingsToEEPROM()
   EEPROM.write(231, notifyTwice);
   EEPROM.write(232, buttonEnabled);
   //233 reserved for first boot flag
+  
   for (int i = 0; i<4; i++) //ip addresses
   {
     EEPROM.write(234+i, staticIP[i]);
     EEPROM.write(238+i, staticGateway[i]);
     EEPROM.write(242+i, staticSubnet[i]);
   }
+  
   EEPROM.write(246, colS[0]);
   EEPROM.write(247, colS[1]);
   EEPROM.write(248, colS[2]);
   EEPROM.write(249, briS);
+  
   EEPROM.write(250, receiveNotificationBrightness);
   EEPROM.write(251, fadeTransition);
   EEPROM.write(252, reverseMode);
   EEPROM.write(253, (transitionDelayDefault >> 0) & 0xFF);
   EEPROM.write(254, (transitionDelayDefault >> 8) & 0xFF);
   EEPROM.write(255, briMultiplier);
+  
   //255,250,231,230,226 notifier bytes
-  for (int i = 256; i < 288; ++i)
-  {
-    EEPROM.write(i, otaPass[i-256]);
-  }
+  writeStringToEEPROM(256, otaPass, 32);
+  
   EEPROM.write(288, nightlightTargetBri);
   EEPROM.write(289, otaLock);
   EEPROM.write(290, (udpPort >> 0) & 0xFF);
   EEPROM.write(291, (udpPort >> 8) & 0xFF);
-  for (int i = 292; i < 324; ++i)
-  {
-    EEPROM.write(i, serverDescription[i-292]);
-  }
+  writeStringToEEPROM(292, serverDescription, 32);
+  
   EEPROM.write(324, effectDefault);
   EEPROM.write(325, effectSpeedDefault);
   EEPROM.write(326, effectIntensityDefault);
+  
   EEPROM.write(327, ntpEnabled);
   EEPROM.write(328, currentTimezone);
   EEPROM.write(329, useAMPM);
   EEPROM.write(330, useGammaCorrectionBri);
   EEPROM.write(331, useGammaCorrectionRGB);
   EEPROM.write(332, overlayDefault);
+  
   EEPROM.write(333, alexaEnabled);
-  for (int i = 334; i < 366; ++i)
-  {
-    EEPROM.write(i, alexaInvocationName[i-334]);
-  }
-  EEPROM.write(366, alexaNotify);
+  writeStringToEEPROM(334, alexaInvocationName, 32);
+  EEPROM.write(366, notifyAlexa);
+  
   EEPROM.write(367, (arlsOffset>=0));
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
   EEPROM.write(370, useHSBDefault);
   EEPROM.write(371, whiteS);
   EEPROM.write(372, useRGBW);
-  EEPROM.write(373, sweepTransition);
-  EEPROM.write(374, sweepDirection);
+  EEPROM.write(373, effectPaletteDefault);
+  EEPROM.write(374, strip.paletteFade);
   EEPROM.write(375, apWaitTimeSecs);
   EEPROM.write(376, recoveryAPDisabled);
+  
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
+  
   EEPROM.write(378, colSecS[0]);
   EEPROM.write(379, colSecS[1]);
   EEPROM.write(380, colSecS[2]);
   EEPROM.write(381, whiteSecS);
-  EEPROM.write(382, ccIndex1);
-  EEPROM.write(383, ccIndex2);
-  EEPROM.write(384, ccNumPrimary);
-  EEPROM.write(385, ccNumSecondary);
-  EEPROM.write(386, ccFromStart);
-  EEPROM.write(387, ccFromEnd);
-  EEPROM.write(388, ccStep);
+  EEPROM.write(382, strip.paletteBlend);
+  
   EEPROM.write(389, bootPreset);
   EEPROM.write(390, aOtaEnabled);
   EEPROM.write(391, receiveNotificationColor);
   EEPROM.write(392, receiveNotificationEffects);
   EEPROM.write(393, wifiLock);
+  
   EEPROM.write(394, (abs(utcOffsetSecs) >> 0) & 0xFF);
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
   EEPROM.write(397, initLedsLast);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
-  EEPROM.write(399, disableSecTransition);
+  EEPROM.write(399, !enableSecTransition);
+
+  //favorite setting (preset) memory (25 slots/ each 20byte)
+  //400 - 899 reserved
 
   for (int k=0;k<6;k++){
     int in = 900+k*8;
-    for (int i=in; i < in+8; ++i)
-    {
-      EEPROM.write(i, cssCol[i-in][k]);
-    }}
+    writeStringToEEPROM(in, cssCol[k], 8);
+  }
 
   EEPROM.write(948,currentTheme);
-  for (int i = 950; i < 982; ++i)
-  {
-    EEPROM.write(i, cssFont[i-950]);
-  }
+  writeStringToEEPROM(950, cssFont, 32);
 
   EEPROM.write(2048, huePollingEnabled);
   //EEPROM.write(2049, hueUpdatingEnabled);
@@ -166,10 +169,7 @@ void saveSettingsToEEPROM()
   {
     EEPROM.write(i, hueIP[i-2050]);
   }
-  for (int i = 2054; i < 2100; ++i)
-  {
-    EEPROM.write(i, hueApiKey[i-2054]);
-  }
+  writeStringToEEPROM(2054, hueApiKey, 46);
   EEPROM.write(2100, (huePollIntervalMs >> 0) & 0xFF);
   EEPROM.write(2101, (huePollIntervalMs >> 8) & 0xFF);
   EEPROM.write(2102, notifyHue);
@@ -183,6 +183,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(2152, analogClock12pixel);
   EEPROM.write(2153, analogClock5MinuteMarks);
   EEPROM.write(2154, analogClockSecondsTrail);
+  
   EEPROM.write(2155, countdownMode);
   EEPROM.write(2156, countdownYear);
   EEPROM.write(2157, countdownMonth);
@@ -192,10 +193,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(2161, countdownSec);
   setCountdown();
 
-  for (int i = 2165; i < 2171; ++i)
-  {
-    EEPROM.write(i, cronixieDisplay[i-2165]);
-  }
+  writeStringToEEPROM(2165, cronixieDisplay, 6);
   EEPROM.write(2171, cronixieBacklight);
   setCronixie();
   
@@ -210,34 +208,43 @@ void saveSettingsToEEPROM()
   EEPROM.write(2190, (e131Universe >> 0) & 0xFF);
   EEPROM.write(2191, (e131Universe >> 8) & 0xFF);
   EEPROM.write(2192, e131Multicast);
-  EEPROM.write(2193, (arlsTimeoutMillis >> 0) & 0xFF);
-  EEPROM.write(2194, (arlsTimeoutMillis >> 8) & 0xFF);
+  EEPROM.write(2193, (realtimeTimeoutMs >> 0) & 0xFF);
+  EEPROM.write(2194, (realtimeTimeoutMs >> 8) & 0xFF);
   EEPROM.write(2195, arlsForceMaxBri);
   EEPROM.write(2196, arlsDisableGammaCorrection);
 
-  EEPROM.write(2200,!receiveDirect);
-  EEPROM.write(2201,enableRealtimeUI);
-  EEPROM.write(2202,uiConfiguration);
-  EEPROM.write(2203,autoRGBtoRGBW);
-  EEPROM.write(2204,skipFirstLed);
+  EEPROM.write(2200, !receiveDirect);
+  EEPROM.write(2201, enableRealtimeUI);
+  EEPROM.write(2202, uiConfiguration);
+  EEPROM.write(2203, autoRGBtoRGBW);
+  EEPROM.write(2204, skipFirstLed);
 
   if (saveCurrPresetCycConf)
   {
-    EEPROM.write(2205,presetCyclingEnabled);
-    EEPROM.write(2206,(presetCycleTime >> 0) & 0xFF);
-    EEPROM.write(2207,(presetCycleTime >> 8) & 0xFF);
-    EEPROM.write(2208,presetCycleMin);
-    EEPROM.write(2209,presetCycleMax);
-    EEPROM.write(2210,presetApplyBri);
-    EEPROM.write(2211,presetApplyCol);
-    EEPROM.write(2212,presetApplyFx);
+    EEPROM.write(2205, presetCyclingEnabled);
+    EEPROM.write(2206, (presetCycleTime >> 0) & 0xFF);
+    EEPROM.write(2207, (presetCycleTime >> 8) & 0xFF);
+    EEPROM.write(2208, presetCycleMin);
+    EEPROM.write(2209, presetCycleMax);
+    EEPROM.write(2210, presetApplyBri);
+    EEPROM.write(2211, presetApplyCol);
+    EEPROM.write(2212, presetApplyFx);
     saveCurrPresetCycConf = false;
   }
 
-  for (int i = 2220; i < 2255; ++i)
+  writeStringToEEPROM(2220, blynkApiKey, 35);
+
+  for (int i = 0; i < 8; ++i)
   {
-    EEPROM.write(i, blynkApiKey[i-2220]);
+    EEPROM.write(2260 + i, timerHours[i]  );
+    EEPROM.write(2270 + i, timerMinutes[i]);
+    EEPROM.write(2280 + i, timerWeekday[i]);
+    EEPROM.write(2290 + i, timerMacro[i]  );
   }
+
+  writeStringToEEPROM(2300,      mqttServer, 32);
+  writeStringToEEPROM(2333, mqttDeviceTopic, 32);
+  writeStringToEEPROM(2366,  mqttGroupTopic, 32);
   
   EEPROM.commit();
 }
@@ -254,47 +261,28 @@ void loadSettingsFromEEPROM(bool first)
   }
   int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
   
-  for (int i = 0; i < 32; ++i)
-  {
-    clientSSID[i] = EEPROM.read(i);
-    if (clientSSID[i] == 0) break;
-  }
 
-  for (int i = 32; i < 96; ++i)
-  {
-    clientPass[i-32] = EEPROM.read(i);
-    if (clientPass[i-32] == 0) break;
-  }
-  
-  for (int i = 96; i < 128; ++i)
-  {
-    cmDNS[i-96] = EEPROM.read(i);
-    if (cmDNS[i-96] == 0) break;
-  }
+  readStringFromEEPROM(  0, clientSSID, 32);
+  readStringFromEEPROM( 32, clientPass, 64);
+  readStringFromEEPROM( 96,      cmDNS, 32);
+  readStringFromEEPROM(128,     apSSID, 32);
+  readStringFromEEPROM(160,     apPass, 64);
 
-  for (int i = 128; i < 160; ++i)
-  {
-    apSSID[i-128] = EEPROM.read(i);
-    if (apSSID[i-128] == 0) break;
-  }
-
-  for (int i = 160; i < 224; ++i)
-  {
-    apPass[i-160] = EEPROM.read(i);
-    if (apPass[i-160] == 0) break;
-  }
   nightlightDelayMins = EEPROM.read(224);
   nightlightFade = EEPROM.read(225);
   notifyDirectDefault = EEPROM.read(226);
   notifyDirect = notifyDirectDefault;
+  
   apChannel = EEPROM.read(227);
   if (apChannel > 13 || apChannel < 1) apChannel = 1;
   apHide = EEPROM.read(228);
   if (apHide > 1) apHide = 1;
   ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
+  
   notifyButton = EEPROM.read(230);
   notifyTwice = EEPROM.read(231);
   buttonEnabled = EEPROM.read(232);
+  
   staticIP[0] = EEPROM.read(234);
   staticIP[1] = EEPROM.read(235);
   staticIP[2] = EEPROM.read(236);
@@ -307,6 +295,7 @@ void loadSettingsFromEEPROM(bool first)
   staticSubnet[1] = EEPROM.read(243);
   staticSubnet[2] = EEPROM.read(244);
   staticSubnet[3] = EEPROM.read(245);
+  
   colS[0] = EEPROM.read(246); col[0] = colS[0];
   colS[1] = EEPROM.read(247); col[1] = colS[1];
   colS[2] = EEPROM.read(248); col[2] = colS[2];
@@ -322,20 +311,14 @@ void loadSettingsFromEEPROM(bool first)
   transitionDelay = transitionDelayDefault;
   briMultiplier = EEPROM.read(255);
 
-  for (int i = 256; i < 288; ++i)
-  {
-    otaPass[i-256] = EEPROM.read(i);
-    if (otaPass[i-256] == 0) break;
-  }
+  readStringFromEEPROM(256, otaPass, 32);
+  
   nightlightTargetBri = EEPROM.read(288);
   otaLock = EEPROM.read(289);
   udpPort = ((EEPROM.read(290) << 0) & 0xFF) + ((EEPROM.read(291) << 8) & 0xFF00);
 
-  for (int i = 292; i < 324; ++i)
-  {
-    serverDescription[i-292] = EEPROM.read(i);
-    if (serverDescription[i-292] == 0) break;
-  }
+  readStringFromEEPROM(292, serverDescription, 32);
+  
   effectDefault = EEPROM.read(324); effectCurrent = effectDefault;
   effectSpeedDefault = EEPROM.read(325); effectSpeed = effectSpeedDefault;
   ntpEnabled = EEPROM.read(327);
@@ -344,22 +327,22 @@ void loadSettingsFromEEPROM(bool first)
   useGammaCorrectionBri = EEPROM.read(330);
   useGammaCorrectionRGB = EEPROM.read(331);
   overlayDefault = EEPROM.read(332);
+  if (lastEEPROMversion < 8 && overlayDefault > 0) overlayDefault--; //overlay mode 1 (solid) was removed
+  
   alexaEnabled = EEPROM.read(333);
 
-  for (int i = 334; i < 366; ++i)
-  {
-    alexaInvocationName[i-334] = EEPROM.read(i);
-    if (alexaInvocationName[i-334] == 0) break;
-  }
-  alexaNotify = EEPROM.read(366);
+  readStringFromEEPROM(334, alexaInvocationName, 32);
+  
+  notifyAlexa = EEPROM.read(366);
   arlsOffset = EEPROM.read(368);
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
   useHSBDefault = EEPROM.read(370);
   whiteS = EEPROM.read(371); white = whiteS;
   useRGBW = EEPROM.read(372);
-  sweepTransition = EEPROM.read(373);
-  sweepDirection = EEPROM.read(374);
+  effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
+  //374 - strip.paletteFade
+
   if (lastEEPROMversion > 0) { 
     apWaitTimeSecs = EEPROM.read(375);
     recoveryAPDisabled = EEPROM.read(376);
@@ -369,15 +352,7 @@ void loadSettingsFromEEPROM(bool first)
     colSecS[0] = EEPROM.read(378); colSec[0] = colSecS[0];
     colSecS[1] = EEPROM.read(379); colSec[1] = colSecS[1];
     colSecS[2] = EEPROM.read(380); colSec[2] = colSecS[2];
-    whiteSecS = EEPROM.read(381); whiteSec = whiteSecS; 
-    ccIndex1 = EEPROM.read(382);
-    ccIndex2 = EEPROM.read(383);
-    ccNumPrimary = EEPROM.read(384);
-    ccNumSecondary = EEPROM.read(385);
-    ccFromStart = EEPROM.read(386);
-    ccFromEnd = EEPROM.read(387);
-    ccStep = EEPROM.read(388);
-    strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
+    whiteSecS = EEPROM.read(381); whiteSec = whiteSecS;
   }
   if (lastEEPROMversion > 3) {
     effectIntensityDefault = EEPROM.read(326); effectIntensity = effectIntensityDefault; 
@@ -385,11 +360,7 @@ void loadSettingsFromEEPROM(bool first)
     receiveNotificationColor = EEPROM.read(391);
     receiveNotificationEffects = EEPROM.read(392);
 
-    for (int i = 950; i < 982; ++i)
-    {
-      cssFont[i-950] = EEPROM.read(i);
-      if (cssFont[i-950] == 0) break;
-    }
+    readStringFromEEPROM(950, cssFont, 32);
   } else //keep receiving notification behavior from pre0.5.0 after update
   {
     receiveNotificationColor = receiveNotificationBrightness;
@@ -404,11 +375,8 @@ void loadSettingsFromEEPROM(bool first)
       hueIP[i-2050] = EEPROM.read(i);
     }
 
-    for (int i = 2054; i < 2100; ++i)
-    {
-      hueApiKey[i-2054] = EEPROM.read(i);
-      if (hueApiKey[i-2054] == 0) break;
-    }
+    readStringFromEEPROM(2054, hueApiKey, 46);
+    
     huePollIntervalMs = ((EEPROM.read(2100) << 0) & 0xFF) + ((EEPROM.read(2101) << 8) & 0xFF00);
     notifyHue = EEPROM.read(2102);
     hueApplyOnOff = EEPROM.read(2103);
@@ -431,10 +399,7 @@ void loadSettingsFromEEPROM(bool first)
     countdownSec = EEPROM.read(2161);
     setCountdown();
 
-    for (int i = 2165; i < 2171; ++i)
-    {
-      cronixieDisplay[i-2165] = EEPROM.read(i);
-    }
+    readStringFromEEPROM(2165, cronixieDisplay, 6);
     cronixieBacklight = EEPROM.read(2171);
     
     macroBoot = EEPROM.read(2175);
@@ -450,9 +415,31 @@ void loadSettingsFromEEPROM(bool first)
   {
     e131Universe = ((EEPROM.read(2190) << 0) & 0xFF) + ((EEPROM.read(2191) << 8) & 0xFF00);
     e131Multicast = EEPROM.read(2192);
-    arlsTimeoutMillis = ((EEPROM.read(2193) << 0) & 0xFF) + ((EEPROM.read(2194) << 8) & 0xFF00);
+    realtimeTimeoutMs = ((EEPROM.read(2193) << 0) & 0xFF) + ((EEPROM.read(2194) << 8) & 0xFF00);
     arlsForceMaxBri = EEPROM.read(2195);
     arlsDisableGammaCorrection = EEPROM.read(2196);
+  }
+
+  if (lastEEPROMversion > 7)
+  {
+    strip.paletteFade  = EEPROM.read(374);
+    strip.paletteBlend = EEPROM.read(382);
+
+    for (int i = 0; i < 8; ++i)
+    {
+      timerHours[i]   = EEPROM.read(2260 + i);
+      timerMinutes[i] = EEPROM.read(2270 + i);
+      timerWeekday[i] = EEPROM.read(2280 + i);
+      if (timerWeekday[i] == 0) timerWeekday[i] = 255;
+      timerMacro[i]  = EEPROM.read(2290 + i);
+    }
+  }
+
+  if (lastEEPROMversion > 8)
+  {
+    readStringFromEEPROM(2300,      mqttServer, 32);
+    readStringFromEEPROM(2333, mqttDeviceTopic, 32);
+    readStringFromEEPROM(2366,  mqttGroupTopic, 32);
   }
   
   receiveDirect = !EEPROM.read(2200);
@@ -477,19 +464,13 @@ void loadSettingsFromEEPROM(bool first)
     presetApplyCol = EEPROM.read(2211);
     presetApplyFx = EEPROM.read(2212);
   }
-
-  for (int i = 2220; i < 2255; ++i)
-  {
-    blynkApiKey[i-2220] = EEPROM.read(i);
-    if (blynkApiKey[i-2220] == 0) break;
-  }
   
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = ((EEPROM.read(394) << 0) & 0xFF) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
   initLedsLast = EEPROM.read(397);
-  disableSecTransition = EEPROM.read(399);
+  enableSecTransition = !EEPROM.read(399);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved
@@ -497,15 +478,14 @@ void loadSettingsFromEEPROM(bool first)
   currentTheme = EEPROM.read(948);
   for (int k=0;k<6;k++){
     int in=900+k*8;
-    for (int i=in; i < in+8; ++i)
-    {
-      if (EEPROM.read(i) == 0) break;
-      cssCol[i-in][k] =EEPROM.read(i);
-    }}
+    readStringFromEEPROM(in, cssCol[k], 8);
+  }
 
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
 
+  readStringFromEEPROM(2220, blynkApiKey, 35);
+  
   //user MOD memory
   //2944 - 3071 reserved
   
@@ -514,12 +494,13 @@ void loadSettingsFromEEPROM(bool first)
   strip.setMode(effectCurrent);
   strip.setSpeed(effectSpeed);
   strip.setIntensity(effectIntensity);
+  strip.setPalette(effectPalette);
   overlayCurrent = overlayDefault;
 }
 
 //PRESET PROTOCOL 20 bytes
 //0: preset purpose byte 0:invalid 1:valid preset 1.0
-//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17-19:Zeros
+//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17: fp 18-19:Zeros
 
 void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
 {
@@ -545,15 +526,11 @@ void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
     effectCurrent = EEPROM.read(i+10);
     effectSpeed = EEPROM.read(i+11);
     effectIntensity = EEPROM.read(i+16);
-    ccNumPrimary = EEPROM.read(i+12);
-    ccNumSecondary = EEPROM.read(i+13);
-    ccFromEnd = EEPROM.read(i+14);
-    ccFromStart = (EEPROM.read(i+14)<2);
-    ccStep = EEPROM.read(i+15);
-    strip.setCustomChase(ccIndex1, ccIndex2, ccStart, ccNumPrimary, ccNumSecondary, ccStep, ccFromStart, ccFromEnd);
+    effectPalette = EEPROM.read(i+17);
     if (lastfx != effectCurrent) strip.setMode(effectCurrent);
     strip.setSpeed(effectSpeed);
     strip.setIntensity(effectIntensity);
+    strip.setPalette(effectPalette);
   }
 }
 
@@ -574,14 +551,9 @@ void savePreset(byte index)
   EEPROM.write(i+9, whiteSec);
   EEPROM.write(i+10, effectCurrent);
   EEPROM.write(i+11, effectSpeed);
-  EEPROM.write(i+12, ccNumPrimary);
-  EEPROM.write(i+13, ccNumSecondary);
-  byte m = 1;
-  if (!ccFromStart) m = 2;
-  if (!ccFromEnd) m = 0;
-  EEPROM.write(i+14, m);
-  EEPROM.write(i+15, ccStep);
+  
   EEPROM.write(i+16, effectIntensity);
+  EEPROM.write(i+17, effectPalette);
   EEPROM.commit();
 }
 
@@ -606,7 +578,7 @@ void applyMacro(byte index)
   String mc="win&";
   mc += loadMacro(index+1);
   mc += "&IN"; //internal, no XML response
-  if (!macroNotify) mc += "&NN";
+  if (!notifyMacro) mc += "&NN";
   String forbidden = "&M="; //dont apply if called by the macro itself to prevent loop
   /*
    * NOTE: loop is still possible if you call a different macro from a macro, which then calls the first macro again. 

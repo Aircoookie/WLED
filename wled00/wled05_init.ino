@@ -5,13 +5,12 @@
 void wledInit()
 { 
   EEPROM.begin(EEPSIZE);
-  showWelcomePage = (EEPROM.read(233) != 233);
   ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
   //RMT eats up too much RAM
   #ifdef ARDUINO_ARCH_ESP32
   if (ledCount > 600) ledCount = 600;
   #endif
-  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,PIN,EEPROM.read(2204)); //quick init
+  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //quick init
 
   Serial.begin(115200);
   Serial.setTimeout(50);
@@ -27,6 +26,7 @@ void wledInit()
   DEBUG_PRINT(clientSSID);
   buildCssColorString();
   userBeginPreConnection();
+  if (strcmp(clientSSID,"Your_Network") == 0) showWelcomePage = true;
 
   initCon();
 
@@ -49,220 +49,73 @@ void wledInit()
   if (ntpEnabled && WiFi.status() == WL_CONNECTED)
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
-  //start captive portal
-  if (onlyAP || strlen(apSSID) > 0)
+  //start captive portal if AP active
+  if (onlyAP || strlen(apSSID) > 0) 
   {
-    dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
-    dnsServer.start(53, "*", WiFi.softAPIP());
+    dnsServer.setErrorReplyCode(DNSReplyCode::ServerFailure);
+    dnsServer.start(53, "wled.me", WiFi.softAPIP());
     dnsActive = true;
   }
-  if (!initLedsLast) strip.service();
-  //SERVER INIT
-  //settings page
-  server.on("/settings", HTTP_GET, [](){
-    serveSettings(0);
-  });
-  server.on("/settings/wifi", HTTP_GET, [](){
-    if (!(wifiLock && otaLock))
-    {
-      serveSettings(1);
-    }else{
-      serveMessage(500, "Access Denied", txd, 254);
-    }
-  });
-  server.on("/settings/leds", HTTP_GET, [](){
-    serveSettings(2);
-  });
-  server.on("/settings/ui", HTTP_GET, [](){
-    serveSettings(3);
-  });
-  server.on("/settings/sync", HTTP_GET, [](){
-    serveSettings(4);
-  });
-  server.on("/settings/time", HTTP_GET, [](){
-    serveSettings(5);
-  });
-  server.on("/settings/sec", HTTP_GET, [](){
-    serveSettings(6);
-  });
-  
-  server.on("/favicon.ico", HTTP_GET, [](){
-    if(!handleFileRead("/favicon.ico"))
-    {
-      server.send_P(200, "image/x-icon", favicon, 156);
-    }
-  });
-  
-  server.on("/", HTTP_GET, [](){
-    serveIndexOrWelcome();
-  });
 
-  server.on("/generate_204", HTTP_GET, [](){
-    serveIndexOrWelcome();
-  });
-
-  server.on("/fwlink", HTTP_GET, [](){
-    serveIndexOrWelcome();
-  });
-  
-  server.on("/sliders", HTTP_GET, serveIndex);
-  
-  server.on("/welcome", HTTP_GET, [](){
-    serveSettings(255);
-  });
-  
-  server.on("/reset", HTTP_GET, [](){
-    serveMessage(200,"Rebooting now...","(takes ~20 seconds, wait for auto-redirect)",79);
-    reset();
-  });
-  
-  server.on("/settings/wifi", HTTP_POST, [](){
-    if (!(wifiLock && otaLock)) handleSettingsSet(1);
-    serveMessage(200,"WiFi settings saved.","Rebooting now... (takes ~20 seconds, wait for auto-redirect)",139);
-    reset();
-  });
-
-  server.on("/settings/leds", HTTP_POST, [](){
-    handleSettingsSet(2);
-    serveMessage(200,"LED settings saved.","Redirecting...",1);
-  });
-
-  server.on("/settings/ui", HTTP_POST, [](){
-    handleSettingsSet(3);
-    serveMessage(200,"UI settings saved.","Reloading to apply theme...",122);
-  });
-
-  server.on("/settings/sync", HTTP_POST, [](){
-    handleSettingsSet(4);
-    if (hueAttempt)
-    {
-      serveMessage(200,"Hue setup result",hueError,253);
-    } else {
-      serveMessage(200,"Sync settings saved.","Redirecting...",1);
-    }
-    hueAttempt = false;
-  });
-
-  server.on("/settings/time", HTTP_POST, [](){
-    handleSettingsSet(5);
-    serveMessage(200,"Time settings saved.","Redirecting...",1);
-  });
-
-  server.on("/settings/sec", HTTP_POST, [](){
-    handleSettingsSet(6);
-    serveMessage(200,"Security settings saved.","Rebooting now... (takes ~20 seconds, wait for auto-redirect)",139);
-    reset();
-  });
-  
-  server.on("/version", HTTP_GET, [](){
-    server.send(200, "text/plain", (String)VERSION);
-    });
-    
-  server.on("/uptime", HTTP_GET, [](){
-    server.send(200, "text/plain", (String)millis());
-    });
-    
-  server.on("/freeheap", HTTP_GET, [](){
-    server.send(200, "text/plain", (String)ESP.getFreeHeap());
-    });
-    
-  server.on("/power", HTTP_GET, [](){
-    String val = (String)(int)strip.getPowerEstimate(ledCount,strip.getColor(),strip.getBrightness());
-    val += "mA currently";
-    serveMessage(200,val,"This is just an estimate (does not take into account several factors like effects and wire resistance). It is NOT an accurate measurement!",254);
-    });
-
-  server.on("/u", HTTP_GET, [](){
-    server.setContentLength(strlen_P(PAGE_usermod));
-    server.send(200, "text/html", "");
-    server.sendContent_P(PAGE_usermod);
-    });
-    
-  server.on("/teapot", HTTP_GET, [](){
-    serveMessage(418, "418. I'm a teapot.","(Tangible Embedded Advanced Project Of Twinkling)",254);
-    });
-    
-  server.on("/build", HTTP_GET, [](){
-    getBuildInfo();
-    server.send(200, "text/plain", obuf);
-    });
-  //if OTA is allowed
-  if (!otaLock){
-    server.on("/edit", HTTP_GET, [](){
-    if(!handleFileRead("/edit.htm")) server.send(200, "text/html", PAGE_edit);
-    });
-    #ifdef USEFS
-    server.on("/edit", HTTP_PUT, handleFileCreate);
-    server.on("/edit", HTTP_DELETE, handleFileDelete);
-    server.on("/edit", HTTP_POST, [](){ server.send(200, "text/plain", ""); }, handleFileUpload);
-    server.on("/list", HTTP_GET, handleFileList);
-    #endif
-    //init ota page
-    httpUpdater.setup(&server);
-  } else
+  prepareIds(); //UUID from MAC (for Alexa and MQTT)
+  if (mqttDeviceTopic[0] == 0)
   {
-    server.on("/edit", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd, 254);
-    });
-    server.on("/update", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd, 254);
-    });
-    server.on("/list", HTTP_GET, [](){
-    serveMessage(500, "Access Denied", txd, 254);
-    });
+    strcpy(mqttDeviceTopic, "wled/");
+    strcat(mqttDeviceTopic, escapedMac.c_str());
   }
-  //called when the url is not defined here, ajax-in; get-settings
-  server.onNotFound([](){
-    DEBUG_PRINTLN("Not-Found HTTP call:");
-    DEBUG_PRINTLN("URI: " + server.uri());
-    DEBUG_PRINTLN("Body: " + server.arg(0));
-    if(!handleSet(server.uri())){
-      if(!handleAlexaApiCall(server.uri(),server.arg(0)))
-      server.send(404, "text/plain", "Not Found");
-    }
-  });
   
-  #ifndef ARDUINO_ARCH_ESP32
-  const char * headerkeys[] = {"User-Agent"};
-  server.collectHeaders(headerkeys,sizeof(headerkeys)/sizeof(char*));
-  #else
-  String ua = "User-Agent";
-  server.collectHeaders(ua);
-  #endif
+  //smartInit, we only init some resources when connected
+  if (!onlyAP && WiFi.status() == WL_CONNECTED)
+  {
+    mqttTCPClient = new WiFiClient();
+    mqtt = new PubSubClient(*mqttTCPClient);
+    mqttInit = initMQTT();
+  }
+   
+  if (!initLedsLast) strip.service();
+
+  //HTTP server page init
+  initServer();
   
   if (!initLedsLast) strip.service();
   //init Alexa hue emulation
-  if (alexaEnabled) alexaInit();
+  if (alexaEnabled && !onlyAP) alexaInit();
 
   server.begin();
   DEBUG_PRINTLN("HTTP server started");
 
   //init ArduinoOTA
-  if (aOtaEnabled)
-  {
-    ArduinoOTA.onStart([]() {
-      #ifndef ARDUINO_ARCH_ESP32
-      wifi_set_sleep_type(NONE_SLEEP_T);
-      #endif
-      DEBUG_PRINTLN("Start ArduinoOTA");
-    });
-    if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
-    ArduinoOTA.begin();
-  }
-
-  if (!initLedsLast) strip.service();
-  // Set up mDNS responder:
-  if (strlen(cmDNS) > 0 && !onlyAP)
-  {
-    MDNS.begin(cmDNS);
-    DEBUG_PRINTLN("mDNS responder started");
-    // Add service to MDNS
-    MDNS.addService("http", "tcp", 80);
-  }
-
-  initBlynk(blynkApiKey);
+  if (!onlyAP) {
+    if (aOtaEnabled)
+    {
+      ArduinoOTA.onStart([]() {
+        #ifndef ARDUINO_ARCH_ESP32
+        wifi_set_sleep_type(NONE_SLEEP_T);
+        #endif
+        DEBUG_PRINTLN("Start ArduinoOTA");
+      });
+      if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
+      ArduinoOTA.begin();
+    }
   
-  initE131();
+    if (!initLedsLast) strip.service();
+    // Set up mDNS responder:
+    if (strlen(cmDNS) > 0 && !onlyAP)
+    {
+      MDNS.begin(cmDNS);
+      DEBUG_PRINTLN("mDNS responder started");
+      // Add service to MDNS
+      MDNS.addService("http", "tcp", 80);
+    }
+    if (!initLedsLast) strip.service();
+
+    initBlynk(blynkApiKey);
+    initE131();
+
+    hueClient = new HTTPClient();
+  } else {
+    e131Enabled = false;
+  }
 
   if (initLedsLast) initStrip();
   userBegin();
@@ -273,11 +126,10 @@ void wledInit()
 void initStrip()
 {
   // Initialize NeoPixel Strip and button
-  if (initLedsLast) strip.init(useRGBW,ledCount,PIN,skipFirstLed);
+  if (initLedsLast) strip.init(useRGBW,ledCount,skipFirstLed);
   strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
-  strip.start();
 
   pinMode(buttonPin, INPUT_PULLUP);
   pinMode(4,OUTPUT); //this is only needed in special cases
@@ -309,12 +161,12 @@ void initCon()
 
   if (strlen(apSSID)>0)
   {
-    DEBUG_PRINT("USING AP");
+    DEBUG_PRINT(" USING AP");
     DEBUG_PRINTLN(strlen(apSSID));
     initAP();
   } else
   {
-    DEBUG_PRINTLN("NO AP");
+    DEBUG_PRINTLN(" NO AP");
     WiFi.softAPdisconnect(true);
   }
   int fail_count = 0;
@@ -355,191 +207,6 @@ void initCon()
   }
 }
 
-void buildCssColorString()
-{
-  String cs[]={"","","","","",""};
-  switch (currentTheme)
-  {
-    default: cs[0]="D9B310"; cs[1]="0B3C5D"; cs[2]="1D2731"; cs[3]="328CC1"; cs[4]="000"; cs[5]="328CC1"; break; //night
-    case 1: cs[0]="eee"; cs[1]="ddd"; cs[2]="b9b9b9"; cs[3]="049"; cs[4]="777"; cs[5]="049"; break; //modern
-    case 2: cs[0]="abc"; cs[1]="fff"; cs[2]="ddd"; cs[3]="000"; cs[4]="0004"; cs[5]="000"; break; //bright
-    case 3: cs[0]="c09f80"; cs[1]="d7cec7"; cs[2]="76323f"; cs[3]="888"; cs[4]="3334"; cs[5]="888"; break; //wine
-    case 4: cs[0]="3cc47c"; cs[1]="828081"; cs[2]="d9a803"; cs[3]="1e392a"; cs[4]="000a"; cs[5]="1e392a"; break; //electric
-    case 5: cs[0]="57bc90"; cs[1]="a5a5af"; cs[2]="015249"; cs[3]="88c9d4"; cs[4]="0004"; cs[5]="88c9d4"; break; //mint
-    case 6: cs[0]="f7c331"; cs[1]="dcc7aa"; cs[2]="6b7a8f"; cs[3]="f7882f"; cs[4]="0007"; cs[5]="f7882f"; break; //amber
-    case 7: cs[0]="fc3"; cs[1]="124"; cs[2]="334"; cs[3]="f1d"; cs[4]="f00"; cs[5]="f1d"; break;//club
-    case 8: cs[0]="0ac"; cs[1]="124"; cs[2]="224"; cs[3]="003eff"; cs[4]="003eff"; cs[5]="003eff"; break;//air
-    case 9: cs[0]="f70"; cs[1]="421"; cs[2]="221"; cs[3]="a50"; cs[4]="f70"; cs[5]="f70"; break;//nixie
-    case 10: cs[0]="2d2"; cs[1]="010"; cs[2]="121"; cs[3]="060"; cs[4]="040"; cs[5]="3f3"; break; //terminal
-    case 11: cs[0]="867ADE"; cs[1]="4033A3"; cs[2]="483AAA"; cs[3]="483AAA"; cs[4]=""; cs[5]="867ADE"; break; //c64
-    case 12: cs[0]="fbe8a6"; cs[1]="d2fdff"; cs[2]="b4dfe5"; cs[3]="f4976c"; cs[4]=""; cs[5]="303c6c"; break; //c64
-    case 14: cs[0]="fc7"; cs[1]="49274a"; cs[2]="94618e"; cs[3]="f4decb"; cs[4]="0008"; cs[5]="f4decb"; break; //end
-    case 15: for (int i=0;i<6;i++)cs[i]=cssCol[i];//custom
-  }
-  cssColorString="<style>:root{--aCol:#";
-  cssColorString+=cs[0];
-  cssColorString+=";--bCol:#";
-  cssColorString+=cs[1];
-  cssColorString+=";--cCol:#";
-  cssColorString+=cs[2];
-  cssColorString+=";--dCol:#";
-  cssColorString+=cs[3];
-  cssColorString+=";--sCol:#";
-  cssColorString+=cs[4];
-  cssColorString+=";--tCol:#";
-  cssColorString+=cs[5];
-  cssColorString+=";--cFn:";
-  cssColorString+=cssFont;
-  cssColorString+=";}";
-}
-
-void serveIndexOrWelcome()
-{
-  if (!showWelcomePage){
-    if(!handleFileRead("/index.htm")) {
-      serveIndex();
-    }
-  }else{
-    if(!handleFileRead("/welcome.htm")) {
-      serveSettings(255);
-    }
-    showWelcomePage = false;
-  }
-}
-
-void serveRealtimeError(bool settings)
-{
-  String mesg = "The ";
-  mesg += (settings)?"settings":"WLED";
-  mesg += " UI is not available while receiving real-time data (";
-  if (realtimeIP[0] == 0)
-  {
-    mesg += "E1.31";
-  } else {
-    mesg += "UDP from ";
-    mesg += realtimeIP[0];
-    for (int i = 1; i < 4; i++)
-    {
-      mesg += ".";
-      mesg += realtimeIP[i];
-    }
-  }
-  mesg += ").";
-  server.send(200, "text/plain", mesg);
-}
-
-void serveIndex()
-{
-  bool serveMobile = false;
-  if (uiConfiguration == 0) serveMobile = checkClientIsMobile(server.header("User-Agent"));
-  else if (uiConfiguration == 2) serveMobile = true;
-
-  if (!arlsTimeout || enableRealtimeUI) //do not serve while receiving realtime
-  {
-    if (serveMobile)
-    {
-      server.setContentLength(strlen_P(PAGE_indexM));
-      server.send(200, "text/html", "");
-      server.sendContent_P(PAGE_indexM);
-    } else
-    {
-      server.setContentLength(strlen_P(PAGE_index0) + cssColorString.length() + strlen_P(PAGE_index1) + strlen_P(PAGE_index2) + strlen_P(PAGE_index3));
-      server.send(200, "text/html", "");
-      server.sendContent_P(PAGE_index0);
-      server.sendContent(cssColorString); 
-      server.sendContent_P(PAGE_index1); 
-      server.sendContent_P(PAGE_index2);
-      server.sendContent_P(PAGE_index3);
-    }
-  } else {
-    serveRealtimeError(false);
-  }
-}
-
-void serveMessage(int code, String headl, String subl="", int optionType)
-{
-  String messageBody = "<h2>";
-  messageBody += headl;
-  messageBody += "</h2>";
-  messageBody += subl;
-  switch(optionType)
-  {
-    case 255: break; //simple message
-    case 254: messageBody += "<br><br><button type=\"button\" onclick=\"B()\">Back</button>"; break; //back button
-    case 253: messageBody += "<br><br><form action=/settings><button type=submit>Back</button></form>"; //button to settings
-  }
-  if (optionType < 60) //redirect to settings after optionType seconds
-  {
-    messageBody += "<script>setTimeout(RS," + String(optionType*1000) + ")</script>";
-  } else if (optionType < 120) //redirect back after optionType-60 seconds
-  {
-    messageBody += "<script>setTimeout(B," + String((optionType-60)*1000) + ")</script>";
-  } else if (optionType < 180) //reload parent after optionType-120 seconds
-  {
-    messageBody += "<script>setTimeout(RP," + String((optionType-120)*1000) + ")</script>";
-  }
-  messageBody += "</body></html>";
-  server.setContentLength(strlen_P(PAGE_msg0) + cssColorString.length() + strlen_P(PAGE_msg1) + messageBody.length());
-  server.send(code, "text/html", "");
-  server.sendContent_P(PAGE_msg0);
-  server.sendContent(cssColorString);
-  server.sendContent_P(PAGE_msg1);
-  server.sendContent(messageBody);
-}
-
-void serveSettings(byte subPage)
-{
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 255: welcomepage
-  if (!arlsTimeout || enableRealtimeUI) //do not serve while receiving realtime
-    {
-      int pl0, pl1;
-      switch (subPage)
-      {
-        case 1: pl0 = strlen_P(PAGE_settings_wifi0); pl1 = strlen_P(PAGE_settings_wifi1); break;
-        case 2: pl0 = strlen_P(PAGE_settings_leds0); pl1 = strlen_P(PAGE_settings_leds1); break;
-        case 3: pl0 = strlen_P(PAGE_settings_ui0); pl1 = strlen_P(PAGE_settings_ui1); break;
-        case 4: pl0 = strlen_P(PAGE_settings_sync0); pl1 = strlen_P(PAGE_settings_sync1); break;
-        case 5: pl0 = strlen_P(PAGE_settings_time0); pl1 = strlen_P(PAGE_settings_time1); break;
-        case 6: pl0 = strlen_P(PAGE_settings_sec0); pl1 = strlen_P(PAGE_settings_sec1); break;
-        case 255: pl0 = strlen_P(PAGE_welcome0); pl1 = strlen_P(PAGE_welcome1); break;
-        default: pl0 = strlen_P(PAGE_settings0); pl1 = strlen_P(PAGE_settings1);
-      }
-      
-      getSettingsJS(subPage);
-      int sCssLength = (subPage >0 && subPage <7)?strlen_P(PAGE_settingsCss):0;
-      
-      server.setContentLength(pl0 + cssColorString.length() + olen + sCssLength + pl1);
-      server.send(200, "text/html", "");
-      
-      switch (subPage)
-      {
-        case 1: server.sendContent_P(PAGE_settings_wifi0); break;
-        case 2: server.sendContent_P(PAGE_settings_leds0); break;
-        case 3: server.sendContent_P(PAGE_settings_ui0); break;
-        case 4: server.sendContent_P(PAGE_settings_sync0); break;
-        case 5: server.sendContent_P(PAGE_settings_time0); break;
-        case 6: server.sendContent_P(PAGE_settings_sec0); break;
-        case 255: server.sendContent_P(PAGE_welcome0); break;
-        default: server.sendContent_P(PAGE_settings0); 
-      }
-      server.sendContent(obuf);
-      server.sendContent(cssColorString);
-      if (subPage >0 && subPage <7) server.sendContent_P(PAGE_settingsCss);
-      switch (subPage)
-      {
-        case 1: server.sendContent_P(PAGE_settings_wifi1); break;
-        case 2: server.sendContent_P(PAGE_settings_leds1); break;
-        case 3: server.sendContent_P(PAGE_settings_ui1); break;
-        case 4: server.sendContent_P(PAGE_settings_sync1); break;
-        case 5: server.sendContent_P(PAGE_settings_time1); break;
-        case 6: server.sendContent_P(PAGE_settings_sec1); break;
-        case 255: server.sendContent_P(PAGE_welcome1); break;
-        default: server.sendContent_P(PAGE_settings1); 
-      }
-    } else {
-        serveRealtimeError(true);
-    }
-}
 
 void getBuildInfo()
 {
@@ -572,12 +239,13 @@ void getBuildInfo()
   oappend("\r\n");
   #ifdef ARDUINO_ARCH_ESP32
   oappend("strip-pin: gpio");
-  oappendi(PIN);
+  oappendi(LEDPIN);
   #else
   oappend("strip-pin: gpio2");
   #endif
   oappend("\r\nbuild-type: src\r\n");
 }
+
 
 bool checkClientIsMobile(String useragent)
 {
