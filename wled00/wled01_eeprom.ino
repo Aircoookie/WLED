@@ -567,7 +567,6 @@ String loadMacro(byte index)
     if (EEPROM.read(i) == 0) break;
     m += char(EEPROM.read(i));
   }
-  if (m.charAt(0) < 65 || m.charAt(0) > 90) return ""; //do simple check if macro is valid (capital first letter)
   return m;
 }
 

@@ -99,8 +99,8 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  if (_reverseMode) i = _length - 1 -i;
   if (_locked[i] && SEGMENT.mode != FX_MODE_FIRE_2012) return;
+  if (_reverseMode) i = _length - 1 -i;
   if (IS_REVERSE)   i = SEGMENT.stop - (i - SEGMENT.start); //reverse just individual segment
   if (!_cronixieMode)
   {
