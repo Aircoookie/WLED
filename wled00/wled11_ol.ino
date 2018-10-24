@@ -171,9 +171,9 @@ void _overlayAnalogClock()
     int pix;
     for (int i = 0; i <= 12; i++)
     {
-      pix = overlayMin + analogClock12pixel + (overlaySize/12)*i;
-      if (pix > overlayMax) pix = pix - overlayMax;
-      strip.setIndividual(pix,0x00FFAA);
+      pix = analogClock12pixel + round((overlaySize / 12.0) *i);
+      if (pix > overlayMax) pix -= overlaySize;
+      strip.setIndividual(pix, 0x00FFAA);
     }
   }
   if (!analogClockSecondsTrail) strip.setIndividual(secondPixel, 0xFF0000);

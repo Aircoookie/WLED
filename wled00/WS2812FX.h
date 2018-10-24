@@ -327,6 +327,7 @@ class WS2812FX {
 
     uint32_t
       color_wheel(uint8_t),
+      color_from_palette(uint16_t, bool, bool, uint8_t, uint8_t pbri = 255),
       color_blend(uint32_t,uint32_t,uint8_t),
       getPixelColor(uint16_t),
       getColor(void);
@@ -346,12 +347,13 @@ class WS2812FX {
 
     // mode helper functions
     uint16_t
-      blink(uint32_t, uint32_t, bool strobe),
-      color_wipe(uint32_t, uint32_t, bool),
-      theater_chase(uint32_t, uint32_t),
+      blink(uint32_t, uint32_t, bool strobe, bool),
+      color_wipe(uint32_t, uint32_t, bool , bool),
+      scan(bool),
+      theater_chase(uint32_t, uint32_t, bool),
       twinkle(uint32_t),
       twinkle_fade(uint32_t),
-      chase(uint32_t, uint32_t, uint32_t),
+      chase(uint32_t, uint32_t, uint32_t, uint8_t),
       running(uint32_t, uint32_t),
       fireworks(uint32_t),
       tricolor_chase(uint32_t, uint32_t, uint32_t);

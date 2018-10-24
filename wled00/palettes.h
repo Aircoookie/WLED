@@ -500,6 +500,22 @@ DEFINE_GRADIENT_PALETTE( Orange_Teal_gp ) {
   200, 255, 72,  0,
   255, 255, 72,  0};
 
+//Custom palette by Aircoookie
+
+DEFINE_GRADIENT_PALETTE( Tiamat_gp ) {
+    0,   1,  2, 14, //gc
+   33,   2,  5, 35, //gc from 47, 61,126
+  100,  13,135, 92, //gc from 88,242,247
+  120,  43,255,193, //gc from 135,255,253
+  140, 247,  7,249, //gc from 252, 69,253
+  160, 193, 17,208, //gc from 231, 96,237
+  180,  39,255,154, //gc from 130, 77,213
+  200,   4,213,236, //gc from 57,122,248
+  220,  39,252,135, //gc from 177,254,255
+  240, 193,213,253, //gc from 203,239,253
+  255, 255,249,255};
+  
+
 
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on
@@ -543,7 +559,8 @@ const TProgmemRGBGradientPalettePtr gGradientPalettes[] = {
   BlacK_Magenta_Red_gp,         //41-28 Magred
   BlacK_Red_Magenta_Yellow_gp,  //42-29 Yelmag
   Blue_Cyan_Yellow_gp,          //43-30 Yelblu
-  Orange_Teal_gp                //44-31 Orange & Teal
+  Orange_Teal_gp,               //44-31 Orange & Teal
+  Tiamat_gp                     //45-32 Tiamat
   };
 
 
@@ -552,4 +569,3 @@ const uint8_t gGradientPaletteCount =
   sizeof( gGradientPalettes) / sizeof( TProgmemRGBGradientPalettePtr );
 
 #endif
-

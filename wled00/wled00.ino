@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.0
+ * @version 0.8.1
  * @author Christian Schwinne
  */
 
@@ -45,8 +45,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1810182
-char versionString[] = "0.8.0";
+#define VERSION 1810241
+char versionString[] = "0.8.1";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -521,5 +521,3 @@ void loop() {
     }
     #endif
 }
-
-

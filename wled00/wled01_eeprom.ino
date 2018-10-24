@@ -599,4 +599,3 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   }
   if (sing) EEPROM.commit();
 }
-
