@@ -2,7 +2,7 @@
 <html>
 <head><meta charset="utf-8"><meta name="theme-color" content="#fff">
 	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico'/>
-	<title>WLED 0.8.0</title>
+	<title>WLED 0.8.1</title>
 	<script>
 		var d=document;
 		var w=window.getComputedStyle(d.querySelector("html"));
@@ -172,7 +172,7 @@
 				case 3: gId("path1").style.fill = aC; gId("path2").style.fill = aC;
 			}
 			tgb.style.fill=(Cf.SA.value>0)?aC:dC;
-			fpX.style.display=(Cf.TX.selectedIndex>64)?"block":"none";
+			fpX.style.display=(Cf.TX.selectedIndex>0)?"block":"none";
 			fof.style.fill=(Cf.TX.selectedIndex>64)?aC:dC;
 			fmr.style.fill=(Cf.TX.selectedIndex<1)?aC:dC;
 		}
@@ -716,6 +716,8 @@
 					<option value="42">Yelmag</option>
 					<option value="43">Yelblu</option>
 					<option value="44">Orange & Teal</option>
+					<option value="43">Tiamat</option>
+					<option value="44">April Night</option>
 				</select>
 				</div>
 				<div id="slX" class="sl">

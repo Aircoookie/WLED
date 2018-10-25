@@ -515,7 +515,27 @@ DEFINE_GRADIENT_PALETTE( Tiamat_gp ) {
   240, 193,213,253, //gc from 203,239,253
   255, 255,249,255};
   
+//Custom palette by Aircoookie
 
+DEFINE_GRADIENT_PALETTE( April_Night_gp ) {
+    0,   1,  5, 45, //deep blue
+   10,   1,  5, 45,
+   25,   5,169,175, //light blue
+   40,   1,  5, 45,
+   61,   1,  5, 45,
+   76,  45,175, 31, //green
+   91,   1,  5, 45,
+  112,   1,  5, 45,
+  127, 249,150,  5, //yellow
+  143,   1,  5, 45,
+  162,   1,  5, 45,
+  178, 255,92,  0, //pastel orange
+  193,   1,  5, 45,
+  214,   1,  5, 45,
+  229, 223, 45, 72, //pink
+  244,   1,  5, 45,
+  255,   1,  5, 45};
+  
 
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on
@@ -560,8 +580,9 @@ const TProgmemRGBGradientPalettePtr gGradientPalettes[] = {
   BlacK_Red_Magenta_Yellow_gp,  //42-29 Yelmag
   Blue_Cyan_Yellow_gp,          //43-30 Yelblu
   Orange_Teal_gp,               //44-31 Orange & Teal
-  Tiamat_gp                     //45-32 Tiamat
-  };
+  Tiamat_gp,                    //45-32 Tiamat
+  April_Night_gp                //46-33 April Night
+};
 
 
 // Count of how many cpt-city gradients are defined:

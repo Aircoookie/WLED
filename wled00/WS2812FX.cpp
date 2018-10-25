@@ -1129,12 +1129,6 @@ uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, uint
   return SPEED_FORMULA_L;
 }
 
-/*
- * Tricolor chase mode
- */
-uint16_t WS2812FX::mode_tricolor_chase(void) {
-  return chase(SEGMENT.colors[1], SEGMENT.colors[0], SEGMENT.colors[2], 1);
-}
 
 /*
  * Bicolor chase, more primary color.
@@ -1142,6 +1136,7 @@ uint16_t WS2812FX::mode_tricolor_chase(void) {
 uint16_t WS2812FX::mode_chase_color(void) {
   return chase(SEGMENT.colors[1], SEGMENT.colors[0], SEGMENT.colors[0], 1);
 }
+
 
 /*
  * Primary running followed by random color.
@@ -1746,10 +1741,38 @@ uint16_t WS2812FX::mode_dual_color_wipe_out_in(void) {
 
 
 /*
+ * Tricolor chase function
+ */
+uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2, uint32_t color3) {
+  uint16_t index = SEGMENT_RUNTIME.counter_mode_step % 6;
+  for(uint16_t i=0; i < SEGMENT_LENGTH; i++, index++) {
+    if(index > 5) index = 0;
+
+    uint32_t color = color1;
+    if(index > 3) color = color_from_palette(i, true, PALETTE_SOLID_WRAP, 2);
+    else if(index > 1) color = color2;
+
+    setPixelColor(SEGMENT.stop - i, color);
+  }
+
+  SEGMENT_RUNTIME.counter_mode_step++;
+  return  35 + ((350 * (uint32_t)(255 - SEGMENT.speed)) / 255);
+}
+
+
+/*
  * Alternating white/red/black pixels running. PLACEHOLDER
  */
 uint16_t WS2812FX::mode_circus_combustus(void) {
-  return chase(RED, WHITE, BLACK, 0);
+  return tricolor_chase(RED, WHITE, BLACK);
+}
+
+
+/*
+ * Tricolor chase mode
+ */
+uint16_t WS2812FX::mode_tricolor_chase(void) {
+  return tricolor_chase(SEGMENT.colors[1], SEGMENT.colors[0], SEGMENT.colors[2]);
 }
 
 
@@ -1825,24 +1848,28 @@ uint16_t WS2812FX::mode_tricolor_wipe(void)
 uint16_t WS2812FX::mode_tricolor_fade(void)
 {
   uint32_t color1 = 0, color2 = 0;
+  byte stage = 0;
 
   if(SEGMENT_RUNTIME.counter_mode_step < 256) {
     color1 = SEGMENT.colors[0];
     color2 = SEGMENT.colors[1];
+    stage = 0;
   } else if(SEGMENT_RUNTIME.counter_mode_step < 512) {
     color1 = SEGMENT.colors[1];
     color2 = SEGMENT.colors[2];
+    stage = 1;
   } else {
     color1 = SEGMENT.colors[2];
     color2 = SEGMENT.colors[0];
+    stage = 2;
   }
 
   byte stp = SEGMENT_RUNTIME.counter_mode_step % 256;
   uint32_t color = 0;
   for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
-    if (color1 == SEGMENT.colors[2]) {
+    if (stage == 2) {
       color = color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), color2, stp); 
-    } else if (color2 == SEGMENT.colors[2]) {
+    } else if (stage == 1) {
       color = color_blend(color1, color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), stp); 
     } else {
       color = color_blend(color1, color2, stp);

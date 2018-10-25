@@ -7,11 +7,24 @@
  * @author Christian Schwinne
  */
 
-//ESP8266-01 got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
-//Uncomment the following line to disable some features (currently Mobile UI, welcome page and single digit + cronixie overlays) to compile for ESP8266-01
-//#define WLED_FLASH_512K_MODE
-//CURRENTLY NOT WORKING
 
+//ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
+
+//ESP8266-01 (black) has 1MB flash and can thus fit the whole program. Use 1M(64K SPIFFS).
+//If you want the OTA update function though, you need to make sure the sketch is smaller than 479kB.
+
+//Uncomment the following lines to disable some features to compile for ESP8266-01 (max flash size 438kB):
+
+//#define WLED_DISABLE_ALEXA
+//#define WLED_DISABLE_BLYNK
+//#define WLED_DISABLE_CRONIXIE
+//#define WLED_DISABLE_HUESYNC
+//#define WLED_DISABLE_MOBILE_UI
+//#define WLED_DISABLE_OTA
+
+
+//to toggle usb serial debug (un)comment following line(s)
+//#define DEBUG
 
 //library inclusions
 #include <Arduino.h>
@@ -45,17 +58,13 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1810241
+#define VERSION 1810251
 char versionString[] = "0.8.1";
 
 
 //AP and OTA default passwords (for maximum change them!)
 char apPass[65] = "wled1234";
 char otaPass[33] = "wledota";
-
-
-//to toggle usb serial debug (un)comment following line(s)
-//#define DEBUG
 
 
 //spiffs FS only useful for debug (only ESP8266)

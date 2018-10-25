@@ -138,6 +138,7 @@ void initStrip()
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
   if(digitalRead(buttonPin) == LOW) buttonEnabled = false; //disable button if it is "pressed" unintentionally
+
 }
 
 void initAP(){
@@ -255,6 +256,3 @@ bool checkClientIsMobile(String useragent)
   if (useragent.indexOf("iPod") >= 0) return true;
   return false;
 }
-
-
-
