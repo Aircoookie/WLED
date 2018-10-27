@@ -222,6 +222,15 @@ void handleNotifications()
               
               id++; if (id >= ledCount) break;
             }
+          } else if (udpIn[0] == 4) //dnrgb
+          {
+            uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+            for (uint16_t i = 4; i < packetSize -2; i += 3)
+            {
+              setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+              
+              id++; if (id >= ledCount) break;
+            }
           }
           strip.show();
         }
@@ -243,5 +252,3 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
     }
   }
 }
-
-
