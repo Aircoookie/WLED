@@ -86,6 +86,7 @@ void wledInit()
 
   //init ArduinoOTA
   if (!onlyAP) {
+    #ifndef WLED_DISABLE_OTA
     if (aOtaEnabled)
     {
       ArduinoOTA.onStart([]() {
@@ -97,6 +98,7 @@ void wledInit()
       if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
       ArduinoOTA.begin();
     }
+    #endif
   
     if (!initLedsLast) strip.service();
     // Set up mDNS responder:
@@ -225,6 +227,25 @@ void getBuildInfo()
   oappendi(VERSION);
   oappend("\r\neepver: ");
   oappendi(EEPVER);
+  oappend("\r\nopt: ");
+  #ifndef WLED_DISABLE_ALEXA
+  oappend("alexa ");
+  #endif
+  #ifndef WLED_DISABLE_BLYNK
+  oappend("blynk ");
+  #endif
+  #ifndef WLED_DISABLE_CRONIXIE
+  oappend("cronixie ");
+  #endif
+  #ifndef WLED_DISABLE_HUESYNC
+  oappend("huesync ");
+  #endif
+  #ifndef WLED_DISABLE_MOBILE_UI
+  oappend("mobile-ui ");
+  #endif
+  #ifndef WLED_DISABLE_OTA
+  oappend("ota");
+  #endif
   #ifdef USEFS
   oappend("\r\nspiffs: true\r\n");
   #else

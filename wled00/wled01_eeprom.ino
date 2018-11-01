@@ -446,7 +446,7 @@ void loadSettingsFromEEPROM(bool first)
   enableRealtimeUI = EEPROM.read(2201);
   uiConfiguration = EEPROM.read(2202);
   
-  #ifdef WLED_FLASH_512K_MODE
+  #ifdef WLED_DISABLE_MOBILE_UI
   uiConfiguration = 1;
   //force default UI since mobile is unavailable
   #endif

@@ -184,7 +184,7 @@ void _overlayAnalogClock()
 
 void _overlayNixieClock()
 {
-  #ifdef WLED_FLASH_512K_MODE
+  #ifdef WLED_DISABLE_CRONIXIE
   if (countdownMode) checkCountdown();
   #else
   

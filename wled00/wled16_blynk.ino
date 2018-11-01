@@ -7,19 +7,24 @@ byte blSat = 255;
 
 void initBlynk(const char* auth)
 {
+  #ifndef WLED_DISABLE_BLYNK
   if (WiFi.status() != WL_CONNECTED) return;
   blynkEnabled = (auth[0] != 0);
   if (blynkEnabled) Blynk.config(auth);
+  #endif
 }
 
 void handleBlynk()
 {
+  #ifndef WLED_DISABLE_BLYNK
   if (WiFi.status() == WL_CONNECTED && blynkEnabled)
   Blynk.run();
+  #endif
 }
 
 void updateBlynk()
 {
+  #ifndef WLED_DISABLE_BLYNK
   if (onlyAP) return;
   Blynk.virtualWrite(V0, bri);
   //we need a RGB -> HSB convert here
@@ -29,8 +34,10 @@ void updateBlynk()
   Blynk.virtualWrite(V6, effectIntensity);
   Blynk.virtualWrite(V7, nightlightActive);
   Blynk.virtualWrite(V8, notifyDirect);
+  #endif
 }
 
+#ifndef WLED_DISABLE_BLYNK
 BLYNK_WRITE(V0)
 {
  bri = param.asInt();//bri
@@ -86,4 +93,4 @@ BLYNK_WRITE(V8)
 {
   notifyDirect = (param.asInt()>0); //send notifications
 }
-
+#endif

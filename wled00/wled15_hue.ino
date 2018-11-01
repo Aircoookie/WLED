@@ -1,7 +1,7 @@
 /*
  * Sync to Philips hue lights
  */
-
+#ifndef WLED_DISABLE_HUESYNC
 void handleHue()
 {
   if (huePollingEnabled && WiFi.status() == WL_CONNECTED && hueClient != NULL)
@@ -206,4 +206,7 @@ String getJsonValue(String* req, String key)
   }
   return "";
 }
-
+#else
+void handleHue(){}
+bool setupHue(){return false;}
+#endif
