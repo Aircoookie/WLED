@@ -237,7 +237,7 @@ Send notifications twice: <input type="checkbox" name="S2"><br>
 Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
 <i>E1.31 (sACN)</i><br>
 Use E1.31 multicast: <input type="checkbox" name="EM"><br>
-E1.31 universe: <input name="EU" type="number" min="1" max="63999" required><br>
+E1.31 start universe: <input name="EU" type="number" min="1" max="63999" required><br>
 <i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br><br>
 Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>

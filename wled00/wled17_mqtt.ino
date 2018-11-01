@@ -93,6 +93,8 @@ bool reconnectMQTT()
       strcat(subuf, "/api");
       mqtt->subscribe(subuf);
     }
+
+    publishMQTT();
   }
   return mqtt->connected();
 }
