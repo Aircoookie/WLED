@@ -40,7 +40,6 @@
 
 
 #include "WS2812FX.h"
-#include "FastLED.h"
 #include "palettes.h"
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
@@ -90,6 +89,12 @@ void WS2812FX::clear()
   bus->ClearTo(RgbColor(0));
 }
 
+bool WS2812FX::modeUsesLock(uint8_t m)
+{
+  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE) return true;
+  return false;
+}
+
 void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   uint8_t w = (c >> 24) & 0xFF;
   uint8_t r = (c >> 16) & 0xFF;
@@ -100,7 +105,7 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  if (_locked[i] && SEGMENT.mode != FX_MODE_FIRE_2012) return;
+  if (_locked[i] && !modeUsesLock(SEGMENT.mode)) return;
   if (_reverseMode) i = _length - 1 -i;
   if (IS_REVERSE)   i = SEGMENT.stop - (i - SEGMENT.start); //reverse just individual segment
   if (!_cronixieMode)
@@ -177,7 +182,7 @@ void WS2812FX::trigger() {
 
 void WS2812FX::setMode(uint8_t m) {
   RESET_RUNTIME;
-  bool ua = _segments[0].mode == FX_MODE_FIRE_2012 && m != FX_MODE_FIRE_2012;
+  bool ua = modeUsesLock(_segments[0].mode) && !modeUsesLock(m);
   _segments[0].mode = constrain(m, 0, MODE_COUNT - 1);
   if (ua) unlockAll();
   setBrightness(_brightness);
@@ -318,7 +323,7 @@ void WS2812FX::resetSegments() {
 
 void WS2812FX::setIndividual(uint16_t i, uint32_t col)
 {
-  if (SEGMENT.mode == FX_MODE_FIRE_2012) return;
+  if (modeUsesLock(SEGMENT.mode)) return;
   if (i >= 0 && i < _length)
   {
     _locked[i] = false;
@@ -340,13 +345,13 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 
 void WS2812FX::lock(uint16_t i)
 {
-  if (SEGMENT.mode == FX_MODE_FIRE_2012) return;
+  if (modeUsesLock(SEGMENT.mode)) return;
   if (i >= 0 && i < _length) _locked[i] = true;
 }
 
 void WS2812FX::lockRange(uint16_t i, uint16_t i2)
 {
-  if (SEGMENT.mode == FX_MODE_FIRE_2012) return;
+  if (modeUsesLock(SEGMENT.mode)) return;
   for (uint16_t x = i; x <= i2; x++)
   {
     if (i >= 0 && i < _length) _locked[i] = true;
@@ -355,13 +360,13 @@ void WS2812FX::lockRange(uint16_t i, uint16_t i2)
 
 void WS2812FX::unlock(uint16_t i)
 {
-  if (SEGMENT.mode == FX_MODE_FIRE_2012) return;
+  if (modeUsesLock(SEGMENT.mode)) return;
   if (i >= 0 && i < _length) _locked[i] = false;
 }
 
 void WS2812FX::unlockRange(uint16_t i, uint16_t i2)
 {
-  if (SEGMENT.mode == FX_MODE_FIRE_2012) return;
+  if (modeUsesLock(SEGMENT.mode)) return;
   for (uint16_t x = i; x < i2; x++)
   {
     if (x >= 0 && x < _length) _locked[x] = false;
@@ -377,7 +382,7 @@ void WS2812FX::setTransitionMode(bool t)
 {
   SEGMENT_RUNTIME.trans_act = (t) ? 1:2;
   if (!t) return;
-  unsigned long waitMax = millis() + 20; //refresh after 20 seconds if transition enabled
+  unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
   if (SEGMENT.mode == FX_MODE_STATIC && SEGMENT_RUNTIME.next_time > waitMax) SEGMENT_RUNTIME.next_time = waitMax;
 }
 
@@ -2051,6 +2056,15 @@ uint16_t WS2812FX::mode_lightning(void)
 }
 
 
+CRGB WS2812FX::fastled_from_col(uint32_t color)
+{
+  CRGB fastled_col;
+  fastled_col.red =   (color >> 16 & 0xFF);
+  fastled_col.green = (color >> 8  & 0xFF);
+  fastled_col.blue =  (color       & 0xFF);
+  return fastled_col;
+}
+
 // Pride2015
 // Animated, ever-changing rainbows.
 // by Mark Kriegsman: https://gist.github.com/kriegsman/964de772d64c502760e5
@@ -2085,11 +2099,7 @@ uint16_t WS2812FX::mode_pride_2015(void)
     bri8 += (255 - brightdepth);
     
     CRGB newcolor = CHSV( hue8, sat8, bri8);
-
-    uint32_t color = getPixelColor(i);
-    fastled_col.red = (color >> 16 & 0xFF);
-    fastled_col.green = (color >> 8  & 0xFF);
-    fastled_col.blue = (color       & 0xFF);
+    fastled_col = fastled_from_col(getPixelColor(i));
     
     nblend( fastled_col, newcolor, 64);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
@@ -2107,10 +2117,7 @@ uint16_t WS2812FX::mode_juggle(void){
   byte dothue = 0;
   for ( byte i = 0; i < 8; i++) {
     uint16_t index = SEGMENT.start + beatsin16(i + 7, 0, SEGMENT_LENGTH -1);
-    uint32_t color = getPixelColor(index);
-    fastled_col.red = (color >> 16 & 0xFF);
-    fastled_col.green = (color >> 8  & 0xFF);
-    fastled_col.blue = (color       & 0xFF);
+    fastled_col = fastled_from_col(getPixelColor(index));
     fastled_col |= CHSV(dothue, 220, 255);
     setPixelColor(index, fastled_col.red, fastled_col.green, fastled_col.blue);
     dothue += 32;
@@ -2161,17 +2168,11 @@ void WS2812FX::handle_palette(void)
         _lastPaletteChange = millis();
       } break;}
     case 2: {//primary color only
-      CRGB prim;
-      prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
-      prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
-      prim.blue  = (SEGMENT.colors[0]       & 0xFF);
+      CRGB prim = fastled_from_col(SEGMENT.colors[0]);
       targetPalette = CRGBPalette16(prim); break;}
     case 3: {//based on primary
       //considering performance implications
-      CRGB prim;
-      prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
-      prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
-      prim.blue  = (SEGMENT.colors[0]       & 0xFF);
+      CRGB prim = fastled_from_col(SEGMENT.colors[0]);
       CHSV prim_hsv = rgb2hsv_approximate(prim);
       targetPalette = CRGBPalette16(
                       CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
@@ -2180,24 +2181,12 @@ void WS2812FX::handle_palette(void)
                       CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v)); //color itself
       break;}
     case 4: {//primary + secondary
-      CRGB prim;
-      prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
-      prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
-      prim.blue  = (SEGMENT.colors[0]       & 0xFF);
-      CRGB sec;
-      sec.red    = (SEGMENT.colors[1] >> 16 & 0xFF);
-      sec.green  = (SEGMENT.colors[1] >> 8  & 0xFF);
-      sec.blue   = (SEGMENT.colors[1]       & 0xFF);
+      CRGB prim = fastled_from_col(SEGMENT.colors[0]);
+      CRGB sec  = fastled_from_col(SEGMENT.colors[1]);
       targetPalette = CRGBPalette16(sec,prim); break;}
     case 5: {//based on primary + secondary
-      CRGB prim;
-      prim.red   = (SEGMENT.colors[0] >> 16 & 0xFF);
-      prim.green = (SEGMENT.colors[0] >> 8  & 0xFF);
-      prim.blue  = (SEGMENT.colors[0]       & 0xFF);
-      CRGB sec;
-      sec.red    = (SEGMENT.colors[1] >> 16 & 0xFF);
-      sec.green  = (SEGMENT.colors[1] >> 8  & 0xFF);
-      sec.blue   = (SEGMENT.colors[1]       & 0xFF);
+      CRGB prim = fastled_from_col(SEGMENT.colors[0]);
+      CRGB sec  = fastled_from_col(SEGMENT.colors[1]);
       targetPalette = CRGBPalette16(sec,prim,CRGB::White); break;}
     case 6: //Party colors
       targetPalette = PartyColors_p; break;
@@ -2359,11 +2348,7 @@ uint16_t WS2812FX::mode_colorwaves(void)
     index = scale8( index, 240);
 
     CRGB newcolor = ColorFromPalette(currentPalette, index, bri8);
-
-    uint32_t color = getPixelColor(i);
-    fastled_col.red = (color >> 16 & 0xFF);
-    fastled_col.green = (color >> 8  & 0xFF);
-    fastled_col.blue = (color       & 0xFF);
+    fastled_col = fastled_from_col(getPixelColor(i));
 
     nblend(fastled_col, newcolor, 128);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
@@ -2494,6 +2479,50 @@ uint16_t WS2812FX::mode_noise16_4(void)
     int16_t index = inoise16(uint32_t(i - SEGMENT.start) << 12, SEGMENT_RUNTIME.counter_mode_step/8);
     fastled_col = ColorFromPalette(currentPalette, index);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+  }
+  return 20;
+}
+
+
+uint16_t WS2812FX::mode_colortwinkle()
+{
+  CRGB fastled_col, prev;
+  fract8 fadeUpAmount = 8 + (SEGMENT.speed/4), fadeDownAmount = 5 + (SEGMENT.speed/7);
+  for( uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+    fastled_col = fastled_from_col(getPixelColor(i));
+    prev = fastled_col;
+    if(_locked[i]) {  
+      CRGB incrementalColor = fastled_col;
+      incrementalColor.nscale8_video( fadeUpAmount);
+      fastled_col += incrementalColor;
+
+      if( fastled_col.red == 255 || fastled_col.green == 255 || fastled_col.blue == 255) {
+        _locked[i] = false;
+      }
+      setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+
+      if (fastled_from_col(getPixelColor(i)) == prev) //fix "stuck" pixels
+      {
+        fastled_col += fastled_col;
+        setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+      }
+    } else {
+      fastled_col.nscale8( 255 - fadeDownAmount);
+      setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    }
+  }
+  
+  if( random8() <= SEGMENT.intensity ) {
+    for (uint8_t times = 0; times < 5; times++) //attempt to spawn a new pixel 5 times
+    {
+      int i = SEGMENT.start + random16(SEGMENT_LENGTH);
+      if(getPixelColor(i) == 0) {
+        fastled_col = ColorFromPalette( currentPalette, random8(), 64, NOBLEND);
+        _locked[i] = true;
+        setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+        return 20; //only spawn 1 new pixel per frame
+      }
+    }
   }
   return 20;
 }

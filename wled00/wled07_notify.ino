@@ -206,6 +206,7 @@ void handleNotifications()
           if (udpIn[1] == 0)
           {
             realtimeActive = false;
+            return;
           } else {
             arlsLock(udpIn[1]*1000);
           }
