@@ -258,13 +258,8 @@ void getBuildInfo()
   #endif
   oappend("button-pin: gpio");
   oappendi(buttonPin);
-  oappend("\r\n");
-  #ifdef ARDUINO_ARCH_ESP32
-  oappend("strip-pin: gpio");
+  oappend("\r\nstrip-pin: gpio");
   oappendi(LEDPIN);
-  #else
-  oappend("strip-pin: gpio2");
-  #endif
   oappend("\r\nbuild-type: dev\r\n");
 }
 
