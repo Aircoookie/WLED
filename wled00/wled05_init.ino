@@ -260,7 +260,8 @@ void getBuildInfo()
   oappendi(buttonPin);
   oappend("\r\nstrip-pin: gpio");
   oappendi(LEDPIN);
-  oappend("\r\nbuild-type: dev\r\n");
+  oappend("\r\nbrand: wled\r\n");
+  oappend("\r\nbuild-type: src\r\n");
 }
 
 

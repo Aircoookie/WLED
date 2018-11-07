@@ -2,7 +2,7 @@
 #ifndef NpbWrapper_h
 #define NpbWrapper_h
 
-//#define WORKAROUND_ESP32_BITBANG
+#define WORKAROUND_ESP32_BITBANG
 //see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
 
 #define LEDPIN 2 //strip pin. Any for ESP32, gpio2 is recommended for ESP8266
@@ -14,6 +14,7 @@
 #ifdef ARDUINO_ARCH_ESP32
   #ifdef WORKAROUND_ESP32_BITBANG
     #define PIXELMETHOD NeoEsp32BitBangWs2813Method
+    #pragma message "Software BitBang is used because of your NeoPixelBus version. Look in NpbWrapper.h for instructions on how to mitigate flickering."
   #else
     #define PIXELMETHOD NeoEsp32RmtWS2813_V3Method
   #endif

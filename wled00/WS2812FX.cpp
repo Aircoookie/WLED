@@ -2484,6 +2484,7 @@ uint16_t WS2812FX::mode_noise16_4(void)
 }
 
 
+//based on https://gist.github.com/kriegsman/5408ecd397744ba0393e
 uint16_t WS2812FX::mode_colortwinkle()
 {
   CRGB fastled_col, prev;
@@ -2517,7 +2518,7 @@ uint16_t WS2812FX::mode_colortwinkle()
     {
       int i = SEGMENT.start + random16(SEGMENT_LENGTH);
       if(getPixelColor(i) == 0) {
-        fastled_col = ColorFromPalette( currentPalette, random8(), 64, NOBLEND);
+        fastled_col = ColorFromPalette(currentPalette, random8(), 64, NOBLEND);
         _locked[i] = true;
         setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
         return 20; //only spawn 1 new pixel per frame
@@ -2525,4 +2526,23 @@ uint16_t WS2812FX::mode_colortwinkle()
     }
   }
   return 20;
+}
+
+
+//Calm effect, like a lake at night
+uint16_t WS2812FX::mode_lake() {
+  uint8_t sp = SEGMENT.speed/10;
+  int wave1 = beatsin8(sp +2, -64,64);
+  int wave2 = beatsin8(sp +1, -64,64);
+  uint8_t wave3 = beatsin8(sp +2,   0,80);
+  CRGB fastled_col;
+
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++)
+  {
+    int index = cos8((i*15)+ wave1)/2 + cubicwave8((i*23)+ wave2)/2;           
+    uint8_t lum = (index > wave3) ? index - wave3 : 0;
+    fastled_col = ColorFromPalette(currentPalette, map(index,0,255,0,240), lum, LINEARBLEND);
+    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+  }
+  return 33;
 }

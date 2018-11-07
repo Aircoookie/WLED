@@ -83,7 +83,7 @@
 #define REVERSE      (uint8_t)0x80
 #define IS_REVERSE   ((SEGMENT.options & REVERSE) == REVERSE)
 
-#define MODE_COUNT  75
+#define MODE_COUNT  76
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -161,6 +161,7 @@
 #define FX_MODE_NOISE16_3               72
 #define FX_MODE_NOISE16_4               73
 #define FX_MODE_COLORTWINKLE            74
+#define FX_MODE_LAKE                    75
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -264,6 +265,7 @@ class WS2812FX {
       _mode[FX_MODE_NOISE16_3]               = &WS2812FX::mode_noise16_3;
       _mode[FX_MODE_NOISE16_4]               = &WS2812FX::mode_noise16_4;
       _mode[FX_MODE_COLORTWINKLE]            = &WS2812FX::mode_colortwinkle;
+      _mode[FX_MODE_LAKE]                    = &WS2812FX::mode_lake;
 
       _brightness = DEFAULT_BRIGHTNESS;
       _running = false;
@@ -438,6 +440,7 @@ class WS2812FX {
       mode_noise16_3(void),
       mode_noise16_4(void),
       mode_colortwinkle(void),
+      mode_lake(void),
       mode_lightning(void);
 
   private:

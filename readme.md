@@ -1,11 +1,11 @@
 ![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/development/wled_logo.png)
 
-## Welcome to my project WLED! (v0.8.1-dev)
+## Welcome to my project WLED! (v0.8.1)
 
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
 
 ### Features:
-- WS2812FX library integrated for over 70 special effects
+- WS2812FX library integrated for 75 special effects
 - FastLED noise effects and palettes
 - Customizable Mobile and desktop UI with color and effect controls
 - Settings page - configuration over network
