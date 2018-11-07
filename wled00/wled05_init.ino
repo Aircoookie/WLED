@@ -86,6 +86,7 @@ void wledInit()
 
   //init ArduinoOTA
   if (!onlyAP) {
+    #ifndef WLED_DISABLE_OTA
     if (aOtaEnabled)
     {
       ArduinoOTA.onStart([]() {
@@ -97,6 +98,7 @@ void wledInit()
       if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
       ArduinoOTA.begin();
     }
+    #endif
   
     if (!initLedsLast) strip.service();
     // Set up mDNS responder:
@@ -138,6 +140,7 @@ void initStrip()
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
   if(digitalRead(buttonPin) == LOW) buttonEnabled = false; //disable button if it is "pressed" unintentionally
+
 }
 
 void initAP(){
@@ -224,6 +227,25 @@ void getBuildInfo()
   oappendi(VERSION);
   oappend("\r\neepver: ");
   oappendi(EEPVER);
+  oappend("\r\nopt: ");
+  #ifndef WLED_DISABLE_ALEXA
+  oappend("alexa ");
+  #endif
+  #ifndef WLED_DISABLE_BLYNK
+  oappend("blynk ");
+  #endif
+  #ifndef WLED_DISABLE_CRONIXIE
+  oappend("cronixie ");
+  #endif
+  #ifndef WLED_DISABLE_HUESYNC
+  oappend("huesync ");
+  #endif
+  #ifndef WLED_DISABLE_MOBILE_UI
+  oappend("mobile-ui ");
+  #endif
+  #ifndef WLED_DISABLE_OTA
+  oappend("ota");
+  #endif
   #ifdef USEFS
   oappend("\r\nspiffs: true\r\n");
   #else
@@ -236,13 +258,9 @@ void getBuildInfo()
   #endif
   oappend("button-pin: gpio");
   oappendi(buttonPin);
-  oappend("\r\n");
-  #ifdef ARDUINO_ARCH_ESP32
-  oappend("strip-pin: gpio");
+  oappend("\r\nstrip-pin: gpio");
   oappendi(LEDPIN);
-  #else
-  oappend("strip-pin: gpio2");
-  #endif
+  oappend("\r\nbrand: wled\r\n");
   oappend("\r\nbuild-type: src\r\n");
 }
 
@@ -255,6 +273,3 @@ bool checkClientIsMobile(String useragent)
   if (useragent.indexOf("iPod") >= 0) return true;
   return false;
 }
-
-
-

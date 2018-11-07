@@ -5,7 +5,13 @@
  * https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch
  * https://github.com/probonopd/ESP8266HueEmulator
  */
+void prepareIds() {
+  escapedMac = WiFi.macAddress();
+  escapedMac.replace(":", "");
+  escapedMac.toLowerCase();
+}
 
+#ifndef WLED_DISABLE_ALEXA
 void alexaInit()
 {
   if (alexaEnabled && WiFi.status() == WL_CONNECTED)
@@ -85,12 +91,6 @@ void alexaDim(byte briL)
     ct = ct + (255);
   }
   handleSet(ct);
-}
-
-void prepareIds() {
-  escapedMac = WiFi.macAddress();
-  escapedMac.replace(":", "");
-  escapedMac.toLowerCase();
 }
 
 void respondToSearch() {
@@ -288,3 +288,9 @@ bool connectUDP(){
   
   return state;
 }
+#else
+void alexaInit(){}
+void handleAlexa(){}
+void alexaInitPages(){}
+bool handleAlexaApiCall(String req, String body){return false;}
+#endif

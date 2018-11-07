@@ -132,7 +132,13 @@ void initServer()
     server.on("/list", HTTP_GET, handleFileList);
     #endif
     //init ota page
+    #ifndef WLED_DISABLE_OTA
     httpUpdater.setup(&server);
+    #else
+    server.on("/update", HTTP_GET, [](){
+    serveMessage(500, "Not implemented", "OTA updates are not supported in this build.", 254);
+    });
+    #endif
   } else
   {
     server.on("/edit", HTTP_GET, [](){
@@ -311,7 +317,7 @@ void serveSettings(byte subPage)
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 255: welcomepage
   if (!realtimeActive || enableRealtimeUI) //do not serve while receiving realtime
     {
-      #ifdef WLED_FLASH_512K_MODE //disable welcome page if not enough storage
+      #ifdef WLED_DISABLE_MOBILE_UI //disable welcome page if not enough storage
       if (subPage == 255) {serveIndex(); return;}
       #endif
       
@@ -363,4 +369,3 @@ void serveSettings(byte subPage)
         serveRealtimeError(true);
     }
 }
-

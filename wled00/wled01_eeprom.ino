@@ -446,7 +446,7 @@ void loadSettingsFromEEPROM(bool first)
   enableRealtimeUI = EEPROM.read(2201);
   uiConfiguration = EEPROM.read(2202);
   
-  #ifdef WLED_FLASH_512K_MODE
+  #ifdef WLED_DISABLE_MOBILE_UI
   uiConfiguration = 1;
   //force default UI since mobile is unavailable
   #endif
@@ -567,7 +567,6 @@ String loadMacro(byte index)
     if (EEPROM.read(i) == 0) break;
     m += char(EEPROM.read(i));
   }
-  if (m.charAt(0) < 65 || m.charAt(0) > 90) return ""; //do simple check if macro is valid (capital first letter)
   return m;
 }
 
@@ -600,4 +599,3 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   }
   if (sing) EEPROM.commit();
 }
-

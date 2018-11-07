@@ -3,6 +3,7 @@
  */
 
 #define WLEDPACKETSIZE 24
+#define UDP_IN_MAXSIZE 1472
 
 void notify(byte callMode, bool followUp=false)
 {
@@ -76,6 +77,27 @@ void initE131(){
   }
 }
 
+void handleE131(){
+  //E1.31 protocol support
+  if(e131Enabled) {
+    uint16_t len = e131->parsePacket();
+    if (!len || e131->universe < e131Universe || e131->universe > e131Universe +4) return;
+    len /= 3; //one LED is 3 DMX channels
+    
+    uint16_t multipacketOffset = (e131->universe - e131Universe)*170; //if more than 170 LEDs (510 channels), client will send in next higher universe 
+    if (ledCount <= multipacketOffset) return;
+
+    arlsLock(realtimeTimeoutMs);
+    if (len + multipacketOffset > ledCount) len = ledCount - multipacketOffset;
+    
+    for (uint16_t i = 0; i < len; i++) {
+      int j = i * 3;
+      setRealtimePixel(i + multipacketOffset, e131->data[j], e131->data[j+1], e131->data[j+2], 0);
+    }
+    strip.show();
+  }
+}
+
 void handleNotifications()
 {
   //send second notification if enabled
@@ -83,20 +105,7 @@ void handleNotifications()
     notify(notificationSentCallMode,true);
   }
 
-  //E1.31 protocol support
-  if(e131Enabled) {
-    uint16_t len = e131->parsePacket();
-    if (len && e131->universe == e131Universe) {
-      arlsLock(realtimeTimeoutMs);
-      if (len > ledCount) len = ledCount;
-      for (uint16_t i = 0; i < len; i++) {
-        int j = i * 3;
-        
-        setRealtimePixel(i, e131->data[j], e131->data[j+1], e131->data[j+2], 0);
-      }
-      strip.show();
-    }
-  }
+  handleE131();
 
   //unlock strip when realtime UDP times out
   if (realtimeActive && millis() > realtimeTimeout)
@@ -116,16 +125,16 @@ void handleNotifications()
     if (!packetSize && udpRgbConnected) {
       packetSize = rgbUdp.parsePacket();
       if (!receiveDirect) return;
-      if (packetSize > 1026 || packetSize < 3) return;
+      if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;
       realtimeIP = rgbUdp.remoteIP();
       DEBUG_PRINTLN(rgbUdp.remoteIP());
-      byte udpIn[packetSize];
-      rgbUdp.read(udpIn, packetSize);
+      olen = 0;
+      rgbUdp.read(obuf, packetSize);
       arlsLock(realtimeTimeoutMs);
       uint16_t id = 0;
       for (uint16_t i = 0; i < packetSize -2; i += 3)
       {
-        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+        setRealtimePixel(id, obuf[i], obuf[i+1], obuf[i+2], 0);
         
         id++; if (id >= ledCount) break;
       }
@@ -133,11 +142,13 @@ void handleNotifications()
       return;
     }
     
-    if (packetSize > 1026) return;
+    if (packetSize > UDP_IN_MAXSIZE) return;
     if(packetSize && notifierUdp.remoteIP() != WiFi.localIP()) //don't process broadcasts we send ourselves
     {
-      byte udpIn[packetSize];
-      notifierUdp.read(udpIn, packetSize);
+      olen = 0;
+      notifierUdp.read(obuf, packetSize);
+      char* udpIn = obuf;
+      
       if (udpIn[0] == 0 && !realtimeActive && receiveNotifications) //wled notifier, block if realtime packets active
       {
         if (receiveNotificationColor)
@@ -195,6 +206,7 @@ void handleNotifications()
           if (udpIn[1] == 0)
           {
             realtimeActive = false;
+            return;
           } else {
             arlsLock(udpIn[1]*1000);
           }
@@ -222,6 +234,15 @@ void handleNotifications()
               
               id++; if (id >= ledCount) break;
             }
+          } else if (udpIn[0] == 4) //dnrgb
+          {
+            uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+            for (uint16_t i = 4; i < packetSize -2; i += 3)
+            {
+               if (id >= ledCount) break;
+              setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+              id++;
+            }
           }
           strip.show();
         }
@@ -243,5 +264,3 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
     }
   }
 }
-
-

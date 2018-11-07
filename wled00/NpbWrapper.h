@@ -2,25 +2,32 @@
 #ifndef NpbWrapper_h
 #define NpbWrapper_h
 
-//#define WORKAROUND_ESP32_BITBANG
+#define WORKAROUND_ESP32_BITBANG
 //see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
 
-#define LEDPIN 2 //strip pin. Only effective for ESP32, ESP8266 must use gpio2
+#define LEDPIN 2 //strip pin. Any for ESP32, gpio2 is recommended for ESP8266
 
 //uncomment this if red and green are swapped
 //#define SWAPRG
 
 //automatically uses the right driver method for each platform
 #ifdef ARDUINO_ARCH_ESP32
-#ifdef WORKAROUND_ESP32_BITBANG
-#define PIXELMETHOD NeoEsp32BitBangWs2813Method
-#else
-#define PIXELMETHOD NeoEsp32RmtWS2813_V3Method
-#endif
+  #ifdef WORKAROUND_ESP32_BITBANG
+    #define PIXELMETHOD NeoEsp32BitBangWs2813Method
+    #pragma message "Software BitBang is used because of your NeoPixelBus version. Look in NpbWrapper.h for instructions on how to mitigate flickering."
+  #else
+    #define PIXELMETHOD NeoEsp32RmtWS2813_V3Method
+  #endif
 #else //esp8266
-//you may change to DMA method on pin GPIO3 here
-#define PIXELMETHOD NeoEsp8266Uart800KbpsMethod
-//#define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
+  //autoselect the right method depending on strip pin
+  #if LEDPIN == 2
+    #define PIXELMETHOD NeoEsp8266Uart800KbpsMethod
+  #elif LEDPIN == 3
+    #define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
+  #else
+    #define PIXELMETHOD NeoEsp8266BitBang800KbpsMethod
+    #pragma message "Software BitBang will be used because of your selected LED pin. This may cause flicker. Use GPIO 2 or 3 for best results."
+  #endif
 #endif
 
 //handle swapping Red and Green automatically

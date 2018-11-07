@@ -24,7 +24,7 @@ button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-seri
 
 
 //new user welcome page
-#ifndef WLED_FLASH_512K_MODE
+#ifndef WLED_DISABLE_MOBILE_UI
 const char PAGE_welcome0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head>

@@ -40,6 +40,7 @@
 #define WS2812FX_h
 
 #include "NpbWrapper.h"
+#include "FastLED.h"
 
 #define DEFAULT_BRIGHTNESS (uint8_t)50
 #define DEFAULT_MODE       (uint8_t)0
@@ -82,7 +83,7 @@
 #define REVERSE      (uint8_t)0x80
 #define IS_REVERSE   ((SEGMENT.options & REVERSE) == REVERSE)
 
-#define MODE_COUNT  74
+#define MODE_COUNT  76
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -159,6 +160,8 @@
 #define FX_MODE_NOISE16_2               71
 #define FX_MODE_NOISE16_3               72
 #define FX_MODE_NOISE16_4               73
+#define FX_MODE_COLORTWINKLE            74
+#define FX_MODE_LAKE                    75
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -261,6 +264,8 @@ class WS2812FX {
       _mode[FX_MODE_NOISE16_2]               = &WS2812FX::mode_noise16_2;
       _mode[FX_MODE_NOISE16_3]               = &WS2812FX::mode_noise16_3;
       _mode[FX_MODE_NOISE16_4]               = &WS2812FX::mode_noise16_4;
+      _mode[FX_MODE_COLORTWINKLE]            = &WS2812FX::mode_colortwinkle;
+      _mode[FX_MODE_LAKE]                    = &WS2812FX::mode_lake;
 
       _brightness = DEFAULT_BRIGHTNESS;
       _running = false;
@@ -327,6 +332,7 @@ class WS2812FX {
 
     uint32_t
       color_wheel(uint8_t),
+      color_from_palette(uint16_t, bool, bool, uint8_t, uint8_t pbri = 255),
       color_blend(uint32_t,uint32_t,uint8_t),
       getPixelColor(uint16_t),
       getColor(void);
@@ -346,12 +352,13 @@ class WS2812FX {
 
     // mode helper functions
     uint16_t
-      blink(uint32_t, uint32_t, bool strobe),
-      color_wipe(uint32_t, uint32_t, bool),
-      theater_chase(uint32_t, uint32_t),
+      blink(uint32_t, uint32_t, bool strobe, bool),
+      color_wipe(uint32_t, uint32_t, bool , bool),
+      scan(bool),
+      theater_chase(uint32_t, uint32_t, bool),
       twinkle(uint32_t),
       twinkle_fade(uint32_t),
-      chase(uint32_t, uint32_t, uint32_t),
+      chase(uint32_t, uint32_t, uint32_t, uint8_t),
       running(uint32_t, uint32_t),
       fireworks(uint32_t),
       tricolor_chase(uint32_t, uint32_t, uint32_t);
@@ -432,16 +439,21 @@ class WS2812FX {
       mode_noise16_2(void),
       mode_noise16_3(void),
       mode_noise16_4(void),
+      mode_colortwinkle(void),
+      mode_lake(void),
       mode_lightning(void);
 
   private:
     NeoPixelWrapper *bus;
+
+    CRGB fastled_from_col(uint32_t);
   
     uint16_t _length;
     uint16_t _rand16seed;
     uint8_t _brightness;
 
     void handle_palette(void);
+    bool modeUsesLock(uint8_t);
 
     double
       _cronixieSecMultiplier;

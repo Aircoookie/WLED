@@ -1,6 +1,27 @@
 /*
  * Color conversion methods
  */
+
+void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
+{
+  float h = ((float)hue)/65535.0;
+  float s = ((float)sat)/255.0;
+  byte i = floor(h*6);
+  float f = h * 6-i;
+  float p = 255 * (1-s);
+  float q = 255 * (1-f*s);
+  float t = 255 * (1-(1-f)*s);
+  switch (i%6) {
+    case 0: rgb[0]=255,rgb[1]=t,rgb[2]=p;break;
+    case 1: rgb[0]=q,rgb[1]=255,rgb[2]=p;break;
+    case 2: rgb[0]=p,rgb[1]=255,rgb[2]=t;break;
+    case 3: rgb[0]=p,rgb[1]=q,rgb[2]=255;break;
+    case 4: rgb[0]=t,rgb[1]=p,rgb[2]=255;break;
+    case 5: rgb[0]=255,rgb[1]=p,rgb[2]=q;
+  }
+}
+
+#ifndef WLED_DISABLE_HUESYNC
 void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
 {
   //this is only an approximation using WS2812B with gamma correction enabled
@@ -28,25 +49,6 @@ void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
   } else
   {
     rgb[0]=237;rgb[1]=255;rgb[2]=239;//150
-  }
-}
-
-void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
-{
-  float h = ((float)hue)/65535.0;
-  float s = ((float)sat)/255.0;
-  byte i = floor(h*6);
-  float f = h * 6-i;
-  float p = 255 * (1-s);
-  float q = 255 * (1-f*s);
-  float t = 255 * (1-(1-f)*s);
-  switch (i%6) {
-    case 0: rgb[0]=255,rgb[1]=t,rgb[2]=p;break;
-    case 1: rgb[0]=q,rgb[1]=255,rgb[2]=p;break;
-    case 2: rgb[0]=p,rgb[1]=255,rgb[2]=t;break;
-    case 3: rgb[0]=p,rgb[1]=q,rgb[2]=255;break;
-    case 4: rgb[0]=t,rgb[1]=p,rgb[2]=255;break;
-    case 5: rgb[0]=255,rgb[1]=p,rgb[2]=q;
   }
 }
 
@@ -106,6 +108,16 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   rgb[2] = 255.0*b;
 }
 
+void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
+{
+  float X = rgb[0] * 0.664511f + rgb[1] * 0.154324f + rgb[2] * 0.162028f;
+  float Y = rgb[0] * 0.283881f + rgb[1] * 0.668433f + rgb[2] * 0.047685f;
+  float Z = rgb[0] * 0.000088f + rgb[1] * 0.072310f + rgb[2] * 0.986039f;
+  xy[0] = X / (X + Y + Z);
+  xy[1] = Y / (X + Y + Z);
+}
+#endif
+
 void colorFromDecOrHexString(byte* rgb, byte* wht, char* in)
 {
   if (in[0] == 0) return;
@@ -124,15 +136,6 @@ void colorFromDecOrHexString(byte* rgb, byte* wht, char* in)
   rgb[0] = (c >> 16) & 0xFF;
   rgb[1] = (c >>  8) & 0xFF;
   rgb[2] =  c        & 0xFF;
-}
-
-void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
-{
-  float X = rgb[0] * 0.664511f + rgb[1] * 0.154324f + rgb[2] * 0.162028f;
-  float Y = rgb[0] * 0.283881f + rgb[1] * 0.668433f + rgb[2] * 0.047685f;
-  float Z = rgb[0] * 0.000088f + rgb[1] * 0.072310f + rgb[2] * 0.986039f;
-  xy[0] = X / (X + Y + Z);
-  xy[1] = Y / (X + Y + Z);
 }
 
 float minf (float v, float w)
@@ -155,4 +158,3 @@ void colorRGBtoRGBW(byte* rgb, byte* wht) //rgb to rgbw (http://codewelt.com/rgb
   float sat = 255.0f * ((high - low) / high);
   *wht = (byte)((255.0f - sat) / 255.0f * (rgb[0] + rgb[1] + rgb[2]) / 3);
 }
-

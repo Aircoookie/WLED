@@ -213,6 +213,7 @@ void handleSettingsSet(byte subPage)
     
     if (server.hasArg("OL")){
       overlayDefault = server.arg("OL").toInt();
+      if (overlayCurrent != overlayDefault) strip.unlockAll();
       overlayCurrent = overlayDefault;
     }
     
