@@ -67,9 +67,11 @@ void WS2812FX::service() {
   if(_running || _triggered) {
     unsigned long now = millis(); // Be aware, millis() rolls over every 49 days
     bool doShow = false;
-    for(uint8_t i=0; i < _num_segments; i++) {
+    for(uint8_t i=0; i < _num_segments; i++)
+    {
       _segment_index = i;
-      if(now > SEGMENT_RUNTIME.next_time || _triggered) {
+      if(now > SEGMENT_RUNTIME.next_time || _triggered)
+      {
         doShow = true;
         handle_palette();
         uint16_t delay = (this->*_mode[SEGMENT.mode])();

@@ -8,7 +8,7 @@ void wledInit()
   ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
   //RMT eats up too much RAM
   #ifdef ARDUINO_ARCH_ESP32
-  if (ledCount > 600) ledCount = 600;
+   if (ledCount > 600) ledCount = 600;
   #endif
   if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //quick init
 
@@ -16,7 +16,7 @@ void wledInit()
   Serial.setTimeout(50);
   
   #ifdef USEFS
-  SPIFFS.begin();
+   SPIFFS.begin();
   #endif
   
   DEBUG_PRINTLN("Load EEPROM");
@@ -139,7 +139,9 @@ void initStrip()
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
-  if(digitalRead(buttonPin) == LOW) buttonEnabled = false; //disable button if it is "pressed" unintentionally
+
+  //disable button if it is "pressed" unintentionally
+  if(digitalRead(buttonPin) == LOW) buttonEnabled = false;
 
 }
 
@@ -173,13 +175,14 @@ void initCon()
     WiFi.softAPdisconnect(true);
   }
   int fail_count = 0;
-  if (strlen(clientSSID) <1 || strcmp(clientSSID,"Your_Network") == 0) fail_count = apWaitTimeSecs*2; //instantly go to ap mode
+  if (strlen(clientSSID) <1 || strcmp(clientSSID,"Your_Network") == 0)
+    fail_count = apWaitTimeSecs*2; //instantly go to ap mode
   #ifndef ARDUINO_ARCH_ESP32
-  WiFi.hostname(serverDescription);
+   WiFi.hostname(serverDescription);
   #endif
-  WiFi.begin(clientSSID, clientPass);
+   WiFi.begin(clientSSID, clientPass);
   #ifdef ARDUINO_ARCH_ESP32
-  WiFi.setHostname(serverDescription);
+   WiFi.setHostname(serverDescription);
   #endif
   unsigned long lastTry = 0;
   bool con = false;
@@ -211,9 +214,9 @@ void initCon()
 }
 
 
+//fill string buffer with build info
 void getBuildInfo()
 {
-  //fill string buffer with build info
   olen = 0;
   oappend("hard-coded build info:\r\n\n");
   #ifdef ARDUINO_ARCH_ESP32

@@ -16,35 +16,30 @@ void alexaInit()
 {
   if (alexaEnabled && WiFi.status() == WL_CONNECTED)
   {
-    udpConnected = connectUDP();
+    alexaUdpConnected = connectUDP();
     
-    if (udpConnected) alexaInitPages();
+    if (alexaUdpConnected) alexaInitPages();
   }
 }
 
 void handleAlexa()
 {
-  if (alexaEnabled && WiFi.status() == WL_CONNECTED)
-  {
-    if(udpConnected){    
-    // if there’s data available, read a packet
-    int packetSize = alexaUDP.parsePacket();
-      if(packetSize>0) {
-        IPAddress remote = alexaUDP.remoteIP();
-        int len = alexaUDP.read(obuf, 254);
-        if (len > 0) {
-            obuf[len] = 0;
-        }
-        
-        if(strstr(obuf,"M-SEARCH") > 0) {
-          if(strstr(obuf,"upnp:rootdevice") > 0 || strstr(obuf,"device:basic:1") > 0) {
-              DEBUG_PRINTLN("Responding search req...");
-              respondToSearch();
-          }
-        }
-      }
-    } 
-  }
+  if (!alexaEnabled || WiFi.status() != WL_CONNECTED || !alexaUdpConnected) return;
+
+  // if there's data available, read a packet
+  int packetSize = alexaUDP.parsePacket();
+  if(packetSize < 1) return;
+  
+  IPAddress remote = alexaUDP.remoteIP();
+  int len = alexaUDP.read(obuf, 254);
+  if (len > 0) obuf[len] = 0;
+      
+  if(strstr(obuf,"M-SEARCH") > 0) {
+    if(strstr(obuf,"upnp:rootdevice") > 0 || strstr(obuf,"device:basic:1") > 0) {
+      DEBUG_PRINTLN("Responding search req...");
+      respondToSearch();
+    }
+  } 
 }
 
 void alexaOn()
@@ -94,126 +89,125 @@ void alexaDim(byte briL)
 }
 
 void respondToSearch() {
-    DEBUG_PRINTLN("");
-    DEBUG_PRINT("Send resp to ");
-    DEBUG_PRINTLN(alexaUDP.remoteIP());
-    DEBUG_PRINT("Port : ");
-    DEBUG_PRINTLN(alexaUDP.remotePort());
+  DEBUG_PRINTLN("");
+  DEBUG_PRINT("Send resp to ");
+  DEBUG_PRINTLN(alexaUDP.remoteIP());
+  DEBUG_PRINT("Port : ");
+  DEBUG_PRINTLN(alexaUDP.remotePort());
 
-    IPAddress localIP = WiFi.localIP();
-    char s[16];
-    sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+  IPAddress localIP = WiFi.localIP();
+  char s[16];
+  sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
 
-    olen = 0;
-    oappend(
-      "HTTP/1.1 200 OK\r\n"
-      "EXT:\r\n"
-      "CACHE-CONTROL: max-age=100\r\n" // SSDP_INTERVAL
-      "LOCATION: http://");
-    oappend(s);
-    oappend(":80/description.xml\r\n"
-      "SERVER: FreeRTOS/6.0.5, UPnP/1.0, IpBridge/1.17.0\r\n" // _modelName, _modelNumber
-      "hue-bridgeid: ");
-    oappend((char*)escapedMac.c_str());
-    oappend("\r\n"
-      "ST: urn:schemas-upnp-org:device:basic:1\r\n"  // _deviceType
-      "USN: uuid:2f402f80-da50-11e1-9b23-");
-    oappend((char*)escapedMac.c_str());
-    oappend("::upnp:rootdevice\r\n" // _uuid::_deviceType
-      "\r\n");
+  olen = 0;
+  oappend(
+    "HTTP/1.1 200 OK\r\n"
+    "EXT:\r\n"
+    "CACHE-CONTROL: max-age=100\r\n" // SSDP_INTERVAL
+    "LOCATION: http://");
+  oappend(s);
+  oappend(":80/description.xml\r\n"
+    "SERVER: FreeRTOS/6.0.5, UPnP/1.0, IpBridge/1.17.0\r\n" // _modelName, _modelNumber
+    "hue-bridgeid: ");
+  oappend((char*)escapedMac.c_str());
+  oappend("\r\n"
+    "ST: urn:schemas-upnp-org:device:basic:1\r\n"  // _deviceType
+    "USN: uuid:2f402f80-da50-11e1-9b23-");
+  oappend((char*)escapedMac.c_str());
+  oappend("::upnp:rootdevice\r\n" // _uuid::_deviceType
+    "\r\n");
 
-    alexaUDP.beginPacket(alexaUDP.remoteIP(), alexaUDP.remotePort());
-    #ifdef ARDUINO_ARCH_ESP32
-    alexaUDP.write((byte*)obuf, olen);
-    #else
-    alexaUDP.write(obuf);
-    #endif
-    alexaUDP.endPacket();                    
+  alexaUDP.beginPacket(alexaUDP.remoteIP(), alexaUDP.remotePort());
+  #ifdef ARDUINO_ARCH_ESP32
+  alexaUDP.write((byte*)obuf, olen);
+  #else
+  alexaUDP.write(obuf);
+  #endif
+  alexaUDP.endPacket();                    
 
-     DEBUG_PRINTLN("Response sent!");
+  DEBUG_PRINTLN("Response sent!");
 }
 
 void alexaInitPages() {
     
-    server.on("/description.xml", HTTP_GET, [](){
-      DEBUG_PRINTLN(" # Responding to description.xml ... #\n");
-
-      IPAddress localIP = WiFi.localIP();
-      char s[16];
-      sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
-
-      olen = 0;
-      oappend("<?xml version=\"1.0\" ?>"
+  server.on("/description.xml", HTTP_GET, [](){
+    DEBUG_PRINTLN(" # Responding to description.xml ... #\n");
+  
+    IPAddress localIP = WiFi.localIP();
+    char s[16];
+    sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+  
+    olen = 0;
+    oappend("<?xml version=\"1.0\" ?>"
           "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
           "<specVersion><major>1</major><minor>0</minor></specVersion>"
           "<URLBase>http://");
-      oappend(s);
-      oappend(":80/</URLBase>"
+    oappend(s);
+    oappend(":80/</URLBase>"
           "<device>"
-            "<deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>"
-            "<friendlyName>Philips hue (");
-      oappend(s);
-      oappend(")</friendlyName>"
-            "<manufacturer>Royal Philips Electronics</manufacturer>"
-            "<manufacturerURL>http://www.philips.com</manufacturerURL>"
-            "<modelDescription>Philips hue Personal Wireless Lighting</modelDescription>"
-            "<modelName>Philips hue bridge 2012</modelName>"
-            "<modelNumber>929000226503</modelNumber>"
-            "<modelURL>http://www.meethue.com</modelURL>"
-            "<serialNumber>");
-      oappend((char*)escapedMac.c_str());
-      oappend("</serialNumber>"
-            "<UDN>uuid:2f402f80-da50-11e1-9b23-");
-      oappend((char*)escapedMac.c_str());
-      oappend("</UDN>"
-            "<presentationURL>index.html</presentationURL>"
-            "<iconList>"
-            "  <icon>"
-            "    <mimetype>image/png</mimetype>"
-            "    <height>48</height>"
-            "    <width>48</width>"
-            "    <depth>24</depth>"
-            "    <url>hue_logo_0.png</url>"
-            "  </icon>"
-            "  <icon>"
-            "    <mimetype>image/png</mimetype>"
-            "    <height>120</height>"
-            "    <width>120</width>"
-            "    <depth>24</depth>"
-            "    <url>hue_logo_3.png</url>"
-            "  </icon>"
-            "</iconList>"
+          "<deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>"
+          "<friendlyName>Philips hue (");
+    oappend(s);
+    oappend(")</friendlyName>"
+          "<manufacturer>Royal Philips Electronics</manufacturer>"
+          "<manufacturerURL>http://www.philips.com</manufacturerURL>"
+          "<modelDescription>Philips hue Personal Wireless Lighting</modelDescription>"
+          "<modelName>Philips hue bridge 2012</modelName>"
+          "<modelNumber>929000226503</modelNumber>"
+          "<modelURL>http://www.meethue.com</modelURL>"
+          "<serialNumber>");
+    oappend((char*)escapedMac.c_str());
+    oappend("</serialNumber>"
+          "<UDN>uuid:2f402f80-da50-11e1-9b23-");
+    oappend((char*)escapedMac.c_str());
+    oappend("</UDN>"
+          "<presentationURL>index.html</presentationURL>"
+          "<iconList>"
+          "  <icon>"
+          "    <mimetype>image/png</mimetype>"
+          "    <height>48</height>"
+          "    <width>48</width>"
+          "    <depth>24</depth>"
+          "    <url>hue_logo_0.png</url>"
+          "  </icon>"
+          "  <icon>"
+          "    <mimetype>image/png</mimetype>"
+          "    <height>120</height>"
+          "    <width>120</width>"
+          "    <depth>24</depth>"
+          "    <url>hue_logo_3.png</url>"
+          "  </icon>"
+          "</iconList>"
           "</device>"
           "</root>");
-            
-        server.send(200, "text/xml", obuf);
         
-        DEBUG_PRINTLN("Sending setup_xml");
-    });
+    server.send(200, "text/xml", obuf);
+    
+    DEBUG_PRINTLN("Sending setup_xml");
+  });
 
-    // openHAB support
-    server.on("/on.html", HTTP_GET, [](){
-         DEBUG_PRINTLN("on req");
-         server.send(200, "text/plain", "turned on");
-         alexaOn();
-       });
- 
-     server.on("/off.html", HTTP_GET, [](){
-        DEBUG_PRINTLN("off req");
-        server.send(200, "text/plain", "turned off");
-        alexaOff();
-       });
- 
-      server.on("/status.html", HTTP_GET, [](){
-        DEBUG_PRINTLN("Got status request");
- 
-        char statrespone[] = "0"; 
-        if (bri > 0) {
-          statrespone[0] = '1'; 
-        }
-        server.send(200, "text/plain", statrespone);
-      
-    });
+  // openHAB support
+  server.on("/on.html", HTTP_GET, [](){
+    DEBUG_PRINTLN("on req");
+    server.send(200, "text/plain", "turned on");
+    alexaOn();
+  });
+
+  server.on("/off.html", HTTP_GET, [](){
+    DEBUG_PRINTLN("off req");
+    server.send(200, "text/plain", "turned off");
+    alexaOff();
+  });
+
+  server.on("/status.html", HTTP_GET, [](){
+    DEBUG_PRINTLN("Got status request");
+
+    char statrespone[] = "0"; 
+    if (bri > 0) {
+      statrespone[0] = '1'; 
+    }
+    server.send(200, "text/plain", statrespone);
+  });
 }
 
 String boolString(bool st)
@@ -288,9 +282,10 @@ bool connectUDP(){
   
   return state;
 }
+
 #else
-void alexaInit(){}
-void handleAlexa(){}
-void alexaInitPages(){}
-bool handleAlexaApiCall(String req, String body){return false;}
+ void alexaInit(){}
+ void handleAlexa(){}
+ void alexaInitPages(){}
+ bool handleAlexaApiCall(String req, String body){return false;}
 #endif

@@ -30,29 +30,29 @@
 //library inclusions
 #include <Arduino.h>
 #ifdef ARDUINO_ARCH_ESP32
-#include <WiFi.h>
-#include <ESPmDNS.h>
-#include "src/dependencies/webserver/WebServer.h"
-#include <HTTPClient.h>
+ #include <WiFi.h>
+ #include <ESPmDNS.h>
+ #include "src/dependencies/webserver/WebServer.h"
+ #include <HTTPClient.h>
 #else
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
-#include <ESP8266WebServer.h>
-#include <ESP8266HTTPClient.h>
+ #include <ESP8266WiFi.h>
+ #include <ESP8266mDNS.h>
+ #include <ESP8266WebServer.h>
+ #include <ESP8266HTTPClient.h>
 #endif
 
 #include <EEPROM.h>
 #include <WiFiUDP.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
-#include <ArduinoOTA.h>
-#include "src/dependencies/webserver/ESP8266HTTPUpdateServer.h"
+ #include <ArduinoOTA.h>
+ #include "src/dependencies/webserver/ESP8266HTTPUpdateServer.h"
 #endif
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
 #ifndef WLED_DISABLE_BLYNK
-#include "src/dependencies/blynk/BlynkSimpleEsp.h"
+ #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 #include "src/dependencies/e131/E131.h"
 #include "src/dependencies/pubsubclient/PubSubClient.h"
@@ -63,7 +63,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1811071
+#define VERSION 1811091
 char versionString[] = "0.8.1";
 
 
@@ -357,6 +357,7 @@ bool auxActive = false, auxActiveBefore = false;
 
 //alexa udp
 WiFiUDP alexaUDP;
+bool alexaUdpConnected = false;
 IPAddress ipMulti(239, 255, 255, 250);
 unsigned int portMulti = 1900;
 String escapedMac;
@@ -381,16 +382,16 @@ uint16_t olen = 0;
 
 //server library objects
 #ifdef ARDUINO_ARCH_ESP32
-WebServer server(80);
+ WebServer server(80);
 #else
-ESP8266WebServer server(80);
+ ESP8266WebServer server(80);
 #endif
 HTTPClient* hueClient = NULL;
 WiFiClient* mqttTCPClient = NULL;
 PubSubClient* mqtt = NULL;
 
 #ifndef WLED_DISABLE_OTA
-ESP8266HTTPUpdateServer httpUpdater;
+ ESP8266HTTPUpdateServer httpUpdater;
 #endif
 
 //udp interface objects
@@ -417,8 +418,8 @@ WS2812FX strip = WS2812FX();
 
 //filesystem
 #ifdef USEFS
-#include <FS.h>;
-File fsUploadFile;
+ #include <FS.h>;
+ File fsUploadFile;
 #endif
 
 //gamma 2.4 lookup table used for color correction
@@ -478,64 +479,63 @@ bool oappendi(int i)
 
 //boot starts here
 void setup() {
-    wledInit();
+  wledInit();
 }
 
 
 //main program loop
 void loop() {
-    server.handleClient();
-    handleSerial();
-    handleNotifications();
-    handleTransitions();
-    userLoop();
-    
-    yield();
-    handleButton();
-    handleNetworkTime();
-    if (!onlyAP)
-    {
-      handleAlexa();
-      handleMQTT();
-    }
-    
-    handleOverlays();
+  server.handleClient();
+  handleSerial();
+  handleNotifications();
+  handleTransitions();
+  userLoop();
+  
+  yield();
+  handleButton();
+  handleNetworkTime();
+  if (!onlyAP)
+  {
+    handleAlexa();
+    handleMQTT();
+  }
+  
+  handleOverlays();
 
-    yield();
-    
-    
-    if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
-    {
-      if (dnsActive) dnsServer.processNextRequest();
-      #ifndef WLED_DISABLE_OTA
-      if (aOtaEnabled) ArduinoOTA.handle();
-      #endif
-      handleNightlight();
-      if (!onlyAP) {
-        handleHue();
-        handleBlynk();
-      }
-      if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
-    }
-    
-    //DEBUG serial logging
-    #ifdef DEBUG
-    if (millis() - debugTime > 5000)
-    {
-      DEBUG_PRINTLN("---MODULE DEBUG INFO---");
-      DEBUG_PRINT("Runtime: "); DEBUG_PRINTLN(millis());
-      DEBUG_PRINT("Unix time: "); DEBUG_PRINTLN(now());
-      DEBUG_PRINT("Free heap: "); DEBUG_PRINTLN(ESP.getFreeHeap());
-      DEBUG_PRINT("Wifi state: "); DEBUG_PRINTLN(WiFi.status());
-      if (WiFi.status() != lastWifiState)
-      {
-        wifiStateChangedTime = millis();
-      }
-      lastWifiState = WiFi.status();
-      DEBUG_PRINT("State time: "); DEBUG_PRINTLN(wifiStateChangedTime);
-      DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
-      DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP());
-      debugTime = millis(); 
-    }
+  yield();
+  
+  if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
+  {
+    if (dnsActive) dnsServer.processNextRequest();
+    #ifndef WLED_DISABLE_OTA
+     if (aOtaEnabled) ArduinoOTA.handle();
     #endif
+    handleNightlight();
+    if (!onlyAP) {
+      handleHue();
+      handleBlynk();
+    }
+    if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
+  }
+  
+  //DEBUG serial logging
+  #ifdef DEBUG
+   if (millis() - debugTime > 5000)
+   {
+     DEBUG_PRINTLN("---MODULE DEBUG INFO---");
+     DEBUG_PRINT("Runtime: "); DEBUG_PRINTLN(millis());
+     DEBUG_PRINT("Unix time: "); DEBUG_PRINTLN(now());
+     DEBUG_PRINT("Free heap: "); DEBUG_PRINTLN(ESP.getFreeHeap());
+     DEBUG_PRINT("Wifi state: "); DEBUG_PRINTLN(WiFi.status());
+     if (WiFi.status() != lastWifiState)
+     {
+       wifiStateChangedTime = millis();
+     }
+     lastWifiState = WiFi.status();
+     DEBUG_PRINT("State time: "); DEBUG_PRINTLN(wifiStateChangedTime);
+     DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
+     DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP());
+     debugTime = millis(); 
+   }
+  #endif
 }

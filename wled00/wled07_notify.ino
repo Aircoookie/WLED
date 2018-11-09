@@ -118,134 +118,135 @@ void handleNotifications()
   }
 
   //receive UDP notifications
-  if(udpConnected && (receiveNotifications || receiveDirect)){
-    uint16_t packetSize = notifierUdp.parsePacket();
-
-    //hyperion / raw RGB
-    if (!packetSize && udpRgbConnected) {
-      packetSize = rgbUdp.parsePacket();
-      if (!receiveDirect) return;
-      if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;
-      realtimeIP = rgbUdp.remoteIP();
-      DEBUG_PRINTLN(rgbUdp.remoteIP());
-      olen = 0;
-      rgbUdp.read(obuf, packetSize);
-      arlsLock(realtimeTimeoutMs);
-      uint16_t id = 0;
-      for (uint16_t i = 0; i < packetSize -2; i += 3)
-      {
-        setRealtimePixel(id, obuf[i], obuf[i+1], obuf[i+2], 0);
-        
-        id++; if (id >= ledCount) break;
-      }
-      strip.show();
-      return;
-    }
+  if (!udpConnected || !(receiveNotifications || receiveDirect)) return;
     
-    if (packetSize > UDP_IN_MAXSIZE) return;
-    if(packetSize && notifierUdp.remoteIP() != WiFi.localIP()) //don't process broadcasts we send ourselves
-    {
-      olen = 0;
-      notifierUdp.read(obuf, packetSize);
-      char* udpIn = obuf;
-      
-      if (udpIn[0] == 0 && !realtimeActive && receiveNotifications) //wled notifier, block if realtime packets active
-      {
-        if (receiveNotificationColor)
-        {
-        col[0] = udpIn[3];
-        col[1] = udpIn[4];
-        col[2] = udpIn[5];
-        }
-        if (udpIn[11] > 0 && receiveNotificationColor) //check if sending modules white val is inteded
-        {
-          white = udpIn[10];
-          if (udpIn[11] > 1 )
-          {
-            colSec[0] = udpIn[12];
-            colSec[1] = udpIn[13];
-            colSec[2] = udpIn[14];
-            whiteSec = udpIn[15];
-          }
-        }
-        if (udpIn[8] != effectCurrent && receiveNotificationEffects)
-        {
-          effectCurrent = udpIn[8];
-          strip.setMode(effectCurrent);
-        }
-        if (udpIn[9] != effectSpeed && receiveNotificationEffects)
-        {
-          effectSpeed = udpIn[9];
-          strip.setSpeed(effectSpeed);
-        }
-        if (udpIn[11] > 2 && udpIn[16] != effectIntensity && receiveNotificationEffects)
-        {
-          effectIntensity = udpIn[16];
-          strip.setIntensity(effectIntensity);
-        }
-        if (udpIn[11] > 3)
-        {
-          transitionDelayTemp = ((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00);
-        }
-        if (udpIn[11] > 4 && udpIn[19] != effectPalette && receiveNotificationEffects)
-        {
-          effectPalette = udpIn[19];
-          strip.setPalette(effectPalette);
-        }
-        nightlightActive = udpIn[6];
-        if (!nightlightActive)
-        {
-          if (receiveNotificationBrightness) bri = udpIn[2];
-          colorUpdated(3);
-        }
-      }  else if (udpIn[0] > 0 && udpIn[0] < 4 && receiveDirect) //1 warls //2 drgb //3 drgbw
-      {
-        realtimeIP = notifierUdp.remoteIP();
-        DEBUG_PRINTLN(notifierUdp.remoteIP());
-        if (packetSize > 1) {
-          if (udpIn[1] == 0)
-          {
-            realtimeActive = false;
-            return;
-          } else {
-            arlsLock(udpIn[1]*1000);
-          }
-          if (udpIn[0] == 1) //warls
-          {
-            for (uint16_t i = 2; i < packetSize -3; i += 4)
-            {
-              setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
-            }
-          } else if (udpIn[0] == 2) //drgb
-          {
-            uint16_t id = 0;
-            for (uint16_t i = 2; i < packetSize -2; i += 3)
-            {
-              setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+  uint16_t packetSize = notifierUdp.parsePacket();
 
-              id++; if (id >= ledCount) break;
-            }
-          } else if (udpIn[0] == 3) //drgbw
-          {
-            uint16_t id = 0;
-            for (uint16_t i = 2; i < packetSize -3; i += 4)
-            {
-              setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-              
-              id++; if (id >= ledCount) break;
-            }
-          } else if (udpIn[0] == 4) //dnrgb
-          {
-            uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-            for (uint16_t i = 4; i < packetSize -2; i += 3)
-            {
-               if (id >= ledCount) break;
-              setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-              id++;
-            }
-          }
-          strip.show();
+  //hyperion / raw RGB
+  if (!packetSize && udpRgbConnected) {
+    packetSize = rgbUdp.parsePacket();
+    if (!receiveDirect) return;
+    if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;
+    realtimeIP = rgbUdp.remoteIP();
+    DEBUG_PRINTLN(rgbUdp.remoteIP());
+    olen = 0;
+    rgbUdp.read(obuf, packetSize);
+    arlsLock(realtimeTimeoutMs);
+    uint16_t id = 0;
+    for (uint16_t i = 0; i < packetSize -2; i += 3)
+    {
+      setRealtimePixel(id, obuf[i], obuf[i+1], obuf[i+2], 0);
+      
+      id++; if (id >= ledCount) break;
+    }
+    strip.show();
+    return;
+  }
+
+  //notifier and UDP realtime
+  if (packetSize > UDP_IN_MAXSIZE) return;
+  if(packetSize && notifierUdp.remoteIP() != WiFi.localIP()) //don't process broadcasts we send ourselves
+  {
+    olen = 0;
+    notifierUdp.read(obuf, packetSize);
+    char* udpIn = obuf;
+    
+    if (udpIn[0] == 0 && !realtimeActive && receiveNotifications) //wled notifier, block if realtime packets active
+    {
+      if (receiveNotificationColor)
+      {
+      col[0] = udpIn[3];
+      col[1] = udpIn[4];
+      col[2] = udpIn[5];
+      }
+      if (udpIn[11] > 0 && receiveNotificationColor) //check if sending modules white val is inteded
+      {
+        white = udpIn[10];
+        if (udpIn[11] > 1 )
+        {
+          colSec[0] = udpIn[12];
+          colSec[1] = udpIn[13];
+          colSec[2] = udpIn[14];
+          whiteSec = udpIn[15];
         }
+      }
+      if (udpIn[8] != effectCurrent && receiveNotificationEffects)
+      {
+        effectCurrent = udpIn[8];
+        strip.setMode(effectCurrent);
+      }
+      if (udpIn[9] != effectSpeed && receiveNotificationEffects)
+      {
+        effectSpeed = udpIn[9];
+        strip.setSpeed(effectSpeed);
+      }
+      if (udpIn[11] > 2 && udpIn[16] != effectIntensity && receiveNotificationEffects)
+      {
+        effectIntensity = udpIn[16];
+        strip.setIntensity(effectIntensity);
+      }
+      if (udpIn[11] > 3)
+      {
+        transitionDelayTemp = ((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00);
+      }
+      if (udpIn[11] > 4 && udpIn[19] != effectPalette && receiveNotificationEffects)
+      {
+        effectPalette = udpIn[19];
+        strip.setPalette(effectPalette);
+      }
+      nightlightActive = udpIn[6];
+      if (!nightlightActive)
+      {
+        if (receiveNotificationBrightness) bri = udpIn[2];
+        colorUpdated(3);
+      }
+    }  else if (udpIn[0] > 0 && udpIn[0] < 4 && receiveDirect) //1 warls //2 drgb //3 drgbw
+    {
+      realtimeIP = notifierUdp.remoteIP();
+      DEBUG_PRINTLN(notifierUdp.remoteIP());
+      if (packetSize > 1) {
+        if (udpIn[1] == 0)
+        {
+          realtimeActive = false;
+          return;
+        } else {
+          arlsLock(udpIn[1]*1000);
+        }
+        if (udpIn[0] == 1) //warls
+        {
+          for (uint16_t i = 2; i < packetSize -3; i += 4)
+          {
+            setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
+          }
+        } else if (udpIn[0] == 2) //drgb
+        {
+          uint16_t id = 0;
+          for (uint16_t i = 2; i < packetSize -2; i += 3)
+          {
+            setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+
+            id++; if (id >= ledCount) break;
+          }
+        } else if (udpIn[0] == 3) //drgbw
+        {
+          uint16_t id = 0;
+          for (uint16_t i = 2; i < packetSize -3; i += 4)
+          {
+            setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+            
+            id++; if (id >= ledCount) break;
+          }
+        } else if (udpIn[0] == 4) //dnrgb
+        {
+          uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+          for (uint16_t i = 4; i < packetSize -2; i += 3)
+          {
+             if (id >= ledCount) break;
+            setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+            id++;
+          }
+        }
+        strip.show();
       }
     }
   }

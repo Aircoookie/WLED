@@ -61,7 +61,9 @@ void handleSettingsSet(byte subPage)
     #endif
     useRGBW = server.hasArg("EW");
     autoRGBtoRGBW = server.hasArg("AW");
-    if (server.hasArg("IS")) //ignore settings and save current brightness, colors and fx as default
+
+    //ignore settings and save current brightness, colors and fx as default
+    if (server.hasArg("IS"))
     {
       colS[0] = col[0];
       colS[1] = col[1];
@@ -170,7 +172,9 @@ void handleSettingsSet(byte subPage)
     strcpy(alexaInvocationName, server.arg("AI").c_str());
     notifyAlexa = server.hasArg("SA");
     
-    if (server.hasArg("BK") && !server.arg("BK").equals("Hidden")) {strcpy(blynkApiKey,server.arg("BK").c_str()); initBlynk(blynkApiKey);}
+    if (server.hasArg("BK") && !server.arg("BK").equals("Hidden")) {
+      strcpy(blynkApiKey,server.arg("BK").c_str()); initBlynk(blynkApiKey);
+    }
 
     strcpy(mqttServer, server.arg("MS").c_str());
     strcpy(mqttDeviceTopic, server.arg("MD").c_str());
@@ -209,7 +213,9 @@ void handleSettingsSet(byte subPage)
     useAMPM = !server.hasArg("CF");
     currentTimezone = server.arg("TZ").toInt();
     utcOffsetSecs = server.arg("UO").toInt();
-    if (ntpEnabled && WiFi.status() == WL_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort); //start if not already connected
+
+    //start ntp if not already connected
+    if (ntpEnabled && WiFi.status() == WL_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
     
     if (server.hasArg("OL")){
       overlayDefault = server.arg("OL").toInt();
@@ -305,451 +311,453 @@ void handleSettingsSet(byte subPage)
 
 bool handleSet(String req)
 {
-   bool effectUpdated = false;
-   if (!(req.indexOf("win") >= 0)) return false;
+  bool effectUpdated = false;
+  if (!(req.indexOf("win") >= 0)) return false;
 
-   int pos = 0;
-   DEBUG_PRINT("API req: ");
-   DEBUG_PRINTLN(req);
+  int pos = 0;
+  DEBUG_PRINT("API req: ");
+  DEBUG_PRINTLN(req);
+  
+  //save macro, requires &MS=<slot>(<macro>) format
+  pos = req.indexOf("&MS=");
+  if (pos > 0) {
+    int i = req.substring(pos + 4).toInt();
+    pos = req.indexOf('(') +1;
+    if (pos > 0) { 
+      int en = req.indexOf(')');
+      String mc = req.substring(pos);
+      if (en > 0) mc = req.substring(pos, en);
+      saveMacro(i, mc); 
+    }
+    
+    pos = req.indexOf("IN");
+    if (pos < 1) XML_response(true);
+    return true;
+    //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
+  }
    
-   //save macro, requires &MS=<slot>(<macro>) format
-   pos = req.indexOf("&MS=");
-   if (pos > 0) {
-      int i = req.substring(pos + 4).toInt();
-      pos = req.indexOf('(') +1;
-      if (pos > 0) { 
-        int en = req.indexOf(')');
-        String mc = req.substring(pos);
-        if (en > 0) mc = req.substring(pos, en);
-        saveMacro(i, mc); 
-      }
-      
-      pos = req.indexOf("IN");
-      if (pos < 1) XML_response(true);
-      return true;
-      //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
-   }
-   
-   //set brigthness
-   pos = req.indexOf("&A=");
-   if (pos > 0) {
-      bri = req.substring(pos + 3).toInt();
-   }
+  //set brigthness
+  pos = req.indexOf("&A=");
+  if (pos > 0) {
+    bri = req.substring(pos + 3).toInt();
+  }
 
-   //set hue
-   pos = req.indexOf("HU=");
-   if (pos > 0) {
-      uint16_t temphue = req.substring(pos + 3).toInt();
-      byte tempsat = 255;
-      pos = req.indexOf("SA=");
-      if (pos > 0) {
-        tempsat = req.substring(pos + 3).toInt();
-      }
-      colorHStoRGB(temphue,tempsat,(req.indexOf("H2")>0)? colSec:col);
-   }
+  //set hue
+  pos = req.indexOf("HU=");
+  if (pos > 0) {
+    uint16_t temphue = req.substring(pos + 3).toInt();
+    byte tempsat = 255;
+    pos = req.indexOf("SA=");
+    if (pos > 0) {
+      tempsat = req.substring(pos + 3).toInt();
+    }
+    colorHStoRGB(temphue,tempsat,(req.indexOf("H2")>0)? colSec:col);
+  }
    
-   //set red value
-   pos = req.indexOf("&R=");
-   if (pos > 0) {
-      col[0] = req.substring(pos + 3).toInt();
-   }
-   //set green value
-   pos = req.indexOf("&G=");
-   if (pos > 0) {
-      col[1] = req.substring(pos + 3).toInt();
-   }
-   //set blue value
-   pos = req.indexOf("&B=");
-   if (pos > 0) {
-      col[2] = req.substring(pos + 3).toInt();
-   }
-   //set white value
-   pos = req.indexOf("&W=");
-   if (pos > 0) {
-      white = req.substring(pos + 3).toInt();
-   }
+  //set red value
+  pos = req.indexOf("&R=");
+  if (pos > 0) {
+    col[0] = req.substring(pos + 3).toInt();
+  }
+  //set green value
+  pos = req.indexOf("&G=");
+  if (pos > 0) {
+    col[1] = req.substring(pos + 3).toInt();
+  }
+  //set blue value
+  pos = req.indexOf("&B=");
+  if (pos > 0) {
+    col[2] = req.substring(pos + 3).toInt();
+  }
+  //set white value
+  pos = req.indexOf("&W=");
+  if (pos > 0) {
+    white = req.substring(pos + 3).toInt();
+  }
    
-   //set 2nd red value
-   pos = req.indexOf("R2=");
-   if (pos > 0) {
-      colSec[0] = req.substring(pos + 3).toInt();
-   }
-   //set 2nd green value
-   pos = req.indexOf("G2=");
-   if (pos > 0) {
-      colSec[1] = req.substring(pos + 3).toInt();
-   }
-   //set 2nd blue value
-   pos = req.indexOf("B2=");
-   if (pos > 0) {
-      colSec[2] = req.substring(pos + 3).toInt();
-   }
-   //set 2nd white value
-   pos = req.indexOf("W2=");
-   if (pos > 0) {
-      whiteSec = req.substring(pos + 3).toInt();
-   }
+  //set 2nd red value
+  pos = req.indexOf("R2=");
+  if (pos > 0) {
+    colSec[0] = req.substring(pos + 3).toInt();
+  }
+  //set 2nd green value
+  pos = req.indexOf("G2=");
+  if (pos > 0) {
+    colSec[1] = req.substring(pos + 3).toInt();
+  }
+  //set 2nd blue value
+  pos = req.indexOf("B2=");
+  if (pos > 0) {
+    colSec[2] = req.substring(pos + 3).toInt();
+  }
+  //set 2nd white value
+  pos = req.indexOf("W2=");
+  if (pos > 0) {
+    whiteSec = req.substring(pos + 3).toInt();
+  }
    
-   //set color from HEX or 32bit DEC
-   pos = req.indexOf("CL=");
-   if (pos > 0) {
-      colorFromDecOrHexString(col, &white, (char*)req.substring(pos + 3).c_str());
-   }
-   pos = req.indexOf("C2=");
-   if (pos > 0) {
-      colorFromDecOrHexString(colSec, &whiteSec, (char*)req.substring(pos + 3).c_str());
-   }
+  //set color from HEX or 32bit DEC
+  pos = req.indexOf("CL=");
+  if (pos > 0) {
+    colorFromDecOrHexString(col, &white, (char*)req.substring(pos + 3).c_str());
+  }
+  pos = req.indexOf("C2=");
+  if (pos > 0) {
+    colorFromDecOrHexString(colSec, &whiteSec, (char*)req.substring(pos + 3).c_str());
+  }
    
-   //set 2nd to white
-   pos = req.indexOf("SW");
-   if (pos > 0) {
-      if(useRGBW) {
-        whiteSec = 255;
-        colSec[0] = 0;
-        colSec[1] = 0;
-        colSec[2] = 0;
-      } else {
-        colSec[0] = 255;
-        colSec[1] = 255;
-        colSec[2] = 255;
-      }
-   }
-   
-   //set 2nd to black
-   pos = req.indexOf("SB");
-   if (pos > 0) {
-      whiteSec = 0;
+  //set 2nd to white
+  pos = req.indexOf("SW");
+  if (pos > 0) {
+    if(useRGBW) {
+      whiteSec = 255;
       colSec[0] = 0;
       colSec[1] = 0;
       colSec[2] = 0;
-   }
+    } else {
+      colSec[0] = 255;
+      colSec[1] = 255;
+      colSec[2] = 255;
+    }
+  }
    
-   //set to random hue SR=0->1st SR=1->2nd
-   pos = req.indexOf("SR");
-   if (pos > 0) {
-      _setRandomColor(req.substring(pos + 3).toInt());
-   }
-   //set 2nd to 1st
-   pos = req.indexOf("SP");
-   if (pos > 0) {
-      colSec[0] = col[0];
-      colSec[1] = col[1];
-      colSec[2] = col[2];
-      whiteSec = white;
-   }
-   //swap 2nd & 1st
-   pos = req.indexOf("SC");
-   if (pos > 0) {
-      byte _temp[4];
-      for (int i = 0; i<3; i++)
-      {
-        _temp[i] = col[i];
-        col[i] = colSec[i];
-        colSec[i] = _temp[i];
-      }
-      _temp[3] = white;
-      white = whiteSec;
-      whiteSec = _temp[3];
-   }
+  //set 2nd to black
+  pos = req.indexOf("SB");
+  if (pos > 0) {
+    whiteSec = 0;
+    colSec[0] = 0;
+    colSec[1] = 0;
+    colSec[2] = 0;
+  }
    
-   //set current effect index
-   pos = req.indexOf("FX=");
-   if (pos > 0) {
-      if (effectCurrent != req.substring(pos + 3).toInt())
-      {
-        effectCurrent = req.substring(pos + 3).toInt();
-        strip.setMode(effectCurrent);
-        effectUpdated = true;
-      }
-   }
-   //set effect speed
-   pos = req.indexOf("SX=");
-   if (pos > 0) {
-      if (effectSpeed != req.substring(pos + 3).toInt())
-      {
-        effectSpeed = req.substring(pos + 3).toInt();
-        strip.setSpeed(effectSpeed);
-        effectUpdated = true;
-      }
-   }
-   //set effect intensity
-   pos = req.indexOf("IX=");
-   if (pos > 0) {
-      if (effectIntensity != req.substring(pos + 3).toInt())
-      {
-        effectIntensity = req.substring(pos + 3).toInt();
-        strip.setIntensity(effectIntensity);
-        effectUpdated = true;
-      }
-   }
-   //set effect palette (only for FastLED effects)
-   pos = req.indexOf("FP=");
-   if (pos > 0) {
-      if (effectPalette != req.substring(pos + 3).toInt())
-      {
-        effectPalette = req.substring(pos + 3).toInt();
-        strip.setPalette(effectPalette);
-        effectUpdated = true;
-      }
-   }
+  //set to random hue SR=0->1st SR=1->2nd
+  pos = req.indexOf("SR");
+  if (pos > 0) {
+    _setRandomColor(req.substring(pos + 3).toInt());
+  }
+  //set 2nd to 1st
+  pos = req.indexOf("SP");
+  if (pos > 0) {
+    colSec[0] = col[0];
+    colSec[1] = col[1];
+    colSec[2] = col[2];
+    whiteSec = white;
+  }
+  //swap 2nd & 1st
+  pos = req.indexOf("SC");
+  if (pos > 0) {
+    byte _temp[4];
+    for (int i = 0; i<3; i++)
+    {
+      _temp[i] = col[i];
+      col[i] = colSec[i];
+      colSec[i] = _temp[i];
+    }
+    _temp[3] = white;
+    white = whiteSec;
+    whiteSec = _temp[3];
+  }
+   
+  //set current effect index
+  pos = req.indexOf("FX=");
+  if (pos > 0) {
+    if (effectCurrent != req.substring(pos + 3).toInt())
+    {
+      effectCurrent = req.substring(pos + 3).toInt();
+      strip.setMode(effectCurrent);
+      effectUpdated = true;
+    }
+  }
+  //set effect speed
+  pos = req.indexOf("SX=");
+  if (pos > 0) {
+    if (effectSpeed != req.substring(pos + 3).toInt())
+    {
+      effectSpeed = req.substring(pos + 3).toInt();
+      strip.setSpeed(effectSpeed);
+      effectUpdated = true;
+    }
+  }
+  //set effect intensity
+  pos = req.indexOf("IX=");
+  if (pos > 0) {
+    if (effectIntensity != req.substring(pos + 3).toInt())
+    {
+      effectIntensity = req.substring(pos + 3).toInt();
+      strip.setIntensity(effectIntensity);
+      effectUpdated = true;
+    }
+  }
+  //set effect palette (only for FastLED effects)
+  pos = req.indexOf("FP=");
+  if (pos > 0) {
+    if (effectPalette != req.substring(pos + 3).toInt())
+    {
+      effectPalette = req.substring(pos + 3).toInt();
+      strip.setPalette(effectPalette);
+      effectUpdated = true;
+    }
+  }
 
-   //set hue polling light: 0 -off
-   pos = req.indexOf("HP=");
-   if (pos > 0) {
-      int id = req.substring(pos + 3).toInt();
-      if (id > 0)
-      {
-        if (id < 100) huePollLightId = id;
-        setupHue();
-      } else {
-        huePollingEnabled = false;
-      }
-   }
+  //set hue polling light: 0 -off
+  pos = req.indexOf("HP=");
+  if (pos > 0) {
+    int id = req.substring(pos + 3).toInt();
+    if (id > 0)
+    {
+      if (id < 100) huePollLightId = id;
+      setupHue();
+    } else {
+      huePollingEnabled = false;
+    }
+  }
    
-   //set default control mode (0 - RGB, 1 - HSB)
-   pos = req.indexOf("MD=");
-   if (pos > 0) {
-      useHSB = req.substring(pos + 3).toInt();
-   }
-   //set advanced overlay
-   pos = req.indexOf("OL=");
-   if (pos > 0) {
-        overlayCurrent = req.substring(pos + 3).toInt();
-        strip.unlockAll();
-   }
-   //(un)lock pixel (ranges)
-   pos = req.indexOf("&L=");
-   if (pos > 0){
-      int index = req.substring(pos + 3).toInt();
-      pos = req.indexOf("L2=");
-      if (pos > 0){
-        int index2 = req.substring(pos + 3).toInt();
-        if (req.indexOf("UL") > 0)
-        {
-          strip.unlockRange(index, index2);
-        } else
-        {
-          strip.lockRange(index, index2);
-        }
+  //set default control mode (0 - RGB, 1 - HSB)
+  pos = req.indexOf("MD=");
+  if (pos > 0) {
+    useHSB = req.substring(pos + 3).toInt();
+  }
+  //set advanced overlay
+  pos = req.indexOf("OL=");
+  if (pos > 0) {
+    overlayCurrent = req.substring(pos + 3).toInt();
+    strip.unlockAll();
+  }
+  //(un)lock pixel (ranges)
+  pos = req.indexOf("&L=");
+  if (pos > 0){
+    int index = req.substring(pos + 3).toInt();
+    pos = req.indexOf("L2=");
+    if (pos > 0){
+      int index2 = req.substring(pos + 3).toInt();
+      if (req.indexOf("UL") > 0)
+      {
+        strip.unlockRange(index, index2);
       } else
       {
-        if (req.indexOf("UL") > 0)
-        {
-          strip.unlock(index);
-        } else
-        {
-          strip.lock(index);
-        }
+        strip.lockRange(index, index2);
       }
-   }
+    } else
+    {
+      if (req.indexOf("UL") > 0)
+      {
+        strip.unlock(index);
+      } else
+      {
+        strip.lock(index);
+      }
+    }
+  }
 
-   //apply macro
-   pos = req.indexOf("&M=");
-   if (pos > 0) {
-      applyMacro(req.substring(pos + 3).toInt());
-   }
-   //toggle send UDP direct notifications
-   if (req.indexOf("SN=") > 0)
-   {
-      notifyDirect = true;
-      if (req.indexOf("SN=0") > 0)
-      {
-        notifyDirect = false;
-      }
-   }
+  //apply macro
+  pos = req.indexOf("&M=");
+  if (pos > 0) {
+    applyMacro(req.substring(pos + 3).toInt());
+  }
+  //toggle send UDP direct notifications
+  if (req.indexOf("SN=") > 0)
+  {
+    notifyDirect = true;
+    if (req.indexOf("SN=0") > 0)
+    {
+      notifyDirect = false;
+    }
+  }
    
-   //toggle receive UDP direct notifications
-   if (req.indexOf("RN=") > 0)
-   {
-      receiveNotifications = true;
-      if (req.indexOf("RN=0") > 0)
-      {
-        receiveNotifications = false;
-      }
-   }
+  //toggle receive UDP direct notifications
+  if (req.indexOf("RN=") > 0)
+  {
+    receiveNotifications = true;
+    if (req.indexOf("RN=0") > 0)
+    {
+      receiveNotifications = false;
+    }
+  }
    
-   //toggle nightlight mode
-   bool aNlDef = false;
-   if (req.indexOf("&ND") > 0) aNlDef = true;
-   pos = req.indexOf("NL=");
-   if (pos > 0)
-   {
-      if (req.indexOf("NL=0") > 0)
-      {
-        nightlightActive = false;
-        bri = briT;
-      } else {
-        nightlightActive = true;
-        if (!aNlDef) nightlightDelayMins = req.substring(pos + 3).toInt();
-        nightlightStartTime = millis();
-      }
-   } else if (aNlDef)
-   {
+  //toggle nightlight mode
+  bool aNlDef = false;
+  if (req.indexOf("&ND") > 0) aNlDef = true;
+  pos = req.indexOf("NL=");
+  if (pos > 0)
+  {
+    if (req.indexOf("NL=0") > 0)
+    {
+      nightlightActive = false;
+      bri = briT;
+    } else {
       nightlightActive = true;
+      if (!aNlDef) nightlightDelayMins = req.substring(pos + 3).toInt();
       nightlightStartTime = millis();
-   }
+    }
+  } else if (aNlDef)
+  {
+    nightlightActive = true;
+    nightlightStartTime = millis();
+  }
    
-   //set nightlight target brightness
-   pos = req.indexOf("NT=");
-   if (pos > 0) {
-      nightlightTargetBri = req.substring(pos + 3).toInt();
-      nightlightActiveOld = false; //re-init
-   }
+  //set nightlight target brightness
+  pos = req.indexOf("NT=");
+  if (pos > 0) {
+    nightlightTargetBri = req.substring(pos + 3).toInt();
+    nightlightActiveOld = false; //re-init
+  }
    
-   //toggle nightlight fade
-   if (req.indexOf("NF=") > 0)
-   {
-      if (req.indexOf("NF=0") > 0)
+  //toggle nightlight fade
+  if (req.indexOf("NF=") > 0)
+  {
+    if (req.indexOf("NF=0") > 0)
+    {
+      nightlightFade = false;
+    } else {
+      nightlightFade = true;
+    }
+    nightlightActiveOld = false; //re-init
+  }
+   
+  //toggle general purpose output
+  pos = req.indexOf("AX=");
+  if (pos > 0) {
+    auxTime = req.substring(pos + 3).toInt();
+    auxActive = true;
+    if (auxTime == 0) auxActive = false;
+  }
+  pos = req.indexOf("TT=");
+  if (pos > 0) {
+    transitionDelay = req.substring(pos + 3).toInt();
+  }
+   
+  //main toggle on/off
+  pos = req.indexOf("&T=");
+  if (pos > 0) {
+    nightlightActive = false; //always disable nightlight when toggling
+    switch (req.substring(pos + 3).toInt())
+    {
+      case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off
+      case 1: bri = briLast; break; //on
+      default: if (bri == 0) //toggle
       {
-        nightlightFade = false;
-      } else {
-        nightlightFade = true;
-      }
-      nightlightActiveOld = false; //re-init
-   }
-   
-   //toggle general purpose output
-   pos = req.indexOf("AX=");
-   if (pos > 0) {
-      auxTime = req.substring(pos + 3).toInt();
-      auxActive = true;
-      if (auxTime == 0) auxActive = false;
-   }
-   pos = req.indexOf("TT=");
-   if (pos > 0) {
-      transitionDelay = req.substring(pos + 3).toInt();
-   }
-   
-   //main toggle on/off
-   pos = req.indexOf("&T=");
-   if (pos > 0) {
-      nightlightActive = false; //always disable nightlight when toggling
-      switch (req.substring(pos + 3).toInt())
+        bri = briLast;
+      } else
       {
-        case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off
-        case 1: bri = briLast; break; //on
-        default: if (bri == 0) //toggle
-        {
-          bri = briLast;
-        } else
-        {
-          briLast = bri;
-          bri = 0;
-        }
+        briLast = bri;
+        bri = 0;
       }
-   }
+    }
+  }
    
-   //deactivate nightlight if target brightness is reached
-   if (bri == nightlightTargetBri) nightlightActive = false;
-   //set time (unix timestamp)
-   pos = req.indexOf("ST=");
-   if (pos > 0) {
-      setTime(req.substring(pos+3).toInt());
-   }
+  //deactivate nightlight if target brightness is reached
+  if (bri == nightlightTargetBri) nightlightActive = false;
+  //set time (unix timestamp)
+  pos = req.indexOf("ST=");
+  if (pos > 0) {
+    setTime(req.substring(pos+3).toInt());
+  }
    
-   //set countdown goal (unix timestamp)
-   pos = req.indexOf("CT=");
-   if (pos > 0) {
-      countdownTime = req.substring(pos+3).toInt();
-      if (countdownTime - now() > 0) countdownOverTriggered = false;
-   }
+  //set countdown goal (unix timestamp)
+  pos = req.indexOf("CT=");
+  if (pos > 0) {
+    countdownTime = req.substring(pos+3).toInt();
+    if (countdownTime - now() > 0) countdownOverTriggered = false;
+  }
    
-   //set presets
-    pos = req.indexOf("P1="); //sets first preset for cycle
-   if (pos > 0) presetCycleMin = req.substring(pos + 3).toInt();
-
-   pos = req.indexOf("P2="); //sets last preset for cycle
-   if (pos > 0) presetCycleMax = req.substring(pos + 3).toInt();
+  //set presets
+  pos = req.indexOf("P1="); //sets first preset for cycle
+  if (pos > 0) presetCycleMin = req.substring(pos + 3).toInt();
+  
+  pos = req.indexOf("P2="); //sets last preset for cycle
+  if (pos > 0) presetCycleMax = req.substring(pos + 3).toInt();
    
-   if (req.indexOf("CY=") > 0) //preset cycle
-   {
-      presetCyclingEnabled = true;
-      if (req.indexOf("CY=0") > 0)
-      {
-        presetCyclingEnabled = false;
-      }
-      presetCycCurr = presetCycleMin;
-   }
-   pos = req.indexOf("PT="); //sets cycle time in ms
-   if (pos > 0) {
-      int v = req.substring(pos + 3).toInt();
-      if (v > 49) presetCycleTime = v;
-   }
-   if (req.indexOf("PA=") > 0) //apply brightness from preset
-   {
-      presetApplyBri = true;
-      if (req.indexOf("PA=0") > 0) presetApplyBri = false;
-   }
-   if (req.indexOf("PC=") > 0) //apply color from preset
-   {
-      presetApplyCol = true;
-      if (req.indexOf("PC=0") > 0) presetApplyCol = false;
-   }
-   if (req.indexOf("PX=") > 0) //apply effects from preset
-   {
-      presetApplyFx = true;
-      if (req.indexOf("PX=0") > 0) presetApplyFx = false;
-   }
-   pos = req.indexOf("PS="); //saves current in preset
-   if (pos > 0) {
-      savePreset(req.substring(pos + 3).toInt());
-   }
-   pos = req.indexOf("PL="); //applies entire preset
-   if (pos > 0) {
-      applyPreset(req.substring(pos + 3).toInt(), presetApplyBri, presetApplyCol, presetApplyFx);
-      if (presetApplyFx) effectUpdated = true;
-   }
-
-   //cronixie
-   pos = req.indexOf("NX="); //sets digits to code
-   if (pos > 0) {
-      strcpy(cronixieDisplay,req.substring(pos + 3, pos + 9).c_str());
-      setCronixie();
-   }
-   pos = req.indexOf("NM="); //mode, 1 countdown
-   if (pos > 0) {
-      countdownMode = true;
-      if (req.indexOf("NM=0") > 0)
-      {
-        countdownMode = false;
-      }
-   }
-   if (req.indexOf("NB=") > 0) //sets backlight
-   {
-      cronixieBacklight = true;
-      if (req.indexOf("NB=0") > 0)
-      {
-        cronixieBacklight = false;
-      }
-      if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
-      overlayRefreshedTime = 0;
-   }
-   pos = req.indexOf("U0="); //user var 0
-   if (pos > 0) {
-      userVar0 = req.substring(pos + 3).toInt();
-   }
-   pos = req.indexOf("U1="); //user var 1
-   if (pos > 0) {
-      userVar1 = req.substring(pos + 3).toInt();
-   }
-   //you can add more if you need
+  if (req.indexOf("CY=") > 0) //preset cycle
+  {
+    presetCyclingEnabled = true;
+    if (req.indexOf("CY=0") > 0)
+    {
+      presetCyclingEnabled = false;
+    }
+    presetCycCurr = presetCycleMin;
+  }
+  pos = req.indexOf("PT="); //sets cycle time in ms
+  if (pos > 0) {
+    int v = req.substring(pos + 3).toInt();
+    if (v > 49) presetCycleTime = v;
+  }
+  if (req.indexOf("PA=") > 0) //apply brightness from preset
+  {
+    presetApplyBri = true;
+    if (req.indexOf("PA=0") > 0) presetApplyBri = false;
+  }
+  if (req.indexOf("PC=") > 0) //apply color from preset
+  {
+    presetApplyCol = true;
+    if (req.indexOf("PC=0") > 0) presetApplyCol = false;
+  }
+  if (req.indexOf("PX=") > 0) //apply effects from preset
+  {
+    presetApplyFx = true;
+    if (req.indexOf("PX=0") > 0) presetApplyFx = false;
+  }
+  
+  pos = req.indexOf("PS="); //saves current in preset
+  if (pos > 0) {
+    savePreset(req.substring(pos + 3).toInt());
+  }
+  pos = req.indexOf("PL="); //applies entire preset
+  if (pos > 0) {
+    applyPreset(req.substring(pos + 3).toInt(), presetApplyBri, presetApplyCol, presetApplyFx);
+    if (presetApplyFx) effectUpdated = true;
+  }
+  
+  //cronixie
+  pos = req.indexOf("NX="); //sets digits to code
+  if (pos > 0) {
+    strcpy(cronixieDisplay,req.substring(pos + 3, pos + 9).c_str());
+    setCronixie();
+  }
+  pos = req.indexOf("NM="); //mode, 1 countdown
+  if (pos > 0) {
+    countdownMode = true;
+    if (req.indexOf("NM=0") > 0)
+    {
+      countdownMode = false;
+    }
+  }
+  if (req.indexOf("NB=") > 0) //sets backlight
+  {
+    cronixieBacklight = true;
+    if (req.indexOf("NB=0") > 0)
+    {
+      cronixieBacklight = false;
+    }
+    if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
+    overlayRefreshedTime = 0;
+  }
+  
+  pos = req.indexOf("U0="); //user var 0
+  if (pos > 0) {
+    userVar0 = req.substring(pos + 3).toInt();
+  }
+  pos = req.indexOf("U1="); //user var 1
+  if (pos > 0) {
+    userVar1 = req.substring(pos + 3).toInt();
+  }
+  //you can add more if you need
    
-   //internal call, does not send XML response
-   pos = req.indexOf("IN");
-   if (pos < 1) XML_response(true);
-   //do not send UDP notifications this time
-   pos = req.indexOf("NN");
-   if (pos > 0)
-   {
-      colorUpdated(5);
-      return true;
-   }
-   if (effectUpdated)
-   {
-      colorUpdated(6);
-   } else
-   {
-      colorUpdated(1);
-   }
-   return true;
+  //internal call, does not send XML response
+  pos = req.indexOf("IN");
+  if (pos < 1) XML_response(true);
+  //do not send UDP notifications this time
+  pos = req.indexOf("NN");
+  if (pos > 0)
+  {
+    colorUpdated(5);
+    return true;
+  }
+  if (effectUpdated)
+  {
+    colorUpdated(6);
+  } else
+  {
+    colorUpdated(1);
+  }
+  return true;
 }
