@@ -40,6 +40,8 @@
 #define WS2812FX_h
 
 #include "NpbWrapper.h"
+
+#define FASTLED_INTERNAL //remove annoying pragma messages
 #include "FastLED.h"
 
 #define DEFAULT_BRIGHTNESS (uint8_t)50

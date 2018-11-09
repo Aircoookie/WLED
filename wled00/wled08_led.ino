@@ -195,7 +195,7 @@ void handleNightlight()
     float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
     if (nightlightFade)
     {
-      bri = briNlT+((nightlightTargetBri - briNlT)*nper);
+      bri = briNlT + ((nightlightTargetBri - briNlT)*nper);
       colorUpdated(5);
     }
     if (nper >= 1)

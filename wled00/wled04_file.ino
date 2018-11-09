@@ -3,36 +3,37 @@
  */
 void handleSerial()
 {
-  if (Serial.available() > 0) //support for Adalight protocol to high-speed control LEDs over serial (gamma correction done by PC)
+  if (Serial.available() > 0) //support for Adalight protocol to high-speed control LEDs over serial
   {
-    if (Serial.find("Ada"))
+    if (!Serial.find("Ada")) return;
+     
+    if (!realtimeActive && bri == 0) strip.setBrightness(briLast);
+    arlsLock(realtimeTimeoutMs);
+    
+    delay(1);
+    byte hi = Serial.read();
+    byte ledc = Serial.read();
+    byte chk = Serial.read();
+    if(chk != (hi ^ ledc ^ 0x55)) return;
+    if (ledCount < ledc) ledc = ledCount;
+    
+    byte sc[3]; int t =-1; int to = 0;
+    for (int i=0; i < ledc; i++)
     {
-      if (!realtimeActive && bri == 0) strip.setBrightness(briLast);
-      arlsLock(realtimeTimeoutMs);
-      delay(1);
-      byte hi = Serial.read();
-      byte ledc = Serial.read();
-      byte chk = Serial.read();
-      if(chk != (hi ^ ledc ^ 0x55)) return;
-      if (ledCount < ledc) ledc = ledCount;
-      byte sc[3]; int t =-1; int to = 0;
-      for (int i=0; i < ledc; i++)
+      for (byte j=0; j<3; j++)
       {
-        for (byte j=0; j<3; j++)
+        while (Serial.peek()<0) //no data yet available
         {
-          while (Serial.peek()<0) //no data yet available
-          {
-            delay(1);
-            to++;
-            if (to>5) {strip.show(); return;} //unexpected end of transmission
-          }
-          to = 0;
-          sc[j] = Serial.read();
+          delay(1);
+          to++;
+          if (to>5) {strip.show(); return;} //unexpected end of transmission
         }
-        setRealtimePixel(i,sc[0],sc[1],sc[2],0);
+        to = 0;
+        sc[j] = Serial.read();
       }
-      strip.show();
+      setRealtimePixel(i,sc[0],sc[1],sc[2],0);
     }
+    strip.show();
   }
 }
 

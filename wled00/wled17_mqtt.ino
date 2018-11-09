@@ -14,6 +14,7 @@ void parseMQTTBriPayload(char* payload)
   }
 }
 
+
 void callbackMQTT(char* topic, byte* payload, unsigned int length) {
 
   DEBUG_PRINT("MQTT callb rec: ");
@@ -36,6 +37,7 @@ void callbackMQTT(char* topic, byte* payload, unsigned int length) {
     parseMQTTBriPayload((char*)payload);
   }
 }
+
 
 void publishMQTT()
 {
@@ -63,6 +65,7 @@ void publishMQTT()
   strcat(subuf, "/v");
   mqtt->publish(subuf, obuf);*/
 }
+
 
 bool reconnectMQTT()
 {
@@ -99,6 +102,7 @@ bool reconnectMQTT()
   return mqtt->connected();
 }
 
+
 bool initMQTT()
 {
   if (WiFi.status() != WL_CONNECTED) return false;
@@ -115,6 +119,7 @@ bool initMQTT()
   DEBUG_PRINTLN("MQTT ready.");
   return true;
 }
+
 
 void handleMQTT()
 {

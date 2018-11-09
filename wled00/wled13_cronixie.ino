@@ -145,72 +145,72 @@ void setCronixie()
 
 void _overlayCronixie()
 {
-    if (countdownMode) checkCountdown();
-    #ifndef WLED_DISABLE_CRONIXIE
-    
-    byte h = hour(local);
-    byte h0 = h;
-    byte m = minute(local);
-    byte s = second(local);
-    byte d = day(local);
-    byte mi = month(local);
-    int y = year(local);
-    //this has to be changed in time for 22nd century
-    y -= 2000; if (y<0) y += 30; //makes countdown work
+  if (countdownMode) checkCountdown();
+  #ifndef WLED_DISABLE_CRONIXIE
+  
+  byte h = hour(local);
+  byte h0 = h;
+  byte m = minute(local);
+  byte s = second(local);
+  byte d = day(local);
+  byte mi = month(local);
+  int y = year(local);
+  //this has to be changed in time for 22nd century
+  y -= 2000; if (y<0) y += 30; //makes countdown work
 
-    if (useAMPM && !countdownMode)
-    {
-      if (h>12) h-=12;
-      else if (h==0) h+=12;
-    }
-    byte _digitOut[]{10,10,10,10,10,10};
-    for (int i = 0; i < 6; i++)
-    {
-      if (dP[i] < 12) _digitOut[i] = dP[i];
-      else {
-        if (dP[i] < 65)
+  if (useAMPM && !countdownMode)
+  {
+    if (h>12) h-=12;
+    else if (h==0) h+=12;
+  }
+  byte _digitOut[]{10,10,10,10,10,10};
+  for (int i = 0; i < 6; i++)
+  {
+    if (dP[i] < 12) _digitOut[i] = dP[i];
+    else {
+      if (dP[i] < 65)
+      {
+        switch(dP[i])
         {
-          switch(dP[i])
-          {
-            case 21: _digitOut[i] = h/10; _digitOut[i+1] = h- _digitOut[i]*10; i++; break; //HH
-            case 25: _digitOut[i] = m/10; _digitOut[i+1] = m- _digitOut[i]*10; i++; break; //MM
-            case 31: _digitOut[i] = s/10; _digitOut[i+1] = s- _digitOut[i]*10; i++; break; //SS
+          case 21: _digitOut[i] = h/10; _digitOut[i+1] = h- _digitOut[i]*10; i++; break; //HH
+          case 25: _digitOut[i] = m/10; _digitOut[i+1] = m- _digitOut[i]*10; i++; break; //MM
+          case 31: _digitOut[i] = s/10; _digitOut[i+1] = s- _digitOut[i]*10; i++; break; //SS
 
-            case 20: _digitOut[i] = h- (h/10)*10; break; //H
-            case 24: _digitOut[i] = m/10; break; //M
-            case 30: _digitOut[i] = s/10; break; //S
-            
-            case 43: _digitOut[i] = weekday(local); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //D
-            case 44: _digitOut[i] = d/10; _digitOut[i+1] = d- _digitOut[i]*10; i++; break; //DD
-            case 40: _digitOut[i] = mi/10; _digitOut[i+1] = mi- _digitOut[i]*10; i++; break; //II
-            case 37: _digitOut[i] = y/10; _digitOut[i+1] = y- _digitOut[i]*10; i++; break; //YY
-            case 39: _digitOut[i] = 2; _digitOut[i+1] = 0; _digitOut[i+2] = y/10; _digitOut[i+3] = y- _digitOut[i+2]*10; i+=3; break; //YYYY
-            
-            case 16: _digitOut[i+2] = ((h0/3)&1)?1:0; i++; //BBB (BBBB NI)
-            case 15: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:0; i++; //BB
-            case 14: _digitOut[i] = (h0>11)?1:0; break; //B
-          }
-        } else
+          case 20: _digitOut[i] = h- (h/10)*10; break; //H
+          case 24: _digitOut[i] = m/10; break; //M
+          case 30: _digitOut[i] = s/10; break; //S
+          
+          case 43: _digitOut[i] = weekday(local); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //D
+          case 44: _digitOut[i] = d/10; _digitOut[i+1] = d- _digitOut[i]*10; i++; break; //DD
+          case 40: _digitOut[i] = mi/10; _digitOut[i+1] = mi- _digitOut[i]*10; i++; break; //II
+          case 37: _digitOut[i] = y/10; _digitOut[i+1] = y- _digitOut[i]*10; i++; break; //YY
+          case 39: _digitOut[i] = 2; _digitOut[i+1] = 0; _digitOut[i+2] = y/10; _digitOut[i+3] = y- _digitOut[i+2]*10; i+=3; break; //YYYY
+          
+          case 16: _digitOut[i+2] = ((h0/3)&1)?1:0; i++; //BBB (BBBB NI)
+          case 15: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:0; i++; //BB
+          case 14: _digitOut[i] = (h0>11)?1:0; break; //B
+        }
+      } else
+      {
+        switch(dP[i])
         {
-          switch(dP[i])
-          {
-            case 71: _digitOut[i] = h/10; _digitOut[i+1] = h- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //hh
-            case 75: _digitOut[i] = m/10; _digitOut[i+1] = m- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //mm
-            case 81: _digitOut[i] = s/10; _digitOut[i+1] = s- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //ss
-            case 66: _digitOut[i+2] = ((h0/3)&1)?1:10; i++; //bbb (bbbb NI)
-            case 65: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:10; i++; //bb
-            case 64: _digitOut[i] = (h0>11)?1:10; break; //b
+          case 71: _digitOut[i] = h/10; _digitOut[i+1] = h- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //hh
+          case 75: _digitOut[i] = m/10; _digitOut[i+1] = m- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //mm
+          case 81: _digitOut[i] = s/10; _digitOut[i+1] = s- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //ss
+          case 66: _digitOut[i+2] = ((h0/3)&1)?1:10; i++; //bbb (bbbb NI)
+          case 65: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:10; i++; //bb
+          case 64: _digitOut[i] = (h0>11)?1:10; break; //b
 
-            case 93: _digitOut[i] = weekday(local); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //d
-            case 94: _digitOut[i] = d/10; _digitOut[i+1] = d- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //dd
-            case 90: _digitOut[i] = mi/10; _digitOut[i+1] = mi- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //ii
-            case 87: _digitOut[i] = y/10; _digitOut[i+1] = y- _digitOut[i]*10; i++; break; //yy
-            case 89: _digitOut[i] = 2; _digitOut[i+1] = 0; _digitOut[i+2] = y/10; _digitOut[i+3] = y- _digitOut[i+2]*10; i+=3; break; //yyyy
-          }
+          case 93: _digitOut[i] = weekday(local); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //d
+          case 94: _digitOut[i] = d/10; _digitOut[i+1] = d- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //dd
+          case 90: _digitOut[i] = mi/10; _digitOut[i+1] = mi- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //ii
+          case 87: _digitOut[i] = y/10; _digitOut[i+1] = y- _digitOut[i]*10; i++; break; //yy
+          case 89: _digitOut[i] = 2; _digitOut[i+1] = 0; _digitOut[i+2] = y/10; _digitOut[i+3] = y- _digitOut[i+2]*10; i+=3; break; //yyyy
         }
       }
     }
-    strip.setCronixieDigits(_digitOut);
-    //strip.trigger(); //this has a drawback, no effects slower than RefreshMs. advantage: Quick update, not dependant on effect time
-    #endif
+  }
+  strip.setCronixieDigits(_digitOut);
+  //strip.trigger(); //this has a drawback, no effects slower than RefreshMs. advantage: Quick update, not dependant on effect time
+  #endif
 }

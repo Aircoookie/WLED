@@ -40,22 +40,22 @@ void updateBlynk()
 #ifndef WLED_DISABLE_BLYNK
 BLYNK_WRITE(V0)
 {
- bri = param.asInt();//bri
- colorUpdated(9);
+  bri = param.asInt();//bri
+  colorUpdated(9);
 }
 
 BLYNK_WRITE(V1)
 {
- blHue = param.asInt();//hue
- colorHStoRGB(blHue*10,blSat,(false)? colSec:col);
- colorUpdated(9);
+  blHue = param.asInt();//hue
+  colorHStoRGB(blHue*10,blSat,(false)? colSec:col);
+  colorUpdated(9);
 }
 
 BLYNK_WRITE(V2)
 {
- blSat = param.asInt();//sat
- colorHStoRGB(blHue*10,blSat,(false)? colSec:col);
- colorUpdated(9);
+  blSat = param.asInt();//sat
+  colorHStoRGB(blHue*10,blSat,(false)? colSec:col);
+  colorUpdated(9);
 }
 
 BLYNK_WRITE(V3)
@@ -65,23 +65,23 @@ BLYNK_WRITE(V3)
 
 BLYNK_WRITE(V4)
 {
- effectCurrent = param.asInt()-1;//fx
- strip.setMode(effectCurrent);
- colorUpdated(6);
+  effectCurrent = param.asInt()-1;//fx
+  strip.setMode(effectCurrent);
+  colorUpdated(6);
 }
 
 BLYNK_WRITE(V5)
 {
- effectSpeed = param.asInt();//sx
- strip.setSpeed(effectSpeed);
- colorUpdated(6);
+  effectSpeed = param.asInt();//sx
+  strip.setSpeed(effectSpeed);
+  colorUpdated(6);
 }
 
 BLYNK_WRITE(V6)
 {
- effectIntensity = param.asInt();//ix
- strip.setIntensity(effectIntensity);
- colorUpdated(6);
+  effectIntensity = param.asInt();//ix
+  strip.setIntensity(effectIntensity);
+  colorUpdated(6);
 }
 
 BLYNK_WRITE(V7)

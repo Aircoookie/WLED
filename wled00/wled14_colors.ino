@@ -25,29 +25,21 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
 void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
 {
   //this is only an approximation using WS2812B with gamma correction enabled
-  if (mired > 475)
-  {
+  if (mired > 475) {
     rgb[0]=255;rgb[1]=199;rgb[2]=92;//500
-  } else if (mired > 425)
-  {
+  } else if (mired > 425) {
     rgb[0]=255;rgb[1]=213;rgb[2]=118;//450
-  } else if (mired > 375)
-  {
+  } else if (mired > 375) {
     rgb[0]=255;rgb[1]=216;rgb[2]=118;//400
-  } else if (mired > 325)
-  {
+  } else if (mired > 325) {
     rgb[0]=255;rgb[1]=234;rgb[2]=140;//350
-  } else if (mired > 275)
-  {
+  } else if (mired > 275) {
     rgb[0]=255;rgb[1]=243;rgb[2]=160;//300
-  } else if (mired > 225)
-  {
+  } else if (mired > 225) {
     rgb[0]=250;rgb[1]=255;rgb[2]=188;//250
-  } else if (mired > 175)
-  {
+  } else if (mired > 175) {
     rgb[0]=247;rgb[1]=255;rgb[2]=215;//200
-  } else
-  {
+  } else {
     rgb[0]=237;rgb[1]=255;rgb[2]=239;//150
   }
 }
@@ -61,20 +53,20 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   float g = (int)255*(-X * 0.707196f + 1.655397f + Z * 0.036152f);
   float b = (int)255*(X * 0.051713f - 0.121364f + Z * 1.011530f);
   if (r > b && r > g && r > 1.0f) {
-        // red is too big
-        g = g / r;
-        b = b / r;
-        r = 1.0f;
+    // red is too big
+    g = g / r;
+    b = b / r;
+    r = 1.0f;
   } else if (g > b && g > r && g > 1.0f) {
-        // green is too big
-        r = r / g;
-        b = b / g;
-        g = 1.0f;
+    // green is too big
+    r = r / g;
+    b = b / g;
+    g = 1.0f;
   } else if (b > r && b > g && b > 1.0f) {
-        // blue is too big
-        r = r / b;
-        g = g / b;
-        b = 1.0f;
+    // blue is too big
+    r = r / b;
+    g = g / b;
+    b = 1.0f;
   }
   // Apply gamma correction
   r = r <= 0.0031308f ? 12.92f * r : (1.0f + 0.055f) * pow(r, (1.0f / 2.4f)) - 0.055f;
@@ -82,26 +74,26 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   b = b <= 0.0031308f ? 12.92f * b : (1.0f + 0.055f) * pow(b, (1.0f / 2.4f)) - 0.055f;
 
   if (r > b && r > g) {
-      // red is biggest
-      if (r > 1.0f) {
-          g = g / r;
-          b = b / r;
-          r = 1.0f;
-      }
+    // red is biggest
+    if (r > 1.0f) {
+      g = g / r;
+      b = b / r;
+      r = 1.0f;
+    }
   } else if (g > b && g > r) {
-      // green is biggest
-      if (g > 1.0f) {
-          r = r / g;
-          b = b / g;
-          g = 1.0f;
-      }
+    // green is biggest
+    if (g > 1.0f) {
+      r = r / g;
+      b = b / g;
+      g = 1.0f;
+    }
   } else if (b > r && b > g) {
-      // blue is biggest
-      if (b > 1.0f) {
-          r = r / b;
-          g = g / b;
-          b = 1.0f;
-      }
+    // blue is biggest
+    if (b > 1.0f) {
+      r = r / b;
+      g = g / b;
+      b = 1.0f;
+    }
   }
   rgb[0] = 255.0*r;
   rgb[1] = 255.0*g;

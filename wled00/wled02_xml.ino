@@ -2,60 +2,57 @@
  * Sending XML status files to client
  */
 
+//build XML response to HTTP /win API request
 void XML_response(bool isHTTP)
 {
-   olen = 0;
-   oappend("<?xml version = \"1.0\" ?><vs><ac>");
-   if (nightlightActive && nightlightFade)
-   {
-     oappendi(briT);
-   } else
-   {
-     oappendi(bri);
-   }
-   oappend("</ac>");
-
-   for (int i = 0; i < 3; i++)
-   {
-     oappend("<cl>");
-     oappendi(col[i]);
-     oappend("</cl>");
-   }
-   oappend("<ns>");
-   oappendi(notifyDirect);
-   oappend("</ns><nr>");
-   oappendi(receiveNotifications);
-   oappend("</nr><nl>");
-   oappendi(nightlightActive);
-   oappend("</nl><nf>");
-   oappendi(nightlightFade);
-   oappend("</nf><nd>");
-   oappendi(nightlightDelayMins);
-   oappend("</nd><nt>");
-   oappendi(nightlightTargetBri);
-   oappend("</nt><fx>");
-   oappendi(effectCurrent);
-   oappend("</fx><sx>");
-   oappendi(effectSpeed);
-   oappend("</sx><ix>");
-   oappendi(effectIntensity);
-   oappend("</ix><fp>");
-   oappendi(effectPalette);
-   oappend("</fp><wv>");
-   if (useRGBW && !autoRGBtoRGBW) {
-     oappendi(white);
-   } else {
-     oappend("-1");
-   }
-   oappend("</wv><md>");
-   oappendi(useHSB);
-   oappend("</md><ds>");
-   oappend(serverDescription);
-   oappend("</ds></vs>");
-   if (isHTTP) server.send(200, "text/xml", obuf);
+  olen = 0;
+  oappend("<?xml version = \"1.0\" ?><vs><ac>");
+  oappendi((nightlightActive && nightlightFade) ? briT : bri);
+  oappend("</ac>");
+  
+  for (int i = 0; i < 3; i++)
+  {
+   oappend("<cl>");
+   oappendi(col[i]);
+   oappend("</cl>");
+  }
+  
+  oappend("<ns>");
+  oappendi(notifyDirect);
+  oappend("</ns><nr>");
+  oappendi(receiveNotifications);
+  oappend("</nr><nl>");
+  oappendi(nightlightActive);
+  oappend("</nl><nf>");
+  oappendi(nightlightFade);
+  oappend("</nf><nd>");
+  oappendi(nightlightDelayMins);
+  oappend("</nd><nt>");
+  oappendi(nightlightTargetBri);
+  oappend("</nt><fx>");
+  oappendi(effectCurrent);
+  oappend("</fx><sx>");
+  oappendi(effectSpeed);
+  oappend("</sx><ix>");
+  oappendi(effectIntensity);
+  oappend("</ix><fp>");
+  oappendi(effectPalette);
+  oappend("</fp><wv>");
+  if (useRGBW && !autoRGBtoRGBW) {
+   oappendi(white);
+  } else {
+   oappend("-1");
+  }
+  oappend("</wv><md>");
+  oappendi(useHSB);
+  oappend("</md><ds>");
+  oappend(serverDescription);
+  oappend("</ds></vs>");
+  if (isHTTP) server.send(200, "text/xml", obuf);
 }
 
-void sappend(char stype, char* key, int val) //append a setting to string buffer
+//append a numeric setting to string buffer
+void sappend(char stype, char* key, int val)
 {
   char ds[] = "d.Sf.";
   
@@ -85,28 +82,30 @@ void sappend(char stype, char* key, int val) //append a setting to string buffer
   }
 }
 
-void sappends(char stype, char* key, char* val) //append a string setting
+//append a string setting to buffer
+void sappends(char stype, char* key, char* val)
 {
   switch(stype)
   {
     case 's': //string (we can interpret val as char*)
-        oappend("d.Sf.");
-        oappend(key);
-        oappend(".value=\"");
-        oappend(val);
-        oappend("\";");
-        break;
+      oappend("d.Sf.");
+      oappend(key);
+      oappend(".value=\"");
+      oappend(val);
+      oappend("\";");
+      break;
     case 'm': //message
-        oappend("d.getElementsByClassName");
-        oappend(key);
-        oappend(".innerHTML=\"");
-        oappend(val);
-        oappend("\";");
-        break;
+      oappend("d.getElementsByClassName");
+      oappend(key);
+      oappend(".innerHTML=\"");
+      oappend(val);
+      oappend("\";");
+      break;
   }
 }
 
-void getSettingsJS(byte subPage) //get values for settings form in javascript
+//get values for settings form in javascript
+void getSettingsJS(byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   DEBUG_PRINT("settings resp");

@@ -259,25 +259,26 @@ void serveIndex()
   if (uiConfiguration == 0) serveMobile = checkClientIsMobile(server.header("User-Agent"));
   else if (uiConfiguration == 2) serveMobile = true;
 
-  if (!realtimeActive || enableRealtimeUI) //do not serve while receiving realtime
+  if (realtimeActive && !enableRealtimeUI) //do not serve while receiving realtime
   {
-    if (serveMobile)
-    {
-      server.setContentLength(strlen_P(PAGE_indexM));
-      server.send(200, "text/html", "");
-      server.sendContent_P(PAGE_indexM);
-    } else
-    {
-      server.setContentLength(strlen_P(PAGE_index0) + cssColorString.length() + strlen_P(PAGE_index1) + strlen_P(PAGE_index2) + strlen_P(PAGE_index3));
-      server.send(200, "text/html", "");
-      server.sendContent_P(PAGE_index0);
-      server.sendContent(cssColorString); 
-      server.sendContent_P(PAGE_index1); 
-      server.sendContent_P(PAGE_index2);
-      server.sendContent_P(PAGE_index3);
-    }
-  } else {
     serveRealtimeError(false);
+    return;
+  }
+  
+  if (serveMobile)
+  {
+    server.setContentLength(strlen_P(PAGE_indexM));
+    server.send(200, "text/html", "");
+    server.sendContent_P(PAGE_indexM);
+  } else
+  {
+    server.setContentLength(strlen_P(PAGE_index0) + cssColorString.length() + strlen_P(PAGE_index1) + strlen_P(PAGE_index2) + strlen_P(PAGE_index3));
+    server.send(200, "text/html", "");
+    server.sendContent_P(PAGE_index0);
+    server.sendContent(cssColorString); 
+    server.sendContent_P(PAGE_index1); 
+    server.sendContent_P(PAGE_index2);
+    server.sendContent_P(PAGE_index3);
   }
 }
 
@@ -314,58 +315,58 @@ void serveMessage(int code, String headl, String subl="", int optionType)
 
 void serveSettings(byte subPage)
 {
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 255: welcomepage
-  if (!realtimeActive || enableRealtimeUI) //do not serve while receiving realtime
-    {
-      #ifdef WLED_DISABLE_MOBILE_UI //disable welcome page if not enough storage
-      if (subPage == 255) {serveIndex(); return;}
-      #endif
-      
-      int pl0, pl1;
-      switch (subPage)
-      {
-        case 1: pl0 = strlen_P(PAGE_settings_wifi0); pl1 = strlen_P(PAGE_settings_wifi1); break;
-        case 2: pl0 = strlen_P(PAGE_settings_leds0); pl1 = strlen_P(PAGE_settings_leds1); break;
-        case 3: pl0 = strlen_P(PAGE_settings_ui0); pl1 = strlen_P(PAGE_settings_ui1); break;
-        case 4: pl0 = strlen_P(PAGE_settings_sync0); pl1 = strlen_P(PAGE_settings_sync1); break;
-        case 5: pl0 = strlen_P(PAGE_settings_time0); pl1 = strlen_P(PAGE_settings_time1); break;
-        case 6: pl0 = strlen_P(PAGE_settings_sec0); pl1 = strlen_P(PAGE_settings_sec1); break;
-        case 255: pl0 = strlen_P(PAGE_welcome0); pl1 = strlen_P(PAGE_welcome1); break;
-        default: pl0 = strlen_P(PAGE_settings0); pl1 = strlen_P(PAGE_settings1);
-      }
-      
-      getSettingsJS(subPage);
-      int sCssLength = (subPage >0 && subPage <7)?strlen_P(PAGE_settingsCss):0;
-      
-      server.setContentLength(pl0 + cssColorString.length() + olen + sCssLength + pl1);
-      server.send(200, "text/html", "");
-      
-      switch (subPage)
-      {
-        case 1: server.sendContent_P(PAGE_settings_wifi0); break;
-        case 2: server.sendContent_P(PAGE_settings_leds0); break;
-        case 3: server.sendContent_P(PAGE_settings_ui0); break;
-        case 4: server.sendContent_P(PAGE_settings_sync0); break;
-        case 5: server.sendContent_P(PAGE_settings_time0); break;
-        case 6: server.sendContent_P(PAGE_settings_sec0); break;
-        case 255: server.sendContent_P(PAGE_welcome0); break;
-        default: server.sendContent_P(PAGE_settings0); 
-      }
-      server.sendContent(obuf);
-      server.sendContent(cssColorString);
-      if (subPage >0 && subPage <7) server.sendContent_P(PAGE_settingsCss);
-      switch (subPage)
-      {
-        case 1: server.sendContent_P(PAGE_settings_wifi1); break;
-        case 2: server.sendContent_P(PAGE_settings_leds1); break;
-        case 3: server.sendContent_P(PAGE_settings_ui1); break;
-        case 4: server.sendContent_P(PAGE_settings_sync1); break;
-        case 5: server.sendContent_P(PAGE_settings_time1); break;
-        case 6: server.sendContent_P(PAGE_settings_sec1); break;
-        case 255: server.sendContent_P(PAGE_welcome1); break;
-        default: server.sendContent_P(PAGE_settings1); 
-      }
-    } else {
-        serveRealtimeError(true);
-    }
+  if (realtimeActive && !enableRealtimeUI) //do not serve while receiving realtime
+  {
+    serveRealtimeError(true);
+    return;
+  }
+  
+  #ifdef WLED_DISABLE_MOBILE_UI //disable welcome page if not enough storage
+   if (subPage == 255) {serveIndex(); return;}
+  #endif
+  
+  int pl0, pl1;
+  switch (subPage) //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 255: welcomepage
+  {
+    case 1: pl0 = strlen_P(PAGE_settings_wifi0); pl1 = strlen_P(PAGE_settings_wifi1); break;
+    case 2: pl0 = strlen_P(PAGE_settings_leds0); pl1 = strlen_P(PAGE_settings_leds1); break;
+    case 3: pl0 = strlen_P(PAGE_settings_ui0); pl1 = strlen_P(PAGE_settings_ui1); break;
+    case 4: pl0 = strlen_P(PAGE_settings_sync0); pl1 = strlen_P(PAGE_settings_sync1); break;
+    case 5: pl0 = strlen_P(PAGE_settings_time0); pl1 = strlen_P(PAGE_settings_time1); break;
+    case 6: pl0 = strlen_P(PAGE_settings_sec0); pl1 = strlen_P(PAGE_settings_sec1); break;
+    case 255: pl0 = strlen_P(PAGE_welcome0); pl1 = strlen_P(PAGE_welcome1); break;
+    default: pl0 = strlen_P(PAGE_settings0); pl1 = strlen_P(PAGE_settings1);
+  }
+  
+  getSettingsJS(subPage);
+  int sCssLength = (subPage >0 && subPage <7)?strlen_P(PAGE_settingsCss):0;
+  
+  server.setContentLength(pl0 + cssColorString.length() + olen + sCssLength + pl1);
+  server.send(200, "text/html", "");
+  
+  switch (subPage)
+  {
+    case 1: server.sendContent_P(PAGE_settings_wifi0); break;
+    case 2: server.sendContent_P(PAGE_settings_leds0); break;
+    case 3: server.sendContent_P(PAGE_settings_ui0); break;
+    case 4: server.sendContent_P(PAGE_settings_sync0); break;
+    case 5: server.sendContent_P(PAGE_settings_time0); break;
+    case 6: server.sendContent_P(PAGE_settings_sec0); break;
+    case 255: server.sendContent_P(PAGE_welcome0); break;
+    default: server.sendContent_P(PAGE_settings0); 
+  }
+  server.sendContent(obuf);
+  server.sendContent(cssColorString);
+  if (subPage >0 && subPage <7) server.sendContent_P(PAGE_settingsCss);
+  switch (subPage)
+  {
+    case 1: server.sendContent_P(PAGE_settings_wifi1); break;
+    case 2: server.sendContent_P(PAGE_settings_leds1); break;
+    case 3: server.sendContent_P(PAGE_settings_ui1); break;
+    case 4: server.sendContent_P(PAGE_settings_sync1); break;
+    case 5: server.sendContent_P(PAGE_settings_time1); break;
+    case 6: server.sendContent_P(PAGE_settings_sec1); break;
+    case 255: server.sendContent_P(PAGE_welcome1); break;
+    default: server.sendContent_P(PAGE_settings1); 
+  }
 }
