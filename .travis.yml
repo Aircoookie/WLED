@@ -30,4 +30,4 @@ install:
     - pip install -U platformio
     - platformio update
 script:
-    - platformio run
+    - platformio ci --board=nodemcuv2 --board=d1_mini --board=esp01_1m
