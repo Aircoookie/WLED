@@ -26,8 +26,11 @@ sudo: false
 cache:
     directories:
         - "~/.platformio"
+env:
+    - PLATFORMIO_CI_SRC=wled00
+    - PLATFORMIO_BUILD_FLAGS="-D DEBUG=false"
 install:
     - pip install -U platformio
     - platformio update
 script:
-    - platformio ci --board=nodemcuv2 --board=d1_mini --board=esp01_1m
+    - platformio ci --project-conf=./platformio.ini
