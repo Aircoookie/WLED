@@ -27,7 +27,7 @@ cache:
     directories:
         - "~/.platformio"
 env:
-    - PLATFORMIO_CI_SRC=wled00 PLATFORMIO_BUILD_FLAGS="-D DEBUG=0"
+    - PLATFORMIO_CI_SRC=wled00
 install:
     - pip install -U platformio
     - platformio update
