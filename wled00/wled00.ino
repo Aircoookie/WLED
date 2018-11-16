@@ -59,7 +59,7 @@
 #include "htmls00.h"
 #include "htmls01.h"
 #include "htmls02.h"
-#include "src/dependencies/ws2812fx/WS2812FX.h"
+#include "WS2812FX.h"
 
 
 //version code in format yymmddb (b = daily build)
