@@ -2430,8 +2430,6 @@ uint16_t WS2812FX::mode_noise16_2(void)
     uint16_t shift_y = SEGMENT_RUNTIME.counter_mode_step/42;
 
     uint32_t real_x = (i + shift_x) * scale;                  // calculate the coordinates within the noise field
-    uint32_t real_y = (i + shift_y) * scale;                  // based on the precalculated positions
-    uint32_t real_z = 4223;
 
     uint8_t noise = inoise16(real_x, 0, 4223) >> 8;    // get the noise data and scale it down
 

@@ -1,6 +1,6 @@
 ![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/development/wled_logo.png)
 
-## Welcome to my project WLED! (v0.8.1)
+## Welcome to my project WLED! (v0.8.2-dev)
 
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
 

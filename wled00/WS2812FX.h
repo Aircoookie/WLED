@@ -44,9 +44,9 @@
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #include "FastLED.h"
 
-#define DEFAULT_BRIGHTNESS (uint8_t)50
+#define DEFAULT_BRIGHTNESS (uint8_t)127
 #define DEFAULT_MODE       (uint8_t)0
-#define DEFAULT_SPEED      (uint16_t)1000
+#define DEFAULT_SPEED      (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFF0000
 
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -173,7 +173,7 @@ class WS2812FX {
     typedef struct Segment { // 21 bytes
       uint16_t start;
       uint16_t stop;
-      uint16_t speed;
+      uint8_t speed;
       uint8_t intensity;
       uint8_t palette;
       uint8_t  mode;
@@ -480,9 +480,9 @@ class WS2812FX {
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
     uint8_t _num_segments = 1;
-    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 20 bytes per element
+    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 21 bytes per element
       // start, stop, speed, intensity, palette, mode, options, color[]
-      {0, 7, DEFAULT_SPEED, 128, 0, FX_MODE_STATIC, NO_OPTIONS, {DEFAULT_COLOR}}
+      { 0, 7, DEFAULT_SPEED, 128, 0, FX_MODE_STATIC, NO_OPTIONS, {DEFAULT_COLOR}}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 17 bytes per element
 };

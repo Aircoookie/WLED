@@ -60,7 +60,7 @@ void publishMQTT()
 
   //if you want to use this, increase the MQTT buffer in PubSubClient.h to 350+
   //it will publish the API response to MQTT
-  /*XML_response(false);
+  /*XML_response(false, false);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/v");
   mqtt->publish(subuf, obuf);*/

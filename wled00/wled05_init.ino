@@ -24,7 +24,6 @@ void wledInit()
   if (!initLedsLast) initStrip();
   DEBUG_PRINT("CSSID: ");
   DEBUG_PRINT(clientSSID);
-  buildCssColorString();
   userBeginPreConnection();
   if (strcmp(clientSSID,"Your_Network") == 0) showWelcomePage = true;
 

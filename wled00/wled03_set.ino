@@ -138,7 +138,6 @@ void handleSettingsSet(byte subPage)
       strcpy(cssCol[i],server.arg(k).c_str());
     }
     strcpy(cssFont,server.arg("CF").c_str());
-    buildCssColorString();
   }
 
   //SYNC
@@ -280,7 +279,7 @@ void handleSettingsSet(byte subPage)
     if (server.hasArg("RS")) //complete factory reset
     {
       clearEEPROM();
-      serveMessage(200, "All Settings erased.", "Connect to WLED-AP to setup again...",255);
+      serveMessage(200, "All Settings erased.", "Connect to WLED-AP to setup again",255);
       reset();
     }
 
@@ -331,7 +330,7 @@ bool handleSet(String req)
     }
     
     pos = req.indexOf("IN");
-    if (pos < 1) XML_response(true);
+    if (pos < 1) XML_response(true, false);
     return true;
     //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
   }
@@ -744,7 +743,7 @@ bool handleSet(String req)
    
   //internal call, does not send XML response
   pos = req.indexOf("IN");
-  if (pos < 1) XML_response(true);
+  if (pos < 1) XML_response(true, (req.indexOf("IT") > 0)); //include theme if firstload
   //do not send UDP notifications this time
   pos = req.indexOf("NN");
   if (pos > 0)

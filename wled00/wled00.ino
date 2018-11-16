@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.1
+ * @version 0.8.2-dev
  * @author Christian Schwinne
  */
 
@@ -11,11 +11,9 @@
 //ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
 
 //ESP8266-01 (black) has 1MB flash and can thus fit the whole program. Use 1M(64K SPIFFS).
-//If you want the OTA update function though, you need to make sure the sketch is smaller than 479kB.
 //Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
 
-//You are required to disable these two features:
-//#define WLED_DISABLE_MOBILE_UI
+//You are required to disable over-the-air updates:
 //#define WLED_DISABLE_OTA
 
 //You need to choose 1-2 of these features to disable:
@@ -23,6 +21,7 @@
 //#define WLED_DISABLE_BLYNK
 //#define WLED_DISABLE_CRONIXIE
 //#define WLED_DISABLE_HUESYNC
+//#define WLED_DISABLE_MOBILE_UI
 
 //to toggle usb serial debug (un)comment following line(s)
 //#define DEBUG
@@ -56,15 +55,16 @@
 #endif
 #include "src/dependencies/e131/E131.h"
 #include "src/dependencies/pubsubclient/PubSubClient.h"
-#include "htmls00.h"
-#include "htmls01.h"
-#include "htmls02.h"
+#include "html_classic.h"
+#include "html_mobile.h"
+#include "html_settings.h"
+#include "html_other.h"
 #include "WS2812FX.h"
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1811091
-char versionString[] = "0.8.1";
+#define VERSION 1811162
+char versionString[] = "0.8.2-dev";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -287,7 +287,6 @@ bool udpConnected = false, udpRgbConnected = false;
 
 //ui style
 char cssCol[6][9]={"","","","","",""};
-String cssColorString="";
 bool showWelcomePage = false;
 
 //hue
@@ -376,7 +375,7 @@ unsigned int ntpLocalPort = 2390;
 #define NTP_PACKET_SIZE 48
 
 //string temp buffer
-#define OMAX 1750
+#define OMAX 2000
 char obuf[OMAX];
 uint16_t olen = 0;
 

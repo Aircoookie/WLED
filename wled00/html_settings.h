@@ -188,7 +188,7 @@ Color Theme:
 <option value="10">Terminal</option>
 <option value="11">C64</option>
 <option value="12">Easter</option>
-<option value="13">Placeholder</option>
+<option value="13">Christmas</option>
 <option value="14">The End</option>
 <option value="15" id="co">Custom</option>
 </select><br>
@@ -411,7 +411,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.1<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.2-dev<br><br>
 <b>Contributors:</b><br>
 StormPie <i>(Mobile HTML UI)</i><br><br>
 Thank you so much!<br><br>
