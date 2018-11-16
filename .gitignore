@@ -1,0 +1,5 @@
+.pio
+.pioenvs
+.piolibdeps
+.vscode
+!.vscode/extensions.json

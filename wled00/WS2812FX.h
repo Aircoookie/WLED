@@ -173,7 +173,7 @@ class WS2812FX {
     typedef struct Segment { // 21 bytes
       uint16_t start;
       uint16_t stop;
-      uint8_t speed;
+      uint16_t speed;
       uint8_t intensity;
       uint8_t palette;
       uint8_t  mode;
@@ -481,8 +481,8 @@ class WS2812FX {
     uint8_t _segment_index_palette_last = 99;
     uint8_t _num_segments = 1;
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 20 bytes per element
-      // start, stop, speed, intensity, mode, options, color[]
-      { 0, 7, DEFAULT_SPEED, 128, FX_MODE_STATIC, NO_OPTIONS, {DEFAULT_COLOR}}
+      // start, stop, speed, intensity, palette, mode, options, color[]
+      {0, 7, DEFAULT_SPEED, 128, 0, FX_MODE_STATIC, NO_OPTIONS, {DEFAULT_COLOR}}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 17 bytes per element
 };
