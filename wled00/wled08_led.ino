@@ -73,7 +73,8 @@ void colorUpdated(int callMode)
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (NN)6: fx changed 7: hue 8: preset cycle 9: blynk
   if (!colorChanged())
   {
-    if (callMode == 6) notify(6);
+    if      (callMode == 2) notify(2);
+    else if (callMode == 6) notify(6);
     return; //no change
   }
   if (callMode != 5 && nightlightActive && nightlightFade)

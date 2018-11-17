@@ -246,7 +246,7 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(2333, mqttDeviceTopic, 32);
   writeStringToEEPROM(2366,  mqttGroupTopic, 32);
   
-  EEPROM.commit();
+  commit();
 }
 
 /*
@@ -502,12 +502,16 @@ void loadSettingsFromEEPROM(bool first)
 //0: preset purpose byte 0:invalid 1:valid preset 1.0
 //1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17: fp 18-19:Zeros
 
-void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
+bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool loadFX = true)
 {
-  if (index == 255 || index == 0) loadSettingsFromEEPROM(false);//load boot defaults
-  if (index > 25 || index < 1) return;
+  if (index == 255 || index == 0)
+  {
+    loadSettingsFromEEPROM(false);//load boot defaults
+    return true;
+  }
+  if (index > 25 || index < 1) return false;
   uint16_t i = 380 + index*20;
-  if (EEPROM.read(i) == 0) return;
+  if (EEPROM.read(i) == 0) return false;
   if (loadBri) bri = EEPROM.read(i+1);
   if (loadCol)
   {
@@ -532,6 +536,7 @@ void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
     strip.setIntensity(effectIntensity);
     strip.setPalette(effectPalette);
   }
+  return true;
 }
 
 void savePreset(byte index)
@@ -554,7 +559,7 @@ void savePreset(byte index)
   
   EEPROM.write(i+16, effectIntensity);
   EEPROM.write(i+17, effectPalette);
-  EEPROM.commit();
+  commit();
 }
 
 String loadMacro(byte index)
@@ -597,5 +602,19 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   {
     EEPROM.write(i, mc.charAt(i-s));
   }
-  if (sing) EEPROM.commit();
+  if (sing) commit();
+}
+
+void commit()
+{
+   #ifdef ARDUINO_ARCH_ESP32
+      delay(1);
+      portDISABLE_INTERRUPTS(); 
+    #endif
+    
+    EEPROM.commit();
+    
+    #ifdef ARDUINO_ARCH_ESP32
+      portENABLE_INTERRUPTS();
+    #endif
 }

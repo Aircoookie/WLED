@@ -120,6 +120,7 @@ void wledInit()
 
   if (initLedsLast) initStrip();
   userBegin();
+
   if (macroBoot>0) applyMacro(macroBoot);
   Serial.println("Ada");
 }
@@ -132,16 +133,13 @@ void initStrip()
   strip.setColor(0);
   strip.setBrightness(255);
 
-  pinMode(buttonPin, INPUT_PULLUP);
-  pinMode(4,OUTPUT); //this is only needed in special cases
-  digitalWrite(4,LOW);
+  pinMode(BTNPIN, INPUT_PULLUP);
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
 
   //disable button if it is "pressed" unintentionally
-  if(digitalRead(buttonPin) == LOW) buttonEnabled = false;
-
+  if(digitalRead(BTNPIN) == LOW) buttonEnabled = false;
 }
 
 void initAP(){
@@ -259,7 +257,7 @@ void getBuildInfo()
   oappend("debug: false\r\n");
   #endif
   oappend("button-pin: gpio");
-  oappendi(buttonPin);
+  oappendi(BTNPIN);
   oappend("\r\nstrip-pin: gpio");
   oappendi(LEDPIN);
   oappend("\r\nbrand: wled\r\n");

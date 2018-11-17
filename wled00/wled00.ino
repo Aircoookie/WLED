@@ -24,7 +24,7 @@
 //#define WLED_DISABLE_MOBILE_UI
 
 //to toggle usb serial debug (un)comment following line(s)
-//#define DEBUG
+//#define WLED_DEBUG
 
 //library inclusions
 #include <Arduino.h>
@@ -33,11 +33,15 @@
  #include <ESPmDNS.h>
  #include "src/dependencies/webserver/WebServer.h"
  #include <HTTPClient.h>
+ #include <IRremote.h>
 #else
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
  #include <ESP8266WebServer.h>
  #include <ESP8266HTTPClient.h>
+ #include <IRremoteESP8266.h>
+ #include <IRrecv.h>
+ #include <IRutils.h>
 #endif
 
 #include <EEPROM.h>
@@ -60,10 +64,11 @@
 #include "html_settings.h"
 #include "html_other.h"
 #include "WS2812FX.h"
+#include "ir_codes.h"
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1811162
+#define VERSION 1811172
 char versionString[] = "0.8.2-dev";
 
 
@@ -77,9 +82,8 @@ char otaPass[33] = "wledota";
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
-//LED strip pin changeable in NpbWrapper.h. Only change for ESP32
-byte buttonPin = 0;                           //needs pull-up
-byte auxPin = 15;                             //debug feature, use e.g. for external relay with API call AX=
+//LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
+
 byte auxDefaultState   = 0;                   //0: input 1: high 2: low
 byte auxTriggeredState = 0;                   //0: input 1: high 2: low
 char ntpServerName[] = "0.wled.pool.ntp.org"; //NTP server to use
@@ -145,6 +149,7 @@ bool useHSBDefault = useHSB;
 
 //Sync CONFIG
 bool buttonEnabled = true;
+bool irEnabled     = true;                    //Infrared receiver
 
 uint16_t udpPort    = 21324;                  //WLED notifier default port
 uint16_t udpRgbPort = 19446;                  //Hyperion port
@@ -492,6 +497,7 @@ void loop() {
   
   yield();
   handleButton();
+  handleIR();
   handleNetworkTime();
   if (!onlyAP)
   {

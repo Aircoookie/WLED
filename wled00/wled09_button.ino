@@ -6,15 +6,15 @@ void handleButton()
 {
   if (buttonEnabled)
   {
-    if (digitalRead(buttonPin) == LOW && !buttonPressedBefore)
+    if (digitalRead(BTNPIN) == LOW && !buttonPressedBefore)
     {
       buttonPressedTime = millis();
       buttonPressedBefore = true;
     }
-     else if (digitalRead(buttonPin) == HIGH && buttonPressedBefore)
+     else if (digitalRead(BTNPIN) == HIGH && buttonPressedBefore)
     {
       delay(15); //debounce
-      if (digitalRead(buttonPin) == HIGH)
+      if (digitalRead(BTNPIN) == HIGH)
       {
         if (millis() - buttonPressedTime > 7000) {initAP();}
         else if (millis() - buttonPressedTime > 700) 
@@ -51,9 +51,9 @@ void handleButton()
       auxActiveBefore = true;
       switch (auxTriggeredState)
       {
-        case 0: pinMode(auxPin, INPUT); break;
-        case 1: pinMode(auxPin, OUTPUT); digitalWrite(auxPin, HIGH); break;
-        case 2: pinMode(auxPin, OUTPUT); digitalWrite(auxPin, LOW); break;
+        case 0: pinMode(AUXPIN, INPUT); break;
+        case 1: pinMode(AUXPIN, OUTPUT); digitalWrite(AUXPIN, HIGH); break;
+        case 2: pinMode(AUXPIN, OUTPUT); digitalWrite(AUXPIN, LOW); break;
       }
       auxStartTime = millis();
     }
@@ -63,9 +63,9 @@ void handleButton()
       auxActiveBefore = false;
       switch (auxDefaultState)
       {
-        case 0: pinMode(auxPin, INPUT); break;
-        case 1: pinMode(auxPin, OUTPUT); digitalWrite(auxPin, HIGH); break;
-        case 2: pinMode(auxPin, OUTPUT); digitalWrite(auxPin, LOW); break;
+        case 0: pinMode(AUXPIN, INPUT); break;
+        case 1: pinMode(AUXPIN, OUTPUT); digitalWrite(AUXPIN, HIGH); break;
+        case 2: pinMode(AUXPIN, OUTPUT); digitalWrite(AUXPIN, LOW); break;
       }
     }
   }

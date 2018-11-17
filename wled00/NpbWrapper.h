@@ -2,10 +2,15 @@
 #ifndef NpbWrapper_h
 #define NpbWrapper_h
 
-#define WORKAROUND_ESP32_BITBANG
+//#define WORKAROUND_ESP32_BITBANG
 //see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
 
-#define LEDPIN 2 //strip pin. Any for ESP32, gpio2 is recommended for ESP8266
+//PIN CONFIGURATION
+#define LEDPIN 2  //strip pin. Any for ESP32, gpio2 is recommended for ESP8266
+#define BTNPIN 0  //button pin. Needs to have pullup (gpio0 recommended)
+#define IR_PIN 4  //infrared pin.
+#define AUXPIN 15 //unused auxiliary output pin
+
 
 //uncomment this if red and green are swapped
 //#define SWAPRG
