@@ -2548,3 +2548,31 @@ uint16_t WS2812FX::mode_lake() {
   }
   return 33;
 }
+
+// meteor effect
+// send a meteor from begining to to the end of the strip with a trail that randomly decay.
+// adapted from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectMeteorRain
+
+uint16_t WS2812FX::mode_meteor() {
+  byte meteorSize=1+(256-SEGMENT.intensity)/16;
+  uint32_t led_offset = SEGMENT_RUNTIME.counter_mode_step;
+  uint16_t i = SEGMENT.start + led_offset;
+  byte meteorTrailDecay=SEGMENT.intensity;
+
+  // fade all leds to colors[1] in LEDs one step
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+    if (random(10)>5)  {
+      setPixelColor(i,color_blend(getPixelColor(i),SEGMENT.colors[1],meteorTrailDecay));        
+    }
+  }
+  
+  // draw meteor
+  for(int j = 0; j < meteorSize; j++) {     
+    if( ( SEGMENT.start + j < SEGMENT.stop) ) {
+      setPixelColor(i+j, SEGMENT.colors[0]);
+    }
+  }
+
+  SEGMENT_RUNTIME.counter_mode_step = (SEGMENT_RUNTIME.counter_mode_step + 1) % (SEGMENT_LENGTH);
+  return SPEED_FORMULA_L;
+}
