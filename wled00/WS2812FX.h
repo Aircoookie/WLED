@@ -40,8 +40,6 @@
 #define WS2812FX_h
 
 #include "NpbWrapper.h"
-
-#define FASTLED_INTERNAL //remove annoying pragma messages
 #include "FastLED.h"
 
 #define DEFAULT_BRIGHTNESS (uint8_t)50
@@ -85,7 +83,7 @@
 #define REVERSE      (uint8_t)0x80
 #define IS_REVERSE   ((SEGMENT.options & REVERSE) == REVERSE)
 
-#define MODE_COUNT  76
+#define MODE_COUNT  77
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -164,6 +162,8 @@
 #define FX_MODE_NOISE16_4               73
 #define FX_MODE_COLORTWINKLE            74
 #define FX_MODE_LAKE                    75
+#define FX_MODE_METEOR                  76
+
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -268,6 +268,8 @@ class WS2812FX {
       _mode[FX_MODE_NOISE16_4]               = &WS2812FX::mode_noise16_4;
       _mode[FX_MODE_COLORTWINKLE]            = &WS2812FX::mode_colortwinkle;
       _mode[FX_MODE_LAKE]                    = &WS2812FX::mode_lake;
+      _mode[FX_MODE_METEOR]                  = &WS2812FX::mode_meteor;
+  
 
       _brightness = DEFAULT_BRIGHTNESS;
       _running = false;
@@ -443,6 +445,7 @@ class WS2812FX {
       mode_noise16_4(void),
       mode_colortwinkle(void),
       mode_lake(void),
+      mode_meteor(void),
       mode_lightning(void);
 
   private:
