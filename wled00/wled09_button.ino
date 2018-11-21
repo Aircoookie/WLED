@@ -25,14 +25,7 @@ void handleButton()
         else {
           if (macroButton == 0)
           {
-            if (bri == 0)
-            {
-              bri = briLast;
-            } else
-            {
-              briLast = bri;
-              bri = 0;
-            }
+            toggleOnOff();
             colorUpdated(2);
           } else {
             applyMacro(macroButton);

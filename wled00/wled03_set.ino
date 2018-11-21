@@ -109,7 +109,7 @@ void handleSettingsSet(byte subPage)
     
     nightlightTargetBri = server.arg("TB").toInt();
     t = server.arg("TL").toInt();
-    if (t > 0) nightlightDelayMins = t;
+    if (t > 0) nightlightDelayMinsDefault = t;
     nightlightFade = server.hasArg("TW");
     
     t = server.arg("PB").toInt();
@@ -144,6 +144,7 @@ void handleSettingsSet(byte subPage)
   if (subPage == 4)
   {
     buttonEnabled = server.hasArg("BT");
+    irEnabled = server.hasArg("IR");
     int t = server.arg("UP").toInt();
     if (t > 0) udpPort = t;
     receiveNotificationBrightness = server.hasArg("RB");
@@ -633,14 +634,7 @@ bool handleSet(String req)
     {
       case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off
       case 1: bri = briLast; break; //on
-      default: if (bri == 0) //toggle
-      {
-        bri = briLast;
-      } else
-      {
-        briLast = bri;
-        bri = 0;
-      }
+      default: toggleOnOff(); //toggle
     }
   }
    

@@ -1,4 +1,10 @@
-//Infrared codes from http://woodsgood.ca/projects/2015/02/13/rgb-led-strip-controllers-ir-codes/
+//Infrared codes
+
+//Add your custom codes here
+#define IRCUSTOM_ONOFF  0xA55AEA15 //Pioneer RC-975R "+FAV" button (example)
+#define IRCUSTOM_MACRO1 0xFFFFFFFF //placeholder, will never be checked for
+
+//Infrared codes for 24-key remote from http://woodsgood.ca/projects/2015/02/13/rgb-led-strip-controllers-ir-codes/
 #define IR24_BRIGHTER  0xF700FF
 #define IR24_DARKER    0xF7807F
 #define IR24_OFF       0xF740BF 

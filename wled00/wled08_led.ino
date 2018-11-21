@@ -2,6 +2,18 @@
  * LED methods
  */
 
+void toggleOnOff()
+{
+  if (bri == 0)
+  {
+    bri = briLast;
+  } else
+  {
+    briLast = bri;
+    bri = 0;
+  }
+}
+
 void setAllLeds() {
   if (!realtimeActive || !arlsForceMaxBri)
   {
@@ -73,6 +85,10 @@ void colorUpdated(int callMode)
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (NN)6: fx changed 7: hue 8: preset cycle 9: blynk
   if (!colorChanged())
   {
+    if (nightlightActive && !nightlightActiveOld && callMode != 3 && callMode != 5)
+    {
+      notify(4); return;
+    }
     if      (callMode == 2) notify(2);
     else if (callMode == 6) notify(6);
     return; //no change
@@ -188,7 +204,6 @@ void handleNightlight()
     if (!nightlightActiveOld) //init
     {
       nightlightStartTime = millis();
-      notify(4);
       nightlightDelayMs = (int)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
