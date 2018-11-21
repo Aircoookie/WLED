@@ -21,10 +21,12 @@
 //#define WLED_DISABLE_BLYNK
 //#define WLED_DISABLE_CRONIXIE
 //#define WLED_DISABLE_HUESYNC
+//#define WLED_DISABLE_INFRARED
 //#define WLED_DISABLE_MOBILE_UI
 
 //to toggle usb serial debug (un)comment following line(s)
-//#define WLED_DEBUG
+#define WLED_DEBUG
+
 
 //library inclusions
 #include <Arduino.h>
@@ -33,15 +35,19 @@
  #include <ESPmDNS.h>
  #include "src/dependencies/webserver/WebServer.h"
  #include <HTTPClient.h>
- #include <IRremote.h>
+ /*#ifndef WLED_DISABLE_INFRARED
+  #include <IRremote.h>
+ #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
 #else
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
  #include <ESP8266WebServer.h>
  #include <ESP8266HTTPClient.h>
- #include <IRremoteESP8266.h>
- #include <IRrecv.h>
- #include <IRutils.h>
+ #ifndef WLED_DISABLE_INFRARED
+  #include <IRremoteESP8266.h>
+  #include <IRrecv.h>
+  #include <IRutils.h>
+ #endif
 #endif
 
 #include <EEPROM.h>
@@ -68,7 +74,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1811172
+#define VERSION 1811201
 char versionString[] = "0.8.2-dev";
 
 
@@ -148,8 +154,8 @@ bool useHSBDefault = useHSB;
 
 
 //Sync CONFIG
-bool buttonEnabled = true;
-bool irEnabled     = true;                    //Infrared receiver
+bool buttonEnabled =  true;
+bool irEnabled     = false;                   //Infrared receiver
 
 uint16_t udpPort    = 21324;                  //WLED notifier default port
 uint16_t udpRgbPort = 19446;                  //Hyperion port
@@ -158,7 +164,7 @@ bool receiveNotificationBrightness = true;    //apply brightness from incoming n
 bool receiveNotificationColor      = true;    //apply color
 bool receiveNotificationEffects    = true;    //apply effects setup
 bool notifyDirect =  true;                    //send notification if change via UI or HTTP API
-bool notifyButton =  true;                     
+bool notifyButton =  true;                    //send if updated by button or infrared remote
 bool notifyAlexa  = false;                    //send notification if updated via Alexa
 bool notifyMacro  = false;                    //send notification for macro
 bool notifyHue    =  true;                    //send notification if Hue light changes
@@ -259,6 +265,7 @@ float tperLast = 0;                           //crossfade transition progress, 0
 bool nightlightActive = false;
 bool nightlightActiveOld = false;
 uint32_t nightlightDelayMs = 10;
+uint8_t nightlightDelayMinsDefault = nightlightDelayMins;
 unsigned long nightlightStartTime;
 byte briNlT = 0;                              //current nightlight brightness
 
@@ -407,7 +414,7 @@ E131* e131;
 WS2812FX strip = WS2812FX();
 
 //debug macros
-#ifdef DEBUG
+#ifdef WLED_DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
  #define DEBUG_PRINTLN(x) Serial.println (x)
  #define DEBUG_PRINTF(x) Serial.printf (x)
@@ -524,7 +531,7 @@ void loop() {
   }
   
   //DEBUG serial logging
-  #ifdef DEBUG
+  #ifdef WLED_DEBUG
    if (millis() - debugTime > 5000)
    {
      DEBUG_PRINTLN("---MODULE DEBUG INFO---");

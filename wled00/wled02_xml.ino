@@ -216,7 +216,7 @@ void getSettingsJS(byte subPage)
     sappend('c',"T2",enableSecTransition);
     sappend('v',"BF",briMultiplier);
     sappend('v',"TB",nightlightTargetBri);
-    sappend('v',"TL",nightlightDelayMins);
+    sappend('v',"TL",nightlightDelayMinsDefault);
     sappend('c',"TW",nightlightFade);
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",reverseMode);
@@ -242,6 +242,7 @@ void getSettingsJS(byte subPage)
   if (subPage == 4)
   {
     sappend('c',"BT",buttonEnabled);
+    sappend('c',"IR",irEnabled);
     sappend('v',"UP",udpPort);
     sappend('c',"RB",receiveNotificationBrightness);
     sappend('c',"RC",receiveNotificationColor);

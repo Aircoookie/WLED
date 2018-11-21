@@ -251,7 +251,7 @@ void getBuildInfo()
   #else
   oappend("\r\nspiffs: false\r\n");
   #endif
-  #ifdef DEBUG
+  #ifdef WLED_DEBUG
   oappend("debug: true\r\n");
   #else
   oappend("debug: false\r\n");
@@ -260,8 +260,8 @@ void getBuildInfo()
   oappendi(BTNPIN);
   oappend("\r\nstrip-pin: gpio");
   oappendi(LEDPIN);
-  oappend("\r\nbrand: wled\r\n");
-  oappend("\r\nbuild-type: src\r\n");
+  oappend("\r\nbrand: wled");
+  oappend("\r\nbuild-type: dev\r\n");
 }
 
 

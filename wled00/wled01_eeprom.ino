@@ -66,7 +66,7 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(128,     apSSID, 32);
   writeStringToEEPROM(160,     apPass, 64);
 
-  EEPROM.write(224, nightlightDelayMins);
+  EEPROM.write(224, nightlightDelayMinsDefault);
   EEPROM.write(225, nightlightFade);
   EEPROM.write(226, notifyDirectDefault);
   EEPROM.write(227, apChannel);
@@ -138,6 +138,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(380, colSecS[2]);
   EEPROM.write(381, whiteSecS);
   EEPROM.write(382, strip.paletteBlend);
+
+  EEPROM.write(385, irEnabled);
   
   EEPROM.write(389, bootPreset);
   EEPROM.write(390, aOtaEnabled);
@@ -256,7 +258,9 @@ void loadSettingsFromEEPROM(bool first)
 {
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
+    DEBUG_PRINT("Settings invalid, restoring defaults...");
     saveSettingsToEEPROM();
+    DEBUG_PRINTLN("done");
     return;
   }
   int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
@@ -268,7 +272,8 @@ void loadSettingsFromEEPROM(bool first)
   readStringFromEEPROM(128,     apSSID, 32);
   readStringFromEEPROM(160,     apPass, 64);
 
-  nightlightDelayMins = EEPROM.read(224);
+  nightlightDelayMinsDefault = EEPROM.read(224);
+  nightlightDelayMins = nightlightDelayMinsDefault;
   nightlightFade = EEPROM.read(225);
   notifyDirectDefault = EEPROM.read(226);
   notifyDirect = notifyDirectDefault;
@@ -342,6 +347,8 @@ void loadSettingsFromEEPROM(bool first)
   useRGBW = EEPROM.read(372);
   effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
   //374 - strip.paletteFade
+
+  irEnabled = EEPROM.read(385);
 
   if (lastEEPROMversion > 0) { 
     apWaitTimeSecs = EEPROM.read(375);
@@ -607,14 +614,16 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
 
 void commit()
 {
-   #ifdef ARDUINO_ARCH_ESP32
-      delay(1);
-      portDISABLE_INTERRUPTS(); 
-    #endif
-    
-    EEPROM.commit();
-    
-    #ifdef ARDUINO_ARCH_ESP32
-      portENABLE_INTERRUPTS();
-    #endif
+  DEBUG_PRINT("s");
+  /*#ifdef ARDUINO_ARCH_ESP32
+  portMUX_TYPE mMux = portMUX_INITIALIZER_UNLOCKED;
+  portENTER_CRITICAL(&mMux); 
+  #endif*/
+
+  EEPROM.commit();
+  
+  /*#ifdef ARDUINO_ARCH_ESP32
+  portEXIT_CRITICAL(&mMux);
+  #endif*/
+  DEBUG_PRINT(".");
 }
