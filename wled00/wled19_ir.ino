@@ -138,10 +138,9 @@ void handleIR()
       
       if (irrecv->decode(&results))
       {
-        DEBUG_PRINT("IR recv\r\n0x");
-        #ifdef WLED_DEBUG
+        Serial.print("IR recv\r\n0x");
         Serial.println((uint32_t)results.value, HEX);
-        #endif
+        Serial.println();
         decodeIR(results.value);
         irrecv->resume();
       }
