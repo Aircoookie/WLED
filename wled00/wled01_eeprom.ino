@@ -18,6 +18,7 @@
 //8 -> 0.8.0-a and up
 //9 -> 0.8.0
 
+
 /*
  * Erase all configuration data
  */
@@ -30,6 +31,7 @@ void clearEEPROM()
   EEPROM.commit();
 }
 
+
 void writeStringToEEPROM(uint16_t pos, char* str, uint16_t len)
 {
   for (int i = 0; i < len; ++i)
@@ -38,6 +40,7 @@ void writeStringToEEPROM(uint16_t pos, char* str, uint16_t len)
     if (str[i] == 0) return;
   }
 }
+
 
 void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
 {
@@ -48,6 +51,7 @@ void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
   }
   str[len] = 0; //make sure every string is properly terminated. str must be at least len +1 big.
 }
+
 
 /*
  * Write configuration to flash
@@ -250,6 +254,7 @@ void saveSettingsToEEPROM()
   
   commit();
 }
+
 
 /*
  * Read all configuration from flash
@@ -498,12 +503,9 @@ void loadSettingsFromEEPROM(bool first)
   
   useHSB = useHSBDefault;
 
-  strip.setMode(effectCurrent);
-  strip.setSpeed(effectSpeed);
-  strip.setIntensity(effectIntensity);
-  strip.setPalette(effectPalette);
   overlayCurrent = overlayDefault;
 }
+
 
 //PRESET PROTOCOL 20 bytes
 //0: preset purpose byte 0:invalid 1:valid preset 1.0
@@ -533,15 +535,10 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
   }
   if (loadFX)
   {
-    byte lastfx = effectCurrent;
     effectCurrent = EEPROM.read(i+10);
     effectSpeed = EEPROM.read(i+11);
     effectIntensity = EEPROM.read(i+16);
     effectPalette = EEPROM.read(i+17);
-    if (lastfx != effectCurrent) strip.setMode(effectCurrent);
-    strip.setSpeed(effectSpeed);
-    strip.setIntensity(effectIntensity);
-    strip.setPalette(effectPalette);
   }
   return true;
 }
@@ -569,6 +566,7 @@ void savePreset(byte index)
   commit();
 }
 
+
 String loadMacro(byte index)
 {
   index-=1;
@@ -581,6 +579,7 @@ String loadMacro(byte index)
   }
   return m;
 }
+
 
 void applyMacro(byte index)
 {
@@ -600,6 +599,7 @@ void applyMacro(byte index)
   handleSet(mc);
 }
 
+
 void saveMacro(byte index, String mc, bool sing=true) //only commit on single save, not in settings
 {
   index-=1;
@@ -612,9 +612,11 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   if (sing) commit();
 }
 
+
 void commit()
 {
   DEBUG_PRINT("s");
+  //this is to support IR on ESP32, needs work
   /*#ifdef ARDUINO_ARCH_ESP32
   portMUX_TYPE mMux = portMUX_INITIALIZER_UNLOCKED;
   portENTER_CRITICAL(&mMux); 

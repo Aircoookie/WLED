@@ -125,6 +125,7 @@ void wledInit()
   Serial.println("Ada");
 }
 
+
 void initStrip()
 {
   // Initialize NeoPixel Strip and button
@@ -142,12 +143,14 @@ void initStrip()
   if(digitalRead(BTNPIN) == LOW) buttonEnabled = false;
 }
 
+
 void initAP(){
   bool set = apSSID[0];
   if (!set) strcpy(apSSID,"WLED-AP");
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
   if (!set) apSSID[0] = 0;
 }
+
 
 void initCon()
 {

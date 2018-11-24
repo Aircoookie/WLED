@@ -5,6 +5,7 @@
 #define WLEDPACKETSIZE 24
 #define UDP_IN_MAXSIZE 1472
 
+
 void notify(byte callMode, bool followUp=false)
 {
   if (!udpConnected) return;
@@ -53,6 +54,7 @@ void notify(byte callMode, bool followUp=false)
   notificationTwoRequired = (followUp)? false:notifyTwice;
 }
 
+
 void arlsLock(uint32_t timeoutMs)
 {
   if (!realtimeActive){
@@ -60,12 +62,13 @@ void arlsLock(uint32_t timeoutMs)
      {
        strip.setPixelColor(i,0,0,0,0);
      }
-     strip.setMode(0);
+     strip.unlockAll();
   }
   realtimeActive = true;
   realtimeTimeout = millis() + timeoutMs;
   if (arlsForceMaxBri) strip.setBrightness(255);
 }
+
 
 void initE131(){
   if (WiFi.status() == WL_CONNECTED && e131Enabled)
@@ -76,6 +79,7 @@ void initE131(){
     e131Enabled = false;
   }
 }
+
 
 void handleE131(){
   //E1.31 protocol support
@@ -98,6 +102,7 @@ void handleE131(){
   }
 }
 
+
 void handleNotifications()
 {
   //send second notification if enabled
@@ -110,10 +115,10 @@ void handleNotifications()
   //unlock strip when realtime UDP times out
   if (realtimeActive && millis() > realtimeTimeout)
   {
-    strip.unlockAll();
+    //strip.unlockAll();
     strip.setBrightness(bri);
     realtimeActive = false;
-    strip.setMode(effectCurrent);
+    //strip.setMode(effectCurrent);
     realtimeIP[0] = 0;
   }
 
@@ -176,26 +181,10 @@ void handleNotifications()
       //apply effects from notification
       if (receiveNotificationEffects)
       {
-        if (udpIn[8] != effectCurrent)
-        {
-          effectCurrent = udpIn[8];
-          strip.setMode(effectCurrent);
-        }
-        if (udpIn[9] != effectSpeed)
-        {
-          effectSpeed = udpIn[9];
-          strip.setSpeed(effectSpeed);
-        }
-        if (udpIn[11] > 2 && udpIn[16] != effectIntensity)
-        {
-          effectIntensity = udpIn[16];
-          strip.setIntensity(effectIntensity);
-        }
-        if (udpIn[11] > 4 && udpIn[19] != effectPalette)
-        {
-          effectPalette = udpIn[19];
-          strip.setPalette(effectPalette);
-        }
+        effectCurrent = udpIn[8];
+        effectSpeed   = udpIn[9];
+        if (udpIn[11] > 2) effectIntensity = udpIn[16];
+        if (udpIn[11] > 4) effectPalette   = udpIn[19];
       }
       
       if (udpIn[11] > 3)
@@ -260,6 +249,7 @@ void handleNotifications()
     }
   }
 }
+
 
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 {

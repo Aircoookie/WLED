@@ -311,7 +311,6 @@ void handleSettingsSet(byte subPage)
 
 bool handleSet(String req)
 {
-  bool effectUpdated = false;
   if (!(req.indexOf("win") >= 0)) return false;
 
   int pos = 0;
@@ -464,8 +463,6 @@ bool handleSet(String req)
     if (effectCurrent != req.substring(pos + 3).toInt())
     {
       effectCurrent = req.substring(pos + 3).toInt();
-      strip.setMode(effectCurrent);
-      effectUpdated = true;
     }
   }
   //set effect speed
@@ -474,8 +471,6 @@ bool handleSet(String req)
     if (effectSpeed != req.substring(pos + 3).toInt())
     {
       effectSpeed = req.substring(pos + 3).toInt();
-      strip.setSpeed(effectSpeed);
-      effectUpdated = true;
     }
   }
   //set effect intensity
@@ -484,8 +479,6 @@ bool handleSet(String req)
     if (effectIntensity != req.substring(pos + 3).toInt())
     {
       effectIntensity = req.substring(pos + 3).toInt();
-      strip.setIntensity(effectIntensity);
-      effectUpdated = true;
     }
   }
   //set effect palette (only for FastLED effects)
@@ -494,8 +487,6 @@ bool handleSet(String req)
     if (effectPalette != req.substring(pos + 3).toInt())
     {
       effectPalette = req.substring(pos + 3).toInt();
-      strip.setPalette(effectPalette);
-      effectUpdated = true;
     }
   }
 
@@ -697,7 +688,6 @@ bool handleSet(String req)
   pos = req.indexOf("PL="); //applies entire preset
   if (pos > 0) {
     applyPreset(req.substring(pos + 3).toInt(), presetApplyBri, presetApplyCol, presetApplyFx);
-    if (presetApplyFx) effectUpdated = true;
   }
   
   //cronixie
@@ -738,19 +728,9 @@ bool handleSet(String req)
   //internal call, does not send XML response
   pos = req.indexOf("IN");
   if (pos < 1) XML_response(true, (req.indexOf("IT") > 0)); //include theme if firstload
-  //do not send UDP notifications this time
-  pos = req.indexOf("NN");
-  if (pos > 0)
-  {
-    colorUpdated(5);
-    return true;
-  }
-  if (effectUpdated)
-  {
-    colorUpdated(6);
-  } else
-  {
-    colorUpdated(1);
-  }
+  
+  pos = req.indexOf("NN"); //do not send UDP notifications this time
+  colorUpdated((pos > 0) ? 5:1);
+  
   return true;
 }

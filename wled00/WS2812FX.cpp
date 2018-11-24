@@ -110,6 +110,14 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   if (_locked[i] && !modeUsesLock(SEGMENT.mode)) return;
   if (_reverseMode) i = _length - 1 -i;
   if (IS_REVERSE)   i = SEGMENT.stop - (i - SEGMENT.start); //reverse just individual segment
+  byte tmpg = g;
+  switch (colorOrder) //0 = Grb, default
+  {
+    case 0: break;                  //0 = Grb, default
+    case 1: g = r; r = tmpg; break; //1 = Rgb, common for WS2811
+    case 2: g = b; b = tmpg; break; //2 = Brg
+    case 3: g = b; b = r; r = tmpg; //3 = Rbg
+  }
   if (!_cronixieMode)
   {
     if (_skipFirstMode) {i++;if(i==1)bus->SetPixelColor(i, RgbwColor(0,0,0,0));}
@@ -185,7 +193,8 @@ void WS2812FX::trigger() {
 void WS2812FX::setMode(uint8_t m) {
   RESET_RUNTIME;
   bool ua = modeUsesLock(_segments[0].mode) && !modeUsesLock(m);
-  _segments[0].mode = constrain(m, 0, MODE_COUNT - 1);
+  if (m > MODE_COUNT - 1) m = MODE_COUNT - 1;
+  _segments[0].mode = m;
   if (ua) unlockAll();
   setBrightness(_brightness);
 }
@@ -202,6 +211,16 @@ void WS2812FX::setIntensity(uint8_t in) {
 
 void WS2812FX::setPalette(uint8_t p) {
   _segments[0].palette = p;
+}
+
+bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p) {
+  bool changed = false;
+  m = constrain(m, 0, MODE_COUNT - 1);
+  if (m != _segments[0].mode)      { setMode(m);      changed = true; }
+  if (s != _segments[0].speed)     { setSpeed(s);     changed = true; }
+  if (i != _segments[0].intensity) { setIntensity(i); changed = true; }
+  if (p != _segments[0].palette)   { setPalette(p);   changed = true; }
+  return changed;
 }
 
 void WS2812FX::setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {

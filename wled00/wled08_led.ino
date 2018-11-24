@@ -14,6 +14,7 @@ void toggleOnOff()
   }
 }
 
+
 void setAllLeds() {
   if (!realtimeActive || !arlsForceMaxBri)
   {
@@ -50,6 +51,7 @@ void setAllLeds() {
   }
 }
 
+
 void setLedsStandard()
 {
   for (byte i = 0; i<3; i++)
@@ -68,6 +70,7 @@ void setLedsStandard()
   setAllLeds();
 }
 
+
 bool colorChanged()
 {
   for (int i = 0; i < 3; i++)
@@ -80,17 +83,19 @@ bool colorChanged()
   return false;
 }
 
+
 void colorUpdated(int callMode)
 {
-  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (NN)6: fx changed 7: hue 8: preset cycle 9: blynk
+  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
+  //                     6: fx changed 7: hue 8: preset cycle 9: blynk
+  bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
   if (!colorChanged())
   {
     if (nightlightActive && !nightlightActiveOld && callMode != 3 && callMode != 5)
     {
       notify(4); return;
     }
-    if      (callMode == 2) notify(2);
-    else if (callMode == 6) notify(6);
+    else if (fxChanged) notify(6);
     return; //no change
   }
   if (callMode != 5 && nightlightActive && nightlightFade)
@@ -150,12 +155,14 @@ void colorUpdated(int callMode)
   updateInterfaces(callMode);
 }
 
+
 void updateInterfaces(uint8_t callMode)
 {
   if (callMode != 9 && callMode != 5) updateBlynk();
   publishMQTT();
   lastInterfaceUpdate = millis();
 }
+
 
 void handleTransitions()
 {
@@ -196,6 +203,7 @@ void handleTransitions()
     if (fadeTransition) setAllLeds();
   }
 }
+
 
 void handleNightlight()
 {

@@ -278,6 +278,7 @@ class WS2812FX {
       _segments[0].speed = DEFAULT_SPEED;
       _reverseMode = false;
       _skipFirstMode = false;
+      colorOrder = 0;
       paletteFade = 0;
       paletteBlend = 0;
       _locked = NULL;
@@ -323,9 +324,13 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void);
 
+    bool
+      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p);
+
     uint8_t
       paletteFade,
       paletteBlend,
+      colorOrder,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
