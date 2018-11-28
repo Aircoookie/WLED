@@ -96,6 +96,13 @@ const char PAGE_settings_leds1[] PROGMEM = R"=====(
 <h2>LED setup</h2>
 LED count: <input name="LC" type="number" min="1" max="1200" required><br>
 LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW"><br>
+Color order:
+<select name="CO">
+<option value="0">GRB</option>
+<option value="1">RGB</option>
+<option value="2">BRG</option>
+<option value="3">RBG</option>
+</select><br>
 <br>
 Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)<br>
 Turn on after power up/reset: <input type="checkbox" name="BO"><br>

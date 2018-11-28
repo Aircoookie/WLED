@@ -196,6 +196,7 @@ void getSettingsJS(byte subPage)
     sappend('v',"CB",colS[2]);
     sappend('v',"CA",briS);
     sappend('c',"EW",useRGBW);
+    sappend('i',"CO",strip.colorOrder);
     sappend('c',"AW",autoRGBtoRGBW);
     sappend('v',"CW",whiteS);
     sappend('v',"SR",colSecS[0]);

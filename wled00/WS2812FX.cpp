@@ -93,7 +93,7 @@ void WS2812FX::clear()
 
 bool WS2812FX::modeUsesLock(uint8_t m)
 {
-  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE) return true;
+  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE || m == FX_MODE_METEOR) return true;
   return false;
 }
 
@@ -241,6 +241,7 @@ void WS2812FX::setSecondaryColor(uint32_t c) {
 }
 
 void WS2812FX::setBrightness(uint8_t b) {
+  if (_brightness == b) return;
   _brightness = b;
   bus->SetBrightness(_brightness);
   show();
@@ -294,7 +295,15 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
     }
   }
   RgbwColor lColor = bus->GetPixelColorRgbw(i);
-  return lColor.W*16777216 + lColor.R*65536 + lColor.G*256 + lColor.B;
+  byte r = lColor.R, g = lColor.G, b = lColor.B;
+  switch (colorOrder)
+  {
+    case 0: break;                                    //0 = Grb
+    case 1: r = lColor.G; g = lColor.R; break;        //1 = Rgb, common for WS2811
+    case 2: g = lColor.B; b = lColor.G; break;        //2 = Brg
+    case 3: r = lColor.B; g = lColor.R; b = lColor.G; //3 = Rbg
+  }
+  return ( (lColor.W << 24) | (r << 16) | (g << 8) | (b) );
 }
 
 WS2812FX::Segment WS2812FX::getSegment(void) {
@@ -2157,8 +2166,11 @@ void WS2812FX::handle_palette(void)
 {
   bool singleSegmentMode = (_segment_index == _segment_index_palette_last);
   _segment_index_palette_last = _segment_index;
+
+  byte paletteIndex = SEGMENT.palette;
+  if (SEGMENT.mode == FX_MODE_METEOR && SEGMENT.palette == 0) paletteIndex = 4;
   
-  switch (SEGMENT.palette)
+  switch (paletteIndex)
   {
     case 0: {//default palette. Differs depending on effect
       switch (SEGMENT.mode)
@@ -2566,30 +2578,44 @@ uint16_t WS2812FX::mode_lake() {
   return 33;
 }
 
-// meteor effect
-// send a meteor from begining to to the end of the strip with a trail that randomly decay.
-// adapted from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectMeteorRain
 
+// meteor effect
+// send a meteor from begining to to the end of the strip with a trail that randomly decays.
+// adapted from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectMeteorRain
 uint16_t WS2812FX::mode_meteor() {
-  byte meteorSize=1+(256-SEGMENT.intensity)/16;
-  uint32_t led_offset = SEGMENT_RUNTIME.counter_mode_step;
-  uint16_t i = SEGMENT.start + led_offset;
-  byte meteorTrailDecay=SEGMENT.intensity;
+  byte meteorSize= 1+ SEGMENT_LENGTH / 10;
+  uint16_t in = SEGMENT.start + SEGMENT_RUNTIME.counter_mode_step;
+
+  byte decayProb = 255 - SEGMENT.intensity;
 
   // fade all leds to colors[1] in LEDs one step
   for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
-    if (random(10)>5)  {
-      setPixelColor(i,color_blend(getPixelColor(i),SEGMENT.colors[1],meteorTrailDecay));        
+    if (random8() <= decayProb)
+    {
+      byte meteorTrailDecay = 128 + random8(127);
+      _locked[i] = scale8(_locked[i], meteorTrailDecay);
+      setPixelColor(i, color_from_palette(_locked[i], false, true, 255));
     }
   }
   
   // draw meteor
-  for(int j = 0; j < meteorSize; j++) {     
-    if( ( SEGMENT.start + j < SEGMENT.stop) ) {
-      setPixelColor(i+j, SEGMENT.colors[0]);
+  for(int j = 0; j < meteorSize; j++) {  
+    uint16_t index = in + j;   
+    if(in + j > SEGMENT.stop) {
+      index = SEGMENT.start + (in + j - SEGMENT.stop) -1;
     }
+
+    _locked[index] = 240;
+    setPixelColor(index, color_from_palette(_locked[index], false, true, 255));
   }
 
   SEGMENT_RUNTIME.counter_mode_step = (SEGMENT_RUNTIME.counter_mode_step + 1) % (SEGMENT_LENGTH);
   return SPEED_FORMULA_L;
 }
+
+//smooth
+//front ramping (maybe from get color
+//50fps
+//fade each led by a certain range (even ramp possible for sparkling)
+//maybe dim to color[1] at end?
+//_locked 0-15 bg-last 15-240 last-first 240-255 first-bg

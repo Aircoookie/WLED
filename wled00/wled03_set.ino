@@ -60,6 +60,7 @@ void handleSettingsSet(byte subPage)
     if (ledCount > 600) ledCount = 600;
     #endif
     useRGBW = server.hasArg("EW");
+    strip.colorOrder = server.arg("CO").toInt(); 
     autoRGBtoRGBW = server.hasArg("AW");
 
     //ignore settings and save current brightness, colors and fx as default

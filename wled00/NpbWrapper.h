@@ -12,9 +12,6 @@
 #define AUXPIN 15 //unused auxiliary output pin
 
 
-//uncomment this if red and green are swapped
-//#define SWAPRG
-
 
 //automatically uses the right driver method for each platform
 #ifdef ARDUINO_ARCH_ESP32
@@ -36,14 +33,11 @@
  #endif
 #endif
 
-//handle swapping Red and Green automatically
-#ifdef SWAPRG
- #define PIXELFEATURE3 NeoRgbFeature
- #define PIXELFEATURE4 NeoRgbwFeature
-#else
- #define PIXELFEATURE3 NeoGrbFeature
- #define PIXELFEATURE4 NeoGrbwFeature
-#endif
+
+//you can now change the color order in the web settings
+#define PIXELFEATURE3 NeoGrbFeature
+#define PIXELFEATURE4 NeoGrbwFeature
+
 
 #include <NeoPixelBrightnessBus.h>
 

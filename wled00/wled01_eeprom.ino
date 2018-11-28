@@ -142,6 +142,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(380, colSecS[2]);
   EEPROM.write(381, whiteSecS);
   EEPROM.write(382, strip.paletteBlend);
+  EEPROM.write(383, strip.colorOrder);
 
   EEPROM.write(385, irEnabled);
   
@@ -452,6 +453,7 @@ void loadSettingsFromEEPROM(bool first)
     readStringFromEEPROM(2300,      mqttServer, 32);
     readStringFromEEPROM(2333, mqttDeviceTopic, 32);
     readStringFromEEPROM(2366,  mqttGroupTopic, 32);
+    strip.colorOrder = EEPROM.read(383);
   }
   
   receiveDirect = !EEPROM.read(2200);

@@ -165,6 +165,8 @@
 #define FX_MODE_COLORTWINKLE            74
 #define FX_MODE_LAKE                    75
 #define FX_MODE_METEOR                  76
+#define FX_MODE_SMOOTH_METEOR           77
+#define FX_MODE_RAILROAD_X              78
 
 
 class WS2812FX {
