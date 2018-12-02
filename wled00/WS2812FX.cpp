@@ -93,7 +93,7 @@ void WS2812FX::clear()
 
 bool WS2812FX::modeUsesLock(uint8_t m)
 {
-  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE || m == FX_MODE_METEOR) return true;
+  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE || m == FX_MODE_METEOR || m == FX_MODE_METEOR_SMOOTH) return true;
   return false;
 }
 
@@ -2271,7 +2271,7 @@ uint16_t WS2812FX::mode_palette(void)
     
     setPixelColor(i, color_from_palette(colorIndex, false, true, 255));
   }
-  SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed *2;
+  SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed;
   if (SEGMENT.speed == 0) SEGMENT_RUNTIME.counter_mode_step = 0;
   return 20;
 }
@@ -2619,3 +2619,74 @@ uint16_t WS2812FX::mode_meteor() {
 //fade each led by a certain range (even ramp possible for sparkling)
 //maybe dim to color[1] at end?
 //_locked 0-15 bg-last 15-240 last-first 240-255 first-bg
+
+
+#define IS_PART_OF_METEOR 245
+// smooth meteor effect
+// send a meteor from begining to to the end of the strip with a trail that randomly decays.
+// adapted from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectMeteorRain
+uint16_t WS2812FX::mode_meteor_smooth() {
+  byte meteorSize= 1+ SEGMENT_LENGTH / 10;
+  uint16_t in = map((SEGMENT_RUNTIME.counter_mode_step >> 6 & 0xFF), 0, 255, SEGMENT.start, SEGMENT.stop);
+
+  byte decayProb = SEGMENT.intensity;
+
+  // fade all leds to colors[1] in LEDs one step
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+    if (_locked[i] != IS_PART_OF_METEOR && _locked[i] != 0 && random8() <= decayProb)
+    {
+      int change = 3 - random8(12); //change each time between -8 and +3
+      _locked[i] += change;
+      if (_locked[i] > 245) _locked[i] = 0;
+      if (_locked[i] > 240) _locked[i] = 240;
+      setPixelColor(i, color_from_palette(_locked[i], false, true, 255));
+    }
+  }
+  
+  // draw meteor
+  for(int j = 0; j < meteorSize; j++) {  
+    uint16_t index = in + j;   
+    if(in + j > SEGMENT.stop) {
+      index = SEGMENT.start + (in + j - SEGMENT.stop) -1;
+    }
+
+    _locked[index] = IS_PART_OF_METEOR;
+    setPixelColor(index, color_blend(getPixelColor(index), color_from_palette(240, false, true, 255), 48));
+
+    if (j == 0) _locked[index] = 240;//last pixel of meteor
+  }
+
+  SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed +1;
+  return 20;
+}
+
+
+//Railway Crossing / Christmas Fairy lights
+uint16_t WS2812FX::mode_railway()
+{
+  uint16_t dur = 40 + (255 - SEGMENT.speed) * 10;
+  uint16_t rampdur = (dur * SEGMENT.intensity) >> 8;
+  if (SEGMENT_RUNTIME.counter_mode_step > dur)
+  {
+    //reverse direction
+    SEGMENT_RUNTIME.counter_mode_step = 0;
+    SEGMENT_RUNTIME.aux_param = !SEGMENT_RUNTIME.aux_param;
+  }
+  uint8_t pos = 255;
+  if (rampdur != 0)
+  {
+    uint16_t p0 = (SEGMENT_RUNTIME.counter_mode_step * 255) / rampdur;
+    if (p0 < 255) pos = p0;
+  }
+  if (SEGMENT_RUNTIME.aux_param) pos = 255 - pos;
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i += 2)
+  {
+    setPixelColor(i, color_from_palette(255 - pos, false, false, 255));
+    if (i != SEGMENT.stop)
+    {
+      setPixelColor(i + 1, color_from_palette(pos, false, false, 255));
+    }
+  }
+  SEGMENT_RUNTIME.counter_mode_step += 20;
+  return 20;
+}

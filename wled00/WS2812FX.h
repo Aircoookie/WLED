@@ -85,7 +85,7 @@
 #define REVERSE      (uint8_t)0x80
 #define IS_REVERSE   ((SEGMENT.options & REVERSE) == REVERSE)
 
-#define MODE_COUNT  77
+#define MODE_COUNT  79
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -165,8 +165,8 @@
 #define FX_MODE_COLORTWINKLE            74
 #define FX_MODE_LAKE                    75
 #define FX_MODE_METEOR                  76
-#define FX_MODE_SMOOTH_METEOR           77
-#define FX_MODE_RAILROAD_X              78
+#define FX_MODE_METEOR_SMOOTH           77
+#define FX_MODE_RAILWAY                 78
 
 
 class WS2812FX {
@@ -273,6 +273,9 @@ class WS2812FX {
       _mode[FX_MODE_COLORTWINKLE]            = &WS2812FX::mode_colortwinkle;
       _mode[FX_MODE_LAKE]                    = &WS2812FX::mode_lake;
       _mode[FX_MODE_METEOR]                  = &WS2812FX::mode_meteor;
+      _mode[FX_MODE_METEOR_SMOOTH]           = &WS2812FX::mode_meteor_smooth;
+      _mode[FX_MODE_RAILWAY]                 = &WS2812FX::mode_railway;
+      
 
       _brightness = DEFAULT_BRIGHTNESS;
       _running = false;
@@ -454,6 +457,8 @@ class WS2812FX {
       mode_colortwinkle(void),
       mode_lake(void),
       mode_meteor(void),
+      mode_meteor_smooth(void),
+      mode_railway(void),
       mode_lightning(void);
 
   private:
