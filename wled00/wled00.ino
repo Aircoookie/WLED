@@ -25,7 +25,7 @@
 //#define WLED_DISABLE_MOBILE_UI
 
 //to toggle usb serial debug (un)comment following line(s)
-#define WLED_DEBUG
+//#define WLED_DEBUG
 
 
 //library inclusions
@@ -74,7 +74,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1812012
+#define VERSION 1812033
 char versionString[] = "0.8.2-dev";
 
 
@@ -111,9 +111,10 @@ IPAddress staticDNS(8, 8, 8, 8);              //only for NTP, google DNS server
 
 
 //LED CONFIG
-uint16_t ledCount = 10;                       //lowered to prevent accidental overcurrent                      
+uint16_t ledCount = 30;                       //overcurrent prevented by ABL             
 bool useRGBW = false;                         //SK6812 strips can contain an extra White channel
 bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White channel from RGB
+#define ABL_MILLIAMPS_DEFAULT 850;            //auto lower brightness to stay close to milliampere limit 
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 

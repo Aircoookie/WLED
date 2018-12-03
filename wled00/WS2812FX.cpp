@@ -59,7 +59,6 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   _segments[0].stop = _length -1;
   unlockAll();
   setBrightness(_brightness);
-  show();
   _running = true;
 }
 
@@ -127,13 +126,13 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     byte o = 10*i;
     if (_cronixieBacklightEnabled && _cronixieDigits[i] <11)
     {
-      byte rCorr = (int)(((double)((_segments[0].colors[1]>>16) & 0xFF))*_cronixieSecMultiplier);
-      byte gCorr = (int)(((double)((_segments[0].colors[1]>>8) & 0xFF))*_cronixieSecMultiplier);
-      byte bCorr = (int)(((double)((_segments[0].colors[1]) & 0xFF))*_cronixieSecMultiplier);
-      byte wCorr = (int)(((double)((_segments[0].colors[1]>>24) & 0xFF))*_cronixieSecMultiplier);
+      byte r2 = (_segments[0].colors[1] >>16) & 0xFF;
+      byte g2 = (_segments[0].colors[1] >> 8) & 0xFF;
+      byte b2 = (_segments[0].colors[1]     ) & 0xFF;
+      byte w2 = (_segments[0].colors[1] >>24) & 0xFF;
       for (int j=o; j< o+19; j++)
       {
-        bus->SetPixelColor((_skipFirstMode)?j+1:j,RgbwColor(rCorr,gCorr,bCorr,wCorr));
+        bus->SetPixelColor((_skipFirstMode)?j+1:j,RgbwColor(r2,g2,b2,w2));
       }
     } else
     {
@@ -182,7 +181,75 @@ void WS2812FX::setCronixieDigits(byte d[])
   }
 }
 
+
+//DISCLAIMER
+//The following function attemps to calculate the current LED power usage,
+//and will limit the brightness to stay below a set amperage threshold.
+//It is NOT a measurement and NOT guaranteed to stay within the ablMilliampsMax margin.
+//Stay safe with high amperage and have a reasonable safety margin!
+//I am NOT to be held liable for burned down garages!
+
+//fine tune power estimation constants for your setup
+#define PU_PER_MA        3600 //power units per milliamperere for accurate power estimation 
+                              //formula: 195075 divided by mA per fully lit LED, here ~54mA)
+                              //lowering the value increases the estimated usage and therefore makes the ABL more aggressive
+                              
+#define MA_FOR_ESP        100 //how much mA does the ESP use (Wemos D1 about 80mA, ESP32 about 120mA)
+                              //you can set it to 0 if the ESP is powered by USB and the LEDs by external
+
 void WS2812FX::show(void) {
+  //power limit calculation
+  //each LED can draw up 195075 "power units" (approx. 53mA)
+  //one PU is the power it takes to have 1 channel 1 step brighter per brightness step
+  //so A=2,R=255,G=0,B=0 would use 510 PU per LED (1mA is about 3700 PU)
+  
+  if (ablMilliampsMax > 149 && ablMilliampsMax < 65000) //lower numbers and 65000 turn off calculation
+  {
+    uint32_t powerBudget = (ablMilliampsMax - MA_FOR_ESP) * PU_PER_MA; //100mA for ESP power
+    if (powerBudget > PU_PER_MA * _length) //each LED uses about 1mA in standby, exclude that from power budget
+    {
+      powerBudget -= PU_PER_MA * _length;
+    } else
+    {
+      powerBudget = 0;
+    }
+
+    uint32_t powerSum = 0;
+
+    for (uint16_t i = 0; i < _length; i++) //sum up the usage of each LED
+    {
+      RgbwColor c = bus->GetPixelColorRgbw(i);
+      powerSum += (c.R + c.G + c.B + c.W);
+    }
+
+    if (_rgbwMode) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    {
+      powerSum *= 3;
+      powerSum >> 2; //same as /= 4
+    }
+
+    uint32_t powerSum0 = powerSum;
+    powerSum *= _brightness;
+    
+    if (powerSum > powerBudget) //scale brightness down to stay in current limit
+    {
+      float scale = (float)powerBudget / (float)powerSum;
+      uint16_t scaleI = scale * 255;
+      uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
+      uint8_t newBri = scale8(_brightness, scaleB);
+      bus->SetBrightness(newBri);
+      currentMilliamps = (powerSum0 * newBri) / PU_PER_MA;
+    } else
+    {
+      currentMilliamps = powerSum / PU_PER_MA;
+      bus->SetBrightness(_brightness);
+    }
+    currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate
+    currentMilliamps += _length; //add standby power back to estimate
+  } else {
+    currentMilliamps = 0;
+  }
+  
   bus->Show();
 }
 
@@ -237,7 +304,6 @@ void WS2812FX::setColor(uint32_t c) {
 
 void WS2812FX::setSecondaryColor(uint32_t c) {
   _segments[0].colors[1] = c;
-  if (_cronixieMode) _cronixieSecMultiplier = getSafePowerMultiplier(900, 100, c, _brightness);
 }
 
 void WS2812FX::setBrightness(uint8_t b) {
@@ -439,33 +505,6 @@ uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint8_t blend) 
   uint32_t b3 = ((b2 * blend) + (b1 * (255 - blend))) / 256;
 
   return ((w3 << 24) | (r3 << 16) | (g3 << 8) | (b3));
-}
-
-
-double WS2812FX::getPowerEstimate(uint16_t leds, uint32_t c, byte b)
-{
-  double _mARequired = 100; //ESP power
-  double _mul = (double)b/255;
-  double _sum = ((c & 0xFF000000) >> 24) + ((c & 0x00FF0000) >> 16) + ((c & 0x0000FF00) >>  8) + ((c & 0x000000FF) >>  0);
-  _sum /= (_rgbwMode)?1024:768;
-  double _mAPerLed = 50*(_mul*_sum);
-  _mARequired += leds*_mAPerLed;
-  return _mARequired;
-}
-
-//DISCLAIMER
-//This is just a helper function for huge amounts of LEDs.
-//It is NOT guaranteed to stay within the safeAmps margin.
-//Stay safe with high amperage and have a reasonable safety margin!
-//I am NOT to be held liable for burned down garages!
-double WS2812FX::getSafePowerMultiplier(double safeMilliAmps, uint16_t leds, uint32_t c, byte b)
-{
-  double _mARequired = getPowerEstimate(leds,c,b);
-  if (_mARequired > safeMilliAmps)
-  {
-    return safeMilliAmps/_mARequired;
-  }
-  return 1.0;
 }
 
 

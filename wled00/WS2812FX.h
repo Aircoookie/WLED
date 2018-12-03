@@ -289,6 +289,8 @@ class WS2812FX {
       colorOrder = 0;
       paletteFade = 0;
       paletteBlend = 0;
+      ablMilliampsMax = 750;
+      currentMilliamps = 0;
       _locked = NULL;
       _cronixieDigits = new byte[6];
       bus = new NeoPixelWrapper();
@@ -352,10 +354,6 @@ class WS2812FX {
       getPixelColor(uint16_t),
       getColor(void);
 
-    double
-      getPowerEstimate(uint16_t leds, uint32_t c, byte b),
-      getSafePowerMultiplier(double safeMilliAmps, uint16_t leds, uint32_t c, byte b);
-
     WS2812FX::Segment
       getSegment(void);
 
@@ -367,6 +365,8 @@ class WS2812FX {
 
     // mode helper functions
     uint16_t
+      ablMilliampsMax,
+      currentMilliamps,
       blink(uint32_t, uint32_t, bool strobe, bool),
       color_wipe(uint32_t, uint32_t, bool , bool),
       scan(bool),
@@ -472,9 +472,6 @@ class WS2812FX {
 
     void handle_palette(void);
     bool modeUsesLock(uint8_t);
-
-    double
-      _cronixieSecMultiplier;
 
     boolean
       _running,

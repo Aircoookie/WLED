@@ -101,9 +101,16 @@ void initServer()
     });
     
   server.on("/power", HTTP_GET, [](){
-    String val = (String)(int)strip.getPowerEstimate(ledCount,strip.getColor(),strip.getBrightness());
-    val += "mA currently";
-    serveMessage(200,val,"This is just an estimate (does not account for factors like effects and wire resistance). It is NOT a measurement!",254);
+    String val = "";
+    if (strip.currentMilliamps == 0)
+    {
+      val = "Power calculation disabled";
+    } else
+    {
+      val += (String)strip.currentMilliamps;
+      val += "mA currently";
+    }
+    serveMessage(200, val, "This is just an estimate (does not account for factors like wire resistance). It is NOT a measurement!", 254);
     });
 
   server.on("/u", HTTP_GET, [](){
@@ -113,7 +120,7 @@ void initServer()
     });
     
   server.on("/teapot", HTTP_GET, [](){
-    serveMessage(418, "418. I'm a teapot.","(Tangible Embedded Advanced Project Of Twinkling)",254);
+    serveMessage(418, "418. I'm a teapot.", "(Tangible Embedded Advanced Project Of Twinkling)", 254);
     });
     
   server.on("/build", HTTP_GET, [](){

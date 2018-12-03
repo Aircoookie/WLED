@@ -191,6 +191,14 @@ void getSettingsJS(byte subPage)
   
   if (subPage == 2) {
     sappend('v',"LC",ledCount);
+    sappend('v',"MA",strip.ablMilliampsMax);
+    if (strip.currentMilliamps)
+    {
+      sappends('m',"(\"pow\")[0]","");
+      olen -= 2; //delete ";
+      oappendi(strip.currentMilliamps);
+      oappend("mA\";");
+    }
     sappend('v',"CR",colS[0]);
     sappend('v',"CG",colS[1]);
     sappend('v',"CB",colS[2]);

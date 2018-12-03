@@ -59,6 +59,7 @@ void handleSettingsSet(byte subPage)
     #ifdef ARDUINO_ARCH_ESP32
     if (ledCount > 600) ledCount = 600;
     #endif
+    strip.ablMilliampsMax = server.arg("MA").toInt();
     useRGBW = server.hasArg("EW");
     strip.colorOrder = server.arg("CO").toInt(); 
     autoRGBtoRGBW = server.hasArg("AW");
