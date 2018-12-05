@@ -14,14 +14,14 @@
 //Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
 
 //You are required to disable over-the-air updates:
-#define WLED_DISABLE_OTA
+//#define WLED_DISABLE_OTA
 
 //You need to choose 1-2 of these features to disable:
 //#define WLED_DISABLE_ALEXA
 //#define WLED_DISABLE_BLYNK
 //#define WLED_DISABLE_CRONIXIE
-#define WLED_DISABLE_HUESYNC
-#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
+//#define WLED_DISABLE_HUESYNC
+//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
 //#define WLED_DISABLE_MOBILE_UI
 
 //to toggle usb serial debug (un)comment following line(s)
