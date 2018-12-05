@@ -59,7 +59,6 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   _segments[0].stop = _length -1;
   unlockAll();
   setBrightness(_brightness);
-  show();
   _running = true;
 }
 
@@ -93,7 +92,7 @@ void WS2812FX::clear()
 
 bool WS2812FX::modeUsesLock(uint8_t m)
 {
-  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE) return true;
+  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE || m == FX_MODE_METEOR || m == FX_MODE_METEOR_SMOOTH) return true;
   return false;
 }
 
@@ -110,6 +109,14 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   if (_locked[i] && !modeUsesLock(SEGMENT.mode)) return;
   if (_reverseMode) i = _length - 1 -i;
   if (IS_REVERSE)   i = SEGMENT.stop - (i - SEGMENT.start); //reverse just individual segment
+  byte tmpg = g;
+  switch (colorOrder) //0 = Grb, default
+  {
+    case 0: break;                  //0 = Grb, default
+    case 1: g = r; r = tmpg; break; //1 = Rgb, common for WS2811
+    case 2: g = b; b = tmpg; break; //2 = Brg
+    case 3: g = b; b = r; r = tmpg; //3 = Rbg
+  }
   if (!_cronixieMode)
   {
     if (_skipFirstMode) {i++;if(i==1)bus->SetPixelColor(i, RgbwColor(0,0,0,0));}
@@ -119,13 +126,13 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     byte o = 10*i;
     if (_cronixieBacklightEnabled && _cronixieDigits[i] <11)
     {
-      byte rCorr = (int)(((double)((_segments[0].colors[1]>>16) & 0xFF))*_cronixieSecMultiplier);
-      byte gCorr = (int)(((double)((_segments[0].colors[1]>>8) & 0xFF))*_cronixieSecMultiplier);
-      byte bCorr = (int)(((double)((_segments[0].colors[1]) & 0xFF))*_cronixieSecMultiplier);
-      byte wCorr = (int)(((double)((_segments[0].colors[1]>>24) & 0xFF))*_cronixieSecMultiplier);
+      byte r2 = (_segments[0].colors[1] >>16) & 0xFF;
+      byte g2 = (_segments[0].colors[1] >> 8) & 0xFF;
+      byte b2 = (_segments[0].colors[1]     ) & 0xFF;
+      byte w2 = (_segments[0].colors[1] >>24) & 0xFF;
       for (int j=o; j< o+19; j++)
       {
-        bus->SetPixelColor((_skipFirstMode)?j+1:j,RgbwColor(rCorr,gCorr,bCorr,wCorr));
+        bus->SetPixelColor((_skipFirstMode)?j+1:j,RgbwColor(r2,g2,b2,w2));
       }
     } else
     {
@@ -174,7 +181,75 @@ void WS2812FX::setCronixieDigits(byte d[])
   }
 }
 
+
+//DISCLAIMER
+//The following function attemps to calculate the current LED power usage,
+//and will limit the brightness to stay below a set amperage threshold.
+//It is NOT a measurement and NOT guaranteed to stay within the ablMilliampsMax margin.
+//Stay safe with high amperage and have a reasonable safety margin!
+//I am NOT to be held liable for burned down garages!
+
+//fine tune power estimation constants for your setup
+#define PU_PER_MA        3600 //power units per milliamperere for accurate power estimation 
+                              //formula: 195075 divided by mA per fully lit LED, here ~54mA)
+                              //lowering the value increases the estimated usage and therefore makes the ABL more aggressive
+                              
+#define MA_FOR_ESP        100 //how much mA does the ESP use (Wemos D1 about 80mA, ESP32 about 120mA)
+                              //you can set it to 0 if the ESP is powered by USB and the LEDs by external
+
 void WS2812FX::show(void) {
+  //power limit calculation
+  //each LED can draw up 195075 "power units" (approx. 53mA)
+  //one PU is the power it takes to have 1 channel 1 step brighter per brightness step
+  //so A=2,R=255,G=0,B=0 would use 510 PU per LED (1mA is about 3700 PU)
+  
+  if (ablMilliampsMax > 149 && ablMilliampsMax < 65000) //lower numbers and 65000 turn off calculation
+  {
+    uint32_t powerBudget = (ablMilliampsMax - MA_FOR_ESP) * PU_PER_MA; //100mA for ESP power
+    if (powerBudget > PU_PER_MA * _length) //each LED uses about 1mA in standby, exclude that from power budget
+    {
+      powerBudget -= PU_PER_MA * _length;
+    } else
+    {
+      powerBudget = 0;
+    }
+
+    uint32_t powerSum = 0;
+
+    for (uint16_t i = 0; i < _length; i++) //sum up the usage of each LED
+    {
+      RgbwColor c = bus->GetPixelColorRgbw(i);
+      powerSum += (c.R + c.G + c.B + c.W);
+    }
+
+    if (_rgbwMode) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    {
+      powerSum *= 3;
+      powerSum >> 2; //same as /= 4
+    }
+
+    uint32_t powerSum0 = powerSum;
+    powerSum *= _brightness;
+    
+    if (powerSum > powerBudget) //scale brightness down to stay in current limit
+    {
+      float scale = (float)powerBudget / (float)powerSum;
+      uint16_t scaleI = scale * 255;
+      uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
+      uint8_t newBri = scale8(_brightness, scaleB);
+      bus->SetBrightness(newBri);
+      currentMilliamps = (powerSum0 * newBri) / PU_PER_MA;
+    } else
+    {
+      currentMilliamps = powerSum / PU_PER_MA;
+      bus->SetBrightness(_brightness);
+    }
+    currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate
+    currentMilliamps += _length; //add standby power back to estimate
+  } else {
+    currentMilliamps = 0;
+  }
+  
   bus->Show();
 }
 
@@ -185,7 +260,8 @@ void WS2812FX::trigger() {
 void WS2812FX::setMode(uint8_t m) {
   RESET_RUNTIME;
   bool ua = modeUsesLock(_segments[0].mode) && !modeUsesLock(m);
-  _segments[0].mode = constrain(m, 0, MODE_COUNT - 1);
+  if (m > MODE_COUNT - 1) m = MODE_COUNT - 1;
+  _segments[0].mode = m;
   if (ua) unlockAll();
   setBrightness(_brightness);
 }
@@ -204,6 +280,16 @@ void WS2812FX::setPalette(uint8_t p) {
   _segments[0].palette = p;
 }
 
+bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p) {
+  bool changed = false;
+  m = constrain(m, 0, MODE_COUNT - 1);
+  if (m != _segments[0].mode)      { setMode(m);      changed = true; }
+  if (s != _segments[0].speed)     { setSpeed(s);     changed = true; }
+  if (i != _segments[0].intensity) { setIntensity(i); changed = true; }
+  if (p != _segments[0].palette)   { setPalette(p);   changed = true; }
+  return changed;
+}
+
 void WS2812FX::setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
   setColor(((uint32_t)w << 24) |((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }
@@ -218,10 +304,10 @@ void WS2812FX::setColor(uint32_t c) {
 
 void WS2812FX::setSecondaryColor(uint32_t c) {
   _segments[0].colors[1] = c;
-  if (_cronixieMode) _cronixieSecMultiplier = getSafePowerMultiplier(900, 100, c, _brightness);
 }
 
 void WS2812FX::setBrightness(uint8_t b) {
+  if (_brightness == b) return;
   _brightness = b;
   bus->SetBrightness(_brightness);
   show();
@@ -275,7 +361,15 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
     }
   }
   RgbwColor lColor = bus->GetPixelColorRgbw(i);
-  return lColor.W*16777216 + lColor.R*65536 + lColor.G*256 + lColor.B;
+  byte r = lColor.R, g = lColor.G, b = lColor.B;
+  switch (colorOrder)
+  {
+    case 0: break;                                    //0 = Grb
+    case 1: r = lColor.G; g = lColor.R; break;        //1 = Rgb, common for WS2811
+    case 2: g = lColor.B; b = lColor.G; break;        //2 = Brg
+    case 3: r = lColor.B; g = lColor.R; b = lColor.G; //3 = Rbg
+  }
+  return ( (lColor.W << 24) | (r << 16) | (g << 8) | (b) );
 }
 
 WS2812FX::Segment WS2812FX::getSegment(void) {
@@ -411,33 +505,6 @@ uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint8_t blend) 
   uint32_t b3 = ((b2 * blend) + (b1 * (255 - blend))) / 256;
 
   return ((w3 << 24) | (r3 << 16) | (g3 << 8) | (b3));
-}
-
-
-double WS2812FX::getPowerEstimate(uint16_t leds, uint32_t c, byte b)
-{
-  double _mARequired = 100; //ESP power
-  double _mul = (double)b/255;
-  double _sum = ((c & 0xFF000000) >> 24) + ((c & 0x00FF0000) >> 16) + ((c & 0x0000FF00) >>  8) + ((c & 0x000000FF) >>  0);
-  _sum /= (_rgbwMode)?1024:768;
-  double _mAPerLed = 50*(_mul*_sum);
-  _mARequired += leds*_mAPerLed;
-  return _mARequired;
-}
-
-//DISCLAIMER
-//This is just a helper function for huge amounts of LEDs.
-//It is NOT guaranteed to stay within the safeAmps margin.
-//Stay safe with high amperage and have a reasonable safety margin!
-//I am NOT to be held liable for burned down garages!
-double WS2812FX::getSafePowerMultiplier(double safeMilliAmps, uint16_t leds, uint32_t c, byte b)
-{
-  double _mARequired = getPowerEstimate(leds,c,b);
-  if (_mARequired > safeMilliAmps)
-  {
-    return safeMilliAmps/_mARequired;
-  }
-  return 1.0;
 }
 
 
@@ -2138,8 +2205,11 @@ void WS2812FX::handle_palette(void)
 {
   bool singleSegmentMode = (_segment_index == _segment_index_palette_last);
   _segment_index_palette_last = _segment_index;
+
+  byte paletteIndex = SEGMENT.palette;
+  if ((SEGMENT.mode >= FX_MODE_METEOR) && SEGMENT.palette == 0) paletteIndex = 4;
   
-  switch (SEGMENT.palette)
+  switch (paletteIndex)
   {
     case 0: {//default palette. Differs depending on effect
       switch (SEGMENT.mode)
@@ -2240,7 +2310,7 @@ uint16_t WS2812FX::mode_palette(void)
     
     setPixelColor(i, color_from_palette(colorIndex, false, true, 255));
   }
-  SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed *2;
+  SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed;
   if (SEGMENT.speed == 0) SEGMENT_RUNTIME.counter_mode_step = 0;
   return 20;
 }
@@ -2430,8 +2500,6 @@ uint16_t WS2812FX::mode_noise16_2(void)
     uint16_t shift_y = SEGMENT_RUNTIME.counter_mode_step/42;
 
     uint32_t real_x = (i + shift_x) * scale;                  // calculate the coordinates within the noise field
-    uint32_t real_y = (i + shift_y) * scale;                  // based on the precalculated positions
-    uint32_t real_z = 4223;
 
     uint8_t noise = inoise16(real_x, 0, 4223) >> 8;    // get the noise data and scale it down
 
@@ -2547,4 +2615,117 @@ uint16_t WS2812FX::mode_lake() {
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
   return 33;
+}
+
+
+// meteor effect
+// send a meteor from begining to to the end of the strip with a trail that randomly decays.
+// adapted from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectMeteorRain
+uint16_t WS2812FX::mode_meteor() {
+  byte meteorSize= 1+ SEGMENT_LENGTH / 10;
+  uint16_t in = SEGMENT.start + SEGMENT_RUNTIME.counter_mode_step;
+
+  byte decayProb = 255 - SEGMENT.intensity;
+
+  // fade all leds to colors[1] in LEDs one step
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+    if (random8() <= decayProb)
+    {
+      byte meteorTrailDecay = 128 + random8(127);
+      _locked[i] = scale8(_locked[i], meteorTrailDecay);
+      setPixelColor(i, color_from_palette(_locked[i], false, true, 255));
+    }
+  }
+  
+  // draw meteor
+  for(int j = 0; j < meteorSize; j++) {  
+    uint16_t index = in + j;   
+    if(in + j > SEGMENT.stop) {
+      index = SEGMENT.start + (in + j - SEGMENT.stop) -1;
+    }
+
+    _locked[index] = 240;
+    setPixelColor(index, color_from_palette(_locked[index], false, true, 255));
+  }
+
+  SEGMENT_RUNTIME.counter_mode_step = (SEGMENT_RUNTIME.counter_mode_step + 1) % (SEGMENT_LENGTH);
+  return SPEED_FORMULA_L;
+}
+
+
+//smooth
+//front ramping (maybe from get color
+//50fps
+//fade each led by a certain range (even ramp possible for sparkling)
+//maybe dim to color[1] at end?
+//_locked 0-15 bg-last 15-240 last-first 240-255 first-bg
+
+#define IS_PART_OF_METEOR 245
+// smooth meteor effect
+// send a meteor from begining to to the end of the strip with a trail that randomly decays.
+// adapted from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectMeteorRain
+uint16_t WS2812FX::mode_meteor_smooth() {
+  byte meteorSize= 1+ SEGMENT_LENGTH / 10;
+  uint16_t in = map((SEGMENT_RUNTIME.counter_mode_step >> 6 & 0xFF), 0, 255, SEGMENT.start, SEGMENT.stop);
+
+  byte decayProb = 255 - SEGMENT.intensity;
+
+  // fade all leds to colors[1] in LEDs one step
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
+    if (_locked[i] != IS_PART_OF_METEOR && _locked[i] != 0 && random8() <= decayProb)
+    {
+      int change = 3 - random8(12); //change each time between -8 and +3
+      _locked[i] += change;
+      if (_locked[i] > 245) _locked[i] = 0;
+      if (_locked[i] > 240) _locked[i] = 240;
+      setPixelColor(i, color_from_palette(_locked[i], false, true, 255));
+    }
+  }
+  
+  // draw meteor
+  for(int j = 0; j < meteorSize; j++) {  
+    uint16_t index = in + j;   
+    if(in + j > SEGMENT.stop) {
+      index = SEGMENT.start + (in + j - SEGMENT.stop) -1;
+    }
+
+    _locked[index] = IS_PART_OF_METEOR;
+    setPixelColor(index, color_blend(getPixelColor(index), color_from_palette(240, false, true, 255), 48));
+
+    if (j == 0) _locked[index] = 240;//last pixel of meteor
+  }
+
+  SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed +1;
+  return 20;
+}
+
+
+//Railway Crossing / Christmas Fairy lights
+uint16_t WS2812FX::mode_railway()
+{
+  uint16_t dur = 40 + (255 - SEGMENT.speed) * 10;
+  uint16_t rampdur = (dur * SEGMENT.intensity) >> 8;
+  if (SEGMENT_RUNTIME.counter_mode_step > dur)
+  {
+    //reverse direction
+    SEGMENT_RUNTIME.counter_mode_step = 0;
+    SEGMENT_RUNTIME.aux_param = !SEGMENT_RUNTIME.aux_param;
+  }
+  uint8_t pos = 255;
+  if (rampdur != 0)
+  {
+    uint16_t p0 = (SEGMENT_RUNTIME.counter_mode_step * 255) / rampdur;
+    if (p0 < 255) pos = p0;
+  }
+  if (SEGMENT_RUNTIME.aux_param) pos = 255 - pos;
+  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i += 2)
+  {
+    setPixelColor(i, color_from_palette(255 - pos, false, false, 255));
+    if (i != SEGMENT.stop)
+    {
+      setPixelColor(i + 1, color_from_palette(pos, false, false, 255));
+    }
+  }
+  SEGMENT_RUNTIME.counter_mode_step += 20;
+  return 20;
 }

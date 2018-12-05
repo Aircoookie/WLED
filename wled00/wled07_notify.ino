@@ -5,6 +5,7 @@
 #define WLEDPACKETSIZE 24
 #define UDP_IN_MAXSIZE 1472
 
+
 void notify(byte callMode, bool followUp=false)
 {
   if (!udpConnected) return;
@@ -53,6 +54,7 @@ void notify(byte callMode, bool followUp=false)
   notificationTwoRequired = (followUp)? false:notifyTwice;
 }
 
+
 void arlsLock(uint32_t timeoutMs)
 {
   if (!realtimeActive){
@@ -60,12 +62,13 @@ void arlsLock(uint32_t timeoutMs)
      {
        strip.setPixelColor(i,0,0,0,0);
      }
-     strip.setMode(0);
+     strip.unlockAll();
   }
   realtimeActive = true;
   realtimeTimeout = millis() + timeoutMs;
   if (arlsForceMaxBri) strip.setBrightness(255);
 }
+
 
 void initE131(){
   if (WiFi.status() == WL_CONNECTED && e131Enabled)
@@ -76,6 +79,7 @@ void initE131(){
     e131Enabled = false;
   }
 }
+
 
 void handleE131(){
   //E1.31 protocol support
@@ -98,6 +102,7 @@ void handleE131(){
   }
 }
 
+
 void handleNotifications()
 {
   //send second notification if enabled
@@ -110,10 +115,10 @@ void handleNotifications()
   //unlock strip when realtime UDP times out
   if (realtimeActive && millis() > realtimeTimeout)
   {
-    strip.unlockAll();
+    //strip.unlockAll();
     strip.setBrightness(bri);
     realtimeActive = false;
-    strip.setMode(effectCurrent);
+    //strip.setMode(effectCurrent);
     realtimeIP[0] = 0;
   }
 
@@ -150,56 +155,49 @@ void handleNotifications()
     olen = 0;
     notifierUdp.read(obuf, packetSize);
     char* udpIn = obuf;
-    
-    if (udpIn[0] == 0 && !realtimeActive && receiveNotifications) //wled notifier, block if realtime packets active
+
+    //wled notifier, block if realtime packets active
+    if (udpIn[0] == 0 && !realtimeActive && receiveNotifications)
     {
+      //apply colors from notification
       if (receiveNotificationColor)
       {
-      col[0] = udpIn[3];
-      col[1] = udpIn[4];
-      col[2] = udpIn[5];
-      }
-      if (udpIn[11] > 0 && receiveNotificationColor) //check if sending modules white val is inteded
-      {
-        white = udpIn[10];
-        if (udpIn[11] > 1 )
+        col[0] = udpIn[3];
+        col[1] = udpIn[4];
+        col[2] = udpIn[5];
+        if (udpIn[11] > 0) //check if sending modules white val is inteded
         {
-          colSec[0] = udpIn[12];
-          colSec[1] = udpIn[13];
-          colSec[2] = udpIn[14];
-          whiteSec = udpIn[15];
+          white = udpIn[10];
+          if (udpIn[11] > 1)
+          {
+            colSec[0] = udpIn[12];
+            colSec[1] = udpIn[13];
+            colSec[2] = udpIn[14];
+            whiteSec = udpIn[15];
+          }
         }
       }
-      if (udpIn[8] != effectCurrent && receiveNotificationEffects)
+
+      //apply effects from notification
+      if (receiveNotificationEffects)
       {
         effectCurrent = udpIn[8];
-        strip.setMode(effectCurrent);
+        effectSpeed   = udpIn[9];
+        if (udpIn[11] > 2) effectIntensity = udpIn[16];
+        if (udpIn[11] > 4) effectPalette   = udpIn[19];
       }
-      if (udpIn[9] != effectSpeed && receiveNotificationEffects)
-      {
-        effectSpeed = udpIn[9];
-        strip.setSpeed(effectSpeed);
-      }
-      if (udpIn[11] > 2 && udpIn[16] != effectIntensity && receiveNotificationEffects)
-      {
-        effectIntensity = udpIn[16];
-        strip.setIntensity(effectIntensity);
-      }
+      
       if (udpIn[11] > 3)
       {
         transitionDelayTemp = ((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00);
       }
-      if (udpIn[11] > 4 && udpIn[19] != effectPalette && receiveNotificationEffects)
-      {
-        effectPalette = udpIn[19];
-        strip.setPalette(effectPalette);
-      }
+
       nightlightActive = udpIn[6];
-      if (!nightlightActive)
-      {
-        if (receiveNotificationBrightness) bri = udpIn[2];
-        colorUpdated(3);
-      }
+      if (nightlightActive) nightlightDelayMins = udpIn[7];
+      
+      if (receiveNotificationBrightness) bri = udpIn[2];
+      colorUpdated(3);
+      
     }  else if (udpIn[0] > 0 && udpIn[0] < 4 && receiveDirect) //1 warls //2 drgb //3 drgbw
     {
       realtimeIP = notifierUdp.remoteIP();
@@ -251,6 +249,7 @@ void handleNotifications()
     }
   }
 }
+
 
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 {

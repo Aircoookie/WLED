@@ -2,6 +2,14 @@
  * Color conversion methods
  */
 
+void colorFromUint32(uint32_t in)
+{
+  white  = in >> 24 & 0xFF;
+  col[0] = in >> 16 & 0xFF;
+  col[1] = in >> 8  & 0xFF;
+  col[2] = in       & 0xFF;
+}
+
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
 {
   float h = ((float)hue)/65535.0;

@@ -101,9 +101,16 @@ void initServer()
     });
     
   server.on("/power", HTTP_GET, [](){
-    String val = (String)(int)strip.getPowerEstimate(ledCount,strip.getColor(),strip.getBrightness());
-    val += "mA currently";
-    serveMessage(200,val,"This is just an estimate (does not take into account several factors like effects and wire resistance). It is NOT an accurate measurement!",254);
+    String val = "";
+    if (strip.currentMilliamps == 0)
+    {
+      val = "Power calculation disabled";
+    } else
+    {
+      val += (String)strip.currentMilliamps;
+      val += "mA currently";
+    }
+    serveMessage(200, val, "This is just an estimate (does not account for factors like wire resistance). It is NOT a measurement!", 254);
     });
 
   server.on("/u", HTTP_GET, [](){
@@ -113,7 +120,7 @@ void initServer()
     });
     
   server.on("/teapot", HTTP_GET, [](){
-    serveMessage(418, "418. I'm a teapot.","(Tangible Embedded Advanced Project Of Twinkling)",254);
+    serveMessage(418, "418. I'm a teapot.", "(Tangible Embedded Advanced Project Of Twinkling)", 254);
     });
     
   server.on("/build", HTTP_GET, [](){
@@ -136,7 +143,7 @@ void initServer()
     httpUpdater.setup(&server);
     #else
     server.on("/update", HTTP_GET, [](){
-    serveMessage(500, "Not implemented", "OTA updates are not supported in this build.", 254);
+    serveMessage(500, "Not implemented", "OTA updates are unsupported in this build.", 254);
     });
     #endif
   } else
@@ -185,43 +192,6 @@ void initServer()
   #endif
 }
 
-void buildCssColorString()
-{
-  String cs[]={"","","","","",""};
-  switch (currentTheme)
-  {
-    default: cs[0]="D9B310"; cs[1]="0B3C5D"; cs[2]="1D2731"; cs[3]="328CC1"; cs[4]="000"; cs[5]="328CC1"; break; //night
-    case 1: cs[0]="eee"; cs[1]="ddd"; cs[2]="b9b9b9"; cs[3]="049"; cs[4]="777"; cs[5]="049"; break; //modern
-    case 2: cs[0]="abc"; cs[1]="fff"; cs[2]="ddd"; cs[3]="000"; cs[4]="0004"; cs[5]="000"; break; //bright
-    case 3: cs[0]="c09f80"; cs[1]="d7cec7"; cs[2]="76323f"; cs[3]="888"; cs[4]="3334"; cs[5]="888"; break; //wine
-    case 4: cs[0]="3cc47c"; cs[1]="828081"; cs[2]="d9a803"; cs[3]="1e392a"; cs[4]="000a"; cs[5]="1e392a"; break; //electric
-    case 5: cs[0]="57bc90"; cs[1]="a5a5af"; cs[2]="015249"; cs[3]="88c9d4"; cs[4]="0004"; cs[5]="88c9d4"; break; //mint
-    case 6: cs[0]="f7c331"; cs[1]="dcc7aa"; cs[2]="6b7a8f"; cs[3]="f7882f"; cs[4]="0007"; cs[5]="f7882f"; break; //amber
-    case 7: cs[0]="fc3"; cs[1]="124"; cs[2]="334"; cs[3]="f1d"; cs[4]="f00"; cs[5]="f1d"; break;//club
-    case 8: cs[0]="0ac"; cs[1]="124"; cs[2]="224"; cs[3]="003eff"; cs[4]="003eff"; cs[5]="003eff"; break;//air
-    case 9: cs[0]="f70"; cs[1]="421"; cs[2]="221"; cs[3]="a50"; cs[4]="f70"; cs[5]="f70"; break;//nixie
-    case 10: cs[0]="2d2"; cs[1]="010"; cs[2]="121"; cs[3]="060"; cs[4]="040"; cs[5]="3f3"; break; //terminal
-    case 11: cs[0]="867ADE"; cs[1]="4033A3"; cs[2]="483AAA"; cs[3]="483AAA"; cs[4]=""; cs[5]="867ADE"; break; //c64
-    case 12: cs[0]="fbe8a6"; cs[1]="d2fdff"; cs[2]="b4dfe5"; cs[3]="f4976c"; cs[4]=""; cs[5]="303c6c"; break; //c64
-    case 14: cs[0]="fc7"; cs[1]="49274a"; cs[2]="94618e"; cs[3]="f4decb"; cs[4]="0008"; cs[5]="f4decb"; break; //end
-    case 15: for (int i=0;i<6;i++)cs[i]=cssCol[i];//custom
-  }
-  cssColorString="<style>:root{--aCol:#";
-  cssColorString+=cs[0];
-  cssColorString+=";--bCol:#";
-  cssColorString+=cs[1];
-  cssColorString+=";--cCol:#";
-  cssColorString+=cs[2];
-  cssColorString+=";--dCol:#";
-  cssColorString+=cs[3];
-  cssColorString+=";--sCol:#";
-  cssColorString+=cs[4];
-  cssColorString+=";--tCol:#";
-  cssColorString+=cs[5];
-  cssColorString+=";--cFn:";
-  cssColorString+=cssFont;
-  cssColorString+=";}";
-}
 
 void serveIndexOrWelcome()
 {
@@ -253,6 +223,22 @@ void serveRealtimeError(bool settings)
   server.send(200, "text/plain", mesg);
 }
 
+
+void getCSSColors()
+{
+  char cs[6][9];
+  getThemeColors(cs);
+  oappend("<style>:root{--aCol:#"); oappend(cs[0]);
+  oappend(";--bCol:#");             oappend(cs[1]);
+  oappend(";--cCol:#");             oappend(cs[2]);
+  oappend(";--dCol:#");             oappend(cs[3]);
+  oappend(";--sCol:#");             oappend(cs[4]);
+  oappend(";--tCol:#");             oappend(cs[5]);
+  oappend(";--cFn:");               oappend(cssFont);
+  oappend(";}");
+}
+
+
 void serveIndex()
 {
   bool serveMobile = false;
@@ -264,26 +250,25 @@ void serveIndex()
     serveRealtimeError(false);
     return;
   }
+
+  //error message is not gzipped
+  #ifdef WLED_DISABLE_MOBILE_UI
+  if (!serveMobile) server.sendHeader("Content-Encoding","gzip");
+  #else
+  server.sendHeader("Content-Encoding","gzip");
+  #endif
   
-  if (serveMobile)
-  {
-    server.setContentLength(strlen_P(PAGE_indexM));
-    server.send(200, "text/html", "");
-    server.sendContent_P(PAGE_indexM);
-  } else
-  {
-    server.setContentLength(strlen_P(PAGE_index0) + cssColorString.length() + strlen_P(PAGE_index1) + strlen_P(PAGE_index2) + strlen_P(PAGE_index3));
-    server.send(200, "text/html", "");
-    server.sendContent_P(PAGE_index0);
-    server.sendContent(cssColorString); 
-    server.sendContent_P(PAGE_index1); 
-    server.sendContent_P(PAGE_index2);
-    server.sendContent_P(PAGE_index3);
-  }
+  server.send_P(200, "text/html",
+                (serveMobile) ? PAGE_indexM   : PAGE_index0,
+                (serveMobile) ? PAGE_indexM_L : PAGE_index0_L);
 }
+
 
 void serveMessage(int code, String headl, String subl="", int optionType)
 {
+  olen = 0;
+  getCSSColors();
+  
   String messageBody = "<h2>";
   messageBody += headl;
   messageBody += "</h2>";
@@ -305,13 +290,14 @@ void serveMessage(int code, String headl, String subl="", int optionType)
     messageBody += "<script>setTimeout(RP," + String((optionType-120)*1000) + ")</script>";
   }
   messageBody += "</body></html>";
-  server.setContentLength(strlen_P(PAGE_msg0) + cssColorString.length() + strlen_P(PAGE_msg1) + messageBody.length());
+  server.setContentLength(strlen_P(PAGE_msg0) + olen + strlen_P(PAGE_msg1) + messageBody.length());
   server.send(code, "text/html", "");
   server.sendContent_P(PAGE_msg0);
-  server.sendContent(cssColorString);
+  server.sendContent(obuf);
   server.sendContent_P(PAGE_msg1);
   server.sendContent(messageBody);
 }
+
 
 void serveSettings(byte subPage)
 {
@@ -337,36 +323,39 @@ void serveSettings(byte subPage)
     case 255: pl0 = strlen_P(PAGE_welcome0); pl1 = strlen_P(PAGE_welcome1); break;
     default: pl0 = strlen_P(PAGE_settings0); pl1 = strlen_P(PAGE_settings1);
   }
+
+  uint16_t sCssLength = (subPage >0 && subPage <7)?strlen_P(PAGE_settingsCss):0;
   
   getSettingsJS(subPage);
-  int sCssLength = (subPage >0 && subPage <7)?strlen_P(PAGE_settingsCss):0;
+
+  getCSSColors();
   
-  server.setContentLength(pl0 + cssColorString.length() + olen + sCssLength + pl1);
+  server.setContentLength(pl0 + olen + sCssLength + pl1);
   server.send(200, "text/html", "");
   
   switch (subPage)
   {
-    case 1: server.sendContent_P(PAGE_settings_wifi0); break;
-    case 2: server.sendContent_P(PAGE_settings_leds0); break;
-    case 3: server.sendContent_P(PAGE_settings_ui0); break;
-    case 4: server.sendContent_P(PAGE_settings_sync0); break;
-    case 5: server.sendContent_P(PAGE_settings_time0); break;
-    case 6: server.sendContent_P(PAGE_settings_sec0); break;
-    case 255: server.sendContent_P(PAGE_welcome0); break;
-    default: server.sendContent_P(PAGE_settings0); 
+    case 1:   server.sendContent_P(PAGE_settings_wifi0); break;
+    case 2:   server.sendContent_P(PAGE_settings_leds0); break;
+    case 3:   server.sendContent_P(PAGE_settings_ui0  ); break;
+    case 4:   server.sendContent_P(PAGE_settings_sync0); break;
+    case 5:   server.sendContent_P(PAGE_settings_time0); break;
+    case 6:   server.sendContent_P(PAGE_settings_sec0 ); break;
+    case 255: server.sendContent_P(PAGE_welcome0      ); break;
+    default:  server.sendContent_P(PAGE_settings0     ); 
   }
   server.sendContent(obuf);
-  server.sendContent(cssColorString);
+
   if (subPage >0 && subPage <7) server.sendContent_P(PAGE_settingsCss);
   switch (subPage)
   {
-    case 1: server.sendContent_P(PAGE_settings_wifi1); break;
-    case 2: server.sendContent_P(PAGE_settings_leds1); break;
-    case 3: server.sendContent_P(PAGE_settings_ui1); break;
-    case 4: server.sendContent_P(PAGE_settings_sync1); break;
-    case 5: server.sendContent_P(PAGE_settings_time1); break;
-    case 6: server.sendContent_P(PAGE_settings_sec1); break;
-    case 255: server.sendContent_P(PAGE_welcome1); break;
-    default: server.sendContent_P(PAGE_settings1); 
+    case 1:   server.sendContent_P(PAGE_settings_wifi1); break;
+    case 2:   server.sendContent_P(PAGE_settings_leds1); break;
+    case 3:   server.sendContent_P(PAGE_settings_ui1  ); break;
+    case 4:   server.sendContent_P(PAGE_settings_sync1); break;
+    case 5:   server.sendContent_P(PAGE_settings_time1); break;
+    case 6:   server.sendContent_P(PAGE_settings_sec1 ); break;
+    case 255: server.sendContent_P(PAGE_welcome1      ); break;
+    default:  server.sendContent_P(PAGE_settings1     ); 
   }
 }

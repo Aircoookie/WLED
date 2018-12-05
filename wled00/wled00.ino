@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.1
+ * @version 0.8.2
  * @author Christian Schwinne
  */
 
@@ -11,21 +11,22 @@
 //ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
 
 //ESP8266-01 (black) has 1MB flash and can thus fit the whole program. Use 1M(64K SPIFFS).
-//If you want the OTA update function though, you need to make sure the sketch is smaller than 479kB.
 //Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
 
-//You are required to disable these two features:
-//#define WLED_DISABLE_MOBILE_UI
-//#define WLED_DISABLE_OTA
+//You are required to disable over-the-air updates:
+#define WLED_DISABLE_OTA
 
 //You need to choose 1-2 of these features to disable:
 //#define WLED_DISABLE_ALEXA
 //#define WLED_DISABLE_BLYNK
 //#define WLED_DISABLE_CRONIXIE
-//#define WLED_DISABLE_HUESYNC
+#define WLED_DISABLE_HUESYNC
+#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
+//#define WLED_DISABLE_MOBILE_UI
 
 //to toggle usb serial debug (un)comment following line(s)
-//#define DEBUG
+//#define WLED_DEBUG
+
 
 //library inclusions
 #include <Arduino.h>
@@ -34,11 +35,19 @@
  #include <ESPmDNS.h>
  #include "src/dependencies/webserver/WebServer.h"
  #include <HTTPClient.h>
+ /*#ifndef WLED_DISABLE_INFRARED
+  #include <IRremote.h>
+ #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
 #else
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
  #include <ESP8266WebServer.h>
  #include <ESP8266HTTPClient.h>
+ #ifndef WLED_DISABLE_INFRARED
+  #include <IRremoteESP8266.h>
+  #include <IRrecv.h>
+  #include <IRutils.h>
+ #endif
 #endif
 
 #include <EEPROM.h>
@@ -56,15 +65,17 @@
 #endif
 #include "src/dependencies/e131/E131.h"
 #include "src/dependencies/pubsubclient/PubSubClient.h"
-#include "htmls00.h"
-#include "htmls01.h"
-#include "htmls02.h"
+#include "html_classic.h"
+#include "html_mobile.h"
+#include "html_settings.h"
+#include "html_other.h"
 #include "WS2812FX.h"
+#include "ir_codes.h"
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1811091
-char versionString[] = "0.8.1";
+#define VERSION 1812052
+char versionString[] = "0.8.2";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -77,9 +88,8 @@ char otaPass[33] = "wledota";
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
-//LED strip pin changeable in NpbWrapper.h. Only change for ESP32
-byte buttonPin = 0;                           //needs pull-up
-byte auxPin = 15;                             //debug feature, use e.g. for external relay with API call AX=
+//LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
+
 byte auxDefaultState   = 0;                   //0: input 1: high 2: low
 byte auxTriggeredState = 0;                   //0: input 1: high 2: low
 char ntpServerName[] = "0.wled.pool.ntp.org"; //NTP server to use
@@ -101,9 +111,10 @@ IPAddress staticDNS(8, 8, 8, 8);              //only for NTP, google DNS server
 
 
 //LED CONFIG
-uint16_t ledCount = 10;                       //lowered to prevent accidental overcurrent                      
+uint16_t ledCount = 30;                       //overcurrent prevented by ABL             
 bool useRGBW = false;                         //SK6812 strips can contain an extra White channel
 bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White channel from RGB
+#define ABL_MILLIAMPS_DEFAULT 850;            //auto lower brightness to stay close to milliampere limit 
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
@@ -144,7 +155,8 @@ bool useHSBDefault = useHSB;
 
 
 //Sync CONFIG
-bool buttonEnabled = true;
+bool buttonEnabled =  true;
+bool irEnabled     = false;                   //Infrared receiver
 
 uint16_t udpPort    = 21324;                  //WLED notifier default port
 uint16_t udpRgbPort = 19446;                  //Hyperion port
@@ -153,7 +165,7 @@ bool receiveNotificationBrightness = true;    //apply brightness from incoming n
 bool receiveNotificationColor      = true;    //apply color
 bool receiveNotificationEffects    = true;    //apply effects setup
 bool notifyDirect =  true;                    //send notification if change via UI or HTTP API
-bool notifyButton =  true;                     
+bool notifyButton =  true;                    //send if updated by button or infrared remote
 bool notifyAlexa  = false;                    //send notification if updated via Alexa
 bool notifyMacro  = false;                    //send notification for macro
 bool notifyHue    =  true;                    //send notification if Hue light changes
@@ -254,6 +266,7 @@ float tperLast = 0;                           //crossfade transition progress, 0
 bool nightlightActive = false;
 bool nightlightActiveOld = false;
 uint32_t nightlightDelayMs = 10;
+uint8_t nightlightDelayMinsDefault = nightlightDelayMins;
 unsigned long nightlightStartTime;
 byte briNlT = 0;                              //current nightlight brightness
 
@@ -287,7 +300,6 @@ bool udpConnected = false, udpRgbConnected = false;
 
 //ui style
 char cssCol[6][9]={"","","","","",""};
-String cssColorString="";
 bool showWelcomePage = false;
 
 //hue
@@ -335,7 +347,7 @@ bool presetCyclingEnabled = false;
 byte presetCycleMin = 1, presetCycleMax = 5;
 uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
-bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
+bool presetApplyBri = false, presetApplyCol = true, presetApplyFx = true;
 bool saveCurrPresetCycConf = false;
 
 //realtime
@@ -376,7 +388,7 @@ unsigned int ntpLocalPort = 2390;
 #define NTP_PACKET_SIZE 48
 
 //string temp buffer
-#define OMAX 1750
+#define OMAX 2000
 char obuf[OMAX];
 uint16_t olen = 0;
 
@@ -403,7 +415,7 @@ E131* e131;
 WS2812FX strip = WS2812FX();
 
 //debug macros
-#ifdef DEBUG
+#ifdef WLED_DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
  #define DEBUG_PRINTLN(x) Serial.println (x)
  #define DEBUG_PRINTF(x) Serial.printf (x)
@@ -493,6 +505,7 @@ void loop() {
   
   yield();
   handleButton();
+  handleIR();
   handleNetworkTime();
   if (!onlyAP)
   {
@@ -519,7 +532,7 @@ void loop() {
   }
   
   //DEBUG serial logging
-  #ifdef DEBUG
+  #ifdef WLED_DEBUG
    if (millis() - debugTime > 5000)
    {
      DEBUG_PRINTLN("---MODULE DEBUG INFO---");

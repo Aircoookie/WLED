@@ -6,7 +6,7 @@
 #define EEPSIZE 3072
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 9
+#define EEPVER 10
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -17,6 +17,8 @@
 //7 -> 0.7.1 and up
 //8 -> 0.8.0-a and up
 //9 -> 0.8.0
+//10-> 0.8.2
+
 
 /*
  * Erase all configuration data
@@ -30,6 +32,7 @@ void clearEEPROM()
   EEPROM.commit();
 }
 
+
 void writeStringToEEPROM(uint16_t pos, char* str, uint16_t len)
 {
   for (int i = 0; i < len; ++i)
@@ -38,6 +41,7 @@ void writeStringToEEPROM(uint16_t pos, char* str, uint16_t len)
     if (str[i] == 0) return;
   }
 }
+
 
 void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
 {
@@ -48,6 +52,7 @@ void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
   }
   str[len] = 0; //make sure every string is properly terminated. str must be at least len +1 big.
 }
+
 
 /*
  * Write configuration to flash
@@ -66,12 +71,12 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(128,     apSSID, 32);
   writeStringToEEPROM(160,     apPass, 64);
 
-  EEPROM.write(224, nightlightDelayMins);
+  EEPROM.write(224, nightlightDelayMinsDefault);
   EEPROM.write(225, nightlightFade);
   EEPROM.write(226, notifyDirectDefault);
   EEPROM.write(227, apChannel);
   EEPROM.write(228, apHide);
-  EEPROM.write(229, (ledCount >> 0) & 0xFF);
+  EEPROM.write(229, ledCount & 0xFF);
   EEPROM.write(230, notifyButton);
   EEPROM.write(231, notifyTwice);
   EEPROM.write(232, buttonEnabled);
@@ -92,7 +97,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(250, receiveNotificationBrightness);
   EEPROM.write(251, fadeTransition);
   EEPROM.write(252, reverseMode);
-  EEPROM.write(253, (transitionDelayDefault >> 0) & 0xFF);
+  EEPROM.write(253, transitionDelayDefault & 0xFF);
   EEPROM.write(254, (transitionDelayDefault >> 8) & 0xFF);
   EEPROM.write(255, briMultiplier);
   
@@ -101,7 +106,7 @@ void saveSettingsToEEPROM()
   
   EEPROM.write(288, nightlightTargetBri);
   EEPROM.write(289, otaLock);
-  EEPROM.write(290, (udpPort >> 0) & 0xFF);
+  EEPROM.write(290, udpPort & 0xFF);
   EEPROM.write(291, (udpPort >> 8) & 0xFF);
   writeStringToEEPROM(292, serverDescription, 32);
   
@@ -138,14 +143,19 @@ void saveSettingsToEEPROM()
   EEPROM.write(380, colSecS[2]);
   EEPROM.write(381, whiteSecS);
   EEPROM.write(382, strip.paletteBlend);
-  
+  EEPROM.write(383, strip.colorOrder);
+
+  EEPROM.write(385, irEnabled);
+
+  EEPROM.write(387, strip.ablMilliampsMax & 0xFF);
+  EEPROM.write(388, (strip.ablMilliampsMax >> 8) & 0xFF);
   EEPROM.write(389, bootPreset);
   EEPROM.write(390, aOtaEnabled);
   EEPROM.write(391, receiveNotificationColor);
   EEPROM.write(392, receiveNotificationEffects);
   EEPROM.write(393, wifiLock);
   
-  EEPROM.write(394, (abs(utcOffsetSecs) >> 0) & 0xFF);
+  EEPROM.write(394, abs(utcOffsetSecs) & 0xFF);
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
   EEPROM.write(397, initLedsLast);
@@ -170,7 +180,7 @@ void saveSettingsToEEPROM()
     EEPROM.write(i, hueIP[i-2050]);
   }
   writeStringToEEPROM(2054, hueApiKey, 46);
-  EEPROM.write(2100, (huePollIntervalMs >> 0) & 0xFF);
+  EEPROM.write(2100, huePollIntervalMs & 0xFF);
   EEPROM.write(2101, (huePollIntervalMs >> 8) & 0xFF);
   EEPROM.write(2102, notifyHue);
   EEPROM.write(2103, hueApplyOnOff);
@@ -205,10 +215,10 @@ void saveSettingsToEEPROM()
   EEPROM.write(2180, macroCountdown);
   EEPROM.write(2181, macroNl);
 
-  EEPROM.write(2190, (e131Universe >> 0) & 0xFF);
+  EEPROM.write(2190, e131Universe & 0xFF);
   EEPROM.write(2191, (e131Universe >> 8) & 0xFF);
   EEPROM.write(2192, e131Multicast);
-  EEPROM.write(2193, (realtimeTimeoutMs >> 0) & 0xFF);
+  EEPROM.write(2193, realtimeTimeoutMs & 0xFF);
   EEPROM.write(2194, (realtimeTimeoutMs >> 8) & 0xFF);
   EEPROM.write(2195, arlsForceMaxBri);
   EEPROM.write(2196, arlsDisableGammaCorrection);
@@ -222,7 +232,7 @@ void saveSettingsToEEPROM()
   if (saveCurrPresetCycConf)
   {
     EEPROM.write(2205, presetCyclingEnabled);
-    EEPROM.write(2206, (presetCycleTime >> 0) & 0xFF);
+    EEPROM.write(2206, presetCycleTime & 0xFF);
     EEPROM.write(2207, (presetCycleTime >> 8) & 0xFF);
     EEPROM.write(2208, presetCycleMin);
     EEPROM.write(2209, presetCycleMax);
@@ -246,8 +256,9 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(2333, mqttDeviceTopic, 32);
   writeStringToEEPROM(2366,  mqttGroupTopic, 32);
   
-  EEPROM.commit();
+  commit();
 }
+
 
 /*
  * Read all configuration from flash
@@ -256,7 +267,9 @@ void loadSettingsFromEEPROM(bool first)
 {
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
+    DEBUG_PRINT("Settings invalid, restoring defaults...");
     saveSettingsToEEPROM();
+    DEBUG_PRINTLN("done");
     return;
   }
   int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
@@ -268,7 +281,8 @@ void loadSettingsFromEEPROM(bool first)
   readStringFromEEPROM(128,     apSSID, 32);
   readStringFromEEPROM(160,     apPass, 64);
 
-  nightlightDelayMins = EEPROM.read(224);
+  nightlightDelayMinsDefault = EEPROM.read(224);
+  nightlightDelayMins = nightlightDelayMinsDefault;
   nightlightFade = EEPROM.read(225);
   notifyDirectDefault = EEPROM.read(226);
   notifyDirect = notifyDirectDefault;
@@ -277,7 +291,7 @@ void loadSettingsFromEEPROM(bool first)
   if (apChannel > 13 || apChannel < 1) apChannel = 1;
   apHide = EEPROM.read(228);
   if (apHide > 1) apHide = 1;
-  ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
+  ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 30;
   
   notifyButton = EEPROM.read(230);
   notifyTwice = EEPROM.read(231);
@@ -307,7 +321,7 @@ void loadSettingsFromEEPROM(bool first)
   receiveNotificationBrightness = EEPROM.read(250);
   fadeTransition = EEPROM.read(251);
   reverseMode = EEPROM.read(252);
-  transitionDelayDefault = ((EEPROM.read(253) << 0) & 0xFF) + ((EEPROM.read(254) << 8) & 0xFF00);
+  transitionDelayDefault = EEPROM.read(253) + ((EEPROM.read(254) << 8) & 0xFF00);
   transitionDelay = transitionDelayDefault;
   briMultiplier = EEPROM.read(255);
 
@@ -315,7 +329,7 @@ void loadSettingsFromEEPROM(bool first)
   
   nightlightTargetBri = EEPROM.read(288);
   otaLock = EEPROM.read(289);
-  udpPort = ((EEPROM.read(290) << 0) & 0xFF) + ((EEPROM.read(291) << 8) & 0xFF00);
+  udpPort = EEPROM.read(290) + ((EEPROM.read(291) << 8) & 0xFF00);
 
   readStringFromEEPROM(292, serverDescription, 32);
   
@@ -377,7 +391,7 @@ void loadSettingsFromEEPROM(bool first)
 
     readStringFromEEPROM(2054, hueApiKey, 46);
     
-    huePollIntervalMs = ((EEPROM.read(2100) << 0) & 0xFF) + ((EEPROM.read(2101) << 8) & 0xFF00);
+    huePollIntervalMs = EEPROM.read(2100) + ((EEPROM.read(2101) << 8) & 0xFF00);
     notifyHue = EEPROM.read(2102);
     hueApplyOnOff = EEPROM.read(2103);
     hueApplyBri = EEPROM.read(2104);
@@ -413,9 +427,9 @@ void loadSettingsFromEEPROM(bool first)
 
   if (lastEEPROMversion > 6)
   {
-    e131Universe = ((EEPROM.read(2190) << 0) & 0xFF) + ((EEPROM.read(2191) << 8) & 0xFF00);
+    e131Universe = EEPROM.read(2190) + ((EEPROM.read(2191) << 8) & 0xFF00);
     e131Multicast = EEPROM.read(2192);
-    realtimeTimeoutMs = ((EEPROM.read(2193) << 0) & 0xFF) + ((EEPROM.read(2194) << 8) & 0xFF00);
+    realtimeTimeoutMs = EEPROM.read(2193) + ((EEPROM.read(2194) << 8) & 0xFF00);
     arlsForceMaxBri = EEPROM.read(2195);
     arlsDisableGammaCorrection = EEPROM.read(2196);
   }
@@ -430,8 +444,8 @@ void loadSettingsFromEEPROM(bool first)
       timerHours[i]   = EEPROM.read(2260 + i);
       timerMinutes[i] = EEPROM.read(2270 + i);
       timerWeekday[i] = EEPROM.read(2280 + i);
+      timerMacro[i]   = EEPROM.read(2290 + i);
       if (timerWeekday[i] == 0) timerWeekday[i] = 255;
-      timerMacro[i]  = EEPROM.read(2290 + i);
     }
   }
 
@@ -440,6 +454,18 @@ void loadSettingsFromEEPROM(bool first)
     readStringFromEEPROM(2300,      mqttServer, 32);
     readStringFromEEPROM(2333, mqttDeviceTopic, 32);
     readStringFromEEPROM(2366,  mqttGroupTopic, 32);
+  }
+
+  if (lastEEPROMversion > 9)
+  {
+    strip.colorOrder = EEPROM.read(383);
+    irEnabled = EEPROM.read(385);
+    strip.ablMilliampsMax = EEPROM.read(387) + ((EEPROM.read(388) << 8) & 0xFF00);
+  } else if (lastEEPROMversion > 1) //ABL is off by default when updating from version older than 0.8.2
+  {
+    strip.ablMilliampsMax = 65000;
+  } else {
+    strip.ablMilliampsMax = ABL_MILLIAMPS_DEFAULT;
   }
   
   receiveDirect = !EEPROM.read(2200);
@@ -457,7 +483,7 @@ void loadSettingsFromEEPROM(bool first)
   if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))
   {
     presetCyclingEnabled = EEPROM.read(2205);
-    presetCycleTime = ((EEPROM.read(2206) << 0) & 0xFF) + ((EEPROM.read(2207) << 8) & 0xFF00);
+    presetCycleTime = EEPROM.read(2206) + ((EEPROM.read(2207) << 8) & 0xFF00);
     presetCycleMin = EEPROM.read(2208);
     presetCycleMax = EEPROM.read(2209);
     presetApplyBri = EEPROM.read(2210);
@@ -467,7 +493,7 @@ void loadSettingsFromEEPROM(bool first)
   
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
-  utcOffsetSecs = ((EEPROM.read(394) << 0) & 0xFF) + ((EEPROM.read(395) << 8) & 0xFF00);
+  utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
   initLedsLast = EEPROM.read(397);
   enableSecTransition = !EEPROM.read(399);
@@ -491,23 +517,24 @@ void loadSettingsFromEEPROM(bool first)
   
   useHSB = useHSBDefault;
 
-  strip.setMode(effectCurrent);
-  strip.setSpeed(effectSpeed);
-  strip.setIntensity(effectIntensity);
-  strip.setPalette(effectPalette);
   overlayCurrent = overlayDefault;
 }
+
 
 //PRESET PROTOCOL 20 bytes
 //0: preset purpose byte 0:invalid 1:valid preset 1.0
 //1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17: fp 18-19:Zeros
 
-void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
+bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool loadFX = true)
 {
-  if (index == 255 || index == 0) loadSettingsFromEEPROM(false);//load boot defaults
-  if (index > 25 || index < 1) return;
+  if (index == 255 || index == 0)
+  {
+    loadSettingsFromEEPROM(false);//load boot defaults
+    return true;
+  }
+  if (index > 25 || index < 1) return false;
   uint16_t i = 380 + index*20;
-  if (EEPROM.read(i) == 0) return;
+  if (EEPROM.read(i) == 0) return false;
   if (loadBri) bri = EEPROM.read(i+1);
   if (loadCol)
   {
@@ -522,16 +549,12 @@ void applyPreset(byte index, bool loadBri, bool loadCol, bool loadFX)
   }
   if (loadFX)
   {
-    byte lastfx = effectCurrent;
     effectCurrent = EEPROM.read(i+10);
     effectSpeed = EEPROM.read(i+11);
     effectIntensity = EEPROM.read(i+16);
     effectPalette = EEPROM.read(i+17);
-    if (lastfx != effectCurrent) strip.setMode(effectCurrent);
-    strip.setSpeed(effectSpeed);
-    strip.setIntensity(effectIntensity);
-    strip.setPalette(effectPalette);
   }
+  return true;
 }
 
 void savePreset(byte index)
@@ -554,8 +577,9 @@ void savePreset(byte index)
   
   EEPROM.write(i+16, effectIntensity);
   EEPROM.write(i+17, effectPalette);
-  EEPROM.commit();
+  commit();
 }
+
 
 String loadMacro(byte index)
 {
@@ -569,6 +593,7 @@ String loadMacro(byte index)
   }
   return m;
 }
+
 
 void applyMacro(byte index)
 {
@@ -588,6 +613,7 @@ void applyMacro(byte index)
   handleSet(mc);
 }
 
+
 void saveMacro(byte index, String mc, bool sing=true) //only commit on single save, not in settings
 {
   index-=1;
@@ -597,5 +623,23 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   {
     EEPROM.write(i, mc.charAt(i-s));
   }
-  if (sing) EEPROM.commit();
+  if (sing) commit();
+}
+
+
+void commit()
+{
+  DEBUG_PRINT("s");
+  //this is to support IR on ESP32, needs work
+  /*#ifdef ARDUINO_ARCH_ESP32
+  portMUX_TYPE mMux = portMUX_INITIALIZER_UNLOCKED;
+  portENTER_CRITICAL(&mMux); 
+  #endif*/
+
+  EEPROM.commit();
+  
+  /*#ifdef ARDUINO_ARCH_ESP32
+  portEXIT_CRITICAL(&mMux);
+  #endif*/
+  DEBUG_PRINT(".");
 }

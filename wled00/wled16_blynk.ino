@@ -66,22 +66,19 @@ BLYNK_WRITE(V3)
 BLYNK_WRITE(V4)
 {
   effectCurrent = param.asInt()-1;//fx
-  strip.setMode(effectCurrent);
-  colorUpdated(6);
+  colorUpdated(9);
 }
 
 BLYNK_WRITE(V5)
 {
   effectSpeed = param.asInt();//sx
-  strip.setSpeed(effectSpeed);
-  colorUpdated(6);
+  colorUpdated(9);
 }
 
 BLYNK_WRITE(V6)
 {
   effectIntensity = param.asInt();//ix
-  strip.setIntensity(effectIntensity);
-  colorUpdated(6);
+  colorUpdated(9);
 }
 
 BLYNK_WRITE(V7)

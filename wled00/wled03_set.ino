@@ -59,7 +59,9 @@ void handleSettingsSet(byte subPage)
     #ifdef ARDUINO_ARCH_ESP32
     if (ledCount > 600) ledCount = 600;
     #endif
+    strip.ablMilliampsMax = server.arg("MA").toInt();
     useRGBW = server.hasArg("EW");
+    strip.colorOrder = server.arg("CO").toInt(); 
     autoRGBtoRGBW = server.hasArg("AW");
 
     //ignore settings and save current brightness, colors and fx as default
@@ -109,7 +111,7 @@ void handleSettingsSet(byte subPage)
     
     nightlightTargetBri = server.arg("TB").toInt();
     t = server.arg("TL").toInt();
-    if (t > 0) nightlightDelayMins = t;
+    if (t > 0) nightlightDelayMinsDefault = t;
     nightlightFade = server.hasArg("TW");
     
     t = server.arg("PB").toInt();
@@ -138,13 +140,13 @@ void handleSettingsSet(byte subPage)
       strcpy(cssCol[i],server.arg(k).c_str());
     }
     strcpy(cssFont,server.arg("CF").c_str());
-    buildCssColorString();
   }
 
   //SYNC
   if (subPage == 4)
   {
     buttonEnabled = server.hasArg("BT");
+    irEnabled = server.hasArg("IR");
     int t = server.arg("UP").toInt();
     if (t > 0) udpPort = t;
     receiveNotificationBrightness = server.hasArg("RB");
@@ -280,7 +282,7 @@ void handleSettingsSet(byte subPage)
     if (server.hasArg("RS")) //complete factory reset
     {
       clearEEPROM();
-      serveMessage(200, "All Settings erased.", "Connect to WLED-AP to setup again...",255);
+      serveMessage(200, "All Settings erased.", "Connect to WLED-AP to setup again",255);
       reset();
     }
 
@@ -309,9 +311,17 @@ void handleSettingsSet(byte subPage)
   if (subPage == 2) strip.init(useRGBW,ledCount,skipFirstLed);
 }
 
+
+//helper to get int value at a position in string
+int getNumVal(String* req, uint16_t pos)
+{
+  return req->substring(pos + 3).toInt();
+}
+
+
+//HTTP API request parser
 bool handleSet(String req)
 {
-  bool effectUpdated = false;
   if (!(req.indexOf("win") >= 0)) return false;
 
   int pos = 0;
@@ -331,7 +341,7 @@ bool handleSet(String req)
     }
     
     pos = req.indexOf("IN");
-    if (pos < 1) XML_response(true);
+    if (pos < 1) XML_response(true, false);
     return true;
     //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
   }
@@ -339,17 +349,17 @@ bool handleSet(String req)
   //set brigthness
   pos = req.indexOf("&A=");
   if (pos > 0) {
-    bri = req.substring(pos + 3).toInt();
+    bri = getNumVal(&req, pos);
   }
 
   //set hue
   pos = req.indexOf("HU=");
   if (pos > 0) {
-    uint16_t temphue = req.substring(pos + 3).toInt();
+    uint16_t temphue = getNumVal(&req, pos);
     byte tempsat = 255;
     pos = req.indexOf("SA=");
     if (pos > 0) {
-      tempsat = req.substring(pos + 3).toInt();
+      tempsat = getNumVal(&req, pos);
     }
     colorHStoRGB(temphue,tempsat,(req.indexOf("H2")>0)? colSec:col);
   }
@@ -357,43 +367,43 @@ bool handleSet(String req)
   //set red value
   pos = req.indexOf("&R=");
   if (pos > 0) {
-    col[0] = req.substring(pos + 3).toInt();
+    col[0] = getNumVal(&req, pos);
   }
   //set green value
   pos = req.indexOf("&G=");
   if (pos > 0) {
-    col[1] = req.substring(pos + 3).toInt();
+    col[1] = getNumVal(&req, pos);
   }
   //set blue value
   pos = req.indexOf("&B=");
   if (pos > 0) {
-    col[2] = req.substring(pos + 3).toInt();
+    col[2] = getNumVal(&req, pos);
   }
   //set white value
   pos = req.indexOf("&W=");
   if (pos > 0) {
-    white = req.substring(pos + 3).toInt();
+    white = getNumVal(&req, pos);
   }
    
   //set 2nd red value
   pos = req.indexOf("R2=");
   if (pos > 0) {
-    colSec[0] = req.substring(pos + 3).toInt();
+    colSec[0] = getNumVal(&req, pos);
   }
   //set 2nd green value
   pos = req.indexOf("G2=");
   if (pos > 0) {
-    colSec[1] = req.substring(pos + 3).toInt();
+    colSec[1] = getNumVal(&req, pos);
   }
   //set 2nd blue value
   pos = req.indexOf("B2=");
   if (pos > 0) {
-    colSec[2] = req.substring(pos + 3).toInt();
+    colSec[2] = getNumVal(&req, pos);
   }
   //set 2nd white value
   pos = req.indexOf("W2=");
   if (pos > 0) {
-    whiteSec = req.substring(pos + 3).toInt();
+    whiteSec = getNumVal(&req, pos);
   }
    
   //set color from HEX or 32bit DEC
@@ -433,7 +443,7 @@ bool handleSet(String req)
   //set to random hue SR=0->1st SR=1->2nd
   pos = req.indexOf("SR");
   if (pos > 0) {
-    _setRandomColor(req.substring(pos + 3).toInt());
+    _setRandomColor(getNumVal(&req, pos));
   }
   //set 2nd to 1st
   pos = req.indexOf("SP");
@@ -461,48 +471,28 @@ bool handleSet(String req)
   //set current effect index
   pos = req.indexOf("FX=");
   if (pos > 0) {
-    if (effectCurrent != req.substring(pos + 3).toInt())
-    {
-      effectCurrent = req.substring(pos + 3).toInt();
-      strip.setMode(effectCurrent);
-      effectUpdated = true;
-    }
+    effectCurrent = getNumVal(&req, pos);
   }
   //set effect speed
   pos = req.indexOf("SX=");
   if (pos > 0) {
-    if (effectSpeed != req.substring(pos + 3).toInt())
-    {
-      effectSpeed = req.substring(pos + 3).toInt();
-      strip.setSpeed(effectSpeed);
-      effectUpdated = true;
-    }
+    effectSpeed = getNumVal(&req, pos);
   }
   //set effect intensity
   pos = req.indexOf("IX=");
   if (pos > 0) {
-    if (effectIntensity != req.substring(pos + 3).toInt())
-    {
-      effectIntensity = req.substring(pos + 3).toInt();
-      strip.setIntensity(effectIntensity);
-      effectUpdated = true;
-    }
+    effectIntensity = req.substring(pos + 3).toInt();
   }
   //set effect palette (only for FastLED effects)
   pos = req.indexOf("FP=");
   if (pos > 0) {
-    if (effectPalette != req.substring(pos + 3).toInt())
-    {
-      effectPalette = req.substring(pos + 3).toInt();
-      strip.setPalette(effectPalette);
-      effectUpdated = true;
-    }
+    effectPalette = req.substring(pos + 3).toInt();
   }
 
   //set hue polling light: 0 -off
   pos = req.indexOf("HP=");
   if (pos > 0) {
-    int id = req.substring(pos + 3).toInt();
+    int id = getNumVal(&req, pos);
     if (id > 0)
     {
       if (id < 100) huePollLightId = id;
@@ -515,21 +505,21 @@ bool handleSet(String req)
   //set default control mode (0 - RGB, 1 - HSB)
   pos = req.indexOf("MD=");
   if (pos > 0) {
-    useHSB = req.substring(pos + 3).toInt();
+    useHSB = getNumVal(&req, pos);
   }
   //set advanced overlay
   pos = req.indexOf("OL=");
   if (pos > 0) {
-    overlayCurrent = req.substring(pos + 3).toInt();
+    overlayCurrent = getNumVal(&req, pos);
     strip.unlockAll();
   }
   //(un)lock pixel (ranges)
   pos = req.indexOf("&L=");
   if (pos > 0){
-    int index = req.substring(pos + 3).toInt();
+    int index = getNumVal(&req, pos);
     pos = req.indexOf("L2=");
     if (pos > 0){
-      int index2 = req.substring(pos + 3).toInt();
+      int index2 = getNumVal(&req, pos);
       if (req.indexOf("UL") > 0)
       {
         strip.unlockRange(index, index2);
@@ -552,7 +542,7 @@ bool handleSet(String req)
   //apply macro
   pos = req.indexOf("&M=");
   if (pos > 0) {
-    applyMacro(req.substring(pos + 3).toInt());
+    applyMacro(getNumVal(&req, pos));
   }
   //toggle send UDP direct notifications
   if (req.indexOf("SN=") > 0)
@@ -586,7 +576,7 @@ bool handleSet(String req)
       bri = briT;
     } else {
       nightlightActive = true;
-      if (!aNlDef) nightlightDelayMins = req.substring(pos + 3).toInt();
+      if (!aNlDef) nightlightDelayMins = getNumVal(&req, pos);
       nightlightStartTime = millis();
     }
   } else if (aNlDef)
@@ -598,7 +588,7 @@ bool handleSet(String req)
   //set nightlight target brightness
   pos = req.indexOf("NT=");
   if (pos > 0) {
-    nightlightTargetBri = req.substring(pos + 3).toInt();
+    nightlightTargetBri = getNumVal(&req, pos);
     nightlightActiveOld = false; //re-init
   }
    
@@ -617,31 +607,24 @@ bool handleSet(String req)
   //toggle general purpose output
   pos = req.indexOf("AX=");
   if (pos > 0) {
-    auxTime = req.substring(pos + 3).toInt();
+    auxTime = getNumVal(&req, pos);
     auxActive = true;
     if (auxTime == 0) auxActive = false;
   }
   pos = req.indexOf("TT=");
   if (pos > 0) {
-    transitionDelay = req.substring(pos + 3).toInt();
+    transitionDelay = getNumVal(&req, pos);
   }
    
   //main toggle on/off
   pos = req.indexOf("&T=");
   if (pos > 0) {
     nightlightActive = false; //always disable nightlight when toggling
-    switch (req.substring(pos + 3).toInt())
+    switch (getNumVal(&req, pos))
     {
       case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off
       case 1: bri = briLast; break; //on
-      default: if (bri == 0) //toggle
-      {
-        bri = briLast;
-      } else
-      {
-        briLast = bri;
-        bri = 0;
-      }
+      default: toggleOnOff(); //toggle
     }
   }
    
@@ -650,22 +633,22 @@ bool handleSet(String req)
   //set time (unix timestamp)
   pos = req.indexOf("ST=");
   if (pos > 0) {
-    setTime(req.substring(pos+3).toInt());
+    setTime(getNumVal(&req, pos));
   }
    
   //set countdown goal (unix timestamp)
   pos = req.indexOf("CT=");
   if (pos > 0) {
-    countdownTime = req.substring(pos+3).toInt();
+    countdownTime = getNumVal(&req, pos);
     if (countdownTime - now() > 0) countdownOverTriggered = false;
   }
    
   //set presets
   pos = req.indexOf("P1="); //sets first preset for cycle
-  if (pos > 0) presetCycleMin = req.substring(pos + 3).toInt();
+  if (pos > 0) presetCycleMin = getNumVal(&req, pos);
   
   pos = req.indexOf("P2="); //sets last preset for cycle
-  if (pos > 0) presetCycleMax = req.substring(pos + 3).toInt();
+  if (pos > 0) presetCycleMax = getNumVal(&req, pos);
    
   if (req.indexOf("CY=") > 0) //preset cycle
   {
@@ -678,7 +661,7 @@ bool handleSet(String req)
   }
   pos = req.indexOf("PT="); //sets cycle time in ms
   if (pos > 0) {
-    int v = req.substring(pos + 3).toInt();
+    int v = getNumVal(&req, pos);
     if (v > 49) presetCycleTime = v;
   }
   if (req.indexOf("PA=") > 0) //apply brightness from preset
@@ -699,12 +682,11 @@ bool handleSet(String req)
   
   pos = req.indexOf("PS="); //saves current in preset
   if (pos > 0) {
-    savePreset(req.substring(pos + 3).toInt());
+    savePreset(getNumVal(&req, pos));
   }
   pos = req.indexOf("PL="); //applies entire preset
   if (pos > 0) {
-    applyPreset(req.substring(pos + 3).toInt(), presetApplyBri, presetApplyCol, presetApplyFx);
-    if (presetApplyFx) effectUpdated = true;
+    applyPreset(getNumVal(&req, pos), presetApplyBri, presetApplyCol, presetApplyFx);
   }
   
   //cronixie
@@ -734,30 +716,20 @@ bool handleSet(String req)
   
   pos = req.indexOf("U0="); //user var 0
   if (pos > 0) {
-    userVar0 = req.substring(pos + 3).toInt();
+    userVar0 = getNumVal(&req, pos);
   }
   pos = req.indexOf("U1="); //user var 1
   if (pos > 0) {
-    userVar1 = req.substring(pos + 3).toInt();
+    userVar1 = getNumVal(&req, pos);
   }
   //you can add more if you need
    
   //internal call, does not send XML response
   pos = req.indexOf("IN");
-  if (pos < 1) XML_response(true);
-  //do not send UDP notifications this time
-  pos = req.indexOf("NN");
-  if (pos > 0)
-  {
-    colorUpdated(5);
-    return true;
-  }
-  if (effectUpdated)
-  {
-    colorUpdated(6);
-  } else
-  {
-    colorUpdated(1);
-  }
+  if (pos < 1) XML_response(true, (req.indexOf("IT") > 0)); //include theme if firstload
+  
+  pos = req.indexOf("NN"); //do not send UDP notifications this time
+  colorUpdated((pos > 0) ? 5:1);
+  
   return true;
 }

@@ -1,6 +1,6 @@
 ![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/development/wled_logo.png)
 
-## Welcome to my project WLED! (v0.8.1)
+## Welcome to my project WLED! (v0.8.2-dev)
 
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
 
@@ -28,6 +28,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Sync to Philips hue lights
 - Adalight (PC ambilight via serial)
 - Sync color of multiple WLED devices (UDP notifier)
+- Infrared remotes (24-key RGB, receiver required)
 - Simple timers/schedules (time from NTP, timezones/DST supported)
 
 ### Quick start guide and documentation:
@@ -37,13 +38,13 @@ See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
 ### Other
 
 Licensed under the MIT license  
-Credits in About page!
+Credits [here](https://github.com/Aircoookie/WLED/wiki/Contributors-&-About)!
 
 Uses Linearicons by Perxis!
 
 Join the Discord [server](https://discord.gg/KuqP7NE) to discuss everything about WLED!  
 You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com).  
-If you insist that you just love WLED too much, you can [send me a gift](https://paypal.me/aircoookie)!
+If WLED really brightens up your every day, you can [send me a small gift](https://paypal.me/aircoookie)!
 
 
 

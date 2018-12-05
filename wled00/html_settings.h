@@ -4,7 +4,7 @@
  
 //common CSS of settings pages
 const char PAGE_settingsCss[] PROGMEM = R"=====(
-body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:3em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}</style>
+body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:4em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}</style>
 )=====";
 
 
@@ -34,7 +34,7 @@ body{text-align:center;background:var(--cCol);height:100%;margin:0;background-at
 //wifi settings
 const char PAGE_settings_wifi0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
+<html><head><meta name="viewport" content="width=500">
 <title>WiFi Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");}function B(){window.history.back();}function GetV(){var d = document;
 )=====";
 
@@ -83,44 +83,63 @@ AP IP: <span class="sip"> Not active </span><hr>
 //LED settings
 const char PAGE_settings_leds0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
-<title>LED Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}function B(){window.history.back();}function GetV(){var d = document;
+<html><head><meta name="viewport" content="width=500">
+<title>LED Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}function B(){window.history.back();}function S(){GetV();UI();}function UI(){
+var myC=document.querySelectorAll('.wc'),l=myC.length;
+for (i = 0; i < l; i++){myC[i].style.display=(document.getElementById('rgbw').checked)?'inline':'none';}
+var val=Math.ceil((100+document.Sf.LC.value*55)/500)/2;
+val=(val>5)?Math.ceil(val):val;var s="";
+if (val<1.1){s="ESP 5V pin with 1A USB supply";}else{s="External 5V ";s+=val;s+="A supply connected to LEDs";}
+document.getElementById('psu').innerHTML=s;document.getElementById('ps2').innerHTML=val+"A = "+val*1000;
+}function GetV(){var d = document;
 )=====";
 
 const char PAGE_settings_leds1[] PROGMEM = R"=====(
 </head>
-<body onload="GetV()">
+<body onload="S()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>LED setup</h2>
-LED count: <input name="LC" type="number" min="1" max="1200" required><br>
-LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW"><br>
-<br>
-Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)<br>
-Turn on after power up/reset: <input type="checkbox" name="BO"><br>
-<br>
+LED count: <input name="LC" type="number" min="1" max="1200" oninput=UI() required><br>
+<i>Recommended power supply for brightest white:</i><br>
+<b><span id="psu">?</span></b><br><br>
+Maximum Current: <input name="MA" type="number" min="250" max="65000" required> mA<br>
+<i>Automatically limits brightness to stay close to the limit.<br>
+Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
+If you are using an external 5V supply, enter its rating.<br>
+"65000" completely diasbles the power calculation.<br>
+(Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
+LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW" onchange=UI() id="rgbw"><br>
+Color order:
+<select name="CO">
+<option value="0">GRB</option>
+<option value="1">RGB</option>
+<option value="2">BRG</option>
+<option value="3">RBG</option></select>
+<h3>Defaults</h3>
+Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br><br>
 Default RGB color:
 <input name="CR" type="number" min="0" max="255" required>
 <input name="CG" type="number" min="0" max="255" required>
 <input name="CB" type="number" min="0" max="255" required><br>
-Default white value (only RGBW): <input name="CW" type="number" min="0" max="255" required><br>
-Auto-calculate white from RGB instead: <input type="checkbox" name="AW"><br>
+<span class="wc">Default white value: <input name="CW" type="number" min="0" max="255" required><br>
+Auto-calculate white from RGB instead: <input type="checkbox" name="AW"><br></span>
 Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br>
 Default effect ID: <input name="FX" type="number" min="0" max="57" required><br>
 Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
 Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br>
 Default effect palette: <input name="FP" type="number" min="0" max="255" required><br>
-Default secondary RGB(W):<br>
+Default secondary RGB<span class="wc">W</span>:<br>
 <input name="SR" type="number" min="0" max="255" required>
 <input name="SG" type="number" min="0" max="255" required>
 <input name="SB" type="number" min="0" max="255" required>
-<input name="SW" type="number" min="0" max="255" required><br>
-Ignore and use current color, brightness and effects: <input type="checkbox" name="IS"><br>
-Save current preset cycle configuration as boot default: <input type="checkbox" name="PC"><br>
-<br>
+<span class="wc"><input name="SW" type="number" min="0" max="255" required></span><br>
+Ignore and use current color, brightness and effects: <input type="checkbox" name="IS"><br><br>
+Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)<br>
+Save current preset cycle configuration as boot default: <input type="checkbox" name="PC"><br><br>
 Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
-Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br>
+Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
 Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
 <h3>Transitions</h3>
 Crossfade: <input type="checkbox" name="TF"><br>
@@ -152,7 +171,7 @@ Skip first LED: <input type="checkbox" name="SL"><hr>
 //User Interface settings
 const char PAGE_settings_ui0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
+<html><head><meta name="viewport" content="width=500">
 <title>UI Settings</title><script>
 function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d = document;
 )=====";
@@ -188,7 +207,7 @@ Color Theme:
 <option value="10">Terminal</option>
 <option value="11">C64</option>
 <option value="12">Easter</option>
-<option value="13">Placeholder</option>
+<option value="13">Christmas</option>
 <option value="14">The End</option>
 <option value="15" id="co">Custom</option>
 </select><br>
@@ -212,7 +231,7 @@ Make sure the font you use is installed on your system!<br>
 //sync settings
 const char PAGE_settings_sync0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head><title>Sync Settings</title>
+<html><head><meta name="viewport" content="width=500"><title>Sync Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}function GetV(){var d = document;
 )=====";
 
@@ -224,7 +243,9 @@ const char PAGE_settings_sync1[] PROGMEM = R"=====(
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
-On/Off button enabled: <input type="checkbox" name="BT">
+On/Off button enabled: <input type="checkbox" name="BT"><br>
+Infrared receiver enabled: <input type="checkbox" name="IR"><br>
+<a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" maxlength="5" size="4"><br>
 Receive <input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects<br>
@@ -248,6 +269,10 @@ Enable UI access during realtime: <input type="checkbox" name="RU"> (can cause i
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
 Alexa invocation name: <input name="AI" maxlength="32">
 <h3>Blynk</h3>
+<b>Blynk, MQTT and Hue sync all connect to external hosts!<br>
+This impacts the responsiveness of the ESP8266.</b><br>
+For best results, only use one of these services at a time.<br>
+(alternatively, connect a second ESP to them and use the UDP sync)<br><br>
 Device Auth token: <input name="BK" maxlength="33"><br>
 <i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
 <h3>MQTT</h3>
@@ -277,7 +302,7 @@ Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 //time and macro settings
 const char PAGE_settings_time0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head><title>Time Settings</title>
+<html><head><meta name="viewport" content="width=500"><title>Time Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function S(){GetV();Cs();}function gId(s){return document.getElementById(s);}function Cs(){gId("cac").style.display="none";gId("coc").style.display="block";gId("ccc").style.display="none";if (gId("ca").selected){gId("cac").style.display="block";}if (gId("cc").selected){gId("coc").style.display="none";gId("ccc").style.display="block";}if (gId("cn").selected){gId("coc").style.display="none";}}function GetV(){var d = document;
 )=====";
 
@@ -329,7 +354,8 @@ Cronixie Display: <input name="CX" maxlength="6"><br>
 Cronixie Backlight: <input type="checkbox" name="CB"><br>
 </div>
 Countdown Mode: <input type="checkbox" name="CE"><br>
-Countdown Goal: Year: 20 <input name="CY" type="number" min="0" max="99" required> Month: <input name="CI" type="number" min="1" max="12" required> Day: <input name="CD" type="number" min="1" max="31" required><br>
+Countdown Goal:<br>
+Year: 20 <input name="CY" type="number" min="0" max="99" required> Month: <input name="CI" type="number" min="1" max="12" required> Day: <input name="CD" type="number" min="1" max="31" required><br>
 Hour: <input name="CH" type="number" min="0" max="23" required> Minute: <input name="CM" type="number" min="0" max="59" required> Second: <input name="CS" type="number" min="0" max="59" required><br>
 <h3>Advanced Macros</h3>
 Define API macros here:<br>
@@ -382,7 +408,7 @@ Time-Controlled Macros (Hours/Minutes &gt; Macro):<br>
 //security settings and about
 const char PAGE_settings_sec0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
+<html><head><meta name="viewport" content="width=500">
 <title>Misc Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings");}function B(){window.open("/settings","_self");}function U(){window.open("/update","_self");}function GetV(){var d = document;
 )=====";
@@ -411,24 +437,11 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.1<br><br>
-<b>Contributors:</b><br>
-StormPie <i>(Mobile HTML UI)</i><br><br>
-Thank you so much!<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.2<br><br>
+<a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
+A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2018 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
-<b>Uses libraries:</b><br>
-<i>ESP8266/ESP32 Arduino Core</i><br>
-<i><a href="https://github.com/svenihoney/NeoPixelBus" target="_blank">NeoPixelBus</a> by Makuna (svenihoney fork)</i><br>
-<i><a href="https://github.com/FastLED/FastLED/" target="_blank">FastLED</a> library</i><br>
-<i>(ESP32) <a href="https://github.com/bbx10/WebServer_tng" target="_blank">WebServer_tng</a> by bbx10</i><br>
-<i><a href="https://github.com/kitesurfer1404/WS2812FX" target="_blank">WS2812FX</a> by kitesurfer1404 (modified)</i><br>
-<i><a href="https://github.com/JChristensen/Timezone" target="_blank">Timezone</a> library by JChristensen</i><br>
-<i><a href="https://github.com/blynkkk/blynk-library" target="_blank">Blynk</a> library (compacted)</i><br>
-<i><a href="https://github.com/forkineye/E131" target="_blank">E1.31</a> library by forkineye (modified)</i><br>
-<i><a href="https://github.com/knolleary/pubsubclient" target="_blank">PubSubClient</a> by knolleary (modified)</i><br>
-<i><a href="https://github.com/Aircoookie/Espalexa" target="_blank">Espalexa</a> by Aircoookie (modified)</i><br><br>
-<i>UI icons by <a href="https://linearicons.com" target="_blank">Linearicons</a> created by <a href="https://perxis.com" target="_blank">Perxis</a>! (CC-BY-SA 4.0)</i> <br><br>
 Server message: <span class="msg"> Response error! </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 </form>

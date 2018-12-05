@@ -5,7 +5,8 @@
 void wledInit()
 { 
   EEPROM.begin(EEPSIZE);
-  ledCount = ((EEPROM.read(229) << 0) & 0xFF) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 10;
+  ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00); 
+  if (ledCount > 1200 || ledCount == 0) ledCount = 30;
   //RMT eats up too much RAM
   #ifdef ARDUINO_ARCH_ESP32
    if (ledCount > 600) ledCount = 600;
@@ -24,7 +25,6 @@ void wledInit()
   if (!initLedsLast) initStrip();
   DEBUG_PRINT("CSSID: ");
   DEBUG_PRINT(clientSSID);
-  buildCssColorString();
   userBeginPreConnection();
   if (strcmp(clientSSID,"Your_Network") == 0) showWelcomePage = true;
 
@@ -121,9 +121,11 @@ void wledInit()
 
   if (initLedsLast) initStrip();
   userBegin();
+
   if (macroBoot>0) applyMacro(macroBoot);
   Serial.println("Ada");
 }
+
 
 void initStrip()
 {
@@ -133,17 +135,15 @@ void initStrip()
   strip.setColor(0);
   strip.setBrightness(255);
 
-  pinMode(buttonPin, INPUT_PULLUP);
-  pinMode(4,OUTPUT); //this is only needed in special cases
-  digitalWrite(4,LOW);
+  pinMode(BTNPIN, INPUT_PULLUP);
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
 
   //disable button if it is "pressed" unintentionally
-  if(digitalRead(buttonPin) == LOW) buttonEnabled = false;
-
+  if(digitalRead(BTNPIN) == LOW) buttonEnabled = false;
 }
+
 
 void initAP(){
   bool set = apSSID[0];
@@ -151,6 +151,7 @@ void initAP(){
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
   if (!set) apSSID[0] = 0;
 }
+
 
 void initCon()
 {
@@ -230,6 +231,12 @@ void getBuildInfo()
   oappendi(VERSION);
   oappend("\r\neepver: ");
   oappendi(EEPVER);
+  oappend("\r\nesp-core: ");
+  #ifdef ARDUINO_ARCH_ESP32
+  oappend((char*)ESP.getSdkVersion());
+  #else
+  oappend((char*)ESP.getCoreVersion().c_str());
+  #endif
   oappend("\r\nopt: ");
   #ifndef WLED_DISABLE_ALEXA
   oappend("alexa ");
@@ -254,16 +261,16 @@ void getBuildInfo()
   #else
   oappend("\r\nspiffs: false\r\n");
   #endif
-  #ifdef DEBUG
+  #ifdef WLED_DEBUG
   oappend("debug: true\r\n");
   #else
   oappend("debug: false\r\n");
   #endif
   oappend("button-pin: gpio");
-  oappendi(buttonPin);
+  oappendi(BTNPIN);
   oappend("\r\nstrip-pin: gpio");
   oappendi(LEDPIN);
-  oappend("\r\nbrand: wled\r\n");
+  oappend("\r\nbrand: wled");
   oappend("\r\nbuild-type: src\r\n");
 }
 

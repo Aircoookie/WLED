@@ -5,7 +5,7 @@
 void parseMQTTBriPayload(char* payload)
 {
   if      (strcmp(payload, "ON") == 0) {bri = briLast; colorUpdated(1);}
-  else if (strcmp(payload, "T" ) == 0) {handleSet("win&T=2");}
+  else if (strcmp(payload, "T" ) == 0) {toggleOnOff(); colorUpdated(1);}
   else {
     uint8_t in = strtoul(payload, NULL, 10);
     if (in == 0 && bri > 0) briLast = bri;
@@ -60,7 +60,7 @@ void publishMQTT()
 
   //if you want to use this, increase the MQTT buffer in PubSubClient.h to 350+
   //it will publish the API response to MQTT
-  /*XML_response(false);
+  /*XML_response(false, false);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/v");
   mqtt->publish(subuf, obuf);*/

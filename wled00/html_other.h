@@ -11,7 +11,7 @@ const char PAGE_usermod[] PROGMEM = R"=====(
 //server message
 const char PAGE_msg0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
+<html><head><meta content='width=device-width' name='viewport'>
 <title>WLED Message</title>
 <script>function B(){window.history.back()};function RS(){window.location = "/settings";}function RP(){top.location.href="/";}</script>
 )=====";
@@ -27,12 +27,12 @@ button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-seri
 #ifndef WLED_DISABLE_MOBILE_UI
 const char PAGE_welcome0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
+<html><head><meta content='width=device-width' name='viewport'>
 <title>WLED Welcome!</title>
 )=====";
 
 const char PAGE_welcome1[] PROGMEM = R"=====(
-body{font-family:var(--cFn),sans-serif;text-align:center;background:linear-gradient(var(--bCol),black);height:100%;margin:0;background-repeat:no-repeat;background-attachment: fixed;color: var(--tCol);}svg {fill: var(--dCol);}
+body{font-family:var(--cFn),sans-serif;text-align:center;background:linear-gradient(var(--bCol),black);margin:0;background-attachment: fixed;color: var(--tCol);}svg {fill: var(--dCol);}
 </style></head>
 <body>
 <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">

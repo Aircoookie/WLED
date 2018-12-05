@@ -44,9 +44,9 @@
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #include "FastLED.h"
 
-#define DEFAULT_BRIGHTNESS (uint8_t)50
+#define DEFAULT_BRIGHTNESS (uint8_t)127
 #define DEFAULT_MODE       (uint8_t)0
-#define DEFAULT_SPEED      (uint16_t)1000
+#define DEFAULT_SPEED      (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFF0000
 
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -85,7 +85,7 @@
 #define REVERSE      (uint8_t)0x80
 #define IS_REVERSE   ((SEGMENT.options & REVERSE) == REVERSE)
 
-#define MODE_COUNT  76
+#define MODE_COUNT  79
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -164,6 +164,10 @@
 #define FX_MODE_NOISE16_4               73
 #define FX_MODE_COLORTWINKLE            74
 #define FX_MODE_LAKE                    75
+#define FX_MODE_METEOR                  76
+#define FX_MODE_METEOR_SMOOTH           77
+#define FX_MODE_RAILWAY                 78
+
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -268,6 +272,10 @@ class WS2812FX {
       _mode[FX_MODE_NOISE16_4]               = &WS2812FX::mode_noise16_4;
       _mode[FX_MODE_COLORTWINKLE]            = &WS2812FX::mode_colortwinkle;
       _mode[FX_MODE_LAKE]                    = &WS2812FX::mode_lake;
+      _mode[FX_MODE_METEOR]                  = &WS2812FX::mode_meteor;
+      _mode[FX_MODE_METEOR_SMOOTH]           = &WS2812FX::mode_meteor_smooth;
+      _mode[FX_MODE_RAILWAY]                 = &WS2812FX::mode_railway;
+      
 
       _brightness = DEFAULT_BRIGHTNESS;
       _running = false;
@@ -278,8 +286,11 @@ class WS2812FX {
       _segments[0].speed = DEFAULT_SPEED;
       _reverseMode = false;
       _skipFirstMode = false;
+      colorOrder = 0;
       paletteFade = 0;
       paletteBlend = 0;
+      ablMilliampsMax = 750;
+      currentMilliamps = 0;
       _locked = NULL;
       _cronixieDigits = new byte[6];
       bus = new NeoPixelWrapper();
@@ -323,9 +334,13 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void);
 
+    bool
+      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p);
+
     uint8_t
       paletteFade,
       paletteBlend,
+      colorOrder,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
@@ -339,10 +354,6 @@ class WS2812FX {
       getPixelColor(uint16_t),
       getColor(void);
 
-    double
-      getPowerEstimate(uint16_t leds, uint32_t c, byte b),
-      getSafePowerMultiplier(double safeMilliAmps, uint16_t leds, uint32_t c, byte b);
-
     WS2812FX::Segment
       getSegment(void);
 
@@ -354,6 +365,8 @@ class WS2812FX {
 
     // mode helper functions
     uint16_t
+      ablMilliampsMax,
+      currentMilliamps,
       blink(uint32_t, uint32_t, bool strobe, bool),
       color_wipe(uint32_t, uint32_t, bool , bool),
       scan(bool),
@@ -443,6 +456,9 @@ class WS2812FX {
       mode_noise16_4(void),
       mode_colortwinkle(void),
       mode_lake(void),
+      mode_meteor(void),
+      mode_meteor_smooth(void),
+      mode_railway(void),
       mode_lightning(void);
 
   private:
@@ -456,9 +472,6 @@ class WS2812FX {
 
     void handle_palette(void);
     bool modeUsesLock(uint8_t);
-
-    double
-      _cronixieSecMultiplier;
 
     boolean
       _running,
@@ -480,9 +493,9 @@ class WS2812FX {
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
     uint8_t _num_segments = 1;
-    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 20 bytes per element
-      // start, stop, speed, intensity, mode, options, color[]
-      { 0, 7, DEFAULT_SPEED, 128, FX_MODE_STATIC, NO_OPTIONS, {DEFAULT_COLOR}}
+    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 21 bytes per element
+      // start, stop, speed, intensity, palette, mode, options, color[]
+      { 0, 7, DEFAULT_SPEED, 128, 0, FX_MODE_STATIC, NO_OPTIONS, {DEFAULT_COLOR}}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 17 bytes per element
 };
