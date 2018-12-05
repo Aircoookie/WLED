@@ -34,7 +34,7 @@ body{text-align:center;background:var(--cCol);height:100%;margin:0;background-at
 //wifi settings
 const char PAGE_settings_wifi0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
+<html><head><meta name="viewport" content="width=500">
 <title>WiFi Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");}function B(){window.history.back();}function GetV(){var d = document;
 )=====";
 
@@ -83,7 +83,7 @@ AP IP: <span class="sip"> Not active </span><hr>
 //LED settings
 const char PAGE_settings_leds0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
+<html><head><meta name="viewport" content="width=500">
 <title>LED Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}function B(){window.history.back();}function S(){GetV();UI();}function UI(){
 var myC=document.querySelectorAll('.wc'),l=myC.length;
 for (i = 0; i < l; i++){myC[i].style.display=(document.getElementById('rgbw').checked)?'inline':'none';}
@@ -106,7 +106,7 @@ LED count: <input name="LC" type="number" min="1" max="1200" oninput=UI() requir
 <b><span id="psu">?</span></b><br><br>
 Maximum Current: <input name="MA" type="number" min="250" max="65000" required> mA<br>
 <i>Automatically limits brightness to stay close to the limit.<br>
-Keep at under 1A if powering LEDs directly from the ESP 5V pin!<br>
+Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
 If you are using an external 5V supply, enter its rating.<br>
 "65000" completely diasbles the power calculation.<br>
 (Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
@@ -171,7 +171,7 @@ Skip first LED: <input type="checkbox" name="SL"><hr>
 //User Interface settings
 const char PAGE_settings_ui0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
+<html><head><meta name="viewport" content="width=500">
 <title>UI Settings</title><script>
 function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d = document;
 )=====";
@@ -231,7 +231,7 @@ Make sure the font you use is installed on your system!<br>
 //sync settings
 const char PAGE_settings_sync0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head><title>Sync Settings</title>
+<html><head><meta name="viewport" content="width=500"><title>Sync Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}function GetV(){var d = document;
 )=====";
 
@@ -269,6 +269,10 @@ Enable UI access during realtime: <input type="checkbox" name="RU"> (can cause i
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
 Alexa invocation name: <input name="AI" maxlength="32">
 <h3>Blynk</h3>
+<b>Blynk, MQTT and Hue sync all connect to external hosts!<br>
+This impacts the responsiveness of the ESP8266.</b><br>
+For best results, only use one of these services at a time.<br>
+(alternatively, connect a second ESP to them and use the UDP sync)<br><br>
 Device Auth token: <input name="BK" maxlength="33"><br>
 <i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
 <h3>MQTT</h3>
@@ -298,7 +302,7 @@ Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 //time and macro settings
 const char PAGE_settings_time0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head><title>Time Settings</title>
+<html><head><meta name="viewport" content="width=500"><title>Time Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function S(){GetV();Cs();}function gId(s){return document.getElementById(s);}function Cs(){gId("cac").style.display="none";gId("coc").style.display="block";gId("ccc").style.display="none";if (gId("ca").selected){gId("cac").style.display="block";}if (gId("cc").selected){gId("coc").style.display="none";gId("ccc").style.display="block";}if (gId("cn").selected){gId("coc").style.display="none";}}function GetV(){var d = document;
 )=====";
 
@@ -350,7 +354,8 @@ Cronixie Display: <input name="CX" maxlength="6"><br>
 Cronixie Backlight: <input type="checkbox" name="CB"><br>
 </div>
 Countdown Mode: <input type="checkbox" name="CE"><br>
-Countdown Goal: Year: 20 <input name="CY" type="number" min="0" max="99" required> Month: <input name="CI" type="number" min="1" max="12" required> Day: <input name="CD" type="number" min="1" max="31" required><br>
+Countdown Goal:<br>
+Year: 20 <input name="CY" type="number" min="0" max="99" required> Month: <input name="CI" type="number" min="1" max="12" required> Day: <input name="CD" type="number" min="1" max="31" required><br>
 Hour: <input name="CH" type="number" min="0" max="23" required> Minute: <input name="CM" type="number" min="0" max="59" required> Second: <input name="CS" type="number" min="0" max="59" required><br>
 <h3>Advanced Macros</h3>
 Define API macros here:<br>
@@ -403,7 +408,7 @@ Time-Controlled Macros (Hours/Minutes &gt; Macro):<br>
 //security settings and about
 const char PAGE_settings_sec0[] PROGMEM = R"=====(
 <!DOCTYPE html>
-<html><head>
+<html><head><meta name="viewport" content="width=500">
 <title>Misc Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings");}function B(){window.open("/settings","_self");}function U(){window.open("/update","_self");}function GetV(){var d = document;
 )=====";

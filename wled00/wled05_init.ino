@@ -231,6 +231,12 @@ void getBuildInfo()
   oappendi(VERSION);
   oappend("\r\neepver: ");
   oappendi(EEPVER);
+  oappend("\r\nesp-core: ");
+  #ifdef ARDUINO_ARCH_ESP32
+  oappend((char*)ESP.getSdkVersion());
+  #else
+  oappend((char*)ESP.getCoreVersion().c_str());
+  #endif
   oappend("\r\nopt: ");
   #ifndef WLED_DISABLE_ALEXA
   oappend("alexa ");
@@ -265,7 +271,7 @@ void getBuildInfo()
   oappend("\r\nstrip-pin: gpio");
   oappendi(LEDPIN);
   oappend("\r\nbrand: wled");
-  oappend("\r\nbuild-type: dev\r\n");
+  oappend("\r\nbuild-type: src\r\n");
 }
 
 

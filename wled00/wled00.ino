@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.2-dev
+ * @version 0.8.2
  * @author Christian Schwinne
  */
 
@@ -14,14 +14,14 @@
 //Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
 
 //You are required to disable over-the-air updates:
-//#define WLED_DISABLE_OTA
+#define WLED_DISABLE_OTA
 
 //You need to choose 1-2 of these features to disable:
 //#define WLED_DISABLE_ALEXA
 //#define WLED_DISABLE_BLYNK
 //#define WLED_DISABLE_CRONIXIE
-//#define WLED_DISABLE_HUESYNC
-//#define WLED_DISABLE_INFRARED
+#define WLED_DISABLE_HUESYNC
+#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
 //#define WLED_DISABLE_MOBILE_UI
 
 //to toggle usb serial debug (un)comment following line(s)
@@ -74,8 +74,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1812033
-char versionString[] = "0.8.2-dev";
+#define VERSION 1812052
+char versionString[] = "0.8.2";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -347,7 +347,7 @@ bool presetCyclingEnabled = false;
 byte presetCycleMin = 1, presetCycleMax = 5;
 uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
-bool presetApplyBri = true, presetApplyCol = true, presetApplyFx = true;
+bool presetApplyBri = false, presetApplyCol = true, presetApplyFx = true;
 bool saveCurrPresetCycConf = false;
 
 //realtime

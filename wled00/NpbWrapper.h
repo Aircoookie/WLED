@@ -2,7 +2,7 @@
 #ifndef NpbWrapper_h
 #define NpbWrapper_h
 
-//#define WORKAROUND_ESP32_BITBANG
+#define WORKAROUND_ESP32_BITBANG
 //see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
 
 //PIN CONFIGURATION

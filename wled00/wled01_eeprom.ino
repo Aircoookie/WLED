@@ -357,8 +357,6 @@ void loadSettingsFromEEPROM(bool first)
   effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
   //374 - strip.paletteFade
 
-  irEnabled = EEPROM.read(385);
-
   if (lastEEPROMversion > 0) { 
     apWaitTimeSecs = EEPROM.read(375);
     recoveryAPDisabled = EEPROM.read(376);
@@ -456,14 +454,17 @@ void loadSettingsFromEEPROM(bool first)
     readStringFromEEPROM(2300,      mqttServer, 32);
     readStringFromEEPROM(2333, mqttDeviceTopic, 32);
     readStringFromEEPROM(2366,  mqttGroupTopic, 32);
-    strip.colorOrder = EEPROM.read(383);
   }
 
   if (lastEEPROMversion > 9)
   {
+    strip.colorOrder = EEPROM.read(383);
+    irEnabled = EEPROM.read(385);
     strip.ablMilliampsMax = EEPROM.read(387) + ((EEPROM.read(388) << 8) & 0xFF00);
-  } else
+  } else if (lastEEPROMversion > 1) //ABL is off by default when updating from version older than 0.8.2
   {
+    strip.ablMilliampsMax = 65000;
+  } else {
     strip.ablMilliampsMax = ABL_MILLIAMPS_DEFAULT;
   }
   

@@ -2207,7 +2207,7 @@ void WS2812FX::handle_palette(void)
   _segment_index_palette_last = _segment_index;
 
   byte paletteIndex = SEGMENT.palette;
-  if (SEGMENT.mode == FX_MODE_METEOR && SEGMENT.palette == 0) paletteIndex = 4;
+  if ((SEGMENT.mode >= FX_MODE_METEOR) && SEGMENT.palette == 0) paletteIndex = 4;
   
   switch (paletteIndex)
   {
@@ -2652,13 +2652,13 @@ uint16_t WS2812FX::mode_meteor() {
   return SPEED_FORMULA_L;
 }
 
+
 //smooth
 //front ramping (maybe from get color
 //50fps
 //fade each led by a certain range (even ramp possible for sparkling)
 //maybe dim to color[1] at end?
 //_locked 0-15 bg-last 15-240 last-first 240-255 first-bg
-
 
 #define IS_PART_OF_METEOR 245
 // smooth meteor effect
@@ -2668,7 +2668,7 @@ uint16_t WS2812FX::mode_meteor_smooth() {
   byte meteorSize= 1+ SEGMENT_LENGTH / 10;
   uint16_t in = map((SEGMENT_RUNTIME.counter_mode_step >> 6 & 0xFF), 0, 255, SEGMENT.start, SEGMENT.stop);
 
-  byte decayProb = SEGMENT.intensity;
+  byte decayProb = 255 - SEGMENT.intensity;
 
   // fade all leds to colors[1] in LEDs one step
   for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {

@@ -204,10 +204,10 @@
 		function SwFX(s)
 		{
 			var n=Cf.TX.selectedIndex+s;
-			if (n==-1||n==77) return;
+			if (n==-1||n==79) return;
 			Cf.TX.selectedIndex =n;
 			if (n < 0) Cf.TX.selectedIndex = 0;
-			if (n > 76) Cf.TX.selectedIndex = 65;
+			if (n > 78) Cf.TX.selectedIndex = 65;
 			GX();
 		}
 		function TgHSB()
@@ -674,6 +674,8 @@
 				<option value="74">Colortwinkle (74)</option>
 				<option value="75">Lake (75)</option>
 				<option value="76">Meteor (76)</option>
+				<option value="77">Smooth Meteor (77)</option>
+				<option value="78">Railway (78)</option>
 			</select><br><br>
 			Set secondary color to 
 			<button type="button" onclick="CS(0)">White</button>
@@ -746,14 +748,14 @@
 				<svg id="psn" onclick="SwitchPS(1)"><use xlink:href="#lnr-arrow-right-circle"></use></svg>
 				<svg id="pss" onclick="PSIO(true)"><use xlink:href="#lnr-arrow-down-circle"></use></svg>
 				<br><input id="psI" name = "FF" type="number" value="1" min="1" max="25" step="1"><br><br>
-				Click checkmark to apply <input type="checkbox" checked="true" name="BC"> brightness, <input type="checkbox" checked="true" name="CC"> color and <input type="checkbox" checked="true" name="FC"> effects.<br><br>
+				Click checkmark to apply <input type="checkbox" checked name="CC"> color, <input type="checkbox" checked name="FC"> effects and <input type="checkbox" name="BC"> brightness.<br><br>
 				Cycle through presets <input id="cy1" name="P1" type="number" value="1" min="1" max="25" step="1"> to <input id="cy2" name="P2" type="number" value="5" min="1" max="25" step="1">, keep each for <input id="cyT" name="PT" type="number" value="1250" min="50" max="65501" step="1">ms: <input type="checkbox" name="CY" onclick="uCY()"><br><br>
 				<button type="button" onclick="R()">Apply boot config</button><br>
 			</div>
 			<div id="tlN" class="tools">
 				Timed Light<br><br>
 				<svg id="ntb" onclick="TgNl()"><use xlink:href="#lnr-power-switch"></use></svg><br><br>
-				Gradually dim down <input type="checkbox" checked="true" name="NC"><br>
+				Gradually dim down <input type="checkbox" checked name="NC"><br>
 				1st slider sets duration (1-255min), 2nd sets target brightness.
 				<div id="slN" class="sl">
 				<input type="range" title="Duration" class="sds" name="SN" value="60" min="1" max="255" step="1"></div>
