@@ -1,6 +1,6 @@
-![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/development/wled_logo.png)
+![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/master/wled_logo.png)
 
-## Welcome to my project WLED! (v0.8.2-dev)
+## Welcome to my project WLED! (v0.8.2)
 
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
 
@@ -16,6 +16,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Nightlight function (gradually dims down)
 - Full OTA software updatability (HTTP + ArduinoOTA), password protectable
 - Configurable analog clock + support for the Cronixie kit by Diamex
+- Configurable Auto Brightness limit for safer operation
 
 ### Supported light control interfaces:
 - HTTP request API
