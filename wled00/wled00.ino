@@ -74,7 +74,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1812052
+#define VERSION 1812141
 char versionString[] = "0.8.2";
 
 
@@ -271,6 +271,8 @@ unsigned long nightlightStartTime;
 byte briNlT = 0;                              //current nightlight brightness
 
 //brightness
+bool offMode = false;
+unsigned long lastOnTime = 0;
 byte bri = briS;
 byte briOld = 0;
 byte briT = 0;
@@ -528,7 +530,19 @@ void loop() {
       handleHue();
       handleBlynk();
     }
-    if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
+    if (briT) lastOnTime = millis();
+    if (millis() - lastOnTime < 600)
+    {
+      offMode = false;
+      strip.service();
+    } else if (!offMode)
+    {
+      /*#if LEDPIN == 2 //turn off onboard LED
+      pinMode(2, OUTPUT);
+      digitalWrite(2, HIGH);
+      #endif*/
+      offMode = true;
+    }
   }
   
   //DEBUG serial logging

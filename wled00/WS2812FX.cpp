@@ -2582,16 +2582,19 @@ uint16_t WS2812FX::mode_colortwinkle()
       setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
     }
   }
-  
-  if( random8() <= SEGMENT.intensity ) {
-    for (uint8_t times = 0; times < 5; times++) //attempt to spawn a new pixel 5 times
-    {
-      int i = SEGMENT.start + random16(SEGMENT_LENGTH);
-      if(getPixelColor(i) == 0) {
-        fastled_col = ColorFromPalette(currentPalette, random8(), 64, NOBLEND);
-        _locked[i] = true;
-        setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
-        return 20; //only spawn 1 new pixel per frame
+
+  for (uint16_t j = 0; j <= SEGMENT_LENGTH / 50; j++)
+  {
+    if ( random8() <= SEGMENT.intensity ) {
+      for (uint8_t times = 0; times < 5; times++) //attempt to spawn a new pixel 5 times
+      {
+        int i = SEGMENT.start + random16(SEGMENT_LENGTH);
+        if(getPixelColor(i) == 0) {
+          fastled_col = ColorFromPalette(currentPalette, random8(), 64, NOBLEND);
+          _locked[i] = true;
+          setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+          break; //only spawn 1 new pixel per frame per 50 LEDs
+        }
       }
     }
   }
