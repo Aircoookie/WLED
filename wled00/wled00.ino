@@ -51,7 +51,7 @@
 #endif
 
 #include <EEPROM.h>
-#include <WiFiUDP.h>
+#include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
  #include <ArduinoOTA.h>
