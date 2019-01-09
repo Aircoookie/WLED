@@ -24,7 +24,7 @@
 #else //esp8266
  //autoselect the right method depending on strip pin
  #if LEDPIN == 2
-  #define PIXELMETHOD NeoEsp8266Uart800KbpsMethod
+  #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, please update to Neopixelbus v2.4.0+
  #elif LEDPIN == 3
   #define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
  #else

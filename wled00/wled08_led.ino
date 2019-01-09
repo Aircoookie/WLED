@@ -36,7 +36,7 @@ void setAllLeds() {
     }
     whiteSecT = whiteSec;
   }
-  if (autoRGBtoRGBW)
+  if (useRGBW && autoRGBtoRGBW)
   {
     colorRGBtoRGBW(colT,&whiteT);
     colorRGBtoRGBW(colSecT,&whiteSecT);
@@ -87,7 +87,7 @@ bool colorChanged()
 void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
-  //                     6: fx changed 7: hue 8: preset cycle 9: blynk
+  //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
   bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
   if (!colorChanged())
   {
@@ -146,6 +146,9 @@ void colorUpdated(int callMode)
   }
 
   if (callMode == 8) return;
+  #ifndef WLED_DISABLE_ALEXA
+  if (espalexaDevice != nullptr) espalexaDevice->setValue(bri);
+  #endif
   //only update Blynk and mqtt every 2 seconds to reduce lag
   if (millis() - lastInterfaceUpdate <= 2000)
   {

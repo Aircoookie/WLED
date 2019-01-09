@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.2
+ * @version 0.8.3
  * @author Christian Schwinne
  */
 
@@ -60,6 +60,10 @@
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
+#ifndef WLED_DISABLE_ALEXA
+ #define ESPALEXA_MAXDEVICES 1
+ #include "src/dependencies/espalexa/Espalexa.h"
+#endif
 #ifndef WLED_DISABLE_BLYNK
  #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
@@ -74,8 +78,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1812141
-char versionString[] = "0.8.2";
+#define VERSION 1901091
+char versionString[] = "0.8.3-dev";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -370,11 +374,11 @@ unsigned long auxStartTime = 0;
 bool auxActive = false, auxActiveBefore = false;
 
 //alexa udp
-WiFiUDP alexaUDP;
-bool alexaUdpConnected = false;
-IPAddress ipMulti(239, 255, 255, 250);
-unsigned int portMulti = 1900;
 String escapedMac;
+#ifndef WLED_DISABLE_ALEXA
+Espalexa espalexa;
+EspalexaDevice* espalexaDevice;
+#endif
 
 //dns server
 DNSServer dnsServer;
@@ -465,6 +469,7 @@ void serveMessage(int,String,String,int=255);
 void reset()
 {
   briT = 0;
+  delay(250); //enough time to send response to client
   setAllLeds();
   DEBUG_PRINTLN("MODULE RESET");
   ESP.restart();

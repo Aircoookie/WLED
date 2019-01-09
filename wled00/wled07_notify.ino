@@ -16,9 +16,10 @@ void notify(byte callMode, bool followUp=false)
     case 2: if (!notifyButton) return; break;
     case 4: if (!notifyDirect) return; break;
     case 6: if (!notifyDirect) return; break; //fx change
-    case 7: if (!notifyHue) return; break;
+    case 7: if (!notifyHue)    return; break;
     case 8: if (!notifyDirect) return; break;
     case 9: if (!notifyDirect) return; break;
+    case 10: if (!notifyAlexa) return; break;
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];

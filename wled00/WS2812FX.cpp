@@ -42,6 +42,9 @@
 #include "WS2812FX.h"
 #include "palettes.h"
 
+
+#define LED_SKIP_AMOUNT 1
+
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
   if (supportWhite == _rgbwMode && countPixels == _length && _locked != NULL) return;
@@ -49,14 +52,19 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   _rgbwMode = supportWhite;
   _skipFirstMode = skipFirst;
   _length = countPixels;
-  if (_skipFirstMode) _length++;
+  
   uint8_t ty = 1;
   if (supportWhite) ty =2;
-  bus->Begin((NeoPixelType)ty, _length);
+  uint16_t lengthRaw = _length;
+  if (_skipFirstMode) lengthRaw += LED_SKIP_AMOUNT;
+  bus->Begin((NeoPixelType)ty, lengthRaw);
+  
   if (_locked != NULL) delete _locked;
   _locked = new byte[_length];
+  
   _segments[0].start = 0;
   _segments[0].stop = _length -1;
+  
   unlockAll();
   setBrightness(_brightness);
   _running = true;
@@ -119,7 +127,12 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   }
   if (!_cronixieMode)
   {
-    if (_skipFirstMode) {i++;if(i==1)bus->SetPixelColor(i, RgbwColor(0,0,0,0));}
+    if (_skipFirstMode)
+    { 
+      if (i < LED_SKIP_AMOUNT) bus->SetPixelColor(i, RgbwColor(0,0,0,0));
+      i += LED_SKIP_AMOUNT;
+    }
+  
     bus->SetPixelColor(i, RgbwColor(r,g,b,w));
   } else {
     if(i>6)return;
@@ -132,27 +145,28 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       byte w2 = (_segments[0].colors[1] >>24) & 0xFF;
       for (int j=o; j< o+19; j++)
       {
-        bus->SetPixelColor((_skipFirstMode)?j+1:j,RgbwColor(r2,g2,b2,w2));
+        bus->SetPixelColor(j, RgbwColor(r2,g2,b2,w2));
       }
     } else
     {
       for (int j=o; j< o+19; j++)
       {
-        bus->SetPixelColor((_skipFirstMode)?j+1:j,RgbwColor(0,0,0,0));
+        bus->SetPixelColor(j, RgbwColor(0,0,0,0));
       }
     }
+    if (_skipFirstMode) o += LED_SKIP_AMOUNT;
     switch(_cronixieDigits[i])
     {
-      case 0: bus->SetPixelColor((_skipFirstMode)?o+6:o+5,RgbwColor(r,g,b,w)); break;
-      case 1: bus->SetPixelColor((_skipFirstMode)?o+1:o+0,RgbwColor(r,g,b,w)); break;
-      case 2: bus->SetPixelColor((_skipFirstMode)?o+7:o+6,RgbwColor(r,g,b,w)); break;
-      case 3: bus->SetPixelColor((_skipFirstMode)?o+2:o+1,RgbwColor(r,g,b,w)); break;
-      case 4: bus->SetPixelColor((_skipFirstMode)?o+8:o+7,RgbwColor(r,g,b,w)); break;
-      case 5: bus->SetPixelColor((_skipFirstMode)?o+3:o+2,RgbwColor(r,g,b,w)); break;
-      case 6: bus->SetPixelColor((_skipFirstMode)?o+9:o+8,RgbwColor(r,g,b,w)); break;
-      case 7: bus->SetPixelColor((_skipFirstMode)?o+4:o+3,RgbwColor(r,g,b,w)); break;
-      case 8: bus->SetPixelColor((_skipFirstMode)?o+10:o+9,RgbwColor(r,g,b,w)); break;
-      case 9: bus->SetPixelColor((_skipFirstMode)?o+5:o+4,RgbwColor(r,g,b,w)); break;
+      case 0: bus->SetPixelColor(o+5, RgbwColor(r,g,b,w)); break;
+      case 1: bus->SetPixelColor(o+0, RgbwColor(r,g,b,w)); break;
+      case 2: bus->SetPixelColor(o+6, RgbwColor(r,g,b,w)); break;
+      case 3: bus->SetPixelColor(o+1, RgbwColor(r,g,b,w)); break;
+      case 4: bus->SetPixelColor(o+7, RgbwColor(r,g,b,w)); break;
+      case 5: bus->SetPixelColor(o+2, RgbwColor(r,g,b,w)); break;
+      case 6: bus->SetPixelColor(o+8, RgbwColor(r,g,b,w)); break;
+      case 7: bus->SetPixelColor(o+3, RgbwColor(r,g,b,w)); break;
+      case 8: bus->SetPixelColor(o+9, RgbwColor(r,g,b,w)); break;
+      case 9: bus->SetPixelColor(o+4, RgbwColor(r,g,b,w)); break;
     }
   }
 }
@@ -340,7 +354,7 @@ uint32_t WS2812FX::getColor(void) {
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   if (_reverseMode) i = _length- 1 -i;
-  if (_skipFirstMode) i++;
+  if (_skipFirstMode) i += LED_SKIP_AMOUNT;
   if (_cronixieMode)
   {
     if(i>6)return 0;

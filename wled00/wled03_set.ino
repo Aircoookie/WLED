@@ -309,6 +309,7 @@ void handleSettingsSet(byte subPage)
   }
   saveSettingsToEEPROM();
   if (subPage == 2) strip.init(useRGBW,ledCount,skipFirstLed);
+  if (subPage == 4) alexaInit();
 }
 
 

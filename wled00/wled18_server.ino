@@ -178,7 +178,9 @@ void initServer()
     }
     
     if(!handleSet(server.uri())){
-      if(!handleAlexaApiCall(server.uri(),server.arg(0)))
+      #ifndef WLED_DISABLE_ALEXA
+      if(!espalexa.handleAlexaApiCall(server.uri(),server.arg(0)))
+      #endif
       server.send(404, "text/plain", "Not Found");
     }
   });
