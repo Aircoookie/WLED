@@ -16,7 +16,8 @@
 #else
 #include <WProgram.h> 
 #endif
-#include "../time/Time.h"              //http://www.arduino.cc/playground/Code/Time
+
+#include "../time/Time.h"      //http://www.arduino.cc/playground/Code/Time
 
 //convenient constants for dstRules
 enum week_t {Last, First, Second, Third, Fourth}; 
