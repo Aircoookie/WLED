@@ -2689,7 +2689,7 @@ uint16_t WS2812FX::mode_meteor_smooth() {
 
   // fade all leds to colors[1] in LEDs one step
   for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
-    if (_locked[i] != IS_PART_OF_METEOR && _locked[i] != 0 && random8() <= decayProb)
+    if (_locked[i] != 0 && random8() <= decayProb)
     {
       int change = 3 - random8(12); //change each time between -8 and +3
       _locked[i] += change;
@@ -2705,11 +2705,8 @@ uint16_t WS2812FX::mode_meteor_smooth() {
     if(in + j > SEGMENT.stop) {
       index = SEGMENT.start + (in + j - SEGMENT.stop) -1;
     }
-
-    _locked[index] = IS_PART_OF_METEOR;
     setPixelColor(index, color_blend(getPixelColor(index), color_from_palette(240, false, true, 255), 48));
-
-    if (j == 0) _locked[index] = 240;//last pixel of meteor
+    _locked[index] = 240;
   }
 
   SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed +1;

@@ -170,6 +170,14 @@ void initServer()
     DEBUG_PRINTLN("URI: " + server.uri());
     DEBUG_PRINTLN("Body: " + server.arg(0));
 
+    //make API CORS compatible
+    if (server.method() == HTTP_OPTIONS)
+    {
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+      server.send(204);
+      return;
+    }
+
     //workaround for subpage issue
     if (server.uri().length() == 1)
     {

@@ -16,6 +16,12 @@ void XML_response(bool isHTTP, bool includeTheme)
    oappendi(col[i]);
    oappend("</cl>");
   }
+  for (int i = 0; i < 3; i++)
+  {
+   oappend("<cs>");
+   oappendi(colSec[i]);
+   oappend("</cs>");
+  }
   
   oappend("<ns>");
   oappendi(notifyDirect);
@@ -43,7 +49,9 @@ void XML_response(bool isHTTP, bool includeTheme)
   } else {
    oappend("-1");
   }
-  oappend("</wv><md>");
+  oappend("</wv><ws>");
+  oappendi(whiteSec);
+  oappend("</ws><md>");
   oappendi(useHSB);
   oappend("</md><ds>");
   oappend(serverDescription);
