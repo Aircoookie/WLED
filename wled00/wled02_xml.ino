@@ -341,6 +341,7 @@ void getSettingsJS(byte subPage)
       k[0] = 'H'; sappend('v',k,timerHours[i]);
       k[0] = 'N'; sappend('v',k,timerMinutes[i]);
       k[0] = 'T'; sappend('v',k,timerMacro[i]);
+      k[0] = 'W'; sappend('v',k,timerWeekday[i]);
     }
   }
 

@@ -273,6 +273,9 @@ void handleSettingsSet(byte subPage)
       
       k[0] = 'T'; //macros
       timerMacro[i] = server.arg(k).toInt();
+
+      k[0] = 'W'; //weekdays
+      timerWeekday[i] = server.arg(k).toInt();
     }
   }
 

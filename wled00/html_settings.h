@@ -4,7 +4,7 @@
  
 //common CSS of settings pages
 const char PAGE_settingsCss[] PROGMEM = R"=====(
-body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:4em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}</style>
+body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:4em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}td{padding:2px;}</style>
 )=====";
 
 
@@ -303,13 +303,16 @@ Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 const char PAGE_settings_time0[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500"><title>Time Settings</title>
-<script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function S(){GetV();Cs();}function gId(s){return document.getElementById(s);}function Cs(){gId("cac").style.display="none";gId("coc").style.display="block";gId("ccc").style.display="none";if (gId("ca").selected){gId("cac").style.display="block";}if (gId("cc").selected){gId("coc").style.display="none";gId("ccc").style.display="block";}if (gId("cn").selected){gId("coc").style.display="none";}}function GetV(){var d = document;
+<script>var d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function S(){BTa();GetV();Cs();FC();}function gId(s){return d.getElementById(s);}function Cs(){gId("cac").style.display="none";gId("coc").style.display="block";gId("ccc").style.display="none";if (gId("ca").selected){gId("cac").style.display="block";}if (gId("cc").selected){gId("coc").style.display="none";gId("ccc").style.display="block";}if (gId("cn").selected){gId("coc").style.display="none";}}
+function BTa(){var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Macro</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";for (i=0;i<8;i++){ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"16\"></td>";for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";}gId("TMT").innerHTML=ih;}
+function FC(){for(j=0;j<8;j++){for(i=0;i<8;i++)gId("W"+i+j).checked=gId("W"+i).value>>j&1;}}
+function Wd(){a=[0,0,0,0,0,0,0,0];for(i=0;i<8;i++){m=1;for(j=0;j<8;j++){a[i]+=gId("W"+i+j).checked*m;m*=2;}gId("W"+i).value=a[i];}}function GetV(){
 )=====";
 
 const char PAGE_settings_time1[] PROGMEM = R"=====(
 </head>
 <body onload="S()">
-<form id="form_s" name="Sf" method="post">
+<form id="form_s" name="Sf" method="post" onsubmit="Wd()">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Time setup</h2>
@@ -381,23 +384,10 @@ Alexa On/Off Macros: <input name="A0" type="number" min="0" max="16" required> <
 Button Macro: <input name="MP" type="number" min="0" max="16" required> Long Press: <input name="ML" type="number" min="0" max="16" required><br>
 Countdown-Over Macro: <input name="MC" type="number" min="0" max="16" required><br>
 Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required><br>
-Time-Controlled Macros (Hours/Minutes &gt; Macro):<br>
-<input name="H0" type="number" min="0" max="24"> <input name="N0" type="number" min="0" max="59">
-&gt; <input name="T0" type="number" min="0" max="16"><br>
-<input name="H1" type="number" min="0" max="24"> <input name="N1" type="number" min="0" max="59">
-&gt; <input name="T1" type="number" min="0" max="16"><br>
-<input name="H2" type="number" min="0" max="24"> <input name="N2" type="number" min="0" max="59">
-&gt; <input name="T2" type="number" min="0" max="16"><br>
-<input name="H3" type="number" min="0" max="24"> <input name="N3" type="number" min="0" max="59">
-&gt; <input name="T3" type="number" min="0" max="16"><br>
-<input name="H4" type="number" min="0" max="24"> <input name="N4" type="number" min="0" max="59">
-&gt; <input name="T4" type="number" min="0" max="16"><br>
-<input name="H5" type="number" min="0" max="24"> <input name="N5" type="number" min="0" max="59">
-&gt; <input name="T5" type="number" min="0" max="16"><br>
-<input name="H6" type="number" min="0" max="24"> <input name="N6" type="number" min="0" max="59">
-&gt; <input name="T6" type="number" min="0" max="16"><br>
-<input name="H7" type="number" min="0" max="24"> <input name="N7" type="number" min="0" max="59">
-&gt; <input name="T7" type="number" min="0" max="16"><hr>
+Time-Controlled Macros:<br>
+<div style="display: inline-block">
+<table id="TMT">
+</table></div><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>

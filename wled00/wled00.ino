@@ -78,7 +78,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1901181
+#define VERSION 1901291
 char versionString[] = "0.8.3-dev";
 
 
@@ -343,7 +343,7 @@ byte timerHours[]   = {0,0,0,0,0,0,0,0};
 byte timerMinutes[] = {0,0,0,0,0,0,0,0};
 byte timerMacro[]   = {0,0,0,0,0,0,0,0};
 byte timerWeekday[] = {255,255,255,255,255,255,255,255}; //weekdays to activate on
-//bit pattern of arr elem: 0b11111111: sat,fri,thu,wed,tue,mon,sun,validity
+//bit pattern of arr elem: 0b11111111: sun,sat,fri,thu,wed,tue,mon,validity
 
 //blynk
 bool blynkEnabled = false;
