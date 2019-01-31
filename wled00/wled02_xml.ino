@@ -68,9 +68,9 @@ void XML_response(bool isHTTP, bool includeTheme)
     oappend(cs[2]);
     oappend("</cc><cd>#");
     oappend(cs[3]);
-    oappend("</cd><cs>#");
+    oappend("</cd><cu>#");
     oappend(cs[4]);
-    oappend("</cs><ct>#");
+    oappend("</cu><ct>#");
     oappend(cs[5]);
     oappend("</ct><cf>");
     oappend(cssFont);

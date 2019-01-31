@@ -6,7 +6,7 @@
 //see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
 
 //PIN CONFIGURATION
-#define LEDPIN 2  //strip pin. Any for ESP32, gpio2 is recommended for ESP8266
+#define LEDPIN 5  //strip pin. Any for ESP32, gpio2 is recommended for ESP8266
 #define BTNPIN 0  //button pin. Needs to have pullup (gpio0 recommended)
 #define IR_PIN 4  //infrared pin.
 #define AUXPIN 15 //unused auxiliary output pin

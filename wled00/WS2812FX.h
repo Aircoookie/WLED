@@ -85,7 +85,7 @@
 #define REVERSE      (uint8_t)0x80
 #define IS_REVERSE   ((SEGMENT.options & REVERSE) == REVERSE)
 
-#define MODE_COUNT  79
+#define MODE_COUNT  80
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -105,8 +105,8 @@
 #define FX_MODE_RUNNING_LIGHTS          15
 #define FX_MODE_TWINKLE                 16
 #define FX_MODE_TWINKLE_RANDOM          17
-#define FX_MODE_TWINKLE_FADE            18
-#define FX_MODE_TWINKLE_FADE_RANDOM     19
+#define FX_MODE_DISSOLVE                18
+#define FX_MODE_DISSOLVE_RANDOM         19
 #define FX_MODE_SPARKLE                 20
 #define FX_MODE_FLASH_SPARKLE           21
 #define FX_MODE_HYPER_SPARKLE           22
@@ -167,6 +167,7 @@
 #define FX_MODE_METEOR                  76
 #define FX_MODE_METEOR_SMOOTH           77
 #define FX_MODE_RAILWAY                 78
+#define FX_MODE_RIPPLE                  79
 
 
 class WS2812FX {
@@ -212,8 +213,8 @@ class WS2812FX {
       _mode[FX_MODE_THEATER_CHASE_RAINBOW]   = &WS2812FX::mode_theater_chase_rainbow;
       _mode[FX_MODE_TWINKLE]                 = &WS2812FX::mode_twinkle;
       _mode[FX_MODE_TWINKLE_RANDOM]          = &WS2812FX::mode_twinkle_random;
-      _mode[FX_MODE_TWINKLE_FADE]            = &WS2812FX::mode_twinkle_fade;
-      _mode[FX_MODE_TWINKLE_FADE_RANDOM]     = &WS2812FX::mode_twinkle_fade_random;
+      _mode[FX_MODE_DISSOLVE]                = &WS2812FX::mode_dissolve;
+      _mode[FX_MODE_DISSOLVE_RANDOM]         = &WS2812FX::mode_dissolve_random;
       _mode[FX_MODE_SPARKLE]                 = &WS2812FX::mode_sparkle;
       _mode[FX_MODE_FLASH_SPARKLE]           = &WS2812FX::mode_flash_sparkle;
       _mode[FX_MODE_HYPER_SPARKLE]           = &WS2812FX::mode_hyper_sparkle;
@@ -275,7 +276,7 @@ class WS2812FX {
       _mode[FX_MODE_METEOR]                  = &WS2812FX::mode_meteor;
       _mode[FX_MODE_METEOR_SMOOTH]           = &WS2812FX::mode_meteor_smooth;
       _mode[FX_MODE_RAILWAY]                 = &WS2812FX::mode_railway;
-      
+      _mode[FX_MODE_RIPPLE]                  = &WS2812FX::mode_ripple;
 
       _brightness = DEFAULT_BRIGHTNESS;
       _running = false;
@@ -372,7 +373,7 @@ class WS2812FX {
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
       twinkle(uint32_t),
-      twinkle_fade(uint32_t),
+      dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, uint8_t),
       running(uint32_t, uint32_t),
       fireworks(uint32_t),
@@ -402,8 +403,8 @@ class WS2812FX {
       mode_running_lights(void),
       mode_twinkle(void),
       mode_twinkle_random(void),
-      mode_twinkle_fade(void),
-      mode_twinkle_fade_random(void),
+      mode_dissolve(void),
+      mode_dissolve_random(void),
       mode_sparkle(void),
       mode_flash_sparkle(void),
       mode_hyper_sparkle(void),
@@ -438,6 +439,7 @@ class WS2812FX {
       mode_tricolor_chase(void),
       mode_tricolor_wipe(void),
       mode_tricolor_fade(void),
+      mode_lightning(void),
       mode_icu(void),
       mode_multi_comet(void),
       mode_dual_larson_scanner(void),
@@ -459,7 +461,7 @@ class WS2812FX {
       mode_meteor(void),
       mode_meteor_smooth(void),
       mode_railway(void),
-      mode_lightning(void);
+      mode_ripple(void);
 
   private:
     NeoPixelWrapper *bus;

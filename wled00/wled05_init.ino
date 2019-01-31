@@ -27,7 +27,7 @@ void wledInit()
   DEBUG_PRINT(clientSSID);
   userBeginPreConnection();
   if (strcmp(clientSSID,"Your_Network") == 0) showWelcomePage = true;
-
+  WiFi.persistent(false);
   initCon();
 
   DEBUG_PRINTLN("");
