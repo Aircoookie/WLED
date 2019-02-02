@@ -301,8 +301,6 @@ class WS2812FX {
     void
       init(bool supportWhite, uint16_t countPixels, bool skipFirst),
       service(void),
-      clear(void),
-      strip_off(void),
       fade_out(uint8_t r),
       setMode(uint8_t m),
       setSpeed(uint8_t s),
@@ -473,6 +471,7 @@ class WS2812FX {
     uint8_t _brightness;
 
     void handle_palette(void);
+    void fill(uint32_t);
     bool modeUsesLock(uint8_t);
 
     boolean

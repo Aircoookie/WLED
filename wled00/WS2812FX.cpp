@@ -26,23 +26,15 @@
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-  CHANGELOG
-  2016-05-28   Initial beta release
-  2016-06-03   Code cleanup, minor improvements, new modes
-  2016-06-04   2 new fx, fixed setColor (now also resets _mode_color)
-  2017-02-02   added external trigger functionality (e.g. for sound-to-light)
-  2017-02-02   removed "blackout" on mode, speed or color-change
-  2017-09-26   implemented segment and reverse features
-  2017-11-16   changed speed calc, reduced memory footprint
-  2018-02-24   added hooks for user created custom effects
-  Modified for WLED
+
+  Modified heavily for WLED
 */
 
 
 #include "WS2812FX.h"
 #include "palettes.h"
 
-
+#define IBN 5100
 #define LED_SKIP_AMOUNT 24
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
@@ -91,11 +83,6 @@ void WS2812FX::service() {
     }
     _triggered = false;
   }
-}
-
-void WS2812FX::clear()
-{
-  bus->ClearTo(RgbColor(0));
 }
 
 bool WS2812FX::modeUsesLock(uint8_t m)
@@ -514,29 +501,28 @@ uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint8_t blend) 
   int g2 = (color2 >>  8) & 0xff;
   int b2 =  color2        & 0xff;
 
-  uint32_t w3 = ((w2 * blend) + (w1 * (255 - blend))) / 256;
-  uint32_t r3 = ((r2 * blend) + (r1 * (255 - blend))) / 256;
-  uint32_t g3 = ((g2 * blend) + (g1 * (255 - blend))) / 256;
-  uint32_t b3 = ((b2 * blend) + (b1 * (255 - blend))) / 256;
+  uint32_t w3 = ((w2 * blend) + (w1 * (255 - blend))) >> 8;
+  uint32_t r3 = ((r2 * blend) + (r1 * (255 - blend))) >> 8;
+  uint32_t g3 = ((g2 * blend) + (g1 * (255 - blend))) >> 8;
+  uint32_t b3 = ((b2 * blend) + (b1 * (255 - blend))) >> 8;
 
   return ((w3 << 24) | (r3 << 16) | (g3 << 8) | (b3));
 }
 
+/*
+ * Fills segment with color
+ */
+void WS2812FX::fill(uint32_t c) {
+  for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
+    setPixelColor(i, c);
+  }
+}
 
 /* #####################################################
 #
 #  Color and Blinken Functions
 #
 ##################################################### */
-
-/*
- * Turns everything off. Doh.
- */
-void WS2812FX::strip_off() {
-  clear();
-  show();
-}
-
 
 /*
  * Put a value 0 to 255 in to get a color value.
@@ -562,10 +548,7 @@ uint32_t WS2812FX::color_wheel(uint8_t pos) {
  * Returns a new, random wheel index with a minimum distance of 42 from pos.
  */
 uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
-  uint8_t r = 0;
-  uint8_t x = 0;
-  uint8_t y = 0;
-  uint8_t d = 0;
+  uint8_t r = 0, x = 0, y = 0, d = 0;
 
   while(d < 42) {
     r = random8();
@@ -573,7 +556,6 @@ uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
     y = 255 - x;
     d = min(x, y);
   }
-
   return r;
 }
 
@@ -582,9 +564,7 @@ uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
  * No blinking. Just plain old static light.
  */
 uint16_t WS2812FX::mode_static(void) {
-  for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
-    setPixelColor(i, SEGMENT.colors[0]);
-  }
+  fill(SEGMENT.colors[0]);
   return (SEGMENT_RUNTIME.trans_act == 1) ? 20 : 500;
 }
 
@@ -603,9 +583,7 @@ uint16_t WS2812FX::blink(uint32_t color1, uint32_t color2, bool strobe, bool do_
       setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
     }
   } else {
-    for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
-      setPixelColor(i, color);
-    }
+    fill(color);
   }
 
   if((SEGMENT_RUNTIME.counter_mode_call & 1) == 0) {
@@ -763,10 +741,10 @@ uint16_t WS2812FX::mode_breath(void) {
   if (SEGMENT.palette == 0)
   {
     uint32_t color = SEGMENT.colors[0];
-    uint8_t w = (color >> 24 & 0xFF) * lum / 256;
-    uint8_t r = (color >> 16 & 0xFF) * lum / 256;
-    uint8_t g = (color >>  8 & 0xFF) * lum / 256;
-    uint8_t b = (color       & 0xFF) * lum / 256;
+    uint8_t w = ((color >> 24 & 0xFF) * lum) >> 8;
+    uint8_t r = ((color >> 16 & 0xFF) * lum) >> 8;
+    uint8_t g = ((color >>  8 & 0xFF) * lum) >> 8;
+    uint8_t b = ((color       & 0xFF) * lum) >> 8;
     for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
       setPixelColor(i, r, g, b, w);
     }
@@ -789,7 +767,7 @@ uint16_t WS2812FX::mode_breath(void) {
 uint16_t WS2812FX::mode_fade(void) {
   int lum = SEGMENT_RUNTIME.counter_mode_step;
   if(lum > 255) lum = 511 - lum; // lum = 0 -> 255 -> 0
-
+  
   for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
     setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGMENT.colors[1], lum));
   }
@@ -809,9 +787,7 @@ uint16_t WS2812FX::scan(bool dual)
     SEGMENT_RUNTIME.counter_mode_step = 0;
   }
 
-  for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
-    setPixelColor(i, SEGMENT.colors[1]);
-  }
+  fill(SEGMENT.colors[1]);
 
   int led_offset = SEGMENT_RUNTIME.counter_mode_step - (SEGMENT_LENGTH - 1);
   led_offset = abs(led_offset);
@@ -851,9 +827,7 @@ uint16_t WS2812FX::mode_dual_scan(void) {
  */
 uint16_t WS2812FX::mode_rainbow(void) {
   uint32_t color = color_wheel(SEGMENT_RUNTIME.counter_mode_step);
-  for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
-    setPixelColor(i, color);
-  }
+  fill(color);
 
   SEGMENT_RUNTIME.counter_mode_step = (SEGMENT_RUNTIME.counter_mode_step + 1) & 0xFF;
   return 1 + (((uint32_t)(255 - SEGMENT.speed)) / 5);
@@ -934,9 +908,7 @@ uint16_t WS2812FX::mode_running_lights(void) {
  */
 uint16_t WS2812FX::twinkle(uint32_t color) {
   if(SEGMENT_RUNTIME.counter_mode_step == 0) {
-    for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
-      setPixelColor(i, SEGMENT.colors[1]);
-    }
+    fill(SEGMENT.colors[1]);
     SEGMENT_RUNTIME.counter_mode_step = map(SEGMENT.intensity, 0, 255, 1, SEGMENT_LENGTH); // make sure, at least one LED is on
   }
 
@@ -986,27 +958,23 @@ void WS2812FX::fade_out(uint8_t rate) {
 
   for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
     color = getPixelColor(i);
-    if(rate == 0) { // old fade-to-black algorithm
-      setPixelColor(i, (color >> 1) & 0x7F7F7F7F);
-    } else { // new fade-to-color algorithm
-      int w1 = (color >> 24) & 0xff;
-      int r1 = (color >> 16) & 0xff;
-      int g1 = (color >>  8) & 0xff;
-      int b1 =  color        & 0xff;
+    int w1 = (color >> 24) & 0xff;
+    int r1 = (color >> 16) & 0xff;
+    int g1 = (color >>  8) & 0xff;
+    int b1 =  color        & 0xff;
 
-      int wdelta = (w2 - w1) / mappedRate;
-      int rdelta = (r2 - r1) / mappedRate;
-      int gdelta = (g2 - g1) / mappedRate;
-      int bdelta = (b2 - b1) / mappedRate;
+    int wdelta = (w2 - w1) / mappedRate;
+    int rdelta = (r2 - r1) / mappedRate;
+    int gdelta = (g2 - g1) / mappedRate;
+    int bdelta = (b2 - b1) / mappedRate;
 
-      // if fade isn't complete, make sure delta is at least 1 (fixes rounding issues)
-      wdelta += (w2 == w1) ? 0 : (w2 > w1) ? 1 : -1;
-      rdelta += (r2 == r1) ? 0 : (r2 > r1) ? 1 : -1;
-      gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
-      bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
+    // if fade isn't complete, make sure delta is at least 1 (fixes rounding issues)
+    wdelta += (w2 == w1) ? 0 : (w2 > w1) ? 1 : -1;
+    rdelta += (r2 == r1) ? 0 : (r2 > r1) ? 1 : -1;
+    gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
+    bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
 
-      setPixelColor(i, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
-    }
+    setPixelColor(i, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
   }
 }
 
@@ -1584,13 +1552,13 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
 uint16_t WS2812FX::mode_gradient(void) {
    if (SEGMENT_RUNTIME.counter_mode_call == 0) SEGMENT_RUNTIME.counter_mode_step = 0;
    byte p_w = (SEGMENT.colors[0] & 0xFF000000) >> 24;
-   byte p_r = (SEGMENT.colors[0] & 0x00FF0000) >> 16;
-   byte p_g = (SEGMENT.colors[0] & 0x0000FF00) >>  8;
-   byte p_b = (SEGMENT.colors[0] & 0x000000FF) >>  0;
+   byte p_r = (SEGMENT.colors[0] & 0xFF0000) >> 16;
+   byte p_g = (SEGMENT.colors[0] & 0xFF00) >>  8;
+   byte p_b = SEGMENT.colors[0] & 0xFF;
    byte p_w2 = (SEGMENT.colors[1] & 0xFF000000) >> 24;
-   byte p_r2 = (SEGMENT.colors[1] & 0x00FF0000) >> 16;
-   byte p_g2 = (SEGMENT.colors[1] & 0x0000FF00) >>  8;
-   byte p_b2 = (SEGMENT.colors[1] & 0x000000FF) >>  0;
+   byte p_r2 = (SEGMENT.colors[1] & 0xFF0000) >> 16;
+   byte p_g2 = (SEGMENT.colors[1] & 0xFF00) >>  8;
+   byte p_b2 = SEGMENT.colors[1] & 0xFF;
    byte nw,nr,ng,nb;
    float per,val; //0.0 = sec 1.0 = pri
    float brd = SEGMENT.intensity/2; if (brd <1.0) brd = 1.0;
@@ -1878,10 +1846,7 @@ uint16_t WS2812FX::mode_tricolor_chase(void) {
 uint16_t WS2812FX::mode_icu(void) {
   uint16_t dest = SEGMENT_RUNTIME.counter_mode_step & 0xFFFF;
 
-  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++)
-  {
-    setPixelColor(i, SEGMENT.colors[1]);
-  }
+  fill(SEGMENT.colors[1]);
 
   byte pindex = map(dest, 0, SEGMENT_LENGTH/2, 0, 255);
   uint32_t col = color_from_palette(pindex, false, false, 0);
@@ -2117,10 +2082,7 @@ uint16_t WS2812FX::mode_lightning(void)
     SEGMENT_RUNTIME.aux_param2 = 1;
   }
 
-  for (int i = SEGMENT.start; i <= SEGMENT.stop; i++)
-  {
-    setPixelColor(i,SEGMENT.colors[1]);
-  }
+  fill(SEGMENT.colors[1]);
   
   if (SEGMENT_RUNTIME.aux_param2) {
     for (int i = ledstart; i < ledstart + ledlen; i++)
@@ -2422,7 +2384,7 @@ uint16_t WS2812FX::mode_colorwaves(void)
 
   for ( uint16_t i = SEGMENT.start ; i <= SEGMENT.stop; i++) {
     hue16 += hueinc16;
-    uint8_t hue8 = hue16 / 256;
+    uint8_t hue8 = hue16 >> 8;
     uint16_t h16_128 = hue16 >> 7;
     if ( h16_128 & 0x100) {
       hue8 = 255 - (h16_128 >> 1);
@@ -2650,11 +2612,9 @@ uint16_t WS2812FX::mode_meteor() {
   byte meteorSize= 1+ SEGMENT_LENGTH / 10;
   uint16_t in = SEGMENT.start + SEGMENT_RUNTIME.counter_mode_step;
 
-  byte decayProb = 255 - SEGMENT.intensity;
-
   // fade all leds to colors[1] in LEDs one step
   for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
-    if (random8() <= decayProb)
+    if (random8() <= 255 - SEGMENT.intensity)
     {
       byte meteorTrailDecay = 128 + random8(127);
       _locked[i] = scale8(_locked[i], meteorTrailDecay);
@@ -2685,11 +2645,9 @@ uint16_t WS2812FX::mode_meteor_smooth() {
   byte meteorSize= 1+ SEGMENT_LENGTH / 10;
   uint16_t in = map((SEGMENT_RUNTIME.counter_mode_step >> 6 & 0xFF), 0, 255, SEGMENT.start, SEGMENT.stop);
 
-  byte decayProb = 255 - SEGMENT.intensity;
-
   // fade all leds to colors[1] in LEDs one step
   for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
-    if (_locked[i] != 0 && random8() <= decayProb)
+    if (_locked[i] != 0 && random8() <= 255 - SEGMENT.intensity)
     {
       int change = 3 - random8(12); //change each time between -8 and +3
       _locked[i] += change;
@@ -2749,50 +2707,56 @@ uint16_t WS2812FX::mode_railway()
 //fade duration is random 2-5sec
 //propagation velocity from speed
 //drop rate from intensity
+//? smooth sine instead of shifting +2
 uint16_t WS2812FX::mode_ripple()
 {
-  uint16_t maxripples = SEGMENT_LENGTH / 5;
+  uint16_t maxripples = SEGMENT_LENGTH / 4;
   if (maxripples == 0) return mode_static();
 
-  //set background
-  for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++)
-  {
-    setPixelColor(i, SEGMENT.colors[1]);
-  }
+  fill(SEGMENT.colors[1]);
 
   //draw wave
   for (uint16_t rippleI = 0; rippleI < maxripples; rippleI++)
   {
-    uint16_t storeI = SEGMENT.start + 5*rippleI;
-    uint8_t ripplestate = _locked[storeI];
+    uint16_t storeI = SEGMENT.start + 4*rippleI;
+    uint16_t ripplestate = _locked[storeI];
     if (ripplestate)
     {
-      uint16_t rippleorigin = ((_locked[storeI+2] << 8) & 0xFF00) + _locked[storeI+3];
-      uint8_t rippledur = _locked[storeI+1];
-      uint8_t ripplecolor = _locked[storeI+4];
-      int16_t progress = ripplestate - rippledur -1;
-      int16_t propagation = (progress * (SEGMENT.speed >> 1)) >> 8;
-      int16_t left = rippleorigin - propagation; 
-      int16_t right = rippleorigin +1 + propagation;
-      uint8_t mix = (ripplestate > 127) ? (ripplestate-128)*2 : 0;
-      uint32_t col = color_blend(color_from_palette(ripplecolor, false, false, 255), SEGMENT.colors[1], mix);
-      if (left >= SEGMENT.start) setPixelColor(left, col);
-      if (right <= SEGMENT.stop) setPixelColor(right, col);
-      
-      _locked[storeI]++;
-    } else //randomly create new ripple
-    {
-      if (random16(4096) <= SEGMENT.intensity)
+      uint8_t rippledecay = (SEGMENT.speed >> 4) +1; //faster decay if faster propagation
+      uint16_t rippleorigin = (_locked[storeI+1] << 8) + _locked[storeI+2];
+      uint32_t col = color_from_palette(_locked[storeI+3], false, false, 255);
+      uint16_t propagation = ((ripplestate/rippledecay -1) * SEGMENT.speed);
+      int16_t propI = propagation >> 8;
+      uint8_t propF = propagation & 0xFF;
+      int16_t left = rippleorigin - propI -1;
+      uint8_t amp = (ripplestate < 17) ? triwave8((ripplestate-1)*8) : map(ripplestate,17,255,255,2);
+
+      for (int16_t v = left; v < left +4; v++)
       {
-        _locked[storeI] = random8(120); //vary ripple strenght
-        _locked[storeI+1] = _locked[storeI];
+        uint8_t mag = scale8(cubicwave8((propF>>2)+(v-left)*64), amp);
+        if (v >= SEGMENT.start)
+        {
+          setPixelColor(v, color_blend(getPixelColor(v), col, mag));
+        }
+        int16_t w = left + propI*2 + 3 -(v-left);
+        if (w <= SEGMENT.stop && w >= SEGMENT.start)
+        {
+          setPixelColor(w, color_blend(getPixelColor(w), col, mag));
+        }
+      }  
+      ripplestate += rippledecay;
+      _locked[storeI] = (ripplestate > 254) ? 0 : ripplestate;
+    } else //randomly create new wave
+    {
+      if (random16(IBN + 10000) <= SEGMENT.intensity)
+      {
+        _locked[storeI] = 1;
         uint16_t origin = SEGMENT.start + random16(SEGMENT_LENGTH);
-        _locked[storeI+2] = origin >> 8;
-        _locked[storeI+3] = origin & 0xFF; 
-        _locked[storeI+4] = random8();
+        _locked[storeI+1] = origin >> 8;
+        _locked[storeI+2] = origin & 0xFF; 
+        _locked[storeI+3] = random8();
       }
     }
   }
-
   return 20;
 }
