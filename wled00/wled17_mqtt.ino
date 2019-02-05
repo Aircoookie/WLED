@@ -25,7 +25,7 @@ void callbackMQTT(char* topic, byte* payload, unsigned int length) {
 
   if (strstr(topic, "/col"))
   {
-    colorFromDecOrHexString(col, &white, (char*)payload);
+    colorFromDecOrHexString(col, (char*)payload);
     colorUpdated(1);
   } else if (strstr(topic, "/api"))
   {
@@ -53,7 +53,7 @@ void publishMQTT()
   strcat(subuf, "/g");
   mqtt->publish(subuf, s);
 
-  sprintf(s, "#%X", white*16777216 + col[0]*65536 + col[1]*256 + col[2]);
+  sprintf(s, "#%X", col[3]*16777216 + col[0]*65536 + col[1]*256 + col[2]);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/c");
   mqtt->publish(subuf, s);

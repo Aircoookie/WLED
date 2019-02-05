@@ -68,7 +68,7 @@ void onAlexaChange(byte b, uint32_t color)
     col[0] = ((color >> 16) & 0xFF);
     col[1] = ((color >>  8) & 0xFF);
     col[2] = (color & 0xFF);
-    if (useRGBW) colorRGBtoRGBW(col,&white);
+    if (useRGBW) colorRGBtoRGBW(col);
     colorUpdated(10);
   }
 }

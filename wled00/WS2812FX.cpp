@@ -889,13 +889,23 @@ uint16_t WS2812FX::mode_theater_chase_rainbow(void) {
 
 
 /*
- * Running lights effect with smooth sine transition.
+ * Running lights effect with smooth sine transition base.
  */
-uint16_t WS2812FX::mode_running_lights(void) {
+uint16_t WS2812FX::running_base(bool saw) {
   uint8_t x_scale = SEGMENT.intensity >> 2;
 
   for(uint16_t i=0; i < SEGMENT_LENGTH; i++) {
-    uint8_t s = sin8(i*x_scale + (SEGMENT_RUNTIME.counter_mode_step >> 4));
+    uint8_t s = 0;
+    uint8_t a = i*x_scale - (SEGMENT_RUNTIME.counter_mode_step >> 4);
+    if (saw) {
+      if (a < 16)
+      {
+        a = 192 + a*8;
+      } else {
+        a = map(a,16,255,64,192);
+      }
+    }
+    s = sin8(a);
     setPixelColor(SEGMENT.start + i, color_blend(SEGMENT.colors[1], color_from_palette(SEGMENT.start + i, true, PALETTE_SOLID_WRAP, 0), s));
   }
   SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed;
@@ -904,40 +914,36 @@ uint16_t WS2812FX::mode_running_lights(void) {
 
 
 /*
- * twinkle function
+ * Running lights effect with smooth sine transition.
  */
-uint16_t WS2812FX::twinkle(uint32_t color) {
+uint16_t WS2812FX::mode_running_lights(void) {
+  return running_base(false);
+}
+
+
+/*
+ * Running lights effect with sawtooth transition.
+ */
+uint16_t WS2812FX::mode_saw(void) {
+  return running_base(true);
+}
+
+
+/*
+ * Blink several LEDs in random colors on, reset, repeat.
+ * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
+ */
+uint16_t WS2812FX::mode_twinkle(void) {
   if(SEGMENT_RUNTIME.counter_mode_step == 0) {
     fill(SEGMENT.colors[1]);
     SEGMENT_RUNTIME.counter_mode_step = map(SEGMENT.intensity, 0, 255, 1, SEGMENT_LENGTH); // make sure, at least one LED is on
   }
 
   uint16_t i = SEGMENT.start + random16(SEGMENT_LENGTH);
-  if (color == SEGMENT.colors[0])
-  {
-    setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-  } else {
-    setPixelColor(i, color);
-  }
+  setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
 
   SEGMENT_RUNTIME.counter_mode_step--;
   return 20 + (5 * (uint16_t)(255 - SEGMENT.speed));
-}
-
-/*
- * Blink several LEDs on, reset, repeat.
- * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
- */
-uint16_t WS2812FX::mode_twinkle(void) {
-  return twinkle(SEGMENT.colors[0]);
-}
-
-/*
- * Blink several LEDs in random colors on, reset, repeat.
- * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
- */
-uint16_t WS2812FX::mode_twinkle_random(void) {
-  return twinkle(color_wheel(random8()));
 }
 
 

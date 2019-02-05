@@ -78,7 +78,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902051
+#define VERSION 1902053
 char versionString[] = "0.8.3-dev";
 
 
@@ -122,10 +122,8 @@ bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
-byte colS[]{255, 159, 0};                     //default RGB color
-byte colSecS[]{0, 0, 0};                      //default RGB secondary color
-byte whiteS = 0;                              //default White channel
-byte whiteSecS = 0;                           //default secondary White channel
+byte colS[]{255, 159, 0, 0};                  //default RGB(W) color
+byte colSecS[]{0, 0, 0, 0};                   //default RGB(W) secondary color
 byte briS = 127;                              //default brightness
 byte effectDefault = 0;                   
 byte effectSpeedDefault = 75;
@@ -246,16 +244,14 @@ uint16_t userVar0 = 0, userVar1 = 0;
 
 //internal global variable declarations
 //color
-byte col[]{255, 159, 0};                      //target RGB color
-byte colOld[]{0, 0, 0};                       //color before transition
-byte colT[]{0, 0, 0};                         //current color
-byte colIT[]{0, 0, 0};                        //color that was last sent to LEDs
-byte colSec[]{0, 0, 0};
-byte colSecT[]{0, 0, 0};
-byte colSecOld[]{0, 0, 0};
-byte colSecIT[]{0, 0, 0};
-byte white = whiteS, whiteOld, whiteT, whiteIT;
-byte whiteSec = whiteSecS, whiteSecOld, whiteSecT, whiteSecIT;
+byte col[]{255, 159, 0, 0};                   //target RGB(W) color
+byte colOld[]{0, 0, 0, 0};                    //color before transition
+byte colT[]{0, 0, 0, 0};                      //current color
+byte colIT[]{0, 0, 0, 0};                     //color that was last sent to LEDs
+byte colSec[]{0, 0, 0, 0};
+byte colSecT[]{0, 0, 0, 0};
+byte colSecOld[]{0, 0, 0, 0};
+byte colSecIT[]{0, 0, 0, 0};
 
 byte lastRandomIndex = 0;                     //used to save last random color so the new one is not the same
 

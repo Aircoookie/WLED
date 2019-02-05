@@ -45,12 +45,12 @@ void XML_response(bool isHTTP, bool includeTheme)
   oappendi(effectPalette);
   oappend("</fp><wv>");
   if (useRGBW && !autoRGBtoRGBW) {
-   oappendi(white);
+   oappendi(col[3]);
   } else {
    oappend("-1");
   }
   oappend("</wv><ws>");
-  oappendi(whiteSec);
+  oappendi(colSec[3]);
   oappend("</ws><md>");
   oappendi(useHSB);
   oappend("</md><cy>");
@@ -216,11 +216,11 @@ void getSettingsJS(byte subPage)
     sappend('c',"EW",useRGBW);
     sappend('i',"CO",strip.colorOrder);
     sappend('c',"AW",autoRGBtoRGBW);
-    sappend('v',"CW",whiteS);
+    sappend('v',"CW",colS[3]);
     sappend('v',"SR",colSecS[0]);
     sappend('v',"SG",colSecS[1]);
     sappend('v',"SB",colSecS[2]);
-    sappend('v',"SW",whiteSecS);
+    sappend('v',"SW",colSecS[3]);
     sappend('c',"BO",turnOnAtBoot);
     sappend('v',"BP",bootPreset);
     sappend('v',"FX",effectDefault);

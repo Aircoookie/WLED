@@ -103,8 +103,8 @@
 #define FX_MODE_THEATER_CHASE           13
 #define FX_MODE_THEATER_CHASE_RAINBOW   14
 #define FX_MODE_RUNNING_LIGHTS          15
-#define FX_MODE_TWINKLE                 16
-#define FX_MODE_TWINKLE_RANDOM          17
+#define FX_MODE_SAW                     16
+#define FX_MODE_TWINKLE                 17
 #define FX_MODE_DISSOLVE                18
 #define FX_MODE_DISSOLVE_RANDOM         19
 #define FX_MODE_SPARKLE                 20
@@ -211,8 +211,8 @@ class WS2812FX {
       _mode[FX_MODE_FADE]                    = &WS2812FX::mode_fade;
       _mode[FX_MODE_THEATER_CHASE]           = &WS2812FX::mode_theater_chase;
       _mode[FX_MODE_THEATER_CHASE_RAINBOW]   = &WS2812FX::mode_theater_chase_rainbow;
+      _mode[FX_MODE_SAW]                     = &WS2812FX::mode_saw;
       _mode[FX_MODE_TWINKLE]                 = &WS2812FX::mode_twinkle;
-      _mode[FX_MODE_TWINKLE_RANDOM]          = &WS2812FX::mode_twinkle_random;
       _mode[FX_MODE_DISSOLVE]                = &WS2812FX::mode_dissolve;
       _mode[FX_MODE_DISSOLVE_RANDOM]         = &WS2812FX::mode_dissolve_random;
       _mode[FX_MODE_SPARKLE]                 = &WS2812FX::mode_sparkle;
@@ -370,7 +370,7 @@ class WS2812FX {
       color_wipe(uint32_t, uint32_t, bool , bool),
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
-      twinkle(uint32_t),
+      running_base(bool),
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, uint8_t),
       gradient_base(bool),
@@ -400,8 +400,8 @@ class WS2812FX {
       mode_rainbow(void),
       mode_rainbow_cycle(void),
       mode_running_lights(void),
+      mode_saw(void),
       mode_twinkle(void),
-      mode_twinkle_random(void),
       mode_dissolve(void),
       mode_dissolve_random(void),
       mode_sparkle(void),

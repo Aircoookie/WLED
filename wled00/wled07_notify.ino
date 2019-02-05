@@ -33,12 +33,12 @@ void notify(byte callMode, bool followUp=false)
   udpOut[7] = nightlightDelayMins;
   udpOut[8] = effectCurrent;
   udpOut[9] = effectSpeed;
-  udpOut[10] = white;
+  udpOut[10] = col[3];
   udpOut[11] = 5; //compatibilityVersionByte: 0: old 1: supports white 2: supports secondary color 3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   udpOut[12] = colSec[0];
   udpOut[13] = colSec[1];
   udpOut[14] = colSec[2];
-  udpOut[15] = whiteSec;
+  udpOut[15] = colSec[3];
   udpOut[16] = effectIntensity;
   udpOut[17] = (transitionDelay >> 0) & 0xFF;
   udpOut[18] = (transitionDelay >> 8) & 0xFF;
@@ -168,13 +168,13 @@ void handleNotifications()
         col[2] = udpIn[5];
         if (udpIn[11] > 0) //check if sending modules white val is inteded
         {
-          white = udpIn[10];
+          col[3] = udpIn[10];
           if (udpIn[11] > 1)
           {
             colSec[0] = udpIn[12];
             colSec[1] = udpIn[13];
             colSec[2] = udpIn[14];
-            whiteSec = udpIn[15];
+            colSec[3] = udpIn[15];
           }
         }
       }
