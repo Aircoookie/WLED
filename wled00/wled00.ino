@@ -78,7 +78,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902021
+#define VERSION 1902051
 char versionString[] = "0.8.3-dev";
 
 
@@ -102,7 +102,7 @@ char ntpServerName[] = "0.wled.pool.ntp.org"; //NTP server to use
 //WiFi CONFIG (all these can be changed via web UI, no need to set them here)
 char clientSSID[33] = "Your_Network";
 char clientPass[65] = "";
-char cmDNS[33] = "led";                       //mDNS address (x.local), only for Apple and Windows, if Bonjour installed
+char cmDNS[33] = "x";                         //mDNS address (placeholder, will be replaced by wledXXXXXXXXXXXX.local)
 char apSSID[65] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
 byte apHide = 0;                              //hidden AP SSID

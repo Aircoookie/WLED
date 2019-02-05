@@ -53,7 +53,9 @@ void XML_response(bool isHTTP, bool includeTheme)
   oappendi(whiteSec);
   oappend("</ws><md>");
   oappendi(useHSB);
-  oappend("</md><ds>");
+  oappend("</md><cy>");
+  oappendi(presetCyclingEnabled);
+  oappend("</cy><ds>");
   oappend(serverDescription);
   oappend("</ds>");
   if (includeTheme)

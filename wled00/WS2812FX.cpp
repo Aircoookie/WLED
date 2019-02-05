@@ -892,10 +892,10 @@ uint16_t WS2812FX::mode_theater_chase_rainbow(void) {
  * Running lights effect with smooth sine transition.
  */
 uint16_t WS2812FX::mode_running_lights(void) {
-  uint8_t x_scale = (SEGMENT.intensity >> 3) + (SEGMENT.intensity >> 4);
+  uint8_t x_scale = SEGMENT.intensity >> 2;
 
   for(uint16_t i=0; i < SEGMENT_LENGTH; i++) {
-    uint8_t s = sin8(i*x_scale +(SEGMENT_RUNTIME.counter_mode_step >> 3));
+    uint8_t s = sin8(i*x_scale + (SEGMENT_RUNTIME.counter_mode_step >> 4));
     setPixelColor(SEGMENT.start + i, color_blend(SEGMENT.colors[1], color_from_palette(SEGMENT.start + i, true, PALETTE_SOLID_WRAP, 0), s));
   }
   SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed;
@@ -1547,41 +1547,43 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
 
 
 /*
+ * Gradient run base function
+ */
+uint16_t WS2812FX::gradient_base(bool loading) {
+  if (SEGMENT_RUNTIME.counter_mode_call == 0) SEGMENT_RUNTIME.counter_mode_step = 0;
+  float per,val; //0.0 = sec 1.0 = pri
+  float brd = SEGMENT.intensity;
+  if (!loading) brd = SEGMENT.intensity/2; 
+  if (brd <1.0) brd = 1.0;
+  int pp = SEGMENT_RUNTIME.counter_mode_step;
+  int p1 = pp-SEGMENT_LENGTH;
+  int p2 = pp+SEGMENT_LENGTH;
+  
+  for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++)
+  {
+    if (loading)
+    {
+      val = abs(((i>pp) ? p2:pp) -i);
+    } else {
+      val = min(abs(pp-i),min(abs(p1-i),abs(p2-i)));
+    }
+    per = val/brd;
+    if (per >1.0) per = 1.0;
+    setPixelColor(SEGMENT.start + i, color_blend(SEGMENT.colors[0], color_from_palette(SEGMENT.start + i, true, PALETTE_SOLID_WRAP, 1), per*255));
+  }
+  
+  SEGMENT_RUNTIME.counter_mode_step++;
+  if (SEGMENT_RUNTIME.counter_mode_step > SEGMENT.stop) SEGMENT_RUNTIME.counter_mode_step = SEGMENT.start;
+  if (SEGMENT.speed == 0) SEGMENT_RUNTIME.counter_mode_step = SEGMENT.start + (SEGMENT_LENGTH >> 1);
+  return SPEED_FORMULA_L;
+}
+
+
+/*
  * Gradient run
  */
 uint16_t WS2812FX::mode_gradient(void) {
-   if (SEGMENT_RUNTIME.counter_mode_call == 0) SEGMENT_RUNTIME.counter_mode_step = 0;
-   byte p_w = (SEGMENT.colors[0] & 0xFF000000) >> 24;
-   byte p_r = (SEGMENT.colors[0] & 0xFF0000) >> 16;
-   byte p_g = (SEGMENT.colors[0] & 0xFF00) >>  8;
-   byte p_b = SEGMENT.colors[0] & 0xFF;
-   byte p_w2 = (SEGMENT.colors[1] & 0xFF000000) >> 24;
-   byte p_r2 = (SEGMENT.colors[1] & 0xFF0000) >> 16;
-   byte p_g2 = (SEGMENT.colors[1] & 0xFF00) >>  8;
-   byte p_b2 = SEGMENT.colors[1] & 0xFF;
-   byte nw,nr,ng,nb;
-   float per,val; //0.0 = sec 1.0 = pri
-   float brd = SEGMENT.intensity/2; if (brd <1.0) brd = 1.0;
-   int pp = SEGMENT_RUNTIME.counter_mode_step;
-   int p1 = pp-SEGMENT_LENGTH;
-   int p2 = pp+SEGMENT_LENGTH;
-
-   for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++)
-   {
-       val = min(abs(pp-i),min(abs(p1-i),abs(p2-i)));
-       per = val/brd;
-       if (per >1.0) per = 1.0;
-       nw = p_w+((p_w2 - p_w)*per);
-       nr = p_r+((p_r2 - p_r)*per);
-       ng = p_g+((p_g2 - p_g)*per);
-       nb = p_b+((p_b2 - p_b)*per);
-       setPixelColor(i,nr,ng,nb,nw);
-   }
-
-   SEGMENT_RUNTIME.counter_mode_step++;
-   if (SEGMENT_RUNTIME.counter_mode_step > SEGMENT.stop) SEGMENT_RUNTIME.counter_mode_step = SEGMENT.start;
-   if (SEGMENT.speed == 0) SEGMENT_RUNTIME.counter_mode_step = SEGMENT.start + (SEGMENT_LENGTH >> 1);
-   return SPEED_FORMULA_L;
+  return gradient_base(false);
 }
 
 
@@ -1589,39 +1591,7 @@ uint16_t WS2812FX::mode_gradient(void) {
  * Gradient run with hard transition
  */
 uint16_t WS2812FX::mode_loading(void) {
-   if (SEGMENT_RUNTIME.counter_mode_call == 0) SEGMENT_RUNTIME.counter_mode_step = 0;
-   byte p_w = (SEGMENT.colors[0] & 0xFF000000) >> 24;
-   byte p_r = (SEGMENT.colors[0] & 0x00FF0000) >> 16;
-   byte p_g = (SEGMENT.colors[0] & 0x0000FF00) >>  8;
-   byte p_b = (SEGMENT.colors[0] & 0x000000FF) >>  0;
-   byte p_w2 = (SEGMENT.colors[1] & 0xFF000000) >> 24;
-   byte p_r2 = (SEGMENT.colors[1] & 0x00FF0000) >> 16;
-   byte p_g2 = (SEGMENT.colors[1] & 0x0000FF00) >>  8;
-   byte p_b2 = (SEGMENT.colors[1] & 0x000000FF) >>  0;
-   byte nw,nr,ng,nb;
-   float per,val; //0.0 = sec 1.0 = pri
-   float brd = SEGMENT.intensity; if (brd <1.0) brd = 1.0;
-   int pp = SEGMENT_RUNTIME.counter_mode_step;
-   int p1 = pp+SEGMENT_LENGTH;
-
-   for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++)
-   {
-       pp = SEGMENT_RUNTIME.counter_mode_step;
-       if (i > pp) pp+=SEGMENT_LENGTH;
-       val = abs(pp-i);
-       per = val/brd;
-       if (per >1.0) per = 1.0;
-       nw = p_w+((p_w2 - p_w)*per);
-       nr = p_r+((p_r2 - p_r)*per);
-       ng = p_g+((p_g2 - p_g)*per);
-       nb = p_b+((p_b2 - p_b)*per);
-       setPixelColor(i,nr,ng,nb,nw);
-   }
-
-   SEGMENT_RUNTIME.counter_mode_step++;
-   if (SEGMENT_RUNTIME.counter_mode_step > SEGMENT.stop) SEGMENT_RUNTIME.counter_mode_step = SEGMENT.start;
-   if (SEGMENT.speed == 0) SEGMENT_RUNTIME.counter_mode_step = SEGMENT.stop;
-   return SPEED_FORMULA_L;
+  return gradient_base(true);
 }
 
 
@@ -2276,7 +2246,7 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
   if (SEGMENT.palette == 0 && mcol < 3) return SEGMENT.colors[mcol]; //WS2812FX default
   uint8_t paletteIndex = i;
   if (mapping) paletteIndex = map(i,SEGMENT.start,SEGMENT.stop,0,255);
-  if (!wrap) paletteIndex = map(paletteIndex, 0, 255, 0, 240); //cut off blend at palette "end"
+  if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
   fastled_col = ColorFromPalette( currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);
   return  fastled_col.r*65536 +  fastled_col.g*256 +  fastled_col.b;

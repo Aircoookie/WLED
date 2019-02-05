@@ -11,10 +11,10 @@ void wledInit()
   #ifdef ARDUINO_ARCH_ESP32
    if (ledCount > 600) ledCount = 600;
   #endif
-  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //quick init
-
   Serial.begin(115200);
   Serial.setTimeout(50);
+  
+  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //quick init
   
   #ifdef USEFS
    SPIFFS.begin();
@@ -58,6 +58,11 @@ void wledInit()
   }
 
   prepareIds(); //UUID from MAC (for Alexa and MQTT)
+  if (strcmp(cmDNS,"x") == 0) //fill in unique mdns default
+  {
+    strcpy(cmDNS, "wled-");
+    strcat(cmDNS, escapedMac.c_str());
+  }
   if (mqttDeviceTopic[0] == 0)
   {
     strcpy(mqttDeviceTopic, "wled/");
@@ -108,6 +113,7 @@ void wledInit()
       DEBUG_PRINTLN("mDNS responder started");
       // Add service to MDNS
       MDNS.addService("http", "tcp", 80);
+      MDNS.addService("wled", "tcp", 80);
     }
     if (!initLedsLast) strip.service();
 

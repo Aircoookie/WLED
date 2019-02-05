@@ -476,6 +476,7 @@ bool handleSet(String req)
   pos = req.indexOf("FX=");
   if (pos > 0) {
     effectCurrent = getNumVal(&req, pos);
+    presetCyclingEnabled = false;
   }
   //set effect speed
   pos = req.indexOf("SX=");

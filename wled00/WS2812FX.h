@@ -373,6 +373,7 @@ class WS2812FX {
       twinkle(uint32_t),
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, uint8_t),
+      gradient_base(bool),
       running(uint32_t, uint32_t),
       fireworks(uint32_t),
       tricolor_chase(uint32_t, uint32_t, uint32_t);

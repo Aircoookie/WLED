@@ -187,23 +187,18 @@ void handleTransitions()
       setLedsStandard();
       return;
     }
-    if (tper - tperLast < 0.004)
-    {
-      return;
-    }
+    if (tper - tperLast < 0.004) return;
     tperLast = tper;
-    if (fadeTransition)
+    for (byte i = 0; i<3; i++)
     {
-      for (byte i = 0; i<3; i++)
-      {
-        colT[i] = colOld[i]+((col[i] - colOld[i])*tper);
-        colSecT[i] = colSecOld[i]+((colSec[i] - colSecOld[i])*tper);
-      }
-      whiteT  = whiteOld +((white  - whiteOld )*tper);
-      whiteSecT = whiteSecOld +((whiteSec  - whiteSecOld )*tper);
-      briT    = briOld   +((bri    - briOld   )*tper);
+      colT[i] = colOld[i]+((col[i] - colOld[i])*tper);
+      colSecT[i] = colSecOld[i]+((colSec[i] - colSecOld[i])*tper);
     }
-    if (fadeTransition) setAllLeds();
+    whiteT  = whiteOld +((white  - whiteOld )*tper);
+    whiteSecT = whiteSecOld +((whiteSec  - whiteSecOld )*tper);
+    briT    = briOld   +((bri    - briOld   )*tper);
+    
+    setAllLeds();
   }
 }
 
