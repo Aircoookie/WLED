@@ -35,7 +35,7 @@
 #include "palettes.h"
 
 #define IBN 5100
-#define LED_SKIP_AMOUNT 24
+#define LED_SKIP_AMOUNT 1
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
@@ -906,7 +906,7 @@ uint16_t WS2812FX::running_base(bool saw) {
       }
     }
     s = sin8(a);
-    setPixelColor(SEGMENT.start + i, color_blend(SEGMENT.colors[1], color_from_palette(SEGMENT.start + i, true, PALETTE_SOLID_WRAP, 0), s));
+    setPixelColor(SEGMENT.start + i, color_blend(color_from_palette(SEGMENT.start + i, true, PALETTE_SOLID_WRAP, 0), SEGMENT.colors[1], s));
   }
   SEGMENT_RUNTIME.counter_mode_step += SEGMENT.speed;
   return 20;

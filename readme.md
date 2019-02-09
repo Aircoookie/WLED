@@ -1,11 +1,16 @@
-![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/master/wled_logo.png)
+![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/master/wled_logo.png)   
 
-## Welcome to my project WLED! (v0.8.3-dev)
+[![](https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square)]()
+[![](https://img.shields.io/discord/473448917040758787.svg?colorB=blue&label=discord&style=flat-square)](https://discord.gg/KuqP7NE)
+[![](https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED/wiki)
+[![](https://img.shields.io/badge/app-wled-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED-App)
+
+## Welcome to my project WLED!
 
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
 
 ### Features:
-- WS2812FX library integrated for 75 special effects
+- WS2812FX library integrated for 80 special effects
 - FastLED noise effects and palettes
 - Customizable Mobile and desktop UI with color and effect controls
 - Settings page - configuration over network
@@ -19,6 +24,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Configurable Auto Brightness limit for safer operation
 
 ### Supported light control interfaces:
+- WLED Android app
 - HTTP request API
 - Blynk IoT
 - MQTT
@@ -45,10 +51,4 @@ Uses Linearicons by Perxis!
 
 Join the Discord [server](https://discord.gg/KuqP7NE) to discuss everything about WLED!  
 You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com).  
-If WLED really brightens up your every day, you can [send me a small gift](https://paypal.me/aircoookie)!
-
-
-
-
-
-
+If WLED really brightens up your every day, you can [![](https://img.shields.io/badge/send%20me%20a%20small%20gift-paypal-blue.svg?style=flat-square)](https://paypal.me/aircoookie)
