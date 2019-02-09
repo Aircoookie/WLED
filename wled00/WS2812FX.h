@@ -1,15 +1,7 @@
-//pixelmethod now in NpbWrapper.h
-
 /*
   WS2812FX.h - Library for WS2812 LED effects.
   Harm Aldick - 2016
   www.aldick.org
-  FEATURES
-    * A lot of blinken modes and counting
-    * WS2812FX can be used as drop-in replacement for Adafruit NeoPixel Library
-  NOTES
-    * Uses the Adafruit NeoPixel library. Get it here:
-      https://github.com/adafruit/Adafruit_NeoPixel
   LICENSE
   The MIT License (MIT)
   Copyright (c) 2016  Harm Aldick
@@ -28,11 +20,7 @@
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-  CHANGELOG
-  2016-05-28   Initial beta release
-  2016-06-03   Code cleanup, minor improvements, new modes
-  2016-06-04   2 new fx, fixed setColor (now also resets _mode_color)
-  2017-02-02   added external trigger functionality (e.g. for sound-to-light)
+
   Modified for WLED
 */
 
@@ -285,6 +273,8 @@ class WS2812FX {
       _segments[0].colors[0] = DEFAULT_COLOR;
       _segments[0].start = 0;
       _segments[0].speed = DEFAULT_SPEED;
+      currentPalette = CRGBPalette16(CRGB::Black);
+      targetPalette = CloudColors_p;
       _reverseMode = false;
       _skipFirstMode = false;
       colorOrder = 0;
@@ -466,6 +456,8 @@ class WS2812FX {
     NeoPixelWrapper *bus;
 
     CRGB fastled_from_col(uint32_t);
+    CRGBPalette16 currentPalette;
+    CRGBPalette16 targetPalette;
   
     uint16_t _length;
     uint16_t _rand16seed;
