@@ -2,6 +2,8 @@
  * MQTT communication protocol for home automation
  */
 
+#define WLED_MQTT_PORT 1883
+
 void parseMQTTBriPayload(char* payload)
 {
   if      (strcmp(payload, "ON") == 0) {bri = briLast; colorUpdated(1);}
@@ -111,9 +113,9 @@ bool initMQTT()
   IPAddress mqttIP;
   if (mqttIP.fromString(mqttServer)) //see if server is IP or domain
   {
-    mqtt->setServer(mqttIP,1883);
+    mqtt->setServer(mqttIP, WLED_MQTT_PORT);
   } else {
-    mqtt->setServer(mqttServer,1883);
+    mqtt->setServer(mqttServer, WLED_MQTT_PORT);
   }
   mqtt->setCallback(callbackMQTT);
   DEBUG_PRINTLN("MQTT ready.");

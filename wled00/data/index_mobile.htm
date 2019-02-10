@@ -29,7 +29,7 @@
            100%{background-color:#333}
            }
          .segment{
-			 display: inline-block;
+             display: inline-block;
              height:145px; 
              max-width:250px; 
          }
@@ -37,7 +37,7 @@
              width: 27px;
              height: 27px;
              float: left;
-             border: solid;
+             border: 2px solid white;
              border-radius: 30px;
              padding: 10px;
              margin: 5px;
@@ -49,7 +49,7 @@
              margin: 10px;
              border-color: white;
              color: white;
-             border: solid;
+             border: 2px solid white;
              text-transform: uppercase;
 			 font-family: helvetica;
              font-size: 19px;
@@ -60,7 +60,7 @@
          .mode li a {
              color: white;
              text-decoration: none;
-			 text-transform: none;
+             text-transform: none;
              font-family: helvetica;
              display:block;
          }
@@ -216,14 +216,14 @@
    width:30%;
    float:left;
    text-align:center;
-   border:solid;
+   border: 2px solid white;
    border-color:white;
-     margin: 1px;
-     padding-top: 10px;
-     padding-bottom: 10px;
-     border-radius: 29px;
-     list-style:none;
-     border-radius:30px;
+   margin: 1px;
+   padding-top: 10px;
+   padding-bottom: 10px;
+   border-radius: 29px;
+   list-style:none;
+   border-radius:30px;
   }
   li {
    box-shadow: rgba(255,255,255,0) 0 0 0px;
@@ -303,7 +303,7 @@
 <div class="cC" onclick="pC('#00ffc8');" style="background-color:#00ffc8;">&nbsp;</div>
 <div class="cC" onclick="pC('#08ff00');" style="background-color:#08ff00;">&nbsp;</div>
 </div>
-<div class="row segment" style="height:245px;">
+<div class="row segment" style="height:360px;">
 <div style="height: 46px;">
 <p style="text-align: right; margin-bottom: 5px;">Edit Presets</p>
 <div class="oos" style="float:right;">
@@ -328,8 +328,8 @@
 <div class="cC" onclick="ps(15);">15</div>
 <div class="cC" onclick="ps(16);">16</div>
 </div>
-<div class="row segment" style="height:50px;padding-top:100px; width:280px;">
-<p style="text-align:right;margin-bottom:5px;padding-top:15px;">Cycle Mode</p>
+<div class="row segment" style="height:50px; width:280px;">
+<p style="text-align:right;margin-bottom:5px;">Cycle Mode</p>
 <div class="oos" style="float:right;">
 <input class="oos-chk oos-chk-cy" id="myoos-cy" name="oos-cy" onclick="tC();" type="checkbox"> <label class="oos-label" for="myoos-cy"></label>
 </div>
@@ -350,137 +350,14 @@
 <p id="CDurL" style="margin-bottom: -4px;">Color Transition</p><input id="cycts" max="65000" min="0" step="50" type="range" value="500">
 </div>
 <p>FX Mode</p>
-<ul class="mode" style="margin-top:20px;">
-<li onclick="X(0)">Solid</li>
-<li onclick="X(1)">Blink</li>
-<li onclick="X(2)">Breathe</li>
-<li onclick="X(3)">Wipe</li>
-<li onclick="X(4)">Wipe Random</li>
-<li onclick="X(5)">Random Colors</li>
-<li onclick="X(6)">Sweep</li>
-<li onclick="X(7)">Dynamic</li>
-<li onclick="X(8)">Colorloop</li>
-<li onclick="X(9)">Rainbow</li>
-<li onclick="X(10)">Scan</li>
-<li onclick="X(11)">Double Scan</li>
-<li onclick="X(12)">Fade</li>
-<li onclick="X(13)">Chase</li>
-<li onclick="X(14)">Chase Rainbow</li>
-<li onclick="X(15)">Running</li>
-<li onclick="X(16)">Twinkle</li>
-<li onclick="X(17)">Twinkle Random</li>
-<li onclick="X(18)">Twinkle Fade</li>
-<li onclick="X(19)">Twinkle Random Fade</li>
-<li onclick="X(20)">Sparkle</li>
-<li onclick="X(21)">Dark Sparkle</li>
-<li onclick="X(22)">Dark Sparkle+</li>
-<li onclick="X(23)">Strobe</li>
-<li onclick="X(24)">Strobe Rainbow</li>
-<li onclick="X(25)">Double Strobe</li>
-<li onclick="X(26)">Blink Rainbow</li>
-<li onclick="X(27)">Android</li>
-<li onclick="X(28)">Dark Chase</li>
-<li onclick="X(29)">Dark Chase Random</li>
-<li onclick="X(30)">Dark Chase Rainbow</li>
-<li onclick="X(31)">Chase Flash</li>
-<li onclick="X(32)">Dark Chase Random</li>
-<li onclick="X(33)">Rainbow Runner</li>
-<li onclick="X(34)">Colorful</li>
-<li onclick="X(35)">Traffic Light</li>
-<li onclick="X(36)">Sweep Random</li>
-<li onclick="X(37)">Running 2</li>
-<li onclick="X(38)">Red & Blue</li>
-<li onclick="X(39)">Running 2 Random</li>
-<li onclick="X(40)">Scanner</li>
-<li onclick="X(41)">Lighthouse</li>
-<li onclick="X(42)">Fireworks</li>
-<li onclick="X(43)">Fireworks Random</li>
-<li onclick="X(44)">Merry Christmas</li>
-<li onclick="X(45)">Fire Flicker</li>
-<li onclick="X(46)">Gradient</li>
-<li onclick="X(47)">Loading</li>
-<li onclick="X(48)">In Out</li>
-<li onclick="X(49)">In In</li>
-<li onclick="X(50)">Out Out</li>
-<li onclick="X(51)">Out In</li>
-<li onclick="X(52)">Circus</li>
-<li onclick="X(53)">Halloween</li>
-<li onclick="X(54)">Tri Chase</li>
-<li onclick="X(55)">Tri Wipe</li>
-<li onclick="X(56)">Tri Fade</li>
-<li onclick="X(57)">Lightning</li>
-<li onclick="X(58)">ICU</li>
-<li onclick="X(59)">Multi Comet</li>
-<li onclick="X(60)">Dual Scanner</li>
-<li onclick="X(61)">Random Chase</li>
-<li onclick="X(62)">Oscillate</li>
-<li onclick="X(63)">Pride 2015</li>
-<li onclick="X(64)">Juggle</li>
-<li onclick="X(65)">Palette</li>
-<li onclick="X(66)">Fire 2012</li>
-<li onclick="X(67)">Colorwaves</li>
-<li onclick="X(68)">BPM</li>
-<li onclick="X(69)">Fill Noise 8</li>
-<li onclick="X(70)">Noise 16 1</li>
-<li onclick="X(71)">Noise 16 2</li>
-<li onclick="X(72)">Noise 16 3</li>
-<li onclick="X(73)">Noise 16 4</li>
-<li onclick="X(74)">Colortwinkle</li>
-<li onclick="X(75)">Lake</li>
-<li onclick="X(76)">Meteor</li>
-<li onclick="X(77)">Smooth Meteor</li>
-<li onclick="X(78)">Railway</li></ul>
+<ul class="mode" id="fxl" style="margin-top:20px;">
+Loading...
+</ul>
 <p style="margin-bottom: -4px;">FX Speed</p><input id="sxs" max="255" min="0" type="range" value="128">
 <p style="margin-bottom: -4px;">FX Intensity</p><input id="ixs" max="255" min="0" type="range" value="128">
 <p>FastLED Palette</p>
-<ul class="mode">
-<li onclick="P(0)">Default</li>
-<li onclick="P(1)">Random Cycle</li>
-<li onclick="P(2)">Primary Color Only</li>
-<li onclick="P(3)">Based on Primary</li>
-<li onclick="P(4)">Set Colors Only</li>
-<li onclick="P(5)">Based on Set Colors</li>
-<li onclick="P(6)">Party</li>
-<li onclick="P(7)">Cloud</li>
-<li onclick="P(8)">Lava</li>
-<li onclick="P(9)">Ocean</li>
-<li onclick="P(10)">Forest</li>
-<li onclick="P(11)">Rainbow</li>
-<li onclick="P(12)">Rainbow Stripe</li>
-<li onclick="P(13)">Sunset</li>
-<li onclick="P(14)">Rivendell</li>
-<li onclick="P(15)">Breeze</li>
-<li onclick="P(16)">Red & Blue</li>
-<li onclick="P(17)">Yellowout</li>
-<li onclick="P(18)">Analogous</li>
-<li onclick="P(19)">Splash</li>
-<li onclick="P(20)">Pastel</li>
-<li onclick="P(21)">Sunset2</li>
-<li onclick="P(22)">Beech</li>
-<li onclick="P(23)">Vintage</li>
-<li onclick="P(24)">Departure</li>
-<li onclick="P(25)">Landscape</li>
-<li onclick="P(26)">Beach</li>
-<li onclick="P(27)">Sherbet</li>
-<li onclick="P(28)">Hult</li>
-<li onclick="P(29)">Hult64</li>
-<li onclick="P(30)">Drywet</li>
-<li onclick="P(31)">Jul</li>
-<li onclick="P(32)">Grintage</li>
-<li onclick="P(33)">Rewhi</li>
-<li onclick="P(34)">Tertiary</li>
-<li onclick="P(35)">Fire</li>
-<li onclick="P(36)">Icefire</li>
-<li onclick="P(37)">Cyane</li>
-<li onclick="P(38)">Light Pink</li>
-<li onclick="P(39)">Autumn</li>
-<li onclick="P(40)">Magenta</li>
-<li onclick="P(41)">Magred</li>
-<li onclick="P(42)">Yelmag</li>
-<li onclick="P(43)">Yelblu</li>
-<li onclick="P(44)">Orange & Teal</li>
-<li onclick="P(45)">Tiamat</li>
-<li onclick="P(46)">April Night</li>
+<ul class="mode" id="fpl">
+Loading...
 </ul>
 <iframe id="stf" onload="feedback();" style="display:none;"></iframe>
 </main>
@@ -502,7 +379,7 @@ function feedback(){
 	var e = d.body;
 	e.classList.remove("feedbackanim");
 	void e.offsetWidth;
-	if(!fs)e.classList.add("feedbackanim");
+	e.classList.add("feedbackanim");
 	fs=false;
 }
 //Speed slider
@@ -585,6 +462,28 @@ if (d.getElementById('myoos-n').checked)
    EC('win&SN=0');
 }
 }
+function fillfx(fp){
+e="Error loading list!";
+el = d.getElementById(fp?'fpl':'fxl');
+fetch(fp?'/json/palettes':'http://10.10.1.52/json/effects')
+  .then(res => {
+    if (!res.ok) {
+       el.innerHTML=e;
+    }
+    return res.json();
+  })
+  .then(json => {
+    var x="";
+    var l=fp?json.palettes:json.effects;
+    for (i in l) {
+      x += "<li onclick=\""+(fp?"P":"X")+"("+i+")\">"+l[i]+"</li>";
+    }
+    el.innerHTML=x;
+  })
+  .catch(function () {
+    el.innerHTML=e;
+  })
+}
 function ms2mins(millis) {
 var minutes = Math.floor(millis / 60000);
 var seconds = ((millis % 60000) / 1000).toFixed(0);
@@ -614,6 +513,8 @@ return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
      }
 	 if(recv) EC(curl);
   });
+  setTimeout(function(){fillfx(0);}, 500);
+  setTimeout(function(){fillfx(1);}, 750);
   d.getElementById("cv").style.opacity=0;
   }
 function GIO()
@@ -642,6 +543,7 @@ function GIO()
 	d.getElementsByClassName("desc")[0].innerHTML = this.responseXML.getElementsByTagName('ds')[0].innerHTML;
 	recv =1;
 	uB();
+  setTimeout(fillfx, 500);
 	}
 	}
 	request.open("GET", "win" +nocache, true);

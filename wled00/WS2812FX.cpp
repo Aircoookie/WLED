@@ -889,6 +889,7 @@ uint16_t WS2812FX::mode_merry_christmas(void) {
   return running(RED, GREEN);
 }
 
+
 /*
  * Alternating orange/purple pixels running.
  */
@@ -910,7 +911,11 @@ uint16_t WS2812FX::mode_running_random(void) {
     setPixelColor(SEGMENT.start, color_wheel(SEGMENT_RUNTIME.aux_param));
   }
 
-  SEGMENT_RUNTIME.counter_mode_step = (SEGMENT_RUNTIME.counter_mode_step == 0) ? 1 : 0;
+  SEGMENT_RUNTIME.counter_mode_step++;
+  if (SEGMENT_RUNTIME.counter_mode_step > ((255-SEGMENT.intensity) >> 4))
+  {
+    SEGMENT_RUNTIME.counter_mode_step = 0;
+  }
   return SPEED_FORMULA_L;
 }
 
@@ -976,7 +981,6 @@ uint16_t WS2812FX::fireworks(uint32_t color) {
       }
     }
   }
-  
   return SPEED_FORMULA_L;
 }
 
@@ -1464,12 +1468,12 @@ uint16_t WS2812FX::mode_random_chase(void)
     setPixelColor(i, getPixelColor(i-1));
   }
   uint32_t color = getPixelColor(SEGMENT.start + 1);
-  int r = random8(6) != 0 ? (color >> 16 & 0xFF) : random8();
-  int g = random8(6) != 0 ? (color >> 8  & 0xFF) : random8();
-  int b = random8(6) != 0 ? (color       & 0xFF) : random8();
+  uint8_t r = random8(6) != 0 ? (color >> 16 & 0xFF) : random8();
+  uint8_t g = random8(6) != 0 ? (color >> 8  & 0xFF) : random8();
+  uint8_t b = random8(6) != 0 ? (color       & 0xFF) : random8();
   setPixelColor(SEGMENT.start, r, g, b);
 
-  return 10 + (uint16_t)(255 - SEGMENT.speed);
+  return SPEED_FORMULA_L;
 }
 
 typedef struct Oscillator {
@@ -1731,11 +1735,7 @@ uint16_t WS2812FX::mode_colorwaves(void)
     uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
     bri8 += (255 - brightdepth);
 
-    uint8_t index = hue8;
-    //index = triwave8( index);
-    index = scale8( index, 240);
-
-    CRGB newcolor = ColorFromPalette(currentPalette, index, bri8);
+    CRGB newcolor = ColorFromPalette(currentPalette, hue8, bri8);
     fastled_col = fastled_from_col(getPixelColor(i));
 
     nblend(fastled_col, newcolor, 128);

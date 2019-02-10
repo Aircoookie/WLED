@@ -29,8 +29,6 @@
 
 #define LED_SKIP_AMOUNT 1
 
-#define LED_SKIP_AMOUNT 1
-
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
   if (supportWhite == _rgbwMode && countPixels == _length && _locked != NULL) return;

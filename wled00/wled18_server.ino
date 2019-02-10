@@ -87,6 +87,22 @@ void initServer()
     serveMessage(200,"Security settings saved.","Rebooting now... (takes ~20 seconds, wait for auto-redirect)",139);
     reset();
   });
+
+  server.on("/json", HTTP_ANY, [](){
+    server.send(500, "application/json", "{\"error\":\"Not implemented\"}");
+    });
+
+  server.on("/json/effects", HTTP_GET, [](){
+    server.setContentLength(strlen_P(JSON_mode_names));
+    server.send(200, "application/json", "");
+    server.sendContent_P(JSON_mode_names);
+    });
+
+  server.on("/json/palettes", HTTP_GET, [](){
+    server.setContentLength(strlen_P(JSON_palette_names));
+    server.send(200, "application/json", "");
+    server.sendContent_P(JSON_palette_names);
+    });
   
   server.on("/version", HTTP_GET, [](){
     server.send(200, "text/plain", (String)VERSION);
