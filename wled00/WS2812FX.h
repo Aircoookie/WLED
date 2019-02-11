@@ -1,15 +1,7 @@
-//pixelmethod now in NpbWrapper.h
-
 /*
   WS2812FX.h - Library for WS2812 LED effects.
   Harm Aldick - 2016
   www.aldick.org
-  FEATURES
-    * A lot of blinken modes and counting
-    * WS2812FX can be used as drop-in replacement for Adafruit NeoPixel Library
-  NOTES
-    * Uses the Adafruit NeoPixel library. Get it here:
-      https://github.com/adafruit/Adafruit_NeoPixel
   LICENSE
   The MIT License (MIT)
   Copyright (c) 2016  Harm Aldick
@@ -28,11 +20,7 @@
   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
-  CHANGELOG
-  2016-05-28   Initial beta release
-  2016-06-03   Code cleanup, minor improvements, new modes
-  2016-06-04   2 new fx, fixed setColor (now also resets _mode_color)
-  2017-02-02   added external trigger functionality (e.g. for sound-to-light)
+
   Modified for WLED
 */
 
@@ -85,7 +73,7 @@
 #define REVERSE      (uint8_t)0x80
 #define IS_REVERSE   ((SEGMENT.options & REVERSE) == REVERSE)
 
-#define MODE_COUNT  79
+#define MODE_COUNT  80
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -103,10 +91,10 @@
 #define FX_MODE_THEATER_CHASE           13
 #define FX_MODE_THEATER_CHASE_RAINBOW   14
 #define FX_MODE_RUNNING_LIGHTS          15
-#define FX_MODE_TWINKLE                 16
-#define FX_MODE_TWINKLE_RANDOM          17
-#define FX_MODE_TWINKLE_FADE            18
-#define FX_MODE_TWINKLE_FADE_RANDOM     19
+#define FX_MODE_SAW                     16
+#define FX_MODE_TWINKLE                 17
+#define FX_MODE_DISSOLVE                18
+#define FX_MODE_DISSOLVE_RANDOM         19
 #define FX_MODE_SPARKLE                 20
 #define FX_MODE_FLASH_SPARKLE           21
 #define FX_MODE_HYPER_SPARKLE           22
@@ -130,7 +118,7 @@
 #define FX_MODE_LARSON_SCANNER          40
 #define FX_MODE_COMET                   41
 #define FX_MODE_FIREWORKS               42
-#define FX_MODE_FIREWORKS_RANDOM        43
+#define FX_MODE_RAIN                    43
 #define FX_MODE_MERRY_CHRISTMAS         44
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
@@ -167,6 +155,7 @@
 #define FX_MODE_METEOR                  76
 #define FX_MODE_METEOR_SMOOTH           77
 #define FX_MODE_RAILWAY                 78
+#define FX_MODE_RIPPLE                  79
 
 
 class WS2812FX {
@@ -210,10 +199,10 @@ class WS2812FX {
       _mode[FX_MODE_FADE]                    = &WS2812FX::mode_fade;
       _mode[FX_MODE_THEATER_CHASE]           = &WS2812FX::mode_theater_chase;
       _mode[FX_MODE_THEATER_CHASE_RAINBOW]   = &WS2812FX::mode_theater_chase_rainbow;
+      _mode[FX_MODE_SAW]                     = &WS2812FX::mode_saw;
       _mode[FX_MODE_TWINKLE]                 = &WS2812FX::mode_twinkle;
-      _mode[FX_MODE_TWINKLE_RANDOM]          = &WS2812FX::mode_twinkle_random;
-      _mode[FX_MODE_TWINKLE_FADE]            = &WS2812FX::mode_twinkle_fade;
-      _mode[FX_MODE_TWINKLE_FADE_RANDOM]     = &WS2812FX::mode_twinkle_fade_random;
+      _mode[FX_MODE_DISSOLVE]                = &WS2812FX::mode_dissolve;
+      _mode[FX_MODE_DISSOLVE_RANDOM]         = &WS2812FX::mode_dissolve_random;
       _mode[FX_MODE_SPARKLE]                 = &WS2812FX::mode_sparkle;
       _mode[FX_MODE_FLASH_SPARKLE]           = &WS2812FX::mode_flash_sparkle;
       _mode[FX_MODE_HYPER_SPARKLE]           = &WS2812FX::mode_hyper_sparkle;
@@ -237,7 +226,7 @@ class WS2812FX {
       _mode[FX_MODE_LARSON_SCANNER]          = &WS2812FX::mode_larson_scanner;
       _mode[FX_MODE_COMET]                   = &WS2812FX::mode_comet;
       _mode[FX_MODE_FIREWORKS]               = &WS2812FX::mode_fireworks;
-      _mode[FX_MODE_FIREWORKS_RANDOM]        = &WS2812FX::mode_fireworks_random;
+      _mode[FX_MODE_RAIN]                    = &WS2812FX::mode_rain;
       _mode[FX_MODE_MERRY_CHRISTMAS]         = &WS2812FX::mode_merry_christmas;
       _mode[FX_MODE_FIRE_FLICKER]            = &WS2812FX::mode_fire_flicker;
       _mode[FX_MODE_GRADIENT]                = &WS2812FX::mode_gradient;
@@ -275,15 +264,16 @@ class WS2812FX {
       _mode[FX_MODE_METEOR]                  = &WS2812FX::mode_meteor;
       _mode[FX_MODE_METEOR_SMOOTH]           = &WS2812FX::mode_meteor_smooth;
       _mode[FX_MODE_RAILWAY]                 = &WS2812FX::mode_railway;
-      
+      _mode[FX_MODE_RIPPLE]                  = &WS2812FX::mode_ripple;
 
       _brightness = DEFAULT_BRIGHTNESS;
-      _running = false;
       _num_segments = 1;
       _segments[0].mode = DEFAULT_MODE;
       _segments[0].colors[0] = DEFAULT_COLOR;
       _segments[0].start = 0;
       _segments[0].speed = DEFAULT_SPEED;
+      currentPalette = CRGBPalette16(CRGB::Black);
+      targetPalette = CloudColors_p;
       _reverseMode = false;
       _skipFirstMode = false;
       colorOrder = 0;
@@ -292,6 +282,7 @@ class WS2812FX {
       ablMilliampsMax = 750;
       currentMilliamps = 0;
       _locked = NULL;
+      _modeUsesLock = false;
       _cronixieDigits = new byte[6];
       bus = new NeoPixelWrapper();
       RESET_RUNTIME;
@@ -300,8 +291,7 @@ class WS2812FX {
     void
       init(bool supportWhite, uint16_t countPixels, bool skipFirst),
       service(void),
-      clear(void),
-      strip_off(void),
+      blur(uint8_t),
       fade_out(uint8_t r),
       setMode(uint8_t m),
       setSpeed(uint8_t s),
@@ -371,12 +361,12 @@ class WS2812FX {
       color_wipe(uint32_t, uint32_t, bool , bool),
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
-      twinkle(uint32_t),
-      twinkle_fade(uint32_t),
-      chase(uint32_t, uint32_t, uint32_t, uint8_t),
+      running_base(bool),
+      dissolve(uint32_t),
+      chase(uint32_t, uint32_t, uint32_t, bool),
+      gradient_base(bool),
       running(uint32_t, uint32_t),
-      fireworks(uint32_t),
-      tricolor_chase(uint32_t, uint32_t, uint32_t);
+      tricolor_chase(uint32_t, uint32_t);
 
     // builtin modes
     uint16_t
@@ -400,10 +390,10 @@ class WS2812FX {
       mode_rainbow(void),
       mode_rainbow_cycle(void),
       mode_running_lights(void),
+      mode_saw(void),
       mode_twinkle(void),
-      mode_twinkle_random(void),
-      mode_twinkle_fade(void),
-      mode_twinkle_fade_random(void),
+      mode_dissolve(void),
+      mode_dissolve_random(void),
       mode_sparkle(void),
       mode_flash_sparkle(void),
       mode_hyper_sparkle(void),
@@ -423,7 +413,7 @@ class WS2812FX {
       mode_larson_scanner(void),
       mode_comet(void),
       mode_fireworks(void),
-      mode_fireworks_random(void),
+      mode_rain(void),
       mode_merry_christmas(void),
       mode_halloween(void),
       mode_fire_flicker(void),
@@ -438,6 +428,7 @@ class WS2812FX {
       mode_tricolor_chase(void),
       mode_tricolor_wipe(void),
       mode_tricolor_fade(void),
+      mode_lightning(void),
       mode_icu(void),
       mode_multi_comet(void),
       mode_dual_larson_scanner(void),
@@ -459,22 +450,25 @@ class WS2812FX {
       mode_meteor(void),
       mode_meteor_smooth(void),
       mode_railway(void),
-      mode_lightning(void);
+      mode_ripple(void);
 
   private:
     NeoPixelWrapper *bus;
 
     CRGB fastled_from_col(uint32_t);
+    CRGBPalette16 currentPalette;
+    CRGBPalette16 targetPalette;
   
     uint16_t _length;
     uint16_t _rand16seed;
     uint8_t _brightness;
 
     void handle_palette(void);
+    void fill(uint32_t);
     bool modeUsesLock(uint8_t);
 
-    boolean
-      _running,
+    bool
+      _modeUsesLock,
       _rgbwMode,
       _reverseMode,
       _cronixieMode,
@@ -499,5 +493,140 @@ class WS2812FX {
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 17 bytes per element
 };
+
+
+const char JSON_mode_names[] PROGMEM = R"=====({"effects":[
+"Solid",
+"Blink",
+"Breathe",
+"Wipe",
+"Wipe Random",
+"Random Colors",
+"Sweep",
+"Dynamic",
+"Colorloop",
+"Rainbow",
+"Scan",
+"Dual Scan",
+"Fade",
+"Chase",
+"Chase Rainbow",
+"Running",
+"Saw",
+"Twinkle",
+"Dissolve",
+"Dissolve Rnd",
+"Sparkle",
+"Dark Sparkle",
+"Sparkle+",
+"Strobe",
+"Strobe Rainbow",
+"Mega Strobe",
+"Blink Rainbow",
+"Android",
+"Chase",
+"Chase Random",
+"Chase Rainbow",
+"Chase Flash",
+"Chase Flash Rnd",
+"Rainbow Runner",
+"Colorful",
+"Traffic Light",
+"Sweep Random",
+"Running 2",
+"Red & Blue",
+"Stream",
+"Scanner",
+"Lighthouse",
+"Fireworks",
+"Rain",
+"Merry Christmas",
+"Fire Flicker",
+"Gradient",
+"Loading",
+"In Out",
+"In In",
+"Out Out",
+"Out In",
+"Circus",
+"Halloween",
+"Tri Chase",
+"Tri Wipe",
+"Tri Fade",
+"Lightning",
+"ICU",
+"Multi Comet",
+"Dual Scanner",
+"Stream 2",
+"Oscillate",
+"Pride 2015",
+"Juggle",
+"Palette",
+"Fire 2012",
+"Colorwaves",
+"BPM",
+"Fill Noise",
+"Noise 1",
+"Noise 2",
+"Noise 3",
+"Noise 4",
+"Colortwinkle",
+"Lake",
+"Meteor",
+"Smooth Meteor",
+"Railway",
+"Ripple"
+]})=====";
+
+
+const char JSON_palette_names[] PROGMEM = R"=====({"palettes":[
+"Default",
+"Random Cycle",
+"Primary Color",
+"Based on Primary",
+"Set Colors",
+"Based on Set",
+"Party",
+"Cloud",
+"Lava",
+"Ocean",
+"Forest",
+"Rainbow",
+"Rainbow Bands",
+"Sunset",
+"Rivendell",
+"Breeze",
+"Red & Blue",
+"Yellowout",
+"Analogous",
+"Splash",
+"Pastel",
+"Sunset 2",
+"Beech",
+"Vintage",
+"Departure",
+"Landscape",
+"Beach",
+"Sherbet",
+"Hult",
+"Hult 64",
+"Drywet",
+"Jul",
+"Grintage",
+"Rewhi",
+"Tertiary",
+"Fire",
+"Icefire",
+"Cyane",
+"Light Pink",
+"Autumn",
+"Magenta",
+"Magred",
+"Yelmag",
+"Yelblu",
+"Orange & Teal",
+"Tiamat",
+"April Night"
+]})=====";
 
 #endif

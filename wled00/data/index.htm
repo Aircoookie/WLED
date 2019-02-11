@@ -2,7 +2,7 @@
 <html>
 <head><meta charset="utf-8"><meta name="theme-color" content="#fff">
 	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico'/>
-	<title>WLED 0.8.2</title>
+	<title>WLED 0.8.3</title>
 	<script>
 		var d=document;
 		var w=window.getComputedStyle(d.querySelector("html"));
@@ -18,6 +18,9 @@
 		var nState = 0;
 		var cv=0;
 		var lm=0;
+    var fxi=0;
+    var fpi=0;
+    var fxn=1;
 		aC="";
 		bC="";
 		dC="";
@@ -38,8 +41,10 @@
 			var w=window.getComputedStyle(d.querySelector("html"));
 			UCol();
 			CV(0);
-			setInterval('GIO()', 5000);
+			setInterval(GIO, 5000);
 			GIO();
+      setTimeout(function(){fillfx(0);}, 500);
+      setTimeout(function(){fillfx(1);}, 750);
 		}
 		function GIO()
 		{
@@ -60,8 +65,8 @@
 							} else {
 								uwv = false;
 							}
-							Cf.TX.selectedIndex = this.responseXML.getElementsByTagName('fx')[0].childNodes[0].nodeValue;
-							Cf.FP.selectedIndex = this.responseXML.getElementsByTagName('fp')[0].childNodes[0].nodeValue;
+							fxi = this.responseXML.getElementsByTagName('fx')[0].childNodes[0].nodeValue;
+							fpi = this.responseXML.getElementsByTagName('fp')[0].childNodes[0].nodeValue;
 							d.Cf.SX.value = this.responseXML.getElementsByTagName('sx')[0].childNodes[0].nodeValue;
 							d.Cf.IX.value = this.responseXML.getElementsByTagName('ix')[0].childNodes[0].nodeValue;
 							nla = (this.responseXML.getElementsByTagName('nl')[0].innerHTML)!=0?true:false;
@@ -73,12 +78,16 @@
 								d.documentElement.style.setProperty("--bCol",this.responseXML.getElementsByTagName('cb')[0].childNodes[0].nodeValue);
 								d.documentElement.style.setProperty("--cCol",this.responseXML.getElementsByTagName('cc')[0].childNodes[0].nodeValue);
 								d.documentElement.style.setProperty("--dCol",this.responseXML.getElementsByTagName('cd')[0].childNodes[0].nodeValue);
-								d.documentElement.style.setProperty("--sCol",this.responseXML.getElementsByTagName('cs')[0].childNodes[0].nodeValue);
+								d.documentElement.style.setProperty("--sCol",this.responseXML.getElementsByTagName('cu')[0].childNodes[0].nodeValue);
 								d.documentElement.style.setProperty("--tCol",this.responseXML.getElementsByTagName('ct')[0].childNodes[0].nodeValue);
 								d.documentElement.style.setProperty("--cFn",this.responseXML.getElementsByTagName('cf')[0].childNodes[0].nodeValue);
 								UCol();
 								CV(parseInt(this.responseXML.getElementsByTagName('md')[0].childNodes[0].nodeValue));
-							}firstload=false;
+							}else{
+                Cf.TX.selectedIndex = fxi;
+                Cf.IX.selectedIndex = fpi;
+              }
+              firstload=false;
 							nState = 0;
 							nState = (this.responseXML.getElementsByTagName('nr')[0].innerHTML)!=0?1:0;
 							nState += (this.responseXML.getElementsByTagName('ns')[0].innerHTML)!=0?2:0;
@@ -204,10 +213,10 @@
 		function SwFX(s)
 		{
 			var n=Cf.TX.selectedIndex+s;
-			if (n==-1||n==79) return;
+			if (n==-1||n==fxn) return;
 			Cf.TX.selectedIndex =n;
 			if (n < 0) Cf.TX.selectedIndex = 0;
-			if (n > 78) Cf.TX.selectedIndex = 65;
+			if (n > fxn) Cf.TX.selectedIndex = Math.min(65,fxn-1);
 			GX();
 		}
 		function TgHSB()
@@ -356,6 +365,32 @@
 		{
 			resp+="&PL=0";GIO();
 		}
+    function fillfx(fp)
+    {
+      e="<option>Error loading list!</option>";
+      el = fp?Cf.FP:Cf.TX;
+      fetch(fp?'/json/palettes':'/json/effects')
+        .then(res => {
+          if (!res.ok) {
+             el.innerHTML=e;
+          }
+          return res.json();
+        })
+        .then(json => {
+          var x="";
+          var l=fp?json.palettes:json.effects;
+          for (i in l) {
+            x += "<option value=\""+i+"\">"+l[i]+" ("+i+")</option>";
+          }
+          el.innerHTML=x;
+          el.selectedIndex=fp?fpi:fxi;
+          if(!fp)fxn=l.length;
+          UV();
+        })
+        .catch(function () {
+          el.innerHTML=e;
+        })
+    }
 	</script>
 	<style>
 		:root {
@@ -597,85 +632,7 @@
 			<svg id="fmf" onclick="SwFX(1)"><use xlink:href="#lnr-arrow-right-circle"></use></svg>
 			<svg id="fof" onclick="SwFX(99)"><use xlink:href="#lnr-rocket"></use></svg><br><br>
 			<select name="TX" onchange="GX()">
-				<option value="0" selected>Solid (0)</option>
-				<option value="1">Blink (1)</option>
-				<option value="2">Breath (2)</option>
-				<option value="3">Wipe (3)</option>
-				<option value="4">Wipe Random (4)</option>
-				<option value="5">Color R (5)</option>
-				<option value="6">Sweep (6)</option>
-				<option value="7">Dynamic (7)</option>
-				<option value="8">Colorloop (8)</option>
-				<option value="9">Rainbow (9)</option>
-				<option value="10">Scan (10)</option>
-				<option value="11">Scan x2 (11)</option>
-				<option value="12">Fade (12)</option>
-				<option value="13">Chase (13)</option>
-				<option value="14">Chase Cl (14)</option>
-				<option value="15">Running (15)</option>
-				<option value="16">Twinkle (16)</option>
-				<option value="17">Twinkle R (17)</option>
-				<option value="18">Twinkle Fade (18)</option>
-				<option value="19">Twinkle RF (19)</option>
-				<option value="20">Sparkle (20)</option>
-				<option value="21">Sparkle Inv (21)</option>
-				<option value="22">Sparkle Inv+ (22)</option>
-				<option value="23">Strobe (23)</option>
-				<option value="24">Strobe Cl (24)</option>
-				<option value="25">Strobe + (25)</option>
-				<option value="26">Blink Cl (26)</option>
-				<option value="27">Android (27)</option>
-				<option value="28">Chase (28)</option>
-				<option value="29">Chase R (29)</option>
-				<option value="30">Chase Rainbow (30)</option>
-				<option value="31">Chase Flash (31)</option>
-				<option value="32">Chase RF (32)</option>
-				<option value="33">Chase Cl Inv (33)</option>
-				<option value="34">Colorful (34)</option>
-				<option value="35">Traffic Light (35)</option>
-				<option value="36">Sweep R(36)</option>
-				<option value="37">Running 2 (37)</option>
-				<option value="38">Red/Blue (38)</option>
-				<option value="39">Running R (39)</option>
-				<option value="40">Scanner (40)</option>
-				<option value="41">Lighthouse (41)</option>
-				<option value="42">Fireworks (42)</option>
-				<option value="43">Fireworks R (43)</option>
-				<option value="44">Christmas (44)</option>
-				<option value="45">Fire Flicker (45)</option>
-				<option value="46">Gradient (46)</option>
-				<option value="47">Loading (47)</option>
-				<option value="48">Wipe IO (48)</option>
-				<option value="49">Wipe II (49)</option>
-				<option value="50">Wipe OO (50)</option>
-				<option value="51">Wipe OI (51)</option>
-				<option value="52">Circus (52)</option>
-				<option value="53">Halloween (53)</option>
-				<option value="54">Tricolor Chase (54)</option>
-				<option value="55">Tricolor Wipe (55)</option>
-				<option value="56">Tricolor Fade (56)</option>
-				<option value="57">Lighting (57)</option>
-				<option value="58">ICU (58)</option>
-				<option value="59">Multi Comet (59)</option>
-				<option value="60">Scanner x2 (60)</option>
-				<option value="61">Random Chase (61)</option>
-				<option value="62">Oscillate (62)</option>
-				<option value="63">Pride 2015 (63)</option>
-				<option value="64">Juggle (64)</option>
-				<option value="65">Palette (65)</option>
-				<option value="66">Fire 2012 (66)</option>
-				<option value="67">Colorwaves (67)</option>
-				<option value="68">BPM (68)</option>
-				<option value="69">Fill Noise 8 (69)</option>
-				<option value="70">Noise 16 1 (70)</option>
-				<option value="71">Noise 16 2 (71)</option>
-				<option value="72">Noise 16 3 (72)</option>
-				<option value="73">Noise 16 4 (73)</option>
-				<option value="74">Colortwinkle (74)</option>
-				<option value="75">Lake (75)</option>
-				<option value="76">Meteor (76)</option>
-				<option value="77">Smooth Meteor (77)</option>
-				<option value="78">Railway (78)</option>
+				<option>Loading...</option>
 			</select><br><br>
 			Set secondary color to 
 			<button type="button" onclick="CS(0)">White</button>
@@ -687,53 +644,7 @@
 				<div id="fpX">
 				<br>FastLED Palette<br><br>
 				<select name="FP" onchange="GP()">
-					<option value="0" selected>Default</option>
-					<option value="1">Random Cycle</option>
-					<option value="2">Primary Color Only</option>
-					<option value="3">Based on Primary</option>
-					<option value="4">Set Colors Only</option>
-					<option value="5">Based on Set Colors</option>
-					<option value="6">Party</option>
-					<option value="7">Cloud</option>
-					<option value="8">Lava</option>
-					<option value="9">Ocean</option>
-					<option value="10">Forest</option>
-					<option value="11">Rainbow</option>
-					<option value="12">Rainbow Stripe</option>
-					<option value="13">Sunset</option>
-					<option value="14">Rivendell</option>
-					<option value="15">Breeze</option>
-					<option value="16">Red & Blue</option>
-					<option value="17">Yellowout</option>
-					<option value="18">Analogous</option>
-					<option value="19">Splash</option>
-					<option value="20">Pastel</option>
-					<option value="21">Sunset2</option>
-					<option value="22">Beech</option>
-					<option value="23">Vintage</option>
-					<option value="24">Departure</option>
-					<option value="25">Landscape</option>
-					<option value="26">Beach</option>
-					<option value="27">Sherbet</option>
-					<option value="28">Hult</option>
-					<option value="29">Hult64</option>
-					<option value="30">Drywet</option>
-					<option value="31">Jul</option>
-					<option value="32">Grintage</option>
-					<option value="33">Rewhi</option>
-					<option value="34">Tertiary</option>
-					<option value="35">Fire</option>
-					<option value="36">Icefire</option>
-					<option value="37">Cyane</option>
-					<option value="38">Light Pink</option>
-					<option value="39">Autumn</option>
-					<option value="40">Magenta</option>
-					<option value="41">Magred</option>
-					<option value="42">Yelmag</option>
-					<option value="43">Yelblu</option>
-					<option value="44">Orange & Teal</option>
-					<option value="43">Tiamat</option>
-					<option value="44">April Night</option>
+					<option>Loading...</option>
 				</select>
 				</div>
 				<div id="slX" class="sl">

@@ -87,6 +87,22 @@ void initServer()
     serveMessage(200,"Security settings saved.","Rebooting now... (takes ~20 seconds, wait for auto-redirect)",139);
     reset();
   });
+
+  server.on("/json", HTTP_ANY, [](){
+    server.send(500, "application/json", "{\"error\":\"Not implemented\"}");
+    });
+
+  server.on("/json/effects", HTTP_GET, [](){
+    server.setContentLength(strlen_P(JSON_mode_names));
+    server.send(200, "application/json", "");
+    server.sendContent_P(JSON_mode_names);
+    });
+
+  server.on("/json/palettes", HTTP_GET, [](){
+    server.setContentLength(strlen_P(JSON_palette_names));
+    server.send(200, "application/json", "");
+    server.sendContent_P(JSON_palette_names);
+    });
   
   server.on("/version", HTTP_GET, [](){
     server.send(200, "text/plain", (String)VERSION);
@@ -170,6 +186,17 @@ void initServer()
     DEBUG_PRINTLN("URI: " + server.uri());
     DEBUG_PRINTLN("Body: " + server.arg(0));
 
+    //make API CORS compatible
+    if (server.method() == HTTP_OPTIONS)
+    {
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+      server.sendHeader("Access-Control-Max-Age", "10000");
+      server.sendHeader("Access-Control-Allow-Methods", "PUT,POST,GET,OPTIONS");
+      server.sendHeader("Access-Control-Allow-Headers", "*");
+      server.send(200);
+      return;
+    }
+
     //workaround for subpage issue
     if (server.uri().length() == 1)
     {
@@ -178,7 +205,9 @@ void initServer()
     }
     
     if(!handleSet(server.uri())){
-      if(!handleAlexaApiCall(server.uri(),server.arg(0)))
+      #ifndef WLED_DISABLE_ALEXA
+      if(!espalexa.handleAlexaApiCall(server.uri(),server.arg(0)))
+      #endif
       server.send(404, "text/plain", "Not Found");
     }
   });

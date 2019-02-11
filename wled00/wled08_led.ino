@@ -34,51 +34,46 @@ void setAllLeds() {
     {
       colSecT[i] = colSec[i];
     }
-    whiteSecT = whiteSec;
+    colSecT[3] = colSec[3];
   }
-  if (autoRGBtoRGBW)
+  if (useRGBW && autoRGBtoRGBW)
   {
-    colorRGBtoRGBW(colT,&whiteT);
-    colorRGBtoRGBW(colSecT,&whiteSecT);
+    colorRGBtoRGBW(colT);
+    colorRGBtoRGBW(colSecT);
   }
   if (useGammaCorrectionRGB)
   {
-    strip.setColor(gamma8[colT[0]], gamma8[colT[1]], gamma8[colT[2]], gamma8[whiteT]);
-    strip.setSecondaryColor(gamma8[colSecT[0]], gamma8[colSecT[1]], gamma8[colSecT[2]], gamma8[whiteSecT]);
+    strip.setColor(gamma8[colT[0]], gamma8[colT[1]], gamma8[colT[2]], gamma8[colT[3]]);
+    strip.setSecondaryColor(gamma8[colSecT[0]], gamma8[colSecT[1]], gamma8[colSecT[2]], gamma8[colSecT[3]]);
   } else {
-    strip.setColor(colT[0], colT[1], colT[2], whiteT);
-    strip.setSecondaryColor(colSecT[0], colSecT[1], colSecT[2], whiteSecT);
+    strip.setColor(colT[0], colT[1], colT[2], colT[3]);
+    strip.setSecondaryColor(colSecT[0], colSecT[1], colSecT[2], colSecT[3]);
   }
 }
 
 
 void setLedsStandard()
 {
-  for (byte i = 0; i<3; i++)
+  for (byte i=0; i<4; i++)
   {
     colOld[i] = col[i];
     colT[i] = col[i];
     colSecOld[i] = colSec[i];
     colSecT[i] = colSec[i];
   }
-  whiteOld = white;
   briOld = bri;
-  whiteSecOld = whiteSec;
-  whiteT = white;
   briT = bri;
-  whiteSecT = whiteSec;
   setAllLeds();
 }
 
 
 bool colorChanged()
 {
-  for (int i = 0; i < 3; i++)
+  for (byte i=0; i<4; i++)
   {
     if (col[i] != colIT[i]) return true;
     if (colSec[i] != colSecIT[i]) return true;
   }
-  if (white != whiteIT || whiteSec != whiteSecIT) return true;
   if (bri != briIT) return true;
   return false;
 }
@@ -87,7 +82,7 @@ bool colorChanged()
 void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
-  //                     6: fx changed 7: hue 8: preset cycle 9: blynk
+  //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
   bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
   if (!colorChanged())
   {
@@ -104,14 +99,11 @@ void colorUpdated(int callMode)
     nightlightDelayMs -= (millis() - nightlightStartTime);
     nightlightStartTime = millis();
   }
-  colIT[0] = col[0];
-  colIT[1] = col[1];
-  colIT[2] = col[2];
-  colSecIT[0] = colSec[0];
-  colSecIT[1] = colSec[1];
-  colSecIT[2] = colSec[2];
-  whiteIT = white;
-  whiteSecIT = whiteSec;
+  for (byte i=0; i<4; i++)
+  {
+    colIT[i] = col[i];
+    colSecIT[i] = colSec[i];
+  }
   briIT = bri;
   if (bri > 0) briLast = bri;
   
@@ -125,14 +117,11 @@ void colorUpdated(int callMode)
     
     if (transitionActive)
     {
-      colOld[0] = colT[0];
-      colOld[1] = colT[1];
-      colOld[2] = colT[2];
-      whiteOld = whiteT;
-      colSecOld[0] = colSecT[0];
-      colSecOld[1] = colSecT[1];
-      colSecOld[2] = colSecT[2];
-      whiteSecOld = whiteSecT;
+      for (byte i=0; i<4; i++)
+      {
+        colOld[i] = colT[i];
+        colSecOld[i] = colSecT[i];
+      }
       briOld = briT;
       tperLast = 0;
     }
@@ -146,6 +135,9 @@ void colorUpdated(int callMode)
   }
 
   if (callMode == 8) return;
+  #ifndef WLED_DISABLE_ALEXA
+  if (espalexaDevice != nullptr) espalexaDevice->setValue(bri);
+  #endif
   //only update Blynk and mqtt every 2 seconds to reduce lag
   if (millis() - lastInterfaceUpdate <= 2000)
   {
@@ -184,23 +176,16 @@ void handleTransitions()
       setLedsStandard();
       return;
     }
-    if (tper - tperLast < 0.004)
-    {
-      return;
-    }
+    if (tper - tperLast < 0.004) return;
     tperLast = tper;
-    if (fadeTransition)
+    for (byte i=0; i<4; i++)
     {
-      for (byte i = 0; i<3; i++)
-      {
-        colT[i] = colOld[i]+((col[i] - colOld[i])*tper);
-        colSecT[i] = colSecOld[i]+((colSec[i] - colSecOld[i])*tper);
-      }
-      whiteT  = whiteOld +((white  - whiteOld )*tper);
-      whiteSecT = whiteSecOld +((whiteSec  - whiteSecOld )*tper);
-      briT    = briOld   +((bri    - briOld   )*tper);
+      colT[i] = colOld[i]+((col[i] - colOld[i])*tper);
+      colSecT[i] = colSecOld[i]+((colSec[i] - colSecOld[i])*tper);
     }
-    if (fadeTransition) setAllLeds();
+    briT    = briOld   +((bri    - briOld   )*tper);
+    
+    setAllLeds();
   }
 }
 

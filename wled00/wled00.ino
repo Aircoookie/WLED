@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.2
+ * @version 0.8.3
  * @author Christian Schwinne
  */
 
@@ -51,7 +51,7 @@
 #endif
 
 #include <EEPROM.h>
-#include <WiFiUDP.h>
+#include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
  #include <ArduinoOTA.h>
@@ -60,6 +60,10 @@
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
+#ifndef WLED_DISABLE_ALEXA
+ #define ESPALEXA_MAXDEVICES 1
+ #include "src/dependencies/espalexa/Espalexa.h"
+#endif
 #ifndef WLED_DISABLE_BLYNK
  #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
@@ -74,8 +78,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1812052
-char versionString[] = "0.8.2";
+#define VERSION 1902112
+char versionString[] = "0.8.3";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -98,7 +102,7 @@ char ntpServerName[] = "0.wled.pool.ntp.org"; //NTP server to use
 //WiFi CONFIG (all these can be changed via web UI, no need to set them here)
 char clientSSID[33] = "Your_Network";
 char clientPass[65] = "";
-char cmDNS[33] = "led";                       //mDNS address (x.local), only for Apple and Windows, if Bonjour installed
+char cmDNS[33] = "x";                         //mDNS address (placeholder, will be replaced by wledXXXXXXXXXXXX.local)
 char apSSID[65] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
 byte apHide = 0;                              //hidden AP SSID
@@ -118,10 +122,8 @@ bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
-byte colS[]{255, 159, 0};                     //default RGB color
-byte colSecS[]{0, 0, 0};                      //default RGB secondary color
-byte whiteS = 0;                              //default White channel
-byte whiteSecS = 0;                           //default secondary White channel
+byte colS[]{255, 159, 0, 0};                  //default RGB(W) color
+byte colSecS[]{0, 0, 0, 0};                   //default RGB(W) secondary color
 byte briS = 127;                              //default brightness
 byte effectDefault = 0;                   
 byte effectSpeedDefault = 75;
@@ -139,7 +141,6 @@ bool enableSecTransition = true;              //also enable transition for secon
 uint16_t transitionDelay = 900;              //default crossfade duration in ms
 
 bool reverseMode  = false;                    //flip entire LED strip (reverses all effect directions)
-bool initLedsLast = false;                    //turn on LEDs only after WiFi connected/AP open
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
 byte briMultiplier =  100;                    //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
@@ -242,16 +243,14 @@ uint16_t userVar0 = 0, userVar1 = 0;
 
 //internal global variable declarations
 //color
-byte col[]{255, 159, 0};                      //target RGB color
-byte colOld[]{0, 0, 0};                       //color before transition
-byte colT[]{0, 0, 0};                         //current color
-byte colIT[]{0, 0, 0};                        //color that was last sent to LEDs
-byte colSec[]{0, 0, 0};
-byte colSecT[]{0, 0, 0};
-byte colSecOld[]{0, 0, 0};
-byte colSecIT[]{0, 0, 0};
-byte white = whiteS, whiteOld, whiteT, whiteIT;
-byte whiteSec = whiteSecS, whiteSecOld, whiteSecT, whiteSecIT;
+byte col[]{255, 159, 0, 0};                   //target RGB(W) color
+byte colOld[]{0, 0, 0, 0};                    //color before transition
+byte colT[]{0, 0, 0, 0};                      //current color
+byte colIT[]{0, 0, 0, 0};                     //color that was last sent to LEDs
+byte colSec[]{0, 0, 0, 0};
+byte colSecT[]{0, 0, 0, 0};
+byte colSecOld[]{0, 0, 0, 0};
+byte colSecIT[]{0, 0, 0, 0};
 
 byte lastRandomIndex = 0;                     //used to save last random color so the new one is not the same
 
@@ -271,6 +270,8 @@ unsigned long nightlightStartTime;
 byte briNlT = 0;                              //current nightlight brightness
 
 //brightness
+bool offMode = false;
+unsigned long lastOnTime = 0;
 byte bri = briS;
 byte briOld = 0;
 byte briT = 0;
@@ -337,7 +338,7 @@ byte timerHours[]   = {0,0,0,0,0,0,0,0};
 byte timerMinutes[] = {0,0,0,0,0,0,0,0};
 byte timerMacro[]   = {0,0,0,0,0,0,0,0};
 byte timerWeekday[] = {255,255,255,255,255,255,255,255}; //weekdays to activate on
-//bit pattern of arr elem: 0b11111111: sat,fri,thu,wed,tue,mon,sun,validity
+//bit pattern of arr elem: 0b11111111: sun,sat,fri,thu,wed,tue,mon,validity
 
 //blynk
 bool blynkEnabled = false;
@@ -368,11 +369,11 @@ unsigned long auxStartTime = 0;
 bool auxActive = false, auxActiveBefore = false;
 
 //alexa udp
-WiFiUDP alexaUDP;
-bool alexaUdpConnected = false;
-IPAddress ipMulti(239, 255, 255, 250);
-unsigned int portMulti = 1900;
 String escapedMac;
+#ifndef WLED_DISABLE_ALEXA
+Espalexa espalexa;
+EspalexaDevice* espalexaDevice;
+#endif
 
 //dns server
 DNSServer dnsServer;
@@ -463,6 +464,7 @@ void serveMessage(int,String,String,int=255);
 void reset()
 {
   briT = 0;
+  delay(250); //enough time to send response to client
   setAllLeds();
   DEBUG_PRINTLN("MODULE RESET");
   ESP.restart();
@@ -528,7 +530,19 @@ void loop() {
       handleHue();
       handleBlynk();
     }
-    if (briT) strip.service(); //do not update strip if off, prevents flicker on ESP32
+    if (briT) lastOnTime = millis();
+    if (millis() - lastOnTime < 600)
+    {
+      offMode = false;
+      strip.service();
+    } else if (!offMode)
+    {
+      /*#if LEDPIN == 2 //turn off onboard LED
+      pinMode(2, OUTPUT);
+      digitalWrite(2, HIGH);
+      #endif*/
+      offMode = true;
+    }
   }
   
   //DEBUG serial logging

@@ -67,14 +67,11 @@ void handleSettingsSet(byte subPage)
     //ignore settings and save current brightness, colors and fx as default
     if (server.hasArg("IS"))
     {
-      colS[0] = col[0];
-      colS[1] = col[1];
-      colS[2] = col[2];
-      colSecS[0] = colSec[0];
-      colSecS[1] = colSec[1];
-      colSecS[2] = colSec[2];
-      whiteS = white;
-      whiteSecS = whiteSec;
+      for (byte i=0; i<4; i++)
+      {
+        colS[i] = col[i];
+        colSecS[i] = colSec[i];
+      }
       briS = bri;
       effectDefault = effectCurrent;
       effectSpeedDefault = effectSpeed;
@@ -87,8 +84,8 @@ void handleSettingsSet(byte subPage)
       colSecS[0] = server.arg("SR").toInt();
       colSecS[1] = server.arg("SG").toInt();
       colSecS[2] = server.arg("SB").toInt();
-      whiteS = server.arg("CW").toInt();
-      whiteSecS = server.arg("SW").toInt();
+      colS[3] = server.arg("CW").toInt();
+      colSecS[3] = server.arg("SW").toInt();
       briS = server.arg("CA").toInt();
       effectDefault = server.arg("FX").toInt();
       effectSpeedDefault = server.arg("SX").toInt();
@@ -116,7 +113,6 @@ void handleSettingsSet(byte subPage)
     
     t = server.arg("PB").toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
-    initLedsLast = server.hasArg("EI");
     reverseMode = server.hasArg("RV");
     strip.setReverseMode(reverseMode);
     skipFirstLed = server.hasArg("SL");
@@ -273,6 +269,9 @@ void handleSettingsSet(byte subPage)
       
       k[0] = 'T'; //macros
       timerMacro[i] = server.arg(k).toInt();
+
+      k[0] = 'W'; //weekdays
+      timerWeekday[i] = server.arg(k).toInt();
     }
   }
 
@@ -309,6 +308,7 @@ void handleSettingsSet(byte subPage)
   }
   saveSettingsToEEPROM();
   if (subPage == 2) strip.init(useRGBW,ledCount,skipFirstLed);
+  if (subPage == 4) alexaInit();
 }
 
 
@@ -382,7 +382,7 @@ bool handleSet(String req)
   //set white value
   pos = req.indexOf("&W=");
   if (pos > 0) {
-    white = getNumVal(&req, pos);
+    col[3] = getNumVal(&req, pos);
   }
    
   //set 2nd red value
@@ -403,24 +403,24 @@ bool handleSet(String req)
   //set 2nd white value
   pos = req.indexOf("W2=");
   if (pos > 0) {
-    whiteSec = getNumVal(&req, pos);
+    colSec[3] = getNumVal(&req, pos);
   }
    
   //set color from HEX or 32bit DEC
   pos = req.indexOf("CL=");
   if (pos > 0) {
-    colorFromDecOrHexString(col, &white, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(col, (char*)req.substring(pos + 3).c_str());
   }
   pos = req.indexOf("C2=");
   if (pos > 0) {
-    colorFromDecOrHexString(colSec, &whiteSec, (char*)req.substring(pos + 3).c_str());
+    colorFromDecOrHexString(colSec, (char*)req.substring(pos + 3).c_str());
   }
    
   //set 2nd to white
   pos = req.indexOf("SW");
   if (pos > 0) {
     if(useRGBW) {
-      whiteSec = 255;
+      colSec[3] = 255;
       colSec[0] = 0;
       colSec[1] = 0;
       colSec[2] = 0;
@@ -434,7 +434,7 @@ bool handleSet(String req)
   //set 2nd to black
   pos = req.indexOf("SB");
   if (pos > 0) {
-    whiteSec = 0;
+    colSec[3] = 0;
     colSec[0] = 0;
     colSec[1] = 0;
     colSec[2] = 0;
@@ -451,27 +451,25 @@ bool handleSet(String req)
     colSec[0] = col[0];
     colSec[1] = col[1];
     colSec[2] = col[2];
-    whiteSec = white;
+    colSec[3] = col[3];
   }
   //swap 2nd & 1st
   pos = req.indexOf("SC");
   if (pos > 0) {
-    byte _temp[4];
-    for (int i = 0; i<3; i++)
+    byte temp;
+    for (uint8_t i=0; i<4; i++)
     {
-      _temp[i] = col[i];
+      temp = col[i];
       col[i] = colSec[i];
-      colSec[i] = _temp[i];
+      colSec[i] = temp;
     }
-    _temp[3] = white;
-    white = whiteSec;
-    whiteSec = _temp[3];
   }
    
   //set current effect index
   pos = req.indexOf("FX=");
   if (pos > 0) {
     effectCurrent = getNumVal(&req, pos);
+    presetCyclingEnabled = false;
   }
   //set effect speed
   pos = req.indexOf("SX=");

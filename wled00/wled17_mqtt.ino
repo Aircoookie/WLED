@@ -2,6 +2,8 @@
  * MQTT communication protocol for home automation
  */
 
+#define WLED_MQTT_PORT 1883
+
 void parseMQTTBriPayload(char* payload)
 {
   if      (strcmp(payload, "ON") == 0) {bri = briLast; colorUpdated(1);}
@@ -25,7 +27,7 @@ void callbackMQTT(char* topic, byte* payload, unsigned int length) {
 
   if (strstr(topic, "/col"))
   {
-    colorFromDecOrHexString(col, &white, (char*)payload);
+    colorFromDecOrHexString(col, (char*)payload);
     colorUpdated(1);
   } else if (strstr(topic, "/api"))
   {
@@ -53,7 +55,7 @@ void publishMQTT()
   strcat(subuf, "/g");
   mqtt->publish(subuf, s);
 
-  sprintf(s, "#%X", white*16777216 + col[0]*65536 + col[1]*256 + col[2]);
+  sprintf(s, "#%X", col[3]*16777216 + col[0]*65536 + col[1]*256 + col[2]);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/c");
   mqtt->publish(subuf, s);
@@ -111,9 +113,9 @@ bool initMQTT()
   IPAddress mqttIP;
   if (mqttIP.fromString(mqttServer)) //see if server is IP or domain
   {
-    mqtt->setServer(mqttIP,1883);
+    mqtt->setServer(mqttIP, WLED_MQTT_PORT);
   } else {
-    mqtt->setServer(mqttServer,1883);
+    mqtt->setServer(mqttServer, WLED_MQTT_PORT);
   }
   mqtt->setCallback(callbackMQTT);
   DEBUG_PRINTLN("MQTT ready.");

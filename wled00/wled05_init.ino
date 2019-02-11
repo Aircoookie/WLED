@@ -11,10 +11,10 @@ void wledInit()
   #ifdef ARDUINO_ARCH_ESP32
    if (ledCount > 600) ledCount = 600;
   #endif
-  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //quick init
-
   Serial.begin(115200);
   Serial.setTimeout(50);
+  
+  strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //init LEDs quickly
   
   #ifdef USEFS
    SPIFFS.begin();
@@ -22,12 +22,12 @@ void wledInit()
   
   DEBUG_PRINTLN("Load EEPROM");
   loadSettingsFromEEPROM(true);
-  if (!initLedsLast) initStrip();
+  beginStrip();
   DEBUG_PRINT("CSSID: ");
   DEBUG_PRINT(clientSSID);
   userBeginPreConnection();
   if (strcmp(clientSSID,"Your_Network") == 0) showWelcomePage = true;
-
+  WiFi.persistent(false);
   initCon();
 
   DEBUG_PRINTLN("");
@@ -58,6 +58,11 @@ void wledInit()
   }
 
   prepareIds(); //UUID from MAC (for Alexa and MQTT)
+  if (strcmp(cmDNS,"x") == 0) //fill in unique mdns default
+  {
+    strcpy(cmDNS, "wled-");
+    strcat(cmDNS, escapedMac.c_str());
+  }
   if (mqttDeviceTopic[0] == 0)
   {
     strcpy(mqttDeviceTopic, "wled/");
@@ -72,12 +77,12 @@ void wledInit()
     mqttInit = initMQTT();
   }
    
-  if (!initLedsLast) strip.service();
+  strip.service();
 
   //HTTP server page init
   initServer();
   
-  if (!initLedsLast) strip.service();
+  strip.service();
   //init Alexa hue emulation
   if (alexaEnabled && !onlyAP) alexaInit();
 
@@ -100,7 +105,7 @@ void wledInit()
     }
     #endif
   
-    if (!initLedsLast) strip.service();
+    strip.service();
     // Set up mDNS responder:
     if (strlen(cmDNS) > 0 && !onlyAP)
     {
@@ -108,8 +113,9 @@ void wledInit()
       DEBUG_PRINTLN("mDNS responder started");
       // Add service to MDNS
       MDNS.addService("http", "tcp", 80);
+      MDNS.addService("wled", "tcp", 80);
     }
-    if (!initLedsLast) strip.service();
+    strip.service();
 
     initBlynk(blynkApiKey);
     initE131();
@@ -119,7 +125,6 @@ void wledInit()
     e131Enabled = false;
   }
 
-  if (initLedsLast) initStrip();
   userBegin();
 
   if (macroBoot>0) applyMacro(macroBoot);
@@ -127,10 +132,9 @@ void wledInit()
 }
 
 
-void initStrip()
+void beginStrip()
 {
   // Initialize NeoPixel Strip and button
-  if (initLedsLast) strip.init(useRGBW,ledCount,skipFirstLed);
   strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
@@ -190,13 +194,10 @@ void initCon()
   while(!con)
   {
     yield();
-    if (!initLedsLast)
-    {
-      handleTransitions();
-      handleButton();
-      handleOverlays();
-      if (briT) strip.service();
-    }
+    handleTransitions();
+    handleButton();
+    handleOverlays();
+    if (briT) strip.service();
     if (millis()-lastTry > 499) {
       con = (WiFi.status() == WL_CONNECTED);
       lastTry = millis();

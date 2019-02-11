@@ -166,6 +166,13 @@ bool checkCountdown()
   return false;
 }
 
+byte weekdayMondayFirst()
+{
+  byte wd = weekday(local) -1;
+  if (wd == 0) wd = 7;
+  return wd;
+}
+
 void checkTimers()
 {
   if (lastTimerMinute != minute(local)) //only check once a new minute begins
@@ -176,11 +183,11 @@ void checkTimers()
       if (timerMacro[i] != 0
           && (timerHours[i] == hour(local) || timerHours[i] == 24) //if hour is set to 24, activate every hour 
           && timerMinutes[i] == minute(local)
-          && timerWeekday[i] >> weekday(local) & 0x01) //timer should activate at current day of week
+          && (timerWeekday[i] & 0x01) //timer is enabled
+          && timerWeekday[i] >> weekdayMondayFirst() & 0x01) //timer should activate at current day of week
       {
         applyMacro(timerMacro[i]);
       }
     }
   }
 }
-

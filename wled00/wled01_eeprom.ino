@@ -129,7 +129,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
   EEPROM.write(370, useHSBDefault);
-  EEPROM.write(371, whiteS);
+  EEPROM.write(371, colS[3]); //white default
   EEPROM.write(372, useRGBW);
   EEPROM.write(373, effectPaletteDefault);
   EEPROM.write(374, strip.paletteFade);
@@ -141,7 +141,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(378, colSecS[0]);
   EEPROM.write(379, colSecS[1]);
   EEPROM.write(380, colSecS[2]);
-  EEPROM.write(381, whiteSecS);
+  EEPROM.write(381, colSecS[3]);
   EEPROM.write(382, strip.paletteBlend);
   EEPROM.write(383, strip.colorOrder);
 
@@ -158,7 +158,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(394, abs(utcOffsetSecs) & 0xFF);
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
-  EEPROM.write(397, initLedsLast);
+  //397 was initLedsLast
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
   EEPROM.write(399, !enableSecTransition);
 
@@ -352,7 +352,7 @@ void loadSettingsFromEEPROM(bool first)
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
   useHSBDefault = EEPROM.read(370);
-  whiteS = EEPROM.read(371); white = whiteS;
+  colS[3] = EEPROM.read(371); col[3] = colS[3];
   useRGBW = EEPROM.read(372);
   effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
   //374 - strip.paletteFade
@@ -363,10 +363,10 @@ void loadSettingsFromEEPROM(bool first)
   }
   //377 = lastEEPROMversion
   if (lastEEPROMversion > 1) {
-    colSecS[0] = EEPROM.read(378); colSec[0] = colSecS[0];
-    colSecS[1] = EEPROM.read(379); colSec[1] = colSecS[1];
-    colSecS[2] = EEPROM.read(380); colSec[2] = colSecS[2];
-    whiteSecS = EEPROM.read(381); whiteSec = whiteSecS;
+    for (byte i=0; i<4; i++)
+    {
+      colSecS[i] = EEPROM.read(378+i); colSec[i] = colSecS[i];
+    }
   }
   if (lastEEPROMversion > 3) {
     effectIntensityDefault = EEPROM.read(326); effectIntensity = effectIntensityDefault; 
@@ -495,7 +495,6 @@ void loadSettingsFromEEPROM(bool first)
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
-  initLedsLast = EEPROM.read(397);
   enableSecTransition = !EEPROM.read(399);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
@@ -538,14 +537,11 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
   if (loadBri) bri = EEPROM.read(i+1);
   if (loadCol)
   {
-    col[0] = EEPROM.read(i+2);
-    col[1] = EEPROM.read(i+3);
-    col[2] = EEPROM.read(i+4);
-    white = EEPROM.read(i+5);
-    colSec[0] = EEPROM.read(i+6);
-    colSec[1] = EEPROM.read(i+7);
-    colSec[2] = EEPROM.read(i+8);
-    whiteSec = EEPROM.read(i+9);
+    for (byte j=0; j<4; j++)
+    {
+      col[j] = EEPROM.read(i+j+2);
+      colSec[j] = EEPROM.read(i+j+6);
+    }
   }
   if (loadFX)
   {
@@ -564,14 +560,11 @@ void savePreset(byte index)
   uint16_t i = 380 + index*20;//min400
   EEPROM.write(i, 1);
   EEPROM.write(i+1, bri);
-  EEPROM.write(i+2, col[0]);
-  EEPROM.write(i+3, col[1]);
-  EEPROM.write(i+4, col[2]);
-  EEPROM.write(i+5, white);
-  EEPROM.write(i+6, colSec[0]);
-  EEPROM.write(i+7, colSec[1]);
-  EEPROM.write(i+8, colSec[2]);
-  EEPROM.write(i+9, whiteSec);
+  for (uint16_t j=0; j<4; j++)
+  {
+    EEPROM.write(i+j+2, col[j]);
+    EEPROM.write(i+j+6, colSec[j]);
+  }
   EEPROM.write(i+10, effectCurrent);
   EEPROM.write(i+11, effectSpeed);
   

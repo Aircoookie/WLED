@@ -4,7 +4,7 @@
 
 void colorFromUint32(uint32_t in)
 {
-  white  = in >> 24 & 0xFF;
+  col[3] = in >> 24 & 0xFF;
   col[0] = in >> 16 & 0xFF;
   col[1] = in >> 8  & 0xFF;
   col[2] = in       & 0xFF;
@@ -118,7 +118,7 @@ void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.develo
 }
 #endif
 
-void colorFromDecOrHexString(byte* rgb, byte* wht, char* in)
+void colorFromDecOrHexString(byte* rgb, char* in)
 {
   if (in[0] == 0) return;
   char first = in[0];
@@ -132,7 +132,7 @@ void colorFromDecOrHexString(byte* rgb, byte* wht, char* in)
     c = strtoul(in, NULL, 10);
   }
 
-  *wht   = (c >> 24) & 0xFF;
+  rgb[3] = (c >> 24) & 0xFF;
   rgb[0] = (c >> 16) & 0xFF;
   rgb[1] = (c >>  8) & 0xFF;
   rgb[2] =  c        & 0xFF;
@@ -150,11 +150,11 @@ float maxf (float v, float w)
   return v;
 }
 
-void colorRGBtoRGBW(byte* rgb, byte* wht) //rgb to rgbw (http://codewelt.com/rgbw)
+void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw)
 {
   float low = minf(rgb[0],minf(rgb[1],rgb[2]));
   float high = maxf(rgb[0],maxf(rgb[1],rgb[2]));
   if (high < 0.1f) return;
   float sat = 255.0f * ((high - low) / high);
-  *wht = (byte)((255.0f - sat) / 255.0f * (rgb[0] + rgb[1] + rgb[2]) / 3);
+  rgb[3] = (byte)((255.0f - sat) / 255.0f * (rgb[0] + rgb[1] + rgb[2]) / 3);
 }

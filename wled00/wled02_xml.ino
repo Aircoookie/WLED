@@ -16,6 +16,12 @@ void XML_response(bool isHTTP, bool includeTheme)
    oappendi(col[i]);
    oappend("</cl>");
   }
+  for (int i = 0; i < 3; i++)
+  {
+   oappend("<cs>");
+   oappendi(colSec[i]);
+   oappend("</cs>");
+  }
   
   oappend("<ns>");
   oappendi(notifyDirect);
@@ -39,13 +45,17 @@ void XML_response(bool isHTTP, bool includeTheme)
   oappendi(effectPalette);
   oappend("</fp><wv>");
   if (useRGBW && !autoRGBtoRGBW) {
-   oappendi(white);
+   oappendi(col[3]);
   } else {
    oappend("-1");
   }
-  oappend("</wv><md>");
+  oappend("</wv><ws>");
+  oappendi(colSec[3]);
+  oappend("</ws><md>");
   oappendi(useHSB);
-  oappend("</md><ds>");
+  oappend("</md><cy>");
+  oappendi(presetCyclingEnabled);
+  oappend("</cy><ds>");
   oappend(serverDescription);
   oappend("</ds>");
   if (includeTheme)
@@ -60,9 +70,9 @@ void XML_response(bool isHTTP, bool includeTheme)
     oappend(cs[2]);
     oappend("</cc><cd>#");
     oappend(cs[3]);
-    oappend("</cd><cs>#");
+    oappend("</cd><cu>#");
     oappend(cs[4]);
-    oappend("</cs><ct>#");
+    oappend("</cu><ct>#");
     oappend(cs[5]);
     oappend("</ct><cf>");
     oappend(cssFont);
@@ -206,11 +216,11 @@ void getSettingsJS(byte subPage)
     sappend('c',"EW",useRGBW);
     sappend('i',"CO",strip.colorOrder);
     sappend('c',"AW",autoRGBtoRGBW);
-    sappend('v',"CW",whiteS);
+    sappend('v',"CW",colS[3]);
     sappend('v',"SR",colSecS[0]);
     sappend('v',"SG",colSecS[1]);
     sappend('v',"SB",colSecS[2]);
-    sappend('v',"SW",whiteSecS);
+    sappend('v',"SW",colSecS[3]);
     sappend('c',"BO",turnOnAtBoot);
     sappend('v',"BP",bootPreset);
     sappend('v',"FX",effectDefault);
@@ -229,7 +239,6 @@ void getSettingsJS(byte subPage)
     sappend('c',"TW",nightlightFade);
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",reverseMode);
-    sappend('c',"EI",initLedsLast);
     sappend('c',"SL",skipFirstLed);
   }
 
@@ -333,6 +342,7 @@ void getSettingsJS(byte subPage)
       k[0] = 'H'; sappend('v',k,timerHours[i]);
       k[0] = 'N'; sappend('v',k,timerMinutes[i]);
       k[0] = 'T'; sappend('v',k,timerMacro[i]);
+      k[0] = 'W'; sappend('v',k,timerWeekday[i]);
     }
   }
 
@@ -361,12 +371,12 @@ void getThemeColors(char o[][9])
     //       accent color (aCol)     background (bCol)       panel (cCol)            controls (dCol)         shadows (sCol)          text (tCol)    
     default: strcpy(o[0], "D9B310"); strcpy(o[1], "0B3C5D"); strcpy(o[2], "1D2731"); strcpy(o[3], "328CC1"); strcpy(o[4], "000");    strcpy(o[5], "328CC1"); break; //night
     case 1:  strcpy(o[0], "eee");    strcpy(o[1], "ddd");    strcpy(o[2], "b9b9b9"); strcpy(o[3], "049");    strcpy(o[4], "777");    strcpy(o[5], "049");    break; //modern
-    case 2:  strcpy(o[0], "abc");    strcpy(o[1], "fff");    strcpy(o[2], "ddd");    strcpy(o[3], "000");    strcpy(o[4], "0004");   strcpy(o[5], "000");    break; //bright
+    case 2:  strcpy(o[0], "abb");    strcpy(o[1], "fff");    strcpy(o[2], "ddd");    strcpy(o[3], "000");    strcpy(o[4], "0004");   strcpy(o[5], "000");    break; //bright
     case 3:  strcpy(o[0], "c09f80"); strcpy(o[1], "d7cec7"); strcpy(o[2], "76323f"); strcpy(o[3], "888");    strcpy(o[4], "3334");   strcpy(o[5], "888");    break; //wine
     case 4:  strcpy(o[0], "3cc47c"); strcpy(o[1], "828081"); strcpy(o[2], "d9a803"); strcpy(o[3], "1e392a"); strcpy(o[4], "000a");   strcpy(o[5], "1e392a"); break; //electric
     case 5:  strcpy(o[0], "57bc90"); strcpy(o[1], "a5a5af"); strcpy(o[2], "015249"); strcpy(o[3], "88c9d4"); strcpy(o[4], "0004");   strcpy(o[5], "88c9d4"); break; //mint
-    case 6:  strcpy(o[0], "f7c331"); strcpy(o[1], "dcc7aa"); strcpy(o[2], "6b7a8f"); strcpy(o[3], "f7882f"); strcpy(o[4], "0007");   strcpy(o[5], "f7882f"); break; //amber
-    case 7:  strcpy(o[0], "fc3");    strcpy(o[1], "124");    strcpy(o[2], "334");    strcpy(o[3], "f1d");    strcpy(o[4], "f00");    strcpy(o[5], "f1d");    break; //club
+    case 6:  strcpy(o[0], "f7c331"); strcpy(o[1], "dca");    strcpy(o[2], "6b7a8f"); strcpy(o[3], "f7882f"); strcpy(o[4], "0007");   strcpy(o[5], "f7882f"); break; //amber
+    case 7:  strcpy(o[0], "fff");    strcpy(o[1], "333");    strcpy(o[2], "222");    strcpy(o[3], "666");    strcpy(o[4], "");       strcpy(o[5], "fff");    break; //dark
     case 8:  strcpy(o[0], "0ac");    strcpy(o[1], "124");    strcpy(o[2], "224");    strcpy(o[3], "003eff"); strcpy(o[4], "003eff"); strcpy(o[5], "003eff"); break; //air
     case 9:  strcpy(o[0], "f70");    strcpy(o[1], "421");    strcpy(o[2], "221");    strcpy(o[3], "a50");    strcpy(o[4], "f70");    strcpy(o[5], "f70");    break; //nixie
     case 10: strcpy(o[0], "2d2");    strcpy(o[1], "010");    strcpy(o[2], "121");    strcpy(o[3], "060");    strcpy(o[4], "040");    strcpy(o[5], "3f3");    break; //terminal
