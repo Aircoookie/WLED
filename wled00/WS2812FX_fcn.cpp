@@ -51,36 +51,34 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   
   unlockAll();
   setBrightness(_brightness);
-  _running = true;
 }
 
 void WS2812FX::service() {
-  if(_running || _triggered) {
-    unsigned long now = millis(); // Be aware, millis() rolls over every 49 days
-    bool doShow = false;
-    for(uint8_t i=0; i < _num_segments; i++)
+  unsigned long now = millis(); // Be aware, millis() rolls over every 49 days
+  bool doShow = false;
+  for(uint8_t i=0; i < _num_segments; i++)
+  {
+    _segment_index = i;
+    if(now > SEGMENT_RUNTIME.next_time || _triggered)
     {
-      _segment_index = i;
-      if(now > SEGMENT_RUNTIME.next_time || _triggered)
-      {
-        doShow = true;
-        handle_palette();
-        uint16_t delay = (this->*_mode[SEGMENT.mode])();
-        SEGMENT_RUNTIME.next_time = now + max(delay, 5);
-        SEGMENT_RUNTIME.counter_mode_call++;
-      }
+      doShow = true;
+      handle_palette();
+      uint16_t delay = (this->*_mode[SEGMENT.mode])();
+      SEGMENT_RUNTIME.next_time = now + max(delay, 5);
+      SEGMENT_RUNTIME.counter_mode_call++;
     }
-    if(doShow) {
-      show();
-    }
-    _triggered = false;
   }
+  if(doShow) {
+    show();
+  }
+  _triggered = false;
 }
 
 bool WS2812FX::modeUsesLock(uint8_t m)
 {
-  if (m < FX_MODE_FIRE_2012) return false;
-  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE || m == FX_MODE_METEOR || m == FX_MODE_METEOR_SMOOTH || m == FX_MODE_RIPPLE) return true;
+  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE  ||
+      m == FX_MODE_METEOR    || m == FX_MODE_METEOR_SMOOTH || 
+      m == FX_MODE_RIPPLE) return true;
   return false;
 }
 
@@ -94,7 +92,7 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  if (_locked[i] && !modeUsesLock(SEGMENT.mode)) return;
+  if (_locked[i] && !_modeUsesLock) return;
   if (_reverseMode) i = _length - 1 -i;
   if (IS_REVERSE)   i = SEGMENT.stop - (i - SEGMENT.start); //reverse just individual segment
   byte tmpg = g;
@@ -257,6 +255,7 @@ void WS2812FX::setMode(uint8_t m) {
   if (m > MODE_COUNT - 1) m = MODE_COUNT - 1;
   _segments[0].mode = m;
   if (ua) unlockAll();
+  _modeUsesLock = modeUsesLock(_segments[0].mode);
   setBrightness(_brightness);
 }
 
@@ -507,6 +506,68 @@ uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint8_t blend) 
 void WS2812FX::fill(uint32_t c) {
   for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
     setPixelColor(i, c);
+  }
+}
+
+/*
+ * fade out function, higher rate = quicker fade
+ */
+void WS2812FX::fade_out(uint8_t rate) {
+  rate = (255-rate) >> 1;
+  float mappedRate = float(rate) +1.1;
+
+  uint32_t color = SEGMENT.colors[1]; // target color
+  int w2 = (color >> 24) & 0xff;
+  int r2 = (color >> 16) & 0xff;
+  int g2 = (color >>  8) & 0xff;
+  int b2 =  color        & 0xff;
+
+  for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
+    color = getPixelColor(i);
+    int w1 = (color >> 24) & 0xff;
+    int r1 = (color >> 16) & 0xff;
+    int g1 = (color >>  8) & 0xff;
+    int b1 =  color        & 0xff;
+
+    int wdelta = (w2 - w1) / mappedRate;
+    int rdelta = (r2 - r1) / mappedRate;
+    int gdelta = (g2 - g1) / mappedRate;
+    int bdelta = (b2 - b1) / mappedRate;
+
+    // if fade isn't complete, make sure delta is at least 1 (fixes rounding issues)
+    wdelta += (w2 == w1) ? 0 : (w2 > w1) ? 1 : -1;
+    rdelta += (r2 == r1) ? 0 : (r2 > r1) ? 1 : -1;
+    gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
+    bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
+
+    setPixelColor(i, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
+  }
+}
+
+/*
+ * blurs segment content, source: FastLED colorutils.cpp
+ */
+void WS2812FX::blur(uint8_t blur_amount)
+{
+  uint8_t keep = 255 - blur_amount;
+  uint8_t seep = blur_amount >> 1;
+  CRGB carryover = CRGB::Black;
+  for(uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++)
+  {
+    CRGB cur = fastled_from_col(getPixelColor(i));
+    CRGB part = cur;
+    part.nscale8(seep);
+    cur.nscale8(keep);
+    cur += carryover;
+    if(i > SEGMENT.start) {
+      uint32_t c = getPixelColor(i-1);
+      uint8_t r = (c >> 16 & 0xFF);
+      uint8_t g = (c >> 8  & 0xFF);
+      uint8_t b = (c       & 0xFF);
+      setPixelColor(i-1, qadd8(r, part.red), qadd8(g, part.green), qadd8(b, part.blue));
+    }
+    setPixelColor(i,cur.red, cur.green, cur.blue);
+    carryover = part;
   }
 }
 

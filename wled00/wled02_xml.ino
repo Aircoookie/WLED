@@ -239,7 +239,6 @@ void getSettingsJS(byte subPage)
     sappend('c',"TW",nightlightFade);
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",reverseMode);
-    sappend('c',"EI",initLedsLast);
     sappend('c',"SL",skipFirstLed);
   }
 

@@ -14,7 +14,7 @@ void wledInit()
   Serial.begin(115200);
   Serial.setTimeout(50);
   
-  if (!EEPROM.read(397)) strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //quick init
+  strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //init LEDs quickly
   
   #ifdef USEFS
    SPIFFS.begin();
@@ -22,7 +22,7 @@ void wledInit()
   
   DEBUG_PRINTLN("Load EEPROM");
   loadSettingsFromEEPROM(true);
-  if (!initLedsLast) initStrip();
+  beginStrip();
   DEBUG_PRINT("CSSID: ");
   DEBUG_PRINT(clientSSID);
   userBeginPreConnection();
@@ -77,12 +77,12 @@ void wledInit()
     mqttInit = initMQTT();
   }
    
-  if (!initLedsLast) strip.service();
+  strip.service();
 
   //HTTP server page init
   initServer();
   
-  if (!initLedsLast) strip.service();
+  strip.service();
   //init Alexa hue emulation
   if (alexaEnabled && !onlyAP) alexaInit();
 
@@ -105,7 +105,7 @@ void wledInit()
     }
     #endif
   
-    if (!initLedsLast) strip.service();
+    strip.service();
     // Set up mDNS responder:
     if (strlen(cmDNS) > 0 && !onlyAP)
     {
@@ -115,7 +115,7 @@ void wledInit()
       MDNS.addService("http", "tcp", 80);
       MDNS.addService("wled", "tcp", 80);
     }
-    if (!initLedsLast) strip.service();
+    strip.service();
 
     initBlynk(blynkApiKey);
     initE131();
@@ -125,7 +125,6 @@ void wledInit()
     e131Enabled = false;
   }
 
-  if (initLedsLast) initStrip();
   userBegin();
 
   if (macroBoot>0) applyMacro(macroBoot);
@@ -133,10 +132,9 @@ void wledInit()
 }
 
 
-void initStrip()
+void beginStrip()
 {
   // Initialize NeoPixel Strip and button
-  if (initLedsLast) strip.init(useRGBW,ledCount,skipFirstLed);
   strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
@@ -196,13 +194,10 @@ void initCon()
   while(!con)
   {
     yield();
-    if (!initLedsLast)
-    {
-      handleTransitions();
-      handleButton();
-      handleOverlays();
-      if (briT) strip.service();
-    }
+    handleTransitions();
+    handleButton();
+    handleOverlays();
+    if (briT) strip.service();
     if (millis()-lastTry > 499) {
       con = (WiFi.status() == WL_CONNECTED);
       lastTry = millis();
@@ -277,7 +272,7 @@ void getBuildInfo()
   oappend("\r\nstrip-pin: gpio");
   oappendi(LEDPIN);
   oappend("\r\nbrand: wled");
-  oappend("\r\nbuild-type: dev\r\n");
+  oappend("\r\nbuild-type: src\r\n");
 }
 
 

@@ -118,7 +118,7 @@
 #define FX_MODE_LARSON_SCANNER          40
 #define FX_MODE_COMET                   41
 #define FX_MODE_FIREWORKS               42
-#define FX_MODE_FIREWORKS_RANDOM        43
+#define FX_MODE_RAIN                    43
 #define FX_MODE_MERRY_CHRISTMAS         44
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
@@ -226,7 +226,7 @@ class WS2812FX {
       _mode[FX_MODE_LARSON_SCANNER]          = &WS2812FX::mode_larson_scanner;
       _mode[FX_MODE_COMET]                   = &WS2812FX::mode_comet;
       _mode[FX_MODE_FIREWORKS]               = &WS2812FX::mode_fireworks;
-      _mode[FX_MODE_FIREWORKS_RANDOM]        = &WS2812FX::mode_fireworks_random;
+      _mode[FX_MODE_RAIN]                    = &WS2812FX::mode_rain;
       _mode[FX_MODE_MERRY_CHRISTMAS]         = &WS2812FX::mode_merry_christmas;
       _mode[FX_MODE_FIRE_FLICKER]            = &WS2812FX::mode_fire_flicker;
       _mode[FX_MODE_GRADIENT]                = &WS2812FX::mode_gradient;
@@ -267,7 +267,6 @@ class WS2812FX {
       _mode[FX_MODE_RIPPLE]                  = &WS2812FX::mode_ripple;
 
       _brightness = DEFAULT_BRIGHTNESS;
-      _running = false;
       _num_segments = 1;
       _segments[0].mode = DEFAULT_MODE;
       _segments[0].colors[0] = DEFAULT_COLOR;
@@ -283,6 +282,7 @@ class WS2812FX {
       ablMilliampsMax = 750;
       currentMilliamps = 0;
       _locked = NULL;
+      _modeUsesLock = false;
       _cronixieDigits = new byte[6];
       bus = new NeoPixelWrapper();
       RESET_RUNTIME;
@@ -291,6 +291,7 @@ class WS2812FX {
     void
       init(bool supportWhite, uint16_t countPixels, bool skipFirst),
       service(void),
+      blur(uint8_t),
       fade_out(uint8_t r),
       setMode(uint8_t m),
       setSpeed(uint8_t s),
@@ -362,11 +363,10 @@ class WS2812FX {
       theater_chase(uint32_t, uint32_t, bool),
       running_base(bool),
       dissolve(uint32_t),
-      chase(uint32_t, uint32_t, uint32_t, uint8_t),
+      chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
       running(uint32_t, uint32_t),
-      fireworks(uint32_t),
-      tricolor_chase(uint32_t, uint32_t, uint32_t);
+      tricolor_chase(uint32_t, uint32_t);
 
     // builtin modes
     uint16_t
@@ -413,7 +413,7 @@ class WS2812FX {
       mode_larson_scanner(void),
       mode_comet(void),
       mode_fireworks(void),
-      mode_fireworks_random(void),
+      mode_rain(void),
       mode_merry_christmas(void),
       mode_halloween(void),
       mode_fire_flicker(void),
@@ -467,8 +467,8 @@ class WS2812FX {
     void fill(uint32_t);
     bool modeUsesLock(uint8_t);
 
-    boolean
-      _running,
+    bool
+      _modeUsesLock,
       _rgbwMode,
       _reverseMode,
       _cronixieMode,
@@ -539,7 +539,7 @@ const char JSON_mode_names[] PROGMEM = R"=====({"effects":[
 "Scanner",
 "Lighthouse",
 "Fireworks",
-"Fireworks Rnd",
+"Rain",
 "Merry Christmas",
 "Fire Flicker",
 "Gradient",

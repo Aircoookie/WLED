@@ -113,7 +113,6 @@ void handleSettingsSet(byte subPage)
     
     t = server.arg("PB").toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
-    initLedsLast = server.hasArg("EI");
     reverseMode = server.hasArg("RV");
     strip.setReverseMode(reverseMode);
     skipFirstLed = server.hasArg("SL");

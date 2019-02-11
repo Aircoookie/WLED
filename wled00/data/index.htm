@@ -18,6 +18,9 @@
 		var nState = 0;
 		var cv=0;
 		var lm=0;
+    var fxi=0;
+    var fpi=0;
+    var fxn=1;
 		aC="";
 		bC="";
 		dC="";
@@ -62,8 +65,8 @@
 							} else {
 								uwv = false;
 							}
-							Cf.TX.selectedIndex = this.responseXML.getElementsByTagName('fx')[0].childNodes[0].nodeValue;
-							Cf.FP.selectedIndex = this.responseXML.getElementsByTagName('fp')[0].childNodes[0].nodeValue;
+							fxi = this.responseXML.getElementsByTagName('fx')[0].childNodes[0].nodeValue;
+							fpi = this.responseXML.getElementsByTagName('fp')[0].childNodes[0].nodeValue;
 							d.Cf.SX.value = this.responseXML.getElementsByTagName('sx')[0].childNodes[0].nodeValue;
 							d.Cf.IX.value = this.responseXML.getElementsByTagName('ix')[0].childNodes[0].nodeValue;
 							nla = (this.responseXML.getElementsByTagName('nl')[0].innerHTML)!=0?true:false;
@@ -80,7 +83,11 @@
 								d.documentElement.style.setProperty("--cFn",this.responseXML.getElementsByTagName('cf')[0].childNodes[0].nodeValue);
 								UCol();
 								CV(parseInt(this.responseXML.getElementsByTagName('md')[0].childNodes[0].nodeValue));
-							}firstload=false;
+							}else{
+                Cf.TX.selectedIndex = fxi;
+                Cf.IX.selectedIndex = fpi;
+              }
+              firstload=false;
 							nState = 0;
 							nState = (this.responseXML.getElementsByTagName('nr')[0].innerHTML)!=0?1:0;
 							nState += (this.responseXML.getElementsByTagName('ns')[0].innerHTML)!=0?2:0;
@@ -206,10 +213,10 @@
 		function SwFX(s)
 		{
 			var n=Cf.TX.selectedIndex+s;
-			if (n==-1||n==79) return;
+			if (n==-1||n==fxn) return;
 			Cf.TX.selectedIndex =n;
 			if (n < 0) Cf.TX.selectedIndex = 0;
-			if (n > 78) Cf.TX.selectedIndex = 65;
+			if (n > fxn) Cf.TX.selectedIndex = Math.min(65,fxn-1);
 			GX();
 		}
 		function TgHSB()
@@ -376,6 +383,9 @@
             x += "<option value=\""+i+"\">"+l[i]+" ("+i+")</option>";
           }
           el.innerHTML=x;
+          el.selectedIndex=fp?fpi:fxi;
+          if(!fp)fxn=l.length;
+          UV();
         })
         .catch(function () {
           el.innerHTML=e;

@@ -158,7 +158,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(394, abs(utcOffsetSecs) & 0xFF);
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
-  EEPROM.write(397, initLedsLast);
+  //397 was initLedsLast
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
   EEPROM.write(399, !enableSecTransition);
 
@@ -461,7 +461,7 @@ void loadSettingsFromEEPROM(bool first)
     strip.colorOrder = EEPROM.read(383);
     irEnabled = EEPROM.read(385);
     strip.ablMilliampsMax = EEPROM.read(387) + ((EEPROM.read(388) << 8) & 0xFF00);
-  } else if (lastEEPROMversion > 1) //ABL is off by default when updating from version older than 0.8.3
+  } else if (lastEEPROMversion > 1) //ABL is off by default when updating from version older than 0.8.2
   {
     strip.ablMilliampsMax = 65000;
   } else {
@@ -495,7 +495,6 @@ void loadSettingsFromEEPROM(bool first)
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
-  initLedsLast = EEPROM.read(397);
   enableSecTransition = !EEPROM.read(399);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)

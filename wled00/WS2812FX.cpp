@@ -417,44 +417,6 @@ uint16_t WS2812FX::mode_twinkle(void) {
 
 
 /*
- * fade out function
- * fades out the current segment by dividing each pixel's intensity by 2
- */
-void WS2812FX::fade_out(uint8_t rate) {
-  static const float rateMap[] = {1.1, 1.20, 1.5, 2.0, 4.0, 8.0, 16.0, 64.0};
-  if (rate > 7) rate = 7;
-  float mappedRate = rateMap[rate];
-
-  uint32_t color = SEGMENT.colors[1]; // target color
-  int w2 = (color >> 24) & 0xff;
-  int r2 = (color >> 16) & 0xff;
-  int g2 = (color >>  8) & 0xff;
-  int b2 =  color        & 0xff;
-
-  for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
-    color = getPixelColor(i);
-    int w1 = (color >> 24) & 0xff;
-    int r1 = (color >> 16) & 0xff;
-    int g1 = (color >>  8) & 0xff;
-    int b1 =  color        & 0xff;
-
-    int wdelta = (w2 - w1) / mappedRate;
-    int rdelta = (r2 - r1) / mappedRate;
-    int gdelta = (g2 - g1) / mappedRate;
-    int bdelta = (b2 - b1) / mappedRate;
-
-    // if fade isn't complete, make sure delta is at least 1 (fixes rounding issues)
-    wdelta += (w2 == w1) ? 0 : (w2 > w1) ? 1 : -1;
-    rdelta += (r2 == r1) ? 0 : (r2 > r1) ? 1 : -1;
-    gdelta += (g2 == g1) ? 0 : (g2 > g1) ? 1 : -1;
-    bdelta += (b2 == b1) ? 0 : (b2 > b1) ? 1 : -1;
-
-    setPixelColor(i, r1 + rdelta, g1 + gdelta, b1 + bdelta, w1 + wdelta);
-  }
-}
-
-
-/*
  * Dissolve function
  */
 uint16_t WS2812FX::dissolve(uint32_t color) {
@@ -647,18 +609,12 @@ uint16_t WS2812FX::mode_android(void) {
  * color1 = background color
  * color2 and color3 = colors of two adjacent leds
  */
-uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, uint8_t dopalette) {
+uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool dopalette) {
   uint16_t a = SEGMENT_RUNTIME.counter_mode_step;
   uint16_t b = (a + 1) % SEGMENT_LENGTH;
   uint16_t c = (b + 1) % SEGMENT_LENGTH;
 
-  switch (dopalette)
-  {
-    case 0: break;
-    case 1: color1 = color_from_palette(SEGMENT.start + a, true, PALETTE_SOLID_WRAP, 1); break;
-    case 2: color2 = color_from_palette(SEGMENT.start + b, true, PALETTE_SOLID_WRAP, 1); break;
-    case 3: color3 = color_from_palette(SEGMENT.start + c, true, PALETTE_SOLID_WRAP, 1); break;
-  }
+  if (dopalette) color1 = color_from_palette(SEGMENT.start + a, true, PALETTE_SOLID_WRAP, 1);
 
   setPixelColor(SEGMENT.start + a, color1);
   setPixelColor(SEGMENT.start + b, color2);
@@ -673,7 +629,7 @@ uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, uint
  * Bicolor chase, more primary color.
  */
 uint16_t WS2812FX::mode_chase_color(void) {
-  return chase(SEGMENT.colors[1], SEGMENT.colors[0], SEGMENT.colors[0], 1);
+  return chase(SEGMENT.colors[1], SEGMENT.colors[0], SEGMENT.colors[0], true);
 }
 
 
@@ -684,7 +640,7 @@ uint16_t WS2812FX::mode_chase_random(void) {
   if(SEGMENT_RUNTIME.counter_mode_step == 0) {
     SEGMENT_RUNTIME.aux_param = get_random_wheel_index(SEGMENT_RUNTIME.aux_param);
   }
-  return chase(color_wheel(SEGMENT_RUNTIME.aux_param), SEGMENT.colors[0], SEGMENT.colors[0], 0);
+  return chase(color_wheel(SEGMENT_RUNTIME.aux_param), SEGMENT.colors[0], SEGMENT.colors[0], false);
 }
 
 
@@ -697,7 +653,7 @@ uint16_t WS2812FX::mode_chase_rainbow_white(void) {
   uint32_t color2 = color_wheel(((n * 256 / SEGMENT_LENGTH) + (SEGMENT_RUNTIME.counter_mode_call & 0xFF)) & 0xFF);
   uint32_t color3 = color_wheel(((m * 256 / SEGMENT_LENGTH) + (SEGMENT_RUNTIME.counter_mode_call & 0xFF)) & 0xFF);
 
-  return chase(SEGMENT.colors[0], color2, color3, 0);
+  return chase(SEGMENT.colors[0], color2, color3, false);
 }
 
 
@@ -924,7 +880,7 @@ uint16_t WS2812FX::mode_running_random(void) {
  * K.I.T.T.
  */
 uint16_t WS2812FX::mode_larson_scanner(void) {
-  fade_out((255-SEGMENT.intensity) / 32);
+  fade_out(SEGMENT.intensity);
 
   uint16_t index = 0;
   if(SEGMENT_RUNTIME.counter_mode_step < SEGMENT_LENGTH) {
@@ -943,7 +899,7 @@ uint16_t WS2812FX::mode_larson_scanner(void) {
  * Firing comets from one end.
  */
 uint16_t WS2812FX::mode_comet(void) {
-  fade_out((255-SEGMENT.intensity) / 32);
+  fade_out(SEGMENT.intensity);
 
   uint16_t index = SEGMENT.start + SEGMENT_RUNTIME.counter_mode_step;
   setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
@@ -956,50 +912,53 @@ uint16_t WS2812FX::mode_comet(void) {
 /*
  * Fireworks function.
  */
-uint16_t WS2812FX::fireworks(uint32_t color) {
-  uint32_t prevLed, thisLed, nextLed;
-
-  fade_out(3);
-
-  // set brightness(i) = ((brightness(i-1)/4 + brightness(i+1))/4) + brightness(i)
-  for(uint16_t i=SEGMENT.start + 1; i <SEGMENT.stop; i++) {
-    prevLed = (getPixelColor(i-1) >> 2) & 0x3F3F3F3F;
-    thisLed = getPixelColor(i);
-    nextLed = (getPixelColor(i+1) >> 2) & 0x3F3F3F3F;
-    setPixelColor(i, prevLed + thisLed + nextLed);
+uint16_t WS2812FX::mode_fireworks() {
+  fade_out(0);
+  if (SEGMENT_RUNTIME.counter_mode_call == 0) {
+    SEGMENT_RUNTIME.aux_param = UINT16_MAX;
+    SEGMENT_RUNTIME.aux_param2 = UINT16_MAX;
   }
+  bool valid1 = (SEGMENT_RUNTIME.aux_param  <= SEGMENT.stop && SEGMENT_RUNTIME.aux_param  >= SEGMENT.start);
+  bool valid2 = (SEGMENT_RUNTIME.aux_param2 <= SEGMENT.stop && SEGMENT_RUNTIME.aux_param2 >= SEGMENT.start);
+  uint32_t sv1 = 0, sv2 = 0;
+  if (valid1) sv1 = getPixelColor(SEGMENT_RUNTIME.aux_param);
+  if (valid2) sv2 = getPixelColor(SEGMENT_RUNTIME.aux_param2);
+  blur(255-SEGMENT.speed);
+  if (valid1) setPixelColor(SEGMENT_RUNTIME.aux_param , sv1);
+  if (valid2) setPixelColor(SEGMENT_RUNTIME.aux_param2, sv2);
 
   for(uint16_t i=0; i<max(1, SEGMENT_LENGTH/20); i++) {
-    if(random8((255 - SEGMENT.intensity)/8) == 0) {
-      uint16_t index = SEGMENT.start + random16(SEGMENT_LENGTH);
-      if (color == SEGMENT.colors[0])
-      {
-        setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
-      } else
-      {
-        setPixelColor(index, color);
-      }
+    if(random8(129 - (SEGMENT.intensity >> 1)) == 0) {
+      uint16_t index = SEGMENT.start + random(SEGMENT_LENGTH);
+      setPixelColor(index, color_from_palette(random8(), false, false, 0));
+      SEGMENT_RUNTIME.aux_param2 = SEGMENT_RUNTIME.aux_param;
+      SEGMENT_RUNTIME.aux_param = index;
     }
   }
-  return SPEED_FORMULA_L;
+  return 22;
 }
 
 
-/*
- * Firework sparks.
- */
-uint16_t WS2812FX::mode_fireworks(void) {
-  uint32_t color = SEGMENT.colors[0];
-  return fireworks(color);
-}
-
-
-/*
- * Random colored firework sparks.
- */
-uint16_t WS2812FX::mode_fireworks_random(void) {
-  uint32_t color = color_wheel(random8());
-  return fireworks(color);
+//Twinkling LEDs running. Inspired by https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Rain.h
+uint16_t WS2812FX::mode_rain()
+{
+  SEGMENT_RUNTIME.counter_mode_step += 22;
+  if (SEGMENT_RUNTIME.counter_mode_step > SPEED_FORMULA_L) {
+    SEGMENT_RUNTIME.counter_mode_step = 0;
+    //shift all leds right
+    uint32_t ctemp = getPixelColor(SEGMENT.stop);
+    for(uint16_t i=SEGMENT.stop; i>SEGMENT.start; i--) {
+      setPixelColor(i, getPixelColor(i-1));
+    }
+    setPixelColor(SEGMENT.start, ctemp);
+    SEGMENT_RUNTIME.aux_param++;
+    SEGMENT_RUNTIME.aux_param2++;
+    if (SEGMENT_RUNTIME.aux_param == 0) SEGMENT_RUNTIME.aux_param = UINT16_MAX;
+    if (SEGMENT_RUNTIME.aux_param2 == 0) SEGMENT_RUNTIME.aux_param = UINT16_MAX;
+    if (SEGMENT_RUNTIME.aux_param == SEGMENT.stop +1) SEGMENT_RUNTIME.aux_param = SEGMENT.start;
+    if (SEGMENT_RUNTIME.aux_param2 == SEGMENT.stop +1) SEGMENT_RUNTIME.aux_param2 = SEGMENT.start;
+  }
+  return mode_fireworks();
 }
 
 
@@ -1256,13 +1215,13 @@ uint16_t WS2812FX::mode_dual_color_wipe_out_in(void) {
 /*
  * Tricolor chase function
  */
-uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2, uint32_t color3) {
+uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2) {
   uint16_t index = SEGMENT_RUNTIME.counter_mode_step % 6;
   for(uint16_t i=0; i < SEGMENT_LENGTH; i++, index++) {
     if(index > 5) index = 0;
 
     uint32_t color = color1;
-    if(index > 3) color = color_from_palette(i, true, PALETTE_SOLID_WRAP, 2);
+    if(index > 3) color = color_from_palette(i, true, PALETTE_SOLID_WRAP, 1);
     else if(index > 1) color = color2;
 
     setPixelColor(SEGMENT.stop - i, color);
@@ -1277,7 +1236,7 @@ uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2, uint32_t col
  * Alternating white/red/black pixels running. PLACEHOLDER
  */
 uint16_t WS2812FX::mode_circus_combustus(void) {
-  return tricolor_chase(RED, WHITE, BLACK);
+  return tricolor_chase(RED, WHITE);
 }
 
 
@@ -1285,7 +1244,7 @@ uint16_t WS2812FX::mode_circus_combustus(void) {
  * Tricolor chase mode
  */
 uint16_t WS2812FX::mode_tricolor_chase(void) {
-  return tricolor_chase(SEGMENT.colors[1], SEGMENT.colors[0], SEGMENT.colors[2]);
+  return tricolor_chase(SEGMENT.colors[2], SEGMENT.colors[0]);
 }
 
 
@@ -1400,11 +1359,11 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
  */
 uint16_t WS2812FX::mode_multi_comet(void)
 {
-  fade_out((255-SEGMENT.intensity) / 32);
+  fade_out(SEGMENT.intensity);
 
-  static uint16_t comets[] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
+  static uint16_t comets[] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
 
-  for(uint8_t i=0; i < 6; i++) {
+  for(uint8_t i=0; i < 8; i++) {
     if(comets[i] < SEGMENT_LENGTH) {
       uint16_t index = SEGMENT.start + comets[i];
       if (SEGMENT.colors[2] != 0)
@@ -1438,7 +1397,7 @@ uint16_t WS2812FX::mode_dual_larson_scanner(void){
     SEGMENT_RUNTIME.counter_mode_step++;
   }
 
-  fade_out((255-SEGMENT.intensity) / 32);
+  fade_out(SEGMENT.intensity);
 
   uint16_t index = SEGMENT.start + SEGMENT_RUNTIME.counter_mode_step;
   setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
@@ -1475,6 +1434,7 @@ uint16_t WS2812FX::mode_random_chase(void)
 
   return SPEED_FORMULA_L;
 }
+
 
 typedef struct Oscillator {
   int16_t pos;
@@ -1605,13 +1565,13 @@ uint16_t WS2812FX::mode_pride_2015(void)
 
 //eight colored dots, weaving in and out of sync with each other
 uint16_t WS2812FX::mode_juggle(void){
-  fade_out((255-SEGMENT.intensity) / 32);
+  fade_out(SEGMENT.intensity);
   CRGB fastled_col;
   byte dothue = 0;
   for ( byte i = 0; i < 8; i++) {
     uint16_t index = SEGMENT.start + beatsin16(i + 7, 0, SEGMENT_LENGTH -1);
     fastled_col = fastled_from_col(getPixelColor(index));
-    fastled_col |= CHSV(dothue, 220, 255);
+    fastled_col |= (SEGMENT.palette==0)?CHSV(dothue, 220, 255):ColorFromPalette(currentPalette, dothue, 255);
     setPixelColor(index, fastled_col.red, fastled_col.green, fastled_col.blue);
     dothue += 32;
   }
@@ -2036,10 +1996,8 @@ uint16_t WS2812FX::mode_railway()
 
 
 //Water ripple
-//fade duration is random 2-5sec
 //propagation velocity from speed
 //drop rate from intensity
-//? smooth sine instead of shifting +2
 uint16_t WS2812FX::mode_ripple()
 {
   uint16_t maxripples = SEGMENT_LENGTH / 4;

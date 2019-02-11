@@ -78,8 +78,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902101
-char versionString[] = "0.8.3-dev";
+#define VERSION 1902112
+char versionString[] = "0.8.3";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -141,7 +141,6 @@ bool enableSecTransition = true;              //also enable transition for secon
 uint16_t transitionDelay = 900;              //default crossfade duration in ms
 
 bool reverseMode  = false;                    //flip entire LED strip (reverses all effect directions)
-bool initLedsLast = false;                    //turn on LEDs only after WiFi connected/AP open
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
 byte briMultiplier =  100;                    //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 

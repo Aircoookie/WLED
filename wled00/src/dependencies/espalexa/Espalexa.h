@@ -37,7 +37,7 @@
 #else
  #ifdef ARDUINO_ARCH_ESP32
   #include <WiFi.h>
-  #include "../webserver/WebServer.h" //> //if you get an error here please update to ESP32 arduino core 1.0.0
+  #include "../webserver/WebServer.h" //if you get an error here please update to ESP32 arduino core 1.0.0
  #else
   #include <ESP8266WebServer.h>
   #include <ESP8266WiFi.h>
@@ -351,6 +351,7 @@ public:
     if (len > 0) {
       packetBuffer[len] = 0;
     }
+    espalexaUdp.flush();
 
     String request = packetBuffer;
     EA_DEBUGLN(request);
