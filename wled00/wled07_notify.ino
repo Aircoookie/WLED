@@ -45,7 +45,7 @@ void notify(byte callMode, bool followUp=false)
   udpOut[19] = effectPalette;
   
   IPAddress broadcastIp;
-  broadcastIp = ~WiFi.subnetMask() | WiFi.gatewayIP();
+  broadcastIp = ~uint32_t(WiFi.subnetMask()) | uint32_t(WiFi.gatewayIP());
 
   notifierUdp.beginPacket(broadcastIp, udpPort);
   notifierUdp.write(udpOut, WLEDPACKETSIZE);
