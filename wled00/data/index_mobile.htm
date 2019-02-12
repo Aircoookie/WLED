@@ -8,6 +8,7 @@
   <meta content="yes" name="apple-mobile-web-app-capable">
   <link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC"/>
   <title>WLED 0.8.3</title>
+  <script>function feedback(){}</script>
   <style>
          *{transition-duration: 0.5s;}
          body {
@@ -375,7 +376,7 @@ var recv=1;
 var nla=false;
 var lbri=222;
 //Feedback
-function feedback(){
+feedback = function() {
 	var e = d.body;
 	e.classList.remove("feedbackanim");
 	void e.offsetWidth;
@@ -465,7 +466,7 @@ if (d.getElementById('myoos-n').checked)
 function fillfx(fp){
 e="Error loading list!";
 el = d.getElementById(fp?'fpl':'fxl');
-fetch(fp?'/json/palettes':'http://10.10.1.52/json/effects')
+fetch(fp?'/json/palettes':'/json/effects')
   .then(res => {
     if (!res.ok) {
        el.innerHTML=e;
@@ -543,7 +544,6 @@ function GIO()
 	d.getElementsByClassName("desc")[0].innerHTML = this.responseXML.getElementsByTagName('ds')[0].innerHTML;
 	recv =1;
 	uB();
-  setTimeout(fillfx, 500);
 	}
 	}
 	request.open("GET", "win" +nocache, true);
