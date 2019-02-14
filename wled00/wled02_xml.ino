@@ -79,7 +79,7 @@ void XML_response(bool isHTTP, bool includeTheme)
     oappend("</cf></th>");
   }
   oappend("</vs>");
-  if (isHTTP) server.send(200, "text/xml", obuf);
+  if (isHTTP) server->send(200, "text/xml", obuf);
 }
 
 //append a numeric setting to string buffer

@@ -33,15 +33,16 @@
 #ifdef ARDUINO_ARCH_ESP32
  #include <WiFi.h>
  #include <ESPmDNS.h>
- #include "src/dependencies/webserver/WebServer.h"
+ #include "src/dependencies/webserver/Webserver->h"
  #include <HTTPClient.h>
  /*#ifndef WLED_DISABLE_INFRARED
   #include <IRremote.h>
  #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
 #else
+ #define TEMPLATE_PLACEHOLDER '~'
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
- #include <ESP8266WebServer.h>
+ #include <ESP8266Webserver.h>
  #include <ESP8266HTTPClient.h>
  #ifndef WLED_DISABLE_INFRARED
   #include <IRremoteESP8266.h>
@@ -52,10 +53,10 @@
 
 #include <EEPROM.h>
 #include <WiFiUdp.h>
-#include <DNSServer.h>
+#include <DNSserver.h>
 #ifndef WLED_DISABLE_OTA
  #include <ArduinoOTA.h>
- #include "src/dependencies/webserver/ESP8266HTTPUpdateServer.h"
+ #include "src/dependencies/webserver/ESP8266HTTPUpdateserver->h"
 #endif
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
@@ -175,7 +176,7 @@ bool notifyTwice  = false;                    //notifications use UDP: enable if
 bool alexaEnabled = true;                     //enable device discovery by Amazon Echo
 char alexaInvocationName[33] = "Light";       //speech control name of device. Choose something voice-to-text can understand
 
-char blynkApiKey[36] = "";                    //Auth token for Blynk server. If empty, no connection will be made
+char blynkApiKey[36] = "";                    //Auth token for Blynk server-> If empty, no connection will be made
 
 uint16_t realtimeTimeoutMs = 2500;            //ms timeout of realtime mode before returning to normal mode
 int  arlsOffset = 0;                          //realtime LED offset
@@ -499,7 +500,7 @@ void setup() {
 
 //main program loop
 void loop() {
-  server.handleClient();
+  server->handleClient();
   handleSerial();
   handleNotifications();
   handleTransitions();
@@ -521,7 +522,7 @@ void loop() {
   
   if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
   {
-    if (dnsActive) dnsServer.processNextRequest();
+    if (dnsActive) dnsserver.processNextRequest();
     #ifndef WLED_DISABLE_OTA
      if (aOtaEnabled) ArduinoOTA.handle();
     #endif

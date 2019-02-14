@@ -52,7 +52,7 @@ String formatBytes(size_t bytes){
 }
 
 String getContentType(String filename){
-  if(server.hasArg("download")) return "application/octet-stream";
+  if(server->hasArg("download")) return "application/octet-stream";
   else if(filename.endsWith(".htm")) return "text/html";
   else if(filename.endsWith(".html")) return "text/html";
   else if(filename.endsWith(".css")) return "text/css";
@@ -77,7 +77,7 @@ bool handleFileRead(String path){
     if(SPIFFS.exists(pathWithGz))
       path += ".gz";
     File file = SPIFFS.open(path, "r");
-    size_t sent = server.streamFile(file, contentType);
+    size_t sent = server->streamFile(file, contentType);
     file.close();
     return true;
   }
@@ -85,8 +85,8 @@ bool handleFileRead(String path){
 }
 
 void handleFileUpload(){
-  if(server.uri() != "/edit") return;
-  HTTPUpload& upload = server.upload();
+  if(server->uri() != "/edit") return;
+  HTTPUpload& upload = server->upload();
   if(upload.status == UPLOAD_FILE_START){
     String filename = upload.filename;
     if(!filename.startsWith("/")) filename = "/"+filename;
@@ -105,22 +105,22 @@ void handleFileUpload(){
 }
 
 void handleFileDelete(){
-  if(server.args() == 0) return server.send(500, "text/plain", "BAD ARGS");
-  String path = server.arg(0);
+  if(server->args() == 0) return server->send(500, "text/plain", "BAD ARGS");
+  String path = server->arg(0);
   DEBUG_PRINTLN("handleFileDelete: " + path);
   if(path == "/")
-    return server.send(500, "text/plain", "BAD PATH");
+    return server->send(500, "text/plain", "BAD PATH");
   if(!SPIFFS.exists(path))
-    return server.send(404, "text/plain", "FileNotFound");
+    return server->send(404, "text/plain", "FileNotFound");
   SPIFFS.remove(path);
-  server.send(200, "text/plain", "");
+  server->send(200, "text/plain", "");
   path = String();
 }
 
 void handleFileList() {
-  if(!server.hasArg("dir")) {server.send(500, "text/plain", "BAD ARGS"); return;}
+  if(!server->hasArg("dir")) {server->send(500, "text/plain", "BAD ARGS"); return;}
   
-  String path = server.arg("dir");
+  String path = server->arg("dir");
   DEBUG_PRINTLN("handleFileList: " + path);
   Dir dir = SPIFFS.openDir(path);
   path = String();
@@ -139,24 +139,24 @@ void handleFileList() {
   }
   
   output += "]";
-  server.send(200, "text/json", output);
+  server->send(200, "text/json", output);
 }
 
 void handleFileCreate(){
-  if(server.args() == 0)
-    return server.send(500, "text/plain", "BAD ARGS");
-  String path = server.arg(0);
+  if(server->args() == 0)
+    return server->send(500, "text/plain", "BAD ARGS");
+  String path = server->arg(0);
   DEBUG_PRINTLN("handleFileCreate: " + path);
   if(path == "/")
-    return server.send(500, "text/plain", "BAD PATH");
+    return server->send(500, "text/plain", "BAD PATH");
   if(SPIFFS.exists(path))
-    return server.send(500, "text/plain", "FILE EXISTS");
+    return server->send(500, "text/plain", "FILE EXISTS");
   File file = SPIFFS.open(path, "w");
   if(file)
     file.close();
   else
-    return server.send(500, "text/plain", "CREATE FAILED");
-  server.send(200, "text/plain", "");
+    return server->send(500, "text/plain", "CREATE FAILED");
+  server->send(200, "text/plain", "");
   path = String();
 }
 
