@@ -603,7 +603,7 @@ void applyMacro(byte index)
    */
   forbidden = forbidden + index;
   if (mc.indexOf(forbidden) >= 0) return;
-  handleSet(mc);
+  handleSet(nullptr, mc);
 }
 
 

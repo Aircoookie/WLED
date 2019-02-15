@@ -33,16 +33,17 @@
 #ifdef ARDUINO_ARCH_ESP32
  #include <WiFi.h>
  #include <ESPmDNS.h>
- #include "src/dependencies/webserver/Webserver->h"
+ #include <AsyncTCP.h>
+ #include <AsyncWebServer.h>
  #include <HTTPClient.h>
  /*#ifndef WLED_DISABLE_INFRARED
   #include <IRremote.h>
  #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
 #else
- #define TEMPLATE_PLACEHOLDER '~'
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
- #include <ESP8266Webserver.h>
+ #include <ESPAsyncTCP.h>
+ #include <ESPAsyncWebServer.h>
  #include <ESP8266HTTPClient.h>
  #ifndef WLED_DISABLE_INFRARED
   #include <IRremoteESP8266.h>
@@ -53,15 +54,16 @@
 
 #include <EEPROM.h>
 #include <WiFiUdp.h>
-#include <DNSserver.h>
+#include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
  #include <ArduinoOTA.h>
- #include "src/dependencies/webserver/ESP8266HTTPUpdateserver->h"
+ //#include "src/dependencies/webserver/ESP8266HTTPUpdateServer.h"
 #endif
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
 #ifndef WLED_DISABLE_ALEXA
+ #define ESPALEXA_ASYNC
  #define ESPALEXA_MAXDEVICES 1
  #include "src/dependencies/espalexa/Espalexa.h"
 #endif
@@ -79,8 +81,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902122
-char versionString[] = "0.8.3";
+#define VERSION 1902162
+char versionString[] = "0.8.4-dev";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -176,7 +178,7 @@ bool notifyTwice  = false;                    //notifications use UDP: enable if
 bool alexaEnabled = true;                     //enable device discovery by Amazon Echo
 char alexaInvocationName[33] = "Light";       //speech control name of device. Choose something voice-to-text can understand
 
-char blynkApiKey[36] = "";                    //Auth token for Blynk server-> If empty, no connection will be made
+char blynkApiKey[36] = "";                    //Auth token for Blynk server. If empty, no connection will be made
 
 uint16_t realtimeTimeoutMs = 2500;            //ms timeout of realtime mode before returning to normal mode
 int  arlsOffset = 0;                          //realtime LED offset
@@ -394,18 +396,17 @@ unsigned int ntpLocalPort = 2390;
 char obuf[OMAX];
 uint16_t olen = 0;
 
+String messageHead, messageSub;
+uint32_t optionType;
+
 //server library objects
-#ifdef ARDUINO_ARCH_ESP32
- WebServer server(80);
-#else
- ESP8266WebServer server(80);
-#endif
+AsyncWebServer server(80);
 HTTPClient* hueClient = NULL;
 WiFiClient* mqttTCPClient = NULL;
 PubSubClient* mqtt = NULL;
 
 #ifndef WLED_DISABLE_OTA
- ESP8266HTTPUpdateServer httpUpdater;
+//ESP8266HTTPUpdateServer httpUpdater;
 #endif
 
 //udp interface objects
@@ -458,7 +459,7 @@ const byte gamma8[] = {
 String txd = "Please disable OTA Lock in security settings!";
 
 //function prototypes
-void serveMessage(int,String,String,int=255);
+void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,uint32_t);
 
 
 //turns all LEDs off and restarts ESP
@@ -500,7 +501,6 @@ void setup() {
 
 //main program loop
 void loop() {
-  server->handleClient();
   handleSerial();
   handleNotifications();
   handleTransitions();
@@ -522,7 +522,7 @@ void loop() {
   
   if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
   {
-    if (dnsActive) dnsserver.processNextRequest();
+    if (dnsActive) dnsServer.processNextRequest();
     #ifndef WLED_DISABLE_OTA
      if (aOtaEnabled) ArduinoOTA.handle();
     #endif

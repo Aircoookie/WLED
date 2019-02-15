@@ -3,16 +3,13 @@
  */
  
 //common CSS of settings pages
-const char PAGE_settingsCss[] PROGMEM = R"=====(body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:4em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}td{padding:2px;}</style>)=====";
+const char PAGE_settingsCss[] PROGMEM = R"=====(body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:4em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}td{padding:2px;}</style>)=====";
 
 
 //settings menu
-const char PAGE_settings0[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><title>WLED Settings</title>)=====";
-
-const char PAGE_settings1[] PROGMEM = R"=====(body{text-align:center;background:var(--cCol);height:100%;margin:0;background-attachment:fixed}html{--h:11.55vh}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),Helvetica,sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:8vmin;height:var(--h);width:95%;margin-top:2.4vh}</style>
-<script>function BB(){if(window.frameElement){document.getElementById("b").style.display="none";document.documentElement.style.setProperty("--h","13.86vh")}};</script>
-</head>
+const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
+<html><head><title>WLED Settings</title>%CSS%body{text-align:center;background:var(--cCol);height:100%%;margin:0;background-attachment:fixed}html{--h:11.55vh}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),Helvetica,sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:8vmin;height:var(--h);width:95%%;margin-top:2.4vh}</style>
+<script>function BB(){if(window.frameElement){document.getElementById("b").style.display="none";document.documentElement.style.setProperty("--h","13.86vh")}};</script></head>
 <body onload=BB()>
 <form action=/><button type=submit id=b>Back</button></form>
 <form action=/settings/wifi><button type=submit>WiFi Setup</button></form>
@@ -21,17 +18,14 @@ const char PAGE_settings1[] PROGMEM = R"=====(body{text-align:center;background:
 <form action=/settings/sync><button type=submit>Sync Interfaces</button></form>
 <form action=/settings/time><button type=submit>Time & Macros</button></form>
 <form action=/settings/sec><button type=submit>Security & Updates</button></form>
-</body>
-</html>)=====";
+</body></html>)=====";
 
 
 //wifi settings
-const char PAGE_settings_wifi0[] PROGMEM = R"=====(<!DOCTYPE html>
+const char PAGE_settings_wifi[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500">
-<title>WiFi Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");}function B(){window.history.back();}function GetV(){var d = document;)=====";
-
-const char PAGE_settings_wifi1[] PROGMEM = R"=====(</head>
-<body onload="GetV()">
+<title>WiFi Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");}function B(){window.history.back();}function GetV(){var d=document;
+%CSS%%SCSS%</head><body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
@@ -71,7 +65,7 @@ AP IP: <span class="sip"> Not active </span><hr>
 
 
 //LED settings
-const char PAGE_settings_leds0[] PROGMEM = R"=====(<!DOCTYPE html>
+const char PAGE_settings_leds[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500">
 <title>LED Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}function B(){window.history.back();}function S(){GetV();UI();}function UI(){
 var myC=document.querySelectorAll('.wc'),l=myC.length;
@@ -80,9 +74,7 @@ var val=Math.ceil((100+document.Sf.LC.value*55)/500)/2;
 val=(val>5)?Math.ceil(val):val;var s="";
 if (val<1.1){s="ESP 5V pin with 1A USB supply";}else{s="External 5V ";s+=val;s+="A supply connected to LEDs";}
 document.getElementById('psu').innerHTML=s;document.getElementById('ps2').innerHTML=val+"A = "+val*1000;
-}function GetV(){var d = document;)=====";
-
-const char PAGE_settings_leds1[] PROGMEM = R"=====(</head>
+}function GetV(){var d=document;%CSS%%SCSS%</head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
@@ -113,7 +105,7 @@ Default RGB color:
 <span class="wc">Default white value: <input name="CW" type="number" min="0" max="255" required><br>
 Auto-calculate white from RGB instead: <input type="checkbox" name="AW"><br></span>
 Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br>
-Default effect ID: <input name="FX" type="number" min="0" max="57" required><br>
+Default effect ID: <input name="FX" type="number" min="0" max="79" required><br>
 Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
 Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br>
 Default effect palette: <input name="FP" type="number" min="0" max="255" required><br>
@@ -127,7 +119,7 @@ Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (
 Save current preset cycle configuration as boot default: <input type="checkbox" name="PC"><br><br>
 Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
 Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
-Brightness factor: <input name="BF" type="number" min="0" max="255" required> %
+Brightness factor: <input name="BF" type="number" min="0" max="255" required> %%
 <h3>Transitions</h3>
 Crossfade: <input type="checkbox" name="TF"><br>
 Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
@@ -154,12 +146,11 @@ Skip first LED: <input type="checkbox" name="SL"><hr>
 
 
 //User Interface settings
-const char PAGE_settings_ui0[] PROGMEM = R"=====(<!DOCTYPE html>
+const char PAGE_settings_ui[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500">
 <title>UI Settings</title><script>
-function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d = document;)=====";
-
-const char PAGE_settings_ui1[] PROGMEM = R"=====(</head>
+function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d=document;
+%CSS%%SCSS%</head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
@@ -210,11 +201,10 @@ Make sure the font you use is installed on your system!<br>
 
 
 //sync settings
-const char PAGE_settings_sync0[] PROGMEM = R"=====(<!DOCTYPE html>
+const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500"><title>Sync Settings</title>
-<script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}function GetV(){var d = document;)=====";
-
-const char PAGE_settings_sync1[] PROGMEM = R"=====(</head>
+<script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}function GetV(){var d=document;
+%CSS%%SCSS%</head>
 <body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
@@ -277,14 +267,13 @@ Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 
 
 //time and macro settings
-const char PAGE_settings_time0[] PROGMEM = R"=====(<!DOCTYPE html>
+const char PAGE_settings_time[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500"><title>Time Settings</title>
 <script>var d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function S(){BTa();GetV();Cs();FC();}function gId(s){return d.getElementById(s);}function Cs(){gId("cac").style.display="none";gId("coc").style.display="block";gId("ccc").style.display="none";if (gId("ca").selected){gId("cac").style.display="block";}if (gId("cc").selected){gId("coc").style.display="none";gId("ccc").style.display="block";}if (gId("cn").selected){gId("coc").style.display="none";}}
 function BTa(){var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Macro</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";for (i=0;i<8;i++){ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"16\"></td>";for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";}gId("TMT").innerHTML=ih;}
 function FC(){for(j=0;j<8;j++){for(i=0;i<8;i++)gId("W"+i+j).checked=gId("W"+i).value>>j&1;}}
-function Wd(){a=[0,0,0,0,0,0,0,0];for(i=0;i<8;i++){m=1;for(j=0;j<8;j++){a[i]+=gId("W"+i+j).checked*m;m*=2;}gId("W"+i).value=a[i];}}function GetV(){)=====";
-
-const char PAGE_settings_time1[] PROGMEM = R"=====(</head>
+function Wd(){a=[0,0,0,0,0,0,0,0];for(i=0;i<8;i++){m=1;for(j=0;j<8;j++){a[i]+=gId("W"+i+j).checked*m;m*=2;}gId("W"+i).value=a[i];}}function GetV(){
+%CSS%%SCSS%</head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post" onsubmit="Wd()">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
@@ -369,12 +358,11 @@ Time-Controlled Macros:<br>
 
 
 //security settings and about
-const char PAGE_settings_sec0[] PROGMEM = R"=====(<!DOCTYPE html>
+const char PAGE_settings_sec[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500">
 <title>Misc Settings</title>
-<script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings");}function B(){window.open("/settings","_self");}function U(){window.open("/update","_self");}function GetV(){var d = document;)=====";
-
-const char PAGE_settings_sec1[] PROGMEM = R"=====(</head>
+<script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings");}function B(){window.open("/settings","_self");}function U(){window.open("/update","_self");}function GetV(){var d=document;
+%CSS%%SCSS%</head>
 <body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>

@@ -33,7 +33,7 @@ void callbackMQTT(char* topic, byte* payload, unsigned int length) {
   {
     String apireq = "win&";
     apireq += (char*)payload;
-    handleSet(apireq);
+    handleSet(nullptr, apireq);
   } else
   {
     parseMQTTBriPayload((char*)payload);
@@ -62,7 +62,7 @@ void publishMQTT()
 
   //if you want to use this, increase the MQTT buffer in PubSubClient.h to 350+
   //it will publish the API response to MQTT
-  /*XML_response(false, false);
+  /*XML_response(nullptr, false);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/v");
   mqtt->publish(subuf, obuf);*/

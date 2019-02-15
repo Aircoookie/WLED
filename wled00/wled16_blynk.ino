@@ -60,7 +60,7 @@ BLYNK_WRITE(V2)
 
 BLYNK_WRITE(V3)
 {
-  handleSet((param.asInt()>0)?"win&T=1&IN":"win&T=0&IN");//power
+  handleSet(nullptr, (param.asInt()>0)?"win&T=1&IN":"win&T=0&IN");//power
 }
 
 BLYNK_WRITE(V4)
@@ -83,7 +83,7 @@ BLYNK_WRITE(V6)
 
 BLYNK_WRITE(V7)
 {
-  handleSet((param.asInt()>0)?"win&ND&IN":"win&NL=0&IN");//nl
+  handleSet(nullptr, (param.asInt()>0)?"win&ND&IN":"win&NL=0&IN");//nl
 }
 
 BLYNK_WRITE(V8)

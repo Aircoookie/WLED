@@ -52,8 +52,8 @@ void wledInit()
   //start captive portal if AP active
   if (onlyAP || strlen(apSSID) > 0) 
   {
-    dnsserver.setErrorReplyCode(DNSReplyCode::ServerFailure);
-    dnsserver.start(53, "wled.me", WiFi.softAPIP());
+    dnsServer.setErrorReplyCode(DNSReplyCode::ServerFailure);
+    dnsServer.start(53, "wled.me", WiFi.softAPIP());
     dnsActive = true;
   }
 
@@ -86,7 +86,7 @@ void wledInit()
   //init Alexa hue emulation
   if (alexaEnabled && !onlyAP) alexaInit();
 
-  server->begin();
+  server.begin();
   DEBUG_PRINTLN("HTTP server started");
 
   //init ArduinoOTA

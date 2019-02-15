@@ -3,7 +3,7 @@
  */
 
 //build XML response to HTTP /win API request
-void XML_response(bool isHTTP, bool includeTheme)
+void XML_response(AsyncWebServerRequest *request, bool includeTheme)
 {
   olen = 0;
   oappend("<?xml version = \"1.0\" ?><vs><ac>");
@@ -79,7 +79,7 @@ void XML_response(bool isHTTP, bool includeTheme)
     oappend("</cf></th>");
   }
   oappend("</vs>");
-  if (isHTTP) server->send(200, "text/xml", obuf);
+  if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
 //append a numeric setting to string buffer
