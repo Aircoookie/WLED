@@ -28,14 +28,14 @@ void initServer()
   });
   
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 200,"Rebooting now...","(takes ~20 seconds, wait for auto-redirect)",79);
-    reset();
+    serveMessage(request, 200,"Rebooting now...","Please wait ~15 seconds...",132);
+    doReboot = true;
   });
   
   server.on("/settings/wifi", HTTP_POST, [](AsyncWebServerRequest *request){
     if (!(wifiLock && otaLock)) handleSettingsSet(request, 1);
     serveMessage(request, 200,"WiFi settings saved.","Rebooting now...",255);
-    reset();
+    doReboot = true;
   });
 
   server.on("/settings/leds", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -66,13 +66,9 @@ void initServer()
 
   server.on("/settings/sec", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 6);
-    serveMessage(request, 200,"Security settings saved.","Rebooting now... (takes ~20 seconds, wait for auto-redirect)",139);
-    reset();
+    serveMessage(request, 200,"Security settings saved.","Rebooting now, please wait ~15 seconds...",132);
+    doReboot = true;
   });
-
-  /*server.on("/json", HTTP_ANY, [](AsyncWebServerRequest *request){
-    request->send(500, "application/json", "{\"error\":\"Not implemented\"}");
-    });*/
 
   server.on("/json/effects", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "application/json", JSON_mode_names);
@@ -80,6 +76,10 @@ void initServer()
 
   server.on("/json/palettes", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "application/json", JSON_palette_names);
+    });
+
+  server.on("/json", HTTP_ANY, [](AsyncWebServerRequest *request){
+    request->send(500, "application/json", "{\"error\":\"Not implemented\"}");
     });
   
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -133,7 +133,38 @@ void initServer()
     #endif
     //init ota page
     #ifndef WLED_DISABLE_OTA
-    //httpUpdater.setup(&server);
+    server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
+      serveMessage(request, 200, "WLED Software Update", "Your installed version: " + String(versionString) + "<br>Download the latest binary: "
+                                                         "<a href=\"https://github.com/Aircoookie/WLED/releases\"><img src=\"https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square\"></a>"
+                                                         "<br><form method='POST' action='/update' enctype='multipart/form-data'>"
+                                                         "<input type='file' class=\"bt\" name='update' required><br><input type='submit' class=\"bt\" value='Update!'></form>", 254);
+    });
+    
+    server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
+      if (Update.hasError())
+      {
+        serveMessage(request, 500, "Failed updating firmware!", "Please check your file and retry!", 254); return;
+      }
+      serveMessage(request, 200, "Successfully updated firmware!", "Please wait while the module reboots...", 132); 
+      doReboot = true;
+    },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+      if(!index){
+        DEBUG_PRINTLN("OTA Update Start");
+        #ifndef ARDUINO_ARCH_ESP32
+        Update.runAsync(true);
+        #endif
+        Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
+      }
+      if(!Update.hasError()) Update.write(data, len);
+      if(final){
+        if(Update.end(true)){
+          DEBUG_PRINTLN("Update Success");
+        } else {
+          DEBUG_PRINTLN("Update Failed");
+        }
+      }
+    });
+    
     #else
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 500, "Not implemented", "OTA updates are unsupported in this build.", 254);
@@ -152,7 +183,6 @@ void initServer()
     });
   }
 
-  //this ceased working somehow
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     serveIndexOrWelcome(request);
   });
@@ -168,13 +198,6 @@ void initServer()
     {
       request->send(200); return;
     }
-
-    //workaround for subpage issue
-    /*if (request->url().length() == 1)
-    {
-      serveIndexOrWelcome(request);
-      return;
-    }*/
     
     if(!handleSet(request, request->url())){
       #ifndef WLED_DISABLE_ALEXA
@@ -271,18 +294,18 @@ String msgProcessor(const String& var)
     if (optionType < 60) //redirect to settings after optionType seconds
     {
       messageBody += "<script>setTimeout(RS," + String(optionType*1000) + ")</script>";
-    } else if (optionType < 120) //redirect back after optionType-60 seconds
+    } else if (optionType < 120) //redirect back after optionType-60 seconds, unused
     {
-      messageBody += "<script>setTimeout(B," + String((optionType-60)*1000) + ")</script>";
+      //messageBody += "<script>setTimeout(B," + String((optionType-60)*1000) + ")</script>";
     } else if (optionType < 180) //reload parent after optionType-120 seconds
     {
       messageBody += "<script>setTimeout(RP," + String((optionType-120)*1000) + ")</script>";
     } else if (optionType == 253)
     {
-      messageBody += "<br><br><form action=/settings><button type=submit>Back</button></form>"; //button to settings
+      messageBody += "<br><br><form action=/settings><button class=\"bt\" type=submit>Back</button></form>"; //button to settings
     } else if (optionType == 254)
     {
-      messageBody += "<br><br><button type=\"button\" onclick=\"B()\">Back</button>";
+      messageBody += "<br><br><button type=\"button\" class=\"bt\" onclick=\"B()\">Back</button>";
     }
     return messageBody;
   }

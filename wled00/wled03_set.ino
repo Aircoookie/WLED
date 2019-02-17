@@ -282,7 +282,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     {
       clearEEPROM();
       serveMessage(request, 200, "All Settings erased.", "Connect to WLED-AP to setup again",255);
-      reset();
+      doReboot = true;
     }
 
     bool pwdCorrect = !otaLock; //always allow access if ota not locked

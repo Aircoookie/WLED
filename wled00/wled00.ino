@@ -34,7 +34,6 @@
  #include <WiFi.h>
  #include <ESPmDNS.h>
  #include <AsyncTCP.h>
- #include <AsyncWebServer.h>
  #include <HTTPClient.h>
  /*#ifndef WLED_DISABLE_INFRARED
   #include <IRremote.h>
@@ -52,12 +51,12 @@
  #endif
 #endif
 
+#include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
 #include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
  #include <ArduinoOTA.h>
- //#include "src/dependencies/webserver/ESP8266HTTPUpdateServer.h"
 #endif
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
@@ -81,7 +80,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902162
+#define VERSION 1902172
 char versionString[] = "0.8.4-dev";
 
 
@@ -399,6 +398,8 @@ uint16_t olen = 0;
 String messageHead, messageSub;
 uint32_t optionType;
 
+bool doReboot = false; //flag to initiate reboot from async handlers
+
 //server library objects
 AsyncWebServer server(80);
 HTTPClient* hueClient = NULL;
@@ -519,6 +520,7 @@ void loop() {
   handleOverlays();
 
   yield();
+  if (doReboot) reset();
   
   if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
   {

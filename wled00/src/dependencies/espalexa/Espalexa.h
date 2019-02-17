@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.3.3
+ * @version 2.3.4
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -37,7 +37,7 @@
 #else
  #ifdef ARDUINO_ARCH_ESP32
   #include <WiFi.h>
-  #include "../webserver/WebServer.h" //if you get an error here please update to ESP32 arduino core 1.0.0
+  #include <WebServer.h> //if you get an error here please update to ESP32 arduino core 1.0.0
  #else
   #include <ESP8266WebServer.h>
   #include <ESP8266WiFi.h>
@@ -46,7 +46,7 @@
 #include <WiFiUdp.h>
 
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa 2.3.3 debug mode"
+ #pragma message "Espalexa 2.3.4 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
 #else
@@ -80,6 +80,7 @@ private:
   String escapedMac=""; //lowercase mac address
   
   //private member functions
+  //device JSON string: color+temperature device emulates LCT015, dimmable device LWB010, (TODO: on/off Plug 01, color temperature device LWT010, color device LST001)
   String deviceJsonString(uint8_t deviceId)
   {
     if (deviceId < 1 || deviceId > currentDeviceCount) return "{}"; //error
@@ -89,7 +90,9 @@ private:
     json += "\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\"";
     json += dev->getName();
     json += "\",\"uniqueid\":\""+ WiFi.macAddress() +"-"+ (deviceId+1) ;
-    json += "\",\"modelid\":\"LST001\",\"state\":{\"on\":";
+    json += "\",\"modelid\":\"";
+    json += dev->isColorDevice() ? "LCT015" : "LWB010";
+    json += "\",\"state\":{\"on\":";
     json += boolString(dev->getValue()) +",\"bri\":"+ (String)(dev->getLastValue()-1) ;
     if (dev->isColorDevice()) 
     {
@@ -112,7 +115,7 @@ private:
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library v2.3.3 by Christian Schwinne 2019";
+    res += "\r\n\r\nEspalexa library v2.3.4 by Christian Schwinne 2019";
     server->send(200, "text/plain", res);
   }
 
@@ -146,7 +149,7 @@ private:
         "<URLBase>http://"+ String(s) +":80/</URLBase>"
         "<device>"
           "<deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>"
-          "<friendlyName>Philips hue ("+ String(s) +")</friendlyName>"
+          "<friendlyName>Espalexa ("+ String(s) +")</friendlyName>"
           "<manufacturer>Royal Philips Electronics</manufacturer>"
           "<manufacturerURL>http://www.philips.com</manufacturerURL>"
           "<modelDescription>Philips hue Personal Wireless Lighting</modelDescription>"
@@ -163,13 +166,6 @@ private:
           "    <width>48</width>"
           "    <depth>24</depth>"
           "    <url>hue_logo_0.png</url>"
-          "  </icon>"
-          "  <icon>"
-          "    <mimetype>image/png</mimetype>"
-          "    <height>120</height>"
-          "    <width>120</width>"
-          "    <depth>24</depth>"
-          "    <url>hue_logo_3.png</url>"
           "  </icon>"
           "</iconList>"
         "</device>"
