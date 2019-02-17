@@ -70,7 +70,7 @@
  #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 #include "src/dependencies/e131/E131.h"
-#include "src/dependencies/pubsubclient/PubSubClient.h"
+#include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #include "html_classic.h"
 #include "html_mobile.h"
 #include "html_settings.h"
@@ -80,7 +80,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902172
+#define VERSION 1902173
 char versionString[] = "0.8.4-dev";
 
 
@@ -359,7 +359,6 @@ IPAddress realtimeIP = (0,0,0,0);
 unsigned long realtimeTimeout = 0;
 
 //mqtt
-bool mqttInit = false;
 long lastMQTTReconnectAttempt = 0;
 long lastInterfaceUpdate = 0;
 byte interfaceUpdateCallMode = 0;
@@ -403,8 +402,7 @@ bool doReboot = false; //flag to initiate reboot from async handlers
 //server library objects
 AsyncWebServer server(80);
 HTTPClient* hueClient = NULL;
-WiFiClient* mqttTCPClient = NULL;
-PubSubClient* mqtt = NULL;
+AsyncMqttClient* mqtt = NULL;
 
 #ifndef WLED_DISABLE_OTA
 //ESP8266HTTPUpdateServer httpUpdater;
@@ -511,11 +509,7 @@ void loop() {
   handleButton();
   handleIR();
   handleNetworkTime();
-  if (!onlyAP)
-  {
-    handleAlexa();
-    handleMQTT();
-  }
+  if (!onlyAP) handleAlexa();
   
   handleOverlays();
 

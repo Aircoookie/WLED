@@ -72,9 +72,8 @@ void wledInit()
   //smartInit, we only init some resources when connected
   if (!onlyAP && WiFi.status() == WL_CONNECTED)
   {
-    mqttTCPClient = new WiFiClient();
-    mqtt = new PubSubClient(*mqttTCPClient);
-    mqttInit = initMQTT();
+    mqtt = new AsyncMqttClient();
+    initMqtt();
   }
    
   strip.service();

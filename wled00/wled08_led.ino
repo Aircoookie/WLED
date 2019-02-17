@@ -151,7 +151,7 @@ void colorUpdated(int callMode)
 void updateInterfaces(uint8_t callMode)
 {
   if (callMode != 9 && callMode != 5) updateBlynk();
-  publishMQTT();
+  publishMqtt();
   lastInterfaceUpdate = millis();
 }
 

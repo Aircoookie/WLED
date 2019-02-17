@@ -17,11 +17,42 @@ void parseMQTTBriPayload(char* payload)
 }
 
 
-void callbackMQTT(char* topic, byte* payload, unsigned int length) {
+void onMqttConnect(bool sessionPresent)
+{
+  //(re)subscribe to required topics
+  char subuf[38];
+  strcpy(subuf, mqttDeviceTopic);
+  
+  if (mqttDeviceTopic[0] != 0)
+  {
+    strcpy(subuf, mqttDeviceTopic);
+    mqtt->subscribe(subuf, 0);
+    strcat(subuf, "/col");
+    mqtt->subscribe(subuf, 0);
+    strcpy(subuf, mqttDeviceTopic);
+    strcat(subuf, "/api");
+    mqtt->subscribe(subuf, 0);
+  }
+
+  if (mqttGroupTopic[0] != 0)
+  {
+    strcpy(subuf, mqttGroupTopic);
+    mqtt->subscribe(subuf, 0);
+    strcat(subuf, "/col");
+    mqtt->subscribe(subuf, 0);
+    strcpy(subuf, mqttGroupTopic);
+    strcat(subuf, "/api");
+    mqtt->subscribe(subuf, 0);
+  }
+  publishMqtt();
+}
+
+
+void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
   DEBUG_PRINT("MQTT callb rec: ");
   DEBUG_PRINTLN(topic);
-  DEBUG_PRINTLN((char*)payload);
+  DEBUG_PRINTLN(payload);
 
   //no need to check the topic because we only get topics we are subscribed to
 
@@ -34,14 +65,11 @@ void callbackMQTT(char* topic, byte* payload, unsigned int length) {
     String apireq = "win&";
     apireq += (char*)payload;
     handleSet(nullptr, apireq);
-  } else
-  {
-    parseMQTTBriPayload((char*)payload);
-  }
+  } else parseMQTTBriPayload(payload);
 }
 
 
-void publishMQTT()
+void publishMqtt()
 {
   if (mqtt == NULL) return;
   if (!mqtt->connected()) return;
@@ -53,59 +81,21 @@ void publishMQTT()
   sprintf(s, "%ld", bri);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/g");
-  mqtt->publish(subuf, s);
+  mqtt->publish(subuf, 0, true, s);
 
   sprintf(s, "#%X", col[3]*16777216 + col[0]*65536 + col[1]*256 + col[2]);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/c");
-  mqtt->publish(subuf, s);
+  mqtt->publish(subuf, 0, true, s);
 
-  //if you want to use this, increase the MQTT buffer in PubSubClient.h to 350+
-  //it will publish the API response to MQTT
-  /*XML_response(nullptr, false);
+  XML_response(nullptr, false);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/v");
-  mqtt->publish(subuf, obuf);*/
+  mqtt->publish(subuf, 0, true, obuf);
 }
 
 
-bool reconnectMQTT()
-{
-  if (mqtt->connect(escapedMac.c_str()))
-  {
-    //re-subscribe to required topics
-    char subuf[38];
-    strcpy(subuf, mqttDeviceTopic);
-    
-    if (mqttDeviceTopic[0] != 0)
-    {
-      strcpy(subuf, mqttDeviceTopic);
-      mqtt->subscribe(subuf);
-      strcat(subuf, "/col");
-      mqtt->subscribe(subuf);
-      strcpy(subuf, mqttDeviceTopic);
-      strcat(subuf, "/api");
-      mqtt->subscribe(subuf);
-    }
-
-    if (mqttGroupTopic[0] != 0)
-    {
-      strcpy(subuf, mqttGroupTopic);
-      mqtt->subscribe(subuf);
-      strcat(subuf, "/col");
-      mqtt->subscribe(subuf);
-      strcpy(subuf, mqttGroupTopic);
-      strcat(subuf, "/api");
-      mqtt->subscribe(subuf);
-    }
-
-    publishMQTT();
-  }
-  return mqtt->connected();
-}
-
-
-bool initMQTT()
+bool initMqtt()
 {
   if (WiFi.status() != WL_CONNECTED) return false;
   if (mqttServer[0] == 0) return false;
@@ -117,29 +107,10 @@ bool initMQTT()
   } else {
     mqtt->setServer(mqttServer, WLED_MQTT_PORT);
   }
-  mqtt->setCallback(callbackMQTT);
+  mqtt->setClientId(escapedMac.c_str());
+  mqtt->onMessage(onMqttMessage);
+  mqtt->onConnect(onMqttConnect);
+  mqtt->connect();
   DEBUG_PRINTLN("MQTT ready.");
   return true;
-}
-
-
-void handleMQTT()
-{
-  if (WiFi.status() != WL_CONNECTED || !mqttInit) return;
-  
-  //every time connection is unsuccessful, the attempt interval is increased, since attempt will block program for 7 sec each time
-  if (!mqtt->connected() && millis() - lastMQTTReconnectAttempt > 5000 + (5000 * mqttFailedConAttempts * mqttFailedConAttempts))
-  {
-    DEBUG_PRINTLN("Attempting to connect MQTT...");
-    lastMQTTReconnectAttempt = millis();
-    if (!reconnectMQTT())
-    {
-      //still attempt reconnect about once daily
-      if (mqttFailedConAttempts < 120) mqttFailedConAttempts++;
-      return;
-    }
-    DEBUG_PRINTLN("MQTT con!");
-    mqttFailedConAttempts = 0;
-  }
-  mqtt->loop();
 }

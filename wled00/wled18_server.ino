@@ -134,7 +134,7 @@ void initServer()
     //init ota page
     #ifndef WLED_DISABLE_OTA
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 200, "WLED Software Update", "Your installed version: " + String(versionString) + "<br>Download the latest binary: "
+      serveMessage(request, 200, "WLED Software Update", "Installed version: " + String(versionString) + "<br>Download the latest binary: "
                                                          "<a href=\"https://github.com/Aircoookie/WLED/releases\"><img src=\"https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square\"></a>"
                                                          "<br><form method='POST' action='/update' enctype='multipart/form-data'>"
                                                          "<input type='file' class=\"bt\" name='update' required><br><input type='submit' class=\"bt\" value='Update!'></form>", 254);
