@@ -4,75 +4,90 @@
 #ifndef WLED_DISABLE_HUESYNC
 void handleHue()
 {
-  if (huePollingEnabled && WiFi.status() == WL_CONNECTED && hueClient != NULL)
+  if (hueClient != nullptr && millis() - hueLastRequestSent > huePollIntervalMs && WiFi.status() == WL_CONNECTED)
   {
-    if (millis() - hueLastRequestSent > huePollIntervalMsTemp)
+    hueLastRequestSent = millis();
+    if (huePollingEnabled)
     {
-      sendHuePoll(false);
+      reconnectHue();
+    } else {
+      hueClient->close();
+      if (hueError[0] == 'A') strcpy(hueError,"Inactive");
+    }
+  }
+  if (hueReceived)
+  {
+    colorUpdated(7); hueReceived = false;
+    if (hueStoreAllowed && hueNewKey)
+    {
+      saveSettingsToEEPROM(); //save api key
+      hueStoreAllowed = false;
+      hueNewKey = false;
     }
   }
 }
 
-bool setupHue()
+void reconnectHue()
 {
-  if (WiFi.status() == WL_CONNECTED) //setup needed
-  {
-    if (strlen(hueApiKey)>20) //api key is probably ok
-    {
-      if (sendHuePoll(false))
-      {
-        huePollingEnabled = true;
-        return true;
-      }
-      if (hueError[0] == 'R' || hueError[0] == 'I') return false; //can't connect
-      delay(20);
-    }
-    sendHuePoll(true); //new API key
-    if (hueError[0] != 'C') return false; //still some error
-    delay(20);
-    if (sendHuePoll(false))
-    {
-      huePollingEnabled = true;
-      return true;
-    }
-    return false;
+  if (WiFi.status() != WL_CONNECTED || !huePollingEnabled) return;
+  DEBUG_PRINTLN("Hue reconnect");
+  if (hueClient == nullptr) {
+    hueClient = new AsyncClient();
+    hueClient->onConnect(&onHueConnect, hueClient);
+    hueClient->onData(&onHueData, hueClient);
+    hueClient->onError(&onHueError, hueClient);
+    hueAuthRequired = (strlen(hueApiKey)<20);
   }
-  else return false;
-  return true;
+  if (hueClient->connecting()) return; //don't start multiple connections before timeout
+  if (hueClient->connected())
+  {
+    if (hueClient->getRemoteAddress() == uint32_t(hueIP) && huePollingEnabled) {sendHuePoll(); return;} //already connected
+    hueClient->close(); return;
+  }
+  hueClient->connect(hueIP, 80);
 }
 
-bool sendHuePoll(bool sAuth)
+void onHueError(void* arg, AsyncClient* client, int8_t error)
 {
-  bool st;
-  hueClient->setReuse(true);
-  hueClient->setTimeout(450);
-  String hueURL = "http://";
-  hueURL += hueIP.toString();
-  hueURL += "/api/";
-  if (!sAuth) {
-    hueURL += hueApiKey;
-    hueURL += "/lights/" + String(huePollLightId);
+  DEBUG_PRINTLN("Hue err");
+  strcpy(hueError,"Request timeout");
+}
+
+void onHueConnect(void* arg, AsyncClient* client)
+{
+  DEBUG_PRINTLN("Hue connect");
+  sendHuePoll();
+}
+
+void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
+{
+  if (len) handleHueResponse(String((char*)data));
+}
+
+void sendHuePoll()
+{
+  if (hueClient == nullptr || !hueClient->connected()) return;
+  String req = "";
+  if (hueAuthRequired)
+  {
+    req += "POST /api HTTP/1.1\r\nHost: ";
+    req += hueIP.toString();
+    req += "\r\nContent-Length: 25\r\n\r\n{\"devicetype\":\"wled#esp\"}";
+  } else
+  {
+    req += "GET /api/";
+    req += hueApiKey;
+    req += "/lights/" + String(huePollLightId);
+    req += " HTTP/1.1\r\nHost: ";
+    req += hueIP.toString();
+    req += "\r\n\r\n";
   }
-  hueClient->begin(hueURL);
-  int httpCode = (sAuth)? hueClient->POST("{\"devicetype\":\"wled#esp\"}"):hueClient->GET();
-  //TODO this request may block operation for ages
-  
-  if (httpCode>0){
-    st = handleHueResponse(hueClient->getString(),sAuth);
-  } else {
-    strcpy(hueError,"Request timed out");
-    st = false;
-  }
-  if (!st){ //error
-    if (huePollIntervalMsTemp<300000) huePollIntervalMsTemp*=2; // only poll every ~5min when unable to connect
-    hueFailCount++;
-    if (hueFailCount > 150) huePollingEnabled = false; //disable after many hours offline
-  }
+  hueClient->add(req.c_str(), req.length());
+  hueClient->send();
   hueLastRequestSent = millis();
-  return st;
 }
 
-bool handleHueResponse(String hueResp, bool isAuth)
+void handleHueResponse(String hueResp)
 {
   DEBUG_PRINTLN(hueApiKey);
   DEBUG_PRINTLN(hueResp);
@@ -81,36 +96,36 @@ bool handleHueResponse(String hueResp, bool isAuth)
     int hueErrorCode = getJsonValue(&hueResp,"type").toInt();
     switch (hueErrorCode)
     {
-      case 1: strcpy(hueError,"Unauthorized"); break;
-      case 3: strcpy(hueError,"Invalid light ID"); break;
-      case 101: strcpy(hueError,"Link button not pressed"); break;
+      case 1: strcpy(hueError,"Unauthorized"); hueAuthRequired = true; break;
+      case 3: strcpy(hueError,"Invalid light ID"); huePollingEnabled = false; break;
+      case 101: strcpy(hueError,"Link button not pressed"); hueAuthRequired = true; break;
       default:
         char coerr[18];
         sprintf(coerr,"Bridge Error %i",hueErrorCode);
         strcpy(hueError,coerr);
     }
-    return false;
+    return;
   }
-  
-  if (isAuth)
+
+  if (hueAuthRequired)
   {
     String tempApi = getJsonValue(&hueResp,"username");
     if (tempApi.length()>0)
     {
       strcpy(hueApiKey,tempApi.c_str());
-      return true;
+      hueAuthRequired = false;
+      hueNewKey = true;
     }
-    strcpy(hueError,"Invalid response");
-    return false;
+    return;
   }
 
   float hueX=0, hueY=0;
   uint16_t hueHue=0, hueCt=0;
   byte hueBri=0, hueSat=0, hueColormode=0;
   
-  if (getJsonValue(&hueResp,"on").charAt(0) == 't')
+  if (getJsonValue(&hueResp,"\"on").charAt(0) == 't')
   {
-    String tempV = getJsonValue(&hueResp,"bri");
+    String tempV = getJsonValue(&hueResp,"\"bri");
     if (tempV.length()>0) //Dimmable device
     {
       hueBri = (tempV.toInt())+1;
@@ -129,12 +144,12 @@ bool handleHueResponse(String hueResp, bool isAuth)
           }
         } else if (tempV.charAt(0) == 'h') //hs mode
         {
-          tempV = getJsonValue(&hueResp,"hue");
+          tempV = getJsonValue(&hueResp,"\"hue");
           if (tempV.length()>0) //valid
           {
             hueColormode = 2;
             hueHue = tempV.toInt();
-            tempV = getJsonValue(&hueResp,"sat");
+            tempV = getJsonValue(&hueResp,"\"sat");
             if (tempV.length()>0) //valid
             {
               hueSat = tempV.toInt();
@@ -142,7 +157,7 @@ bool handleHueResponse(String hueResp, bool isAuth)
           }
         } else //ct mode
         {
-          tempV = getJsonValue(&hueResp,"\"ct"); //dirty hack to not get effect value instead
+          tempV = getJsonValue(&hueResp,"\"ct");
           if (tempV.length()>0) //valid
           {
             hueColormode = 3;
@@ -158,9 +173,7 @@ bool handleHueResponse(String hueResp, bool isAuth)
   {
     hueBri = 0;
   }
-  hueFailCount = 0;
-  huePollIntervalMsTemp = huePollIntervalMs;
-  strcpy(hueError,"Connected");
+  strcpy(hueError,"Active");
   //applying vals
   if (hueBri != hueBriLast)
   {
@@ -184,8 +197,7 @@ bool handleHueResponse(String hueResp, bool isAuth)
       case 3: if (hueCt != hueCtLast) colorCTtoRGB(hueCt,col); hueCtLast = hueCt; break;
     }
   }
-  colorUpdated(7);
-  return true;
+  hueReceived = true;
 }
 
 String getJsonValue(String* req, String key)
@@ -208,5 +220,5 @@ String getJsonValue(String* req, String key)
 }
 #else
 void handleHue(){}
-bool setupHue(){return false;}
+bool reconnectHue(){}
 #endif

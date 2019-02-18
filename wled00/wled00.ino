@@ -80,7 +80,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902173
+#define VERSION 1902181
 char versionString[] = "0.8.4-dev";
 
 
@@ -272,7 +272,6 @@ unsigned long nightlightStartTime;
 byte briNlT = 0;                              //current nightlight brightness
 
 //brightness
-bool offMode = false;
 unsigned long lastOnTime = 0;
 byte bri = briS;
 byte briOld = 0;
@@ -307,13 +306,16 @@ bool showWelcomePage = false;
 
 //hue
 char hueError[25] = "Inactive";
-uint16_t hueFailCount = 0;
+//uint16_t hueFailCount = 0;
 float hueXLast=0, hueYLast=0;
 uint16_t hueHueLast=0, hueCtLast=0;
 byte hueSatLast=0, hueBriLast=0;
 unsigned long hueLastRequestSent = 0;
-unsigned long huePollIntervalMsTemp = huePollIntervalMs;
-bool hueAttempt = false;
+bool hueAuthRequired = false;
+bool hueReceived = false;
+bool hueStoreAllowed = false, hueNewKey = false;
+//unsigned long huePollIntervalMsTemp = huePollIntervalMs;
+//bool hueAttempt = false;
 
 //overlays
 byte overlayCurrent = overlayDefault;
@@ -401,12 +403,8 @@ bool doReboot = false; //flag to initiate reboot from async handlers
 
 //server library objects
 AsyncWebServer server(80);
-HTTPClient* hueClient = NULL;
+AsyncClient* hueClient = NULL;
 AsyncMqttClient* mqtt = NULL;
-
-#ifndef WLED_DISABLE_OTA
-//ESP8266HTTPUpdateServer httpUpdater;
-#endif
 
 //udp interface objects
 WiFiUDP notifierUdp, rgbUdp;
@@ -528,18 +526,7 @@ void loop() {
       handleBlynk();
     }
     if (briT) lastOnTime = millis();
-    if (millis() - lastOnTime < 600)
-    {
-      offMode = false;
-      strip.service();
-    } else if (!offMode)
-    {
-      /*#if LEDPIN == 2 //turn off onboard LED
-      pinMode(2, OUTPUT);
-      digitalWrite(2, HIGH);
-      #endif*/
-      offMode = true;
-    }
+    if (millis() - lastOnTime < 600) strip.service();
   }
   
   //DEBUG serial logging

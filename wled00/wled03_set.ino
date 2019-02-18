@@ -193,15 +193,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     hueApplyOnOff = request->hasArg("HO");
     hueApplyBri = request->hasArg("HB");
     hueApplyColor = request->hasArg("HC");
-    if (request->hasArg("HP"))
-    {
-      if (!huePollingEnabled) hueAttempt = true;
-      if (!setupHue()) hueAttempt = true;
-    } else
-    {
-      huePollingEnabled = false;
-      strcpy(hueError,"Inactive");
-    }
+    huePollingEnabled = request->hasArg("HP");
+    hueStoreAllowed = true;
+    reconnectHue();
   }
 
   //TIME
@@ -494,7 +488,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     if (id > 0)
     {
       if (id < 100) huePollLightId = id;
-      setupHue();
+      reconnectHue();
     } else {
       huePollingEnabled = false;
     }

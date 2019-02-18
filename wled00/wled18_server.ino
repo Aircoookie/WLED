@@ -50,13 +50,7 @@ void initServer()
 
   server.on("/settings/sync", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 4);
-    if (hueAttempt)
-    {
-      serveMessage(request, 200,"Hue setup result",hueError,253);
-    } else {
-      serveMessage(request, 200,"Sync settings saved.","Redirecting...",1);
-    }
-    hueAttempt = false;
+    serveMessage(request, 200,"Sync settings saved.","Redirecting...",1);
   });
 
   server.on("/settings/time", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -190,8 +184,7 @@ void initServer()
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
     DEBUG_PRINTLN("Not-Found HTTP call:");
-    DEBUG_PRINTLN("URI: " + server->uri());
-    DEBUG_PRINTLN("Body: " + server->arg(0));
+    DEBUG_PRINTLN("URI: " + request->url());
 
     //make API CORS compatible
     if (request->method() == HTTP_OPTIONS)

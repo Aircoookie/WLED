@@ -118,8 +118,7 @@ void wledInit()
 
     initBlynk(blynkApiKey);
     initE131();
-
-    hueClient = new HTTPClient();
+    reconnectHue();
   } else {
     e131Enabled = false;
   }
