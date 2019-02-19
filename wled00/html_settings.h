@@ -221,7 +221,8 @@ Send notifications on direct change: <input type="checkbox" name="SD"><br>
 Send notifications on button press: <input type="checkbox" name="SB"><br>
 Send Alexa notifications: <input type="checkbox" name="SA"><br>
 Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
-Send notifications twice: <input type="checkbox" name="S2"><br>
+Send Macro notifications: <input type="checkbox" name="SM"><br>
+Send notifications twice: <input type="checkbox" name="S2">
 <h3>Realtime</h3>
 Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
 <i>E1.31 (sACN)</i><br>
@@ -231,14 +232,13 @@ E1.31 start universe: <input name="EU" type="number" min="1" max="63999" require
 Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
-Realtime LED offset: <input name="WO" type="number" min="-255" max="255" required><br>
-Enable UI access during realtime: <input type="checkbox" name="RU"> (can cause issues)
+Realtime LED offset: <input name="WO" type="number" min="-255" max="255" required>
 <h3>Alexa Voice Assistant</h3>
 Emulate Alexa device: <input type="checkbox" name="AL"><br>
 Alexa invocation name: <input name="AI" maxlength="32">
 <h3>Blynk</h3>
 <b>Blynk, MQTT and Hue sync all connect to external hosts!<br>
-This impacts the responsiveness of the ESP8266.</b><br>
+This may impact the responsiveness of the ESP8266.</b><br>
 For best results, only use one of these services at a time.<br>
 (alternatively, connect a second ESP to them and use the UDP sync)<br><br>
 Device Auth token: <input name="BK" maxlength="33"><br>
@@ -385,7 +385,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.3<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.4-dev<br><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2019 Christian Schwinne <br>

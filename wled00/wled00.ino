@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.3
+ * @version 0.8.4-dev
  * @author Christian Schwinne
  */
 
@@ -80,7 +80,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902181
+#define VERSION 1902191
 char versionString[] = "0.8.4-dev";
 
 
@@ -182,7 +182,6 @@ char blynkApiKey[36] = "";                    //Auth token for Blynk server. If 
 uint16_t realtimeTimeoutMs = 2500;            //ms timeout of realtime mode before returning to normal mode
 int  arlsOffset = 0;                          //realtime LED offset
 bool receiveDirect    =  true;                //receive UDP realtime
-bool enableRealtimeUI = false;                //web UI accessible during realtime mode (works on ESP32, lags out ESP8266)
 bool arlsDisableGammaCorrection = true;       //activate if gamma correction is handled by the source
 bool arlsForceMaxBri = false;                 //enable to force max brightness if source has very dark colors that would be black
 

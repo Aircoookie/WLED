@@ -152,6 +152,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyDirectDefault = request->hasArg("SD");
     notifyDirect = notifyDirectDefault;
     notifyButton = request->hasArg("SB");
+    notifyAlexa = request->hasArg("SA");
+    notifyHue = request->hasArg("SH");
+    notifyMacro = request->hasArg("SM");
     notifyTwice = request->hasArg("S2");
     
     receiveDirect = request->hasArg("RD");
@@ -164,11 +167,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     arlsDisableGammaCorrection = request->hasArg("RG");
     t = request->arg("WO").toInt();
     if (t >= -255  && t <= 255) arlsOffset = t;
-    enableRealtimeUI = request->hasArg("RU");
     
     alexaEnabled = request->hasArg("AL");
     strcpy(alexaInvocationName, request->arg("AI").c_str());
-    notifyAlexa = request->hasArg("SA");
     
     if (request->hasArg("BK") && !request->arg("BK").equals("Hidden")) {
       strcpy(blynkApiKey,request->arg("BK").c_str()); initBlynk(blynkApiKey);
@@ -178,7 +179,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strcpy(mqttDeviceTopic, request->arg("MD").c_str());
     strcpy(mqttGroupTopic, request->arg("MG").c_str());
     
-    notifyHue = request->hasArg("SH");
     for (int i=0;i<4;i++){
       String a = "H"+String(i);
       hueIP[i] = request->arg(a).toInt();

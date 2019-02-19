@@ -211,27 +211,6 @@ void serveIndexOrWelcome(AsyncWebServerRequest *request)
   }
 }
 
-void serveRealtimeError(AsyncWebServerRequest *request, bool settings)
-{
-  String mesg = "The ";
-  mesg += (settings)?"settings":"WLED";
-  mesg += " UI is not available while receiving real-time data (";
-  if (realtimeIP[0] == 0)
-  {
-    mesg += "E1.31";
-  } else {
-    mesg += "UDP from ";
-    mesg += realtimeIP[0];
-    for (int i = 1; i < 4; i++)
-    {
-      mesg += ".";
-      mesg += realtimeIP[i];
-    }
-  }
-  mesg += ").";
-  request->send(200, "text/plain", mesg);
-}
-
 
 void getCSSColors()
 {
@@ -250,12 +229,6 @@ void getCSSColors()
 
 void serveIndex(AsyncWebServerRequest* request)
 {
-  if (realtimeActive && !enableRealtimeUI) //do not serve while receiving realtime
-  {
-    serveRealtimeError(request, false);
-    return;
-  }
-  
   bool serveMobile = false;
   if (uiConfiguration == 0 && request->hasHeader("User-Agent")) serveMobile = checkClientIsMobile(request->getHeader("User-Agent")->value());
   else if (uiConfiguration == 2) serveMobile = true;
@@ -339,12 +312,6 @@ void serveSettings(AsyncWebServerRequest* request)
     else if (url.indexOf("time") > 0) subPage = 5;
     else if (url.indexOf("sec")  > 0) subPage = 6;
   } else subPage = 255; //welcome page
-  
-  if (realtimeActive && !enableRealtimeUI) //do not serve while receiving realtime
-  {
-    serveRealtimeError(request, true);
-    return;
-  }
 
   if (subPage == 1 && wifiLock && otaLock)
   {

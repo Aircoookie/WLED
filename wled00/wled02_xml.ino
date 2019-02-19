@@ -56,7 +56,26 @@ void XML_response(AsyncWebServerRequest *request, bool includeTheme)
   oappend("</md><cy>");
   oappendi(presetCyclingEnabled);
   oappend("</cy><ds>");
-  oappend(serverDescription);
+  if (realtimeActive)
+  {
+    String mesg = "Live ";
+    if (realtimeIP[0] == 0)
+    {
+      mesg += "E1.31 mode";
+    } else {
+      mesg += "UDP from ";
+      mesg += realtimeIP[0];
+      for (int i = 1; i < 4; i++)
+      {
+        mesg += ".";
+        mesg += realtimeIP[i];
+      }
+    }
+    oappend((char*)mesg.c_str());
+  } else {
+    oappend(serverDescription);
+  }
+  
   oappend("</ds>");
   if (includeTheme)
   {
@@ -268,6 +287,7 @@ void getSettingsJS(byte subPage)
     sappend('c',"SD",notifyDirectDefault);
     sappend('c',"SB",notifyButton);
     sappend('c',"SH",notifyHue);
+    sappend('c',"SM",notifyMacro);
     sappend('c',"S2",notifyTwice);
     sappend('c',"RD",receiveDirect);
     sappend('c',"EM",e131Multicast);
@@ -276,7 +296,6 @@ void getSettingsJS(byte subPage)
     sappend('c',"FB",arlsForceMaxBri);
     sappend('c',"RG",arlsDisableGammaCorrection);
     sappend('v',"WO",arlsOffset);
-    sappend('c',"RU",enableRealtimeUI);
     sappend('c',"AL",alexaEnabled);
     sappends('s',"AI",alexaInvocationName);
     sappend('c',"SA",notifyAlexa);
