@@ -87,7 +87,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902201
+#define VERSION 1902202
 char versionString[] = "0.8.4-dev";
 
 
@@ -399,12 +399,12 @@ unsigned int ntpLocalPort = 2390;
 #define NTP_PACKET_SIZE 48
 
 //string temp buffer
-#define OMAX 2000
+#define OMAX 2048
 char obuf[OMAX];
 uint16_t olen = 0;
 
 String messageHead, messageSub;
-uint32_t optionType;
+byte optionType;
 
 bool doReboot = false; //flag to initiate reboot from async handlers
 
@@ -463,7 +463,7 @@ const byte gamma8[] = {
 String txd = "Please disable OTA Lock in security settings!";
 
 //function prototypes
-void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,uint32_t);
+void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
 
 
 //turns all LEDs off and restarts ESP
@@ -532,6 +532,7 @@ void loop() {
       handleHue();
       handleBlynk();
     }
+    yield();
     if (briT) lastOnTime = millis();
     if (millis() - lastOnTime < 600) strip.service();
   }

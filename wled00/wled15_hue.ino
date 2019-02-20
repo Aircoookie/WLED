@@ -38,12 +38,6 @@ void reconnectHue()
     hueClient->onError(&onHueError, hueClient);
     hueAuthRequired = (strlen(hueApiKey)<20);
   }
-  if (hueClient->connecting()) return; //don't start multiple connections before timeout
-  if (hueClient->connected())
-  {
-    if (hueClient->getRemoteAddress() == uint32_t(hueIP) && huePollingEnabled) {sendHuePoll(); return;} //already connected
-    hueClient->close(); return;
-  }
   hueClient->connect(hueIP, 80);
 }
 

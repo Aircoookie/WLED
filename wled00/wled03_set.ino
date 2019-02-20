@@ -55,9 +55,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     int t = request->arg("LC").toInt();
     if (t > 0 && t <= 1200) ledCount = t;
-    //RMT eats up too much RAM
-    #ifdef ARDUINO_ARCH_ESP32
-    if (ledCount > 600) ledCount = 600;
+    #ifndef ARDUINO_ARCH_ESP32
+    #if LEDPIN == 3
+    if (ledCount > 300) ledCount = 300; //DMA method uses too much ram
+    #endif
     #endif
     strip.ablMilliampsMax = request->arg("MA").toInt();
     useRGBW = request->hasArg("EW");

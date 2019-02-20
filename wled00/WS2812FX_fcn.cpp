@@ -27,7 +27,7 @@
 #include "WS2812FX.h"
 #include "palettes.h"
 
-#define LED_SKIP_AMOUNT 1
+#define LED_SKIP_AMOUNT 24
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {

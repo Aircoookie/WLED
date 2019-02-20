@@ -28,7 +28,7 @@ void initServer()
   });
   
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 200,"Rebooting now...","Please wait ~15 seconds...",132);
+    serveMessage(request, 200,"Rebooting now...","Please wait ~10 seconds...",129);
     doReboot = true;
   });
   
@@ -60,7 +60,7 @@ void initServer()
 
   server.on("/settings/sec", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 6);
-    serveMessage(request, 200,"Security settings saved.","Rebooting now, please wait ~15 seconds...",132);
+    serveMessage(request, 200,"Security settings saved.","Rebooting now, please wait ~10 seconds...",129);
     doReboot = true;
   });
 
@@ -70,6 +70,10 @@ void initServer()
 
   server.on("/json/palettes", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "application/json", JSON_palette_names);
+    });
+
+  server.on("/json/info", HTTP_ANY, [](AsyncWebServerRequest *request){
+    request->send(500, "application/json", "{\"error\":\"Not implemented\"}");
     });
 
   server.on("/json", HTTP_ANY, [](AsyncWebServerRequest *request){
@@ -139,7 +143,7 @@ void initServer()
       {
         serveMessage(request, 500, "Failed updating firmware!", "Please check your file and retry!", 254); return;
       }
-      serveMessage(request, 200, "Successfully updated firmware!", "Please wait while the module reboots...", 132); 
+      serveMessage(request, 200, "Successfully updated firmware!", "Please wait while the module reboots...", 131); 
       doReboot = true;
     },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
       if(!index){
@@ -256,20 +260,21 @@ String msgProcessor(const String& var)
     messageBody += messageHead;
     messageBody += "</h2>";
     messageBody += messageSub;
+    uint32_t optt = optionType;
 
-    if (optionType < 60) //redirect to settings after optionType seconds
+    if (optt < 60) //redirect to settings after optionType seconds
     {
-      messageBody += "<script>setTimeout(RS," + String(optionType*1000) + ")</script>";
-    } else if (optionType < 120) //redirect back after optionType-60 seconds, unused
+      messageBody += "<script>setTimeout(RS," + String(optt*1000) + ")</script>";
+    } else if (optt < 120) //redirect back after optionType-60 seconds, unused
     {
-      //messageBody += "<script>setTimeout(B," + String((optionType-60)*1000) + ")</script>";
-    } else if (optionType < 180) //reload parent after optionType-120 seconds
+      //messageBody += "<script>setTimeout(B," + String((optt-60)*1000) + ")</script>";
+    } else if (optt < 180) //reload parent after optionType-120 seconds
     {
-      messageBody += "<script>setTimeout(RP," + String((optionType-120)*1000) + ")</script>";
-    } else if (optionType == 253)
+      messageBody += "<script>setTimeout(RP," + String((optt-120)*1000) + ")</script>";
+    } else if (optt == 253)
     {
       messageBody += "<br><br><form action=/settings><button class=\"bt\" type=submit>Back</button></form>"; //button to settings
-    } else if (optionType == 254)
+    } else if (optt == 254)
     {
       messageBody += "<br><br><button type=\"button\" class=\"bt\" onclick=\"B()\">Back</button>";
     }
@@ -279,7 +284,7 @@ String msgProcessor(const String& var)
 }
 
 
-void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", uint32_t optionT=255)
+void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", byte optionT=255)
 {
   olen = 0;
   getCSSColors();

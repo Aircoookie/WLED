@@ -2,24 +2,15 @@
 #ifndef NpbWrapper_h
 #define NpbWrapper_h
 
-//#define WORKAROUND_ESP32_BITBANG
-//see https://github.com/Aircoookie/WLED/issues/2 for flicker free ESP32 support
-
 //PIN CONFIGURATION
-#define LEDPIN 2  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
+#define LEDPIN 3  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 #define BTNPIN 0  //button pin. Needs to have pullup (gpio0 recommended)
 #define IR_PIN 4  //infrared pin (-1 to disable)
 #define AUXPIN -1 //unused auxiliary output pin (-1 to disable)
 
-
 //automatically uses the right driver method for each platform
 #ifdef ARDUINO_ARCH_ESP32
- #ifdef WORKAROUND_ESP32_BITBANG
-  #define PIXELMETHOD NeoEsp32BitBangWs2813Method
-  #pragma message "Software BitBang is used because of your NeoPixelBus version. Look in NpbWrapper.h for instructions on how to mitigate flickering."
- #else
-  #define PIXELMETHOD NeoWs2813Method
- #endif
+ #define PIXELMETHOD NeoWs2813Method
 #else //esp8266
  //autoselect the right method depending on strip pin
  #if LEDPIN == 2
@@ -86,24 +77,11 @@ public:
 
   void Show()
   {
-    #ifdef ARDUINO_ARCH_ESP32
-     #ifdef WORKAROUND_ESP32_BITBANG
-      delay(1);
-      portDISABLE_INTERRUPTS(); //this is a workaround to prevent flickering (see https://github.com/adafruit/Adafruit_NeoPixel/issues/139)
-     #endif
-    #endif
-    
     switch (_type)
     {
       case NeoPixelType_Grb:  _pGrb->Show();   break;
       case NeoPixelType_Grbw: _pGrbw->Show();  break;
     }
-    
-    #ifdef ARDUINO_ARCH_ESP32
-     #ifdef WORKAROUND_ESP32_BITBANG
-      portENABLE_INTERRUPTS();
-     #endif
-    #endif
   }
   
   bool CanShow() const
