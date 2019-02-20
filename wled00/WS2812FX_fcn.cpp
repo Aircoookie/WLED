@@ -217,7 +217,7 @@ void WS2812FX::show(void) {
     if (_rgbwMode) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
     {
       powerSum *= 3;
-      powerSum >> 2; //same as /= 4
+      powerSum = powerSum >> 2; //same as /= 4
     }
 
     uint32_t powerSum0 = powerSum;

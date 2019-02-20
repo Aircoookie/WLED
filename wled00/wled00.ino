@@ -27,28 +27,17 @@
 //to toggle usb serial debug (un)comment following line(s)
 //#define WLED_DEBUG
 
-
 //library inclusions
 #include <Arduino.h>
 #ifdef ARDUINO_ARCH_ESP32
  #include <WiFi.h>
  #include <ESPmDNS.h>
  #include <AsyncTCP.h>
- #include <HTTPClient.h>
- /*#ifndef WLED_DISABLE_INFRARED
-  #include <IRremote.h>
- #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
 #else
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
  #include <ESPAsyncTCP.h>
  #include <ESPAsyncWebServer.h>
- #include <ESP8266HTTPClient.h>
- #ifndef WLED_DISABLE_INFRARED
-  #include <IRremoteESP8266.h>
-  #include <IRrecv.h>
-  #include <IRutils.h>
- #endif
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -78,9 +67,27 @@
 #include "WS2812FX.h"
 #include "ir_codes.h"
 
+#if IR_PIN < 0
+ #ifndef WLED_DISABLE_INFRARED
+  #define WLED_DISABLE_INFRARED
+ #endif
+#endif
+
+#ifdef ARDUINO_ARCH_ESP32
+ /*#ifndef WLED_DISABLE_INFRARED
+  #include <IRremote.h>
+ #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
+#else
+ #ifndef WLED_DISABLE_INFRARED
+  #include <IRremoteESP8266.h>
+  #include <IRrecv.h>
+  #include <IRutils.h>
+ #endif
+#endif
+
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902191
+#define VERSION 1902201
 char versionString[] = "0.8.4-dev";
 
 
@@ -281,6 +288,7 @@ byte briLast = 127;                           //brightness before turned off. Us
 //button
 bool buttonPressedBefore = false;
 unsigned long buttonPressedTime = 0;
+unsigned long buttonReleasedTime = 0;
 
 //notifications
 bool notifyDirectDefault = notifyDirect;

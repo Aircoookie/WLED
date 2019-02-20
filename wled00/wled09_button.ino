@@ -4,38 +4,43 @@
 
 void handleButton()
 {
-  if (buttonEnabled)
+  if (buttonEnabled && millis() - buttonReleasedTime > 20) //debounce
   {
-    if (digitalRead(BTNPIN) == LOW && !buttonPressedBefore)
+    if (digitalRead(BTNPIN) == LOW && !buttonPressedBefore) //pressed
     {
       buttonPressedTime = millis();
       buttonPressedBefore = true;
     }
-     else if (digitalRead(BTNPIN) == HIGH && buttonPressedBefore)
+     else if (digitalRead(BTNPIN) == HIGH && buttonPressedBefore) //released
     {
-      delay(15); //debounce
-      if (digitalRead(BTNPIN) == HIGH)
-      {
-        if (millis() - buttonPressedTime > 7000) {initAP();}
-        else if (millis() - buttonPressedTime > 700) 
+      if (buttonReleasedTime == 0) {
+        buttonReleasedTime = millis();
+      } else {
+        if (digitalRead(BTNPIN) == HIGH)
         {
-          if (macroLongPress != 0) {applyMacro(macroLongPress);}
-          else _setRandomColor(false,true);
-        }
-        else {
-          if (macroButton == 0)
+          if (buttonReleasedTime - buttonPressedTime > 7000) {initAP();}
+          else if (buttonReleasedTime  - buttonPressedTime > 700) 
           {
-            toggleOnOff();
-            colorUpdated(2);
-          } else {
-            applyMacro(macroButton);
+            if (macroLongPress != 0) {applyMacro(macroLongPress);}
+            else _setRandomColor(false,true);
           }
+          else {
+            if (macroButton == 0)
+            {
+              toggleOnOff();
+              colorUpdated(2);
+            } else {
+              applyMacro(macroButton);
+            }
+          }
+          buttonPressedBefore = false;
         }
-        buttonPressedBefore = false;
+        buttonReleasedTime = 0;
       }
     }
   }
 
+  #if AUXPIN >= 0
   //output
   if (auxActive || auxActiveBefore)
   {
@@ -62,4 +67,5 @@ void handleButton()
       }
     }
   }
+  #endif
 }
