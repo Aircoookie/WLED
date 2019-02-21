@@ -72,14 +72,16 @@ void initServer()
     request->send_P(200, "application/json", JSON_palette_names);
     });
 
-  server.on("/json/info", HTTP_ANY, [](AsyncWebServerRequest *request){
-    request->send(500, "application/json", "{\"error\":\"Not implemented\"}");
+  server.on("/json/info", HTTP_GET, [](AsyncWebServerRequest *request){
+    getJsonInfo();
+    request->send(200, "application/json", obuf);
     });
 
   server.on("/json", HTTP_ANY, [](AsyncWebServerRequest *request){
     request->send(500, "application/json", "{\"error\":\"Not implemented\"}");
     });
-  
+
+  //*******DEPRECATED*******
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)VERSION);
     });
@@ -90,6 +92,11 @@ void initServer()
     
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
+    });
+
+  server.on("/build", HTTP_GET, [](AsyncWebServerRequest *request){
+    getJsonInfo();
+    request->send(200, "application/json", obuf);
     });
     
   server.on("/power", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -104,18 +111,14 @@ void initServer()
     }
     serveMessage(request, 200, val, "This is just an estimate (does not account for factors like wire resistance). It is NOT a measurement!", 254);
     });
-
+  //*******END*******/
+  
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", PAGE_usermod);
     });
     
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, "418. I'm a teapot.", "(Tangible Embedded Advanced Project Of Twinkling)", 254);
-    });
-    
-  server.on("/build", HTTP_GET, [](AsyncWebServerRequest *request){
-    getBuildInfo();
-    request->send(200, "text/plain", obuf);
     });
     
   //if OTA is allowed

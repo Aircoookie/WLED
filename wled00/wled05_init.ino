@@ -216,62 +216,75 @@ void initCon()
 
 
 //fill string buffer with build info
-void getBuildInfo()
+void getJsonInfo()
 {
   olen = 0;
-  oappend("hard-coded build info:\r\n\n");
-  #ifdef ARDUINO_ARCH_ESP32
-  oappend("platform: esp32");
-  #else
-  oappend("platform: esp8266");
-  #endif
-  oappend("\r\nversion: ");
+  oappend("{\r\n\"ver\":\"");
   oappend(versionString);
-  oappend("\r\nbuild: ");
+  oappend("\",\r\n\"vid\":");
   oappendi(VERSION);
-  oappend("\r\neepver: ");
-  oappendi(EEPVER);
-  oappend("\r\nesp-core: ");
+  oappend(",\r\n\"leds\":{\r\n");
+  oappend("\"count\":");
+  oappendi(ledCount);
+  oappend(",\r\n\"rgbw\":");
+  oappend((char*)(useRGBW?"true":"false"));
+  oappend(",\r\n\"pin\":[");
+  oappendi(LEDPIN);
+  oappend("],\r\n\"pwr\":");
+  oappendi(strip.currentMilliamps);
+  oappend(",\r\n\"maxpwr\":");
+  oappendi(strip.ablMilliampsMax);
+  oappend(",\r\n\"maxseg\":1},\r\n\"name\":\"");
+  oappend(serverDescription);
+  oappend("\",\r\n\"udpport\":");
+  oappendi(udpPort);
   #ifdef ARDUINO_ARCH_ESP32
+  oappend(",\r\n\"arch\":\"esp32\",\r\n\"core\":\"");
   oappend((char*)ESP.getSdkVersion());
   #else
+  oappend(",\r\n\"arch\":\"esp8266\",\r\n\"core\":\"");
   oappend((char*)ESP.getCoreVersion().c_str());
   #endif
-  oappend("\r\nopt: ");
+  oappend("\",\r\n\"uptime\":");
+  oappendi(millis()/1000);
+  oappend(",\r\n\"freeheap\":");
+  oappendi(ESP.getFreeHeap());
+  oappend(",\r\n\"maxalloc\":");
+  #ifdef ARDUINO_ARCH_ESP32
+  oappendi(ESP.getMaxAllocHeap());
+  #else
+  oappendi(ESP.getMaxFreeBlockSize());
+  #endif
+  oappend(",\r\n\"opt\":[");
   #ifndef WLED_DISABLE_ALEXA
-  oappend("alexa ");
+  oappend("\"alexa\",");
   #endif
   #ifndef WLED_DISABLE_BLYNK
-  oappend("blynk ");
+  oappend("\"blynk\",");
   #endif
   #ifndef WLED_DISABLE_CRONIXIE
-  oappend("cronixie ");
-  #endif
-  #ifndef WLED_DISABLE_HUESYNC
-  oappend("huesync ");
-  #endif
-  #ifndef WLED_DISABLE_MOBILE_UI
-  oappend("mobile-ui ");
-  #endif
-  #ifndef WLED_DISABLE_OTA
-  oappend("ota");
-  #endif
-  #ifdef USEFS
-  oappend("\r\nspiffs: true\r\n");
-  #else
-  oappend("\r\nspiffs: false\r\n");
+  oappend("\"cronixie\",");
   #endif
   #ifdef WLED_DEBUG
-  oappend("debug: true\r\n");
-  #else
-  oappend("debug: false\r\n");
+  oappend("\"debug\",");
   #endif
-  oappend("button-pin: gpio");
-  oappendi(BTNPIN);
-  oappend("\r\nstrip-pin: gpio");
-  oappendi(LEDPIN);
-  oappend("\r\nbrand: wled");
-  oappend("\r\nbuild-type: dev\r\n");
+  #ifdef USEFS
+  oappend("\"fs\",");
+  #endif
+  #ifndef WLED_DISABLE_HUESYNC
+  oappend("\"huesync\",");
+  #endif
+  #ifndef WLED_DISABLE_MOBILE_UI
+  oappend("\"mobile-ui\",");
+  #endif
+  #ifndef WLED_DISABLE_OTA
+  oappend("\"ota\"]");
+  #else
+  oappend("\"no-ota\"]");
+  #endif
+  oappend(",\r\n\"brand\":\"wled\",\r\n\"btype\":\"dev\",\r\n\"mac\":\"");
+  oappend((char*)escapedMac.c_str());
+  oappend("\"\r\n}");
 }
 
 
