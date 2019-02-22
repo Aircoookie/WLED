@@ -307,10 +307,41 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 }
 
 
+
 //helper to get int value at a position in string
 int getNumVal(String* req, uint16_t pos)
 {
-  return req->substring(pos + 3).toInt();
+  return req->substring(pos+3).toInt();
+}
+
+
+//helper to get int value at a position in string
+bool updateVal(String* req, const char* key, byte* val, byte minv=0, byte maxv=255)
+{
+  int pos = req->indexOf(key);
+  if (pos < 1) return false;
+  
+  if (req->charAt(pos+3) == '~') {
+    int out = getNumVal(req, pos+1);
+    if (out == 0)
+    {
+      if (req->charAt(pos+4) == '-')
+      {
+        *val = (*val <= minv)? maxv : *val -1;
+      } else {
+        *val = (*val >= maxv)? minv : *val +1;
+      }
+    } else {
+      out += *val;
+      if (out > maxv) out = maxv;
+      if (out < minv) out = minv;
+      *val = out;
+    }
+  } else
+  {
+    *val = getNumVal(req, pos);
+  }
+  return true;
 }
 
 
@@ -341,11 +372,18 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
   }
    
-  //set brigthness
-  pos = req.indexOf("&A=");
-  if (pos > 0) {
-    bri = getNumVal(&req, pos);
-  }
+  //set brightness
+  updateVal(&req, "&A=", &bri);
+
+  //set colors
+  updateVal(&req, "&R=", &col[0]);
+  updateVal(&req, "&G=", &col[1]);
+  updateVal(&req, "&B=", &col[2]);
+  updateVal(&req, "&W=", &col[3]);
+  updateVal(&req, "R2=", &colSec[0]);
+  updateVal(&req, "G2=", &colSec[1]);
+  updateVal(&req, "B2=", &colSec[2]);
+  updateVal(&req, "W2=", &colSec[3]);
 
   //set hue
   pos = req.indexOf("HU=");
@@ -357,48 +395,6 @@ bool handleSet(AsyncWebServerRequest *request, String req)
       tempsat = getNumVal(&req, pos);
     }
     colorHStoRGB(temphue,tempsat,(req.indexOf("H2")>0)? colSec:col);
-  }
-   
-  //set red value
-  pos = req.indexOf("&R=");
-  if (pos > 0) {
-    col[0] = getNumVal(&req, pos);
-  }
-  //set green value
-  pos = req.indexOf("&G=");
-  if (pos > 0) {
-    col[1] = getNumVal(&req, pos);
-  }
-  //set blue value
-  pos = req.indexOf("&B=");
-  if (pos > 0) {
-    col[2] = getNumVal(&req, pos);
-  }
-  //set white value
-  pos = req.indexOf("&W=");
-  if (pos > 0) {
-    col[3] = getNumVal(&req, pos);
-  }
-   
-  //set 2nd red value
-  pos = req.indexOf("R2=");
-  if (pos > 0) {
-    colSec[0] = getNumVal(&req, pos);
-  }
-  //set 2nd green value
-  pos = req.indexOf("G2=");
-  if (pos > 0) {
-    colSec[1] = getNumVal(&req, pos);
-  }
-  //set 2nd blue value
-  pos = req.indexOf("B2=");
-  if (pos > 0) {
-    colSec[2] = getNumVal(&req, pos);
-  }
-  //set 2nd white value
-  pos = req.indexOf("W2=");
-  if (pos > 0) {
-    colSec[3] = getNumVal(&req, pos);
   }
    
   //set color from HEX or 32bit DEC
@@ -440,6 +436,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   if (pos > 0) {
     _setRandomColor(getNumVal(&req, pos));
   }
+  
   //set 2nd to 1st
   pos = req.indexOf("SP");
   if (pos > 0) {
@@ -448,6 +445,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     colSec[2] = col[2];
     colSec[3] = col[3];
   }
+  
   //swap 2nd & 1st
   pos = req.indexOf("SC");
   if (pos > 0) {
@@ -460,27 +458,11 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     }
   }
    
-  //set current effect index
-  pos = req.indexOf("FX=");
-  if (pos > 0) {
-    effectCurrent = getNumVal(&req, pos);
-    presetCyclingEnabled = false;
-  }
-  //set effect speed
-  pos = req.indexOf("SX=");
-  if (pos > 0) {
-    effectSpeed = getNumVal(&req, pos);
-  }
-  //set effect intensity
-  pos = req.indexOf("IX=");
-  if (pos > 0) {
-    effectIntensity = req.substring(pos + 3).toInt();
-  }
-  //set effect palette (only for FastLED effects)
-  pos = req.indexOf("FP=");
-  if (pos > 0) {
-    effectPalette = req.substring(pos + 3).toInt();
-  }
+  //set effect parameters
+  if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) presetCyclingEnabled = false;
+  updateVal(&req, "SX=", &effectSpeed);
+  updateVal(&req, "IX=", &effectIntensity);
+  updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
 
   //set hue polling light: 0 -off
   pos = req.indexOf("HP=");
@@ -500,33 +482,31 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   if (pos > 0) {
     useHSB = getNumVal(&req, pos);
   }
+  
   //set advanced overlay
   pos = req.indexOf("OL=");
   if (pos > 0) {
     overlayCurrent = getNumVal(&req, pos);
     strip.unlockAll();
   }
+  
   //(un)lock pixel (ranges)
   pos = req.indexOf("&L=");
-  if (pos > 0){
-    int index = getNumVal(&req, pos);
+  if (pos > 0) {
+    uint16_t index = getNumVal(&req, pos);
     pos = req.indexOf("L2=");
+    bool unlock = req.indexOf("UL") > 0;
     if (pos > 0){
-      int index2 = getNumVal(&req, pos);
-      if (req.indexOf("UL") > 0)
-      {
+      uint16_t index2 = getNumVal(&req, pos);
+      if (unlock) {
         strip.unlockRange(index, index2);
-      } else
-      {
+      } else {
         strip.lockRange(index, index2);
       }
-    } else
-    {
-      if (req.indexOf("UL") > 0)
-      {
+    } else {
+      if (unlock) {
         strip.unlock(index);
-      } else
-      {
+      } else {
         strip.lock(index);
       }
     }
@@ -537,25 +517,14 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   if (pos > 0) {
     applyMacro(getNumVal(&req, pos));
   }
+  
   //toggle send UDP direct notifications
-  if (req.indexOf("SN=") > 0)
-  {
-    notifyDirect = true;
-    if (req.indexOf("SN=0") > 0)
-    {
-      notifyDirect = false;
-    }
-  }
+  pos = req.indexOf("SN=");
+  if (pos > 0) notifyDirect = (req.charAt(pos+3) != '0');
    
   //toggle receive UDP direct notifications
-  if (req.indexOf("RN=") > 0)
-  {
-    receiveNotifications = true;
-    if (req.indexOf("RN=0") > 0)
-    {
-      receiveNotifications = false;
-    }
-  }
+  pos = req.indexOf("RN=");
+  if (pos > 0) receiveNotifications = (req.charAt(pos+3) != '0');
    
   //toggle nightlight mode
   bool aNlDef = false;
@@ -563,7 +532,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   pos = req.indexOf("NL=");
   if (pos > 0)
   {
-    if (req.indexOf("NL=0") > 0)
+    if (req.charAt(pos+3) == '0')
     {
       nightlightActive = false;
       bri = briT;
@@ -586,14 +555,10 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   }
    
   //toggle nightlight fade
-  if (req.indexOf("NF=") > 0)
+  pos = req.indexOf("NF=");
+  if (pos > 0)
   {
-    if (req.indexOf("NF=0") > 0)
-    {
-      nightlightFade = false;
-    } else {
-      nightlightFade = true;
-    }
+    nightlightFade = (req.charAt(pos+3) != '0');
     nightlightActiveOld = false; //re-init
   }
    
@@ -604,11 +569,10 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     auxActive = true;
     if (auxTime == 0) auxActive = false;
   }
+  
   pos = req.indexOf("TT=");
-  if (pos > 0) {
-    transitionDelay = getNumVal(&req, pos);
-  }
-   
+  if (pos > 0) transitionDelay = getNumVal(&req, pos);
+
   //main toggle on/off
   pos = req.indexOf("&T=");
   if (pos > 0) {
@@ -642,43 +606,35 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   
   pos = req.indexOf("P2="); //sets last preset for cycle
   if (pos > 0) presetCycleMax = getNumVal(&req, pos);
-   
-  if (req.indexOf("CY=") > 0) //preset cycle
+
+  //preset cycle
+  pos = req.indexOf("CY=");
+  if (pos > 0)
   {
-    presetCyclingEnabled = true;
-    if (req.indexOf("CY=0") > 0)
-    {
-      presetCyclingEnabled = false;
-    }
+    presetCyclingEnabled = req.charAt(pos+3 != '0');
     presetCycCurr = presetCycleMin;
   }
+  
   pos = req.indexOf("PT="); //sets cycle time in ms
   if (pos > 0) {
     int v = getNumVal(&req, pos);
     if (v > 49) presetCycleTime = v;
   }
-  if (req.indexOf("PA=") > 0) //apply brightness from preset
-  {
-    presetApplyBri = true;
-    if (req.indexOf("PA=0") > 0) presetApplyBri = false;
-  }
-  if (req.indexOf("PC=") > 0) //apply color from preset
-  {
-    presetApplyCol = true;
-    if (req.indexOf("PC=0") > 0) presetApplyCol = false;
-  }
-  if (req.indexOf("PX=") > 0) //apply effects from preset
-  {
-    presetApplyFx = true;
-    if (req.indexOf("PX=0") > 0) presetApplyFx = false;
-  }
+
+  pos = req.indexOf("PA="); //apply brightness from preset
+  if (pos > 0) presetApplyBri = req.charAt(pos+3 != '0');
+
+  pos = req.indexOf("PC="); //apply color from preset
+  if (pos > 0) presetApplyCol = req.charAt(pos+3 != '0'); 
+
+  pos = req.indexOf("PX="); //apply effects from preset
+  if (pos > 0) presetApplyFx = req.charAt(pos+3 != '0');
   
   pos = req.indexOf("PS="); //saves current in preset
-  if (pos > 0) {
-    savePreset(getNumVal(&req, pos));
-  }
-  pos = req.indexOf("PL="); //applies entire preset
-  if (pos > 0) {
+  if (pos > 0) savePreset(getNumVal(&req, pos));
+
+  //apply preset
+  if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
     applyPreset(getNumVal(&req, pos), presetApplyBri, presetApplyCol, presetApplyFx);
   }
   
@@ -688,6 +644,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     strcpy(cronixieDisplay,req.substring(pos + 3, pos + 9).c_str());
     setCronixie();
   }
+  
   pos = req.indexOf("NM="); //mode, 1 countdown
   if (pos > 0) {
     countdownMode = true;
@@ -696,6 +653,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
       countdownMode = false;
     }
   }
+  
   if (req.indexOf("NB=") > 0) //sets backlight
   {
     cronixieBacklight = true;
@@ -711,6 +669,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   if (pos > 0) {
     userVar0 = getNumVal(&req, pos);
   }
+  
   pos = req.indexOf("U1="); //user var 1
   if (pos > 0) {
     userVar1 = getNumVal(&req, pos);
@@ -719,9 +678,9 @@ bool handleSet(AsyncWebServerRequest *request, String req)
    
   //internal call, does not send XML response
   pos = req.indexOf("IN");
-  if (pos < 1) XML_response(request, (req.indexOf("IT") > 0)); //include theme if firstload
+  if (pos < 1) XML_response(request, (req.indexOf("&IT") > 0)); //include theme if firstload
   
-  pos = req.indexOf("NN"); //do not send UDP notifications this time
+  pos = req.indexOf("&NN"); //do not send UDP notifications this time
   colorUpdated((pos > 0) ? 5:1);
   
   return true;

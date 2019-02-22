@@ -238,6 +238,10 @@ void getJsonInfo()
   oappend(serverDescription);
   oappend("\",\r\n\"udpport\":");
   oappendi(udpPort);
+  oappend(",\r\n\"modecount\":");
+  oappendi(strip.getModeCount());
+  oappend(",\r\n\"palettecount\":");
+  oappendi(strip.getPaletteCount());
   #ifdef ARDUINO_ARCH_ESP32
   oappend(",\r\n\"arch\":\"esp32\",\r\n\"core\":\"");
   oappend((char*)ESP.getSdkVersion());

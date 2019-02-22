@@ -335,6 +335,8 @@ class WS2812FX {
       getMode(void),
       getSpeed(void),
       getNumSegments(void),
+      getModeCount(void),
+      getPaletteCount(void),
       get_random_wheel_index(uint8_t);
 
     uint32_t

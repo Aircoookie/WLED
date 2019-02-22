@@ -259,6 +259,16 @@ void WS2812FX::setMode(uint8_t m) {
   setBrightness(_brightness);
 }
 
+uint8_t WS2812FX::getModeCount()
+{
+  return MODE_COUNT;
+}
+
+uint8_t WS2812FX::getPaletteCount()
+{
+  return 13 + gGradientPaletteCount;
+}
+
 //TODO transitions
 
 void WS2812FX::setSpeed(uint8_t s) {

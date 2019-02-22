@@ -256,7 +256,7 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(2333, mqttDeviceTopic, 32);
   writeStringToEEPROM(2366,  mqttGroupTopic, 32);
   
-  commit();
+  EEPROM.commit();
 }
 
 
@@ -570,7 +570,7 @@ void savePreset(byte index)
   
   EEPROM.write(i+16, effectIntensity);
   EEPROM.write(i+17, effectPalette);
-  commit();
+  EEPROM.commit();
 }
 
 
@@ -616,23 +616,5 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   {
     EEPROM.write(i, mc.charAt(i-s));
   }
-  if (sing) commit();
-}
-
-
-void commit()
-{
-  DEBUG_PRINT("s");
-  //this is to support IR on ESP32, needs work
-  /*#ifdef ARDUINO_ARCH_ESP32
-  portMUX_TYPE mMux = portMUX_INITIALIZER_UNLOCKED;
-  portENTER_CRITICAL(&mMux); 
-  #endif*/
-
-  EEPROM.commit();
-  
-  /*#ifdef ARDUINO_ARCH_ESP32
-  portEXIT_CRITICAL(&mMux);
-  #endif*/
-  DEBUG_PRINT(".");
+  if (sing) EEPROM.commit();
 }
