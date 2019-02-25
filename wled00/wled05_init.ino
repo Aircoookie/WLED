@@ -286,7 +286,7 @@ void getJsonInfo()
   #else
   oappend("\"no-ota\"]");
   #endif
-  oappend(",\r\n\"brand\":\"wled\",\r\n\"btype\":\"dev\",\r\n\"mac\":\"");
+  oappend(",\r\n\"brand\":\"wled\",\r\n\"product\":\"DIY light\",\r\n\"btype\":\"dev\",\r\n\"mac\":\"");
   oappend((char*)escapedMac.c_str());
   oappend("\"\r\n}");
 }

@@ -37,7 +37,6 @@
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
  #include <ESPAsyncTCP.h>
- #include <ESPAsyncWebServer.h>
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -373,10 +372,12 @@ long lastInterfaceUpdate = 0;
 byte interfaceUpdateCallMode = 0;
 uint32_t mqttFailedConAttempts = 0;
 
+#if AUXPIN >= 0
 //auxiliary debug pin
 byte auxTime = 0;
 unsigned long auxStartTime = 0;
 bool auxActive = false, auxActiveBefore = false;
+#endif
 
 //alexa udp
 String escapedMac;

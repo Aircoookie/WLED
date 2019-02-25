@@ -561,7 +561,8 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     nightlightFade = (req.charAt(pos+3) != '0');
     nightlightActiveOld = false; //re-init
   }
-   
+
+  #if AUXPIN >= 0
   //toggle general purpose output
   pos = req.indexOf("AX=");
   if (pos > 0) {
@@ -569,6 +570,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     auxActive = true;
     if (auxTime == 0) auxActive = false;
   }
+  #endif
   
   pos = req.indexOf("TT=");
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
@@ -635,7 +637,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
 
   //apply preset
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
-    applyPreset(getNumVal(&req, pos), presetApplyBri, presetApplyCol, presetApplyFx);
+    applyPreset(presetCycCurr, presetApplyBri, presetApplyCol, presetApplyFx);
   }
   
   //cronixie

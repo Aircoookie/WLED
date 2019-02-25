@@ -53,9 +53,9 @@ http:// <input name="CM" maxlength="32"> .local<br>
 Try connecting before opening AP for: <input name="AT" type="number" min="0" max="255" required> s <br>
 Client IP: <span class="sip"> Not connected </span><br>
 <h3>Configure Access Point</h3>
-AP SSID (leave empty for no AP):<br> <input name="AS" maxlength="32"><br>
+AP SSID (leave empty for no AP):<br><input name="AS" maxlength="32"><br>
 Hide AP name: <input type="checkbox" name="AH"><br>
-AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63"> <br>
+AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63"><br>
 Access Point WiFi channel: <input name="AC" type="number" min="1" max="13" required><br>
 AP IP: <span class="sip"> Not active </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
@@ -215,7 +215,7 @@ On/Off button enabled: <input type="checkbox" name="BT"><br>
 Infrared receiver enabled: <input type="checkbox" name="IR"><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
-UDP Port: <input name="UP" maxlength="5" size="4"><br>
+UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>
 Receive <input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects<br>
 Send notifications on direct change: <input type="checkbox" name="SD"><br>
 Send notifications on button press: <input type="checkbox" name="SB"><br>

@@ -30,11 +30,10 @@ void setAllLeds() {
   }
   if (!enableSecTransition)
   {
-    for (byte i = 0; i<3; i++)
+    for (byte i = 0; i<4; i++)
     {
       colSecT[i] = colSec[i];
     }
-    colSecT[3] = colSec[3];
   }
   if (useRGBW && autoRGBtoRGBW)
   {
