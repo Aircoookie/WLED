@@ -22,7 +22,6 @@ void XML_response(AsyncWebServerRequest *request, bool includeTheme)
    oappendi(colSec[i]);
    oappend("</cs>");
   }
-  
   oappend("<ns>");
   oappendi(notifyDirect);
   oappend("</ns><nr>");
@@ -242,10 +241,13 @@ void getSettingsJS(byte subPage)
     sappend('v',"SW",colSecS[3]);
     sappend('c',"BO",turnOnAtBoot);
     sappend('v',"BP",bootPreset);
-    sappend('v',"FX",effectDefault);
+    oappend("f=");
+    oappendi(effectDefault);
+    oappend(";p=");
+    oappendi(effectPaletteDefault);
+    oappend(";");
     sappend('v',"SX",effectSpeedDefault);
     sappend('v',"IX",effectIntensityDefault);
-    sappend('v',"FP",effectPaletteDefault);
     sappend('c',"GB",useGammaCorrectionBri);
     sappend('c',"GC",useGammaCorrectionRGB);
     sappend('c',"TF",fadeTransition);

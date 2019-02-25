@@ -67,14 +67,14 @@ AP IP: <span class="sip"> Not active </span><hr>
 //LED settings
 const char PAGE_settings_leds[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500">
-<title>LED Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}function B(){window.history.back();}function S(){GetV();UI();}function UI(){
-var myC=document.querySelectorAll('.wc'),l=myC.length;
-for (i = 0; i < l; i++){myC[i].style.display=(document.getElementById('rgbw').checked)?'inline':'none';}
-var val=Math.ceil((100+document.Sf.LC.value*55)/500)/2;
-val=(val>5)?Math.ceil(val):val;var s="";
-if (val<1.1){s="ESP 5V pin with 1A USB supply";}else{s="External 5V ";s+=val;s+="A supply connected to LEDs";}
-document.getElementById('psu').innerHTML=s;document.getElementById('ps2').innerHTML=val+"A = "+val*1000;
-}function GetV(){var d=document;%CSS%%SCSS%</head>
+<title>LED Settings</title><script>var f=0,p=0;function H()
+{window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}
+function B(){window.open("/settings","_self");}function S(){GetV();setTimeout(function(){fillfx(0);},200);setTimeout(function(){fillfx(1);},400);UI();}
+function UI(){var myC=document.querySelectorAll('.wc'),l=myC.length;for(i=0;i<l;i++){myC[i].style.display=(document.getElementById('rgbw').checked)?'inline':'none';}
+var val=Math.ceil((100+document.Sf.LC.value*55)/500)/2;val=(val>5)?Math.ceil(val):val;var s="";if(val<1.02){s="ESP 5V pin with 1A USB supply";}else{s="External 5V ";s+=val;s+="A supply connected to LEDs";}document.getElementById('psu').innerHTML=s;}
+function fillfx(pl){e="<option>Error loading list!</option>";el=pl?Sf.FP:Sf.FX;fetch(pl?'/json/palettes':'/json/effects').then(res=>{if(!res.ok){el.innerHTML=e;}
+return res.json();}).then(json=>{var x="";var l=pl?json.palettes:json.effects;for(i in l){x+="<option value=\""+i+"\">"+l[i]+" ("+i+")</option>";}
+el.innerHTML=x;el.selectedIndex=pl?p:f;}).catch(function(){el.innerHTML=e;})}function GetV(){var d=document;%CSS%%SCSS%</head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
@@ -97,26 +97,34 @@ Color order:
 <option value="2">BRG</option>
 <option value="3">RBG</option></select>
 <h3>Defaults</h3>
-Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br><br>
-Default RGB color:
+Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
+Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>
+Set current color, brightness and effects as boot default: <input type="checkbox" name="IS"><br>
+Set current preset cycle setting as boot default: <input type="checkbox" name="PC">
+<br>- <i>or</i> -<br>
+Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)
+<br>- <i>or</i> -<br>
+Default RGB<span class="wc">W</span> color:<br>
 <input name="CR" type="number" min="0" max="255" required>
 <input name="CG" type="number" min="0" max="255" required>
-<input name="CB" type="number" min="0" max="255" required><br>
-<span class="wc">Default white value: <input name="CW" type="number" min="0" max="255" required><br>
-Auto-calculate white from RGB instead: <input type="checkbox" name="AW"><br></span>
-Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br>
-Default effect ID: <input name="FX" type="number" min="0" max="79" required><br>
-Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
-Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br>
-Default effect palette: <input name="FP" type="number" min="0" max="255" required><br>
+<input name="CB" type="number" min="0" max="255" required>
+<span class="wc"><input name="CW" type="number" min="0" max="255" required><br>
+Auto-calculate white from RGB instead: <input type="checkbox" name="AW"></span><br>
 Default secondary RGB<span class="wc">W</span>:<br>
 <input name="SR" type="number" min="0" max="255" required>
 <input name="SG" type="number" min="0" max="255" required>
 <input name="SB" type="number" min="0" max="255" required>
 <span class="wc"><input name="SW" type="number" min="0" max="255" required></span><br>
-Ignore and use current color, brightness and effects: <input type="checkbox" name="IS"><br><br>
-Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)<br>
-Save current preset cycle configuration as boot default: <input type="checkbox" name="PC"><br><br>
+Default effect ID:<br>
+<select name="FX">
+<option>Loading...</option>
+</select>
+<br>Default color palette:<br>
+<select name="FP">
+<option>Loading...</option>
+</select><br>
+Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
+Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br><br>
 Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
 Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
 Brightness factor: <input name="BF" type="number" min="0" max="255" required> %%
