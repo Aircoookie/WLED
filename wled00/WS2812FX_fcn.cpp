@@ -312,8 +312,7 @@ void WS2812FX::setSecondaryColor(uint32_t c) {
 void WS2812FX::setBrightness(uint8_t b) {
   if (_brightness == b) return;
   _brightness = b;
-  bus->SetBrightness(_brightness);
-  show();
+  if (SEGMENT_RUNTIME.next_time > millis() + 20) show(); //apply brightness change immeadiately if no refresh soon
 }
 
 uint8_t WS2812FX::getMode(void) {

@@ -586,6 +586,10 @@ bool handleSet(AsyncWebServerRequest *request, String req)
       default: toggleOnOff(); //toggle
     }
   }
+
+  //Segment reverse
+  //pos = req.indexOf("SR=");
+  //if (pos > 0) strip.getSegment().reverse = (req.charAt(pos+3) != '0');
    
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri) nightlightActive = false;
@@ -641,19 +645,11 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   }
   
   //cronixie
+  #ifndef WLED_DISABLE_CRONIXIE
   pos = req.indexOf("NX="); //sets digits to code
   if (pos > 0) {
     strcpy(cronixieDisplay,req.substring(pos + 3, pos + 9).c_str());
     setCronixie();
-  }
-  
-  pos = req.indexOf("NM="); //mode, 1 countdown
-  if (pos > 0) {
-    countdownMode = true;
-    if (req.indexOf("NM=0") > 0)
-    {
-      countdownMode = false;
-    }
   }
   
   if (req.indexOf("NB=") > 0) //sets backlight
@@ -665,6 +661,15 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     }
     if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
     overlayRefreshedTime = 0;
+  }
+  #endif
+  pos = req.indexOf("NM="); //mode, 1 countdown
+  if (pos > 0) {
+    countdownMode = true;
+    if (req.indexOf("NM=0") > 0)
+    {
+      countdownMode = false;
+    }
   }
   
   pos = req.indexOf("U0="); //user var 0

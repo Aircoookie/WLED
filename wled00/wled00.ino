@@ -86,7 +86,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1902251
+#define VERSION 1903011
 char versionString[] = "0.8.4-dev";
 
 
@@ -146,7 +146,7 @@ byte nightlightDelayMins = 60;
 bool nightlightFade = true;                   //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
 bool fadeTransition = true;                   //enable crossfading color transition
 bool enableSecTransition = true;              //also enable transition for secondary color
-uint16_t transitionDelay = 900;              //default crossfade duration in ms
+uint16_t transitionDelay = 750;              //default crossfade duration in ms
 
 bool reverseMode  = false;                    //flip entire LED strip (reverses all effect directions)
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)

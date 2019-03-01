@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.3.4
+ * @version 2.4.0
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -20,6 +20,9 @@
 
 //you can use these defines for library config in your sketch. Just use them before #include <Espalexa.h>
 //#define ESPALEXA_ASYNC
+
+//in case this is unwanted in your application (will disable the /espalexa value page)
+//#define ESPALEXA_NO_SUBPAGE
 
 #ifndef ESPALEXA_MAXDEVICES
  #define ESPALEXA_MAXDEVICES 10 //this limit only has memory reasons, set it higher should you need to
@@ -46,7 +49,7 @@
 #include <WiFiUdp.h>
 
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa 2.3.4 debug mode"
+ #pragma message "Espalexa 2.4.0 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
 #else
@@ -55,6 +58,7 @@
 #endif
 
 #include "EspalexaDevice.h"
+
 
 class Espalexa {
 private:
@@ -69,6 +73,7 @@ private:
   ESP8266WebServer* server;
   #endif
   uint8_t currentDeviceCount = 0;
+  bool discoverable = true;
 
   EspalexaDevice* devices[ESPALEXA_MAXDEVICES] = {};
   //Keep in mind that Device IDs go from 1 to DEVICES, cpp arrays from 0 to DEVICES-1!!
@@ -80,44 +85,99 @@ private:
   String escapedMac=""; //lowercase mac address
   
   //private member functions
+  String boolString(bool st)
+  {
+    return(st)?"true":"false";
+  }
+  
+  String modeString(EspalexaColorMode m)
+  {
+    if (m == EspalexaColorMode::xy) return "xy";
+    if (m == EspalexaColorMode::hs) return "hs";
+    return "ct";
+  }
+  
+  String typeString(EspalexaDeviceType t)
+  {
+    switch (t)
+    {
+      case EspalexaDeviceType::dimmable:      return "Dimmable light";
+      case EspalexaDeviceType::whitespectrum: return "Color temperature light";
+      case EspalexaDeviceType::color:         return "Color light";
+      case EspalexaDeviceType::extendedcolor: return "Extended color light";
+    }
+    return "Light";
+  }
+  
+  String modelidString(EspalexaDeviceType t)
+  {
+    switch (t)
+    {
+      case EspalexaDeviceType::dimmable:      return "LWB010";
+      case EspalexaDeviceType::whitespectrum: return "LWT010";
+      case EspalexaDeviceType::color:         return "LST001";
+      case EspalexaDeviceType::extendedcolor: return "LCT015";
+    }
+    return "Plug 01";
+  }
+  
   //device JSON string: color+temperature device emulates LCT015, dimmable device LWB010, (TODO: on/off Plug 01, color temperature device LWT010, color device LST001)
   String deviceJsonString(uint8_t deviceId)
   {
     if (deviceId < 1 || deviceId > currentDeviceCount) return "{}"; //error
     EspalexaDevice* dev = devices[deviceId-1];
-    String json = "{\"type\":\"";
-    json += dev->isColorDevice() ? "Extended color light" : "Dimmable light";
-    json += "\",\"manufacturername\":\"OpenSource\",\"swversion\":\"0.1\",\"name\":\"";
-    json += dev->getName();
-    json += "\",\"uniqueid\":\""+ WiFi.macAddress() +"-"+ (deviceId+1) ;
-    json += "\",\"modelid\":\"";
-    json += dev->isColorDevice() ? "LCT015" : "LWB010";
-    json += "\",\"state\":{\"on\":";
-    json += boolString(dev->getValue()) +",\"bri\":"+ (String)(dev->getLastValue()-1) ;
-    if (dev->isColorDevice()) 
+
+    String json = "{\"state\":{\"on\":";
+    json += boolString(dev->getValue());
+    if (dev->getType() != EspalexaDeviceType::onoff) //bri support
     {
-      json += ",\"xy\":[0.00000,0.00000],\"colormode\":\"";
-      json += (dev->isColorTemperatureMode()) ? "ct":"hs";
-      json += "\",\"effect\":\"none\",\"ct\":" + (String)(dev->getCt()) + ",\"hue\":" + (String)(dev->getHue()) + ",\"sat\":" + (String)(dev->getSat());
+      json += ",\"bri\":" + String(dev->getLastValue()-1);
+      if (static_cast<uint8_t>(dev->getType()) > 2) //color support
+      {
+        json += ",\"hue\":" + String(dev->getHue()) + ",\"sat\":" + String(dev->getSat());
+        json += ",\"effect\":\"none\",\"xy\":[" + String(dev->getX()) + "," + String(dev->getY()) + "]";
+      }
+      if (static_cast<uint8_t>(dev->getType()) > 1 && dev->getType() != EspalexaDeviceType::color) //white spectrum support
+      {
+        json += ",\"ct\":" + String(dev->getCt());
+      }
     }
-    json +=",\"alert\":\"none\",\"reachable\":true}}";
+    json += ",\"alert\":\"none";
+    if (static_cast<uint8_t>(dev->getType()) > 1) json += "\",\"colormode\":\"" + modeString(dev->getColorMode());
+    json += "\",\"mode\":\"homeautomation\",\"reachable\":true},";
+    json += "\"type\":\"" + typeString(dev->getType());
+    json += "\",\"name\":\"" + dev->getName();
+    json += "\",\"modelid\":\"" + modelidString(dev->getType());
+    json += "\",\"manufacturername\":\"Espalexa\",\"productname\":\"E" + String(static_cast<uint8_t>(dev->getType()));
+    json += "\",\"uniqueid\":\""+ WiFi.macAddress() +"-"+ (deviceId+1);
+    json += "\",\"swversion\":\"2.4.0\"}";
+    
     return json;
   }
   
   //Espalexa status page /espalexa
+  #ifndef ESPALEXA_NO_SUBPAGE
   void servePage()
   {
     EA_DEBUGLN("HTTP Req espalexa ...\n");
     String res = "Hello from Espalexa!\r\n\r\n";
     for (int i=0; i<currentDeviceCount; i++)
     {
-      res += "Value of device " + String(i+1) + " (" + devices[i]->getName() + "): " + String(devices[i]->getValue()) + "\r\n";
+      EspalexaDevice* dev = devices[i];
+      res += "Value of device " + String(i+1) + " (" + dev->getName() + "): " + String(dev->getValue()) + " (" + typeString(dev->getType());
+      if (static_cast<uint8_t>(dev->getType()) > 1) //color support
+      {
+        res += ", colormode=" + modeString(dev->getColorMode()) + ", r=" + String(dev->getR()) + ", g=" + String(dev->getG()) + ", b=" + String(dev->getB());
+        res +=", ct=" + String(dev->getCt()) + ", hue=" + String(dev->getHue()) + ", sat=" + String(dev->getSat()) + ", x=" + String(dev->getX()) + ", y=" + String(dev->getY());
+      }
+      res += ")\r\n";
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library v2.3.4 by Christian Schwinne 2019";
+    res += "\r\n\r\nEspalexa library v2.4.0 by Christian Schwinne 2019";
     server->send(200, "text/plain", res);
   }
+  #endif
 
   //not found URI (only if internal webserver is used)
   void serveNotFound()
@@ -194,7 +254,9 @@ private:
       EA_DEBUG("Received body: ");
       EA_DEBUGLN(body);
     });
+    #ifndef ESPALEXA_NO_SUBPAGE
     serverAsync->on("/espalexa", HTTP_GET, [=](AsyncWebServerRequest *request){server = request; servePage();});
+    #endif
     serverAsync->on("/description.xml", HTTP_GET, [=](AsyncWebServerRequest *request){server = request; serveDescription();});
     serverAsync->begin();
     
@@ -208,55 +270,12 @@ private:
       server->onNotFound([=](){serveNotFound();});
     }
 
+    #ifndef ESPALEXA_NO_SUBPAGE
     server->on("/espalexa", HTTP_GET, [=](){servePage();});
+    #endif
     server->on("/description.xml", HTTP_GET, [=](){serveDescription();});
     server->begin();
     #endif
-  }
-
-  //called when Alexa sends ON command
-  void alexaOn(uint8_t deviceId)
-  {
-    devices[deviceId-1]->setValue(devices[deviceId-1]->getLastValue());
-    devices[deviceId-1]->setPropertyChanged(1);
-    devices[deviceId-1]->doCallback();
-  }
-
-  //called when Alexa sends OFF command
-  void alexaOff(uint8_t deviceId)
-  {
-    devices[deviceId-1]->setValue(0);
-    devices[deviceId-1]->setPropertyChanged(2);
-    devices[deviceId-1]->doCallback();
-  }
-
-  //called when Alexa sends BRI command
-  void alexaDim(uint8_t deviceId, uint8_t briL)
-  {
-    if (briL == 255)
-    {
-     devices[deviceId-1]->setValue(255);
-    } else {
-     devices[deviceId-1]->setValue(briL+1); 
-    }
-    devices[deviceId-1]->setPropertyChanged(3);
-    devices[deviceId-1]->doCallback();
-  }
-
-  //called when Alexa sends HUE command
-  void alexaCol(uint8_t deviceId, uint16_t hue, uint8_t sat)
-  {
-    devices[deviceId-1]->setColor(hue, sat);
-    devices[deviceId-1]->setPropertyChanged(4);
-    devices[deviceId-1]->doCallback();
-  }
-
-  //called when Alexa sends CT command (color temperature)
-  void alexaCt(uint8_t deviceId, uint16_t ct)
-  {
-    devices[deviceId-1]->setColor(ct);
-    devices[deviceId-1]->setPropertyChanged(5);
-    devices[deviceId-1]->doCallback();
   }
 
   //respond to UDP SSDP M-SEARCH
@@ -284,11 +303,6 @@ private:
     espalexaUdp.write(response.c_str());
     #endif
     espalexaUdp.endPacket();                    
-  }
-
-  String boolString(bool st)
-  {
-    return(st)?"true":"false";
   }
 
 public:
@@ -348,10 +362,11 @@ public:
       packetBuffer[len] = 0;
     }
     espalexaUdp.flush();
-
+    if (!discoverable) return; //do not reply to M-SEARCH if not discoverable
+    
     String request = packetBuffer;
-    EA_DEBUGLN(request);
     if(request.indexOf("M-SEARCH") >= 0) {
+      EA_DEBUGLN(request);
       if(request.indexOf("upnp:rootdevice") > 0 || request.indexOf("asic:1") > 0) {
         EA_DEBUGLN("Responding search req...");
         respondToSearch();
@@ -364,12 +379,15 @@ public:
     EA_DEBUG("Adding device ");
     EA_DEBUGLN((currentDeviceCount+1));
     if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
+    if (d == nullptr) return false;
+    d->setId(currentDeviceCount);
     devices[currentDeviceCount] = d;
     currentDeviceCount++;
     return true;
   }
-
-  bool addDevice(String deviceName, CallbackBriFunction callback, uint8_t initialValue = 0)
+  
+  //deprecated brightness-only callback
+  bool addDevice(String deviceName, BrightnessCallbackFunction callback, uint8_t initialValue = 0)
   {
     EA_DEBUG("Constructing device ");
     EA_DEBUGLN((currentDeviceCount+1));
@@ -378,12 +396,12 @@ public:
     return addDevice(d);
   }
 
-  bool addDevice(String deviceName, CallbackColFunction callback, uint8_t initialValue = 0)
+  bool addDevice(String deviceName, DeviceCallbackFunction callback, EspalexaDeviceType t = EspalexaDeviceType::dimmable, uint8_t initialValue = 0)
   {
     EA_DEBUG("Constructing device ");
     EA_DEBUGLN((currentDeviceCount+1));
     if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
-    EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
+    EspalexaDevice* d = new EspalexaDevice(deviceName, callback, t, initialValue);
     return addDevice(d);
   }
   
@@ -413,32 +431,78 @@ public:
     {
       EA_DEBUGLN("devType");
       body = "";
-      server->send(200, "application/json", "[{\"success\":{\"username\": \"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]");
+      server->send(200, "application/json", "[{\"success\":{\"username\":\"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]");
       return true;
     }
 
     if (req.indexOf("state") > 0) //client wants to control light
     {
       server->send(200, "application/json", "[{\"success\":true}]"); //short valid response
-    
-      int tempDeviceId = req.substring(req.indexOf("lights")+7).toInt();
-      EA_DEBUG("ls"); EA_DEBUGLN(tempDeviceId);
-      if (body.indexOf("false")>0) {alexaOff(tempDeviceId); return true;}
-      if (body.indexOf("bri")>0  ) {alexaDim(tempDeviceId, body.substring(body.indexOf("bri") +5).toInt()); return true;}
-      if (body.indexOf("hue")>0  ) {alexaCol(tempDeviceId, body.substring(body.indexOf("hue") +5).toInt(), body.substring(body.indexOf("sat") +5).toInt()); return true;}
-      if (body.indexOf("ct") >0  ) {alexaCt (tempDeviceId, body.substring(body.indexOf("ct") +4).toInt()); return true;}
-      alexaOn(tempDeviceId);
+
+      int devId = req.substring(req.indexOf("lights")+7).toInt();
+      EA_DEBUG("ls"); EA_DEBUGLN(devId);
+      devices[devId-1]->setPropertyChanged(EspalexaDeviceProperty::none);
       
+      if (body.indexOf("false")>0) //OFF command
+      {
+        devices[devId-1]->setValue(0);
+        devices[devId-1]->setPropertyChanged(EspalexaDeviceProperty::off);
+        devices[devId-1]->doCallback();
+        return true;
+      }
+      
+      if (body.indexOf("true") >0) //ON command
+      {
+        devices[devId-1]->setValue(devices[devId-1]->getLastValue());
+        devices[devId-1]->setPropertyChanged(EspalexaDeviceProperty::on);
+      }
+      
+      if (body.indexOf("bri")  >0) //BRIGHTNESS command
+      {
+        uint8_t briL = body.substring(body.indexOf("bri") +5).toInt();
+        if (briL == 255)
+        {
+         devices[devId-1]->setValue(255);
+        } else {
+         devices[devId-1]->setValue(briL+1); 
+        }
+        devices[devId-1]->setPropertyChanged(EspalexaDeviceProperty::bri);
+      }
+      
+      if (body.indexOf("xy")   >0) //COLOR command (XY mode)
+      {
+        devices[devId-1]->setColorXY(body.substring(body.indexOf("[") +1).toFloat(), body.substring(body.indexOf(",0") +1).toFloat());
+        devices[devId-1]->setPropertyChanged(EspalexaDeviceProperty::xy);
+      }
+      
+      if (body.indexOf("hue")  >0) //COLOR command (HS mode)
+      {
+        devices[devId-1]->setColor(body.substring(body.indexOf("hue") +5).toInt(), body.substring(body.indexOf("sat") +5).toInt());
+        devices[devId-1]->setPropertyChanged(EspalexaDeviceProperty::hs);
+      }
+      
+      if (body.indexOf("ct")   >0) //COLOR TEMP command (white spectrum)
+      {
+        devices[devId-1]->setColor(body.substring(body.indexOf("ct") +4).toInt());
+        devices[devId-1]->setPropertyChanged(EspalexaDeviceProperty::ct);
+      }
+      
+      devices[devId-1]->doCallback();
+      
+      #ifdef ESPALEXA_DEBUG
+      if (devices[devId-1]->getLastChangedProperty() == EspalexaDeviceProperty::none)
+        EA_DEBUGLN("STATE REQ WITHOUT BODY (likely Content-Type issue #6)");
+      #endif
       return true;
     }
     
     int pos = req.indexOf("lights");
     if (pos > 0) //client wants light info
     {
-      int tempDeviceId = req.substring(pos+7).toInt();
-      EA_DEBUG("l"); EA_DEBUGLN(tempDeviceId);
+      int devId = req.substring(pos+7).toInt();
+      EA_DEBUG("l"); EA_DEBUGLN(devId);
 
-      if (tempDeviceId == 0) //client wants all lights
+      if (devId == 0) //client wants all lights
       {
         EA_DEBUGLN("lAll");
         String jsonTemp = "{";
@@ -450,9 +514,9 @@ public:
         }
         jsonTemp += "}";
         server->send(200, "application/json", jsonTemp);
-      } else //client wants one light (tempDeviceId)
+      } else //client wants one light (devId)
       {
-        server->send(200, "application/json", deviceJsonString(tempDeviceId));
+        server->send(200, "application/json", deviceJsonString(devId));
       }
       
       return true;
@@ -463,21 +527,26 @@ public:
     return true;
   }
   
+  //set whether Alexa can discover any devices
+  void setDiscoverable(bool d)
+  {
+    discoverable = d;
+  }
+  
+  //get EspalexaDevice at specific index
+  EspalexaDevice* getDevice(uint8_t index)
+  {
+    if (index >= currentDeviceCount) return nullptr;
+    return devices[index];
+  }
+  
   //is an unique device ID
   String getEscapedMac()
   {
     return escapedMac;
   }
   
-  //convert brightness (0-255) to percentage
-  uint8_t toPercent(uint8_t bri)
-  {
-    uint16_t perc = bri * 100;
-    return perc / 255;
-  }
-  
   ~Espalexa(){delete devices;} //note: Espalexa is NOT meant to be destructed
 };
 
 #endif
-

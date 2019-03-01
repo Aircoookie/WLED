@@ -134,9 +134,6 @@ void colorUpdated(int callMode)
   }
 
   if (callMode == 8) return;
-  #ifndef WLED_DISABLE_ALEXA
-  if (espalexaDevice != nullptr) espalexaDevice->setValue(bri);
-  #endif
   //only update Blynk and mqtt every 2 seconds to reduce lag
   if (millis() - lastInterfaceUpdate <= 2000)
   {
@@ -149,6 +146,12 @@ void colorUpdated(int callMode)
 
 void updateInterfaces(uint8_t callMode)
 {
+  #ifndef WLED_DISABLE_ALEXA
+  if (espalexaDevice != nullptr && callMode != 10) {
+    espalexaDevice->setValue(bri);
+    espalexaDevice->setColor(col[0], col[1], col[2]);
+  }
+  #endif
   if (callMode != 9 && callMode != 5) updateBlynk();
   publishMqtt();
   lastInterfaceUpdate = millis();

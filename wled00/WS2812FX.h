@@ -169,8 +169,11 @@ class WS2812FX {
       uint8_t speed;
       uint8_t intensity;
       uint8_t palette;
-      uint8_t  mode;
-      uint8_t  options;
+      uint8_t mode;
+      uint8_t options;
+      //uint8_t clone;
+      //bool reverse;
+      //uint8_t grouping;
       uint32_t colors[NUM_COLORS];
     } segment;
 

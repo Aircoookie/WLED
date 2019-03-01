@@ -6,8 +6,8 @@
 
 void parseMQTTBriPayload(char* payload)
 {
-  if      (strcmp(payload, "ON") == 0) {bri = briLast; colorUpdated(1);}
-  else if (strcmp(payload, "T" ) == 0) {toggleOnOff(); colorUpdated(1);}
+  if      (strcmp(payload, "ON") == 0 || strcmp(payload, "on") == 0) {bri = briLast; colorUpdated(1);}
+  else if (strcmp(payload, "T" ) == 0 || strcmp(payload, "t" ) == 0) {toggleOnOff(); colorUpdated(1);}
   else {
     uint8_t in = strtoul(payload, NULL, 10);
     if (in == 0 && bri > 0) briLast = bri;

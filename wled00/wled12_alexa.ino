@@ -12,7 +12,7 @@ void prepareIds() {
 }
 
 #ifndef WLED_DISABLE_ALEXA
-void onAlexaChange(byte b, uint32_t color);
+void onAlexaChange(EspalexaDevice* dev);
 
 void alexaInit()
 {
@@ -20,7 +20,7 @@ void alexaInit()
   {
     if (espalexaDevice == nullptr) //only init once
     {
-      espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange);
+      espalexaDevice = new EspalexaDevice(alexaInvocationName, onAlexaChange, EspalexaDeviceType::extendedcolor);
       espalexa.addDevice(espalexaDevice);
       espalexa.begin(&server);
     } else {
@@ -35,11 +35,12 @@ void handleAlexa()
   espalexa.loop();
 }
 
-void onAlexaChange(byte b, uint32_t color)
+void onAlexaChange(EspalexaDevice* dev)
 {
-  byte m = espalexaDevice->getLastChangedProperty();
+  EspalexaDeviceProperty m = espalexaDevice->getLastChangedProperty();
   
-  if (m == 1){ //ON
+  if (m == EspalexaDeviceProperty::on)
+  {
     if (!macroAlexaOn)
     {
       if (bri == 0)
@@ -48,7 +49,7 @@ void onAlexaChange(byte b, uint32_t color)
         colorUpdated(10);
       }
     } else applyMacro(macroAlexaOn);
-  } else if (m == 2) //OFF
+  } else if (m == EspalexaDeviceProperty::off)
   {
     if (!macroAlexaOff)
     {
@@ -59,12 +60,13 @@ void onAlexaChange(byte b, uint32_t color)
         colorUpdated(10);
       }
     } else applyMacro(macroAlexaOff);
-  } else if (m == 3) //brightness
+  } else if (m == EspalexaDeviceProperty::bri)
   {
-    bri = b;
+    bri = espalexaDevice->getValue();
     colorUpdated(10);
   } else //color
   {
+    uint32_t color = espalexaDevice->getRGB();
     col[0] = ((color >> 16) & 0xFF);
     col[1] = ((color >>  8) & 0xFF);
     col[2] = (color & 0xFF);
