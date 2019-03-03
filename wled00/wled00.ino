@@ -40,6 +40,8 @@
 #endif
 
 #include <ESPAsyncWebServer.h>
+#include <AsyncJson.h>
+#include <ArduinoJson.h> //please use v5.13.x!
 #include <EEPROM.h>
 #include <WiFiUdp.h>
 #include <DNSServer.h>
@@ -51,6 +53,7 @@
 #include "src/dependencies/timezone/Timezone.h"
 #ifndef WLED_DISABLE_ALEXA
  #define ESPALEXA_ASYNC
+ #define ESPALEXA_NO_SUBPAGE
  #define ESPALEXA_MAXDEVICES 1
  #include "src/dependencies/espalexa/Espalexa.h"
 #endif
@@ -86,7 +89,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903011
+#define VERSION 1903031
 char versionString[] = "0.8.4-dev";
 
 

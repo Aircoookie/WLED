@@ -216,79 +216,72 @@ void initCon()
 
 
 //fill string buffer with build info
-void getJsonInfo()
+void serveJsonInfo(AsyncWebServerRequest* request)
 {
-  olen = 0;
-  oappend("{\r\n\"ver\":\"");
-  oappend(versionString);
-  oappend("\",\r\n\"vid\":");
-  oappendi(VERSION);
-  oappend(",\r\n\"leds\":{\r\n");
-  oappend("\"count\":");
-  oappendi(ledCount);
-  oappend(",\r\n\"rgbw\":");
-  oappend((char*)(useRGBW?"true":"false"));
-  oappend(",\r\n\"pin\":[");
-  oappendi(LEDPIN);
-  oappend("],\r\n\"pwr\":");
-  oappendi(strip.currentMilliamps);
-  oappend(",\r\n\"maxpwr\":");
-  oappendi(strip.ablMilliampsMax);
-  oappend(",\r\n\"maxseg\":1},\r\n\"name\":\"");
-  oappend(serverDescription);
-  oappend("\",\r\n\"udpport\":");
-  oappendi(udpPort);
-  oappend(",\r\n\"modecount\":");
-  oappendi(strip.getModeCount());
-  oappend(",\r\n\"palettecount\":");
-  oappendi(strip.getPaletteCount());
+  AsyncJsonResponse* response = new AsyncJsonResponse();
+  JsonObject& doc = response->getRoot();
+  
+  doc["ver"] = versionString;
+  doc["vid"] = VERSION;
+  
+  JsonObject& leds = doc.createNestedObject("leds");
+  leds["count"] = ledCount;
+  leds["rgbw"] = useRGBW;
+  JsonArray& leds_pin = leds.createNestedArray("pin");
+  leds_pin.add(LEDPIN);
+  
+  leds["pwr"] = strip.currentMilliamps;
+  leds["maxpwr"] = strip.ablMilliampsMax;
+  leds["maxseg"] = 1;
+  doc["name"] = serverDescription;
+  doc["udpport"] = udpPort;
+  doc["modecount"] = strip.getModeCount();
+  doc["palettecount"] = strip.getPaletteCount();
   #ifdef ARDUINO_ARCH_ESP32
-  oappend(",\r\n\"arch\":\"esp32\",\r\n\"core\":\"");
-  oappend((char*)ESP.getSdkVersion());
+  doc["arch"] = "esp32";
+  doc["core"] = ESP.getSdkVersion();
+  doc["maxalloc"] = ESP.getMaxAllocHeap();
   #else
-  oappend(",\r\n\"arch\":\"esp8266\",\r\n\"core\":\"");
-  oappend((char*)ESP.getCoreVersion().c_str());
+  doc["arch"] = "esp8266";
+  doc["core"] = ESP.getCoreVersion();
+  doc["maxalloc"] = ESP.getMaxFreeBlockSize();
   #endif
-  oappend("\",\r\n\"uptime\":");
-  oappendi(millis()/1000);
-  oappend(",\r\n\"freeheap\":");
-  oappendi(ESP.getFreeHeap());
-  oappend(",\r\n\"maxalloc\":");
-  #ifdef ARDUINO_ARCH_ESP32
-  oappendi(ESP.getMaxAllocHeap());
-  #else
-  oappendi(ESP.getMaxFreeBlockSize());
-  #endif
-  oappend(",\r\n\"opt\":[");
+  doc["freeheap"] = ESP.getFreeHeap();
+  doc["uptime"] = millis()/1000;
+  
+  JsonArray& opt = doc.createNestedArray("opt");
   #ifndef WLED_DISABLE_ALEXA
-  oappend("\"alexa\",");
+  opt.add("alexa");
   #endif
   #ifndef WLED_DISABLE_BLYNK
-  oappend("\"blynk\",");
+  opt.add("blynk");
   #endif
   #ifndef WLED_DISABLE_CRONIXIE
-  oappend("\"cronixie\",");
+  opt.add("cronixie");
   #endif
   #ifdef WLED_DEBUG
-  oappend("\"debug\",");
+  opt.add("debug");
   #endif
   #ifdef USEFS
-  oappend("\"fs\",");
+  opt.add("fs");
   #endif
   #ifndef WLED_DISABLE_HUESYNC
-  oappend("\"huesync\",");
+  opt.add("huesync");
   #endif
   #ifndef WLED_DISABLE_MOBILE_UI
-  oappend("\"mobile-ui\",");
+  opt.add("mobile-ui");
   #endif
-  #ifndef WLED_DISABLE_OTA
-  oappend("\"ota\"]");
-  #else
-  oappend("\"no-ota\"]");
+  #ifndef WLED_DISABLE_OTA 
+  opt.add("ota");
   #endif
-  oappend(",\r\n\"brand\":\"wled\",\r\n\"product\":\"DIY light\",\r\n\"btype\":\"dev\",\r\n\"mac\":\"");
-  oappend((char*)escapedMac.c_str());
-  oappend("\"\r\n}");
+  
+  doc["brand"] = "wled";
+  doc["product"] = "DIY light";
+  doc["btype"] = "dev";
+  doc["mac"] = escapedMac;
+
+  response->setLength();
+  request->send(response);
 }
 
 

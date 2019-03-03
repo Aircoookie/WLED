@@ -182,10 +182,10 @@ void handleNotifications()
       //apply effects from notification
       if (receiveNotificationEffects)
       {
-        effectCurrent = udpIn[8];
+        if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
         effectSpeed   = udpIn[9];
         if (udpIn[11] > 2) effectIntensity = udpIn[16];
-        if (udpIn[11] > 4) effectPalette   = udpIn[19];
+        if (udpIn[11] > 4 && udpIn[19] < strip.getPaletteCount()) effectPalette = udpIn[19];
       }
       
       if (udpIn[11] > 3)

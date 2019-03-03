@@ -73,8 +73,7 @@ void initServer()
     });
 
   server.on("/json/info", HTTP_GET, [](AsyncWebServerRequest *request){
-    getJsonInfo();
-    request->send(200, "application/json", obuf);
+    serveJsonInfo(request);
     });
 
   server.on("/json", HTTP_ANY, [](AsyncWebServerRequest *request){
@@ -95,8 +94,7 @@ void initServer()
     });
 
   server.on("/build", HTTP_GET, [](AsyncWebServerRequest *request){
-    getJsonInfo();
-    request->send(200, "application/json", obuf);
+    serveJsonInfo(request);
     });
     
   server.on("/power", HTTP_GET, [](AsyncWebServerRequest *request){
