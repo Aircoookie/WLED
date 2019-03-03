@@ -53,11 +53,6 @@ void onHueConnect(void* arg, AsyncClient* client)
   sendHuePoll();
 }
 
-void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
-{
-  if (len) handleHueResponse(String((char*)data));
-}
-
 void sendHuePoll()
 {
   if (hueClient == nullptr || !hueClient->connected()) return;
@@ -81,82 +76,92 @@ void sendHuePoll()
   hueLastRequestSent = millis();
 }
 
-void handleHueResponse(String hueResp)
+void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
 {
+  if (!len) return;
+  char* str = (char*)data;
   DEBUG_PRINTLN(hueApiKey);
-  DEBUG_PRINTLN(hueResp);
-  if (hueResp.indexOf("error")>0)//hue bridge returned error
+  DEBUG_PRINTLN(str);
+  //only get response body
+  str = strstr(str,"\r\n\r\n");
+  if (str == nullptr) return;
+  str += 4;
+
+  StaticJsonBuffer<512> jb;
+  if (str[0] == '[') //is JSON array
   {
-    int hueErrorCode = getJsonValue(&hueResp,"type").toInt();
-    switch (hueErrorCode)
+    JsonArray& root = jb.parseArray(str);
+    if (!root.success())
     {
-      case 1: strcpy(hueError,"Unauthorized"); hueAuthRequired = true; break;
-      case 3: strcpy(hueError,"Invalid light ID"); huePollingEnabled = false; break;
-      case 101: strcpy(hueError,"Link button not pressed"); hueAuthRequired = true; break;
-      default:
-        char coerr[18];
-        sprintf(coerr,"Bridge Error %i",hueErrorCode);
-        strcpy(hueError,coerr);
+      strcpy(hueError,"JSON parsing error"); return;
+    }
+    int hueErrorCode = root[0]["error"]["type"];
+  
+    if (hueErrorCode)//hue bridge returned error
+    {
+      switch (hueErrorCode)
+      {
+        case 1: strcpy(hueError,"Unauthorized"); hueAuthRequired = true; break;
+        case 3: strcpy(hueError,"Invalid light ID"); huePollingEnabled = false; break;
+        case 101: strcpy(hueError,"Link button not pressed"); hueAuthRequired = true; break;
+        default:
+          char coerr[18];
+          sprintf(coerr,"Bridge Error %i",hueErrorCode);
+          strcpy(hueError,coerr);
+      }
+      return;
+    }
+    
+    if (hueAuthRequired)
+    {
+      const char* apikey = root[0]["success"]["username"];
+      if (apikey != nullptr)
+      {
+        strlcpy(hueApiKey, apikey, sizeof(hueApiKey));
+        hueAuthRequired = false;
+        hueNewKey = true;
+      }
     }
     return;
   }
 
-  if (hueAuthRequired)
+  //else, assume it is JSON object, look for state and only parse that
+  str = strstr(str,"state");
+  if (str == nullptr) return;
+  str = strstr(str,"{");
+  
+  JsonObject& root = jb.parseObject(str);
+  if (!root.success())
   {
-    String tempApi = getJsonValue(&hueResp,"username");
-    if (tempApi.length()>0)
-    {
-      strcpy(hueApiKey,tempApi.c_str());
-      hueAuthRequired = false;
-      hueNewKey = true;
-    }
-    return;
+    strcpy(hueError,"JSON parsing error"); return;
   }
 
   float hueX=0, hueY=0;
   uint16_t hueHue=0, hueCt=0;
   byte hueBri=0, hueSat=0, hueColormode=0;
-  
-  if (getJsonValue(&hueResp,"\"on").charAt(0) == 't')
-  {
-    String tempV = getJsonValue(&hueResp,"\"bri");
-    if (tempV.length()>0) //Dimmable device
+
+  if (root["on"]) {
+    if (root.containsKey("bri")) //Dimmable device
     {
-      hueBri = (tempV.toInt())+1;
-      tempV = getJsonValue(&hueResp,"colormode");
-      if (hueApplyColor && tempV.length()>0) //Color device
+      hueBri = root["bri"];
+      hueBri++;
+      const char* cm =root["colormode"];
+      if (cm != nullptr) //Color device
       {
-        if (tempV.charAt(0) == 'x') //xy mode
+        if (strstr(cm,"ct") != nullptr) //ct mode
         {
-          tempV = getJsonValue(&hueResp,"xy");
-          if (tempV.length()>0) //valid
-          {
-            hueColormode = 1;
-            hueX = tempV.toFloat();
-            tempV = tempV.substring(tempV.indexOf(',')+1);
-            hueY = tempV.toFloat();
-          }
-        } else if (tempV.charAt(0) == 'h') //hs mode
+          hueCt = root["ct"];
+          hueColormode = 3;
+        } else if (strstr(cm,"xy") != nullptr) //xy mode
         {
-          tempV = getJsonValue(&hueResp,"\"hue");
-          if (tempV.length()>0) //valid
-          {
-            hueColormode = 2;
-            hueHue = tempV.toInt();
-            tempV = getJsonValue(&hueResp,"\"sat");
-            if (tempV.length()>0) //valid
-            {
-              hueSat = tempV.toInt();
-            }
-          }
-        } else //ct mode
+          hueX = root["xy"][0]; // 0.5051
+          hueY = root["xy"][1]; // 0.4151
+          hueColormode = 1;
+        } else //hs mode
         {
-          tempV = getJsonValue(&hueResp,"\"ct");
-          if (tempV.length()>0) //valid
-          {
-            hueColormode = 3;
-            hueCt = tempV.toInt();
-          }
+          hueHue = root["hue"];
+          hueSat = root["sat"];
+          hueColormode = 2;
         }
       }
     } else //On/Off device
@@ -167,8 +172,10 @@ void handleHueResponse(String hueResp)
   {
     hueBri = 0;
   }
+
   strcpy(hueError,"Active");
-  //applying vals
+  
+  //apply vals
   if (hueBri != hueBriLast)
   {
     if (hueApplyOnOff)
@@ -194,24 +201,6 @@ void handleHueResponse(String hueResp)
   hueReceived = true;
 }
 
-String getJsonValue(String* req, String key)
-{
-  //TODO may replace with ArduinoJSON if too complex
-  //this is horribly inefficient and designed to work only in this case
-  uint16_t pos = req->indexOf(key);
-  String b = req->substring(pos + key.length()+2);
-  if (b.charAt(0)=='\"') //is string
-  {
-    return b.substring(1,b.substring(1).indexOf('\"')+1);
-  } else if (b.charAt(0)=='[') //is array
-  {
-    return b.substring(1,b.indexOf(']'));
-  } else //is primitive type
-  {
-    return b.substring(0,b.indexOf(',')); //this works only if value not last
-  }
-  return "";
-}
 #else
 void handleHue(){}
 bool reconnectHue(){}
