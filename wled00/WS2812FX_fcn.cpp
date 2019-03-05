@@ -27,7 +27,8 @@
 #include "WS2812FX.h"
 #include "palettes.h"
 
-#define LED_SKIP_AMOUNT 1
+#define LED_SKIP_AMOUNT  1
+#define MIN_SHOW_DELAY  15
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
@@ -47,7 +48,7 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   _locked = new byte[_length];
   
   _segments[0].start = 0;
-  _segments[0].stop = _length -1;
+  _segments[0].stop = _length;
   
   unlockAll();
   setBrightness(_brightness);
@@ -55,6 +56,7 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 
 void WS2812FX::service() {
   unsigned long now = millis(); // Be aware, millis() rolls over every 49 days
+  if (now - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
   for(uint8_t i=0; i < _num_segments; i++)
   {
@@ -64,12 +66,14 @@ void WS2812FX::service() {
       doShow = true;
       handle_palette();
       uint16_t delay = (this->*_mode[SEGMENT.mode])();
-      SEGMENT_RUNTIME.next_time = now + max(delay, 5);
+      SEGMENT_RUNTIME.next_time = now + max(delay, MIN_SHOW_DELAY);
       SEGMENT_RUNTIME.counter_mode_call++;
     }
   }
   if(doShow) {
+    yield();
     show();
+    _lastShow = millis();
   }
   _triggered = false;
 }
@@ -93,8 +97,8 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   if (_locked[i] && !_modeUsesLock) return;
-  if (_reverseMode) i = _length - 1 -i;
-  if (IS_REVERSE)   i = SEGMENT.stop - (i - SEGMENT.start); //reverse just individual segment
+  if (_reverseMode) i = _length -1 -i;
+  if (IS_REVERSE)   i = SEGMENT.stop -1 -i - SEGMENT.start; //reverse just individual segment
   byte tmpg = g;
   switch (colorOrder) //0 = Grb, default
   {
@@ -157,7 +161,7 @@ void WS2812FX::setReverseMode(bool b)
 void WS2812FX::driverModeCronixie(bool b)
 {
   _cronixieMode = b;
-  _segments[0].stop = (b) ? 5 : _length-1;
+  _segments[0].stop = (b) ? 6 : _length;
 }
 
 void WS2812FX::setCronixieBacklight(bool b)
@@ -240,6 +244,7 @@ void WS2812FX::show(void) {
     currentMilliamps += _length; //add standby power back to estimate
   } else {
     currentMilliamps = 0;
+    bus->SetBrightness(_brightness);
   }
   
   bus->Show();
@@ -375,7 +380,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
 }
 
 WS2812FX::Segment WS2812FX::getSegment(void) {
-  return SEGMENT;
+  return _segments[0];
 }
 
 WS2812FX::Segment_runtime WS2812FX::getSegmentRuntime(void) {
@@ -478,8 +483,13 @@ void WS2812FX::unlockAll()
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  SEGMENT_RUNTIME.trans_act = (t) ? 1:2;
-  if (!t) return;
+  if (t) {
+    SEGMENT.options |= 0x01 << 7;
+  } else
+  {
+    SEGMENT.options &= ~(0x01 << 7);
+    return;
+  }
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
   if (SEGMENT.mode == FX_MODE_STATIC && SEGMENT_RUNTIME.next_time > waitMax) SEGMENT_RUNTIME.next_time = waitMax;
 }
@@ -513,7 +523,7 @@ uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint8_t blend) 
  * Fills segment with color
  */
 void WS2812FX::fill(uint32_t c) {
-  for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
+  for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
     setPixelColor(i, c);
   }
 }
@@ -531,7 +541,7 @@ void WS2812FX::fade_out(uint8_t rate) {
   int g2 = (color >>  8) & 0xff;
   int b2 =  color        & 0xff;
 
-  for(uint16_t i=SEGMENT.start; i <= SEGMENT.stop; i++) {
+  for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
     color = getPixelColor(i);
     int w1 = (color >> 24) & 0xff;
     int r1 = (color >> 16) & 0xff;
@@ -561,7 +571,7 @@ void WS2812FX::blur(uint8_t blur_amount)
   uint8_t keep = 255 - blur_amount;
   uint8_t seep = blur_amount >> 1;
   CRGB carryover = CRGB::Black;
-  for(uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++)
+  for(uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
   {
     CRGB cur = fastled_from_col(getPixelColor(i));
     CRGB part = cur;
@@ -718,7 +728,7 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
 {
   if (SEGMENT.palette == 0 && mcol < 3) return SEGMENT.colors[mcol]; //WS2812FX default
   uint8_t paletteIndex = i;
-  if (mapping) paletteIndex = map(i,SEGMENT.start,SEGMENT.stop,0,255);
+  if (mapping) paletteIndex = map(i,SEGMENT.start,SEGMENT.stop-1,0,255);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
   fastled_col = ColorFromPalette( currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);

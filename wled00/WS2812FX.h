@@ -35,18 +35,18 @@
 #define DEFAULT_BRIGHTNESS (uint8_t)127
 #define DEFAULT_MODE       (uint8_t)0
 #define DEFAULT_SPEED      (uint8_t)128
-#define DEFAULT_COLOR      (uint32_t)0xFF0000
+#define DEFAULT_COLOR      (uint32_t)0xFFAA00
 
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
 
-/* each segment uses 38 bytes of SRAM memory, so if you're application fails because of
+/* each segment uses 37 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #define MAX_NUM_SEGMENTS 10
 #define NUM_COLORS        3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
 #define SEGMENT_RUNTIME  _segment_runtimes[_segment_index]
-#define SEGMENT_LENGTH   (SEGMENT.stop - SEGMENT.start + 1)
+#define SEGMENT_LENGTH   (SEGMENT.stop - SEGMENT.start)
 #define SPEED_FORMULA_L  5 + (50*(255 - SEGMENT.speed))/SEGMENT_LENGTH
 #define RESET_RUNTIME    memset(_segment_runtimes, 0, sizeof(_segment_runtimes))
 
@@ -65,13 +65,17 @@
 #define ULTRAWHITE (uint32_t)0xFFFFFFFF
 
 // options
-// bit    8: reverse animation
-// bits 5-7: fade rate (0-7)
-// bit    4: gamma correction
-// bits 1-3: TBD
+// bit    7: segment is in transition mode
+// bits 2-6: TBD
+// bit    1: reverse segment
+// bit    0: segment is selected
 #define NO_OPTIONS   (uint8_t)0x00
-#define REVERSE      (uint8_t)0x80
-#define IS_REVERSE   ((SEGMENT.options & REVERSE) == REVERSE)
+#define TRANSITIONAL (uint8_t)0x80
+#define REVERSE      (uint8_t)0x02
+#define SELECTED     (uint8_t)0x01
+#define IS_TRANSITIONAL ((SEGMENT.options & TRANSITIONAL) == TRANSITIONAL)
+#define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
+#define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
 #define MODE_COUNT  80
 
@@ -165,26 +169,22 @@ class WS2812FX {
   public:
     typedef struct Segment { // 21 bytes
       uint16_t start;
-      uint16_t stop;
+      uint16_t stop; //segment invalid if stop == 0
       uint8_t speed;
       uint8_t intensity;
       uint8_t palette;
       uint8_t mode;
-      uint8_t options;
-      //uint8_t clone;
-      //bool reverse;
-      //uint8_t grouping;
+      uint8_t options; //bit pattern: msb first: cloning3 cloning2 cloning1 cloning0 tbd tbd reverse selected
       uint32_t colors[NUM_COLORS];
     } segment;
 
   // segment runtime parameters
-    typedef struct Segment_runtime { // 17 bytes
+    typedef struct Segment_runtime { // 16 bytes
       unsigned long next_time;
       uint32_t counter_mode_step;
       uint32_t counter_mode_call;
       uint16_t aux_param;
       uint16_t aux_param2;
-      uint8_t trans_act;
     } segment_runtime;
 
     WS2812FX() {
@@ -488,6 +488,7 @@ class WS2812FX {
 
     
     uint32_t _lastPaletteChange = 0;
+    uint32_t _lastShow = 0;
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
@@ -496,7 +497,7 @@ class WS2812FX {
       // start, stop, speed, intensity, palette, mode, options, color[]
       { 0, 7, DEFAULT_SPEED, 128, 0, FX_MODE_STATIC, NO_OPTIONS, {DEFAULT_COLOR}}
     };
-    segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 17 bytes per element
+    segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 16 bytes per element
 };
 
 

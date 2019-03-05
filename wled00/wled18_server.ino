@@ -64,6 +64,10 @@ void initServer()
     doReboot = true;
   });
 
+  server.on("/json/state", HTTP_GET, [](AsyncWebServerRequest *request){
+    serveJsonState(request);
+    });
+
   server.on("/json/effects", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "application/json", JSON_mode_names);
     });
@@ -172,13 +176,13 @@ void initServer()
   } else
   {
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 500, "Access Denied", txd, 254);
+    serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
     });
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 500, "Access Denied", txd, 254);
+    serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
     });
     server.on("/list", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 500, "Access Denied", txd, 254);
+    serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
     });
   }
 
@@ -239,7 +243,7 @@ void serveIndex(AsyncWebServerRequest* request)
   else if (uiConfiguration == 2) serveMobile = true;
 
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", 
-                                      (serveMobile) ? PAGE_indexM : PAGE_index,
+                                      (serveMobile) ? (uint8_t*)PAGE_indexM : PAGE_index,
                                       (serveMobile) ? PAGE_indexM_L : PAGE_index_L);
 
   //error message is not gzipped
@@ -321,7 +325,7 @@ void serveSettings(AsyncWebServerRequest* request)
 
   if (subPage == 1 && wifiLock && otaLock)
   {
-    serveMessage(request, 500, "Access Denied", txd, 254); return;
+    serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254); return;
   }
   
   #ifdef WLED_DISABLE_MOBILE_UI //disable welcome page if not enough storage
