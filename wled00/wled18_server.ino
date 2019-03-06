@@ -64,25 +64,17 @@ void initServer()
     doReboot = true;
   });
 
-  server.on("/json/state", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveJsonState(request);
-    });
+  server.on("/json", HTTP_GET, [](AsyncWebServerRequest *request){
+    serveJson(request);
+  });
 
-  server.on("/json/effects", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "application/json", JSON_mode_names);
-    });
-
-  server.on("/json/palettes", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "application/json", JSON_palette_names);
-    });
-
-  server.on("/json/info", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveJsonInfo(request);
-    });
-
-  server.on("/json", HTTP_ANY, [](AsyncWebServerRequest *request){
-    request->send(500, "application/json", "{\"error\":\"Not implemented\"}");
-    });
+  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    JsonObject& root = json.as<JsonObject>();
+    if (!root.success()){request->send(500, "application/json", "{\"error\":\"Parsing failed\"}"); return;}
+    deserializeState(root);
+    request->send(200, "application/json", "{\"success\":true}");
+  });
+  server.addHandler(handler);
 
   //*******DEPRECATED*******
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -95,10 +87,6 @@ void initServer()
     
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
-    });
-
-  server.on("/build", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveJsonInfo(request);
     });
     
   server.on("/power", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -312,7 +300,7 @@ String settingsProcessor(const String& var)
 void serveSettings(AsyncWebServerRequest* request)
 {
   byte subPage = 0;
-  String url = request->url();
+  const String& url = request->url();
   if (url.indexOf("sett") >= 0) 
   {
     if      (url.indexOf("wifi") > 0) subPage = 1;

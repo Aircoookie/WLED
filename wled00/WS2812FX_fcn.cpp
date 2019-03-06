@@ -336,8 +336,8 @@ uint8_t WS2812FX::getNumSegments(void) {
   return _num_segments;
 }
 
-void WS2812FX::setNumSegments(uint8_t n) {
-  _num_segments = n;
+uint8_t WS2812FX::getMaxSegments(void) {
+  return MAX_NUM_SEGMENTS;
 }
 
 uint32_t WS2812FX::getColor(void) {
@@ -379,8 +379,9 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   return ( (lColor.W << 24) | (r << 16) | (g << 8) | (b) );
 }
 
-WS2812FX::Segment WS2812FX::getSegment(void) {
-  return _segments[0];
+WS2812FX::Segment& WS2812FX::getSegment(uint8_t id) {
+  if (id >= MAX_NUM_SEGMENTS) return _segments[0];
+  return _segments[id];
 }
 
 WS2812FX::Segment_runtime WS2812FX::getSegmentRuntime(void) {
@@ -391,29 +392,14 @@ WS2812FX::Segment* WS2812FX::getSegments(void) {
   return _segments;
 }
 
-void WS2812FX::setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t mode, uint32_t color, uint8_t speed, uint8_t intensity, bool reverse) {
-  uint32_t colors[] = {color, 0, 0};
-  setSegment(n, start, stop, mode, colors, speed, intensity, reverse);
-}
-
-void WS2812FX::setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t mode, const uint32_t colors[], uint8_t speed, uint8_t intensity, bool reverse) {
-  setSegment(n, start, stop, mode, colors, speed, intensity, (uint8_t)(reverse ? REVERSE : NO_OPTIONS));
-}
-
-void WS2812FX::setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t mode, const uint32_t colors[], uint8_t speed, uint8_t intensity, uint8_t options) {
-  if(n < (sizeof(_segments) / sizeof(_segments[0]))) {
-    if(n + 1 > _num_segments) _num_segments = n + 1;
-    _segments[n].start = start;
-    _segments[n].stop = stop;
-    _segments[n].mode = mode;
-    _segments[n].speed = speed;
-    _segments[n].intensity = intensity;
-    _segments[n].options = options;
-
-    for(uint8_t i=0; i<NUM_COLORS; i++) {
-      _segments[n].colors[i] = colors[i];
-    }
-  }
+void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2) {
+  if (n >= MAX_NUM_SEGMENTS) return;
+  Segment& seg = _segments[n];
+  if (seg.start == i1 && seg.stop == i2) return;
+  if (i1 < _length) seg.start = i1;
+  seg.stop = i2;
+  if (i2 > _length) seg.stop = _length;
+  _segment_runtimes[n].reset();
 }
 
 void WS2812FX::resetSegments() {
@@ -421,7 +407,11 @@ void WS2812FX::resetSegments() {
   memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
   _segment_index = 0;
   _num_segments = 1;
-  setSegment(0, 0, 7, FX_MODE_STATIC, (const uint32_t[]){DEFAULT_COLOR, 0, 0}, DEFAULT_SPEED, 128, NO_OPTIONS);
+  _segments[0].mode = DEFAULT_MODE;
+  _segments[0].colors[0] = DEFAULT_COLOR;
+  _segments[0].start = 0;
+  _segments[0].speed = DEFAULT_SPEED;
+  _segments[0].stop = _length;
 }
 
 void WS2812FX::setIndividual(uint16_t i, uint32_t col)
@@ -483,13 +473,8 @@ void WS2812FX::unlockAll()
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  if (t) {
-    SEGMENT.options |= 0x01 << 7;
-  } else
-  {
-    SEGMENT.options &= ~(0x01 << 7);
-    return;
-  }
+  SEGMENT.setOption(7,t);
+  if (!t) return;
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
   if (SEGMENT.mode == FX_MODE_STATIC && SEGMENT_RUNTIME.next_time > waitMax) SEGMENT_RUNTIME.next_time = waitMax;
 }

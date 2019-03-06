@@ -42,7 +42,7 @@
 
 /* each segment uses 37 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
-#define MAX_NUM_SEGMENTS 10
+#define MAX_NUM_SEGMENTS 1
 #define NUM_COLORS        3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
 #define SEGMENT_RUNTIME  _segment_runtimes[_segment_index]
@@ -174,8 +174,26 @@ class WS2812FX {
       uint8_t intensity;
       uint8_t palette;
       uint8_t mode;
-      uint8_t options; //bit pattern: msb first: cloning3 cloning2 cloning1 cloning0 tbd tbd reverse selected
+      uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
       uint32_t colors[NUM_COLORS];
+      //member functions
+      uint32_t color(uint8_t n)
+      {
+        return colors[n];
+      }
+      void setOption(uint8_t n, bool val)
+      {
+        if (val) {
+          options |= 0x01 << n;
+        } else
+        {
+          options &= ~(0x01 << n);
+        }
+      }
+      bool getOption(uint8_t n)
+      {
+        return ((options >> n) & 0x01);
+      }
     } segment;
 
   // segment runtime parameters
@@ -185,6 +203,7 @@ class WS2812FX {
       uint32_t counter_mode_call;
       uint16_t aux_param;
       uint16_t aux_param2;
+      void reset(){next_time = 0; counter_mode_step = 0; counter_mode_call = 0; aux_param = 0; aux_param2 = 0;};
     } segment_runtime;
 
     WS2812FX() {
@@ -318,10 +337,7 @@ class WS2812FX {
       unlockAll(void),
       setTransitionMode(bool t),
       trigger(void),
-      setNumSegments(uint8_t n),
-      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t mode, uint32_t color,   uint8_t speed, uint8_t intensity, bool reverse),
-      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t mode, const uint32_t colors[], uint8_t speed, uint8_t intensity, bool reverse),
-      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t mode, const uint32_t colors[], uint8_t speed, uint8_t intensity, uint8_t options),
+      setSegment(uint8_t n, uint16_t start, uint16_t stop),
       resetSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
@@ -340,6 +356,7 @@ class WS2812FX {
       getNumSegments(void),
       getModeCount(void),
       getPaletteCount(void),
+      getMaxSegments(void),
       get_random_wheel_index(uint8_t);
 
     uint32_t
@@ -349,8 +366,8 @@ class WS2812FX {
       getPixelColor(uint16_t),
       getColor(void);
 
-    WS2812FX::Segment
-      getSegment(void);
+    WS2812FX::Segment&
+      getSegment(uint8_t n);
 
     WS2812FX::Segment_runtime
       getSegmentRuntime(void);
@@ -495,144 +512,31 @@ class WS2812FX {
     uint8_t _num_segments = 1;
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 21 bytes per element
       // start, stop, speed, intensity, palette, mode, options, color[]
-      { 0, 7, DEFAULT_SPEED, 128, 0, FX_MODE_STATIC, NO_OPTIONS, {DEFAULT_COLOR}}
+      { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, {DEFAULT_COLOR}}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 16 bytes per element
 };
 
 
-const char JSON_mode_names[] PROGMEM = R"=====({"effects":[
-"Solid",
-"Blink",
-"Breathe",
-"Wipe",
-"Wipe Random",
-"Random Colors",
-"Sweep",
-"Dynamic",
-"Colorloop",
-"Rainbow",
-"Scan",
-"Dual Scan",
-"Fade",
-"Chase",
-"Chase Rainbow",
-"Running",
-"Saw",
-"Twinkle",
-"Dissolve",
-"Dissolve Rnd",
-"Sparkle",
-"Dark Sparkle",
-"Sparkle+",
-"Strobe",
-"Strobe Rainbow",
-"Mega Strobe",
-"Blink Rainbow",
-"Android",
-"Chase",
-"Chase Random",
-"Chase Rainbow",
-"Chase Flash",
-"Chase Flash Rnd",
-"Rainbow Runner",
-"Colorful",
-"Traffic Light",
-"Sweep Random",
-"Running 2",
-"Red & Blue",
-"Stream",
-"Scanner",
-"Lighthouse",
-"Fireworks",
-"Rain",
-"Merry Christmas",
-"Fire Flicker",
-"Gradient",
-"Loading",
-"In Out",
-"In In",
-"Out Out",
-"Out In",
-"Circus",
-"Halloween",
-"Tri Chase",
-"Tri Wipe",
-"Tri Fade",
-"Lightning",
-"ICU",
-"Multi Comet",
-"Dual Scanner",
-"Stream 2",
-"Oscillate",
-"Pride 2015",
-"Juggle",
-"Palette",
-"Fire 2012",
-"Colorwaves",
-"BPM",
-"Fill Noise",
-"Noise 1",
-"Noise 2",
-"Noise 3",
-"Noise 4",
-"Colortwinkle",
-"Lake",
-"Meteor",
-"Smooth Meteor",
-"Railway",
-"Ripple"
-]})=====";
+//10 names per line
+const char JSON_mode_names[] PROGMEM = R"=====([
+"Solid","Blink","Breathe","Wipe","Wipe Random","Random Colors","Sweep","Dynamic","Colorloop","Rainbow",
+"Scan","Dual Scan","Fade","Chase","Chase Rainbow","Running","Saw","Twinkle","Dissolve","Dissolve Rnd",
+"Sparkle","Dark Sparkle","Sparkle+","Strobe","Strobe Rainbow","Mega Strobe","Blink Rainbow","Android","Chase","Chase Random",
+"Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Red & Blue","Stream",
+"Scanner","Lighthouse","Fireworks","Rain","Merry Christmas","Fire Flicker","Gradient","Loading","In Out","In In",
+"Out Out","Out In","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
+"Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","BPM","Fill Noise","Noise 1",
+"Noise 2","Noise 3","Noise 4","Colortwinkle","Lake","Meteor","Smooth Meteor","Railway","Ripple"
+])=====";
 
 
-const char JSON_palette_names[] PROGMEM = R"=====({"palettes":[
-"Default",
-"Random Cycle",
-"Primary Color",
-"Based on Primary",
-"Set Colors",
-"Based on Set",
-"Party",
-"Cloud",
-"Lava",
-"Ocean",
-"Forest",
-"Rainbow",
-"Rainbow Bands",
-"Sunset",
-"Rivendell",
-"Breeze",
-"Red & Blue",
-"Yellowout",
-"Analogous",
-"Splash",
-"Pastel",
-"Sunset 2",
-"Beech",
-"Vintage",
-"Departure",
-"Landscape",
-"Beach",
-"Sherbet",
-"Hult",
-"Hult 64",
-"Drywet",
-"Jul",
-"Grintage",
-"Rewhi",
-"Tertiary",
-"Fire",
-"Icefire",
-"Cyane",
-"Light Pink",
-"Autumn",
-"Magenta",
-"Magred",
-"Yelmag",
-"Yelblu",
-"Orange & Teal",
-"Tiamat",
-"April Night"
-]})=====";
+const char JSON_palette_names[] PROGMEM = R"=====([
+"Default","Random Cycle","Primary Color","Based on Primary","Set Colors","Based on Set","Party","Cloud","Lava","Ocean",
+"Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
+"Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
+"Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
+"Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night"
+])=====";
 
 #endif

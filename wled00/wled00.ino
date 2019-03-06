@@ -89,7 +89,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903051
+#define VERSION 1903055
 char versionString[] = "0.8.4-dev";
 
 
@@ -466,7 +466,6 @@ const byte gamma8[] = {
 
 //function prototypes
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
-
 
 //turns all LEDs off and restarts ESP
 void reset()
