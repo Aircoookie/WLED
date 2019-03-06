@@ -347,6 +347,7 @@ uint32_t WS2812FX::getColor(void) {
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   if (_reverseMode) i = _length- 1 -i;
+  if (IS_REVERSE)   i = SEGMENT.stop -1 -i - SEGMENT.start; //reverse just individual segment
   if (_skipFirstMode) i += LED_SKIP_AMOUNT;
   if (_cronixieMode)
   {

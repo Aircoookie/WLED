@@ -72,8 +72,8 @@ const char PAGE_settings_leds[] PROGMEM = R"=====(<!DOCTYPE html>
 function B(){window.open("/settings","_self");}function S(){GetV();setTimeout(function(){fillfx(0);},200);setTimeout(function(){fillfx(1);},400);UI();}
 function UI(){var myC=document.querySelectorAll('.wc'),l=myC.length;for(i=0;i<l;i++){myC[i].style.display=(document.getElementById('rgbw').checked)?'inline':'none';}
 var val=Math.ceil((100+document.Sf.LC.value*55)/500)/2;val=(val>5)?Math.ceil(val):val;var s="";if(val<1.02){s="ESP 5V pin with 1A USB supply";}else{s="External 5V ";s+=val;s+="A supply connected to LEDs";}document.getElementById('psu').innerHTML=s;}
-function fillfx(pl){e="<option>Error loading list!</option>";el=pl?Sf.FP:Sf.FX;fetch(pl?'/json/palettes':'/json/effects').then(res=>{if(!res.ok){el.innerHTML=e;}
-return res.json();}).then(json=>{var x="";var l=pl?json.palettes:json.effects;for(i in l){x+="<option value=\""+i+"\">"+l[i]+" ("+i+")</option>";}
+function fillfx(pl){e="<option>Error loading list!</option>";el=pl?Sf.FP:Sf.FX;fetch(pl?'/json/pal':'/json/eff').then(res=>{if(!res.ok){el.innerHTML=e;}
+return res.json();}).then(json=>{var x="";for(i in json){x+="<option value=\""+i+"\">"+json[i]+" ("+i+")</option>";}
 el.innerHTML=x;el.selectedIndex=pl?p:f;}).catch(function(){el.innerHTML=e;})}function GetV(){var d=document;%CSS%%SCSS%</head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post">

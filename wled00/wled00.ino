@@ -40,8 +40,6 @@
 #endif
 
 #include <ESPAsyncWebServer.h>
-#include <AsyncJson.h>
-#include <ArduinoJson.h> //please use v5.13.x!
 #include <EEPROM.h>
 #include <WiFiUdp.h>
 #include <DNSServer.h>
@@ -62,6 +60,8 @@
 #endif
 #include "src/dependencies/e131/E131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
+#include "src/dependencies/json/AsyncJson.h"
+#include "src/dependencies/json/ArduinoJson-v5.h"
 #include "html_classic.h"
 #include "html_mobile.h"
 #include "html_settings.h"
@@ -89,7 +89,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903055
+#define VERSION 1903062
 char versionString[] = "0.8.4-dev";
 
 

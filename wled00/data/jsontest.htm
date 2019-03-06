@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>JSON client</title>
+    <style>
+      :root {
+        --bCol:#333;--cCol:#222;--dCol:#666;--tCol:#fff;
+      }
+      body {
+        font-family: Verdana, sans-serif;
+        text-align: center;
+        background: var(--cCol);
+        color: var(--tCol);
+        margin: 20px;
+        background-attachment: fixed;
+      }
+      button {
+        background: var(--cCol);
+        color: var(--tCol);
+        border: 0.3ch solid var(--cCol);
+        display: inline-block;
+        font-size: 20px;
+        margin: 8px;
+        margin-top: 12px;
+      }
+      input {
+        background: var(--cCol);
+        color: var(--tCol);
+        border: 0.5ch solid var(--cCol);
+        width: 100%;
+      }
+      h1{
+        margin: 0px;
+        font-size: 20px;
+      }
+      h2{
+        font-size: 16px;
+        margin-top: 20px;
+      }
+      form{
+        background: var(--bCol);
+        width: 500px;
+        padding: 20px;
+        -webkit-border-radius: 10px;
+        -moz-border-radius: 10px;
+        display: inline-block;
+      }
+      textarea{
+        background: var(--cCol);
+        color: var(--tCol);
+        padding-top: 10px;
+        width: 100%;
+        font-family: monaco,monospace;
+        font-size: 12px;
+        -webkit-border-radius: 10px;
+        -moz-border-radius: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+      <form name="cf">
+          <h1>JSON API test tool</h1>
+          <h2>URL:</h2>
+          <input name="cu" type="text" size="60" value="http://192.168.4.1/json">
+          <div id="buttons">
+              <button type="button" onclick="rq('GET')">GET</button>
+              <button type="button" onclick="rq('POST')">POST</button>
+          </div>
+          <h2>Body:</h2>
+          <textarea name="bd" rows="8" cols="100"></textarea>
+          <h2>Response:</h2>
+          <textarea name="rsp" rows="25" cols="100"></textarea>
+      </form>
+  </body>
+</html>
+
+<script>
+function rq(cm)
+{
+  var h = new XMLHttpRequest();
+  h.open(cm, document.cf.cu.value, true);
+  h.onreadystatechange = function()
+  {
+    if(h.readyState == 4)
+    {
+      if(h.status==200)
+      {
+        document.cf.rsp.value="Bad JSON: "+h.responseText
+        document.cf.rsp.value=JSON.stringify(JSON.parse(h.responseText), null, '\t');
+      }
+      else
+      {
+        document.cf.rsp.value="Error "+h.status+"\r\n\n"+h.responseText;
+      }
+    }
+  }
+  h.send(document.cf.bd.value);
+}
+</script>

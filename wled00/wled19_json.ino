@@ -4,17 +4,22 @@
 
 void deserializeState(JsonObject& root)
 {
+  bri = root["bri"] | briLast;
+  
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
-  
-  briLast = root["bri"] | briLast;
-  if (bri > 0) bri = briLast;
   
   if (root.containsKey("transition"))
   {
     transitionDelay = root["transition"];
     transitionDelay *= 100;
   }
+
+  int ps = root["ps"] | -1;
+  if (ps >= 0) applyPreset(ps);
+  
+  int cy = root["pl"] | -1;
+  presetCyclingEnabled = (cy >= 0);
 
   JsonObject& nl = root["nl"];
   nightlightActive    = nl["on"]   | nightlightActive;
@@ -91,6 +96,9 @@ void serializeState(JsonObject& root)
   root["on"] = (bri > 0);
   root["bri"] = briLast;
   root["transition"] = transitionDelay/100; //in 100ms
+
+  root["ps"] = -1; //
+  root["pl"] = (presetCyclingEnabled) ? 0: -1;
   
   JsonObject& nl = root.createNestedObject("nl");
   nl["on"] = nightlightActive;
@@ -111,14 +119,20 @@ void serializeSegment(JsonObject& root)
 {
   WS2812FX::Segment seg = strip.getSegment(0);
   
-  //root["i"] = i;
+  //root["id"] = i;
   root["start"] = seg.start;
   root["stop"] = seg.stop;
   root["len"] = seg.stop - seg.start;
   
   JsonArray& colarr = root.createNestedArray("col");
 
-  for (uint8_t i = 0; i < 3; i++)
+  //temporary
+  JsonArray& c0 = colarr.createNestedArray();
+  c0.add(col[0]); c0.add(col[1]); c0.add(col[2]); if (useRGBW) c0.add(col[3]);
+  JsonArray& c1 = colarr.createNestedArray();
+  c1.add(colSec[0]); c1.add(colSec[1]); c1.add(colSec[2]); if (useRGBW) c1.add(colSec[3]);
+  //set i back to 0 once temporary is removed!
+  for (uint8_t i = 2; i < 3; i++)
   {
     JsonArray& colX = colarr.createNestedArray();
     colX.add((seg.colors[i] >> 16) & 0xFF);
@@ -217,7 +231,7 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(  500, "application/json", "{\"error\":\"Not implemented\"}");
+    request->send(  501, "application/json", "{\"error\":\"Not implemented\"}");
     return;
   }
   

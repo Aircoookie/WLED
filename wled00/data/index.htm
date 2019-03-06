@@ -2,7 +2,7 @@
 <html>
 <head><meta charset="utf-8"><meta name="theme-color" content="#fff">
 	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico'/>
-	<title>WLED 0.8.3</title>
+	<title>WLED 0.8.4</title>
 	<script>
 		var d=document;
 		var w=window.getComputedStyle(d.querySelector("html"));
@@ -43,8 +43,8 @@
 			CV(0);
 			setInterval(GIO, 5000);
 			GIO();
-      setTimeout(function(){fillfx(0);}, 500);
-      setTimeout(function(){fillfx(1);}, 750);
+      setTimeout(function(){fillfx(0);}, 200);
+      setTimeout(function(){fillfx(1);}, 500);
 		}
 		function GIO()
 		{
@@ -369,7 +369,7 @@
     {
       e="<option>Error loading list!</option>";
       el = fp?Cf.FP:Cf.TX;
-      fetch(fp?'/json/palettes':'/json/effects')
+      fetch(fp?'/json/pal':'/json/eff')
         .then(res => {
           if (!res.ok) {
              el.innerHTML=e;
@@ -378,13 +378,12 @@
         })
         .then(json => {
           var x="";
-          var l=fp?json.palettes:json.effects;
-          for (i in l) {
-            x += "<option value=\""+i+"\">"+l[i]+" ("+i+")</option>";
+          for (i in json) {
+            x += "<option value=\""+i+"\">"+json[i]+" ("+i+")</option>";
           }
           el.innerHTML=x;
           el.selectedIndex=fp?fpi:fxi;
-          if(!fp)fxn=l.length;
+          if(!fp)fxn=json.length;
           UV();
         })
         .catch(function () {

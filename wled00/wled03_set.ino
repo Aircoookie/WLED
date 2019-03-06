@@ -588,8 +588,8 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   }
 
   //Segment reverse
-  //pos = req.indexOf("SR=");
-  //if (pos > 0) strip.getSegment().reverse = (req.charAt(pos+3) != '0');
+  pos = req.indexOf("RV=");
+  if (pos > 0) strip.getSegment(0).setOption(1, req.charAt(pos+3) != '0');
    
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri) nightlightActive = false;
@@ -617,7 +617,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   pos = req.indexOf("CY=");
   if (pos > 0)
   {
-    presetCyclingEnabled = req.charAt(pos+3 != '0');
+    presetCyclingEnabled = (req.charAt(pos+3) != '0');
     presetCycCurr = presetCycleMin;
   }
   
@@ -628,13 +628,13 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   }
 
   pos = req.indexOf("PA="); //apply brightness from preset
-  if (pos > 0) presetApplyBri = req.charAt(pos+3 != '0');
+  if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
 
   pos = req.indexOf("PC="); //apply color from preset
-  if (pos > 0) presetApplyCol = req.charAt(pos+3 != '0'); 
+  if (pos > 0) presetApplyCol = (req.charAt(pos+3) != '0'); 
 
   pos = req.indexOf("PX="); //apply effects from preset
-  if (pos > 0) presetApplyFx = req.charAt(pos+3 != '0');
+  if (pos > 0) presetApplyFx = (req.charAt(pos+3) != '0');
   
   pos = req.indexOf("PS="); //saves current in preset
   if (pos > 0) savePreset(getNumVal(&req, pos));

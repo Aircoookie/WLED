@@ -6,6 +6,8 @@ void initServer()
 {
   //CORS compatiblity
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "*");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "*");
   
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
