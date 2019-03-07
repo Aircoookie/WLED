@@ -16,7 +16,7 @@ const uint16_t PAGE_indexM_L = 91; //length of the binary payload
 const char PAGE_indexM[] PROGMEM = R"=====(
 Mobile UI is unsupported in this build. Go to /settings/ui and change UI mode to "Classic".
 )=====";
-#else WLED_DISABLE_MOBILE_UI
+#else 
 const uint16_t PAGE_indexM_L = 19142; //length of the binary payload
 
 const uint8_t PAGE_indexM[] PROGMEM = {

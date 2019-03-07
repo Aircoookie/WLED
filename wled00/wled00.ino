@@ -89,7 +89,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903062
+#define VERSION 1903071
 char versionString[] = "0.8.4-dev";
 
 
@@ -540,9 +540,9 @@ void loop() {
   
   //DEBUG serial logging
   #ifdef WLED_DEBUG
-   if (millis() - debugTime > 5000)
+   if (millis() - debugTime > 9999)
    {
-     DEBUG_PRINTLN("---MODULE DEBUG INFO---");
+     DEBUG_PRINTLN("---DEBUG INFO---");
      DEBUG_PRINT("Runtime: "); DEBUG_PRINTLN(millis());
      DEBUG_PRINT("Unix time: "); DEBUG_PRINTLN(now());
      DEBUG_PRINT("Free heap: "); DEBUG_PRINTLN(ESP.getFreeHeap());

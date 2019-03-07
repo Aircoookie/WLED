@@ -14,9 +14,22 @@ void wledInit()
   #endif
   Serial.begin(115200);
   Serial.setTimeout(50);
+  DEBUG_PRINTLN();
+  DEBUG_PRINT("---WLED "); DEBUG_PRINT(versionString); DEBUG_PRINT(" "); DEBUG_PRINT(VERSION); DEBUG_PRINTLN(" INIT---");
+  #ifdef ARDUINO_ARCH_ESP32
+  DEBUG_PRINT("esp32 ");   DEBUG_PRINTLN(ESP.getSdkVersion());
+  #else
+  DEBUG_PRINT("esp8266 "); DEBUG_PRINTLN(ESP.getCoreVersion());
+  #endif
+  int heapPreAlloc = ESP.getFreeHeap();
+  DEBUG_PRINT("heap ");
+  DEBUG_PRINTLN(ESP.getFreeHeap());
   
   strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //init LEDs quickly
-  
+
+  DEBUG_PRINT("LEDs inited. heap usage ~");
+  DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
+
   #ifdef USEFS
    SPIFFS.begin();
   #endif
