@@ -89,7 +89,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903071
+#define VERSION 1903072
 char versionString[] = "0.8.4-dev";
 
 
@@ -471,7 +471,11 @@ void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
 void reset()
 {
   briT = 0;
-  delay(250); //enough time to send response to client
+  long dly = millis();
+  while(millis() - dly < 250)
+  {
+    yield(); //enough time to send response to client
+  }
   setAllLeds();
   DEBUG_PRINTLN("MODULE RESET");
   ESP.restart();

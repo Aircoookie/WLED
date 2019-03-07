@@ -10,7 +10,7 @@ void handleSerial()
     if (!realtimeActive && bri == 0) strip.setBrightness(briLast);
     arlsLock(realtimeTimeoutMs);
     
-    delay(1);
+    yield();
     byte hi = Serial.read();
     byte ledc = Serial.read();
     byte chk = Serial.read();
@@ -24,9 +24,9 @@ void handleSerial()
       {
         while (Serial.peek()<0) //no data yet available
         {
-          delay(1);
+          yield();
           to++;
-          if (to>5) {strip.show(); return;} //unexpected end of transmission
+          if (to>15) {strip.show(); return;} //unexpected end of transmission
         }
         to = 0;
         sc[j] = Serial.read();

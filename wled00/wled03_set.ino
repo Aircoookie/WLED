@@ -301,7 +301,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       aOtaEnabled = request->hasArg("AO");
     }
   }
-  saveSettingsToEEPROM();
+  if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
   if (subPage == 2) strip.init(useRGBW,ledCount,skipFirstLed);
   if (subPage == 4) alexaInit();
 }
@@ -465,6 +465,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
 
   //set hue polling light: 0 -off
+  #ifndef WLED_DISABLE_HUESYNC
   pos = req.indexOf("HP=");
   if (pos > 0) {
     int id = getNumVal(&req, pos);
@@ -476,6 +477,7 @@ bool handleSet(AsyncWebServerRequest *request, String req)
       huePollingEnabled = false;
     }
   }
+  #endif
    
   //set default control mode (0 - RGB, 1 - HSB)
   pos = req.indexOf("MD=");

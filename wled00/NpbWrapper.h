@@ -18,7 +18,7 @@
  #elif LEDPIN == 3
   #define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
  #else
-  #define PIXELMETHOD NeoEsp8266BitBangWs2813Method
+  #define PIXELMETHOD NeoEsp8266BitBang800KbpsMethod
   #pragma message "Software BitBang will be used because of your selected LED pin. This may cause flicker. Use GPIO 2 or 3 for best results."
  #endif
 #endif

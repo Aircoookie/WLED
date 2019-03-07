@@ -62,7 +62,7 @@ void initServer()
 
   server.on("/settings/sec", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 6);
-    serveMessage(request, 200,"Security settings saved.","Rebooting now, please wait ~10 seconds...",129);
+    if (!doReboot) serveMessage(request, 200,"Security settings saved.","Rebooting now, please wait ~10 seconds...",129);
     doReboot = true;
   });
 
