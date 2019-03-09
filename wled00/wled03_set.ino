@@ -527,6 +527,10 @@ bool handleSet(AsyncWebServerRequest *request, String req)
   //toggle receive UDP direct notifications
   pos = req.indexOf("RN=");
   if (pos > 0) receiveNotifications = (req.charAt(pos+3) != '0');
+
+  //receive live data via UDP/Hyperion
+  pos = req.indexOf("RD=");
+  if (pos > 0) receiveDirect = (req.charAt(pos+3) != '0');
    
   //toggle nightlight mode
   bool aNlDef = false;
@@ -665,14 +669,9 @@ bool handleSet(AsyncWebServerRequest *request, String req)
     overlayRefreshedTime = 0;
   }
   #endif
-  pos = req.indexOf("NM="); //mode, 1 countdown
-  if (pos > 0) {
-    countdownMode = true;
-    if (req.indexOf("NM=0") > 0)
-    {
-      countdownMode = false;
-    }
-  }
+  //mode, 1 countdown
+  pos = req.indexOf("NM=");
+  if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
   
   pos = req.indexOf("U0="); //user var 0
   if (pos > 0) {
