@@ -175,7 +175,7 @@ void initCon()
 
   if (staticIP[0] != 0)
   {
-    WiFi.config(staticIP, staticGateway, staticSubnet, staticDNS);
+    WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(8,8,8,8));
   } else
   {
     WiFi.config(0U, 0U, 0U);

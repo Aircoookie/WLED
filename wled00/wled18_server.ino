@@ -90,19 +90,6 @@ void initServer()
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
     });
-    
-  server.on("/power", HTTP_GET, [](AsyncWebServerRequest *request){
-    String val = "";
-    if (strip.currentMilliamps == 0)
-    {
-      val = "Power calculation disabled";
-    } else
-    {
-      val += (String)strip.currentMilliamps;
-      val += "mA currently";
-    }
-    serveMessage(request, 200, val, "This is just an estimate (does not account for factors like wire resistance). It is NOT a measurement!", 254);
-    });
   //*******END*******/
   
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -127,10 +114,9 @@ void initServer()
     //init ota page
     #ifndef WLED_DISABLE_OTA
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 200, "WLED Software Update", "Installed version: " + String(versionString) + "<br>Download the latest binary: "
-                                                         "<a href=\"https://github.com/Aircoookie/WLED/releases\"><img src=\"https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square\"></a>"
-                                                         "<br><form method='POST' action='/update' enctype='multipart/form-data'>"
-                                                         "<input type='file' class=\"bt\" name='update' required><br><input type='submit' class=\"bt\" value='Update!'></form>", 254);
+      olen = 0;
+      getCSSColors();
+      request->send_P(200, "text/html", PAGE_update, msgProcessor);
     });
     
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -251,8 +237,7 @@ String msgProcessor(const String& var)
 {
   if (var == "CSS") return String(obuf);
   if (var == "MSG") {
-    String messageBody = "";
-    messageBody += messageHead;
+    String messageBody = messageHead;
     messageBody += "</h2>";
     messageBody += messageSub;
     uint32_t optt = optionType;

@@ -89,7 +89,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903091
+#define VERSION 1903092
 char versionString[] = "0.8.4-dev";
 
 
@@ -122,8 +122,6 @@ bool recoveryAPDisabled = false;              //never open AP (not recommended)
 IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
 IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
 IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home networks
-IPAddress staticDNS(8, 8, 8, 8);              //only for NTP, google DNS server
-
 
 //LED CONFIG
 uint16_t ledCount = 30;                       //overcurrent prevented by ABL             
@@ -533,6 +531,7 @@ void loop() {
      if (aOtaEnabled) ArduinoOTA.handle();
     #endif
     handleNightlight();
+    yield();
     if (!onlyAP) {
       handleHue();
       handleBlynk();

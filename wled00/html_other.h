@@ -4,7 +4,7 @@
 
 //USER HTML HERE (/u subpage)
 const char PAGE_usermod[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><body>There is no usermod installed or it doesn't specify a custom web page.</body></html>)=====";
+<html><body>No usermod installed or it doesn't specify a custom web page.</body></html>)=====";
 
 
 //server message
@@ -12,15 +12,21 @@ const char PAGE_msg[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta content='width=device-width' name='viewport'>
 <title>WLED Message</title>
 <script>function B(){window.history.back()};function RS(){window.location = "/settings";}function RP(){top.location.href="/";}</script>
-%CSS%.bt{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}input[type=file]{font-size:16px}body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%%;margin:0;background-attachment:fixed}</style></head>
+%CSS%.bt{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%%;margin:0}</style></head>
 <body><h2>%MSG%</body></html>)=====";
+
+
+//firmware update page
+const char PAGE_update[] PROGMEM = R"=====(<!DOCTYPE html>
+<html><head><meta content='width=device-width' name='viewport'><title>WLED Message</title><script>function B(){window.history.back()}</script>
+%CSS%.bt{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}input[type=file]{font-size:16px}body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%%}</style></head>
+<body><h2>WLED Software Update</h2>Installed version: 0.8.4-dev<br>Download the latest binary: <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a><br><form method='POST' action='/update' enctype='multipart/form-data'><input type='file' class="bt" name='update' required><br><input type='submit' class="bt" value='Update!'></form><button type="button" class="bt" onclick="B()">Back</button></body></html>)=====";
 
 
 //new user welcome page
 #ifndef WLED_DISABLE_MOBILE_UI
 const char PAGE_welcome[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta content='width=device-width' name='viewport'>
-<title>WLED Welcome!</title>
+<html><head><meta content='width=device-width' name='viewport'><title>WLED Welcome!</title>
 %CSS%body{font-family:var(--cFn),sans-serif;text-align:center;background:linear-gradient(var(--bCol),black);margin:0;background-attachment: fixed;color: var(--tCol);}svg {fill: var(--dCol);}
 </style></head>
 <body>

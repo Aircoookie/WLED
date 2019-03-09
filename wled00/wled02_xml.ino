@@ -6,7 +6,7 @@
 void XML_response(AsyncWebServerRequest *request, bool includeTheme)
 {
   olen = 0;
-  oappend("<?xml version = \"1.0\" ?><vs><ac>");
+  oappend("<?xml version=\"1.0\" ?><vs><ac>");
   oappendi((nightlightActive && nightlightFade) ? briT : bri);
   oappend("</ac>");
   

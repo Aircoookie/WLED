@@ -301,11 +301,10 @@ class WS2812FX {
       colorOrder = 0;
       paletteFade = 0;
       paletteBlend = 0;
-      ablMilliampsMax = 750;
+      ablMilliampsMax = 850;
       currentMilliamps = 0;
-      _locked = NULL;
+      _locked = nullptr;
       _modeUsesLock = false;
-      _cronixieDigits = new byte[6];
       bus = new NeoPixelWrapper();
       RESET_RUNTIME;
     }
@@ -499,7 +498,7 @@ class WS2812FX {
       _triggered;
 
     byte* _locked;
-    byte* _cronixieDigits;
+    byte _cronixieDigits[6];
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
 

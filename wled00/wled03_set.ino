@@ -309,14 +309,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
 
 //helper to get int value at a position in string
-int getNumVal(String* req, uint16_t pos)
+int getNumVal(const String* req, uint16_t pos)
 {
   return req->substring(pos+3).toInt();
 }
 
 
 //helper to get int value at a position in string
-bool updateVal(String* req, const char* key, byte* val, byte minv=0, byte maxv=255)
+bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255)
 {
   int pos = req->indexOf(key);
   if (pos < 1) return false;
@@ -346,7 +346,7 @@ bool updateVal(String* req, const char* key, byte* val, byte minv=0, byte maxv=2
 
 
 //HTTP API request parser
-bool handleSet(AsyncWebServerRequest *request, String req)
+bool handleSet(AsyncWebServerRequest *request, const String& req)
 {
   if (!(req.indexOf("win") >= 0)) return false;
 
