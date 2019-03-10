@@ -4,7 +4,7 @@
 
 void deserializeState(JsonObject& root)
 {
-  bri = root["bri"] | briLast;
+  bri = root["bri"] | bri;
   
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
@@ -60,7 +60,6 @@ void deserializeState(JsonObject& root)
           if (sz > 0 && sz < 5)
           {
             int rgbw[] = {0,0,0,0};
-            memset(rgbw, 0, 4);
             byte cp = colX.copyTo(rgbw);
             seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
             if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;

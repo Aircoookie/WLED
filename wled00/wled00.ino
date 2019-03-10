@@ -89,7 +89,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903092
+#define VERSION 1903111
 char versionString[] = "0.8.4-dev";
 
 
@@ -114,7 +114,7 @@ char ntpServerName[] = "0.wled.pool.ntp.org"; //NTP server to use
 char clientSSID[33] = "Your_Network";
 char clientPass[65] = "";
 char cmDNS[33] = "x";                         //mDNS address (placeholder, will be replaced by wledXXXXXXXXXXXX.local)
-char apSSID[65] = "";                         //AP off by default (unless setup)
+char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
 byte apHide = 0;                              //hidden AP SSID
 byte apWaitTimeSecs = 32;                     //time to wait for connection before opening AP

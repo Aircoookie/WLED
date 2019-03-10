@@ -44,7 +44,7 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   if (_skipFirstMode) lengthRaw += LED_SKIP_AMOUNT;
   bus->Begin((NeoPixelType)ty, lengthRaw);
   
-  if (_locked != NULL) delete _locked;
+  delete[] _locked;
   _locked = new byte[_length];
   
   _segments[0].start = 0;

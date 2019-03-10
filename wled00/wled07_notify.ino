@@ -59,11 +59,11 @@ void notify(byte callMode, bool followUp=false)
 void arlsLock(uint32_t timeoutMs)
 {
   if (!realtimeActive){
-     for (uint16_t i = 0; i < ledCount; i++)
-     {
-       strip.setPixelColor(i,0,0,0,0);
-     }
-     strip.unlockAll();
+    for (uint16_t i = 0; i < ledCount; i++)
+    {
+      strip.setPixelColor(i,0,0,0,0);
+    }
+    strip.unlockAll();
   }
   realtimeActive = true;
   realtimeTimeout = millis() + timeoutMs;
@@ -160,8 +160,9 @@ void handleNotifications()
     //wled notifier, block if realtime packets active
     if (udpIn[0] == 0 && !realtimeActive && receiveNotifications)
     {
+      bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
       //apply colors from notification
-      if (receiveNotificationColor)
+      if (receiveNotificationColor || !someSel)
       {
         col[0] = udpIn[3];
         col[1] = udpIn[4];
@@ -180,7 +181,7 @@ void handleNotifications()
       }
 
       //apply effects from notification
-      if (receiveNotificationEffects)
+      if (receiveNotificationEffects || !someSel)
       {
         if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
         effectSpeed   = udpIn[9];
@@ -196,7 +197,7 @@ void handleNotifications()
       nightlightActive = udpIn[6];
       if (nightlightActive) nightlightDelayMins = udpIn[7];
       
-      if (receiveNotificationBrightness) bri = udpIn[2];
+      if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
       colorUpdated(3);
       
     }  else if (udpIn[0] > 0 && udpIn[0] < 4 && receiveDirect) //1 warls //2 drgb //3 drgbw
