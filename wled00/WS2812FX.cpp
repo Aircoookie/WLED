@@ -739,16 +739,16 @@ uint16_t WS2812FX::mode_chase_rainbow(void) {
 /*
  * Sec flashes running on prim.
  */
+#define FLASH_COUNT 4
 uint16_t WS2812FX::mode_chase_flash(void) {
-  const static uint8_t flash_count = 4;
-  uint8_t flash_step = SEGMENT_RUNTIME.counter_mode_call % ((flash_count * 2) + 1);
+  uint8_t flash_step = SEGMENT_RUNTIME.counter_mode_call % ((FLASH_COUNT * 2) + 1);
 
   for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
     setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
   }
 
   uint16_t delay = 10 + ((30 * (uint16_t)(255 - SEGMENT.speed)) / SEGMENT_LENGTH);
-  if(flash_step < (flash_count * 2)) {
+  if(flash_step < (FLASH_COUNT * 2)) {
     if(flash_step % 2 == 0) {
       uint16_t n = SEGMENT_RUNTIME.counter_mode_step;
       uint16_t m = (SEGMENT_RUNTIME.counter_mode_step + 1) % SEGMENT_LENGTH;
@@ -769,15 +769,14 @@ uint16_t WS2812FX::mode_chase_flash(void) {
  * Prim flashes running, followed by random color.
  */
 uint16_t WS2812FX::mode_chase_flash_random(void) {
-  const static uint8_t flash_count = 4;
-  uint8_t flash_step = SEGMENT_RUNTIME.counter_mode_call % ((flash_count * 2) + 1);
+  uint8_t flash_step = SEGMENT_RUNTIME.counter_mode_call % ((FLASH_COUNT * 2) + 1);
 
   for(uint16_t i=0; i < SEGMENT_RUNTIME.counter_mode_step; i++) {
     setPixelColor(SEGMENT.start + i, color_wheel(SEGMENT_RUNTIME.aux_param));
   }
 
   uint16_t delay = 1 + ((10 * (uint16_t)(255 - SEGMENT.speed)) / SEGMENT_LENGTH);
-  if(flash_step < (flash_count * 2)) {
+  if(flash_step < (FLASH_COUNT * 2)) {
     uint16_t n = SEGMENT_RUNTIME.counter_mode_step;
     uint16_t m = (SEGMENT_RUNTIME.counter_mode_step + 1) % SEGMENT_LENGTH;
     if(flash_step % 2 == 0) {

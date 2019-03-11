@@ -266,6 +266,8 @@ String msgProcessor(const String& var)
 
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", byte optionT=255)
 {
+  char buf[512];
+  obuf = buf;
   olen = 0;
   getCSSColors();
   messageHead = headl;
@@ -278,7 +280,11 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, S
 
 String settingsProcessor(const String& var)
 {
-  if (var == "CSS") return String(obuf);
+  if (var == "CSS") {
+    char* buf = getSettingsJS(optionType);
+    getCSSColors();
+    return buf;
+  }
   if (var == "SCSS") return String(PAGE_settingsCss);
   return String();
 }
@@ -306,10 +312,8 @@ void serveSettings(AsyncWebServerRequest* request)
   #ifdef WLED_DISABLE_MOBILE_UI //disable welcome page if not enough storage
    if (subPage == 255) {serveIndex(request); return;}
   #endif
-  
-  getSettingsJS(subPage);
 
-  getCSSColors();
+  optionType = subPage;
   
   switch (subPage)
   {

@@ -3,9 +3,10 @@
  */
 
 //build XML response to HTTP /win API request
-void XML_response(AsyncWebServerRequest *request, bool includeTheme)
+char* XML_response(AsyncWebServerRequest *request, bool includeTheme)
 {
-  olen = 0;
+  char sbuf[1024];
+  olen = 0; obuf = sbuf;
   oappend("<?xml version=\"1.0\" ?><vs><ac>");
   oappendi((nightlightActive && nightlightFade) ? briT : bri);
   oappend("</ac>");
@@ -97,7 +98,8 @@ void XML_response(AsyncWebServerRequest *request, bool includeTheme)
     oappend("</cf></th>");
   }
   oappend("</vs>");
-  if (request != nullptr) request->send(200, "text/xml", obuf);
+  if (request != nullptr) request->send(200, "text/xml", sbuf);
+  return sbuf;
 }
 
 //append a numeric setting to string buffer
@@ -155,13 +157,15 @@ void sappends(char stype, char* key, char* val)
 
 
 //get values for settings form in javascript
-void getSettingsJS(byte subPage)
+char* getSettingsJS(byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   DEBUG_PRINT("settings resp");
   DEBUG_PRINTLN(subPage);
-  olen = 0; obuf[0] = 0; //clear buffer
-  if (subPage <1 || subPage >6) return;
+  char sbuf[2048];
+  olen = 0; obuf = sbuf;
+  
+  if (subPage <1 || subPage >6) return sbuf;
 
   if (subPage == 1) {
     sappends('s',"CS",clientSSID);
@@ -345,7 +349,7 @@ void getSettingsJS(byte subPage)
     for (int i=1;i<17;i++)
     {
       sprintf(k+1,"%i",i);
-      sappends('s',k,(char*)loadMacro(i).c_str());
+      sappends('s',k,loadMacro(i));
     }
     
     sappend('v',"MB",macroBoot);
@@ -381,6 +385,7 @@ void getSettingsJS(byte subPage)
     oappend(") OK\";");
   }
   oappend("}</script>");
+  return sbuf;
 }
 
 

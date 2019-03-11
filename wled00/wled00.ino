@@ -248,7 +248,6 @@ bool aOtaEnabled = true;                      //ArduinoOTA allows easy updates d
 uint16_t userVar0 = 0, userVar1 = 0;
 
 
-
 //internal global variable declarations
 //color
 byte col[]{255, 159, 0, 0};                   //target RGB(W) color
@@ -400,9 +399,9 @@ IPAddress ntpServerIP;
 unsigned int ntpLocalPort = 2390;
 #define NTP_PACKET_SIZE 48
 
-//string temp buffer
+//string temp buffer (now stored in stack locally)
 #define OMAX 2048
-char obuf[OMAX];
+char* obuf;
 uint16_t olen = 0;
 
 String messageHead, messageSub;

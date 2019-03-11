@@ -574,16 +574,12 @@ void savePreset(byte index)
 }
 
 
-String loadMacro(byte index)
+char* loadMacro(byte index)
 {
   index-=1;
-  String m="";
+  char m[65];
   if (index > 15) return m;
-  for (int i = 1024+64*index; i < 1088+64*index; i++)
-  {
-    if (EEPROM.read(i) == 0) break;
-    m += char(EEPROM.read(i));
-  }
+  readStringFromEEPROM(1024+64*index, m, 64);
   return m;
 }
 

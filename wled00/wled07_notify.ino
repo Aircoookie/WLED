@@ -135,13 +135,13 @@ void handleNotifications()
     if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;
     realtimeIP = rgbUdp.remoteIP();
     DEBUG_PRINTLN(rgbUdp.remoteIP());
-    olen = 0;
-    rgbUdp.read(obuf, packetSize);
+    uint8_t lbuf[packetSize];
+    rgbUdp.read(lbuf, packetSize);
     arlsLock(realtimeTimeoutMs);
     uint16_t id = 0;
     for (uint16_t i = 0; i < packetSize -2; i += 3)
     {
-      setRealtimePixel(id, obuf[i], obuf[i+1], obuf[i+2], 0);
+      setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
       
       id++; if (id >= ledCount) break;
     }
@@ -153,9 +153,8 @@ void handleNotifications()
   if (packetSize > UDP_IN_MAXSIZE) return;
   if(packetSize && notifierUdp.remoteIP() != WiFi.localIP()) //don't process broadcasts we send ourselves
   {
-    olen = 0;
-    notifierUdp.read(obuf, packetSize);
-    char* udpIn = obuf;
+    uint8_t udpIn[packetSize];
+    notifierUdp.read(udpIn, packetSize);
 
     //wled notifier, block if realtime packets active
     if (udpIn[0] == 0 && !realtimeActive && receiveNotifications)
