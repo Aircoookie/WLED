@@ -73,22 +73,22 @@ void handleNetworkTime()
 void sendNTPPacket()
 {
   WiFi.hostByName(ntpServerName, ntpServerIP);
-  DEBUG_PRINTLN("send NTP packet");
+  DEBUG_PRINTLN("send NTP");
+  byte pbuf[NTP_PACKET_SIZE];
+  memset(pbuf, 0, NTP_PACKET_SIZE);
 
-  memset(obuf, 0, NTP_PACKET_SIZE);
-
-  obuf[0] = 0b11100011;   // LI, Version, Mode
-  obuf[1] = 0;     // Stratum, or type of clock
-  obuf[2] = 6;     // Polling Interval
-  obuf[3] = 0xEC;  // Peer Clock Precision
+  pbuf[0] = 0b11100011;   // LI, Version, Mode
+  pbuf[1] = 0;     // Stratum, or type of clock
+  pbuf[2] = 6;     // Polling Interval
+  pbuf[3] = 0xEC;  // Peer Clock Precision
   // 8 bytes of zero for Root Delay & Root Dispersion
-  obuf[12]  = 49;
-  obuf[13]  = 0x4E;
-  obuf[14]  = 49;
-  obuf[15]  = 52;
+  pbuf[12]  = 49;
+  pbuf[13]  = 0x4E;
+  pbuf[14]  = 49;
+  pbuf[15]  = 52;
 
   ntpUdp.beginPacket(ntpServerIP, 123); //NTP requests are to port 123
-  ntpUdp.write((byte*)obuf, NTP_PACKET_SIZE);
+  ntpUdp.write(pbuf, NTP_PACKET_SIZE);
   ntpUdp.endPacket();
 }
 
@@ -96,13 +96,13 @@ bool checkNTPResponse()
 {
   int cb = ntpUdp.parsePacket();
   if (cb) {
-    DEBUG_PRINT("packet received, l=");
+    DEBUG_PRINT("NTP recv, l=");
     DEBUG_PRINTLN(cb);
+    byte pbuf[NTP_PACKET_SIZE];
+    ntpUdp.read(pbuf, NTP_PACKET_SIZE); // read the packet into the buffer
 
-    ntpUdp.read(obuf, NTP_PACKET_SIZE); // read the packet into the buffer
-
-    unsigned long highWord = word(obuf[40], obuf[41]);
-    unsigned long lowWord = word(obuf[42], obuf[43]);
+    unsigned long highWord = word(pbuf[40], pbuf[41]);
+    unsigned long lowWord = word(pbuf[42], pbuf[43]);
     if (highWord == 0 && lowWord == 0) return false;
     
     unsigned long secsSince1900 = highWord << 16 | lowWord;
@@ -123,14 +123,24 @@ void updateLocalTime()
   local = timezones[currentTimezone]->toLocal(tmc);
 }
 
-String getTimeString()
+char* getTimeString()
 {
   updateLocalTime();
-  String ret = monthStr(month(local));
-  ret = ret + " ";
+  char out[32];
+  sprintf(out,"%i-%i-%i, %i:%s%i:%s%i",year(local), month(local), day(local), 
+                                       (useAMPM)? hour(local)%12:hour(local),
+                                       (minute(local)<10)?"0":"",minute(local),
+                                       (second(local)<10)?"0":"",second(local));
+  if (useAMPM)
+  {
+    strcat(out,(hour(local) > 11)? " PM":" AM");
+  }
+  return out;
+  /*
+  String ret = year(local) + "-";
+  ret = ret + month(local);
+  ret = ret + "-";
   ret = ret + day(local);
-  ret = ret + " ";
-  ret = ret + year(local);
   ret = ret + ", ";
   ret += (useAMPM)? hour(local)%12:hour(local);
   ret = ret + ":";
@@ -144,6 +154,7 @@ String getTimeString()
     ret += (hour(local) > 11)? " PM":" AM";
   }
   return ret;
+  */
 }
 
 void setCountdown()

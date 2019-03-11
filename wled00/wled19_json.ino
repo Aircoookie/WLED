@@ -248,8 +248,8 @@ void serveJson(AsyncWebServerRequest* request)
       serializeState(state);
       JsonObject& info = doc.createNestedObject("info");
       serializeInfo(info);
-      doc["effects"] = RawJson(JSON_mode_names);
-      doc["palettes"] = RawJson(JSON_palette_names);
+      doc["effects"] = RawJson(String(JSON_mode_names));
+      doc["palettes"] = RawJson(String(JSON_palette_names));
   }
   
   response->setLength();

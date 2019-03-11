@@ -153,13 +153,13 @@ void sappends(char stype, char* key, char* val)
   }
 }
 
+
 //get values for settings form in javascript
 void getSettingsJS(byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   DEBUG_PRINT("settings resp");
   DEBUG_PRINTLN(subPage);
-  
   olen = 0; obuf[0] = 0; //clear buffer
   if (subPage <1 || subPage >6) return;
 
@@ -324,7 +324,7 @@ void getSettingsJS(byte subPage)
     sappend('c',"CF",!useAMPM);
     sappend('i',"TZ",currentTimezone);
     sappend('v',"UO",utcOffsetSecs);
-    sappends('m',"(\"times\")[0]",(char*)getTimeString().c_str());
+    sappends('m',"(\"times\")[0]",getTimeString());
     sappend('i',"OL",overlayCurrent);
     sappend('v',"O1",overlayMin);
     sappend('v',"O2",overlayMax);
