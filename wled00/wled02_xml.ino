@@ -359,6 +359,7 @@ char* getSettingsJS(byte subPage)
     sappend('v',"ML",macroLongPress);
     sappend('v',"MC",macroCountdown);
     sappend('v',"MN",macroNl);
+    sappend('v',"MD",macroDoublePress);
 
     k[2] = 0; //Time macros
     for (int i = 0; i<8; i++)

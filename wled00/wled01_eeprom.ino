@@ -3,7 +3,7 @@
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
 
-#define EEPSIZE 3072
+#define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
 #define EEPVER 10
@@ -214,6 +214,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(2179, macroLongPress);
   EEPROM.write(2180, macroCountdown);
   EEPROM.write(2181, macroNl);
+  EEPROM.write(2182, macroDoublePress);
 
   EEPROM.write(2190, e131Universe & 0xFF);
   EEPROM.write(2191, (e131Universe >> 8) & 0xFF);
@@ -423,6 +424,8 @@ void loadSettingsFromEEPROM(bool first)
     macroLongPress = EEPROM.read(2179);
     macroCountdown = EEPROM.read(2180);
     macroNl = EEPROM.read(2181);
+    macroDoublePress = EEPROM.read(2182);
+    if (macroDoublePress > 16) macroDoublePress = 0;
   }
 
   if (lastEEPROMversion > 6)

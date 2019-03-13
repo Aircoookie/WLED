@@ -350,12 +350,13 @@ Define API macros here:<br>
 15: <input name="M15" maxlength="64"><br>
 16: <input name="M16" maxlength="64"><br><br>
 <i>Use 0 for the default action instead of a macro</i><br>
-Boot Macro: <input name="MB" type="number" min="0" max="16" required><br>
-Alexa On/Off Macros: <input name="A0" type="number" min="0" max="16" required> <input name="A1" type="number" min="0" max="16" required><br>
-Button Macro: <input name="MP" type="number" min="0" max="16" required> Long Press: <input name="ML" type="number" min="0" max="16" required><br>
-Countdown-Over Macro: <input name="MC" type="number" min="0" max="16" required><br>
-Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required><br>
-Time-Controlled Macros:<br>
+Boot macro: <input name="MB" type="number" min="0" max="16" required><br>
+Alexa On/Off macros: <input name="A0" type="number" min="0" max="16" required> <input name="A1" type="number" min="0" max="16" required><br>
+Button short press macro: <input name="MP" type="number" min="0" max="16" required><br>
+Long press: <input name="ML" type="number" min="0" max="16" required> Double press: <input name="MD" type="number" min="0" max="16" required><br>
+Countdown-Over macro: <input name="MC" type="number" min="0" max="16" required><br>
+Timed-Light-Over macro: <input name="MN" type="number" min="0" max="16" required><br>
+Time-Controlled macros:<br>
 <div style="display: inline-block">
 <table id="TMT">
 </table></div><hr>

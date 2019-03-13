@@ -89,7 +89,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903112
+#define VERSION 1903131
 char versionString[] = "0.8.4-dev";
 
 
@@ -236,7 +236,7 @@ byte macroBoot = 0;                           //macro loaded after startup
 byte macroNl = 0;                             //after nightlight delay over
 byte macroCountdown = 0;                      
 byte macroAlexaOn = 0, macroAlexaOff = 0;
-byte macroButton = 0, macroLongPress = 0;
+byte macroButton = 0, macroLongPress = 0, macroDoublePress = 0;
 
 
 //Security CONFIG
@@ -278,6 +278,7 @@ byte briNlT = 0;                              //current nightlight brightness
 
 //brightness
 unsigned long lastOnTime = 0;
+bool offMode = !turnOnAtBoot;
 byte bri = briS;
 byte briOld = 0;
 byte briT = 0;
@@ -287,7 +288,7 @@ byte briLast = 127;                           //brightness before turned off. Us
 //button
 bool buttonPressedBefore = false;
 unsigned long buttonPressedTime = 0;
-unsigned long buttonReleasedTime = 0;
+unsigned long buttonWaitTime = 0;
 
 //notifications
 bool notifyDirectDefault = notifyDirect;
@@ -536,8 +537,7 @@ void loop() {
       handleBlynk();
     }
     yield();
-    if (briT) lastOnTime = millis();
-    if (millis() - lastOnTime < 600) strip.service();
+    if (!offMode) strip.service();
   }
   
   //DEBUG serial logging

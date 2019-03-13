@@ -250,6 +250,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     macroLongPress = request->arg("ML").toInt();
     macroCountdown = request->arg("MC").toInt();
     macroNl = request->arg("MN").toInt();
+    macroDoublePress = request->arg("MD").toInt();
 
     char k[3]; k[2] = 0;
     for (int i = 0; i<8; i++)

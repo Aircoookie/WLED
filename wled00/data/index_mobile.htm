@@ -248,7 +248,7 @@
   .whs input[type=range]::-moz-range-track{
 	background: linear-gradient(45deg,black,white);
   }
-  #cv {
+  .ol {
 	position:fixed;
 	height:100%;
 	width:100%;
@@ -268,7 +268,8 @@
 </head>
 <body>
 <main style="max-width:280px; margin-left:auto; margin-right:auto; text-align:center;">
-<div id="cv">Loading WLED UI...</div>
+<div id="cv" class="ol">Loading WLED UI...</div>
+<noscript><div class="ol" style="opacity:1;">Sorry, the WLED UI needs JavaScript to work!</div></noscript>
 <div style="width:100%; max-width:260px; margin-left:auto; margin-right:auto; font-size:12px; margin-bottom:20px;">
 <div class="btns" style="width:70%; float:left; text-align:left;">
 <p class="desc">Loading...</p>
