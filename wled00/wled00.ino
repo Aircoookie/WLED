@@ -24,8 +24,13 @@
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
 //#define WLED_DISABLE_MOBILE_UI
 
-//to toggle usb serial debug (un)comment following line(s)
+#define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
+//#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
+//#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
+
+//to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
+
 
 //library inclusions
 #include <Arduino.h>
@@ -33,6 +38,7 @@
  #include <WiFi.h>
  #include <ESPmDNS.h>
  #include <AsyncTCP.h>
+ #include "SPIFFS.h"
 #else
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
@@ -46,6 +52,7 @@
 #ifndef WLED_DISABLE_OTA
  #include <ArduinoOTA.h>
 #endif
+#include <SPIFFSEditor.h>
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
@@ -69,6 +76,7 @@
 #include "WS2812FX.h"
 #include "ir_codes.h"
 
+
 #if IR_PIN < 0
  #ifndef WLED_DISABLE_INFRARED
   #define WLED_DISABLE_INFRARED
@@ -89,17 +97,13 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903131
+#define VERSION 1903161
 char versionString[] = "0.8.4-dev";
 
 
 //AP and OTA default passwords (for maximum change them!)
 char apPass[65] = "wled1234";
 char otaPass[33] = "wledota";
-
-
-//spiffs FS only useful for debug (only ESP8266)
-//#define USEFS
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
@@ -438,9 +442,12 @@ WS2812FX strip = WS2812FX();
 #endif
 
 //filesystem
-#ifdef USEFS
- #include <FS.h>;
- File fsUploadFile;
+#ifndef WLED_DISABLE_FILESYSTEM
+ #include <FS.h>
+ #ifdef ARDUINO_ARCH_ESP32
+  #include "SPIFFS.h"
+ #endif
+ #include "SPIFFSEditor.h"
 #endif
 
 //gamma 2.4 lookup table used for color correction
@@ -464,6 +471,7 @@ const byte gamma8[] = {
 
 //function prototypes
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
+
 
 //turns all LEDs off and restarts ESP
 void reset()
@@ -514,7 +522,7 @@ void loop() {
   userLoop();
   
   yield();
-  handleButton();
+  handleIO();
   handleIR();
   handleNetworkTime();
   if (!onlyAP) handleAlexa();

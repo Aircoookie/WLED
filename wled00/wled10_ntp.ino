@@ -123,10 +123,9 @@ void updateLocalTime()
   local = timezones[currentTimezone]->toLocal(tmc);
 }
 
-char* getTimeString()
+void getTimeString(char* out)
 {
   updateLocalTime();
-  char out[32];
   sprintf(out,"%i-%i-%i, %i:%s%i:%s%i",year(local), month(local), day(local), 
                                        (useAMPM)? hour(local)%12:hour(local),
                                        (minute(local)<10)?"0":"",minute(local),
@@ -135,26 +134,6 @@ char* getTimeString()
   {
     strcat(out,(hour(local) > 11)? " PM":" AM");
   }
-  return out;
-  /*
-  String ret = year(local) + "-";
-  ret = ret + month(local);
-  ret = ret + "-";
-  ret = ret + day(local);
-  ret = ret + ", ";
-  ret += (useAMPM)? hour(local)%12:hour(local);
-  ret = ret + ":";
-  if (minute(local) < 10) ret = ret + "0";
-  ret = ret + minute(local);
-  ret = ret + ":";
-  if (second(local) < 10) ret = ret + "0";
-  ret = ret + second(local);
-  if (useAMPM)
-  {
-    ret += (hour(local) > 11)? " PM":" AM";
-  }
-  return ret;
-  */
 }
 
 void setCountdown()

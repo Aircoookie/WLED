@@ -195,7 +195,7 @@ void serializeInfo(JsonObject& root)
   #ifndef WLED_DISABLE_CRONIXIE
   os += 0x10;
   #endif
-  #ifdef USEFS
+  #ifndef WLED_DISABLE_FILESYSTEM
   os += 0x08;
   #endif
   #ifndef WLED_DISABLE_HUESYNC

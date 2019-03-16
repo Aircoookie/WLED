@@ -30,8 +30,11 @@ void wledInit()
   DEBUG_PRINT("LEDs inited. heap usage ~");
   DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
-  #ifdef USEFS
-   SPIFFS.begin();
+  #ifndef WLED_DISABLE_FILESYSTEM
+   #ifdef ARDUINO_ARCH_ESP32
+    SPIFFS.begin(true);
+   #endif
+    SPIFFS.begin();
   #endif
   
   DEBUG_PRINTLN("Load EEPROM");

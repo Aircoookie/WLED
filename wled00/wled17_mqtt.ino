@@ -88,9 +88,11 @@ void publishMqtt()
   strcat(subuf, "/c");
   mqtt->publish(subuf, 0, true, s);
 
+  char apires[1024];
+  XML_response(nullptr, false, apires);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/v");
-  mqtt->publish(subuf, 0, true, XML_response(nullptr, false));
+  mqtt->publish(subuf, 0, true, apires);
 }
 
 

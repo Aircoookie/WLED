@@ -15,7 +15,7 @@ void initServer()
   });
   
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-    if(!handleFileRead("/favicon.ico"))
+    if(!handleFileRead(request, "/favicon.ico"))
     {
       request->send_P(200, "image/x-icon", favicon, 156);
     }
@@ -102,14 +102,16 @@ void initServer()
     
   //if OTA is allowed
   if (!otaLock){
+    #if !defined WLED_DISABLE_FILESYSTEM && defined WLED_ENABLE_FS_EDITOR
+     #ifdef ARDUINO_ARCH_ESP32
+      server.addHandler(new SPIFFSEditor(SPIFFS));//http_username,http_password));
+     #else
+      server.addHandler(new SPIFFSEditor());//http_username,http_password));
+     #endif
+    #else
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(200, "text/html", PAGE_edit);
+      serveMessage(request, 501, "Not implemented", "The SPIFFS editor is disabled in this build.", 254);
     });
-    #ifdef USEFS
-    server.on("/edit", HTTP_PUT, handleFileCreate);
-    server.on("/edit", HTTP_DELETE, handleFileDelete);
-    server.on("/edit", HTTP_POST, [](){ server->send(200, "text/plain", ""); }, handleFileUpload);
-    server.on("/list", HTTP_GET, handleFileList);
     #endif
     //init ota page
     #ifndef WLED_DISABLE_OTA
@@ -146,19 +148,16 @@ void initServer()
     
     #else
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 500, "Not implemented", "OTA updates are unsupported in this build.", 254);
+      serveMessage(request, 501, "Not implemented", "OTA updates are disabled in this build.", 254);
     });
     #endif
   } else
   {
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
+      serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
     });
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
-    });
-    server.on("/list", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
+      serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
     });
   }
 
@@ -177,12 +176,14 @@ void initServer()
       request->send(200); return;
     }
     
-    if(!handleSet(request, request->url())){
-      #ifndef WLED_DISABLE_ALEXA
-      if(!espalexa.handleAlexaApiCall(request))
-      #endif
-      request->send(404, "text/plain", "Not Found");
-    }
+    if(handleSet(request, request->url())) return;
+    #ifndef WLED_DISABLE_ALEXA
+    if(espalexa.handleAlexaApiCall(request)) return;
+    #endif
+    #ifdef WLED_ENABLE_FS_SERVING
+    if(handleFileRead(request, request->url())) return;
+    #endif
+    request->send(404, "text/plain", "Not Found");
   });
 }
 
@@ -218,6 +219,16 @@ void serveIndex(AsyncWebServerRequest* request)
   if (uiConfiguration == 0 && request->hasHeader("User-Agent")) serveMobile = checkClientIsMobile(request->getHeader("User-Agent")->value());
   else if (uiConfiguration == 2) serveMobile = true;
 
+  #ifdef WLED_ENABLE_FS_SERVING
+  if (serveMobile)
+  {
+    if (handleFileRead(request, "/index_mobile.htm")) return;
+  } else
+  {
+    if (handleFileRead(request, "/index.htm")) return;
+  }
+  #endif
+
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", 
                                       (serveMobile) ? (uint8_t*)PAGE_indexM : PAGE_index,
                                       (serveMobile) ? PAGE_indexM_L : PAGE_index_L);
@@ -235,7 +246,13 @@ void serveIndex(AsyncWebServerRequest* request)
 
 String msgProcessor(const String& var)
 {
-  if (var == "CSS") return String(obuf);
+  if (var == "CSS") {
+    char css[512];
+    obuf = css;
+    olen = 0;
+    getCSSColors();
+    return String(obuf);
+  }
   if (var == "MSG") {
     String messageBody = messageHead;
     messageBody += "</h2>";
@@ -266,8 +283,10 @@ String msgProcessor(const String& var)
 
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", byte optionT=255)
 {
-  char buf[512];
+  #ifndef ARDUINO_ARCH_ESP32
+  char buf[256];
   obuf = buf;
+  #endif
   olen = 0;
   getCSSColors();
   messageHead = headl;
@@ -281,9 +300,10 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, S
 String settingsProcessor(const String& var)
 {
   if (var == "CSS") {
-    char* buf = getSettingsJS(optionType);
+    char buf[2048];
+    getSettingsJS(optionType, buf);
     getCSSColors();
-    return buf;
+    return String(buf);
   }
   if (var == "SCSS") return String(PAGE_settingsCss);
   return String();

@@ -3,10 +3,17 @@
  */
 
 //build XML response to HTTP /win API request
-char* XML_response(AsyncWebServerRequest *request, bool includeTheme)
+char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest = nullptr)
 {
-  char sbuf[1024];
-  olen = 0; obuf = sbuf;
+  if (dest == nullptr) //allocate local buffer if none passed
+  {
+    char sbuf[1024];
+    obuf = sbuf;
+  } else {
+    obuf = dest;
+  }
+  
+  olen = 0;
   oappend("<?xml version=\"1.0\" ?><vs><ac>");
   oappendi((nightlightActive && nightlightFade) ? briT : bri);
   oappend("</ac>");
@@ -98,8 +105,7 @@ char* XML_response(AsyncWebServerRequest *request, bool includeTheme)
     oappend("</cf></th>");
   }
   oappend("</vs>");
-  if (request != nullptr) request->send(200, "text/xml", sbuf);
-  return sbuf;
+  if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
 //append a numeric setting to string buffer
@@ -157,15 +163,15 @@ void sappends(char stype, char* key, char* val)
 
 
 //get values for settings form in javascript
-char* getSettingsJS(byte subPage)
+void getSettingsJS(byte subPage, char* dest)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   DEBUG_PRINT("settings resp");
   DEBUG_PRINTLN(subPage);
-  char sbuf[2048];
-  olen = 0; obuf = sbuf;
+  obuf = dest;
+  olen = 0;
   
-  if (subPage <1 || subPage >6) return sbuf;
+  if (subPage <1 || subPage >6) return;
 
   if (subPage == 1) {
     sappends('s',"CS",clientSSID);
@@ -328,7 +334,9 @@ char* getSettingsJS(byte subPage)
     sappend('c',"CF",!useAMPM);
     sappend('i',"TZ",currentTimezone);
     sappend('v',"UO",utcOffsetSecs);
-    sappends('m',"(\"times\")[0]",getTimeString());
+    char tm[32];
+    getTimeString(tm); 
+    sappends('m',"(\"times\")[0]",tm);
     sappend('i',"OL",overlayCurrent);
     sappend('v',"O1",overlayMin);
     sappend('v',"O2",overlayMax);
@@ -344,12 +352,13 @@ char* getSettingsJS(byte subPage)
     sappend('v',"CH",countdownHour);
     sappend('v',"CM",countdownMin);
     sappend('v',"CS",countdownSec);
-
     char k[4]; k[0]= 'M';
     for (int i=1;i<17;i++)
     {
+      char m[65];
+      loadMacro(i, m);
       sprintf(k+1,"%i",i);
-      sappends('s',k,loadMacro(i));
+      sappends('s',k,m);
     }
     
     sappend('v',"MB",macroBoot);
@@ -386,7 +395,6 @@ char* getSettingsJS(byte subPage)
     oappend(") OK\";");
   }
   oappend("}</script>");
-  return sbuf;
 }
 
 

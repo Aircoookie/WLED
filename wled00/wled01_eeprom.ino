@@ -577,13 +577,11 @@ void savePreset(byte index)
 }
 
 
-char* loadMacro(byte index)
+void loadMacro(byte index, char* m)
 {
   index-=1;
-  char m[65];
-  if (index > 15) return m;
+  if (index > 15) return;
   readStringFromEEPROM(1024+64*index, m, 64);
-  return m;
 }
 
 
@@ -592,7 +590,9 @@ void applyMacro(byte index)
   index-=1;
   if (index > 15) return;
   String mc="win&";
-  mc += loadMacro(index+1);
+  char m[65];
+  loadMacro(index+1, m);
+  mc += m;
   mc += "&IN"; //internal, no XML response
   if (!notifyMacro) mc += "&NN";
   String forbidden = "&M="; //dont apply if called by the macro itself to prevent loop
