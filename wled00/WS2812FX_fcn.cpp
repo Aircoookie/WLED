@@ -393,6 +393,14 @@ WS2812FX::Segment* WS2812FX::getSegments(void) {
   return _segments;
 }
 
+const __FlashStringHelper* WS2812FX::getModeName(uint8_t m) {
+  if(m < MODE_COUNT) {
+    return _names[m];
+  } else {
+    return F("");
+  }
+}
+
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2) {
   if (n >= MAX_NUM_SEGMENTS) return;
   Segment& seg = _segments[n];
