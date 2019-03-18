@@ -24,6 +24,8 @@
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
 //#define WLED_DISABLE_MOBILE_UI
 
+//#define WLED_ENABLE_HOMEASSISTANT_AUTODISCOVERY
+
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
