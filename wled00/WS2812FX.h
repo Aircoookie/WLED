@@ -29,6 +29,8 @@
 
 #include "NpbWrapper.h"
 
+#define FSH(x) (__FlashStringHelper*)(x)
+
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #include "FastLED.h"
 
@@ -77,7 +79,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  80
+#define MODE_COUNT (sizeof(_names)/sizeof(_names[0]))
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -161,6 +163,169 @@
 #define FX_MODE_RAILWAY                 78
 #define FX_MODE_RIPPLE                  79
 
+const char name_0[] PROGMEM = "Static";
+const char name_1[] PROGMEM = "Blink";
+const char name_2[] PROGMEM = "Breath";
+const char name_3[] PROGMEM = "Color Wipe";
+const char name_4[] PROGMEM = "Color Wipe Random";
+const char name_5[] PROGMEM = "Random Color";
+const char name_6[] PROGMEM = "Color Sweep";
+const char name_7[] PROGMEM = "Dynamic";
+const char name_8[] PROGMEM = "Rainbow";
+const char name_9[] PROGMEM = "Rainbow Cycle";
+const char name_10[] PROGMEM = "Scan";
+const char name_11[] PROGMEM = "Dual Scan";
+const char name_12[] PROGMEM = "Fade";
+const char name_13[] PROGMEM = "Theater Chase";
+const char name_14[] PROGMEM = "Theater Chase Rainbow";
+const char name_15[] PROGMEM = "Running Lights";
+const char name_16[] PROGMEM = "Twinkle";
+const char name_17[] PROGMEM = "Twinkle Random";
+const char name_18[] PROGMEM = "Twinkle Fade";
+const char name_19[] PROGMEM = "Twinkle Fade Random";
+const char name_20[] PROGMEM = "Sparkle";
+const char name_21[] PROGMEM = "Flash Sparkle";
+const char name_22[] PROGMEM = "Hyper Sparkle";
+const char name_23[] PROGMEM = "Strobe";
+const char name_24[] PROGMEM = "Strobe Rainbow";
+const char name_25[] PROGMEM = "Multi Strobe";
+const char name_26[] PROGMEM = "Blink Rainbow";
+const char name_27[] PROGMEM = "Android";
+const char name_28[] PROGMEM = "Chase Color";
+const char name_29[] PROGMEM = "Chase Random";
+const char name_30[] PROGMEM = "Chase Rainbow";
+const char name_31[] PROGMEM = "Chase Flash";
+const char name_32[] PROGMEM = "Chase Flash Random";
+const char name_33[] PROGMEM = "Chase Rainbow White";
+const char name_34[] PROGMEM = "Colorful";
+const char name_35[] PROGMEM = "Traffic Light";
+const char name_36[] PROGMEM = "Color Sweep Random";
+const char name_37[] PROGMEM = "Running Color";
+const char name_38[] PROGMEM = "Running Red Blue";
+const char name_39[] PROGMEM = "Running Random";
+const char name_40[] PROGMEM = "Larson Scanner";
+const char name_41[] PROGMEM = "Comet";
+const char name_42[] PROGMEM = "Fireworks";
+const char name_43[] PROGMEM = "Fireworks Random";
+const char name_44[] PROGMEM = "Merry Christmas";
+const char name_45[] PROGMEM = "Fire Flicker";
+const char name_46[] PROGMEM = "Gradient";
+const char name_47[] PROGMEM = "Loading";
+const char name_48[] PROGMEM = "Dual Color Wipe In Out";
+const char name_49[] PROGMEM = "Dual Color Wipe In In";
+const char name_50[] PROGMEM = "Dual Color Wipe Out Out";
+const char name_51[] PROGMEM = "Dual Color Wipe Out In";
+const char name_52[] PROGMEM = "Circus Combustus";
+const char name_53[] PROGMEM = "Halloween";
+const char name_54[] PROGMEM = "Tricolor Chase";
+const char name_55[] PROGMEM = "Tricolor Wipe";
+const char name_56[] PROGMEM = "Tricolor Fade";
+const char name_57[] PROGMEM = "Lightning";
+const char name_58[] PROGMEM = "ICU";
+const char name_59[] PROGMEM = "Multi Comet";
+const char name_60[] PROGMEM = "Dual Larson Scanner";
+const char name_61[] PROGMEM = "Random Chase";
+const char name_62[] PROGMEM = "Oscillate";
+const char name_63[] PROGMEM = "Pride 2015";
+const char name_64[] PROGMEM = "Juggle";
+const char name_65[] PROGMEM = "Pallette";
+const char name_66[] PROGMEM = "Fire 2012";
+const char name_67[] PROGMEM = "Colorwaves";
+const char name_68[] PROGMEM = "BPM";
+const char name_69[] PROGMEM = "Fill Noise 8";
+const char name_70[] PROGMEM = "Noise 16 1";
+const char name_71[] PROGMEM = "Noise 16 2";
+const char name_72[] PROGMEM = "Noise 16 3";
+const char name_73[] PROGMEM = "Noise 16 4";
+const char name_74[] PROGMEM = "Color Twinkle";
+const char name_75[] PROGMEM = "Lake";
+const char name_76[] PROGMEM = "Meteor";
+const char name_77[] PROGMEM = "Meteor Smooth";
+const char name_78[] PROGMEM = "Railway";
+const char name_79[] PROGMEM = "Ripple";
+
+static const __FlashStringHelper* _names[] = {
+  FSH(name_0),
+  FSH(name_1),
+  FSH(name_2),
+  FSH(name_3),
+  FSH(name_4),
+  FSH(name_5),
+  FSH(name_6),
+  FSH(name_7),
+  FSH(name_8),
+  FSH(name_9),
+  FSH(name_10),
+  FSH(name_11),
+  FSH(name_12),
+  FSH(name_13),
+  FSH(name_14),
+  FSH(name_15),
+  FSH(name_16),
+  FSH(name_17),
+  FSH(name_18),
+  FSH(name_19),
+  FSH(name_20),
+  FSH(name_21),
+  FSH(name_22),
+  FSH(name_23),
+  FSH(name_24),
+  FSH(name_25),
+  FSH(name_26),
+  FSH(name_27),
+  FSH(name_28),
+  FSH(name_29),
+  FSH(name_30),
+  FSH(name_31),
+  FSH(name_32),
+  FSH(name_33),
+  FSH(name_34),
+  FSH(name_35),
+  FSH(name_36),
+  FSH(name_37),
+  FSH(name_38),
+  FSH(name_39),
+  FSH(name_40),
+  FSH(name_41),
+  FSH(name_42),
+  FSH(name_43),
+  FSH(name_44),
+  FSH(name_45),
+  FSH(name_46),
+  FSH(name_47),
+  FSH(name_48),
+  FSH(name_49),
+  FSH(name_50),
+  FSH(name_51),
+  FSH(name_52),
+  FSH(name_53),
+  FSH(name_54),
+  FSH(name_55),
+  FSH(name_56),
+  FSH(name_57),
+  FSH(name_58),
+  FSH(name_59),
+  FSH(name_60),
+  FSH(name_61),
+  FSH(name_62),
+  FSH(name_63),
+  FSH(name_64),
+  FSH(name_65),
+  FSH(name_66),
+  FSH(name_67),
+  FSH(name_68),
+  FSH(name_69),
+  FSH(name_70),
+  FSH(name_71),
+  FSH(name_72),
+  FSH(name_73),
+  FSH(name_74),
+  FSH(name_75),
+  FSH(name_76),
+  FSH(name_77),
+  FSH(name_78),
+  FSH(name_79)
+};
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -472,6 +637,8 @@ class WS2812FX {
       mode_meteor_smooth(void),
       mode_railway(void),
       mode_ripple(void);
+
+  const __FlashStringHelper* getModeName(uint8_t m);
 
   private:
     NeoPixelWrapper *bus;
