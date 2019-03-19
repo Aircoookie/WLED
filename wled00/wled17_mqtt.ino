@@ -231,7 +231,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   root["bri_cmd_t"] = mqttDeviceTopic;
   root["bri_stat_t"] = bufg;
   root["bri_val_tpl"] = "{{value}}";
-  root["rgb_cmd_tpl"] = "{{'#%02x%02x%02x' | format(red, green, blue)}}";
+  root["rgb_cmd_tpl"] = "{{'#%02x%02x%02x'|format(red, green, blue)}}";
   root["rgb_val_tpl"] = "{{value[1:3]|int(base=16)}},{{value[3:5]|int(base=16)}},{{value[5:7]|int(base=16)}}";
   root["qos"] = 0;
   root["opt"] = true;
@@ -331,8 +331,8 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   DEBUG_PRINT("HA Discovery Sending >>");
   DEBUG_PRINTLN(buffer);
 
-  strcpy(pubt, "homeassistant/light/");
-  strcat(pubt, serverDescription);
+  strcpy(pubt, "homeassistant/light/WLED_");
+  strcat(pubt, escapedMac.c_str());
   strcat(pubt, "/config");
   mqtt->publish(pubt, 0, true, buffer);
 }
