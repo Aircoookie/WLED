@@ -221,7 +221,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   strcat(bufapi, "/api");
 
 
-  DynamicJsonBuffer jsonBuffer(JSON_ARRAY_SIZE(80) + JSON_OBJECT_SIZE(18) + 3000);
+  DynamicJsonBuffer jsonBuffer(JSON_ARRAY_SIZE(strip.getModeCount()) + JSON_OBJECT_SIZE(18));
   JsonObject& root = jsonBuffer.createObject();
   root["name"] = serverDescription;
   root["stat_t"] = bufc;
