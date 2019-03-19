@@ -5,13 +5,8 @@
 //build XML response to HTTP /win API request
 char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest = nullptr)
 {
-  if (dest == nullptr) //allocate local buffer if none passed
-  {
-    char sbuf[1024];
-    obuf = sbuf;
-  } else {
-    obuf = dest;
-  }
+  char sbuf[(dest == nullptr)?1024:1]; //allocate local buffer if none passed
+  obuf = (dest == nullptr)? sbuf:dest;
   
   olen = 0;
   oappend("<?xml version=\"1.0\" ?><vs><ac>");
