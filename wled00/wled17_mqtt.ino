@@ -246,7 +246,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   {
     char effect_tmp_name[64];
     snprintf(effect_tmp_name, 64, "[FX=%02d] %s", i, strip.getModeName(i));
-    fx_list.add(effect_tmp_name);
+    fx_list.add(String(effect_tmp_name));
   }
 
   size_t jlen = root.measureLength() + 1;
