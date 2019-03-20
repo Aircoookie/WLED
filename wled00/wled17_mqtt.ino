@@ -44,8 +44,9 @@ void onMqttConnect(bool sessionPresent)
     strcat(subuf, "/api");
     mqtt->subscribe(subuf, 0);
   }
-
+  #ifdef WLED_ENABLE_HOMEASSISTANT_AUTODISCOVERY
   sendHADiscoveryMQTT();
+  #endif
   publishMqtt();
 }
 
@@ -97,6 +98,7 @@ void publishMqtt()
   mqtt->publish(subuf, 0, true, apires);
 }
 
+#ifdef WLED_ENABLE_HOMEASSISTANT_AUTODISCOVERY
 void sendHADiscoveryMQTT(){
 /*
 
@@ -261,6 +263,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   strcat(pubt, "/config");
   mqtt->publish(pubt, 0, true, buffer);
 }
+#endif
 
 bool initMqtt()
 {
