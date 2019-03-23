@@ -24,7 +24,7 @@
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
 //#define WLED_DISABLE_MOBILE_UI
 
-//#define WLED_ENABLE_HOMEASSISTANT_AUTODISCOVERY
+#define WLED_ENABLE_HOMEASSISTANT_AUTODISCOVERY
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
@@ -99,7 +99,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903191
+#define VERSION 1903233
 char versionString[] = "0.8.4-dev";
 
 
