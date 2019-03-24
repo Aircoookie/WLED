@@ -99,7 +99,6 @@ void publishMqtt()
   mqtt->publish(subuf, 0, true, apires);
 }
 
-#ifdef WLED_ENABLE_HOMEASSISTANT_AUTODISCOVERY
 const char HA_static_JSON[] PROGMEM = R"=====(,"bri_val_tpl":"{{value}}","rgb_cmd_tpl":"{{'#%02x%02x%02x' | format(red, green, blue)}}","rgb_val_tpl":"{{value[1:3]|int(base=16)}},{{value[3:5]|int(base=16)}},{{value[5:7]|int(base=16)}}","qos":0,"opt":true,"pl_on":"ON","pl_off":"OFF","fx_val_tpl":"{{value}}","fx_list":[)=====";
 
 void sendHADiscoveryMQTT(){
@@ -128,88 +127,11 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
 "fx_stat_t":"YYYY/api",
 "fx_val_tpl":"{{value}}",
 "fx_list":[
-"[FX=00]  STATIC",
-"[FX=01]  BLINK",
-"[FX=02]  BREATH",
-"[FX=03]  COLOR_WIPE",
-"[FX=04]  COLOR_WIPE_RANDOM",
-"[FX=05]  RANDOM_COLOR",
-"[FX=06]  COLOR_SWEEP",
-"[FX=07]  DYNAMIC",
-"[FX=08]  RAINBOW",
-"[FX=09]  RAINBOW_CYCLE",
-"[FX=10]  SCAN",
-"[FX=11]  DUAL_SCAN",
-"[FX=12]  FADE",
-"[FX=13]  THEATER_CHASE",
-"[FX=14]  THEATER_C_RAINBOW",
-"[FX=15]  RUNNING_LIGHTS",
-"[FX=16]  SAW",
-"[FX=17]  TWINKLE",
-"[FX=18]  DISSOLVE",
-"[FX=19]  DISSOLVE_RANDOM",
-"[FX=20]  SPARKLE",
-"[FX=21]  FLASH_SPARKLE",
-"[FX=22]  HYPER_SPARKLE",
-"[FX=23]  STROBE",
-"[FX=24]  STROBE_RAINBOW",
-"[FX=25]  MULTI_STROBE",
-"[FX=26]  BLINK_RAINBOW",
-"[FX=27]  ANDROID",
-"[FX=28]  CHASE_COLOR",
-"[FX=29]  CHASE_RANDOM",
-"[FX=30]  CHASE_RAINBOW",
-"[FX=31]  CHASE_FLASH",
-"[FX=32]  CHASE_FLASH_RANDOM",
-"[FX=33]  CHASE_RAINBOW_WHITE",
-"[FX=34]  COLORFUL",
-"[FX=35]  TRAFFIC_LIGHT",
-"[FX=36]  COLOR_SWEEP_RANDOM",
-"[FX=37]  RUNNING_COLOR",
-"[FX=38]  RUNNING_RED_BLUE",
-"[FX=39]  RUNNING_RANDOM",
-"[FX=40]  LARSON_SCANNER",
-"[FX=41]  COMET",
-"[FX=42]  FIREWORKS",
-"[FX=43]  RAIN",
-"[FX=44]  MERRY_CHRISTMAS",
-"[FX=45]  FIRE_FLICKER",
-"[FX=46]  GRADIENT",
-"[FX=47]  LOADING",
-"[FX=48]  DUAL_COLOR_WIPE_IN_OUT",
-"[FX=49]  DUAL_COLOR_WIPE_IN_IN",
-"[FX=50]  DUAL_COLOR_WIPE_OUT_OUT",
-"[FX=51]  DUAL_COLOR_WIPE_OUT_IN",
-"[FX=52]  CIRCUS_COMBUSTUS",
-"[FX=53]  HALLOWEEN",
-"[FX=54]  TRICOLOR_CHASE",
-"[FX=55]  TRICOLOR_WIPE",
-"[FX=56]  TRICOLOR_FADE",
-"[FX=57]  LIGHTNING",
-"[FX=58]  ICU",
-"[FX=59]  MULTI_COMET",
-"[FX=60]  DUAL_LARSON_SCANNER",
-"[FX=61]  RANDOM_CHASE",
-"[FX=62]  OSCILLATE",
-"[FX=63]  PRIDE_2015",
-"[FX=64]  JUGGLE",
-"[FX=65]  PALETTE",
-"[FX=66]  FIRE_2012",
-"[FX=67]  COLORWAVES",
-"[FX=68]  BPM",
-"[FX=69]  FILLNOISE8",
-"[FX=70]  NOISE16_1",
-"[FX=71]  NOISE16_2",
-"[FX=72]  NOISE16_3",
-"[FX=73]  NOISE16_4",
-"[FX=74]  COLORTWINKLE",
-"[FX=75]  LAKE",
-"[FX=76]  METEOR",
-"[FX=77]  METEOR_SMOOTH",
-"[FX=78]  RAILWAY",
-"[FX=79]  RIPPLE"
+"[FX=00] Solid",
+"[FX=01] Blink", 
+"[FX=02] ...",
+"[FX=79] Ripple"
 ]
-
 }
 
   */
@@ -225,7 +147,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   strcat(bufg, "/g");
   strcat(bufapi, "/api");
 
-  StaticJsonBuffer<JSON_OBJECT_SIZE(8)> jsonBuffer;
+  StaticJsonBuffer<JSON_OBJECT_SIZE(9) +512> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
   root["name"] = serverDescription;
   root["stat_t"] = bufc;
@@ -277,6 +199,8 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
       isNameStart = !isNameStart;
     }   
   }
+  olen--;
+  oappend("]}");
 
   DEBUG_PRINT("HA Discovery Sending >>");
   DEBUG_PRINTLN(buffer);
@@ -286,7 +210,6 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   strcat(pubt, "/config");
   mqtt->publish(pubt, 0, true, buffer);
 }
-#endif
 
 bool initMqtt()
 {
