@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.4-dev
+ * @version 0.8.4
  * @author Christian Schwinne
  */
 
@@ -98,8 +98,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1903242
-char versionString[] = "0.8.4-dev";
+#define VERSION 1903252
+char versionString[] = "0.8.4";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -161,7 +161,7 @@ byte briMultiplier =  100;                    //% of brightness to set (to limit
 
 //User Interface CONFIG
 char serverDescription[33] = "WLED Light";    //Name of module
-byte currentTheme = 0;                        //UI theme index for settings and classic UI
+byte currentTheme = 7;                        //UI theme index for settings and classic UI
 byte uiConfiguration = 0;                     //0: automatic (depends on user-agent) 1: classic UI 2: mobile UI
 bool useHSB = true;                           //classic UI: use HSB sliders instead of RGB by default
 char cssFont[33] = "Verdana";                 //font to use in classic UI
@@ -179,8 +179,8 @@ uint16_t udpRgbPort = 19446;                  //Hyperion port
 bool receiveNotificationBrightness = true;    //apply brightness from incoming notifications
 bool receiveNotificationColor      = true;    //apply color
 bool receiveNotificationEffects    = true;    //apply effects setup
-bool notifyDirect =  true;                    //send notification if change via UI or HTTP API
-bool notifyButton =  true;                    //send if updated by button or infrared remote
+bool notifyDirect = false;                    //send notification if change via UI or HTTP API
+bool notifyButton = false;                    //send if updated by button or infrared remote
 bool notifyAlexa  = false;                    //send notification if updated via Alexa
 bool notifyMacro  = false;                    //send notification for macro
 bool notifyHue    =  true;                    //send notification if Hue light changes

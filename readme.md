@@ -25,7 +25,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 
 ### Supported light control interfaces:
 - WLED Android app
-- HTTP request API
+- HTTP and JSON request APIs
 - Blynk IoT
 - MQTT
 - E1.31

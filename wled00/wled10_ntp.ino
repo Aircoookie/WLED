@@ -126,9 +126,14 @@ void updateLocalTime()
 void getTimeString(char* out)
 {
   updateLocalTime();
+  byte hr = hour(local);
+  if (useAMPM)
+  {
+    if (hr > 11) hr -= 12;
+    if (hr == 0) hr  = 12;
+  }
   sprintf(out,"%i-%i-%i, %i:%s%i:%s%i",year(local), month(local), day(local), 
-                                       (useAMPM)? hour(local)%12:hour(local),
-                                       (minute(local)<10)?"0":"",minute(local),
+                                       hr,(minute(local)<10)?"0":"",minute(local),
                                        (second(local)<10)?"0":"",second(local));
   if (useAMPM)
   {

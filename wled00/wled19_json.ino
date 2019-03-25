@@ -40,14 +40,14 @@ void deserializeState(JsonObject& root)
     if (id < strip.getMaxSegments())
     {
       WS2812FX::Segment& seg = strip.getSegment(id);
-      uint16_t start = elem["start"] | seg.start;
+      /*uint16_t start = elem["start"] | seg.start;
       int stop = elem["stop"] | -1;
 
       if (stop < 0) {
         uint16_t len = elem["len"];
         stop = (len > 0) ? start + len : seg.stop;
       }
-      strip.setSegment(id, start, stop);
+      strip.setSegment(id, start, stop);*/
       
       JsonArray& colarr = elem["col"];
       if (colarr.success())
@@ -145,7 +145,7 @@ void serializeSegment(JsonObject& root)
   root["sx"] = seg.speed;
   root["ix"] = seg.intensity;
   root["pal"] = seg.palette;
-  root["sel"] = seg.getOption(0);
+  root["sel"] = true; //seg.getOption(0);
   root["rev"] = seg.getOption(1);
   root["cln"] = -1;
 }
@@ -211,7 +211,7 @@ void serializeInfo(JsonObject& root)
   
   root["brand"] = "WLED";
   root["product"] = "DIY light";
-  root["btype"] = "dev";
+  root["btype"] = "src";
   root["mac"] = escapedMac;
 }
 
