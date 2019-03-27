@@ -1918,7 +1918,7 @@ uint16_t WS2812FX::mode_meteor() {
   for(int j = 0; j < meteorSize; j++) {  
     uint16_t index = in + j;   
     if(in + j >= SEGMENT.stop) {
-      index = SEGMENT.start + (in + j - SEGMENT.stop) -2;
+      index = SEGMENT.start + (in + j - SEGMENT.stop);
     }
 
     _locked[index] = 240;
@@ -1953,7 +1953,7 @@ uint16_t WS2812FX::mode_meteor_smooth() {
   for(int j = 0; j < meteorSize; j++) {  
     uint16_t index = in + j;   
     if(in + j >= SEGMENT.stop) {
-      index = SEGMENT.start + (in + j - SEGMENT.stop) -2;
+      index = SEGMENT.start + (in + j - SEGMENT.stop);
     }
     setPixelColor(index, color_blend(getPixelColor(index), color_from_palette(240, false, true, 255), 48));
     _locked[index] = 240;
