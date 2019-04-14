@@ -4,7 +4,7 @@
 
 EspalexaDevice::EspalexaDevice(){}
 
-EspalexaDevice::EspalexaDevice(String deviceName, BrightnessCallbackFunction gnCallback, uint8_t initialValue) { //constructor
+EspalexaDevice::EspalexaDevice(String deviceName, BrightnessCallbackFunction gnCallback, uint8_t initialValue) { //constructor for dimmable device
   
   _deviceName = deviceName;
   _callback = gnCallback;
@@ -13,12 +13,21 @@ EspalexaDevice::EspalexaDevice(String deviceName, BrightnessCallbackFunction gnC
   _type = EspalexaDeviceType::dimmable;
 }
 
-EspalexaDevice::EspalexaDevice(String deviceName, DeviceCallbackFunction gnCallback, EspalexaDeviceType t, uint8_t initialValue) { //constructor for color device
+EspalexaDevice::EspalexaDevice(String deviceName, ColorCallbackFunction gnCallback, uint8_t initialValue) { //constructor for color device
+  
+  _deviceName = deviceName;
+  _callbackCol = gnCallback;
+  _val = initialValue;
+  _val_last = _val;
+  _type = EspalexaDeviceType::extendedcolor;
+}
+
+EspalexaDevice::EspalexaDevice(String deviceName, DeviceCallbackFunction gnCallback, EspalexaDeviceType t, uint8_t initialValue) { //constructor for general device
   
   _deviceName = deviceName;
   _callbackDev = gnCallback;
-  _callback = nullptr;
   _type = t;
+  if (t == EspalexaDeviceType::onoff) _type = EspalexaDeviceType::dimmable; //on/off is broken, so make dimmable device instead
   _val = initialValue;
   _val_last = _val;
 }
@@ -305,5 +314,7 @@ void EspalexaDevice::setColor(uint8_t r, uint8_t g, uint8_t b)
 
 void EspalexaDevice::doCallback()
 {
-  (_callback != nullptr) ? _callback(_val) : _callbackDev(this);
+  if (_callback != nullptr) {_callback(_val); return;}
+  if (_callbackDev != nullptr) {_callbackDev(this); return;}
+  if (_callbackCol != nullptr) _callbackCol(_val, getRGB());
 }

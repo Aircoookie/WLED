@@ -87,11 +87,16 @@ void colorUpdated(int callMode)
   {
     if (nightlightActive && !nightlightActiveOld && callMode != 3 && callMode != 5)
     {
-      notify(4); return;
+      notify(4); interfaceUpdateCallMode = 4; return;
     }
-    else if (fxChanged) notify(6);
+    else if (fxChanged) {
+      notify(6);
+      if (callMode != 8) interfaceUpdateCallMode = 6;
+      if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
+    }
     return; //no change
   }
+  if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
   if (callMode != 5 && nightlightActive && nightlightFade)
   {
     briNlT = bri;
@@ -134,13 +139,8 @@ void colorUpdated(int callMode)
   }
 
   if (callMode == 8) return;
-  //only update Blynk and mqtt every 2 seconds to reduce lag
-  if (millis() - lastInterfaceUpdate <= 2000)
-  {
-    interfaceUpdateCallMode = callMode;
-    return;
-  }
-  updateInterfaces(callMode);
+  //set flag to update blynk and mqtt
+  interfaceUpdateCallMode = callMode;
 }
 
 

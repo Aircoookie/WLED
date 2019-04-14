@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.4.0
+ * @version 2.4.2
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -49,7 +49,7 @@
 #include <WiFiUdp.h>
 
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa 2.4.0 debug mode"
+ #pragma message "Espalexa 2.4.2 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
 #else
@@ -118,7 +118,7 @@ private:
       case EspalexaDeviceType::color:         return "LST001";
       case EspalexaDeviceType::extendedcolor: return "LCT015";
     }
-    return "Plug 01";
+    return "Plug";
   }
   
   //device JSON string: color+temperature device emulates LCT015, dimmable device LWB010, (TODO: on/off Plug 01, color temperature device LWT010, color device LST001)
@@ -148,9 +148,9 @@ private:
     json += "\"type\":\"" + typeString(dev->getType());
     json += "\",\"name\":\"" + dev->getName();
     json += "\",\"modelid\":\"" + modelidString(dev->getType());
-    json += "\",\"manufacturername\":\"Espalexa\",\"productname\":\"E" + String(static_cast<uint8_t>(dev->getType()));
+    json += "\",\"manufacturername\":\"Philips\",\"productname\":\"E" + String(static_cast<uint8_t>(dev->getType()));
     json += "\",\"uniqueid\":\""+ WiFi.macAddress() +"-"+ (deviceId+1);
-    json += "\",\"swversion\":\"2.4.0\"}";
+    json += "\",\"swversion\":\"espalexa-2.4.2\"}";
     
     return json;
   }
@@ -174,7 +174,7 @@ private:
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library v2.4.0 by Christian Schwinne 2019";
+    res += "\r\n\r\nEspalexa library v2.4.2 by Christian Schwinne 2019";
     server->send(200, "text/plain", res);
   }
   #endif
@@ -386,7 +386,7 @@ public:
     return true;
   }
   
-  //deprecated brightness-only callback
+  //brightness-only callback
   bool addDevice(String deviceName, BrightnessCallbackFunction callback, uint8_t initialValue = 0)
   {
     EA_DEBUG("Constructing device ");
@@ -395,6 +395,17 @@ public:
     EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
     return addDevice(d);
   }
+  
+  //brightness-only callback
+  bool addDevice(String deviceName, ColorCallbackFunction callback, uint8_t initialValue = 0)
+  {
+    EA_DEBUG("Constructing device ");
+    EA_DEBUGLN((currentDeviceCount+1));
+    if (currentDeviceCount >= ESPALEXA_MAXDEVICES) return false;
+    EspalexaDevice* d = new EspalexaDevice(deviceName, callback, initialValue);
+    return addDevice(d);
+  }
+
 
   bool addDevice(String deviceName, DeviceCallbackFunction callback, EspalexaDeviceType t = EspalexaDeviceType::dimmable, uint8_t initialValue = 0)
   {
@@ -544,6 +555,13 @@ public:
   String getEscapedMac()
   {
     return escapedMac;
+  }
+  
+  //convert brightness (0-255) to percentage
+  uint8_t toPercent(uint8_t bri)
+  {
+    uint16_t perc = bri * 100;
+    return perc / 255;
   }
   
   ~Espalexa(){delete devices;} //note: Espalexa is NOT meant to be destructed

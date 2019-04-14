@@ -31,7 +31,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     int t = request->arg("AT").toInt(); if (t > 9 && t <= 255) apWaitTimeSecs = t;
     strcpy(apSSID, request->arg("AS").c_str());
     apHide = request->hasArg("AH");
-    if (request->arg("AP").charAt(0) != '*') strcpy(apPass, request->arg("AP").c_str());
+    int passlen = request->arg("AP").length();
+    if (passlen == 0 || (passlen > 7 && request->arg("AP").charAt(0) != '*')) strcpy(apPass, request->arg("AP").c_str());
     t = request->arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
     
     char k[3]; k[2] = 0;

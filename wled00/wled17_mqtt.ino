@@ -6,7 +6,7 @@
 
 void parseMQTTBriPayload(char* payload)
 {
-  if      (strstr(payload, "ON") || strstr(payload, "on")) {bri = briLast; colorUpdated(1);}
+  if      (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {bri = briLast; colorUpdated(1);}
   else if (strstr(payload, "T" ) || strstr(payload, "t" )) {toggleOnOff(); colorUpdated(1);}
   else {
     uint8_t in = strtoul(payload, NULL, 10);

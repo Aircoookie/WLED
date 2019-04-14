@@ -64,9 +64,10 @@ void arlsLock(uint32_t timeoutMs)
       strip.setPixelColor(i,0,0,0,0);
     }
     strip.unlockAll();
+    realtimeActive = true;
   }
-  realtimeActive = true;
   realtimeTimeout = millis() + timeoutMs;
+  if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
   if (arlsForceMaxBri) strip.setBrightness(255);
 }
 
@@ -206,10 +207,10 @@ void handleNotifications()
       if (packetSize > 1) {
         if (udpIn[1] == 0)
         {
-          realtimeActive = false;
+          realtimeTimeout = 0;
           return;
         } else {
-          arlsLock(udpIn[1]*1000);
+          arlsLock(udpIn[1]*1000 +1);
         }
         if (udpIn[0] == 1) //warls
         {
