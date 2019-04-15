@@ -85,7 +85,7 @@ void publishMqtt()
   strcat(subuf, "/g");
   mqtt->publish(subuf, 0, true, s);
 
-  sprintf(s, "#%X", col[3]*16777216 + col[0]*65536 + col[1]*256 + col[2]);
+  sprintf(s, "#%06X", col[3]*16777216 + col[0]*65536 + col[1]*256 + col[2]);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/c");
   mqtt->publish(subuf, 0, true, s);
