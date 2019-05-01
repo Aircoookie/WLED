@@ -3,13 +3,16 @@
 #define NpbWrapper_h
 
 //PIN CONFIGURATION
+#define BTNPIN 0  //button pin. Needs to have pullup (gpio0 recommended)
 //#define USE_APA102 // Uncomment for using APA102 LEDs.
 #ifdef USE_APA102
  #define CLKPIN 0
  #define DATAPIN 2
-#else
- #define BTNPIN 0  //button pin. Needs to have pullup (gpio0 recommended)
+ #if BTNPIN == CLKPIN || BTNPIN == DATAPIN
+  #undef BTNPIN   // Deactivate button pin if it conflicts with one of the APA102 pins.
+ #endif
 #endif
+
 #define LEDPIN 2  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 #define IR_PIN 4  //infrared pin (-1 to disable)
 #define RLYPIN 12 //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
