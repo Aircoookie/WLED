@@ -3,8 +3,17 @@
 #define NpbWrapper_h
 
 //PIN CONFIGURATION
-#define LEDPIN 2  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 #define BTNPIN 0  //button pin. Needs to have pullup (gpio0 recommended)
+//#define USE_APA102 // Uncomment for using APA102 LEDs.
+#ifdef USE_APA102
+ #define CLKPIN 0
+ #define DATAPIN 2
+ #if BTNPIN == CLKPIN || BTNPIN == DATAPIN
+  #undef BTNPIN   // Deactivate button pin if it conflicts with one of the APA102 pins.
+ #endif
+#endif
+
+#define LEDPIN 2  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 #define IR_PIN 4  //infrared pin (-1 to disable)
 #define RLYPIN 12 //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
 #define AUXPIN -1 //debug auxiliary output pin (-1 to disable)
@@ -17,7 +26,9 @@
  #define PIXELMETHOD NeoWs2813Method
 #else //esp8266
  //autoselect the right method depending on strip pin
- #if LEDPIN == 2
+ #ifdef USE_APA102
+  #define PIXELMETHOD DotStarMethod
+ #elif LEDPIN == 2
   #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
  #elif LEDPIN == 3
   #define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
@@ -29,8 +40,13 @@
 
 
 //you can now change the color order in the web settings
-#define PIXELFEATURE3 NeoGrbFeature
-#define PIXELFEATURE4 NeoGrbwFeature
+#ifdef USE_APA102
+ #define PIXELFEATURE3 DotStarBgrFeature
+ #define PIXELFEATURE4 DotStarLbgrFeature
+#else
+ #define PIXELFEATURE3 NeoGrbFeature
+ #define PIXELFEATURE4 NeoGrbwFeature
+#endif
 
 
 #include <NeoPixelBrightnessBus.h>
@@ -68,12 +84,20 @@ public:
     switch (_type)
     {
       case NeoPixelType_Grb:
+      #ifdef USE_APA102
+        _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
+      #else
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, LEDPIN);
+      #endif
         _pGrb->Begin();
       break;
 
       case NeoPixelType_Grbw:
+      #ifdef USE_APA102
+        _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
+      #else
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, LEDPIN);
+      #endif
         _pGrbw->Begin();
       break;
     }

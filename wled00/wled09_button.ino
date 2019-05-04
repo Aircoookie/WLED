@@ -16,6 +16,7 @@ void shortPressAction()
 
 void handleButton()
 {
+#ifdef BTNPIN
   if (!buttonEnabled) return;
   
   if (digitalRead(BTNPIN) == LOW && !buttonPressedBefore) //pressed
@@ -51,6 +52,7 @@ void handleButton()
     buttonWaitTime = 0;
     shortPressAction();
   }
+#endif
 }
 
 void handleIO()

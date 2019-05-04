@@ -154,7 +154,9 @@ void beginStrip()
   strip.setColor(0);
   strip.setBrightness(255);
 
+#ifdef BTNPIN
   pinMode(BTNPIN, INPUT_PULLUP);
+#endif
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
   colorUpdated(0);
@@ -170,7 +172,11 @@ void beginStrip()
   #endif
 
   //disable button if it is "pressed" unintentionally
+#ifdef BTNPIN
   if(digitalRead(BTNPIN) == LOW) buttonEnabled = false;
+#else
+  buttonEnabled = false;
+#endif
 }
 
 
