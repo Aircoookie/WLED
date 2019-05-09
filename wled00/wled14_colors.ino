@@ -138,6 +138,23 @@ void colorFromDecOrHexString(byte* rgb, char* in)
   rgb[2] =  c        & 0xFF;
 }
 
+uint32_t colFromDecOrHexString(char* in)
+{
+  if (in[0] == 0) return 0xffffff;
+  char first = in[0];
+  uint32_t c = 0;
+
+  if (first == '#' || first == 'h' || first == 'H') //is HEX encoded
+  {
+    c = strtoul(in +1, NULL, 16);
+  } else
+  {
+    c = strtoul(in, NULL, 10);
+  }
+
+  return c;
+}
+
 float minf (float v, float w)
 {
   if (w > v) return v;

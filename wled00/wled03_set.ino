@@ -398,7 +398,19 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     }
     colorHStoRGB(temphue,tempsat,(req.indexOf("H2")>0)? colSec:col);
   }
-   
+
+  //set led
+  pos = req.indexOf("XE=");
+  if (pos > 0) {
+    uint32_t colx = 0x0000FF;
+    uint16_t temphue = getNumVal(&req, pos);
+    pos = req.indexOf("XC=");
+    if (pos > 0) {
+    colx= colFromDecOrHexString((char*)req.substring(pos + 3).c_str());
+    }
+    strip.setIndividual(temphue, colx);
+  }
+
   //set color from HEX or 32bit DEC
   pos = req.indexOf("CL=");
   if (pos > 0) {
