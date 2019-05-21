@@ -258,9 +258,9 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
   uint16_t pix = i + arlsOffset;
   if (pix < ledCount)
   {
-    if (!arlsDisableGammaCorrection && useGammaCorrectionRGB)
+    if (!arlsDisableGammaCorrection && strip.gammaCorrectCol)
     {
-      strip.setPixelColor(pix, gamma8[r], gamma8[g], gamma8[b], gamma8[w]);
+      strip.setPixelColor(pix, strip.gamma8(r), strip.gamma8(g), strip.gamma8(b), strip.gamma8(w));
     } else {
       strip.setPixelColor(pix, r, g, b, w);
     }

@@ -143,7 +143,6 @@ void wledInit()
 void beginStrip()
 {
   // Initialize NeoPixel Strip and button
-  strip.setReverseMode(reverseMode);
   strip.setColor(0);
   strip.setBrightness(255);
 

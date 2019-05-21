@@ -253,8 +253,8 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(";");
     sappend('v',"SX",effectSpeedDefault);
     sappend('v',"IX",effectIntensityDefault);
-    sappend('c',"GB",useGammaCorrectionBri);
-    sappend('c',"GC",useGammaCorrectionRGB);
+    sappend('c',"GB",strip.gammaCorrectBri);
+    sappend('c',"GC",strip.gammaCorrectCol);
     sappend('c',"TF",fadeTransition);
     sappend('v',"TD",transitionDelay);
     sappend('c',"PF",strip.paletteFade);
@@ -264,7 +264,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"TL",nightlightDelayMinsDefault);
     sappend('c',"TW",nightlightFade);
     sappend('i',"PB",strip.paletteBlend);
-    sappend('c',"RV",reverseMode);
+    sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);
   }
 

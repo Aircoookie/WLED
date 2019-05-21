@@ -98,8 +98,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     turnOnAtBoot = request->hasArg("BO");
     t = request->arg("BP").toInt();
     if (t <= 25) bootPreset = t;
-    useGammaCorrectionBri = request->hasArg("GB");
-    useGammaCorrectionRGB = request->hasArg("GC");
+    strip.gammaCorrectBri = request->hasArg("GB");
+    strip.gammaCorrectCol = request->hasArg("GC");
     
     fadeTransition = request->hasArg("TF");
     t = request->arg("TD").toInt();
@@ -115,8 +115,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     
     t = request->arg("PB").toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
-    reverseMode = request->hasArg("RV");
-    strip.setReverseMode(reverseMode);
+    strip.reverseMode = request->hasArg("RV");
     skipFirstLed = request->hasArg("SL");
     t = request->arg("BF").toInt();
     if (t > 0) briMultiplier = t;

@@ -96,7 +96,7 @@ void saveSettingsToEEPROM()
   
   EEPROM.write(250, receiveNotificationBrightness);
   EEPROM.write(251, fadeTransition);
-  EEPROM.write(252, reverseMode);
+  EEPROM.write(252, strip.reverseMode);
   EEPROM.write(253, transitionDelayDefault & 0xFF);
   EEPROM.write(254, (transitionDelayDefault >> 8) & 0xFF);
   EEPROM.write(255, briMultiplier);
@@ -117,8 +117,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(327, ntpEnabled);
   EEPROM.write(328, currentTimezone);
   EEPROM.write(329, useAMPM);
-  EEPROM.write(330, useGammaCorrectionBri);
-  EEPROM.write(331, useGammaCorrectionRGB);
+  EEPROM.write(330, strip.gammaCorrectBri);
+  EEPROM.write(331, strip.gammaCorrectCol);
   EEPROM.write(332, overlayDefault);
   
   EEPROM.write(333, alexaEnabled);
@@ -321,7 +321,7 @@ void loadSettingsFromEEPROM(bool first)
   }
   receiveNotificationBrightness = EEPROM.read(250);
   fadeTransition = EEPROM.read(251);
-  reverseMode = EEPROM.read(252);
+  strip.reverseMode = EEPROM.read(252);
   transitionDelayDefault = EEPROM.read(253) + ((EEPROM.read(254) << 8) & 0xFF00);
   transitionDelay = transitionDelayDefault;
   briMultiplier = EEPROM.read(255);
@@ -339,8 +339,8 @@ void loadSettingsFromEEPROM(bool first)
   ntpEnabled = EEPROM.read(327);
   currentTimezone = EEPROM.read(328);
   useAMPM = EEPROM.read(329);
-  useGammaCorrectionBri = EEPROM.read(330);
-  useGammaCorrectionRGB = EEPROM.read(331);
+  strip.gammaCorrectBri = EEPROM.read(330);
+  strip.gammaCorrectCol = EEPROM.read(331);
   overlayDefault = EEPROM.read(332);
   if (lastEEPROMversion < 8 && overlayDefault > 0) overlayDefault--; //overlay mode 1 (solid) was removed
   

@@ -125,13 +125,7 @@ void serializeSegment(JsonObject& root)
   
   JsonArray& colarr = root.createNestedArray("col");
 
-  //temporary
-  JsonArray& c0 = colarr.createNestedArray();
-  c0.add(col[0]); c0.add(col[1]); c0.add(col[2]); if (useRGBW) c0.add(col[3]);
-  JsonArray& c1 = colarr.createNestedArray();
-  c1.add(colSec[0]); c1.add(colSec[1]); c1.add(colSec[2]); if (useRGBW) c1.add(colSec[3]);
-  //set i back to 0 once temporary is removed!
-  for (uint8_t i = 2; i < 3; i++)
+  for (uint8_t i = 0; i < 3; i++)
   {
     JsonArray& colX = colarr.createNestedArray();
     colX.add((seg.colors[i] >> 16) & 0xFF);
@@ -211,7 +205,7 @@ void serializeInfo(JsonObject& root)
   
   root["brand"] = "WLED";
   root["product"] = "DIY light";
-  root["btype"] = "src";
+  root["btype"] = "dev";
   root["mac"] = escapedMac;
 }
 

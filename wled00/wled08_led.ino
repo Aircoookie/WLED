@@ -21,12 +21,7 @@ void setAllLeds() {
     double d = briT*briMultiplier;
     int val = d/100;
     if (val > 255) val = 255;
-    if (useGammaCorrectionBri)
-    {
-      strip.setBrightness(gamma8[val]);
-    } else {
-      strip.setBrightness(val);
-    }
+    strip.setBrightness(val);
   }
   if (!enableSecTransition)
   {
@@ -40,14 +35,8 @@ void setAllLeds() {
     colorRGBtoRGBW(colT);
     colorRGBtoRGBW(colSecT);
   }
-  if (useGammaCorrectionRGB)
-  {
-    strip.setColor(gamma8[colT[0]], gamma8[colT[1]], gamma8[colT[2]], gamma8[colT[3]]);
-    strip.setSecondaryColor(gamma8[colSecT[0]], gamma8[colSecT[1]], gamma8[colSecT[2]], gamma8[colSecT[3]]);
-  } else {
-    strip.setColor(colT[0], colT[1], colT[2], colT[3]);
-    strip.setSecondaryColor(colSecT[0], colSecT[1], colSecT[2], colSecT[3]);
-  }
+  strip.setColor(colT[0], colT[1], colT[2], colT[3]);
+  strip.setSecondaryColor(colSecT[0], colSecT[1], colSecT[2], colSecT[3]);
 }
 
 
