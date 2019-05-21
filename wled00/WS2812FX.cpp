@@ -979,7 +979,7 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
       setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, 255 - flicker));
     }
   }
-  return 10 + (2 * (uint16_t)(255 - SEGMENT.speed));
+  return 20 + random((255 - SEGMENT.speed),(2 * (uint16_t)(255 - SEGMENT.speed)));
 }
 
 

@@ -8,7 +8,7 @@
  */
 
 
-//ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.3.0 and the setting 512K(64K SPIFFS).
+//ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
 //ESP8266-01 (black) has 1MB flash and can thus fit the whole program. Use 1M(64K SPIFFS).
 //Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
@@ -30,7 +30,7 @@
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 //to toggle usb serial debug (un)comment the following line
-//#define WLED_DEBUG
+#define WLED_DEBUG
 
 
 //library inclusions
@@ -98,7 +98,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1904141
+#define VERSION 1905091
 char versionString[] = "0.8.4";
 
 
@@ -373,10 +373,9 @@ IPAddress realtimeIP = (0,0,0,0);
 unsigned long realtimeTimeout = 0;
 
 //mqtt
-long lastMQTTReconnectAttempt = 0;
+long nextMQTTReconnectAttempt = 0;
 long lastInterfaceUpdate = 0;
 byte interfaceUpdateCallMode = 0;
-uint32_t mqttFailedConAttempts = 0;
 
 #if AUXPIN >= 0
 //auxiliary debug pin
@@ -544,6 +543,13 @@ void loop() {
     if (!onlyAP) {
       handleHue();
       handleBlynk();
+      yield();
+      if (millis() > nextMQTTReconnectAttempt)
+      {
+        yield();
+        initMqtt();
+        nextMQTTReconnectAttempt = millis() + 30000;
+      }
     }
     yield();
     if (!offMode) strip.service();

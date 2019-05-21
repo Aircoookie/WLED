@@ -500,7 +500,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     uint16_t index = getNumVal(&req, pos);
     pos = req.indexOf("L2=");
     bool unlock = req.indexOf("UL") > 0;
-    if (pos > 0){
+    if (pos > 0) {
       uint16_t index2 = getNumVal(&req, pos);
       if (unlock) {
         strip.unlockRange(index, index2);

@@ -47,6 +47,7 @@ void onMqttConnect(bool sessionPresent)
 
   sendHADiscoveryMQTT();
   publishMqtt();
+  DEBUG_PRINTLN("MQTT ready");
 }
 
 
@@ -100,6 +101,8 @@ void publishMqtt()
 const char HA_static_JSON[] PROGMEM = R"=====(,"bri_val_tpl":"{{value}}","rgb_cmd_tpl":"{{'#%02x%02x%02x' | format(red, green, blue)}}","rgb_val_tpl":"{{value[1:3]|int(base=16)}},{{value[3:5]|int(base=16)}},{{value[5:7]|int(base=16)}}","qos":0,"opt":true,"pl_on":"ON","pl_off":"OFF","fx_val_tpl":"{{value}}","fx_list":[)=====";
 
 void sendHADiscoveryMQTT(){
+  
+#if ARDUINO_ARCH_ESP32 || LEDPIN != 3
 /*
 
 YYYY is discovery tipic
@@ -207,12 +210,15 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   strcat(pubt, escapedMac.c_str());
   strcat(pubt, "/config");
   mqtt->publish(pubt, 0, true, buffer);
+#endif
 }
 
 bool initMqtt()
 {
-  if (WiFi.status() != WL_CONNECTED) return false;
   if (mqttServer[0] == 0) return false;
+  if (WiFi.status() != WL_CONNECTED) return false;
+  if (!mqtt) mqtt = new AsyncMqttClient();
+  if (mqtt->connected()) return true;
   
   IPAddress mqttIP;
   if (mqttIP.fromString(mqttServer)) //see if server is IP or domain
@@ -225,6 +231,5 @@ bool initMqtt()
   mqtt->onMessage(onMqttMessage);
   mqtt->onConnect(onMqttConnect);
   mqtt->connect();
-  DEBUG_PRINTLN("MQTT ready");
   return true;
 }

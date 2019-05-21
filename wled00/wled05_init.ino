@@ -85,13 +85,6 @@ void wledInit()
     strcpy(mqttDeviceTopic, "wled/");
     strcat(mqttDeviceTopic, escapedMac.c_str());
   }
-  
-  //smartInit, we only init some resources when connected
-  if (!onlyAP && WiFi.status() == WL_CONNECTED)
-  {
-    mqtt = new AsyncMqttClient();
-    initMqtt();
-  }
    
   strip.service();
 

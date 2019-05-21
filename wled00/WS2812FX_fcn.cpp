@@ -446,7 +446,7 @@ void WS2812FX::lock(uint16_t i)
 void WS2812FX::lockRange(uint16_t i, uint16_t i2)
 {
   if (modeUsesLock(SEGMENT.mode)) return;
-  for (uint16_t x = i; x <= i2; x++)
+  for (uint16_t x = i; x < i2; x++)
   {
     if (i >= 0 && i < _length) _locked[i] = true;
   }
