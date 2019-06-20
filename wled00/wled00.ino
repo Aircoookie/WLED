@@ -98,7 +98,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1905222
+#define VERSION 1906061
 char versionString[] = "0.8.4";
 
 
@@ -491,6 +491,7 @@ bool oappendi(int i)
 
 //boot starts here
 void setup() {
+  pinMode(4, OUTPUT); digitalWrite(4, HIGH);
   wledInit();
 }
 

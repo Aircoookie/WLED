@@ -42,12 +42,13 @@
 
 /* each segment uses 37 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
-#define MAX_NUM_SEGMENTS 8
+#define MAX_NUM_SEGMENTS 10
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
 #define SEGCOLOR(x)      gamma32(_segments[_segment_index].colors[x])
 #define SEGENV           _segment_runtimes[_segment_index]
 #define SEGLEN           SEGMENT.length()
+#define SEGACT           SEGMENT.stop
 #define SPEED_FORMULA_L  5 + (50*(255 - SEGMENT.speed))/SEGLEN
 #define RESET_RUNTIME    memset(_segment_runtimes, 0, sizeof(_segment_runtimes))
 
@@ -190,7 +191,15 @@ class WS2812FX {
       {
         return ((options >> n) & 0x01);
       }
-      inline uint16_t length()
+      bool isSelected()
+      {
+        return getOption(0);
+      }
+      bool isActive()
+      {
+        return stop > start;
+      }
+      uint16_t length()
       {
         return stop - start;
       }
@@ -289,11 +298,6 @@ class WS2812FX {
       _mode[FX_MODE_RIPPLE]                  = &WS2812FX::mode_ripple;
 
       _brightness = DEFAULT_BRIGHTNESS;
-      _num_segments = 1;
-      _segments[0].mode = DEFAULT_MODE;
-      _segments[0].colors[0] = DEFAULT_COLOR;
-      _segments[0].start = 0;
-      _segments[0].speed = DEFAULT_SPEED;
       currentPalette = CRGBPalette16(CRGB::Black);
       targetPalette = CloudColors_p;
       ablMilliampsMax = 850;
@@ -301,7 +305,7 @@ class WS2812FX {
       _locked = nullptr;
       _modeUsesLock = false;
       bus = new NeoPixelWrapper();
-      RESET_RUNTIME;
+      resetSegments();
     }
 
     void
@@ -310,13 +314,12 @@ class WS2812FX {
       blur(uint8_t),
       fade_out(uint8_t r),
       setMode(uint8_t m),
+      setMode(uint8_t segid, uint8_t m),
       setSpeed(uint8_t s),
       setIntensity(uint8_t i),
       setPalette(uint8_t p),
-      setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
-      setSecondaryColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
-      setColor(uint32_t c),
-      setSecondaryColor(uint32_t c),
+      setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
+      setColor(uint8_t slot, uint32_t c),
       setBrightness(uint8_t b),
       driverModeCronixie(bool b),
       setCronixieDigits(byte* d),
@@ -337,22 +340,24 @@ class WS2812FX {
       show(void);
 
     bool
-      reverseMode = true,
+      reverseMode = false,
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p);
 
     uint8_t
+      returnedSegment = 0,
       paletteFade = 0,
       paletteBlend = 0,
       colorOrder = 0,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
-      getNumSegments(void),
       getModeCount(void),
       getPaletteCount(void),
       getMaxSegments(void),
+      getFirstSelectedSegment(void),
+      getReturnedSegmentId(void),
       gamma8(uint8_t),
       get_random_wheel_index(uint8_t);
 
@@ -506,7 +511,6 @@ class WS2812FX {
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
-    uint8_t _num_segments = 1;
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 21 bytes per element
       // start, stop, speed, intensity, palette, mode, options, color[]
       { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, {DEFAULT_COLOR}}

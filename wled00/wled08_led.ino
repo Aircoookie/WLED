@@ -35,8 +35,8 @@ void setAllLeds() {
     colorRGBtoRGBW(colT);
     colorRGBtoRGBW(colSecT);
   }
-  strip.setColor(colT[0], colT[1], colT[2], colT[3]);
-  strip.setSecondaryColor(colSecT[0], colSecT[1], colSecT[2], colSecT[3]);
+  strip.setColor(0, colT[0], colT[1], colT[2], colT[3]);
+  strip.setColor(1, colSecT[0], colSecT[1], colSecT[2], colSecT[3]);
 }
 
 

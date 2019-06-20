@@ -2,8 +2,10 @@
  * JSON API (De)serialization
  */
 
-void deserializeState(JsonObject& root)
+bool deserializeState(JsonObject& root)
 {
+  bool stateResponse = root["v"] | false;
+  
   bri = root["bri"] | bri;
   
   bool on = root["on"] | (bri > 0);
@@ -32,6 +34,9 @@ void deserializeState(JsonObject& root)
   receiveNotifications = udpn["recv"] | receiveNotifications;
   bool noNotification  = udpn["nn"]; //send no notification just for this request
 
+  int timein = root["time"] | -1;
+  if (timein != -1) setTime(timein);
+
   int it = 0;
   JsonArray& segs = root["seg"];
   for (JsonObject& elem : segs)
@@ -40,14 +45,14 @@ void deserializeState(JsonObject& root)
     if (id < strip.getMaxSegments())
     {
       WS2812FX::Segment& seg = strip.getSegment(id);
-      /*uint16_t start = elem["start"] | seg.start;
+      uint16_t start = elem["start"] | seg.start;
       int stop = elem["stop"] | -1;
 
       if (stop < 0) {
         uint16_t len = elem["len"];
         stop = (len > 0) ? start + len : seg.stop;
       }
-      strip.setSegment(id, start, stop);*/
+      strip.setSegment(id, start, stop);
       
       JsonArray& colarr = elem["col"];
       if (colarr.success())
@@ -63,31 +68,37 @@ void deserializeState(JsonObject& root)
             byte cp = colX.copyTo(rgbw);
             seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
             if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
-            //temporary
-            if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
-            if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
+            if (id == 0) //temporary
+            { 
+              if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
+              if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
+            }
           }
         }
       }
       
       byte fx = elem["fx"] | seg.mode;
-      if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(fx);
+      if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
       seg.speed = elem["sx"] | seg.speed;
       seg.intensity = elem["ix"] | seg.intensity;
-      byte pal = elem["pal"] | seg.palette;
-      if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
-      seg.setOption(0, elem["sel"] | seg.getOption(0));
-      seg.setOption(1, elem["rev"] | seg.getOption(1));
+      seg.palette = elem["pal"] | seg.palette;
+      //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
+      seg.setOption(0, elem["sel"] | seg.getOption(0)); //selected
+      seg.setOption(1, elem["rev"] | seg.getOption(1)); //reverse
       //int cln = seg_0["cln"];
       //temporary
-      effectCurrent = seg.mode;
-      effectSpeed = seg.speed;
-      effectIntensity = seg.intensity;
-      effectPalette = seg.palette;
+      if (id == 0) {
+        effectCurrent = seg.mode;
+        effectSpeed = seg.speed;
+        effectIntensity = seg.intensity;
+        effectPalette = seg.palette;
+      }
     }
     it++;
   }
   colorUpdated(noNotification ? 5:1);
+
+  return stateResponse;
 }
 
 void serializeState(JsonObject& root)
@@ -110,15 +121,20 @@ void serializeState(JsonObject& root)
   udpn["recv"] = receiveNotifications;
   
   JsonArray& seg = root.createNestedArray("seg");
-  JsonObject& seg0 = seg.createNestedObject();
-  serializeSegment(seg0);
+  for (byte s = 0; s < strip.getMaxSegments(); s++)
+  {
+    WS2812FX::Segment sg = strip.getSegment(s);
+    if (sg.isActive())
+    {
+      JsonObject& seg0 = seg.createNestedObject();
+      serializeSegment(seg0, sg, s);
+    }
+  }
 }
 
-void serializeSegment(JsonObject& root)
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 {
-  WS2812FX::Segment seg = strip.getSegment(0);
-  
-  //root["id"] = i;
+  root["id"] = id;
   root["start"] = seg.start;
   root["stop"] = seg.stop;
   root["len"] = seg.stop - seg.start;
@@ -139,7 +155,7 @@ void serializeSegment(JsonObject& root)
   root["sx"] = seg.speed;
   root["ix"] = seg.intensity;
   root["pal"] = seg.palette;
-  root["sel"] = true; //seg.getOption(0);
+  root["sel"] = seg.isSelected();
   root["rev"] = seg.getOption(1);
   root["cln"] = -1;
 }

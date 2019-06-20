@@ -58,16 +58,19 @@ void WS2812FX::service() {
   unsigned long now = millis(); // Be aware, millis() rolls over every 49 days
   if (now - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
-  for(uint8_t i=0; i < _num_segments; i++)
+  for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
     _segment_index = i;
-    if(now > SEGENV.next_time || _triggered)
+    if (SEGMENT.isActive())
     {
-      doShow = true;
-      handle_palette();
-      uint16_t delay = (this->*_mode[SEGMENT.mode])();
-      SEGENV.next_time = now + max(delay, MIN_SHOW_DELAY);
-      SEGENV.call++;
+      if(now > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
+      {
+        doShow = true;
+        handle_palette();
+        uint16_t delay = (this->*_mode[SEGMENT.mode])();
+        SEGENV.next_time = now + delay;
+        SEGENV.call++;
+      }
     }
   }
   if(doShow) {
@@ -249,14 +252,24 @@ void WS2812FX::trigger() {
   _triggered = true;
 }
 
-void WS2812FX::setMode(uint8_t m) {
-  RESET_RUNTIME;
-  bool ua = modeUsesLock(_segments[0].mode) && !modeUsesLock(m);
-  if (m > MODE_COUNT - 1) m = MODE_COUNT - 1;
-  _segments[0].mode = m;
-  if (ua) unlockAll();
-  _modeUsesLock = modeUsesLock(_segments[0].mode);
-  setBrightness(_brightness);
+void WS2812FX::setMode(uint8_t segid, uint8_t m) {
+  if (segid >= MAX_NUM_SEGMENTS) return;
+   
+  bool anyUsedLock = _modeUsesLock, anyUseLock = false;
+  if (m >= MODE_COUNT) m = MODE_COUNT - 1;
+
+  if (_segments[segid].mode != m) 
+  {
+    _segment_runtimes[segid].reset();
+    _segments[segid].mode = m;
+  }
+
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (modeUsesLock(_segments[i].mode)) anyUseLock = true;
+  }
+  if (anyUsedLock && !anyUseLock) unlockAll();
+  _modeUsesLock = anyUseLock;
 }
 
 uint8_t WS2812FX::getModeCount()
@@ -271,42 +284,64 @@ uint8_t WS2812FX::getPaletteCount()
 
 //TODO transitions
 
+void WS2812FX::setMode(uint8_t m) {
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isSelected()) setMode(i, m);
+  }
+}
+
 void WS2812FX::setSpeed(uint8_t s) {
-  _segments[0].speed = s;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isSelected()) _segments[i].speed = s;
+  }
 }
 
 void WS2812FX::setIntensity(uint8_t in) {
-  _segments[0].intensity = in;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isSelected()) _segments[i].intensity = in;
+  }
 }
 
 void WS2812FX::setPalette(uint8_t p) {
-  _segments[0].palette = p;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isSelected()) _segments[i].palette = p;
+  }
 }
 
-bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p) {
-  bool changed = false;
-  m = constrain(m, 0, MODE_COUNT - 1);
-  if (m != _segments[0].mode)      { setMode(m);      changed = true; }
-  if (s != _segments[0].speed)     { setSpeed(s);     changed = true; }
-  if (i != _segments[0].intensity) { setIntensity(i); changed = true; }
-  if (p != _segments[0].palette)   { setPalette(p);   changed = true; }
-  return changed;
+bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
+  uint8_t retSeg = getReturnedSegmentId();
+  Segment& seg = _segments[retSeg];
+  uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
+
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isSelected())
+    {
+      _segments[i].speed = s;
+      _segments[i].intensity = in;
+      _segments[i].palette = p;
+      setMode(i, m);
+    }
+  }
+  
+  if (seg.mode != modePrev || seg.speed != speedPrev || seg.intensity != intensityPrev || seg.palette != palettePrev) return true;
+  return false;
 }
 
-void WS2812FX::setColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
-  setColor(((uint32_t)w << 24) |((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
+void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+  setColor(slot, ((uint32_t)w << 24) |((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
 }
 
-void WS2812FX::setSecondaryColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
-  setSecondaryColor(((uint32_t)w << 24) |((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
-}
-
-void WS2812FX::setColor(uint32_t c) {
-  _segments[0].colors[0] = c;
-}
-
-void WS2812FX::setSecondaryColor(uint32_t c) {
-  _segments[0].colors[1] = c;
+void WS2812FX::setColor(uint8_t slot, uint32_t c) {
+  if (slot >= NUM_COLORS) return;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isSelected()) _segments[i].colors[slot] = c;
+  }
 }
 
 void WS2812FX::setBrightness(uint8_t b) {
@@ -316,27 +351,44 @@ void WS2812FX::setBrightness(uint8_t b) {
 }
 
 uint8_t WS2812FX::getMode(void) {
-  return _segments[0].mode;
+  return _segments[getReturnedSegmentId()].mode;
 }
 
 uint8_t WS2812FX::getSpeed(void) {
-  return _segments[0].speed;
+  return _segments[getReturnedSegmentId()].speed;
 }
 
 uint8_t WS2812FX::getBrightness(void) {
   return _brightness;
 }
 
-uint8_t WS2812FX::getNumSegments(void) {
-  return _num_segments;
-}
-
 uint8_t WS2812FX::getMaxSegments(void) {
   return MAX_NUM_SEGMENTS;
 }
 
+uint8_t WS2812FX::getFirstSelectedSegment(void)
+{
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isActive() && _segments[i].isSelected()) return i;
+  }
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) //if none selected, get first active
+  {
+    if (_segments[i].isActive()) return i;
+  }
+  return 0;
+}
+
+uint8_t WS2812FX::getReturnedSegmentId(void) {
+  if (returnedSegment >= MAX_NUM_SEGMENTS || !_segments[returnedSegment].isActive())
+  {
+    return getFirstSelectedSegment();
+  }
+  return returnedSegment;
+}
+
 uint32_t WS2812FX::getColor(void) {
-  return _segments[0].colors[0];
+  return _segments[getReturnedSegmentId()].colors[0];
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
@@ -392,6 +444,16 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2) {
   if (n >= MAX_NUM_SEGMENTS) return;
   Segment& seg = _segments[n];
   if (seg.start == i1 && seg.stop == i2) return;
+  if (seg.isActive() && modeUsesLock(seg.mode))
+  {
+    _modeUsesLock = false;
+    unlockRange(seg.start, seg.stop);
+    _modeUsesLock = true;
+  }
+  if (i2 <= i1) //disable segment
+  {
+    seg.stop = 0; return;
+  }
   if (i1 < _length) seg.start = i1;
   seg.stop = i2;
   if (i2 > _length) seg.stop = _length;
@@ -402,12 +464,12 @@ void WS2812FX::resetSegments() {
   memset(_segments, 0, sizeof(_segments));
   memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
   _segment_index = 0;
-  _num_segments = 1;
   _segments[0].mode = DEFAULT_MODE;
   _segments[0].colors[0] = DEFAULT_COLOR;
   _segments[0].start = 0;
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].stop = _length;
+  _segments[0].setOption(0, 1); //select
 }
 
 void WS2812FX::setIndividual(uint16_t i, uint32_t col)
@@ -434,28 +496,28 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 
 void WS2812FX::lock(uint16_t i)
 {
-  if (modeUsesLock(SEGMENT.mode)) return;
+  if (_modeUsesLock) return;
   if (i >= 0 && i < _length) _locked[i] = true;
 }
 
 void WS2812FX::lockRange(uint16_t i, uint16_t i2)
 {
-  if (modeUsesLock(SEGMENT.mode)) return;
+  if (_modeUsesLock) return;
   for (uint16_t x = i; x < i2; x++)
   {
-    if (i >= 0 && i < _length) _locked[i] = true;
+    if (x >= 0 && x < _length) _locked[i] = true;
   }
 }
 
 void WS2812FX::unlock(uint16_t i)
 {
-  if (modeUsesLock(SEGMENT.mode)) return;
+  if (_modeUsesLock) return;
   if (i >= 0 && i < _length) _locked[i] = false;
 }
 
 void WS2812FX::unlockRange(uint16_t i, uint16_t i2)
 {
-  if (modeUsesLock(SEGMENT.mode)) return;
+  if (_modeUsesLock) return;
   for (uint16_t x = i; x < i2; x++)
   {
     if (x >= 0 && x < _length) _locked[x] = false;
