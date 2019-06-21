@@ -68,8 +68,8 @@
 #endif
 #include "src/dependencies/e131/E131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
-#include "src/dependencies/json/AsyncJson.h"
-#include "src/dependencies/json/ArduinoJson-v5.h"
+#include "src/dependencies/json/AsyncJson-v6.h"
+#include "src/dependencies/json/ArduinoJson-v6.h"
 #include "html_classic.h"
 #include "html_mobile.h"
 #include "html_settings.h"
@@ -98,8 +98,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1906061
-char versionString[] = "0.8.4";
+#define VERSION 1906201
+char versionString[] = "0.8.5-dev";
 
 
 //AP and OTA default passwords (for maximum change them!)

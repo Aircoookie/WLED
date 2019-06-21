@@ -2,7 +2,7 @@
  * JSON API (De)serialization
  */
 
-bool deserializeState(JsonObject& root)
+bool deserializeState(JsonObject root)
 {
   bool stateResponse = root["v"] | false;
   
@@ -23,13 +23,13 @@ bool deserializeState(JsonObject& root)
   int cy = root["pl"] | -1;
   presetCyclingEnabled = (cy >= 0);
 
-  JsonObject& nl = root["nl"];
+  JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]   | nightlightActive;
   nightlightDelayMins = nl["dur"]  | nightlightDelayMins;
   nightlightFade      = nl["fade"] | nightlightFade;
   nightlightTargetBri = nl["tbri"] | nightlightTargetBri;
 
-  JsonObject& udpn = root["udpn"];
+  JsonObject udpn = root["udpn"];
   notifyDirect         = udpn["send"] | notifyDirect;
   receiveNotifications = udpn["recv"] | receiveNotifications;
   bool noNotification  = udpn["nn"]; //send no notification just for this request
@@ -38,8 +38,8 @@ bool deserializeState(JsonObject& root)
   if (timein != -1) setTime(timein);
 
   int it = 0;
-  JsonArray& segs = root["seg"];
-  for (JsonObject& elem : segs)
+  JsonArray segs = root["seg"];
+  for (JsonObject elem : segs)
   {
     byte id = elem["id"] | it;
     if (id < strip.getMaxSegments())
@@ -54,18 +54,18 @@ bool deserializeState(JsonObject& root)
       }
       strip.setSegment(id, start, stop);
       
-      JsonArray& colarr = elem["col"];
-      if (colarr.success())
+      JsonArray colarr = elem["col"];
+      if (!colarr.isNull())
       {
         for (uint8_t i = 0; i < 3; i++)
         {
-          JsonArray& colX = colarr[i];
-          if (!colX.success()) break;
+          JsonArray colX = colarr[i];
+          if (colX.isNull()) break;
           byte sz = colX.size();
           if (sz > 0 && sz < 5)
           {
             int rgbw[] = {0,0,0,0};
-            byte cp = colX.copyTo(rgbw);
+            byte cp = copyArray(colX, rgbw);
             seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
             if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
             if (id == 0) //temporary
@@ -101,7 +101,7 @@ bool deserializeState(JsonObject& root)
   return stateResponse;
 }
 
-void serializeState(JsonObject& root)
+void serializeState(JsonObject root)
 {
   root["on"] = (bri > 0);
   root["bri"] = briLast;
@@ -110,23 +110,23 @@ void serializeState(JsonObject& root)
   root["ps"] = -1; //
   root["pl"] = (presetCyclingEnabled) ? 0: -1;
   
-  JsonObject& nl = root.createNestedObject("nl");
+  JsonObject nl = root.createNestedObject("nl");
   nl["on"] = nightlightActive;
   nl["dur"] = nightlightDelayMins;
   nl["fade"] = nightlightFade;
   nl["tbri"] = nightlightTargetBri;
   
-  JsonObject& udpn = root.createNestedObject("udpn");
+  JsonObject udpn = root.createNestedObject("udpn");
   udpn["send"] = notifyDirect;
   udpn["recv"] = receiveNotifications;
   
-  JsonArray& seg = root.createNestedArray("seg");
+  JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++)
   {
     WS2812FX::Segment sg = strip.getSegment(s);
     if (sg.isActive())
     {
-      JsonObject& seg0 = seg.createNestedObject();
+      JsonObject seg0 = seg.createNestedObject();
       serializeSegment(seg0, sg, s);
     }
   }
@@ -139,11 +139,11 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
   root["stop"] = seg.stop;
   root["len"] = seg.stop - seg.start;
   
-  JsonArray& colarr = root.createNestedArray("col");
+  JsonArray colarr = root.createNestedArray("col");
 
   for (uint8_t i = 0; i < 3; i++)
   {
-    JsonArray& colX = colarr.createNestedArray();
+    JsonArray colX = colarr.createNestedArray();
     colX.add((seg.colors[i] >> 16) & 0xFF);
     colX.add((seg.colors[i] >>  8) & 0xFF);
     colX.add((seg.colors[i]      ) & 0xFF);
@@ -160,15 +160,15 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
   root["cln"] = -1;
 }
 
-void serializeInfo(JsonObject& root)
+void serializeInfo(JsonObject root)
 {
   root["ver"] = versionString;
   root["vid"] = VERSION;
   
-  JsonObject& leds = root.createNestedObject("leds");
+  JsonObject leds = root.createNestedObject("leds");
   leds["count"] = ledCount;
   leds["rgbw"] = useRGBW;
-  JsonArray& leds_pin = leds.createNestedArray("pin");
+  JsonArray leds_pin = leds.createNestedArray("pin");
   leds_pin.add(LEDPIN);
   
   leds["pwr"] = strip.currentMilliamps;
@@ -245,7 +245,7 @@ void serveJson(AsyncWebServerRequest* request)
   }
   
   AsyncJsonResponse* response = new AsyncJsonResponse();
-  JsonObject& doc = response->getRoot();
+  JsonObject doc = response->getRoot();
 
   switch (subJson)
   {
@@ -254,12 +254,12 @@ void serveJson(AsyncWebServerRequest* request)
     case 2: //info
       serializeInfo(doc); break;
     default: //all
-      JsonObject& state = doc.createNestedObject("state");
+      JsonObject state = doc.createNestedObject("state");
       serializeState(state);
-      JsonObject& info = doc.createNestedObject("info");
+      JsonObject info  = doc.createNestedObject("info");
       serializeInfo(info);
-      doc["effects"] = RawJson(String(JSON_mode_names));
-      doc["palettes"] = RawJson(String(JSON_palette_names));
+      doc["effects"]  = serialized((const __FlashStringHelper*)JSON_mode_names);
+      doc["palettes"] = serialized((const __FlashStringHelper*)JSON_palette_names);
   }
   
   response->setLength();

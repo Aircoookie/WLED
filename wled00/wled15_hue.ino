@@ -87,16 +87,16 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
   if (str == nullptr) return;
   str += 4;
 
-  StaticJsonBuffer<512> jb;
+  StaticJsonDocument<512> root;
   if (str[0] == '[') //is JSON array
   {
-    JsonArray& root = jb.parseArray(str);
-    if (!root.success())
+    auto error = deserializeJson(root, str);
+    if (error)
     {
       strcpy(hueError,"JSON parsing error"); return;
     }
+    
     int hueErrorCode = root[0]["error"]["type"];
-  
     if (hueErrorCode)//hue bridge returned error
     {
       switch (hueErrorCode)
@@ -130,8 +130,8 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
   if (str == nullptr) return;
   str = strstr(str,"{");
   
-  JsonObject& root = jb.parseObject(str);
-  if (!root.success())
+  auto error = deserializeJson(root, str);
+  if (error)
   {
     strcpy(hueError,"JSON parsing error"); return;
   }

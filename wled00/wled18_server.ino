@@ -71,8 +71,8 @@ void initServer()
   });
 
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request, JsonVariant &json) {
-    JsonObject& root = json.as<JsonObject>();
-    if (!root.success()){request->send(500, "application/json", "{\"error\":\"Parsing failed\"}"); return;}
+    JsonObject root = json.to<JsonObject>();
+    if (root.isNull()){request->send(500, "application/json", "{\"error\":\"Parsing failed\"}"); return;}
     if (deserializeState(root)) { serveJson(request); return; } //if JSON contains "v" (verbose response)
     request->send(200, "application/json", "{\"success\":true}");
   });

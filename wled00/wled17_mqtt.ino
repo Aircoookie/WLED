@@ -100,7 +100,8 @@ void publishMqtt()
 
 const char HA_static_JSON[] PROGMEM = R"=====(,"bri_val_tpl":"{{value}}","rgb_cmd_tpl":"{{'#%02x%02x%02x' | format(red, green, blue)}}","rgb_val_tpl":"{{value[1:3]|int(base=16)}},{{value[3:5]|int(base=16)}},{{value[5:7]|int(base=16)}}","qos":0,"opt":true,"pl_on":"ON","pl_off":"OFF","fx_val_tpl":"{{value}}","fx_list":[)=====";
 
-void sendHADiscoveryMQTT(){
+void sendHADiscoveryMQTT()
+{
   
 #if ARDUINO_ARCH_ESP32 || LEDPIN != 3
 /*
@@ -148,8 +149,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   strcat(bufg, "/g");
   strcat(bufapi, "/api");
 
-  StaticJsonBuffer<JSON_OBJECT_SIZE(9) +512> jsonBuffer;
-  JsonObject& root = jsonBuffer.createObject();
+  StaticJsonDocument<JSON_OBJECT_SIZE(9) +512> root;
   root["name"] = serverDescription;
   root["stat_t"] = bufc;
   root["cmd_t"] = mqttDeviceTopic;
@@ -160,10 +160,9 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   root["fx_cmd_t"] = bufapi;
   root["fx_stat_t"] = bufapi;
 
-  size_t jlen = root.measureLength();
-  char pubt[21 + sizeof(serverDescription) + 8];
+  size_t jlen = measureJson(root);
   DEBUG_PRINTLN(jlen);
-  root.printTo(buffer, jlen);
+  serializeJson(root, buffer, jlen);
 
   //add values which don't change
   strcpy_P(buffer + jlen -1, HA_static_JSON);
@@ -206,6 +205,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   DEBUG_PRINT("HA Discovery Sending >>");
   DEBUG_PRINTLN(buffer);
 
+  char pubt[25 + 12 + 8];
   strcpy(pubt, "homeassistant/light/WLED_");
   strcat(pubt, escapedMac.c_str());
   strcat(pubt, "/config");
