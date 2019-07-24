@@ -101,6 +101,35 @@ bool deserializeState(JsonObject root)
   return stateResponse;
 }
 
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
+{
+	root["id"] = id;
+	root["start"] = seg.start;
+	root["stop"] = seg.stop;
+	root["len"] = seg.stop - seg.start;
+
+	JsonArray colarr = root.createNestedArray("col");
+
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		JsonArray colX = colarr.createNestedArray();
+		colX.add((seg.colors[i] >> 16) & 0xFF);
+		colX.add((seg.colors[i] >> 8) & 0xFF);
+		colX.add((seg.colors[i]) & 0xFF);
+		if (useRGBW)
+			colX.add((seg.colors[i] >> 24) & 0xFF);
+	}
+
+	root["fx"] = seg.mode;
+	root["sx"] = seg.speed;
+	root["ix"] = seg.intensity;
+	root["pal"] = seg.palette;
+	root["sel"] = seg.isSelected();
+	root["rev"] = seg.getOption(1);
+	root["cln"] = -1;
+}
+
+
 void serializeState(JsonObject root)
 {
   root["on"] = (bri > 0);
@@ -130,34 +159,6 @@ void serializeState(JsonObject root)
       serializeSegment(seg0, sg, s);
     }
   }
-}
-
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
-{
-  root["id"] = id;
-  root["start"] = seg.start;
-  root["stop"] = seg.stop;
-  root["len"] = seg.stop - seg.start;
-  
-  JsonArray colarr = root.createNestedArray("col");
-
-  for (uint8_t i = 0; i < 3; i++)
-  {
-    JsonArray colX = colarr.createNestedArray();
-    colX.add((seg.colors[i] >> 16) & 0xFF);
-    colX.add((seg.colors[i] >>  8) & 0xFF);
-    colX.add((seg.colors[i]      ) & 0xFF);
-    if (useRGBW)
-    colX.add((seg.colors[i] >> 24) & 0xFF);
-  }
-  
-  root["fx"] = seg.mode;
-  root["sx"] = seg.speed;
-  root["ix"] = seg.intensity;
-  root["pal"] = seg.palette;
-  root["sel"] = seg.isSelected();
-  root["rev"] = seg.getOption(1);
-  root["cln"] = -1;
 }
 
 void serializeInfo(JsonObject root)
