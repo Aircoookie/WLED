@@ -50,26 +50,32 @@
 #include <EEPROM.h>
 #include <WiFiUdp.h>
 #include <DNSServer.h>
+
 #ifndef WLED_DISABLE_OTA
  #include <ArduinoOTA.h>
 #endif
+
 #include <SPIFFSEditor.h>
 #include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
+
 #ifndef WLED_DISABLE_ALEXA
  #define ESPALEXA_ASYNC
  #define ESPALEXA_NO_SUBPAGE
  #define ESPALEXA_MAXDEVICES 1
  #include "src/dependencies/espalexa/Espalexa.h"
 #endif
+
 #ifndef WLED_DISABLE_BLYNK
  #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
+
 #include "src/dependencies/e131/E131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
+#include "src/dependencies/tpm2net/tpm2net.h"
 #include "html_classic.h"
 #include "html_mobile.h"
 #include "html_settings.h"
@@ -110,9 +116,9 @@ char otaPass[33] = "wledota";
 //Hardware CONFIG (only changeble HERE, not at runtime)
 //LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
 
-byte auxDefaultState   = 0;                   //0: input 1: high 2: low
-byte auxTriggeredState = 0;                   //0: input 1: high 2: low
-char ntpServerName[] = "0.wled.pool.ntp.org"; //NTP server to use
+byte auxDefaultState   = 0;					  //0: input 1: high 2: low
+byte auxTriggeredState = 0;					 //0: input 1: high 2: low
+char ntpServerName[] = "0.wled.pool.ntp.org";//NTP server to use
 
 
 //WiFi CONFIG (all these can be changed via web UI, no need to set them here)
@@ -200,6 +206,8 @@ bool arlsForceMaxBri = false;                 //enable to force max brightness i
 bool e131Enabled = true;                      //settings for E1.31 (sACN) protocol
 uint16_t e131Universe = 1;
 bool e131Multicast = false;
+
+bool tpm2netEnabled = true;                   //settings tpm2net Protocol
 
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
 char mqttGroupTopic[33] = "wled/all";         //second MQTT topic (for example to group devices)
@@ -423,6 +431,7 @@ AsyncMqttClient* mqtt = NULL;
 WiFiUDP notifierUdp, rgbUdp;
 WiFiUDP ntpUdp;
 E131* e131;
+TPM2NET* tpm2net;
 
 //led fx library object
 WS2812FX strip = WS2812FX();
