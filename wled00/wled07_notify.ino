@@ -90,11 +90,21 @@ void initE131(){
   }
 }
 
+void initTPM2net() {
+	if (WiFi.status() == WL_CONNECTED && tpm2netEnabled)
+	{
+		tpm2net = new TPM2NET();
+		tpm2net->begin();
+	}
+	else {
+		tpm2netEnabled = false;
+	}
+}
 
 void handleE131(){
   //E1.31 protocol support
   if(e131Enabled) {
-    uint16_t len = e131->parsePacket();
+    uint16_t len = tpm2net->parsePacket();
     if (!len || e131->universe < e131Universe || e131->universe > e131Universe +4) return;
     len /= 3; //one LED is 3 DMX channels
     
@@ -112,6 +122,24 @@ void handleE131(){
   }
 }
 
+void handletpm2net() {
+	//tpm2net protocol support
+	if (tpm2netEnabled) {
+		uint16_t countofData = tpm2net->parsePacket();
+		if (countofData <=1 ) return;
+		countofData /= 3; //one LED is 3 DMX channels
+
+		arlsLock(realtimeTimeoutMs);
+
+		uint16_t currentLed = tpm2net->packetNumber * ledCount;
+		int dataposition = TPM2NET_HEADER_SIZE;
+		for (byte i = 0; i < tpm2net->frameSize; i++) {
+			setRealtimePixel(currentLed++, tpm2net->tpm2packet[dataposition], tpm2net->tpm2packet[dataposition + 1], tpm2net->tpm2packet[dataposition + 2], 0);
+			dataposition += 3;
+		}
+		strip.show();
+	}
+}
 
 void handleNotifications()
 {
@@ -121,6 +149,8 @@ void handleNotifications()
   }
 
   handleE131();
+
+  handletpm2net();
 
   //unlock strip when realtime UDP times out
   if (realtimeActive && millis() > realtimeTimeout)

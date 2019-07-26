@@ -128,6 +128,7 @@ void wledInit()
 
     initBlynk(blynkApiKey);
     initE131();
+	initTPM2net();
     reconnectHue();
   } else {
     e131Enabled = false;
