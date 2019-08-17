@@ -1,7 +1,7 @@
 /*
  * Settings html
  */
- 
+
 //common CSS of settings pages
 const char PAGE_settingsCss[] PROGMEM = R"=====(body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:4em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}td{padding:2px;}</style>)=====";
 
@@ -253,6 +253,9 @@ Device Auth token: <input name="BK" maxlength="33"><br>
 <i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
 <h3>MQTT</h3>
 Broker: <input name="MS" maxlength="32"><br>
+Username: <input name="MQTTUSER" maxlength="32"><br>
+Password: <input type="password" input name="MQTTPASS" maxlength="32"><br>
+Client ID: <input name="MQTTCID" maxlength="32"><br>
 Device Topic: <input name="MD" maxlength="32"><br>
 Group Topic: <input name="MG" maxlength="32"><br>
 <i>Reboot required to apply changes. </i><a href="https://github.com/Aircoookie/WLED/wiki/MQTT" target="_blank">MQTT info</a>
@@ -289,7 +292,7 @@ function Wd(){a=[0,0,0,0,0,0,0,0];for(i=0;i<8;i++){m=1;for(j=0;j<8;j++){a[i]+=gI
 <h2>Time setup</h2>
 Get time from NTP server: <input type="checkbox" name="NT"><br>
 Use 24h format: <input type="checkbox" name="CF"><br>
-Time zone: 
+Time zone:
 <select name="TZ">
 <option value="0" selected>GMT(UTC)</option>
 <option value="1">GMT/BST</option>

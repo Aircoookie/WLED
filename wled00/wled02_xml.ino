@@ -7,12 +7,12 @@ char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest
 {
   char sbuf[(dest == nullptr)?1024:1]; //allocate local buffer if none passed
   obuf = (dest == nullptr)? sbuf:dest;
-  
+
   olen = 0;
   oappend("<?xml version=\"1.0\" ?><vs><ac>");
   oappendi((nightlightActive && nightlightFade) ? briT : bri);
   oappend("</ac>");
-  
+
   for (int i = 0; i < 3; i++)
   {
    oappend("<cl>");
@@ -77,7 +77,7 @@ char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest
   } else {
     oappend(serverDescription);
   }
-  
+
   oappend("</ds>");
   if (includeTheme)
   {
@@ -107,7 +107,7 @@ char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest
 void sappend(char stype, char* key, int val)
 {
   char ds[] = "d.Sf.";
-  
+
   switch(stype)
   {
     case 'c': //checkbox
@@ -165,7 +165,7 @@ void getSettingsJS(byte subPage, char* dest)
   DEBUG_PRINTLN(subPage);
   obuf = dest;
   olen = 0;
-  
+
   if (subPage <1 || subPage >6) return;
 
   if (subPage == 1) {
@@ -174,7 +174,7 @@ void getSettingsJS(byte subPage, char* dest)
     byte l = strlen(clientPass);
     char fpass[l+1]; //fill password field with ***
     fpass[l] = 0;
-    memset(fpass,'*',l); 
+    memset(fpass,'*',l);
     sappends('s',"CP",fpass);
 
     char k[3]; k[2] = 0; //IP addresses
@@ -190,13 +190,13 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"AT",apWaitTimeSecs);
     sappends('s',"AS",apSSID);
     sappend('c',"AH",apHide);
-    
+
     l = strlen(apPass);
     char fapass[l+1]; //fill password field with ***
     fapass[l] = 0;
-    memset(fapass,'*',l); 
+    memset(fapass,'*',l);
     sappends('s',"AP",fapass);
-    
+
     sappend('v',"AC",apChannel);
 
     if (WiFi.localIP()[0] != 0) //is connected
@@ -209,7 +209,7 @@ void getSettingsJS(byte subPage, char* dest)
     {
       sappends('m',"(\"sip\")[0]","Not connected");
     }
-    
+
     if (WiFi.softAPIP()[0] != 0) //is active
     {
       char s[16];
@@ -221,7 +221,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappends('m',"(\"sip\")[1]","Not active");
     }
   }
-  
+
   if (subPage == 2) {
     sappend('v',"LC",ledCount);
     sappend('v',"MA",strip.ablMilliampsMax);
@@ -269,7 +269,7 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   if (subPage == 3)
-  { 
+  {
     sappend('i',"UI",uiConfiguration);
     sappends('s',"DS",serverDescription);
     sappend('c',"MD",useHSBDefault);
@@ -308,6 +308,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
     sappends('s',"MS",mqttServer);
+    sappends('s',"MQTTUSER",mqttUser);
+    sappends('s',"MQTTPASS",mqttPass);
+    sappends('s',"MQTTCID",mqttClientID);
     sappends('s',"MD",mqttDeviceTopic);
     sappends('s',"MG",mqttGroupTopic);
     sappend('v',"H0",hueIP[0]);
@@ -330,7 +333,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',"TZ",currentTimezone);
     sappend('v',"UO",utcOffsetSecs);
     char tm[32];
-    getTimeString(tm); 
+    getTimeString(tm);
     sappends('m',"(\"times\")[0]",tm);
     sappend('i',"OL",overlayCurrent);
     sappend('v',"O1",overlayMin);
@@ -355,7 +358,7 @@ void getSettingsJS(byte subPage, char* dest)
       sprintf(k+1,"%i",i);
       sappends('s',k,m);
     }
-    
+
     sappend('v',"MB",macroBoot);
     sappend('v',"A0",macroAlexaOn);
     sappend('v',"A1",macroAlexaOff);
@@ -398,7 +401,7 @@ void getThemeColors(char o[][9])
 {
   switch (currentTheme)
   {
-    //       accent color (aCol)     background (bCol)       panel (cCol)            controls (dCol)         shadows (sCol)          text (tCol)    
+    //       accent color (aCol)     background (bCol)       panel (cCol)            controls (dCol)         shadows (sCol)          text (tCol)
     default: strcpy(o[0], "D9B310"); strcpy(o[1], "0B3C5D"); strcpy(o[2], "1D2731"); strcpy(o[3], "328CC1"); strcpy(o[4], "000");    strcpy(o[5], "328CC1"); break; //night
     case 1:  strcpy(o[0], "eee");    strcpy(o[1], "ddd");    strcpy(o[2], "b9b9b9"); strcpy(o[3], "049");    strcpy(o[4], "777");    strcpy(o[5], "049");    break; //modern
     case 2:  strcpy(o[0], "abb");    strcpy(o[1], "fff");    strcpy(o[2], "ddd");    strcpy(o[3], "000");    strcpy(o[4], "0004");   strcpy(o[5], "000");    break; //bright

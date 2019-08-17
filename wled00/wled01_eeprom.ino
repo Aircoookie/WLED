@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 10
+#define EEPVER 11
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -18,6 +18,7 @@
 //8 -> 0.8.0-a and up
 //9 -> 0.8.0
 //10-> 0.8.2
+//11-> 0.8.5-dev #mqttauth @TimothyBrown
 
 
 /*
@@ -64,7 +65,7 @@ void saveSettingsToEEPROM()
     clearEEPROM();
     EEPROM.write(233, 233);
   }
-  
+
   writeStringToEEPROM(  0, clientSSID, 32);
   writeStringToEEPROM( 32, clientPass, 64);
   writeStringToEEPROM( 96,      cmDNS, 32);
@@ -81,50 +82,50 @@ void saveSettingsToEEPROM()
   EEPROM.write(231, notifyTwice);
   EEPROM.write(232, buttonEnabled);
   //233 reserved for first boot flag
-  
+
   for (int i = 0; i<4; i++) //ip addresses
   {
     EEPROM.write(234+i, staticIP[i]);
     EEPROM.write(238+i, staticGateway[i]);
     EEPROM.write(242+i, staticSubnet[i]);
   }
-  
+
   EEPROM.write(246, colS[0]);
   EEPROM.write(247, colS[1]);
   EEPROM.write(248, colS[2]);
   EEPROM.write(249, briS);
-  
+
   EEPROM.write(250, receiveNotificationBrightness);
   EEPROM.write(251, fadeTransition);
   EEPROM.write(252, strip.reverseMode);
   EEPROM.write(253, transitionDelayDefault & 0xFF);
   EEPROM.write(254, (transitionDelayDefault >> 8) & 0xFF);
   EEPROM.write(255, briMultiplier);
-  
+
   //255,250,231,230,226 notifier bytes
   writeStringToEEPROM(256, otaPass, 32);
-  
+
   EEPROM.write(288, nightlightTargetBri);
   EEPROM.write(289, otaLock);
   EEPROM.write(290, udpPort & 0xFF);
   EEPROM.write(291, (udpPort >> 8) & 0xFF);
   writeStringToEEPROM(292, serverDescription, 32);
-  
+
   EEPROM.write(324, effectDefault);
   EEPROM.write(325, effectSpeedDefault);
   EEPROM.write(326, effectIntensityDefault);
-  
+
   EEPROM.write(327, ntpEnabled);
   EEPROM.write(328, currentTimezone);
   EEPROM.write(329, useAMPM);
   EEPROM.write(330, strip.gammaCorrectBri);
   EEPROM.write(331, strip.gammaCorrectCol);
   EEPROM.write(332, overlayDefault);
-  
+
   EEPROM.write(333, alexaEnabled);
   writeStringToEEPROM(334, alexaInvocationName, 32);
   EEPROM.write(366, notifyAlexa);
-  
+
   EEPROM.write(367, (arlsOffset>=0));
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
@@ -135,9 +136,9 @@ void saveSettingsToEEPROM()
   EEPROM.write(374, strip.paletteFade);
   EEPROM.write(375, apWaitTimeSecs);
   EEPROM.write(376, recoveryAPDisabled);
-  
+
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
-  
+
   EEPROM.write(378, colSecS[0]);
   EEPROM.write(379, colSecS[1]);
   EEPROM.write(380, colSecS[2]);
@@ -154,7 +155,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(391, receiveNotificationColor);
   EEPROM.write(392, receiveNotificationEffects);
   EEPROM.write(393, wifiLock);
-  
+
   EEPROM.write(394, abs(utcOffsetSecs) & 0xFF);
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
@@ -193,7 +194,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(2152, analogClock12pixel);
   EEPROM.write(2153, analogClock5MinuteMarks);
   EEPROM.write(2154, analogClockSecondsTrail);
-  
+
   EEPROM.write(2155, countdownMode);
   EEPROM.write(2156, countdownYear);
   EEPROM.write(2157, countdownMonth);
@@ -206,7 +207,7 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(2165, cronixieDisplay, 6);
   EEPROM.write(2171, cronixieBacklight);
   setCronixie();
-  
+
   EEPROM.write(2175, macroBoot);
   EEPROM.write(2176, macroAlexaOn);
   EEPROM.write(2177, macroAlexaOff);
@@ -253,10 +254,13 @@ void saveSettingsToEEPROM()
     EEPROM.write(2290 + i, timerMacro[i]  );
   }
 
-  writeStringToEEPROM(2300,      mqttServer, 32);
+  writeStringToEEPROM(2300, mqttServer, 32);
   writeStringToEEPROM(2333, mqttDeviceTopic, 32);
-  writeStringToEEPROM(2366,  mqttGroupTopic, 32);
-  
+  writeStringToEEPROM(2366, mqttGroupTopic, 32);
+  writeStringToEEPROM(2399, mqttUser, 32);
+  writeStringToEEPROM(2432, mqttPass, 32);
+  writeStringToEEPROM(2465, mqttClientID, 32);
+
   EEPROM.commit();
 }
 
@@ -274,7 +278,7 @@ void loadSettingsFromEEPROM(bool first)
     return;
   }
   int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
-  
+
 
   readStringFromEEPROM(  0, clientSSID, 32);
   readStringFromEEPROM( 32, clientPass, 64);
@@ -287,17 +291,17 @@ void loadSettingsFromEEPROM(bool first)
   nightlightFade = EEPROM.read(225);
   notifyDirectDefault = EEPROM.read(226);
   notifyDirect = notifyDirectDefault;
-  
+
   apChannel = EEPROM.read(227);
   if (apChannel > 13 || apChannel < 1) apChannel = 1;
   apHide = EEPROM.read(228);
   if (apHide > 1) apHide = 1;
   ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00); if (ledCount > 1200 || ledCount == 0) ledCount = 30;
-  
+
   notifyButton = EEPROM.read(230);
   notifyTwice = EEPROM.read(231);
   buttonEnabled = EEPROM.read(232);
-  
+
   staticIP[0] = EEPROM.read(234);
   staticIP[1] = EEPROM.read(235);
   staticIP[2] = EEPROM.read(236);
@@ -310,7 +314,7 @@ void loadSettingsFromEEPROM(bool first)
   staticSubnet[1] = EEPROM.read(243);
   staticSubnet[2] = EEPROM.read(244);
   staticSubnet[3] = EEPROM.read(245);
-  
+
   colS[0] = EEPROM.read(246); col[0] = colS[0];
   colS[1] = EEPROM.read(247); col[1] = colS[1];
   colS[2] = EEPROM.read(248); col[2] = colS[2];
@@ -327,13 +331,13 @@ void loadSettingsFromEEPROM(bool first)
   briMultiplier = EEPROM.read(255);
 
   readStringFromEEPROM(256, otaPass, 32);
-  
+
   nightlightTargetBri = EEPROM.read(288);
   otaLock = EEPROM.read(289);
   udpPort = EEPROM.read(290) + ((EEPROM.read(291) << 8) & 0xFF00);
 
   readStringFromEEPROM(292, serverDescription, 32);
-  
+
   effectDefault = EEPROM.read(324); effectCurrent = effectDefault;
   effectSpeedDefault = EEPROM.read(325); effectSpeed = effectSpeedDefault;
   ntpEnabled = EEPROM.read(327);
@@ -343,11 +347,11 @@ void loadSettingsFromEEPROM(bool first)
   strip.gammaCorrectCol = EEPROM.read(331);
   overlayDefault = EEPROM.read(332);
   if (lastEEPROMversion < 8 && overlayDefault > 0) overlayDefault--; //overlay mode 1 (solid) was removed
-  
+
   alexaEnabled = EEPROM.read(333);
 
   readStringFromEEPROM(334, alexaInvocationName, 32);
-  
+
   notifyAlexa = EEPROM.read(366);
   arlsOffset = EEPROM.read(368);
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
@@ -358,7 +362,7 @@ void loadSettingsFromEEPROM(bool first)
   effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
   //374 - strip.paletteFade
 
-  if (lastEEPROMversion > 0) { 
+  if (lastEEPROMversion > 0) {
     apWaitTimeSecs = EEPROM.read(375);
     recoveryAPDisabled = EEPROM.read(376);
   }
@@ -370,7 +374,7 @@ void loadSettingsFromEEPROM(bool first)
     }
   }
   if (lastEEPROMversion > 3) {
-    effectIntensityDefault = EEPROM.read(326); effectIntensity = effectIntensityDefault; 
+    effectIntensityDefault = EEPROM.read(326); effectIntensity = effectIntensityDefault;
     aOtaEnabled = EEPROM.read(390);
     receiveNotificationColor = EEPROM.read(391);
     receiveNotificationEffects = EEPROM.read(392);
@@ -391,7 +395,7 @@ void loadSettingsFromEEPROM(bool first)
     }
 
     readStringFromEEPROM(2054, hueApiKey, 46);
-    
+
     huePollIntervalMs = EEPROM.read(2100) + ((EEPROM.read(2101) << 8) & 0xFF00);
     notifyHue = EEPROM.read(2102);
     hueApplyOnOff = EEPROM.read(2103);
@@ -416,7 +420,7 @@ void loadSettingsFromEEPROM(bool first)
 
     readStringFromEEPROM(2165, cronixieDisplay, 6);
     cronixieBacklight = EEPROM.read(2171);
-    
+
     macroBoot = EEPROM.read(2175);
     macroAlexaOn = EEPROM.read(2176);
     macroAlexaOff = EEPROM.read(2177);
@@ -454,9 +458,9 @@ void loadSettingsFromEEPROM(bool first)
 
   if (lastEEPROMversion > 8)
   {
-    readStringFromEEPROM(2300,      mqttServer, 32);
+    readStringFromEEPROM(2300, mqttServer, 32);
     readStringFromEEPROM(2333, mqttDeviceTopic, 32);
-    readStringFromEEPROM(2366,  mqttGroupTopic, 32);
+    readStringFromEEPROM(2366, mqttGroupTopic, 32);
   }
 
   if (lastEEPROMversion > 9)
@@ -470,16 +474,23 @@ void loadSettingsFromEEPROM(bool first)
   } else {
     strip.ablMilliampsMax = ABL_MILLIAMPS_DEFAULT;
   }
-  
+
+  if (lastEEPROMversion > 10)
+  {
+    readStringFromEEPROM(2399, mqttUser, 32);
+    readStringFromEEPROM(2432, mqttPass, 32);
+    readStringFromEEPROM(2465, mqttClientID, 32);
+  }
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
   uiConfiguration = EEPROM.read(2202);
-  
+
   #ifdef WLED_DISABLE_MOBILE_UI
   uiConfiguration = 1;
   //force default UI since mobile is unavailable
   #endif
-  
+
   autoRGBtoRGBW = EEPROM.read(2203);
   skipFirstLed = EEPROM.read(2204);
 
@@ -493,7 +504,7 @@ void loadSettingsFromEEPROM(bool first)
     presetApplyCol = EEPROM.read(2211);
     presetApplyFx = EEPROM.read(2212);
   }
-  
+
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);
@@ -513,10 +524,10 @@ void loadSettingsFromEEPROM(bool first)
   //1024-2047 reserved
 
   readStringFromEEPROM(2220, blynkApiKey, 35);
-  
+
   //user MOD memory
   //2944 - 3071 reserved
-  
+
   useHSB = useHSBDefault;
 
   overlayCurrent = overlayDefault;
@@ -570,7 +581,7 @@ void savePreset(byte index)
   }
   EEPROM.write(i+10, effectCurrent);
   EEPROM.write(i+11, effectSpeed);
-  
+
   EEPROM.write(i+16, effectIntensity);
   EEPROM.write(i+17, effectPalette);
   EEPROM.commit();
@@ -597,7 +608,7 @@ void applyMacro(byte index)
   if (!notifyMacro) mc += "&NN";
   String forbidden = "&M="; //dont apply if called by the macro itself to prevent loop
   /*
-   * NOTE: loop is still possible if you call a different macro from a macro, which then calls the first macro again. 
+   * NOTE: loop is still possible if you call a different macro from a macro, which then calls the first macro again.
    * To prevent that, but also disable calling macros within macros, comment the next line out.
    */
   forbidden = forbidden + index;

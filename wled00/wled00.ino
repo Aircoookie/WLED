@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.4
+ * @version 0.8.5-dev #mqttauth @TimothyBrown
  * @author Christian Schwinne
  */
 
@@ -129,17 +129,17 @@ IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
 IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home networks
 
 //LED CONFIG
-uint16_t ledCount = 30;                       //overcurrent prevented by ABL             
+uint16_t ledCount = 30;                       //overcurrent prevented by ABL
 bool useRGBW = false;                         //SK6812 strips can contain an extra White channel
 bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White channel from RGB
-#define ABL_MILLIAMPS_DEFAULT 850;            //auto lower brightness to stay close to milliampere limit 
+#define ABL_MILLIAMPS_DEFAULT 850;            //auto lower brightness to stay close to milliampere limit
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
 byte colS[]{255, 159, 0, 0};                  //default RGB(W) color
 byte colSecS[]{0, 0, 0, 0};                   //default RGB(W) secondary color
 byte briS = 127;                              //default brightness
-byte effectDefault = 0;                   
+byte effectDefault = 0;
 byte effectSpeedDefault = 75;
 byte effectIntensityDefault = 128;            //intensity is supported on some effects as an additional parameter (e.g. for blink you can change the duty cycle)
 byte effectPaletteDefault = 0;                //palette is supported on the FastLED effects, otherwise it has no effect
@@ -204,6 +204,9 @@ bool e131Multicast = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
 char mqttGroupTopic[33] = "wled/all";         //second MQTT topic (for example to group devices)
 char mqttServer[33] = "";                     //both domains and IPs should work (no SSL)
+char mqttUser[33] = "";                       //optional: username for MQTT auth
+char mqttPass[33] = "";                       //optional: password for MQTT auth
+char mqttClientID[33] = "";                   //override the client ID
 
 bool huePollingEnabled = false;               //poll hue bridge for light state
 uint16_t huePollIntervalMs = 2500;            //low values (< 1sec) may cause lag but offer quicker response
@@ -239,7 +242,7 @@ byte countdownMin  =  0, countdownSec   = 0;
 
 byte macroBoot = 0;                           //macro loaded after startup
 byte macroNl = 0;                             //after nightlight delay over
-byte macroCountdown = 0;                      
+byte macroCountdown = 0;
 byte macroAlexaOn = 0, macroAlexaOff = 0;
 byte macroButton = 0, macroLongPress = 0, macroDoublePress = 0;
 
@@ -483,7 +486,7 @@ bool oappend(char* txt)
 //append new number to temp buffer efficiently
 bool oappendi(int i)
 {
-  char s[11]; 
+  char s[11];
   sprintf(s,"%ld", i);
   return oappend(s);
 }
@@ -502,18 +505,18 @@ void loop() {
   handleNotifications();
   handleTransitions();
   userLoop();
-  
+
   yield();
   handleIO();
   handleIR();
   handleNetworkTime();
   if (!onlyAP) handleAlexa();
-  
+
   handleOverlays();
 
   yield();
   if (doReboot) reset();
-  
+
   if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
   {
     if (dnsActive) dnsServer.processNextRequest();
@@ -536,7 +539,7 @@ void loop() {
     yield();
     if (!offMode) strip.service();
   }
-  
+
   //DEBUG serial logging
   #ifdef WLED_DEBUG
    if (millis() - debugTime > 9999)
@@ -554,7 +557,7 @@ void loop() {
      DEBUG_PRINT("State time: "); DEBUG_PRINTLN(wifiStateChangedTime);
      DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
      DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP());
-     debugTime = millis(); 
+     debugTime = millis();
    }
   #endif
 }
