@@ -90,6 +90,10 @@ void wledInit()
     strcpy(mqttClientID, "WLED-");
     sprintf(mqttClientID+5, "%*s", 6, escapedMac.c_str()+6);
   }
+  if (mqttPort[0] == 0)
+  {
+    strcpy(mqttPort, "1883");
+  }
 
   strip.service();
 

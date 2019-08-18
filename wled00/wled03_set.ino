@@ -177,6 +177,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     strcpy(mqttServer, request->arg("MS").c_str());
+    strcpy(mqttPort, request->arg("MQTTPORT").c_str());
     strcpy(mqttUser, request->arg("MQTTUSER").c_str());
     strcpy(mqttPass, request->arg("MQTTPASS").c_str());
     strcpy(mqttClientID, request->arg("MQTTCID").c_str());

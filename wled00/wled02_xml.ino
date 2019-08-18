@@ -308,6 +308,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
     sappends('s',"MS",mqttServer);
+    sappends('s',"MQTTPORT",mqttPort);
     sappends('s',"MQTTUSER",mqttUser);
     sappends('s',"MQTTPASS",mqttPass);
     sappends('s',"MQTTCID",mqttClientID);

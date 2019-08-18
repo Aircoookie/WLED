@@ -98,7 +98,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1906201
+#define VERSION 190817
 char versionString[] = "0.8.5-dev";
 
 
@@ -204,9 +204,10 @@ bool e131Multicast = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
 char mqttGroupTopic[33] = "wled/all";         //second MQTT topic (for example to group devices)
 char mqttServer[33] = "";                     //both domains and IPs should work (no SSL)
-char mqttUser[33] = "";                       //optional: username for MQTT auth
-char mqttPass[33] = "";                       //optional: password for MQTT auth
-char mqttClientID[33] = "";                   //override the client ID
+char mqttUser[41] = "";                       //optional: username for MQTT auth
+char mqttPass[41] = "";                       //optional: password for MQTT auth
+char mqttClientID[41] = "";                   //override the client ID
+char mqttPort[6] = "";
 
 bool huePollingEnabled = false;               //poll hue bridge for light state
 uint16_t huePollIntervalMs = 2500;            //low values (< 1sec) may cause lag but offer quicker response
