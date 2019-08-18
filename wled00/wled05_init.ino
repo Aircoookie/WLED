@@ -69,8 +69,8 @@ void wledInit()
   //start captive portal if AP active
   if (onlyAP || strlen(apSSID) > 0)
   {
-    dnsServer.setErrorReplyCode(DNSReplyCode::ServerFailure);
-    dnsServer.start(53, "wled.me", WiFi.softAPIP());
+    dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+    dnsServer.start(53, "*", WiFi.softAPIP());
     dnsActive = true;
   }
 
@@ -78,21 +78,17 @@ void wledInit()
   if (strcmp(cmDNS,"x") == 0) //fill in unique mdns default
   {
     strcpy(cmDNS, "wled-");
-    strcat(cmDNS, escapedMac.c_str());
+    sprintf(cmDNS+5, "%*s", 6, escapedMac.c_str()+6);
   }
   if (mqttDeviceTopic[0] == 0)
   {
     strcpy(mqttDeviceTopic, "wled/");
-    strcat(mqttDeviceTopic, escapedMac.c_str());
+    sprintf(mqttDeviceTopic+5, "%*s", 6, escapedMac.c_str()+6);
   }
   if (mqttClientID[0] == 0)
   {
     strcpy(mqttClientID, "WLED-");
     sprintf(mqttClientID+5, "%*s", 6, escapedMac.c_str()+6);
-  }
-  if (mqttPort[0] == 0)
-  {
-    strcpy(mqttPort, "1883");
   }
 
   strip.service();

@@ -308,10 +308,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
     sappends('s',"MS",mqttServer);
-    sappends('s',"MQTTPORT",mqttPort);
-    sappends('s',"MQTTUSER",mqttUser);
-    sappends('s',"MQTTPASS",mqttPass);
-    sappends('s',"MQTTCID",mqttClientID);
+    sappend('v',"MQPORT",mqttPort);
+    sappends('s',"MQUSER",mqttUser);
+    sappends('s',"MQPASS",mqttPass);
+    byte l = strlen(mqttPass);
+    char fpass[l+1]; //fill password field with ***
+    fpass[l] = 0;
+    memset(fpass,'*',l);
+    sappends('s',"MQPASS",fpass);
+    sappends('s',"MQCID",mqttClientID);
     sappends('s',"MD",mqttDeviceTopic);
     sappends('s',"MG",mqttGroupTopic);
     sappend('v',"H0",hueIP[0]);

@@ -252,11 +252,13 @@ For best results, only use one of these services at a time.<br>
 Device Auth token: <input name="BK" maxlength="33"><br>
 <i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
 <h3>MQTT</h3>
-Broker: <input name="MS" maxlength="32"><br>
-Port: <input name="MQTTPORT" maxlength="5"><br>
-Username: <input name="MQTTUSER" maxlength="40"><br>
-Password: <input type="password" input name="MQTTPASS" maxlength="40"><br>
-Client ID: <input name="MQTTCID" maxlength="40"><br>
+Broker: <input name="MS" maxlength="32">
+Port: <input name="MQPORT" type="number" min="1" max="65535" required><br>
+<b>The MQTT credentials are sent over an unsecured connection.<br>
+Never use the MQTT password for another service!</b><br>
+Username: <input name="MQUSER" maxlength="40"><br>
+Password: <input type="password" input name="MQPASS" maxlength="40"><br>
+Client ID: <input name="MQCID" maxlength="40"><br>
 Device Topic: <input name="MD" maxlength="32"><br>
 Group Topic: <input name="MG" maxlength="32"><br>
 <i>Reboot required to apply changes. </i><a href="https://github.com/Aircoookie/WLED/wiki/MQTT" target="_blank">MQTT info</a>

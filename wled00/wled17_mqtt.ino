@@ -47,13 +47,13 @@ void onMqttConnect(bool sessionPresent)
 
   sendHADiscoveryMQTT();
   publishMqtt();
-  DEBUG_PRINTLN("MQTT ready");
+  DEBUG_PRINTLN("MQ ready");
 }
 
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
-  DEBUG_PRINT("MQTT callb rec: ");
+  DEBUG_PRINT("MQ callb rec: ");
   DEBUG_PRINTLN(topic);
   DEBUG_PRINTLN(payload);
 
@@ -223,9 +223,9 @@ bool initMqtt()
   IPAddress mqttIP;
   if (mqttIP.fromString(mqttServer)) //see if server is IP or domain
   {
-    mqtt->setServer(mqttIP, atoi(mqttPort));
+    mqtt->setServer(mqttIP, mqttPort);
   } else {
-    mqtt->setServer(mqttServer, atoi(mqttPort));
+    mqtt->setServer(mqttServer, mqttPort);
   }
   mqtt->setClientId(mqttClientID);
   if (mqttUser[0] && mqttPass[0] != 0) mqtt->setCredentials(mqttUser, mqttPass);

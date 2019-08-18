@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.5-dev #mqttauth @TimothyBrown
+ * @version 0.8.5-dev
  * @author Christian Schwinne
  */
 
@@ -98,7 +98,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 190817
+#define VERSION 1908181
 char versionString[] = "0.8.5-dev";
 
 
@@ -207,7 +207,7 @@ char mqttServer[33] = "";                     //both domains and IPs should work
 char mqttUser[41] = "";                       //optional: username for MQTT auth
 char mqttPass[41] = "";                       //optional: password for MQTT auth
 char mqttClientID[41] = "";                   //override the client ID
-char mqttPort[6] = "";
+uint16_t mqttPort = 1883;
 
 bool huePollingEnabled = false;               //poll hue bridge for light state
 uint16_t huePollIntervalMs = 2500;            //low values (< 1sec) may cause lag but offer quicker response

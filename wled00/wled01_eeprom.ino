@@ -260,7 +260,8 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(2399, mqttUser, 40);
   writeStringToEEPROM(2440, mqttPass, 40);
   writeStringToEEPROM(2481, mqttClientID, 40);
-  writeStringToEEPROM(2522, mqttPort, 5);
+  EEPROM.write(2522, mqttPort & 0xFF);
+  EEPROM.write(2523, (mqttPort >> 8) & 0xFF);
 
   EEPROM.commit();
 }
@@ -481,7 +482,7 @@ void loadSettingsFromEEPROM(bool first)
     readStringFromEEPROM(2399, mqttUser, 40);
     readStringFromEEPROM(2440, mqttPass, 40);
     readStringFromEEPROM(2481, mqttClientID, 40);
-    readStringFromEEPROM(2522, mqttPort, 5);
+    mqttPort = EEPROM.read(2522) + ((EEPROM.read(2523) << 8) & 0xFF00);
   }
 
   receiveDirect = !EEPROM.read(2200);

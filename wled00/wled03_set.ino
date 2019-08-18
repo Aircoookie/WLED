@@ -177,10 +177,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     strcpy(mqttServer, request->arg("MS").c_str());
-    strcpy(mqttPort, request->arg("MQTTPORT").c_str());
-    strcpy(mqttUser, request->arg("MQTTUSER").c_str());
-    strcpy(mqttPass, request->arg("MQTTPASS").c_str());
-    strcpy(mqttClientID, request->arg("MQTTCID").c_str());
+    t = request->arg("MQPORT").toInt();
+    if (t > 0) mqttPort = t;
+    strcpy(mqttUser, request->arg("MQUSER").c_str());
+    if (request->arg("MQPASS").charAt(0) != '*') strcpy(mqttPass, request->arg("MQPASS").c_str());
+    strcpy(mqttClientID, request->arg("MQCID").c_str());
     strcpy(mqttDeviceTopic, request->arg("MD").c_str());
     strcpy(mqttGroupTopic, request->arg("MG").c_str());
 
