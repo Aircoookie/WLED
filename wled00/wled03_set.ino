@@ -19,7 +19,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
   if (subPage <1 || subPage >6) return;
-  
+
   //WIFI SETTINGS
   if (subPage == 1)
   {
@@ -27,25 +27,25 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (request->arg("CP").charAt(0) != '*') strcpy(clientPass, request->arg("CP").c_str());
 
     strcpy(cmDNS, request->arg("CM").c_str());
-    
+
     int t = request->arg("AT").toInt(); if (t > 9 && t <= 255) apWaitTimeSecs = t;
     strcpy(apSSID, request->arg("AS").c_str());
     apHide = request->hasArg("AH");
     int passlen = request->arg("AP").length();
     if (passlen == 0 || (passlen > 7 && request->arg("AP").charAt(0) != '*')) strcpy(apPass, request->arg("AP").c_str());
     t = request->arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
-    
+
     char k[3]; k[2] = 0;
     for (int i = 0; i<4; i++)
     {
       k[1] = i+48;//ascii 0,1,2,3
-      
+
       k[0] = 'I'; //static IP
       staticIP[i] = request->arg(k).toInt();
-      
+
       k[0] = 'G'; //gateway
       staticGateway[i] = request->arg(k).toInt();
-      
+
       k[0] = 'S'; //subnet
       staticSubnet[i] = request->arg(k).toInt();
     }
@@ -63,7 +63,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     #endif
     strip.ablMilliampsMax = request->arg("MA").toInt();
     useRGBW = request->hasArg("EW");
-    strip.colorOrder = request->arg("CO").toInt(); 
+    strip.colorOrder = request->arg("CO").toInt();
     autoRGBtoRGBW = request->hasArg("AW");
 
     //ignore settings and save current brightness, colors and fx as default
@@ -100,19 +100,19 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t <= 25) bootPreset = t;
     strip.gammaCorrectBri = request->hasArg("GB");
     strip.gammaCorrectCol = request->hasArg("GC");
-    
+
     fadeTransition = request->hasArg("TF");
     t = request->arg("TD").toInt();
     if (t > 0) transitionDelay = t;
     transitionDelayDefault = t;
     strip.paletteFade = request->hasArg("PF");
     enableSecTransition = request->hasArg("T2");
-    
+
     nightlightTargetBri = request->arg("TB").toInt();
     t = request->arg("TL").toInt();
     if (t > 0) nightlightDelayMinsDefault = t;
     nightlightFade = request->hasArg("TW");
-    
+
     t = request->arg("PB").toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
     strip.reverseMode = request->hasArg("RV");
@@ -157,7 +157,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyHue = request->hasArg("SH");
     notifyMacro = request->hasArg("SM");
     notifyTwice = request->hasArg("S2");
-    
+
     receiveDirect = request->hasArg("RD");
     e131Multicast = request->hasArg("EM");
     t = request->arg("EU").toInt();
@@ -168,18 +168,23 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     arlsDisableGammaCorrection = request->hasArg("RG");
     t = request->arg("WO").toInt();
     if (t >= -255  && t <= 255) arlsOffset = t;
-    
+
     alexaEnabled = request->hasArg("AL");
     strcpy(alexaInvocationName, request->arg("AI").c_str());
-    
+
     if (request->hasArg("BK") && !request->arg("BK").equals("Hidden")) {
       strcpy(blynkApiKey,request->arg("BK").c_str()); initBlynk(blynkApiKey);
     }
 
     strcpy(mqttServer, request->arg("MS").c_str());
+    t = request->arg("MQPORT").toInt();
+    if (t > 0) mqttPort = t;
+    strcpy(mqttUser, request->arg("MQUSER").c_str());
+    if (request->arg("MQPASS").charAt(0) != '*') strcpy(mqttPass, request->arg("MQPASS").c_str());
+    strcpy(mqttClientID, request->arg("MQCID").c_str());
     strcpy(mqttDeviceTopic, request->arg("MD").c_str());
     strcpy(mqttGroupTopic, request->arg("MG").c_str());
-    
+
     for (int i=0;i<4;i++){
       String a = "H"+String(i);
       hueIP[i] = request->arg(a).toInt();
@@ -209,19 +214,19 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     //start ntp if not already connected
     if (ntpEnabled && WiFi.status() == WL_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
-    
+
     if (request->hasArg("OL")){
       overlayDefault = request->arg("OL").toInt();
       if (overlayCurrent != overlayDefault) strip.unlockAll();
       overlayCurrent = overlayDefault;
     }
-    
+
     overlayMin = request->arg("O1").toInt();
     overlayMax = request->arg("O2").toInt();
     analogClock12pixel = request->arg("OM").toInt();
     analogClock5MinuteMarks = request->hasArg("O5");
     analogClockSecondsTrail = request->hasArg("OS");
-    
+
     strcpy(cronixieDisplay,request->arg("CX").c_str());
     bool cbOld = cronixieBacklight;
     cronixieBacklight = request->hasArg("CB");
@@ -236,13 +241,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     countdownHour = request->arg("CH").toInt();
     countdownMin = request->arg("CM").toInt();
     countdownSec = request->arg("CS").toInt();
-    
+
     for (int i=1;i<17;i++)
     {
       String a = "M"+String(i);
       if (request->hasArg(a.c_str())) saveMacro(i,request->arg(a),false);
     }
-    
+
     macroBoot = request->arg("MB").toInt();
     macroAlexaOn = request->arg("A0").toInt();
     macroAlexaOff = request->arg("A1").toInt();
@@ -256,13 +261,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     for (int i = 0; i<8; i++)
     {
       k[1] = i+48;//ascii 0,1,2,3
-      
+
       k[0] = 'H'; //timer hours
       timerHours[i] = request->arg(k).toInt();
-      
+
       k[0] = 'N'; //minutes
       timerMinutes[i] = request->arg(k).toInt();
-      
+
       k[0] = 'T'; //macros
       timerMacro[i] = request->arg(k).toInt();
 
@@ -293,7 +298,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         strcpy(otaPass,request->arg("OP").c_str());
       }
     }
-    
+
     if (pwdCorrect) //allow changes if correct pwd or no ota active
     {
       otaLock = request->hasArg("NO");
@@ -321,7 +326,7 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte 
 {
   int pos = req->indexOf(key);
   if (pos < 1) return false;
-  
+
   if (req->charAt(pos+3) == '~') {
     int out = getNumVal(req, pos+1);
     if (out == 0)
@@ -354,25 +359,25 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   int pos = 0;
   DEBUG_PRINT("API req: ");
   DEBUG_PRINTLN(req);
-  
+
   //save macro, requires &MS=<slot>(<macro>) format
   pos = req.indexOf("&MS=");
   if (pos > 0) {
     int i = req.substring(pos + 4).toInt();
     pos = req.indexOf('(') +1;
-    if (pos > 0) { 
+    if (pos > 0) {
       int en = req.indexOf(')');
       String mc = req.substring(pos);
       if (en > 0) mc = req.substring(pos, en);
-      saveMacro(i, mc); 
+      saveMacro(i, mc);
     }
-    
+
     pos = req.indexOf("IN");
     if (pos < 1) XML_response(request, false);
     return true;
     //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
   }
-   
+
   //set brightness
   updateVal(&req, "&A=", &bri);
 
@@ -397,7 +402,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     }
     colorHStoRGB(temphue,tempsat,(req.indexOf("H2")>0)? colSec:col);
   }
-   
+
   //set color from HEX or 32bit DEC
   pos = req.indexOf("CL=");
   if (pos > 0) {
@@ -407,7 +412,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) {
     colorFromDecOrHexString(colSec, (char*)req.substring(pos + 3).c_str());
   }
-   
+
   //set 2nd to white
   pos = req.indexOf("SW");
   if (pos > 0) {
@@ -422,7 +427,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       colSec[2] = 255;
     }
   }
-   
+
   //set 2nd to black
   pos = req.indexOf("SB");
   if (pos > 0) {
@@ -431,13 +436,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     colSec[1] = 0;
     colSec[2] = 0;
   }
-   
+
   //set to random hue SR=0->1st SR=1->2nd
   pos = req.indexOf("SR");
   if (pos > 0) {
     _setRandomColor(getNumVal(&req, pos));
   }
-  
+
   //set 2nd to 1st
   pos = req.indexOf("SP");
   if (pos > 0) {
@@ -446,7 +451,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     colSec[2] = col[2];
     colSec[3] = col[3];
   }
-  
+
   //swap 2nd & 1st
   pos = req.indexOf("SC");
   if (pos > 0) {
@@ -458,7 +463,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       colSec[i] = temp;
     }
   }
-   
+
   //set effect parameters
   if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) presetCyclingEnabled = false;
   updateVal(&req, "SX=", &effectSpeed);
@@ -479,20 +484,20 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     }
   }
   #endif
-   
+
   //set default control mode (0 - RGB, 1 - HSB)
   pos = req.indexOf("MD=");
   if (pos > 0) {
     useHSB = getNumVal(&req, pos);
   }
-  
+
   //set advanced overlay
   pos = req.indexOf("OL=");
   if (pos > 0) {
     overlayCurrent = getNumVal(&req, pos);
     strip.unlockAll();
   }
-  
+
   //(un)lock pixel (ranges)
   pos = req.indexOf("&L=");
   if (pos > 0) {
@@ -520,11 +525,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) {
     applyMacro(getNumVal(&req, pos));
   }
-  
+
   //toggle send UDP direct notifications
   pos = req.indexOf("SN=");
   if (pos > 0) notifyDirect = (req.charAt(pos+3) != '0');
-   
+
   //toggle receive UDP direct notifications
   pos = req.indexOf("RN=");
   if (pos > 0) receiveNotifications = (req.charAt(pos+3) != '0');
@@ -532,7 +537,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   //receive live data via UDP/Hyperion
   pos = req.indexOf("RD=");
   if (pos > 0) receiveDirect = (req.charAt(pos+3) != '0');
-   
+
   //toggle nightlight mode
   bool aNlDef = false;
   if (req.indexOf("&ND") > 0) aNlDef = true;
@@ -553,14 +558,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     nightlightActive = true;
     nightlightStartTime = millis();
   }
-   
+
   //set nightlight target brightness
   pos = req.indexOf("NT=");
   if (pos > 0) {
     nightlightTargetBri = getNumVal(&req, pos);
     nightlightActiveOld = false; //re-init
   }
-   
+
   //toggle nightlight fade
   pos = req.indexOf("NF=");
   if (pos > 0)
@@ -578,7 +583,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     if (auxTime == 0) auxActive = false;
   }
   #endif
-  
+
   pos = req.indexOf("TT=");
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
 
@@ -597,7 +602,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   //Segment reverse
   pos = req.indexOf("RV=");
   if (pos > 0) strip.getSegment(0).setOption(1, req.charAt(pos+3) != '0');
-   
+
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri) nightlightActive = false;
   //set time (unix timestamp)
@@ -605,18 +610,18 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) {
     setTime(getNumVal(&req, pos));
   }
-   
+
   //set countdown goal (unix timestamp)
   pos = req.indexOf("CT=");
   if (pos > 0) {
     countdownTime = getNumVal(&req, pos);
     if (countdownTime - now() > 0) countdownOverTriggered = false;
   }
-   
+
   //set presets
   pos = req.indexOf("P1="); //sets first preset for cycle
   if (pos > 0) presetCycleMin = getNumVal(&req, pos);
-  
+
   pos = req.indexOf("P2="); //sets last preset for cycle
   if (pos > 0) presetCycleMax = getNumVal(&req, pos);
 
@@ -627,7 +632,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     presetCyclingEnabled = (req.charAt(pos+3) != '0');
     presetCycCurr = presetCycleMin;
   }
-  
+
   pos = req.indexOf("PT="); //sets cycle time in ms
   if (pos > 0) {
     int v = getNumVal(&req, pos);
@@ -638,11 +643,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
 
   pos = req.indexOf("PC="); //apply color from preset
-  if (pos > 0) presetApplyCol = (req.charAt(pos+3) != '0'); 
+  if (pos > 0) presetApplyCol = (req.charAt(pos+3) != '0');
 
   pos = req.indexOf("PX="); //apply effects from preset
   if (pos > 0) presetApplyFx = (req.charAt(pos+3) != '0');
-  
+
   pos = req.indexOf("PS="); //saves current in preset
   if (pos > 0) savePreset(getNumVal(&req, pos));
 
@@ -650,7 +655,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
     applyPreset(presetCycCurr, presetApplyBri, presetApplyCol, presetApplyFx);
   }
-  
+
   //cronixie
   #ifndef WLED_DISABLE_CRONIXIE
   pos = req.indexOf("NX="); //sets digits to code
@@ -658,7 +663,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     strcpy(cronixieDisplay,req.substring(pos + 3, pos + 9).c_str());
     setCronixie();
   }
-  
+
   if (req.indexOf("NB=") > 0) //sets backlight
   {
     cronixieBacklight = true;
@@ -673,24 +678,24 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   //mode, 1 countdown
   pos = req.indexOf("NM=");
   if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
-  
+
   pos = req.indexOf("U0="); //user var 0
   if (pos > 0) {
     userVar0 = getNumVal(&req, pos);
   }
-  
+
   pos = req.indexOf("U1="); //user var 1
   if (pos > 0) {
     userVar1 = getNumVal(&req, pos);
   }
   //you can add more if you need
-   
+
   //internal call, does not send XML response
   pos = req.indexOf("IN");
   if (pos < 1) XML_response(request, (req.indexOf("&IT") > 0)); //include theme if firstload
-  
+
   pos = req.indexOf("&NN"); //do not send UDP notifications this time
   colorUpdated((pos > 0) ? 5:1);
-  
+
   return true;
 }

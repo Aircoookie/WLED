@@ -3,9 +3,9 @@
  */
 
 void wledInit()
-{ 
+{
   EEPROM.begin(EEPSIZE);
-  ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00); 
+  ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00);
   if (ledCount > 1200 || ledCount == 0) ledCount = 30;
   #ifndef ARDUINO_ARCH_ESP32
   #if LEDPIN == 3
@@ -24,7 +24,7 @@ void wledInit()
   int heapPreAlloc = ESP.getFreeHeap();
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
-  
+
   strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //init LEDs quickly
 
   DEBUG_PRINT("LEDs inited. heap usage ~");
@@ -36,7 +36,7 @@ void wledInit()
    #endif
     SPIFFS.begin();
   #endif
-  
+
   DEBUG_PRINTLN("Load EEPROM");
   loadSettingsFromEEPROM(true);
   beginStrip();
@@ -67,10 +67,10 @@ void wledInit()
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   //start captive portal if AP active
-  if (onlyAP || strlen(apSSID) > 0) 
+  if (onlyAP || strlen(apSSID) > 0)
   {
-    dnsServer.setErrorReplyCode(DNSReplyCode::ServerFailure);
-    dnsServer.start(53, "wled.me", WiFi.softAPIP());
+    dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+    dnsServer.start(53, "*", WiFi.softAPIP());
     dnsActive = true;
   }
 
@@ -78,19 +78,24 @@ void wledInit()
   if (strcmp(cmDNS,"x") == 0) //fill in unique mdns default
   {
     strcpy(cmDNS, "wled-");
-    strcat(cmDNS, escapedMac.c_str());
+    sprintf(cmDNS+5, "%*s", 6, escapedMac.c_str()+6);
   }
   if (mqttDeviceTopic[0] == 0)
   {
     strcpy(mqttDeviceTopic, "wled/");
-    strcat(mqttDeviceTopic, escapedMac.c_str());
+    sprintf(mqttDeviceTopic+5, "%*s", 6, escapedMac.c_str()+6);
   }
-   
+  if (mqttClientID[0] == 0)
+  {
+    strcpy(mqttClientID, "WLED-");
+    sprintf(mqttClientID+5, "%*s", 6, escapedMac.c_str()+6);
+  }
+
   strip.service();
 
   //HTTP server page init
   initServer();
-  
+
   strip.service();
   //init Alexa hue emulation
   if (alexaEnabled && !onlyAP) alexaInit();
@@ -113,7 +118,7 @@ void wledInit()
       ArduinoOTA.begin();
     }
     #endif
-  
+
     strip.service();
     // Set up mDNS responder:
     if (strlen(cmDNS) > 0 && !onlyAP)

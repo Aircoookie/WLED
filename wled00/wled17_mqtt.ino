@@ -2,7 +2,7 @@
  * MQTT communication protocol for home automation
  */
 
-#define WLED_MQTT_PORT 1883
+//#define WLED_MQTT_PORT 1883
 
 void parseMQTTBriPayload(char* payload)
 {
@@ -22,7 +22,7 @@ void onMqttConnect(bool sessionPresent)
   //(re)subscribe to required topics
   char subuf[38];
   strcpy(subuf, mqttDeviceTopic);
-  
+
   if (mqttDeviceTopic[0] != 0)
   {
     strcpy(subuf, mqttDeviceTopic);
@@ -47,13 +47,13 @@ void onMqttConnect(bool sessionPresent)
 
   sendHADiscoveryMQTT();
   publishMqtt();
-  DEBUG_PRINTLN("MQTT ready");
+  DEBUG_PRINTLN("MQ ready");
 }
 
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
-  DEBUG_PRINT("MQTT callb rec: ");
+  DEBUG_PRINT("MQ callb rec: ");
   DEBUG_PRINTLN(topic);
   DEBUG_PRINTLN(payload);
 
@@ -80,7 +80,7 @@ void publishMqtt()
 
   char s[10];
   char subuf[38];
-  
+
   sprintf(s, "%ld", bri);
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/g");
@@ -102,7 +102,7 @@ const char HA_static_JSON[] PROGMEM = R"=====(,"bri_val_tpl":"{{value}}","rgb_cm
 
 void sendHADiscoveryMQTT()
 {
-  
+
 #if ARDUINO_ARCH_ESP32 || LEDPIN != 3
 /*
 
@@ -130,7 +130,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
 "fx_val_tpl":"{{value}}",
 "fx_list":[
 "[FX=00] Solid",
-"[FX=01] Blink", 
+"[FX=01] Blink",
 "[FX=02] ...",
 "[FX=79] Ripple"
 ]
@@ -180,11 +180,11 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   {
     if (pgm_read_byte(JSON_mode_names + j) == '\"' || j == jmnlen -1)
     {
-      if (isNameStart) 
+      if (isNameStart)
       {
         nameStart = j +1;
       }
-      else 
+      else
       {
         nameEnd = j;
         char mdnfx[64], mdn[56];
@@ -197,7 +197,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
         i++;
       }
       isNameStart = !isNameStart;
-    }   
+    }
   }
   olen--;
   oappend("]}");
@@ -219,15 +219,16 @@ bool initMqtt()
   if (WiFi.status() != WL_CONNECTED) return false;
   if (!mqtt) mqtt = new AsyncMqttClient();
   if (mqtt->connected()) return true;
-  
+
   IPAddress mqttIP;
   if (mqttIP.fromString(mqttServer)) //see if server is IP or domain
   {
-    mqtt->setServer(mqttIP, WLED_MQTT_PORT);
+    mqtt->setServer(mqttIP, mqttPort);
   } else {
-    mqtt->setServer(mqttServer, WLED_MQTT_PORT);
+    mqtt->setServer(mqttServer, mqttPort);
   }
-  mqtt->setClientId(escapedMac.c_str());
+  mqtt->setClientId(mqttClientID);
+  if (mqttUser[0] && mqttPass[0] != 0) mqtt->setCredentials(mqttUser, mqttPass);
   mqtt->onMessage(onMqttMessage);
   mqtt->onConnect(onMqttConnect);
   mqtt->connect();
