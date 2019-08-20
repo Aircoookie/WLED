@@ -305,7 +305,7 @@ String settingsProcessor(const String& var)
     getCSSColors();
     return String(buf);
   }
-  if (var == "SCSS") return String(PAGE_settingsCss);
+  if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
   return String();
 }
 
