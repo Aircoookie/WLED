@@ -15,11 +15,7 @@
 #include "ArduinoJson-v6.h"
 #include <Print.h>
 
-#if ARDUINOJSON_VERSION_MAJOR == 5
-  #define ARDUINOJSON_5_COMPATIBILITY
-#else
-  #define DYNAMYC_JSON_DOCUMENT_SIZE  4096
-#endif
+#define DYNAMYC_JSON_DOCUMENT_SIZE  4096
 
 constexpr const char* JSON_MIMETYPE = "application/json";
 
@@ -57,27 +53,13 @@ class ChunkPrint : public Print {
 class AsyncJsonResponse: public AsyncAbstractResponse {
   private:
 
-#ifdef ARDUINOJSON_5_COMPATIBILITY
-    DynamicJsonBuffer _jsonBuffer;
-#else
     DynamicJsonDocument _jsonBuffer;
-#endif
 
     JsonVariant _root;
     bool _isValid;
 
   public:    
 
-#ifdef ARDUINOJSON_5_COMPATIBILITY
-    AsyncJsonResponse(bool isArray=false): _isValid{false} {
-      _code = 200;
-      _contentType = JSON_MIMETYPE;
-      if(isArray)
-        _root = _jsonBuffer.createArray();
-      else
-        _root = _jsonBuffer.createObject();
-    }
-#else
     AsyncJsonResponse(size_t maxJsonBufferSize = DYNAMYC_JSON_DOCUMENT_SIZE, bool isArray=false) : _jsonBuffer(maxJsonBufferSize), _isValid{false} {
       _code = 200;
       _contentType = JSON_MIMETYPE;
@@ -86,18 +68,13 @@ class AsyncJsonResponse: public AsyncAbstractResponse {
       else
         _root = _jsonBuffer.createNestedObject();
     }
-#endif
 
     ~AsyncJsonResponse() {}
     JsonVariant & getRoot() { return _root; }
     bool _sourceValid() const { return _isValid; }
     size_t setLength() {
 
-#ifdef ARDUINOJSON_5_COMPATIBILITY      
-      _contentLength = _root.measureLength();
-#else
       _contentLength = measureJson(_root);
-#endif
 
       if (_contentLength) { _isValid = true; }
       return _contentLength;
@@ -108,16 +85,12 @@ class AsyncJsonResponse: public AsyncAbstractResponse {
     size_t _fillBuffer(uint8_t *data, size_t len){
       ChunkPrint dest(data, _sentLength, len);
 
-#ifdef ARDUINOJSON_5_COMPATIBILITY      
-      _root.printTo( dest ) ;
-#else
       serializeJson(_root, dest);
-#endif
       return len;
     }
 };
 
-typedef std::function<void(AsyncWebServerRequest *request, JsonVariant &json)> ArJsonRequestHandlerFunction;
+typedef std::function<void(AsyncWebServerRequest *request, JsonObject json)> ArJsonRequestHandlerFunction;
 
 class AsyncCallbackJsonWebHandler: public AsyncWebHandler {
 private:
@@ -126,18 +99,12 @@ protected:
   WebRequestMethodComposite _method;
   ArJsonRequestHandlerFunction _onRequest;
   int _contentLength;
-#ifndef ARDUINOJSON_5_COMPATIBILITY   
   const size_t maxJsonBufferSize;
-#endif
   int _maxContentLength;
 public:
-#ifdef ARDUINOJSON_5_COMPATIBILITY      
-  AsyncCallbackJsonWebHandler(const String& uri, ArJsonRequestHandlerFunction onRequest) 
-  : _uri(uri), _method(HTTP_POST|HTTP_PUT|HTTP_PATCH), _onRequest(onRequest), _maxContentLength(16384) {}
-#else
+
   AsyncCallbackJsonWebHandler(const String& uri, ArJsonRequestHandlerFunction onRequest, size_t maxJsonBufferSize=DYNAMYC_JSON_DOCUMENT_SIZE) 
   : _uri(uri), _method(HTTP_POST|HTTP_PUT|HTTP_PATCH), _onRequest(onRequest), maxJsonBufferSize(maxJsonBufferSize), _maxContentLength(16384) {}
-#endif
   
   void setMethod(WebRequestMethodComposite method){ _method = method; }
   void setMaxContentLength(int maxContentLength){ _maxContentLength = maxContentLength; }
@@ -161,16 +128,10 @@ public:
     if(_onRequest) {
       if (request->_tempObject != NULL) {
 
-#ifdef ARDUINOJSON_5_COMPATIBILITY    
-        DynamicJsonBuffer jsonBuffer;
-        JsonVariant json = jsonBuffer.parse((uint8_t*)(request->_tempObject));
-        if (json.success()) {
-#else
         DynamicJsonDocument jsonBuffer(this->maxJsonBufferSize);
         DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
         if(!error) {
-          JsonVariant json = jsonBuffer.as<JsonVariant>();
-#endif
+          JsonObject json = jsonBuffer.as<JsonObject>();
 
           _onRequest(request, json);
           return;

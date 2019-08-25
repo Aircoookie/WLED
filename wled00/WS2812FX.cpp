@@ -1634,7 +1634,7 @@ uint16_t WS2812FX::mode_fire_2012(void)
 {
   // Step 1.  Cool down every cell a little
   for( int i = SEGMENT.start; i < SEGMENT.stop; i++) {
-    _locked[i] = qsub8(_locked[i],  random8(0, ((COOLING * 10) / SEGLEN) + 2));
+    _locked[i] = qsub8(_locked[i],  random8(0, (((20 + SEGMENT.speed /3) * 10) / SEGLEN) + 2));
   }
 
   // Step 2.  Heat from each cell drifts 'up' and diffuses a little
@@ -1653,7 +1653,7 @@ uint16_t WS2812FX::mode_fire_2012(void)
     CRGB color = ColorFromPalette( currentPalette, min(_locked[j],240), 255, LINEARBLEND);
     setPixelColor(j, color.red, color.green, color.blue);
   }
-  return 10 + (uint16_t)(255 - SEGMENT.speed)/6;
+  return 20;
 }
 
 
