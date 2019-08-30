@@ -501,7 +501,7 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 void WS2812FX::lock(uint16_t i)
 {
   if (_modeUsesLock) return;
-  if (i >= 0 && i < _length) _locked[i] = true;
+  if (i < _length) _locked[i] = true;
 }
 
 void WS2812FX::lockRange(uint16_t i, uint16_t i2)
@@ -509,14 +509,14 @@ void WS2812FX::lockRange(uint16_t i, uint16_t i2)
   if (_modeUsesLock) return;
   for (uint16_t x = i; x < i2; x++)
   {
-    if (x >= 0 && x < _length) _locked[i] = true;
+    if (x < _length) _locked[i] = true;
   }
 }
 
 void WS2812FX::unlock(uint16_t i)
 {
   if (_modeUsesLock) return;
-  if (i >= 0 && i < _length) _locked[i] = false;
+  if (i < _length) _locked[i] = false;
 }
 
 void WS2812FX::unlockRange(uint16_t i, uint16_t i2)
@@ -524,7 +524,7 @@ void WS2812FX::unlockRange(uint16_t i, uint16_t i2)
   if (_modeUsesLock) return;
   for (uint16_t x = i; x < i2; x++)
   {
-    if (x >= 0 && x < _length) _locked[x] = false;
+    if (x < _length) _locked[x] = false;
   }
 }
 
