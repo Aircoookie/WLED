@@ -79,7 +79,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  80
+#define MODE_COUNT  81
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -162,6 +162,7 @@
 #define FX_MODE_METEOR_SMOOTH           77
 #define FX_MODE_RAILWAY                 78
 #define FX_MODE_RIPPLE                  79
+#define FX_MODE_TWINKLEFOX              80
 
 
 class WS2812FX {
@@ -216,6 +217,7 @@ class WS2812FX {
     } segment_runtime;
 
     WS2812FX() {
+      //assign each member of the _mode[] array to its respective function reference 
       _mode[FX_MODE_STATIC]                  = &WS2812FX::mode_static;
       _mode[FX_MODE_BLINK]                   = &WS2812FX::mode_blink;
       _mode[FX_MODE_COLOR_WIPE]              = &WS2812FX::mode_color_wipe;
@@ -296,6 +298,7 @@ class WS2812FX {
       _mode[FX_MODE_METEOR_SMOOTH]           = &WS2812FX::mode_meteor_smooth;
       _mode[FX_MODE_RAILWAY]                 = &WS2812FX::mode_railway;
       _mode[FX_MODE_RIPPLE]                  = &WS2812FX::mode_ripple;
+      _mode[FX_MODE_TWINKLEFOX]              = &WS2812FX::mode_twinklefox;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -335,6 +338,7 @@ class WS2812FX {
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop),
       resetSegments(),
+      setPixelColor(uint16_t n, CRGB fastled),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void);
@@ -361,6 +365,10 @@ class WS2812FX {
       gamma8(uint8_t),
       get_random_wheel_index(uint8_t);
 
+    uint16_t
+      ablMilliampsMax,
+      currentMilliamps;
+
     uint32_t
       color_wheel(uint8_t),
       color_from_palette(uint16_t, bool, bool, uint8_t, uint8_t pbri = 255),
@@ -377,21 +385,6 @@ class WS2812FX {
 
     WS2812FX::Segment*
       getSegments(void);
-
-    // mode helper functions
-    uint16_t
-      ablMilliampsMax,
-      currentMilliamps,
-      blink(uint32_t, uint32_t, bool strobe, bool),
-      color_wipe(uint32_t, uint32_t, bool , bool),
-      scan(bool),
-      theater_chase(uint32_t, uint32_t, bool),
-      running_base(bool),
-      dissolve(uint32_t),
-      chase(uint32_t, uint32_t, uint32_t, bool),
-      gradient_base(bool),
-      running(uint32_t, uint32_t),
-      tricolor_chase(uint32_t, uint32_t);
 
     // builtin modes
     uint16_t
@@ -475,12 +468,14 @@ class WS2812FX {
       mode_meteor(void),
       mode_meteor_smooth(void),
       mode_railway(void),
-      mode_ripple(void);
+      mode_ripple(void),
+      mode_twinklefox(void);
 
   private:
     NeoPixelWrapper *bus;
 
-    CRGB fastled_from_col(uint32_t);
+    uint32_t crgb_to_col(CRGB fastled);
+    CRGB col_to_crgb(uint32_t);
     CRGBPalette16 currentPalette;
     CRGBPalette16 targetPalette;
   
@@ -505,6 +500,20 @@ class WS2812FX {
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
 
+    // mode helper functions
+    uint16_t
+      blink(uint32_t, uint32_t, bool strobe, bool),
+      color_wipe(uint32_t, uint32_t, bool , bool),
+      scan(bool),
+      theater_chase(uint32_t, uint32_t, bool),
+      running_base(bool),
+      dissolve(uint32_t),
+      chase(uint32_t, uint32_t, uint32_t, bool),
+      gradient_base(bool),
+      running(uint32_t, uint32_t),
+      tricolor_chase(uint32_t, uint32_t);
+
+    CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt);
     
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
@@ -528,7 +537,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Scanner","Lighthouse","Fireworks","Rain","Merry Christmas","Fire Flicker","Gradient","Loading","In Out","In In",
 "Out Out","Out In","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","BPM","Fill Noise","Noise 1",
-"Noise 2","Noise 3","Noise 4","Colortwinkle","Lake","Meteor","Smooth Meteor","Railway","Ripple"
+"Noise 2","Noise 3","Noise 4","Colortwinkle","Lake","Meteor","Smooth Meteor","Railway","Ripple","Twinklefox"
 ])=====";
 
 
@@ -537,7 +546,7 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
 "Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
-"Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night"
+"Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery"
 ])=====";
 
 #endif

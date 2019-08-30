@@ -1552,7 +1552,7 @@ uint16_t WS2812FX::mode_pride_2015(void)
     bri8 += (255 - brightdepth);
     
     CRGB newcolor = CHSV( hue8, sat8, bri8);
-    fastled_col = fastled_from_col(getPixelColor(i));
+    fastled_col = col_to_crgb(getPixelColor(i));
     
     nblend( fastled_col, newcolor, 64);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
@@ -1570,7 +1570,7 @@ uint16_t WS2812FX::mode_juggle(void){
   byte dothue = 0;
   for ( byte i = 0; i < 8; i++) {
     uint16_t index = SEGMENT.start + beatsin16(i + 7, 0, SEGLEN -1);
-    fastled_col = fastled_from_col(getPixelColor(index));
+    fastled_col = col_to_crgb(getPixelColor(index));
     fastled_col |= (SEGMENT.palette==0)?CHSV(dothue, 220, 255):ColorFromPalette(currentPalette, dothue, 255);
     setPixelColor(index, fastled_col.red, fastled_col.green, fastled_col.blue);
     dothue += 32;
@@ -1696,7 +1696,7 @@ uint16_t WS2812FX::mode_colorwaves(void)
     bri8 += (255 - brightdepth);
 
     CRGB newcolor = ColorFromPalette(currentPalette, hue8, bri8);
-    fastled_col = fastled_from_col(getPixelColor(i));
+    fastled_col = col_to_crgb(getPixelColor(i));
 
     nblend(fastled_col, newcolor, 128);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
@@ -1836,7 +1836,7 @@ uint16_t WS2812FX::mode_colortwinkle()
   CRGB fastled_col, prev;
   fract8 fadeUpAmount = 8 + (SEGMENT.speed/4), fadeDownAmount = 5 + (SEGMENT.speed/7);
   for( uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
-    fastled_col = fastled_from_col(getPixelColor(i));
+    fastled_col = col_to_crgb(getPixelColor(i));
     prev = fastled_col;
     if(_locked[i]) {  
       CRGB incrementalColor = fastled_col;
@@ -1848,7 +1848,7 @@ uint16_t WS2812FX::mode_colortwinkle()
       }
       setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
 
-      if (fastled_from_col(getPixelColor(i)) == prev) //fix "stuck" pixels
+      if (col_to_crgb(getPixelColor(i)) == prev) //fix "stuck" pixels
       {
         fastled_col += fastled_col;
         setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
@@ -2046,6 +2046,133 @@ uint16_t WS2812FX::mode_ripple()
         _locked[storeI+2] = origin & 0xFF; 
         _locked[storeI+3] = random8();
       }
+    }
+  }
+  return 20;
+}
+
+
+//  TwinkleFOX by Mark Kriegsman: https://gist.github.com/kriegsman/756ea6dcae8e30845b5a
+//
+//  TwinkleFOX: Twinkling 'holiday' lights that fade in and out.
+//  Colors are chosen from a palette. Read more about this effect using the link above!
+
+// If COOL_LIKE_INCANDESCENT is set to 1, colors will
+// fade out slighted 'reddened', similar to how
+// incandescent bulbs change color as they get dim down.
+#define COOL_LIKE_INCANDESCENT 1
+
+CRGB WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt)
+{
+  // Overall twinkle speed (changed)
+  uint16_t ticks = ms / (32 - (SEGMENT.speed >> 3));
+  uint8_t fastcycle8 = ticks;
+  uint16_t slowcycle16 = (ticks >> 8) + salt;
+  slowcycle16 += sin8(slowcycle16);
+  slowcycle16 = (slowcycle16 * 2053) + 1384;
+  uint8_t slowcycle8 = (slowcycle16 & 0xFF) + (slowcycle16 >> 8);
+  
+  // Overall twinkle density.
+  // 0 (NONE lit) to 8 (ALL lit at once).
+  // Default is 5.
+  uint8_t twinkleDensity = (SEGMENT.intensity >> 5) +1;
+
+  uint8_t bright = 0;
+  if (((slowcycle8 & 0x0E)/2) < twinkleDensity) {
+    uint8_t ph = fastcycle8;
+    // This is like 'triwave8', which produces a
+    // symmetrical up-and-down triangle sawtooth waveform, except that this
+    // function produces a triangle wave with a faster attack and a slower decay
+    if (ph < 86) {
+    bright = ph * 3;
+    } else {
+      ph -= 86;
+      bright = 255 - (ph + (ph/2));
+    }
+  }
+
+  uint8_t hue = slowcycle8 - salt;
+  CRGB c;
+  if (bright > 0) {
+    c = ColorFromPalette(currentPalette, hue, bright, NOBLEND);
+    if(COOL_LIKE_INCANDESCENT == 1) {
+      // This code takes a pixel, and if its in the 'fading down'
+      // part of the cycle, it adjusts the color a little bit like the
+      // way that incandescent bulbs fade toward 'red' as they dim.
+      if (fastcycle8 >= 128) 
+      {
+        uint8_t cooling = (fastcycle8 - 128) >> 4;
+        c.g = qsub8(c.g, cooling);
+        c.b = qsub8(c.b, cooling * 2);
+      }
+    }
+  } else {
+    c = CRGB::Black;
+  }
+  return c;
+}
+
+//  This function loops over each pixel, calculates the
+//  adjusted 'clock' that this pixel should use, and calls
+//  "CalculateOneTwinkle" on each pixel.  It then displays
+//  either the twinkle color of the background color,
+//  whichever is brighter.
+uint16_t WS2812FX::mode_twinklefox()
+{
+  // "PRNG16" is the pseudorandom number generator
+  // It MUST be reset to the same starting value each time
+  // this function is called, so that the sequence of 'random'
+  // numbers that it generates is (paradoxically) stable.
+  uint16_t PRNG16 = 11337;
+
+  uint32_t clock32 = millis();
+
+  // Set up the background color, "bg".
+  // if AUTO_SELECT_BACKGROUND_COLOR == 1, and the first two colors of
+  // the current palette are identical, then a deeply faded version of
+  // that color is used for the background color
+  CRGB bg;
+  bg = col_to_crgb(SEGCOLOR(1));
+  uint8_t bglight = bg.getAverageLight();
+  if (bglight > 64) {
+    bg.nscale8_video(16); // very bright, so scale to 1/16th
+  } else if (bglight > 16) {
+    bg.nscale8_video(64); // not that bright, so scale to 1/4th
+  } else {
+    bg.nscale8_video(86); // dim, scale to 1/3rd.
+  }
+
+  uint8_t backgroundBrightness = bg.getAverageLight();
+
+  for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
+  
+    PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; // next 'random' number
+    uint16_t myclockoffset16= PRNG16; // use that number as clock offset
+    PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; // next 'random' number
+    // use that number as clock speed adjustment factor (in 8ths, from 8/8ths to 23/8ths)
+    uint8_t myspeedmultiplierQ5_3 =  ((((PRNG16 & 0xFF)>>4) + (PRNG16 & 0x0F)) & 0x0F) + 0x08;
+    uint32_t myclock30 = (uint32_t)((clock32 * myspeedmultiplierQ5_3) >> 3) + myclockoffset16;
+    uint8_t  myunique8 = PRNG16 >> 8; // get 'salt' value for this pixel
+
+    // We now have the adjusted 'clock' for this pixel, now we call
+    // the function that computes what color the pixel should be based
+    // on the "brightness = f( time )" idea.
+    CRGB c = twinklefox_one_twinkle(myclock30, myunique8);
+
+    uint8_t cbright = c.getAverageLight();
+    int16_t deltabright = cbright - backgroundBrightness;
+    if (deltabright >= 32 || (!bg)) {
+      // If the new pixel is significantly brighter than the background color,
+      // use the new color.
+      setPixelColor(i, c);
+    } else if (deltabright > 0) {
+      // If the new pixel is just slightly brighter than the background color,
+      // mix a blend of the new color and the background color
+      setPixelColor(i, color_blend(crgb_to_col(bg), crgb_to_col(c), deltabright * 8));
+    } else {
+      // if the new pixel is not at all brighter than the background color,
+      // just use the background color.
+      setPixelColor(i, bg);
     }
   }
   return 20;

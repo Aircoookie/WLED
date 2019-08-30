@@ -89,6 +89,10 @@ bool WS2812FX::modeUsesLock(uint8_t m)
   return false;
 }
 
+void WS2812FX::setPixelColor(uint16_t n, CRGB fastled) {
+  setPixelColor(n, fastled.red, fastled.green, fastled.blue, 0);
+}
+
 void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   uint8_t w = (c >> 24) & 0xFF;
   uint8_t r = (c >> 16) & 0xFF;
@@ -616,7 +620,7 @@ void WS2812FX::blur(uint8_t blur_amount)
   CRGB carryover = CRGB::Black;
   for(uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
   {
-    CRGB cur = fastled_from_col(getPixelColor(i));
+    CRGB cur = col_to_crgb(getPixelColor(i));
     CRGB part = cur;
     part.nscale8(seep);
     cur.nscale8(keep);
@@ -668,7 +672,13 @@ uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
 }
 
 
-CRGB WS2812FX::fastled_from_col(uint32_t color)
+uint32_t WS2812FX::crgb_to_col(CRGB fastled)
+{
+  return (((uint32_t)fastled.red << 16) | ((uint32_t)fastled.green << 8) | fastled.blue);
+}
+
+
+CRGB WS2812FX::col_to_crgb(uint32_t color)
 {
   CRGB fastled_col;
   fastled_col.red =   (color >> 16 & 0xFF);
@@ -720,11 +730,11 @@ void WS2812FX::handle_palette(void)
         _lastPaletteChange = millis();
       } break;}
     case 2: {//primary color only
-      CRGB prim = fastled_from_col(SEGCOLOR(0));
+      CRGB prim = col_to_crgb(SEGCOLOR(0));
       targetPalette = CRGBPalette16(prim); break;}
     case 3: {//based on primary
       //considering performance implications
-      CRGB prim = fastled_from_col(SEGCOLOR(0));
+      CRGB prim = col_to_crgb(SEGCOLOR(0));
       CHSV prim_hsv = rgb2hsv_approximate(prim);
       targetPalette = CRGBPalette16(
                       CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
@@ -733,12 +743,12 @@ void WS2812FX::handle_palette(void)
                       CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v)); //color itself
       break;}
     case 4: {//primary + secondary
-      CRGB prim = fastled_from_col(SEGCOLOR(0));
-      CRGB sec  = fastled_from_col(SEGCOLOR(1));
+      CRGB prim = col_to_crgb(SEGCOLOR(0));
+      CRGB sec  = col_to_crgb(SEGCOLOR(1));
       targetPalette = CRGBPalette16(sec,prim); break;}
     case 5: {//based on primary + secondary
-      CRGB prim = fastled_from_col(SEGCOLOR(0));
-      CRGB sec  = fastled_from_col(SEGCOLOR(1));
+      CRGB prim = col_to_crgb(SEGCOLOR(0));
+      CRGB sec  = col_to_crgb(SEGCOLOR(1));
       targetPalette = CRGBPalette16(sec,prim,CRGB::White); break;}
     case 6: //Party colors
       targetPalette = PartyColors_p; break;
