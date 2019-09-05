@@ -2,6 +2,33 @@
  * Server page definitions
  */
 
+//Is this an IP?
+bool isIp(String str) {
+  for (size_t i = 0; i < str.length(); i++) {
+    int c = str.charAt(i);
+    if (c != '.' && (c < '0' || c > '9')) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool captivePortal(AsyncWebServerRequest *request)
+{
+  String hostH;
+  if (!request->hasHeader("Host")) return false;
+  hostH = request->getHeader("Host")->value();
+  
+  if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
+    DEBUG_PRINTLN("Captive portal");
+    AsyncWebServerResponse *response = request->beginResponse(302);
+    response->addHeader("Location", "http://local.wled.me");
+    request->send(response);
+    return true;
+  }
+  return false;
+}
+
 void initServer()
 {
   //CORS compatiblity
@@ -161,13 +188,20 @@ void initServer()
   }
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
+
+  /*server.on("/generate_204", HTTP_GET, [](AsyncWebServerRequest *request){
+    //if (captivePortal(request)) return;
+    serveIndexOrWelcome(request);
+  });*/
   
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
     DEBUG_PRINTLN("Not-Found HTTP call:");
     DEBUG_PRINTLN("URI: " + request->url());
+    if (captivePortal(request)) return;
 
     //make API CORS compatible
     if (request->method() == HTTP_OPTIONS)
