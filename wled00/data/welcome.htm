@@ -1,27 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
 	<meta content='width=device-width' name='viewport'>
+  <meta name="theme-color" content="#333333">
 	<title>WLED Setup</title>
 	<style>
-		:root {
-			--aCol: #D9B310;
-			--bCol: #0B3C5D;
-			--cCol: #1D2731;
-			--dCol: #328CC1;
-			--sCol: #000;
-		}
 		body {
 			font-family: Verdana, Helvetica, sans-serif;
 			text-align: center;
-			background: linear-gradient(var(--bCol),black);
+			background-color: #333;
 			margin: 0;
-			background-attachment: fixed;
-			color: var(--dCol);
+			color: #fff;
 		}
+    
+    button {
+      outline: none;
+      cursor: pointer;
+    }
+    
+    .btn {
+      padding: 8px;
+      margin: 10px;
+      width: 230px;
+      text-transform: uppercase;
+      font-family: helvetica;
+      font-size: 19px;
+      background-color: #222;
+      color: white;
+      border: 0px solid white;
+      border-radius: 5px;
+    }
 
 		svg {
-			fill: var(--dCol);
+			fill: #fff;
 		}
 	</style>
 </head>
@@ -34,10 +46,12 @@
 <svg><use xlink:href="#lnr-smile"></use></svg>
 <h1>Welcome to WLED!</h1>
 <h3>Thank you for installing my application!</h3>
-Take a quick look at the <a href="https://github.com/Aircoookie/WLED/wiki" target="_blank">wiki</a>!<br>
 If you encounter a bug or have a question/feature suggestion, feel free to open a GitHub issue!<br><br>
 <b>Next steps:</b><br><br>
-Connect the module to your local WiFi <a href="/settings/wifi">here</a>!<br><br>
-<i>Just trying this out in AP mode?</i> <a href="/sliders">Here are the controls.</a><br>
+Connect the module to your local WiFi here!<br>
+<button class="btn" onclick="window.location.href='/settings/wifi'">WiFi settings</button><br>
+<i>Just trying this out in AP mode?</i><br>
+<button class="btn" onclick="window.location.href='/sliders'">To the controls!</button>
+
 </body>
 </html>

@@ -180,6 +180,7 @@ void beginStrip()
 void initAP(){
   bool set = apSSID[0];
   if (!set) strcpy(apSSID,"WLED-AP");
+  WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255,255,255,0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
   if (!set) apSSID[0] = 0;
 }
@@ -250,5 +251,6 @@ bool checkClientIsMobile(String useragent)
   if (useragent.indexOf("Android") >= 0) return true;
   if (useragent.indexOf("iPhone") >= 0) return true;
   if (useragent.indexOf("iPod") >= 0) return true;
+  if (useragent.indexOf("iPad") >= 0) return true;
   return false;
 }
