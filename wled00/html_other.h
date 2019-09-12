@@ -20,30 +20,14 @@ const char PAGE_msg[] PROGMEM = R"=====(<!DOCTYPE html>
 const char PAGE_update[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta content='width=device-width' name='viewport'><title>WLED Update</title><script>function B(){window.history.back()}</script>
 %CSS%.bt{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}input[type=file]{font-size:16px}body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%%}</style></head>
-<body><h2>WLED Software Update</h2>Installed version: 0.8.4<br>Download the latest binary: <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a><br><form method='POST' action='/update' enctype='multipart/form-data'><input type='file' class="bt" name='update' required><br><input type='submit' class="bt" value='Update!'></form><button type="button" class="bt" onclick="B()">Back</button></body></html>)=====";
+<body><h2>WLED Software Update</h2>Installed version: 0.8.5<br>Download the latest binary: <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a><br><form method='POST' action='/update' enctype='multipart/form-data'><input type='file' class="bt" name='update' required><br><input type='submit' class="bt" value='Update!'></form><button type="button" class="bt" onclick="B()">Back</button></body></html>)=====";
 
 
 //new user welcome page
 #ifndef WLED_DISABLE_MOBILE_UI
-const char PAGE_welcome[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta content='width=device-width' name='viewport'><title>WLED Welcome!</title>
-%CSS%body{font-family:var(--cFn),sans-serif;text-align:center;background:linear-gradient(var(--bCol),black);margin:0;background-attachment: fixed;color: var(--tCol);}svg {fill: var(--dCol);}
-</style></head>
-<body>
-<svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<symbol id="lnr-smile" viewBox="0 0 1024 1024"><path d="M486.4 1024c-129.922 0-252.067-50.594-343.936-142.464s-142.464-214.014-142.464-343.936c0-129.923 50.595-252.067 142.464-343.936s214.013-142.464 343.936-142.464c129.922 0 252.067 50.595 343.936 142.464s142.464 214.014 142.464 343.936-50.594 252.067-142.464 343.936c-91.869 91.87-214.014 142.464-343.936 142.464zM486.4 102.4c-239.97 0-435.2 195.23-435.2 435.2s195.23 435.2 435.2 435.2 435.2-195.23 435.2-435.2-195.23-435.2-435.2-435.2z"></path><path d="M332.8 409.6c-42.347 0-76.8-34.453-76.8-76.8s34.453-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.453 76.8-76.8 76.8zM332.8 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M640 409.6c-42.349 0-76.8-34.453-76.8-76.8s34.451-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.451 76.8-76.8 76.8zM640 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M486.4 870.4c-183.506 0-332.8-149.294-332.8-332.8 0-14.139 11.462-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 155.275 126.325 281.6 281.6 281.6s281.6-126.325 281.6-281.6c0-14.139 11.461-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 183.506-149.294 332.8-332.8 332.8z"></path></symbol>
-</defs></svg>
-<br><br>
-<svg><use xlink:href="#lnr-smile"></use></svg>
-<h1>Welcome to WLED!</h1>
-<h3>Thank you for installing my application!</h3>
-Take a quick look at the <a href="https://github.com/Aircoookie/WLED/wiki" target="_blank">wiki</a>!<br>
-If you encounter a bug or have a question/feature suggestion, feel free to open a GitHub issue!<br><br>
-<b>Next steps:</b><br><br>
-Connect the module to your local WiFi <a href="/settings/wifi">here</a>!<br><br>
-<i>Just trying this out in AP mode?</i> <a href="/sliders">Here are the controls.</a><br>
-</body></html>)=====";
+const char PAGE_welcome[] PROGMEM = R"=====(<!DOCTYPE html><html><head><meta charset=utf-8><meta content='width=device-width' name=viewport><meta name=theme-color content=#333333><title>WLED Setup</title> <style>body{font-family:Verdana,Helvetica,sans-serif;text-align:center;background-color:#333;margin:0;color:#fff}button{outline:0;cursor:pointer}.btn{padding:8px;margin:10px;width:230px;text-transform:uppercase;font-family:helvetica;font-size:19px;background-color:#222;color:white;border:0 solid white;border-radius:5px}svg{fill:#fff}</style></head>
+<body> <svg style=position:absolute;width:0;height:0;overflow:hidden version=1.1 xmlns=http://www.w3.org/2000/svg> <defs> <symbol id=lnr-smile viewBox="0 0 1024 1024"><path d="M486.4 1024c-129.922 0-252.067-50.594-343.936-142.464s-142.464-214.014-142.464-343.936c0-129.923 50.595-252.067 142.464-343.936s214.013-142.464 343.936-142.464c129.922 0 252.067 50.595 343.936 142.464s142.464 214.014 142.464 343.936-50.594 252.067-142.464 343.936c-91.869 91.87-214.014 142.464-343.936 142.464zM486.4 102.4c-239.97 0-435.2 195.23-435.2 435.2s195.23 435.2 435.2 435.2 435.2-195.23 435.2-435.2-195.23-435.2-435.2-435.2z"></path><path d="M332.8 409.6c-42.347 0-76.8-34.453-76.8-76.8s34.453-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.453 76.8-76.8 76.8zM332.8 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M640 409.6c-42.349 0-76.8-34.453-76.8-76.8s34.451-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.451 76.8-76.8 76.8zM640 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M486.4 870.4c-183.506 0-332.8-149.294-332.8-332.8 0-14.139 11.462-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 155.275 126.325 281.6 281.6 281.6s281.6-126.325 281.6-281.6c0-14.139 11.461-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 183.506-149.294 332.8-332.8 332.8z"></path></symbol> </defs></svg> <br><br>
+<svg><use xlink:href=#lnr-smile></use></svg><h1>Welcome to WLED!</h1><h3>Thank you for installing my application!</h3> If you encounter a bug or have a question/feature suggestion, feel free to open a GitHub issue!<br><br> <b>Next steps:</b><br><br> Connect the module to your local WiFi here!<br> <button class=btn onclick="window.location.href='/settings/wifi'">WiFi settings</button><br> <i>Just trying this out in AP mode?</i><br> <button class=btn onclick="window.location.href='/sliders'">To the controls!</button></body></html>)=====";
 #else
 const char PAGE_welcome[] PROGMEM = "";
 #endif
