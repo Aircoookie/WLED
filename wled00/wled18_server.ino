@@ -15,6 +15,7 @@ bool isIp(String str) {
 
 bool captivePortal(AsyncWebServerRequest *request)
 {
+  if (ON_STA_FILTER(request)) return false; //only serve captive in AP mode
   String hostH;
   if (!request->hasHeader("Host")) return false;
   hostH = request->getHeader("Host")->value();
@@ -22,7 +23,7 @@ bool captivePortal(AsyncWebServerRequest *request)
   if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
     DEBUG_PRINTLN("Captive portal");
     AsyncWebServerResponse *response = request->beginResponse(302);
-    response->addHeader("Location", "http://local.wled.me");
+    response->addHeader("Location", "http://4.3.2.1");
     request->send(response);
     return true;
   }
@@ -191,11 +192,6 @@ void initServer()
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
-
-  /*server.on("/generate_204", HTTP_GET, [](AsyncWebServerRequest *request){
-    //if (captivePortal(request)) return;
-    serveIndexOrWelcome(request);
-  });*/
   
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
@@ -376,7 +372,7 @@ void serveSettings(AsyncWebServerRequest* request)
     case 4:   request->send_P(200, "text/html", PAGE_settings_sync, settingsProcessor); break;
     case 5:   request->send_P(200, "text/html", PAGE_settings_time, settingsProcessor); break;
     case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
-    case 255: request->send_P(200, "text/html", PAGE_welcome      , settingsProcessor); break;
+    case 255: request->send_P(200, "text/html", PAGE_welcome); break;
     default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor); 
   }
 }
