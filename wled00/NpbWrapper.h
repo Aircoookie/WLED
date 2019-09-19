@@ -6,7 +6,7 @@
 #define LEDPIN 2  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 //#define USE_APA102 // Uncomment for using APA102 LEDs.
 #define BTNPIN 0  //button pin. Needs to have pullup (gpio0 recommended)
-#define IR_PIN -1 //infrared pin (-1 to disable)
+#define IR_PIN 4 //infrared pin (-1 to disable)
 #define RLYPIN 12 //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
 #define AUXPIN -1 //debug auxiliary output pin (-1 to disable)
 

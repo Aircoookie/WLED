@@ -148,8 +148,6 @@ void wledInit()
 void beginStrip()
 {
   // Initialize NeoPixel Strip and button
-  strip.setColor(0, 0);
-  strip.setBrightness(255);
 
 #ifdef BTNPIN
   pinMode(BTNPIN, INPUT_PULLUP);

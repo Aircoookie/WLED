@@ -350,8 +350,9 @@ void WS2812FX::setColor(uint8_t slot, uint32_t c) {
 
 void WS2812FX::setBrightness(uint8_t b) {
   if (_brightness == b) return;
-  _brightness = gammaCorrectBri ? gamma8(b) : b;
-  if (SEGENV.next_time > millis() + 20) show(); //apply brightness change immediately if no refresh soon
+  _brightness = (gammaCorrectBri) ? gamma8(b) : b;
+  _segment_index = 0;
+  if (SEGENV.next_time > millis() + 22) show();//apply brightness change immediately if no refresh soon
 }
 
 uint8_t WS2812FX::getMode(void) {
@@ -535,6 +536,7 @@ void WS2812FX::unlockAll()
 
 void WS2812FX::setTransitionMode(bool t)
 {
+  _segment_index = 0;
   SEGMENT.setOption(7,t);
   if (!t) return;
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
@@ -779,7 +781,7 @@ void WS2812FX::handle_palette(void)
 
 uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
-  if (SEGMENT.palette == 0 && mcol < 3) return SEGMENT.colors[mcol]; //WS2812FX default
+  if (SEGMENT.palette == 0 && mcol < 3) return SEGCOLOR(mcol); //WS2812FX default
   uint8_t paletteIndex = i;
   if (mapping) paletteIndex = map(i,SEGMENT.start,SEGMENT.stop-1,0,255);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"

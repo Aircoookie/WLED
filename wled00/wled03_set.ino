@@ -111,6 +111,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     nightlightTargetBri = request->arg("TB").toInt();
     t = request->arg("TL").toInt();
     if (t > 0) nightlightDelayMinsDefault = t;
+    nightlightDelayMins = nightlightDelayMinsDefault;
     nightlightFade = request->hasArg("TW");
 
     t = request->arg("PB").toInt();
