@@ -23,7 +23,11 @@
 
 //automatically uses the right driver method for each platform
 #ifdef ARDUINO_ARCH_ESP32
- #define PIXELMETHOD NeoWs2813Method
+ #ifdef USE_APA102
+  #define PIXELMETHOD DotStarMethod
+ #else
+  #define PIXELMETHOD NeoEsp32Rmt0Ws2812xMethod
+ #endif
 #else //esp8266
  //autoselect the right method depending on strip pin
  #ifdef USE_APA102
