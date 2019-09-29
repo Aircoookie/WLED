@@ -45,6 +45,11 @@ void onMqttConnect(bool sessionPresent)
     mqtt->subscribe(subuf, 0);
   }
 
+  // publish online status
+  strcpy(subuf, mqttDeviceTopic);
+  strcat(subuf, "/o");
+  mqtt->publish(subuf, 0, true, "online");
+
   sendHADiscoveryMQTT();
   publishMqtt();
   DEBUG_PRINTLN("MQ ready");
@@ -114,6 +119,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
 "name": "XXXX",
 "stat_t":"YYYY/c",
 "cmd_t":"YYYY",
+"avty_t":"YYYY/o",
 "rgb_stat_t":"YYYY/c",
 "rgb_cmd_t":"YYYY/col",
 "bri_cmd_t":"YYYY",
@@ -137,21 +143,24 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
 }
 
   */
-  char bufc[36], bufcol[38], bufg[36], bufapi[38], buffer[2500];
+  char bufc[36], bufcol[38], bufg[36], bufapi[38], bufav[38], buffer[2500];
 
   strcpy(bufc, mqttDeviceTopic);
   strcpy(bufcol, mqttDeviceTopic);
   strcpy(bufg, mqttDeviceTopic);
   strcpy(bufapi, mqttDeviceTopic);
+  strcpy(bufav, mqttDeviceTopic);
 
   strcat(bufc, "/c");
   strcat(bufcol, "/col");
   strcat(bufg, "/g");
   strcat(bufapi, "/api");
+  strcat(bufav, "/o");
 
   StaticJsonDocument<JSON_OBJECT_SIZE(9) +512> root;
   root["name"] = serverDescription;
   root["stat_t"] = bufc;
+  root["avty_t"] = bufav;
   root["cmd_t"] = mqttDeviceTopic;
   root["rgb_stat_t"] = bufc;
   root["rgb_cmd_t"] = bufcol;
@@ -215,6 +224,10 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
 
 bool initMqtt()
 {
+  static char buflwt[38] = {"\0"};  // setWill doesn't copy so make static to keep memory available
+  strcpy(buflwt, mqttDeviceTopic);
+  strcat(buflwt, "/o");
+  
   if (mqttServer[0] == 0) return false;
   if (WiFi.status() != WL_CONNECTED) return false;
   if (!mqtt) mqtt = new AsyncMqttClient();
@@ -231,6 +244,8 @@ bool initMqtt()
   if (mqttUser[0] && mqttPass[0] != 0) mqtt->setCredentials(mqttUser, mqttPass);
   mqtt->onMessage(onMqttMessage);
   mqtt->onConnect(onMqttConnect);
+  mqtt->setWill(buflwt, 0, true, "offline");
+
   mqtt->connect();
   return true;
 }
