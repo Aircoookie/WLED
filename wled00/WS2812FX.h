@@ -79,7 +79,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  81
+#define MODE_COUNT  83
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -163,6 +163,8 @@
 #define FX_MODE_RAILWAY                 78
 #define FX_MODE_RIPPLE                  79
 #define FX_MODE_TWINKLEFOX              80
+#define FX_MODE_TWINKLECAT              81
+#define FX_MODE_HALLOWEEN_EYES          82
 
 
 class WS2812FX {
@@ -299,6 +301,8 @@ class WS2812FX {
       _mode[FX_MODE_RAILWAY]                 = &WS2812FX::mode_railway;
       _mode[FX_MODE_RIPPLE]                  = &WS2812FX::mode_ripple;
       _mode[FX_MODE_TWINKLEFOX]              = &WS2812FX::mode_twinklefox;
+      _mode[FX_MODE_TWINKLECAT]              = &WS2812FX::mode_twinklecat;
+      _mode[FX_MODE_HALLOWEEN_EYES]          = &WS2812FX::mode_halloween_eyes;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -469,7 +473,9 @@ class WS2812FX {
       mode_meteor_smooth(void),
       mode_railway(void),
       mode_ripple(void),
-      mode_twinklefox(void);
+      mode_twinklefox(void),
+      mode_twinklecat(void),
+      mode_halloween_eyes(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -478,7 +484,8 @@ class WS2812FX {
     CRGB col_to_crgb(uint32_t);
     CRGBPalette16 currentPalette;
     CRGBPalette16 targetPalette;
-  
+
+    uint32_t now;
     uint16_t _length;
     uint16_t _rand16seed;
     uint8_t _brightness;
@@ -486,6 +493,7 @@ class WS2812FX {
     void handle_palette(void);
     void fill(uint32_t);
     bool modeUsesLock(uint8_t);
+    void twinklefox_base(bool);
 
     bool
       _modeUsesLock,
@@ -513,7 +521,7 @@ class WS2812FX {
       running(uint32_t, uint32_t),
       tricolor_chase(uint32_t, uint32_t);
 
-    CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt);
+    CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
@@ -536,8 +544,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Red & Blue","Stream",
 "Scanner","Lighthouse","Fireworks","Rain","Merry Christmas","Fire Flicker","Gradient","Loading","In Out","In In",
 "Out Out","Out In","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
-"Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","BPM","Fill Noise","Noise 1",
-"Noise 2","Noise 3","Noise 4","Colortwinkle","Lake","Meteor","Smooth Meteor","Railway","Ripple","Twinklefox"
+"Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","BPM","Fill Noise",
+"Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Smooth Meteor","Railway","Ripple",
+"Twinklefox","Twinklecat","Halloween Eyes"
 ])=====";
 
 

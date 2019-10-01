@@ -45,21 +45,35 @@ uint16_t WS2812FX::mode_static(void) {
  * if(strobe == true) then create a strobe effect
  */
 uint16_t WS2812FX::blink(uint32_t color1, uint32_t color2, bool strobe, bool do_palette) {
-  uint32_t color = ((SEGENV.call & 1) == 0) ? color1 : color2;
+  uint16_t stateTime = SEGENV.aux1;
+  uint32_t cycleTime = (255 - SEGMENT.speed)*20;
+  uint32_t onTime = 0;
+  uint32_t offTime = cycleTime;
+
+  if (!strobe) {
+    onTime = (cycleTime * SEGMENT.intensity) >> 8;
+    offTime = cycleTime - onTime;
+  }
+  
+  stateTime = ((SEGENV.aux0 & 1) == 0) ? onTime : offTime;
+  stateTime += 20;
+    
+  if (now - SEGENV.step > stateTime)
+  {
+    SEGENV.aux0++;
+    SEGENV.aux1 = stateTime;
+    SEGENV.step = now;
+  }
+
+  uint32_t color = ((SEGENV.aux0 & 1) == 0) ? color1 : color2;
   if (color == color1 && do_palette)
   {
     for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
       setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
     }
-  } else {
-    fill(color);
-  }
+  } else fill(color);
 
-  if((SEGENV.call & 1) == 0) {
-    return strobe ? 20 : (100 + ((1986 * (uint32_t)(255 - SEGMENT.speed)) / 255))*(float)(SEGMENT.intensity/128.0);
-  } else {
-    return strobe ? 50 + ((1986 * (uint32_t)(255 - SEGMENT.speed)) / 255) : (100 + ((1986 * (uint32_t)(255 - SEGMENT.speed)) / 255))*(float)(2.0-(SEGMENT.intensity/128.0));
-  }
+  return 20;
 }
 
 
@@ -2044,7 +2058,7 @@ uint16_t WS2812FX::mode_ripple()
         uint16_t origin = SEGMENT.start + random16(SEGLEN);
         _locked[storeI+1] = origin >> 8;
         _locked[storeI+2] = origin & 0xFF; 
-        _locked[storeI+3] = random8();
+        _locked[storeI+3] = random8(); //color
       }
     }
   }
@@ -2062,7 +2076,7 @@ uint16_t WS2812FX::mode_ripple()
 // incandescent bulbs change color as they get dim down.
 #define COOL_LIKE_INCANDESCENT 1
 
-CRGB WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt)
+CRGB WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat)
 {
   // Overall twinkle speed (changed)
   uint16_t ticks = ms / (32 - (SEGMENT.speed >> 3));
@@ -2083,11 +2097,16 @@ CRGB WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt)
     // This is like 'triwave8', which produces a
     // symmetrical up-and-down triangle sawtooth waveform, except that this
     // function produces a triangle wave with a faster attack and a slower decay
-    if (ph < 86) {
-    bright = ph * 3;
-    } else {
-      ph -= 86;
-      bright = 255 - (ph + (ph/2));
+    if (cat) //twinklecat, variant where the leds instantly turn on
+    {
+      bright = 255 - ph;
+    } else { //vanilla twinklefox
+      if (ph < 86) {
+      bright = ph * 3;
+      } else {
+        ph -= 86;
+        bright = 255 - (ph + (ph/2));
+      }
     }
   }
 
@@ -2117,15 +2136,13 @@ CRGB WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt)
 //  "CalculateOneTwinkle" on each pixel.  It then displays
 //  either the twinkle color of the background color,
 //  whichever is brighter.
-uint16_t WS2812FX::mode_twinklefox()
+void WS2812FX::twinklefox_base(bool cat)
 {
   // "PRNG16" is the pseudorandom number generator
   // It MUST be reset to the same starting value each time
   // this function is called, so that the sequence of 'random'
   // numbers that it generates is (paradoxically) stable.
   uint16_t PRNG16 = 11337;
-
-  uint32_t clock32 = millis();
 
   // Set up the background color, "bg".
   // if AUTO_SELECT_BACKGROUND_COLOR == 1, and the first two colors of
@@ -2151,13 +2168,13 @@ uint16_t WS2812FX::mode_twinklefox()
     PRNG16 = (uint16_t)(PRNG16 * 2053) + 1384; // next 'random' number
     // use that number as clock speed adjustment factor (in 8ths, from 8/8ths to 23/8ths)
     uint8_t myspeedmultiplierQ5_3 =  ((((PRNG16 & 0xFF)>>4) + (PRNG16 & 0x0F)) & 0x0F) + 0x08;
-    uint32_t myclock30 = (uint32_t)((clock32 * myspeedmultiplierQ5_3) >> 3) + myclockoffset16;
+    uint32_t myclock30 = (uint32_t)((now * myspeedmultiplierQ5_3) >> 3) + myclockoffset16;
     uint8_t  myunique8 = PRNG16 >> 8; // get 'salt' value for this pixel
 
     // We now have the adjusted 'clock' for this pixel, now we call
     // the function that computes what color the pixel should be based
     // on the "brightness = f( time )" idea.
-    CRGB c = twinklefox_one_twinkle(myclock30, myunique8);
+    CRGB c = twinklefox_one_twinkle(myclock30, myunique8, cat);
 
     uint8_t cbright = c.getAverageLight();
     int16_t deltabright = cbright - backgroundBrightness;
@@ -2175,5 +2192,74 @@ uint16_t WS2812FX::mode_twinklefox()
       setPixelColor(i, bg);
     }
   }
+}
+
+uint16_t WS2812FX::mode_twinklefox()
+{
+  twinklefox_base(false);
+  return 20;
+}
+
+uint16_t WS2812FX::mode_twinklecat()
+{
+  twinklefox_base(true);
+  return 20;
+}
+
+
+//inspired by https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectBlinkingHalloweenEyes
+#define HALLOWEEN_EYE_SPACE 3
+#define HALLOWEEN_EYE_WIDTH 1
+
+uint16_t WS2812FX::mode_halloween_eyes()
+{  
+  uint16_t eyeLength = (2*HALLOWEEN_EYE_WIDTH) + HALLOWEEN_EYE_SPACE;
+  if (eyeLength > SEGLEN) return mode_static(); //bail if segment too short
+
+  fill(SEGCOLOR(1)); //fill background
+
+  uint8_t state = SEGENV.aux1 >> 8;
+  uint16_t stateTime = SEGENV.call;
+  if (stateTime == 0) stateTime = 2000;
+
+  if (state == 0) { //spawn eyes
+    SEGENV.aux0 = random(SEGMENT.start, SEGMENT.stop - eyeLength); //start pos
+    SEGENV.aux1 = random8(); //color
+    state = 1;
+  }
+  
+  if (state < 2) { //fade eyes
+    uint16_t startPos    = SEGENV.aux0;
+    uint16_t start2ndEye = startPos + HALLOWEEN_EYE_WIDTH + HALLOWEEN_EYE_SPACE;
+    
+    uint32_t fadestage = (now - SEGENV.step)*255 / stateTime;
+    if (fadestage > 255) fadestage = 255;
+    uint32_t c = color_blend(color_from_palette(SEGENV.aux1 & 0xFF, false, false, 0), SEGCOLOR(1), fadestage);
+    
+    for (uint16_t i = 0; i < HALLOWEEN_EYE_WIDTH; i++)
+    {
+      setPixelColor(startPos    + i, c);
+      setPixelColor(start2ndEye + i, c);
+    }
+  }
+
+  if (now - SEGENV.step > stateTime)
+  {
+    state++;
+    if (state > 2) state = 0;
+    
+    if (state < 2)
+    {
+      stateTime = 100 + (255 - SEGMENT.intensity)*10; //eye fade time
+    } else {
+      uint16_t eyeOffTimeBase = (255 - SEGMENT.speed)*10;
+      stateTime = eyeOffTimeBase + random(eyeOffTimeBase);
+    }
+    SEGENV.step = now;
+    SEGENV.call = stateTime;
+  }
+
+  SEGENV.aux1 = (SEGENV.aux1 & 0xFF) + (state << 8); //save state
+  
   return 20;
 }
