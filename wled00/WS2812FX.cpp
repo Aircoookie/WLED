@@ -114,7 +114,7 @@ uint16_t WS2812FX::mode_strobe_rainbow(void) {
  * LEDs are turned on (color1) in sequence, then turned off (color2) in sequence.
  * if (bool rev == true) then LEDs are turned off in reverse order
  */
-uint16_t WS2812FX::color_wipe(uint32_t color1, uint32_t color2, bool rev, bool doPalette) {
+uint16_t WS2812FX::color_wipe(bool rev, bool useRandomColors) {
   uint32_t cycleTime = 1000 + (255 - SEGMENT.speed)*200;
   uint32_t perc = now % cycleTime;
   uint16_t prog = (perc * 65535) / cycleTime;
@@ -125,24 +125,41 @@ uint16_t WS2812FX::color_wipe(uint32_t color1, uint32_t color2, bool rev, bool d
   } else {
     if (SEGENV.step == 2) SEGENV.step = 3; //trigger color change
   }
+
+  if (useRandomColors) {
+    if (SEGENV.call == 0) {
+      SEGENV.aux0 = random8();
+      SEGENV.step = 3;
+    }
+    if (SEGENV.step == 1) { //if flag set, change to new random color
+      SEGENV.aux1 = get_random_wheel_index(SEGENV.aux0);
+      SEGENV.step = 2;
+    }
+    if (SEGENV.step == 3) {
+      SEGENV.aux0 = get_random_wheel_index(SEGENV.aux1);
+      SEGENV.step = 0;
+    }
+  }
+  
   uint16_t ledIndex = (prog * SEGLEN) >> 15;
   uint16_t rem = 0;
   rem = (prog * SEGLEN) * 2; //mod 0xFFFF
   rem /= (SEGMENT.intensity +1);
   if (rem > 255) rem = 255;
-  
+
+  uint32_t col1 = useRandomColors? color_wheel(SEGENV.aux1) : SEGCOLOR(1);
   for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
   {
     uint16_t index = (rev && back)? SEGMENT.stop -1 -i : i;
-    uint32_t mainCol = doPalette? color_from_palette(index, true, PALETTE_SOLID_WRAP, 0) : color1;
+    uint32_t col0 = useRandomColors? color_wheel(SEGENV.aux0) : color_from_palette(index, true, PALETTE_SOLID_WRAP, 0);
     
     if (i - SEGMENT.start < ledIndex) 
     {
-      setPixelColor(index, back? color2 : mainCol);
+      setPixelColor(index, back? col1 : col0);
     } else
     {
-      setPixelColor(index, back? mainCol : color2);
-      if (i - SEGMENT.start == ledIndex) setPixelColor(index, color_blend(back? mainCol : color2, back? color2 : mainCol, rem));
+      setPixelColor(index, back? col0 : col1);
+      if (i - SEGMENT.start == ledIndex) setPixelColor(index, color_blend(back? col0 : col1, back? col1 : col0, rem));
     }
   } 
   return FRAMETIME;
@@ -153,14 +170,14 @@ uint16_t WS2812FX::color_wipe(uint32_t color1, uint32_t color2, bool rev, bool d
  * Lights all LEDs one after another.
  */
 uint16_t WS2812FX::mode_color_wipe(void) {
-  return color_wipe(SEGCOLOR(0), SEGCOLOR(1), false, true);
+  return color_wipe(false, false);
 }
 
 /*
  * Lights all LEDs one after another. Turns off opposite
  */
 uint16_t WS2812FX::mode_color_sweep(void) {
-  return color_wipe(SEGCOLOR(0), SEGCOLOR(1), true, true);
+  return color_wipe(true, false);
 }
 
 
@@ -169,17 +186,7 @@ uint16_t WS2812FX::mode_color_sweep(void) {
  * Then starts over with another color.
  */
 uint16_t WS2812FX::mode_color_wipe_random(void) {
-  if (SEGENV.call == 0) {
-    SEGENV.aux0 = random8();
-    SEGENV.step = 2;
-  }
-  if(SEGENV.step & 1) { //if flag set, change to new random color
-    SEGENV.aux1 = SEGENV.aux0;
-    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0);
-    SEGENV.step++;
-    if (SEGENV.step > 3) SEGENV.step = 0;
-  }
-  return color_wipe(color_wheel(SEGENV.aux1), color_wheel(SEGENV.aux0), false, false);
+  return color_wipe(false, true);
 }
 
 
@@ -187,19 +194,7 @@ uint16_t WS2812FX::mode_color_wipe_random(void) {
  * Random color introduced alternating from start and end of strip.
  */
 uint16_t WS2812FX::mode_color_sweep_random(void) {
-  if (SEGENV.call == 0) {
-    SEGENV.aux0 = random8();
-    SEGENV.step = 3;
-  }
-  if (SEGENV.step == 1) { //if flag set, change to new random color
-    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux1);
-    SEGENV.step = 2;
-  }
-  if (SEGENV.step == 3) {
-    SEGENV.aux1 = get_random_wheel_index(SEGENV.aux0);
-    SEGENV.step = 0;
-  }
-  return color_wipe(color_wheel(SEGENV.aux1), color_wheel(SEGENV.aux0), true, false);
+  return color_wipe(true, true);
 }
 
 
@@ -226,7 +221,7 @@ uint16_t WS2812FX::mode_random_color(void) {
   if (it != SEGENV.step) //new color
   {
     SEGENV.aux1 = SEGENV.aux0;
-    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0); // aux0 will store our random color wheel index
+    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0); //aux0 will store our random color wheel index
     SEGENV.step = it;
   }
 

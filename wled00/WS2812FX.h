@@ -516,7 +516,7 @@ class WS2812FX {
     // mode helper functions
     uint16_t
       blink(uint32_t, uint32_t, bool strobe, bool),
-      color_wipe(uint32_t, uint32_t, bool , bool),
+      color_wipe(bool, bool),
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
       running_base(bool),
