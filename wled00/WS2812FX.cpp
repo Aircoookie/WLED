@@ -232,7 +232,7 @@ uint16_t WS2812FX::mode_random_color(void) {
 
 /*
  * Lights every LED in a random color. Changes all LED at the same time
- * to new random colors.
+// * to new random colors. NOTE: Problematic for revamp. Consider using data array?
  */
 uint16_t WS2812FX::mode_dynamic(void) {
   if(SEGMENT.intensity > 127 || SEGENV.call == 0) {
@@ -246,43 +246,23 @@ uint16_t WS2812FX::mode_dynamic(void) {
 
 
 /*
- * Does the "standby-breathing" of well known i-Devices. Fixed Speed.
- * Use mode "fade" if you like to have something similar with a different speed.
+ * Does the "standby-breathing" of well known i-Devices.
  */
 uint16_t WS2812FX::mode_breath(void) {
-  int lum = SEGENV.step;
-  if(lum > 255) lum = 511 - lum; // lum = 15 -> 255 -> 15
-
-  uint16_t delay;
-  if(lum == 15) delay = 465; // 970 pause before each breath
-  else if(lum <=  25) delay = 19; // 19
-  else if(lum <=  50) delay = 18; // 18
-  else if(lum <=  75) delay = 14; // 14
-  else if(lum <= 100) delay = 10; // 10
-  else if(lum <= 125) delay = 7; // 7
-  else if(lum <= 150) delay = 5; // 5
-  else delay = 4; // 4
-
-  if (SEGMENT.palette == 0)
-  {
-    uint32_t color = SEGCOLOR(0);
-    uint8_t w = ((color >> 24 & 0xFF) * lum) >> 8;
-    uint8_t r = ((color >> 16 & 0xFF) * lum) >> 8;
-    uint8_t g = ((color >>  8 & 0xFF) * lum) >> 8;
-    uint8_t b = ((color       & 0xFF) * lum) >> 8;
-    for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
-      setPixelColor(i, r, g, b, w);
-    }
-  } else
-  {
-    for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
-      setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, lum));
-    }
+  uint16_t var = 0;
+  uint16_t counter = (now * ((SEGMENT.speed >> 3) +10)) & 0xFFFF;
+  counter = (counter >> 2) + (counter >> 4); //0-16384 + 0-2048
+  if (counter < 16384) {
+    if (counter > 8192) counter = 8192 - (counter - 8192);
+    var = sin16(counter) / 103; //close to parabolic in range 0-8192, max val. 23170
+  }
+  
+  uint8_t lum = 30 + var;
+  for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), lum));
   }
 
-  SEGENV.step += 2;
-  if(SEGENV.step > (512-15)) SEGENV.step = 15;
-  return delay * (((256 - SEGMENT.speed)/64) +1);
+  return FRAMETIME;
 }
 
 
@@ -290,16 +270,15 @@ uint16_t WS2812FX::mode_breath(void) {
  * Fades the LEDs between two colors
  */
 uint16_t WS2812FX::mode_fade(void) {
-  int lum = SEGENV.step;
-  if(lum > 255) lum = 511 - lum; // lum = 0 -> 255 -> 0
-  
+  uint16_t counter = (now * ((SEGMENT.speed >> 3) +10)) & 0xFFFF;
+  if (counter > 32767) counter = 32768 - (counter - 32768);
+  uint8_t lum = counter >> 7;
+
   for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
-    setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), lum));
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), lum));
   }
 
-  SEGENV.step += 4;
-  if(SEGENV.step > 511) SEGENV.step = 0;
-  return 5 + ((15 * (uint32_t)(255 - SEGMENT.speed)) / 255);
+  return FRAMETIME;
 }
 
 
