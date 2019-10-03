@@ -40,9 +40,14 @@
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
 
+/* Not used in all effects yet */
+#define WLED_FPS         50
+#define FRAMETIME        1000/WLED_FPS
+
 /* each segment uses 37 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #define MAX_NUM_SEGMENTS 10
+
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
 #define SEGCOLOR(x)      gamma32(_segments[_segment_index].colors[x])

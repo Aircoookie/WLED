@@ -35,7 +35,7 @@
  */
 uint16_t WS2812FX::mode_static(void) {
   fill(SEGCOLOR(0));
-  return (SEGMENT.getOption(7)) ? 20 : 500; //update faster if in transition
+  return (SEGMENT.getOption(7)) ? FRAMETIME : 500; //update faster if in transition
 }
 
 
@@ -73,7 +73,7 @@ uint16_t WS2812FX::blink(uint32_t color1, uint32_t color2, bool strobe, bool do_
     }
   } else fill(color);
 
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -114,22 +114,38 @@ uint16_t WS2812FX::mode_strobe_rainbow(void) {
  * LEDs are turned on (color1) in sequence, then turned off (color2) in sequence.
  * if (bool rev == true) then LEDs are turned off in reverse order
  */
-uint16_t WS2812FX::color_wipe(uint32_t color1, uint32_t color2, bool rev, bool dopalette) {
-  if(SEGENV.step < SEGLEN) {
-    uint32_t led_offset = SEGENV.step;
-    uint16_t i = SEGMENT.start + led_offset;
-    setPixelColor(i, dopalette ? color_from_palette(i, true, PALETTE_SOLID_WRAP, 0) : color1);
+uint16_t WS2812FX::color_wipe(uint32_t color1, uint32_t color2, bool rev, bool doPalette) {
+  uint32_t cycleTime = 1000 + (255 - SEGMENT.speed)*200;
+  uint32_t perc = now % cycleTime;
+  uint16_t prog = (perc * 65535) / cycleTime;
+  bool back = (prog > 32767);
+  if (back) {
+    prog -= 32767;
+    if (SEGENV.step == 0) SEGENV.step = 1;
   } else {
-    uint32_t led_offset = SEGENV.step - SEGLEN;
-    if(rev) {
-      setPixelColor(SEGMENT.stop -1 - led_offset, color2);
-    } else {
-      setPixelColor(SEGMENT.start + led_offset, color2);
-    }
+    if (SEGENV.step == 2) SEGENV.step = 3; //trigger color change
   }
-
-  SEGENV.step = (SEGENV.step + 1) % (SEGLEN * 2);
-  return SPEED_FORMULA_L;
+  uint16_t ledIndex = (prog * SEGLEN) >> 15;
+  uint16_t rem = 0;
+  rem = (prog * SEGLEN) * 2; //mod 0xFFFF
+  rem /= (SEGMENT.intensity +1);
+  if (rem > 255) rem = 255;
+  
+  for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
+  {
+    uint16_t index = (rev && back)? SEGMENT.stop -1 -i : i;
+    uint32_t mainCol = doPalette? color_from_palette(index, true, PALETTE_SOLID_WRAP, 0) : color1;
+    
+    if (i - SEGMENT.start < ledIndex) 
+    {
+      setPixelColor(index, back? color2 : mainCol);
+    } else
+    {
+      setPixelColor(index, back? mainCol : color2);
+      if (i - SEGMENT.start == ledIndex) setPixelColor(index, color_blend(back? mainCol : color2, back? color2 : mainCol, rem));
+    }
+  } 
+  return FRAMETIME;
 }
 
 
@@ -153,11 +169,17 @@ uint16_t WS2812FX::mode_color_sweep(void) {
  * Then starts over with another color.
  */
 uint16_t WS2812FX::mode_color_wipe_random(void) {
-  if(SEGENV.step % SEGLEN == 0) { // aux0 will store our random color wheel index
-    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0);
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = random8();
+    SEGENV.step = 2;
   }
-  uint32_t color = color_wheel(SEGENV.aux0);
-  return color_wipe(color, color, false, false);
+  if(SEGENV.step & 1) { //if flag set, change to new random color
+    SEGENV.aux1 = SEGENV.aux0;
+    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0);
+    SEGENV.step++;
+    if (SEGENV.step > 3) SEGENV.step = 0;
+  }
+  return color_wipe(color_wheel(SEGENV.aux1), color_wheel(SEGENV.aux0), false, false);
 }
 
 
@@ -165,11 +187,19 @@ uint16_t WS2812FX::mode_color_wipe_random(void) {
  * Random color introduced alternating from start and end of strip.
  */
 uint16_t WS2812FX::mode_color_sweep_random(void) {
-  if(SEGENV.step % SEGLEN == 0) { // aux0 will store our random color wheel index
-    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0);
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = random8();
+    SEGENV.step = 3;
   }
-  uint32_t color = color_wheel(SEGENV.aux0);
-  return color_wipe(color, color, true, false);
+  if (SEGENV.step == 1) { //if flag set, change to new random color
+    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux1);
+    SEGENV.step = 2;
+  }
+  if (SEGENV.step == 3) {
+    SEGENV.aux1 = get_random_wheel_index(SEGENV.aux0);
+    SEGENV.step = 0;
+  }
+  return color_wipe(color_wheel(SEGENV.aux1), color_wheel(SEGENV.aux0), true, false);
 }
 
 
@@ -178,13 +208,30 @@ uint16_t WS2812FX::mode_color_sweep_random(void) {
  * to the next random color.
  */
 uint16_t WS2812FX::mode_random_color(void) {
-  SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0); // aux0 will store our random color wheel index
-  uint32_t color = color_wheel(SEGENV.aux0);
+  uint32_t cycleTime = 200 + (255 - SEGMENT.speed)*50;
+  uint32_t it = now / cycleTime;
+  uint32_t rem = now % cycleTime;
+  uint16_t fadedur = (cycleTime * SEGMENT.intensity) >> 8;
 
-  for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
-    setPixelColor(i, color);
+  uint32_t fade = 255;
+  if (fadedur) {
+    fade = (rem * 255) / fadedur;
+    if (fade > 255) fade = 255;
   }
-  return 50 + (20 * (uint32_t)(255 - SEGMENT.speed));
+
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = random8();
+    SEGENV.step = 2;
+  }
+  if (it != SEGENV.step) //new color
+  {
+    SEGENV.aux1 = SEGENV.aux0;
+    SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0); // aux0 will store our random color wheel index
+    SEGENV.step = it;
+  }
+
+  fill(color_blend(color_wheel(SEGENV.aux1), color_wheel(SEGENV.aux0), fade));
+  return FRAMETIME;
 }
 
 
@@ -1494,8 +1541,8 @@ uint16_t WS2812FX::mode_oscillate(void)
 
 uint16_t WS2812FX::mode_lightning(void)
 {
-  uint16_t ledstart = SEGMENT.start + random8(SEGLEN);               // Determine starting location of flash
-  uint16_t ledlen = random8(SEGMENT.stop -1 -ledstart);                      // Determine length of flash (not to go beyond NUM_LEDS-1)
+  uint16_t ledstart = SEGMENT.start + random16(SEGLEN);               // Determine starting location of flash
+  uint16_t ledlen = random16(SEGMENT.stop -1 -ledstart);                      // Determine length of flash (not to go beyond NUM_LEDS-1)
   uint8_t bri = 255/random8(1, 3);   
 
   if (SEGENV.step == 0)
@@ -2197,13 +2244,13 @@ void WS2812FX::twinklefox_base(bool cat)
 uint16_t WS2812FX::mode_twinklefox()
 {
   twinklefox_base(false);
-  return 20;
+  return FRAMETIME;
 }
 
 uint16_t WS2812FX::mode_twinklecat()
 {
   twinklefox_base(true);
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -2223,7 +2270,7 @@ uint16_t WS2812FX::mode_halloween_eyes()
   if (stateTime == 0) stateTime = 2000;
 
   if (state == 0) { //spawn eyes
-    SEGENV.aux0 = random(SEGMENT.start, SEGMENT.stop - eyeLength); //start pos
+    SEGENV.aux0 = random16(SEGMENT.start, SEGMENT.stop - eyeLength); //start pos
     SEGENV.aux1 = random8(); //color
     state = 1;
   }
@@ -2253,7 +2300,7 @@ uint16_t WS2812FX::mode_halloween_eyes()
       stateTime = 100 + (255 - SEGMENT.intensity)*10; //eye fade time
     } else {
       uint16_t eyeOffTimeBase = (255 - SEGMENT.speed)*10;
-      stateTime = eyeOffTimeBase + random(eyeOffTimeBase);
+      stateTime = eyeOffTimeBase + random16(eyeOffTimeBase);
     }
     SEGENV.step = now;
     SEGENV.call = stateTime;
@@ -2261,5 +2308,5 @@ uint16_t WS2812FX::mode_halloween_eyes()
 
   SEGENV.aux1 = (SEGENV.aux1 & 0xFF) + (state << 8); //save state
   
-  return 20;
+  return FRAMETIME;
 }
