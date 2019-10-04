@@ -7,7 +7,7 @@
 
 ## Welcome to my project WLED!
 
-A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B) LEDs!
+A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs!
 
 ### Features:
 - WS2812FX library integrated for 80 special effects   

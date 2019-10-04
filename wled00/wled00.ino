@@ -98,7 +98,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910033
+#define VERSION 1910042
 char versionString[] = "0.8.5";
 
 
@@ -160,7 +160,7 @@ byte briMultiplier =  100;                    //% of brightness to set (to limit
 
 
 //User Interface CONFIG
-char serverDescription[33] = "WLED Light";    //Name of module
+char serverDescription[33] = "WLED";          //Name of module
 byte currentTheme = 7;                        //UI theme index for settings and classic UI
 byte uiConfiguration = 0;                     //0: automatic (depends on user-agent) 1: classic UI 2: mobile UI
 bool useHSB = true;                           //classic UI: use HSB sliders instead of RGB by default

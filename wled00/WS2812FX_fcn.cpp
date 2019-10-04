@@ -85,7 +85,7 @@ bool WS2812FX::modeUsesLock(uint8_t m)
 {
   if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE  ||
       m == FX_MODE_METEOR    || m == FX_MODE_METEOR_SMOOTH || 
-      m == FX_MODE_RIPPLE) return true;
+      m == FX_MODE_RIPPLE    || m == FX_MODE_DYNAMIC ) return true;
   return false;
 }
 

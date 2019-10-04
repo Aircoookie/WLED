@@ -43,6 +43,7 @@ uint16_t WS2812FX::mode_static(void) {
  * Blink/strobe function
  * Alternate between color1 and color2
  * if(strobe == true) then create a strobe effect
+ * NOTE: Maybe re-rework without timer
  */
 uint16_t WS2812FX::blink(uint32_t color1, uint32_t color2, bool strobe, bool do_palette) {
   uint16_t stateTime = SEGENV.aux1;
@@ -232,16 +233,27 @@ uint16_t WS2812FX::mode_random_color(void) {
 
 /*
  * Lights every LED in a random color. Changes all LED at the same time
-// * to new random colors. NOTE: Problematic for revamp. Consider using data array?
+// * to new random colors.
  */
 uint16_t WS2812FX::mode_dynamic(void) {
-  if(SEGMENT.intensity > 127 || SEGENV.call == 0) {
-    for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
-      setPixelColor(i, color_wheel(random8()));
-    }
+  if(SEGENV.call == 0) {
+    for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) _locked[i] = random8();
   }
-  setPixelColor(SEGMENT.start + random16(SEGLEN), color_wheel(random8()));
-  return 50 + (15 * (uint32_t)(255 - SEGMENT.speed));
+
+  uint32_t cycleTime = 50 + (255 - SEGMENT.speed)*15;
+  uint32_t it = now / cycleTime;
+  if (it != SEGENV.step) //new color
+  {
+    for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
+      if (random8() <= SEGMENT.intensity) _locked[i] = random8();
+    }
+    SEGENV.step = it;
+  }
+  
+  for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
+    setPixelColor(i, color_wheel(_locked[i]));
+  }
+  return FRAMETIME;
 }
 
 
@@ -309,7 +321,7 @@ uint16_t WS2812FX::scan(bool dual)
 }
 
 
-//TODO add intensity (more than 1 pixel lit)
+//NOTE: add intensity (more than 1 pixel lit)
 /*
  * Runs a single pixel back and forth.
  */
@@ -330,11 +342,12 @@ uint16_t WS2812FX::mode_dual_scan(void) {
  * Cycles all LEDs at once through a rainbow.
  */
 uint16_t WS2812FX::mode_rainbow(void) {
-  uint32_t color = color_wheel(SEGENV.step);
-  fill(color);
+  uint16_t counter = (now * ((SEGMENT.speed >> 3) +2)) & 0xFFFF;
+  counter = counter >> 8;
 
-  SEGENV.step = (SEGENV.step + 1) & 0xFF;
-  return 1 + (((uint32_t)(255 - SEGMENT.speed)) / 5);
+  fill(color_wheel(counter));
+
+  return FRAMETIME;
 }
 
 
@@ -342,13 +355,16 @@ uint16_t WS2812FX::mode_rainbow(void) {
  * Cycles a rainbow over the entire string of LEDs.
  */
 uint16_t WS2812FX::mode_rainbow_cycle(void) {
+  uint16_t counter = (now * ((SEGMENT.speed >> 3) +2)) & 0xFFFF;
+  counter = counter >> 8;
+  
   for(uint16_t i=0; i < SEGLEN; i++) {
-    uint32_t color = color_wheel(((i * 256 / ((uint16_t)(SEGLEN*(float)(SEGMENT.intensity/128.0))+1)) + SEGENV.step) & 0xFF);
-    setPixelColor(SEGMENT.start + i, color);
+    //intensity/29 = 0 (1/16) 1 (1/8) 2 (1/4) 3 (1/2) 4 (1) 5 (2) 6 (4) 7 (8) 8 (16)
+    uint8_t index = (i * (16 << (SEGMENT.intensity /29)) / SEGLEN) + counter;
+    setPixelColor(SEGMENT.start + i, color_wheel(index));
   }
 
-  SEGENV.step = (SEGENV.step + 1) & 0xFF;
-  return 1 + (((uint32_t)(255 - SEGMENT.speed)) / 5);
+  return FRAMETIME;
 }
 
 
