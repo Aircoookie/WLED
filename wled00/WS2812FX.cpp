@@ -1630,20 +1630,25 @@ uint16_t WS2812FX::mode_juggle(void){
 }
 
 
-uint16_t WS2812FX::mode_palette(void)
+uint16_t WS2812FX::mode_palette()
 {
+  uint16_t counter = 0;
+  if (SEGMENT.speed != 0) 
+  {
+    counter = (now * ((SEGMENT.speed >> 3) +1)) & 0xFFFF;
+    counter = counter >> 8;
+  }
+  
   bool noWrap = (paletteBlend == 2 || (paletteBlend == 0 && SEGMENT.speed == 0));
   for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
   {
-    uint8_t colorIndex = map(i,SEGMENT.start,SEGMENT.stop -1,0,255) - (SEGENV.step >> 6 & 0xFF);
+    uint8_t colorIndex = (i * 255 / SEGLEN) - counter;
     
     if (noWrap) colorIndex = map(colorIndex, 0, 255, 0, 240); //cut off blend at palette "end"
     
     setPixelColor(i, color_from_palette(colorIndex, false, true, 255));
   }
-  SEGENV.step += SEGMENT.speed;
-  if (SEGMENT.speed == 0) SEGENV.step = 0;
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -1673,30 +1678,32 @@ uint16_t WS2812FX::mode_palette(void)
 //
 //
 // There are two main parameters you can play with to control the look and
-// feel of your fire: COOLING (used in step 1 above), and SPARKING (used
+// feel of your fire: COOLING (used in step 1 above) (Speed = COOLING), and SPARKING (used
 // in step 3 above) (Effect Intensity = Sparking).
-//
-// COOLING: How much does the air cool as it rises?
-// Less cooling = taller flames.  More cooling = shorter flames.
-// Default 50, suggested range 20-100 
-#define COOLING  75
 
-uint16_t WS2812FX::mode_fire_2012(void)
+
+uint16_t WS2812FX::mode_fire_2012()
 {
-  // Step 1.  Cool down every cell a little
-  for( int i = SEGMENT.start; i < SEGMENT.stop; i++) {
-    _locked[i] = qsub8(_locked[i],  random8(0, (((20 + SEGMENT.speed /3) * 10) / SEGLEN) + 2));
-  }
+  uint32_t it = now >> 5; //div 32
 
-  // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-  for( int k= SEGMENT.stop -1; k >= SEGMENT.start + 2; k--) {
-    _locked[k] = (_locked[k - 1] + _locked[k - 2] + _locked[k - 2] ) / 3;
-  }
+  if (it != SEGENV.step)
+  {
+    // Step 1.  Cool down every cell a little
+    for( int i = SEGMENT.start; i < SEGMENT.stop; i++) {
+      _locked[i] = qsub8(_locked[i],  random8(0, (((20 + SEGMENT.speed /3) * 10) / SEGLEN) + 2));
+    }
   
-  // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-  if( random8() <= SEGMENT.intensity ) {
-    int y = SEGMENT.start + random8(7);
-    if (y < SEGMENT.stop) _locked[y] = qadd8(_locked[y], random8(160,255) );
+    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+    for( int k= SEGMENT.stop -1; k >= SEGMENT.start + 2; k--) {
+      _locked[k] = (_locked[k - 1] + _locked[k - 2] + _locked[k - 2] ) / 3;
+    }
+    
+    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+    if( random8() <= SEGMENT.intensity ) {
+      int y = SEGMENT.start + random8(7);
+      if (y < SEGMENT.stop) _locked[y] = qadd8(_locked[y], random8(160,255) );
+    }
+    SEGENV.step = it;
   }
 
   // Step 4.  Map from heat cells to LED colors
@@ -1704,14 +1711,14 @@ uint16_t WS2812FX::mode_fire_2012(void)
     CRGB color = ColorFromPalette( currentPalette, min(_locked[j],240), 255, LINEARBLEND);
     setPixelColor(j, color.red, color.green, color.blue);
   }
-  return 20;
+  return FRAMETIME;
 }
 
 
 // ColorWavesWithPalettes by Mark Kriegsman: https://gist.github.com/kriegsman/8281905786e8b2632aeb
 // This function draws color waves with an ever-changing,
 // widely-varying set of parameters, using a color palette.
-uint16_t WS2812FX::mode_colorwaves(void)
+uint16_t WS2812FX::mode_colorwaves()
 {
   uint16_t duration = 10 + SEGMENT.speed;
   uint16_t sPseudotime = SEGENV.step;
@@ -1759,21 +1766,20 @@ uint16_t WS2812FX::mode_colorwaves(void)
 
 
 // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
-uint16_t WS2812FX::mode_bpm(void)
+uint16_t WS2812FX::mode_bpm()
 {
   CRGB fastled_col;
+  uint32_t stp = (now / 20) & 0xFF;
   uint8_t beat = beatsin8(SEGMENT.speed, 64, 255);
   for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
-    fastled_col = ColorFromPalette(currentPalette, SEGENV.step + (i * 2), beat - SEGENV.step + (i * 10));
+    fastled_col = ColorFromPalette(currentPalette, stp + (i * 2), beat - stp + (i * 10));
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
-  SEGENV.step++;
-  if (SEGENV.step >= 255) SEGENV.step = 0;
-  return 20;
+  return FRAMETIME;
 }
 
 
-uint16_t WS2812FX::mode_fillnoise8(void)
+uint16_t WS2812FX::mode_fillnoise8()
 {
   if (SEGENV.call == 0) SEGENV.step = random16(12345);
   CRGB fastled_col;
@@ -1787,7 +1793,7 @@ uint16_t WS2812FX::mode_fillnoise8(void)
   return 20;
 }
 
-uint16_t WS2812FX::mode_noise16_1(void)
+uint16_t WS2812FX::mode_noise16_1()
 {
   uint16_t scale = 320;                                      // the "zoom factor" for the noise
   CRGB fastled_col;
@@ -1815,11 +1821,11 @@ uint16_t WS2812FX::mode_noise16_1(void)
 }
 
 
-uint16_t WS2812FX::mode_noise16_2(void)
+uint16_t WS2812FX::mode_noise16_2()
 {
   uint16_t scale = 1000;                                       // the "zoom factor" for the noise
   CRGB fastled_col;
-  SEGENV.step += (1 + SEGMENT.speed);
+  SEGENV.step += (1 + (SEGMENT.speed >> 1));
 
   for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
 
@@ -1840,7 +1846,7 @@ uint16_t WS2812FX::mode_noise16_2(void)
 }
 
 
-uint16_t WS2812FX::mode_noise16_3(void)
+uint16_t WS2812FX::mode_noise16_3()
 {
   uint16_t scale = 800;                                       // the "zoom factor" for the noise
   CRGB fastled_col;
@@ -1868,16 +1874,17 @@ uint16_t WS2812FX::mode_noise16_3(void)
 
 
 //https://github.com/aykevl/ledstrip-spark/blob/master/ledstrip.ino
-uint16_t WS2812FX::mode_noise16_4(void)
+uint16_t WS2812FX::mode_noise16_4()
 {
   CRGB fastled_col;
   SEGENV.step += SEGMENT.speed;
+  uint32_t stp = (now / 160) * SEGMENT.speed;
   for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
-    int16_t index = inoise16(uint32_t(i - SEGMENT.start) << 12, SEGENV.step/8);
+    int16_t index = inoise16(uint32_t(i - SEGMENT.start) << 12, stp);
     fastled_col = ColorFromPalette(currentPalette, index);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -1944,7 +1951,7 @@ uint16_t WS2812FX::mode_lake() {
     fastled_col = ColorFromPalette(currentPalette, map(index,0,255,0,240), lum, LINEARBLEND);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
-  return 33;
+  return FRAMETIME;
 }
 
 
@@ -2041,8 +2048,8 @@ uint16_t WS2812FX::mode_railway()
       setPixelColor(i + 1, color_from_palette(pos, false, false, 255));
     }
   }
-  SEGENV.step += 20;
-  return 20;
+  SEGENV.step += FRAMETIME;
+  return FRAMETIME;
 }
 
 
@@ -2218,7 +2225,7 @@ void WS2812FX::twinklefox_base(bool cat)
     if (deltabright >= 32 || (!bg)) {
       // If the new pixel is significantly brighter than the background color,
       // use the new color.
-      setPixelColor(i, c);
+      setPixelColor(i, c.red, c.green, c.blue);
     } else if (deltabright > 0) {
       // If the new pixel is just slightly brighter than the background color,
       // mix a blend of the new color and the background color
@@ -2226,7 +2233,7 @@ void WS2812FX::twinklefox_base(bool cat)
     } else {
       // if the new pixel is not at all brighter than the background color,
       // just use the background color.
-      setPixelColor(i, bg);
+      setPixelColor(i, bg.r, bg.g, bg.b);
     }
   }
 }

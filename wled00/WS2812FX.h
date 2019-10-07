@@ -347,7 +347,6 @@ class WS2812FX {
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop),
       resetSegments(),
-      setPixelColor(uint16_t n, CRGB fastled),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void);

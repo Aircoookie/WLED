@@ -89,10 +89,6 @@ bool WS2812FX::modeUsesLock(uint8_t m)
   return false;
 }
 
-void WS2812FX::setPixelColor(uint16_t n, CRGB fastled) {
-  setPixelColor(n, fastled.red, fastled.green, fastled.blue, 0);
-}
-
 void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   uint8_t w = (c >> 24) & 0xFF;
   uint8_t r = (c >> 16) & 0xFF;
