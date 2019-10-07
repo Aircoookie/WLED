@@ -24,7 +24,7 @@
   Modified heavily for WLED
 */
 
-#include "WS2812FX.h"
+#include "FX.h"
 
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)

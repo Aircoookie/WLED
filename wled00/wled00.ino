@@ -74,7 +74,7 @@
 #include "html_mobile.h"
 #include "html_settings.h"
 #include "html_other.h"
-#include "WS2812FX.h"
+#include "FX.h"
 #include "ir_codes.h"
 
 

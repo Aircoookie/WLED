@@ -24,7 +24,7 @@
   Modified heavily for WLED
 */
 
-#include "WS2812FX.h"
+#include "FX.h"
 #include "palettes.h"
 
 #define LED_SKIP_AMOUNT  1
