@@ -413,10 +413,11 @@ uint16_t WS2812FX::mode_theater_chase_rainbow(void) {
  */
 uint16_t WS2812FX::running_base(bool saw) {
   uint8_t x_scale = SEGMENT.intensity >> 2;
+  uint32_t counter = (now * SEGMENT.speed) >> 9;
 
   for(uint16_t i=0; i < SEGLEN; i++) {
     uint8_t s = 0;
-    uint8_t a = i*x_scale - (SEGENV.step >> 4);
+    uint8_t a = i*x_scale - counter;
     if (saw) {
       if (a < 16)
       {
@@ -428,8 +429,7 @@ uint16_t WS2812FX::running_base(bool saw) {
     s = sin8(a);
     setPixelColor(SEGMENT.start + i, color_blend(color_from_palette(SEGMENT.start + i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), s));
   }
-  SEGENV.step += SEGMENT.speed;
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -854,11 +854,16 @@ uint16_t WS2812FX::mode_chase_flash_random(void) {
  * Alternating pixels running function.
  */
 uint16_t WS2812FX::running(uint32_t color1, uint32_t color2) {
+  uint8_t pxw = 1 + (SEGMENT.intensity >> 5);
+  uint32_t cycleTime = 35 + (255 - SEGMENT.speed);
+  uint32_t it = now / cycleTime;
+  if (SEGMENT.speed == 0) it = 0;
+
   for(uint16_t i=0; i < SEGLEN; i++) {
-    if((i + SEGENV.step) % 4 < 2) {
+    if((i + SEGENV.aux0) % (pxw*2) < pxw) {
       if (color1 == SEGCOLOR(0))
       {
-        setPixelColor(SEGMENT.stop -i, color_from_palette(SEGMENT.stop -i -1, true, PALETTE_SOLID_WRAP, 0));
+        setPixelColor(SEGMENT.stop -i -1, color_from_palette(SEGMENT.stop -i -1, true, PALETTE_SOLID_WRAP, 0));
       } else
       {
         setPixelColor(SEGMENT.stop -i -1, color1);
@@ -868,8 +873,12 @@ uint16_t WS2812FX::running(uint32_t color1, uint32_t color2) {
     }
   }
 
-  if (SEGMENT.speed != 0) SEGENV.step = (SEGENV.step + 1) & 0x3;
-  return  35 + ((350 * (uint32_t)(255 - SEGMENT.speed)) / 255);
+  if (it != SEGENV.step )
+  {
+    SEGENV.aux0 = (SEGENV.aux0 +1) % (pxw*2);
+    SEGENV.step = it;
+  }
+  return FRAMETIME;
 }
 
 /*

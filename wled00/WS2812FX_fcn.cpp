@@ -546,15 +546,15 @@ uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint8_t blend) 
   if(blend == 0)   return color1;
   if(blend == 255) return color2;
 
-  int w1 = (color1 >> 24) & 0xff;
-  int r1 = (color1 >> 16) & 0xff;
-  int g1 = (color1 >>  8) & 0xff;
-  int b1 =  color1        & 0xff;
+  uint32_t w1 = (color1 >> 24) & 0xff;
+  uint32_t r1 = (color1 >> 16) & 0xff;
+  uint32_t g1 = (color1 >>  8) & 0xff;
+  uint32_t b1 =  color1        & 0xff;
 
-  int w2 = (color2 >> 24) & 0xff;
-  int r2 = (color2 >> 16) & 0xff;
-  int g2 = (color2 >>  8) & 0xff;
-  int b2 =  color2        & 0xff;
+  uint32_t w2 = (color2 >> 24) & 0xff;
+  uint32_t r2 = (color2 >> 16) & 0xff;
+  uint32_t g2 = (color2 >>  8) & 0xff;
+  uint32_t b2 =  color2        & 0xff;
 
   uint32_t w3 = ((w2 * blend) + (w1 * (255 - blend))) >> 8;
   uint32_t r3 = ((r2 * blend) + (r1 * (255 - blend))) >> 8;
