@@ -99,7 +99,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910174
+#define VERSION 1910181
 char versionString[] = "0.8.5";
 
 
@@ -433,6 +433,8 @@ E131* e131;
 //led fx library object
 WS2812FX strip = WS2812FX();
 
+#define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
+
 //debug macros
 #ifdef WLED_DEBUG
  #define DEBUG_PRINT(x)  Serial.print (x)
@@ -504,6 +506,7 @@ void setup() {
 
 //main program loop
 void loop() {
+  handleConnection();
   handleSerial();
   handleNotifications();
   handleTransitions();

@@ -214,7 +214,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     utcOffsetSecs = request->arg("UO").toInt();
 
     //start ntp if not already connected
-    if (ntpEnabled && WiFi.status() == WL_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
+    if (ntpEnabled && WLED_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
 
     if (request->hasArg("OL")){
       overlayDefault = request->arg("OL").toInt();

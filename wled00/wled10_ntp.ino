@@ -56,7 +56,7 @@ Timezone* timezones[] = {&tzUTC, &tzUK, &tzEUCentral, &tzEUEastern, &tzUSEastern
 
 void handleNetworkTime()
 {
-  if (ntpEnabled && ntpConnected && millis() - ntpLastSyncTime > 50000000L && WiFi.status() == WL_CONNECTED)
+  if (ntpEnabled && ntpConnected && millis() - ntpLastSyncTime > 50000000L && WLED_CONNECTED)
   {
     if (millis() - ntpPacketSentTime > 10000)
     {

@@ -16,7 +16,7 @@ void onAlexaChange(EspalexaDevice* dev);
 
 void alexaInit()
 {
-  if (alexaEnabled && WiFi.status() == WL_CONNECTED)
+  if (alexaEnabled && WLED_CONNECTED)
   {
     if (espalexaDevice == nullptr) //only init once
     {
@@ -31,7 +31,7 @@ void alexaInit()
 
 void handleAlexa()
 {
-  if (!alexaEnabled || WiFi.status() != WL_CONNECTED) return;
+  if (!alexaEnabled || !WLED_CONNECTED) return;
   espalexa.loop();
 }
 

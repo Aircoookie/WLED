@@ -87,7 +87,7 @@ void arlsLock(uint32_t timeoutMs)
 
 
 void initE131(){
-  if (WiFi.status() == WL_CONNECTED && e131Enabled)
+  if (WLED_CONNECTED && e131Enabled)
   {
     e131 = new E131();
     e131->begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST , e131Universe);

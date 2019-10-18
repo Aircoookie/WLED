@@ -4,7 +4,7 @@
 #ifndef WLED_DISABLE_HUESYNC
 void handleHue()
 {
-  if (hueClient != nullptr && millis() - hueLastRequestSent > huePollIntervalMs && WiFi.status() == WL_CONNECTED)
+  if (hueClient != nullptr && millis() - hueLastRequestSent > huePollIntervalMs && WLED_CONNECTED)
   {
     hueLastRequestSent = millis();
     if (huePollingEnabled)
@@ -29,7 +29,7 @@ void handleHue()
 
 void reconnectHue()
 {
-  if (WiFi.status() != WL_CONNECTED || !huePollingEnabled) return;
+  if (!WLED_CONNECTED || !huePollingEnabled) return;
   DEBUG_PRINTLN("Hue reconnect");
   if (hueClient == nullptr) {
     hueClient = new AsyncClient();

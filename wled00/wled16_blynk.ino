@@ -8,7 +8,7 @@ byte blSat = 255;
 void initBlynk(const char* auth)
 {
   #ifndef WLED_DISABLE_BLYNK
-  if (WiFi.status() != WL_CONNECTED) return;
+  if (!WLED_CONNECTED) return;
   blynkEnabled = (auth[0] != 0);
   if (blynkEnabled) Blynk.config(auth);
   #endif
@@ -17,7 +17,7 @@ void initBlynk(const char* auth)
 void handleBlynk()
 {
   #ifndef WLED_DISABLE_BLYNK
-  if (WiFi.status() == WL_CONNECTED && blynkEnabled)
+  if (WLED_CONNECTED && blynkEnabled)
   Blynk.run();
   #endif
 }

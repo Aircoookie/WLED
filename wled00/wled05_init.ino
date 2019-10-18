@@ -63,7 +63,7 @@ void wledInit()
     udpConnected = notifierUdp.begin(udpPort);
     if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
   }
-  if (ntpEnabled && WiFi.status() == WL_CONNECTED)
+  if (ntpEnabled && WLED_CONNECTED)
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   //start captive portal if AP active
@@ -227,7 +227,7 @@ void initCon()
     handleOverlays();
     if (briT) strip.service();
     if (millis()-lastTry > 499) {
-      con = (WiFi.status() == WL_CONNECTED);
+      con = WLED_CONNECTED;
       lastTry = millis();
       DEBUG_PRINTLN("C_NC");
       if (!recoveryAPDisabled && fail_count > apWaitTimeSecs*2)
