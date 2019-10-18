@@ -175,9 +175,10 @@ void beginStrip()
 }
 
 
-void initAP(){
+void initAP(bool resetAP=false){
   bool set = apSSID[0];
-  if (!set) strcpy(apSSID,"WLED-AP");
+  if (!set || resetAP) strcpy(apSSID, "WLED-AP");
+  //if (resetAP) strcpy(apPass,"wled1234");
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255,255,255,0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
   if (!set) apSSID[0] = 0;

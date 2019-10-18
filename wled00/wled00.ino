@@ -61,6 +61,7 @@
  #define ESPALEXA_ASYNC
  #define ESPALEXA_NO_SUBPAGE
  #define ESPALEXA_MAXDEVICES 1
+ #define ESPALEXA_DEBUG
  #include "src/dependencies/espalexa/Espalexa.h"
 #endif
 #ifndef WLED_DISABLE_BLYNK
@@ -98,7 +99,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910073
+#define VERSION 1910174
 char versionString[] = "0.8.5";
 
 
@@ -296,6 +297,7 @@ byte briLast = 127;                           //brightness before turned off. Us
 
 //button
 bool buttonPressedBefore = false;
+bool buttonLongPressed = false;
 unsigned long buttonPressedTime = 0;
 unsigned long buttonWaitTime = 0;
 

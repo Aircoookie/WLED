@@ -55,7 +55,7 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 }
 
 void WS2812FX::service() {
-  now = millis(); // Be aware, millis() rolls over every 49 days
+  now = millis() + timebase; // Be aware, millis() rolls over every 49 days
   if (now - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)

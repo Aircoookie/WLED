@@ -314,6 +314,7 @@ class WS2812FX {
       targetPalette = CloudColors_p;
       ablMilliampsMax = 850;
       currentMilliamps = 0;
+      timebase = 0;
       _locked = nullptr;
       _modeUsesLock = false;
       bus = new NeoPixelWrapper();
@@ -378,6 +379,7 @@ class WS2812FX {
       currentMilliamps;
 
     uint32_t
+      timebase,
       color_wheel(uint8_t),
       color_from_palette(uint16_t, bool, bool, uint8_t, uint8_t pbri = 255),
       color_blend(uint32_t,uint32_t,uint8_t),

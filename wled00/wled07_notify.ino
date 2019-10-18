@@ -2,7 +2,7 @@
  * UDP notifier
  */
 
-#define WLEDPACKETSIZE 24
+#define WLEDPACKETSIZE 29
 #define UDP_IN_MAXSIZE 1472
 
 
@@ -37,8 +37,8 @@ void notify(byte callMode, bool followUp=false)
   //compatibilityVersionByte: 
   //0: old 1: supports white 2: supports secondary color
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
-  //6: supports tertiary color
-  udpOut[11] = 5; 
+  //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 
+  udpOut[11] = 6; 
   udpOut[12] = colSec[0];
   udpOut[13] = colSec[1];
   udpOut[14] = colSec[2];
@@ -51,6 +51,12 @@ void notify(byte callMode, bool followUp=false)
   udpOut[21] = colTer[1];
   udpOut[22] = colTer[2];
   udpOut[23] = colTer[3];*/
+  udpOut[24] = followUp;
+  uint32_t t = millis() + strip.timebase;
+  udpOut[25] = (t >> 24) & 0xFF;
+  udpOut[26] = (t >> 16) & 0xFF;
+  udpOut[27] = (t >>  8) & 0xFF;
+  udpOut[28] = (t >>  0) & 0xFF;
   
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(WiFi.subnetMask()) | uint32_t(WiFi.gatewayIP());
@@ -185,7 +191,14 @@ void handleNotifications()
             colSec[2] = udpIn[14];
             colSec[3] = udpIn[15];
           }
-          /*if (udpIn[11] > 5)
+          if (udpIn[11] > 5)
+          {
+            uint32_t t = (udpIn[25] << 24) | (udpIn[26] << 16) | (udpIn[27] << 8) | (udpIn[28]);
+            t -= 2;
+            t -= millis();
+            strip.timebase = t;
+          }
+          /*if (udpIn[11] > 6)
           {
             colTer[0] = udpIn[20];
             colTer[1] = udpIn[21];
