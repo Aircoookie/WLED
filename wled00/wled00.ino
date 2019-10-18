@@ -99,7 +99,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910181
+#define VERSION 1910182
 char versionString[] = "0.8.5";
 
 
@@ -124,6 +124,7 @@ char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
 byte apHide = 0;                              //hidden AP SSID
 byte apWaitTimeSecs = 32;                     //time to wait for connection before opening AP
+bool apAlwaysOn = true;
 bool recoveryAPDisabled = false;              //never open AP (not recommended)
 IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
 IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
@@ -259,6 +260,12 @@ uint16_t userVar0 = 0, userVar1 = 0;
 
 
 //internal global variable declarations
+//wifi
+bool apActive = false;
+bool forceReconnect = false;
+uint32_t lastReconnectAttempt = 0;
+bool interfacesInited = false;
+
 //color
 byte col[]{255, 159, 0, 0};                   //target RGB(W) color
 byte colOld[]{0, 0, 0, 0};                    //color before transition
@@ -398,7 +405,6 @@ EspalexaDevice* espalexaDevice;
 
 //dns server
 DNSServer dnsServer;
-bool dnsActive = false;
 
 //network time
 bool ntpConnected = false;
@@ -433,6 +439,7 @@ E131* e131;
 WS2812FX strip = WS2812FX();
 
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
+#define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID,"Your_Network") != 0)
 
 //debug macros
 #ifdef WLED_DEBUG
@@ -498,7 +505,6 @@ bool oappendi(int i)
 
 //boot starts here
 void setup() {
-  pinMode(4, OUTPUT); digitalWrite(4, HIGH);
   wledInit();
 }
 
@@ -524,7 +530,7 @@ void loop() {
 
   if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
   {
-    if (dnsActive) dnsServer.processNextRequest();
+    if (apActive) dnsServer.processNextRequest();
     #ifndef WLED_DISABLE_OTA
      if (aOtaEnabled) ArduinoOTA.handle();
     #endif
@@ -533,16 +539,12 @@ void loop() {
 
     handleHue();
     handleBlynk();
-    yield();
-    if (millis() - lastMqttReconnectAttempt > 30000)
-    {
-      initMqtt();
-      lastMqttReconnectAttempt = millis();
-    }
 
     yield();
     if (!offMode) strip.service();
   }
+  yield();
+  if (millis() - lastMqttReconnectAttempt > 30000) initMqtt();
 
   //DEBUG serial logging
   #ifdef WLED_DEBUG

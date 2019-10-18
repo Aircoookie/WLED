@@ -2,8 +2,6 @@
  * MQTT communication protocol for home automation
  */
 
-//#define WLED_MQTT_PORT 1883
-
 void parseMQTTBriPayload(char* payload)
 {
   if      (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {bri = briLast; colorUpdated(1);}
@@ -47,7 +45,7 @@ void onMqttConnect(bool sessionPresent)
 
   sendHADiscoveryMQTT();
   publishMqtt();
-  DEBUG_PRINTLN("MQ ready");
+  DEBUG_PRINTLN("MQTT ready");
 }
 
 
@@ -74,8 +72,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
 void publishMqtt()
 {
-  if (mqtt == NULL) return;
-  if (!mqtt->connected()) return;
+  if (mqtt == nullptr || !mqtt->connected()) return;
   DEBUG_PRINTLN("Publish MQTT");
 
   char s[10];
@@ -206,8 +203,8 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   DEBUG_PRINTLN(buffer);
 
   char pubt[25 + 12 + 8];
-  strcpy(pubt, "homeassistant/light/WLED_");
-  strcat(pubt, escapedMac.c_str());
+  strcpy(pubt, "homeassistant/light/");
+  strcat(pubt, mqttClientID);
   strcat(pubt, "/config");
   mqtt->publish(pubt, 0, true, buffer);
 #endif
@@ -215,11 +212,13 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
 
 bool initMqtt()
 {
+  lastMqttReconnectAttempt = millis();
   if (mqttServer[0] == 0 || !WLED_CONNECTED) return false;
 
-  if (!mqtt) mqtt = new AsyncMqttClient();
+  if (mqtt == nullptr) mqtt = new AsyncMqttClient();
   if (mqtt->connected()) return true;
 
+  DEBUG_PRINTLN("Reconnecting MQTT");
   IPAddress mqttIP;
   if (mqttIP.fromString(mqttServer)) //see if server is IP or domain
   {
@@ -228,7 +227,7 @@ bool initMqtt()
     mqtt->setServer(mqttServer, mqttPort);
   }
   mqtt->setClientId(mqttClientID);
-  if (mqttUser[0] && mqttPass[0] != 0) mqtt->setCredentials(mqttUser, mqttPass);
+  if (mqttUser[0] && mqttPass[0]) mqtt->setCredentials(mqttUser, mqttPass);
   mqtt->onMessage(onMqttMessage);
   mqtt->onConnect(onMqttConnect);
   mqtt->connect();
