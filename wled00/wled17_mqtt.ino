@@ -215,8 +215,8 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
 
 bool initMqtt()
 {
-  if (mqttServer[0] == 0) return false;
-  if (WiFi.status() != WL_CONNECTED) return false;
+  if (mqttServer[0] == 0 || !WLED_CONNECTED) return false;
+
   if (!mqtt) mqtt = new AsyncMqttClient();
   if (mqtt->connected()) return true;
 

@@ -67,7 +67,7 @@ void wledInit()
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   //start captive portal if AP active
-  if (onlyAP || strlen(apSSID) > 0)
+  if (!WLED_CONNECTED || strlen(apSSID) > 0)
   {
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
@@ -98,13 +98,13 @@ void wledInit()
 
   strip.service();
   //init Alexa hue emulation
-  if (alexaEnabled && !onlyAP) alexaInit();
+  if (alexaEnabled) alexaInit();
 
   server.begin();
   DEBUG_PRINTLN("HTTP server started");
 
   //init ArduinoOTA
-  if (!onlyAP) {
+  if (WLED_CONNECTED) {
     #ifndef WLED_DISABLE_OTA
     if (aOtaEnabled)
     {
@@ -121,7 +121,7 @@ void wledInit()
 
     strip.service();
     // Set up mDNS responder:
-    if (strlen(cmDNS) > 0 && !onlyAP)
+    if (strlen(cmDNS) > 0 && WLED_CONNECTED)
     {
       MDNS.begin(cmDNS);
       DEBUG_PRINTLN("mDNS responder started");
@@ -176,6 +176,7 @@ void beginStrip()
 
 
 void initAP(bool resetAP=false){
+  DEBUG_PRINTLN("Opening AP...");
   bool set = apSSID[0];
   if (!set || resetAP) strcpy(apSSID, "WLED-AP");
   //if (resetAP) strcpy(apPass,"wled1234");
@@ -207,9 +208,14 @@ void initCon()
     DEBUG_PRINTLN(" NO AP");
     WiFi.softAPdisconnect(true);
   }
-  int fail_count = 0;
+
   if (strlen(clientSSID) <1 || strcmp(clientSSID,"Your_Network") == 0)
-    fail_count = apWaitTimeSecs*2; //instantly go to ap mode
+  {
+    DEBUG_PRINT("No connection configured. ");
+    initAP(); //instantly go to ap mode
+    return;
+  }
+
   #ifndef ARDUINO_ARCH_ESP32
    WiFi.hostname(serverDescription);
   #endif
@@ -217,6 +223,8 @@ void initCon()
   #ifdef ARDUINO_ARCH_ESP32
    WiFi.setHostname(serverDescription);
   #endif
+  //wifiInit = true;
+  uint32_t fail_count = 0;
   unsigned long lastTry = 0;
   bool con = false;
   while(!con)
@@ -233,13 +241,19 @@ void initCon()
       if (!recoveryAPDisabled && fail_count > apWaitTimeSecs*2)
       {
         WiFi.disconnect();
-        DEBUG_PRINTLN("Can't connect. Opening AP...");
-        onlyAP = true;
+        DEBUG_PRINT("Can't connect. ");
         initAP();
         return;
       }
       fail_count++;
     }
+  }
+}
+
+
+void handleConnection() {
+  if (!WLED_CONNECTED) {
+    
   }
 }
 

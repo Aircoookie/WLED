@@ -30,7 +30,7 @@
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 //to toggle usb serial debug (un)comment the following line
-//#define WLED_DEBUG
+#define WLED_DEBUG
 
 
 //library inclusions
@@ -315,7 +315,6 @@ byte effectIntensity = effectIntensityDefault;
 byte effectPalette = effectPaletteDefault;
 
 //network
-bool onlyAP = false;                          //only Access Point active, no connection to home network
 bool udpConnected = false, udpRgbConnected = false;
 
 //ui style
@@ -379,7 +378,7 @@ IPAddress realtimeIP = (0,0,0,0);
 unsigned long realtimeTimeout = 0;
 
 //mqtt
-long nextMQTTReconnectAttempt = 0;
+long lastMqttReconnectAttempt = 0;
 long lastInterfaceUpdate = 0;
 byte interfaceUpdateCallMode = 0;
 
@@ -516,7 +515,7 @@ void loop() {
   handleIO();
   handleIR();
   handleNetworkTime();
-  if (!onlyAP) handleAlexa();
+  handleAlexa();
 
   handleOverlays();
 
@@ -531,17 +530,16 @@ void loop() {
     #endif
     handleNightlight();
     yield();
-    if (!onlyAP) {
-      handleHue();
-      handleBlynk();
-      yield();
-      if (millis() > nextMQTTReconnectAttempt)
-      {
-        yield();
-        initMqtt();
-        nextMQTTReconnectAttempt = millis() + 30000;
-      }
+
+    handleHue();
+    handleBlynk();
+    yield();
+    if (millis() - lastMqttReconnectAttempt > 30000)
+    {
+      initMqtt();
+      lastMqttReconnectAttempt = millis();
     }
+
     yield();
     if (!offMode) strip.service();
   }

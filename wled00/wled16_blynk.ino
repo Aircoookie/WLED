@@ -25,7 +25,7 @@ void handleBlynk()
 void updateBlynk()
 {
   #ifndef WLED_DISABLE_BLYNK
-  if (onlyAP) return;
+  if (!WLED_CONNECTED) return;
   Blynk.virtualWrite(V0, bri);
   //we need a RGB -> HSB convert here
   Blynk.virtualWrite(V3, bri? 1:0);
