@@ -7,6 +7,7 @@
 
 #ifdef ESP32
 #include <AsyncTCP.h>
+#include <freertos/semphr.h>
 #elif defined(ESP8266)
 #include <ESPAsyncTCP.h>
 #else
@@ -36,6 +37,14 @@
 #include "AsyncMqttClient/Packets/PubAckPacket.hpp"
 #include "AsyncMqttClient/Packets/PubRecPacket.hpp"
 #include "AsyncMqttClient/Packets/PubCompPacket.hpp"
+
+#if ESP32
+#define SEMAPHORE_TAKE(X) if (xSemaphoreTake(_xSemaphore, 1000 / portTICK_PERIOD_MS) != pdTRUE) { return X; }  // Waits max 1000ms
+#define SEMAPHORE_GIVE() xSemaphoreGive(_xSemaphore);
+#elif defined(ESP8266)
+#define SEMAPHORE_TAKE(X) void()
+#define SEMAPHORE_GIVE() void()
+#endif
 
 class AsyncMqttClient {
  public:
@@ -120,6 +129,10 @@ class AsyncMqttClient {
   std::vector<AsyncMqttClientInternals::PendingPubRel> _pendingPubRels;
 
   std::vector<AsyncMqttClientInternals::PendingAck> _toSendAcks;
+
+#ifdef ESP32
+  SemaphoreHandle_t _xSemaphore = nullptr;
+#endif
 
   void _clear();
   void _freeCurrentParsedPacket();

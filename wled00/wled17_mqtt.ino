@@ -215,7 +215,11 @@ bool initMqtt()
   lastMqttReconnectAttempt = millis();
   if (mqttServer[0] == 0 || !WLED_CONNECTED) return false;
 
-  if (mqtt == nullptr) mqtt = new AsyncMqttClient();
+  if (mqtt == nullptr) {
+    mqtt = new AsyncMqttClient();
+    mqtt->onMessage(onMqttMessage);
+    mqtt->onConnect(onMqttConnect);
+  }
   if (mqtt->connected()) return true;
 
   DEBUG_PRINTLN("Reconnecting MQTT");
@@ -228,8 +232,6 @@ bool initMqtt()
   }
   mqtt->setClientId(mqttClientID);
   if (mqttUser[0] && mqttPass[0]) mqtt->setCredentials(mqttUser, mqttPass);
-  mqtt->onMessage(onMqttMessage);
-  mqtt->onConnect(onMqttConnect);
   mqtt->connect();
   return true;
 }

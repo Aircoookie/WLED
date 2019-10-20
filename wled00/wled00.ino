@@ -99,7 +99,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910182
+#define VERSION 1910201
 char versionString[] = "0.8.5";
 
 
@@ -449,6 +449,7 @@ WS2812FX strip = WS2812FX();
  unsigned long debugTime = 0;
  int lastWifiState = 3;
  unsigned long wifiStateChangedTime = 0;
+ int loops = 0;
 #else
  #define DEBUG_PRINT(x)
  #define DEBUG_PRINTLN(x)
@@ -563,7 +564,10 @@ void loop() {
      DEBUG_PRINT("State time: "); DEBUG_PRINTLN(wifiStateChangedTime);
      DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
      DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP());
+     DEBUG_PRINT("Loops/sec: "); DEBUG_PRINTLN(loops/10);
+     loops = 0;
      debugTime = millis();
    }
+   loops++;
   #endif
 }

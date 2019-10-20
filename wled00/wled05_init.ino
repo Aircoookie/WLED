@@ -188,13 +188,15 @@ void initConnection()
 
   lastReconnectAttempt = millis();
 
-  if (apAlwaysOn)
-  {
-    initAP();
-  } else if (!apActive)
-  {
-    DEBUG_PRINTLN("Access point disabled.");
-    WiFi.softAPdisconnect(true);
+  if (!apActive) {
+    if (apAlwaysOn)
+    {
+      initAP();
+    } else
+    {
+      DEBUG_PRINTLN("Access point disabled.");
+      WiFi.softAPdisconnect(true);
+    }
   }
 
   if (!WLED_WIFI_CONFIGURED)
