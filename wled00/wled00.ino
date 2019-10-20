@@ -61,7 +61,7 @@
  #define ESPALEXA_ASYNC
  #define ESPALEXA_NO_SUBPAGE
  #define ESPALEXA_MAXDEVICES 1
- #define ESPALEXA_DEBUG
+ //#define ESPALEXA_DEBUG
  #include "src/dependencies/espalexa/Espalexa.h"
 #endif
 #ifndef WLED_DISABLE_BLYNK
@@ -124,7 +124,7 @@ char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
 byte apHide = 0;                              //hidden AP SSID
 byte apWaitTimeSecs = 32;                     //time to wait for connection before opening AP
-bool apAlwaysOn = true;
+bool apAlwaysOn = false;
 bool recoveryAPDisabled = false;              //never open AP (not recommended)
 IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
 IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
@@ -145,9 +145,6 @@ byte effectDefault = 0;
 byte effectSpeedDefault = 75;
 byte effectIntensityDefault = 128;            //intensity is supported on some effects as an additional parameter (e.g. for blink you can change the duty cycle)
 byte effectPaletteDefault = 0;                //palette is supported on the FastLED effects, otherwise it has no effect
-
-//bool strip.gammaCorrectBri = false;         //gamma correct brightness (not recommended) --> edit in WS2812FX.h
-//bool strip.gammaCorrectCol = true;          //gamma correct colors (strongly recommended)
 
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
 byte nightlightDelayMins = 60;
@@ -424,6 +421,8 @@ String messageHead, messageSub;
 byte optionType;
 
 bool doReboot = false; //flag to initiate reboot from async handlers
+bool doPublishMqtt = false;
+bool doSendHADiscovery = true;
 
 //server library objects
 AsyncWebServer server(80);
@@ -464,6 +463,7 @@ WS2812FX strip = WS2812FX();
  #endif
  #include "SPIFFSEditor.h"
 #endif
+
 
 //function prototypes
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
@@ -525,7 +525,7 @@ void loop() {
   handleAlexa();
 
   handleOverlays();
-
+  if (doSendHADiscovery) sendHADiscoveryMQTT();
   yield();
   if (doReboot) reset();
 
@@ -533,7 +533,7 @@ void loop() {
   {
     if (apActive) dnsServer.processNextRequest();
     #ifndef WLED_DISABLE_OTA
-     if (aOtaEnabled) ArduinoOTA.handle();
+    if (WLED_CONNECTED && aOtaEnabled) ArduinoOTA.handle();
     #endif
     handleNightlight();
     yield();

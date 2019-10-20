@@ -142,7 +142,7 @@ void updateInterfaces(uint8_t callMode)
   }
   #endif
   if (callMode != 9 && callMode != 5) updateBlynk();
-  publishMqtt();
+  doPublishMqtt = true;
   lastInterfaceUpdate = millis();
 }
 
@@ -155,6 +155,7 @@ void handleTransitions()
     updateInterfaces(interfaceUpdateCallMode);
     interfaceUpdateCallMode = 0; //disable
   }
+  if (doPublishMqtt) publishMqtt();
   
   if (transitionActive && transitionDelayTemp > 0)
   {

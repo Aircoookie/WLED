@@ -40,20 +40,12 @@ void wledInit()
   DEBUG_PRINTLN("Load EEPROM");
   loadSettingsFromEEPROM(true);
   beginStrip();
-  userBeginPreConnection();
+  userSetup();
   if (strcmp(clientSSID,"Your_Network") == 0) showWelcomePage = true;
   WiFi.persistent(false);
 
   if (macroBoot>0) applyMacro(macroBoot);
   Serial.println("Ada");
-
-  if (udpPort > 0 && udpPort != ntpLocalPort)
-  {
-    udpConnected = notifierUdp.begin(udpPort);
-    if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
-  }
-  if (ntpEnabled && WLED_CONNECTED)
-  ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   //generate module IDs
   escapedMac = WiFi.macAddress();
@@ -77,51 +69,25 @@ void wledInit()
 
   strip.service();
 
-  //HTTP server page init
-  initServer();
-
-  strip.service();
-
-  server.begin();
-  DEBUG_PRINTLN("HTTP server started");
-
-  //init ArduinoOTA
-  if (true) {
-    #ifndef WLED_DISABLE_OTA
+  #ifndef WLED_DISABLE_OTA
     if (aOtaEnabled)
     {
       ArduinoOTA.onStart([]() {
-        #ifndef ARDUINO_ARCH_ESP32
+        #ifdef ESP8266
         wifi_set_sleep_type(NONE_SLEEP_T);
         #endif
         DEBUG_PRINTLN("Start ArduinoOTA");
       });
       if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
-      ArduinoOTA.begin();
     }
-    #endif
+  #endif
+  
+  //HTTP server page init
+  initServer();
 
-    strip.service();
-    // Set up mDNS responder:
-    if (strlen(cmDNS) > 0 && WLED_CONNECTED)
-    {
-      MDNS.begin(cmDNS);
-      DEBUG_PRINTLN("mDNS responder started");
-      // Add service to MDNS
-      MDNS.addService("http", "tcp", 80);
-      MDNS.addService("wled", "tcp", 80);
-    }
-    strip.service();
-
-    initBlynk(blynkApiKey);
-    initE131();
-    reconnectHue();
-  } else {
-    e131Enabled = false;
-  }
+  strip.service();
 
   initConnection();
-  userBegin();
 }
 
 
@@ -168,6 +134,14 @@ void initAP(bool resetAP=false){
   
   if (!apActive) //start captive portal if AP active
   {
+    DEBUG_PRINTLN("Init AP interfaces");
+    server.begin();
+    if (udpPort > 0 && udpPort != ntpLocalPort)
+    {
+      udpConnected = notifierUdp.begin(udpPort);
+      if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
+    }
+
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
   }
@@ -188,7 +162,12 @@ void initConnection()
 
   lastReconnectAttempt = millis();
 
-  if (!apActive) {
+  if (!WLED_WIFI_CONFIGURED)
+  {
+    DEBUG_PRINT("No connection configured. ");
+    if (!apActive) initAP(); //instantly go to ap mode
+    return;
+  } else if (!apActive) {
     if (apAlwaysOn)
     {
       initAP();
@@ -198,20 +177,13 @@ void initConnection()
       WiFi.softAPdisconnect(true);
     }
   }
-
-  if (!WLED_WIFI_CONFIGURED)
-  {
-    DEBUG_PRINT("No connection configured. ");
-    initAP(); //instantly go to ap mode
-    return;
-  }
   showWelcomePage = false;
   
   DEBUG_PRINT("Connecting to ");
   DEBUG_PRINT(clientSSID);
   DEBUG_PRINTLN("...");
 
-  #ifndef ARDUINO_ARCH_ESP32
+  #ifdef ESP8266
    WiFi.hostname(serverDescription);
   #endif
    WiFi.begin(clientSSID, clientPass);
@@ -221,6 +193,9 @@ void initConnection()
 }
 
 void initInterfaces() {
+  DEBUG_PRINTLN("Init STA interfaces");
+  server.begin();
+  
   if (hueIP[0] == 0)
   {
     hueIP[0] = WiFi.localIP()[0];
@@ -231,45 +206,43 @@ void initInterfaces() {
   //init Alexa hue emulation
   if (alexaEnabled) alexaInit();
 
-  initMqtt();
-
   #ifndef WLED_DISABLE_OTA
-    if (aOtaEnabled)
-    {
-      ArduinoOTA.onStart([]() {
-        #ifndef ARDUINO_ARCH_ESP32
-        wifi_set_sleep_type(NONE_SLEEP_T);
-        #endif
-        DEBUG_PRINTLN("Start ArduinoOTA");
-      });
-      if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
-      ArduinoOTA.begin();
-    }
+    if (aOtaEnabled) ArduinoOTA.begin();
   #endif
 
   strip.service();
   // Set up mDNS responder:
   if (strlen(cmDNS) > 0)
   {
-    MDNS.begin(cmDNS);
-    DEBUG_PRINTLN("mDNS responder started");
-    // Add service to MDNS
-    MDNS.addService("http", "tcp", 80);
-    MDNS.addService("wled", "tcp", 80);
+    if (MDNS.begin(cmDNS))
+    {
+      MDNS.addService("http", "tcp", 80);
+      MDNS.addService("wled", "tcp", 80);
+      DEBUG_PRINTLN("mDNS started");
+    } else {
+      DEBUG_PRINTLN("mDNS failed!");
+    }
+    DEBUG_PRINTLN("mDNS started");
   }
   strip.service();
+
+  if (ntpEnabled && WLED_CONNECTED)
+  ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   initBlynk(blynkApiKey);
   initE131();
   reconnectHue();
-    
+  initMqtt();
   interfacesInited = true;
 }
 
 byte stacO = 0;
 
 void handleConnection() {
-  byte stac = wifi_softap_get_station_num();
+  byte stac = 0;
+  #ifdef ESP8266
+  stac = wifi_softap_get_station_num();
+  #endif
   if (stac != stacO)
   {
     stacO = stac;
@@ -300,6 +273,7 @@ void handleConnection() {
     DEBUG_PRINT("Connected! IP address: ");
     DEBUG_PRINTLN(WiFi.localIP());
     initInterfaces();
+    userConnected();
 
     //shut down AP
     if (!apAlwaysOn && apActive)

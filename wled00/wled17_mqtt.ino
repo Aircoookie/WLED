@@ -43,15 +43,15 @@ void onMqttConnect(bool sessionPresent)
     mqtt->subscribe(subuf, 0);
   }
 
-  sendHADiscoveryMQTT();
-  publishMqtt();
+  doSendHADiscovery = true;
+  //doPublishMqtt = true;
   DEBUG_PRINTLN("MQTT ready");
 }
 
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
-  DEBUG_PRINT("MQ callb rec: ");
+  DEBUG_PRINT("MQTT msg: ");
   DEBUG_PRINTLN(topic);
   DEBUG_PRINTLN(payload);
 
@@ -72,6 +72,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
 void publishMqtt()
 {
+  doPublishMqtt = false;
   if (mqtt == nullptr || !mqtt->connected()) return;
   DEBUG_PRINTLN("Publish MQTT");
 
@@ -134,6 +135,9 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
 }
 
   */
+  doSendHADiscovery = false;
+  if (mqtt == nullptr || !mqtt->connected()) return;
+  
   char bufc[36], bufcol[38], bufg[36], bufapi[38], buffer[2500];
 
   strcpy(bufc, mqttDeviceTopic);
@@ -158,7 +162,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   root["fx_stat_t"] = bufapi;
 
   size_t jlen = measureJson(root);
-  DEBUG_PRINTLN(jlen);
+  //DEBUG_PRINTLN(jlen);
   serializeJson(root, buffer, jlen);
 
   //add values which don't change
@@ -190,7 +194,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
         mdn[namelen] = 0;
         snprintf(mdnfx, 64, "\"[FX=%02d] %s\",", i, mdn);
         oappend(mdnfx);
-        DEBUG_PRINTLN(mdnfx);
+        //DEBUG_PRINTLN(mdnfx);
         i++;
       }
       isNameStart = !isNameStart;
@@ -206,7 +210,8 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   strcpy(pubt, "homeassistant/light/");
   strcat(pubt, mqttClientID);
   strcat(pubt, "/config");
-  mqtt->publish(pubt, 0, true, buffer);
+  DEBUG_PRINTLN(mqtt->publish(pubt, 0, true, buffer));
+  yield();
 #endif
 }
 

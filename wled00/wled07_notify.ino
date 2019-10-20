@@ -99,7 +99,7 @@ void initE131(){
 
 void handleE131(){
   //E1.31 protocol support
-  if(e131Enabled) {
+  if(WLED_CONNECTED && e131Enabled) {
     uint16_t len = e131->parsePacket();
     if (!len || e131->universe < e131Universe || e131->universe > e131Universe +4) return;
     len /= 3; //one LED is 3 DMX channels
