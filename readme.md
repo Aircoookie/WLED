@@ -52,3 +52,5 @@ Uses Linearicons by Perxis!
 Join the Discord [server](https://discord.gg/KuqP7NE) to discuss everything about WLED!  
 You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com).  
 If WLED really brightens up your every day, you can [![](https://img.shields.io/badge/send%20me%20a%20small%20gift-paypal-blue.svg?style=flat-square)](https://paypal.me/aircoookie)
+
+## Future Updates
