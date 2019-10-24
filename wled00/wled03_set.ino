@@ -28,12 +28,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     strcpy(cmDNS, request->arg("CM").c_str());
 
-    int t = request->arg("AT").toInt(); if (t > 9 && t <= 255) apWaitTimeSecs = t;
+    apBehavior = request->arg("AB").toInt();
     strcpy(apSSID, request->arg("AS").c_str());
     apHide = request->hasArg("AH");
     int passlen = request->arg("AP").length();
     if (passlen == 0 || (passlen > 7 && request->arg("AP").charAt(0) != '*')) strcpy(apPass, request->arg("AP").c_str());
-    t = request->arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
+    int t = request->arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
 
     char k[3]; k[2] = 0;
     for (int i = 0; i<4; i++)
@@ -304,7 +304,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     {
       otaLock = request->hasArg("NO");
       wifiLock = request->hasArg("OW");
-      recoveryAPDisabled = request->hasArg("NA");
       aOtaEnabled = request->hasArg("AO");
     }
   }

@@ -122,15 +122,14 @@ void beginStrip()
 
 
 void initAP(bool resetAP=false){
-  if (recoveryAPDisabled) return;
-  bool set = apSSID[0];
-  if (!set || resetAP) strcpy(apSSID, "WLED-AP");
+  if (apBehavior == 3 && !resetAP) return;
+
+  if (!apSSID[0] || resetAP) strcpy(apSSID, "WLED-AP");
   if (resetAP) strcpy(apPass,"wled1234");
   DEBUG_PRINT("Opening access point ");
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255,255,255,0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
-  if (!set) apSSID[0] = 0;
   
   if (!apActive) //start captive portal if AP active
   {
@@ -168,7 +167,7 @@ void initConnection()
     if (!apActive) initAP(); //instantly go to ap mode
     return;
   } else if (!apActive) {
-    if (apAlwaysOn)
+    if (apBehavior == 2)
     {
       initAP();
     } else
@@ -194,7 +193,6 @@ void initConnection()
 
 void initInterfaces() {
   DEBUG_PRINTLN("Init STA interfaces");
-  server.begin();
   
   if (hueIP[0] == 0)
   {
@@ -207,7 +205,7 @@ void initInterfaces() {
   if (alexaEnabled) alexaInit();
 
   #ifndef WLED_DISABLE_OTA
-    if (aOtaEnabled) ArduinoOTA.begin();
+    if (aOtaEnabled) ArduinoOTA.begin(false);
   #endif
 
   strip.service();
@@ -216,16 +214,21 @@ void initInterfaces() {
   {
     if (MDNS.begin(cmDNS))
     {
+      DEBUG_PRINTLN("mDNS started");
       MDNS.addService("http", "tcp", 80);
       MDNS.addService("wled", "tcp", 80);
-      DEBUG_PRINTLN("mDNS started");
+      if (aOtaEnabled) MDNS.enableArduino(8266);
     } else {
       DEBUG_PRINTLN("mDNS failed!");
     }
-    DEBUG_PRINTLN("mDNS started");
   }
-  strip.service();
+  server.begin();
 
+  if (udpPort > 0 && udpPort != ntpLocalPort)
+  {
+    udpConnected = notifierUdp.begin(udpPort);
+    if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
+  }
   if (ntpEnabled && WLED_CONNECTED)
   ntpConnected = ntpUdp.begin(ntpLocalPort);
 
@@ -239,9 +242,14 @@ void initInterfaces() {
 byte stacO = 0;
 
 void handleConnection() {
+  //TODO: reconnect if heap <8000
   byte stac = 0;
   #ifdef ESP8266
   stac = wifi_softap_get_station_num();
+  #else
+  wifi_sta_list_t stationList;
+  esp_wifi_ap_get_sta_list(&stationList);
+  stac = stationList.num;
   #endif
   if (stac != stacO)
   {
@@ -267,7 +275,7 @@ void handleConnection() {
       initConnection();
     }
     if (millis() - lastReconnectAttempt > 300000 && WLED_WIFI_CONFIGURED) initConnection();
-    if (!apActive && millis() - lastReconnectAttempt > apWaitTimeSecs*1000) initAP(); 
+    if (!apActive && millis() - lastReconnectAttempt > 12000) initAP(); 
   } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
     DEBUG_PRINT("Connected! IP address: ");
@@ -276,12 +284,12 @@ void handleConnection() {
     userConnected();
 
     //shut down AP
-    if (!apAlwaysOn && apActive)
+    if (apBehavior != 2 && apActive)
     {
       dnsServer.stop();
-      DEBUG_PRINTLN("Access point disabled.");
       WiFi.softAPdisconnect(true);
       apActive = false;
+      DEBUG_PRINTLN("Access point disabled.");
     }
   }
 }

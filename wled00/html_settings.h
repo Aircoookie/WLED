@@ -28,7 +28,7 @@ const char PAGE_settings_wifi[] PROGMEM = R"=====(<!DOCTYPE html>
 %CSS%%SCSS%</head><body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
+<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button><hr>
 <h2>WiFi setup</h2>
 <h3>Connect to existing network</h3>
 Network name (SSID, empty to not connect): <br><input name="CS" maxlength="32"><br>
@@ -50,15 +50,20 @@ Static subnet mask:<br>
 <input name="S3" type="number" min="0" max="255" required><br>
 mDNS address (leave empty for no mDNS):<br/>
 http:// <input name="CM" maxlength="32"> .local<br>
-Try connecting before opening AP for: <input name="AT" type="number" min="0" max="255" required> s <br>
 Client IP: <span class="sip"> Not connected </span><br>
 <h3>Configure Access Point</h3>
 AP SSID (leave empty for no AP):<br><input name="AS" maxlength="32"><br>
 Hide AP name: <input type="checkbox" name="AH"><br>
 AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63"><br>
 Access Point WiFi channel: <input name="AC" type="number" min="1" max="13" required><br>
+AP opens:
+<select name="AB">
+<option value="0">No connection after boot</option>
+<option value="1">Disconnected</option>
+<option value="2">Always</option>
+<option value="3">Never (not recommended)</option></select><br>
 AP IP: <span class="sip"> Not active </span><hr>
-<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
+<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
 </form>
 </body>
 </html>)=====";
@@ -390,9 +395,6 @@ The password should be changed when OTA is enabled.<br>
 <b>Disable OTA when not in use, otherwise an attacker can reflash device software!</b><br>
 <i>Settings on this page are only changable if OTA lock is disabled!</i><br>
 Deny access to WiFi settings if locked: <input type="checkbox" name="OW"><br><br>
-Disable recovery AP: <input type="checkbox" name="NA"><br>
-In case of an error there will be no wireless recovery possible!<br>
-Completely disables all Access Point functions.<br><br>
 Factory reset: <input type="checkbox" name="RS"><br>
 All EEPROM content (settings) will be erased.<br><br>
 HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
@@ -400,7 +402,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.5<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.8.6<br><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2019 Christian Schwinne <br>

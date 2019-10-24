@@ -44,7 +44,7 @@ void onMqttConnect(bool sessionPresent)
   }
 
   doSendHADiscovery = true;
-  //doPublishMqtt = true;
+  doPublishMqtt = true;
   DEBUG_PRINTLN("MQTT ready");
 }
 
@@ -98,6 +98,8 @@ void publishMqtt()
 
 const char HA_static_JSON[] PROGMEM = R"=====(,"bri_val_tpl":"{{value}}","rgb_cmd_tpl":"{{'#%02x%02x%02x' | format(red, green, blue)}}","rgb_val_tpl":"{{value[1:3]|int(base=16)}},{{value[3:5]|int(base=16)}},{{value[5:7]|int(base=16)}}","qos":0,"opt":true,"pl_on":"ON","pl_off":"OFF","fx_val_tpl":"{{value}}","fx_list":[)=====";
 
+char buffer[2400]; //TODO: this is a TERRIBLE waste of precious memory, local var leads to exception though. Maybe dynamic allocation, but it is unclear when to free
+
 void sendHADiscoveryMQTT()
 {
 
@@ -138,7 +140,7 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   doSendHADiscovery = false;
   if (mqtt == nullptr || !mqtt->connected()) return;
   
-  char bufc[36], bufcol[38], bufg[36], bufapi[38], buffer[2500];
+  char bufc[36], bufcol[38], bufg[36], bufapi[38];
 
   strcpy(bufc, mqttDeviceTopic);
   strcpy(bufcol, mqttDeviceTopic);
@@ -211,7 +213,6 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   strcat(pubt, mqttClientID);
   strcat(pubt, "/config");
   DEBUG_PRINTLN(mqtt->publish(pubt, 0, true, buffer));
-  yield();
 #endif
 }
 

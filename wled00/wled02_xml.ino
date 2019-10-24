@@ -187,7 +187,7 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     sappends('s',"CM",cmDNS);
-    sappend('v',"AT",apWaitTimeSecs);
+    sappend('i',"AB",apBehavior);
     sappends('s',"AS",apSSID);
     sappend('c',"AH",apHide);
 
@@ -390,7 +390,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"NO",otaLock);
     sappend('c',"OW",wifiLock);
     sappend('c',"AO",aOtaEnabled);
-    sappend('c',"NA",recoveryAPDisabled);
     sappends('m',"(\"msg\")[0]","WLED ");
     olen -= 2; //delete ";
     oappend(versionString);

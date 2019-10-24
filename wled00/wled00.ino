@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.5-dev
+ * @version 0.8.6
  * @author Christian Schwinne
  */
 
@@ -30,7 +30,7 @@
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 //to toggle usb serial debug (un)comment the following line
-#define WLED_DEBUG
+//#define WLED_DEBUG
 
 
 //library inclusions
@@ -99,8 +99,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910201
-char versionString[] = "0.8.5";
+#define VERSION 1910251
+char versionString[] = "0.8.6";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -123,9 +123,9 @@ char cmDNS[33] = "x";                         //mDNS address (placeholder, will 
 char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
 byte apHide = 0;                              //hidden AP SSID
-byte apWaitTimeSecs = 32;                     //time to wait for connection before opening AP
-bool apAlwaysOn = false;
-bool recoveryAPDisabled = false;              //never open AP (not recommended)
+//byte apWaitTimeSecs = 32;                   //time to wait for connection before opening AP
+byte apBehavior = 0;                          //0: Open AP when no connection after boot 1: Open when no connection 2: Always open 3: Only when button pressed for 6 sec
+//bool recoveryAPDisabled = false;            //never open AP (not recommended)
 IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
 IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
 IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home networks
@@ -335,8 +335,6 @@ unsigned long hueLastRequestSent = 0;
 bool hueAuthRequired = false;
 bool hueReceived = false;
 bool hueStoreAllowed = false, hueNewKey = false;
-//unsigned long huePollIntervalMsTemp = huePollIntervalMs;
-//bool hueAttempt = false;
 
 //overlays
 byte overlayCurrent = overlayDefault;
