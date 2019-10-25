@@ -106,7 +106,7 @@ void sendHADiscoveryMQTT()
 #if ARDUINO_ARCH_ESP32 || LEDPIN != 3
 /*
 
-YYYY is discovery tipic
+YYYY is device topic
 XXXX is device name
 
 Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
@@ -212,7 +212,8 @@ Send out HA MQTT Discovery message on MQTT connect (~2.4kB):
   strcpy(pubt, "homeassistant/light/");
   strcat(pubt, mqttClientID);
   strcat(pubt, "/config");
-  DEBUG_PRINTLN(mqtt->publish(pubt, 0, true, buffer));
+  bool success = mqtt->publish(pubt, 0, true, buffer);
+  DEBUG_PRINTLN(success);
 #endif
 }
 

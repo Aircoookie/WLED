@@ -205,27 +205,18 @@ void initInterfaces() {
   if (alexaEnabled) alexaInit();
 
   #ifndef WLED_DISABLE_OTA
-   #ifdef ESP8266
-    if (aOtaEnabled) ArduinoOTA.begin(false);
-   #else
-    ArduinoOTA.setMdnsEnabled(false);
-    if (aOtaEnabled) ArduinoOTA.begin();
-   #endif
+   if (aOtaEnabled) ArduinoOTA.begin();
   #endif
 
   strip.service();
   // Set up mDNS responder:
   if (strlen(cmDNS) > 0)
   {
-    if (MDNS.begin(cmDNS))
-    {
-      DEBUG_PRINTLN("mDNS started");
-      MDNS.addService("http", "tcp", 80);
-      MDNS.addService("wled", "tcp", 80);
-      if (aOtaEnabled) MDNS.enableArduino(8266);
-    } else {
-      DEBUG_PRINTLN("mDNS failed!");
-    }
+    if (!aOtaEnabled) MDNS.begin(cmDNS);
+
+    DEBUG_PRINTLN("mDNS started");
+    MDNS.addService("http", "tcp", 80);
+    MDNS.addService("wled", "tcp", 80);
   }
   server.begin();
 

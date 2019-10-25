@@ -30,21 +30,21 @@
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 //to toggle usb serial debug (un)comment the following line
-//#define WLED_DEBUG
+#define WLED_DEBUG
 
 
 //library inclusions
 #include <Arduino.h>
-#ifdef ARDUINO_ARCH_ESP32
+#ifdef ESP8266
+ #include <ESP8266WiFi.h>
+ #include <ESP8266mDNS.h>
+ #include <ESPAsyncTCP.h>
+#else
  #include <WiFi.h>
  #include "esp_wifi.h"
  #include <ESPmDNS.h>
  #include <AsyncTCP.h>
  #include "SPIFFS.h"
-#else
- #include <ESP8266WiFi.h>
- #include <ESP8266mDNS.h>
- #include <ESPAsyncTCP.h>
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -100,7 +100,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910252
+#define VERSION 1910253
 char versionString[] = "0.8.6";
 
 
@@ -162,7 +162,7 @@ byte briMultiplier =  100;                    //% of brightness to set (to limit
 //User Interface CONFIG
 char serverDescription[33] = "WLED";          //Name of module
 byte currentTheme = 7;                        //UI theme index for settings and classic UI
-byte uiConfiguration = 0;                     //0: automatic (depends on user-agent) 1: classic UI 2: mobile UI
+byte uiConfiguration = 2;                     //0: automatic (depends on user-agent) 1: classic UI 2: mobile UI
 bool useHSB = true;                           //classic UI: use HSB sliders instead of RGB by default
 char cssFont[33] = "Verdana";                 //font to use in classic UI
 
