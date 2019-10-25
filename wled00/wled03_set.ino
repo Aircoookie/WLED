@@ -55,10 +55,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 2)
   {
     int t = request->arg("LC").toInt();
-    if (t > 0 && t <= 1200) ledCount = t;
+    if (t > 0 && t <= MAX_LEDS) ledCount = t;
     #ifndef ARDUINO_ARCH_ESP32
     #if LEDPIN == 3
-    if (ledCount > 300) ledCount = 300; //DMA method uses too much ram
+    if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
     #endif
     #endif
     strip.ablMilliampsMax = request->arg("MA").toInt();

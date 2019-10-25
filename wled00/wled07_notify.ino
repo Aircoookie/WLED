@@ -174,6 +174,9 @@ void handleNotifications()
     //wled notifier, block if realtime packets active
     if (udpIn[0] == 0 && !realtimeActive && receiveNotifications)
     {
+      //ignore notification if received within a second after sending a notification ourselves
+      if (millis() - notificationSentTime < 1000) return;
+      
       bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
       //apply colors from notification
       if (receiveNotificationColor || !someSel)

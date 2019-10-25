@@ -6,10 +6,10 @@ void wledInit()
 {
   EEPROM.begin(EEPSIZE);
   ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00);
-  if (ledCount > 1200 || ledCount == 0) ledCount = 30;
+  if (ledCount > MAX_LEDS || ledCount == 0) ledCount = 30;
   #ifndef ARDUINO_ARCH_ESP32
   #if LEDPIN == 3
-  if (ledCount > 300) ledCount = 300; //DMA method uses too much ram
+  if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
   #endif
   #endif
   Serial.begin(115200);
@@ -233,6 +233,7 @@ void initInterfaces() {
   reconnectHue();
   initMqtt();
   interfacesInited = true;
+  wasConnected = true;
 }
 
 byte stacO = 0;
@@ -262,6 +263,7 @@ void handleConnection() {
     initConnection();
     interfacesInited = false;
     forceReconnect = false;
+    wasConnected = false;
     return;
   }
   if (!WLED_CONNECTED) {
@@ -271,7 +273,7 @@ void handleConnection() {
       initConnection();
     }
     if (millis() - lastReconnectAttempt > 300000 && WLED_WIFI_CONFIGURED) initConnection();
-    if (!apActive && millis() - lastReconnectAttempt > 12000) initAP(); 
+    if (!apActive && millis() - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == 1)) initAP(); 
   } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
     DEBUG_PRINT("Connected! IP address: ");

@@ -30,7 +30,7 @@
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 //to toggle usb serial debug (un)comment the following line
-#define WLED_DEBUG
+//#define WLED_DEBUG
 
 
 //library inclusions
@@ -100,7 +100,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910253
+#define VERSION 1910255
 char versionString[] = "0.8.6";
 
 
@@ -263,6 +263,7 @@ bool apActive = false;
 bool forceReconnect = false;
 uint32_t lastReconnectAttempt = 0;
 bool interfacesInited = false;
+bool wasConnected = false;
 
 //color
 byte col[]{255, 159, 0, 0};                   //target RGB(W) color
@@ -410,6 +411,9 @@ unsigned long ntpPacketSentTime = 999000000L;
 IPAddress ntpServerIP;
 unsigned int ntpLocalPort = 2390;
 #define NTP_PACKET_SIZE 48
+
+#define MAX_LEDS 1500
+#define MAX_LEDS_DMA 500
 
 //string temp buffer (now stored in stack locally)
 #define OMAX 2048

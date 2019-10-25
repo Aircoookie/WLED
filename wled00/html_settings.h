@@ -85,7 +85,7 @@ el.innerHTML=x;el.selectedIndex=pl?p:f;}).catch(function(){el.innerHTML=e;})}fun
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>LED setup</h2>
-LED count: <input name="LC" type="number" min="1" max="1200" oninput=UI() required><br>
+LED count: <input name="LC" type="number" min="1" max="1500" oninput=UI() required><br>
 <i>Recommended power supply for brightest white:</i><br>
 <b><span id="psu">?</span></b><br><br>
 Maximum Current: <input name="MA" type="number" min="250" max="65000" required> mA<br>
