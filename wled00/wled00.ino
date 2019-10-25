@@ -37,6 +37,7 @@
 #include <Arduino.h>
 #ifdef ARDUINO_ARCH_ESP32
  #include <WiFi.h>
+ #include "esp_wifi.h"
  #include <ESPmDNS.h>
  #include <AsyncTCP.h>
  #include "SPIFFS.h"
@@ -99,7 +100,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910251
+#define VERSION 1910252
 char versionString[] = "0.8.6";
 
 

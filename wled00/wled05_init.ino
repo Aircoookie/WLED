@@ -205,7 +205,12 @@ void initInterfaces() {
   if (alexaEnabled) alexaInit();
 
   #ifndef WLED_DISABLE_OTA
+   #ifdef ESP8266
     if (aOtaEnabled) ArduinoOTA.begin(false);
+   #else
+    ArduinoOTA.setMdnsEnabled(false);
+    if (aOtaEnabled) ArduinoOTA.begin();
+   #endif
   #endif
 
   strip.service();
