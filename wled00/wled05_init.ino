@@ -26,6 +26,7 @@ void wledInit()
   DEBUG_PRINTLN(ESP.getFreeHeap());
 
   strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //init LEDs quickly
+  strip.setBrightness(0);
 
   DEBUG_PRINT("LEDs inited. heap usage ~");
   DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
@@ -225,8 +226,7 @@ void initInterfaces() {
     udpConnected = notifierUdp.begin(udpPort);
     if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
   }
-  if (ntpEnabled && WLED_CONNECTED)
-  ntpConnected = ntpUdp.begin(ntpLocalPort);
+  if (ntpEnabled) ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   initBlynk(blynkApiKey);
   initE131();
