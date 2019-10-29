@@ -100,7 +100,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910255
+#define VERSION 1910291
 char versionString[] = "0.8.6";
 
 
@@ -409,7 +409,7 @@ time_t local = 0;
 unsigned long ntpLastSyncTime = 999000000L;
 unsigned long ntpPacketSentTime = 999000000L;
 IPAddress ntpServerIP;
-unsigned int ntpLocalPort = 2390;
+uint16_t ntpLocalPort = 2390;
 #define NTP_PACKET_SIZE 48
 
 #define MAX_LEDS 1500

@@ -77,21 +77,22 @@ bool deserializeState(JsonObject root)
         }
       }
       
-      byte fx = elem["fx"] | seg.mode;
-      if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
-      seg.speed = elem["sx"] | seg.speed;
-      seg.intensity = elem["ix"] | seg.intensity;
-      seg.palette = elem["pal"] | seg.palette;
       //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
       seg.setOption(0, elem["sel"] | seg.getOption(0)); //selected
       seg.setOption(1, elem["rev"] | seg.getOption(1)); //reverse
       //int cln = seg_0["cln"];
-      //temporary
+      //temporary, strip object gets updated via colorUpdated()
       if (id == 0) {
-        effectCurrent = seg.mode;
-        effectSpeed = seg.speed;
-        effectIntensity = seg.intensity;
-        effectPalette = seg.palette;
+        effectCurrent = elem["fx"] | effectCurrent;
+        effectSpeed = elem["sx"] | effectSpeed;
+        effectIntensity = elem["ix"] | effectIntensity ;
+        effectPalette = elem["pal"] | effectPalette;
+      } else { //permanent
+        byte fx = elem["fx"] | seg.mode;
+        if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
+        seg.speed = elem["sx"] | seg.speed;
+        seg.intensity = elem["ix"] | seg.intensity;
+        seg.palette = elem["pal"] | seg.palette;
       }
     }
     it++;

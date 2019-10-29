@@ -102,7 +102,7 @@ char* buffer;
 
 void sendHADiscoveryMQTT()
 {
-
+//TODO: With LwIP 1 the ESP loses MQTT connection and causes memory leak when sending discovery packet
 #if ARDUINO_ARCH_ESP32 || LWIP_VERSION_MAJOR > 1
 /*
 

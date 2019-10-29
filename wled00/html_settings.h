@@ -52,7 +52,7 @@ mDNS address (leave empty for no mDNS):<br/>
 http:// <input name="CM" maxlength="32"> .local<br>
 Client IP: <span class="sip"> Not connected </span><br>
 <h3>Configure Access Point</h3>
-AP SSID (leave empty for no AP):<br><input name="AS" maxlength="32"><br>
+AP name (SSID):<br><input name="AS" maxlength="32"><br>
 Hide AP name: <input type="checkbox" name="AH"><br>
 AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63"><br>
 Access Point WiFi channel: <input name="AC" type="number" min="1" max="13" required><br>
@@ -316,6 +316,7 @@ Time zone:
 <option value="11">AEST/AEDT</option>
 <option value="12">NZST/NZDT</option>
 <option value="13">North Korea</option>
+<option value="14">IST (India)</option>
 </select><br>
 UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 Current local time is <span class="times">unknown</span>.

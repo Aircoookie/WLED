@@ -52,7 +52,10 @@ Timezone tzNZ(NZDT, NZST);
 TimeChangeRule NKST = {Last, Sun, Mar, 1, 510};     //Pyongyang Time = UTC + 8.5 hours
 Timezone tzNK(NKST, NKST);
 
-Timezone* timezones[] = {&tzUTC, &tzUK, &tzEUCentral, &tzEUEastern, &tzUSEastern, &tzUSCentral, &tzUSMountain, &tzUSArizona, &tzUSPacific, &tzChina, &tzJapan, &tzAUEastern, &tzNZ, &tzNK};  
+TimeChangeRule IST = {Last, Sun, Mar, 1, 330};     // India Standard Time = UTC + 5.5 hours
+Timezone tzIndia(IST, IST);
+
+Timezone* timezones[] = {&tzUTC, &tzUK, &tzEUCentral, &tzEUEastern, &tzUSEastern, &tzUSCentral, &tzUSMountain, &tzUSArizona, &tzUSPacific, &tzChina, &tzJapan, &tzAUEastern, &tzNZ, &tzNK, &tzIndia};  
 
 void handleNetworkTime()
 {
