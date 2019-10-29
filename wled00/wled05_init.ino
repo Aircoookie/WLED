@@ -218,6 +218,7 @@ void initInterfaces() {
     DEBUG_PRINTLN("mDNS started");
     MDNS.addService("http", "tcp", 80);
     MDNS.addService("wled", "tcp", 80);
+    MDNS.addServiceTxt("wled", "tcp", "mac", escapedMac.c_str());
   }
   server.begin();
 
