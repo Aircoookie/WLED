@@ -100,7 +100,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1910292
+#define VERSION 1910293
 char versionString[] = "0.8.6";
 
 
@@ -283,6 +283,7 @@ uint16_t transitionDelayDefault = transitionDelay;
 uint16_t transitionDelayTemp = transitionDelay;
 unsigned long transitionStartTime;
 float tperLast = 0;                           //crossfade transition progress, 0.0f - 1.0f
+bool jsonTransitionOnce = false;
 
 //nightlight
 bool nightlightActive = false;

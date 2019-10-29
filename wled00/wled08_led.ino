@@ -105,7 +105,8 @@ void colorUpdated(int callMode)
   if (fadeTransition)
   {
     //set correct delay if not using notification delay
-    if (callMode != 3) transitionDelayTemp = transitionDelay;
+    if (callMode != 3 && !jsonTransitionOnce) transitionDelayTemp = transitionDelay;
+    jsonTransitionOnce = false;
     if (transitionDelayTemp == 0) {setLedsStandard(); strip.trigger(); return;}
     
     if (transitionActive)

@@ -16,6 +16,12 @@ bool deserializeState(JsonObject root)
     transitionDelay = root["transition"];
     transitionDelay *= 100;
   }
+  if (root.containsKey("tt"))
+  {
+    transitionDelayTemp = root["tt"];
+    transitionDelayTemp *= 100;
+    jsonTransitionOnce = true;
+  }
 
   int ps = root["ps"] | -1;
   if (ps >= 0) applyPreset(ps);
@@ -182,15 +188,24 @@ void serializeInfo(JsonObject root)
   root["live"] = realtimeActive;
   root["fxcount"] = strip.getModeCount();
   root["palcount"] = strip.getPaletteCount();
+
+  JsonObject wifi_info = root.createNestedObject("wifi");
+  wifi_info["bssid"] = WiFi.BSSIDstr();
+  wifi_info["signal"] = getSignalQuality(WiFi.RSSI());
+  wifi_info["channel"] = WiFi.channel();
+  
   #ifdef ARDUINO_ARCH_ESP32
   root["arch"] = "esp32";
   root["core"] = ESP.getSdkVersion();
   //root["maxalloc"] = ESP.getMaxAllocHeap();
+  root["lwip"] = 0;
   #else
   root["arch"] = "esp8266";
   root["core"] = ESP.getCoreVersion();
   //root["maxalloc"] = ESP.getMaxFreeBlockSize();
+  root["lwip"] = LWIP_VERSION_MAJOR;
   #endif
+  
   root["freeheap"] = ESP.getFreeHeap();
   root["uptime"] = millis()/1000;
   
