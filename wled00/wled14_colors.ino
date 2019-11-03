@@ -27,6 +27,7 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
     case 4: rgb[0]=t,rgb[1]=p,rgb[2]=255;break;
     case 5: rgb[0]=255,rgb[1]=p,rgb[2]=q;
   }
+  if (useRGBW) colorRGBtoRGBW(col);
 }
 
 #ifndef WLED_DISABLE_HUESYNC
@@ -50,6 +51,7 @@ void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
   } else {
     rgb[0]=237;rgb[1]=255;rgb[2]=239;//150
   }
+  if (useRGBW) colorRGBtoRGBW(col);
 }
 
 void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
@@ -106,6 +108,7 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   rgb[0] = 255.0*r;
   rgb[1] = 255.0*g;
   rgb[2] = 255.0*b;
+  if (useRGBW) colorRGBtoRGBW(col);
 }
 
 void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)

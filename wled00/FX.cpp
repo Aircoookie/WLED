@@ -372,9 +372,17 @@ uint16_t WS2812FX::mode_rainbow_cycle(void) {
  * theater chase function
  */
 uint16_t WS2812FX::theater_chase(uint32_t color1, uint32_t color2, bool dopalette) {
-  SEGENV.call = SEGENV.call % 3;
+  byte gap = 2 + ((255 - SEGMENT.intensity) >> 5);
+  uint32_t cycleTime = 50 + (255 - SEGMENT.speed)*2;
+  uint32_t it = now / cycleTime;
+  if (it != SEGENV.step) //new color
+  {
+    SEGENV.aux0 = (SEGENV.aux0 +1) % gap;
+    SEGENV.step = it;
+  }
+  
   for(uint16_t i=0; i < SEGLEN; i++) {
-    if((i % 3) == SEGENV.call) {
+    if((i % gap) == SEGENV.aux0) {
       if (dopalette)
       {
         setPixelColor(SEGMENT.start + i, color_from_palette(SEGMENT.start + i, true, PALETTE_SOLID_WRAP, 0));
@@ -385,7 +393,7 @@ uint16_t WS2812FX::theater_chase(uint32_t color1, uint32_t color2, bool dopalett
       setPixelColor(SEGMENT.start + i, color2);
     }
   }
-  return 50 + (2 * (uint32_t)(255 - SEGMENT.speed));
+  return FRAMETIME;
 }
 
 
