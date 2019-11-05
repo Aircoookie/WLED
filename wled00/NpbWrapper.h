@@ -20,6 +20,13 @@
  #endif
 #endif
 
+#ifndef WLED_DISABLE_ANALOG_LEDS
+  //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
+  #define RPIN 5    //R pin for analog LED strip   
+  #define GPIN 12   //G pin for analog LED strip
+  #define BPIN 13   //B pin for analog LED strip
+  #define WPIN 15   //W pin for analog LED strip
+#endif
 
 //automatically uses the right driver method for each platform
 #ifdef ARDUINO_ARCH_ESP32
@@ -104,15 +111,59 @@ public:
       #endif
         _pGrbw->Begin();
       break;
+
+        #ifndef WLED_DISABLE_ANALOG_LEDS      
+          //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
+          pinMode(RPIN, OUTPUT);
+          pinMode(GPIN, OUTPUT);
+          pinMode(BPIN, OUTPUT);
+          switch (_type) {
+            case NeoPixelType_Grb:                          break;
+            case NeoPixelType_Grbw: pinMode(WPIN, OUTPUT);  break;
+          }
+          analogWriteRange(255);  //same range as one RGB channel
+          analogWriteFreq(880);   //PWM frequency proven as good for LEDs
+        #endif
+
     }
   }
 
+#ifndef WLED_DISABLE_ANALOG_LEDS      
+    void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w)
+    {
+      analogWrite(RPIN, r);
+      analogWrite(GPIN, g);
+      analogWrite(BPIN, b);
+      switch (_type) {
+        case NeoPixelType_Grb:                        break;
+        case NeoPixelType_Grbw: analogWrite(WPIN, w); break;
+      }
+    }
+#endif
+
   void Show()
   {
+    byte b;
     switch (_type)
     {
-      case NeoPixelType_Grb:  _pGrb->Show();   break;
-      case NeoPixelType_Grbw: _pGrbw->Show();  break;
+      case NeoPixelType_Grb: {
+        _pGrb->Show();
+        #ifndef WLED_DISABLE_ANALOG_LEDS      
+          RgbColor color = _pGrb->GetPixelColor(0);
+          b = _pGrb->GetBrightness();
+          SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, 0);
+        #endif
+      }
+      break;
+      case NeoPixelType_Grbw: {
+        _pGrbw->Show();
+        #ifndef WLED_DISABLE_ANALOG_LEDS      
+          RgbwColor colorW = _pGrbw->GetPixelColor(0);
+          b = _pGrbw->GetBrightness();
+          SetRgbwPwm(colorW.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, colorW.W * b / 255);
+        #endif
+      }
+      break;
     }
   }
   
