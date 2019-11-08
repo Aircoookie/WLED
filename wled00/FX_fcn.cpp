@@ -100,7 +100,7 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   if (_locked[i] && !_modeUsesLock) return;
-  if (IS_REVERSE)   i = SEGMENT.stop -1 -i - SEGMENT.start; //reverse just individual segment
+  if (IS_REVERSE)   i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
   byte tmpg = g;
   switch (colorOrder) //0 = Grb, default
   {
@@ -395,7 +395,7 @@ uint32_t WS2812FX::getColor(void) {
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   if (reverseMode) i = _length- 1 -i;
-  if (IS_REVERSE)   i = SEGMENT.stop -1 -i - SEGMENT.start; //reverse just individual segment
+  if (IS_REVERSE)   i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
   if (_skipFirstMode) i += LED_SKIP_AMOUNT;
   if (_cronixieMode)
   {
