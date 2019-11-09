@@ -443,7 +443,7 @@ public:
     if (req.indexOf("api") <0) return false; //return if not an API call
     EA_DEBUGLN("ok");
 
-    if (body.indexOf("devicetype") > 0) //client wants a hue api username, we dont care and give static
+    if (body.indexOf("devicetype") > 0) //client wants a hue api username, we don't care and give static
     {
       EA_DEBUGLN("devType");
       body = "";
@@ -453,7 +453,7 @@ public:
 
     if (req.indexOf("state") > 0) //client wants to control light
     {
-      server->send(200, "application/json", "[{\"success\":true}]"); //short valid response
+      server->send(200, "application/json", "[{\"success\":{\"/lights/1/state/\": true}}]");
 
       uint32_t devId = req.substring(req.indexOf("lights")+7).toInt();
       EA_DEBUG("ls"); EA_DEBUGLN(devId);
@@ -550,7 +550,7 @@ public:
       return true;
     }
 
-    //we dont care about other api commands at this time and send empty JSON
+    //we don't care about other api commands at this time and send empty JSON
     server->send(200, "application/json", "{}");
     return true;
   }

@@ -42,6 +42,13 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 
 See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
 
+DrZzs has made some excellent video guides:  
+https://www.youtube.com/watch?v=tXvtxwK3jRk  
+https://www.youtube.com/watch?v=6eCE2BpLaUQ
+
+If you'd rather read, here is a very detailed step-by-step beginner tutorial:  
+https://tynick.com/blog/11-03-2019/getting-started-with-wled-on-esp8266/  
+
 ### Other
 
 Licensed under the MIT license  
