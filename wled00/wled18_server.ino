@@ -64,7 +64,7 @@ void initServer()
   
   server.on("/settings/wifi", HTTP_POST, [](AsyncWebServerRequest *request){
     if (!(wifiLock && otaLock)) handleSettingsSet(request, 1);
-    serveMessage(request, 200,"WiFi settings saved.","Reconnecting now...",255);
+    serveMessage(request, 200,"WiFi settings saved.","Reconnecting now...",129);
     forceReconnect = true;
   });
 

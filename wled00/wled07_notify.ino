@@ -176,6 +176,7 @@ void handleNotifications()
     {
       //ignore notification if received within a second after sending a notification ourselves
       if (millis() - notificationSentTime < 1000) return;
+      if (udpIn[1] > 199) return; //do not receive custom versions
       
       bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
       //apply colors from notification

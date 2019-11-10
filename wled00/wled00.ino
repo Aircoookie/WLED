@@ -100,7 +100,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1911101
+#define VERSION 1911102
 char versionString[] = "0.8.6";
 
 
@@ -386,6 +386,7 @@ unsigned long realtimeTimeout = 0;
 long lastMqttReconnectAttempt = 0;
 long lastInterfaceUpdate = 0;
 byte interfaceUpdateCallMode = 0;
+char mqttStatusTopic[40] = ""; //this must be global because of async handlers
 
 #if AUXPIN >= 0
 //auxiliary debug pin
