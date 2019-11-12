@@ -308,15 +308,16 @@ Time zone:
 <option value="3">EET/EEST</option>
 <option value="4">US-EST/EDT</option>
 <option value="5">US-CST/CDT</option>
-<option value="6">US-MST/MDT</option>
-<option value="7">US-AZ</option>
-<option value="8">US-PST/PDT</option>
-<option value="9">CST(AWST)</option>
-<option value="10">JST(KST)</option>
-<option value="11">AEST/AEDT</option>
-<option value="12">NZST/NZDT</option>
-<option value="13">North Korea</option>
-<option value="14">IST (India)</option>
+<option value="6">Saskatchewan</option>
+<option value="7">US-MST/MDT</option>
+<option value="8">US-AZ</option>
+<option value="9">US-PST/PDT</option>
+<option value="10">CST(AWST)</option>
+<option value="11">JST(KST)</option>
+<option value="12">AEST/AEDT</option>
+<option value="13">NZST/NZDT</option>
+<option value="14">North Korea</option>
+<option value="15">IST (India)</option>
 </select><br>
 UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 Current local time is <span class="times">unknown</span>.
