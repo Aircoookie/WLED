@@ -223,8 +223,14 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   if (subPage == 2) {
+    #ifdef ESP8266
+    #if LEDPIN == 3
+    oappend("d.Sf.LC.max=500;");
+    #endif
+    #endif
     sappend('v',"LC",ledCount);
     sappend('v',"MA",strip.ablMilliampsMax);
+    sappend('v',"LA",strip.milliampsPerLed);
     if (strip.currentMilliamps)
     {
       sappends('m',"(\"pow\")[0]","");

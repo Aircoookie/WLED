@@ -71,90 +71,126 @@ AP IP: <span class="sip"> Not active </span><hr>
 
 //LED settings
 const char PAGE_settings_leds[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=500">
-<title>LED Settings</title><script>var f=0,p=0;function H()
+<html><head><meta name=viewport content="width=500">
+<title>LED Settings</title>
+<script>var f=0,p=0,d=document,laprev=55;function H()
 {window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}
-function B(){window.open("/settings","_self");}function S(){GetV();setTimeout(function(){fillfx(0);},200);setTimeout(function(){fillfx(1);},400);UI();}
-function UI(){var myC=document.querySelectorAll('.wc'),l=myC.length;for(i=0;i<l;i++){myC[i].style.display=(document.getElementById('rgbw').checked)?'inline':'none';}
-var val=Math.ceil((100+document.Sf.LC.value*55)/500)/2;val=(val>5)?Math.ceil(val):val;var s="";if(val<1.02){s="ESP 5V pin with 1A USB supply";}else{s="External 5V ";s+=val;s+="A supply connected to LEDs";}document.getElementById('psu').innerHTML=s;}
-function fillfx(pl){e="<option>Error loading list!</option>";el=pl?Sf.FP:Sf.FX;fetch(pl?'/json/pal':'/json/eff').then(res=>{if(!res.ok){el.innerHTML=e;}
+function B()
+{window.open("/settings","_self");}
+function S(){GetV();setTimeout(function(){fillfx(0);},200);setTimeout(function(){fillfx(1);},400);setABL();}
+function enABL(){var en=d.getElementById('able').checked;d.Sf.LA.value=(en)?laprev:0;d.getElementById('abl').style.display=(en)?'inline':'none';d.getElementById('psu2').style.display=(en)?'inline':'none';if(d.Sf.LA.value>0)setABL();}
+function enLA(){var val=d.Sf.LAsel.value;d.Sf.LA.value=val;d.getElementById('LAdis').style.display=(val==50)?'inline':'none';UI();}
+function setABL(){d.getElementById('able').checked = true;d.Sf.LAsel.value = 50;switch(parseInt(d.Sf.LA.value)){case 0:d.getElementById('able').checked=false;enABL();break;case 30:d.Sf.LAsel.value=30;break;case 35:d.Sf.LAsel.value=35;break;case 55:d.Sf.LAsel.value=55;break;default:d.getElementById('LAdis').style.display='inline';}
+UI();}
+function UI(){var myC=d.querySelectorAll('.wc'),l=myC.length;for(i=0;i<l;i++){myC[i].style.display=(d.getElementById('rgbw').checked)?'inline':'none';}
+d.getElementById('ledwarning').style.display=(d.Sf.LC.value>1000)?'inline':'none';d.getElementById('ampwarning').style.display=(d.Sf.MA.value>7200)?'inline':'none';if(d.Sf.LA.value>0)laprev=d.Sf.LA.value;var val=Math.ceil((100+d.Sf.LC.value*laprev)/500)/2;val=(val>5)?Math.ceil(val):val;var s="";var is12V=(d.Sf.LAsel.value==30);if(val<1.02&&!is12V)
+{s="ESP 5V pin with 1A USB supply";}else
+{s+=is12V?"12V ":"5V ";s+=val;s+="A supply connected to LEDs";}
+var val2=Math.ceil((100+d.Sf.LC.value*laprev)/1500)/2;val2=(val2>5)?Math.ceil(val2):val2;var s2="(for most effects, ~";s2+=val2;s2+="A is enough)<br>";d.getElementById('psu').innerHTML=s;d.getElementById('psu2').innerHTML=s2;}
+function fillfx(pl)
+{e="<option>Error loading list!</option>";el=pl?Sf.FP:Sf.FX;fetch(pl?'/json/palettes':'/json/effects').then(res=>{if(!res.ok){el.innerHTML=e;}
 return res.json();}).then(json=>{var x="";for(i in json){x+="<option value=\""+i+"\">"+json[i]+" ("+i+")</option>";}
-el.innerHTML=x;el.selectedIndex=pl?p:f;}).catch(function(){el.innerHTML=e;})}function GetV(){var d=document;%CSS%%SCSS%</head>
-<body onload="S()">
-<form id="form_s" name="Sf" method="post">
-<div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+el.innerHTML=x;el.selectedIndex=pl?p:f;}).catch(function(){el.innerHTML=e;})}
+function GetV(){%CSS%%SCSS%</head>
+<body onload=S()>
+<form id=form_s name=Sf method=post>
+<div class=helpB><button type=button onclick=H()>?</button></div>
+<button type=button onclick=B()>Back</button><button type=submit>Save</button><hr>
 <h2>LED setup</h2>
-LED count: <input name="LC" type="number" min="1" max="1500" oninput=UI() required><br>
+LED count: <input name=LC type=number min=1 max=1500 oninput=UI() required><br>
+<div id=ledwarning style="color:orange; display: none;">
+&#9888; You might run into stability or lag issues.<br>
+Use less than 1000 LEDs per ESP for the best experience!<br>
+</div>
 <i>Recommended power supply for brightest white:</i><br>
-<b><span id="psu">?</span></b><br><br>
-Maximum Current: <input name="MA" type="number" min="250" max="65000" required> mA<br>
+<b><span id=psu>?</span></b><br>
+<span id=psu2><br></span>
+<br>
+Enable automatic brightness limiter: <input type=checkbox name=ABen onchange=enABL() id=able><br>
+<div id=abl>
+Maximum Current: <input name=MA type=number min=250 max=65000 oninput=UI() required> mA<br>
+<div id=ampwarning style="color:orange; display: none;">
+&#9888; Your power supply provides high current.<br>
+To improve the safety of your setup,<br>
+please use thick cables,<br>
+multiple power injection points and a fuse!<br>
+</div>
 <i>Automatically limits brightness to stay close to the limit.<br>
 Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
-If you are using an external 5V supply, enter its rating.<br>
-"65000" completely diasbles the power calculation.<br>
-(Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
-LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW" onchange=UI() id="rgbw"><br>
+If you are using an external power supply, enter its rating.<br>
+(Current estimated usage: <span class=pow>unknown</span>)</i><br><br>
+LED voltage (Max. current for a single LED):<br>
+<select name=LAsel onchange=enLA()>
+<option value=55 selected>5V default (55mA)</option>
+<option value=35>5V efficient (35mA)</option>
+<option value=30>12V (30mA)</option>
+<option value=50>Custom</option>
+</select><br>
+<span id=LAdis style=display:none>Custom max. current per LED: <input name=LA type=number min=0 max=255 id=la oninput=UI() required> mA<br></span>
+<i>Keep at default if you are unsure about your type of LEDs.</i><br>
+</div>
+<br>
+LEDs are 4-channel type (RGBW): <input type=checkbox name=EW onchange=UI() id=rgbw><br>
 Color order:
-<select name="CO">
-<option value="0">GRB</option>
-<option value="1">RGB</option>
-<option value="2">BRG</option>
-<option value="3">RBG</option></select>
+<select name=CO>
+<option value=0>GRB</option>
+<option value=1>RGB</option>
+<option value=2>BRG</option>
+<option value=3>RBG</option>
+</select>
 <h3>Defaults</h3>
-Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
-Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>
-Set current color, brightness and effects as boot default: <input type="checkbox" name="IS"><br>
-Set current preset cycle setting as boot default: <input type="checkbox" name="PC">
+Turn LEDs on after power up/reset: <input type=checkbox name=BO><br>
+Default brightness: <input name=CA type=number min=0 max=255 required> (0-255)<br><br>
+Set current color, brightness and effects as boot default: <input type=checkbox name=IS><br>
+Set current preset cycle setting as boot default: <input type=checkbox name=PC>
 <br>- <i>or</i> -<br>
-Apply preset <input name="BP" type="number" min="0" max="25" required> at boot (0 uses defaults)
+Apply preset <input name=BP type=number min=0 max=25 required> at boot (0 uses defaults)
 <br>- <i>or</i> -<br>
-Default RGB<span class="wc">W</span> color:<br>
-<input name="CR" type="number" min="0" max="255" required>
-<input name="CG" type="number" min="0" max="255" required>
-<input name="CB" type="number" min="0" max="255" required>
-<span class="wc"><input name="CW" type="number" min="0" max="255" required><br>
-Auto-calculate white from RGB instead: <input type="checkbox" name="AW"></span><br>
-Default secondary RGB<span class="wc">W</span>:<br>
-<input name="SR" type="number" min="0" max="255" required>
-<input name="SG" type="number" min="0" max="255" required>
-<input name="SB" type="number" min="0" max="255" required>
-<span class="wc"><input name="SW" type="number" min="0" max="255" required></span><br>
+Default RGB<span class=wc>W</span> color:<br>
+<input name=CR type=number min=0 max=255 required>
+<input name=CG type=number min=0 max=255 required>
+<input name=CB type=number min=0 max=255 required>
+<span class=wc><input name=CW type=number min=0 max=255 required><br>
+Auto-calculate white from RGB instead: <input type=checkbox name=AW></span><br>
+Default secondary RGB<span class=wc>W</span>:<br>
+<input name=SR type=number min=0 max=255 required>
+<input name=SG type=number min=0 max=255 required>
+<input name=SB type=number min=0 max=255 required>
+<span class=wc><input name=SW type=number min=0 max=255 required></span><br>
 Default effect ID:<br>
-<select name="FX">
+<select name=FX>
 <option>Loading...</option>
 </select>
 <br>Default color palette:<br>
-<select name="FP">
+<select name=FP>
 <option>Loading...</option>
 </select><br>
-Default effect speed: <input name="SX" type="number" min="0" max="255" required><br>
-Default effect intensity: <input name="IX" type="number" min="0" max="255" required><br><br>
-Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
-Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
-Brightness factor: <input name="BF" type="number" min="0" max="255" required> %%
+Default effect speed: <input name=SX type=number min=0 max=255 required><br>
+Default effect intensity: <input name=IX type=number min=0 max=255 required><br><br>
+Use Gamma correction for color: <input type=checkbox name=GC> (strongly recommended)<br>
+Use Gamma correction for brightness: <input type=checkbox name=GB> (not recommended)<br><br>
+Brightness factor: <input name=BF type=number min=1 max=255 required> %
 <h3>Transitions</h3>
-Crossfade: <input type="checkbox" name="TF"><br>
-Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
-Enable transition for secondary color: <input type="checkbox" name="T2"><br>
-Enable Palette transitions: <input type="checkbox" name="PF">
+Crossfade: <input type=checkbox name=TF><br>
+Transition Time: <input name=TD maxlength=5 size=2> ms<br>
+Enable transition for secondary color: <input type=checkbox name=T2><br>
+Enable Palette transitions: <input type=checkbox name=PF>
 <h3>Timed light</h3>
-Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
-Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
-Fade down: <input type="checkbox" name="TW"><br>
+Default Duration: <input name=TL type=number min=1 max=255 required> min<br>
+Default Target brightness: <input name=TB type=number min=0 max=255 required><br>
+Fade down: <input type=checkbox name=TW><br>
 <h3>Advanced</h3>
 Palette blending:
-<select name="PB">
-<option value="0">Linear (wrap if moving)</option>
-<option value="1">Linear (always wrap)</option>
-<option value="2">Linear (never wrap)</option>
-<option value="3">None (not recommended)</option>
+<select name=PB>
+<option value=0>Linear (wrap if moving)</option>
+<option value=1>Linear (always wrap)</option>
+<option value=2>Linear (never wrap)</option>
+<option value=3>None (not recommended)</option>
 </select><br>
-Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
-Skip first LED: <input type="checkbox" name="SL"><hr>
-<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
-</form>
-</body>
+Reverse LED order (rotate 180): <input type=checkbox name=RV><br>
+Skip first LED: <input type=checkbox name=SL><hr>
+<button type=button onclick=B()>Back</button><button type=submit>Save</button>
+</form></body>
 </html>)=====";
 
 

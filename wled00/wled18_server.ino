@@ -158,7 +158,7 @@ void initServer()
     },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
       if(!index){
         DEBUG_PRINTLN("OTA Update Start");
-        #ifndef ARDUINO_ARCH_ESP32
+        #ifdef ESP8266
         Update.runAsync(true);
         #endif
         Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
@@ -312,7 +312,7 @@ String msgProcessor(const String& var)
 
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", byte optionT=255)
 {
-  #ifndef ARDUINO_ARCH_ESP32
+  #ifdef ESP8266
   char buf[256];
   obuf = buf;
   #endif

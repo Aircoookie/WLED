@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 11
+#define EEPVER 12
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -19,7 +19,7 @@
 //9 -> 0.8.0
 //10-> 0.8.2
 //11-> 0.8.5-dev #mqttauth @TimothyBrown
-
+//12-> 0.8.7
 
 /*
  * Erase all configuration data
@@ -134,7 +134,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(372, useRGBW);
   EEPROM.write(373, effectPaletteDefault);
   EEPROM.write(374, strip.paletteFade);
-  //EEPROM.write(375, apWaitTimeSecs);
+  EEPROM.write(375, strip.milliampsPerLed); //was apWaitTimeSecs up to 0.8.5
   EEPROM.write(376, apBehavior);
 
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
@@ -363,11 +363,9 @@ void loadSettingsFromEEPROM(bool first)
   useRGBW = EEPROM.read(372);
   effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
   //374 - strip.paletteFade
-
-  if (lastEEPROMversion > 0) {
-    //apWaitTimeSecs = EEPROM.read(375);
-    apBehavior = EEPROM.read(376);
-  }
+  
+  apBehavior = EEPROM.read(376);
+    
   //377 = lastEEPROMversion
   if (lastEEPROMversion > 1) {
     for (byte i=0; i<4; i++)
@@ -483,6 +481,15 @@ void loadSettingsFromEEPROM(bool first)
     readStringFromEEPROM(2440, mqttPass, 40);
     readStringFromEEPROM(2481, mqttClientID, 40);
     mqttPort = EEPROM.read(2522) + ((EEPROM.read(2523) << 8) & 0xFF00);
+  }
+
+  if (lastEEPROMversion > 11)
+  {
+    strip.milliampsPerLed = EEPROM.read(375);
+  } else if (strip.ablMilliampsMax == 65000) //65000 indicates disabled ABL in <0.8.7
+  {
+    strip.ablMilliampsMax = ABL_MILLIAMPS_DEFAULT;
+    strip.milliampsPerLed = 0; //disable ABL
   }
 
   receiveDirect = !EEPROM.read(2200);

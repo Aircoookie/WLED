@@ -183,11 +183,7 @@ void WS2812FX::setCronixieDigits(byte d[])
 //Stay safe with high amperage and have a reasonable safety margin!
 //I am NOT to be held liable for burned down garages!
 
-//fine tune power estimation constants for your setup
-#define PU_PER_MA        3600 //power units per milliamperere for accurate power estimation 
-                              //formula: 195075 divided by mA per fully lit LED, here ~54mA)
-                              //lowering the value increases the estimated usage and therefore makes the ABL more aggressive
-                              
+//fine tune power estimation constants for your setup                  
 #define MA_FOR_ESP        100 //how much mA does the ESP use (Wemos D1 about 80mA, ESP32 about 120mA)
                               //you can set it to 0 if the ESP is powered by USB and the LEDs by external
 
@@ -197,12 +193,13 @@ void WS2812FX::show(void) {
   //one PU is the power it takes to have 1 channel 1 step brighter per brightness step
   //so A=2,R=255,G=0,B=0 would use 510 PU per LED (1mA is about 3700 PU)
   
-  if (ablMilliampsMax > 149 && ablMilliampsMax < 65000) //lower numbers and 65000 turn off calculation
+  if (ablMilliampsMax > 149 && milliampsPerLed > 0) //0 mA per LED and too low numbers turn off calculation
   {
-    uint32_t powerBudget = (ablMilliampsMax - MA_FOR_ESP) * PU_PER_MA; //100mA for ESP power
-    if (powerBudget > PU_PER_MA * _length) //each LED uses about 1mA in standby, exclude that from power budget
+    uint32_t puPerMilliamp = 195075 / milliampsPerLed;
+    uint32_t powerBudget = (ablMilliampsMax - MA_FOR_ESP) * puPerMilliamp; //100mA for ESP power
+    if (powerBudget > puPerMilliamp * _length) //each LED uses about 1mA in standby, exclude that from power budget
     {
-      powerBudget -= PU_PER_MA * _length;
+      powerBudget -= puPerMilliamp * _length;
     } else
     {
       powerBudget = 0;
@@ -232,10 +229,10 @@ void WS2812FX::show(void) {
       uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
       uint8_t newBri = scale8(_brightness, scaleB);
       bus->SetBrightness(newBri);
-      currentMilliamps = (powerSum0 * newBri) / PU_PER_MA;
+      currentMilliamps = (powerSum0 * newBri) / puPerMilliamp;
     } else
     {
-      currentMilliamps = powerSum / PU_PER_MA;
+      currentMilliamps = powerSum / puPerMilliamp;
       bus->SetBrightness(_brightness);
     }
     currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate

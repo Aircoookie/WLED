@@ -56,12 +56,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     int t = request->arg("LC").toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
-    #ifndef ARDUINO_ARCH_ESP32
+    #ifdef ESP8266
     #if LEDPIN == 3
     if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
     #endif
     #endif
     strip.ablMilliampsMax = request->arg("MA").toInt();
+    strip.milliampsPerLed = request->arg("LA").toInt();
+    
     useRGBW = request->hasArg("EW");
     strip.colorOrder = request->arg("CO").toInt();
     autoRGBtoRGBW = request->hasArg("AW");

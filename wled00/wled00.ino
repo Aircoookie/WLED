@@ -100,8 +100,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1911102
-char versionString[] = "0.8.6";
+#define VERSION 1911121
+char versionString[] = "0.8.7-dev";
 
 
 //AP and OTA default passwords (for maximum change them!)
