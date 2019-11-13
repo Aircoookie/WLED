@@ -5,7 +5,7 @@
  * Workflow for creating them from HTML source:
  * 1. Minify HTML (https://htmlcompressor.com/compressor/) (optional)
  * 2. Compress with gzip (https://online-converting.com/archives/convert-to-gzip/)
- * 3. Convert gzip binary to c array (https://littlevgl.com/image-to-c-array) (select RAW as color format)
+ * 3. Convert gzip binary to c array (https://littlevgl.com/image-to-c-array) (select RAW as color format, add .bmp file extension to gzip)
  *    alternative: https://sourceforge.net/projects/bin2header/
  * 4. update length value
 */

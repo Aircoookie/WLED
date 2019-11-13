@@ -23,16 +23,16 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //WIFI SETTINGS
   if (subPage == 1)
   {
-    strcpy(clientSSID,request->arg("CS").c_str());
-    if (request->arg("CP").charAt(0) != '*') strcpy(clientPass, request->arg("CP").c_str());
+    strlcpy(clientSSID,request->arg("CS").c_str(), 33);
+    if (request->arg("CP").charAt(0) != '*') strlcpy(clientPass, request->arg("CP").c_str(), 65);
 
-    strcpy(cmDNS, request->arg("CM").c_str());
+    strlcpy(cmDNS, request->arg("CM").c_str(), 33);
 
     apBehavior = request->arg("AB").toInt();
-    strcpy(apSSID, request->arg("AS").c_str());
+    strlcpy(apSSID, request->arg("AS").c_str(), 33);
     apHide = request->hasArg("AH");
     int passlen = request->arg("AP").length();
-    if (passlen == 0 || (passlen > 7 && request->arg("AP").charAt(0) != '*')) strcpy(apPass, request->arg("AP").c_str());
+    if (passlen == 0 || (passlen > 7 && request->arg("AP").charAt(0) != '*')) strlcpy(apPass, request->arg("AP").c_str(), 65);
     int t = request->arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
 
     char k[3]; k[2] = 0;
@@ -129,7 +129,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     int t = request->arg("UI").toInt();
     if (t >= 0 && t < 3) uiConfiguration = t;
-    strcpy(serverDescription, request->arg("DS").c_str());
+    strlcpy(serverDescription, request->arg("DS").c_str(), 33);
     useHSBDefault = request->hasArg("MD");
     useHSB = useHSBDefault;
     currentTheme = request->arg("TH").toInt();
@@ -137,9 +137,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     for(int i=0;i<6;i++)
     {
       k[1] = i+48;
-      strcpy(cssCol[i],request->arg(k).c_str());
+      strlcpy(cssCol[i],request->arg(k).c_str(), 9);
     }
-    strcpy(cssFont,request->arg("CF").c_str());
+    strlcpy(cssFont,request->arg("CF").c_str(), 33);
   }
 
   //SYNC
@@ -173,20 +173,20 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= -255  && t <= 255) arlsOffset = t;
 
     alexaEnabled = request->hasArg("AL");
-    strcpy(alexaInvocationName, request->arg("AI").c_str());
+    strlcpy(alexaInvocationName, request->arg("AI").c_str(), 33);
 
     if (request->hasArg("BK") && !request->arg("BK").equals("Hidden")) {
-      strcpy(blynkApiKey,request->arg("BK").c_str()); initBlynk(blynkApiKey);
+      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey);
     }
 
-    strcpy(mqttServer, request->arg("MS").c_str());
+    strlcpy(mqttServer, request->arg("MS").c_str(), 33);
     t = request->arg("MQPORT").toInt();
     if (t > 0) mqttPort = t;
-    strcpy(mqttUser, request->arg("MQUSER").c_str());
-    if (request->arg("MQPASS").charAt(0) != '*') strcpy(mqttPass, request->arg("MQPASS").c_str());
-    strcpy(mqttClientID, request->arg("MQCID").c_str());
-    strcpy(mqttDeviceTopic, request->arg("MD").c_str());
-    strcpy(mqttGroupTopic, request->arg("MG").c_str());
+    strlcpy(mqttUser, request->arg("MQUSER").c_str(), 41);
+    if (request->arg("MQPASS").charAt(0) != '*') strlcpy(mqttPass, request->arg("MQPASS").c_str(), 41);
+    strlcpy(mqttClientID, request->arg("MQCID").c_str(), 41);
+    strlcpy(mqttDeviceTopic, request->arg("MD").c_str(), 33);
+    strlcpy(mqttGroupTopic, request->arg("MG").c_str(), 33);
 
     for (int i=0;i<4;i++){
       String a = "H"+String(i);
@@ -298,7 +298,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       if (!otaLock && request->arg("OP").length() > 0)
       {
-        strcpy(otaPass,request->arg("OP").c_str());
+        strlcpy(otaPass,request->arg("OP").c_str(), 33);
       }
     }
 
@@ -662,7 +662,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   #ifndef WLED_DISABLE_CRONIXIE
   pos = req.indexOf("NX="); //sets digits to code
   if (pos > 0) {
-    strcpy(cronixieDisplay,req.substring(pos + 3, pos + 9).c_str());
+    strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
     setCronixie();
   }
 

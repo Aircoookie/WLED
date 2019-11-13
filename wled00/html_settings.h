@@ -23,7 +23,7 @@ const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
 
 //wifi settings
 const char PAGE_settings_wifi[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=500">
+<html><head><meta name="viewport" content="width=500"><meta charset="utf-8">
 <title>WiFi Settings</title><script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");}function B(){window.history.back();}function GetV(){var d=document;
 %CSS%%SCSS%</head><body onload="GetV()">
 <form id="form_s" name="Sf" method="post">
@@ -71,8 +71,7 @@ AP IP: <span class="sip"> Not active </span><hr>
 
 //LED settings
 const char PAGE_settings_leds[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name=viewport content="width=500">
-<title>LED Settings</title>
+<html><head><meta name=viewport content="width=500"><meta charset="utf-8"><title>LED Settings</title>
 <script>var f=0,p=0,d=document,laprev=55;function H()
 {window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");}
 function B()
@@ -196,8 +195,7 @@ Skip first LED: <input type=checkbox name=SL><hr>
 
 //User Interface settings
 const char PAGE_settings_ui[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=500">
-<title>UI Settings</title><script>
+<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>UI Settings</title><script>
 function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d=document;
 %CSS%%SCSS%</head>
 <body onload="S()">
@@ -251,7 +249,7 @@ Make sure the font you use is installed on your system!<br>
 
 //sync settings
 const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=500"><title>Sync Settings</title>
+<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>Sync Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}function GetV(){var d=document;
 %CSS%%SCSS%</head>
 <body onload="GetV()">
@@ -323,7 +321,7 @@ Hue status: <span class="hms"> Internal ESP Error! </span><hr>
 
 //time and macro settings
 const char PAGE_settings_time[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=500"><title>Time Settings</title>
+<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>Time Settings</title>
 <script>var d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings");}function B(){window.open("/settings","_self");}function S(){BTa();GetV();Cs();FC();}function gId(s){return d.getElementById(s);}function Cs(){gId("cac").style.display="none";gId("coc").style.display="block";gId("ccc").style.display="none";if (gId("ca").selected){gId("cac").style.display="block";}if (gId("cc").selected){gId("coc").style.display="none";gId("ccc").style.display="block";}if (gId("cn").selected){gId("coc").style.display="none";}}
 function BTa(){var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Macro</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";for (i=0;i<8;i++){ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"16\"></td>";for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";}gId("TMT").innerHTML=ih;}
 function FC(){for(j=0;j<8;j++){for(i=0;i<8;i++)gId("W"+i+j).checked=gId("W"+i).value>>j&1;}}
@@ -416,7 +414,7 @@ Time-Controlled macros:<br>
 
 //security settings and about
 const char PAGE_settings_sec[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=500">
+<html><head><meta name="viewport" content="width=500"><meta charset="utf-8">
 <title>Misc Settings</title>
 <script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings");}function B(){window.open("/settings","_self");}function U(){window.open("/update","_self");}function GetV(){var d=document;
 %CSS%%SCSS%</head>

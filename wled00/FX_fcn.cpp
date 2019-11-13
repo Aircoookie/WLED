@@ -448,6 +448,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2) {
     unlockRange(seg.start, seg.stop);
     _modeUsesLock = true;
   }
+  _segment_index = n; fill(0); //turn old segment range off
   if (i2 <= i1) //disable segment
   {
     seg.stop = 0; return;
