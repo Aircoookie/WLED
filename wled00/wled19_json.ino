@@ -248,6 +248,10 @@ void serveJson(AsyncWebServerRequest* request)
   const String& url = request->url();
   if      (url.indexOf("state") > 0) subJson = 1;
   else if (url.indexOf("info")  > 0) subJson = 2;
+  else if (url.indexOf("live")  > 0) {
+    serveLiveLeds(request);
+    return;
+  }
   else if (url.indexOf("eff")   > 0) {
     request->send_P(200, "application/json", JSON_mode_names);
     return;
@@ -281,4 +285,24 @@ void serveJson(AsyncWebServerRequest* request)
   
   response->setLength();
   request->send(response);
+}
+
+#define MAX_LIVE_LEDS 180
+
+void serveLiveLeds(AsyncWebServerRequest* request)
+{
+  byte n = (ledCount -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
+  char buffer[2000] = "{\"leds\":[";
+  olen = 9;
+  obuf = buffer;
+
+  for (uint16_t i= 0; i < ledCount; i += n)
+  {
+    olen += sprintf(buffer + olen, "\"%06X\",", strip.getPixelColor(i));
+  }
+  olen -= 1;
+  oappend("],\"n\":");
+  oappendi(n);
+  oappend("}");
+  request->send(200, "application/json", buffer);
 }

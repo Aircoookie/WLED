@@ -2324,3 +2324,34 @@ uint16_t WS2812FX::mode_halloween_eyes()
   
   return FRAMETIME;
 }
+
+
+//Speed slider sets amount of LEDs lit, intensity sets unlit
+uint16_t WS2812FX::mode_static_pattern()
+{
+  uint16_t lit = 1 + SEGMENT.speed;
+  uint16_t unlit = 1 + SEGMENT.intensity;
+  bool drawingLit = true;
+  uint16_t cnt = 0;
+
+  for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
+    setPixelColor(i, (drawingLit) ? color_from_palette(i, true, PALETTE_SOLID_WRAP, 0) : SEGCOLOR(1));
+    cnt++;
+    if (cnt >= ((drawingLit) ? lit : unlit)) {
+      cnt = 0;
+      drawingLit = !drawingLit;
+    }
+  }
+  
+  return FRAMETIME;
+}
+
+
+//Speed slider sets number of "lights", intensity sets LEDs per light
+/*uint16_t WS2812FX::mode_static_pattern2()
+{
+  uint16_t maxlights = SEGLEN >> 1;
+  uint16_t zones = 1 + (SEGMENT.speed);
+  
+  return FRAMETIME;
+}*/
