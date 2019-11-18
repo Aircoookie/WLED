@@ -86,36 +86,26 @@ void arlsLock(uint32_t timeoutMs)
 }
 
 
-void initE131(){
-  if (WLED_CONNECTED && e131Enabled)
-  {
-    if (e131 == nullptr) e131 = new E131();
-    e131->begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST , e131Universe);
-  } else {
-    e131Enabled = false;
-  }
-}
-
-
-void handleE131(){
+void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
   //E1.31 protocol support
-  if(WLED_CONNECTED && e131Enabled) {
-    uint16_t len = e131->parsePacket();
-    if (!len || e131->universe < e131Universe || e131->universe > e131Universe +4) return;
-    len /= 3; //one LED is 3 DMX channels
-    
-    uint16_t multipacketOffset = (e131->universe - e131Universe)*170; //if more than 170 LEDs (510 channels), client will send in next higher universe 
-    if (ledCount <= multipacketOffset) return;
+  uint16_t uni = htons(p->universe);
+  if (uni < e131Universe || uni >= e131Universe + E131_MAX_UNIVERSE_COUNT) return;
+  
+  uint16_t len = htons(p->property_value_count) -1;
+  len /= 3; //one LED is 3 DMX channels
+  
+  uint16_t multipacketOffset = (uni - e131Universe)*170; //if more than 170 LEDs (510 channels), client will send in next higher universe 
+  if (ledCount <= multipacketOffset) return;
 
-    arlsLock(realtimeTimeoutMs);
-    if (len + multipacketOffset > ledCount) len = ledCount - multipacketOffset;
-    
-    for (uint16_t i = 0; i < len; i++) {
-      int j = i * 3;
-      setRealtimePixel(i + multipacketOffset, e131->data[j], e131->data[j+1], e131->data[j+2], 0);
-    }
-    strip.show();
+  arlsLock(realtimeTimeoutMs);
+  if (len + multipacketOffset > ledCount) len = ledCount - multipacketOffset;
+  
+  for (uint16_t i = 0; i < len; i++) {
+    int j = i * 3 +1;
+    setRealtimePixel(i + multipacketOffset, p->property_values[j], p->property_values[j+1], p->property_values[j+2], 0);
   }
+
+  e131NewData = true;
 }
 
 
@@ -126,7 +116,12 @@ void handleNotifications()
     notify(notificationSentCallMode,true);
   }
 
-  handleE131();
+  if (e131NewData && millis() - strip.getLastShow() > 15)
+  {
+    e131NewData = false;
+    strip.show();
+    Serial.println("Show");
+  }
 
   //unlock strip when realtime UDP times out
   if (realtimeActive && millis() > realtimeTimeout)

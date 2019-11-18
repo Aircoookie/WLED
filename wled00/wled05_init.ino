@@ -230,7 +230,7 @@ void initInterfaces() {
   if (ntpEnabled) ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   initBlynk(blynkApiKey);
-  initE131();
+  Serial.println(e131.begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST , e131Universe, E131_MAX_UNIVERSE_COUNT));
   reconnectHue();
   initMqtt();
   interfacesInited = true;

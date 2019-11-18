@@ -388,6 +388,7 @@ class WS2812FX {
       color_from_palette(uint16_t, bool, bool, uint8_t, uint8_t pbri = 255),
       color_blend(uint32_t,uint32_t,uint8_t),
       gamma32(uint32_t),
+      getLastShow(void),
       getPixelColor(uint16_t),
       getColor(void);
 
