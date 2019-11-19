@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.6
+ * @version 0.8.7-dev
  * @author Christian Schwinne
  */
 
@@ -55,7 +55,6 @@
  #include <ArduinoOTA.h>
 #endif
 #include <SPIFFSEditor.h>
-#include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
 #ifndef WLED_DISABLE_ALEXA
@@ -100,7 +99,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1911181
+#define VERSION 1911201
 char versionString[] = "0.8.7-dev";
 
 

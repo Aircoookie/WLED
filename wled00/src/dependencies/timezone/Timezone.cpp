@@ -12,7 +12,7 @@
 #include "Timezone.h"
 
 //THIS LINE WAS ADDED FOR COMPATIBILY WITH THE WLED DEPENDENCY STRUCTURE. REMOVE IF YOU USE IT OUTSIDE OF WLED!
-#include "../time/Time.h"
+#include "../time/TimeLib.h"
 
 #ifdef __AVR__
 	#include <avr/eeprom.h>
