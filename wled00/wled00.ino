@@ -32,6 +32,8 @@
 //to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
 
+//to toggle using analog RGB or RGBW led strips (un)comment the following line
+//#define WLED_DISABLE_ANALOG_LEDS
 
 //library inclusions
 #include <Arduino.h>
