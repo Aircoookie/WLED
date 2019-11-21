@@ -152,7 +152,7 @@ void initConnection()
 {
   WiFi.disconnect(); //close old connections
 
-  if (staticIP[0] != 0)
+  if (staticIP[0] != 0 && staticGateway[0] != 0)
   {
     WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(8,8,8,8));
   } else
