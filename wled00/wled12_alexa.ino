@@ -62,10 +62,10 @@ void onAlexaChange(EspalexaDevice* dev)
   } else //color
   {
     uint32_t color = espalexaDevice->getRGB();
+    col[3] = ((color >> 24) & 0xFF);
     col[0] = ((color >> 16) & 0xFF);
     col[1] = ((color >>  8) & 0xFF);
     col[2] = (color & 0xFF);
-    if (useRGBW) colorRGBtoRGBW(col);
     colorUpdated(10);
   }
 }
