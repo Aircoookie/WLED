@@ -172,7 +172,7 @@ bool useHSBDefault = useHSB;
 
 //Sync CONFIG
 bool buttonEnabled =  true;
-bool irEnabled     = false;                   //Infrared receiver
+bool irEnabled     = true;                   //Infrared receiver
 
 uint16_t udpPort    = 21324;                  //WLED notifier default port
 uint16_t udpRgbPort = 19446;                  //Hyperion port
@@ -301,6 +301,8 @@ byte briOld = 0;
 byte briT = 0;
 byte briIT = 0;
 byte briLast = 127;                           //brightness before turned off. Used for toggle function
+byte white = 0;
+byte whiteLast = 0;                           //white level before turned off. Used for toggle function
 
 //button
 bool buttonPressedBefore = false;
