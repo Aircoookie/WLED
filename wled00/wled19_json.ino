@@ -105,6 +105,9 @@ bool deserializeState(JsonObject root)
   }
   colorUpdated(noNotification ? 5:1);
 
+  ps = root["psave"] | -1;
+  if (ps >= 0) savePreset(ps);
+
   return stateResponse;
 }
 

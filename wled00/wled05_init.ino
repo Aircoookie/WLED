@@ -85,10 +85,6 @@ void wledInit()
   
   //HTTP server page init
   initServer();
-
-  strip.service();
-
-  initConnection();
 }
 
 
@@ -241,6 +237,9 @@ byte stacO = 0;
 
 void handleConnection() {
   //TODO: reconnect if heap <8000
+  if (millis() < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == 2)) return;
+  if (lastReconnectAttempt == 0) initConnection();
+  
   byte stac = 0;
   #ifdef ESP8266
   stac = wifi_softap_get_station_num();
