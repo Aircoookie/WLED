@@ -2347,6 +2347,36 @@ uint16_t WS2812FX::mode_static_pattern()
 }
 
 
+//American Police Light with all LEDs Red and Blue 
+uint16_t WS2812FX::mode_policeall()
+{
+  SEGENV.step++;
+  if (SEGENV.step >= SEGLEN) {
+    SEGENV.step = 0;
+  }
+
+  uint16_t idexR = SEGENV.step;
+  uint16_t topindex = SEGLEN >> 1;
+  uint16_t idexB = idexR + topindex;
+
+  if (idexR >= topindex) idexB -= SEGLEN;
+
+  setPixelColor(idexR, RED);
+  setPixelColor(idexB, BLUE);
+
+  return SPEED_FORMULA_L;
+}
+
+
+//Police Lights Red and Blue 
+uint16_t WS2812FX::mode_police()
+{
+  fill(SEGCOLOR(1));
+
+  return mode_policeall();
+}
+
+
 //Speed slider sets number of "lights", intensity sets LEDs per light
 /*uint16_t WS2812FX::mode_static_pattern2()
 {
