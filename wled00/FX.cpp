@@ -2346,94 +2346,35 @@ uint16_t WS2812FX::mode_static_pattern()
   return FRAMETIME;
 }
 
+
+//American Police Light with all LEDs Red and Blue 
+uint16_t WS2812FX::mode_policeall()
+{
+  SEGENV.step++;
+  if (SEGENV.step >= SEGLEN) {
+    SEGENV.step = 0;
+  }
+
+  uint16_t idexR = SEGENV.step;
+  uint16_t topindex = SEGLEN >> 1;
+  uint16_t idexB = idexR + topindex;
+
+  if (idexR >= topindex) idexB -= SEGLEN;
+
+  setPixelColor(idexR, RED);
+  setPixelColor(idexB, BLUE);
+
+  return SPEED_FORMULA_L;
+}
+
+
 //Police Lights Red and Blue 
 uint16_t WS2812FX::mode_police()
 {
+  fill(SEGCOLOR(1));
 
-	SEGENV.step += 1;
-	if (SEGENV.step >= SEGLEN) {
-		SEGENV.step = 0;
-	}
-
-	uint16_t idexR = SEGENV.step;
-	uint16_t topindex = SEGLEN / 2;
-	uint16_t antipodal;
-
-	antipodal = idexR + topindex;
-
-	if (idexR >= topindex) {
-		antipodal = (idexR + topindex) % SEGLEN;
-	}
-
-	uint16_t idexB = antipodal;
-
-
-	uint8_t thathue = (thishuepolice + 160) % 255;
-
-
-	for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
-		if (i == idexR) {
-			CRGB newcolor = CHSV(thishuepolice, thissat, 255);
-			setPixelColor(idexR, newcolor.r, newcolor.g, newcolor.b, 0x00);
-		}
-		else if (i == idexB) {
-			CRGB newcolor = CHSV(thathue, thissat, 255);
-			setPixelColor(idexB, newcolor.r, newcolor.g, newcolor.b, 0x00);
-		}
-		else {
-			setPixelColor(i, 0, 0, 0, 0);
-		}
-	}
-	return SPEED_FORMULA_L;
+  return mode_policeall();
 }
-
-//American Police Light with all LED´s Red and Blue 
-uint16_t WS2812FX::mode_policeall()
-{
-
-	SEGENV.step += 1;
-	if (SEGENV.step >= SEGLEN) {
-		SEGENV.step = 0;
-	}
-
-	uint16_t idexR = SEGENV.step;
-	uint16_t topindex = SEGLEN / 2;
-	uint16_t antipodal;
-
-	antipodal = idexR + topindex;
-
-	if (idexR >= topindex) {
-		antipodal = (idexR + topindex) % SEGLEN;
-	}
-
-	uint16_t idexB = antipodal;
-
-
-	uint8_t thathue = (thishuepolice + 160) % 255;
-
-	CRGB indexRCol = CHSV(thishuepolice, thissat, 255);
-	CRGB indexBCol = CHSV(thathue, thissat, 255);
-
-	setPixelColor(idexR, indexRCol.r, indexRCol.g, indexRCol.b, 0x00);
-	setPixelColor(idexB, indexBCol.r, indexBCol.g, indexBCol.b, 0x00);
-
-
-	return SPEED_FORMULA_L;
-
-}
-
-/*
- * Lights every LED in a random color. Changes all LED at the same time
- * to new random colors.
- */
-uint16_t WS2812FX::mode_multi_dynamic()
-{
-	for (uint16_t i = SEGMENT.start; i <= SEGMENT.stop; i++) {
-		setPixelColor(i, color_wheel(random8(SEGMENT.intensity)));
-	}
-	return (SEGMENT.speed);
-}
-
 
 
 //Speed slider sets number of "lights", intensity sets LEDs per light

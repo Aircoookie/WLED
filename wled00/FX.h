@@ -84,7 +84,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  87
+#define MODE_COUNT  86
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -171,9 +171,9 @@
 #define FX_MODE_TWINKLECAT              81
 #define FX_MODE_HALLOWEEN_EYES          82
 #define FX_MODE_STATIC_PATTERN          83
-#define FX_MODE_POLICE					84
-#define FX_MODE_POLICE_ALL				85
-#define FX_MODE_MULTI_DYNAMIC			86
+#define FX_MODE_POLICE					        84
+#define FX_MODE_POLICE_ALL				      85
+
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -312,9 +312,8 @@ class WS2812FX {
       _mode[FX_MODE_TWINKLECAT]              = &WS2812FX::mode_twinklecat;
       _mode[FX_MODE_HALLOWEEN_EYES]          = &WS2812FX::mode_halloween_eyes;
       _mode[FX_MODE_STATIC_PATTERN]          = &WS2812FX::mode_static_pattern;
-	  _mode[FX_MODE_POLICE]					 = &WS2812FX::mode_police;
-	  _mode[FX_MODE_POLICE_ALL]				 = &WS2812FX::mode_policeall;
-	  _mode[FX_MODE_MULTI_DYNAMIC]			 = &WS2812FX::mode_multi_dynamic;
+	    _mode[FX_MODE_POLICE]					         = &WS2812FX::mode_police;
+	    _mode[FX_MODE_POLICE_ALL]				       = &WS2812FX::mode_policeall;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -492,9 +491,8 @@ class WS2812FX {
       mode_twinklecat(void),
       mode_halloween_eyes(void),
       mode_static_pattern(void),
-	  mode_police(void),
-	  mode_policeall(void),
-	  mode_multi_dynamic(void);
+	    mode_police(void),
+	    mode_policeall(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -526,10 +524,6 @@ class WS2812FX {
     byte _cronixieDigits[6];
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
-
-	/*Define Variables for the Police Effects*/
-	int thissat = 255;           //-FX LOOPS DELAY VAR
-	uint8_t thishuepolice = 0;
 
     // mode helper functions
     uint16_t
@@ -567,9 +561,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Red & Blue","Stream",
 "Scanner","Lighthouse","Fireworks","Rain","Merry Christmas","Fire Flicker","Gradient","Loading","In Out","In In",
 "Out Out","Out In","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
-"Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","BPM","Fill Noise",
+"Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Smooth Meteor","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Police","Police All","Multi Dynamic"
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Police","Police All"
 ])=====";
 
 
