@@ -5,12 +5,16 @@
 [![](https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED/wiki)
 [![](https://img.shields.io/badge/app-wled-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED-App)
 
-## Welcome to my project WLED!
+## Welcome to the modded version of the brilliant project WLED!
+
+The Mod enables **analog RGBW stripes** instead of digital ones.
+
+### All the acknowledgement goes to Aircoookie, the author of WLED.
 
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs!
 
 ### Features:
-- WS2812FX library integrated for 80 special effects   
+- WS2812FX library integrated for 80+ special effects   
 - FastLED noise effects and palettes  
 - Customizable Mobile and desktop UI with color and effect controls  
 - Settings page - configuration over network  
