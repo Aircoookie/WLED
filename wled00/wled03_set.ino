@@ -274,7 +274,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
   if (subPage == 2) {
-    strip.init(useRGBW,ledCount,skipFirstLed,disableNLeds);
+    strip.init(useRGBW,ledCount,1,disableNLeds,skipFirstLed);
   }
   if (subPage == 4) alexaInit();
 }
@@ -375,7 +375,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) {
     stopI = getNumVal(&req, pos);
   }
-  strip.setSegment(main, startI, stopI);
+  strip.setSegment(main, startI, stopI, 1);
 
   main = strip.getMainSegmentId();
 

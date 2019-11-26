@@ -30,7 +30,7 @@ void wledInit()
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204),disableNLeds); //init LEDs quickly
+  strip.init(EEPROM.read(372),ledCount,1,disableNLeds,EEPROM.read(2204)); //init LEDs quickly
   strip.setBrightness(0);
 
   DEBUG_PRINT("LEDs inited. heap usage ~");

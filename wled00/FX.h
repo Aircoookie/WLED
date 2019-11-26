@@ -187,6 +187,7 @@ class WS2812FX {
       uint8_t intensity;
       uint8_t palette;
       uint8_t mode;
+      uint8_t grouping;
       uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
       uint8_t group, spacing;
       uint8_t opacity;
@@ -331,7 +332,7 @@ class WS2812FX {
     }
 
     void
-      init(bool supportWhite, uint16_t countPixels, bool skipFirs, uint8_t disableNLeds),
+      init(bool supportWhite, uint16_t countPixels, uint8_t grouping, uint8_t disableNLeds, bool skipFirst),
       service(void),
       blur(uint8_t),
       fade_out(uint8_t r),
@@ -351,7 +352,7 @@ class WS2812FX {
       unlockAll(void),
       setTransitionMode(bool t),
       trigger(void),
-      setSegment(uint8_t n, uint16_t start, uint16_t stop),
+      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping),
       resetSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
@@ -372,6 +373,7 @@ class WS2812FX {
       colorOrder = 0,
       milliampsPerLed = 55,
       _disableNLeds = 0,
+      _grouping = 1,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
@@ -508,7 +510,7 @@ class WS2812FX {
     CRGBPalette16 targetPalette;
 
     uint32_t now;
-    uint16_t _length, _lengthRaw, _usableCount;
+    uint16_t _length, _lengthRaw;
     uint16_t _rand16seed;
     uint8_t _brightness;
 
