@@ -55,20 +55,21 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 }
 
 void WS2812FX::service() {
-  now = millis() + timebase; // Be aware, millis() rolls over every 49 days
-  if (now - _lastShow < MIN_SHOW_DELAY) return;
+  uint32_t nowUp = millis(); // Be aware, millis() rolls over every 49 days
+  now = nowUp + timebase;
+  if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
     _segment_index = i;
     if (SEGMENT.isActive())
     {
-      if(now > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
+      if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
       {
         doShow = true;
         handle_palette();
         uint16_t delay = (this->*_mode[SEGMENT.mode])();
-        SEGENV.next_time = now + delay;
+        SEGENV.next_time = millis() + delay;
         if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
       }
     }
