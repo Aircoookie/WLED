@@ -16,12 +16,13 @@ enum class AdaState {
 void handleSerial()
 {
   static auto state = AdaState::Header_A;
-  static unsigned int count = 0;
-  static unsigned int pixel = 0;
+  static uint16_t count = 0;
+  static uint16_t pixel = 0;
   static byte check = 0x00;
   static byte red   = 0x00;
   static byte green = 0x00;
-  static byte blue  = 0x00;
+  static bool changed = false;
+  
   while (Serial.available() > 0)
   {
     byte next = Serial.read();
@@ -61,18 +62,23 @@ void handleSerial()
         state = AdaState::Data_Blue;
         break;
       case AdaState::Data_Blue:
-        blue  = next;
+        byte blue  = next;
+        changed = true;
         setRealtimePixel(pixel++, red, green, blue, 0);
         if (--count > 0) state = AdaState::Data_Red;
         else             state = AdaState::Header_A;
         break;
     }
+  }
 
+  if (changed)
+  {
     if (!realtimeActive && bri == 0) strip.setBrightness(briLast);
     arlsLock(realtimeTimeoutMs);
 
     yield();
     strip.show();
+    changed = false;
   }
 }
 
