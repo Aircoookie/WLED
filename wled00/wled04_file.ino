@@ -15,6 +15,7 @@ enum class AdaState {
 
 void handleSerial()
 {
+  #ifdef WLED_ENABLE_ADALIGHT
   static auto state = AdaState::Header_A;
   static uint16_t count = 0;
   static uint16_t pixel = 0;
@@ -80,6 +81,7 @@ void handleSerial()
     strip.show();
     changed = false;
   }
+  #endif
 }
 
 
