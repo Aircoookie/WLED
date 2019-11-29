@@ -16,14 +16,14 @@
 //You are required to disable over-the-air updates:
 //#define WLED_DISABLE_OTA
 
-//You need to choose 1-2 of these features to disable:
+//You need to choose some of these features to disable:
 //#define WLED_DISABLE_ALEXA
 //#define WLED_DISABLE_BLYNK
 //#define WLED_DISABLE_CRONIXIE
 //#define WLED_DISABLE_HUESYNC
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
 //#define WLED_DISABLE_MOBILE_UI
-
+#define WLED_ENABLE_ADALIGHT       //only saves about 500b
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
@@ -437,7 +437,7 @@ AsyncMqttClient* mqtt = NULL;
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
 void handleE131Packet(e131_packet_t*, IPAddress);
 
-#define E131_MAX_UNIVERSE_COUNT 7
+#define E131_MAX_UNIVERSE_COUNT 9
 
 //udp interface objects
 WiFiUDP notifierUdp, rgbUdp;
