@@ -172,8 +172,8 @@
 #define FX_MODE_HALLOWEEN_EYES          82
 #define FX_MODE_STATIC_PATTERN          83
 #define FX_MODE_TRI_STATIC_PATTERN      84
-#define FX_MODE_POLICE					        85
-#define FX_MODE_POLICE_ALL				      86
+#define FX_MODE_POLICE                  85
+#define FX_MODE_POLICE_ALL              86
 
 
 class WS2812FX {
@@ -313,9 +313,9 @@ class WS2812FX {
       _mode[FX_MODE_TWINKLECAT]              = &WS2812FX::mode_twinklecat;
       _mode[FX_MODE_HALLOWEEN_EYES]          = &WS2812FX::mode_halloween_eyes;
       _mode[FX_MODE_STATIC_PATTERN]          = &WS2812FX::mode_static_pattern;
-	    _mode[FX_MODE_TRI_STATIC_PATTERN]			 = &WS2812FX::mode_tri_static_pattern;
-	    _mode[FX_MODE_POLICE]					         = &WS2812FX::mode_police;
-	    _mode[FX_MODE_POLICE_ALL]				       = &WS2812FX::mode_policeall;
+      _mode[FX_MODE_TRI_STATIC_PATTERN]      = &WS2812FX::mode_tri_static_pattern;
+      _mode[FX_MODE_POLICE]                  = &WS2812FX::mode_police;
+      _mode[FX_MODE_POLICE_ALL]              = &WS2812FX::mode_policeall;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);

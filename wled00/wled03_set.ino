@@ -120,9 +120,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0 && t < 4) strip.paletteBlend = t;
     strip.reverseMode = request->hasArg("RV");
     skipFirstLed = request->hasArg("SL");
-
     disableNLeds = request->arg("DL").toInt();
-
     t = request->arg("BF").toInt();
     if (t > 0) briMultiplier = t;
   }
