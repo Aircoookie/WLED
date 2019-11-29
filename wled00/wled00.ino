@@ -155,6 +155,7 @@ uint16_t transitionDelay = 750;               //default crossfade duration in ms
 
 //bool strip.reverseMode  = false;            //flip entire LED strip (reverses all effect directions) --> edit in WS2812FX.h
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
+uint8_t disableNLeds = 0;                        //disables N LEDs between active nodes. (Useful for spacing out lights for more traditional christmas light look)
 byte briMultiplier =  100;                    //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 

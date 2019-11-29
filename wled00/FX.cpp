@@ -141,7 +141,7 @@ uint16_t WS2812FX::color_wipe(bool rev, bool useRandomColors) {
       SEGENV.step = 0;
     }
   }
-  
+
   uint16_t ledIndex = (prog * SEGLEN) >> 15;
   uint16_t rem = 0;
   rem = (prog * SEGLEN) * 2; //mod 0xFFFF
@@ -2346,6 +2346,29 @@ uint16_t WS2812FX::mode_static_pattern()
   return FRAMETIME;
 }
 
+uint16_t WS2812FX::mode_tri_static_pattern()
+{
+  uint8_t segSize = (SEGMENT.intensity >> 5) +1;
+  uint8_t currSeg = 0;
+  uint16_t currSegCount = 0;
+
+  for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
+    if ( currSeg % 3 == 0 ) {
+      setPixelColor(i, SEGCOLOR(0));
+    } else if( currSeg % 3 == 1) {
+      setPixelColor(i, SEGCOLOR(1));
+    } else {
+      setPixelColor(i, (SEGCOLOR(2) > 0 ? SEGCOLOR(2) : WHITE));
+    }
+    currSegCount += 1;
+    if (currSegCount >= segSize) {
+      currSeg +=1;
+      currSegCount = 0;
+    }
+  }
+
+  return FRAMETIME;
+}
 
 //American Police Light with all LEDs Red and Blue 
 uint16_t WS2812FX::mode_policeall()

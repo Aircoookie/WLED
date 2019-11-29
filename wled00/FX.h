@@ -84,7 +84,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  86
+#define MODE_COUNT  87
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -171,8 +171,9 @@
 #define FX_MODE_TWINKLECAT              81
 #define FX_MODE_HALLOWEEN_EYES          82
 #define FX_MODE_STATIC_PATTERN          83
-#define FX_MODE_POLICE					        84
-#define FX_MODE_POLICE_ALL				      85
+#define FX_MODE_TRI_STATIC_PATTERN      84
+#define FX_MODE_POLICE					        85
+#define FX_MODE_POLICE_ALL				      86
 
 
 class WS2812FX {
@@ -312,6 +313,7 @@ class WS2812FX {
       _mode[FX_MODE_TWINKLECAT]              = &WS2812FX::mode_twinklecat;
       _mode[FX_MODE_HALLOWEEN_EYES]          = &WS2812FX::mode_halloween_eyes;
       _mode[FX_MODE_STATIC_PATTERN]          = &WS2812FX::mode_static_pattern;
+	    _mode[FX_MODE_TRI_STATIC_PATTERN]			 = &WS2812FX::mode_tri_static_pattern;
 	    _mode[FX_MODE_POLICE]					         = &WS2812FX::mode_police;
 	    _mode[FX_MODE_POLICE_ALL]				       = &WS2812FX::mode_policeall;
 
@@ -328,7 +330,7 @@ class WS2812FX {
     }
 
     void
-      init(bool supportWhite, uint16_t countPixels, bool skipFirs),
+      init(bool supportWhite, uint16_t countPixels, bool skipFirs, uint8_t disableNLeds),
       service(void),
       blur(uint8_t),
       fade_out(uint8_t r),
@@ -370,6 +372,7 @@ class WS2812FX {
       paletteBlend = 0,
       colorOrder = 0,
       milliampsPerLed = 55,
+      _disableNLeds = 0,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
@@ -383,7 +386,8 @@ class WS2812FX {
 
     uint16_t
       ablMilliampsMax,
-      currentMilliamps;
+      currentMilliamps,
+      _usableCount;
 
     uint32_t
       timebase,
@@ -491,6 +495,7 @@ class WS2812FX {
       mode_twinklecat(void),
       mode_halloween_eyes(void),
       mode_static_pattern(void),
+	    mode_tri_static_pattern(void),
 	    mode_police(void),
 	    mode_policeall(void);
 
@@ -563,7 +568,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Out Out","Out In","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Smooth Meteor","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Police","Police All"
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Tri Color Pattern", "Police","Police All"
 ])=====";
 
 
