@@ -386,8 +386,7 @@ class WS2812FX {
 
     uint16_t
       ablMilliampsMax,
-      currentMilliamps,
-      _usableCount;
+      currentMilliamps;
 
     uint32_t
       timebase,
@@ -508,7 +507,7 @@ class WS2812FX {
     CRGBPalette16 targetPalette;
 
     uint32_t now;
-    uint16_t _length;
+    uint16_t _length, _lengthRaw, _usableCount;
     uint16_t _rand16seed;
     uint8_t _brightness;
 

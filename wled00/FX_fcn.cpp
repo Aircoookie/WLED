@@ -52,12 +52,12 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst, uin
 
   uint8_t ty = 1;
   if (supportWhite) ty =2;
-  uint16_t lengthRaw = _length;
+  _lengthRaw = _length;
   if (_skipFirstMode) {
-    lengthRaw += LED_SKIP_AMOUNT;
+    _lengthRaw += LED_SKIP_AMOUNT;
   }
 
-  bus->Begin((NeoPixelType)ty, lengthRaw);
+  bus->Begin((NeoPixelType)ty, _lengthRaw);
   
   delete[] _locked;
   _locked = new byte[_length];
@@ -116,7 +116,7 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   uint16_t actualPixelLocation = i * (_disableNLeds+1);
   if (_locked[i] && !_modeUsesLock) return;
-  if (IS_REVERSE)   i = SEGMENT.stop -1 -actualPixelLocation + SEGMENT.start; //reverse just individual segment
+  if (IS_REVERSE) actualPixelLocation = SEGMENT.stop -1 -actualPixelLocation + SEGMENT.start; //reverse just individual segment
   byte tmpg = g;
   switch (colorOrder) //0 = Grb, default
   {
@@ -127,16 +127,16 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   }
   if (!_cronixieMode)
   {
-    if (reverseMode) i = _usableCount -1 -i;
+    if (reverseMode) actualPixelLocation = _length -1 -actualPixelLocation;
     if (_skipFirstMode)
     { 
-      if (i < LED_SKIP_AMOUNT) bus->SetPixelColor(i, RgbwColor(0,0,0,0));
-      i += LED_SKIP_AMOUNT;
+      if (actualPixelLocation < LED_SKIP_AMOUNT) bus->SetPixelColor(actualPixelLocation, RgbwColor(0,0,0,0));
+      actualPixelLocation += LED_SKIP_AMOUNT;
     }
-    bus->SetPixelColor(actualPixelLocation, RgbwColor(r,g,b,w));
+    if (actualPixelLocation < _lengthRaw) bus->SetPixelColor(actualPixelLocation, RgbwColor(r,g,b,w));
     if (_disableNLeds > 0) {
       for(uint16_t offCount=0; offCount < _disableNLeds; offCount++) {
-        bus->SetPixelColor((actualPixelLocation+offCount+1), RgbwColor(0,0,0,0));
+        if (actualPixelLocation < _lengthRaw) bus->SetPixelColor((actualPixelLocation+offCount+1), RgbwColor(0,0,0,0));
       }
     }
   } else {
