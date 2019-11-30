@@ -99,7 +99,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1911261
+#define VERSION 1911301
 char versionString[] = "0.8.7-dev";
 
 
@@ -419,6 +419,10 @@ uint16_t ntpLocalPort = 2390;
 #define OMAX 2048
 char* obuf;
 uint16_t olen = 0;
+
+uint16_t savedPresets = 0;
+
+byte errorFlag = 0;
 
 String messageHead, messageSub;
 byte optionType;

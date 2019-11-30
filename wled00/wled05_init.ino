@@ -241,21 +241,23 @@ void handleConnection() {
   if (lastReconnectAttempt == 0) initConnection();
   
   byte stac = 0;
-  #ifdef ESP8266
-  stac = wifi_softap_get_station_num();
-  #else
-  wifi_sta_list_t stationList;
-  esp_wifi_ap_get_sta_list(&stationList);
-  stac = stationList.num;
-  #endif
-  if (stac != stacO)
-  {
-    stacO = stac;
-    DEBUG_PRINT("Connected AP clients: ");
-    DEBUG_PRINTLN(stac);
-    if (!WLED_CONNECTED && WLED_WIFI_CONFIGURED) { //trying to connect, but not connected
-      if (stac) WiFi.disconnect(); //disable search so that AP can work
-      else initConnection(); //restart search 
+  if (apActive) {
+    #ifdef ESP8266
+    stac = wifi_softap_get_station_num();
+    #else
+    wifi_sta_list_t stationList;
+    esp_wifi_ap_get_sta_list(&stationList);
+    stac = stationList.num;
+    #endif
+    if (stac != stacO)
+    {
+      stacO = stac;
+      DEBUG_PRINT("Connected AP clients: ");
+      DEBUG_PRINTLN(stac);
+      if (!WLED_CONNECTED && WLED_WIFI_CONFIGURED) { //trying to connect, but not connected
+        if (stac) WiFi.disconnect(); //disable search so that AP can work
+        else initConnection(); //restart search 
+      }
     }
   }
   if (forceReconnect) {
@@ -272,7 +274,7 @@ void handleConnection() {
       interfacesInited = false;
       initConnection();
     }
-    if (millis() - lastReconnectAttempt > 300000 && WLED_WIFI_CONFIGURED) initConnection();
+    if (millis() - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED) initConnection();
     if (!apActive && millis() - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == 1)) initAP(); 
   } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");

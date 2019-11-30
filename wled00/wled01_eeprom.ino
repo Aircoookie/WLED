@@ -21,6 +21,11 @@
 //11-> 0.8.5-dev #mqttauth @TimothyBrown
 //12-> 0.8.7
 
+void commit()
+{
+  if (!EEPROM.commit()) errorFlag = 2;
+}
+
 /*
  * Erase all configuration data
  */
@@ -30,7 +35,7 @@ void clearEEPROM()
   {
     EEPROM.write(i, 0);
   }
-  EEPROM.commit();
+  commit();
 }
 
 
@@ -263,7 +268,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(2522, mqttPort & 0xFF);
   EEPROM.write(2523, (mqttPort >> 8) & 0xFF);
 
-  EEPROM.commit();
+  commit();
 }
 
 
@@ -541,12 +546,29 @@ void loadSettingsFromEEPROM(bool first)
   useHSB = useHSBDefault;
 
   overlayCurrent = overlayDefault;
+
+  savedToPresets();
 }
 
 
 //PRESET PROTOCOL 20 bytes
 //0: preset purpose byte 0:invalid 1:valid preset 1.0
 //1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17: fp 18-19:Zeros
+//determines which presets already contain save data
+void savedToPresets()
+{
+  for (byte index = 1; index <= 16; index++)
+  {
+    uint16_t i = 380 + index*20;
+
+    if (EEPROM.read(i) == 1) {
+      savedPresets |= 0x01 << (index-1);
+    } else
+    {
+      savedPresets &= ~(0x01 << (index-1));
+    }
+  }
+}
 
 bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool loadFX = true)
 {
@@ -594,7 +616,7 @@ void savePreset(byte index)
 
   EEPROM.write(i+16, effectIntensity);
   EEPROM.write(i+17, effectPalette);
-  EEPROM.commit();
+  commit();
 }
 
 
@@ -636,5 +658,5 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   {
     EEPROM.write(i, mc.charAt(i-s));
   }
-  if (sing) EEPROM.commit();
+  if (sing) commit();
 }

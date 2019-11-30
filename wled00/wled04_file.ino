@@ -22,10 +22,10 @@ void handleSerial()
   static byte check = 0x00;
   static byte red   = 0x00;
   static byte green = 0x00;
-  static bool changed = false;
   
   while (Serial.available() > 0)
   {
+    yield();
     byte next = Serial.read();
     switch (state) {
       case AdaState::Header_A:
@@ -64,22 +64,17 @@ void handleSerial()
         break;
       case AdaState::Data_Blue:
         byte blue  = next;
-        changed = true;
         setRealtimePixel(pixel++, red, green, blue, 0);
         if (--count > 0) state = AdaState::Data_Red;
-        else             state = AdaState::Header_A;
+        else {
+          if (!realtimeActive && bri == 0) strip.setBrightness(briLast);
+          arlsLock(realtimeTimeoutMs);
+
+          strip.show();
+          state = AdaState::Header_A;
+        }
         break;
     }
-  }
-
-  if (changed)
-  {
-    if (!realtimeActive && bri == 0) strip.setBrightness(briLast);
-    arlsLock(realtimeTimeoutMs);
-
-    yield();
-    strip.show();
-    changed = false;
   }
   #endif
 }

@@ -142,6 +142,8 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 
 void serializeState(JsonObject root)
 {
+  if (errorFlag) root["error"] = errorFlag;
+  
   root["on"] = (bri > 0);
   root["bri"] = briLast;
   root["transition"] = transitionDelay/100; //in 100ms
