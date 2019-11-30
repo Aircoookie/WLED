@@ -331,7 +331,7 @@ void WS2812FX::setPalette(uint8_t p) {
 }
 
 bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
-  uint8_t retSeg = getReturnedSegmentId();
+  uint8_t retSeg = getMainSegmentId();
   Segment& seg = _segments[retSeg];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
 
@@ -370,11 +370,11 @@ void WS2812FX::setBrightness(uint8_t b) {
 }
 
 uint8_t WS2812FX::getMode(void) {
-  return _segments[getReturnedSegmentId()].mode;
+  return _segments[getMainSegmentId()].mode;
 }
 
 uint8_t WS2812FX::getSpeed(void) {
-  return _segments[getReturnedSegmentId()].speed;
+  return _segments[getMainSegmentId()].speed;
 }
 
 uint8_t WS2812FX::getBrightness(void) {
@@ -398,20 +398,21 @@ uint8_t WS2812FX::getFirstSelectedSegment(void)
   return 0;
 }
 
-uint8_t WS2812FX::getReturnedSegmentId(void) {
-  if (returnedSegment >= MAX_NUM_SEGMENTS || !_segments[returnedSegment].isActive())
+uint8_t WS2812FX::getMainSegmentId(void) {
+  if (mainSegment >= MAX_NUM_SEGMENTS || !_segments[mainSegment].isActive())
   {
     return getFirstSelectedSegment();
   }
-  return returnedSegment;
+  return mainSegment;
 }
 
 uint32_t WS2812FX::getColor(void) {
-  return _segments[getReturnedSegmentId()].colors[0];
+  return _segments[getMainSegmentId()].colors[0];
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
+  i = i * (_disableNLeds+1);
   if (reverseMode) i = _length- 1 -i;
   if (IS_REVERSE)   i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
   if (_skipFirstMode) i += LED_SKIP_AMOUNT;
@@ -434,6 +435,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
       default: return 0;
     }
   }
+  if (i >= _lengthRaw) return 0;
   RgbwColor lColor = bus->GetPixelColorRgbw(i);
   byte r = lColor.R, g = lColor.G, b = lColor.B;
   switch (colorOrder)

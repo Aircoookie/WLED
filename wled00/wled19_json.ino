@@ -2,6 +2,64 @@
  * JSON API (De)serialization
  */
 
+void deserializeSegment(JsonObject elem, byte it)
+{
+  byte id = elem["id"] | it;
+  if (id < strip.getMaxSegments())
+  {
+    WS2812FX::Segment& seg = strip.getSegment(id);
+    uint16_t start = elem["start"] | seg.start;
+    int stop = elem["stop"] | -1;
+
+    if (stop < 0) {
+      uint16_t len = elem["len"];
+      stop = (len > 0) ? start + len : seg.stop;
+    }
+    strip.setSegment(id, start, stop);
+    
+    JsonArray colarr = elem["col"];
+    if (!colarr.isNull())
+    {
+      for (uint8_t i = 0; i < 3; i++)
+      {
+        JsonArray colX = colarr[i];
+        if (colX.isNull()) break;
+        byte sz = colX.size();
+        if (sz > 0 && sz < 5)
+        {
+          int rgbw[] = {0,0,0,0};
+          byte cp = copyArray(colX, rgbw);
+          seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
+          if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
+          if (id == 0) //temporary
+          { 
+            if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
+            if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
+          }
+        }
+      }
+    }
+    
+    //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
+    seg.setOption(0, elem["sel"] | seg.getOption(0)); //selected
+    seg.setOption(1, elem["rev"] | seg.getOption(1)); //reverse
+    //int cln = seg_0["cln"];
+    //temporary, strip object gets updated via colorUpdated()
+    if (id == 0) {
+      effectCurrent = elem["fx"] | effectCurrent;
+      effectSpeed = elem["sx"] | effectSpeed;
+      effectIntensity = elem["ix"] | effectIntensity ;
+      effectPalette = elem["pal"] | effectPalette;
+    } else { //permanent
+      byte fx = elem["fx"] | seg.mode;
+      if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
+      seg.speed = elem["sx"] | seg.speed;
+      seg.intensity = elem["ix"] | seg.intensity;
+      seg.palette = elem["pal"] | seg.palette;
+    }
+  }
+}
+
 bool deserializeState(JsonObject root)
 {
   bool stateResponse = root["v"] | false;
@@ -10,15 +68,18 @@ bool deserializeState(JsonObject root)
   
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
-  
-  if (root.containsKey("transition"))
+
+  int tr = root["transition"] | -1;
+  if (tr >= 0)
   {
-    transitionDelay = root["transition"];
+    transitionDelay = tr;
     transitionDelay *= 100;
   }
-  if (root.containsKey("tt"))
+
+  tr = root["tt"] | -1;
+  if (tr >= 0)
   {
-    transitionDelayTemp = root["tt"];
+    transitionDelayTemp = tr;
     transitionDelayTemp *= 100;
     jsonTransitionOnce = true;
   }
@@ -44,65 +105,31 @@ bool deserializeState(JsonObject root)
   if (timein != -1) setTime(timein);
 
   int it = 0;
-  JsonArray segs = root["seg"];
-  for (JsonObject elem : segs)
+  JsonVariant segVar = root["seg"];
+  if (segVar.is<JsonObject>())
   {
-    byte id = elem["id"] | it;
-    if (id < strip.getMaxSegments())
-    {
-      WS2812FX::Segment& seg = strip.getSegment(id);
-      uint16_t start = elem["start"] | seg.start;
-      int stop = elem["stop"] | -1;
-
-      if (stop < 0) {
-        uint16_t len = elem["len"];
-        stop = (len > 0) ? start + len : seg.stop;
-      }
-      strip.setSegment(id, start, stop);
-      
-      JsonArray colarr = elem["col"];
-      if (!colarr.isNull())
+    int id = segVar["id"] | -1;
+    if (id < 0) { //set all selected segments
+      for (byte s = 0; s < strip.getMaxSegments(); s++)
       {
-        for (uint8_t i = 0; i < 3; i++)
+        WS2812FX::Segment sg = strip.getSegment(s);
+        if (sg.isActive() && sg.isSelected())
         {
-          JsonArray colX = colarr[i];
-          if (colX.isNull()) break;
-          byte sz = colX.size();
-          if (sz > 0 && sz < 5)
-          {
-            int rgbw[] = {0,0,0,0};
-            byte cp = copyArray(colX, rgbw);
-            seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
-            if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
-            if (id == 0) //temporary
-            { 
-              if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
-              if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
-            }
-          }
+          deserializeSegment(segVar, s);
         }
       }
-      
-      //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
-      seg.setOption(0, elem["sel"] | seg.getOption(0)); //selected
-      seg.setOption(1, elem["rev"] | seg.getOption(1)); //reverse
-      //int cln = seg_0["cln"];
-      //temporary, strip object gets updated via colorUpdated()
-      if (id == 0) {
-        effectCurrent = elem["fx"] | effectCurrent;
-        effectSpeed = elem["sx"] | effectSpeed;
-        effectIntensity = elem["ix"] | effectIntensity ;
-        effectPalette = elem["pal"] | effectPalette;
-      } else { //permanent
-        byte fx = elem["fx"] | seg.mode;
-        if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
-        seg.speed = elem["sx"] | seg.speed;
-        seg.intensity = elem["ix"] | seg.intensity;
-        seg.palette = elem["pal"] | seg.palette;
-      }
+    } else { //set only the segment with the specified ID
+      deserializeSegment(segVar, it);
     }
-    it++;
+  } else {
+    JsonArray segs = segVar.as<JsonArray>();
+    for (JsonObject elem : segs)
+    {
+      deserializeSegment(elem, it);
+      it++;
+    }
   }
+
   colorUpdated(noNotification ? 5:1);
 
   ps = root["psave"] | -1;

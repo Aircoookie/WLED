@@ -36,6 +36,10 @@ void initServer()
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "*");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "*");
+
+  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/html", PAGE_liveview);
+  });
   
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){

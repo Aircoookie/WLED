@@ -367,7 +367,7 @@ class WS2812FX {
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p);
 
     uint8_t
-      returnedSegment = 0,
+      mainSegment = 0,
       paletteFade = 0,
       paletteBlend = 0,
       colorOrder = 0,
@@ -380,7 +380,7 @@ class WS2812FX {
       getPaletteCount(void),
       getMaxSegments(void),
       getFirstSelectedSegment(void),
-      getReturnedSegmentId(void),
+      getMainSegmentId(void),
       gamma8(uint8_t),
       get_random_wheel_index(uint8_t);
 
