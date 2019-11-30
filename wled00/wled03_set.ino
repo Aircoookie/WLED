@@ -85,10 +85,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       colS[0] = request->arg("CR").toInt();
       colS[1] = request->arg("CG").toInt();
       colS[2] = request->arg("CB").toInt();
+      colS[3] = request->arg("CW").toInt();
       colSecS[0] = request->arg("SR").toInt();
       colSecS[1] = request->arg("SG").toInt();
       colSecS[2] = request->arg("SB").toInt();
-      colS[3] = request->arg("CW").toInt();
       colSecS[3] = request->arg("SW").toInt();
       briS = request->arg("CA").toInt();
       effectDefault = request->arg("FX").toInt();
@@ -120,6 +120,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0 && t < 4) strip.paletteBlend = t;
     strip.reverseMode = request->hasArg("RV");
     skipFirstLed = request->hasArg("SL");
+    disableNLeds = request->arg("DL").toInt();
     t = request->arg("BF").toInt();
     if (t > 0) briMultiplier = t;
   }
@@ -310,7 +311,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
   }
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
-  if (subPage == 2) strip.init(useRGBW,ledCount,skipFirstLed);
+  if (subPage == 2) {
+    strip.init(useRGBW,ledCount,skipFirstLed,disableNLeds);
+  }
   if (subPage == 4) alexaInit();
 }
 

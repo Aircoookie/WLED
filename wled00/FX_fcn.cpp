@@ -30,25 +30,40 @@
 #define LED_SKIP_AMOUNT  1
 #define MIN_SHOW_DELAY  15
 
-void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
+void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst, uint8_t disableNLeds)
 {
-  if (supportWhite == _rgbwMode && countPixels == _length && _locked != NULL) return;
+  if (supportWhite == _rgbwMode && countPixels == _length && _locked != NULL && disableNLeds == _disableNLeds) return;
   RESET_RUNTIME;
   _rgbwMode = supportWhite;
   _skipFirstMode = skipFirst;
   _length = countPixels;
-  
+
+  if (disableNLeds > 0) {
+    uint16_t groupCount = disableNLeds +1;
+    //since 1st led is lit, even partial group has a led lit, whereas int division truncates decimal.
+    bool hasExtraLight = _length % groupCount != 0;
+    _usableCount = _length/groupCount;
+    _usableCount += hasExtraLight ? 1 : 0;
+  } else {
+    _usableCount = _length;
+  }
+
+  _disableNLeds = disableNLeds;
+
   uint8_t ty = 1;
   if (supportWhite) ty =2;
   uint16_t lengthRaw = _length;
-  if (_skipFirstMode) lengthRaw += LED_SKIP_AMOUNT;
+  if (_skipFirstMode) {
+    lengthRaw += LED_SKIP_AMOUNT;
+  }
+
   bus->Begin((NeoPixelType)ty, lengthRaw);
   
   delete[] _locked;
   _locked = new byte[_length];
   
   _segments[0].start = 0;
-  _segments[0].stop = _length;
+  _segments[0].stop = _usableCount;
   
   unlockAll();
   setBrightness(_brightness);
@@ -99,8 +114,9 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
+  uint16_t actualPixelLocation = i * (_disableNLeds+1);
   if (_locked[i] && !_modeUsesLock) return;
-  if (IS_REVERSE)   i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
+  if (IS_REVERSE)   i = SEGMENT.stop -1 -actualPixelLocation + SEGMENT.start; //reverse just individual segment
   byte tmpg = g;
   switch (colorOrder) //0 = Grb, default
   {
@@ -111,14 +127,18 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   }
   if (!_cronixieMode)
   {
-    if (reverseMode) i = _length -1 -i;
+    if (reverseMode) i = _usableCount -1 -i;
     if (_skipFirstMode)
     { 
       if (i < LED_SKIP_AMOUNT) bus->SetPixelColor(i, RgbwColor(0,0,0,0));
       i += LED_SKIP_AMOUNT;
     }
-  
-    bus->SetPixelColor(i, RgbwColor(r,g,b,w));
+    bus->SetPixelColor(actualPixelLocation, RgbwColor(r,g,b,w));
+    if (_disableNLeds > 0) {
+      for(uint16_t offCount=0; offCount < _disableNLeds; offCount++) {
+        bus->SetPixelColor((actualPixelLocation+offCount+1), RgbwColor(0,0,0,0));
+      }
+    }
   } else {
     if(i>6)return;
     byte o = 10*i;

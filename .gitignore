@@ -2,6 +2,7 @@
 .pioenvs
 .piolibdeps
 .vscode
+platformio.ini
 !.vscode/extensions.json
 /wled00/Release
 /wled00/extLibs
