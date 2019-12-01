@@ -383,6 +383,27 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
   }
 
+  //segment select (sets main segment)
+  pos = req.indexOf("SS=");
+  if (pos > 0) {
+    strip.mainSegment = getNumVal(&req, pos);
+  }
+  byte main = strip.getMainSegmentId();
+
+  uint16_t startI = strip.getSegment(main).start;
+  uint16_t stopI = strip.getSegment(main).stop;
+  pos = req.indexOf("S="); //segment start
+  if (pos > 0) {
+    startI = getNumVal(&req, pos);
+  }
+  pos = req.indexOf("S2="); //segment stop
+  if (pos > 0) {
+    stopI = getNumVal(&req, pos);
+  }
+  strip.setSegment(main, startI, stopI);
+
+  main = strip.getMainSegmentId();
+
   //set brightness
   updateVal(&req, "&A=", &bri);
 
@@ -606,7 +627,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   //Segment reverse
   pos = req.indexOf("RV=");
-  if (pos > 0) strip.getSegment(0).setOption(1, req.charAt(pos+3) != '0');
+  if (pos > 0) strip.getSegment(main).setOption(1, req.charAt(pos+3) != '0');
 
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri) nightlightActive = false;

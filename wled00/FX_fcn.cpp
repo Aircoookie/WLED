@@ -105,18 +105,18 @@ bool WS2812FX::modeUsesLock(uint8_t m)
 }
 
 void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
-  uint8_t w = (c >> 24) & 0xFF;
-  uint8_t r = (c >> 16) & 0xFF;
-  uint8_t g = (c >>  8) & 0xFF;
-  uint8_t b =  c        & 0xFF;
+  uint8_t w = (c >> 24);
+  uint8_t r = (c >> 16);
+  uint8_t g = (c >>  8);
+  uint8_t b =  c       ;
   setPixelColor(n, r, g, b, w);
 }
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  uint16_t actualPixelLocation = i * (_disableNLeds+1);
+  i = i * (_disableNLeds+1);
   if (_locked[i] && !_modeUsesLock) return;
-  if (IS_REVERSE) actualPixelLocation = SEGMENT.stop -1 -actualPixelLocation + SEGMENT.start; //reverse just individual segment
+  if (IS_REVERSE) i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
   byte tmpg = g;
   switch (colorOrder) //0 = Grb, default
   {
@@ -127,16 +127,16 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   }
   if (!_cronixieMode)
   {
-    if (reverseMode) actualPixelLocation = _length -1 -actualPixelLocation;
+    if (reverseMode) i = _length -1 -i;
     if (_skipFirstMode)
     { 
-      if (actualPixelLocation < LED_SKIP_AMOUNT) bus->SetPixelColor(actualPixelLocation, RgbwColor(0,0,0,0));
-      actualPixelLocation += LED_SKIP_AMOUNT;
+      if (i < LED_SKIP_AMOUNT) bus->SetPixelColor(i, RgbwColor(0,0,0,0));
+      i += LED_SKIP_AMOUNT;
     }
-    if (actualPixelLocation < _lengthRaw) bus->SetPixelColor(actualPixelLocation, RgbwColor(r,g,b,w));
+    if (i < _lengthRaw) bus->SetPixelColor(i, RgbwColor(r,g,b,w));
     if (_disableNLeds > 0) {
       for(uint16_t offCount=0; offCount < _disableNLeds; offCount++) {
-        if (actualPixelLocation < _lengthRaw) bus->SetPixelColor((actualPixelLocation+offCount+1), RgbwColor(0,0,0,0));
+        if (i < _lengthRaw) bus->SetPixelColor((i + offCount + 1), RgbwColor(0,0,0,0));
       }
     }
   } else {
@@ -144,10 +144,10 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     byte o = 10*i;
     if (_cronixieBacklightEnabled && _cronixieDigits[i] <11)
     {
-      byte r2 = (_segments[0].colors[1] >>16) & 0xFF;
-      byte g2 = (_segments[0].colors[1] >> 8) & 0xFF;
-      byte b2 = (_segments[0].colors[1]     ) & 0xFF;
-      byte w2 = (_segments[0].colors[1] >>24) & 0xFF;
+      byte r2 = _segments[0].colors[1] >>16;
+      byte g2 = _segments[0].colors[1] >> 8;
+      byte b2 = _segments[0].colors[1];
+      byte w2 = _segments[0].colors[1] >>24;
       for (int j=o; j< o+19; j++)
       {
         bus->SetPixelColor(j, RgbwColor(r2,g2,b2,w2));
@@ -385,7 +385,7 @@ uint8_t WS2812FX::getMaxSegments(void) {
   return MAX_NUM_SEGMENTS;
 }
 
-uint8_t WS2812FX::getFirstSelectedSegment(void)
+/*uint8_t WS2812FX::getFirstSelectedSegment(void)
 {
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
@@ -396,13 +396,10 @@ uint8_t WS2812FX::getFirstSelectedSegment(void)
     if (_segments[i].isActive()) return i;
   }
   return 0;
-}
+}*/
 
 uint8_t WS2812FX::getMainSegmentId(void) {
-  if (mainSegment >= MAX_NUM_SEGMENTS || !_segments[mainSegment].isActive())
-  {
-    return getFirstSelectedSegment();
-  }
+  if (mainSegment >= MAX_NUM_SEGMENTS) return 0;
   return mainSegment;
 }
 
@@ -459,6 +456,10 @@ WS2812FX::Segment_runtime WS2812FX::getSegmentRuntime(void) {
 
 WS2812FX::Segment* WS2812FX::getSegments(void) {
   return _segments;
+}
+
+uint16_t WS2812FX::getUsableCount(void) {
+  return _usableCount;
 }
 
 uint32_t WS2812FX::getLastShow(void) {
@@ -809,6 +810,22 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
   CRGB fastled_col;
   fastled_col = ColorFromPalette( currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);
   return  fastled_col.r*65536 +  fastled_col.g*256 +  fastled_col.b;
+}
+
+bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
+{
+  //if (a->start != b->start) return false;
+  //if (a->stop != b->stop) return false;
+  for (uint8_t i = 0; i < NUM_COLORS; i++)
+  {
+    if (a->colors[i] != b->colors[i]) return false;
+  }
+  if (a->mode != b->mode) return false;
+  if (a->speed != b->speed) return false;
+  if (a->intensity != b->intensity) return false;
+  if (a->palette != b->palette) return false;
+  //if (a->getOption(1) != b->getOption(1)) return false; //reverse
+  return true;
 }
 
 //gamma 2.4 lookup table used for color correction

@@ -77,8 +77,9 @@ char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest
   } else {
     oappend(serverDescription);
   }
-
-  oappend("</ds>");
+  oappend("</ds><ss>");
+  oappendi(strip.getMainSegmentId());
+  oappend("</ss>");
   if (includeTheme)
   {
     char cs[6][9];

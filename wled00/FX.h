@@ -364,6 +364,7 @@ class WS2812FX {
       reverseMode = false,
       gammaCorrectBri = false,
       gammaCorrectCol = true,
+      segmentsAreIdentical(Segment* a, Segment* b),
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p);
 
     uint8_t
@@ -379,14 +380,15 @@ class WS2812FX {
       getModeCount(void),
       getPaletteCount(void),
       getMaxSegments(void),
-      getFirstSelectedSegment(void),
+      //getFirstSelectedSegment(void),
       getMainSegmentId(void),
       gamma8(uint8_t),
       get_random_wheel_index(uint8_t);
 
     uint16_t
       ablMilliampsMax,
-      currentMilliamps;
+      currentMilliamps,
+      getUsableCount();
 
     uint32_t
       timebase,

@@ -600,6 +600,8 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
     effectIntensity = EEPROM.read(i+16);
     effectPalette = EEPROM.read(i+17);
   }
+  currentPreset = index;
+  isPreset = true;
   return true;
 }
 
@@ -621,6 +623,8 @@ void savePreset(byte index)
   EEPROM.write(i+16, effectIntensity);
   EEPROM.write(i+17, effectPalette);
   commit();
+  currentPreset = index;
+  isPreset = true;
 }
 
 

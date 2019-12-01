@@ -31,7 +31,7 @@ void deserializeSegment(JsonObject elem, byte it)
           byte cp = copyArray(colX, rgbw);
           seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
           if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
-          if (id == 0) //temporary
+          if (id == strip.getMainSegmentId()) //temporary
           { 
             if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
             if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
@@ -45,10 +45,10 @@ void deserializeSegment(JsonObject elem, byte it)
     seg.setOption(1, elem["rev"] | seg.getOption(1)); //reverse
     //int cln = seg_0["cln"];
     //temporary, strip object gets updated via colorUpdated()
-    if (id == 0) {
+    if (id == strip.getMainSegmentId()) {
       effectCurrent = elem["fx"] | effectCurrent;
       effectSpeed = elem["sx"] | effectSpeed;
-      effectIntensity = elem["ix"] | effectIntensity ;
+      effectIntensity = elem["ix"] | effectIntensity;
       effectPalette = elem["pal"] | effectPalette;
     } else { //permanent
       byte fx = elem["fx"] | seg.mode;
@@ -103,6 +103,8 @@ bool deserializeState(JsonObject root)
 
   int timein = root["time"] | -1;
   if (timein != -1) setTime(timein);
+
+  strip.mainSegment = root["mainseg"] | strip.mainSegment;
 
   int it = 0;
   JsonVariant segVar = root["seg"];
@@ -175,7 +177,8 @@ void serializeState(JsonObject root)
   root["bri"] = briLast;
   root["transition"] = transitionDelay/100; //in 100ms
 
-  root["ps"] = -1; //
+  root["ps"] = currentPreset;
+  root["pss"] = savedPresets;
   root["pl"] = (presetCyclingEnabled) ? 0: -1;
   
   JsonObject nl = root.createNestedObject("nl");
@@ -187,6 +190,8 @@ void serializeState(JsonObject root)
   JsonObject udpn = root.createNestedObject("udpn");
   udpn["send"] = notifyDirect;
   udpn["recv"] = receiveNotifications;
+
+  root["mainseg"] = strip.getMainSegmentId();
   
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++)
@@ -214,6 +219,7 @@ void serializeInfo(JsonObject root)
   leds["pwr"] = strip.currentMilliamps;
   leds["maxpwr"] = strip.ablMilliampsMax;
   leds["maxseg"] = strip.getMaxSegments();
+  leds["seglock"] = false; //will be used in the future to prevent modifications to segment config
   
   root["name"] = serverDescription;
   root["udpport"] = udpPort;
@@ -323,12 +329,13 @@ void serveJson(AsyncWebServerRequest* request)
 
 void serveLiveLeds(AsyncWebServerRequest* request)
 {
-  byte n = (ledCount -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
+  byte used = strip.getUsableCount();
+  byte n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
   char buffer[2000] = "{\"leds\":[";
   olen = 9;
   obuf = buffer;
 
-  for (uint16_t i= 0; i < ledCount; i += n)
+  for (uint16_t i= 0; i < used; i += n)
   {
     olen += sprintf(buffer + olen, "\"%06X\",", strip.getPixelColor(i));
   }

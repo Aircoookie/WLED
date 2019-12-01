@@ -99,7 +99,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1911302
+#define VERSION 1912011
 char versionString[] = "0.8.7-dev";
 
 
@@ -422,6 +422,8 @@ char* obuf;
 uint16_t olen = 0;
 
 uint16_t savedPresets = 0;
+int8_t currentPreset = -1;
+bool isPreset = false;
 
 byte errorFlag = 0;
 
