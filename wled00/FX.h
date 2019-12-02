@@ -181,7 +181,7 @@ class WS2812FX {
   
   // segment parameters
   public:
-    typedef struct Segment { // 21 bytes
+    typedef struct Segment { // 24 bytes
       uint16_t start;
       uint16_t stop; //segment invalid if stop == 0
       uint8_t speed;
@@ -189,6 +189,8 @@ class WS2812FX {
       uint8_t palette;
       uint8_t mode;
       uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
+      uint8_t group, spacing;
+      uint8_t opacity;
       uint32_t colors[NUM_COLORS];
       void setOption(uint8_t n, bool val)
       {
@@ -334,11 +336,7 @@ class WS2812FX {
       service(void),
       blur(uint8_t),
       fade_out(uint8_t r),
-      setMode(uint8_t m),
       setMode(uint8_t segid, uint8_t m),
-      setSpeed(uint8_t s),
-      setIntensity(uint8_t i),
-      setPalette(uint8_t p),
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
       setBrightness(uint8_t b),
@@ -364,6 +362,7 @@ class WS2812FX {
       reverseMode = false,
       gammaCorrectBri = false,
       gammaCorrectCol = true,
+      applyToAllSelected = true,
       segmentsAreIdentical(Segment* a, Segment* b),
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p);
 

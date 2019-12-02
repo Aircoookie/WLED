@@ -3,12 +3,12 @@
  */
 
 //common CSS of settings pages
-const char PAGE_settingsCss[] PROGMEM = R"=====(body{font-family:var(--cFn),sans-serif;text-align:center;background:var(--cCol);color:var(--tCol);line-height:200%%;margin:0;background-attachment:fixed}hr{border-color:var(--dCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:.5ch solid var(--bCol);filter:drop-shadow(-5px -5px 5px var(--sCol))}input[type=number]{width:4em}select{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),sans-serif;border:0.5ch solid var(--bCol);filter:drop-shadow( -5px -5px 5px var(--sCol) );}td{padding:2px;}</style>)=====";
+const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}</style>)=====";
 
 
 //settings menu
 const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><title>WLED Settings</title>%CSS%body{text-align:center;background:var(--cCol);height:100%%;margin:0;background-attachment:fixed}html{--h:11.55vh}button{background:var(--bCol);color:var(--tCol);font-family:var(--cFn),Helvetica,sans-serif;border:.3ch solid var(--bCol);display:inline-block;filter:drop-shadow(-5px -5px 5px var(--sCol));font-size:8vmin;height:var(--h);width:95%%;margin-top:2.4vh}</style>
+<html><head><title>WLED Settings</title><style>body{text-align:center;background:#222;height:100%;margin:0}html{--h:11.55vh}button{background:#333;color:#fff;font-family:Verdana,Helvetica,sans-serif;border:.3ch solid #333;display:inline-block;font-size:8vmin;height:var(--h);width:95%;margin-top:2.4vh}</style>
 <script>function BB(){if(window.frameElement){document.getElementById("b").style.display="none";document.documentElement.style.setProperty("--h","13.86vh")}};</script></head>
 <body onload=BB()>
 <form action=/><button type=submit id=b>Back</button></form>
@@ -205,44 +205,7 @@ function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}fun
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Web Setup</h2>
-User Interface Mode:
-<select name="UI">
-<option value="0" selected>Auto</option>
-<option value="1">Classic</option>
-<option value="2">Mobile</option>
-</select><br>
 Server description: <input name="DS" maxlength="32"><br><br>
-<i>The following options are for the classic UI!</i><br>
-Use HSB sliders instead of RGB by default: <input type="checkbox" name="MD"><br>
-Color Theme:
-<select name="TH" onchange="Ct()">
-<option value="0" selected>Night</option>
-<option value="1">Modern</option>
-<option value="2">Bright</option>
-<option value="3">Wine</option>
-<option value="4">Electric</option>
-<option value="5">Mint</option>
-<option value="6">Amber</option>
-<option value="7">Dark</option>
-<option value="8">Air</option>
-<option value="9">Nixie</option>
-<option value="10">Terminal</option>
-<option value="11">C64</option>
-<option value="12">Easter</option>
-<option value="13">Christmas</option>
-<option value="14">The End</option>
-<option value="15" id="co">Custom</option>
-</select><br>
-<div id="cth">
-Please specify your custom hex colors (e.g. FF0000 for red)<br>
-Custom accent color: <input maxlength=9 name="C0"><br>
-Custom background: <input maxlength=9 name="C1"><br>
-Custom panel color: <input maxlength=9 name="C2"><br>
-Custom icon color: <input maxlength=9 name="C3"><br>
-Custom shadow: <input maxlength=9 name="C4"><br>
-Custom text color: <input maxlength=9 name="C5"><br></div>
-Use font: <input maxlength=32 name="CF"><br>
-Make sure the font you use is installed on your system!<br>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>

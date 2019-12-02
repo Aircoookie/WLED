@@ -313,13 +313,3 @@ int getSignalQuality(int rssi)
   }
   return quality;
 }
-
-bool checkClientIsMobile(String useragent)
-{
-  //to save complexity this function is not comprehensive
-  if (useragent.indexOf("Android") >= 0) return true;
-  if (useragent.indexOf("iPhone") >= 0) return true;
-  if (useragent.indexOf("iPod") >= 0) return true;
-  if (useragent.indexOf("iPad") >= 0) return true;
-  return false;
-}

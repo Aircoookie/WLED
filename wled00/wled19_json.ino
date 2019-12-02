@@ -62,6 +62,7 @@ void deserializeSegment(JsonObject elem, byte it)
 
 bool deserializeState(JsonObject root)
 {
+  strip.applyToAllSelected = false;
   bool stateResponse = root["v"] | false;
   
   bri = root["bri"] | bri;
@@ -132,6 +133,7 @@ bool deserializeState(JsonObject root)
     }
   }
 
+  //fromJson = true;
   colorUpdated(noNotification ? 5:1);
 
   ps = root["psave"] | -1;

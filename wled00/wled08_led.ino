@@ -71,6 +71,8 @@ void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
   //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
+  if (callMode != 1 && callMode != 5) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
+  
   bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
   if (!colorChanged())
   {
@@ -82,10 +84,14 @@ void colorUpdated(int callMode)
       notify(6);
       if (callMode != 8) interfaceUpdateCallMode = 6;
       if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
+      if (isPreset) {isPreset = false;}
+          else {currentPreset = -1;}
     }
     return; //no change
   }
   if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
+  if (isPreset) {isPreset = false;}
+      else {currentPreset = -1;}
   if (callMode != 5 && nightlightActive && nightlightFade)
   {
     briNlT = bri;

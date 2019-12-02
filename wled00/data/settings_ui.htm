@@ -37,18 +37,19 @@
 	</script>
 	<style>
 		:root {
-			--aCol: #eee;
-			--bCol: #ccc;
-			--cCol: #b9b9b9;
-			--dCol: #049;
-			--sCol: #777;
+			--aCol: #666;
+			--bCol: #333;
+			--cCol: #222;
+			--dCol: #666;
+      --tCol: #fff;
+			--sCol: #0000;
 			--cFn: Verdana;
 		}
 		body {
 			font-family: var(--cFn), Helvetica, sans-serif;
 			text-align: center;
 			background: var(--cCol);
-			color: var(--dCol);
+			color: var(--tCol);
 			line-height: 200%;
 			margin: 0;
 			background-attachment: fixed;
@@ -59,7 +60,7 @@
 		}
 		button {
 			background: var(--bCol);
-			color: var(--dCol);
+			color: var(--tCol);
 			border: 0.3ch solid var(--bCol);
 			display: inline-block;
 			font-family: var(--cFn), Helvetica, sans-serif;
@@ -82,7 +83,7 @@
 		}
 		select {
 			background: var(--bCol);
-			color: var(--dCol);
+			color: var(-tCol);
 			border: 0.5ch solid var(--bCol);
 			filter: drop-shadow( -5px -5px 5px var(--sCol) );
 			font-family: var(--cFn), Helvetica, sans-serif;
@@ -97,45 +98,7 @@
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 		<h2>Web Setup</h2>
-		User Interface Mode:
-		<select name="UI">
-			<option value="0" selected>Auto</option>
-			<option value="1">Classic</option>
-			<option value="2">Mobile</option>
-		</select><br>
 		Server description: <input name="DS" maxlength="32"><br><br>
-		<i>The following options are for the classic UI!</i><br>
-		Use HSB sliders instead of RGB by default: <input type="checkbox" name="MD"><br>
-		Color Theme:
-		<select name="TH" onchange="Ct()">
-			<option value="0" selected>Night</option>
-			<option value="1">Modern</option>
-			<option value="2">Bright</option>
-			<option value="3">Wine</option>
-			<option value="4">Electric</option>
-			<option value="5">Mint</option>
-			<option value="6">Amber</option>
-			<option value="7">Dark</option>
-			<option value="8">Air</option>
-			<option value="9">Nixie</option>
-			<option value="10">Terminal</option>
-			<option value="11">C64</option>
-			<option value="12">Easter</option>
-			<option value="13">Christmas</option>
-			<option value="14">The End</option>
-			<option value="15" id="co">Custom</option>
-		</select><br>
-		<div id="cth">
-		Please specify your custom hex colors (e.g. FF0000 for red)<br>
-		Custom accent color: <input maxlength=9 name="C0"><br>
-		Custom background: <input maxlength=9 name="C1"><br>
-		Custom panel color: <input maxlength=9 name="C2"><br>
-		Custom icon color: <input maxlength=9 name="C3"><br>
-		Custom shadow: <input maxlength=9 name="C4"><br>
-		Custom text color: <input maxlength=9 name="C5"><br>
-		</div>
-		Use font: <input maxlength=32 name="CF"><br>
-		Make sure the font you use is installed on your system!<br>
 		<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
 </body>

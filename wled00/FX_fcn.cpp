@@ -302,48 +302,28 @@ uint8_t WS2812FX::getPaletteCount()
 
 //TODO transitions
 
-void WS2812FX::setMode(uint8_t m) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) setMode(i, m);
-  }
-}
-
-void WS2812FX::setSpeed(uint8_t s) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) _segments[i].speed = s;
-  }
-}
-
-void WS2812FX::setIntensity(uint8_t in) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) _segments[i].intensity = in;
-  }
-}
-
-void WS2812FX::setPalette(uint8_t p) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) _segments[i].palette = p;
-  }
-}
 
 bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
-  uint8_t retSeg = getMainSegmentId();
-  Segment& seg = _segments[retSeg];
+  uint8_t mainSeg = getMainSegmentId();
+  Segment& seg = _segments[getMainSegmentId()];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
 
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected())
+  if (applyToAllSelected) {
+    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
-      _segments[i].speed = s;
-      _segments[i].intensity = in;
-      _segments[i].palette = p;
-      setMode(i, m);
+      if (_segments[i].isSelected())
+      {
+        _segments[i].speed = s;
+        _segments[i].intensity = in;
+        _segments[i].palette = p;
+        setMode(i, m);
+      }
     }
+  } else {
+    seg.speed = s;
+    seg.intensity = in;
+    seg.palette = p;
+    setMode(mainSegment, m);
   }
   
   if (seg.mode != modePrev || seg.speed != speedPrev || seg.intensity != intensityPrev || seg.palette != palettePrev) return true;
@@ -356,9 +336,13 @@ void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w
 
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) _segments[i].colors[slot] = c;
+  if (applyToAllSelected) {
+    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+    {
+      if (_segments[i].isSelected()) _segments[i].colors[slot] = c;
+    }
+  } else {
+    _segments[getMainSegmentId()].colors[slot] = c;
   }
 }
 
@@ -558,7 +542,7 @@ void WS2812FX::unlockAll()
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  _segment_index = 0;
+  _segment_index = getMainSegmentId();
   SEGMENT.setOption(7,t);
   if (!t) return;
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled

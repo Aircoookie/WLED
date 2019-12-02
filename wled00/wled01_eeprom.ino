@@ -134,7 +134,6 @@ void saveSettingsToEEPROM()
   EEPROM.write(367, (arlsOffset>=0));
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
-  EEPROM.write(370, useHSBDefault);
   EEPROM.write(371, colS[3]); //white default
   EEPROM.write(372, useRGBW);
   EEPROM.write(373, effectPaletteDefault);
@@ -170,14 +169,6 @@ void saveSettingsToEEPROM()
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved
-
-  for (int k=0;k<6;k++){
-    int in = 900+k*8;
-    writeStringToEEPROM(in, cssCol[k], 8);
-  }
-
-  EEPROM.write(948,currentTheme);
-  writeStringToEEPROM(950, cssFont, 32);
 
   EEPROM.write(2048, huePollingEnabled);
   //EEPROM.write(2049, hueUpdatingEnabled);
@@ -232,7 +223,6 @@ void saveSettingsToEEPROM()
 
   EEPROM.write(2200, !receiveDirect);
   EEPROM.write(2201, notifyMacro); //was enableRealtime
-  EEPROM.write(2202, uiConfiguration);
   EEPROM.write(2203, autoRGBtoRGBW);
   EEPROM.write(2204, skipFirstLed);
 
@@ -365,7 +355,6 @@ void loadSettingsFromEEPROM(bool first)
   arlsOffset = EEPROM.read(368);
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
-  useHSBDefault = EEPROM.read(370);
   colS[3] = EEPROM.read(371); col[3] = colS[3];
   useRGBW = EEPROM.read(372);
   effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
@@ -386,7 +375,6 @@ void loadSettingsFromEEPROM(bool first)
     receiveNotificationColor = EEPROM.read(391);
     receiveNotificationEffects = EEPROM.read(392);
 
-    readStringFromEEPROM(950, cssFont, 32);
   } else //keep receiving notification behavior from pre0.5.0 after update
   {
     receiveNotificationColor = receiveNotificationBrightness;
@@ -501,12 +489,6 @@ void loadSettingsFromEEPROM(bool first)
 
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
-  uiConfiguration = EEPROM.read(2202);
-
-  #ifdef WLED_DISABLE_MOBILE_UI
-  uiConfiguration = 1;
-  //force default UI since mobile is unavailable
-  #endif
 
   autoRGBtoRGBW = EEPROM.read(2203);
   skipFirstLed = EEPROM.read(2204);
@@ -533,12 +515,6 @@ void loadSettingsFromEEPROM(bool first)
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved
 
-  currentTheme = EEPROM.read(948);
-  for (int k=0;k<6;k++){
-    int in=900+k*8;
-    readStringFromEEPROM(in, cssCol[k], 8);
-  }
-
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
 
@@ -547,8 +523,6 @@ void loadSettingsFromEEPROM(bool first)
   //user MOD memory
   //2944 - 3071 reserved
 
-  useHSB = useHSBDefault;
-
   overlayCurrent = overlayDefault;
 
   savedToPresets();
@@ -556,12 +530,12 @@ void loadSettingsFromEEPROM(bool first)
 
 
 //PRESET PROTOCOL 20 bytes
-//0: preset purpose byte 0:invalid 1:valid preset 1.0
+//0: preset purpose byte 0:invalid 1:valid preset 2:segment preset 2.0
 //1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17: fp 18-19:Zeros
 //determines which presets already contain save data
 void savedToPresets()
 {
-  for (byte index = 1; index <= 16; index++)
+  for (byte index = 1; index < 16; index++)
   {
     uint16_t i = 380 + index*20;
 
@@ -572,6 +546,12 @@ void savedToPresets()
       savedPresets &= ~(0x01 << (index-1));
     }
   }
+  if (EEPROM.read(700) == 2) {
+    savedPresets |= 0x01 << 15;
+  } else
+  {
+    savedPresets &= ~(0x01 << 15);
+  }
 }
 
 bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool loadFX = true)
@@ -581,24 +561,31 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
     loadSettingsFromEEPROM(false);//load boot defaults
     return true;
   }
-  if (index > 25 || index < 1) return false;
+  if (index > 16 || index < 1) return false;
   uint16_t i = 380 + index*20;
-  if (EEPROM.read(i) == 0) return false;
-  if (loadBri) bri = EEPROM.read(i+1);
-  if (loadCol)
-  {
-    for (byte j=0; j<4; j++)
+  if (index < 16) {
+    if (EEPROM.read(i) != 1) return false;
+    if (loadBri) bri = EEPROM.read(i+1);
+    if (loadCol)
     {
-      col[j] = EEPROM.read(i+j+2);
-      colSec[j] = EEPROM.read(i+j+6);
+      for (byte j=0; j<4; j++)
+      {
+        col[j] = EEPROM.read(i+j+2);
+        colSec[j] = EEPROM.read(i+j+6);
+      }
     }
-  }
-  if (loadFX)
-  {
-    effectCurrent = EEPROM.read(i+10);
-    effectSpeed = EEPROM.read(i+11);
-    effectIntensity = EEPROM.read(i+16);
-    effectPalette = EEPROM.read(i+17);
+    if (loadFX)
+    {
+      effectCurrent = EEPROM.read(i+10);
+      effectSpeed = EEPROM.read(i+11);
+      effectIntensity = EEPROM.read(i+16);
+      effectPalette = EEPROM.read(i+17);
+    }
+  } else {
+    if (EEPROM.read(i) != 2) return false;
+    if (loadBri) bri = EEPROM.read(i+1);
+    WS2812FX::Segment* seg = strip.getSegments();
+    memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
   }
   currentPreset = index;
   isPreset = true;
@@ -607,21 +594,30 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
 
 void savePreset(byte index)
 {
-  if (index > 25) return;
+  if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
   uint16_t i = 380 + index*20;//min400
-  EEPROM.write(i, 1);
-  EEPROM.write(i+1, bri);
-  for (uint16_t j=0; j<4; j++)
-  {
-    EEPROM.write(i+j+2, col[j]);
-    EEPROM.write(i+j+6, colSec[j]);
+  
+  if (index < 16) {
+    EEPROM.write(i, 1);
+    EEPROM.write(i+1, bri);
+    for (uint16_t j=0; j<4; j++)
+    {
+      EEPROM.write(i+j+2, col[j]);
+      EEPROM.write(i+j+6, colSec[j]);
+    }
+    EEPROM.write(i+10, effectCurrent);
+    EEPROM.write(i+11, effectSpeed);
+  
+    EEPROM.write(i+16, effectIntensity);
+    EEPROM.write(i+17, effectPalette);
+  } else { //segment 16 can save segments
+    EEPROM.write(i, 2);
+    EEPROM.write(i+1, bri);
+    WS2812FX::Segment* seg = strip.getSegments();
+    memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
   }
-  EEPROM.write(i+10, effectCurrent);
-  EEPROM.write(i+11, effectSpeed);
-
-  EEPROM.write(i+16, effectIntensity);
-  EEPROM.write(i+17, effectPalette);
+  
   commit();
   currentPreset = index;
   isPreset = true;

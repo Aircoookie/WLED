@@ -128,19 +128,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //UI
   if (subPage == 3)
   {
-    int t = request->arg("UI").toInt();
-    if (t >= 0 && t < 3) uiConfiguration = t;
     strlcpy(serverDescription, request->arg("DS").c_str(), 33);
-    useHSBDefault = request->hasArg("MD");
-    useHSB = useHSBDefault;
-    currentTheme = request->arg("TH").toInt();
-    char k[3]; k[0]='C'; k[2]=0;
-    for(int i=0;i<6;i++)
-    {
-      k[1] = i+48;
-      strlcpy(cssCol[i],request->arg(k).c_str(), 9);
-    }
-    strlcpy(cssFont,request->arg("CF").c_str(), 33);
   }
 
   //SYNC
@@ -383,6 +371,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
   }
 
+  strip.applyToAllSelected = true;
+
   //segment select (sets main segment)
   pos = req.indexOf("SS=");
   if (pos > 0) {
@@ -510,12 +500,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     }
   }
   #endif
-
-  //set default control mode (0 - RGB, 1 - HSB)
-  pos = req.indexOf("MD=");
-  if (pos > 0) {
-    useHSB = getNumVal(&req, pos);
-  }
 
   //set advanced overlay
   pos = req.indexOf("OL=");

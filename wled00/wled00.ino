@@ -22,7 +22,6 @@
 //#define WLED_DISABLE_CRONIXIE
 //#define WLED_DISABLE_HUESYNC
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
-//#define WLED_DISABLE_MOBILE_UI
 #define WLED_ENABLE_ADALIGHT       //only saves about 500b
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
@@ -71,8 +70,7 @@
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
-#include "html_classic.h"
-#include "html_mobile.h"
+#include "html_ui.h"
 #include "html_settings.h"
 #include "html_other.h"
 #include "FX.h"
@@ -99,7 +97,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1912011
+#define VERSION 1912013
 char versionString[] = "0.8.7-dev";
 
 
@@ -161,12 +159,6 @@ byte briMultiplier =  100;                    //% of brightness to set (to limit
 
 //User Interface CONFIG
 char serverDescription[33] = "WLED";          //Name of module
-byte currentTheme = 7;                        //UI theme index for settings and classic UI
-byte uiConfiguration = 2;                     //0: automatic (depends on user-agent) 1: classic UI 2: mobile UI
-bool useHSB = true;                           //classic UI: use HSB sliders instead of RGB by default
-char cssFont[33] = "Verdana";                 //font to use in classic UI
-
-bool useHSBDefault = useHSB;
 
 
 //Sync CONFIG
@@ -324,7 +316,6 @@ byte effectPalette = effectPaletteDefault;
 bool udpConnected = false, udpRgbConnected = false;
 
 //ui style
-char cssCol[6][9]={"","","","","",""};
 bool showWelcomePage = false;
 
 //hue
