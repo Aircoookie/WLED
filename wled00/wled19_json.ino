@@ -268,7 +268,7 @@ void serializeInfo(JsonObject root)
   #ifndef WLED_DISABLE_HUESYNC
   os += 0x04;
   #endif
-  #ifndef WLED_DISABLE_MOBILE_UI
+  #ifdef WLED_ENABLE_ADALIGHT
   os += 0x02;
   #endif
   #ifndef WLED_DISABLE_OTA 

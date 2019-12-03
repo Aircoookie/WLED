@@ -97,7 +97,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1912013
+#define VERSION 1912033
 char versionString[] = "0.8.7-dev";
 
 
@@ -431,6 +431,7 @@ AsyncClient* hueClient = NULL;
 AsyncMqttClient* mqtt = NULL;
 
 //function prototypes
+void colorFromUint32(uint32_t,bool=false);
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
 void handleE131Packet(e131_packet_t*, IPAddress);
 

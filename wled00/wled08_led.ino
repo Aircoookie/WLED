@@ -1,6 +1,16 @@
 /*
  * LED methods
  */
+void setValuesFromMainSeg()
+{
+  WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+  colorFromUint32(seg.colors[0]);
+  colorFromUint32(seg.colors[1], true);
+  effectCurrent = seg.mode;
+  effectSpeed = seg.speed;
+  effectIntensity = seg.intensity;
+  effectPalette = seg.palette;
+}
 
 void toggleOnOff()
 {

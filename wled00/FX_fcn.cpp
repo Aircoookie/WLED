@@ -839,10 +839,10 @@ uint8_t WS2812FX::gamma8(uint8_t b)
 uint32_t WS2812FX::gamma32(uint32_t color)
 {
   if (!gammaCorrectCol) return color;
-  uint8_t w = (color >> 24) & 0xFF;
-  uint8_t r = (color >> 16) & 0xFF;
-  uint8_t g = (color >>  8) & 0xFF;
-  uint8_t b =  color        & 0xFF;
+  uint8_t w = (color >> 24);
+  uint8_t r = (color >> 16);
+  uint8_t g = (color >>  8);
+  uint8_t b =  color;
   w = gammaT[w];
   r = gammaT[r];
   g = gammaT[g];

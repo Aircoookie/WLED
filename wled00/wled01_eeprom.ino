@@ -565,6 +565,7 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
   uint16_t i = 380 + index*20;
   if (index < 16) {
     if (EEPROM.read(i) != 1) return false;
+    strip.applyToAllSelected = true;
     if (loadBri) bri = EEPROM.read(i+1);
     if (loadCol)
     {
@@ -583,9 +584,11 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
     }
   } else {
     if (EEPROM.read(i) != 2) return false;
+    strip.applyToAllSelected = false;
     if (loadBri) bri = EEPROM.read(i+1);
     WS2812FX::Segment* seg = strip.getSegments();
     memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
+    setValuesFromMainSeg();
   }
   currentPreset = index;
   isPreset = true;
@@ -619,6 +622,7 @@ void savePreset(byte index)
   }
   
   commit();
+  savedToPresets();
   currentPreset = index;
   isPreset = true;
 }
