@@ -169,7 +169,6 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["pal"] = seg.palette;
 	root["sel"] = seg.isSelected();
 	root["rev"] = seg.getOption(1);
-	root["cln"] = -1;
 }
 
 
@@ -217,6 +216,7 @@ void serializeInfo(JsonObject root)
   JsonObject leds = root.createNestedObject("leds");
   leds["count"] = ledCount;
   leds["rgbw"] = useRGBW;
+  leds["wv"] = useRGBW && !autoRGBtoRGBW; //should a white channel slider be displayed?
   JsonArray leds_pin = leds.createNestedArray("pin");
   leds_pin.add(LEDPIN);
   

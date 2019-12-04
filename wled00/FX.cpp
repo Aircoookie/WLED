@@ -262,7 +262,7 @@ uint16_t WS2812FX::mode_dynamic(void) {
  */
 uint16_t WS2812FX::mode_breath(void) {
   uint16_t var = 0;
-  uint16_t counter = (now * ((SEGMENT.speed >> 3) +10)) & 0xFFFF;
+  uint16_t counter = (now * ((SEGMENT.speed >> 3) +10));
   counter = (counter >> 2) + (counter >> 4); //0-16384 + 0-2048
   if (counter < 16384) {
     if (counter > 8192) counter = 8192 - (counter - 8192);
@@ -282,9 +282,8 @@ uint16_t WS2812FX::mode_breath(void) {
  * Fades the LEDs between two colors
  */
 uint16_t WS2812FX::mode_fade(void) {
-  uint16_t counter = (now * ((SEGMENT.speed >> 3) +10)) & 0xFFFF;
-  if (counter > 32767) counter = 32768 - (counter - 32768);
-  uint8_t lum = counter >> 7;
+  uint16_t counter = (now * ((SEGMENT.speed >> 3) +10));
+  uint8_t lum = triwave16(counter) >> 8;
 
   for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), lum));
@@ -1100,182 +1099,56 @@ uint16_t WS2812FX::mode_loading(void) {
 }
 
 
-/*  
- * Lights all LEDs after each other up starting from the outer edges and  
- * finishing in the middle. Then turns them in reverse order off. Repeat. 
- */ 
-uint16_t WS2812FX::mode_dual_color_wipe_in_out(void) {  
-  int end = SEGLEN - SEGENV.step - 1; 
-  bool odd = (SEGLEN % 2) == 1; 
-  int mid = odd ? ((SEGLEN / 2) + 1) : (SEGLEN / 2);  
-  if (SEGENV.step < mid) {
-    byte pindex = map(SEGENV.step, 0, mid -1, 0, 255);
-    uint32_t col = color_from_palette(pindex, false, false, 0);
-    
-    setPixelColor(SEGMENT.start + SEGENV.step, col); 
-    setPixelColor(SEGMENT.start + end, col); 
-  } else {  
-    if (odd) {  
-      // If odd, we need to 'double count' the center LED (once to turn it on,  
-      // once to turn it off). So trail one behind after the middle LED.  
-      setPixelColor(SEGMENT.start + SEGENV.step - 1, SEGCOLOR(1)); 
-      setPixelColor(SEGMENT.start + end + 1, SEGCOLOR(1)); 
-    } else {  
-      setPixelColor(SEGMENT.start + SEGENV.step, SEGCOLOR(1)); 
-      setPixelColor(SEGMENT.start + end, SEGCOLOR(1)); 
-    } 
-  } 
-   SEGENV.step++; 
-  if (odd) {  
-    if (SEGENV.step > SEGLEN) { 
-      SEGENV.step = 0;  
-    } 
-  } else {  
-    if (SEGENV.step >= SEGLEN) {  
-      SEGENV.step = 0;  
-    } 
-  } 
-  return SPEED_FORMULA_L;
+//American Police Light with all LEDs Red and Blue 
+uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
+{
+  uint16_t counter = now * ((SEGMENT.speed >> 3) +1);
+  uint16_t idexR = (counter * SEGLEN) >> 16;
+  if (idexR >= SEGLEN) idexR = 0;
+
+  uint16_t topindex = SEGLEN >> 1;
+  uint16_t idexB = idexR + topindex;
+
+  if (idexR > topindex) idexB -= SEGLEN;
+  if (idexB >= SEGLEN) idexB = 0; //otherwise overflow on odd number of LEDs
+
+  setPixelColor(SEGMENT.start + idexR, color1);
+  setPixelColor(SEGMENT.start + idexB, color2);
+
+  return FRAMETIME;
 }
 
 
-/* 
-* Lights all LEDs after each other up starting from the outer edges and  
-* finishing in the middle. Then turns them in that order off. Repeat.  
-*/ 
-uint16_t WS2812FX::mode_dual_color_wipe_in_in(void) { 
-  bool odd = (SEGLEN % 2) == 1; 
-  int mid = SEGLEN / 2;
-  byte pindex = 0;
-  uint32_t col = 0;
-  if (SEGENV.step <= mid)
-  {
-    pindex = map(SEGENV.step, 0, mid, 0, 255);
-    col = color_from_palette(pindex, false, false, 0);
-  }
-  if (odd) {  
-    if (SEGENV.step <= mid) { 
-      setPixelColor(SEGMENT.start + SEGENV.step, col); 
-      setPixelColor(SEGMENT.start + SEGLEN - SEGENV.step - 1, col);  
-    } else {  
-      int i = SEGENV.step - mid;  
-      setPixelColor(SEGMENT.start + i - 1, SEGCOLOR(1)); 
-      setPixelColor(SEGMENT.start + SEGLEN - i, SEGCOLOR(1));  
-    } 
-  } else {  
-    if (SEGENV.step < mid) {  
-      setPixelColor(SEGMENT.start + SEGENV.step, col); 
-      setPixelColor(SEGMENT.start + SEGLEN - SEGENV.step - 1, col);  
-    } else {  
-      int i = SEGENV.step - mid;  
-      setPixelColor(SEGMENT.start + i, SEGCOLOR(1)); 
-      setPixelColor(SEGMENT.start + SEGLEN - i - 1, SEGCOLOR(1));  
-    } 
-  } 
-   SEGENV.step++; 
-  if (odd) {  
-    if (SEGENV.step > SEGLEN) { 
-      SEGENV.step = 0;  
-    } 
-  } else {  
-    if (SEGENV.step >= SEGLEN) {  
-      SEGENV.step = 0;  
-    } 
-  } 
-  return SPEED_FORMULA_L;
+//American Police Light with all LEDs Red and Blue 
+uint16_t WS2812FX::mode_police_all()
+{
+  return police_base(RED, BLUE);
 }
 
 
-/* 
-* Lights all LEDs after each other up starting from the middle and 
-* finishing at the edges. Then turns them off in that order. Repeat. 
-*/ 
-uint16_t WS2812FX::mode_dual_color_wipe_out_out(void) { 
-  int end = SEGLEN - SEGENV.step - 1; 
-  bool odd = (SEGLEN % 2) == 1; 
-  int mid = SEGLEN / 2;
-  byte pindex = 0;
-  uint32_t col = 0;
-  if (SEGENV.step <= mid)
-  {
-    pindex = map(SEGENV.step, 0, mid, 255, 0);
-    col = color_from_palette(pindex, false, false, 0);
-  }
-  if (odd) { 
-    if (SEGENV.step <= mid) { 
-      setPixelColor(SEGMENT.start + mid + SEGENV.step, col); 
-      setPixelColor(SEGMENT.start + mid - SEGENV.step, col); 
-    } else {  
-      setPixelColor(SEGMENT.start + SEGENV.step - 1, SEGCOLOR(1)); 
-      setPixelColor(SEGMENT.start + end + 1, SEGCOLOR(1)); 
-    } 
-  } else {  
-    if (SEGENV.step < mid) {  
-      setPixelColor(SEGMENT.start + mid - SEGENV.step - 1, col); 
-      setPixelColor(SEGMENT.start + mid + SEGENV.step, col); 
-    } else {  
-      setPixelColor(SEGMENT.start + SEGENV.step, SEGCOLOR(1)); 
-      setPixelColor(SEGMENT.start + end, SEGCOLOR(1)); 
-    } 
-  } 
-   SEGENV.step++; 
-  if (odd) {  
-    if (SEGENV.step > SEGLEN) { 
-      SEGENV.step = 0;  
-    } 
-  } else {  
-    if (SEGENV.step >= SEGLEN) {  
-      SEGENV.step = 0;  
-    } 
-  } 
-  return SPEED_FORMULA_L;
-} 
+//Police Lights Red and Blue 
+uint16_t WS2812FX::mode_police()
+{
+  fill(SEGCOLOR(1));
+
+  return police_base(RED, BLUE);
+}
 
 
-/* 
-* Lights all LEDs after each other up starting from the middle and 
-* finishing at the edges. Then turns them off in reverse order. Repeat.  
-*/ 
-uint16_t WS2812FX::mode_dual_color_wipe_out_in(void) {  
-  bool odd = (SEGLEN % 2) == 1; 
-  int mid = SEGLEN / 2;
-  byte pindex = 0;
-  uint32_t col = 0;
-  if (SEGENV.step <= mid)
-  {
-    pindex = map(SEGENV.step, 0, mid, 255, 0);
-    col = color_from_palette(pindex, false, false, 0);
-  }
-   if (odd) { 
-    if (SEGENV.step <= mid) { 
-      setPixelColor(SEGMENT.start + mid + SEGENV.step, col); 
-      setPixelColor(SEGMENT.start + mid - SEGENV.step, col); 
-    } else {  
-      int i = SEGENV.step - mid;  
-      setPixelColor(SEGMENT.start + i - 1, SEGCOLOR(1)); 
-      setPixelColor(SEGMENT.start + SEGLEN - i, SEGCOLOR(1));  
-    } 
-  } else {  
-    if (SEGENV.step < mid) {  
-      setPixelColor(SEGMENT.start + mid - SEGENV.step - 1, col); 
-      setPixelColor(SEGMENT.start + mid + SEGENV.step, col); 
-    } else {  
-      int i = SEGENV.step - mid;  
-      setPixelColor(SEGMENT.start + i, SEGCOLOR(1)); 
-      setPixelColor(SEGMENT.start + SEGLEN - i - 1, SEGCOLOR(1));  
-    } 
-  } 
-   SEGENV.step++; 
-  if (odd) {  
-    if (SEGENV.step > SEGLEN) { 
-      SEGENV.step = 0;  
-    } 
-  } else {  
-    if (SEGENV.step >= SEGLEN) {  
-      SEGENV.step = 0;  
-    } 
-  } 
-  return SPEED_FORMULA_L;
+//Police All with custom colors
+uint16_t WS2812FX::mode_two_areas()
+{
+  return police_base(SEGCOLOR(0), SEGCOLOR(1));
+}
+
+
+//Police Lights with custom colors 
+uint16_t WS2812FX::mode_two_dots()
+{
+  fill(SEGCOLOR(2));
+  uint32_t color2 = (SEGCOLOR(1) == SEGCOLOR(2)) ? SEGCOLOR(0) : SEGCOLOR(1);
+
+  return police_base(SEGCOLOR(0), color2);
 }
 
 
@@ -2197,7 +2070,7 @@ CRGB WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat)
 //  "CalculateOneTwinkle" on each pixel.  It then displays
 //  either the twinkle color of the background color,
 //  whichever is brighter.
-void WS2812FX::twinklefox_base(bool cat)
+uint16_t WS2812FX::twinklefox_base(bool cat)
 {
   // "PRNG16" is the pseudorandom number generator
   // It MUST be reset to the same starting value each time
@@ -2253,18 +2126,17 @@ void WS2812FX::twinklefox_base(bool cat)
       setPixelColor(i, bg.r, bg.g, bg.b);
     }
   }
+  return FRAMETIME;
 }
 
 uint16_t WS2812FX::mode_twinklefox()
 {
-  twinklefox_base(false);
-  return FRAMETIME;
+  return twinklefox_base(false);
 }
 
 uint16_t WS2812FX::mode_twinklecat()
 {
-  twinklefox_base(true);
-  return FRAMETIME;
+  return twinklefox_base(true);
 }
 
 
@@ -2370,41 +2242,46 @@ uint16_t WS2812FX::mode_tri_static_pattern()
   return FRAMETIME;
 }
 
-//American Police Light with all LEDs Red and Blue 
-uint16_t WS2812FX::mode_policeall()
-{
-  SEGENV.step++;
-  if (SEGENV.step >= SEGLEN) {
-    SEGENV.step = 0;
-  }
 
-  uint16_t idexR = SEGENV.step;
-  uint16_t topindex = SEGLEN >> 1;
-  uint16_t idexB = idexR + topindex;
-
-  if (idexR >= topindex) idexB -= SEGLEN;
-
-  setPixelColor(idexR, RED);
-  setPixelColor(idexB, BLUE);
-
-  return SPEED_FORMULA_L;
-}
-
-
-//Police Lights Red and Blue 
-uint16_t WS2812FX::mode_police()
+uint16_t WS2812FX::spots_base(uint16_t threshold)
 {
   fill(SEGCOLOR(1));
+  
+  uint16_t maxZones = SEGLEN >> 2;
+  uint16_t zones = 1 + ((SEGMENT.intensity * maxZones) >> 8);
+  uint16_t zoneLen = SEGLEN / zones;
+  uint16_t offset = (SEGLEN - zones * zoneLen) >> 1;
 
-  return mode_policeall();
+  for (uint16_t z = 0; z < zones; z++)
+  {
+    uint16_t pos = offset + z * zoneLen;
+    for (uint16_t i = 0; i < zoneLen; i++)
+    {
+      uint16_t wave = triwave16((i * 0xFFFF) / zoneLen);
+      if (wave > threshold) {
+        uint16_t index = SEGMENT.start + pos + i;
+        uint8_t s = (wave - threshold)*255 / (0xFFFF - threshold);
+        setPixelColor(index, color_blend(color_from_palette(index, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), 255-s));
+      }
+    }
+  }
+  
+  return FRAMETIME;
 }
 
 
-//Speed slider sets number of "lights", intensity sets LEDs per light
-/*uint16_t WS2812FX::mode_static_pattern2()
+//Intensity slider sets number of "lights", speed sets LEDs per light
+uint16_t WS2812FX::mode_spots()
 {
-  uint16_t maxlights = SEGLEN >> 1;
-  uint16_t zones = 1 + (SEGMENT.speed);
-  
-  return FRAMETIME;
-}*/
+  return spots_base((255 - SEGMENT.speed) << 8);
+}
+
+
+//Intensity slider sets number of "lights", LEDs per light fade in and out
+uint16_t WS2812FX::mode_spots_fade()
+{
+  uint16_t counter = now * ((SEGMENT.speed >> 2) +8);
+  uint16_t t = triwave16(counter);
+  uint16_t tr = (t >> 1) + (t >> 2);
+  return spots_base(tr);
+}

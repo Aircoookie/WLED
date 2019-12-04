@@ -645,6 +645,12 @@ void WS2812FX::blur(uint8_t blur_amount)
   }
 }
 
+uint16_t WS2812FX::triwave16(uint16_t in)
+{
+  if (in < 0x8000) return in *2;
+  return 0xFFFF - (in - 0x8000)*2;
+}
+
 /*
  * Put a value 0 to 255 in to get a color value.
  * The colours are a transition r -> g -> b -> back to r

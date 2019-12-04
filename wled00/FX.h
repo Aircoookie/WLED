@@ -134,10 +134,10 @@
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
 #define FX_MODE_LOADING                 47
-#define FX_MODE_DUAL_COLOR_WIPE_IN_OUT  48
-#define FX_MODE_DUAL_COLOR_WIPE_IN_IN   49
-#define FX_MODE_DUAL_COLOR_WIPE_OUT_OUT 50
-#define FX_MODE_DUAL_COLOR_WIPE_OUT_IN  51
+#define FX_MODE_POLICE                  48
+#define FX_MODE_POLICE_ALL              49
+#define FX_MODE_TWO_DOTS                50
+#define FX_MODE_TWO_AREAS               51
 #define FX_MODE_CIRCUS_COMBUSTUS        52
 #define FX_MODE_HALLOWEEN               53
 #define FX_MODE_TRICOLOR_CHASE          54
@@ -149,7 +149,6 @@
 #define FX_MODE_DUAL_LARSON_SCANNER     60
 #define FX_MODE_RANDOM_CHASE            61
 #define FX_MODE_OSCILLATE               62
-//Modes that use FastLED -->
 #define FX_MODE_PRIDE_2015              63
 #define FX_MODE_JUGGLE                  64
 #define FX_MODE_PALETTE                 65
@@ -172,8 +171,8 @@
 #define FX_MODE_HALLOWEEN_EYES          82
 #define FX_MODE_STATIC_PATTERN          83
 #define FX_MODE_TRI_STATIC_PATTERN      84
-#define FX_MODE_POLICE                  85
-#define FX_MODE_POLICE_ALL              86
+#define FX_MODE_SPOTS                   85
+#define FX_MODE_SPOTS_FADE              86
 
 
 class WS2812FX {
@@ -277,10 +276,10 @@ class WS2812FX {
       _mode[FX_MODE_FIRE_FLICKER]            = &WS2812FX::mode_fire_flicker;
       _mode[FX_MODE_GRADIENT]                = &WS2812FX::mode_gradient;
       _mode[FX_MODE_LOADING]                 = &WS2812FX::mode_loading;
-      _mode[FX_MODE_DUAL_COLOR_WIPE_IN_OUT]  = &WS2812FX::mode_dual_color_wipe_in_out;
-      _mode[FX_MODE_DUAL_COLOR_WIPE_IN_IN]   = &WS2812FX::mode_dual_color_wipe_in_in;
-      _mode[FX_MODE_DUAL_COLOR_WIPE_OUT_OUT] = &WS2812FX::mode_dual_color_wipe_out_out;
-      _mode[FX_MODE_DUAL_COLOR_WIPE_OUT_IN]  = &WS2812FX::mode_dual_color_wipe_out_in;
+      _mode[FX_MODE_POLICE]                  = &WS2812FX::mode_police;
+      _mode[FX_MODE_POLICE_ALL]              = &WS2812FX::mode_police_all;
+      _mode[FX_MODE_TWO_DOTS]                = &WS2812FX::mode_two_dots;
+      _mode[FX_MODE_TWO_AREAS]               = &WS2812FX::mode_two_areas;
       _mode[FX_MODE_CIRCUS_COMBUSTUS]        = &WS2812FX::mode_circus_combustus;
       _mode[FX_MODE_HALLOWEEN]               = &WS2812FX::mode_halloween;
       _mode[FX_MODE_TRICOLOR_CHASE]          = &WS2812FX::mode_tricolor_chase;
@@ -316,8 +315,8 @@ class WS2812FX {
       _mode[FX_MODE_HALLOWEEN_EYES]          = &WS2812FX::mode_halloween_eyes;
       _mode[FX_MODE_STATIC_PATTERN]          = &WS2812FX::mode_static_pattern;
       _mode[FX_MODE_TRI_STATIC_PATTERN]      = &WS2812FX::mode_tri_static_pattern;
-      _mode[FX_MODE_POLICE]                  = &WS2812FX::mode_police;
-      _mode[FX_MODE_POLICE_ALL]              = &WS2812FX::mode_policeall;
+      _mode[FX_MODE_SPOTS]                   = &WS2812FX::mode_spots;
+      _mode[FX_MODE_SPOTS_FADE]              = &WS2812FX::mode_spots_fade;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -387,6 +386,7 @@ class WS2812FX {
     uint16_t
       ablMilliampsMax,
       currentMilliamps,
+      triwave16(uint16_t),
       getUsableCount();
 
     uint32_t
@@ -459,10 +459,10 @@ class WS2812FX {
       mode_fire_flicker(void),
       mode_gradient(void),
       mode_loading(void),
-      mode_dual_color_wipe_in_out(void),
-      mode_dual_color_wipe_in_in(void),
-      mode_dual_color_wipe_out_out(void),
-      mode_dual_color_wipe_out_in(void),
+      mode_police(void),
+      mode_police_all(void),
+      mode_two_dots(void),
+      mode_two_areas(void),
       mode_circus_combustus(void),
       mode_bicolor_chase(void),
       mode_tricolor_chase(void),
@@ -496,8 +496,8 @@ class WS2812FX {
       mode_halloween_eyes(void),
       mode_static_pattern(void),
 	    mode_tri_static_pattern(void),
-	    mode_police(void),
-	    mode_policeall(void);
+      mode_spots(void),
+      mode_spots_fade(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -515,7 +515,6 @@ class WS2812FX {
     void handle_palette(void);
     void fill(uint32_t);
     bool modeUsesLock(uint8_t);
-    void twinklefox_base(bool);
 
     bool
       _modeUsesLock,
@@ -540,8 +539,11 @@ class WS2812FX {
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
+      police_base(uint32_t, uint32_t),
       running(uint32_t, uint32_t),
-      tricolor_chase(uint32_t, uint32_t);
+      tricolor_chase(uint32_t, uint32_t),
+      twinklefox_base(bool),
+      spots_base(uint16_t);
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     
@@ -564,11 +566,11 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Scan","Dual Scan","Fade","Theater","Theater Rainbow","Running","Saw","Twinkle","Dissolve","Dissolve Rnd",
 "Sparkle","Dark Sparkle","Sparkle+","Strobe","Strobe Rainbow","Mega Strobe","Blink Rainbow","Android","Chase","Chase Random",
 "Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Red & Blue","Stream",
-"Scanner","Lighthouse","Fireworks","Rain","Merry Christmas","Fire Flicker","Gradient","Loading","In Out","In In",
-"Out Out","Out In","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
+"Scanner","Lighthouse","Fireworks","Rain","Merry Christmas","Fire Flicker","Gradient","Loading","Police","Police All",
+"Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Smooth Meteor","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Tri Color Pattern", "Police","Police All"
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade"
 ])=====";
 
 
