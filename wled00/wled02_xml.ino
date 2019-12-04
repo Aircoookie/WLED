@@ -3,7 +3,7 @@
  */
 
 //build XML response to HTTP /win API request
-char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest = nullptr)
+char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
 {
   char sbuf[(dest == nullptr)?1024:1]; //allocate local buffer if none passed
   obuf = (dest == nullptr)? sbuf:dest;
@@ -216,33 +216,20 @@ void getSettingsJS(byte subPage, char* dest)
       oappendi(strip.currentMilliamps);
       oappend("mA\";");
     }
-    sappend('v',"CR",colS[0]);
-    sappend('v',"CG",colS[1]);
-    sappend('v',"CB",colS[2]);
+
     sappend('v',"CA",briS);
     sappend('c',"EW",useRGBW);
     sappend('i',"CO",strip.colorOrder);
     sappend('c',"AW",autoRGBtoRGBW);
-    sappend('v',"CW",colS[3]);
-    sappend('v',"SR",colSecS[0]);
-    sappend('v',"SG",colSecS[1]);
-    sappend('v',"SB",colSecS[2]);
-    sappend('v',"SW",colSecS[3]);
+
     sappend('c',"BO",turnOnAtBoot);
     sappend('v',"BP",bootPreset);
-    oappend("f=");
-    oappendi(effectDefault);
-    oappend(";p=");
-    oappendi(effectPaletteDefault);
-    oappend(";");
-    sappend('v',"SX",effectSpeedDefault);
-    sappend('v',"IX",effectIntensityDefault);
+
     sappend('c',"GB",strip.gammaCorrectBri);
     sappend('c',"GC",strip.gammaCorrectCol);
     sappend('c',"TF",fadeTransition);
     sappend('v',"TD",transitionDelay);
     sappend('c',"PF",strip.paletteFade);
-    sappend('c',"T2",enableSecTransition);
     sappend('v',"BF",briMultiplier);
     sappend('v',"TB",nightlightTargetBri);
     sappend('v',"TL",nightlightDelayMinsDefault);
@@ -310,6 +297,7 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == 5)
   {
     sappend('c',"NT",ntpEnabled);
+    sappends('s',"NS",ntpServerName);
     sappend('c',"CF",!useAMPM);
     sappend('i',"TZ",currentTimezone);
     sappend('v',"UO",utcOffsetSecs);

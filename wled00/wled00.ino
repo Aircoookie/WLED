@@ -111,7 +111,7 @@ char otaPass[33] = "wledota";
 
 byte auxDefaultState   = 0;                   //0: input 1: high 2: low
 byte auxTriggeredState = 0;                   //0: input 1: high 2: low
-char ntpServerName[] = "0.wled.pool.ntp.org"; //NTP server to use
+char ntpServerName[33] = "0.wled.pool.ntp.org";//NTP server to use
 
 
 //WiFi CONFIG (all these can be changed via web UI, no need to set them here)
@@ -136,13 +136,9 @@ bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
-byte colS[]{255, 159, 0, 0};                  //default RGB(W) color
-byte colSecS[]{0, 0, 0, 0};                   //default RGB(W) secondary color
-byte briS = 127;                              //default brightness
-byte effectDefault = 0;
-byte effectSpeedDefault = 75;
-byte effectIntensityDefault = 128;            //intensity is supported on some effects as an additional parameter (e.g. for blink you can change the duty cycle)
-byte effectPaletteDefault = 0;                //palette is supported on the FastLED effects, otherwise it has no effect
+byte col[]{255, 160, 0, 0};                   //default RGB(W) color
+byte colSec[]{0, 0, 0, 0};                    //default RGB(W) secondary color
+byte briS = 128;                              //default brightness
 
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
 byte nightlightDelayMins = 60;
@@ -227,7 +223,7 @@ char cronixieDisplay[7] = "HHMMSS";           //Cronixie Display mask. See wled1
 bool cronixieBacklight = true;                //Allow digits to be back-illuminated
 
 bool countdownMode = false;                   //Clock will count down towards date
-byte countdownYear = 19, countdownMonth = 1;  //Countdown target date, year is last two digits
+byte countdownYear = 20, countdownMonth = 1;  //Countdown target date, year is last two digits
 byte countdownDay  =  1, countdownHour  = 0;
 byte countdownMin  =  0, countdownSec   = 0;
 
@@ -257,11 +253,9 @@ bool interfacesInited = false;
 bool wasConnected = false;
 
 //color
-byte col[]{255, 159, 0, 0};                   //target RGB(W) color
 byte colOld[]{0, 0, 0, 0};                    //color before transition
 byte colT[]{0, 0, 0, 0};                      //current color
 byte colIT[]{0, 0, 0, 0};                     //color that was last sent to LEDs
-byte colSec[]{0, 0, 0, 0};
 byte colSecT[]{0, 0, 0, 0};
 byte colSecOld[]{0, 0, 0, 0};
 byte colSecIT[]{0, 0, 0, 0};
@@ -291,7 +285,7 @@ byte bri = briS;
 byte briOld = 0;
 byte briT = 0;
 byte briIT = 0;
-byte briLast = 127;                           //brightness before turned off. Used for toggle function
+byte briLast = 128;                           //brightness before turned off. Used for toggle function
 
 //button
 bool buttonPressedBefore = false;
@@ -307,10 +301,10 @@ byte notificationSentCallMode = 0;
 bool notificationTwoRequired = false;
 
 //effects
-byte effectCurrent = effectDefault;
-byte effectSpeed = effectSpeedDefault;
-byte effectIntensity = effectIntensityDefault;
-byte effectPalette = effectPaletteDefault;
+byte effectCurrent = 0;
+byte effectSpeed = 128;
+byte effectIntensity = 128;
+byte effectPalette = 0;
 
 //network
 bool udpConnected = false, udpRgbConnected = false;
@@ -423,7 +417,6 @@ byte optionType;
 
 bool doReboot = false; //flag to initiate reboot from async handlers
 bool doPublishMqtt = false;
-bool doSendHADiscovery = true;
 
 //server library objects
 AsyncWebServer server(80);
@@ -529,7 +522,6 @@ void loop() {
   handleAlexa();
 
   handleOverlays();
-  if (doSendHADiscovery) sendHADiscoveryMQTT();
   yield();
   if (doReboot) reset();
 

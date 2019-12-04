@@ -68,34 +68,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.colorOrder = request->arg("CO").toInt();
     autoRGBtoRGBW = request->hasArg("AW");
 
-    //ignore settings and save current brightness, colors and fx as default
-    if (request->hasArg("IS"))
-    {
-      for (byte i=0; i<4; i++)
-      {
-        colS[i] = col[i];
-        colSecS[i] = colSec[i];
-      }
-      briS = bri;
-      effectDefault = effectCurrent;
-      effectSpeedDefault = effectSpeed;
-      effectIntensityDefault = effectIntensity;
-      effectPaletteDefault = effectPalette;
-    } else {
-      colS[0] = request->arg("CR").toInt();
-      colS[1] = request->arg("CG").toInt();
-      colS[2] = request->arg("CB").toInt();
-      colS[3] = request->arg("CW").toInt();
-      colSecS[0] = request->arg("SR").toInt();
-      colSecS[1] = request->arg("SG").toInt();
-      colSecS[2] = request->arg("SB").toInt();
-      colSecS[3] = request->arg("SW").toInt();
-      briS = request->arg("CA").toInt();
-      effectDefault = request->arg("FX").toInt();
-      effectSpeedDefault = request->arg("SX").toInt();
-      effectIntensityDefault = request->arg("IX").toInt();
-      effectPaletteDefault = request->arg("FP").toInt();
-    }
+    briS = request->arg("CA").toInt();
+
     saveCurrPresetCycConf = request->hasArg("PC");
     turnOnAtBoot = request->hasArg("BO");
     t = request->arg("BP").toInt();
@@ -108,7 +82,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t > 0) transitionDelay = t;
     transitionDelayDefault = t;
     strip.paletteFade = request->hasArg("PF");
-    enableSecTransition = request->hasArg("T2");
 
     nightlightTargetBri = request->arg("TB").toInt();
     t = request->arg("TL").toInt();
@@ -200,6 +173,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 5)
   {
     ntpEnabled = request->hasArg("NT");
+    strlcpy(ntpServerName, request->arg("NS").c_str(), 33);
     useAMPM = !request->hasArg("CF");
     currentTimezone = request->arg("TZ").toInt();
     utcOffsetSecs = request->arg("UO").toInt();
@@ -366,7 +340,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     }
 
     pos = req.indexOf("IN");
-    if (pos < 1) XML_response(request, false);
+    if (pos < 1) XML_response(request);
     return true;
     //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
   }
@@ -374,15 +348,26 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   strip.applyToAllSelected = true;
 
   //segment select (sets main segment)
-  pos = req.indexOf("SS=");
+  byte prevMain = strip.getMainSegmentId();
+  pos = req.indexOf("SM=");
   if (pos > 0) {
     strip.mainSegment = getNumVal(&req, pos);
   }
   byte main = strip.getMainSegmentId();
+  if (main != prevMain) setValuesFromMainSeg();
+
+  pos = req.indexOf("SS=");
+  if (pos > 0) {
+    byte t = getNumVal(&req, pos);
+    if (t < strip.getMaxSegments()) main = t;
+  }
+
+  pos = req.indexOf("SV="); //segment selected
+  if (pos > 0) strip.getSegment(main).setOption(0, (req.charAt(pos+3) != '0'));
 
   uint16_t startI = strip.getSegment(main).start;
   uint16_t stopI = strip.getSegment(main).stop;
-  pos = req.indexOf("S="); //segment start
+  pos = req.indexOf("&S="); //segment start
   if (pos > 0) {
     startI = getNumVal(&req, pos);
   }
@@ -429,43 +414,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     colorFromDecOrHexString(colSec, (char*)req.substring(pos + 3).c_str());
   }
 
-  //set 2nd to white
-  pos = req.indexOf("SW");
-  if (pos > 0) {
-    if(useRGBW) {
-      colSec[3] = 255;
-      colSec[0] = 0;
-      colSec[1] = 0;
-      colSec[2] = 0;
-    } else {
-      colSec[0] = 255;
-      colSec[1] = 255;
-      colSec[2] = 255;
-    }
-  }
-
-  //set 2nd to black
-  pos = req.indexOf("SB");
-  if (pos > 0) {
-    colSec[3] = 0;
-    colSec[0] = 0;
-    colSec[1] = 0;
-    colSec[2] = 0;
-  }
-
   //set to random hue SR=0->1st SR=1->2nd
   pos = req.indexOf("SR");
   if (pos > 0) {
     _setRandomColor(getNumVal(&req, pos));
-  }
-
-  //set 2nd to 1st
-  pos = req.indexOf("SP");
-  if (pos > 0) {
-    colSec[0] = col[0];
-    colSec[1] = col[1];
-    colSec[2] = col[2];
-    colSec[3] = col[3];
   }
 
   //swap 2nd & 1st
@@ -485,21 +437,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   updateVal(&req, "SX=", &effectSpeed);
   updateVal(&req, "IX=", &effectIntensity);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
-
-  //set hue polling light: 0 -off
-  #ifndef WLED_DISABLE_HUESYNC
-  pos = req.indexOf("HP=");
-  if (pos > 0) {
-    int id = getNumVal(&req, pos);
-    if (id > 0)
-    {
-      if (id < 100) huePollLightId = id;
-      reconnectHue();
-    } else {
-      huePollingEnabled = false;
-    }
-  }
-  #endif
 
   //set advanced overlay
   pos = req.indexOf("OL=");
@@ -674,13 +611,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     setCronixie();
   }
 
-  if (req.indexOf("NB=") > 0) //sets backlight
+  pos = req.indexOf("NB=");
+  if (pos > 0) //sets backlight
   {
-    cronixieBacklight = true;
-    if (req.indexOf("NB=0") > 0)
-    {
-      cronixieBacklight = false;
-    }
+    presetApplyFx = (req.charAt(pos+3) != '0');
     if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
     overlayRefreshedTime = 0;
   }
@@ -702,7 +636,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   //internal call, does not send XML response
   pos = req.indexOf("IN");
-  if (pos < 1) XML_response(request, (req.indexOf("&IT") > 0)); //include theme if firstload
+  if (pos < 1) XML_response(request);
 
   pos = req.indexOf("&NN"); //do not send UDP notifications this time
   colorUpdated((pos > 0) ? 5:1);

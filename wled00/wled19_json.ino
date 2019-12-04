@@ -105,7 +105,9 @@ bool deserializeState(JsonObject root)
   int timein = root["time"] | -1;
   if (timein != -1) setTime(timein);
 
-  strip.mainSegment = root["mainseg"] | strip.mainSegment;
+  byte prevMain = strip.getMainSegmentId();
+  strip.mainSegment = root["mainseg"] | prevMain;
+  if (strip.getMainSegmentId() != prevMain) setValuesFromMainSeg();
 
   int it = 0;
   JsonVariant segVar = root["seg"];

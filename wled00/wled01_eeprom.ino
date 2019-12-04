@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 12
+#define EEPVER 13
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -19,7 +19,8 @@
 //9 -> 0.8.0
 //10-> 0.8.2
 //11-> 0.8.5-dev #mqttauth @TimothyBrown
-//12-> 0.8.7
+//12-> 0.8.7-dev
+//13-> 0.9.0
 
 void commit()
 {
@@ -95,9 +96,6 @@ void saveSettingsToEEPROM()
     EEPROM.write(242+i, staticSubnet[i]);
   }
 
-  EEPROM.write(246, colS[0]);
-  EEPROM.write(247, colS[1]);
-  EEPROM.write(248, colS[2]);
   EEPROM.write(249, briS);
 
   EEPROM.write(250, receiveNotificationBrightness);
@@ -116,10 +114,6 @@ void saveSettingsToEEPROM()
   EEPROM.write(291, (udpPort >> 8) & 0xFF);
   writeStringToEEPROM(292, serverDescription, 32);
 
-  EEPROM.write(324, effectDefault);
-  EEPROM.write(325, effectSpeedDefault);
-  EEPROM.write(326, effectIntensityDefault);
-
   EEPROM.write(327, ntpEnabled);
   EEPROM.write(328, currentTimezone);
   EEPROM.write(329, useAMPM);
@@ -134,19 +128,14 @@ void saveSettingsToEEPROM()
   EEPROM.write(367, (arlsOffset>=0));
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
-  EEPROM.write(371, colS[3]); //white default
+
   EEPROM.write(372, useRGBW);
-  EEPROM.write(373, effectPaletteDefault);
   EEPROM.write(374, strip.paletteFade);
   EEPROM.write(375, strip.milliampsPerLed); //was apWaitTimeSecs up to 0.8.5
   EEPROM.write(376, apBehavior);
 
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
 
-  EEPROM.write(378, colSecS[0]);
-  EEPROM.write(379, colSecS[1]);
-  EEPROM.write(380, colSecS[2]);
-  EEPROM.write(381, colSecS[3]);
   EEPROM.write(382, strip.paletteBlend);
   EEPROM.write(383, strip.colorOrder);
 
@@ -168,7 +157,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(399, !enableSecTransition);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
-  //400 - 899 reserved
+  //400 - 940 reserved
+  writeStringToEEPROM(990, ntpServerName, 32);
 
   EEPROM.write(2048, huePollingEnabled);
   //EEPROM.write(2049, hueUpdatingEnabled);
@@ -314,9 +304,6 @@ void loadSettingsFromEEPROM(bool first)
   staticSubnet[2] = EEPROM.read(244);
   staticSubnet[3] = EEPROM.read(245);
 
-  colS[0] = EEPROM.read(246); col[0] = colS[0];
-  colS[1] = EEPROM.read(247); col[1] = colS[1];
-  colS[2] = EEPROM.read(248); col[2] = colS[2];
   briS = EEPROM.read(249); bri = briS;
   if (!EEPROM.read(369) && first)
   {
@@ -337,8 +324,6 @@ void loadSettingsFromEEPROM(bool first)
 
   readStringFromEEPROM(292, serverDescription, 32);
 
-  effectDefault = EEPROM.read(324); effectCurrent = effectDefault;
-  effectSpeedDefault = EEPROM.read(325); effectSpeed = effectSpeedDefault;
   ntpEnabled = EEPROM.read(327);
   currentTimezone = EEPROM.read(328);
   useAMPM = EEPROM.read(329);
@@ -355,32 +340,19 @@ void loadSettingsFromEEPROM(bool first)
   arlsOffset = EEPROM.read(368);
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
-  colS[3] = EEPROM.read(371); col[3] = colS[3];
   useRGBW = EEPROM.read(372);
-  effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
   //374 - strip.paletteFade
   
   apBehavior = EEPROM.read(376);
     
   //377 = lastEEPROMversion
-  if (lastEEPROMversion > 1) {
-    for (byte i=0; i<4; i++)
-    {
-      colSecS[i] = EEPROM.read(378+i); colSec[i] = colSecS[i];
-    }
-  }
   if (lastEEPROMversion > 3) {
-    effectIntensityDefault = EEPROM.read(326); effectIntensity = effectIntensityDefault;
     aOtaEnabled = EEPROM.read(390);
     receiveNotificationColor = EEPROM.read(391);
     receiveNotificationEffects = EEPROM.read(392);
-
-  } else //keep receiving notification behavior from pre0.5.0 after update
-  {
-    receiveNotificationColor = receiveNotificationBrightness;
-    receiveNotificationEffects = receiveNotificationBrightness;
   }
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+  
   if (lastEEPROMversion > 4) {
     huePollingEnabled = EEPROM.read(2048);
     //hueUpdatingEnabled = EEPROM.read(2049);
@@ -485,6 +457,10 @@ void loadSettingsFromEEPROM(bool first)
   {
     strip.ablMilliampsMax = ABL_MILLIAMPS_DEFAULT;
     strip.milliampsPerLed = 0; //disable ABL
+  }
+  if (lastEEPROMversion > 12)
+  {
+    readStringFromEEPROM(990, ntpServerName, 32);
   }
 
   receiveDirect = !EEPROM.read(2200);
