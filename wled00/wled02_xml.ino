@@ -228,7 +228,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"GB",strip.gammaCorrectBri);
     sappend('c',"GC",strip.gammaCorrectCol);
     sappend('c',"TF",fadeTransition);
-    sappend('v',"TD",transitionDelay);
+    sappend('v',"TD",transitionDelayDefault);
     sappend('c',"PF",strip.paletteFade);
     sappend('v',"BF",briMultiplier);
     sappend('v',"TB",nightlightTargetBri);

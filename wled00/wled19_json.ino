@@ -90,6 +90,15 @@ bool deserializeState(JsonObject root)
   
   int cy = root["pl"] | -1;
   presetCyclingEnabled = (cy >= 0);
+  JsonObject ccnf = root["ccnf"];
+  presetCycleMin = ccnf["min"] | presetCycleMin;
+  presetCycleMax = ccnf["max"] | presetCycleMax;
+  tr = ccnf["time"] | -1;
+  if (tr >= 2)
+  {
+    presetCycleTime = tr;
+    presetCycleTime *= 100;
+  }
 
   JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]   | nightlightActive;
@@ -183,6 +192,12 @@ void serializeState(JsonObject root)
   root["ps"] = currentPreset;
   root["pss"] = savedPresets;
   root["pl"] = (presetCyclingEnabled) ? 0: -1;
+
+  //temporary for preser cycle
+  JsonObject ccnf = root.createNestedObject("ccnf");
+  ccnf["min"] = presetCycleMin;
+  ccnf["max"] = presetCycleMax;
+  ccnf["time"] = presetCycleTime/100;
   
   JsonObject nl = root.createNestedObject("nl");
   nl["on"] = nightlightActive;
