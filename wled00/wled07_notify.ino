@@ -227,7 +227,7 @@ void handleNotifications()
       if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
       colorUpdated(3);
       
-    }  else if (udpIn[0] > 0 && udpIn[0] < 4 && receiveDirect) //1 warls //2 drgb //3 drgbw
+    }  else if (udpIn[0] > 0 && udpIn[0] < 5 && receiveDirect) //1 warls //2 drgb //3 drgbw
     {
       realtimeIP = notifierUdp.remoteIP();
       DEBUG_PRINTLN(notifierUdp.remoteIP());
@@ -269,7 +269,7 @@ void handleNotifications()
           for (uint16_t i = 4; i < packetSize -2; i += 3)
           {
              if (id >= ledCount) break;
-            setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+            setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
             id++;
           }
         }

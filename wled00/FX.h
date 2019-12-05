@@ -552,9 +552,9 @@ class WS2812FX {
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
-    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 21 bytes per element
-      // start, stop, speed, intensity, palette, mode, options, color[]
-      { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, {DEFAULT_COLOR}}
+    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
+      // start, stop, speed, intensity, palette, mode, options, 3 unused bytes (group, spacing, opacity), color[]
+      { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 16 bytes per element
 };
