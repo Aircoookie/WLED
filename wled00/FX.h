@@ -44,7 +44,7 @@
 #define WLED_FPS         42
 #define FRAMETIME        1000/WLED_FPS
 
-/* each segment uses 37 bytes of SRAM memory, so if you're application fails because of
+/* each segment uses 41 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #define MAX_NUM_SEGMENTS 10
 
@@ -180,14 +180,14 @@ class WS2812FX {
   
   // segment parameters
   public:
-    typedef struct Segment { // 24 bytes
+    typedef struct Segment { // 25 bytes
       uint16_t start;
       uint16_t stop; //segment invalid if stop == 0
+      uint16_t rawLength;
       uint8_t speed;
       uint8_t intensity;
       uint8_t palette;
       uint8_t mode;
-      uint8_t grouping;
       uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
       uint8_t group, spacing;
       uint8_t opacity;
@@ -216,6 +216,9 @@ class WS2812FX {
       uint16_t length()
       {
         return stop - start;
+      }
+      uint16_t ledGroup() {
+        return group + spacing;
       }
     } segment;
 
@@ -332,7 +335,7 @@ class WS2812FX {
     }
 
     void
-      init(bool supportWhite, uint16_t countPixels, uint8_t grouping, uint8_t disableNLeds, bool skipFirst),
+      init(bool supportWhite, uint16_t countPixels, uint8_t group, uint8_t spacing, bool skipFirst),
       service(void),
       blur(uint8_t),
       fade_out(uint8_t r),
@@ -352,7 +355,7 @@ class WS2812FX {
       unlockAll(void),
       setTransitionMode(bool t),
       trigger(void),
-      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping),
+      setSegment(uint8_t n, uint16_t start, uint16_t length, uint8_t group, uint8_t spacing),
       resetSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
@@ -372,8 +375,8 @@ class WS2812FX {
       paletteBlend = 0,
       colorOrder = 0,
       milliampsPerLed = 55,
-      _disableNLeds = 0,
-      _grouping = 1,
+      _spacing = 0,
+      _group = 1,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
@@ -510,7 +513,7 @@ class WS2812FX {
     CRGBPalette16 targetPalette;
 
     uint32_t now;
-    uint16_t _length, _lengthRaw;
+    uint16_t _length;
     uint16_t _rand16seed;
     uint8_t _brightness;
 
@@ -554,11 +557,13 @@ class WS2812FX {
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
-    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
-      // start, stop, speed, intensity, palette, mode, options, 3 unused bytes (group, spacing, opacity), color[]
-      { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
+    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 25 bytes per element
+      // start, stop, length, speed, intensity, palette, mode, options, group, spacing, opacity (unused), color[]
+      { 0, 7, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 16 bytes per element
+
+    uint16_t realPixelIndex(uint16_t i);
 };
 
 

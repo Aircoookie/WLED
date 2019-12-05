@@ -93,7 +93,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0 && t < 4) strip.paletteBlend = t;
     strip.reverseMode = request->hasArg("RV");
     skipFirstLed = request->hasArg("SL");
-    disableNLeds = request->arg("DL").toInt();
+    spacing = request->arg("DL").toInt();
     t = request->arg("BF").toInt();
     if (t > 0) briMultiplier = t;
   }
@@ -274,7 +274,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
   if (subPage == 2) {
-    strip.init(useRGBW,ledCount,1,disableNLeds,skipFirstLed);
+    strip.init(useRGBW,ledCount,1,spacing,skipFirstLed);
   }
   if (subPage == 4) alexaInit();
 }
@@ -375,7 +375,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) {
     stopI = getNumVal(&req, pos);
   }
-  strip.setSegment(main, startI, stopI, 1);
+  strip.setSegment(main, startI, stopI, 1, 0);
 
   main = strip.getMainSegmentId();
 

@@ -237,7 +237,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);
-    sappend('v',"DL",disableNLeds);
+    sappend('v',"DL",spacing);
   }
 
   if (subPage == 3)
