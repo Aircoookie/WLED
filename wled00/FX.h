@@ -42,7 +42,7 @@
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
-#define FRAMETIME        1000/WLED_FPS
+#define FRAMETIME        (1000/WLED_FPS)
 
 /* each segment uses 37 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
@@ -84,7 +84,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  87
+#define MODE_COUNT  89
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -173,6 +173,8 @@
 #define FX_MODE_TRI_STATIC_PATTERN      84
 #define FX_MODE_SPOTS                   85
 #define FX_MODE_SPOTS_FADE              86
+#define FX_MODE_GLITTER                 87
+#define FX_MODE_CANDLE                  88
 
 
 class WS2812FX {
@@ -317,6 +319,8 @@ class WS2812FX {
       _mode[FX_MODE_TRI_STATIC_PATTERN]      = &WS2812FX::mode_tri_static_pattern;
       _mode[FX_MODE_SPOTS]                   = &WS2812FX::mode_spots;
       _mode[FX_MODE_SPOTS_FADE]              = &WS2812FX::mode_spots_fade;
+      _mode[FX_MODE_GLITTER]                 = &WS2812FX::mode_glitter;
+      _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -497,7 +501,10 @@ class WS2812FX {
       mode_static_pattern(void),
 	    mode_tri_static_pattern(void),
       mode_spots(void),
-      mode_spots_fade(void);
+      mode_spots_fade(void),
+      mode_glitter(void),
+      mode_candle(void);
+      
 
   private:
     NeoPixelWrapper *bus;
@@ -570,7 +577,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Smooth Meteor","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade"
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle"
 ])=====";
 
 

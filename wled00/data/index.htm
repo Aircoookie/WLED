@@ -941,8 +941,8 @@ function requestJson(command, verbose = true) {
   e1 = d.getElementById('fxlist');
   e2 = d.getElementById('selectPalette');
 
-  //url = command ? 'http://10.10.1.26/json/state':'http://10.10.1.26/json';
   url = command ? '/json/state':'/json';
+  url = command ? 'http://10.10.1.26/json/state':'http://10.10.1.26/json';
   type = command ? 'post':'get';
   if (command)
   {
@@ -1096,7 +1096,7 @@ function makeSeg() {
       <div class="segin expanded">
         Start LED: <input class="starts" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(this)"><br>
         Stop LED: <input class="stops" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(this)">
-        <span class="h">(${ledCount} LEDs)</span><br>
+        <span class="h">(${ledCount - ns} LEDs)</span><br>
         <i class="icons slider-icon cnf" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
       </div>
     </div>`;
@@ -1137,8 +1137,6 @@ function setRev(s){
 }
 
 function setX(ind) {
-  selectedFx = ind;
-    
 	var obj = {"seg": {"fx": parseInt(ind)}};
   requestJson(obj);
 }
