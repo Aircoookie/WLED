@@ -93,7 +93,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0 && t < 4) strip.paletteBlend = t;
     strip.reverseMode = request->hasArg("RV");
     skipFirstLed = request->hasArg("SL");
-    spacing = request->arg("DL").toInt();
+    spacing = request->arg("SP").toInt();
+    group = request->arg("GR").toInt();
     t = request->arg("BF").toInt();
     if (t > 0) briMultiplier = t;
   }
@@ -274,7 +275,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
   if (subPage == 2) {
-    strip.init(useRGBW,ledCount,1,spacing,skipFirstLed);
+    strip.init(useRGBW,ledCount,group,spacing,skipFirstLed);
   }
   if (subPage == 4) alexaInit();
 }

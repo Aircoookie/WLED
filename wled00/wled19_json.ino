@@ -8,14 +8,12 @@ void deserializeSegment(JsonObject elem, byte it)
   if (id < strip.getMaxSegments())
   {
     WS2812FX::Segment& seg = strip.getSegment(id);
-    uint16_t start = elem["start"] | seg.start;
-    int stop = elem["stop"] | -1;
+    uint16_t start = elem.containsKey("start") ? elem["start"] : seg.start;
+    uint16_t len = elem.containsKey("len") ? elem["len"] : seg.rawLength;
+    uint8_t group = max(1, elem["grp"] | seg.group);
+    uint8_t spacing = elem.containsKey("spc") ? elem["spc"] : seg.spacing;
 
-    if (stop < 0) {
-      uint16_t len = elem["len"];
-      stop = (len > 0) ? start + len : seg.stop;
-    }
-    strip.setSegment(id, start, stop, 1, 0);
+    strip.setSegment(id, start, len, group, spacing);
     
     JsonArray colarr = elem["col"];
     if (!colarr.isNull())
@@ -158,7 +156,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["id"] = id;
 	root["start"] = seg.start;
 	root["stop"] = seg.stop;
-	root["len"] = seg.stop - seg.start;
+	root["len"] = seg.rawLength;
 
 	JsonArray colarr = root.createNestedArray("col");
 
@@ -178,6 +176,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["pal"] = seg.palette;
 	root["sel"] = seg.isSelected();
   root["grp"] = seg.group;
+  root["spc"] = seg.spacing;
 	root["rev"] = seg.getOption(1);
 }
 

@@ -230,6 +230,7 @@ void saveSettingsToEEPROM()
   }
 
   EEPROM.write(2213, spacing);
+  EEPROM.write(2214, group);
 
   writeStringToEEPROM(2220, blynkApiKey, 35);
 
@@ -481,6 +482,7 @@ void loadSettingsFromEEPROM(bool first)
   }
 
   spacing = EEPROM.read(2213);
+  group = max(1, EEPROM.read(2214));
 
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);

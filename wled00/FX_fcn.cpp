@@ -50,6 +50,8 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, uint8_t group, uint
   _locked = new byte[_length];
   
   _segments[0].start = 0;
+  _segments[0].group = _group;
+  _segments[0].spacing = _spacing;
   _segments[0].stop = getUsableCount();
   _segments[0].rawLength = _length;
   

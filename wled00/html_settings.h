@@ -151,8 +151,9 @@ Palette blending:
 </select><br>
 Reverse LED order (rotate 180): <input type=checkbox name=RV><br>
 Skip first LED: <input type=checkbox name=SL><br>
-Disable repeating N LEDs: <input type=number min=0 max=255 name=DL><br>
-(Turns off N LEDs between each lit one, spacing out effects)<hr>
+LED spacing: <input type=number min=0 max=255 name=SP><br>
+(Turns off N LEDs between each lit one, spacing out effects)<br>
+LED grouping: <input type=number min=1 max=255 name=GR><hr>
 <button type=button onclick=B()>Back</button><button type=submit>Save</button>
 </form></body></html>)=====";
 

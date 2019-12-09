@@ -11,6 +11,7 @@ void wledInit()
   spacing = EEPROM.read(2213);
   //this was reading 255 after inital flash causing bootloop. Don't know why.
   spacing = spacing!= 255 ? spacing : 0;
+  group = max(1, EEPROM.read(2214));
 
   #ifdef ESP8266
   #if LEDPIN == 3
@@ -30,7 +31,7 @@ void wledInit()
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  strip.init(EEPROM.read(372),ledCount,1,spacing,EEPROM.read(2204)); //init LEDs quickly
+  strip.init(EEPROM.read(372),ledCount,group,spacing,EEPROM.read(2204)); //init LEDs quickly
   strip.setBrightness(0);
 
   DEBUG_PRINT("LEDs inited. heap usage ~");
