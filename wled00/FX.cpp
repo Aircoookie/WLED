@@ -2285,3 +2285,67 @@ uint16_t WS2812FX::mode_spots_fade()
   uint16_t tr = (t >> 1) + (t >> 2);
   return spots_base(tr);
 }
+
+
+/*
+*  Bouncing Balls Effect
+*  Adapted from: https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
+*/
+uint16_t WS2812FX::mode_BouncingBalls(void) {
+  // number of balls based on intensity setting, 
+  // only has 4 for a few of the higher settings as there is no colour selection
+  // fourth ball is a random colour
+  int balls = int(((SEGMENT.intensity * 6.2) / 255) + 1);
+
+  // ideally use speed for gravity effect on the bounce
+  float Gravity = -9.81;
+
+  const int maxBallCount = 7;
+  static float Height[maxBallCount];
+  static float ImpactVelocity[maxBallCount];
+  static int   Position[maxBallCount];
+  static float TimeSinceLastBounce[maxBallCount];
+  static long  ClockTimeSinceLastBounce[maxBallCount];
+  static int   StartHeight = 1;                 // height in metres (strip length)
+  static float Dampening[maxBallCount] = {0};   // Coefficient of Restitution (bounce damping)
+  static float ImpactVelocityStart=sqrt( -2 * Gravity * StartHeight);
+
+  // Different from the examples, to allow for initialisation of the first bounce
+  if (Dampening[0] == 0) {
+    for (int i = 0 ; i < maxBallCount ; i++) {
+      ClockTimeSinceLastBounce[i] = millis();
+      ImpactVelocity[i] = ImpactVelocityStart;
+      TimeSinceLastBounce[i] = 0;
+      Dampening[i] = 0.90 - float(i)/pow(maxBallCount,2);
+    }
+  }
+  
+  for (int i = 0 ; i < balls ; i++) {
+    TimeSinceLastBounce[i] =  millis() - ClockTimeSinceLastBounce[i];
+    Height[i] = 0.5 * Gravity * pow( TimeSinceLastBounce[i]/1000 , 2.0 ) + ImpactVelocity[i] * TimeSinceLastBounce[i]/1000;
+
+    if ( Height[i] < 0 ) {
+      Height[i] = 0;
+      ImpactVelocity[i] = Dampening[i] * ImpactVelocity[i];
+      ClockTimeSinceLastBounce[i] = millis();
+
+      if ( ImpactVelocity[i] < 0.01 ) {
+        ImpactVelocity[i] = ImpactVelocityStart;
+      }
+    }
+    Position[i] = round( Height[i] * (SEGLEN - 1) / StartHeight);
+  }
+  
+  fill(BLACK);
+
+  for (int i = 0 ; i < balls ; i++) {
+    uint32_t color = SEGCOLOR(i % NUM_COLORS);
+    if (!color) {
+       color = color_wheel(random8());
+    }
+    
+    setPixelColor(Position[i],color);
+  }
+
+  return 20;
+}
