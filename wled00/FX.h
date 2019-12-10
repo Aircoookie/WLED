@@ -84,7 +84,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  89
+#define MODE_COUNT  90
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -175,6 +175,7 @@
 #define FX_MODE_SPOTS_FADE              86
 #define FX_MODE_BOUNCINGBALLS           87
 #define FX_MODE_SINELON                 88
+#define FX_MODE_POPCORN                 89
 
 
 class WS2812FX {
@@ -321,6 +322,7 @@ class WS2812FX {
       _mode[FX_MODE_SPOTS_FADE]              = &WS2812FX::mode_spots_fade;
       _mode[FX_MODE_BOUNCINGBALLS]           = &WS2812FX::mode_BouncingBalls;
       _mode[FX_MODE_SINELON]                 = &WS2812FX::mode_sinelon;
+      _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -503,7 +505,8 @@ class WS2812FX {
       mode_spots(void),
       mode_spots_fade(void),
       mode_BouncingBalls(void),
-      mode_sinelon(void);
+      mode_sinelon(void),
+      mode_popcorn(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -576,7 +579,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Smooth Meteor","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Bouncing Balls", "Sinelon"
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Bouncing Balls", "Sinelon","Popcorn"
 ])=====";
 
 

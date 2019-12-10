@@ -2374,3 +2374,52 @@ uint16_t WS2812FX::mode_sinelon(void) {
   prevpos = pos;
   return FRAMETIME;
 }
+
+
+/*
+*  POPCORN
+*/
+typedef struct Kernel {
+  float position;
+  float velocity;
+  int32_t color;
+} kernel;
+
+#define MAX_NUM_POPCORN 12
+#define GRAVITY 0.06
+
+uint16_t WS2812FX::mode_popcorn(void) {
+  uint32_t popcornColor = SEGCOLOR(0);
+  uint32_t bgColor = SEGCOLOR(1);
+  if(popcornColor == bgColor) popcornColor = color_wheel(random8());
+  
+  static kernel popcorn[MAX_NUM_POPCORN];
+  static float coeff = 0.0f;
+  if(coeff == 0.0f) { // calculate the velocity coeff once (the secret sauce)
+    coeff = pow((float)SEGLEN, 0.5223324f) * 0.3944296f;
+  }
+
+  fill(SEGCOLOR(1));
+
+  uint16_t ledIndex;
+  for(int8_t i=0; i < MAX_NUM_POPCORN; i++) {
+    bool isActive = popcorn[i].position >= 0.0f;
+
+    if(isActive) { // if kernel is active, update its position
+      popcorn[i].position += popcorn[i].velocity;
+      popcorn[i].velocity -= (GRAVITY * SEGMENT.intensity/25);
+      ledIndex = SEGMENT.start + popcorn[i].position;
+      if(ledIndex >= SEGMENT.start && ledIndex <= SEGMENT.stop) setPixelColor(ledIndex, popcorn[i].color);
+    } else { // if kernel is inactive, randomly pop it
+      if(random8() < 2) { // POP!!!
+        popcorn[i].position = 0.0f;
+        popcorn[i].velocity = coeff * (random(66, 100) / 100.0f);
+        popcorn[i].color = popcornColor;
+        ledIndex = SEGMENT.start;
+        setPixelColor(ledIndex, popcorn[i].color);
+      }
+    }
+  }
+
+  return SPEED_FORMULA_L;
+}
