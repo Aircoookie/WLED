@@ -113,7 +113,7 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
     /* reverse just an individual segment */
     int16_t realIndex;
     if IS_REVERSE
-      realIndex = SEGMENT.stop - iGroup -1;
+      realIndex = SEGMENT.rawLength + SEGMENT.start - iGroup -1;
     else
       realIndex = SEGMENT.start + iGroup;
     /* Reverse the whole string */
