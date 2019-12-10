@@ -2349,3 +2349,28 @@ uint16_t WS2812FX::mode_BouncingBalls(void) {
 
   return 20;
 }
+
+/*
+* Sinelon stolen from FASTLED examples
+*/
+uint16_t WS2812FX::mode_sinelon(void) {
+
+  fade_out(SEGMENT.intensity);
+  int pos = beatsin16(SEGMENT.speed/10,0,SEGLEN-1);
+  static int prevpos = 0;
+
+  // setRange seems great to use, but doesn't work here for some reason
+  if( pos < prevpos ) { 
+    for (uint16_t i = pos; i < prevpos; i++)
+    {
+      setPixelColor(i, color_from_palette(pos, false, false, 0));
+    }
+  } else {
+    for (uint16_t i = prevpos; i < pos; i++)
+    {
+      setPixelColor(i, color_from_palette(pos, false, false, 0));
+    }
+  }
+  prevpos = pos;
+  return FRAMETIME;
+}
