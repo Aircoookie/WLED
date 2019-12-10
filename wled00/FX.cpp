@@ -2302,6 +2302,10 @@ uint16_t WS2812FX::mode_glitter()
 }
 
 
+//values close to 100 produce 5Hz flicker, which looks very candle-y
+//Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
+//and https://cpldcpu.wordpress.com/2016/01/05/reverse-engineering-a-real-candle/
+
 uint16_t WS2812FX::mode_candle()
 {
   if (SEGENV.call == 0) {
@@ -2329,17 +2333,14 @@ uint16_t WS2812FX::mode_candle()
     uint8_t valrange = SEGMENT.intensity;
     uint8_t rndval = valrange >> 1;
     target = random8(rndval) + random8(rndval);
-    if (target < (rndval >> 1)) target += random8(rndval >> 1);
+    if (target < (rndval >> 1)) target = (rndval >> 1) + random8(rndval);
     uint8_t offset = (255 - valrange) >> 1;
     target += offset;
 
     uint8_t dif = (target > s) ? target - s : s - target;
-    uint16_t fadeSpeed = 50 + ((255-SEGMENT.speed) >> 1);
   
     //how much to move closer to target per frame
-    fadeStep = dif;
-    uint8_t frames = 1;
-    if (fadeSpeed > FRAMETIME) fadeStep = dif / (fadeSpeed / FRAMETIME);
+    fadeStep = dif >> 2; //mode called every ~25 ms, so 4 frames to have a new target every 100ms
     if (fadeStep == 0) fadeStep = 1;
     
     SEGENV.step = fadeStep;

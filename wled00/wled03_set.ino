@@ -14,6 +14,16 @@ void _setRandomColor(bool _sec,bool fromButton=false)
 }
 
 
+bool isAsterisksOnly(const char* str, byte maxLen)
+{
+  for (byte i = 0; i < maxLen; i++) {
+    if (str[i] == 0) break;
+    if (str[i] != '*') return false;
+  }
+  return true;
+}
+
+
 //called upon POST settings form submit
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
@@ -24,7 +34,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 1)
   {
     strlcpy(clientSSID,request->arg("CS").c_str(), 33);
-    if (request->arg("CP").charAt(0) != '*') strlcpy(clientPass, request->arg("CP").c_str(), 65);
+
+    if (!isAsterisksOnly(request->arg("CP").c_str(), 65)) strlcpy(clientPass, request->arg("CP").c_str(), 65);
 
     strlcpy(cmDNS, request->arg("CM").c_str(), 33);
 
@@ -32,7 +43,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strlcpy(apSSID, request->arg("AS").c_str(), 33);
     apHide = request->hasArg("AH");
     int passlen = request->arg("AP").length();
-    if (passlen == 0 || (passlen > 7 && request->arg("AP").charAt(0) != '*')) strlcpy(apPass, request->arg("AP").c_str(), 65);
+    if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg("AP").c_str(), 65))) strlcpy(apPass, request->arg("AP").c_str(), 65);
     int t = request->arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
 
     char k[3]; k[2] = 0;
@@ -141,15 +152,18 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey);
     }
 
+    #ifdef WLED_ENABLE_MQTT
     strlcpy(mqttServer, request->arg("MS").c_str(), 33);
     t = request->arg("MQPORT").toInt();
     if (t > 0) mqttPort = t;
     strlcpy(mqttUser, request->arg("MQUSER").c_str(), 41);
-    if (request->arg("MQPASS").charAt(0) != '*') strlcpy(mqttPass, request->arg("MQPASS").c_str(), 41);
+    if (!isAsterisksOnly(request->arg("MQPASS").c_str(), 41)) strlcpy(mqttPass, request->arg("MQPASS").c_str(), 41);
     strlcpy(mqttClientID, request->arg("MQCID").c_str(), 41);
     strlcpy(mqttDeviceTopic, request->arg("MD").c_str(), 33);
     strlcpy(mqttGroupTopic, request->arg("MG").c_str(), 33);
+    #endif
 
+    #ifndef WLED_DISABLE_HUESYNC
     for (int i=0;i<4;i++){
       String a = "H"+String(i);
       hueIP[i] = request->arg(a).toInt();
@@ -167,6 +181,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     huePollingEnabled = request->hasArg("HP");
     hueStoreAllowed = true;
     reconnectHue();
+    #endif
   }
 
   //TIME

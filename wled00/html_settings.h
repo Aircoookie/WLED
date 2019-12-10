@@ -121,7 +121,7 @@ Color order:
 <select name=CO>
 <option value=0>GRB</option>
 <option value=1>RGB</option>
-<option value=2 disabled>BRG</option>
+<option value=2>BRG</option>
 <option value=3>RBG</option>
 </select>
 <h3>Defaults</h3>
@@ -287,7 +287,7 @@ Clock Overlay:
 <select name="OL" onchange="Cs()">
 <option value="0" id="cn" selected>None</option>
 <option value="1" id="ca">Analog Clock</option>
-<option value="2">Single Digit Clock</option>
+<option value="2" disabled>-</option>
 <option value="3" id="cc">Cronixie Clock</option>
 </select><br>
 <div id="coc">
@@ -365,7 +365,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.0-dev<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.0-b1<br><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2019 Christian Schwinne <br>

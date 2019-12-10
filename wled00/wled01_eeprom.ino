@@ -495,6 +495,7 @@ void loadSettingsFromEEPROM(bool first)
   //1024-2047 reserved
 
   readStringFromEEPROM(2220, blynkApiKey, 35);
+  if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
 
   //user MOD memory
   //2944 - 3071 reserved

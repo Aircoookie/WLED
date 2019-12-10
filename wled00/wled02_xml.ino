@@ -82,7 +82,7 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
 }
 
 //append a numeric setting to string buffer
-void sappend(char stype, char* key, int val)
+void sappend(char stype, const char* key, int val)
 {
   char ds[] = "d.Sf.";
 
@@ -113,7 +113,7 @@ void sappend(char stype, char* key, int val)
 }
 
 //append a string setting to buffer
-void sappends(char stype, char* key, char* val)
+void sappends(char stype, const char* key, char* val)
 {
   switch(stype)
   {
@@ -269,6 +269,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"AI",alexaInvocationName);
     sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
+
+    #ifdef WLED_ENABLE_MQTT
     sappends('s',"MS",mqttServer);
     sappend('v',"MQPORT",mqttPort);
     sappends('s',"MQUSER",mqttUser);
@@ -281,6 +283,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"MQCID",mqttClientID);
     sappends('s',"MD",mqttDeviceTopic);
     sappends('s',"MG",mqttGroupTopic);
+    #endif
+
+    #ifdef WLED_DISABLE_HUESYNC
+    sappends('m',"(\"hms\")[0]","Unsupported in build");
+    #else
     sappend('v',"H0",hueIP[0]);
     sappend('v',"H1",hueIP[1]);
     sappend('v',"H2",hueIP[2]);
@@ -292,6 +299,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"HB",hueApplyBri);
     sappend('c',"HC",hueApplyColor);
     sappends('m',"(\"hms\")[0]",hueError);
+    #endif
   }
 
   if (subPage == 5)
