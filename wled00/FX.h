@@ -42,7 +42,7 @@
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
-#define FRAMETIME        1000/WLED_FPS
+#define FRAMETIME        (1000/WLED_FPS)
 
 /* each segment uses 37 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
@@ -84,7 +84,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  90
+#define MODE_COUNT  92
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -173,9 +173,11 @@
 #define FX_MODE_TRI_STATIC_PATTERN      84
 #define FX_MODE_SPOTS                   85
 #define FX_MODE_SPOTS_FADE              86
-#define FX_MODE_BOUNCINGBALLS           87
-#define FX_MODE_SINELON                 88
-#define FX_MODE_POPCORN                 89
+#define FX_MODE_GLITTER                 87
+#define FX_MODE_CANDLE                  88
+#define FX_MODE_BOUNCINGBALLS           89
+#define FX_MODE_SINELON                 90
+#define FX_MODE_POPCORN                 91
 
 
 class WS2812FX {
@@ -323,6 +325,8 @@ class WS2812FX {
       _mode[FX_MODE_BOUNCINGBALLS]           = &WS2812FX::mode_BouncingBalls;
       _mode[FX_MODE_SINELON]                 = &WS2812FX::mode_sinelon;
       _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
+      _mode[FX_MODE_GLITTER]                 = &WS2812FX::mode_glitter;
+      _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -506,7 +510,10 @@ class WS2812FX {
       mode_spots_fade(void),
       mode_BouncingBalls(void),
       mode_sinelon(void),
-      mode_popcorn(void);
+      mode_popcorn(void),
+      mode_glitter(void),
+      mode_candle(void);
+      
 
   private:
     NeoPixelWrapper *bus;
@@ -573,13 +580,14 @@ class WS2812FX {
 const char JSON_mode_names[] PROGMEM = R"=====([
 "Solid","Blink","Breathe","Wipe","Wipe Random","Random Colors","Sweep","Dynamic","Colorloop","Rainbow",
 "Scan","Dual Scan","Fade","Theater","Theater Rainbow","Running","Saw","Twinkle","Dissolve","Dissolve Rnd",
-"Sparkle","Dark Sparkle","Sparkle+","Strobe","Strobe Rainbow","Mega Strobe","Blink Rainbow","Android","Chase","Chase Random",
+"Sparkle","Sparkle Dark","Sparkle+","Strobe","Strobe Rainbow","Strobe Mega","Blink Rainbow","Android","Chase","Chase Random",
 "Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Red & Blue","Stream",
 "Scanner","Lighthouse","Fireworks","Rain","Merry Christmas","Fire Flicker","Gradient","Loading","Police","Police All",
 "Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
-"Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
-"Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Smooth Meteor","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Bouncing Balls", "Sinelon","Popcorn"
+"Scanner Dual ","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
+"Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle",
+"Bouncing Balls", "Sinelon","Popcorn"
 ])=====";
 
 

@@ -533,11 +533,18 @@ uint16_t WS2812FX::mode_dissolve_random(void) {
  */
 uint16_t WS2812FX::mode_sparkle(void) {
   for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
-      setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 1));
+    setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 1));
   }
-  SEGENV.aux0 = random16(SEGLEN); // aux0 stores the random led index
+  uint32_t cycleTime = 10 + (255 - SEGMENT.speed)*2;
+  uint32_t it = now / cycleTime;
+  if (it != SEGENV.step)
+  {
+    SEGENV.aux0 = random16(SEGLEN); // aux0 stores the random led index
+    SEGENV.step = it;
+  }
+  
   setPixelColor(SEGMENT.start + SEGENV.aux0, SEGCOLOR(0));
-  return 10 + (uint16_t)(255 - SEGMENT.speed);
+  return FRAMETIME;
 }
 
 
@@ -546,14 +553,9 @@ uint16_t WS2812FX::mode_sparkle(void) {
  * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
  */
 uint16_t WS2812FX::mode_flash_sparkle(void) {
-  if(SEGENV.call == 0) {
-    for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
-      setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-    }
+  for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
+    setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
   }
-
-  uint16_t i = SEGMENT.start + SEGENV.aux0;
-  setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
 
   if(random8(5) == 0) {
     SEGENV.aux0 = random16(SEGLEN); // aux0 stores the random led index
@@ -613,7 +615,6 @@ uint16_t WS2812FX::mode_multi_strobe(void) {
 uint16_t WS2812FX::mode_android(void) {
   if (SEGENV.call == 0)
   {
-    SEGENV.aux0 = 0;
     SEGENV.step = SEGMENT.start;
   }
   
@@ -1530,13 +1531,13 @@ uint16_t WS2812FX::mode_palette()
   }
   
   bool noWrap = (paletteBlend == 2 || (paletteBlend == 0 && SEGMENT.speed == 0));
-  for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
+  for (uint16_t i = 0; i < SEGLEN; i++)
   {
     uint8_t colorIndex = (i * 255 / SEGLEN) - counter;
     
     if (noWrap) colorIndex = map(colorIndex, 0, 255, 0, 240); //cut off blend at palette "end"
     
-    setPixelColor(i, color_from_palette(colorIndex, false, true, 255));
+    setPixelColor(SEGMENT.start + i, color_from_palette(colorIndex, false, true, 255));
   }
   return FRAMETIME;
 }
@@ -2376,6 +2377,20 @@ uint16_t WS2812FX::mode_sinelon(void) {
 }
 
 
+//Rainbow with glitter, inspired by https://gist.github.com/kriegsman/062e10f7f07ba8518af6
+uint16_t WS2812FX::mode_glitter()
+{
+  mode_palette();
+
+  if (SEGMENT.intensity > random8())
+  {
+    setPixelColor(SEGMENT.start + random16(SEGLEN), ULTRAWHITE);
+  }
+  
+  return FRAMETIME;
+}
+
+
 /*
 *  POPCORN
 */
@@ -2422,4 +2437,53 @@ uint16_t WS2812FX::mode_popcorn(void) {
   }
 
   return SPEED_FORMULA_L;
+}
+
+
+//values close to 100 produce 5Hz flicker, which looks very candle-y
+//Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
+//and https://cpldcpu.wordpress.com/2016/01/05/reverse-engineering-a-real-candle/
+
+uint16_t WS2812FX::mode_candle()
+{
+  if (SEGENV.call == 0) {
+    SEGENV.aux0 = 128; SEGENV.aux1 = 132; SEGENV.step = 1;
+  }
+  bool newTarget = false;
+  
+  uint8_t s = SEGENV.aux0, target = SEGENV.aux1, fadeStep = SEGENV.step;
+  
+  if (target > s) { //fade up
+    s = qadd8(s, fadeStep);
+    if (s >= target) newTarget = true;
+  } else {
+    s = qsub8(s, fadeStep);
+    if (s <= target) newTarget = true;
+  }
+  SEGENV.aux0 = s;
+
+  for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
+    setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), 255-s));
+  }
+
+  if (newTarget)
+  {
+    uint8_t valrange = SEGMENT.intensity;
+    uint8_t rndval = valrange >> 1;
+    target = random8(rndval) + random8(rndval);
+    if (target < (rndval >> 1)) target = (rndval >> 1) + random8(rndval);
+    uint8_t offset = (255 - valrange) >> 1;
+    target += offset;
+
+    uint8_t dif = (target > s) ? target - s : s - target;
+  
+    //how much to move closer to target per frame
+    fadeStep = dif >> 2; //mode called every ~25 ms, so 4 frames to have a new target every 100ms
+    if (fadeStep == 0) fadeStep = 1;
+    
+    SEGENV.step = fadeStep;
+    SEGENV.aux1 = target;
+  }
+
+  return FRAMETIME;
 }

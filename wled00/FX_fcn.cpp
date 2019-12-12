@@ -711,7 +711,8 @@ void WS2812FX::handle_palette(void)
   _segment_index_palette_last = _segment_index;
 
   byte paletteIndex = SEGMENT.palette;
-  if ((SEGMENT.mode >= FX_MODE_METEOR) && SEGMENT.palette == 0) paletteIndex = 4;
+  if (SEGMENT.mode == FX_MODE_GLITTER && paletteIndex == 0) paletteIndex = 11;
+  if (SEGMENT.mode >= FX_MODE_METEOR && paletteIndex == 0) paletteIndex = 4;
   
   switch (paletteIndex)
   {
@@ -725,6 +726,7 @@ void WS2812FX::handle_palette(void)
         case FX_MODE_NOISE16_2  : targetPalette = gGradientPalettes[30]; break;//Blue cyan yellow
         case FX_MODE_NOISE16_3  : targetPalette = gGradientPalettes[22]; break;//heat palette
         case FX_MODE_NOISE16_4  : targetPalette = gGradientPalettes[13]; break;//landscape 33
+        //case FX_MODE_GLITTER    : targetPalette = RainbowColors_p;       break;
         
         default: targetPalette = PartyColors_p; break;//palette, bpm
       }
@@ -763,7 +765,8 @@ void WS2812FX::handle_palette(void)
     case 5: {//based on primary + secondary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
-      targetPalette = CRGBPalette16(sec,prim,CRGB::White); break;}
+      CRGB ter  = col_to_crgb(SEGCOLOR(2));
+      targetPalette = CRGBPalette16(ter,sec,prim); break;}
     case 6: //Party colors
       targetPalette = PartyColors_p; break;
     case 7: //Cloud colors
