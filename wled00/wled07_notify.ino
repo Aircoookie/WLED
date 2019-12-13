@@ -38,7 +38,7 @@ void notify(byte callMode, bool followUp=false)
   //0: old 1: supports white 2: supports secondary color
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 
-  udpOut[11] = 6; 
+  udpOut[11] = 7; 
   udpOut[12] = colSec[0];
   udpOut[13] = colSec[1];
   udpOut[14] = colSec[2];
@@ -47,10 +47,12 @@ void notify(byte callMode, bool followUp=false)
   udpOut[17] = (transitionDelay >> 0) & 0xFF;
   udpOut[18] = (transitionDelay >> 8) & 0xFF;
   udpOut[19] = effectPalette;
-  /*udpOut[20] = colTer[0];
-  udpOut[21] = colTer[1];
-  udpOut[22] = colTer[2];
-  udpOut[23] = colTer[3];*/
+  uint32_t colTer = strip.getSegment(strip.getMainSegmentId()).colors[2];
+  udpOut[20] = (t >> 16) & 0xFF;
+  udpOut[21] = (t >>  8) & 0xFF;
+  udpOut[22] = (t >>  0) & 0xFF;
+  udpOut[23] = (t >> 24) & 0xFF;
+  
   udpOut[24] = followUp;
   uint32_t t = millis() + strip.timebase;
   udpOut[25] = (t >> 24) & 0xFF;
@@ -196,13 +198,10 @@ void handleNotifications()
             t -= millis();
             strip.timebase = t;
           }
-          /*if (udpIn[11] > 6)
+          if (udpIn[11] > 6)
           {
-            colTer[0] = udpIn[20];
-            colTer[1] = udpIn[21];
-            colTer[2] = udpIn[22];
-            colSec[3] = udpIn[23];
-          }*/
+            strip.setColor(2, udpIn[20], udpIn[21], udpIn[22], udpIn[23]); //tertiary color
+          }
         }
       }
 
