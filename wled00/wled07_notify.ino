@@ -48,10 +48,10 @@ void notify(byte callMode, bool followUp=false)
   udpOut[18] = (transitionDelay >> 8) & 0xFF;
   udpOut[19] = effectPalette;
   uint32_t colTer = strip.getSegment(strip.getMainSegmentId()).colors[2];
-  udpOut[20] = (t >> 16) & 0xFF;
-  udpOut[21] = (t >>  8) & 0xFF;
-  udpOut[22] = (t >>  0) & 0xFF;
-  udpOut[23] = (t >> 24) & 0xFF;
+  udpOut[20] = (colTer >> 16) & 0xFF;
+  udpOut[21] = (colTer >>  8) & 0xFF;
+  udpOut[22] = (colTer >>  0) & 0xFF;
+  udpOut[23] = (colTer >> 24) & 0xFF;
   
   udpOut[24] = followUp;
   uint32_t t = millis() + strip.timebase;
