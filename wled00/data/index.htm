@@ -38,6 +38,7 @@ body {
   height: 100%;
   width: 100%;
   position: fixed;
+  overscroll-behavior: none;
 }
 
 p {
@@ -173,9 +174,9 @@ button {
   width: 100%;
   width: calc(var(--n)*100%);
   height: calc(100% - var(--tp, 60px) - var(--bt, 60px));
-  margin-bottom: 62px;
   margin-top: var(--tp, 60px);
   transform: translate(calc(var(--tx, 0px) + var(--i, 0)/var(--n)*-100%));
+  overscroll-behavior: none;
 }
 
 .tabcontent {
@@ -245,11 +246,8 @@ button {
   text-align: center;
   border-radius: 2px;
   padding: 16px;
-  padding: 16px;
-  padding: 16px;
-  padding: 16px;
   position: fixed;
-  z-index: 1;
+  z-index: 2;
   left: 50%;
   transform: translateX(-50%);
   bottom: 100px;
@@ -766,7 +764,7 @@ input[type=number]::-webkit-outer-spin-button {
 !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?module.exports=t():"function"==typeof define&&define.amd?define("RangeTouch",t):e.RangeTouch=t()}(this,function(){"use strict";function e(e,t){for(var n=0;n<t.length;n++){var r=t[n];r.enumerable=r.enumerable||!1,r.configurable=!0,"value"in r&&(r.writable=!0),Object.defineProperty(e,r.key,r)}}var t={addCSS:!0,thumbWidth:15,watch:!0};var n=function(e){return null!=e?e.constructor:null},r=function(e,t){return!!(e&&t&&e instanceof t)},u=function(e){return null==e},i=function(e){return n(e)===Object},o=function(e){return n(e)===String},a=function(e){return Array.isArray(e)},c=function(e){return r(e,NodeList)},l={nullOrUndefined:u,object:i,number:function(e){return n(e)===Number&&!Number.isNaN(e)},string:o,boolean:function(e){return n(e)===Boolean},function:function(e){return n(e)===Function},array:a,nodeList:c,element:function(e){return r(e,Element)},event:function(e){return r(e,Event)},empty:function(e){return u(e)||(o(e)||a(e)||c(e))&&!e.length||i(e)&&!Object.keys(e).length}};function s(e,t){if(1>t){var n=function(e){var t="".concat(e).match(/(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/);return t?Math.max(0,(t[1]?t[1].length:0)-(t[2]?+t[2]:0)):0}(t);return parseFloat(e.toFixed(n))}return Math.round(e/t)*t}return function(){function n(e,r){(function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")})(this,n),l.element(e)?this.element=e:l.string(e)&&(this.element=document.querySelector(e)),l.element(this.element)&&l.empty(this.element.rangeTouch)&&(this.config=Object.assign({},t,r),this.init())}return r=n,i=[{key:"setup",value:function(e){var r=1<arguments.length&&void 0!==arguments[1]?arguments[1]:{},u=null;if(l.empty(e)||l.string(e)?u=Array.from(document.querySelectorAll(l.string(e)?e:'input[type="range"]')):l.element(e)?u=[e]:l.nodeList(e)?u=Array.from(e):l.array(e)&&(u=e.filter(l.element)),l.empty(u))return null;var i=Object.assign({},t,r);l.string(e)&&i.watch&&new MutationObserver(function(t){Array.from(t).forEach(function(t){Array.from(t.addedNodes).forEach(function(t){l.element(t)&&function(e,t){return function(){return Array.from(document.querySelectorAll(t)).includes(this)}.call(e,t)}(t,e)&&new n(t,i)})})}).observe(document.body,{childList:!0,subtree:!0});return u.map(function(e){return new n(e,r)})}},{key:"enabled",get:function(){return"ontouchstart"in document.documentElement}}],(u=[{key:"init",value:function(){n.enabled&&(this.config.addCSS&&(this.element.style.userSelect="none",this.element.style.webKitUserSelect="none",this.element.style.touchAction="manipulation"),this.listeners(!0),this.element.rangeTouch=this)}},{key:"destroy",value:function(){n.enabled&&(this.listeners(!1),this.element.rangeTouch=null)}},{key:"listeners",value:function(e){var t=this,n=e?"addEventListener":"removeEventListener";["touchstart","touchmove","touchend"].forEach(function(e){t.element[n](e,function(e){return t.set(e)},!1)})}},{key:"get",value:function(e){if(!n.enabled||!l.event(e))return null;var t,r=e.target,u=e.changedTouches[0],i=parseFloat(r.getAttribute("min"))||0,o=parseFloat(r.getAttribute("max"))||100,a=parseFloat(r.getAttribute("step"))||1,c=r.getBoundingClientRect(),f=100/c.width*(this.config.thumbWidth/2)/100;return 0>(t=100/c.width*(u.clientX-c.left))?t=0:100<t&&(t=100),50>t?t-=(100-2*t)*f:50<t&&(t+=2*(t-50)*f),i+s(t/100*(o-i),a)}},{key:"set",value:function(e){n.enabled&&l.event(e)&&!e.target.disabled&&(e.preventDefault(),e.target.value=this.get(e),function(e,t){if(e&&t){var n=new Event(t);e.dispatchEvent(n)}}(e.target,"touchend"===e.type?"change":"input"))}}])&&e(r.prototype,u),i&&e(r,i),n;var r,u,i}()});
 //page js
 var ps = false, noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, syncSend = false, isRgbw = false;
+var isOn = false, nlA = false, isLv = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
 var expanded = [false];
 var nlDur = 60;
@@ -835,14 +833,14 @@ function showToast(text, error = false) {
   x.style.animation = 'none';
   x.offsetHeight;
   x.style.animation = null; 
-  timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+  timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 }
 
 function showErrorToast() {
   showToast('Connection to light failed. Please refresh the page. If the issue persists, reboot your ESP.', true);
 }
 function clearErrorToast() {
-  d.getElementById("toast").className.replace("error", "");
+  d.getElementById("toast").className = d.getElementById("toast").className.replace("error", "");
 }
 
 function populateSegments(s)
@@ -866,8 +864,8 @@ function populateSegments(s)
       </label>
       <i class="icons slider-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
       <div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
-        Start LED: <input class="starts" id="seg${i}s" class="noslide" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(this)"><br>
-        Stop LED: <input class="stops botpad" id="seg${i}e" class="noslide" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(this)">
+        Start LED: <input class="starts noslide" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(this)"><br>
+        Stop LED: <input class="stops noslide botpad" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(this)">
         <span class="h">(${inst.stop - inst.start} LED${inst.stop - inst.start > 1 ? "s":""})</span><br>
         <i class="icons slider-icon cnf" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i>
         <i class="icons slider-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
@@ -951,13 +949,12 @@ function requestJson(command, verbose = true) {
   e2 = d.getElementById('selectPalette');
 
   url = command ? '/json/state':'/json';
-  //url = command ? 'http://10.10.1.26/json/state':'http://10.10.1.26/json';
+  
   type = command ? 'post':'get';
   if (command)
   {
     command.v = verbose;
     req = JSON.stringify(command);
-    console.log(req);
   }
   fetch
   (url, {
@@ -977,7 +974,8 @@ function requestJson(command, verbose = true) {
     clearTimeout(jsonTimeout);
     jsonTimeout = null;
     clearErrorToast();
-    if (json.success) return; //non-verbose response
+    if (!json) showToast('Empty response', true);
+    if (json.success) return;
     var s = json;
     if (!command) {
       var x='',y='<option value="0">Default</option>';
@@ -999,10 +997,11 @@ function requestJson(command, verbose = true) {
       var name = info.name;
       d.getElementById('namelabel').innerHTML = name;
       if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-      if (json.info.live) name = "(Live) " + name;
+      if (info.live) name = "(Live) " + name;
       d.title = name;
       isRgbw = info.leds.wv;
       ledCount = info.leds.count;
+      syncTglRecv = info.str;
       maxSeg = info.leds.maxseg;
       s = json.state;
     }
@@ -1026,6 +1025,11 @@ function requestJson(command, verbose = true) {
       if(s.seg[i].sel) {selc = ind; break;} ind++;
     }
     var i=s.seg[selc];
+    if (!i) {
+      showToast('No Segments!', true);
+      updateUI();
+      return;
+    }
     var cd = d.getElementById('csl').children;
     for (e = 2; e >= 0; e--)
     {
@@ -1039,17 +1043,14 @@ function requestJson(command, verbose = true) {
     d.getElementById('sliderIntensity').value = i.ix;
 
     d.getElementById('fxb' + selectedFx).style.backgroundColor = "#333";
-    var f = i.fx;
     selectedFx = i.fx;
     e2.value = i.pal;
-    isPaused = i.psd;
     if (!command) d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
 
     if (s.error) showToast('WLED error ' + s.error, true);
     updateUI();
   })
   .catch(function (error) {
-    console.log('Request failed', error);
     showToast(error, true);
   })
 }
@@ -1081,7 +1082,8 @@ function toggleSync() {
   } else {
     showToast('This light and other lights in the network will no longer sync.');
   }
-  var obj = {"udpn": {"send": syncSend, "recv": syncSend}};
+  var obj = {"udpn": {"send": syncSend}};
+  if (syncTglRecv) obj.udpn.recv = syncSend;
   requestJson(obj);
 }
 
@@ -1103,8 +1105,8 @@ function makeSeg() {
         Segment ${lowestUnused} (new)
       </label>
       <div class="segin expanded">
-        Start LED: <input class="starts" id="seg${lowestUnused}s" class="noslide" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(this)"><br>
-        Stop LED: <input class="stops" id="seg${lowestUnused}e" class="noslide" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(this)">
+        Start LED: <input class="starts noslide" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(this)"><br>
+        Stop LED: <input class="stops noslide" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(this)">
         <span class="h">(${ledCount - ns} LEDs)</span><br>
         <i class="icons slider-icon cnf" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
       </div>
@@ -1113,7 +1115,8 @@ function makeSeg() {
 }
 
 function resetUtil() {
-  d.getElementById('segutil').innerHTML = '<button class="btn btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>';
+  var cn = `<button class="btn btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>`;
+  d.getElementById('segutil').innerHTML = cn;
 }
 
 function selSeg(s){
@@ -1123,15 +1126,18 @@ function selSeg(s){
 }
 
 function setSeg(s){
-  var start = d.getElementById(`seg${s}s`).value;
-  var stop  = d.getElementById(`seg${s}e`).value;
-  var obj = {"seg": {"id": s, "start": parseInt(start), "stop": parseInt(stop)}};
-  console.log(obj);
+  var start = parseInt(d.getElementById(`seg${s}s`).value);
+  var stop  = parseInt(d.getElementById(`seg${s}e`).value);
+  if (stop <= start) {delSeg(s); return;};
+  var obj = {"seg": {"id": s, "start": start, "stop": stop}};
   requestJson(obj);
 }
 
 function delSeg(s){
-  if (segCount < 2) return;
+  if (segCount < 2) {
+    showToast("You need to have multiple segments in order to delete one.");
+    return;
+  }
   expanded[s] = false;
   segCount--;
   var obj = {"seg": {"id": s, "stop": 0}};
@@ -1140,7 +1146,6 @@ function delSeg(s){
 
 function setRev(s){
   var rev = d.getElementById(`seg${s}rev`).checked;
-  console.log(rev);
   var obj = {"seg": {"id": s, "rev": rev}};
   requestJson(obj);
 }

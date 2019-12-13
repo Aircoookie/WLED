@@ -179,7 +179,7 @@ void handleNotifications()
         col[0] = udpIn[3];
         col[1] = udpIn[4];
         col[2] = udpIn[5];
-        if (udpIn[11] > 0) //check if sending modules white val is inteded
+        if (udpIn[11] > 0) //sending module's white val is intended
         {
           col[3] = udpIn[10];
           if (udpIn[11] > 1)
@@ -192,7 +192,7 @@ void handleNotifications()
           if (udpIn[11] > 5)
           {
             uint32_t t = (udpIn[25] << 24) | (udpIn[26] << 16) | (udpIn[27] << 8) | (udpIn[28]);
-            t -= 2;
+            t += 2;
             t -= millis();
             strip.timebase = t;
           }

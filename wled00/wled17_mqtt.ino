@@ -106,7 +106,7 @@ void publishMqtt()
 bool initMqtt()
 {
   lastMqttReconnectAttempt = millis();
-  if (mqttServer[0] == 0 || !WLED_CONNECTED) return false;
+  if (!mqttEnabled || mqttServer[0] == 0 || !WLED_CONNECTED) return false;
 
   if (mqtt == nullptr) {
     mqtt = new AsyncMqttClient();

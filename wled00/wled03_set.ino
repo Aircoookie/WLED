@@ -113,6 +113,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 3)
   {
     strlcpy(serverDescription, request->arg("DS").c_str(), 33);
+    syncToggleReceive = request->hasArg("ST");
   }
 
   //SYNC
@@ -153,6 +154,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
 
     #ifdef WLED_ENABLE_MQTT
+    mqttEnabled = request->hasArg("MQ");
     strlcpy(mqttServer, request->arg("MS").c_str(), 33);
     t = request->arg("MQPORT").toInt();
     if (t > 0) mqttPort = t;

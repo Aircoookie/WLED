@@ -98,7 +98,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1912111
+#define VERSION 1912121
 char versionString[] = "0.9.0-b1";
 
 
@@ -148,7 +148,6 @@ bool fadeTransition = true;                   //enable crossfading color transit
 bool enableSecTransition = true;              //also enable transition for secondary color
 uint16_t transitionDelay = 750;               //default crossfade duration in ms
 
-//bool strip.reverseMode  = false;            //flip entire LED strip (reverses all effect directions) --> edit in WS2812FX.h
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
 uint8_t disableNLeds = 0;                     //disables N LEDs between active nodes. (Useful for spacing out lights for more traditional christmas light look)
 byte briMultiplier =  100;                    //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
@@ -156,6 +155,7 @@ byte briMultiplier =  100;                    //% of brightness to set (to limit
 
 //User Interface CONFIG
 char serverDescription[33] = "WLED";          //Name of module
+bool syncToggleReceive = false;               //UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 
 //Sync CONFIG
@@ -189,6 +189,7 @@ bool arlsForceMaxBri = false;                 //enable to force max brightness i
 uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol
 bool e131Multicast = false;
 
+bool mqttEnabled = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
 char mqttGroupTopic[33] = "wled/all";         //second MQTT topic (for example to group devices)
 char mqttServer[33] = "";                     //both domains and IPs should work (no SSL)

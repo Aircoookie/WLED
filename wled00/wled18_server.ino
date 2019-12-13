@@ -68,7 +68,7 @@ void initServer()
   
   server.on("/settings/wifi", HTTP_POST, [](AsyncWebServerRequest *request){
     if (!(wifiLock && otaLock)) handleSettingsSet(request, 1);
-    serveMessage(request, 200,"WiFi settings saved.","Reconnecting now...",129);
+    serveMessage(request, 200,"WiFi settings saved.","Please connect to the new IP (if changed)",129);
     forceReconnect = true;
   });
 
@@ -79,7 +79,7 @@ void initServer()
 
   server.on("/settings/ui", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 3);
-    serveMessage(request, 200,"UI settings saved.","Reloading to apply theme...",122);
+    serveMessage(request, 200,"UI settings saved.","Redirecting...",1);
   });
 
   server.on("/settings/sync", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -94,7 +94,7 @@ void initServer()
 
   server.on("/settings/sec", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 6);
-    if (!doReboot) serveMessage(request, 200,"Security settings saved.","Rebooting now, please wait ~10 seconds...",129);
+    if (!doReboot) serveMessage(request, 200,"Security settings saved.","Rebooting, please wait ~10 seconds...",129);
     doReboot = true;
   });
 

@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 13
+#define EEPVER 14
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -20,7 +20,8 @@
 //10-> 0.8.2
 //11-> 0.8.5-dev #mqttauth @TimothyBrown
 //12-> 0.8.7-dev
-//13-> 0.9.0
+//13-> 0.9.0-dev
+//14-> 0.9.0-b1
 
 void commit()
 {
@@ -152,7 +153,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(394, abs(utcOffsetSecs) & 0xFF);
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
-  //397 was initLedsLast
+  EEPROM.write(397, syncToggleReceive);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
   EEPROM.write(399, !enableSecTransition);
 
@@ -241,6 +242,7 @@ void saveSettingsToEEPROM()
     EEPROM.write(2290 + i, timerMacro[i]  );
   }
 
+  EEPROM.write(2299, mqttEnabled);
   writeStringToEEPROM(2300, mqttServer, 32);
   writeStringToEEPROM(2333, mqttDeviceTopic, 32);
   writeStringToEEPROM(2366, mqttGroupTopic, 32);
@@ -461,6 +463,14 @@ void loadSettingsFromEEPROM(bool first)
   if (lastEEPROMversion > 12)
   {
     readStringFromEEPROM(990, ntpServerName, 32);
+  }
+  if (lastEEPROMversion > 13)
+  {
+    mqttEnabled = EEPROM.read(2299);
+    syncToggleReceive = EEPROM.read(397);
+  } else {
+    mqttEnabled = true;
+    syncToggleReceive = false;
   }
 
   receiveDirect = !EEPROM.read(2200);
