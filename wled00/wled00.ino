@@ -33,7 +33,10 @@
 //#define WLED_DEBUG
 
 //to toggle using analog RGB or RGBW led strips (un)comment the following line
-//#define WLED_DISABLE_ANALOG_LEDS
+//#define WLED_USE_ANALOG_LEDS
+
+//to toggle using 5CH analog RGBWS led strips (un)comment the following line
+//#define WLED_USE_5CH_LEDS
 
 //library inclusions
 #include <Arduino.h>
@@ -88,7 +91,7 @@
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
-  #define WLED_DISABLE_ANALOG_LEDS  // Solid RGBW not implemented for ESP32 yet
+  #undef WLED_USE_ANALOG_LEDS  // Solid RGBW not implemented for ESP32 yet
  /*#ifndef WLED_DISABLE_INFRARED
   #include <IRremote.h>
  #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
