@@ -173,7 +173,7 @@ bool useHSBDefault = useHSB;
 
 //Sync CONFIG
 bool buttonEnabled =  true;
-bool irEnabled     = true;                   //Infrared receiver
+byte irEnabled     =  1;                      //Infrared receiver
 
 uint16_t udpPort    = 21324;                  //WLED notifier default port
 uint16_t udpRgbPort = 19446;                  //Hyperion port
