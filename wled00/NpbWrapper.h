@@ -5,8 +5,13 @@
 //PIN CONFIGURATION
 #define LEDPIN 2  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 //#define USE_APA102 // Uncomment for using APA102 LEDs.
-#define BTNPIN -1 //button pin. Needs to have pullup (gpio0 recommended)
-#define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#ifdef WLED_USE_H801
+  #define BTNPIN -1 //button pin. Needs to have pullup (gpio0 recommended)
+  #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#else
+  #define BTNPIN  0 //button pin. Needs to have pullup (gpio0 recommended)
+  #define IR_PIN  4 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#endif
 #define RLYPIN -1 //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
 #define AUXPIN -1 //debug auxiliary output pin (-1 to disable)
 
@@ -20,20 +25,21 @@
  #endif
 #endif
 
-#ifndef WLED_DISABLE_ANALOG_LEDS
+#ifdef WLED_USE_ANALOG_LEDS
   //PWM pins - PINs 15,13,12,14 (W2 = 04)are used with H801 Wifi LED Controller
-  #define RPIN 15   //R pin for analog LED strip   
-  #define GPIN 13   //G pin for analog LED strip
-  #define BPIN 12   //B pin for analog LED strip
-  #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
-  #define W2PIN 04  //W2 pin for analog LED strip 
-  //
-  /*PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-  #define RPIN 5   //R pin for analog LED strip   
-  #define GPIN 12   //G pin for analog LED strip
-  #define BPIN 13   //B pin for analog LED strip
-  #define WPIN 15   //W pin for analog LED strip (W1: 14, W2: 04)
-  */
+  #ifdef WLED_USE_H801
+    #define RPIN 15   //R pin for analog LED strip   
+    #define GPIN 13   //G pin for analog LED strip
+    #define BPIN 12   //B pin for analog LED strip
+    #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
+    #define W2PIN 04  //W2 pin for analog LED strip 
+  #else
+  //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
+    #define RPIN 5   //R pin for analog LED strip   
+    #define GPIN 12   //G pin for analog LED strip
+    #define BPIN 15   //B pin for analog LED strip
+    #define WPIN 13   //W pin for analog LED strip (W1: 14, W2: 04)
+  #endif
 #endif
 
 //automatically uses the right driver method for each platform
@@ -120,7 +126,7 @@ public:
         _pGrbw->Begin();
       break;
 
-        #ifndef WLED_DISABLE_ANALOG_LEDS      
+        #ifdef WLED_USE_ANALOG_LEDS      
           //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
           pinMode(RPIN, OUTPUT);
           pinMode(GPIN, OUTPUT);
@@ -140,7 +146,7 @@ public:
     }
   }
 
-#ifndef WLED_DISABLE_ANALOG_LEDS      
+#ifdef WLED_USE_ANALOG_LEDS      
     void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w, uint8_t w2=0)
     {
       analogWrite(RPIN, r);
@@ -164,7 +170,7 @@ public:
     {
       case NeoPixelType_Grb: {
         _pGrb->Show();
-        #ifndef WLED_DISABLE_ANALOG_LEDS      
+        #ifdef WLED_USE_ANALOG_LEDS      
           RgbColor color = _pGrb->GetPixelColor(0);
           b = _pGrb->GetBrightness();
           SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, 0);
@@ -173,7 +179,7 @@ public:
       break;
       case NeoPixelType_Grbw: {
         _pGrbw->Show();
-        #ifndef WLED_DISABLE_ANALOG_LEDS      
+        #ifdef WLED_USE_ANALOG_LEDS      
           RgbwColor colorW = _pGrbw->GetPixelColor(0);
           b = _pGrbw->GetBrightness();
           // check color values for Warm / COld white mix (for RGBW)  // EsplanexaDevice.cpp
