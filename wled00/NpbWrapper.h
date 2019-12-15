@@ -26,6 +26,7 @@
   #define GPIN 13   //G pin for analog LED strip
   #define BPIN 12   //B pin for analog LED strip
   #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
+  #define W2PIN 04  //W2 pin for analog LED strip 
   //
   /*PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
   #define RPIN 5   //R pin for analog LED strip   
@@ -125,8 +126,12 @@ public:
           pinMode(GPIN, OUTPUT);
           pinMode(BPIN, OUTPUT);
           switch (_type) {
-            case NeoPixelType_Grb:                          break;
-            case NeoPixelType_Grbw: pinMode(WPIN, OUTPUT);  break;
+            case NeoPixelType_Grb:                                                    break;
+            #ifdef WLED_USE_5CH_LEDS
+              case NeoPixelType_Grbw: pinMode(WPIN, OUTPUT); pinMode(W2PIN, OUTPUT);  break;
+            #else
+              case NeoPixelType_Grbw: pinMode(WPIN, OUTPUT);                          break;
+            #endif
           }
           analogWriteRange(255);  //same range as one RGB channel
           analogWriteFreq(880);   //PWM frequency proven as good for LEDs
@@ -136,14 +141,18 @@ public:
   }
 
 #ifndef WLED_DISABLE_ANALOG_LEDS      
-    void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w)
+    void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w, uint8_t w2=0)
     {
       analogWrite(RPIN, r);
       analogWrite(GPIN, g);
       analogWrite(BPIN, b);
       switch (_type) {
-        case NeoPixelType_Grb:                        break;
-        case NeoPixelType_Grbw: analogWrite(WPIN, w); break;
+        case NeoPixelType_Grb:                                                  break;
+        #ifdef WLED_USE_5CH_LEDS
+          case NeoPixelType_Grbw: analogWrite(WPIN, w); analogWrite(W2PIN, w2); break;
+        #else
+          case NeoPixelType_Grbw: analogWrite(WPIN, w);                         break;
+        #endif
       }
     }
 #endif
@@ -167,7 +176,24 @@ public:
         #ifndef WLED_DISABLE_ANALOG_LEDS      
           RgbwColor colorW = _pGrbw->GetPixelColor(0);
           b = _pGrbw->GetBrightness();
-          SetRgbwPwm(colorW.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, colorW.W * b / 255);
+          // check color values for Warm / COld white mix (for RGBW)  // EsplanexaDevice.cpp
+          #ifdef WLED_USE_5CH_LEDS
+            if        (colorW.R == 255 & colorW.G == 255 && colorW.B == 255 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0,                  0, colorW.W * b / 255);
+            } else if (colorW.R == 127 & colorW.G == 127 && colorW.B == 127 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0, colorW.W * b / 512, colorW.W * b / 255);
+            } else if (colorW.R ==   0 & colorW.G ==   0 && colorW.B ==   0 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0, colorW.W * b / 255,                  0);
+            } else if (colorW.R == 130 & colorW.G ==  90 && colorW.B ==   0 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0, colorW.W * b / 255, colorW.W * b / 512);
+            } else if (colorW.R == 255 & colorW.G == 153 && colorW.B ==   0 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0, colorW.W * b / 255,                  0);
+            } else {  // not only white colors
+              SetRgbwPwm(colorW.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, colorW.W * b / 255);
+            }
+          #else
+            SetRgbwPwm(colorW.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, colorW.W * b / 255);
+          #endif         
         #endif
       }
       break;
