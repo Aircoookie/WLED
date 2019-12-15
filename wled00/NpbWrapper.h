@@ -34,11 +34,11 @@
     #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
     #define W2PIN 04  //W2 pin for analog LED strip 
   #else
-  //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-    #define RPIN 5   //R pin for analog LED strip   
+  //PWM pins - PINs 12,5,13,15 are used with Magic Home LED Controller
     #define GPIN 12   //G pin for analog LED strip
+    #define RPIN 5   //R pin for analog LED strip   
+    #define WPIN 13   //W pin for analog LED strip
     #define BPIN 15   //B pin for analog LED strip
-    #define WPIN 13   //W pin for analog LED strip (W1: 14, W2: 04)
   #endif
 #endif
 
