@@ -5,7 +5,7 @@
 [![](https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED/wiki)
 [![](https://img.shields.io/badge/app-wled-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED-App)
 
-## Welcome to the modded version of the brilliant project WLED!
+## Welcome to the modded version of the brilliant project WLED
 
 The Mod enables **analog RGBW stripes** instead of digital ones.
 
@@ -14,33 +14,34 @@ The Mod enables **analog RGBW stripes** instead of digital ones.
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs!
 
 ### Features:
-- WS2812FX library integrated for 80+ special effects  
-- FastLED noise effects and palettes  
-- Customizable Mobile and desktop UI with color and effect controls  
-- Settings page - configuration over network  
-- Access Point and station mode - automatic failsafe AP  
-- Support for RGBW strips  
-- 25 user presets to save and load colors/effects easily, supports cycling through them.  
-- Macro functions to automatically execute API calls  
-- Nightlight function (gradually dims down)  
-- Full OTA software updatability (HTTP + ArduinoOTA), password protectable  
-- Configurable analog clock + support for the Cronixie kit by Diamex  
-- Configurable Auto Brightness limit for safer operation  
+  - WS2812FX library integrated for almost 90 special effects  
+  - FastLED noise effects and palettes  
+  - Modern UI with color, effect and segment controls  
+  - Segments to set different effects and colors to parts of the LEDs  
+  - Settings page - configuration over network  
+  - Access Point and station mode - automatic failsafe AP  
+  - Support for RGBW strips  
+  - 16 user presets to save and load colors/effects easily, supports cycling through them.  
+  - Macro functions to automatically execute API calls  
+  - Nightlight function (gradually dims down)  
+  - Full OTA software updatability (HTTP + ArduinoOTA), password protectable  
+  - Configurable analog clock + support for the Cronixie kit by Diamex  
+  - Configurable Auto Brightness limit for safer operation
 
 ### Supported light control interfaces:
-- WLED app for Android and iOS  
-- JSON and HTTP request APIs  
-- MQTT  
-- Blynk IoT  
-- E1.31  
-- Hyperion  
-- UDP realtime  
-- Alexa voice control (including dimming and color)  
-- Sync to Philips hue lights  
-- Adalight (PC ambilight via serial)  
-- Sync color of multiple WLED devices (UDP notifier)  
-- Infrared remotes (24-key RGB, receiver required)  
-- Simple timers/schedules (time from NTP, timezones/DST supported)  
+  - WLED app for Android and iOS  
+  - JSON and HTTP request APIs  
+  - MQTT  
+  - Blynk IoT  
+  - E1.31  
+  - Hyperion  
+  - UDP realtime  
+  - Alexa voice control (including dimming and color)  
+  - Sync to Philips hue lights  
+  - Adalight (PC ambilight via serial)  
+  - Sync color of multiple WLED devices (UDP notifier)  
+  - Infrared remotes (24-key RGB, receiver required)  
+  - Simple timers/schedules (time from NTP, timezones/DST supported)  
 
 ### Quick start guide and documentation:
 

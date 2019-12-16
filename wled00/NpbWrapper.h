@@ -12,7 +12,11 @@
   #define BTNPIN  0 //button pin. Needs to have pullup (gpio0 recommended)
   #define IR_PIN  4 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
 #endif
-#define RLYPIN -1 //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
+#ifdef WLED_USE_ANALOG_LEDS
+  #define RLYPIN -1 //disable RLYPIN as it will be used for the RGB-PINs
+#else
+  #define RLYPIN 12 //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
+#endif
 #define AUXPIN -1 //debug auxiliary output pin (-1 to disable)
 
 #define RLYMDE 1  //mode for relay, 0: LOW if LEDs are on 1: HIGH if LEDs are on
