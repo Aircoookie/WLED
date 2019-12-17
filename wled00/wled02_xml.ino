@@ -243,6 +243,7 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == 3)
   {
     sappends('s',"DS",serverDescription);
+    sappend('c',"ST",syncToggleReceive);
   }
 
   if (subPage == 4)
@@ -271,6 +272,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
 
     #ifdef WLED_ENABLE_MQTT
+    sappend('c',"MQ",mqttEnabled);
     sappends('s',"MS",mqttServer);
     sappend('v',"MQPORT",mqttPort);
     sappends('s',"MQUSER",mqttUser);
