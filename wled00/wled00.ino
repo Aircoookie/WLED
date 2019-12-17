@@ -296,6 +296,7 @@ uint32_t nightlightDelayMs = 10;
 uint8_t nightlightDelayMinsDefault = nightlightDelayMins;
 unsigned long nightlightStartTime;
 byte briNlT = 0;                              //current nightlight brightness
+byte colNlT[]{0, 0, 0, 0};                    //current nightlight color
 
 //brightness
 unsigned long lastOnTime = 0;
