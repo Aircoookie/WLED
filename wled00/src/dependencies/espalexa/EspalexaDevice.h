@@ -47,7 +47,10 @@ public:
   uint32_t getKelvin();
   float getX();
   float getY();
+  float minf (float v, float w);
+  float maxf (float v, float w);
   uint32_t getRGB();
+  uint8_t getW();
   uint8_t getR();
   uint8_t getG();
   uint8_t getB();
@@ -63,6 +66,7 @@ public:
   void setColor(uint16_t hue, uint8_t sat);
   void setColorXY(float x, float y);
   void setColor(uint8_t r, uint8_t g, uint8_t b);
+  void RGBtoRGBW(byte* rgb);
   
   void doCallback();
   

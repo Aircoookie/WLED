@@ -187,7 +187,7 @@ const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
 On/Off button enabled: <input type="checkbox" name="BT"><br>
-Infrared receiver enabled: <input type="checkbox" name="IR"><br>
+Infrared receiver type (0 = disabled): <input name="IR" type="number" min="0" max="4" required><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>

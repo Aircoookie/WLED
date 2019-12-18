@@ -32,6 +32,11 @@
 //to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
 
+//to toggle using analog RGB or RGBW led strips (un)comment the following line
+//#define WLED_USE_ANALOG_LEDS
+
+//to toggle using 5CH analog RGBWS led strips (un)comment the following line
+//#define WLED_USE_5CH_LEDS
 
 //library inclusions
 #include <Arduino.h>
@@ -85,6 +90,7 @@
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
+  #undef WLED_USE_ANALOG_LEDS  // Solid RGBW not implemented for ESP32 yet
  /*#ifndef WLED_DISABLE_INFRARED
   #include <IRremote.h>
  #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
@@ -160,7 +166,7 @@ bool syncToggleReceive = false;               //UIs which only have a single but
 
 //Sync CONFIG
 bool buttonEnabled =  true;
-bool irEnabled     = false;                   //Infrared receiver
+byte irEnabled     =  1;                      //Infrared receiver
 
 uint16_t udpPort    = 21324;                  //WLED notifier default port
 uint16_t udpRgbPort = 19446;                  //Hyperion port
@@ -279,6 +285,7 @@ uint32_t nightlightDelayMs = 10;
 uint8_t nightlightDelayMinsDefault = nightlightDelayMins;
 unsigned long nightlightStartTime;
 byte briNlT = 0;                              //current nightlight brightness
+byte colNlT[]{0, 0, 0, 0};                    //current nightlight color
 
 //brightness
 unsigned long lastOnTime = 0;

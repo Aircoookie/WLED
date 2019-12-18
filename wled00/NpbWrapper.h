@@ -5,10 +5,19 @@
 //PIN CONFIGURATION
 #define LEDPIN 2     //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 //#define USE_APA102 // Uncomment for using APA102 LEDs.
-#define BTNPIN 0     //button pin. Needs to have pullup (gpio0 recommended)
-#define IR_PIN 4     //infrared pin (-1 to disable)
-#define RLYPIN 12    //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
-#define AUXPIN -1    //debug auxiliary output pin (-1 to disable)
+#ifdef WLED_USE_H801
+  #define BTNPIN -1 //button pin. Needs to have pullup (gpio0 recommended)
+  #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#else
+  #define BTNPIN  0 //button pin. Needs to have pullup (gpio0 recommended)
+  #define IR_PIN  4 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#endif
+#ifdef WLED_USE_ANALOG_LEDS
+  #define RLYPIN -1 //disable RLYPIN as it will be used for the RGB-PINs
+#else
+  #define RLYPIN 12 //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
+#endif
+#define AUXPIN -1 //debug auxiliary output pin (-1 to disable)
 
 #define RLYMDE 1     //mode for relay, 0: LOW if LEDs are on 1: HIGH if LEDs are on
 
@@ -20,6 +29,22 @@
  #endif
 #endif
 
+#ifdef WLED_USE_ANALOG_LEDS
+  //PWM pins - PINs 15,13,12,14 (W2 = 04)are used with H801 Wifi LED Controller
+  #ifdef WLED_USE_H801
+    #define RPIN 15   //R pin for analog LED strip   
+    #define GPIN 13   //G pin for analog LED strip
+    #define BPIN 12   //B pin for analog LED strip
+    #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
+    #define W2PIN 04  //W2 pin for analog LED strip 
+  #else
+  //PWM pins - PINs 12,5,13,15 are used with Magic Home LED Controller
+    #define GPIN 12   //G pin for analog LED strip
+    #define RPIN 5   //R pin for analog LED strip   
+    #define WPIN 13   //W pin for analog LED strip
+    #define BPIN 15   //B pin for analog LED strip
+  #endif
+#endif
 
 //automatically uses the right driver method for each platform
 #ifdef ARDUINO_ARCH_ESP32
@@ -104,15 +129,84 @@ public:
       #endif
         _pGrbw->Begin();
       break;
+
+        #ifdef WLED_USE_ANALOG_LEDS      
+          //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
+          pinMode(RPIN, OUTPUT);
+          pinMode(GPIN, OUTPUT);
+          pinMode(BPIN, OUTPUT);
+          switch (_type) {
+            case NeoPixelType_Grb:                                                    break;
+            #ifdef WLED_USE_5CH_LEDS
+              case NeoPixelType_Grbw: pinMode(WPIN, OUTPUT); pinMode(W2PIN, OUTPUT);  break;
+            #else
+              case NeoPixelType_Grbw: pinMode(WPIN, OUTPUT);                          break;
+            #endif
+          }
+          analogWriteRange(255);  //same range as one RGB channel
+          analogWriteFreq(880);   //PWM frequency proven as good for LEDs
+        #endif
+
     }
   }
 
+#ifdef WLED_USE_ANALOG_LEDS      
+    void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w, uint8_t w2=0)
+    {
+      analogWrite(RPIN, r);
+      analogWrite(GPIN, g);
+      analogWrite(BPIN, b);
+      switch (_type) {
+        case NeoPixelType_Grb:                                                  break;
+        #ifdef WLED_USE_5CH_LEDS
+          case NeoPixelType_Grbw: analogWrite(WPIN, w); analogWrite(W2PIN, w2); break;
+        #else
+          case NeoPixelType_Grbw: analogWrite(WPIN, w);                         break;
+        #endif
+      }
+    }
+#endif
+
   void Show()
   {
+    byte b;
     switch (_type)
     {
-      case NeoPixelType_Grb:  _pGrb->Show();   break;
-      case NeoPixelType_Grbw: _pGrbw->Show();  break;
+      case NeoPixelType_Grb: {
+        _pGrb->Show();
+        #ifdef WLED_USE_ANALOG_LEDS      
+          RgbColor color = _pGrb->GetPixelColor(0);
+          b = _pGrb->GetBrightness();
+          SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, 0);
+        #endif
+      }
+      break;
+      case NeoPixelType_Grbw: {
+        _pGrbw->Show();
+        #ifdef WLED_USE_ANALOG_LEDS      
+          RgbwColor colorW = _pGrbw->GetPixelColor(0);
+          b = _pGrbw->GetBrightness();
+          // check color values for Warm / COld white mix (for RGBW)  // EsplanexaDevice.cpp
+          #ifdef WLED_USE_5CH_LEDS
+            if        (colorW.R == 255 & colorW.G == 255 && colorW.B == 255 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0,                  0, colorW.W * b / 255);
+            } else if (colorW.R == 127 & colorW.G == 127 && colorW.B == 127 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0, colorW.W * b / 512, colorW.W * b / 255);
+            } else if (colorW.R ==   0 & colorW.G ==   0 && colorW.B ==   0 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0, colorW.W * b / 255,                  0);
+            } else if (colorW.R == 130 & colorW.G ==  90 && colorW.B ==   0 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0, colorW.W * b / 255, colorW.W * b / 512);
+            } else if (colorW.R == 255 & colorW.G == 153 && colorW.B ==   0 && colorW.W == 255) {  
+              SetRgbwPwm(0, 0, 0, colorW.W * b / 255,                  0);
+            } else {  // not only white colors
+              SetRgbwPwm(colorW.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, colorW.W * b / 255);
+            }
+          #else
+            SetRgbwPwm(colorW.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, colorW.W * b / 255);
+          #endif         
+        #endif
+      }
+      break;
     }
   }
   
