@@ -37,7 +37,6 @@
     #undef BTNPIN
     #undef IR_PIN
     #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
-#endif
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
     #define RPIN 5   //R pin for analog LED strip   
