@@ -32,7 +32,6 @@
 //to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
 
-
 //library inclusions
 #include <Arduino.h>
 #ifdef ESP8266
@@ -85,6 +84,7 @@
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
+  #undef WLED_USE_ANALOG_LEDS  // Solid RGBW not implemented for ESP32 yet
  /*#ifndef WLED_DISABLE_INFRARED
   #include <IRremote.h>
  #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
@@ -98,8 +98,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1912182
-char versionString[] = "0.9.0-b1";
+#define VERSION 1912191
+char versionString[] = "0.9.0-b2";
 
 
 //AP and OTA default passwords (for maximum change them!)

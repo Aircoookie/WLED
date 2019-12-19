@@ -110,8 +110,8 @@ uint32_t EspalexaDevice::getKelvin()
 uint32_t EspalexaDevice::getRGB()
 {
   if (_rgb != 0) return _rgb; //color has not changed
-  uint8_t rgb[3];
-  float r, g, b;
+  byte rgb[4]{0, 0, 0, 0}; 
+  float r, g, b, w;
   
   if (_mode == EspalexaColorMode::none) return 0;
 
@@ -122,6 +122,15 @@ uint32_t EspalexaDevice::getRGB()
     float temp = 10000/ _ct; //kelvins = 1,000,000/mired (and that /100)
     float r, g, b;
 
+// Cold white to warm white receiving from Alexa: _ct = 199, 234, 284, 350, 383 (from cold white to warm white)
+    switch (_ct) {
+      case 199: rgb[0]=255,rgb[1]=255,rgb[2]=255;rgb[3]=255;break;
+      case 234: rgb[0]=127,rgb[1]=127,rgb[2]=127;rgb[3]=255;break;
+      case 284: rgb[0]=0,rgb[1]=0,rgb[2]=0;rgb[3]=255;break;
+      case 350: rgb[0]=130,rgb[1]=90,rgb[2]=0;rgb[3]=255;break;
+      case 383: rgb[0]=255,rgb[1]=153,rgb[2]=0;rgb[3]=255;break;
+      default: {
+ 
     if( temp <= 66 ){ 
       r = 255; 
       g = temp;
@@ -143,6 +152,9 @@ uint32_t EspalexaDevice::getRGB()
     rgb[0] = (byte)constrain(r,0.1,255.1);
     rgb[1] = (byte)constrain(g,0.1,255.1);
     rgb[2] = (byte)constrain(b,0.1,255.1);
+
+    }
+    }
   } else if (_mode == EspalexaColorMode::hs)
   {
     float h = ((float)_hue)/65535.0;
@@ -216,7 +228,7 @@ uint32_t EspalexaDevice::getRGB()
     rgb[1] = 255.0*g;
     rgb[2] = 255.0*b;
   }
-  _rgb = ((rgb[0] << 16) | (rgb[1] << 8) | (rgb[2]));
+  _rgb = ((rgb[3] << 24) | (rgb[0] << 16) | (rgb[1] << 8) | (rgb[2]));  //white value is only >0 if Alexa did provide a CT value, RGB colors will not be touched.
   return _rgb;
 }
 
