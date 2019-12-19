@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.8.6
+ * @version 0.9.0-b1
  * @author Christian Schwinne
  */
 
@@ -14,16 +14,16 @@
 //Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
 
 //You are required to disable over-the-air updates:
-//#define WLED_DISABLE_OTA
+//#define WLED_DISABLE_OTA         //saves 14kb
 
-//You need to choose 1-2 of these features to disable:
-//#define WLED_DISABLE_ALEXA
-//#define WLED_DISABLE_BLYNK
-//#define WLED_DISABLE_CRONIXIE
-//#define WLED_DISABLE_HUESYNC
-//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01
-//#define WLED_DISABLE_MOBILE_UI
-
+//You need to choose some of these features to disable:
+//#define WLED_DISABLE_ALEXA       //saves 11kb
+//#define WLED_DISABLE_BLYNK       //saves 6kb
+//#define WLED_DISABLE_CRONIXIE    //saves 3kb
+//#define WLED_DISABLE_HUESYNC     //saves 4kb
+//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
+#define WLED_ENABLE_MQTT           //saves 12kb
+#define WLED_ENABLE_ADALIGHT       //saves 500b only
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
@@ -60,7 +60,6 @@
  #include <ArduinoOTA.h>
 #endif
 #include <SPIFFSEditor.h>
-#include "src/dependencies/time/Time.h"
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
 #ifndef WLED_DISABLE_ALEXA
@@ -73,12 +72,11 @@
 #ifndef WLED_DISABLE_BLYNK
  #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
-#include "src/dependencies/e131/E131.h"
+#include "src/dependencies/e131/ESPAsyncE131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
-#include "html_classic.h"
-#include "html_mobile.h"
+#include "html_ui.h"
 #include "html_settings.h"
 #include "html_other.h"
 #include "FX.h"
@@ -106,8 +104,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1911031
-char versionString[] = "0.8.6";
+#define VERSION 1912182
+char versionString[] = "0.9.0-b1";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -120,7 +118,7 @@ char otaPass[33] = "wledota";
 
 byte auxDefaultState   = 0;                   //0: input 1: high 2: low
 byte auxTriggeredState = 0;                   //0: input 1: high 2: low
-char ntpServerName[] = "0.wled.pool.ntp.org"; //NTP server to use
+char ntpServerName[33] = "0.wled.pool.ntp.org";//NTP server to use
 
 
 //WiFi CONFIG (all these can be changed via web UI, no need to set them here)
@@ -145,13 +143,9 @@ bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
-byte colS[]{255, 159, 0, 0};                  //default RGB(W) color
-byte colSecS[]{0, 0, 0, 0};                   //default RGB(W) secondary color
-byte briS = 127;                              //default brightness
-byte effectDefault = 0;
-byte effectSpeedDefault = 75;
-byte effectIntensityDefault = 128;            //intensity is supported on some effects as an additional parameter (e.g. for blink you can change the duty cycle)
-byte effectPaletteDefault = 0;                //palette is supported on the FastLED effects, otherwise it has no effect
+byte col[]{255, 160, 0, 0};                   //default RGB(W) color
+byte colSec[]{0, 0, 0, 0};                    //default RGB(W) secondary color
+byte briS = 128;                              //default brightness
 
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
 byte nightlightDelayMins = 60;
@@ -160,19 +154,14 @@ bool fadeTransition = true;                   //enable crossfading color transit
 bool enableSecTransition = true;              //also enable transition for secondary color
 uint16_t transitionDelay = 750;               //default crossfade duration in ms
 
-//bool strip.reverseMode  = false;            //flip entire LED strip (reverses all effect directions) --> edit in WS2812FX.h
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
+uint8_t disableNLeds = 0;                     //disables N LEDs between active nodes. (Useful for spacing out lights for more traditional christmas light look)
 byte briMultiplier =  100;                    //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 
 //User Interface CONFIG
 char serverDescription[33] = "WLED";          //Name of module
-byte currentTheme = 7;                        //UI theme index for settings and classic UI
-byte uiConfiguration = 2;                     //0: automatic (depends on user-agent) 1: classic UI 2: mobile UI
-bool useHSB = true;                           //classic UI: use HSB sliders instead of RGB by default
-char cssFont[33] = "Verdana";                 //font to use in classic UI
-
-bool useHSBDefault = useHSB;
+bool syncToggleReceive = false;               //UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 
 //Sync CONFIG
@@ -203,10 +192,10 @@ bool receiveDirect    =  true;                //receive UDP realtime
 bool arlsDisableGammaCorrection = true;       //activate if gamma correction is handled by the source
 bool arlsForceMaxBri = false;                 //enable to force max brightness if source has very dark colors that would be black
 
-bool e131Enabled = true;                      //settings for E1.31 (sACN) protocol
-uint16_t e131Universe = 1;
+uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol
 bool e131Multicast = false;
 
+bool mqttEnabled = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
 char mqttGroupTopic[33] = "wled/all";         //second MQTT topic (for example to group devices)
 char mqttServer[33] = "";                     //both domains and IPs should work (no SSL)
@@ -242,7 +231,7 @@ char cronixieDisplay[7] = "HHMMSS";           //Cronixie Display mask. See wled1
 bool cronixieBacklight = true;                //Allow digits to be back-illuminated
 
 bool countdownMode = false;                   //Clock will count down towards date
-byte countdownYear = 19, countdownMonth = 1;  //Countdown target date, year is last two digits
+byte countdownYear = 20, countdownMonth = 1;  //Countdown target date, year is last two digits
 byte countdownDay  =  1, countdownHour  = 0;
 byte countdownMin  =  0, countdownSec   = 0;
 
@@ -272,11 +261,9 @@ bool interfacesInited = false;
 bool wasConnected = false;
 
 //color
-byte col[]{255, 159, 0, 0};                   //target RGB(W) color
 byte colOld[]{0, 0, 0, 0};                    //color before transition
 byte colT[]{0, 0, 0, 0};                      //current color
 byte colIT[]{0, 0, 0, 0};                     //color that was last sent to LEDs
-byte colSec[]{0, 0, 0, 0};
 byte colSecT[]{0, 0, 0, 0};
 byte colSecOld[]{0, 0, 0, 0};
 byte colSecIT[]{0, 0, 0, 0};
@@ -306,7 +293,7 @@ byte bri = briS;
 byte briOld = 0;
 byte briT = 0;
 byte briIT = 0;
-byte briLast = 127;                           //brightness before turned off. Used for toggle function
+byte briLast = 128;                           //brightness before turned off. Used for toggle function
 
 //button
 bool buttonPressedBefore = false;
@@ -322,16 +309,15 @@ byte notificationSentCallMode = 0;
 bool notificationTwoRequired = false;
 
 //effects
-byte effectCurrent = effectDefault;
-byte effectSpeed = effectSpeedDefault;
-byte effectIntensity = effectIntensityDefault;
-byte effectPalette = effectPaletteDefault;
+byte effectCurrent = 0;
+byte effectSpeed = 128;
+byte effectIntensity = 128;
+byte effectPalette = 0;
 
 //network
 bool udpConnected = false, udpRgbConnected = false;
 
 //ui style
-char cssCol[6][9]={"","","","","",""};
 bool showWelcomePage = false;
 
 //hue
@@ -350,11 +336,6 @@ byte overlayCurrent = overlayDefault;
 byte overlaySpeed = 200;
 unsigned long overlayRefreshMs = 200;
 unsigned long overlayRefreshedTime;
-int overlayArr[6];
-uint16_t overlayDur[6];
-uint16_t overlayPauseDur[6];
-int nixieClockI = -1;
-bool nixiePause = false;
 
 //cronixie
 byte dP[]{0,0,0,0,0,0};
@@ -392,6 +373,7 @@ unsigned long realtimeTimeout = 0;
 long lastMqttReconnectAttempt = 0;
 long lastInterfaceUpdate = 0;
 byte interfaceUpdateCallMode = 0;
+char mqttStatusTopic[40] = ""; //this must be global because of async handlers
 
 #if AUXPIN >= 0
 //auxiliary debug pin
@@ -427,22 +409,35 @@ uint16_t ntpLocalPort = 2390;
 char* obuf;
 uint16_t olen = 0;
 
+uint16_t savedPresets = 0;
+int8_t currentPreset = -1;
+bool isPreset = false;
+
+byte errorFlag = 0;
+
 String messageHead, messageSub;
 byte optionType;
 
 bool doReboot = false; //flag to initiate reboot from async handlers
 bool doPublishMqtt = false;
-bool doSendHADiscovery = true;
 
 //server library objects
 AsyncWebServer server(80);
 AsyncClient* hueClient = NULL;
 AsyncMqttClient* mqtt = NULL;
 
+//function prototypes
+void colorFromUint32(uint32_t,bool=false);
+void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
+void handleE131Packet(e131_packet_t*, IPAddress);
+
+#define E131_MAX_UNIVERSE_COUNT 9
+
 //udp interface objects
 WiFiUDP notifierUdp, rgbUdp;
 WiFiUDP ntpUdp;
-E131* e131;
+ESPAsyncE131 e131(handleE131Packet);
+bool e131NewData = false;
 
 //led fx library object
 WS2812FX strip = WS2812FX();
@@ -474,11 +469,6 @@ WS2812FX strip = WS2812FX();
  #include "SPIFFSEditor.h"
 #endif
 
-
-//function prototypes
-void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
-
-
 //turns all LEDs off and restarts ESP
 void reset()
 {
@@ -495,7 +485,7 @@ void reset()
 
 
 //append new c string to temp buffer efficiently
-bool oappend(char* txt)
+bool oappend(const char* txt)
 {
   uint16_t len = strlen(txt);
   if (olen + len >= OMAX) return false; //buffer full
@@ -535,7 +525,6 @@ void loop() {
   handleAlexa();
 
   handleOverlays();
-  if (doSendHADiscovery) sendHADiscoveryMQTT();
   yield();
   if (doReboot) reset();
 

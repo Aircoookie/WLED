@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 11
+#define EEPVER 14
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -19,7 +19,14 @@
 //9 -> 0.8.0
 //10-> 0.8.2
 //11-> 0.8.5-dev #mqttauth @TimothyBrown
+//12-> 0.8.7-dev
+//13-> 0.9.0-dev
+//14-> 0.9.0-b1
 
+void commit()
+{
+  if (!EEPROM.commit()) errorFlag = 2;
+}
 
 /*
  * Erase all configuration data
@@ -30,7 +37,7 @@ void clearEEPROM()
   {
     EEPROM.write(i, 0);
   }
-  EEPROM.commit();
+  commit();
 }
 
 
@@ -90,9 +97,6 @@ void saveSettingsToEEPROM()
     EEPROM.write(242+i, staticSubnet[i]);
   }
 
-  EEPROM.write(246, colS[0]);
-  EEPROM.write(247, colS[1]);
-  EEPROM.write(248, colS[2]);
   EEPROM.write(249, briS);
 
   EEPROM.write(250, receiveNotificationBrightness);
@@ -111,10 +115,6 @@ void saveSettingsToEEPROM()
   EEPROM.write(291, (udpPort >> 8) & 0xFF);
   writeStringToEEPROM(292, serverDescription, 32);
 
-  EEPROM.write(324, effectDefault);
-  EEPROM.write(325, effectSpeedDefault);
-  EEPROM.write(326, effectIntensityDefault);
-
   EEPROM.write(327, ntpEnabled);
   EEPROM.write(328, currentTimezone);
   EEPROM.write(329, useAMPM);
@@ -129,20 +129,14 @@ void saveSettingsToEEPROM()
   EEPROM.write(367, (arlsOffset>=0));
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
-  EEPROM.write(370, useHSBDefault);
-  EEPROM.write(371, colS[3]); //white default
+
   EEPROM.write(372, useRGBW);
-  EEPROM.write(373, effectPaletteDefault);
   EEPROM.write(374, strip.paletteFade);
-  //EEPROM.write(375, apWaitTimeSecs);
+  EEPROM.write(375, strip.milliampsPerLed); //was apWaitTimeSecs up to 0.8.5
   EEPROM.write(376, apBehavior);
 
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
 
-  EEPROM.write(378, colSecS[0]);
-  EEPROM.write(379, colSecS[1]);
-  EEPROM.write(380, colSecS[2]);
-  EEPROM.write(381, colSecS[3]);
   EEPROM.write(382, strip.paletteBlend);
   EEPROM.write(383, strip.colorOrder);
 
@@ -159,20 +153,13 @@ void saveSettingsToEEPROM()
   EEPROM.write(394, abs(utcOffsetSecs) & 0xFF);
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
-  //397 was initLedsLast
+  EEPROM.write(397, syncToggleReceive);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
   EEPROM.write(399, !enableSecTransition);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
-  //400 - 899 reserved
-
-  for (int k=0;k<6;k++){
-    int in = 900+k*8;
-    writeStringToEEPROM(in, cssCol[k], 8);
-  }
-
-  EEPROM.write(948,currentTheme);
-  writeStringToEEPROM(950, cssFont, 32);
+  //400 - 940 reserved
+  writeStringToEEPROM(990, ntpServerName, 32);
 
   EEPROM.write(2048, huePollingEnabled);
   //EEPROM.write(2049, hueUpdatingEnabled);
@@ -227,7 +214,6 @@ void saveSettingsToEEPROM()
 
   EEPROM.write(2200, !receiveDirect);
   EEPROM.write(2201, notifyMacro); //was enableRealtime
-  EEPROM.write(2202, uiConfiguration);
   EEPROM.write(2203, autoRGBtoRGBW);
   EEPROM.write(2204, skipFirstLed);
 
@@ -244,6 +230,8 @@ void saveSettingsToEEPROM()
     saveCurrPresetCycConf = false;
   }
 
+  EEPROM.write(2213, disableNLeds);
+
   writeStringToEEPROM(2220, blynkApiKey, 35);
 
   for (int i = 0; i < 8; ++i)
@@ -254,6 +242,7 @@ void saveSettingsToEEPROM()
     EEPROM.write(2290 + i, timerMacro[i]  );
   }
 
+  EEPROM.write(2299, mqttEnabled);
   writeStringToEEPROM(2300, mqttServer, 32);
   writeStringToEEPROM(2333, mqttDeviceTopic, 32);
   writeStringToEEPROM(2366, mqttGroupTopic, 32);
@@ -263,7 +252,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(2522, mqttPort & 0xFF);
   EEPROM.write(2523, (mqttPort >> 8) & 0xFF);
 
-  EEPROM.commit();
+  commit();
 }
 
 
@@ -317,9 +306,6 @@ void loadSettingsFromEEPROM(bool first)
   staticSubnet[2] = EEPROM.read(244);
   staticSubnet[3] = EEPROM.read(245);
 
-  colS[0] = EEPROM.read(246); col[0] = colS[0];
-  colS[1] = EEPROM.read(247); col[1] = colS[1];
-  colS[2] = EEPROM.read(248); col[2] = colS[2];
   briS = EEPROM.read(249); bri = briS;
   if (!EEPROM.read(369) && first)
   {
@@ -340,8 +326,6 @@ void loadSettingsFromEEPROM(bool first)
 
   readStringFromEEPROM(292, serverDescription, 32);
 
-  effectDefault = EEPROM.read(324); effectCurrent = effectDefault;
-  effectSpeedDefault = EEPROM.read(325); effectSpeed = effectSpeedDefault;
   ntpEnabled = EEPROM.read(327);
   currentTimezone = EEPROM.read(328);
   useAMPM = EEPROM.read(329);
@@ -358,36 +342,19 @@ void loadSettingsFromEEPROM(bool first)
   arlsOffset = EEPROM.read(368);
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
-  useHSBDefault = EEPROM.read(370);
-  colS[3] = EEPROM.read(371); col[3] = colS[3];
   useRGBW = EEPROM.read(372);
-  effectPaletteDefault = EEPROM.read(373); effectPalette = effectPaletteDefault;
   //374 - strip.paletteFade
-
-  if (lastEEPROMversion > 0) {
-    //apWaitTimeSecs = EEPROM.read(375);
-    apBehavior = EEPROM.read(376);
-  }
+  
+  apBehavior = EEPROM.read(376);
+    
   //377 = lastEEPROMversion
-  if (lastEEPROMversion > 1) {
-    for (byte i=0; i<4; i++)
-    {
-      colSecS[i] = EEPROM.read(378+i); colSec[i] = colSecS[i];
-    }
-  }
   if (lastEEPROMversion > 3) {
-    effectIntensityDefault = EEPROM.read(326); effectIntensity = effectIntensityDefault;
     aOtaEnabled = EEPROM.read(390);
     receiveNotificationColor = EEPROM.read(391);
     receiveNotificationEffects = EEPROM.read(392);
-
-    readStringFromEEPROM(950, cssFont, 32);
-  } else //keep receiving notification behavior from pre0.5.0 after update
-  {
-    receiveNotificationColor = receiveNotificationBrightness;
-    receiveNotificationEffects = receiveNotificationBrightness;
   }
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+  
   if (lastEEPROMversion > 4) {
     huePollingEnabled = EEPROM.read(2048);
     //hueUpdatingEnabled = EEPROM.read(2049);
@@ -485,14 +452,29 @@ void loadSettingsFromEEPROM(bool first)
     mqttPort = EEPROM.read(2522) + ((EEPROM.read(2523) << 8) & 0xFF00);
   }
 
+  if (lastEEPROMversion > 11)
+  {
+    strip.milliampsPerLed = EEPROM.read(375);
+  } else if (strip.ablMilliampsMax == 65000) //65000 indicates disabled ABL in <0.8.7
+  {
+    strip.ablMilliampsMax = ABL_MILLIAMPS_DEFAULT;
+    strip.milliampsPerLed = 0; //disable ABL
+  }
+  if (lastEEPROMversion > 12)
+  {
+    readStringFromEEPROM(990, ntpServerName, 32);
+  }
+  if (lastEEPROMversion > 13)
+  {
+    mqttEnabled = EEPROM.read(2299);
+    syncToggleReceive = EEPROM.read(397);
+  } else {
+    mqttEnabled = true;
+    syncToggleReceive = false;
+  }
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
-  uiConfiguration = EEPROM.read(2202);
-
-  #ifdef WLED_DISABLE_MOBILE_UI
-  uiConfiguration = 1;
-  //force default UI since mobile is unavailable
-  #endif
 
   autoRGBtoRGBW = EEPROM.read(2203);
   skipFirstLed = EEPROM.read(2204);
@@ -508,6 +490,8 @@ void loadSettingsFromEEPROM(bool first)
     presetApplyFx = EEPROM.read(2212);
   }
 
+  disableNLeds = EEPROM.read(2213);
+
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);
@@ -517,29 +501,45 @@ void loadSettingsFromEEPROM(bool first)
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved
 
-  currentTheme = EEPROM.read(948);
-  for (int k=0;k<6;k++){
-    int in=900+k*8;
-    readStringFromEEPROM(in, cssCol[k], 8);
-  }
-
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
 
   readStringFromEEPROM(2220, blynkApiKey, 35);
+  if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
 
   //user MOD memory
   //2944 - 3071 reserved
 
-  useHSB = useHSBDefault;
-
   overlayCurrent = overlayDefault;
+
+  savedToPresets();
 }
 
 
 //PRESET PROTOCOL 20 bytes
-//0: preset purpose byte 0:invalid 1:valid preset 1.0
+//0: preset purpose byte 0:invalid 1:valid preset 2:segment preset 2.0
 //1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17: fp 18-19:Zeros
+//determines which presets already contain save data
+void savedToPresets()
+{
+  for (byte index = 1; index < 16; index++)
+  {
+    uint16_t i = 380 + index*20;
+
+    if (EEPROM.read(i) == 1) {
+      savedPresets |= 0x01 << (index-1);
+    } else
+    {
+      savedPresets &= ~(0x01 << (index-1));
+    }
+  }
+  if (EEPROM.read(700) == 2) {
+    savedPresets |= 0x01 << 15;
+  } else
+  {
+    savedPresets &= ~(0x01 << 15);
+  }
+}
 
 bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool loadFX = true)
 {
@@ -548,46 +548,70 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
     loadSettingsFromEEPROM(false);//load boot defaults
     return true;
   }
-  if (index > 25 || index < 1) return false;
+  if (index > 16 || index < 1) return false;
   uint16_t i = 380 + index*20;
-  if (EEPROM.read(i) == 0) return false;
-  if (loadBri) bri = EEPROM.read(i+1);
-  if (loadCol)
-  {
-    for (byte j=0; j<4; j++)
+  if (index < 16) {
+    if (EEPROM.read(i) != 1) return false;
+    strip.applyToAllSelected = true;
+    if (loadBri) bri = EEPROM.read(i+1);
+    if (loadCol)
     {
-      col[j] = EEPROM.read(i+j+2);
-      colSec[j] = EEPROM.read(i+j+6);
+      for (byte j=0; j<4; j++)
+      {
+        col[j] = EEPROM.read(i+j+2);
+        colSec[j] = EEPROM.read(i+j+6);
+      }
     }
+    if (loadFX)
+    {
+      effectCurrent = EEPROM.read(i+10);
+      effectSpeed = EEPROM.read(i+11);
+      effectIntensity = EEPROM.read(i+16);
+      effectPalette = EEPROM.read(i+17);
+    }
+  } else {
+    if (EEPROM.read(i) != 2) return false;
+    strip.applyToAllSelected = false;
+    if (loadBri) bri = EEPROM.read(i+1);
+    WS2812FX::Segment* seg = strip.getSegments();
+    memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
+    setValuesFromMainSeg();
   }
-  if (loadFX)
-  {
-    effectCurrent = EEPROM.read(i+10);
-    effectSpeed = EEPROM.read(i+11);
-    effectIntensity = EEPROM.read(i+16);
-    effectPalette = EEPROM.read(i+17);
-  }
+  currentPreset = index;
+  isPreset = true;
   return true;
 }
 
 void savePreset(byte index)
 {
-  if (index > 25) return;
+  if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
   uint16_t i = 380 + index*20;//min400
-  EEPROM.write(i, 1);
-  EEPROM.write(i+1, bri);
-  for (uint16_t j=0; j<4; j++)
-  {
-    EEPROM.write(i+j+2, col[j]);
-    EEPROM.write(i+j+6, colSec[j]);
+  
+  if (index < 16) {
+    EEPROM.write(i, 1);
+    EEPROM.write(i+1, bri);
+    for (uint16_t j=0; j<4; j++)
+    {
+      EEPROM.write(i+j+2, col[j]);
+      EEPROM.write(i+j+6, colSec[j]);
+    }
+    EEPROM.write(i+10, effectCurrent);
+    EEPROM.write(i+11, effectSpeed);
+  
+    EEPROM.write(i+16, effectIntensity);
+    EEPROM.write(i+17, effectPalette);
+  } else { //segment 16 can save segments
+    EEPROM.write(i, 2);
+    EEPROM.write(i+1, bri);
+    WS2812FX::Segment* seg = strip.getSegments();
+    memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
   }
-  EEPROM.write(i+10, effectCurrent);
-  EEPROM.write(i+11, effectSpeed);
-
-  EEPROM.write(i+16, effectIntensity);
-  EEPROM.write(i+17, effectPalette);
-  EEPROM.commit();
+  
+  commit();
+  savedToPresets();
+  currentPreset = index;
+  isPreset = true;
 }
 
 
@@ -629,5 +653,5 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   {
     EEPROM.write(i, mc.charAt(i-s));
   }
-  if (sing) EEPROM.commit();
+  if (sing) commit();
 }

@@ -36,6 +36,10 @@ void initServer()
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "*");
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "*");
+
+  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/html", PAGE_liveview);
+  });
   
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -64,7 +68,7 @@ void initServer()
   
   server.on("/settings/wifi", HTTP_POST, [](AsyncWebServerRequest *request){
     if (!(wifiLock && otaLock)) handleSettingsSet(request, 1);
-    serveMessage(request, 200,"WiFi settings saved.","Reconnecting now...",255);
+    serveMessage(request, 200,"WiFi settings saved.","Please connect to the new IP (if changed)",129);
     forceReconnect = true;
   });
 
@@ -75,7 +79,7 @@ void initServer()
 
   server.on("/settings/ui", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 3);
-    serveMessage(request, 200,"UI settings saved.","Reloading to apply theme...",122);
+    serveMessage(request, 200,"UI settings saved.","Redirecting...",1);
   });
 
   server.on("/settings/sync", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -90,7 +94,7 @@ void initServer()
 
   server.on("/settings/sec", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 6);
-    if (!doReboot) serveMessage(request, 200,"Security settings saved.","Rebooting now, please wait ~10 seconds...",129);
+    if (!doReboot) serveMessage(request, 200,"Security settings saved.","Rebooting, please wait ~10 seconds...",129);
     doReboot = true;
   });
 
@@ -98,9 +102,20 @@ void initServer()
     serveJson(request);
   });
 
-  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request, JsonObject root) {
-    if (root.isNull()){request->send(500, "application/json", "{\"error\":\"Parsing failed\"}"); return;}
-    if (deserializeState(root)) { serveJson(request); return; } //if JSON contains "v" (verbose response)
+  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
+    bool verboseResponse = false;
+    if (1) { //scope JsonDocument so it releases its buffer
+      DynamicJsonDocument jsonBuffer(8192);
+      DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
+      JsonObject root = jsonBuffer.as<JsonObject>();
+      if (error || root.isNull()) {
+        request->send(400, "application/json", "{\"error\":10}"); return;
+      }
+      verboseResponse = deserializeState(root);
+    }
+    if (verboseResponse) { //if JSON contains "v"
+      serveJson(request); return; 
+    } 
     request->send(200, "application/json", "{\"success\":true}");
   });
   server.addHandler(handler);
@@ -143,9 +158,7 @@ void initServer()
     //init ota page
     #ifndef WLED_DISABLE_OTA
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      olen = 0;
-      getCSSColors();
-      request->send_P(200, "text/html", PAGE_update, msgProcessor);
+      request->send_P(200, "text/html", PAGE_update);
     });
     
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -158,7 +171,7 @@ void initServer()
     },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
       if(!index){
         DEBUG_PRINTLN("OTA Update Start");
-        #ifndef ARDUINO_ARCH_ESP32
+        #ifdef ESP8266
         Update.runAsync(true);
         #endif
         Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
@@ -227,47 +240,15 @@ void serveIndexOrWelcome(AsyncWebServerRequest *request)
 }
 
 
-void getCSSColors()
-{
-  char cs[6][9];
-  getThemeColors(cs);
-  oappend("<style>:root{--aCol:#"); oappend(cs[0]);
-  oappend(";--bCol:#");             oappend(cs[1]);
-  oappend(";--cCol:#");             oappend(cs[2]);
-  oappend(";--dCol:#");             oappend(cs[3]);
-  oappend(";--sCol:#");             oappend(cs[4]);
-  oappend(";--tCol:#");             oappend(cs[5]);
-  oappend(";--cFn:");               oappend(cssFont);
-  oappend(";}");
-}
-
-
 void serveIndex(AsyncWebServerRequest* request)
 {
-  bool serveMobile = false;
-  if (uiConfiguration == 0 && request->hasHeader("User-Agent")) serveMobile = checkClientIsMobile(request->getHeader("User-Agent")->value());
-  else if (uiConfiguration == 2) serveMobile = true;
-
   #ifdef WLED_ENABLE_FS_SERVING
-  if (serveMobile)
-  {
-    if (handleFileRead(request, "/index_mobile.htm")) return;
-  } else
-  {
-    if (handleFileRead(request, "/index.htm")) return;
-  }
+  if (handleFileRead(request, "/index.htm")) return;
   #endif
 
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", 
-                                      (serveMobile) ? (uint8_t*)PAGE_indexM : PAGE_index,
-                                      (serveMobile) ? PAGE_indexM_L : PAGE_index_L);
+  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 
-  //error message is not gzipped
-  #ifdef WLED_DISABLE_MOBILE_UI
-  if (!serveMobile) response->addHeader("Content-Encoding","gzip");
-  #else
   response->addHeader("Content-Encoding","gzip");
-  #endif
   
   request->send(response);
 }
@@ -275,13 +256,6 @@ void serveIndex(AsyncWebServerRequest* request)
 
 String msgProcessor(const String& var)
 {
-  if (var == "CSS") {
-    char css[512];
-    obuf = css;
-    olen = 0;
-    getCSSColors();
-    return String(obuf);
-  }
   if (var == "MSG") {
     String messageBody = messageHead;
     messageBody += "</h2>";
@@ -312,12 +286,6 @@ String msgProcessor(const String& var)
 
 void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", byte optionT=255)
 {
-  #ifndef ARDUINO_ARCH_ESP32
-  char buf[256];
-  obuf = buf;
-  #endif
-  olen = 0;
-  getCSSColors();
   messageHead = headl;
   messageSub = subl;
   optionType = optionT;
@@ -331,7 +299,6 @@ String settingsProcessor(const String& var)
   if (var == "CSS") {
     char buf[2048];
     getSettingsJS(optionType, buf);
-    getCSSColors();
     return String(buf);
   }
   if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
@@ -373,6 +340,6 @@ void serveSettings(AsyncWebServerRequest* request)
     case 5:   request->send_P(200, "text/html", PAGE_settings_time, settingsProcessor); break;
     case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
     case 255: request->send_P(200, "text/html", PAGE_welcome); break;
-    default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor); 
+    default:  request->send_P(200, "text/html", PAGE_settings); 
   }
 }

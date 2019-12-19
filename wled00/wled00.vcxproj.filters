@@ -62,9 +62,6 @@
     <ClInclude Include="palettes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WS2812FX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -179,9 +176,6 @@
     <ClInclude Include="src\dependencies\blynk\Blynk\BlynkWiFiCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\dependencies\e131\E131.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\dependencies\espalexa\Espalexa.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -203,14 +197,14 @@
     <ClInclude Include="src\dependencies\timezone\Timezone.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FX.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dependencies\e131\ESPAsyncE131.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="WS2812FX.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WS2812FX_fcn.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\dependencies\async-mqtt-client\AsyncMqttClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -253,9 +247,6 @@
     <ClCompile Include="src\dependencies\blynk\Blynk\utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\dependencies\e131\E131.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\dependencies\espalexa\EspalexaDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -266,6 +257,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\dependencies\timezone\Timezone.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FX_fcn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dependencies\e131\ESPAsyncE131.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

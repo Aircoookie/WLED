@@ -2,12 +2,19 @@
  * Color conversion methods
  */
 
-void colorFromUint32(uint32_t in)
+void colorFromUint32(uint32_t in, bool secondary)
 {
-  col[3] = in >> 24 & 0xFF;
-  col[0] = in >> 16 & 0xFF;
-  col[1] = in >> 8  & 0xFF;
-  col[2] = in       & 0xFF;
+  if (secondary) {
+    colSec[3] = in >> 24 & 0xFF;
+    colSec[0] = in >> 16 & 0xFF;
+    colSec[1] = in >> 8  & 0xFF;
+    colSec[2] = in       & 0xFF;
+  } else {
+    col[3] = in >> 24 & 0xFF;
+    col[0] = in >> 16 & 0xFF;
+    col[1] = in >> 8  & 0xFF;
+    col[2] = in       & 0xFF;
+  }
 }
 
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb

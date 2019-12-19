@@ -7,7 +7,12 @@ void wledInit()
   EEPROM.begin(EEPSIZE);
   ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00);
   if (ledCount > MAX_LEDS || ledCount == 0) ledCount = 30;
-  #ifndef ARDUINO_ARCH_ESP32
+
+  disableNLeds = EEPROM.read(2213);
+  //this was reading 255 after inital flash causing bootloop. Don't know why.
+  disableNLeds = disableNLeds != 255 ? disableNLeds : 0;
+
+  #ifdef ESP8266
   #if LEDPIN == 3
   if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
   #endif
@@ -25,7 +30,7 @@ void wledInit()
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //init LEDs quickly
+  strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204),disableNLeds); //init LEDs quickly
   strip.setBrightness(0);
 
   DEBUG_PRINT("LEDs inited. heap usage ~");
@@ -85,10 +90,6 @@ void wledInit()
   
   //HTTP server page init
   initServer();
-
-  strip.service();
-
-  initConnection();
 }
 
 
@@ -139,7 +140,10 @@ void initAP(bool resetAP=false){
     if (udpPort > 0 && udpPort != ntpLocalPort)
     {
       udpConnected = notifierUdp.begin(udpPort);
-      if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
+    }
+    if (udpRgbPort > 0 && udpRgbPort != ntpLocalPort && udpRgbPort != udpPort)
+    {
+      udpRgbConnected = rgbUdp.begin(udpRgbPort);
     }
 
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
@@ -152,7 +156,7 @@ void initConnection()
 {
   WiFi.disconnect(); //close old connections
 
-  if (staticIP[0] != 0)
+  if (staticIP[0] != 0 && staticGateway[0] != 0)
   {
     WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(8,8,8,8));
   } else
@@ -230,7 +234,7 @@ void initInterfaces() {
   if (ntpEnabled) ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   initBlynk(blynkApiKey);
-  initE131();
+  e131.begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST , e131Universe, E131_MAX_UNIVERSE_COUNT);
   reconnectHue();
   initMqtt();
   interfacesInited = true;
@@ -238,25 +242,44 @@ void initInterfaces() {
 }
 
 byte stacO = 0;
+uint32_t lastHeap;
+unsigned long heapTime = 0;
 
 void handleConnection() {
-  //TODO: reconnect if heap <8000
-  byte stac = 0;
-  #ifdef ESP8266
-  stac = wifi_softap_get_station_num();
-  #else
-  wifi_sta_list_t stationList;
-  esp_wifi_ap_get_sta_list(&stationList);
-  stac = stationList.num;
-  #endif
-  if (stac != stacO)
+  if (millis() < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == 2)) return;
+  if (lastReconnectAttempt == 0) initConnection();
+
+  //reconnect WiFi to clear stale allocations if heap gets too low
+  if (millis() - heapTime > 5000)
   {
-    stacO = stac;
-    DEBUG_PRINT("Connected AP clients: ");
-    DEBUG_PRINTLN(stac);
-    if (!WLED_CONNECTED && WLED_WIFI_CONFIGURED) { //trying to connect, but not connected
-      if (stac) WiFi.disconnect(); //disable search so that AP can work
-      else initConnection(); //restart search 
+    uint32_t heap = ESP.getFreeHeap();
+    if (heap < 9000 && lastHeap < 9000) {
+      DEBUG_PRINT("Heap too low! ");
+      DEBUG_PRINTLN(heap);
+      forceReconnect = true;
+    }
+    lastHeap = heap;
+    heapTime = millis();
+  }
+  
+  byte stac = 0;
+  if (apActive) {
+    #ifdef ESP8266
+    stac = wifi_softap_get_station_num();
+    #else
+    wifi_sta_list_t stationList;
+    esp_wifi_ap_get_sta_list(&stationList);
+    stac = stationList.num;
+    #endif
+    if (stac != stacO)
+    {
+      stacO = stac;
+      DEBUG_PRINT("Connected AP clients: ");
+      DEBUG_PRINTLN(stac);
+      if (!WLED_CONNECTED && WLED_WIFI_CONFIGURED) { //trying to connect, but not connected
+        if (stac) WiFi.disconnect(); //disable search so that AP can work
+        else initConnection(); //restart search 
+      }
     }
   }
   if (forceReconnect) {
@@ -273,7 +296,7 @@ void handleConnection() {
       interfacesInited = false;
       initConnection();
     }
-    if (millis() - lastReconnectAttempt > 300000 && WLED_WIFI_CONFIGURED) initConnection();
+    if (millis() - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED) initConnection();
     if (!apActive && millis() - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == 1)) initAP(); 
   } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
@@ -306,14 +329,4 @@ int getSignalQuality(int rssi)
     quality = 2 * (rssi + 100);
   }
   return quality;
-}
-
-bool checkClientIsMobile(String useragent)
-{
-  //to save complexity this function is not comprehensive
-  if (useragent.indexOf("Android") >= 0) return true;
-  if (useragent.indexOf("iPhone") >= 0) return true;
-  if (useragent.indexOf("iPod") >= 0) return true;
-  if (useragent.indexOf("iPad") >= 0) return true;
-  return false;
 }

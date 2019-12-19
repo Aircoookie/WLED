@@ -3,19 +3,20 @@
 #define NpbWrapper_h
 
 //PIN CONFIGURATION
-#define LEDPIN 2  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
+#define LEDPIN 2     //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 //#define USE_APA102 // Uncomment for using APA102 LEDs.
-#ifdef WLED_USE_H801
-  #define BTNPIN -1 //button pin. Needs to have pullup (gpio0 recommended)
-  #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
-#else
-  #define BTNPIN  0 //button pin. Needs to have pullup (gpio0 recommended)
-  #define IR_PIN  4 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
-#endif
-#define RLYPIN -1 //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
-#define AUXPIN -1 //debug auxiliary output pin (-1 to disable)
+//#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
+//#define WLED_USE_H801 //H801 5 channel controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
+//#define WLED_USE_5CH
+
+#define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
+#define IR_PIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#define RLYPIN 12  //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
+#define AUXPIN -1  //debug auxiliary output pin (-1 to disable)
 
 #define RLYMDE 1  //mode for relay, 0: LOW if LEDs are on 1: HIGH if LEDs are on
+
+//END CONFIGURATION
 
 #ifdef USE_APA102
  #define CLKPIN 0
@@ -32,7 +33,11 @@
     #define GPIN 13   //G pin for analog LED strip
     #define BPIN 12   //B pin for analog LED strip
     #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
-    #define W2PIN 04  //W2 pin for analog LED strip 
+    #define W2PIN 04  //W2 pin for analog LED strip
+    #undef BTNPIN
+    #undef IR_PIN
+    #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#endif
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
     #define RPIN 5   //R pin for analog LED strip   
@@ -40,6 +45,8 @@
     #define BPIN 15   //B pin for analog LED strip
     #define WPIN 13   //W pin for analog LED strip (W1: 14, W2: 04)
   #endif
+  #undef RLYPIN
+  #define RLYPIN -1 //disable as pin 12 is used by analog LEDs
 #endif
 
 //automatically uses the right driver method for each platform
@@ -168,66 +175,51 @@ public:
     byte b;
     switch (_type)
     {
-      case NeoPixelType_Grb: {
-        _pGrb->Show();
-        #ifdef WLED_USE_ANALOG_LEDS      
-          RgbColor color = _pGrb->GetPixelColor(0);
-          b = _pGrb->GetBrightness();
-          SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, 0);
-        #endif
-      }
-      break;
-      case NeoPixelType_Grbw: {
-        _pGrbw->Show();
-        #ifdef WLED_USE_ANALOG_LEDS      
-          RgbwColor colorW = _pGrbw->GetPixelColor(0);
-          b = _pGrbw->GetBrightness();
-          // check color values for Warm / COld white mix (for RGBW)  // EsplanexaDevice.cpp
-          #ifdef WLED_USE_5CH_LEDS
-            if        (colorW.R == 255 & colorW.G == 255 && colorW.B == 255 && colorW.W == 255) {  
-              SetRgbwPwm(0, 0, 0,                  0, colorW.W * b / 255);
-            } else if (colorW.R == 127 & colorW.G == 127 && colorW.B == 127 && colorW.W == 255) {  
-              SetRgbwPwm(0, 0, 0, colorW.W * b / 512, colorW.W * b / 255);
-            } else if (colorW.R ==   0 & colorW.G ==   0 && colorW.B ==   0 && colorW.W == 255) {  
-              SetRgbwPwm(0, 0, 0, colorW.W * b / 255,                  0);
-            } else if (colorW.R == 130 & colorW.G ==  90 && colorW.B ==   0 && colorW.W == 255) {  
-              SetRgbwPwm(0, 0, 0, colorW.W * b / 255, colorW.W * b / 512);
-            } else if (colorW.R == 255 & colorW.G == 153 && colorW.B ==   0 && colorW.W == 255) {  
-              SetRgbwPwm(0, 0, 0, colorW.W * b / 255,                  0);
-            } else {  // not only white colors
-              SetRgbwPwm(colorW.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, colorW.W * b / 255);
-            }
-          #else
-            SetRgbwPwm(colorW.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, colorW.W * b / 255);
-          #endif         
-        #endif
-      }
-      break;
-    }
-  }
-  
-  bool CanShow() const
-  {
-    switch (_type) {
-      case NeoPixelType_Grb:  _pGrb->CanShow();  break;
-      case NeoPixelType_Grbw: _pGrbw->CanShow(); break;
-    }
-  }
-
-  void SetPixelColor(uint16_t indexPixel, RgbColor color)
-  {
-    switch (_type) {
-      case NeoPixelType_Grb: _pGrb->SetPixelColor(indexPixel, color);   break;
-      case NeoPixelType_Grbw:_pGrbw->SetPixelColor(indexPixel, color);  break;
+      case NeoPixelType_Grb:  _pGrb->Show();  break;
+      case NeoPixelType_Grbw: _pGrbw->Show(); break;
     }
   }
 
   void SetPixelColor(uint16_t indexPixel, RgbwColor color)
   {
     switch (_type) {
-      case NeoPixelType_Grb:  _pGrb->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));   break;
-      case NeoPixelType_Grbw: _pGrbw->SetPixelColor(indexPixel, color);   break;
+      case NeoPixelType_Grb: {
+        _pGrb->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
+        #ifdef WLED_USE_ANALOG_LEDS
+        if (indexPixel != 0) return; //set analog LEDs from first pixel
+        b = _pGrb->GetBrightness();
+        SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, 0);
+        #endif
+      }
+      break;
+      case NeoPixelType_Grbw: {
+        _pGrbw->SetPixelColor(indexPixel, color);
+        #ifdef WLED_USE_ANALOG_LEDS      
+          if (indexPixel != 0) return; //set analog LEDs from first pixel
+          b = _pGrbw->GetBrightness();
+          // check color values for Warm / Cold white mix (for RGBW)  // EsplanexaDevice.cpp
+          #ifdef WLED_USE_5CH_LEDS
+            if        (color.R == 255 & color.G == 255 && color.B == 255 && color.W == 255) {  
+              SetRgbwPwm(0, 0, 0,                  0, color.W * b / 255);
+            } else if (color.R == 127 & color.G == 127 && color.B == 127 && color.W == 255) {  
+              SetRgbwPwm(0, 0, 0, color.W * b / 512, colorW.W * b / 255);
+            } else if (color.R ==   0 & color.G ==   0 && color.B ==   0 && color.W == 255) {  
+              SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
+            } else if (color.R == 130 & color.G ==  90 && color.B ==   0 && color.W == 255) {  
+              SetRgbwPwm(0, 0, 0, color.W * b / 255, color.W * b / 512);
+            } else if (color.R == 255 & color.G == 153 && color.B ==   0 && color.W == 255) {  
+              SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
+            } else {  // not only white colors
+              SetRgbwPwm(color.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, color.W * b / 255);
+            }
+          #else
+            SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
+          #endif         
+        #endif
+      }
+      break;
     }
+    
   }
 
   void SetBrightness(byte b)
@@ -236,15 +228,6 @@ public:
       case NeoPixelType_Grb: _pGrb->SetBrightness(b);   break;
       case NeoPixelType_Grbw:_pGrbw->SetBrightness(b);  break;
     }
-  }
-
-  RgbColor GetPixelColor(uint16_t indexPixel) const
-  {
-    switch (_type) {
-      case NeoPixelType_Grb:  return _pGrb->GetPixelColor(indexPixel);     break;
-      case NeoPixelType_Grbw: /*doesn't support it so we don't return it*/ break;
-    }
-    return 0;
   }
 
   // NOTE:  Due to feature differences, some support RGBW but the method name
@@ -258,21 +241,6 @@ public:
     return 0;
   }
 
-  void ClearTo(RgbColor color)
-  {
-    switch (_type) {
-      case NeoPixelType_Grb: _pGrb->ClearTo(color);   break;
-      case NeoPixelType_Grbw:_pGrbw->ClearTo(color);  break;
-    }
-  }
-
-  void ClearTo(RgbwColor color)
-  {
-    switch (_type) {
-      case NeoPixelType_Grb:    break;
-      case NeoPixelType_Grbw:_pGrbw->ClearTo(color);  break;
-    }
-  }
 
 private:
   NeoPixelType _type;

@@ -75,7 +75,15 @@ void handleNetworkTime()
 
 void sendNTPPacket()
 {
-  WiFi.hostByName(ntpServerName, ntpServerIP);
+  if (!ntpServerIP.fromString(ntpServerName)) //see if server is IP or domain
+  {
+    #ifdef ESP8266
+    WiFi.hostByName(ntpServerName, ntpServerIP, 750);
+    #else
+    WiFi.hostByName(ntpServerName, ntpServerIP);
+    #endif
+  }
+
   DEBUG_PRINTLN("send NTP");
   byte pbuf[NTP_PACKET_SIZE];
   memset(pbuf, 0, NTP_PACKET_SIZE);

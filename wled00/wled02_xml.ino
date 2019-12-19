@@ -3,7 +3,7 @@
  */
 
 //build XML response to HTTP /win API request
-char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest = nullptr)
+char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
 {
   char sbuf[(dest == nullptr)?1024:1]; //allocate local buffer if none passed
   obuf = (dest == nullptr)? sbuf:dest;
@@ -53,9 +53,7 @@ char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest
   }
   oappend("</wv><ws>");
   oappendi(colSec[3]);
-  oappend("</ws><md>");
-  oappendi(useHSB);
-  oappend("</md><cy>");
+  oappend("</ws><cy>");
   oappendi(presetCyclingEnabled);
   oappend("</cy><ds>");
   if (realtimeActive)
@@ -77,34 +75,14 @@ char* XML_response(AsyncWebServerRequest *request, bool includeTheme, char* dest
   } else {
     oappend(serverDescription);
   }
-
-  oappend("</ds>");
-  if (includeTheme)
-  {
-    char cs[6][9];
-    getThemeColors(cs);
-    oappend("<th><ca>#");
-    oappend(cs[0]);
-    oappend("</ca><cb>#");
-    oappend(cs[1]);
-    oappend("</cb><cc>#");
-    oappend(cs[2]);
-    oappend("</cc><cd>#");
-    oappend(cs[3]);
-    oappend("</cd><cu>#");
-    oappend(cs[4]);
-    oappend("</cu><ct>#");
-    oappend(cs[5]);
-    oappend("</ct><cf>");
-    oappend(cssFont);
-    oappend("</cf></th>");
-  }
-  oappend("</vs>");
+  oappend("</ds><ss>");
+  oappendi(strip.getMainSegmentId());
+  oappend("</ss></vs>");
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
 //append a numeric setting to string buffer
-void sappend(char stype, char* key, int val)
+void sappend(char stype, const char* key, int val)
 {
   char ds[] = "d.Sf.";
 
@@ -135,7 +113,7 @@ void sappend(char stype, char* key, int val)
 }
 
 //append a string setting to buffer
-void sappends(char stype, char* key, char* val)
+void sappends(char stype, const char* key, char* val)
 {
   switch(stype)
   {
@@ -223,8 +201,14 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   if (subPage == 2) {
+    #ifdef ESP8266
+    #if LEDPIN == 3
+    oappend("d.Sf.LC.max=500;");
+    #endif
+    #endif
     sappend('v',"LC",ledCount);
     sappend('v',"MA",strip.ablMilliampsMax);
+    sappend('v',"LA",strip.milliampsPerLed);
     if (strip.currentMilliamps)
     {
       sappends('m',"(\"pow\")[0]","");
@@ -232,33 +216,20 @@ void getSettingsJS(byte subPage, char* dest)
       oappendi(strip.currentMilliamps);
       oappend("mA\";");
     }
-    sappend('v',"CR",colS[0]);
-    sappend('v',"CG",colS[1]);
-    sappend('v',"CB",colS[2]);
+
     sappend('v',"CA",briS);
     sappend('c',"EW",useRGBW);
     sappend('i',"CO",strip.colorOrder);
     sappend('c',"AW",autoRGBtoRGBW);
-    sappend('v',"CW",colS[3]);
-    sappend('v',"SR",colSecS[0]);
-    sappend('v',"SG",colSecS[1]);
-    sappend('v',"SB",colSecS[2]);
-    sappend('v',"SW",colSecS[3]);
+
     sappend('c',"BO",turnOnAtBoot);
     sappend('v',"BP",bootPreset);
-    oappend("f=");
-    oappendi(effectDefault);
-    oappend(";p=");
-    oappendi(effectPaletteDefault);
-    oappend(";");
-    sappend('v',"SX",effectSpeedDefault);
-    sappend('v',"IX",effectIntensityDefault);
+
     sappend('c',"GB",strip.gammaCorrectBri);
     sappend('c',"GC",strip.gammaCorrectCol);
     sappend('c',"TF",fadeTransition);
-    sappend('v',"TD",transitionDelay);
+    sappend('v',"TD",transitionDelayDefault);
     sappend('c',"PF",strip.paletteFade);
-    sappend('c',"T2",enableSecTransition);
     sappend('v',"BF",briMultiplier);
     sappend('v',"TB",nightlightTargetBri);
     sappend('v',"TL",nightlightDelayMinsDefault);
@@ -266,21 +237,13 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);
+    sappend('v',"DL",disableNLeds);
   }
 
   if (subPage == 3)
   {
-    sappend('i',"UI",uiConfiguration);
     sappends('s',"DS",serverDescription);
-    sappend('c',"MD",useHSBDefault);
-    sappend('i',"TH",currentTheme);
-    char k[3]; k[0] = 'C'; k[2] = 0; //keys
-    for (int i=0; i<6; i++)
-    {
-      k[1] = 48+i; //ascii 0,1,2,3,4,5
-      sappends('s',k,cssCol[i]);
-    }
-    sappends('s',"CF",cssFont);
+    sappend('c',"ST",syncToggleReceive);
   }
 
   if (subPage == 4)
@@ -307,6 +270,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"AI",alexaInvocationName);
     sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
+
+    #ifdef WLED_ENABLE_MQTT
+    sappend('c',"MQ",mqttEnabled);
     sappends('s',"MS",mqttServer);
     sappend('v',"MQPORT",mqttPort);
     sappends('s',"MQUSER",mqttUser);
@@ -319,6 +285,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"MQCID",mqttClientID);
     sappends('s',"MD",mqttDeviceTopic);
     sappends('s',"MG",mqttGroupTopic);
+    #endif
+
+    #ifdef WLED_DISABLE_HUESYNC
+    sappends('m',"(\"hms\")[0]","Unsupported in build");
+    #else
     sappend('v',"H0",hueIP[0]);
     sappend('v',"H1",hueIP[1]);
     sappend('v',"H2",hueIP[2]);
@@ -330,11 +301,13 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"HB",hueApplyBri);
     sappend('c',"HC",hueApplyColor);
     sappends('m',"(\"hms\")[0]",hueError);
+    #endif
   }
 
   if (subPage == 5)
   {
     sappend('c',"NT",ntpEnabled);
+    sappends('s',"NS",ntpServerName);
     sappend('c',"CF",!useAMPM);
     sappend('i',"TZ",currentTimezone);
     sappend('v',"UO",utcOffsetSecs);
@@ -398,30 +371,4 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(") OK\";");
   }
   oappend("}</script>");
-}
-
-
-//get colors from current theme as c strings
-void getThemeColors(char o[][9])
-{
-  switch (currentTheme)
-  {
-    //       accent color (aCol)     background (bCol)       panel (cCol)            controls (dCol)         shadows (sCol)          text (tCol)
-    default: strcpy(o[0], "D9B310"); strcpy(o[1], "0B3C5D"); strcpy(o[2], "1D2731"); strcpy(o[3], "328CC1"); strcpy(o[4], "000");    strcpy(o[5], "328CC1"); break; //night
-    case 1:  strcpy(o[0], "eee");    strcpy(o[1], "ddd");    strcpy(o[2], "b9b9b9"); strcpy(o[3], "049");    strcpy(o[4], "777");    strcpy(o[5], "049");    break; //modern
-    case 2:  strcpy(o[0], "abb");    strcpy(o[1], "fff");    strcpy(o[2], "ddd");    strcpy(o[3], "000");    strcpy(o[4], "0004");   strcpy(o[5], "000");    break; //bright
-    case 3:  strcpy(o[0], "c09f80"); strcpy(o[1], "d7cec7"); strcpy(o[2], "76323f"); strcpy(o[3], "888");    strcpy(o[4], "3334");   strcpy(o[5], "888");    break; //wine
-    case 4:  strcpy(o[0], "3cc47c"); strcpy(o[1], "828081"); strcpy(o[2], "d9a803"); strcpy(o[3], "1e392a"); strcpy(o[4], "000a");   strcpy(o[5], "1e392a"); break; //electric
-    case 5:  strcpy(o[0], "57bc90"); strcpy(o[1], "a5a5af"); strcpy(o[2], "015249"); strcpy(o[3], "88c9d4"); strcpy(o[4], "0004");   strcpy(o[5], "88c9d4"); break; //mint
-    case 6:  strcpy(o[0], "f7c331"); strcpy(o[1], "dca");    strcpy(o[2], "6b7a8f"); strcpy(o[3], "f7882f"); strcpy(o[4], "0007");   strcpy(o[5], "f7882f"); break; //amber
-    case 7:  strcpy(o[0], "fff");    strcpy(o[1], "333");    strcpy(o[2], "222");    strcpy(o[3], "666");    strcpy(o[4], "");       strcpy(o[5], "fff");    break; //dark
-    case 8:  strcpy(o[0], "0ac");    strcpy(o[1], "124");    strcpy(o[2], "224");    strcpy(o[3], "003eff"); strcpy(o[4], "003eff"); strcpy(o[5], "003eff"); break; //air
-    case 9:  strcpy(o[0], "f70");    strcpy(o[1], "421");    strcpy(o[2], "221");    strcpy(o[3], "a50");    strcpy(o[4], "f70");    strcpy(o[5], "f70");    break; //nixie
-    case 10: strcpy(o[0], "2d2");    strcpy(o[1], "010");    strcpy(o[2], "121");    strcpy(o[3], "060");    strcpy(o[4], "040");    strcpy(o[5], "3f3");    break; //terminal
-    case 11: strcpy(o[0], "867ADE"); strcpy(o[1], "4033A3"); strcpy(o[2], "483AAA"); strcpy(o[3], "483AAA"); strcpy(o[4], "");       strcpy(o[5], "867ADE"); break; //c64
-    case 12: strcpy(o[0], "fbe8a6"); strcpy(o[1], "d2fdff"); strcpy(o[2], "b4dfe5"); strcpy(o[3], "f4976c"); strcpy(o[4], "");       strcpy(o[5], "303c6c"); break; //easter
-    case 13: strcpy(o[0], "d4af37"); strcpy(o[1], "173305"); strcpy(o[2], "308505"); strcpy(o[3], "f21313"); strcpy(o[4], "f002");   strcpy(o[5], "d4af37"); break; //christmas
-    case 14: strcpy(o[0], "fc7");    strcpy(o[1], "49274a"); strcpy(o[2], "94618e"); strcpy(o[3], "f4decb"); strcpy(o[4], "0008");   strcpy(o[5], "f4decb"); break; //end
-    case 15: for (int i=0;i<6;i++) strcpy(o[i], cssCol[i]); //custom
-  }
 }

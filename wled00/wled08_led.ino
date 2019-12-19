@@ -1,6 +1,23 @@
 /*
  * LED methods
  */
+void setValuesFromMainSeg()
+{
+  WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
+  colorFromUint32(seg.colors[0]);
+  colorFromUint32(seg.colors[1], true);
+  effectCurrent = seg.mode;
+  effectSpeed = seg.speed;
+  effectIntensity = seg.intensity;
+  effectPalette = seg.palette;
+}
+
+
+void resetTimebase()
+{
+  strip.timebase = 0 - millis();
+}
+
 
 void toggleOnOff()
 {
@@ -71,6 +88,8 @@ void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
   //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
+  if (callMode != 0 && callMode != 1 && callMode != 5) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
+  
   bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
   if (!colorChanged())
   {
@@ -82,10 +101,14 @@ void colorUpdated(int callMode)
       notify(6);
       if (callMode != 8) interfaceUpdateCallMode = 6;
       if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
+      if (isPreset) {isPreset = false;}
+          else {currentPreset = -1;}
     }
     return; //no change
   }
   if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
+  if (isPreset) {isPreset = false;}
+      else {currentPreset = -1;}
   if (callMode != 5 && nightlightActive && nightlightFade)
   {
     briNlT = bri;
@@ -97,6 +120,7 @@ void colorUpdated(int callMode)
     colIT[i] = col[i];
     colSecIT[i] = colSec[i];
   }
+  if (briT == 0 && callMode != 3) resetTimebase(); 
   briIT = bri;
   if (bri > 0) briLast = bri;
   

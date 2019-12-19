@@ -30,45 +30,61 @@
 #define LED_SKIP_AMOUNT  1
 #define MIN_SHOW_DELAY  15
 
-void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
+void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst, uint8_t disableNLeds)
 {
-  if (supportWhite == _rgbwMode && countPixels == _length && _locked != NULL) return;
+  if (supportWhite == _rgbwMode && countPixels == _length && _locked != NULL && disableNLeds == _disableNLeds) return;
   RESET_RUNTIME;
   _rgbwMode = supportWhite;
   _skipFirstMode = skipFirst;
   _length = countPixels;
-  
+
+  if (disableNLeds > 0) {
+    uint16_t groupCount = disableNLeds +1;
+    //since 1st led is lit, even partial group has a led lit, whereas int division truncates decimal.
+    bool hasExtraLight = _length % groupCount != 0;
+    _usableCount = _length/groupCount;
+    _usableCount += hasExtraLight ? 1 : 0;
+  } else {
+    _usableCount = _length;
+  }
+
+  _disableNLeds = disableNLeds;
+
   uint8_t ty = 1;
   if (supportWhite) ty =2;
-  uint16_t lengthRaw = _length;
-  if (_skipFirstMode) lengthRaw += LED_SKIP_AMOUNT;
-  bus->Begin((NeoPixelType)ty, lengthRaw);
+  _lengthRaw = _length;
+  if (_skipFirstMode) {
+    _lengthRaw += LED_SKIP_AMOUNT;
+  }
+
+  bus->Begin((NeoPixelType)ty, _lengthRaw);
   
   delete[] _locked;
   _locked = new byte[_length];
   
   _segments[0].start = 0;
-  _segments[0].stop = _length;
+  _segments[0].stop = _usableCount;
   
   unlockAll();
   setBrightness(_brightness);
 }
 
 void WS2812FX::service() {
-  now = millis() + timebase; // Be aware, millis() rolls over every 49 days
-  if (now - _lastShow < MIN_SHOW_DELAY) return;
+  uint32_t nowUp = millis(); // Be aware, millis() rolls over every 49 days
+  now = nowUp + timebase;
+  if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
     _segment_index = i;
     if (SEGMENT.isActive())
     {
-      if(now > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
+      if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
       {
         doShow = true;
         handle_palette();
         uint16_t delay = (this->*_mode[SEGMENT.mode])();
-        SEGENV.next_time = now + delay;
+        SEGENV.next_time = nowUp + delay;
         if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
       }
     }
@@ -76,7 +92,6 @@ void WS2812FX::service() {
   if(doShow) {
     yield();
     show();
-    _lastShow = millis();
   }
   _triggered = false;
 }
@@ -90,17 +105,18 @@ bool WS2812FX::modeUsesLock(uint8_t m)
 }
 
 void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
-  uint8_t w = (c >> 24) & 0xFF;
-  uint8_t r = (c >> 16) & 0xFF;
-  uint8_t g = (c >>  8) & 0xFF;
-  uint8_t b =  c        & 0xFF;
+  uint8_t w = (c >> 24);
+  uint8_t r = (c >> 16);
+  uint8_t g = (c >>  8);
+  uint8_t b =  c       ;
   setPixelColor(n, r, g, b, w);
 }
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
+  i = i * (_disableNLeds+1);
   if (_locked[i] && !_modeUsesLock) return;
-  if (IS_REVERSE)   i = SEGMENT.stop -1 -i - SEGMENT.start; //reverse just individual segment
+  if (IS_REVERSE) i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
   byte tmpg = g;
   switch (colorOrder) //0 = Grb, default
   {
@@ -117,17 +133,21 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       if (i < LED_SKIP_AMOUNT) bus->SetPixelColor(i, RgbwColor(0,0,0,0));
       i += LED_SKIP_AMOUNT;
     }
-  
-    bus->SetPixelColor(i, RgbwColor(r,g,b,w));
+    if (i < _lengthRaw) bus->SetPixelColor(i, RgbwColor(r,g,b,w));
+    if (_disableNLeds > 0) {
+      for(uint16_t offCount=0; offCount < _disableNLeds; offCount++) {
+        if (i < _lengthRaw) bus->SetPixelColor((i + offCount + 1), RgbwColor(0,0,0,0));
+      }
+    }
   } else {
     if(i>6)return;
     byte o = 10*i;
     if (_cronixieBacklightEnabled && _cronixieDigits[i] <11)
     {
-      byte r2 = (_segments[0].colors[1] >>16) & 0xFF;
-      byte g2 = (_segments[0].colors[1] >> 8) & 0xFF;
-      byte b2 = (_segments[0].colors[1]     ) & 0xFF;
-      byte w2 = (_segments[0].colors[1] >>24) & 0xFF;
+      byte r2 = _segments[0].colors[1] >>16;
+      byte g2 = _segments[0].colors[1] >> 8;
+      byte b2 = _segments[0].colors[1];
+      byte w2 = _segments[0].colors[1] >>24;
       for (int j=o; j< o+19; j++)
       {
         bus->SetPixelColor(j, RgbwColor(r2,g2,b2,w2));
@@ -183,11 +203,7 @@ void WS2812FX::setCronixieDigits(byte d[])
 //Stay safe with high amperage and have a reasonable safety margin!
 //I am NOT to be held liable for burned down garages!
 
-//fine tune power estimation constants for your setup
-#define PU_PER_MA        3600 //power units per milliamperere for accurate power estimation 
-                              //formula: 195075 divided by mA per fully lit LED, here ~54mA)
-                              //lowering the value increases the estimated usage and therefore makes the ABL more aggressive
-                              
+//fine tune power estimation constants for your setup                  
 #define MA_FOR_ESP        100 //how much mA does the ESP use (Wemos D1 about 80mA, ESP32 about 120mA)
                               //you can set it to 0 if the ESP is powered by USB and the LEDs by external
 
@@ -197,12 +213,13 @@ void WS2812FX::show(void) {
   //one PU is the power it takes to have 1 channel 1 step brighter per brightness step
   //so A=2,R=255,G=0,B=0 would use 510 PU per LED (1mA is about 3700 PU)
   
-  if (ablMilliampsMax > 149 && ablMilliampsMax < 65000) //lower numbers and 65000 turn off calculation
+  if (ablMilliampsMax > 149 && milliampsPerLed > 0) //0 mA per LED and too low numbers turn off calculation
   {
-    uint32_t powerBudget = (ablMilliampsMax - MA_FOR_ESP) * PU_PER_MA; //100mA for ESP power
-    if (powerBudget > PU_PER_MA * _length) //each LED uses about 1mA in standby, exclude that from power budget
+    uint32_t puPerMilliamp = 195075 / milliampsPerLed;
+    uint32_t powerBudget = (ablMilliampsMax - MA_FOR_ESP) * puPerMilliamp; //100mA for ESP power
+    if (powerBudget > puPerMilliamp * _length) //each LED uses about 1mA in standby, exclude that from power budget
     {
-      powerBudget -= PU_PER_MA * _length;
+      powerBudget -= puPerMilliamp * _length;
     } else
     {
       powerBudget = 0;
@@ -232,10 +249,10 @@ void WS2812FX::show(void) {
       uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
       uint8_t newBri = scale8(_brightness, scaleB);
       bus->SetBrightness(newBri);
-      currentMilliamps = (powerSum0 * newBri) / PU_PER_MA;
+      currentMilliamps = (powerSum0 * newBri) / puPerMilliamp;
     } else
     {
-      currentMilliamps = powerSum / PU_PER_MA;
+      currentMilliamps = powerSum / puPerMilliamp;
       bus->SetBrightness(_brightness);
     }
     currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate
@@ -246,6 +263,7 @@ void WS2812FX::show(void) {
   }
   
   bus->Show();
+  _lastShow = millis();
 }
 
 void WS2812FX::trigger() {
@@ -284,48 +302,28 @@ uint8_t WS2812FX::getPaletteCount()
 
 //TODO transitions
 
-void WS2812FX::setMode(uint8_t m) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) setMode(i, m);
-  }
-}
-
-void WS2812FX::setSpeed(uint8_t s) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) _segments[i].speed = s;
-  }
-}
-
-void WS2812FX::setIntensity(uint8_t in) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) _segments[i].intensity = in;
-  }
-}
-
-void WS2812FX::setPalette(uint8_t p) {
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) _segments[i].palette = p;
-  }
-}
 
 bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
-  uint8_t retSeg = getReturnedSegmentId();
-  Segment& seg = _segments[retSeg];
+  uint8_t mainSeg = getMainSegmentId();
+  Segment& seg = _segments[getMainSegmentId()];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
 
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected())
+  if (applyToAllSelected) {
+    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
-      _segments[i].speed = s;
-      _segments[i].intensity = in;
-      _segments[i].palette = p;
-      setMode(i, m);
+      if (_segments[i].isSelected())
+      {
+        _segments[i].speed = s;
+        _segments[i].intensity = in;
+        _segments[i].palette = p;
+        setMode(i, m);
+      }
     }
+  } else {
+    seg.speed = s;
+    seg.intensity = in;
+    seg.palette = p;
+    setMode(mainSegment, m);
   }
   
   if (seg.mode != modePrev || seg.speed != speedPrev || seg.intensity != intensityPrev || seg.palette != palettePrev) return true;
@@ -338,9 +336,13 @@ void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w
 
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (_segments[i].isSelected()) _segments[i].colors[slot] = c;
+  if (applyToAllSelected) {
+    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+    {
+      if (_segments[i].isSelected()) _segments[i].colors[slot] = c;
+    }
+  } else {
+    _segments[getMainSegmentId()].colors[slot] = c;
   }
 }
 
@@ -352,11 +354,11 @@ void WS2812FX::setBrightness(uint8_t b) {
 }
 
 uint8_t WS2812FX::getMode(void) {
-  return _segments[getReturnedSegmentId()].mode;
+  return _segments[getMainSegmentId()].mode;
 }
 
 uint8_t WS2812FX::getSpeed(void) {
-  return _segments[getReturnedSegmentId()].speed;
+  return _segments[getMainSegmentId()].speed;
 }
 
 uint8_t WS2812FX::getBrightness(void) {
@@ -367,7 +369,7 @@ uint8_t WS2812FX::getMaxSegments(void) {
   return MAX_NUM_SEGMENTS;
 }
 
-uint8_t WS2812FX::getFirstSelectedSegment(void)
+/*uint8_t WS2812FX::getFirstSelectedSegment(void)
 {
   for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
   {
@@ -378,24 +380,22 @@ uint8_t WS2812FX::getFirstSelectedSegment(void)
     if (_segments[i].isActive()) return i;
   }
   return 0;
-}
+}*/
 
-uint8_t WS2812FX::getReturnedSegmentId(void) {
-  if (returnedSegment >= MAX_NUM_SEGMENTS || !_segments[returnedSegment].isActive())
-  {
-    return getFirstSelectedSegment();
-  }
-  return returnedSegment;
+uint8_t WS2812FX::getMainSegmentId(void) {
+  if (mainSegment >= MAX_NUM_SEGMENTS) return 0;
+  return mainSegment;
 }
 
 uint32_t WS2812FX::getColor(void) {
-  return _segments[getReturnedSegmentId()].colors[0];
+  return _segments[getMainSegmentId()].colors[0];
 }
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
+  i = i * (_disableNLeds+1);
   if (reverseMode) i = _length- 1 -i;
-  if (IS_REVERSE)   i = SEGMENT.stop -1 -i - SEGMENT.start; //reverse just individual segment
+  if (IS_REVERSE)   i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
   if (_skipFirstMode) i += LED_SKIP_AMOUNT;
   if (_cronixieMode)
   {
@@ -416,6 +416,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
       default: return 0;
     }
   }
+  if (i >= _lengthRaw) return 0;
   RgbwColor lColor = bus->GetPixelColorRgbw(i);
   byte r = lColor.R, g = lColor.G, b = lColor.B;
   switch (colorOrder)
@@ -441,6 +442,14 @@ WS2812FX::Segment* WS2812FX::getSegments(void) {
   return _segments;
 }
 
+uint16_t WS2812FX::getUsableCount(void) {
+  return _usableCount;
+}
+
+uint32_t WS2812FX::getLastShow(void) {
+  return _lastShow;
+}
+
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2) {
   if (n >= MAX_NUM_SEGMENTS) return;
   Segment& seg = _segments[n];
@@ -451,6 +460,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2) {
     unlockRange(seg.start, seg.stop);
     _modeUsesLock = true;
   }
+  _segment_index = n; fill(0); //turn old segment range off
   if (i2 <= i1) //disable segment
   {
     seg.stop = 0; return;
@@ -471,6 +481,10 @@ void WS2812FX::resetSegments() {
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].stop = _length;
   _segments[0].setOption(0, 1); //select
+  for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
+  {
+    _segments[i].colors[0] = color_wheel(i*51);
+  }
 }
 
 void WS2812FX::setIndividual(uint16_t i, uint32_t col)
@@ -532,7 +546,7 @@ void WS2812FX::unlockAll()
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  _segment_index = 0;
+  _segment_index = getMainSegmentId();
   SEGMENT.setOption(7,t);
   if (!t) return;
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
@@ -635,6 +649,12 @@ void WS2812FX::blur(uint8_t blur_amount)
   }
 }
 
+uint16_t WS2812FX::triwave16(uint16_t in)
+{
+  if (in < 0x8000) return in *2;
+  return 0xFFFF - (in - 0x8000)*2;
+}
+
 /*
  * Put a value 0 to 255 in to get a color value.
  * The colours are a transition r -> g -> b -> back to r
@@ -695,7 +715,8 @@ void WS2812FX::handle_palette(void)
   _segment_index_palette_last = _segment_index;
 
   byte paletteIndex = SEGMENT.palette;
-  if ((SEGMENT.mode >= FX_MODE_METEOR) && SEGMENT.palette == 0) paletteIndex = 4;
+  if (SEGMENT.mode == FX_MODE_GLITTER && paletteIndex == 0) paletteIndex = 11;
+  if (SEGMENT.mode >= FX_MODE_METEOR && paletteIndex == 0) paletteIndex = 4;
   
   switch (paletteIndex)
   {
@@ -709,6 +730,7 @@ void WS2812FX::handle_palette(void)
         case FX_MODE_NOISE16_2  : targetPalette = gGradientPalettes[30]; break;//Blue cyan yellow
         case FX_MODE_NOISE16_3  : targetPalette = gGradientPalettes[22]; break;//heat palette
         case FX_MODE_NOISE16_4  : targetPalette = gGradientPalettes[13]; break;//landscape 33
+        //case FX_MODE_GLITTER    : targetPalette = RainbowColors_p;       break;
         
         default: targetPalette = PartyColors_p; break;//palette, bpm
       }
@@ -747,7 +769,8 @@ void WS2812FX::handle_palette(void)
     case 5: {//based on primary + secondary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
-      targetPalette = CRGBPalette16(sec,prim,CRGB::White); break;}
+      CRGB ter  = col_to_crgb(SEGCOLOR(2));
+      targetPalette = CRGBPalette16(ter,sec,prim); break;}
     case 6: //Party colors
       targetPalette = PartyColors_p; break;
     case 7: //Cloud colors
@@ -786,6 +809,22 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
   return  fastled_col.r*65536 +  fastled_col.g*256 +  fastled_col.b;
 }
 
+bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
+{
+  //if (a->start != b->start) return false;
+  //if (a->stop != b->stop) return false;
+  for (uint8_t i = 0; i < NUM_COLORS; i++)
+  {
+    if (a->colors[i] != b->colors[i]) return false;
+  }
+  if (a->mode != b->mode) return false;
+  if (a->speed != b->speed) return false;
+  if (a->intensity != b->intensity) return false;
+  if (a->palette != b->palette) return false;
+  //if (a->getOption(1) != b->getOption(1)) return false; //reverse
+  return true;
+}
+
 //gamma 2.4 lookup table used for color correction
 const byte gammaT[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -813,10 +852,10 @@ uint8_t WS2812FX::gamma8(uint8_t b)
 uint32_t WS2812FX::gamma32(uint32_t color)
 {
   if (!gammaCorrectCol) return color;
-  uint8_t w = (color >> 24) & 0xFF;
-  uint8_t r = (color >> 16) & 0xFF;
-  uint8_t g = (color >>  8) & 0xFF;
-  uint8_t b =  color        & 0xFF;
+  uint8_t w = (color >> 24);
+  uint8_t r = (color >> 16);
+  uint8_t g = (color >>  8);
+  uint8_t b =  color;
   w = gammaT[w];
   r = gammaT[r];
   g = gammaT[g];

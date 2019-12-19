@@ -14,6 +14,16 @@ void _setRandomColor(bool _sec,bool fromButton=false)
 }
 
 
+bool isAsterisksOnly(const char* str, byte maxLen)
+{
+  for (byte i = 0; i < maxLen; i++) {
+    if (str[i] == 0) break;
+    if (str[i] != '*') return false;
+  }
+  return true;
+}
+
+
 //called upon POST settings form submit
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
@@ -23,16 +33,17 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //WIFI SETTINGS
   if (subPage == 1)
   {
-    strcpy(clientSSID,request->arg("CS").c_str());
-    if (request->arg("CP").charAt(0) != '*') strcpy(clientPass, request->arg("CP").c_str());
+    strlcpy(clientSSID,request->arg("CS").c_str(), 33);
 
-    strcpy(cmDNS, request->arg("CM").c_str());
+    if (!isAsterisksOnly(request->arg("CP").c_str(), 65)) strlcpy(clientPass, request->arg("CP").c_str(), 65);
+
+    strlcpy(cmDNS, request->arg("CM").c_str(), 33);
 
     apBehavior = request->arg("AB").toInt();
-    strcpy(apSSID, request->arg("AS").c_str());
+    strlcpy(apSSID, request->arg("AS").c_str(), 33);
     apHide = request->hasArg("AH");
     int passlen = request->arg("AP").length();
-    if (passlen == 0 || (passlen > 7 && request->arg("AP").charAt(0) != '*')) strcpy(apPass, request->arg("AP").c_str());
+    if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg("AP").c_str(), 65))) strlcpy(apPass, request->arg("AP").c_str(), 65);
     int t = request->arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
 
     char k[3]; k[2] = 0;
@@ -56,44 +67,20 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     int t = request->arg("LC").toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
-    #ifndef ARDUINO_ARCH_ESP32
+    #ifdef ESP8266
     #if LEDPIN == 3
     if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
     #endif
     #endif
     strip.ablMilliampsMax = request->arg("MA").toInt();
+    strip.milliampsPerLed = request->arg("LA").toInt();
+    
     useRGBW = request->hasArg("EW");
     strip.colorOrder = request->arg("CO").toInt();
     autoRGBtoRGBW = request->hasArg("AW");
 
-    //ignore settings and save current brightness, colors and fx as default
-    if (request->hasArg("IS"))
-    {
-      for (byte i=0; i<4; i++)
-      {
-        colS[i] = col[i];
-        colSecS[i] = colSec[i];
-      }
-      briS = bri;
-      effectDefault = effectCurrent;
-      effectSpeedDefault = effectSpeed;
-      effectIntensityDefault = effectIntensity;
-      effectPaletteDefault = effectPalette;
-    } else {
-      colS[0] = request->arg("CR").toInt();
-      colS[1] = request->arg("CG").toInt();
-      colS[2] = request->arg("CB").toInt();
-      colSecS[0] = request->arg("SR").toInt();
-      colSecS[1] = request->arg("SG").toInt();
-      colSecS[2] = request->arg("SB").toInt();
-      colS[3] = request->arg("CW").toInt();
-      colSecS[3] = request->arg("SW").toInt();
-      briS = request->arg("CA").toInt();
-      effectDefault = request->arg("FX").toInt();
-      effectSpeedDefault = request->arg("SX").toInt();
-      effectIntensityDefault = request->arg("IX").toInt();
-      effectPaletteDefault = request->arg("FP").toInt();
-    }
+    briS = request->arg("CA").toInt();
+
     saveCurrPresetCycConf = request->hasArg("PC");
     turnOnAtBoot = request->hasArg("BO");
     t = request->arg("BP").toInt();
@@ -106,7 +93,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t > 0) transitionDelay = t;
     transitionDelayDefault = t;
     strip.paletteFade = request->hasArg("PF");
-    enableSecTransition = request->hasArg("T2");
 
     nightlightTargetBri = request->arg("TB").toInt();
     t = request->arg("TL").toInt();
@@ -118,6 +104,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0 && t < 4) strip.paletteBlend = t;
     strip.reverseMode = request->hasArg("RV");
     skipFirstLed = request->hasArg("SL");
+    disableNLeds = request->arg("DL").toInt();
     t = request->arg("BF").toInt();
     if (t > 0) briMultiplier = t;
   }
@@ -125,19 +112,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //UI
   if (subPage == 3)
   {
-    int t = request->arg("UI").toInt();
-    if (t >= 0 && t < 3) uiConfiguration = t;
-    strcpy(serverDescription, request->arg("DS").c_str());
-    useHSBDefault = request->hasArg("MD");
-    useHSB = useHSBDefault;
-    currentTheme = request->arg("TH").toInt();
-    char k[3]; k[0]='C'; k[2]=0;
-    for(int i=0;i<6;i++)
-    {
-      k[1] = i+48;
-      strcpy(cssCol[i],request->arg(k).c_str());
-    }
-    strcpy(cssFont,request->arg("CF").c_str());
+    strlcpy(serverDescription, request->arg("DS").c_str(), 33);
+    syncToggleReceive = request->hasArg("ST");
   }
 
   //SYNC
@@ -171,21 +147,25 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= -255  && t <= 255) arlsOffset = t;
 
     alexaEnabled = request->hasArg("AL");
-    strcpy(alexaInvocationName, request->arg("AI").c_str());
+    strlcpy(alexaInvocationName, request->arg("AI").c_str(), 33);
 
     if (request->hasArg("BK") && !request->arg("BK").equals("Hidden")) {
-      strcpy(blynkApiKey,request->arg("BK").c_str()); initBlynk(blynkApiKey);
+      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey);
     }
 
-    strcpy(mqttServer, request->arg("MS").c_str());
+    #ifdef WLED_ENABLE_MQTT
+    mqttEnabled = request->hasArg("MQ");
+    strlcpy(mqttServer, request->arg("MS").c_str(), 33);
     t = request->arg("MQPORT").toInt();
     if (t > 0) mqttPort = t;
-    strcpy(mqttUser, request->arg("MQUSER").c_str());
-    if (request->arg("MQPASS").charAt(0) != '*') strcpy(mqttPass, request->arg("MQPASS").c_str());
-    strcpy(mqttClientID, request->arg("MQCID").c_str());
-    strcpy(mqttDeviceTopic, request->arg("MD").c_str());
-    strcpy(mqttGroupTopic, request->arg("MG").c_str());
+    strlcpy(mqttUser, request->arg("MQUSER").c_str(), 41);
+    if (!isAsterisksOnly(request->arg("MQPASS").c_str(), 41)) strlcpy(mqttPass, request->arg("MQPASS").c_str(), 41);
+    strlcpy(mqttClientID, request->arg("MQCID").c_str(), 41);
+    strlcpy(mqttDeviceTopic, request->arg("MD").c_str(), 33);
+    strlcpy(mqttGroupTopic, request->arg("MG").c_str(), 33);
+    #endif
 
+    #ifndef WLED_DISABLE_HUESYNC
     for (int i=0;i<4;i++){
       String a = "H"+String(i);
       hueIP[i] = request->arg(a).toInt();
@@ -203,12 +183,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     huePollingEnabled = request->hasArg("HP");
     hueStoreAllowed = true;
     reconnectHue();
+    #endif
   }
 
   //TIME
   if (subPage == 5)
   {
     ntpEnabled = request->hasArg("NT");
+    strlcpy(ntpServerName, request->arg("NS").c_str(), 33);
     useAMPM = !request->hasArg("CF");
     currentTimezone = request->arg("TZ").toInt();
     utcOffsetSecs = request->arg("UO").toInt();
@@ -296,7 +278,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       if (!otaLock && request->arg("OP").length() > 0)
       {
-        strcpy(otaPass,request->arg("OP").c_str());
+        strlcpy(otaPass,request->arg("OP").c_str(), 33);
       }
     }
 
@@ -308,7 +290,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
   }
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
-  if (subPage == 2) strip.init(useRGBW,ledCount,skipFirstLed);
+  if (subPage == 2) {
+    strip.init(useRGBW,ledCount,skipFirstLed,disableNLeds);
+  }
   if (subPage == 4) alexaInit();
 }
 
@@ -373,10 +357,44 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     }
 
     pos = req.indexOf("IN");
-    if (pos < 1) XML_response(request, false);
+    if (pos < 1) XML_response(request);
     return true;
     //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
   }
+
+  strip.applyToAllSelected = true;
+
+  //segment select (sets main segment)
+  byte prevMain = strip.getMainSegmentId();
+  pos = req.indexOf("SM=");
+  if (pos > 0) {
+    strip.mainSegment = getNumVal(&req, pos);
+  }
+  byte main = strip.getMainSegmentId();
+  if (main != prevMain) setValuesFromMainSeg();
+
+  pos = req.indexOf("SS=");
+  if (pos > 0) {
+    byte t = getNumVal(&req, pos);
+    if (t < strip.getMaxSegments()) main = t;
+  }
+
+  pos = req.indexOf("SV="); //segment selected
+  if (pos > 0) strip.getSegment(main).setOption(0, (req.charAt(pos+3) != '0'));
+
+  uint16_t startI = strip.getSegment(main).start;
+  uint16_t stopI = strip.getSegment(main).stop;
+  pos = req.indexOf("&S="); //segment start
+  if (pos > 0) {
+    startI = getNumVal(&req, pos);
+  }
+  pos = req.indexOf("S2="); //segment stop
+  if (pos > 0) {
+    stopI = getNumVal(&req, pos);
+  }
+  strip.setSegment(main, startI, stopI);
+
+  main = strip.getMainSegmentId();
 
   //set brightness
   updateVal(&req, "&A=", &bri);
@@ -413,43 +431,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     colorFromDecOrHexString(colSec, (char*)req.substring(pos + 3).c_str());
   }
 
-  //set 2nd to white
-  pos = req.indexOf("SW");
-  if (pos > 0) {
-    if(useRGBW) {
-      colSec[3] = 255;
-      colSec[0] = 0;
-      colSec[1] = 0;
-      colSec[2] = 0;
-    } else {
-      colSec[0] = 255;
-      colSec[1] = 255;
-      colSec[2] = 255;
-    }
-  }
-
-  //set 2nd to black
-  pos = req.indexOf("SB");
-  if (pos > 0) {
-    colSec[3] = 0;
-    colSec[0] = 0;
-    colSec[1] = 0;
-    colSec[2] = 0;
-  }
-
   //set to random hue SR=0->1st SR=1->2nd
   pos = req.indexOf("SR");
   if (pos > 0) {
     _setRandomColor(getNumVal(&req, pos));
-  }
-
-  //set 2nd to 1st
-  pos = req.indexOf("SP");
-  if (pos > 0) {
-    colSec[0] = col[0];
-    colSec[1] = col[1];
-    colSec[2] = col[2];
-    colSec[3] = col[3];
   }
 
   //swap 2nd & 1st
@@ -469,27 +454,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   updateVal(&req, "SX=", &effectSpeed);
   updateVal(&req, "IX=", &effectIntensity);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
-
-  //set hue polling light: 0 -off
-  #ifndef WLED_DISABLE_HUESYNC
-  pos = req.indexOf("HP=");
-  if (pos > 0) {
-    int id = getNumVal(&req, pos);
-    if (id > 0)
-    {
-      if (id < 100) huePollLightId = id;
-      reconnectHue();
-    } else {
-      huePollingEnabled = false;
-    }
-  }
-  #endif
-
-  //set default control mode (0 - RGB, 1 - HSB)
-  pos = req.indexOf("MD=");
-  if (pos > 0) {
-    useHSB = getNumVal(&req, pos);
-  }
 
   //set advanced overlay
   pos = req.indexOf("OL=");
@@ -601,7 +565,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   //Segment reverse
   pos = req.indexOf("RV=");
-  if (pos > 0) strip.getSegment(0).setOption(1, req.charAt(pos+3) != '0');
+  if (pos > 0) strip.getSegment(main).setOption(1, req.charAt(pos+3) != '0');
 
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri) nightlightActive = false;
@@ -660,17 +624,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   #ifndef WLED_DISABLE_CRONIXIE
   pos = req.indexOf("NX="); //sets digits to code
   if (pos > 0) {
-    strcpy(cronixieDisplay,req.substring(pos + 3, pos + 9).c_str());
+    strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
     setCronixie();
   }
 
-  if (req.indexOf("NB=") > 0) //sets backlight
+  pos = req.indexOf("NB=");
+  if (pos > 0) //sets backlight
   {
-    cronixieBacklight = true;
-    if (req.indexOf("NB=0") > 0)
-    {
-      cronixieBacklight = false;
-    }
+    presetApplyFx = (req.charAt(pos+3) != '0');
     if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
     overlayRefreshedTime = 0;
   }
@@ -692,7 +653,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   //internal call, does not send XML response
   pos = req.indexOf("IN");
-  if (pos < 1) XML_response(request, (req.indexOf("&IT") > 0)); //include theme if firstload
+  if (pos < 1) XML_response(request);
 
   pos = req.indexOf("&NN"); //do not send UDP notifications this time
   colorUpdated((pos > 0) ? 5:1);
