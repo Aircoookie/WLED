@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.9.0-b1
+ * @version 0.9.0-b2
  * @author Christian Schwinne
  */
 
@@ -98,7 +98,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1912191
+#define VERSION 1912211
 char versionString[] = "0.9.0-b2";
 
 
