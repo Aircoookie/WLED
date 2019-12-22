@@ -1,12 +1,18 @@
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 
+//The SCL and SDA pins are defined here. 
+//Lolin32 boards use SCL=4 SDA=5 
+#define U8X8_PIN_SCL 5
+#define U8X8_PIN_SDA 4
+
+
 // If display does not work or looks corrupted check the
 // constructor reference:
 // https://github.com/olikraus/u8g2/wiki/u8x8setupcpp
 // or check the gallery:
 // https://github.com/olikraus/u8g2/wiki/gallery
-U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, 5,
-                                          4); // Pins are Reset, SCL, SDA
+U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL,
+                                          U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
 
 // gets called once at boot. Do all initialization that doesn't depend on
 // network here
