@@ -947,18 +947,17 @@ uint16_t WS2812FX::mode_running_random(void) {
  * K.I.T.T.
  */
 uint16_t WS2812FX::mode_larson_scanner(void) {
+  uint16_t counter = now * (SEGMENT.speed >>3) +1;
+  uint16_t index = counter * SEGLEN * 2 >> 16;
+
   fade_out(SEGMENT.intensity);
 
-  uint16_t index = 0;
-  if(SEGENV.step < SEGLEN) {
-    index = SEGMENT.start + SEGENV.step;
-  } else {
-    index = SEGMENT.start + ((SEGLEN * 2) - SEGENV.step) - 2;
+  if (index >= SEGLEN) {
+    index = SEGLEN - (index - SEGLEN + 1);
   }
   setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
 
-  SEGENV.step = (SEGENV.step + 1) % ((SEGLEN * 2) - 2);
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
@@ -966,13 +965,14 @@ uint16_t WS2812FX::mode_larson_scanner(void) {
  * Firing comets from one end.
  */
 uint16_t WS2812FX::mode_comet(void) {
+  uint16_t counter = now * (SEGMENT.speed >>3) +1;
+  uint16_t index = counter * SEGLEN >> 16;
+
   fade_out(SEGMENT.intensity);
 
-  uint16_t index = SEGMENT.start + SEGENV.step;
   setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
 
-  SEGENV.step = (SEGENV.step + 1) % SEGLEN;
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
@@ -1058,12 +1058,12 @@ uint16_t WS2812FX::gradient_base(bool loading) {
   if (SEGENV.call == 0) SEGENV.step = 0;
   float per,val; //0.0 = sec 1.0 = pri
   float brd = SEGMENT.intensity;
-  if (!loading) brd = SEGMENT.intensity/2; 
+  if (!loading) brd = SEGMENT.intensity/2;
   if (brd <1.0) brd = 1.0;
   int pp = SEGENV.step;
   int p1 = pp-SEGLEN;
   int p2 = pp+SEGLEN;
-  
+
   for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++)
   {
     if (loading)
@@ -1074,9 +1074,9 @@ uint16_t WS2812FX::gradient_base(bool loading) {
     }
     per = val/brd;
     if (per >1.0) per = 1.0;
-    setPixelColor(SEGMENT.start + i, color_blend(SEGCOLOR(0), color_from_palette(SEGMENT.start + i, true, PALETTE_SOLID_WRAP, 1), per*255));
+    setPixelColor(i, color_blend(SEGCOLOR(0), color_from_palette(i, true, PALETTE_SOLID_WRAP, 1), per*255));
   }
-  
+
   SEGENV.step++;
   if (SEGENV.step >= SEGMENT.stop) SEGENV.step = SEGMENT.start;
   if (SEGMENT.speed == 0) SEGENV.step = SEGMENT.start + (SEGLEN >> 1);
@@ -1199,7 +1199,7 @@ uint16_t WS2812FX::mode_icu(void) {
 
   byte pindex = map(dest, 0, SEGLEN/2, 0, 255);
   uint32_t col = color_from_palette(pindex, false, false, 0);
- 
+
   setPixelColor(SEGMENT.start + dest, col);
   setPixelColor(SEGMENT.start + dest + SEGLEN/2, col);
 
@@ -1278,9 +1278,9 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
   uint32_t color = 0;
   for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
     if (stage == 2) {
-      color = color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), color2, stp); 
+      color = color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), color2, stp);
     } else if (stage == 1) {
-      color = color_blend(color1, color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), stp); 
+      color = color_blend(color1, color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), stp);
     } else {
       color = color_blend(color1, color2, stp);
     }
@@ -1330,19 +1330,13 @@ uint16_t WS2812FX::mode_multi_comet(void)
  * Custom mode by Keith Lord: https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/DualLarson.h
  */
 uint16_t WS2812FX::mode_dual_larson_scanner(void){
-  if (SEGENV.aux0)
-  {
-    SEGENV.step--;
-  } else
-  {
-    SEGENV.step++;
-  }
+  uint16_t counter = now * (SEGMENT.speed >>3) +1;
+  uint16_t index = counter * SEGLEN >> 16;
 
   fade_out(SEGMENT.intensity);
 
-  uint16_t index = SEGMENT.start + SEGENV.step;
   setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
-  index = SEGMENT.stop - SEGENV.step -1;
+  index = SEGMENT.stop - index -1;
   if (SEGCOLOR(2) != 0)
   {
     setPixelColor(index, SEGCOLOR(2));
@@ -1351,10 +1345,7 @@ uint16_t WS2812FX::mode_dual_larson_scanner(void){
     setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
   }
 
-  if(SEGENV.step >= SEGLEN -1 || SEGENV.step <= 0)
-  SEGENV.aux0 = !SEGENV.aux0;
-  
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
@@ -1383,40 +1374,53 @@ typedef struct Oscillator {
   int8_t  size;
   int8_t  dir;
   int8_t  speed;
+  uint16_t timeref;
 } oscillator;
 
+/*
+/  Oscillating bars of color, updated with standard framerate
+*/
 uint16_t WS2812FX::mode_oscillate(void)
 {
-  static oscillator oscillators[2] = {
-    {SEGLEN/4,   SEGLEN/8,  1, 1},
-    {SEGLEN/4*2, SEGLEN/8, -1, 1}
-    //{SEGLEN/4*3, SEGLEN/8,  1, 2}
+  uint16_t counter;
+  uint16_t index;
+
+  static oscillator oscillators[NUM_COLORS] = {
+    {SEGLEN-1, SEGLEN/8,  -1, 4},
+    {0,        SEGLEN/8,   1, 3},
+    {SEGLEN-1, SEGLEN/8,  -1, 2}
   };
 
   for(int8_t i=0; i < sizeof(oscillators)/sizeof(oscillators[0]); i++) {
-    oscillators[i].pos += oscillators[i].dir * oscillators[i].speed;
-    if((oscillators[i].dir == -1) && (oscillators[i].pos <= 0)) {
-      oscillators[i].pos = 0;
-      oscillators[i].dir = 1;
-      oscillators[i].speed = random8(1, 3);
+    oscillators[i].size = SEGLEN/(3+SEGMENT.intensity/8);
+    //calculate the change since last cycle
+    counter = (now - oscillators[i].timeref) * ((SEGMENT.speed >> oscillators[i].speed) +1);
+    index = (counter * SEGLEN) >> 16;
+    
+    if (oscillators[i].dir == -1) {
+      oscillators[i].pos = SEGLEN - 1 - index;
+    } else  {
+      oscillators[i].pos = index;
     }
-    if((oscillators[i].dir == 1) && (oscillators[i].pos >= (SEGLEN - 1))) {
-      oscillators[i].pos = SEGLEN - 1;
-      oscillators[i].dir = -1;
-      oscillators[i].speed = random8(1, 3);
+
+    if (index >= SEGLEN - 1) {
+      //switch direction once while at each end of cycle
+      if (now - oscillators[i].timeref > 1000) oscillators[i].dir *= -1;
+      oscillators[i].timeref = now;
+      oscillators[i].speed = random8(2, 4);
     }
   }
-
+ 
   for(int16_t i=0; i < SEGLEN; i++) {
     uint32_t color = BLACK;
     for(int8_t j=0; j < sizeof(oscillators)/sizeof(oscillators[0]); j++) {
       if(i >= oscillators[j].pos - oscillators[j].size && i <= oscillators[j].pos + oscillators[j].size) {
-        color = (color == BLACK) ? SEGMENT.colors[j] : color_blend(color, SEGMENT.colors[j], 128);
+        color = (color == BLACK) ? SEGCOLOR(j) : color_blend(color, SEGCOLOR(j), 128);
       }
     }
     setPixelColor(SEGMENT.start + i, color);
   }
-  return 15 + (uint32_t)(255 - SEGMENT.speed);
+  return FRAMETIME;
 }
 
 
@@ -1424,17 +1428,17 @@ uint16_t WS2812FX::mode_lightning(void)
 {
   uint16_t ledstart = SEGMENT.start + random16(SEGLEN);               // Determine starting location of flash
   uint16_t ledlen = random16(SEGMENT.stop -1 -ledstart);                      // Determine length of flash (not to go beyond NUM_LEDS-1)
-  uint8_t bri = 255/random8(1, 3);   
+  uint8_t bri = 255/random8(1, 3);
 
   if (SEGENV.step == 0)
   {
     SEGENV.aux0 = random8(3, 3 + SEGMENT.intensity/20); //number of flashes
-    bri = 52; 
+    bri = 52;
     SEGENV.aux1 = 1;
   }
 
   fill(SEGCOLOR(1));
-  
+
   if (SEGENV.aux1) {
     for (int i = ledstart; i < ledstart + ledlen; i++)
     {
@@ -1468,7 +1472,7 @@ uint16_t WS2812FX::mode_pride_2015(void)
   uint16_t duration = 10 + SEGMENT.speed;
   uint16_t sPseudotime = SEGENV.step;
   uint16_t sHue16 = SEGENV.aux0;
- 
+
   uint8_t sat8 = beatsin88( 87, 220, 250);
   uint8_t brightdepth = beatsin88( 341, 96, 224);
   uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 256), (40 * 256));
@@ -1476,12 +1480,12 @@ uint16_t WS2812FX::mode_pride_2015(void)
 
   uint16_t hue16 = sHue16;//gHue * 256;
   uint16_t hueinc16 = beatsin88(113, 1, 3000);
-  
+
   sPseudotime += duration * msmultiplier;
   sHue16 += duration * beatsin88( 400, 5,9);
   uint16_t brightnesstheta16 = sPseudotime;
   CRGB fastled_col;
-  
+
   for( uint16_t i = SEGMENT.start ; i < SEGMENT.stop; i++) {
     hue16 += hueinc16;
     uint8_t hue8 = hue16 >> 8;
@@ -1492,16 +1496,16 @@ uint16_t WS2812FX::mode_pride_2015(void)
     uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
     uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
     bri8 += (255 - brightdepth);
-    
+
     CRGB newcolor = CHSV( hue8, sat8, bri8);
     fastled_col = col_to_crgb(getPixelColor(i));
-    
+
     nblend( fastled_col, newcolor, 64);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
   SEGENV.step = sPseudotime;
   SEGENV.aux0 = sHue16;
-  return 20;
+  return FRAMETIME;
 }
 
 
