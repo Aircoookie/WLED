@@ -88,8 +88,8 @@ bool deserializeState(JsonObject root)
   int ps = root["ps"] | -1;
   if (ps >= 0) applyPreset(ps);
   
-  int cy = root["pl"] | -1;
-  presetCyclingEnabled = (cy >= 0);
+  int cy = root["pl"] | -2;
+  if (cy > -2) presetCyclingEnabled = (cy >= 0);
   JsonObject ccnf = root["ccnf"];
   presetCycleMin = ccnf["min"] | presetCycleMin;
   presetCycleMax = ccnf["max"] | presetCycleMax;

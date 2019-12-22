@@ -102,9 +102,20 @@ void initServer()
     serveJson(request);
   });
 
-  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request, JsonObject root) {
-    if (root.isNull()){request->send(500, "application/json", "{\"error\":\"Parsing failed\"}"); return;}
-    if (deserializeState(root)) { serveJson(request); return; } //if JSON contains "v" (verbose response)
+  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
+    bool verboseResponse = false;
+    { //scope JsonDocument so it releases its buffer
+      DynamicJsonDocument jsonBuffer(8192);
+      DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
+      JsonObject root = jsonBuffer.as<JsonObject>();
+      if (error || root.isNull()) {
+        request->send(400, "application/json", "{\"error\":10}"); return;
+      }
+      verboseResponse = deserializeState(root);
+    }
+    if (verboseResponse) { //if JSON contains "v"
+      serveJson(request); return; 
+    } 
     request->send(200, "application/json", "{\"success\":true}");
   });
   server.addHandler(handler);
