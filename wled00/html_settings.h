@@ -121,7 +121,7 @@ Color order:
 <select name=CO>
 <option value=0>GRB</option>
 <option value=1>RGB</option>
-<option value=2 disabled>BRG</option>
+<option value=2>BRG</option>
 <option value=3>RBG</option>
 </select>
 <h3>Defaults</h3>
@@ -167,7 +167,8 @@ function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}fun
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Web Setup</h2>
-Server description: <input name="DS" maxlength="32"><br><br>
+Server description: <input name="DS" maxlength="32"><br>
+Sync button toggles both send and receive: <input type="checkbox" name="ST"><br><br>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
@@ -218,6 +219,7 @@ For best results, only use one of these services at a time.<br>
 Device Auth token: <input name="BK" maxlength="33"><br>
 <i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
 <h3>MQTT</h3>
+Enable MQTT: <input type="checkbox" name="MQ"><br>
 Broker: <input name="MS" maxlength="32">
 Port: <input name="MQPORT" type="number" min="1" max="65535" required><br>
 <b>The MQTT credentials are sent over an unsecured connection.<br>
@@ -287,7 +289,7 @@ Clock Overlay:
 <select name="OL" onchange="Cs()">
 <option value="0" id="cn" selected>None</option>
 <option value="1" id="ca">Analog Clock</option>
-<option value="2">Single Digit Clock</option>
+<option value="2" disabled>-</option>
 <option value="3" id="cc">Cronixie Clock</option>
 </select><br>
 <div id="coc">
@@ -365,7 +367,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.0-dev<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.0-b1<br><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2019 Christian Schwinne <br>

@@ -481,6 +481,10 @@ void WS2812FX::resetSegments() {
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].stop = _length;
   _segments[0].setOption(0, 1); //select
+  for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
+  {
+    _segments[i].colors[0] = color_wheel(i*51);
+  }
 }
 
 void WS2812FX::setIndividual(uint16_t i, uint32_t col)

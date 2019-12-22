@@ -151,7 +151,7 @@ uint16_t WS2812FX::color_wipe(bool rev, bool useRandomColors) {
   uint32_t col1 = useRandomColors? color_wheel(SEGENV.aux1) : SEGCOLOR(1);
   for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
   {
-    uint16_t index = (rev && back)? SEGMENT.stop -1 -i : i;
+    uint16_t index = (rev && back)? SEGMENT.stop -1 -i +SEGMENT.start : i;
     uint32_t col0 = useRandomColors? color_wheel(SEGENV.aux0) : color_from_palette(index, true, PALETTE_SOLID_WRAP, 0);
     
     if (i - SEGMENT.start < ledIndex) 
@@ -729,33 +729,40 @@ uint16_t WS2812FX::mode_colorful(void) {
     cols[3] = 0x0077F0F0;
     for (uint8_t i = 4; i < 7; i++) cols[i] = cols[i-4];
   }
-  int i = SEGMENT.start;
-  for (i; i < SEGMENT.stop ; i+=4)
+  
+  uint32_t cycleTime = 50 + (15 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t it = now / cycleTime;
+  if (it != SEGENV.step)
   {
-    setPixelColor(i, cols[SEGENV.step]);
-    setPixelColor(i+1, cols[SEGENV.step+1]);
-    setPixelColor(i+2, cols[SEGENV.step+2]);
-    setPixelColor(i+3, cols[SEGENV.step+3]);
+    if (SEGMENT.speed > 0) SEGENV.aux0++;
+    if (SEGENV.aux0 > 3) SEGENV.aux0 = 0;
+    SEGENV.step = it;
   }
-  i+=4;
+  
+  uint16_t i = SEGMENT.start;
+  for (i; i < SEGMENT.stop -3; i+=4)
+  {
+    setPixelColor(i, cols[SEGENV.aux0]);
+    setPixelColor(i+1, cols[SEGENV.aux0+1]);
+    setPixelColor(i+2, cols[SEGENV.aux0+2]);
+    setPixelColor(i+3, cols[SEGENV.aux0+3]);
+  }
   if(i < SEGMENT.stop)
   {
-    setPixelColor(i, cols[SEGENV.step]);
+    setPixelColor(i, cols[SEGENV.aux0]);
     
     if(i+1 < SEGMENT.stop)
     {
-      setPixelColor(i+1, cols[SEGENV.step+1]);
+      setPixelColor(i+1, cols[SEGENV.aux0+1]);
       
       if(i+2 < SEGMENT.stop)
       {
-        setPixelColor(i+2, cols[SEGENV.step+2]);
+        setPixelColor(i+2, cols[SEGENV.aux0+2]);
       }
     }
   }
   
-  if (SEGMENT.speed > 0) SEGENV.step++; //static if lowest speed
-  if (SEGENV.step >3) SEGENV.step = 0;
-  return 50 + (15 * (uint32_t)(255 - SEGMENT.speed));
+  return FRAMETIME;
 }
 
 
@@ -768,7 +775,7 @@ uint16_t WS2812FX::mode_traffic_light(void) {
   uint32_t mdelay = 500;
   for (int i = SEGMENT.start; i < SEGMENT.stop-2 ; i+=3)
   {
-    switch (SEGENV.step)
+    switch (SEGENV.aux0)
     {
       case 0: setPixelColor(i, 0x00FF0000); mdelay = 150 + (100 * (uint32_t)(255 - SEGMENT.speed));break;
       case 1: setPixelColor(i, 0x00FF0000); mdelay = 150 + (20 * (uint32_t)(255 - SEGMENT.speed)); setPixelColor(i+1, 0x00EECC00); break;
@@ -777,9 +784,14 @@ uint16_t WS2812FX::mode_traffic_light(void) {
     }
   }
 
-  SEGENV.step++;
-  if (SEGENV.step >3) SEGENV.step = 0;
-  return mdelay;
+  if (now - SEGENV.step > mdelay)
+  {
+    SEGENV.aux0++;
+    if (SEGENV.aux0 > 3) SEGENV.aux0 = 0;
+    SEGENV.step = now;
+  }
+  
+  return FRAMETIME;
 }
 
 
@@ -2306,6 +2318,10 @@ uint16_t WS2812FX::mode_glitter()
 }
 
 
+//values close to 100 produce 5Hz flicker, which looks very candle-y
+//Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
+//and https://cpldcpu.wordpress.com/2016/01/05/reverse-engineering-a-real-candle/
+
 uint16_t WS2812FX::mode_candle()
 {
   if (SEGENV.call == 0) {
@@ -2333,17 +2349,14 @@ uint16_t WS2812FX::mode_candle()
     uint8_t valrange = SEGMENT.intensity;
     uint8_t rndval = valrange >> 1;
     target = random8(rndval) + random8(rndval);
-    if (target < (rndval >> 1)) target += random8(rndval >> 1);
+    if (target < (rndval >> 1)) target = (rndval >> 1) + random8(rndval);
     uint8_t offset = (255 - valrange) >> 1;
     target += offset;
 
     uint8_t dif = (target > s) ? target - s : s - target;
-    uint16_t fadeSpeed = 50 + ((255-SEGMENT.speed) >> 1);
   
     //how much to move closer to target per frame
-    fadeStep = dif;
-    uint8_t frames = 1;
-    if (fadeSpeed > FRAMETIME) fadeStep = dif / (fadeSpeed / FRAMETIME);
+    fadeStep = dif >> 2; //mode called every ~25 ms, so 4 frames to have a new target every 100ms
     if (fadeStep == 0) fadeStep = 1;
     
     SEGENV.step = fadeStep;

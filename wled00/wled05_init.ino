@@ -140,7 +140,10 @@ void initAP(bool resetAP=false){
     if (udpPort > 0 && udpPort != ntpLocalPort)
     {
       udpConnected = notifierUdp.begin(udpPort);
-      if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
+    }
+    if (udpRgbPort > 0 && udpRgbPort != ntpLocalPort && udpRgbPort != udpPort)
+    {
+      udpRgbConnected = rgbUdp.begin(udpRgbPort);
     }
 
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);

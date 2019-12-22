@@ -15,7 +15,7 @@
 #include "ArduinoJson-v6.h"
 #include <Print.h>
 
-#define DYNAMYC_JSON_DOCUMENT_SIZE 8192
+#define DYNAMIC_JSON_DOCUMENT_SIZE 8192
 
 constexpr const char* JSON_MIMETYPE = "application/json";
 
@@ -60,7 +60,7 @@ class AsyncJsonResponse: public AsyncAbstractResponse {
 
   public:    
 
-    AsyncJsonResponse(size_t maxJsonBufferSize = DYNAMYC_JSON_DOCUMENT_SIZE, bool isArray=false) : _jsonBuffer(maxJsonBufferSize), _isValid{false} {
+    AsyncJsonResponse(size_t maxJsonBufferSize = DYNAMIC_JSON_DOCUMENT_SIZE, bool isArray=false) : _jsonBuffer(maxJsonBufferSize), _isValid{false} {
       _code = 200;
       _contentType = JSON_MIMETYPE;
       if(isArray)
@@ -90,7 +90,7 @@ class AsyncJsonResponse: public AsyncAbstractResponse {
     }
 };
 
-typedef std::function<void(AsyncWebServerRequest *request, JsonObject json)> ArJsonRequestHandlerFunction;
+typedef std::function<void(AsyncWebServerRequest *request)> ArJsonRequestHandlerFunction;
 
 class AsyncCallbackJsonWebHandler: public AsyncWebHandler {
 private:
@@ -103,7 +103,7 @@ protected:
   int _maxContentLength;
 public:
 
-  AsyncCallbackJsonWebHandler(const String& uri, ArJsonRequestHandlerFunction onRequest, size_t maxJsonBufferSize=DYNAMYC_JSON_DOCUMENT_SIZE) 
+  AsyncCallbackJsonWebHandler(const String& uri, ArJsonRequestHandlerFunction onRequest, size_t maxJsonBufferSize=DYNAMIC_JSON_DOCUMENT_SIZE) 
   : _uri(uri), _method(HTTP_POST|HTTP_PUT|HTTP_PATCH), _onRequest(onRequest), maxJsonBufferSize(maxJsonBufferSize), _maxContentLength(16384) {}
   
   void setMethod(WebRequestMethodComposite method){ _method = method; }
@@ -127,15 +127,8 @@ public:
   virtual void handleRequest(AsyncWebServerRequest *request) override final {
     if(_onRequest) {
       if (request->_tempObject != NULL) {
-
-        DynamicJsonDocument jsonBuffer(this->maxJsonBufferSize);
-        DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
-        if(!error) {
-          JsonObject json = jsonBuffer.as<JsonObject>();
-
-          _onRequest(request, json);
-          return;
-        }
+        _onRequest(request);
+        return;
       }
       request->send(_contentLength > _maxContentLength ? 413 : 400);
     } else {
