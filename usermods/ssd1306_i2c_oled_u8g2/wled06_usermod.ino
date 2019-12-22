@@ -80,9 +80,9 @@ void userLoop() {
 
   // First row with Wifi name
   u8x8.setCursor(1, 0);
-  u8x8.print(ssid.substring(0, u8x8.getCols() > 1 ? u8x8.getCols() - 2 : 0));
+  u8x8.print(knownSsid.substring(0, u8x8.getCols() > 1 ? u8x8.getCols() - 2 : 0));
   // Print `~` char to indicate that SSID is longer, than owr dicplay
-  if (ssid.length() > u8x8.getCols())
+  if (knownSsid.length() > u8x8.getCols())
     u8x8.print("~");
 
   // Second row with IP or Psssword
@@ -91,7 +91,7 @@ void userLoop() {
   if (apActive && bri == 0)
     u8x8.print(apPass);
   else
-    u8x8.print(ip);
+    u8x8.print(knownIp);
 
   // Third row with mode name
   u8x8.setCursor(2, 2);
