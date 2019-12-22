@@ -69,7 +69,7 @@ void userLoop() {
   needRedraw = false;
 
   // Update last known values.
-  #ifdef(ESP8266)
+  #if defined(ESP8266)
   knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
   #else
   knownSsid = WiFi.SSID();
