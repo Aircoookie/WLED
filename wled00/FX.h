@@ -543,6 +543,7 @@ class WS2812FX {
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
       running_base(bool),
+      larson_scanner(bool),
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
