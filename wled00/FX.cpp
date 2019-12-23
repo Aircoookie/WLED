@@ -116,7 +116,7 @@ uint16_t WS2812FX::mode_strobe_rainbow(void) {
  * if (bool rev == true) then LEDs are turned off in reverse order
  */
 uint16_t WS2812FX::color_wipe(bool rev, bool useRandomColors) {
-  uint32_t cycleTime = 1000 + (255 - SEGMENT.speed)*200;
+  uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
   uint32_t perc = now % cycleTime;
   uint16_t prog = (perc * 65535) / cycleTime;
   bool back = (prog > 32767);
@@ -298,13 +298,14 @@ uint16_t WS2812FX::mode_fade(void) {
  */
 uint16_t WS2812FX::scan(bool dual)
 {
-  if(SEGENV.step > (SEGLEN * 2) - 3) {
-    SEGENV.step = 0;
-  }
+  uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
+  uint32_t perc = now % cycleTime;
+  uint16_t prog = (perc * 65535) / cycleTime;
+  uint16_t ledIndex = (prog * ((SEGLEN * 2) - 2)) >> 16;
 
   fill(SEGCOLOR(1));
 
-  int led_offset = SEGENV.step - (SEGLEN - 1);
+  int led_offset = ledIndex - (SEGLEN - 1);
   led_offset = abs(led_offset);
 
   uint16_t i = SEGMENT.start + led_offset;
@@ -315,8 +316,7 @@ uint16_t WS2812FX::scan(bool dual)
     setPixelColor(i2, color_from_palette(i2, true, PALETTE_SOLID_WRAP, 0));
   }
 
-  SEGENV.step++;
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
@@ -507,7 +507,7 @@ uint16_t WS2812FX::dissolve(uint32_t color) {
     SEGENV.call = 0;
   }
   
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -1014,14 +1014,14 @@ uint16_t WS2812FX::mode_fireworks() {
       SEGENV.aux0 = index;
     }
   }
-  return 22;
+  return FRAMETIME;
 }
 
 
 //Twinkling LEDs running. Inspired by https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Rain.h
 uint16_t WS2812FX::mode_rain()
 {
-  SEGENV.step += 22;
+  SEGENV.step += FRAMETIME;
   if (SEGENV.step > SPEED_FORMULA_L) {
     SEGENV.step = 0;
     //shift all leds right
@@ -1513,7 +1513,7 @@ uint16_t WS2812FX::mode_pride_2015(void)
   }
   SEGENV.step = sPseudotime;
   SEGENV.aux0 = sHue16;
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -1664,7 +1664,7 @@ uint16_t WS2812FX::mode_colorwaves()
   }
   SEGENV.step = sPseudotime;
   SEGENV.aux0 = sHue16;
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -1693,7 +1693,7 @@ uint16_t WS2812FX::mode_fillnoise8()
   }
   SEGENV.step += beatsin8(SEGMENT.speed, 1, 6); //10,1,4
 
-  return 20;
+  return FRAMETIME;
 }
 
 uint16_t WS2812FX::mode_noise16_1()
@@ -1720,7 +1720,7 @@ uint16_t WS2812FX::mode_noise16_1()
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -1745,7 +1745,7 @@ uint16_t WS2812FX::mode_noise16_2()
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -1772,7 +1772,7 @@ uint16_t WS2812FX::mode_noise16_3()
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -1835,7 +1835,7 @@ uint16_t WS2812FX::mode_colortwinkle()
       }
     }
   }
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -1921,7 +1921,7 @@ uint16_t WS2812FX::mode_meteor_smooth() {
   }
 
   SEGENV.step += SEGMENT.speed +1;
-  return 20;
+  return FRAMETIME;
 }
 
 
@@ -2009,7 +2009,7 @@ uint16_t WS2812FX::mode_ripple()
       }
     }
   }
-  return 20;
+  return FRAMETIME;
 }
 
 
