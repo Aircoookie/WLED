@@ -461,16 +461,34 @@ uint16_t WS2812FX::mode_saw(void) {
  * Inspired by www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
  */
 uint16_t WS2812FX::mode_twinkle(void) {
-  if(SEGENV.step == 0) {
-    fill(SEGCOLOR(1));
-    SEGENV.step = map(SEGMENT.intensity, 0, 255, 1, SEGLEN); // make sure, at least one LED is on
+  fill(SEGCOLOR(1));
+
+  uint32_t cycleTime = 20 + (255 - SEGMENT.speed)*5;
+  uint32_t it = now / cycleTime;
+  if (it != SEGENV.step)
+  {
+    uint16_t maxOn = map(SEGMENT.intensity, 0, 255, 1, SEGLEN); // make sure at least one LED is on
+    if (SEGENV.aux0 >= maxOn)
+    {
+      SEGENV.aux0 = 0;
+      SEGENV.aux1 = random16(); //new seed for our PRNG
+    }
+    SEGENV.aux0++;
+    SEGENV.step = it;
+  }
+  
+  uint16_t PRNG16 = SEGENV.aux1;
+
+  for (uint16_t i = 0; i < SEGENV.aux0; i++)
+  {
+    PRNG16 = (uint16_t)(PRNG16 * 2053) + 13849; // next 'random' number
+    uint32_t p = (uint32_t)SEGLEN * (uint32_t)PRNG16;
+    uint16_t mapped = p >> 16;
+    uint16_t j = SEGMENT.start + mapped;
+    setPixelColor(j, color_from_palette(j, true, PALETTE_SOLID_WRAP, 0));
   }
 
-  uint16_t i = SEGMENT.start + random16(SEGLEN);
-  setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-
-  SEGENV.step--;
-  return 20 + (5 * (uint16_t)(255 - SEGMENT.speed));
+  return FRAMETIME;
 }
 
 
@@ -592,6 +610,7 @@ uint16_t WS2812FX::mode_multi_strobe(void) {
   for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
     setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 1));
   }
+  //blink(SEGCOLOR(0), SEGCOLOR(1), true, true);
 
   uint16_t delay = 50 + 20*(uint16_t)(255-SEGMENT.speed);
   uint16_t count = 2 * ((SEGMENT.speed / 10) + 1);
@@ -1542,13 +1561,13 @@ uint16_t WS2812FX::mode_juggle(void){
   CRGB fastled_col;
   byte dothue = 0;
   for ( byte i = 0; i < 8; i++) {
-    uint16_t index = SEGMENT.start + beatsin16(i + 7, 0, SEGLEN -1);
+    uint16_t index = SEGMENT.start + beatsin88((128 + SEGMENT.speed)*(i + 7), 0, SEGLEN -1);
     fastled_col = col_to_crgb(getPixelColor(index));
     fastled_col |= (SEGMENT.palette==0)?CHSV(dothue, 220, 255):ColorFromPalette(currentPalette, dothue, 255);
     setPixelColor(index, fastled_col.red, fastled_col.green, fastled_col.blue);
     dothue += 32;
   }
-  return 10 + (uint16_t)(255 - SEGMENT.speed)/4;
+  return FRAMETIME;
 }
 
 
@@ -1799,8 +1818,7 @@ uint16_t WS2812FX::mode_noise16_3()
 uint16_t WS2812FX::mode_noise16_4()
 {
   CRGB fastled_col;
-  SEGENV.step += SEGMENT.speed;
-  uint32_t stp = (now / 160) * SEGMENT.speed;
+  uint32_t stp = (now * SEGMENT.speed) >> 7;
   for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
     int16_t index = inoise16(uint32_t(i - SEGMENT.start) << 12, stp);
     fastled_col = ColorFromPalette(currentPalette, index);
