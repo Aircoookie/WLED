@@ -1882,7 +1882,8 @@ uint16_t WS2812FX::mode_lake() {
 // adapted from https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectMeteorRain
 uint16_t WS2812FX::mode_meteor() {
   byte meteorSize= 1+ SEGLEN / 10;
-  uint16_t in = SEGMENT.start + SEGENV.step;
+  uint16_t counter = now * ((SEGMENT.speed >> 2) +8);
+  uint16_t in = counter * SEGLEN >> 16;
 
   // fade all leds to colors[1] in LEDs one step
   for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++) {
@@ -1893,10 +1894,10 @@ uint16_t WS2812FX::mode_meteor() {
       setPixelColor(i, color_from_palette(_locked[i], false, true, 255));
     }
   }
-  
+
   // draw meteor
-  for(int j = 0; j < meteorSize; j++) {  
-    uint16_t index = in + j;   
+  for(int j = 0; j < meteorSize; j++) {
+    uint16_t index = in + j;
     if(in + j >= SEGMENT.stop) {
       index = SEGMENT.start + (in + j - SEGMENT.stop);
     }
@@ -1905,8 +1906,7 @@ uint16_t WS2812FX::mode_meteor() {
     setPixelColor(index, color_from_palette(_locked[index], false, true, 255));
   }
 
-  SEGENV.step = (SEGENV.step + 1) % (SEGLEN);
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
