@@ -302,6 +302,7 @@ uint16_t WS2812FX::scan(bool dual)
   uint32_t perc = now % cycleTime;
   uint16_t prog = (perc * 65535) / cycleTime;
   uint16_t ledIndex = (prog * ((SEGLEN * 2) - 2)) >> 16;
+  uint16_t size = 1 + SEGMENT.intensity >> 3;
 
   fill(SEGCOLOR(1));
 
@@ -309,18 +310,21 @@ uint16_t WS2812FX::scan(bool dual)
   led_offset = abs(led_offset);
 
   uint16_t i = SEGMENT.start + led_offset;
-  setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+  for (int16_t j=i-size/2; j<=i+size/2; j++) {
+    if (j>=0) setPixelColor(j, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+  }
 
   if (dual) {
     uint16_t i2 = SEGMENT.start + SEGLEN - led_offset - 1;
-    setPixelColor(i2, color_from_palette(i2, true, PALETTE_SOLID_WRAP, 0));
+    for (int16_t j=i2-size/2; j<=i2+size/2; j++) {
+      if (j>=0) setPixelColor(j, color_from_palette(i2, true, PALETTE_SOLID_WRAP, 0));
+    }
   }
 
   return FRAMETIME;
 }
 
 
-//NOTE: add intensity (more than 1 pixel lit)
 /*
  * Runs a single pixel back and forth.
  */
