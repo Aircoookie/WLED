@@ -669,9 +669,11 @@ uint16_t WS2812FX::mode_android(void) {
  * color2 and color3 = colors of two adjacent leds
  */
 uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool dopalette) {
-  uint16_t a = SEGENV.step;
-  uint16_t b = (a + 1) % SEGLEN;
-  uint16_t c = (b + 1) % SEGLEN;
+  uint16_t counter = now * (SEGMENT.speed >> 3) + 1;
+  uint16_t a = counter * SEGLEN  >> 16;
+  // Use intensity setting to vary chase up to 1/2 string length
+  uint16_t b = (a + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
+  uint16_t c = (b + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
 
   if (dopalette) color1 = color_from_palette(SEGMENT.start + a, true, PALETTE_SOLID_WRAP, 1);
 
@@ -679,8 +681,7 @@ uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool
   setPixelColor(SEGMENT.start + b, color2);
   setPixelColor(SEGMENT.start + c, color3);
 
-  SEGENV.step = (SEGENV.step + 1) % SEGLEN;
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
@@ -958,17 +959,39 @@ uint16_t WS2812FX::mode_running_random(void) {
 /*
  * K.I.T.T.
  */
-uint16_t WS2812FX::mode_larson_scanner(void) {
-  uint16_t counter = now * (SEGMENT.speed >>3) +1;
-  uint16_t index = counter * SEGLEN * 2 >> 16;
+uint16_t WS2812FX::mode_larson_scanner(void){
+  return larson_scanner(false);
+}
+
+uint16_t WS2812FX::larson_scanner(bool dual) {
+  uint16_t counter = now * ((SEGMENT.speed >> 2) +8);
+  uint16_t index = counter * SEGLEN  >> 16;
 
   fade_out(SEGMENT.intensity);
 
-  if (index >= SEGLEN) {
-    index = SEGLEN - (index - SEGLEN + 1);
+  if (SEGENV.step > index && SEGENV.step - index > SEGLEN/2) {
+    SEGENV.aux0 = !SEGENV.aux0;
   }
-  setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
+  
+  for (uint16_t i = SEGENV.step; i < index; i++) {
+    uint16_t j = (SEGENV.aux0)?i:SEGLEN-1-i;
+    setPixelColor(j, color_from_palette(j, true, PALETTE_SOLID_WRAP, 0));
+  }
+  if (dual) {
+    uint32_t c;
+    if (SEGCOLOR(2) != 0) {
+      c = SEGCOLOR(2);
+    } else {
+      c = color_from_palette(index, true, PALETTE_SOLID_WRAP, 0);
+    }
 
+    for (uint16_t i = SEGENV.step; i < index; i++) {
+      uint16_t j = (SEGENV.aux0)?SEGLEN-1-i:i;
+      setPixelColor(j, c);
+    }
+  }
+
+  SEGENV.step = index;
   return FRAMETIME;
 }
 
@@ -1067,6 +1090,9 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
  * Gradient run base function
  */
 uint16_t WS2812FX::gradient_base(bool loading) {
+  uint16_t counter = now * (SEGMENT.speed >> 3) + 1;
+  SEGENV.step = counter * SEGLEN >> 16;
+  if (SEGMENT.speed == 0) SEGENV.step = SEGMENT.start + (SEGLEN >> 1);
   if (SEGENV.call == 0) SEGENV.step = 0;
   float per,val; //0.0 = sec 1.0 = pri
   float brd = SEGMENT.intensity;
@@ -1089,10 +1115,7 @@ uint16_t WS2812FX::gradient_base(bool loading) {
     setPixelColor(i, color_blend(SEGCOLOR(0), color_from_palette(i, true, PALETTE_SOLID_WRAP, 1), per*255));
   }
 
-  SEGENV.step++;
-  if (SEGENV.step >= SEGMENT.stop) SEGENV.step = SEGMENT.start;
-  if (SEGMENT.speed == 0) SEGENV.step = SEGMENT.start + (SEGLEN >> 1);
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
@@ -1169,19 +1192,22 @@ uint16_t WS2812FX::mode_two_dots()
  * Tricolor chase function
  */
 uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2) {
-  uint16_t index = SEGENV.step % 6;
+  uint32_t cycleTime = 50 + (255 - SEGMENT.speed)*2;
+  uint32_t it = now / cycleTime;
+  uint8_t width = (1 + SEGMENT.intensity/32) * 3; //value of 1-8 for each colour
+  uint8_t index = it % width;
+  
   for(uint16_t i=0; i < SEGLEN; i++, index++) {
-    if(index > 5) index = 0;
+    if(index > width-1) index = 0;
 
     uint32_t color = color1;
-    if(index > 3) color = color_from_palette(i, true, PALETTE_SOLID_WRAP, 1);
-    else if(index > 1) color = color2;
+    if(index > width*2/3-1) color = color_from_palette(i, true, PALETTE_SOLID_WRAP, 1);
+    else if(index > width/3-1) color = color2;
 
     setPixelColor(SEGMENT.stop - i -1, color);
   }
 
-  SEGENV.step++;
-  return  35 + ((350 * (uint32_t)(255 - SEGMENT.speed)) / 255);
+  return FRAMETIME;
 }
 
 
@@ -1342,22 +1368,7 @@ uint16_t WS2812FX::mode_multi_comet(void)
  * Custom mode by Keith Lord: https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/DualLarson.h
  */
 uint16_t WS2812FX::mode_dual_larson_scanner(void){
-  uint16_t counter = now * (SEGMENT.speed >>3) +1;
-  uint16_t index = counter * SEGLEN >> 16;
-
-  fade_out(SEGMENT.intensity);
-
-  setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
-  index = SEGMENT.stop - index -1;
-  if (SEGCOLOR(2) != 0)
-  {
-    setPixelColor(index, SEGCOLOR(2));
-  } else
-  {
-    setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
-  }
-
-  return FRAMETIME;
+  return larson_scanner(true);
 }
 
 
@@ -1367,6 +1378,10 @@ uint16_t WS2812FX::mode_dual_larson_scanner(void){
  */
 uint16_t WS2812FX::mode_random_chase(void)
 {
+  uint32_t cycleTime = 25 + (3 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t it = now / cycleTime;
+  if (SEGENV.step == it) return FRAMETIME;
+
   for(uint16_t i=SEGMENT.stop -1; i>SEGMENT.start; i--) {
     setPixelColor(i, getPixelColor(i-1));
   }
@@ -1377,7 +1392,8 @@ uint16_t WS2812FX::mode_random_chase(void)
   uint8_t b = random8(6) != 0 ? (color       & 0xFF) : random8();
   setPixelColor(SEGMENT.start, r, g, b);
 
-  return SPEED_FORMULA_L;
+  SEGENV.step = it;
+  return FRAMETIME;
 }
 
 
@@ -1386,7 +1402,6 @@ typedef struct Oscillator {
   int8_t  size;
   int8_t  dir;
   int8_t  speed;
-  uint16_t timeref;
 } oscillator;
 
 /*
@@ -1394,44 +1409,44 @@ typedef struct Oscillator {
 */
 uint16_t WS2812FX::mode_oscillate(void)
 {
-  uint16_t counter;
-  uint16_t index;
-
   static oscillator oscillators[NUM_COLORS] = {
-    {SEGLEN-1, SEGLEN/8,  -1, 4},
-    {0,        SEGLEN/8,   1, 3},
-    {SEGLEN-1, SEGLEN/8,  -1, 2}
+    {SEGLEN/4,   SEGLEN/8,  1, 1},
+    {SEGLEN/4*3, SEGLEN/8,  1, 2},
+    {SEGLEN/4*2, SEGLEN/8, -1, 1}
+    
   };
 
-  for(int8_t i=0; i < sizeof(oscillators)/sizeof(oscillators[0]); i++) {
-    oscillators[i].size = SEGLEN/(3+SEGMENT.intensity/8);
-    //calculate the change since last cycle
-    counter = (now - oscillators[i].timeref) * ((SEGMENT.speed >> oscillators[i].speed) +1);
-    index = (counter * SEGLEN) >> 16;
-    
-    if (oscillators[i].dir == -1) {
-      oscillators[i].pos = SEGLEN - 1 - index;
-    } else  {
-      oscillators[i].pos = index;
-    }
+  uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t it = now / cycleTime;
 
-    if (index >= SEGLEN - 1) {
-      //switch direction once while at each end of cycle
-      if (now - oscillators[i].timeref > 1000) oscillators[i].dir *= -1;
-      oscillators[i].timeref = now;
-      oscillators[i].speed = random8(2, 4);
+  for(int8_t i=0; i < sizeof(oscillators)/sizeof(oscillators[0]); i++) {
+    // if the counter has increased, move the oscillator by the random step
+    if (it != SEGENV.step) oscillators[i].pos += oscillators[i].dir * oscillators[i].speed;
+    oscillators[i].size = SEGLEN/(3+SEGMENT.intensity/8);
+    if((oscillators[i].dir == -1) && (oscillators[i].pos <= 0)) {
+      oscillators[i].pos = 0;
+      oscillators[i].dir = 1;
+      // make bigger steps for faster speeds
+      oscillators[i].speed = SEGMENT.speed > 100 ? random8(2, 4):random8(1, 3);
+    }
+    if((oscillators[i].dir == 1) && (oscillators[i].pos >= (SEGLEN - 1))) {
+      oscillators[i].pos = SEGLEN - 1;
+      oscillators[i].dir = -1;
+      oscillators[i].speed = SEGMENT.speed > 100 ? random8(2, 4):random8(1, 3);
     }
   }
- 
+
   for(int16_t i=0; i < SEGLEN; i++) {
     uint32_t color = BLACK;
     for(int8_t j=0; j < sizeof(oscillators)/sizeof(oscillators[0]); j++) {
       if(i >= oscillators[j].pos - oscillators[j].size && i <= oscillators[j].pos + oscillators[j].size) {
-        color = (color == BLACK) ? SEGCOLOR(j) : color_blend(color, SEGCOLOR(j), 128);
+        color = (color == BLACK) ? SEGMENT.colors[j] : color_blend(color, SEGMENT.colors[j], 128);
       }
     }
     setPixelColor(SEGMENT.start + i, color);
   }
+ 
+  SEGENV.step = it;
   return FRAMETIME;
 }
 
