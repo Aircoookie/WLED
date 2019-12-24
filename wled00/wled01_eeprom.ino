@@ -561,6 +561,7 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
         col[j] = EEPROM.read(i+j+2);
         colSec[j] = EEPROM.read(i+j+6);
       }
+      strip.setColor(2, EEPROM.read(i+12), EEPROM.read(i+13), EEPROM.read(i+14), EEPROM.read(i+15)); //tertiary color
     }
     if (loadFX)
     {
@@ -598,6 +599,12 @@ void savePreset(byte index)
     }
     EEPROM.write(i+10, effectCurrent);
     EEPROM.write(i+11, effectSpeed);
+
+    uint32_t colTer = strip.getSegment(strip.getMainSegmentId()).colors[2];
+    EEPROM.write(i+12, (colTer >> 16) & 0xFF);
+    EEPROM.write(i+13, (colTer >>  8) & 0xFF);
+    EEPROM.write(i+14, (colTer >>  0) & 0xFF);
+    EEPROM.write(i+15, (colTer >> 24) & 0xFF);
   
     EEPROM.write(i+16, effectIntensity);
     EEPROM.write(i+17, effectPalette);
