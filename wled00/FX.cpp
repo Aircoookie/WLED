@@ -961,10 +961,6 @@ uint16_t WS2812FX::mode_halloween(void) {
  * Random colored pixels running.
  */
 uint16_t WS2812FX::mode_running_random(void) {
-  uint32_t cycleTime = 25 + (3 * (uint32_t)(255 - SEGMENT.speed));
-  uint32_t it = now / cycleTime;
-  if (SEGENV.aux1 == it) return FRAMETIME;
-
   for(uint16_t i=SEGLEN-1; i > 0; i--) {
     setPixelColor(SEGMENT.start + i, getPixelColor(SEGMENT.start + i - 1));
   }
@@ -979,9 +975,7 @@ uint16_t WS2812FX::mode_running_random(void) {
   {
     SEGENV.step = 0;
   }
-
-  SEGENV.aux1 = it;
-  return FRAMETIME;
+  return SPEED_FORMULA_L;
 }
 
 
@@ -1097,10 +1091,6 @@ uint16_t WS2812FX::mode_rain()
  * Fire flicker function
  */
 uint16_t WS2812FX::mode_fire_flicker(void) {
-  uint32_t cycleTime = 40 + (255 - SEGMENT.speed);
-  uint32_t it = now / cycleTime;
-  if (SEGENV.step == it) return FRAMETIME;
-  
   byte w = (SEGCOLOR(0) >> 24) & 0xFF;
   byte r = (SEGCOLOR(0) >> 16) & 0xFF;
   byte g = (SEGCOLOR(0) >>  8) & 0xFF;
@@ -1115,9 +1105,7 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
       setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, 255 - flicker));
     }
   }
-
-  SEGENV.step = it;
-  return FRAMETIME;
+  return 20 + random((255 - SEGMENT.speed),(2 * (uint16_t)(255 - SEGMENT.speed)));
 }
 
 
@@ -1297,7 +1285,6 @@ uint16_t WS2812FX::mode_icu(void) {
   setPixelColor(SEGMENT.start + dest, col);
   setPixelColor(SEGMENT.start + dest + SEGLEN/2, col);
 
-  if (SEGMENT.intensity > 127) return FRAMETIME;
   return SPEED_FORMULA_L;
 }
 
@@ -1307,11 +1294,6 @@ uint16_t WS2812FX::mode_icu(void) {
  */
 uint16_t WS2812FX::mode_tricolor_wipe(void)
 {
-  uint32_t cycleTime = 40 + (3 * (uint32_t)(255 - SEGMENT.speed));
-  uint32_t it = now / cycleTime;
-  if (SEGENV.step == it) return FRAMETIME;
-  uint8_t incr = it-SEGENV.step;
-
   if(SEGENV.step < SEGLEN) {
     uint32_t led_offset = SEGENV.step;
     setPixelColor(SEGMENT.start + led_offset, SEGCOLOR(0));
@@ -1325,7 +1307,7 @@ uint16_t WS2812FX::mode_tricolor_wipe(void)
   }
 
   SEGENV.step = (SEGENV.step + 1) % (SEGLEN * 3);
-  return FRAMETIME;
+  return SPEED_FORMULA_L;
 }
 
 
@@ -1336,9 +1318,6 @@ uint16_t WS2812FX::mode_tricolor_wipe(void)
  */
 uint16_t WS2812FX::mode_tricolor_fade(void)
 {
-  uint16_t counter = now * ((SEGMENT.speed >> 3) +1);
-  SEGENV.step = (counter * 768) >> 16;
-
   uint32_t color1 = 0, color2 = 0;
   byte stage = 0;
 
@@ -1369,7 +1348,10 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
     setPixelColor(i, color);
   }
 
-  return FRAMETIME;
+  SEGENV.step += 4;
+  if(SEGENV.step >= 768) SEGENV.step = 0;
+
+  return 5 + ((uint32_t)(255 - SEGMENT.speed) / 10);
 }
 
 
@@ -1379,10 +1361,6 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
  */
 uint16_t WS2812FX::mode_multi_comet(void)
 {
-  uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
-  uint32_t it = now / cycleTime;
-  if (SEGENV.step == it) return FRAMETIME;
-
   fade_out(SEGMENT.intensity);
 
   static uint16_t comets[] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
@@ -1404,9 +1382,7 @@ uint16_t WS2812FX::mode_multi_comet(void)
       }
     }
   }
-
-  SEGENV.step = it;
-  return FRAMETIME;
+  return SPEED_FORMULA_L;
 }
 
 
@@ -2365,6 +2341,95 @@ uint16_t WS2812FX::mode_spots_fade()
 }
 
 
+/*
+*  Bouncing Balls Effect
+*  Adapted from: https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
+*/
+uint16_t WS2812FX::mode_BouncingBalls(void) {
+  // number of balls based on intensity setting, 
+  // only has 4 for a few of the higher settings as there is no colour selection
+  // fourth ball is a random colour
+  int balls = int(((SEGMENT.intensity * 6.2) / 255) + 1);
+
+  // ideally use speed for gravity effect on the bounce
+  float Gravity = -9.81;
+
+  const int maxBallCount = 7;
+  static float Height[maxBallCount];
+  static float ImpactVelocity[maxBallCount];
+  static int   Position[maxBallCount];
+  static float TimeSinceLastBounce[maxBallCount];
+  static long  ClockTimeSinceLastBounce[maxBallCount];
+  static int   StartHeight = 1;                 // height in metres (strip length)
+  static float Dampening[maxBallCount] = {0};   // Coefficient of Restitution (bounce damping)
+  static float ImpactVelocityStart=sqrt( -2 * Gravity * StartHeight);
+
+  // Different from the examples, to allow for initialisation of the first bounce
+  if (Dampening[0] == 0) {
+    for (int i = 0 ; i < maxBallCount ; i++) {
+      ClockTimeSinceLastBounce[i] = millis();
+      ImpactVelocity[i] = ImpactVelocityStart;
+      TimeSinceLastBounce[i] = 0;
+      Dampening[i] = 0.90 - float(i)/pow(maxBallCount,2);
+    }
+  }
+  
+  for (int i = 0 ; i < balls ; i++) {
+    TimeSinceLastBounce[i] =  millis() - ClockTimeSinceLastBounce[i];
+    Height[i] = 0.5 * Gravity * pow( TimeSinceLastBounce[i]/1000 , 2.0 ) + ImpactVelocity[i] * TimeSinceLastBounce[i]/1000;
+
+    if ( Height[i] < 0 ) {
+      Height[i] = 0;
+      ImpactVelocity[i] = Dampening[i] * ImpactVelocity[i];
+      ClockTimeSinceLastBounce[i] = millis();
+
+      if ( ImpactVelocity[i] < 0.01 ) {
+        ImpactVelocity[i] = ImpactVelocityStart;
+      }
+    }
+    Position[i] = round( Height[i] * (SEGLEN - 1) / StartHeight);
+  }
+  
+  fill(BLACK);
+
+  for (int i = 0 ; i < balls ; i++) {
+    uint32_t color = SEGCOLOR(i % NUM_COLORS);
+    if (!color) {
+       color = color_wheel(random8());
+    }
+    
+    setPixelColor(Position[i],color);
+  }
+
+  return 20;
+}
+
+/*
+* Sinelon stolen from FASTLED examples
+*/
+uint16_t WS2812FX::mode_sinelon(void) {
+
+  fade_out(SEGMENT.intensity);
+  int pos = beatsin16(SEGMENT.speed/10,0,SEGLEN-1);
+  static int prevpos = 0;
+
+  // setRange seems great to use, but doesn't work here for some reason
+  if( pos < prevpos ) { 
+    for (uint16_t i = pos; i < prevpos; i++)
+    {
+      setPixelColor(i, color_from_palette(pos, false, false, 0));
+    }
+  } else {
+    for (uint16_t i = prevpos; i < pos; i++)
+    {
+      setPixelColor(i, color_from_palette(pos, false, false, 0));
+    }
+  }
+  prevpos = pos;
+  return FRAMETIME;
+}
+
+
 //Rainbow with glitter, inspired by https://gist.github.com/kriegsman/062e10f7f07ba8518af6
 uint16_t WS2812FX::mode_glitter()
 {
@@ -2376,6 +2441,55 @@ uint16_t WS2812FX::mode_glitter()
   }
   
   return FRAMETIME;
+}
+
+
+/*
+*  POPCORN
+*/
+typedef struct Kernel {
+  float position;
+  float velocity;
+  int32_t color;
+} kernel;
+
+#define MAX_NUM_POPCORN 12
+#define GRAVITY 0.06
+
+uint16_t WS2812FX::mode_popcorn(void) {
+  uint32_t popcornColor = SEGCOLOR(0);
+  uint32_t bgColor = SEGCOLOR(1);
+  if(popcornColor == bgColor) popcornColor = color_wheel(random8());
+  
+  static kernel popcorn[MAX_NUM_POPCORN];
+  static float coeff = 0.0f;
+  if(coeff == 0.0f) { // calculate the velocity coeff once (the secret sauce)
+    coeff = pow((float)SEGLEN, 0.5223324f) * 0.3944296f;
+  }
+
+  fill(SEGCOLOR(1));
+
+  uint16_t ledIndex;
+  for(int8_t i=0; i < MAX_NUM_POPCORN; i++) {
+    bool isActive = popcorn[i].position >= 0.0f;
+
+    if(isActive) { // if kernel is active, update its position
+      popcorn[i].position += popcorn[i].velocity;
+      popcorn[i].velocity -= (GRAVITY * SEGMENT.intensity/25);
+      ledIndex = SEGMENT.start + popcorn[i].position;
+      if(ledIndex >= SEGMENT.start && ledIndex <= SEGMENT.stop) setPixelColor(ledIndex, popcorn[i].color);
+    } else { // if kernel is inactive, randomly pop it
+      if(random8() < 2) { // POP!!!
+        popcorn[i].position = 0.0f;
+        popcorn[i].velocity = coeff * (random(66, 100) / 100.0f);
+        popcorn[i].color = popcornColor;
+        ledIndex = SEGMENT.start;
+        setPixelColor(ledIndex, popcorn[i].color);
+      }
+    }
+  }
+
+  return SPEED_FORMULA_L;
 }
 
 
