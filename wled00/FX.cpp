@@ -1297,8 +1297,7 @@ uint16_t WS2812FX::mode_icu(void) {
   setPixelColor(SEGMENT.start + dest, col);
   setPixelColor(SEGMENT.start + dest + SEGLEN/2, col);
 
-  if (SEGMENT.intensity > 127) return FRAMETIME;
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
