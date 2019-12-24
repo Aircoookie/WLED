@@ -84,7 +84,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  92
+#define MODE_COUNT  89
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -175,9 +175,6 @@
 #define FX_MODE_SPOTS_FADE              86
 #define FX_MODE_GLITTER                 87
 #define FX_MODE_CANDLE                  88
-#define FX_MODE_BOUNCINGBALLS           89
-#define FX_MODE_SINELON                 90
-#define FX_MODE_POPCORN                 91
 
 
 class WS2812FX {
@@ -322,9 +319,6 @@ class WS2812FX {
       _mode[FX_MODE_TRI_STATIC_PATTERN]      = &WS2812FX::mode_tri_static_pattern;
       _mode[FX_MODE_SPOTS]                   = &WS2812FX::mode_spots;
       _mode[FX_MODE_SPOTS_FADE]              = &WS2812FX::mode_spots_fade;
-      _mode[FX_MODE_BOUNCINGBALLS]           = &WS2812FX::mode_BouncingBalls;
-      _mode[FX_MODE_SINELON]                 = &WS2812FX::mode_sinelon;
-      _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
       _mode[FX_MODE_GLITTER]                 = &WS2812FX::mode_glitter;
       _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
 
@@ -508,9 +502,6 @@ class WS2812FX {
 	    mode_tri_static_pattern(void),
       mode_spots(void),
       mode_spots_fade(void),
-      mode_BouncingBalls(void),
-      mode_sinelon(void),
-      mode_popcorn(void),
       mode_glitter(void),
       mode_candle(void);
       
@@ -587,8 +578,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Scanner Dual ","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle",
-"Bouncing Balls", "Sinelon","Popcorn"
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle"
 ])=====";
 
 

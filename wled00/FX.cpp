@@ -301,24 +301,24 @@ uint16_t WS2812FX::scan(bool dual)
   uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
   uint32_t perc = now % cycleTime;
   uint16_t prog = (perc * 65535) / cycleTime;
-  uint16_t size = 1 + ((SEGMENT.intensity * SEGLEN) >>9);
-  uint16_t ledIndex = (prog * ((SEGLEN *2) - size *2)) >> 16;
+  uint16_t ledIndex = (prog * ((SEGLEN * 2) - 2)) >> 16;
+  uint16_t size = 1 + SEGMENT.intensity >> 3;
 
   fill(SEGCOLOR(1));
 
-  int led_offset = ledIndex - (SEGLEN - size);
+  int led_offset = ledIndex - (SEGLEN - 1);
   led_offset = abs(led_offset);
 
-  if (dual) {
-    for (uint16_t j = led_offset; j < led_offset + size; j++) {
-      uint16_t i2 = SEGMENT.stop -1 -j;
-      setPixelColor(i2, color_from_palette(i2, true, PALETTE_SOLID_WRAP, (SEGCOLOR(2))? 2:0));
-    }
+  uint16_t i = SEGMENT.start + led_offset;
+  for (int16_t j=i-size/2; j<=i+size/2; j++) {
+    if (j>=0) setPixelColor(j, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
   }
 
-  for (uint16_t j = led_offset; j < led_offset + size; j++) {
-    uint16_t i = SEGMENT.start + j;
-    setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+  if (dual) {
+    uint16_t i2 = SEGMENT.start + SEGLEN - led_offset - 1;
+    for (int16_t j=i2-size/2; j<=i2+size/2; j++) {
+      if (j>=0) setPixelColor(j, color_from_palette(i2, true, PALETTE_SOLID_WRAP, 0));
+    }
   }
 
   return FRAMETIME;
@@ -1004,7 +1004,7 @@ uint16_t WS2812FX::larson_scanner(bool dual) {
   
   for (uint16_t i = SEGENV.step; i < index; i++) {
     uint16_t j = (SEGENV.aux0)?i:SEGLEN-1-i;
-    setPixelColor(SEGMENT.start + j, color_from_palette(j, true, PALETTE_SOLID_WRAP, 0));
+    setPixelColor(j, color_from_palette(j, true, PALETTE_SOLID_WRAP, 0));
   }
   if (dual) {
     uint32_t c;
@@ -1016,7 +1016,7 @@ uint16_t WS2812FX::larson_scanner(bool dual) {
 
     for (uint16_t i = SEGENV.step; i < index; i++) {
       uint16_t j = (SEGENV.aux0)?SEGLEN-1-i:i;
-      setPixelColor(SEGMENT.start + j, c);
+      setPixelColor(j, c);
     }
   }
 
@@ -1034,7 +1034,7 @@ uint16_t WS2812FX::mode_comet(void) {
 
   fade_out(SEGMENT.intensity);
 
-  setPixelColor(SEGMENT.start + index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
+  setPixelColor(index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
 
   return FRAMETIME;
 }
