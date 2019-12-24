@@ -961,6 +961,10 @@ uint16_t WS2812FX::mode_halloween(void) {
  * Random colored pixels running.
  */
 uint16_t WS2812FX::mode_running_random(void) {
+  uint32_t cycleTime = 25 + (3 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t it = now / cycleTime;
+  if (SEGENV.aux1 == it) return FRAMETIME;
+
   for(uint16_t i=SEGLEN-1; i > 0; i--) {
     setPixelColor(SEGMENT.start + i, getPixelColor(SEGMENT.start + i - 1));
   }
@@ -975,7 +979,9 @@ uint16_t WS2812FX::mode_running_random(void) {
   {
     SEGENV.step = 0;
   }
-  return SPEED_FORMULA_L;
+
+  SEGENV.aux1 = it;
+  return FRAMETIME;
 }
 
 
@@ -1091,6 +1097,10 @@ uint16_t WS2812FX::mode_rain()
  * Fire flicker function
  */
 uint16_t WS2812FX::mode_fire_flicker(void) {
+  uint32_t cycleTime = 40 + (255 - SEGMENT.speed);
+  uint32_t it = now / cycleTime;
+  if (SEGENV.step == it) return FRAMETIME;
+  
   byte w = (SEGCOLOR(0) >> 24) & 0xFF;
   byte r = (SEGCOLOR(0) >> 16) & 0xFF;
   byte g = (SEGCOLOR(0) >>  8) & 0xFF;
@@ -1105,7 +1115,9 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
       setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, 255 - flicker));
     }
   }
-  return 20 + random((255 - SEGMENT.speed),(2 * (uint16_t)(255 - SEGMENT.speed)));
+
+  SEGENV.step = it;
+  return FRAMETIME;
 }
 
 
@@ -1285,6 +1297,7 @@ uint16_t WS2812FX::mode_icu(void) {
   setPixelColor(SEGMENT.start + dest, col);
   setPixelColor(SEGMENT.start + dest + SEGLEN/2, col);
 
+  if (SEGMENT.intensity > 127) return FRAMETIME;
   return SPEED_FORMULA_L;
 }
 
@@ -1294,6 +1307,11 @@ uint16_t WS2812FX::mode_icu(void) {
  */
 uint16_t WS2812FX::mode_tricolor_wipe(void)
 {
+  uint32_t cycleTime = 40 + (3 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t it = now / cycleTime;
+  if (SEGENV.step == it) return FRAMETIME;
+  uint8_t incr = it-SEGENV.step;
+
   if(SEGENV.step < SEGLEN) {
     uint32_t led_offset = SEGENV.step;
     setPixelColor(SEGMENT.start + led_offset, SEGCOLOR(0));
@@ -1307,7 +1325,7 @@ uint16_t WS2812FX::mode_tricolor_wipe(void)
   }
 
   SEGENV.step = (SEGENV.step + 1) % (SEGLEN * 3);
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
@@ -1318,6 +1336,9 @@ uint16_t WS2812FX::mode_tricolor_wipe(void)
  */
 uint16_t WS2812FX::mode_tricolor_fade(void)
 {
+  uint16_t counter = now * ((SEGMENT.speed >> 3) +1);
+  SEGENV.step = (counter * 768) >> 16;
+
   uint32_t color1 = 0, color2 = 0;
   byte stage = 0;
 
@@ -1348,10 +1369,7 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
     setPixelColor(i, color);
   }
 
-  SEGENV.step += 4;
-  if(SEGENV.step >= 768) SEGENV.step = 0;
-
-  return 5 + ((uint32_t)(255 - SEGMENT.speed) / 10);
+  return FRAMETIME;
 }
 
 
@@ -1361,6 +1379,10 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
  */
 uint16_t WS2812FX::mode_multi_comet(void)
 {
+  uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t it = now / cycleTime;
+  if (SEGENV.step == it) return FRAMETIME;
+
   fade_out(SEGMENT.intensity);
 
   static uint16_t comets[] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
@@ -1382,7 +1404,9 @@ uint16_t WS2812FX::mode_multi_comet(void)
       }
     }
   }
-  return SPEED_FORMULA_L;
+
+  SEGENV.step = it;
+  return FRAMETIME;
 }
 
 
