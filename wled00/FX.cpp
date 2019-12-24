@@ -2346,9 +2346,8 @@ uint16_t WS2812FX::mode_spots_fade()
 *  Adapted from: https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
 */
 uint16_t WS2812FX::mode_BouncingBalls(void) {
-  // number of balls based on intensity setting, 
-  // only has 4 for a few of the higher settings as there is no colour selection
-  // fourth ball is a random colour
+  // number of balls based on intensity setting to max of 7 (cycles colors)
+  // non-chosen color is a random color
   int balls = int(((SEGMENT.intensity * 6.2) / 255) + 1);
 
   // ideally use speed for gravity effect on the bounce
@@ -2375,7 +2374,7 @@ uint16_t WS2812FX::mode_BouncingBalls(void) {
   }
   
   for (int i = 0 ; i < balls ; i++) {
-    TimeSinceLastBounce[i] =  millis() - ClockTimeSinceLastBounce[i];
+    TimeSinceLastBounce[i] =  (millis() - ClockTimeSinceLastBounce[i])/((255-SEGMENT.speed)*8/256 +1);
     Height[i] = 0.5 * Gravity * pow( TimeSinceLastBounce[i]/1000 , 2.0 ) + ImpactVelocity[i] * TimeSinceLastBounce[i]/1000;
 
     if ( Height[i] < 0 ) {
@@ -2398,35 +2397,73 @@ uint16_t WS2812FX::mode_BouncingBalls(void) {
        color = color_wheel(random8());
     }
     
-    setPixelColor(Position[i],color);
+    setPixelColor(SEGMENT.start+Position[i],color);
   }
 
-  return 20;
+  return FRAMETIME;
 }
 
 /*
 * Sinelon stolen from FASTLED examples
 */
-uint16_t WS2812FX::mode_sinelon(void) {
+uint16_t WS2812FX::sinelon_base(bool dual, bool rainbow=false) {
 
   fade_out(SEGMENT.intensity);
   int pos = beatsin16(SEGMENT.speed/10,0,SEGLEN-1);
   static int prevpos = 0;
+  
+  uint32_t color1 = color_from_palette(pos, true, false, 0);
+  if (rainbow) {
+    color1 = color_wheel((pos % 8) * 32);
+  }
 
-  // setRange seems great to use, but doesn't work here for some reason
   if( pos < prevpos ) { 
     for (uint16_t i = pos; i < prevpos; i++)
     {
-      setPixelColor(i, color_from_palette(pos, false, false, 0));
+      setPixelColor(i, color1);
     }
   } else {
     for (uint16_t i = prevpos; i < pos; i++)
     {
-      setPixelColor(i, color_from_palette(pos, false, false, 0));
+      setPixelColor(SEGMENT.start + i, color1);
+    }
+  }
+
+  if (dual) {
+    uint32_t color2 = SEGCOLOR(2);
+   
+    if (color2 == 0) {
+      color2 = color_from_palette(pos, true, false, 0);
+    } 
+    if (rainbow) {
+      color2 = color_wheel((pos % 8) * 32);
+    }
+    if( pos < prevpos ) { 
+      for (uint16_t i = pos; i < prevpos; i++)
+      {
+        setPixelColor(SEGMENT.start + SEGLEN-1-i, color2);
+      }
+    } else {
+      for (uint16_t i = prevpos; i < pos; i++)
+      {
+        setPixelColor(SEGMENT.start + SEGLEN-1-i, color2);
+      }
     }
   }
   prevpos = pos;
   return FRAMETIME;
+}
+
+uint16_t WS2812FX::mode_sinelon(void) {
+  return sinelon_base(false);
+}
+
+uint16_t WS2812FX::mode_sinelon_dual(void) {
+  return sinelon_base(true);
+}
+
+uint16_t WS2812FX::mode_sinelon_rainbow(void) {
+  return sinelon_base(true, true);
 }
 
 
@@ -2470,12 +2507,12 @@ uint16_t WS2812FX::mode_popcorn(void) {
   fill(SEGCOLOR(1));
 
   uint16_t ledIndex;
-  for(int8_t i=0; i < MAX_NUM_POPCORN; i++) {
+  for(int8_t i=0; i < SEGMENT.intensity*MAX_NUM_POPCORN/255; i++) {
     bool isActive = popcorn[i].position >= 0.0f;
 
     if(isActive) { // if kernel is active, update its position
       popcorn[i].position += popcorn[i].velocity;
-      popcorn[i].velocity -= (GRAVITY * SEGMENT.intensity/25);
+      popcorn[i].velocity -= (GRAVITY * ((255-SEGMENT.speed)*8/256 + 1));
       ledIndex = SEGMENT.start + popcorn[i].position;
       if(ledIndex >= SEGMENT.start && ledIndex <= SEGMENT.stop) setPixelColor(ledIndex, popcorn[i].color);
     } else { // if kernel is inactive, randomly pop it
@@ -2489,7 +2526,7 @@ uint16_t WS2812FX::mode_popcorn(void) {
     }
   }
 
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 

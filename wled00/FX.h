@@ -84,7 +84,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  92
+#define MODE_COUNT  94
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -177,7 +177,9 @@
 #define FX_MODE_CANDLE                  88
 #define FX_MODE_BOUNCINGBALLS           89
 #define FX_MODE_SINELON                 90
-#define FX_MODE_POPCORN                 91
+#define FX_MODE_SINELON_DUAL            91
+#define FX_MODE_SINELON_RAINBOW         92
+#define FX_MODE_POPCORN                 93
 
 
 class WS2812FX {
@@ -324,6 +326,8 @@ class WS2812FX {
       _mode[FX_MODE_SPOTS_FADE]              = &WS2812FX::mode_spots_fade;
       _mode[FX_MODE_BOUNCINGBALLS]           = &WS2812FX::mode_BouncingBalls;
       _mode[FX_MODE_SINELON]                 = &WS2812FX::mode_sinelon;
+      _mode[FX_MODE_SINELON_DUAL]            = &WS2812FX::mode_sinelon_dual;
+      _mode[FX_MODE_SINELON_RAINBOW]         = &WS2812FX::mode_sinelon_rainbow;
       _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
       _mode[FX_MODE_GLITTER]                 = &WS2812FX::mode_glitter;
       _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
@@ -510,6 +514,8 @@ class WS2812FX {
       mode_spots_fade(void),
       mode_BouncingBalls(void),
       mode_sinelon(void),
+      mode_sinelon_dual(void),
+      mode_sinelon_rainbow(void),
       mode_popcorn(void),
       mode_glitter(void),
       mode_candle(void);
@@ -553,6 +559,7 @@ class WS2812FX {
       theater_chase(uint32_t, uint32_t, bool),
       running_base(bool),
       larson_scanner(bool),
+      sinelon_base(bool,bool),
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
@@ -587,8 +594,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Scanner Dual ","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle",
-"Bouncing Balls", "Sinelon","Popcorn"
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Bouncing Balls",
+"Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn"
 ])=====";
 
 
