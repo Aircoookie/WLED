@@ -414,7 +414,6 @@ uint16_t WS2812FX::mode_theater_chase(void) {
  * Inspired by the Adafruit examples.
  */
 uint16_t WS2812FX::mode_theater_chase_rainbow(void) {
-  SEGENV.step = (SEGENV.step + 1) & 0xFF;
   return theater_chase(color_wheel(SEGENV.step), SEGCOLOR(1), false);
 }
 
