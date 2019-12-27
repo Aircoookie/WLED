@@ -2380,8 +2380,7 @@ void WS2812FX::flare() {
     flarePos = 0;
     flareVel = float(random16(150, 190)) / (75+SEGMENT.intensity/4); // trial and error to get reasonable range
     brightness = 1;
-Serial.printf("%3.1f %3.3f %3d",flareVel,gravity,SEGMENT.intensity);
-Serial.println("");
+
     // initialize launch sparks
     for (int i = 0; i < 5; i++) { 
       sparkPos[i] = 0; 
