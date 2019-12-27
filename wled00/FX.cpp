@@ -2348,3 +2348,125 @@ uint16_t WS2812FX::mode_candle()
 
   return FRAMETIME;
 }
+
+
+/*
+ * Exploding fireworks effect
+ * adapted from: http://www.anirama.com/1000leds/1d-fireworks/
+ */
+#define NUM_SPARKS 60 // max number (could be NUM_LEDS / 2);
+uint16_t WS2812FX::mode_exploding_fireworks(void)
+{
+  if (SEGENV.aux1==0) {    // manage states using params
+    flare();
+  } else {
+    explode();
+  }
+
+  return FRAMETIME;  
+}
+
+static float sparkPos[NUM_SPARKS];
+static float sparkVel[NUM_SPARKS];
+static float sparkCol[NUM_SPARKS];
+static float flarePos;
+static float flareVel;
+static float brightness;
+
+void WS2812FX::flare() {
+  float gravity = -0.02 - (SEGMENT.speed/10000.0); // m/s/s
+
+  if (SEGENV.aux0 == 0) {  //use aux0 for initialization flag
+    flarePos = 0;
+    flareVel = float(random16(150, 190)) / (75+SEGMENT.intensity/4); // trial and error to get reasonable range
+    brightness = 1;
+Serial.printf("%3.1f %3.3f %3d",flareVel,gravity,SEGMENT.intensity);
+Serial.println("");
+    // initialize launch sparks
+    for (int i = 0; i < 5; i++) { 
+      sparkPos[i] = 0; 
+      sparkVel[i] = (float(random8(100,255)) / 255.0) * (flareVel/ 3.0); // random around 20% of flare velocity 
+      sparkCol[i] = sparkVel[i] * 1000.0; 
+      sparkCol[i] = constrain(sparkCol[i], 0, 255); 
+    }
+    SEGENV.aux0=1; 
+  }
+  
+  // launch 
+  if (flareVel >= -.3) {
+    // sparks
+    for (int i = 0; i < 5; i++) {
+      sparkPos[i] += sparkVel[i];
+      sparkPos[i] = constrain(sparkPos[i], 0, SEGLEN-1);
+      sparkVel[i] += gravity;
+      sparkCol[i] += -.8;
+      sparkCol[i] = constrain(sparkCol[i], 0, 255);
+      
+      CRGB color = HeatColor(sparkCol[i]);
+      setPixelColor(SEGMENT.stop - int(sparkPos[i]),color.red,color.green,color.blue);
+    }
+    // flare
+    fade_out(255);
+    setPixelColor(SEGMENT.stop - int(flarePos),brightness*255,brightness*255,brightness*255);
+
+    flarePos += flareVel;
+    flarePos = constrain(flarePos, 0, SEGLEN-1);
+    flareVel += gravity;
+    brightness *= .975;
+  } else {
+    SEGENV.aux0=0;  // allow next state to init
+    SEGENV.aux1=1;  // ready to explode
+  }
+}
+
+/*
+ * Explode!
+ * 
+ * Explosion happens where the flare ended.
+ * Size is proportional to the height.
+ */
+void WS2812FX::explode() {
+  int nSparks = flarePos / 2; // works out to look about right
+  nSparks = constrain(nSparks,0,NUM_SPARKS);
+  static float dying_gravity;
+  float gravity = -0.02 - (SEGMENT.speed/10000.0);
+  float c1=120; 
+  float c2=50;
+  
+  // initialize sparks
+  if (SEGENV.aux0==0) {
+    for (int i = 0; i < nSparks; i++) { 
+      sparkPos[i] = flarePos; 
+      sparkVel[i] = (float(random16(0, 20000)) / 10000.0) - 1.0; // from -1 to 1 
+      sparkCol[i] = abs(sparkVel[i] * 500.0); // set colors before scaling velocity to keep them bright 
+      sparkCol[i] = constrain(sparkCol[i], 0, 255); 
+      sparkVel[i] *= flarePos / SEGLEN; // proportional to height 
+    } 
+    sparkCol[0] = 255; // this will be our known spark 
+    dying_gravity = gravity; 
+    SEGENV.aux0=1;
+  }
+
+  if (sparkCol[0] > c2/10 ) {//&& sparkPos[0] > 0) { // as long as our known spark is lit, work with all the sparks
+    fade_out(255);
+    for (int i = 0; i < nSparks; i++) { 
+      sparkPos[i] += sparkVel[i]; 
+      sparkPos[i] = constrain(sparkPos[i], 0, SEGLEN-1); 
+      sparkVel[i] += dying_gravity; 
+      sparkCol[i] *= .97; 
+      sparkCol[i] = constrain(sparkCol[i], 0, 255); // red cross dissolve 
+      
+      if(sparkCol[i] > c1) { // fade white to yellow
+        setPixelColor(SEGMENT.stop - sparkPos[i],255, 255, (255 * (sparkCol[i] - c1)) / (255 - c1));
+      } else if (sparkCol[i] < c2) { // fade from red to black
+        setPixelColor(SEGMENT.stop - sparkPos[i],(255 * sparkCol[i]) / c2, 0, 0);
+      } else { // fade from yellow to red
+        setPixelColor(SEGMENT.stop - sparkPos[i],255, (255 * (sparkCol[i] - c2)) / (c1 - c2), 0);
+      }
+    }
+    dying_gravity *= .995; // as sparks burn out they fall slower
+  } else {
+    SEGENV.aux0=0;
+    SEGENV.aux1=0;
+  }
+}
