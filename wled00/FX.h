@@ -84,7 +84,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  89
+#define MODE_COUNT  90
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -175,6 +175,7 @@
 #define FX_MODE_SPOTS_FADE              86
 #define FX_MODE_GLITTER                 87
 #define FX_MODE_CANDLE                  88
+#define FX_MODE_STARBURST               89
 
 
 class WS2812FX {
@@ -321,6 +322,7 @@ class WS2812FX {
       _mode[FX_MODE_SPOTS_FADE]              = &WS2812FX::mode_spots_fade;
       _mode[FX_MODE_GLITTER]                 = &WS2812FX::mode_glitter;
       _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
+      _mode[FX_MODE_STARBURST]               = &WS2812FX::mode_starburst;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -503,7 +505,8 @@ class WS2812FX {
       mode_spots(void),
       mode_spots_fade(void),
       mode_glitter(void),
-      mode_candle(void);
+      mode_candle(void),
+      mode_starburst(void);
       
 
   private:
@@ -577,7 +580,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Smooth Meteor","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle"
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst"
 ])=====";
 
 
