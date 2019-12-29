@@ -2349,6 +2349,12 @@ uint16_t WS2812FX::mode_candle()
   return FRAMETIME;
 }
 
+
+/*
+/ Fireworks in starburst effect
+/ based on the video: https://www.reddit.com/r/arduino/comments/c3sd46/i_made_this_fireworks_effect_for_my_led_strips/
+/ Speed sets frequency of new starbursts, intensity is the intensity of the burst
+*/
 typedef struct Particle {
   CRGB     color;
   uint32_t birth  =0;
