@@ -2343,34 +2343,28 @@ uint16_t WS2812FX::mode_spots_fade()
 
 /*
 *  Bouncing Balls Effect
-*  Adapted from: https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/
 */
 uint16_t WS2812FX::mode_BouncingBalls(void) {
   // number of balls based on intensity setting to max of 7 (cycles colors)
   // non-chosen color is a random color
   int balls = int(((SEGMENT.intensity * 6.2) / 255) + 1);
 
-  // ideally use speed for gravity effect on the bounce
-  float Gravity = -9.81;
+  const  int   maxBallCount = 7;
+  
+  float Gravity                           = -9.81; // standard value of gravity
+  int   Position[maxBallCount];                    // current position of the ball normalized to segment size
+  float TimeSinceLastBounce[maxBallCount] = {0};   // time difference for physics calculations
+  int   StartHeight                       = 1;     // height in metres (strip length)
+  float Dampening[maxBallCount]           = {0};   // Coefficient of Restitution (bounce damping)
+  float ImpactVelocityStart               = sqrt( -2 * Gravity * StartHeight);
 
-  const int maxBallCount = 7;
+  static float ImpactVelocity[maxBallCount] = {ImpactVelocityStart};
+  static long  ClockTimeSinceLastBounce[maxBallCount] = {millis()};
   static float Height[maxBallCount];
-  static float ImpactVelocity[maxBallCount];
-  static int   Position[maxBallCount];
-  static float TimeSinceLastBounce[maxBallCount];
-  static long  ClockTimeSinceLastBounce[maxBallCount];
-  static int   StartHeight = 1;                 // height in metres (strip length)
-  static float Dampening[maxBallCount] = {0};   // Coefficient of Restitution (bounce damping)
-  static float ImpactVelocityStart=sqrt( -2 * Gravity * StartHeight);
-
-  // Different from the examples, to allow for initialisation of the first bounce
-  if (Dampening[0] == 0) {
-    for (int i = 0 ; i < maxBallCount ; i++) {
-      ClockTimeSinceLastBounce[i] = millis();
-      ImpactVelocity[i] = ImpactVelocityStart;
-      TimeSinceLastBounce[i] = 0;
-      Dampening[i] = 0.90 - float(i)/pow(maxBallCount,2);
-    }
+  
+  //set up variable damping for better effect using multiple balls
+  for (int i = 0 ; i < maxBallCount ; i++) {
+    Dampening[i] = 0.90 - float(i)/pow(maxBallCount,2);
   }
   
   for (int i = 0 ; i < balls ; i++) {
@@ -2410,7 +2404,7 @@ uint16_t WS2812FX::sinelon_base(bool dual, bool rainbow=false) {
 
   fade_out(SEGMENT.intensity);
   int pos = beatsin16(SEGMENT.speed/10,0,SEGLEN-1);
-  static int prevpos = 0;
+  int prevpos = SEGENV.aux0;
   
   uint32_t color1 = color_from_palette(pos, true, false, 0);
   if (rainbow) {
@@ -2418,13 +2412,11 @@ uint16_t WS2812FX::sinelon_base(bool dual, bool rainbow=false) {
   }
 
   if( pos < prevpos ) { 
-    for (uint16_t i = pos; i < prevpos; i++)
-    {
+    for (uint16_t i = pos; i < prevpos; i++) {
       setPixelColor(i, color1);
     }
   } else {
-    for (uint16_t i = prevpos; i < pos; i++)
-    {
+    for (uint16_t i = prevpos; i < pos; i++) {
       setPixelColor(SEGMENT.start + i, color1);
     }
   }
@@ -2438,19 +2430,18 @@ uint16_t WS2812FX::sinelon_base(bool dual, bool rainbow=false) {
     if (rainbow) {
       color2 = color_wheel((pos % 8) * 32);
     }
-    if( pos < prevpos ) { 
-      for (uint16_t i = pos; i < prevpos; i++)
-      {
+    if ( pos < prevpos ) { 
+      for (uint16_t i = pos; i < prevpos; i++) {
         setPixelColor(SEGMENT.start + SEGLEN-1-i, color2);
       }
     } else {
-      for (uint16_t i = prevpos; i < pos; i++)
-      {
+      for (uint16_t i = prevpos; i < pos; i++) {
         setPixelColor(SEGMENT.start + SEGLEN-1-i, color2);
       }
     }
   }
-  prevpos = pos;
+
+  SEGENV.aux0 = pos;
   return FRAMETIME;
 }
 
@@ -2497,12 +2488,9 @@ uint16_t WS2812FX::mode_popcorn(void) {
   uint32_t popcornColor = SEGCOLOR(0);
   uint32_t bgColor = SEGCOLOR(1);
   if(popcornColor == bgColor) popcornColor = color_wheel(random8());
-  
+
   static kernel popcorn[MAX_NUM_POPCORN];
-  static float coeff = 0.0f;
-  if(coeff == 0.0f) { // calculate the velocity coeff once (the secret sauce)
-    coeff = pow((float)SEGLEN, 0.5223324f) * 0.3944296f;
-  }
+  float coeff = pow((float)SEGLEN, 0.5223324f) * 0.3944296f;
 
   fill(SEGCOLOR(1));
 
@@ -2513,6 +2501,7 @@ uint16_t WS2812FX::mode_popcorn(void) {
     if(isActive) { // if kernel is active, update its position
       popcorn[i].position += popcorn[i].velocity;
       popcorn[i].velocity -= (GRAVITY * ((255-SEGMENT.speed)*8/256 + 1));
+      
       ledIndex = SEGMENT.start + popcorn[i].position;
       if(ledIndex >= SEGMENT.start && ledIndex <= SEGMENT.stop) setPixelColor(ledIndex, popcorn[i].color);
     } else { // if kernel is inactive, randomly pop it
@@ -2520,6 +2509,7 @@ uint16_t WS2812FX::mode_popcorn(void) {
         popcorn[i].position = 0.0f;
         popcorn[i].velocity = coeff * (random(66, 100) / 100.0f);
         popcorn[i].color = popcornColor;
+        
         ledIndex = SEGMENT.start;
         setPixelColor(ledIndex, popcorn[i].color);
       }
