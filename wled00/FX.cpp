@@ -2378,7 +2378,7 @@ void WS2812FX::flare() {
 
   if (SEGENV.aux0 == 0) {  //use aux0 for initialization flag
     flarePos = 0;
-    flareVel = float(random16(150, 190)) / (75+SEGMENT.intensity/4); // trial and error to get reasonable range
+    flareVel = float(random16(150, 190)) / (75+(255-SEGMENT.intensity)/4); // trial and error to get reasonable range
     brightness = 1;
 
     // initialize launch sparks
@@ -2428,10 +2428,10 @@ void WS2812FX::explode() {
   int nSparks = flarePos / 2; // works out to look about right
   nSparks = constrain(nSparks,0,NUM_SPARKS);
   static float dying_gravity;
-  float gravity = -0.02 - (SEGMENT.speed/10000.0);
+  float gravity = -0.02 - ((255-SEGMENT.speed)/10000.0);
   float c1=120; 
   float c2=50;
-  
+
   // initialize sparks
   if (SEGENV.aux0==0) {
     for (int i = 0; i < nSparks; i++) { 
