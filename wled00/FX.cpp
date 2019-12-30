@@ -1296,7 +1296,7 @@ uint16_t WS2812FX::mode_icu(void) {
   setPixelColor(SEGMENT.start + dest, col);
   setPixelColor(SEGMENT.start + dest + SEGLEN/2, col);
 
-  return FRAMETIME;
+  return SPEED_FORMULA_L;
 }
 
 
@@ -1305,24 +1305,35 @@ uint16_t WS2812FX::mode_icu(void) {
  */
 uint16_t WS2812FX::mode_tricolor_wipe(void)
 {
-  uint32_t cycleTime = 40 + (3 * (uint32_t)(255 - SEGMENT.speed));
-  uint32_t it = now / cycleTime;
-  if (SEGENV.step == it) return FRAMETIME;
-  uint8_t incr = it-SEGENV.step;
+  uint32_t counter = now / (40 + (3 * (uint32_t)(255 - SEGMENT.speed)));
+  uint32_t prog = counter % (SEGLEN * 3);
+  uint16_t led_offset = prog;
 
-  if(SEGENV.step < SEGLEN) {
-    uint32_t led_offset = SEGENV.step;
-    setPixelColor(SEGMENT.start + led_offset, SEGCOLOR(0));
-  } else if (SEGENV.step < SEGLEN*2) {
-    uint32_t led_offset = SEGENV.step - SEGLEN;
-    setPixelColor(SEGMENT.start + led_offset, SEGCOLOR(1));
-  } else
+  for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
   {
-    uint32_t led_offset = SEGENV.step - SEGLEN*2;
-    setPixelColor(SEGMENT.start + led_offset, color_from_palette(SEGMENT.start + led_offset, true, PALETTE_SOLID_WRAP, 2));
+    setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 2));
+  }
+  
+  if(prog < SEGLEN) { //wipe from 0 to 1
+    for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
+    {
+      setPixelColor(i, (i - SEGMENT.start > led_offset)? SEGCOLOR(0) : SEGCOLOR(1));
+    }
+  } else if (prog < SEGLEN*2) { //wipe from 1 to 2
+    led_offset = prog - SEGLEN;
+    for (uint16_t i = SEGMENT.start +led_offset +1; i < SEGMENT.stop; i++)
+    {
+      setPixelColor(i, SEGCOLOR(1));
+    }
+  } else //wipe from 2 to 0
+  {
+    led_offset = prog - SEGLEN*2;
+    for (uint16_t i = SEGMENT.start; i <= SEGMENT.start +led_offset; i++)
+    {
+      setPixelColor(i, SEGCOLOR(0));
+    }
   }
 
-  SEGENV.step = (SEGENV.step + 1) % (SEGLEN * 3);
   return FRAMETIME;
 }
 
@@ -1335,16 +1346,16 @@ uint16_t WS2812FX::mode_tricolor_wipe(void)
 uint16_t WS2812FX::mode_tricolor_fade(void)
 {
   uint16_t counter = now * ((SEGMENT.speed >> 3) +1);
-  SEGENV.step = (counter * 768) >> 16;
+  uint32_t prog = (counter * 768) >> 16;
 
   uint32_t color1 = 0, color2 = 0;
   byte stage = 0;
 
-  if(SEGENV.step < 256) {
+  if(prog < 256) {
     color1 = SEGCOLOR(0);
     color2 = SEGCOLOR(1);
     stage = 0;
-  } else if(SEGENV.step < 512) {
+  } else if(prog < 512) {
     color1 = SEGCOLOR(1);
     color2 = SEGCOLOR(2);
     stage = 1;
@@ -1354,7 +1365,7 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
     stage = 2;
   }
 
-  byte stp = SEGENV.step % 256;
+  byte stp = prog; // % 256
   uint32_t color = 0;
   for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
     if (stage == 2) {
