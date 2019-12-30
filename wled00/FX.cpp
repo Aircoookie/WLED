@@ -414,7 +414,6 @@ uint16_t WS2812FX::mode_theater_chase(void) {
  * Inspired by the Adafruit examples.
  */
 uint16_t WS2812FX::mode_theater_chase_rainbow(void) {
-  SEGENV.step = (SEGENV.step + 1) & 0xFF;
   return theater_chase(color_wheel(SEGENV.step), SEGCOLOR(1), false);
 }
 
@@ -961,6 +960,10 @@ uint16_t WS2812FX::mode_halloween(void) {
  * Random colored pixels running.
  */
 uint16_t WS2812FX::mode_running_random(void) {
+  uint32_t cycleTime = 25 + (3 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t it = now / cycleTime;
+  if (SEGENV.aux1 == it) return FRAMETIME;
+
   for(uint16_t i=SEGLEN-1; i > 0; i--) {
     setPixelColor(SEGMENT.start + i, getPixelColor(SEGMENT.start + i - 1));
   }
@@ -975,7 +978,9 @@ uint16_t WS2812FX::mode_running_random(void) {
   {
     SEGENV.step = 0;
   }
-  return SPEED_FORMULA_L;
+
+  SEGENV.aux1 = it;
+  return FRAMETIME;
 }
 
 
@@ -1091,6 +1096,10 @@ uint16_t WS2812FX::mode_rain()
  * Fire flicker function
  */
 uint16_t WS2812FX::mode_fire_flicker(void) {
+  uint32_t cycleTime = 40 + (255 - SEGMENT.speed);
+  uint32_t it = now / cycleTime;
+  if (SEGENV.step == it) return FRAMETIME;
+  
   byte w = (SEGCOLOR(0) >> 24) & 0xFF;
   byte r = (SEGCOLOR(0) >> 16) & 0xFF;
   byte g = (SEGCOLOR(0) >>  8) & 0xFF;
@@ -1105,7 +1114,9 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
       setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, 255 - flicker));
     }
   }
-  return 20 + random((255 - SEGMENT.speed),(2 * (uint16_t)(255 - SEGMENT.speed)));
+
+  SEGENV.step = it;
+  return FRAMETIME;
 }
 
 
@@ -1294,20 +1305,38 @@ uint16_t WS2812FX::mode_icu(void) {
  */
 uint16_t WS2812FX::mode_tricolor_wipe(void)
 {
-  if(SEGENV.step < SEGLEN) {
-    uint32_t led_offset = SEGENV.step;
-    setPixelColor(SEGMENT.start + led_offset, SEGCOLOR(0));
-  } else if (SEGENV.step < SEGLEN*2) {
-    uint32_t led_offset = SEGENV.step - SEGLEN;
-    setPixelColor(SEGMENT.start + led_offset, SEGCOLOR(1));
-  } else
+  uint32_t cycleTime = 1000 + (255 - SEGMENT.speed)*200;
+  uint32_t perc = now % cycleTime;
+  uint16_t prog = (perc * 65535) / cycleTime;
+  uint16_t ledIndex = (prog * SEGLEN * 3) >> 16;
+  uint16_t ledOffset = ledIndex;
+
+  for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
   {
-    uint32_t led_offset = SEGENV.step - SEGLEN*2;
-    setPixelColor(SEGMENT.start + led_offset, color_from_palette(SEGMENT.start + led_offset, true, PALETTE_SOLID_WRAP, 2));
+    setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 2));
+  }
+  
+  if(ledIndex < SEGLEN) { //wipe from 0 to 1
+    for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
+    {
+      setPixelColor(i, (i - SEGMENT.start > ledOffset)? SEGCOLOR(0) : SEGCOLOR(1));
+    }
+  } else if (ledIndex < SEGLEN*2) { //wipe from 1 to 2
+    ledOffset = ledIndex - SEGLEN;
+    for (uint16_t i = SEGMENT.start +ledOffset +1; i < SEGMENT.stop; i++)
+    {
+      setPixelColor(i, SEGCOLOR(1));
+    }
+  } else //wipe from 2 to 0
+  {
+    ledOffset = ledIndex - SEGLEN*2;
+    for (uint16_t i = SEGMENT.start; i <= SEGMENT.start +ledOffset; i++)
+    {
+      setPixelColor(i, SEGCOLOR(0));
+    }
   }
 
-  SEGENV.step = (SEGENV.step + 1) % (SEGLEN * 3);
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
@@ -1318,14 +1347,17 @@ uint16_t WS2812FX::mode_tricolor_wipe(void)
  */
 uint16_t WS2812FX::mode_tricolor_fade(void)
 {
+  uint16_t counter = now * ((SEGMENT.speed >> 3) +1);
+  uint32_t prog = (counter * 768) >> 16;
+
   uint32_t color1 = 0, color2 = 0;
   byte stage = 0;
 
-  if(SEGENV.step < 256) {
+  if(prog < 256) {
     color1 = SEGCOLOR(0);
     color2 = SEGCOLOR(1);
     stage = 0;
-  } else if(SEGENV.step < 512) {
+  } else if(prog < 512) {
     color1 = SEGCOLOR(1);
     color2 = SEGCOLOR(2);
     stage = 1;
@@ -1335,7 +1367,7 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
     stage = 2;
   }
 
-  byte stp = SEGENV.step % 256;
+  byte stp = prog; // % 256
   uint32_t color = 0;
   for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
     if (stage == 2) {
@@ -1348,10 +1380,7 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
     setPixelColor(i, color);
   }
 
-  SEGENV.step += 4;
-  if(SEGENV.step >= 768) SEGENV.step = 0;
-
-  return 5 + ((uint32_t)(255 - SEGMENT.speed) / 10);
+  return FRAMETIME;
 }
 
 
@@ -1361,6 +1390,10 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
  */
 uint16_t WS2812FX::mode_multi_comet(void)
 {
+  uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t it = now / cycleTime;
+  if (SEGENV.step == it) return FRAMETIME;
+
   fade_out(SEGMENT.intensity);
 
   static uint16_t comets[] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
@@ -1382,7 +1415,9 @@ uint16_t WS2812FX::mode_multi_comet(void)
       }
     }
   }
-  return SPEED_FORMULA_L;
+
+  SEGENV.step = it;
+  return FRAMETIME;
 }
 
 
