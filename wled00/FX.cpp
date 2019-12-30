@@ -242,7 +242,7 @@ uint16_t WS2812FX::mode_dynamic(void) {
 
   uint32_t cycleTime = 50 + (255 - SEGMENT.speed)*15;
   uint32_t it = now / cycleTime;
-  if (it != SEGENV.step) //new color
+  if (it != SEGENV.step && SEGMENT.speed != 0) //new color
   {
     for(uint16_t i=SEGMENT.start; i < SEGMENT.stop; i++) {
       if (random8() <= SEGMENT.intensity) _locked[i] = random8();
