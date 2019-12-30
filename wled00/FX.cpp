@@ -1305,30 +1305,32 @@ uint16_t WS2812FX::mode_icu(void) {
  */
 uint16_t WS2812FX::mode_tricolor_wipe(void)
 {
-  uint32_t counter = now / (40 + (3 * (uint32_t)(255 - SEGMENT.speed)));
-  uint32_t prog = counter % (SEGLEN * 3);
-  uint16_t led_offset = prog;
+  uint32_t cycleTime = 1000 + (255 - SEGMENT.speed)*200;
+  uint32_t perc = now % cycleTime;
+  uint16_t prog = (perc * 65535) / cycleTime;
+  uint16_t ledIndex = (prog * SEGLEN * 3) >> 16;
+  uint16_t ledOffset = ledIndex;
 
   for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
   {
     setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 2));
   }
   
-  if(prog < SEGLEN) { //wipe from 0 to 1
+  if(ledIndex < SEGLEN) { //wipe from 0 to 1
     for (uint16_t i = SEGMENT.start; i < SEGMENT.stop; i++)
     {
-      setPixelColor(i, (i - SEGMENT.start > led_offset)? SEGCOLOR(0) : SEGCOLOR(1));
+      setPixelColor(i, (i - SEGMENT.start > ledOffset)? SEGCOLOR(0) : SEGCOLOR(1));
     }
-  } else if (prog < SEGLEN*2) { //wipe from 1 to 2
-    led_offset = prog - SEGLEN;
-    for (uint16_t i = SEGMENT.start +led_offset +1; i < SEGMENT.stop; i++)
+  } else if (ledIndex < SEGLEN*2) { //wipe from 1 to 2
+    ledOffset = ledIndex - SEGLEN;
+    for (uint16_t i = SEGMENT.start +ledOffset +1; i < SEGMENT.stop; i++)
     {
       setPixelColor(i, SEGCOLOR(1));
     }
   } else //wipe from 2 to 0
   {
-    led_offset = prog - SEGLEN*2;
-    for (uint16_t i = SEGMENT.start; i <= SEGMENT.start +led_offset; i++)
+    ledOffset = ledIndex - SEGLEN*2;
+    for (uint16_t i = SEGMENT.start; i <= SEGMENT.start +ledOffset; i++)
     {
       setPixelColor(i, SEGCOLOR(0));
     }
