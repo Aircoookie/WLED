@@ -2444,9 +2444,9 @@ uint16_t WS2812FX::mode_candle()
 / based on the video: https://www.reddit.com/r/arduino/comments/c3sd46/i_made_this_fireworks_effect_for_my_led_strips/
 / Speed sets frequency of new starbursts, intensity is the intensity of the burst
 */
-#define STARBURST_MAX_FRAG 20
+#define STARBURST_MAX_FRAG 12
 
-typedef struct Particle {
+typedef struct particle {
   CRGB     color;
   uint32_t birth  =0;
   uint32_t last   =0;
@@ -2458,11 +2458,11 @@ typedef struct Particle {
 uint16_t WS2812FX::mode_starburst(void) {
   uint32_t it = millis();
   
-  const uint8_t  numStars                = 4;
+  const uint8_t  numStars                = 15;
   static   star  stars[numStars];
   float          maxSpeed                = 375.0f;  // Max velocity
-  float          ParticleIgnition        = 250.0f;    // How long to "flash"
-  float          ParticleFadeTime        = 1500.0f;    // Fade out time
+  float          particleIgnition        = 250.0f;  // How long to "flash"
+  float          particleFadeTime        = 1500.0f; // Fade out time
      
   for (int j = 0; j < numStars; j++)
   {
@@ -2471,7 +2471,7 @@ uint16_t WS2812FX::mode_starburst(void) {
     {
       // Pick a random color and location.  
       uint16_t startPos = random16(SEGLEN-1);
-      double multiplier = (float)(random8())/255.0 * 1.0;
+      float multiplier = (float)(random8())/255.0 * 1.0;
 
       stars[j].color = col_to_crgb(color_wheel(random8()));
       stars[j].pos = startPos; 
@@ -2479,7 +2479,7 @@ uint16_t WS2812FX::mode_starburst(void) {
       stars[j].birth = it;
       stars[j].last = it;
       // more fragments means larger burst effect
-      int num = random8(5,10 + (SEGMENT.intensity * STARBURST_MAX_FRAG/255));
+      int num = random8(3,6 + (SEGMENT.intensity >> 5));
 
       for (int i=0; i < STARBURST_MAX_FRAG; i++) {
         if (i < num) stars[j].fragment[i] = startPos;
@@ -2499,12 +2499,8 @@ uint16_t WS2812FX::mode_starburst(void) {
         int var = i >> 1;
         
         if (stars[j].fragment[i] > 0) {
-          // spplit fragments half to each side with some travelling further
-          if (i % 2) {
-            stars[j].fragment[i] -= stars[j].vel * dt * (float)var/6.0;
-          } else {
-            stars[j].fragment[i] += stars[j].vel * dt * (float)var/6.0;
-          }
+          //all fragments travel right, will be mirrored on other side
+          stars[j].fragment[i] += stars[j].vel * dt * (float)var/3.0;
         }
       }
       stars[j].last = it;
@@ -2518,30 +2514,34 @@ uint16_t WS2812FX::mode_starburst(void) {
     float fade = 0.0f;
     float age = it-stars[j].birth;
 
-    if (age < ParticleIgnition) {
-      c = col_to_crgb(color_blend(ULTRAWHITE, crgb_to_col(c), 254.5f*((age / ParticleIgnition))));
+    if (age < particleIgnition) {
+      c = col_to_crgb(color_blend(WHITE, crgb_to_col(c), 254.5f*((age / particleIgnition))));
     } else {
       // Figure out how much to fade and shrink the star based on 
       // its age relative to its lifetime
-      if (age > ParticleIgnition + ParticleFadeTime) {
+      if (age > particleIgnition + particleFadeTime) {
         fade = 1.0f;                  // Black hole, all faded out
         stars[j].birth = 0;
         c = col_to_crgb(SEGCOLOR(1));
       } else {
-        age -= ParticleIgnition;
-        fade = (age / ParticleFadeTime);  // Fading star
+        age -= particleIgnition;
+        fade = (age / particleFadeTime);  // Fading star
         byte f = 254.5f*fade;
         c = col_to_crgb(color_blend(crgb_to_col(c), SEGCOLOR(1), f));
       }
     }
     
-    float ParticleSize = (1.0 - fade) * 2;
+    float particleSize = (1.0 - fade) * 2;
 
-    for (int i=0; i < STARBURST_MAX_FRAG; i++) {
+    for (uint8_t index=0; index < STARBURST_MAX_FRAG*2; index++) {
+      bool mirrored = index & 0x1;
+      uint8_t i = index >> 1;
       if (stars[j].fragment[i] > 0) {
-        int start = int(stars[j].fragment[i]) - int(ParticleSize);
+        float loc = stars[j].fragment[i];
+        if (mirrored) loc -= (loc-stars[j].pos)*2;
+        int start = loc - particleSize;
+        int end = loc + particleSize;
         if (start < 0) start = 0;
-        int end = int(stars[j].fragment[i]) + int(ParticleSize);
         if (start == end) end++;
         if (end > SEGLEN) end = SEGLEN;    
         for (int p = start; p < end; p++) {
