@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 13
+#define EEPVER 14
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -20,7 +20,8 @@
 //10-> 0.8.2
 //11-> 0.8.5-dev #mqttauth @TimothyBrown
 //12-> 0.8.7-dev
-//13-> 0.9.0
+//13-> 0.9.0-dev
+//14-> 0.9.0-b1
 
 void commit()
 {
@@ -152,7 +153,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(394, abs(utcOffsetSecs) & 0xFF);
   EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
-  //397 was initLedsLast
+  EEPROM.write(397, syncToggleReceive);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
   EEPROM.write(399, !enableSecTransition);
 
@@ -241,6 +242,7 @@ void saveSettingsToEEPROM()
     EEPROM.write(2290 + i, timerMacro[i]  );
   }
 
+  EEPROM.write(2299, mqttEnabled);
   writeStringToEEPROM(2300, mqttServer, 32);
   writeStringToEEPROM(2333, mqttDeviceTopic, 32);
   writeStringToEEPROM(2366, mqttGroupTopic, 32);
@@ -462,6 +464,14 @@ void loadSettingsFromEEPROM(bool first)
   {
     readStringFromEEPROM(990, ntpServerName, 32);
   }
+  if (lastEEPROMversion > 13)
+  {
+    mqttEnabled = EEPROM.read(2299);
+    syncToggleReceive = EEPROM.read(397);
+  } else {
+    mqttEnabled = true;
+    syncToggleReceive = false;
+  }
 
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
@@ -495,6 +505,7 @@ void loadSettingsFromEEPROM(bool first)
   //1024-2047 reserved
 
   readStringFromEEPROM(2220, blynkApiKey, 35);
+  if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
 
   //user MOD memory
   //2944 - 3071 reserved
@@ -550,6 +561,7 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
         col[j] = EEPROM.read(i+j+2);
         colSec[j] = EEPROM.read(i+j+6);
       }
+      strip.setColor(2, EEPROM.read(i+12), EEPROM.read(i+13), EEPROM.read(i+14), EEPROM.read(i+15)); //tertiary color
     }
     if (loadFX)
     {
@@ -587,6 +599,12 @@ void savePreset(byte index)
     }
     EEPROM.write(i+10, effectCurrent);
     EEPROM.write(i+11, effectSpeed);
+
+    uint32_t colTer = strip.getSegment(strip.getMainSegmentId()).colors[2];
+    EEPROM.write(i+12, (colTer >> 16) & 0xFF);
+    EEPROM.write(i+13, (colTer >>  8) & 0xFF);
+    EEPROM.write(i+14, (colTer >>  0) & 0xFF);
+    EEPROM.write(i+15, (colTer >> 24) & 0xFF);
   
     EEPROM.write(i+16, effectIntensity);
     EEPROM.write(i+17, effectPalette);

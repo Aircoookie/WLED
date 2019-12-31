@@ -165,6 +165,6 @@ void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw)
   float low = minf(rgb[0],minf(rgb[1],rgb[2]));
   float high = maxf(rgb[0],maxf(rgb[1],rgb[2]));
   if (high < 0.1f) return;
-  float sat = 255.0f * ((high - low) / high);
+  float sat = 100.0f * ((high - low) / high);;   // maximum saturation is 100  (corrected from 255)
   rgb[3] = (byte)((255.0f - sat) / 255.0f * (rgb[0] + rgb[1] + rgb[2]) / 3);
 }
