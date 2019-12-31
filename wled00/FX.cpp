@@ -2458,28 +2458,24 @@ typedef struct Particle {
 uint16_t WS2812FX::mode_starburst(void) {
   uint32_t it = millis();
   
-  const uint8_t  numStars                = 12;
+  const uint8_t  numStars                = 4;
   static   star  stars[numStars];
-  float          MaxSpeed                = 375.0f;  // Max velocity
-  int            NewParticleProbability  = 2;       // Odds of new particle (out of 255)
-  float          ParticlePreignitonTime  = 0.0f;    // How long to "wink"
-  float          ParticleIgnition        = 0.06f;    // How long to "flash"
-  float          ParticleHoldTime        = 0.0f;    // Main lifecycle time
-  float          ParticleFadeTime        = 2.6f;    // Fade out time
+  float          maxSpeed                = 375.0f;  // Max velocity
+  float          ParticleIgnition        = 250.0f;    // How long to "flash"
+  float          ParticleFadeTime        = 1500.0f;    // Fade out time
      
   for (int j = 0; j < numStars; j++)
   {
     // speed to adjust chance of a burst, max is nearly always.
-    if (random8((263-SEGMENT.speed)>>1) < NewParticleProbability && stars[j].birth==0) 
+    if (random8((144-(SEGMENT.speed >> 1))) == 0 && stars[j].birth == 0)
     {
       // Pick a random color and location.  
       uint16_t startPos = random16(SEGLEN-1);
-      CRGB color = col_to_crgb(color_wheel(random8()));
       double multiplier = (float)(random8())/255.0 * 1.0;
 
-      stars[j].color = color;
+      stars[j].color = col_to_crgb(color_wheel(random8()));
       stars[j].pos = startPos; 
-      stars[j].vel = MaxSpeed * (float)(random8())/255.0 * multiplier;
+      stars[j].vel = maxSpeed * (float)(random8())/255.0 * multiplier;
       stars[j].birth = it;
       stars[j].last = it;
       // more fragments means larger burst effect
@@ -2492,7 +2488,7 @@ uint16_t WS2812FX::mode_starburst(void) {
     }
   }
   
-  fill(BLACK);
+  fill(SEGCOLOR(1));
   
   for (int j=0; j<numStars; j++)
   {
@@ -2500,7 +2496,7 @@ uint16_t WS2812FX::mode_starburst(void) {
       float dt = (it-stars[j].last)/1000.0;
 
       for (int i=0; i < STARBURST_MAX_FRAG; i++) {
-        int var = i/2;
+        int var = i >> 1;
         
         if (stars[j].fragment[i] > 0) {
           // spplit fragments half to each side with some travelling further
@@ -2513,7 +2509,6 @@ uint16_t WS2812FX::mode_starburst(void) {
       }
       stars[j].last = it;
       stars[j].vel -= 3*stars[j].vel*dt;
-      stars[j].color = stars[j].color.nscale8(235);
     }
   
     CRGB c = stars[j].color;
@@ -2521,37 +2516,33 @@ uint16_t WS2812FX::mode_starburst(void) {
     // If the star is brand new, it flashes white briefly.  
     // Otherwise it just fades over time.
     float fade = 0.0f;
-    float age = (it-stars[j].birth)/1000.0;
+    float age = it-stars[j].birth;
 
-    if (age > ParticlePreignitonTime && age < ParticleIgnition + ParticlePreignitonTime) {
-      c = CRGB(ULTRAWHITE);
+    if (age < ParticleIgnition) {
+      c = col_to_crgb(color_blend(ULTRAWHITE, crgb_to_col(c), 254.5f*((age / ParticleIgnition))));
     } else {
       // Figure out how much to fade and shrink the star based on 
       // its age relative to its lifetime
-      if (age < ParticlePreignitonTime) {
-        fade = 1.0 - (age / ParticlePreignitonTime);
+      if (age > ParticleIgnition + ParticleFadeTime) {
+        fade = 1.0f;                  // Black hole, all faded out
+        stars[j].birth = 0;
+        c = col_to_crgb(SEGCOLOR(1));
       } else {
-        age -= ParticlePreignitonTime;
-        if (age < ParticleHoldTime + ParticleIgnition) {
-          fade = 0.0f;                  // Just born
-        } else if (age > ParticleHoldTime + ParticleIgnition + ParticleFadeTime) {
-          fade = 1.0f;                  // Black hole, all faded out
-          stars[j].birth = 0;
-        } else {
-          age -= (ParticleHoldTime + ParticleIgnition);
-          fade = (age / ParticleFadeTime);  // Fading star
-        }
+        age -= ParticleIgnition;
+        fade = (age / ParticleFadeTime);  // Fading star
+        byte f = 254.5f*fade;
+        c = col_to_crgb(color_blend(crgb_to_col(c), SEGCOLOR(1), f));
       }
-      
-    c = c.nscale8(255-int(255.0*fade)/2);
     }
-    float ParticleSize = (1 - fade) * 4;
+    
+    float ParticleSize = (1.0 - fade) * 2;
 
     for (int i=0; i < STARBURST_MAX_FRAG; i++) {
       if (stars[j].fragment[i] > 0) {
-        int start = int(stars[j].fragment[i]) - int(ParticleSize/2);
-        if (start<0) start = 0;
-        int end = int(stars[j].fragment[i]) + int(ParticleSize/2);
+        int start = int(stars[j].fragment[i]) - int(ParticleSize);
+        if (start < 0) start = 0;
+        int end = int(stars[j].fragment[i]) + int(ParticleSize);
+        if (start == end) end++;
         if (end > SEGLEN) end = SEGLEN;    
         for (int p = start; p < end; p++) {
           setPixelColor(SEGMENT.start+p, c.r, c.g, c.b);
