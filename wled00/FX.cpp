@@ -2444,21 +2444,21 @@ uint16_t WS2812FX::mode_candle()
 / based on the video: https://www.reddit.com/r/arduino/comments/c3sd46/i_made_this_fireworks_effect_for_my_led_strips/
 / Speed sets frequency of new starbursts, intensity is the intensity of the burst
 */
+#define STARBURST_MAX_FRAG 20
+
 typedef struct Particle {
   CRGB     color;
   uint32_t birth  =0;
   uint32_t last   =0;
   double   vel    =0;
   uint16_t pos    =-1;
-  float    fragment[40];
+  float    fragment[STARBURST_MAX_FRAG];
 } star;
 
 uint16_t WS2812FX::mode_starburst(void) {
   uint32_t it = millis();
   
-  boolean        Blend                   = true;
   const uint8_t  numStars                = 12;
-  const uint8_t  maxFrag                 = 20;
   static   star  stars[numStars];
   float          MaxSpeed                = 375.0f;  // Max velocity
   int            NewParticleProbability  = 2;       // Odds of new particle (out of 255)
@@ -2466,15 +2466,14 @@ uint16_t WS2812FX::mode_starburst(void) {
   float          ParticleIgnition        = 0.06f;    // How long to "flash"
   float          ParticleHoldTime        = 0.0f;    // Main lifecycle time
   float          ParticleFadeTime        = 2.6f;    // Fade out time
-  float          ParticleSize            = 0.00f;   // Size of the particle
      
   for (int j = 0; j < numStars; j++)
   {
     // speed to adjust chance of a burst, max is nearly always.
-    if (random8((263-SEGMENT.speed)/2) < NewParticleProbability && stars[j].birth==0) 
+    if (random8((263-SEGMENT.speed)>>1) < NewParticleProbability && stars[j].birth==0) 
     {
       // Pick a random color and location.  
-      uint16_t startPos = random8(SEGLEN-1);
+      uint16_t startPos = random16(SEGLEN-1);
       CRGB color = col_to_crgb(color_wheel(random8()));
       double multiplier = (float)(random8())/255.0 * 1.0;
 
@@ -2484,9 +2483,9 @@ uint16_t WS2812FX::mode_starburst(void) {
       stars[j].birth = it;
       stars[j].last = it;
       // more fragments means larger burst effect
-      int num = random8(5,10 + (SEGMENT.intensity * maxFrag/255));
+      int num = random8(5,10 + (SEGMENT.intensity * STARBURST_MAX_FRAG/255));
 
-      for (int i=0; i<40; i++) {
+      for (int i=0; i < STARBURST_MAX_FRAG; i++) {
         if (i < num) stars[j].fragment[i] = startPos;
         else stars[j].fragment[i] = -1;
       }
@@ -2500,7 +2499,7 @@ uint16_t WS2812FX::mode_starburst(void) {
     if (stars[j].birth != 0) {
       float dt = (it-stars[j].last)/1000.0;
 
-      for (int i=0; i<=maxFrag; i++) {
+      for (int i=0; i < STARBURST_MAX_FRAG; i++) {
         int var = i/2;
         
         if (stars[j].fragment[i] > 0) {
@@ -2525,7 +2524,7 @@ uint16_t WS2812FX::mode_starburst(void) {
     float age = (it-stars[j].birth)/1000.0;
 
     if (age > ParticlePreignitonTime && age < ParticleIgnition + ParticlePreignitonTime) {
-      c = CRGB(WHITE);
+      c = CRGB(ULTRAWHITE);
     } else {
       // Figure out how much to fade and shrink the star based on 
       // its age relative to its lifetime
@@ -2546,15 +2545,15 @@ uint16_t WS2812FX::mode_starburst(void) {
       
     c = c.nscale8(255-int(255.0*fade)/2);
     }
-    ParticleSize = (1 - fade) * 4;
+    float ParticleSize = (1 - fade) * 4;
 
-    for (int i=0; i<=maxFrag; i++) {
+    for (int i=0; i < STARBURST_MAX_FRAG; i++) {
       if (stars[j].fragment[i] > 0) {
         int start = int(stars[j].fragment[i]) - int(ParticleSize/2);
         if (start<0) start = 0;
         int end = int(stars[j].fragment[i]) + int(ParticleSize/2);
-        if (end>SEGLEN-1) end = SEGLEN-1;    
-        for (int p=start; p<=end; p++) {
+        if (end > SEGLEN) end = SEGLEN;    
+        for (int p = start; p < end; p++) {
           setPixelColor(SEGMENT.start+p, c.r, c.g, c.b);
         }
       }
