@@ -44,9 +44,16 @@
 #define WLED_FPS         42
 #define FRAMETIME        (1000/WLED_FPS)
 
-/* each segment uses 37 bytes of SRAM memory, so if you're application fails because of
+/* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #define MAX_NUM_SEGMENTS 10
+
+/* How much data bytes all segments combined may allocate */
+#ifdef ESP8266
+#define MAX_SEGMENT_DATA 2048
+#else
+#define MAX_SEGMENT_DATA 8192
+#endif
 
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
@@ -221,13 +228,35 @@ class WS2812FX {
     } segment;
 
   // segment runtime parameters
-    typedef struct Segment_runtime { // 16 bytes
+    typedef struct Segment_runtime { // 28 bytes
       unsigned long next_time;
       uint32_t step;
       uint32_t call;
       uint16_t aux0;
       uint16_t aux1;
-      void reset(){next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;};
+      byte* data = nullptr;
+      bool allocateData(uint16_t len){
+        if (data && _dataLen == len) return true; //already allocated
+        deallocateData();
+        if (WS2812FX::_usedSegmentData + len > MAX_SEGMENT_DATA) return false; //not enough memory
+        data = new (std::nothrow) byte[len];
+        if (!data) return false; //allocation failed
+        WS2812FX::_usedSegmentData += len;
+        _dataLen = len;
+        memset(data, 0, len);
+        return true;
+      }
+      void deallocateData(){
+        if (data) {
+          delete[] data;
+        }
+        data = nullptr;
+        WS2812FX::_usedSegmentData -= _dataLen;
+        _dataLen = 0;
+      }
+      void reset(){next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; deallocateData();}
+      private:
+        uint16_t _dataLen = 0;
     } segment_runtime;
 
     WS2812FX() {
@@ -518,6 +547,7 @@ class WS2812FX {
     uint16_t _length, _lengthRaw, _usableCount;
     uint16_t _rand16seed;
     uint8_t _brightness;
+    static uint16_t _usedSegmentData;
 
     void handle_palette(void);
     void fill(uint32_t);
@@ -564,7 +594,8 @@ class WS2812FX {
       // start, stop, speed, intensity, palette, mode, options, 3 unused bytes (group, spacing, opacity), color[]
       { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
     };
-    segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 16 bytes per element
+    segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
+    friend class Segment_runtime;
 };
 
 
