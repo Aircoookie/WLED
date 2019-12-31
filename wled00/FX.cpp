@@ -2359,25 +2359,23 @@ typedef struct Particle {
   CRGB     color;
   uint32_t birth  =0;
   uint32_t last   =0;
-  double   vel    =0;
+  float    vel    =0;
   uint16_t pos    =-1;
-  float    fragment[40];
+  float    fragment[30];
 } star;
 
 uint16_t WS2812FX::mode_starburst(void) {
   uint32_t it = millis();
   
-  boolean        Blend                   = true;
-  const uint8_t  numStars                = 12;
-  const uint8_t  maxFrag                 = 20;
+  const uint8_t  numStars                = 12;      // max starburtsts at one time
+  const uint8_t  maxFrag                 = 20;      // max fragments from each burst
   static   star  stars[numStars];
-  float          MaxSpeed                = 375.0f;  // Max velocity
+  int            MaxSpeed                = 375;  // Max velocity
   int            NewParticleProbability  = 2;       // Odds of new particle (out of 255)
   float          ParticlePreignitonTime  = 0.0f;    // How long to "wink"
-  float          ParticleIgnition        = 0.06f;    // How long to "flash"
+  float          ParticleIgnition        = 0.06f;   // How long to "flash"
   float          ParticleHoldTime        = 0.0f;    // Main lifecycle time
   float          ParticleFadeTime        = 2.6f;    // Fade out time
-  float          ParticleSize            = 0.00f;   // Size of the particle
      
   for (int j = 0; j < numStars; j++)
   {
@@ -2387,7 +2385,7 @@ uint16_t WS2812FX::mode_starburst(void) {
       // Pick a random color and location.  
       uint16_t startPos = random8(SEGLEN-1);
       CRGB color = col_to_crgb(color_wheel(random8()));
-      double multiplier = (float)(random8())/255.0 * 1.0;
+      float multiplier = (float)(random8())/255.0 * 1.0;
 
       stars[j].color = color;
       stars[j].pos = startPos; 
@@ -2397,7 +2395,7 @@ uint16_t WS2812FX::mode_starburst(void) {
       // more fragments means larger burst effect
       int num = random8(5,10 + (SEGMENT.intensity * maxFrag/255));
 
-      for (int i=0; i<40; i++) {
+      for (int i=0; i<30; i++) {
         if (i < num) stars[j].fragment[i] = startPos;
         else stars[j].fragment[i] = -1;
       }
@@ -2457,7 +2455,7 @@ uint16_t WS2812FX::mode_starburst(void) {
       
     c = c.nscale8(255-int(255.0*fade)/2);
     }
-    ParticleSize = (1 - fade) * 4;
+    float ParticleSize = (1 - fade) * 4;
 
     for (int i=0; i<=maxFrag; i++) {
       if (stars[j].fragment[i] > 0) {
