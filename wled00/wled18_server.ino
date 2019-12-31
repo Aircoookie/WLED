@@ -68,7 +68,7 @@ void initServer()
   
   server.on("/settings/wifi", HTTP_POST, [](AsyncWebServerRequest *request){
     if (!(wifiLock && otaLock)) handleSettingsSet(request, 1);
-    serveMessage(request, 200,"WiFi settings saved.","Reconnecting now...",129);
+    serveMessage(request, 200,"WiFi settings saved.","Please connect to the new IP (if changed)",129);
     forceReconnect = true;
   });
 
@@ -79,7 +79,7 @@ void initServer()
 
   server.on("/settings/ui", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 3);
-    serveMessage(request, 200,"UI settings saved.","Reloading to apply theme...",122);
+    serveMessage(request, 200,"UI settings saved.","Redirecting...",1);
   });
 
   server.on("/settings/sync", HTTP_POST, [](AsyncWebServerRequest *request){
@@ -94,7 +94,7 @@ void initServer()
 
   server.on("/settings/sec", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 6);
-    if (!doReboot) serveMessage(request, 200,"Security settings saved.","Rebooting now, please wait ~10 seconds...",129);
+    if (!doReboot) serveMessage(request, 200,"Security settings saved.","Rebooting, please wait ~10 seconds...",129);
     doReboot = true;
   });
 
@@ -102,9 +102,20 @@ void initServer()
     serveJson(request);
   });
 
-  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request, JsonObject root) {
-    if (root.isNull()){request->send(500, "application/json", "{\"error\":\"Parsing failed\"}"); return;}
-    if (deserializeState(root)) { serveJson(request); return; } //if JSON contains "v" (verbose response)
+  AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
+    bool verboseResponse = false;
+    { //scope JsonDocument so it releases its buffer
+      DynamicJsonDocument jsonBuffer(8192);
+      DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
+      JsonObject root = jsonBuffer.as<JsonObject>();
+      if (error || root.isNull()) {
+        request->send(400, "application/json", "{\"error\":10}"); return;
+      }
+      verboseResponse = deserializeState(root);
+    }
+    if (verboseResponse) { //if JSON contains "v"
+      serveJson(request); return; 
+    } 
     request->send(200, "application/json", "{\"success\":true}");
   });
   server.addHandler(handler);

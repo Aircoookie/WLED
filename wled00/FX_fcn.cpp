@@ -473,7 +473,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2) {
 
 void WS2812FX::resetSegments() {
   memset(_segments, 0, sizeof(_segments));
-  memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
+  //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
   _segment_index = 0;
   _segments[0].mode = DEFAULT_MODE;
   _segments[0].colors[0] = DEFAULT_COLOR;
@@ -481,6 +481,12 @@ void WS2812FX::resetSegments() {
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].stop = _length;
   _segments[0].setOption(0, 1); //select
+  for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
+  {
+    _segments[i].colors[0] = color_wheel(i*51);
+    _segment_runtimes[i].reset();
+  }
+  _segment_runtimes[0].reset();
 }
 
 void WS2812FX::setIndividual(uint16_t i, uint32_t col)
@@ -858,3 +864,5 @@ uint32_t WS2812FX::gamma32(uint32_t color)
   b = gammaT[b];
   return ((w << 24) | (r << 16) | (g << 8) | (b));
 }
+
+uint16_t WS2812FX::_usedSegmentData = 0;

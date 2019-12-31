@@ -12,6 +12,13 @@ void setValuesFromMainSeg()
   effectPalette = seg.palette;
 }
 
+
+void resetTimebase()
+{
+  strip.timebase = 0 - millis();
+}
+
+
 void toggleOnOff()
 {
   if (bri == 0)
@@ -81,7 +88,7 @@ void colorUpdated(int callMode)
 {
   //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
   //                     6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
-  if (callMode != 1 && callMode != 5) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
+  if (callMode != 0 && callMode != 1 && callMode != 5) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
   
   bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
   if (!colorChanged())
@@ -113,6 +120,7 @@ void colorUpdated(int callMode)
     colIT[i] = col[i];
     colSecIT[i] = colSec[i];
   }
+  if (briT == 0 && callMode != 3) resetTimebase(); 
   briIT = bri;
   if (bri > 0) briLast = bri;
   

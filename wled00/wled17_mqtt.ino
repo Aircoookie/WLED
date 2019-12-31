@@ -2,6 +2,8 @@
  * MQTT communication protocol for home automation
  */
 
+#ifdef WLED_ENABLE_MQTT
+
 void parseMQTTBriPayload(char* payload)
 {
   if      (strstr(payload, "ON") || strstr(payload, "on") || strstr(payload, "true")) {bri = briLast; colorUpdated(1);}
@@ -104,7 +106,7 @@ void publishMqtt()
 bool initMqtt()
 {
   lastMqttReconnectAttempt = millis();
-  if (mqttServer[0] == 0 || !WLED_CONNECTED) return false;
+  if (!mqttEnabled || mqttServer[0] == 0 || !WLED_CONNECTED) return false;
 
   if (mqtt == nullptr) {
     mqtt = new AsyncMqttClient();
@@ -130,3 +132,8 @@ bool initMqtt()
   mqtt->connect();
   return true;
 }
+
+#else
+bool initMqtt(){return false;}
+void publishMqtt(){}
+#endif
