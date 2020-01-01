@@ -2450,7 +2450,7 @@ typedef struct particle {
   CRGB     color;
   uint32_t birth  =0;
   uint32_t last   =0;
-  double   vel    =0;
+  float    vel    =0;
   uint16_t pos    =-1;
   float    fragment[STARBURST_MAX_FRAG];
 } star;
