@@ -1,7 +1,7 @@
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 
 //The SCL and SDA pins are defined here. 
-//Lolin32 boards use SCL=4 SDA=5 
+//Lolin32 boards use SCL=5 SDA=4 
 #define U8X8_PIN_SCL 5
 #define U8X8_PIN_SDA 4
 

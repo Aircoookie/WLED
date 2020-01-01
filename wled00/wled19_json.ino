@@ -243,7 +243,7 @@ void serializeInfo(JsonObject root)
   leds_pin.add(LEDPIN);
   
   leds["pwr"] = strip.currentMilliamps;
-  leds["maxpwr"] = strip.ablMilliampsMax;
+  leds["maxpwr"] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds["maxseg"] = strip.getMaxSegments();
   leds["seglock"] = false; //will be used in the future to prevent modifications to segment config
 
