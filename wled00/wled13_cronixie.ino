@@ -147,7 +147,6 @@ void _overlayCronixie()
 {
   if (countdownMode) checkCountdown();
   #ifndef WLED_DISABLE_CRONIXIE
-  
   byte h = hour(local);
   byte h0 = h;
   byte m = minute(local);

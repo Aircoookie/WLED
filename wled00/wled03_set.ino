@@ -622,6 +622,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   //cronixie
   #ifndef WLED_DISABLE_CRONIXIE
+  //mode, 1 countdown
+  pos = req.indexOf("NM=");
+  if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
+  
   pos = req.indexOf("NX="); //sets digits to code
   if (pos > 0) {
     strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
@@ -636,9 +640,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     overlayRefreshedTime = 0;
   }
   #endif
-  //mode, 1 countdown
-  pos = req.indexOf("NM=");
-  if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
 
   pos = req.indexOf("U0="); //user var 0
   if (pos > 0) {
