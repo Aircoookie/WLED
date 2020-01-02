@@ -358,7 +358,6 @@ class WS2812FX {
       currentMilliamps = 0;
       timebase = 0;
       _locked = nullptr;
-      _modeUsesLock = false;
       bus = new NeoPixelWrapper();
       resetSegments();
     }
@@ -552,10 +551,8 @@ class WS2812FX {
 
     void handle_palette(void);
     void fill(uint32_t);
-    bool modeUsesLock(uint8_t);
 
     bool
-      _modeUsesLock,
       _rgbwMode,
       _cronixieMode,
       _cronixieBacklightEnabled,

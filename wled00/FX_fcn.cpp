@@ -96,14 +96,6 @@ void WS2812FX::service() {
   _triggered = false;
 }
 
-bool WS2812FX::modeUsesLock(uint8_t m)
-{
-  if (m == FX_MODE_FIRE_2012 || m == FX_MODE_COLORTWINKLE  ||
-      m == FX_MODE_METEOR    || m == FX_MODE_METEOR_SMOOTH || 
-      m == FX_MODE_RIPPLE    || m == FX_MODE_DYNAMIC ) return true;
-  return false;
-}
-
 void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   uint8_t w = (c >> 24);
   uint8_t r = (c >> 16);
@@ -115,7 +107,7 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   i = i * (_disableNLeds+1);
-  if (_locked[i] && !_modeUsesLock) return;
+  if (_locked[i]) return;
   if (IS_REVERSE) i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
   byte tmpg = g;
   switch (colorOrder) //0 = Grb, default
@@ -273,7 +265,6 @@ void WS2812FX::trigger() {
 void WS2812FX::setMode(uint8_t segid, uint8_t m) {
   if (segid >= MAX_NUM_SEGMENTS) return;
    
-  bool anyUsedLock = _modeUsesLock, anyUseLock = false;
   if (m >= MODE_COUNT) m = MODE_COUNT - 1;
 
   if (_segments[segid].mode != m) 
@@ -281,13 +272,6 @@ void WS2812FX::setMode(uint8_t segid, uint8_t m) {
     _segment_runtimes[segid].reset();
     _segments[segid].mode = m;
   }
-
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-  {
-    if (modeUsesLock(_segments[i].mode)) anyUseLock = true;
-  }
-  if (anyUsedLock && !anyUseLock) unlockAll();
-  _modeUsesLock = anyUseLock;
 }
 
 uint8_t WS2812FX::getModeCount()
@@ -454,12 +438,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2) {
   if (n >= MAX_NUM_SEGMENTS) return;
   Segment& seg = _segments[n];
   if (seg.start == i1 && seg.stop == i2) return;
-  if (seg.isActive() && modeUsesLock(seg.mode))
-  {
-    _modeUsesLock = false;
-    unlockRange(seg.start, seg.stop);
-    _modeUsesLock = true;
-  }
+
   _segment_index = n; fill(0); //turn old segment range off
   if (i2 <= i1) //disable segment
   {
@@ -491,7 +470,6 @@ void WS2812FX::resetSegments() {
 
 void WS2812FX::setIndividual(uint16_t i, uint32_t col)
 {
-  if (modeUsesLock(SEGMENT.mode)) return;
   if (i >= 0 && i < _length)
   {
     _locked[i] = false;
@@ -513,13 +491,11 @@ void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 
 void WS2812FX::lock(uint16_t i)
 {
-  if (_modeUsesLock) return;
   if (i < _length) _locked[i] = true;
 }
 
 void WS2812FX::lockRange(uint16_t i, uint16_t i2)
 {
-  if (_modeUsesLock) return;
   for (uint16_t x = i; x < i2; x++)
   {
     if (x < _length) _locked[i] = true;
@@ -528,13 +504,11 @@ void WS2812FX::lockRange(uint16_t i, uint16_t i2)
 
 void WS2812FX::unlock(uint16_t i)
 {
-  if (_modeUsesLock) return;
   if (i < _length) _locked[i] = false;
 }
 
 void WS2812FX::unlockRange(uint16_t i, uint16_t i2)
 {
-  if (_modeUsesLock) return;
   for (uint16_t x = i; x < i2; x++)
   {
     if (x < _length) _locked[x] = false;
