@@ -248,9 +248,7 @@ class WS2812FX {
         return true;
       }
       void deallocateData(){
-        if (data) {
-          delete[] data;
-        }
+        delete[] data;
         data = nullptr;
         WS2812FX::_usedSegmentData -= _dataLen;
         _dataLen = 0;

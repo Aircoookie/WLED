@@ -2446,6 +2446,7 @@ uint16_t WS2812FX::mode_candle()
 */
 #define STARBURST_MAX_FRAG 12
 
+//each needs 64 byte
 typedef struct particle {
   CRGB     color;
   uint32_t birth  =0;
@@ -2456,10 +2457,16 @@ typedef struct particle {
 } star;
 
 uint16_t WS2812FX::mode_starburst(void) {
+  uint8_t numStars = 1 + (SEGLEN >> 3);
+  if (numStars > 15) numStars = 15;
+  uint16_t dataSize = sizeof(star) * numStars;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  
   uint32_t it = millis();
   
-  const uint8_t  numStars                = 15;
-  static   star  stars[numStars];
+  star* stars = reinterpret_cast<star*>(SEGENV.data);
+  
   float          maxSpeed                = 375.0f;  // Max velocity
   float          particleIgnition        = 250.0f;  // How long to "flash"
   float          particleFadeTime        = 1500.0f; // Fade out time
