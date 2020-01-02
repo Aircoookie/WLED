@@ -187,6 +187,9 @@
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
+
+  // pre show callback
+  typedef void (*show_callback) (void);
   
   // segment parameters
   public:
@@ -357,7 +360,6 @@ class WS2812FX {
       ablMilliampsMax = 850;
       currentMilliamps = 0;
       timebase = 0;
-      _locked = nullptr;
       bus = new NeoPixelWrapper();
       resetSegments();
     }
@@ -374,13 +376,8 @@ class WS2812FX {
       driverModeCronixie(bool b),
       setCronixieDigits(byte* d),
       setCronixieBacklight(bool b),
-      setIndividual(uint16_t i, uint32_t col),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
-      lock(uint16_t i),
-      lockRange(uint16_t i, uint16_t i2),
-      unlock(uint16_t i),
-      unlockRange(uint16_t i, uint16_t i2),
-      unlockAll(void),
+      setShowCallback(show_callback cb),
       setTransitionMode(bool t),
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop),
@@ -559,10 +556,11 @@ class WS2812FX {
       _skipFirstMode,
       _triggered;
 
-    byte* _locked;
     byte _cronixieDigits[6];
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
+
+    show_callback _callback = nullptr;
 
     // mode helper functions
     uint16_t

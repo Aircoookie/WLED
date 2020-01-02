@@ -32,7 +32,7 @@
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst, uint8_t disableNLeds)
 {
-  if (supportWhite == _rgbwMode && countPixels == _length && _locked != NULL && disableNLeds == _disableNLeds) return;
+  if (supportWhite == _rgbwMode && countPixels == _length && disableNLeds == _disableNLeds) return;
   RESET_RUNTIME;
   _rgbwMode = supportWhite;
   _skipFirstMode = skipFirst;
@@ -59,13 +59,9 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst, uin
 
   bus->Begin((NeoPixelType)ty, _lengthRaw);
   
-  delete[] _locked;
-  _locked = new byte[_length];
-  
   _segments[0].start = 0;
   _segments[0].stop = _usableCount;
-  
-  unlockAll();
+
   setBrightness(_brightness);
 }
 
@@ -107,7 +103,6 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   i = i * (_disableNLeds+1);
-  if (_locked[i]) return;
   if (IS_REVERSE) i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
   byte tmpg = g;
   switch (colorOrder) //0 = Grb, default
@@ -200,6 +195,8 @@ void WS2812FX::setCronixieDigits(byte d[])
                               //you can set it to 0 if the ESP is powered by USB and the LEDs by external
 
 void WS2812FX::show(void) {
+  if (_callback) _callback();
+  
   //power limit calculation
   //each LED can draw up 195075 "power units" (approx. 53mA)
   //one PU is the power it takes to have 1 channel 1 step brighter per brightness step
@@ -468,56 +465,20 @@ void WS2812FX::resetSegments() {
   _segment_runtimes[0].reset();
 }
 
-void WS2812FX::setIndividual(uint16_t i, uint32_t col)
-{
-  if (i >= 0 && i < _length)
-  {
-    _locked[i] = false;
-    setPixelColor(i, col);
-    _locked[i] = true;
-  }
-}
-
 void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 {
   if (i2 >= i)
   {
-    for (uint16_t x = i; x <= i2; x++) setIndividual(x,col);
+    for (uint16_t x = i; x <= i2; x++) setPixelColor(x, col);
   } else
   {
-    for (uint16_t x = i2; x <= i; x++) setIndividual(x,col);
+    for (uint16_t x = i2; x <= i; x++) setPixelColor(x, col);
   }
 }
 
-void WS2812FX::lock(uint16_t i)
+void WS2812FX::setShowCallback(show_callback cb)
 {
-  if (i < _length) _locked[i] = true;
-}
-
-void WS2812FX::lockRange(uint16_t i, uint16_t i2)
-{
-  for (uint16_t x = i; x < i2; x++)
-  {
-    if (x < _length) _locked[i] = true;
-  }
-}
-
-void WS2812FX::unlock(uint16_t i)
-{
-  if (i < _length) _locked[i] = false;
-}
-
-void WS2812FX::unlockRange(uint16_t i, uint16_t i2)
-{
-  for (uint16_t x = i; x < i2; x++)
-  {
-    if (x < _length) _locked[x] = false;
-  }
-}
-
-void WS2812FX::unlockAll()
-{
-  for (int i=0; i < _length; i++) _locked[i] = false;
+  _callback = cb;
 }
 
 void WS2812FX::setTransitionMode(bool t)
