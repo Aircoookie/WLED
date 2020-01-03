@@ -88,8 +88,8 @@ bool deserializeState(JsonObject root)
   int ps = root["ps"] | -1;
   if (ps >= 0) applyPreset(ps);
   
-  int cy = root["pl"] | -1;
-  presetCyclingEnabled = (cy >= 0);
+  int cy = root["pl"] | -2;
+  if (cy > -2) presetCyclingEnabled = (cy >= 0);
   JsonObject ccnf = root["ccnf"];
   presetCycleMin = ccnf["min"] | presetCycleMin;
   presetCycleMax = ccnf["max"] | presetCycleMax;
@@ -123,15 +123,23 @@ bool deserializeState(JsonObject root)
   if (segVar.is<JsonObject>())
   {
     int id = segVar["id"] | -1;
+    
     if (id < 0) { //set all selected segments
+      bool didSet = false;
+      byte lowestActive = 99;
       for (byte s = 0; s < strip.getMaxSegments(); s++)
       {
         WS2812FX::Segment sg = strip.getSegment(s);
-        if (sg.isActive() && sg.isSelected())
+        if (sg.isActive())
         {
-          deserializeSegment(segVar, s);
+          if (lowestActive == 99) lowestActive = s;
+          if (sg.isSelected()) {
+            deserializeSegment(segVar, s);
+            didSet = true;
+          }
         }
       }
+      if (!didSet && lowestActive < strip.getMaxSegments()) deserializeSegment(segVar, lowestActive);
     } else { //set only the segment with the specified ID
       deserializeSegment(segVar, it);
     }
@@ -144,7 +152,6 @@ bool deserializeState(JsonObject root)
     }
   }
 
-  //fromJson = true;
   colorUpdated(noNotification ? 5:1);
 
   ps = root["psave"] | -1;
@@ -236,9 +243,11 @@ void serializeInfo(JsonObject root)
   leds_pin.add(LEDPIN);
   
   leds["pwr"] = strip.currentMilliamps;
-  leds["maxpwr"] = strip.ablMilliampsMax;
+  leds["maxpwr"] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds["maxseg"] = strip.getMaxSegments();
   leds["seglock"] = false; //will be used in the future to prevent modifications to segment config
+
+  root["str"] = syncToggleReceive;
   
   root["name"] = serverDescription;
   root["udpport"] = udpPort;
@@ -295,7 +304,7 @@ void serializeInfo(JsonObject root)
   
   root["brand"] = "WLED";
   root["product"] = "DIY light";
-  root["btype"] = "dev";
+  root["btype"] = "src";
   root["mac"] = escapedMac;
 }
 

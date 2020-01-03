@@ -44,9 +44,16 @@
 #define WLED_FPS         42
 #define FRAMETIME        (1000/WLED_FPS)
 
-/* each segment uses 37 bytes of SRAM memory, so if you're application fails because of
+/* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #define MAX_NUM_SEGMENTS 10
+
+/* How much data bytes all segments combined may allocate */
+#ifdef ESP8266
+#define MAX_SEGMENT_DATA 2048
+#else
+#define MAX_SEGMENT_DATA 8192
+#endif
 
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
@@ -84,7 +91,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  90
+#define MODE_COUNT  91
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -175,11 +182,15 @@
 #define FX_MODE_SPOTS_FADE              86
 #define FX_MODE_GLITTER                 87
 #define FX_MODE_CANDLE                  88
-#define FX_MODE_EXPLODING_FIREWORKS     89
+#define FX_MODE_STARBURST               89
+#define FX_MODE_EXPLODING_FIREWORKS     90
 
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
+
+  // pre show callback
+  typedef void (*show_callback) (void);
   
   // segment parameters
   public:
@@ -222,13 +233,33 @@ class WS2812FX {
     } segment;
 
   // segment runtime parameters
-    typedef struct Segment_runtime { // 16 bytes
+    typedef struct Segment_runtime { // 28 bytes
       unsigned long next_time;
       uint32_t step;
       uint32_t call;
       uint16_t aux0;
       uint16_t aux1;
-      void reset(){next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;};
+      byte* data = nullptr;
+      bool allocateData(uint16_t len){
+        if (data && _dataLen == len) return true; //already allocated
+        deallocateData();
+        if (WS2812FX::_usedSegmentData + len > MAX_SEGMENT_DATA) return false; //not enough memory
+        data = new (std::nothrow) byte[len];
+        if (!data) return false; //allocation failed
+        WS2812FX::_usedSegmentData += len;
+        _dataLen = len;
+        memset(data, 0, len);
+        return true;
+      }
+      void deallocateData(){
+        delete[] data;
+        data = nullptr;
+        WS2812FX::_usedSegmentData -= _dataLen;
+        _dataLen = 0;
+      }
+      void reset(){next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; deallocateData();}
+      private:
+        uint16_t _dataLen = 0;
     } segment_runtime;
 
     WS2812FX() {
@@ -322,8 +353,8 @@ class WS2812FX {
       _mode[FX_MODE_SPOTS_FADE]              = &WS2812FX::mode_spots_fade;
       _mode[FX_MODE_GLITTER]                 = &WS2812FX::mode_glitter;
       _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
+      _mode[FX_MODE_STARBURST]               = &WS2812FX::mode_starburst;
       _mode[FX_MODE_EXPLODING_FIREWORKS]     = &WS2812FX::mode_exploding_fireworks;
-    
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -331,8 +362,6 @@ class WS2812FX {
       ablMilliampsMax = 850;
       currentMilliamps = 0;
       timebase = 0;
-      _locked = nullptr;
-      _modeUsesLock = false;
       bus = new NeoPixelWrapper();
       resetSegments();
     }
@@ -349,13 +378,8 @@ class WS2812FX {
       driverModeCronixie(bool b),
       setCronixieDigits(byte* d),
       setCronixieBacklight(bool b),
-      setIndividual(uint16_t i, uint32_t col),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
-      lock(uint16_t i),
-      lockRange(uint16_t i, uint16_t i2),
-      unlock(uint16_t i),
-      unlockRange(uint16_t i, uint16_t i2),
-      unlockAll(void),
+      setShowCallback(show_callback cb),
       setTransitionMode(bool t),
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop),
@@ -509,6 +533,7 @@ class WS2812FX {
       mode_spots_fade(void),
       mode_glitter(void),
       mode_candle(void),
+      mode_starburst(void),
       mode_exploding_fireworks(void);
       
 
@@ -524,23 +549,23 @@ class WS2812FX {
     uint16_t _length, _lengthRaw, _usableCount;
     uint16_t _rand16seed;
     uint8_t _brightness;
+    static uint16_t _usedSegmentData;
 
     void handle_palette(void);
     void fill(uint32_t);
-    bool modeUsesLock(uint8_t);
 
     bool
-      _modeUsesLock,
       _rgbwMode,
       _cronixieMode,
       _cronixieBacklightEnabled,
       _skipFirstMode,
       _triggered;
 
-    byte* _locked;
     byte _cronixieDigits[6];
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
+
+    show_callback _callback = nullptr;
 
     // mode helper functions
     uint16_t
@@ -549,6 +574,7 @@ class WS2812FX {
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
       running_base(bool),
+      larson_scanner(bool),
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
@@ -569,21 +595,23 @@ class WS2812FX {
       // start, stop, speed, intensity, palette, mode, options, 3 unused bytes (group, spacing, opacity), color[]
       { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
     };
-    segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 16 bytes per element
+    segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
+    friend class Segment_runtime;
 };
 
 
 //10 names per line
 const char JSON_mode_names[] PROGMEM = R"=====([
 "Solid","Blink","Breathe","Wipe","Wipe Random","Random Colors","Sweep","Dynamic","Colorloop","Rainbow",
-"Scan","Dual Scan","Fade","Theater","Theater Rainbow","Running","Saw","Twinkle","Dissolve","Dissolve Rnd",
-"Sparkle","Dark Sparkle","Sparkle+","Strobe","Strobe Rainbow","Mega Strobe","Blink Rainbow","Android","Chase","Chase Random",
+"Scan","Scan Dual","Fade","Theater","Theater Rainbow","Running","Saw","Twinkle","Dissolve","Dissolve Rnd",
+"Sparkle","Sparkle Dark","Sparkle+","Strobe","Strobe Rainbow","Strobe Mega","Blink Rainbow","Android","Chase","Chase Random",
 "Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Red & Blue","Stream",
 "Scanner","Lighthouse","Fireworks","Rain","Merry Christmas","Fire Flicker","Gradient","Loading","Police","Police All",
 "Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
-"Dual Scanner","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
-"Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Smooth Meteor","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks 1D"
+"Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
+"Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
+"Fireworks 1D"
 ])=====";
 
 
@@ -592,7 +620,8 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
 "Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
-"Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura"
+"Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
+"Aurora"
 ])=====";
 
 #endif

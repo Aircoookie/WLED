@@ -564,6 +564,14 @@ DEFINE_GRADIENT_PALETTE( Sakura_gp ) {
   130, 223, 45, 72,
   195, 255, 82,103,
   255, 223, 13, 17};
+
+DEFINE_GRADIENT_PALETTE( Aurora_gp ) {
+    0,   1,  5, 45, //deep blue
+   64,   0,200, 23,
+  128,   0,255,  0, //green
+  170,   0,243, 45,
+  200,   0,135,  7,
+  255,   1,  5, 45};//deep blue
   
 
 // Single array of defined cpt-city color palettes.
@@ -614,6 +622,7 @@ const TProgmemRGBGradientPalettePtr gGradientPalettes[] = {
   Orangery_gp,                  //47-34 Orangery
   C9_gp,                        //48-35 C9
   Sakura_gp,                    //49-36 Sakura
+  Aurora_gp,                    //50-37 Aurora
 };
 
 
