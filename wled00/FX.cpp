@@ -2599,3 +2599,125 @@ uint16_t WS2812FX::mode_starburst(void) {
   }
   return FRAMETIME;
 }
+
+
+/*
+ * Exploding fireworks effect
+ * adapted from: http://www.anirama.com/1000leds/1d-fireworks/
+ */
+
+//each needs 12 byte
+typedef struct Spark {
+  float pos;
+  float vel;
+  uint16_t col;
+  uint8_t colIndex;
+} spark;
+
+uint16_t WS2812FX::mode_exploding_fireworks(void)
+{
+  //allocate segment data
+  uint16_t numSparks = 2 + (SEGLEN >> 1); 
+  if (numSparks > 80) numSparks = 80;
+  uint16_t dataSize = sizeof(spark) * numSparks;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+
+  fill(BLACK);
+  
+  bool actuallyReverse = SEGMENT.getOption(1);
+  //have fireworks start in either direction based on intensity
+  SEGMENT.setOption(1, SEGENV.step);
+  
+  Spark* sparks = reinterpret_cast<Spark*>(SEGENV.data);
+  Spark* flare = sparks; //first spark is flare data
+
+  float gravity = -0.0004 - (SEGMENT.speed/800000.0); // m/s/s
+  gravity *= SEGLEN;
+  
+  if (SEGENV.aux0 < 2) { //FLARE
+    if (SEGENV.aux0 == 0) { //init flare
+      flare->pos = 0;
+      uint16_t peakHeight = 75 + random8(180); //0-255
+      peakHeight = (peakHeight * (SEGLEN -1)) >> 8;
+      flare->vel = sqrt(-2.0 * gravity * peakHeight);
+      flare->col = 255; //brightness
+
+      SEGENV.aux0 = 1; 
+    }
+    
+    // launch 
+    if (flare->vel > 12 * gravity) {
+      // flare
+      setPixelColor(SEGMENT.start + int(flare->pos),flare->col,flare->col,flare->col);
+  
+      flare->pos += flare->vel;
+      flare->pos = constrain(flare->pos, 0, SEGLEN-1);
+      flare->vel += gravity;
+      flare->col -= 2;
+    } else {
+      SEGENV.aux0 = 2;  // ready to explode
+    }
+  } else if (SEGENV.aux0 < 4) {
+    /*
+     * Explode!
+     * 
+     * Explosion happens where the flare ended.
+     * Size is proportional to the height.
+     */
+    int nSparks = flare->pos;
+    nSparks = constrain(nSparks, 0, numSparks);
+    static float dying_gravity;
+  
+    // initialize sparks
+    if (SEGENV.aux0 == 2) {
+      for (int i = 1; i < nSparks; i++) { 
+        sparks[i].pos = flare->pos; 
+        sparks[i].vel = (float(random16(0, 20000)) / 10000.0) - 0.9; // from -0.9 to 1.1
+        sparks[i].col = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright 
+        //sparks[i].col = constrain(sparks[i].col, 0, 345); 
+        sparks[i].colIndex = random8();
+        sparks[i].vel *= flare->pos/SEGLEN; // proportional to height 
+        sparks[i].vel *= -gravity *50;
+      } 
+      //sparks[1].col = 345; // this will be our known spark 
+      dying_gravity = gravity/2; 
+      SEGENV.aux0 = 3;
+    }
+  
+    if (sparks[1].col > 4) {//&& sparks[1].pos > 0) { // as long as our known spark is lit, work with all the sparks
+      for (int i = 1; i < nSparks; i++) { 
+        sparks[i].pos += sparks[i].vel; 
+        sparks[i].vel += dying_gravity; 
+        if (sparks[i].col > 3) sparks[i].col -= 4; 
+
+        if (sparks[i].pos > 0 && sparks[i].pos < SEGLEN) {
+          uint16_t prog = sparks[i].col;
+          uint32_t spColor = (SEGMENT.palette) ? color_wheel(sparks[i].colIndex) : SEGCOLOR(0);
+          CRGB c = CRGB::Black; //HeatColor(sparks[i].col);
+          if (prog > 300) { //fade from white to spark color
+            c = col_to_crgb(color_blend(spColor, WHITE, (prog - 300)*5));
+          } else if (prog > 45) { //fade from spark color to black
+            c = col_to_crgb(color_blend(BLACK, spColor, prog - 45));
+            uint8_t cooling = (300 - prog) >> 5;
+            c.g = qsub8(c.g, cooling);
+            c.b = qsub8(c.b, cooling * 2);
+          }
+          setPixelColor(SEGMENT.start + int(sparks[i].pos), c.red, c.green, c.blue);
+        }
+      }
+      dying_gravity *= .99; // as sparks burn out they fall slower
+    } else {
+      SEGENV.aux0 = 6 + random8(10); //wait for this many frames
+    }
+  } else {
+    SEGENV.aux0--;
+    if (SEGENV.aux0 < 4) {
+      SEGENV.aux0 = 0; //back to flare
+      SEGENV.step = (SEGMENT.intensity > random8()); //decide firing side
+    }
+  }
+
+  SEGMENT.setOption(1, actuallyReverse);
+  
+  return FRAMETIME;  
+}
