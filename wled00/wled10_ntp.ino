@@ -163,13 +163,16 @@ void setCountdown()
 //returns true if countdown just over
 bool checkCountdown()
 {
-  long diff = countdownTime - now();
-  local = abs(diff);
-  if (diff <0 && !countdownOverTriggered)
-  {
-    if (macroCountdown != 0) applyMacro(macroCountdown);
-    countdownOverTriggered = true;
-    return true;
+  unsigned long n = now();
+  local = countdownTime - n;
+  if (n > countdownTime) {
+    local = n - countdownTime;
+    if (!countdownOverTriggered)
+    {
+      if (macroCountdown != 0) applyMacro(macroCountdown);
+      countdownOverTriggered = true;
+      return true;
+    }
   }
   return false;
 }

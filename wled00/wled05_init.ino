@@ -96,6 +96,7 @@ void wledInit()
 void beginStrip()
 {
   // Initialize NeoPixel Strip and button
+  strip.setShowCallback(handleOverlayDraw);
 
 #ifdef BTNPIN
   pinMode(BTNPIN, INPUT_PULLUP);

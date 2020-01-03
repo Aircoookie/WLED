@@ -98,7 +98,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1912232
+#define VERSION 2001031
 char versionString[] = "0.9.0-b2";
 
 
@@ -424,6 +424,7 @@ AsyncMqttClient* mqtt = NULL;
 void colorFromUint32(uint32_t,bool=false);
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
 void handleE131Packet(e131_packet_t*, IPAddress);
+void handleOverlayDraw();
 
 #define E131_MAX_UNIVERSE_COUNT 9
 
