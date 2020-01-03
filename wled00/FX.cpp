@@ -2610,7 +2610,8 @@ uint16_t WS2812FX::mode_starburst(void) {
 typedef struct Spark {
   float pos;
   float vel;
-  float col;
+  uint16_t col;
+  uint8_t colIndex;
 } spark;
 
 uint16_t WS2812FX::mode_exploding_fireworks(void)
@@ -2623,104 +2624,100 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
 
   fill(BLACK);
   
+  bool actuallyReverse = SEGMENT.getOption(1);
+  //have fireworks start in either direction based on intensity
+  SEGMENT.setOption(1, SEGENV.step);
+  
   Spark* sparks = reinterpret_cast<Spark*>(SEGENV.data);
   Spark* flare = sparks; //first spark is flare data
 
-  float gravity = -0.02 - (SEGMENT.speed/10000.0); // m/s/s
+  float gravity = -0.0004 - (SEGMENT.speed/800000.0); // m/s/s
+  gravity *= SEGLEN;
   
-  if (SEGENV.aux1 == 0) { //FLARE
+  if (SEGENV.aux0 < 2) { //FLARE
     if (SEGENV.aux0 == 0) { //init flare
       flare->pos = 0;
-      flare->vel = float(random16(150, 190)) / (75+(255-SEGMENT.intensity)/4); // trial and error to get reasonable range
-      //flare->vel = 2;
-      flare->col = 1; //brightness
-  
-      // initialize launch sparks
-      for (int i = 1; i < min(6, numSparks); i++) { 
-        sparks[i].pos = 0; 
-        sparks[i].vel = (float(random8(100,255)) / 255.0) * (flare->vel/ 3.0); // random around 20% of flare velocity 
-        sparks[i].col = sparks[i].vel * 1000.0; 
-        sparks[i].col = constrain(sparks[i].col, 0, 255); 
-      }
+      uint16_t peakHeight = 75 + random8(180); //0-255
+      peakHeight = (peakHeight * (SEGLEN -1)) >> 8;
+      flare->vel = sqrt(-2.0 * gravity * peakHeight);
+      flare->col = 255; //brightness
+
       SEGENV.aux0 = 1; 
     }
     
     // launch 
-    if (flare->vel > -.3) {
-      // sparks
-      for (int i = 1; i < min(6, numSparks); i++) {
-        sparks[i].pos += sparks[i].vel;
-        sparks[i].pos = constrain(sparks[i].pos, 0, SEGLEN-1);
-        sparks[i].vel += gravity;
-        sparks[i].col -= 0.8;
-        sparks[i].col = constrain(sparks[i].col, 0, 255);
-        
-        CRGB color = HeatColor(sparks[i].col);
-        setPixelColor(SEGMENT.start + int(sparks[i].pos),color.red,color.green,color.blue);
-      }
+    if (flare->vel > 12 * gravity) {
       // flare
-      //fade_out(255);
-      setPixelColor(SEGMENT.start + int(flare->pos),flare->col*255,flare->col*255,flare->col*255);
+      setPixelColor(SEGMENT.start + int(flare->pos),flare->col,flare->col,flare->col);
   
       flare->pos += flare->vel;
       flare->pos = constrain(flare->pos, 0, SEGLEN-1);
       flare->vel += gravity;
-      flare->col *= .975;
+      flare->col -= 2;
     } else {
-      SEGENV.aux0 = 0;  // allow next state to init
-      SEGENV.aux1 = 1;  // ready to explode
+      SEGENV.aux0 = 2;  // ready to explode
     }
-  } else {
+  } else if (SEGENV.aux0 < 4) {
     /*
      * Explode!
      * 
      * Explosion happens where the flare ended.
      * Size is proportional to the height.
      */
-    int nSparks = flare->pos / 2; // works out to look about right
+    int nSparks = flare->pos;
     nSparks = constrain(nSparks, 0, numSparks);
     static float dying_gravity;
-    //gravity = -0.02 - ((255-SEGMENT.speed)/10000.0);
   
     // initialize sparks
-    if (SEGENV.aux0==0) {
+    if (SEGENV.aux0 == 2) {
       for (int i = 1; i < nSparks; i++) { 
         sparks[i].pos = flare->pos; 
-        sparks[i].vel = (float(random16(0, 20000)) / 10000.0) - 1.0; // from -1 to 1 
-        sparks[i].col = abs(sparks[i].vel * 500.0); // set colors before scaling velocity to keep them bright 
-        sparks[i].col = constrain(sparks[i].col, 0, 255); 
-        sparks[i].vel *= flare->pos / SEGLEN; // proportional to height 
+        sparks[i].vel = (float(random16(0, 20000)) / 10000.0) - 0.9; // from -0.9 to 1.1
+        sparks[i].col = 345;//abs(sparks[i].vel * 750.0); // set colors before scaling velocity to keep them bright 
+        //sparks[i].col = constrain(sparks[i].col, 0, 345); 
+        sparks[i].colIndex = random8();
+        sparks[i].vel *= flare->pos/SEGLEN; // proportional to height 
+        sparks[i].vel *= -gravity *50;
       } 
-      sparks[1].col = 255; // this will be our known spark 
-      dying_gravity = gravity; 
-      SEGENV.aux0 = 1;
+      //sparks[1].col = 345; // this will be our known spark 
+      dying_gravity = gravity/2; 
+      SEGENV.aux0 = 3;
     }
-
-    float c1 = 120; 
-    float c2 = 50;
   
-    if (sparks[1].col > 5) {//&& sparks[1].pos > 0) { // as long as our known spark is lit, work with all the sparks
-      //fade_out(255);
+    if (sparks[1].col > 4) {//&& sparks[1].pos > 0) { // as long as our known spark is lit, work with all the sparks
       for (int i = 1; i < nSparks; i++) { 
         sparks[i].pos += sparks[i].vel; 
-        sparks[i].pos = constrain(sparks[i].pos, 0, SEGLEN-1); 
         sparks[i].vel += dying_gravity; 
-        sparks[i].col *= .97; 
-        sparks[i].col = constrain(sparks[i].col, 0, 255); // red cross dissolve 
-        
-        if(sparks[i].pos > c1) { // fade white to yellow
-          setPixelColor(SEGMENT.start + sparks[i].pos,255, 255, (255 * (sparks[i].col - c1)) / (255 - c1));
-        } else if (sparks[i].col < c2) { // fade from red to black
-          setPixelColor(SEGMENT.start + sparks[i].pos,(255 * sparks[i].col) / c2, 0, 0);
-        } else { // fade from yellow to red
-          setPixelColor(SEGMENT.start + sparks[i].pos,255, (255 * (sparks[i].col - c2)) / (c1 - c2), 0);
+        if (sparks[i].col > 3) sparks[i].col -= 4; 
+
+        if (sparks[i].pos > 0 && sparks[i].pos < SEGLEN) {
+          uint16_t prog = sparks[i].col;
+          uint32_t spColor = (SEGMENT.palette) ? color_wheel(sparks[i].colIndex) : SEGCOLOR(0);
+          CRGB c = CRGB::Black; //HeatColor(sparks[i].col);
+          if (prog > 300) { //fade from white to spark color
+            c = col_to_crgb(color_blend(spColor, WHITE, (prog - 300)*5));
+          } else if (prog > 45) { //fade from spark color to black
+            c = col_to_crgb(color_blend(BLACK, spColor, prog - 45));
+            uint8_t cooling = (300 - prog) >> 5;
+            c.g = qsub8(c.g, cooling);
+            c.b = qsub8(c.b, cooling * 2);
+          }
+          setPixelColor(SEGMENT.start + int(sparks[i].pos), c.red, c.green, c.blue);
         }
       }
-      dying_gravity *= .995; // as sparks burn out they fall slower
+      dying_gravity *= .99; // as sparks burn out they fall slower
     } else {
-      SEGENV.aux0 = 0; //init again
-      SEGENV.aux1 = 0; //back to flare
+      SEGENV.aux0 = 6 + random8(10); //wait for this many frames
+    }
+  } else {
+    SEGENV.aux0--;
+    if (SEGENV.aux0 < 4) {
+      SEGENV.aux0 = 0; //back to flare
+      SEGENV.step = (SEGMENT.intensity > random8()); //decide firing side
     }
   }
+
+  SEGMENT.setOption(1, actuallyReverse);
+  
   return FRAMETIME;  
 }
