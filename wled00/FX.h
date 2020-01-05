@@ -360,7 +360,7 @@ class WS2812FX {
       _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
       _mode[FX_MODE_STARBURST]               = &WS2812FX::mode_starburst;
       _mode[FX_MODE_EXPLODING_FIREWORKS]     = &WS2812FX::mode_exploding_fireworks;
-      _mode[FX_MODE_BOUNCINGBALLS]           = &WS2812FX::mode_BouncingBalls;
+      _mode[FX_MODE_BOUNCINGBALLS]           = &WS2812FX::mode_bouncing_balls;
       _mode[FX_MODE_SINELON]                 = &WS2812FX::mode_sinelon;
       _mode[FX_MODE_SINELON_DUAL]            = &WS2812FX::mode_sinelon_dual;
       _mode[FX_MODE_SINELON_RAINBOW]         = &WS2812FX::mode_sinelon_rainbow;
@@ -543,7 +543,7 @@ class WS2812FX {
       mode_candle(void),
       mode_starburst(void),
       mode_exploding_fireworks(void),
-      mode_BouncingBalls(void),
+      mode_bouncing_balls(void),
       mode_sinelon(void),
       mode_sinelon_dual(void),
       mode_sinelon_rainbow(void),

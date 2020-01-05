@@ -2401,107 +2401,94 @@ uint16_t WS2812FX::mode_spots_fade()
 }
 
 
+//each needs 12 bytes
+//Spark type is used for popcorn and 1D fireworks
+typedef struct Ball {
+  unsigned long lastBounceTime;
+  float impactVelocity;
+  float height;
+} ball;
+
 /*
 *  Bouncing Balls Effect
 */
-uint16_t WS2812FX::mode_BouncingBalls(void) {
+uint16_t WS2812FX::mode_bouncing_balls(void) {
+  //allocate segment data
+  uint16_t maxNumBalls = 16; 
+  uint16_t dataSize = sizeof(ball) * maxNumBalls;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  
+  Ball* balls = reinterpret_cast<Ball*>(SEGENV.data);
+  
   // number of balls based on intensity setting to max of 7 (cycles colors)
   // non-chosen color is a random color
-  int balls = int(((SEGMENT.intensity * 6.2) / 255) + 1);
-
-  const  int   maxBallCount = 7;
+  uint8_t numBalls = int(((SEGMENT.intensity * (maxNumBalls - 0.8f)) / 255) + 1);
   
-  float Gravity                           = -9.81; // standard value of gravity
-  int   Position[maxBallCount];                    // current position of the ball normalized to segment size
-  float TimeSinceLastBounce[maxBallCount] = {0};   // time difference for physics calculations
-  int   StartHeight                       = 1;     // height in metres (strip length)
-  float Dampening[maxBallCount]           = {0};   // Coefficient of Restitution (bounce damping)
-  float ImpactVelocityStart               = sqrt( -2 * Gravity * StartHeight);
+  float gravity                           = -9.81; // standard value of gravity
+  float impactVelocityStart               = sqrt( -2 * gravity);
 
-  static float ImpactVelocity[maxBallCount] = {ImpactVelocityStart};
-  static long  ClockTimeSinceLastBounce[maxBallCount] = {millis()};
-  static float Height[maxBallCount];
-  
-  //set up variable damping for better effect using multiple balls
-  for (int i = 0 ; i < maxBallCount ; i++) {
-    Dampening[i] = 0.90 - float(i)/pow(maxBallCount,2);
+  unsigned long time = millis();
+
+  if (SEGENV.call == 0) {
+    for (uint8_t i = 0; i < maxNumBalls; i++) balls[i].lastBounceTime = time;
   }
   
-  for (int i = 0 ; i < balls ; i++) {
-    TimeSinceLastBounce[i] =  (millis() - ClockTimeSinceLastBounce[i])/((255-SEGMENT.speed)*8/256 +1);
-    Height[i] = 0.5 * Gravity * pow( TimeSinceLastBounce[i]/1000 , 2.0 ) + ImpactVelocity[i] * TimeSinceLastBounce[i]/1000;
+  bool hasCol2 = SEGCOLOR(2);
+  fill(hasCol2 ? BLACK : SEGCOLOR(1));
+  
+  for (uint8_t i = 0; i < numBalls; i++) {
+    float timeSinceLastBounce = (time - balls[i].lastBounceTime)/((255-SEGMENT.speed)*8/256 +1);
+    balls[i].height = 0.5 * gravity * pow(timeSinceLastBounce/1000 , 2.0) + balls[i].impactVelocity * timeSinceLastBounce/1000;
 
-    if ( Height[i] < 0 ) {
-      Height[i] = 0;
-      ImpactVelocity[i] = Dampening[i] * ImpactVelocity[i];
-      ClockTimeSinceLastBounce[i] = millis();
+    if (balls[i].height < 0) { //start bounce
+      balls[i].height = 0;
+      //damping for better effect using multiple balls
+      float dampening = 0.90 - float(i)/pow(numBalls,2);
+      balls[i].impactVelocity = dampening * balls[i].impactVelocity;
+      balls[i].lastBounceTime = time;
 
-      if ( ImpactVelocity[i] < 0.01 ) {
-        ImpactVelocity[i] = ImpactVelocityStart;
+      if (balls[i].impactVelocity < 0.015) {
+        balls[i].impactVelocity = impactVelocityStart;
       }
     }
-    Position[i] = round( Height[i] * (SEGLEN - 1) / StartHeight);
-  }
-  
-  fill(BLACK);
-
-  for (int i = 0 ; i < balls ; i++) {
-    uint32_t color = SEGCOLOR(i % NUM_COLORS);
-    if (!color) {
-       color = color_wheel(random8());
-    }
     
-    setPixelColor(SEGMENT.start+Position[i],color);
+    uint32_t color = SEGCOLOR(0);
+    if (SEGMENT.palette) {
+      color = color_wheel(i*(256/max(numBalls, 8)));
+    } else if (hasCol2) {
+      color = SEGCOLOR(i % NUM_COLORS);
+    }
+
+    uint16_t pos = round(balls[i].height * (SEGLEN - 1));
+    setPixelColor(SEGMENT.start + pos, color);
   }
 
   return FRAMETIME;
 }
 
+
 /*
 * Sinelon stolen from FASTLED examples
 */
 uint16_t WS2812FX::sinelon_base(bool dual, bool rainbow=false) {
-
   fade_out(SEGMENT.intensity);
   int pos = beatsin16(SEGMENT.speed/10,0,SEGLEN-1);
-  int prevpos = SEGENV.aux0;
   
   uint32_t color1 = color_from_palette(pos, true, false, 0);
   if (rainbow) {
-    color1 = color_wheel((pos % 8) * 32);
+    color1 = color_wheel((pos & 0x07) * 32);
   }
-
-  if( pos < prevpos ) { 
-    for (uint16_t i = pos; i < prevpos; i++) {
-      setPixelColor(i, color1);
-    }
-  } else {
-    for (uint16_t i = prevpos; i < pos; i++) {
-      setPixelColor(SEGMENT.start + i, color1);
-    }
-  }
+  setPixelColor(SEGMENT.start + pos, color1);
 
   if (dual) {
     uint32_t color2 = SEGCOLOR(2);
    
-    if (color2 == 0) {
-      color2 = color_from_palette(pos, true, false, 0);
-    } 
-    if (rainbow) {
-      color2 = color_wheel((pos % 8) * 32);
-    }
-    if ( pos < prevpos ) { 
-      for (uint16_t i = pos; i < prevpos; i++) {
-        setPixelColor(SEGMENT.start + SEGLEN-1-i, color2);
-      }
-    } else {
-      for (uint16_t i = prevpos; i < pos; i++) {
-        setPixelColor(SEGMENT.start + SEGLEN-1-i, color2);
-      }
-    }
+    if (!color2) color2 = color_from_palette(pos, true, false, 0);
+    if (rainbow) color2 = color1; //rainbow
+
+    setPixelColor(SEGMENT.start + SEGLEN-1-pos, color2);
   }
 
-  SEGENV.aux0 = pos;
   return FRAMETIME;
 }
 
@@ -2532,46 +2519,64 @@ uint16_t WS2812FX::mode_glitter()
 }
 
 
+
+//each needs 12 bytes
+//Spark type is used for popcorn and 1D fireworks
+typedef struct Spark {
+  float pos;
+  float vel;
+  uint16_t col;
+  uint8_t colIndex;
+} spark;
+
 /*
 *  POPCORN
+*  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
 */
-typedef struct Kernel {
-  float position;
-  float velocity;
-  int32_t color;
-} kernel;
-
-#define MAX_NUM_POPCORN 12
-#define GRAVITY 0.06
-
 uint16_t WS2812FX::mode_popcorn(void) {
-  uint32_t popcornColor = SEGCOLOR(0);
-  uint32_t bgColor = SEGCOLOR(1);
-  if(popcornColor == bgColor) popcornColor = color_wheel(random8());
+  //allocate segment data
+  uint16_t maxNumPopcorn = 24; 
+  uint16_t dataSize = sizeof(spark) * maxNumPopcorn;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  
+  Spark* popcorn = reinterpret_cast<Spark*>(SEGENV.data);
 
-  static kernel popcorn[MAX_NUM_POPCORN];
-  float coeff = pow((float)SEGLEN, 0.5223324f) * 0.3944296f;
+  float gravity = -0.0001 - (SEGMENT.speed/200000.0); // m/s/s
+  gravity *= SEGLEN;
 
-  fill(SEGCOLOR(1));
+  bool hasCol2 = SEGCOLOR(2);
+  fill(hasCol2 ? BLACK : SEGCOLOR(1));
 
-  uint16_t ledIndex;
-  for(int8_t i=0; i < SEGMENT.intensity*MAX_NUM_POPCORN/255; i++) {
-    bool isActive = popcorn[i].position >= 0.0f;
+  uint8_t numPopcorn = SEGMENT.intensity*maxNumPopcorn/255;
+  if (numPopcorn == 0) numPopcorn = 1;
+
+  for(uint8_t i = 0; i < numPopcorn; i++) {
+    bool isActive = popcorn[i].pos >= 0.0f;
 
     if(isActive) { // if kernel is active, update its position
-      popcorn[i].position += popcorn[i].velocity;
-      popcorn[i].velocity -= (GRAVITY * ((255-SEGMENT.speed)*8/256 + 1));
+      popcorn[i].pos += popcorn[i].vel;
+      popcorn[i].vel += gravity;
+      uint32_t col = color_wheel(popcorn[i].colIndex);
+      if (!SEGMENT.palette && popcorn[i].colIndex < NUM_COLORS) col = SEGCOLOR(popcorn[i].colIndex);
       
-      ledIndex = SEGMENT.start + popcorn[i].position;
-      if(ledIndex >= SEGMENT.start && ledIndex <= SEGMENT.stop) setPixelColor(ledIndex, popcorn[i].color);
+      uint16_t ledIndex = SEGMENT.start + popcorn[i].pos;
+      if(ledIndex >= SEGMENT.start && ledIndex < SEGMENT.stop) setPixelColor(ledIndex, col);
     } else { // if kernel is inactive, randomly pop it
       if(random8() < 2) { // POP!!!
-        popcorn[i].position = 0.0f;
-        popcorn[i].velocity = coeff * (random(66, 100) / 100.0f);
-        popcorn[i].color = popcornColor;
+        popcorn[i].pos = 0.01f;
         
-        ledIndex = SEGMENT.start;
-        setPixelColor(ledIndex, popcorn[i].color);
+        uint16_t peakHeight = 128 + random8(128); //0-255
+        peakHeight = (peakHeight * (SEGLEN -1)) >> 8;
+        popcorn[i].vel = sqrt(-2.0 * gravity * peakHeight);
+        
+        if (SEGMENT.palette)
+        {
+          popcorn[i].colIndex = random8();
+        } else {
+          byte col = random8(0, NUM_COLORS);
+          if (!hasCol2 || !SEGCOLOR(col)) col = 0;
+          popcorn[i].colIndex = col;
+        }
       }
     }
   }
@@ -2755,14 +2760,6 @@ uint16_t WS2812FX::mode_starburst(void) {
  * Exploding fireworks effect
  * adapted from: http://www.anirama.com/1000leds/1d-fireworks/
  */
-
-//each needs 12 byte
-typedef struct Spark {
-  float pos;
-  float vel;
-  uint16_t col;
-  uint8_t colIndex;
-} spark;
 
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
