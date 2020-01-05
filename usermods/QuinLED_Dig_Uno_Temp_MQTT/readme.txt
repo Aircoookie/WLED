@@ -4,5 +4,5 @@ This code uses Aircookie's WLED software. It has a premade file for user modific
 
 To install:
 
-Add the enties in the WLED00 file to the top of the same file from Aircoookies WLED.
+Add the entries in the WLED00 file to the top of the same file from Aircoookies WLED.
 Replace the WLED06_usermod.ino file in Aircoookies WLED folder.

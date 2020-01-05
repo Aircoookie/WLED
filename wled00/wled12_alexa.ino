@@ -62,10 +62,11 @@ void onAlexaChange(EspalexaDevice* dev)
   } else //color
   {
     uint32_t color = espalexaDevice->getRGB();
+    col[3] = ((color >> 24) & 0xFF);  // white color from Alexa is "pure white only" 
     col[0] = ((color >> 16) & 0xFF);
     col[1] = ((color >>  8) & 0xFF);
     col[2] = (color & 0xFF);
-    if (useRGBW) colorRGBtoRGBW(col);
+    if (useRGBW && col[3] == 0) colorRGBtoRGBW(col);  // do not touch white value if EspalexaDevice.cpp did set the white channel
     colorUpdated(10);
   }
 }

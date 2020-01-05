@@ -97,6 +97,7 @@ void wledInit()
 void beginStrip()
 {
   // Initialize NeoPixel Strip and button
+  strip.setShowCallback(handleOverlayDraw);
 
 #ifdef BTNPIN
   pinMode(BTNPIN, INPUT_PULLUP);
@@ -141,7 +142,10 @@ void initAP(bool resetAP=false){
     if (udpPort > 0 && udpPort != ntpLocalPort)
     {
       udpConnected = notifierUdp.begin(udpPort);
-      if (udpConnected && udpRgbPort != udpPort) udpRgbConnected = rgbUdp.begin(udpRgbPort);
+    }
+    if (udpRgbPort > 0 && udpRgbPort != ntpLocalPort && udpRgbPort != udpPort)
+    {
+      udpRgbConnected = rgbUdp.begin(udpRgbPort);
     }
 
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
@@ -232,7 +236,7 @@ void initInterfaces() {
   if (ntpEnabled) ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   initBlynk(blynkApiKey);
-  Serial.println(e131.begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST , e131Universe, E131_MAX_UNIVERSE_COUNT));
+  e131.begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST , e131Universe, E131_MAX_UNIVERSE_COUNT);
   reconnectHue();
   initMqtt();
   interfacesInited = true;
@@ -240,11 +244,25 @@ void initInterfaces() {
 }
 
 byte stacO = 0;
+uint32_t lastHeap;
+unsigned long heapTime = 0;
 
 void handleConnection() {
-  //TODO: reconnect if heap <8000
   if (millis() < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == 2)) return;
   if (lastReconnectAttempt == 0) initConnection();
+
+  //reconnect WiFi to clear stale allocations if heap gets too low
+  if (millis() - heapTime > 5000)
+  {
+    uint32_t heap = ESP.getFreeHeap();
+    if (heap < 9000 && lastHeap < 9000) {
+      DEBUG_PRINT("Heap too low! ");
+      DEBUG_PRINTLN(heap);
+      forceReconnect = true;
+    }
+    lastHeap = heap;
+    heapTime = millis();
+  }
   
   byte stac = 0;
   if (apActive) {
