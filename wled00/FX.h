@@ -91,7 +91,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  91
+#define MODE_COUNT  96
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -184,6 +184,11 @@
 #define FX_MODE_CANDLE                  88
 #define FX_MODE_STARBURST               89
 #define FX_MODE_EXPLODING_FIREWORKS     90
+#define FX_MODE_BOUNCINGBALLS           91
+#define FX_MODE_SINELON                 92
+#define FX_MODE_SINELON_DUAL            93
+#define FX_MODE_SINELON_RAINBOW         94
+#define FX_MODE_POPCORN                 95
 
 
 class WS2812FX {
@@ -355,6 +360,11 @@ class WS2812FX {
       _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
       _mode[FX_MODE_STARBURST]               = &WS2812FX::mode_starburst;
       _mode[FX_MODE_EXPLODING_FIREWORKS]     = &WS2812FX::mode_exploding_fireworks;
+      _mode[FX_MODE_BOUNCINGBALLS]           = &WS2812FX::mode_bouncing_balls;
+      _mode[FX_MODE_SINELON]                 = &WS2812FX::mode_sinelon;
+      _mode[FX_MODE_SINELON_DUAL]            = &WS2812FX::mode_sinelon_dual;
+      _mode[FX_MODE_SINELON_RAINBOW]         = &WS2812FX::mode_sinelon_rainbow;
+      _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -532,7 +542,12 @@ class WS2812FX {
       mode_glitter(void),
       mode_candle(void),
       mode_starburst(void),
-      mode_exploding_fireworks(void);
+      mode_exploding_fireworks(void),
+      mode_bouncing_balls(void),
+      mode_sinelon(void),
+      mode_sinelon_dual(void),
+      mode_sinelon_rainbow(void),
+      mode_popcorn(void);
       
 
   private:
@@ -573,6 +588,7 @@ class WS2812FX {
       theater_chase(uint32_t, uint32_t, bool),
       running_base(bool),
       larson_scanner(bool),
+      sinelon_base(bool,bool),
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
@@ -609,7 +625,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
-"Fireworks 1D"
+"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn"
 ])=====";
 
 

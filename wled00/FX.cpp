@@ -962,10 +962,6 @@ uint16_t WS2812FX::mode_halloween(void) {
  * Random colored pixels running.
  */
 uint16_t WS2812FX::mode_running_random(void) {
-  uint32_t cycleTime = 25 + (3 * (uint32_t)(255 - SEGMENT.speed));
-  uint32_t it = now / cycleTime;
-  if (SEGENV.aux1 == it) return FRAMETIME;
-
   for(uint16_t i=SEGLEN-1; i > 0; i--) {
     setPixelColor(SEGMENT.start + i, getPixelColor(SEGMENT.start + i - 1));
   }
@@ -980,9 +976,7 @@ uint16_t WS2812FX::mode_running_random(void) {
   {
     SEGENV.step = 0;
   }
-
-  SEGENV.aux1 = it;
-  return FRAMETIME;
+  return SPEED_FORMULA_L;
 }
 
 
@@ -1098,10 +1092,6 @@ uint16_t WS2812FX::mode_rain()
  * Fire flicker function
  */
 uint16_t WS2812FX::mode_fire_flicker(void) {
-  uint32_t cycleTime = 40 + (255 - SEGMENT.speed);
-  uint32_t it = now / cycleTime;
-  if (SEGENV.step == it) return FRAMETIME;
-  
   byte w = (SEGCOLOR(0) >> 24) & 0xFF;
   byte r = (SEGCOLOR(0) >> 16) & 0xFF;
   byte g = (SEGCOLOR(0) >>  8) & 0xFF;
@@ -1116,9 +1106,7 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
       setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, 255 - flicker));
     }
   }
-
-  SEGENV.step = it;
-  return FRAMETIME;
+  return 20 + random((255 - SEGMENT.speed),(2 * (uint16_t)(255 - SEGMENT.speed)));
 }
 
 
@@ -1382,7 +1370,10 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
     setPixelColor(i, color);
   }
 
-  return FRAMETIME;
+  SEGENV.step += 4;
+  if(SEGENV.step >= 768) SEGENV.step = 0;
+
+  return 5 + ((uint32_t)(255 - SEGMENT.speed) / 10);
 }
 
 
@@ -1392,10 +1383,6 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
  */
 uint16_t WS2812FX::mode_multi_comet(void)
 {
-  uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
-  uint32_t it = now / cycleTime;
-  if (SEGENV.step == it) return FRAMETIME;
-
   fade_out(SEGMENT.intensity);
 
   static uint16_t comets[] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
@@ -1417,9 +1404,7 @@ uint16_t WS2812FX::mode_multi_comet(void)
       }
     }
   }
-
-  SEGENV.step = it;
-  return FRAMETIME;
+  return SPEED_FORMULA_L;
 }
 
 
@@ -2416,6 +2401,110 @@ uint16_t WS2812FX::mode_spots_fade()
 }
 
 
+//each needs 12 bytes
+//Spark type is used for popcorn and 1D fireworks
+typedef struct Ball {
+  unsigned long lastBounceTime;
+  float impactVelocity;
+  float height;
+} ball;
+
+/*
+*  Bouncing Balls Effect
+*/
+uint16_t WS2812FX::mode_bouncing_balls(void) {
+  //allocate segment data
+  uint16_t maxNumBalls = 16; 
+  uint16_t dataSize = sizeof(ball) * maxNumBalls;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  
+  Ball* balls = reinterpret_cast<Ball*>(SEGENV.data);
+  
+  // number of balls based on intensity setting to max of 7 (cycles colors)
+  // non-chosen color is a random color
+  uint8_t numBalls = int(((SEGMENT.intensity * (maxNumBalls - 0.8f)) / 255) + 1);
+  
+  float gravity                           = -9.81; // standard value of gravity
+  float impactVelocityStart               = sqrt( -2 * gravity);
+
+  unsigned long time = millis();
+
+  if (SEGENV.call == 0) {
+    for (uint8_t i = 0; i < maxNumBalls; i++) balls[i].lastBounceTime = time;
+  }
+  
+  bool hasCol2 = SEGCOLOR(2);
+  fill(hasCol2 ? BLACK : SEGCOLOR(1));
+  
+  for (uint8_t i = 0; i < numBalls; i++) {
+    float timeSinceLastBounce = (time - balls[i].lastBounceTime)/((255-SEGMENT.speed)*8/256 +1);
+    balls[i].height = 0.5 * gravity * pow(timeSinceLastBounce/1000 , 2.0) + balls[i].impactVelocity * timeSinceLastBounce/1000;
+
+    if (balls[i].height < 0) { //start bounce
+      balls[i].height = 0;
+      //damping for better effect using multiple balls
+      float dampening = 0.90 - float(i)/pow(numBalls,2);
+      balls[i].impactVelocity = dampening * balls[i].impactVelocity;
+      balls[i].lastBounceTime = time;
+
+      if (balls[i].impactVelocity < 0.015) {
+        balls[i].impactVelocity = impactVelocityStart;
+      }
+    }
+    
+    uint32_t color = SEGCOLOR(0);
+    if (SEGMENT.palette) {
+      color = color_wheel(i*(256/max(numBalls, 8)));
+    } else if (hasCol2) {
+      color = SEGCOLOR(i % NUM_COLORS);
+    }
+
+    uint16_t pos = round(balls[i].height * (SEGLEN - 1));
+    setPixelColor(SEGMENT.start + pos, color);
+  }
+
+  return FRAMETIME;
+}
+
+
+/*
+* Sinelon stolen from FASTLED examples
+*/
+uint16_t WS2812FX::sinelon_base(bool dual, bool rainbow=false) {
+  fade_out(SEGMENT.intensity);
+  int pos = beatsin16(SEGMENT.speed/10,0,SEGLEN-1);
+  
+  uint32_t color1 = color_from_palette(pos, true, false, 0);
+  if (rainbow) {
+    color1 = color_wheel((pos & 0x07) * 32);
+  }
+  setPixelColor(SEGMENT.start + pos, color1);
+
+  if (dual) {
+    uint32_t color2 = SEGCOLOR(2);
+   
+    if (!color2) color2 = color_from_palette(pos, true, false, 0);
+    if (rainbow) color2 = color1; //rainbow
+
+    setPixelColor(SEGMENT.start + SEGLEN-1-pos, color2);
+  }
+
+  return FRAMETIME;
+}
+
+uint16_t WS2812FX::mode_sinelon(void) {
+  return sinelon_base(false);
+}
+
+uint16_t WS2812FX::mode_sinelon_dual(void) {
+  return sinelon_base(true);
+}
+
+uint16_t WS2812FX::mode_sinelon_rainbow(void) {
+  return sinelon_base(true, true);
+}
+
+
 //Rainbow with glitter, inspired by https://gist.github.com/kriegsman/062e10f7f07ba8518af6
 uint16_t WS2812FX::mode_glitter()
 {
@@ -2426,6 +2515,72 @@ uint16_t WS2812FX::mode_glitter()
     setPixelColor(SEGMENT.start + random16(SEGLEN), ULTRAWHITE);
   }
   
+  return FRAMETIME;
+}
+
+
+
+//each needs 12 bytes
+//Spark type is used for popcorn and 1D fireworks
+typedef struct Spark {
+  float pos;
+  float vel;
+  uint16_t col;
+  uint8_t colIndex;
+} spark;
+
+/*
+*  POPCORN
+*  modified from https://github.com/kitesurfer1404/WS2812FX/blob/master/src/custom/Popcorn.h
+*/
+uint16_t WS2812FX::mode_popcorn(void) {
+  //allocate segment data
+  uint16_t maxNumPopcorn = 24; 
+  uint16_t dataSize = sizeof(spark) * maxNumPopcorn;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  
+  Spark* popcorn = reinterpret_cast<Spark*>(SEGENV.data);
+
+  float gravity = -0.0001 - (SEGMENT.speed/200000.0); // m/s/s
+  gravity *= SEGLEN;
+
+  bool hasCol2 = SEGCOLOR(2);
+  fill(hasCol2 ? BLACK : SEGCOLOR(1));
+
+  uint8_t numPopcorn = SEGMENT.intensity*maxNumPopcorn/255;
+  if (numPopcorn == 0) numPopcorn = 1;
+
+  for(uint8_t i = 0; i < numPopcorn; i++) {
+    bool isActive = popcorn[i].pos >= 0.0f;
+
+    if(isActive) { // if kernel is active, update its position
+      popcorn[i].pos += popcorn[i].vel;
+      popcorn[i].vel += gravity;
+      uint32_t col = color_wheel(popcorn[i].colIndex);
+      if (!SEGMENT.palette && popcorn[i].colIndex < NUM_COLORS) col = SEGCOLOR(popcorn[i].colIndex);
+      
+      uint16_t ledIndex = SEGMENT.start + popcorn[i].pos;
+      if(ledIndex >= SEGMENT.start && ledIndex < SEGMENT.stop) setPixelColor(ledIndex, col);
+    } else { // if kernel is inactive, randomly pop it
+      if(random8() < 2) { // POP!!!
+        popcorn[i].pos = 0.01f;
+        
+        uint16_t peakHeight = 128 + random8(128); //0-255
+        peakHeight = (peakHeight * (SEGLEN -1)) >> 8;
+        popcorn[i].vel = sqrt(-2.0 * gravity * peakHeight);
+        
+        if (SEGMENT.palette)
+        {
+          popcorn[i].colIndex = random8();
+        } else {
+          byte col = random8(0, NUM_COLORS);
+          if (!hasCol2 || !SEGCOLOR(col)) col = 0;
+          popcorn[i].colIndex = col;
+        }
+      }
+    }
+  }
+
   return FRAMETIME;
 }
 
@@ -2605,14 +2760,6 @@ uint16_t WS2812FX::mode_starburst(void) {
  * Exploding fireworks effect
  * adapted from: http://www.anirama.com/1000leds/1d-fireworks/
  */
-
-//each needs 12 byte
-typedef struct Spark {
-  float pos;
-  float vel;
-  uint16_t col;
-  uint8_t colIndex;
-} spark;
 
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
