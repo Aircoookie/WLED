@@ -257,6 +257,8 @@ void serializeInfo(JsonObject root)
 
   JsonObject wifi_info = root.createNestedObject("wifi");
   wifi_info["bssid"] = WiFi.BSSIDstr();
+  int qrssi = WiFi.RSSI();
+  wifi_info["rssi"] = qrssi;
   wifi_info["signal"] = getSignalQuality(WiFi.RSSI());
   wifi_info["channel"] = WiFi.channel();
   
