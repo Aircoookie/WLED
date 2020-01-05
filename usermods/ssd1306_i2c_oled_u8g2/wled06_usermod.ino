@@ -39,6 +39,8 @@ uint8_t knownMode = 0;
 uint8_t knownPalette = 0;
 
 long lastUpdate = 0;
+long startupTimestamp = millis();
+bool displayTurnedOff = false;
 // How often we are redrawing screen
 #define USER_LOOP_REFRESH_RATE_MS 5000
 
@@ -49,6 +51,11 @@ void userLoop() {
     return;
   }
   lastUpdate = millis();
+// Turn off display after 5 minutes from powering.
+  if( !displayTurnedOff && millis() - startupTimestamp > 5*60*1000) {
+    u8x8.setPowerSave(1);
+    displayTurnedOff = true;
+  }
 
   // Check if values which are shown on display changed from the last tiem.
   if ((apActive == true ? String(apSSID) : WiFi.SSID()) != knownSsid) {
