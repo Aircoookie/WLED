@@ -32,4 +32,4 @@ install:
     - pip install -U platformio
     - platformio update
 script:
-    - platformio ci --project-conf=./platformio.ini -v
+    - platformio ci --project-conf=./platformio.ini
