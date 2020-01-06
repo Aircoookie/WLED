@@ -39,7 +39,7 @@ uint8_t knownMode = 0;
 uint8_t knownPalette = 0;
 
 long lastUpdate = 0;
-long startupTimestamp = millis();
+long lastRedraw = 0;
 bool displayTurnedOff = false;
 // How often we are redrawing screen
 #define USER_LOOP_REFRESH_RATE_MS 5000
@@ -51,14 +51,15 @@ void userLoop() {
     return;
   }
   lastUpdate = millis();
-// Turn off display after 5 minutes from powering.
-  if( !displayTurnedOff && millis() - startupTimestamp > 5*60*1000) {
+  
+  // Turn off display after 3 minutes with no change.
+  if(!displayTurnedOff && millis() - lastRedraw > 3*60*1000) {
     u8x8.setPowerSave(1);
     displayTurnedOff = true;
   }
 
-  // Check if values which are shown on display changed from the last tiem.
-  if ((apActive == true ? String(apSSID) : WiFi.SSID()) != knownSsid) {
+  // Check if values which are shown on display changed from the last time.
+  if (((apActive) ? String(apSSID) : WiFi.SSID()) != knownSsid) {
     needRedraw = true;
   } else if (knownIp != (apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP())) {
     needRedraw = true;
@@ -74,6 +75,13 @@ void userLoop() {
     return;
   }
   needRedraw = false;
+  
+  if (displayTurnedOff)
+  {
+    u8x8.setPowerSave(0);
+    displayTurnedOff = false;
+  }
+  lastRedraw = millis();
 
   // Update last known values.
   #if defined(ESP8266)
