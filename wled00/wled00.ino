@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.9.0-b1
+ * @version 0.9.0-b2
  * @author Christian Schwinne
  */
 
@@ -31,12 +31,6 @@
 
 //to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
-
-//to toggle using analog RGB or RGBW led strips (un)comment the following line
-//#define WLED_USE_ANALOG_LEDS
-
-//to toggle using 5CH analog RGBWS led strips (un)comment the following line
-//#define WLED_USE_5CH_LEDS
 
 //library inclusions
 #include <Arduino.h>
@@ -104,8 +98,8 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 1912182
-char versionString[] = "0.9.0-b1";
+#define VERSION 2001052
+char versionString[] = "0.9.0-b2";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -430,6 +424,7 @@ AsyncMqttClient* mqtt = NULL;
 void colorFromUint32(uint32_t,bool=false);
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
 void handleE131Packet(e131_packet_t*, IPAddress);
+void handleOverlayDraw();
 
 #define E131_MAX_UNIVERSE_COUNT 9
 

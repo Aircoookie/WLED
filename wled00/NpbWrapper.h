@@ -6,8 +6,8 @@
 #define LEDPIN 2     //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 //#define USE_APA102 // Uncomment for using APA102 LEDs.
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
-//#define WLED_USE_H801 //H801 5 channel controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
-//#define WLED_USE_5CH
+//#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
+//#define WLED_USE_5CH  //5 Channel H801 for cold and warm white
 
 #define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
 #define IR_PIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
@@ -37,7 +37,6 @@
     #undef BTNPIN
     #undef IR_PIN
     #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
-#endif
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
     #define RPIN 5   //R pin for analog LED strip   
@@ -131,26 +130,25 @@ public:
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, LEDPIN);
       #endif
         _pGrbw->Begin();
-      break;
-
-        #ifdef WLED_USE_ANALOG_LEDS      
-          //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-          pinMode(RPIN, OUTPUT);
-          pinMode(GPIN, OUTPUT);
-          pinMode(BPIN, OUTPUT);
-          switch (_type) {
-            case NeoPixelType_Grb:                                                    break;
-            #ifdef WLED_USE_5CH_LEDS
-              case NeoPixelType_Grbw: pinMode(WPIN, OUTPUT); pinMode(W2PIN, OUTPUT);  break;
-            #else
-              case NeoPixelType_Grbw: pinMode(WPIN, OUTPUT);                          break;
-            #endif
-          }
-          analogWriteRange(255);  //same range as one RGB channel
-          analogWriteFreq(880);   //PWM frequency proven as good for LEDs
+      
+      #ifdef WLED_USE_ANALOG_LEDS
+        pinMode(WPIN, OUTPUT); 
+        #ifdef WLED_USE_5CH_LEDS
+          pinMode(W2PIN, OUTPUT);
         #endif
-
+      #endif
+        
+      break;
     }
+
+    #ifdef WLED_USE_ANALOG_LEDS   
+      //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
+      pinMode(RPIN, OUTPUT);
+      pinMode(GPIN, OUTPUT);
+      pinMode(BPIN, OUTPUT);   
+      analogWriteRange(255);  //same range as one RGB channel
+      analogWriteFreq(880);   //PWM frequency proven as good for LEDs
+    #endif
   }
 
 #ifdef WLED_USE_ANALOG_LEDS      
@@ -186,9 +184,9 @@ public:
       case NeoPixelType_Grb: {
         _pGrb->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
         #ifdef WLED_USE_ANALOG_LEDS
-        if (indexPixel != 0) return; //set analog LEDs from first pixel
-        b = _pGrb->GetBrightness();
-        SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, 0);
+          if (indexPixel != 0) return; //set analog LEDs from first pixel
+          byte b = _pGrb->GetBrightness();
+          SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, 0);
         #endif
       }
       break;
@@ -196,7 +194,7 @@ public:
         _pGrbw->SetPixelColor(indexPixel, color);
         #ifdef WLED_USE_ANALOG_LEDS      
           if (indexPixel != 0) return; //set analog LEDs from first pixel
-          b = _pGrbw->GetBrightness();
+          byte b = _pGrbw->GetBrightness();
           // check color values for Warm / Cold white mix (for RGBW)  // EsplanexaDevice.cpp
           #ifdef WLED_USE_5CH_LEDS
             if        (color.R == 255 & color.G == 255 && color.B == 255 && color.W == 255) {  

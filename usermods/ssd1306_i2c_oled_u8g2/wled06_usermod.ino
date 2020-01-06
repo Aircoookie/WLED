@@ -1,12 +1,18 @@
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 
+//The SCL and SDA pins are defined here. 
+//Lolin32 boards use SCL=5 SDA=4 
+#define U8X8_PIN_SCL 5
+#define U8X8_PIN_SDA 4
+
+
 // If display does not work or looks corrupted check the
 // constructor reference:
 // https://github.com/olikraus/u8g2/wiki/u8x8setupcpp
 // or check the gallery:
 // https://github.com/olikraus/u8g2/wiki/gallery
-U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, 5,
-                                          4); // Pins are Reset, SCL, SDA
+U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL,
+                                          U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
 
 // gets called once at boot. Do all initialization that doesn't depend on
 // network here
@@ -33,6 +39,8 @@ uint8_t knownMode = 0;
 uint8_t knownPalette = 0;
 
 long lastUpdate = 0;
+long lastRedraw = 0;
+bool displayTurnedOff = false;
 // How often we are redrawing screen
 #define USER_LOOP_REFRESH_RATE_MS 5000
 
@@ -43,9 +51,15 @@ void userLoop() {
     return;
   }
   lastUpdate = millis();
+  
+  // Turn off display after 3 minutes with no change.
+  if(!displayTurnedOff && millis() - lastRedraw > 3*60*1000) {
+    u8x8.setPowerSave(1);
+    displayTurnedOff = true;
+  }
 
-  // Check if values which are shown on display changed from the last tiem.
-  if ((apActive == true ? String(apSSID) : WiFi.SSID()) != knownSsid) {
+  // Check if values which are shown on display changed from the last time.
+  if (((apActive) ? String(apSSID) : WiFi.SSID()) != knownSsid) {
     needRedraw = true;
   } else if (knownIp != (apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP())) {
     needRedraw = true;
@@ -61,9 +75,20 @@ void userLoop() {
     return;
   }
   needRedraw = false;
+  
+  if (displayTurnedOff)
+  {
+    u8x8.setPowerSave(0);
+    displayTurnedOff = false;
+  }
+  lastRedraw = millis();
 
   // Update last known values.
+  #if defined(ESP8266)
   knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
+  #else
+  knownSsid = WiFi.SSID();
+  #endif
   knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
   knownBrightness = bri;
   knownMode = strip.getMode();
@@ -74,9 +99,9 @@ void userLoop() {
 
   // First row with Wifi name
   u8x8.setCursor(1, 0);
-  u8x8.print(ssid.substring(0, u8x8.getCols() > 1 ? u8x8.getCols() - 2 : 0));
+  u8x8.print(knownSsid.substring(0, u8x8.getCols() > 1 ? u8x8.getCols() - 2 : 0));
   // Print `~` char to indicate that SSID is longer, than owr dicplay
-  if (ssid.length() > u8x8.getCols())
+  if (knownSsid.length() > u8x8.getCols())
     u8x8.print("~");
 
   // Second row with IP or Psssword
@@ -85,7 +110,7 @@ void userLoop() {
   if (apActive && bri == 0)
     u8x8.print(apPass);
   else
-    u8x8.print(ip);
+    u8x8.print(knownIp);
 
   // Third row with mode name
   u8x8.setCursor(2, 2);
