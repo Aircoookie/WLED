@@ -249,7 +249,7 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == 4)
   {
     sappend('c',"BT",buttonEnabled);
-    sappend('c',"IR",irEnabled);
+    sappend('v',"IR",irEnabled);
     sappend('v',"UP",udpPort);
     sappend('c',"RB",receiveNotificationBrightness);
     sappend('c',"RC",receiveNotificationColor);
