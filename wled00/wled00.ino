@@ -85,18 +85,11 @@
 
 #ifdef ARDUINO_ARCH_ESP32
   #undef WLED_USE_ANALOG_LEDS  // Solid RGBW not implemented for ESP32 yet
- /*#ifndef WLED_DISABLE_INFRARED
-  #include <IRremote.h>
- #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
-#else
- #ifndef WLED_DISABLE_INFRARED
-//  #include <IRremoteESP8266.h>
-//  #include <IRrecv.h>
-//  #include <IRutils.h>
-  #include "dependencies\IRremoteESP8266\IRremoteESP8266.h"
-  #include "dependencies\IRremoteESP8266\IRrecv.h"
-  #include "dependencies\IRremoteESP8266\IRutils.h"
- #endif
+#endif
+
+#ifndef WLED_DISABLE_INFRARED
+  #include "src/dependencies/IRremoteESP8266/IRremoteESP8266.h"
+  #include "src/dependencies/IRremoteESP8266/IRrecv.h"
 #endif
 
 
