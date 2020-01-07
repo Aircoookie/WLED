@@ -130,41 +130,72 @@ public:
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, LEDPIN);
       #endif
         _pGrbw->Begin();
-      
-      #ifdef WLED_USE_ANALOG_LEDS
-        pinMode(WPIN, OUTPUT); 
-        #ifdef WLED_USE_5CH_LEDS
-          pinMode(W2PIN, OUTPUT);
-        #endif
-      #endif
-        
       break;
     }
 
-    #ifdef WLED_USE_ANALOG_LEDS   
-      //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-      pinMode(RPIN, OUTPUT);
-      pinMode(GPIN, OUTPUT);
-      pinMode(BPIN, OUTPUT);   
-      analogWriteRange(255);  //same range as one RGB channel
-      analogWriteFreq(880);   //PWM frequency proven as good for LEDs
+    #ifdef WLED_USE_ANALOG_LEDS 
+      #ifdef ARDUINO_ARCH_ESP32
+        ledcSetup(0, 5000, 8);
+        ledcAttachPin(RPIN, 0);
+        ledcSetup(1, 5000, 8);
+        ledcAttachPin(GPIN, 1);
+        ledcSetup(2, 5000, 8);        
+        ledcAttachPin(BPIN, 2);
+        if(_type == NeoPixelType_Grbw) 
+        {
+          ledcSetup(3, 5000, 8);        
+          ledcAttachPin(WPIN, 3);
+          #ifdef WLED_USE_5CH_LEDS
+            ledcSetup(4, 5000, 8);        
+            ledcAttachPin(W2PIN, 4);
+          #endif
+        }
+      #else  // ESP8266
+        //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
+        pinMode(RPIN, OUTPUT);
+        pinMode(GPIN, OUTPUT);
+        pinMode(BPIN, OUTPUT); 
+        if(_type == NeoPixelType_Grbw) 
+        {
+          pinMode(WPIN, OUTPUT); 
+          #ifdef WLED_USE_5CH_LEDS
+            pinMode(W2PIN, OUTPUT);
+          #endif
+        }
+        analogWriteRange(255);  //same range as one RGB channel
+        analogWriteFreq(880);   //PWM frequency proven as good for LEDs
+      #endif 
     #endif
   }
 
 #ifdef WLED_USE_ANALOG_LEDS      
     void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w, uint8_t w2=0)
     {
-      analogWrite(RPIN, r);
-      analogWrite(GPIN, g);
-      analogWrite(BPIN, b);
-      switch (_type) {
-        case NeoPixelType_Grb:                                                  break;
-        #ifdef WLED_USE_5CH_LEDS
-          case NeoPixelType_Grbw: analogWrite(WPIN, w); analogWrite(W2PIN, w2); break;
-        #else
-          case NeoPixelType_Grbw: analogWrite(WPIN, w);                         break;
-        #endif
-      }
+      #ifdef ARDUINO_ARCH_ESP32
+        ledcWrite(0, r);  //RPIN
+        ledcWrite(1, g);  //GPIN
+        ledcWrite(2, b);  //BPIN
+        switch (_type) {
+          case NeoPixelType_Grb:                                                  break;
+          #ifdef WLED_USE_5CH_LEDS
+            case NeoPixelType_Grbw: ledcWrite(3, w); ledcWrite(4, w2);            break;
+          #else
+            case NeoPixelType_Grbw: ledcWrite(3, w);                              break;
+          #endif
+        }        
+      #else 
+        analogWrite(RPIN, r);
+        analogWrite(GPIN, g);
+        analogWrite(BPIN, b);
+        switch (_type) {
+          case NeoPixelType_Grb:                                                  break;
+          #ifdef WLED_USE_5CH_LEDS
+            case NeoPixelType_Grbw: analogWrite(WPIN, w); analogWrite(W2PIN, w2); break;
+          #else
+            case NeoPixelType_Grbw: analogWrite(WPIN, w);                         break;
+          #endif
+        }
+      #endif 
     }
 #endif
 
