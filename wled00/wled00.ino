@@ -90,9 +90,12 @@
  #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
 #else
  #ifndef WLED_DISABLE_INFRARED
-  #include <IRremoteESP8266.h>
-  #include <IRrecv.h>
-  #include <IRutils.h>
+//  #include <IRremoteESP8266.h>
+//  #include <IRrecv.h>
+//  #include <IRutils.h>
+  #include "dependencies\IRremoteESP8266\IRremoteESP8266.h"
+  #include "dependencies\IRremoteESP8266\IRrecv.h"
+  #include "dependencies\IRremoteESP8266\IRutils.h"
  #endif
 #endif
 
