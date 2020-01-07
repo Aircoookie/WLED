@@ -257,7 +257,9 @@ void serializeInfo(JsonObject root)
 
   JsonObject wifi_info = root.createNestedObject("wifi");
   wifi_info["bssid"] = WiFi.BSSIDstr();
-  wifi_info["signal"] = getSignalQuality(WiFi.RSSI());
+  int qrssi = WiFi.RSSI();
+  wifi_info["rssi"] = qrssi;
+  wifi_info["signal"] = getSignalQuality(qrssi);
   wifi_info["channel"] = WiFi.channel();
   
   #ifdef ARDUINO_ARCH_ESP32

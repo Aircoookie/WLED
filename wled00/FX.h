@@ -91,7 +91,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  90
+#define MODE_COUNT  96
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -183,10 +183,19 @@
 #define FX_MODE_GLITTER                 87
 #define FX_MODE_CANDLE                  88
 #define FX_MODE_STARBURST               89
+#define FX_MODE_EXPLODING_FIREWORKS     90
+#define FX_MODE_BOUNCINGBALLS           91
+#define FX_MODE_SINELON                 92
+#define FX_MODE_SINELON_DUAL            93
+#define FX_MODE_SINELON_RAINBOW         94
+#define FX_MODE_POPCORN                 95
 
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
+
+  // pre show callback
+  typedef void (*show_callback) (void);
   
   // segment parameters
   public:
@@ -248,9 +257,7 @@ class WS2812FX {
         return true;
       }
       void deallocateData(){
-        if (data) {
-          delete[] data;
-        }
+        delete[] data;
         data = nullptr;
         WS2812FX::_usedSegmentData -= _dataLen;
         _dataLen = 0;
@@ -352,6 +359,12 @@ class WS2812FX {
       _mode[FX_MODE_GLITTER]                 = &WS2812FX::mode_glitter;
       _mode[FX_MODE_CANDLE]                  = &WS2812FX::mode_candle;
       _mode[FX_MODE_STARBURST]               = &WS2812FX::mode_starburst;
+      _mode[FX_MODE_EXPLODING_FIREWORKS]     = &WS2812FX::mode_exploding_fireworks;
+      _mode[FX_MODE_BOUNCINGBALLS]           = &WS2812FX::mode_bouncing_balls;
+      _mode[FX_MODE_SINELON]                 = &WS2812FX::mode_sinelon;
+      _mode[FX_MODE_SINELON_DUAL]            = &WS2812FX::mode_sinelon_dual;
+      _mode[FX_MODE_SINELON_RAINBOW]         = &WS2812FX::mode_sinelon_rainbow;
+      _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -359,8 +372,6 @@ class WS2812FX {
       ablMilliampsMax = 850;
       currentMilliamps = 0;
       timebase = 0;
-      _locked = nullptr;
-      _modeUsesLock = false;
       bus = new NeoPixelWrapper();
       resetSegments();
     }
@@ -377,13 +388,8 @@ class WS2812FX {
       driverModeCronixie(bool b),
       setCronixieDigits(byte* d),
       setCronixieBacklight(bool b),
-      setIndividual(uint16_t i, uint32_t col),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
-      lock(uint16_t i),
-      lockRange(uint16_t i, uint16_t i2),
-      unlock(uint16_t i),
-      unlockRange(uint16_t i, uint16_t i2),
-      unlockAll(void),
+      setShowCallback(show_callback cb),
       setTransitionMode(bool t),
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop),
@@ -535,7 +541,13 @@ class WS2812FX {
       mode_spots_fade(void),
       mode_glitter(void),
       mode_candle(void),
-      mode_starburst(void);
+      mode_starburst(void),
+      mode_exploding_fireworks(void),
+      mode_bouncing_balls(void),
+      mode_sinelon(void),
+      mode_sinelon_dual(void),
+      mode_sinelon_rainbow(void),
+      mode_popcorn(void);
       
 
   private:
@@ -554,20 +566,19 @@ class WS2812FX {
 
     void handle_palette(void);
     void fill(uint32_t);
-    bool modeUsesLock(uint8_t);
 
     bool
-      _modeUsesLock,
       _rgbwMode,
       _cronixieMode,
       _cronixieBacklightEnabled,
       _skipFirstMode,
       _triggered;
 
-    byte* _locked;
     byte _cronixieDigits[6];
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
+
+    show_callback _callback = nullptr;
 
     // mode helper functions
     uint16_t
@@ -577,6 +588,7 @@ class WS2812FX {
       theater_chase(uint32_t, uint32_t, bool),
       running_base(bool),
       larson_scanner(bool),
+      sinelon_base(bool,bool),
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
@@ -612,7 +624,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst"
+"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
+"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn"
 ])=====";
 
 
