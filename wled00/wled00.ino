@@ -288,6 +288,7 @@ byte briOld = 0;
 byte briT = 0;
 byte briIT = 0;
 byte briLast = 128;                           //brightness before turned off. Used for toggle function
+byte whiteLast = 128;                         //white channel before turned off. Used for toggle function
 
 //button
 bool buttonPressedBefore = false;
