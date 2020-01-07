@@ -85,11 +85,8 @@
 
 #ifdef ARDUINO_ARCH_ESP32
   #undef WLED_USE_ANALOG_LEDS  // Solid RGBW not implemented for ESP32 yet
- /*#ifndef WLED_DISABLE_INFRARED
-  #include <IRremote.h>
- #endif*/ //there are issues with ESP32 infrared, so it is disabled for now
-#else
- #ifndef WLED_DISABLE_INFRARED
+#endif
+ #ifndef WLED_DISABLE_INFRARED  // Support for ESP32 was added in v2.6.2 of IRremoteESP8266
 //  #include <IRremoteESP8266.h>
 //  #include <IRrecv.h>
 //  #include <IRutils.h>
@@ -97,7 +94,7 @@
   #include "dependencies\IRremoteESP8266\IRrecv.h"
   #include "dependencies\IRremoteESP8266\IRutils.h"
  #endif
-#endif
+
 
 
 //version code in format yymmddb (b = daily build)
@@ -163,7 +160,7 @@ bool syncToggleReceive = false;               //UIs which only have a single but
 
 //Sync CONFIG
 bool buttonEnabled =  true;
-bool irEnabled     = false;                   //Infrared receiver
+byte irEnabled     =  0;                      //Infrared receiver
 
 uint16_t udpPort    = 21324;                  //WLED notifier default port
 uint16_t udpRgbPort = 19446;                  //Hyperion port
@@ -510,6 +507,7 @@ void setup() {
 
 //main program loop
 void loop() {
+  handleIR();          //2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
   handleSerial();
   handleNotifications();
