@@ -511,6 +511,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0)
   {
     nightlightFade = (req.charAt(pos+3) != '0');
+    nightlightColorFade = (req.charAt(pos+3) == '2');  //NighLightColorFade can only be enabled via API or Macro with "NF=2"
     nightlightActiveOld = false; //re-init
   }
 
