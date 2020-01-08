@@ -83,16 +83,11 @@
  #endif
 #endif
 
-#ifdef ARDUINO_ARCH_ESP32
-  #undef WLED_USE_ANALOG_LEDS  // Solid RGBW not implemented for ESP32 yet
-#else
  #ifndef WLED_DISABLE_INFRARED
   #include <IRremoteESP8266.h>
   #include <IRrecv.h>
   #include <IRutils.h>
  #endif
-#endif
-
 
 //version code in format yymmddb (b = daily build)
 #define VERSION 2001071
