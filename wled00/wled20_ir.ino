@@ -48,11 +48,11 @@ void decodeIR(uint32_t code)
   if (code == 0xFFFFFFFF) //repeated code, continue brightness up/down
   {
     irTimesRepeated++;
-    if (lastValidCode == IR24_BRIGHTER | lastValidCode == IR40_BPLUS )
+    if (lastValidCode == IR24_BRIGHTER || lastValidCode == IR40_BPLUS )
     { 
       relativeChange(&bri, 10); colorUpdated(2);
     }
-    else if (lastValidCode == IR24_DARKER | lastValidCode == IR40_BMINUS )
+    else if (lastValidCode == IR24_DARKER || lastValidCode == IR40_BMINUS )
     {
       relativeChange(&bri, -10, 5); colorUpdated(2);
     }
@@ -64,7 +64,7 @@ void decodeIR(uint32_t code)
     {
       relativeChangeWhite(-10, 5); colorUpdated(2);
     }
-    else if ((lastValidCode == IR24_ON | lastValidCode == IR40_ON) && irTimesRepeated > 7 )
+    else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 )
     {
       nightlightActive = true;
       nightlightStartTime = millis();
