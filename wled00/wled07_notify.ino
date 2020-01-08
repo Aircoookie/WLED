@@ -103,6 +103,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
   
   for (uint16_t i = 0; i < len; i++) {
     int j = i * 3 +1;
+    if (useRGBW) colorRGBtoRGBW(col);
     setRealtimePixel(i + multipacketOffset, p->property_values[j], p->property_values[j+1], p->property_values[j+2], 0);
   }
 
