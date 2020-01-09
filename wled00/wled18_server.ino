@@ -104,7 +104,7 @@ void initServer()
 
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
-    if (1) { //scope JsonDocument so it releases its buffer
+    { //scope JsonDocument so it releases its buffer
       DynamicJsonDocument jsonBuffer(8192);
       DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
       JsonObject root = jsonBuffer.as<JsonObject>();

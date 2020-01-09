@@ -1,6 +1,7 @@
 /*
  * Used to draw clock overlays over the strip
  */
+ 
 void initCronixie()
 {
   if (overlayCurrent == 3 && !cronixieInit)
@@ -24,14 +25,8 @@ void handleOverlays()
     initCronixie();
     updateLocalTime();
     checkTimers();
-    switch (overlayCurrent)
-    {
-      case 0: break;//no overlay
-      case 1: _overlayAnalogClock(); break;//2 analog clock
-      case 2: break;//nixie 1-digit, removed
-      case 3: _overlayCronixie();//Diamex cronixie clock kit
-    }
-    if (!countdownMode || overlayCurrent < 3) checkCountdown(); //countdown macro activation must work
+    checkCountdown();
+    if (overlayCurrent == 3) _overlayCronixie();//Diamex cronixie clock kit
     overlayRefreshedTime = millis();
   }
 }
@@ -40,7 +35,6 @@ void handleOverlays()
 void _overlayAnalogClock()
 {
   int overlaySize = overlayMax - overlayMin +1;
-  strip.unlockAll();
   if (countdownMode)
   {
     _overlayAnalogCountdown(); return;
@@ -73,23 +67,19 @@ void _overlayAnalogClock()
     {
       pix = analogClock12pixel + round((overlaySize / 12.0) *i);
       if (pix > overlayMax) pix -= overlaySize;
-      strip.setIndividual(pix, 0x00FFAA);
+      strip.setPixelColor(pix, 0x00FFAA);
     }
   }
-  if (!analogClockSecondsTrail) strip.setIndividual(secondPixel, 0xFF0000);
-  strip.setIndividual(minutePixel, 0x00FF00);
-  strip.setIndividual(hourPixel, 0x0000FF);
+  if (!analogClockSecondsTrail) strip.setPixelColor(secondPixel, 0xFF0000);
+  strip.setPixelColor(minutePixel, 0x00FF00);
+  strip.setPixelColor(hourPixel, 0x0000FF);
   overlayRefreshMs = 998;
 }
 
 
 void _overlayAnalogCountdown()
 {
-  strip.unlockAll();
-  if (now() >= countdownTime)
-  {
-    checkCountdown();
-  } else
+  if (now() < countdownTime)
   {
     long diff = countdownTime - now();
     double pval = 60;
@@ -126,4 +116,10 @@ void _overlayAnalogCountdown()
     }
   }
   overlayRefreshMs = 998;
+}
+
+
+void handleOverlayDraw() {
+  if (overlayCurrent != 1) return; //only analog clock
+  _overlayAnalogClock();
 }

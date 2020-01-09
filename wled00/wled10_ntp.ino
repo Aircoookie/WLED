@@ -25,6 +25,8 @@ TimeChangeRule CDT = {Second, Sun, Mar, 2, -300 };    //Daylight time = UTC - 5 
 TimeChangeRule CST = {First, Sun, Nov, 2, -360 };     //Standard time = UTC - 6 hours
 Timezone tzUSCentral(CDT, CST);
 
+Timezone tzCASaskatchewan(CST, CST); //Central without DST
+
 TimeChangeRule MDT = {Second, Sun, Mar, 2, -360 };    //Daylight time = UTC - 6 hours
 TimeChangeRule MST = {First, Sun, Nov, 2, -420 };     //Standard time = UTC - 7 hours
 Timezone tzUSMountain(MDT, MST);
@@ -55,7 +57,7 @@ Timezone tzNK(NKST, NKST);
 TimeChangeRule IST = {Last, Sun, Mar, 1, 330};     // India Standard Time = UTC + 5.5 hours
 Timezone tzIndia(IST, IST);
 
-Timezone* timezones[] = {&tzUTC, &tzUK, &tzEUCentral, &tzEUEastern, &tzUSEastern, &tzUSCentral, &tzUSMountain, &tzUSArizona, &tzUSPacific, &tzChina, &tzJapan, &tzAUEastern, &tzNZ, &tzNK, &tzIndia};  
+Timezone* timezones[] = {&tzUTC, &tzUK, &tzEUCentral, &tzEUEastern, &tzUSEastern, &tzUSCentral, &tzUSMountain, &tzUSArizona, &tzUSPacific, &tzChina, &tzJapan, &tzAUEastern, &tzNZ, &tzNK, &tzIndia, &tzCASaskatchewan};  
 
 void handleNetworkTime()
 {
@@ -161,13 +163,16 @@ void setCountdown()
 //returns true if countdown just over
 bool checkCountdown()
 {
-  long diff = countdownTime - now();
-  local = abs(diff);
-  if (diff <0 && !countdownOverTriggered)
-  {
-    if (macroCountdown != 0) applyMacro(macroCountdown);
-    countdownOverTriggered = true;
-    return true;
+  unsigned long n = now();
+  local = countdownTime - n;
+  if (n > countdownTime) {
+    local = n - countdownTime;
+    if (!countdownOverTriggered)
+    {
+      if (macroCountdown != 0) applyMacro(macroCountdown);
+      countdownOverTriggered = true;
+      return true;
+    }
   }
   return false;
 }

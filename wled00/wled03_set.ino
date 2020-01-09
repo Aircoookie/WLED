@@ -200,7 +200,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     if (request->hasArg("OL")){
       overlayDefault = request->arg("OL").toInt();
-      if (overlayCurrent != overlayDefault) strip.unlockAll();
       overlayCurrent = overlayDefault;
     }
 
@@ -459,29 +458,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("OL=");
   if (pos > 0) {
     overlayCurrent = getNumVal(&req, pos);
-    strip.unlockAll();
-  }
-
-  //(un)lock pixel (ranges)
-  pos = req.indexOf("&L=");
-  if (pos > 0) {
-    uint16_t index = getNumVal(&req, pos);
-    pos = req.indexOf("L2=");
-    bool unlock = req.indexOf("UL") > 0;
-    if (pos > 0) {
-      uint16_t index2 = getNumVal(&req, pos);
-      if (unlock) {
-        strip.unlockRange(index, index2);
-      } else {
-        strip.lockRange(index, index2);
-      }
-    } else {
-      if (unlock) {
-        strip.unlock(index);
-      } else {
-        strip.lock(index);
-      }
-    }
   }
 
   //apply macro
@@ -535,6 +511,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0)
   {
     nightlightFade = (req.charAt(pos+3) != '0');
+    nightlightColorFade = (req.charAt(pos+3) == '2');  //NighLightColorFade can only be enabled via API or Macro with "NF=2"
     nightlightActiveOld = false; //re-init
   }
 
@@ -622,6 +599,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   //cronixie
   #ifndef WLED_DISABLE_CRONIXIE
+  //mode, 1 countdown
+  pos = req.indexOf("NM=");
+  if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
+  
   pos = req.indexOf("NX="); //sets digits to code
   if (pos > 0) {
     strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
@@ -636,9 +617,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     overlayRefreshedTime = 0;
   }
   #endif
-  //mode, 1 countdown
-  pos = req.indexOf("NM=");
-  if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
 
   pos = req.indexOf("U0="); //user var 0
   if (pos > 0) {

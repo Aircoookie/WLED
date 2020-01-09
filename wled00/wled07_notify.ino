@@ -79,7 +79,6 @@ void arlsLock(uint32_t timeoutMs)
     {
       strip.setPixelColor(i,0,0,0,0);
     }
-    strip.unlockAll();
     realtimeActive = true;
   }
   realtimeTimeout = millis() + timeoutMs;
@@ -127,7 +126,6 @@ void handleNotifications()
   //unlock strip when realtime UDP times out
   if (realtimeActive && millis() > realtimeTimeout)
   {
-    //strip.unlockAll();
     strip.setBrightness(bri);
     realtimeActive = false;
     //strip.setMode(effectCurrent);
