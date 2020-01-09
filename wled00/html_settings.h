@@ -123,6 +123,8 @@ Color order:
 <option value=1>RGB</option>
 <option value=2>BRG</option>
 <option value=3>RBG</option>
+<option value=4>BGR</option>
+<option value=5>GBR</option>
 </select>
 <h3>Defaults</h3>
 Turn LEDs on after power up/reset: <input type=checkbox name=BO><br>

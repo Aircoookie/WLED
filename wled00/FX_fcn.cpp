@@ -104,14 +104,16 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   i = i * (_disableNLeds+1);
   if (IS_REVERSE) i = SEGMENT.stop -1 -i + SEGMENT.start; //reverse just individual segment
-  byte tmpg = g;
+  byte tmpg = g, tmpr = b;
   switch (colorOrder) //0 = Grb, default
   {
-    case 0: break;                  //0 = Grb, default
-    case 1: g = r; r = tmpg; break; //1 = Rgb, common for WS2811
-    case 2: g = b; b = tmpg; break; //2 = Brg
-    case 3: g = b; b = r; r = tmpg; //3 = Rbg
-  }
+    case 0:                            break;    //0 = Grb
+    case 1: g = r; r = tmpg;           break;    //1 = Rgb, common for WS2811
+    case 2: g = b;           b = tmpg; break;    //2 = Brg
+    case 3: g = r; r = b;    b = tmpg; break;    //3 = Rbg
+    case 4: g = b; r = tmpg; b = tmpr; break;    //4 = Bgr
+    case 5:        r = b;    b = tmpr;           //5 = Gbr
+ }
   if (!_cronixieMode)
   {
     if (reverseMode) i = _length -1 -i;
@@ -402,10 +404,12 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   byte r = lColor.R, g = lColor.G, b = lColor.B;
   switch (colorOrder)
   {
-    case 0: break;                                    //0 = Grb
-    case 1: r = lColor.G; g = lColor.R; break;        //1 = Rgb, common for WS2811
-    case 2: g = lColor.B; b = lColor.G; break;        //2 = Brg
-    case 3: r = lColor.B; g = lColor.R; b = lColor.G; //3 = Rbg
+    case 0:                                           break;    //0 = Grb
+    case 1: g = lColor.R; r = lColor.G;               break;    //1 = Rgb, common for WS2811
+    case 2: g = lColor.B;               b = lColor.G; break;    //2 = Brg
+    case 3: g = lColor.R; r = lColor.B; b = lColor.G; break;    //3 = Rbg
+    case 4: g = lColor.B; r = lColor.G; b = lColor.R; break;    //4 = Bgr
+    case 5:               r = lColor.B; b = lColor.R;           //5 = Gbr
   }
   return ( (lColor.W << 24) | (r << 16) | (g << 8) | (b) );
 }
