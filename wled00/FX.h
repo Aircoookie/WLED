@@ -91,7 +91,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  96
+#define MODE_COUNT  97
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -189,6 +189,7 @@
 #define FX_MODE_SINELON_DUAL            93
 #define FX_MODE_SINELON_RAINBOW         94
 #define FX_MODE_POPCORN                 95
+#define FX_MODE_WATERTORTURE            96
 
 
 class WS2812FX {
@@ -365,6 +366,7 @@ class WS2812FX {
       _mode[FX_MODE_SINELON_DUAL]            = &WS2812FX::mode_sinelon_dual;
       _mode[FX_MODE_SINELON_RAINBOW]         = &WS2812FX::mode_sinelon_rainbow;
       _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
+      _mode[FX_MODE_WATERTORTURE]            = &WS2812FX::mode_water_torture;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -547,7 +549,8 @@ class WS2812FX {
       mode_sinelon(void),
       mode_sinelon_dual(void),
       mode_sinelon_rainbow(void),
-      mode_popcorn(void);
+      mode_popcorn(void),
+      mode_water_torture(void);
       
 
   private:
@@ -625,7 +628,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
-"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn"
+"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Water Torture"
 ])=====";
 
 
