@@ -2886,10 +2886,10 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
 
 
 /*
- * Water Torture
+ * Drip Effect
  * ported of: https://www.youtube.com/watch?v=sru2fXh4r7k
  */
-uint16_t WS2812FX::mode_water_torture(void)
+uint16_t WS2812FX::mode_drip(void)
 {
   //allocate segment data
   uint16_t numDrops = 2; 
