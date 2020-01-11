@@ -2902,7 +2902,7 @@ uint16_t WS2812FX::mode_drip(void)
 
   float gravity = -0.001 - (SEGMENT.speed/50000.0);
   gravity *= SEGLEN;
-  int sourcedrop = 24;
+  int sourcedrop = 12;
 
   for (int j=0;j<numDrops;j++) {
     if (drops[j].colIndex == 0) { //init
@@ -2914,17 +2914,12 @@ uint16_t WS2812FX::mode_drip(void)
     
     setPixelColor(SEGMENT.start + SEGLEN-1,color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
     if (drops[j].colIndex==1) {
- 
-      if (drops[j].col >= 255) {           // swelling of droplet one or two pixels
-        setPixelColor(SEGMENT.start + int(drops[j].pos)-1,color_blend(BLACK,SEGCOLOR(0),drops[j].col/2));
-        setPixelColor(SEGMENT.start + int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col/2));
-      } else {
-        setPixelColor(SEGMENT.start + int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
-      }
+      if (drops[j].col>255) drops[j].col=255;
+      setPixelColor(SEGMENT.start + int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
       
-      drops[j].col += map(SEGMENT.intensity, 0, 255, 1, 16); // swelling
+      drops[j].col += map(SEGMENT.intensity, 0, 255, 1, 6); // swelling
       
-      if (random8() < drops[j].col/(20+50*j)) {               // random drop
+      if (random8() < drops[j].col/10) {               // random drop
         drops[j].colIndex=2;               //fall
         drops[j].col=255;
       }
@@ -2934,8 +2929,8 @@ uint16_t WS2812FX::mode_drip(void)
         drops[j].pos += drops[j].vel;
         if (drops[j].pos < 0) drops[j].pos = 0;
         drops[j].vel += gravity;
-        
-        for (int i=1;i<6-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
+
+        for (int i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
           setPixelColor(SEGMENT.start + int(drops[j].pos)+i,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
         }
         
@@ -2948,11 +2943,12 @@ uint16_t WS2812FX::mode_drip(void)
           drops[j].col = sourcedrop;
           
         } else {
+
           if (drops[j].colIndex==2) {      // init bounce
             drops[j].vel = -drops[j].vel/4;// reverse velocity with damping 
             drops[j].pos += drops[j].vel;
           } 
-          drops[j].col = sourcedrop*3;
+          drops[j].col = sourcedrop*2;
           drops[j].colIndex = 5;           // bouncing
         }
       }
