@@ -350,7 +350,11 @@ uint16_t WS2812FX::mode_rainbow(void) {
   uint16_t counter = (now * ((SEGMENT.speed >> 3) +2)) & 0xFFFF;
   counter = counter >> 8;
 
-  fill(color_wheel(counter));
+  if (SEGMENT.intensity < 128){
+    fill(color_blend(color_wheel(counter),WHITE,128-SEGMENT.intensity));
+  } else {
+    fill(color_wheel(counter));
+  }
 
   return FRAMETIME;
 }
