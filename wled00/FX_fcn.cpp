@@ -229,7 +229,8 @@ void WS2812FX::show(void) {
 
       if(useWackyWS2815PowerModel)
       {
-        powerSum += (max(max(max(c.R,c.G),c.B),c.W)) * 3;
+        // ignore white component on WS2815 power calculation
+        powerSum += (max(max(c.R,c.G),c.B)) * 3;
       }
       else 
       {
