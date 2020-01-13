@@ -6,7 +6,7 @@
 #define LEDPIN 2     //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 //#define USE_APA102 // Uncomment for using APA102 LEDs.
 //#define USE_WS2801 // Uncomment for using WS2801 LEDs (make sure you have NeoPixelBus v2.5.6 or newer)
-//#define USE_LPD8806// Uncomment for using LPD8806
+#define USE_LPD8806// Uncomment for using LPD8806
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
 //#define WLED_USE_5CH  //5 Channel H801 for cold and warm white
@@ -86,6 +86,7 @@
  #define PIXELFEATURE4 DotStarLbgrFeature
 #elif defined(USE_LPD8806)
  #define PIXELFEATURE3 Lpd8806GrbFeature 
+ #define PIXELFEATURE4 Lpd8806GrbFeature 
 #else
  #define PIXELFEATURE3 NeoGrbFeature
  #define PIXELFEATURE4 NeoGrbwFeature
@@ -234,7 +235,11 @@ public:
       }
       break;
       case NeoPixelType_Grbw: {
+        #ifdef USE_LPD8806
+        _pGrbw->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
+        #else
         _pGrbw->SetPixelColor(indexPixel, color);
+        #endif
         #ifdef WLED_USE_ANALOG_LEDS      
           if (indexPixel != 0) return; //set analog LEDs from first pixel
           byte b = _pGrbw->GetBrightness();
