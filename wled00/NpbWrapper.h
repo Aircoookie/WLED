@@ -3,8 +3,10 @@
 #define NpbWrapper_h
 
 //PIN CONFIGURATION
-#define LEDPIN 2     //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
-//#define USE_APA102 // Uncomment for using APA102 LEDs.
+#define LEDPIN 2      //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
+//#define USE_APA102  // Uncomment for using APA102 LEDs.
+//#define USE_WS2801  // Uncomment for using WS2801 LEDs (make sure you have NeoPixelBus v2.5.6 or newer)
+//#define USE_LPD8806 // Uncomment for using LPD8806
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
 //#define WLED_USE_5CH  //5 Channel H801 for cold and warm white
@@ -18,7 +20,7 @@
 
 //END CONFIGURATION
 
-#ifdef USE_APA102
+#if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
  #define CLKPIN 0
  #define DATAPIN 2
  #if BTNPIN == CLKPIN || BTNPIN == DATAPIN
@@ -52,6 +54,10 @@
 #ifdef ARDUINO_ARCH_ESP32
  #ifdef USE_APA102
   #define PIXELMETHOD DotStarMethod
+ #elif defined(USE_WS2801)
+  #define PIXELMETHOD NeoWs2801Method
+ #elif defined(USE_LPD8806)
+  #define PIXELMETHOD Lpd8806Method
  #else
   #define PIXELMETHOD NeoEsp32Rmt0Ws2812xMethod
  #endif
@@ -59,6 +65,10 @@
  //autoselect the right method depending on strip pin
  #ifdef USE_APA102
   #define PIXELMETHOD DotStarMethod
+ #elif defined(USE_WS2801)
+  #define PIXELMETHOD NeoWs2801Method
+ #elif defined(USE_LPD8806)
+  #define PIXELMETHOD Lpd8806Method
  #elif LEDPIN == 2
   #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
  #elif LEDPIN == 3
@@ -74,6 +84,9 @@
 #ifdef USE_APA102
  #define PIXELFEATURE3 DotStarBgrFeature
  #define PIXELFEATURE4 DotStarLbgrFeature
+#elif defined(USE_LPD8806)
+ #define PIXELFEATURE3 Lpd8806GrbFeature 
+ #define PIXELFEATURE4 Lpd8806GrbFeature 
 #else
  #define PIXELFEATURE3 NeoGrbFeature
  #define PIXELFEATURE4 NeoGrbwFeature
@@ -115,7 +128,7 @@ public:
     switch (_type)
     {
       case NeoPixelType_Grb:
-      #ifdef USE_APA102
+      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
       #else
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, LEDPIN);
@@ -124,47 +137,78 @@ public:
       break;
 
       case NeoPixelType_Grbw:
-      #ifdef USE_APA102
+      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
       #else
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, LEDPIN);
       #endif
         _pGrbw->Begin();
-      
-      #ifdef WLED_USE_ANALOG_LEDS
-        pinMode(WPIN, OUTPUT); 
-        #ifdef WLED_USE_5CH_LEDS
-          pinMode(W2PIN, OUTPUT);
-        #endif
-      #endif
-        
       break;
     }
 
-    #ifdef WLED_USE_ANALOG_LEDS   
-      //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-      pinMode(RPIN, OUTPUT);
-      pinMode(GPIN, OUTPUT);
-      pinMode(BPIN, OUTPUT);   
-      analogWriteRange(255);  //same range as one RGB channel
-      analogWriteFreq(880);   //PWM frequency proven as good for LEDs
+    #ifdef WLED_USE_ANALOG_LEDS 
+      #ifdef ARDUINO_ARCH_ESP32
+        ledcSetup(0, 5000, 8);
+        ledcAttachPin(RPIN, 0);
+        ledcSetup(1, 5000, 8);
+        ledcAttachPin(GPIN, 1);
+        ledcSetup(2, 5000, 8);        
+        ledcAttachPin(BPIN, 2);
+        if(_type == NeoPixelType_Grbw) 
+        {
+          ledcSetup(3, 5000, 8);        
+          ledcAttachPin(WPIN, 3);
+          #ifdef WLED_USE_5CH_LEDS
+            ledcSetup(4, 5000, 8);        
+            ledcAttachPin(W2PIN, 4);
+          #endif
+        }
+      #else  // ESP8266
+        //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
+        pinMode(RPIN, OUTPUT);
+        pinMode(GPIN, OUTPUT);
+        pinMode(BPIN, OUTPUT); 
+        if(_type == NeoPixelType_Grbw) 
+        {
+          pinMode(WPIN, OUTPUT); 
+          #ifdef WLED_USE_5CH_LEDS
+            pinMode(W2PIN, OUTPUT);
+          #endif
+        }
+        analogWriteRange(255);  //same range as one RGB channel
+        analogWriteFreq(880);   //PWM frequency proven as good for LEDs
+      #endif 
     #endif
   }
 
 #ifdef WLED_USE_ANALOG_LEDS      
     void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w, uint8_t w2=0)
     {
-      analogWrite(RPIN, r);
-      analogWrite(GPIN, g);
-      analogWrite(BPIN, b);
-      switch (_type) {
-        case NeoPixelType_Grb:                                                  break;
-        #ifdef WLED_USE_5CH_LEDS
-          case NeoPixelType_Grbw: analogWrite(WPIN, w); analogWrite(W2PIN, w2); break;
-        #else
-          case NeoPixelType_Grbw: analogWrite(WPIN, w);                         break;
-        #endif
-      }
+      #ifdef ARDUINO_ARCH_ESP32
+        ledcWrite(0, r);  //RPIN
+        ledcWrite(1, g);  //GPIN
+        ledcWrite(2, b);  //BPIN
+        switch (_type) {
+          case NeoPixelType_Grb:                                                  break;
+          #ifdef WLED_USE_5CH_LEDS
+            case NeoPixelType_Grbw: ledcWrite(3, w); ledcWrite(4, w2);            break;
+          #else
+            case NeoPixelType_Grbw: ledcWrite(3, w);                              break;
+          #endif
+        }        
+      #else 
+        analogWrite(RPIN, r);
+        analogWrite(GPIN, g);
+        analogWrite(BPIN, b);
+        switch (_type) {
+          case NeoPixelType_Grb:                                                  break;
+          #ifdef WLED_USE_5CH_LEDS
+            case NeoPixelType_Grbw: analogWrite(WPIN, w); analogWrite(W2PIN, w2); break;
+          #else
+            case NeoPixelType_Grbw: analogWrite(WPIN, w);                         break;
+          #endif
+        }
+      #endif 
     }
 #endif
 
@@ -191,7 +235,11 @@ public:
       }
       break;
       case NeoPixelType_Grbw: {
+        #ifdef USE_LPD8806
+        _pGrbw->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
+        #else
         _pGrbw->SetPixelColor(indexPixel, color);
+        #endif
         #ifdef WLED_USE_ANALOG_LEDS      
           if (indexPixel != 0) return; //set analog LEDs from first pixel
           byte b = _pGrbw->GetBrightness();

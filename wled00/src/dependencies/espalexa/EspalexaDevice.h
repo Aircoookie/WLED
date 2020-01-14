@@ -51,6 +51,7 @@ public:
   uint8_t getR();
   uint8_t getG();
   uint8_t getB();
+  uint8_t getW();
   EspalexaColorMode getColorMode();
   EspalexaDeviceType getType();
   

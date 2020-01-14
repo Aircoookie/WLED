@@ -349,7 +349,11 @@ uint16_t WS2812FX::mode_rainbow(void) {
   uint16_t counter = (now * ((SEGMENT.speed >> 3) +2)) & 0xFFFF;
   counter = counter >> 8;
 
-  fill(color_wheel(counter));
+  if (SEGMENT.intensity < 128){
+    fill(color_blend(color_wheel(counter),WHITE,128-SEGMENT.intensity));
+  } else {
+    fill(color_wheel(counter));
+  }
 
   return FRAMETIME;
 }
@@ -2530,7 +2534,7 @@ uint16_t WS2812FX::mode_glitter()
 
 
 //each needs 12 bytes
-//Spark type is used for popcorn and 1D fireworks
+//Spark type is used for popcorn, 1D fireworks, and drip
 typedef struct Spark {
   float pos;
   float vel;
@@ -2875,5 +2879,78 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
 
   SEGMENT.setOption(1, actuallyReverse);
   
+  return FRAMETIME;  
+}
+
+
+/*
+ * Drip Effect
+ * ported of: https://www.youtube.com/watch?v=sru2fXh4r7k
+ */
+uint16_t WS2812FX::mode_drip(void)
+{
+  //allocate segment data
+  uint16_t numDrops = 2; 
+  uint16_t dataSize = sizeof(spark) * numDrops;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+
+  fill(SEGCOLOR(1));
+  
+  Spark* drops = reinterpret_cast<Spark*>(SEGENV.data);
+
+  float gravity = -0.001 - (SEGMENT.speed/50000.0);
+  gravity *= SEGLEN;
+  int sourcedrop = 12;
+
+  for (int j=0;j<numDrops;j++) {
+    if (drops[j].colIndex == 0) { //init
+      drops[j].pos = SEGLEN-1;    // start at end
+      drops[j].vel = 0;           // speed
+      drops[j].col = sourcedrop;  // brightness
+      drops[j].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing) 
+    }
+    
+    setPixelColor(SEGMENT.start + SEGLEN-1,color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
+    if (drops[j].colIndex==1) {
+      if (drops[j].col>255) drops[j].col=255;
+      setPixelColor(SEGMENT.start + int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
+      
+      drops[j].col += map(SEGMENT.intensity, 0, 255, 1, 6); // swelling
+      
+      if (random8() < drops[j].col/10) {               // random drop
+        drops[j].colIndex=2;               //fall
+        drops[j].col=255;
+      }
+    }  
+    if (drops[j].colIndex > 1) {           // falling
+      if (drops[j].pos > 0) {              // fall until end of segment
+        drops[j].pos += drops[j].vel;
+        if (drops[j].pos < 0) drops[j].pos = 0;
+        drops[j].vel += gravity;
+
+        for (int i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
+          setPixelColor(SEGMENT.start + int(drops[j].pos)+i,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
+        }
+        
+        if (drops[j].colIndex > 2) {       // during bounce, some water is on the floor
+          setPixelColor(SEGMENT.start,color_blend(SEGCOLOR(0),BLACK,drops[j].col));
+        }
+      } else {                             // we hit bottom
+        if (drops[j].colIndex > 2) {       // already hit once, so back to forming
+          drops[j].colIndex = 0;
+          drops[j].col = sourcedrop;
+          
+        } else {
+
+          if (drops[j].colIndex==2) {      // init bounce
+            drops[j].vel = -drops[j].vel/4;// reverse velocity with damping 
+            drops[j].pos += drops[j].vel;
+          } 
+          drops[j].col = sourcedrop*2;
+          drops[j].colIndex = 5;           // bouncing
+        }
+      }
+    }
+  }
   return FRAMETIME;  
 }

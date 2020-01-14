@@ -19,6 +19,7 @@ U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL,
 void userSetup() {
   u8x8.begin();
   u8x8.setPowerSave(0);
+    u8x8.setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
   u8x8.setFont(u8x8_font_chroma48medium8_r);
   u8x8.drawString(0, 0, "Loading...");
 }
@@ -39,6 +40,8 @@ uint8_t knownMode = 0;
 uint8_t knownPalette = 0;
 
 long lastUpdate = 0;
+long lastRedraw = 0;
+bool displayTurnedOff = false;
 // How often we are redrawing screen
 #define USER_LOOP_REFRESH_RATE_MS 5000
 
@@ -49,9 +52,15 @@ void userLoop() {
     return;
   }
   lastUpdate = millis();
+  
+  // Turn off display after 3 minutes with no change.
+  if(!displayTurnedOff && millis() - lastRedraw > 3*60*1000) {
+    u8x8.setPowerSave(1);
+    displayTurnedOff = true;
+  }
 
-  // Check if values which are shown on display changed from the last tiem.
-  if ((apActive == true ? String(apSSID) : WiFi.SSID()) != knownSsid) {
+  // Check if values which are shown on display changed from the last time.
+  if (((apActive) ? String(apSSID) : WiFi.SSID()) != knownSsid) {
     needRedraw = true;
   } else if (knownIp != (apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP())) {
     needRedraw = true;
@@ -67,6 +76,13 @@ void userLoop() {
     return;
   }
   needRedraw = false;
+  
+  if (displayTurnedOff)
+  {
+    u8x8.setPowerSave(0);
+    displayTurnedOff = false;
+  }
+  lastRedraw = millis();
 
   // Update last known values.
   #if defined(ESP8266)

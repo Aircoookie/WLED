@@ -130,30 +130,28 @@ uint32_t EspalexaDevice::getRGB()
       case 350: rgb[0]=130,rgb[1]=90,rgb[2]=0;rgb[3]=255;break;
       case 383: rgb[0]=255,rgb[1]=153,rgb[2]=0;rgb[3]=255;break;
       default: {
- 
-    if( temp <= 66 ){ 
-      r = 255; 
-      g = temp;
-      g = 99.470802 * log(g) - 161.119568;
-      if( temp <= 19){
-          b = 0;
-      } else {
-          b = temp-10;
-          b = 138.517731 * log(b) - 305.044793;
-      }
-    } else {
-      r = temp - 60;
-      r = 329.698727 * pow(r, -0.13320476);
-      g = temp - 60;
-      g = 288.12217 * pow(g, -0.07551485 );
-      b = 255;
-    }
+        if( temp <= 66 ){ 
+          r = 255; 
+          g = temp;
+          g = 99.470802 * log(g) - 161.119568;
+          if( temp <= 19){
+              b = 0;
+          } else {
+              b = temp-10;
+              b = 138.517731 * log(b) - 305.044793;
+          }
+        } else {
+          r = temp - 60;
+          r = 329.698727 * pow(r, -0.13320476);
+          g = temp - 60;
+          g = 288.12217 * pow(g, -0.07551485 );
+          b = 255;
+        }
     
-    rgb[0] = (byte)constrain(r,0.1,255.1);
-    rgb[1] = (byte)constrain(g,0.1,255.1);
-    rgb[2] = (byte)constrain(b,0.1,255.1);
-
-    }
+        rgb[0] = (byte)constrain(r,0.1,255.1);
+        rgb[1] = (byte)constrain(g,0.1,255.1);
+        rgb[2] = (byte)constrain(b,0.1,255.1);
+      }
     }
   } else if (_mode == EspalexaColorMode::hs)
   {
@@ -230,6 +228,12 @@ uint32_t EspalexaDevice::getRGB()
   }
   _rgb = ((rgb[3] << 24) | (rgb[0] << 16) | (rgb[1] << 8) | (rgb[2]));  //white value is only >0 if Alexa did provide a CT value, RGB colors will not be touched.
   return _rgb;
+}
+
+//white channel for RGBW lights. Always 0 unless colormode is ct
+uint8_t EspalexaDevice::getW()
+{
+  return (getRGB() >> 24) & 0xFF;
 }
 
 uint8_t EspalexaDevice::getR()
