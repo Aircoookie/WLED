@@ -86,7 +86,10 @@
  #define PIXELFEATURE4 DotStarLbgrFeature
 #elif defined(USE_LPD8806)
  #define PIXELFEATURE3 Lpd8806GrbFeature 
- #define PIXELFEATURE4 Lpd8806GrbFeature 
+ #define PIXELFEATURE4 Lpd8806GrbFeature
+#elif defined(USE_WS2801)
+ #define PIXELFEATURE3 NeoRbgFeature
+ #define PIXELFEATURE4 NeoRbgFeature
 #else
  #define PIXELFEATURE3 NeoGrbFeature
  #define PIXELFEATURE4 NeoGrbwFeature
@@ -235,7 +238,7 @@ public:
       }
       break;
       case NeoPixelType_Grbw: {
-        #ifdef USE_LPD8806
+        #if defined(USE_LPD8806) || defined(USE_WS2801)
         _pGrbw->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
         #else
         _pGrbw->SetPixelColor(indexPixel, color);
