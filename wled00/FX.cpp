@@ -2910,10 +2910,10 @@ uint16_t WS2812FX::mode_drip(void)
       drops[j].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing) 
     }
     
-    setPixelColor(SEGMENT.start + SEGLEN-1,color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
+    setPixelColor(SEGLEN-1,color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
     if (drops[j].colIndex==1) {
       if (drops[j].col>255) drops[j].col=255;
-      setPixelColor(SEGMENT.start + int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
+      setPixelColor(int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
       
       drops[j].col += map(SEGMENT.intensity, 0, 255, 1, 6); // swelling
       
@@ -2929,11 +2929,11 @@ uint16_t WS2812FX::mode_drip(void)
         drops[j].vel += gravity;
 
         for (int i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
-          setPixelColor(SEGMENT.start + int(drops[j].pos)+i,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
+          setPixelColor(int(drops[j].pos)+i,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
         }
         
         if (drops[j].colIndex > 2) {       // during bounce, some water is on the floor
-          setPixelColor(SEGMENT.start,color_blend(SEGCOLOR(0),BLACK,drops[j].col));
+          setPixelColor(0,color_blend(SEGCOLOR(0),BLACK,drops[j].col));
         }
       } else {                             // we hit bottom
         if (drops[j].colIndex > 2) {       // already hit once, so back to forming
