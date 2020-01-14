@@ -8,12 +8,16 @@ void deserializeSegment(JsonObject elem, byte it)
   if (id < strip.getMaxSegments())
   {
     WS2812FX::Segment& seg = strip.getSegment(id);
-    uint16_t start = elem.containsKey("start") ? elem["start"] : seg.start;
-    uint16_t len = elem.containsKey("len") ? elem["len"] : seg.rawLength;
-    uint8_t group = max(1, elem["grp"] | seg.group);
-    uint8_t spacing = elem.containsKey("spc") ? elem["spc"] : seg.spacing;
+    uint16_t start = elem["start"] | seg.start;
+    int stop = elem["stop"] | -1;
 
-    strip.setSegment(id, start, len, group, spacing);
+    if (stop < 0) {
+      uint16_t len = elem["len"];
+      stop = (len > 0) ? start + len : seg.stop;
+    }
+    uint16_t grp = elem["grp"] | seg.grouping;
+    uint16_t spc = elem["spc"] | seg.spacing;
+    strip.setSegment(id, start, stop, grp, spc);
     
     JsonArray colarr = elem["col"];
     if (!colarr.isNull())
@@ -163,7 +167,9 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["id"] = id;
 	root["start"] = seg.start;
 	root["stop"] = seg.stop;
-	root["len"] = seg.rawLength;
+	root["len"] = seg.stop - seg.start;
+  root["grp"] = seg.grouping;
+  root["spc"] = seg.spacing;
 
 	JsonArray colarr = root.createNestedArray("col");
 
@@ -182,8 +188,6 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["ix"] = seg.intensity;
 	root["pal"] = seg.palette;
 	root["sel"] = seg.isSelected();
-  root["grp"] = seg.group;
-  root["spc"] = seg.spacing;
 	root["rev"] = seg.getOption(1);
 }
 
@@ -257,7 +261,9 @@ void serializeInfo(JsonObject root)
 
   JsonObject wifi_info = root.createNestedObject("wifi");
   wifi_info["bssid"] = WiFi.BSSIDstr();
-  wifi_info["signal"] = getSignalQuality(WiFi.RSSI());
+  int qrssi = WiFi.RSSI();
+  wifi_info["rssi"] = qrssi;
+  wifi_info["signal"] = getSignalQuality(qrssi);
   wifi_info["channel"] = WiFi.channel();
   
   #ifdef ARDUINO_ARCH_ESP32
@@ -357,7 +363,7 @@ void serveJson(AsyncWebServerRequest* request)
 
 void serveLiveLeds(AsyncWebServerRequest* request)
 {
-  byte used = strip.getUsableCount();
+  byte used = ledCount;
   byte n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
   char buffer[2000] = "{\"leds\":[";
   olen = 9;
