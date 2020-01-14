@@ -98,7 +98,7 @@
 
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2001051
+#define VERSION 2001071
 char versionString[] = "0.9.0-b2";
 
 
@@ -149,8 +149,6 @@ bool enableSecTransition = true;              //also enable transition for secon
 uint16_t transitionDelay = 750;               //default crossfade duration in ms
 
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
-uint8_t spacing = 0;                          //disables N LEDs between active nodes. (Useful for spacing out lights for more traditional christmas light look)
-uint8_t group = 1;                            //Group LEDs into one logical LED
 byte briMultiplier =  100;                    //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 

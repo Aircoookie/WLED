@@ -230,9 +230,6 @@ void saveSettingsToEEPROM()
     saveCurrPresetCycConf = false;
   }
 
-  EEPROM.write(2213, spacing);
-  EEPROM.write(2214, group);
-
   writeStringToEEPROM(2220, blynkApiKey, 35);
 
   for (int i = 0; i < 8; ++i)
@@ -490,9 +487,6 @@ void loadSettingsFromEEPROM(bool first)
     presetApplyCol = EEPROM.read(2211);
     presetApplyFx = EEPROM.read(2212);
   }
-
-  spacing = EEPROM.read(2213);
-  group = max(1, EEPROM.read(2214));
 
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
