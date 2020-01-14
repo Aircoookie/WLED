@@ -1048,8 +1048,8 @@ uint16_t WS2812FX::mode_fireworks() {
     SEGENV.aux0 = UINT16_MAX;
     SEGENV.aux1 = UINT16_MAX;
   }
-  bool valid1 = (SEGENV.aux0  < SEGLEN && SEGENV.aux0  >= 0);
-  bool valid2 = (SEGENV.aux1 < SEGLEN && SEGENV.aux1 >= 0);
+  bool valid1 = (SEGENV.aux0 < SEGLEN);
+  bool valid2 = (SEGENV.aux1 < SEGLEN);
   uint32_t sv1 = 0, sv2 = 0;
   if (valid1) sv1 = getPixelColor(SEGENV.aux0);
   if (valid2) sv2 = getPixelColor(SEGENV.aux1);
