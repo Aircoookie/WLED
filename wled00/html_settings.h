@@ -123,6 +123,8 @@ Color order:
 <option value=1>RGB</option>
 <option value=2>BRG</option>
 <option value=3>RBG</option>
+<option value=4>BGR</option>
+<option value=5>GBR</option>
 </select>
 <h3>Defaults</h3>
 Turn LEDs on after power up/reset: <input type=checkbox name=BO><br>
@@ -150,9 +152,7 @@ Palette blending:
 <option value=3>None (not recommended)</option>
 </select><br>
 Reverse LED order (rotate 180): <input type=checkbox name=RV><br>
-Skip first LED: <input type=checkbox name=SL><br>
-Disable repeating N LEDs: <input type=number min=0 max=255 name=DL><br>
-(Turns off N LEDs between each lit one, spacing out effects)<hr>
+Skip first LED: <input type=checkbox name=SL><hr>
 <button type=button onclick=B()>Back</button><button type=submit>Save</button>
 </form></body></html>)=====";
 
