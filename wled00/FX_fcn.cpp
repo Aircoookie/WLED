@@ -215,10 +215,17 @@ void WS2812FX::show(void) {
   //each LED can draw up 195075 "power units" (approx. 53mA)
   //one PU is the power it takes to have 1 channel 1 step brighter per brightness step
   //so A=2,R=255,G=0,B=0 would use 510 PU per LED (1mA is about 3700 PU)
-  
-  if (ablMilliampsMax > 149 && milliampsPerLed > 0) //0 mA per LED and too low numbers turn off calculation
+  bool useWackyWS2815PowerModel = false;
+  byte actualMilliampsPerLed = milliampsPerLed;
+
+  if(milliampsPerLed == 255) {
+    useWackyWS2815PowerModel = true;
+    actualMilliampsPerLed = 12; // from testing an actual strip
+  }
+
+  if (ablMilliampsMax > 149 && actualMilliampsPerLed > 0) //0 mA per LED and too low numbers turn off calculation
   {
-    uint32_t puPerMilliamp = 195075 / milliampsPerLed;
+    uint32_t puPerMilliamp = 195075 / actualMilliampsPerLed;
     uint32_t powerBudget = (ablMilliampsMax - MA_FOR_ESP) * puPerMilliamp; //100mA for ESP power
     if (powerBudget > puPerMilliamp * _length) //each LED uses about 1mA in standby, exclude that from power budget
     {
@@ -233,8 +240,18 @@ void WS2812FX::show(void) {
     for (uint16_t i = 0; i < _length; i++) //sum up the usage of each LED
     {
       RgbwColor c = bus->GetPixelColorRgbw(i);
-      powerSum += (c.R + c.G + c.B + c.W);
+
+      if(useWackyWS2815PowerModel)
+      {
+        // ignore white component on WS2815 power calculation
+        powerSum += (max(max(c.R,c.G),c.B)) * 3;
+      }
+      else 
+      {
+        powerSum += (c.R + c.G + c.B + c.W);
+      }
     }
+
 
     if (_rgbwMode) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
     {
