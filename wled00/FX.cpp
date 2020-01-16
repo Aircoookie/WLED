@@ -1182,9 +1182,14 @@ uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
   if (idexR > topindex) idexB -= SEGLEN;
   if (idexB >= SEGLEN) idexB = 0; //otherwise overflow on odd number of LEDs
 
-  setPixelColor(idexR, color1);
-  setPixelColor(idexB, color2);
-
+  uint8_t gap = (SEGMENT.speed / ((SEGLEN >> 3) +1));
+  for (uint8_t i = 0; i <= gap ; i++) {
+    if ((idexR - i) < 0) idexR = SEGLEN + i;
+    if ((idexB - i) < 0) idexB = SEGLEN + i;
+    setPixelColor(idexR-i, color1);
+    setPixelColor(idexB-i, color2);
+  }
+  
   return FRAMETIME;
 }
 
