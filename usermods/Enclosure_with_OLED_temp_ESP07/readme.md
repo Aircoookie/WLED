@@ -10,8 +10,8 @@ This usermod is using ideas from @mrVanboy and @400killer
 ## Hardware
 ![Hardware connection](assets/controller.jpg)
 
-## Requirements
-Functionality checked with:
+## Functionality
+checked with:
 - ESP-07S
 - PlatformIO
 - SSD1306 128x32 I2C OLED display
@@ -19,7 +19,7 @@ Functionality checked with:
 - KY-022 (infrared receiver)
 - Push button (N.O. momentary switch)
 
-### Platformio
+### Platformio requirements
 Uncomment `U8g2@~2.27.3`,`DallasTemperature@~3.8.0`,`OneWire@~2.3.5 under` `[common]` section in `platformio.ini`:
 ```ini
 # platformio.ini
