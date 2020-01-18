@@ -1,10 +1,10 @@
 # Almost universal controller board for outdoor applications
 This usermod is using ideas from @mrVanboy and @400killer
 ## Features
-- SSD1306 128x32 and 128x64 I2C OLED display (optional)
+- SSD1306 128x32 and 128x64 I2C OLED display
 - On screen IP address, SSID and controller status (e.g. ON or OFF, recent effect)
 - Auto display shutoff for saving display lifetime
-- Dallas temperature sensor (optional)
+- Dallas temperature sensor
 - Reporting temperature to MQTT broker
 
 ## Hardware
