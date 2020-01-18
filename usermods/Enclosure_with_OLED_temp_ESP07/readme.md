@@ -2,7 +2,10 @@
 This usermod is using ideas from @mrVanboy and @400killer
 ## Features
 - SSD1306 128x32 and 128x64 I2C OLED display (optional)
+- On screen IP address and controller status (e.g. ON or OFF, recent effect)
+- Auto display shutoff for saving display lifetime
 - Dallas temperature sensor (optional)
+- Reporting temperature to MQTT broker
 
 ## Hardware
 ![Hardware connection](assets/controller.jpg)
