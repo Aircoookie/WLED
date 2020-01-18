@@ -2891,13 +2891,15 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
 uint16_t WS2812FX::mode_drip(void)
 {
   //allocate segment data
-  uint16_t numDrops = 2; 
+  uint16_t numDrops = 4; 
   uint16_t dataSize = sizeof(spark) * numDrops;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
   fill(SEGCOLOR(1));
   
   Spark* drops = reinterpret_cast<Spark*>(SEGENV.data);
+
+  numDrops = 1 + (SEGMENT.intensity >> 6);
 
   float gravity = -0.001 - (SEGMENT.speed/50000.0);
   gravity *= SEGLEN;
@@ -2916,7 +2918,7 @@ uint16_t WS2812FX::mode_drip(void)
       if (drops[j].col>255) drops[j].col=255;
       setPixelColor(int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
       
-      drops[j].col += map(SEGMENT.intensity, 0, 255, 1, 6); // swelling
+      drops[j].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
       
       if (random8() < drops[j].col/10) {               // random drop
         drops[j].colIndex=2;               //fall
@@ -2961,43 +2963,15 @@ uint16_t WS2812FX::mode_drip(void)
 / Plasma Effect
 / adapted from https://github.com/atuline/FastLED-Demos/blob/master/plasma/plasma.ino
 */
-// Use qsuba for smooth pixel colouring and qsubd for non-smooth pixel colouring
-#define qsubd(x, b)  ((x>b)?b:0)                                // Digital unsigned subtraction macro. if result <0, then => 0. Otherwise, take on fixed value.
-#define qsuba(x, b)  ((x>b)?x-b:0)                              // Analog Unsigned subtraction macro. if result <0, then => 0
 uint16_t WS2812FX::mode_plasma(void) {
-
   uint8_t thisPhase = beatsin8(6,-64,64);                       // Setting phase change for a couple of waves.
   uint8_t thatPhase = beatsin8(7,-64,64);
-  static CRGBPalette16 myCurrentPalette;                        // Palette definitions
-  static CRGBPalette16 myTargetPalette;
-  TBlendType currentBlending = LINEARBLEND;
 
-  if (SEGENV.call % 2 == 0) { 
-    uint8_t maxChanges = 24; 
-    nblendPaletteTowardPalette(myCurrentPalette, myTargetPalette, maxChanges);  // AWESOME palette blending capability.
-  }
-
-  if (SEGMENT.palette != 0) {                                                   // Is a color palette selected ?
-    myTargetPalette = currentPalette;
-  } else {
-    if ((SEGENV.call % 200 == 0) || (SEGENV.step != SEGCOLOR(0))) {             // Change the target palette to a variation based on the primary color every 5 seconds or if the primary color did change
-      SEGENV.step   = SEGCOLOR(0);                                              // remember the last primary color 
-      CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(SEGCOLOR(0)));
-      uint8_t baseC = prim_hsv.h;
-      uint8_t intC  = SEGMENT.intensity >> 2;
-      myTargetPalette = CRGBPalette16(CHSV(((255 - (intC >> 1) + baseC + random8(intC)) & 0xFF), 192, random8(200,255)),
-                                      CHSV(((255 - (intC >> 1) + baseC + random8(intC)) & 0xFF), 255, random8(230,255)), 
-                                      CHSV(((255 - (intC >> 1) + baseC + random8(intC)) & 0xFF), 192, random8(230,255)), 
-                                      CHSV(((255 - (intC >> 1) + baseC + random8(intC)) & 0xFF), 255, random8(200,255)));
-    }
-  }
-
-  for (int k=0; k<SEGLEN; k++) {   // For each of the LED's in the strand, set color &  brightness based on a wave as follows:
-    uint8_t colorIndex = cubicwave8((k*(1+ 3*(SEGMENT.speed >> 5)))+(thisPhase) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
-                             + cos8((k*(1+ 2*(SEGMENT.speed >> 5)))+(thatPhase) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
-    uint8_t thisBright = qsuba(colorIndex, beatsin8(6,0,128));
-    CRGB color = ColorFromPalette(myCurrentPalette, colorIndex, thisBright, currentBlending);
-    setPixelColor(k, color.red, color.green, color.blue);
+  for (int i = 0; i < SEGLEN; i++) {   // For each of the LED's in the strand, set color &  brightness based on a wave as follows:
+    uint8_t colorIndex = cubicwave8((i*(1+ 3*(SEGMENT.speed >> 5)))+(thisPhase) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
+                             + cos8((i*(1+ 2*(SEGMENT.speed >> 5)))+(thatPhase) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
+    uint8_t thisBright = qsub8(colorIndex, beatsin8(6,0,128));
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(colorIndex, false, false, 0), thisBright));
   }
 
   return FRAMETIME;
