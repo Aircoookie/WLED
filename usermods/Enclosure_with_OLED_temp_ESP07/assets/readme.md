@@ -4,6 +4,6 @@
 ![Enclosure](controller.jpg)
 
 ## PCB
-![PCB](controller.jpg)
+![PCB](pcb.png)
 ```
 ```
