@@ -1720,7 +1720,8 @@ uint16_t WS2812FX::mode_colorwaves()
   uint8_t msmultiplier = beatsin88(147, 23, 60);
 
   uint16_t hue16 = sHue16;//gHue * 256;
-  uint16_t hueinc16 = beatsin88(113, 300, 1500);
+  // uint16_t hueinc16 = beatsin88(113, 300, 1500);
+  uint16_t hueinc16 = beatsin88(113, 60, 300)*SEGMENT.intensity*10/255;  // Use the Intensity Slider for the hues
 
   sPseudotime += duration * msmultiplier;
   sHue16 += duration * beatsin88(400, 5, 9);
@@ -2954,3 +2955,50 @@ uint16_t WS2812FX::mode_drip(void)
   }
   return FRAMETIME;  
 }
+
+
+/*
+/ Plasma Effect
+/ adapted from https://github.com/atuline/FastLED-Demos/blob/master/plasma/plasma.ino
+*/
+// Use qsuba for smooth pixel colouring and qsubd for non-smooth pixel colouring
+#define qsubd(x, b)  ((x>b)?b:0)                                // Digital unsigned subtraction macro. if result <0, then => 0. Otherwise, take on fixed value.
+#define qsuba(x, b)  ((x>b)?x-b:0)                              // Analog Unsigned subtraction macro. if result <0, then => 0
+uint16_t WS2812FX::mode_plasma(void) {
+
+  uint8_t thisPhase = beatsin8(6,-64,64);                       // Setting phase change for a couple of waves.
+  uint8_t thatPhase = beatsin8(7,-64,64);
+  static CRGBPalette16 myCurrentPalette;                        // Palette definitions
+  static CRGBPalette16 myTargetPalette;
+  TBlendType currentBlending = LINEARBLEND;
+
+  if (SEGENV.call % 2 == 0) { 
+    uint8_t maxChanges = 24; 
+    nblendPaletteTowardPalette(myCurrentPalette, myTargetPalette, maxChanges);  // AWESOME palette blending capability.
+  }
+
+  if (SEGMENT.palette != 0) {                                                   // Is a color palette selected ?
+    myTargetPalette = currentPalette;
+  } else {
+    if ((SEGENV.call % 200 == 0) || (SEGENV.step != SEGCOLOR(0))) {             // Change the target palette to a variation based on the primary color every 5 seconds or if the primary color did change
+      SEGENV.step   = SEGCOLOR(0);                                              // remember the last primary color 
+      CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(SEGCOLOR(0)));
+      uint8_t baseC = prim_hsv.h;
+      uint8_t intC  = SEGMENT.intensity >> 2;
+      myTargetPalette = CRGBPalette16(CHSV(((255 - (intC >> 1) + baseC + random8(intC)) & 0xFF), 192, random8(200,255)),
+                                      CHSV(((255 - (intC >> 1) + baseC + random8(intC)) & 0xFF), 255, random8(230,255)), 
+                                      CHSV(((255 - (intC >> 1) + baseC + random8(intC)) & 0xFF), 192, random8(230,255)), 
+                                      CHSV(((255 - (intC >> 1) + baseC + random8(intC)) & 0xFF), 255, random8(200,255)));
+    }
+  }
+
+  for (int k=0; k<SEGLEN; k++) {   // For each of the LED's in the strand, set color &  brightness based on a wave as follows:
+    uint8_t colorIndex = cubicwave8((k*(1+ 3*(SEGMENT.speed >> 5)))+(thisPhase) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
+                             + cos8((k*(1+ 2*(SEGMENT.speed >> 5)))+(thatPhase) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
+    uint8_t thisBright = qsuba(colorIndex, beatsin8(6,0,128));
+    CRGB color = ColorFromPalette(myCurrentPalette, colorIndex, thisBright, currentBlending);
+    setPixelColor(k, color.red, color.green, color.blue);
+  }
+
+  return FRAMETIME;
+} 
