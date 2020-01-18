@@ -10,7 +10,7 @@ This usermod is using ideas from @mrVanboy and @400killer
 ## Hardware
 ![Hardware connection](assets/controller.jpg)
 
-## Functionality checked with:
+## Functionality checked with
 *   ESP-07S
 *   PlatformIO
 *   SSD1306 128x32 I2C OLED display
