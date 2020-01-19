@@ -2976,3 +2976,31 @@ uint16_t WS2812FX::mode_plasma(void) {
 
   return FRAMETIME;
 } 
+
+/*
+ * Percentage display
+ * Intesity values from 0-100 turn on the leds.
+ */
+uint16_t WS2812FX::mode_percent(void) {
+
+	uint8_t percent = max(0, min(100, SEGMENT.intensity));
+
+	float active_float = SEGLEN * percent / 100.0;
+	uint16_t active_leds = active_float;
+	uint16_t active_part = (active_float - active_leds) * 255;
+	CRGB color;
+
+	for (uint16_t i = 0; i < SEGLEN; i++) {
+		if (i < active_leds) {
+			setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+		}
+		else if (i == active_leds) {
+			setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, active_part));
+		}
+		else {
+			setPixelColor(i, SEGCOLOR(1));
+		}
+	}
+
+	return FRAMETIME;
+}
