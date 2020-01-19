@@ -1,5 +1,7 @@
 # Almost universal controller board for outdoor applications
 This usermod is using ideas from @mrVanboy and @400killer
+## Firmware used
+-   [Original project repository](https://github.com/srg74/Controller-for-WLED-firmware) - Main controller repository
 ## Features
 *   SSD1306 128x32 and 128x64 I2C OLED display
 *   On screen IP address, SSID and controller status (e.g. ON or OFF, recent effect)
