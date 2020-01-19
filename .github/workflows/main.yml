@@ -1,0 +1,9 @@
+name: Test
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build all example sketches
+      uses: antimatter15/esp8266-arduino-builder-action@v4.0.0
