@@ -1720,7 +1720,8 @@ uint16_t WS2812FX::mode_colorwaves()
   uint8_t msmultiplier = beatsin88(147, 23, 60);
 
   uint16_t hue16 = sHue16;//gHue * 256;
-  uint16_t hueinc16 = beatsin88(113, 300, 1500);
+  // uint16_t hueinc16 = beatsin88(113, 300, 1500);
+  uint16_t hueinc16 = beatsin88(113, 60, 300)*SEGMENT.intensity*10/255;  // Use the Intensity Slider for the hues
 
   sPseudotime += duration * msmultiplier;
   sHue16 += duration * beatsin88(400, 5, 9);
@@ -2890,13 +2891,15 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
 uint16_t WS2812FX::mode_drip(void)
 {
   //allocate segment data
-  uint16_t numDrops = 2; 
+  uint16_t numDrops = 4; 
   uint16_t dataSize = sizeof(spark) * numDrops;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
   fill(SEGCOLOR(1));
   
   Spark* drops = reinterpret_cast<Spark*>(SEGENV.data);
+
+  numDrops = 1 + (SEGMENT.intensity >> 6);
 
   float gravity = -0.001 - (SEGMENT.speed/50000.0);
   gravity *= SEGLEN;
@@ -2915,7 +2918,7 @@ uint16_t WS2812FX::mode_drip(void)
       if (drops[j].col>255) drops[j].col=255;
       setPixelColor(int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
       
-      drops[j].col += map(SEGMENT.intensity, 0, 255, 1, 6); // swelling
+      drops[j].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
       
       if (random8() < drops[j].col/10) {               // random drop
         drops[j].colIndex=2;               //fall
@@ -2953,4 +2956,51 @@ uint16_t WS2812FX::mode_drip(void)
     }
   }
   return FRAMETIME;  
+}
+
+
+/*
+/ Plasma Effect
+/ adapted from https://github.com/atuline/FastLED-Demos/blob/master/plasma/plasma.ino
+*/
+uint16_t WS2812FX::mode_plasma(void) {
+  uint8_t thisPhase = beatsin8(6,-64,64);                       // Setting phase change for a couple of waves.
+  uint8_t thatPhase = beatsin8(7,-64,64);
+
+  for (int i = 0; i < SEGLEN; i++) {   // For each of the LED's in the strand, set color &  brightness based on a wave as follows:
+    uint8_t colorIndex = cubicwave8((i*(1+ 3*(SEGMENT.speed >> 5)))+(thisPhase) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
+                             + cos8((i*(1+ 2*(SEGMENT.speed >> 5)))+(thatPhase) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
+    uint8_t thisBright = qsub8(colorIndex, beatsin8(6,0,128));
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(colorIndex, false, false, 0), thisBright));
+  }
+
+  return FRAMETIME;
+} 
+
+/*
+ * Percentage display
+ * Intesity values from 0-100 turn on the leds.
+ */
+uint16_t WS2812FX::mode_percent(void) {
+
+	uint8_t percent = max(0, min(100, SEGMENT.intensity));
+
+	float active_float = SEGLEN * percent / 100.0;
+	uint16_t active_leds = active_float;
+	uint16_t active_part = (active_float - active_leds) * 255;
+	CRGB color;
+
+	for (uint16_t i = 0; i < SEGLEN; i++) {
+		if (i < active_leds) {
+			setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+		}
+		else if (i == active_leds) {
+			setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, active_part));
+		}
+		else {
+			setPixelColor(i, SEGCOLOR(1));
+		}
+	}
+
+	return FRAMETIME;
 }

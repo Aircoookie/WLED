@@ -377,11 +377,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     if (t < strip.getMaxSegments()) main = t;
   }
 
+  WS2812FX::Segment& mainseg = strip.getSegment(main);
   pos = req.indexOf("SV="); //segment selected
-  if (pos > 0) strip.getSegment(main).setOption(0, (req.charAt(pos+3) != '0'));
+  if (pos > 0) mainseg.setOption(0, (req.charAt(pos+3) != '0'));
 
-  uint16_t startI = strip.getSegment(main).start;
-  uint16_t stopI = strip.getSegment(main).stop;
+  uint16_t startI = mainseg.start;
+  uint16_t stopI = mainseg.stop;
+  uint8_t grpI = mainseg.grouping;
+  uint16_t spcI = mainseg.spacing;
   pos = req.indexOf("&S="); //segment start
   if (pos > 0) {
     startI = getNumVal(&req, pos);
@@ -390,7 +393,16 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) {
     stopI = getNumVal(&req, pos);
   }
-  strip.setSegment(main, startI, stopI);
+  pos = req.indexOf("GP="); //segment grouping
+  if (pos > 0) {
+    grpI = getNumVal(&req, pos);
+    if (grpI == 0) grpI = 1;
+  }
+  pos = req.indexOf("SP="); //segment spacing
+  if (pos > 0) {
+    spcI = getNumVal(&req, pos);
+  }
+  strip.setSegment(main, startI, stopI, grpI, spcI);
 
   main = strip.getMainSegmentId();
 

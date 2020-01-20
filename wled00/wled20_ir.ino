@@ -83,6 +83,7 @@ void decodeIR(uint32_t code)
       case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
       case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
       case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
+      case 5: decodeIR21(code);    break;  // white 21-key remote  
       default: return;
     }
   }
@@ -315,6 +316,35 @@ void decodeIR44(uint32_t code)
   colorUpdated(2); //for notifier, IR is considered a button input 
 }
 
+void decodeIR21(uint32_t code)
+{
+    switch (code) {
+    case IR21_BRIGHTER:  relativeChange(&bri, 10);         break;
+    case IR21_DARKER:    relativeChange(&bri, -10, 5);     break;
+    case IR21_OFF:       briLast = bri; bri = 0;           break;
+    case IR21_ON:        bri = briLast;                    break;
+    case IR21_RED:       colorFromUint32(COLOR_RED);       break;
+    case IR21_REDDISH:   colorFromUint32(COLOR_REDDISH);   break;
+    case IR21_ORANGE:    colorFromUint32(COLOR_ORANGE);    break;
+    case IR21_YELLOWISH: colorFromUint32(COLOR_YELLOWISH); break;
+    case IR21_GREEN:     colorFromUint32(COLOR_GREEN);     break;
+    case IR21_GREENISH:  colorFromUint32(COLOR_GREENISH);  break;
+    case IR21_TURQUOISE: colorFromUint32(COLOR_TURQUOISE); break;
+    case IR21_CYAN:      colorFromUint32(COLOR_CYAN);      break;
+    case IR21_BLUE:      colorFromUint32(COLOR_BLUE);      break;
+    case IR21_DEEPBLUE:  colorFromUint32(COLOR_DEEPBLUE);  break;
+    case IR21_PURPLE:    colorFromUint32(COLOR_PURPLE);    break;
+    case IR21_PINK:      colorFromUint32(COLOR_PINK);      break;
+    case IR21_WHITE:     colorFromUint32(COLOR_WHITE);           effectCurrent = 0;  break;
+    case IR21_FLASH:     if (!applyPreset(1)) effectCurrent = FX_MODE_COLORTWINKLE;  break;
+    case IR21_STROBE:    if (!applyPreset(2)) effectCurrent = FX_MODE_RAINBOW_CYCLE; break;
+    case IR21_FADE:      if (!applyPreset(3)) effectCurrent = FX_MODE_BREATH;        break;
+    case IR21_SMOOTH:    if (!applyPreset(4)) effectCurrent = FX_MODE_RAINBOW;       break;
+    default: return;
+    }
+    lastValidCode = code;
+    colorUpdated(2); //for notifier, IR is considered a button input
+}
 
 void initIR()
 {

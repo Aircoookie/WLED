@@ -170,6 +170,29 @@
 #define IR44_FADE3         0xFF609F  // 
 #define IR44_FADE7         0xFFE01F  // 
 
+//Infrared codes for 21-key remote https://images-na.ssl-images-amazon.com/images/I/51NMA0XucnL.jpg
+#define IR21_BRIGHTER      0xFFE01F
+#define IR21_DARKER        0xFFA857
+#define IR21_OFF           0xFF629D
+#define IR21_ON            0xFFA25D
+#define IR21_RED           0xFF6897
+#define IR21_REDDISH       0xFF30CF
+#define IR21_ORANGE        0xFF10EF
+#define IR21_YELLOWISH     0xFF42BD
+#define IR21_GREEN         0xFF9867
+#define IR21_GREENISH      0xFF18E7
+#define IR21_TURQUOISE     0xFF38C7
+#define IR21_CYAN          0xFF4AB5
+#define IR21_BLUE          0xFFB04F
+#define IR21_DEEPBLUE      0xFF7A85
+#define IR21_PURPLE        0xFF5AA5
+#define IR21_PINK          0xFF52AD
+#define IR21_WHITE         0xFF906F
+#define IR21_FLASH         0xFFE21D
+#define IR21_STROBE        0xFF22DD
+#define IR21_FADE          0xFF02FD
+#define IR21_SMOOTH        0xFFC23D
+
 #define COLOR_RED       0xFF0000
 #define COLOR_REDDISH   0xFF7800
 #define COLOR_ORANGE    0xFFA000
