@@ -3,10 +3,12 @@
 #define NpbWrapper_h
 
 //PIN CONFIGURATION
-#define LEDPIN 2      //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
-//#define USE_APA102  // Uncomment for using APA102 LEDs.
-//#define USE_WS2801  // Uncomment for using WS2801 LEDs (make sure you have NeoPixelBus v2.5.6 or newer)
-//#define USE_LPD8806 // Uncomment for using LPD8806
+//strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
+//Modified for 3 strips support (for now)
+#define LEDPIN 14
+#define LEDPIN2 27
+#define LEDPIN3 26
+//#define USE_APA102 // Uncomment for using APA102 LEDs.
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
 //#define WLED_USE_5CH  //5 Channel H801 for cold and warm white
@@ -20,7 +22,7 @@
 
 //END CONFIGURATION
 
-#if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
+#ifdef USE_APA102
  #define CLKPIN 0
  #define DATAPIN 2
  #if BTNPIN == CLKPIN || BTNPIN == DATAPIN
@@ -54,25 +56,28 @@
 #ifdef ARDUINO_ARCH_ESP32
  #ifdef USE_APA102
   #define PIXELMETHOD DotStarMethod
- #elif defined(USE_WS2801)
-  #define PIXELMETHOD NeoWs2801Method
- #elif defined(USE_LPD8806)
-  #define PIXELMETHOD Lpd8806Method
  #else
   #define PIXELMETHOD NeoEsp32Rmt0Ws2812xMethod
+  #define PIXELMETHOD2 NeoEsp32Rmt1Ws2812xMethod
+  #define PIXELMETHOD3 NeoEsp32Rmt2Ws2812xMethod
+  //#define PIXELMETHOD NeoWs2813Method
+  //#define PIXELMETHOD2 NeoWs2813Method
+  //#define PIXELMETHOD3 NeoWs2813Method
  #endif
 #else //esp8266
  //autoselect the right method depending on strip pin
  #ifdef USE_APA102
   #define PIXELMETHOD DotStarMethod
- #elif defined(USE_WS2801)
-  #define PIXELMETHOD NeoWs2801Method
- #elif defined(USE_LPD8806)
-  #define PIXELMETHOD Lpd8806Method
+  #define PIXELMETHOD2 DotStarMethod
+  #define PIXELMETHOD3 DotStarMethod
  #elif LEDPIN == 2
   #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
+  #define PIXELMETHOD2 NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
+  #define PIXELMETHOD3 NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
  #elif LEDPIN == 3
   #define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
+  #define PIXELMETHOD2 NeoEsp8266Dma800KbpsMethod
+  #define PIXELMETHOD3 NeoEsp8266Dma800KbpsMethod
  #else
   #define PIXELMETHOD NeoEsp8266BitBang800KbpsMethod
   #pragma message "Software BitBang will be used because of your selected LED pin. This may cause flicker. Use GPIO 2 or 3 for best results."
@@ -84,9 +89,6 @@
 #ifdef USE_APA102
  #define PIXELFEATURE3 DotStarBgrFeature
  #define PIXELFEATURE4 DotStarLbgrFeature
-#elif defined(USE_LPD8806)
- #define PIXELFEATURE3 Lpd8806GrbFeature 
- #define PIXELFEATURE4 Lpd8806GrbFeature 
 #else
  #define PIXELFEATURE3 NeoGrbFeature
  #define PIXELFEATURE4 NeoGrbwFeature
@@ -110,6 +112,10 @@ public:
     // initialize each member to null
     _pGrb(NULL),
     _pGrbw(NULL),
+    _pGrb2(NULL),
+    _pGrbw2(NULL),
+    _pGrb3(NULL),
+    _pGrbw3(NULL),
     _type(NeoPixelType_None)
   {
 
@@ -128,21 +134,30 @@ public:
     switch (_type)
     {
       case NeoPixelType_Grb:
-      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
+      #ifdef USE_APA102
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
       #else
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, LEDPIN);
+        _pGrb2 = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD2>(countPixels, LEDPIN2);
+        _pGrb3 = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD3>(countPixels, LEDPIN3);
       #endif
         _pGrb->Begin();
+        _pGrb2->Begin();
+        _pGrb3->Begin();
       break;
 
       case NeoPixelType_Grbw:
-      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
+      #ifdef USE_APA102
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
       #else
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, LEDPIN);
+        _pGrbw2 = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD2>(countPixels, LEDPIN2);
+        _pGrbw3 = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD3>(countPixels, LEDPIN3);
       #endif
-        _pGrbw->Begin();
+        _pGrbw->Begin();                
+        _pGrbw2->Begin();        
+        _pGrbw3->Begin();        
+
       break;
     }
 
@@ -217,8 +232,8 @@ public:
     byte b;
     switch (_type)
     {
-      case NeoPixelType_Grb:  _pGrb->Show();  break;
-      case NeoPixelType_Grbw: _pGrbw->Show(); break;
+      case NeoPixelType_Grb:  _pGrb->Show();  _pGrb2->Show();  _pGrb3->Show();   break;
+      case NeoPixelType_Grbw:  _pGrbw->Show();  _pGrbw2->Show();  _pGrbw3->Show();   break;
     }
   }
 
@@ -227,6 +242,8 @@ public:
     switch (_type) {
       case NeoPixelType_Grb: {
         _pGrb->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
+        _pGrb2->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
+        _pGrb3->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
         #ifdef WLED_USE_ANALOG_LEDS
           if (indexPixel != 0) return; //set analog LEDs from first pixel
           byte b = _pGrb->GetBrightness();
@@ -235,11 +252,9 @@ public:
       }
       break;
       case NeoPixelType_Grbw: {
-        #ifdef USE_LPD8806
-        _pGrbw->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
-        #else
         _pGrbw->SetPixelColor(indexPixel, color);
-        #endif
+        _pGrbw2->SetPixelColor(indexPixel, color);
+        _pGrbw3->SetPixelColor(indexPixel, color);
         #ifdef WLED_USE_ANALOG_LEDS      
           if (indexPixel != 0) return; //set analog LEDs from first pixel
           byte b = _pGrbw->GetBrightness();
@@ -271,8 +286,8 @@ public:
   void SetBrightness(byte b)
   {
     switch (_type) {
-      case NeoPixelType_Grb: _pGrb->SetBrightness(b);   break;
-      case NeoPixelType_Grbw:_pGrbw->SetBrightness(b);  break;
+      case NeoPixelType_Grb: _pGrb->SetBrightness(b);  _pGrb2->SetBrightness(b);  _pGrb3->SetBrightness(b);   break;
+      case NeoPixelType_Grbw:_pGrbw->SetBrightness(b);  _pGrbw2->SetBrightness(b);  _pGrbw3->SetBrightness(b);  break;
     }
   }
 
@@ -294,12 +309,16 @@ private:
   // have a member for every possible type
   NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>*  _pGrb;
   NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>* _pGrbw;
+  NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD2>*  _pGrb2;
+  NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD2>* _pGrbw2;
+  NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD3>*  _pGrb3;
+  NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD3>* _pGrbw3;
 
   void cleanup()
   {
     switch (_type) {
-      case NeoPixelType_Grb:  delete _pGrb ; _pGrb  = NULL; break;
-      case NeoPixelType_Grbw: delete _pGrbw; _pGrbw = NULL; break;
+      case NeoPixelType_Grb:  delete _pGrb ; _pGrb  = NULL;   delete _pGrb2 ; _pGrb2  = NULL;   delete _pGrb3 ; _pGrb3  = NULL;break;
+      case NeoPixelType_Grbw: delete _pGrbw; _pGrbw = NULL;   delete _pGrbw2; _pGrbw2 = NULL;   delete _pGrbw3; _pGrbw3 = NULL ;break;
     }
   }
 };
