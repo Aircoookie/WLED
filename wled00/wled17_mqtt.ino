@@ -93,8 +93,17 @@ void publishMqtt()
   strcat(subuf, "/status");
   mqtt->publish(subuf, 0, true, "online");
 
+#ifndef WLED_MQTT_JSON
   char apires[1024];
   XML_response(nullptr, apires);
+#else
+  #define APIRESSIZE 256
+  char apires[APIRESSIZE];       // withoutsegments the array is only about 160 bytes long
+  AsyncJsonResponse* response = new AsyncJsonResponse(APIRESSIZE);
+  JsonObject state = response->getRoot();
+  serializeState(state, false);  // do not serialize the segments, only the global items
+  serializeJson(state, apires);
+#endif
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/v");
   mqtt->publish(subuf, 0, true, apires);
