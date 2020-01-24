@@ -2970,8 +2970,9 @@ uint16_t WS2812FX::mode_plasma(void) {
   for (int i = 0; i < SEGLEN; i++) {   // For each of the LED's in the strand, set color &  brightness based on a wave as follows:
     uint8_t colorIndex = cubicwave8((i*(1+ 3*(SEGMENT.speed >> 5)))+(thisPhase) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
                              + cos8((i*(1+ 2*(SEGMENT.speed >> 5)))+(thatPhase) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
-    uint8_t thisBright = qsub8(colorIndex, beatsin8(6,0,128));
-    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(colorIndex, false, false, 0), thisBright));
+    uint8_t thisBright = qsub8(colorIndex, beatsin8(6,0, (255 - SEGMENT.intensity)|0x01 ));
+    CRGB color = ColorFromPalette(currentPalette, colorIndex, thisBright, LINEARBLEND);
+    setPixelColor(i, color.red, color.green, color.blue);
   }
 
   return FRAMETIME;
