@@ -378,7 +378,6 @@ void decodeIR6(uint32_t code)
           case 10:colorFromUint32(COLOR_PURPLE);    break;
           case 11:colorFromUint32(COLOR_PINK);      break;
           case 12:colorFromUint32(COLOR_WHITE);      break;
-            break;
             default:break;
 
         }
