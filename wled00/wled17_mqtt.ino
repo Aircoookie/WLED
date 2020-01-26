@@ -103,6 +103,7 @@ void publishMqtt()
   JsonObject state = response->getRoot();
   serializeState(state, false);  // do not serialize the segments, only the global items
   serializeJson(state, apires);
+  delete response; response = NULL;
 #endif
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/v");
