@@ -1025,15 +1025,19 @@ uint16_t WS2812FX::larson_scanner(bool dual) {
 
 
 /*
- * Firing comets from one end.
+ * Firing comets from one end. "Lighthouse"
  */
 uint16_t WS2812FX::mode_comet(void) {
-  uint16_t counter = now * (SEGMENT.speed >>3) +1;
+  uint16_t counter = now * ((SEGMENT.speed >>2) +1);
   uint16_t index = counter * SEGLEN >> 16;
+  if (SEGENV.call == 0) SEGENV.aux0 = index;
 
   fade_out(SEGMENT.intensity);
 
-  setPixelColor( index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
+  for (uint16_t i = SEGENV.aux0; i <= index ; i++) {
+     setPixelColor( i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+  }
+  SEGENV.aux0 = index;
 
   return FRAMETIME;
 }
