@@ -9,7 +9,7 @@
 //#define USE_LPD8806 // Uncomment for using LPD8806
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
-//#define WLED_USE_5CH  //5 Channel H801 for cold and warm white
+//#define WLED_USE_5CH_LEDS  //5 Channel H801 for cold and warm white
 
 #define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
 #define IR_PIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0

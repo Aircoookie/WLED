@@ -535,6 +535,7 @@ void loop() {
     if (!offMode) strip.service();
   }
   yield();
+  MDNS.update();
   if (millis() - lastMqttReconnectAttempt > 30000) initMqtt();
 
   //DEBUG serial logging
