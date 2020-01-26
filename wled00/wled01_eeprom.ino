@@ -226,8 +226,6 @@ void saveSettingsToEEPROM()
     saveCurrPresetCycConf = false;
   }
 
-  writeStringToEEPROM(2220, blynkApiKey, 35);
-
   for (int i = 0; i < 8; ++i)
   {
     EEPROM.write(2260 + i, timerHours[i]  );
@@ -492,9 +490,6 @@ void loadSettingsFromEEPROM(bool first)
 
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
-
-  readStringFromEEPROM(2220, blynkApiKey, 35);
-  if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
 
   //user MOD memory
   //2944 - 3071 reserved

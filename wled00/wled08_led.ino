@@ -166,7 +166,6 @@ void updateInterfaces(uint8_t callMode)
     espalexaDevice->setColor(col[0], col[1], col[2]);
   }
   #endif
-  if (callMode != 9 && callMode != 5) updateBlynk();
   doPublishMqtt = true;
   lastInterfaceUpdate = millis();
 }
@@ -237,7 +236,6 @@ void handleNightlight()
         bri = nightlightTargetBri;
         colorUpdated(5);
       }
-      updateBlynk();
       if (bri == 0) briLast = briNlT;
     }
   } else if (nightlightActiveOld) //early de-init

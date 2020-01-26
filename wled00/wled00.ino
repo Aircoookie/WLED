@@ -18,7 +18,6 @@
 
 //You need to choose some of these features to disable:
 //#define WLED_DISABLE_ALEXA       //saves 11kb
-//#define WLED_DISABLE_BLYNK       //saves 6kb
 //#define WLED_DISABLE_HUESYNC     //saves 4kb
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
 #define WLED_ENABLE_MQTT           //saves 12kb
@@ -61,9 +60,6 @@
  #define ESPALEXA_MAXDEVICES 1
  //#define ESPALEXA_DEBUG
  #include "src/dependencies/espalexa/Espalexa.h"
-#endif
-#ifndef WLED_DISABLE_BLYNK
- #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 #include "src/dependencies/e131/ESPAsyncE131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
@@ -169,8 +165,6 @@ bool notifyTwice  = false;                    //notifications use UDP: enable if
 
 bool alexaEnabled = true;                     //enable device discovery by Amazon Echo
 char alexaInvocationName[33] = "Light";       //speech control name of device. Choose something voice-to-text can understand
-
-char blynkApiKey[36] = "";                    //Auth token for Blynk server. If empty, no connection will be made
 
 uint16_t realtimeTimeoutMs = 2500;            //ms timeout of realtime mode before returning to normal mode
 int  arlsOffset = 0;                          //realtime LED offset
@@ -333,9 +327,6 @@ byte timerMinutes[] = {0,0,0,0,0,0,0,0};
 byte timerMacro[]   = {0,0,0,0,0,0,0,0};
 byte timerWeekday[] = {255,255,255,255,255,255,255,255}; //weekdays to activate on
 //bit pattern of arr elem: 0b11111111: sun,sat,fri,thu,wed,tue,mon,validity
-
-//blynk
-bool blynkEnabled = false;
 
 //preset cycling
 bool presetCyclingEnabled = false;
@@ -521,7 +512,6 @@ void loop() {
     yield();
 
     handleHue();
-    handleBlynk();
 
     yield();
     if (!offMode) strip.service();
