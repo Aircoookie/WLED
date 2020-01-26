@@ -1,5 +1,7 @@
 # Almost universal controller board for outdoor applications
 This usermod is using ideas from @mrVanboy and @400killer
+## Project repository
+-   [Original repository](https://github.com/srg74/Controller-for-WLED-firmware) - Main controller repository
 ## Features
 *   SSD1306 128x32 and 128x64 I2C OLED display
 *   On screen IP address, SSID and controller status (e.g. ON or OFF, recent effect)
@@ -27,7 +29,7 @@ Uncomment `U8g2@~2.27.3`,`DallasTemperature@~3.8.0`,`OneWire@~2.3.5 under` `[com
 ...
 lib_deps_external =
   ...
-  #For use SSD1306 0.91" OLED display uncomment following
+  #For use SSD1306 OLED display uncomment following
   U8g2@~2.27.3
   #For Dallas sensor uncomment following 2 lines
   DallasTemperature@~3.8.0

@@ -17,15 +17,9 @@ long lastMeasure = 0;
 // or check the gallery:
 // https://github.com/olikraus/u8g2/wiki/gallery
 // --> First choise of cheap I2C OLED 128X32
-<<<<<<< HEAD
 U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
 // --> Second choise of cheap I2C OLED 128X64
 //U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
-=======
-//U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
-// --> Second choise of cheap I2C OLED 128X64
-U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
->>>>>>> 1680c014057bb993974950f37b14369b398ca647
 // gets called once at boot. Do all initialization that doesn't depend on
 // network here
 void userSetup() {
