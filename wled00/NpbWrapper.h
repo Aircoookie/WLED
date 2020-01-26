@@ -137,9 +137,9 @@ public:
       #ifdef USE_APA102
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
       #else
-        _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, LEDPIN);
-        _pGrb2 = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD2>(countPixels, LEDPIN2);
-        _pGrb3 = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD3>(countPixels, LEDPIN3);
+        _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(25, LEDPIN);
+        _pGrb2 = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD2>(40, LEDPIN2);
+        _pGrb3 = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD3>(80, LEDPIN3);
       #endif
         _pGrb->Begin();
         _pGrb2->Begin();
