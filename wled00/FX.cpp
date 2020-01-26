@@ -1172,23 +1172,29 @@ uint16_t WS2812FX::mode_loading(void) {
 //American Police Light with all LEDs Red and Blue 
 uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
 {
+
+
   uint16_t counter = now * ((SEGMENT.speed >> 3) +1);
   uint16_t idexR = (counter * SEGLEN) >> 16;
   if (idexR >= SEGLEN) idexR = 0;
 
   uint16_t topindex = SEGLEN >> 1;
   uint16_t idexB = idexR + topindex;
+  if (SEGENV.call == 0) SEGENV.aux0 = idexR; 
 
   if (idexR > topindex) idexB -= SEGLEN;
   if (idexB >= SEGLEN) idexB = 0; //otherwise overflow on odd number of LEDs
 
-  uint8_t gap = (SEGMENT.speed / ((SEGLEN >> 3) +1));
-  for (uint8_t i = 0; i <= gap ; i++) {
+
+  uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
+  for (uint8_t i = 0; i < gap ; i++) {
     if ((idexR - i) < 0) idexR = SEGLEN + i;
     if ((idexB - i) < 0) idexB = SEGLEN + i;
     setPixelColor(idexR-i, color1);
     setPixelColor(idexB-i, color2);
   }
+  SEGENV.aux0 = idexR;
+  SEGENV.aux1 = idexB;
   
   return FRAMETIME;
 }
