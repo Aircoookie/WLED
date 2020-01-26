@@ -83,6 +83,7 @@ void decodeIR(uint32_t code)
       case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
       case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
       case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
+      case 5: decodeIR21(code);    break;  // white 21-key remote  
       default: return;
     }
   }
@@ -146,10 +147,10 @@ void decodeIR24OLD(uint32_t code)
     case IR24_OLD_MAGENTA   : colorFromUint32(COLOR_MAGENTA);      break;
     case IR24_OLD_PINK      : colorFromUint32(COLOR_PINK);         break;
     case IR24_OLD_WHITE     : colorFromUint32(COLOR_WHITE);        effectCurrent = 0;     break;
-    case IR24_OLD_FLASH     : if (!applyPreset(1)) effectCurrent = FX_MODE_COLORTWINKLE;  effectPalette = 0; break;
-    case IR24_OLD_STROBE    : if (!applyPreset(2)) effectCurrent = FX_MODE_RAINBOW_CYCLE; effectPalette = 0; break;
-    case IR24_OLD_FADE      : if (!applyPreset(3)) effectCurrent = FX_MODE_BREATH;        effectPalette = 0; break;
-    case IR24_OLD_SMOOTH    : if (!applyPreset(4)) effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; break;
+    case IR24_OLD_FLASH     : if (!applyPreset(1)) { effectCurrent = FX_MODE_COLORTWINKLE;  effectPalette = 0; } break;
+    case IR24_OLD_STROBE    : if (!applyPreset(2)) { effectCurrent = FX_MODE_RAINBOW_CYCLE; effectPalette = 0; } break;
+    case IR24_OLD_FADE      : if (!applyPreset(3)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
+    case IR24_OLD_SMOOTH    : if (!applyPreset(4)) { effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; } break;
     default: return;
   }
   lastValidCode = code;
@@ -179,13 +180,13 @@ void decodeIR24CT(uint32_t code)
     case IR24_CT_PURPLE     : colorFromUint32(COLOR_PURPLE);       break;
     case IR24_CT_MAGENTA    : colorFromUint32(COLOR_MAGENTA);      break;
     case IR24_CT_PINK       : colorFromUint32(COLOR_PINK);         break;
-    case IR24_CT_COLDWHITE  : colorFromUint32(COLOR_COLDWHITE);    effectCurrent = 0;  break;
-    case IR24_CT_WARMWHITE  : colorFromUint32(COLOR_WARMWHITE);    effectCurrent = 0;  break;
-    case IR24_CT_CTPLUS     : colorFromUint32(COLOR_COLDWHITE2);   effectCurrent = 0;  break;
-    case IR24_CT_CTMINUS    : colorFromUint32(COLOR_WARMWHITE2);   effectCurrent = 0;  break;
+    case IR24_CT_COLDWHITE  : colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0;  break;
+    case IR24_CT_WARMWHITE  : colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0;  break;
+    case IR24_CT_CTPLUS     : colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0;  break;
+    case IR24_CT_CTMINUS    : colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0;  break;
     case IR24_CT_MEMORY   : {
       if (col[3] > 0) col[3] = 0; 
-      else colorFromUint32(COLOR_NEUTRALWHITE); effectCurrent = 0; }                    break;
+      else colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }                   break;
     default: return; 
   }
   lastValidCode = code;
@@ -242,10 +243,10 @@ void decodeIR40(uint32_t code)
     case IR40_SLOW         : relativeChange(&effectSpeed, -10, 5);                       break;
     case IR40_JUMP7        : relativeChange(&effectIntensity, 10);                       break;
     case IR40_AUTO         : relativeChange(&effectIntensity, -10, 5);                   break;
-    case IR40_JUMP3        : if (!applyPreset(1)) effectCurrent = FX_MODE_STATIC;        effectPalette = 0; break;
-    case IR40_FADE3        : if (!applyPreset(2)) effectCurrent = FX_MODE_BREATH;        effectPalette = 0; break;
-    case IR40_FADE7        : if (!applyPreset(3)) effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; break;
-    case IR40_FLASH        : if (!applyPreset(4)) effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; break;
+    case IR40_JUMP3        : if (!applyPreset(1)) { effectCurrent = FX_MODE_STATIC;        effectPalette = 0; } break;
+    case IR40_FADE3        : if (!applyPreset(2)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
+    case IR40_FADE7        : if (!applyPreset(3)) { effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; } break;
+    case IR40_FLASH        : if (!applyPreset(4)) { effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; } break;
   }
   lastValidCode = code;
   colorUpdated(2); //for notifier, IR is considered a button input 
@@ -298,12 +299,12 @@ void decodeIR44(uint32_t code)
     case IR44_BLUEMINUS   : relativeChange(&effectIntensity, -10, 5);                   break;
     case IR44_QUICK       : relativeChange(&effectSpeed, 10);                           break;
     case IR44_SLOW        : relativeChange(&effectSpeed, -10, 5);                       break;
-    case IR44_DIY1        : if (!applyPreset(1)) effectCurrent = FX_MODE_STATIC;        effectPalette = 0; break;
-    case IR44_DIY2        : if (!applyPreset(2)) effectCurrent = FX_MODE_BREATH;        effectPalette = 0; break;
-    case IR44_DIY3        : if (!applyPreset(3)) effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; break;
-    case IR44_DIY4        : if (!applyPreset(4)) effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; break;
-    case IR44_DIY5        : if (!applyPreset(5)) effectCurrent = FX_MODE_METEOR_SMOOTH; effectPalette = 0; break;
-    case IR44_DIY6        : if (!applyPreset(6)) effectCurrent = FX_MODE_RAIN;          effectPalette = 0; break;
+    case IR44_DIY1        : if (!applyPreset(1)) { effectCurrent = FX_MODE_STATIC;        effectPalette = 0; } break;
+    case IR44_DIY2        : if (!applyPreset(2)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
+    case IR44_DIY3        : if (!applyPreset(3)) { effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; } break;
+    case IR44_DIY4        : if (!applyPreset(4)) { effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; } break;
+    case IR44_DIY5        : if (!applyPreset(5)) { effectCurrent = FX_MODE_METEOR_SMOOTH; effectPalette = 0; } break;
+    case IR44_DIY6        : if (!applyPreset(6)) { effectCurrent = FX_MODE_RAIN;          effectPalette = 0; } break;
     case IR44_AUTO        : effectCurrent = FX_MODE_STATIC;                             break;
     case IR44_FLASH       : effectCurrent = FX_MODE_PALETTE;                            break;
     case IR44_JUMP3       : bri = 63;                                                   break;
@@ -315,6 +316,35 @@ void decodeIR44(uint32_t code)
   colorUpdated(2); //for notifier, IR is considered a button input 
 }
 
+void decodeIR21(uint32_t code)
+{
+    switch (code) {
+    case IR21_BRIGHTER:  relativeChange(&bri, 10);         break;
+    case IR21_DARKER:    relativeChange(&bri, -10, 5);     break;
+    case IR21_OFF:       briLast = bri; bri = 0;           break;
+    case IR21_ON:        bri = briLast;                    break;
+    case IR21_RED:       colorFromUint32(COLOR_RED);       break;
+    case IR21_REDDISH:   colorFromUint32(COLOR_REDDISH);   break;
+    case IR21_ORANGE:    colorFromUint32(COLOR_ORANGE);    break;
+    case IR21_YELLOWISH: colorFromUint32(COLOR_YELLOWISH); break;
+    case IR21_GREEN:     colorFromUint32(COLOR_GREEN);     break;
+    case IR21_GREENISH:  colorFromUint32(COLOR_GREENISH);  break;
+    case IR21_TURQUOISE: colorFromUint32(COLOR_TURQUOISE); break;
+    case IR21_CYAN:      colorFromUint32(COLOR_CYAN);      break;
+    case IR21_BLUE:      colorFromUint32(COLOR_BLUE);      break;
+    case IR21_DEEPBLUE:  colorFromUint32(COLOR_DEEPBLUE);  break;
+    case IR21_PURPLE:    colorFromUint32(COLOR_PURPLE);    break;
+    case IR21_PINK:      colorFromUint32(COLOR_PINK);      break;
+    case IR21_WHITE:     colorFromUint32(COLOR_WHITE);           effectCurrent = 0;  break;
+    case IR21_FLASH:     if (!applyPreset(1)) { effectCurrent = FX_MODE_COLORTWINKLE;  effectPalette = 0; } break;
+    case IR21_STROBE:    if (!applyPreset(2)) { effectCurrent = FX_MODE_RAINBOW_CYCLE; effectPalette = 0; } break;
+    case IR21_FADE:      if (!applyPreset(3)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
+    case IR21_SMOOTH:    if (!applyPreset(4)) { effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; } break;
+    default: return;
+    }
+    lastValidCode = code;
+    colorUpdated(2); //for notifier, IR is considered a button input
+}
 
 void initIR()
 {

@@ -248,7 +248,7 @@ public:
             if        (color.R == 255 & color.G == 255 && color.B == 255 && color.W == 255) {  
               SetRgbwPwm(0, 0, 0,                  0, color.W * b / 255);
             } else if (color.R == 127 & color.G == 127 && color.B == 127 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 512, colorW.W * b / 255);
+              SetRgbwPwm(0, 0, 0, color.W * b / 512, color.W * b / 255);
             } else if (color.R ==   0 & color.G ==   0 && color.B ==   0 && color.W == 255) {  
               SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
             } else if (color.R == 130 & color.G ==  90 && color.B ==   0 && color.W == 255) {  
@@ -256,7 +256,7 @@ public:
             } else if (color.R == 255 & color.G == 153 && color.B ==   0 && color.W == 255) {  
               SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
             } else {  // not only white colors
-              SetRgbwPwm(color.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, color.W * b / 255);
+              SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
             }
           #else
             SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
