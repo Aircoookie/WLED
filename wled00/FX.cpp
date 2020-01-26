@@ -1172,29 +1172,25 @@ uint16_t WS2812FX::mode_loading(void) {
 //American Police Light with all LEDs Red and Blue 
 uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
 {
-
-
-  uint16_t counter = now * ((SEGMENT.speed >> 3) +1);
+  uint16_t counter = now * ((SEGMENT.speed >> 2) +1);
   uint16_t idexR = (counter * SEGLEN) >> 16;
   if (idexR >= SEGLEN) idexR = 0;
 
   uint16_t topindex = SEGLEN >> 1;
   uint16_t idexB = idexR + topindex;
-  if (SEGENV.call == 0) SEGENV.aux0 = idexR; 
-
+  if (SEGENV.call == 0) SEGENV.aux0 = idexR;
+  
   if (idexR > topindex) idexB -= SEGLEN;
   if (idexB >= SEGLEN) idexB = 0; //otherwise overflow on odd number of LEDs
 
-
   uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
   for (uint8_t i = 0; i < gap ; i++) {
-    if ((idexR - i) < 0) idexR = SEGLEN + i;
-    if ((idexB - i) < 0) idexB = SEGLEN + i;
+    if ((idexR - i) < 0) idexR = SEGLEN-1 + i;
+    if ((idexB - i) < 0) idexB = SEGLEN-1 + i;
     setPixelColor(idexR-i, color1);
     setPixelColor(idexB-i, color2);
   }
   SEGENV.aux0 = idexR;
-  SEGENV.aux1 = idexB;
   
   return FRAMETIME;
 }
@@ -2497,21 +2493,32 @@ uint16_t WS2812FX::mode_bouncing_balls(void) {
 */
 uint16_t WS2812FX::sinelon_base(bool dual, bool rainbow=false) {
   fade_out(SEGMENT.intensity);
-  int pos = beatsin16(SEGMENT.speed/10,0,SEGLEN-1);
-  
+  uint16_t pos = beatsin16(SEGMENT.speed/10,0,SEGLEN-1);
+  if (SEGENV.call == 0) SEGENV.aux0 = pos;
   uint32_t color1 = color_from_palette(pos, true, false, 0);
+  uint32_t color2 = SEGCOLOR(2);
   if (rainbow) {
     color1 = color_wheel((pos & 0x07) * 32);
   }
   setPixelColor(pos, color1);
-
   if (dual) {
-    uint32_t color2 = SEGCOLOR(2);
-   
     if (!color2) color2 = color_from_palette(pos, true, false, 0);
     if (rainbow) color2 = color1; //rainbow
-
     setPixelColor(SEGLEN-1-pos, color2);
+  }
+  if (SEGENV.aux0 != pos) { 
+    if (SEGENV.aux0 < pos) {
+      for (uint16_t i = SEGENV.aux0; i < pos ; i++) {
+        setPixelColor(i, color1);
+        setPixelColor(SEGLEN-1-i, color2);
+      }
+    } else {
+      for (uint16_t i = SEGENV.aux0; i > pos ; i--) {
+        setPixelColor(i, color1);
+        setPixelColor(SEGLEN-1-i, color2);
+      }
+    }
+    SEGENV.aux0 = pos;
   }
 
   return FRAMETIME;
