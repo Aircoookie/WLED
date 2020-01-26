@@ -19,7 +19,6 @@
 //You need to choose some of these features to disable:
 //#define WLED_DISABLE_ALEXA       //saves 11kb
 //#define WLED_DISABLE_BLYNK       //saves 6kb
-//#define WLED_DISABLE_CRONIXIE    //saves 3kb
 //#define WLED_DISABLE_HUESYNC     //saves 4kb
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
 #define WLED_ENABLE_MQTT           //saves 12kb
@@ -214,9 +213,6 @@ byte analogClock12pixel = 0;                  //The pixel in your strip where "m
 bool analogClockSecondsTrail = false;         //Display seconds as trail of LEDs instead of a single pixel
 bool analogClock5MinuteMarks = false;         //Light pixels at every 5-minute position
 
-char cronixieDisplay[7] = "HHMMSS";           //Cronixie Display mask. See wled13_cronixie.ino
-bool cronixieBacklight = true;                //Allow digits to be back-illuminated
-
 bool countdownMode = false;                   //Clock will count down towards date
 byte countdownYear = 20, countdownMonth = 1;  //Countdown target date, year is last two digits
 byte countdownDay  =  1, countdownHour  = 0;
@@ -325,10 +321,6 @@ byte overlayCurrent = overlayDefault;
 byte overlaySpeed = 200;
 unsigned long overlayRefreshMs = 200;
 unsigned long overlayRefreshedTime;
-
-//cronixie
-byte dP[]{0,0,0,0,0,0};
-bool cronixieInit = false;
 
 //countdown
 unsigned long countdownTime = 1514764800L;

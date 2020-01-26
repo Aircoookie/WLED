@@ -399,9 +399,6 @@ class WS2812FX {
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
       setBrightness(uint8_t b),
-      driverModeCronixie(bool b),
-      setCronixieDigits(byte* d),
-      setCronixieBacklight(bool b),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setShowCallback(show_callback cb),
       setTransitionMode(bool t),
@@ -588,8 +585,6 @@ class WS2812FX {
       _cronixieBacklightEnabled,
       _skipFirstMode,
       _triggered;
-
-    byte _cronixieDigits[6];
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
 

@@ -191,10 +191,6 @@ void saveSettingsToEEPROM()
   EEPROM.write(2161, countdownSec);
   setCountdown();
 
-  writeStringToEEPROM(2165, cronixieDisplay, 6);
-  EEPROM.write(2171, cronixieBacklight);
-  setCronixie();
-
   EEPROM.write(2175, macroBoot);
   EEPROM.write(2176, macroAlexaOn);
   EEPROM.write(2177, macroAlexaOff);
@@ -384,9 +380,6 @@ void loadSettingsFromEEPROM(bool first)
     countdownMin = EEPROM.read(2160);
     countdownSec = EEPROM.read(2161);
     setCountdown();
-
-    readStringFromEEPROM(2165, cronixieDisplay, 6);
-    cronixieBacklight = EEPROM.read(2171);
 
     macroBoot = EEPROM.read(2175);
     macroAlexaOn = EEPROM.read(2176);

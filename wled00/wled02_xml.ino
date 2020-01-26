@@ -321,8 +321,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"OM",analogClock12pixel);
     sappend('c',"OS",analogClockSecondsTrail);
     sappend('c',"O5",analogClock5MinuteMarks);
-    sappends('s',"CX",cronixieDisplay);
-    sappend('c',"CB",cronixieBacklight);
     sappend('c',"CE",countdownMode);
     sappend('v',"CY",countdownYear);
     sappend('v',"CI",countdownMonth);

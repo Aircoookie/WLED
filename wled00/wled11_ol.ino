@@ -1,32 +1,15 @@
 /*
  * Used to draw clock overlays over the strip
  */
- 
-void initCronixie()
-{
-  if (overlayCurrent == 3 && !cronixieInit)
-  {
-    strip.driverModeCronixie(true);
-    strip.setCronixieBacklight(cronixieBacklight);
-    setCronixie();
-    cronixieInit = true;
-  } else if (cronixieInit && overlayCurrent != 3)
-  {
-    strip.driverModeCronixie(false);
-    cronixieInit = false; 
-  }
-}
 
 
 void handleOverlays()
 {
   if (millis() - overlayRefreshedTime > overlayRefreshMs)
   {
-    initCronixie();
     updateLocalTime();
     checkTimers();
     checkCountdown();
-    if (overlayCurrent == 3) _overlayCronixie();//Diamex cronixie clock kit
     overlayRefreshedTime = millis();
   }
 }

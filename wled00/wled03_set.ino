@@ -208,13 +208,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClock5MinuteMarks = request->hasArg("O5");
     analogClockSecondsTrail = request->hasArg("OS");
 
-    strcpy(cronixieDisplay,request->arg("CX").c_str());
-    bool cbOld = cronixieBacklight;
-    cronixieBacklight = request->hasArg("CB");
-    if (cbOld != cronixieBacklight && overlayCurrent == 3)
-    {
-      strip.setCronixieBacklight(cronixieBacklight); overlayRefreshedTime = 0;
-    }
     countdownMode = request->hasArg("CE");
     countdownYear = request->arg("CY").toInt();
     countdownMonth = request->arg("CI").toInt();
@@ -607,27 +600,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
     applyPreset(presetCycCurr, presetApplyBri, presetApplyCol, presetApplyFx);
   }
-
-  //cronixie
-  #ifndef WLED_DISABLE_CRONIXIE
-  //mode, 1 countdown
-  pos = req.indexOf("NM=");
-  if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
-  
-  pos = req.indexOf("NX="); //sets digits to code
-  if (pos > 0) {
-    strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
-    setCronixie();
-  }
-
-  pos = req.indexOf("NB=");
-  if (pos > 0) //sets backlight
-  {
-    presetApplyFx = (req.charAt(pos+3) != '0');
-    if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
-    overlayRefreshedTime = 0;
-  }
-  #endif
 
   pos = req.indexOf("U0="); //user var 0
   if (pos > 0) {
