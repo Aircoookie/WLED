@@ -1034,10 +1034,13 @@ uint16_t WS2812FX::mode_comet(void) {
 
   fade_out(SEGMENT.intensity);
 
-  for (uint16_t i = SEGENV.aux0; i <= index ; i++) {
-     setPixelColor( i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+  setPixelColor( index, color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
+  if (index > SEGENV.aux0) {
+    for (uint16_t i = SEGENV.aux0; i < index ; i++) {
+       setPixelColor( i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+    }
   }
-  SEGENV.aux0 = index;
+  SEGENV.aux0 = index++;
 
   return FRAMETIME;
 }
