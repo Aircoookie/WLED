@@ -2517,12 +2517,12 @@ uint16_t WS2812FX::sinelon_base(bool dual, bool rainbow=false) {
     if (SEGENV.aux0 < pos) {
       for (uint16_t i = SEGENV.aux0; i < pos ; i++) {
         setPixelColor(i, color1);
-        setPixelColor(SEGLEN-1-i, color2);
+        if (dual) setPixelColor(SEGLEN-1-i, color2);
       }
     } else {
       for (uint16_t i = SEGENV.aux0; i > pos ; i--) {
         setPixelColor(i, color1);
-        setPixelColor(SEGLEN-1-i, color2);
+        if (dual) setPixelColor(SEGLEN-1-i, color2);
       }
     }
     SEGENV.aux0 = pos;
