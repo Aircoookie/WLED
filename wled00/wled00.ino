@@ -83,19 +83,15 @@
  #endif
 #endif
 
-#ifdef ARDUINO_ARCH_ESP32
-  #undef WLED_USE_ANALOG_LEDS  // Solid RGBW not implemented for ESP32 yet
-#else
  #ifndef WLED_DISABLE_INFRARED
   #include <IRremoteESP8266.h>
   #include <IRrecv.h>
   #include <IRutils.h>
  #endif
-#endif
-
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2001071
+#define VERSION 2001281
+
 char versionString[] = "0.9.0-b2";
 
 
@@ -141,12 +137,12 @@ byte briS = 128;                              //default brightness
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
 byte nightlightDelayMins = 60;
 bool nightlightFade = true;                   //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
+bool nightlightColorFade = false;             //if enabled, light will gradually fade color from primary to secondary color.
 bool fadeTransition = true;                   //enable crossfading color transition
 bool enableSecTransition = true;              //also enable transition for secondary color
 uint16_t transitionDelay = 750;               //default crossfade duration in ms
 
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
-uint8_t disableNLeds = 0;                     //disables N LEDs between active nodes. (Useful for spacing out lights for more traditional christmas light look)
 byte briMultiplier =  100;                    //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 
@@ -276,6 +272,7 @@ uint32_t nightlightDelayMs = 10;
 uint8_t nightlightDelayMinsDefault = nightlightDelayMins;
 unsigned long nightlightStartTime;
 byte briNlT = 0;                              //current nightlight brightness
+byte colNlT[]{0, 0, 0, 0};                    //current nightlight color
 
 //brightness
 unsigned long lastOnTime = 0;
@@ -538,6 +535,9 @@ void loop() {
     if (!offMode) strip.service();
   }
   yield();
+  #ifdef ESP8266
+  MDNS.update();
+  #endif
   if (millis() - lastMqttReconnectAttempt > 30000) initMqtt();
 
   //DEBUG serial logging

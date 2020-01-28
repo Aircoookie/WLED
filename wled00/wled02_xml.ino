@@ -53,7 +53,9 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   }
   oappend("</wv><ws>");
   oappendi(colSec[3]);
-  oappend("</ws><cy>");
+  oappend("</ws><ps>");
+  oappendi((currentPreset < 1) ? 0:currentPreset);
+  oappend("</ps><cy>");
   oappendi(presetCyclingEnabled);
   oappend("</cy><ds>");
   if (realtimeActive)
@@ -237,7 +239,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);
-    sappend('v',"DL",disableNLeds);
   }
 
   if (subPage == 3)

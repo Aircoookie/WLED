@@ -10,7 +10,7 @@
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs!
 
 ### Features:
-- WS2812FX library integrated for almost 90 special effects  
+- WS2812FX library integrated for almost 100 special effects  
 - FastLED noise effects and palettes  
 - Modern UI with color, effect and segment controls  
 - Segments to set different effects and colors to parts of the LEDs  

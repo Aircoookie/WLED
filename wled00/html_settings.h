@@ -75,7 +75,8 @@ const char PAGE_settings_leds[] PROGMEM = R"=====(<!DOCTYPE html>
 <meta charset=utf-8>
 <meta name=viewport content="width=500">
 <title>LED Settings</title>
-<script>var d=document,laprev=55;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings")}function B(){window.open("/settings","_self")}function S(){GetV();setABL()}function enABL(){var a=d.getElementById("able").checked;d.Sf.LA.value=(a)?laprev:0;d.getElementById("abl").style.display=(a)?"inline":"none";d.getElementById("psu2").style.display=(a)?"inline":"none";if(d.Sf.LA.value>0){setABL()}}function enLA(){var a=d.Sf.LAsel.value;d.Sf.LA.value=a;d.getElementById("LAdis").style.display=(a==50)?"inline":"none";UI()}function setABL(){d.getElementById("able").checked=true;d.Sf.LAsel.value=50;switch(parseInt(d.Sf.LA.value)){case 0:d.getElementById("able").checked=false;enABL();break;case 30:d.Sf.LAsel.value=30;break;case 35:d.Sf.LAsel.value=35;break;case 55:d.Sf.LAsel.value=55;break;default:d.getElementById("LAdis").style.display="inline"}UI()}function UI(){var b=d.querySelectorAll(".wc"),a=b.length;for(i=0;i<a;i++){b[i].style.display=(d.getElementById("rgbw").checked)?"inline":"none"}d.getElementById("ledwarning").style.display=(d.Sf.LC.value>1000)?"inline":"none";d.getElementById("ampwarning").style.display=(d.Sf.MA.value>7200)?"inline":"none";if(d.Sf.LA.value>0){laprev=d.Sf.LA.value}var j=Math.ceil((100+d.Sf.LC.value*laprev)/500)/2;j=(j>5)?Math.ceil(j):j;var g="";var e=(d.Sf.LAsel.value==30);if(j<1.02&&!e){g="ESP 5V pin with 1A USB supply"}else{g+=e?"12V ":"5V ";g+=j;g+="A supply connected to LEDs"}var h=Math.ceil((100+d.Sf.LC.value*laprev)/1500)/2;h=(h>5)?Math.ceil(h):h;var c="(for most effects, ~";c+=h;c+="A is enough)<br>";d.getElementById("psu").innerHTML=g;d.getElementById("psu2").innerHTML=c}function GetV(){var d=document;
+<script>var d=document,laprev=55;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings")}function B(){window.open("/settings","_self")}function S(){GetV();setABL()}
+function enABL(){var a=d.getElementById("able").checked;d.Sf.LA.value=(a)?laprev:0;d.getElementById("abl").style.display=(a)?"inline":"none";d.getElementById("psu2").style.display=(a)?"inline":"none";if(d.Sf.LA.value>0){setABL()}}function enLA(){var a=d.Sf.LAsel.value;d.Sf.LA.value=a;d.getElementById("LAdis").style.display=(a==50)?"inline":"none";UI()}function setABL(){d.getElementById("able").checked=true;d.Sf.LAsel.value=50;switch(parseInt(d.Sf.LA.value)){case 0:d.getElementById("able").checked=false;enABL();break;case 30:d.Sf.LAsel.value=30;break;case 35:d.Sf.LAsel.value=35;break;case 55:d.Sf.LAsel.value=55;break;case 255:d.Sf.LAsel.value=255;break;default:d.getElementById("LAdis").style.display="inline"}UI()}function UI(){var b=d.querySelectorAll(".wc"),a=b.length;for(i=0;i<a;i++){b[i].style.display=(d.getElementById("rgbw").checked)?"inline":"none"}d.getElementById("ledwarning").style.display=(d.Sf.LC.value>1000)?"inline":"none";d.getElementById("ampwarning").style.display=(d.Sf.MA.value>7200)?"inline":"none";if(d.Sf.LA.value==255){laprev=12} else if(d.Sf.LA.value>0){laprev=d.Sf.LA.value}var j=Math.ceil((100+d.Sf.LC.value*laprev)/500)/2;j=(j>5)?Math.ceil(j):j;var g="";var e=(d.Sf.LAsel.value==30);var i=(d.Sf.LAsel.value==255);if(j<1.02&&!e&&!i){g="ESP 5V pin with 1A USB supply"}else{g+=e?"12V ":i?"WS2815 12V ":"5V ";g+=j;g+="A supply connected to LEDs"}var h=Math.ceil((100+d.Sf.LC.value*laprev)/1500)/2;h=(h>5)?Math.ceil(h):h;var c="(for most effects, ~";c+=h;c+="A is enough)<br>";d.getElementById("psu").innerHTML=g;d.getElementById("psu2").innerHTML=i?"":c}function GetV(){var d=document;
 %CSS%%SCSS%</head><body onload=S()>
 <form id=form_s name=Sf method=post>
 <div class=helpB><button type=button onclick=H()>?</button></div>
@@ -108,6 +109,7 @@ LED voltage (Max. current for a single LED):<br>
 <option value=55 selected>5V default (55mA)</option>
 <option value=35>5V efficient (35mA)</option>
 <option value=30>12V (30mA)</option>
+<option value=255>WS2815 (12mA)</option>
 <option value=50>Custom</option>
 </select><br>
 <span id=LAdis style=display:none>Custom max. current per LED: <input name=LA type=number min=0 max=255 id=la oninput=UI() required> mA<br></span>
@@ -123,6 +125,8 @@ Color order:
 <option value=1>RGB</option>
 <option value=2>BRG</option>
 <option value=3>RBG</option>
+<option value=4>BGR</option>
+<option value=5>GBR</option>
 </select>
 <h3>Defaults</h3>
 Turn LEDs on after power up/reset: <input type=checkbox name=BO><br>
@@ -150,9 +154,7 @@ Palette blending:
 <option value=3>None (not recommended)</option>
 </select><br>
 Reverse LED order (rotate 180): <input type=checkbox name=RV><br>
-Skip first LED: <input type=checkbox name=SL><br>
-Disable repeating N LEDs: <input type=number min=0 max=255 name=DL><br>
-(Turns off N LEDs between each lit one, spacing out effects)<hr>
+Skip first LED: <input type=checkbox name=SL><hr>
 <button type=button onclick=B()>Back</button><button type=submit>Save</button>
 </form></body></html>)=====";
 
@@ -187,7 +189,7 @@ const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
 On/Off button enabled: <input type="checkbox" name="BT"><br>
-Infrared receiver type (0 = disabled): <input name="IR" type="number" min="0" max="4" required><br>
+Infrared receiver type (0 = disabled): <input name="IR" type="number" min="0" max="6" required><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>

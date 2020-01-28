@@ -59,7 +59,7 @@
 #define SEGMENT          _segments[_segment_index]
 #define SEGCOLOR(x)      gamma32(_segments[_segment_index].colors[x])
 #define SEGENV           _segment_runtimes[_segment_index]
-#define SEGLEN           SEGMENT.length()
+#define SEGLEN           _virtualSegmentLength
 #define SEGACT           SEGMENT.stop
 #define SPEED_FORMULA_L  5 + (50*(255 - SEGMENT.speed))/SEGLEN
 #define RESET_RUNTIME    memset(_segment_runtimes, 0, sizeof(_segment_runtimes))
@@ -91,7 +91,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  96
+#define MODE_COUNT  99
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -189,7 +189,9 @@
 #define FX_MODE_SINELON_DUAL            93
 #define FX_MODE_SINELON_RAINBOW         94
 #define FX_MODE_POPCORN                 95
-
+#define FX_MODE_DRIP                    96
+#define FX_MODE_PLASMA                  97
+#define FX_MODE_PERCENT                 98
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -207,7 +209,7 @@ class WS2812FX {
       uint8_t palette;
       uint8_t mode;
       uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
-      uint8_t group, spacing;
+      uint8_t grouping, spacing;
       uint8_t opacity;
       uint32_t colors[NUM_COLORS];
       void setOption(uint8_t n, bool val)
@@ -234,6 +236,15 @@ class WS2812FX {
       uint16_t length()
       {
         return stop - start;
+      }
+      uint16_t groupLength()
+      {
+        return grouping + spacing;
+      }
+      uint16_t virtualLength()
+      {
+        uint16_t groupLen = groupLength();
+        return (length() + groupLen -1) / groupLen;
       }
     } segment;
 
@@ -365,6 +376,9 @@ class WS2812FX {
       _mode[FX_MODE_SINELON_DUAL]            = &WS2812FX::mode_sinelon_dual;
       _mode[FX_MODE_SINELON_RAINBOW]         = &WS2812FX::mode_sinelon_rainbow;
       _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
+      _mode[FX_MODE_DRIP]                    = &WS2812FX::mode_drip;
+      _mode[FX_MODE_PLASMA]                  = &WS2812FX::mode_plasma;
+      _mode[FX_MODE_PERCENT]                 = &WS2812FX::mode_percent;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -377,7 +391,7 @@ class WS2812FX {
     }
 
     void
-      init(bool supportWhite, uint16_t countPixels, bool skipFirs, uint8_t disableNLeds),
+      init(bool supportWhite, uint16_t countPixels, bool skipFirst),
       service(void),
       blur(uint8_t),
       fade_out(uint8_t r),
@@ -392,7 +406,7 @@ class WS2812FX {
       setShowCallback(show_callback cb),
       setTransitionMode(bool t),
       trigger(void),
-      setSegment(uint8_t n, uint16_t start, uint16_t stop),
+      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0),
       resetSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
@@ -412,7 +426,6 @@ class WS2812FX {
       paletteBlend = 0,
       colorOrder = 0,
       milliampsPerLed = 55,
-      _disableNLeds = 0,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
@@ -427,8 +440,7 @@ class WS2812FX {
     uint16_t
       ablMilliampsMax,
       currentMilliamps,
-      triwave16(uint16_t),
-      getUsableCount();
+      triwave16(uint16_t);
 
     uint32_t
       timebase,
@@ -547,7 +559,10 @@ class WS2812FX {
       mode_sinelon(void),
       mode_sinelon_dual(void),
       mode_sinelon_rainbow(void),
-      mode_popcorn(void);
+      mode_popcorn(void),
+      mode_drip(void),
+      mode_plasma(void),
+      mode_percent(void);
       
 
   private:
@@ -559,7 +574,7 @@ class WS2812FX {
     CRGBPalette16 targetPalette;
 
     uint32_t now;
-    uint16_t _length, _lengthRaw, _usableCount;
+    uint16_t _length, _lengthRaw, _virtualSegmentLength;
     uint16_t _rand16seed;
     uint8_t _brightness;
     static uint16_t _usedSegmentData;
@@ -606,11 +621,13 @@ class WS2812FX {
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
-      // start, stop, speed, intensity, palette, mode, options, 3 unused bytes (group, spacing, opacity), color[]
+      // start, stop, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[]
       { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
     friend class Segment_runtime;
+
+    uint16_t realPixelIndex(uint16_t i);
 };
 
 
@@ -625,7 +642,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
-"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn"
+"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent"
 ])=====";
 
 

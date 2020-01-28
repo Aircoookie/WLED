@@ -15,7 +15,9 @@ void deserializeSegment(JsonObject elem, byte it)
       uint16_t len = elem["len"];
       stop = (len > 0) ? start + len : seg.stop;
     }
-    strip.setSegment(id, start, stop);
+    uint16_t grp = elem["grp"] | seg.grouping;
+    uint16_t spc = elem["spc"] | seg.spacing;
+    strip.setSegment(id, start, stop, grp, spc);
     
     JsonArray colarr = elem["col"];
     if (!colarr.isNull())
@@ -166,6 +168,8 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["start"] = seg.start;
 	root["stop"] = seg.stop;
 	root["len"] = seg.stop - seg.start;
+  root["grp"] = seg.grouping;
+  root["spc"] = seg.spacing;
 
 	JsonArray colarr = root.createNestedArray("col");
 
@@ -359,7 +363,7 @@ void serveJson(AsyncWebServerRequest* request)
 
 void serveLiveLeds(AsyncWebServerRequest* request)
 {
-  byte used = strip.getUsableCount();
+  byte used = ledCount;
   byte n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
   char buffer[2000] = "{\"leds\":[";
   olen = 9;
