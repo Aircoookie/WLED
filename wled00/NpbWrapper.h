@@ -34,7 +34,7 @@
     #define RPIN 15   //R pin for analog LED strip   
     #define GPIN 13   //G pin for analog LED strip
     #define BPIN 12   //B pin for analog LED strip
-    #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
+    #define WPIN 14   //W pin for analog LED strip 
     #define W2PIN 04  //W2 pin for analog LED strip
     #undef BTNPIN
     #undef IR_PIN
@@ -44,7 +44,7 @@
     #define RPIN 5   //R pin for analog LED strip   
     #define GPIN 12   //G pin for analog LED strip
     #define BPIN 15   //B pin for analog LED strip
-    #define WPIN 13   //W pin for analog LED strip (W1: 14, W2: 04)
+    #define WPIN 13   //W pin for analog LED strip 
   #endif
   #undef RLYPIN
   #define RLYPIN -1 //disable as pin 12 is used by analog LEDs
