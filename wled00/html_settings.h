@@ -189,7 +189,7 @@ const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
 On/Off button enabled: <input type="checkbox" name="BT"><br>
-Infrared receiver type (0 = disabled): <input name="IR" type="number" min="0" max="5" required><br>
+Infrared receiver type (0 = disabled): <input name="IR" type="number" min="0" max="6" required><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>
@@ -234,13 +234,13 @@ Group Topic: <input name="MG" maxlength="32"><br>
 <i>Reboot required to apply changes. </i><a href="https://github.com/Aircoookie/WLED/wiki/MQTT" target="_blank">MQTT info</a>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
-Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
+Poll Hue light <input name="HL" type="number" min="1" max="99" > every <input name="HI" type="number" min="100" max="65000"> ms: <input type="checkbox" name="HP"><br>
 Then, receive <input type="checkbox" name="HO"> On/Off, <input type="checkbox" name="HB"> Brightness, and <input type="checkbox" name="HC"> Color<br>
 Hue Bridge IP:<br>
-<input name="H0" type="number" min="0" max="255" required> .
-<input name="H1" type="number" min="0" max="255" required> .
-<input name="H2" type="number" min="0" max="255" required> .
-<input name="H3" type="number" min="0" max="255" required><br>
+<input name="H0" type="number" min="0" max="255" > .
+<input name="H1" type="number" min="0" max="255" > .
+<input name="H2" type="number" min="0" max="255" > .
+<input name="H3" type="number" min="0" max="255" ><br>
 <b>Press the pushlink button on the bridge, after that save this page!</b><br>
 (when first connecting)<br>
 Hue status: <span class="hms"> Internal ESP Error! </span><hr>
