@@ -83,7 +83,9 @@ void wledInit()
       if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
     }
   #endif
-  
+  #ifdef WLED_ENABLE_DMX
+    dmx.init(512); // initialize with bus length
+  #endif
   //HTTP server page init
   initServer();
 }
