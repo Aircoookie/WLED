@@ -60,6 +60,5 @@ void handleDMX() {
 }
 
 #else
-void DMXInit() {}
 void handleDMX() {}
 #endif
