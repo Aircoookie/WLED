@@ -469,7 +469,19 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
   if (seg.stop) setRange(seg.start, seg.stop -1, 0); //turn old segment range off
   if (i2 <= i1) //disable segment
   {
-    seg.stop = 0; return;
+    seg.stop = 0; 
+    if (n == mainSegment) //if main segment is deleted, set first active as main segment
+    {
+      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+      {
+        if (_segments[i].isActive()) {
+          mainSegment = i;
+          return;
+        }
+      }
+      mainSegment = 0; //should not happen (always at least one active segment)
+    }
+    return;
   }
   if (i1 < _length) seg.start = i1;
   seg.stop = i2;
@@ -482,6 +494,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
 }
 
 void WS2812FX::resetSegments() {
+  mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
   //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
   _segment_index = 0;

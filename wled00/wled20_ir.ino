@@ -14,6 +14,7 @@ decode_results results;
 unsigned long irCheckedTime = 0;
 uint32_t lastValidCode = 0;
 uint16_t irTimesRepeated = 0;
+uint8_t lastIR6ColourIdx = 0;
 
 
 //Add what your custom IR codes should trigger here. Guide: https://github.com/Aircoookie/WLED/wiki/Infrared-Control
@@ -84,6 +85,9 @@ void decodeIR(uint32_t code)
       case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
       case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
       case 5: decodeIR21(code);    break;  // white 21-key remote  
+      case 6: decodeIR6(code);    break;   // black 6-key learning remote defaults: "CH" controls brightness,
+                                           // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
+                                           // sets bright plain white
       default: return;
     }
   }
@@ -345,6 +349,49 @@ void decodeIR21(uint32_t code)
     lastValidCode = code;
     colorUpdated(2); //for notifier, IR is considered a button input
 }
+
+void decodeIR6(uint32_t code)
+{
+  
+    switch (code) {
+      case IR6_POWER: toggleOnOff(); break;
+      case IR6_CHANNEL_UP: relativeChange(&bri, 10);         break;
+      case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);     break;
+      case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1); break;
+      case IR6_VOLUME_DOWN: 
+      /* next palette */ 
+      
+        relativeChange(&effectPalette, 1); 
+
+        switch(lastIR6ColourIdx)
+        {
+          case 0: colorFromUint32(COLOR_RED); break;
+          case 1: colorFromUint32(COLOR_REDDISH); break;
+          case 2:colorFromUint32(COLOR_ORANGE);    break;
+          case 3:colorFromUint32(COLOR_YELLOWISH); break;
+          case 4:colorFromUint32(COLOR_GREEN);     break;
+          case 5:colorFromUint32(COLOR_GREENISH);  break;
+          case 6:colorFromUint32(COLOR_TURQUOISE); break;
+          case 7: colorFromUint32(COLOR_CYAN);      break;
+          case 8:colorFromUint32(COLOR_BLUE);      break;
+          case 9:colorFromUint32(COLOR_DEEPBLUE);  break;
+          case 10:colorFromUint32(COLOR_PURPLE);    break;
+          case 11:colorFromUint32(COLOR_PINK);      break;
+          case 12:colorFromUint32(COLOR_WHITE);      break;
+            default:break;
+
+        }
+        
+        lastIR6ColourIdx++;
+        if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
+      
+      break;
+      case IR6_MUTE: effectCurrent = 0;  effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
+    }
+    lastValidCode = code;
+    colorUpdated(2); //for notifier, IR is considered a button input
+}
+
 
 void initIR()
 {
