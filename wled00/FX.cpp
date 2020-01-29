@@ -1039,6 +1039,10 @@ uint16_t WS2812FX::mode_comet(void) {
     for (uint16_t i = SEGENV.aux0; i < index ; i++) {
        setPixelColor( i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
     }
+  } else if (index < SEGENV.aux0 && index < 10) {
+    for (uint16_t i = 0; i < index ; i++) {
+       setPixelColor( i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+    }      
   }
   SEGENV.aux0 = index++;
 
