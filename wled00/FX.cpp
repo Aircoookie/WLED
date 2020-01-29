@@ -3027,7 +3027,7 @@ uint16_t WS2812FX::mode_percent(void) {
     SEGENV.step += size;
     if (SEGENV.step > active_leds) SEGENV.step = active_leds;
   } else if (active_leds < SEGENV.step) {
-    SEGENV.step -= size;
+    if (SEGENV.step > size) SEGENV.step -= size; else SEGENV.step = 0;
     if (SEGENV.step < active_leds) SEGENV.step = active_leds;
   }
 
