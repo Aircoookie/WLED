@@ -1039,6 +1039,10 @@ uint16_t WS2812FX::mode_comet(void) {
     for (uint16_t i = SEGENV.aux0; i < index ; i++) {
        setPixelColor( i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
     }
+  } else if (index < SEGENV.aux0 && index < 10) {
+    for (uint16_t i = 0; i < index ; i++) {
+       setPixelColor( i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+    }      
   }
   SEGENV.aux0 = index++;
 
@@ -3027,7 +3031,7 @@ uint16_t WS2812FX::mode_percent(void) {
     SEGENV.step += size;
     if (SEGENV.step > active_leds) SEGENV.step = active_leds;
   } else if (active_leds < SEGENV.step) {
-    SEGENV.step -= size;
+    if (SEGENV.step > size) SEGENV.step -= size; else SEGENV.step = 0;
     if (SEGENV.step < active_leds) SEGENV.step = active_leds;
   }
 
