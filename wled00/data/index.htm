@@ -46,6 +46,12 @@ p {
   color: #ddd;
 }
 
+td {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
 button {
   outline: none;
   cursor: pointer;
@@ -84,6 +90,15 @@ button {
   line-height: 1;
   display: inline-block;
   margin: -2px 0 4px 0;
+}
+
+table {
+  table-layout: fixed;
+  width: 76%;
+}
+
+td {
+  text-align: center;
 }
 
 .slider-icon
@@ -432,8 +447,8 @@ input[type=number]::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 
-.botpad {
-  margin-bottom: 16px !important;
+.segn {
+  margin: 3px 0 6px 0 !important;
 }
 
 .ic {
@@ -470,11 +485,19 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .cnf {
-  position: absolute;
-  top: 75px;
-  right: 60px;
-  color: #fff;
-  cursor: pointer;
+    position: absolute;
+    top: 66px;
+    right: 28px;
+    color: #fff;
+    cursor: pointer;
+    background: #333;
+    padding: 43px 6px;
+    border-radius: 5px;
+}
+
+.half {
+  padding: 6px 6px;
+  top: 64px;
 }
 
 .del {
@@ -572,8 +595,13 @@ input[type=number]::-webkit-outer-spin-button {
 
 .h {
   font-size: 13px;
+  text-align: center;
   color: #bbb;
-  text-align: left;
+  margin-bottom: 5px;
+}
+
+.bp {
+  margin-bottom: 5px;
 }
 
 .seg {
@@ -734,8 +762,8 @@ input[type=number]::-webkit-outer-spin-button {
     </label><br>
     First preset: <input id="cycs" class="noslide" type="number" min="1" max="14" value="1"><br>
     Last preset: <input id="cyce" class="noslide" type="number" min="2" max="15" value="3"><br>
-    Time per preset: <input id="cyct" class="noslide" type="number" min="0.2" max="65.5" value="1.2">s<br>
-    Transition: <input id="cyctt" class="noslide" type="number" min="0" max="65.5" value="0.7">s
+    Time per preset: <input id="cyct" class="noslide" type="number" min="0.2" max="65.5" step="0.1" value="1.2">s<br>
+    Transition: <input id="cyctt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s
   </div>
 </div>
 
@@ -864,9 +892,27 @@ function populateSegments(s)
       </label>
       <i class="icons slider-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
       <div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
-        Start LED: <input class="starts noslide" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(this)"><br>
-        Stop LED: <input class="stops noslide botpad" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(this)">
-        <span class="h">(${inst.stop - inst.start} LED${inst.stop - inst.start > 1 ? "s":""})</span><br>
+      <table>
+        <tr>
+          <td>Start LED</td>
+          <td>Stop LED</td>
+        </tr>
+        <tr>
+          <td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
+          <td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(${i})"></td>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <td>Grouping</td>
+          <td>Spacing</td>
+        </tr>
+        <tr>
+          <td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
+          <td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+        </tr>
+      </table>
+      <div class="h bp" id="seg${i}len">${inst.stop - inst.start} LED${inst.stop - inst.start > 1 ? "s":""} (${Math.ceil((inst.stop - inst.start)/(inst.grp + inst.spc))} virtual)</div>
         <i class="icons slider-icon cnf" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i>
         <i class="icons slider-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
         <label class="check revchkl">
@@ -896,18 +942,28 @@ function updateTrail(e)
   e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 }
 
-function updateLen(e)
+function updateLen(s)
 {
-  var len = e.parentNode.getElementsByClassName('stops')[0].value;
-  len -= e.parentNode.getElementsByClassName('starts')[0].value;
+  var start = parseInt(d.getElementById(`seg${s}s`).value);
+  var stop  = parseInt(d.getElementById(`seg${s}e`).value);
+  var len = stop - start;
+  var out = "(delete)"
   if (len > 1) {
-    len = `(${len} LEDs)`;
+    out = `${len} LEDs`;
   } else if (len == 1) {
-    len = "(1 LED)"
-  } else {
-    len = "(delete)";
+    out = "1 LED"
   }
-  e.parentNode.getElementsByClassName('h')[0].innerHTML = len;
+  
+  if (d.getElementById(`seg${s}grp`) != null)
+  {
+    var grp = parseInt(d.getElementById(`seg${s}grp`).value);
+    var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+    if (grp == 0) grp = 1;
+    var virt = Math.ceil(len/(grp + spc));
+    if (!isNaN(virt) && (grp > 1 || spc > 0)) out += ` (${virt} virtual)`;
+  }
+  
+  d.getElementById(`seg${s}len`).innerHTML = out;
 }
 
 function updateUI()
@@ -948,7 +1004,7 @@ function requestJson(command, verbose = true) {
   e1 = d.getElementById('fxlist');
   e2 = d.getElementById('selectPalette');
 
-  url = command ? '/json/state':'/json';
+  url = command ? 'http://10.10.1.26/json/state':'http://10.10.1.26/json';
   
   type = command ? 'post':'get';
   if (command)
@@ -1105,10 +1161,18 @@ function makeSeg() {
         Segment ${lowestUnused} (new)
       </label>
       <div class="segin expanded">
-        Start LED: <input class="starts noslide" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(this)"><br>
-        Stop LED: <input class="stops noslide" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(this)">
-        <span class="h">(${ledCount - ns} LEDs)</span><br>
-        <i class="icons slider-icon cnf" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
+        <table>
+          <tr>
+            <td>Start LED</td>
+            <td>Stop LED</td>
+          </tr>
+          <tr>
+            <td><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
+            <td><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(${lowestUnused})"></td>
+          </tr>
+        </table>
+        <div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
+        <i class="icons slider-icon cnf half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
       </div>
     </div>`;
   d.getElementById('segutil').innerHTML = cn;
@@ -1130,6 +1194,13 @@ function setSeg(s){
   var stop  = parseInt(d.getElementById(`seg${s}e`).value);
   if (stop <= start) {delSeg(s); return;};
   var obj = {"seg": {"id": s, "start": start, "stop": stop}};
+  if (d.getElementById(`seg${s}grp`))
+  {
+    var grp = parseInt(d.getElementById(`seg${s}grp`).value);
+    var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+    obj.seg.grp = grp;
+    obj.seg.spc = spc;
+  }
   requestJson(obj);
 }
 
