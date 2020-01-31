@@ -90,7 +90,7 @@
  #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2001151
+#define VERSION 2001281
 
 char versionString[] = "0.9.0-b2";
 
@@ -535,6 +535,9 @@ void loop() {
     if (!offMode) strip.service();
   }
   yield();
+  #ifdef ESP8266
+  MDNS.update();
+  #endif
   if (millis() - lastMqttReconnectAttempt > 30000) initMqtt();
 
   //DEBUG serial logging

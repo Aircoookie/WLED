@@ -9,7 +9,7 @@
 //#define USE_LPD8806 // Uncomment for using LPD8806
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
-//#define WLED_USE_5CH  //5 Channel H801 for cold and warm white
+//#define WLED_USE_5CH_LEDS  //5 Channel H801 for cold and warm white
 
 #define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
 #define IR_PIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
@@ -34,7 +34,7 @@
     #define RPIN 15   //R pin for analog LED strip   
     #define GPIN 13   //G pin for analog LED strip
     #define BPIN 12   //B pin for analog LED strip
-    #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
+    #define WPIN 14   //W pin for analog LED strip 
     #define W2PIN 04  //W2 pin for analog LED strip
     #undef BTNPIN
     #undef IR_PIN
@@ -44,7 +44,7 @@
     #define RPIN 5   //R pin for analog LED strip   
     #define GPIN 12   //G pin for analog LED strip
     #define BPIN 15   //B pin for analog LED strip
-    #define WPIN 13   //W pin for analog LED strip (W1: 14, W2: 04)
+    #define WPIN 13   //W pin for analog LED strip 
   #endif
   #undef RLYPIN
   #define RLYPIN -1 //disable as pin 12 is used by analog LEDs
@@ -248,7 +248,7 @@ public:
             if        (color.R == 255 & color.G == 255 && color.B == 255 && color.W == 255) {  
               SetRgbwPwm(0, 0, 0,                  0, color.W * b / 255);
             } else if (color.R == 127 & color.G == 127 && color.B == 127 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 512, colorW.W * b / 255);
+              SetRgbwPwm(0, 0, 0, color.W * b / 512, color.W * b / 255);
             } else if (color.R ==   0 & color.G ==   0 && color.B ==   0 && color.W == 255) {  
               SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
             } else if (color.R == 130 & color.G ==  90 && color.B ==   0 && color.W == 255) {  
@@ -256,7 +256,7 @@ public:
             } else if (color.R == 255 & color.G == 153 && color.B ==   0 && color.W == 255) {  
               SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
             } else {  // not only white colors
-              SetRgbwPwm(color.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, color.W * b / 255);
+              SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
             }
           #else
             SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
