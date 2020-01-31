@@ -119,7 +119,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 4)
   {
     buttonEnabled = request->hasArg("BT");
-    irEnabled = request->arg("IR").toInt();
     int t = request->arg("UP").toInt();
     if (t > 0) udpPort = t;
     receiveNotificationBrightness = request->hasArg("RB");
@@ -192,17 +191,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     //start ntp if not already connected
     if (ntpEnabled && WLED_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
-
-    if (request->hasArg("OL")){
-      overlayDefault = request->arg("OL").toInt();
-      overlayCurrent = overlayDefault;
-    }
-
-    overlayMin = request->arg("O1").toInt();
-    overlayMax = request->arg("O2").toInt();
-    analogClock12pixel = request->arg("OM").toInt();
-    analogClock5MinuteMarks = request->hasArg("O5");
-    analogClockSecondsTrail = request->hasArg("OS");
 
     countdownMode = request->hasArg("CE");
     countdownYear = request->arg("CY").toInt();
@@ -453,12 +441,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   updateVal(&req, "SX=", &effectSpeed);
   updateVal(&req, "IX=", &effectIntensity);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
-
-  //set advanced overlay
-  pos = req.indexOf("OL=");
-  if (pos > 0) {
-    overlayCurrent = getNumVal(&req, pos);
-  }
 
   //apply macro
   pos = req.indexOf("&M=");

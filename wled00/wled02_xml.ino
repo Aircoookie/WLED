@@ -250,7 +250,6 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == 4)
   {
     sappend('c',"BT",buttonEnabled);
-    sappend('v',"IR",irEnabled);
     sappend('v',"UP",udpPort);
     sappend('c',"RB",receiveNotificationBrightness);
     sappend('c',"RC",receiveNotificationColor);
@@ -314,12 +313,6 @@ void getSettingsJS(byte subPage, char* dest)
     char tm[32];
     getTimeString(tm);
     sappends('m',"(\"times\")[0]",tm);
-    sappend('i',"OL",overlayCurrent);
-    sappend('v',"O1",overlayMin);
-    sappend('v',"O2",overlayMax);
-    sappend('v',"OM",analogClock12pixel);
-    sappend('c',"OS",analogClockSecondsTrail);
-    sappend('c',"O5",analogClock5MinuteMarks);
     sappend('c',"CE",countdownMode);
     sappend('v',"CY",countdownYear);
     sappend('v',"CI",countdownMonth);

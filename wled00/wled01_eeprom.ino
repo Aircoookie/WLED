@@ -120,7 +120,6 @@ void saveSettingsToEEPROM()
   EEPROM.write(329, useAMPM);
   EEPROM.write(330, strip.gammaCorrectBri);
   EEPROM.write(331, strip.gammaCorrectCol);
-  EEPROM.write(332, overlayDefault);
 
   EEPROM.write(333, alexaEnabled);
   writeStringToEEPROM(334, alexaInvocationName, 32);
@@ -139,8 +138,6 @@ void saveSettingsToEEPROM()
 
   EEPROM.write(382, strip.paletteBlend);
   EEPROM.write(383, strip.colorOrder);
-
-  EEPROM.write(385, irEnabled);
 
   EEPROM.write(387, strip.ablMilliampsMax & 0xFF);
   EEPROM.write(388, (strip.ablMilliampsMax >> 8) & 0xFF);
@@ -175,12 +172,6 @@ void saveSettingsToEEPROM()
   EEPROM.write(2104, hueApplyBri);
   EEPROM.write(2105, hueApplyColor);
   EEPROM.write(2106, huePollLightId);
-
-  EEPROM.write(2150, overlayMin);
-  EEPROM.write(2151, overlayMax);
-  EEPROM.write(2152, analogClock12pixel);
-  EEPROM.write(2153, analogClock5MinuteMarks);
-  EEPROM.write(2154, analogClockSecondsTrail);
 
   EEPROM.write(2155, countdownMode);
   EEPROM.write(2156, countdownYear);
@@ -323,8 +314,6 @@ void loadSettingsFromEEPROM(bool first)
   useAMPM = EEPROM.read(329);
   strip.gammaCorrectBri = EEPROM.read(330);
   strip.gammaCorrectCol = EEPROM.read(331);
-  overlayDefault = EEPROM.read(332);
-  if (lastEEPROMversion < 8 && overlayDefault > 0) overlayDefault--; //overlay mode 1 (solid) was removed
 
   alexaEnabled = EEPROM.read(333);
 
@@ -365,11 +354,6 @@ void loadSettingsFromEEPROM(bool first)
     huePollLightId = EEPROM.read(2106);
   }
   if (lastEEPROMversion > 5) {
-    overlayMin = EEPROM.read(2150);
-    overlayMax = EEPROM.read(2151);
-    analogClock12pixel = EEPROM.read(2152);
-    analogClock5MinuteMarks = EEPROM.read(2153);
-    analogClockSecondsTrail = EEPROM.read(2154);
     countdownMode = EEPROM.read(2155);
     countdownYear = EEPROM.read(2156);
     countdownMonth = EEPROM.read(2157);
@@ -424,7 +408,6 @@ void loadSettingsFromEEPROM(bool first)
   if (lastEEPROMversion > 9)
   {
     strip.colorOrder = EEPROM.read(383);
-    irEnabled = EEPROM.read(385);
     strip.ablMilliampsMax = EEPROM.read(387) + ((EEPROM.read(388) << 8) & 0xFF00);
   } else if (lastEEPROMversion > 1) //ABL is off by default when updating from version older than 0.8.2
   {
@@ -493,8 +476,6 @@ void loadSettingsFromEEPROM(bool first)
 
   //user MOD memory
   //2944 - 3071 reserved
-
-  overlayCurrent = overlayDefault;
 
   savedToPresets();
 }

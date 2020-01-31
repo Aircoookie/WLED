@@ -19,7 +19,6 @@
 //You need to choose some of these features to disable:
 //#define WLED_DISABLE_ALEXA       //saves 11kb
 //#define WLED_DISABLE_HUESYNC     //saves 4kb
-//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
 
@@ -71,24 +70,10 @@
 #include "FX.h"
 #include "ir_codes.h"
 
-
-#if IR_PIN < 0
- #ifndef WLED_DISABLE_INFRARED
-  #define WLED_DISABLE_INFRARED
- #endif
-#endif
-
- #ifndef WLED_DISABLE_INFRARED
-  #include <IRremoteESP8266.h>
-  #include <IRrecv.h>
-  #include <IRutils.h>
- #endif
-
 //version code in format yymmddb (b = daily build)
 #define VERSION 2001191
 
 char versionString[] = "0.9.0-b2";
-
 
 //AP and OTA default passwords (for maximum change them!)
 char apPass[65] = "wled1234";
@@ -148,7 +133,6 @@ bool syncToggleReceive = false;               //UIs which only have a single but
 
 //Sync CONFIG
 bool buttonEnabled =  true;
-byte irEnabled     =  0;                      //Infrared receiver
 
 uint16_t udpPort    = 21324;                  //WLED notifier default port
 uint16_t udpRgbPort = 19446;                  //Hyperion port
@@ -203,9 +187,6 @@ int  utcOffsetSecs   = 0;                     //Seconds to offset from UTC befor
 byte overlayDefault = 0;                      //0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
 byte overlayMin = 0, overlayMax = ledCount-1; //boundaries of overlay mode
 
-byte analogClock12pixel = 0;                  //The pixel in your strip where "midnight" would be
-bool analogClockSecondsTrail = false;         //Display seconds as trail of LEDs instead of a single pixel
-bool analogClock5MinuteMarks = false;         //Light pixels at every 5-minute position
 
 bool countdownMode = false;                   //Clock will count down towards date
 byte countdownYear = 20, countdownMonth = 1;  //Countdown target date, year is last two digits
@@ -485,7 +466,6 @@ void setup() {
 
 //main program loop
 void loop() {
-  handleIR();          //2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
   handleSerial();
   handleNotifications();
@@ -494,11 +474,9 @@ void loop() {
 
   yield();
   handleIO();
-  handleIR();
   handleNetworkTime();
   handleAlexa();
 
-  handleOverlays();
   yield();
   if (doReboot) reset();
 

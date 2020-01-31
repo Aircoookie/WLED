@@ -14,7 +14,6 @@
 //#define WLED_USE_5CH  //5 Channel H801 for cold and warm white
 
 #define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
-#define IR_PIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
 #define RLYPIN 12  //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
 #define AUXPIN -1  //debug auxiliary output pin (-1 to disable)
 
@@ -39,8 +38,6 @@
     #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
     #define W2PIN 04  //W2 pin for analog LED strip
     #undef BTNPIN
-    #undef IR_PIN
-    #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
     #define RPIN 5   //R pin for analog LED strip   
