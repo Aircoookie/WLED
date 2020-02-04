@@ -693,6 +693,8 @@ uint16_t WS2812FX::mode_android(void) {
 uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool dopalette) {
   uint16_t counter = now * (SEGMENT.speed >> 3) + 1;
   uint16_t a = counter * SEGLEN  >> 16;
+  SEGENV.step = a;
+  if (SEGENV.call == 0) SEGENV.aux1 = a;
   // Use intensity setting to vary chase up to 1/2 string length
   uint16_t b = (a + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
   uint16_t c = (b + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
@@ -702,6 +704,26 @@ uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool
   setPixelColor(a, color1);
   setPixelColor(b, color2);
   setPixelColor(c, color3);
+
+ if (a > SEGENV.aux1) { // when speed is too fast, this catches the gaps
+  for (uint16_t i = SEGENV.aux1; i < a ; i++) {
+    setPixelColor(i, color1);
+    uint16_t b1 = (i + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
+    uint16_t c1 = (b1 + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
+    setPixelColor(b1, color2);
+    setPixelColor(c1, color3);
+  }
+ } else if (a < SEGENV.aux1 && a < 10) { // this is for the start of the strip
+    for (uint16_t i = 0; i < a ; i++) {
+      setPixelColor(i, color1);
+      uint16_t b1 = (i + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
+      uint16_t c1 = (b1 + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
+      setPixelColor(b1, color2);
+      setPixelColor(c1, color3);
+      SEGENV.step = 0;
+    }      
+  }
+  SEGENV.aux1 = a++;
 
   return FRAMETIME;
 }
