@@ -1,7 +1,7 @@
 ![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/master/wled_logo.png)   
 
 [![](https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square)](https://github.com/Aircoookie/WLED/releases)
-[![](https://img.shields.io/discourse/topics?color=%230000ac&label=forum&server=https://wled.discourse.group?style=flat-square)](https://wled.discourse.group)
+[![](https://img.shields.io/discourse/topics?colorB=blue&label=forum&server=https%3A%2F%2Fwled.discourse.group%2F&style=flat-square)](https://wled.discourse.group)
 [![](https://img.shields.io/discord/473448917040758787.svg?colorB=blue&label=discord&style=flat-square)](https://discord.gg/KuqP7NE)
 [![](https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED/wiki)
 [![](https://img.shields.io/badge/app-wled-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED-App)
