@@ -385,7 +385,7 @@ input[type=range]::-ms-thumb {
   background-color: #333;
   color: white;
   border: 0px solid white;
-  border-radius: 5px;
+  border-radius: 25px;
   filter: drop-shadow(0px 0px 2px #000);
   transition-duration: 0.5s;
   -webkit-backface-visibility: hidden;
@@ -402,13 +402,32 @@ input[type=range]::-ms-thumb {
   vertical-align: middle;
 }
 
+.qcs-w {
+  margin-top: 10px;
+}
+.qcs {
+  padding: 14px;
+  margin: 2px;
+  border-radius: 14px;
+  display: inline-block;
+}
+.qcsb {
+  padding: 13px;
+  border: 1px solid white;
+}
+
+.cl {
+  width: 42px;
+}
+
 select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='white'><polygon points='0,0 100,0 50,50'/></svg>") no-repeat;
   background-size: 12px;
-  background-position: 210px 16px;
+  background-position: 206px 16px;
+  padding-left: 12px !important;
   background-repeat: no-repeat;
   outline: none;
 }
@@ -455,13 +474,13 @@ input[type=number]::-webkit-outer-spin-button {
   padding: 6px 0 0 0;
 }
 
-.xs {
-  width: 60px;
+.xxs {
+  width: 40px;
+  margin: 6px;
 }
 
-.xxs {
-  width: 42px;
-  margin: 8px;
+.rect {
+  border-radius: 5px;
 }
 
 .psts {
@@ -597,7 +616,6 @@ input[type=number]::-webkit-outer-spin-button {
   font-size: 13px;
   text-align: center;
   color: #bbb;
-  margin-bottom: 5px;
 }
 
 .bp {
@@ -679,6 +697,19 @@ input[type=number]::-webkit-outer-spin-button {
         <input id="sliderW" class="noslide" onchange="setColor(false)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
         <div class="sliderdisplay"></div>
       </div>
+    </div>
+    <div class="qcs-w">
+      <div class="qcs" onclick="pC('#ff0000');" style="background-color:#ff0000;"></div>
+      <div class="qcs" onclick="pC('#ffa000');" style="background-color:#ffa000;"></div>
+      <div class="qcs" onclick="pC('#ffc800');" style="background-color:#ffc800;"></div>
+      <div class="qcs" onclick="pC('#fff0a0');" style="background-color:#fff0a0;"></div>
+      <div class="qcs" onclick="pC('#ffffff');" style="background-color:#ffffff;"></div>
+      <div class="qcs qcsb" onclick="pC('#000000');" style="background-color:#000000;"></div><br>
+      <div class="qcs" onclick="pC('#ff00ff');" style="background-color:#ff00ff;"></div>
+      <div class="qcs" onclick="pC('#0000ff');" style="background-color:#0000ff;"></div>
+      <div class="qcs" onclick="pC('#00ffc8');" style="background-color:#00ffc8;"></div>
+      <div class="qcs" onclick="pC('#08ff00');" style="background-color:#08ff00;"></div>
+      <div class="qcs" onclick="pC('rnd');" style="background-color:#333; padding: 4px 8px; transform: translateY(-10px);">R</div>
     </div>
     <div id="csl">
       <button class="xxs cl btn" onclick="selectSlot(0);">1</button>
@@ -1179,7 +1210,7 @@ function makeSeg() {
 }
 
 function resetUtil() {
-  var cn = `<button class="btn btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>`;
+  var cn = `<button class="btn btn-i rect" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>`;
   d.getElementById('segutil').innerHTML = cn;
 }
 
@@ -1296,9 +1327,9 @@ function selectSlot(b) {
     cd[i].style.margin="5px";
     cd[i].style.width="42px";
   }
-  cd[csel].style.border="6px solid white";
+  cd[csel].style.border="5px solid white";
   cd[csel].style.margin="2px";
-  cd[csel].style.width="54px";
+  cd[csel].style.width="50px";
   if (cpick.color.rgbString !== cd[csel].style.backgroundColor) {
     cpick.color.set(cd[csel].style.backgroundColor);
   }
