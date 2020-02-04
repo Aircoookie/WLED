@@ -503,26 +503,17 @@ void setup() {
 //main program loop
 void loop() {
   handleIR();          //2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
-  yield();
   handleConnection();
-  yield();
   handleSerial();
-  yield();
   handleNotifications();
-  yield();
   handleTransitions();
-  yield();
   userLoop();
 
   yield();
   handleIO();
-  yield();
   handleIR();
-  yield();
   handleNetworkTime();
-  yield();
   handleAlexa();
-  yield();
 
   handleOverlays();
   yield();
@@ -538,7 +529,6 @@ void loop() {
     yield();
 
     handleHue();
-    yield();
     handleBlynk();
 
     yield();
