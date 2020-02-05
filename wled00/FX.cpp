@@ -1210,20 +1210,23 @@ uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
   if (idexR >= SEGLEN) idexR = 0;
 
   uint16_t topindex = SEGLEN >> 1;
-  uint16_t idexB = idexR + topindex;
+  uint16_t idexB = (idexR > topindex) ? idexR - topindex : idexR + topindex;
   if (SEGENV.call == 0) SEGENV.aux0 = idexR;
-  
-  if (idexR > topindex) idexB -= SEGLEN;
   if (idexB >= SEGLEN) idexB = 0; //otherwise overflow on odd number of LEDs
 
-  uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
-  for (uint8_t i = 0; i < gap ; i++) {
-    if ((idexR - i) < 0) idexR = SEGLEN-1 + i;
-    if ((idexB - i) < 0) idexB = SEGLEN-1 + i;
-    setPixelColor(idexR-i, color1);
-    setPixelColor(idexB-i, color2);
+  if (SEGENV.aux0 == idexR) {
+    setPixelColor(idexR, color1);
+    setPixelColor(idexB, color2);
+  } else {
+    uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
+    for (uint8_t i = 0; i <= gap ; i++) {
+      if ((idexR - i) < 0) idexR = SEGLEN-1 + i;
+      if ((idexB - i) < 0) idexB = SEGLEN-1 + i;
+      setPixelColor(idexR-i, color1);
+      setPixelColor(idexB-i, color2);
+    }
+    SEGENV.aux0 = idexR;
   }
-  SEGENV.aux0 = idexR;
   
   return FRAMETIME;
 }
