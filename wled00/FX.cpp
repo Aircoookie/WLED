@@ -3013,21 +3013,34 @@ uint16_t WS2812FX::mode_plasma(void) {
  */
 uint16_t WS2812FX::mode_percent(void) {
 
-	uint8_t percent = max(0, min(100, SEGMENT.intensity));
-	uint16_t active_leds = SEGLEN * percent / 100.0;
+	uint8_t percent = max(0, min(200, SEGMENT.intensity));
+	uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
+                                         : SEGLEN * (200 - percent) / 100.0;
   
   if (SEGENV.call == 0) SEGENV.step = 0;
   uint8_t size = (1 + ((SEGMENT.speed * SEGLEN) >> 11)) & 0xFF ;
     
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-		if (i < SEGENV.step) {
-			setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-		}
-		else {
-			setPixelColor(i, SEGCOLOR(1));
-		}
-	} 
-  if(active_leds > SEGENV.step) {
+  if (percent < 100) {
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+	  	if (i < SEGENV.step) {
+        setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+	  	}
+	  	else {
+        setPixelColor(i, SEGCOLOR(1));
+	  	}
+	  }
+  } else {
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+	  	if (i < (SEGLEN - SEGENV.step)) {
+        setPixelColor(i, SEGCOLOR(1));
+	  	}
+	  	else {
+        setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+	  	}
+	  }
+  }
+
+  if(active_leds > SEGENV.step) {  // smooth transition to the target value
     SEGENV.step += size;
     if (SEGENV.step > active_leds) SEGENV.step = active_leds;
   } else if (active_leds < SEGENV.step) {
