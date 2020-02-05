@@ -16,9 +16,9 @@ long lastMeasure = 0;
 // https://github.com/olikraus/u8g2/wiki/u8x8setupcpp
 // or check the gallery:
 // https://github.com/olikraus/u8g2/wiki/gallery
-// --> First choise of cheap I2C OLED 128X32
+// --> First choise of cheap I2C OLED 128X32 0.91"
 U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
-// --> Second choise of cheap I2C OLED 128X64
+// --> Second choise of cheap I2C OLED 128X64 0.96" or 1.3"
 //U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
 // gets called once at boot. Do all initialization that doesn't depend on
 // network here
