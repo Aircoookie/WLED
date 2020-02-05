@@ -5,7 +5,7 @@
 #define U8X8_PIN_SCL 5
 #define U8X8_PIN_SDA 4
 // Dallas sensor
-OneWire oneWire(12); 
+OneWire oneWire(13); 
 DallasTemperature sensor(&oneWire);
 long temptimer = millis();
 long lastMeasure = 0;
