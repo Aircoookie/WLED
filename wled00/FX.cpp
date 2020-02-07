@@ -693,6 +693,8 @@ uint16_t WS2812FX::mode_android(void) {
 uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool dopalette) {
   uint16_t counter = now * (SEGMENT.speed >> 3) + 1;
   uint16_t a = counter * SEGLEN  >> 16;
+  SEGENV.step = a;
+  if (SEGENV.call == 0) SEGENV.aux1 = a;
   // Use intensity setting to vary chase up to 1/2 string length
   uint16_t b = (a + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
   uint16_t c = (b + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
@@ -702,6 +704,26 @@ uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool
   setPixelColor(a, color1);
   setPixelColor(b, color2);
   setPixelColor(c, color3);
+
+ if (a > SEGENV.aux1) { // when speed is too fast, this catches the gaps
+  for (uint16_t i = SEGENV.aux1; i < a ; i++) {
+    setPixelColor(i, color1);
+    uint16_t b1 = (i + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
+    uint16_t c1 = (b1 + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
+    setPixelColor(b1, color2);
+    setPixelColor(c1, color3);
+  }
+ } else if (a < SEGENV.aux1 && a < 10) { // this is for the start of the strip
+    for (uint16_t i = 0; i < a ; i++) {
+      setPixelColor(i, color1);
+      uint16_t b1 = (i + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
+      uint16_t c1 = (b1 + 1 + (SEGMENT.intensity * SEGLEN >> 10)) % SEGLEN;
+      setPixelColor(b1, color2);
+      setPixelColor(c1, color3);
+      SEGENV.step = 0;
+    }      
+  }
+  SEGENV.aux1 = a++;
 
   return FRAMETIME;
 }
@@ -1188,20 +1210,23 @@ uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
   if (idexR >= SEGLEN) idexR = 0;
 
   uint16_t topindex = SEGLEN >> 1;
-  uint16_t idexB = idexR + topindex;
+  uint16_t idexB = (idexR > topindex) ? idexR - topindex : idexR + topindex;
   if (SEGENV.call == 0) SEGENV.aux0 = idexR;
-  
-  if (idexR > topindex) idexB -= SEGLEN;
   if (idexB >= SEGLEN) idexB = 0; //otherwise overflow on odd number of LEDs
 
-  uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
-  for (uint8_t i = 0; i < gap ; i++) {
-    if ((idexR - i) < 0) idexR = SEGLEN-1 + i;
-    if ((idexB - i) < 0) idexB = SEGLEN-1 + i;
-    setPixelColor(idexR-i, color1);
-    setPixelColor(idexB-i, color2);
+  if (SEGENV.aux0 == idexR) {
+    setPixelColor(idexR, color1);
+    setPixelColor(idexB, color2);
+  } else {
+    uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
+    for (uint8_t i = 0; i <= gap ; i++) {
+      if ((idexR - i) < 0) idexR = SEGLEN-1 + i;
+      if ((idexB - i) < 0) idexB = SEGLEN-1 + i;
+      setPixelColor(idexR-i, color1);
+      setPixelColor(idexB-i, color2);
+    }
+    SEGENV.aux0 = idexR;
   }
-  SEGENV.aux0 = idexR;
   
   return FRAMETIME;
 }
@@ -3013,21 +3038,34 @@ uint16_t WS2812FX::mode_plasma(void) {
  */
 uint16_t WS2812FX::mode_percent(void) {
 
-	uint8_t percent = max(0, min(100, SEGMENT.intensity));
-	uint16_t active_leds = SEGLEN * percent / 100.0;
+	uint8_t percent = max(0, min(200, SEGMENT.intensity));
+	uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
+                                         : SEGLEN * (200 - percent) / 100.0;
   
   if (SEGENV.call == 0) SEGENV.step = 0;
   uint8_t size = (1 + ((SEGMENT.speed * SEGLEN) >> 11)) & 0xFF ;
     
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-		if (i < SEGENV.step) {
-			setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-		}
-		else {
-			setPixelColor(i, SEGCOLOR(1));
-		}
-	} 
-  if(active_leds > SEGENV.step) {
+  if (percent < 100) {
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+	  	if (i < SEGENV.step) {
+        setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+	  	}
+	  	else {
+        setPixelColor(i, SEGCOLOR(1));
+	  	}
+	  }
+  } else {
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+	  	if (i < (SEGLEN - SEGENV.step)) {
+        setPixelColor(i, SEGCOLOR(1));
+	  	}
+	  	else {
+        setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
+	  	}
+	  }
+  }
+
+  if(active_leds > SEGENV.step) {  // smooth transition to the target value
     SEGENV.step += size;
     if (SEGENV.step > active_leds) SEGENV.step = active_leds;
   } else if (active_leds < SEGENV.step) {
