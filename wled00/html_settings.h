@@ -206,6 +206,13 @@ Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
 Use E1.31 multicast: <input type="checkbox" name="EM"><br>
 E1.31 start universe: <input name="EU" type="number" min="1" max="63999" required><br>
 <i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br><br>
+DMX start address: <input name="DA" type="number" min="1" max="510" value="1" required><br>
+DMX mode: <input name="DM" type="radio" value="0"> disabled<br>
+<input name="DM" type="radio" value="1"> Single RGB (3 Channels for all LEDs: Red Green Blue)<br>
+<input name="DM" type="radio" value="2"> Single DRGB (4 Channels for all LEDs: Dimmer Red Green Blue)<br>
+<input name="DM" type="radio" value="3"> Effect (11 Channels parametrizing Effects: Dimmer Effect Speed Intensity Palette PriRed PriGreen PriBlue SecRed SecGreen SecBlue)<br>
+<input name="DM" type="radio" value="4"> Multiple RGB (3 Channels for each LED: Red Green Blue)<br>
+<input name="DM" type="radio" value="5"> Multiple DRGB (1+3 Channels for each LED: Dimmer Red1 Green1 Blue1 Red2 Green2 Blue2...)<br>
 Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>

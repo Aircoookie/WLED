@@ -63,7 +63,21 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
     String mesg = "Live ";
     if (realtimeIP[0] == 0)
     {
-      mesg += "E1.31 mode";
+      mesg += "E1.31 mode ";
+      mesg += DMXMode;
+      mesg += " at fixture DMX Address ";
+      mesg += DMXAddress;
+      mesg += " from '";
+      mesg += e131ClientUA;
+      mesg += "' (";
+      mesg += e131ClientIP[0];
+      for (int i = 1; i < 4; i++)
+      {
+        mesg += ".";
+        mesg += e131ClientIP[i];
+      }
+      mesg += ") seq=";
+      mesg += e131LastSequenceNumber;
     } else {
       mesg += "UDP from ";
       mesg += realtimeIP[0];
@@ -263,6 +277,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"RD",receiveDirect);
     sappend('c',"EM",e131Multicast);
     sappend('v',"EU",e131Universe);
+    sappend('v',"DA",DMXAddress);
+    sappend('v',"DM",DMXMode);
     sappend('v',"ET",realtimeTimeoutMs);
     sappend('c',"FB",arlsForceMaxBri);
     sappend('c',"RG",arlsDisableGammaCorrection);

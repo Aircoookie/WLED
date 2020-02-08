@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 14
+#define EEPVER 15
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -22,6 +22,7 @@
 //12-> 0.8.7-dev
 //13-> 0.9.0-dev
 //14-> 0.9.0-b1
+//15-> 0.9.0-b3
 
 void commit()
 {
@@ -211,6 +212,9 @@ void saveSettingsToEEPROM()
   EEPROM.write(2194, (realtimeTimeoutMs >> 8) & 0xFF);
   EEPROM.write(2195, arlsForceMaxBri);
   EEPROM.write(2196, arlsDisableGammaCorrection);
+  EEPROM.write(2197, DMXAddress & 0xFF);
+  EEPROM.write(2198, (DMXAddress >> 8) & 0xFF);
+  EEPROM.write(2199, DMXMode);
 
   EEPROM.write(2200, !receiveDirect);
   EEPROM.write(2201, notifyMacro); //was enableRealtime
@@ -470,6 +474,13 @@ void loadSettingsFromEEPROM(bool first)
     mqttEnabled = true;
     syncToggleReceive = false;
   }
+
+  if (lastEEPROMversion > 14)
+  {
+    DMXAddress = EEPROM.read(2197) + ((EEPROM.read(2198) << 8) & 0xFF00);
+    DMXMode = EEPROM.read(2199);
+  }
+
 
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
