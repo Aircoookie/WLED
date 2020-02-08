@@ -83,6 +83,53 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
+char* URL_response(AsyncWebServerRequest *request)
+{
+  char sbuf[256]; //allocate local buffer if none passed
+  char s2buf[100];
+  obuf = s2buf;
+  olen = 0;
+
+  char s[16];
+  oappend("http://");
+  IPAddress localIP = WiFi.localIP();
+  sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+  oappend(s);
+  oappend("/win&A=");
+  oappendi(bri);
+  oappend("&CL=h");
+  for (int i = 0; i < 3; i++)
+  {
+   sprintf(s,"%02X", col[i]);
+   oappend(s); 
+  }
+  oappend("&C2=h");
+  for (int i = 0; i < 3; i++)
+  {
+   sprintf(s,"%02X", colSec[i]);
+   oappend(s);
+  }
+  oappend("&FX=");
+  oappendi(effectCurrent);
+  oappend("&SX=");
+  oappendi(effectSpeed);
+  oappend("&IX=");
+  oappendi(effectIntensity);
+  oappend("&FP=");
+  oappendi(effectPalette);
+
+  obuf = sbuf;
+  olen = 0;
+
+  oappend("<html><body><a href=\"");
+  oappend(s2buf);
+  oappend("\" target=\"_blank\">");
+  oappend(s2buf);  
+  oappend("</a></body></html>");
+
+  if (request != nullptr) request->send(200, "text/html", obuf);
+}
+
 //append a numeric setting to string buffer
 void sappend(char stype, const char* key, int val)
 {

@@ -138,6 +138,10 @@ void initServer()
     request->send_P(200, "text/html", PAGE_usermod);
     });
     
+  server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
+    URL_response(request);
+    });
+    
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, "418. I'm a teapot.", "(Tangible Embedded Advanced Project Of Twinkling)", 254);
     });
