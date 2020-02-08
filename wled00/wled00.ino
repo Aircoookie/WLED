@@ -179,8 +179,20 @@ bool receiveDirect    =  true;                //receive UDP realtime
 bool arlsDisableGammaCorrection = true;       //activate if gamma correction is handled by the source
 bool arlsForceMaxBri = false;                 //enable to force max brightness if source has very dark colors that would be black
 
-uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol
-bool e131Multicast = false;
+uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
+#define  DMX_MODE_DISABLED      0             //not used
+#define  DMX_MODE_SINGLE_RGB    1             //all LEDs same RGB color (3 channels)
+#define  DMX_MODE_SINGLE_DRGB   2             //all LEDs same RGB color and master dimmer (4 channels)
+#define  DMX_MODE_EFFECT        3             //trigger standalone effects of WLED (11 channels)
+#define  DMX_MODE_MULTIPLE_RGB  4             //every LED is addressed with its own RGB (ledCount * 3 channels)
+#define  DMX_MODE_MULTIPLE_DRGB 5             //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
+uint8_t  DMXMode;                             //DMX mode (s.a.)
+uint16_t DMXAddress;                          //DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
+uint8_t  DMXOldDimmer = 0;                    //only update brightness on change
+uint8_t  e131LastSequenceNumber = 0;          //to detect packet loss
+bool     e131Multicast = false;               //multicast or unicast
+IPAddress e131ClientIP;                       //E1.31 client IP
+String   e131ClientUA;                        //E1.31 client User Agent
 
 bool mqttEnabled = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
