@@ -1207,6 +1207,7 @@ uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
 {
   uint16_t counter = now * ((SEGMENT.speed >> 2) +1);
   uint16_t idexR = (counter * SEGLEN) >> 16;
+  uint8_t size = 1 + SEGMENT.intensity >> 3;
   if (idexR >= SEGLEN) idexR = 0;
 
   uint16_t topindex = SEGLEN >> 1;
@@ -1214,10 +1215,11 @@ uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
   if (SEGENV.call == 0) SEGENV.aux0 = idexR;
   if (idexB >= SEGLEN) idexB = 0; //otherwise overflow on odd number of LEDs
 
-  if (SEGENV.aux0 == idexR) {
-    setPixelColor(idexR, color1);
-    setPixelColor(idexB, color2);
-  } else {
+  for (uint8_t i=0; i <= size; i++) {
+    setPixelColor(idexR+i, color1);
+    setPixelColor(idexB+i, color2);
+  }
+  if (SEGENV.aux0 != idexR) {
     uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
     for (uint8_t i = 0; i <= gap ; i++) {
       if ((idexR - i) < 0) idexR = SEGLEN-1 + i;
