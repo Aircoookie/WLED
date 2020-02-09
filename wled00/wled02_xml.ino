@@ -58,27 +58,25 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   oappend("</ps><cy>");
   oappendi(presetCyclingEnabled);
   oappend("</cy><ds>");
-  if (realtimeActive)
+  if (realtimeMode)
   {
     String mesg = "Live ";
-    if (realtimeIP[0] == 0)
+    if (realtimeMode == REALTIME_MODE_E131)
     {
       mesg += "E1.31 mode ";
       mesg += DMXMode;
-      mesg += " at fixture DMX Address ";
+      mesg += " at DMX Address ";
       mesg += DMXAddress;
-      mesg += " from '";
-      mesg += e131ClientUA;
-      mesg += "' (";
-      mesg += e131ClientIP[0];
+      mesg += " from ";
+      mesg += realtimeIP[0];
       for (int i = 1; i < 4; i++)
       {
         mesg += ".";
-        mesg += e131ClientIP[i];
+        mesg += realtimeIP[i];
       }
-      mesg += ") seq=";
+      mesg += " seq=";
       mesg += e131LastSequenceNumber;
-    } else {
+    } else if (realtimeMode == REALTIME_MODE_UDP || realtimeMode == REALTIME_MODE_HYPERION) {
       mesg += "UDP from ";
       mesg += realtimeIP[0];
       for (int i = 1; i < 4; i++)
@@ -86,6 +84,10 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
         mesg += ".";
         mesg += realtimeIP[i];
       }
+    } else if (realtimeMode == REALTIME_MODE_ADALIGHT) {
+      mesg += "USB Adalight";
+    } else { //generic
+      mesg += "data";
     }
     oappend((char*)mesg.c_str());
   } else {

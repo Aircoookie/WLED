@@ -479,6 +479,9 @@ void loadSettingsFromEEPROM(bool first)
   {
     DMXAddress = EEPROM.read(2197) + ((EEPROM.read(2198) << 8) & 0xFF00);
     DMXMode = EEPROM.read(2199);
+  } else {
+    DMXAddress = 1;
+    DMXMode = DMX_MODE_MULTIPLE_RGB;
   }
 
 

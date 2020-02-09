@@ -72,14 +72,14 @@ void notify(byte callMode, bool followUp=false)
 }
 
 
-void arlsLock(uint32_t timeoutMs)
+void arlsLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC)
 {
-  if (!realtimeActive){
+  if (!realtimeMode){
     for (uint16_t i = 0; i < ledCount; i++)
     {
       strip.setPixelColor(i,0,0,0,0);
     }
-    realtimeActive = true;
+    realtimeMode = md;
   }
   realtimeTimeout = millis() + timeoutMs;
   if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
@@ -103,8 +103,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
   e131LastSequenceNumber = p->sequence_number;
 
   // update status info
-  e131ClientIP = clientIP;
-  e131ClientUA = String((char *)p->source_name);
+  realtimeIP = clientIP;
   
   uint16_t uni = htons(p->universe);
   uint8_t previousUniverses = uni - e131Universe;
@@ -141,7 +140,6 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
       if (DMXOldDimmer != p->property_values[DMXAddress+0]) {
         DMXOldDimmer = p->property_values[DMXAddress+0];
         bri = p->property_values[DMXAddress+0];
-        strip.setBrightness(bri);
       }
       if (p->property_values[DMXAddress+1] < MODE_COUNT)
         effectCurrent = p->property_values[DMXAddress+ 1];
@@ -154,8 +152,13 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
       colSec[0]       = p->property_values[DMXAddress+ 8];
       colSec[1]       = p->property_values[DMXAddress+ 9];
       colSec[2]       = p->property_values[DMXAddress+10];
-      fadeTransition  = false; // act fast
-      colorUpdated(5);         // don't send UDP
+      if (dmxChannels-DMXAddress+1 > 11)
+      {
+        col[3]          = p->property_values[DMXAddress+11]; //white
+        colSec[3]       = p->property_values[DMXAddress+12];
+      }
+      transitionDelayTemp = 0; // act fast
+      colorUpdated(3);         // don't send UDP
       return;                  // don't activate realtime live mode
       break;
 
@@ -212,7 +215,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
       break;
   }
 
-  arlsLock(realtimeTimeoutMs);
+  arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
   e131NewData = true;
 }
 
@@ -231,12 +234,10 @@ void handleNotifications()
   }
 
   //unlock strip when realtime UDP times out
-  if (realtimeActive && millis() > realtimeTimeout)
+  if (realtimeMode && millis() > realtimeTimeout)
   {
     strip.setBrightness(bri);
-    realtimeActive = false;
-    //strip.setMode(effectCurrent);
-    realtimeIP[0] = 0;
+    realtimeMode = REALTIME_MODE_INACTIVE;
   }
 
   //receive UDP notifications
@@ -253,7 +254,7 @@ void handleNotifications()
     DEBUG_PRINTLN(rgbUdp.remoteIP());
     uint8_t lbuf[packetSize];
     rgbUdp.read(lbuf, packetSize);
-    arlsLock(realtimeTimeoutMs);
+    arlsLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
     uint16_t id = 0;
     for (uint16_t i = 0; i < packetSize -2; i += 3)
     {
@@ -273,7 +274,7 @@ void handleNotifications()
     notifierUdp.read(udpIn, packetSize);
 
     //wled notifier, block if realtime packets active
-    if (udpIn[0] == 0 && !realtimeActive && receiveNotifications)
+    if (udpIn[0] == 0 && !realtimeMode && receiveNotifications)
     {
       //ignore notification if received within a second after sending a notification ourselves
       if (millis() - notificationSentTime < 1000) return;
@@ -340,7 +341,7 @@ void handleNotifications()
           realtimeTimeout = 0;
           return;
         } else {
-          arlsLock(udpIn[1]*1000 +1);
+          arlsLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
         }
         if (udpIn[0] == 1) //warls
         {

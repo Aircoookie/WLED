@@ -191,8 +191,6 @@ uint16_t DMXAddress;                          //DMX start address of fixture, a.
 uint8_t  DMXOldDimmer = 0;                    //only update brightness on change
 uint8_t  e131LastSequenceNumber = 0;          //to detect packet loss
 bool     e131Multicast = false;               //multicast or unicast
-IPAddress e131ClientIP;                       //E1.31 client IP
-String   e131ClientUA;                        //E1.31 client User Agent
 
 bool mqttEnabled = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
@@ -366,9 +364,16 @@ bool presetApplyBri = false, presetApplyCol = true, presetApplyFx = true;
 bool saveCurrPresetCycConf = false;
 
 //realtime
-bool realtimeActive = false;
+#define REALTIME_MODE_INACTIVE 0
+#define REALTIME_MODE_GENERIC  1
+#define REALTIME_MODE_UDP      2
+#define REALTIME_MODE_HYPERION 3
+#define REALTIME_MODE_E131     4
+#define REALTIME_MODE_ADALIGHT 5
+byte realtimeMode = 0;
 IPAddress realtimeIP = (0,0,0,0);
 unsigned long realtimeTimeout = 0;
+
 
 //mqtt
 long lastMqttReconnectAttempt = 0;
@@ -431,6 +436,7 @@ AsyncMqttClient* mqtt = NULL;
 void colorFromUint32(uint32_t,bool=false);
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
 void handleE131Packet(e131_packet_t*, IPAddress);
+void arlsLock(uint32_t,byte);
 void handleOverlayDraw();
 
 #define E131_MAX_UNIVERSE_COUNT 9
@@ -531,7 +537,7 @@ void loop() {
   yield();
   if (doReboot) reset();
 
-  if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
+  if (!realtimeMode) //block stuff if WARLS/Adalight is enabled
   {
     if (apActive) dnsServer.processNextRequest();
     #ifndef WLED_DISABLE_OTA

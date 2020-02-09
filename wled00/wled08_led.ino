@@ -33,7 +33,7 @@ void toggleOnOff()
 
 
 void setAllLeds() {
-  if (!realtimeActive || !arlsForceMaxBri)
+  if (!realtimeMode || !arlsForceMaxBri)
   {
     double d = briT*briMultiplier;
     int val = d/100;
