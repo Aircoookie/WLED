@@ -66,6 +66,9 @@ bool deserializeState(JsonObject root)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root["v"] | false;
+
+  int ps = root["ps"] | -1;
+  if (ps >= 0) applyPreset(ps);
   
   bri = root["bri"] | bri;
   
@@ -86,9 +89,6 @@ bool deserializeState(JsonObject root)
     transitionDelayTemp *= 100;
     jsonTransitionOnce = true;
   }
-
-  int ps = root["ps"] | -1;
-  if (ps >= 0) applyPreset(ps);
   
   int cy = root["pl"] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);
