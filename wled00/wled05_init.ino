@@ -152,6 +152,7 @@ void initAP(bool resetAP=false){
 void initConnection()
 {
   WiFi.disconnect(); //close old connections
+  WiFi.setPhyMode(WIFI_PHY_MODE_11N);
 
   if (staticIP[0] != 0 && staticGateway[0] != 0)
   {

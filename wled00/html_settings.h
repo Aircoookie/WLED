@@ -223,7 +223,7 @@ Device Auth token: <input name="BK" maxlength="33"><br>
 <h3>MQTT</h3>
 Enable MQTT: <input type="checkbox" name="MQ"><br>
 Broker: <input name="MS" maxlength="32">
-Port: <input name="MQPORT" type="number" min="1" max="65535" required><br>
+Port: <input name="MQPORT" type="number" min="1" max="65535"><br>
 <b>The MQTT credentials are sent over an unsecured connection.<br>
 Never use the MQTT password for another service!</b><br>
 Username: <input name="MQUSER" maxlength="40"><br>
@@ -370,7 +370,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.0-b2<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.1<br><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2020 Christian Schwinne <br>

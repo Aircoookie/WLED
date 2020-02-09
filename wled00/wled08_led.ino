@@ -57,7 +57,7 @@ void setAllLeds() {
 }
 
 
-void setLedsStandard()
+void setLedsStandard(bool justColors = false)
 {
   for (byte i=0; i<4; i++)
   {
@@ -66,6 +66,7 @@ void setLedsStandard()
     colSecOld[i] = colSec[i];
     colSecT[i] = colSec[i];
   }
+  if (justColors) return;
   briOld = bri;
   briT = bri;
   setAllLeds();
@@ -120,7 +121,12 @@ void colorUpdated(int callMode)
     colIT[i] = col[i];
     colSecIT[i] = colSec[i];
   }
-  if (briT == 0 && callMode != 3) resetTimebase(); 
+  if (briT == 0)
+  {
+    setLedsStandard(true); //do not color transition if starting from off
+    if (callMode != 3) resetTimebase(); //effect start from beginning
+  }
+
   briIT = bri;
   if (bri > 0) briLast = bri;
   
