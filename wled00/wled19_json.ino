@@ -255,7 +255,7 @@ void serializeInfo(JsonObject root)
   
   root["name"] = serverDescription;
   root["udpport"] = udpPort;
-  root["live"] = realtimeActive;
+  root["live"] = (bool)realtimeMode;
   root["fxcount"] = strip.getModeCount();
   root["palcount"] = strip.getPaletteCount();
 
