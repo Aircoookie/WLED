@@ -138,6 +138,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     e131Multicast = request->hasArg("EM");
     t = request->arg("EU").toInt();
     if (t > 0  && t <= 63999) e131Universe = t;
+    t = request->arg("DA").toInt();
+    if (t > 0  && t <= 510) DMXAddress = t;
+    t = request->arg("DM").toInt();
+    if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_DRGB) DMXMode = t;
     t = request->arg("ET").toInt();
     if (t > 99  && t <= 65000) realtimeTimeoutMs = t;
     arlsForceMaxBri = request->hasArg("FB");

@@ -72,14 +72,14 @@ void notify(byte callMode, bool followUp=false)
 }
 
 
-void arlsLock(uint32_t timeoutMs)
+void arlsLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC)
 {
-  if (!realtimeActive){
+  if (!realtimeMode){
     for (uint16_t i = 0; i < ledCount; i++)
     {
       strip.setPixelColor(i,0,0,0,0);
     }
-    realtimeActive = true;
+    realtimeMode = md;
   }
   realtimeTimeout = millis() + timeoutMs;
   if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
@@ -89,23 +89,133 @@ void arlsLock(uint32_t timeoutMs)
 
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
   //E1.31 protocol support
-  uint16_t uni = htons(p->universe);
-  if (uni < e131Universe || uni >= e131Universe + E131_MAX_UNIVERSE_COUNT) return;
   
-  uint16_t len = htons(p->property_value_count) -1;
-  len /= 3; //one LED is 3 DMX channels
-  
-  uint16_t multipacketOffset = (uni - e131Universe)*170; //if more than 170 LEDs (510 channels), client will send in next higher universe 
-  if (ledCount <= multipacketOffset) return;
+  // skip out-of-sequence packets
+  if (p->sequence_number < e131LastSequenceNumber && p->sequence_number - e131LastSequenceNumber > -20){
+    DEBUG_PRINT("skipping E1.31 frame (last seq=");
+    DEBUG_PRINT(e131LastSequenceNumber);
+    DEBUG_PRINT(", current seq=");
+    DEBUG_PRINT(p->sequence_number);
+    DEBUG_PRINTLN(")");
+    e131LastSequenceNumber = p->sequence_number;
+    return;
+  }
+  e131LastSequenceNumber = p->sequence_number;
 
-  arlsLock(realtimeTimeoutMs);
-  if (len + multipacketOffset > ledCount) len = ledCount - multipacketOffset;
+  // update status info
+  realtimeIP = clientIP;
   
-  for (uint16_t i = 0; i < len; i++) {
-    int j = i * 3 +1;
-    setRealtimePixel(i + multipacketOffset, p->property_values[j], p->property_values[j+1], p->property_values[j+2], 0);
+  uint16_t uni = htons(p->universe);
+  uint8_t previousUniverses = uni - e131Universe;
+  uint16_t possibleLEDsInCurrentUniverse;
+  uint16_t dmxChannels = htons(p->property_value_count) -1;
+
+  switch (DMXMode) {
+    case DMX_MODE_DISABLED:
+      return;  // nothing to do
+      break;
+
+    case DMX_MODE_SINGLE_RGB:
+      if (uni != e131Universe) return;
+      if (dmxChannels-DMXAddress+1 < 3) return;
+      for (uint16_t i = 0; i < ledCount; i++)
+        setRealtimePixel(i, p->property_values[DMXAddress+0], p->property_values[DMXAddress+1], p->property_values[DMXAddress+2], 0);
+      break;
+
+    case DMX_MODE_SINGLE_DRGB:
+      if (uni != e131Universe) return;
+      if (dmxChannels-DMXAddress+1 < 4) return;
+      if (DMXOldDimmer != p->property_values[DMXAddress+0]) {
+        DMXOldDimmer = p->property_values[DMXAddress+0];
+        bri = p->property_values[DMXAddress+0];
+        strip.setBrightness(bri);
+      }
+      for (uint16_t i = 0; i < ledCount; i++)
+        setRealtimePixel(i, p->property_values[DMXAddress+1], p->property_values[DMXAddress+2], p->property_values[DMXAddress+3], 0);
+      break;
+
+    case DMX_MODE_EFFECT:
+      if (uni != e131Universe) return;
+      if (dmxChannels-DMXAddress+1 < 11) return;
+      if (DMXOldDimmer != p->property_values[DMXAddress+0]) {
+        DMXOldDimmer = p->property_values[DMXAddress+0];
+        bri = p->property_values[DMXAddress+0];
+      }
+      if (p->property_values[DMXAddress+1] < MODE_COUNT)
+        effectCurrent = p->property_values[DMXAddress+ 1];
+      effectSpeed     = p->property_values[DMXAddress+ 2];  // flickers
+      effectIntensity = p->property_values[DMXAddress+ 3];
+      effectPalette   = p->property_values[DMXAddress+ 4];
+      col[0]          = p->property_values[DMXAddress+ 5];
+      col[1]          = p->property_values[DMXAddress+ 6];
+      col[2]          = p->property_values[DMXAddress+ 7];
+      colSec[0]       = p->property_values[DMXAddress+ 8];
+      colSec[1]       = p->property_values[DMXAddress+ 9];
+      colSec[2]       = p->property_values[DMXAddress+10];
+      if (dmxChannels-DMXAddress+1 > 11)
+      {
+        col[3]          = p->property_values[DMXAddress+11]; //white
+        colSec[3]       = p->property_values[DMXAddress+12];
+      }
+      transitionDelayTemp = 0; // act fast
+      colorUpdated(3);         // don't send UDP
+      return;                  // don't activate realtime live mode
+      break;
+
+    case DMX_MODE_MULTIPLE_RGB:
+      if (previousUniverses == 0) {
+        // first universe of this fixture
+        possibleLEDsInCurrentUniverse = (dmxChannels - DMXAddress + 1) / 3;
+        for (uint16_t i = 0; i < ledCount; i++) {
+          if (i >= possibleLEDsInCurrentUniverse) break;  // more LEDs will follow in next universe(s)
+          setRealtimePixel(i, p->property_values[DMXAddress+i*3+0], p->property_values[DMXAddress+i*3+1], p->property_values[DMXAddress+i*3+2], 0);
+        }
+      } else if (previousUniverses > 0 && uni < (e131Universe + E131_MAX_UNIVERSE_COUNT)) {
+        // additional universe(s) of this fixture
+        uint16_t numberOfLEDsInPreviousUniverses = ((512 - DMXAddress + 1) / 3);                            // first universe
+        if (previousUniverses > 1) numberOfLEDsInPreviousUniverses += (512 / 3) * (previousUniverses - 1);  // extended universe(s) before current
+        possibleLEDsInCurrentUniverse = dmxChannels / 3;
+        for (uint16_t i = numberOfLEDsInPreviousUniverses; i < ledCount; i++) {
+          uint8_t j = i - numberOfLEDsInPreviousUniverses;
+          if (j >= possibleLEDsInCurrentUniverse) break;   // more LEDs will follow in next universe(s)
+          setRealtimePixel(i, p->property_values[j*3+1], p->property_values[j*3+2], p->property_values[j*3+3], 0);
+        }
+      }
+      break;
+
+    case DMX_MODE_MULTIPLE_DRGB:
+      if (previousUniverses == 0) {
+        // first universe of this fixture
+        if (DMXOldDimmer != p->property_values[DMXAddress+0]) {
+          DMXOldDimmer = p->property_values[DMXAddress+0];
+          bri = p->property_values[DMXAddress+0];
+          strip.setBrightness(bri);
+        }
+        possibleLEDsInCurrentUniverse = (dmxChannels - DMXAddress) / 3;
+        for (uint16_t i = 0; i < ledCount; i++) {
+          if (i >= possibleLEDsInCurrentUniverse) break;  // more LEDs will follow in next universe(s)
+          setRealtimePixel(i, p->property_values[DMXAddress+i*3+1], p->property_values[DMXAddress+i*3+2], p->property_values[DMXAddress+i*3+3], 0);
+        }
+      } else if (previousUniverses > 0 && uni < (e131Universe + E131_MAX_UNIVERSE_COUNT)) {
+        // additional universe(s) of this fixture
+        uint16_t numberOfLEDsInPreviousUniverses = ((512 - DMXAddress + 1) / 3);                            // first universe
+        if (previousUniverses > 1) numberOfLEDsInPreviousUniverses += (512 / 3) * (previousUniverses - 1);  // extended universe(s) before current
+        possibleLEDsInCurrentUniverse = dmxChannels / 3;
+        for (uint16_t i = numberOfLEDsInPreviousUniverses; i < ledCount; i++) {
+          uint8_t j = i - numberOfLEDsInPreviousUniverses;
+          if (j >= possibleLEDsInCurrentUniverse) break;   // more LEDs will follow in next universe(s)
+          setRealtimePixel(i, p->property_values[j*3+1], p->property_values[j*3+2], p->property_values[j*3+3], 0);
+        }
+      }
+      break;
+
+    default:
+      DEBUG_PRINTLN("unknown E1.31 DMX mode");
+      return;  // nothing to do
+      break;
   }
 
+  arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
   e131NewData = true;
 }
 
@@ -124,12 +234,10 @@ void handleNotifications()
   }
 
   //unlock strip when realtime UDP times out
-  if (realtimeActive && millis() > realtimeTimeout)
+  if (realtimeMode && millis() > realtimeTimeout)
   {
     strip.setBrightness(bri);
-    realtimeActive = false;
-    //strip.setMode(effectCurrent);
-    realtimeIP[0] = 0;
+    realtimeMode = REALTIME_MODE_INACTIVE;
   }
 
   //receive UDP notifications
@@ -146,7 +254,7 @@ void handleNotifications()
     DEBUG_PRINTLN(rgbUdp.remoteIP());
     uint8_t lbuf[packetSize];
     rgbUdp.read(lbuf, packetSize);
-    arlsLock(realtimeTimeoutMs);
+    arlsLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
     uint16_t id = 0;
     for (uint16_t i = 0; i < packetSize -2; i += 3)
     {
@@ -166,7 +274,7 @@ void handleNotifications()
     notifierUdp.read(udpIn, packetSize);
 
     //wled notifier, block if realtime packets active
-    if (udpIn[0] == 0 && !realtimeActive && receiveNotifications)
+    if (udpIn[0] == 0 && !realtimeMode && receiveNotifications)
     {
       //ignore notification if received within a second after sending a notification ourselves
       if (millis() - notificationSentTime < 1000) return;
@@ -233,7 +341,7 @@ void handleNotifications()
           realtimeTimeout = 0;
           return;
         } else {
-          arlsLock(udpIn[1]*1000 +1);
+          arlsLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
         }
         if (udpIn[0] == 1) //warls
         {
