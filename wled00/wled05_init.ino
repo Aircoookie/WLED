@@ -152,6 +152,9 @@ void initAP(bool resetAP=false){
 void initConnection()
 {
   WiFi.disconnect(); //close old connections
+  #ifdef ESP8266
+  WiFi.setPhyMode(WIFI_PHY_MODE_11N);
+  #endif
 
   if (staticIP[0] != 0 && staticGateway[0] != 0)
   {

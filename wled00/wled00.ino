@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.9.0-b2
+ * @version 0.9.1
  * @author Christian Schwinne
  */
 
@@ -90,9 +90,9 @@
  #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2001281
+#define VERSION 2002021
 
-char versionString[] = "0.9.0-b2";
+char versionString[] = "0.9.1";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -115,9 +115,7 @@ char cmDNS[33] = "x";                         //mDNS address (placeholder, will 
 char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
 byte apHide = 0;                              //hidden AP SSID
-//byte apWaitTimeSecs = 32;                   //time to wait for connection before opening AP
 byte apBehavior = 0;                          //0: Open AP when no connection after boot 1: Open when no connection 2: Always open 3: Only when button pressed for 6 sec
-//bool recoveryAPDisabled = false;            //never open AP (not recommended)
 IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
 IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
 IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home networks
