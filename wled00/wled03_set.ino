@@ -138,6 +138,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     e131Multicast = request->hasArg("EM");
     t = request->arg("EU").toInt();
     if (t > 0  && t <= 63999) e131Universe = t;
+    t = request->arg("DA").toInt();
+    if (t > 0  && t <= 510) DMXAddress = t;
+    t = request->arg("DM").toInt();
+    if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_DRGB) DMXMode = t;
     t = request->arg("ET").toInt();
     if (t > 99  && t <= 65000) realtimeTimeoutMs = t;
     arlsForceMaxBri = request->hasArg("FB");
@@ -406,6 +410,44 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   main = strip.getMainSegmentId();
 
+   //set presets
+  pos = req.indexOf("P1="); //sets first preset for cycle
+  if (pos > 0) presetCycleMin = getNumVal(&req, pos);
+
+  pos = req.indexOf("P2="); //sets last preset for cycle
+  if (pos > 0) presetCycleMax = getNumVal(&req, pos);
+
+  //preset cycle
+  pos = req.indexOf("CY=");
+  if (pos > 0)
+  {
+    presetCyclingEnabled = (req.charAt(pos+3) != '0');
+    presetCycCurr = presetCycleMin;
+  }
+
+  pos = req.indexOf("PT="); //sets cycle time in ms
+  if (pos > 0) {
+    int v = getNumVal(&req, pos);
+    if (v > 49) presetCycleTime = v;
+  }
+
+  pos = req.indexOf("PA="); //apply brightness from preset
+  if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
+
+  pos = req.indexOf("PC="); //apply color from preset
+  if (pos > 0) presetApplyCol = (req.charAt(pos+3) != '0');
+
+  pos = req.indexOf("PX="); //apply effects from preset
+  if (pos > 0) presetApplyFx = (req.charAt(pos+3) != '0');
+
+  pos = req.indexOf("PS="); //saves current in preset
+  if (pos > 0) savePreset(getNumVal(&req, pos));
+
+  //apply preset
+  if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
+    applyPreset(presetCycCurr, presetApplyBri, presetApplyCol, presetApplyFx);
+  }
+
   //set brightness
   updateVal(&req, "&A=", &bri);
 
@@ -568,44 +610,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) {
     countdownTime = getNumVal(&req, pos);
     if (countdownTime - now() > 0) countdownOverTriggered = false;
-  }
-
-  //set presets
-  pos = req.indexOf("P1="); //sets first preset for cycle
-  if (pos > 0) presetCycleMin = getNumVal(&req, pos);
-
-  pos = req.indexOf("P2="); //sets last preset for cycle
-  if (pos > 0) presetCycleMax = getNumVal(&req, pos);
-
-  //preset cycle
-  pos = req.indexOf("CY=");
-  if (pos > 0)
-  {
-    presetCyclingEnabled = (req.charAt(pos+3) != '0');
-    presetCycCurr = presetCycleMin;
-  }
-
-  pos = req.indexOf("PT="); //sets cycle time in ms
-  if (pos > 0) {
-    int v = getNumVal(&req, pos);
-    if (v > 49) presetCycleTime = v;
-  }
-
-  pos = req.indexOf("PA="); //apply brightness from preset
-  if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
-
-  pos = req.indexOf("PC="); //apply color from preset
-  if (pos > 0) presetApplyCol = (req.charAt(pos+3) != '0');
-
-  pos = req.indexOf("PX="); //apply effects from preset
-  if (pos > 0) presetApplyFx = (req.charAt(pos+3) != '0');
-
-  pos = req.indexOf("PS="); //saves current in preset
-  if (pos > 0) savePreset(getNumVal(&req, pos));
-
-  //apply preset
-  if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
-    applyPreset(presetCycCurr, presetApplyBri, presetApplyCol, presetApplyFx);
   }
 
   //cronixie

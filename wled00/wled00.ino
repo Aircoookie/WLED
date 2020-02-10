@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.9.0-b2
+ * @version 0.9.1
  * @author Christian Schwinne
  */
 
@@ -90,9 +90,9 @@
  #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2001281
+#define VERSION 2002021
 
-char versionString[] = "0.9.0-b2";
+char versionString[] = "0.9.1";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -115,9 +115,7 @@ char cmDNS[33] = "x";                         //mDNS address (placeholder, will 
 char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
 byte apHide = 0;                              //hidden AP SSID
-//byte apWaitTimeSecs = 32;                   //time to wait for connection before opening AP
 byte apBehavior = 0;                          //0: Open AP when no connection after boot 1: Open when no connection 2: Always open 3: Only when button pressed for 6 sec
-//bool recoveryAPDisabled = false;            //never open AP (not recommended)
 IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
 IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
 IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home networks
@@ -179,8 +177,18 @@ bool receiveDirect    =  true;                //receive UDP realtime
 bool arlsDisableGammaCorrection = true;       //activate if gamma correction is handled by the source
 bool arlsForceMaxBri = false;                 //enable to force max brightness if source has very dark colors that would be black
 
-uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol
-bool e131Multicast = false;
+uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
+#define  DMX_MODE_DISABLED      0             //not used
+#define  DMX_MODE_SINGLE_RGB    1             //all LEDs same RGB color (3 channels)
+#define  DMX_MODE_SINGLE_DRGB   2             //all LEDs same RGB color and master dimmer (4 channels)
+#define  DMX_MODE_EFFECT        3             //trigger standalone effects of WLED (11 channels)
+#define  DMX_MODE_MULTIPLE_RGB  4             //every LED is addressed with its own RGB (ledCount * 3 channels)
+#define  DMX_MODE_MULTIPLE_DRGB 5             //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
+uint8_t  DMXMode;                             //DMX mode (s.a.)
+uint16_t DMXAddress;                          //DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
+uint8_t  DMXOldDimmer = 0;                    //only update brightness on change
+uint8_t  e131LastSequenceNumber = 0;          //to detect packet loss
+bool     e131Multicast = false;               //multicast or unicast
 
 bool mqttEnabled = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
@@ -354,9 +362,16 @@ bool presetApplyBri = false, presetApplyCol = true, presetApplyFx = true;
 bool saveCurrPresetCycConf = false;
 
 //realtime
-bool realtimeActive = false;
+#define REALTIME_MODE_INACTIVE 0
+#define REALTIME_MODE_GENERIC  1
+#define REALTIME_MODE_UDP      2
+#define REALTIME_MODE_HYPERION 3
+#define REALTIME_MODE_E131     4
+#define REALTIME_MODE_ADALIGHT 5
+byte realtimeMode = 0;
 IPAddress realtimeIP = (0,0,0,0);
 unsigned long realtimeTimeout = 0;
+
 
 //mqtt
 long lastMqttReconnectAttempt = 0;
@@ -419,6 +434,7 @@ AsyncMqttClient* mqtt = NULL;
 void colorFromUint32(uint32_t,bool=false);
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
 void handleE131Packet(e131_packet_t*, IPAddress);
+void arlsLock(uint32_t,byte);
 void handleOverlayDraw();
 
 #define E131_MAX_UNIVERSE_COUNT 9
@@ -519,7 +535,7 @@ void loop() {
   yield();
   if (doReboot) reset();
 
-  if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
+  if (!realtimeMode) //block stuff if WARLS/Adalight is enabled
   {
     if (apActive) dnsServer.processNextRequest();
     #ifndef WLED_DISABLE_OTA

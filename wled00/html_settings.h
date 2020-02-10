@@ -205,7 +205,14 @@ Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
 <i>E1.31 (sACN)</i><br>
 Use E1.31 multicast: <input type="checkbox" name="EM"><br>
 E1.31 start universe: <input name="EU" type="number" min="1" max="63999" required><br>
-<i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br><br>
+<i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br>
+DMX start address: <input name="DA" type="number" min="1" max="510" value="1" required><br>
+DMX mode: <input name="DM" type="radio" value="0"> disabled<br>
+<input name="DM" type="radio" value="1"> Single RGB (3 Channels for all LEDs: Red Green Blue)<br>
+<input name="DM" type="radio" value="2"> Single DRGB (4 Channels for all LEDs: Dimmer Red Green Blue)<br>
+<input name="DM" type="radio" value="3"> Effect (11 Channels for properties: Dimmer FX Speed Intensity Palette PriR PriG PriB SecR SecG SecB)<br>
+<input name="DM" type="radio" value="4"> Multiple RGB (3 Channels for each LED: Red Green Blue)<br>
+<input name="DM" type="radio" value="5"> Multiple DRGB (1+3 Channels for each LED: Dimmer R1 G1 B1 R2 G2 B2...)<br><br>
 Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
@@ -223,7 +230,7 @@ Device Auth token: <input name="BK" maxlength="33"><br>
 <h3>MQTT</h3>
 Enable MQTT: <input type="checkbox" name="MQ"><br>
 Broker: <input name="MS" maxlength="32">
-Port: <input name="MQPORT" type="number" min="1" max="65535" required><br>
+Port: <input name="MQPORT" type="number" min="1" max="65535"><br>
 <b>The MQTT credentials are sent over an unsecured connection.<br>
 Never use the MQTT password for another service!</b><br>
 Username: <input name="MQUSER" maxlength="40"><br>
@@ -370,7 +377,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.0-b2<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.1<br><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2020 Christian Schwinne <br>
