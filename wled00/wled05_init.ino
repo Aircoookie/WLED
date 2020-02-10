@@ -192,7 +192,10 @@ void initConnection()
   #endif
    WiFi.begin(clientSSID, clientPass);
   #ifdef ARDUINO_ARCH_ESP32
+   WiFi.setSleep(false);
    WiFi.setHostname(serverDescription);
+  #else
+   wifi_set_sleep_type(NONE_SLEEP_T);
   #endif
 }
 
