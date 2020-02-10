@@ -14,6 +14,7 @@ const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
 <form action=/><button type=submit id=b>Back</button></form>
 <form action=/settings/wifi><button type=submit>WiFi Setup</button></form>
 <form action=/settings/leds><button type=submit>LED Preferences</button></form>
+<form action=/settings/dmx><button type=submit>DMX Output</button></form>
 <form action=/settings/ui><button type=submit>User Interface</button></form>
 <form action=/settings/sync><button type=submit>Sync Interfaces</button></form>
 <form action=/settings/time><button type=submit>Time & Macros</button></form>
@@ -159,6 +160,23 @@ Skip first LED: <input type=checkbox name=SL><hr>
 </form></body></html>)=====";
 
 
+//DMX Output settings
+const char PAGE_settings_dmx[] PROGMEM = R"=====(<!DOCTYPE html>
+<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>UI Settings</title><script>
+function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d=document;
+%CSS%%SCSS%</head>
+<body onload="S()">
+<form id="form_s" name="Sf" method="post">
+<div class="helpB"><button type="button" onclick="H()">?</button></div>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+<h2>Imma firin ma lazer (if it has dmx support)</h2>
+Server description: <input name="DS" maxlength="32"><br>
+Sync button toggles both send and receive: <input type="checkbox" name="ST"><br><br>
+<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+</form>
+</body>
+</html>)=====";
+
 //User Interface settings
 const char PAGE_settings_ui[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>UI Settings</title><script>
@@ -175,6 +193,7 @@ Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
 </form>
 </body>
 </html>)=====";
+
 
 
 //sync settings
