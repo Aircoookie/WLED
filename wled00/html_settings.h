@@ -160,10 +160,11 @@ Skip first LED: <input type=checkbox name=SL><hr>
 </form></body></html>)=====";
 
 
+#ifdef WLED_ENABLE_DMX
 //DMX Output settings
 const char PAGE_settings_dmx[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>UI Settings</title><script>
-function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d=document;
+<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>DMX Settings</title><script>
+function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/DMX");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d=document;
 %CSS%%SCSS%</head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post">
@@ -174,14 +175,33 @@ function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}fun
 <i>Number of fixtures is taken from LED config page</i><br>
 
 channels per fixture (15 max): <input name="CN" maxlength="2"><br />
-spacing between fixtures: <input name="CG" maxlength="2"> [<a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a>]
-<br>
+start channel: <input name="CS" maxlength="2"><br />
+spacing between fixtures: <input name="CG" maxlength="2"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
 
-Sync button toggles both send and receive: <input type="checkbox" name="ST"><br><br>
+<h3>channel functions</h3>
+<div class="dmxchannels">
+
+Channel 1: <select name=CH0>
+<option value=0>Set to 0</option>
+<option value=1>Red</option>
+<option value=2>Green</option>
+<option value=3>Blue</option>
+<option value=4>White</option>
+<option value=5>Shutter (Brightness)</option>
+<option value=255>Set to 255</option>
+</select>
+
+</div>
+
+
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>
 </html>)=====";
+
+#else
+const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
+#endif
 
 //User Interface settings
 const char PAGE_settings_ui[] PROGMEM = R"=====(<!DOCTYPE html>
