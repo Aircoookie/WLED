@@ -372,10 +372,12 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(") OK\";");
   }
   
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
     sappends('s',"DS",serverDescription);
     sappend('c',"ST",syncToggleReceive);
   }
+  #endif
   oappend("}</script>");
 }

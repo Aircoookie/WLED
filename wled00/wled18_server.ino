@@ -323,7 +323,9 @@ void serveSettings(AsyncWebServerRequest* request)
     else if (url.indexOf("sync") > 0) subPage = 4;
     else if (url.indexOf("time") > 0) subPage = 5;
     else if (url.indexOf("sec")  > 0) subPage = 6;
+    #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     else if (url.indexOf("dmx")  > 0) subPage = 7;
+    #endif
   } else subPage = 255; //welcome page
 
   if (subPage == 1 && wifiLock && otaLock)

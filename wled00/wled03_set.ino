@@ -288,13 +288,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       aOtaEnabled = request->hasArg("AO");
     }
   }
-  
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
     strlcpy(serverDescription, request->arg("DS").c_str(), 33);
     syncToggleReceive = request->hasArg("ST");
   }
-
+  
+  #endif
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
   if (subPage == 2) {
     strip.init(useRGBW,ledCount,skipFirstLed);
