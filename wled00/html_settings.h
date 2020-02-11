@@ -169,8 +169,14 @@ function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}fun
 <form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
-<h2>Imma firin ma lazer (if it has dmx support)</h2>
-Server description: <input name="DS" maxlength="32"><br>
+<h2>Imma firin ma lazer (if it has DMX support)</h2><!-- TODO: Change to something less-meme-related //-->
+
+<i>Number of fixtures is taken from LED config page</i><br>
+
+channels per fixture (15 max): <input name="CN" maxlength="2"><br />
+spacing between fixtures: <input name="CG" maxlength="2"> [<a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a>]
+<br>
+
 Sync button toggles both send and receive: <input type="checkbox" name="ST"><br><br>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
