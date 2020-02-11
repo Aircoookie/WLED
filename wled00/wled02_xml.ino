@@ -146,7 +146,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >6) return;
+  if (subPage <1 || subPage >7) return;
 
   if (subPage == 1) {
     sappends('s',"CS",clientSSID);
@@ -370,6 +370,12 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(" (build ");
     oappendi(VERSION);
     oappend(") OK\";");
+  }
+  
+  if (subPage == 7)
+  {
+    sappends('s',"DS",serverDescription);
+    sappend('c',"ST",syncToggleReceive);
   }
   oappend("}</script>");
 }

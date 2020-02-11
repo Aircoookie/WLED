@@ -323,6 +323,7 @@ void serveSettings(AsyncWebServerRequest* request)
     else if (url.indexOf("sync") > 0) subPage = 4;
     else if (url.indexOf("time") > 0) subPage = 5;
     else if (url.indexOf("sec")  > 0) subPage = 6;
+    else if (url.indexOf("dmx")  > 0) subPage = 7;
   } else subPage = 255; //welcome page
 
   if (subPage == 1 && wifiLock && otaLock)
