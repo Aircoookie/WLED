@@ -82,6 +82,11 @@ void initServer()
     serveMessage(request, 200,"UI settings saved.","Redirecting...",1);
   });
 
+  server.on("/settings/dmx", HTTP_POST, [](AsyncWebServerRequest *request){
+    handleSettingsSet(request, 7);
+    serveMessage(request, 200,"UI settings saved.","Redirecting...",1);
+  });
+
   server.on("/settings/sync", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 4);
     serveMessage(request, 200,"Sync settings saved.","Redirecting...",1);
@@ -339,6 +344,7 @@ void serveSettings(AsyncWebServerRequest* request)
     case 4:   request->send_P(200, "text/html", PAGE_settings_sync, settingsProcessor); break;
     case 5:   request->send_P(200, "text/html", PAGE_settings_time, settingsProcessor); break;
     case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
+    case 7:   request->send_P(200, "text/html", PAGE_settings_dmx , settingsProcessor); break;
     case 255: request->send_P(200, "text/html", PAGE_welcome); break;
     default:  request->send_P(200, "text/html", PAGE_settings); 
   }
