@@ -227,11 +227,6 @@ public:
     switch (_type) {
       case NeoPixelType_Grb: {
         _pGrb->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
-        #ifdef WLED_USE_ANALOG_LEDS
-          if (indexPixel != 0) return; //set analog LEDs from first pixel
-          byte b = _pGrb->GetBrightness();
-          SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, 0);
-        #endif
       }
       break;
       case NeoPixelType_Grbw: {
@@ -239,28 +234,6 @@ public:
         _pGrbw->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
         #else
         _pGrbw->SetPixelColor(indexPixel, color);
-        #endif
-        #ifdef WLED_USE_ANALOG_LEDS      
-          if (indexPixel != 0) return; //set analog LEDs from first pixel
-          byte b = _pGrbw->GetBrightness();
-          // check color values for Warm / Cold white mix (for RGBW)  // EsplanexaDevice.cpp
-          #ifdef WLED_USE_5CH_LEDS
-            if        (color.R == 255 & color.G == 255 && color.B == 255 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0,                  0, color.W * b / 255);
-            } else if (color.R == 127 & color.G == 127 && color.B == 127 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 512, color.W * b / 255);
-            } else if (color.R ==   0 & color.G ==   0 && color.B ==   0 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
-            } else if (color.R == 130 & color.G ==  90 && color.B ==   0 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 255, color.W * b / 512);
-            } else if (color.R == 255 & color.G == 153 && color.B ==   0 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
-            } else {  // not only white colors
-              SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
-            }
-          #else
-            SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
-          #endif         
         #endif
       }
       break;

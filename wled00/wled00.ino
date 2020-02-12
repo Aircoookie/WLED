@@ -533,6 +533,10 @@ void loop() {
 
   handleOverlays();
   yield();
+  #ifdef WLED_USE_ANALOG_LEDS 
+  strip.setRgbwPwm();
+  #endif
+
   if (doReboot) reset();
 
   if (!realtimeMode) //block stuff if WARLS/Adalight is enabled
