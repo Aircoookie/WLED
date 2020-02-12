@@ -1177,15 +1177,12 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
  * Gradient run base function
  */
 uint16_t WS2812FX::gradient_base(bool loading) {
-  uint16_t counter = now * (SEGMENT.speed >> 3) + 1;
-  SEGENV.step = counter * SEGLEN >> 16;
-  if (SEGMENT.speed == 0) SEGENV.step = SEGLEN >> 1;
-  if (SEGENV.call == 0) SEGENV.step = 0;
-  float per,val; //0.0 = sec 1.0 = pri
-  float brd = SEGMENT.intensity;
-  if (!loading) brd = SEGMENT.intensity/2;
+  uint16_t counter = now * ((SEGMENT.speed >> 2) + 1);
+  uint16_t pp = counter * SEGLEN >> 16;
+  if (SEGENV.call == 0) pp = 0;
+  float val; //0.0 = sec 1.0 = pri
+  float brd = loading ? SEGMENT.intensity : SEGMENT.intensity/2;
   if (brd <1.0) brd = 1.0;
-  int pp = SEGENV.step;
   int p1 = pp-SEGLEN;
   int p2 = pp+SEGLEN;
 
@@ -1197,9 +1194,8 @@ uint16_t WS2812FX::gradient_base(bool loading) {
     } else {
       val = min(abs(pp-i),min(abs(p1-i),abs(p2-i)));
     }
-    per = val/brd;
-    if (per >1.0) per = 1.0;
-    setPixelColor(i, color_blend(SEGCOLOR(0), color_from_palette(i, true, PALETTE_SOLID_WRAP, 1), per*255));
+    val = (brd > val) ? val/brd * 255 : 255;
+    setPixelColor(i, color_blend(SEGCOLOR(0), color_from_palette(i, true, PALETTE_SOLID_WRAP, 1), val));
   }
 
   return FRAMETIME;
