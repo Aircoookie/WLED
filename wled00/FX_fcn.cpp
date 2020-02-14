@@ -814,8 +814,9 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
 #ifdef WLED_USE_ANALOG_LEDS     
 void WS2812FX::setRgbwPwm(void) {
   uint32_t nowUp = millis(); // Be aware, millis() rolls over every 49 days
-  now = nowUp + timebase;
   if (nowUp - _analogLastShow < MIN_SHOW_DELAY) return;
+
+  _analogLastShow = nowUp;
 
   RgbwColor color = bus->GetPixelColorRgbw(0);
   byte b = getBrightness();
