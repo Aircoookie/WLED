@@ -3112,7 +3112,7 @@ uint16_t WS2812FX::mode_heartbeat(void) {
   memmove(bus->GetPixels(), bus->GetPixels() + bytesPerPixelBlock, byteCount);
   memmove(bus->GetPixels() + centerOffset + bytesPerPixelBlock, bus->GetPixels() + centerOffset, byteCount);
 
-  fade_out(SEGMENT.intensity);
+  fade_out(255 - SEGMENT.intensity);
 
   unsigned long beatTimer = millis() - lastBeat;
   if((beatTimer > secondBeat) && !secondBeatActive) { // time for the second beat?
