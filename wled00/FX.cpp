@@ -1451,13 +1451,14 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
  */
 uint16_t WS2812FX::mode_multi_comet(void)
 {
-  uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t cycleTime = 10 + (uint32_t)(255 - SEGMENT.speed);
   uint32_t it = now / cycleTime;
   if (SEGENV.step == it) return FRAMETIME;
-
+  if (!SEGENV.allocateData(sizeof(uint16_t) * 8)) return mode_static(); //allocation failed
+  
   fade_out(SEGMENT.intensity);
-
-  static uint16_t comets[] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
+  
+  uint16_t* comets = reinterpret_cast<uint16_t*>(SEGENV.data);
 
   for(uint8_t i=0; i < 8; i++) {
     if(comets[i] < SEGLEN) {
