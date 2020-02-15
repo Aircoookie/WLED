@@ -1327,22 +1327,23 @@ uint16_t WS2812FX::mode_tricolor_chase(void) {
  */
 uint16_t WS2812FX::mode_icu(void) {
   uint16_t dest = SEGENV.step & 0xFFFF;
+  uint8_t space = (SEGMENT.intensity >> 3) +2;
 
   fill(SEGCOLOR(1));
 
-  byte pindex = map(dest, 0, SEGLEN/2, 0, 255);
+  byte pindex = map(dest, 0, SEGLEN-SEGLEN/space, 0, 255);
   uint32_t col = color_from_palette(pindex, false, false, 0);
 
-  setPixelColor( dest, col);
-  setPixelColor( dest + SEGLEN/2, col);
+  setPixelColor(SEGMENT.start + dest, col);
+  setPixelColor(SEGMENT.start + dest + SEGLEN/space, col);
 
   if(SEGENV.aux0 == dest) { // pause between eye movements
     if(random8(6) == 0) { // blink once in a while
-      setPixelColor( dest, SEGCOLOR(1));
-      setPixelColor( dest + SEGLEN/2, SEGCOLOR(1));
+      setPixelColor(SEGMENT.start + dest, SEGCOLOR(1));
+      setPixelColor(SEGMENT.start + dest + SEGLEN/space, SEGCOLOR(1));
       return 200;
     }
-    SEGENV.aux0 = random16(SEGLEN/2);
+    SEGENV.aux0 = random16(SEGLEN-SEGLEN/space);
     return 1000 + random16(2000);
   }
 
@@ -1354,10 +1355,10 @@ uint16_t WS2812FX::mode_icu(void) {
     dest--;
   }
 
-  setPixelColor(dest, col);
-  setPixelColor(dest + SEGLEN/2, col);
+  setPixelColor(SEGMENT.start + dest, col);
+  setPixelColor(SEGMENT.start + dest + SEGLEN/space, col);
 
-  return SPEED_FORMULA_L;
+  return FRAMETIME;
 }
 
 
