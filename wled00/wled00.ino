@@ -38,12 +38,16 @@
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
  #include <ESPAsyncTCP.h>
+ extern "C" {
+ #include <user_interface.h>
+ }
 #else
  #include <WiFi.h>
  #include "esp_wifi.h"
  #include <ESPmDNS.h>
  #include <AsyncTCP.h>
  #include "SPIFFS.h"
+ #include <rom/rtc.h>
 #endif
 
 #include <ESPAsyncWebServer.h>
