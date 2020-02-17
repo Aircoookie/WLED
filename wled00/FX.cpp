@@ -3120,3 +3120,43 @@ uint16_t WS2812FX::mode_percent(void) {
 
  	return FRAMETIME;
 }
+
+uint16_t WS2812FX::mode_heartbeat(void) {
+  static unsigned long lastBeat = 0;
+  static bool secondBeatActive = false;
+
+  uint8_t bpm = 40 + (SEGMENT.speed >> 4);
+  uint32_t msPerBeat = (60000 / bpm);
+  uint32_t secondBeat = (msPerBeat / 3);
+
+  // Get and translate the segment's size option
+  uint8_t size = 2 << ((SEGMENT.options >> 1) & 0x03); // 2,4,8,16
+
+  // copy pixels from the middle of the segment to the edges
+  uint16_t bytesPerPixelBlock = size * 4;
+  uint16_t centerOffset = (SEGLEN / 2) * 4;
+  uint16_t byteCount = centerOffset - bytesPerPixelBlock;
+  memmove(bus->GetPixels(), bus->GetPixels() + bytesPerPixelBlock, byteCount);
+  memmove(bus->GetPixels() + centerOffset + bytesPerPixelBlock, bus->GetPixels() + centerOffset, byteCount);
+
+  fade_out(255 - SEGMENT.intensity);
+
+  unsigned long beatTimer = millis() - lastBeat;
+  if((beatTimer > secondBeat) && !secondBeatActive) { // time for the second beat?
+    uint16_t startLed = (SEGLEN / 2) - size;
+    for (uint16_t i = startLed; i < startLed + (size * 2); i++) {
+      setPixelColor(i, SEGMENT.colors[0]);
+    }
+    secondBeatActive = 1;
+  }
+  if(beatTimer > msPerBeat) { // time to reset the beat timer?
+    uint16_t startLed = (SEGLEN / 2) - size;
+    for (uint16_t i = startLed; i < startLed + (size * 2); i++) {
+      setPixelColor(i, SEGMENT.colors[0]);
+    }
+    secondBeatActive = 0;
+    lastBeat = millis();
+  }
+
+  return FRAMETIME;
+}
