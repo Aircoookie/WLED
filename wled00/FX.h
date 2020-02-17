@@ -567,8 +567,8 @@ class WS2812FX {
       mode_drip(void),
       mode_plasma(void),
       mode_percent(void),
+      mode_ripple_rainbow(void),
       mode_heartbeat(void);
-      mode_ripple_rainbow(void);
       
 
   private:
