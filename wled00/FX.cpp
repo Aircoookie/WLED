@@ -1451,13 +1451,14 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
  */
 uint16_t WS2812FX::mode_multi_comet(void)
 {
-  uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
+  uint32_t cycleTime = 10 + (uint32_t)(255 - SEGMENT.speed);
   uint32_t it = now / cycleTime;
   if (SEGENV.step == it) return FRAMETIME;
-
+  if (!SEGENV.allocateData(sizeof(uint16_t) * 8)) return mode_static(); //allocation failed
+  
   fade_out(SEGMENT.intensity);
-
-  static uint16_t comets[] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
+  
+  uint16_t* comets = reinterpret_cast<uint16_t*>(SEGENV.data);
 
   for(uint8_t i=0; i < 8; i++) {
     if(comets[i] < SEGLEN) {
@@ -2133,7 +2134,7 @@ typedef struct Ripple {
   uint16_t pos;
 } ripple;
 
-uint16_t WS2812FX::mode_ripple()
+uint16_t WS2812FX::ripple_base(bool rainbow)
 {
   uint16_t maxRipples = 1 + (SEGLEN >> 2);
   if (maxRipples > 100) maxRipples = 100;
@@ -2143,8 +2144,25 @@ uint16_t WS2812FX::mode_ripple()
  
   Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
 
-  fill(SEGCOLOR(1));
-
+  // ranbow background or chosen background, all very dim.
+  if (rainbow) {
+    if (SEGENV.call ==0) {
+      SEGENV.aux0 = random8();
+      SEGENV.aux1 = random8();
+    }
+    if (SEGENV.aux0 == SEGENV.aux1) {
+      SEGENV.aux1 = random8();
+    }
+    else if (SEGENV.aux1 > SEGENV.aux0) {
+      SEGENV.aux0++;
+    } else {
+      SEGENV.aux0--;
+    }
+    fill(color_blend(color_wheel(SEGENV.aux0),BLACK,235));
+  } else {
+    fill(SEGCOLOR(1));
+  }
+  
   //draw wave
   for (uint16_t i = 0; i < maxRipples; i++)
   {
@@ -2187,6 +2205,15 @@ uint16_t WS2812FX::mode_ripple()
   }
   return FRAMETIME;
 }
+
+uint16_t WS2812FX::mode_ripple(void) {
+  return ripple_base(false);
+}
+
+uint16_t WS2812FX::mode_ripple_rainbow(void) {
+  return ripple_base(true);
+}
+
 
 
 //  TwinkleFOX by Mark Kriegsman: https://gist.github.com/kriegsman/756ea6dcae8e30845b5a

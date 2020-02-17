@@ -103,7 +103,7 @@ td {
 
 .slider-icon
 {
-  transform: translateY(2px);
+  transform: translateY(3px);
   color: #ddd;
 }
 
@@ -141,7 +141,7 @@ td {
 .tab {
   background-color: #222;
   color: #ddd;
-  filter: drop-shadow(0px 0px 2px #000);
+  //filter: drop-shadow(0px 0px 2px #000);
 }
 
 .bot {
@@ -1337,12 +1337,28 @@ function selectSlot(b) {
   updateTrail(d.getElementById('sliderW'));
 }
 
+var lasth = 0;
+function pC(col)
+{
+  if (col == "rnd")
+  {
+	col = {h: 0, s: 0, v: 100};
+	col.s = Math.floor((Math.random() * 50) + 50);
+	do {
+	  col.h = Math.floor(Math.random() * 360);
+	} while (Math.abs(col.h - lasth) < 50);
+	lasth = col.h;
+  }
+  cpick.color.set(col);
+  setColor(false);
+}
+
 function setColor(fromPicker) {
   var cd = d.getElementById('csl').children;
   if (fromPicker && cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') cpick.color.setChannel('hsv', 'v', 100);
   cd[csel].style.backgroundColor = cpick.color.rgbString;
   whites[csel] = d.getElementById('sliderW').value;
-  col = cpick.color.rgb;
+  var col = cpick.color.rgb;
   var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
   if (csel == 1) {
     obj = {"seg": {"col": [[],[col.r, col.g, col.b, whites[csel]],[]]}};
