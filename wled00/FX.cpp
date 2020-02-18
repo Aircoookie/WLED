@@ -1219,11 +1219,10 @@ uint16_t WS2812FX::mode_loading(void) {
 
 
 //American Police Light with all LEDs Red and Blue 
-uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
+uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2, bool all)
 {
   uint16_t counter = now * ((SEGMENT.speed >> 2) +1);
   uint16_t idexR = (counter * SEGLEN) >> 16;
-  uint8_t size = 1 + SEGMENT.intensity >> 3;
   if (idexR >= SEGLEN) idexR = 0;
 
   uint16_t topindex = SEGLEN >> 1;
@@ -1231,19 +1230,31 @@ uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
   if (SEGENV.call == 0) SEGENV.aux0 = idexR;
   if (idexB >= SEGLEN) idexB = 0; //otherwise overflow on odd number of LEDs
 
-  for (uint8_t i=0; i <= size; i++) {
-    setPixelColor(idexR+i, color1);
-    setPixelColor(idexB+i, color2);
-  }
-  if (SEGENV.aux0 != idexR) {
-    uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
-    for (uint8_t i = 0; i <= gap ; i++) {
-      if ((idexR - i) < 0) idexR = SEGLEN-1 + i;
-      if ((idexB - i) < 0) idexB = SEGLEN-1 + i;
-      setPixelColor(idexR-i, color1);
-      setPixelColor(idexB-i, color2);
+  if (all) { //different algo, ensuring immediate fill
+    if (idexB > idexR) {
+      fill(color2);
+      for (uint16_t i = idexR; i < idexB; i++) setPixelColor(i, color1);
+    } else {
+      fill(color1);
+      for (uint16_t i = idexB; i < idexR; i++) setPixelColor(i, color2);
+    } 
+  } else { //regular dot-only mode
+    uint8_t size = 1 + SEGMENT.intensity >> 3;
+    if (size > SEGLEN/2) size = 1+ SEGLEN/2;
+    for (uint8_t i=0; i <= size; i++) {
+      setPixelColor(idexR+i, color1);
+      setPixelColor(idexB+i, color2);
     }
-    SEGENV.aux0 = idexR;
+    if (SEGENV.aux0 != idexR) {
+      uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
+      for (uint8_t i = 0; i <= gap ; i++) {
+        if ((idexR - i) < 0) idexR = SEGLEN-1 + i;
+        if ((idexB - i) < 0) idexB = SEGLEN-1 + i;
+        setPixelColor(idexR-i, color1);
+        setPixelColor(idexB-i, color2);
+      }
+      SEGENV.aux0 = idexR;
+    }
   }
   
   return FRAMETIME;
@@ -1253,7 +1264,7 @@ uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2)
 //American Police Light with all LEDs Red and Blue 
 uint16_t WS2812FX::mode_police_all()
 {
-  return police_base(RED, BLUE);
+  return police_base(RED, BLUE, true);
 }
 
 
@@ -1262,14 +1273,14 @@ uint16_t WS2812FX::mode_police()
 {
   fill(SEGCOLOR(1));
 
-  return police_base(RED, BLUE);
+  return police_base(RED, BLUE, false);
 }
 
 
 //Police All with custom colors
 uint16_t WS2812FX::mode_two_areas()
 {
-  return police_base(SEGCOLOR(0), SEGCOLOR(1));
+  return police_base(SEGCOLOR(0), SEGCOLOR(1), true);
 }
 
 
@@ -1279,7 +1290,7 @@ uint16_t WS2812FX::mode_two_dots()
   fill(SEGCOLOR(2));
   uint32_t color2 = (SEGCOLOR(1) == SEGCOLOR(2)) ? SEGCOLOR(0) : SEGCOLOR(1);
 
-  return police_base(SEGCOLOR(0), color2);
+  return police_base(SEGCOLOR(0), color2, false);
 }
 
 
@@ -3087,8 +3098,8 @@ uint16_t WS2812FX::mode_percent(void) {
 	uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
                                          : SEGLEN * (200 - percent) / 100.0;
   
-  if (SEGENV.call == 0) SEGENV.step = 0;
-  uint8_t size = (1 + ((SEGMENT.speed * SEGLEN) >> 11)) & 0xFF ;
+  uint8_t size = (1 + ((SEGMENT.speed * SEGLEN) >> 11));
+  if (SEGMENT.speed == 255) size = 255;
     
   if (percent < 100) {
     for (uint16_t i = 0; i < SEGLEN; i++) {
@@ -3122,40 +3133,27 @@ uint16_t WS2812FX::mode_percent(void) {
 }
 
 uint16_t WS2812FX::mode_heartbeat(void) {
-  static unsigned long lastBeat = 0;
-  static bool secondBeatActive = false;
-
   uint8_t bpm = 40 + (SEGMENT.speed >> 4);
   uint32_t msPerBeat = (60000 / bpm);
   uint32_t secondBeat = (msPerBeat / 3);
 
-  // Get and translate the segment's size option
-  uint8_t size = 2 << ((SEGMENT.options >> 1) & 0x03); // 2,4,8,16
+  uint32_t bri_lower = SEGENV.aux1;
+  bri_lower = bri_lower * 2042 / (2048 + SEGMENT.intensity);
+  SEGENV.aux1 = bri_lower;
 
-  // copy pixels from the middle of the segment to the edges
-  uint16_t bytesPerPixelBlock = size * 4;
-  uint16_t centerOffset = (SEGLEN / 2) * 4;
-  uint16_t byteCount = centerOffset - bytesPerPixelBlock;
-  memmove(bus->GetPixels(), bus->GetPixels() + bytesPerPixelBlock, byteCount);
-  memmove(bus->GetPixels() + centerOffset + bytesPerPixelBlock, bus->GetPixels() + centerOffset, byteCount);
-
-  fade_out(255 - SEGMENT.intensity);
-
-  unsigned long beatTimer = millis() - lastBeat;
-  if((beatTimer > secondBeat) && !secondBeatActive) { // time for the second beat?
-    uint16_t startLed = (SEGLEN / 2) - size;
-    for (uint16_t i = startLed; i < startLed + (size * 2); i++) {
-      setPixelColor(i, SEGMENT.colors[0]);
-    }
-    secondBeatActive = 1;
+  unsigned long beatTimer = millis() - SEGENV.step;
+  if((beatTimer > secondBeat) && !SEGENV.aux0) { // time for the second beat?
+    SEGENV.aux1 = UINT16_MAX; //full bri
+    SEGENV.aux0 = 1;
   }
   if(beatTimer > msPerBeat) { // time to reset the beat timer?
-    uint16_t startLed = (SEGLEN / 2) - size;
-    for (uint16_t i = startLed; i < startLed + (size * 2); i++) {
-      setPixelColor(i, SEGMENT.colors[0]);
-    }
-    secondBeatActive = 0;
-    lastBeat = millis();
+    SEGENV.aux1 = UINT16_MAX; //full bri
+    SEGENV.aux0 = 0;
+    SEGENV.step = millis();
+  }
+
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+    setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), 255 - (SEGENV.aux1 >> 8)));
   }
 
   return FRAMETIME;
