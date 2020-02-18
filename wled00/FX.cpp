@@ -1338,22 +1338,23 @@ uint16_t WS2812FX::mode_tricolor_chase(void) {
  */
 uint16_t WS2812FX::mode_icu(void) {
   uint16_t dest = SEGENV.step & 0xFFFF;
+  uint8_t space = (SEGMENT.intensity >> 3) +2;
 
   fill(SEGCOLOR(1));
 
-  byte pindex = map(dest, 0, SEGLEN/2, 0, 255);
+  byte pindex = map(dest, 0, SEGLEN-SEGLEN/space, 0, 255);
   uint32_t col = color_from_palette(pindex, false, false, 0);
 
-  setPixelColor( dest, col);
-  setPixelColor( dest + SEGLEN/2, col);
+  setPixelColor(dest, col);
+  setPixelColor(dest + SEGLEN/space, col);
 
   if(SEGENV.aux0 == dest) { // pause between eye movements
     if(random8(6) == 0) { // blink once in a while
-      setPixelColor( dest, SEGCOLOR(1));
-      setPixelColor( dest + SEGLEN/2, SEGCOLOR(1));
+      setPixelColor(dest, SEGCOLOR(1));
+      setPixelColor(dest + SEGLEN/space, SEGCOLOR(1));
       return 200;
     }
-    SEGENV.aux0 = random16(SEGLEN/2);
+    SEGENV.aux0 = random16(SEGLEN-SEGLEN/space);
     return 1000 + random16(2000);
   }
 
@@ -1366,7 +1367,7 @@ uint16_t WS2812FX::mode_icu(void) {
   }
 
   setPixelColor(dest, col);
-  setPixelColor(dest + SEGLEN/2, col);
+  setPixelColor(dest + SEGLEN/space, col);
 
   return SPEED_FORMULA_L;
 }
@@ -1578,7 +1579,7 @@ uint16_t WS2812FX::mode_oscillate(void)
     uint32_t color = BLACK;
     for(uint8_t j=0; j < numOscillators; j++) {
       if(i >= oscillators[j].pos - oscillators[j].size && i <= oscillators[j].pos + oscillators[j].size) {
-        color = (color == BLACK) ? SEGMENT.colors[j] : color_blend(color, SEGMENT.colors[j], 128);
+        color = (color == BLACK) ? SEGCOLOR(j) : color_blend(color, SEGCOLOR(j), 128);
       }
     }
     setPixelColor(i, color);
@@ -3132,6 +3133,9 @@ uint16_t WS2812FX::mode_percent(void) {
  	return FRAMETIME;
 }
 
+/*
+/ Modulates the brightness similar to a heartbeat
+*/
 uint16_t WS2812FX::mode_heartbeat(void) {
   uint8_t bpm = 40 + (SEGMENT.speed >> 4);
   uint32_t msPerBeat = (60000 / bpm);
