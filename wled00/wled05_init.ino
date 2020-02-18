@@ -192,10 +192,15 @@ void initConnection()
   #endif
    WiFi.begin(clientSSID, clientPass);
   #ifdef ARDUINO_ARCH_ESP32
-   WiFi.setSleep(false);
-   WiFi.setHostname(serverDescription);
-  #else
-   wifi_set_sleep_type(NONE_SLEEP_T);
+  WiFi.setHostname(serverDescription);
+  #endif
+
+  #ifdef WLED_DISABLE_SLEEP_MODE
+    #ifdef ESP8266
+      wifi_set_sleep_type(NONE_SLEEP_T);  // available modes: NONE_SLEEP_T, MODEM_SLEEP_T (default), LIGHT_SLEEP_T
+    #else
+      WiFi.setSleep(false);
+    #endif
   #endif
 }
 

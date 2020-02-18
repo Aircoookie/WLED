@@ -29,6 +29,8 @@
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
+#define WLED_DISABLE_SLEEP_MODE    //disable sleep mode to remove flick of analog LED strips and prevents WiFi disconnects
+
 //to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
 
@@ -38,16 +40,12 @@
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
  #include <ESPAsyncTCP.h>
- extern "C" {
- #include <user_interface.h>
- }
 #else
  #include <WiFi.h>
  #include "esp_wifi.h"
  #include <ESPmDNS.h>
  #include <AsyncTCP.h>
  #include "SPIFFS.h"
- #include <rom/rtc.h>
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -74,6 +72,7 @@
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
+#include "src/dependencies/arduino/core_esp8266_waveform.h"
 #include "html_ui.h"
 #include "html_settings.h"
 #include "html_other.h"
@@ -92,6 +91,17 @@
   #include <IRrecv.h>
   #include <IRutils.h>
  #endif
+
+// enable additional debug output
+#ifdef WLED_DEBUG
+  #ifdef ESP8266
+    extern "C" {
+    #include <user_interface.h>
+    }
+  #else
+    #include <rom/rtc.h>
+  #endif
+#endif
 
 //version code in format yymmddb (b = daily build)
 #define VERSION 2002021
