@@ -375,9 +375,25 @@ void getSettingsJS(byte subPage, char* dest)
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
-    sappends('s',"DS",serverDescription);
-    sappend('c',"ST",syncToggleReceive);
-  }
+    sappend('v',"CN",7);
+    sappend('v',"CG",10);
+    sappend('v',"CS",10);
+    
+    sappend('i',"CH1",5);    
+    sappend('i',"CH2",1);    
+    sappend('i',"CH3",2);    
+    sappend('i',"CH4",3);    
+    sappend('i',"CH5",4);    
+    sappend('i',"CH6",0);    
+    sappend('i',"CH7",0);    
+    sappend('i',"CH8",0);    
+    sappend('i',"CH9",0);    
+    sappend('i',"CH10",0);    
+    sappend('i',"CH11",0);    
+    sappend('i',"CH12",0);    
+    sappend('i',"CH13",0);    
+    sappend('i',"CH14",0);    
+    }
   #endif
   oappend("}</script>");
 }

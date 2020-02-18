@@ -1,6 +1,6 @@
 /*
- * Settings html
- */
+   Settings html
+*/
 
 //common CSS of settings pages
 const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}</style>)=====";
@@ -164,7 +164,29 @@ Skip first LED: <input type=checkbox name=SL><hr>
 //DMX Output settings
 const char PAGE_settings_dmx[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>DMX Settings</title><script>
-function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/DMX");}function B(){window.history.back();}function Ct(){if (gId("co").selected){gId("cth").style.display="block";}else{gId("cth").style.display="none";}}function GetV(){var d=document;
+function GCH(num) {
+  d=document;
+  
+  d.getElementById('dmxchannels').innerHTML += "";
+  for (i=0;i<num;i++) {
+    d.getElementById('dmxchannels').innerHTML += "<span id=CH" + (i+1) + "s >Channel " + (i+1) + ": <select name=CH" + (i+1) + " id=\"CH" + (i+1) + "\"><option value=0>Set to 0</option><option value=1>Red</option><option value=2>Green</option><option value=3>Blue</option><option value=4>White</option><option value=5>Shutter (Brightness)</option><option value=255>Set to 255</option></select></span><br />\n";
+  }
+}
+function mMap(){
+  d=document;
+  numCh=document.Sf.CN.value;
+  for (i=0;i<15;i++) {
+    if (i>=numCh) {
+      d.getElementById("CH"+(i+1) + "s").style.opacity = "0.5";
+      d.getElementById("CH"+(i+1)).disabled = true;
+      
+    } else {
+      d.getElementById("CH"+(i+1) + "s").style.opacity = "1";
+      d.getElementById("CH"+(i+1)).disabled = false;
+    }
+  }
+}
+function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/DMX");}function B(){window.history.back();}function GetV(){var d=document;
 %CSS%%SCSS%</head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post">
@@ -174,22 +196,12 @@ function gId(s){return document.getElementById(s);}function S(){GetV();Ct();}fun
 
 <i>Number of fixtures is taken from LED config page</i><br>
 
-channels per fixture (15 max): <input name="CN" maxlength="2"><br />
-start channel: <input name="CS" maxlength="2"><br />
-spacing between fixtures: <input name="CG" maxlength="2"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
+channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
+start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
+spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
 
 <h3>channel functions</h3>
-<div class="dmxchannels">
-
-Channel 1: <select name=CH0>
-<option value=0>Set to 0</option>
-<option value=1>Red</option>
-<option value=2>Green</option>
-<option value=3>Blue</option>
-<option value=4>White</option>
-<option value=5>Shutter (Brightness)</option>
-<option value=255>Set to 255</option>
-</select>
+<div id="dmxchannels">
 
 </div>
 
