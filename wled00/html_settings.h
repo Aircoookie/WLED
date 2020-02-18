@@ -189,7 +189,16 @@ const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
 On/Off button enabled: <input type="checkbox" name="BT"><br>
-Infrared receiver type (0 = disabled): <input name="IR" type="number" min="0" max="6" required><br>
+Infrared remote:
+<select name=IR>
+<option value=0>Disabled</option>
+<option value=1>24-key RGB</option>
+<option value=2>24-key with CT</option>
+<option value=3>40-key blue</option>
+<option value=4>44-key RGB</option>
+<option value=5>21-key RGB</option>
+<option value=6>6-key black</option>
+</select><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>
@@ -207,12 +216,16 @@ Use E1.31 multicast: <input type="checkbox" name="EM"><br>
 E1.31 start universe: <input name="EU" type="number" min="1" max="63999" required><br>
 <i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br>
 DMX start address: <input name="DA" type="number" min="1" max="510" value="1" required><br>
-DMX mode: <input name="DM" type="radio" value="0"> disabled<br>
-<input name="DM" type="radio" value="1"> Single RGB (3 Channels for all LEDs: Red Green Blue)<br>
-<input name="DM" type="radio" value="2"> Single DRGB (4 Channels for all LEDs: Dimmer Red Green Blue)<br>
-<input name="DM" type="radio" value="3"> Effect (11 Channels for properties: Dimmer FX Speed Intensity Palette PriR PriG PriB SecR SecG SecB)<br>
-<input name="DM" type="radio" value="4"> Multiple RGB (3 Channels for each LED: Red Green Blue)<br>
-<input name="DM" type="radio" value="5"> Multiple DRGB (1+3 Channels for each LED: Dimmer R1 G1 B1 R2 G2 B2...)<br><br>
+DMX mode:
+<select name=DM>
+<option value=0>Disabled</option>
+<option value=1>Single RGB</option>
+<option value=2>Single DRGB</option>
+<option value=3>Effect</option>
+<option value=4>Multi RGB</option>
+<option value=5>Multi DRGB</option>
+</select><br>
+<a href="https://github.com/Aircoookie/WLED/wiki/E1.31-DMX" target="_blank">E1.31 info</a><br>
 Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
