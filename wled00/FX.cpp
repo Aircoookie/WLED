@@ -1334,13 +1334,13 @@ uint16_t WS2812FX::mode_icu(void) {
   byte pindex = map(dest, 0, SEGLEN-SEGLEN/space, 0, 255);
   uint32_t col = color_from_palette(pindex, false, false, 0);
 
-  setPixelColor(SEGMENT.start + dest, col);
-  setPixelColor(SEGMENT.start + dest + SEGLEN/space, col);
+  setPixelColor(dest, col);
+  setPixelColor(dest + SEGLEN/space, col);
 
   if(SEGENV.aux0 == dest) { // pause between eye movements
     if(random8(6) == 0) { // blink once in a while
-      setPixelColor(SEGMENT.start + dest, SEGCOLOR(1));
-      setPixelColor(SEGMENT.start + dest + SEGLEN/space, SEGCOLOR(1));
+      setPixelColor(dest, SEGCOLOR(1));
+      setPixelColor(dest + SEGLEN/space, SEGCOLOR(1));
       return 200;
     }
     SEGENV.aux0 = random16(SEGLEN-SEGLEN/space);
@@ -1355,10 +1355,10 @@ uint16_t WS2812FX::mode_icu(void) {
     dest--;
   }
 
-  setPixelColor(SEGMENT.start + dest, col);
-  setPixelColor(SEGMENT.start + dest + SEGLEN/space, col);
+  setPixelColor(dest, col);
+  setPixelColor(dest + SEGLEN/space, col);
 
-  return FRAMETIME;
+  return SPEED_FORMULA_L;
 }
 
 
@@ -1567,7 +1567,7 @@ uint16_t WS2812FX::mode_oscillate(void)
     uint32_t color = BLACK;
     for(uint8_t j=0; j < numOscillators; j++) {
       if(i >= oscillators[j].pos - oscillators[j].size && i <= oscillators[j].pos + oscillators[j].size) {
-        color = (color == BLACK) ? SEGMENT.colors[j] : color_blend(color, SEGMENT.colors[j], 128);
+        color = (color == BLACK) ? SEGCOLOR(j) : color_blend(color, SEGCOLOR(j), 128);
       }
     }
     setPixelColor(i, color);
