@@ -72,7 +72,6 @@
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
-#include "src/dependencies/arduino/core_esp8266_waveform.h"
 #include "html_ui.h"
 #include "html_settings.h"
 #include "html_other.h"
@@ -91,6 +90,11 @@
   #include <IRrecv.h>
   #include <IRutils.h>
  #endif
+
+// remove flicker because PWM signal of RGB channels can become out of phase
+#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
+  #include "src/dependencies/arduino/core_esp8266_waveform.h"
+#endif
 
 // enable additional debug output
 #ifdef WLED_DEBUG
