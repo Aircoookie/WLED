@@ -426,13 +426,15 @@ uint16_t WS2812FX::mode_theater_chase_rainbow(void) {
 /*
  * Running lights effect with smooth sine transition base.
  */
-uint16_t WS2812FX::running_base(bool saw) {
+uint16_t WS2812FX::running_base(bool saw, bool dual=false) {
   uint8_t x_scale = SEGMENT.intensity >> 2;
   uint32_t counter = (now * SEGMENT.speed) >> 9;
 
   for(uint16_t i = 0; i < SEGLEN; i++) {
     uint8_t s = 0;
+    uint8_t t = 0;
     uint8_t a = i*x_scale - counter;
+    uint8_t b = (SEGLEN-1-i)*x_scale - counter;
     if (saw) {
       if (a < 16)
       {
@@ -442,9 +444,21 @@ uint16_t WS2812FX::running_base(bool saw) {
       }
     }
     s = sin8(a);
-    setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), s));
+    t = sin8(b);
+    uint32_t ca = color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), s);
+    uint32_t cb = color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), SEGCOLOR(1), t);
+    uint32_t cl = dual ? color_blend(ca, cb, 127) : ca;
+    setPixelColor(i, cl);
   }
   return FRAMETIME;
+}
+
+
+/*
+ * Running lights in opposite directions.
+ */
+uint16_t WS2812FX::mode_running_dual(void) {
+  return running_base(false, true);
 }
 
 
