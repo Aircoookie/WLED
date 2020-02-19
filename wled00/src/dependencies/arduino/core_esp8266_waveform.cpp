@@ -37,6 +37,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 */
 
+#ifdef ESP8266
 #include <Arduino.h>
 #include "ets_sys.h"
 #include "core_esp8266_waveform.h"
@@ -308,3 +309,4 @@ static ICACHE_RAM_ATTR void timer1Interrupt() {
 }
 
 };
+#endif
