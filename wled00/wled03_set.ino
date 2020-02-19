@@ -291,8 +291,23 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
-    strlcpy(serverDescription, request->arg("DS").c_str(), 33);
-    syncToggleReceive = request->hasArg("ST");
+    int t = request->arg("CN").toInt();
+    if (t>0 && t<16) {
+      DMXChannels = t;
+    }
+    t = request->arg("CS").toInt();
+    if (t>0 && t<513) {
+      DMXStart = t;
+    }
+    t = request->arg("CG").toInt();
+    if (t>0 && t<513) {
+      DMXGap = t;
+    }
+    for (int i=0; i<15; i++) {
+      String argname = "CH" + String((i+1));
+      t = request->arg(argname).toInt();
+      DMXFixtureMap[i] = t;
+    }
   }
   
   #endif
