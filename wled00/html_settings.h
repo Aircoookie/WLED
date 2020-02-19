@@ -174,6 +174,12 @@ function GCH(num) {
 function mMap(){
   d=document;
   numCh=document.Sf.CN.value;
+  numGap=document.Sf.CG.value;
+  if (parseInt(numCh)>parseInt(numGap)) {
+    d.getElementById("gapwarning").style.display="block";
+  } else {
+    d.getElementById("gapwarning").style.display="none";
+  }
   for (i=0;i<15;i++) {
     if (i>=numCh) {
       d.getElementById("CH"+(i+1) + "s").style.opacity = "0.5";
@@ -197,8 +203,8 @@ function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com
 
 channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
 start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
-spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
-
+spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
+<div id="gapwarning" style="color: orange; display: none;">WARNING: Channel gap is lower than channels per fixture.<br />This will cause overlap.</div>
 <h3>channel functions</h3>
 <div id="dmxchannels">
 
