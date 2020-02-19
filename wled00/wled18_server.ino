@@ -206,6 +206,16 @@ void initServer()
     });
   }
 
+
+    #ifdef WLED_ENABLE_DMX
+    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+      serveMessage(request, 200, "DMX channel map", DMXChannelMap(), 254);
+    });
+    #else
+    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+      serveMessage(request, 501, "Not implemented", "DMX support is not enabled in this build.", 254);
+    });
+    #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
