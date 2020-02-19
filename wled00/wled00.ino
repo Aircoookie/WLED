@@ -24,7 +24,7 @@
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
-#define WLED_ENABLE_DMX            //saves incredible 660b
+//#define WLED_ENABLE_DMX            //saves incredible 660b
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
@@ -242,16 +242,14 @@ bool aOtaEnabled = true;                      //ArduinoOTA allows easy updates d
 
 
 uint16_t userVar0 = 0, userVar1 = 0;
+
 //dmx CONFIG
+int DMXChannels = 7;                          // number of channels per fixture
+int DMXFixtureMap[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                                              // assigns the different channels to different functions. See wled21_dmx.ino for more information.
+int DMXGap = 10;                              // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
+int DMXStart = 10;                            // start address of the first fixture
 
-#ifdef WLED_ENABLE_DMX
-
-int DMXChannels = 7; // number of channels per fixture
-int DMXFixtureMap[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // assigns the different channels to different functions. See wled21_dmx.ino for more information.
-int DMXGap = 10; // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
-int DMXStart = 10; // start address of the first fixture
-
-#endif
 
 
 //internal global variable declarations
