@@ -521,7 +521,7 @@ void loadSettingsFromEEPROM(bool first)
   DMXStart = EEPROM.read(2553) + ((EEPROM.read(2554) << 8) & 0xFF00);
   
   for (int i=0;i<15;i++) {
-    DMXFixtureMap[i] = EEPROM.read(2550+i);
+    DMXFixtureMap[i] = EEPROM.read(2555+i);
   } // last used: 2569. maybe leave 30 bytes for future expansion and go on with 2600 kthxbye.
 
 
