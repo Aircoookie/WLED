@@ -260,6 +260,15 @@ public:
     return 0;
   }
 
+  uint8_t* GetPixels(void)
+  {
+    switch (_type) {
+      case NeoPixelType_Grb:  return _pGrb->Pixels();  break;
+      case NeoPixelType_Grbw: return _pGrbw->Pixels(); break;
+    }
+    return 0;
+  }
+
 
 private:
   NeoPixelType _type;
