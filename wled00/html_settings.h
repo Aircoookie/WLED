@@ -5,20 +5,19 @@
 //common CSS of settings pages
 const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}</style>)=====";
 
-
 //settings menu
 const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><title>WLED Settings</title><style>body{text-align:center;background:#222;height:100%;margin:0}html{--h:11.55vh}button{background:#333;color:#fff;font-family:Verdana,Helvetica,sans-serif;border:.3ch solid #333;display:inline-block;font-size:8vmin;height:var(--h);width:95%;margin-top:2.4vh}</style>
+<html><head><title>WLED Settings</title><style>body{text-align:center;background:#222;height:100%%;margin:0}html{--h:11.55vh}button{background:#333;color:#fff;font-family:Verdana,Helvetica,sans-serif;border:.3ch solid #333;display:inline-block;font-size:8vmin;height:var(--h);width:95%%;margin-top:2.4vh}</style>
 <script>function BB(){if(window.frameElement){document.getElementById("b").style.display="none";document.documentElement.style.setProperty("--h","13.86vh")}};</script></head>
 <body onload=BB()>
 <form action=/><button type=submit id=b>Back</button></form>
 <form action=/settings/wifi><button type=submit>WiFi Setup</button></form>
 <form action=/settings/leds><button type=submit>LED Preferences</button></form>
-<form action=/settings/dmx><button type=submit>DMX Output</button></form>
-<form action=/settings/ui><button type=submit>User Interface</button></form>
+<form action=/settings/ui><button type=submit>User Interface</button></form>%DMXMENU%
 <form action=/settings/sync><button type=submit>Sync Interfaces</button></form>
 <form action=/settings/time><button type=submit>Time & Macros</button></form>
 <form action=/settings/sec><button type=submit>Security & Updates</button></form>
+
 </body></html>)=====";
 
 

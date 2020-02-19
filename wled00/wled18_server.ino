@@ -306,6 +306,14 @@ String settingsProcessor(const String& var)
     getSettingsJS(optionType, buf);
     return String(buf);
   }
+  
+  #ifdef WLED_ENABLE_DMX
+
+  if (var == "DMXMENU") {
+    return String("<form action=/settings/dmx><button type=submit>DMX Output</button></form>");
+  }
+  
+  #endif
   if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
   return String();
 }
@@ -349,6 +357,6 @@ void serveSettings(AsyncWebServerRequest* request)
     case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
     case 7:   request->send_P(200, "text/html", PAGE_settings_dmx , settingsProcessor); break;
     case 255: request->send_P(200, "text/html", PAGE_welcome); break;
-    default:  request->send_P(200, "text/html", PAGE_settings); 
+    default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor); 
   }
 }
