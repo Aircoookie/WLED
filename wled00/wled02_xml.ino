@@ -375,9 +375,9 @@ void getSettingsJS(byte subPage, char* dest)
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
-    sappend('v',"CN",7);
-    sappend('v',"CG",10);
-    sappend('v',"CS",10);
+    sappend('v',"CN",DMXChannels);
+    sappend('v',"CG",DMXGap);
+    sappend('v',"CS",DMXStart);
     
     sappend('i',"CH1",DMXFixtureMap[0]);    
     sappend('i',"CH2",DMXFixtureMap[1]);    
