@@ -77,7 +77,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     
     useRGBW = request->hasArg("EW");
     strip.colorOrder = request->arg("CO").toInt();
-    autoRGBtoRGBW = request->hasArg("AW");
+    strip.rgbwMode = request->arg("AW").toInt();
 
     briS = request->arg("CA").toInt();
 

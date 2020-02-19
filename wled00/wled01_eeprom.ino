@@ -218,7 +218,7 @@ void saveSettingsToEEPROM()
 
   EEPROM.write(2200, !receiveDirect);
   EEPROM.write(2201, notifyMacro); //was enableRealtime
-  EEPROM.write(2203, autoRGBtoRGBW);
+  EEPROM.write(2203, strip.rgbwMode);
   EEPROM.write(2204, skipFirstLed);
 
   if (saveCurrPresetCycConf)
@@ -488,7 +488,7 @@ void loadSettingsFromEEPROM(bool first)
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
-  autoRGBtoRGBW = EEPROM.read(2203);
+  strip.rgbwMode = EEPROM.read(2203);
   skipFirstLed = EEPROM.read(2204);
 
   if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))

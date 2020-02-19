@@ -91,7 +91,7 @@
  #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002191
+#define VERSION 2002192
 
 char versionString[] = "0.9.1";
 
@@ -124,7 +124,6 @@ IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home netwo
 //LED CONFIG
 uint16_t ledCount = 30;                       //overcurrent prevented by ABL
 bool useRGBW = false;                         //SK6812 strips can contain an extra White channel
-bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White channel from RGB
 #define ABL_MILLIAMPS_DEFAULT 850;            //auto lower brightness to stay close to milliampere limit
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
