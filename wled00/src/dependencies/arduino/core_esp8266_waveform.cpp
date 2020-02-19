@@ -224,8 +224,8 @@ static ICACHE_RAM_ATTR void timer1Interrupt() {
     endPin = 32 - __builtin_clz(waveformEnabled);
   }
 
-  bool done = false;
   if (waveformEnabled) {
+  bool done = false;
     do {
       nextEventCycles = microsecondsToClockCycles(MAXIRQUS);
       for (int i = startPin; i <= endPin; i++) {
