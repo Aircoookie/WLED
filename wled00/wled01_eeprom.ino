@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 14
+#define EEPVER 15
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -22,6 +22,7 @@
 //12-> 0.8.7-dev
 //13-> 0.9.0-dev
 //14-> 0.9.0-b1
+//15-> 0.9.1-dmx
 
 void commit()
 {
@@ -60,7 +61,6 @@ void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
   }
   str[len] = 0; //make sure every string is properly terminated. str must be at least len +1 big.
 }
-
 
 /*
  * Write configuration to flash

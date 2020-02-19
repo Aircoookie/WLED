@@ -97,7 +97,7 @@ DMXESPSerial dmx;
 //version code in format yymmddb (b = daily build)
 #define VERSION 2001281
 
-char versionString[] = "0.9.0-b2";
+char versionString[] = "0.9.1-dmx";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -242,6 +242,16 @@ bool aOtaEnabled = true;                      //ArduinoOTA allows easy updates d
 
 
 uint16_t userVar0 = 0, userVar1 = 0;
+//dmx CONFIG
+
+#ifdef WLED_ENABLE_DMX
+
+int DMXChannels = 7; // number of channels per fixture
+int DMXFixtureMap[15] = { 5, 1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // assigns the different channels to different functions. See wled21_dmx.ino for more information.
+int DMXGap = 10; // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
+int DMXStart = 10; // start address of the first fixture
+
+#endif
 
 
 //internal global variable declarations
