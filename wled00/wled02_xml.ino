@@ -379,21 +379,21 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"CG",DMXGap);
     sappend('v',"CS",DMXStart);
     
-    sappend('i',"CH1",DMXFixtureMap[0]);    
-    sappend('i',"CH2",DMXFixtureMap[1]);    
-    sappend('i',"CH3",DMXFixtureMap[2]);    
-    sappend('i',"CH4",DMXFixtureMap[3]);    
-    sappend('i',"CH5",DMXFixtureMap[4]);    
-    sappend('i',"CH6",DMXFixtureMap[5]);    
-    sappend('i',"CH7",DMXFixtureMap[6]);    
-    sappend('i',"CH8",DMXFixtureMap[7]);    
-    sappend('i',"CH9",DMXFixtureMap[8]);    
-    sappend('i',"CH10",DMXFixtureMap[9]);    
-    sappend('i',"CH11",DMXFixtureMap[10]);    
-    sappend('i',"CH12",DMXFixtureMap[11]);    
-    sappend('i',"CH13",DMXFixtureMap[12]);    
-    sappend('i',"CH14",DMXFixtureMap[13]);   
-    sappend('i',"CH15",DMXFixtureMap[14]);    
+    sappend('i',"CH1",DMXFixtureMap[0]);
+    sappend('i',"CH2",DMXFixtureMap[1]);
+    sappend('i',"CH3",DMXFixtureMap[2]);
+    sappend('i',"CH4",DMXFixtureMap[3]);
+    sappend('i',"CH5",DMXFixtureMap[4]);
+    sappend('i',"CH6",DMXFixtureMap[5]);
+    sappend('i',"CH7",DMXFixtureMap[6]);
+    sappend('i',"CH8",DMXFixtureMap[7]);
+    sappend('i',"CH9",DMXFixtureMap[8]);
+    sappend('i',"CH10",DMXFixtureMap[9]);
+    sappend('i',"CH11",DMXFixtureMap[10]);
+    sappend('i',"CH12",DMXFixtureMap[11]);
+    sappend('i',"CH13",DMXFixtureMap[12]);
+    sappend('i',"CH14",DMXFixtureMap[13]);
+    sappend('i',"CH15",DMXFixtureMap[14]);
     }
   #endif
   oappend("}</script>");
