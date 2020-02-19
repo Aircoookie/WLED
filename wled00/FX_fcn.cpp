@@ -125,9 +125,12 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
       bool reversed = reverseMode ^ IS_REVERSE;
       uint16_t realIndex = realPixelIndex(i);
+
       for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
         int16_t indexSet = realIndex + (reversed ? -j : j);
-        if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
+        int16_t indexSetRev = indexSet;
+        if (reverseMode) indexSetRev = _length - 1 - indexSet;
+        if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
       }
     } else { //live data, etc.
       if (reverseMode) i = _length - 1 - i;
