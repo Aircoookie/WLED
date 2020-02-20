@@ -46,7 +46,7 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   oappend("</ix><fp>");
   oappendi(effectPalette);
   oappend("</fp><wv>");
-  if (useRGBW && !autoRGBtoRGBW) {
+  if (strip.rgbwMode) {
    oappendi(col[3]);
   } else {
    oappend("-1");
@@ -238,7 +238,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"CA",briS);
     sappend('c',"EW",useRGBW);
     sappend('i',"CO",strip.colorOrder);
-    sappend('c',"AW",autoRGBtoRGBW);
+    sappend('v',"AW",strip.rgbwMode);
 
     sappend('c',"BO",turnOnAtBoot);
     sappend('v',"BP",bootPreset);

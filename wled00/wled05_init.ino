@@ -121,7 +121,7 @@ void beginStrip()
 
 
 void initAP(bool resetAP=false){
-  if (apBehavior == 3 && !resetAP) return;
+  if (apBehavior == AP_BEHAVIOR_BUTTON_ONLY && !resetAP) return;
 
   if (!apSSID[0] || resetAP) strcpy(apSSID, "WLED-AP");
   if (resetAP) strcpy(apPass,"wled1234");
@@ -172,7 +172,7 @@ void initConnection()
     if (!apActive) initAP(); //instantly go to ap mode
     return;
   } else if (!apActive) {
-    if (apBehavior == 2)
+    if (apBehavior == AP_BEHAVIOR_ALWAYS)
     {
       initAP();
     } else
@@ -246,7 +246,7 @@ uint32_t lastHeap;
 unsigned long heapTime = 0;
 
 void handleConnection() {
-  if (millis() < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == 2)) return;
+  if (millis() < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS)) return;
   if (lastReconnectAttempt == 0) initConnection();
 
   //reconnect WiFi to clear stale allocations if heap gets too low
@@ -297,7 +297,7 @@ void handleConnection() {
       initConnection();
     }
     if (millis() - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED) initConnection();
-    if (!apActive && millis() - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == 1)) initAP(); 
+    if (!apActive && millis() - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) initAP(); 
   } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
     DEBUG_PRINT("Connected! IP address: ");
@@ -306,7 +306,7 @@ void handleConnection() {
     userConnected();
 
     //shut down AP
-    if (apBehavior != 2 && apActive)
+    if (apBehavior != AP_BEHAVIOR_ALWAYS && apActive)
     {
       dnsServer.stop();
       WiFi.softAPdisconnect(true);
