@@ -25,6 +25,7 @@ U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_
 void userSetup() {
   sensor.begin(); //Start Dallas temperature sensor
   u8x8.begin();
+  //u8x8.setFlipMode(1); //Uncoment if using WLED Wemos shield 
   u8x8.setPowerSave(0);
   u8x8.setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
   u8x8.setFont(u8x8_font_chroma48medium8_r);
