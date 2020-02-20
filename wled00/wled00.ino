@@ -38,6 +38,9 @@
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
  #include <ESPAsyncTCP.h>
+ extern "C" {
+ #include <user_interface.h>
+ }
 #else
  #include <WiFi.h>
  #include "esp_wifi.h"
@@ -120,6 +123,8 @@ byte apBehavior = AP_BEHAVIOR_BOOT_NO_CONN;   //access point opens when no conne
 IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
 IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
 IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home networks
+bool noWifiSleep = false;                     //disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
+
 
 //LED CONFIG
 uint16_t ledCount = 30;                       //overcurrent prevented by ABL

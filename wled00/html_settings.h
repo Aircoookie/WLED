@@ -62,7 +62,12 @@ AP opens:
 <option value="1">Disconnected</option>
 <option value="2">Always</option>
 <option value="3">Never (not recommended)</option></select><br>
-AP IP: <span class="sip"> Not active </span><hr>
+AP IP: <span class="sip"> Not active </span><br>
+<h3>Experimental</h3>
+Disable WiFi sleep: <input type="checkbox" name="WS"><br>
+<i>Can help with connectivity issues.<br>
+Do not enable if WiFi is working correctly, increases power consumption.</i>
+<hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
 </form>
 </body>
