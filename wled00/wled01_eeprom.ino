@@ -250,16 +250,16 @@ void saveSettingsToEEPROM()
   EEPROM.write(2522, mqttPort & 0xFF);
   EEPROM.write(2523, (mqttPort >> 8) & 0xFF);
 
-  // DMX (2550 - 2569)
-  EEPROM.write(2550, DMXChannels);
-  EEPROM.write(2551, DMXGap & 0xFF);
-  EEPROM.write(2552, (DMXGap >> 8) & 0xFF);
-  EEPROM.write(2553, DMXStart & 0xFF);
-  EEPROM.write(2554, (DMXStart >> 8) & 0xFF);
+  // DMX (2530 - 2549)
+  EEPROM.write(2530, DMXChannels);
+  EEPROM.write(2531, DMXGap & 0xFF);
+  EEPROM.write(2532, (DMXGap >> 8) & 0xFF);
+  EEPROM.write(2533, DMXStart & 0xFF);
+  EEPROM.write(2534, (DMXStart >> 8) & 0xFF);
 
   for (int i=0;i<15;i++) {
-    EEPROM.write(2555+i, DMXFixtureMap[i]);
-  } // last used: 2569. maybe leave 30 bytes for future expansion and go on with 2600 kthxbye.
+    EEPROM.write(2535+i, DMXFixtureMap[i]);
+  } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
 
   commit();
 }
@@ -515,14 +515,14 @@ void loadSettingsFromEEPROM(bool first)
   if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
 
   
-  // DMX (2550 - 2569)
-  DMXChannels = EEPROM.read(2550);
-  DMXGap = EEPROM.read(2551) + ((EEPROM.read(2552) << 8) & 0xFF00);
-  DMXStart = EEPROM.read(2553) + ((EEPROM.read(2554) << 8) & 0xFF00);
+  // DMX (2530 - 2549)2535
+  DMXChannels = EEPROM.read(2530);
+  DMXGap = EEPROM.read(2531) + ((EEPROM.read(2532) << 8) & 0xFF00);
+  DMXStart = EEPROM.read(2533) + ((EEPROM.read(2534) << 8) & 0xFF00);
   
   for (int i=0;i<15;i++) {
-    DMXFixtureMap[i] = EEPROM.read(2555+i);
-  } // last used: 2569. maybe leave 30 bytes for future expansion and go on with 2600 kthxbye.
+    DMXFixtureMap[i] = EEPROM.read(2535+i);
+  } //last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
 
 
   //user MOD memory
