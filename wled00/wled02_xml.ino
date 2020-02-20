@@ -194,6 +194,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"AP",fapass);
 
     sappend('v',"AC",apChannel);
+    sappend('c',"WS",noWifiSleep);
+
 
     if (WiFi.localIP()[0] != 0) //is connected
     {

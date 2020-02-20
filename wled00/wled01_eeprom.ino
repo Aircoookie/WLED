@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 15
+#define EEPVER 16
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -23,6 +23,7 @@
 //13-> 0.9.0-dev
 //14-> 0.9.0-b1
 //15-> 0.9.0-b3
+//16-> 0.9.1
 
 void commit()
 {
@@ -130,6 +131,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(367, (arlsOffset>=0));
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
+
+  EEPROM.write(370, noWifiSleep);
 
   EEPROM.write(372, useRGBW);
   EEPROM.write(374, strip.paletteFade);
@@ -483,6 +486,11 @@ void loadSettingsFromEEPROM(bool first)
     DMXAddress = 1;
     DMXMode = DMX_MODE_MULTIPLE_RGB;
   }
+
+  //if (lastEEPROMversion > 15)
+  //{
+    noWifiSleep = EEPROM.read(370);
+  //}
 
 
   receiveDirect = !EEPROM.read(2200);
