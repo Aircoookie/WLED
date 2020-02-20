@@ -190,9 +190,14 @@ void initConnection()
   #ifdef ESP8266
    WiFi.hostname(serverDescription);
   #endif
+  
    WiFi.begin(clientSSID, clientPass);
+   
   #ifdef ARDUINO_ARCH_ESP32
+   if (noWifiSleep) WiFi.setSleep(false);
    WiFi.setHostname(serverDescription);
+  #else
+   if (noWifiSleep) wifi_set_sleep_type(NONE_SLEEP_T);
   #endif
 }
 
