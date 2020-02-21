@@ -11,15 +11,15 @@ void notify(byte callMode, bool followUp=false)
   if (!udpConnected) return;
   switch (callMode)
   {
-    case 0: return;
-    case 1: if (!notifyDirect) return; break;
-    case 2: if (!notifyButton) return; break;
-    case 4: if (!notifyDirect) return; break;
-    case 6: if (!notifyDirect) return; break; //fx change
-    case 7: if (!notifyHue)    return; break;
-    case 8: if (!notifyDirect) return; break;
-    case 9: if (!notifyDirect) return; break;
-    case 10: if (!notifyAlexa) return; break;
+    case NOTIFIER_CALL_MODE_INIT:          return;
+    case NOTIFIER_CALL_MODE_DIRECT_CHANGE: if (!notifyDirect) return; break;
+    case NOTIFIER_CALL_MODE_BUTTON:        if (!notifyButton) return; break;
+    case NOTIFIER_CALL_MODE_NIGHTLIGHT:    if (!notifyDirect) return; break;
+    case NOTIFIER_CALL_MODE_FX_CHANGED:    if (!notifyDirect) return; break; //fx change
+    case NOTIFIER_CALL_MODE_HUE:           if (!notifyHue)    return; break;
+    case NOTIFIER_CALL_MODE_PRESET_CYCLE:  if (!notifyDirect) return; break;
+    case NOTIFIER_CALL_MODE_BLYNK:         if (!notifyDirect) return; break;
+    case NOTIFIER_CALL_MODE_ALEXA:         if (!notifyAlexa)  return; break;
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];
