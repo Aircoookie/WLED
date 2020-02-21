@@ -47,7 +47,7 @@ void setAllLeds() {
       colSecT[i] = colSec[i];
     }
   }
-  if (useRGBW && autoRGBtoRGBW)
+  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY)
   {
     colorRGBtoRGBW(colT);
     colorRGBtoRGBW(colSecT);

@@ -242,7 +242,7 @@ void serializeInfo(JsonObject root)
   JsonObject leds = root.createNestedObject("leds");
   leds["count"] = ledCount;
   leds["rgbw"] = useRGBW;
-  leds["wv"] = useRGBW && !autoRGBtoRGBW; //should a white channel slider be displayed?
+  leds["wv"] = useRGBW && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
   JsonArray leds_pin = leds.createNestedArray("pin");
   leds_pin.add(LEDPIN);
   

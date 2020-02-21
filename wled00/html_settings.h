@@ -62,7 +62,12 @@ AP opens:
 <option value="1">Disconnected</option>
 <option value="2">Always</option>
 <option value="3">Never (not recommended)</option></select><br>
-AP IP: <span class="sip"> Not active </span><hr>
+AP IP: <span class="sip"> Not active </span><br>
+<h3>Experimental</h3>
+Disable WiFi sleep: <input type="checkbox" name="WS"><br>
+<i>Can help with connectivity issues.<br>
+Do not enable if WiFi is working correctly, increases power consumption.</i>
+<hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
 </form>
 </body>
@@ -118,7 +123,15 @@ LED voltage (Max. current for a single LED):<br>
 <br>
 LEDs are 4-channel type (RGBW): <input type=checkbox name=EW onchange=UI() id=rgbw><br>
 <span class=wc>
-Auto-calculate white channel from RGB: <input type=checkbox name=AW><br></span>
+Auto-calculate white channel from RGB:<br>
+<select name=AW>
+<option value=0>None</option>
+<option value=1>Brighter</option>
+<option value=2>Accurate</option>
+<option value=3>Dual</option>
+<option value=4>Legacy</option>
+</select>
+<br></span>
 Color order:
 <select name=CO>
 <option value=0>GRB</option>
