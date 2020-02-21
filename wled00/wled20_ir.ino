@@ -35,10 +35,10 @@ bool decodeIRCustom(uint32_t code)
 
 
 //relatively change brightness, minumum A=5
-void relativeChange(byte* property, int8_t amount, byte lowerBoundary =0)
+void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF)
 {
   int16_t new_val = (int16_t) *property + amount;
-  if (new_val > 0xFF) new_val = 0xFF;
+  if (new_val > higherBoundary) new_val = higherBoundary;
   else if (new_val < lowerBoundary) new_val = lowerBoundary;
   *property = new_val;
 }
@@ -295,9 +295,9 @@ void decodeIR44(uint32_t code)
     case IR44_COLDWHITE2  : {
       if (useRGBW) {        colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }    
       else                  colorFromUint24(COLOR_COLDWHITE2);                       }  break;
-    case IR44_REDPLUS     : relativeChange(&effectCurrent, 1);                          break;
+    case IR44_REDPLUS     : relativeChange(&effectCurrent,  1, 0, MODE_COUNT);          break;
     case IR44_REDMINUS    : relativeChange(&effectCurrent, -1, 0);                      break;
-    case IR44_GREENPLUS   : relativeChange(&effectPalette, 1);                          break;
+    case IR44_GREENPLUS   : relativeChange(&effectPalette,  1, 0, maxPaletteIndex);     break;
     case IR44_GREENMINUS  : relativeChange(&effectPalette, -1, 0);                      break;
     case IR44_BLUEPLUS    : relativeChange(&effectIntensity, 10);                       break;
     case IR44_BLUEMINUS   : relativeChange(&effectIntensity, -10, 5);                   break;
@@ -352,39 +352,32 @@ void decodeIR21(uint32_t code)
 
 void decodeIR6(uint32_t code)
 {
-  
-    switch (code) {
-      case IR6_POWER: toggleOnOff(); break;
-      case IR6_CHANNEL_UP: relativeChange(&bri, 10);         break;
-      case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);     break;
-      case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1); break;
-      case IR6_VOLUME_DOWN: 
-      /* next palette */ 
-      
-        relativeChange(&effectPalette, 1); 
-
-        switch(lastIR6ColourIdx)
-        {
-          case 0: colorFromUint32(COLOR_RED); break;
-          case 1: colorFromUint32(COLOR_REDDISH); break;
-          case 2:colorFromUint32(COLOR_ORANGE);    break;
-          case 3:colorFromUint32(COLOR_YELLOWISH); break;
-          case 4:colorFromUint32(COLOR_GREEN);     break;
-          case 5:colorFromUint32(COLOR_GREENISH);  break;
-          case 6:colorFromUint32(COLOR_TURQUOISE); break;
-          case 7: colorFromUint32(COLOR_CYAN);      break;
-          case 8:colorFromUint32(COLOR_BLUE);      break;
-          case 9:colorFromUint32(COLOR_DEEPBLUE);  break;
-          case 10:colorFromUint32(COLOR_PURPLE);    break;
-          case 11:colorFromUint32(COLOR_PINK);      break;
-          case 12:colorFromUint32(COLOR_WHITE);      break;
-            default:break;
-
-        }
-        
-        lastIR6ColourIdx++;
-        if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
-      
+  switch (code) {
+    case IR6_POWER: toggleOnOff(); break;
+    case IR6_CHANNEL_UP: relativeChange(&bri, 10);         break;
+    case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);     break;
+    case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1); break;
+    case IR6_VOLUME_DOWN: 
+    /* next palette */ 
+      relativeChange(&effectPalette, 1, 0, maxPaletteIndex); 
+      switch(lastIR6ColourIdx) {
+        case 0: colorFromUint32(COLOR_RED);      break;
+        case 1: colorFromUint32(COLOR_REDDISH);  break;
+        case 2:colorFromUint32(COLOR_ORANGE);    break;
+        case 3:colorFromUint32(COLOR_YELLOWISH); break;
+        case 4:colorFromUint32(COLOR_GREEN);     break;
+        case 5:colorFromUint32(COLOR_GREENISH);  break;
+        case 6:colorFromUint32(COLOR_TURQUOISE); break;
+        case 7: colorFromUint32(COLOR_CYAN);     break;
+        case 8:colorFromUint32(COLOR_BLUE);      break;
+        case 9:colorFromUint32(COLOR_DEEPBLUE);  break;
+        case 10:colorFromUint32(COLOR_PURPLE);   break;
+        case 11:colorFromUint32(COLOR_PINK);     break;
+        case 12:colorFromUint32(COLOR_WHITE);    break;
+        default:break;
+      }
+      lastIR6ColourIdx++;
+      if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
       break;
       case IR6_MUTE: effectCurrent = 0;  effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
     }
