@@ -241,7 +241,7 @@ void handleNightlight()
       {
         for (byte i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);  // fading from actual color to secondary color
       }
-      colorUpdated(5);
+      colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
     }
     if (nper >= 1)
     {
@@ -249,7 +249,7 @@ void handleNightlight()
       if (!nightlightFade)
       {
         bri = nightlightTargetBri;
-        colorUpdated(5);
+        colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
       }
       updateBlynk();
       if (bri == 0) briLast = briNlT;
@@ -265,7 +265,7 @@ void handleNightlight()
     applyPreset(presetCycCurr,presetApplyBri,presetApplyCol,presetApplyFx);
     presetCycCurr++; if (presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
     if (presetCycCurr > 25) presetCycCurr = 1;
-    colorUpdated(8);
+    colorUpdated(NOTIFIER_CALL_MODE_PRESET_CYCLE);
     presetCycledTime = millis();
   }
 }

@@ -99,7 +99,7 @@ void beginStrip()
 #endif
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
-  colorUpdated(0);
+  colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
   //init relay pin
   #if RLYPIN >= 0

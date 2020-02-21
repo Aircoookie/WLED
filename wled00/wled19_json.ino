@@ -154,7 +154,7 @@ bool deserializeState(JsonObject root)
     }
   }
 
-  colorUpdated(noNotification ? 5:1);
+  colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
   ps = root["psave"] | -1;
   if (ps >= 0) savePreset(ps);

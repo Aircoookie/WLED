@@ -157,9 +157,9 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
         col[3]          = p->property_values[DMXAddress+11]; //white
         colSec[3]       = p->property_values[DMXAddress+12];
       }
-      transitionDelayTemp = 0; // act fast
-      colorUpdated(3);         // don't send UDP
-      return;                  // don't activate realtime live mode
+      transitionDelayTemp = 0;                        // act fast
+      colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);  // don't send UDP
+      return;                                         // don't activate realtime live mode
       break;
 
     case DMX_MODE_MULTIPLE_RGB:
@@ -329,7 +329,7 @@ void handleNotifications()
       if (nightlightActive) nightlightDelayMins = udpIn[7];
       
       if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
-      colorUpdated(3);
+      colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
       
     }  else if (udpIn[0] > 0 && udpIn[0] < 5 && receiveDirect) //1 warls //2 drgb //3 drgbw
     {
