@@ -1,17 +1,20 @@
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 #include <DallasTemperature.h> //Dallastemperature sensor
-
+#ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
+uint8_t SCL_PIN = 22; 
+uint8_t SDA_PIN = 21; 
+OneWire oneWire(23);
+#else //ESP8266 boards
+uint8_t SCL_PIN = 5;
+uint8_t SDA_PIN = 4;
+OneWire oneWire(13);
+#endif
 //The SCL and SDA pins are defined here.
-//ESP8266 Wemos D1 mini boards use SCL=5 SDA=4
-#define U8X8_PIN_SCL 5
-#define U8X8_PIN_SDA 4
-//ESP32 Wemos32 mini boards use SCL=22 SDA=21
-//#define U8X8_PIN_SCL 22
-//#define U8X8_PIN_SDA 21
+//ESP8266 Wemos D1 mini board use SCL=5 SDA=4 while ESP32 Wemos32 mini board use SCL=22 SDA=21
+#define U8X8_PIN_SCL SCL_PIN
+#define U8X8_PIN_SDA SDA_PIN
 
 // Dallas sensor
-OneWire oneWire(13); //ESP8266 boards
-//OneWire oneWire(23); //ESP32 boards
 DallasTemperature sensor(&oneWire);
 long temptimer = millis();
 long lastMeasure = 0;
