@@ -46,6 +46,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg("AP").c_str(), 65))) strlcpy(apPass, request->arg("AP").c_str(), 65);
     int t = request->arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
 
+    noWifiSleep = request->hasArg("WS");
+
     char k[3]; k[2] = 0;
     for (int i = 0; i<4; i++)
     {
@@ -77,7 +79,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     
     useRGBW = request->hasArg("EW");
     strip.colorOrder = request->arg("CO").toInt();
-    autoRGBtoRGBW = request->hasArg("AW");
+    strip.rgbwMode = request->arg("AW").toInt();
 
     briS = request->arg("CA").toInt();
 

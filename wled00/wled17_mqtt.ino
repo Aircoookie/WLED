@@ -129,6 +129,7 @@ bool initMqtt()
   strcpy(mqttStatusTopic, mqttDeviceTopic);
   strcat(mqttStatusTopic, "/status");
   mqtt->setWill(mqttStatusTopic, 0, true, "offline");
+  mqtt->setKeepAlive(60);
   mqtt->connect();
   return true;
 }

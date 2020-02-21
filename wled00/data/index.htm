@@ -141,7 +141,7 @@ td {
 .tab {
   background-color: #222;
   color: #ddd;
-  //filter: drop-shadow(0px 0px 2px #000);
+  filter: drop-shadow(0px 0px 0px #111);
 }
 
 .bot {
@@ -658,6 +658,12 @@ input[type=number]::-webkit-outer-spin-button {
     float: none;
   }
 }
+
+@media all and (max-width: 1250px) {
+  #buttonPcm {
+	display: none;
+  }
+}
 </style>
 </head>
 <body onload="onLoad()">
@@ -673,6 +679,7 @@ input[type=number]::-webkit-outer-spin-button {
       <button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><p class="tab-label">Sync</p></button>
       <button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">Preview</p></button>
       <button onclick="window.location.href = '/settings';"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
+	  <button id="buttonPcm" onclick="togglePcMode()"><i class="icons">&#xe23d;</i><p class="tab-label">PC Mode</p></button>
     </div>
     <div id="briwrap">
       <p class="hd">Brightness</p>
@@ -702,7 +709,7 @@ input[type=number]::-webkit-outer-spin-button {
       <div class="qcs" onclick="pC('#ff0000');" style="background-color:#ff0000;"></div>
       <div class="qcs" onclick="pC('#ffa000');" style="background-color:#ffa000;"></div>
       <div class="qcs" onclick="pC('#ffc800');" style="background-color:#ffc800;"></div>
-      <div class="qcs" onclick="pC('#fff0a0');" style="background-color:#fff0a0;"></div>
+      <div class="qcs" onclick="pC('#ffe0a0');" style="background-color:#ffe0a0;"></div>
       <div class="qcs" onclick="pC('#ffffff');" style="background-color:#ffffff;"></div>
       <div class="qcs qcsb" onclick="pC('#000000');" style="background-color:#000000;"></div><br>
       <div class="qcs" onclick="pC('#ff00ff');" style="background-color:#ff00ff;"></div>
@@ -833,6 +840,7 @@ var savedPresets = 0;
 var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0;
+var pcMode = false;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 
@@ -872,10 +880,12 @@ function updateTablinks(tabI)
   for (i = 0; i < tablinks.length; i++) {
     tablinks[i].className = tablinks[i].className.replace(" active", "");
   }
+  if (pcMode) return;
   tablinks[tabI].className += " active";
 }
 
 function openTab(tabI) {
+  if (pcMode) return;
   var i, tabcontent, tablinks;
   iSlide = tabI;
   _C.classList.toggle('smooth', false);
@@ -1035,7 +1045,7 @@ function requestJson(command, verbose = true) {
   e1 = d.getElementById('fxlist');
   e2 = d.getElementById('selectPalette');
 
-  url = command ? 'http://10.10.1.26/json/state':'http://10.10.1.26/json';
+  url = command ? '/json/state':'/json';
   
   type = command ? 'post':'get';
   if (command)
@@ -1394,17 +1404,18 @@ let iSlide = 0, x0 = null, y0 = null, scrollS = 0, locked = false, w;
 function unify(e) {	return e.changedTouches ? e.changedTouches[0] : e }
 
 function lock(e) {
+  if (pcMode) return;
   var l = e.target.classList;
   if (l.contains('noslide') || l.contains('iro__wheel__saturation') || l.contains('iro__slider__value')  || l.contains('iro__slider')) return;
   x0 = unify(e).clientX;
   y0 = unify(e).clientY;
   scrollS = d.getElementsByClassName("tabcontent")[iSlide].scrollTop;
 
-	_C.classList.toggle('smooth', !(locked = true))
+  _C.classList.toggle('smooth', !(locked = true))
 }
 
 function drag(e) {
-  if (!locked) return;
+  if (!locked || pcMode) return;
   if (d.getElementsByClassName("tabcontent")[iSlide].scrollTop != scrollS) {
     move(e); return;
   }
@@ -1417,7 +1428,7 @@ function drag(e) {
 }
 
 function move(e) {
-  if(!locked) return;
+  if(!locked || pcMode) return;
   var dx = unify(e).clientX - x0, s = Math.sign(dx), 
       f = +(s*dx/w).toFixed(2);
 
@@ -1437,6 +1448,23 @@ function size() {
   w = window.innerWidth; 
   _C.style.setProperty('--tp', d.getElementById('top').clientHeight + "px");
   _C.style.setProperty('--bt', d.getElementById('bot').clientHeight + "px");
+  if (w < 1250) togglePcMode();
+}
+
+function togglePcMode()
+{
+  if (w < 1250 && !pcMode) return;
+  openTab(0);
+  pcMode = !pcMode;
+  if (w < 1250) pcMode = false;
+  updateTablinks(0);
+  d.getElementById('buttonPcm').className = (pcMode) ? "active":"";
+  if (pcMode)
+  {
+	_C.style.width = '100%';
+  } else {
+    _C.style.width = '400%';
+  }
 }
 
 size();
