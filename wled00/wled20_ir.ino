@@ -40,9 +40,34 @@ void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte 
   int16_t new_val = (int16_t) *property + amount;
   if (new_val > higherBoundary) new_val = higherBoundary;
   else if (new_val < lowerBoundary) new_val = lowerBoundary;
-  *property = new_val;
+  *property = (byte)constrain(new_val,0.1,255.1);
 }
 
+void changeEffectSpeed(int8_t amount)
+{
+  if (effectCurrent != 0) {
+    int16_t new_val = (int16_t) &effectSpeed + amount;
+    &effectSpeed = (byte)constrain(new_val,0.1,255.1);
+  } else {  // Effect = "solid Color", change the hue of the primary color
+    CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
+    int16_t new_val = (int16_t) prim_hsv.h + amount;
+    uint8_t prim_hsv.h = (byte)constrain(new_val,0.1,255.1);
+    hsv2rgb_rainbow(&prim_hsv, &col);
+  }
+}
+
+void changeEffectIntensity(int8_t amount)
+{
+  if (effectCurrent != 0) {
+    int16_t new_val = (int16_t) &effectIntensity + amount;
+    &effectIntensity = (byte)constrain(new_val,0.1,255.1);
+  } else {  // Effect = "solid Color", change the saturation of the primary color
+    CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
+    int16_t new_val = (int16_t) prim_hsv.s + amount;
+    uint8_t prim_hsv.s = (byte)constrain(new_val,0.1,255.1);
+    hsv2rgb_rainbow(&prim_hsv, &col);
+  }
+}
 
 void decodeIR(uint32_t code)
 {
@@ -243,10 +268,10 @@ void decodeIR40(uint32_t code)
     case IR40_W50          : bri = 127;                                                  break;
     case IR40_W75          : bri = 191;                                                  break;
     case IR40_W100         : bri = 255;                                                  break;
-    case IR40_QUICK        : relativeChange(&effectSpeed, 10);                           break;
-    case IR40_SLOW         : relativeChange(&effectSpeed, -10, 5);                       break;
-    case IR40_JUMP7        : relativeChange(&effectIntensity, 10);                       break;
-    case IR40_AUTO         : relativeChange(&effectIntensity, -10, 5);                   break;
+    case IR40_QUICK        : changeEffectSpeed( 10);                                     break;
+    case IR40_SLOW         : changeEffectSpeed(-10);                                     break;
+    case IR40_JUMP7        : changeEffectIntensity( 10);                                 break;
+    case IR40_AUTO         : changeEffectIntensity(-10);                                 break;
     case IR40_JUMP3        : if (!applyPreset(1)) { effectCurrent = FX_MODE_STATIC;        effectPalette = 0; } break;
     case IR40_FADE3        : if (!applyPreset(2)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
     case IR40_FADE7        : if (!applyPreset(3)) { effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; } break;
@@ -299,10 +324,10 @@ void decodeIR44(uint32_t code)
     case IR44_REDMINUS    : relativeChange(&effectCurrent, -1, 0);                      break;
     case IR44_GREENPLUS   : relativeChange(&effectPalette,  1, 0, maxPaletteIndex);     break;
     case IR44_GREENMINUS  : relativeChange(&effectPalette, -1, 0);                      break;
-    case IR44_BLUEPLUS    : relativeChange(&effectIntensity, 10);                       break;
-    case IR44_BLUEMINUS   : relativeChange(&effectIntensity, -10, 5);                   break;
-    case IR44_QUICK       : relativeChange(&effectSpeed, 10);                           break;
-    case IR44_SLOW        : relativeChange(&effectSpeed, -10, 5);                       break;
+    case IR44_BLUEPLUS    : changeEffectIntensity( 10);                                 break;
+    case IR44_BLUEMINUS   : changeEffectIntensity(-10);                                 break;
+    case IR44_QUICK       : changeEffectSpeed( 10);                                     break;
+    case IR44_SLOW        : changeEffectSpeed(-10);                                     break;
     case IR44_DIY1        : if (!applyPreset(1)) { effectCurrent = FX_MODE_STATIC;        effectPalette = 0; } break;
     case IR44_DIY2        : if (!applyPreset(2)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
     case IR44_DIY3        : if (!applyPreset(3)) { effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; } break;
@@ -356,7 +381,7 @@ void decodeIR6(uint32_t code)
     case IR6_POWER: toggleOnOff(); break;
     case IR6_CHANNEL_UP: relativeChange(&bri, 10);         break;
     case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);     break;
-    case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1); break;
+    case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1, 0 MODE_COUNT); break;
     case IR6_VOLUME_DOWN: 
     /* next palette */ 
       relativeChange(&effectPalette, 1, 0, maxPaletteIndex); 
