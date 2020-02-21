@@ -28,6 +28,7 @@
 #define WS2812FX_h
 
 #include "NpbWrapper.h"
+#include "const.h"
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #include "FastLED.h"
@@ -91,7 +92,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  99
+#define MODE_COUNT  101
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -192,6 +193,8 @@
 #define FX_MODE_DRIP                    96
 #define FX_MODE_PLASMA                  97
 #define FX_MODE_PERCENT                 98
+#define FX_MODE_RIPPLE_RAINBOW          99
+#define FX_MODE_HEARTBEAT              100
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -379,6 +382,8 @@ class WS2812FX {
       _mode[FX_MODE_DRIP]                    = &WS2812FX::mode_drip;
       _mode[FX_MODE_PLASMA]                  = &WS2812FX::mode_plasma;
       _mode[FX_MODE_PERCENT]                 = &WS2812FX::mode_percent;
+      _mode[FX_MODE_RIPPLE_RAINBOW]          = &WS2812FX::mode_ripple_rainbow;
+      _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -422,6 +427,7 @@ class WS2812FX {
 
     uint8_t
       mainSegment = 0,
+      rgbwMode = RGBW_MODE_DUAL,
       paletteFade = 0,
       paletteBlend = 0,
       colorOrder = 0,
@@ -562,7 +568,9 @@ class WS2812FX {
       mode_popcorn(void),
       mode_drip(void),
       mode_plasma(void),
-      mode_percent(void);
+      mode_percent(void),
+      mode_ripple_rainbow(void),
+      mode_heartbeat(void);
       
 
   private:
@@ -583,7 +591,7 @@ class WS2812FX {
     void fill(uint32_t);
 
     bool
-      _rgbwMode,
+      _useRgbw = false,
       _cronixieMode,
       _cronixieBacklightEnabled,
       _skipFirstMode,
@@ -607,7 +615,8 @@ class WS2812FX {
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
-      police_base(uint32_t, uint32_t),
+      ripple_base(bool),
+      police_base(uint32_t, uint32_t, bool),
       running(uint32_t, uint32_t),
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),
@@ -642,7 +651,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
-"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent"
+"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
+"Heartbeat"
 ])=====";
 
 

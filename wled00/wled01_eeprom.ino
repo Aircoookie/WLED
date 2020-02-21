@@ -6,7 +6,7 @@
 #define EEPSIZE 2560
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 14
+#define EEPVER 16
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -22,6 +22,8 @@
 //12-> 0.8.7-dev
 //13-> 0.9.0-dev
 //14-> 0.9.0-b1
+//15-> 0.9.0-b3
+//16-> 0.9.1
 
 void commit()
 {
@@ -130,6 +132,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
 
+  EEPROM.write(370, noWifiSleep);
+
   EEPROM.write(372, useRGBW);
   EEPROM.write(374, strip.paletteFade);
   EEPROM.write(375, strip.milliampsPerLed); //was apWaitTimeSecs up to 0.8.5
@@ -211,10 +215,13 @@ void saveSettingsToEEPROM()
   EEPROM.write(2194, (realtimeTimeoutMs >> 8) & 0xFF);
   EEPROM.write(2195, arlsForceMaxBri);
   EEPROM.write(2196, arlsDisableGammaCorrection);
+  EEPROM.write(2197, DMXAddress & 0xFF);
+  EEPROM.write(2198, (DMXAddress >> 8) & 0xFF);
+  EEPROM.write(2199, DMXMode);
 
   EEPROM.write(2200, !receiveDirect);
   EEPROM.write(2201, notifyMacro); //was enableRealtime
-  EEPROM.write(2203, autoRGBtoRGBW);
+  EEPROM.write(2203, strip.rgbwMode);
   EEPROM.write(2204, skipFirstLed);
 
   if (saveCurrPresetCycConf)
@@ -471,10 +478,25 @@ void loadSettingsFromEEPROM(bool first)
     syncToggleReceive = false;
   }
 
+  if (lastEEPROMversion > 14)
+  {
+    DMXAddress = EEPROM.read(2197) + ((EEPROM.read(2198) << 8) & 0xFF00);
+    DMXMode = EEPROM.read(2199);
+  } else {
+    DMXAddress = 1;
+    DMXMode = DMX_MODE_MULTIPLE_RGB;
+  }
+
+  //if (lastEEPROMversion > 15)
+  //{
+    noWifiSleep = EEPROM.read(370);
+  //}
+
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
-  autoRGBtoRGBW = EEPROM.read(2203);
+  strip.rgbwMode = EEPROM.read(2203);
   skipFirstLed = EEPROM.read(2204);
 
   if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))

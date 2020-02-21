@@ -3,7 +3,7 @@
  */
 /*
  * @title WLED project sketch
- * @version 0.9.0-b2
+ * @version 0.9.1
  * @author Christian Schwinne
  */
 
@@ -38,6 +38,9 @@
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
  #include <ESPAsyncTCP.h>
+ extern "C" {
+ #include <user_interface.h>
+ }
 #else
  #include <WiFi.h>
  #include "esp_wifi.h"
@@ -75,6 +78,7 @@
 #include "html_other.h"
 #include "FX.h"
 #include "ir_codes.h"
+#include "const.h"
 
 
 #if IR_PIN < 0
@@ -90,9 +94,9 @@
  #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2001191
+#define VERSION 2002192
 
-char versionString[] = "0.9.0-b2";
+char versionString[] = "0.9.1";
 
 
 //AP and OTA default passwords (for maximum change them!)
@@ -115,17 +119,16 @@ char cmDNS[33] = "x";                         //mDNS address (placeholder, will 
 char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
 byte apHide = 0;                              //hidden AP SSID
-//byte apWaitTimeSecs = 32;                   //time to wait for connection before opening AP
-byte apBehavior = 0;                          //0: Open AP when no connection after boot 1: Open when no connection 2: Always open 3: Only when button pressed for 6 sec
-//bool recoveryAPDisabled = false;            //never open AP (not recommended)
+byte apBehavior = AP_BEHAVIOR_BOOT_NO_CONN;   //access point opens when no connection after boot by default
 IPAddress staticIP(0, 0, 0, 0);               //static IP of ESP
 IPAddress staticGateway(0, 0, 0, 0);          //gateway (router) IP
 IPAddress staticSubnet(255, 255, 255, 0);     //most common subnet in home networks
+bool noWifiSleep = false;                     //disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
+
 
 //LED CONFIG
 uint16_t ledCount = 30;                       //overcurrent prevented by ABL
 bool useRGBW = false;                         //SK6812 strips can contain an extra White channel
-bool autoRGBtoRGBW = false;                   //if RGBW enabled, calculate White channel from RGB
 #define ABL_MILLIAMPS_DEFAULT 850;            //auto lower brightness to stay close to milliampere limit
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
@@ -179,8 +182,12 @@ bool receiveDirect    =  true;                //receive UDP realtime
 bool arlsDisableGammaCorrection = true;       //activate if gamma correction is handled by the source
 bool arlsForceMaxBri = false;                 //enable to force max brightness if source has very dark colors that would be black
 
-uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol
-bool e131Multicast = false;
+uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
+uint8_t  DMXMode = DMX_MODE_MULTIPLE_RGB;     //DMX mode (s.a.)
+uint16_t DMXAddress = 1;                      //DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
+uint8_t  DMXOldDimmer = 0;                    //only update brightness on change
+uint8_t  e131LastSequenceNumber = 0;          //to detect packet loss
+bool     e131Multicast = false;               //multicast or unicast
 
 bool mqttEnabled = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
@@ -354,9 +361,10 @@ bool presetApplyBri = false, presetApplyCol = true, presetApplyFx = true;
 bool saveCurrPresetCycConf = false;
 
 //realtime
-bool realtimeActive = false;
+byte realtimeMode = REALTIME_MODE_INACTIVE;
 IPAddress realtimeIP = (0,0,0,0);
 unsigned long realtimeTimeout = 0;
+
 
 //mqtt
 long lastMqttReconnectAttempt = 0;
@@ -419,6 +427,7 @@ AsyncMqttClient* mqtt = NULL;
 void colorFromUint32(uint32_t,bool=false);
 void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
 void handleE131Packet(e131_packet_t*, IPAddress);
+void arlsLock(uint32_t,byte);
 void handleOverlayDraw();
 
 #define E131_MAX_UNIVERSE_COUNT 9
@@ -519,7 +528,7 @@ void loop() {
   yield();
   if (doReboot) reset();
 
-  if (!realtimeActive) //block stuff if WARLS/Adalight is enabled
+  if (!realtimeMode) //block stuff if WARLS/Adalight is enabled
   {
     if (apActive) dnsServer.processNextRequest();
     #ifndef WLED_DISABLE_OTA
@@ -535,6 +544,9 @@ void loop() {
     if (!offMode) strip.service();
   }
   yield();
+  #ifdef ESP8266
+  MDNS.update();
+  #endif
   if (millis() - lastMqttReconnectAttempt > 30000) initMqtt();
 
   //DEBUG serial logging

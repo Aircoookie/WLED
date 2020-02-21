@@ -46,7 +46,7 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   oappend("</ix><fp>");
   oappendi(effectPalette);
   oappend("</fp><wv>");
-  if (useRGBW && !autoRGBtoRGBW) {
+  if (strip.rgbwMode) {
    oappendi(col[3]);
   } else {
    oappend("-1");
@@ -58,13 +58,25 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   oappend("</ps><cy>");
   oappendi(presetCyclingEnabled);
   oappend("</cy><ds>");
-  if (realtimeActive)
+  if (realtimeMode)
   {
     String mesg = "Live ";
-    if (realtimeIP[0] == 0)
+    if (realtimeMode == REALTIME_MODE_E131)
     {
-      mesg += "E1.31 mode";
-    } else {
+      mesg += "E1.31 mode ";
+      mesg += DMXMode;
+      mesg += " at DMX Address ";
+      mesg += DMXAddress;
+      mesg += " from ";
+      mesg += realtimeIP[0];
+      for (int i = 1; i < 4; i++)
+      {
+        mesg += ".";
+        mesg += realtimeIP[i];
+      }
+      mesg += " seq=";
+      mesg += e131LastSequenceNumber;
+    } else if (realtimeMode == REALTIME_MODE_UDP || realtimeMode == REALTIME_MODE_HYPERION) {
       mesg += "UDP from ";
       mesg += realtimeIP[0];
       for (int i = 1; i < 4; i++)
@@ -72,6 +84,10 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
         mesg += ".";
         mesg += realtimeIP[i];
       }
+    } else if (realtimeMode == REALTIME_MODE_ADALIGHT) {
+      mesg += "USB Adalight";
+    } else { //generic
+      mesg += "data";
     }
     oappend((char*)mesg.c_str());
   } else {
@@ -178,6 +194,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"AP",fapass);
 
     sappend('v',"AC",apChannel);
+    sappend('c',"WS",noWifiSleep);
+
 
     if (WiFi.localIP()[0] != 0) //is connected
     {
@@ -222,7 +240,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"CA",briS);
     sappend('c',"EW",useRGBW);
     sappend('i',"CO",strip.colorOrder);
-    sappend('c',"AW",autoRGBtoRGBW);
+    sappend('v',"AW",strip.rgbwMode);
 
     sappend('c',"BO",turnOnAtBoot);
     sappend('v',"BP",bootPreset);
@@ -263,6 +281,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"RD",receiveDirect);
     sappend('c',"EM",e131Multicast);
     sappend('v',"EU",e131Universe);
+    sappend('v',"DA",DMXAddress);
+    sappend('v',"DM",DMXMode);
     sappend('v',"ET",realtimeTimeoutMs);
     sappend('c',"FB",arlsForceMaxBri);
     sappend('c',"RG",arlsDisableGammaCorrection);

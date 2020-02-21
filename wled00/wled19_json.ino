@@ -66,6 +66,9 @@ bool deserializeState(JsonObject root)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root["v"] | false;
+
+  int ps = root["ps"] | -1;
+  if (ps >= 0) applyPreset(ps);
   
   bri = root["bri"] | bri;
   
@@ -86,9 +89,6 @@ bool deserializeState(JsonObject root)
     transitionDelayTemp *= 100;
     jsonTransitionOnce = true;
   }
-
-  int ps = root["ps"] | -1;
-  if (ps >= 0) applyPreset(ps);
   
   int cy = root["pl"] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);
@@ -242,7 +242,7 @@ void serializeInfo(JsonObject root)
   JsonObject leds = root.createNestedObject("leds");
   leds["count"] = ledCount;
   leds["rgbw"] = useRGBW;
-  leds["wv"] = useRGBW && !autoRGBtoRGBW; //should a white channel slider be displayed?
+  leds["wv"] = useRGBW && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
   JsonArray leds_pin = leds.createNestedArray("pin");
   leds_pin.add(LEDPIN);
   
@@ -255,7 +255,7 @@ void serializeInfo(JsonObject root)
   
   root["name"] = serverDescription;
   root["udpport"] = udpPort;
-  root["live"] = realtimeActive;
+  root["live"] = (bool)realtimeMode;
   root["fxcount"] = strip.getModeCount();
   root["palcount"] = strip.getPaletteCount();
 
