@@ -12,8 +12,7 @@
 ## Hardware
 ![Shield](https://github.com/srg74/WLED-wemos-shield/blob/master/resources/Images/Assembly_8.jpg)
 
-## Wiki
-![Wiki](https://github.com/srg74/WLED-wemos-shield/wiki)
+-   [Wiki](https://github.com/srg74/WLED-wemos-shield/wiki)
 
 ## Functionality checked with
 *   Wemos D1 mini original v3.1 and clones
