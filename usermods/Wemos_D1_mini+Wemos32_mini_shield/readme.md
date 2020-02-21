@@ -21,4 +21,3 @@
 -   SSD1306 128x32 I2C OLED display
 -   DS18B20 (temperature sensor)
 -   Push button (N.O. momentary switch)
-
