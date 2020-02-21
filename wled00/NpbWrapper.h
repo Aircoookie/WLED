@@ -164,7 +164,7 @@ public:
           #endif
         }
       #else  // ESP8266
-        //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
+        //init PWM pins
         pinMode(RPIN, OUTPUT);
         pinMode(GPIN, OUTPUT);
         pinMode(BPIN, OUTPUT); 
@@ -185,9 +185,9 @@ public:
     void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w, uint8_t w2=0)
     {
       #ifdef ARDUINO_ARCH_ESP32
-        ledcWrite(0, r);  //RPIN
-        ledcWrite(1, g);  //GPIN
-        ledcWrite(2, b);  //BPIN
+        ledcWrite(0, r);
+        ledcWrite(1, g);
+        ledcWrite(2, b);
         switch (_type) {
           case NeoPixelType_Grb:                                                  break;
           #ifdef WLED_USE_5CH_LEDS
@@ -196,7 +196,7 @@ public:
             case NeoPixelType_Grbw: ledcWrite(3, w);                              break;
           #endif
         }        
-      #else 
+      #else   // ESP8266
         analogWrite(RPIN, r);
         analogWrite(GPIN, g);
         analogWrite(BPIN, b);

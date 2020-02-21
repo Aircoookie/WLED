@@ -626,6 +626,8 @@ class WS2812FX {
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
     uint32_t _analogLastShow = 0;
+    uint32_t _analogLastColor = 0;
+    uint32_t _analogLastBri = 0;
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;

@@ -823,6 +823,7 @@ void WS2812FX::setRgbwPwm(void) {
 
   RgbwColor color = bus->GetPixelColorRgbw(0);
   byte b = getBrightness();
+  if (color == _analogLastColor && b == _analogLastBri) return;
   
   // check color values for Warm / Cold white mix (for RGBW)  // EsplanexaDevice.cpp
   #ifdef WLED_USE_5CH_LEDS
