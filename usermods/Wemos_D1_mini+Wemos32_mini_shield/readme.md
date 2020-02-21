@@ -2,6 +2,7 @@
 ## Project repository
 -   [Original repository](https://github.com/srg74/WLED-wemos-shield) - WLED Wemos shield repository
 -   [Wemos shield project Wiki](https://github.com/srg74/WLED-wemos-shield/wiki)
+-   [Precompiled WLED firmware](https://github.com/srg74/WLED-wemos-shield/tree/master/resources/Firmware)
 ## Features
 *   SSD1306 128x32 or 128x64 I2C OLED display
 *   On screen IP address, SSID and controller status (e.g. ON or OFF, recent effect)
