@@ -29,8 +29,6 @@
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
-#define WLED_DISABLE_SLEEP_MODE    //disable sleep mode to prevent WiFi disconnects
-
 //to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
 
@@ -102,11 +100,7 @@
 
 // enable additional debug output
 #ifdef WLED_DEBUG
-  #ifdef ESP8266
-    extern "C" {
-    #include <user_interface.h>
-    }
-  #else
+  #ifndef ESP8266
     #include <rom/rtc.h>
   #endif
 #endif
