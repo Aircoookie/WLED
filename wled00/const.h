@@ -7,6 +7,19 @@
 #define AP_BEHAVIOR_ALWAYS        2            //Always open
 #define AP_BEHAVIOR_BUTTON_ONLY   3            //Only when button pressed for 6 sec
 
+//Notifier callMode 
+#define NOTIFIER_CALL_MODE_INIT           0    // no updates on init, can be used to disable updates
+#define NOTIFIER_CALL_MODE_DIRECT_CHANGE  1
+#define NOTIFIER_CALL_MODE_BUTTON         2
+#define NOTIFIER_CALL_MODE_NOTIFICATION   3
+#define NOTIFIER_CALL_MODE_NIGHTLIGHT     4
+#define NOTIFIER_CALL_MODE_NO_NOTIFY      5
+#define NOTIFIER_CALL_MODE_FX_CHANGED     6
+#define NOTIFIER_CALL_MODE_HUE            7
+#define NOTIFIER_CALL_MODE_PRESET_CYCLE   8
+#define NOTIFIER_CALL_MODE_BLYNK          9
+#define NOTIFIER_CALL_MODE_ALEXA         10
+
 //RGB to RGBW conversion mode
 #define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
 #define RGBW_MODE_AUTO_BRIGHTER   1            //New algorithm. Adds as much white as the darkest RGBW channel

@@ -301,7 +301,7 @@ unsigned long buttonWaitTime = 0;
 bool notifyDirectDefault = notifyDirect;
 bool receiveNotifications = true;
 unsigned long notificationSentTime = 0;
-byte notificationSentCallMode = 0;
+byte notificationSentCallMode = NOTIFIER_CALL_MODE_INIT;
 bool notificationTwoRequired = false;
 
 //effects
@@ -369,7 +369,7 @@ unsigned long realtimeTimeout = 0;
 //mqtt
 long lastMqttReconnectAttempt = 0;
 long lastInterfaceUpdate = 0;
-byte interfaceUpdateCallMode = 0;
+byte interfaceUpdateCallMode = NOTIFIER_CALL_MODE_INIT;
 char mqttStatusTopic[40] = ""; //this must be global because of async handlers
 
 #if AUXPIN >= 0
