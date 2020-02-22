@@ -67,8 +67,8 @@ void handleSerial()
         setRealtimePixel(pixel++, red, green, blue, 0);
         if (--count > 0) state = AdaState::Data_Red;
         else {
-          if (!realtimeActive && bri == 0) strip.setBrightness(briLast);
-          arlsLock(realtimeTimeoutMs);
+          if (!realtimeMode && bri == 0) strip.setBrightness(briLast);
+          arlsLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
 
           strip.show();
           state = AdaState::Header_A;

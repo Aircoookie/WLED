@@ -46,6 +46,12 @@ p {
   color: #ddd;
 }
 
+td {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
 button {
   outline: none;
   cursor: pointer;
@@ -86,9 +92,18 @@ button {
   margin: -2px 0 4px 0;
 }
 
+table {
+  table-layout: fixed;
+  width: 76%;
+}
+
+td {
+  text-align: center;
+}
+
 .slider-icon
 {
-  transform: translateY(2px);
+  transform: translateY(3px);
   color: #ddd;
 }
 
@@ -126,7 +141,7 @@ button {
 .tab {
   background-color: #222;
   color: #ddd;
-  filter: drop-shadow(0px 0px 2px #000);
+  filter: drop-shadow(0px 0px 0px #111);
 }
 
 .bot {
@@ -370,7 +385,7 @@ input[type=range]::-ms-thumb {
   background-color: #333;
   color: white;
   border: 0px solid white;
-  border-radius: 5px;
+  border-radius: 25px;
   filter: drop-shadow(0px 0px 2px #000);
   transition-duration: 0.5s;
   -webkit-backface-visibility: hidden;
@@ -387,13 +402,32 @@ input[type=range]::-ms-thumb {
   vertical-align: middle;
 }
 
+.qcs-w {
+  margin-top: 10px;
+}
+.qcs {
+  padding: 14px;
+  margin: 2px;
+  border-radius: 14px;
+  display: inline-block;
+}
+.qcsb {
+  padding: 13px;
+  border: 1px solid white;
+}
+
+.cl {
+  width: 42px;
+}
+
 select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='white'><polygon points='0,0 100,0 50,50'/></svg>") no-repeat;
   background-size: 12px;
-  background-position: 210px 16px;
+  background-position: 206px 16px;
+  padding-left: 12px !important;
   background-repeat: no-repeat;
   outline: none;
 }
@@ -432,21 +466,21 @@ input[type=number]::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 
-.botpad {
-  margin-bottom: 16px !important;
+.segn {
+  margin: 3px 0 6px 0 !important;
 }
 
 .ic {
   padding: 6px 0 0 0;
 }
 
-.xs {
-  width: 60px;
+.xxs {
+  width: 40px;
+  margin: 6px;
 }
 
-.xxs {
-  width: 42px;
-  margin: 8px;
+.rect {
+  border-radius: 5px;
 }
 
 .psts {
@@ -470,11 +504,19 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .cnf {
-  position: absolute;
-  top: 75px;
-  right: 60px;
-  color: #fff;
-  cursor: pointer;
+    position: absolute;
+    top: 66px;
+    right: 28px;
+    color: #fff;
+    cursor: pointer;
+    background: #333;
+    padding: 43px 6px;
+    border-radius: 5px;
+}
+
+.half {
+  padding: 6px 6px;
+  top: 64px;
 }
 
 .del {
@@ -572,8 +614,12 @@ input[type=number]::-webkit-outer-spin-button {
 
 .h {
   font-size: 13px;
+  text-align: center;
   color: #bbb;
-  text-align: left;
+}
+
+.bp {
+  margin-bottom: 5px;
 }
 
 .seg {
@@ -612,6 +658,12 @@ input[type=number]::-webkit-outer-spin-button {
     float: none;
   }
 }
+
+@media all and (max-width: 1250px) {
+  #buttonPcm {
+	display: none;
+  }
+}
 </style>
 </head>
 <body onload="onLoad()">
@@ -627,6 +679,7 @@ input[type=number]::-webkit-outer-spin-button {
       <button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><p class="tab-label">Sync</p></button>
       <button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">Preview</p></button>
       <button onclick="window.location.href = '/settings';"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
+	  <button id="buttonPcm" onclick="togglePcMode()"><i class="icons">&#xe23d;</i><p class="tab-label">PC Mode</p></button>
     </div>
     <div id="briwrap">
       <p class="hd">Brightness</p>
@@ -651,6 +704,19 @@ input[type=number]::-webkit-outer-spin-button {
         <input id="sliderW" class="noslide" onchange="setColor(false)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
         <div class="sliderdisplay"></div>
       </div>
+    </div>
+    <div class="qcs-w">
+      <div class="qcs" onclick="pC('#ff0000');" style="background-color:#ff0000;"></div>
+      <div class="qcs" onclick="pC('#ffa000');" style="background-color:#ffa000;"></div>
+      <div class="qcs" onclick="pC('#ffc800');" style="background-color:#ffc800;"></div>
+      <div class="qcs" onclick="pC('#ffe0a0');" style="background-color:#ffe0a0;"></div>
+      <div class="qcs" onclick="pC('#ffffff');" style="background-color:#ffffff;"></div>
+      <div class="qcs qcsb" onclick="pC('#000000');" style="background-color:#000000;"></div><br>
+      <div class="qcs" onclick="pC('#ff00ff');" style="background-color:#ff00ff;"></div>
+      <div class="qcs" onclick="pC('#0000ff');" style="background-color:#0000ff;"></div>
+      <div class="qcs" onclick="pC('#00ffc8');" style="background-color:#00ffc8;"></div>
+      <div class="qcs" onclick="pC('#08ff00');" style="background-color:#08ff00;"></div>
+      <div class="qcs" onclick="pC('rnd');" style="background-color:#333; padding: 4px 8px; transform: translateY(-10px);">R</div>
     </div>
     <div id="csl">
       <button class="xxs cl btn" onclick="selectSlot(0);">1</button>
@@ -734,8 +800,8 @@ input[type=number]::-webkit-outer-spin-button {
     </label><br>
     First preset: <input id="cycs" class="noslide" type="number" min="1" max="14" value="1"><br>
     Last preset: <input id="cyce" class="noslide" type="number" min="2" max="15" value="3"><br>
-    Time per preset: <input id="cyct" class="noslide" type="number" min="0.2" max="65.5" value="1.2">s<br>
-    Transition: <input id="cyctt" class="noslide" type="number" min="0" max="65.5" value="0.7">s
+    Time per preset: <input id="cyct" class="noslide" type="number" min="0.2" max="65.5" step="0.1" value="1.2">s<br>
+    Transition: <input id="cyctt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s
   </div>
 </div>
 
@@ -774,6 +840,7 @@ var savedPresets = 0;
 var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0;
+var pcMode = false;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 
@@ -813,10 +880,12 @@ function updateTablinks(tabI)
   for (i = 0; i < tablinks.length; i++) {
     tablinks[i].className = tablinks[i].className.replace(" active", "");
   }
+  if (pcMode) return;
   tablinks[tabI].className += " active";
 }
 
 function openTab(tabI) {
+  if (pcMode) return;
   var i, tabcontent, tablinks;
   iSlide = tabI;
   _C.classList.toggle('smooth', false);
@@ -864,9 +933,27 @@ function populateSegments(s)
       </label>
       <i class="icons slider-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
       <div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
-        Start LED: <input class="starts noslide" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(this)"><br>
-        Stop LED: <input class="stops noslide botpad" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(this)">
-        <span class="h">(${inst.stop - inst.start} LED${inst.stop - inst.start > 1 ? "s":""})</span><br>
+      <table>
+        <tr>
+          <td>Start LED</td>
+          <td>Stop LED</td>
+        </tr>
+        <tr>
+          <td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
+          <td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(${i})"></td>
+        </tr>
+      </table>
+      <table>
+        <tr>
+          <td>Grouping</td>
+          <td>Spacing</td>
+        </tr>
+        <tr>
+          <td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
+          <td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+        </tr>
+      </table>
+      <div class="h bp" id="seg${i}len">${inst.stop - inst.start} LED${inst.stop - inst.start > 1 ? "s":""} (${Math.ceil((inst.stop - inst.start)/(inst.grp + inst.spc))} virtual)</div>
         <i class="icons slider-icon cnf" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i>
         <i class="icons slider-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
         <label class="check revchkl">
@@ -896,18 +983,28 @@ function updateTrail(e)
   e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 }
 
-function updateLen(e)
+function updateLen(s)
 {
-  var len = e.parentNode.getElementsByClassName('stops')[0].value;
-  len -= e.parentNode.getElementsByClassName('starts')[0].value;
+  var start = parseInt(d.getElementById(`seg${s}s`).value);
+  var stop  = parseInt(d.getElementById(`seg${s}e`).value);
+  var len = stop - start;
+  var out = "(delete)"
   if (len > 1) {
-    len = `(${len} LEDs)`;
+    out = `${len} LEDs`;
   } else if (len == 1) {
-    len = "(1 LED)"
-  } else {
-    len = "(delete)";
+    out = "1 LED"
   }
-  e.parentNode.getElementsByClassName('h')[0].innerHTML = len;
+  
+  if (d.getElementById(`seg${s}grp`) != null)
+  {
+    var grp = parseInt(d.getElementById(`seg${s}grp`).value);
+    var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+    if (grp == 0) grp = 1;
+    var virt = Math.ceil(len/(grp + spc));
+    if (!isNaN(virt) && (grp > 1 || spc > 0)) out += ` (${virt} virtual)`;
+  }
+  
+  d.getElementById(`seg${s}len`).innerHTML = out;
 }
 
 function updateUI()
@@ -1105,17 +1202,25 @@ function makeSeg() {
         Segment ${lowestUnused} (new)
       </label>
       <div class="segin expanded">
-        Start LED: <input class="starts noslide" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(this)"><br>
-        Stop LED: <input class="stops noslide" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(this)">
-        <span class="h">(${ledCount - ns} LEDs)</span><br>
-        <i class="icons slider-icon cnf" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
+        <table>
+          <tr>
+            <td>Start LED</td>
+            <td>Stop LED</td>
+          </tr>
+          <tr>
+            <td><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
+            <td><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(${lowestUnused})"></td>
+          </tr>
+        </table>
+        <div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
+        <i class="icons slider-icon cnf half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
       </div>
     </div>`;
   d.getElementById('segutil').innerHTML = cn;
 }
 
 function resetUtil() {
-  var cn = `<button class="btn btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>`;
+  var cn = `<button class="btn btn-i rect" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>`;
   d.getElementById('segutil').innerHTML = cn;
 }
 
@@ -1130,6 +1235,13 @@ function setSeg(s){
   var stop  = parseInt(d.getElementById(`seg${s}e`).value);
   if (stop <= start) {delSeg(s); return;};
   var obj = {"seg": {"id": s, "start": start, "stop": stop}};
+  if (d.getElementById(`seg${s}grp`))
+  {
+    var grp = parseInt(d.getElementById(`seg${s}grp`).value);
+    var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+    obj.seg.grp = grp;
+    obj.seg.spc = spc;
+  }
   requestJson(obj);
 }
 
@@ -1225,9 +1337,9 @@ function selectSlot(b) {
     cd[i].style.margin="5px";
     cd[i].style.width="42px";
   }
-  cd[csel].style.border="6px solid white";
+  cd[csel].style.border="5px solid white";
   cd[csel].style.margin="2px";
-  cd[csel].style.width="54px";
+  cd[csel].style.width="50px";
   if (cpick.color.rgbString !== cd[csel].style.backgroundColor) {
     cpick.color.set(cd[csel].style.backgroundColor);
   }
@@ -1235,12 +1347,28 @@ function selectSlot(b) {
   updateTrail(d.getElementById('sliderW'));
 }
 
+var lasth = 0;
+function pC(col)
+{
+  if (col == "rnd")
+  {
+	col = {h: 0, s: 0, v: 100};
+	col.s = Math.floor((Math.random() * 50) + 50);
+	do {
+	  col.h = Math.floor(Math.random() * 360);
+	} while (Math.abs(col.h - lasth) < 50);
+	lasth = col.h;
+  }
+  cpick.color.set(col);
+  setColor(false);
+}
+
 function setColor(fromPicker) {
   var cd = d.getElementById('csl').children;
   if (fromPicker && cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') cpick.color.setChannel('hsv', 'v', 100);
   cd[csel].style.backgroundColor = cpick.color.rgbString;
   whites[csel] = d.getElementById('sliderW').value;
-  col = cpick.color.rgb;
+  var col = cpick.color.rgb;
   var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
   if (csel == 1) {
     obj = {"seg": {"col": [[],[col.r, col.g, col.b, whites[csel]],[]]}};
@@ -1276,17 +1404,18 @@ let iSlide = 0, x0 = null, y0 = null, scrollS = 0, locked = false, w;
 function unify(e) {	return e.changedTouches ? e.changedTouches[0] : e }
 
 function lock(e) {
+  if (pcMode) return;
   var l = e.target.classList;
   if (l.contains('noslide') || l.contains('iro__wheel__saturation') || l.contains('iro__slider__value')  || l.contains('iro__slider')) return;
   x0 = unify(e).clientX;
   y0 = unify(e).clientY;
   scrollS = d.getElementsByClassName("tabcontent")[iSlide].scrollTop;
 
-	_C.classList.toggle('smooth', !(locked = true))
+  _C.classList.toggle('smooth', !(locked = true))
 }
 
 function drag(e) {
-  if (!locked) return;
+  if (!locked || pcMode) return;
   if (d.getElementsByClassName("tabcontent")[iSlide].scrollTop != scrollS) {
     move(e); return;
   }
@@ -1299,7 +1428,7 @@ function drag(e) {
 }
 
 function move(e) {
-  if(!locked) return;
+  if(!locked || pcMode) return;
   var dx = unify(e).clientX - x0, s = Math.sign(dx), 
       f = +(s*dx/w).toFixed(2);
 
@@ -1319,6 +1448,23 @@ function size() {
   w = window.innerWidth; 
   _C.style.setProperty('--tp', d.getElementById('top').clientHeight + "px");
   _C.style.setProperty('--bt', d.getElementById('bot').clientHeight + "px");
+  if (w < 1250) togglePcMode();
+}
+
+function togglePcMode()
+{
+  if (w < 1250 && !pcMode) return;
+  openTab(0);
+  pcMode = !pcMode;
+  if (w < 1250) pcMode = false;
+  updateTablinks(0);
+  d.getElementById('buttonPcm').className = (pcMode) ? "active":"";
+  if (pcMode)
+  {
+	_C.style.width = '100%';
+  } else {
+    _C.style.width = '400%';
+  }
 }
 
 size();

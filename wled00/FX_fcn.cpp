@@ -32,9 +32,9 @@
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
-  if (supportWhite == _rgbwMode && countPixels == _length) return;
+  if (supportWhite == _useRgbw && countPixels == _length) return;
   RESET_RUNTIME;
-  _rgbwMode = supportWhite;
+  _useRgbw = supportWhite;
   _skipFirstMode = skipFirst;
   _length = countPixels;
 
@@ -65,6 +65,7 @@ void WS2812FX::service() {
     {
       if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
       {
+        if (SEGMENT.grouping == 0) SEGMENT.grouping = 1; //sanity check
         _virtualSegmentLength = SEGMENT.virtualLength();
         doShow = true;
         handle_palette();
@@ -106,6 +107,20 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
+  //auto calculate white channel value if enabled
+  if (_useRgbw) {
+    if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || (w == 0 && (rgbwMode == RGBW_MODE_DUAL || rgbwMode == RGBW_MODE_LEGACY)))
+    {
+      //white value is set to lowest RGB channel
+      //thank you to @Def3nder!
+      w = r < g ? (r < b ? r : b) : (g < b ? g : b);
+    } else if (rgbwMode == RGBW_MODE_AUTO_ACCURATE && w == 0)
+    {
+      w = r < g ? (r < b ? r : b) : (g < b ? g : b);
+      r -= w; g -= w; b -= w;
+    }
+  }
+  
   RgbwColor col;
   switch (colorOrder)
   {
@@ -125,9 +140,12 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
       bool reversed = reverseMode ^ IS_REVERSE;
       uint16_t realIndex = realPixelIndex(i);
+
       for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
         int16_t indexSet = realIndex + (reversed ? -j : j);
-        if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
+        int16_t indexSetRev = indexSet;
+        if (reverseMode) indexSetRev = _length - 1 - indexSet;
+        if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
       }
     } else { //live data, etc.
       if (reverseMode) i = _length - 1 - i;
@@ -253,7 +271,7 @@ void WS2812FX::show(void) {
     }
 
 
-    if (_rgbwMode) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    if (_useRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
     {
       powerSum *= 3;
       powerSum = powerSum >> 2; //same as /= 4
