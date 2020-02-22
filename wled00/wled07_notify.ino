@@ -11,15 +11,15 @@ void notify(byte callMode, bool followUp=false)
   if (!udpConnected) return;
   switch (callMode)
   {
-    case 0: return;
-    case 1: if (!notifyDirect) return; break;
-    case 2: if (!notifyButton) return; break;
-    case 4: if (!notifyDirect) return; break;
-    case 6: if (!notifyDirect) return; break; //fx change
-    case 7: if (!notifyHue)    return; break;
-    case 8: if (!notifyDirect) return; break;
-    case 9: if (!notifyDirect) return; break;
-    case 10: if (!notifyAlexa) return; break;
+    case NOTIFIER_CALL_MODE_INIT:          return;
+    case NOTIFIER_CALL_MODE_DIRECT_CHANGE: if (!notifyDirect) return; break;
+    case NOTIFIER_CALL_MODE_BUTTON:        if (!notifyButton) return; break;
+    case NOTIFIER_CALL_MODE_NIGHTLIGHT:    if (!notifyDirect) return; break;
+    case NOTIFIER_CALL_MODE_FX_CHANGED:    if (!notifyDirect) return; break; //fx change
+    case NOTIFIER_CALL_MODE_HUE:           if (!notifyHue)    return; break;
+    case NOTIFIER_CALL_MODE_PRESET_CYCLE:  if (!notifyDirect) return; break;
+    case NOTIFIER_CALL_MODE_BLYNK:         if (!notifyDirect) return; break;
+    case NOTIFIER_CALL_MODE_ALEXA:         if (!notifyAlexa)  return; break;
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];
@@ -91,13 +91,12 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
   //E1.31 protocol support
   
   // skip out-of-sequence packets
-  if (p->sequence_number < e131LastSequenceNumber && p->sequence_number - e131LastSequenceNumber > -20){
+  if (p->sequence_number < e131LastSequenceNumber && p->sequence_number > 20 && e131LastSequenceNumber < 250){
     DEBUG_PRINT("skipping E1.31 frame (last seq=");
     DEBUG_PRINT(e131LastSequenceNumber);
     DEBUG_PRINT(", current seq=");
     DEBUG_PRINT(p->sequence_number);
     DEBUG_PRINTLN(")");
-    e131LastSequenceNumber = p->sequence_number;
     return;
   }
   e131LastSequenceNumber = p->sequence_number;
@@ -157,9 +156,9 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
         col[3]          = p->property_values[DMXAddress+11]; //white
         colSec[3]       = p->property_values[DMXAddress+12];
       }
-      transitionDelayTemp = 0; // act fast
-      colorUpdated(3);         // don't send UDP
-      return;                  // don't activate realtime live mode
+      transitionDelayTemp = 0;                        // act fast
+      colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);  // don't send UDP
+      return;                                         // don't activate realtime live mode
       break;
 
     case DMX_MODE_MULTIPLE_RGB:
@@ -329,7 +328,7 @@ void handleNotifications()
       if (nightlightActive) nightlightDelayMins = udpIn[7];
       
       if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
-      colorUpdated(3);
+      colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
       
     }  else if (udpIn[0] > 0 && udpIn[0] < 5 && receiveDirect) //1 warls //2 drgb //3 drgbw
     {

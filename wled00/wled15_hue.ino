@@ -6,7 +6,7 @@ void handleHue()
 {
   if (hueReceived)
   {
-    colorUpdated(7); hueReceived = false;
+    colorUpdated(NOTIFIER_CALL_MODE_HUE); hueReceived = false;
     if (hueStoreAllowed && hueNewKey)
     {
       saveSettingsToEEPROM(); //save api key
