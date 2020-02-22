@@ -91,13 +91,12 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
   //E1.31 protocol support
   
   // skip out-of-sequence packets
-  if (p->sequence_number < e131LastSequenceNumber && p->sequence_number - e131LastSequenceNumber > -20){
+  if (p->sequence_number < e131LastSequenceNumber && p->sequence_number > 20 && e131LastSequenceNumber < 250){
     DEBUG_PRINT("skipping E1.31 frame (last seq=");
     DEBUG_PRINT(e131LastSequenceNumber);
     DEBUG_PRINT(", current seq=");
     DEBUG_PRINT(p->sequence_number);
     DEBUG_PRINTLN(")");
-    e131LastSequenceNumber = p->sequence_number;
     return;
   }
   e131LastSequenceNumber = p->sequence_number;
