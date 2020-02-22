@@ -3,6 +3,7 @@
  */
 
 #ifdef WLED_ENABLE_MQTT
+#define MQTT_KEEP_ALIVE_TIME 60    // contact the MQTT broker every 60 seconds
 
 void parseMQTTBriPayload(char* payload)
 {
@@ -129,7 +130,7 @@ bool initMqtt()
   strcpy(mqttStatusTopic, mqttDeviceTopic);
   strcat(mqttStatusTopic, "/status");
   mqtt->setWill(mqttStatusTopic, 0, true, "offline");
-  mqtt->setKeepAlive(60);
+  mqtt->setKeepAlive(MQTT_KEEP_ALIVE_TIME);
   mqtt->connect();
   return true;
 }
