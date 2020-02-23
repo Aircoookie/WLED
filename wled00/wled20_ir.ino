@@ -29,7 +29,7 @@ bool decodeIRCustom(uint32_t code)
 
     default: return false;
   }
-  if (code != IRCUSTOM_MACRO1) colorUpdated(2); //don't update color again if we apply macro, it already does it
+  if (code != IRCUSTOM_MACRO1) colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //don't update color again if we apply macro, it already does it
   return true;
 }
 
@@ -51,25 +51,25 @@ void decodeIR(uint32_t code)
     irTimesRepeated++;
     if (lastValidCode == IR24_BRIGHTER || lastValidCode == IR40_BPLUS )
     { 
-      relativeChange(&bri, 10); colorUpdated(2);
+      relativeChange(&bri, 10); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
     else if (lastValidCode == IR24_DARKER || lastValidCode == IR40_BMINUS )
     {
-      relativeChange(&bri, -10, 5); colorUpdated(2);
+      relativeChange(&bri, -10, 5); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
     if (lastValidCode == IR40_WPLUS)
     { 
-      relativeChangeWhite(10); colorUpdated(2);
+      relativeChangeWhite(10); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
     else if (lastValidCode == IR40_WMINUS)
     {
-      relativeChangeWhite(-10, 5); colorUpdated(2);
+      relativeChangeWhite(-10, 5); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
     else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 )
     {
       nightlightActive = true;
       nightlightStartTime = millis();
-      colorUpdated(2);
+      colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
     return;
   }
@@ -85,11 +85,12 @@ void decodeIR(uint32_t code)
       case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
       case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
       case 5: decodeIR21(code);    break;  // white 21-key remote  
-      case 6: decodeIR6(code);    break;   // black 6-key learning remote defaults: "CH" controls brightness,
+      case 6: decodeIR6(code);     break;  // black 6-key learning remote defaults: "CH" controls brightness,
                                            // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
                                            // sets bright plain white
       default: return;
     }
+    colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
   }
   //code <= 0xF70000 also invalid
 }
@@ -125,7 +126,6 @@ void decodeIR24(uint32_t code)
     default: return;
   }
   lastValidCode = code;
-  colorUpdated(2); //for notifier, IR is considered a button input
 }
 
 void decodeIR24OLD(uint32_t code)
@@ -158,7 +158,6 @@ void decodeIR24OLD(uint32_t code)
     default: return;
   }
   lastValidCode = code;
-  colorUpdated(2); //for notifier, IR is considered a button input
 }
 
 
@@ -194,7 +193,6 @@ void decodeIR24CT(uint32_t code)
     default: return; 
   }
   lastValidCode = code;
-  colorUpdated(2); //for notifier, IR is considered a button input
 }
 
 
@@ -253,7 +251,6 @@ void decodeIR40(uint32_t code)
     case IR40_FLASH        : if (!applyPreset(4)) { effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; } break;
   }
   lastValidCode = code;
-  colorUpdated(2); //for notifier, IR is considered a button input 
 }
 
 void decodeIR44(uint32_t code)
@@ -317,12 +314,11 @@ void decodeIR44(uint32_t code)
     case IR44_FADE7       : bri = 255;                                                  break;
   }
   lastValidCode = code;
-  colorUpdated(2); //for notifier, IR is considered a button input 
 }
 
 void decodeIR21(uint32_t code)
 {
-    switch (code) {
+  switch (code) {
     case IR21_BRIGHTER:  relativeChange(&bri, 10);         break;
     case IR21_DARKER:    relativeChange(&bri, -10, 5);     break;
     case IR21_OFF:       briLast = bri; bri = 0;           break;
@@ -345,51 +341,42 @@ void decodeIR21(uint32_t code)
     case IR21_FADE:      if (!applyPreset(3)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
     case IR21_SMOOTH:    if (!applyPreset(4)) { effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; } break;
     default: return;
-    }
-    lastValidCode = code;
-    colorUpdated(2); //for notifier, IR is considered a button input
+  }
+  lastValidCode = code;
 }
 
 void decodeIR6(uint32_t code)
 {
-  
-    switch (code) {
-      case IR6_POWER: toggleOnOff(); break;
-      case IR6_CHANNEL_UP: relativeChange(&bri, 10);         break;
-      case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);     break;
-      case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1); break;
-      case IR6_VOLUME_DOWN: 
-      /* next palette */ 
-      
-        relativeChange(&effectPalette, 1); 
-
-        switch(lastIR6ColourIdx)
-        {
-          case 0: colorFromUint32(COLOR_RED); break;
-          case 1: colorFromUint32(COLOR_REDDISH); break;
-          case 2:colorFromUint32(COLOR_ORANGE);    break;
-          case 3:colorFromUint32(COLOR_YELLOWISH); break;
-          case 4:colorFromUint32(COLOR_GREEN);     break;
-          case 5:colorFromUint32(COLOR_GREENISH);  break;
-          case 6:colorFromUint32(COLOR_TURQUOISE); break;
-          case 7: colorFromUint32(COLOR_CYAN);      break;
-          case 8:colorFromUint32(COLOR_BLUE);      break;
-          case 9:colorFromUint32(COLOR_DEEPBLUE);  break;
-          case 10:colorFromUint32(COLOR_PURPLE);    break;
-          case 11:colorFromUint32(COLOR_PINK);      break;
-          case 12:colorFromUint32(COLOR_WHITE);      break;
-            default:break;
-
-        }
-        
-        lastIR6ColourIdx++;
-        if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
-      
+  switch (code) {
+    case IR6_POWER: toggleOnOff(); break;
+    case IR6_CHANNEL_UP: relativeChange(&bri, 10);         break;
+    case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);     break;
+    case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1); break;
+    case IR6_VOLUME_DOWN: 
+    /* next palette */ 
+      relativeChange(&effectPalette, 1); 
+      switch(lastIR6ColourIdx) {
+        case 0: colorFromUint32(COLOR_RED);      break;
+        case 1: colorFromUint32(COLOR_REDDISH);  break;
+        case 2:colorFromUint32(COLOR_ORANGE);    break;
+        case 3:colorFromUint32(COLOR_YELLOWISH); break;
+        case 4:colorFromUint32(COLOR_GREEN);     break;
+        case 5:colorFromUint32(COLOR_GREENISH);  break;
+        case 6:colorFromUint32(COLOR_TURQUOISE); break;
+        case 7: colorFromUint32(COLOR_CYAN);     break;
+        case 8:colorFromUint32(COLOR_BLUE);      break;
+        case 9:colorFromUint32(COLOR_DEEPBLUE);  break;
+        case 10:colorFromUint32(COLOR_PURPLE);   break;
+        case 11:colorFromUint32(COLOR_PINK);     break;
+        case 12:colorFromUint32(COLOR_WHITE);    break;
+        default:break;
+      }
+      lastIR6ColourIdx++;
+      if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
       break;
-      case IR6_MUTE: effectCurrent = 0;  effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
-    }
-    lastValidCode = code;
-    colorUpdated(2); //for notifier, IR is considered a button input
+    case IR6_MUTE: effectCurrent = 0;  effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
+  }
+  lastValidCode = code;
 }
 
 

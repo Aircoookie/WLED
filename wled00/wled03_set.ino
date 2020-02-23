@@ -651,7 +651,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos < 1) XML_response(request);
 
   pos = req.indexOf("&NN"); //do not send UDP notifications this time
-  colorUpdated((pos > 0) ? 5:1);
+  colorUpdated((pos > 0) ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
   return true;
 }

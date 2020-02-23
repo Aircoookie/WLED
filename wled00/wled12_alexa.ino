@@ -41,7 +41,7 @@ void onAlexaChange(EspalexaDevice* dev)
       if (bri == 0)
       {
         bri = briLast;
-        colorUpdated(10);
+        colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
       }
     } else applyMacro(macroAlexaOn);
   } else if (m == EspalexaDeviceProperty::off)
@@ -52,13 +52,13 @@ void onAlexaChange(EspalexaDevice* dev)
       {
         briLast = bri;
         bri = 0;
-        colorUpdated(10);
+        colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
       }
     } else applyMacro(macroAlexaOff);
   } else if (m == EspalexaDeviceProperty::bri)
   {
     bri = espalexaDevice->getValue();
-    colorUpdated(10);
+    colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
   } else //color
   {
     uint32_t color = espalexaDevice->getRGB();
@@ -67,7 +67,7 @@ void onAlexaChange(EspalexaDevice* dev)
     col[1] = ((color >>  8) & 0xFF);
     col[2] = (color & 0xFF);
     if (useRGBW && col[3] == 0) colorRGBtoRGBW(col);  // do not touch white value if EspalexaDevice.cpp did set the white channel
-    colorUpdated(10);
+    colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
   }
 }
 

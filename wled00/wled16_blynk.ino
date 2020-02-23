@@ -41,45 +41,45 @@ void updateBlynk()
 BLYNK_WRITE(V0)
 {
   bri = param.asInt();//bri
-  colorUpdated(9);
+  colorUpdated(NOTIFIER_CALL_MODE_BLYNK);
 }
 
 BLYNK_WRITE(V1)
 {
   blHue = param.asInt();//hue
   colorHStoRGB(blHue*10,blSat,(false)? colSec:col);
-  colorUpdated(9);
+  colorUpdated(NOTIFIER_CALL_MODE_BLYNK);
 }
 
 BLYNK_WRITE(V2)
 {
   blSat = param.asInt();//sat
   colorHStoRGB(blHue*10,blSat,(false)? colSec:col);
-  colorUpdated(9);
+  colorUpdated(NOTIFIER_CALL_MODE_BLYNK);
 }
 
 BLYNK_WRITE(V3)
 {
   bool on = (param.asInt()>0);
-  if (!on != !bri) {toggleOnOff(); colorUpdated(9);}
+  if (!on != !bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BLYNK);}
 }
 
 BLYNK_WRITE(V4)
 {
   effectCurrent = param.asInt()-1;//fx
-  colorUpdated(9);
+  colorUpdated(NOTIFIER_CALL_MODE_BLYNK);
 }
 
 BLYNK_WRITE(V5)
 {
   effectSpeed = param.asInt();//sx
-  colorUpdated(9);
+  colorUpdated(NOTIFIER_CALL_MODE_BLYNK);
 }
 
 BLYNK_WRITE(V6)
 {
   effectIntensity = param.asInt();//ix
-  colorUpdated(9);
+  colorUpdated(NOTIFIER_CALL_MODE_BLYNK);
 }
 
 BLYNK_WRITE(V7)

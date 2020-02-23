@@ -93,6 +93,18 @@
   #include <IRutils.h>
  #endif
 
+// remove flicker because PWM signal of RGB channels can become out of phase
+#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
+  #include "src/dependencies/arduino/core_esp8266_waveform.h"
+#endif
+
+// enable additional debug output
+#ifdef WLED_DEBUG
+  #ifndef ESP8266
+    #include <rom/rtc.h>
+  #endif
+#endif
+
 //version code in format yymmddb (b = daily build)
 #define VERSION 2002192
 
@@ -301,7 +313,7 @@ unsigned long buttonWaitTime = 0;
 bool notifyDirectDefault = notifyDirect;
 bool receiveNotifications = true;
 unsigned long notificationSentTime = 0;
-byte notificationSentCallMode = 0;
+byte notificationSentCallMode = NOTIFIER_CALL_MODE_INIT;
 bool notificationTwoRequired = false;
 
 //effects
@@ -369,7 +381,7 @@ unsigned long realtimeTimeout = 0;
 //mqtt
 long lastMqttReconnectAttempt = 0;
 long lastInterfaceUpdate = 0;
-byte interfaceUpdateCallMode = 0;
+byte interfaceUpdateCallMode = NOTIFIER_CALL_MODE_INIT;
 char mqttStatusTopic[40] = ""; //this must be global because of async handlers
 
 #if AUXPIN >= 0
@@ -526,6 +538,10 @@ void loop() {
 
   handleOverlays();
   yield();
+  #ifdef WLED_USE_ANALOG_LEDS 
+  strip.setRgbwPwm();
+  #endif
+
   if (doReboot) reset();
 
   if (!realtimeMode) //block stuff if WARLS/Adalight is enabled

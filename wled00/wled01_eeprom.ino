@@ -3,7 +3,7 @@
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
 
-#define EEPSIZE 2560
+#define EEPSIZE 2560  //Maximum is 4096
 
 //eeprom Version code, enables default settings instead of 0 init on update
 #define EEPVER 16
