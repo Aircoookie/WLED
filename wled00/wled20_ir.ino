@@ -51,7 +51,9 @@ void changeEffectSpeed(int8_t amount)
   } else {  // Effect = "solid Color", change the hue of the primary color
     CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
     int16_t new_val = (int16_t) prim_hsv.h + amount;
-    uint8_t prim_hsv.h = (byte)constrain(new_val,0.1,255.1);
+    if (new_val > 255) new_val -= 255;
+    if (new_val < 0) new_val += 255;
+    prim_hsv.h = (byte)new_val;
     hsv2rgb_rainbow(&prim_hsv, &col);
   }
 }
@@ -64,7 +66,7 @@ void changeEffectIntensity(int8_t amount)
   } else {  // Effect = "solid Color", change the saturation of the primary color
     CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
     int16_t new_val = (int16_t) prim_hsv.s + amount;
-    uint8_t prim_hsv.s = (byte)constrain(new_val,0.1,255.1);
+    prim_hsv.s = (byte)constrain(new_val,0.1,255.1);
     hsv2rgb_rainbow(&prim_hsv, &col);
   }
 }
