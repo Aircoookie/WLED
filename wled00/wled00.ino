@@ -150,8 +150,8 @@ bool useRGBW = false;                         //SK6812 strips can contain an ext
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
-byte col[] {255, 160, 0, 0};                  //default RGB(W) color
-byte colSec[] {0, 0, 0, 0};                   //default RGB(W) secondary color
+byte col[] {255, 160, 0, 0};                  //current RGB(W) primary color. col[] should be updated if you want to change the color.
+byte colSec[] {0, 0, 0, 0};                   //current RGB(W) secondary color
 byte briS = 128;                              //default brightness
 
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
@@ -282,7 +282,7 @@ bool wasConnected = false;
 
 //color
 byte colOld[] {0, 0, 0, 0};                   //color before transition
-byte colT[] {0, 0, 0, 0};                     //current color
+byte colT[] {0, 0, 0, 0};                     //color that is currently displayed on the LEDs
 byte colIT[] {0, 0, 0, 0};                    //color that was last sent to LEDs
 byte colSecT[] {0, 0, 0, 0};
 byte colSecOld[] {0, 0, 0, 0};

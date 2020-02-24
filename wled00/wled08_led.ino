@@ -237,9 +237,9 @@ void handleNightlight()
     if (nightlightFade)
     {
       bri = briNlT + ((nightlightTargetBri - briNlT)*nper);
-      if (nightlightColorFade)                                                          // color fading only is enabled with "NF=2"
+      if (nightlightColorFade)                                                         // color fading only is enabled with "NF=2"
       {
-        for (byte i=0; i<4; i++) col[i] = colNlT[i]+ ((colSecT[i] - colNlT[i])*nper);  // fading from actual color to secondary color
+        for (byte i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);   // fading from actual color to secondary color
       }
       colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
     }
