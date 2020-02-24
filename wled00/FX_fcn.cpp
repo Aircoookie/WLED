@@ -27,9 +27,6 @@
 #include "FX.h"
 #include "palettes.h"
 
-#define LED_SKIP_AMOUNT  1
-#define MIN_SHOW_DELAY  15
-
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
   if (supportWhite == _useRgbw && countPixels == _length) return;
@@ -380,7 +377,7 @@ void WS2812FX::setBrightness(uint8_t b) {
   if (_brightness == b) return;
   _brightness = (gammaCorrectBri) ? gamma8(b) : b;
   _segment_index = 0;
-  if (SEGENV.next_time > millis() + 22) show();//apply brightness change immediately if no refresh soon
+  if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
 }
 
 uint8_t WS2812FX::getMode(void) {

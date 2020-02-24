@@ -21,7 +21,7 @@
 //#define WLED_DISABLE_BLYNK       //saves 6kb
 //#define WLED_DISABLE_CRONIXIE    //saves 3kb
 //#define WLED_DISABLE_HUESYNC     //saves 4kb
-//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
+//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
 //#define WLED_ENABLE_DMX          //uses 3.5kb
@@ -85,6 +85,14 @@ DMXESPSerial dmx;
 #include "ir_codes.h"
 #include "const.h"
 
+#ifndef CLIENT_SSID
+#define CLIENT_SSID DEFAULT_CLIENT_SSID
+#endif
+
+#ifndef CLIENT_PASS
+#define CLIENT_PASS ""
+#endif
+
 
 #if IR_PIN < 0
 #ifndef WLED_DISABLE_INFRARED
@@ -111,13 +119,14 @@ DMXESPSerial dmx;
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002192
+#define VERSION 2002243
+
 char versionString[] = "0.9.1";
 
 
 //AP and OTA default passwords (for maximum change them!)
-char apPass[65] = "wled1234";
-char otaPass[33] = "wledota";
+char apPass[65] = DEFAULT_AP_PASS;
+char otaPass[33] = DEFAULT_OTA_PASS;
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
@@ -129,8 +138,8 @@ char ntpServerName[33] = "0.wled.pool.ntp.org";//NTP server to use
 
 
 //WiFi CONFIG (all these can be changed via web UI, no need to set them here)
-char clientSSID[33] = "Your_Network";
-char clientPass[65] = "";
+char clientSSID[33] = CLIENT_SSID;
+char clientPass[65] = CLIENT_PASS;
 char cmDNS[33] = "x";                         //mDNS address (placeholder, will be replaced by wledXXXXXXXXXXXX.local)
 char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
@@ -149,8 +158,8 @@ bool useRGBW = false;                         //SK6812 strips can contain an ext
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
-byte col[] {255, 160, 0, 0};                  //default RGB(W) color
-byte colSec[] {0, 0, 0, 0};                   //default RGB(W) secondary color
+byte col[] {255, 160, 0, 0};                  //current RGB(W) primary color. col[] should be updated if you want to change the color.
+byte colSec[] {0, 0, 0, 0};                   //current RGB(W) secondary color
 byte briS = 128;                              //default brightness
 
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
@@ -158,7 +167,6 @@ byte nightlightDelayMins = 60;
 bool nightlightFade = true;                   //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
 bool nightlightColorFade = false;             //if enabled, light will gradually fade color from primary to secondary color.
 bool fadeTransition = true;                   //enable crossfading color transition
-bool enableSecTransition = true;              //also enable transition for secondary color
 uint16_t transitionDelay = 750;               //default crossfade duration in ms
 
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
@@ -261,13 +269,14 @@ bool aOtaEnabled = true;                      //ArduinoOTA allows easy updates d
 
 uint16_t userVar0 = 0, userVar1 = 0;
 
+#ifdef WLED_ENABLE_DMX
 //dmx CONFIG
-uint16_t DMXChannels = 7;                          // number of channels per fixture
-uint16_t DMXFixtureMap[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+byte DMXChannels = 7;                          // number of channels per fixture
+byte DMXFixtureMap[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
                                               // assigns the different channels to different functions. See wled21_dmx.ino for more information.
 uint16_t DMXGap = 10;                              // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
 uint16_t DMXStart = 10;                            // start address of the first fixture
-
+#endif
 
 
 //internal global variable declarations
@@ -280,7 +289,7 @@ bool wasConnected = false;
 
 //color
 byte colOld[] {0, 0, 0, 0};                   //color before transition
-byte colT[] {0, 0, 0, 0};                     //current color
+byte colT[] {0, 0, 0, 0};                     //color that is currently displayed on the LEDs
 byte colIT[] {0, 0, 0, 0};                    //color that was last sent to LEDs
 byte colSecT[] {0, 0, 0, 0};
 byte colSecOld[] {0, 0, 0, 0};
@@ -466,7 +475,7 @@ bool e131NewData = false;
 WS2812FX strip = WS2812FX();
 
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
-#define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID,"Your_Network") != 0)
+#define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID,DEFAULT_CLIENT_SSID) != 0)
 
 //debug macros
 #ifdef WLED_DEBUG
