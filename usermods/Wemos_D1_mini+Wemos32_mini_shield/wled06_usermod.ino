@@ -3,11 +3,11 @@
 #ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
 uint8_t SCL_PIN = 22; 
 uint8_t SDA_PIN = 21;
-// uint8_t RST_PIN = 16; // Uncoment for Heltec WiFi-Kit-8
 OneWire oneWire(23);
 #else //ESP8266 boards
 uint8_t SCL_PIN = 5;
 uint8_t SDA_PIN = 4;
+// uint8_t RST_PIN = 16; // Uncoment for Heltec WiFi-Kit-8
 OneWire oneWire(13);
 #endif
 //The SCL and SDA pins are defined here.
