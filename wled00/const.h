@@ -1,6 +1,11 @@
 #ifndef wled_const_h
 #define wled_const_h
 
+//Defaults
+#define DEFAULT_CLIENT_SSID "Your_Network"
+#define DEFAULT_AP_PASS     "wled1234"
+#define DEFAULT_OTA_PASS    "wledota"
+
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
 #define AP_BEHAVIOR_NO_CONN       1            //Open when no connection (either after boot or if connection is lost)
