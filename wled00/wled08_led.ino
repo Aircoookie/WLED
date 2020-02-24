@@ -227,15 +227,15 @@ void handleNightlight()
       nightlightDelayMs = (int)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
-      for (byte i=0; i<4; i++) colNlT[i] = colT[i];                                     // remember starting color
+      for (byte i=0; i<4; i++) colNlT[i] = col[i];                                     // remember starting color
     }
     float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
     if (nightlightFade)
     {
       bri = briNlT + ((nightlightTargetBri - briNlT)*nper);
-      if (nightlightColorFade)                                                          // color fading only is enabled with "NF=2"
+      if (nightlightColorFade)                                                         // color fading only is enabled with "NF=2"
       {
-        for (byte i=0; i<4; i++) colT[i] = colNlT[i]+ ((colSecT[i] - colNlT[i])*nper);  // fading from actual color to secondary color
+        for (byte i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);   // fading from actual color to secondary color
       }
       colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
     }
