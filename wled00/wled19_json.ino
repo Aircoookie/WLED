@@ -154,7 +154,7 @@ bool deserializeState(JsonObject root)
     }
   }
 
-  colorUpdated(noNotification ? 5:1);
+  colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
   ps = root["psave"] | -1;
   if (ps >= 0) savePreset(ps);
@@ -267,14 +267,25 @@ void serializeInfo(JsonObject root)
   wifi_info["channel"] = WiFi.channel();
   
   #ifdef ARDUINO_ARCH_ESP32
+  #ifdef WLED_DEBUG
+    wifi_info["txPower"] = (int) WiFi.getTxPower();
+    wifi_info["sleep"] = (bool) WiFi.getSleep();
+  #endif
   root["arch"] = "esp32";
   root["core"] = ESP.getSdkVersion();
   //root["maxalloc"] = ESP.getMaxAllocHeap();
+  #ifdef WLED_DEBUG
+    root["resetReason0"] = (int)rtc_get_reset_reason(0);
+    root["resetReason1"] = (int)rtc_get_reset_reason(1);
+  #endif
   root["lwip"] = 0;
   #else
   root["arch"] = "esp8266";
   root["core"] = ESP.getCoreVersion();
   //root["maxalloc"] = ESP.getMaxFreeBlockSize();
+  #ifdef WLED_DEBUG
+    root["resetReason"] = (int)ESP.getResetInfoPtr()->reason;
+  #endif
   root["lwip"] = LWIP_VERSION_MAJOR;
   #endif
   

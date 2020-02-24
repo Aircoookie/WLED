@@ -27,8 +27,9 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 //called upon POST settings form submit
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
-  if (subPage <1 || subPage >6) return;
+
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX
+  if (subPage <1 || subPage >7) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -293,6 +294,29 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       aOtaEnabled = request->hasArg("AO");
     }
   }
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+  if (subPage == 7)
+  {
+    int t = request->arg("CN").toInt();
+    if (t>0 && t<16) {
+      DMXChannels = t;
+    }
+    t = request->arg("CS").toInt();
+    if (t>0 && t<513) {
+      DMXStart = t;
+    }
+    t = request->arg("CG").toInt();
+    if (t>0 && t<513) {
+      DMXGap = t;
+    }
+    for (int i=0; i<15; i++) {
+      String argname = "CH" + String((i+1));
+      t = request->arg(argname).toInt();
+      DMXFixtureMap[i] = t;
+    }
+  }
+  
+  #endif
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
   if (subPage == 2) {
     strip.init(useRGBW,ledCount,skipFirstLed);
@@ -651,7 +675,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos < 1) XML_response(request);
 
   pos = req.indexOf("&NN"); //do not send UDP notifications this time
-  colorUpdated((pos > 0) ? 5:1);
+  colorUpdated((pos > 0) ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
   return true;
 }

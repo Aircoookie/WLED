@@ -415,7 +415,8 @@ class WS2812FX {
       resetSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
-      show(void);
+      show(void),
+      setRgbwPwm(void);
 
     bool
       reverseMode = false,
@@ -626,6 +627,12 @@ class WS2812FX {
     
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
+    
+    #ifdef WLED_USE_ANALOG_LEDS
+    uint32_t _analogLastShow = 0;
+    uint32_t _analogLastColor = 0;
+    uint8_t _analogLastBri = 0;
+    #endif
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
