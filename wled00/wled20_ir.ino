@@ -51,8 +51,8 @@ void changeEffectSpeed(int8_t amount)
   } else {  // Effect = "solid Color", change the hue of the primary color
     CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
     int16_t new_val = (int16_t) prim_hsv.h + amount;
-    if (new_val > 255) new_val -= 255;
-    if (new_val < 0) new_val += 255;
+    if (new_val > 255) new_val -= 255;  // roll-over if  bigger than 255
+    if (new_val < 0) new_val += 255;    // roll-over if smaller than 0
     prim_hsv.h = (byte)new_val;
     hsv2rgb_rainbow(&prim_hsv, &col);
   }
@@ -66,7 +66,7 @@ void changeEffectIntensity(int8_t amount)
   } else {  // Effect = "solid Color", change the saturation of the primary color
     CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
     int16_t new_val = (int16_t) prim_hsv.s + amount;
-    prim_hsv.s = (byte)constrain(new_val,0.1,255.1);
+    prim_hsv.s = (byte)constrain(new_val,0.1,255.1);  // constrain to 0-255
     hsv2rgb_rainbow(&prim_hsv, &col);
   }
 }
@@ -323,10 +323,10 @@ void decodeIR44(uint32_t code)
     case IR44_REDMINUS    : relativeChange(&effectCurrent, -1, 0);                      break;
     case IR44_GREENPLUS   : relativeChange(&effectPalette,  1, 0, maxPaletteIndex);     break;
     case IR44_GREENMINUS  : relativeChange(&effectPalette, -1, 0);                      break;
-    case IR44_BLUEPLUS    : changeEffectIntensity( 10);                                 break;
-    case IR44_BLUEMINUS   : changeEffectIntensity(-10);                                 break;
-    case IR44_QUICK       : changeEffectSpeed( 10);                                     break;
-    case IR44_SLOW        : changeEffectSpeed(-10);                                     break;
+    case IR44_BLUEPLUS    : changeEffectIntensity( 16);                                 break;
+    case IR44_BLUEMINUS   : changeEffectIntensity(-16);                                 break;
+    case IR44_QUICK       : changeEffectSpeed( 16);                                     break;
+    case IR44_SLOW        : changeEffectSpeed(-16);                                     break;
     case IR44_DIY1        : if (!applyPreset(1)) { effectCurrent = FX_MODE_STATIC;        effectPalette = 0; } break;
     case IR44_DIY2        : if (!applyPreset(2)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
     case IR44_DIY3        : if (!applyPreset(3)) { effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; } break;
@@ -345,7 +345,7 @@ void decodeIR44(uint32_t code)
 
 void decodeIR21(uint32_t code)
 {
-  switch (code) {
+    switch (code) {
     case IR21_BRIGHTER:  relativeChange(&bri, 10);         break;
     case IR21_DARKER:    relativeChange(&bri, -10, 5);     break;
     case IR21_OFF:       briLast = bri; bri = 0;           break;
@@ -368,19 +368,18 @@ void decodeIR21(uint32_t code)
     case IR21_FADE:      if (!applyPreset(3)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
     case IR21_SMOOTH:    if (!applyPreset(4)) { effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; } break;
     default: return;
-  }
-  lastValidCode = code;
+    }
+    lastValidCode = code;
 }
 
 void decodeIR6(uint32_t code)
 {
   switch (code) {
-    case IR6_POWER: toggleOnOff(); break;
-    case IR6_CHANNEL_UP: relativeChange(&bri, 10);         break;
-    case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);     break;
-    case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1, 0 MODE_COUNT); break;
-    case IR6_VOLUME_DOWN: 
-    /* next palette */ 
+    case IR6_POWER: toggleOnOff();                                         break;
+    case IR6_CHANNEL_UP: relativeChange(&bri, 10);                         break;
+    case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);                   break;
+    case IR6_VOLUME_UP:   relativeChange(&effectCurrent, 1, 0 MODE_COUNT); break;  // next effect
+    case IR6_VOLUME_DOWN:                                                          // next palette
       relativeChange(&effectPalette, 1, 0, maxPaletteIndex); 
       switch(lastIR6ColourIdx) {
         case 0: colorFromUint32(COLOR_RED);      break;
@@ -399,11 +398,10 @@ void decodeIR6(uint32_t code)
         default:break;
       }
       lastIR6ColourIdx++;
-      if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
-      break;
-    case IR6_MUTE: effectCurrent = 0;  effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
-  }
-  lastValidCode = code;
+      if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;                      break;
+      case IR6_MUTE: effectCurrent = 0; effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
+    }
+    lastValidCode = code;
 }
 
 
