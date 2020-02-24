@@ -164,9 +164,9 @@ void setCountdown()
 bool checkCountdown()
 {
   unsigned long n = now();
-  local = countdownTime - n;
+  if (countdownMode) local = countdownTime - n + utcOffsetSecs;
   if (n > countdownTime) {
-    local = n - countdownTime;
+    if (countdownMode) local = n - countdownTime + utcOffsetSecs;
     if (!countdownOverTriggered)
     {
       if (macroCountdown != 0) applyMacro(macroCountdown);
