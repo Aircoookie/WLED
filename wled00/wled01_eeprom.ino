@@ -258,15 +258,17 @@ void saveSettingsToEEPROM()
   EEPROM.write(2523, (mqttPort >> 8) & 0xFF);
 
   // DMX (2530 - 2549)
+  #ifdef WLED_ENABLE_DMX
   EEPROM.write(2530, DMXChannels);
   EEPROM.write(2531, DMXGap & 0xFF);
   EEPROM.write(2532, (DMXGap >> 8) & 0xFF);
   EEPROM.write(2533, DMXStart & 0xFF);
   EEPROM.write(2534, (DMXStart >> 8) & 0xFF);
 
-  for (int i=0;i<15;i++) {
+  for (int i=0; i<15; i++) {
     EEPROM.write(2535+i, DMXFixtureMap[i]);
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
+  #endif
 
   commit();
 }
@@ -536,7 +538,7 @@ void loadSettingsFromEEPROM(bool first)
   readStringFromEEPROM(2220, blynkApiKey, 35);
   if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
 
-  
+  #ifdef WLED_ENABLE_DMX
   // DMX (2530 - 2549)2535
   DMXChannels = EEPROM.read(2530);
   DMXGap = EEPROM.read(2531) + ((EEPROM.read(2532) << 8) & 0xFF00);
@@ -545,7 +547,7 @@ void loadSettingsFromEEPROM(bool first)
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
   } //last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
-
+  #endif
 
   //user MOD memory
   //2944 - 3071 reserved

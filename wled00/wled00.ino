@@ -262,13 +262,14 @@ bool aOtaEnabled = true;                      //ArduinoOTA allows easy updates d
 
 uint16_t userVar0 = 0, userVar1 = 0;
 
+#ifdef WLED_ENABLE_DMX
 //dmx CONFIG
-uint16_t DMXChannels = 7;                          // number of channels per fixture
-uint16_t DMXFixtureMap[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+byte DMXChannels = 7;                          // number of channels per fixture
+byte DMXFixtureMap[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
                                               // assigns the different channels to different functions. See wled21_dmx.ino for more information.
 uint16_t DMXGap = 10;                              // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
 uint16_t DMXStart = 10;                            // start address of the first fixture
-
+#endif
 
 
 //internal global variable declarations
