@@ -1,6 +1,6 @@
 /*
- * Main sketch, global variable declarations
- */
+   Main sketch, global variable declarations
+*/
 /*
  * @title WLED project sketch
  * @version 0.9.1
@@ -24,6 +24,7 @@
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
+//#define WLED_ENABLE_DMX          //uses 3.5kb
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
@@ -34,6 +35,10 @@
 
 //library inclusions
 #include <Arduino.h>
+#ifdef WLED_ENABLE_DMX
+#include <ESPDMX.h>
+DMXESPSerial dmx;
+#endif
 #ifdef ESP8266
  #include <ESP8266WiFi.h>
  #include <ESP8266mDNS.h>
@@ -42,11 +47,11 @@
  #include <user_interface.h>
  }
 #else
- #include <WiFi.h>
- #include "esp_wifi.h"
- #include <ESPmDNS.h>
- #include <AsyncTCP.h>
- #include "SPIFFS.h"
+#include <WiFi.h>
+#include "esp_wifi.h"
+#include <ESPmDNS.h>
+#include <AsyncTCP.h>
+#include "SPIFFS.h"
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -54,20 +59,20 @@
 #include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
- #include <ArduinoOTA.h>
+#include <ArduinoOTA.h>
 #endif
 #include <SPIFFSEditor.h>
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
 #ifndef WLED_DISABLE_ALEXA
- #define ESPALEXA_ASYNC
- #define ESPALEXA_NO_SUBPAGE
- #define ESPALEXA_MAXDEVICES 1
- //#define ESPALEXA_DEBUG
- #include "src/dependencies/espalexa/Espalexa.h"
+#define ESPALEXA_ASYNC
+#define ESPALEXA_NO_SUBPAGE
+#define ESPALEXA_MAXDEVICES 1
+//#define ESPALEXA_DEBUG
+#include "src/dependencies/espalexa/Espalexa.h"
 #endif
 #ifndef WLED_DISABLE_BLYNK
- #include "src/dependencies/blynk/BlynkSimpleEsp.h"
+#include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 #include "src/dependencies/e131/ESPAsyncE131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
@@ -82,16 +87,16 @@
 
 
 #if IR_PIN < 0
- #ifndef WLED_DISABLE_INFRARED
-  #define WLED_DISABLE_INFRARED
- #endif
+#ifndef WLED_DISABLE_INFRARED
+#define WLED_DISABLE_INFRARED
+#endif
 #endif
 
- #ifndef WLED_DISABLE_INFRARED
-  #include <IRremoteESP8266.h>
-  #include <IRrecv.h>
-  #include <IRutils.h>
- #endif
+#ifndef WLED_DISABLE_INFRARED
+#include <IRremoteESP8266.h>
+#include <IRrecv.h>
+#include <IRutils.h>
+#endif
 
 // remove flicker because PWM signal of RGB channels can become out of phase
 #if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
@@ -107,7 +112,6 @@
 
 //version code in format yymmddb (b = daily build)
 #define VERSION 2002192
-
 char versionString[] = "0.9.1";
 
 
@@ -145,8 +149,8 @@ bool useRGBW = false;                         //SK6812 strips can contain an ext
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
-byte col[]{255, 160, 0, 0};                   //default RGB(W) color
-byte colSec[]{0, 0, 0, 0};                    //default RGB(W) secondary color
+byte col[] {255, 160, 0, 0};                  //default RGB(W) color
+byte colSec[] {0, 0, 0, 0};                   //default RGB(W) secondary color
 byte briS = 128;                              //default brightness
 
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
@@ -214,7 +218,7 @@ bool huePollingEnabled = false;               //poll hue bridge for light state
 uint16_t huePollIntervalMs = 2500;            //low values (< 1sec) may cause lag but offer quicker response
 char hueApiKey[47] = "api";                   //key token will be obtained from bridge
 byte huePollLightId = 1;                      //ID of hue lamp to sync to. Find the ID in the hue app ("about" section)
-IPAddress hueIP = (0,0,0,0);                  //IP address of the bridge
+IPAddress hueIP = (0, 0, 0, 0);               //IP address of the bridge
 bool hueApplyOnOff = true;
 bool hueApplyBri   = true;
 bool hueApplyColor = true;
@@ -227,7 +231,7 @@ byte currentTimezone = 0;                     //Timezone ID. Refer to timezones 
 int  utcOffsetSecs   = 0;                     //Seconds to offset from UTC before timzone calculation
 
 byte overlayDefault = 0;                      //0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
-byte overlayMin = 0, overlayMax = ledCount-1; //boundaries of overlay mode
+byte overlayMin = 0, overlayMax = ledCount - 1; //boundaries of overlay mode
 
 byte analogClock12pixel = 0;                  //The pixel in your strip where "midnight" would be
 bool analogClockSecondsTrail = false;         //Display seconds as trail of LEDs instead of a single pixel
@@ -257,6 +261,14 @@ bool aOtaEnabled = true;                      //ArduinoOTA allows easy updates d
 
 uint16_t userVar0 = 0, userVar1 = 0;
 
+//dmx CONFIG
+uint16_t DMXChannels = 7;                          // number of channels per fixture
+uint16_t DMXFixtureMap[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                                              // assigns the different channels to different functions. See wled21_dmx.ino for more information.
+uint16_t DMXGap = 10;                              // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
+uint16_t DMXStart = 10;                            // start address of the first fixture
+
+
 
 //internal global variable declarations
 //wifi
@@ -267,12 +279,12 @@ bool interfacesInited = false;
 bool wasConnected = false;
 
 //color
-byte colOld[]{0, 0, 0, 0};                    //color before transition
-byte colT[]{0, 0, 0, 0};                      //current color
-byte colIT[]{0, 0, 0, 0};                     //color that was last sent to LEDs
-byte colSecT[]{0, 0, 0, 0};
-byte colSecOld[]{0, 0, 0, 0};
-byte colSecIT[]{0, 0, 0, 0};
+byte colOld[] {0, 0, 0, 0};                   //color before transition
+byte colT[] {0, 0, 0, 0};                     //current color
+byte colIT[] {0, 0, 0, 0};                    //color that was last sent to LEDs
+byte colSecT[] {0, 0, 0, 0};
+byte colSecOld[] {0, 0, 0, 0};
+byte colSecIT[] {0, 0, 0, 0};
 
 byte lastRandomIndex = 0;                     //used to save last random color so the new one is not the same
 
@@ -291,7 +303,7 @@ uint32_t nightlightDelayMs = 10;
 uint8_t nightlightDelayMinsDefault = nightlightDelayMins;
 unsigned long nightlightStartTime;
 byte briNlT = 0;                              //current nightlight brightness
-byte colNlT[]{0, 0, 0, 0};                    //current nightlight color
+byte colNlT[] {0, 0, 0, 0};                   //current nightlight color
 
 //brightness
 unsigned long lastOnTime = 0;
@@ -331,9 +343,9 @@ bool showWelcomePage = false;
 //hue
 char hueError[25] = "Inactive";
 //uint16_t hueFailCount = 0;
-float hueXLast=0, hueYLast=0;
-uint16_t hueHueLast=0, hueCtLast=0;
-byte hueSatLast=0, hueBriLast=0;
+float hueXLast = 0, hueYLast = 0;
+uint16_t hueHueLast = 0, hueCtLast = 0;
+byte hueSatLast = 0, hueBriLast = 0;
 unsigned long hueLastRequestSent = 0;
 bool hueAuthRequired = false;
 bool hueReceived = false;
@@ -346,7 +358,7 @@ unsigned long overlayRefreshMs = 200;
 unsigned long overlayRefreshedTime;
 
 //cronixie
-byte dP[]{0,0,0,0,0,0};
+byte dP[] {0, 0, 0, 0, 0, 0};
 bool cronixieInit = false;
 
 //countdown
@@ -355,10 +367,10 @@ bool countdownOverTriggered = true;
 
 //timer
 byte lastTimerMinute = 0;
-byte timerHours[]   = {0,0,0,0,0,0,0,0};
-byte timerMinutes[] = {0,0,0,0,0,0,0,0};
-byte timerMacro[]   = {0,0,0,0,0,0,0,0};
-byte timerWeekday[] = {255,255,255,255,255,255,255,255}; //weekdays to activate on
+byte timerHours[]   = {0, 0, 0, 0, 0, 0, 0, 0};
+byte timerMinutes[] = {0, 0, 0, 0, 0, 0, 0, 0};
+byte timerMacro[]   = {0, 0, 0, 0, 0, 0, 0, 0};
+byte timerWeekday[] = {255, 255, 255, 255, 255, 255, 255, 255}; //weekdays to activate on
 //bit pattern of arr elem: 0b11111111: sun,sat,fri,thu,wed,tue,mon,validity
 
 //blynk
@@ -436,8 +448,8 @@ AsyncClient* hueClient = NULL;
 AsyncMqttClient* mqtt = NULL;
 
 //function prototypes
-void colorFromUint32(uint32_t,bool=false);
-void serveMessage(AsyncWebServerRequest*,uint16_t,String,String,byte);
+void colorFromUint32(uint32_t, bool = false);
+void serveMessage(AsyncWebServerRequest*, uint16_t, String, String, byte);
 void handleE131Packet(e131_packet_t*, IPAddress);
 void arlsLock(uint32_t,byte);
 void handleOverlayDraw();
@@ -458,34 +470,36 @@ WS2812FX strip = WS2812FX();
 
 //debug macros
 #ifdef WLED_DEBUG
- #define DEBUG_PRINT(x)  Serial.print (x)
- #define DEBUG_PRINTLN(x) Serial.println (x)
- #define DEBUG_PRINTF(x) Serial.printf (x)
- unsigned long debugTime = 0;
- int lastWifiState = 3;
- unsigned long wifiStateChangedTime = 0;
- int loops = 0;
+#define DEBUG_PRINT(x)  Serial.print (x)
+#define DEBUG_PRINTLN(x) Serial.println (x)
+#define DEBUG_PRINTF(x) Serial.printf (x)
+unsigned long debugTime = 0;
+int lastWifiState = 3;
+unsigned long wifiStateChangedTime = 0;
+int loops = 0;
 #else
- #define DEBUG_PRINT(x)
- #define DEBUG_PRINTLN(x)
- #define DEBUG_PRINTF(x)
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTLN(x)
+#define DEBUG_PRINTF(x)
 #endif
 
 //filesystem
 #ifndef WLED_DISABLE_FILESYSTEM
- #include <FS.h>
- #ifdef ARDUINO_ARCH_ESP32
-  #include "SPIFFS.h"
- #endif
- #include "SPIFFSEditor.h"
+#include <FS.h>
+#ifdef ARDUINO_ARCH_ESP32
+#include "SPIFFS.h"
 #endif
+#include "SPIFFSEditor.h"
+#endif
+
+
 
 //turns all LEDs off and restarts ESP
 void reset()
 {
   briT = 0;
   long dly = millis();
-  while(millis() - dly < 250)
+  while (millis() - dly < 250)
   {
     yield(); //enough time to send response to client
   }
@@ -510,13 +524,15 @@ bool oappend(const char* txt)
 bool oappendi(int i)
 {
   char s[11];
-  sprintf(s,"%ld", i);
+  sprintf(s, "%ld", i);
   return oappend(s);
 }
 
 
 //boot starts here
 void setup() {
+
+
   wledInit();
 }
 
@@ -528,6 +544,7 @@ void loop() {
   handleSerial();
   handleNotifications();
   handleTransitions();
+  handleDMX();
   userLoop();
 
   yield();
@@ -547,9 +564,9 @@ void loop() {
   if (!realtimeMode) //block stuff if WARLS/Adalight is enabled
   {
     if (apActive) dnsServer.processNextRequest();
-    #ifndef WLED_DISABLE_OTA
+#ifndef WLED_DISABLE_OTA
     if (WLED_CONNECTED && aOtaEnabled) ArduinoOTA.handle();
-    #endif
+#endif
     handleNightlight();
     yield();
 
@@ -566,26 +583,26 @@ void loop() {
   if (millis() - lastMqttReconnectAttempt > 30000) initMqtt();
 
   //DEBUG serial logging
-  #ifdef WLED_DEBUG
-   if (millis() - debugTime > 9999)
-   {
-     DEBUG_PRINTLN("---DEBUG INFO---");
-     DEBUG_PRINT("Runtime: "); DEBUG_PRINTLN(millis());
-     DEBUG_PRINT("Unix time: "); DEBUG_PRINTLN(now());
-     DEBUG_PRINT("Free heap: "); DEBUG_PRINTLN(ESP.getFreeHeap());
-     DEBUG_PRINT("Wifi state: "); DEBUG_PRINTLN(WiFi.status());
-     if (WiFi.status() != lastWifiState)
-     {
-       wifiStateChangedTime = millis();
-     }
-     lastWifiState = WiFi.status();
-     DEBUG_PRINT("State time: "); DEBUG_PRINTLN(wifiStateChangedTime);
-     DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
-     DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP());
-     DEBUG_PRINT("Loops/sec: "); DEBUG_PRINTLN(loops/10);
-     loops = 0;
-     debugTime = millis();
-   }
-   loops++;
-  #endif
+#ifdef WLED_DEBUG
+  if (millis() - debugTime > 9999)
+  {
+    DEBUG_PRINTLN("---DEBUG INFO---");
+    DEBUG_PRINT("Runtime: "); DEBUG_PRINTLN(millis());
+    DEBUG_PRINT("Unix time: "); DEBUG_PRINTLN(now());
+    DEBUG_PRINT("Free heap: "); DEBUG_PRINTLN(ESP.getFreeHeap());
+    DEBUG_PRINT("Wifi state: "); DEBUG_PRINTLN(WiFi.status());
+    if (WiFi.status() != lastWifiState)
+    {
+      wifiStateChangedTime = millis();
+    }
+    lastWifiState = WiFi.status();
+    DEBUG_PRINT("State time: "); DEBUG_PRINTLN(wifiStateChangedTime);
+    DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
+    DEBUG_PRINT("Client IP: "); DEBUG_PRINTLN(WiFi.localIP());
+    DEBUG_PRINT("Loops/sec: "); DEBUG_PRINTLN(loops / 10);
+    loops = 0;
+    debugTime = millis();
+  }
+  loops++;
+#endif
 }
