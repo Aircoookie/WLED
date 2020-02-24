@@ -82,6 +82,11 @@ void initServer()
     serveMessage(request, 200,"UI settings saved.","Redirecting...",1);
   });
 
+  server.on("/settings/dmx", HTTP_POST, [](AsyncWebServerRequest *request){
+    handleSettingsSet(request, 7);
+    serveMessage(request, 200,"UI settings saved.","Redirecting...",1);
+  });
+
   server.on("/settings/sync", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 4);
     serveMessage(request, 200,"Sync settings saved.","Redirecting...",1);
@@ -201,6 +206,16 @@ void initServer()
     });
   }
 
+
+    #ifdef WLED_ENABLE_DMX
+    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
+    });
+    #else
+    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+      serveMessage(request, 501, "Not implemented", "DMX support is not enabled in this build.", 254);
+    });
+    #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
@@ -301,8 +316,36 @@ String settingsProcessor(const String& var)
     getSettingsJS(optionType, buf);
     return String(buf);
   }
+  
+  #ifdef WLED_ENABLE_DMX
+
+  if (var == "DMXMENU") {
+    return String("<form action=/settings/dmx><button type=submit>DMX Output</button></form>");
+  }
+  
+  #endif
   if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
   return String();
+}
+
+String dmxProcessor(const String& var)
+{
+  String mapJS;
+  #ifdef WLED_ENABLE_DMX
+    if (var == "DMXVARS") {
+      mapJS += "\nCN=" + String(DMXChannels) + ";\n";
+      mapJS += "CS=" + String(DMXStart) + ";\n";
+      mapJS += "CG=" + String(DMXGap) + ";\n";
+      mapJS += "LC=" + String(ledCount) + ";\n";
+      mapJS += "var CH=[";
+      for (int i=0;i<15;i++) {
+        mapJS += String(DMXFixtureMap[i]) + ",";
+      }
+      mapJS += "0];";
+    }
+  #endif
+  
+  return mapJS;
 }
 
 
@@ -318,6 +361,9 @@ void serveSettings(AsyncWebServerRequest* request)
     else if (url.indexOf("sync") > 0) subPage = 4;
     else if (url.indexOf("time") > 0) subPage = 5;
     else if (url.indexOf("sec")  > 0) subPage = 6;
+    #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+    else if (url.indexOf("dmx")  > 0) subPage = 7;
+    #endif
   } else subPage = 255; //welcome page
 
   if (subPage == 1 && wifiLock && otaLock)
@@ -339,7 +385,8 @@ void serveSettings(AsyncWebServerRequest* request)
     case 4:   request->send_P(200, "text/html", PAGE_settings_sync, settingsProcessor); break;
     case 5:   request->send_P(200, "text/html", PAGE_settings_time, settingsProcessor); break;
     case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
+    case 7:   request->send_P(200, "text/html", PAGE_settings_dmx , settingsProcessor); break;
     case 255: request->send_P(200, "text/html", PAGE_welcome); break;
-    default:  request->send_P(200, "text/html", PAGE_settings); 
+    default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor); 
   }
 }
