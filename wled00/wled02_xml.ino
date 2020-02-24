@@ -99,6 +99,53 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
+char* URL_response(AsyncWebServerRequest *request)
+{
+  char sbuf[256]; //allocate local buffer if none passed
+  char s2buf[100];
+  obuf = s2buf;
+  olen = 0;
+
+  char s[16];
+  oappend("http://");
+  IPAddress localIP = WiFi.localIP();
+  sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+  oappend(s);
+  oappend("/win&A=");
+  oappendi(bri);
+  oappend("&CL=h");
+  for (int i = 0; i < 3; i++)
+  {
+   sprintf(s,"%02X", col[i]);
+   oappend(s); 
+  }
+  oappend("&C2=h");
+  for (int i = 0; i < 3; i++)
+  {
+   sprintf(s,"%02X", colSec[i]);
+   oappend(s);
+  }
+  oappend("&FX=");
+  oappendi(effectCurrent);
+  oappend("&SX=");
+  oappendi(effectSpeed);
+  oappend("&IX=");
+  oappendi(effectIntensity);
+  oappend("&FP=");
+  oappendi(effectPalette);
+
+  obuf = sbuf;
+  olen = 0;
+
+  oappend("<html><body><a href=\"");
+  oappend(s2buf);
+  oappend("\" target=\"_blank\">");
+  oappend(s2buf);  
+  oappend("</a></body></html>");
+
+  if (request != nullptr) request->send(200, "text/html", obuf);
+}
+
 //append a numeric setting to string buffer
 void sappend(char stype, const char* key, int val)
 {
@@ -162,7 +209,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >6) return;
+  if (subPage <1 || subPage >7) return;
 
   if (subPage == 1) {
     sappends('s',"CS",clientSSID);
@@ -391,5 +438,30 @@ void getSettingsJS(byte subPage, char* dest)
     oappendi(VERSION);
     oappend(") OK\";");
   }
+  
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+  if (subPage == 7)
+  {
+    sappend('v',"CN",DMXChannels);
+    sappend('v',"CG",DMXGap);
+    sappend('v',"CS",DMXStart);
+    
+    sappend('i',"CH1",DMXFixtureMap[0]);
+    sappend('i',"CH2",DMXFixtureMap[1]);
+    sappend('i',"CH3",DMXFixtureMap[2]);
+    sappend('i',"CH4",DMXFixtureMap[3]);
+    sappend('i',"CH5",DMXFixtureMap[4]);
+    sappend('i',"CH6",DMXFixtureMap[5]);
+    sappend('i',"CH7",DMXFixtureMap[6]);
+    sappend('i',"CH8",DMXFixtureMap[7]);
+    sappend('i',"CH9",DMXFixtureMap[8]);
+    sappend('i',"CH10",DMXFixtureMap[9]);
+    sappend('i',"CH11",DMXFixtureMap[10]);
+    sappend('i',"CH12",DMXFixtureMap[11]);
+    sappend('i',"CH13",DMXFixtureMap[12]);
+    sappend('i',"CH14",DMXFixtureMap[13]);
+    sappend('i',"CH15",DMXFixtureMap[14]);
+    }
+  #endif
   oappend("}</script>");
 }
