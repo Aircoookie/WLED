@@ -111,7 +111,7 @@ DMXESPSerial dmx;
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002241
+#define VERSION 2002242
 
 char versionString[] = "0.9.1";
 
