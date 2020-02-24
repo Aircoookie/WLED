@@ -270,10 +270,10 @@ void decodeIR40(uint32_t code)
     case IR40_W50          : bri = 127;                                                  break;
     case IR40_W75          : bri = 191;                                                  break;
     case IR40_W100         : bri = 255;                                                  break;
-    case IR40_QUICK        : changeEffectSpeed( 10);                                     break;
-    case IR40_SLOW         : changeEffectSpeed(-10);                                     break;
-    case IR40_JUMP7        : changeEffectIntensity( 10);                                 break;
-    case IR40_AUTO         : changeEffectIntensity(-10);                                 break;
+    case IR40_QUICK        : changeEffectSpeed( 16);                                     break;
+    case IR40_SLOW         : changeEffectSpeed(-16);                                     break;
+    case IR40_JUMP7        : changeEffectIntensity( 16);                                 break;
+    case IR40_AUTO         : changeEffectIntensity(-16);                                 break;
     case IR40_JUMP3        : if (!applyPreset(1)) { effectCurrent = FX_MODE_STATIC;        effectPalette = 0; } break;
     case IR40_FADE3        : if (!applyPreset(2)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
     case IR40_FADE7        : if (!applyPreset(3)) { effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; } break;
