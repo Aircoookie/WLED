@@ -119,7 +119,7 @@ DMXESPSerial dmx;
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002242
+#define VERSION 2002243
 
 char versionString[] = "0.9.1";
 
@@ -167,7 +167,6 @@ byte nightlightDelayMins = 60;
 bool nightlightFade = true;                   //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
 bool nightlightColorFade = false;             //if enabled, light will gradually fade color from primary to secondary color.
 bool fadeTransition = true;                   //enable crossfading color transition
-bool enableSecTransition = true;              //also enable transition for secondary color
 uint16_t transitionDelay = 750;               //default crossfade duration in ms
 
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
