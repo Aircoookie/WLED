@@ -85,6 +85,14 @@ DMXESPSerial dmx;
 #include "ir_codes.h"
 #include "const.h"
 
+#ifndef CLIENT_SSID
+#define CLIENT_SSID DEFAULT_CLIENT_SSID
+#endif
+
+#ifndef CLIENT_PASS
+#define CLIENT_PASS ""
+#endif
+
 
 #if IR_PIN < 0
 #ifndef WLED_DISABLE_INFRARED
@@ -111,14 +119,14 @@ DMXESPSerial dmx;
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002242
+#define VERSION 2002243
 
 char versionString[] = "0.9.1";
 
 
 //AP and OTA default passwords (for maximum change them!)
-char apPass[65] = "wled1234";
-char otaPass[33] = "wledota";
+char apPass[65] = DEFAULT_AP_PASS;
+char otaPass[33] = DEFAULT_OTA_PASS;
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
@@ -130,8 +138,8 @@ char ntpServerName[33] = "0.wled.pool.ntp.org";//NTP server to use
 
 
 //WiFi CONFIG (all these can be changed via web UI, no need to set them here)
-char clientSSID[33] = "Your_Network";
-char clientPass[65] = "";
+char clientSSID[33] = CLIENT_SSID;
+char clientPass[65] = CLIENT_PASS;
 char cmDNS[33] = "x";                         //mDNS address (placeholder, will be replaced by wledXXXXXXXXXXXX.local)
 char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
@@ -159,7 +167,6 @@ byte nightlightDelayMins = 60;
 bool nightlightFade = true;                   //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
 bool nightlightColorFade = false;             //if enabled, light will gradually fade color from primary to secondary color.
 bool fadeTransition = true;                   //enable crossfading color transition
-bool enableSecTransition = true;              //also enable transition for secondary color
 uint16_t transitionDelay = 750;               //default crossfade duration in ms
 
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
@@ -468,7 +475,7 @@ bool e131NewData = false;
 WS2812FX strip = WS2812FX();
 
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
-#define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID,"Your_Network") != 0)
+#define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID,DEFAULT_CLIENT_SSID) != 0)
 
 //debug macros
 #ifdef WLED_DEBUG

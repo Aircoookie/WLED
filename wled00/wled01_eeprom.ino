@@ -159,7 +159,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
   EEPROM.write(397, syncToggleReceive);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
-  EEPROM.write(399, !enableSecTransition);
+  //EEPROM.write(399, was !enableSecTransition);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 940 reserved
@@ -527,7 +527,7 @@ void loadSettingsFromEEPROM(bool first)
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
-  enableSecTransition = !EEPROM.read(399);
+  //!EEPROM.read(399); was enableSecTransition
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved

@@ -40,13 +40,6 @@ void setAllLeds() {
     if (val > 255) val = 255;
     strip.setBrightness(val);
   }
-  if (!enableSecTransition)
-  {
-    for (byte i = 0; i<4; i++)
-    {
-      colSecT[i] = colSec[i];
-    }
-  }
   if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY)
   {
     colorRGBtoRGBW(colT);
