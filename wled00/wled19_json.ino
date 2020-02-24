@@ -321,7 +321,6 @@ void serializeInfo(JsonObject root)
   
   root["brand"] = "WLED";
   root["product"] = "DIY light";
-  root["btype"] = "src";
   root["mac"] = escapedMac;
 }
 
