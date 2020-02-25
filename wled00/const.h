@@ -61,4 +61,13 @@
 #define TYPE_ANALOG_4CH           9            //analog RGBW
 #define TYPE_ANALOG_5CH          10            //analog RGB + WW + CW
 
+//Hue error codes
+#define HUE_ERROR_INACTIVE        0
+#define HUE_ERROR_UNAUTHORIZED    1
+#define HUE_ERROR_LIGHTID         3
+#define HUE_ERROR_PUSHLINK      101
+#define HUE_ERROR_JSON_PARSING  250
+#define HUE_ERROR_TIMEOUT       251
+#define HUE_ERROR_ACTIVE        255
+
 #endif

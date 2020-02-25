@@ -119,7 +119,7 @@
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002243
+#define VERSION 2002251
 
 char versionString[] = "0.9.1";
 
@@ -350,7 +350,7 @@ bool udpConnected = false, udpRgbConnected = false;
 bool showWelcomePage = false;
 
 //hue
-char hueError[25] = "Inactive";
+byte hueError = HUE_ERROR_INACTIVE;
 //uint16_t hueFailCount = 0;
 float hueXLast = 0, hueYLast = 0;
 uint16_t hueHueLast = 0, hueCtLast = 0;

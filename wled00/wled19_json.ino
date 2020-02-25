@@ -343,7 +343,7 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(  501, "application/json", "{\"error\":\"Not implemented\"}");
+    request->send(  501, "application/json", F("{\"error\":\"Not implemented\"}"));
     return;
   }
   
