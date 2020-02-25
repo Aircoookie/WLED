@@ -96,8 +96,12 @@ void beginStrip()
   // Initialize NeoPixel Strip and button
   strip.setShowCallback(handleOverlayDraw);
 
-#ifdef BTNPIN
+#if BTNPIN >= 0
   pinMode(BTNPIN, INPUT_PULLUP);
+#endif
+
+#if SWITCHPIN >= 0
+  pinMode(SWITCHPIN, INPUT_PULLUP);
 #endif
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
@@ -114,7 +118,7 @@ void beginStrip()
   #endif
 
   //disable button if it is "pressed" unintentionally
-#ifdef BTNPIN
+#if BTNPIN >= 0
   if(digitalRead(BTNPIN) == LOW) buttonEnabled = false;
 #else
   buttonEnabled = false;

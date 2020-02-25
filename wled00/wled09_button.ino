@@ -16,7 +16,7 @@ void shortPressAction()
 
 void handleButton()
 {
-#ifdef BTNPIN
+#if BTNPIN >= 0
   if (!buttonEnabled) return;
   
   if (digitalRead(BTNPIN) == LOW) //pressed
@@ -65,9 +65,21 @@ void handleButton()
 #endif
 }
 
+void handleSwitch()
+{
+#if SWITCHPIN >= 0
+  if (digitalRead(SWITCHPIN) != switchStateBefore) //switched
+  {
+    switchStateBefore = digitalRead(SWITCHPIN);
+    shortPressAction();
+  }
+#endif
+}
+
 void handleIO()
 {
   handleButton();
+  handleSwitch();
   
   //set relay when LEDs turn on
   if (strip.getBrightness())

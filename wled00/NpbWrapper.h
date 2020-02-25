@@ -17,6 +17,10 @@
 #define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
 #endif
 
+#ifndef SWITCHPIN
+#define SWITCHPIN  -1  //switch pin.
+#endif
+
 #ifndef IR_PIN
 #define IR_PIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
 #endif

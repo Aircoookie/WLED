@@ -330,6 +330,9 @@ bool buttonLongPressed = false;
 unsigned long buttonPressedTime = 0;
 unsigned long buttonWaitTime = 0;
 
+//switch
+bool switchStateBefore = LOW;
+
 //notifications
 bool notifyDirectDefault = notifyDirect;
 bool receiveNotifications = true;
