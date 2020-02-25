@@ -119,7 +119,7 @@
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002243
+#define VERSION 2002252
 
 char versionString[] = "0.9.1";
 
@@ -350,7 +350,7 @@ bool udpConnected = false, udpRgbConnected = false;
 bool showWelcomePage = false;
 
 //hue
-char hueError[25] = "Inactive";
+byte hueError = HUE_ERROR_INACTIVE;
 //uint16_t hueFailCount = 0;
 float hueXLast = 0, hueYLast = 0;
 uint16_t hueHueLast = 0, hueCtLast = 0;
@@ -430,7 +430,7 @@ IPAddress ntpServerIP;
 uint16_t ntpLocalPort = 2390;
 #define NTP_PACKET_SIZE 48
 
-//maximum number of LEDs - MAX_LEDS is comming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
+//maximum number of LEDs - MAX_LEDS is coming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
 #define MAX_LEDS 1500
 #define MAX_LEDS_DMA 500
 

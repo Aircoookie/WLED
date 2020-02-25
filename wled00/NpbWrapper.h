@@ -30,7 +30,7 @@
 #endif
 
 #ifndef RLYMDE
-#define RLYMDE 1  //mode for relay, 0: LOW if LEDs are on 1: HIGH if LEDs are on
+#define RLYMDE  1  //mode for relay, 0: LOW if LEDs are on 1: HIGH if LEDs are on
 #endif
 
 //END CONFIGURATION

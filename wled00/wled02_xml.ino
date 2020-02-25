@@ -9,7 +9,7 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   obuf = (dest == nullptr)? sbuf:dest;
 
   olen = 0;
-  oappend("<?xml version=\"1.0\" ?><vs><ac>");
+  oappend((const char*)F("<?xml version=\"1.0\" ?><vs><ac>"));
   oappendi((nightlightActive && nightlightFade) ? briT : bri);
   oappend("</ac>");
 
@@ -65,7 +65,7 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
     {
       mesg += "E1.31 mode ";
       mesg += DMXMode;
-      mesg += " at DMX Address ";
+      mesg += F(" at DMX Address ");
       mesg += DMXAddress;
       mesg += " from ";
       mesg += realtimeIP[0];
@@ -85,7 +85,7 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
         mesg += realtimeIP[i];
       }
     } else if (realtimeMode == REALTIME_MODE_ADALIGHT) {
-      mesg += "USB Adalight";
+      mesg += F("USB Adalight");
     } else { //generic
       mesg += "data";
     }
@@ -137,11 +137,11 @@ char* URL_response(AsyncWebServerRequest *request)
   obuf = sbuf;
   olen = 0;
 
-  oappend("<html><body><a href=\"");
+  oappend((const char*)F("<html><body><a href=\""));
   oappend(s2buf);
-  oappend("\" target=\"_blank\">");
+  oappend((const char*)F("\" target=\"_blank\">"));
   oappend(s2buf);  
-  oappend("</a></body></html>");
+  oappend((const char*)F("</a></body></html>"));
 
   if (request != nullptr) request->send(200, "text/html", obuf);
 }
@@ -355,9 +355,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"MG",mqttGroupTopic);
     #endif
 
-    #ifdef WLED_DISABLE_HUESYNC
-    sappends('m',"(\"hms\")[0]","Unsupported in build");
-    #else
+    #ifndef WLED_DISABLE_HUESYNC
     sappend('v',"H0",hueIP[0]);
     sappend('v',"H1",hueIP[1]);
     sappend('v',"H2",hueIP[2]);
@@ -368,7 +366,20 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"HO",hueApplyOnOff);
     sappend('c',"HB",hueApplyBri);
     sappend('c',"HC",hueApplyColor);
-    sappends('m',"(\"hms\")[0]",hueError);
+    char hueErrorString[25];
+    switch (hueError)
+    {
+      case HUE_ERROR_INACTIVE     : strcpy(hueErrorString,(char*)F("Inactive"));                break;
+      case HUE_ERROR_ACTIVE       : strcpy(hueErrorString,(char*)F("Active"));                  break;
+      case HUE_ERROR_UNAUTHORIZED : strcpy(hueErrorString,(char*)F("Unauthorized"));            break;
+      case HUE_ERROR_LIGHTID      : strcpy(hueErrorString,(char*)F("Invalid light ID"));        break;
+      case HUE_ERROR_PUSHLINK     : strcpy(hueErrorString,(char*)F("Link button not pressed")); break;
+      case HUE_ERROR_JSON_PARSING : strcpy(hueErrorString,(char*)F("JSON parsing error"));      break;
+      case HUE_ERROR_TIMEOUT      : strcpy(hueErrorString,(char*)F("Timeout"));                 break;
+      default: sprintf(hueErrorString,"Bridge Error %i",hueError);
+    }
+    
+    sappends('m',"(\"hms\")[0]",hueErrorString);
     #endif
   }
 

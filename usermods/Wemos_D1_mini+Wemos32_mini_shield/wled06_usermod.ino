@@ -7,13 +7,14 @@ OneWire oneWire(23);
 #else //ESP8266 boards
 uint8_t SCL_PIN = 5;
 uint8_t SDA_PIN = 4;
+// uint8_t RST_PIN = 16; // Uncoment for Heltec WiFi-Kit-8
 OneWire oneWire(13);
 #endif
 //The SCL and SDA pins are defined here.
 //ESP8266 Wemos D1 mini board use SCL=5 SDA=4 while ESP32 Wemos32 mini board use SCL=22 SDA=21
 #define U8X8_PIN_SCL SCL_PIN
 #define U8X8_PIN_SDA SDA_PIN
-
+//#define U8X8_PIN_RESET RST_PIN // Uncoment for Heltec WiFi-Kit-8
 // Dallas sensor
 DallasTemperature sensor(&oneWire);
 long temptimer = millis();
@@ -29,6 +30,8 @@ long lastMeasure = 0;
 U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
 // --> Second choise of cheap I2C OLED 128X64 0.96" or 1.3"
 //U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
+// --> Third choise of Heltec WiFi-Kit-8 OLED 128X32 0.91"
+//U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_RESET, U8X8_PIN_SCL, U8X8_PIN_SDA); // Constracor for Heltec WiFi-Kit-8
 // gets called once at boot. Do all initialization that doesn't depend on
 // network here
 void userSetup() {

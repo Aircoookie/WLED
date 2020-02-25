@@ -591,6 +591,7 @@ class WS2812FX {
     uint8_t _brightness;
     static uint16_t _usedSegmentData;
 
+    void load_gradient_palette(uint8_t);
     void handle_palette(void);
     void fill(uint32_t);
 

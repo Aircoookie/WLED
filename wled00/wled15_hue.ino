@@ -23,7 +23,7 @@ void handleHue()
     reconnectHue();
   } else {
     hueClient->close();
-    if (hueError[0] == 'A') strcpy(hueError,"Inactive");
+    if (hueError == HUE_ERROR_ACTIVE) hueError = HUE_ERROR_INACTIVE;
   }
 }
 
@@ -44,7 +44,7 @@ void reconnectHue()
 void onHueError(void* arg, AsyncClient* client, int8_t error)
 {
   DEBUG_PRINTLN("Hue err");
-  strcpy(hueError,"Request timeout");
+  hueError = HUE_ERROR_TIMEOUT;
 }
 
 void onHueConnect(void* arg, AsyncClient* client)
@@ -59,15 +59,15 @@ void sendHuePoll()
   String req = "";
   if (hueAuthRequired)
   {
-    req += "POST /api HTTP/1.1\r\nHost: ";
+    req += F("POST /api HTTP/1.1\r\nHost: ");
     req += hueIP.toString();
-    req += "\r\nContent-Length: 25\r\n\r\n{\"devicetype\":\"wled#esp\"}";
+    req += F("\r\nContent-Length: 25\r\n\r\n{\"devicetype\":\"wled#esp\"}");
   } else
   {
     req += "GET /api/";
     req += hueApiKey;
     req += "/lights/" + String(huePollLightId);
-    req += " HTTP/1.1\r\nHost: ";
+    req += F(" HTTP/1.1\r\nHost: ");
     req += hueIP.toString();
     req += "\r\n\r\n";
   }
@@ -93,21 +93,18 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
     auto error = deserializeJson(root, str);
     if (error)
     {
-      strcpy(hueError,"JSON parsing error"); return;
+      hueError = HUE_ERROR_JSON_PARSING; return;
     }
     
     int hueErrorCode = root[0]["error"]["type"];
     if (hueErrorCode)//hue bridge returned error
     {
+      hueError = hueErrorCode;
       switch (hueErrorCode)
       {
-        case 1: strcpy(hueError,"Unauthorized"); hueAuthRequired = true; break;
-        case 3: strcpy(hueError,"Invalid light ID"); huePollingEnabled = false; break;
-        case 101: strcpy(hueError,"Link button not pressed"); hueAuthRequired = true; break;
-        default:
-          char coerr[18];
-          sprintf(coerr,"Bridge Error %i",hueErrorCode);
-          strcpy(hueError,coerr);
+        case 1:   hueAuthRequired = true;    break; //Unauthorized user
+        case 3:   huePollingEnabled = false; break; //Invalid light ID
+        case 101: hueAuthRequired = true;    break; //link button not presset
       }
       return;
     }
@@ -133,7 +130,7 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
   auto error = deserializeJson(root, str);
   if (error)
   {
-    strcpy(hueError,"JSON parsing error"); return;
+    hueError = HUE_ERROR_JSON_PARSING; return;
   }
 
   float hueX=0, hueY=0;
@@ -173,7 +170,7 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
     hueBri = 0;
   }
 
-  strcpy(hueError,"Active");
+  hueError = HUE_ERROR_ACTIVE;
   
   //apply vals
   if (hueBri != hueBriLast)
