@@ -32,8 +32,7 @@ U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_
 //U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
 // --> Third choise of Heltec WiFi-Kit-8 OLED 128X32 0.91"
 //U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_RESET, U8X8_PIN_SCL, U8X8_PIN_SDA); // Constructor for Heltec WiFi-Kit-8
-// gets called once at boot. Do all initialization that doesn't depend on
-// network here
+// gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup() {
   sensor.begin(); //Start Dallas temperature sensor
   u8x8.begin();
