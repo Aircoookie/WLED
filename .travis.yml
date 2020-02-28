@@ -33,4 +33,4 @@ install:
     - platformio update
 script:
     # - platformio ci --project-conf=./platformio.ini
-    - platformio ci --board=d1_mini
+    - platformio ci --board=d1_mini --project-conf=./platformio.ini
