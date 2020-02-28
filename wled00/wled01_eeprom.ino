@@ -3,10 +3,10 @@
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
 
-#define EEPSIZE 2560
+#define EEPSIZE 2560  //Maximum is 4096
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 14
+#define EEPVER 17
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -22,6 +22,9 @@
 //12-> 0.8.7-dev
 //13-> 0.9.0-dev
 //14-> 0.9.0-b1
+//15-> 0.9.0-b3
+//16-> 0.9.1
+//17-> 0.9.1-dmx
 
 void commit()
 {
@@ -60,7 +63,6 @@ void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
   }
   str[len] = 0; //make sure every string is properly terminated. str must be at least len +1 big.
 }
-
 
 /*
  * Write configuration to flash
@@ -130,6 +132,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
 
+  EEPROM.write(370, noWifiSleep);
+
   EEPROM.write(372, useRGBW);
   EEPROM.write(374, strip.paletteFade);
   EEPROM.write(375, strip.milliampsPerLed); //was apWaitTimeSecs up to 0.8.5
@@ -155,7 +159,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
   EEPROM.write(397, syncToggleReceive);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
-  EEPROM.write(399, !enableSecTransition);
+  //EEPROM.write(399, was !enableSecTransition);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 940 reserved
@@ -211,10 +215,13 @@ void saveSettingsToEEPROM()
   EEPROM.write(2194, (realtimeTimeoutMs >> 8) & 0xFF);
   EEPROM.write(2195, arlsForceMaxBri);
   EEPROM.write(2196, arlsDisableGammaCorrection);
+  EEPROM.write(2197, DMXAddress & 0xFF);
+  EEPROM.write(2198, (DMXAddress >> 8) & 0xFF);
+  EEPROM.write(2199, DMXMode);
 
   EEPROM.write(2200, !receiveDirect);
   EEPROM.write(2201, notifyMacro); //was enableRealtime
-  EEPROM.write(2203, autoRGBtoRGBW);
+  EEPROM.write(2203, strip.rgbwMode);
   EEPROM.write(2204, skipFirstLed);
 
   if (saveCurrPresetCycConf)
@@ -229,8 +236,6 @@ void saveSettingsToEEPROM()
     EEPROM.write(2212, presetApplyFx);
     saveCurrPresetCycConf = false;
   }
-
-  EEPROM.write(2213, disableNLeds);
 
   writeStringToEEPROM(2220, blynkApiKey, 35);
 
@@ -251,6 +256,19 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(2481, mqttClientID, 40);
   EEPROM.write(2522, mqttPort & 0xFF);
   EEPROM.write(2523, (mqttPort >> 8) & 0xFF);
+
+  // DMX (2530 - 2549)
+  #ifdef WLED_ENABLE_DMX
+  EEPROM.write(2530, DMXChannels);
+  EEPROM.write(2531, DMXGap & 0xFF);
+  EEPROM.write(2532, (DMXGap >> 8) & 0xFF);
+  EEPROM.write(2533, DMXStart & 0xFF);
+  EEPROM.write(2534, (DMXStart >> 8) & 0xFF);
+
+  for (int i=0; i<15; i++) {
+    EEPROM.write(2535+i, DMXFixtureMap[i]);
+  } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
+  #endif
 
   commit();
 }
@@ -473,10 +491,25 @@ void loadSettingsFromEEPROM(bool first)
     syncToggleReceive = false;
   }
 
+  if (lastEEPROMversion > 14)
+  {
+    DMXAddress = EEPROM.read(2197) + ((EEPROM.read(2198) << 8) & 0xFF00);
+    DMXMode = EEPROM.read(2199);
+  } else {
+    DMXAddress = 1;
+    DMXMode = DMX_MODE_MULTIPLE_RGB;
+  }
+
+  //if (lastEEPROMversion > 15)
+  //{
+    noWifiSleep = EEPROM.read(370);
+  //}
+
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
-  autoRGBtoRGBW = EEPROM.read(2203);
+  strip.rgbwMode = EEPROM.read(2203);
   skipFirstLed = EEPROM.read(2204);
 
   if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))
@@ -490,13 +523,11 @@ void loadSettingsFromEEPROM(bool first)
     presetApplyFx = EEPROM.read(2212);
   }
 
-  disableNLeds = EEPROM.read(2213);
-
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
-  enableSecTransition = !EEPROM.read(399);
+  //!EEPROM.read(399); was enableSecTransition
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved
@@ -506,6 +537,17 @@ void loadSettingsFromEEPROM(bool first)
 
   readStringFromEEPROM(2220, blynkApiKey, 35);
   if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
+
+  #ifdef WLED_ENABLE_DMX
+  // DMX (2530 - 2549)2535
+  DMXChannels = EEPROM.read(2530);
+  DMXGap = EEPROM.read(2531) + ((EEPROM.read(2532) << 8) & 0xFF00);
+  DMXStart = EEPROM.read(2533) + ((EEPROM.read(2534) << 8) & 0xFF00);
+  
+  for (int i=0;i<15;i++) {
+    DMXFixtureMap[i] = EEPROM.read(2535+i);
+  } //last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
+  #endif
 
   //user MOD memory
   //2944 - 3071 reserved

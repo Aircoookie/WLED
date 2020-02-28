@@ -183,7 +183,7 @@ float maxf (float v, float w)
   return v;
 }
 
-void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw)
+void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_MODE_LEGACY)
 {
   float low = minf(rgb[0],minf(rgb[1],rgb[2]));
   float high = maxf(rgb[0],maxf(rgb[1],rgb[2]));

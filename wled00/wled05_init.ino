@@ -8,10 +8,6 @@ void wledInit()
   ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00);
   if (ledCount > MAX_LEDS || ledCount == 0) ledCount = 30;
 
-  disableNLeds = EEPROM.read(2213);
-  //this was reading 255 after inital flash causing bootloop. Don't know why.
-  disableNLeds = disableNLeds != 255 ? disableNLeds : 0;
-
   #ifdef ESP8266
   #if LEDPIN == 3
   if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
@@ -30,7 +26,7 @@ void wledInit()
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
 
-  strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204),disableNLeds); //init LEDs quickly
+  strip.init(EEPROM.read(372),ledCount,EEPROM.read(2204)); //init LEDs quickly
   strip.setBrightness(0);
 
   DEBUG_PRINT("LEDs inited. heap usage ~");
@@ -47,7 +43,7 @@ void wledInit()
   loadSettingsFromEEPROM(true);
   beginStrip();
   userSetup();
-  if (strcmp(clientSSID,"Your_Network") == 0) showWelcomePage = true;
+  if (strcmp(clientSSID,DEFAULT_CLIENT_SSID) == 0) showWelcomePage = true;
   WiFi.persistent(false);
 
   if (macroBoot>0) applyMacro(macroBoot);
@@ -87,7 +83,9 @@ void wledInit()
       if (strlen(cmDNS) > 0) ArduinoOTA.setHostname(cmDNS);
     }
   #endif
-  
+  #ifdef WLED_ENABLE_DMX
+    dmx.init(512); // initialize with bus length
+  #endif
   //HTTP server page init
   initServer();
 }
@@ -103,7 +101,7 @@ void beginStrip()
 #endif
 
   if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
-  colorUpdated(0);
+  colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
   //init relay pin
   #if RLYPIN >= 0
@@ -125,10 +123,10 @@ void beginStrip()
 
 
 void initAP(bool resetAP=false){
-  if (apBehavior == 3 && !resetAP) return;
+  if (apBehavior == AP_BEHAVIOR_BUTTON_ONLY && !resetAP) return;
 
   if (!apSSID[0] || resetAP) strcpy(apSSID, "WLED-AP");
-  if (resetAP) strcpy(apPass,"wled1234");
+  if (resetAP) strcpy(apPass,DEFAULT_AP_PASS);
   DEBUG_PRINT("Opening access point ");
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255,255,255,0));
@@ -156,6 +154,9 @@ void initAP(bool resetAP=false){
 void initConnection()
 {
   WiFi.disconnect(); //close old connections
+  #ifdef ESP8266
+  WiFi.setPhyMode(WIFI_PHY_MODE_11N);
+  #endif
 
   if (staticIP[0] != 0 && staticGateway[0] != 0)
   {
@@ -173,7 +174,7 @@ void initConnection()
     if (!apActive) initAP(); //instantly go to ap mode
     return;
   } else if (!apActive) {
-    if (apBehavior == 2)
+    if (apBehavior == AP_BEHAVIOR_ALWAYS)
     {
       initAP();
     } else
@@ -191,9 +192,14 @@ void initConnection()
   #ifdef ESP8266
    WiFi.hostname(serverDescription);
   #endif
+  
    WiFi.begin(clientSSID, clientPass);
+   
   #ifdef ARDUINO_ARCH_ESP32
+   WiFi.setSleep(!noWifiSleep);
    WiFi.setHostname(serverDescription);
+  #else
+   wifi_set_sleep_type((noWifiSleep) ? NONE_SLEEP_T : MODEM_SLEEP_T);
   #endif
 }
 
@@ -247,7 +253,7 @@ uint32_t lastHeap;
 unsigned long heapTime = 0;
 
 void handleConnection() {
-  if (millis() < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == 2)) return;
+  if (millis() < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS)) return;
   if (lastReconnectAttempt == 0) initConnection();
 
   //reconnect WiFi to clear stale allocations if heap gets too low
@@ -298,7 +304,7 @@ void handleConnection() {
       initConnection();
     }
     if (millis() - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED) initConnection();
-    if (!apActive && millis() - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == 1)) initAP(); 
+    if (!apActive && millis() - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN)) initAP(); 
   } else if (!interfacesInited) { //newly connected
     DEBUG_PRINTLN("");
     DEBUG_PRINT("Connected! IP address: ");
@@ -307,7 +313,7 @@ void handleConnection() {
     userConnected();
 
     //shut down AP
-    if (apBehavior != 2 && apActive)
+    if (apBehavior != AP_BEHAVIOR_ALWAYS && apActive)
     {
       dnsServer.stop();
       WiFi.softAPdisconnect(true);

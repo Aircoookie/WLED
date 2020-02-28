@@ -3,6 +3,7 @@
  */
 
 #ifdef WLED_ENABLE_MQTT
+#define MQTT_KEEP_ALIVE_TIME 60    // contact the MQTT broker every 60 seconds
 
 void parseMQTTBriPayload(char* payload)
 {
@@ -12,7 +13,7 @@ void parseMQTTBriPayload(char* payload)
     uint8_t in = strtoul(payload, NULL, 10);
     if (in == 0 && bri > 0) briLast = bri;
     bri = in;
-    colorUpdated(1);
+    colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
   }
 }
 
@@ -60,7 +61,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   if (strstr(topic, "/col"))
   {
     colorFromDecOrHexString(col, (char*)payload);
-    colorUpdated(1);
+    colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
   } else if (strstr(topic, "/api"))
   {
     String apireq = "win&";
@@ -129,6 +130,7 @@ bool initMqtt()
   strcpy(mqttStatusTopic, mqttDeviceTopic);
   strcat(mqttStatusTopic, "/status");
   mqtt->setWill(mqttStatusTopic, 0, true, "offline");
+  mqtt->setKeepAlive(MQTT_KEEP_ALIVE_TIME);
   mqtt->connect();
   return true;
 }

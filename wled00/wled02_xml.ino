@@ -9,7 +9,7 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   obuf = (dest == nullptr)? sbuf:dest;
 
   olen = 0;
-  oappend("<?xml version=\"1.0\" ?><vs><ac>");
+  oappend((const char*)F("<?xml version=\"1.0\" ?><vs><ac>"));
   oappendi((nightlightActive && nightlightFade) ? briT : bri);
   oappend("</ac>");
 
@@ -46,23 +46,37 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   oappend("</ix><fp>");
   oappendi(effectPalette);
   oappend("</fp><wv>");
-  if (useRGBW && !autoRGBtoRGBW) {
+  if (strip.rgbwMode) {
    oappendi(col[3]);
   } else {
    oappend("-1");
   }
   oappend("</wv><ws>");
   oappendi(colSec[3]);
-  oappend("</ws><cy>");
+  oappend("</ws><ps>");
+  oappendi((currentPreset < 1) ? 0:currentPreset);
+  oappend("</ps><cy>");
   oappendi(presetCyclingEnabled);
   oappend("</cy><ds>");
-  if (realtimeActive)
+  if (realtimeMode)
   {
     String mesg = "Live ";
-    if (realtimeIP[0] == 0)
+    if (realtimeMode == REALTIME_MODE_E131)
     {
-      mesg += "E1.31 mode";
-    } else {
+      mesg += "E1.31 mode ";
+      mesg += DMXMode;
+      mesg += F(" at DMX Address ");
+      mesg += DMXAddress;
+      mesg += " from ";
+      mesg += realtimeIP[0];
+      for (int i = 1; i < 4; i++)
+      {
+        mesg += ".";
+        mesg += realtimeIP[i];
+      }
+      mesg += " seq=";
+      mesg += e131LastSequenceNumber;
+    } else if (realtimeMode == REALTIME_MODE_UDP || realtimeMode == REALTIME_MODE_HYPERION) {
       mesg += "UDP from ";
       mesg += realtimeIP[0];
       for (int i = 1; i < 4; i++)
@@ -70,6 +84,10 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
         mesg += ".";
         mesg += realtimeIP[i];
       }
+    } else if (realtimeMode == REALTIME_MODE_ADALIGHT) {
+      mesg += F("USB Adalight");
+    } else { //generic
+      mesg += "data";
     }
     oappend((char*)mesg.c_str());
   } else {
@@ -79,6 +97,53 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   oappendi(strip.getMainSegmentId());
   oappend("</ss></vs>");
   if (request != nullptr) request->send(200, "text/xml", obuf);
+}
+
+char* URL_response(AsyncWebServerRequest *request)
+{
+  char sbuf[256]; //allocate local buffer if none passed
+  char s2buf[100];
+  obuf = s2buf;
+  olen = 0;
+
+  char s[16];
+  oappend("http://");
+  IPAddress localIP = WiFi.localIP();
+  sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+  oappend(s);
+  oappend("/win&A=");
+  oappendi(bri);
+  oappend("&CL=h");
+  for (int i = 0; i < 3; i++)
+  {
+   sprintf(s,"%02X", col[i]);
+   oappend(s); 
+  }
+  oappend("&C2=h");
+  for (int i = 0; i < 3; i++)
+  {
+   sprintf(s,"%02X", colSec[i]);
+   oappend(s);
+  }
+  oappend("&FX=");
+  oappendi(effectCurrent);
+  oappend("&SX=");
+  oappendi(effectSpeed);
+  oappend("&IX=");
+  oappendi(effectIntensity);
+  oappend("&FP=");
+  oappendi(effectPalette);
+
+  obuf = sbuf;
+  olen = 0;
+
+  oappend((const char*)F("<html><body><a href=\""));
+  oappend(s2buf);
+  oappend((const char*)F("\" target=\"_blank\">"));
+  oappend(s2buf);  
+  oappend((const char*)F("</a></body></html>"));
+
+  if (request != nullptr) request->send(200, "text/html", obuf);
 }
 
 //append a numeric setting to string buffer
@@ -144,7 +209,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >6) return;
+  if (subPage <1 || subPage >7) return;
 
   if (subPage == 1) {
     sappends('s',"CS",clientSSID);
@@ -176,6 +241,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"AP",fapass);
 
     sappend('v',"AC",apChannel);
+    sappend('c',"WS",noWifiSleep);
+
 
     if (WiFi.localIP()[0] != 0) //is connected
     {
@@ -220,7 +287,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"CA",briS);
     sappend('c',"EW",useRGBW);
     sappend('i',"CO",strip.colorOrder);
-    sappend('c',"AW",autoRGBtoRGBW);
+    sappend('v',"AW",strip.rgbwMode);
 
     sappend('c',"BO",turnOnAtBoot);
     sappend('v',"BP",bootPreset);
@@ -237,7 +304,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);
-    sappend('v',"DL",disableNLeds);
   }
 
   if (subPage == 3)
@@ -262,6 +328,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"RD",receiveDirect);
     sappend('c',"EM",e131Multicast);
     sappend('v',"EU",e131Universe);
+    sappend('v',"DA",DMXAddress);
+    sappend('v',"DM",DMXMode);
     sappend('v',"ET",realtimeTimeoutMs);
     sappend('c',"FB",arlsForceMaxBri);
     sappend('c',"RG",arlsDisableGammaCorrection);
@@ -287,9 +355,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"MG",mqttGroupTopic);
     #endif
 
-    #ifdef WLED_DISABLE_HUESYNC
-    sappends('m',"(\"hms\")[0]","Unsupported in build");
-    #else
+    #ifndef WLED_DISABLE_HUESYNC
     sappend('v',"H0",hueIP[0]);
     sappend('v',"H1",hueIP[1]);
     sappend('v',"H2",hueIP[2]);
@@ -300,7 +366,20 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"HO",hueApplyOnOff);
     sappend('c',"HB",hueApplyBri);
     sappend('c',"HC",hueApplyColor);
-    sappends('m',"(\"hms\")[0]",hueError);
+    char hueErrorString[25];
+    switch (hueError)
+    {
+      case HUE_ERROR_INACTIVE     : strcpy(hueErrorString,(char*)F("Inactive"));                break;
+      case HUE_ERROR_ACTIVE       : strcpy(hueErrorString,(char*)F("Active"));                  break;
+      case HUE_ERROR_UNAUTHORIZED : strcpy(hueErrorString,(char*)F("Unauthorized"));            break;
+      case HUE_ERROR_LIGHTID      : strcpy(hueErrorString,(char*)F("Invalid light ID"));        break;
+      case HUE_ERROR_PUSHLINK     : strcpy(hueErrorString,(char*)F("Link button not pressed")); break;
+      case HUE_ERROR_JSON_PARSING : strcpy(hueErrorString,(char*)F("JSON parsing error"));      break;
+      case HUE_ERROR_TIMEOUT      : strcpy(hueErrorString,(char*)F("Timeout"));                 break;
+      default: sprintf(hueErrorString,"Bridge Error %i",hueError);
+    }
+    
+    sappends('m',"(\"hms\")[0]",hueErrorString);
     #endif
   }
 
@@ -370,5 +449,30 @@ void getSettingsJS(byte subPage, char* dest)
     oappendi(VERSION);
     oappend(") OK\";");
   }
+  
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+  if (subPage == 7)
+  {
+    sappend('v',"CN",DMXChannels);
+    sappend('v',"CG",DMXGap);
+    sappend('v',"CS",DMXStart);
+    
+    sappend('i',"CH1",DMXFixtureMap[0]);
+    sappend('i',"CH2",DMXFixtureMap[1]);
+    sappend('i',"CH3",DMXFixtureMap[2]);
+    sappend('i',"CH4",DMXFixtureMap[3]);
+    sappend('i',"CH5",DMXFixtureMap[4]);
+    sappend('i',"CH6",DMXFixtureMap[5]);
+    sappend('i',"CH7",DMXFixtureMap[6]);
+    sappend('i',"CH8",DMXFixtureMap[7]);
+    sappend('i',"CH9",DMXFixtureMap[8]);
+    sappend('i',"CH10",DMXFixtureMap[9]);
+    sappend('i',"CH11",DMXFixtureMap[10]);
+    sappend('i',"CH12",DMXFixtureMap[11]);
+    sappend('i',"CH13",DMXFixtureMap[12]);
+    sappend('i',"CH14",DMXFixtureMap[13]);
+    sappend('i',"CH15",DMXFixtureMap[14]);
+    }
+  #endif
   oappend("}</script>");
 }
