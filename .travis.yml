@@ -36,7 +36,7 @@ script:
 jobs:
   include:
     env: 
-      - d1_mini
-      - esp32_dev
-      - esp01
-      - esp01_m
+      - D1_MINI=d1_mini
+      - ESP32_DEV=esp32_dev
+      - ESP01=esp01
+      - ESP01_M=esp01_m
