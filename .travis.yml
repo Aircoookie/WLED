@@ -33,10 +33,3 @@ install:
     - platformio update
 script:
     - platformio ci --project-conf=./platformio.ini
-jobs:
-  include:
-    env: 
-      - D1_MINI=d1_mini
-      - ESP32_DEV=esp32_dev
-      - ESP01=esp01
-      - ESP01_M=esp01_m
