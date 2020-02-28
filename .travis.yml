@@ -32,6 +32,7 @@ cache:
     ccache: true
     directories:
         - "~/.platformio"
+        - "~/.buildcache"
 env:
     - PLATFORMIO_CI_SRC=wled00
 install:
