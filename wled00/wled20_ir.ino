@@ -90,8 +90,8 @@ void decodeIR(uint32_t code)
                                            // sets bright plain white
       default: return;
     }
-    colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
   }
+  colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
   //code <= 0xF70000 also invalid
 }
 
@@ -356,25 +356,25 @@ void decodeIR6(uint32_t code)
     /* next palette */ 
       relativeChange(&effectPalette, 1); 
       switch(lastIR6ColourIdx) {
-        case 0: colorFromUint32(COLOR_RED);      break;
-        case 1: colorFromUint32(COLOR_REDDISH);  break;
-        case 2:colorFromUint32(COLOR_ORANGE);    break;
-        case 3:colorFromUint32(COLOR_YELLOWISH); break;
-        case 4:colorFromUint32(COLOR_GREEN);     break;
-        case 5:colorFromUint32(COLOR_GREENISH);  break;
-        case 6:colorFromUint32(COLOR_TURQUOISE); break;
-        case 7: colorFromUint32(COLOR_CYAN);     break;
-        case 8:colorFromUint32(COLOR_BLUE);      break;
-        case 9:colorFromUint32(COLOR_DEEPBLUE);  break;
-        case 10:colorFromUint32(COLOR_PURPLE);   break;
-        case 11:colorFromUint32(COLOR_PINK);     break;
-        case 12:colorFromUint32(COLOR_WHITE);    break;
-        default:break;
+        case 0: colorFromUint32(COLOR_RED);       break;
+        case 1: colorFromUint32(COLOR_REDDISH);   break;
+        case 2: colorFromUint32(COLOR_ORANGE);    break;
+        case 3: colorFromUint32(COLOR_YELLOWISH); break;
+        case 4: colorFromUint32(COLOR_GREEN);     break;
+        case 5: colorFromUint32(COLOR_GREENISH);  break;
+        case 6: colorFromUint32(COLOR_TURQUOISE); break;
+        case 7: colorFromUint32(COLOR_CYAN);      break;
+        case 8: colorFromUint32(COLOR_BLUE);      break;
+        case 9: colorFromUint32(COLOR_DEEPBLUE);  break;
+        case 10:colorFromUint32(COLOR_PURPLE);    break;
+        case 11:colorFromUint32(COLOR_PINK);      break;
+        case 12:colorFromUint32(COLOR_WHITE);     break;
+        default:                                  break;
       }
       lastIR6ColourIdx++;
       if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
       break;
-    case IR6_MUTE: effectCurrent = 0;  effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
+    case IR6_MUTE: effectCurrent = 0; effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
   }
   lastValidCode = code;
 }
