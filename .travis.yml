@@ -28,7 +28,7 @@ python:
     - "3.5"
 os: linux
 cache:
-    # bundler: true
+    bundler: true
     ccache: true
     directories:
         - "~/.platformio"
