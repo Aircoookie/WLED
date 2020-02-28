@@ -15,3 +15,13 @@ build_flags = ${common.build_flags_esp8266}
   -D WLED_DISABLE_CRONIXIE 
   -D WLED_DISABLE_HUESYNC 
   -D WLED_DISABLE_INFRARED
+; PIN defines - uncomment and change, if needed:
+;   -D LEDPIN=2
+;   -D BTNPIN=0
+;   -D IR_PIN=4
+;   -D RLYPIN=12
+;   -D RLYMDE=1
+; digital LED strip types - uncomment only one ! - this will disable WS281x / SK681x support
+;   -D USE_APA102
+;   -D USE_WS2801
+;   -D USE_LPD8806
