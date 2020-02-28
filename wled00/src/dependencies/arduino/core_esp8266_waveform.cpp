@@ -224,8 +224,8 @@ static ICACHE_RAM_ATTR void timer1Interrupt() {
     endPin = 32 - __builtin_clz(waveformEnabled);
   }
 
-  if (waveformEnabled) {
   bool done = false;
+  if (waveformEnabled) {
     do {
       nextEventCycles = microsecondsToClockCycles(MAXIRQUS);
       for (int i = startPin; i <= endPin; i++) {
@@ -257,7 +257,13 @@ static ICACHE_RAM_ATTR void timer1Interrupt() {
         // Check for toggles
         int32_t cyclesToGo = wave->nextServiceCycle - now;
         if (cyclesToGo < 0) {
-          cyclesToGo = -((-cyclesToGo) % (wave->nextTimeHighCycles + wave->nextTimeLowCycles));
+          // See #7057
+          // The following is a no-op unless we have overshot by an entire waveform cycle.
+          // As modulus is an expensive operation, this code is removed for now:
+          // cyclesToGo = -((-cyclesToGo) % (wave->nextTimeHighCycles + wave->nextTimeLowCycles));
+          //
+          // Alternative version with lower CPU impact:
+          // while (-cyclesToGo > wave->nextTimeHighCycles + wave->nextTimeLowCycles) { cyclesToGo += wave->nextTimeHighCycles + wave->nextTimeLowCycles)};
           waveformState ^= mask;
           if (waveformState & mask) {
             if (i == 16) {
