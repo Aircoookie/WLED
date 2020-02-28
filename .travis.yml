@@ -34,7 +34,7 @@ install:
 script:
     - platformio ci --project-conf=./platformio.ini
 jobs:
-  exclude:
+  include:
     - env: 
       d1_mini
       esp32_dev
