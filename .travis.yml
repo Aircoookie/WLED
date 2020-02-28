@@ -22,12 +22,13 @@
 #   < https://config.travis-ci.com/explore >
 #
 
-language: cpp
+language: python
 python:
     - "2.7"
 os: linux
 cache:
-    bundler: true
+    # bundler: true
+    ccache: true
     directories:
         - "~/.platformio"
 env:
