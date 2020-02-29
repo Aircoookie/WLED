@@ -232,8 +232,8 @@ void saveSettingsToEEPROM()
     EEPROM.write(2208, presetCycleMin);
     EEPROM.write(2209, presetCycleMax);
     EEPROM.write(2210, presetApplyBri);
-    EEPROM.write(2211, presetApplyCol);
-    EEPROM.write(2212, presetApplyFx);
+    // was EEPROM.write(2211, presetApplyCol);
+    // was EEPROM.write(2212, presetApplyFx);
     saveCurrPresetCycConf = false;
   }
 
@@ -519,8 +519,8 @@ void loadSettingsFromEEPROM(bool first)
     presetCycleMin = EEPROM.read(2208);
     presetCycleMax = EEPROM.read(2209);
     presetApplyBri = EEPROM.read(2210);
-    presetApplyCol = EEPROM.read(2211);
-    presetApplyFx = EEPROM.read(2212);
+    //was presetApplyCol = EEPROM.read(2211);
+    //was presetApplyFx = EEPROM.read(2212);
   }
 
   bootPreset = EEPROM.read(389);
@@ -583,7 +583,7 @@ void savedToPresets()
   }
 }
 
-bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool loadFX = true)
+bool applyPreset(byte index, bool loadBri = true)
 {
   if (index == 255 || index == 0)
   {
@@ -596,22 +596,18 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
     if (EEPROM.read(i) != 1) return false;
     strip.applyToAllSelected = true;
     if (loadBri) bri = EEPROM.read(i+1);
-    if (loadCol)
+    
+    for (byte j=0; j<4; j++)
     {
-      for (byte j=0; j<4; j++)
-      {
-        col[j] = EEPROM.read(i+j+2);
-        colSec[j] = EEPROM.read(i+j+6);
-      }
-      strip.setColor(2, EEPROM.read(i+12), EEPROM.read(i+13), EEPROM.read(i+14), EEPROM.read(i+15)); //tertiary color
+      col[j] = EEPROM.read(i+j+2);
+      colSec[j] = EEPROM.read(i+j+6);
     }
-    if (loadFX)
-    {
-      effectCurrent = EEPROM.read(i+10);
-      effectSpeed = EEPROM.read(i+11);
-      effectIntensity = EEPROM.read(i+16);
-      effectPalette = EEPROM.read(i+17);
-    }
+    strip.setColor(2, EEPROM.read(i+12), EEPROM.read(i+13), EEPROM.read(i+14), EEPROM.read(i+15)); //tertiary color
+
+    effectCurrent = EEPROM.read(i+10);
+    effectSpeed = EEPROM.read(i+11);
+    effectIntensity = EEPROM.read(i+16);
+    effectPalette = EEPROM.read(i+17);
   } else {
     if (EEPROM.read(i) != 2) return false;
     strip.applyToAllSelected = false;

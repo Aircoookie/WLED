@@ -379,7 +379,7 @@ uint16_t WS2812FX::mode_rainbow_cycle(void) {
 /*
  * theater chase function
  */
-uint16_t WS2812FX::theater_chase(uint32_t color1, uint32_t color2, bool dopalette) {
+uint16_t WS2812FX::theater_chase(uint32_t color1, uint32_t color2, bool do_palette) {
   byte gap = 2 + ((255 - SEGMENT.intensity) >> 5);
   uint32_t cycleTime = 50 + (255 - SEGMENT.speed)*2;
   uint32_t it = now / cycleTime;
@@ -391,7 +391,7 @@ uint16_t WS2812FX::theater_chase(uint32_t color1, uint32_t color2, bool dopalett
   
   for(uint16_t i = 0; i < SEGLEN; i++) {
     if((i % gap) == SEGENV.aux0) {
-      if (dopalette)
+      if (do_palette)
       {
         setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
       } else {
@@ -690,58 +690,68 @@ uint16_t WS2812FX::mode_android(void) {
  * color1 = background color
  * color2 and color3 = colors of two adjacent leds
  */
-uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool dopalette) {
+uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool do_palette) {
   uint16_t counter = now * ((SEGMENT.speed >> 2) + 1);
   uint16_t a = counter * SEGLEN  >> 16;
+
+  bool chase_random = (SEGMENT.mode == FX_MODE_CHASE_RANDOM);
+  if (chase_random) {
+    if (a < SEGENV.step) //we hit the start again, choose new color for Chase random
+    {
+      SEGENV.aux1 = SEGENV.aux0; //store previous random color
+      SEGENV.aux0 = get_random_wheel_index(SEGENV.aux0);
+    }
+    color1 = color_wheel(SEGENV.aux0);
+  }
   SEGENV.step = a;
-  uint8_t size = 1 + (SEGMENT.intensity * SEGLEN >> 10);
-  if (SEGENV.call == 0) {SEGENV.aux0 = 0; SEGENV.aux1 = a;}
+
   // Use intensity setting to vary chase up to 1/2 string length
-  uint16_t b = (a + size) % SEGLEN;
-  uint16_t c = (b + size) % SEGLEN;
+  uint8_t size = 1 + (SEGMENT.intensity * SEGLEN >> 10);
 
-  if (dopalette) color1 = color_from_palette(a, true, PALETTE_SOLID_WRAP, 1);
+  uint16_t b = a + size; //"trail" of chase, filled with color1 
+  if (b > SEGLEN) b -= SEGLEN;
+  uint16_t c = b + size;
+  if (c > SEGLEN) c -= SEGLEN;
 
-  setPixelColor(a, color1);
-  if (SEGENV.aux0 == 0) {                // catch the first pixels after color change from "chase random" (because they have the "old" color)
-    for (uint16_t i = 0; i < a; i++) {
-    uint32_t color = getPixelColor(0);
-    setPixelColor(i, color1);
+  //background
+  if (do_palette)
+  {
+    for(uint16_t i = 0; i < SEGLEN; i++) {
+      setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 1));
     }
-    SEGENV.aux0 = 1;
-  }
-  setPixelColor(b, color2);
-  setPixelColor(c, color3);
+  } else fill(color1);
 
-  if (a != SEGENV.aux1) {                                  // when speed is too fast, this catches the gaps
-    if (a > SEGENV.aux1) {
-      for (uint16_t i = SEGENV.aux1; i <= a; i++) {        // sometimes the step-length varies from one to the next call - therefor "<= a" and not "< a"
-        setPixelColor(i, color1);
-        uint16_t b1 = (i  + size) % SEGLEN;
-        uint16_t c1 = (b1 + size) % SEGLEN;
-        setPixelColor(b1, color2);
-        setPixelColor(c1, color3);
-      } 
-    } else {
-      for (uint16_t i = SEGENV.aux1; i <= SEGLEN; i++) {   // from last position to the end
-        setPixelColor(i, color1);
-        uint16_t b1 = (i  + size) % SEGLEN;
-        uint16_t c1 = (b1 + size) % SEGLEN;
-        setPixelColor(b1, color2);
-        setPixelColor(c1, color3);
-      } 
-      for (uint16_t i = 0; i < a; i++) {                  // from 0 to the actual position
-        setPixelColor(i, color1);
-        uint16_t b1 = (i  + size) % SEGLEN;
-        uint16_t c1 = (b1 + size) % SEGLEN;
-        setPixelColor(b1, color2);
-        setPixelColor(c1, color3);
-      }
-      SEGENV.step = 0;
-      SEGENV.aux0 = 0;
-    }
+  //if random, fill old background between a and end
+  if (chase_random)
+  {
+    color1 = color_wheel(SEGENV.aux1);
+    for (uint16_t i = a; i < SEGLEN; i++)
+      setPixelColor(i, color1);
   }
-  SEGENV.aux1 = ++a;
+
+  //fill between points a and b with color2
+  if (a < b)
+  {
+    for (uint16_t i = a; i < b; i++)
+      setPixelColor(i, color2);
+  } else {
+    for (uint16_t i = a; i < SEGLEN; i++) //fill until end
+      setPixelColor(i, color2);
+    for (uint16_t i = 0; i < b; i++) //fill from start until b
+      setPixelColor(i, color2);
+  }
+
+  //fill between points b and c with color2
+  if (b < c)
+  {
+    for (uint16_t i = b; i < c; i++)
+      setPixelColor(i, color3);
+  } else {
+    for (uint16_t i = b; i < SEGLEN; i++) //fill until end
+      setPixelColor(i, color3);
+    for (uint16_t i = 0; i < c; i++) //fill from start until c
+      setPixelColor(i, color3);
+  }
 
   return FRAMETIME;
 }
@@ -751,7 +761,7 @@ uint16_t WS2812FX::chase(uint32_t color1, uint32_t color2, uint32_t color3, bool
  * Bicolor chase, more primary color.
  */
 uint16_t WS2812FX::mode_chase_color(void) {
-  return chase(SEGCOLOR(1), SEGCOLOR(0), SEGCOLOR(0), true);
+  return chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), true);
 }
 
 
@@ -759,12 +769,19 @@ uint16_t WS2812FX::mode_chase_color(void) {
  * Primary running followed by random color.
  */
 uint16_t WS2812FX::mode_chase_random(void) {
-  if (!SEGENV.allocateData(2)) return mode_static(); //allocation failed
-  if (SEGENV.call == 0) SEGENV.data[0] = 0;
-  if (SEGENV.step == 0) {
-    SEGENV.data[0] = get_random_wheel_index(SEGENV.data[0]);
-  }
-  return chase(color_wheel(SEGENV.data[0]), SEGCOLOR(0), SEGCOLOR(0), false);
+  return chase(SEGCOLOR(1), (SEGCOLOR(2)) ? SEGCOLOR(2) : SEGCOLOR(0), SEGCOLOR(0), false);
+}
+
+
+/*
+ * Primary, secondary running on rainbow.
+ */
+uint16_t WS2812FX::mode_chase_rainbow(void) {
+  uint8_t color_sep = 256 / SEGLEN;
+  uint8_t color_index = SEGENV.call & 0xFF;
+  uint32_t color = color_wheel(((SEGENV.step * color_sep) + color_index) & 0xFF);
+
+  return chase(color, SEGCOLOR(0), SEGCOLOR(1), false);
 }
 
 
@@ -857,18 +874,6 @@ uint16_t WS2812FX::mode_traffic_light(void) {
   }
   
   return FRAMETIME;
-}
-
-
-/*
- * Primary, secondary running on rainbow.
- */
-uint16_t WS2812FX::mode_chase_rainbow(void) {
-  uint8_t color_sep = 256 / SEGLEN;
-  uint8_t color_index = SEGENV.call & 0xFF;
-  uint32_t color = color_wheel(((SEGENV.step * color_sep) + color_index) & 0xFF);
-
-  return chase(color, SEGCOLOR(0), SEGCOLOR(1), 0);
 }
 
 
