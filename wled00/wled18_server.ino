@@ -62,39 +62,44 @@ void initServer()
   });
   
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 200,"Rebooting now...","Please wait ~10 seconds...",129);
+    serveMessage(request, 200,"Rebooting now...",F("Please wait ~10 seconds..."),129);
     doReboot = true;
   });
   
   server.on("/settings/wifi", HTTP_POST, [](AsyncWebServerRequest *request){
     if (!(wifiLock && otaLock)) handleSettingsSet(request, 1);
-    serveMessage(request, 200,"WiFi settings saved.","Please connect to the new IP (if changed)",129);
+    serveMessage(request, 200,F("WiFi settings saved."),F("Please connect to the new IP (if changed)"),129);
     forceReconnect = true;
   });
 
   server.on("/settings/leds", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 2);
-    serveMessage(request, 200,"LED settings saved.","Redirecting...",1);
+    serveMessage(request, 200,F("LED settings saved."),"Redirecting...",1);
   });
 
   server.on("/settings/ui", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 3);
-    serveMessage(request, 200,"UI settings saved.","Redirecting...",1);
+    serveMessage(request, 200,F("UI settings saved."),"Redirecting...",1);
+  });
+
+  server.on("/settings/dmx", HTTP_POST, [](AsyncWebServerRequest *request){
+    handleSettingsSet(request, 7);
+    serveMessage(request, 200,F("UI settings saved."),"Redirecting...",1);
   });
 
   server.on("/settings/sync", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 4);
-    serveMessage(request, 200,"Sync settings saved.","Redirecting...",1);
+    serveMessage(request, 200,F("Sync settings saved."),"Redirecting...",1);
   });
 
   server.on("/settings/time", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 5);
-    serveMessage(request, 200,"Time settings saved.","Redirecting...",1);
+    serveMessage(request, 200,F("Time settings saved."),"Redirecting...",1);
   });
 
   server.on("/settings/sec", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSettingsSet(request, 6);
-    if (!doReboot) serveMessage(request, 200,"Security settings saved.","Rebooting, please wait ~10 seconds...",129);
+    if (!doReboot) serveMessage(request, 200,F("Security settings saved."),F("Rebooting, please wait ~10 seconds..."),129);
     doReboot = true;
   });
 
@@ -104,7 +109,7 @@ void initServer()
 
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
-    if (1) { //scope JsonDocument so it releases its buffer
+    { //scope JsonDocument so it releases its buffer
       DynamicJsonDocument jsonBuffer(8192);
       DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
       JsonObject root = jsonBuffer.as<JsonObject>();
@@ -138,8 +143,12 @@ void initServer()
     request->send_P(200, "text/html", PAGE_usermod);
     });
     
+  server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
+    URL_response(request);
+    });
+    
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 418, "418. I'm a teapot.", "(Tangible Embedded Advanced Project Of Twinkling)", 254);
+    serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
     });
     
   //if OTA is allowed
@@ -152,7 +161,7 @@ void initServer()
      #endif
     #else
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", "The SPIFFS editor is disabled in this build.", 254);
+      serveMessage(request, 501, "Not implemented", F("The SPIFFS editor is disabled in this build."), 254);
     });
     #endif
     //init ota page
@@ -164,9 +173,9 @@ void initServer()
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
       if (Update.hasError())
       {
-        serveMessage(request, 500, "Failed updating firmware!", "Please check your file and retry!", 254); return;
+        serveMessage(request, 500, F("Failed updating firmware!"), F("Please check your file and retry!"), 254); return;
       }
-      serveMessage(request, 200, "Successfully updated firmware!", "Please wait while the module reboots...", 131); 
+      serveMessage(request, 200, F("Successfully updated firmware!"), F("Please wait while the module reboots..."), 131); 
       doReboot = true;
     },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
       if(!index){
@@ -188,7 +197,7 @@ void initServer()
     
     #else
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", "OTA updates are disabled in this build.", 254);
+      serveMessage(request, 501, "Not implemented", F("OTA updates are disabled in this build."), 254);
     });
     #endif
   } else
@@ -201,6 +210,16 @@ void initServer()
     });
   }
 
+
+    #ifdef WLED_ENABLE_DMX
+    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
+    });
+    #else
+    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+      serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
+    });
+    #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
@@ -273,10 +292,10 @@ String msgProcessor(const String& var)
       messageBody += "<script>setTimeout(RP," + String((optt-120)*1000) + ")</script>";
     } else if (optt == 253)
     {
-      messageBody += "<br><br><form action=/settings><button class=\"bt\" type=submit>Back</button></form>"; //button to settings
+      messageBody += F("<br><br><form action=/settings><button class=\"bt\" type=submit>Back</button></form>"); //button to settings
     } else if (optt == 254)
     {
-      messageBody += "<br><br><button type=\"button\" class=\"bt\" onclick=\"B()\">Back</button>";
+      messageBody += F("<br><br><button type=\"button\" class=\"bt\" onclick=\"B()\">Back</button>");
     }
     return messageBody;
   }
@@ -301,8 +320,36 @@ String settingsProcessor(const String& var)
     getSettingsJS(optionType, buf);
     return String(buf);
   }
+  
+  #ifdef WLED_ENABLE_DMX
+
+  if (var == "DMXMENU") {
+    return String(F("<form action=/settings/dmx><button type=submit>DMX Output</button></form>"));
+  }
+  
+  #endif
   if (var == "SCSS") return String(FPSTR(PAGE_settingsCss));
   return String();
+}
+
+String dmxProcessor(const String& var)
+{
+  String mapJS;
+  #ifdef WLED_ENABLE_DMX
+    if (var == "DMXVARS") {
+      mapJS += "\nCN=" + String(DMXChannels) + ";\n";
+      mapJS += "CS=" + String(DMXStart) + ";\n";
+      mapJS += "CG=" + String(DMXGap) + ";\n";
+      mapJS += "LC=" + String(ledCount) + ";\n";
+      mapJS += "var CH=[";
+      for (int i=0;i<15;i++) {
+        mapJS += String(DMXFixtureMap[i]) + ",";
+      }
+      mapJS += "0];";
+    }
+  #endif
+  
+  return mapJS;
 }
 
 
@@ -318,6 +365,9 @@ void serveSettings(AsyncWebServerRequest* request)
     else if (url.indexOf("sync") > 0) subPage = 4;
     else if (url.indexOf("time") > 0) subPage = 5;
     else if (url.indexOf("sec")  > 0) subPage = 6;
+    #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+    else if (url.indexOf("dmx")  > 0) subPage = 7;
+    #endif
   } else subPage = 255; //welcome page
 
   if (subPage == 1 && wifiLock && otaLock)
@@ -339,7 +389,8 @@ void serveSettings(AsyncWebServerRequest* request)
     case 4:   request->send_P(200, "text/html", PAGE_settings_sync, settingsProcessor); break;
     case 5:   request->send_P(200, "text/html", PAGE_settings_time, settingsProcessor); break;
     case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
+    case 7:   request->send_P(200, "text/html", PAGE_settings_dmx , settingsProcessor); break;
     case 255: request->send_P(200, "text/html", PAGE_welcome); break;
-    default:  request->send_P(200, "text/html", PAGE_settings); 
+    default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor); 
   }
 }

@@ -8,7 +8,7 @@ In order for other people to be able to have fun with your usermod, please keep 
 
 -   Create a folder in this folder with a descriptive name (for example `usermod_ds18b20_temp_sensor_mqtt`)  
 -   Include your custom `wled06_usermod.ino` file  
--   If your usermod requieres changes to other WLED files, please write a `readme.md` outlining the steps one has to take to use the usermod  
+-   If your usermod requires changes to other WLED files, please write a `readme.md` outlining the steps one has to take to use the usermod  
 -   Create a pull request!  
 -   If your feature is useful for the majority of WLED users, I will consider adding it to the base code!  
 

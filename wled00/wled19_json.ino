@@ -15,7 +15,9 @@ void deserializeSegment(JsonObject elem, byte it)
       uint16_t len = elem["len"];
       stop = (len > 0) ? start + len : seg.stop;
     }
-    strip.setSegment(id, start, stop);
+    uint16_t grp = elem["grp"] | seg.grouping;
+    uint16_t spc = elem["spc"] | seg.spacing;
+    strip.setSegment(id, start, stop, grp, spc);
     
     JsonArray colarr = elem["col"];
     if (!colarr.isNull())
@@ -64,6 +66,9 @@ bool deserializeState(JsonObject root)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root["v"] | false;
+
+  int ps = root["ps"] | -1;
+  if (ps >= 0) applyPreset(ps);
   
   bri = root["bri"] | bri;
   
@@ -84,9 +89,6 @@ bool deserializeState(JsonObject root)
     transitionDelayTemp *= 100;
     jsonTransitionOnce = true;
   }
-
-  int ps = root["ps"] | -1;
-  if (ps >= 0) applyPreset(ps);
   
   int cy = root["pl"] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);
@@ -152,7 +154,7 @@ bool deserializeState(JsonObject root)
     }
   }
 
-  colorUpdated(noNotification ? 5:1);
+  colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
   ps = root["psave"] | -1;
   if (ps >= 0) savePreset(ps);
@@ -166,6 +168,8 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["start"] = seg.start;
 	root["stop"] = seg.stop;
 	root["len"] = seg.stop - seg.start;
+  root["grp"] = seg.grouping;
+  root["spc"] = seg.spacing;
 
 	JsonArray colarr = root.createNestedArray("col");
 
@@ -238,12 +242,12 @@ void serializeInfo(JsonObject root)
   JsonObject leds = root.createNestedObject("leds");
   leds["count"] = ledCount;
   leds["rgbw"] = useRGBW;
-  leds["wv"] = useRGBW && !autoRGBtoRGBW; //should a white channel slider be displayed?
+  leds["wv"] = useRGBW && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
   JsonArray leds_pin = leds.createNestedArray("pin");
   leds_pin.add(LEDPIN);
   
   leds["pwr"] = strip.currentMilliamps;
-  leds["maxpwr"] = strip.ablMilliampsMax;
+  leds["maxpwr"] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds["maxseg"] = strip.getMaxSegments();
   leds["seglock"] = false; //will be used in the future to prevent modifications to segment config
 
@@ -251,24 +255,37 @@ void serializeInfo(JsonObject root)
   
   root["name"] = serverDescription;
   root["udpport"] = udpPort;
-  root["live"] = realtimeActive;
+  root["live"] = (bool)realtimeMode;
   root["fxcount"] = strip.getModeCount();
   root["palcount"] = strip.getPaletteCount();
 
   JsonObject wifi_info = root.createNestedObject("wifi");
   wifi_info["bssid"] = WiFi.BSSIDstr();
-  wifi_info["signal"] = getSignalQuality(WiFi.RSSI());
+  int qrssi = WiFi.RSSI();
+  wifi_info["rssi"] = qrssi;
+  wifi_info["signal"] = getSignalQuality(qrssi);
   wifi_info["channel"] = WiFi.channel();
   
   #ifdef ARDUINO_ARCH_ESP32
+  #ifdef WLED_DEBUG
+    wifi_info["txPower"] = (int) WiFi.getTxPower();
+    wifi_info["sleep"] = (bool) WiFi.getSleep();
+  #endif
   root["arch"] = "esp32";
   root["core"] = ESP.getSdkVersion();
   //root["maxalloc"] = ESP.getMaxAllocHeap();
+  #ifdef WLED_DEBUG
+    root["resetReason0"] = (int)rtc_get_reset_reason(0);
+    root["resetReason1"] = (int)rtc_get_reset_reason(1);
+  #endif
   root["lwip"] = 0;
   #else
   root["arch"] = "esp8266";
   root["core"] = ESP.getCoreVersion();
   //root["maxalloc"] = ESP.getMaxFreeBlockSize();
+  #ifdef WLED_DEBUG
+    root["resetReason"] = (int)ESP.getResetInfoPtr()->reason;
+  #endif
   root["lwip"] = LWIP_VERSION_MAJOR;
   #endif
   
@@ -304,7 +321,6 @@ void serializeInfo(JsonObject root)
   
   root["brand"] = "WLED";
   root["product"] = "DIY light";
-  root["btype"] = "src";
   root["mac"] = escapedMac;
 }
 
@@ -327,7 +343,7 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(  501, "application/json", "{\"error\":\"Not implemented\"}");
+    request->send(  501, "application/json", F("{\"error\":\"Not implemented\"}"));
     return;
   }
   
@@ -357,7 +373,7 @@ void serveJson(AsyncWebServerRequest* request)
 
 void serveLiveLeds(AsyncWebServerRequest* request)
 {
-  byte used = strip.getUsableCount();
+  byte used = ledCount;
   byte n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
   char buffer[2000] = "{\"leds\":[";
   olen = 9;

@@ -1,25 +1,45 @@
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
-
-//The SCL and SDA pins are defined here. 
-//Lolin32 boards use SCL=5 SDA=4 
-#define U8X8_PIN_SCL 5
-#define U8X8_PIN_SDA 4
-
+#include <DallasTemperature.h> //Dallastemperature sensor
+#ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
+uint8_t SCL_PIN = 22; 
+uint8_t SDA_PIN = 21; 
+OneWire oneWire(23);
+#else //ESP8266 boards
+uint8_t SCL_PIN = 5;
+uint8_t SDA_PIN = 4;
+// uint8_t RST_PIN = 16; // Uncoment for Heltec WiFi-Kit-8
+OneWire oneWire(13);
+#endif
+//The SCL and SDA pins are defined here.
+//ESP8266 Wemos D1 mini board use SCL=5 SDA=4 while ESP32 Wemos32 mini board use SCL=22 SDA=21
+#define U8X8_PIN_SCL SCL_PIN
+#define U8X8_PIN_SDA SDA_PIN
+//#define U8X8_PIN_RESET RST_PIN // Uncoment for Heltec WiFi-Kit-8
+// Dallas sensor
+DallasTemperature sensor(&oneWire);
+long temptimer = millis();
+long lastMeasure = 0;
+#define Celsius // Show temperature mesaurement in Celcius otherwise is in Fahrenheit 
 
 // If display does not work or looks corrupted check the
 // constructor reference:
 // https://github.com/olikraus/u8g2/wiki/u8x8setupcpp
 // or check the gallery:
 // https://github.com/olikraus/u8g2/wiki/gallery
-U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL,
-                                          U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
-
+// --> First choise of cheap I2C OLED 128X32 0.91"
+U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
+// --> Second choise of cheap I2C OLED 128X64 0.96" or 1.3"
+//U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
+// --> Third choise of Heltec WiFi-Kit-8 OLED 128X32 0.91"
+//U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_RESET, U8X8_PIN_SCL, U8X8_PIN_SDA); // Constracor for Heltec WiFi-Kit-8
 // gets called once at boot. Do all initialization that doesn't depend on
 // network here
 void userSetup() {
+  sensor.begin(); //Start Dallas temperature sensor
   u8x8.begin();
   u8x8.setPowerSave(0);
-    u8x8.setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
+  u8x8.setFlipMode(1);
+  u8x8.setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
   u8x8.setFont(u8x8_font_chroma48medium8_r);
   u8x8.drawString(0, 0, "Loading...");
 }
@@ -46,6 +66,30 @@ bool displayTurnedOff = false;
 #define USER_LOOP_REFRESH_RATE_MS 5000
 
 void userLoop() {
+
+//----> Dallas temperature sensor MQTT publishing
+  temptimer = millis();  
+// Timer to publishe new temperature every 60 seconds
+  if (temptimer - lastMeasure > 60000) 
+  {
+    lastMeasure = temptimer;    
+//Check if MQTT Connected, otherwise it will crash the 8266
+    if (mqtt != nullptr)
+    {
+      sensor.requestTemperatures();
+//Gets prefered temperature scale based on selection in definitions section
+      #ifdef Celsius
+      float board_temperature = sensor.getTempCByIndex(0);
+      #else
+      float board_temperature = sensor.getTempFByIndex(0);
+      #endif
+//Create character string populated with user defined device topic from the UI, and the read temperature. Then publish to MQTT server.
+      char subuf[38];
+      strcpy(subuf, mqttDeviceTopic);
+      strcat(subuf, "/temperature");
+      mqtt->publish(subuf, 0, true, String(board_temperature).c_str());
+    }
+  }
 
   // Check if we time interval for redrawing passes.
   if (millis() - lastUpdate < USER_LOOP_REFRESH_RATE_MS) {
@@ -94,7 +138,6 @@ void userLoop() {
   knownBrightness = bri;
   knownMode = strip.getMode();
   knownPalette = strip.getSegment(0).palette;
-
   u8x8.clear();
   u8x8.setFont(u8x8_font_chroma48medium8_r);
 
@@ -119,6 +162,7 @@ void userLoop() {
   bool insideQuotes = false;
   uint8_t printedChars = 0;
   char singleJsonSymbol;
+
   // Find the mode name in JSON
   for (size_t i = 0; i < strlen_P(JSON_mode_names); i++) {
     singleJsonSymbol = pgm_read_byte_near(JSON_mode_names + i);

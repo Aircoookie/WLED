@@ -17,6 +17,29 @@ void colorFromUint32(uint32_t in, bool secondary)
   }
 }
 
+//load a color without affecting the white channel
+void colorFromUint24(uint32_t in, bool secondary = false)
+{
+  if (secondary) {
+    colSec[0] = in >> 16 & 0xFF;
+    colSec[1] = in >> 8  & 0xFF;
+    colSec[2] = in       & 0xFF;
+  } else {
+    col[0] = in >> 16 & 0xFF;
+    col[1] = in >> 8  & 0xFF;
+    col[2] = in       & 0xFF;
+  }
+}
+
+//relatively change white brightness, minumum A=5
+void relativeChangeWhite(int8_t amount, byte lowerBoundary =0)
+{
+  int16_t new_val = (int16_t) col[3] + amount;
+  if (new_val > 0xFF) new_val = 0xFF;
+  else if (new_val < lowerBoundary) new_val = lowerBoundary;
+  col[3] = new_val;
+}
+
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
 {
   float h = ((float)hue)/65535.0;
@@ -160,7 +183,7 @@ float maxf (float v, float w)
   return v;
 }
 
-void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw)
+void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_MODE_LEGACY)
 {
   float low = minf(rgb[0],minf(rgb[1],rgb[2]));
   float high = maxf(rgb[0],maxf(rgb[1],rgb[2]));
