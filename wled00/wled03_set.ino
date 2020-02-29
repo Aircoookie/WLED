@@ -460,18 +460,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("PA="); //apply brightness from preset
   if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
 
-  pos = req.indexOf("PC="); //apply color from preset
-  if (pos > 0) presetApplyCol = (req.charAt(pos+3) != '0');
-
-  pos = req.indexOf("PX="); //apply effects from preset
-  if (pos > 0) presetApplyFx = (req.charAt(pos+3) != '0');
-
   pos = req.indexOf("PS="); //saves current in preset
   if (pos > 0) savePreset(getNumVal(&req, pos));
 
   //apply preset
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
-    applyPreset(presetCycCurr, presetApplyBri, presetApplyCol, presetApplyFx);
+    applyPreset(presetCycCurr, presetApplyBri);
   }
 
   //set brightness
@@ -653,7 +647,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("NB=");
   if (pos > 0) //sets backlight
   {
-    presetApplyFx = (req.charAt(pos+3) != '0');
+    cronixieBacklight = (req.charAt(pos+3) != '0');
     if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
     overlayRefreshedTime = 0;
   }

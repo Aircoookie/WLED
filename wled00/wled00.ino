@@ -390,7 +390,7 @@ bool presetCyclingEnabled = false;
 byte presetCycleMin = 1, presetCycleMax = 5;
 uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
-bool presetApplyBri = false, presetApplyCol = true, presetApplyFx = true;
+bool presetApplyBri = true;
 bool saveCurrPresetCycConf = false;
 
 //realtime
