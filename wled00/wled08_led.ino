@@ -251,7 +251,7 @@ void handleNightlight()
   //also handle preset cycle here
   if (presetCyclingEnabled && (millis() - presetCycledTime > presetCycleTime))
   {
-    applyPreset(presetCycCurr,presetApplyBri,presetApplyCol,presetApplyFx);
+    applyPreset(presetCycCurr,presetApplyBri);
     presetCycCurr++; if (presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
     if (presetCycCurr > 25) presetCycCurr = 1;
     colorUpdated(NOTIFIER_CALL_MODE_PRESET_CYCLE);
