@@ -863,7 +863,9 @@ void WS2812FX::setRgbwPwm(void) {
     }
   #else
     bus->SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
-  #endif         
+  #endif   
+  _analogLastColor = color;
+  _analogLastBri = b;
 }
 #else
 void WS2812FX::setRgbwPwm() {}
