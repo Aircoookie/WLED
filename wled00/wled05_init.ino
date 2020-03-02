@@ -100,7 +100,7 @@ void beginStrip()
   pinMode(BTNPIN, INPUT_PULLUP);
 #endif
 
-  if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
+  if (bootPreset > 0) applyPreset(bootPreset, turnOnAtBoot);
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
   //init relay pin
