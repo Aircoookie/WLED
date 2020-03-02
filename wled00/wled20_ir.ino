@@ -48,7 +48,7 @@ void changeEffectSpeed(int8_t amount)
   if (effectCurrent != 0) {
     int16_t new_val = (int16_t) &effectSpeed + amount;
     &effectSpeed = (byte)constrain(new_val,0.1,255.1);
-  } else {  // Effect = "solid Color", change the hue of the primary color
+  } else {                              // if Effect == "solid Color", change the hue of the primary color
     CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
     int16_t new_val = (int16_t) prim_hsv.h + amount;
     if (new_val > 255) new_val -= 255;  // roll-over if  bigger than 255
@@ -63,7 +63,7 @@ void changeEffectIntensity(int8_t amount)
   if (effectCurrent != 0) {
     int16_t new_val = (int16_t) &effectIntensity + amount;
     &effectIntensity = (byte)constrain(new_val,0.1,255.1);
-  } else {  // Effect = "solid Color", change the saturation of the primary color
+  } else {                                            // if Effect == "solid Color", change the saturation of the primary color
     CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
     int16_t new_val = (int16_t) prim_hsv.s + amount;
     prim_hsv.s = (byte)constrain(new_val,0.1,255.1);  // constrain to 0-255
