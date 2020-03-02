@@ -46,28 +46,42 @@ void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte 
 void changeEffectSpeed(int8_t amount)
 {
   if (effectCurrent != 0) {
-    int16_t new_val = (int16_t) &effectSpeed + amount;
-    &effectSpeed = (byte)constrain(new_val,0.1,255.1);
+    int16_t new_val = (int16_t) effectSpeed + amount;
+    effectSpeed = (byte)constrain(new_val,0.1,255.1);
   } else {                              // if Effect == "solid Color", change the hue of the primary color
-    CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
+    CRGB fastled_col;
+    fastled_col.red =   col[0];
+    fastled_col.green = col[1];
+    fastled_col.blue =  col[2];
+    CHSV prim_hsv = rgb2hsv_approximate(fastled_col);
     int16_t new_val = (int16_t) prim_hsv.h + amount;
     if (new_val > 255) new_val -= 255;  // roll-over if  bigger than 255
     if (new_val < 0) new_val += 255;    // roll-over if smaller than 0
     prim_hsv.h = (byte)new_val;
-    hsv2rgb_rainbow(&prim_hsv, &col);
+    hsv2rgb_rainbow(prim_hsv, fastled_col);
+    col[0] = fastled_col.red; 
+    col[1] = fastled_col.green; 
+    col[2] = fastled_col.blue;
   }
 }
 
 void changeEffectIntensity(int8_t amount)
 {
   if (effectCurrent != 0) {
-    int16_t new_val = (int16_t) &effectIntensity + amount;
-    &effectIntensity = (byte)constrain(new_val,0.1,255.1);
+    int16_t new_val = (int16_t) effectIntensity + amount;
+    effectIntensity = (byte)constrain(new_val,0.1,255.1);
   } else {                                            // if Effect == "solid Color", change the saturation of the primary color
-    CHSV prim_hsv = rgb2hsv_approximate(col_to_crgb(col);
+    CRGB fastled_col;
+    fastled_col.red =   col[0];
+    fastled_col.green = col[1];
+    fastled_col.blue =  col[2];
+    CHSV prim_hsv = rgb2hsv_approximate(fastled_col);
     int16_t new_val = (int16_t) prim_hsv.s + amount;
     prim_hsv.s = (byte)constrain(new_val,0.1,255.1);  // constrain to 0-255
-    hsv2rgb_rainbow(&prim_hsv, &col);
+    hsv2rgb_rainbow(prim_hsv, fastled_col);
+    col[0] = fastled_col.red; 
+    col[1] = fastled_col.green; 
+    col[2] = fastled_col.blue;
   }
 }
 
@@ -378,8 +392,8 @@ void decodeIR6(uint32_t code)
     case IR6_POWER: toggleOnOff();                                         break;
     case IR6_CHANNEL_UP: relativeChange(&bri, 10);                         break;
     case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);                   break;
-    case IR6_VOLUME_UP:   relativeChange(&effectCurrent, 1, 0 MODE_COUNT); break;  // next effect
-    case IR6_VOLUME_DOWN:                                                          // next palette
+    case IR6_VOLUME_UP:   relativeChange(&effectCurrent, 1, 0, MODE_COUNT); break;  // next effect
+    case IR6_VOLUME_DOWN:                                                           // next palette
       relativeChange(&effectPalette, 1, 0, strip.getPaletteCount() -1); 
       switch(lastIR6ColourIdx) {
         case 0: colorFromUint32(COLOR_RED);       break;
