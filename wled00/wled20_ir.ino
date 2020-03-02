@@ -399,9 +399,9 @@ void decodeIR6(uint32_t code)
       }
       lastIR6ColourIdx++;
       if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;                      break;
-      case IR6_MUTE: effectCurrent = 0; effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
-    }
-    lastValidCode = code;
+    case IR6_MUTE: effectCurrent = 0; effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
+  }
+  lastValidCode = code;
 }
 
 
