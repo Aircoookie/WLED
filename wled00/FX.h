@@ -56,6 +56,9 @@
 #define MAX_SEGMENT_DATA 8192
 #endif
 
+#define LED_SKIP_AMOUNT  1
+#define MIN_SHOW_DELAY  15
+
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
 #define SEGCOLOR(x)      gamma32(_segments[_segment_index].colors[x])
@@ -588,6 +591,7 @@ class WS2812FX {
     uint8_t _brightness;
     static uint16_t _usedSegmentData;
 
+    void load_gradient_palette(uint8_t);
     void handle_palette(void);
     void fill(uint32_t);
 

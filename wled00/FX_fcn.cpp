@@ -27,9 +27,6 @@
 #include "FX.h"
 #include "palettes.h"
 
-#define LED_SKIP_AMOUNT  1
-#define MIN_SHOW_DELAY  15
-
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
   if (supportWhite == _useRgbw && countPixels == _length) return;
@@ -327,7 +324,7 @@ uint8_t WS2812FX::getModeCount()
 
 uint8_t WS2812FX::getPaletteCount()
 {
-  return 13 + gGradientPaletteCount;
+  return 13 + GRADIENT_PALETTE_COUNT;
 }
 
 //TODO transitions
@@ -380,7 +377,7 @@ void WS2812FX::setBrightness(uint8_t b) {
   if (_brightness == b) return;
   _brightness = (gammaCorrectBri) ? gamma8(b) : b;
   _segment_index = 0;
-  if (SEGENV.next_time > millis() + 22) show();//apply brightness change immediately if no refresh soon
+  if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
 }
 
 uint8_t WS2812FX::getMode(void) {
@@ -711,6 +708,15 @@ CRGB WS2812FX::col_to_crgb(uint32_t color)
 
 const uint8_t maxPaletteIndex = gGradientPaletteCount + 12;  // internal palettes 0 to 12 + FastLED palettes defined in palettes.h
 
+void WS2812FX::load_gradient_palette(uint8_t index)
+{
+  byte i = constrain(index, 0, GRADIENT_PALETTE_COUNT -1);
+  byte tcp[72]; //support gradient palettes with up to 18 entries
+  memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i])), 72);
+  targetPalette.loadDynamicGradientPalette(tcp);
+}
+
+
 /*
  * FastLED palette modes helper function. Limitation: Due to memory reasons, multiple active segments with FastLED will disable the Palette transitions
  */
@@ -728,13 +734,13 @@ void WS2812FX::handle_palette(void)
     case 0: {//default palette. Differs depending on effect
       switch (SEGMENT.mode)
       {
-        case FX_MODE_FIRE_2012  : targetPalette = gGradientPalettes[22]; break;//heat palette
-        case FX_MODE_COLORWAVES : targetPalette = gGradientPalettes[13]; break;//landscape 33
+        case FX_MODE_FIRE_2012  : load_gradient_palette(22); break;//heat palette
+        case FX_MODE_COLORWAVES : load_gradient_palette(13); break;//landscape 33
         case FX_MODE_FILLNOISE8 : targetPalette = OceanColors_p;         break;
-        case FX_MODE_NOISE16_1  : targetPalette = gGradientPalettes[17]; break;//Drywet
-        case FX_MODE_NOISE16_2  : targetPalette = gGradientPalettes[30]; break;//Blue cyan yellow
-        case FX_MODE_NOISE16_3  : targetPalette = gGradientPalettes[22]; break;//heat palette
-        case FX_MODE_NOISE16_4  : targetPalette = gGradientPalettes[13]; break;//landscape 33
+        case FX_MODE_NOISE16_1  : load_gradient_palette(17); break;//Drywet
+        case FX_MODE_NOISE16_2  : load_gradient_palette(30); break;//Blue cyan yellow
+        case FX_MODE_NOISE16_3  : load_gradient_palette(22); break;//heat palette
+        case FX_MODE_NOISE16_4  : load_gradient_palette(13); break;//landscape 33
         //case FX_MODE_GLITTER    : targetPalette = RainbowColors_p;       break;
         
         default: targetPalette = PartyColors_p; break;//palette, bpm
@@ -791,7 +797,7 @@ void WS2812FX::handle_palette(void)
     case 12: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
     default: //progmem palettes
-      targetPalette = gGradientPalettes[constrain(SEGMENT.palette -13, 0, gGradientPaletteCount -1)];
+      load_gradient_palette(SEGMENT.palette -13);
   }
   
   if (singleSegmentMode && paletteFade) //only blend if just one segment uses FastLED mode
@@ -858,7 +864,9 @@ void WS2812FX::setRgbwPwm(void) {
     }
   #else
     bus->SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
-  #endif         
+  #endif   
+  _analogLastColor = color;
+  _analogLastBri = b;
 }
 #else
 void WS2812FX::setRgbwPwm() {}

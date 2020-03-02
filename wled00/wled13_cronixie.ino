@@ -97,8 +97,8 @@ void setCronixie()
       case '-': dP[i] = 11; break; 
       case 'r': dP[i] = random(1,7); break; //random btw. 1-6
       case 'R': dP[i] = random(0,10); break; //random btw. 0-9
-      case 't': break; //Test upw.
-      case 'T': break; //Test dnw.
+      //case 't': break; //Test upw.
+      //case 'T': break; //Test dnw.
       case 'b': dP[i] = 14 + getSameCodeLength('b',i,cronixieDisplay); i = i+dP[i]-14; break; 
       case 'B': dP[i] = 14 + getSameCodeLength('B',i,cronixieDisplay); i = i+dP[i]-14; break;
       case 'h': dP[i] = 70 + getSameCodeLength('h',i,cronixieDisplay); i = i+dP[i]-70; break;
@@ -113,8 +113,8 @@ void setCronixie()
       case 'y': dP[i] = 86 + getSameCodeLength('y',i,cronixieDisplay); i = i+dP[i]-86; break; 
       case 'I': dP[i] = 39 + getSameCodeLength('I',i,cronixieDisplay); i = i+dP[i]-39; break;  //Month. Don't ask me why month and minute both start with M.
       case 'i': dP[i] = 89 + getSameCodeLength('i',i,cronixieDisplay); i = i+dP[i]-89; break; 
-      case 'W': break;
-      case 'w': break;
+      //case 'W': break;
+      //case 'w': break;
       case 'D': dP[i] = 43 + getSameCodeLength('D',i,cronixieDisplay); i = i+dP[i]-43; break;
       case 'd': dP[i] = 93 + getSameCodeLength('d',i,cronixieDisplay); i = i+dP[i]-93; break;
       case '0': dP[i] = 0; break;
@@ -127,8 +127,8 @@ void setCronixie()
       case '7': dP[i] = 7; break;
       case '8': dP[i] = 8; break;
       case '9': dP[i] = 9; break;
-      case 'V': break; //user var0
-      case 'v': break; //user var1
+      //case 'V': break; //user var0
+      //case 'v': break; //user var1
     }
   }
   DEBUG_PRINT("result ");

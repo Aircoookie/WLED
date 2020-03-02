@@ -335,7 +335,7 @@ Hue Bridge IP:<br>
 <input name="H3" type="number" min="0" max="255" ><br>
 <b>Press the pushlink button on the bridge, after that save this page!</b><br>
 (when first connecting)<br>
-Hue status: <span class="hms"> Internal ESP Error! </span><hr>
+Hue status: <span class="hms"> Disabled in this build </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>
 </body>

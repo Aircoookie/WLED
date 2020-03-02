@@ -21,7 +21,7 @@
 //#define WLED_DISABLE_BLYNK       //saves 6kb
 //#define WLED_DISABLE_CRONIXIE    //saves 3kb
 //#define WLED_DISABLE_HUESYNC     //saves 4kb
-//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
+//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
 //#define WLED_ENABLE_DMX          //uses 3.5kb
@@ -36,22 +36,22 @@
 //library inclusions
 #include <Arduino.h>
 #ifdef WLED_ENABLE_DMX
-#include <ESPDMX.h>
-DMXESPSerial dmx;
+  #include <ESPDMX.h>
+  DMXESPSerial dmx;
 #endif
 #ifdef ESP8266
- #include <ESP8266WiFi.h>
- #include <ESP8266mDNS.h>
- #include <ESPAsyncTCP.h>
- extern "C" {
- #include <user_interface.h>
- }
-#else
-#include <WiFi.h>
-#include "esp_wifi.h"
-#include <ESPmDNS.h>
-#include <AsyncTCP.h>
-#include "SPIFFS.h"
+  #include <ESP8266WiFi.h>
+  #include <ESP8266mDNS.h>
+  #include <ESPAsyncTCP.h>
+  extern "C" {
+  #include <user_interface.h>
+  }
+#else  //ESP32
+  #include <WiFi.h>
+  #include "esp_wifi.h"
+  #include <ESPmDNS.h>
+  #include <AsyncTCP.h>
+  #include "SPIFFS.h"
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -59,20 +59,20 @@ DMXESPSerial dmx;
 #include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
-#include <ArduinoOTA.h>
+  #include <ArduinoOTA.h>
 #endif
 #include <SPIFFSEditor.h>
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
 #ifndef WLED_DISABLE_ALEXA
-#define ESPALEXA_ASYNC
-#define ESPALEXA_NO_SUBPAGE
-#define ESPALEXA_MAXDEVICES 1
-//#define ESPALEXA_DEBUG
-#include "src/dependencies/espalexa/Espalexa.h"
+  #define ESPALEXA_ASYNC
+  #define ESPALEXA_NO_SUBPAGE
+  #define ESPALEXA_MAXDEVICES 1
+  // #define ESPALEXA_DEBUG
+  #include "src/dependencies/espalexa/Espalexa.h"
 #endif
 #ifndef WLED_DISABLE_BLYNK
-#include "src/dependencies/blynk/BlynkSimpleEsp.h"
+  #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 #include "src/dependencies/e131/ESPAsyncE131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
@@ -85,17 +85,25 @@ DMXESPSerial dmx;
 #include "ir_codes.h"
 #include "const.h"
 
+#ifndef CLIENT_SSID
+#define CLIENT_SSID DEFAULT_CLIENT_SSID
+#endif
+
+#ifndef CLIENT_PASS
+#define CLIENT_PASS ""
+#endif
+
 
 #if IR_PIN < 0
-#ifndef WLED_DISABLE_INFRARED
-#define WLED_DISABLE_INFRARED
-#endif
+  #ifndef WLED_DISABLE_INFRARED
+    #define WLED_DISABLE_INFRARED
+  #endif
 #endif
 
 #ifndef WLED_DISABLE_INFRARED
-#include <IRremoteESP8266.h>
-#include <IRrecv.h>
-#include <IRutils.h>
+  #include <IRremoteESP8266.h>
+  #include <IRrecv.h>
+  #include <IRutils.h>
 #endif
 
 // remove flicker because PWM signal of RGB channels can become out of phase
@@ -111,13 +119,14 @@ DMXESPSerial dmx;
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002192
+#define VERSION 2002292
+
 char versionString[] = "0.9.1";
 
 
 //AP and OTA default passwords (for maximum change them!)
-char apPass[65] = "wled1234";
-char otaPass[33] = "wledota";
+char apPass[65] = DEFAULT_AP_PASS;
+char otaPass[33] = DEFAULT_OTA_PASS;
 
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
@@ -129,8 +138,8 @@ char ntpServerName[33] = "0.wled.pool.ntp.org";//NTP server to use
 
 
 //WiFi CONFIG (all these can be changed via web UI, no need to set them here)
-char clientSSID[33] = "Your_Network";
-char clientPass[65] = "";
+char clientSSID[33] = CLIENT_SSID;
+char clientPass[65] = CLIENT_PASS;
 char cmDNS[33] = "x";                         //mDNS address (placeholder, will be replaced by wledXXXXXXXXXXXX.local)
 char apSSID[33] = "";                         //AP off by default (unless setup)
 byte apChannel = 1;                           //2.4GHz WiFi AP channel (1-13)
@@ -149,8 +158,8 @@ bool useRGBW = false;                         //SK6812 strips can contain an ext
 bool turnOnAtBoot  = true;                    //turn on LEDs at power-up
 byte bootPreset = 0;                          //save preset to load after power-up
 
-byte col[] {255, 160, 0, 0};                  //default RGB(W) color
-byte colSec[] {0, 0, 0, 0};                   //default RGB(W) secondary color
+byte col[] {255, 160, 0, 0};                  //current RGB(W) primary color. col[] should be updated if you want to change the color.
+byte colSec[] {0, 0, 0, 0};                   //current RGB(W) secondary color
 byte briS = 128;                              //default brightness
 
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
@@ -158,7 +167,6 @@ byte nightlightDelayMins = 60;
 bool nightlightFade = true;                   //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
 bool nightlightColorFade = false;             //if enabled, light will gradually fade color from primary to secondary color.
 bool fadeTransition = true;                   //enable crossfading color transition
-bool enableSecTransition = true;              //also enable transition for secondary color
 uint16_t transitionDelay = 750;               //default crossfade duration in ms
 
 bool skipFirstLed = false;                    //ignore first LED in strip (useful if you need the LED as signal repeater)
@@ -261,13 +269,14 @@ bool aOtaEnabled = true;                      //ArduinoOTA allows easy updates d
 
 uint16_t userVar0 = 0, userVar1 = 0;
 
-//dmx CONFIG
-uint16_t DMXChannels = 7;                          // number of channels per fixture
-uint16_t DMXFixtureMap[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+#ifdef WLED_ENABLE_DMX
+  //dmx CONFIG
+  byte DMXChannels = 7;                       // number of channels per fixture
+  byte DMXFixtureMap[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
                                               // assigns the different channels to different functions. See wled21_dmx.ino for more information.
-uint16_t DMXGap = 10;                              // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
-uint16_t DMXStart = 10;                            // start address of the first fixture
-
+  uint16_t DMXGap = 10;                       // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
+  uint16_t DMXStart = 10;                     // start address of the first fixture
+#endif
 
 
 //internal global variable declarations
@@ -280,7 +289,7 @@ bool wasConnected = false;
 
 //color
 byte colOld[] {0, 0, 0, 0};                   //color before transition
-byte colT[] {0, 0, 0, 0};                     //current color
+byte colT[] {0, 0, 0, 0};                     //color that is currently displayed on the LEDs
 byte colIT[] {0, 0, 0, 0};                    //color that was last sent to LEDs
 byte colSecT[] {0, 0, 0, 0};
 byte colSecOld[] {0, 0, 0, 0};
@@ -341,7 +350,7 @@ bool udpConnected = false, udpRgbConnected = false;
 bool showWelcomePage = false;
 
 //hue
-char hueError[25] = "Inactive";
+byte hueError = HUE_ERROR_INACTIVE;
 //uint16_t hueFailCount = 0;
 float hueXLast = 0, hueYLast = 0;
 uint16_t hueHueLast = 0, hueCtLast = 0;
@@ -381,14 +390,13 @@ bool presetCyclingEnabled = false;
 byte presetCycleMin = 1, presetCycleMax = 5;
 uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
-bool presetApplyBri = false, presetApplyCol = true, presetApplyFx = true;
+bool presetApplyBri = true;
 bool saveCurrPresetCycConf = false;
 
 //realtime
 byte realtimeMode = REALTIME_MODE_INACTIVE;
 IPAddress realtimeIP = (0,0,0,0);
 unsigned long realtimeTimeout = 0;
-
 
 //mqtt
 long lastMqttReconnectAttempt = 0;
@@ -397,17 +405,17 @@ byte interfaceUpdateCallMode = NOTIFIER_CALL_MODE_INIT;
 char mqttStatusTopic[40] = ""; //this must be global because of async handlers
 
 #if AUXPIN >= 0
-//auxiliary debug pin
-byte auxTime = 0;
-unsigned long auxStartTime = 0;
-bool auxActive = false, auxActiveBefore = false;
+  //auxiliary debug pin
+  byte auxTime = 0;
+  unsigned long auxStartTime = 0;
+  bool auxActive = false, auxActiveBefore = false;
 #endif
 
 //alexa udp
 String escapedMac;
 #ifndef WLED_DISABLE_ALEXA
-Espalexa espalexa;
-EspalexaDevice* espalexaDevice;
+  Espalexa espalexa;
+  EspalexaDevice* espalexaDevice;
 #endif
 
 //dns server
@@ -422,6 +430,7 @@ IPAddress ntpServerIP;
 uint16_t ntpLocalPort = 2390;
 #define NTP_PACKET_SIZE 48
 
+//maximum number of LEDs - MAX_LEDS is coming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
 #define MAX_LEDS 1500
 #define MAX_LEDS_DMA 500
 
@@ -430,6 +439,7 @@ uint16_t ntpLocalPort = 2390;
 char* obuf;
 uint16_t olen = 0;
 
+//presets
 uint16_t savedPresets = 0;
 int8_t currentPreset = -1;
 bool isPreset = false;
@@ -466,30 +476,30 @@ bool e131NewData = false;
 WS2812FX strip = WS2812FX();
 
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
-#define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID,"Your_Network") != 0)
+#define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID,DEFAULT_CLIENT_SSID) != 0)
 
 //debug macros
 #ifdef WLED_DEBUG
-#define DEBUG_PRINT(x)  Serial.print (x)
-#define DEBUG_PRINTLN(x) Serial.println (x)
-#define DEBUG_PRINTF(x) Serial.printf (x)
-unsigned long debugTime = 0;
-int lastWifiState = 3;
-unsigned long wifiStateChangedTime = 0;
-int loops = 0;
+  #define DEBUG_PRINT(x)  Serial.print (x)
+  #define DEBUG_PRINTLN(x) Serial.println (x)
+  #define DEBUG_PRINTF(x) Serial.printf (x)
+  unsigned long debugTime = 0;
+  int lastWifiState = 3;
+  unsigned long wifiStateChangedTime = 0;
+  int loops = 0;
 #else
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTLN(x)
-#define DEBUG_PRINTF(x)
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINTF(x)
 #endif
 
 //filesystem
 #ifndef WLED_DISABLE_FILESYSTEM
-#include <FS.h>
-#ifdef ARDUINO_ARCH_ESP32
-#include "SPIFFS.h"
-#endif
-#include "SPIFFSEditor.h"
+  #include <FS.h>
+  #ifdef ARDUINO_ARCH_ESP32
+    #include "SPIFFS.h"
+  #endif
+  #include "SPIFFSEditor.h"
 #endif
 
 
@@ -531,8 +541,6 @@ bool oappendi(int i)
 
 //boot starts here
 void setup() {
-
-
   wledInit();
 }
 
@@ -555,9 +563,9 @@ void loop() {
 
   handleOverlays();
   yield();
-  #ifdef WLED_USE_ANALOG_LEDS 
+#ifdef WLED_USE_ANALOG_LEDS 
   strip.setRgbwPwm();
-  #endif
+#endif
 
   if (doReboot) reset();
 
@@ -577,9 +585,9 @@ void loop() {
     if (!offMode) strip.service();
   }
   yield();
-  #ifdef ESP8266
+#ifdef ESP8266
   MDNS.update();
-  #endif
+#endif
   if (millis() - lastMqttReconnectAttempt > 30000) initMqtt();
 
   //DEBUG serial logging

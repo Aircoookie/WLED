@@ -159,7 +159,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
   EEPROM.write(397, syncToggleReceive);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
-  EEPROM.write(399, !enableSecTransition);
+  //EEPROM.write(399, was !enableSecTransition);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 940 reserved
@@ -232,8 +232,8 @@ void saveSettingsToEEPROM()
     EEPROM.write(2208, presetCycleMin);
     EEPROM.write(2209, presetCycleMax);
     EEPROM.write(2210, presetApplyBri);
-    EEPROM.write(2211, presetApplyCol);
-    EEPROM.write(2212, presetApplyFx);
+    // was EEPROM.write(2211, presetApplyCol);
+    // was EEPROM.write(2212, presetApplyFx);
     saveCurrPresetCycConf = false;
   }
 
@@ -258,15 +258,17 @@ void saveSettingsToEEPROM()
   EEPROM.write(2523, (mqttPort >> 8) & 0xFF);
 
   // DMX (2530 - 2549)
+  #ifdef WLED_ENABLE_DMX
   EEPROM.write(2530, DMXChannels);
   EEPROM.write(2531, DMXGap & 0xFF);
   EEPROM.write(2532, (DMXGap >> 8) & 0xFF);
   EEPROM.write(2533, DMXStart & 0xFF);
   EEPROM.write(2534, (DMXStart >> 8) & 0xFF);
 
-  for (int i=0;i<15;i++) {
+  for (int i=0; i<15; i++) {
     EEPROM.write(2535+i, DMXFixtureMap[i]);
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
+  #endif
 
   commit();
 }
@@ -517,15 +519,15 @@ void loadSettingsFromEEPROM(bool first)
     presetCycleMin = EEPROM.read(2208);
     presetCycleMax = EEPROM.read(2209);
     presetApplyBri = EEPROM.read(2210);
-    presetApplyCol = EEPROM.read(2211);
-    presetApplyFx = EEPROM.read(2212);
+    //was presetApplyCol = EEPROM.read(2211);
+    //was presetApplyFx = EEPROM.read(2212);
   }
 
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
-  enableSecTransition = !EEPROM.read(399);
+  //!EEPROM.read(399); was enableSecTransition
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved
@@ -536,7 +538,7 @@ void loadSettingsFromEEPROM(bool first)
   readStringFromEEPROM(2220, blynkApiKey, 35);
   if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
 
-  
+  #ifdef WLED_ENABLE_DMX
   // DMX (2530 - 2549)2535
   DMXChannels = EEPROM.read(2530);
   DMXGap = EEPROM.read(2531) + ((EEPROM.read(2532) << 8) & 0xFF00);
@@ -545,7 +547,7 @@ void loadSettingsFromEEPROM(bool first)
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
   } //last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
-
+  #endif
 
   //user MOD memory
   //2944 - 3071 reserved
@@ -581,7 +583,7 @@ void savedToPresets()
   }
 }
 
-bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool loadFX = true)
+bool applyPreset(byte index, bool loadBri = true)
 {
   if (index == 255 || index == 0)
   {
@@ -594,22 +596,18 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
     if (EEPROM.read(i) != 1) return false;
     strip.applyToAllSelected = true;
     if (loadBri) bri = EEPROM.read(i+1);
-    if (loadCol)
+    
+    for (byte j=0; j<4; j++)
     {
-      for (byte j=0; j<4; j++)
-      {
-        col[j] = EEPROM.read(i+j+2);
-        colSec[j] = EEPROM.read(i+j+6);
-      }
-      strip.setColor(2, EEPROM.read(i+12), EEPROM.read(i+13), EEPROM.read(i+14), EEPROM.read(i+15)); //tertiary color
+      col[j] = EEPROM.read(i+j+2);
+      colSec[j] = EEPROM.read(i+j+6);
     }
-    if (loadFX)
-    {
-      effectCurrent = EEPROM.read(i+10);
-      effectSpeed = EEPROM.read(i+11);
-      effectIntensity = EEPROM.read(i+16);
-      effectPalette = EEPROM.read(i+17);
-    }
+    strip.setColor(2, EEPROM.read(i+12), EEPROM.read(i+13), EEPROM.read(i+14), EEPROM.read(i+15)); //tertiary color
+
+    effectCurrent = EEPROM.read(i+10);
+    effectSpeed = EEPROM.read(i+11);
+    effectIntensity = EEPROM.read(i+16);
+    effectPalette = EEPROM.read(i+17);
   } else {
     if (EEPROM.read(i) != 2) return false;
     strip.applyToAllSelected = false;

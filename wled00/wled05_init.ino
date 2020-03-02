@@ -43,7 +43,7 @@ void wledInit()
   loadSettingsFromEEPROM(true);
   beginStrip();
   userSetup();
-  if (strcmp(clientSSID,"Your_Network") == 0) showWelcomePage = true;
+  if (strcmp(clientSSID,DEFAULT_CLIENT_SSID) == 0) showWelcomePage = true;
   WiFi.persistent(false);
 
   if (macroBoot>0) applyMacro(macroBoot);
@@ -100,7 +100,7 @@ void beginStrip()
   pinMode(BTNPIN, INPUT_PULLUP);
 #endif
 
-  if (bootPreset>0) applyPreset(bootPreset, turnOnAtBoot, true, true);
+  if (bootPreset > 0) applyPreset(bootPreset, turnOnAtBoot);
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
   //init relay pin
@@ -126,7 +126,7 @@ void initAP(bool resetAP=false){
   if (apBehavior == AP_BEHAVIOR_BUTTON_ONLY && !resetAP) return;
 
   if (!apSSID[0] || resetAP) strcpy(apSSID, "WLED-AP");
-  if (resetAP) strcpy(apPass,"wled1234");
+  if (resetAP) strcpy(apPass,DEFAULT_AP_PASS);
   DEBUG_PRINT("Opening access point ");
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255,255,255,0));
