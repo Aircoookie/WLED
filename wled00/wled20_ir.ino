@@ -91,6 +91,7 @@ void decodeIR(uint32_t code)
       default: return;
     }
   }
+  if (nightlightActive && bri == 0) nightlightActive = false;
   colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
   //code <= 0xF70000 also invalid
 }
