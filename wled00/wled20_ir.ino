@@ -321,7 +321,7 @@ void decodeIR44(uint32_t code)
       else                  colorFromUint24(COLOR_COLDWHITE2);                       }  break;
     case IR44_REDPLUS     : relativeChange(&effectCurrent,  1, 0, MODE_COUNT);          break;
     case IR44_REDMINUS    : relativeChange(&effectCurrent, -1, 0);                      break;
-    case IR44_GREENPLUS   : relativeChange(&effectPalette,  1, 0, maxPaletteIndex);     break;
+    case IR44_GREENPLUS   : relativeChange(&effectPalette,  1, 0, strip.getPaletteCount() -1);     break;
     case IR44_GREENMINUS  : relativeChange(&effectPalette, -1, 0);                      break;
     case IR44_BLUEPLUS    : changeEffectIntensity( 16);                                 break;
     case IR44_BLUEMINUS   : changeEffectIntensity(-16);                                 break;
@@ -380,7 +380,7 @@ void decodeIR6(uint32_t code)
     case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);                   break;
     case IR6_VOLUME_UP:   relativeChange(&effectCurrent, 1, 0 MODE_COUNT); break;  // next effect
     case IR6_VOLUME_DOWN:                                                          // next palette
-      relativeChange(&effectPalette, 1, 0, maxPaletteIndex); 
+      relativeChange(&effectPalette, 1, 0, strip.getPaletteCount() -1); 
       switch(lastIR6ColourIdx) {
         case 0: colorFromUint32(COLOR_RED);       break;
         case 1: colorFromUint32(COLOR_REDDISH);   break;

@@ -706,7 +706,6 @@ CRGB WS2812FX::col_to_crgb(uint32_t color)
   return fastled_col;
 }
 
-const uint8_t maxPaletteIndex = gGradientPaletteCount + 12;  // internal palettes 0 to 12 + FastLED palettes defined in palettes.h
 
 void WS2812FX::load_gradient_palette(uint8_t index)
 {
