@@ -372,6 +372,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   DEBUG_PRINT("API req: ");
   DEBUG_PRINTLN(req);
 
+  //write presets and macros saved to flash directly?
+  bool persistSaves = true;
+  pos = req.indexOf("NP");
+  if (pos > 0) {
+    persistSaves = false;
+  }
+
   //save macro, requires &MS=<slot>(<macro>) format
   pos = req.indexOf("&MS=");
   if (pos > 0) {
@@ -381,7 +388,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       int en = req.indexOf(')');
       String mc = req.substring(pos);
       if (en > 0) mc = req.substring(pos, en);
-      saveMacro(i, mc);
+      saveMacro(i, mc, persistSaves);
     }
 
     pos = req.indexOf("IN");
@@ -461,7 +468,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
 
   pos = req.indexOf("PS="); //saves current in preset
-  if (pos > 0) savePreset(getNumVal(&req, pos));
+  if (pos > 0) savePreset(getNumVal(&req, pos), persistSaves);
 
   //apply preset
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
