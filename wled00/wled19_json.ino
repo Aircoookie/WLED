@@ -156,8 +156,11 @@ bool deserializeState(JsonObject root)
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
+  //write presets to flash directly?
+  bool persistSaves = !(root["np"] | false);
+
   ps = root["psave"] | -1;
-  if (ps >= 0) savePreset(ps);
+  if (ps >= 0) savePreset(ps, persistSaves);
 
   return stateResponse;
 }
