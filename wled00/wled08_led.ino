@@ -72,7 +72,6 @@ bool colorChanged()
   {
     if (col[i] != colIT[i]) return true;
     if (colSec[i] != colSecIT[i]) return true;
-    //if (col[i] != colNlT[i]) return true; (this effectively made the ESP send out sync packets every time colorUpdated() is called, even if nothing changed)
   }
   if (bri != briIT) return true;
   return false;

@@ -35,14 +35,55 @@ bool decodeIRCustom(uint32_t code)
 
 
 //relatively change brightness, minumum A=5
-void relativeChange(byte* property, int8_t amount, byte lowerBoundary =0)
+void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF)
 {
   int16_t new_val = (int16_t) *property + amount;
-  if (new_val > 0xFF) new_val = 0xFF;
+  if (new_val > higherBoundary) new_val = higherBoundary;
   else if (new_val < lowerBoundary) new_val = lowerBoundary;
-  *property = new_val;
+  *property = (byte)constrain(new_val,0.1,255.1);
 }
 
+void changeEffectSpeed(int8_t amount)
+{
+  if (effectCurrent != 0) {
+    int16_t new_val = (int16_t) effectSpeed + amount;
+    effectSpeed = (byte)constrain(new_val,0.1,255.1);
+  } else {                              // if Effect == "solid Color", change the hue of the primary color
+    CRGB fastled_col;
+    fastled_col.red =   col[0];
+    fastled_col.green = col[1];
+    fastled_col.blue =  col[2];
+    CHSV prim_hsv = rgb2hsv_approximate(fastled_col);
+    int16_t new_val = (int16_t) prim_hsv.h + amount;
+    if (new_val > 255) new_val -= 255;  // roll-over if  bigger than 255
+    if (new_val < 0) new_val += 255;    // roll-over if smaller than 0
+    prim_hsv.h = (byte)new_val;
+    hsv2rgb_rainbow(prim_hsv, fastled_col);
+    col[0] = fastled_col.red; 
+    col[1] = fastled_col.green; 
+    col[2] = fastled_col.blue;
+  }
+}
+
+void changeEffectIntensity(int8_t amount)
+{
+  if (effectCurrent != 0) {
+    int16_t new_val = (int16_t) effectIntensity + amount;
+    effectIntensity = (byte)constrain(new_val,0.1,255.1);
+  } else {                                            // if Effect == "solid Color", change the saturation of the primary color
+    CRGB fastled_col;
+    fastled_col.red =   col[0];
+    fastled_col.green = col[1];
+    fastled_col.blue =  col[2];
+    CHSV prim_hsv = rgb2hsv_approximate(fastled_col);
+    int16_t new_val = (int16_t) prim_hsv.s + amount;
+    prim_hsv.s = (byte)constrain(new_val,0.1,255.1);  // constrain to 0-255
+    hsv2rgb_rainbow(prim_hsv, fastled_col);
+    col[0] = fastled_col.red; 
+    col[1] = fastled_col.green; 
+    col[2] = fastled_col.blue;
+  }
+}
 
 void decodeIR(uint32_t code)
 {
@@ -91,6 +132,7 @@ void decodeIR(uint32_t code)
       default: return;
     }
   }
+  if (nightlightActive && bri == 0) nightlightActive = false;
   colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
   //code <= 0xF70000 also invalid
 }
@@ -241,10 +283,10 @@ void decodeIR40(uint32_t code)
     case IR40_W50          : bri = 127;                                                  break;
     case IR40_W75          : bri = 191;                                                  break;
     case IR40_W100         : bri = 255;                                                  break;
-    case IR40_QUICK        : relativeChange(&effectSpeed, 10);                           break;
-    case IR40_SLOW         : relativeChange(&effectSpeed, -10, 5);                       break;
-    case IR40_JUMP7        : relativeChange(&effectIntensity, 10);                       break;
-    case IR40_AUTO         : relativeChange(&effectIntensity, -10, 5);                   break;
+    case IR40_QUICK        : changeEffectSpeed( 16);                                     break;
+    case IR40_SLOW         : changeEffectSpeed(-16);                                     break;
+    case IR40_JUMP7        : changeEffectIntensity( 16);                                 break;
+    case IR40_AUTO         : changeEffectIntensity(-16);                                 break;
     case IR40_JUMP3        : if (!applyPreset(1)) { effectCurrent = FX_MODE_STATIC;        effectPalette = 0; } break;
     case IR40_FADE3        : if (!applyPreset(2)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
     case IR40_FADE7        : if (!applyPreset(3)) { effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; } break;
@@ -292,14 +334,14 @@ void decodeIR44(uint32_t code)
     case IR44_COLDWHITE2  : {
       if (useRGBW) {        colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }    
       else                  colorFromUint24(COLOR_COLDWHITE2);                       }  break;
-    case IR44_REDPLUS     : relativeChange(&effectCurrent, 1);                          break;
+    case IR44_REDPLUS     : relativeChange(&effectCurrent,  1, 0, MODE_COUNT);          break;
     case IR44_REDMINUS    : relativeChange(&effectCurrent, -1, 0);                      break;
-    case IR44_GREENPLUS   : relativeChange(&effectPalette, 1);                          break;
+    case IR44_GREENPLUS   : relativeChange(&effectPalette,  1, 0, strip.getPaletteCount() -1);     break;
     case IR44_GREENMINUS  : relativeChange(&effectPalette, -1, 0);                      break;
-    case IR44_BLUEPLUS    : relativeChange(&effectIntensity, 10);                       break;
-    case IR44_BLUEMINUS   : relativeChange(&effectIntensity, -10, 5);                   break;
-    case IR44_QUICK       : relativeChange(&effectSpeed, 10);                           break;
-    case IR44_SLOW        : relativeChange(&effectSpeed, -10, 5);                       break;
+    case IR44_BLUEPLUS    : changeEffectIntensity( 16);                                 break;
+    case IR44_BLUEMINUS   : changeEffectIntensity(-16);                                 break;
+    case IR44_QUICK       : changeEffectSpeed( 16);                                     break;
+    case IR44_SLOW        : changeEffectSpeed(-16);                                     break;
     case IR44_DIY1        : if (!applyPreset(1)) { effectCurrent = FX_MODE_STATIC;        effectPalette = 0; } break;
     case IR44_DIY2        : if (!applyPreset(2)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
     case IR44_DIY3        : if (!applyPreset(3)) { effectCurrent = FX_MODE_FIRE_FLICKER;  effectPalette = 0; } break;
@@ -318,7 +360,7 @@ void decodeIR44(uint32_t code)
 
 void decodeIR21(uint32_t code)
 {
-  switch (code) {
+    switch (code) {
     case IR21_BRIGHTER:  relativeChange(&bri, 10);         break;
     case IR21_DARKER:    relativeChange(&bri, -10, 5);     break;
     case IR21_OFF:       briLast = bri; bri = 0;           break;
@@ -341,20 +383,19 @@ void decodeIR21(uint32_t code)
     case IR21_FADE:      if (!applyPreset(3)) { effectCurrent = FX_MODE_BREATH;        effectPalette = 0; } break;
     case IR21_SMOOTH:    if (!applyPreset(4)) { effectCurrent = FX_MODE_RAINBOW;       effectPalette = 0; } break;
     default: return;
-  }
-  lastValidCode = code;
+    }
+    lastValidCode = code;
 }
 
 void decodeIR6(uint32_t code)
 {
   switch (code) {
-    case IR6_POWER: toggleOnOff(); break;
-    case IR6_CHANNEL_UP: relativeChange(&bri, 10);         break;
-    case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);     break;
-    case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1); break;
-    case IR6_VOLUME_DOWN: 
-    /* next palette */ 
-      relativeChange(&effectPalette, 1); 
+    case IR6_POWER: toggleOnOff();                                         break;
+    case IR6_CHANNEL_UP: relativeChange(&bri, 10);                         break;
+    case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);                   break;
+    case IR6_VOLUME_UP:   relativeChange(&effectCurrent, 1, 0, MODE_COUNT); break;  // next effect
+    case IR6_VOLUME_DOWN:                                                           // next palette
+      relativeChange(&effectPalette, 1, 0, strip.getPaletteCount() -1); 
       switch(lastIR6ColourIdx) {
         case 0: colorFromUint32(COLOR_RED);       break;
         case 1: colorFromUint32(COLOR_REDDISH);   break;
@@ -372,8 +413,7 @@ void decodeIR6(uint32_t code)
         default:                                  break;
       }
       lastIR6ColourIdx++;
-      if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;
-      break;
+      if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;                      break;
     case IR6_MUTE: effectCurrent = 0; effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
   }
   lastValidCode = code;
