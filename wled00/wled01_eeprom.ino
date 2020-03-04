@@ -621,7 +621,7 @@ bool applyPreset(byte index, bool loadBri = true)
   return true;
 }
 
-void savePreset(byte index)
+void savePreset(byte index, bool persist = true)
 {
   if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
@@ -653,7 +653,7 @@ void savePreset(byte index)
     memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
   }
   
-  commit();
+  if (persist) commit();
   savedToPresets();
   currentPreset = index;
   isPreset = true;
@@ -689,7 +689,7 @@ void applyMacro(byte index)
 }
 
 
-void saveMacro(byte index, String mc, bool sing=true) //only commit on single save, not in settings
+void saveMacro(byte index, String mc, bool persist = true) //only commit on single save, not in settings
 {
   index-=1;
   if (index > 15) return;
@@ -698,5 +698,5 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   {
     EEPROM.write(i, mc.charAt(i-s));
   }
-  if (sing) commit();
+  if (persist) commit();
 }
