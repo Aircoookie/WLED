@@ -1,8 +1,19 @@
-//starts Dallas Temp service on boot
+//Intiating code for QuinLED Dig-Uno temp sensor
+//Uncomment Celsius if that is your prefered temperature scale
+#include <DallasTemperature.h> //Dallastemperature sensor
+#ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
+OneWire oneWire(18);
+#else //ESP8266 boards
+OneWire oneWire(14);
+#endif
+DallasTemperature sensor(&oneWire);
+long temptimer = millis();
+long lastMeasure = 0;
+#define Celsius // Show temperature mesaurement in Celcius otherwise is in Fahrenheit
 void userSetup()
 {
 // Start the DS18B20 sensor
-  sensors.begin(); 
+  sensor.begin();
 }
     
 //gets called every time WiFi is (re-)connected. Initialize own network interfaces here
@@ -21,11 +32,11 @@ void userLoop()
     
 //Check if MQTT Connected, otherwise it will crash the 8266
     if (mqtt != nullptr){
-      sensors.requestTemperatures();
+      sensor.requestTemperatures();
 
 //Gets prefered temperature scale based on selection in definitions section
       #ifdef Celsius
-      float board_temperature = sensors.getTempCByIndex(0);
+      float board_temperature = sensor.getTempCByIndex(0);
       #else
       float board_temperature = sensors.getTempFByIndex(0);
       #endif
