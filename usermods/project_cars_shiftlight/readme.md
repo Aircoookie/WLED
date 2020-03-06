@@ -6,7 +6,7 @@ It is pretty straight forward to use.
 
 1. Make sure, your WLED device and your PC/console are on the same network and can talk to each other
 
-2. Go to the gameplay settings menu in PCARS and enable UDP. There are 9 numbers you can choose from. This is the refresh rate. The lower the number, the better. 1=60 updates per second.
+2. Go to the gameplay settings menu in PCARS and enable UDP. There are 9 numbers you can choose from. This is the refresh rate. The lower the number, the better. But you might run into problems at faster rates.
 
 | Number | Updates/Second |
 | ------ | -------------- |
