@@ -49,17 +49,19 @@
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 
 //Light capability byte (unused)
-#define TYPE_WS2812_RGB           0
-#define TYPE_SK6812_RGBW          1
-#define TYPE_WS2812_WWA           2            //amber + warm + cold white
-#define TYPE_APA102               3
-#define TYPE_LPD8806              4
+#define TYPE_NONE                 0            //light is not configured
+#define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
+#define TYPE_WS2812_RGB           2
+#define TYPE_SK6812_RGBW          3
+#define TYPE_WS2812_WWA           4            //amber + warm + cold white
 #define TYPE_WS2801               5
 #define TYPE_ANALOG_1CH           6            //single channel PWM. Uses value of brightest RGBW channel
 #define TYPE_ANALOG_2CH           7            //analog WW + CW
 #define TYPE_ANALOG_3CH           8            //analog RGB
 #define TYPE_ANALOG_4CH           9            //analog RGBW
 #define TYPE_ANALOG_5CH          10            //analog RGB + WW + CW
+#define TYPE_APA102              11
+#define TYPE_LPD8806             12
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0

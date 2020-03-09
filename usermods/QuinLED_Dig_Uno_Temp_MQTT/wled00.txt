@@ -1,8 +1,0 @@
-//Intiating code for QuinLED Dig-Uno temp sensor
-//Uncomment Celsius if that is your prefered temperature scale
-#include <DallasTemperature.h>
-OneWire oneWire(14); 
-DallasTemperature sensors(&oneWire);
-long temptimer = millis();
-long lastMeasure = 0;
-//#define Celsius
