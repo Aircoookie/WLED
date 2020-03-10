@@ -97,17 +97,17 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
   // only listen for universes we're handling & allocated memory
   if (uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
 
-  // skip out-of-sequence packets
-  if (p->sequence_number < e131LastSequenceNumber[uni-e131Universe] && p->sequence_number > 20 && e131LastSequenceNumber[uni-e131Universe] < 250){
-    DEBUG_PRINT("skipping E1.31 frame (last seq=");
-    DEBUG_PRINT(e131LastSequenceNumber[uni-e131Universe]);
-    DEBUG_PRINT(", current seq=");
-    DEBUG_PRINT(p->sequence_number);
-    DEBUG_PRINT(", universe=");
-    DEBUG_PRINT(uni);
-    DEBUG_PRINTLN(")");
-    return;
-  }
+  if (e131SkipOutOfSequence)
+    if (p->sequence_number < e131LastSequenceNumber[uni-e131Universe] && p->sequence_number > 20 && e131LastSequenceNumber[uni-e131Universe] < 250){
+      DEBUG_PRINT("skipping E1.31 frame (last seq=");
+      DEBUG_PRINT(e131LastSequenceNumber[uni-e131Universe]);
+      DEBUG_PRINT(", current seq=");
+      DEBUG_PRINT(p->sequence_number);
+      DEBUG_PRINT(", universe=");
+      DEBUG_PRINT(uni);
+      DEBUG_PRINTLN(")");
+      return;
+    }
   e131LastSequenceNumber[uni-e131Universe] = p->sequence_number;
 
   // update status info

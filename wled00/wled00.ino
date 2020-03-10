@@ -213,6 +213,7 @@ uint16_t DMXAddress = 1;                      //DMX start address of fixture, a.
 uint8_t  DMXOldDimmer = 0;                    //only update brightness on change
 uint8_t  e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT];          //to detect packet loss
 bool     e131Multicast = false;               //multicast or unicast
+bool     e131SkipOutOfSequence = false;       //freeze instead of flickering
 
 bool mqttEnabled = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)

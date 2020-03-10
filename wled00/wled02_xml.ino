@@ -324,6 +324,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"SM",notifyMacro);
     sappend('c',"S2",notifyTwice);
     sappend('c',"RD",receiveDirect);
+    sappend('c',"ES",e131SkipOutOfSequence);
     sappend('c',"EM",e131Multicast);
     sappend('v',"EU",e131Universe);
     sappend('v',"DA",DMXAddress);
