@@ -6,7 +6,7 @@
 #define EEPSIZE 2560  //Maximum is 4096
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 17
+#define EEPVER 18
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -25,6 +25,7 @@
 //15-> 0.9.0-b3
 //16-> 0.9.1
 //17-> 0.9.1-dmx
+//18-> 0.9.1-e131
 
 void commit()
 {
@@ -208,6 +209,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(2181, macroNl);
   EEPROM.write(2182, macroDoublePress);
 
+  EEPROM.write(2189, e131SkipOutOfSequence);
   EEPROM.write(2190, e131Universe & 0xFF);
   EEPROM.write(2191, (e131Universe >> 8) & 0xFF);
   EEPROM.write(2192, e131Multicast);
@@ -505,6 +507,12 @@ void loadSettingsFromEEPROM(bool first)
     noWifiSleep = EEPROM.read(370);
   //}
 
+  if (lastEEPROMversion > 17)
+  {
+    e131SkipOutOfSequence = EEPROM.read(2189);
+  } else {
+    e131SkipOutOfSequence = true;
+  }
 
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);

@@ -206,12 +206,14 @@ bool receiveDirect    =  true;                //receive UDP realtime
 bool arlsDisableGammaCorrection = true;       //activate if gamma correction is handled by the source
 bool arlsForceMaxBri = false;                 //enable to force max brightness if source has very dark colors that would be black
 
+#define E131_MAX_UNIVERSE_COUNT 9
 uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 uint8_t  DMXMode = DMX_MODE_MULTIPLE_RGB;     //DMX mode (s.a.)
 uint16_t DMXAddress = 1;                      //DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
 uint8_t  DMXOldDimmer = 0;                    //only update brightness on change
-uint8_t  e131LastSequenceNumber = 0;          //to detect packet loss
+uint8_t  e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT];          //to detect packet loss
 bool     e131Multicast = false;               //multicast or unicast
+bool     e131SkipOutOfSequence = false;       //freeze instead of flickering
 
 bool mqttEnabled = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
@@ -463,8 +465,6 @@ void serveMessage(AsyncWebServerRequest*, uint16_t, String, String, byte);
 void handleE131Packet(e131_packet_t*, IPAddress);
 void arlsLock(uint32_t,byte);
 void handleOverlayDraw();
-
-#define E131_MAX_UNIVERSE_COUNT 9
 
 //udp interface objects
 WiFiUDP notifierUdp, rgbUdp;
