@@ -88,26 +88,31 @@ void arlsLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC)
 
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
   //E1.31 protocol support
-  
-  // skip out-of-sequence packets
-  if (p->sequence_number < e131LastSequenceNumber && p->sequence_number > 20 && e131LastSequenceNumber < 250){
-    DEBUG_PRINT("skipping E1.31 frame (last seq=");
-    DEBUG_PRINT(e131LastSequenceNumber);
-    DEBUG_PRINT(", current seq=");
-    DEBUG_PRINT(p->sequence_number);
-    DEBUG_PRINTLN(")");
-    return;
-  }
-  e131LastSequenceNumber = p->sequence_number;
 
-  // update status info
-  realtimeIP = clientIP;
-  
   uint16_t uni = htons(p->universe);
   uint8_t previousUniverses = uni - e131Universe;
   uint16_t possibleLEDsInCurrentUniverse;
   uint16_t dmxChannels = htons(p->property_value_count) -1;
 
+  // only listen for universes we're handling & allocated memory
+  if (uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
+
+  // skip out-of-sequence packets
+  if (p->sequence_number < e131LastSequenceNumber[uni-e131Universe] && p->sequence_number > 20 && e131LastSequenceNumber[uni-e131Universe] < 250){
+    DEBUG_PRINT("skipping E1.31 frame (last seq=");
+    DEBUG_PRINT(e131LastSequenceNumber[uni-e131Universe]);
+    DEBUG_PRINT(", current seq=");
+    DEBUG_PRINT(p->sequence_number);
+    DEBUG_PRINT(", universe=");
+    DEBUG_PRINT(uni);
+    DEBUG_PRINTLN(")");
+    return;
+  }
+  e131LastSequenceNumber[uni-e131Universe] = p->sequence_number;
+
+  // update status info
+  realtimeIP = clientIP;
+  
   switch (DMXMode) {
     case DMX_MODE_DISABLED:
       return;  // nothing to do

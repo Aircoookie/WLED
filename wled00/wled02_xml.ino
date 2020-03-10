@@ -74,8 +74,6 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
         mesg += ".";
         mesg += realtimeIP[i];
       }
-      mesg += " seq=";
-      mesg += e131LastSequenceNumber;
     } else if (realtimeMode == REALTIME_MODE_UDP || realtimeMode == REALTIME_MODE_HYPERION) {
       mesg += "UDP from ";
       mesg += realtimeIP[0];
