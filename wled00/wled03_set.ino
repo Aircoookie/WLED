@@ -138,6 +138,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyTwice = request->hasArg("S2");
 
     receiveDirect = request->hasArg("RD");
+    e131SkipOutOfSequence = request->hasArg("ES");
     e131Multicast = request->hasArg("EM");
     t = request->arg("EU").toInt();
     if (t > 0  && t <= 63999) e131Universe = t;

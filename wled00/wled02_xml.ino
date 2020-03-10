@@ -74,8 +74,6 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
         mesg += ".";
         mesg += realtimeIP[i];
       }
-      mesg += " seq=";
-      mesg += e131LastSequenceNumber;
     } else if (realtimeMode == REALTIME_MODE_UDP || realtimeMode == REALTIME_MODE_HYPERION) {
       mesg += "UDP from ";
       mesg += realtimeIP[0];
@@ -326,6 +324,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"SM",notifyMacro);
     sappend('c',"S2",notifyTwice);
     sappend('c',"RD",receiveDirect);
+    sappend('c',"ES",e131SkipOutOfSequence);
     sappend('c',"EM",e131Multicast);
     sappend('v',"EU",e131Universe);
     sappend('v',"DA",DMXAddress);
