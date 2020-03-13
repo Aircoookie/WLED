@@ -5,6 +5,6 @@
 
 #### Build 2003121
 
-Created changelog.md - make tracking changes to code easier
-Merged pull request #766 by @pille: Fix E1.31 out-of sequence detection
+- Created changelog.md - make tracking changes to code easier
+- Merged pull request #766 by @pille: Fix E1.31 out-of sequence detection
 
