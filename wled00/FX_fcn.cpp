@@ -335,6 +335,8 @@ bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
   Segment& seg = _segments[getMainSegmentId()];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
 
+  bool applied = false;
+  
   if (applyToAllSelected) {
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
@@ -344,9 +346,12 @@ bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
         _segments[i].intensity = in;
         _segments[i].palette = p;
         setMode(i, m);
+        applied = true;
       }
     }
-  } else {
+  } 
+  
+  if (!applyToAllSelected || !applied) {
     seg.speed = s;
     seg.intensity = in;
     seg.palette = p;
@@ -363,12 +368,17 @@ void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w
 
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
+
+  bool applied = false;
+  
   if (applyToAllSelected) {
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
       if (_segments[i].isSelected()) _segments[i].colors[slot] = c;
     }
-  } else {
+  }
+
+  if (!applyToAllSelected || !applied) {
     _segments[getMainSegmentId()].colors[slot] = c;
   }
 }
