@@ -3167,3 +3167,219 @@ uint16_t WS2812FX::mode_heartbeat(void) {
 
   return FRAMETIME;
 }
+
+
+
+#define MAX_BALLS_V2 10
+
+typedef struct Ball_v2 {
+  bool active=false;
+  //byte r=255;
+  //byte g=0;
+  //byte b=0;
+  float  start_position;
+  //float  start_velocity;
+  float  position;
+  float  old_position;
+  float  velocity=0.0;
+  float damping = 0.1;
+  //bool initiate_pos = false;
+  bool ignore_collisions=false;
+  int size=1;
+} ball_v2;
+
+
+typedef struct Ball_data_v2 {
+  Ball_v2 balls[MAX_BALLS_V2];
+  float startgrav;
+  float endgrav;
+  long last_time;
+} ball_data_v2;
+
+/*
+*  Bouncing Balls Effect v2
+*/
+
+
+uint16_t WS2812FX::mode_bouncing_balls_v2(void) {
+  
+  //allocate segment data
+  uint16_t dataSize = sizeof(ball_data_v2);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  
+  Ball_data_v2* ball_data = reinterpret_cast<Ball_data_v2*>(SEGENV.data);
+  Ball_v2* balls = ball_data->balls;
+  ball_data->startgrav=10;
+  ball_data->endgrav=10;
+  fill(BLACK);
+  if (SEGENV.call == 0) {
+    //initiation
+    //Serial.println("Init balls");
+
+    for (uint8_t i = 0; i < MAX_BALLS_V2; i++) 
+    {
+      balls[i].active=false;
+    }
+    
+    for (uint8_t i = 0; i < MAX_BALLS_V2; i++) 
+    {
+      
+      balls[i].size=1.0;
+      for (int j=0;j<20;j++)
+      {
+        balls[i].position = (float)random(1,SEGLEN-1);
+        float min_pos=10000.0;
+        for (int k=0;k<i;k++)
+        {
+          min_pos=min(min_pos,abs(balls[k].position-balls[i].position));
+        }
+        if (min_pos>=1.0)
+        {
+          balls[i].active=true;
+          break;
+        }
+      }
+      
+      balls[i].start_position= balls[i].position;
+      balls[i].old_position = balls[i].position;
+      balls[i].velocity = (float)random(SEGLEN*SEGMENT.speed/(-100),SEGLEN*SEGMENT.speed/100);
+      balls[i].damping = 0.3;
+      balls[i].ignore_collisions=false;
+    }
+    ball_data->last_time = millis();
+  }
+
+
+  for (uint8_t i = 0; i <  int(((SEGMENT.intensity * (MAX_BALLS_V2 - 0.8f)) / 255) + 1); i++) 
+  {
+    balls[i].active=true;
+  }
+
+  for (uint8_t i = int(((SEGMENT.intensity * (MAX_BALLS_V2 - 0.8f)) / 255) + 1); i < MAX_BALLS_V2; i++) 
+  {
+    balls[i].active=false;
+  }
+    
+  int dt0 =  millis() - ball_data->last_time;
+  
+  ball_data->last_time = millis();
+  float dt_rem=(float)dt0;
+  if (dt0>100) return 0;
+
+  
+  for (int iter=0;iter<100;iter++)
+  {
+    if(dt_rem==0.0) break;
+
+    //calculate max velocity of balls
+    //it will be used to dfetermine maximum time increment of this iteration
+    float maxvelocity=0.0;
+    for (int i = 0 ; i < MAX_BALLS_V2 ; i++) {
+      if (!balls[i].active) continue;
+      maxvelocity=max(maxvelocity,abs(balls[i].velocity));
+    }
+    //maximum distance that each pixel may travel in one increment is 0.5
+    //max time increment will be calculated to not violate it
+    float dt=0.0;
+    if (maxvelocity==0.0)
+    {
+      dt=dt_rem;
+    }
+    else
+    {
+      dt=min(dt_rem,0.5/maxvelocity*1000);
+    }
+
+
+    //calculate new position of balls
+    for (int i = 0 ; i < MAX_BALLS_V2 ; i++) {
+      if (!balls[i].active) continue;
+      float grav=0.0;
+      //ball in this segment
+      if (balls[i].position<(float)SEGLEN/2)
+      {
+            //ball in first hal of the segment
+         grav=ball_data->startgrav*(-1);
+      }
+      else
+      {
+        grav=ball_data->endgrav;
+      }
+      float dx = (balls[i].velocity)*dt/1000.0;
+      float dv = grav*dt/1000.0;
+      balls[i].old_position=balls[i].position;
+      balls[i].position+= dx;
+      balls[i].velocity+= dv;
+
+      float basedist=min(balls[i].position,abs((float)SEGLEN-balls[i].position));
+      if (basedist<=0.5)
+      {
+        //Serial.println("collision");
+        balls[i].velocity=balls[i].velocity*-1.0*(1.0-balls[i].damping);
+        balls[i].position=balls[i].old_position;
+        //Serial.println(balls[i].velocity);
+        if (abs(balls[i].velocity)<2.0)
+        {
+          float min_dis_new=10000;
+          for (int j = 0 ; j < MAX_BALLS_V2 ; j++) {
+            if (i==j)continue;
+            if(balls[j].ignore_collisions || !balls[j].active) continue;
+            min_dis_new=min(min_dis_new,abs(balls[j].position-balls[i].position));
+          }
+          if (min_dis_new<1)
+          {
+            balls[i].velocity=0.0;
+            if (balls[i].position<1)
+            {
+            balls[i].position=-0.5;
+            }
+            else
+            {
+              balls[i].position=(float)SEGLEN+0.5;
+            }
+          }
+          else
+          {
+            balls[i].position=balls[i].start_position;
+            balls[i].velocity=(float)random(SEGLEN*SEGMENT.speed/(-100),SEGLEN*SEGMENT.speed/100);//balls[i].start_velocity;
+          }
+        }
+      }
+      
+    }
+    dt_rem-=dt;
+
+  //check collisions between ballas
+    for (int b1=0;b1<MAX_BALLS_V2;b1++)
+    {
+      if(balls[b1].ignore_collisions || !balls[b1].active) continue;
+      
+      for (int b2=b1+1;b2<MAX_BALLS_V2;b2++)
+      {
+        if(balls[b2].ignore_collisions || !balls[b2].active) continue;
+      
+        if (abs(balls[b1].position-balls[b2].position)<1)
+        {
+          float v1=balls[b1].velocity;
+          float v2=balls[b2].velocity;
+          float m1=balls[b1].size;
+          float m2=balls[b2].size;
+          balls[b1].velocity=(m1-m2)/(m1+m2)*v1+2*m2/(m1+m2)*v2;
+          balls[b2].velocity=2*m1/(m1+m2)*v1+(m2-m1)/(m1+m2)*v2;
+          balls[b1].position=balls[b1].old_position;
+          balls[b2].position=balls[b2].old_position;
+        }
+      }
+    }
+
+  }
+  
+  //Serial.println("setPixelColor");
+  for (int i=0;i<MAX_BALLS_V2;i++)
+  {
+    if (!balls[i].active) continue;
+    setPixelColor(balls[i].position, SEGCOLOR(i%3));
+  }
+
+  return 0;
+}
