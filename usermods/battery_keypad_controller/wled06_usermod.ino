@@ -140,7 +140,6 @@ void userLoop()
                     if (effectPalette <= 0) effectPalette = 50;
                     colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
                     break;
-                    break;
 
             }
 
