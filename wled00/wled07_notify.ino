@@ -121,6 +121,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
     case DMX_MODE_SINGLE_RGB:
       if (uni != e131Universe) return;
       if (dmxChannels-DMXAddress+1 < 3) return;
+      arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
       for (uint16_t i = 0; i < ledCount; i++)
         setRealtimePixel(i, p->property_values[DMXAddress+0], p->property_values[DMXAddress+1], p->property_values[DMXAddress+2], 0);
       break;
@@ -128,6 +129,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
     case DMX_MODE_SINGLE_DRGB:
       if (uni != e131Universe) return;
       if (dmxChannels-DMXAddress+1 < 4) return;
+      arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
       if (DMXOldDimmer != p->property_values[DMXAddress+0]) {
         DMXOldDimmer = p->property_values[DMXAddress+0];
         bri = p->property_values[DMXAddress+0];
@@ -166,6 +168,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
       break;
 
     case DMX_MODE_MULTIPLE_RGB:
+      arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
       if (previousUniverses == 0) {
         // first universe of this fixture
         possibleLEDsInCurrentUniverse = (dmxChannels - DMXAddress + 1) / 3;
@@ -187,6 +190,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
       break;
 
     case DMX_MODE_MULTIPLE_DRGB:
+      arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
       if (previousUniverses == 0) {
         // first universe of this fixture
         if (DMXOldDimmer != p->property_values[DMXAddress+0]) {
@@ -218,7 +222,6 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
       break;
   }
 
-  arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
   e131NewData = true;
 }
 
