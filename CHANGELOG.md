@@ -2,6 +2,11 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2003211
+
+- Added custom mapping compile define to FX_fcn.h
+- Merged pull request #784 by @TravisDean: Fixed initialization bug when toggling skip first
+- Added link to youtube videos by Room31 to readme
 
 #### Build 2003141
 
