@@ -27,13 +27,30 @@
 #include "FX.h"
 #include "palettes.h"
 
+//enable custom per-LED mapping. This can allow for better effects on matrices or special displays
+//#define WLED_CUSTOM_LED_MAPPING
+
+#ifdef WLED_CUSTOM_LED_MAPPING
+//this is just an example (30 LEDs). It will first set all even, then all uneven LEDs.
+const uint16_t customMappingTable[] = {
+  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
+  1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29};
+
+//another example. Switches direction every 5 LEDs.
+/*const uint16_t customMappingTable[] = {
+  0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14,
+  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25};*/
+
+const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); //30 in example
+#endif
+
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
-  if (supportWhite == _useRgbw && countPixels == _length) return;
+  if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
   RESET_RUNTIME;
   _useRgbw = supportWhite;
-  _skipFirstMode = skipFirst;
   _length = countPixels;
+  _skipFirstMode = skipFirst;
 
   uint8_t ty = 1;
   if (supportWhite) ty = 2;
@@ -142,10 +159,16 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
         int16_t indexSet = realIndex + (reversed ? -j : j);
         int16_t indexSetRev = indexSet;
         if (reverseMode) indexSetRev = _length - 1 - indexSet;
+        #ifdef WLED_CUSTOM_LED_MAPPING
+        if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
+        #endif
         if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
       }
     } else { //live data, etc.
       if (reverseMode) i = _length - 1 - i;
+      #ifdef WLED_CUSTOM_LED_MAPPING
+      if (i < customMappingSize) i = customMappingTable[i];
+      #endif
       bus->SetPixelColor(i + skip, col);
     }
     if (skip && i == 0) {
@@ -430,7 +453,13 @@ uint32_t WS2812FX::getColor(void) {
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  i = realPixelIndex(i) + (_skipFirstMode ? LED_SKIP_AMOUNT : 0);
+  i = realPixelIndex(i);
+  
+  #ifdef WLED_CUSTOM_LED_MAPPING
+  if (i < customMappingSize) i = customMappingTable[i];
+  #endif
+
+  if (_skipFirstMode) i += LED_SKIP_AMOUNT;
   
   if (_cronixieMode)
   {

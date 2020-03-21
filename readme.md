@@ -50,6 +50,10 @@ DrZzs has made some excellent video guides:
 
 If you'd rather read, here is a very [detailed step-by-step beginner tutorial](https://tynick.com/blog/11-03-2019/getting-started-with-wled-on-esp8266/) by tynick!  
 
+Russian speakers, check out the videos by Room31:
+[WLED Firmware Overview: Interface and Settings](https://youtu.be/h7lKsczEI7E)  
+[ESP8266 based LED controller for WS2812b strip. WLED Firmware + OpenHAB](https://youtu.be/K4ioTt3XvGc)  
+
 ### Other
 
 Licensed under the MIT license  
