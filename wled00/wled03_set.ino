@@ -217,12 +217,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClockSecondsTrail = request->hasArg("OS");
 
     strcpy(cronixieDisplay,request->arg("CX").c_str());
-    bool cbOld = cronixieBacklight;
     cronixieBacklight = request->hasArg("CB");
-    if (cbOld != cronixieBacklight && overlayCurrent == 3)
-    {
-      strip.setCronixieBacklight(cronixieBacklight); overlayRefreshedTime = 0;
-    }
     countdownMode = request->hasArg("CE");
     countdownYear = request->arg("CY").toInt();
     countdownMonth = request->arg("CI").toInt();
@@ -656,7 +651,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) //sets backlight
   {
     cronixieBacklight = (req.charAt(pos+3) != '0');
-    if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
     overlayRefreshedTime = 0;
   }
   #endif

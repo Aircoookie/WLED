@@ -2,6 +2,10 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2003221
+
+- Moved Cronixie driver from FX library to drawOverlay handler
+
 #### Build 2003211
 
 - Added custom mapping compile define to FX_fcn.h
