@@ -27,8 +27,9 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 //called upon POST settings form submit
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
-  if (subPage <1 || subPage >6) return;
+
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX
+  if (subPage <1 || subPage >7) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -45,6 +46,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     int passlen = request->arg("AP").length();
     if (passlen == 0 || (passlen > 7 && !isAsterisksOnly(request->arg("AP").c_str(), 65))) strlcpy(apPass, request->arg("AP").c_str(), 65);
     int t = request->arg("AC").toInt(); if (t > 0 && t < 14) apChannel = t;
+
+    noWifiSleep = request->hasArg("WS");
 
     char k[3]; k[2] = 0;
     for (int i = 0; i<4; i++)
@@ -77,7 +80,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     
     useRGBW = request->hasArg("EW");
     strip.colorOrder = request->arg("CO").toInt();
-    autoRGBtoRGBW = request->hasArg("AW");
+    strip.rgbwMode = request->arg("AW").toInt();
 
     briS = request->arg("CA").toInt();
 
@@ -134,9 +137,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyTwice = request->hasArg("S2");
 
     receiveDirect = request->hasArg("RD");
+    e131SkipOutOfSequence = request->hasArg("ES");
     e131Multicast = request->hasArg("EM");
     t = request->arg("EU").toInt();
     if (t > 0  && t <= 63999) e131Universe = t;
+    t = request->arg("DA").toInt();
+    if (t > 0  && t <= 510) DMXAddress = t;
+    t = request->arg("DM").toInt();
+    if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_DRGB) DMXMode = t;
     t = request->arg("ET").toInt();
     if (t > 99  && t <= 65000) realtimeTimeoutMs = t;
     arlsForceMaxBri = request->hasArg("FB");
@@ -264,6 +272,29 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       aOtaEnabled = request->hasArg("AO");
     }
   }
+  #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+  if (subPage == 7)
+  {
+    int t = request->arg("CN").toInt();
+    if (t>0 && t<16) {
+      DMXChannels = t;
+    }
+    t = request->arg("CS").toInt();
+    if (t>0 && t<513) {
+      DMXStart = t;
+    }
+    t = request->arg("CG").toInt();
+    if (t>0 && t<513) {
+      DMXGap = t;
+    }
+    for (int i=0; i<15; i++) {
+      String argname = "CH" + String((i+1));
+      t = request->arg(argname).toInt();
+      DMXFixtureMap[i] = t;
+    }
+  }
+  
+  #endif
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
   if (subPage == 2) {
     strip.init(useRGBW,ledCount,skipFirstLed);
@@ -319,6 +350,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   DEBUG_PRINT("API req: ");
   DEBUG_PRINTLN(req);
 
+  //write presets and macros saved to flash directly?
+  bool persistSaves = true;
+  pos = req.indexOf("NP");
+  if (pos > 0) {
+    persistSaves = false;
+  }
+
   //save macro, requires &MS=<slot>(<macro>) format
   pos = req.indexOf("&MS=");
   if (pos > 0) {
@@ -328,7 +366,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       int en = req.indexOf(')');
       String mc = req.substring(pos);
       if (en > 0) mc = req.substring(pos, en);
-      saveMacro(i, mc);
+      saveMacro(i, mc, persistSaves);
     }
 
     pos = req.indexOf("IN");
@@ -382,6 +420,38 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   strip.setSegment(main, startI, stopI, grpI, spcI);
 
   main = strip.getMainSegmentId();
+
+   //set presets
+  pos = req.indexOf("P1="); //sets first preset for cycle
+  if (pos > 0) presetCycleMin = getNumVal(&req, pos);
+
+  pos = req.indexOf("P2="); //sets last preset for cycle
+  if (pos > 0) presetCycleMax = getNumVal(&req, pos);
+
+  //preset cycle
+  pos = req.indexOf("CY=");
+  if (pos > 0)
+  {
+    presetCyclingEnabled = (req.charAt(pos+3) != '0');
+    presetCycCurr = presetCycleMin;
+  }
+
+  pos = req.indexOf("PT="); //sets cycle time in ms
+  if (pos > 0) {
+    int v = getNumVal(&req, pos);
+    if (v > 49) presetCycleTime = v;
+  }
+
+  pos = req.indexOf("PA="); //apply brightness from preset
+  if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
+
+  pos = req.indexOf("PS="); //saves current in preset
+  if (pos > 0) savePreset(getNumVal(&req, pos), persistSaves);
+
+  //apply preset
+  if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
+    applyPreset(presetCycCurr, presetApplyBri);
+  }
 
   //set brightness
   updateVal(&req, "&A=", &bri);
@@ -541,43 +611,26 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     if (countdownTime - now() > 0) countdownOverTriggered = false;
   }
 
-  //set presets
-  pos = req.indexOf("P1="); //sets first preset for cycle
-  if (pos > 0) presetCycleMin = getNumVal(&req, pos);
-
-  pos = req.indexOf("P2="); //sets last preset for cycle
-  if (pos > 0) presetCycleMax = getNumVal(&req, pos);
-
-  //preset cycle
-  pos = req.indexOf("CY=");
-  if (pos > 0)
-  {
-    presetCyclingEnabled = (req.charAt(pos+3) != '0');
-    presetCycCurr = presetCycleMin;
-  }
-
-  pos = req.indexOf("PT="); //sets cycle time in ms
+  //cronixie
+  #ifndef WLED_DISABLE_CRONIXIE
+  //mode, 1 countdown
+  pos = req.indexOf("NM=");
+  if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
+  
+  pos = req.indexOf("NX="); //sets digits to code
   if (pos > 0) {
-    int v = getNumVal(&req, pos);
-    if (v > 49) presetCycleTime = v;
+    strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
+    setCronixie();
   }
 
-  pos = req.indexOf("PA="); //apply brightness from preset
-  if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
-
-  pos = req.indexOf("PC="); //apply color from preset
-  if (pos > 0) presetApplyCol = (req.charAt(pos+3) != '0');
-
-  pos = req.indexOf("PX="); //apply effects from preset
-  if (pos > 0) presetApplyFx = (req.charAt(pos+3) != '0');
-
-  pos = req.indexOf("PS="); //saves current in preset
-  if (pos > 0) savePreset(getNumVal(&req, pos));
-
-  //apply preset
-  if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
-    applyPreset(presetCycCurr, presetApplyBri, presetApplyCol, presetApplyFx);
+  pos = req.indexOf("NB=");
+  if (pos > 0) //sets backlight
+  {
+    cronixieBacklight = (req.charAt(pos+3) != '0');
+    if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
+    overlayRefreshedTime = 0;
   }
+  #endif
 
   pos = req.indexOf("U0="); //user var 0
   if (pos > 0) {
@@ -595,7 +648,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos < 1) XML_response(request);
 
   pos = req.indexOf("&NN"); //do not send UDP notifications this time
-  colorUpdated((pos > 0) ? 5:1);
+  colorUpdated((pos > 0) ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
   return true;
 }

@@ -31,12 +31,14 @@ void deserializeSegment(JsonObject elem, byte it)
         {
           int rgbw[] = {0,0,0,0};
           byte cp = copyArray(colX, rgbw);
-          seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
+          
           if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
-          if (id == strip.getMainSegmentId()) //temporary
+          if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
           { 
             if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
             if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
+          } else {
+            seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
           }
         }
       }
@@ -66,6 +68,9 @@ bool deserializeState(JsonObject root)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root["v"] | false;
+
+  int ps = root["ps"] | -1;
+  if (ps >= 0) applyPreset(ps);
   
   bri = root["bri"] | bri;
   
@@ -86,9 +91,6 @@ bool deserializeState(JsonObject root)
     transitionDelayTemp *= 100;
     jsonTransitionOnce = true;
   }
-
-  int ps = root["ps"] | -1;
-  if (ps >= 0) applyPreset(ps);
   
   int cy = root["pl"] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);
@@ -154,10 +156,13 @@ bool deserializeState(JsonObject root)
     }
   }
 
-  colorUpdated(noNotification ? 5:1);
+  colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
+
+  //write presets to flash directly?
+  bool persistSaves = !(root["np"] | false);
 
   ps = root["psave"] | -1;
-  if (ps >= 0) savePreset(ps);
+  if (ps >= 0) savePreset(ps, persistSaves);
 
   return stateResponse;
 }
@@ -172,15 +177,24 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
   root["spc"] = seg.spacing;
 
 	JsonArray colarr = root.createNestedArray("col");
-
+  
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		JsonArray colX = colarr.createNestedArray();
-		colX.add((seg.colors[i] >> 16) & 0xFF);
-		colX.add((seg.colors[i] >> 8) & 0xFF);
-		colX.add((seg.colors[i]) & 0xFF);
-		if (useRGBW)
-			colX.add((seg.colors[i] >> 24) & 0xFF);
+    if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
+    {
+      if (i == 0) {
+        colX.add(col[0]); colX.add(col[1]); colX.add(col[2]); if (useRGBW) colX.add(col[3]); 
+      } else {
+         colX.add(colSec[0]); colX.add(colSec[1]); colX.add(colSec[2]); if (useRGBW) colX.add(colSec[3]); 
+      }
+    } else {
+  		colX.add((seg.colors[i] >> 16) & 0xFF);
+  		colX.add((seg.colors[i] >> 8) & 0xFF);
+  		colX.add((seg.colors[i]) & 0xFF);
+  		if (useRGBW)
+  			colX.add((seg.colors[i] >> 24) & 0xFF);
+    }
 	}
 
 	root["fx"] = seg.mode;
@@ -242,7 +256,7 @@ void serializeInfo(JsonObject root)
   JsonObject leds = root.createNestedObject("leds");
   leds["count"] = ledCount;
   leds["rgbw"] = useRGBW;
-  leds["wv"] = useRGBW && !autoRGBtoRGBW; //should a white channel slider be displayed?
+  leds["wv"] = useRGBW && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
   JsonArray leds_pin = leds.createNestedArray("pin");
   leds_pin.add(LEDPIN);
   
@@ -255,7 +269,7 @@ void serializeInfo(JsonObject root)
   
   root["name"] = serverDescription;
   root["udpport"] = udpPort;
-  root["live"] = realtimeActive;
+  root["live"] = (bool)realtimeMode;
   root["fxcount"] = strip.getModeCount();
   root["palcount"] = strip.getPaletteCount();
 
@@ -267,14 +281,25 @@ void serializeInfo(JsonObject root)
   wifi_info["channel"] = WiFi.channel();
   
   #ifdef ARDUINO_ARCH_ESP32
+  #ifdef WLED_DEBUG
+    wifi_info["txPower"] = (int) WiFi.getTxPower();
+    wifi_info["sleep"] = (bool) WiFi.getSleep();
+  #endif
   root["arch"] = "esp32";
   root["core"] = ESP.getSdkVersion();
   //root["maxalloc"] = ESP.getMaxAllocHeap();
+  #ifdef WLED_DEBUG
+    root["resetReason0"] = (int)rtc_get_reset_reason(0);
+    root["resetReason1"] = (int)rtc_get_reset_reason(1);
+  #endif
   root["lwip"] = 0;
   #else
   root["arch"] = "esp8266";
   root["core"] = ESP.getCoreVersion();
   //root["maxalloc"] = ESP.getMaxFreeBlockSize();
+  #ifdef WLED_DEBUG
+    root["resetReason"] = (int)ESP.getResetInfoPtr()->reason;
+  #endif
   root["lwip"] = LWIP_VERSION_MAJOR;
   #endif
   
@@ -310,7 +335,6 @@ void serializeInfo(JsonObject root)
   
   root["brand"] = "WLED";
   root["product"] = "DIY light";
-  root["btype"] = "src";
   root["mac"] = escapedMac;
 }
 
@@ -333,7 +357,7 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.length() > 6) { //not just /json
-    request->send(  501, "application/json", "{\"error\":\"Not implemented\"}");
+    request->send(  501, "application/json", F("{\"error\":\"Not implemented\"}"));
     return;
   }
   

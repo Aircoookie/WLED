@@ -27,16 +27,30 @@
 #include "FX.h"
 #include "palettes.h"
 
-#define LED_SKIP_AMOUNT  1
-#define MIN_SHOW_DELAY  15
+//enable custom per-LED mapping. This can allow for better effects on matrices or special displays
+//#define WLED_CUSTOM_LED_MAPPING
+
+#ifdef WLED_CUSTOM_LED_MAPPING
+//this is just an example (30 LEDs). It will first set all even, then all uneven LEDs.
+const uint16_t customMappingTable[] = {
+  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
+  1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29};
+
+//another example. Switches direction every 5 LEDs.
+/*const uint16_t customMappingTable[] = {
+  0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14,
+  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25};*/
+
+const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); //30 in example
+#endif
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
-  if (supportWhite == _rgbwMode && countPixels == _length) return;
+  if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
   RESET_RUNTIME;
-  _rgbwMode = supportWhite;
-  _skipFirstMode = skipFirst;
+  _useRgbw = supportWhite;
   _length = countPixels;
+  _skipFirstMode = skipFirst;
 
   uint8_t ty = 1;
   if (supportWhite) ty = 2;
@@ -65,6 +79,7 @@ void WS2812FX::service() {
     {
       if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
       {
+        if (SEGMENT.grouping == 0) SEGMENT.grouping = 1; //sanity check
         _virtualSegmentLength = SEGMENT.virtualLength();
         doShow = true;
         handle_palette();
@@ -106,6 +121,20 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
+  //auto calculate white channel value if enabled
+  if (_useRgbw) {
+    if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || (w == 0 && (rgbwMode == RGBW_MODE_DUAL || rgbwMode == RGBW_MODE_LEGACY)))
+    {
+      //white value is set to lowest RGB channel
+      //thank you to @Def3nder!
+      w = r < g ? (r < b ? r : b) : (g < b ? g : b);
+    } else if (rgbwMode == RGBW_MODE_AUTO_ACCURATE && w == 0)
+    {
+      w = r < g ? (r < b ? r : b) : (g < b ? g : b);
+      r -= w; g -= w; b -= w;
+    }
+  }
+  
   RgbwColor col;
   switch (colorOrder)
   {
@@ -125,12 +154,21 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
       bool reversed = reverseMode ^ IS_REVERSE;
       uint16_t realIndex = realPixelIndex(i);
+
       for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
         int16_t indexSet = realIndex + (reversed ? -j : j);
-        if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
+        int16_t indexSetRev = indexSet;
+        if (reverseMode) indexSetRev = _length - 1 - indexSet;
+        #ifdef WLED_CUSTOM_LED_MAPPING
+        if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
+        #endif
+        if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
       }
     } else { //live data, etc.
       if (reverseMode) i = _length - 1 - i;
+      #ifdef WLED_CUSTOM_LED_MAPPING
+      if (i < customMappingSize) i = customMappingTable[i];
+      #endif
       bus->SetPixelColor(i + skip, col);
     }
     if (skip && i == 0) {
@@ -199,7 +237,7 @@ void WS2812FX::show(void) {
     }
 
 
-    if (_rgbwMode) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    if (_useRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
     {
       powerSum *= 3;
       powerSum = powerSum >> 2; //same as /= 4
@@ -255,7 +293,7 @@ uint8_t WS2812FX::getModeCount()
 
 uint8_t WS2812FX::getPaletteCount()
 {
-  return 13 + gGradientPaletteCount;
+  return 13 + GRADIENT_PALETTE_COUNT;
 }
 
 //TODO transitions
@@ -266,6 +304,8 @@ bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
   Segment& seg = _segments[getMainSegmentId()];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
 
+  bool applied = false;
+  
   if (applyToAllSelected) {
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
@@ -275,9 +315,12 @@ bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
         _segments[i].intensity = in;
         _segments[i].palette = p;
         setMode(i, m);
+        applied = true;
       }
     }
-  } else {
+  } 
+  
+  if (!applyToAllSelected || !applied) {
     seg.speed = s;
     seg.intensity = in;
     seg.palette = p;
@@ -294,12 +337,17 @@ void WS2812FX::setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w
 
 void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (slot >= NUM_COLORS) return;
+
+  bool applied = false;
+  
   if (applyToAllSelected) {
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
       if (_segments[i].isSelected()) _segments[i].colors[slot] = c;
     }
-  } else {
+  }
+
+  if (!applyToAllSelected || !applied) {
     _segments[getMainSegmentId()].colors[slot] = c;
   }
 }
@@ -308,7 +356,7 @@ void WS2812FX::setBrightness(uint8_t b) {
   if (_brightness == b) return;
   _brightness = (gammaCorrectBri) ? gamma8(b) : b;
   _segment_index = 0;
-  if (SEGENV.next_time > millis() + 22) show();//apply brightness change immediately if no refresh soon
+  if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
 }
 
 uint8_t WS2812FX::getMode(void) {
@@ -351,7 +399,13 @@ uint32_t WS2812FX::getColor(void) {
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  i = realPixelIndex(i) + (_skipFirstMode ? LED_SKIP_AMOUNT : 0);
+  i = realPixelIndex(i);
+  
+  #ifdef WLED_CUSTOM_LED_MAPPING
+  if (i < customMappingSize) i = customMappingTable[i];
+  #endif
+
+  if (_skipFirstMode) i += LED_SKIP_AMOUNT;
   
   if (i >= _lengthRaw) return 0;
   
@@ -396,7 +450,19 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
   if (seg.stop) setRange(seg.start, seg.stop -1, 0); //turn old segment range off
   if (i2 <= i1) //disable segment
   {
-    seg.stop = 0; return;
+    seg.stop = 0; 
+    if (n == mainSegment) //if main segment is deleted, set first active as main segment
+    {
+      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+      {
+        if (_segments[i].isActive()) {
+          mainSegment = i;
+          return;
+        }
+      }
+      mainSegment = 0; //should not happen (always at least one active segment)
+    }
+    return;
   }
   if (i1 < _length) seg.start = i1;
   seg.stop = i2;
@@ -409,6 +475,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
 }
 
 void WS2812FX::resetSegments() {
+  mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
   //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
   _segment_index = 0;
@@ -606,6 +673,15 @@ CRGB WS2812FX::col_to_crgb(uint32_t color)
 }
 
 
+void WS2812FX::load_gradient_palette(uint8_t index)
+{
+  byte i = constrain(index, 0, GRADIENT_PALETTE_COUNT -1);
+  byte tcp[72]; //support gradient palettes with up to 18 entries
+  memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i])), 72);
+  targetPalette.loadDynamicGradientPalette(tcp);
+}
+
+
 /*
  * FastLED palette modes helper function. Limitation: Due to memory reasons, multiple active segments with FastLED will disable the Palette transitions
  */
@@ -623,13 +699,13 @@ void WS2812FX::handle_palette(void)
     case 0: {//default palette. Differs depending on effect
       switch (SEGMENT.mode)
       {
-        case FX_MODE_FIRE_2012  : targetPalette = gGradientPalettes[22]; break;//heat palette
-        case FX_MODE_COLORWAVES : targetPalette = gGradientPalettes[13]; break;//landscape 33
+        case FX_MODE_FIRE_2012  : load_gradient_palette(22); break;//heat palette
+        case FX_MODE_COLORWAVES : load_gradient_palette(13); break;//landscape 33
         case FX_MODE_FILLNOISE8 : targetPalette = OceanColors_p;         break;
-        case FX_MODE_NOISE16_1  : targetPalette = gGradientPalettes[17]; break;//Drywet
-        case FX_MODE_NOISE16_2  : targetPalette = gGradientPalettes[30]; break;//Blue cyan yellow
-        case FX_MODE_NOISE16_3  : targetPalette = gGradientPalettes[22]; break;//heat palette
-        case FX_MODE_NOISE16_4  : targetPalette = gGradientPalettes[13]; break;//landscape 33
+        case FX_MODE_NOISE16_1  : load_gradient_palette(17); break;//Drywet
+        case FX_MODE_NOISE16_2  : load_gradient_palette(30); break;//Blue cyan yellow
+        case FX_MODE_NOISE16_3  : load_gradient_palette(22); break;//heat palette
+        case FX_MODE_NOISE16_4  : load_gradient_palette(13); break;//landscape 33
         //case FX_MODE_GLITTER    : targetPalette = RainbowColors_p;       break;
         
         default: targetPalette = PartyColors_p; break;//palette, bpm
@@ -686,7 +762,7 @@ void WS2812FX::handle_palette(void)
     case 12: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
     default: //progmem palettes
-      targetPalette = gGradientPalettes[constrain(SEGMENT.palette -13, 0, gGradientPaletteCount -1)];
+      load_gradient_palette(SEGMENT.palette -13);
   }
   
   if (singleSegmentMode && paletteFade) //only blend if just one segment uses FastLED mode
@@ -724,6 +800,42 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
   //if (a->getOption(1) != b->getOption(1)) return false; //reverse
   return true;
 }
+
+#ifdef WLED_USE_ANALOG_LEDS     
+void WS2812FX::setRgbwPwm(void) {
+  uint32_t nowUp = millis(); // Be aware, millis() rolls over every 49 days
+  if (nowUp - _analogLastShow < MIN_SHOW_DELAY) return;
+
+  _analogLastShow = nowUp;
+
+  RgbwColor color = bus->GetPixelColorRgbw(0);
+  byte b = getBrightness();
+  if (color == _analogLastColor && b == _analogLastBri) return;
+  
+  // check color values for Warm / Cold white mix (for RGBW)  // EsplanexaDevice.cpp
+  #ifdef WLED_USE_5CH_LEDS
+    if        (color.R == 255 && color.G == 255 && color.B == 255 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0,                  0, color.W * b / 255);
+    } else if (color.R == 127 && color.G == 127 && color.B == 127 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, color.W * b / 512, color.W * b / 255);
+    } else if (color.R ==   0 && color.G ==   0 && color.B ==   0 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
+    } else if (color.R == 130 && color.G ==  90 && color.B ==   0 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, color.W * b / 255, color.W * b / 512);
+    } else if (color.R == 255 && color.G == 153 && color.B ==   0 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
+    } else {  // not only white colors
+      bus->SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
+    }
+  #else
+    bus->SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
+  #endif   
+  _analogLastColor = color;
+  _analogLastBri = b;
+}
+#else
+void WS2812FX::setRgbwPwm() {}
+#endif
 
 //gamma 2.4 lookup table used for color correction
 const byte gammaT[] = {

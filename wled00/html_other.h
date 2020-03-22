@@ -15,12 +15,42 @@ const char PAGE_msg[] PROGMEM = R"=====(<!DOCTYPE html>
 <style>.bt{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}</style></head>
 <body><h2>%MSG%</body></html>)=====";
 
+//DMX channel map
+const char PAGE_dmxmap[] PROGMEM = R"=====(<!DOCTYPE html>
+<html><head><meta content='width=device-width' name='viewport'>
+<title>DMX Map</title>
+<script>function B(){window.history.back()};function RS(){window.location = "/settings";}function RP(){top.location.href="/";}function FM() {%DMXVARS%
+  var dmxlabels = ["SET 0","RED","GREEN","BLUE","WHITE","SHUTTER","SET 255", "DISABLED"];
+  var dmxchans = [];
+  for (i=0;i<512;i++) {
+    dmxchans.push(7); // set all to DISABLED
+  }
+  for (i=0;i<LC;i++) {
+    FS = CS + (CG * i);
+    for (j=0;j<CN;j++) {
+      DA=FS+j;
+      dmxchans[DA-1] = CH[j];
+    }
+  }
+  DMXMap = "";
+  for (i=0;i<512;i++) {
+    isstart = "";
+    if ((i+1) % 10 == 0) {
+      isstart="S"
+    }
+    DMXMap += "<div class=\"anytype " + isstart + " type" + dmxchans[i] + "\">" + String(i+1) + "<br />" + dmxlabels[dmxchans[i]] + "</div>";
+  }
+  document.getElementById("map").innerHTML = DMXMap;
+}</script>
+<style>.anytype{border: 1px solid white; margin: 1px; float: left; width: 100px; height: 100px;}.S { margin: 0px; border: 2px solid white;} .type7{color: #888; border: 1px dotted grey;}.type6{color: #FFF;}.type4{color: #FFF; font-weight: bold; }.type3{color: #00F; font-weight: bold; }.type2{color: #0F0; font-weight: bold; }.type1{color: #F00; font-weight: bold; } .bt{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}</style></head>
+<body onload="FM();"><div id="map">...</div></body></html>)=====";
+
 
 //firmware update page
 const char PAGE_update[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta content='width=device-width' name='viewport'><title>WLED Update</title><script>function B(){window.history.back()}</script>
 <style>.bt{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}input[type=file]{font-size:16px}body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%}</style></head>
-<body><h2>WLED Software Update</h2>Installed version: 0.9.0-b1<br>Download the latest binary: <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a><br><form method='POST' action='/update' enctype='multipart/form-data'><input type='file' class="bt" name='update' required><br><input type='submit' class="bt" value='Update!'></form><button type="button" class="bt" onclick="B()">Back</button></body></html>)=====";
+<body><h2>WLED Software Update</h2>Installed version: 0.9.1<br>Download the latest binary: <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a><br><form method='POST' action='/update' enctype='multipart/form-data'><input type='file' class="bt" name='update' required><br><input type='submit' class="bt" value='Update!'></form><button type="button" class="bt" onclick="B()">Back</button></body></html>)=====";
 
 
 //new user welcome page

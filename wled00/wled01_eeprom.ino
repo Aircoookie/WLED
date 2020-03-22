@@ -3,10 +3,10 @@
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
 
-#define EEPSIZE 2560
+#define EEPSIZE 2560  //Maximum is 4096
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 14
+#define EEPVER 18
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -22,6 +22,10 @@
 //12-> 0.8.7-dev
 //13-> 0.9.0-dev
 //14-> 0.9.0-b1
+//15-> 0.9.0-b3
+//16-> 0.9.1
+//17-> 0.9.1-dmx
+//18-> 0.9.1-e131
 
 void commit()
 {
@@ -60,7 +64,6 @@ void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
   }
   str[len] = 0; //make sure every string is properly terminated. str must be at least len +1 big.
 }
-
 
 /*
  * Write configuration to flash
@@ -129,6 +132,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(368, abs(arlsOffset));
   EEPROM.write(369, turnOnAtBoot);
 
+  EEPROM.write(370, noWifiSleep);
+
   EEPROM.write(372, useRGBW);
   EEPROM.write(374, strip.paletteFade);
   EEPROM.write(375, strip.milliampsPerLed); //was apWaitTimeSecs up to 0.8.5
@@ -152,7 +157,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(396, (utcOffsetSecs<0)); //is negative
   EEPROM.write(397, syncToggleReceive);
   EEPROM.write(398, (ledCount >> 8) & 0xFF);
-  EEPROM.write(399, !enableSecTransition);
+  //EEPROM.write(399, was !enableSecTransition);
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 940 reserved
@@ -191,6 +196,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(2181, macroNl);
   EEPROM.write(2182, macroDoublePress);
 
+  EEPROM.write(2189, e131SkipOutOfSequence);
   EEPROM.write(2190, e131Universe & 0xFF);
   EEPROM.write(2191, (e131Universe >> 8) & 0xFF);
   EEPROM.write(2192, e131Multicast);
@@ -198,10 +204,13 @@ void saveSettingsToEEPROM()
   EEPROM.write(2194, (realtimeTimeoutMs >> 8) & 0xFF);
   EEPROM.write(2195, arlsForceMaxBri);
   EEPROM.write(2196, arlsDisableGammaCorrection);
+  EEPROM.write(2197, DMXAddress & 0xFF);
+  EEPROM.write(2198, (DMXAddress >> 8) & 0xFF);
+  EEPROM.write(2199, DMXMode);
 
   EEPROM.write(2200, !receiveDirect);
   EEPROM.write(2201, notifyMacro); //was enableRealtime
-  EEPROM.write(2203, autoRGBtoRGBW);
+  EEPROM.write(2203, strip.rgbwMode);
   EEPROM.write(2204, skipFirstLed);
 
   if (saveCurrPresetCycConf)
@@ -212,8 +221,8 @@ void saveSettingsToEEPROM()
     EEPROM.write(2208, presetCycleMin);
     EEPROM.write(2209, presetCycleMax);
     EEPROM.write(2210, presetApplyBri);
-    EEPROM.write(2211, presetApplyCol);
-    EEPROM.write(2212, presetApplyFx);
+    // was EEPROM.write(2211, presetApplyCol);
+    // was EEPROM.write(2212, presetApplyFx);
     saveCurrPresetCycConf = false;
   }
 
@@ -234,6 +243,19 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(2481, mqttClientID, 40);
   EEPROM.write(2522, mqttPort & 0xFF);
   EEPROM.write(2523, (mqttPort >> 8) & 0xFF);
+
+  // DMX (2530 - 2549)
+  #ifdef WLED_ENABLE_DMX
+  EEPROM.write(2530, DMXChannels);
+  EEPROM.write(2531, DMXGap & 0xFF);
+  EEPROM.write(2532, (DMXGap >> 8) & 0xFF);
+  EEPROM.write(2533, DMXStart & 0xFF);
+  EEPROM.write(2534, (DMXStart >> 8) & 0xFF);
+
+  for (int i=0; i<15; i++) {
+    EEPROM.write(2535+i, DMXFixtureMap[i]);
+  } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
+  #endif
 
   commit();
 }
@@ -445,10 +467,31 @@ void loadSettingsFromEEPROM(bool first)
     syncToggleReceive = false;
   }
 
+  if (lastEEPROMversion > 14)
+  {
+    DMXAddress = EEPROM.read(2197) + ((EEPROM.read(2198) << 8) & 0xFF00);
+    DMXMode = EEPROM.read(2199);
+  } else {
+    DMXAddress = 1;
+    DMXMode = DMX_MODE_MULTIPLE_RGB;
+  }
+
+  //if (lastEEPROMversion > 15)
+  //{
+    noWifiSleep = EEPROM.read(370);
+  //}
+
+  if (lastEEPROMversion > 17)
+  {
+    e131SkipOutOfSequence = EEPROM.read(2189);
+  } else {
+    e131SkipOutOfSequence = true;
+  }
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
-  autoRGBtoRGBW = EEPROM.read(2203);
+  strip.rgbwMode = EEPROM.read(2203);
   skipFirstLed = EEPROM.read(2204);
 
   if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))
@@ -458,15 +501,15 @@ void loadSettingsFromEEPROM(bool first)
     presetCycleMin = EEPROM.read(2208);
     presetCycleMax = EEPROM.read(2209);
     presetApplyBri = EEPROM.read(2210);
-    presetApplyCol = EEPROM.read(2211);
-    presetApplyFx = EEPROM.read(2212);
+    //was presetApplyCol = EEPROM.read(2211);
+    //was presetApplyFx = EEPROM.read(2212);
   }
 
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);
   if (EEPROM.read(396)) utcOffsetSecs = -utcOffsetSecs; //negative
-  enableSecTransition = !EEPROM.read(399);
+  //!EEPROM.read(399); was enableSecTransition
 
   //favorite setting (preset) memory (25 slots/ each 20byte)
   //400 - 899 reserved
@@ -506,7 +549,7 @@ void savedToPresets()
   }
 }
 
-bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool loadFX = true)
+bool applyPreset(byte index, bool loadBri = true)
 {
   if (index == 255 || index == 0)
   {
@@ -519,22 +562,18 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
     if (EEPROM.read(i) != 1) return false;
     strip.applyToAllSelected = true;
     if (loadBri) bri = EEPROM.read(i+1);
-    if (loadCol)
+    
+    for (byte j=0; j<4; j++)
     {
-      for (byte j=0; j<4; j++)
-      {
-        col[j] = EEPROM.read(i+j+2);
-        colSec[j] = EEPROM.read(i+j+6);
-      }
-      strip.setColor(2, EEPROM.read(i+12), EEPROM.read(i+13), EEPROM.read(i+14), EEPROM.read(i+15)); //tertiary color
+      col[j] = EEPROM.read(i+j+2);
+      colSec[j] = EEPROM.read(i+j+6);
     }
-    if (loadFX)
-    {
-      effectCurrent = EEPROM.read(i+10);
-      effectSpeed = EEPROM.read(i+11);
-      effectIntensity = EEPROM.read(i+16);
-      effectPalette = EEPROM.read(i+17);
-    }
+    strip.setColor(2, EEPROM.read(i+12), EEPROM.read(i+13), EEPROM.read(i+14), EEPROM.read(i+15)); //tertiary color
+
+    effectCurrent = EEPROM.read(i+10);
+    effectSpeed = EEPROM.read(i+11);
+    effectIntensity = EEPROM.read(i+16);
+    effectPalette = EEPROM.read(i+17);
   } else {
     if (EEPROM.read(i) != 2) return false;
     strip.applyToAllSelected = false;
@@ -548,7 +587,7 @@ bool applyPreset(byte index, bool loadBri = true, bool loadCol = true, bool load
   return true;
 }
 
-void savePreset(byte index)
+void savePreset(byte index, bool persist = true)
 {
   if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
@@ -580,7 +619,7 @@ void savePreset(byte index)
     memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
   }
   
-  commit();
+  if (persist) commit();
   savedToPresets();
   currentPreset = index;
   isPreset = true;
@@ -616,7 +655,7 @@ void applyMacro(byte index)
 }
 
 
-void saveMacro(byte index, String mc, bool sing=true) //only commit on single save, not in settings
+void saveMacro(byte index, String mc, bool persist = true) //only commit on single save, not in settings
 {
   index-=1;
   if (index > 15) return;
@@ -625,5 +664,5 @@ void saveMacro(byte index, String mc, bool sing=true) //only commit on single sa
   {
     EEPROM.write(i, mc.charAt(i-s));
   }
-  if (sing) commit();
+  if (persist) commit();
 }

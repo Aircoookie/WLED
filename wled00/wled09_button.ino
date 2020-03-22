@@ -7,7 +7,7 @@ void shortPressAction()
   if (!macroButton)
   {
     toggleOnOff();
-    colorUpdated(2);
+    colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
   } else {
     applyMacro(macroButton);
   }
