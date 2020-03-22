@@ -552,7 +552,9 @@ void loop() {
   handleSerial();
   handleNotifications();
   handleTransitions();
+#ifdef WLED_ENABLE_DMX
   handleDMX();
+#endif
   userLoop();
 
   yield();
