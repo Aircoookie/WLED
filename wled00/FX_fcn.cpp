@@ -147,90 +147,32 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   }
   col.W = w;
   
-  if (!_cronixieMode)
-  {
-    uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
-    if (SEGLEN) {//from segment
-      /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
-      bool reversed = reverseMode ^ IS_REVERSE;
-      uint16_t realIndex = realPixelIndex(i);
+  uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
+  if (SEGLEN) {//from segment
+    /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
+    bool reversed = reverseMode ^ IS_REVERSE;
+    uint16_t realIndex = realPixelIndex(i);
 
-      for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
-        int16_t indexSet = realIndex + (reversed ? -j : j);
-        int16_t indexSetRev = indexSet;
-        if (reverseMode) indexSetRev = _length - 1 - indexSet;
-        #ifdef WLED_CUSTOM_LED_MAPPING
-        if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
-        #endif
-        if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
-      }
-    } else { //live data, etc.
-      if (reverseMode) i = _length - 1 - i;
+    for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
+      int16_t indexSet = realIndex + (reversed ? -j : j);
+      int16_t indexSetRev = indexSet;
+      if (reverseMode) indexSetRev = _length - 1 - indexSet;
       #ifdef WLED_CUSTOM_LED_MAPPING
-      if (i < customMappingSize) i = customMappingTable[i];
+      if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
       #endif
-      bus->SetPixelColor(i + skip, col);
+      if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
     }
-    if (skip && i == 0) {
-      for (uint16_t j = 0; j < skip; j++) {
-        bus->SetPixelColor(j, RgbwColor(0, 0, 0, 0));
-      }
-    }
-    return;
+  } else { //live data, etc.
+    if (reverseMode) i = _length - 1 - i;
+    #ifdef WLED_CUSTOM_LED_MAPPING
+    if (i < customMappingSize) i = customMappingTable[i];
+    #endif
+    bus->SetPixelColor(i + skip, col);
   }
-
-  //CRONIXIE
-  if(i>6)return;
-  byte o = 10*i;
-  if (_cronixieBacklightEnabled && _cronixieDigits[i] <11)
-  {
-    byte r2 = _segments[0].colors[1] >>16;
-    byte g2 = _segments[0].colors[1] >> 8;
-    byte b2 = _segments[0].colors[1];
-    byte w2 = _segments[0].colors[1] >>24;
-    for (int j=o; j< o+19; j++)
-    {
-      bus->SetPixelColor(j, RgbwColor(r2,g2,b2,w2));
+  if (skip && i == 0) {
+    for (uint16_t j = 0; j < skip; j++) {
+      bus->SetPixelColor(j, RgbwColor(0, 0, 0, 0));
     }
-  } else
-  {
-    for (int j=o; j< o+19; j++)
-    {
-      bus->SetPixelColor(j, RgbwColor(0,0,0,0));
-    }
-  }
-  if (_skipFirstMode) o += LED_SKIP_AMOUNT;
-  switch(_cronixieDigits[i])
-  {
-    case 0: bus->SetPixelColor(o+5, col); break;
-    case 1: bus->SetPixelColor(o+0, col); break;
-    case 2: bus->SetPixelColor(o+6, col); break;
-    case 3: bus->SetPixelColor(o+1, col); break;
-    case 4: bus->SetPixelColor(o+7, col); break;
-    case 5: bus->SetPixelColor(o+2, col); break;
-    case 6: bus->SetPixelColor(o+8, col); break;
-    case 7: bus->SetPixelColor(o+3, col); break;
-    case 8: bus->SetPixelColor(o+9, col); break;
-    case 9: bus->SetPixelColor(o+4, col); break;
-  }
-}
-
-void WS2812FX::driverModeCronixie(bool b)
-{
-  _cronixieMode = b;
-  _segments[0].stop = (b) ? 6 : _length;
-}
-
-void WS2812FX::setCronixieBacklight(bool b)
-{
-  _cronixieBacklightEnabled = b;
-}
-
-void WS2812FX::setCronixieDigits(byte d[])
-{
-  for (int i = 0; i<6; i++)
-  {
-    _cronixieDigits[i] = d[i];
   }
 }
 
@@ -461,25 +403,6 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
 
   if (_skipFirstMode) i += LED_SKIP_AMOUNT;
   
-  if (_cronixieMode)
-  {
-    if(i>6)return 0;
-    byte o = 10*i;
-    switch(_cronixieDigits[i])
-    {
-      case 0: i=o+5; break;
-      case 1: i=o+0; break;
-      case 2: i=o+6; break;
-      case 3: i=o+1; break;
-      case 4: i=o+7; break;
-      case 5: i=o+2; break;
-      case 6: i=o+8; break;
-      case 7: i=o+3; break;
-      case 8: i=o+9; break;
-      case 9: i=o+4; break;
-      default: return 0;
-    }
-  }
   if (i >= _lengthRaw) return 0;
   
   RgbwColor col = bus->GetPixelColorRgbw(i);

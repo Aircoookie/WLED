@@ -119,7 +119,7 @@
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2003211
+#define VERSION 2003221
 
 char versionString[] = "0.9.1";
 
@@ -552,7 +552,9 @@ void loop() {
   handleSerial();
   handleNotifications();
   handleTransitions();
+#ifdef WLED_ENABLE_DMX
   handleDMX();
+#endif
   userLoop();
 
   yield();

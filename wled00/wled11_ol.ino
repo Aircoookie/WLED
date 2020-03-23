@@ -6,13 +6,12 @@ void initCronixie()
 {
   if (overlayCurrent == 3 && !cronixieInit)
   {
-    strip.driverModeCronixie(true);
-    strip.setCronixieBacklight(cronixieBacklight);
     setCronixie();
+    strip.getSegment(0).grouping = 10; //10 LEDs per digit
     cronixieInit = true;
   } else if (cronixieInit && overlayCurrent != 3)
   {
-    strip.driverModeCronixie(false);
+    strip.getSegment(0).grouping = 1;
     cronixieInit = false; 
   }
 }
@@ -120,6 +119,10 @@ void _overlayAnalogCountdown()
 
 
 void handleOverlayDraw() {
-  if (overlayCurrent != 1) return; //only analog clock
-  _overlayAnalogClock();
+  if (!overlayCurrent) return;
+  switch (overlayCurrent)
+  {
+    case 1: _overlayAnalogClock(); break;
+    case 3: _drawOverlayCronixie(); break;
+  }
 }
