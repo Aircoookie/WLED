@@ -3167,3 +3167,358 @@ uint16_t WS2812FX::mode_heartbeat(void) {
 
   return FRAMETIME;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//                  ASOUND routines by Andrew Tuline                                //
+//////////////////////////////////////////////////////////////////////////////////////
+
+uint16_t WS2812FX::mode_asound1(void) {                                       // Pixels
+
+  int segLoc;
+  CRGB color;
+  
+  fade_out(4);
+  
+  for (int i = 0; i < SEGMENT.intensity/16; i++) {
+    segLoc = random(SEGLEN);
+    color = ColorFromPalette(currentPalette, myVals[i%32]+i*4, sampleAgc, LINEARBLEND);     // myVals only has 32 elements defined
+    setPixelColor(segLoc, color.red, color.green, color.blue);
+  }
+
+//  EVERY_N_MILLIS(1000) {
+
+//      Serial.print("SEGENV.call "); Serial.println(SEGENV.call);
+      Serial.print("SEGENV.next_time "); Serial.print(SEGENV.next_time);
+      Serial.print(" ");
+      Serial.print("now"); Serial.println(now);
+      
+//      Serial.print("SEGENV.step "); Serial.println(SEGENV.step);
+//      Serial.print("SEGENV.aux0 "); Serial.println(SEGENV.aux0);
+//      Serial.print("SEGENV.aux1 "); Serial.println(SEGENV.aux1);
+      
+//      Serial.print("SEGLEN "); Serial.println(SEGLEN);
+//      Serial.print("SEGMENT.start "); Serial.println(SEGMENT.start);
+//      Serial.print("SEGMENT.stop "); Serial.println(SEGMENT.stop);
+//      Serial.print("SEGMENT.intensity "); Serial.println(SEGMENT.intensity);
+//      Serial.print("SEGMENT.speed "); Serial.println(SEGMENT.speed);
+//      Serial.print("SEGMENT.options "); Serial.println(SEGMENT.options);
+//      setPixelColor(0, random8(), random8(), random8());
+//      setPixelColor(29, random8(), random8(), random8());
+//  }
+
+
+  return FRAMETIME;
+
+} // mode_asound1()
+
+
+
+
+uint16_t WS2812FX::mode_asound2(void) {                                           // Pixelwave
+
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to . . 
+
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
+
+    int pixVal = sample * SEGMENT.intensity / 256;
+
+    if (pixVal > 20) {pixVal = 255; } else {pixVal = 0;}
+    
+    CRGB color = ColorFromPalette(currentPalette, millis(), pixVal, LINEARBLEND);
+    setPixelColor(SEGLEN/2, color.red, color.green, color.blue);
+    setPixelColor(SEGLEN/2-1, color.red, color.green, color.blue);
+  
+    for (int i = SEGLEN - 1; i > SEGLEN/2; i--) {                                 // Move to the right.
+      setPixelColor(i,getPixelColor(i-1));
+    }
+  
+    for (int i = 0; i < SEGLEN/2; i++) {                                          // Move to the left.
+      setPixelColor(i,getPixelColor(i+1));
+    }  
+
+  }
+  
+  return FRAMETIME;
+
+} // mode_asound2()
+
+
+
+
+uint16_t WS2812FX::mode_asound3(void) {                                           // Puddle
+
+  uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
+  fade_out(fadeVal);
+  
+  int pos = random(SEGLEN);                                                      // Set a random starting position.
+
+  int size = 0;
+  
+  if (sample > 0 ) {
+    size = sample * SEGMENT.intensity /256 /8 + 1;                                                            // Determine size of the flash based on the volume.
+    if (pos + size >= SEGLEN) size = SEGLEN - pos - 1;
+  }
+
+  for(int i=0; i<size; i++) {                                                     // Flash the LED's.
+    CRGB color = ColorFromPalette(currentPalette, millis(), 255, LINEARBLEND);
+    setPixelColor(pos+i, color.red, color.green, color.blue);
+  }
+
+  return FRAMETIME;
+  
+} // mode_asound3()
+
+
+
+
+uint16_t WS2812FX::mode_asound4(void) {                                           // Matrix
+
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to
+
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
+
+    int matVal;
+    if (sample*3 > (255 - SEGMENT.intensity)) {matVal = 255;} else {matVal = 0;}
+    
+    CRGB color = ColorFromPalette(currentPalette, millis(), matVal, LINEARBLEND);
+//    CRGB color = ColorFromPalette(currentPalette, millis(), sampleAgc*2, LINEARBLEND);
+    setPixelColor(SEGLEN-1, color.red, color.green, color.blue);
+    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
+  }
+  
+  return FRAMETIME; 
+
+} // mode_asound4()
+
+
+
+
+uint16_t WS2812FX::mode_asound5(void) {                                           // Myvumeter
+
+  static int topLED;
+  static int gravityCounter = 0;
+
+  fade_out(240);
+  sampleAvg = sampleAvg * SEGMENT.intensity / 255;
+  
+  int tempsamp = constrain(sampleAvg*2,0,SEGLEN-1);                               // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+    
+  for (int i=0; i<tempsamp; i++) {
+    uint8_t index = inoise8(i*sampleAvg+millis(), 5000+i*sampleAvg); 
+    CRGB color = ColorFromPalette(currentPalette, index, sampleAvg*8, LINEARBLEND);
+    setPixelColor(i, color.red, color.green, color.blue);
+  }
+
+  if (tempsamp >= topLED)
+    topLED = tempsamp;
+  else if (gravityCounter % gravity == 0)
+    topLED--;
+
+  if (topLED > 0) {
+    CRGB color = ColorFromPalette(currentPalette, millis(), 255, LINEARBLEND);
+    setPixelColor(topLED, color.red, color.green, color.blue);
+  }
+  
+  gravityCounter = (gravityCounter + 1) % gravity;
+  return FRAMETIME;
+  
+} // mode_asound5()
+
+
+
+
+uint16_t WS2812FX::mode_asound6(void) {                                           // Plasma
+
+  static int16_t thisphase = 0;                                                   // Phase of a cubicwave8.
+  static int16_t thatphase = 0;                                                   // Phase of the cos8.
+
+  uint16_t thisbright;
+  uint16_t colorIndex;
+
+//  fade_out(32); 
+  
+  thisphase += beatsin8(6,-4,4);                                                  // You can change direction and speed individually.
+  thatphase += beatsin8(7,-4,4);                                                  // Two phase values to make a complex pattern. By Andrew Tuline.
+
+  for (int k=0; k<SEGLEN; k++) {                                                  // For each of the LED's in the strand, set a brightness based on a wave as follows.
+    thisbright = cubicwave8((k*13)+thisphase)/2;    
+    thisbright += cos8((k*117)+thatphase)/2;                                      // Let's munge the brightness a bit and animate it all with the phases.
+    colorIndex=thisbright;
+    
+    
+    if (sampleAvg * 8 * SEGMENT.intensity/256 * SEGMENT.intensity/256 > thisbright) {thisbright = 255;} else {thisbright = 0;}
+    
+    CRGB color = ColorFromPalette(currentPalette, colorIndex, thisbright, LINEARBLEND);
+    setPixelColor(k, color.red, color.green, color.blue);
+  }
+
+  return FRAMETIME;
+  
+} // mode_asound6()
+
+
+
+
+uint16_t WS2812FX::mode_asound7(void) {                                           // Jugglep
+
+  static int thistime = 20;
+  CRGB color;
+
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to
+
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
+    
+    fade_out(224);
+
+    for (int i= 0; i < SEGMENT.intensity/32; i++) {
+      color = ColorFromPalette(currentPalette, millis()/4+i*2, sampleAgc, LINEARBLEND);
+      setPixelColor(beatsin16(thistime+i*2,0,SEGLEN-1), color.red, color.green, color.blue);
+    }
+  }
+  
+  return FRAMETIME;
+  
+} // mode_asound7()
+
+
+
+
+
+uint16_t WS2812FX::mode_asound8(void) {                                           // FillnoiseMid
+
+  static int xdist;
+  static int ydist;
+
+  fade_out(224);
+    
+  int maxLen = sampleAvg * SEGMENT.intensity / 256;                                 // Too sensitive.
+  maxLen = maxLen * SEGMENT.intensity / 256;                                        // Reduce sensitity/length.
+  
+  if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
+
+//  for (int i = (SEGLEN-maxLen)/2; i <(SEGLEN+maxLen+1)/2; i++) {                  // The louder the sound, the wider the soundbar.
+  for (int i = (SEGLEN/2 - maxLen); i < (SEGLEN/2+maxLen); i++) {
+    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);                // Get a value from the noise function. I'm using both x and y axis.
+    CRGB color = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
+    setPixelColor(i, color.red, color.green, color.blue);
+  }
+
+  xdist=xdist+beatsin8(5,0,10);
+  ydist=ydist+beatsin8(4,0,10);
+
+  return FRAMETIME;
+  
+} // mode_asound8()
+
+
+
+
+
+uint16_t WS2812FX::mode_asound9(void) {                                           // Fillnoise
+
+  static int xdist;
+  static int ydist;
+
+  fade_out(240);
+
+  int maxLen = sampleAvg;
+  if (sample > sampleAvg) maxLen = sample-sampleAvg;
+  maxLen = maxLen * SEGMENT.intensity / 256;                                      // Still a bit too sensitive.
+  maxLen = maxLen * SEGMENT.intensity / 256;                                      // Reduce sensitity/length.
+  if (maxLen >SEGLEN) maxLen = SEGLEN;
+
+  for (int i = 0; i < maxLen; i++) {                                              // The louder the sound, the wider the soundbar. By Andrew Tuline.
+    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);                // Get a value from the noise function. I'm using both x and y axis.
+    CRGB color = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
+    setPixelColor(i, color.red, color.green, color.blue);
+  }
+
+  xdist=xdist+beatsin8(5,0,10);
+  ydist=ydist+beatsin8(4,0,10);
+
+  return FRAMETIME;
+
+} // mode_asound9()
+
+
+
+
+uint16_t WS2812FX::mode_asound10(void) { 
+  delay(1);
+  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
+  setPixelColor(0, color.red, color.green, color.blue);
+
+  return FRAMETIME;
+} // mode_asound10()
+
+
+
+uint16_t WS2812FX::mode_asound11(void) { 
+  delay(1);
+  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
+  setPixelColor(0, color.red, color.green, color.blue);
+  return FRAMETIME;
+} // mode_asound11()
+
+
+
+uint16_t WS2812FX::mode_asound12(void) { 
+  delay(1);
+  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
+  setPixelColor(0, color.red, color.green, color.blue);
+  return FRAMETIME;
+} // mode_asound12()
+
+
+
+uint16_t WS2812FX::mode_asound13(void) { 
+  delay(1);
+  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
+  setPixelColor(0, color.red, color.green, color.blue);
+  return FRAMETIME;   
+} // mode_asound13()
+
+
+
+uint16_t WS2812FX::mode_asound14(void) { 
+  delay(1);
+  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
+  setPixelColor(0, color.red, color.green, color.blue);
+  return FRAMETIME;
+} // mode_asound14()
+
+
+
+uint16_t WS2812FX::mode_asound15(void) { 
+  delay(1);
+  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
+  setPixelColor(0, color.red, color.green, color.blue);
+  return FRAMETIME;
+} // mode_asound15()
+
+
+
+
+
+/* void lineit() {
+  for (int i=0; i<SEGLEN-1; i++) {
+    // leds[i] = leds[i+1];
+    setPixelColor(i,getPixelColor(i+1));
+} // lineit()
+*/
+
+
+/*
+void waveit() {
+  for (int i = SEGLEN - 1; i > SEGLEN/2; i--) {                                // Move to the right.
+    setPixelColor(i,getPixelColor(i-1));
+  }
+
+  for (int i = 0; i < SEGLEN/2; i++) {                                        // Move to the left.
+    setPixelColor(i,getPixelColor(i+1));
+  }
+
+} // waveit()
+*/

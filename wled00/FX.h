@@ -95,7 +95,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  101
+#define MODE_COUNT  116
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -198,6 +198,31 @@
 #define FX_MODE_PERCENT                 98
 #define FX_MODE_RIPPLE_RAINBOW          99
 #define FX_MODE_HEARTBEAT              100
+#define FX_MODE_ASound1                101
+#define FX_MODE_ASound2                102
+#define FX_MODE_ASound3                103
+#define FX_MODE_ASound4                104
+#define FX_MODE_ASound5                105
+#define FX_MODE_ASound6                106
+#define FX_MODE_ASound7                107
+#define FX_MODE_ASound8                108
+#define FX_MODE_ASound9                109
+#define FX_MODE_ASound10               110
+#define FX_MODE_ASound11               111
+#define FX_MODE_ASound12               112
+#define FX_MODE_ASound13               113
+#define FX_MODE_ASound14               114
+#define FX_MODE_ASound15               115
+
+
+// Sound reactive external variables
+extern int sample;
+extern float sampleAvg;
+extern bool samplePeak;
+extern uint8_t myVals[32];
+extern int sampleAgc;
+extern uint8_t squelch;
+
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -387,6 +412,22 @@ class WS2812FX {
       _mode[FX_MODE_PERCENT]                 = &WS2812FX::mode_percent;
       _mode[FX_MODE_RIPPLE_RAINBOW]          = &WS2812FX::mode_ripple_rainbow;
       _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
+      _mode[FX_MODE_ASound1]                 = &WS2812FX::mode_asound1;
+      _mode[FX_MODE_ASound2]                 = &WS2812FX::mode_asound2;
+      _mode[FX_MODE_ASound3]                 = &WS2812FX::mode_asound3;
+      _mode[FX_MODE_ASound4]                 = &WS2812FX::mode_asound4;
+      _mode[FX_MODE_ASound5]                 = &WS2812FX::mode_asound5;
+      _mode[FX_MODE_ASound6]                 = &WS2812FX::mode_asound6;
+      _mode[FX_MODE_ASound7]                 = &WS2812FX::mode_asound7;
+      _mode[FX_MODE_ASound8]                 = &WS2812FX::mode_asound8;
+      _mode[FX_MODE_ASound9]                 = &WS2812FX::mode_asound9;
+      _mode[FX_MODE_ASound10]                 = &WS2812FX::mode_asound10;
+      _mode[FX_MODE_ASound11]                 = &WS2812FX::mode_asound11;
+      _mode[FX_MODE_ASound12]                 = &WS2812FX::mode_asound12;
+      _mode[FX_MODE_ASound13]                 = &WS2812FX::mode_asound13;
+      _mode[FX_MODE_ASound14]                 = &WS2812FX::mode_asound14;
+      _mode[FX_MODE_ASound15]                 = &WS2812FX::mode_asound15;
+
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -571,7 +612,22 @@ class WS2812FX {
       mode_plasma(void),
       mode_percent(void),
       mode_ripple_rainbow(void),
-      mode_heartbeat(void);
+      mode_heartbeat(void),
+      mode_asound1(void),
+      mode_asound2(void),
+      mode_asound3(void),
+      mode_asound4(void),
+      mode_asound5(void),
+      mode_asound6(void),
+      mode_asound7(void),
+      mode_asound8(void),
+      mode_asound9(void),
+      mode_asound10(void),           
+      mode_asound11(void),
+      mode_asound12(void),
+      mode_asound13(void),
+      mode_asound14(void),
+      mode_asound15(void);
       
 
   private:
@@ -656,7 +712,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat"
+"Heartbeat","ASound1","ASound2","ASound3","ASound4","ASound5","ASound6","ASound7","ASound8","ASound9",
+"ASound10","ASound11","ASound12","ASound13","ASound14","ASound15"
 ])=====";
 
 
