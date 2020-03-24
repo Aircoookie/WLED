@@ -8,9 +8,9 @@
 
 ## Welcome to my project WLED!
 
-### This is a fork of WLED that provide sound reactivity. We have a [Sound Reactive WLED Wiki](https://github.com/atuline/WLED/wiki).
+NOTE: This is a fork of WLED that provides sound reactivity. We have a [Sound Reactive WLED Wiki](https://github.com/atuline/WLED/wiki).
 
-In the meantime, we bring you WLED. 
+And now back to WLED. 
 
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs!
 
