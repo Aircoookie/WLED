@@ -17,11 +17,11 @@
 //#define WLED_DISABLE_OTA         //saves 14kb
 
 //You need to choose some of these features to disable:
-//#define WLED_DISABLE_ALEXA       //saves 11kb
-//#define WLED_DISABLE_BLYNK       //saves 6kb
-//#define WLED_DISABLE_CRONIXIE    //saves 3kb
-//#define WLED_DISABLE_HUESYNC     //saves 4kb
-//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
+#define WLED_DISABLE_ALEXA       //saves 11kb
+#define WLED_DISABLE_BLYNK       //saves 6kb
+#define WLED_DISABLE_CRONIXIE    //saves 3kb
+#define WLED_DISABLE_HUESYNC     //saves 4kb
+#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
 //#define WLED_ENABLE_DMX          //uses 3.5kb

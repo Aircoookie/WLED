@@ -3443,13 +3443,53 @@ uint16_t WS2812FX::mode_asound9(void) {                                         
 } // mode_asound9()
 
 
-
+#ifndef ESP8266
+extern uint16_t FFT_MajorPeak;
+#endif
 
 uint16_t WS2812FX::mode_asound10(void) { 
   delay(1);
-  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
-  setPixelColor(0, color.red, color.green, color.blue);
 
+// Instead of using colorpalettes, This effect works on the HSV color circle with red being the lowest frequency
+// 
+// as a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz. 
+// Depending on the music stream you have you might find it useful to change the frequency mapping. 
+#ifndef ESP8266
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to . .
+
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
+
+    fade_out(SEGMENT.speed/2);
+    
+    CRGB color = 0;
+
+    if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
+    // MajorPeak holds the freq. value which is most abundant in the last sample. With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
+    // we will treat everything with less than 65Hz as 0
+//Serial.printf("%5d ", FFT_MajorPeak, 0);
+    if (FFT_MajorPeak < 80) {
+      color = CRGB::Black;
+    } else {
+      int upperLimit = 20 * SEGMENT.intensity;
+      int i =  map(FFT_MajorPeak, 80, upperLimit, 0, 255);
+//Serial.printf("%3d %4d %2d\n",SEGMENT.intensity, upperLimit, i);
+      CHSV c = CHSV(i, 240,240);
+      color = c;
+    }
+    // Serial.println(color);
+    setPixelColor(SEGLEN/2, color.red, color.green, color.blue);
+    setPixelColor(SEGLEN/2-1, color.red, color.green, color.blue);
+
+    for (int i = SEGLEN - 1; i > SEGLEN/2; i--) {                                 // Move to the right.
+      setPixelColor(i,getPixelColor(i-1));
+    }
+  
+    for (int i = 0; i < SEGLEN/2; i++) {                                          // Move to the left.
+      setPixelColor(i,getPixelColor(i+1));
+    }  
+  }
+
+#endif
   return FRAMETIME;
 } // mode_asound10()
 

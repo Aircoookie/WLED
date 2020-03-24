@@ -40,8 +40,8 @@ uint8_t myVals[32];
 
 arduinoFFT FFT = arduinoFFT(); /* Create FFT object */
 
-const uint16_t samples = 1024; //This value MUST ALWAYS be a power of 2
-const double samplingFrequency = 20480; 
+const uint16_t samples = 512; //This value MUST ALWAYS be a power of 2
+const double samplingFrequency = 10240; 
 
 unsigned int sampling_period_us;
 unsigned long microseconds;
@@ -153,7 +153,7 @@ void agcAvg() {                                                   // A simple av
 
 // #include "esp_task_wdt.h"
 
-double FFT_MajorPeak = 0;
+uint16_t FFT_MajorPeak = 0;
 
 // FFT main code
 void FFTcode( void * parameter) {
@@ -193,7 +193,7 @@ void FFTcode( void * parameter) {
     }
 
     // vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz). There could be interesting data at [2 .. 7] but chances are there are too many artifacts
-    FFT_MajorPeak = FFT.MajorPeak(vReal, samples, samplingFrequency);       // let the effects know which freq was most dominant
+    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(vReal, samples, samplingFrequency);       // let the effects know which freq was most dominant
 
     //Serial.print("FFT_MajorPeak: ");
     //Serial.println(FFT_MajorPeak);
