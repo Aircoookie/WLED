@@ -61,12 +61,28 @@ void onAlexaChange(EspalexaDevice* dev)
     colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
   } else //color
   {
-    uint32_t color = espalexaDevice->getRGB();
-    col[3] = ((color >> 24) & 0xFF);  // white color from Alexa is "pure white only" 
-    col[0] = ((color >> 16) & 0xFF);
-    col[1] = ((color >>  8) & 0xFF);
-    col[2] = (color & 0xFF);
-    if (useRGBW && col[3] == 0) colorRGBtoRGBW(col);  // do not touch white value if EspalexaDevice.cpp did set the white channel
+    if (espalexaDevice->getColorMode() == EspalexaColorMode::ct) //shade of white
+    {
+      uint16_t ct = espalexaDevice->getCt();
+      if (useRGBW)
+      {
+        switch (ct) { //these values empirically look good on RGBW
+          case 199: col[0]=255; col[1]=255; col[2]=255; col[3]=255; break;
+          case 234: col[0]=127; col[1]=127; col[2]=127; col[3]=255; break;
+          case 284: col[0]=  0; col[1]=  0; col[2]=  0; col[3]=255; break;
+          case 350: col[0]=130; col[1]= 90; col[2]=  0; col[3]=255; break;
+          case 383: col[0]=255; col[1]=153; col[2]=  0; col[3]=255; break;
+        }
+      } else {
+        colorCTtoRGB(ct, col);
+      }
+    } else {
+      uint32_t color = espalexaDevice->getRGB();
+    
+      col[0] = ((color >> 16) & 0xFF);
+      col[1] = ((color >>  8) & 0xFF);
+      col[2] = ( color        & 0xFF);
+    }
     colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
   }
 }
