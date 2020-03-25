@@ -514,7 +514,7 @@ public:
         wledInit();
     }
 
-private:
+public: // TODO: privacy
     void wledInit();
     void beginStrip();
 

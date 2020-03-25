@@ -5,7 +5,7 @@
 /*
  * UDP notifier
  */
-union e131_packet_t;    // Will this compile?
+//union e131_packet_t;    // Will this compile?
 class IPAddress;
 
 void notify(byte callMode, bool followUp=false);

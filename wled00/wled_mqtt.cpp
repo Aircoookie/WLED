@@ -1,5 +1,7 @@
 #include "wled_mqtt.h"
 #include "wled.h"
+#include "wled_notify.h"
+#include "wled_led.h"
 
 #ifdef WLED_ENABLE_MQTT
 #define MQTT_KEEP_ALIVE_TIME 60    // contact the MQTT broker every 60 seconds

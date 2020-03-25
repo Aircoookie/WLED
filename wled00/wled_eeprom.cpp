@@ -592,7 +592,7 @@ void savedToPresets()
   }
 }
 
-bool applyPreset(byte index, bool loadBri = true)
+bool applyPreset(byte index, bool loadBri)
 {
   if (index == 255 || index == 0)
   {
@@ -630,7 +630,7 @@ bool applyPreset(byte index, bool loadBri = true)
   return true;
 }
 
-void savePreset(byte index, bool persist = true)
+void savePreset(byte index, bool persist)
 {
   if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
@@ -698,7 +698,7 @@ void applyMacro(byte index)
 }
 
 
-void saveMacro(byte index, String mc, bool persist = true) //only commit on single save, not in settings
+void saveMacro(byte index, String mc, bool persist) //only commit on single save, not in settings
 {
   index-=1;
   if (index > 15) return;

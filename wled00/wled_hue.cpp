@@ -1,5 +1,7 @@
 #include "wled_hue.h"
 #include "wled.h"
+#include "wled_colors.h"
+#include "wled_eeprom.h"
 
 #ifndef WLED_DISABLE_HUESYNC
 

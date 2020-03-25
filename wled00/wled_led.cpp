@@ -1,5 +1,10 @@
 #include "wled_led.h"
 #include "wled.h"
+#include "wled_notify.h"
+#include "wled_blynk.h"
+#include "wled_eeprom.h"
+#include "wled_mqtt.h"
+#include "wled_colors.h"
 
 void setValuesFromMainSeg()
 {
