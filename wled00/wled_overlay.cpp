@@ -1,5 +1,7 @@
 #include "wled_overlay.h"
 #include "wled.h"
+#include "wled_cronixie.h"
+#include "wled_ntp.h"
  
 void initCronixie()
 {

@@ -1,6 +1,7 @@
 #ifndef WLED_NOTIFY_H
 #define WLED_NOTIFY_H
 #include <Arduino.h>
+#include "src/dependencies/e131/ESPAsyncE131.h"
 #include "const.h"
 /*
  * UDP notifier

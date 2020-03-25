@@ -4,6 +4,8 @@
 /*
  * Server page declarations
  */
+class AsyncWebServerRequest;
+
 
 bool isIp(String str);
 bool captivePortal(AsyncWebServerRequest *request);

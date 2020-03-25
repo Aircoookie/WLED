@@ -4,7 +4,7 @@
  * Sync to Philips hue lights
  */
 #include <Arduino.h>
-#include <ESPAsyncTCP.h>
+class AsyncClient;
 
 void handleHue();
 void reconnectHue();

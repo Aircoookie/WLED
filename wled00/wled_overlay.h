@@ -8,5 +8,7 @@
 void initCronixie();
 void handleOverlays();
 void handleOverlayDraw();
+void _overlayAnalogCountdown();
+void _overlayAnalogClock();
 
 #endif // WLED_OVERLAY_H

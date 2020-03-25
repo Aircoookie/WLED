@@ -2,6 +2,8 @@
 #include "wled.h"
 #include "wled_colors.h"
 #include "wled_eeprom.h"
+#include "wled_notify.h"
+#include "wled_led.h"
 
 #ifndef WLED_DISABLE_HUESYNC
 

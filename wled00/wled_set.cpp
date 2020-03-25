@@ -9,7 +9,7 @@
 #include "wled_cronixie.h"
 #include "wled_xml.h"
 
-void _setRandomColor(bool _sec,bool fromButton=false)
+void _setRandomColor(bool _sec,bool fromButton)
 {
   lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
   if (_sec){
@@ -337,7 +337,7 @@ int getNumVal(const String* req, uint16_t pos)
 
 
 //helper to get int value at a position in string
-bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255)
+bool updateVal(const String* req, const char* key, byte* val, byte minv, byte maxv)
 {
   int pos = req->indexOf(key);
   if (pos < 1) return false;
