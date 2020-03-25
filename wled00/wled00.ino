@@ -3,11 +3,11 @@
 */
 #include "wled.h"
 
+WLED wled;
 void setup() {
-  //auto& wled = Wled();
+  wled.instance();  // Force creation of static instance
 }
 
 void loop() {
-
-
+  wled.loop();
 }

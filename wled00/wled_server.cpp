@@ -1,5 +1,10 @@
 #include "wled_server.h"
 #include "wled.h"
+#include "wled_file.h"
+#include "wled_set.h"
+#include "wled_json.h"
+#include "wled_xml.h"
+
 
 //Is this an IP?
 bool isIp(String str) {

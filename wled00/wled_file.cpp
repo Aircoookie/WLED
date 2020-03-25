@@ -1,5 +1,8 @@
 #include "wled_file.h"
 #include "wled.h"
+#include "wled_led.h"
+#include "wled_notify.h"
+
 //filesystem
 #ifndef WLED_DISABLE_FILESYSTEM
 #include <FS.h>
@@ -21,6 +24,7 @@ enum class AdaState {
   Data_Blue
 };
 
+// Maybe Adalight should not be in filehandling? TODO
 void handleSerial()
 {
   #ifdef WLED_ENABLE_ADALIGHT

@@ -1,5 +1,6 @@
 #ifndef WLED_SERVER_H
 #define WLED_SERVER_H
+#include <Arduino.h>
 /*
  * Server page declarations
  */

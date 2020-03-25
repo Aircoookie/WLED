@@ -5,6 +5,7 @@
  * Methods to handle saving and loading to non-volatile memory
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
+#define EEPSIZE 2560  //Maximum is 4096
 
 void commit();
 void clearEEPROM();

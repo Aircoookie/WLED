@@ -1,7 +1,10 @@
 #include "wled_eeprom.h"
 #include "wled.h"
+#include "wled_cronixie.h"
+#include "wled_ntp.h"
+#include "wled_set.h"
+#include "wled_led.h"
 
-#define EEPSIZE 2560  //Maximum is 4096
 
 //eeprom Version code, enables default settings instead of 0 init on update
 #define EEPVER 18

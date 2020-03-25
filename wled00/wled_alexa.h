@@ -7,10 +7,11 @@
  * https://github.com/kakopappa/arduino-esp8266-alexa-wemo-switch
  * https://github.com/probonopd/ESP8266HueEmulator
  */
-class EspalexaDevice;
+#include "src/dependencies/espalexa/EspalexaDevice.h"
+
 void onAlexaChange(EspalexaDevice* dev);
 void alexaInit();
 void handleAlexa();
 void onAlexaChange(EspalexaDevice* dev);
 
-#define WLED_ALEXA_H
+#endif // WLED_ALEXA_H

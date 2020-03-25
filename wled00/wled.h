@@ -491,6 +491,7 @@ int loops = 0;
 bool oappend(const char *txt);
 //append new number to temp buffer efficiently
 bool oappendi(int i);
+int getSignalQuality(int rssi);
 
 class WLED
 {
@@ -503,8 +504,6 @@ public:
 
     WLED();
 
-    void wledInit();
-
     void reset();
     void loop();
 
@@ -514,8 +513,6 @@ public:
     {
         wledInit();
     }
-
-    void loop();
 
 private:
     void wledInit();

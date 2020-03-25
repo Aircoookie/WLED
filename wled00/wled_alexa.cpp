@@ -1,6 +1,7 @@
 #include "wled_alexa.h"
 #include "wled.h"
 #include "src/dependencies/espalexa/EspalexaDevice.h"
+#include "const.h"
 
 #ifndef WLED_DISABLE_ALEXA
 void onAlexaChange(EspalexaDevice* dev);

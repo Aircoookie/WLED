@@ -1,4 +1,18 @@
 #include "wled.h"
+#include "wled_led.h"
+#include "wled_ir.h"
+#include "wled_notify.h"
+#include "wled_alexa.h"
+#include "wled_overlay.h"
+#include "wled_file.h"
+#include "wled_button.h"
+#include "wled_ntp.h"
+#include "wled_usermod.h"
+#include "wled_blynk.h"
+#include "wled_hue.h"
+#include "wled_mqtt.h"
+#include "wled_eeprom.h"
+#include "wled_server.h"
 
 WLED::WLED() {
 
@@ -251,7 +265,7 @@ void WLED::beginStrip()
 #endif
 }
 
-void WLED::initAP(bool resetAP = false)
+void WLED::initAP(bool resetAP)
 {
     if (apBehavior == AP_BEHAVIOR_BUTTON_ONLY && !resetAP)
         return;
@@ -483,7 +497,7 @@ void WLED::handleConnection()
 }
 
 //by https://github.com/tzapu/WiFiManager/blob/master/WiFiManager.cpp
-int WLED::getSignalQuality(int rssi)
+int getSignalQuality(int rssi)
 {
     int quality = 0;
 
