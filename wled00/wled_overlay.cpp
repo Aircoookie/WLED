@@ -1,6 +1,5 @@
-/*
- * Used to draw clock overlays over the strip
- */
+#include "wled_overlay.h"
+#include "wled.h"
  
 void initCronixie()
 {

@@ -1,9 +1,8 @@
-/*
- * Support for the Cronixie clock
- */
+#include "wled_cronixie.h"
+#include "wled.h"
+
 #ifndef WLED_DISABLE_CRONIXIE
 byte _digitOut[6] = {10,10,10,10,10,10};
-#endif
  
 byte getSameCodeLength(char code, int index, char const cronixieDisplay[])
 {
@@ -23,7 +22,6 @@ byte getSameCodeLength(char code, int index, char const cronixieDisplay[])
 
 void setCronixie()
 {
-  #ifndef WLED_DISABLE_CRONIXIE
   /*
    * digit purpose index
    * 0-9 | 0-9 (incl. random)
@@ -144,12 +142,10 @@ void setCronixie()
   DEBUG_PRINTLN((int)dP[5]);
 
   _overlayCronixie(); //refresh
-  #endif
 }
 
 void _overlayCronixie()
 {
-  #ifndef WLED_DISABLE_CRONIXIE
   byte h = hour(local);
   byte h0 = h;
   byte m = minute(local);
@@ -211,12 +207,10 @@ void _overlayCronixie()
       }
     }
   }
-  #endif
 }
 
 void _drawOverlayCronixie()
 {
-  #ifndef WLED_DISABLE_CRONIXIE
   byte offsets[] = {5, 0, 6, 1, 7, 2, 8, 3, 9, 4};
   
   for (uint16_t i = 0; i < 6; i++)
@@ -239,5 +233,11 @@ void _drawOverlayCronixie()
       }
     }
   }
-  #endif
 }
+
+#else // WLED_DISABLE_CRONIXIE
+byte getSameCodeLength(char code, int index, char const cronixieDisplay[]) {}
+void setCronixie() {}
+void _overlayCronixie() {}
+void _drawOverlayCronixie() {}
+#endif

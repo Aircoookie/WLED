@@ -1,6 +1,5 @@
-/*
- * JSON API (De)serialization
- */
+#include "wled_json.h"
+#include "wled.h"
 
 void deserializeSegment(JsonObject elem, byte it)
 {

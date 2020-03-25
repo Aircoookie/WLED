@@ -1,3 +1,7 @@
+#include "wled_set.h"
+#include "wled.h"
+#include "wled_hue.h"
+#include "wled_colors.h"
 /*
  * Receives client input
  */

@@ -1,6 +1,14 @@
-/*
- * Utility for SPIFFS filesystem & Serial console
- */
+#include "wled_file.h"
+#include "wled.h"
+//filesystem
+#ifndef WLED_DISABLE_FILESYSTEM
+#include <FS.h>
+#ifdef ARDUINO_ARCH_ESP32
+#include "SPIFFS.h"
+#endif
+#include "SPIFFSEditor.h"
+#endif
+
 enum class AdaState {
   Header_A,
   Header_d,

@@ -1,10 +1,7 @@
-/*
- * Support for DMX via MAX485.
- * Needs the espdmx library. You might have to change the output pin within the library. Sketchy, i know.
- * https://github.com/Rickgg/ESP-Dmx
- */
-#ifdef WLED_ENABLE_DMX
+#include "wled_dmx.h"
+#include "wled.h"
 
+#ifdef WLED_ENABLE_DMX
 void handleDMX() {
   // TODO: calculate brightness manually if no shutter channel is set
   

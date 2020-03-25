@@ -1,3 +1,5 @@
+#include "wled_button.h"
+#include "wled.h"
 /*
  * Physical IO
  */

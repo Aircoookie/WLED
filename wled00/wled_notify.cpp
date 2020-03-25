@@ -1,6 +1,6 @@
-/*
- * UDP notifier
- */
+#include "wled_notify.h"
+#include "wled.h"
+#include "src/dependencies/e131/ESPAsyncE131.h"
 
 #define WLEDPACKETSIZE 29
 #define UDP_IN_MAXSIZE 1472

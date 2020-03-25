@@ -1,7 +1,5 @@
-/*
- * Methods to handle saving and loading to non-volatile memory
- * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
- */
+#include "wled_eeprom.h"
+#include "wled.h"
 
 #define EEPSIZE 2560  //Maximum is 4096
 
