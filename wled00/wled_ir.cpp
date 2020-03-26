@@ -1,5 +1,8 @@
 #include "wled_ir.h"
 #include "wled.h"
+#include "wled_led.h"
+#include "wled_colors.h"
+#include "wled_eeprom.h"
 
 #if defined(WLED_DISABLE_INFRARED)
 void handleIR(){}
@@ -34,7 +37,7 @@ bool decodeIRCustom(uint32_t code)
 
 
 //relatively change brightness, minumum A=5
-void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF)
+void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
   int16_t new_val = (int16_t) *property + amount;
   if (new_val > higherBoundary) new_val = higherBoundary;

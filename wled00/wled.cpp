@@ -1,4 +1,5 @@
 #include "wled.h"
+#include <Arduino.h>
 #include "wled_led.h"
 #include "wled_ir.h"
 #include "wled_notify.h"

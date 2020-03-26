@@ -1,6 +1,9 @@
 #include "wled_blynk.h"
+#include "const.h"
 #include "wled.h"
 #include "src/dependencies/blynk/Blynk/BlynkHandlers.h"
+#include "wled_led.h"
+#include "wled_colors.h"
 
 uint16_t blHue = 0;
 byte blSat = 255;
