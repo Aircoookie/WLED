@@ -5,7 +5,7 @@
  * Color conversion methods
  */
 
-void colorFromUint32(uint32_t in, bool secondary);
+void colorFromUint32(uint32_t in, bool secondary = false);
 void colorFromUint24(uint32_t in, bool secondary = false);
 void relativeChangeWhite(int8_t amount, byte lowerBoundary = 0);
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb

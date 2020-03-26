@@ -123,305 +123,297 @@ extern "C"
 //version code in format yymmddb (b = daily build)
 #define VERSION 2003222
 
-char versionString[] = "0.9.1";
+extern char versionString[];
 
 //AP and OTA default passwords (for maximum change them!)
-char apPass[65] = DEFAULT_AP_PASS;
-char otaPass[33] = DEFAULT_OTA_PASS;
+extern char apPass[65];
+extern char otaPass[33];
 
 //Hardware CONFIG (only changeble HERE, not at runtime)
 //LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
 
-byte auxDefaultState = 0;                       //0: input 1: high 2: low
-byte auxTriggeredState = 0;                     //0: input 1: high 2: low
-char ntpServerName[33] = "0.wled.pool.ntp.org"; //NTP server to use
+extern byte auxDefaultState;                       //0: input 1: high 2: low
+extern byte auxTriggeredState;                     //0: input 1: high 2: low
+extern char ntpServerName[33]; //NTP server to use
 
 //WiFi CONFIG (all these can be changed via web UI, no need to set them here)
-char clientSSID[33] = CLIENT_SSID;
-char clientPass[65] = CLIENT_PASS;
-char cmDNS[33] = "x";                       //mDNS address (placeholder, will be replaced by wledXXXXXXXXXXXX.local)
-char apSSID[33] = "";                       //AP off by default (unless setup)
-byte apChannel = 1;                         //2.4GHz WiFi AP channel (1-13)
-byte apHide = 0;                            //hidden AP SSID
-byte apBehavior = AP_BEHAVIOR_BOOT_NO_CONN; //access point opens when no connection after boot by default
-IPAddress staticIP(0, 0, 0, 0);             //static IP of ESP
-IPAddress staticGateway(0, 0, 0, 0);        //gateway (router) IP
-IPAddress staticSubnet(255, 255, 255, 0);   //most common subnet in home networks
-bool noWifiSleep = false;                   //disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
+extern char clientSSID[33];
+extern char clientPass[65];
+extern char cmDNS[33];                       //mDNS address (placeholder, will be replaced by wledXXXXXXXXXXXX.local)
+extern char apSSID[33];                       //AP off by default (unless setup)
+extern byte apChannel;                         //2.4GHz WiFi AP channel (1-13)
+extern byte apHide;                            //hidden AP SSID
+extern byte apBehavior; //access point opens when no connection after boot by default
+extern IPAddress staticIP;             //static IP of ESP
+extern IPAddress staticGateway;        //gateway (router) IP
+extern IPAddress staticSubnet;   //most common subnet in home networks
+extern bool noWifiSleep;                   //disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
 
 //LED CONFIG
-uint16_t ledCount = 30;            //overcurrent prevented by ABL
-bool useRGBW = false;              //SK6812 strips can contain an extra White channel
+extern uint16_t ledCount;            //overcurrent prevented by ABL
+extern bool useRGBW;              //SK6812 strips can contain an extra White channel
 #define ABL_MILLIAMPS_DEFAULT 850; //auto lower brightness to stay close to milliampere limit
-bool turnOnAtBoot = true;          //turn on LEDs at power-up
-byte bootPreset = 0;               //save preset to load after power-up
+extern bool turnOnAtBoot;          //turn on LEDs at power-up
+extern byte bootPreset;               //save preset to load after power-up
 
-byte col[]{255, 160, 0, 0}; //current RGB(W) primary color. col[] should be updated if you want to change the color.
-byte colSec[]{0, 0, 0, 0};  //current RGB(W) secondary color
-byte briS = 128;            //default brightness
+extern byte col[]; //current RGB(W) primary color. col[] should be updated if you want to change the color.
+extern byte colSec[];  //current RGB(W) secondary color
+extern byte briS;            //default brightness
 
-byte nightlightTargetBri = 0; //brightness after nightlight is over
-byte nightlightDelayMins = 60;
-bool nightlightFade = true;       //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
-bool nightlightColorFade = false; //if enabled, light will gradually fade color from primary to secondary color.
-bool fadeTransition = true;       //enable crossfading color transition
-uint16_t transitionDelay = 750;   //default crossfade duration in ms
+extern byte nightlightTargetBri; //brightness after nightlight is over
+extern byte nightlightDelayMins;
+extern bool nightlightFade;       //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
+extern bool nightlightColorFade; //if enabled, light will gradually fade color from primary to secondary color.
+extern bool fadeTransition;       //enable crossfading color transition
+extern uint16_t transitionDelay;   //default crossfade duration in ms
 
-bool skipFirstLed = false; //ignore first LED in strip (useful if you need the LED as signal repeater)
-byte briMultiplier = 100;  //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
+extern bool skipFirstLed; //ignore first LED in strip (useful if you need the LED as signal repeater)
+extern byte briMultiplier;  //% of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 //User Interface CONFIG
-char serverDescription[33] = "WLED"; //Name of module
-bool syncToggleReceive = false;      //UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
+extern char serverDescription[33]; //Name of module
+extern bool syncToggleReceive;      //UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 //Sync CONFIG
-bool buttonEnabled = true;
-byte irEnabled = 0; //Infrared receiver
+extern bool buttonEnabled;
+extern byte irEnabled; //Infrared receiver
 
-uint16_t udpPort = 21324;    //WLED notifier default port
-uint16_t udpRgbPort = 19446; //Hyperion port
+extern uint16_t udpPort;    //WLED notifier default port
+extern uint16_t udpRgbPort; //Hyperion port
 
-bool receiveNotificationBrightness = true; //apply brightness from incoming notifications
-bool receiveNotificationColor = true;      //apply color
-bool receiveNotificationEffects = true;    //apply effects setup
-bool notifyDirect = false;                 //send notification if change via UI or HTTP API
-bool notifyButton = false;                 //send if updated by button or infrared remote
-bool notifyAlexa = false;                  //send notification if updated via Alexa
-bool notifyMacro = false;                  //send notification for macro
-bool notifyHue = true;                     //send notification if Hue light changes
-bool notifyTwice = false;                  //notifications use UDP: enable if devices don't sync reliably
+extern bool receiveNotificationBrightness; //apply brightness from incoming notifications
+extern bool receiveNotificationColor;      //apply color
+extern bool receiveNotificationEffects;    //apply effects setup
+extern bool notifyDirect;                 //send notification if change via UI or HTTP API
+extern bool notifyButton;                 //send if updated by button or infrared remote
+extern bool notifyAlexa;                  //send notification if updated via Alexa
+extern bool notifyMacro;                  //send notification for macro
+extern bool notifyHue;                     //send notification if Hue light changes
+extern bool notifyTwice;                  //notifications use UDP: enable if devices don't sync reliably
 
-bool alexaEnabled = true;               //enable device discovery by Amazon Echo
-char alexaInvocationName[33] = "Light"; //speech control name of device. Choose something voice-to-text can understand
+extern bool alexaEnabled;               //enable device discovery by Amazon Echo
+extern char alexaInvocationName[33]; //speech control name of device. Choose something voice-to-text can understand
 
-char blynkApiKey[36] = ""; //Auth token for Blynk server. If empty, no connection will be made
+extern char blynkApiKey[36]; //Auth token for Blynk server. If empty, no connection will be made
 
-uint16_t realtimeTimeoutMs = 2500;      //ms timeout of realtime mode before returning to normal mode
-int arlsOffset = 0;                     //realtime LED offset
-bool receiveDirect = true;              //receive UDP realtime
-bool arlsDisableGammaCorrection = true; //activate if gamma correction is handled by the source
-bool arlsForceMaxBri = false;           //enable to force max brightness if source has very dark colors that would be black
+extern uint16_t realtimeTimeoutMs;      //ms timeout of realtime mode before returning to normal mode
+extern int arlsOffset;                     //realtime LED offset
+extern bool receiveDirect;              //receive UDP realtime
+extern bool arlsDisableGammaCorrection; //activate if gamma correction is handled by the source
+extern bool arlsForceMaxBri;           //enable to force max brightness if source has very dark colors that would be black
 
 #define E131_MAX_UNIVERSE_COUNT 9
-uint16_t e131Universe = 1;                               //settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
-uint8_t DMXMode = DMX_MODE_MULTIPLE_RGB;                 //DMX mode (s.a.)
-uint16_t DMXAddress = 1;                                 //DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
-uint8_t DMXOldDimmer = 0;                                //only update brightness on change
-uint8_t e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT]; //to detect packet loss
-bool e131Multicast = false;                              //multicast or unicast
-bool e131SkipOutOfSequence = false;                      //freeze instead of flickering
+extern uint16_t e131Universe;                               //settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
+extern uint8_t DMXMode;                 //DMX mode (s.a.)
+extern uint16_t DMXAddress;                                 //DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
+extern uint8_t DMXOldDimmer;                                //only update brightness on change
+extern uint8_t e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT]; //to detect packet loss
+extern bool e131Multicast;                              //multicast or unicast
+extern bool e131SkipOutOfSequence;                      //freeze instead of flickering
 
-bool mqttEnabled = false;
-char mqttDeviceTopic[33] = "";        //main MQTT topic (individual per device, default is wled/mac)
-char mqttGroupTopic[33] = "wled/all"; //second MQTT topic (for example to group devices)
-char mqttServer[33] = "";             //both domains and IPs should work (no SSL)
-char mqttUser[41] = "";               //optional: username for MQTT auth
-char mqttPass[41] = "";               //optional: password for MQTT auth
-char mqttClientID[41] = "";           //override the client ID
-uint16_t mqttPort = 1883;
+extern bool mqttEnabled;
+extern char mqttDeviceTopic[33];        //main MQTT topic (individual per device, default is wled/mac)
+extern char mqttGroupTopic[33]; //second MQTT topic (for example to group devices)
+extern char mqttServer[33];             //both domains and IPs should work (no SSL)
+extern char mqttUser[41];               //optional: username for MQTT auth
+extern char mqttPass[41];               //optional: password for MQTT auth
+extern char mqttClientID[41];           //override the client ID
+extern uint16_t mqttPort;
 
-bool huePollingEnabled = false;    //poll hue bridge for light state
-uint16_t huePollIntervalMs = 2500; //low values (< 1sec) may cause lag but offer quicker response
-char hueApiKey[47] = "api";        //key token will be obtained from bridge
-byte huePollLightId = 1;           //ID of hue lamp to sync to. Find the ID in the hue app ("about" section)
-IPAddress hueIP = (0, 0, 0, 0);    //IP address of the bridge
-bool hueApplyOnOff = true;
-bool hueApplyBri = true;
-bool hueApplyColor = true;
+extern bool huePollingEnabled;    //poll hue bridge for light state
+extern uint16_t huePollIntervalMs; //low values (< 1sec) may cause lag but offer quicker response
+extern char hueApiKey[47];        //key token will be obtained from bridge
+extern byte huePollLightId;           //ID of hue lamp to sync to. Find the ID in the hue app ("about" section)
+extern IPAddress hueIP;    //IP address of the bridge
+extern bool hueApplyOnOff;
+extern bool hueApplyBri;
+extern bool hueApplyColor;
 
 //Time CONFIG
-bool ntpEnabled = false;  //get internet time. Only required if you use clock overlays or time-activated macros
-bool useAMPM = false;     //12h/24h clock format
-byte currentTimezone = 0; //Timezone ID. Refer to timezones array in wled10_ntp.ino
-int utcOffsetSecs = 0;    //Seconds to offset from UTC before timzone calculation
+extern bool ntpEnabled;  //get internet time. Only required if you use clock overlays or time-activated macros
+extern bool useAMPM;     //12h/24h clock format
+extern byte currentTimezone; //Timezone ID. Refer to timezones array in wled_ntp.cpp
+extern int utcOffsetSecs;    //Seconds to offset from UTC before timzone calculation
 
-byte overlayDefault = 0;                        //0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
-byte overlayMin = 0, overlayMax = ledCount - 1; //boundaries of overlay mode
+extern byte overlayDefault;                        //0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
+extern byte overlayMin; //boundaries of overlay mode
+extern byte overlayMax;
 
-byte analogClock12pixel = 0;          //The pixel in your strip where "midnight" would be
-bool analogClockSecondsTrail = false; //Display seconds as trail of LEDs instead of a single pixel
-bool analogClock5MinuteMarks = false; //Light pixels at every 5-minute position
+extern byte analogClock12pixel;          //The pixel in your strip where "midnight" would be
+extern bool analogClockSecondsTrail; //Display seconds as trail of LEDs instead of a single pixel
+extern bool analogClock5MinuteMarks; //Light pixels at every 5-minute position
 
-char cronixieDisplay[7] = "HHMMSS"; //Cronixie Display mask. See wled13_cronixie.ino
-bool cronixieBacklight = true;      //Allow digits to be back-illuminated
+extern char cronixieDisplay[7]; //Cronixie Display mask. See wled13_cronixie.ino
+extern bool cronixieBacklight;      //Allow digits to be back-illuminated
 
-bool countdownMode = false;                  //Clock will count down towards date
-byte countdownYear = 20, countdownMonth = 1; //Countdown target date, year is last two digits
-byte countdownDay = 1, countdownHour = 0;
-byte countdownMin = 0, countdownSec = 0;
+extern bool countdownMode;                  //Clock will count down towards date
+extern byte countdownYear, countdownMonth; //Countdown target date, year is last two digits
+extern byte countdownDay, countdownHour;
+extern byte countdownMin, countdownSec;
 
-byte macroBoot = 0; //macro loaded after startup
-byte macroNl = 0;   //after nightlight delay over
-byte macroCountdown = 0;
-byte macroAlexaOn = 0, macroAlexaOff = 0;
-byte macroButton = 0, macroLongPress = 0, macroDoublePress = 0;
+extern byte macroBoot; //macro loaded after startup
+extern byte macroNl;   //after nightlight delay over
+extern byte macroCountdown;
+extern byte macroAlexaOn, macroAlexaOff;
+extern byte macroButton, macroLongPress, macroDoublePress;
 
 //Security CONFIG
-bool otaLock = false;    //prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
-bool wifiLock = false;   //prevents access to WiFi settings when OTA lock is enabled
-bool aOtaEnabled = true; //ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
+extern bool otaLock;    //prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
+extern bool wifiLock;   //prevents access to WiFi settings when OTA lock is enabled
+extern bool aOtaEnabled; //ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
 
-uint16_t userVar0 = 0, userVar1 = 0;
+extern uint16_t userVar0, userVar1;
 
 #ifdef WLED_ENABLE_DMX
 //dmx CONFIG
-byte DMXChannels = 7; // number of channels per fixture
-byte DMXFixtureMap[15] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-// assigns the different channels to different functions. See wled21_dmx.ino for more information.
-uint16_t DMXGap = 10;   // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
-uint16_t DMXStart = 10; // start address of the first fixture
+extern byte DMXChannels; // number of channels per fixture
+extern byte DMXFixtureMap[15];
+extern // assigns the different channels to different functions. See wled21_dmx.ino for more information.
+extern uint16_t DMXGap;   // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
+extern uint16_t DMXStart; // start address of the first fixture
 #endif
 
 //internal global variable declarations
 //wifi
-bool apActive = false;
-bool forceReconnect = false;
-uint32_t lastReconnectAttempt = 0;
-bool interfacesInited = false;
-bool wasConnected = false;
+extern bool apActive;
+extern bool forceReconnect;
+extern uint32_t lastReconnectAttempt;
+extern bool interfacesInited;
+extern bool wasConnected;
 
 //color
-byte colOld[]{0, 0, 0, 0}; //color before transition
-byte colT[]{0, 0, 0, 0};   //color that is currently displayed on the LEDs
-byte colIT[]{0, 0, 0, 0};  //color that was last sent to LEDs
-byte colSecT[]{0, 0, 0, 0};
-byte colSecOld[]{0, 0, 0, 0};
-byte colSecIT[]{0, 0, 0, 0};
+extern byte colOld[]; //color before transition
+extern byte colT[];   //color that is currently displayed on the LEDs
+extern byte colIT[];  //color that was last sent to LEDs
+extern byte colSecT[];
+extern byte colSecOld[];
+extern byte colSecIT[];
 
-byte lastRandomIndex = 0; //used to save last random color so the new one is not the same
+extern byte lastRandomIndex; //used to save last random color so the new one is not the same
 
 //transitions
-bool transitionActive = false;
-uint16_t transitionDelayDefault = transitionDelay;
-uint16_t transitionDelayTemp = transitionDelay;
-unsigned long transitionStartTime;
-float tperLast = 0; //crossfade transition progress, 0.0f - 1.0f
-bool jsonTransitionOnce = false;
+extern bool transitionActive;
+extern uint16_t transitionDelayDefault;
+extern uint16_t transitionDelayTemp;
+extern unsigned long transitionStartTime;
+extern float tperLast; //crossfade transition progress, 0.0f - 1.0f
+extern bool jsonTransitionOnce;
 
 //nightlight
-bool nightlightActive = false;
-bool nightlightActiveOld = false;
-uint32_t nightlightDelayMs = 10;
-uint8_t nightlightDelayMinsDefault = nightlightDelayMins;
-unsigned long nightlightStartTime;
-byte briNlT = 0;           //current nightlight brightness
-byte colNlT[]{0, 0, 0, 0}; //current nightlight color
+extern bool nightlightActive;
+extern bool nightlightActiveOld;
+extern uint32_t nightlightDelayMs;
+extern uint8_t nightlightDelayMinsDefault;
+extern unsigned long nightlightStartTime;
+extern byte briNlT;           //current nightlight brightness
+extern byte colNlT[]; //current nightlight color
 
-//brightness
-unsigned long lastOnTime = 0;
-bool offMode = !turnOnAtBoot;
-byte bri = briS;
-byte briOld = 0;
-byte briT = 0;
-byte briIT = 0;
-byte briLast = 128;   //brightness before turned off. Used for toggle function
-byte whiteLast = 128; //white channel before turned off. Used for toggle function
+extern unsigned long lastOnTime;
+extern bool offMode;
+extern byte bri;
+extern byte briOld;
+extern byte briT;
+extern byte briIT;
+extern byte briLast;   //brightness before turned off. Used for toggle function
+extern byte whiteLast; //white channel before turned off. Used for toggle function
 
-//button
-bool buttonPressedBefore = false;
-bool buttonLongPressed = false;
-unsigned long buttonPressedTime = 0;
-unsigned long buttonWaitTime = 0;
+extern bool buttonPressedBefore;
+extern bool buttonLongPressed;
+extern unsigned long buttonPressedTime;
+extern unsigned long buttonWaitTime;
 
-//notifications
-bool notifyDirectDefault = notifyDirect;
-bool receiveNotifications = true;
-unsigned long notificationSentTime = 0;
-byte notificationSentCallMode = NOTIFIER_CALL_MODE_INIT;
-bool notificationTwoRequired = false;
+extern bool notifyDirectDefault;
+extern bool receiveNotifications;
+extern unsigned long notificationSentTime;
+extern byte notificationSentCallMode;
+extern bool notificationTwoRequired;
 
-//effects
-byte effectCurrent = 0;
-byte effectSpeed = 128;
-byte effectIntensity = 128;
-byte effectPalette = 0;
+extern byte effectCurrent;
+extern byte effectSpeed;
+extern byte effectIntensity;
+extern byte effectPalette;
 
-//network
-bool udpConnected = false, udpRgbConnected = false;
+extern bool udpConnected, udpRgbConnected;
 
-//ui style
-bool showWelcomePage = false;
+extern bool showWelcomePage;
 
-//hue
-byte hueError = HUE_ERROR_INACTIVE;
-//uint16_t hueFailCount = 0;
-float hueXLast = 0, hueYLast = 0;
-uint16_t hueHueLast = 0, hueCtLast = 0;
-byte hueSatLast = 0, hueBriLast = 0;
-unsigned long hueLastRequestSent = 0;
-bool hueAuthRequired = false;
-bool hueReceived = false;
-bool hueStoreAllowed = false, hueNewKey = false;
+extern byte hueError;
+//uint16_t hueFailCount;
+extern float hueXLast, hueYLast;
+extern uint16_t hueHueLast, hueCtLast;
+extern byte hueSatLast, hueBriLast;
+extern unsigned long hueLastRequestSent;
+extern bool hueAuthRequired;
+extern bool hueReceived;
+extern bool hueStoreAllowed, hueNewKey;
 
-//overlays
-byte overlayCurrent = overlayDefault;
-byte overlaySpeed = 200;
-unsigned long overlayRefreshMs = 200;
-unsigned long overlayRefreshedTime;
+extern byte overlayCurrent;
+extern byte overlaySpeed;
+extern unsigned long overlayRefreshMs;
+extern unsigned long overlayRefreshedTime;
 
-//cronixie
-byte dP[]{0, 0, 0, 0, 0, 0};
-bool cronixieInit = false;
+extern byte dP[];
+extern bool cronixieInit;
 
 //countdown
-unsigned long countdownTime = 1514764800L;
-bool countdownOverTriggered = true;
+extern unsigned long countdownTime;
+extern bool countdownOverTriggered;
 
 //timer
-byte lastTimerMinute = 0;
-byte timerHours[] = {0, 0, 0, 0, 0, 0, 0, 0};
-byte timerMinutes[] = {0, 0, 0, 0, 0, 0, 0, 0};
-byte timerMacro[] = {0, 0, 0, 0, 0, 0, 0, 0};
-byte timerWeekday[] = {255, 255, 255, 255, 255, 255, 255, 255}; //weekdays to activate on
+extern byte lastTimerMinute;
+extern byte timerHours[];
+extern byte timerMinutes[];
+extern byte timerMacro[];
+extern byte timerWeekday[]; //weekdays to activate on
 //bit pattern of arr elem: 0b11111111: sun,sat,fri,thu,wed,tue,mon,validity
 
 //blynk
-bool blynkEnabled = false;
+extern bool blynkEnabled;
 
 //preset cycling
-bool presetCyclingEnabled = false;
-byte presetCycleMin = 1, presetCycleMax = 5;
-uint16_t presetCycleTime = 1250;
-unsigned long presetCycledTime = 0;
-byte presetCycCurr = presetCycleMin;
-bool presetApplyBri = true;
-bool saveCurrPresetCycConf = false;
+extern bool presetCyclingEnabled;
+extern byte presetCycleMin, presetCycleMax;
+extern uint16_t presetCycleTime;
+extern unsigned long presetCycledTime;
+extern byte presetCycCurr;
+extern bool presetApplyBri;
+extern bool saveCurrPresetCycConf;
 
 //realtime
-byte realtimeMode = REALTIME_MODE_INACTIVE;
-IPAddress realtimeIP = (0, 0, 0, 0);
-unsigned long realtimeTimeout = 0;
+extern byte realtimeMode;
+extern IPAddress realtimeIP;
+extern unsigned long realtimeTimeout;
 
 //mqtt
-long lastMqttReconnectAttempt = 0;
-long lastInterfaceUpdate = 0;
-byte interfaceUpdateCallMode = NOTIFIER_CALL_MODE_INIT;
-char mqttStatusTopic[40] = ""; //this must be global because of async handlers
+extern long lastMqttReconnectAttempt;
+extern long lastInterfaceUpdate;
+extern byte interfaceUpdateCallMode;
+extern char mqttStatusTopic[40]; //this must be global because of async handlers
 
 #if AUXPIN >= 0
-    //auxiliary debug pin
-byte auxTime = 0;
-unsigned long auxStartTime = 0;
-bool auxActive = false, auxActiveBefore = false;
+//auxiliary debug pin
+extern byte auxTime;
+extern unsigned long auxStartTime;
+extern bool auxActive;
 #endif
 
 //alexa udp
-String escapedMac;
+extern String escapedMac;
 #ifndef WLED_DISABLE_ALEXA
-Espalexa espalexa;
-EspalexaDevice *espalexaDevice;
+extern Espalexa espalexa;
+extern EspalexaDevice *espalexaDevice;
 #endif
 
 //dns server
-DNSServer dnsServer;
+extern DNSServer dnsServer;
 
 //network time
-bool ntpConnected = false;
-time_t local = 0;
-unsigned long ntpLastSyncTime = 999000000L;
-unsigned long ntpPacketSentTime = 999000000L;
-IPAddress ntpServerIP;
-uint16_t ntpLocalPort = 2390;
+extern bool ntpConnected;
+extern time_t local;
+extern unsigned long ntpLastSyncTime;
+extern unsigned long ntpPacketSentTime;
+extern IPAddress ntpServerIP;
+extern uint16_t ntpLocalPort;
 #define NTP_PACKET_SIZE 48
 
 //maximum number of LEDs - MAX_LEDS is coming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
@@ -430,42 +422,43 @@ uint16_t ntpLocalPort = 2390;
 
 //string temp buffer (now stored in stack locally)
 #define OMAX 2048
-char *obuf;
-uint16_t olen = 0;
+extern char *obuf;
+extern uint16_t olen;
 
 //presets
-uint16_t savedPresets = 0;
-int8_t currentPreset = -1;
-bool isPreset = false;
+extern uint16_t savedPresets;
+extern int8_t currentPreset;
+extern bool isPreset;
 
-byte errorFlag = 0;
+extern byte errorFlag;
 
-String messageHead, messageSub;
-byte optionType;
+extern String messageHead, messageSub;
+extern byte optionType;
 
-bool doReboot = false; //flag to initiate reboot from async handlers
-bool doPublishMqtt = false;
+extern bool doReboot; //flag to initiate reboot from async handlers
+extern bool doPublishMqtt;
 
 //server library objects
-AsyncWebServer server(80);
-AsyncClient *hueClient = NULL;
-AsyncMqttClient *mqtt = NULL;
+extern AsyncWebServer server;
+extern AsyncClient *hueClient;
+extern AsyncMqttClient *mqtt;
 
 //function prototypes
-void colorFromUint32(uint32_t, bool = false);
-void serveMessage(AsyncWebServerRequest *, uint16_t, String, String, byte);
-void handleE131Packet(e131_packet_t *, IPAddress);
-void arlsLock(uint32_t, byte);
-void handleOverlayDraw();
+extern void colorFromUint32(uint32_t, bool);
+extern void serveMessage(AsyncWebServerRequest *, uint16_t, String, String, byte);
+extern void handleE131Packet(e131_packet_t *, IPAddress);
+extern void arlsLock(uint32_t, byte);
+extern void handleOverlayDraw();
 
 //udp interface objects
-WiFiUDP notifierUdp, rgbUdp;
-WiFiUDP ntpUdp;
-ESPAsyncE131 e131(handleE131Packet);
-bool e131NewData = false;
+extern WiFiUDP notifierUdp, rgbUdp;
+extern WiFiUDP ntpUdp;
+extern ESPAsyncE131 e131;
+extern bool e131NewData;
 
 //led fx library object
-WS2812FX strip = WS2812FX();
+extern WS2812FX strip;
+
 
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
