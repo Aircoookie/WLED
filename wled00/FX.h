@@ -631,7 +631,7 @@ class WS2812FX {
     
     #ifdef WLED_USE_ANALOG_LEDS
     uint32_t _analogLastShow = 0;
-    uint32_t _analogLastColor = 0;
+    RgbwColor _analogLastColor = 0;
     uint8_t _analogLastBri = 0;
     #endif
     
