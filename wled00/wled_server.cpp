@@ -1,4 +1,4 @@
-#include "server.h"
+#include "wled_server.h"
 #include "wled.h"
 #include "file.h"
 #include "set.h"

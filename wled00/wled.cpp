@@ -13,7 +13,7 @@
 #include "hue.h"
 #include "mqtt.h"
 #include "wled_eeprom.h"
-#include "server.h"
+#include "wled_server.h"
 // Global Variable definitions
 char versionString[] = "0.9.1";
 
