@@ -4,7 +4,7 @@
 #include "hue.h"
 #include "led.h"
 #include "blynk.h"
-#include "eeprom.h"
+#include "wled_eeprom.h"
 #include "alexa.h"
 #include "cronixie.h"
 #include "xml.h"

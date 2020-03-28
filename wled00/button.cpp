@@ -1,7 +1,7 @@
 #include "button.h"
 #include "wled.h"
 #include "led.h"
-#include "eeprom.h"
+#include "wled_eeprom.h"
 #include "set.h"
 
 /*

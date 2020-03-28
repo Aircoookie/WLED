@@ -2,7 +2,7 @@
 #include "wled.h"
 #include "const.h"
 #include "led.h"
-#include "eeprom.h"
+#include "wled_eeprom.h"
 #include "colors.h"
 
 #ifndef WLED_DISABLE_ALEXA

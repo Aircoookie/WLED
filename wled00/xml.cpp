@@ -1,6 +1,6 @@
 #include "xml.h"
 #include "wled.h"
-#include "eeprom.h"
+#include "wled_eeprom.h"
 #include "ntp.h"
 
 

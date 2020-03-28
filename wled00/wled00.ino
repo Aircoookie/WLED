@@ -3,12 +3,10 @@
 */
 #include "wled.h"
 
-WLED& wled;
 void setup() {
-  wled = WLED::instance();
-  wled.setup();
+  WLED::instance().setup();
 }
 
 void loop() {
-  wled.loop();
+  WLED::instance().loop();
 }

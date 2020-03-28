@@ -1,6 +1,8 @@
 #include "ntp.h"
+#include "src/dependencies/timezone/Timezone.h"
 #include "wled.h"
-#include "eeprom.h" 
+#include "wled_eeprom.h" 
+
 TimeChangeRule UTCr = {Last, Sun, Mar, 1, 0};     // UTC
 Timezone tzUTC(UTCr, UTCr);
 

@@ -1,7 +1,7 @@
 #include "hue.h"
 #include "wled.h"
 #include "colors.h"
-#include "eeprom.h"
+#include "wled_eeprom.h"
 #include "notify.h"
 #include "led.h"
 

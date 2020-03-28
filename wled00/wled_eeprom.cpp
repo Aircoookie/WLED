@@ -1,4 +1,5 @@
-#include "eeprom.h"
+#include "wled_eeprom.h"
+#include <EEPROM.h>
 #include "wled.h"
 #include "cronixie.h"
 #include "ntp.h"

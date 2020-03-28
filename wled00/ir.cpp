@@ -2,7 +2,7 @@
 #include "wled.h"
 #include "led.h"
 #include "colors.h"
-#include "eeprom.h"
+#include "wled_eeprom.h"
 
 #if defined(WLED_DISABLE_INFRARED)
 void handleIR(){}

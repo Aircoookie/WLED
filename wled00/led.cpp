@@ -2,7 +2,7 @@
 #include "wled.h"
 #include "notify.h"
 #include "blynk.h"
-#include "eeprom.h"
+#include "wled_eeprom.h"
 #include "mqtt.h"
 #include "colors.h"
 

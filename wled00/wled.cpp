@@ -12,9 +12,8 @@
 #include "blynk.h"
 #include "hue.h"
 #include "mqtt.h"
-#include "eeprom.h"
+#include "wled_eeprom.h"
 #include "server.h"
-// replaced
 // Global Variable definitions
 char versionString[] = "0.9.1";
 
