@@ -10,7 +10,7 @@
  */
 /*
  * @title Espalexa library
- * @version 2.4.4
+ * @version 2.4.5
  * @author Christian Schwinne
  * @license MIT
  * @contributors d-999
@@ -49,7 +49,7 @@
 #include <WiFiUdp.h>
 
 #ifdef ESPALEXA_DEBUG
- #pragma message "Espalexa 2.4.4 debug mode"
+ #pragma message "Espalexa 2.4.5 debug mode"
  #define EA_DEBUG(x)  Serial.print (x)
  #define EA_DEBUGLN(x) Serial.println (x)
 #else
@@ -164,7 +164,7 @@ private:
     json += "\",\"modelid\":\"" + modelidString(dev->getType());
     json += "\",\"manufacturername\":\"Philips\",\"productname\":\"E" + String(static_cast<uint8_t>(dev->getType()));
     json += "\",\"uniqueid\":\"" + String(encodeLightId(deviceId+1));
-    json += "\",\"swversion\":\"espalexa-2.4.4\"}";
+    json += "\",\"swversion\":\"espalexa-2.4.5\"}";
     
     return json;
   }
@@ -188,7 +188,7 @@ private:
     }
     res += "\r\nFree Heap: " + (String)ESP.getFreeHeap();
     res += "\r\nUptime: " + (String)millis();
-    res += "\r\n\r\nEspalexa library v2.4.4 by Christian Schwinne 2020";
+    res += "\r\n\r\nEspalexa library v2.4.5 by Christian Schwinne 2020";
     server->send(200, "text/plain", res);
   }
   #endif
@@ -370,9 +370,10 @@ public:
     if (!discoverable) return; //do not reply to M-SEARCH if not discoverable
     
     String request = packetBuffer;
-    if(request.indexOf("M-SEARCH") >= 0) {
+    if(request.indexOf("M-SEA") >= 0) { //M-SEARCH
       EA_DEBUGLN(request);
-      if(request.indexOf("upnp:rootdevice") > 0 || request.indexOf("asic:1") > 0 || request.indexOf("ssdp:all") > 0) {
+      //match upnp:rootdevice, device:basic:1, ssdp:all and ssdp:discover
+      if(request.indexOf("np:rootd") > 0 || request.indexOf("asic:1") > 0 || request.indexOf("dp:all") > 0 || request.indexOf("dp:dis") > 0) {
         EA_DEBUGLN("Responding search req...");
         respondToSearch();
       }

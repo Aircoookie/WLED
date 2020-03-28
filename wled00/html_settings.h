@@ -3,7 +3,7 @@
 */
 
 //common CSS of settings pages
-const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}</style>)=====";
+const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}.d5{width:4.5em !important;}</style>)=====";
 
 //settings menu
 const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
@@ -273,7 +273,7 @@ Infrared remote:
 </select><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
-UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>
+UDP Port: <input name="UP" type="number" min="1" max="65535" class="d5" required><br>
 Receive <input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects<br>
 Send notifications on direct change: <input type="checkbox" name="SD"><br>
 Send notifications on button press: <input type="checkbox" name="SB"><br>
@@ -284,9 +284,9 @@ Send notifications twice: <input type="checkbox" name="S2">
 <h3>Realtime</h3>
 Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
 <i>E1.31 (sACN)</i><br>
-Skip out-of-sequence packets (freeze instead of flicker): <input type="checkbox" name="ES"><br>
 Use E1.31 multicast: <input type="checkbox" name="EM"><br>
 E1.31 start universe: <input name="EU" type="number" min="1" max="63999" required><br>
+Skip out-of-sequence packets: <input type="checkbox" name="ES"><br>
 <i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br>
 DMX start address: <input name="DA" type="number" min="1" max="510" value="1" required><br>
 DMX mode:
@@ -316,7 +316,7 @@ Device Auth token: <input name="BK" maxlength="33"><br>
 <h3>MQTT</h3>
 Enable MQTT: <input type="checkbox" name="MQ"><br>
 Broker: <input name="MS" maxlength="32">
-Port: <input name="MQPORT" type="number" min="1" max="65535"><br>
+Port: <input name="MQPORT" type="number" min="1" max="65535" class="d5"><br>
 <b>The MQTT credentials are sent over an unsecured connection.<br>
 Never use the MQTT password for another service!</b><br>
 Username: <input name="MQUSER" maxlength="40"><br>

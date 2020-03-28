@@ -13,7 +13,7 @@
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
 
-#define GRADIENT_PALETTE_COUNT 38
+#define GRADIENT_PALETTE_COUNT 39
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
@@ -574,6 +574,14 @@ const byte Aurora_gp[] PROGMEM = {
   170,   0,243, 45,
   200,   0,135,  7,
   255,   1,  5, 45};//deep blue
+
+const byte Atlantica_gp[] PROGMEM = {
+    0,   0, 28,112, //#001C70
+   50,  32, 96,255, //#2060FF
+  100,   0,243, 45,
+  150,  12, 95, 82, //#0C5F52
+  200,  25,190, 95, //#19BE5F
+  255,  40,170, 80};//#28AA50
   
 
 // Single array of defined cpt-city color palettes.
@@ -619,6 +627,7 @@ const byte* const gGradientPalettes[] PROGMEM = {
   C9_gp,                        //48-35 C9
   Sakura_gp,                    //49-36 Sakura
   Aurora_gp,                    //50-37 Aurora
+  Atlantica_gp,                 //51-38 Atlantica
 };
 
 #endif

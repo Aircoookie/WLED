@@ -57,10 +57,9 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
     case 4: rgb[0]=t,rgb[1]=p,rgb[2]=255;break;
     case 5: rgb[0]=255,rgb[1]=p,rgb[2]=q;
   }
-  if (useRGBW) colorRGBtoRGBW(col);
+  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
-#ifndef WLED_DISABLE_HUESYNC
 void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
 {
   //this is only an approximation using WS2812B with gamma correction enabled
@@ -81,9 +80,10 @@ void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
   } else {
     rgb[0]=237;rgb[1]=255;rgb[2]=239;//150
   }
-  if (useRGBW) colorRGBtoRGBW(col);
+  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
+#ifndef WLED_DISABLE_HUESYNC
 void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
 {
   float z = 1.0f - x - y;
