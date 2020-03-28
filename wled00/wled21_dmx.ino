@@ -5,20 +5,27 @@
  */
 #ifdef WLED_ENABLE_DMX
 
-void handleDMX() {
+void handleDMX() {  
+  WS2812FX::Segment& seg = strip.getSegment(DMXSegment);
+
+  if (!seg.isActive()) {
+    return;
+  }
+
   // TODO: calculate brightness manually if no shutter channel is set
-  
   uint8_t brightness = strip.getBrightness();
 
-  for (int i = 0; i < ledCount; i++) { // uses the amount of LEDs as fixture count
+  // Calculate the start LED depending on segment and DMXStartLED config
+  uint8_t startLed = seg.start + DMXStartLED;
 
+  for (int i = startLed; i < seg.stop; i++) {
     uint32_t in = strip.getPixelColor(i); // time to get the colors for the individual fixtures as suggested by AirCookie at issue #462
     byte w = in >> 24 & 0xFF;
     byte r = in >> 16 & 0xFF;
     byte g = in >> 8  & 0xFF;
     byte b = in       & 0xFF;
 
-    int DMXFixtureStart = DMXStart + (DMXGap * i);
+    int DMXFixtureStart = DMXStart + (DMXGap * (i - startLed));
     for (int j = 0; j < DMXChannels; j++) {
       int DMXAddr = DMXFixtureStart + j;
       switch (DMXFixtureMap[j]) {

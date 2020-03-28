@@ -23,7 +23,7 @@
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
-//#define WLED_ENABLE_DMX          //uses 3.5kb
+//#define WLED_ENABLE_DMX          //uses 3.5kb, if wanting to use DMX together with LEDs, you should change the LEDPIN to something other than 2 in NpbWrapper.h
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
@@ -277,6 +277,8 @@ uint16_t userVar0 = 0, userVar1 = 0;
                                               // assigns the different channels to different functions. See wled21_dmx.ino for more information.
   uint16_t DMXGap = 10;                       // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
   uint16_t DMXStart = 10;                     // start address of the first fixture
+  uint16_t DMXSegment = 0;                    // segment which DMX fixtures use
+  uint16_t DMXStartLED = 0;                   // start LED from which DMX fixtures should start
 #endif
 
 

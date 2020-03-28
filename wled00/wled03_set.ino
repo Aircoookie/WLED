@@ -310,6 +310,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       t = request->arg(argname).toInt();
       DMXFixtureMap[i] = t;
     }
+    t = request->arg("SEG").toInt();
+    if (t>=0 && t<10) {
+      DMXSegment = t;
+    }
+    t = request->arg("SL").toInt();
+    if (t>=0 && t<1500) {
+      DMXStartLED = t;
+    }
   }
   
   #endif

@@ -270,6 +270,9 @@ void saveSettingsToEEPROM()
   for (int i=0; i<15; i++) {
     EEPROM.write(2535+i, DMXFixtureMap[i]);
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
+
+  EEPROM.write(2550, DMXSegment);
+  EEPROM.write(2551, DMXStartLED);
   #endif
 
   commit();
@@ -551,6 +554,8 @@ void loadSettingsFromEEPROM(bool first)
   DMXChannels = EEPROM.read(2530);
   DMXGap = EEPROM.read(2531) + ((EEPROM.read(2532) << 8) & 0xFF00);
   DMXStart = EEPROM.read(2533) + ((EEPROM.read(2534) << 8) & 0xFF00);
+  DMXSegment = EEPROM.read(2550);
+  DMXStartLED = EEPROM.read(2551);
   
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);

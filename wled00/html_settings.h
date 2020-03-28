@@ -218,7 +218,13 @@ channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" m
 start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
 spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
 <div id="gapwarning" style="color: orange; display: none;">WARNING: Channel gap is lower than channels per fixture.<br />This will cause overlap.</div>
-<button type="button" onclick="location.href='/dmxmap';">DMX Map</button>
+<button type="button" onclick="location.href='/dmxmap';">DMX Map</button><br>
+
+<i>If wanting to use DMX together with LEDs. Number of fixtures will also depend on the segment and start LED settings below</i><br>
+<i>Using these settings, you can position your fixtures anywhere you want on the LED strip</i><br>
+which segment should DMX use: <input type="number" min="0" max="9" name="SEG" maxlength="2"><br />
+start LED from the above channel from which DMX fixtures should start: <input type="number" min="0" max="1500" name="SL" maxlength="2"><br />
+
 <h3>channel functions</h3>
 <div id="dmxchannels"></div>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
