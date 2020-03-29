@@ -95,7 +95,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  116
+#define MODE_COUNT  117
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -198,21 +198,22 @@
 #define FX_MODE_PERCENT                 98
 #define FX_MODE_RIPPLE_RAINBOW          99
 #define FX_MODE_HEARTBEAT              100
-#define FX_MODE_ASound1                101
-#define FX_MODE_ASound2                102
-#define FX_MODE_ASound3                103
-#define FX_MODE_ASound4                104
-#define FX_MODE_ASound5                105
-#define FX_MODE_ASound6                106
-#define FX_MODE_ASound7                107
-#define FX_MODE_ASound8                108
-#define FX_MODE_ASound9                109
-#define FX_MODE_ASound10               110
-#define FX_MODE_ASound11               111
-#define FX_MODE_ASound12               112
-#define FX_MODE_ASound13               113
-#define FX_MODE_ASound14               114
-#define FX_MODE_ASound15               115
+#define FX_MODE_PACIFICA               101
+#define FX_MODE_ASound1                102
+#define FX_MODE_ASound2                103
+#define FX_MODE_ASound3                104
+#define FX_MODE_ASound4                105
+#define FX_MODE_ASound5                106
+#define FX_MODE_ASound6                107
+#define FX_MODE_ASound7                108
+#define FX_MODE_ASound8                109
+#define FX_MODE_ASound9                110
+#define FX_MODE_ASound10               111
+#define FX_MODE_ASound11               112
+#define FX_MODE_ASound12               113
+#define FX_MODE_ASound13               114
+#define FX_MODE_ASound14               115
+#define FX_MODE_ASound15               116
 
 
 // Sound reactive external variables
@@ -412,6 +413,7 @@ class WS2812FX {
       _mode[FX_MODE_PERCENT]                 = &WS2812FX::mode_percent;
       _mode[FX_MODE_RIPPLE_RAINBOW]          = &WS2812FX::mode_ripple_rainbow;
       _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
+      _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
       _mode[FX_MODE_ASound1]                 = &WS2812FX::mode_asound1;
       _mode[FX_MODE_ASound2]                 = &WS2812FX::mode_asound2;
       _mode[FX_MODE_ASound3]                 = &WS2812FX::mode_asound3;
@@ -613,6 +615,7 @@ class WS2812FX {
       mode_percent(void),
       mode_ripple_rainbow(void),
       mode_heartbeat(void),
+      mode_pacifica(void),
       mode_asound1(void),
       mode_asound2(void),
       mode_asound3(void),
@@ -677,6 +680,7 @@ class WS2812FX {
       spots_base(uint16_t);
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
+    CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
     
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
@@ -712,8 +716,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat","ASound1","ASound2","ASound3","ASound4","ASound5","ASound6","ASound7","ASound8","ASound9",
-"ASound10","ASound11","ASound12","ASound13","ASound14","ASound15"
+"Heartbeat","Pacifica","ASound1","ASound2","ASound3","ASound4","ASound5","ASound6","ASound7","ASound8",
+"ASound9","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15"
 ])=====";
 
 
@@ -723,7 +727,7 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
-"Aurora"
+"Aurora","Atlantica"
 ])=====";
 
 #endif
