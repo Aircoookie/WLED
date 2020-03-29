@@ -3175,7 +3175,7 @@ uint16_t WS2812FX::mode_heartbeat(void) {
 
 uint16_t WS2812FX::mode_asound1(void) {                                       // Pixels
 
-  int segLoc;
+  uint16_t segLoc;															  // 16 bit for larger strands of LED's.
   CRGB color;
   
   fade_out(4);
@@ -3334,8 +3334,8 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
   static int16_t thisphase = 0;                                                   // Phase of a cubicwave8.
   static int16_t thatphase = 0;                                                   // Phase of the cos8.
 
-  uint16_t thisbright;
-  uint16_t colorIndex;
+  uint8_t thisbright;
+  uint8_t colorIndex;
 
 //  fade_out(32); 
   
