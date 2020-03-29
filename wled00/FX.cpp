@@ -3459,6 +3459,9 @@ uint16_t WS2812FX::mode_asound10(void) {
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
 
+    // Fadeout regulates how long the bars are and how long the "history" is here. Unfortunately we do not have another slider right now. We really needs at least one more slider, preferably two 
+    // Additional audio effects need additional sliders when thinking of LED bars of varying lengths
+    
     fade_out(SEGMENT.speed/2);
     
     CRGB color = 0;

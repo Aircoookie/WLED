@@ -36,7 +36,7 @@
 //END CONFIGURATION
 
 #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
- #define CLKPIN 0
+ #define CLKPIN 4
  #define DATAPIN 2
  #if BTNPIN == CLKPIN || BTNPIN == DATAPIN
   #undef BTNPIN   // Deactivate button pin if it conflicts with one of the APA102 pins.
