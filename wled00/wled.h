@@ -381,28 +381,23 @@ int getSignalQuality(int rssi);
 class WLED
 {
 public:
+    WLED(); 
     static WLED &instance()
     {
         static WLED instance;
         return instance;
     }
 
-    WLED();
-
-    void reset();
-    void loop();
-
-
     //boot starts here
     void setup()
     {
         wledInit();
     }
+    void loop();
+    void reset();
 
-public: // TODO: privacy
     void wledInit();
     void beginStrip();
-
     void handleConnection();
     void initAP(bool resetAP = false);
     void initConnection();
