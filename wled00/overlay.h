@@ -1,5 +1,5 @@
-#ifndef WLED_OVERLAYS_H
-#define WLED_OVERLAYS_H
+#ifndef WLED_OVERLAY_H
+#define WLED_OVERLAY_H
 #include <Arduino.h>
 /*
  * Used to draw clock overlays over the strip
