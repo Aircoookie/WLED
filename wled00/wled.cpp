@@ -484,7 +484,7 @@ void WLED::loop()
 #endif // WLED_DEBU
 }
 
-void WLED::wledInit()
+void WLED::setup()
 {
     EEPROM.begin(EEPSIZE);
     ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00);

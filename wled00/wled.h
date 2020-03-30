@@ -388,14 +388,11 @@ public:
     }
 
     //boot starts here
-    void setup()
-    {
-        wledInit();
-    }
+    void setup();
+
     void loop();
     void reset();
 
-    void wledInit();
     void beginStrip();
     void handleConnection();
     void initAP(bool resetAP = false);
