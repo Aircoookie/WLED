@@ -14,6 +14,7 @@
 #include "mqtt.h"
 #include "wled_eeprom.h"
 #include "wled_server.h"
+
 // Global Variable definitions
 char versionString[] = "0.9.1";
 
@@ -342,13 +343,6 @@ bool doPublishMqtt = false;
 AsyncWebServer server(80);
 AsyncClient *hueClient = NULL;
 AsyncMqttClient *mqtt = NULL;
-
-//function prototypes
-void colorFromUint32(uint32_t, bool = false);
-void serveMessage(AsyncWebServerRequest *, uint16_t, String, String, byte);
-void handleE131Packet(e131_packet_t *, IPAddress);
-void arlsLock(uint32_t, byte);
-void handleOverlayDraw();
 
 //udp interface objects
 WiFiUDP notifierUdp, rgbUdp;

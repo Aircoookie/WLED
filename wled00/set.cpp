@@ -8,6 +8,7 @@
 #include "alexa.h"
 #include "cronixie.h"
 #include "xml.h"
+#include "wled_server.h"
 
 void _setRandomColor(bool _sec,bool fromButton)
 {

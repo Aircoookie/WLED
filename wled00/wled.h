@@ -354,13 +354,6 @@ extern ESPAsyncE131 e131;
 extern bool e131NewData;
 extern WS2812FX strip;
 
-// Function prototypes
-extern void colorFromUint32(uint32_t, bool);
-extern void serveMessage(AsyncWebServerRequest *, uint16_t, String, String, byte);
-extern void handleE131Packet(e131_packet_t *, IPAddress);
-extern void arlsLock(uint32_t, byte);
-extern void handleOverlayDraw();
-
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 
