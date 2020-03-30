@@ -2,6 +2,7 @@
 #define EspalexaDevice_h
 #include <functional>
 #include "Arduino.h"
+#include <functional>
 
 typedef class EspalexaDevice;
 

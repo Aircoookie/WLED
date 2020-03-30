@@ -115,7 +115,7 @@ extern "C"
 #endif
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2003222
+#define VERSION 2003301
 
 // Global external variable declaration. See wled.cpp for definitions and comments.
 extern char versionString[];
