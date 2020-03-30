@@ -376,7 +376,6 @@ extern int loops;
 bool oappend(const char *txt);
 // append new number to temp buffer efficiently
 bool oappendi(int i);
-int getSignalQuality(int rssi);
 
 class WLED
 {
