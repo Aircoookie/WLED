@@ -135,9 +135,6 @@
     <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Helpers.hpp">
       <Filter>Header Files\Dependencies</Filter>
     </ClInclude>
-    <ClInclude Include="ir_codes.h">
-      <Filter>Header Files\Dependencies</Filter>
-    </ClInclude>
     <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\MessageProperties.hpp">
       <Filter>Header Files\Dependencies</Filter>
     </ClInclude>
@@ -145,9 +142,6 @@
       <Filter>Header Files\Dependencies</Filter>
     </ClInclude>
     <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\Packet.hpp">
-      <Filter>Header Files\Dependencies</Filter>
-    </ClInclude>
-    <ClInclude Include="palettes.h">
       <Filter>Header Files\Dependencies</Filter>
     </ClInclude>
     <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\ParsingInformation.hpp">
@@ -256,6 +250,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="xml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ir_codes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="palettes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
