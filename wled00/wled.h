@@ -14,41 +14,41 @@
 // Alternatively, with platformio pass your chosen flags to your custom build target in platformio.ini.override
 
 // You are required to disable over-the-air updates:
-//#define WLED_DISABLE_OTA         //saves 14kb
+//#define WLED_DISABLE_OTA         // saves 14kb
 
 // You need to choose some of these features to disable:
-//#define WLED_DISABLE_ALEXA       //saves 11kb
-//#define WLED_DISABLE_BLYNK       //saves 6kb
-//#define WLED_DISABLE_CRONIXIE    //saves 3kb
-//#define WLED_DISABLE_HUESYNC     //saves 4kb
-//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
-#define WLED_ENABLE_MQTT         //saves 12kb
-#define WLED_ENABLE_ADALIGHT     //saves 500b only
-//#define WLED_ENABLE_DMX          //uses 3.5kb
+//#define WLED_DISABLE_ALEXA       // saves 11kb
+//#define WLED_DISABLE_BLYNK       // saves 6kb
+//#define WLED_DISABLE_CRONIXIE    // saves 3kb
+//#define WLED_DISABLE_HUESYNC     // saves 4kb
+//#define WLED_DISABLE_INFRARED    // there is no pin left for this on ESP8266-01, saves 12kb
+#define WLED_ENABLE_MQTT            // saves 12kb
+#define WLED_ENABLE_ADALIGHT        // saves 500b only
+//#define WLED_ENABLE_DMX          // uses 3.5kb
 
-#define WLED_DISABLE_FILESYSTEM //SPIFFS is not used by any WLED feature yet
-//#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
-//#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
+#define WLED_DISABLE_FILESYSTEM        // SPIFFS is not used by any WLED feature yet
+//#define WLED_ENABLE_FS_SERVING   // Enable sending html file from SPIFFS before serving progmem version
+//#define WLED_ENABLE_FS_EDITOR    // enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 // to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
 
 // Library inclusions. 
 #include <Arduino.h>
-#ifdef ESP8266
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
-#include <ESPAsyncTCP.h>
-extern "C"
-{
-#include <user_interface.h>
-}
-#else //ESP32
-#include <WiFi.h>
-#include "esp_wifi.h"
-#include <ESPmDNS.h>
-#include <AsyncTCP.h>
-#include "SPIFFS.h"
+  #ifdef ESP8266
+  #include <ESP8266WiFi.h>
+  #include <ESP8266mDNS.h>
+  #include <ESPAsyncTCP.h>
+  extern "C"
+  {
+  #include <user_interface.h>
+  }
+#else // ESP32
+  #include <WiFi.h>
+  #include "esp_wifi.h"
+  #include <ESPmDNS.h>
+  #include <AsyncTCP.h>
+  #include "SPIFFS.h"
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -56,25 +56,28 @@ extern "C"
 #include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
-#include <ArduinoOTA.h>
+  #include <ArduinoOTA.h>
 #endif
 #include <SPIFFSEditor.h>
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
+
 #ifndef WLED_DISABLE_ALEXA
-#define ESPALEXA_ASYNC
-#define ESPALEXA_NO_SUBPAGE
-#define ESPALEXA_MAXDEVICES 1
-// #define ESPALEXA_DEBUG
-#include "src/dependencies/espalexa/Espalexa.h"
+  #define ESPALEXA_ASYNC
+  #define ESPALEXA_NO_SUBPAGE
+  #define ESPALEXA_MAXDEVICES 1
+  // #define ESPALEXA_DEBUG
+  #include "src/dependencies/espalexa/Espalexa.h"
 #endif
 #ifndef WLED_DISABLE_BLYNK
-#include "src/dependencies/blynk/BlynkSimpleEsp.h"
+  #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
+
 #include "src/dependencies/e131/ESPAsyncE131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
+
 #include "html_ui.h"
 #include "html_settings.h"
 #include "html_other.h"
@@ -83,35 +86,35 @@ extern "C"
 #include "const.h"
 
 #ifndef CLIENT_SSID
-#define CLIENT_SSID DEFAULT_CLIENT_SSID
+  #define CLIENT_SSID DEFAULT_CLIENT_SSID
 #endif
 
 #ifndef CLIENT_PASS
-#define CLIENT_PASS ""
+  #define CLIENT_PASS ""
 #endif
 
 #if IR_PIN < 0
-#ifndef WLED_DISABLE_INFRARED
-#define WLED_DISABLE_INFRARED
-#endif
+  #ifndef WLED_DISABLE_INFRARED
+    #define WLED_DISABLE_INFRARED
+  #endif
 #endif
 
 #ifndef WLED_DISABLE_INFRARED
-#include <IRremoteESP8266.h>
-#include <IRrecv.h>
-#include <IRutils.h>
+  #include <IRremoteESP8266.h>
+  #include <IRrecv.h>
+  #include <IRutils.h>
 #endif
 
 // remove flicker because PWM signal of RGB channels can become out of phase
 #if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
-#include "src/dependencies/arduino/core_esp8266_waveform.h"
+  #include "src/dependencies/arduino/core_esp8266_waveform.h"
 #endif
 
 // enable additional debug output
 #ifdef WLED_DEBUG
-#ifndef ESP8266
-#include <rom/rtc.h>
-#endif
+  #ifndef ESP8266
+  #include <rom/rtc.h>
+  #endif
 #endif
 
 // version code in format yymmddb (b = daily build)
@@ -137,7 +140,7 @@ extern IPAddress staticSubnet;
 extern bool noWifiSleep;                   
 extern uint16_t ledCount;            
 extern bool useRGBW;              
-#define ABL_MILLIAMPS_DEFAULT 850; //auto lower brightness to stay close to milliampere limit
+#define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
 extern bool turnOnAtBoot;          
 extern byte bootPreset;               
 extern byte col[]; 
@@ -224,11 +227,10 @@ extern bool wifiLock;
 extern bool aOtaEnabled; 
 extern uint16_t userVar0, userVar1;
 #ifdef WLED_ENABLE_DMX
-extern byte DMXChannels; 
-extern byte DMXFixtureMap[15];
-extern 
-extern uint16_t DMXGap;   
-extern uint16_t DMXStart; 
+  extern byte DMXChannels; 
+  extern byte DMXFixtureMap[15];
+  extern uint16_t DMXGap;   
+  extern uint16_t DMXStart; 
 #endif
 extern bool apActive;
 extern bool forceReconnect;
@@ -315,15 +317,17 @@ extern long lastInterfaceUpdate;
 extern byte interfaceUpdateCallMode;
 extern char mqttStatusTopic[40]; 
 #if AUXPIN >= 0
-extern byte auxTime;
-extern unsigned long auxStartTime;
-extern bool auxActive;
+  extern byte auxTime;
+  extern unsigned long auxStartTime;
+  extern bool auxActive;
 #endif
 extern String escapedMac;
 #ifndef WLED_DISABLE_ALEXA
-extern Espalexa espalexa;
-extern EspalexaDevice *espalexaDevice;
+  extern Espalexa espalexa;
+  extern EspalexaDevice *espalexaDevice;
 #endif
+
+#define NTP_PACKET_SIZE 48
 extern DNSServer dnsServer;
 extern bool ntpConnected;
 extern time_t local;
@@ -331,15 +335,14 @@ extern unsigned long ntpLastSyncTime;
 extern unsigned long ntpPacketSentTime;
 extern IPAddress ntpServerIP;
 extern uint16_t ntpLocalPort;
-#define NTP_PACKET_SIZE 48
 
-//maximum number of LEDs - MAX_LEDS is coming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
+// maximum number of LEDs - MAX_LEDS is coming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
 #define MAX_LEDS 1500
 #define MAX_LEDS_DMA 500
 
-//string temp buffer (now stored in stack locally)
+// string temp buffer (now stored in stack locally)
 #define OMAX 2048
-extern char *obuf;
+extern char* obuf;
 extern uint16_t olen;
 
 extern uint16_t savedPresets;
@@ -348,11 +351,11 @@ extern bool isPreset;
 extern byte errorFlag;
 extern String messageHead, messageSub;
 extern byte optionType;
-extern bool doReboot; 
+extern bool doReboot;
 extern bool doPublishMqtt;
 extern AsyncWebServer server;
-extern AsyncClient *hueClient;
-extern AsyncMqttClient *mqtt;
+extern AsyncClient* hueClient;
+extern AsyncMqttClient* mqtt;
 extern WiFiUDP notifierUdp, rgbUdp;
 extern WiFiUDP ntpUdp;
 extern ESPAsyncE131 e131;
@@ -362,46 +365,45 @@ extern WS2812FX strip;
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 
-//debug macros
+// debug macros
 #ifdef WLED_DEBUG
-#define DEBUG_PRINT(x) Serial.print(x)
-#define DEBUG_PRINTLN(x) Serial.println(x)
-#define DEBUG_PRINTF(x) Serial.printf(x)
-extern unsigned long debugTime;
-extern int lastWifiState;
-extern unsigned long wifiStateChangedTime;
-extern int loops;
+  #define DEBUG_PRINT(x) Serial.print(x)
+  #define DEBUG_PRINTLN(x) Serial.println(x)
+  #define DEBUG_PRINTF(x) Serial.printf(x)
+  extern unsigned long debugTime;
+  extern int lastWifiState;
+  extern unsigned long wifiStateChangedTime;
+  extern int loops;
 #else
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTLN(x)
-#define DEBUG_PRINTF(x)
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINTF(x)
 #endif
 
 // append new c string to temp buffer efficiently
-bool oappend(const char *txt);
+bool oappend(const char* txt);
 // append new number to temp buffer efficiently
 bool oappendi(int i);
 
-class WLED
-{
+class WLED {
 public:
-    WLED(); 
-    static WLED &instance()
-    {
-        static WLED instance;
-        return instance;
-    }
+  WLED();
+  static WLED& instance()
+  {
+    static WLED instance;
+    return instance;
+  }
 
-    //boot starts here
-    void setup();
+  // boot starts here
+  void setup();
 
-    void loop();
-    void reset();
+  void loop();
+  void reset();
 
-    void beginStrip();
-    void handleConnection();
-    void initAP(bool resetAP = false);
-    void initConnection();
-    void initInterfaces();
+  void beginStrip();
+  void handleConnection();
+  void initAP(bool resetAP = false);
+  void initConnection();
+  void initInterfaces();
 };
-#endif // WLED_H
+#endif        // WLED_H

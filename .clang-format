@@ -1,4 +1,12 @@
 ---
   BasedOnStyle: Webkit
   IndentWidth: 2
-  
+  AlignTrailingComments: true 
+  SpacesBeforeTrailingComments: 8
+  AllowShortIfStatementsOnASingleLine: Always
+  AllowShortLoopsOnASingleLine: true
+  AllowShortLambdasOnASingleLine: true
+  AllowShortCaseLabelsOnASingleLine: true
+  AllowShortFunctionsOnASingleLine: All
+  AllowShortBlocksOnASingleLine: true
+  IndentCaseLabels: true
