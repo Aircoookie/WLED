@@ -2,6 +2,7 @@
 #include "alexa.h"
 #include "blynk.h"
 #include "button.h"
+#include "dmx.h"
 #include "file.h"
 #include "hue.h"
 #include "ir.h"
