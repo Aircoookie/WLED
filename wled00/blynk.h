@@ -8,6 +8,6 @@
 void initBlynk(const char* auth);
 void handleBlynk();
 void updateBlynk();
-// Unsure if the macro expansions need to accessed through the declaration... TODO
+// TODO: Make sure that the macro expansions are handled correctly.
 
 #endif //WLED_BLYNK_H

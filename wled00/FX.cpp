@@ -268,7 +268,7 @@ uint16_t WS2812FX::mode_breath(void) {
   counter = (counter >> 2) + (counter >> 4); //0-16384 + 0-2048
   if (counter < 16384) {
     if (counter > 8192) counter = 8192 - (counter - 8192);
-    var = sin16(counter) / 103; //close to parabolic in range 0-8192, MAX val. 23170
+    var = sin16(counter) / 103; //close to parabolic in range 0-8192, max val. 23170
   }
   
   uint8_t lum = 30 + var;
@@ -475,8 +475,8 @@ uint16_t WS2812FX::mode_twinkle(void) {
   uint32_t it = now / cycleTime;
   if (it != SEGENV.step)
   {
-    uint16_t MAXOn = map(SEGMENT.intensity, 0, 255, 1, SEGLEN); // make sure at least one LED is on
-    if (SEGENV.aux0 >= MAXOn)
+    uint16_t maxOn = map(SEGMENT.intensity, 0, 255, 1, SEGLEN); // make sure at least one LED is on
+    if (SEGENV.aux0 >= maxOn)
     {
       SEGENV.aux0 = 0;
       SEGENV.aux1 = random16(); //new seed for our PRNG
@@ -1597,8 +1597,8 @@ uint16_t WS2812FX::mode_oscillate(void)
 
 uint16_t WS2812FX::mode_lightning(void)
 {
-  uint16_t ledstart = random16(SEGLEN);               // DeterMINe starting location of flash
-  uint16_t ledlen = random16(SEGLEN -1 -ledstart);    // DeterMINe length of flash (not to go beyond NUM_LEDS-1)
+  uint16_t ledstart = random16(SEGLEN);               // Determine starting location of flash
+  uint16_t ledlen = random16(SEGLEN -1 -ledstart);    // Determine length of flash (not to go beyond NUM_LEDS-1)
   uint8_t bri = 255/random8(1, 3);
 
   if (SEGENV.step == 0)
@@ -2153,9 +2153,9 @@ typedef struct Ripple {
 
 uint16_t WS2812FX::ripple_base(bool rainbow)
 {
-  uint16_t MAXRipples = 1 + (SEGLEN >> 2);
-  if (MAXRipples > 100) MAXRipples = 100;
-  uint16_t dataSize = sizeof(ripple) * MAXRipples;
+  uint16_t maxRipples = 1 + (SEGLEN >> 2);
+  if (maxRipples > 100) maxRipples = 100;
+  uint16_t dataSize = sizeof(ripple) * maxRipples;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
  
@@ -2181,7 +2181,7 @@ uint16_t WS2812FX::ripple_base(bool rainbow)
   }
   
   //draw wave
-  for (uint16_t i = 0; i < MAXRipples; i++)
+  for (uint16_t i = 0; i < maxRipples; i++)
   {
     uint16_t ripplestate = ripples[i].state;
     if (ripplestate)
@@ -2480,8 +2480,8 @@ uint16_t WS2812FX::spots_base(uint16_t threshold)
 {
   fill(SEGCOLOR(1));
   
-  uint16_t MAXZones = SEGLEN >> 2;
-  uint16_t zones = 1 + ((SEGMENT.intensity * MAXZones) >> 8);
+  uint16_t maxZones = SEGLEN >> 2;
+  uint16_t zones = 1 + ((SEGMENT.intensity * maxZones) >> 8);
   uint16_t zoneLen = SEGLEN / zones;
   uint16_t offset = (SEGLEN - zones * zoneLen) >> 1;
 
@@ -2533,15 +2533,15 @@ typedef struct Ball {
 */
 uint16_t WS2812FX::mode_bouncing_balls(void) {
   //allocate segment data
-  uint16_t MAXNumBalls = 16; 
-  uint16_t dataSize = sizeof(ball) * MAXNumBalls;
+  uint16_t maxNumBalls = 16; 
+  uint16_t dataSize = sizeof(ball) * maxNumBalls;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   
   Ball* balls = reinterpret_cast<Ball*>(SEGENV.data);
   
-  // number of balls based on intensity setting to MAX of 7 (cycles colors)
+  // number of balls based on intensity setting to max of 7 (cycles colors)
   // non-chosen color is a random color
-  uint8_t numBalls = int(((SEGMENT.intensity * (MAXNumBalls - 0.8f)) / 255) + 1);
+  uint8_t numBalls = int(((SEGMENT.intensity * (maxNumBalls - 0.8f)) / 255) + 1);
   
   float gravity                           = -9.81; // standard value of gravity
   float impactVelocityStart               = sqrt( -2 * gravity);
@@ -2549,7 +2549,7 @@ uint16_t WS2812FX::mode_bouncing_balls(void) {
   unsigned long time = millis();
 
   if (SEGENV.call == 0) {
-    for (uint8_t i = 0; i < MAXNumBalls; i++) balls[i].lastBounceTime = time;
+    for (uint8_t i = 0; i < maxNumBalls; i++) balls[i].lastBounceTime = time;
   }
   
   bool hasCol2 = SEGCOLOR(2);
@@ -2665,8 +2665,8 @@ typedef struct Spark {
 */
 uint16_t WS2812FX::mode_popcorn(void) {
   //allocate segment data
-  uint16_t MAXNumPopcorn = 24; 
-  uint16_t dataSize = sizeof(spark) * MAXNumPopcorn;
+  uint16_t maxNumPopcorn = 24; 
+  uint16_t dataSize = sizeof(spark) * maxNumPopcorn;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   
   Spark* popcorn = reinterpret_cast<Spark*>(SEGENV.data);
@@ -2677,7 +2677,7 @@ uint16_t WS2812FX::mode_popcorn(void) {
   bool hasCol2 = SEGCOLOR(2);
   fill(hasCol2 ? BLACK : SEGCOLOR(1));
 
-  uint8_t numPopcorn = SEGMENT.intensity*MAXNumPopcorn/255;
+  uint8_t numPopcorn = SEGMENT.intensity*maxNumPopcorn/255;
   if (numPopcorn == 0) numPopcorn = 1;
 
   for(uint8_t i = 0; i < numPopcorn; i++) {
@@ -2792,13 +2792,13 @@ uint16_t WS2812FX::mode_starburst(void) {
   
   star* stars = reinterpret_cast<star*>(SEGENV.data);
   
-  float          MAXSpeed                = 375.0f;  // Max velocity
+  float          maxSpeed                = 375.0f;  // Max velocity
   float          particleIgnition        = 250.0f;  // How long to "flash"
   float          particleFadeTime        = 1500.0f; // Fade out time
      
   for (int j = 0; j < numStars; j++)
   {
-    // speed to adjust chance of a burst, MAX is nearly always.
+    // speed to adjust chance of a burst, max is nearly always.
     if (random8((144-(SEGMENT.speed >> 1))) == 0 && stars[j].birth == 0)
     {
       // Pick a random color and location.  
@@ -2807,7 +2807,7 @@ uint16_t WS2812FX::mode_starburst(void) {
 
       stars[j].color = col_to_crgb(color_wheel(random8()));
       stars[j].pos = startPos; 
-      stars[j].vel = MAXSpeed * (float)(random8())/255.0 * multiplier;
+      stars[j].vel = maxSpeed * (float)(random8())/255.0 * multiplier;
       stars[j].birth = it;
       stars[j].last = it;
       // more fragments means larger burst effect
@@ -3026,7 +3026,7 @@ uint16_t WS2812FX::mode_drip(void)
       drops[j].pos = SEGLEN-1;    // start at end
       drops[j].vel = 0;           // speed
       drops[j].col = sourcedrop;  // brightness
-      drops[j].colIndex = 1;      // drop state (0 init, 1 forMINg, 2 falling, 5 bouncing) 
+      drops[j].colIndex = 1;      // drop state (0 init, 1 forming, 2 falling, 5 bouncing) 
     }
     
     setPixelColor(SEGLEN-1,color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
@@ -3047,7 +3047,7 @@ uint16_t WS2812FX::mode_drip(void)
         if (drops[j].pos < 0) drops[j].pos = 0;
         drops[j].vel += gravity;
 
-        for (int i=1;i<7-drops[j].colIndex;i++) { // some MINor math so we don't expand bouncing droplets
+        for (int i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
           setPixelColor(int(drops[j].pos)+i,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
         }
         
@@ -3055,7 +3055,7 @@ uint16_t WS2812FX::mode_drip(void)
           setPixelColor(0,color_blend(SEGCOLOR(0),BLACK,drops[j].col));
         }
       } else {                             // we hit bottom
-        if (drops[j].colIndex > 2) {       // already hit once, so back to forMINg
+        if (drops[j].colIndex > 2) {       // already hit once, so back to forming
           drops[j].colIndex = 0;
           drops[j].col = sourcedrop;
           
