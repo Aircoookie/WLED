@@ -294,11 +294,11 @@ uint8_t WS2812FX::getPaletteCount()
 
 //TODO transitions
 
+bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t f1, uint8_t f2, uint8_t f3, uint8_t p) {
 
-bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
   uint8_t mainSeg = getMainSegmentId();
   Segment& seg = _segments[getMainSegmentId()];
-  uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
+  uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, fft1Prev = seg.fft1, fft2Prev = seg.fft2, fft3Prev = seg.fft3, palettePrev = seg.palette;
 
   bool applied = false;
   
@@ -309,6 +309,9 @@ bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
       {
         _segments[i].speed = s;
         _segments[i].intensity = in;
+        _segments[i].fft1 = f1;
+        _segments[i].fft2 = f2;
+        _segments[i].fft3 = f3;
         _segments[i].palette = p;
         setMode(i, m);
         applied = true;
@@ -319,11 +322,14 @@ bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
   if (!applyToAllSelected || !applied) {
     seg.speed = s;
     seg.intensity = in;
+    seg.fft1 = f1;
+    seg.fft2 = f2;
+    seg.fft3 = f3;
     seg.palette = p;
     setMode(mainSegment, m);
   }
-  
-  if (seg.mode != modePrev || seg.speed != speedPrev || seg.intensity != intensityPrev || seg.palette != palettePrev) return true;
+
+  if (seg.mode != modePrev || seg.speed != speedPrev || seg.intensity != intensityPrev || seg.fft1 != fft1Prev || seg.fft2 != fft2Prev || seg.fft3 != fft3Prev || seg.palette != palettePrev) return true;
   return false;
 }
 
@@ -792,6 +798,9 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
   if (a->mode != b->mode) return false;
   if (a->speed != b->speed) return false;
   if (a->intensity != b->intensity) return false;
+  if (a->fft1 != b->fft1) return false;
+  if (a->fft2 != b->fft2) return false;
+  if (a->fft3 != b->fft3) return false;
   if (a->palette != b->palette) return false;
   //if (a->getOption(1) != b->getOption(1)) return false; //reverse
   return true;

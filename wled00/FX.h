@@ -238,6 +238,9 @@ class WS2812FX {
       uint16_t stop; //segment invalid if stop == 0
       uint8_t speed;
       uint8_t intensity;
+      uint8_t fft1;
+      uint8_t fft2;
+      uint8_t fft3;
       uint8_t palette;
       uint8_t mode;
       uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
@@ -467,7 +470,7 @@ class WS2812FX {
       gammaCorrectCol = true,
       applyToAllSelected = true,
       segmentsAreIdentical(Segment* a, Segment* b),
-      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p);
+      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t f1, uint8_t f2, uint8_t f3, uint8_t p);
 
     uint8_t
       mainSegment = 0,
@@ -693,10 +696,12 @@ class WS2812FX {
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
-    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
-      // start, stop, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[]
-      { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
+
+    segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 27 bytes per element
+      // start, stop, speed, intensity, fft1, fft2, fft3, palette, mode, options, grouping, spacing, opacity (unused), color[]
+      { 0, 7, DEFAULT_SPEED, 128, 128, 128, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
     };
+
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
     friend class Segment_runtime;
 

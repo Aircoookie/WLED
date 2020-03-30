@@ -53,12 +53,18 @@ void deserializeSegment(JsonObject elem, byte it)
       effectCurrent = elem["fx"] | effectCurrent;
       effectSpeed = elem["sx"] | effectSpeed;
       effectIntensity = elem["ix"] | effectIntensity;
+      effectFFT1 = elem["f1x"] | effectFFT1;
+      effectFFT2 = elem["f2x"] | effectFFT2;
+      effectFFT3 = elem["f3x"] | effectFFT3;
       effectPalette = elem["pal"] | effectPalette;
     } else { //permanent
       byte fx = elem["fx"] | seg.mode;
       if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
       seg.speed = elem["sx"] | seg.speed;
       seg.intensity = elem["ix"] | seg.intensity;
+      seg.fft1 = elem["f1x"] | seg.fft1;
+      seg.fft2 = elem["f2x"] | seg.fft2;
+      seg.fft3 = elem["f3x"] | seg.fft3;
       seg.palette = elem["pal"] | seg.palette;
     }
   }
@@ -200,6 +206,9 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["fx"] = seg.mode;
 	root["sx"] = seg.speed;
 	root["ix"] = seg.intensity;
+  root["f1x"] = seg.fft1;
+  root["f2x"] = seg.fft2;
+  root["f3x"] = seg.fft3;
 	root["pal"] = seg.palette;
 	root["sel"] = seg.isSelected();
 	root["rev"] = seg.getOption(1);

@@ -750,6 +750,30 @@ input[type=number]::-webkit-outer-spin-button {
         <div class="sliderdisplay"></div>
       </div>
     </div>
+    <p class="labels">Effect FFT1</p>
+    <div class="staytop" id="staytop1">
+      <i class="icons slider-icon">&#xe409;</i>
+      <div class="sliderwrap il">
+        <input id="sliderFFT1" class="noslide" onchange="setFFT1()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+        <div class="sliderdisplay"></div>
+      </div>
+    </div>
+    <p class="labels">Effect FFT2</p>
+    <div class="staytop" id="staytop1">
+      <i class="icons slider-icon">&#xe409;</i>
+      <div class="sliderwrap il">
+        <input id="sliderFFT2" class="noslide" onchange="setFFT2()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+        <div class="sliderdisplay"></div>
+      </div>
+    </div>
+    <p class="labels">Effect FFT3</p>
+    <div class="staytop" id="staytop1">
+      <i class="icons slider-icon">&#xe409;</i>
+      <div class="sliderwrap il">
+        <input id="sliderFFT3" class="noslide" onchange="setFFT3()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+        <div class="sliderdisplay"></div>
+      </div>
+    </div>
     <p class="labels">Effect mode</p>
     <div class="staytop" id="staytop2">
       <button class="btn" id="fxb0" onclick="setX(0);">Solid</button>
@@ -759,7 +783,8 @@ input[type=number]::-webkit-outer-spin-button {
     </div>
     <br>
   </div>
-  
+
+
   <div id="Segments" class="tabcontent">
     <div id="segcont">
       Loading...
@@ -1017,6 +1042,9 @@ function updateUI()
   updateTrail(d.getElementById('sliderBri'));
   updateTrail(d.getElementById('sliderSpeed'));
   updateTrail(d.getElementById('sliderIntensity'));
+  updateTrail(d.getElementById('sliderFFT1'));
+  updateTrail(d.getElementById('sliderFFT2'));
+  updateTrail(d.getElementById('sliderFFT3'));
   updateTrail(d.getElementById('sliderW'));
   if (isRgbw) d.getElementById('wwrap').style.display = "block";
   
@@ -1138,6 +1166,9 @@ function requestJson(command, verbose = true) {
 
     d.getElementById('sliderSpeed').value = i.sx;
     d.getElementById('sliderIntensity').value = i.ix;
+    d.getElementById('sliderFFT1').value = i.f1x;
+    d.getElementById('sliderFFT2').value = i.f2x;
+    d.getElementById('sliderFFT3').value = i.f3x;
 
     d.getElementById('fxb' + selectedFx).style.backgroundColor = "#333";
     selectedFx = i.fx;
@@ -1289,6 +1320,21 @@ function setIntensity() {
   requestJson(obj);
 }
 
+function setFFT1() {
+  var obj = {"seg": {"f1x": parseInt(d.getElementById('sliderFFT1').value)}};
+  requestJson(obj);
+}
+
+function setFFT2() {
+  var obj = {"seg": {"f2x": parseInt(d.getElementById('sliderFFT2').value)}};
+  requestJson(obj);
+}
+
+function setFFT3() {
+  var obj = {"seg": {"f3x": parseInt(d.getElementById('sliderFFT3').value)}};
+  requestJson(obj);
+}
+
 function toggleCY() {
   var obj = {"pl" : -1};
   if (d.getElementById('cyToggle').checked)
@@ -1394,6 +1440,10 @@ function unfocusSliders() {
   d.getElementById("sliderBri").blur();
   d.getElementById("sliderSpeed").blur();
   d.getElementById("sliderIntensity").blur();
+  d.getElementById("sliderFFT1").blur();
+  d.getElementById("sliderFFT2").blur();
+  d.getElementById("sliderFFT3").blur();
+
 }
 
 //sliding UI

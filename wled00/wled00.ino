@@ -343,6 +343,9 @@ bool notificationTwoRequired = false;
 byte effectCurrent = 0;
 byte effectSpeed = 128;
 byte effectIntensity = 128;
+byte effectFFT1 = 128;
+byte effectFFT2 = 128;
+byte effectFFT3 = 128;
 byte effectPalette = 0;
 
 //network

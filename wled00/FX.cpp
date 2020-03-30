@@ -3297,9 +3297,9 @@ uint16_t WS2812FX::mode_asound1(void) {                                       //
 //  EVERY_N_MILLIS(1000) {
 
 //      Serial.print("SEGENV.call "); Serial.println(SEGENV.call);
-      Serial.print("SEGENV.next_time "); Serial.print(SEGENV.next_time);
-      Serial.print(" ");
-      Serial.print("now"); Serial.println(now);
+//      Serial.print("SEGENV.next_time "); Serial.print(SEGENV.next_time);
+//      Serial.print(" ");
+//      Serial.print("now"); Serial.println(now);
       
 //      Serial.print("SEGENV.step "); Serial.println(SEGENV.step);
 //      Serial.print("SEGENV.aux0 "); Serial.println(SEGENV.aux0);
@@ -3309,6 +3309,7 @@ uint16_t WS2812FX::mode_asound1(void) {                                       //
 //      Serial.print("SEGMENT.start "); Serial.println(SEGMENT.start);
 //      Serial.print("SEGMENT.stop "); Serial.println(SEGMENT.stop);
 //      Serial.print("SEGMENT.intensity "); Serial.println(SEGMENT.intensity);
+        Serial.print("SEGMENT.fft1 "); Serial.println(SEGMENT.fft1);
 //      Serial.print("SEGMENT.speed "); Serial.println(SEGMENT.speed);
 //      Serial.print("SEGMENT.options "); Serial.println(SEGMENT.options);
 //      setPixelColor(0, random8(), random8(), random8());

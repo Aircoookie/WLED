@@ -1,18 +1,14 @@
-/*
- * Binary arrays for the mobile index page by StormPie.
- * gzip is used for smaller size and improved speeds.
- * 
- * Workflow for creating them from HTML source:
- * 1. Minify HTML (https://htmlcompressor.com/compressor/) (optional)
- * 2. Compress with gzip (https://online-converting.com/archives/convert-to-gzip/)
- * 3. Convert gzip binary to c array (https://littlevgl.com/image-to-c-array) (select RAW as color format, add .bmp file extension to gzip)
- *    alternative: https://sourceforge.net/projects/bin2header/
- * 4. update length value
-*/
+#include "lvgl/lvgl.h"
 
-const uint16_t PAGE_index_L = 24419; //length of the binary payload
+#ifndef LV_ATTRIBUTE_MEM_ALIGN
+#define LV_ATTRIBUTE_MEM_ALIGN
+#endif
 
-const uint8_t PAGE_index[] PROGMEM = {
+#ifndef LV_ATTRIBUTE_IMG_INDEX
+#define LV_ATTRIBUTE_IMG_INDEX
+#endif
+
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_IMG_INDEX uint8_t index_map[] = {
   0x1f, 0x8b, 0x08, 0x08, 0x28, 0xfb, 0x81, 0x5e, 0x00, 0x03, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x2e, 
   0x68, 0x74, 0x6d, 0x00, 0xd4, 0x7d, 0x6b, 0x97, 0xa2, 0x48, 0xb6, 0xe8, 0xe7, 0xea, 0xb5, 0xfa, 
   0x3f, 0xd8, 0xd6, 0x3a, 0x53, 0x55, 0x93, 0x65, 0x02, 0xbe, 0xd2, 0xac, 0xd7, 0x99, 0x00, 0x51, 
@@ -1540,4 +1536,13 @@ const uint8_t PAGE_index[] PROGMEM = {
   0x72, 0xcb, 0xdc, 0x32, 0xe4, 0x65, 0x33, 0xfb, 0xf1, 0x01, 0xac, 0x59, 0xe9, 0xb2, 0x3a, 0xc1, 
   0x47, 0x3c, 0x29, 0x45, 0x0f, 0x57, 0xd5, 0x75, 0x76, 0xf2, 0xbf, 0x82, 0x9d, 0xb4, 0xd5, 0x57, 
   0x27, 0x01, 0x00, 
+};
+
+const lv_img_dsc_t index = {
+  .header.always_zero = 0,
+  .header.w = ,
+  .header.h = ,
+  .data_size = 24419,
+  .header.cf = LV_IMG_CF_RAW,
+  .data = index_map,
 };
