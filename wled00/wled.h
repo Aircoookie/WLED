@@ -37,10 +37,6 @@
 
 //library inclusions
 #include <Arduino.h>
-#ifdef WLED_ENABLE_DMX
-#include <ESPDMX.h>
-DMXESPSerial dmx;
-#endif
 #ifdef ESP8266
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
