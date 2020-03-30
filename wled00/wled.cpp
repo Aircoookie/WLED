@@ -45,7 +45,6 @@ bool noWifiSleep = false;                   //disabling modem sleep modes will i
 //LED CONFIG
 uint16_t ledCount = 30;            //overcurrent prevented by ABL
 bool useRGBW = false;              //SK6812 strips can contain an extra White channel
-#define ABL_MILLIAMPS_DEFAULT 850; //auto lower brightness to stay close to milliampere limit
 bool turnOnAtBoot = true;          //turn on LEDs at power-up
 byte bootPreset = 0;               //save preset to load after power-up
 
@@ -95,7 +94,6 @@ bool receiveDirect = true;              //receive UDP realtime
 bool arlsDisableGammaCorrection = true; //activate if gamma correction is handled by the source
 bool arlsForceMaxBri = false;           //enable to force max brightness if source has very dark colors that would be black
 
-#define E131_MAX_UNIVERSE_COUNT 9
 uint16_t e131Universe = 1;                               //settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 uint8_t DMXMode = DMX_MODE_MULTIPLE_RGB;                 //DMX mode (s.a.)
 uint16_t DMXAddress = 1;                                 //DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
@@ -315,14 +313,8 @@ unsigned long ntpLastSyncTime = 999000000L;
 unsigned long ntpPacketSentTime = 999000000L;
 IPAddress ntpServerIP;
 uint16_t ntpLocalPort = 2390;
-#define NTP_PACKET_SIZE 48
 
-//maximum number of LEDs - MAX_LEDS is coming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
-#define MAX_LEDS 1500
-#define MAX_LEDS_DMA 500
-
-//string temp buffer (now stored in stack locally)
-#define OMAX 2048
+// Temp buffer
 char *obuf;
 uint16_t olen = 0;
 
@@ -352,9 +344,6 @@ bool e131NewData = false;
 
 //led fx library object
 WS2812FX strip = WS2812FX();
-
-#define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
-#define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 
 //debug macro variable definitions
 #ifdef WLED_DEBUG

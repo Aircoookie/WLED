@@ -137,7 +137,7 @@ extern IPAddress staticSubnet;
 extern bool noWifiSleep;                   
 extern uint16_t ledCount;            
 extern bool useRGBW;              
-#define ABL_MILLIAMPS_DEFAULT 850; 
+#define ABL_MILLIAMPS_DEFAULT 850; //auto lower brightness to stay close to milliampere limit
 extern bool turnOnAtBoot;          
 extern byte bootPreset;               
 extern byte col[]; 
@@ -332,11 +332,16 @@ extern unsigned long ntpPacketSentTime;
 extern IPAddress ntpServerIP;
 extern uint16_t ntpLocalPort;
 #define NTP_PACKET_SIZE 48
+
+//maximum number of LEDs - MAX_LEDS is coming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
 #define MAX_LEDS 1500
 #define MAX_LEDS_DMA 500
+
+//string temp buffer (now stored in stack locally)
 #define OMAX 2048
 extern char *obuf;
 extern uint16_t olen;
+
 extern uint16_t savedPresets;
 extern int8_t currentPreset;
 extern bool isPreset;
