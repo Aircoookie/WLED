@@ -23,20 +23,23 @@
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
-//#define WLED_ENABLE_DMX          //uses 3.5kb
+//#define WLED_ENABLE_DMX            //uses 10.7kb
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 //to toggle usb serial debug (un)comment the following line
-//#define WLED_DEBUG
+#define WLED_DEBUG
 
 //library inclusions
 #include <Arduino.h>
 #ifdef WLED_ENABLE_DMX
-  #include <ESPDMX.h>
-  DMXESPSerial dmx;
+  #ifdef ESP8266
+    #include <LXESP8266DMX.h>
+  #else
+    #include <LXESP32DMX.h>
+  #endif
 #endif
 #ifdef ESP8266
   #include <ESP8266WiFi.h>
@@ -277,6 +280,13 @@ uint16_t userVar0 = 0, userVar1 = 0;
                                               // assigns the different channels to different functions. See wled21_dmx.ino for more information.
   uint16_t DMXGap = 10;                       // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
   uint16_t DMXStart = 10;                     // start address of the first fixture
+  #ifdef ESP8266
+    uint16_t DMXDirectionPin = 14;
+    uint16_t DMXSerialOutputPin = 15;
+  #else
+    uint16_t DMXDirectionPin = 21;
+    uint16_t DMXSerialOutputPin = 17;
+  #endif
 #endif
 
 
@@ -481,7 +491,7 @@ WS2812FX strip = WS2812FX();
 #ifdef WLED_DEBUG
   #define DEBUG_PRINT(x)  Serial.print (x)
   #define DEBUG_PRINTLN(x) Serial.println (x)
-  #define DEBUG_PRINTF(x) Serial.printf (x)
+  #define DEBUG_PRINTF(x...) Serial.printf (x)
   unsigned long debugTime = 0;
   int lastWifiState = 3;
   unsigned long wifiStateChangedTime = 0;
@@ -489,7 +499,7 @@ WS2812FX strip = WS2812FX();
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
-  #define DEBUG_PRINTF(x)
+  #define DEBUG_PRINTF(x...)
 #endif
 
 //filesystem

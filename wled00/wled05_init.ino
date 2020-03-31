@@ -84,7 +84,16 @@ void wledInit()
     }
   #endif
   #ifdef WLED_ENABLE_DMX
-    dmx.init(512); // initialize with bus length
+    pinMode(DMXDirectionPin, OUTPUT);
+    pinMode(DMXSerialOutputPin, OUTPUT);
+    #ifdef ESP8266
+      ESP8266DMX.setDirectionPin(DMXDirectionPin);
+      ESP8266DMX.startOutput();
+    #else
+      digitalWrite(DMXDirectionPin, HIGH);
+      ESP32DMX.startOutput(DMXSerialOutputPin);
+    #endif
+    DEBUG_PRINT("Start DMX output");
   #endif
   //HTTP server page init
   initServer();

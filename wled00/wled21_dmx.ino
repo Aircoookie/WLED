@@ -5,10 +5,39 @@
  */
 #ifdef WLED_ENABLE_DMX
 
+static uint8_t level;
+static uint8_t dmxbuffer[DMX_MAX_FRAME];
+static bool changed = true;
+
+void copyDMXToOutput(void) {
+  xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
+	for (int i=1; i<DMX_MAX_FRAME; i++) {
+    #ifdef ESP8266
+      ESP8266DMX.setSlot(i, dmxbuffer[i]);
+    #else
+    	ESP32DMX.setSlot(i , dmxbuffer[i]);
+    #endif
+   }
+   changed = false;
+   xSemaphoreGive( ESP32DMX.lxDataLock );
+}
+
+void setDMX(uint16_t DMXAddr, byte value) {
+  if (DMXAddr < DMX_MAX_FRAME && dmxbuffer[DMXAddr] != value) {
+    dmxbuffer[DMXAddr] = value;
+    changed = true;
+  }
+}
+
 void handleDMX() {
   // TODO: calculate brightness manually if no shutter channel is set
   
   uint8_t brightness = strip.getBrightness();
+  bool calc_brightness = true;
+  for (byte i = 0; i < DMXChannels; i++)
+  {
+    if (DMXFixtureMap[i] == 5) calc_brightness = false;
+  }
 
   for (int i = 0; i < ledCount; i++) { // uses the amount of LEDs as fixture count
 
@@ -23,31 +52,34 @@ void handleDMX() {
       int DMXAddr = DMXFixtureStart + j;
       switch (DMXFixtureMap[j]) {
         case 0: // Set this channel to 0. Good way to tell strobe- and fade-functions to fuck right off.
-          dmx.write(DMXAddr, 0);
+          setDMX(DMXAddr, 0);
           break;
         case 1: // Red
-          dmx.write(DMXAddr, r);
+          setDMX(DMXAddr, calc_brightness ? (r * brightness) / 255 : r);
           break;
         case 2: // Green
-          dmx.write(DMXAddr, g);
+          setDMX(DMXAddr, calc_brightness ? (g * brightness) / 255 : g);
           break;
         case 3: // Blue
-          dmx.write(DMXAddr, b);
+          setDMX(DMXAddr, calc_brightness ? (b * brightness) / 255 : b);
           break;
         case 4: // White
-          dmx.write(DMXAddr, w);
+          setDMX(DMXAddr, calc_brightness ? (w * brightness) / 255 : w);
           break;
         case 5: // Shutter channel. Controls the brightness.
-          dmx.write(DMXAddr, brightness);
+          setDMX(DMXAddr, brightness);
           break;
         case 6:// Sets this channel to 255. Like 0, but more wholesome.
-          dmx.write(DMXAddr, 255);
+          setDMX(DMXAddr, 255);
           break;
       }
     }
   }
 
-  dmx.update();           // update the DMX bus
+  if (changed) {
+    copyDMXToOutput();           // update the DMX bus
+    DEBUG_PRINTLN("Sent colors via DMX");
+  }
 }
 
 #else
