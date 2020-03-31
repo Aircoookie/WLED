@@ -1,6 +1,17 @@
-/*
- * Utility for SPIFFS filesystem & Serial console
- */
+#include "file.h"
+#include "wled.h"
+#include "led.h"
+#include "notify.h"
+
+//filesystem
+#ifndef WLED_DISABLE_FILESYSTEM
+#include <FS.h>
+#ifdef ARDUINO_ARCH_ESP32
+#include "SPIFFS.h"
+#endif
+#include "SPIFFSEditor.h"
+#endif
+
 enum class AdaState {
   Header_A,
   Header_d,
@@ -13,6 +24,7 @@ enum class AdaState {
   Data_Blue
 };
 
+// Maybe Adalight should not be in filehandling? TODO
 void handleSerial()
 {
   #ifdef WLED_ENABLE_ADALIGHT

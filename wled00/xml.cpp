@@ -1,9 +1,11 @@
-/*
- * Sending XML status files to client
- */
+#include "xml.h"
+#include "wled.h"
+#include "wled_eeprom.h"
+#include "ntp.h"
+
 
 //build XML response to HTTP /win API request
-char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
+char* XML_response(AsyncWebServerRequest *request, char* dest)
 {
   char sbuf[(dest == nullptr)?1024:1]; //allocate local buffer if none passed
   obuf = (dest == nullptr)? sbuf:dest;

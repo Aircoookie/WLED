@@ -1,6 +1,7 @@
-/*
- * Used to draw clock overlays over the strip
- */
+#include "overlay.h"
+#include "wled.h"
+#include "cronixie.h"
+#include "ntp.h"
  
 void initCronixie()
 {

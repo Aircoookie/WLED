@@ -1,6 +1,7 @@
-/*
- * Acquires time from NTP server
- */
+#include "ntp.h"
+#include "src/dependencies/timezone/Timezone.h"
+#include "wled.h"
+#include "wled_eeprom.h" 
 
 TimeChangeRule UTCr = {Last, Sun, Mar, 1, 0};     // UTC
 Timezone tzUTC(UTCr, UTCr);
@@ -57,6 +58,7 @@ Timezone tzNK(NKST, NKST);
 TimeChangeRule IST = {Last, Sun, Mar, 1, 330};     // India Standard Time = UTC + 5.5 hours
 Timezone tzIndia(IST, IST);
 
+// Pick your timezone from here.
 Timezone* timezones[] = {&tzUTC, &tzUK, &tzEUCentral, &tzEUEastern, &tzUSEastern, &tzUSCentral, &tzUSMountain, &tzUSArizona, &tzUSPacific, &tzChina, &tzJapan, &tzAUEastern, &tzNZ, &tzNK, &tzIndia, &tzCASaskatchewan};  
 
 void handleNetworkTime()

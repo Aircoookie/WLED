@@ -1,6 +1,5 @@
-/*
- * Color conversion methods
- */
+#include "colors.h"
+#include "wled.h"
 
 void colorFromUint32(uint32_t in, bool secondary)
 {
@@ -18,7 +17,7 @@ void colorFromUint32(uint32_t in, bool secondary)
 }
 
 //load a color without affecting the white channel
-void colorFromUint24(uint32_t in, bool secondary = false)
+void colorFromUint24(uint32_t in, bool secondary)
 {
   if (secondary) {
     colSec[0] = in >> 16 & 0xFF;
@@ -32,7 +31,7 @@ void colorFromUint24(uint32_t in, bool secondary = false)
 }
 
 //relatively change white brightness, minumum A=5
-void relativeChangeWhite(int8_t amount, byte lowerBoundary =0)
+void relativeChangeWhite(int8_t amount, byte lowerBoundary)
 {
   int16_t new_val = (int16_t) col[3] + amount;
   if (new_val > 0xFF) new_val = 0xFF;
@@ -149,7 +148,8 @@ void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.develo
   xy[0] = X / (X + Y + Z);
   xy[1] = Y / (X + Y + Z);
 }
-#endif
+#endif // WLED_DISABLE_HUESYNC
+
 
 void colorFromDecOrHexString(byte* rgb, char* in)
 {

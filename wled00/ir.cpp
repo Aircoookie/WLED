@@ -1,6 +1,8 @@
-/*
- * Infrared sensor support for generic 24/40/44 key RGB remotes
- */
+#include "ir.h"
+#include "wled.h"
+#include "led.h"
+#include "colors.h"
+#include "wled_eeprom.h"
 
 #if defined(WLED_DISABLE_INFRARED)
 void handleIR(){}
@@ -35,7 +37,7 @@ bool decodeIRCustom(uint32_t code)
 
 
 //relatively change brightness, minumum A=5
-void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF)
+void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
   int16_t new_val = (int16_t) *property + amount;
   if (new_val > higherBoundary) new_val = higherBoundary;

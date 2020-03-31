@@ -1,12 +1,13 @@
-/*
- * UDP notifier
- */
+#include "notify.h"
+#include "wled.h"
+#include "src/dependencies/e131/ESPAsyncE131.h"
+#include "led.h"
 
 #define WLEDPACKETSIZE 29
 #define UDP_IN_MAXSIZE 1472
 
 
-void notify(byte callMode, bool followUp=false)
+void notify(byte callMode, bool followUp)
 {
   if (!udpConnected) return;
   switch (callMode)
@@ -71,7 +72,7 @@ void notify(byte callMode, bool followUp=false)
 }
 
 
-void arlsLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC)
+void arlsLock(uint32_t timeoutMs, byte md)
 {
   if (!realtimeMode){
     for (uint16_t i = 0; i < ledCount; i++)

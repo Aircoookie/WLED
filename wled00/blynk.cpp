@@ -1,6 +1,9 @@
-/*
- * Remote light control with the free Blynk app
- */
+#include "blynk.h"
+#include "const.h"
+#include "wled.h"
+#include "src/dependencies/blynk/Blynk/BlynkHandlers.h"
+#include "led.h"
+#include "colors.h"
 
 uint16_t blHue = 0;
 byte blSat = 255;

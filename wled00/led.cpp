@@ -1,6 +1,11 @@
-/*
- * LED methods
- */
+#include "led.h"
+#include "wled.h"
+#include "notify.h"
+#include "blynk.h"
+#include "wled_eeprom.h"
+#include "mqtt.h"
+#include "colors.h"
+
 void setValuesFromMainSeg()
 {
   WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
@@ -50,7 +55,7 @@ void setAllLeds() {
 }
 
 
-void setLedsStandard(bool justColors = false)
+void setLedsStandard(bool justColors)
 {
   for (byte i=0; i<4; i++)
   {

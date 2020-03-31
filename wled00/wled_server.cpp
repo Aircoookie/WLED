@@ -1,6 +1,10 @@
-/*
- * Server page definitions
- */
+#include "wled_server.h"
+#include "wled.h"
+#include "file.h"
+#include "set.h"
+#include "json.h"
+#include "xml.h"
+
 
 //Is this an IP?
 bool isIp(String str) {
@@ -303,7 +307,7 @@ String msgProcessor(const String& var)
 }
 
 
-void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", byte optionT=255)
+void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl, byte optionT)
 {
   messageHead = headl;
   messageSub = subl;
