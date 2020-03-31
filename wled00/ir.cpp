@@ -1,8 +1,8 @@
-#include "ir.h"
 #include "wled.h"
-#include "led.h"
-#include "colors.h"
-#include "wled_eeprom.h"
+
+/*
+ * Infrared sensor support for generic 24/40/44 key RGB remotes
+ */
 
 #if defined(WLED_DISABLE_INFRARED)
 void handleIR(){}

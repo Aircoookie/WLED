@@ -1,9 +1,8 @@
-#include "hue.h"
 #include "wled.h"
-#include "colors.h"
-#include "wled_eeprom.h"
-#include "notify.h"
-#include "led.h"
+
+/*
+ * Sync to Philips hue lights
+ */
 
 #ifndef WLED_DISABLE_HUESYNC
 

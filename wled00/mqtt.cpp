@@ -1,10 +1,8 @@
-#include "mqtt.h"
 #include "wled.h"
-#include "notify.h"
-#include "led.h"
-#include "colors.h"
-#include "xml.h"
-#include "set.h"
+
+/*
+ * MQTT communication protocol for home automation
+ */
 
 #ifdef WLED_ENABLE_MQTT
 #define MQTT_KEEP_ALIVE_TIME 60    // contact the MQTT broker every 60 seconds

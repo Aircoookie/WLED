@@ -1,6 +1,5 @@
-#ifndef WLED_DMX_H
-#define WLED_DMX_H
 #include "wled.h"
+
 /*
  * Support for DMX via MAX485.
  * Change the output pin in src/dependencies/ESPDMX.cpp if needed.
@@ -61,5 +60,3 @@ void handleDMX()
 #else
 void handleDMX() {}
 #endif
-
-#endif        //WLED_DMX_H

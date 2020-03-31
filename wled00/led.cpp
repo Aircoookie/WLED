@@ -1,10 +1,8 @@
-#include "led.h"
 #include "wled.h"
-#include "notify.h"
-#include "blynk.h"
-#include "wled_eeprom.h"
-#include "mqtt.h"
-#include "colors.h"
+
+/*
+ * LED methods
+ */
 
 void setValuesFromMainSeg()
 {

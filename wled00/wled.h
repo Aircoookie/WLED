@@ -3,9 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.9.1
+   @version 0.9.1n
    @author Christian Schwinne
  */
+
+// version code in format yymmddb (b = daily build)
+#define VERSION 2003300
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -78,6 +81,7 @@
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
 
+#include "func_declare.h"
 #include "html_ui.h"
 #include "html_settings.h"
 #include "html_other.h"
@@ -116,9 +120,6 @@
   #include <rom/rtc.h>
   #endif
 #endif
-
-// version code in format yymmddb (b = daily build)
-#define VERSION 2003301
 
 // Global external variable declaration. See wled.cpp for definitions and comments.
 extern char versionString[];

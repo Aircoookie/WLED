@@ -1,8 +1,8 @@
-#include "xml.h"
 #include "wled.h"
-#include "wled_eeprom.h"
-#include "ntp.h"
 
+/*
+ * Sending XML status files to client
+ */
 
 //build XML response to HTTP /win API request
 char* XML_response(AsyncWebServerRequest *request, char* dest)

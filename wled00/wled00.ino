@@ -1,6 +1,6 @@
 /*
-    Arduino Studio support file.
-*/
+ * Arduino IDE compatibility file.
+ */
 #include "wled.h"
 
 void setup() {

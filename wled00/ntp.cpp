@@ -1,7 +1,9 @@
-#include "ntp.h"
 #include "src/dependencies/timezone/Timezone.h"
 #include "wled.h"
-#include "wled_eeprom.h" 
+
+/*
+ * Acquires time from NTP server
+ */
 
 TimeChangeRule UTCr = {Last, Sun, Mar, 1, 0};     // UTC
 Timezone tzUTC(UTCr, UTCr);

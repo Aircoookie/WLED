@@ -1,14 +1,8 @@
-#include "set.h"
 #include "wled.h"
-#include "colors.h"
-#include "hue.h"
-#include "led.h"
-#include "blynk.h"
-#include "wled_eeprom.h"
-#include "alexa.h"
-#include "cronixie.h"
-#include "xml.h"
-#include "wled_server.h"
+
+/*
+ * Receives client input
+ */
 
 void _setRandomColor(bool _sec,bool fromButton)
 {

@@ -1,7 +1,8 @@
-#include "json.h"
 #include "wled.h"
-#include "wled_eeprom.h"
-#include "led.h"
+
+/*
+ * JSON API (De)serialization
+ */
 
 void deserializeSegment(JsonObject elem, byte it)
 {

@@ -1,11 +1,10 @@
-#include "wled_eeprom.h"
 #include <EEPROM.h>
 #include "wled.h"
-#include "cronixie.h"
-#include "ntp.h"
-#include "set.h"
-#include "led.h"
 
+/*
+ * Methods to handle saving and loading to non-volatile memory
+ * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
+ */
 
 //eeprom Version code, enables default settings instead of 0 init on update
 #define EEPVER 18

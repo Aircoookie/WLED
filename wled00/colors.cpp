@@ -1,5 +1,8 @@
-#include "colors.h"
 #include "wled.h"
+
+/*
+ * Color conversion methods
+ */
 
 void colorFromUint32(uint32_t in, bool secondary)
 {

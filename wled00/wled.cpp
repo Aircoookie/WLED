@@ -1,23 +1,8 @@
 #include "wled.h"
-#include "alexa.h"
-#include "blynk.h"
-#include "button.h"
-#include "dmx.h"
-#include "file.h"
-#include "hue.h"
-#include "ir.h"
-#include "led.h"
-#include "mqtt.h"
-#include "notify.h"
-#include "ntp.h"
-#include "overlay.h"
-#include "usermod.h"
-#include "wled_eeprom.h"
-#include "wled_server.h"
 #include <Arduino.h>
 
 // Global Variable definitions
-char versionString[] = "0.9.1";
+char versionString[] = "0.9.1n";
 
 // AP and OTA default passwords (for maximum change them!)
 char apPass[65] = DEFAULT_AP_PASS;

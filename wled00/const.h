@@ -1,5 +1,5 @@
-#ifndef wled_const_h
-#define wled_const_h
+#ifndef WLED_CONST_H
+#define WLED_CONST_H
 
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
@@ -71,5 +71,8 @@
 #define HUE_ERROR_JSON_PARSING  250
 #define HUE_ERROR_TIMEOUT       251
 #define HUE_ERROR_ACTIVE        255
+
+//EEPROM size
+#define EEPSIZE 2560  //Maximum is 4096
 
 #endif

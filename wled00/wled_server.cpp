@@ -1,10 +1,8 @@
-#include "wled_server.h"
 #include "wled.h"
-#include "file.h"
-#include "set.h"
-#include "json.h"
-#include "xml.h"
 
+/*
+ * Integrated HTTP web server page declarations
+ */
 
 //Is this an IP?
 bool isIp(String str) {
