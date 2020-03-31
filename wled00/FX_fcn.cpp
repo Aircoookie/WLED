@@ -559,6 +559,33 @@ void WS2812FX::fill(uint32_t c) {
 /*
  * fade out function, higher rate = quicker fade
  */
+void WS2812FX::fade2black(uint8_t rate) {
+  uint32_t color;
+  
+  //rate = rate >> 1;
+  float mappedRate = (float) map(rate, 0, 255, 1, 100) ;
+
+  mappedRate = mappedRate / 100;
+  
+  for(uint16_t i = 0; i < SEGLEN; i++) {
+    color = getPixelColor(i);
+    int w1 = (color >> 24) & 0xff;
+    int r1 = (color >> 16) & 0xff;
+    int g1 = (color >>  8) & 0xff;
+    int b1 =  color        & 0xff;
+
+    int w = w1 * mappedRate;
+    int r = r1 * (mappedRate * 1.05);      // acount for the fact that leds stay red on much lower intensities
+    int g = g1 * mappedRate;
+    int b = b1 * mappedRate;
+    
+    setPixelColor(i, r, g, b, w);
+  }
+}
+
+/*
+ * fade out function, higher rate = quicker fade
+ */
 void WS2812FX::fade_out(uint8_t rate) {
   rate = (255-rate) >> 1;
   float mappedRate = float(rate) +1.1;

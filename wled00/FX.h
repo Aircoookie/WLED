@@ -449,6 +449,7 @@ class WS2812FX {
       service(void),
       blur(uint8_t),
       fade_out(uint8_t r),
+      fade2black(uint8_t r),
       setMode(uint8_t segid, uint8_t m),
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
