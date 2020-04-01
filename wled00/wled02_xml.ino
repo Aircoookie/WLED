@@ -43,7 +43,13 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   oappendi(effectSpeed);
   oappend("</sx><ix>");
   oappendi(effectIntensity);
-  oappend("</ix><fp>");
+  oappend("</ix><f1>");
+  oappendi(effectFFT1);
+  oappend("</f1><f2>");
+  oappendi(effectFFT2);
+  oappend("</f2><f3>");
+  oappendi(effectFFT3);
+  oappend("</f3><fp>");
   oappendi(effectPalette);
   oappend("</fp><wv>");
   if (strip.rgbwMode) {

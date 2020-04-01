@@ -528,6 +528,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) presetCyclingEnabled = false;
   updateVal(&req, "SX=", &effectSpeed);
   updateVal(&req, "IX=", &effectIntensity);
+  updateVal(&req, "F1=", &effectFFT1);
+  updateVal(&req, "F2=", &effectFFT2);
+  updateVal(&req, "F3=", &effectFFT3);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
 
   //set advanced overlay
