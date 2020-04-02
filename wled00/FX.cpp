@@ -3621,13 +3621,47 @@ uint16_t WS2812FX::mode_asound10(void) {
   return FRAMETIME;
 } // mode_asound10()
 
+extern uint16_t lastSample;
 
 
-uint16_t WS2812FX::mode_asound11(void) { 
-  delay(1);
-  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
-  setPixelColor(0, color.red, color.green, color.blue);
+// Slider use: Intensity: the general chance of sparking new fire near the bottom
+//            FFT Custom: How sensitive to the microphone noise- How hot the spark will be
+
+uint16_t WS2812FX::mode_asound11(void) {                  // Fire with sound activation
+{
+  uint32_t it = now >> 5; //div 32
+
+  if (!SEGENV.allocateData(SEGLEN)) return mode_static(); //allocation failed
+  
+  byte* heat = SEGENV.data;
+
+  if (it != SEGENV.step)
+  {
+    // Step 1.  Cool down every cell a little
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+      SEGENV.data[i] = qsub8(heat[i],  random8(0, (((20 + SEGMENT.speed /3) * 10) / SEGLEN) + 2));
+    }
+  
+    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+    for (uint16_t k= SEGLEN -1; k > 1; k--) {
+      heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
+    }
+    
+    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+    if (random8() <= SEGMENT.intensity) {
+      uint8_t y = random8(7);
+      if (y < SEGLEN) heat[y] = qadd8(heat[y], lastSample * SEGMENT.fft3 / 256);
+    }
+    SEGENV.step = it;
+  }
+
+  // Step 4.  Map from heat cells to LED colors
+  for (uint16_t j = 0; j < SEGLEN; j++) {
+    CRGB color = ColorFromPalette(currentPalette, min(heat[j],240), 255, LINEARBLEND);
+    setPixelColor(j, color.red, color.green, color.blue);
+  }
   return FRAMETIME;
+}
 } // mode_asound11()
 
 

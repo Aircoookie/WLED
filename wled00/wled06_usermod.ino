@@ -54,6 +54,7 @@ double vReal[samples];
 double vImag[samples];
 #endif
 
+uint16_t lastSample;            // last audio noise sample
 
 
 //gets called once at boot. Do all initialization that doesn't depend on network here
@@ -105,6 +106,7 @@ void getSample() {
   micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering.
   micIn -= micLev;                                            // Let's center it to 0 now.
   micIn = abs(micIn);                                         // And get the absolute value of each sample.
+  lastSample = micIn;
   
   sample = (micIn <= squelch) ? 0 : (sample*3 + micIn) / 4;   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
   sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 32 samples.
