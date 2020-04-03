@@ -3327,7 +3327,7 @@ uint16_t WS2812FX::mode_asound2(void) {                                         
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
 
-    int pixVal = sample * SEGMENT.intensity / 256;
+    uint16_t pixVal = sample * SEGMENT.intensity / 256;
 
     if (pixVal > 20) {pixVal = 255; } else {pixVal = 0;}
 
@@ -3356,9 +3356,9 @@ uint16_t WS2812FX::mode_asound3(void) {                                         
   uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
   fade_out(fadeVal);
   
-  int pos = random(SEGLEN);                                                      // Set a random starting position.
+  uint16_t pos = random(SEGLEN);                                                      // Set a random starting position.
 
-  int size = 0;
+  uint16_t size = 0;
   
   if (sample > 0 ) {
     size = sample * SEGMENT.intensity /256 /8 + 1;                                                            // Determine size of the flash based on the volume.
@@ -3382,7 +3382,7 @@ uint16_t WS2812FX::mode_asound4(void) {                                         
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
 
-    int matVal;
+    uint8_t matVal;
     if (sample*3 > (255 - SEGMENT.intensity)) {matVal = 255;} else {matVal = 0;}
 
     setPixelColor(SEGLEN-1, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, matVal));
@@ -3399,13 +3399,13 @@ uint16_t WS2812FX::mode_asound4(void) {                                         
 
 uint16_t WS2812FX::mode_asound5(void) {                                           // Myvumeter
 
-  static int topLED;
+  static uint16_t topLED;
   static int gravityCounter = 0;
 
   fade_out(240);
   sampleAvg = sampleAvg * SEGMENT.intensity / 255;
   
-  int tempsamp = constrain(sampleAvg*2,0,SEGLEN-1);                               // Keep the sample from overflowing.
+  uint16_t tempsamp = constrain(sampleAvg*2,0,SEGLEN-1);                               // Keep the sample from overflowing.
   uint8_t gravity = 8 - SEGMENT.speed/32;
     
   for (int i=0; i<tempsamp; i++) {
@@ -3437,9 +3437,7 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
 
   uint8_t thisbright;
   uint8_t colorIndex;
-
-//  fade_out(32); 
-  
+ 
   thisphase += beatsin8(6,-4,4);                                                  // You can change direction and speed individually.
   thatphase += beatsin8(7,-4,4);                                                  // Two phase values to make a complex pattern. By Andrew Tuline.
 
@@ -3461,8 +3459,7 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
 
 uint16_t WS2812FX::mode_asound7(void) {                                           // Jugglep
 
-  static int thistime = 20;
-//  CRGB color;
+  static uint16_t thistime = 20;
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to
 
@@ -3484,12 +3481,12 @@ uint16_t WS2812FX::mode_asound7(void) {                                         
 
 uint16_t WS2812FX::mode_asound8(void) {                                           // FillnoiseMid
 
-  static int xdist;
-  static int ydist;
+  static uint16_t xdist;
+  static uint16_t ydist;
 
   fade_out(224);
     
-  int maxLen = sampleAvg * SEGMENT.intensity / 256;                                 // Too sensitive.
+  uint16_t maxLen = sampleAvg * SEGMENT.intensity / 256;                                 // Too sensitive.
   maxLen = maxLen * SEGMENT.intensity / 256;                                        // Reduce sensitity/length.
   
   if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
@@ -3512,8 +3509,8 @@ uint16_t WS2812FX::mode_asound8(void) {                                         
 
 uint16_t WS2812FX::mode_asound9(void) {                                           // Fillnoise
 
-  static int xdist;
-  static int ydist;
+  static uint16_t xdist;
+  static uint16_t ydist;
 
   fade_out(240);
 
