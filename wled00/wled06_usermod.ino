@@ -19,6 +19,8 @@ TaskHandle_t FFT_Task;
 
 #define SQUELCH 10                                            // Our fixed squelch value.
 uint8_t squelch = 10;                                         // Anything below this is background noise, so we'll make it '0'. Can be adjusted.
+int micIn;                                                    // Current sample starts with negative values and large values, which is why it's 16 bit signed.
+int amicIn;
 int sample;                                                   // Current sample.
 float sampleAvg = 0;                                          // Smoothed Average.
 float micLev = 0;                                             // Used to convert returned value to have '0' as minimum. A leveller.
@@ -87,22 +89,28 @@ void userConnected()
 
 //loop. You can use "if (WLED_CONNECTED)" to check for successful connection
 void userLoop() {
-  if (millis()-lastTime > delayMs) {
+  
+  if (millis()-lastTime > delayMs) {                            // I need to run this continuously because the animations are too slow.
     lastTime = millis();  
     getSample();                                                // Sample the microphone.
     agcAvg();                                                   // Calculated the PI adjusted value as sampleAvg.
+    myVals[millis()%32] = sampleAgc;
   }
-  myVals[millis()%32] = sampleAgc;
 
-}
+} // userLoop()
+
 
 
 void getSample() {
-  
-  int16_t micIn;                                              // Current sample starts with negative values and large values, which is why it's 16 bit signed.
+
   static long peakTime;
-  
-  micIn = analogRead(MIC_PIN);                                // Poor man's analog Read.
+
+  #ifdef WLED_DISABLE_SOUND 
+  micIn = inoise8(millis(), millis());                        // Simulated analog read.
+  #else
+  micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
+  #endif
+
   micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering.
   micIn -= micLev;                                            // Let's center it to 0 now.
   micIn = abs(micIn);                                         // And get the absolute value of each sample.
@@ -140,15 +148,18 @@ void agcAvg() {                                                   // A simple av
 //  Serial.print(sampleAvg); Serial.print(" ");
 //  Serial.print(micLev); Serial.print(" ");
 //  Serial.print(samplePeak); Serial.print(" "); //samplePeak = 0;
-//  Serial.print(100); Serial.print(" ");
-//  Serial.print(0); Serial.print(" ");
-//  Serial.println(" ");
+  Serial.print(micIn); Serial.print(" ");
+  Serial.print(amicIn); Serial.print(" ");
+  Serial.print(100); Serial.print(" ");
+  Serial.print(0); Serial.print(" ");
+  Serial.println(" ");
 #ifndef ESP8266                 // if we are on a ESP32
 //  Serial.print("running on core ");               // identify core
 //  Serial.println(xPortGetCoreID());
 #endif
 
 } // agcAvg()
+
 
 
 #ifndef ESP8266

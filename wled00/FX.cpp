@@ -3278,20 +3278,17 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
 
 
 //////////////////////////////////////////////////////////////////////////////////////
-//                  ASOUND routines by Andrew Tuline                                //
+//                  ASOUND1-9 routines by Andrew Tuline                             //
+//                  ASOUND10-15 routines by Andreas Pleschutznig                    //
 //////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t WS2812FX::mode_asound1(void) {                                       // Pixels
 
-  uint16_t segLoc;															  // 16 bit for larger strands of LED's.
-  CRGB color;
-  
   fade_out(4);
   
   for (int i = 0; i < SEGMENT.intensity/16; i++) {
-    segLoc = random(SEGLEN);
-    color = ColorFromPalette(currentPalette, myVals[i%32]+i*4, sampleAgc, LINEARBLEND);     // myVals only has 32 elements defined
-    setPixelColor(segLoc, color.red, color.green, color.blue);
+    uint16_t segLoc = random(SEGLEN);                                // 16 bit for larger strands of LED's.     
+    setPixelColor(segLoc, color_from_palette(myVals[i%32]+i*4, true, PALETTE_SOLID_WRAP, 1, sampleAgc));
   }
 
 //  EVERY_N_MILLIS(1000) {
@@ -3309,7 +3306,7 @@ uint16_t WS2812FX::mode_asound1(void) {                                       //
 //      Serial.print("SEGMENT.start "); Serial.println(SEGMENT.start);
 //      Serial.print("SEGMENT.stop "); Serial.println(SEGMENT.stop);
 //      Serial.print("SEGMENT.intensity "); Serial.println(SEGMENT.intensity);
-        Serial.print("SEGMENT.fft1 "); Serial.println(SEGMENT.fft1);
+//      Serial.print("SEGMENT.fft1 "); Serial.println(SEGMENT.fft1);
 //      Serial.print("SEGMENT.speed "); Serial.println(SEGMENT.speed);
 //      Serial.print("SEGMENT.options "); Serial.println(SEGMENT.options);
 //      setPixelColor(0, random8(), random8(), random8());
@@ -3333,11 +3330,10 @@ uint16_t WS2812FX::mode_asound2(void) {                                         
     int pixVal = sample * SEGMENT.intensity / 256;
 
     if (pixVal > 20) {pixVal = 255; } else {pixVal = 0;}
-    
-    CRGB color = ColorFromPalette(currentPalette, millis(), pixVal, LINEARBLEND);
-    setPixelColor(SEGLEN/2, color.red, color.green, color.blue);
-    setPixelColor(SEGLEN/2-1, color.red, color.green, color.blue);
-  
+
+    setPixelColor(SEGLEN/2, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, pixVal));
+    setPixelColor(SEGLEN/2, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, pixVal));
+
     for (int i = SEGLEN - 1; i > SEGLEN/2; i--) {                                 // Move to the right.
       setPixelColor(i,getPixelColor(i-1));
     }
@@ -3370,8 +3366,7 @@ uint16_t WS2812FX::mode_asound3(void) {                                         
   }
 
   for(int i=0; i<size; i++) {                                                     // Flash the LED's.
-    CRGB color = ColorFromPalette(currentPalette, millis(), 255, LINEARBLEND);
-    setPixelColor(pos+i, color.red, color.green, color.blue);
+     setPixelColor(pos+i, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, 255));   
   }
 
   return FRAMETIME;
@@ -3389,10 +3384,9 @@ uint16_t WS2812FX::mode_asound4(void) {                                         
 
     int matVal;
     if (sample*3 > (255 - SEGMENT.intensity)) {matVal = 255;} else {matVal = 0;}
-    
-    CRGB color = ColorFromPalette(currentPalette, millis(), matVal, LINEARBLEND);
-//    CRGB color = ColorFromPalette(currentPalette, millis(), sampleAgc*2, LINEARBLEND);
-    setPixelColor(SEGLEN-1, color.red, color.green, color.blue);
+
+    setPixelColor(SEGLEN-1, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, matVal));
+
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
   }
   
@@ -3415,9 +3409,8 @@ uint16_t WS2812FX::mode_asound5(void) {                                         
   uint8_t gravity = 8 - SEGMENT.speed/32;
     
   for (int i=0; i<tempsamp; i++) {
-    uint8_t index = inoise8(i*sampleAvg+millis(), 5000+i*sampleAvg); 
-    CRGB color = ColorFromPalette(currentPalette, index, sampleAvg*8, LINEARBLEND);
-    setPixelColor(i, color.red, color.green, color.blue);
+    uint8_t index = inoise8(i*sampleAvg+millis(), 5000+i*sampleAvg);
+    setPixelColor(i, color_from_palette(index, true, PALETTE_SOLID_WRAP, 1, sampleAvg*8));
   }
 
   if (tempsamp >= topLED)
@@ -3426,8 +3419,7 @@ uint16_t WS2812FX::mode_asound5(void) {                                         
     topLED--;
 
   if (topLED > 0) {
-    CRGB color = ColorFromPalette(currentPalette, millis(), 255, LINEARBLEND);
-    setPixelColor(topLED, color.red, color.green, color.blue);
+        setPixelColor(topLED, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, 255));
   }
   
   gravityCounter = (gravityCounter + 1) % gravity;
@@ -3456,11 +3448,8 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
     thisbright += cos8((k*117)+thatphase)/2;                                      // Let's munge the brightness a bit and animate it all with the phases.
     colorIndex=thisbright;
     
-    
     if (sampleAvg * 8 * SEGMENT.intensity/256 * SEGMENT.intensity/256 > thisbright) {thisbright = 255;} else {thisbright = 0;}
-    
-    CRGB color = ColorFromPalette(currentPalette, colorIndex, thisbright, LINEARBLEND);
-    setPixelColor(k, color.red, color.green, color.blue);
+    setPixelColor(k, color_from_palette(colorIndex, true, PALETTE_SOLID_WRAP, 1, thisbright));
   }
 
   return FRAMETIME;
@@ -3473,7 +3462,7 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
 uint16_t WS2812FX::mode_asound7(void) {                                           // Jugglep
 
   static int thistime = 20;
-  CRGB color;
+//  CRGB color;
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to
 
@@ -3482,15 +3471,13 @@ uint16_t WS2812FX::mode_asound7(void) {                                         
     fade_out(224);
 
     for (int i= 0; i < SEGMENT.intensity/32; i++) {
-      color = ColorFromPalette(currentPalette, millis()/4+i*2, sampleAgc, LINEARBLEND);
-      setPixelColor(beatsin16(thistime+i*2,0,SEGLEN-1), color.red, color.green, color.blue);
+      setPixelColor(beatsin16(thistime+i*2,0,SEGLEN-1), color_from_palette(millis()/4+i*2, true, PALETTE_SOLID_WRAP, 1, sampleAgc));
     }
   }
   
   return FRAMETIME;
   
 } // mode_asound7()
-
 
 
 
@@ -3507,11 +3494,9 @@ uint16_t WS2812FX::mode_asound8(void) {                                         
   
   if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
 
-//  for (int i = (SEGLEN-maxLen)/2; i <(SEGLEN+maxLen+1)/2; i++) {                  // The louder the sound, the wider the soundbar.
   for (int i = (SEGLEN/2 - maxLen); i < (SEGLEN/2+maxLen); i++) {
     uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);                // Get a value from the noise function. I'm using both x and y axis.
-    CRGB color = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
-    setPixelColor(i, color.red, color.green, color.blue);
+    setPixelColor(i, color_from_palette(index, true, PALETTE_SOLID_WRAP, 1, 255));
   }
 
   xdist=xdist+beatsin8(5,0,10);
@@ -3540,8 +3525,7 @@ uint16_t WS2812FX::mode_asound9(void) {                                         
 
   for (int i = 0; i < maxLen; i++) {                                              // The louder the sound, the wider the soundbar. By Andrew Tuline.
     uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);                // Get a value from the noise function. I'm using both x and y axis.
-    CRGB color = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
-    setPixelColor(i, color.red, color.green, color.blue);
+    setPixelColor(i, color_from_palette(index, true, PALETTE_SOLID_WRAP, 1, 255));
   }
 
   xdist=xdist+beatsin8(5,0,10);
@@ -3668,8 +3652,7 @@ uint16_t WS2812FX::mode_asound11(void) {                  // Fire with sound act
 
 uint16_t WS2812FX::mode_asound12(void) { 
   delay(1);
-  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
-  setPixelColor(0, color.red, color.green, color.blue);
+  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
   return FRAMETIME;
 } // mode_asound12()
 
@@ -3677,8 +3660,7 @@ uint16_t WS2812FX::mode_asound12(void) {
 
 uint16_t WS2812FX::mode_asound13(void) { 
   delay(1);
-  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
-  setPixelColor(0, color.red, color.green, color.blue);
+  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
   return FRAMETIME;   
 } // mode_asound13()
 
@@ -3686,8 +3668,7 @@ uint16_t WS2812FX::mode_asound13(void) {
 
 uint16_t WS2812FX::mode_asound14(void) { 
   delay(1);
-  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
-  setPixelColor(0, color.red, color.green, color.blue);
+  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
   return FRAMETIME;
 } // mode_asound14()
 
@@ -3695,32 +3676,6 @@ uint16_t WS2812FX::mode_asound14(void) {
 
 uint16_t WS2812FX::mode_asound15(void) { 
   delay(1);
-  CRGB color = ColorFromPalette(currentPalette, 0, 255, LINEARBLEND);
-  setPixelColor(0, color.red, color.green, color.blue);
+  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
   return FRAMETIME;
 } // mode_asound15()
-
-
-
-
-
-/* void lineit() {
-  for (int i=0; i<SEGLEN-1; i++) {
-    // leds[i] = leds[i+1];
-    setPixelColor(i,getPixelColor(i+1));
-} // lineit()
-*/
-
-
-/*
-void waveit() {
-  for (int i = SEGLEN - 1; i > SEGLEN/2; i--) {                                // Move to the right.
-    setPixelColor(i,getPixelColor(i-1));
-  }
-
-  for (int i = 0; i < SEGLEN/2; i++) {                                        // Move to the left.
-    setPixelColor(i,getPixelColor(i+1));
-  }
-
-} // waveit()
-*/
