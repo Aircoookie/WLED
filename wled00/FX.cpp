@@ -3287,8 +3287,11 @@ uint16_t WS2812FX::mode_asound1(void) {                                       //
   fade_out(4);
   
   for (int i = 0; i < SEGMENT.intensity/16; i++) {
-    uint16_t segLoc = random(SEGLEN);                                // 16 bit for larger strands of LED's.     
-    setPixelColor(segLoc, color_from_palette(myVals[i%32]+i*4, true, PALETTE_SOLID_WRAP, 1, sampleAgc));
+    uint16_t segLoc = random(SEGLEN);                                // 16 bit for larger strands of LED's.
+
+    CRGB color;
+    color = (SEGMENT.palette==0) ? CHSV(myVals[i%32]+i*4, 220, sampleAgc):ColorFromPalette(currentPalette, myVals[i%32]+i*4, sampleAgc);
+    setPixelColor(segLoc, color.red, color.green, color.blue);
   }
 
 //  EVERY_N_MILLIS(1000) {
@@ -3331,8 +3334,9 @@ uint16_t WS2812FX::mode_asound2(void) {                                         
 
     if (pixVal > 20) {pixVal = 255; } else {pixVal = 0;}
 
-    setPixelColor(SEGLEN/2, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, pixVal));
-    setPixelColor(SEGLEN/2, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, pixVal));
+    CRGB color;
+    color = (SEGMENT.palette==0) ? CHSV(millis(), 220, pixVal):ColorFromPalette(currentPalette, millis(), pixVal);
+    setPixelColor(SEGLEN/2, color.red, color.green, color.blue);
 
     for (int i = SEGLEN - 1; i > SEGLEN/2; i--) {                                 // Move to the right.
       setPixelColor(i,getPixelColor(i-1));
@@ -3366,7 +3370,9 @@ uint16_t WS2812FX::mode_asound3(void) {                                         
   }
 
   for(int i=0; i<size; i++) {                                                     // Flash the LED's.
-     setPixelColor(pos+i, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, 255));   
+    CRGB color;
+    color = (SEGMENT.palette==0) ? CHSV(millis(), 220, 255):ColorFromPalette(currentPalette, millis(), 255);
+    setPixelColor(pos+i, color.red, color.green, color.blue);
   }
 
   return FRAMETIME;
@@ -3385,10 +3391,12 @@ uint16_t WS2812FX::mode_asound4(void) {                                         
     uint8_t matVal;
     if (sample*3 > (255 - SEGMENT.intensity)) {matVal = 255;} else {matVal = 0;}
 
-    setPixelColor(SEGLEN-1, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, matVal));
+    CRGB color;
+    color = (SEGMENT.palette==0) ? CHSV(millis(), 220, matVal):ColorFromPalette(currentPalette, millis(), matVal);
+    setPixelColor(SEGLEN-1, color.red, color.green, color.blue);
 
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
-  }
+  } 
   
   return FRAMETIME; 
 
@@ -3410,7 +3418,10 @@ uint16_t WS2812FX::mode_asound5(void) {                                         
     
   for (int i=0; i<tempsamp; i++) {
     uint8_t index = inoise8(i*sampleAvg+millis(), 5000+i*sampleAvg);
-    setPixelColor(i, color_from_palette(index, true, PALETTE_SOLID_WRAP, 1, sampleAvg*8));
+
+    CRGB color;
+    color = (SEGMENT.palette==0) ? CHSV(index, 220, sampleAvg*8):ColorFromPalette(currentPalette, index, sampleAvg*8);
+    setPixelColor(i, color.red, color.green, color.blue);
   }
 
   if (tempsamp >= topLED)
@@ -3419,7 +3430,11 @@ uint16_t WS2812FX::mode_asound5(void) {                                         
     topLED--;
 
   if (topLED > 0) {
-        setPixelColor(topLED, color_from_palette(millis(), true, PALETTE_SOLID_WRAP, 1, 255));
+
+    CRGB color;
+    color = (SEGMENT.palette==0) ? CHSV(millis(), 220, 255):ColorFromPalette(currentPalette, millis(), 255);
+    setPixelColor(topLED, color.red, color.green, color.blue);
+
   }
   
   gravityCounter = (gravityCounter + 1) % gravity;
@@ -3437,7 +3452,11 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
 
   uint8_t thisbright;
   uint8_t colorIndex;
+<<<<<<< HEAD
  
+=======
+
+>>>>>>> asound
   thisphase += beatsin8(6,-4,4);                                                  // You can change direction and speed individually.
   thatphase += beatsin8(7,-4,4);                                                  // Two phase values to make a complex pattern. By Andrew Tuline.
 
@@ -3447,7 +3466,10 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
     colorIndex=thisbright;
     
     if (sampleAvg * 8 * SEGMENT.intensity/256 * SEGMENT.intensity/256 > thisbright) {thisbright = 255;} else {thisbright = 0;}
-    setPixelColor(k, color_from_palette(colorIndex, true, PALETTE_SOLID_WRAP, 1, thisbright));
+
+    CRGB color;
+    color = (SEGMENT.palette==0) ? CHSV(colorIndex, 220, thisbright):ColorFromPalette(currentPalette, colorIndex, thisbright);
+    setPixelColor(k, color.red, color.green, color.blue);
   }
 
   return FRAMETIME;
@@ -3468,7 +3490,9 @@ uint16_t WS2812FX::mode_asound7(void) {                                         
     fade_out(224);
 
     for (int i= 0; i < SEGMENT.intensity/32; i++) {
-      setPixelColor(beatsin16(thistime+i*2,0,SEGLEN-1), color_from_palette(millis()/4+i*2, true, PALETTE_SOLID_WRAP, 1, sampleAgc));
+      CRGB color;
+      color = (SEGMENT.palette==0) ? CHSV(millis()/4+i*2, 220, sampleAgc):ColorFromPalette(currentPalette, millis()/4+i*2, sampleAgc);
+      setPixelColor(beatsin16(thistime+i*2,0,SEGLEN-1), color.red, color.green, color.blue);
     }
   }
   
@@ -3493,7 +3517,10 @@ uint16_t WS2812FX::mode_asound8(void) {                                         
 
   for (int i = (SEGLEN/2 - maxLen); i < (SEGLEN/2+maxLen); i++) {
     uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);                // Get a value from the noise function. I'm using both x and y axis.
-    setPixelColor(i, color_from_palette(index, true, PALETTE_SOLID_WRAP, 1, 255));
+
+    CRGB color;
+    color = (SEGMENT.palette==0) ? CHSV(index, 220, 255):ColorFromPalette(currentPalette, index, 255);
+    setPixelColor(i, color.red, color.green, color.blue);
   }
 
   xdist=xdist+beatsin8(5,0,10);
@@ -3522,7 +3549,10 @@ uint16_t WS2812FX::mode_asound9(void) {                                         
 
   for (int i = 0; i < maxLen; i++) {                                              // The louder the sound, the wider the soundbar. By Andrew Tuline.
     uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);                // Get a value from the noise function. I'm using both x and y axis.
-    setPixelColor(i, color_from_palette(index, true, PALETTE_SOLID_WRAP, 1, 255));
+
+    CRGB color;
+    color = (SEGMENT.palette==0) ? CHSV(index, 220, 255):ColorFromPalette(currentPalette, index, 255);
+    setPixelColor(i, color.red, color.green, color.blue);
   }
 
   xdist=xdist+beatsin8(5,0,10);
@@ -3531,6 +3561,7 @@ uint16_t WS2812FX::mode_asound9(void) {                                         
   return FRAMETIME;
 
 } // mode_asound9()
+
 
 
 #ifndef ESP8266

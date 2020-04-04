@@ -25,7 +25,11 @@
 //#define WLED_ENABLE_MQTT         //saves 12kb
 //#define WLED_ENABLE_ADALIGHT     //saves 500b only
 //#define WLED_ENABLE_DMX          //uses 3.5kb
+<<<<<<< HEAD
   #define WLED_DISABLE_SOUND       // saves 1kb
+=======
+//#define WLED_DISABLE_SOUND    // saves 1kb
+>>>>>>> asound
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
