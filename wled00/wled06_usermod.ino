@@ -20,7 +20,6 @@ TaskHandle_t FFT_Task;
 #define SQUELCH 10                                            // Our fixed squelch value.
 uint8_t squelch = 10;                                         // Anything below this is background noise, so we'll make it '0'. Can be adjusted.
 int micIn;                                                    // Current sample starts with negative values and large values, which is why it's 16 bit signed.
-int amicIn;
 int sample;                                                   // Current sample.
 float sampleAvg = 0;                                          // Smoothed Average.
 float micLev = 0;                                             // Used to convert returned value to have '0' as minimum. A leveller.
@@ -148,11 +147,10 @@ void agcAvg() {                                                   // A simple av
 //  Serial.print(sampleAvg); Serial.print(" ");
 //  Serial.print(micLev); Serial.print(" ");
 //  Serial.print(samplePeak); Serial.print(" "); //samplePeak = 0;
-  Serial.print(micIn); Serial.print(" ");
-  Serial.print(amicIn); Serial.print(" ");
-  Serial.print(100); Serial.print(" ");
-  Serial.print(0); Serial.print(" ");
-  Serial.println(" ");
+//  Serial.print(micIn); Serial.print(" ");
+//  Serial.print(100); Serial.print(" ");
+//  Serial.print(0); Serial.print(" ");
+//  Serial.println(" ");
 #ifndef ESP8266                 // if we are on a ESP32
 //  Serial.print("running on core ");               // identify core
 //  Serial.println(xPortGetCoreID());
