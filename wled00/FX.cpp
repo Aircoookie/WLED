@@ -3101,8 +3101,8 @@ uint16_t WS2812FX::mode_plasma(void) {
  */
 uint16_t WS2812FX::mode_percent(void) {
 
-	uint8_t percent = max(0, min(200, SEGMENT.intensity));
-	uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
+  uint8_t percent = max(0, min(200, SEGMENT.intensity));
+  uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
                                          : SEGLEN * (200 - percent) / 100.0;
   
   uint8_t size = (1 + ((SEGMENT.speed * SEGLEN) >> 11));
@@ -3110,22 +3110,22 @@ uint16_t WS2812FX::mode_percent(void) {
     
   if (percent < 100) {
     for (uint16_t i = 0; i < SEGLEN; i++) {
-	  	if (i < SEGENV.step) {
+      if (i < SEGENV.step) {
         setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-	  	}
-	  	else {
+      }
+      else {
         setPixelColor(i, SEGCOLOR(1));
-	  	}
-	  }
+      }
+    }
   } else {
     for (uint16_t i = 0; i < SEGLEN; i++) {
-	  	if (i < (SEGLEN - SEGENV.step)) {
+      if (i < (SEGLEN - SEGENV.step)) {
         setPixelColor(i, SEGCOLOR(1));
-	  	}
-	  	else {
+      }
+      else {
         setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0));
-	  	}
-	  }
+      }
+    }
   }
 
   if(active_leds > SEGENV.step) {  // smooth transition to the target value
@@ -3136,7 +3136,7 @@ uint16_t WS2812FX::mode_percent(void) {
     if (SEGENV.step < active_leds) SEGENV.step = active_leds;
   }
 
- 	return FRAMETIME;
+  return FRAMETIME;
 }
 
 /*
@@ -3330,7 +3330,7 @@ uint16_t WS2812FX::mode_asound2(void) {                                         
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
 
-    uint16_t pixVal = sample * SEGMENT.intensity / 256;
+    int pixVal = sample * SEGMENT.intensity / 256;
 
     if (pixVal > 20) {pixVal = 255; } else {pixVal = 0;}
 
@@ -3360,9 +3360,9 @@ uint16_t WS2812FX::mode_asound3(void) {                                         
   uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
   fade_out(fadeVal);
   
-  uint16_t pos = random(SEGLEN);                                                      // Set a random starting position.
+  int pos = random(SEGLEN);                                                      // Set a random starting position.
 
-  uint16_t size = 0;
+  int size = 0;
   
   if (sample > 0 ) {
     size = sample * SEGMENT.intensity /256 /8 + 1;                                                            // Determine size of the flash based on the volume.
@@ -3388,7 +3388,7 @@ uint16_t WS2812FX::mode_asound4(void) {                                         
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
 
-    uint8_t matVal;
+    int matVal;
     if (sample*3 > (255 - SEGMENT.intensity)) {matVal = 255;} else {matVal = 0;}
 
     CRGB color;
@@ -3407,13 +3407,13 @@ uint16_t WS2812FX::mode_asound4(void) {                                         
 
 uint16_t WS2812FX::mode_asound5(void) {                                           // Myvumeter
 
-  static uint16_t topLED;
+  static int topLED;
   static int gravityCounter = 0;
 
   fade_out(240);
   sampleAvg = sampleAvg * SEGMENT.intensity / 255;
   
-  uint16_t tempsamp = constrain(sampleAvg*2,0,SEGLEN-1);                               // Keep the sample from overflowing.
+  int tempsamp = constrain(sampleAvg*2,0,SEGLEN-1);                               // Keep the sample from overflowing.
   uint8_t gravity = 8 - SEGMENT.speed/32;
     
   for (int i=0; i<tempsamp; i++) {
@@ -3452,11 +3452,7 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
 
   uint8_t thisbright;
   uint8_t colorIndex;
-<<<<<<< HEAD
- 
-=======
 
->>>>>>> asound
   thisphase += beatsin8(6,-4,4);                                                  // You can change direction and speed individually.
   thatphase += beatsin8(7,-4,4);                                                  // Two phase values to make a complex pattern. By Andrew Tuline.
 
@@ -3481,7 +3477,8 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
 
 uint16_t WS2812FX::mode_asound7(void) {                                           // Jugglep
 
-  static uint16_t thistime = 20;
+  static int thistime = 20;
+//  CRGB color;
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to
 
@@ -3505,12 +3502,12 @@ uint16_t WS2812FX::mode_asound7(void) {                                         
 
 uint16_t WS2812FX::mode_asound8(void) {                                           // FillnoiseMid
 
-  static uint16_t xdist;
-  static uint16_t ydist;
+  static int xdist;
+  static int ydist;
 
   fade_out(224);
     
-  uint16_t maxLen = sampleAvg * SEGMENT.intensity / 256;                                 // Too sensitive.
+  int maxLen = sampleAvg * SEGMENT.intensity / 256;                                 // Too sensitive.
   maxLen = maxLen * SEGMENT.intensity / 256;                                        // Reduce sensitity/length.
   
   if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
@@ -3536,8 +3533,8 @@ uint16_t WS2812FX::mode_asound8(void) {                                         
 
 uint16_t WS2812FX::mode_asound9(void) {                                           // Fillnoise
 
-  static uint16_t xdist;
-  static uint16_t ydist;
+  static int xdist;
+  static int ydist;
 
   fade_out(240);
 
