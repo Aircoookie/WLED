@@ -463,7 +463,8 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
-      setRgbwPwm(void);
+      setRgbwPwm(void),
+      setPixCol(uint16_t location, uint32_t index, uint8_t intensity);
 
     bool
       reverseMode = false,
