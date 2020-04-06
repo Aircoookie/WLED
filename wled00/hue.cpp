@@ -1,7 +1,11 @@
+#include "wled.h"
+
 /*
  * Sync to Philips hue lights
  */
+
 #ifndef WLED_DISABLE_HUESYNC
+
 void handleHue()
 {
   if (hueReceived)
