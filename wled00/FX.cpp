@@ -3283,15 +3283,15 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {   // This helper function supports the RGBW SEGCOLOR(0) if no palette has been loaded. Index must be 32 bit because I use millis().
+void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {   // This helper function displays the RGBW SEGCOLOR(0) if no palette has been loaded. Index must be 32 bit because I use millis().
 
   CRGB color;
 
   if (SEGMENT.palette == 0) {                                             // No palette loaded, so let's use the first colour. . . and white.
-    uint32_t myClr = color_blend(0, SEGCOLOR(0), intensity);              // Scale the brightness of the colour.
+    uint32_t myClr = color_blend(0, SEGCOLOR(0), intensity);              // Scale the brightness of the colour. Not blending to SEGCOLOR(1) with this, just black.
     setPixelColor(location, myClr);                                       // This supports RGBW.
   } else {
-    color = ColorFromPalette(currentPalette, index, intensity);           // This just uses the palettes.
+    color = ColorFromPalette(currentPalette, index, intensity);           // This just uses the palettes and just RGB ones at that.
     setPixelColor(location, color.red, color.green, color.blue);
   }
 
@@ -3299,17 +3299,14 @@ void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
 
 
 
-uint16_t WS2812FX::mode_asound1(void) {                                       // Pixels
+uint16_t WS2812FX::mode_asound1(void) {                                   // Pixels
 
   fade_out(4);
   
-  for (int i = 0; i < SEGMENT.intensity/16; i++) {
-    uint16_t segLoc = random(SEGLEN);                                // 16 bit for larger strands of LED's.
+  for (int i=0; i <SEGMENT.intensity/16; i++) {
+    uint16_t segLoc = random(SEGLEN);                                     // 16 bit for larger strands of LED's.
     setPixCol(segLoc, myVals[i%32]+i*4, sampleAgc);
   }  
-
-  Serial.println(SEGCOLOR(0));
-  
 
 //  EVERY_N_MILLIS(1000) {
 
@@ -3329,8 +3326,6 @@ uint16_t WS2812FX::mode_asound1(void) {                                       //
 //      Serial.print("SEGMENT.fft1 "); Serial.println(SEGMENT.fft1);
 //      Serial.print("SEGMENT.speed "); Serial.println(SEGMENT.speed);
 //      Serial.print("SEGMENT.options "); Serial.println(SEGMENT.options);
-//      setPixelColor(0, random8(), random8(), random8());
-//      setPixelColor(29, random8(), random8(), random8());
 //  }
 
 
@@ -3341,20 +3336,20 @@ uint16_t WS2812FX::mode_asound1(void) {                                       //
 
 
 
-uint16_t WS2812FX::mode_asound2(void) {                                           // Pixelwave
+uint16_t WS2812FX::mode_asound2(void) {                                   // Pixelwave
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to . . 
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . . 
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
     int pixVal = sample * SEGMENT.intensity / 256;
     if (pixVal > 20) {pixVal = 255; } else {pixVal = 0;}
     setPixCol(SEGLEN/2, millis(), pixVal);
 
-    for (int i = SEGLEN - 1; i > SEGLEN/2; i--) {                                 // Move to the right.
+    for (int i=SEGLEN-1; i>SEGLEN/2; i--) {                               // Move to the right.
       setPixelColor(i,getPixelColor(i-1));
     }
   
-    for (int i = 0; i < SEGLEN/2; i++) {                                          // Move to the left.
+    for (int i=0; i<SEGLEN/2; i++) {                                      // Move to the left.
       setPixelColor(i,getPixelColor(i+1));
     }  
   }
@@ -3366,20 +3361,20 @@ uint16_t WS2812FX::mode_asound2(void) {                                         
 
 
 
-uint16_t WS2812FX::mode_asound3(void) {                                           // Puddle
+uint16_t WS2812FX::mode_asound3(void) {                                   // Puddle
 
-  int size = 0;
+  uint16_t size = 0;
   uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
-  int pos = random(SEGLEN);                                                      // Set a random starting position.
+  uint16_t pos = random(SEGLEN);                                          // Set a random starting position.
   
   fade_out(fadeVal);
   
-  if (sample > 0 ) {
-    size = sample * SEGMENT.intensity /256 /8 + 1;                               // Determine size of the flash based on the volume.
-    if (pos + size >= SEGLEN) size = SEGLEN - pos - 1;
+  if (sample>0 ) {
+    size = sample * SEGMENT.intensity /256 /8 + 1;                        // Determine size of the flash based on the volume.
+    if (pos+size>= SEGLEN) size=SEGLEN-pos-1;
   }
 
-  for(int i=0; i<size; i++) {                                                     // Flash the LED's.
+  for(int i=0; i<size; i++) {                                             // Flash the LED's.
     setPixCol(pos+i, millis(), 255);
   }
 
@@ -3390,11 +3385,11 @@ uint16_t WS2812FX::mode_asound3(void) {                                         
 
 
 
-uint16_t WS2812FX::mode_asound4(void) {                                           // Matrix
+uint16_t WS2812FX::mode_asound4(void) {                                   // Matrix
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
     int matVal;
     if (sample*3 > (255 - SEGMENT.intensity)) {matVal = 255;} else {matVal = 0;}
     setPixCol(SEGLEN-1, millis(), matVal);
@@ -3409,7 +3404,7 @@ uint16_t WS2812FX::mode_asound4(void) {                                         
 
 
 
-uint16_t WS2812FX::mode_asound5(void) {                                           // Myvumeter
+uint16_t WS2812FX::mode_asound5(void) {                                   // Myvumeter
 
   static int topLED;
   static int gravityCounter = 0;
@@ -3418,7 +3413,7 @@ uint16_t WS2812FX::mode_asound5(void) {                                         
   
   sampleAvg = sampleAvg * SEGMENT.intensity / 255;
   
-  int tempsamp = constrain(sampleAvg*2,0,SEGLEN-1);                               // Keep the sample from overflowing.
+  int tempsamp = constrain(sampleAvg*2,0,SEGLEN-1);                       // Keep the sample from overflowing.
   uint8_t gravity = 8 - SEGMENT.speed/32;
     
   for (int i=0; i<tempsamp; i++) {
@@ -3441,24 +3436,24 @@ uint16_t WS2812FX::mode_asound5(void) {                                         
 
 
 
-uint16_t WS2812FX::mode_asound6(void) {                                           // Plasma
+uint16_t WS2812FX::mode_asound6(void) {                                   // Plasma
 
-  static int16_t thisphase = 0;                                                   // Phase of a cubicwave8.
-  static int16_t thatphase = 0;                                                   // Phase of the cos8.
+  static int16_t thisphase = 0;                                           // Phase of a cubicwave8.
+  static int16_t thatphase = 0;                                           // Phase of the cos8.
 
   uint8_t thisbright;
   uint8_t colorIndex;
 
-  thisphase += beatsin8(6,-4,4);                                                  // You can change direction and speed individually.
-  thatphase += beatsin8(7,-4,4);                                                  // Two phase values to make a complex pattern. By Andrew Tuline.
+  thisphase += beatsin8(6,-4,4);                                          // You can change direction and speed individually.
+  thatphase += beatsin8(7,-4,4);                                          // Two phase values to make a complex pattern. By Andrew Tuline.
 
-  for (int k=0; k<SEGLEN; k++) {                                                  // For each of the LED's in the strand, set a brightness based on a wave as follows.
-    thisbright = cubicwave8((k*13)+thisphase)/2;    
-    thisbright += cos8((k*117)+thatphase)/2;                                      // Let's munge the brightness a bit and animate it all with the phases.
+  for (int i=0; i<SEGLEN; i++) {                                          // For each of the LED's in the strand, set a brightness based on a wave as follows.
+    thisbright = cubicwave8((i*13)+thisphase)/2;    
+    thisbright += cos8((i*117)+thatphase)/2;                              // Let's munge the brightness a bit and animate it all with the phases.
     colorIndex=thisbright;
     if (sampleAvg * 8 * SEGMENT.intensity/256 * SEGMENT.intensity/256 > thisbright) {thisbright = 255;} else {thisbright = 0;}
 
-    setPixCol(k, colorIndex, thisbright);
+    setPixCol(i, colorIndex, thisbright);
   }
 
   return FRAMETIME;
@@ -3468,17 +3463,17 @@ uint16_t WS2812FX::mode_asound6(void) {                                         
 
 
 
-uint16_t WS2812FX::mode_asound7(void) {                                           // Jugglep
+uint16_t WS2812FX::mode_asound7(void) {                                   // Jugglep
 
   static int thistime = 20;
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                               // Using FastLED's timer. You want to change speed? You need to
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
     
     fade_out(224);
 
-    for (int i= 0; i < SEGMENT.intensity/32; i++) {
+    for (int i=0; i<SEGMENT.intensity/32; i++) {
       setPixCol(beatsin16(thistime+i*2,0,SEGLEN-1), millis()/4+i*2, sampleAgc);
     }
   }
@@ -3490,20 +3485,20 @@ uint16_t WS2812FX::mode_asound7(void) {                                         
 
 
 
-uint16_t WS2812FX::mode_asound8(void) {                                           // FillnoiseMid
+uint16_t WS2812FX::mode_asound8(void) {                                   // FillnoiseMid
 
-  static int xdist;
-  static int ydist;
+  static uint16_t xdist;
+  static uint16_t ydist;
 
   fade_out(224);
     
-  int maxLen = sampleAvg * SEGMENT.intensity / 256;                                 // Too sensitive.
-  maxLen = maxLen * SEGMENT.intensity / 256;                                        // Reduce sensitity/length.
+  uint16_t maxLen = sampleAvg * SEGMENT.intensity / 256;                  // Too sensitive.
+  maxLen = maxLen * SEGMENT.intensity / 256;                              // Reduce sensitity/length.
   
   if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
 
-  for (int i = (SEGLEN/2 - maxLen); i < (SEGLEN/2+maxLen); i++) {
-    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);                // Get a value from the noise function. I'm using both x and y axis.
+  for (int i=(SEGLEN/2-maxLen); i<(SEGLEN/2+maxLen); i++) {
+    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);        // Get a value from the noise function. I'm using both x and y axis.
     setPixCol(i, index, 255);  
   }
 
@@ -3518,26 +3513,26 @@ uint16_t WS2812FX::mode_asound8(void) {                                         
 
 
 
-uint16_t WS2812FX::mode_asound9(void) {                                           // Fillnoise
+uint16_t WS2812FX::mode_asound9(void) {                                   // Fillnoise
 
-  static int xdist;
-  static int ydist;
+  static uint16_t xdist;
+  static uint16_t ydist;
 
   fade_out(240);
 
   int maxLen = sampleAvg;
   if (sample > sampleAvg) maxLen = sample-sampleAvg;
-  maxLen = maxLen * SEGMENT.intensity / 256;                                      // Still a bit too sensitive.
-  maxLen = maxLen * SEGMENT.intensity / 256;                                      // Reduce sensitity/length.
+  maxLen = maxLen * SEGMENT.intensity / 256;                              // Still a bit too sensitive.
+  maxLen = maxLen * SEGMENT.intensity / 256;                              // Reduce sensitity/length.
   if (maxLen >SEGLEN) maxLen = SEGLEN;
 
-  for (int i = 0; i < maxLen; i++) {                                              // The louder the sound, the wider the soundbar. By Andrew Tuline.
-    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);                // Get a value from the noise function. I'm using both x and y axis.
+  for (int i=0; i<maxLen; i++) {                                          // The louder the sound, the wider the soundbar. By Andrew Tuline.
+    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);        // Get a value from the noise function. I'm using both x and y axis.
     setPixCol(i, index, 255);
   }
 
-  xdist=xdist+beatsin8(5,0,10);
-  ydist=ydist+beatsin8(4,0,10);
+  xdist+=beatsin8(5,0,10);
+  ydist+=beatsin8(4,0,10);
 
   return FRAMETIME;
 
