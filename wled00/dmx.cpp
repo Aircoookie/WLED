@@ -19,7 +19,7 @@ void handleDMX()
 
   for (int i = 0; i < ledCount; i++) {        // uses the amount of LEDs as fixture count
 
-    uint32_t in = strip.getPixelColor(i);        // time to get the colors for the individual fixtures as suggested by AirCookie at issue #462
+    uint32_t in = strip.getPixelColor(i);     // get the colors for the individual fixtures as suggested by Aircoookie in issue #462
     byte w = in >> 24 & 0xFF;
     byte r = in >> 16 & 0xFF;
     byte g = in >> 8 & 0xFF;

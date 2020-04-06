@@ -75,4 +75,17 @@
 //EEPROM size
 #define EEPSIZE 2560  //Maximum is 4096
 
+#define NTP_PACKET_SIZE 48
+
+// maximum number of LEDs - MAX_LEDS is coming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
+#define MAX_LEDS 1500
+#define MAX_LEDS_DMA 500
+
+// string temp buffer (now stored in stack locally)
+#define OMAX 2048
+
+#define E131_MAX_UNIVERSE_COUNT 9
+
+#define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
+
 #endif

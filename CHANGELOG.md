@@ -2,6 +2,10 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2004060
+
+-   Consolidated global variables in wled.h
+
 #### Build 2003300
 
 -   Major change of project structure from .ino to .cpp and func_declare.h
