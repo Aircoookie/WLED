@@ -3371,7 +3371,7 @@ uint16_t WS2812FX::mode_asound3(void) {                                   // Pud
   
   if (sample>0 ) {
     size = sample * SEGMENT.intensity /256 /8 + 1;                        // Determine size of the flash based on the volume.
-    if (pos+size>= SEGLEN) size=SEGLEN-pos-1;
+    if (pos+size>= SEGLEN) size=SEGLEN-pos;
   }
 
   for(int i=0; i<size; i++) {                                             // Flash the LED's.
