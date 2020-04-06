@@ -1,4 +1,4 @@
-/*
+k /*
    Main sketch, global variable declarations
 */
 /*

@@ -3283,7 +3283,7 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {   // This routine supports the RGBW SEGCOLOR(0) if no palette has been loaded.
+void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {   // This helper function supports the RGBW SEGCOLOR(0) if no palette has been loaded. Index must be 32 bit because I use millis().
 
   CRGB color;
 
