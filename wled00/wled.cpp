@@ -2,6 +2,10 @@
 #include "wled.h"
 #include <Arduino.h>
 
+/*
+ * Main WLED class implementation. Mostly initialization and connection logic
+ */
+
 WLED::WLED()
 {
 }

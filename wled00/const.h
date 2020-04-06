@@ -1,6 +1,10 @@
 #ifndef WLED_CONST_H
 #define WLED_CONST_H
 
+/*
+ * Readability defines and their associated numerical values + compile-time constants
+ */
+
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
 #define DEFAULT_AP_PASS     "wled1234"

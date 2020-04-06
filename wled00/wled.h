@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2004060
+#define VERSION 2004061
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -81,7 +81,7 @@
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
 
-#include "func_declare.h"
+#include "fcn_declare.h"
 #include "html_ui.h"
 #include "html_settings.h"
 #include "html_other.h"
@@ -128,6 +128,12 @@
   #define DEBUG_PRINTF(x)
 #endif
 
+// GLOBAL VARIABLES
+// both declared and defined in header (solution from http://www.keil.com/support/docs/1868.htm)
+//
+//e.g. byte test = 2 becomes WLED_GLOBAL byte test _INIT(2);
+//     int arr[]{0,1,2} becomes WLED_GLOBAL int arr[] _INIT_N(({0,1,2}));
+
 #ifndef WLED_DEFINE_GLOBAL_VARS
 # define WLED_GLOBAL extern
 # define _INIT(x)
@@ -170,13 +176,13 @@ WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling 
 
 // LED CONFIG
 WLED_GLOBAL uint16_t ledCount _INIT(30);          // overcurrent prevented by ABL
-WLED_GLOBAL bool useRGBW _INIT(false);            // SK6812 strips can contain an extra White channel
+WLED_GLOBAL bool useRGBW      _INIT(false);       // SK6812 strips can contain an extra White channel
 WLED_GLOBAL bool turnOnAtBoot _INIT(true);        // turn on LEDs at power-up
-WLED_GLOBAL byte bootPreset _INIT(0);             // save preset to load after power-up
+WLED_GLOBAL byte bootPreset   _INIT(0);           // save preset to load after power-up
 
-WLED_GLOBAL byte col[] _INIT_N(({ 255, 160, 0, 0 }));       // current RGB(W) primary color. col[] should be updated if you want to change the color.
-WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));        // current RGB(W) secondary color
-WLED_GLOBAL byte briS _INIT(128);                 // default brightness
+WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
+WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
+WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
 
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);
@@ -189,52 +195,52 @@ WLED_GLOBAL bool skipFirstLed  _INIT(false);        // ignore first LED in strip
 WLED_GLOBAL byte briMultiplier _INIT(100);          // % of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 // User Interface CONFIG
-WLED_GLOBAL char serverDescription[33] _INIT("WLED");        // Name of module
-WLED_GLOBAL bool syncToggleReceive _INIT(false);             // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
+WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module
+WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 // Sync CONFIG
-WLED_GLOBAL bool buttonEnabled _INIT(true);
-WLED_GLOBAL byte irEnabled _INIT(0);        // Infrared receiver
+WLED_GLOBAL bool buttonEnabled  _INIT(true);
+WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
-WLED_GLOBAL uint16_t udpPort _INIT(21324);           // WLED notifier default port
-WLED_GLOBAL uint16_t udpRgbPort _INIT(19446);        // Hyperion port
+WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
+WLED_GLOBAL uint16_t udpRgbPort _INIT(19446); // Hyperion port
 
-WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);        // apply brightness from incoming notifications
-WLED_GLOBAL bool receiveNotificationColor _INIT(true);             // apply color
-WLED_GLOBAL bool receiveNotificationEffects _INIT(true);           // apply effects setup
-WLED_GLOBAL bool notifyDirect _INIT(false);                        // send notification if change via UI or HTTP API
-WLED_GLOBAL bool notifyButton _INIT(false);                        // send if updated by button or infrared remote
-WLED_GLOBAL bool notifyAlexa _INIT(false);                         // send notification if updated via Alexa
-WLED_GLOBAL bool notifyMacro _INIT(false);                         // send notification for macro
-WLED_GLOBAL bool notifyHue _INIT(true);                            // send notification if Hue light changes
-WLED_GLOBAL bool notifyTwice _INIT(false);                         // notifications use UDP: enable if devices don't sync reliably
+WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);       // apply brightness from incoming notifications
+WLED_GLOBAL bool receiveNotificationColor      _INIT(true);       // apply color
+WLED_GLOBAL bool receiveNotificationEffects    _INIT(true);       // apply effects setup
+WLED_GLOBAL bool notifyDirect _INIT(false);                       // send notification if change via UI or HTTP API
+WLED_GLOBAL bool notifyButton _INIT(false);                       // send if updated by button or infrared remote
+WLED_GLOBAL bool notifyAlexa  _INIT(false);                       // send notification if updated via Alexa
+WLED_GLOBAL bool notifyMacro  _INIT(false);                       // send notification for macro
+WLED_GLOBAL bool notifyHue    _INIT(true);                        // send notification if Hue light changes
+WLED_GLOBAL bool notifyTwice  _INIT(false);                       // notifications use UDP: enable if devices don't sync reliably
 
-WLED_GLOBAL bool alexaEnabled _INIT(true);                      // enable device discovery by Amazon Echo
-WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");        // speech control name of device. Choose something voice-to-text can understand
+WLED_GLOBAL bool alexaEnabled _INIT(true);                        // enable device discovery by Amazon Echo
+WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 
-WLED_GLOBAL char blynkApiKey[36] _INIT("");                     // Auth token for Blynk server. If empty, no connection will be made
+WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
 
-WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);             // ms timeout of realtime mode before returning to normal mode
-WLED_GLOBAL int arlsOffset _INIT(0);                            // realtime LED offset
-WLED_GLOBAL bool receiveDirect _INIT(true);                     // receive UDP realtime
-WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);        // activate if gamma correction is handled by the source
-WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                  // enable to force max brightness if source has very dark colors that would be black
+WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
+WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset
+WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP realtime
+WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if gamma correction is handled by the source
+WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
-WLED_GLOBAL uint16_t e131Universe _INIT(1);                                      // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
-WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);                        // DMX mode (s.a.)
-WLED_GLOBAL uint16_t DMXAddress _INIT(1);                                        // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
-WLED_GLOBAL byte DMXOldDimmer _INIT(0);                                       // only update brightness on change
-WLED_GLOBAL byte e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT];        // to detect packet loss
-WLED_GLOBAL bool e131Multicast _INIT(false);                                     // multicast or unicast
-WLED_GLOBAL bool e131SkipOutOfSequence _INIT(false);                             // freeze instead of flickering
+WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
+WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
+WLED_GLOBAL uint16_t DMXAddress _INIT(1);                         // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
+WLED_GLOBAL byte DMXOldDimmer _INIT(0);                           // only update brightness on change
+WLED_GLOBAL byte e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT]; // to detect packet loss
+WLED_GLOBAL bool e131Multicast _INIT(false);                      // multicast or unicast
+WLED_GLOBAL bool e131SkipOutOfSequence _INIT(false);              // freeze instead of flickering
 
 WLED_GLOBAL bool mqttEnabled _INIT(false);
-WLED_GLOBAL char mqttDeviceTopic[33] _INIT("");               // main MQTT topic (individual per device, default is wled/mac)
-WLED_GLOBAL char mqttGroupTopic[33] _INIT("wled/all");        // second MQTT topic (for example to group devices)
-WLED_GLOBAL char mqttServer[33] _INIT("");                    // both domains and IPs should work (no SSL)
-WLED_GLOBAL char mqttUser[41] _INIT("");                      // optional: username for MQTT auth
-WLED_GLOBAL char mqttPass[41] _INIT("");                      // optional: password for MQTT auth
-WLED_GLOBAL char mqttClientID[41] _INIT("");                  // override the client ID
+WLED_GLOBAL char mqttDeviceTopic[33] _INIT("");            // main MQTT topic (individual per device, default is wled/mac)
+WLED_GLOBAL char mqttGroupTopic[33] _INIT("wled/all");     // second MQTT topic (for example to group devices)
+WLED_GLOBAL char mqttServer[33] _INIT("");                 // both domains and IPs should work (no SSL)
+WLED_GLOBAL char mqttUser[41] _INIT("");                   // optional: username for MQTT auth
+WLED_GLOBAL char mqttPass[41] _INIT("");                   // optional: password for MQTT auth
+WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
 WLED_GLOBAL uint16_t mqttPort _INIT(1883);
 
 WLED_GLOBAL bool huePollingEnabled _INIT(false);           // poll hue bridge for light state
@@ -255,30 +261,30 @@ WLED_GLOBAL int utcOffsetSecs _INIT(0);           // Seconds to offset from UTC 
 WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
 WLED_GLOBAL byte overlayMin _INIT(0), overlayMax _INIT(ledCount - 1);   // boundaries of overlay mode
 
-WLED_GLOBAL byte analogClock12pixel _INIT(0);                 // The pixel in your strip where "midnight" would be
-WLED_GLOBAL bool analogClockSecondsTrail _INIT(false);        // Display seconds as trail of LEDs instead of a single pixel
-WLED_GLOBAL bool analogClock5MinuteMarks _INIT(false);        // Light pixels at every 5-minute position
+WLED_GLOBAL byte analogClock12pixel _INIT(0);               // The pixel in your strip where "midnight" would be
+WLED_GLOBAL bool analogClockSecondsTrail _INIT(false);      // Display seconds as trail of LEDs instead of a single pixel
+WLED_GLOBAL bool analogClock5MinuteMarks _INIT(false);      // Light pixels at every 5-minute position
 
 WLED_GLOBAL char cronixieDisplay[7] _INIT("HHMMSS");        // Cronixie Display mask. See wled13_cronixie.ino
 WLED_GLOBAL bool cronixieBacklight _INIT(true);             // Allow digits to be back-illuminated
 
 WLED_GLOBAL bool countdownMode _INIT(false);                         // Clock will count down towards date
-WLED_GLOBAL byte countdownYear _INIT(20), countdownMonth _INIT(1);        // Countdown target date, year is last two digits
-WLED_GLOBAL byte countdownDay _INIT(1), countdownHour _INIT(0);
-WLED_GLOBAL byte countdownMin _INIT(0), countdownSec _INIT(0);
+WLED_GLOBAL byte countdownYear _INIT(20), countdownMonth _INIT(1);   // Countdown target date, year is last two digits
+WLED_GLOBAL byte countdownDay  _INIT(1) , countdownHour  _INIT(0);
+WLED_GLOBAL byte countdownMin  _INIT(0) , countdownSec   _INIT(0);
 
 WLED_GLOBAL byte macroBoot _INIT(0);        // macro loaded after startup
-WLED_GLOBAL byte macroNl _INIT(0);          // after nightlight delay over
+WLED_GLOBAL byte macroNl   _INIT(0);        // after nightlight delay over
 WLED_GLOBAL byte macroCountdown _INIT(0);
 WLED_GLOBAL byte macroAlexaOn _INIT(0), macroAlexaOff _INIT(0);
 WLED_GLOBAL byte macroButton _INIT(0), macroLongPress _INIT(0), macroDoublePress _INIT(0);
 
 // Security CONFIG
-WLED_GLOBAL bool otaLock _INIT(false);           // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
-WLED_GLOBAL bool wifiLock _INIT(false);          // prevents access to WiFi settings when OTA lock is enabled
-WLED_GLOBAL bool aOtaEnabled _INIT(true);        // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
+WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
+WLED_GLOBAL bool wifiLock    _INIT(false);  // prevents access to WiFi settings when OTA lock is enabled
+WLED_GLOBAL bool aOtaEnabled _INIT(true);   // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
 
-WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0);
+WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use in usermod
 
 #ifdef WLED_ENABLE_DMX
   // dmx CONFIG

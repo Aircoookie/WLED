@@ -412,8 +412,8 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
     case  0: return ((col.W << 24) | (col.G << 8) | (col.R << 16) | (col.B)); //0 = GRB, default
     case  1: return ((col.W << 24) | (col.R << 8) | (col.G << 16) | (col.B)); //1 = RGB, common for WS2811
     case  2: return ((col.W << 24) | (col.B << 8) | (col.R << 16) | (col.G)); //2 = BRG
-    case  3: return ((col.W << 24) | (col.R << 8) | (col.B << 16) | (col.G)); //3 = RBG
-    case  4: return ((col.W << 24) | (col.B << 8) | (col.G << 16) | (col.R)); //4 = BGR
+    case  3: return ((col.W << 24) | (col.B << 8) | (col.G << 16) | (col.R)); //3 = RBG
+    case  4: return ((col.W << 24) | (col.R << 8) | (col.B << 16) | (col.G)); //4 = BGR
     case  5: return ((col.W << 24) | (col.G << 8) | (col.B << 16) | (col.R)); //5 = GBR
   }
   return 0;

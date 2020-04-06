@@ -1,5 +1,5 @@
-#ifndef WLED_FUNC_DECLARE_H
-#define WLED_FUNC_DECLARE_H
+#ifndef WLED_FCN_DECLARE_H
+#define WLED_FCN_DECLARE_H
 #include <Arduino.h>
 #include "src/dependencies/espalexa/EspalexaDevice.h"
 #include "src/dependencies/e131/ESPAsyncE131.h"

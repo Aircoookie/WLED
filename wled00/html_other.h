@@ -1,5 +1,5 @@
 /*
- * Various pages
+ * Various web pages
  */
 
 //USER HTML HERE (/u subpage)

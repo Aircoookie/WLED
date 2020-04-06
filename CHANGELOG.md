@@ -2,6 +2,11 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2004061
+
+-   Fixed RBG and BGR getPixelColor (#825)
+-   Improved formatting
+
 #### Build 2004060
 
 -   Consolidated global variables in wled.h
