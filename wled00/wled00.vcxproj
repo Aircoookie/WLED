@@ -104,231 +104,103 @@
     <None Include="wled00.ino">
       <FileType>CppCode</FileType>
     </None>
-    <None Include="wled01_eeprom.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled02_xml.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled03_set.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled04_file.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled05_init.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled06_usermod.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled07_notify.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled08_led.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled09_button.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled10_ntp.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled11_ol.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled12_alexa.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled13_cronixie.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled14_colors.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled15_hue.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled16_blynk.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled17_mqtt.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled18_server.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled19_json.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled20_ir.ino">
-      <FileType>CppCode</FileType>
-    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="html_classic.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="html_mobile.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="html_other.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="html_settings.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="ir_codes.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="NpbWrapper.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="palettes.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Callbacks.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\DisconnectReasons.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Flags.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Helpers.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\MessageProperties.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\ConnAckPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\Packet.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PingRespPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubAckPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubCompPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PublishPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubRecPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubRelPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\SubAckPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\UnsubAckPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\ParsingInformation.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Storage.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\BlynkSimpleEsp.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkApi.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkApiArduino.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkArduinoClient.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkConfig.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDateTime.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDebug.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDetectDevice.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkEveryN.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkFifo.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkHandlers.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkParam.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkProtocol.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkProtocolDefs.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkTemplates.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkTimer.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkUtility.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkWidgetBase.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkWiFiCommon.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
+    <ClInclude Include="alexa.h" />
+    <ClInclude Include="blynk.h" />
+    <ClInclude Include="button.h" />
+    <ClInclude Include="colors.h" />
+    <ClInclude Include="const.h" />
+    <ClInclude Include="cronixie.h" />
+    <ClInclude Include="dmx.h" />
+    <ClInclude Include="file.h" />
+    <ClInclude Include="html_classic.h" />
+    <ClInclude Include="html_mobile.h" />
+    <ClInclude Include="html_other.h" />
+    <ClInclude Include="html_settings.h" />
+    <ClInclude Include="html_ui.h" />
+    <ClInclude Include="hue.h" />
+    <ClInclude Include="ir.h" />
+    <ClInclude Include="ir_codes.h" />
+    <ClInclude Include="json.h" />
+    <ClInclude Include="led.h" />
+    <ClInclude Include="mqtt.h" />
+    <ClInclude Include="notify.h" />
+    <ClInclude Include="NpbWrapper.h" />
+    <ClInclude Include="ntp.h" />
+    <ClInclude Include="overlay.h" />
+    <ClInclude Include="palettes.h" />
+    <ClInclude Include="set.h" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient.h" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Callbacks.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\DisconnectReasons.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Flags.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Helpers.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\MessageProperties.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\ConnAckPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\Packet.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PingRespPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubAckPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubCompPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PublishPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubRecPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubRelPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\SubAckPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\UnsubAckPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\ParsingInformation.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Storage.hpp" />
+    <ClInclude Include="src\dependencies\blynk\BlynkSimpleEsp.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkApi.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkApiArduino.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkArduinoClient.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkConfig.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDateTime.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDebug.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDetectDevice.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkEveryN.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkFifo.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkHandlers.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkParam.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkProtocol.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkProtocolDefs.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkTemplates.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkTimer.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkUtility.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkWidgetBase.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkWiFiCommon.h" />
     <ClInclude Include="src\dependencies\e131\ESPAsyncE131.h" />
-    <ClInclude Include="src\dependencies\espalexa\Espalexa.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\espalexa\EspalexaDevice.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\json\ArduinoJson-v6.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\json\AsyncJson-v6.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\timezone\Timezone.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\time\Time.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\time\TimeLib.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="FX.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
+    <ClInclude Include="src\dependencies\espalexa\Espalexa.h" />
+    <ClInclude Include="src\dependencies\espalexa\EspalexaDevice.h" />
+    <ClInclude Include="src\dependencies\json\ArduinoJson-v6.h" />
+    <ClInclude Include="src\dependencies\json\AsyncJson-v6.h" />
+    <ClInclude Include="src\dependencies\timezone\Timezone.h" />
+    <ClInclude Include="src\dependencies\time\Time.h" />
+    <ClInclude Include="src\dependencies\time\TimeLib.h" />
+    <ClInclude Include="FX.h" />
+    <ClInclude Include="usermod.h" />
+    <ClInclude Include="wled.h" />
+    <ClInclude Include="wled_eeprom.h" />
+    <ClInclude Include="wled_server.h" />
+    <ClInclude Include="xml.h" />
     <ClInclude Include="__vm\.wled00.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="alexa.cpp" />
+    <ClCompile Include="blynk.cpp" />
+    <ClCompile Include="button.cpp" />
+    <ClCompile Include="colors.cpp" />
+    <ClCompile Include="cronixie.cpp" />
+    <ClCompile Include="file.cpp" />
+    <ClCompile Include="hue.cpp" />
+    <ClCompile Include="ir.cpp" />
+    <ClCompile Include="json.cpp" />
+    <ClCompile Include="led.cpp" />
+    <ClCompile Include="mqtt.cpp" />
+    <ClCompile Include="notify.cpp" />
+    <ClCompile Include="ntp.cpp" />
+    <ClCompile Include="overlay.cpp" />
+    <ClCompile Include="set.cpp" />
     <ClCompile Include="src\dependencies\async-mqtt-client\AsyncMqttClient.cpp" />
     <ClCompile Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\ConnAckPacket.cpp" />
     <ClCompile Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PingRespPacket.cpp" />
@@ -350,6 +222,11 @@
     <ClCompile Include="src\dependencies\time\Time.cpp" />
     <ClCompile Include="FX.cpp" />
     <ClCompile Include="FX_fcn.cpp" />
+    <ClCompile Include="usermod.cpp" />
+    <ClCompile Include="wled.cpp" />
+    <ClCompile Include="wled_eeprom.cpp" />
+    <ClCompile Include="wled_server.cpp" />
+    <ClCompile Include="xml.cpp" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
