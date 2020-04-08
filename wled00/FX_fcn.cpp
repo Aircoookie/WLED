@@ -224,7 +224,7 @@ void WS2812FX::show(void) {
       if(useWackyWS2815PowerModel)
       {
         // ignore white component on WS2815 power calculation
-        powerSum += (max(max(c.R,c.G),c.B)) * 3;
+        powerSum += (MAX(MAX(c.R,c.G),c.B)) * 3;
       }
       else 
       {
@@ -412,8 +412,8 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
     case  0: return ((col.W << 24) | (col.G << 8) | (col.R << 16) | (col.B)); //0 = GRB, default
     case  1: return ((col.W << 24) | (col.R << 8) | (col.G << 16) | (col.B)); //1 = RGB, common for WS2811
     case  2: return ((col.W << 24) | (col.B << 8) | (col.R << 16) | (col.G)); //2 = BRG
-    case  3: return ((col.W << 24) | (col.R << 8) | (col.B << 16) | (col.G)); //3 = RBG
-    case  4: return ((col.W << 24) | (col.B << 8) | (col.G << 16) | (col.R)); //4 = BGR
+    case  3: return ((col.W << 24) | (col.B << 8) | (col.G << 16) | (col.R)); //3 = RBG
+    case  4: return ((col.W << 24) | (col.R << 8) | (col.B << 16) | (col.G)); //4 = BGR
     case  5: return ((col.W << 24) | (col.G << 8) | (col.B << 16) | (col.R)); //5 = GBR
   }
   return 0;
@@ -647,7 +647,7 @@ uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
     r = random8();
     x = abs(pos - r);
     y = 255 - x;
-    d = min(x, y);
+    d = MIN(x, y);
   }
   return r;
 }
@@ -730,8 +730,8 @@ void WS2812FX::handle_palette(void)
       CHSV prim_hsv = rgb2hsv_approximate(prim);
       targetPalette = CRGBPalette16(
                       CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
-                      CHSV(prim_hsv.h, max(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
-                      CHSV(prim_hsv.h, prim_hsv.s, max(prim_hsv.v - 50,0)), //darker
+                      CHSV(prim_hsv.h, MAX(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
+                      CHSV(prim_hsv.h, prim_hsv.s, MAX(prim_hsv.v - 50,0)), //darker
                       CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v)); //color itself
       break;}
     case 4: {//primary + secondary

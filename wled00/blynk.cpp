@@ -1,3 +1,6 @@
+#include "wled.h"
+#include "src/dependencies/blynk/Blynk/BlynkHandlers.h"
+
 /*
  * Remote light control with the free Blynk app
  */
