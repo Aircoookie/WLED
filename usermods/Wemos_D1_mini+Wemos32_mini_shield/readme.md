@@ -23,3 +23,25 @@
 -   SSD1306 128x32 I2C OLED display
 -   DS18B20 (temperature sensor)
 -   Push button (N.O. momentary switch)
+
+### Platformio requirements
+Uncomment `U8g2@~2.27.3`,`DallasTemperature@~3.8.0`,`OneWire@~2.3.5 under` `[common]` section in `platformio.ini`:
+```ini
+# platformio.ini
+...
+[platformio]
+...
+; default_envs = esp07
+default_envs = d1_mini
+...
+[common]
+...
+lib_deps_external =
+  ...
+  #For use SSD1306 OLED display uncomment following
+  U8g2@~2.27.3
+  #For Dallas sensor uncomment following 2 lines
+  DallasTemperature@~3.8.0
+  OneWire@~2.3.5
+...
+```
