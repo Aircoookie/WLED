@@ -1,4 +1,5 @@
 # Wemos D1 mini and Wemos32 mini shield
+-   Installation of file: Copy and replace file in wled00 directory
 -   Added third choice of controller Heltec WiFi-Kit-8. Totally DIY but with OLED display.
 ## Project repository
 -   [Original repository](https://github.com/srg74/WLED-wemos-shield) - WLED Wemos shield repository
@@ -22,3 +23,25 @@
 -   SSD1306 128x32 I2C OLED display
 -   DS18B20 (temperature sensor)
 -   Push button (N.O. momentary switch)
+
+### Platformio requirements
+Uncomment `U8g2@~2.27.3`,`DallasTemperature@~3.8.0`,`OneWire@~2.3.5 under` `[common]` section in `platformio.ini`:
+```ini
+# platformio.ini
+...
+[platformio]
+...
+; default_envs = esp07
+default_envs = d1_mini
+...
+[common]
+...
+lib_deps_external =
+  ...
+  #For use SSD1306 OLED display uncomment following
+  U8g2@~2.27.3
+  #For Dallas sensor uncomment following 2 lines
+  DallasTemperature@~3.8.0
+  OneWire@~2.3.5
+...
+```
