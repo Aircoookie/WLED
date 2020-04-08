@@ -1,4 +1,5 @@
 # Wemos D1 mini and Wemos32 mini shield
+-   Installation of file: Copy and replace file in wled00 directory
 -   Added third choice of controller Heltec WiFi-Kit-8. Totally DIY but with OLED display.
 ## Project repository
 -   [Original repository](https://github.com/srg74/WLED-wemos-shield) - WLED Wemos shield repository
