@@ -1,9 +1,10 @@
+#include <EEPROM.h>
+#include "wled.h"
+
 /*
  * Methods to handle saving and loading to non-volatile memory
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
-
-#define EEPSIZE 2560  //Maximum is 4096
 
 //eeprom Version code, enables default settings instead of 0 init on update
 #define EEPVER 18
@@ -591,7 +592,7 @@ void savedToPresets()
   }
 }
 
-bool applyPreset(byte index, bool loadBri = true)
+bool applyPreset(byte index, bool loadBri)
 {
   if (index == 255 || index == 0)
   {
@@ -629,7 +630,7 @@ bool applyPreset(byte index, bool loadBri = true)
   return true;
 }
 
-void savePreset(byte index, bool persist = true)
+void savePreset(byte index, bool persist)
 {
   if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
@@ -697,7 +698,7 @@ void applyMacro(byte index)
 }
 
 
-void saveMacro(byte index, String mc, bool persist = true) //only commit on single save, not in settings
+void saveMacro(byte index, String mc, bool persist) //only commit on single save, not in settings
 {
   index-=1;
   if (index > 15) return;
