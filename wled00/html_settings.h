@@ -214,11 +214,12 @@ function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com
 
 <i>Number of fixtures is taken from LED config page</i><br>
 
-channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
-start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
-spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
+Channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
+Start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
+Spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
 <div id="gapwarning" style="color: orange; display: none;">WARNING: Channel gap is lower than channels per fixture.<br />This will cause overlap.</div>
-<button type="button" onclick="location.href='/dmxmap';">DMX Map</button>
+<button type="button" onclick="location.href='/dmxmap';">DMX Map</button><br>
+DMX fixtures start LED: <input type="number" min="0" max="1500" name="SL">
 <h3>channel functions</h3>
 <div id="dmxchannels"></div>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
