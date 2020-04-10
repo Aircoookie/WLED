@@ -37,14 +37,15 @@ void colorRGBtoXY(byte* rgb, float* xy); // only defined if huesync disabled TOD
 void colorFromDecOrHexString(byte* rgb, char* in);
 void colorRGBtoRGBW(byte* rgb); //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_MODE_LEGACY)
 
+//dmx.cpp
+void initDMX();
+void handleDMX();
+
 //e131.cpp
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP);
 
 //file.cpp
 bool handleFileRead(AsyncWebServerRequest*, String path);
-
-//dmx.cpp
-void handleDMX();
 
 //hue.cpp
 void handleHue();

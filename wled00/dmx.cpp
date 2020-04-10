@@ -17,7 +17,7 @@ void handleDMX()
 
   uint8_t brightness = strip.getBrightness();
 
-  for (int i = 0; i < ledCount; i++) {        // uses the amount of LEDs as fixture count
+  for (int i = DMXStartLED; i < ledCount; i++) {        // uses the amount of LEDs as fixture count
 
     uint32_t in = strip.getPixelColor(i);     // get the colors for the individual fixtures as suggested by Aircoookie in issue #462
     byte w = in >> 24 & 0xFF;
@@ -25,7 +25,7 @@ void handleDMX()
     byte g = in >> 8 & 0xFF;
     byte b = in & 0xFF;
 
-    int DMXFixtureStart = DMXStart + (DMXGap * i);
+    int DMXFixtureStart = DMXStart + (DMXGap * (i - DMXStartLED));
     for (int j = 0; j < DMXChannels; j++) {
       int DMXAddr = DMXFixtureStart + j;
       switch (DMXFixtureMap[j]) {
@@ -57,6 +57,11 @@ void handleDMX()
   dmx.update();        // update the DMX bus
 }
 
+void initDMX() {
+  dmx.init(512);        // initialize with bus length
+}
+
 #else
 void handleDMX() {}
+void initDMX() {}
 #endif

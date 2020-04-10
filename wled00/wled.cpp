@@ -213,7 +213,7 @@ void WLED::setup()
   }
 #endif
 #ifdef WLED_ENABLE_DMX
-  dmx.init(512);        // initialize with bus length
+  initDMX();
 #endif
   // HTTP server page init
   initServer();

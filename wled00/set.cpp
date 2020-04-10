@@ -307,6 +307,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t>0 && t<513) {
       DMXGap = t;
     }
+    t = request->arg("SL").toInt();
+    if (t>=0 && t < MAX_LEDS) {
+      DMXStartLED = t;
+    }
     for (int i=0; i<15; i++) {
       String argname = "CH" + String((i+1));
       t = request->arg(argname).toInt();

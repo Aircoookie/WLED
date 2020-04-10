@@ -2,6 +2,12 @@
 
 ### Development versions after 0.9.1 release
 
+
+#### Build 2004100
+
+-   Fixed DMX output compilation
+-   Added DMX start LED setting
+
 #### Build 2004061
 
 -   Fixed RBG and BGR getPixelColor (#825)

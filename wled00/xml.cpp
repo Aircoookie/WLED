@@ -457,6 +457,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"CN",DMXChannels);
     sappend('v',"CG",DMXGap);
     sappend('v',"CS",DMXStart);
+    sappend('v',"SL",DMXStartLED);
     
     sappend('i',"CH1",DMXFixtureMap[0]);
     sappend('i',"CH2",DMXFixtureMap[1]);
