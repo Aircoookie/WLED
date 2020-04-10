@@ -1,5 +1,7 @@
 # Almost universal controller board for outdoor applications
 This usermod is using ideas from @mrVanboy and @400killer
+
+Installation of file: Copy and replace file in wled00 directory
 ## Project repository
 -   [Original repository](https://github.com/srg74/Controller-for-WLED-firmware) - Main controller repository
 ## Features
@@ -24,6 +26,11 @@ This usermod is using ideas from @mrVanboy and @400killer
 Uncomment `U8g2@~2.27.3`,`DallasTemperature@~3.8.0`,`OneWire@~2.3.5 under` `[common]` section in `platformio.ini`:
 ```ini
 # platformio.ini
+...
+[platformio]
+...
+; default_envs = esp01_1m_full
+default_envs = esp07
 ...
 [common]
 ...
