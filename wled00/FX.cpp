@@ -601,7 +601,7 @@ uint16_t WS2812FX::mode_hyper_sparkle(void) {
   }
 
   if(random8(5) < 2) {
-    for(uint16_t i = 0; i < max(1, SEGLEN/3); i++) {
+    for(uint16_t i = 0; i < MAX(1, SEGLEN/3); i++) {
       setPixelColor(random16(SEGLEN), SEGCOLOR(1));
     }
     return 20;
@@ -1115,7 +1115,7 @@ uint16_t WS2812FX::mode_fireworks() {
   if (valid1) setPixelColor(SEGENV.aux0 , sv1);
   if (valid2) setPixelColor(SEGENV.aux1, sv2);
 
-  for(uint16_t i=0; i<max(1, SEGLEN/20); i++) {
+  for(uint16_t i=0; i<MAX(1, SEGLEN/20); i++) {
     if(random8(129 - (SEGMENT.intensity >> 1)) == 0) {
       uint16_t index = random(SEGLEN);
       setPixelColor(index, color_from_palette(random8(), false, false, 0));
@@ -1162,12 +1162,12 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
   byte r = (SEGCOLOR(0) >> 16) & 0xFF;
   byte g = (SEGCOLOR(0) >>  8) & 0xFF;
   byte b = (SEGCOLOR(0)        & 0xFF);
-  byte lum = (SEGMENT.palette == 0) ? max(w, max(r, max(g, b))) : 255;
+  byte lum = (SEGMENT.palette == 0) ? MAX(w, MAX(r, MAX(g, b))) : 255;
   lum /= (((256-SEGMENT.intensity)/16)+1);
   for(uint16_t i = 0; i < SEGLEN; i++) {
     byte flicker = random8(lum);
     if (SEGMENT.palette == 0) {
-      setPixelColor(i, max(r - flicker, 0), max(g - flicker, 0), max(b - flicker, 0), max(w - flicker, 0));
+      setPixelColor(i, MAX(r - flicker, 0), MAX(g - flicker, 0), MAX(b - flicker, 0), MAX(w - flicker, 0));
     } else {
       setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, 255 - flicker));
     }
@@ -1197,7 +1197,7 @@ uint16_t WS2812FX::gradient_base(bool loading) {
     {
       val = abs(((i>pp) ? p2:pp) -i);
     } else {
-      val = min(abs(pp-i),min(abs(p1-i),abs(p2-i)));
+      val = MIN(abs(pp-i),MIN(abs(p1-i),abs(p2-i)));
     }
     val = (brd > val) ? val/brd * 255 : 255;
     setPixelColor(i, color_blend(SEGCOLOR(0), color_from_palette(i, true, PALETTE_SOLID_WRAP, 1), val));
@@ -1778,7 +1778,7 @@ uint16_t WS2812FX::mode_fire_2012()
 
   // Step 4.  Map from heat cells to LED colors
   for (uint16_t j = 0; j < SEGLEN; j++) {
-    CRGB color = ColorFromPalette(currentPalette, min(heat[j],240), 255, LINEARBLEND);
+    CRGB color = ColorFromPalette(currentPalette, MIN(heat[j],240), 255, LINEARBLEND);
     setPixelColor(j, color.red, color.green, color.blue);
   }
   return FRAMETIME;
@@ -2573,7 +2573,7 @@ uint16_t WS2812FX::mode_bouncing_balls(void) {
     
     uint32_t color = SEGCOLOR(0);
     if (SEGMENT.palette) {
-      color = color_wheel(i*(256/max(numBalls, 8)));
+      color = color_wheel(i*(256/MAX(numBalls, 8)));
     } else if (hasCol2) {
       color = SEGCOLOR(i % NUM_COLORS);
     }
@@ -3094,13 +3094,14 @@ uint16_t WS2812FX::mode_plasma(void) {
   return FRAMETIME;
 } 
 
+
 /*
  * Percentage display
  * Intesity values from 0-100 turn on the leds.
  */
 uint16_t WS2812FX::mode_percent(void) {
 
-	uint8_t percent = max(0, min(200, SEGMENT.intensity));
+	uint8_t percent = MAX(0, MIN(200, SEGMENT.intensity));
 	uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
                                          : SEGLEN * (200 - percent) / 100.0;
   
@@ -3166,4 +3167,109 @@ uint16_t WS2812FX::mode_heartbeat(void) {
   }
 
   return FRAMETIME;
+}
+
+
+//  "Pacifica"
+//  Gentle, blue-green ocean waves.
+//  December 2019, Mark Kriegsman and Mary Corey March.
+//  For Dan.
+//
+//
+// In this animation, there are four "layers" of waves of light.  
+//
+// Each layer moves independently, and each is scaled separately.
+//
+// All four wave layers are added together on top of each other, and then 
+// another filter is applied that adds "whitecaps" of brightness where the 
+// waves line up with each other more.  Finally, another pass is taken
+// over the led array to 'deepen' (dim) the blues and greens.
+//
+// The speed and scale and motion each layer varies slowly within independent 
+// hand-chosen ranges, which is why the code has a lot of low-speed 'beatsin8' functions
+// with a lot of oddly specific numeric ranges.
+//
+// These three custom blue-green color palettes were inspired by the colors found in
+// the waters off the southern coast of California, https://goo.gl/maps/QQgd97jjHesHZVxQ7
+//
+// Modified for WLED, based on https://github.com/FastLED/FastLED/blob/master/examples/Pacifica/Pacifica.ino
+//
+uint16_t WS2812FX::mode_pacifica()
+{
+  CRGBPalette16 pacifica_palette_1 = 
+    { 0x000507, 0x000409, 0x00030B, 0x00030D, 0x000210, 0x000212, 0x000114, 0x000117, 
+      0x000019, 0x00001C, 0x000026, 0x000031, 0x00003B, 0x000046, 0x14554B, 0x28AA50 };
+  CRGBPalette16 pacifica_palette_2 = 
+    { 0x000507, 0x000409, 0x00030B, 0x00030D, 0x000210, 0x000212, 0x000114, 0x000117, 
+      0x000019, 0x00001C, 0x000026, 0x000031, 0x00003B, 0x000046, 0x0C5F52, 0x19BE5F };
+  CRGBPalette16 pacifica_palette_3 = 
+    { 0x000208, 0x00030E, 0x000514, 0x00061A, 0x000820, 0x000927, 0x000B2D, 0x000C33, 
+      0x000E39, 0x001040, 0x001450, 0x001860, 0x001C70, 0x002080, 0x1040BF, 0x2060FF };
+  // Increment the four "color index start" counters, one for each wave layer.
+  // Each is incremented at a different speed, and the speeds vary over time.
+  uint16_t sCIStart1 = SEGENV.aux0, sCIStart2 = SEGENV.aux1, sCIStart3 = SEGENV.step, sCIStart4 = SEGENV.step >> 16;
+  //static uint16_t sCIStart1, sCIStart2, sCIStart3, sCIStart4;
+  uint32_t deltams = 26 + (SEGMENT.speed >> 3);
+  
+  uint16_t speedfactor1 = beatsin16(3, 179, 269);
+  uint16_t speedfactor2 = beatsin16(4, 179, 269);
+  uint32_t deltams1 = (deltams * speedfactor1) / 256;
+  uint32_t deltams2 = (deltams * speedfactor2) / 256;
+  uint32_t deltams21 = (deltams1 + deltams2) / 2;
+  sCIStart1 += (deltams1 * beatsin88(1011,10,13));
+  sCIStart2 -= (deltams21 * beatsin88(777,8,11));
+  sCIStart3 -= (deltams1 * beatsin88(501,5,7));
+  sCIStart4 -= (deltams2 * beatsin88(257,4,6));
+  SEGENV.aux0 = sCIStart1; SEGENV.aux1 = sCIStart2;
+  SEGENV.step = sCIStart4; SEGENV.step = (SEGENV.step << 16) + sCIStart3;
+
+  // Clear out the LED array to a dim background blue-green
+  //fill(132618);
+
+  uint8_t basethreshold = beatsin8( 9, 55, 65);
+  uint8_t wave = beat8( 7 );
+  
+  for( uint16_t i = 0; i < SEGLEN; i++) {
+    CRGB c = CRGB(2, 6, 10);
+    // Render each of four layers, with different scales and speeds, that vary over time
+    c += pacifica_one_layer(i, pacifica_palette_1, sCIStart1, beatsin16(3, 11 * 256, 14 * 256), beatsin8(10, 70, 130), 0-beat16(301));
+    c += pacifica_one_layer(i, pacifica_palette_2, sCIStart2, beatsin16(4,  6 * 256,  9 * 256), beatsin8(17, 40,  80),   beat16(401));
+    c += pacifica_one_layer(i, pacifica_palette_3, sCIStart3,                         6 * 256 , beatsin8(9, 10,38)   , 0-beat16(503));
+    c += pacifica_one_layer(i, pacifica_palette_3, sCIStart4,                         5 * 256 , beatsin8(8, 10,28)   ,   beat16(601));
+    
+    // Add extra 'white' to areas where the four layers of light have lined up brightly
+    uint8_t threshold = scale8( sin8( wave), 20) + basethreshold;
+    wave += 7;
+    uint8_t l = c.getAverageLight();
+    if (l > threshold) {
+      uint8_t overage = l - threshold;
+      uint8_t overage2 = qadd8(overage, overage);
+      c += CRGB(overage, overage2, qadd8(overage2, overage2));
+    }
+
+    //deepen the blues and greens
+    c.blue  = scale8(c.blue,  145); 
+    c.green = scale8(c.green, 200); 
+    c |= CRGB( 2, 5, 7);
+
+    setPixelColor(i, c.red, c.green, c.blue);
+  }
+
+  return FRAMETIME;
+}
+
+// Add one layer of waves into the led array
+CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff)
+{
+  uint16_t ci = cistart;
+  uint16_t waveangle = ioff;
+  uint16_t wavescale_half = (wavescale >> 1) + 20;
+  
+  waveangle += ((120 + SEGMENT.intensity) * i); //original 250 * i
+  uint16_t s16 = sin16(waveangle) + 32768;
+  uint16_t cs = scale16(s16, wavescale_half) + wavescale_half;
+  ci += (cs * i);
+  uint16_t sindex16 = sin16(ci) + 32768;
+  uint8_t sindex8 = scale16(sindex16, 240);
+  return ColorFromPalette(p, sindex8, bri, LINEARBLEND);
 }

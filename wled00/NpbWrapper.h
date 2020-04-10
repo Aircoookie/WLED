@@ -4,11 +4,12 @@
 
 //PIN CONFIGURATION
 #ifndef LEDPIN
-#define LEDPIN 2      //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
+#define LEDPIN 2  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
 #endif
 //#define USE_APA102  // Uncomment for using APA102 LEDs.
 //#define USE_WS2801  // Uncomment for using WS2801 LEDs (make sure you have NeoPixelBus v2.5.6 or newer)
 //#define USE_LPD8806 // Uncomment for using LPD8806
+//#define USE_P9813   // Uncomment for using P9813 LEDs (make sure you have NeoPixelBus v2.5.8 or newer)
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
 //#define WLED_USE_5CH_LEDS  //5 Channel H801 for cold and warm white
@@ -35,7 +36,7 @@
 
 //END CONFIGURATION
 
-#if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
+#if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806) || defined(USE_P9813)
  #define CLKPIN 0
  #define DATAPIN 2
  #if BTNPIN == CLKPIN || BTNPIN == DATAPIN
@@ -73,6 +74,8 @@
   #define PIXELMETHOD NeoWs2801Method
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
+ #elif defined(USE_P9813)
+  #define PIXELMETHOD P9813Method  
  #else
   #define PIXELMETHOD NeoEsp32Rmt0Ws2812xMethod
  #endif
@@ -84,6 +87,8 @@
   #define PIXELMETHOD NeoWs2801Method
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
+ #elif defined(USE_P9813)
+  #define PIXELMETHOD P9813Method  
  #elif LEDPIN == 2
   #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
  #elif LEDPIN == 3
@@ -101,7 +106,10 @@
  #define PIXELFEATURE4 DotStarLbgrFeature
 #elif defined(USE_LPD8806)
  #define PIXELFEATURE3 Lpd8806GrbFeature 
- #define PIXELFEATURE4 Lpd8806GrbFeature 
+ #define PIXELFEATURE4 Lpd8806GrbFeature
+#elif defined(USE_P9813)
+ #define PIXELFEATURE3 P9813BgrFeature 
+ #define PIXELFEATURE4 NeoGrbwFeature   
 #else
  #define PIXELFEATURE3 NeoGrbFeature
  #define PIXELFEATURE4 NeoGrbwFeature
@@ -143,7 +151,7 @@ public:
     switch (_type)
     {
       case NeoPixelType_Grb:
-      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
+      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806) || defined(USE_P9813)
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
       #else
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, LEDPIN);
@@ -152,7 +160,7 @@ public:
       break;
 
       case NeoPixelType_Grbw:
-      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
+      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806) || defined(USE_P9813)
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
       #else
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, LEDPIN);

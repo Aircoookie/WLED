@@ -1,6 +1,142 @@
+#include "wled.h"
+
+/*
+ * Used to draw clock overlays over the strip
+ */
+ 
+void initCronixie()
+{
+  if (overlayCurrent == 3 && !cronixieInit)
+  {
+    setCronixie();
+    strip.getSegment(0).grouping = 10; //10 LEDs per digit
+    cronixieInit = true;
+  } else if (cronixieInit && overlayCurrent != 3)
+  {
+    strip.getSegment(0).grouping = 1;
+    cronixieInit = false; 
+  }
+}
+
+
+void handleOverlays()
+{
+  if (millis() - overlayRefreshedTime > overlayRefreshMs)
+  {
+    initCronixie();
+    updateLocalTime();
+    checkTimers();
+    checkCountdown();
+    if (overlayCurrent == 3) _overlayCronixie();//Diamex cronixie clock kit
+    overlayRefreshedTime = millis();
+  }
+}
+
+
+void _overlayAnalogClock()
+{
+  int overlaySize = overlayMax - overlayMin +1;
+  if (countdownMode)
+  {
+    _overlayAnalogCountdown(); return;
+  }
+  double hourP = ((double)(hour(local)%12))/12;
+  double minuteP = ((double)minute(local))/60;
+  hourP = hourP + minuteP/12;
+  double secondP = ((double)second(local))/60;
+  int hourPixel = floor(analogClock12pixel + overlaySize*hourP);
+  if (hourPixel > overlayMax) hourPixel = overlayMin -1 + hourPixel - overlayMax;
+  int minutePixel = floor(analogClock12pixel + overlaySize*minuteP);
+  if (minutePixel > overlayMax) minutePixel = overlayMin -1 + minutePixel - overlayMax; 
+  int secondPixel = floor(analogClock12pixel + overlaySize*secondP);
+  if (secondPixel > overlayMax) secondPixel = overlayMin -1 + secondPixel - overlayMax;
+  if (analogClockSecondsTrail)
+  {
+    if (secondPixel < analogClock12pixel)
+    {
+      strip.setRange(analogClock12pixel, overlayMax, 0xFF0000);
+      strip.setRange(overlayMin, secondPixel, 0xFF0000);
+    } else
+    {
+      strip.setRange(analogClock12pixel, secondPixel, 0xFF0000);
+    }
+  }
+  if (analogClock5MinuteMarks)
+  {
+    int pix;
+    for (int i = 0; i <= 12; i++)
+    {
+      pix = analogClock12pixel + round((overlaySize / 12.0) *i);
+      if (pix > overlayMax) pix -= overlaySize;
+      strip.setPixelColor(pix, 0x00FFAA);
+    }
+  }
+  if (!analogClockSecondsTrail) strip.setPixelColor(secondPixel, 0xFF0000);
+  strip.setPixelColor(minutePixel, 0x00FF00);
+  strip.setPixelColor(hourPixel, 0x0000FF);
+  overlayRefreshMs = 998;
+}
+
+
+void _overlayAnalogCountdown()
+{
+  if (now() < countdownTime)
+  {
+    long diff = countdownTime - now();
+    double pval = 60;
+    if (diff > 31557600L) //display in years if more than 365 days
+    {
+      pval = 315576000L; //10 years
+    } else if (diff > 2592000L) //display in months if more than a month
+    {
+      pval = 31557600L; //1 year
+    } else if (diff > 604800) //display in weeks if more than a week
+    {
+      pval = 2592000L; //1 month
+    } else if (diff > 86400) //display in days if more than 24 hours
+    {
+      pval = 604800; //1 week
+    } else if (diff > 3600) //display in hours if more than 60 minutes
+    {
+      pval = 86400; //1 day
+    } else if (diff > 60) //display in minutes if more than 60 seconds
+    {
+      pval = 3600; //1 hour
+    }
+    int overlaySize = overlayMax - overlayMin +1;
+    double perc = (pval-(double)diff)/pval;
+    if (perc > 1.0) perc = 1.0;
+    byte pixelCnt = perc*overlaySize;
+    if (analogClock12pixel + pixelCnt > overlayMax)
+    {
+      strip.setRange(analogClock12pixel, overlayMax, ((uint32_t)colSec[3] << 24)| ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
+      strip.setRange(overlayMin, overlayMin +pixelCnt -(1+ overlayMax -analogClock12pixel), ((uint32_t)colSec[3] << 24)| ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
+    } else
+    {
+      strip.setRange(analogClock12pixel, analogClock12pixel + pixelCnt, ((uint32_t)colSec[3] << 24)| ((uint32_t)colSec[0] << 16) | ((uint32_t)colSec[1] << 8) | colSec[2]);
+    }
+  }
+  overlayRefreshMs = 998;
+}
+
+
+void handleOverlayDraw() {
+  if (!overlayCurrent) return;
+  switch (overlayCurrent)
+  {
+    case 1: _overlayAnalogClock(); break;
+    case 3: _drawOverlayCronixie(); break;
+  }
+}
+
+
 /*
  * Support for the Cronixie clock
  */
+ 
+#ifndef WLED_DISABLE_CRONIXIE
+byte _digitOut[6] = {10,10,10,10,10,10};
+ 
 byte getSameCodeLength(char code, int index, char const cronixieDisplay[])
 {
   byte counter = 0;
@@ -19,7 +155,6 @@ byte getSameCodeLength(char code, int index, char const cronixieDisplay[])
 
 void setCronixie()
 {
-  #ifndef WLED_DISABLE_CRONIXIE
   /*
    * digit purpose index
    * 0-9 | 0-9 (incl. random)
@@ -140,12 +275,10 @@ void setCronixie()
   DEBUG_PRINTLN((int)dP[5]);
 
   _overlayCronixie(); //refresh
-  #endif
 }
 
 void _overlayCronixie()
 {
-  #ifndef WLED_DISABLE_CRONIXIE
   byte h = hour(local);
   byte h0 = h;
   byte m = minute(local);
@@ -161,7 +294,6 @@ void _overlayCronixie()
     if (h>12) h-=12;
     else if (h==0) h+=12;
   }
-  byte _digitOut[]{10,10,10,10,10,10};
   for (int i = 0; i < 6; i++)
   {
     if (dP[i] < 12) _digitOut[i] = dP[i];
@@ -184,8 +316,8 @@ void _overlayCronixie()
           case 37: _digitOut[i] = y/10; _digitOut[i+1] = y- _digitOut[i]*10; i++; break; //YY
           case 39: _digitOut[i] = 2; _digitOut[i+1] = 0; _digitOut[i+2] = y/10; _digitOut[i+3] = y- _digitOut[i+2]*10; i+=3; break; //YYYY
           
-          case 16: _digitOut[i+2] = ((h0/3)&1)?1:0; i++; //BBB (BBBB NI)
-          case 15: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:0; i++; //BB
+          //case 16: _digitOut[i+2] = ((h0/3)&1)?1:0; i++; //BBB (BBBB NI)
+          //case 15: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:0; i++; //BB
           case 14: _digitOut[i] = (h0>11)?1:0; break; //B
         }
       } else
@@ -195,8 +327,8 @@ void _overlayCronixie()
           case 71: _digitOut[i] = h/10; _digitOut[i+1] = h- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //hh
           case 75: _digitOut[i] = m/10; _digitOut[i+1] = m- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //mm
           case 81: _digitOut[i] = s/10; _digitOut[i+1] = s- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //ss
-          case 66: _digitOut[i+2] = ((h0/3)&1)?1:10; i++; //bbb (bbbb NI)
-          case 65: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:10; i++; //bb
+          //case 66: _digitOut[i+2] = ((h0/3)&1)?1:10; i++; //bbb (bbbb NI)
+          //case 65: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:10; i++; //bb
           case 64: _digitOut[i] = (h0>11)?1:10; break; //b
 
           case 93: _digitOut[i] = weekday(local); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //d
@@ -208,7 +340,37 @@ void _overlayCronixie()
       }
     }
   }
-  strip.setCronixieDigits(_digitOut);
-  //strip.trigger(); //this has a drawback, no effects slower than RefreshMs. advantage: Quick update, not dependant on effect time
-  #endif
 }
+
+void _drawOverlayCronixie()
+{
+  byte offsets[] = {5, 0, 6, 1, 7, 2, 8, 3, 9, 4};
+  
+  for (uint16_t i = 0; i < 6; i++)
+  {
+    byte o = 10*i;
+    byte excl = 10;
+    if(_digitOut[i] < 10) excl = offsets[_digitOut[i]];
+    excl += o;
+    
+    if (cronixieBacklight && _digitOut[i] <11)
+    {
+      uint32_t col = strip.gamma32(strip.getSegment(0).colors[1]);
+      for (uint16_t j=o; j< o+10; j++) {
+        if (j != excl) strip.setPixelColor(j, col);
+      }
+    } else
+    {
+      for (uint16_t j=o; j< o+10; j++) {
+        if (j != excl) strip.setPixelColor(j, 0);
+      }
+    }
+  }
+}
+
+#else // WLED_DISABLE_CRONIXIE
+byte getSameCodeLength(char code, int index, char const cronixieDisplay[]) {}
+void setCronixie() {}
+void _overlayCronixie() {}
+void _drawOverlayCronixie() {}
+#endif

@@ -1,8 +1,10 @@
+#include "wled.h"
+
 /*
  * Receives client input
  */
 
-void _setRandomColor(bool _sec,bool fromButton=false)
+void _setRandomColor(bool _sec,bool fromButton)
 {
   lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
   if (_sec){
@@ -217,12 +219,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClockSecondsTrail = request->hasArg("OS");
 
     strcpy(cronixieDisplay,request->arg("CX").c_str());
-    bool cbOld = cronixieBacklight;
     cronixieBacklight = request->hasArg("CB");
-    if (cbOld != cronixieBacklight && overlayCurrent == 3)
-    {
-      strip.setCronixieBacklight(cronixieBacklight); overlayRefreshedTime = 0;
-    }
     countdownMode = request->hasArg("CE");
     countdownYear = request->arg("CY").toInt();
     countdownMonth = request->arg("CI").toInt();
@@ -310,6 +307,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t>0 && t<513) {
       DMXGap = t;
     }
+    t = request->arg("SL").toInt();
+    if (t>=0 && t < MAX_LEDS) {
+      DMXStartLED = t;
+    }
     for (int i=0; i<15; i++) {
       String argname = "CH" + String((i+1));
       t = request->arg(argname).toInt();
@@ -335,7 +336,7 @@ int getNumVal(const String* req, uint16_t pos)
 
 
 //helper to get int value at a position in string
-bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255)
+bool updateVal(const String* req, const char* key, byte* val, byte minv, byte maxv)
 {
   int pos = req->indexOf(key);
   if (pos < 1) return false;
@@ -656,7 +657,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) //sets backlight
   {
     cronixieBacklight = (req.charAt(pos+3) != '0');
-    if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
     overlayRefreshedTime = 0;
   }
   #endif

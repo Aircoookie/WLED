@@ -1,9 +1,11 @@
+#include "wled.h"
+
 /*
  * Sending XML status files to client
  */
 
 //build XML response to HTTP /win API request
-char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
+char* XML_response(AsyncWebServerRequest *request, char* dest)
 {
   char sbuf[(dest == nullptr)?1024:1]; //allocate local buffer if none passed
   obuf = (dest == nullptr)? sbuf:dest;
@@ -455,6 +457,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"CN",DMXChannels);
     sappend('v',"CG",DMXGap);
     sappend('v',"CS",DMXStart);
+    sappend('v',"SL",DMXStartLED);
     
     sappend('i',"CH1",DMXFixtureMap[0]);
     sappend('i',"CH2",DMXFixtureMap[1]);

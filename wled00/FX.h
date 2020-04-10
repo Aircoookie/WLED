@@ -38,8 +38,8 @@
 #define DEFAULT_SPEED      (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
 
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)>(b)?(a):(b))
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
@@ -95,7 +95,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  101
+#define MODE_COUNT  102
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -198,6 +198,7 @@
 #define FX_MODE_PERCENT                 98
 #define FX_MODE_RIPPLE_RAINBOW          99
 #define FX_MODE_HEARTBEAT              100
+#define FX_MODE_PACIFICA               101
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -387,6 +388,7 @@ class WS2812FX {
       _mode[FX_MODE_PERCENT]                 = &WS2812FX::mode_percent;
       _mode[FX_MODE_RIPPLE_RAINBOW]          = &WS2812FX::mode_ripple_rainbow;
       _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
+      _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -407,9 +409,6 @@ class WS2812FX {
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
       setBrightness(uint8_t b),
-      driverModeCronixie(bool b),
-      setCronixieDigits(byte* d),
-      setCronixieBacklight(bool b),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setShowCallback(show_callback cb),
       setTransitionMode(bool t),
@@ -574,7 +573,8 @@ class WS2812FX {
       mode_plasma(void),
       mode_percent(void),
       mode_ripple_rainbow(void),
-      mode_heartbeat(void);
+      mode_heartbeat(void),
+      mode_pacifica(void);
       
 
   private:
@@ -597,12 +597,8 @@ class WS2812FX {
 
     bool
       _useRgbw = false,
-      _cronixieMode,
-      _cronixieBacklightEnabled,
       _skipFirstMode,
       _triggered;
-
-    byte _cronixieDigits[6];
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
 
@@ -628,13 +624,14 @@ class WS2812FX {
       spots_base(uint16_t);
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
+    CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
     
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
     
     #ifdef WLED_USE_ANALOG_LEDS
     uint32_t _analogLastShow = 0;
-    uint32_t _analogLastColor = 0;
+    RgbwColor _analogLastColor = 0;
     uint8_t _analogLastBri = 0;
     #endif
     
@@ -663,7 +660,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat"
+"Heartbeat","Pacifica"
 ])=====";
 
 
@@ -673,7 +670,7 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
-"Aurora"
+"Aurora","Atlantica"
 ])=====";
 
 #endif

@@ -1,9 +1,9 @@
 /*
-   Settings html
-*/
+ *  Settings html
+ */
 
 //common CSS of settings pages
-const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}</style>)=====";
+const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}.d5{width:4.5em !important;}</style>)=====";
 
 //settings menu
 const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
@@ -214,11 +214,12 @@ function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com
 
 <i>Number of fixtures is taken from LED config page</i><br>
 
-channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
-start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
-spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
+Channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
+Start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
+Spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
 <div id="gapwarning" style="color: orange; display: none;">WARNING: Channel gap is lower than channels per fixture.<br />This will cause overlap.</div>
-<button type="button" onclick="location.href='/dmxmap';">DMX Map</button>
+<button type="button" onclick="location.href='/dmxmap';">DMX Map</button><br>
+DMX fixtures start LED: <input type="number" min="0" max="1500" name="SL">
 <h3>channel functions</h3>
 <div id="dmxchannels"></div>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
@@ -273,7 +274,7 @@ Infrared remote:
 </select><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
-UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>
+UDP Port: <input name="UP" type="number" min="1" max="65535" class="d5" required><br>
 Receive <input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects<br>
 Send notifications on direct change: <input type="checkbox" name="SD"><br>
 Send notifications on button press: <input type="checkbox" name="SB"><br>
@@ -284,9 +285,9 @@ Send notifications twice: <input type="checkbox" name="S2">
 <h3>Realtime</h3>
 Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
 <i>E1.31 (sACN)</i><br>
-Skip out-of-sequence packets (freeze instead of flicker): <input type="checkbox" name="ES"><br>
 Use E1.31 multicast: <input type="checkbox" name="EM"><br>
 E1.31 start universe: <input name="EU" type="number" min="1" max="63999" required><br>
+Skip out-of-sequence packets: <input type="checkbox" name="ES"><br>
 <i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br>
 DMX start address: <input name="DA" type="number" min="1" max="510" value="1" required><br>
 DMX mode:
@@ -316,7 +317,7 @@ Device Auth token: <input name="BK" maxlength="33"><br>
 <h3>MQTT</h3>
 Enable MQTT: <input type="checkbox" name="MQ"><br>
 Broker: <input name="MS" maxlength="32">
-Port: <input name="MQPORT" type="number" min="1" max="65535"><br>
+Port: <input name="MQPORT" type="number" min="1" max="65535" class="d5"><br>
 <b>The MQTT credentials are sent over an unsecured connection.<br>
 Never use the MQTT password for another service!</b><br>
 Username: <input name="MQUSER" maxlength="40"><br>

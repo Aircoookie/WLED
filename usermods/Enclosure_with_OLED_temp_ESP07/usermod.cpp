@@ -1,21 +1,13 @@
+#include "wled.h"
+#include <Arduino.h>
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 #include <DallasTemperature.h> //Dallastemperature sensor
-#ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
-uint8_t SCL_PIN = 22; 
-uint8_t SDA_PIN = 21; 
-OneWire oneWire(23);
-#else //ESP8266 boards
-uint8_t SCL_PIN = 5;
-uint8_t SDA_PIN = 4;
-// uint8_t RST_PIN = 16; // Uncoment for Heltec WiFi-Kit-8
-OneWire oneWire(13);
-#endif
-//The SCL and SDA pins are defined here.
-//ESP8266 Wemos D1 mini board use SCL=5 SDA=4 while ESP32 Wemos32 mini board use SCL=22 SDA=21
-#define U8X8_PIN_SCL SCL_PIN
-#define U8X8_PIN_SDA SDA_PIN
-//#define U8X8_PIN_RESET RST_PIN // Uncoment for Heltec WiFi-Kit-8
+//The SCL and SDA pins are defined here. 
+//Lolin32 boards use SCL=5 SDA=4 
+#define U8X8_PIN_SCL 5
+#define U8X8_PIN_SDA 4
 // Dallas sensor
+OneWire oneWire(13); 
 DallasTemperature sensor(&oneWire);
 long temptimer = millis();
 long lastMeasure = 0;
@@ -30,14 +22,13 @@ long lastMeasure = 0;
 U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
 // --> Second choise of cheap I2C OLED 128X64 0.96" or 1.3"
 //U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); // Pins are Reset, SCL, SDA
-// --> Third choise of Heltec WiFi-Kit-8 OLED 128X32 0.91"
-//U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_RESET, U8X8_PIN_SCL, U8X8_PIN_SDA); // Constructor for Heltec WiFi-Kit-8
-// gets called once at boot. Do all initialization that doesn't depend on network here
+// gets called once at boot. Do all initialization that doesn't depend on
+// network here
 void userSetup() {
   sensor.begin(); //Start Dallas temperature sensor
   u8x8.begin();
+  //u8x8.setFlipMode(1); //Uncoment if using WLED Wemos shield 
   u8x8.setPowerSave(0);
-  u8x8.setFlipMode(1);
   u8x8.setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
   u8x8.setFont(u8x8_font_chroma48medium8_r);
   u8x8.drawString(0, 0, "Loading...");

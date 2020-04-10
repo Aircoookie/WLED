@@ -1,3 +1,5 @@
+#include "wled.h"
+
 /*
  * JSON API (De)serialization
  */
@@ -248,6 +250,26 @@ void serializeState(JsonObject root)
   }
 }
 
+//by https://github.com/tzapu/WiFiManager/blob/master/WiFiManager.cpp
+int getSignalQuality(int rssi)
+{
+    int quality = 0;
+
+    if (rssi <= -100)
+    {
+        quality = 0;
+    }
+    else if (rssi >= -50)
+    {
+        quality = 100;
+    }
+    else
+    {
+        quality = 2 * (rssi + 100);
+    }
+    return quality;
+}
+
 void serializeInfo(JsonObject root)
 {
   root["ver"] = versionString;
@@ -387,8 +409,8 @@ void serveJson(AsyncWebServerRequest* request)
 
 void serveLiveLeds(AsyncWebServerRequest* request)
 {
-  byte used = ledCount;
-  byte n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
+  uint16_t used = ledCount;
+  uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
   char buffer[2000] = "{\"leds\":[";
   olen = 9;
   obuf = buffer;

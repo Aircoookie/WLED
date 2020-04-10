@@ -1,5 +1,7 @@
+#include "wled.h"
+
 /*
- * Server page definitions
+ * Integrated HTTP web server page declarations
  */
 
 //Is this an IP?
@@ -303,7 +305,7 @@ String msgProcessor(const String& var)
 }
 
 
-void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", byte optionT=255)
+void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl, byte optionT)
 {
   messageHead = headl;
   messageSub = subl;

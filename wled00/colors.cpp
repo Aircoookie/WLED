@@ -1,3 +1,5 @@
+#include "wled.h"
+
 /*
  * Color conversion methods
  */
@@ -18,7 +20,7 @@ void colorFromUint32(uint32_t in, bool secondary)
 }
 
 //load a color without affecting the white channel
-void colorFromUint24(uint32_t in, bool secondary = false)
+void colorFromUint24(uint32_t in, bool secondary)
 {
   if (secondary) {
     colSec[0] = in >> 16 & 0xFF;
@@ -32,7 +34,7 @@ void colorFromUint24(uint32_t in, bool secondary = false)
 }
 
 //relatively change white brightness, minumum A=5
-void relativeChangeWhite(int8_t amount, byte lowerBoundary =0)
+void relativeChangeWhite(int8_t amount, byte lowerBoundary)
 {
   int16_t new_val = (int16_t) col[3] + amount;
   if (new_val > 0xFF) new_val = 0xFF;
@@ -57,10 +59,9 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
     case 4: rgb[0]=t,rgb[1]=p,rgb[2]=255;break;
     case 5: rgb[0]=255,rgb[1]=p,rgb[2]=q;
   }
-  if (useRGBW) colorRGBtoRGBW(col);
+  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
-#ifndef WLED_DISABLE_HUESYNC
 void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
 {
   //this is only an approximation using WS2812B with gamma correction enabled
@@ -81,9 +82,10 @@ void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
   } else {
     rgb[0]=237;rgb[1]=255;rgb[2]=239;//150
   }
-  if (useRGBW) colorRGBtoRGBW(col);
+  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
+#ifndef WLED_DISABLE_HUESYNC
 void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
 {
   float z = 1.0f - x - y;
@@ -149,7 +151,8 @@ void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.develo
   xy[0] = X / (X + Y + Z);
   xy[1] = Y / (X + Y + Z);
 }
-#endif
+#endif // WLED_DISABLE_HUESYNC
+
 
 void colorFromDecOrHexString(byte* rgb, char* in)
 {
