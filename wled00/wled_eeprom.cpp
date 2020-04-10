@@ -1,9 +1,10 @@
+#include <EEPROM.h>
+#include "wled.h"
+
 /*
  * Methods to handle saving and loading to non-volatile memory
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
-
-#define EEPSIZE 2560  //Maximum is 4096
 
 //eeprom Version code, enables default settings instead of 0 init on update
 #define EEPVER 18
@@ -270,9 +271,6 @@ void saveSettingsToEEPROM()
   for (int i=0; i<15; i++) {
     EEPROM.write(2535+i, DMXFixtureMap[i]);
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
-
-  EEPROM.write(2550, DMXSegment);
-  EEPROM.write(2551, DMXStartLED);
   #endif
 
   commit();
@@ -554,12 +552,11 @@ void loadSettingsFromEEPROM(bool first)
   DMXChannels = EEPROM.read(2530);
   DMXGap = EEPROM.read(2531) + ((EEPROM.read(2532) << 8) & 0xFF00);
   DMXStart = EEPROM.read(2533) + ((EEPROM.read(2534) << 8) & 0xFF00);
-  DMXSegment = EEPROM.read(2550);
-  DMXStartLED = EEPROM.read(2551);
   
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
-  } //last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
+  } //last used: 2549
+  EEPROM.write(2550, DMXStartLED);
   #endif
 
   //user MOD memory
@@ -596,7 +593,7 @@ void savedToPresets()
   }
 }
 
-bool applyPreset(byte index, bool loadBri = true)
+bool applyPreset(byte index, bool loadBri)
 {
   if (index == 255 || index == 0)
   {
@@ -634,7 +631,7 @@ bool applyPreset(byte index, bool loadBri = true)
   return true;
 }
 
-void savePreset(byte index, bool persist = true)
+void savePreset(byte index, bool persist)
 {
   if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
@@ -702,7 +699,7 @@ void applyMacro(byte index)
 }
 
 
-void saveMacro(byte index, String mc, bool persist = true) //only commit on single save, not in settings
+void saveMacro(byte index, String mc, bool persist) //only commit on single save, not in settings
 {
   index-=1;
   if (index > 15) return;

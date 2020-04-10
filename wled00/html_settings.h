@@ -1,6 +1,6 @@
 /*
-   Settings html
-*/
+ *  Settings html
+ */
 
 //common CSS of settings pages
 const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}.d5{width:4.5em !important;}</style>)=====";
@@ -214,17 +214,12 @@ function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com
 
 <i>Number of fixtures is taken from LED config page</i><br>
 
-channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
-start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
-spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
+Channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
+Start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
+Spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
 <div id="gapwarning" style="color: orange; display: none;">WARNING: Channel gap is lower than channels per fixture.<br />This will cause overlap.</div>
 <button type="button" onclick="location.href='/dmxmap';">DMX Map</button><br>
-
-<i>If wanting to use DMX together with LEDs. Number of fixtures will also depend on the segment and start LED settings below</i><br>
-<i>Using these settings, you can position your fixtures anywhere you want on the LED strip</i><br>
-which segment should DMX use: <input type="number" min="0" max="9" name="SEG" maxlength="2"><br />
-start LED from the above channel from which DMX fixtures should start: <input type="number" min="0" max="1500" name="SL" maxlength="2"><br />
-
+DMX fixtures start LED: <input type="number" min="0" max="1500" name="SL">
 <h3>channel functions</h3>
 <div id="dmxchannels"></div>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>

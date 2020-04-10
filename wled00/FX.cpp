@@ -601,7 +601,7 @@ uint16_t WS2812FX::mode_hyper_sparkle(void) {
   }
 
   if(random8(5) < 2) {
-    for(uint16_t i = 0; i < max(1, SEGLEN/3); i++) {
+    for(uint16_t i = 0; i < MAX(1, SEGLEN/3); i++) {
       setPixelColor(random16(SEGLEN), SEGCOLOR(1));
     }
     return 20;
@@ -1115,7 +1115,7 @@ uint16_t WS2812FX::mode_fireworks() {
   if (valid1) setPixelColor(SEGENV.aux0 , sv1);
   if (valid2) setPixelColor(SEGENV.aux1, sv2);
 
-  for(uint16_t i=0; i<max(1, SEGLEN/20); i++) {
+  for(uint16_t i=0; i<MAX(1, SEGLEN/20); i++) {
     if(random8(129 - (SEGMENT.intensity >> 1)) == 0) {
       uint16_t index = random(SEGLEN);
       setPixelColor(index, color_from_palette(random8(), false, false, 0));
@@ -1162,12 +1162,12 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
   byte r = (SEGCOLOR(0) >> 16) & 0xFF;
   byte g = (SEGCOLOR(0) >>  8) & 0xFF;
   byte b = (SEGCOLOR(0)        & 0xFF);
-  byte lum = (SEGMENT.palette == 0) ? max(w, max(r, max(g, b))) : 255;
+  byte lum = (SEGMENT.palette == 0) ? MAX(w, MAX(r, MAX(g, b))) : 255;
   lum /= (((256-SEGMENT.intensity)/16)+1);
   for(uint16_t i = 0; i < SEGLEN; i++) {
     byte flicker = random8(lum);
     if (SEGMENT.palette == 0) {
-      setPixelColor(i, max(r - flicker, 0), max(g - flicker, 0), max(b - flicker, 0), max(w - flicker, 0));
+      setPixelColor(i, MAX(r - flicker, 0), MAX(g - flicker, 0), MAX(b - flicker, 0), MAX(w - flicker, 0));
     } else {
       setPixelColor(i, color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, 255 - flicker));
     }
@@ -1197,7 +1197,7 @@ uint16_t WS2812FX::gradient_base(bool loading) {
     {
       val = abs(((i>pp) ? p2:pp) -i);
     } else {
-      val = min(abs(pp-i),min(abs(p1-i),abs(p2-i)));
+      val = MIN(abs(pp-i),MIN(abs(p1-i),abs(p2-i)));
     }
     val = (brd > val) ? val/brd * 255 : 255;
     setPixelColor(i, color_blend(SEGCOLOR(0), color_from_palette(i, true, PALETTE_SOLID_WRAP, 1), val));
@@ -1778,7 +1778,7 @@ uint16_t WS2812FX::mode_fire_2012()
 
   // Step 4.  Map from heat cells to LED colors
   for (uint16_t j = 0; j < SEGLEN; j++) {
-    CRGB color = ColorFromPalette(currentPalette, min(heat[j],240), 255, LINEARBLEND);
+    CRGB color = ColorFromPalette(currentPalette, MIN(heat[j],240), 255, LINEARBLEND);
     setPixelColor(j, color.red, color.green, color.blue);
   }
   return FRAMETIME;
@@ -2573,7 +2573,7 @@ uint16_t WS2812FX::mode_bouncing_balls(void) {
     
     uint32_t color = SEGCOLOR(0);
     if (SEGMENT.palette) {
-      color = color_wheel(i*(256/max(numBalls, 8)));
+      color = color_wheel(i*(256/MAX(numBalls, 8)));
     } else if (hasCol2) {
       color = SEGCOLOR(i % NUM_COLORS);
     }
@@ -3101,7 +3101,7 @@ uint16_t WS2812FX::mode_plasma(void) {
  */
 uint16_t WS2812FX::mode_percent(void) {
 
-	uint8_t percent = max(0, min(200, SEGMENT.intensity));
+	uint8_t percent = MAX(0, MIN(200, SEGMENT.intensity));
 	uint16_t active_leds = (percent < 100) ? SEGLEN * percent / 100.0
                                          : SEGLEN * (200 - percent) / 100.0;
   

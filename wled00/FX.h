@@ -38,8 +38,8 @@
 #define DEFAULT_SPEED      (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
 
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)>(b)?(a):(b))
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
