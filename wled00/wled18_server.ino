@@ -337,7 +337,9 @@ String dmxProcessor(const String& var)
   String mapJS;
   #ifdef WLED_ENABLE_DMX
     if (var == "DMXVARS") {
-      mapJS += "\nCN=" + String(DMXChannels) + ";\n";
+      mapJS += "\nDP=" + String(DMXDirectionPin) + ";\n";
+      mapJS += "OP=" + String(DMXSerialOutputPin) + ";\n";
+      mapJS += "CN=" + String(DMXChannels) + ";\n";
       mapJS += "CS=" + String(DMXStart) + ";\n";
       mapJS += "CG=" + String(DMXGap) + ";\n";
       mapJS += "LC=" + String(ledCount) + ";\n";

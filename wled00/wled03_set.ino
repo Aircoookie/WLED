@@ -293,7 +293,15 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
-    int t = request->arg("CN").toInt();
+    int t = request->arg("DP").toInt();
+    if (t>=0 && t<43) {
+      DMXDirectionPin = t;
+    }
+    t = request->arg("OP").toInt();
+    if (t>=0 && t<43) {
+      DMXSerialOutputPin = t;
+    }
+    t = request->arg("CN").toInt();
     if (t>0 && t<16) {
       DMXChannels = t;
     }
