@@ -23,7 +23,7 @@
 //#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
-//#define WLED_ENABLE_DMX            //uses 10.7kb
+#define WLED_ENABLE_DMX            //uses 10.7kb (ESP32) and 8.0kb (ESP8266)
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
@@ -36,7 +36,7 @@
 #include <Arduino.h>
 #ifdef WLED_ENABLE_DMX
   #ifdef ESP8266
-    #include <LXESP8266DMX.h>
+    #include <LXESP8266UARTDMX.h>
   #else
     #include <LXESP32DMX.h>
   #endif

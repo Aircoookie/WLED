@@ -5,12 +5,20 @@
  */
 #ifdef WLED_ENABLE_DMX
 
+#ifdef ESP8266
+  #include <LXESP8266UARTDMX.h>
+#else
+  #include <LXESP32DMX.h>
+#endif
+
 static uint8_t level;
 static uint8_t dmxbuffer[DMX_MAX_FRAME];
 static bool changed = true;
 
 void copyDMXToOutput(void) {
-  xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
+  #ifndef ESP8266
+    xSemaphoreTake( ESP32DMX.lxDataLock, portMAX_DELAY );
+  #endif
 	for (int i=1; i<DMX_MAX_FRAME; i++) {
     #ifdef ESP8266
       ESP8266DMX.setSlot(i, dmxbuffer[i]);
@@ -19,7 +27,9 @@ void copyDMXToOutput(void) {
     #endif
    }
    changed = false;
-   xSemaphoreGive( ESP32DMX.lxDataLock );
+  #ifndef ESP8266
+    xSemaphoreGive( ESP32DMX.lxDataLock );
+  #endif
 }
 
 void setDMX(uint16_t DMXAddr, byte value) {
@@ -34,6 +44,8 @@ void handleDMX() {
   
   uint8_t brightness = strip.getBrightness();
   bool calc_brightness = true;
+
+  // check if no shutter channel is set
   for (byte i = 0; i < DMXChannels; i++)
   {
     if (DMXFixtureMap[i] == 5) calc_brightness = false;

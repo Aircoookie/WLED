@@ -90,7 +90,7 @@ void wledInit()
       ESP8266DMX.setDirectionPin(DMXDirectionPin);
       ESP8266DMX.startOutput();
     #else
-      digitalWrite(DMXDirectionPin, HIGH);
+      ESP32DMX.setDirectionPin(DMXDirectionPin);
       ESP32DMX.startOutput(DMXSerialOutputPin);
     #endif
     DEBUG_PRINT("Start DMX output");
