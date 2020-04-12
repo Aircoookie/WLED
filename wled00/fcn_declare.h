@@ -42,7 +42,7 @@ void initDMX();
 void handleDMX();
 
 //e131.cpp
-void handleE131Packet(e131_packet_t* p, IPAddress clientIP);
+void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet);
 
 //file.cpp
 bool handleFileRead(AsyncWebServerRequest*, String path);
@@ -103,12 +103,6 @@ void handleNightlight();
 bool initMqtt();
 void publishMqtt();
 
-//notify.cpp
-void notify(byte callMode, bool followUp=false);
-void arlsLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
-void handleNotifications();
-void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
-
 //ntp.cpp
 void handleNetworkTime();
 void sendNTPPacket();
@@ -139,6 +133,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage);
 bool handleSet(AsyncWebServerRequest *request, const String& req);
 int getNumVal(const String* req, uint16_t pos);
 bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
+
+//udp.cpp
+void notify(byte callMode, bool followUp=false);
+void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
+void handleNotifications();
+void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 
 //usermod.cpp
 void userSetup();
