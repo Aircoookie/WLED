@@ -1856,6 +1856,24 @@ uint16_t WS2812FX::mode_fillnoise8()
   CRGB fastled_col;
   for (uint16_t i = 0; i < SEGLEN; i++) {
     uint8_t index = inoise8(i * SEGLEN, SEGENV.step + i * SEGLEN);
+
+    setPixCol(i, index, sin8(index));
+    
+//    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+  }
+  SEGENV.step += beatsin8(SEGMENT.speed, 1, 6); //10,1,4
+
+  return FRAMETIME;
+}
+
+/*
+uint16_t WS2812FX::mode_fillnoise8()
+{
+  if (SEGENV.call == 0) SEGENV.step = random16(12345);
+  CRGB fastled_col;
+  for (uint16_t i = 0; i < SEGLEN; i++) {
+    uint8_t index = inoise8(i * SEGLEN, SEGENV.step + i * SEGLEN);
     fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
     setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
@@ -1863,6 +1881,10 @@ uint16_t WS2812FX::mode_fillnoise8()
 
   return FRAMETIME;
 }
+
+ * 
+*/
+
 
 uint16_t WS2812FX::mode_noise16_1()
 {
@@ -3288,7 +3310,7 @@ void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
   CRGB color;
 
   if (SEGMENT.palette == 0) {                                             // No palette loaded, so let's use the first colour. . . and white.
-    uint32_t myClr = color_blend(0, SEGCOLOR(0), intensity);              // Scale the brightness of the colour. Not blending to SEGCOLOR(1) with this, just black.
+    uint32_t myClr = color_blend(SEGCOLOR(1), SEGCOLOR(0), intensity);              // Scale the brightness of the colour. Not blending to SEGCOLOR(1) with this, just black.
     setPixelColor(location, myClr);                                       // This supports RGBW.
   } else {
     color = ColorFromPalette(currentPalette, index, intensity);           // This just uses the palettes and just RGB ones at that.
