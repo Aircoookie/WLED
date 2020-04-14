@@ -176,7 +176,7 @@ byte briMultiplier =  100;                    //% of brightness to set (to limit
 
 
 //User Interface CONFIG
-char serverDescription[33] = "WLED";          //Name of module
+char serverDescription[33] = "WLED-AudioReactive";    //Name of module
 bool syncToggleReceive = false;               //UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 
@@ -345,9 +345,9 @@ bool notificationTwoRequired = false;
 byte effectCurrent = 0;
 byte effectSpeed = 128;
 byte effectIntensity = 128;
-byte effectFFT1 = 128;
+byte effectFFT1 = 6;
 byte effectFFT2 = 128;
-byte effectFFT3 = 128;
+byte effectFFT3 = 252;
 byte effectPalette = 0;
 
 //network
