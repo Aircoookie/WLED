@@ -42,7 +42,7 @@ uint8_t myVals[32];
 arduinoFFT FFT = arduinoFFT(); /* Create FFT object */
 
 const uint16_t samples = 512; //This value MUST ALWAYS be a power of 2
-const double samplingFrequency = 10240; 
+const double samplingFrequency = 10240;
 
 unsigned int sampling_period_us;
 unsigned long microseconds;
@@ -64,7 +64,7 @@ void userSetup()
 #ifndef ESP8266
 
  sampling_period_us = round(1000000*(1.0/samplingFrequency));
- 
+
 // Define the FFT Task and lock it to core 0
 xTaskCreatePinnedToCore(
       FFTcode, /* Function to implement the task */
@@ -88,9 +88,9 @@ void userConnected()
 
 //loop. You can use "if (WLED_CONNECTED)" to check for successful connection
 void userLoop() {
-  
+
   if (millis()-lastTime > delayMs) {                            // I need to run this continuously because the animations are too slow.
-    lastTime = millis();  
+    lastTime = millis();
     getSample();                                                // Sample the microphone.
     agcAvg();                                                   // Calculated the PI adjusted value as sampleAvg.
     myVals[millis()%32] = sampleAgc;
@@ -104,7 +104,7 @@ void getSample() {
 
   static long peakTime;
 
-  #ifdef WLED_DISABLE_SOUND 
+  #ifdef WLED_DISABLE_SOUND
   micIn = inoise8(millis(), millis());                        // Simulated analog read.
   #else
   micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
@@ -114,7 +114,7 @@ void getSample() {
   micIn -= micLev;                                            // Let's center it to 0 now.
   micIn = abs(micIn);                                         // And get the absolute value of each sample.
   lastSample = micIn;
-  
+
   sample = (micIn <= squelch) ? 0 : (sample*3 + micIn) / 4;   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
   sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 32 samples.
 
@@ -122,22 +122,22 @@ void getSample() {
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 100)) {    // Poor man's beat detection by seeing if sample > Average + some value.
     samplePeak = 1;                                                   // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
     userVar1 = samplePeak;
-    peakTime=millis();                
-  }                                                           
+    peakTime=millis();
+  }
 
 }  // getSample()
 
 
 
 void agcAvg() {                                                   // A simple averaging multiplier to automatically adjust sound sensitivity.
-  
+
   multAgc = (sampleAvg < 1) ? targetAgc : targetAgc / sampleAvg;  // Make the multiplier so that sampleAvg * multiplier = setpoint
   sampleAgc = sample * multAgc;
   if (sampleAgc > 255) sampleAgc = 0;
 
   userVar0 = sampleAvg * 4;
   if (userVar0 > 255) userVar0 = 255;
-  
+
 //------------ Oscilloscope output ---------------------------
 //  Serial.print(targetAgc); Serial.print(" ");
 //  Serial.print(multAgc); Serial.print(" ");
