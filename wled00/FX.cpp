@@ -3569,18 +3569,24 @@ extern uint16_t FFT_MajorPeak;
 
 
 // sound 10: assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT 
-// and then mapping this to the HSV color cirecle. Currently we are sampling at 10240 Hz, so the highest frequency we can look at is 5120Hz.
+// and then mapping this to the HSV color circle. Currently we are sampling at 10240 Hz, so the highest frequency we can look at is 5120Hz.
 //
 // SEGMENT.fft1: the lower cut off point for the FFT. (many, most time the lowest values have very little information since they are FFT conversion artifacts. Suggested value is close to but above 0
-// SEGMENT.fft2: The high cut off point. This depends obn your sound profile. Most music looks goog when this slider is betweeh 50% and 100%.
+// SEGMENT.fft2: The high cut off point. This depends on your sound profile. Most music looks good when this slider is between 50% and 100%.
 // SEGMENT.fft3: the "loss" or darkening of pixels as they move outwards. This is the darken factor so silder at 100% == no darkening. Very sensitive.
 //
 // I suggest that for this effect you turn the brightness to 95%-100% but again it depends on your soundprofile you find yourself in.
+
+// Instead of using colorpalettes, This effect works on the HSV color circle with red being the lowest frequency
+// 
+// as a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz. 
+// Depending on the music stream you have you might find it useful to change the frequency mapping. 
   
 uint16_t WS2812FX::mode_asound10(void) {
   
   delay(1);
 
+  
 // Instead of using colorpalettes, This effect works on the HSV color circle with red being the lowest frequency
 // 
 // as a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz. 
@@ -3589,6 +3595,11 @@ uint16_t WS2812FX::mode_asound10(void) {
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {// Using FastLED's timer. You want to change speed? You need to . .
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
+
+    uint16_t dataSize = 4 * SEGLEN;               // prepared for RGBW strips, even though we are currently only using RGB strips
+    if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+
+    uint32_t* leds = reinterpret_cast<uint32_t*>(SEGENV.data);
 
     int fade = SEGMENT.fft3;
     
@@ -3615,17 +3626,30 @@ uint16_t WS2812FX::mode_asound10(void) {
       CHSV c = CHSV(i, 240,255 * intensity);
       color = c;
     }
+
+
     // Serial.println(color);
-    setPixelColor(SEGLEN/2, color.red, color.green, color.blue);
-    setPixelColor(SEGLEN/2-1, color.red, color.green, color.blue);
+    leds[SEGLEN/2] =  (color.red << 16) + (color.green << 8)  + (color.blue );
+    leds[SEGLEN/2 - 1] =  (color.red <<16) + (color.green << 8)  + (color.blue);
 
     for (int i = SEGLEN - 1; i > SEGLEN/2; i--) {                                 // Move to the right.
-      setPixelColor(i,getPixelColor(i-1));
+      leds[i] = leds[i-1];
     }
   
     for (int i = 0; i < SEGLEN/2; i++) {                                          // Move to the left.
-      setPixelColor(i,getPixelColor(i+1));
+      leds[i] = leds[i+1];
     }  
+
+
+
+// DISPLAY ARRAY
+
+    for (int i= 0; i < SEGLEN; i++) {
+      color.red = (leds[i+1] >> 16) & 0xFF;
+      color.green = (leds[i+1] >> 8) &0xFF;
+      color.blue = leds[i+1] & 0xFF;
+      setPixelColor(i,color.red, color.green, color.blue);
+    }
   }
 
 #endif
