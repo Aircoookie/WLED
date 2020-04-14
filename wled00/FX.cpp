@@ -1857,7 +1857,7 @@ uint16_t WS2812FX::mode_fillnoise8()
   for (uint16_t i = 0; i < SEGLEN; i++) {
     uint8_t index = inoise8(i * SEGLEN, SEGENV.step + i * SEGLEN);
 
-    setPixCol(i, index, sin8(index));
+    setPixCol(i, index, sin8(index));                               // Now supports non-palette colours and white channel.
     
 //    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
 //    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
@@ -1866,24 +1866,6 @@ uint16_t WS2812FX::mode_fillnoise8()
 
   return FRAMETIME;
 }
-
-/*
-uint16_t WS2812FX::mode_fillnoise8()
-{
-  if (SEGENV.call == 0) SEGENV.step = random16(12345);
-  CRGB fastled_col;
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-    uint8_t index = inoise8(i * SEGLEN, SEGENV.step + i * SEGLEN);
-    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
-  }
-  SEGENV.step += beatsin8(SEGMENT.speed, 1, 6); //10,1,4
-
-  return FRAMETIME;
-}
-
- * 
-*/
 
 
 uint16_t WS2812FX::mode_noise16_1()
@@ -1906,8 +1888,11 @@ uint16_t WS2812FX::mode_noise16_1()
 
     uint8_t index = sin8(noise * 3);                         // map LED color based on noise data
 
-    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+ //   fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+ //   setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+
+    setPixCol(i, index, sin8(index));                               // Now supports non-palette colours and white channel.
+     
   }
 
   return FRAMETIME;
@@ -1931,8 +1916,11 @@ uint16_t WS2812FX::mode_noise16_2()
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 
-    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+//    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+
+    setPixCol(i, index, sin8(noise));                               // Now supports non-palette colours and white channel.
+    
   }
 
   return FRAMETIME;
@@ -1958,8 +1946,11 @@ uint16_t WS2812FX::mode_noise16_3()
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 
-    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+//    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+
+    setPixCol(i, index, sin8(noise));                               // Now supports non-palette colours and white channel.
+    
   }
 
   return FRAMETIME;
@@ -1973,8 +1964,12 @@ uint16_t WS2812FX::mode_noise16_4()
   uint32_t stp = (now * SEGMENT.speed) >> 7;
   for (uint16_t i = 0; i < SEGLEN; i++) {
     int16_t index = inoise16(uint32_t(i) << 12, stp);
-    fastled_col = ColorFromPalette(currentPalette, index);
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    
+//    fastled_col = ColorFromPalette(currentPalette, index);
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+
+    setPixCol(i, index, sin8(index));                               // Now supports non-palette colours and white channel.
+    
   }
   return FRAMETIME;
 }
@@ -3109,8 +3104,12 @@ uint16_t WS2812FX::mode_plasma(void) {
     uint8_t colorIndex = cubicwave8((i*(1+ 3*(SEGMENT.speed >> 5)))+(thisPhase) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
                              + cos8((i*(1+ 2*(SEGMENT.speed >> 5)))+(thatPhase) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
     uint8_t thisBright = qsub8(colorIndex, beatsin8(6,0, (255 - SEGMENT.intensity)|0x01 ));
-    CRGB color = ColorFromPalette(currentPalette, colorIndex, thisBright, LINEARBLEND);
-    setPixelColor(i, color.red, color.green, color.blue);
+    
+//    CRGB color = ColorFromPalette(currentPalette, colorIndex, thisBright, LINEARBLEND);
+//    setPixelColor(i, color.red, color.green, color.blue);
+
+    setPixCol(i, colorIndex, thisBright);                               // Now supports non-palette colours and white channel.
+    
   }
 
   return FRAMETIME;
@@ -3310,7 +3309,7 @@ void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
   CRGB color;
 
   if (SEGMENT.palette == 0) {                                             // No palette loaded, so let's use the first colour. . . and white.
-    uint32_t myClr = color_blend(SEGCOLOR(1), SEGCOLOR(0), intensity);              // Scale the brightness of the colour. Not blending to SEGCOLOR(1) with this, just black.
+    uint32_t myClr = color_blend(SEGCOLOR(1), SEGCOLOR(0), intensity);    // Scale the brightness of the colour. SEGCOLOR(1) is usually black.
     setPixelColor(location, myClr);                                       // This supports RGBW.
   } else {
     color = ColorFromPalette(currentPalette, index, intensity);           // This just uses the palettes and just RGB ones at that.
