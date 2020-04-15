@@ -1858,7 +1858,7 @@ uint16_t WS2812FX::mode_fillnoise8()
     uint8_t index = inoise8(i * SEGLEN, SEGENV.step + i * SEGLEN);
 
     setPixCol(i, index, sin8(index));
-
+    
 //    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
 //    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
@@ -1882,7 +1882,6 @@ uint16_t WS2812FX::mode_fillnoise8()
   return FRAMETIME;
 }
 
- *
 */
 
 
@@ -3193,6 +3192,96 @@ uint16_t WS2812FX::mode_heartbeat(void) {
 
 
 
+//  "Pacifica"
+//  Gentle, blue-green ocean waves.
+//  December 2019, Mark Kriegsman and Mary Corey March.
+//  For Dan.
+//
+//
+// In this animation, there are four "layers" of waves of light.  
+//
+// Each layer moves independently, and each is scaled separately.
+//
+// All four wave layers are added together on top of each other, and then 
+// another filter is applied that adds "whitecaps" of brightness where the 
+// waves line up with each other more.  Finally, another pass is taken
+// over the led array to 'deepen' (dim) the blues and greens.
+//
+// The speed and scale and motion each layer varies slowly within independent 
+// hand-chosen ranges, which is why the code has a lot of low-speed 'beatsin8' functions
+// with a lot of oddly specific numeric ranges.
+//
+// These three custom blue-green color palettes were inspired by the colors found in
+// the waters off the southern coast of California, https://goo.gl/maps/QQgd97jjHesHZVxQ7
+//
+// Modified for WLED, based on https://github.com/FastLED/FastLED/blob/master/examples/Pacifica/Pacifica.ino
+//
+
+
+uint16_t WS2812FX::mode_pacifica_pal()
+{
+  CRGBPalette16 pacifica_palette_1 = 
+    { 0x000507, 0x000409, 0x00030B, 0x00030D, 0x000210, 0x000212, 0x000114, 0x000117, 
+      0x000019, 0x00001C, 0x000026, 0x000031, 0x00003B, 0x000046, 0x14554B, 0x28AA50 };
+  CRGBPalette16 pacifica_palette_2 = 
+    { 0x000507, 0x000409, 0x00030B, 0x00030D, 0x000210, 0x000212, 0x000114, 0x000117, 
+      0x000019, 0x00001C, 0x000026, 0x000031, 0x00003B, 0x000046, 0x0C5F52, 0x19BE5F };
+  CRGBPalette16 pacifica_palette_3 = 
+    { 0x000208, 0x00030E, 0x000514, 0x00061A, 0x000820, 0x000927, 0x000B2D, 0x000C33, 
+      0x000E39, 0x001040, 0x001450, 0x001860, 0x001C70, 0x002080, 0x1040BF, 0x2060FF };
+  // Increment the four "color index start" counters, one for each wave layer.
+  // Each is incremented at a different speed, and the speeds vary over time.
+  uint16_t sCIStart1 = SEGENV.aux0, sCIStart2 = SEGENV.aux1, sCIStart3 = SEGENV.step, sCIStart4 = SEGENV.step >> 16;
+  //static uint16_t sCIStart1, sCIStart2, sCIStart3, sCIStart4;
+  uint32_t deltams = 26 + (SEGMENT.speed >> 3);
+
+  uint16_t speedfactor1 = beatsin16(3, 179, 269);
+  uint16_t speedfactor2 = beatsin16(4, 179, 269);
+  uint32_t deltams1 = (deltams * speedfactor1) / 256;
+  uint32_t deltams2 = (deltams * speedfactor2) / 256;
+  uint32_t deltams21 = (deltams1 + deltams2) / 2;
+  sCIStart1 += (deltams1 * beatsin88(1011,10,13));
+  sCIStart2 -= (deltams21 * beatsin88(777,8,11));
+  sCIStart3 -= (deltams1 * beatsin88(501,5,7));
+  sCIStart4 -= (deltams2 * beatsin88(257,4,6));
+  SEGENV.aux0 = sCIStart1; SEGENV.aux1 = sCIStart2;
+  SEGENV.step = sCIStart4; SEGENV.step = (SEGENV.step << 16) + sCIStart3;
+
+  // Clear out the LED array to a dim background blue-green
+  //fill(132618);
+
+  uint8_t basethreshold = beatsin8( 9, 55, 65);
+  uint8_t wave = beat8( 7 );
+
+  for( uint16_t i = 0; i < SEGLEN; i++) {
+    CRGB c = CRGB(2, 6, 10);
+    // Render each of four layers, with different scales and speeds, that vary over time
+    c += pacifica_one_layer(i, currentPalette, sCIStart1, beatsin16(3, 11 * 256, 14 * 256), beatsin8(10, 70, 130), 0-beat16(301));
+    c += pacifica_one_layer(i, currentPalette, sCIStart2, beatsin16(4,  6 * 256,  9 * 256), beatsin8(17, 40,  80),   beat16(401));
+    c += pacifica_one_layer(i, currentPalette, sCIStart3,                         6 * 256 , beatsin8(9, 10,38)   , 0-beat16(503));
+    c += pacifica_one_layer(i, currentPalette, sCIStart4,                         5 * 256 , beatsin8(8, 10,28)   ,   beat16(601));
+
+    // Add extra 'white' to areas where the four layers of light have lined up brightly
+    uint8_t threshold = scale8( sin8( wave), 20) + basethreshold;
+    wave += 7;
+    uint8_t l = c.getAverageLight();
+    if (l > threshold) {
+      uint8_t overage = l - threshold;
+      uint8_t overage2 = qadd8(overage, overage);
+      c += CRGB(overage, overage2, qadd8(overage2, overage2));
+    }
+
+    //deepen the blues and greens
+    c.blue  = scale8(c.blue,  145); 
+    c.green = scale8(c.green, 200); 
+    c |= CRGB( 2, 5, 7);
+
+    setPixelColor(i, c.red, c.green, c.blue);
+  }
+
+  return FRAMETIME;
+}
+
 
 //  "Pacifica"
 //  Gentle, blue-green ocean waves.
@@ -3289,7 +3378,7 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
   uint16_t waveangle = ioff;
   uint16_t wavescale_half = (wavescale >> 1) + 20;
 
-  waveangle += ((120 + SEGMENT.intensity) * i); //original 250 * i
+  waveangle += ((120 + SEGMENT.intensity) * i);                           //original 250 * i
   uint16_t s16 = sin16(waveangle) + 32768;
   uint16_t cs = scale16(s16, wavescale_half) + wavescale_half;
   ci += (cs * i);
@@ -3318,7 +3407,6 @@ void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
   }
 
 } // setPixCol()
-
 
 
 uint16_t WS2812FX::mode_asound01(void) {                                   // Pixels
@@ -3356,8 +3444,6 @@ uint16_t WS2812FX::mode_asound01(void) {                                   // Pi
 } // mode_asound01()
 
 
-
-
 uint16_t WS2812FX::mode_asound02(void) {                                  // Pixelwave
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
@@ -3379,8 +3465,6 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
   return FRAMETIME;
 
 } // mode_asound02()
-
-
 
 
 uint16_t WS2812FX::mode_asound03(void) {                                  // Puddle
@@ -3405,8 +3489,6 @@ uint16_t WS2812FX::mode_asound03(void) {                                  // Pud
 } // mode_asound03()
 
 
-
-
 uint16_t WS2812FX::mode_asound04(void) {                                  // Matrix
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
@@ -3422,8 +3504,6 @@ uint16_t WS2812FX::mode_asound04(void) {                                  // Mat
   return FRAMETIME;
 
 } // mode_asound04()
-
-
 
 
 uint16_t WS2812FX::mode_asound05(void) {                                  // Myvumeter
@@ -3456,8 +3536,6 @@ uint16_t WS2812FX::mode_asound05(void) {                                  // Myv
 } // mode_asound05()
 
 
-
-
 uint16_t WS2812FX::mode_asound06(void) {                                  // Plasma
 
   static int16_t thisphase = 0;                                           // Phase of a cubicwave8.
@@ -3483,8 +3561,6 @@ uint16_t WS2812FX::mode_asound06(void) {                                  // Pla
 } // mode_asound06()
 
 
-
-
 uint16_t WS2812FX::mode_asound07(void) {                                  // Jugglep
 
   static int thistime = 20;
@@ -3503,8 +3579,6 @@ uint16_t WS2812FX::mode_asound07(void) {                                  // Jug
   return FRAMETIME;
 
 } // mode_asound07()
-
-
 
 
 uint16_t WS2812FX::mode_asound08(void) {                                  // FillnoiseMid
@@ -3530,9 +3604,6 @@ uint16_t WS2812FX::mode_asound08(void) {                                  // Fil
   return FRAMETIME;
 
 } // mode_asound08()
-
-
-
 
 
 uint16_t WS2812FX::mode_asound09(void) {                                  // Fillnoise
@@ -3561,21 +3632,22 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Fil
 } // mode_asound09()
 
 
-
-
 #ifndef ESP8266
 extern uint16_t FFT_MajorPeak;
 #endif
 
-
-// sound 10: assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT
-// and then mapping this to the HSV color cirecle. Currently we are sampling at 10240 Hz, so the highest frequency we can look at is 5120Hz.
+// sound 10: assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT 
+// and then mapping this to the HSV color circle. Currently we are sampling at 10240 Hz, so the highest frequency we can look at is 5120Hz.
 //
 // SEGMENT.fft1: the lower cut off point for the FFT. (many, most time the lowest values have very little information since they are FFT conversion artifacts. Suggested value is close to but above 0
-// SEGMENT.fft2: The high cut off point. This depends obn your sound profile. Most music looks goog when this slider is betweeh 50% and 100%.
+// SEGMENT.fft2: The high cut off point. This depends on your sound profile. Most music looks good when this slider is between 50% and 100%.
 // SEGMENT.fft3: the "loss" or darkening of pixels as they move outwards. This is the darken factor so silder at 100% == no darkening. Very sensitive.
 //
 // I suggest that for this effect you turn the brightness to 95%-100% but again it depends on your soundprofile you find yourself in.
+// Instead of using colorpalettes, This effect works on the HSV color circle with red being the lowest frequency
+// 
+// as a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz. 
+// Depending on the music stream you have you might find it useful to change the frequency mapping. 
 
 uint16_t WS2812FX::mode_asound10(void) {
 
@@ -3585,46 +3657,61 @@ uint16_t WS2812FX::mode_asound10(void) {
 //
 // as a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
-#ifndef ESP8266
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {// Using FastLED's timer. You want to change speed? You need to . .
+  
+  #ifndef ESP8266
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                   // Using FastLED's timer. You want to change speed? You need to . .
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                               // change it down here!!! By Andrew Tuline.
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
+
+    uint16_t dataSize = 4 * SEGLEN;                                   // prepared for RGBW strips, even though we are currently only using RGB strips
+    if (!SEGENV.allocateData(dataSize)) return mode_static();         //allocation failed
+
+    uint32_t* leds = reinterpret_cast<uint32_t*>(SEGENV.data);
 
     int fade = SEGMENT.fft3;
 
     fade2black(fade);
 
     int pixVal = sampleAvg * SEGMENT.intensity / 256;
-    double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;                       // make a brightness from the last avg
+    double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;            // make a brightness from the last avg
 
-//Serial.println(intensity);
+    //Serial.println(intensity);
 
     CRGB color = 0;
 
     if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
-    // MajorPeak holds the freq. value which is most abundant in the last sample. With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
-    // we will treat everything with less than 65Hz as 0
-//Serial.printf("%5d ", FFT_MajorPeak, 0);
+      // MajorPeak holds the freq. value which is most abundant in the last sample.
+      // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
+      // we will treat everything with less than 65Hz as 0
+      //Serial.printf("%5d ", FFT_MajorPeak, 0);
     if (FFT_MajorPeak < 80) {
       color = CRGB::Black;
     } else {
       int upperLimit = 20 * SEGMENT.fft2;
       int lowerLimit = 2 * SEGMENT.fft1;
       int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
-//Serial.printf("%3d %4d %2d\n",SEGMENT.intensity, upperLimit, i);
+      //Serial.printf("%3d %4d %2d\n",SEGMENT.intensity, upperLimit, i);
       CHSV c = CHSV(i, 240,255 * intensity);
       color = c;
     }
-    // Serial.println(color);
-    setPixelColor(SEGLEN/2, color.red, color.green, color.blue);
-    setPixelColor(SEGLEN/2-1, color.red, color.green, color.blue);
 
-    for (int i = SEGLEN - 1; i > SEGLEN/2; i--) {                                 // Move to the right.
-      setPixelColor(i,getPixelColor(i-1));
+    // Serial.println(color);
+    leds[SEGLEN/2] =  (color.red << 16) + (color.green << 8)  + (color.blue );
+    leds[SEGLEN/2 - 1] =  (color.red <<16) + (color.green << 8)  + (color.blue);
+
+    for (int i = SEGLEN; i > SEGLEN/2; i--) {                                 // Move to the right.
+      leds[i] = leds[i-1];
     }
 
-    for (int i = 0; i < SEGLEN/2; i++) {                                          // Move to the left.
-      setPixelColor(i,getPixelColor(i+1));
+    for (int i = 0; i < SEGLEN/2; i++) {                                      // Move to the left.
+      leds[i] = leds[i+1];
+    }  
+
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      color.red = (leds[i+1] >> 16) & 0xFF;
+      color.green = (leds[i+1] >> 8) &0xFF;
+      color.blue = leds[i+1] & 0xFF;
     }
   }
 
@@ -3632,17 +3719,17 @@ uint16_t WS2812FX::mode_asound10(void) {
   return FRAMETIME;
 } // mode_asound10()
 
-extern uint16_t lastSample;
 
+extern uint16_t lastSample;
 
 // Slider use: Intensity: the general chance of sparking new fire near the bottom
 //            FFT Custom: How sensitive to the microphone noise- How hot the spark will be
 
-uint16_t WS2812FX::mode_asound11(void) {                  // Fire with sound activation
+uint16_t WS2812FX::mode_asound11(void) {                    // Fire with sound activation
 {
   uint32_t it = now >> 5; //div 32
 
-  if (!SEGENV.allocateData(SEGLEN)) return mode_static(); //allocation failed
+  if (!SEGENV.allocateData(SEGLEN)) return mode_static();   //allocation failed
 
   byte* heat = SEGENV.data;
 
@@ -3676,13 +3763,11 @@ uint16_t WS2812FX::mode_asound11(void) {                  // Fire with sound act
 } // mode_asound11()
 
 
-
 uint16_t WS2812FX::mode_asound12(void) {
   delay(1);
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
   return FRAMETIME;
 } // mode_asound12()
-
 
 
 uint16_t WS2812FX::mode_asound13(void) {
@@ -3692,13 +3777,11 @@ uint16_t WS2812FX::mode_asound13(void) {
 } // mode_asound13()
 
 
-
 uint16_t WS2812FX::mode_asound14(void) {
   delay(1);
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
   return FRAMETIME;
 } // mode_asound14()
-
 
 
 uint16_t WS2812FX::mode_asound15(void) {

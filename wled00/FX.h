@@ -99,7 +99,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  117
+#define MODE_COUNT  118
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -203,21 +203,22 @@
 #define FX_MODE_RIPPLE_RAINBOW          99
 #define FX_MODE_HEARTBEAT              100
 #define FX_MODE_PACIFICA               101
-#define FX_MODE_ASound01               102
-#define FX_MODE_ASound02               103
-#define FX_MODE_ASound03               104
-#define FX_MODE_ASound04               105
-#define FX_MODE_ASound05               106
-#define FX_MODE_ASound06               107
-#define FX_MODE_ASound07               108
-#define FX_MODE_ASound08               109
-#define FX_MODE_ASound09               110
-#define FX_MODE_ASound10               111
-#define FX_MODE_ASound11               112
-#define FX_MODE_ASound12               113
-#define FX_MODE_ASound13               114
-#define FX_MODE_ASound14               115
-#define FX_MODE_ASound15               116
+#define FX_MODE_PACIFICA_PAL           102
+#define FX_MODE_ASound01               103
+#define FX_MODE_ASound02               104
+#define FX_MODE_ASound03               105
+#define FX_MODE_ASound04               106
+#define FX_MODE_ASound05               107
+#define FX_MODE_ASound06               108
+#define FX_MODE_ASound07               109
+#define FX_MODE_ASound08               110
+#define FX_MODE_ASound09               111
+#define FX_MODE_ASound10               112
+#define FX_MODE_ASound11               113
+#define FX_MODE_ASound12               114
+#define FX_MODE_ASound13               115
+#define FX_MODE_ASound14               116
+#define FX_MODE_ASound15               117
 
 
 // Sound reactive external variables
@@ -421,6 +422,7 @@ class WS2812FX {
       _mode[FX_MODE_RIPPLE_RAINBOW]          = &WS2812FX::mode_ripple_rainbow;
       _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
       _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
+      _mode[FX_MODE_PACIFICA_PAL]            = &WS2812FX::mode_pacifica_pal;
       _mode[FX_MODE_ASound01]                = &WS2812FX::mode_asound01;
       _mode[FX_MODE_ASound02]                = &WS2812FX::mode_asound02;
       _mode[FX_MODE_ASound03]                = &WS2812FX::mode_asound03;
@@ -436,7 +438,6 @@ class WS2812FX {
       _mode[FX_MODE_ASound13]                = &WS2812FX::mode_asound13;
       _mode[FX_MODE_ASound14]                = &WS2812FX::mode_asound14;
       _mode[FX_MODE_ASound15]                = &WS2812FX::mode_asound15;
-
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -625,6 +626,7 @@ class WS2812FX {
       mode_ripple_rainbow(void),
       mode_heartbeat(void),
       mode_pacifica(void),
+      mode_pacifica_pal(void),
       mode_asound01(void),
       mode_asound02(void),
       mode_asound03(void),
@@ -640,7 +642,6 @@ class WS2812FX {
       mode_asound13(void),
       mode_asound14(void),
       mode_asound15(void);
-
 
   private:
     NeoPixelWrapper *bus;
@@ -727,8 +728,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat","Pacifica","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06","ASound07","ASound08",
-"ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15"
+"Heartbeat","Pacifica","Pacifica Pal","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06","ASound07",
+"ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15"
 ])=====";
 
 
