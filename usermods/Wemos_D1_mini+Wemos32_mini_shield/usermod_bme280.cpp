@@ -255,11 +255,13 @@ void UpdateBME280Data() {
   float temp(NAN), hum(NAN), pres(NAN);
 #ifdef Celsius
   BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
-#else
-  BME280::TempUnit tempUnit(BME280::TempUnit_Fahrenheit);
-#endif
   BME280::PresUnit presUnit(BME280::PresUnit_Pa);
   bme.read(pres, temp, hum, tempUnit, presUnit);
+#else
+  BME280::TempUnit tempUnit(BME280::TempUnit_Fahrenheit);
+  BME280::PresUnit presUnit(BME280::PresUnit_Pa);
+  bme.read(pres, temp, hum, tempUnit, presUnit);
+#endif
   SensorTemperature=temp;
   SensorHumidity=hum;
   SensorPressure=pres;
