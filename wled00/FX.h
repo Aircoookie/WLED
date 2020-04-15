@@ -36,6 +36,10 @@
 #define DEFAULT_BRIGHTNESS (uint8_t)127
 #define DEFAULT_MODE       (uint8_t)0
 #define DEFAULT_SPEED      (uint8_t)128
+#define DEFAULT_INTENSITY  (uint8_t)128
+#define DEFAULT_FFT1       (uint8_t)6
+#define DEFAULT_FFT2       (uint8_t)128
+#define DEFAULT_FFT3       (uint8_t)252
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
 
 #define min(a,b) ((a)<(b)?(a):(b))
@@ -200,15 +204,15 @@
 #define FX_MODE_HEARTBEAT              100
 #define FX_MODE_PACIFICA               101
 #define FX_MODE_PACIFICA_PAL           102
-#define FX_MODE_ASound1                103
-#define FX_MODE_ASound2                104
-#define FX_MODE_ASound3                105
-#define FX_MODE_ASound4                106
-#define FX_MODE_ASound5                107
-#define FX_MODE_ASound6                108
-#define FX_MODE_ASound7                109
-#define FX_MODE_ASound8                110
-#define FX_MODE_ASound9                111
+#define FX_MODE_ASound01               103
+#define FX_MODE_ASound02               104
+#define FX_MODE_ASound03               105
+#define FX_MODE_ASound04               106
+#define FX_MODE_ASound05               107
+#define FX_MODE_ASound06               108
+#define FX_MODE_ASound07               109
+#define FX_MODE_ASound08               110
+#define FX_MODE_ASound09               111
 #define FX_MODE_ASound10               112
 #define FX_MODE_ASound11               113
 #define FX_MODE_ASound12               114
@@ -231,7 +235,7 @@ class WS2812FX {
 
   // pre show callback
   typedef void (*show_callback) (void);
-  
+
   // segment parameters
   public:
     typedef struct Segment { // 24 bytes
@@ -315,7 +319,7 @@ class WS2812FX {
     } segment_runtime;
 
     WS2812FX() {
-      //assign each member of the _mode[] array to its respective function reference 
+      //assign each member of the _mode[] array to its respective function reference
       _mode[FX_MODE_STATIC]                  = &WS2812FX::mode_static;
       _mode[FX_MODE_BLINK]                   = &WS2812FX::mode_blink;
       _mode[FX_MODE_COLOR_WIPE]              = &WS2812FX::mode_color_wipe;
@@ -419,22 +423,21 @@ class WS2812FX {
       _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
       _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
       _mode[FX_MODE_PACIFICA_PAL]            = &WS2812FX::mode_pacifica_pal;
-      _mode[FX_MODE_ASound1]                 = &WS2812FX::mode_asound1;
-      _mode[FX_MODE_ASound2]                 = &WS2812FX::mode_asound2;
-      _mode[FX_MODE_ASound3]                 = &WS2812FX::mode_asound3;
-      _mode[FX_MODE_ASound4]                 = &WS2812FX::mode_asound4;
-      _mode[FX_MODE_ASound5]                 = &WS2812FX::mode_asound5;
-      _mode[FX_MODE_ASound6]                 = &WS2812FX::mode_asound6;
-      _mode[FX_MODE_ASound7]                 = &WS2812FX::mode_asound7;
-      _mode[FX_MODE_ASound8]                 = &WS2812FX::mode_asound8;
-      _mode[FX_MODE_ASound9]                 = &WS2812FX::mode_asound9;
-      _mode[FX_MODE_ASound10]                 = &WS2812FX::mode_asound10;
-      _mode[FX_MODE_ASound11]                 = &WS2812FX::mode_asound11;
-      _mode[FX_MODE_ASound12]                 = &WS2812FX::mode_asound12;
-      _mode[FX_MODE_ASound13]                 = &WS2812FX::mode_asound13;
-      _mode[FX_MODE_ASound14]                 = &WS2812FX::mode_asound14;
-      _mode[FX_MODE_ASound15]                 = &WS2812FX::mode_asound15;
-
+      _mode[FX_MODE_ASound01]                = &WS2812FX::mode_asound01;
+      _mode[FX_MODE_ASound02]                = &WS2812FX::mode_asound02;
+      _mode[FX_MODE_ASound03]                = &WS2812FX::mode_asound03;
+      _mode[FX_MODE_ASound04]                = &WS2812FX::mode_asound04;
+      _mode[FX_MODE_ASound05]                = &WS2812FX::mode_asound05;
+      _mode[FX_MODE_ASound06]                = &WS2812FX::mode_asound06;
+      _mode[FX_MODE_ASound07]                = &WS2812FX::mode_asound07;
+      _mode[FX_MODE_ASound08]                = &WS2812FX::mode_asound08;
+      _mode[FX_MODE_ASound09]                = &WS2812FX::mode_asound09;
+      _mode[FX_MODE_ASound10]                = &WS2812FX::mode_asound10;
+      _mode[FX_MODE_ASound11]                = &WS2812FX::mode_asound11;
+      _mode[FX_MODE_ASound12]                = &WS2812FX::mode_asound12;
+      _mode[FX_MODE_ASound13]                = &WS2812FX::mode_asound13;
+      _mode[FX_MODE_ASound14]                = &WS2812FX::mode_asound14;
+      _mode[FX_MODE_ASound15]                = &WS2812FX::mode_asound15;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -624,22 +627,21 @@ class WS2812FX {
       mode_heartbeat(void),
       mode_pacifica(void),
       mode_pacifica_pal(void),
-      mode_asound1(void),
-      mode_asound2(void),
-      mode_asound3(void),
-      mode_asound4(void),
-      mode_asound5(void),
-      mode_asound6(void),
-      mode_asound7(void),
-      mode_asound8(void),
-      mode_asound9(void),
-      mode_asound10(void),           
+      mode_asound01(void),
+      mode_asound02(void),
+      mode_asound03(void),
+      mode_asound04(void),
+      mode_asound05(void),
+      mode_asound06(void),
+      mode_asound07(void),
+      mode_asound08(void),
+      mode_asound09(void),
+      mode_asound10(void),
       mode_asound11(void),
       mode_asound12(void),
       mode_asound13(void),
       mode_asound14(void),
       mode_asound15(void);
-      
 
   private:
     NeoPixelWrapper *bus;
@@ -689,22 +691,22 @@ class WS2812FX {
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
-    
+
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
-    
+
     #ifdef WLED_USE_ANALOG_LEDS
     uint32_t _analogLastShow = 0;
     RgbwColor _analogLastColor = 0;
     uint8_t _analogLastBri = 0;
     #endif
-    
+
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
 
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 27 bytes per element
       // start, stop, speed, intensity, fft1, fft2, fft3, palette, mode, options, grouping, spacing, opacity (unused), color[]
-      { 0, 7, DEFAULT_SPEED, 128, 6, 128, 252, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
+      { 0, 7, DEFAULT_SPEED, DEFAULT_INTENSITY, DEFAULT_FFT1, DEFAULT_FFT2, DEFAULT_FFT3, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
     };
 
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
@@ -726,8 +728,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat","Pacifica","Pacifica Pal","ASound1","ASound2","ASound3","ASound4","ASound5","ASound6","ASound7","ASound8",
-"ASound9","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15"
+"Heartbeat","Pacifica","Pacifica Pal","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06","ASound07",
+"ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15"
 ])=====";
 
 

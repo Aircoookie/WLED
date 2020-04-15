@@ -25,7 +25,7 @@
 //#define WLED_ENABLE_MQTT         //saves 12kb
 //#define WLED_ENABLE_ADALIGHT     //saves 500b only
 //#define WLED_ENABLE_DMX          //uses 3.5kb
-// #define WLED_DISABLE_SOUND       // saves 1kb
+//#define WLED_DISABLE_SOUND       // saves 1kb
 
 
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
@@ -176,7 +176,7 @@ byte briMultiplier =  100;                    //% of brightness to set (to limit
 
 
 //User Interface CONFIG
-char serverDescription[33] = "WLED";          //Name of module
+char serverDescription[33] = "WLED-AudioReactive";    //Name of module
 bool syncToggleReceive = false;               //UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 
@@ -345,9 +345,9 @@ bool notificationTwoRequired = false;
 byte effectCurrent = 0;
 byte effectSpeed = 128;
 byte effectIntensity = 128;
-byte effectFFT1 = 128;
+byte effectFFT1 = 6;
 byte effectFFT2 = 128;
-byte effectFFT3 = 128;
+byte effectFFT3 = 252;
 byte effectPalette = 0;
 
 //network
@@ -570,7 +570,7 @@ void loop() {
 
   handleOverlays();
   yield();
-#ifdef WLED_USE_ANALOG_LEDS 
+#ifdef WLED_USE_ANALOG_LEDS
   strip.setRgbwPwm();
 #endif
 

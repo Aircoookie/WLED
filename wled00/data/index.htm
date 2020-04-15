@@ -162,7 +162,7 @@ td {
 
 .top button {
   padding: 14px 14px 10px 14px;
-}                       
+}
 
 .bot button {
   padding: 10px 0 8px 0;
@@ -461,8 +461,8 @@ input[type=number]:focus {
   background: #666;
 }
 
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 
@@ -723,7 +723,7 @@ input[type=number]::-webkit-outer-spin-button {
       <button class="xxs cl btn" onclick="selectSlot(1);">2</button>
       <button class="xxs cl btn" onclick="selectSlot(2);">3</button>
     </div>
-    <p class="labels">Color palette</p> 
+    <p class="labels">Color palette</p>
     <div class="il">
       <i class="icons sel-icon">&#xe2b3;</i>
       <select class="btn sel" id="selectPalette" onchange="setPalette()">
@@ -762,7 +762,7 @@ input[type=number]::-webkit-outer-spin-button {
     <div class="staytop" id="staytop1">
       <i class="icons slider-icon">&#xe409;</i>
       <div class="sliderwrap il">
-        <input id="sliderFFT2" class="noslide" onchange="setFFT2()" oninput="updateTrail(this)" max="255" min="0" type="range" value="135" />
+        <input id="sliderFFT2" class="noslide" onchange="setFFT2()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
         <div class="sliderdisplay"></div>
       </div>
     </div>
@@ -790,7 +790,7 @@ input[type=number]::-webkit-outer-spin-button {
       Loading...
     </div>
     <div id="segutil">
-      
+
     </div>
   </div>
 
@@ -882,7 +882,7 @@ function handleVisibilityChange() {
 
 function onLoad() {
   size();
-  
+
   var cd = d.getElementById('csl').children;
   for (i = 0; i < cd.length; i++) {
     cd[i].style.backgroundColor = "rgb(0, 0, 0)";
@@ -895,7 +895,7 @@ function onLoad() {
   });
   setTimeout(requestJson, 25);
   d.addEventListener("visibilitychange", handleVisibilityChange, false);
-  
+
   d.getElementById("cv").style.opacity=0;
 }
 
@@ -926,7 +926,7 @@ function showToast(text, error = false) {
   clearTimeout(timeout);
   x.style.animation = 'none';
   x.offsetHeight;
-  x.style.animation = null; 
+  x.style.animation = null;
   timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 }
 
@@ -941,15 +941,15 @@ function populateSegments(s)
 {
   var cn = "";
   segCount = 0, lowestUnused = 0;
- 
+
   for (y in s.seg)
   {
     segCount++;
-    
+
     var inst=s.seg[y];
     var i = parseInt(inst.id);
     if (i == lowestUnused) lowestUnused = i+1;
-    
+
     cn += `<div class="seg">
       <label class="check schkl">
         Segment ${i}
@@ -1019,7 +1019,7 @@ function updateLen(s)
   } else if (len == 1) {
     out = "1 LED"
   }
-  
+
   if (d.getElementById(`seg${s}grp`) != null)
   {
     var grp = parseInt(d.getElementById(`seg${s}grp`).value);
@@ -1028,7 +1028,7 @@ function updateLen(s)
     var virt = Math.ceil(len/(grp + spc));
     if (!isNaN(virt) && (grp > 1 || spc > 0)) out += ` (${virt} virtual)`;
   }
-  
+
   d.getElementById(`seg${s}len`).innerHTML = out;
 }
 
@@ -1047,7 +1047,7 @@ function updateUI()
   updateTrail(d.getElementById('sliderFFT3'));
   updateTrail(d.getElementById('sliderW'));
   if (isRgbw) d.getElementById('wwrap').style.display = "block";
-  
+
   var btns = document.getElementsByClassName("psts");
   for (i = 0; i < btns.length; i++) {
     btns[i].className = btns[i].className.replace(" active", "");
@@ -1074,7 +1074,7 @@ function requestJson(command, verbose = true) {
   e2 = d.getElementById('selectPalette');
 
   url = command ? '/json/state':'/json';
-  
+
   type = command ? 'post':'get';
   if (command)
   {
@@ -1117,7 +1117,7 @@ function requestJson(command, verbose = true) {
       for (i in json.palettes) {
         y += '<option value="'+json.palettes[i].id+'">'+json.palettes[i].name+'</option>';
       }
-      e1.innerHTML=x; e2.innerHTML=y;  
+      e1.innerHTML=x; e2.innerHTML=y;
       var info = json.info;
       var name = info.name;
       d.getElementById('namelabel').innerHTML = name;
@@ -1142,7 +1142,7 @@ function requestJson(command, verbose = true) {
     d.getElementById('cyce').value = s.ccnf.max;
     d.getElementById('cyct').value = s.ccnf.time /10;
     d.getElementById('cyctt').value = s.transition /10;
-    
+
     var selc=0; var ind=0;
     populateSegments(s);
     for (i in s.seg)
@@ -1342,13 +1342,13 @@ function toggleCY() {
     obj = {"pl": 0, "ccnf": {"min": parseInt(d.getElementById('cycs').value), "max": parseInt(d.getElementById('cyce').value), "time": parseInt(d.getElementById('cyct').value*10)}};
     obj.transition = parseInt(d.getElementById('cyctt').value*10);
   }
-  
+
   requestJson(obj);
 }
 
 function togglePS() {
   ps = !ps;
-  
+
   var btns = document.getElementsByClassName("psts");
   for (i = 0; i < btns.length; i++) {
     if (ps) {
@@ -1357,7 +1357,7 @@ function togglePS() {
       btns[i].className = btns[i].className.replace(" saving", "");
     }
   }
-  
+
   d.getElementById("psLabel").innerHTML = (ps) ? "Save to slot":"Load from slot";
 }
 
@@ -1469,17 +1469,17 @@ function drag(e) {
   if (d.getElementsByClassName("tabcontent")[iSlide].scrollTop != scrollS) {
     move(e); return;
   }
-  
+
   //if (Math.abs(unify(e).clientX - x0) > Math.abs(unify(e).clientY - y0)) {
     //if (e.cancelable) e.preventDefault();
   //}
-			
+
   _C.style.setProperty('--tx', `${Math.round(unify(e).clientX - x0)}px`)
 }
 
 function move(e) {
   if(!locked || pcMode) return;
-  var dx = unify(e).clientX - x0, s = Math.sign(dx), 
+  var dx = unify(e).clientX - x0, s = Math.sign(dx),
       f = +(s*dx/w).toFixed(2);
 
   if((iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) && f > .12) {
@@ -1487,15 +1487,15 @@ function move(e) {
     f = 1 - f;
     updateTablinks(iSlide);
   }
-  
+
   _C.style.setProperty('--tx', '0px');
   _C.style.setProperty('--f', f);
   _C.classList.toggle('smooth', !(locked = false));
   x0 = null
 }
 
-function size() { 
-  w = window.innerWidth; 
+function size() {
+  w = window.innerWidth;
   _C.style.setProperty('--tp', d.getElementById('top').clientHeight + "px");
   _C.style.setProperty('--bt', d.getElementById('bot').clientHeight + "px");
   if (w < 1250) togglePcMode();
