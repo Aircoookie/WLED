@@ -55,12 +55,18 @@
     #undef BTNPIN
     #undef IR_PIN
     #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+  #elif defined(WLED_USE_BWLT11)
+  //PWM pins - to use with BW-LT11
+    #define RPIN 12  //R pin for analog LED strip
+    #define GPIN 4   //G pin for analog LED strip
+    #define BPIN 14  //B pin for analog LED strip
+    #define WPIN 5   //W pin for analog LED strip
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-    #define RPIN 5   //R pin for analog LED strip   
-    #define GPIN 12   //G pin for analog LED strip
-    #define BPIN 15   //B pin for analog LED strip
-    #define WPIN 13   //W pin for analog LED strip 
+    #define RPIN 5   //R pin for analog LED strip
+    #define GPIN 12  //G pin for analog LED strip
+    #define BPIN 15  //B pin for analog LED strip
+    #define WPIN 13  //W pin for analog LED strip
   #endif
   #undef RLYPIN
   #define RLYPIN -1 //disable as pin 12 is used by analog LEDs
