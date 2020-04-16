@@ -108,11 +108,15 @@ void getSample() {
   micIn = inoise8(millis(), millis());                        // Simulated analog read.
   #else
   micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
+  #ifndef ESP8266
+  micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize.
+  #endif
   #endif
 
   micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering.
   micIn -= micLev;                                            // Let's center it to 0 now.
   micIn = abs(micIn);                                         // And get the absolute value of each sample.
+
   lastSample = micIn;
 
   sample = (micIn <= squelch) ? 0 : (sample*3 + micIn) / 4;   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
