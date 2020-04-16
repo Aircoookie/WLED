@@ -3668,7 +3668,8 @@ uint16_t WS2812FX::mode_asound10(void) {
 
     uint32_t* leds = reinterpret_cast<uint32_t*>(SEGENV.data);
 
-    int fade = SEGMENT.fft3;
+    uint8_t fade = SEGMENT.fft3;
+    uint8_t fadeval;
 
     fade2black(fade);
 
@@ -3678,6 +3679,7 @@ uint16_t WS2812FX::mode_asound10(void) {
     //Serial.println(intensity);
 
     CRGB color = 0;
+    CHSV c;
 
     if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
       // MajorPeak holds the freq. value which is most abundant in the last sample.
@@ -3691,27 +3693,38 @@ uint16_t WS2812FX::mode_asound10(void) {
       int lowerLimit = 2 * SEGMENT.fft1;
       int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
       //Serial.printf("%3d %4d %2d\n",SEGMENT.intensity, upperLimit, i);
-      CHSV c = CHSV(i, 240,255 * intensity);
-      color = c;
+      c = CHSV(i, 240,255 * intensity);
     }
 
     // Serial.println(color);
-    leds[SEGLEN/2] =  (color.red << 16) + (color.green << 8)  + (color.blue );
-    leds[SEGLEN/2 - 1] =  (color.red <<16) + (color.green << 8)  + (color.blue);
+    leds[SEGLEN/2] =  (c.h << 16) + (c.s << 8)  + (c.v );
 
+// shift the pixels one pixel outwards
     for (int i = SEGLEN; i > SEGLEN/2; i--) {                                 // Move to the right.
       leds[i] = leds[i-1];
     }
-
     for (int i = 0; i < SEGLEN/2; i++) {                                      // Move to the left.
       leds[i] = leds[i+1];
     }  
 
+    fadeval = fade;
+// Apply fading
+//    for (int i = SEGLEN/2 + 1; i < SEGLEN; i++) {
+//      uint8_t val = leds[i]  & 0xFF;                                          // we only need the intensity information
+//      val = qsub8(val,fadeval);                                               // fade it down
+//      leds[i] = leds[i] & 0xFFFFFF00;                                         // clear out val
+//      leds[i] = leds[i] | val;                                                // put new value in place
+//      fadeval = fadeval + fade;                                               // increase fading for the next iteration
+//    }
+
+    
     // DISPLAY ARRAY
     for (int i= 0; i < SEGLEN; i++) {
-      color.red = (leds[i+1] >> 16) & 0xFF;
-      color.green = (leds[i+1] >> 8) &0xFF;
-      color.blue = leds[i+1] & 0xFF;
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
     }
   }
 
