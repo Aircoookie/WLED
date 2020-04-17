@@ -17,7 +17,6 @@ TaskHandle_t FFT_Task;
 #define MIC_PIN   36 //  Changed to directly naming pin since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
 #endif
 
-#define SQUELCH 10                                            // Our fixed squelch value.
 uint8_t squelch = 10;                                         // Anything below this is background noise, so we'll make it '0'. Can be adjusted.
 int micIn;                                                    // Current sample starts with negative values and large values, which is why it's 16 bit signed.
 int sample;                                                   // Current sample.
@@ -31,9 +30,9 @@ float multAgc;                                                // sample * multAg
 uint8_t targetAgc = 60;                                       // This is our setPoint at 20% of max for the adjusted output.
 
 long lastTime = 0;
-int delayMs = 10;
+int delayMs = 1;                                             // I don't want to sample too often and overload WLED.
 
-uint8_t myVals[32];
+uint8_t myVals[32];                                           // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized.
 
 
 #ifndef ESP8266
@@ -55,7 +54,7 @@ double vReal[samples];
 double vImag[samples];
 #endif
 
-uint16_t lastSample;            // last audio noise sample
+ uint16_t lastSample;            // last audio noise sample
 
 
 //gets called once at boot. Do all initialization that doesn't depend on network here
@@ -110,8 +109,10 @@ void getSample() {
   micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
   #ifndef ESP8266
   micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize.
+  if (micIn == 1023 || micIn < 50) {micIn = micLev;}          // The ESP32 has some nasty spikes when combined with WLED. This is a nasty hack to deal with that. I hate it.
   #endif
   #endif
+
 
   micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering.
   micIn -= micLev;                                            // Let's center it to 0 now.
