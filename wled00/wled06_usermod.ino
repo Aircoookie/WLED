@@ -105,7 +105,21 @@ void getSample() {
 
   static long peakTime;
 
+
   #ifdef WLED_DISABLE_SOUND
+  micIn = inoise8(millis(), millis());                        // Simulated analog read.
+  #else
+  #ifdef ESP32
+  micIn = micData;
+  micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize.
+  #endif
+  #ifdef ESP8266
+  micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
+  #endif
+  #endif
+
+  
+/*  #ifdef WLED_DISABLE_SOUND
   micIn = inoise8(millis(), millis());                        // Simulated analog read.
   #else
   micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
@@ -114,6 +128,7 @@ void getSample() {
   if (micIn == 1023 || micIn < 50) {micIn = micLev;}          // The ESP32 has some nasty spikes when combined with WLED. This is a nasty hack to deal with that. I hate it.
   #endif
   #endif
+*/
 
 
   micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering.
