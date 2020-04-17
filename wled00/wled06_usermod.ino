@@ -32,6 +32,8 @@ uint8_t targetAgc = 60;                                       // This is our set
 long lastTime = 0;
 int delayMs = 1;                                             // I don't want to sample too often and overload WLED.
 
+uint16_t micData;
+
 uint8_t myVals[32];                                           // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized.
 
 
@@ -180,7 +182,8 @@ void FFTcode( void * parameter) {
     microseconds = micros();
     for(int i=0; i<samples; i++)
     {
-      vReal[i] = analogRead(MIC_PIN);
+      micData = analogRead(MIC_PIN);
+      vReal[i] = micData;
       vImag[i] = 0;
       while(micros() - microseconds < sampling_period_us){
         //empty loop
