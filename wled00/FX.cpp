@@ -1808,7 +1808,6 @@ uint16_t WS2812FX::mode_colorwaves()
   CRGB fastled_col;
 
   for ( uint16_t i = 0 ; i < SEGLEN; i++) {
-    hue16 += hueinc16;
     uint8_t hue8 = hue16 >> 8;
     uint16_t h16_128 = hue16 >> 7;
     if ( h16_128 & 0x100) {
@@ -1867,23 +1866,6 @@ uint16_t WS2812FX::mode_fillnoise8()
   return FRAMETIME;
 }
 
-/*
-uint16_t WS2812FX::mode_fillnoise8()
-{
-  if (SEGENV.call == 0) SEGENV.step = random16(12345);
-  CRGB fastled_col;
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-    uint8_t index = inoise8(i * SEGLEN, SEGENV.step + i * SEGLEN);
-    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
-  }
-  SEGENV.step += beatsin8(SEGMENT.speed, 1, 6); //10,1,4
-
-  return FRAMETIME;
-}
-
-*/
-
 
 uint16_t WS2812FX::mode_noise16_1()
 {
@@ -1905,8 +1887,10 @@ uint16_t WS2812FX::mode_noise16_1()
 
     uint8_t index = sin8(noise * 3);                         // map LED color based on noise data
 
-    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    setPixCol(i, index, sin8(index));
+
+//    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
   return FRAMETIME;
@@ -1930,8 +1914,9 @@ uint16_t WS2812FX::mode_noise16_2()
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 
-    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    setPixCol(i, index, sin8(index));
+//    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
   return FRAMETIME;
@@ -1957,8 +1942,9 @@ uint16_t WS2812FX::mode_noise16_3()
 
     uint8_t index = sin8(noise * 3);                          // map led color based on noise data
 
-    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    setPixCol(i, index, sin8(index));
+//    fastled_col = ColorFromPalette(currentPalette, index, noise, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
 
   return FRAMETIME;
@@ -1972,8 +1958,10 @@ uint16_t WS2812FX::mode_noise16_4()
   uint32_t stp = (now * SEGMENT.speed) >> 7;
   for (uint16_t i = 0; i < SEGLEN; i++) {
     int16_t index = inoise16(uint32_t(i) << 12, stp);
-    fastled_col = ColorFromPalette(currentPalette, index);
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+
+    setPixCol(i, index, sin8(index));
+//    fastled_col = ColorFromPalette(currentPalette, index);
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
   return FRAMETIME;
 }
@@ -3108,8 +3096,10 @@ uint16_t WS2812FX::mode_plasma(void) {
     uint8_t colorIndex = cubicwave8((i*(1+ 3*(SEGMENT.speed >> 5)))+(thisPhase) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
                              + cos8((i*(1+ 2*(SEGMENT.speed >> 5)))+(thatPhase) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
     uint8_t thisBright = qsub8(colorIndex, beatsin8(6,0, (255 - SEGMENT.intensity)|0x01 ));
-    CRGB color = ColorFromPalette(currentPalette, colorIndex, thisBright, LINEARBLEND);
-    setPixelColor(i, color.red, color.green, color.blue);
+
+    setPixCol(i, colorIndex, thisBright);
+//    CRGB color = ColorFromPalette(currentPalette, colorIndex, thisBright, LINEARBLEND);
+//    setPixelColor(i, color.red, color.green, color.blue);
   }
 
   return FRAMETIME;
@@ -3668,7 +3658,8 @@ uint16_t WS2812FX::mode_asound10(void) {
 
     uint32_t* leds = reinterpret_cast<uint32_t*>(SEGENV.data);
 
-    int fade = SEGMENT.fft3;
+    uint8_t fade = SEGMENT.fft3;
+    uint8_t fadeval;
 
     fade2black(fade);
 
@@ -3678,6 +3669,7 @@ uint16_t WS2812FX::mode_asound10(void) {
     //Serial.println(intensity);
 
     CRGB color = 0;
+    CHSV c;
 
     if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
       // MajorPeak holds the freq. value which is most abundant in the last sample.
@@ -3691,27 +3683,38 @@ uint16_t WS2812FX::mode_asound10(void) {
       int lowerLimit = 2 * SEGMENT.fft1;
       int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
       //Serial.printf("%3d %4d %2d\n",SEGMENT.intensity, upperLimit, i);
-      CHSV c = CHSV(i, 240,255 * intensity);
-      color = c;
+      c = CHSV(i, 240,255 * intensity);
     }
 
     // Serial.println(color);
-    leds[SEGLEN/2] =  (color.red << 16) + (color.green << 8)  + (color.blue );
-    leds[SEGLEN/2 - 1] =  (color.red <<16) + (color.green << 8)  + (color.blue);
+    leds[SEGLEN/2] =  (c.h << 16) + (c.s << 8)  + (c.v );
 
+// shift the pixels one pixel outwards
     for (int i = SEGLEN; i > SEGLEN/2; i--) {                                 // Move to the right.
       leds[i] = leds[i-1];
     }
-
     for (int i = 0; i < SEGLEN/2; i++) {                                      // Move to the left.
       leds[i] = leds[i+1];
     }  
 
+    fadeval = fade;
+// Apply fading
+//    for (int i = SEGLEN/2 + 1; i < SEGLEN; i++) {
+//      uint8_t val = leds[i]  & 0xFF;                                          // we only need the intensity information
+//      val = qsub8(val,fadeval);                                               // fade it down
+//      leds[i] = leds[i] & 0xFFFFFF00;                                         // clear out val
+//      leds[i] = leds[i] | val;                                                // put new value in place
+//      fadeval = fadeval + fade;                                               // increase fading for the next iteration
+//    }
+
+    
     // DISPLAY ARRAY
     for (int i= 0; i < SEGLEN; i++) {
-      color.red = (leds[i+1] >> 16) & 0xFF;
-      color.green = (leds[i+1] >> 8) &0xFF;
-      color.blue = leds[i+1] & 0xFF;
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
     }
   }
 
