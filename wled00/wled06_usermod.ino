@@ -52,7 +52,7 @@ unsigned long microseconds;
 These are the input and output vectors
 Input vectors receive computed results from FFT
 */
-double vReal[samples];
+double fftBin[samples];
 double vImag[samples];
 #endif
 
@@ -180,10 +180,12 @@ void FFTcode( void * parameter) {
   for(;;) {
     delay(1);             // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
     microseconds = micros();
+    extern double volume;
+    
     for(int i=0; i<samples; i++)
     {
-      micData = analogRead(MIC_PIN);
-      vReal[i] = micData;
+      micData = analogRead(MIC_PIN) * volume;
+      fftBin[i] = micData;
       vImag[i] = 0;
       while(micros() - microseconds < sampling_period_us){
         //empty loop
@@ -191,34 +193,34 @@ void FFTcode( void * parameter) {
         microseconds += sampling_period_us;
     }
 
-    FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh data */
-    FFT.Compute(vReal, vImag, samples, FFT_FORWARD); /* Compute FFT */
-    FFT.ComplexToMagnitude(vReal, vImag, samples); /* Compute magnitudes */
+    FFT.Windowing(fftBin, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh data */
+    FFT.Compute(fftBin, vImag, samples, FFT_FORWARD); /* Compute FFT */
+    FFT.ComplexToMagnitude(fftBin, vImag, samples); /* Compute magnitudes */
     FFT.DCRemoval();
 
     // Zero out bins we already know do not hold relevant information
     for (int i = 0; i < 6; i++){
-      vReal[i] = 0;
+      fftBin[i] = 0;
       }
     sum = 0;
     // Normalize bins
     for ( int i = 0; i < samples; i++) {
-      sum += vReal[i];
+      sum += fftBin[i];
     }
     mean = sum / samples;
     for ( int i = 0; i < samples; i++) {
-      vReal[i] -= mean;
-      if (vReal[i] < 0) vReal[i] = 0;
+      fftBin[i] -= mean;
+      if (fftBin[i] < 0) fftBin[i] = 0;
     }
 
-    // vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz). There could be interesting data at [2 .. 7] but chances are there are too many artifacts
-    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(vReal, samples, samplingFrequency);       // let the effects know which freq was most dominant
+    // fftBin[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz). There could be interesting data at [2 .. 7] but chances are there are too many artifacts
+    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(fftBin, samples, samplingFrequency);       // let the effects know which freq was most dominant
 
     //Serial.print("FFT_MajorPeak: ");
     //Serial.println(FFT_MajorPeak);
     //Serial.print(" ");
     //for (int i = 0; i < samples; i++) {
-    //  Serial.print(vReal[i],0);
+    //  Serial.print(fftBin[i],0);
     //  Serial.print("\t");
     //}
     //Serial.println();
@@ -226,6 +228,7 @@ void FFTcode( void * parameter) {
 
   }
 }
+
 
 
 #endif

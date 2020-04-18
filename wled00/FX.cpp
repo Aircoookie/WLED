@@ -3624,7 +3624,15 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Fil
 
 #ifndef ESP8266
 extern uint16_t FFT_MajorPeak;
+double volume;
+
+
+double mapf(double x, double in_min, double in_max, double out_min, double out_max)
+{
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 #endif
+
 
 // sound 10: assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT 
 // and then mapping this to the HSV color circle. Currently we are sampling at 10240 Hz, so the highest frequency we can look at is 5120Hz.
@@ -3654,7 +3662,7 @@ uint16_t WS2812FX::mode_asound10(void) {
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
 
     uint16_t dataSize = 4 * SEGLEN;                                   // prepared for RGBW strips, even though we are currently only using RGB strips
-    if (!SEGENV.allocateData(dataSize)) return mode_static();         //allocation failed
+    if (!SEGENV.allocateData(dataSize)) return mode_static();         //allocation failed 
 
     uint32_t* leds = reinterpret_cast<uint32_t*>(SEGENV.data);
 
@@ -3664,6 +3672,8 @@ uint16_t WS2812FX::mode_asound10(void) {
     fade2black(fade);
 
     int pixVal = sampleAvg * SEGMENT.intensity / 256;
+    volume = mapf(SEGMENT.intensity, 0, 255, 1, 5);            // read intensity slider
+    
     double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;            // make a brightness from the last avg
 
     //Serial.println(intensity);
@@ -3683,7 +3693,9 @@ uint16_t WS2812FX::mode_asound10(void) {
       int lowerLimit = 2 * SEGMENT.fft1;
       int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
       //Serial.printf("%3d %4d %2d\n",SEGMENT.intensity, upperLimit, i);
-      c = CHSV(i, 240,255 * intensity);
+      uint16_t b = 255 * intensity;
+      if (b > 255) b=255;
+      c = CHSV(i, 240, (uint8_t)b);
     }
 
     // Serial.println(color);
@@ -3765,10 +3777,71 @@ uint16_t WS2812FX::mode_asound11(void) {                    // Fire with sound a
 }
 } // mode_asound11()
 
+extern double fftBin[];
 
 uint16_t WS2812FX::mode_asound12(void) {
   delay(1);
+#ifndef ESP8266
+  double maxVal = 0;
+  
+// determine upper and lower boundaries
+  int upperLimit = 20 * SEGMENT.fft2;
+  int lowerLimit = 20 * SEGMENT.fft1;
+  int frequencyBand = upperLimit-lowerLimit;
+  int numBins = frequencyBand / 20;
+  int binsPerLED = SEGLEN/numBins;
+  while (binsPerLED == 0) {
+    SEGMENT.fft2--;           // Limit upper end
+    upperLimit = 20 * SEGMENT.fft2;
+    frequencyBand = upperLimit-lowerLimit;
+    numBins = frequencyBand / 20;
+    binsPerLED = SEGLEN/numBins;
+  }
+  if ((SEGMENT.fft2 < 255) && (SEGMENT.fft1 > 0)) {
+  while ((SEGLEN % numBins) != 0) {
+      if (SEGMENT.fft2 < 255) {           // adjust ever so slightly 
+        SEGMENT.fft2++;
+      } else {
+        if (SEGMENT.fft1 > 0) {
+          SEGMENT.fft1--;
+        } else {
+          // I hate to do that, can't adjust without falling out of bounds
+          goto CantAdjust;
+        }
+      }
+      lowerLimit = 20 * SEGMENT.fft1;
+      upperLimit = 20 * SEGMENT.fft2;
+      frequencyBand = upperLimit-lowerLimit;
+      numBins = frequencyBand / 20;
+      binsPerLED = SEGLEN/numBins;
+    }
+  }
+CantAdjust:
+// Serial.printf("%4d %4d %4d %2d %2d %3d\n",lowerLimit, upperLimit, frequencyBand, numBins, binsPerLED, SEGLEN % numBins);
+
+// Determine max value in bins to normalize
+  maxVal = 0;
+  for (int i = SEGMENT.fft1; i < 2*SEGMENT.fft2; i++) {
+    if (fftBin[i] > maxVal) {
+      maxVal = fftBin[i];
+    if (maxVal > 10000)
+      Serial.printf("-> %6.0f %3d\n",maxVal, i);
+    }
+  }
+Serial.printf("%6.0f\n", maxVal);
+  for ( int b = 0; b < numBins; b++) { 
+    if (binsPerLED > 1) {
+      for ( int i = 0; i < binsPerLED; i++) {
+        
+      }
+    } else {
+      
+    }
+  }
+  
+#else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+#endif
   return FRAMETIME;
 } // mode_asound12()
 
