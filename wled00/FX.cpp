@@ -3625,7 +3625,7 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Fil
 
 #ifndef ESP8266
 extern uint16_t FFT_MajorPeak;
-double volume;
+double volume = 1;
 
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max)
@@ -3659,7 +3659,7 @@ uint16_t WS2812FX::mode_asound10(void) {
   
   #ifndef ESP8266
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                   // Using FastLED's timer. You want to change speed? You need to . .
-
+    
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
 
     uint16_t dataSize = 4 * SEGLEN;                                   // prepared for RGBW strips, even though we are currently only using RGB strips
@@ -3672,8 +3672,10 @@ uint16_t WS2812FX::mode_asound10(void) {
 
     fade2black(fade);
 
-    int pixVal = sampleAvg * SEGMENT.intensity / 256;
-    volume = mapf(SEGMENT.intensity, 0, 255, 1, 5);            // read intensity slider
+    double sensitivity = mapf(SEGMENT.fft3, 1, 255, 1, 10);
+    int pixVal = sampleAvg * SEGMENT.intensity / 256 * sensitivity;
+    if (pixVal > 255) pixVal = 255;
+//    volume = mapf(SEGMENT.intensity, 0, 255, 1, 5);            // read intensity slider
     
     double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;            // make a brightness from the last avg
 
