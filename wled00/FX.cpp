@@ -3640,7 +3640,7 @@ double mapf(double x, double in_min, double in_max, double out_min, double out_m
 //
 // SEGMENT.fft1: the lower cut off point for the FFT. (many, most time the lowest values have very little information since they are FFT conversion artifacts. Suggested value is close to but above 0
 // SEGMENT.fft2: The high cut off point. This depends on your sound profile. Most music looks good when this slider is between 50% and 100%.
-// SEGMENT.fft3: the "loss" or darkening of pixels as they move outwards. This is the darken factor so silder at 100% == no darkening. Very sensitive.
+// SEGMENT.fft3: "preamp" for the audio signal for audio10.
 //
 // I suggest that for this effect you turn the brightness to 95%-100% but again it depends on your soundprofile you find yourself in.
 // Instead of using colorpalettes, This effect works on the HSV color circle with red being the lowest frequency
@@ -3745,37 +3745,7 @@ extern uint16_t lastSample;
 
 uint16_t WS2812FX::mode_asound11(void) {                    // Fire with sound activation
 {
-  uint32_t it = now >> 5; //div 32
-
-  if (!SEGENV.allocateData(SEGLEN)) return mode_static();   //allocation failed
-
-  byte* heat = SEGENV.data;
-
-  if (it != SEGENV.step)
-  {
-    // Step 1.  Cool down every cell a little
-    for (uint16_t i = 0; i < SEGLEN; i++) {
-      SEGENV.data[i] = qsub8(heat[i],  random8(0, (((20 + SEGMENT.speed /3) * 10) / SEGLEN) + 2));
-    }
-
-    // Step 2.  Heat from each cell drifts 'up' and diffuses a little
-    for (uint16_t k= SEGLEN -1; k > 1; k--) {
-      heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
-    }
-
-    // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
-    if (random8() <= SEGMENT.intensity) {
-      uint8_t y = random8(7);
-      if (y < SEGLEN) heat[y] = qadd8(heat[y], lastSample * SEGMENT.fft3 / 256);
-    }
-    SEGENV.step = it;
-  }
-
-  // Step 4.  Map from heat cells to LED colors
-  for (uint16_t j = 0; j < SEGLEN; j++) {
-    CRGB color = ColorFromPalette(currentPalette, min(heat[j],240), 255, LINEARBLEND);
-    setPixelColor(j, color.red, color.green, color.blue);
-  }
+  delay(1);                                                 // DO NOT REMOVE!
   return FRAMETIME;
 }
 } // mode_asound11()
