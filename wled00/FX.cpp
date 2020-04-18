@@ -3793,3 +3793,9 @@ uint16_t WS2812FX::mode_asound15(void) {
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
   return FRAMETIME;
 } // mode_asound15()
+
+
+uint16_t WS2812FX::mode_phased(void) {
+
+  return FRAMETIME;
+}
