@@ -3380,6 +3380,31 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
 
 
 //////////////////////////////////////////////////////////////////////////////////////
+//                  Non-reactive by Andrew Tuline                                   //
+//////////////////////////////////////////////////////////////////////////////////////
+
+uint16_t WS2812FX::mode_phased(void) {                          // By: Andrew Tuline
+
+  float thisspeed = SEGMENT.speed/32.0;
+  float allfreq = SEGMENT.intensity/16.0;
+  static float thisphase = 0;                                   // Phase change value gets calculated.
+  uint8_t thisrot = 16;
+  
+  uint8_t thisindex = millis() / thisrot;
+  thisphase += thisspeed;
+  
+  for (int i=0; i<SEGLEN; i++) {                                                          // For each of the LED's in the strand, set a brightness based on a wave as follows:
+    int thisbright = cubicwave8((i*allfreq)+thisphase*i/2);
+    setPixCol(i, thisindex, thisbright);
+    thisindex +=256/SEGLEN;
+  }
+
+  return FRAMETIME;
+} // mode_phased()
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////
 //                  ASOUND01-09 routines by Andrew Tuline                           //
 //                  ASOUND10-15 routines by Andreas Pleschutznig                    //
 //////////////////////////////////////////////////////////////////////////////////////
@@ -3838,9 +3863,3 @@ uint16_t WS2812FX::mode_asound15(void) {
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
   return FRAMETIME;
 } // mode_asound15()
-
-
-uint16_t WS2812FX::mode_phased(void) {
-
-  return FRAMETIME;
-}

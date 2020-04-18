@@ -30,7 +30,7 @@ float multAgc;                                                // sample * multAg
 uint8_t targetAgc = 60;                                       // This is our setPoint at 20% of max for the adjusted output.
 
 long lastTime = 0;
-int delayMs = 1;                                             // I don't want to sample too often and overload WLED.
+int delayMs = 10;                                             // I don't want to sample too often and overload WLED.
 
 uint16_t micData;
 
