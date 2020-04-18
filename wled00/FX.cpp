@@ -1852,7 +1852,7 @@ uint16_t WS2812FX::mode_bpm()
 uint16_t WS2812FX::mode_fillnoise8()
 {
   if (SEGENV.call == 0) SEGENV.step = random16(12345);
-  CRGB fastled_col;
+//  CRGB fastled_col;
   for (uint16_t i = 0; i < SEGLEN; i++) {
     uint8_t index = inoise8(i * SEGLEN, SEGENV.step + i * SEGLEN);
 
@@ -1861,7 +1861,8 @@ uint16_t WS2812FX::mode_fillnoise8()
 //    fastled_col = ColorFromPalette(currentPalette, index, 255, LINEARBLEND);
 //    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
   }
-  SEGENV.step += beatsin8(SEGMENT.speed, 1, 6); //10,1,4
+//  SEGENV.step += beatsin8(SEGMENT.speed, 1, 6); //10,1,4
+  SEGENV.step += (SEGMENT.speed >> 4);
 
   return FRAMETIME;
 }
@@ -3865,3 +3866,9 @@ uint16_t WS2812FX::mode_asound15(void) {
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
   return FRAMETIME;
 } // mode_asound15()
+
+
+uint16_t WS2812FX::mode_phased(void) {
+
+  return FRAMETIME;
+}

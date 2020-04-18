@@ -99,7 +99,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
 
-#define MODE_COUNT  118
+#define MODE_COUNT  119
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -219,6 +219,7 @@
 #define FX_MODE_ASound13               115
 #define FX_MODE_ASound14               116
 #define FX_MODE_ASound15               117
+#define FX_MODE_PHASED                 118
 
 
 // Sound reactive external variables
@@ -438,6 +439,7 @@ class WS2812FX {
       _mode[FX_MODE_ASound13]                = &WS2812FX::mode_asound13;
       _mode[FX_MODE_ASound14]                = &WS2812FX::mode_asound14;
       _mode[FX_MODE_ASound15]                = &WS2812FX::mode_asound15;
+      _mode[FX_MODE_PHASED]                  = &WS2812FX::mode_phased;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -641,7 +643,8 @@ class WS2812FX {
       mode_asound12(void),
       mode_asound13(void),
       mode_asound14(void),
-      mode_asound15(void);
+      mode_asound15(void),
+      mode_phased(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -729,7 +732,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Pacifica Pal","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06","ASound07",
-"ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15"
+"ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","Phased"
 ])=====";
 
 
