@@ -3393,15 +3393,36 @@ uint16_t WS2812FX::mode_phased(void) {                          // By: Andrew Tu
   uint8_t thisindex = millis() / thisrot;
   thisphase += thisspeed;
   
-  for (int i=0; i<SEGLEN; i++) {                                                          // For each of the LED's in the strand, set a brightness based on a wave as follows:
+  for (int i=0; i<SEGLEN; i++) {                                // For each of the LED's in the strand, set a brightness based on a wave as follows:
     int thisbright = cubicwave8((i*allfreq)+thisphase*i/2);
     setPixCol(i, thisindex, thisbright);
     thisindex +=256/SEGLEN;
   }
 
   return FRAMETIME;
+
 } // mode_phased()
 
+
+
+uint16_t WS2812FX::mode_twinkleup(void) {                       // By: Andrew Tuline - This sure is a LOT shorter than those other twinkle routines.
+
+  uint8_t ranstart;                                             // Our first random number is the starting brightness in our sin() calculation.
+  uint8_t mylen;                                                // The second random number is used as our frequency.
+  uint8_t mysin;                                                // The result of sin(start+millis/frequency).
+
+  random16_set_seed(535);                                       // The randomizer needs to be re-set each time through the loop in order for the 'random' numbers to be the same each time through.
+
+  for (int i = 0; i<SEGLEN; i++) {
+    ranstart = random8();                                       // The starting value (aka brightness) for each pixel.
+    mylen = random8(10,20);                                     // The frequency of our sine wave.
+    mysin = sin8(ranstart + millis()/mylen);                    // Combined those with millis() which progresses it along.
+    setPixCol(i, i*20, mysin);
+  }
+ 
+  return FRAMETIME;
+   
+} // mode_twinkleup()
 
 
 //////////////////////////////////////////////////////////////////////////////////////
