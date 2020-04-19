@@ -17,32 +17,33 @@ TaskHandle_t FFT_Task;
 #define MIC_PIN   36 //  Changed to directly naming pin since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
 #endif
 
-uint8_t squelch = 10;                                         // Anything below this is background noise, so we'll make it '0'. Can be adjusted.
-int micIn;                                                    // Current sample starts with negative values and large values, which is why it's 16 bit signed.
-int sample;                                                   // Current sample.
-float sampleAvg = 0;                                          // Smoothed Average.
-float micLev = 0;                                             // Used to convert returned value to have '0' as minimum. A leveller.
-uint8_t maxVol = 11;                                          // Reasonable value for constant volume for 'peak detector', as it won't always trigger.
-bool samplePeak = 0;                                          // Boolean flag for peak. Responding routine must reset this flag.
+uint8_t squelch = 10;                                         // Anything below this is background noise, so we'll make it '0'. Can be adjusted
+int micIn;                                                    // Current sample starts with negative values and large values, which is why it's 16 bit signed
+int sample;                                                   // Current sample
+float sampleAvg = 0;                                          // Smoothed Average
+float micLev = 0;                                             // Used to convert returned value to have '0' as minimum. A leveller
+uint8_t maxVol = 11;                                          // Reasonable value for constant volume for 'peak detector', as it won't always trigger
+bool samplePeak = 0;                                          // Boolean flag for peak. Responding routine must reset this flag
 
-int sampleAgc;                                                // Our AGC sample.
-float multAgc;                                                // sample * multAgc = sampleAgc. Our multiplier.
-uint8_t targetAgc = 60;                                       // This is our setPoint at 20% of max for the adjusted output.
+int sampleAgc;                                                // Our AGC sample
+float multAgc;                                                // sample * multAgc = sampleAgc. Our multiplier
+uint8_t targetAgc = 60;                                       // This is our setPoint at 20% of max for the adjusted output
 
 long lastTime = 0;
-int delayMs = 1;                                             // I don't want to sample too often and overload WLED.
+int delayMs = 1;                                              // I don't want to sample too often and overload WLED
 
 uint16_t micData;
 
-uint8_t myVals[32];                                           // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized.
+uint8_t myVals[32];                                           // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized
 
 
 #ifndef ESP8266
 #include "arduinoFFT.h"
 
-arduinoFFT FFT = arduinoFFT(); /* Create FFT object */
+// Create FFT object
+arduinoFFT FFT = arduinoFFT();
 
-const uint16_t samples = 512; //This value MUST ALWAYS be a power of 2
+const uint16_t samples = 512;                                 //This value MUST ALWAYS be a power of 2
 const double samplingFrequency = 10240;
 
 unsigned int sampling_period_us;
@@ -56,10 +57,9 @@ double vReal[samples];
 double vImag[samples];
 #endif
 
- uint16_t lastSample;            // last audio noise sample
+ uint16_t lastSample;                                         // last audio noise sample
 
-
-//gets called once at boot. Do all initialization that doesn't depend on network here
+// This gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
 #ifndef ESP8266
@@ -68,72 +68,64 @@ void userSetup()
 
 // Define the FFT Task and lock it to core 0
 xTaskCreatePinnedToCore(
-      FFTcode, /* Function to implement the task */
-      "FFT", /* Name of the task */
-      10000,  /* Stack size in words */
-      NULL,  /* Task input parameter */
-      1,  /* Priority of the task */
-      &FFT_Task,  /* Task handle. */
-      0); /* Core where the task should run */
+      FFTcode,                          // Function to implement the task
+      "FFT",                            // Name of the task
+      10000,                            // Stack size in words
+      NULL,                             // Task input parameter
+      1,                                // Priority of the task
+      &FFT_Task,                        // Task handle
+      0);                               // Core where the task should run
 #endif
 }
 
-//gets called every time WiFi is (re-)connected. Initialize own network interfaces here
+// This gets called every time WiFi is (re-)connected. Initialize own network interfaces here
 void userConnected()
 {
-
 }
 
-
-
-
-//loop. You can use "if (WLED_CONNECTED)" to check for successful connection
+// userLoop. You can use "if (WLED_CONNECTED)" to check for successful connection
 void userLoop() {
 
-  if (millis()-lastTime > delayMs) {                            // I need to run this continuously because the animations are too slow.
+  if (millis()-lastTime > delayMs) {                          // I need to run this continuously because the animations are too slow
     lastTime = millis();
-    getSample();                                                // Sample the microphone.
-    agcAvg();                                                   // Calculated the PI adjusted value as sampleAvg.
+    getSample();                                              // Sample the microphone
+    agcAvg();                                                 // Calculated the PI adjusted value as sampleAvg
     myVals[millis()%32] = sampleAgc;
   }
 
 } // userLoop()
 
-
-
 void getSample() {
 
   static long peakTime;
 
-
   #ifdef WLED_DISABLE_SOUND
-  micIn = inoise8(millis(), millis());                        // Simulated analog read.
+  micIn = inoise8(millis(), millis());                        // Simulated analog read
   #else
   #ifdef ESP32
   micIn = micData;
-  micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize.
+  micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize
   #endif
   #ifdef ESP8266
-  micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
+  micIn = analogRead(MIC_PIN);                                // Poor man's analog read
   #endif
   #endif
 
-  
 /*  #ifdef WLED_DISABLE_SOUND
-  micIn = inoise8(millis(), millis());                        // Simulated analog read.
+  micIn = inoise8(millis(), millis());                        // Simulated analog read
   #else
-  micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
+  micIn = analogRead(MIC_PIN);                                // Poor man's analog read
   #ifndef ESP8266
-  micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize.
+  micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize
   if (micIn == 1023 || micIn < 50) {micIn = micLev;}          // The ESP32 has some nasty spikes when combined with WLED. This is a nasty hack to deal with that. I hate it.
   #endif
   #endif
 */
 
 
-  micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering.
-  micIn -= micLev;                                            // Let's center it to 0 now.
-  micIn = abs(micIn);                                         // And get the absolute value of each sample.
+  micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering
+  micIn -= micLev;                                            // Let's center it to 0 now
+  micIn = abs(micIn);                                         // And get the absolute value of each sample
 
   lastSample = micIn;
 
@@ -141,7 +133,7 @@ void getSample() {
   sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 32 samples.
 
   if (userVar1 == 0) samplePeak = 0;
-  if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 100)) {    // Poor man's beat detection by seeing if sample > Average + some value.
+  if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 100)) {   // Poor man's beat detection by seeing if sample > Average + some value.
     samplePeak = 1;                                                   // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
     userVar1 = samplePeak;
     peakTime=millis();
@@ -149,11 +141,9 @@ void getSample() {
 
 }  // getSample()
 
+void agcAvg() {                                                       // A simple averaging multiplier to automatically adjust sound sensitivity.
 
-
-void agcAvg() {                                                   // A simple averaging multiplier to automatically adjust sound sensitivity.
-
-  multAgc = (sampleAvg < 1) ? targetAgc : targetAgc / sampleAvg;  // Make the multiplier so that sampleAvg * multiplier = setpoint
+  multAgc = (sampleAvg < 1) ? targetAgc : targetAgc / sampleAvg;      // Make the multiplier so that sampleAvg * multiplier = setpoint
   sampleAgc = sample * multAgc;
   if (sampleAgc > 255) sampleAgc = 0;
 
@@ -180,8 +170,6 @@ void agcAvg() {                                                   // A simple av
 
 } // agcAvg()
 
-
-
 #ifndef ESP8266
 
 // #include "esp_task_wdt.h"
@@ -193,7 +181,7 @@ void FFTcode( void * parameter) {
   double sum, mean = 0;
 
   for(;;) {
-    delay(1);             // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
+    delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
     microseconds = micros();
     for(int i=0; i<samples; i++)
     {
@@ -206,9 +194,9 @@ void FFTcode( void * parameter) {
         microseconds += sampling_period_us;
     }
 
-    FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh data */
-    FFT.Compute(vReal, vImag, samples, FFT_FORWARD); /* Compute FFT */
-    FFT.ComplexToMagnitude(vReal, vImag, samples); /* Compute magnitudes */
+    FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);   // Weigh data
+    FFT.Compute(vReal, vImag, samples, FFT_FORWARD);                   // Compute FFT
+    FFT.ComplexToMagnitude(vReal, vImag, samples);                     // Compute magnitudes
     FFT.DCRemoval();
 
     // Zero out bins we already know do not hold relevant information
@@ -226,8 +214,9 @@ void FFTcode( void * parameter) {
       if (vReal[i] < 0) vReal[i] = 0;
     }
 
-    // vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz). There could be interesting data at [2 .. 7] but chances are there are too many artifacts
-    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(vReal, samples, samplingFrequency);       // let the effects know which freq was most dominant
+    // vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
+    // There could be interesting data at [2 .. 7] but chances are there are too many artifacts
+    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(vReal, samples, samplingFrequency);  // let the effects know which freq was most dominant
 
     //Serial.print("FFT_MajorPeak: ");
     //Serial.println(FFT_MajorPeak);
@@ -241,6 +230,5 @@ void FFTcode( void * parameter) {
 
   }
 }
-
 
 #endif
