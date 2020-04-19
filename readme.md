@@ -71,7 +71,7 @@ You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@g
 If WLED really brightens up your every day, you can [![](https://img.shields.io/badge/send%20me%20a%20small%20gift-paypal-blue.svg?style=flat-square)](https://paypal.me/aircoookie)
 
 *Disclaimer:*   
-If you are sensitive to photoeleptic seizures it is not recommended that you use this software.  
-In case you still want to try, don't use strobe, lighting or noise modes or high effect speed settings.
-As per the MIT license, i assume no liability for any damage to you or any other person or equipment.  
+If you are prone to photo epileptic seizures, it is not recommended that you use this software.  
+If you still want to try, **DO NOT** use strobe, lightning or noise modes or high effect-speed settings.
+As per the MIT license, I assume no liability for any damage to you or any other person or equipment.  
 
