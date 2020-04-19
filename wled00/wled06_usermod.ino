@@ -17,7 +17,6 @@ TaskHandle_t FFT_Task;
 #define MIC_PIN   36 //  Changed to directly naming pin since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
 #endif
 
-#define SQUELCH 10                                            // Our fixed squelch value.
 uint8_t squelch = 10;                                         // Anything below this is background noise, so we'll make it '0'. Can be adjusted.
 int micIn;                                                    // Current sample starts with negative values and large values, which is why it's 16 bit signed.
 int sample;                                                   // Current sample.
@@ -31,9 +30,11 @@ float multAgc;                                                // sample * multAg
 uint8_t targetAgc = 60;                                       // This is our setPoint at 20% of max for the adjusted output.
 
 long lastTime = 0;
-int delayMs = 10;
+int delayMs = 10;                                             // I don't want to sample too often and overload WLED.
 
-uint8_t myVals[32];
+uint16_t micData;
+
+uint8_t myVals[32];                                           // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized.
 
 
 #ifndef ESP8266
@@ -51,11 +52,11 @@ unsigned long microseconds;
 These are the input and output vectors
 Input vectors receive computed results from FFT
 */
-double vReal[samples];
+double fftBin[samples];
 double vImag[samples];
 #endif
 
-uint16_t lastSample;            // last audio noise sample
+ uint16_t lastSample;            // last audio noise sample
 
 
 //gets called once at boot. Do all initialization that doesn't depend on network here
@@ -104,14 +105,31 @@ void getSample() {
 
   static long peakTime;
 
+
   #ifdef WLED_DISABLE_SOUND
+  micIn = inoise8(millis(), millis());                        // Simulated analog read.
+  #else
+  #ifdef ESP32
+  micIn = micData;
+  micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize.
+  #endif
+  #ifdef ESP8266
+  micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
+  #endif
+  #endif
+
+  
+/*  #ifdef WLED_DISABLE_SOUND
   micIn = inoise8(millis(), millis());                        // Simulated analog read.
   #else
   micIn = analogRead(MIC_PIN);                                // Poor man's analog read.
   #ifndef ESP8266
   micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize.
+  if (micIn == 1023 || micIn < 50) {micIn = micLev;}          // The ESP32 has some nasty spikes when combined with WLED. This is a nasty hack to deal with that. I hate it.
   #endif
   #endif
+*/
+
 
   micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering.
   micIn -= micLev;                                            // Let's center it to 0 now.
@@ -120,7 +138,7 @@ void getSample() {
   lastSample = micIn;
 
   sample = (micIn <= squelch) ? 0 : (sample*3 + micIn) / 4;   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
-  sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 32 samples.
+  sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 16 samples.
 
   if (userVar1 == 0) samplePeak = 0;
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 100)) {    // Poor man's beat detection by seeing if sample > Average + some value.
@@ -177,9 +195,12 @@ void FFTcode( void * parameter) {
   for(;;) {
     delay(1);             // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
     microseconds = micros();
+    extern double volume;
+    
     for(int i=0; i<samples; i++)
     {
-      vReal[i] = analogRead(MIC_PIN);
+      micData = analogRead(MIC_PIN) * volume;
+      fftBin[i] = micData;
       vImag[i] = 0;
       while(micros() - microseconds < sampling_period_us){
         //empty loop
@@ -187,34 +208,34 @@ void FFTcode( void * parameter) {
         microseconds += sampling_period_us;
     }
 
-    FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh data */
-    FFT.Compute(vReal, vImag, samples, FFT_FORWARD); /* Compute FFT */
-    FFT.ComplexToMagnitude(vReal, vImag, samples); /* Compute magnitudes */
+    FFT.Windowing(fftBin, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);  /* Weigh data */
+    FFT.Compute(fftBin, vImag, samples, FFT_FORWARD); /* Compute FFT */
+    FFT.ComplexToMagnitude(fftBin, vImag, samples); /* Compute magnitudes */
     FFT.DCRemoval();
 
     // Zero out bins we already know do not hold relevant information
     for (int i = 0; i < 6; i++){
-      vReal[i] = 0;
+      fftBin[i] = 0;
       }
     sum = 0;
     // Normalize bins
     for ( int i = 0; i < samples; i++) {
-      sum += vReal[i];
+      sum += fftBin[i];
     }
     mean = sum / samples;
     for ( int i = 0; i < samples; i++) {
-      vReal[i] -= mean;
-      if (vReal[i] < 0) vReal[i] = 0;
+      fftBin[i] -= mean;
+      if (fftBin[i] < 0) fftBin[i] = 0;
     }
 
-    // vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz). There could be interesting data at [2 .. 7] but chances are there are too many artifacts
-    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(vReal, samples, samplingFrequency);       // let the effects know which freq was most dominant
+    // fftBin[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz). There could be interesting data at [2 .. 7] but chances are there are too many artifacts
+    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(fftBin, samples, samplingFrequency);       // let the effects know which freq was most dominant
 
     //Serial.print("FFT_MajorPeak: ");
     //Serial.println(FFT_MajorPeak);
     //Serial.print(" ");
     //for (int i = 0; i < samples; i++) {
-    //  Serial.print(vReal[i],0);
+    //  Serial.print(fftBin[i],0);
     //  Serial.print("\t");
     //}
     //Serial.println();
@@ -222,6 +243,7 @@ void FFTcode( void * parameter) {
 
   }
 }
+
 
 
 #endif
