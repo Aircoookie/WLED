@@ -196,9 +196,9 @@ void FFTcode( void * parameter) {
         microseconds += sampling_period_us;
     }
 
-    FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);   // Weigh data
-    FFT.Compute(vReal, vImag, samples, FFT_FORWARD);                   // Compute FFT
-    FFT.ComplexToMagnitude(vReal, vImag, samples);                     // Compute magnitudes
+    FFT.Windowing(fftBin, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);   // Weigh data
+    FFT.Compute(fftBin, vImag, samples, FFT_FORWARD);                   // Compute FFT
+    FFT.ComplexToMagnitude(fftBin, vImag, samples);                     // Compute magnitudes
     FFT.DCRemoval();
 
     // Zero out bins we already know do not hold relevant information
@@ -216,9 +216,9 @@ void FFTcode( void * parameter) {
       if (fftBin[i] < 0) fftBin[i] = 0;
     }
 
-    // vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
+    // fftBin[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
     // There could be interesting data at [2 .. 7] but chances are there are too many artifacts
-    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(vReal, samples, samplingFrequency);  // let the effects know which freq was most dominant
+    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(fftBin, samples, samplingFrequency);  // let the effects know which freq was most dominant
 
     //Serial.print("FFT_MajorPeak: ");
     //Serial.println(FFT_MajorPeak);
