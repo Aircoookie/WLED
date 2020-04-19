@@ -30,7 +30,7 @@ float multAgc;                                                // sample * multAg
 uint8_t targetAgc = 60;                                       // This is our setPoint at 20% of max for the adjusted output
 
 long lastTime = 0;
-int delayMs = 1;                                              // I don't want to sample too often and overload WLED
+int delayMs = 10;                                             // I don't want to sample too often and overload WLED.
 
 uint16_t micData;
 
@@ -53,7 +53,7 @@ unsigned long microseconds;
 These are the input and output vectors
 Input vectors receive computed results from FFT
 */
-double vReal[samples];
+double fftBin[samples];
 double vImag[samples];
 #endif
 
@@ -130,7 +130,7 @@ void getSample() {
   lastSample = micIn;
 
   sample = (micIn <= squelch) ? 0 : (sample*3 + micIn) / 4;   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
-  sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 32 samples.
+  sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 16 samples.
 
   if (userVar1 == 0) samplePeak = 0;
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 100)) {   // Poor man's beat detection by seeing if sample > Average + some value.
@@ -183,10 +183,12 @@ void FFTcode( void * parameter) {
   for(;;) {
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
     microseconds = micros();
+    extern double volume;
+
     for(int i=0; i<samples; i++)
     {
-      micData = analogRead(MIC_PIN);
-      vReal[i] = micData;
+      micData = analogRead(MIC_PIN) * volume;
+      fftBin[i] = micData;
       vImag[i] = 0;
       while(micros() - microseconds < sampling_period_us){
         //empty loop
@@ -201,17 +203,17 @@ void FFTcode( void * parameter) {
 
     // Zero out bins we already know do not hold relevant information
     for (int i = 0; i < 6; i++){
-      vReal[i] = 0;
+      fftBin[i] = 0;
       }
     sum = 0;
     // Normalize bins
     for ( int i = 0; i < samples; i++) {
-      sum += vReal[i];
+      sum += fftBin[i];
     }
     mean = sum / samples;
     for ( int i = 0; i < samples; i++) {
-      vReal[i] -= mean;
-      if (vReal[i] < 0) vReal[i] = 0;
+      fftBin[i] -= mean;
+      if (fftBin[i] < 0) fftBin[i] = 0;
     }
 
     // vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
@@ -222,7 +224,7 @@ void FFTcode( void * parameter) {
     //Serial.println(FFT_MajorPeak);
     //Serial.print(" ");
     //for (int i = 0; i < samples; i++) {
-    //  Serial.print(vReal[i],0);
+    //  Serial.print(fftBin[i],0);
     //  Serial.print("\t");
     //}
     //Serial.println();
@@ -232,3 +234,6 @@ void FFTcode( void * parameter) {
 }
 
 #endif
+
+
+
