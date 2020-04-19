@@ -138,7 +138,7 @@ void getSample() {
   lastSample = micIn;
 
   sample = (micIn <= squelch) ? 0 : (sample*3 + micIn) / 4;   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
-  sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 32 samples.
+  sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 16 samples.
 
   if (userVar1 == 0) samplePeak = 0;
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 100)) {    // Poor man's beat detection by seeing if sample > Average + some value.

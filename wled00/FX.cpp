@@ -3436,7 +3436,7 @@ void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
   CRGB color;
 
   if (SEGMENT.palette == 0) {                                             // No palette loaded, so let's use the first colour. . . and white.
-    uint32_t myClr = color_blend(SEGCOLOR(1), SEGCOLOR(0), intensity);    // Scale the brightness of the colour. Not blending to SEGCOLOR(1) with this, just black.
+    uint32_t myClr = color_blend(SEGCOLOR(1), SEGCOLOR(0), intensity);    // Scale the brightness of the colour.
     setPixelColor(location, myClr);                                       // This supports RGBW.
   } else {
     color = ColorFromPalette(currentPalette, index, intensity);           // This just uses the palettes and just RGB ones at that.
