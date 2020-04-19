@@ -7,7 +7,7 @@
  */
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 18
+#define EEPVER 19
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -27,6 +27,7 @@
 //16-> 0.9.1
 //17-> 0.9.1-dmx
 //18-> 0.9.1-e131
+//19-> 0.9.1n
 
 void commit()
 {
@@ -209,6 +210,9 @@ void saveSettingsToEEPROM()
   EEPROM.write(2180, macroCountdown);
   EEPROM.write(2181, macroNl);
   EEPROM.write(2182, macroDoublePress);
+
+  EEPROM.write(2187, e131Port & 0xFF);
+  EEPROM.write(2188, (e131Port >> 8) & 0xFF);
 
   EEPROM.write(2189, e131SkipOutOfSequence);
   EEPROM.write(2190, e131Universe & 0xFF);
@@ -515,6 +519,11 @@ void loadSettingsFromEEPROM(bool first)
     e131SkipOutOfSequence = true;
   }
 
+  if (lastEEPROMversion > 18)
+  {
+    e131Port = EEPROM.read(2187) + ((EEPROM.read(2188) << 8) & 0xFF00);
+  }
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
@@ -555,7 +564,8 @@ void loadSettingsFromEEPROM(bool first)
   
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
-  } //last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
+  } //last used: 2549
+  EEPROM.write(2550, DMXStartLED);
   #endif
 
   //user MOD memory

@@ -9,6 +9,7 @@
 //#define USE_APA102  // Uncomment for using APA102 LEDs.
 //#define USE_WS2801  // Uncomment for using WS2801 LEDs (make sure you have NeoPixelBus v2.5.6 or newer)
 //#define USE_LPD8806 // Uncomment for using LPD8806
+//#define USE_TM1814   // Uncomment for using TM1814 LEDs (make sure you have NeoPixelBus v2.5.7 or newer)
 //#define USE_P9813   // Uncomment for using P9813 LEDs (make sure you have NeoPixelBus v2.5.8 or newer)
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
@@ -55,12 +56,18 @@
     #undef BTNPIN
     #undef IR_PIN
     #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+  #elif defined(WLED_USE_BWLT11)
+  //PWM pins - to use with BW-LT11
+    #define RPIN 12  //R pin for analog LED strip
+    #define GPIN 4   //G pin for analog LED strip
+    #define BPIN 14  //B pin for analog LED strip
+    #define WPIN 5   //W pin for analog LED strip
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-    #define RPIN 5   //R pin for analog LED strip   
-    #define GPIN 12   //G pin for analog LED strip
-    #define BPIN 15   //B pin for analog LED strip
-    #define WPIN 13   //W pin for analog LED strip 
+    #define RPIN 5   //R pin for analog LED strip
+    #define GPIN 12  //G pin for analog LED strip
+    #define BPIN 15  //B pin for analog LED strip
+    #define WPIN 13  //W pin for analog LED strip
   #endif
   #undef RLYPIN
   #define RLYPIN -1 //disable as pin 12 is used by analog LEDs
@@ -74,6 +81,8 @@
   #define PIXELMETHOD NeoWs2801Method
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
+ #elif defined(USE_TM1814)
+  #define PIXELMETHOD NeoTm1814Method  
  #elif defined(USE_P9813)
   #define PIXELMETHOD P9813Method  
  #else
@@ -87,6 +96,8 @@
   #define PIXELMETHOD NeoWs2801Method
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
+ #elif defined(USE_TM1814)
+  #define PIXELMETHOD NeoTm1814Method  
  #elif defined(USE_P9813)
   #define PIXELMETHOD P9813Method  
  #elif LEDPIN == 2
@@ -107,6 +118,9 @@
 #elif defined(USE_LPD8806)
  #define PIXELFEATURE3 Lpd8806GrbFeature 
  #define PIXELFEATURE4 Lpd8806GrbFeature
+#elif defined(USE_TM1814)
+  #define PIXELFEATURE3 NeoWrgbTm1814Feature
+  #define PIXELFEATURE4 NeoWrgbTm1814Feature
 #elif defined(USE_P9813)
  #define PIXELFEATURE3 P9813BgrFeature 
  #define PIXELFEATURE4 NeoGrbwFeature   

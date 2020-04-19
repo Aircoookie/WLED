@@ -213,7 +213,7 @@ void WLED::setup()
   }
 #endif
 #ifdef WLED_ENABLE_DMX
-  dmx.init(512);        // initialize with bus length
+  initDMX();
 #endif
   // HTTP server page init
   initServer();
@@ -371,7 +371,7 @@ void WLED::initInterfaces()
     ntpConnected = ntpUdp.begin(ntpLocalPort);
 
   initBlynk(blynkApiKey);
-  e131.begin((e131Multicast) ? E131_MULTICAST : E131_UNICAST, e131Universe, E131_MAX_UNIVERSE_COUNT);
+  e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
   reconnectHue();
   initMqtt();
   interfacesInited = true;

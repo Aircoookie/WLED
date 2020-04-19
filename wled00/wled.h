@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2004061
+#define VERSION 2004190
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -25,9 +25,9 @@
 //#define WLED_DISABLE_CRONIXIE    // saves 3kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
 //#define WLED_DISABLE_INFRARED    // there is no pin left for this on ESP8266-01, saves 12kb
-#define WLED_ENABLE_MQTT            // saves 12kb
-#define WLED_ENABLE_ADALIGHT        // saves 500b only
-//#define WLED_ENABLE_DMX          // uses 3.5kb
+#define WLED_ENABLE_MQTT           // saves 12kb
+#define WLED_ENABLE_ADALIGHT       // saves 500b only
+//#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
 
 #define WLED_DISABLE_FILESYSTEM        // SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   // Enable sending html file from SPIFFS before serving progmem version
@@ -227,6 +227,7 @@ WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
+WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
 WLED_GLOBAL uint16_t DMXAddress _INIT(1);                         // DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
 WLED_GLOBAL byte DMXOldDimmer _INIT(0);                           // only update brightness on change
@@ -293,6 +294,7 @@ WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use i
   // assigns the different channels to different functions. See wled21_dmx.ino for more information.
   WLED_GLOBAL uint16_t DMXGap _INIT(10);          // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
   WLED_GLOBAL uint16_t DMXStart _INIT(10);        // start address of the first fixture
+  WLED_GLOBAL uint16_t DMXStartLED _INIT(0);      // LED from which DMX fixtures start
 #endif
 
 // internal global variable declarations

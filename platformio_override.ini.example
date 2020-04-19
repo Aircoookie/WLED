@@ -28,7 +28,9 @@ build_flags = ${common.build_flags_esp8266}
 ; to drive analog LED strips (aka 5050), uncomment the following
 ; PWM pins 5,12,13,15 are used with Magic Home LED Controller (default)
 ;   -D WLED_USE_ANALOG_LEDS
-; for the H801 controler (PINs 15,13,12,14 (W2 = 04)) uncomment this
+; for the H801 controller (PINs 15,13,12,14 (W2 = 04)) uncomment this
 ;   -D WLED_USE_H801
+; for the BW-LT11 controller (PINs 12,4,14,5 ) uncomment this
+;   -D WLED_USE_BWLT11
 ; and to enable channel 5 for RGBW-CT led strips this
 ;   -D WLED_USE_5CH_LEDS

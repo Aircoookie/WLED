@@ -1,3 +1,5 @@
+#include "wled.h"
+#include <Arduino.h>
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 #include <DallasTemperature.h> //Dallastemperature sensor
 #ifdef ARDUINO_ARCH_ESP32 //ESP32 boards

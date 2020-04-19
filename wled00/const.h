@@ -43,6 +43,7 @@
 #define REALTIME_MODE_HYPERION    3
 #define REALTIME_MODE_E131        4
 #define REALTIME_MODE_ADALIGHT    5
+#define REALTIME_MODE_ARTNET      6
 
 //E1.31 DMX modes
 #define DMX_MODE_DISABLED         0            //not used

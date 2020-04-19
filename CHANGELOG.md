@@ -2,6 +2,16 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2004120
+
+-   Added Art-Net support
+-   Added OTA platform to platformio.ini
+
+#### Build 2004100
+
+-   Fixed DMX output compilation
+-   Added DMX start LED setting
+
 #### Build 2004061
 
 -   Fixed RBG and BGR getPixelColor (#825)
@@ -17,7 +27,7 @@
 
 #### Build 2003262
 
-- Fixed compilation for Analog LEDs
+-   Fixed compilation for Analog LEDs
 -   Fixed sync settings network port fields too small
 
 #### Build 2003261

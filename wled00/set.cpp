@@ -142,10 +142,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     receiveDirect = request->hasArg("RD");
     e131SkipOutOfSequence = request->hasArg("ES");
     e131Multicast = request->hasArg("EM");
+    t = request->arg("EP").toInt();
+    if (t > 0) e131Port = t;
     t = request->arg("EU").toInt();
-    if (t > 0  && t <= 63999) e131Universe = t;
+    if (t >= 0  && t <= 63999) e131Universe = t;
     t = request->arg("DA").toInt();
-    if (t > 0  && t <= 510) DMXAddress = t;
+    if (t >= 0  && t <= 510) DMXAddress = t;
     t = request->arg("DM").toInt();
     if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_DRGB) DMXMode = t;
     t = request->arg("ET").toInt();
@@ -306,6 +308,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg("CG").toInt();
     if (t>0 && t<513) {
       DMXGap = t;
+    }
+    t = request->arg("SL").toInt();
+    if (t>=0 && t < MAX_LEDS) {
+      DMXStartLED = t;
     }
     for (int i=0; i<15; i++) {
       String argname = "CH" + String((i+1));

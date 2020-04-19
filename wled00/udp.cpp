@@ -72,7 +72,7 @@ void notify(byte callMode, bool followUp)
 }
 
 
-void arlsLock(uint32_t timeoutMs, byte md)
+void realtimeLock(uint32_t timeoutMs, byte md)
 {
   if (!realtimeMode){
     for (uint16_t i = 0; i < ledCount; i++)
@@ -121,7 +121,7 @@ void handleNotifications()
     DEBUG_PRINTLN(rgbUdp.remoteIP());
     uint8_t lbuf[packetSize];
     rgbUdp.read(lbuf, packetSize);
-    arlsLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
+    realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
     uint16_t id = 0;
     for (uint16_t i = 0; i < packetSize -2; i += 3)
     {
@@ -208,7 +208,7 @@ void handleNotifications()
           realtimeTimeout = 0;
           return;
         } else {
-          arlsLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
+          realtimeLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
         }
         if (udpIn[0] == 1) //warls
         {
