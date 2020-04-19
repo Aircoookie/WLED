@@ -146,6 +146,8 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     default: col.G = g; col.R = b; col.B = r; break; //5 = GBR
   }
   col.W = w;
+
+  //color_blend(BLACK, (uint32_t)col, SEGMENT.opacity);
   
   uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
