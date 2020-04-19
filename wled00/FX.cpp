@@ -3394,7 +3394,7 @@ uint16_t WS2812FX::mode_phased(void) {                          // By: Andrew Tu
   thisphase += thisspeed;
   
   for (int i=0; i<SEGLEN; i++) {                                // For each of the LED's in the strand, set a brightness based on a wave as follows:
-    int thisbright = cubicwave8((i*allfreq)+thisphase*i/2);
+    int thisbright = cubicwave8(((i+1)*allfreq)+thisphase*(i+1)/2);
     setPixCol(i, thisindex, thisbright);
     thisindex +=256/SEGLEN;
   }
