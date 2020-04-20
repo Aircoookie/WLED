@@ -228,15 +228,6 @@ void FFTcode( void * parameter) {
     // There could be interesting data at [2 .. 7] but chances are there are too many artifacts
     FFT_MajorPeak = (uint16_t) FFT.MajorPeak(vReal, samples, samplingFrequency);  // let the effects know which freq was most dominant
 
-    //Serial.print("FFT_MajorPeak: ");
-    //Serial.println(FFT_MajorPeak);
-    //Serial.print(" ");
-    //for (int i = 0; i < samples; i++) {
-    //  Serial.print(vReal[i],0);
-    //  Serial.print("\t");
-    //}
-    //Serial.println();
-    //delay(10000);
     for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];       // export FFT field
 
     // Create an array of 16 bins which roughly represent values the human ear can determine as different frequency bands (fftBins[0..6] are already zero'd)
