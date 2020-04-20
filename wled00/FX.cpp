@@ -3741,7 +3741,6 @@ uint16_t WS2812FX::mode_asound10(void) {
       int upperLimit = 20 * SEGMENT.fft2;
       int lowerLimit = 2 * SEGMENT.fft1;
       int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
-      //Serial.printf("%3d %4d %2d\n",SEGMENT.intensity, upperLimit, i);
       uint16_t b = 255 * intensity;
       if (b > 255) b=255;
       c = CHSV(i, 240, (uint8_t)b);
@@ -3759,15 +3758,6 @@ uint16_t WS2812FX::mode_asound10(void) {
     }  
 
     fadeval = fade;
-// Apply fading
-//    for (int i = SEGLEN/2 + 1; i < SEGLEN; i++) {
-//      uint8_t val = leds[i]  & 0xFF;                                          // we only need the intensity information
-//      val = qsub8(val,fadeval);                                               // fade it down
-//      leds[i] = leds[i] & 0xFFFFFF00;                                         // clear out val
-//      leds[i] = leds[i] | val;                                                // put new value in place
-//      fadeval = fadeval + fade;                                               // increase fading for the next iteration
-//    }
-
     
     // DISPLAY ARRAY
     for (int i= 0; i < SEGLEN; i++) {
@@ -3791,7 +3781,71 @@ extern uint16_t lastSample;
 
 uint16_t WS2812FX::mode_asound11(void) {                    // Fire with sound activation
 {
-  delay(1);                                                 // DO NOT REMOVE!
+  delay(1); // DO NOT REMOVE!
+#ifndef ESP8266
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                   // Using FastLED's timer. You want to change speed? You need to . .
+    
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
+
+    uint16_t dataSize = 4 * SEGLEN;                                   // prepared for RGBW strips, even though we are currently only using RGB strips
+    if (!SEGENV.allocateData(dataSize)) return mode_static();         //allocation failed 
+
+    uint32_t* leds = reinterpret_cast<uint32_t*>(SEGENV.data);
+
+    uint8_t fade = SEGMENT.fft3;
+    uint8_t fadeval;
+
+    fade2black(fade);
+
+    double sensitivity = mapf(SEGMENT.fft3, 1, 255, 1, 10);
+    int pixVal = sampleAvg * SEGMENT.intensity / 256 * sensitivity;
+    if (pixVal > 255) pixVal = 255;
+//    volume = mapf(SEGMENT.intensity, 0, 255, 1, 5);            // read intensity slider
+    
+    double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;            // make a brightness from the last avg
+
+    //Serial.println(intensity);
+
+    CRGB color = 0;
+    CHSV c;
+
+    if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
+      // MajorPeak holds the freq. value which is most abundant in the last sample.
+      // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
+      // we will treat everything with less than 65Hz as 0
+      //Serial.printf("%5d ", FFT_MajorPeak, 0);
+    if (FFT_MajorPeak < 80) {
+      color = CRGB::Black;
+    } else {
+      int upperLimit = 20 * SEGMENT.fft2;
+      int lowerLimit = 2 * SEGMENT.fft1;
+      int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
+      uint16_t b = 255 * intensity;
+      if (b > 255) b=255;
+      c = CHSV(i, 240, (uint8_t)b);
+    }
+
+    // Serial.println(color);
+    leds[0] =  (c.h << 16) + (c.s << 8)  + (c.v );
+
+// shift the pixels one pixel up
+    for (int i = SEGLEN; i > 0; i--) {                                 // Move up
+      leds[i] = leds[i-1];
+    }
+
+    fadeval = fade;
+    
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
+    }
+  }
+
+#endif
   return FRAMETIME;
 }
 } // mode_asound11()
