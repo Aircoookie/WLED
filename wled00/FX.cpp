@@ -3800,6 +3800,13 @@ extern double fftBin[];           // raw FFT data
 extern double fftResult[];        // pre-added result array 0 .. 15
 
 
+
+// asound12 delivers a spectral "analysis" of the audio signal compressed into 16 bins which are supposed to be at least half way similar log (human ear is log as well)
+// 
+// this effect is best being displayed on strips in multiples of 16 leds (and only in multiples of 16), you can use it on strips shorter than 16 leds but then the higher frequency bins are just cut off
+// 
+// The only slider that is active in this effect is the general brightness slider, everything else is being computed on the fly. 
+// 
 uint16_t WS2812FX::mode_asound12(void) {
   delay(1);
 #ifndef ESP8266
