@@ -3780,7 +3780,6 @@ extern uint16_t lastSample;
 //            FFT Custom: How sensitive to the microphone noise- How hot the spark will be
 
 uint16_t WS2812FX::mode_asound11(void) {                    // Fire with sound activation
-{
   delay(1); // DO NOT REMOVE!
 #ifndef ESP8266
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                   // Using FastLED's timer. You want to change speed? You need to . .
@@ -3847,7 +3846,6 @@ uint16_t WS2812FX::mode_asound11(void) {                    // Fire with sound a
 
 #endif
   return FRAMETIME;
-}
 } // mode_asound11()
 
 extern double fftBin[];           // raw FFT data
