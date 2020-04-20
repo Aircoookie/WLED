@@ -54,6 +54,7 @@ These are the input and output vectors
 Input vectors receive computed results from FFT
 */
 double fftBin[samples];
+double vReal[samples];
 double vImag[samples];
 #endif
 
@@ -172,7 +173,18 @@ void agcAvg() {                                                       // A simpl
 
 #ifndef ESP8266
 
-// #include "esp_task_wdt.h"
+double fftResult[16];
+
+double fftAdd( int from, int to) {
+  int i = from; 
+  double result = 0;
+  
+  while ( i <= to) {
+    result += fftBin[i++];
+  } 
+
+  return result;
+}
 
 uint16_t FFT_MajorPeak = 0;
 
@@ -188,7 +200,7 @@ void FFTcode( void * parameter) {
     for(int i=0; i<samples; i++)
     {
       micData = analogRead(MIC_PIN) * volume;
-      fftBin[i] = micData;
+      vReal[i] = micData;
       vImag[i] = 0;
       while(micros() - microseconds < sampling_period_us){
         //empty loop
@@ -196,44 +208,55 @@ void FFTcode( void * parameter) {
         microseconds += sampling_period_us;
     }
 
-    FFT.Windowing(fftBin, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);   // Weigh data
-    FFT.Compute(fftBin, vImag, samples, FFT_FORWARD);                   // Compute FFT
-    FFT.ComplexToMagnitude(fftBin, vImag, samples);                     // Compute magnitudes
+    FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);   // Weigh data
+    FFT.Compute(vReal, vImag, samples, FFT_FORWARD);                   // Compute FFT
+    FFT.ComplexToMagnitude(vReal, vImag, samples);                     // Compute magnitudes
     FFT.DCRemoval();
 
-    // Zero out bins we already know do not hold relevant information
-    for (int i = 0; i < 6; i++){
-      fftBin[i] = 0;
-      }
     sum = 0;
     // Normalize bins
-    for ( int i = 0; i < samples; i++) {
-      sum += fftBin[i];
+    for ( int i = 1; i < samples; i++) {
+      sum += vReal[i];
     }
     mean = sum / samples;
     for ( int i = 0; i < samples; i++) {
-      fftBin[i] -= mean;
-      if (fftBin[i] < 0) fftBin[i] = 0;
+      vReal[i] -= mean;
+      if (vReal[i] < 0) vReal[i] = 0;
     }
 
-    // fftBin[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
+    // vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
     // There could be interesting data at [2 .. 7] but chances are there are too many artifacts
-    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(fftBin, samples, samplingFrequency);  // let the effects know which freq was most dominant
+    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(vReal, samples, samplingFrequency);  // let the effects know which freq was most dominant
 
     //Serial.print("FFT_MajorPeak: ");
     //Serial.println(FFT_MajorPeak);
     //Serial.print(" ");
     //for (int i = 0; i < samples; i++) {
-    //  Serial.print(fftBin[i],0);
+    //  Serial.print(vReal[i],0);
     //  Serial.print("\t");
     //}
     //Serial.println();
     //delay(10000);
+    for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];       // export FFT field
 
+    // Create an array of 16 bins which roughly represent values the human ear can determine as different frequency bands (fftBins[0..6] are already zero'd)
+    fftResult[0] = fftAdd(7,11); 
+    fftResult[1] = fftAdd(12,16); 
+    fftResult[2] = fftAdd(17,21); 
+    fftResult[3] = fftAdd(22, 30); 
+    fftResult[4] = fftAdd(31, 39); 
+    fftResult[5] = fftAdd(40, 48); 
+    fftResult[6] = fftAdd(49, 61); 
+    fftResult[7] = fftAdd(62, 78); 
+    fftResult[8] = fftAdd(79, 99); 
+    fftResult[9] = fftAdd(100, 124); 
+    fftResult[10] = fftAdd(125, 157); 
+    fftResult[11] = fftAdd(158, 198); 
+    fftResult[12] = fftAdd(199, 247); 
+    fftResult[13] = fftAdd(248, 312); 
+    fftResult[14] = fftAdd(313, 393); 
+    fftResult[15] = fftAdd(394, 470); 
   }
 }
 
 #endif
-
-
-
