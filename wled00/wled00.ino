@@ -547,11 +547,14 @@ bool oappendi(int i)
 //boot starts here
 void setup() {
   wledInit();
+//Serial.printf("Free Heap: %d\n", ESP.getFreeHeap());
 }
 
 
 //main program loop
 void loop() {
+//  EVERY_N_MILLISECONDS(1000) Serial.printf("Free Heap: %d\n", ESP.getFreeHeap());
+  
   handleIR();          //2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
   handleSerial();
