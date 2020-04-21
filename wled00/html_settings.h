@@ -297,6 +297,7 @@ Type:
 </select><br>
 <div id=xp>Port: <input name=EP type=number min=1 max=65535 value=5568 class=d5 required><br></div>
 Multicast: <input type=checkbox name=EM><br>
+Proxy Universe <input name=PU type=number min=0 max=63999 required> to DMX via MAX485 DI pin connected to D4 (0=disabled, compile with WLED_ENABLE_DMX)<br>
 Start universe: <input name=EU type=number min=0 max=63999 required><br>
 <i>Reboot required.</i> Check out <a href=https://github.com/ahodges9/LedFx target=_blank>LedFx</a>!<br>
 Skip out-of-sequence packets: <input type=checkbox name=ES><br>

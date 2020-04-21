@@ -147,6 +147,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     e131Multicast = request->hasArg("EM");
     t = request->arg("EP").toInt();
     if (t > 0) e131Port = t;
+    #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
+    t = request->arg("PU").toInt();
+    if (t >= 0  && t <= 63999) e131ProxyUniverse = t;
+    #endif
     t = request->arg("EU").toInt();
     if (t >= 0  && t <= 63999) e131Universe = t;
     t = request->arg("DA").toInt();

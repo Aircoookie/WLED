@@ -345,6 +345,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"EP",e131Port);
     sappend('c',"ES",e131SkipOutOfSequence);
     sappend('c',"EM",e131Multicast);
+    #ifdef WLED_ENABLE_DMX
+    sappend('v',"PU",e131ProxyUniverse);
+    #endif
     sappend('v',"EU",e131Universe);
     sappend('v',"DA",DMXAddress);
     sappend('v',"DM",DMXMode);
