@@ -25,6 +25,15 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
     seq = p->sequence_number;
   }
 
+  #ifdef WLED_ENABLE_DMX
+  // does not act on out-of-order packets yet
+  if (e131ProxyUniverse > 0 && uni == e131ProxyUniverse) {
+    for (uint16_t i = 1; i <= dmxChannels; i++)
+      dmx.write(i, e131_data[i]);
+    dmx.update();
+  }
+  #endif
+
   // only listen for universes we're handling & allocated memory
   if (uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
 
