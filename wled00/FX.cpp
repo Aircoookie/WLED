@@ -3678,6 +3678,8 @@ double mapf(double x, double in_min, double in_max, double out_min, double out_m
 {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+
+uint32_t ledData[1500];
 #endif
 
 
@@ -3708,24 +3710,17 @@ uint16_t WS2812FX::mode_asound10(void) {
     
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
 
-    uint16_t dataSize = 4 * SEGLEN;                                   // prepared for RGBW strips, even though we are currently only using RGB strips
-    if (!SEGENV.allocateData(dataSize)) return mode_static();         //allocation failed 
+    uint32_t* leds = ledData;
+    
 
-    uint32_t* leds = reinterpret_cast<uint32_t*>(SEGENV.data);
-
-    uint8_t fade = SEGMENT.fft3;
-    uint8_t fadeval;
-
-    fade2black(fade);
+    //uint8_t fade = SEGMENT.fft3;
+    //uint8_t fadeval;
 
     double sensitivity = mapf(SEGMENT.fft3, 1, 255, 1, 10);
     int pixVal = sampleAvg * SEGMENT.intensity / 256 * sensitivity;
     if (pixVal > 255) pixVal = 255;
-//    volume = mapf(SEGMENT.intensity, 0, 255, 1, 5);            // read intensity slider
     
     double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;            // make a brightness from the last avg
-
-    //Serial.println(intensity);
 
     CRGB color = 0;
     CHSV c;
@@ -3756,8 +3751,6 @@ uint16_t WS2812FX::mode_asound10(void) {
     for (int i = 0; i < SEGLEN/2; i++) {                                      // Move to the left.
       leds[i] = leds[i+1];
     }  
-
-    fadeval = fade;
     
     // DISPLAY ARRAY
     for (int i= 0; i < SEGLEN; i++) {
@@ -3776,34 +3769,20 @@ uint16_t WS2812FX::mode_asound10(void) {
 
 extern uint16_t lastSample;
 
-// Slider use: Intensity: the general chance of sparking new fire near the bottom
-//            FFT Custom: How sensitive to the microphone noise- How hot the spark will be
-
-uint16_t WS2812FX::mode_asound11(void) {                    // Fire with sound activation
+uint16_t WS2812FX::mode_asound11(void) {                    
   delay(1); // DO NOT REMOVE!
 #ifndef ESP8266
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                   // Using FastLED's timer. You want to change speed? You need to . .
     
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
 
-    uint16_t dataSize = 4 * SEGLEN;                                   // prepared for RGBW strips, even though we are currently only using RGB strips
-    if (!SEGENV.allocateData(dataSize)) return mode_static();         //allocation failed 
-
-    uint32_t* leds = reinterpret_cast<uint32_t*>(SEGENV.data);
-
-    uint8_t fade = SEGMENT.fft3;
-    uint8_t fadeval;
-
-    fade2black(fade);
+    uint32_t *leds = ledData;
 
     double sensitivity = mapf(SEGMENT.fft3, 1, 255, 1, 10);
     int pixVal = sampleAvg * SEGMENT.intensity / 256 * sensitivity;
     if (pixVal > 255) pixVal = 255;
-//    volume = mapf(SEGMENT.intensity, 0, 255, 1, 5);            // read intensity slider
     
     double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;            // make a brightness from the last avg
-
-    //Serial.println(intensity);
 
     CRGB color = 0;
     CHSV c;
@@ -3832,7 +3811,7 @@ uint16_t WS2812FX::mode_asound11(void) {                    // Fire with sound a
       leds[i] = leds[i-1];
     }
 
-    fadeval = fade;
+    //fadeval = fade;
     
     // DISPLAY ARRAY
     for (int i= 0; i < SEGLEN; i++) {
