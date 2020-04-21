@@ -3741,7 +3741,6 @@ uint16_t WS2812FX::mode_asound10(void) {
       int upperLimit = 20 * SEGMENT.fft2;
       int lowerLimit = 2 * SEGMENT.fft1;
       int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
-      //Serial.printf("%3d %4d %2d\n",SEGMENT.intensity, upperLimit, i);
       uint16_t b = 255 * intensity;
       if (b > 255) b=255;
       c = CHSV(i, 240, (uint8_t)b);
@@ -3759,15 +3758,6 @@ uint16_t WS2812FX::mode_asound10(void) {
     }  
 
     fadeval = fade;
-// Apply fading
-//    for (int i = SEGLEN/2 + 1; i < SEGLEN; i++) {
-//      uint8_t val = leds[i]  & 0xFF;                                          // we only need the intensity information
-//      val = qsub8(val,fadeval);                                               // fade it down
-//      leds[i] = leds[i] & 0xFFFFFF00;                                         // clear out val
-//      leds[i] = leds[i] | val;                                                // put new value in place
-//      fadeval = fadeval + fade;                                               // increase fading for the next iteration
-//    }
-
     
     // DISPLAY ARRAY
     for (int i= 0; i < SEGLEN; i++) {
@@ -3790,76 +3780,136 @@ extern uint16_t lastSample;
 //            FFT Custom: How sensitive to the microphone noise- How hot the spark will be
 
 uint16_t WS2812FX::mode_asound11(void) {                    // Fire with sound activation
-{
-  delay(1);                                                 // DO NOT REMOVE!
+  delay(1); // DO NOT REMOVE!
+#ifndef ESP8266
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                   // Using FastLED's timer. You want to change speed? You need to . .
+    
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
+
+    uint16_t dataSize = 4 * SEGLEN;                                   // prepared for RGBW strips, even though we are currently only using RGB strips
+    if (!SEGENV.allocateData(dataSize)) return mode_static();         //allocation failed 
+
+    uint32_t* leds = reinterpret_cast<uint32_t*>(SEGENV.data);
+
+    uint8_t fade = SEGMENT.fft3;
+    uint8_t fadeval;
+
+    fade2black(fade);
+
+    double sensitivity = mapf(SEGMENT.fft3, 1, 255, 1, 10);
+    int pixVal = sampleAvg * SEGMENT.intensity / 256 * sensitivity;
+    if (pixVal > 255) pixVal = 255;
+//    volume = mapf(SEGMENT.intensity, 0, 255, 1, 5);            // read intensity slider
+    
+    double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;            // make a brightness from the last avg
+
+    //Serial.println(intensity);
+
+    CRGB color = 0;
+    CHSV c;
+
+    if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
+      // MajorPeak holds the freq. value which is most abundant in the last sample.
+      // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
+      // we will treat everything with less than 65Hz as 0
+      //Serial.printf("%5d ", FFT_MajorPeak, 0);
+    if (FFT_MajorPeak < 80) {
+      color = CRGB::Black;
+    } else {
+      int upperLimit = 20 * SEGMENT.fft2;
+      int lowerLimit = 2 * SEGMENT.fft1;
+      int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
+      uint16_t b = 255 * intensity;
+      if (b > 255) b=255;
+      c = CHSV(i, 240, (uint8_t)b);
+    }
+
+    // Serial.println(color);
+    leds[0] =  (c.h << 16) + (c.s << 8)  + (c.v );
+
+// shift the pixels one pixel up
+    for (int i = SEGLEN; i > 0; i--) {                                 // Move up
+      leds[i] = leds[i-1];
+    }
+
+    fadeval = fade;
+    
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
+    }
+  }
+
+#endif
   return FRAMETIME;
-}
 } // mode_asound11()
 
-extern double fftBin[];
+extern double fftBin[];           // raw FFT data
+extern double fftResult[];        // pre-added result array 0 .. 15
 
+
+
+// asound12 delivers a spectral "analysis" of the audio signal compressed into 16 bins which are supposed to be at least half way similar log (human ear is log as well)
+// 
+// this effect is best being displayed on strips in multiples of 16 leds (and only in multiples of 16), you can use it on strips shorter than 16 leds but then the higher frequency bins are just cut off
+// 
+// The only slider that is active in this effect is the general brightness slider, everything else is being computed on the fly. 
+// 
 uint16_t WS2812FX::mode_asound12(void) {
   delay(1);
 #ifndef ESP8266
   double maxVal = 0;
-  
-// determine upper and lower boundaries
-  int upperLimit = 20 * SEGMENT.fft2;
-  int lowerLimit = 20 * SEGMENT.fft1;
-  int frequencyBand = upperLimit-lowerLimit;
-  int numBins = frequencyBand / 20;
-  int binsPerLED = SEGLEN/numBins;
-  while (binsPerLED == 0) {
-    SEGMENT.fft2--;           // Limit upper end
-    upperLimit = 20 * SEGMENT.fft2;
-    frequencyBand = upperLimit-lowerLimit;
-    numBins = frequencyBand / 20;
-    binsPerLED = SEGLEN/numBins;
-  }
-  if ((SEGMENT.fft2 < 255) && (SEGMENT.fft1 > 0)) {
-  while ((SEGLEN % numBins) != 0) {
-      if (SEGMENT.fft2 < 255) {           // adjust ever so slightly 
-        SEGMENT.fft2++;
-      } else {
-        if (SEGMENT.fft1 > 0) {
-          SEGMENT.fft1--;
-        } else {
-          // I hate to do that, can't adjust without falling out of bounds
-          goto CantAdjust;
-        }
-      }
-      lowerLimit = 20 * SEGMENT.fft1;
-      upperLimit = 20 * SEGMENT.fft2;
-      frequencyBand = upperLimit-lowerLimit;
-      numBins = frequencyBand / 20;
-      binsPerLED = SEGLEN/numBins;
-    }
-  }
-CantAdjust:
-// Serial.printf("%4d %4d %4d %2d %2d %3d\n",lowerLimit, upperLimit, frequencyBand, numBins, binsPerLED, SEGLEN % numBins);
+  CHSV c;
+  CRGB color;
 
-// Determine max value in bins to normalize
+  // Determine max value in bins to normalize
   maxVal = 0;
-  for (int i = SEGMENT.fft1; i < 2*SEGMENT.fft2; i++) {
-    if (fftBin[i] > maxVal) {
-      maxVal = fftBin[i];
-    if (maxVal > 10000)
-      Serial.printf("-> %6.0f %3d\n",maxVal, i);
+  for (int i = 0; i < 16; i++) {
+    if (fftResult[i] > maxVal) {
+      maxVal = fftResult[i];
     }
-  }
-Serial.printf("%6.0f\n", maxVal);
-  for ( int b = 0; b < numBins; b++) { 
-    if (binsPerLED > 1) {
-      for ( int i = 0; i < binsPerLED; i++) {
-        
+
+  if (maxVal == 0) maxVal = 255;
+
+//  EVERY_N_MILLISECONDS(5000) {
+//    for (int i = 0; i < 16; i++) Serial.printf("%6.0f ",fftResult[i]);
+//    Serial.println();
+//  }
+  int ledsPerBin = SEGLEN/16;
+  
+  if (ledsPerBin > 0) {                                     // our led strip is longer or at least than 16 LEDS
+    for (int i = 0; i < 16; i++ )                           // walk through all bins and display
+      if (ledsPerBin > 1) {                                 // more than one led per bin
+        for (int l = 0; l < ledsPerBin; l++)  {
+          int pos = i*ledsPerBin+l;                                   // which led are we talking about -- Also which bin are we talking about
+          uint8_t angle = map(i*ledsPerBin, 0, SEGLEN, 0, 255);            // the color we are going to display
+          uint8_t bright = mapf(fftResult[i], 0, maxVal, 0, 255); // find the brightness in relation to max
+          color = CHSV(angle, 240, bright);                   // colculate a color and convert it to RGB
+          setPixelColor(pos, color.red, color.green, color.blue);  
+        }      
+      } else {                                              // only one led per bin
+        int pos = i;                                        // which led are we talking about -- Also which bin are we talking about
+        uint8_t angle = map(pos, 0, SEGLEN, 0, 255);            // the color we are going to display
+        uint8_t bright = mapf(fftResult[i], 0, maxVal, 0, 255); // find the brightness in relation to max
+        color = CHSV(angle, 240, bright);                   // colculate a color and convert it to RGB
+        setPixelColor(pos, color.red, color.green, color.blue);
       }
-    } else {
-      
+    } else {                                                  // our led strip is shorter than 16LEDS
+    for (int i = 0; i < SEGLEN; i++ )  {                                      // which led are we talking about -- Also which bin are we talking about
+        uint8_t angle = map(i, 0, SEGLEN, 0, 255);            // the color we are going to display
+        uint8_t bright = mapf(fftResult[i], 0, maxVal, 0, 255); // find the brightness in relation to max
+        color = CHSV(angle, 240, bright);                   // colculate a color and convert it to RGB
+        setPixelColor(i, color.red, color.green, color.blue);
+      }
     }
   }
   
 #else
-  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+  for (int i = 0; i < SEGMENT.length; i++)  setPixelColor(i, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
 #endif
   return FRAMETIME;
 } // mode_asound12()
