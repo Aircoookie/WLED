@@ -3711,6 +3711,7 @@ uint16_t WS2812FX::mode_asound10(void) {
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
 
     uint32_t* leds = ledData;
+    
 
     //uint8_t fade = SEGMENT.fft3;
     //uint8_t fadeval;
