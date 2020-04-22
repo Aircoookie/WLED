@@ -3444,8 +3444,7 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
-    int pixVal = sample * SEGMENT.intensity / 256;
-    if (pixVal > 20) {pixVal = 255; } else {pixVal = 0;}
+    int pixVal = sample * SEGMENT.intensity / 128;
     setPixCol(SEGLEN/2, millis(), pixVal);
 
     for (int i=SEGLEN-1; i>SEGLEN/2; i--) {                               // Move to the right.
@@ -3489,11 +3488,10 @@ uint16_t WS2812FX::mode_asound04(void) {                                  // Mat
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
-    int matVal;
-    if (sample*3 > (255 - SEGMENT.intensity)) {matVal = 255;} else {matVal = 0;}
-    setPixCol(SEGLEN-1, millis(), matVal);
-
+    int pixVal = sample * SEGMENT.intensity / 128;
+    setPixCol(SEGLEN-1, millis(), pixVal);
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
+
   }
 
   return FRAMETIME;
@@ -3546,7 +3544,9 @@ uint16_t WS2812FX::mode_asound06(void) {                                  // Pla
     thisbright = cubicwave8((i*13)+thisphase)/2;
     thisbright += cos8((i*117)+thatphase)/2;                              // Let's munge the brightness a bit and animate it all with the phases.
     colorIndex=thisbright;
-    if (sampleAvg * 8 * SEGMENT.intensity/256 * SEGMENT.intensity/256 > thisbright) {thisbright = 255;} else {thisbright = 0;}
+
+    if (sampleAvg * 8 * SEGMENT.intensity/256 > thisbright) {thisbright = 255;} else {thisbright = 0;}
+
 
     setPixCol(i, colorIndex, thisbright);
   }
