@@ -2,6 +2,15 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2004220
+
+-   Added Candle Multi effect
+-   Added Palette capability to Pacifica effect
+
+#### Build 2004190
+
+-   Added TM1814 type LED defines
+
 #### Build 2004120
 
 -   Added Art-Net support
