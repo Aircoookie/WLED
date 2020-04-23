@@ -3365,15 +3365,13 @@ uint16_t WS2812FX::mode_phased(void) {                          // By: Andrew Tu
 
 uint16_t WS2812FX::mode_twinkleup(void) {                       // By: Andrew Tuline - This sure is a LOT shorter than those other twinkle routines.
 
-  uint8_t ranstart;                                             // Our first random number is the starting brightness in our sin() calculation.
-  uint8_t mysin;                                                // The result of sin(start+millis/frequency).
-
   random16_set_seed(535);                                       // The randomizer needs to be re-set each time through the loop in order for the 'random' numbers to be the same each time through.
 
   for (int i = 0; i<SEGLEN; i++) {
-    ranstart = random8();                                       // The starting value (aka brightness) for each pixel.
-    mysin = sin8(ranstart + 16 * millis()/(255-SEGMENT.speed));
-    setPixCol(i, i*20, mysin);
+    uint8_t ranstart = random8();                                       // The starting value (aka brightness) for each pixel.
+    uint8_t pixVal = sin8(ranstart + 16 * millis()/(255-SEGMENT.speed));
+    if (random8() > SEGMENT.intensity) pixVal = 0;
+    setPixCol(i, i*20, pixVal);
   }
  
   return FRAMETIME;
