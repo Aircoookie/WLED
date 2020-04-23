@@ -3342,7 +3342,9 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
 //                  Non-reactive routines by Andrew Tuline                          //
 //////////////////////////////////////////////////////////////////////////////////////
 
-uint16_t WS2812FX::mode_phased(void) {                          // By: Andrew Tuline
+
+// A spring like effect using phases of sine waves. By Andrew Tuline.
+uint16_t WS2812FX::mode_phased(void) {
 
   float thisspeed = SEGMENT.speed/32.0;
   float allfreq = SEGMENT.intensity/16.0;
@@ -3363,10 +3365,10 @@ uint16_t WS2812FX::mode_phased(void) {                          // By: Andrew Tu
 } // mode_phased()
 
 
+// A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
+uint16_t WS2812FX::mode_twinkleup(void) {                       
 
-uint16_t WS2812FX::mode_twinkleup(void) {                       // By: Andrew Tuline - This sure is a LOT shorter than those other twinkle routines.
-
-  random16_set_seed(535);                                       // The randomizer needs to be re-set each time through the loop in order for the 'random' numbers to be the same each time through.
+  random16_set_seed(535);                                       // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
 
   for (int i = 0; i<SEGLEN; i++) {
     uint8_t ranstart = random8();                               // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
@@ -3380,12 +3382,69 @@ uint16_t WS2812FX::mode_twinkleup(void) {                       // By: Andrew Tu
 } // mode_twinkleup()
 
 
+// Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls. By Andrew Tuline.
+uint16_t WS2812FX::mode_noisepal(void) {
+  
+  #define scale 30                                                          // Don't change this programmatically or everything shakes.
+
+  static CRGBPalette16 thisPalette;
+  static CRGBPalette16 thatPalette = RainbowColors_p;                       // An initial palette so the led's aren't black.
+  
+  static uint16_t dist;                                                     // Our distance from 0.
+  CRGB color;
+  
+  EVERY_N_MILLIS(10) {
+    nblendPaletteTowardPalette(thisPalette, thatPalette, 48);               // Blend towards the target palette over 48 iterations.
+  }
+
+  EVERY_N_SECONDS(5) {                                                      // Change the target palette to a random one every 5 seconds.
+    uint8_t baseI = random8();
+    thatPalette = CRGBPalette16(CHSV(baseI+random8(64), 255, random8(128,255)), CHSV(baseI+128, 255, random8(128,255)), CHSV(baseI+random8(92), 192, random8(128,255)), CHSV(baseI+random8(92), 255, random8(128,255)));
+  }
+  
+  for(int i = 0; i < SEGLEN; i++) {
+    uint8_t index = inoise8(i*scale, dist+i*scale);                       // Get a value from the noise function. I'm using both x and y axis.
+    color = ColorFromPalette(thisPalette, index, 255, LINEARBLEND);       // Use the my own palette.
+    setPixelColor(i, color.red, color.green, color.blue);
+  }
+  
+  dist += beatsin8(10,1,4);                                                // Moving along the distance. Vary it a bit with a sine wave.
+
+  return FRAMETIME;
+  
+} // mode_noisepal()
+
+
+// Sine waves that have controllable phase change speed, frequency and cutoff. By Andrew Tuline.
+// SEGMENT.speed ->Speed, SEGMENT.intensity -> PWM cutoff, SEGMENT.fft1 -> Color change, SEGMENT.fft2 -> Frequency
+uint16_t WS2812FX::mode_sinewave(void) {
+
+  #define qsuba(x, b)  ((x>b)?x-b:0)                 // Analog Unsigned subtraction macro. if result <0, then => 0
+
+  static uint16_t thisPhase = 0;
+  uint16_t thisFreq;
+  uint16_t colorIndex = millis() / (256 - SEGMENT.fft1);  // Amount of colour change.
+
+  thisPhase += SEGMENT.speed/16;                   // Speed of animation.
+  thisFreq = SEGMENT.fft2/8;                       // Frequency of the signal.
+  
+  for (int i=0; i<SEGLEN; i++) {                   // For each of the LED's in the strand, set a brightness based on a wave as follows:
+    int pixVal = qsuba(cubicwave8((i*thisFreq)+thisPhase), (255-SEGMENT.intensity));    // qsub sets a minimum value called thiscutoff. If < thiscutoff, then bright = 0. Otherwise, bright = 128 (as defined in qsub)..
+    setPixCol(i, i*colorIndex/255, pixVal);  
+  }
+  
+  return FRAMETIME;
+  
+} // mode_sinewave()
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////
 //                  Helper routine by Andrew Tuline                                 //
 //////////////////////////////////////////////////////////////////////////////////////
 
-void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {   // This helper function displays the RGBW SEGCOLOR(0) if no palette has been loaded. Index must be 32 bit because I use millis().
+// This helper function displays the RGBW SEGCOLOR(0) if no palette has been loaded. Index must be 32 bit because I use millis().
+void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
 
   CRGB color;
 
