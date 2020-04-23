@@ -3337,8 +3337,9 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
 }
 
 
+
 //////////////////////////////////////////////////////////////////////////////////////
-//                  Non-reactive by Andrew Tuline                                   //
+//                  Non-reactive routines by Andrew Tuline                          //
 //////////////////////////////////////////////////////////////////////////////////////
 
 uint16_t WS2812FX::mode_phased(void) {                          // By: Andrew Tuline
@@ -3368,7 +3369,7 @@ uint16_t WS2812FX::mode_twinkleup(void) {                       // By: Andrew Tu
   random16_set_seed(535);                                       // The randomizer needs to be re-set each time through the loop in order for the 'random' numbers to be the same each time through.
 
   for (int i = 0; i<SEGLEN; i++) {
-    uint8_t ranstart = random8();                                       // The starting value (aka brightness) for each pixel.
+    uint8_t ranstart = random8();                               // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
     uint8_t pixVal = sin8(ranstart + 16 * millis()/(255-SEGMENT.speed));
     if (random8() > SEGMENT.intensity) pixVal = 0;
     setPixCol(i, i*20, pixVal);
@@ -3379,11 +3380,10 @@ uint16_t WS2812FX::mode_twinkleup(void) {                       // By: Andrew Tu
 } // mode_twinkleup()
 
 
-//////////////////////////////////////////////////////////////////////////////////////
-//                  ASOUND01-09 routines by Andrew Tuline                           //
-//                  ASOUND10-15 routines by Andreas Pleschutznig                    //
-//////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////////////////
+//                  Helper routine by Andrew Tuline                                 //
+//////////////////////////////////////////////////////////////////////////////////////
 
 void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {   // This helper function displays the RGBW SEGCOLOR(0) if no palette has been loaded. Index must be 32 bit because I use millis().
 
@@ -3400,6 +3400,12 @@ void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
 } // setPixCol()
 
 
+
+//////////////////////////////////////////////////////////////////////////////////////
+//                  ASOUND01-09 volume routines by Andrew Tuline                    //
+//                  ASOUND10-15 FFT routines by Andreas Pleschutznig                //
+//////////////////////////////////////////////////////////////////////////////////////
+
 uint16_t WS2812FX::mode_asound01(void) {                                   // Pixels
 
   fade_out(4);
@@ -3408,27 +3414,6 @@ uint16_t WS2812FX::mode_asound01(void) {                                   // Pi
     uint16_t segLoc = random(SEGLEN);                                      // 16 bit for larger strands of LED's.
     setPixCol(segLoc, myVals[i%32]+i*4, sampleAgc);
   }
-
-//  EVERY_N_MILLIS(1000) {
-
-//      Serial.print("SEGENV.call "); Serial.println(SEGENV.call);
-//      Serial.print("SEGENV.next_time "); Serial.print(SEGENV.next_time);
-//      Serial.print(" ");
-//      Serial.print("now"); Serial.println(now);
-
-//      Serial.print("SEGENV.step "); Serial.println(SEGENV.step);
-//      Serial.print("SEGENV.aux0 "); Serial.println(SEGENV.aux0);
-//      Serial.print("SEGENV.aux1 "); Serial.println(SEGENV.aux1);
-
-//      Serial.print("SEGLEN "); Serial.println(SEGLEN);
-//      Serial.print("SEGMENT.start "); Serial.println(SEGMENT.start);
-//      Serial.print("SEGMENT.stop "); Serial.println(SEGMENT.stop);
-//      Serial.print("SEGMENT.intensity "); Serial.println(SEGMENT.intensity);
-//      Serial.print("SEGMENT.fft1 "); Serial.println(SEGMENT.fft1);
-//      Serial.print("SEGMENT.speed "); Serial.println(SEGMENT.speed);
-//      Serial.print("SEGMENT.options "); Serial.println(SEGMENT.options);
-//  }
-
 
   return FRAMETIME;
 
