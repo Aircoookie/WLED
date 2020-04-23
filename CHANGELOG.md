@@ -2,6 +2,13 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2004230
+
+-   Added brightness and power for individual segments
+-   Added `on` and `bri` properties to Segment object in JSON API
+-   Added `C3` an `SB` commands to HTTP get API
+-   Merged pull request #865 for 5CH_Shojo_PCB environment
+
 #### Build 2004220
 
 -   Added Candle Multi effect

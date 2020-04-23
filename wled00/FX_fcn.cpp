@@ -146,11 +146,23 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     default: col.G = g; col.R = b; col.B = r; break; //5 = GBR
   }
   col.W = w;
-
-  //color_blend(BLACK, (uint32_t)col, SEGMENT.opacity);
   
   uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
+
+    //color_blend(getpixel, col, SEGMENT.opacity); (pseudocode for future blending of segments)
+    if (IS_SEGMENT_ON)
+    {
+      if (SEGMENT.opacity < 255) {  
+        col.R = scale8(col.R, SEGMENT.opacity);
+        col.G = scale8(col.G, SEGMENT.opacity);
+        col.B = scale8(col.B, SEGMENT.opacity);
+        col.W = scale8(col.W, SEGMENT.opacity);
+      }
+    } else {
+      col = BLACK;
+    }
+
     /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
     bool reversed = reverseMode ^ IS_REVERSE;
     uint16_t realIndex = realPixelIndex(i);
@@ -484,10 +496,15 @@ void WS2812FX::resetSegments() {
   _segments[0].stop = _length;
   _segments[0].grouping = 1;
   _segments[0].setOption(0, 1); //select
+  _segments[0].setOption(2, 1); //on
+  _segments[0].opacity = 255;
+
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
     _segments[i].colors[0] = color_wheel(i*51);
     _segments[i].grouping = 1;
+    _segments[i].setOption(2, 1); //on
+    _segments[i].opacity = 255;
     _segment_runtimes[i].reset();
   }
   _segment_runtimes[0].reset();
