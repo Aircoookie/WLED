@@ -3940,8 +3940,9 @@ uint16_t WS2812FX::mode_asound15(void) {
     int binNum = 7+i*3;                     // Every 3 bins or so is good for any given frequency it seems.
 //    int binNum = 7+i*470/SEGLEN;          // This mapped method doesn't work.
 
-    if (binNum > 470) binNum = 470;         // If you've got a long segment, this is the end of the road.
+    if (binNum > 470) binNum = 471;         // If you've got a long segment, this is the end of the road.
     double binVal = fftBin[binNum];         // Bin Values are high, so let's remap them.
+    if (binNum == 471) binVal = 0;          // Make everything black once we've hit the end of the line.
     if (binVal > maxVal) binVal = maxVal;   // Make sure our bin isn't higher than the max . . which we capped.
 
     uint8_t bright = mapf(binVal, 0, maxVal, 0, 255); // find the brightness in relation to max
