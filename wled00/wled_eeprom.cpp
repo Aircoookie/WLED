@@ -611,8 +611,10 @@ bool applyPreset(byte index, bool loadBri)
   }
   if (index > 16 || index < 1) return false;
   uint16_t i = 380 + index*20;
+  byte ver = EEPROM.read(i);
+
   if (index < 16) {
-    if (EEPROM.read(i) != 1) return false;
+    if (ver != 1) return false;
     strip.applyToAllSelected = true;
     if (loadBri) bri = EEPROM.read(i+1);
     
@@ -628,11 +630,18 @@ bool applyPreset(byte index, bool loadBri)
     effectIntensity = EEPROM.read(i+16);
     effectPalette = EEPROM.read(i+17);
   } else {
-    if (EEPROM.read(i) != 2) return false;
+    if (ver != 2 && ver != 3) return false;
     strip.applyToAllSelected = false;
     if (loadBri) bri = EEPROM.read(i+1);
     WS2812FX::Segment* seg = strip.getSegments();
     memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
+    if (ver == 2) { //versions before 2004230 did not have opacity
+      for (byte j = 0; j < strip.getMaxSegments(); j++)
+      {
+        strip.getSegment(j).opacity = 255;
+        strip.getSegment(j).setOption(SEG_OPTION_ON, 1);
+      }
+    }
     setValuesFromMainSeg();
   }
   currentPreset = index;
@@ -666,7 +675,7 @@ void savePreset(byte index, bool persist)
     EEPROM.write(i+16, effectIntensity);
     EEPROM.write(i+17, effectPalette);
   } else { //segment 16 can save segments
-    EEPROM.write(i, 2);
+    EEPROM.write(i, 3);
     EEPROM.write(i+1, bri);
     WS2812FX::Segment* seg = strip.getSegments();
     memcpy(EEPROM.getDataPtr() +i+2, seg, 240);

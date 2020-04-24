@@ -84,16 +84,19 @@
 
 // options
 // bit    7: segment is in transition mode
-// bits 2-6: TBD
+// bits 3-6: TBD
+// bit    2: segment is on
 // bit    1: reverse segment
 // bit    0: segment is selected
 #define NO_OPTIONS   (uint8_t)0x00
 #define TRANSITIONAL (uint8_t)0x80
+#define SEGMENT_ON   (uint8_t)0x04
 #define REVERSE      (uint8_t)0x02
 #define SELECTED     (uint8_t)0x01
 #define IS_TRANSITIONAL ((SEGMENT.options & TRANSITIONAL) == TRANSITIONAL)
-#define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
-#define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
+#define IS_SEGMENT_ON   ((SEGMENT.options & SEGMENT_ON  ) == SEGMENT_ON  )
+#define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
+#define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
 #define MODE_COUNT  103
 

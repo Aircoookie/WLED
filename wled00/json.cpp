@@ -20,6 +20,16 @@ void deserializeSegment(JsonObject elem, byte it)
     uint16_t grp = elem["grp"] | seg.grouping;
     uint16_t spc = elem["spc"] | seg.spacing;
     strip.setSegment(id, start, stop, grp, spc);
+
+    int segbri = elem["bri"] | -1;
+    if (segbri == 0) {
+      seg.setOption(SEG_OPTION_ON, 0);
+    } else if (segbri > 0) {
+      seg.opacity = segbri;
+      seg.setOption(SEG_OPTION_ON, 1);
+    }
+  
+    seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON));
     
     JsonArray colarr = elem["col"];
     if (!colarr.isNull())
@@ -47,9 +57,9 @@ void deserializeSegment(JsonObject elem, byte it)
     }
     
     //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
-    seg.setOption(0, elem["sel"] | seg.getOption(0)); //selected
-    seg.setOption(1, elem["rev"] | seg.getOption(1)); //reverse
-    //int cln = seg_0["cln"];
+    seg.setOption(SEG_OPTION_SELECTED, elem["sel"] | seg.getOption(SEG_OPTION_SELECTED));
+    seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
+
     //temporary, strip object gets updated via colorUpdated()
     if (id == strip.getMainSegmentId()) {
       effectCurrent = elem["fx"] | effectCurrent;
@@ -177,6 +187,9 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["len"] = seg.stop - seg.start;
   root["grp"] = seg.grouping;
   root["spc"] = seg.spacing;
+  root["on"] = seg.getOption(SEG_OPTION_ON);
+  byte segbri = seg.opacity;
+  root["bri"] = (segbri) ? segbri : 255;
 
 	JsonArray colarr = root.createNestedArray("col");
   
@@ -204,7 +217,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["ix"] = seg.intensity;
 	root["pal"] = seg.palette;
 	root["sel"] = seg.isSelected();
-	root["rev"] = seg.getOption(1);
+	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
 }
 
 
