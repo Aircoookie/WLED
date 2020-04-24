@@ -3908,6 +3908,19 @@ uint16_t WS2812FX::mode_asound14(void) {
 
 uint16_t WS2812FX::mode_asound15(void) {
   delay(1);
-  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+#ifndef ESP8266
+  extern double fftBin[];           // raw FFT data. He uses bins 7 through 470.
+
+  for (int i=0; i< SEGLEN; i++) {
+//    int binNum = 463 * i / SEGLEN +7;       // Starting good bin is #7 and there's 463 good bins. Let's map them to our segment length.
+    int binNum = 7+i*3;
+     double binVal = fftBin[binNum];        // Bin Values are high, so let's remap them.
+    if (binVal >5000.0) binVal = 5000.0;
+     uint8_t bright = mapf(binVal, 0, 5000., 0, 255);
+    Serial.println(bright);     
+    setPixCol(i, i*4, bright);          // colour is just an index in the palette. The FFT is the intensity.
+  }
+#endif
+
   return FRAMETIME;
 } // mode_asound15()
