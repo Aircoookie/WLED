@@ -200,7 +200,8 @@ void FFTcode( void * parameter) {
     for(int i=0; i<samples; i++)
     {
       micData = analogRead(MIC_PIN) * volume;
-      vReal[i] = micData;
+
+      vReal[i] = micData >> 2;
       vImag[i] = 0;
       while(micros() - microseconds < sampling_period_us){
         //empty loop

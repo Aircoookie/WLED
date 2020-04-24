@@ -3711,7 +3711,6 @@ uint16_t WS2812FX::mode_asound10(void) {
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
 
     uint32_t* leds = ledData;
-    
 
     //uint8_t fade = SEGMENT.fft3;
     //uint8_t fadeval;
@@ -3836,7 +3835,8 @@ extern double fftResult[];        // pre-added result array 0 .. 15
 // 
 // this effect is best being displayed on strips in multiples of 16 leds (and only in multiples of 16), you can use it on strips shorter than 16 leds but then the higher frequency bins are just cut off
 // 
-// The only slider that is active in this effect is the general brightness slider, everything else is being computed on the fly. 
+// The 2 slider that is active in this effect is the general brightness slider, everything else is being computed on the fly. 
+// FFT3 sets the cutoff value below which we think its noise
 // 
 uint16_t WS2812FX::mode_asound12(void) {
   delay(1);
@@ -3845,12 +3845,23 @@ uint16_t WS2812FX::mode_asound12(void) {
   CHSV c;
   CRGB color;
 
+  if (SEGENV.call == 0)                
+    for (int i = 0; i < SEGLEN; i++)
+      setPixelColor(i, 0,0,0);                              // turn off all leds
+
+  uint16_t cutoff = 40 * SEGMENT.fft3;                      // read slider3
+
   // Determine max value in bins to normalize
   maxVal = 0;
   for (int i = 0; i < 16; i++) {
     if (fftResult[i] > maxVal) {
       maxVal = fftResult[i];
     }
+
+  if (maxVal < cutoff)                                      // we assume this is noise
+    for (int i = 0; i < 16; i++)
+      fftResult[i] = 0;
+    
 
   if (maxVal == 0) maxVal = 255;
 
@@ -3874,7 +3885,7 @@ uint16_t WS2812FX::mode_asound12(void) {
         int pos = i;                                        // which led are we talking about -- Also which bin are we talking about
         uint8_t angle = map(pos, 0, SEGLEN, 0, 255);            // the color we are going to display
         uint8_t bright = mapf(fftResult[i], 0, maxVal, 0, 255); // find the brightness in relation to max
-        color = CHSV(angle, 240, bright);                   // colculate a color and convert it to RGB
+        color = CHSV(angle, 240, bright);                   // calculate a color and convert it to RGB
         setPixelColor(pos, color.red, color.green, color.blue);
       }
     } else {                                                  // our led strip is shorter than 16LEDS
