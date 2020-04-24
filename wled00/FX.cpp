@@ -3501,21 +3501,19 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
 } // mode_asound02()
 
 
-uint16_t WS2812FX::mode_asound03(void) {                                  // Puddle
+uint16_t WS2812FX::mode_asound03(void) {                                  // Jugglep
 
-  uint16_t size = 0;
-  uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
-  uint16_t pos = random(SEGLEN);                                          // Set a random starting position.
+  static int thistime = 20;
 
-  fade_out(fadeVal);
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
 
-  if (sample>0 ) {
-    size = sample * SEGMENT.intensity /256 /8 + 1;                        // Determine size of the flash based on the volume.
-    if (pos+size>= SEGLEN) size=SEGLEN-pos;
-  }
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
 
-  for(int i=0; i<size; i++) {                                             // Flash the LED's.
-    setPixCol(pos+i, millis(), 255);
+    fade_out(224);
+
+    for (int i=0; i<SEGMENT.intensity/32; i++) {
+      setPixCol(beatsin16(thistime+i*2,0,SEGLEN-1), millis()/4+i*2, sampleAgc);
+    }
   }
 
   return FRAMETIME;
@@ -3596,19 +3594,21 @@ uint16_t WS2812FX::mode_asound06(void) {                                  // Pla
 } // mode_asound06()
 
 
-uint16_t WS2812FX::mode_asound07(void) {                                  // Jugglep
+uint16_t WS2812FX::mode_asound07(void) {                                  // Puddle
 
-  static int thistime = 20;
+  uint16_t size = 0;
+  uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
+  uint16_t pos = random(SEGLEN);                                          // Set a random starting position.
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
+  fade_out(fadeVal);
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
+  if (sample>0 ) {
+    size = sample * SEGMENT.intensity /256 /8 + 1;                        // Determine size of the flash based on the volume.
+    if (pos+size>= SEGLEN) size=SEGLEN-pos;
+  }
 
-    fade_out(224);
-
-    for (int i=0; i<SEGMENT.intensity/32; i++) {
-      setPixCol(beatsin16(thistime+i*2,0,SEGLEN-1), millis()/4+i*2, sampleAgc);
-    }
+  for(int i=0; i<size; i++) {                                             // Flash the LED's.
+    setPixCol(pos+i, millis(), 255);
   }
 
   return FRAMETIME;
