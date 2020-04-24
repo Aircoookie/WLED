@@ -3906,18 +3906,35 @@ uint16_t WS2812FX::mode_asound14(void) {
 } // mode_asound14()
 
 
-// Andrew's coding style is to break it till you make it. Hence this hack. Not to be use with LARGE segments, at least, not yet.
+// Andrew's coding style is to break it till you make it. Hence this hack. Doesn't yet map full spectrum to the SEGLEN.
 uint16_t WS2812FX::mode_asound15(void) {
   delay(1);
 #ifndef ESP8266
-  extern double fftBin[];                    // raw FFT data. He uses bins 7 through 470. I'll just use the lower 2kHz or so.
+  extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to that.
+  extern double fftResult[];
+  
+  double maxVal = 0;
+
+  for (int i = 0; i < 16; i++) {            // apleshu's method to to get the max volume.
+    if (fftResult[i] > maxVal) {
+      maxVal = fftResult[i];
+    }
+  }
+  
+  if (maxVal == 0) maxVal = 255;            // If maxVal is too low, we'll have a mapping issue.
+  if (maxVal > 5000) maxVal = 5000;         // That maxVal may be too high, so let's cap it.
 
   for (int i=0; i< SEGLEN; i++) {
-    int binNum = 7+i*3;                      // Every 3 bins or so is good for any given frequency it seems.
-     double binVal = fftBin[binNum];         // Bin Values are high, so let's remap them.
-    if (binVal >5000.0) binVal = 5000.0;
-     uint8_t bright = mapf(binVal, 0, 5000., 0, 255);
-    Serial.println(bright);     
+
+    int binNum = 7+i*3;                     // Every 3 bins or so is good for any given frequency it seems.
+//    int binNum = 7+i*470/SEGLEN;          // This mapped method doesn't work.
+
+    if (binNum > 470) binNum = 470;         // If you've got a long segment, this is the end of the road.
+    double binVal = fftBin[binNum];         // Bin Values are high, so let's remap them.
+    if (binVal > maxVal) binVal = maxVal;   // Make sure our bin isn't higher than the max . . which we capped.
+
+    uint8_t bright = mapf(binVal, 0, maxVal, 0, 255); // find the brightness in relation to max
+     
     setPixCol(i, i*4, bright);               // colour is just an index in the palette. The FFT is the intensity.
   }
 #endif
