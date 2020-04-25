@@ -3897,7 +3897,7 @@ uint16_t WS2812FX::mode_asound12(void) {
   }
   
 #else
-  for (int i = 0; i < SEGMENT.length; i++)  setPixelColor(i, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+  for (int i = 0; i < SEGLEN; i++)  setPixelColor(i, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
 #endif
   return FRAMETIME;
 } // mode_asound12()
