@@ -495,15 +495,15 @@ void WS2812FX::resetSegments() {
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].stop = _length;
   _segments[0].grouping = 1;
-  _segments[0].setOption(0, 1); //select
-  _segments[0].setOption(2, 1); //on
+  _segments[0].setOption(SEG_OPTION_SELECTED, 1);
+  _segments[0].setOption(SEG_OPTION_ON, 1);
   _segments[0].opacity = 255;
 
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
     _segments[i].colors[0] = color_wheel(i*51);
     _segments[i].grouping = 1;
-    _segments[i].setOption(2, 1); //on
+    _segments[i].setOption(SEG_OPTION_ON, 1);
     _segments[i].opacity = 255;
     _segment_runtimes[i].reset();
   }
@@ -529,7 +529,7 @@ void WS2812FX::setShowCallback(show_callback cb)
 void WS2812FX::setTransitionMode(bool t)
 {
   _segment_index = getMainSegmentId();
-  SEGMENT.setOption(7,t);
+  SEGMENT.setOption(SEG_OPTION_TRANSITIONAL, t);
   if (!t) return;
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
   if (SEGMENT.mode == FX_MODE_STATIC && SEGENV.next_time > waitMax) SEGENV.next_time = waitMax;
@@ -812,7 +812,7 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
   if (a->speed != b->speed) return false;
   if (a->intensity != b->intensity) return false;
   if (a->palette != b->palette) return false;
-  //if (a->getOption(1) != b->getOption(1)) return false; //reverse
+  //if (a->getOption(SEG_OPTION_REVERSED) != b->getOption(SEG_OPTION_REVERSED)) return false;
   return true;
 }
 
