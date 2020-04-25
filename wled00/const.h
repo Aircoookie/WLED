@@ -77,6 +77,12 @@
 #define HUE_ERROR_TIMEOUT       251
 #define HUE_ERROR_ACTIVE        255
 
+//Segment option byte bits
+#define SEG_OPTION_SELECTED       0
+#define SEG_OPTION_REVERSED       1
+#define SEG_OPTION_ON             2
+#define SEG_OPTION_TRANSITIONAL   7
+
 //EEPROM size
 #define EEPSIZE 2560  //Maximum is 4096
 

@@ -9,7 +9,7 @@
 //#define USE_APA102  // Uncomment for using APA102 LEDs.
 //#define USE_WS2801  // Uncomment for using WS2801 LEDs (make sure you have NeoPixelBus v2.5.6 or newer)
 //#define USE_LPD8806 // Uncomment for using LPD8806
-//#define USE_TM1814   // Uncomment for using TM1814 LEDs (make sure you have NeoPixelBus v2.5.7 or newer)
+//#define USE_TM1814  // Uncomment for using TM1814 LEDs (make sure you have NeoPixelBus v2.5.7 or newer)
 //#define USE_P9813   // Uncomment for using P9813 LEDs (make sure you have NeoPixelBus v2.5.8 or newer)
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
@@ -62,6 +62,13 @@
     #define GPIN 4   //G pin for analog LED strip
     #define BPIN 14  //B pin for analog LED strip
     #define WPIN 5   //W pin for analog LED strip
+  #elif defined(SHOJO_PCB)
+  //PWM pins - to use with Shojo PCB (https://www.bastelbunker.de/esp-rgbww-wifi-led-controller-vbs-edition/)
+    #define RPIN 14  //R pin for analog LED strip
+    #define GPIN 4   //G pin for analog LED strip
+    #define BPIN 5   //B pin for analog LED strip
+    #define WPIN 15  //W pin for analog LED strip
+    #define W2PIN 12 //W2 pin for analog LED strip
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
     #define RPIN 5   //R pin for analog LED strip
