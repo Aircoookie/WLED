@@ -164,7 +164,7 @@ byte col[] {255, 160, 0, 0};                  //current RGB(W) primary color. co
 byte colSec[] {0, 0, 0, 0};                   //current RGB(W) secondary color
 byte briS = 128;                              //default brightness
 
-byte soundSquelch = 10;                       //squelch value for volume reactive routines.
+byte soundSquelch = 10;                       //default squelch value for volume reactive routines.
 
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
 byte nightlightDelayMins = 60;
