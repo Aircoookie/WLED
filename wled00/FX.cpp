@@ -2943,9 +2943,9 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
 
   fill(BLACK);
   
-  bool actuallyReverse = SEGMENT.getOption(1);
+  bool actuallyReverse = SEGMENT.getOption(SEG_OPTION_REVERSED);
   //have fireworks start in either direction based on intensity
-  SEGMENT.setOption(1, SEGENV.step);
+  SEGMENT.setOption(SEG_OPTION_REVERSED, SEGENV.step);
   
   Spark* sparks = reinterpret_cast<Spark*>(SEGENV.data);
   Spark* flare = sparks; //first spark is flare data
@@ -3036,7 +3036,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
     }
   }
 
-  SEGMENT.setOption(1, actuallyReverse);
+  SEGMENT.setOption(SEG_OPTION_REVERSED, actuallyReverse);
   
   return FRAMETIME;  
 }
