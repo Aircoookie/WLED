@@ -3480,10 +3480,6 @@ uint16_t WS2812FX::mode_asound01(void) {                                   // Pi
 
 
 uint16_t WS2812FX::mode_asound02(void) {                                  // Pixelwave
-
-  extern uint8_t soundSquelch;
-  
-  Serial.println(soundSquelch);
   
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
 

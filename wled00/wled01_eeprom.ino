@@ -145,8 +145,6 @@ void saveSettingsToEEPROM()
   EEPROM.write(382, strip.paletteBlend);
   EEPROM.write(383, strip.colorOrder);
 
-  EEPROM.write(384, soundSquelch);
-
   EEPROM.write(385, irEnabled);
 
   EEPROM.write(387, strip.ablMilliampsMax & 0xFF);
@@ -274,6 +272,12 @@ void saveSettingsToEEPROM()
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
   #endif
 
+  //user MOD memory
+  //2944 - 3071 reserved
+
+  EEPROM.write(2944, soundSquelch);
+  
+ 
   commit();
 }
 
@@ -367,8 +371,6 @@ void loadSettingsFromEEPROM(bool first)
   useRGBW = EEPROM.read(372);
   //374 - strip.paletteFade
 
-  soundSquelch = EEPROM.read(384);
-  
   apBehavior = EEPROM.read(376);
     
   //377 = lastEEPROMversion
@@ -563,6 +565,8 @@ void loadSettingsFromEEPROM(bool first)
 
   //user MOD memory
   //2944 - 3071 reserved
+
+  EEPROM.write(2944, soundSquelch);
 
   overlayCurrent = overlayDefault;
 
