@@ -3917,6 +3917,7 @@ uint16_t WS2812FX::mode_asound14(void) {
 } // mode_asound14()
 
 
+/* 
 // Andrew's coding style is to break it till you make it. Hence this hack. Doesn't yet map full spectrum to the SEGLEN.
 uint16_t WS2812FX::mode_asound15(void) {
   delay(1);
@@ -3948,6 +3949,47 @@ uint16_t WS2812FX::mode_asound15(void) {
     uint8_t bright = mapf(binVal, 0, maxVal, 0, 255); // find the brightness in relation to max
      
     setPixCol(i, i*4, bright);               // colour is just an index in the palette. The FFT is the intensity.
+  }
+#endif
+
+  return FRAMETIME;
+} // mode_asound15()
+*/
+
+// Map bins 7 through 490 to the ENTIRE SEGLEN.
+// For some reason, it seems to be mirroring itself. I really don't know why.
+uint16_t WS2812FX::mode_asound15(void) {
+  delay(1);
+#ifndef ESP8266
+
+  extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
+  extern double fftResult[];
+  #define samples 490                       // Don't use the highest bins.
+  
+  double maxVal = 0;
+
+  for (int i = 0; i < 16; i++) {            // apleshu's quickie method to to get the max volume.
+    if (fftResult[i] > maxVal) {
+      maxVal = fftResult[i];                // These values aren't normalized though.
+    }
+  }
+  
+  if (maxVal == 0) maxVal = 255;            // If maxVal is too low, we'll have a mapping issue.
+  if (maxVal > (255-SEGMENT.intensity)*10) maxVal = (255- SEGMENT.intensity)*10;         // That maxVal may be too high, so let's cap it.
+
+  for (int i=0; i<SEGLEN; i++) {
+
+    uint16_t startBin = 7+i*(samples-8)/SEGLEN;   // Don't use the first 7 bins, and don't overshoot by 8.
+    uint16_t   endBin = 7+(i+1)*(samples-8)/SEGLEN;  // Ditto.
+
+    double sumBin = 0;
+    for (int j=startBin; j<=endBin; j++) { sumBin += fftBin[j]; }
+    sumBin = sumBin / (endBin-startBin+1);  // Normalize it
+
+    if (sumBin > maxVal) sumBin = maxVal;   // Make sure our bin isn't higher than the max . . which we capped earlier.
+    uint8_t bright = mapf(sumBin, 0, maxVal, 0, 255); // find the brightness in relation to max
+    setPixCol(i, i*4, bright);               // colour is just an index in the palette. The FFT is the intensity.
+ 
   }
 #endif
 
