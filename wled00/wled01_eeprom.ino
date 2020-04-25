@@ -145,6 +145,8 @@ void saveSettingsToEEPROM()
   EEPROM.write(382, strip.paletteBlend);
   EEPROM.write(383, strip.colorOrder);
 
+  EEPROM.write(384, soundSquelch);
+
   EEPROM.write(385, irEnabled);
 
   EEPROM.write(387, strip.ablMilliampsMax & 0xFF);
@@ -364,6 +366,8 @@ void loadSettingsFromEEPROM(bool first)
   turnOnAtBoot = EEPROM.read(369);
   useRGBW = EEPROM.read(372);
   //374 - strip.paletteFade
+
+  soundSquelch = EEPROM.read(384);
   
   apBehavior = EEPROM.read(376);
     
