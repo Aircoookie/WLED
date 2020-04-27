@@ -17,7 +17,11 @@ TaskHandle_t FFT_Task;
 #define MIC_PIN   36 //  Changed to directly naming pin since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
 #endif
 
-uint8_t squelch = 10;                                         // Anything below this is background noise, so we'll make it '0'. Can be adjusted
+// As defined in wled00.ino
+// byte soundSquelch = 10;                                    //default squelch value for volume reactive routines.
+
+// uint8_t squelch = 10;                                         // Anything below this is background noise, so we'll make it '0'. Can be adjusted
+
 int micIn;                                                    // Current sample starts with negative values and large values, which is why it's 16 bit signed
 int sample;                                                   // Current sample
 float sampleAvg = 0;                                          // Smoothed Average
@@ -130,7 +134,7 @@ void getSample() {
 
   lastSample = micIn;
 
-  sample = (micIn <= squelch) ? 0 : (sample*3 + micIn) / 4;   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
+  sample = (micIn <= soundSquelch) ? 0 : (sample*3 + micIn) / 4;   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
   sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 16 samples.
 
   if (userVar1 == 0) samplePeak = 0;
@@ -200,7 +204,8 @@ void FFTcode( void * parameter) {
     for(int i=0; i<samples; i++)
     {
       micData = analogRead(MIC_PIN) * volume;
-      vReal[i] = micData;
+
+      vReal[i] = micData >> 2;
       vImag[i] = 0;
       while(micros() - microseconds < sampling_period_us){
         //empty loop

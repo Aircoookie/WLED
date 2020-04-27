@@ -97,6 +97,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     transitionDelayDefault = t;
     strip.paletteFade = request->hasArg("PF");
 
+    t = request->arg("SQ").toInt();
+    if (t > 0) soundSquelch = t;
+    
     nightlightTargetBri = request->arg("TB").toInt();
     t = request->arg("TL").toInt();
     if (t > 0) nightlightDelayMinsDefault = t;

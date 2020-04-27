@@ -158,6 +158,8 @@ Enable Palette transitions: <input type=checkbox name=PF>
 Default Duration: <input name=TL type=number min=1 max=255 required> min<br>
 Default Target brightness: <input name=TB type=number min=0 max=255 required><br>
 Fade down: <input type=checkbox name=TW><br>
+<h3>Sound</h3>
+Squelch: <input name="SQ" type="number" min="1" max="255" required><br>
 <h3>Advanced</h3>
 Palette blending:
 <select name=PB>
