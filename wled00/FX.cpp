@@ -1842,8 +1842,11 @@ uint16_t WS2812FX::mode_bpm()
   uint32_t stp = (now / 20) & 0xFF;
   uint8_t beat = beatsin8(SEGMENT.speed, 64, 255);
   for (uint16_t i = 0; i < SEGLEN; i++) {
-    fastled_col = ColorFromPalette(currentPalette, stp + (i * 2), beat - stp + (i * 10));
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+//    fastled_col = ColorFromPalette(currentPalette, stp + (i * 2), beat - stp + (i * 10));
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+
+    setPixCol(i, stp + (i * 2), beat - stp + (i * 10));
+    
   }
   return FRAMETIME;
 }
@@ -2037,8 +2040,10 @@ uint16_t WS2812FX::mode_lake() {
   {
     int index = cos8((i*15)+ wave1)/2 + cubicwave8((i*23)+ wave2)/2;
     uint8_t lum = (index > wave3) ? index - wave3 : 0;
-    fastled_col = ColorFromPalette(currentPalette, map(index,0,255,0,240), lum, LINEARBLEND);
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    
+//    fastled_col = ColorFromPalette(currentPalette, map(index,0,255,0,240), lum, LINEARBLEND);
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    setPixCol(i,map(index,0,255,0,240), lum);
   }
   return FRAMETIME;
 }
