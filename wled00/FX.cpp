@@ -1615,7 +1615,8 @@ uint16_t WS2812FX::mode_lightning(void)
     {
       if (SEGMENT.palette == 0)
       {
-        setPixelColor(i,bri,bri,bri,bri);
+//        setPixelColor(i,bri,bri,bri,bri);
+        setPixelColor(i, SEGCOLOR(0));      
       } else {
         setPixelColor(i,color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, bri));
       }
@@ -1667,12 +1668,18 @@ uint16_t WS2812FX::mode_pride_2015(void)
     uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
     uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
     bri8 += (255 - brightdepth);
-
+ 
     CRGB newcolor = CHSV( hue8, sat8, bri8);
     fastled_col = col_to_crgb(getPixelColor(i));
-
     nblend(fastled_col, newcolor, 64);
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+ 
+    if (SEGMENT.palette == 0) {
+      setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    } else {
+      fastled_col = ColorFromPalette(currentPalette, hue8, bri8);
+      setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    }
+
   }
   SEGENV.step = sPseudotime;
   SEGENV.aux0 = sHue16;
