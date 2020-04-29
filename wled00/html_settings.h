@@ -344,7 +344,7 @@ Hue Bridge IP:<br>
 <input name=H3 type=number min=0 max=255><br>
 <b>Press the pushlink button on the bridge, after that save this page!</b><br>
 (when first connecting)<br>
-Hue status: <span class=hms> Disabled in this build </span><hr>
+Hue status: <span class=sip> Disabled in this build </span><hr>
 <button type=button onclick=B()>Back</button><button type=submit>Save</button>
 </form>
 </body></html>)=====";
@@ -475,7 +475,7 @@ Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2020 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
-Server message: <span class="msg"> Response error! </span><hr>
+Server message: <span class="sip"> Response error! </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 </form>
 </body>

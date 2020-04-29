@@ -67,13 +67,13 @@ void handleSerial()
         break;
       case AdaState::Data_Blue:
         byte blue  = next;
-        setRealtimePixel(pixel++, red, green, blue, 0);
+        if (!realtimeOverride) setRealtimePixel(pixel++, red, green, blue, 0);
         if (--count > 0) state = AdaState::Data_Red;
         else {
           if (!realtimeMode && bri == 0) strip.setBrightness(briLast);
           realtimeLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
 
-          strip.show();
+          if (!realtimeOverride) strip.show();
           state = AdaState::Header_A;
         }
         break;

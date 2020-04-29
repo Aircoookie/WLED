@@ -2,6 +2,15 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2004300
+
+-   Added realtime override option and `lor` JSON property
+-   Added `lm` (live mode) and `lip` (live IP) properties to info in JSON API
+-   Added reset commands to APIs
+-   Added `json/si`, returning state and info, but no FX or Palette lists
+-   Added rollover detection to millis(). Can track uptimes longer than 49 days
+-   Attempted to fix Wifi issues with Unifi brand APs
+
 #### Build 2004230
 
 -   Added brightness and power for individual segments

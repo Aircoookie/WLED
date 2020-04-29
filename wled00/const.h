@@ -45,6 +45,11 @@
 #define REALTIME_MODE_ADALIGHT    5
 #define REALTIME_MODE_ARTNET      6
 
+//realtime override modes
+#define REALTIME_OVERRIDE_NONE    0
+#define REALTIME_OVERRIDE_ONCE    1
+#define REALTIME_OVERRIDE_ALWAYS  2
+
 //E1.31 DMX modes
 #define DMX_MODE_DISABLED         0            //not used
 #define DMX_MODE_SINGLE_RGB       1            //all LEDs same RGB color (3 channels)
