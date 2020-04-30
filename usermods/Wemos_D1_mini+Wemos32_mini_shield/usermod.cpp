@@ -1,24 +1,49 @@
 #include "wled.h"
 #include <Arduino.h>
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
-#include <DallasTemperature.h> //Dallastemperature sensor
-#ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
+#include <OneWire.h> // Dallas temperature sensor
+
+//Dallas sensor quick reading. Credit to - Author: Peter Scargill, August 17th, 2013
+int16_t Dallas(int x, byte start)
+{
+    OneWire DallasSensor(x);
+    byte i;
+    byte data[2];
+    int16_t result;
+    do
+    {
+      DallasSensor.reset();
+      DallasSensor.write(0xCC);
+      DallasSensor.write(0xBE);
+      for ( i = 0; i < 2; i++) data[i] = DallasSensor.read();
+      result=(data[1]<<8)|data[0];
+      result>>=4; if (data[1]&128) result|=61440;
+      if (data[0]&8) ++result;
+      DallasSensor.reset();
+      DallasSensor.write(0xCC);
+      DallasSensor.write(0x44,1);
+      if (start) delay(1000);
+    } while (start--);
+      return result;
+}
+#ifdef ARDUINO_ARCH_ESP32
 uint8_t SCL_PIN = 22; 
-uint8_t SDA_PIN = 21; 
-OneWire oneWire(23);
-#else //ESP8266 boards
+uint8_t SDA_PIN = 21;
+uint8_t DALLAS_PIN =23;
+#else
 uint8_t SCL_PIN = 5;
 uint8_t SDA_PIN = 4;
+uint8_t DALLAS_PIN =13;
 // uint8_t RST_PIN = 16; // Uncoment for Heltec WiFi-Kit-8
-OneWire oneWire(13);
 #endif
+
 //The SCL and SDA pins are defined here.
 //ESP8266 Wemos D1 mini board use SCL=5 SDA=4 while ESP32 Wemos32 mini board use SCL=22 SDA=21
 #define U8X8_PIN_SCL SCL_PIN
 #define U8X8_PIN_SDA SDA_PIN
 //#define U8X8_PIN_RESET RST_PIN // Uncoment for Heltec WiFi-Kit-8
-// Dallas sensor
-DallasTemperature sensor(&oneWire);
+
+// Dallas sensor reading timer
 long temptimer = millis();
 long lastMeasure = 0;
 #define Celsius // Show temperature mesaurement in Celcius otherwise is in Fahrenheit 
@@ -36,7 +61,9 @@ U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_
 //U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_RESET, U8X8_PIN_SCL, U8X8_PIN_SDA); // Constructor for Heltec WiFi-Kit-8
 // gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup() {
-  sensor.begin(); //Start Dallas temperature sensor
+//Serial.begin(115200);
+
+  Dallas (DALLAS_PIN,1);
   u8x8.begin();
   u8x8.setPowerSave(0);
   u8x8.setFlipMode(1);
@@ -77,18 +104,17 @@ void userLoop() {
 //Check if MQTT Connected, otherwise it will crash the 8266
     if (mqtt != nullptr)
     {
-      sensor.requestTemperatures();
+//      Serial.println(Dallas(DALLAS_PIN,0));
 //Gets prefered temperature scale based on selection in definitions section
-      #ifdef Celsius
-      float board_temperature = sensor.getTempCByIndex(0);
-      #else
-      float board_temperature = sensor.getTempFByIndex(0);
-      #endif
+        #ifdef Celsius
+        int16_t board_temperature = Dallas(DALLAS_PIN,0);
+        #else
+        int16_t board_temperature = (Dallas(DALLAS_PIN,0)* 1.8 + 32);
+        #endif
 //Create character string populated with user defined device topic from the UI, and the read temperature. Then publish to MQTT server.
-      char subuf[38];
-      strcpy(subuf, mqttDeviceTopic);
-      strcat(subuf, "/temperature");
-      mqtt->publish(subuf, 0, true, String(board_temperature).c_str());
+        String t = String(mqttDeviceTopic);
+        t += "/temperature";
+        mqtt->publish(t.c_str(), 0, true, String(board_temperature).c_str());
     }
   }
 
@@ -130,10 +156,10 @@ void userLoop() {
   lastRedraw = millis();
 
   // Update last known values.
-  #if defined(ESP8266)
-  knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
-  #else
+  #ifdef ARDUINO_ARCH_ESP32
   knownSsid = WiFi.SSID();
+  #else
+  knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
   #endif
   knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
   knownBrightness = bri;
