@@ -1615,7 +1615,8 @@ uint16_t WS2812FX::mode_lightning(void)
     {
       if (SEGMENT.palette == 0)
       {
-        setPixelColor(i,bri,bri,bri,bri);
+//        setPixelColor(i,bri,bri,bri,bri);
+        setPixelColor(i, SEGCOLOR(0));      
       } else {
         setPixelColor(i,color_from_palette(i, true, PALETTE_SOLID_WRAP, 0, bri));
       }
@@ -1667,12 +1668,18 @@ uint16_t WS2812FX::mode_pride_2015(void)
     uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
     uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
     bri8 += (255 - brightdepth);
-
+ 
     CRGB newcolor = CHSV( hue8, sat8, bri8);
     fastled_col = col_to_crgb(getPixelColor(i));
-
     nblend(fastled_col, newcolor, 64);
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+ 
+    if (SEGMENT.palette == 0) {
+      setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    } else {
+      fastled_col = ColorFromPalette(currentPalette, hue8, bri8);
+      setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    }
+
   }
   SEGENV.step = sPseudotime;
   SEGENV.aux0 = sHue16;
@@ -1842,8 +1849,11 @@ uint16_t WS2812FX::mode_bpm()
   uint32_t stp = (now / 20) & 0xFF;
   uint8_t beat = beatsin8(SEGMENT.speed, 64, 255);
   for (uint16_t i = 0; i < SEGLEN; i++) {
-    fastled_col = ColorFromPalette(currentPalette, stp + (i * 2), beat - stp + (i * 10));
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+//    fastled_col = ColorFromPalette(currentPalette, stp + (i * 2), beat - stp + (i * 10));
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+
+    setPixCol(i, stp + (i * 2), beat - stp + (i * 10));
+    
   }
   return FRAMETIME;
 }
@@ -2037,8 +2047,10 @@ uint16_t WS2812FX::mode_lake() {
   {
     int index = cos8((i*15)+ wave1)/2 + cubicwave8((i*23)+ wave2)/2;
     uint8_t lum = (index > wave3) ? index - wave3 : 0;
-    fastled_col = ColorFromPalette(currentPalette, map(index,0,255,0,240), lum, LINEARBLEND);
-    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    
+//    fastled_col = ColorFromPalette(currentPalette, map(index,0,255,0,240), lum, LINEARBLEND);
+//    setPixelColor(i, fastled_col.red, fastled_col.green, fastled_col.blue);
+    setPixCol(i,map(index,0,255,0,240), lum);
   }
   return FRAMETIME;
 }
