@@ -199,6 +199,7 @@ void FFTcode( void * parameter) {
   double sum, mean = 0;
   double beatSample = 0;
   double envelope = 0;
+  uint16_t rawMicData = 0;
 
 
   for(;;) {
@@ -208,13 +209,14 @@ void FFTcode( void * parameter) {
 
     for(int i=0; i<samples; i++)
     {
-      micData = analogRead(MIC_PIN) >> 2;
-      mAvg = audioData.reading(micData);            // send data to rolling Avg lib and get the current rolling Avg
+      micData = analogRead(MIC_PIN);
+      rawMicData = micData >> 2;
+      mAvg = audioData.reading(rawMicData);            // send data to rolling Avg lib and get the current rolling Avg
       vReal[i] = micData;
       vImag[i] = 0;
 
-      micData = micData - mAvg;                     // center
-      beatSample = bassFilter(micData);
+      rawMicData = rawMicData - mAvg;                     // center
+      beatSample = bassFilter(rawMicData);
       if (beatSample < 0) beatSample =-beatSample;  // abs
       envelope = envelopeFilter(beatSample);
       
