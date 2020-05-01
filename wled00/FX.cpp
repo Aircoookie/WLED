@@ -3670,6 +3670,7 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Fil
 #ifndef ESP8266
 extern uint16_t FFT_MajorPeak;
 double volume = 1;
+extern double beat;
 
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max)
@@ -3912,7 +3913,15 @@ uint16_t WS2812FX::mode_asound13(void) {
 
 uint16_t WS2812FX::mode_asound14(void) {
   delay(1);
+#ifndef ESP8266
+  if (beat > 30000){
+    setPixelColor(10, 255,0,0);
+  } else {
+    setPixelColor(10, 0,0,0);
+  }
+#else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+#endif
   return FRAMETIME;
 } // mode_asound14()
 
