@@ -2,6 +2,14 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2005010
+
+-   Added module info page to web UI
+-   Added realtime override functionality to web UI
+-   Added individial segment power and brightness to web UI
+-   Added feature to one-click select single segment only by tapping segment name
+-   Removed palette jumping to default if color is changed
+
 #### Build 2004300
 
 -   Added realtime override option and `lor` JSON property

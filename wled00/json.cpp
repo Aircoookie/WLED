@@ -293,7 +293,7 @@ void serializeInfo(JsonObject root)
 {
   root["ver"] = versionString;
   root["vid"] = VERSION;
-  root["cn"] = WLED_CODENAME;
+  //root["cn"] = WLED_CODENAME;
   
   JsonObject leds = root.createNestedObject("leds");
   leds["count"] = ledCount;
