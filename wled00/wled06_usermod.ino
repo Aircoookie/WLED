@@ -30,7 +30,7 @@ int micIn;                                                    // Current sample 
 int sample;                                                   // Current sample
 float sampleAvg = 0;                                          // Smoothed Average
 float micLev = 0;                                             // Used to convert returned value to have '0' as minimum. A leveller
-uint8_t maxVol = 11;                                          // Reasonable value for constant volume for 'peak detector', as it won't always trigger
+uint8_t maxVol = 13;                                          // Reasonable value for constant volume for 'peak detector', as it won't always trigger
 bool samplePeak = 0;                                          // Boolean flag for peak. Responding routine must reset this flag
 
 int sampleAgc;                                                // Our AGC sample
@@ -139,7 +139,7 @@ void getSample() {
   sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 16 samples.
 
   if (userVar1 == 0) samplePeak = 0;
-  if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 100)) {   // Poor man's beat detection by seeing if sample > Average + some value.
+  if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 300)) {   // Poor man's beat detection by seeing if sample > Average + some value.
     samplePeak = 1;                                                   // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
     userVar1 = samplePeak;
     peakTime=millis();
