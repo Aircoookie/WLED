@@ -216,9 +216,9 @@ void FFTcode( void * parameter) {
       vImag[i] = 0;
 
       rawMicData = rawMicData - mAvg;                     // center
-      beatSample = bassFilter(rawMicData);
-      if (beatSample < 0) beatSample =-beatSample;  // abs
-      envelope = envelopeFilter(beatSample);
+//      beatSample = bassFilter(rawMicData);
+//      if (beatSample < 0) beatSample =-beatSample;  // abs
+//      envelope = envelopeFilter(beatSample);
       
       
       while(micros() - microseconds < sampling_period_us){
@@ -227,7 +227,7 @@ void FFTcode( void * parameter) {
         microseconds += sampling_period_us;
     }
 
-    beat = beatFilter(envelope);
+//    beat = beatFilter(envelope);
 //if (beat > 50000) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
     
 
@@ -273,7 +273,7 @@ void FFTcode( void * parameter) {
     fftResult[15] = fftAdd(394, 470); 
   }
 }
-
+/*
 // 20 - 200hz Single Pole Bandpass IIR Filter
 double bassFilter(double sample) {
     static double xv[3] = {0,0,0}, yv[3] = {0,0,0};
@@ -305,5 +305,6 @@ double beatFilter(double sample) {
     yv[2] = (xv[2] - xv[0]) + (-0.7169861741f * yv[0]) + (1.4453653501f * yv[1]);
     return yv[2];
 }
+*/
 
 #endif
