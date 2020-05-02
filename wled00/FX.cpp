@@ -3918,15 +3918,35 @@ uint16_t WS2812FX::mode_asound12(void) {
 
 
 // Andrew's temporary peak detector for testing. Whatever we end up with should not be worse than this.
-uint16_t WS2812FX::mode_asound13(void) {  
+uint16_t WS2812FX::mode_asound13(void) {
+
+  static long oldPeak;
+
   delay(1);
-  if (samplePeak == 1){
-    setPixelColor(10, 255,0,0);
+
+  extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
+
+//  Serial.print(sampleAvg); Serial.print(" "); Serial.println(fftBin[6]);
+
+// fftBin version with simple math.
+  if (fftBin[6] > sampleAvg*100 & millis() > (oldPeak + 300)) {
+        setPixelColor(10, 255,0,0);
+  } else {
+        setPixelColor(10, 0,0,0);
+  }
+  
+
+// Volume version only!!!
+if (samplePeak == 1){
+    setPixelColor(9, 255,0,0);
     samplePeak = 0;                // It's up to the animation routine to reset the peak.
   } else {
-    setPixelColor(10, 0,0,0);
+    setPixelColor(9, 0,0,0);
   }
+
+  
   return FRAMETIME;
+  
 } // mode_asound13()
 
 
