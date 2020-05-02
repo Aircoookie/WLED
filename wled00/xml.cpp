@@ -382,7 +382,7 @@ void getSettingsJS(byte subPage, char* dest)
       default: sprintf(hueErrorString,"Bridge Error %i",hueError);
     }
     
-    sappends('m',"(\"hms\")[0]",hueErrorString);
+    sappends('m',"(\"sip\")[0]",hueErrorString);
     #endif
   }
 
@@ -445,12 +445,12 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"NO",otaLock);
     sappend('c',"OW",wifiLock);
     sappend('c',"AO",aOtaEnabled);
-    sappends('m',"(\"msg\")[0]","WLED ");
+    sappends('m',"(\"sip\")[0]","WLED ");
     olen -= 2; //delete ";
     oappend(versionString);
     oappend(" (build ");
     oappendi(VERSION);
-    oappend(") OK\";");
+    oappend(")\";");
   }
   
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled

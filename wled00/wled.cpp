@@ -67,7 +67,7 @@ void WLED::loop()
   if (doReboot)
     reset();
 
-  if (!realtimeMode)        // block stuff if WARLS/Adalight is enabled
+  if (!realtimeMode || realtimeOverride)  // block stuff if WARLS/Adalight is enabled
   {
     if (apActive)
       dnsServer.processNextRequest();
@@ -89,8 +89,10 @@ void WLED::loop()
 #ifdef ESP8266
   MDNS.update();
 #endif
-  if (millis() - lastMqttReconnectAttempt > 30000)
+  if (millis() - lastMqttReconnectAttempt > 30000) {
+    if (lastMqttReconnectAttempt > millis()) rolloverMillis++; //millis() rolls over every 50 days
     initMqtt();
+  }
 
 // DEBUG serial logging
 #ifdef WLED_DEBUG
@@ -284,7 +286,7 @@ void WLED::initAP(bool resetAP)
 
 void WLED::initConnection()
 {
-  WiFi.disconnect();        // close old connections
+  WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
   WiFi.setPhyMode(WIFI_PHY_MODE_11N);
 #endif
@@ -308,6 +310,7 @@ void WLED::initConnection()
     } else {
       DEBUG_PRINTLN("Access point disabled.");
       WiFi.softAPdisconnect(true);
+      WiFi.mode(WIFI_STA);
     }
   }
   showWelcomePage = false;
