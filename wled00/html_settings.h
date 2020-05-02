@@ -384,6 +384,8 @@ Time zone:
 <option value="13">North Korea</option>
 <option value="14">IST (India)</option>
 <option value="15">CA-Saskatchewan</option>
+<option value="16">ACST</option>
+<option value="17">ACST/ACDT</option>
 </select><br>
 UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 Current local time is <span class="times">unknown</span>.

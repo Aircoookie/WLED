@@ -2,6 +2,10 @@
 
 ### Development versions after 0.9.1 release
 
+#### Build 2005020
+
+-   Added ACST and ACST/ACDT timezones
+
 #### Build 2005010
 
 -   Added module info page to web UI
