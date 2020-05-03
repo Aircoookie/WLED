@@ -272,6 +272,12 @@ void saveSettingsToEEPROM()
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
   #endif
 
+  //user MOD memory
+  //2944 - 3071 reserved
+
+  EEPROM.write(2944, soundSquelch);
+  
+ 
   commit();
 }
 
@@ -364,7 +370,7 @@ void loadSettingsFromEEPROM(bool first)
   turnOnAtBoot = EEPROM.read(369);
   useRGBW = EEPROM.read(372);
   //374 - strip.paletteFade
-  
+
   apBehavior = EEPROM.read(376);
     
   //377 = lastEEPROMversion
@@ -559,6 +565,8 @@ void loadSettingsFromEEPROM(bool first)
 
   //user MOD memory
   //2944 - 3071 reserved
+
+  EEPROM.write(2944, soundSquelch);
 
   overlayCurrent = overlayDefault;
 

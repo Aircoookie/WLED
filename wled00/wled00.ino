@@ -27,7 +27,6 @@
 //#define WLED_ENABLE_DMX          //uses 3.5kb
 //#define WLED_DISABLE_SOUND       // saves 1kb
 
-
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
@@ -164,6 +163,8 @@ byte col[] {255, 160, 0, 0};                  //current RGB(W) primary color. co
 byte colSec[] {0, 0, 0, 0};                   //current RGB(W) secondary color
 byte briS = 128;                              //default brightness
 
+byte soundSquelch = 10;                       //default squelch value for volume reactive routines.
+uint16_t noiseFloor = 100;                    // default squelch value for FFT reactive routines.
 byte nightlightTargetBri = 0;                 //brightness after nightlight is over
 byte nightlightDelayMins = 60;
 bool nightlightFade = true;                   //if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
@@ -547,11 +548,14 @@ bool oappendi(int i)
 //boot starts here
 void setup() {
   wledInit();
+//Serial.printf("Free Heap: %d\n", ESP.getFreeHeap());
 }
 
 
 //main program loop
 void loop() {
+//  EVERY_N_MILLISECONDS(1000) Serial.printf("Free Heap: %d\n", ESP.getFreeHeap());
+  
   handleIR();          //2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
   handleSerial();
