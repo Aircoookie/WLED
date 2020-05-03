@@ -15,6 +15,10 @@ TaskHandle_t FFT_Task;
 #define MIC_PIN   A0
 #else
 #define MIC_PIN   36 //  Changed to directly naming pin since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
+#ifndef LED_BUILTIN
+  // Set LED_BUILTIN if it is not defined by Arduino framework
+  #define LED_BUILTIN 3
+#endif
 #endif
 
 // As defined in wled00.ino
@@ -35,6 +39,7 @@ uint8_t targetAgc = 60;                                       // This is our set
 
 long lastTime = 0;
 int delayMs = 10;                                             // I don't want to sample too often and overload WLED.
+double beat = 0;                                              // beat Detection
 
 uint16_t micData;
 
@@ -43,6 +48,7 @@ uint8_t myVals[32];                                           // Used to store a
 
 #ifndef ESP8266
 #include "arduinoFFT.h"
+//#include "movingAvg.h"
 
 // Create FFT object
 arduinoFFT FFT = arduinoFFT();
@@ -60,6 +66,7 @@ Input vectors receive computed results from FFT
 double fftBin[samples];
 double vReal[samples];
 double vImag[samples];
+
 #endif
 
  uint16_t lastSample;                                         // last audio noise sample
@@ -68,6 +75,9 @@ double vImag[samples];
 void userSetup()
 {
 #ifndef ESP8266
+  pinMode(LED_BUILTIN, OUTPUT);
+  
+  
 
  sampling_period_us = round(1000000*(1.0/samplingFrequency));
 
@@ -115,17 +125,6 @@ void getSample() {
   micIn = analogRead(MIC_PIN);                                // Poor man's analog read
   #endif
   #endif
-
-/*  #ifdef WLED_DISABLE_SOUND
-  micIn = inoise8(millis(), millis());                        // Simulated analog read
-  #else
-  micIn = analogRead(MIC_PIN);                                // Poor man's analog read
-  #ifndef ESP8266
-  micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize
-  if (micIn == 1023 || micIn < 50) {micIn = micLev;}          // The ESP32 has some nasty spikes when combined with WLED. This is a nasty hack to deal with that. I hate it.
-  #endif
-  #endif
-*/
 
 
   micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering
@@ -178,6 +177,7 @@ void agcAvg() {                                                       // A simpl
 #ifndef ESP8266
 
 double fftResult[16];
+uint16_t mAvg = 0;
 
 double fftAdd( int from, int to) {
   int i = from; 
@@ -195,6 +195,10 @@ uint16_t FFT_MajorPeak = 0;
 // FFT main code
 void FFTcode( void * parameter) {
   double sum, mean = 0;
+  double beatSample = 0;
+  double envelope = 0;
+  uint16_t rawMicData = 0;
+
 
   for(;;) {
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
@@ -203,15 +207,27 @@ void FFTcode( void * parameter) {
 
     for(int i=0; i<samples; i++)
     {
-      micData = analogRead(MIC_PIN) * volume;
-
-      vReal[i] = micData >> 2;
+      micData = analogRead(MIC_PIN);
+      rawMicData = micData >> 2;
+      vReal[i] = micData;
       vImag[i] = 0;
+
+//      rawMicData = rawMicData - mAvg;                     // center
+//      beatSample = bassFilter(rawMicData);
+//      if (beatSample < 0) beatSample =-beatSample;  // abs
+//      envelope = envelopeFilter(beatSample);
+      
+      
       while(micros() - microseconds < sampling_period_us){
         //empty loop
         }
         microseconds += sampling_period_us;
     }
+
+//    beat = beatFilter(envelope);
+//if (beat > 50000) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
+    
+
 
     FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);   // Weigh data
     FFT.Compute(vReal, vImag, samples, FFT_FORWARD);                   // Compute FFT
@@ -236,7 +252,7 @@ void FFTcode( void * parameter) {
     for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];       // export FFT field
 
     // Create an array of 16 bins which roughly represent values the human ear can determine as different frequency bands (fftBins[0..6] are already zero'd)
-    fftResult[0] = fftAdd(7,11); 
+    fftResult[0] = fftAdd(7,11) * 0.8; 
     fftResult[1] = fftAdd(12,16); 
     fftResult[2] = fftAdd(17,21); 
     fftResult[3] = fftAdd(22, 30); 

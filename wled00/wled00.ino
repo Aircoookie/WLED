@@ -27,7 +27,6 @@
 //#define WLED_ENABLE_DMX          //uses 3.5kb
 //#define WLED_DISABLE_SOUND       // saves 1kb
 
-
 #define WLED_DISABLE_FILESYSTEM    //SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   //Enable sending html file from SPIFFS before serving progmem version
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock

@@ -3682,6 +3682,7 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Fil
 #ifndef ESP8266
 extern uint16_t FFT_MajorPeak;
 double volume = 1;
+extern double beat;
 
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max)
@@ -3915,58 +3916,56 @@ uint16_t WS2812FX::mode_asound12(void) {
 } // mode_asound12()
 
 
+
+// Andrew's temporary peak detector for testing. Whatever we end up with should not be worse than this.
 uint16_t WS2812FX::mode_asound13(void) {
+
+  static long oldPeak;
+
   delay(1);
-  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+
+  extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
+
+//  Serial.print(sampleAvg); Serial.print(" "); Serial.println(fftBin[6]);
+
+// fftBin version with simple math.
+  if (fftBin[6] > sampleAvg*100 & millis() > (oldPeak + 300)) {
+        setPixelColor(10, 255,0,0);
+  } else {
+        setPixelColor(10, 0,0,0);
+  }
+  
+
+// Volume version only!!!
+if (samplePeak == 1){
+    setPixelColor(9, 255,0,0);
+    samplePeak = 0;                // It's up to the animation routine to reset the peak.
+  } else {
+    setPixelColor(9, 0,0,0);
+  }
+
+  
   return FRAMETIME;
+  
 } // mode_asound13()
+
 
 
 uint16_t WS2812FX::mode_asound14(void) {
   delay(1);
+#ifndef ESP8266
+  if (beat > 30000){
+    setPixelColor(10, 255,0,0);
+  } else {
+    setPixelColor(10, 0,0,0);
+  }
+#else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+#endif
   return FRAMETIME;
 } // mode_asound14()
 
 
-/* 
-// Andrew's coding style is to break it till you make it. Hence this hack. Doesn't yet map full spectrum to the SEGLEN.
-uint16_t WS2812FX::mode_asound15(void) {
-  delay(1);
-#ifndef ESP8266
-  extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to that.
-  extern double fftResult[];
-  
-  double maxVal = 0;
-
-  for (int i = 0; i < 16; i++) {            // apleshu's method to to get the max volume.
-    if (fftResult[i] > maxVal) {
-      maxVal = fftResult[i];
-    }
-  }
-  
-  if (maxVal == 0) maxVal = 255;            // If maxVal is too low, we'll have a mapping issue.
-  if (maxVal > 5000) maxVal = 5000;         // That maxVal may be too high, so let's cap it.
-
-  for (int i=0; i< SEGLEN; i++) {
-
-    int binNum = 7+i*3;                     // Every 3 bins or so is good for any given frequency it seems.
-//    int binNum = 7+i*470/SEGLEN;          // This mapped method doesn't work.
-
-    if (binNum > 470) binNum = 471;         // If you've got a long segment, this is the end of the road.
-    double binVal = fftBin[binNum];         // Bin Values are high, so let's remap them.
-    if (binNum == 471) binVal = 0;          // Make everything black once we've hit the end of the line.
-    if (binVal > maxVal) binVal = maxVal;   // Make sure our bin isn't higher than the max . . which we capped.
-
-    uint8_t bright = mapf(binVal, 0, maxVal, 0, 255); // find the brightness in relation to max
-     
-    setPixCol(i, i*4, bright);               // colour is just an index in the palette. The FFT is the intensity.
-  }
-#endif
-
-  return FRAMETIME;
-} // mode_asound15()
-*/
 
 // Map bins 7 through 490 to the ENTIRE SEGLEN.
 // For some reason, it seems to be mirroring itself. I really don't know why.
