@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.10.0p
+   @version 0.10.0
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2005010
+#define VERSION 2005030
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -148,7 +148,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.10.0p");
+WLED_GLOBAL char versionString[] _INIT("0.10.0");
 #define WLED_CODENAME "Namigai"
 
 // AP and OTA default passwords (for maximum security change them!)

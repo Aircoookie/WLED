@@ -46,6 +46,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
 
   // update status info
   realtimeIP = clientIP;
+  byte wChannel = 0;
   
   switch (DMXMode) {
     case DMX_MODE_DISABLED:
@@ -57,8 +58,9 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
       if (dmxChannels-DMXAddress+1 < 3) return;
       realtimeLock(realtimeTimeoutMs, mde);
       if (realtimeOverride) return;
+      wChannel = (dmxChannels-DMXAddress+1 > 3) ? e131_data[DMXAddress+3] : 0;
       for (uint16_t i = 0; i < ledCount; i++)
-        setRealtimePixel(i, e131_data[DMXAddress+0], e131_data[DMXAddress+1], e131_data[DMXAddress+2], 0);
+        setRealtimePixel(i, e131_data[DMXAddress+0], e131_data[DMXAddress+1], e131_data[DMXAddress+2], wChannel);
       break;
 
     case DMX_MODE_SINGLE_DRGB:
@@ -66,13 +68,14 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
       if (dmxChannels-DMXAddress+1 < 4) return;
       realtimeLock(realtimeTimeoutMs, mde);
       if (realtimeOverride) return;
+      wChannel = (dmxChannels-DMXAddress+1 > 4) ? e131_data[DMXAddress+4] : 0;
       if (DMXOldDimmer != e131_data[DMXAddress+0]) {
         DMXOldDimmer = e131_data[DMXAddress+0];
         bri = e131_data[DMXAddress+0];
         strip.setBrightness(bri);
       }
       for (uint16_t i = 0; i < ledCount; i++)
-        setRealtimePixel(i, e131_data[DMXAddress+1], e131_data[DMXAddress+2], e131_data[DMXAddress+3], 0);
+        setRealtimePixel(i, e131_data[DMXAddress+1], e131_data[DMXAddress+2], e131_data[DMXAddress+3], wChannel);
       break;
 
     case DMX_MODE_EFFECT:

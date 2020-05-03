@@ -743,25 +743,25 @@ void WS2812FX::handle_palette(void)
     case 2: {//primary color only
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       targetPalette = CRGBPalette16(prim); break;}
-    case 3: {//based on primary
-      //considering performance implications
-      CRGB prim = col_to_crgb(SEGCOLOR(0));
-      CHSV prim_hsv = rgb2hsv_approximate(prim);
-      targetPalette = CRGBPalette16(
-                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
-                      CHSV(prim_hsv.h, MAX(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
-                      CHSV(prim_hsv.h, prim_hsv.s, MAX(prim_hsv.v - 50,0)), //darker
-                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v)); //color itself
-      break;}
-    case 4: {//primary + secondary
+    case 3: {//primary + secondary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
-      targetPalette = CRGBPalette16(sec,prim); break;}
-    case 5: {//based on primary + secondary
+      targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
+    case 4: {//primary + secondary + tertiary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
       CRGB ter  = col_to_crgb(SEGCOLOR(2));
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
+    case 5: {//primary + secondary (+tert if not off), more distinct
+      CRGB prim = col_to_crgb(SEGCOLOR(0));
+      CRGB sec  = col_to_crgb(SEGCOLOR(1));
+      if (SEGCOLOR(2)) {
+        CRGB ter = col_to_crgb(SEGCOLOR(2));
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
+      } else {
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
+      }
+      break;}
     case 6: //Party colors
       targetPalette = PartyColors_p; break;
     case 7: //Cloud colors
