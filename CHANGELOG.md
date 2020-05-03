@@ -1,6 +1,13 @@
 ## WLED changelog
 
-### Development versions after 0.9.1 release
+### WLED version 0.10.0
+
+#### Build 2005030
+
+-   DMX Single RGW and Single DRGB modes now support an additional white channel
+-   Improved palettes derived from set colors and changed their names
+
+### Development versions between 0.9.1 and 0.10.0 release
 
 #### Build 2005020
 
