@@ -1,3 +1,5 @@
+#include "wled.h"
+
 /*
  * Physical IO
  */
@@ -44,7 +46,7 @@ void handleButton()
 
     if (dur > 6000) //long press
     {
-      initAP(true);
+      WLED::instance().initAP(true);
     }
     else if (!buttonLongPressed) { //short press
       if (macroDoublePress)

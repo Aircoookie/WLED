@@ -9,6 +9,7 @@
 //#define USE_APA102  // Uncomment for using APA102 LEDs.
 //#define USE_WS2801  // Uncomment for using WS2801 LEDs (make sure you have NeoPixelBus v2.5.6 or newer)
 //#define USE_LPD8806 // Uncomment for using LPD8806
+//#define USE_TM1814  // Uncomment for using TM1814 LEDs (make sure you have NeoPixelBus v2.5.7 or newer)
 //#define USE_P9813   // Uncomment for using P9813 LEDs (make sure you have NeoPixelBus v2.5.8 or newer)
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
@@ -47,20 +48,33 @@
 #ifdef WLED_USE_ANALOG_LEDS
   //PWM pins - PINs 15,13,12,14 (W2 = 04)are used with H801 Wifi LED Controller
   #ifdef WLED_USE_H801
-    #define RPIN 15   //R pin for analog LED strip   
+    #define RPIN 15   //R pin for analog LED strip
     #define GPIN 13   //G pin for analog LED strip
     #define BPIN 12   //B pin for analog LED strip
-    #define WPIN 14   //W pin for analog LED strip 
+    #define WPIN 14   //W pin for analog LED strip
     #define W2PIN 04  //W2 pin for analog LED strip
     #undef BTNPIN
     #undef IR_PIN
     #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+  #elif defined(WLED_USE_BWLT11)
+  //PWM pins - to use with BW-LT11
+    #define RPIN 12  //R pin for analog LED strip
+    #define GPIN 4   //G pin for analog LED strip
+    #define BPIN 14  //B pin for analog LED strip
+    #define WPIN 5   //W pin for analog LED strip
+  #elif defined(SHOJO_PCB)
+  //PWM pins - to use with Shojo PCB (https://www.bastelbunker.de/esp-rgbww-wifi-led-controller-vbs-edition/)
+    #define RPIN 14  //R pin for analog LED strip
+    #define GPIN 4   //G pin for analog LED strip
+    #define BPIN 5   //B pin for analog LED strip
+    #define WPIN 15  //W pin for analog LED strip
+    #define W2PIN 12 //W2 pin for analog LED strip
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-    #define RPIN 5   //R pin for analog LED strip   
-    #define GPIN 12   //G pin for analog LED strip
-    #define BPIN 15   //B pin for analog LED strip
-    #define WPIN 13   //W pin for analog LED strip 
+    #define RPIN 5   //R pin for analog LED strip
+    #define GPIN 12  //G pin for analog LED strip
+    #define BPIN 15  //B pin for analog LED strip
+    #define WPIN 13  //W pin for analog LED strip
   #endif
   #undef RLYPIN
   #define RLYPIN -1 //disable as pin 12 is used by analog LEDs
@@ -74,8 +88,10 @@
   #define PIXELMETHOD NeoWs2801Method
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
+ #elif defined(USE_TM1814)
+  #define PIXELMETHOD NeoTm1814Method
  #elif defined(USE_P9813)
-  #define PIXELMETHOD P9813Method  
+  #define PIXELMETHOD P9813Method
  #else
   #define PIXELMETHOD NeoEsp32Rmt0Ws2812xMethod
  #endif
@@ -87,9 +103,9 @@
   #define PIXELMETHOD NeoWs2801Method
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
+ #elif defined(USE_TM1814)
  #elif defined(USE_P9813)
-  #define PIXELMETHOD P9813Method  
- #elif LEDPIN == 2
+  #define PIXELMETHOD P9813Method
   #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
  #elif LEDPIN == 3
   #define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
@@ -105,11 +121,15 @@
  #define PIXELFEATURE3 DotStarBgrFeature
  #define PIXELFEATURE4 DotStarLbgrFeature
 #elif defined(USE_LPD8806)
- #define PIXELFEATURE3 Lpd8806GrbFeature 
+ #define PIXELFEATURE3 Lpd8806GrbFeature
  #define PIXELFEATURE4 Lpd8806GrbFeature
+
+#elif defined(USE_TM1814)
+  #define PIXELFEATURE3 NeoWrgbTm1814Feature
+  #define PIXELFEATURE4 NeoWrgbTm1814Feature
 #elif defined(USE_P9813)
- #define PIXELFEATURE3 P9813BgrFeature 
- #define PIXELFEATURE4 NeoGrbwFeature   
+ #define PIXELFEATURE3 P9813BgrFeature
+ #define PIXELFEATURE4 NeoGrbwFeature
 #else
  #define PIXELFEATURE3 NeoGrbFeature
  #define PIXELFEATURE4 NeoGrbwFeature
@@ -169,20 +189,20 @@ public:
       break;
     }
 
-    #ifdef WLED_USE_ANALOG_LEDS 
+    #ifdef WLED_USE_ANALOG_LEDS
       #ifdef ARDUINO_ARCH_ESP32
         ledcSetup(0, 5000, 8);
         ledcAttachPin(RPIN, 0);
         ledcSetup(1, 5000, 8);
         ledcAttachPin(GPIN, 1);
-        ledcSetup(2, 5000, 8);        
+        ledcSetup(2, 5000, 8);
         ledcAttachPin(BPIN, 2);
-        if(_type == NeoPixelType_Grbw) 
+        if(_type == NeoPixelType_Grbw)
         {
-          ledcSetup(3, 5000, 8);        
+          ledcSetup(3, 5000, 8);
           ledcAttachPin(WPIN, 3);
           #ifdef WLED_USE_5CH_LEDS
-            ledcSetup(4, 5000, 8);        
+            ledcSetup(4, 5000, 8);
             ledcAttachPin(W2PIN, 4);
           #endif
         }
@@ -190,21 +210,21 @@ public:
         //init PWM pins
         pinMode(RPIN, OUTPUT);
         pinMode(GPIN, OUTPUT);
-        pinMode(BPIN, OUTPUT); 
-        if(_type == NeoPixelType_Grbw) 
+        pinMode(BPIN, OUTPUT);
+        if(_type == NeoPixelType_Grbw)
         {
-          pinMode(WPIN, OUTPUT); 
+          pinMode(WPIN, OUTPUT);
           #ifdef WLED_USE_5CH_LEDS
             pinMode(W2PIN, OUTPUT);
           #endif
         }
         analogWriteRange(255);  //same range as one RGB channel
         analogWriteFreq(880);   //PWM frequency proven as good for LEDs
-      #endif 
+      #endif
     #endif
   }
 
-#ifdef WLED_USE_ANALOG_LEDS      
+#ifdef WLED_USE_ANALOG_LEDS
     void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w, uint8_t w2=0)
     {
       #ifdef ARDUINO_ARCH_ESP32
@@ -218,7 +238,7 @@ public:
           #else
             case NeoPixelType_Grbw: ledcWrite(3, w);                              break;
           #endif
-        }        
+        }
       #else   // ESP8266
         analogWrite(RPIN, r);
         analogWrite(GPIN, g);
@@ -231,7 +251,7 @@ public:
             case NeoPixelType_Grbw: analogWrite(WPIN, w);                         break;
           #endif
         }
-      #endif 
+      #endif
     }
 #endif
 
@@ -261,7 +281,7 @@ public:
       }
       break;
     }
-    
+
   }
 
   void SetBrightness(byte b)

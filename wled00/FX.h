@@ -42,8 +42,8 @@
 #define DEFAULT_FFT3       (uint8_t)252
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
 
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)>(b)?(a):(b))
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
@@ -88,16 +88,19 @@
 
 // options
 // bit    7: segment is in transition mode
-// bits 2-6: TBD
+// bits 3-6: TBD
+// bit    2: segment is on
 // bit    1: reverse segment
 // bit    0: segment is selected
 #define NO_OPTIONS   (uint8_t)0x00
 #define TRANSITIONAL (uint8_t)0x80
+#define SEGMENT_ON   (uint8_t)0x04
 #define REVERSE      (uint8_t)0x02
 #define SELECTED     (uint8_t)0x01
 #define IS_TRANSITIONAL ((SEGMENT.options & TRANSITIONAL) == TRANSITIONAL)
-#define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
-#define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
+#define IS_SEGMENT_ON   ((SEGMENT.options & SEGMENT_ON  ) == SEGMENT_ON  )
+#define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
+#define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
 #define MODE_COUNT  122
 
@@ -704,7 +707,6 @@ class WS2812FX {
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
-
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
 
@@ -748,7 +750,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 
 
 const char JSON_palette_names[] PROGMEM = R"=====([
-"Default","Random Cycle","Primary Color","Based on Primary","Set Colors","Based on Set","Party","Cloud","Lava","Ocean",
+"Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
 "Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
 "Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",

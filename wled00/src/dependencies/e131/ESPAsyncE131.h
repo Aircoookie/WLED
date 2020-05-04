@@ -14,8 +14,11 @@
 *  Author shall not be liable in any event for incidental or consequential
 *  damages in connection with, or arising out of, the furnishing, performance
 *  or use of these programs.
-*
 */
+
+/*
+ * Inspired by https://github.com/hideakitai/ArtNet for ArtNet support
+ */
 
 #ifndef ESPASYNCE131_H_
 #define ESPASYNCE131_H_
@@ -40,7 +43,10 @@ typedef struct ip_addr ip4_addr_t;
 #endif
 
 // Defaults
-#define E131_DEFAULT_PORT 5568
+#define E131_DEFAULT_PORT   5568
+#define ARTNET_DEFAULT_PORT 6454
+
+#define ARTNET_OPCODE_OPDMX 0x5000
 
 // E1.31 Packet Offsets
 #define E131_ROOT_PREAMBLE_SIZE 0
@@ -69,7 +75,7 @@ typedef struct ip_addr ip4_addr_t;
 
 // E1.31 Packet Structure
 typedef union {
-    struct {
+    struct { //E1.31 packet
         // Root Layer
         uint16_t preamble_size;
         uint16_t postamble_size;
@@ -97,34 +103,30 @@ typedef union {
         uint16_t property_value_count;
         uint8_t  property_values[513];
     } __attribute__((packed));
+	
+	struct { //Art-Net packet
+        uint8_t  art_id[8];
+        uint16_t art_opcode;
+        uint16_t art_protocol_ver;
+        uint8_t  art_sequence_number;
+		uint8_t  art_physical;
+		uint16_t art_universe;
+		uint16_t art_length;
+
+        uint8_t  art_data[512];
+    } __attribute__((packed));
 
     uint8_t raw[638];
 } e131_packet_t;
 
-// Error Types
-typedef enum {
-    ERROR_NONE,
-    ERROR_IGNORE,
-    ERROR_ACN_ID,
-    ERROR_PACKET_SIZE,
-    ERROR_VECTOR_ROOT,
-    ERROR_VECTOR_FRAME,
-    ERROR_VECTOR_DMP
-} e131_error_t;
-
-// E1.31 Listener Types
-typedef enum {
-    E131_UNICAST,
-    E131_MULTICAST
-} e131_listen_t;
-
 // new packet callback
-typedef void (*e131_packet_callback_function) (e131_packet_t* p, IPAddress clientIP);
+typedef void (*e131_packet_callback_function) (e131_packet_t* p, IPAddress clientIP, bool isArtnet);
 
 class ESPAsyncE131 {
  private:
     // Constants for packet validation
     static const uint8_t ACN_ID[];
+	static const uint8_t ART_ID[];
     static const uint32_t VECTOR_ROOT = 4;
     static const uint32_t VECTOR_FRAME = 2;
     static const uint8_t VECTOR_DMP = 2;
@@ -133,8 +135,8 @@ class ESPAsyncE131 {
     AsyncUDP        udp;        // AsyncUDP
 
     // Internal Initializers
-    bool initUnicast();
-    bool initMulticast(uint16_t universe, uint8_t n = 1);
+    bool initUnicast(uint16_t port);
+    bool initMulticast(uint16_t port, uint16_t universe, uint8_t n = 1);
 
     // Packet parser callback
     void parsePacket(AsyncUDPPacket _packet);
@@ -145,7 +147,7 @@ class ESPAsyncE131 {
     ESPAsyncE131(e131_packet_callback_function callback);
 
     // Generic UDP listener, no physical or IP configuration
-    bool begin(e131_listen_t type, uint16_t universe = 1, uint8_t n = 1);
+    bool begin(bool multicast, uint16_t port = E131_DEFAULT_PORT, uint16_t universe = 1, uint8_t n = 1);
 };
 
 #endif  // ESPASYNCE131_H_
