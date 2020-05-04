@@ -14,6 +14,11 @@ void alexaInit();
 void handleAlexa();
 void onAlexaChange(EspalexaDevice* dev);
 
+//audio_reactive.cpp                               // Which functions do we declare here???
+//void agcAvg();
+//void FFTcode(void * parameter);
+//void getSample();
+
 //blynk.cpp
 void initBlynk(const char* auth);
 void handleBlynk();
@@ -106,7 +111,7 @@ void publishMqtt();
 //ntp.cpp
 void handleNetworkTime();
 void sendNTPPacket();
-bool checkNTPResponse();    
+bool checkNTPResponse();
 void updateLocalTime();
 void getTimeString(char* out);
 bool checkCountdown();
@@ -123,7 +128,7 @@ void _overlayAnalogClock();
 
 byte getSameCodeLength(char code, int index, char const cronixieDisplay[]);
 void setCronixie();
-void _overlayCronixie();    
+void _overlayCronixie();
 void _drawOverlayCronixie();
 
 //set.cpp

@@ -6,25 +6,24 @@
  */
 
 #ifndef ESP8266
-TaskHandle_t FFT_Task;
+  TaskHandle_t FFT_Task;
 #endif
 
 //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
 
 #ifdef ESP8266
-#define MIC_PIN   A0
+  #define MIC_PIN   A0
 #else
-#define MIC_PIN   36 //  Changed to directly naming pin since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
+  #define MIC_PIN   36 //  Changed to directly naming pin since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
 #ifndef LED_BUILTIN
   // Set LED_BUILTIN if it is not defined by Arduino framework
   #define LED_BUILTIN 3
 #endif
 #endif
 
-// As defined in wled00.ino
-// byte soundSquelch = 10;                                    //default squelch value for volume reactive routines.
-
-// uint8_t squelch = 10;                                         // Anything below this is background noise, so we'll make it '0'. Can be adjusted
+// As defined in wled00.h
+// byte soundSquelch = 10;                                    // default squelch value for volume reactive routines
+// uint16_t noiseFloor = 100;                                 // default squelch value for FFT reactive routines
 
 int micIn;                                                    // Current sample starts with negative values and large values, which is why it's 16 bit signed
 int sample;                                                   // Current sample
@@ -47,46 +46,42 @@ uint8_t myVals[32];                                           // Used to store a
 
 
 #ifndef ESP8266
-#include "arduinoFFT.h"
-//#include "movingAvg.h"
+  #include "arduinoFFT.h"
+  //#include "movingAvg.h"
 
-// Create FFT object
-arduinoFFT FFT = arduinoFFT();
+  arduinoFFT FFT = arduinoFFT();                              // Create FFT object
 
-const uint16_t samples = 512;                                 //This value MUST ALWAYS be a power of 2
-const double samplingFrequency = 10240;
+  const uint16_t samples = 512;                               // This value MUST ALWAYS be a power of 2
+  const double samplingFrequency = 10240;                     // Sampling frequency
 
-unsigned int sampling_period_us;
-unsigned long microseconds;
+  unsigned int sampling_period_us;
+  unsigned long microseconds;
 
-/*
-These are the input and output vectors
-Input vectors receive computed results from FFT
-*/
-double fftBin[samples];
-double vReal[samples];
-double vImag[samples];
-
+  /*
+  These are the input and output vectors
+  Input vectors receive computed results from FFT
+  */
+  double fftBin[samples];
+  double vReal[samples];
+  double vImag[samples];
 #endif
 
- uint16_t lastSample;                                         // last audio noise sample
+uint16_t lastSample;                                          // last audio noise sample
 
 void getSample() {
-
   static long peakTime;
 
   #ifdef WLED_DISABLE_SOUND
-  micIn = inoise8(millis(), millis());                        // Simulated analog read
+    micIn = inoise8(millis(), millis());                      // Simulated analog read
   #else
   #ifdef ESP32
-  micIn = micData;
-  micIn = micIn >> 2;                                         // ESP32 has 2 more bits of A/D, so we need to normalize
+    micIn = micData;
+    micIn = micIn >> 2;                                       // ESP32 has 2 more bits of A/D, so we need to normalize
   #endif
   #ifdef ESP8266
-  micIn = analogRead(MIC_PIN);                                // Poor man's analog read
+    micIn = analogRead(MIC_PIN);                              // Poor man's analog read
   #endif
   #endif
-
 
   micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering
   micIn -= micLev;                                            // Let's center it to 0 now
@@ -160,7 +155,6 @@ void FFTcode( void * parameter) {
   double envelope = 0;
   uint16_t rawMicData = 0;
 
-
   for(;;) {
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
     microseconds = micros();
@@ -175,9 +169,8 @@ void FFTcode( void * parameter) {
 
 //      rawMicData = rawMicData - mAvg;                     // center
 //      beatSample = bassFilter(rawMicData);
-//      if (beatSample < 0) beatSample =-beatSample;  // abs
+//      if (beatSample < 0) beatSample =-beatSample;        // abs
 //      envelope = envelopeFilter(beatSample);
-
 
       while(micros() - microseconds < sampling_period_us){
         //empty loop
@@ -185,10 +178,8 @@ void FFTcode( void * parameter) {
         microseconds += sampling_period_us;
     }
 
-//    beat = beatFilter(envelope);
-//if (beat > 50000) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
-
-
+//  beat = beatFilter(envelope);
+//  if (beat > 50000) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
 
     FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);   // Weigh data
     FFT.Compute(vReal, vImag, samples, FFT_FORWARD);                   // Compute FFT
