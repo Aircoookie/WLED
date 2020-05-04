@@ -3919,7 +3919,8 @@ uint16_t WS2812FX::mode_asound12(void) {
 
 // Andrew's temporary peak detector for testing. Whatever we end up with should not be worse than this.
 uint16_t WS2812FX::mode_asound13(void) {
-
+  delay(1);
+#ifndef ESP8266
   static long oldPeak;
 
   delay(1);
@@ -3944,7 +3945,7 @@ if (samplePeak == 1){
     setPixelColor(9, 0,0,0);
   }
 
-  
+#endif
   return FRAMETIME;
   
 } // mode_asound13()
