@@ -1,10 +1,12 @@
+#include "wled.h"
+#include "audio_reactive.h"
 /*
  * This file allows you to add own functionality to WLED more easily
  * See: https://github.com/Aircoookie/WLED/wiki/Add-own-functionality
- * EEPROM bytes 2750+ are reserved for your custom use case. (if you extend #define EEPSIZE in wled01_eeprom.h)
+ * EEPROM bytes 2750+ are reserved for your custom use case. (if you extend #define EEPSIZE in const.h)
  * bytes 2400+ are currently ununsed, but might be used for future wled features
  */
-
+/*
 #ifndef ESP8266
 TaskHandle_t FFT_Task;
 #endif
@@ -63,6 +65,7 @@ unsigned long microseconds;
 These are the input and output vectors
 Input vectors receive computed results from FFT
 */
+/*
 double fftBin[samples];
 double vReal[samples];
 double vImag[samples];
@@ -70,14 +73,15 @@ double vImag[samples];
 #endif
 
  uint16_t lastSample;                                         // last audio noise sample
+*/
 
 // This gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
 #ifndef ESP8266
   pinMode(LED_BUILTIN, OUTPUT);
-  
-  
+
+
 
  sampling_period_us = round(1000000*(1.0/samplingFrequency));
 
@@ -109,7 +113,7 @@ void userLoop() {
   }
 
 } // userLoop()
-
+/*
 void getSample() {
 
   static long peakTime;
@@ -180,12 +184,12 @@ double fftResult[16];
 uint16_t mAvg = 0;
 
 double fftAdd( int from, int to) {
-  int i = from; 
+  int i = from;
   double result = 0;
-  
+
   while ( i <= to) {
     result += fftBin[i++];
-  } 
+  }
 
   return result;
 }
@@ -216,8 +220,8 @@ void FFTcode( void * parameter) {
 //      beatSample = bassFilter(rawMicData);
 //      if (beatSample < 0) beatSample =-beatSample;  // abs
 //      envelope = envelopeFilter(beatSample);
-      
-      
+
+
       while(micros() - microseconds < sampling_period_us){
         //empty loop
         }
@@ -226,7 +230,7 @@ void FFTcode( void * parameter) {
 
 //    beat = beatFilter(envelope);
 //if (beat > 50000) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
-    
+
 
 
     FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);   // Weigh data
@@ -252,23 +256,24 @@ void FFTcode( void * parameter) {
     for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];       // export FFT field
 
     // Create an array of 16 bins which roughly represent values the human ear can determine as different frequency bands (fftBins[0..6] are already zero'd)
-    fftResult[0] = fftAdd(7,11) * 0.8; 
-    fftResult[1] = fftAdd(12,16); 
-    fftResult[2] = fftAdd(17,21); 
-    fftResult[3] = fftAdd(22, 30); 
-    fftResult[4] = fftAdd(31, 39); 
-    fftResult[5] = fftAdd(40, 48); 
-    fftResult[6] = fftAdd(49, 61); 
-    fftResult[7] = fftAdd(62, 78); 
-    fftResult[8] = fftAdd(79, 99); 
-    fftResult[9] = fftAdd(100, 124); 
-    fftResult[10] = fftAdd(125, 157); 
-    fftResult[11] = fftAdd(158, 198); 
-    fftResult[12] = fftAdd(199, 247); 
-    fftResult[13] = fftAdd(248, 312); 
-    fftResult[14] = fftAdd(313, 393); 
-    fftResult[15] = fftAdd(394, 470); 
+    fftResult[0] = fftAdd(7,11) * 0.8;
+    fftResult[1] = fftAdd(12,16);
+    fftResult[2] = fftAdd(17,21);
+    fftResult[3] = fftAdd(22, 30);
+    fftResult[4] = fftAdd(31, 39);
+    fftResult[5] = fftAdd(40, 48);
+    fftResult[6] = fftAdd(49, 61);
+    fftResult[7] = fftAdd(62, 78);
+    fftResult[8] = fftAdd(79, 99);
+    fftResult[9] = fftAdd(100, 124);
+    fftResult[10] = fftAdd(125, 157);
+    fftResult[11] = fftAdd(158, 198);
+    fftResult[12] = fftAdd(199, 247);
+    fftResult[13] = fftAdd(248, 312);
+    fftResult[14] = fftAdd(313, 393);
+    fftResult[15] = fftAdd(394, 470);
   }
 }
 
 #endif
+*/

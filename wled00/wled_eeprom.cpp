@@ -1,12 +1,13 @@
+#include <EEPROM.h>
+#include "wled.h"
+
 /*
  * Methods to handle saving and loading to non-volatile memory
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
 
-#define EEPSIZE 2560  //Maximum is 4096
-
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 18
+#define EEPVER 19
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -26,6 +27,7 @@
 //16-> 0.9.1
 //17-> 0.9.1-dmx
 //18-> 0.9.1-e131
+//19-> 0.9.1n
 
 void commit()
 {
@@ -208,6 +210,9 @@ void saveSettingsToEEPROM()
   EEPROM.write(2180, macroCountdown);
   EEPROM.write(2181, macroNl);
   EEPROM.write(2182, macroDoublePress);
+
+  EEPROM.write(2187, e131Port & 0xFF);
+  EEPROM.write(2188, (e131Port >> 8) & 0xFF);
 
   EEPROM.write(2189, e131SkipOutOfSequence);
   EEPROM.write(2190, e131Universe & 0xFF);
@@ -520,6 +525,11 @@ void loadSettingsFromEEPROM(bool first)
     e131SkipOutOfSequence = true;
   }
 
+  if (lastEEPROMversion > 18)
+  {
+    e131Port = EEPROM.read(2187) + ((EEPROM.read(2188) << 8) & 0xFF00);
+  }
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
@@ -560,7 +570,8 @@ void loadSettingsFromEEPROM(bool first)
   
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
-  } //last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
+  } //last used: 2549
+  EEPROM.write(2550, DMXStartLED);
   #endif
 
   //user MOD memory
@@ -599,7 +610,7 @@ void savedToPresets()
   }
 }
 
-bool applyPreset(byte index, bool loadBri = true)
+bool applyPreset(byte index, bool loadBri)
 {
   if (index == 255 || index == 0)
   {
@@ -608,8 +619,10 @@ bool applyPreset(byte index, bool loadBri = true)
   }
   if (index > 16 || index < 1) return false;
   uint16_t i = 380 + index*20;
+  byte ver = EEPROM.read(i);
+
   if (index < 16) {
-    if (EEPROM.read(i) != 1) return false;
+    if (ver != 1) return false;
     strip.applyToAllSelected = true;
     if (loadBri) bri = EEPROM.read(i+1);
     
@@ -628,11 +641,18 @@ bool applyPreset(byte index, bool loadBri = true)
     effectFFT2 = EEPROM.read(i+19);
     effectFFT3 = EEPROM.read(i+20);
   } else {
-    if (EEPROM.read(i) != 2) return false;
+    if (ver != 2 && ver != 3) return false;
     strip.applyToAllSelected = false;
     if (loadBri) bri = EEPROM.read(i+1);
     WS2812FX::Segment* seg = strip.getSegments();
     memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
+    if (ver == 2) { //versions before 2004230 did not have opacity
+      for (byte j = 0; j < strip.getMaxSegments(); j++)
+      {
+        strip.getSegment(j).opacity = 255;
+        strip.getSegment(j).setOption(SEG_OPTION_ON, 1);
+      }
+    }
     setValuesFromMainSeg();
   }
   currentPreset = index;
@@ -640,7 +660,7 @@ bool applyPreset(byte index, bool loadBri = true)
   return true;
 }
 
-void savePreset(byte index, bool persist = true)
+void savePreset(byte index, bool persist)
 {
   if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
@@ -669,7 +689,7 @@ void savePreset(byte index, bool persist = true)
     EEPROM.write(i+19, effectFFT2);
     EEPROM.write(i+20, effectFFT3);
   } else { //segment 16 can save segments
-    EEPROM.write(i, 2);
+    EEPROM.write(i, 3);
     EEPROM.write(i+1, bri);
     WS2812FX::Segment* seg = strip.getSegments();
     memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
@@ -711,7 +731,7 @@ void applyMacro(byte index)
 }
 
 
-void saveMacro(byte index, String mc, bool persist = true) //only commit on single save, not in settings
+void saveMacro(byte index, String mc, bool persist) //only commit on single save, not in settings
 {
   index-=1;
   if (index > 15) return;

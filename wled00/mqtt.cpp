@@ -1,3 +1,5 @@
+#include "wled.h"
+
 /*
  * MQTT communication protocol for home automation
  */

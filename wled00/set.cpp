@@ -1,8 +1,10 @@
+#include "wled.h"
+
 /*
  * Receives client input
  */
 
-void _setRandomColor(bool _sec,bool fromButton=false)
+void _setRandomColor(bool _sec,bool fromButton)
 {
   lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
   if (_sec){
@@ -143,10 +145,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     receiveDirect = request->hasArg("RD");
     e131SkipOutOfSequence = request->hasArg("ES");
     e131Multicast = request->hasArg("EM");
+    t = request->arg("EP").toInt();
+    if (t > 0) e131Port = t;
     t = request->arg("EU").toInt();
-    if (t > 0  && t <= 63999) e131Universe = t;
+    if (t >= 0  && t <= 63999) e131Universe = t;
     t = request->arg("DA").toInt();
-    if (t > 0  && t <= 510) DMXAddress = t;
+    if (t >= 0  && t <= 510) DMXAddress = t;
     t = request->arg("DM").toInt();
     if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_DRGB) DMXMode = t;
     t = request->arg("ET").toInt();
@@ -308,6 +312,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t>0 && t<513) {
       DMXGap = t;
     }
+    t = request->arg("SL").toInt();
+    if (t>=0 && t < MAX_LEDS) {
+      DMXStartLED = t;
+    }
     for (int i=0; i<15; i++) {
       String argname = "CH" + String((i+1));
       t = request->arg(argname).toInt();
@@ -333,7 +341,7 @@ int getNumVal(const String* req, uint16_t pos)
 
 
 //helper to get int value at a position in string
-bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255)
+bool updateVal(const String* req, const char* key, byte* val, byte minv, byte maxv)
 {
   int pos = req->indexOf(key);
   if (pos < 1) return false;
@@ -415,7 +423,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   WS2812FX::Segment& mainseg = strip.getSegment(main);
   pos = req.indexOf("SV="); //segment selected
-  if (pos > 0) mainseg.setOption(0, (req.charAt(pos+3) != '0'));
+  if (pos > 0) mainseg.setOption(SEG_OPTION_SELECTED, (req.charAt(pos+3) != '0'));
 
   uint16_t startI = mainseg.start;
   uint16_t stopI = mainseg.stop;
@@ -507,6 +515,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("C2=");
   if (pos > 0) {
     colorFromDecOrHexString(colSec, (char*)req.substring(pos + 3).c_str());
+  }
+  pos = req.indexOf("C3=");
+  if (pos > 0) {
+    byte t[4];
+    colorFromDecOrHexString(t, (char*)req.substring(pos + 3).c_str());
+    strip.setColor(2, t[0], t[1], t[2], t[3]);
   }
 
   //set to random hue SR=0->1st SR=1->2nd
@@ -624,7 +638,17 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   //Segment reverse
   pos = req.indexOf("RV=");
-  if (pos > 0) strip.getSegment(main).setOption(1, req.charAt(pos+3) != '0');
+  if (pos > 0) strip.getSegment(main).setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
+
+  //Segment brightness/opacity
+  pos = req.indexOf("SB=");
+  if (pos > 0) {
+    byte segbri = getNumVal(&req, pos);
+    strip.getSegment(main).setOption(SEG_OPTION_ON, segbri);
+    if (segbri) {
+      strip.getSegment(main).opacity = segbri;
+    }
+  }
 
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri) nightlightActive = false;
@@ -640,6 +664,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     countdownTime = getNumVal(&req, pos);
     if (countdownTime - now() > 0) countdownOverTriggered = false;
   }
+
+  pos = req.indexOf("RB");
+  if (pos > 0) doReboot = true;
 
   //cronixie
   #ifndef WLED_DISABLE_CRONIXIE
