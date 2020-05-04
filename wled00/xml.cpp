@@ -1,9 +1,11 @@
+#include "wled.h"
+
 /*
  * Sending XML status files to client
  */
 
 //build XML response to HTTP /win API request
-char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
+char* XML_response(AsyncWebServerRequest *request, char* dest)
 {
   char sbuf[(dest == nullptr)?1024:1]; //allocate local buffer if none passed
   obuf = (dest == nullptr)? sbuf:dest;
@@ -69,9 +71,10 @@ char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr)
   if (realtimeMode)
   {
     String mesg = "Live ";
-    if (realtimeMode == REALTIME_MODE_E131)
+    if (realtimeMode == REALTIME_MODE_E131 || realtimeMode == REALTIME_MODE_ARTNET)
     {
-      mesg += "E1.31 mode ";
+      mesg += (realtimeMode == REALTIME_MODE_E131) ? "E1.31" : "Art-Net";
+      mesg += " mode ";
       mesg += DMXMode;
       mesg += F(" at DMX Address ");
       mesg += DMXAddress;
@@ -333,6 +336,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"SM",notifyMacro);
     sappend('c',"S2",notifyTwice);
     sappend('c',"RD",receiveDirect);
+    sappend('v',"EP",e131Port);
     sappend('c',"ES",e131SkipOutOfSequence);
     sappend('c',"EM",e131Multicast);
     sappend('v',"EU",e131Universe);
@@ -387,7 +391,7 @@ void getSettingsJS(byte subPage, char* dest)
       default: sprintf(hueErrorString,"Bridge Error %i",hueError);
     }
     
-    sappends('m',"(\"hms\")[0]",hueErrorString);
+    sappends('m',"(\"sip\")[0]",hueErrorString);
     #endif
   }
 
@@ -450,12 +454,12 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',"NO",otaLock);
     sappend('c',"OW",wifiLock);
     sappend('c',"AO",aOtaEnabled);
-    sappends('m',"(\"msg\")[0]","WLED ");
+    sappends('m',"(\"sip\")[0]","WLED ");
     olen -= 2; //delete ";
     oappend(versionString);
     oappend(" (build ");
     oappendi(VERSION);
-    oappend(") OK\";");
+    oappend(")\";");
   }
   
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
@@ -464,6 +468,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"CN",DMXChannels);
     sappend('v',"CG",DMXGap);
     sappend('v',"CS",DMXStart);
+    sappend('v',"SL",DMXStartLED);
     
     sappend('i',"CH1",DMXFixtureMap[0]);
     sappend('i',"CH2",DMXFixtureMap[1]);
