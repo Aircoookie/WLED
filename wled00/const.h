@@ -45,6 +45,11 @@
 #define REALTIME_MODE_ADALIGHT    5
 #define REALTIME_MODE_ARTNET      6
 
+//realtime override modes
+#define REALTIME_OVERRIDE_NONE    0
+#define REALTIME_OVERRIDE_ONCE    1
+#define REALTIME_OVERRIDE_ALWAYS  2
+
 //E1.31 DMX modes
 #define DMX_MODE_DISABLED         0            //not used
 #define DMX_MODE_SINGLE_RGB       1            //all LEDs same RGB color (3 channels)
@@ -76,6 +81,12 @@
 #define HUE_ERROR_JSON_PARSING  250
 #define HUE_ERROR_TIMEOUT       251
 #define HUE_ERROR_ACTIVE        255
+
+//Segment option byte bits
+#define SEG_OPTION_SELECTED       0
+#define SEG_OPTION_REVERSED       1
+#define SEG_OPTION_ON             2
+#define SEG_OPTION_TRANSITIONAL   7
 
 //EEPROM size
 #define EEPSIZE 2560  //Maximum is 4096

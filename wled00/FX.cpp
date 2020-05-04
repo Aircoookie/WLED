@@ -35,7 +35,7 @@
  */
 uint16_t WS2812FX::mode_static(void) {
   fill(SEGCOLOR(0));
-  return (SEGMENT.getOption(7)) ? FRAMETIME : 500; //update faster if in transition
+  return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : 500; //update faster if in transition
 }
 
 
@@ -2719,48 +2719,90 @@ uint16_t WS2812FX::mode_popcorn(void) {
 //Inspired by https://github.com/avanhanegem/ArduinoCandleEffectNeoPixel
 //and https://cpldcpu.wordpress.com/2016/01/05/reverse-engineering-a-real-candle/
 
-uint16_t WS2812FX::mode_candle()
+uint16_t WS2812FX::candle(bool multi)
 {
-  if (SEGENV.call == 0) {
-    SEGENV.aux0 = 128; SEGENV.aux1 = 132; SEGENV.step = 1;
-  }
-  bool newTarget = false;
-  
-  uint8_t s = SEGENV.aux0, target = SEGENV.aux1, fadeStep = SEGENV.step;
-  
-  if (target > s) { //fade up
-    s = qadd8(s, fadeStep);
-    if (s >= target) newTarget = true;
-  } else {
-    s = qsub8(s, fadeStep);
-    if (s <= target) newTarget = true;
-  }
-  SEGENV.aux0 = s;
-
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-    setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), 255-s));
-  }
-
-  if (newTarget)
+  if (multi)
   {
-    uint8_t valrange = SEGMENT.intensity;
-    uint8_t rndval = valrange >> 1;
-    target = random8(rndval) + random8(rndval);
-    if (target < (rndval >> 1)) target = (rndval >> 1) + random8(rndval);
-    uint8_t offset = (255 - valrange) >> 1;
-    target += offset;
+    //allocate segment data
+    uint16_t dataSize = (SEGLEN -1) *3;
+    if (!SEGENV.allocateData(dataSize)) return candle(false); //allocation failed
+  }
 
-    uint8_t dif = (target > s) ? target - s : s - target;
-  
-    //how much to move closer to target per frame
-    fadeStep = dif >> 2; //mode called every ~25 ms, so 4 frames to have a new target every 100ms
-    if (fadeStep == 0) fadeStep = 1;
+  //max. flicker range controlled by intensity
+  uint8_t valrange = SEGMENT.intensity;
+  uint8_t rndval = valrange >> 1;
+
+  //step (how much to move closer to target per frame) coarsely set by speed
+  uint8_t speedFactor = 4;
+  if (SEGMENT.speed > 252) { //epilepsy
+    speedFactor = 1;
+  } else if (SEGMENT.speed > 99) { //regular candle (mode called every ~25 ms, so 4 frames to have a new target every 100ms)
+    speedFactor = 2;
+  } else if (SEGMENT.speed > 49) { //slower fade
+    speedFactor = 3;
+  } //else 4 (slowest)
+
+  uint16_t numCandles = (multi) ? SEGLEN : 1;
+
+  for (uint16_t i = 0; i < numCandles; i++)
+  {
+    uint16_t d = 0; //data location
+
+    uint8_t s = SEGENV.aux0, s_target = SEGENV.aux1, fadeStep = SEGENV.step;
+    if (i > 0) {
+      d = (i-1) *3;
+      s = SEGENV.data[d]; s_target = SEGENV.data[d+1]; fadeStep = SEGENV.data[d+2];
+    }
+    if (fadeStep == 0) { //init vals
+      s = 128; s_target = 130 + random8(4); fadeStep = 1;
+    }
+
+    bool newTarget = false;
+    if (s_target > s) { //fade up
+      s = qadd8(s, fadeStep);
+      if (s >= s_target) newTarget = true;
+    } else {
+      s = qsub8(s, fadeStep);
+      if (s <= s_target) newTarget = true;
+    }
+
+    if (newTarget) {
+      s_target = random8(rndval) + random8(rndval);
+      if (s_target < (rndval >> 1)) s_target = (rndval >> 1) + random8(rndval);
+      uint8_t offset = (255 - valrange) >> 1;
+      s_target += offset;
+
+      uint8_t dif = (s_target > s) ? s_target - s : s - s_target;
     
-    SEGENV.step = fadeStep;
-    SEGENV.aux1 = target;
+      fadeStep = dif >> speedFactor;
+      if (fadeStep == 0) fadeStep = 1;
+    }
+
+     if (i > 0) {
+      setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), s));
+
+      SEGENV.data[d] = s; SEGENV.data[d+1] = s_target; SEGENV.data[d+2] = fadeStep;
+    } else {
+      for (uint16_t j = 0; j < SEGLEN; j++) {
+        setPixelColor(j, color_blend(SEGCOLOR(1), color_from_palette(j, true, PALETTE_SOLID_WRAP, 0), s));
+      }
+
+      SEGENV.aux0 = s; SEGENV.aux1 = s_target; SEGENV.step = fadeStep;
+    }
   }
 
   return FRAMETIME;
+}
+
+uint16_t WS2812FX::mode_candle()
+{
+  return candle(false);
+}
+
+
+uint16_t WS2812FX::mode_candle_multi()
+{
+  return candle(true);
 }
 
 
@@ -2901,9 +2943,9 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
 
   fill(BLACK);
   
-  bool actuallyReverse = SEGMENT.getOption(1);
+  bool actuallyReverse = SEGMENT.getOption(SEG_OPTION_REVERSED);
   //have fireworks start in either direction based on intensity
-  SEGMENT.setOption(1, SEGENV.step);
+  SEGMENT.setOption(SEG_OPTION_REVERSED, SEGENV.step);
   
   Spark* sparks = reinterpret_cast<Spark*>(SEGENV.data);
   Spark* flare = sparks; //first spark is flare data
@@ -2994,7 +3036,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
     }
   }
 
-  SEGMENT.setOption(1, actuallyReverse);
+  SEGMENT.setOption(SEG_OPTION_REVERSED, actuallyReverse);
   
   return FRAMETIME;  
 }
@@ -3205,6 +3247,13 @@ uint16_t WS2812FX::mode_pacifica()
   CRGBPalette16 pacifica_palette_3 = 
     { 0x000208, 0x00030E, 0x000514, 0x00061A, 0x000820, 0x000927, 0x000B2D, 0x000C33, 
       0x000E39, 0x001040, 0x001450, 0x001860, 0x001C70, 0x002080, 0x1040BF, 0x2060FF };
+
+  if (SEGMENT.palette) {
+    pacifica_palette_1 = currentPalette;
+    pacifica_palette_2 = currentPalette;
+    pacifica_palette_3 = currentPalette;
+  }
+
   // Increment the four "color index start" counters, one for each wave layer.
   // Each is incremented at a different speed, and the speeds vary over time.
   uint16_t sCIStart1 = SEGENV.aux0, sCIStart2 = SEGENV.aux1, sCIStart3 = SEGENV.step, sCIStart4 = SEGENV.step >> 16;

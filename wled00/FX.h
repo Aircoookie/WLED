@@ -84,18 +84,21 @@
 
 // options
 // bit    7: segment is in transition mode
-// bits 2-6: TBD
+// bits 3-6: TBD
+// bit    2: segment is on
 // bit    1: reverse segment
 // bit    0: segment is selected
 #define NO_OPTIONS   (uint8_t)0x00
 #define TRANSITIONAL (uint8_t)0x80
+#define SEGMENT_ON   (uint8_t)0x04
 #define REVERSE      (uint8_t)0x02
 #define SELECTED     (uint8_t)0x01
 #define IS_TRANSITIONAL ((SEGMENT.options & TRANSITIONAL) == TRANSITIONAL)
-#define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
-#define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
+#define IS_SEGMENT_ON   ((SEGMENT.options & SEGMENT_ON  ) == SEGMENT_ON  )
+#define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
+#define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  102
+#define MODE_COUNT  103
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -199,6 +202,7 @@
 #define FX_MODE_RIPPLE_RAINBOW          99
 #define FX_MODE_HEARTBEAT              100
 #define FX_MODE_PACIFICA               101
+#define FX_MODE_CANDLE_MULTI           102
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -389,6 +393,7 @@ class WS2812FX {
       _mode[FX_MODE_RIPPLE_RAINBOW]          = &WS2812FX::mode_ripple_rainbow;
       _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
       _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
+      _mode[FX_MODE_CANDLE_MULTI]            = &WS2812FX::mode_candle_multi;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -574,7 +579,8 @@ class WS2812FX {
       mode_percent(void),
       mode_ripple_rainbow(void),
       mode_heartbeat(void),
-      mode_pacifica(void);
+      mode_pacifica(void),
+      mode_candle_multi(void);
       
 
   private:
@@ -607,6 +613,7 @@ class WS2812FX {
     // mode helper functions
     uint16_t
       blink(uint32_t, uint32_t, bool strobe, bool),
+      candle(bool),
       color_wipe(bool, bool),
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
@@ -660,12 +667,12 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat","Pacifica"
+"Heartbeat","Pacifica","Candle Multi"
 ])=====";
 
 
 const char JSON_palette_names[] PROGMEM = R"=====([
-"Default","Random Cycle","Primary Color","Based on Primary","Set Colors","Based on Set","Party","Cloud","Lava","Ocean",
+"Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
 "Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
 "Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",

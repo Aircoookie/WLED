@@ -146,11 +146,23 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     default: col.G = g; col.R = b; col.B = r; break; //5 = GBR
   }
   col.W = w;
-
-  //color_blend(BLACK, (uint32_t)col, SEGMENT.opacity);
   
   uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
+
+    //color_blend(getpixel, col, SEGMENT.opacity); (pseudocode for future blending of segments)
+    if (IS_SEGMENT_ON)
+    {
+      if (SEGMENT.opacity < 255) {  
+        col.R = scale8(col.R, SEGMENT.opacity);
+        col.G = scale8(col.G, SEGMENT.opacity);
+        col.B = scale8(col.B, SEGMENT.opacity);
+        col.W = scale8(col.W, SEGMENT.opacity);
+      }
+    } else {
+      col = BLACK;
+    }
+
     /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
     bool reversed = reverseMode ^ IS_REVERSE;
     uint16_t realIndex = realPixelIndex(i);
@@ -483,11 +495,16 @@ void WS2812FX::resetSegments() {
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].stop = _length;
   _segments[0].grouping = 1;
-  _segments[0].setOption(0, 1); //select
+  _segments[0].setOption(SEG_OPTION_SELECTED, 1);
+  _segments[0].setOption(SEG_OPTION_ON, 1);
+  _segments[0].opacity = 255;
+
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
     _segments[i].colors[0] = color_wheel(i*51);
     _segments[i].grouping = 1;
+    _segments[i].setOption(SEG_OPTION_ON, 1);
+    _segments[i].opacity = 255;
     _segment_runtimes[i].reset();
   }
   _segment_runtimes[0].reset();
@@ -512,7 +529,7 @@ void WS2812FX::setShowCallback(show_callback cb)
 void WS2812FX::setTransitionMode(bool t)
 {
   _segment_index = getMainSegmentId();
-  SEGMENT.setOption(7,t);
+  SEGMENT.setOption(SEG_OPTION_TRANSITIONAL, t);
   if (!t) return;
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
   if (SEGMENT.mode == FX_MODE_STATIC && SEGENV.next_time > waitMax) SEGENV.next_time = waitMax;
@@ -726,25 +743,25 @@ void WS2812FX::handle_palette(void)
     case 2: {//primary color only
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       targetPalette = CRGBPalette16(prim); break;}
-    case 3: {//based on primary
-      //considering performance implications
-      CRGB prim = col_to_crgb(SEGCOLOR(0));
-      CHSV prim_hsv = rgb2hsv_approximate(prim);
-      targetPalette = CRGBPalette16(
-                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
-                      CHSV(prim_hsv.h, MAX(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
-                      CHSV(prim_hsv.h, prim_hsv.s, MAX(prim_hsv.v - 50,0)), //darker
-                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v)); //color itself
-      break;}
-    case 4: {//primary + secondary
+    case 3: {//primary + secondary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
-      targetPalette = CRGBPalette16(sec,prim); break;}
-    case 5: {//based on primary + secondary
+      targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
+    case 4: {//primary + secondary + tertiary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
       CRGB ter  = col_to_crgb(SEGCOLOR(2));
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
+    case 5: {//primary + secondary (+tert if not off), more distinct
+      CRGB prim = col_to_crgb(SEGCOLOR(0));
+      CRGB sec  = col_to_crgb(SEGCOLOR(1));
+      if (SEGCOLOR(2)) {
+        CRGB ter = col_to_crgb(SEGCOLOR(2));
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
+      } else {
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
+      }
+      break;}
     case 6: //Party colors
       targetPalette = PartyColors_p; break;
     case 7: //Cloud colors
@@ -795,7 +812,7 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
   if (a->speed != b->speed) return false;
   if (a->intensity != b->intensity) return false;
   if (a->palette != b->palette) return false;
-  //if (a->getOption(1) != b->getOption(1)) return false; //reverse
+  //if (a->getOption(SEG_OPTION_REVERSED) != b->getOption(SEG_OPTION_REVERSED)) return false;
   return true;
 }
 

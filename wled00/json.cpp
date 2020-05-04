@@ -20,6 +20,16 @@ void deserializeSegment(JsonObject elem, byte it)
     uint16_t grp = elem["grp"] | seg.grouping;
     uint16_t spc = elem["spc"] | seg.spacing;
     strip.setSegment(id, start, stop, grp, spc);
+
+    int segbri = elem["bri"] | -1;
+    if (segbri == 0) {
+      seg.setOption(SEG_OPTION_ON, 0);
+    } else if (segbri > 0) {
+      seg.opacity = segbri;
+      seg.setOption(SEG_OPTION_ON, 1);
+    }
+  
+    seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON));
     
     JsonArray colarr = elem["col"];
     if (!colarr.isNull())
@@ -47,9 +57,9 @@ void deserializeSegment(JsonObject elem, byte it)
     }
     
     //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
-    seg.setOption(0, elem["sel"] | seg.getOption(0)); //selected
-    seg.setOption(1, elem["rev"] | seg.getOption(1)); //reverse
-    //int cln = seg_0["cln"];
+    seg.setOption(SEG_OPTION_SELECTED, elem["sel"] | seg.getOption(SEG_OPTION_SELECTED));
+    seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
+
     //temporary, strip object gets updated via colorUpdated()
     if (id == strip.getMainSegmentId()) {
       effectCurrent = elem["fx"] | effectCurrent;
@@ -119,6 +129,10 @@ bool deserializeState(JsonObject root)
 
   int timein = root["time"] | -1;
   if (timein != -1) setTime(timein);
+  doReboot = root["rb"] | doReboot;
+
+  realtimeOverride = root["lor"] | realtimeOverride;
+  if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
 
   byte prevMain = strip.getMainSegmentId();
   strip.mainSegment = root["mainseg"] | prevMain;
@@ -177,6 +191,9 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["len"] = seg.stop - seg.start;
   root["grp"] = seg.grouping;
   root["spc"] = seg.spacing;
+  root["on"] = seg.getOption(SEG_OPTION_ON);
+  byte segbri = seg.opacity;
+  root["bri"] = (segbri) ? segbri : 255;
 
 	JsonArray colarr = root.createNestedArray("col");
   
@@ -204,7 +221,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 	root["ix"] = seg.intensity;
 	root["pal"] = seg.palette;
 	root["sel"] = seg.isSelected();
-	root["rev"] = seg.getOption(1);
+	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
 }
 
 
@@ -235,6 +252,8 @@ void serializeState(JsonObject root)
   JsonObject udpn = root.createNestedObject("udpn");
   udpn["send"] = notifyDirect;
   udpn["recv"] = receiveNotifications;
+
+  root["lor"] = realtimeOverride;
 
   root["mainseg"] = strip.getMainSegmentId();
   
@@ -274,6 +293,7 @@ void serializeInfo(JsonObject root)
 {
   root["ver"] = versionString;
   root["vid"] = VERSION;
+  //root["cn"] = WLED_CODENAME;
   
   JsonObject leds = root.createNestedObject("leds");
   leds["count"] = ledCount;
@@ -292,6 +312,24 @@ void serializeInfo(JsonObject root)
   root["name"] = serverDescription;
   root["udpport"] = udpPort;
   root["live"] = (bool)realtimeMode;
+
+  switch (realtimeMode) {
+    case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;
+    case REALTIME_MODE_GENERIC:  root["lm"] = ""; break;
+    case REALTIME_MODE_UDP:      root["lm"] = "UDP"; break;
+    case REALTIME_MODE_HYPERION: root["lm"] = "Hyperion"; break;
+    case REALTIME_MODE_E131:     root["lm"] = "E1.31"; break;
+    case REALTIME_MODE_ADALIGHT: root["lm"] = F("USB Adalight");
+    case REALTIME_MODE_ARTNET:   root["lm"] = "Art-Net"; break;
+  }
+
+  if (realtimeIP[0] == 0)
+  {
+    root["lip"] = "";
+  } else {
+    root["lip"] = realtimeIP.toString();
+  }
+
   root["fxcount"] = strip.getModeCount();
   root["palcount"] = strip.getPaletteCount();
 
@@ -326,7 +364,7 @@ void serializeInfo(JsonObject root)
   #endif
   
   root["freeheap"] = ESP.getFreeHeap();
-  root["uptime"] = millis()/1000;
+  root["uptime"] = millis()/1000 + rolloverMillis*4294967;
   
   byte os = 0;
   #ifdef WLED_DEBUG
@@ -356,7 +394,7 @@ void serializeInfo(JsonObject root)
   root["opt"] = os;
   
   root["brand"] = "WLED";
-  root["product"] = "DIY light";
+  root["product"] = "FOSS";
   root["mac"] = escapedMac;
 }
 
@@ -366,6 +404,7 @@ void serveJson(AsyncWebServerRequest* request)
   const String& url = request->url();
   if      (url.indexOf("state") > 0) subJson = 1;
   else if (url.indexOf("info")  > 0) subJson = 2;
+  else if (url.indexOf("si") > 0) subJson = 3;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
@@ -397,8 +436,11 @@ void serveJson(AsyncWebServerRequest* request)
       serializeState(state);
       JsonObject info  = doc.createNestedObject("info");
       serializeInfo(info);
-      doc["effects"]  = serialized((const __FlashStringHelper*)JSON_mode_names);
-      doc["palettes"] = serialized((const __FlashStringHelper*)JSON_palette_names);
+      if (subJson != 3)
+      {
+        doc["effects"]  = serialized((const __FlashStringHelper*)JSON_mode_names);
+        doc["palettes"] = serialized((const __FlashStringHelper*)JSON_palette_names);
+      }
   }
   
   response->setLength();

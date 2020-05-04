@@ -420,7 +420,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   WS2812FX::Segment& mainseg = strip.getSegment(main);
   pos = req.indexOf("SV="); //segment selected
-  if (pos > 0) mainseg.setOption(0, (req.charAt(pos+3) != '0'));
+  if (pos > 0) mainseg.setOption(SEG_OPTION_SELECTED, (req.charAt(pos+3) != '0'));
 
   uint16_t startI = mainseg.start;
   uint16_t stopI = mainseg.stop;
@@ -512,6 +512,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("C2=");
   if (pos > 0) {
     colorFromDecOrHexString(colSec, (char*)req.substring(pos + 3).c_str());
+  }
+  pos = req.indexOf("C3=");
+  if (pos > 0) {
+    byte t[4];
+    colorFromDecOrHexString(t, (char*)req.substring(pos + 3).c_str());
+    strip.setColor(2, t[0], t[1], t[2], t[3]);
   }
 
   //set to random hue SR=0->1st SR=1->2nd
@@ -626,7 +632,17 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   //Segment reverse
   pos = req.indexOf("RV=");
-  if (pos > 0) strip.getSegment(main).setOption(1, req.charAt(pos+3) != '0');
+  if (pos > 0) strip.getSegment(main).setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
+
+  //Segment brightness/opacity
+  pos = req.indexOf("SB=");
+  if (pos > 0) {
+    byte segbri = getNumVal(&req, pos);
+    strip.getSegment(main).setOption(SEG_OPTION_ON, segbri);
+    if (segbri) {
+      strip.getSegment(main).opacity = segbri;
+    }
+  }
 
   //deactivate nightlight if target brightness is reached
   if (bri == nightlightTargetBri) nightlightActive = false;
@@ -642,6 +658,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     countdownTime = getNumVal(&req, pos);
     if (countdownTime - now() > 0) countdownOverTriggered = false;
   }
+
+  pos = req.indexOf("RB");
+  if (pos > 0) doReboot = true;
 
   //cronixie
   #ifndef WLED_DISABLE_CRONIXIE

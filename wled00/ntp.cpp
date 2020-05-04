@@ -60,8 +60,13 @@ Timezone tzNK(NKST, NKST);
 TimeChangeRule IST = {Last, Sun, Mar, 1, 330};     // India Standard Time = UTC + 5.5 hours
 Timezone tzIndia(IST, IST);
 
+TimeChangeRule ACST = {First, Sun, Apr, 3, 570};   //Australian Central Standard = UTC + 9.5 hours
+TimeChangeRule ACDT = {First, Sun, Oct, 2, 630};   //Australian Central Daylight = UTC + 10.5 hours
+Timezone tzAUNorthern(ACST, ACST);
+Timezone tzAUSouthern(ACDT, ACST);
+
 // Pick your timezone from here.
-Timezone* timezones[] = {&tzUTC, &tzUK, &tzEUCentral, &tzEUEastern, &tzUSEastern, &tzUSCentral, &tzUSMountain, &tzUSArizona, &tzUSPacific, &tzChina, &tzJapan, &tzAUEastern, &tzNZ, &tzNK, &tzIndia, &tzCASaskatchewan};  
+Timezone* timezones[] = {&tzUTC, &tzUK, &tzEUCentral, &tzEUEastern, &tzUSEastern, &tzUSCentral, &tzUSMountain, &tzUSArizona, &tzUSPacific, &tzChina, &tzJapan, &tzAUEastern, &tzNZ, &tzNK, &tzIndia, &tzCASaskatchewan, &tzAUNorthern, &tzAUSouthern};  
 
 void handleNetworkTime()
 {
