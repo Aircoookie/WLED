@@ -594,7 +594,7 @@ void savedToPresets()
       savedPresets &= ~(0x01 << (index-1));
     }
   }
-  if (EEPROM.read(700) == 2) {
+  if (EEPROM.read(700) == 2 || EEPROM.read(700) == 3) {
     savedPresets |= 0x01 << 15;
   } else
   {
@@ -604,6 +604,12 @@ void savedToPresets()
 
 bool applyPreset(byte index, bool loadBri)
 {
+  StaticJsonDocument<1024> temp;
+  errorFlag = !readObjectFromFileUsingId("/presets.json", index, &temp);
+  serializeJson(temp, Serial);
+  deserializeState(temp.as<JsonObject>());
+  //presetToApply = index;
+  return true;
   if (index == 255 || index == 0)
   {
     loadSettingsFromEEPROM(false);//load boot defaults
