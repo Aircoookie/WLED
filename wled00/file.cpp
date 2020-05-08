@@ -15,44 +15,83 @@
 
 #ifndef WLED_DISABLE_FILESYSTEM
 
-bool find(const char *target, File f) {
+//find() that reads and buffers data from file stream in 256-byte blocks.
+//Significantly faster, f.find(key) can take SECONDS for multi-kB files
+bool bufferedFind(const char *target, File f) {
   size_t targetLen = strlen(target);
+  Serial.println(target);
+  //Serial.println(f.position());
   size_t index = 0;
-  int c;
+  byte c;
+  uint16_t bufsize = 0, count = 0;
+  byte buf[256];
 
-  while(f.position() < f.size() -1) {
-    c = f.read();
-    if(c != target[index])
+  while (f.position() < f.size() -1) {
+    //c = f.read();
+    //Serial.println(f.position());
+    bufsize = f.read(buf, 256);
+    count = 0;
+    while (count < bufsize) {
+      if(buf[count] != target[index])
       index = 0; // reset index if any char does not match
 
-    if(c == target[index]) {
-      if(++index >= targetLen) { // return true if all chars in the target match
-        return true;
+      if(buf[count] == target[index]) {
+        if(++index >= targetLen) { // return true if all chars in the target match
+          f.seek((f.position() - bufsize) + count +1);
+          return true;
+        }
       }
+      count++;
     }
   }
   return false;
 }
 
-bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonObject content, File input, bool doClose = true)
+//find empty spots in file stream in 256-byte blocks.
+bool bufferedFindSpace(uint16_t targetLen, File f) {
+  size_t index = 0;
+  byte c;
+  uint16_t bufsize = 0, count = 0;
+  byte buf[256];
+
+  while (f.position() < f.size() -1) {
+    bufsize = f.read(buf, 256);
+    count = 0;
+    while (count < bufsize) {
+      if(buf[count] != ' ')
+      index = 0; // reset index if not space
+
+      if(buf[count] == ' ') {
+        if(++index >= targetLen) { // return true if space long enough
+          f.seek(f.position() - targetLen);
+          return true;
+        }
+      }
+      count++;
+    }
+  }
+  return false;
+}
+
+bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content)
 {
   char objKey[10];
   sprintf(objKey, "\"%ld\":", id);
-  writeObjectToFile(file, objKey, content, input, doClose);
+  writeObjectToFile(file, objKey, content);
 }
 
-bool writeObjectToFile(const char* file, const char* key, JsonObject content, File input, bool doClose = true)
+bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
 {
   uint32_t pos = 0;
-  File f = (input) ? input : SPIFFS.open(file, "r+");
+  File f = SPIFFS.open(file, "r+");
   if (!f) f = SPIFFS.open(file,"w");
   if (!f) return false;
   //f.setTimeout(1);
   f.seek(0, SeekSet);
   
-  if (!find(key, f)) //key does not exist in file
+  if (!bufferedFind(key, f)) //key does not exist in file
   {
-    return appendObjectToFile(file, key, content, f, true);
+    return appendObjectToFile(file, key, content, f);
   } 
   
   //exists
@@ -63,9 +102,9 @@ bool writeObjectToFile(const char* file, const char* key, JsonObject content, Fi
   uint32_t pos2 = f.position();
   uint32_t oldLen = pos2 - pos;
   
-  if (!content.isNull() && measureJson(content) <= oldLen)  //replace
+  if (!content->isNull() && measureJson(*content) <= oldLen)  //replace
   {
-    serializeJson(content, f);
+    serializeJson(*content, f);
     //pad rest
     for (uint32_t i = f.position(); i < pos2; i++) {
       f.write(' ');
@@ -77,53 +116,43 @@ bool writeObjectToFile(const char* file, const char* key, JsonObject content, Fi
     for (uint32_t i = pos; i < pos2; i++) {
       f.write(' ');
     }
-    if (!content.isNull()) return appendObjectToFile(file, key, content, f, true);
+    if (!content->isNull()) return appendObjectToFile(file, key, content, f);
   }
   f.close();
 }
 
-bool appendObjectToFile(const char* file, const char* key, JsonObject& content, File input, bool doClose = true)
+bool appendObjectToFile(const char* file, const char* key, JsonDocument* content, File input)
 {
+  Serial.println("Append");
   uint32_t pos = 0;
   File f = (input) ? input : SPIFFS.open(file, "r+");
   if (!f) f = SPIFFS.open(file,"w");
   if (!f) return false;
-  f.setTimeout(1);
   if (f.size() < 3) f.print("{}");
   
   //if there is enough empty space in file, insert there instead of appending
-  uint32_t contentLen = measureJson(content);
-  uint32_t spaces = 0, spaceI = 0, spacesMax = 0, spaceMaxI = 0;
-  f.seek(1, SeekSet);
-  for (uint32_t i = 1; i < f.size(); i++)
-  {
-    if (f.read() == ' ') {
-      if (!spaces) spaceI = i; spaces++;
-    } else {
-      if (spaces > spacesMax) { spacesMax = spaces; spaceMaxI = spaceI;}
-      spaces = 0;
-      if (spacesMax >= contentLen) {
-        f.seek(spaceMaxI, SeekSet);
-        serializeJson(content, f);
-        return true;
-      }
-    }
+  uint32_t contentLen = measureJson(*content);
+  Serial.print("clen"); Serial.println(contentLen);
+  if (bufferedFindSpace(contentLen, f)) {
+    Serial.println("space");
+    serializeJson(*content, f);
+    return true;
   }
   
   //check if last character in file is '}' (typical)
-  uint32_t lastByte = f.size() -1;
   f.seek(1, SeekEnd);
-  if (f.read() == '}') pos = lastByte;
+  if (f.read() == '}') pos = f.size() -1;
   
   if (pos == 0) //not found
   {
-    while (find("}",f)) //find last closing bracket in JSON if not last char
+    Serial.println("not}");
+    while (bufferedFind("}",f)) //find last closing bracket in JSON if not last char
     {
       pos = f.position();
     }
   }
-  
-  if (pos)
+  Serial.print("pos"); Serial.println(pos);
+  if (pos < 3)
   {
     f.seek(pos -1, SeekSet);
     f.write(',');
@@ -132,14 +161,14 @@ bool appendObjectToFile(const char* file, const char* key, JsonObject& content, 
     f.write('{'); //start JSON
   }
 
-  f.print("\"");
+  //f.print("\"");
   f.print(key);
-  f.print("\":");
+  //f.print("\":");
   //Append object
-  serializeJson(content, f);
+  serializeJson(*content, f);
   
   f.write('}');
-  if (doClose) f.close();
+  f.close();
 }
 
 bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest)
@@ -156,9 +185,9 @@ bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
   
   File f = SPIFFS.open(file, "r");
   if (!f) return false;
-  f.setTimeout(0);
-  Serial.println(key);
-  if (f.find(key)) //key does not exist in file
+  //f.setTimeout(0);
+  //Serial.println(key);
+  if (!bufferedFind(key, f)) //key does not exist in file
   {
     f.close();
     return false;

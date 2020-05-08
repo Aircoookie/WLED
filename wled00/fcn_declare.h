@@ -45,11 +45,10 @@ void handleDMX();
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet);
 
 //file.cpp
-bool find(const char* target, File f);
 bool handleFileRead(AsyncWebServerRequest*, String path);
-bool writeObjectToFileUsing(const char* file, const char* key, JsonObject content, File input, bool doClose);
-bool writeObjectToFile(const char* file, const char* key, JsonObject content, File input, bool doClose);
-bool appendObjectToFile(const char* file, const char* key, JsonObject& content, File input, bool doClose);
+bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content);
+bool writeObjectToFile(const char* file, const char* key, JsonDocument* content);
+bool appendObjectToFile(const char* file, const char* key, JsonDocument* content, File input);
 bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest);
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest);
 
