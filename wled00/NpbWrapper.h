@@ -14,6 +14,8 @@
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
 //#define WLED_USE_5CH_LEDS  //5 Channel H801 for cold and warm white
+//#define WLED_USE_BWLT11
+//#define WLED_USE_SHOJO_PCB
 
 #ifndef BTNPIN
 #define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
@@ -62,7 +64,7 @@
     #define GPIN 4   //G pin for analog LED strip
     #define BPIN 14  //B pin for analog LED strip
     #define WPIN 5   //W pin for analog LED strip
-  #elif defined(SHOJO_PCB)
+  #elif defined(WLED_USE_SHOJO_PCB)
   //PWM pins - to use with Shojo PCB (https://www.bastelbunker.de/esp-rgbww-wifi-led-controller-vbs-edition/)
     #define RPIN 14  //R pin for analog LED strip
     #define GPIN 4   //G pin for analog LED strip

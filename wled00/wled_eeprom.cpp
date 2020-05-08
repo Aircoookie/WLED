@@ -594,7 +594,7 @@ void savedToPresets()
       savedPresets &= ~(0x01 << (index-1));
     }
   }
-  if (EEPROM.read(700) == 2) {
+  if (EEPROM.read(700) == 2 || EEPROM.read(700) == 3) {
     savedPresets |= 0x01 << 15;
   } else
   {
