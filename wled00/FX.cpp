@@ -3322,3 +3322,15 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
   uint8_t sindex8 = scale16(sindex16, 240);
   return ColorFromPalette(p, sindex8, bri, LINEARBLEND);
 }
+
+//Solid colour background with glitter
+uint16_t WS2812FX::mode_solid_glitter()
+{
+  fill(SEGCOLOR(0));
+
+  if (SEGMENT.intensity > random8())
+  {
+    setPixelColor(random16(SEGLEN), ULTRAWHITE);
+  }
+  return FRAMETIME;
+}
