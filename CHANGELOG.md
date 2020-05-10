@@ -2,6 +2,11 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2005100
+
+-   Update to Espalexa v2.4.6 (+1.6kB free heap memory)
+-   Added `m5atom` PlatformIO environment
+
 #### Build 2005090
 
 -   Default to ESP8266 Arduino core v2.7.1 in PlatformIO

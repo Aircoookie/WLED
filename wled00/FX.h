@@ -220,7 +220,7 @@ class WS2812FX {
       uint8_t intensity;
       uint8_t palette;
       uint8_t mode;
-      uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
+      uint8_t options; //bit pattern: msb first: transitional needspixelstate tbd tbd (paused) on reverse selected
       uint8_t grouping, spacing;
       uint8_t opacity;
       uint32_t colors[NUM_COLORS];

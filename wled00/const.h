@@ -86,6 +86,8 @@
 #define SEG_OPTION_SELECTED       0
 #define SEG_OPTION_REVERSED       1
 #define SEG_OPTION_ON             2
+#define SEG_OPTION_PAUSED         3            //unused
+#define SEG_OPTION_NONUNITY       4            //Indicates that the effect does not use FRAMETIME or needs getPixelColor
 #define SEG_OPTION_TRANSITIONAL   7
 
 //EEPROM size
