@@ -1,9 +1,9 @@
 /*
-   Settings html
-*/
+ *  Settings html
+ */
 
 //common CSS of settings pages
-const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}</style>)=====";
+const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}.d5{width:4.5em !important;}</style>)=====";
 
 //settings menu
 const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
@@ -214,11 +214,12 @@ function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com
 
 <i>Number of fixtures is taken from LED config page</i><br>
 
-channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
-start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
-spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
+Channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
+Start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
+Spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
 <div id="gapwarning" style="color: orange; display: none;">WARNING: Channel gap is lower than channels per fixture.<br />This will cause overlap.</div>
-<button type="button" onclick="location.href='/dmxmap';">DMX Map</button>
+<button type="button" onclick="location.href='/dmxmap';">DMX Map</button><br>
+DMX fixtures start LED: <input type="number" min="0" max="1500" name="SL">
 <h3>channel functions</h3>
 <div id="dmxchannels"></div>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
@@ -251,16 +252,16 @@ Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
 
 //sync settings
 const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>Sync Settings</title>
-<script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}function GetV(){var d=document;
+<html><head><meta name=viewport content="width=500"><meta charset=utf-8><title>Sync Settings</title>
+<script>var d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings")}function B(){window.open("/settings","_self")}function adj(){if(d.Sf.DI.value==6454){if(d.Sf.DA.value==1){d.Sf.DA.value=0}if(d.Sf.EU.value==1){d.Sf.EU.value=0}}else{if(d.Sf.DI.value==5568){if(d.Sf.DA.value==0){d.Sf.DA.value=1}if(d.Sf.EU.value==0){d.Sf.EU.value=1}}}}function SP(){var a=d.Sf.DI.value;d.getElementById("xp").style.display=(a>0)?"none":"block";if(a>0){d.Sf.EP.value=a}}function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568:d.Sf.DI.value=5568;break;case 6454:d.Sf.DI.value=6454;break}SP()}function S(){GetV();SetVal()};function GetV(){
 %CSS%%SCSS%</head>
-<body onload="GetV()">
-<form id="form_s" name="Sf" method="post">
-<div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+<body onload=S()>
+<form id=form_s name=Sf method=post>
+<div class=helpB><button type=button onclick=H()>?</button></div>
+<button type=button onclick=B()>Back</button><button type=submit>Save</button><hr>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
-On/Off button enabled: <input type="checkbox" name="BT"><br>
+On/Off button enabled: <input type=checkbox name=BT><br>
 Infrared remote:
 <select name=IR>
 <option value=0>Disabled</option>
@@ -271,24 +272,31 @@ Infrared remote:
 <option value=5>21-key RGB</option>
 <option value=6>6-key black</option>
 </select><br>
-<a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
+<a href=https://github.com/Aircoookie/WLED/wiki/Infrared-Control target=_blank>IR info</a>
 <h3>WLED Broadcast</h3>
-UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>
-Receive <input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects<br>
-Send notifications on direct change: <input type="checkbox" name="SD"><br>
-Send notifications on button press: <input type="checkbox" name="SB"><br>
-Send Alexa notifications: <input type="checkbox" name="SA"><br>
-Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
-Send Macro notifications: <input type="checkbox" name="SM"><br>
-Send notifications twice: <input type="checkbox" name="S2">
+UDP Port: <input name=UP type=number min=1 max=65535 class=d5 required><br>
+Receive <input type=checkbox name=RB>Brightness, <input type=checkbox name=RC>Color, and <input type=checkbox name=RX>Effects<br>
+Send notifications on direct change: <input type=checkbox name=SD><br>
+Send notifications on button press: <input type=checkbox name=SB><br>
+Send Alexa notifications: <input type=checkbox name=SA><br>
+Send Philips Hue change notifications: <input type=checkbox name=SH><br>
+Send Macro notifications: <input type=checkbox name=SM><br>
+Send notifications twice: <input type=checkbox name=S2>
 <h3>Realtime</h3>
-Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
-<i>E1.31 (sACN)</i><br>
-Skip out-of-sequence packets (freeze instead of flicker): <input type="checkbox" name="ES"><br>
-Use E1.31 multicast: <input type="checkbox" name="EM"><br>
-E1.31 start universe: <input name="EU" type="number" min="1" max="63999" required><br>
-<i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br>
-DMX start address: <input name="DA" type="number" min="1" max="510" value="1" required><br>
+Receive UDP realtime: <input type=checkbox name=RD><br><br>
+<i>Network DMX input</i><br>
+Type:
+<select name=DI onchange=SP();adj()>
+<option value=5568>E1.31 (sACN)</option>
+<option value=6454>Art-Net</option>
+<option value=0 selected>Custom port</option>
+</select><br>
+<div id=xp>Port: <input name=EP type=number min=1 max=65535 value=5568 class=d5 required><br></div>
+Multicast: <input type=checkbox name=EM><br>
+Start universe: <input name=EU type=number min=0 max=63999 required><br>
+<i>Reboot required.</i> Check out <a href=https://github.com/ahodges9/LedFx target=_blank>LedFx</a>!<br>
+Skip out-of-sequence packets: <input type=checkbox name=ES><br>
+DMX start address: <input name=DA type=number min=0 max=510 required><br>
 DMX mode:
 <select name=DM>
 <option value=0>Disabled</option>
@@ -298,49 +306,48 @@ DMX mode:
 <option value=4>Multi RGB</option>
 <option value=5>Multi DRGB</option>
 </select><br>
-<a href="https://github.com/Aircoookie/WLED/wiki/E1.31-DMX" target="_blank">E1.31 info</a><br>
-Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
-Force max brightness: <input type="checkbox" name="FB"><br>
-Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
-Realtime LED offset: <input name="WO" type="number" min="-255" max="255" required>
+<a href=https://github.com/Aircoookie/WLED/wiki/E1.31-DMX target=_blank>E1.31 info</a><br>
+Timeout: <input name=ET type=number min=1 max=65000 required> ms<br>
+Force max brightness: <input type=checkbox name=FB><br>
+Disable realtime gamma correction: <input type=checkbox name=RG><br>
+Realtime LED offset: <input name=WO type=number min=-255 max=255 required>
 <h3>Alexa Voice Assistant</h3>
-Emulate Alexa device: <input type="checkbox" name="AL"><br>
-Alexa invocation name: <input name="AI" maxlength="32">
+Emulate Alexa device: <input type=checkbox name=AL><br>
+Alexa invocation name: <input name=AI maxlength=32>
 <h3>Blynk</h3>
 <b>Blynk, MQTT and Hue sync all connect to external hosts!<br>
 This may impact the responsiveness of the ESP8266.</b><br>
 For best results, only use one of these services at a time.<br>
 (alternatively, connect a second ESP to them and use the UDP sync)<br><br>
-Device Auth token: <input name="BK" maxlength="33"><br>
-<i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
+Device Auth token: <input name=BK maxlength=33><br>
+<i>Clear the token field to disable. </i><a href=https://github.com/Aircoookie/WLED/wiki/Blynk target=_blank>Setup info</a>
 <h3>MQTT</h3>
-Enable MQTT: <input type="checkbox" name="MQ"><br>
-Broker: <input name="MS" maxlength="32">
-Port: <input name="MQPORT" type="number" min="1" max="65535"><br>
+Enable MQTT: <input type=checkbox name=MQ><br>
+Broker: <input name=MS maxlength=32>
+Port: <input name=MQPORT type=number min=1 max=65535 class=d5><br>
 <b>The MQTT credentials are sent over an unsecured connection.<br>
 Never use the MQTT password for another service!</b><br>
-Username: <input name="MQUSER" maxlength="40"><br>
-Password: <input type="password" input name="MQPASS" maxlength="40"><br>
-Client ID: <input name="MQCID" maxlength="40"><br>
-Device Topic: <input name="MD" maxlength="32"><br>
-Group Topic: <input name="MG" maxlength="32"><br>
-<i>Reboot required to apply changes. </i><a href="https://github.com/Aircoookie/WLED/wiki/MQTT" target="_blank">MQTT info</a>
+Username: <input name=MQUSER maxlength=40><br>
+Password: <input type=password input name=MQPASS maxlength=40><br>
+Client ID: <input name=MQCID maxlength=40><br>
+Device Topic: <input name=MD maxlength=32><br>
+Group Topic: <input name=MG maxlength=32><br>
+<i>Reboot required to apply changes. </i><a href=https://github.com/Aircoookie/WLED/wiki/MQTT target=_blank>MQTT info</a>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
-Poll Hue light <input name="HL" type="number" min="1" max="99" > every <input name="HI" type="number" min="100" max="65000"> ms: <input type="checkbox" name="HP"><br>
-Then, receive <input type="checkbox" name="HO"> On/Off, <input type="checkbox" name="HB"> Brightness, and <input type="checkbox" name="HC"> Color<br>
+Poll Hue light <input name=HL type=number min=1 max=99> every <input name=HI type=number min=100 max=65000> ms: <input type=checkbox name=HP><br>
+Then, receive <input type=checkbox name=HO> On/Off, <input type=checkbox name=HB> Brightness, and <input type=checkbox name=HC> Color<br>
 Hue Bridge IP:<br>
-<input name="H0" type="number" min="0" max="255" > .
-<input name="H1" type="number" min="0" max="255" > .
-<input name="H2" type="number" min="0" max="255" > .
-<input name="H3" type="number" min="0" max="255" ><br>
+<input name=H0 type=number min=0 max=255> .
+<input name=H1 type=number min=0 max=255> .
+<input name=H2 type=number min=0 max=255> .
+<input name=H3 type=number min=0 max=255><br>
 <b>Press the pushlink button on the bridge, after that save this page!</b><br>
 (when first connecting)<br>
-Hue status: <span class="hms"> Disabled in this build </span><hr>
-<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+Hue status: <span class=sip> Disabled in this build </span><hr>
+<button type=button onclick=B()>Back</button><button type=submit>Save</button>
 </form>
-</body>
-</html>)=====";
+</body></html>)=====";
 
 
 //time and macro settings
@@ -377,6 +384,8 @@ Time zone:
 <option value="13">North Korea</option>
 <option value="14">IST (India)</option>
 <option value="15">CA-Saskatchewan</option>
+<option value="16">ACST</option>
+<option value="17">ACST/ACDT</option>
 </select><br>
 UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 Current local time is <span class="times">unknown</span>.
@@ -463,12 +472,12 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.1<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.10.0<br><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2020 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
-Server message: <span class="msg"> Response error! </span><hr>
+Server message: <span class="sip"> Response error! </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 </form>
 </body>

@@ -27,13 +27,30 @@
 #include "FX.h"
 #include "palettes.h"
 
+//enable custom per-LED mapping. This can allow for better effects on matrices or special displays
+//#define WLED_CUSTOM_LED_MAPPING
+
+#ifdef WLED_CUSTOM_LED_MAPPING
+//this is just an example (30 LEDs). It will first set all even, then all uneven LEDs.
+const uint16_t customMappingTable[] = {
+  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
+  1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29};
+
+//another example. Switches direction every 5 LEDs.
+/*const uint16_t customMappingTable[] = {
+  0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14,
+  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25};*/
+
+const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); //30 in example
+#endif
+
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
-  if (supportWhite == _useRgbw && countPixels == _length) return;
+  if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
   RESET_RUNTIME;
   _useRgbw = supportWhite;
-  _skipFirstMode = skipFirst;
   _length = countPixels;
+  _skipFirstMode = skipFirst;
 
   uint8_t ty = 1;
   if (supportWhite) ty = 2;
@@ -55,6 +72,7 @@ void WS2812FX::service() {
   now = nowUp + timebase;
   if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
+
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
     _segment_index = i;
@@ -130,84 +148,46 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   }
   col.W = w;
   
-  if (!_cronixieMode)
-  {
-    uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
-    if (SEGLEN) {//from segment
-      /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
-      bool reversed = reverseMode ^ IS_REVERSE;
-      uint16_t realIndex = realPixelIndex(i);
+  uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
+  if (SEGLEN) {//from segment
 
-      for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
-        int16_t indexSet = realIndex + (reversed ? -j : j);
-        int16_t indexSetRev = indexSet;
-        if (reverseMode) indexSetRev = _length - 1 - indexSet;
-        if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
-      }
-    } else { //live data, etc.
-      if (reverseMode) i = _length - 1 - i;
-      bus->SetPixelColor(i + skip, col);
-    }
-    if (skip && i == 0) {
-      for (uint16_t j = 0; j < skip; j++) {
-        bus->SetPixelColor(j, RgbwColor(0, 0, 0, 0));
-      }
-    }
-    return;
-  }
-
-  //CRONIXIE
-  if(i>6)return;
-  byte o = 10*i;
-  if (_cronixieBacklightEnabled && _cronixieDigits[i] <11)
-  {
-    byte r2 = _segments[0].colors[1] >>16;
-    byte g2 = _segments[0].colors[1] >> 8;
-    byte b2 = _segments[0].colors[1];
-    byte w2 = _segments[0].colors[1] >>24;
-    for (int j=o; j< o+19; j++)
+    //color_blend(getpixel, col, SEGMENT.opacity); (pseudocode for future blending of segments)
+    if (IS_SEGMENT_ON)
     {
-      bus->SetPixelColor(j, RgbwColor(r2,g2,b2,w2));
+      if (SEGMENT.opacity < 255) {  
+        col.R = scale8(col.R, SEGMENT.opacity);
+        col.G = scale8(col.G, SEGMENT.opacity);
+        col.B = scale8(col.B, SEGMENT.opacity);
+        col.W = scale8(col.W, SEGMENT.opacity);
+      }
+    } else {
+      col = BLACK;
     }
-  } else
-  {
-    for (int j=o; j< o+19; j++)
-    {
-      bus->SetPixelColor(j, RgbwColor(0,0,0,0));
+
+    /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
+    bool reversed = reverseMode ^ IS_REVERSE;
+    uint16_t realIndex = realPixelIndex(i);
+
+    for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
+      int16_t indexSet = realIndex + (reversed ? -j : j);
+      int16_t indexSetRev = indexSet;
+      if (reverseMode) indexSetRev = _length - 1 - indexSet;
+      #ifdef WLED_CUSTOM_LED_MAPPING
+      if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
+      #endif
+      if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
     }
+  } else { //live data, etc.
+    if (reverseMode) i = _length - 1 - i;
+    #ifdef WLED_CUSTOM_LED_MAPPING
+    if (i < customMappingSize) i = customMappingTable[i];
+    #endif
+    bus->SetPixelColor(i + skip, col);
   }
-  if (_skipFirstMode) o += LED_SKIP_AMOUNT;
-  switch(_cronixieDigits[i])
-  {
-    case 0: bus->SetPixelColor(o+5, col); break;
-    case 1: bus->SetPixelColor(o+0, col); break;
-    case 2: bus->SetPixelColor(o+6, col); break;
-    case 3: bus->SetPixelColor(o+1, col); break;
-    case 4: bus->SetPixelColor(o+7, col); break;
-    case 5: bus->SetPixelColor(o+2, col); break;
-    case 6: bus->SetPixelColor(o+8, col); break;
-    case 7: bus->SetPixelColor(o+3, col); break;
-    case 8: bus->SetPixelColor(o+9, col); break;
-    case 9: bus->SetPixelColor(o+4, col); break;
-  }
-}
-
-void WS2812FX::driverModeCronixie(bool b)
-{
-  _cronixieMode = b;
-  _segments[0].stop = (b) ? 6 : _length;
-}
-
-void WS2812FX::setCronixieBacklight(bool b)
-{
-  _cronixieBacklightEnabled = b;
-}
-
-void WS2812FX::setCronixieDigits(byte d[])
-{
-  for (int i = 0; i<6; i++)
-  {
-    _cronixieDigits[i] = d[i];
+  if (skip && i == 0) {
+    for (uint16_t j = 0; j < skip; j++) {
+      bus->SetPixelColor(j, RgbwColor(0, 0, 0, 0));
+    }
   }
 }
 
@@ -259,7 +239,7 @@ void WS2812FX::show(void) {
       if(useWackyWS2815PowerModel)
       {
         // ignore white component on WS2815 power calculation
-        powerSum += (max(max(c.R,c.G),c.B)) * 3;
+        powerSum += (MAX(MAX(c.R,c.G),c.B)) * 3;
       }
       else 
       {
@@ -430,27 +410,14 @@ uint32_t WS2812FX::getColor(void) {
 
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
-  i = realPixelIndex(i) + (_skipFirstMode ? LED_SKIP_AMOUNT : 0);
+  i = realPixelIndex(i);
   
-  if (_cronixieMode)
-  {
-    if(i>6)return 0;
-    byte o = 10*i;
-    switch(_cronixieDigits[i])
-    {
-      case 0: i=o+5; break;
-      case 1: i=o+0; break;
-      case 2: i=o+6; break;
-      case 3: i=o+1; break;
-      case 4: i=o+7; break;
-      case 5: i=o+2; break;
-      case 6: i=o+8; break;
-      case 7: i=o+3; break;
-      case 8: i=o+9; break;
-      case 9: i=o+4; break;
-      default: return 0;
-    }
-  }
+  #ifdef WLED_CUSTOM_LED_MAPPING
+  if (i < customMappingSize) i = customMappingTable[i];
+  #endif
+
+  if (_skipFirstMode) i += LED_SKIP_AMOUNT;
+  
   if (i >= _lengthRaw) return 0;
   
   RgbwColor col = bus->GetPixelColorRgbw(i);
@@ -460,8 +427,8 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
     case  0: return ((col.W << 24) | (col.G << 8) | (col.R << 16) | (col.B)); //0 = GRB, default
     case  1: return ((col.W << 24) | (col.R << 8) | (col.G << 16) | (col.B)); //1 = RGB, common for WS2811
     case  2: return ((col.W << 24) | (col.B << 8) | (col.R << 16) | (col.G)); //2 = BRG
-    case  3: return ((col.W << 24) | (col.R << 8) | (col.B << 16) | (col.G)); //3 = RBG
-    case  4: return ((col.W << 24) | (col.B << 8) | (col.G << 16) | (col.R)); //4 = BGR
+    case  3: return ((col.W << 24) | (col.B << 8) | (col.G << 16) | (col.R)); //3 = RBG
+    case  4: return ((col.W << 24) | (col.R << 8) | (col.B << 16) | (col.G)); //4 = BGR
     case  5: return ((col.W << 24) | (col.G << 8) | (col.B << 16) | (col.R)); //5 = GBR
   }
   return 0;
@@ -529,11 +496,16 @@ void WS2812FX::resetSegments() {
   _segments[0].speed = DEFAULT_SPEED;
   _segments[0].stop = _length;
   _segments[0].grouping = 1;
-  _segments[0].setOption(0, 1); //select
+  _segments[0].setOption(SEG_OPTION_SELECTED, 1);
+  _segments[0].setOption(SEG_OPTION_ON, 1);
+  _segments[0].opacity = 255;
+
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
     _segments[i].colors[0] = color_wheel(i*51);
     _segments[i].grouping = 1;
+    _segments[i].setOption(SEG_OPTION_ON, 1);
+    _segments[i].opacity = 255;
     _segment_runtimes[i].reset();
   }
   _segment_runtimes[0].reset();
@@ -558,7 +530,7 @@ void WS2812FX::setShowCallback(show_callback cb)
 void WS2812FX::setTransitionMode(bool t)
 {
   _segment_index = getMainSegmentId();
-  SEGMENT.setOption(7,t);
+  SEGMENT.setOption(SEG_OPTION_TRANSITIONAL, t);
   if (!t) return;
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
   if (SEGMENT.mode == FX_MODE_STATIC && SEGENV.next_time > waitMax) SEGENV.next_time = waitMax;
@@ -695,7 +667,7 @@ uint8_t WS2812FX::get_random_wheel_index(uint8_t pos) {
     r = random8();
     x = abs(pos - r);
     y = 255 - x;
-    d = min(x, y);
+    d = MIN(x, y);
   }
   return r;
 }
@@ -772,25 +744,25 @@ void WS2812FX::handle_palette(void)
     case 2: {//primary color only
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       targetPalette = CRGBPalette16(prim); break;}
-    case 3: {//based on primary
-      //considering performance implications
-      CRGB prim = col_to_crgb(SEGCOLOR(0));
-      CHSV prim_hsv = rgb2hsv_approximate(prim);
-      targetPalette = CRGBPalette16(
-                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
-                      CHSV(prim_hsv.h, max(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
-                      CHSV(prim_hsv.h, prim_hsv.s, max(prim_hsv.v - 50,0)), //darker
-                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v)); //color itself
-      break;}
-    case 4: {//primary + secondary
+    case 3: {//primary + secondary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
-      targetPalette = CRGBPalette16(sec,prim); break;}
-    case 5: {//based on primary + secondary
+      targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
+    case 4: {//primary + secondary + tertiary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
       CRGB ter  = col_to_crgb(SEGCOLOR(2));
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
+    case 5: {//primary + secondary (+tert if not off), more distinct
+      CRGB prim = col_to_crgb(SEGCOLOR(0));
+      CRGB sec  = col_to_crgb(SEGCOLOR(1));
+      if (SEGCOLOR(2)) {
+        CRGB ter = col_to_crgb(SEGCOLOR(2));
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
+      } else {
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
+      }
+      break;}
     case 6: //Party colors
       targetPalette = PartyColors_p; break;
     case 7: //Cloud colors
@@ -841,7 +813,7 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
   if (a->speed != b->speed) return false;
   if (a->intensity != b->intensity) return false;
   if (a->palette != b->palette) return false;
-  //if (a->getOption(1) != b->getOption(1)) return false; //reverse
+  //if (a->getOption(SEG_OPTION_REVERSED) != b->getOption(SEG_OPTION_REVERSED)) return false;
   return true;
 }
 
