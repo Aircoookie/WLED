@@ -3395,7 +3395,7 @@ uint16_t WS2812FX::mode_bouncing_balls_v2(void) {
         float min_pos=10000.0;
         for (int k=0;k<i;k++)
         {
-          min_pos=min(min_pos,abs(balls[k].position-balls[i].position));
+          min_pos=MIN(min_pos,abs(balls[k].position-balls[i].position));
         }
         if (min_pos>=1.0)
         {
@@ -3440,7 +3440,7 @@ uint16_t WS2812FX::mode_bouncing_balls_v2(void) {
     float maxvelocity=0.0;
     for (int i = 0 ; i < MAX_BALLS_V2 ; i++) {
       if (!balls[i].active) continue;
-      maxvelocity=max(maxvelocity,abs(balls[i].velocity));
+      maxvelocity=MAX(maxvelocity,abs(balls[i].velocity));
     }
     //maximum distance that each pixel may travel in one increment is 0.5
     //max time increment will be calculated to not violate it
@@ -3451,7 +3451,7 @@ uint16_t WS2812FX::mode_bouncing_balls_v2(void) {
     }
     else
     {
-      dt=min(dt_rem,0.5/maxvelocity*1000);
+      dt=MIN(dt_rem,0.5/maxvelocity*1000);
     }
 
 
@@ -3475,7 +3475,7 @@ uint16_t WS2812FX::mode_bouncing_balls_v2(void) {
       balls[i].position+= dx;
       balls[i].velocity+= dv;
 
-      float basedist=min(balls[i].position,abs((float)SEGLEN-balls[i].position));
+      float basedist=MIN(balls[i].position,abs((float)SEGLEN-balls[i].position));
       if (basedist<=0.5)
       {
         //Serial.println("collision");
@@ -3488,7 +3488,7 @@ uint16_t WS2812FX::mode_bouncing_balls_v2(void) {
           for (int j = 0 ; j < MAX_BALLS_V2 ; j++) {
             if (i==j)continue;
             if(balls[j].ignore_collisions || !balls[j].active) continue;
-            min_dis_new=min(min_dis_new,abs(balls[j].position-balls[i].position));
+            min_dis_new=MIN (min_dis_new,abs(balls[j].position-balls[i].position));
           }
           if (min_dis_new<1)
           {
@@ -3547,4 +3547,3 @@ uint16_t WS2812FX::mode_bouncing_balls_v2(void) {
 
   return FRAMETIME;
 }
-

@@ -200,6 +200,7 @@
 #define FX_MODE_PLASMA                  97
 #define FX_MODE_PERCENT                 98
 #define FX_MODE_RIPPLE_RAINBOW          99
+#define FX_MODE_HEARTBEAT              100
 #define FX_MODE_PACIFICA               101
 #define FX_MODE_CANDLE_MULTI           102
 #define FX_MODE_SOLID_GLITTER          103
