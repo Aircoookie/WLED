@@ -74,16 +74,18 @@ void notify(byte callMode, bool followUp)
 
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
-  if (!realtimeMode){
+  if (!realtimeMode && !realtimeOverride){
     for (uint16_t i = 0; i < ledCount; i++)
     {
       strip.setPixelColor(i,0,0,0,0);
     }
-    realtimeMode = md;
   }
+
   realtimeTimeout = millis() + timeoutMs;
   if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
-  if (arlsForceMaxBri) strip.setBrightness(255);
+  realtimeMode = md;
+
+  if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(255);
 }
 
 
@@ -103,8 +105,10 @@ void handleNotifications()
   //unlock strip when realtime UDP times out
   if (realtimeMode && millis() > realtimeTimeout)
   {
+    if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
     strip.setBrightness(bri);
     realtimeMode = REALTIME_MODE_INACTIVE;
+    realtimeIP[0] = 0;
   }
 
   //receive UDP notifications
@@ -122,6 +126,7 @@ void handleNotifications()
     uint8_t lbuf[packetSize];
     rgbUdp.read(lbuf, packetSize);
     realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
+    if (realtimeOverride) return;
     uint16_t id = 0;
     for (uint16_t i = 0; i < packetSize -2; i += 3)
     {
@@ -202,50 +207,52 @@ void handleNotifications()
     {
       realtimeIP = notifierUdp.remoteIP();
       DEBUG_PRINTLN(notifierUdp.remoteIP());
-      if (packetSize > 1) {
-        if (udpIn[1] == 0)
-        {
-          realtimeTimeout = 0;
-          return;
-        } else {
-          realtimeLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
-        }
-        if (udpIn[0] == 1) //warls
-        {
-          for (uint16_t i = 2; i < packetSize -3; i += 4)
-          {
-            setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
-          }
-        } else if (udpIn[0] == 2) //drgb
-        {
-          uint16_t id = 0;
-          for (uint16_t i = 2; i < packetSize -2; i += 3)
-          {
-            setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+      if (packetSize < 2) return;
 
-            id++; if (id >= ledCount) break;
-          }
-        } else if (udpIn[0] == 3) //drgbw
-        {
-          uint16_t id = 0;
-          for (uint16_t i = 2; i < packetSize -3; i += 4)
-          {
-            setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-            
-            id++; if (id >= ledCount) break;
-          }
-        } else if (udpIn[0] == 4) //dnrgb
-        {
-          uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-          for (uint16_t i = 4; i < packetSize -2; i += 3)
-          {
-             if (id >= ledCount) break;
-            setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-            id++;
-          }
-        }
-        strip.show();
+      if (udpIn[1] == 0)
+      {
+        realtimeTimeout = 0;
+        return;
+      } else {
+        realtimeLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
       }
+      if (realtimeOverride) return;
+
+      if (udpIn[0] == 1) //warls
+      {
+        for (uint16_t i = 2; i < packetSize -3; i += 4)
+        {
+          setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
+        }
+      } else if (udpIn[0] == 2) //drgb
+      {
+        uint16_t id = 0;
+        for (uint16_t i = 2; i < packetSize -2; i += 3)
+        {
+          setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+
+          id++; if (id >= ledCount) break;
+        }
+      } else if (udpIn[0] == 3) //drgbw
+      {
+        uint16_t id = 0;
+        for (uint16_t i = 2; i < packetSize -3; i += 4)
+        {
+          setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+          
+          id++; if (id >= ledCount) break;
+        }
+      } else if (udpIn[0] == 4) //dnrgb
+      {
+        uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+        for (uint16_t i = 4; i < packetSize -2; i += 3)
+        {
+            if (id >= ledCount) break;
+          setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+          id++;
+        }
+      }
+      strip.show();
     }
   }
 }

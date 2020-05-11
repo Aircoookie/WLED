@@ -659,6 +659,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     if (countdownTime - now() > 0) countdownOverTriggered = false;
   }
 
+  pos = req.indexOf("RB");
+  if (pos > 0) doReboot = true;
+
   //cronixie
   #ifndef WLED_DISABLE_CRONIXIE
   //mode, 1 countdown

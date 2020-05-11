@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.9.1n
+   @version 0.10.0
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2004230
+#define VERSION 2005100
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -109,10 +109,10 @@
   #include <IRutils.h>
 #endif
 
-// remove flicker because PWM signal of RGB channels can become out of phase
-#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
-  #include "src/dependencies/arduino/core_esp8266_waveform.h"
-#endif
+// remove flicker because PWM signal of RGB channels can become out of phase (part of core as of Arduino core v2.7.0)
+//#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
+//  #include "src/dependencies/arduino/core_esp8266_waveform.h"
+//#endif
 
 // enable additional debug output
 #ifdef WLED_DEBUG
@@ -148,7 +148,8 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.9.1n");
+WLED_GLOBAL char versionString[] _INIT("0.10.0");
+#define WLED_CODENAME "Namigai"
 
 // AP and OTA default passwords (for maximum security change them!)
 WLED_GLOBAL char apPass[65]  _INIT(DEFAULT_AP_PASS);
@@ -215,7 +216,7 @@ WLED_GLOBAL bool notifyMacro  _INIT(false);                       // send notifi
 WLED_GLOBAL bool notifyHue    _INIT(true);                        // send notification if Hue light changes
 WLED_GLOBAL bool notifyTwice  _INIT(false);                       // notifications use UDP: enable if devices don't sync reliably
 
-WLED_GLOBAL bool alexaEnabled _INIT(true);                        // enable device discovery by Amazon Echo
+WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable device discovery by Amazon Echo
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 
 WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
@@ -414,6 +415,7 @@ WLED_GLOBAL bool saveCurrPresetCycConf _INIT(false);
 
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
+WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);
 WLED_GLOBAL IPAddress realtimeIP _INIT((0, 0, 0, 0));
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
 
@@ -447,6 +449,7 @@ WLED_GLOBAL unsigned long ntpLastSyncTime _INIT(999000000L);
 WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(999000000L);
 WLED_GLOBAL IPAddress ntpServerIP;
 WLED_GLOBAL uint16_t ntpLocalPort _INIT(2390);
+WLED_GLOBAL uint16_t rolloverMillis _INIT(0);
 
 // Temp buffer
 WLED_GLOBAL char* obuf;
