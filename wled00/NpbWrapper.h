@@ -3,24 +3,43 @@
 #define NpbWrapper_h
 
 //PIN CONFIGURATION
-#define LEDPIN 2      //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
+#ifndef LEDPIN
+#define LEDPIN 2  //strip pin. Any for ESP32, gpio2 or 3 is recommended for ESP8266 (gpio2/3 are labeled D4/RX on NodeMCU and Wemos)
+#endif
 //#define USE_APA102  // Uncomment for using APA102 LEDs.
 //#define USE_WS2801  // Uncomment for using WS2801 LEDs (make sure you have NeoPixelBus v2.5.6 or newer)
 //#define USE_LPD8806 // Uncomment for using LPD8806
+//#define USE_TM1814  // Uncomment for using TM1814 LEDs (make sure you have NeoPixelBus v2.5.7 or newer)
+//#define USE_P9813   // Uncomment for using P9813 LEDs (make sure you have NeoPixelBus v2.5.8 or newer)
 //#define WLED_USE_ANALOG_LEDS //Uncomment for using "dumb" PWM controlled LEDs (see pins below, default R: gpio5, G: 12, B: 15, W: 13)
 //#define WLED_USE_H801 //H801 controller. Please uncomment #define WLED_USE_ANALOG_LEDS as well
-//#define WLED_USE_5CH  //5 Channel H801 for cold and warm white
+//#define WLED_USE_5CH_LEDS  //5 Channel H801 for cold and warm white
+//#define WLED_USE_BWLT11
+//#define WLED_USE_SHOJO_PCB
 
+#ifndef BTNPIN
 #define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
-#define IR_PIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
-#define RLYPIN 12  //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
-#define AUXPIN -1  //debug auxiliary output pin (-1 to disable)
+#endif
 
-#define RLYMDE 1  //mode for relay, 0: LOW if LEDs are on 1: HIGH if LEDs are on
+#ifndef IR_PIN
+#define IR_PIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#endif
+
+#ifndef RLYPIN
+#define RLYPIN 12  //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
+#endif
+
+#ifndef AUXPIN
+#define AUXPIN -1  //debug auxiliary output pin (-1 to disable)
+#endif
+
+#ifndef RLYMDE
+#define RLYMDE  1  //mode for relay, 0: LOW if LEDs are on 1: HIGH if LEDs are on
+#endif
 
 //END CONFIGURATION
 
-#if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
+#if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806) || defined(USE_P9813)
  #define CLKPIN 0
  #define DATAPIN 2
  #if BTNPIN == CLKPIN || BTNPIN == DATAPIN
@@ -34,17 +53,30 @@
     #define RPIN 15   //R pin for analog LED strip   
     #define GPIN 13   //G pin for analog LED strip
     #define BPIN 12   //B pin for analog LED strip
-    #define WPIN 14   //W pin for analog LED strip (W1: 14, W2: 04)
+    #define WPIN 14   //W pin for analog LED strip 
     #define W2PIN 04  //W2 pin for analog LED strip
     #undef BTNPIN
     #undef IR_PIN
     #define IR_PIN  0 //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+  #elif defined(WLED_USE_BWLT11)
+  //PWM pins - to use with BW-LT11
+    #define RPIN 12  //R pin for analog LED strip
+    #define GPIN 4   //G pin for analog LED strip
+    #define BPIN 14  //B pin for analog LED strip
+    #define WPIN 5   //W pin for analog LED strip
+  #elif defined(WLED_USE_SHOJO_PCB)
+  //PWM pins - to use with Shojo PCB (https://www.bastelbunker.de/esp-rgbww-wifi-led-controller-vbs-edition/)
+    #define RPIN 14  //R pin for analog LED strip
+    #define GPIN 4   //G pin for analog LED strip
+    #define BPIN 5   //B pin for analog LED strip
+    #define WPIN 15  //W pin for analog LED strip
+    #define W2PIN 12 //W2 pin for analog LED strip
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-    #define RPIN 5   //R pin for analog LED strip   
-    #define GPIN 12   //G pin for analog LED strip
-    #define BPIN 15   //B pin for analog LED strip
-    #define WPIN 13   //W pin for analog LED strip (W1: 14, W2: 04)
+    #define RPIN 5   //R pin for analog LED strip
+    #define GPIN 12  //G pin for analog LED strip
+    #define BPIN 15  //B pin for analog LED strip
+    #define WPIN 13  //W pin for analog LED strip
   #endif
   #undef RLYPIN
   #define RLYPIN -1 //disable as pin 12 is used by analog LEDs
@@ -58,6 +90,10 @@
   #define PIXELMETHOD NeoWs2801Method
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
+ #elif defined(USE_TM1814)
+  #define PIXELMETHOD NeoTm1814Method  
+ #elif defined(USE_P9813)
+  #define PIXELMETHOD P9813Method  
  #else
   #define PIXELMETHOD NeoEsp32Rmt0Ws2812xMethod
  #endif
@@ -69,6 +105,10 @@
   #define PIXELMETHOD NeoWs2801Method
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
+ #elif defined(USE_TM1814)
+  #define PIXELMETHOD NeoTm1814Method  
+ #elif defined(USE_P9813)
+  #define PIXELMETHOD P9813Method  
  #elif LEDPIN == 2
   #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
  #elif LEDPIN == 3
@@ -86,10 +126,15 @@
  #define PIXELFEATURE4 DotStarLbgrFeature
 #elif defined(USE_LPD8806)
  #define PIXELFEATURE3 Lpd8806GrbFeature 
- #define PIXELFEATURE4 Lpd8806GrbFeature
 #elif defined(USE_WS2801)
  #define PIXELFEATURE3 NeoRbgFeature
  #define PIXELFEATURE4 NeoRbgFeature
+#elif defined(USE_TM1814)
+  #define PIXELFEATURE3 NeoWrgbTm1814Feature
+  #define PIXELFEATURE4 NeoWrgbTm1814Feature
+#elif defined(USE_P9813)
+ #define PIXELFEATURE3 P9813BgrFeature 
+ #define PIXELFEATURE4 NeoGrbwFeature   
 #else
  #define PIXELFEATURE3 NeoGrbFeature
  #define PIXELFEATURE4 NeoGrbwFeature
@@ -131,7 +176,7 @@ public:
     switch (_type)
     {
       case NeoPixelType_Grb:
-      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
+      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806) || defined(USE_P9813)
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
       #else
         _pGrb = new NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>(countPixels, LEDPIN);
@@ -140,7 +185,7 @@ public:
       break;
 
       case NeoPixelType_Grbw:
-      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806)
+      #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806) || defined(USE_P9813)
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, CLKPIN, DATAPIN);
       #else
         _pGrbw = new NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>(countPixels, LEDPIN);
@@ -167,7 +212,7 @@ public:
           #endif
         }
       #else  // ESP8266
-        //init PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
+        //init PWM pins
         pinMode(RPIN, OUTPUT);
         pinMode(GPIN, OUTPUT);
         pinMode(BPIN, OUTPUT); 
@@ -188,9 +233,9 @@ public:
     void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w, uint8_t w2=0)
     {
       #ifdef ARDUINO_ARCH_ESP32
-        ledcWrite(0, r);  //RPIN
-        ledcWrite(1, g);  //GPIN
-        ledcWrite(2, b);  //BPIN
+        ledcWrite(0, r);
+        ledcWrite(1, g);
+        ledcWrite(2, b);
         switch (_type) {
           case NeoPixelType_Grb:                                                  break;
           #ifdef WLED_USE_5CH_LEDS
@@ -199,7 +244,7 @@ public:
             case NeoPixelType_Grbw: ledcWrite(3, w);                              break;
           #endif
         }        
-      #else 
+      #else   // ESP8266
         analogWrite(RPIN, r);
         analogWrite(GPIN, g);
         analogWrite(BPIN, b);
@@ -230,11 +275,6 @@ public:
     switch (_type) {
       case NeoPixelType_Grb: {
         _pGrb->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
-        #ifdef WLED_USE_ANALOG_LEDS
-          if (indexPixel != 0) return; //set analog LEDs from first pixel
-          byte b = _pGrb->GetBrightness();
-          SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, 0);
-        #endif
       }
       break;
       case NeoPixelType_Grbw: {
@@ -242,28 +282,6 @@ public:
         _pGrbw->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
         #else
         _pGrbw->SetPixelColor(indexPixel, color);
-        #endif
-        #ifdef WLED_USE_ANALOG_LEDS      
-          if (indexPixel != 0) return; //set analog LEDs from first pixel
-          byte b = _pGrbw->GetBrightness();
-          // check color values for Warm / Cold white mix (for RGBW)  // EsplanexaDevice.cpp
-          #ifdef WLED_USE_5CH_LEDS
-            if        (color.R == 255 & color.G == 255 && color.B == 255 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0,                  0, color.W * b / 255);
-            } else if (color.R == 127 & color.G == 127 && color.B == 127 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 512, colorW.W * b / 255);
-            } else if (color.R ==   0 & color.G ==   0 && color.B ==   0 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
-            } else if (color.R == 130 & color.G ==  90 && color.B ==   0 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 255, color.W * b / 512);
-            } else if (color.R == 255 & color.G == 153 && color.B ==   0 && color.W == 255) {  
-              SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
-            } else {  // not only white colors
-              SetRgbwPwm(color.R * b / 255, colorW.G * b / 255, colorW.B * b / 255, color.W * b / 255);
-            }
-          #else
-            SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
-          #endif         
         #endif
       }
       break;
@@ -286,6 +304,15 @@ public:
     switch (_type) {
       case NeoPixelType_Grb:  return _pGrb->GetPixelColor(indexPixel);  break;
       case NeoPixelType_Grbw: return _pGrbw->GetPixelColor(indexPixel); break;
+    }
+    return 0;
+  }
+
+  uint8_t* GetPixels(void)
+  {
+    switch (_type) {
+      case NeoPixelType_Grb:  return _pGrb->Pixels();  break;
+      case NeoPixelType_Grbw: return _pGrbw->Pixels(); break;
     }
     return 0;
   }

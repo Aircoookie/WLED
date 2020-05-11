@@ -28,6 +28,7 @@
 #define WS2812FX_h
 
 #include "NpbWrapper.h"
+#include "const.h"
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #include "FastLED.h"
@@ -37,8 +38,8 @@
 #define DEFAULT_SPEED      (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
 
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)>(b)?(a):(b))
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
@@ -55,11 +56,14 @@
 #define MAX_SEGMENT_DATA 8192
 #endif
 
+#define LED_SKIP_AMOUNT  1
+#define MIN_SHOW_DELAY  15
+
 #define NUM_COLORS       3 /* number of colors per segment */
 #define SEGMENT          _segments[_segment_index]
 #define SEGCOLOR(x)      gamma32(_segments[_segment_index].colors[x])
 #define SEGENV           _segment_runtimes[_segment_index]
-#define SEGLEN           SEGMENT.length()
+#define SEGLEN           _virtualSegmentLength
 #define SEGACT           SEGMENT.stop
 #define SPEED_FORMULA_L  5 + (50*(255 - SEGMENT.speed))/SEGLEN
 #define RESET_RUNTIME    memset(_segment_runtimes, 0, sizeof(_segment_runtimes))
@@ -80,18 +84,21 @@
 
 // options
 // bit    7: segment is in transition mode
-// bits 2-6: TBD
+// bits 3-6: TBD
+// bit    2: segment is on
 // bit    1: reverse segment
 // bit    0: segment is selected
 #define NO_OPTIONS   (uint8_t)0x00
 #define TRANSITIONAL (uint8_t)0x80
+#define SEGMENT_ON   (uint8_t)0x04
 #define REVERSE      (uint8_t)0x02
 #define SELECTED     (uint8_t)0x01
 #define IS_TRANSITIONAL ((SEGMENT.options & TRANSITIONAL) == TRANSITIONAL)
-#define IS_REVERSE      ((SEGMENT.options & REVERSE )     == REVERSE     )
-#define IS_SELECTED     ((SEGMENT.options & SELECTED)     == SELECTED    )
+#define IS_SEGMENT_ON   ((SEGMENT.options & SEGMENT_ON  ) == SEGMENT_ON  )
+#define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
+#define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  97
+#define MODE_COUNT  104
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -190,7 +197,13 @@
 #define FX_MODE_SINELON_RAINBOW         94
 #define FX_MODE_POPCORN                 95
 #define FX_MODE_DRIP                    96
-
+#define FX_MODE_PLASMA                  97
+#define FX_MODE_PERCENT                 98
+#define FX_MODE_RIPPLE_RAINBOW          99
+#define FX_MODE_HEARTBEAT              100
+#define FX_MODE_PACIFICA               101
+#define FX_MODE_CANDLE_MULTI           102
+#define FX_MODE_SOLID_GLITTER          103
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -207,8 +220,8 @@ class WS2812FX {
       uint8_t intensity;
       uint8_t palette;
       uint8_t mode;
-      uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
-      uint8_t group, spacing;
+      uint8_t options; //bit pattern: msb first: transitional needspixelstate tbd tbd (paused) on reverse selected
+      uint8_t grouping, spacing;
       uint8_t opacity;
       uint32_t colors[NUM_COLORS];
       void setOption(uint8_t n, bool val)
@@ -235,6 +248,15 @@ class WS2812FX {
       uint16_t length()
       {
         return stop - start;
+      }
+      uint16_t groupLength()
+      {
+        return grouping + spacing;
+      }
+      uint16_t virtualLength()
+      {
+        uint16_t groupLen = groupLength();
+        return (length() + groupLen -1) / groupLen;
       }
     } segment;
 
@@ -367,6 +389,13 @@ class WS2812FX {
       _mode[FX_MODE_SINELON_RAINBOW]         = &WS2812FX::mode_sinelon_rainbow;
       _mode[FX_MODE_POPCORN]                 = &WS2812FX::mode_popcorn;
       _mode[FX_MODE_DRIP]                    = &WS2812FX::mode_drip;
+      _mode[FX_MODE_PLASMA]                  = &WS2812FX::mode_plasma;
+      _mode[FX_MODE_PERCENT]                 = &WS2812FX::mode_percent;
+      _mode[FX_MODE_RIPPLE_RAINBOW]          = &WS2812FX::mode_ripple_rainbow;
+      _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
+      _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
+      _mode[FX_MODE_CANDLE_MULTI]            = &WS2812FX::mode_candle_multi;
+      _mode[FX_MODE_SOLID_GLITTER]           = &WS2812FX::mode_solid_glitter;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -379,7 +408,7 @@ class WS2812FX {
     }
 
     void
-      init(bool supportWhite, uint16_t countPixels, bool skipFirs, uint8_t disableNLeds),
+      init(bool supportWhite, uint16_t countPixels, bool skipFirst),
       service(void),
       blur(uint8_t),
       fade_out(uint8_t r),
@@ -387,18 +416,16 @@ class WS2812FX {
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       setColor(uint8_t slot, uint32_t c),
       setBrightness(uint8_t b),
-      driverModeCronixie(bool b),
-      setCronixieDigits(byte* d),
-      setCronixieBacklight(bool b),
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setShowCallback(show_callback cb),
       setTransitionMode(bool t),
       trigger(void),
-      setSegment(uint8_t n, uint16_t start, uint16_t stop),
+      setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0),
       resetSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
-      show(void);
+      show(void),
+      setRgbwPwm(void);
 
     bool
       reverseMode = false,
@@ -410,11 +437,11 @@ class WS2812FX {
 
     uint8_t
       mainSegment = 0,
+      rgbwMode = RGBW_MODE_DUAL,
       paletteFade = 0,
       paletteBlend = 0,
       colorOrder = 0,
       milliampsPerLed = 55,
-      _disableNLeds = 0,
       getBrightness(void),
       getMode(void),
       getSpeed(void),
@@ -429,8 +456,7 @@ class WS2812FX {
     uint16_t
       ablMilliampsMax,
       currentMilliamps,
-      triwave16(uint16_t),
-      getUsableCount();
+      triwave16(uint16_t);
 
     uint32_t
       timebase,
@@ -538,7 +564,7 @@ class WS2812FX {
       mode_twinklecat(void),
       mode_halloween_eyes(void),
       mode_static_pattern(void),
-	    mode_tri_static_pattern(void),
+      mode_tri_static_pattern(void),
       mode_spots(void),
       mode_spots_fade(void),
       mode_glitter(void),
@@ -550,8 +576,14 @@ class WS2812FX {
       mode_sinelon_dual(void),
       mode_sinelon_rainbow(void),
       mode_popcorn(void),
-      mode_drip(void);
-      
+      mode_drip(void),
+      mode_plasma(void),
+      mode_percent(void),
+      mode_ripple_rainbow(void),
+      mode_heartbeat(void),
+      mode_pacifica(void),
+      mode_candle_multi(void),
+      mode_solid_glitter(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -562,22 +594,19 @@ class WS2812FX {
     CRGBPalette16 targetPalette;
 
     uint32_t now;
-    uint16_t _length, _lengthRaw, _usableCount;
+    uint16_t _length, _lengthRaw, _virtualSegmentLength;
     uint16_t _rand16seed;
     uint8_t _brightness;
     static uint16_t _usedSegmentData;
 
+    void load_gradient_palette(uint8_t);
     void handle_palette(void);
     void fill(uint32_t);
 
     bool
-      _rgbwMode,
-      _cronixieMode,
-      _cronixieBacklightEnabled,
+      _useRgbw = false,
       _skipFirstMode,
       _triggered;
-
-    byte _cronixieDigits[6];
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
 
@@ -586,6 +615,7 @@ class WS2812FX {
     // mode helper functions
     uint16_t
       blink(uint32_t, uint32_t, bool strobe, bool),
+      candle(bool),
       color_wipe(bool, bool),
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
@@ -595,25 +625,35 @@ class WS2812FX {
       dissolve(uint32_t),
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
-      police_base(uint32_t, uint32_t),
+      ripple_base(bool),
+      police_base(uint32_t, uint32_t, bool),
       running(uint32_t, uint32_t),
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),
       spots_base(uint16_t);
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
+    CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
     
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
     
+    #ifdef WLED_USE_ANALOG_LEDS
+    uint32_t _analogLastShow = 0;
+    RgbwColor _analogLastColor = 0;
+    uint8_t _analogLastBri = 0;
+    #endif
+    
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
-      // start, stop, speed, intensity, palette, mode, options, 3 unused bytes (group, spacing, opacity), color[]
+      // start, stop, speed, intensity, palette, mode, options, grouping, spacing, opacity (unused), color[]
       { 0, 7, DEFAULT_SPEED, 128, 0, DEFAULT_MODE, NO_OPTIONS, 1, 0, 255, {DEFAULT_COLOR}}
     };
     segment_runtime _segment_runtimes[MAX_NUM_SEGMENTS]; // SRAM footprint: 28 bytes per element
     friend class Segment_runtime;
+
+    uint16_t realPixelIndex(uint16_t i);
 };
 
 
@@ -628,17 +668,18 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
-"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip"
+"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
+"Heartbeat","Pacifica","Candle Multi", "Solid Glitter"
 ])=====";
 
 
 const char JSON_palette_names[] PROGMEM = R"=====([
-"Default","Random Cycle","Primary Color","Based on Primary","Set Colors","Based on Set","Party","Cloud","Lava","Ocean",
+"Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
 "Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
 "Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
-"Aurora"
+"Aurora","Atlantica"
 ])=====";
 
 #endif

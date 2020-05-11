@@ -1,6 +1,7 @@
 ![WLED logo](https://raw.githubusercontent.com/Aircoookie/WLED/master/wled_logo.png)   
 
 [![](https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square)](https://github.com/Aircoookie/WLED/releases)
+[![](https://img.shields.io/discourse/topics?colorB=blue&label=forum&server=https%3A%2F%2Fwled.discourse.group%2F&style=flat-square)](https://wled.discourse.group)
 [![](https://img.shields.io/discord/473448917040758787.svg?colorB=blue&label=discord&style=flat-square)](https://discord.gg/KuqP7NE)
 [![](https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED/wiki)
 [![](https://img.shields.io/badge/app-wled-blue.svg?style=flat-square)](https://github.com/Aircoookie/WLED-App)
@@ -10,8 +11,8 @@
 A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs!
 
 ### Features:
-- WS2812FX library integrated for almost 100 special effects  
-- FastLED noise effects and palettes  
+- WS2812FX library integrated for over 100 special effects  
+- FastLED noise effects and 50 palettes  
 - Modern UI with color, effect and segment controls  
 - Segments to set different effects and colors to parts of the LEDs  
 - Settings page - configuration over network  
@@ -49,6 +50,10 @@ DrZzs has made some excellent video guides:
 
 If you'd rather read, here is a very [detailed step-by-step beginner tutorial](https://tynick.com/blog/11-03-2019/getting-started-with-wled-on-esp8266/) by tynick!  
 
+Russian speakers, check out the videos by Room31:
+[WLED Firmware Overview: Interface and Settings](https://youtu.be/h7lKsczEI7E)  
+[ESP8266 based LED controller for WS2812b strip. WLED Firmware + OpenHAB](https://youtu.be/K4ioTt3XvGc)  
+
 ### Other
 
 Licensed under the MIT license  
@@ -57,7 +62,8 @@ Credits [here](https://github.com/Aircoookie/WLED/wiki/Contributors-&-About)!
 Uses Linearicons by Perxis!
 
 Join the Discord [server](https://discord.gg/KuqP7NE) to discuss everything about WLED!  
-You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com).  
+Check out the WLED [Discourse forum](https://wled.discourse.group)!  
+You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com), but please only do so if you want to talk to me privately.  
 If WLED really brightens up your every day, you can [![](https://img.shields.io/badge/send%20me%20a%20small%20gift-paypal-blue.svg?style=flat-square)](https://paypal.me/aircoookie)
 
 *Disclaimer:*   

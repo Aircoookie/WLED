@@ -18,18 +18,26 @@
 # it (remove "# " before each line) or use own configuration according to the
 # Travis CI documentation (see above).
 #
+# * Test the Travis config here:
+#   < https://config.travis-ci.com/explore >
+#
 
 language: python
 python:
-    - "2.7"
-sudo: false
+    # - "2.7"
+    - "3.5"
+os: linux
 cache:
+    bundler: true
+    ccache: true
     directories:
         - "~/.platformio"
+        - "~/.buildcache"
 env:
     - PLATFORMIO_CI_SRC=wled00
 install:
     - pip install -U platformio
     - platformio update
 script:
-    - platformio ci --project-conf=./platformio.ini
+    # - platformio ci --project-conf=./platformio.ini
+    - platformio run 

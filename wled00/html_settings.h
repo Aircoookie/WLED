@@ -1,23 +1,23 @@
 /*
- * Settings html
+ *  Settings html
  */
 
 //common CSS of settings pages
-const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}</style>)=====";
-
+const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}.d5{width:4.5em !important;}</style>)=====";
 
 //settings menu
 const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><title>WLED Settings</title><style>body{text-align:center;background:#222;height:100%;margin:0}html{--h:11.55vh}button{background:#333;color:#fff;font-family:Verdana,Helvetica,sans-serif;border:.3ch solid #333;display:inline-block;font-size:8vmin;height:var(--h);width:95%;margin-top:2.4vh}</style>
+<html><head><title>WLED Settings</title><style>body{text-align:center;background:#222;height:100%%;margin:0}html{--h:11.55vh}button{background:#333;color:#fff;font-family:Verdana,Helvetica,sans-serif;border:.3ch solid #333;display:inline-block;font-size:8vmin;height:var(--h);width:95%%;margin-top:2.4vh}</style>
 <script>function BB(){if(window.frameElement){document.getElementById("b").style.display="none";document.documentElement.style.setProperty("--h","13.86vh")}};</script></head>
 <body onload=BB()>
 <form action=/><button type=submit id=b>Back</button></form>
 <form action=/settings/wifi><button type=submit>WiFi Setup</button></form>
 <form action=/settings/leds><button type=submit>LED Preferences</button></form>
-<form action=/settings/ui><button type=submit>User Interface</button></form>
+<form action=/settings/ui><button type=submit>User Interface</button></form>%DMXMENU%
 <form action=/settings/sync><button type=submit>Sync Interfaces</button></form>
 <form action=/settings/time><button type=submit>Time & Macros</button></form>
 <form action=/settings/sec><button type=submit>Security & Updates</button></form>
+
 </body></html>)=====";
 
 
@@ -62,7 +62,12 @@ AP opens:
 <option value="1">Disconnected</option>
 <option value="2">Always</option>
 <option value="3">Never (not recommended)</option></select><br>
-AP IP: <span class="sip"> Not active </span><hr>
+AP IP: <span class="sip"> Not active </span><br>
+<h3>Experimental</h3>
+Disable WiFi sleep: <input type="checkbox" name="WS"><br>
+<i>Can help with connectivity issues.<br>
+Do not enable if WiFi is working correctly, increases power consumption.</i>
+<hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
 </form>
 </body>
@@ -75,7 +80,8 @@ const char PAGE_settings_leds[] PROGMEM = R"=====(<!DOCTYPE html>
 <meta charset=utf-8>
 <meta name=viewport content="width=500">
 <title>LED Settings</title>
-<script>var d=document,laprev=55;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings")}function B(){window.open("/settings","_self")}function S(){GetV();setABL()}function enABL(){var a=d.getElementById("able").checked;d.Sf.LA.value=(a)?laprev:0;d.getElementById("abl").style.display=(a)?"inline":"none";d.getElementById("psu2").style.display=(a)?"inline":"none";if(d.Sf.LA.value>0){setABL()}}function enLA(){var a=d.Sf.LAsel.value;d.Sf.LA.value=a;d.getElementById("LAdis").style.display=(a==50)?"inline":"none";UI()}function setABL(){d.getElementById("able").checked=true;d.Sf.LAsel.value=50;switch(parseInt(d.Sf.LA.value)){case 0:d.getElementById("able").checked=false;enABL();break;case 30:d.Sf.LAsel.value=30;break;case 35:d.Sf.LAsel.value=35;break;case 55:d.Sf.LAsel.value=55;break;default:d.getElementById("LAdis").style.display="inline"}UI()}function UI(){var b=d.querySelectorAll(".wc"),a=b.length;for(i=0;i<a;i++){b[i].style.display=(d.getElementById("rgbw").checked)?"inline":"none"}d.getElementById("ledwarning").style.display=(d.Sf.LC.value>1000)?"inline":"none";d.getElementById("ampwarning").style.display=(d.Sf.MA.value>7200)?"inline":"none";if(d.Sf.LA.value>0){laprev=d.Sf.LA.value}var j=Math.ceil((100+d.Sf.LC.value*laprev)/500)/2;j=(j>5)?Math.ceil(j):j;var g="";var e=(d.Sf.LAsel.value==30);if(j<1.02&&!e){g="ESP 5V pin with 1A USB supply"}else{g+=e?"12V ":"5V ";g+=j;g+="A supply connected to LEDs"}var h=Math.ceil((100+d.Sf.LC.value*laprev)/1500)/2;h=(h>5)?Math.ceil(h):h;var c="(for most effects, ~";c+=h;c+="A is enough)<br>";d.getElementById("psu").innerHTML=g;d.getElementById("psu2").innerHTML=c}function GetV(){var d=document;
+<script>var d=document,laprev=55;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings")}function B(){window.open("/settings","_self")}function S(){GetV();setABL()}
+function enABL(){var a=d.getElementById("able").checked;d.Sf.LA.value=(a)?laprev:0;d.getElementById("abl").style.display=(a)?"inline":"none";d.getElementById("psu2").style.display=(a)?"inline":"none";if(d.Sf.LA.value>0){setABL()}}function enLA(){var a=d.Sf.LAsel.value;d.Sf.LA.value=a;d.getElementById("LAdis").style.display=(a==50)?"inline":"none";UI()}function setABL(){d.getElementById("able").checked=true;d.Sf.LAsel.value=50;switch(parseInt(d.Sf.LA.value)){case 0:d.getElementById("able").checked=false;enABL();break;case 30:d.Sf.LAsel.value=30;break;case 35:d.Sf.LAsel.value=35;break;case 55:d.Sf.LAsel.value=55;break;case 255:d.Sf.LAsel.value=255;break;default:d.getElementById("LAdis").style.display="inline"}UI()}function UI(){var b=d.querySelectorAll(".wc"),a=b.length;for(i=0;i<a;i++){b[i].style.display=(d.getElementById("rgbw").checked)?"inline":"none"}d.getElementById("ledwarning").style.display=(d.Sf.LC.value>1000)?"inline":"none";d.getElementById("ampwarning").style.display=(d.Sf.MA.value>7200)?"inline":"none";if(d.Sf.LA.value==255){laprev=12} else if(d.Sf.LA.value>0){laprev=d.Sf.LA.value}var j=Math.ceil((100+d.Sf.LC.value*laprev)/500)/2;j=(j>5)?Math.ceil(j):j;var g="";var e=(d.Sf.LAsel.value==30);var i=(d.Sf.LAsel.value==255);if(j<1.02&&!e&&!i){g="ESP 5V pin with 1A USB supply"}else{g+=e?"12V ":i?"WS2815 12V ":"5V ";g+=j;g+="A supply connected to LEDs"}var h=Math.ceil((100+d.Sf.LC.value*laprev)/1500)/2;h=(h>5)?Math.ceil(h):h;var c="(for most effects, ~";c+=h;c+="A is enough)<br>";d.getElementById("psu").innerHTML=g;d.getElementById("psu2").innerHTML=i?"":c}function GetV(){var d=document;
 %CSS%%SCSS%</head><body onload=S()>
 <form id=form_s name=Sf method=post>
 <div class=helpB><button type=button onclick=H()>?</button></div>
@@ -108,6 +114,7 @@ LED voltage (Max. current for a single LED):<br>
 <option value=55 selected>5V default (55mA)</option>
 <option value=35>5V efficient (35mA)</option>
 <option value=30>12V (30mA)</option>
+<option value=255>WS2815 (12mA)</option>
 <option value=50>Custom</option>
 </select><br>
 <span id=LAdis style=display:none>Custom max. current per LED: <input name=LA type=number min=0 max=255 id=la oninput=UI() required> mA<br></span>
@@ -116,13 +123,23 @@ LED voltage (Max. current for a single LED):<br>
 <br>
 LEDs are 4-channel type (RGBW): <input type=checkbox name=EW onchange=UI() id=rgbw><br>
 <span class=wc>
-Auto-calculate white channel from RGB: <input type=checkbox name=AW><br></span>
+Auto-calculate white channel from RGB:<br>
+<select name=AW>
+<option value=0>None</option>
+<option value=1>Brighter</option>
+<option value=2>Accurate</option>
+<option value=3>Dual</option>
+<option value=4>Legacy</option>
+</select>
+<br></span>
 Color order:
 <select name=CO>
 <option value=0>GRB</option>
 <option value=1>RGB</option>
 <option value=2>BRG</option>
 <option value=3>RBG</option>
+<option value=4>BGR</option>
+<option value=5>GBR</option>
 </select>
 <h3>Defaults</h3>
 Turn LEDs on after power up/reset: <input type=checkbox name=BO><br>
@@ -150,12 +167,69 @@ Palette blending:
 <option value=3>None (not recommended)</option>
 </select><br>
 Reverse LED order (rotate 180): <input type=checkbox name=RV><br>
-Skip first LED: <input type=checkbox name=SL><br>
-Disable repeating N LEDs: <input type=number min=0 max=255 name=DL><br>
-(Turns off N LEDs between each lit one, spacing out effects)<hr>
+Skip first LED: <input type=checkbox name=SL><hr>
 <button type=button onclick=B()>Back</button><button type=submit>Save</button>
 </form></body></html>)=====";
 
+
+#ifdef WLED_ENABLE_DMX
+//DMX Output settings
+const char PAGE_settings_dmx[] PROGMEM = R"=====(<!DOCTYPE html>
+<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>DMX Settings</title><script>
+function GCH(num) {
+  d=document;
+  
+  d.getElementById('dmxchannels').innerHTML += "";
+  for (i=0;i<num;i++) {
+    d.getElementById('dmxchannels').innerHTML += "<span id=CH" + (i+1) + "s >Channel " + (i+1) + ": <select name=CH" + (i+1) + " id=\"CH" + (i+1) + "\"><option value=0>Set to 0</option><option value=1>Red</option><option value=2>Green</option><option value=3>Blue</option><option value=4>White</option><option value=5>Shutter (Brightness)</option><option value=6>Set to 255</option></select></span><br />\n";
+  }
+}
+function mMap(){
+  d=document;
+  numCh=document.Sf.CN.value;
+  numGap=document.Sf.CG.value;
+  if (parseInt(numCh)>parseInt(numGap)) {
+    d.getElementById("gapwarning").style.display="block";
+  } else {
+    d.getElementById("gapwarning").style.display="none";
+  }
+  for (i=0;i<15;i++) {
+    if (i>=numCh) {
+      d.getElementById("CH"+(i+1) + "s").style.opacity = "0.5";
+      d.getElementById("CH"+(i+1)).disabled = true;
+      
+    } else {
+      d.getElementById("CH"+(i+1) + "s").style.opacity = "1";
+      d.getElementById("CH"+(i+1)).disabled = false;
+    }
+  }
+}
+function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/DMX");}function B(){window.history.back();}function GetV(){var d=document;
+%CSS%%SCSS%</head>
+<body onload="S()">
+<form id="form_s" name="Sf" method="post">
+<div class="helpB"><button type="button" onclick="H()">?</button></div>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+<h2>Imma firin ma lazer (if it has DMX support)</h2><!-- TODO: Change to something less-meme-related //-->
+
+<i>Number of fixtures is taken from LED config page</i><br>
+
+Channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
+Start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
+Spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
+<div id="gapwarning" style="color: orange; display: none;">WARNING: Channel gap is lower than channels per fixture.<br />This will cause overlap.</div>
+<button type="button" onclick="location.href='/dmxmap';">DMX Map</button><br>
+DMX fixtures start LED: <input type="number" min="0" max="1500" name="SL">
+<h3>channel functions</h3>
+<div id="dmxchannels"></div>
+<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+</form>
+</body>
+</html>)=====";
+
+#else
+const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
+#endif
 
 //User Interface settings
 const char PAGE_settings_ui[] PROGMEM = R"=====(<!DOCTYPE html>
@@ -175,77 +249,105 @@ Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
 </html>)=====";
 
 
+
 //sync settings
 const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>Sync Settings</title>
-<script>function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}function GetV(){var d=document;
+<html><head><meta name=viewport content="width=500"><meta charset=utf-8><title>Sync Settings</title>
+<script>var d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings")}function B(){window.open("/settings","_self")}function adj(){if(d.Sf.DI.value==6454){if(d.Sf.DA.value==1){d.Sf.DA.value=0}if(d.Sf.EU.value==1){d.Sf.EU.value=0}}else{if(d.Sf.DI.value==5568){if(d.Sf.DA.value==0){d.Sf.DA.value=1}if(d.Sf.EU.value==0){d.Sf.EU.value=1}}}}function SP(){var a=d.Sf.DI.value;d.getElementById("xp").style.display=(a>0)?"none":"block";if(a>0){d.Sf.EP.value=a}}function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568:d.Sf.DI.value=5568;break;case 6454:d.Sf.DI.value=6454;break}SP()}function S(){GetV();SetVal()};function GetV(){
 %CSS%%SCSS%</head>
-<body onload="GetV()">
-<form id="form_s" name="Sf" method="post">
-<div class="helpB"><button type="button" onclick="H()">?</button></div>
-<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+<body onload=S()>
+<form id=form_s name=Sf method=post>
+<div class=helpB><button type=button onclick=H()>?</button></div>
+<button type=button onclick=B()>Back</button><button type=submit>Save</button><hr>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
-On/Off button enabled: <input type="checkbox" name="BT"><br>
-Infrared receiver type (0 = disabled): <input name="IR" type="number" min="0" max="4" required><br>
-<a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
+On/Off button enabled: <input type=checkbox name=BT><br>
+Infrared remote:
+<select name=IR>
+<option value=0>Disabled</option>
+<option value=1>24-key RGB</option>
+<option value=2>24-key with CT</option>
+<option value=3>40-key blue</option>
+<option value=4>44-key RGB</option>
+<option value=5>21-key RGB</option>
+<option value=6>6-key black</option>
+</select><br>
+<a href=https://github.com/Aircoookie/WLED/wiki/Infrared-Control target=_blank>IR info</a>
 <h3>WLED Broadcast</h3>
-UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>
-Receive <input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects<br>
-Send notifications on direct change: <input type="checkbox" name="SD"><br>
-Send notifications on button press: <input type="checkbox" name="SB"><br>
-Send Alexa notifications: <input type="checkbox" name="SA"><br>
-Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
-Send Macro notifications: <input type="checkbox" name="SM"><br>
-Send notifications twice: <input type="checkbox" name="S2">
+UDP Port: <input name=UP type=number min=1 max=65535 class=d5 required><br>
+Receive <input type=checkbox name=RB>Brightness, <input type=checkbox name=RC>Color, and <input type=checkbox name=RX>Effects<br>
+Send notifications on direct change: <input type=checkbox name=SD><br>
+Send notifications on button press: <input type=checkbox name=SB><br>
+Send Alexa notifications: <input type=checkbox name=SA><br>
+Send Philips Hue change notifications: <input type=checkbox name=SH><br>
+Send Macro notifications: <input type=checkbox name=SM><br>
+Send notifications twice: <input type=checkbox name=S2>
 <h3>Realtime</h3>
-Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
-<i>E1.31 (sACN)</i><br>
-Use E1.31 multicast: <input type="checkbox" name="EM"><br>
-E1.31 start universe: <input name="EU" type="number" min="1" max="63999" required><br>
-<i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br><br>
-Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
-Force max brightness: <input type="checkbox" name="FB"><br>
-Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
-Realtime LED offset: <input name="WO" type="number" min="-255" max="255" required>
+Receive UDP realtime: <input type=checkbox name=RD><br><br>
+<i>Network DMX input</i><br>
+Type:
+<select name=DI onchange=SP();adj()>
+<option value=5568>E1.31 (sACN)</option>
+<option value=6454>Art-Net</option>
+<option value=0 selected>Custom port</option>
+</select><br>
+<div id=xp>Port: <input name=EP type=number min=1 max=65535 value=5568 class=d5 required><br></div>
+Multicast: <input type=checkbox name=EM><br>
+Start universe: <input name=EU type=number min=0 max=63999 required><br>
+<i>Reboot required.</i> Check out <a href=https://github.com/ahodges9/LedFx target=_blank>LedFx</a>!<br>
+Skip out-of-sequence packets: <input type=checkbox name=ES><br>
+DMX start address: <input name=DA type=number min=0 max=510 required><br>
+DMX mode:
+<select name=DM>
+<option value=0>Disabled</option>
+<option value=1>Single RGB</option>
+<option value=2>Single DRGB</option>
+<option value=3>Effect</option>
+<option value=4>Multi RGB</option>
+<option value=5>Multi DRGB</option>
+</select><br>
+<a href=https://github.com/Aircoookie/WLED/wiki/E1.31-DMX target=_blank>E1.31 info</a><br>
+Timeout: <input name=ET type=number min=1 max=65000 required> ms<br>
+Force max brightness: <input type=checkbox name=FB><br>
+Disable realtime gamma correction: <input type=checkbox name=RG><br>
+Realtime LED offset: <input name=WO type=number min=-255 max=255 required>
 <h3>Alexa Voice Assistant</h3>
-Emulate Alexa device: <input type="checkbox" name="AL"><br>
-Alexa invocation name: <input name="AI" maxlength="32">
+Emulate Alexa device: <input type=checkbox name=AL><br>
+Alexa invocation name: <input name=AI maxlength=32>
 <h3>Blynk</h3>
 <b>Blynk, MQTT and Hue sync all connect to external hosts!<br>
 This may impact the responsiveness of the ESP8266.</b><br>
 For best results, only use one of these services at a time.<br>
 (alternatively, connect a second ESP to them and use the UDP sync)<br><br>
-Device Auth token: <input name="BK" maxlength="33"><br>
-<i>Clear the token field to disable. </i><a href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info</a>
+Device Auth token: <input name=BK maxlength=33><br>
+<i>Clear the token field to disable. </i><a href=https://github.com/Aircoookie/WLED/wiki/Blynk target=_blank>Setup info</a>
 <h3>MQTT</h3>
-Enable MQTT: <input type="checkbox" name="MQ"><br>
-Broker: <input name="MS" maxlength="32">
-Port: <input name="MQPORT" type="number" min="1" max="65535" required><br>
+Enable MQTT: <input type=checkbox name=MQ><br>
+Broker: <input name=MS maxlength=32>
+Port: <input name=MQPORT type=number min=1 max=65535 class=d5><br>
 <b>The MQTT credentials are sent over an unsecured connection.<br>
 Never use the MQTT password for another service!</b><br>
-Username: <input name="MQUSER" maxlength="40"><br>
-Password: <input type="password" input name="MQPASS" maxlength="40"><br>
-Client ID: <input name="MQCID" maxlength="40"><br>
-Device Topic: <input name="MD" maxlength="32"><br>
-Group Topic: <input name="MG" maxlength="32"><br>
-<i>Reboot required to apply changes. </i><a href="https://github.com/Aircoookie/WLED/wiki/MQTT" target="_blank">MQTT info</a>
+Username: <input name=MQUSER maxlength=40><br>
+Password: <input type=password input name=MQPASS maxlength=40><br>
+Client ID: <input name=MQCID maxlength=40><br>
+Device Topic: <input name=MD maxlength=32><br>
+Group Topic: <input name=MG maxlength=32><br>
+<i>Reboot required to apply changes. </i><a href=https://github.com/Aircoookie/WLED/wiki/MQTT target=_blank>MQTT info</a>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>
-Poll Hue light <input name="HL" type="number" min="1" max="99" required> every <input name="HI" type="number" min="100" max="65000" required> ms: <input type="checkbox" name="HP"><br>
-Then, receive <input type="checkbox" name="HO"> On/Off, <input type="checkbox" name="HB"> Brightness, and <input type="checkbox" name="HC"> Color<br>
+Poll Hue light <input name=HL type=number min=1 max=99> every <input name=HI type=number min=100 max=65000> ms: <input type=checkbox name=HP><br>
+Then, receive <input type=checkbox name=HO> On/Off, <input type=checkbox name=HB> Brightness, and <input type=checkbox name=HC> Color<br>
 Hue Bridge IP:<br>
-<input name="H0" type="number" min="0" max="255" required> .
-<input name="H1" type="number" min="0" max="255" required> .
-<input name="H2" type="number" min="0" max="255" required> .
-<input name="H3" type="number" min="0" max="255" required><br>
+<input name=H0 type=number min=0 max=255> .
+<input name=H1 type=number min=0 max=255> .
+<input name=H2 type=number min=0 max=255> .
+<input name=H3 type=number min=0 max=255><br>
 <b>Press the pushlink button on the bridge, after that save this page!</b><br>
 (when first connecting)<br>
-Hue status: <span class="hms"> Internal ESP Error! </span><hr>
-<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+Hue status: <span class=sip> Disabled in this build </span><hr>
+<button type=button onclick=B()>Back</button><button type=submit>Save</button>
 </form>
-</body>
-</html>)=====";
+</body></html>)=====";
 
 
 //time and macro settings
@@ -282,6 +384,8 @@ Time zone:
 <option value="13">North Korea</option>
 <option value="14">IST (India)</option>
 <option value="15">CA-Saskatchewan</option>
+<option value="16">ACST</option>
+<option value="17">ACST/ACDT</option>
 </select><br>
 UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 Current local time is <span class="times">unknown</span>.
@@ -368,12 +472,12 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <button type="button" onclick="U()">Manual OTA Update</button><br>
 Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
 <h3>About</h3>
-<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.9.0-b2<br><br>
+<a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a> version 0.10.0<br><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
 (c) 2016-2020 Christian Schwinne <br>
 <i>Licensed under the MIT license</i><br><br>
-Server message: <span class="msg"> Response error! </span><hr>
+Server message: <span class="sip"> Response error! </span><hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 </form>
 </body>

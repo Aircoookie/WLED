@@ -1,7 +1,7 @@
 /*
  * This file allows you to add own functionality to WLED more easily
  * See: https://github.com/Aircoookie/WLED/wiki/Add-own-functionality
- * EEPROM bytes 2750+ are reserved for your custom use case. (if you extend #define EEPSIZE in wled01_eeprom.h)
+ * EEPROM bytes 2750+ are reserved for your custom use case. (if you extend #define EEPSIZE in wled_eeprom.h)
  * bytes 2400+ are currently ununsed, but might be used for future wled features
  */
 
@@ -10,6 +10,9 @@
 byte wipeState = 0; //0: inactive 1: wiping 2: solid
 unsigned long timeStaticStart = 0;
 uint16_t previousUserVar0 = 0;
+
+//comment this out if you want the turn off effect to be just fading out instead of reverse wipe
+#define STAIRCASE_WIPE_OFF
 
 //gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
@@ -44,7 +47,7 @@ void userLoop()
       if (millis() + strip.timebase > (cycleTime - 25)) { //wipe complete
         effectCurrent = FX_MODE_STATIC;
         timeStaticStart = millis();
-        colorUpdated(3);
+        colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
         wipeState = 2;
       }
     } else if (wipeState == 2) { //static
@@ -52,14 +55,28 @@ void userLoop()
       {
         if (millis() - timeStaticStart > userVar1*1000) wipeState = 3;
       }
-    } else { //wipeState == 3, turn off slowly
+    } else if (wipeState == 3) { //switch to wipe off
+      #ifdef STAIRCASE_WIPE_OFF
+      effectCurrent = FX_MODE_COLOR_WIPE;
+      strip.timebase = 360 + (255 - effectSpeed)*75 - millis(); //make sure wipe starts fully lit
+      colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+      wipeState = 4;
+      #else
       turnOff();
-      userVar0 = 0;
-      wipeState = 0;
+      #endif
+    } else { //wiping off
+      if (millis() + strip.timebase > (725 + (255 - effectSpeed)*150)) turnOff(); //wipe complete
     }
   } else {
-    if (previousUserVar0) turnOff();
     wipeState = 0; //reset for next time
+    if (previousUserVar0) {
+      #ifdef STAIRCASE_WIPE_OFF
+      userVar0 = previousUserVar0;
+      wipeState = 3;
+      #else
+      turnOff();
+      #endif
+    }
     previousUserVar0 = 0;
   }
 }
@@ -76,12 +93,19 @@ void startWipe()
   bool doReverse = (userVar0 == 2);
   seg.setOption(1, doReverse);
 
-  colorUpdated(3);
+  colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
 }
 
 void turnOff()
 {
-  transitionDelayTemp = 4000;
+  #ifdef STAIRCASE_WIPE_OFF
+  transitionDelayTemp = 0; //turn off immediately after wipe completed
+  #else
+  transitionDelayTemp = 4000; //fade out slowly
+  #endif
   bri = 0;
-  colorUpdated(3);
+  colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+  wipeState = 0;
+  userVar0 = 0;
+  previousUserVar0 = 0;
 }
