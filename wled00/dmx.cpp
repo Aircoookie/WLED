@@ -8,11 +8,12 @@
  */
 
 #ifdef WLED_ENABLE_DMX
-#include "src/dependencies/dmx/ESPDMX.h"
-DMXESPSerial dmx;
 
 void handleDMX()
 {
+  // don't act, when in DMX Proxy mode
+  if (e131ProxyUniverse != 0) return;
+
   // TODO: calculate brightness manually if no shutter channel is set
 
   uint8_t brightness = strip.getBrightness();
