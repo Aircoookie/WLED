@@ -212,7 +212,8 @@ function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Imma firin ma lazer (if it has DMX support)</h2><!-- TODO: Change to something less-meme-related //-->
 
-<i>This functionality may be disabled by DMX Proxy Universe &ne; 0 on sync settings page</i><br>
+Proxy Universe <input name=PU type=number min=0 max=63999 required> from E1.31 to DMX (0=disabled)<br>
+<i>This will disable the LED data output to DMX configurable below</i><br><br>
 <i>Number of fixtures is taken from LED config page</i><br>
 
 Channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
@@ -294,7 +295,6 @@ Type:
 </select><br>
 <div id=xp>Port: <input name=EP type=number min=1 max=65535 value=5568 class=d5 required><br></div>
 Multicast: <input type=checkbox name=EM><br>
-Proxy Universe <input name=PU type=number min=0 max=63999 required> to DMX via MAX485 DI pin connected to D4 (0=disabled, compile with WLED_ENABLE_DMX)<br>
 Start universe: <input name=EU type=number min=0 max=63999 required><br>
 <i>Reboot required.</i> Check out <a href=https://github.com/ahodges9/LedFx target=_blank>LedFx</a>!<br>
 Skip out-of-sequence packets: <input type=checkbox name=ES><br>
