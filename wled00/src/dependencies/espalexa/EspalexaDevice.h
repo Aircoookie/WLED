@@ -1,6 +1,6 @@
 #ifndef EspalexaDevice_h
 #define EspalexaDevice_h
-#include <functional>
+
 #include "Arduino.h"
 #include <functional>
 

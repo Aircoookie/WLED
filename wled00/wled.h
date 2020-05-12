@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2005030
+#define VERSION 2005100
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -77,6 +77,10 @@
   #include "src/dependencies/blynk/BlynkSimpleEsp.h"
 #endif
 
+#ifdef WLED_ENABLE_DMX
+  #include "src/dependencies/dmx/ESPDMX.h"
+#endif
+
 #include "src/dependencies/e131/ESPAsyncE131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
 #include "src/dependencies/json/AsyncJson-v6.h"
@@ -110,10 +114,10 @@
   #include <IRutils.h>
 #endif
 
-// remove flicker because PWM signal of RGB channels can become out of phase
-#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
-  #include "src/dependencies/arduino/core_esp8266_waveform.h"
-#endif
+// remove flicker because PWM signal of RGB channels can become out of phase (part of core as of Arduino core v2.7.0)
+//#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
+//  #include "src/dependencies/arduino/core_esp8266_waveform.h"
+//#endif
 
 // enable additional debug output
 #ifdef WLED_DEBUG
@@ -219,7 +223,7 @@ WLED_GLOBAL bool notifyMacro  _INIT(false);                       // send notifi
 WLED_GLOBAL bool notifyHue    _INIT(true);                        // send notification if Hue light changes
 WLED_GLOBAL bool notifyTwice  _INIT(false);                       // notifications use UDP: enable if devices don't sync reliably
 
-WLED_GLOBAL bool alexaEnabled _INIT(true);                        // enable device discovery by Amazon Echo
+WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable device discovery by Amazon Echo
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 
 WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
@@ -230,6 +234,10 @@ WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP
 WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if gamma correction is handled by the source
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
+#ifdef WLED_ENABLE_DMX
+WLED_GLOBAL DMXESPSerial dmx;
+WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
+#endif
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)

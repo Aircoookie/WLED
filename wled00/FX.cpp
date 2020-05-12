@@ -3348,7 +3348,17 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
   return ColorFromPalette(p, sindex8, bri, LINEARBLEND);
 }
 
+//Solid colour background with glitter
+uint16_t WS2812FX::mode_solid_glitter()
+{
+  fill(SEGCOLOR(0));
 
+  if (SEGMENT.intensity > random8())
+  {
+    setPixelColor(random16(SEGLEN), ULTRAWHITE);
+  }
+  return FRAMETIME;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 //                  Non-reactive routines by Andrew Tuline                          //
@@ -3378,7 +3388,7 @@ uint16_t WS2812FX::mode_phased(void) {
 
 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
 uint16_t WS2812FX::mode_twinkleup(void) {
-  
+
   random16_set_seed(535);                                       // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
 
   for (int i = 0; i<SEGLEN; i++) {

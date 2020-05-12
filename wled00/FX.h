@@ -102,7 +102,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  122
+#define MODE_COUNT  123
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -207,25 +207,26 @@
 #define FX_MODE_HEARTBEAT              100
 #define FX_MODE_PACIFICA               101
 #define FX_MODE_CANDLE_MULTI           102
-#define FX_MODE_ASound01               103
-#define FX_MODE_ASound02               104
-#define FX_MODE_ASound03               105
-#define FX_MODE_ASound04               106
-#define FX_MODE_ASound05               107
-#define FX_MODE_ASound06               108
-#define FX_MODE_ASound07               109
-#define FX_MODE_ASound08               110
-#define FX_MODE_ASound09               111
-#define FX_MODE_ASound10               112
-#define FX_MODE_ASound11               113
-#define FX_MODE_ASound12               114
-#define FX_MODE_ASound13               115
-#define FX_MODE_ASound14               116
-#define FX_MODE_ASound15               117
-#define FX_MODE_PHASED                 118
-#define FX_MODE_TWINKLEUP              119
-#define FX_MODE_NOISEPAL               120
-#define FX_MODE_SINEWAVE               121
+#define FX_MODE_SOLID_GLITTER          103
+#define FX_MODE_ASound01               104
+#define FX_MODE_ASound02               105
+#define FX_MODE_ASound03               106
+#define FX_MODE_ASound04               107
+#define FX_MODE_ASound05               108
+#define FX_MODE_ASound06               109
+#define FX_MODE_ASound07               110
+#define FX_MODE_ASound08               111
+#define FX_MODE_ASound09               112
+#define FX_MODE_ASound10               113
+#define FX_MODE_ASound11               114
+#define FX_MODE_ASound12               115
+#define FX_MODE_ASound13               116
+#define FX_MODE_ASound14               117
+#define FX_MODE_ASound15               118
+#define FX_MODE_PHASED                 119
+#define FX_MODE_TWINKLEUP              120
+#define FX_MODE_NOISEPAL               121
+#define FX_MODE_SINEWAVE               122
 
 
 // Sound reactive external variables
@@ -255,7 +256,7 @@ class WS2812FX {
       uint8_t fft3;
       uint8_t palette;
       uint8_t mode;
-      uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
+      uint8_t options; //bit pattern: msb first: transitional needspixelstate tbd tbd (paused) on reverse selected
       uint8_t grouping, spacing;
       uint8_t opacity;
       uint32_t colors[NUM_COLORS];
@@ -430,6 +431,7 @@ class WS2812FX {
       _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
       _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
       _mode[FX_MODE_CANDLE_MULTI]            = &WS2812FX::mode_candle_multi;
+      _mode[FX_MODE_SOLID_GLITTER]           = &WS2812FX::mode_solid_glitter;
       _mode[FX_MODE_ASound01]                = &WS2812FX::mode_asound01;
       _mode[FX_MODE_ASound02]                = &WS2812FX::mode_asound02;
       _mode[FX_MODE_ASound03]                = &WS2812FX::mode_asound03;
@@ -619,7 +621,7 @@ class WS2812FX {
       mode_twinklecat(void),
       mode_halloween_eyes(void),
       mode_static_pattern(void),
-	    mode_tri_static_pattern(void),
+      mode_tri_static_pattern(void),
       mode_spots(void),
       mode_spots_fade(void),
       mode_glitter(void),
@@ -638,6 +640,7 @@ class WS2812FX {
       mode_heartbeat(void),
       mode_pacifica(void),
       mode_candle_multi(void),
+      mode_solid_glitter(void),
       mode_asound01(void),
       mode_asound02(void),
       mode_asound03(void),
@@ -743,9 +746,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat","Pacifica","Candle Multi","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06","ASound07",
-"ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","Phased","Twinkleup",
-"NoisePal", "SineWave"
+"Heartbeat","Pacifica","Candle Multi","Solid Glitter","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06",
+"ASound07","ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","Phased",
+"Twinkleup","NoisePal", "SineWave"
 ])=====";
 
 
