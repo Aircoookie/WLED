@@ -3927,7 +3927,7 @@ uint16_t WS2812FX::mode_asound13(void) {
 //  Serial.print(sampleAvg); Serial.print(" "); Serial.println(fftBin[6]);
 
 // fftBin version with simple math.
-  if (fftBin[6] > sampleAvg*100 & millis() > (oldPeak + 300)) {
+  if ((fftBin[6] > sampleAvg*100) & (millis() > (oldPeak + 300))) {
         setPixelColor(10, 255,0,0);
   } else {
         setPixelColor(10, 0,0,0);

@@ -186,12 +186,12 @@ WLED_GLOBAL bool useRGBW      _INIT(false);       // SK6812 strips can contain a
 WLED_GLOBAL bool turnOnAtBoot _INIT(true);        // turn on LEDs at power-up
 WLED_GLOBAL byte bootPreset   _INIT(0);           // save preset to load after power-up
 
-WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
+WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
 WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
 
-WLED_GLOBAL byte soundSquelch _INIT(10);            //default squelch value for volume reactive routines.
-WLED_GLOBAL uint16_t noiseFloor _INIT(100);         // default squelch value for FFT reactive routines.
+WLED_GLOBAL byte soundSquelch _INIT(10);            // default squelch value for volume reactive routines
+WLED_GLOBAL uint16_t noiseFloor _INIT(100);         // default squelch value for FFT reactive routines
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);
 WLED_GLOBAL bool nightlightFade      _INIT(true);   // if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
