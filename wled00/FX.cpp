@@ -3348,7 +3348,17 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
   return ColorFromPalette(p, sindex8, bri, LINEARBLEND);
 }
 
+//Solid colour background with glitter
+uint16_t WS2812FX::mode_solid_glitter()
+{
+  fill(SEGCOLOR(0));
 
+  if (SEGMENT.intensity > random8())
+  {
+    setPixelColor(random16(SEGLEN), ULTRAWHITE);
+  }
+  return FRAMETIME;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 //                  Non-reactive routines by Andrew Tuline                          //
@@ -3373,7 +3383,6 @@ uint16_t WS2812FX::mode_phased(void) {
   }
 
   return FRAMETIME;
-
 } // mode_phased()
 
 
@@ -3390,7 +3399,6 @@ uint16_t WS2812FX::mode_twinkleup(void) {
   }
 
   return FRAMETIME;
-
 } // mode_twinkleup()
 
 
@@ -3423,7 +3431,6 @@ uint16_t WS2812FX::mode_noisepal(void) {
   dist += beatsin8(10,1,4);                                                // Moving along the distance. Vary it a bit with a sine wave.
 
   return FRAMETIME;
-
 } // mode_noisepal()
 
 
@@ -3446,7 +3453,6 @@ uint16_t WS2812FX::mode_sinewave(void) {
   }
 
   return FRAMETIME;
-
 } // mode_sinewave()
 
 
@@ -3487,7 +3493,6 @@ uint16_t WS2812FX::mode_asound01(void) {                                   // Pi
   }
 
   return FRAMETIME;
-
 } // mode_asound01()
 
 
@@ -3509,7 +3514,6 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
   }
 
   return FRAMETIME;
-
 } // mode_asound02()
 
 
@@ -3529,7 +3533,6 @@ uint16_t WS2812FX::mode_asound03(void) {                                  // Jug
   }
 
   return FRAMETIME;
-
 } // mode_asound03()
 
 
@@ -3545,7 +3548,6 @@ uint16_t WS2812FX::mode_asound04(void) {                                  // Mat
   }
 
   return FRAMETIME;
-
 } // mode_asound04()
 
 
@@ -3575,7 +3577,6 @@ uint16_t WS2812FX::mode_asound05(void) {                                  // Myv
   gravityCounter = (gravityCounter + 1) % gravity;
 
   return FRAMETIME;
-
 } // mode_asound05()
 
 
@@ -3602,7 +3603,6 @@ uint16_t WS2812FX::mode_asound06(void) {                                  // Pla
   }
 
   return FRAMETIME;
-
 } // mode_asound06()
 
 
@@ -3624,7 +3624,6 @@ uint16_t WS2812FX::mode_asound07(void) {                                  // Pud
   }
 
   return FRAMETIME;
-
 } // mode_asound07()
 
 
@@ -3649,7 +3648,6 @@ uint16_t WS2812FX::mode_asound08(void) {                                  // Fil
   ydist=ydist+beatsin8(4,0,10);
 
   return FRAMETIME;
-
 } // mode_asound08()
 
 
@@ -3675,7 +3673,6 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Fil
   ydist+=beatsin8(4,0,10);
 
   return FRAMETIME;
-
 } // mode_asound09()
 
 
@@ -3947,7 +3944,6 @@ if (samplePeak == 1){
 
 #endif
   return FRAMETIME;
-
 } // mode_asound13()
 
 

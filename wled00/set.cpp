@@ -300,7 +300,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
-    int t = request->arg("CN").toInt();
+    int t = request->arg("PU").toInt();
+    if (t >= 0  && t <= 63999) e131ProxyUniverse = t;
+
+    t = request->arg("CN").toInt();
     if (t>0 && t<16) {
       DMXChannels = t;
     }
@@ -699,6 +702,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   }
   //you can add more if you need
 
+  pos = req.indexOf("DX="); // delay in ms  050720 ajn
+  if (pos > 0) delay(getNumVal(&req,pos));
+ 
   //internal call, does not send XML response
   pos = req.indexOf("IN");
   if (pos < 1) XML_response(request);
@@ -706,5 +712,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("&NN"); //do not send UDP notifications this time
   colorUpdated((pos > 0) ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
+
+  
   return true;
 }
