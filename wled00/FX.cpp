@@ -1598,7 +1598,7 @@ uint16_t WS2812FX::mode_oscillate(void)
 uint16_t WS2812FX::mode_lightning(void)
 {
   uint16_t ledstart = random16(SEGLEN);               // Determine starting location of flash
-  uint16_t ledlen = random16(SEGLEN -1 -ledstart);    // Determine length of flash (not to go beyond NUM_LEDS-1)
+  uint16_t ledlen = random16(SEGLEN -1 -ledstart);    // Determine length of flash (not to go beyond SEGLEN-1)
   uint8_t bri = 255/random8(1, 3);
 
   if (SEGENV.step == 0)
@@ -3348,33 +3348,60 @@ CRGB WS2812FX::pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart
   return ColorFromPalette(p, sindex8, bri, LINEARBLEND);
 }
 
+//Solid colour background with glitter
+uint16_t WS2812FX::mode_solid_glitter()
+{
+  fill(SEGCOLOR(0));
 
+  if (SEGMENT.intensity > random8())
+  {
+    setPixelColor(random16(SEGLEN), ULTRAWHITE);
+  }
+  return FRAMETIME;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 //                  Non-reactive routines by Andrew Tuline                          //
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-// A spring like effect using phases of sine waves. By Andrew Tuline.
-uint16_t WS2812FX::mode_phased(void) {
+uint16_t WS2812FX::phased_base(uint8_t moder) {                                    // We're making sine waves here.
 
-  float thisspeed = SEGMENT.speed/32.0;
-  float allfreq = SEGMENT.intensity/16.0;
-  static float thisphase = 0;                                   // Phase change value gets calculated.
-  uint8_t thisrot = 16;
+  float thisspeed = SEGMENT.speed/32.0;                               // You can change the speed of the wave.   AKA SPEED (was .4)
+  uint8_t allfreq = 16;                                               // Base frequency.
+  static float thisphase;                                             // Phase change value gets calculated.
+  uint8_t thisrot = 64;                                               // Colour rotation speed.
+  uint8_t cutOff = (255-SEGMENT.intensity);                           // You can change the number of pixels.  AKA INTENSITY (was 192).
+  uint8_t modVal = SEGMENT.fft1/8+1;                                  // You can change the modulus. AKA FFT1 (was 5).
 
-  uint8_t thisindex = millis() / thisrot;
-  thisphase += thisspeed;
+  uint8_t thisindex = millis()/thisrot;                               // Colour at leds[0].
+  thisphase += thisspeed;                                             // Phase change at leds[0].
 
-  for (int i=0; i<SEGLEN; i++) {                                // For each of the LED's in the strand, set a brightness based on a wave as follows:
-    int thisbright = cubicwave8(((i+1)*allfreq)+thisphase*(i+1)/2);
+  for (int i=0; i<SEGLEN; i++) {
+    if (moder == 1) modVal = (inoise8(i*1000 + i*1000) >> 4);         // Let's randomize our mod length with some Perlin noise.
+    int val = (i+1)*allfreq;                                          // This sets the frequency of the waves. The +1 makes sure that leds[0] is used.
+    val +=thisphase*(i%modVal+1)/2;                                   // This sets the varying phase change of the waves. By Andrew Tuline.
+    int thisbright = cubicwave8(val);                                 // Now we make an 8 bit sinewave.
+    thisbright = (thisbright > cutOff) ? (thisbright-cutOff) : 0;     // A ternary operator to cutoff the light.
     setPixCol(i, thisindex, thisbright);
     thisindex +=256/SEGLEN;
   }
 
   return FRAMETIME;
-
 } // mode_phased()
+
+
+
+uint16_t WS2812FX::mode_phased(void) {
+  return phased_base(0);
+} // mode_phased()
+
+
+
+uint16_t WS2812FX::mode_phased_noise(void) {
+  return phased_base(1);
+} // mode_phased_noise()
+
 
 
 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
@@ -3390,7 +3417,6 @@ uint16_t WS2812FX::mode_twinkleup(void) {
   }
 
   return FRAMETIME;
-
 } // mode_twinkleup()
 
 
@@ -3423,7 +3449,6 @@ uint16_t WS2812FX::mode_noisepal(void) {
   dist += beatsin8(10,1,4);                                                // Moving along the distance. Vary it a bit with a sine wave.
 
   return FRAMETIME;
-
 } // mode_noisepal()
 
 
@@ -3446,7 +3471,6 @@ uint16_t WS2812FX::mode_sinewave(void) {
   }
 
   return FRAMETIME;
-
 } // mode_sinewave()
 
 
@@ -3487,7 +3511,6 @@ uint16_t WS2812FX::mode_asound01(void) {                                   // Pi
   }
 
   return FRAMETIME;
-
 } // mode_asound01()
 
 
@@ -3509,7 +3532,6 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
   }
 
   return FRAMETIME;
-
 } // mode_asound02()
 
 
@@ -3529,7 +3551,6 @@ uint16_t WS2812FX::mode_asound03(void) {                                  // Jug
   }
 
   return FRAMETIME;
-
 } // mode_asound03()
 
 
@@ -3545,7 +3566,6 @@ uint16_t WS2812FX::mode_asound04(void) {                                  // Mat
   }
 
   return FRAMETIME;
-
 } // mode_asound04()
 
 
@@ -3575,7 +3595,6 @@ uint16_t WS2812FX::mode_asound05(void) {                                  // Myv
   gravityCounter = (gravityCounter + 1) % gravity;
 
   return FRAMETIME;
-
 } // mode_asound05()
 
 
@@ -3602,7 +3621,6 @@ uint16_t WS2812FX::mode_asound06(void) {                                  // Pla
   }
 
   return FRAMETIME;
-
 } // mode_asound06()
 
 
@@ -3624,7 +3642,6 @@ uint16_t WS2812FX::mode_asound07(void) {                                  // Pud
   }
 
   return FRAMETIME;
-
 } // mode_asound07()
 
 
@@ -3649,7 +3666,6 @@ uint16_t WS2812FX::mode_asound08(void) {                                  // Fil
   ydist=ydist+beatsin8(4,0,10);
 
   return FRAMETIME;
-
 } // mode_asound08()
 
 
@@ -3675,7 +3691,6 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Fil
   ydist+=beatsin8(4,0,10);
 
   return FRAMETIME;
-
 } // mode_asound09()
 
 
@@ -3947,7 +3962,6 @@ if (samplePeak == 1){
 
 #endif
   return FRAMETIME;
-
 } // mode_asound13()
 
 
