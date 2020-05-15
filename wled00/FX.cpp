@@ -3360,6 +3360,7 @@ uint16_t WS2812FX::mode_solid_glitter()
   return FRAMETIME;
 }
 
+
 //////////////////////////////////////////////////////////////////////////////////////
 //                  Non-reactive routines by Andrew Tuline                          //
 //////////////////////////////////////////////////////////////////////////////////////
@@ -3388,7 +3389,7 @@ uint16_t WS2812FX::phased_base(uint8_t moder) {                                 
   }
 
   return FRAMETIME;
-} // mode_phased()
+} // phased_base()
 
 
 
@@ -3418,6 +3419,7 @@ uint16_t WS2812FX::mode_twinkleup(void) {
 
   return FRAMETIME;
 } // mode_twinkleup()
+
 
 
 // Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls. By Andrew Tuline.
@@ -3450,6 +3452,7 @@ uint16_t WS2812FX::mode_noisepal(void) {
 
   return FRAMETIME;
 } // mode_noisepal()
+
 
 
 // Sine waves that have controllable phase change speed, frequency and cutoff. By Andrew Tuline.
@@ -3514,7 +3517,8 @@ uint16_t WS2812FX::mode_asound01(void) {                                   // Pi
 } // mode_asound01()
 
 
-uint16_t WS2812FX::mode_asound02(void) {                                  // Pixelwave
+
+uint16_t WS2812FX::mode_asound02(void) {                                  // Pixel 2 wave
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
 
@@ -3535,7 +3539,8 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
 } // mode_asound02()
 
 
-uint16_t WS2812FX::mode_asound03(void) {                                  // Jugglep
+
+uint16_t WS2812FX::mode_asound03(void) {                                  // Juggle pixels
 
   static int thistime = 20;
 
@@ -3554,6 +3559,7 @@ uint16_t WS2812FX::mode_asound03(void) {                                  // Jug
 } // mode_asound03()
 
 
+
 uint16_t WS2812FX::mode_asound04(void) {                                  // Matrix
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
@@ -3567,6 +3573,7 @@ uint16_t WS2812FX::mode_asound04(void) {                                  // Mat
 
   return FRAMETIME;
 } // mode_asound04()
+
 
 
 uint16_t WS2812FX::mode_asound05(void) {                                  // Myvumeter
@@ -3598,6 +3605,7 @@ uint16_t WS2812FX::mode_asound05(void) {                                  // Myv
 } // mode_asound05()
 
 
+
 uint16_t WS2812FX::mode_asound06(void) {                                  // Plasma
 
   static int16_t thisphase = 0;                                           // Phase of a cubicwave8.
@@ -3624,6 +3632,7 @@ uint16_t WS2812FX::mode_asound06(void) {                                  // Pla
 } // mode_asound06()
 
 
+
 uint16_t WS2812FX::mode_asound07(void) {                                  // Puddle
 
   uint16_t size = 0;
@@ -3643,6 +3652,7 @@ uint16_t WS2812FX::mode_asound07(void) {                                  // Pud
 
   return FRAMETIME;
 } // mode_asound07()
+
 
 
 uint16_t WS2812FX::mode_asound08(void) {                                  // FillnoiseMid
@@ -3669,7 +3679,8 @@ uint16_t WS2812FX::mode_asound08(void) {                                  // Fil
 } // mode_asound08()
 
 
-uint16_t WS2812FX::mode_asound09(void) {                                  // Fillnoise
+
+uint16_t WS2812FX::mode_asound09(void) {                                  // Vumeter noise
 
   static uint16_t xdist;
   static uint16_t ydist;
@@ -3692,6 +3703,7 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Fil
 
   return FRAMETIME;
 } // mode_asound09()
+
 
 
 #ifndef ESP8266
@@ -3966,14 +3978,17 @@ if (samplePeak == 1){
 
 
 
-uint16_t WS2812FX::mode_asound14(void) {
-  delay(1);
+uint16_t WS2812FX::mode_asound14(void) {                  // Pixels to frequency
+
 #ifndef ESP8266
-  if (beat > 30000){
-    setPixelColor(10, 255,0,0);
-  } else {
-    setPixelColor(10, 0,0,0);
-  }
+
+  extern double FFT_mpX;                    // Major Peak frequency
+  extern double FFT_mpV;                    // Major Peak volume
+
+  fade_out(128);
+  uint16_t locn = random16(0,SEGLEN);
+  setPixCol(locn, (int)FFT_mpX>> 4, (int)FFT_mpV>>8);
+  
 #else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
 #endif
