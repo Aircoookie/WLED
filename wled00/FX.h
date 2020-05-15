@@ -102,7 +102,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  123
+#define MODE_COUNT  124
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -227,6 +227,7 @@
 #define FX_MODE_TWINKLEUP              120
 #define FX_MODE_NOISEPAL               121
 #define FX_MODE_SINEWAVE               122
+#define FX_MODE_PHASEDNOISE            123
 
 
 // Sound reactive external variables
@@ -451,6 +452,7 @@ class WS2812FX {
       _mode[FX_MODE_TWINKLEUP]               = &WS2812FX::mode_twinkleup;
       _mode[FX_MODE_NOISEPAL]                = &WS2812FX::mode_noisepal;
       _mode[FX_MODE_SINEWAVE]                = &WS2812FX::mode_sinewave;
+      _mode[FX_MODE_PHASEDNOISE]             = &WS2812FX::mode_phased_noise;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -659,7 +661,8 @@ class WS2812FX {
       mode_phased(void),
       mode_twinkleup(void),
       mode_noisepal(void),
-      mode_sinewave(void);
+      mode_sinewave(void),
+      mode_phased_noise(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -706,7 +709,8 @@ class WS2812FX {
       running(uint32_t, uint32_t),
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),
-      spots_base(uint16_t);
+      spots_base(uint16_t),
+      phased_base(uint8_t);
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
@@ -748,7 +752,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06",
 "ASound07","ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","Phased",
-"Twinkleup","NoisePal", "SineWave"
+"Twinkleup","NoisePal", "SineWave", "Phased Noise"
 ])=====";
 
 
