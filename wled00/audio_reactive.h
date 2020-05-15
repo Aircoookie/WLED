@@ -120,16 +120,17 @@ void agcAvg() {                                                       // A simpl
   unsigned int sampling_period_us;
   unsigned long microseconds;
 
-  uint16_t FFT_MajorPeak = 0;
+  double FFT_MajorPeak = 0;
+  double FFT_Magnitude = 0;
   uint16_t mAvg = 0;
 
   /*
   These are the input and output vectors
   Input vectors receive computed results from FFT
   */
-  double fftBin[samples];
   double vReal[samples];
   double vImag[samples];
+  double fftBin[samples];
   double fftResult[16];
 
   // Create FFT object
@@ -178,13 +179,17 @@ void agcAvg() {                                                       // A simpl
       FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );    // Weigh data
       FFT.Compute( FFT_FORWARD );                           // Compute FFT
       FFT.ComplexToMagnitude();                             // Compute magnitudes
-      FFT.DCRemoval();
+      //FFT.DCRemoval();
 
       /*
        * vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
        * There could be interesting data at [2 .. 7] but chances are there are too many artifacts
        */
-      FFT_MajorPeak = (uint16_t) FFT.MajorPeak();               // let the effects know which freq was most dominant
+      double x;                                               // Dominant frequency
+      double v;                                               // Magnitude of the peak
+      FFT.MajorPeak(&x, &v);                                  // let the effects know which freq was most dominant
+      FFT_MajorPeak = x;
+      FFT_Magnitude = v;
 
       for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];   // export FFT field
 
