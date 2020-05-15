@@ -179,7 +179,6 @@ void agcAvg() {                                                       // A simpl
       FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );    // Weigh data
       FFT.Compute( FFT_FORWARD );                           // Compute FFT
       FFT.ComplexToMagnitude();                             // Compute magnitudes
-      //FFT.DCRemoval();
 
       /*
        * vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
@@ -190,6 +189,8 @@ void agcAvg() {                                                       // A simpl
       FFT.MajorPeak(&x, &v);                                  // let the effects know which freq was most dominant
       FFT_MajorPeak = x;
       FFT_Magnitude = v;
+
+      if (FFT_Magnitude > 65535) FFT_Magnitude = 0;         // FFT_Magnitude just skyrockets when the volume is quiet. Very strange.
 
       for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];   // export FFT field
 
