@@ -184,11 +184,7 @@ void agcAvg() {                                                       // A simpl
        * vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
        * There could be interesting data at [2 .. 7] but chances are there are too many artifacts
        */
-      double x;                                               // Dominant frequency
-      double v;                                               // Magnitude of the peak
-      FFT.MajorPeak(&x, &v);                                  // let the effects know which freq was most dominant
-      FFT_MajorPeak = x;
-      FFT_Magnitude = v;
+      FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);        // let the effects know which freq was most dominant
 
       if (FFT_Magnitude > 65535) FFT_Magnitude = 0;         // FFT_Magnitude just skyrockets when the volume is quiet. Very strange.
 
