@@ -147,6 +147,8 @@ double fftAdd( int from, int to) {
 }
 
 uint16_t FFT_MajorPeak = 0;
+double FFT_mpX = 0;
+double FFT_mpV = 0;
 
 // FFT main code
 void FFTcode( void * parameter) {
@@ -181,10 +183,10 @@ void FFTcode( void * parameter) {
 //  beat = beatFilter(envelope);
 //  if (beat > 50000) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
 
+
     FFT.Windowing(vReal, samples, FFT_WIN_TYP_HAMMING, FFT_FORWARD);   // Weigh data
     FFT.Compute(vReal, vImag, samples, FFT_FORWARD);                   // Compute FFT
     FFT.ComplexToMagnitude(vReal, vImag, samples);                     // Compute magnitudes
-    FFT.DCRemoval();
 
     sum = 0;
     // Normalize bins
@@ -198,8 +200,11 @@ void FFTcode( void * parameter) {
     }
 
     // vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
-    // There could be interesting data at [2 .. 7] but chances are there are too many artifacts
-    FFT_MajorPeak = (uint16_t) FFT.MajorPeak(vReal, samples, samplingFrequency);  // let the effects know which freq was most dominant
+    // There could be interesting data at [2 .. 7] but chances are there are too many artifacts.
+
+    FFT.MajorPeak(vReal, samples, samplingFrequency, &FFT_mpX, &FFT_mpV);  // Let the effects know which freq/volume was most dominant.
+    FFT_MajorPeak = FFT_mpX;                  // Current effects use this value.
+    if (FFT_mpV > 65535) FFT_mpV = 0;         // FFT_mpV just skyrockets when the volume is quiet. Very strange.
 
     for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];       // export FFT field
 
