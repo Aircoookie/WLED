@@ -3707,7 +3707,8 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Vum
 
 
 #ifndef ESP8266
-extern uint16_t FFT_MajorPeak;
+extern double FFT_MajorPeak;
+extern double FFT_Magnitude;
 double volume = 1;
 extern double beat;
 
@@ -3982,12 +3983,12 @@ uint16_t WS2812FX::mode_asound14(void) {                  // Pixels to frequency
 
 #ifndef ESP8266
 
-  extern double FFT_mpX;                    // Major Peak frequency
-  extern double FFT_mpV;                    // Major Peak volume
-
   fade_out(128);
+
+  Serial.print(FFT_MajorPeak); Serial.print(" "); Serial.println(FFT_Magnitude);
+  
   uint16_t locn = random16(0,SEGLEN);
-  setPixCol(locn, (int)FFT_mpX>> 4, (int)FFT_mpV>>8);
+  setPixCol(locn, (int)FFT_MajorPeak>> 3, (int)FFT_Magnitude>>8);
   
 #else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
@@ -4021,7 +4022,7 @@ uint16_t WS2812FX::mode_asound15(void) {
   for (int i=0; i<SEGLEN; i++) {
 
     uint16_t startBin = 7+i*(samples-8)/SEGLEN;   // Don't use the first 7 bins, and don't overshoot by 8.
-    uint16_t   endBin = 7+(i+1)*(samples-8)/SEGLEN;  // Ditto.
+   uint16_t   endBin = 7+(i+1)*(samples-8)/SEGLEN;  // Ditto.
 
     double sumBin = 0;
     for (int j=startBin; j<=endBin; j++) { sumBin += fftBin[j]; }
