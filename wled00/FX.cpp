@@ -3704,23 +3704,29 @@ uint16_t WS2812FX::mode_asound09(void) {                                  // Vum
   return FRAMETIME;
 } // mode_asound09()
 
-
+///////////////////////////////
+//     BEGIN FFT ROUTINES    //
+///////////////////////////////
 
 #ifndef ESP8266
 extern double FFT_MajorPeak;
 extern double FFT_Magnitude;
-double volume = 1;
+extern double fftBin[];           // raw FFT data
+extern double fftResult[];        // pre-added result array 0 .. 15
 extern double beat;
+extern uint16_t lastSample;
+double volume = 1;
+uint32_t ledData[1500];
 
-
-double mapf(double x, double in_min, double in_max, double out_min, double out_max)
-{
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+double mapf(double x, double in_min, double in_max, double out_min, double out_max){
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-uint32_t ledData[1500];
 #endif
 
+//////////////////////
+//     ASOUND10     //
+//////////////////////
 
 // sound 10: assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT
 // and then mapping this to the HSV color circle. Currently we are sampling at 10240 Hz, so the highest frequency we can look at is 5120Hz.
@@ -3804,8 +3810,9 @@ uint16_t WS2812FX::mode_asound10(void) {
   return FRAMETIME;
 } // mode_asound10()
 
-
-extern uint16_t lastSample;
+//////////////////////
+//     ASOUND11     //
+//////////////////////
 
 uint16_t WS2812FX::mode_asound11(void) {
   delay(1); // DO NOT REMOVE!
@@ -3865,10 +3872,9 @@ uint16_t WS2812FX::mode_asound11(void) {
   return FRAMETIME;
 } // mode_asound11()
 
-extern double fftBin[];           // raw FFT data
-extern double fftResult[];        // pre-added result array 0 .. 15
-
-
+//////////////////////
+//     ASOUND12     //
+//////////////////////
 
 // asound12 delivers a spectral "analysis" of the audio signal compressed into 16 bins which are supposed to be at least half way similar log (human ear is log as well)
 //
@@ -3943,7 +3949,9 @@ uint16_t WS2812FX::mode_asound12(void) {
   return FRAMETIME;
 } // mode_asound12()
 
-
+//////////////////////
+//     ASOUND13     //
+//////////////////////
 
 // Andrew's temporary peak detector for testing. Whatever we end up with should not be worse than this.
 uint16_t WS2812FX::mode_asound13(void) {
@@ -3977,7 +3985,9 @@ if (samplePeak == 1){
   return FRAMETIME;
 } // mode_asound13()
 
-
+//////////////////////
+//     ASOUND14     //
+//////////////////////
 
 uint16_t WS2812FX::mode_asound14(void) {                  // Pixels to frequency
 
@@ -3986,17 +3996,19 @@ uint16_t WS2812FX::mode_asound14(void) {                  // Pixels to frequency
   fade_out(128);
 
   Serial.print(FFT_MajorPeak); Serial.print(" "); Serial.println(FFT_Magnitude);
-  
+
   uint16_t locn = random16(0,SEGLEN);
   setPixCol(locn, (int)FFT_MajorPeak>> 3, (int)FFT_Magnitude>>8);
-  
+
 #else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
 #endif
   return FRAMETIME;
 } // mode_asound14()
 
-
+//////////////////////
+//     ASOUND15     //
+//////////////////////
 
 // Map bins 7 through 490 to the ENTIRE SEGLEN.
 // For some reason, it seems to be mirroring itself. I really don't know why.
@@ -4021,8 +4033,8 @@ uint16_t WS2812FX::mode_asound15(void) {
 
   for (int i=0; i<SEGLEN; i++) {
 
-    uint16_t startBin = 7+i*(samples-8)/SEGLEN;   // Don't use the first 7 bins, and don't overshoot by 8.
-   uint16_t   endBin = 7+(i+1)*(samples-8)/SEGLEN;  // Ditto.
+    uint16_t startBin = 7+i*(samples-8)/SEGLEN;      // Don't use the first 7 bins, and don't overshoot by 8.
+    uint16_t   endBin = 7+(i+1)*(samples-8)/SEGLEN;  // Ditto.
 
     double sumBin = 0;
     for (int j=startBin; j<=endBin; j++) { sumBin += fftBin[j]; }
