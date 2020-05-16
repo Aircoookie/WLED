@@ -186,8 +186,6 @@ void agcAvg() {                                                       // A simpl
        */
       FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);        // let the effects know which freq was most dominant
 
-      if (FFT_Magnitude > 65535) FFT_Magnitude = 0;         // FFT_Magnitude just skyrockets when the volume is quiet. Very strange.
-
       for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];   // export FFT field
 
       /*
