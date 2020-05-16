@@ -3953,32 +3953,23 @@ uint16_t WS2812FX::mode_asound12(void) {
 //     ASOUND13     //
 //////////////////////
 
-// Andrew's temporary peak detector for testing. Whatever we end up with should not be worse than this.
-uint16_t WS2812FX::mode_asound13(void) {
-  delay(1);
+
+uint16_t WS2812FX::mode_asound13(void) {                  // FFT version of Matrix. By: Andrew Tuline
+
 #ifndef ESP8266
-  static long oldPeak;
 
-  delay(1);
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
+    uint8_t pixVal = (log10((int)FFT_MajorPeak) - 2.26) * 177;            // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
-  extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
-
-//  Serial.print(sampleAvg); Serial.print(" "); Serial.println(fftBin[6]);
-
-// fftBin version with simple math.
-  if ((fftBin[6] > sampleAvg*100) & (millis() > (oldPeak + 300))) {
-        setPixelColor(10, 255,0,0);
-  } else {
-        setPixelColor(10, 0,0,0);
-  }
-
-
-// Volume version only!!!
-if (samplePeak == 1){
-    setPixelColor(9, 255,0,0);
-    samplePeak = 0;                // It's up to the animation routine to reset the peak.
-  } else {
-    setPixelColor(9, 0,0,0);
+    if (samplePeak) {
+      samplePeak = 0;
+      setPixelColor(SEGLEN-1,92,92,92);
+    } else {
+      setPixCol(SEGLEN-1, pixVal+128, (int)FFT_Magnitude>>8);
+    }
+    
+    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
   }
 
 #endif
@@ -3989,14 +3980,14 @@ if (samplePeak == 1){
 //     ASOUND14     //
 //////////////////////
 
-uint16_t WS2812FX::mode_asound14(void) {                  // Pixels to frequency. By Andrew Tuline.
+uint16_t WS2812FX::mode_asound14(void) {                  // Pixels by frequency. By Andrew Tuline.
 
 #ifndef ESP8266
 
   fade_out(128);
   uint16_t locn = random16(0,SEGLEN);
-  uint8_t val = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range from 2.26 to 3.7
-  setPixCol(locn, 128+val, (int)FFT_Magnitude>>8);           // Shift the colours so we start at blue.
+  uint8_t pixVal = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+  setPixCol(locn, 128+pixVal, (int)FFT_Magnitude>>8);           // Shift the colours so we start at blue.
   
 //  Serial.print(log10((int)FFT_MajorPeak)); Serial.print(" "); Serial.print(FFT_MajorPeak); Serial.print(" "); Serial.println(FFT_Magnitude);
 
@@ -4013,7 +4004,7 @@ uint16_t WS2812FX::mode_asound14(void) {                  // Pixels to frequency
 
 // Map bins 7 through 490 to the ENTIRE SEGLEN.
 // For some reason, it seems to be mirroring itself. I really don't know why.
-uint16_t WS2812FX::mode_asound15(void) {
+uint16_t WS2812FX::mode_asound15(void) {    // Scale bins to SEGLEN. By Andrew Tuline
   delay(1);
 #ifndef ESP8266
 
@@ -4050,3 +4041,30 @@ uint16_t WS2812FX::mode_asound15(void) {
 
   return FRAMETIME;
 } // mode_asound15()
+
+//////////////////////
+//     ASOUND16     //
+//////////////////////
+
+/*
+uint16_t WS2812FX::mode_asound16(void) {                  // Frequency beat to blas out pixels. By Andrew Tuline.
+
+  fade_out(128);
+
+  uint8_t pixVal = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+
+   if (samplePeak) {
+      samplePeak = 0;
+      for (int i=0; i < SEGLEN; i++) {
+            setPixCol(i, 128+pixVal, 128);           // Beat is the colour of the FFT_MajorPeak frequency.
+      }
+    }  
+  
+#else
+  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+#endif
+
+  return FRAMETIME;
+} // mode_asound116()
+
+*/
