@@ -3989,20 +3989,21 @@ if (samplePeak == 1){
 //     ASOUND14     //
 //////////////////////
 
-uint16_t WS2812FX::mode_asound14(void) {                  // Pixels to frequency
+uint16_t WS2812FX::mode_asound14(void) {                  // Pixels to frequency. By Andrew Tuline.
 
 #ifndef ESP8266
 
   fade_out(128);
-
-  Serial.print(FFT_MajorPeak); Serial.print(" "); Serial.println(FFT_Magnitude);
-
   uint16_t locn = random16(0,SEGLEN);
-  setPixCol(locn, (int)FFT_MajorPeak>> 3, (int)FFT_Magnitude>>8);
+  uint8_t val = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range from 2.26 to 3.7
+  setPixCol(locn, 128+val, (int)FFT_Magnitude>>8);           // Shift the colours so we start at blue.
+  
+//  Serial.print(log10((int)FFT_MajorPeak)); Serial.print(" "); Serial.print(FFT_MajorPeak); Serial.print(" "); Serial.println(FFT_Magnitude);
 
 #else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
 #endif
+
   return FRAMETIME;
 } // mode_asound14()
 
