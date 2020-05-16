@@ -102,7 +102,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  124
+#define MODE_COUNT  128
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -223,11 +223,15 @@
 #define FX_MODE_ASound13               116
 #define FX_MODE_ASound14               117
 #define FX_MODE_ASound15               118
-#define FX_MODE_PHASED                 119
-#define FX_MODE_TWINKLEUP              120
-#define FX_MODE_NOISEPAL               121
-#define FX_MODE_SINEWAVE               122
-#define FX_MODE_PHASEDNOISE            123
+#define FX_MODE_ASound16               119
+#define FX_MODE_ASound17               120
+#define FX_MODE_ASound18               121
+#define FX_MODE_ASound19               122
+#define FX_MODE_PHASED                 123
+#define FX_MODE_TWINKLEUP              124
+#define FX_MODE_NOISEPAL               125
+#define FX_MODE_SINEWAVE               126
+#define FX_MODE_PHASEDNOISE            127
 
 
 // Sound reactive external variables
@@ -448,6 +452,10 @@ class WS2812FX {
       _mode[FX_MODE_ASound13]                = &WS2812FX::mode_asound13;
       _mode[FX_MODE_ASound14]                = &WS2812FX::mode_asound14;
       _mode[FX_MODE_ASound15]                = &WS2812FX::mode_asound15;
+      _mode[FX_MODE_ASound16]                = &WS2812FX::mode_asound16;
+      _mode[FX_MODE_ASound17]                = &WS2812FX::mode_asound17;
+      _mode[FX_MODE_ASound18]                = &WS2812FX::mode_asound18;
+      _mode[FX_MODE_ASound19]                = &WS2812FX::mode_asound19;
       _mode[FX_MODE_PHASED]                  = &WS2812FX::mode_phased;
       _mode[FX_MODE_TWINKLEUP]               = &WS2812FX::mode_twinkleup;
       _mode[FX_MODE_NOISEPAL]                = &WS2812FX::mode_noisepal;
@@ -658,6 +666,10 @@ class WS2812FX {
       mode_asound13(void),
       mode_asound14(void),
       mode_asound15(void),
+      mode_asound16(void),
+      mode_asound17(void),
+      mode_asound18(void),
+      mode_asound19(void),
       mode_phased(void),
       mode_twinkleup(void),
       mode_noisepal(void),
@@ -751,8 +763,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06",
-"ASound07","ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","Phased",
-"Twinkleup","NoisePal", "SineWave", "Phased Noise"
+"ASound07","ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","ASound16",
+"ASound17","ASound18","ASound19","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise"
 ])=====";
 
 

@@ -3412,9 +3412,9 @@ uint16_t WS2812FX::mode_twinkleup(void) {
 
   for (int i = 0; i<SEGLEN; i++) {
     uint8_t ranstart = random8();                               // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
-    uint8_t pixVal = sin8(ranstart + 16 * millis()/(255-SEGMENT.speed));
-    if (random8() > SEGMENT.intensity) pixVal = 0;
-    setPixCol(i, i*20, pixVal);
+    uint8_t pixBri = sin8(ranstart + 16 * millis()/(255-SEGMENT.speed));
+    if (random8() > SEGMENT.intensity) pixBri = 0;
+    setPixCol(i, i*20, pixBri);
   }
 
   return FRAMETIME;
@@ -3469,8 +3469,8 @@ uint16_t WS2812FX::mode_sinewave(void) {
   thisFreq = SEGMENT.fft2/8;                       // Frequency of the signal.
 
   for (int i=0; i<SEGLEN; i++) {                   // For each of the LED's in the strand, set a brightness based on a wave as follows:
-    int pixVal = qsuba(cubicwave8((i*thisFreq)+thisPhase), (255-SEGMENT.intensity));    // qsub sets a minimum value called thiscutoff. If < thiscutoff, then bright = 0. Otherwise, bright = 128 (as defined in qsub)..
-    setPixCol(i, i*colorIndex/255, pixVal);
+    int pixBri = qsuba(cubicwave8((i*thisFreq)+thisPhase), (255-SEGMENT.intensity));    // qsub sets a minimum value called thiscutoff. If < thiscutoff, then bright = 0. Otherwise, bright = 128 (as defined in qsub)..
+    setPixCol(i, i*colorIndex/255, pixBri);
   }
 
   return FRAMETIME;
@@ -3523,8 +3523,8 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
-    int pixVal = sample * SEGMENT.intensity / 128;
-    setPixCol(SEGLEN/2, millis(), pixVal);
+    int pixBri = sample * SEGMENT.intensity / 128;
+    setPixCol(SEGLEN/2, millis(), pixBri);
 
     for (int i=SEGLEN-1; i>SEGLEN/2; i--) {                               // Move to the right.
       setPixelColor(i,getPixelColor(i-1));
@@ -3565,8 +3565,8 @@ uint16_t WS2812FX::mode_asound04(void) {                                  // Mat
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
-    int pixVal = sample * SEGMENT.intensity / 128;
-    setPixCol(SEGLEN-1, millis(), pixVal);
+    int pixBri = sample * SEGMENT.intensity / 128;
+    setPixCol(SEGLEN-1, millis(), pixBri);
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
 
   }
@@ -3960,13 +3960,13 @@ uint16_t WS2812FX::mode_asound13(void) {                  // FFT version of Matr
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
-    uint8_t pixVal = (log10((int)FFT_MajorPeak) - 2.26) * 177;            // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;            // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
     if (samplePeak) {
       samplePeak = 0;
       setPixelColor(SEGLEN-1,92,92,92);
     } else {
-      setPixCol(SEGLEN-1, pixVal+128, (int)FFT_Magnitude>>8);
+      setPixCol(SEGLEN-1, pixCol+128, (int)FFT_Magnitude>>8);
     }
     
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
@@ -3986,8 +3986,8 @@ uint16_t WS2812FX::mode_asound14(void) {                  // Pixels by frequency
 
   fade_out(128);
   uint16_t locn = random16(0,SEGLEN);
-  uint8_t pixVal = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-  setPixCol(locn, 128+pixVal, (int)FFT_Magnitude>>8);           // Shift the colours so we start at blue.
+  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+  setPixCol(locn, 128+pixCol, (int)FFT_Magnitude>>8);           // Shift the colours so we start at blue.
   
 //  Serial.print(log10((int)FFT_MajorPeak)); Serial.print(" "); Serial.print(FFT_MajorPeak); Serial.print(" "); Serial.println(FFT_Magnitude);
 
@@ -4037,34 +4037,83 @@ uint16_t WS2812FX::mode_asound15(void) {    // Scale bins to SEGLEN. By Andrew T
     setPixCol(i, i*4, bright);               // colour is just an index in the palette. The FFT is the intensity.
 
   }
-#endif
-
-  return FRAMETIME;
-} // mode_asound15()
-
-//////////////////////
-//     ASOUND16     //
-//////////////////////
-
-/*
-uint16_t WS2812FX::mode_asound16(void) {                  // Frequency beat to blas out pixels. By Andrew Tuline.
-
-  fade_out(128);
-
-  uint8_t pixVal = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-
-   if (samplePeak) {
-      samplePeak = 0;
-      for (int i=0; i < SEGLEN; i++) {
-            setPixCol(i, 128+pixVal, 128);           // Beat is the colour of the FFT_MajorPeak frequency.
-      }
-    }  
-  
 #else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
 #endif
 
   return FRAMETIME;
-} // mode_asound116()
+} // mode_asound15()
 
-*/
+
+//////////////////////
+//     ASOUND16     //
+//////////////////////
+
+uint16_t WS2812FX::mode_asound16(void) {                  // Frequency beat (err. . . OK peak) to blast out pixels. By Andrew Tuline.
+
+#ifndef ESP8266
+
+  fade_out(248);                                          // A REALLY FAST fade.
+
+  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+
+   if (samplePeak) {
+      samplePeak = 0;
+      for (int i=0; i < SEGLEN; i++) {
+            setPixCol(i, 128+pixCol, 255);           // Beat is the colour of the FFT_MajorPeak frequency.
+      }
+    }  
+
+#else
+  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+#endif
+
+  return FRAMETIME;
+} // mode_asound16()
+
+
+//////////////////////
+//     ASOUND17     //
+//////////////////////
+
+uint16_t WS2812FX::mode_asound17(void) {
+
+#ifndef ESP8266
+// Put FFT code here.  
+#else
+  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+#endif
+
+  return FRAMETIME;
+} // mode_asound17()
+
+
+//////////////////////
+//     ASOUND18     //
+//////////////////////
+
+uint16_t WS2812FX::mode_asound18(void) {
+#ifndef ESP8266
+// Put FFT code here.  
+#else
+  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+#endif
+
+  return FRAMETIME;
+} // mode_asound18()
+
+
+//////////////////////
+//     ASOUND19     //
+//////////////////////
+
+
+uint16_t WS2812FX::mode_asound19(void) {
+#ifndef ESP8266
+// Put FFT code here.  
+#else
+  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+#endif
+
+  return FRAMETIME;
+} // mode_asound19()
