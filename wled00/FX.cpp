@@ -4075,7 +4075,7 @@ uint16_t WS2812FX::mode_asound15(void) {    // Scale bins to SEGLEN. By Andrew T
 //     ASOUND16     //
 //////////////////////
 
-uint16_t WS2812FX::mode_asound16(void) {                  // Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise pixels. By Andrew Tuline.
+uint16_t WS2812FX::mode_asound16(void) {                  // Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise across SEGLEN. By Andrew Tuline.
 
 #ifndef ESP8266
 
@@ -4114,10 +4114,28 @@ uint16_t WS2812FX::mode_asound16(void) {                  // Frequency noise bea
 //     ASOUND17     //
 //////////////////////
 
-uint16_t WS2812FX::mode_asound17(void) {
+uint16_t WS2812FX::mode_asound17(void) {                                    // I am the god of hellfire. . . Volume (only) reactive fire routine. By Andrew Tuline.
 
 #ifndef ESP8266
-// Put FFT code here.  
+
+#define xscale 20            // How far apart they are
+#define yscale 3             // How fast they move
+
+  CRGB color;
+  uint16_t index;            // Current colour lookup value.
+  
+  currentPalette = CRGBPalette16(CHSV(0,255,2), CHSV(0,255,4), CHSV(0,255,8), CHSV(0, 255, 8),    // Fire palette definition. Lower value = darker.
+                                 CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,                                   
+                                 CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
+                                 CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
+  
+  for (int i = 0; i < SEGLEN; i++) {
+    index = inoise8(i*xscale,millis()*yscale*SEGLEN/255);                     // X location is constant, but we move along the Y at the rate of millis(). By Andrew Tuline.
+    index = (255 - i*256/SEGLEN) * index/128;                                 // Now we need to scale index so that it gets blacker as we get close to one of the ends.
+    color = ColorFromPalette(currentPalette, index, sampleAvg*2, LINEARBLEND);       // Use the my own palette.
+    setPixelColor(i, color.red, color.green, color.blue);                       // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.     
+  }  
+
 #else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
 #endif
