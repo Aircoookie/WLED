@@ -1,56 +1,36 @@
 <!DOCTYPE html>
-<html><head>
+<html>
+
+<head>
 	<meta content='width=device-width' name='viewport'>
 	<title>WLED Message</title>
-	<script>
-	function B() {
-		window.history.back();
-	}
-	function RS() {
-		window.location = "/settings";
-	}
-	function RP() {
-		top.location.href="/";
-	}
-	</script>
+	<script>function B() { window.history.back() }; function RS() { window.location = "/settings"; } function RP() { top.location.href = "/"; }</script>
 	<style>
-		:root {
-			--aCol: #D9B310;
-			--bCol: #0B3C5D;
-			--cCol: #1D2731;
-			--dCol: #328CC1;
-			--sCol: #000;
-			--tCol: #328CC1;
-			--cFn: Verdana;
-		}
 		.bt {
-			background: var(--bCol);
-			color: var(--tCol);
-			border: 0.3ch solid var(--bCol);
+			background: #333;
+			color: #fff;
+			font-family: Verdana, sans-serif;
+			border: .3ch solid #333;
 			display: inline-block;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-family: var(--cFn), sans-serif;
 			font-size: 20px;
 			margin: 8px;
-			margin-top: 12px;
+			margin-top: 12px
 		}
-    input[type=file] {
-      font-size: 16px;
-    }
+
 		body {
-			font-family: var(--cFn), sans-serif;
+			font-family: Verdana, sans-serif;
 			text-align: center;
-			background: var(--cCol);
-			color: var(--tCol);
-			line-height: 200%;
-			margin: 0;
-			background-attachment: fixed;
+			background: #222;
+			color: #fff;
+			line-height: 200%%;
+			margin: 0
 		}
 	</style>
 </head>
+
 <body>
-<h2>Sample message.</h2>
-Sample detail.
+	<h2>Sample Message.</h2>
+	Sample Detail.
 </body>
+
 </html>
-	
