@@ -175,6 +175,10 @@ writeChunks(
         str
           .replace(/\<link rel="stylesheet".*\>/gms, "")
           .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "function GetV() {var d=document;\n"
+          )
     },
     {
       file: "settings_leds.htm",
@@ -187,6 +191,10 @@ writeChunks(
         str
           .replace(/\<link rel="stylesheet".*\>/gms, "")
           .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "function GetV() {var d=document;\n"
+          )
     },
     {
       file: "settings_dmx.htm",
@@ -198,7 +206,11 @@ writeChunks(
       mangle: str => {
         const nocss = str
           .replace(/\<link rel="stylesheet".*\>/gms, "")
-          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%");
+          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "function GetV() {var d=document;\n"
+          );
         return `
 #ifdef WLED_ENABLE_DMX
 ${nocss}
@@ -219,6 +231,10 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
         str
           .replace(/\<link rel="stylesheet".*\>/gms, "")
           .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "function GetV() {var d=document;\n"
+          )
     },
     {
       file: "settings_sync.htm",
@@ -231,6 +247,7 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
         str
           .replace(/\<link rel="stylesheet".*\>/gms, "")
           .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          .replace(/function GetV().*\<\/script\>/gms, "function GetV() {\n")
     },
     {
       file: "settings_time.htm",
@@ -243,6 +260,7 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
         str
           .replace(/\<link rel="stylesheet".*\>/gms, "")
           .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          .replace(/function GetV().*\<\/script\>/gms, "function GetV() {\n")
     },
     {
       file: "settings_sec.htm",
@@ -255,6 +273,10 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
         str
           .replace(/\<link rel="stylesheet".*\>/gms, "")
           .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "function GetV() {var d=document;\n"
+          )
     }
   ],
   "wled00/html_settings.h"
@@ -277,7 +299,8 @@ writeChunks(
       prepend: "=====(",
       append: ")=====",
       method: "plaintext",
-      filter: "html-minify"
+      filter: "html-minify",
+      mangle: str => str.replace(/\<h2\>.*\<\/body\>/gms, "<h2>%MSG%</body>")
     },
     {
       file: "dmxmap.htm",
@@ -288,7 +311,7 @@ writeChunks(
       filter: "html-minify",
       mangle: str => `
 #ifdef WLED_ENABLE_DMX
-${str}
+${str.replace(/function FM\(\)[ ]?\{/gms, "function FM() {%DMXVARS%\n")}
 #else
 const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
 #endif
