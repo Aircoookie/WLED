@@ -291,7 +291,8 @@ writeChunks(
       prepend: "=====(",
       append: ")=====",
       method: "plaintext",
-      filter: "html-minify"
+      filter: "html-minify",
+      mangle: str => str.replace(/fetch\("http\:\/\/.*\/win/gms, "fetch(\"/win")
     },
     {
       file: "msg.htm",
