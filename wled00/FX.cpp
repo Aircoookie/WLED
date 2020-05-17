@@ -3361,12 +3361,11 @@ uint16_t WS2812FX::mode_solid_glitter()
 }
 
 
-//////////////////////////////////////////////////////////////////////////////////////
-//                  Non-reactive routines by Andrew Tuline                          //
-//////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+//    Start of Audio Reactive fork, beginning with Non-reactive routines   //
+/////////////////////////////////////////////////////////////////////////////
 
-
-uint16_t WS2812FX::phased_base(uint8_t moder) {                                    // We're making sine waves here.
+uint16_t WS2812FX::phased_base(uint8_t moder) {                       // We're making sine waves here. By Andrew Tuline
 
   float thisspeed = SEGMENT.speed/32.0;                               // You can change the speed of the wave.   AKA SPEED (was .4)
   uint8_t allfreq = 16;                                               // Base frequency.
@@ -3405,13 +3404,12 @@ uint16_t WS2812FX::mode_phased_noise(void) {
 
 
 
-// A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
-uint16_t WS2812FX::mode_twinkleup(void) {
+uint16_t WS2812FX::mode_twinkleup(void) {                 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
 
-  random16_set_seed(535);                                       // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
+  random16_set_seed(535);                                 // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
 
   for (int i = 0; i<SEGLEN; i++) {
-    uint8_t ranstart = random8();                               // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
+    uint8_t ranstart = random8();                         // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
     uint8_t pixBri = sin8(ranstart + 16 * millis()/(255-SEGMENT.speed));
     if (random8() > SEGMENT.intensity) pixBri = 0;
     setPixCol(i, i*20, pixBri);
@@ -3422,8 +3420,8 @@ uint16_t WS2812FX::mode_twinkleup(void) {
 
 
 
-// Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls. By Andrew Tuline.
-uint16_t WS2812FX::mode_noisepal(void) {
+// Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls.
+uint16_t WS2812FX::mode_noisepal(void) {                                    // Slow noise palette by Andrew Tuline.
 
   #define scale 30                                                          // Don't change this programmatically or everything shakes.
 
@@ -3454,10 +3452,9 @@ uint16_t WS2812FX::mode_noisepal(void) {
 } // mode_noisepal()
 
 
-
 // Sine waves that have controllable phase change speed, frequency and cutoff. By Andrew Tuline.
 // SEGMENT.speed ->Speed, SEGMENT.intensity -> PWM cutoff, SEGMENT.fft1 -> Color change, SEGMENT.fft2 -> Frequency
-uint16_t WS2812FX::mode_sinewave(void) {
+uint16_t WS2812FX::mode_sinewave(void) {             // Adjustable sinewave. By Andrew Tuline.
 
   #define qsuba(x, b)  ((x>b)?x-b:0)                 // Analog Unsigned subtraction macro. if result <0, then => 0
 
@@ -3478,9 +3475,9 @@ uint16_t WS2812FX::mode_sinewave(void) {
 
 
 
-//////////////////////////////////////////////////////////////////////////////////////
-//                  Helper routine by Andrew Tuline                                 //
-//////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+//   Pixel assignment helper routine by Andrew Tuline    //
+///////////////////////////////////////////////////////////
 
 // This helper function displays the RGBW SEGCOLOR(0) if no palette has been loaded. Index must be 32 bit because I use millis().
 void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
@@ -3499,12 +3496,16 @@ void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
 
 
 
-//////////////////////////////////////////////////////////////////////////////////////
-//                  ASOUND01-09 volume routines by Andrew Tuline                    //
-//                  ASOUND10-15 FFT routines by Andreas Pleschutznig                //
-//////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////
+//    ASOUND01-09 volume routines     //
+//    ASOUND10-19 FFT routines        //
+////////////////////////////////////////
 
-uint16_t WS2812FX::mode_asound01(void) {                                   // Pixels
+//////////////////////
+//     ASOUND01     //
+//////////////////////
+
+uint16_t WS2812FX::mode_asound01(void) {                                   // Pixels. By Andrew Tuline
 
   fade_out(4);
 
@@ -3517,8 +3518,11 @@ uint16_t WS2812FX::mode_asound01(void) {                                   // Pi
 } // mode_asound01()
 
 
+//////////////////////
+//     ASOUND02     //
+//////////////////////
 
-uint16_t WS2812FX::mode_asound02(void) {                                  // Pixel 2 wave
+uint16_t WS2812FX::mode_asound02(void) {                                  // Pixel 2 wave. By Andrew Tuline
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
 
@@ -3539,6 +3543,9 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
 } // mode_asound02()
 
 
+//////////////////////
+//     ASOUND03     //
+//////////////////////
 
 uint16_t WS2812FX::mode_asound03(void) {                                  // Juggle pixels
 
@@ -3559,6 +3566,9 @@ uint16_t WS2812FX::mode_asound03(void) {                                  // Jug
 } // mode_asound03()
 
 
+//////////////////////
+//     ASOUND04     //
+//////////////////////
 
 uint16_t WS2812FX::mode_asound04(void) {                                  // Matrix
 
@@ -3575,6 +3585,9 @@ uint16_t WS2812FX::mode_asound04(void) {                                  // Mat
 } // mode_asound04()
 
 
+//////////////////////
+//     ASOUND05     //
+//////////////////////
 
 uint16_t WS2812FX::mode_asound05(void) {                                  // Myvumeter
 
@@ -3605,6 +3618,9 @@ uint16_t WS2812FX::mode_asound05(void) {                                  // Myv
 } // mode_asound05()
 
 
+//////////////////////
+//     ASOUND06     //
+//////////////////////
 
 uint16_t WS2812FX::mode_asound06(void) {                                  // Plasma
 
@@ -3632,6 +3648,9 @@ uint16_t WS2812FX::mode_asound06(void) {                                  // Pla
 } // mode_asound06()
 
 
+//////////////////////
+//     ASOUND07     //
+//////////////////////
 
 uint16_t WS2812FX::mode_asound07(void) {                                  // Puddle
 
@@ -3654,6 +3673,9 @@ uint16_t WS2812FX::mode_asound07(void) {                                  // Pud
 } // mode_asound07()
 
 
+//////////////////////
+//     ASOUND08     //
+//////////////////////
 
 uint16_t WS2812FX::mode_asound08(void) {                                  // FillnoiseMid
 
@@ -3679,6 +3701,9 @@ uint16_t WS2812FX::mode_asound08(void) {                                  // Fil
 } // mode_asound08()
 
 
+//////////////////////
+//     ASOUND09     //
+//////////////////////
 
 uint16_t WS2812FX::mode_asound09(void) {                                  // Vumeter noise
 
@@ -3954,19 +3979,19 @@ uint16_t WS2812FX::mode_asound12(void) {
 //////////////////////
 
 
-uint16_t WS2812FX::mode_asound13(void) {                  // FFT version of Matrix. By: Andrew Tuline
+uint16_t WS2812FX::mode_asound13(void) {                  // FFT Waterfall. By: Andrew Tuline
 
 #ifndef ESP8266
 
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!!
     uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;            // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
     if (samplePeak) {
       samplePeak = 0;
       setPixelColor(SEGLEN-1,92,92,92);
     } else {
-      setPixCol(SEGLEN-1, pixCol+128, (int)FFT_Magnitude>>8);
+      setPixCol(SEGLEN-1, pixCol+SEGMENT.intensity, (int)FFT_Magnitude>>8);
     }
     
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
@@ -3976,20 +4001,20 @@ uint16_t WS2812FX::mode_asound13(void) {                  // FFT version of Matr
   return FRAMETIME;
 } // mode_asound13()
 
+
 //////////////////////
 //     ASOUND14     //
 //////////////////////
 
-uint16_t WS2812FX::mode_asound14(void) {                  // Pixels by frequency. By Andrew Tuline.
+uint16_t WS2812FX::mode_asound14(void) {                  // Random pixels by frequency. By Andrew Tuline.
 
 #ifndef ESP8266
 
-  fade_out(128);
+  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;   // Get to 255 as quick as you can.
+  fade_out(fadeRate);
   uint16_t locn = random16(0,SEGLEN);
   uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-  setPixCol(locn, 128+pixCol, (int)FFT_Magnitude>>8);           // Shift the colours so we start at blue.
-  
-//  Serial.print(log10((int)FFT_MajorPeak)); Serial.print(" "); Serial.print(FFT_MajorPeak); Serial.print(" "); Serial.println(FFT_Magnitude);
+  setPixCol(locn, SEGMENT.intensity+pixCol, (int)FFT_Magnitude>>8);           // Shift the colours so we start at blue.
 
 #else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
@@ -3998,6 +4023,7 @@ uint16_t WS2812FX::mode_asound14(void) {                  // Pixels by frequency
   return FRAMETIME;
 } // mode_asound14()
 
+
 //////////////////////
 //     ASOUND15     //
 //////////////////////
@@ -4005,7 +4031,7 @@ uint16_t WS2812FX::mode_asound14(void) {                  // Pixels by frequency
 // Map bins 7 through 490 to the ENTIRE SEGLEN.
 // For some reason, it seems to be mirroring itself. I really don't know why.
 uint16_t WS2812FX::mode_asound15(void) {    // Scale bins to SEGLEN. By Andrew Tuline
-  delay(1);
+
 #ifndef ESP8266
 
   extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
@@ -4053,14 +4079,15 @@ uint16_t WS2812FX::mode_asound16(void) {                  // Frequency beat (err
 
 #ifndef ESP8266
 
-  fade_out(248);                                          // A REALLY FAST fade.
+  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;   // Get to 255 as quick as you can.
+  fade_out(fadeRate);
 
   uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
    if (samplePeak) {
       samplePeak = 0;
       for (int i=0; i < SEGLEN; i++) {
-            setPixCol(i, 128+pixCol, 255);           // Beat is the colour of the FFT_MajorPeak frequency.
+            setPixCol(i, SEGMENT.intensity+pixCol, 255);           // Beat is the colour of the FFT_MajorPeak frequency.
       }
     }  
 
