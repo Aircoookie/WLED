@@ -4075,21 +4075,32 @@ uint16_t WS2812FX::mode_asound15(void) {    // Scale bins to SEGLEN. By Andrew T
 //     ASOUND16     //
 //////////////////////
 
-uint16_t WS2812FX::mode_asound16(void) {                  // Frequency beat (err. . . OK peak) to blast out pixels. By Andrew Tuline.
+uint16_t WS2812FX::mode_asound16(void) {                  // Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise pixels. By Andrew Tuline.
 
 #ifndef ESP8266
 
+  static CRGBPalette16 thisPalette;
+  static uint16_t dist;
+  CRGB color;
+    
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;   // Get to 255 as quick as you can.
   fade_out(fadeRate);
 
-  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+  uint8_t pixCol = SEGMENT.intensity+(log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
    if (samplePeak) {
       samplePeak = 0;
-      for (int i=0; i < SEGLEN; i++) {
-            setPixCol(i, SEGMENT.intensity+pixCol, 255);           // Beat is the colour of the FFT_MajorPeak frequency.
+
+      // Palette defined on the fly that stays close to the base pixCol.
+      thisPalette = CRGBPalette16(CHSV(pixCol,255,random8(128,255)),CHSV(pixCol+32,255,random8(128,255)),CHSV(pixCol+80,192,random8(128,255)),CHSV(pixCol+16,255,random8(128,255)));
+
+      for (int i = 0; i < SEGLEN; i++) {
+        uint8_t index = inoise8(i*30, dist+i*30);                       // Get a value from the noise function. I'm using both x and y axis.
+        color = ColorFromPalette(thisPalette, index, 255, LINEARBLEND);       // Use the my own palette.
+        setPixelColor(i, color.red, color.green, color.blue);
       }
-    }  
+    }
+  dist += beatsin8(10,1,4);
 
 #else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
@@ -4133,7 +4144,6 @@ uint16_t WS2812FX::mode_asound18(void) {
 //////////////////////
 //     ASOUND19     //
 //////////////////////
-
 
 uint16_t WS2812FX::mode_asound19(void) {
 #ifndef ESP8266
