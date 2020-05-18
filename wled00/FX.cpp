@@ -4163,9 +4163,17 @@ uint16_t WS2812FX::mode_asound18(void) {
 //     ASOUND19     //
 //////////////////////
 
-uint16_t WS2812FX::mode_asound19(void) {
+uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
 #ifndef ESP8266
-// Put FFT code here.  
+
+  fade_out(92);
+  
+  for (int i=0; i<3; i++) {     // DO NOT make this > 5 because we only have 15 FFTresult bins.
+    uint16_t locn = inoise16(millis()*SEGMENT.speed+i*50000, millis()*SEGMENT.speed);           // Get a new pixel location from moving noise.
+    locn = map(locn,0,65535,0,SEGLEN-1);                                         // Map that to the length of the strand, and ensure we don't go over.
+    setPixCol(locn, i*64, fftResult[i*3]/256); 
+  }  
+
 #else
   setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
 #endif
