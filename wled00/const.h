@@ -44,6 +44,7 @@
 #define REALTIME_MODE_E131        4
 #define REALTIME_MODE_ADALIGHT    5
 #define REALTIME_MODE_ARTNET      6
+#define REALTIME_MODE_TPM2NET     7
 
 //realtime override modes
 #define REALTIME_OVERRIDE_NONE    0

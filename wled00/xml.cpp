@@ -77,7 +77,7 @@ char* XML_response(AsyncWebServerRequest *request, char* dest)
         mesg += ".";
         mesg += realtimeIP[i];
       }
-    } else if (realtimeMode == REALTIME_MODE_UDP || realtimeMode == REALTIME_MODE_HYPERION) {
+    } else if (realtimeMode == REALTIME_MODE_UDP || realtimeMode == REALTIME_MODE_HYPERION || realtimeMode == REALTIME_MODE_TPM2NET) {
       mesg += "UDP from ";
       mesg += realtimeIP[0];
       for (int i = 1; i < 4; i++)

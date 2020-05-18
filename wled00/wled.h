@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2005100
+#define VERSION 2005180
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -415,7 +415,7 @@ WLED_GLOBAL bool blynkEnabled _INIT(false);
 // preset cycling
 WLED_GLOBAL bool presetCyclingEnabled _INIT(false);
 WLED_GLOBAL byte presetCycleMin _INIT(1), presetCycleMax _INIT(5);
-WLED_GLOBAL uint16_t presetCycleTime _INIT(1250);
+WLED_GLOBAL uint16_t presetCycleTime _INIT(12);
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL byte presetCycCurr _INIT(presetCycleMin);
 WLED_GLOBAL bool presetApplyBri _INIT(true);
@@ -426,6 +426,7 @@ WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
 WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);
 WLED_GLOBAL IPAddress realtimeIP _INIT((0, 0, 0, 0));
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
+WLED_GLOBAL uint16_t tpmDataReceived _INIT(0);
 
 // mqtt
 WLED_GLOBAL long lastMqttReconnectAttempt _INIT(0);

@@ -468,7 +468,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("PT="); //sets cycle time in ms
   if (pos > 0) {
     int v = getNumVal(&req, pos);
-    if (v > 49) presetCycleTime = v;
+    if (v > 100) presetCycleTime = v/100;
   }
 
   pos = req.indexOf("PA="); //apply brightness from preset
