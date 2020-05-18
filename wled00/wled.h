@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2005090
+#define VERSION 2005180
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -74,6 +74,10 @@
 #endif
 #ifndef WLED_DISABLE_BLYNK
   #include "src/dependencies/blynk/BlynkSimpleEsp.h"
+#endif
+
+#ifdef WLED_ENABLE_DMX
+  #include "src/dependencies/dmx/ESPDMX.h"
 #endif
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
@@ -227,6 +231,10 @@ WLED_GLOBAL bool receiveDirect _INIT(true);                       // receive UDP
 WLED_GLOBAL bool arlsDisableGammaCorrection _INIT(true);          // activate if gamma correction is handled by the source
 WLED_GLOBAL bool arlsForceMaxBri _INIT(false);                    // enable to force max brightness if source has very dark colors that would be black
 
+#ifdef WLED_ENABLE_DMX
+WLED_GLOBAL DMXESPSerial dmx;
+WLED_GLOBAL uint16_t e131ProxyUniverse _INIT(0);                  // output this E1.31 (sACN) / ArtNet universe via MAX485 (0 = disabled)
+#endif
 WLED_GLOBAL uint16_t e131Universe _INIT(1);                       // settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 WLED_GLOBAL uint16_t e131Port _INIT(5568);                        // DMX in port. E1.31 default is 5568, Art-Net is 6454
 WLED_GLOBAL byte DMXMode _INIT(DMX_MODE_MULTIPLE_RGB);            // DMX mode (s.a.)
@@ -407,7 +415,7 @@ WLED_GLOBAL bool blynkEnabled _INIT(false);
 // preset cycling
 WLED_GLOBAL bool presetCyclingEnabled _INIT(false);
 WLED_GLOBAL byte presetCycleMin _INIT(1), presetCycleMax _INIT(5);
-WLED_GLOBAL uint16_t presetCycleTime _INIT(1250);
+WLED_GLOBAL uint16_t presetCycleTime _INIT(12);
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL byte presetCycCurr _INIT(presetCycleMin);
 WLED_GLOBAL bool presetApplyBri _INIT(true);
@@ -418,6 +426,7 @@ WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
 WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);
 WLED_GLOBAL IPAddress realtimeIP _INIT((0, 0, 0, 0));
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
+WLED_GLOBAL uint16_t tpmDataReceived _INIT(0);
 
 // mqtt
 WLED_GLOBAL long lastMqttReconnectAttempt _INIT(0);

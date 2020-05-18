@@ -44,6 +44,7 @@
 #define REALTIME_MODE_E131        4
 #define REALTIME_MODE_ADALIGHT    5
 #define REALTIME_MODE_ARTNET      6
+#define REALTIME_MODE_TPM2NET     7
 
 //realtime override modes
 #define REALTIME_OVERRIDE_NONE    0
@@ -86,6 +87,8 @@
 #define SEG_OPTION_SELECTED       0
 #define SEG_OPTION_REVERSED       1
 #define SEG_OPTION_ON             2
+#define SEG_OPTION_PAUSED         3            //unused
+#define SEG_OPTION_NONUNITY       4            //Indicates that the effect does not use FRAMETIME or needs getPixelColor
 #define SEG_OPTION_TRANSITIONAL   7
 
 //EEPROM size

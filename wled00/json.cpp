@@ -110,11 +110,7 @@ bool deserializeState(JsonObject root)
   presetCycleMin = ccnf["min"] | presetCycleMin;
   presetCycleMax = ccnf["max"] | presetCycleMax;
   tr = ccnf["time"] | -1;
-  if (tr >= 2)
-  {
-    presetCycleTime = tr;
-    presetCycleTime *= 100;
-  }
+  if (tr >= 2) presetCycleTime = tr;
 
   JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]   | nightlightActive;
@@ -237,11 +233,11 @@ void serializeState(JsonObject root)
   root["pss"] = savedPresets;
   root["pl"] = (presetCyclingEnabled) ? 0: -1;
 
-  //temporary for preser cycle
+  //temporary for preset cycle
   JsonObject ccnf = root.createNestedObject("ccnf");
   ccnf["min"] = presetCycleMin;
   ccnf["max"] = presetCycleMax;
-  ccnf["time"] = presetCycleTime/100;
+  ccnf["time"] = presetCycleTime;
   
   JsonObject nl = root.createNestedObject("nl");
   nl["on"] = nightlightActive;
@@ -321,6 +317,7 @@ void serializeInfo(JsonObject root)
     case REALTIME_MODE_E131:     root["lm"] = "E1.31"; break;
     case REALTIME_MODE_ADALIGHT: root["lm"] = F("USB Adalight");
     case REALTIME_MODE_ARTNET:   root["lm"] = "Art-Net"; break;
+    case REALTIME_MODE_TPM2NET:  root["lm"] = F("tpm2.net"); break;
   }
 
   if (realtimeIP[0] == 0)

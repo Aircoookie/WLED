@@ -297,7 +297,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
-    int t = request->arg("CN").toInt();
+    int t = request->arg("PU").toInt();
+    if (t >= 0  && t <= 63999) e131ProxyUniverse = t;
+
+    t = request->arg("CN").toInt();
     if (t>0 && t<16) {
       DMXChannels = t;
     }
@@ -465,7 +468,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("PT="); //sets cycle time in ms
   if (pos > 0) {
     int v = getNumVal(&req, pos);
-    if (v > 49) presetCycleTime = v;
+    if (v > 100) presetCycleTime = v/100;
   }
 
   pos = req.indexOf("PA="); //apply brightness from preset
