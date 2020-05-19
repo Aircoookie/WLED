@@ -3978,14 +3978,17 @@ uint16_t WS2812FX::mode_asound12(void) {
 //     ASOUND13     //
 //////////////////////
 
-
 uint16_t WS2812FX::mode_asound13(void) {                  // FFT Waterfall. By: Andrew Tuline
 
 #ifndef ESP8266
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!!
-    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;            // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
     if (samplePeak) {
       samplePeak = 0;
