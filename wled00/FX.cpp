@@ -3525,9 +3525,12 @@ uint16_t WS2812FX::mode_asound01(void) {                                   // Pi
 
 uint16_t WS2812FX::mode_asound02(void) {                                  // Pixel 2 wave. By Andrew Tuline
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
     int pixBri = sample * SEGMENT.intensity / 128;
     setPixCol(SEGLEN/2, millis(), pixBri);
 
@@ -3547,12 +3550,16 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
 //////////////////////
 //     ASOUND03     //
 //////////////////////
-uint16_t WS2812FX::mode_asound03(void) {                                  // Juggle pixels
+
+uint16_t WS2812FX::mode_asound03(void) {                                  // Juggle pixels. By Andrew Tulne
 
   static int thistime = 20;
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
 
     fade_out(224);
 
@@ -3571,9 +3578,12 @@ uint16_t WS2812FX::mode_asound03(void) {                                  // Jug
 
 uint16_t WS2812FX::mode_asound04(void) {                                  // Matrix
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
     int pixBri = sample * SEGMENT.intensity / 128;
     setPixCol(SEGLEN-1, millis(), pixBri);
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
@@ -4188,43 +4198,43 @@ uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
 } // mode_asound19()
 
 uint16_t WS2812FX::mode_2D01(void) {
-  
+
   return FRAMETIME;
 }
 
 uint16_t WS2812FX::mode_2D02(void) {
-  
+
   return FRAMETIME;
 }
 uint16_t WS2812FX::mode_2D03(void) {
-  
+
   return FRAMETIME;
 }
 uint16_t WS2812FX::mode_2D04(void) {
-  
+
   return FRAMETIME;
 }
 uint16_t WS2812FX::mode_2D05(void) {
-  
+
   return FRAMETIME;
 }
 uint16_t WS2812FX::mode_2D06(void) {
-  
+
   return FRAMETIME;
 }
 uint16_t WS2812FX::mode_2D07(void) {
-  
+
   return FRAMETIME;
 }
 uint16_t WS2812FX::mode_2D08(void) {
-  
+
   return FRAMETIME;
 }
 uint16_t WS2812FX::mode_2D09(void) {
-  
+
   return FRAMETIME;
 }
 uint16_t WS2812FX::mode_2D10(void) {
-  
+
   return FRAMETIME;
 }
