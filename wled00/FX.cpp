@@ -4180,3 +4180,45 @@ uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
 
   return FRAMETIME;
 } // mode_asound19()
+
+uint16_t WS2812FX::mode_2D01(void) {
+  
+  return FRAMETIME;
+}
+
+uint16_t WS2812FX::mode_2D02(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D03(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D04(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D05(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D06(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D07(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D08(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D09(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D10(void) {
+  
+  return FRAMETIME;
+}
