@@ -3985,9 +3985,13 @@ uint16_t WS2812FX::mode_asound13(void) {                  // FFT Waterfall. By: 
 
 #ifndef ESP8266
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!!
-    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;            // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
     if (samplePeak) {
       samplePeak = 0;
@@ -4182,3 +4186,45 @@ uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
 
   return FRAMETIME;
 } // mode_asound19()
+
+uint16_t WS2812FX::mode_2D01(void) {
+  
+  return FRAMETIME;
+}
+
+uint16_t WS2812FX::mode_2D02(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D03(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D04(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D05(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D06(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D07(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D08(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D09(void) {
+  
+  return FRAMETIME;
+}
+uint16_t WS2812FX::mode_2D10(void) {
+  
+  return FRAMETIME;
+}
