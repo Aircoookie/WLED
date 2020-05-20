@@ -30,6 +30,8 @@
 #include "NpbWrapper.h"
 #include "const.h"
 
+
+
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #include "FastLED.h"
 
@@ -102,7 +104,11 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
+#ifdef WLED_ENABLE_2D
 #define MODE_COUNT  138
+#else
+#define MODE_COUNT  128
+#endif
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -242,6 +248,7 @@
 #define FX_MODE_2D08                   135
 #define FX_MODE_2D09                   136
 #define FX_MODE_2D10                   137
+
 
 
 // Sound reactive external variables
@@ -705,7 +712,8 @@ class WS2812FX {
       mode_2D08(void),
       mode_2D09(void),
       mode_2D10(void);
-
+      
+      
   private:
     NeoPixelWrapper *bus;
 

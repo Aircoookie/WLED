@@ -3775,18 +3775,17 @@ double mapf(double x, double in_min, double in_max, double out_min, double out_m
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 
 uint16_t WS2812FX::mode_asound10(void) {
-
-  delay(1);
-
 // Instead of using colorpalettes, This effect works on the HSV color circle with red being the lowest frequency
 //
 // as a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 
   #ifndef ESP8266
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                   // Using FastLED's timer. You want to change speed? You need to . .
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
 
     uint32_t* leds = ledData;
 
@@ -3848,11 +3847,12 @@ uint16_t WS2812FX::mode_asound10(void) {
 //////////////////////
 
 uint16_t WS2812FX::mode_asound11(void) {
-  delay(1); // DO NOT REMOVE!
 #ifndef ESP8266
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                   // Using FastLED's timer. You want to change speed? You need to . .
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
 
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                   // change it down here!!! By Andrew Tuline.
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
 
     uint32_t *leds = ledData;
 
@@ -3917,7 +3917,6 @@ uint16_t WS2812FX::mode_asound11(void) {
 // FFT3 sets the cutoff value below which we think its noise
 //
 uint16_t WS2812FX::mode_asound12(void) {
-  delay(1);
 #ifndef ESP8266
   double maxVal = 0;
   CHSV c;
@@ -3942,11 +3941,6 @@ uint16_t WS2812FX::mode_asound12(void) {
 
 
   if (maxVal == 0) maxVal = 255;
-
-//  EVERY_N_MILLISECONDS(5000) {
-//    for (int i = 0; i < 16; i++) Serial.printf("%6.0f ",fftResult[i]);
-//    Serial.println();
-//  }
   int ledsPerBin = SEGLEN/16;
 
   if (ledsPerBin > 0) {                                     // our led strip is longer or at least than 16 LEDS
@@ -4192,7 +4186,18 @@ uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
   return FRAMETIME;
 } // mode_asound19()
 
+
+
+
 uint16_t WS2812FX::mode_2D01(void) {
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+  
+  }
   
   return FRAMETIME;
 }
