@@ -519,7 +519,9 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
       setRgbwPwm(void),
-      setPixCol(uint16_t location, uint32_t index, uint8_t intensity);
+      setPixCol(uint16_t location, uint32_t index, uint8_t intensity),
+      noise8_help(uint8_t),
+      mapNoiseToLEDsUsingPalette();
 
     bool
       reverseMode = false,
@@ -550,7 +552,8 @@ class WS2812FX {
     uint16_t
       ablMilliampsMax,
       currentMilliamps,
-      triwave16(uint16_t);
+      triwave16(uint16_t),
+      XY(int,int);
 
     uint32_t
       timebase,

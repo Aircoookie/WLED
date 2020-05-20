@@ -14,6 +14,9 @@
 
 #include "FX.h"
 
+#define IBN 5100
+#define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
+
 #define MAX_X 32
 #define MAX_Y 32
 
@@ -37,7 +40,8 @@ uint8_t colorLoop = 1;
 // translates from x, y into an index into the LED array and
 // finds the right index for a S shaped matrix
 //
-int XY(int x, int y) { 
+
+uint16_t WS2812FX::XY(int x, int y) { 
   if(y > Height) { 
     y = Height; 
   }
@@ -63,8 +67,7 @@ int XY(int x, int y) {
   return (x * (Width) + y); 
 }
 
-
-void fillnoise8(uint8_t speed) {
+void WS2812FX::noise8_help(uint8_t speed) {
   // If we're runing at a low "speed", some 8-bit artifacts become visible
   // from frame-to-frame.  In order to reduce this, we can do some fast data-smoothing.
   // The amount of data smoothing we're doing depends on "speed".
@@ -103,7 +106,7 @@ void fillnoise8(uint8_t speed) {
   y -= speed / 16;
 }
 
-void mapNoiseToLEDsUsingPalette()
+void WS2812FX::mapNoiseToLEDsUsingPalette()
 {
   static uint8_t ihue=0;
   
@@ -129,8 +132,8 @@ void mapNoiseToLEDsUsingPalette()
         bri = dim8_raw( bri * 2);
       }
 
-      CRGB color = ColorFromPalette( currentPalette, index, bri);
-      leds[XY(i,j)] = color;
+      CRGB color = ColorFromPalette(currentPalette, index, bri);
+      // leds[XY(i,j)] = color;
     }
   }
   
