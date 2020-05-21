@@ -4192,11 +4192,25 @@ uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
 uint16_t WS2812FX::mode_2D01(void) {
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
+  CHSV c;
+  CRGB color;
+
+  uint32_t *leds = ledData;
 
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
 
-  
+    //noise8_help(SEGMENT.speed);
+    // mapNoiseToLEDsUsingPalette(); 
+
+     // DISPLAY ARRAY
+//    for (int i= 0; i < SEGLEN; i++) {
+//      c.h = (leds[i] >> 16) & 0xFF;
+//      c.s = (leds[i] >> 8) &0xFF;
+//      c.v = leds[i] & 0xFF;
+//      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+//      setPixelColor(i, color.red, color.green, color.blue);
+//    }
   }
   
   return FRAMETIME;

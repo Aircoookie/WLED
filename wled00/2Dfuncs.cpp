@@ -14,6 +14,8 @@
 
 #include "FX.h"
 
+extern uint32_t ledData[];
+
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
 
@@ -109,6 +111,7 @@ void WS2812FX::noise8_help(uint8_t speed) {
 void WS2812FX::mapNoiseToLEDsUsingPalette()
 {
   static uint8_t ihue=0;
+  uint32_t* leds = ledData;
   
   for(int i = 0; i < MAX_X; i++) {
     for(int j = 0; j < MAX_Y; j++) {
@@ -133,7 +136,7 @@ void WS2812FX::mapNoiseToLEDsUsingPalette()
       }
 
       CRGB color = ColorFromPalette(currentPalette, index, bri);
-      // leds[XY(i,j)] = color;
+      leds[XY(i,j)] = color;
     }
   }
   
