@@ -1,5 +1,5 @@
-/*
-  WS2812FX.h - Library for WS2812 LED effects.
+  /*
+   * WS2812FX.h - Library for WS2812 LED effects.
   Harm Aldick - 2016
   www.aldick.org
   LICENSE
@@ -104,11 +104,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#ifdef WLED_ENABLE_2D
-#define MODE_COUNT  138
-#else
-#define MODE_COUNT  128
-#endif
+#define MODE_COUNT                      128
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -238,16 +234,7 @@
 #define FX_MODE_NOISEPAL               125
 #define FX_MODE_SINEWAVE               126
 #define FX_MODE_PHASEDNOISE            127
-#define FX_MODE_2D01                   128
-#define FX_MODE_2D02                   129
-#define FX_MODE_2D03                   130
-#define FX_MODE_2D04                   131
-#define FX_MODE_2D05                   132
-#define FX_MODE_2D06                   133
-#define FX_MODE_2D07                   134
-#define FX_MODE_2D08                   135
-#define FX_MODE_2D09                   136
-#define FX_MODE_2D10                   137
+
 
 
 
@@ -268,7 +255,7 @@ class WS2812FX {
 
   // segment parameters
   public:
-    typedef struct Segment { // 24 bytes ---- we are going to have to change this if we want 2D effects working with segments
+    typedef struct Segment { // 24 bytes
       uint16_t start;
       uint16_t stop; //segment invalid if stop == 0
       uint8_t speed;
@@ -478,16 +465,6 @@ class WS2812FX {
       _mode[FX_MODE_NOISEPAL]                = &WS2812FX::mode_noisepal;
       _mode[FX_MODE_SINEWAVE]                = &WS2812FX::mode_sinewave;
       _mode[FX_MODE_PHASEDNOISE]             = &WS2812FX::mode_phased_noise;
-      _mode[FX_MODE_2D01]                    = &WS2812FX::mode_2D01;
-      _mode[FX_MODE_2D02]                    = &WS2812FX::mode_2D02;
-      _mode[FX_MODE_2D03]                    = &WS2812FX::mode_2D03;
-      _mode[FX_MODE_2D04]                    = &WS2812FX::mode_2D04;
-      _mode[FX_MODE_2D05]                    = &WS2812FX::mode_2D05;
-      _mode[FX_MODE_2D06]                    = &WS2812FX::mode_2D06;
-      _mode[FX_MODE_2D07]                    = &WS2812FX::mode_2D07;
-      _mode[FX_MODE_2D08]                    = &WS2812FX::mode_2D08;
-      _mode[FX_MODE_2D09]                    = &WS2812FX::mode_2D09;
-      _mode[FX_MODE_2D10]                    = &WS2812FX::mode_2D10;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -704,18 +681,7 @@ class WS2812FX {
       mode_twinkleup(void),
       mode_noisepal(void),
       mode_sinewave(void),
-      mode_phased_noise(void),
-      mode_2D01(void),
-      mode_2D02(void),
-      mode_2D03(void),
-      mode_2D04(void),
-      mode_2D05(void),
-      mode_2D06(void),
-      mode_2D07(void),
-      mode_2D08(void),
-      mode_2D09(void),
-      mode_2D10(void);
-      
+      mode_phased_noise(void);
       
   private:
     NeoPixelWrapper *bus;
@@ -805,8 +771,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06",
 "ASound07","ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","ASound16",
-"ASound17","ASound18","ASound19","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D 01", "2D 02",
-"2D 03", "2D 04", "2D 05", "2D 06", "2D 07", "2D 08", "2D 09", "2D 10"
+"ASound17","ASound18","ASound19","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise"
 ])=====";
 
 
