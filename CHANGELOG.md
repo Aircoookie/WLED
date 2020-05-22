@@ -2,6 +2,15 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2005220
+
+-   Added TPM2.NET protocol support (need to set WLED broadcast UDP port to 65506)
+-   Added TPM2 protocol support via Serial
+-   Support up to 6553 seconds preset cycle durations (backend, NOT yet in UI)
+-   Merged pull request #591 fixing WS2801 color order
+-   Merged pull request #858 adding fully featured travis builds
+-   Merged pull request #862 adding DMX proxy feature
+
 #### Build 2005100
 
 -   Update to Espalexa v2.4.6 (+1.6kB free heap memory)
