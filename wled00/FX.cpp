@@ -3524,12 +3524,9 @@ uint16_t WS2812FX::mode_asound01(void) {                                   // Pi
 
 uint16_t WS2812FX::mode_asound02(void) {                                  // Pixel 2 wave. By Andrew Tuline
 
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
 
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
-
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
     int pixBri = sample * SEGMENT.intensity / 128;
     setPixCol(SEGLEN/2, millis(), pixBri);
 
@@ -3550,15 +3547,13 @@ uint16_t WS2812FX::mode_asound02(void) {                                  // Pix
 //     ASOUND03     //
 //////////////////////
 
-uint16_t WS2812FX::mode_asound03(void) {                                  // Juggle pixels. By Andrew Tulne
+uint16_t WS2812FX::mode_asound03(void) {                                  // Juggle pixels
 
   static int thistime = 20;
 
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
 
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
 
     fade_out(224);
 
@@ -3577,12 +3572,9 @@ uint16_t WS2812FX::mode_asound03(void) {                                  // Jug
 
 uint16_t WS2812FX::mode_asound04(void) {                                  // Matrix
 
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
 
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
-
+    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
     int pixBri = sample * SEGMENT.intensity / 128;
     setPixCol(SEGLEN-1, millis(), pixBri);
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
