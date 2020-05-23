@@ -2,6 +2,10 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2005230
+
+-   Fixed TPM2
+
 #### Build 2005220
 
 -   Added TPM2.NET protocol support (need to set WLED broadcast UDP port to 65506)

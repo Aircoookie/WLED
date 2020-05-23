@@ -315,7 +315,7 @@ void serializeInfo(JsonObject root)
     case REALTIME_MODE_UDP:      root["lm"] = "UDP"; break;
     case REALTIME_MODE_HYPERION: root["lm"] = "Hyperion"; break;
     case REALTIME_MODE_E131:     root["lm"] = "E1.31"; break;
-    case REALTIME_MODE_ADALIGHT: root["lm"] = F("USB Adalight/TPM2");
+    case REALTIME_MODE_ADALIGHT: root["lm"] = F("USB Adalight/TPM2"); break;
     case REALTIME_MODE_ARTNET:   root["lm"] = "Art-Net"; break;
     case REALTIME_MODE_TPM2NET:  root["lm"] = F("tpm2.net"); break;
   }

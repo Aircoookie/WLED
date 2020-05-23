@@ -36,7 +36,7 @@ void handleSerial()
     switch (state) {
       case AdaState::Header_A:
         if (next == 'A') state = AdaState::Header_d;
-        else if (next == 0x9C) { //TPM2 start byte
+        else if (next == 0xC9) { //TPM2 start byte
           state = AdaState::TPM2_Header_Type;
         }
         break;
@@ -74,7 +74,7 @@ void handleSerial()
         state = AdaState::TPM2_Header_CountLo;
         break;
       case AdaState::TPM2_Header_CountLo:
-        count += next /3 + 1;
+        count += next /3;
         state = AdaState::Data_Red;
         break;
       case AdaState::Data_Red:
