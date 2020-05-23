@@ -3367,6 +3367,7 @@ uint16_t WS2812FX::mode_solid_glitter()
 
 uint16_t WS2812FX::phased_base(uint8_t moder) {                       // We're making sine waves here. By Andrew Tuline
 
+
   float thisspeed = SEGMENT.speed/32.0;                               // You can change the speed of the wave.   AKA SPEED (was .4)
   uint8_t allfreq = 16;                                               // Base frequency.
   static float thisphase;                                             // Phase change value gets calculated.
@@ -3378,14 +3379,15 @@ uint16_t WS2812FX::phased_base(uint8_t moder) {                       // We're m
   thisphase += thisspeed;                                             // Phase change at leds[0].
 
   for (int i=0; i<SEGLEN; i++) {
-    if (moder == 1) modVal = (inoise8(i*1000 + i*1000) >> 4);         // Let's randomize our mod length with some Perlin noise.
-    int val = (i+1)*allfreq;                                          // This sets the frequency of the waves. The +1 makes sure that leds[0] is used.
+    if (moder == 1) modVal = (inoise8(i*10 + i*10) /16);         // Let's randomize our mod length with some Perlin noise.
+    uint16_t val = (i+1)*allfreq;                                          // This sets the frequency of the waves. The +1 makes sure that leds[0] is used.
     val +=thisphase*(i%modVal+1)/2;                                   // This sets the varying phase change of the waves. By Andrew Tuline.
-    int thisbright = cubicwave8(val);                                 // Now we make an 8 bit sinewave.
+    uint8_t thisbright = cubicwave8(val);                                 // Now we make an 8 bit sinewave.
     thisbright = (thisbright > cutOff) ? (thisbright-cutOff) : 0;     // A ternary operator to cutoff the light.
     setPixCol(i, thisindex, thisbright);
     thisindex +=256/SEGLEN;
   }
+
 
   return FRAMETIME;
 } // phased_base()
