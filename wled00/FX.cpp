@@ -4179,3 +4179,39 @@ uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
 
   return FRAMETIME;
 } // mode_asound19()
+
+
+
+/////////////////////////////////
+//     START of 2D ROUTINES    //
+/////////////////////////////////
+
+
+//////////////////////
+//     2D01         //
+//////////////////////
+
+uint16_t WS2812FX::mode_2D01(void) {
+
+  return FRAMETIME;
+} // mode_2D01()
+
+
+//////////////////////
+//     2D02         //
+//////////////////////
+
+uint16_t WS2812FX::mode_2D02(void) {
+
+  return FRAMETIME;
+} // mode_2D02()
+
+
+//////////////////////
+//     2D03         //
+//////////////////////
+
+uint16_t WS2812FX::mode_2D03(void) {
+
+  return FRAMETIME;
+} // mode_2D03()

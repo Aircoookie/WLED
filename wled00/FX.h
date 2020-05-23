@@ -104,7 +104,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                      128
+#define MODE_COUNT                      131
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -234,6 +234,9 @@
 #define FX_MODE_NOISEPAL               125
 #define FX_MODE_SINEWAVE               126
 #define FX_MODE_PHASEDNOISE            127
+#define FX_MODE_2D01                   128
+#define FX_MODE_2D02                   129
+#define FX_MODE_2D03                   130
 
 
 
@@ -465,6 +468,10 @@ class WS2812FX {
       _mode[FX_MODE_NOISEPAL]                = &WS2812FX::mode_noisepal;
       _mode[FX_MODE_SINEWAVE]                = &WS2812FX::mode_sinewave;
       _mode[FX_MODE_PHASEDNOISE]             = &WS2812FX::mode_phased_noise;
+      _mode[FX_MODE_2D01]                    = &WS2812FX::mode_2D01;
+      _mode[FX_MODE_2D02]                    = &WS2812FX::mode_2D02;
+      _mode[FX_MODE_2D03]                    = &WS2812FX::mode_2D03;
+
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -681,7 +688,10 @@ class WS2812FX {
       mode_twinkleup(void),
       mode_noisepal(void),
       mode_sinewave(void),
-      mode_phased_noise(void);
+      mode_phased_noise(void),
+      mode_2D01(void),
+      mode_2D02(void),
+      mode_2D03(void);
       
   private:
     NeoPixelWrapper *bus;
@@ -771,7 +781,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06",
 "ASound07","ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","ASound16",
-"ASound17","ASound18","ASound19","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise"
+"ASound17","ASound18","ASound19","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D_01", "2D_02",
+"2D_03"
 ])=====";
 
 
