@@ -711,6 +711,7 @@ class WS2812FX {
     void handle_palette(void);
     void fill(uint32_t);
 
+
     bool
       _useRgbw = false,
       _skipFirstMode,
@@ -740,6 +741,9 @@ class WS2812FX {
       twinklefox_base(bool),
       spots_base(uint16_t),
       phased_base(uint8_t);
+
+    uint16_t XY_2d( int, int);
+    void fillnoise8_2d(uint8_t);
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);

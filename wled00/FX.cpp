@@ -3745,6 +3745,7 @@ extern uint16_t lastSample;
 double volume = 1;
 uint32_t ledData[1500];
 
+
 double mapf(double x, double in_min, double in_max, double out_min, double out_max){
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
@@ -4186,12 +4187,192 @@ uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
 //     START of 2D ROUTINES    //
 /////////////////////////////////
 
+// Params for width and height
+const uint16_t kMatrixWidth = 8  ;                                    // needs to become a variable that we can set from the UI
+const uint16_t kMatrixHeight = 32;                                   // needs to become a variable that we can set from the UI
 
+static uint16_t x = 0;
+static uint16_t y = 0;
+static uint16_t z = 0;
+uint8_t colorLoop = 1;
+
+// Scale determines how far apart the pixels in our noise matrix are.  Try
+// changing these values around to see how it affects the motion of the display.  The
+// higher the value of scale, the more "zoomed out" the noise iwll be.  A value
+// of 1 will be so zoomed in, you'll mostly see solid colors.
+uint16_t scale_2d = 30; // scale is set dynamically once we've started up
+
+
+// Param for different pixel layouts
+const bool    kMatrixSerpentineLayout = true;                       // needs to become a variable that we can set from the UI
+// Set 'kMatrixSerpentineLayout' to false if your pixels are 
+// laid out all running the same way, like this:
+//
+//     0 >  1 >  2 >  3 >  4
+//                         |
+//     .----<----<----<----'
+//     |
+//     5 >  6 >  7 >  8 >  9
+//                         |
+//     .----<----<----<----'
+//     |
+//    10 > 11 > 12 > 13 > 14
+//                         |
+//     .----<----<----<----'
+//     |
+//    15 > 16 > 17 > 18 > 19
+//
+// Set 'kMatrixSerpentineLayout' to true if your pixels are 
+// laid out back-and-forth, like this:
+//
+//     0 >  1 >  2 >  3 >  4
+//                         |
+//                         |
+//     9 <  8 <  7 <  6 <  5
+//     |
+//     |
+//    10 > 11 > 12 > 13 > 14
+//                        |
+//                        |
+//    19 < 18 < 17 < 16 < 15
+//
+// Bonus vocabulary word: anything that goes one way 
+// in one row, and then backwards in the next row, and so on
+// is call "boustrophedon", meaning "as the ox plows."
+
+
+// This function will return the right 'led index number' for 
+// a given set of X and Y coordinates on your matrix.  
+// IT DOES NOT CHECK THE COORDINATE BOUNDARIES.  
+// That's up to you.  Don't pass it bogus values.
+//
+// Use the "XY" function like this:
+//
+//    for( uint8_t x = 0; x < kMatrixWidth; x++) {
+//      for( uint8_t y = 0; y < kMatrixHeight; y++) {
+//      
+//        // Here's the x, y to 'led index' in action: 
+//        leds[ XY( x, y) ] = CHSV( random8(), 255, 255);
+//      
+//      }
+//    }
+//
+//
+uint16_t WS2812FX::XY_2d( int x, int y)
+{
+  uint16_t i;
+  
+  if( kMatrixSerpentineLayout == false) {
+    i = (y * kMatrixWidth) + x;
+  }
+
+  if( kMatrixSerpentineLayout == true) {
+    if( y & 0x01) {
+      // Odd rows run backwards
+      uint8_t reverseX = (kMatrixWidth - 1) - x;
+      i = (y * kMatrixWidth) + reverseX;
+    } else {
+      // Even rows run forwards
+      i = (y * kMatrixWidth) + x;
+    }
+  }
+  
+  return i;
+}
+
+void WS2812FX::fillnoise8_2d(uint8_t speed) {
+
+  uint32_t *noise = ledData;                    // we use the set aside storage array for FFT routines to store temporary 2D data
+  scale_2d = SEGMENT.fft3;
+    
+  // If we're runing at a low "speed", some 8-bit artifacts become visible
+  // from frame-to-frame.  In order to reduce this, we can do some fast data-smoothing.
+  // The amount of data smoothing we're doing depends on "speed".
+  uint8_t dataSmoothing = 0;
+  if( speed < 50) {
+    dataSmoothing = 200 - (speed * 4);
+  }
+  
+  for(uint8_t i = 0; i < kMatrixWidth; i++) {
+    uint8_t ioffset = scale_2d * i;
+    for(uint8_t j = 0; j < kMatrixHeight; j++) {
+      uint8_t joffset = scale_2d * j;
+      
+      uint8_t data = inoise8(x + ioffset,y + joffset,z);
+
+      // The range of the inoise8 function is roughly 16-238.
+      // These two operations expand those values out to roughly 0..255
+      // You can comment them out if you want the raw noise data.
+      data = qsub8(data,16);
+      data = qadd8(data,scale8(data,39));
+
+      if( dataSmoothing ) {
+        uint8_t olddata = noise[XY_2d(i, j)];       
+        uint8_t newdata = scale8( olddata, dataSmoothing) + scale8( data, 256 - dataSmoothing);
+        data = newdata;
+      }
+
+      noise[XY_2d(i, j)] = data;
+    }
+  }
+  
+  z += speed;
+  
+  // apply slow drift to X and Y, just for visual variation.
+  x += speed / 8;
+  y -= speed / 16;
+}
+
+/* 
+ *      fillnoise8_2d(50);
+  
+    for(int i = 0; i < kMatrixWidth; i++) {
+      for(int j = 0; j < kMatrixHeight; j++) {
+        // We use the value at the (i,j) coordinate in the noise
+        // array for our brightness, and the flipped value from (j,i)
+        // for our pixel's index into the color palette.
+
+        index = noise[XY_2d(j, i)];            // noise[j][i];
+        bri =   noise[XY_2d(i, j)];            // noise[i][j];
+
+        // if this palette is a 'loop', add a slowly-changing base value
+        if( colorLoop) { 
+          index += ihue;
+          }
+
+        // brighten up, as the color palette itself often contains the 
+        // light/dark dynamic range desired
+        if( bri > 127 ) {
+          bri = 255;
+        } else {
+          bri = dim8_raw( bri * 2);
+        }
+
+        CRGB color = ColorFromPalette(currentPalette, index, bri, LINEARBLEND);       
+        setPixelColor(index, color.red, color.green, color.blue);
+      }
+      ihue+=1;
+    }
+ */
 //////////////////////
 //     2D01         //
 //////////////////////
 
 uint16_t WS2812FX::mode_2D01(void) {
+  
+  static uint8_t ihue=0;
+  uint8_t index;
+  uint8_t bri;
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint32_t *noise = ledData;                    // we use the set aside storage array for FFT routines to store temporary 2D data
+
+    setPixelColor(XY_2d(1,1), 255,0,0);
+  }
 
   return FRAMETIME;
 } // mode_2D01()
