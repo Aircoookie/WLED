@@ -4182,7 +4182,7 @@ uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
 } // mode_asound19()
 
 
-
+#ifndef ESP8266
 /////////////////////////////////
 //     START of 2D ROUTINES    //
 /////////////////////////////////
@@ -4205,6 +4205,8 @@ uint16_t scale_2d = 30; // scale is set dynamically once we've started up
 
 // Param for different pixel layouts
 const bool    kMatrixSerpentineLayout = true;                       // needs to become a variable that we can set from the UI
+
+#endif // ESP8266
 // Set 'kMatrixSerpentineLayout' to false if your pixels are 
 // laid out all running the same way, like this:
 //
@@ -4259,6 +4261,7 @@ const bool    kMatrixSerpentineLayout = true;                       // needs to 
 //
 //
 uint16_t WS2812FX::XY_2d( int x, int y)
+#ifndef ESP8266
 {
   uint16_t i;
   
@@ -4278,88 +4281,17 @@ uint16_t WS2812FX::XY_2d( int x, int y)
   }
   
   return i;
+#endif // ESP8266
 }
 
-void WS2812FX::fillnoise8_2d(uint8_t speed) {
 
-  uint32_t *noise = ledData;                    // we use the set aside storage array for FFT routines to store temporary 2D data
-  scale_2d = SEGMENT.fft3;
-    
-  // If we're runing at a low "speed", some 8-bit artifacts become visible
-  // from frame-to-frame.  In order to reduce this, we can do some fast data-smoothing.
-  // The amount of data smoothing we're doing depends on "speed".
-  uint8_t dataSmoothing = 0;
-  if( speed < 50) {
-    dataSmoothing = 200 - (speed * 4);
-  }
-  
-  for(uint8_t i = 0; i < kMatrixWidth; i++) {
-    uint8_t ioffset = scale_2d * i;
-    for(uint8_t j = 0; j < kMatrixHeight; j++) {
-      uint8_t joffset = scale_2d * j;
-      
-      uint8_t data = inoise8(x + ioffset,y + joffset,z);
-
-      // The range of the inoise8 function is roughly 16-238.
-      // These two operations expand those values out to roughly 0..255
-      // You can comment them out if you want the raw noise data.
-      data = qsub8(data,16);
-      data = qadd8(data,scale8(data,39));
-
-      if( dataSmoothing ) {
-        uint8_t olddata = noise[XY_2d(i, j)];       
-        uint8_t newdata = scale8( olddata, dataSmoothing) + scale8( data, 256 - dataSmoothing);
-        data = newdata;
-      }
-
-      noise[XY_2d(i, j)] = data;
-    }
-  }
-  
-  z += speed;
-  
-  // apply slow drift to X and Y, just for visual variation.
-  x += speed / 8;
-  y -= speed / 16;
-}
-
-/* 
- *      fillnoise8_2d(50);
-  
-    for(int i = 0; i < kMatrixWidth; i++) {
-      for(int j = 0; j < kMatrixHeight; j++) {
-        // We use the value at the (i,j) coordinate in the noise
-        // array for our brightness, and the flipped value from (j,i)
-        // for our pixel's index into the color palette.
-
-        index = noise[XY_2d(j, i)];            // noise[j][i];
-        bri =   noise[XY_2d(i, j)];            // noise[i][j];
-
-        // if this palette is a 'loop', add a slowly-changing base value
-        if( colorLoop) { 
-          index += ihue;
-          }
-
-        // brighten up, as the color palette itself often contains the 
-        // light/dark dynamic range desired
-        if( bri > 127 ) {
-          bri = 255;
-        } else {
-          bri = dim8_raw( bri * 2);
-        }
-
-        CRGB color = ColorFromPalette(currentPalette, index, bri, LINEARBLEND);       
-        setPixelColor(index, color.red, color.green, color.blue);
-      }
-      ihue+=1;
-    }
- */
 //////////////////////
 //     2D01         //
 //////////////////////
 
 uint16_t WS2812FX::mode_2D01(void) {
-  
+
+#ifndef ESP8266
   static uint8_t ihue=0;
   uint8_t index;
   uint8_t bri;
@@ -4373,7 +4305,7 @@ uint16_t WS2812FX::mode_2D01(void) {
 
     setPixelColor(XY_2d(1,1), 255,0,0);
   }
-
+#endif // ESP8266
   return FRAMETIME;
 } // mode_2D01()
 
@@ -4383,7 +4315,9 @@ uint16_t WS2812FX::mode_2D01(void) {
 //////////////////////
 
 uint16_t WS2812FX::mode_2D02(void) {
+#ifndef ESP8266
 
+#endif // ESP8266
   return FRAMETIME;
 } // mode_2D02()
 
@@ -4393,6 +4327,8 @@ uint16_t WS2812FX::mode_2D02(void) {
 //////////////////////
 
 uint16_t WS2812FX::mode_2D03(void) {
+#ifndef ESP8266
 
+#endif // ESP8266
   return FRAMETIME;
 } // mode_2D03()
