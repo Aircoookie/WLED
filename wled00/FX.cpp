@@ -4260,10 +4260,11 @@ const bool    kMatrixSerpentineLayout = true;                       // needs to 
 //    }
 //
 //
-uint16_t WS2812FX::XY_2d( int x, int y)
+uint16_t WS2812FX::XY_2d( int x, int y) {
+
 #ifndef ESP8266
-{
-  uint16_t i;
+
+uint16_t i;
   
   if( kMatrixSerpentineLayout == false) {
     i = (y * kMatrixWidth) + x;
@@ -4283,6 +4284,7 @@ uint16_t WS2812FX::XY_2d( int x, int y)
   return i;
 #endif // ESP8266
 }
+
 
 
 //////////////////////
@@ -4306,6 +4308,7 @@ uint16_t WS2812FX::mode_2D01(void) {
     setPixelColor(XY_2d(1,1), 255,0,0);
   }
 #endif // ESP8266
+
   return FRAMETIME;
 } // mode_2D01()
 
