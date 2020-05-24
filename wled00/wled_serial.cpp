@@ -1,7 +1,7 @@
 #include "wled.h"
 
 /*
- * Adalight handler
+ * Adalight and TPM2 handler
  */
 
 enum class AdaState {
@@ -13,7 +13,10 @@ enum class AdaState {
   Header_CountCheck,
   Data_Red,
   Data_Green,
-  Data_Blue
+  Data_Blue,
+  TPM2_Header_Type,
+  TPM2_Header_CountHi,
+  TPM2_Header_CountLo
 };
 
 void handleSerial()
@@ -33,6 +36,9 @@ void handleSerial()
     switch (state) {
       case AdaState::Header_A:
         if (next == 'A') state = AdaState::Header_d;
+        else if (next == 0xC9) { //TPM2 start byte
+          state = AdaState::TPM2_Header_Type;
+        }
         break;
       case AdaState::Header_d:
         if (next == 'd') state = AdaState::Header_a;
@@ -56,6 +62,20 @@ void handleSerial()
       case AdaState::Header_CountCheck:
         if (check == next) state = AdaState::Data_Red;
         else               state = AdaState::Header_A;
+        break;
+      case AdaState::TPM2_Header_Type:
+        state = AdaState::Header_A; //(unsupported) TPM2 command or invalid type
+        if (next == 0xDA) state = AdaState::TPM2_Header_CountHi; //TPM2 data
+        else if (next == 0xAA) Serial.write(0xAC); //TPM2 ping
+        break;
+      case AdaState::TPM2_Header_CountHi:
+        pixel = 0;
+        count = (next * 0x100) /3;
+        state = AdaState::TPM2_Header_CountLo;
+        break;
+      case AdaState::TPM2_Header_CountLo:
+        count += next /3;
+        state = AdaState::Data_Red;
         break;
       case AdaState::Data_Red:
         red   = next;

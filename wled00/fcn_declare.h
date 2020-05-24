@@ -77,7 +77,6 @@ void handleIR();
 #include "src/dependencies/json/ArduinoJson-v6.h"
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "FX.h"
-// TODO: AsynicWebServerRequest conflict?
 
 void deserializeSegment(JsonObject elem, byte it);
 bool deserializeState(JsonObject root);

@@ -223,24 +223,24 @@ void handleNotifications()
     if (tpmType == 0xaa) { //TPM2.NET polling, expect answer
       sendTPM2Ack(); return;
     }
-    if (tpmType == 0xda) { //TPM2.NET data
-      realtimeIP = notifierUdp.remoteIP();
-      realtimeLock(realtimeTimeoutMs, REALTIME_MODE_TPM2NET);
-      if (realtimeOverride) return;
+    if (tpmType != 0xda) return; //return if notTPM2.NET data
 
-      uint16_t frameSize = (udpIn[2] << 8) + udpIn[3];
-      byte packetNum = udpIn[4]; //starts with 1!
-      byte numPackets = udpIn[5];
+    realtimeIP = notifierUdp.remoteIP();
+    realtimeLock(realtimeTimeoutMs, REALTIME_MODE_TPM2NET);
+    if (realtimeOverride) return;
 
-      uint16_t id = tpmDataReceived / 3; //start LED
-      for (uint16_t i = 6; i < frameSize + 4; i += 3)
-      {
-        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-        id++; if (id >= ledCount) break;
-      }
-      tpmDataReceived += frameSize;
-      if (packetNum == numPackets) {strip.show(); tpmDataReceived = 0;} //show if last packet
+    uint16_t frameSize = (udpIn[2] << 8) + udpIn[3];
+    byte packetNum = udpIn[4]; //starts with 1!
+    byte numPackets = udpIn[5];
+
+    uint16_t id = ((tpmFirstFrameSize/3)*(packetNum-1)) / 3; //start LED
+    for (uint16_t i = 6; i < frameSize + 4; i += 3)
+    {
+      setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+      id++; if (id >= ledCount) break;
     }
+    if (packetNum == 1) tpmFirstFrameSize = frameSize;
+    if (packetNum == numPackets) {strip.show(); } //show if last packet 
   }
 
   //UDP realtime: 1 warls 2 drgb 3 drgbw
