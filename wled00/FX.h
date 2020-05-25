@@ -444,7 +444,6 @@ class WS2812FX {
       _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
       _mode[FX_MODE_CANDLE_MULTI]            = &WS2812FX::mode_candle_multi;
       _mode[FX_MODE_SOLID_GLITTER]           = &WS2812FX::mode_solid_glitter;
-
       _mode[FX_MODE_ASound01]                = &WS2812FX::mode_asound01;
       _mode[FX_MODE_ASound02]                = &WS2812FX::mode_asound02;
       _mode[FX_MODE_ASound03]                = &WS2812FX::mode_asound03;

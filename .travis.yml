@@ -40,4 +40,5 @@ install:
     - platformio update
 script:
     # - platformio ci --project-conf=./platformio.ini
-    - platformio run --environment travis_esp8266 --environment travis_esp32
+    - platformio run
+
