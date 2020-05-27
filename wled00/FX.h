@@ -210,25 +210,25 @@
 #define FX_MODE_PACIFICA               101
 #define FX_MODE_CANDLE_MULTI           102
 #define FX_MODE_SOLID_GLITTER          103
-#define FX_MODE_ASound01               104
-#define FX_MODE_ASound02               105
-#define FX_MODE_ASound03               106
-#define FX_MODE_ASound04               107
-#define FX_MODE_ASound05               108
-#define FX_MODE_ASound06               109
-#define FX_MODE_ASound07               110
-#define FX_MODE_ASound08               111
-#define FX_MODE_ASound09               112
-#define FX_MODE_ASound10               113
-#define FX_MODE_ASound11               114
-#define FX_MODE_ASound12               115
-#define FX_MODE_ASound13               116
-#define FX_MODE_ASound14               117
-#define FX_MODE_ASound15               118
-#define FX_MODE_ASound16               119
-#define FX_MODE_ASound17               120
-#define FX_MODE_ASound18               121
-#define FX_MODE_ASound19               122
+#define FX_MODE_PIXELS                 104
+#define FX_MODE_PIXELWAVE              105
+#define FX_MODE_JUGGLES                106
+#define FX_MODE_MATRIPIX               107
+#define FX_MODE_GRAVIMETER             108
+#define FX_MODE_PLASMOID               109
+#define FX_MODE_PUDDLES                110
+#define FX_MODE_MIDNOISE               111
+#define FX_MODE_NOISEMETER             112
+#define FX_MODE_FREQWAVE               113
+#define FX_MODE_FREQMATRIX             114
+#define FX_MODE_SPECTRAL               115
+#define FX_MODE_WATERFALL              116
+#define FX_MODE_FREQPIXEL              117
+#define FX_MODE_BINMAP                 118
+#define FX_MODE_NOISEPEAK              119
+#define FX_MODE_NOISEFIRE              120
+#define FX_MODE_PUDDLEPEAK             121
+#define FX_MODE_NOISEMOVE              122
 #define FX_MODE_PHASED                 123
 #define FX_MODE_TWINKLEUP              124
 #define FX_MODE_NOISEPAL               125
@@ -444,25 +444,25 @@ class WS2812FX {
       _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
       _mode[FX_MODE_CANDLE_MULTI]            = &WS2812FX::mode_candle_multi;
       _mode[FX_MODE_SOLID_GLITTER]           = &WS2812FX::mode_solid_glitter;
-      _mode[FX_MODE_ASound01]                = &WS2812FX::mode_asound01;
-      _mode[FX_MODE_ASound02]                = &WS2812FX::mode_asound02;
-      _mode[FX_MODE_ASound03]                = &WS2812FX::mode_asound03;
-      _mode[FX_MODE_ASound04]                = &WS2812FX::mode_asound04;
-      _mode[FX_MODE_ASound05]                = &WS2812FX::mode_asound05;
-      _mode[FX_MODE_ASound06]                = &WS2812FX::mode_asound06;
-      _mode[FX_MODE_ASound07]                = &WS2812FX::mode_asound07;
-      _mode[FX_MODE_ASound08]                = &WS2812FX::mode_asound08;
-      _mode[FX_MODE_ASound09]                = &WS2812FX::mode_asound09;
-      _mode[FX_MODE_ASound10]                = &WS2812FX::mode_asound10;
-      _mode[FX_MODE_ASound11]                = &WS2812FX::mode_asound11;
-      _mode[FX_MODE_ASound12]                = &WS2812FX::mode_asound12;
-      _mode[FX_MODE_ASound13]                = &WS2812FX::mode_asound13;
-      _mode[FX_MODE_ASound14]                = &WS2812FX::mode_asound14;
-      _mode[FX_MODE_ASound15]                = &WS2812FX::mode_asound15;
-      _mode[FX_MODE_ASound16]                = &WS2812FX::mode_asound16;
-      _mode[FX_MODE_ASound17]                = &WS2812FX::mode_asound17;
-      _mode[FX_MODE_ASound18]                = &WS2812FX::mode_asound18;
-      _mode[FX_MODE_ASound19]                = &WS2812FX::mode_asound19;
+      _mode[FX_MODE_PIXELS]                  = &WS2812FX::mode_pixels;
+      _mode[FX_MODE_PIXELWAVE]               = &WS2812FX::mode_pixelwave;
+      _mode[FX_MODE_JUGGLES]                 = &WS2812FX::mode_juggles;
+      _mode[FX_MODE_MATRIPIX]                = &WS2812FX::mode_matripix;
+      _mode[FX_MODE_GRAVIMETER]              = &WS2812FX::mode_gravimeter;
+      _mode[FX_MODE_PLASMOID]                = &WS2812FX::mode_plasmoid;
+      _mode[FX_MODE_PUDDLES]                 = &WS2812FX::mode_puddles;
+      _mode[FX_MODE_MIDNOISE]                = &WS2812FX::mode_midnoise;
+      _mode[FX_MODE_NOISEMETER]              = &WS2812FX::mode_noisemeter;
+      _mode[FX_MODE_FREQWAVE]                = &WS2812FX::mode_freqwave;
+      _mode[FX_MODE_FREQMATRIX]              = &WS2812FX::mode_freqmatrix;
+      _mode[FX_MODE_SPECTRAL]                = &WS2812FX::mode_spectral;
+      _mode[FX_MODE_WATERFALL]               = &WS2812FX::mode_waterfall;
+      _mode[FX_MODE_FREQPIXEL]               = &WS2812FX::mode_freqpixel;
+      _mode[FX_MODE_BINMAP]                  = &WS2812FX::mode_binmap;
+      _mode[FX_MODE_NOISEPEAK]               = &WS2812FX::mode_noisepeak;
+      _mode[FX_MODE_NOISEFIRE]               = &WS2812FX::mode_noisefire;
+      _mode[FX_MODE_PUDDLEPEAK]              = &WS2812FX::mode_puddlepeak;
+      _mode[FX_MODE_NOISEMOVE]               = &WS2812FX::mode_noisemove;
       _mode[FX_MODE_PHASED]                  = &WS2812FX::mode_phased;
       _mode[FX_MODE_TWINKLEUP]               = &WS2812FX::mode_twinkleup;
       _mode[FX_MODE_NOISEPAL]                = &WS2812FX::mode_noisepal;
@@ -665,25 +665,25 @@ class WS2812FX {
       mode_pacifica(void),
       mode_candle_multi(void),
       mode_solid_glitter(void),
-      mode_asound01(void),
-      mode_asound02(void),
-      mode_asound03(void),
-      mode_asound04(void),
-      mode_asound05(void),
-      mode_asound06(void),
-      mode_asound07(void),
-      mode_asound08(void),
-      mode_asound09(void),
-      mode_asound10(void),
-      mode_asound11(void),
-      mode_asound12(void),
-      mode_asound13(void),
-      mode_asound14(void),
-      mode_asound15(void),
-      mode_asound16(void),
-      mode_asound17(void),
-      mode_asound18(void),
-      mode_asound19(void),
+      mode_pixels(void),
+      mode_pixelwave(void),
+      mode_juggles(void),
+      mode_matripix(void),
+      mode_gravimeter(void),
+      mode_plasmoid(void),
+      mode_puddles(void),
+      mode_midnoise(void),
+      mode_noisemeter(void),
+      mode_freqwave(void),
+      mode_freqmatrix(void),
+      mode_spectral(void),
+      mode_waterfall(void),
+      mode_freqpixel(void),
+      mode_binmap(void),
+      mode_noisepeak(void),
+      mode_noisefire(void),
+      mode_puddlepeak(void),
+      mode_noisemove(void),
       mode_phased(void),
       mode_twinkleup(void),
       mode_noisepal(void),
@@ -782,9 +782,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat","Pacifica","Candle Multi","Solid Glitter","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06",
-"ASound07","ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","ASound16",
-"ASound17","ASound18","ASound19","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D_01", "2D_02",
+"Heartbeat","Pacifica","Candle Multi","Solid Glitter","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
+"* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","** Waterfall","** Freqpixel","** Binmap","** Noisespeak",
+"* Noisefire","* Puddlepeak","** Noisemove","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D_01", "2D_02",
 "2D_03"
 ])=====";
 
