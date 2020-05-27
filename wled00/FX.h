@@ -723,8 +723,6 @@ class WS2812FX {
       spots_base(uint16_t),
       phased_base(uint8_t);
 
-    uint16_t XY_2d( int, int);
-
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
     uint32_t _lastPaletteChange = 0;
