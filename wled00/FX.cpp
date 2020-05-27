@@ -4295,7 +4295,11 @@ const bool    kMatrixSerpentineLayout = true;                       // needs to 
 //    }
 //
 //
+<<<<<<< HEAD
 uint16_t WS2812FX::XY( int x, int y) {
+=======
+uint16_t WS2812FX::XY_2d( int x, int y) {                      // A basic 2D helper routine based on wiring layout.
+>>>>>>> 4b92ede1be4ffb6facc5360e8ff0143ff92e62e5
 
 #ifndef ESP8266
 
@@ -4326,11 +4330,19 @@ uint16_t i;
 //     2D01         //
 //////////////////////
 
+<<<<<<< HEAD
 uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig. A work in progress.
 
 #ifndef ESP8266
 
   static uint8_t ihue=0;
+=======
+uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung. A work in progress.
+
+#ifndef ESP8266
+
+/*  static uint8_t ihue=0;
+>>>>>>> 4b92ede1be4ffb6facc5360e8ff0143ff92e62e5
   uint8_t index;
   uint8_t bri;
   static unsigned long prevMillis;
@@ -4383,8 +4395,13 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig.
 
     setPixelColor(XY(1,1), 255,0,0);
   }
+<<<<<<< HEAD
 
     
+=======
+*/
+  fade_out(224);  
+>>>>>>> 4b92ede1be4ffb6facc5360e8ff0143ff92e62e5
 #else
   fade_out(224);
 #endif // ESP8266
@@ -4397,11 +4414,17 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig.
 //     2D02         //
 //////////////////////
 
+<<<<<<< HEAD
 uint16_t WS2812FX::mode_2D02(void) {
   fade_out(240);
 #ifndef ESP8266
 
 
+=======
+uint16_t WS2812FX::mode_2D02(void) {             // Up for grabs.
+
+#ifndef ESP8266
+>>>>>>> 4b92ede1be4ffb6facc5360e8ff0143ff92e62e5
   fade_out(224);
 #else
   fade_out(224);
