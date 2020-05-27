@@ -3572,7 +3572,7 @@ uint16_t WS2812FX::mode_juggles(void) {                                  // Jugg
 
 uint16_t WS2812FX::mode_matripix(void) {                                  // Matripix. By Andrew Tuline.
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . . 
+  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!!
     int pixBri = sample * SEGMENT.intensity / 128;
@@ -3741,18 +3741,18 @@ uint16_t WS2812FX::mode_noisefire(void) {                    // Noisefire. By An
 
   CRGB color;
   uint16_t index;            // Current colour lookup value.
-  
+
   currentPalette = CRGBPalette16(CHSV(0,255,2), CHSV(0,255,4), CHSV(0,255,8), CHSV(0, 255, 8),    // Fire palette definition. Lower value = darker.
-                                 CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,                                   
+                                 CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,
                                  CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
                                  CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
-  
+
   for (int i = 0; i < SEGLEN; i++) {
     index = inoise8(i*xscale,millis()*yscale*SEGLEN/255);                     // X location is constant, but we move along the Y at the rate of millis(). By Andrew Tuline.
     index = (255 - i*256/SEGLEN) * index/128;                                 // Now we need to scale index so that it gets blacker as we get close to one of the ends.
     color = ColorFromPalette(currentPalette, index, sampleAvg*2, LINEARBLEND);       // Use the my own palette.
-    setPixelColor(i, color.red, color.green, color.blue);                       // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.     
-  }  
+    setPixelColor(i, color.red, color.green, color.blue);                       // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
+  }
 
   return FRAMETIME;
 } // mode_noisefire()
@@ -3901,7 +3901,7 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 ///////////////////////
 
 uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Pleschung.
-  
+
 #ifndef ESP8266
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
@@ -3976,7 +3976,7 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
 // FFT3 sets the cutoff value below which we think its noise
 //
 uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschung.
-  
+
 #ifndef ESP8266
   double maxVal = 0;
   CHSV c;
@@ -4062,13 +4062,13 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
       setPixelColor(SEGLEN-1,92,92,92);
     } else {
 
-#ifndef ESP8266      
+#ifndef ESP8266
     setPixCol(SEGLEN-1, pixCol+SEGMENT.intensity, (int)FFT_Magnitude>>8);
 #else
     setPixCol(SEGLEN-1, millis(), pixCol);
 #endif // ESP8266
     }
-    
+
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
   }
 
@@ -4157,7 +4157,7 @@ uint16_t WS2812FX::mode_noisepeak(void) {                  // Noisepeak.  Freque
   static CRGBPalette16 thisPalette;
   static uint16_t dist;
   CRGB color;
-    
+
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;   // Get to 255 as quick as you can.
   fade_out(fadeRate);
 
@@ -4193,12 +4193,12 @@ uint16_t WS2812FX::mode_noisemove(void) {          // Noisemove    By: Andrew Tu
 #ifndef ESP8266
 
   fade_out(92);
-  
+
   for (int i=0; i<3; i++) {     // DO NOT make this > 5 because we only have 15 FFTresult bins.
     uint16_t locn = inoise16(millis()*SEGMENT.speed+i*50000, millis()*SEGMENT.speed);           // Get a new pixel location from moving noise.
     locn = map(locn,0,65535,0,SEGLEN-1);                                         // Map that to the length of the strand, and ensure we don't go over.
-    setPixCol(locn, i*64, fftResult[i*3]/256); 
-  }  
+    setPixCol(locn, i*64, fftResult[i*3]/256);
+  }
 
 #else
   fade_out(224);
@@ -4242,7 +4242,7 @@ const bool    kMatrixSerpentineLayout = true;                       // needs to 
 #endif // ESP8266
 
 
-// Set 'kMatrixSerpentineLayout' to false if your pixels are 
+// Set 'kMatrixSerpentineLayout' to false if your pixels are
 // laid out all running the same way, like this:
 //
 //     0 >  1 >  2 >  3 >  4
@@ -4259,7 +4259,7 @@ const bool    kMatrixSerpentineLayout = true;                       // needs to 
 //     |
 //    15 > 16 > 17 > 18 > 19
 //
-// Set 'kMatrixSerpentineLayout' to true if your pixels are 
+// Set 'kMatrixSerpentineLayout' to true if your pixels are
 // laid out back-and-forth, like this:
 //
 //     0 >  1 >  2 >  3 >  4
@@ -4273,38 +4273,34 @@ const bool    kMatrixSerpentineLayout = true;                       // needs to 
 //                        |
 //    19 < 18 < 17 < 16 < 15
 //
-// Bonus vocabulary word: anything that goes one way 
+// Bonus vocabulary word: anything that goes one way
 // in one row, and then backwards in the next row, and so on
 // is call "boustrophedon", meaning "as the ox plows."
 
 
-// This function will return the right 'led index number' for 
-// a given set of X and Y coordinates on your matrix.  
-// IT DOES NOT CHECK THE COORDINATE BOUNDARIES.  
+// This function will return the right 'led index number' for
+// a given set of X and Y coordinates on your matrix.
+// IT DOES NOT CHECK THE COORDINATE BOUNDARIES.
 // That's up to you.  Don't pass it bogus values.
 //
 // Use the "XY" function like this:
 //
 //    for( uint8_t x = 0; x < kMatrixWidth; x++) {
 //      for( uint8_t y = 0; y < kMatrixHeight; y++) {
-//      
-//        // Here's the x, y to 'led index' in action: 
+//
+//        // Here's the x, y to 'led index' in action:
 //        leds[ XY( x, y) ] = CHSV( random8(), 255, 255);
-//      
+//
 //      }
 //    }
 //
 //
-<<<<<<< HEAD
 uint16_t WS2812FX::XY( int x, int y) {
-=======
-uint16_t WS2812FX::XY_2d( int x, int y) {                      // A basic 2D helper routine based on wiring layout.
->>>>>>> 4b92ede1be4ffb6facc5360e8ff0143ff92e62e5
 
 #ifndef ESP8266
 
 uint16_t i;
-  
+
   if( kMatrixSerpentineLayout == false) {
     i = (y * kMatrixWidth) + x;
   }
@@ -4319,7 +4315,7 @@ uint16_t i;
       i = (y * kMatrixWidth) + x;
     }
   }
-  
+
   return i;
 #endif // ESP8266
 }
@@ -4330,19 +4326,11 @@ uint16_t i;
 //     2D01         //
 //////////////////////
 
-<<<<<<< HEAD
 uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig. A work in progress.
 
 #ifndef ESP8266
 
   static uint8_t ihue=0;
-=======
-uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung. A work in progress.
-
-#ifndef ESP8266
-
-/*  static uint8_t ihue=0;
->>>>>>> 4b92ede1be4ffb6facc5360e8ff0143ff92e62e5
   uint8_t index;
   uint8_t bri;
   static unsigned long prevMillis;
@@ -4362,12 +4350,12 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung. A 
     if( speed2D < 50) {
       dataSmoothing = 200 - (speed2D * 4);
       }
-  
+
     for(int i = 0; i < MAX_DIMENSION; i++) {
       int ioffset = scale * i;
       for(int j = 0; j < MAX_DIMENSION; j++) {
         int joffset = scale * j;
-      
+
         uint8_t data = inoise8(x + ioffset,y + joffset,z);
 
           // The range of the inoise8 function is roughly 16-238.
@@ -4381,13 +4369,13 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung. A 
           uint8_t newdata = scale8( olddata, dataSmoothing) + scale8( data, 256 - dataSmoothing);
           data = newdata;
         }
-      
+
         noise[XY(i,j)] = data;
       }
     }
-  
+
     z += speed2D;
-  
+
     // apply slow drift to X and Y, just for visual variation.
     x += speed2D / 8;
     y -= speed2D / 16;
@@ -4395,13 +4383,8 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung. A 
 
     setPixelColor(XY(1,1), 255,0,0);
   }
-<<<<<<< HEAD
 
-    
-=======
-*/
-  fade_out(224);  
->>>>>>> 4b92ede1be4ffb6facc5360e8ff0143ff92e62e5
+
 #else
   fade_out(224);
 #endif // ESP8266
@@ -4414,17 +4397,11 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung. A 
 //     2D02         //
 //////////////////////
 
-<<<<<<< HEAD
 uint16_t WS2812FX::mode_2D02(void) {
   fade_out(240);
 #ifndef ESP8266
 
 
-=======
-uint16_t WS2812FX::mode_2D02(void) {             // Up for grabs.
-
-#ifndef ESP8266
->>>>>>> 4b92ede1be4ffb6facc5360e8ff0143ff92e62e5
   fade_out(224);
 #else
   fade_out(224);
