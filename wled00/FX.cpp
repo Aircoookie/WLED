@@ -3987,9 +3987,8 @@ uint16_t WS2812FX::mode_asound12(void) {        // Spectral. By Andreas Pleschun
 //     ASOUND13     //
 //////////////////////
 
+// Experimenting with volume only as a fallback if no FFT.
 uint16_t WS2812FX::mode_asound13(void) {                  // Waterfall. By: Andrew Tuline
-
-#ifndef ESP8266
 
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
@@ -3997,21 +3996,26 @@ uint16_t WS2812FX::mode_asound13(void) {                  // Waterfall. By: Andr
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
 
+#ifndef ESP8266
     uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+#else
+    uint8_t pixCol = sample * SEGMENT.intensity / 128;
+#endif // ESP8266
 
     if (samplePeak) {
       samplePeak = 0;
       setPixelColor(SEGLEN-1,92,92,92);
     } else {
-      setPixCol(SEGLEN-1, pixCol+SEGMENT.intensity, (int)FFT_Magnitude>>8);
+
+#ifndef ESP8266      
+    setPixCol(SEGLEN-1, pixCol+SEGMENT.intensity, (int)FFT_Magnitude>>8);
+#else
+    setPixCol(SEGLEN-1, millis(), pixCol);
+#endif // ESP8266
     }
     
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
   }
-
-#else
-  fade_out(224);
-#endif // ESP8266
 
   return FRAMETIME;
 } // mode_asound13()
@@ -4025,14 +4029,14 @@ uint16_t WS2812FX::mode_asound14(void) {                  // Pixelfreq. By Andre
 
 #ifndef ESP8266
 
-  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;   // Get to 255 as quick as you can.
+  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;      // Get to 255 as quick as you can.
   fade_out(fadeRate);
   uint16_t locn = random16(0,SEGLEN);
-  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;                  // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
   setPixCol(locn, SEGMENT.intensity+pixCol, (int)FFT_Magnitude>>8);           // Shift the colours so we start at blue.
 
 #else
-  setPixelColor(0, color_from_palette(0, true, PALETTE_SOLID_WRAP, 1, 0));
+  fade_out(224);
 #endif // ESP8266
 
   return FRAMETIME;
@@ -4231,6 +4235,8 @@ uint16_t scale_2d = 30; // scale is set dynamically once we've started up
 const bool    kMatrixSerpentineLayout = true;                       // needs to become a variable that we can set from the UI
 
 #endif // ESP8266
+
+
 // Set 'kMatrixSerpentineLayout' to false if your pixels are 
 // laid out all running the same way, like this:
 //
@@ -4284,7 +4290,7 @@ const bool    kMatrixSerpentineLayout = true;                       // needs to 
 //    }
 //
 //
-uint16_t WS2812FX::XY_2d( int x, int y) {
+uint16_t WS2812FX::XY_2d( int x, int y) {                      // A basic 2D helper routine based on wiring layout.
 
 #ifndef ESP8266
 
@@ -4315,10 +4321,11 @@ uint16_t i;
 //     2D01         //
 //////////////////////
 
-uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung.
+uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung. A work in progress.
 
 #ifndef ESP8266
-  static uint8_t ihue=0;
+
+/*  static uint8_t ihue=0;
   uint8_t index;
   uint8_t bri;
   static unsigned long prevMillis;
@@ -4331,6 +4338,10 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung.
 
     setPixelColor(XY_2d(1,1), 255,0,0);
   }
+*/
+  fade_out(224);  
+#else
+  fade_out(224);
 #endif // ESP8266
 
   return FRAMETIME;
@@ -4341,9 +4352,11 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschung.
 //     2D02         //
 //////////////////////
 
-uint16_t WS2812FX::mode_2D02(void) {
+uint16_t WS2812FX::mode_2D02(void) {             // Up for grabs.
 
 #ifndef ESP8266
+  fade_out(224);
+#else
   fade_out(224);
 #endif // ESP8266
 
@@ -4355,9 +4368,11 @@ uint16_t WS2812FX::mode_2D02(void) {
 //     2D03         //
 //////////////////////
 
-uint16_t WS2812FX::mode_2D03(void) {
+uint16_t WS2812FX::mode_2D03(void) {             // Up for grabs.
 
 #ifndef ESP8266
+  fade_out(224);
+#else
   fade_out(224);
 #endif // ESP8266
 
