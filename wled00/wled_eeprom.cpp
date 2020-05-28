@@ -287,8 +287,15 @@ void saveSettingsToEEPROM()
   //2944 - 3071 reserved
 
   EEPROM.write(2944, soundSquelch);
-  
- 
+
+  #ifndef ESP8266
+  EEPROM.write(2944+1, strip.matrixWidth & 0xFF);
+  EEPROM.write(2944+2, (strip.matrixWidth >> 8) & 0xFF);
+  EEPROM.write(2944+3, strip.matrixHeight & 0xFF);
+  EEPROM.write(2944+4, (strip.matrixHeight >> 8) & 0xFF);
+  EEPROM.write(2944+5, strip.matrixSerpentine);
+  #endif EPS8266
+
   commit();
 }
 
@@ -584,16 +591,21 @@ void loadSettingsFromEEPROM(bool first)
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
   } //last used: 2549
-  EEPROM.write(2550, DMXStartLED);
+  DMXStartLED = EEPROM.read(2550);
   #endif
 
   //user MOD memory
   //2944 - 3071 reserved
 
-  EEPROM.write(2944, soundSquelch);
+  soundSquelch = EEPROM.read(2944);
+
+  #ifndef ESP8266
+  strip.matrixWidth = EEPROM.read(2944+1) + ((EEPROM.read(2944+2) << 8) & 0xFF00);
+  strip.matrixHeight = EEPROM.read(2944+3) + ((EEPROM.read(2944+4) << 8) & 0xFF00);
+  strip.matrixSerpentine = EEPROM.read(2944+5) > 0;
+  #endif // EPS8266
 
   overlayCurrent = overlayDefault;
-
   savedToPresets();
 }
 

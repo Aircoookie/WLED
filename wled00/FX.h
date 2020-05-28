@@ -549,6 +549,13 @@ class WS2812FX {
       getPixelColor(uint16_t),
       getColor(void);
 
+    #ifndef ESP8266
+    uint16_t
+      matrixWidth,
+      matrixHeight,
+      matrixSerpentine;
+    #endif // ESP8266
+
     WS2812FX::Segment&
       getSegment(uint8_t n);
 

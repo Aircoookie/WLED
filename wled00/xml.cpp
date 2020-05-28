@@ -320,6 +320,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);
+    #ifdef ESP8266
+    sappends('v',"LCW", "");
+    sappends('v',"LCH", "");
+    sappend('c',"LCWHS", 1);
+    #else
+    sappend('v',"LCW",strip.matrixWidth);
+    sappend('v',"LCH",strip.matrixHeight);
+    sappend('c',"LCWHS",strip.matrixSerpentine);
+    #endif // ESP8266
   }
 
   if (subPage == 3)
