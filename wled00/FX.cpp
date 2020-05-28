@@ -4185,11 +4185,7 @@ uint16_t WS2812FX::mode_asound19(void) {  // By: Andrew Tuline
 #ifndef ESP8266
 /////////////////////////////////
 //     START of 2D ROUTINES    //
-/////////////////////////////////
-
-// Params for width and height
-const uint16_t kMatrixWidth = 8  ;                                    // needs to become a variable that we can set from the UI
-const uint16_t kMatrixHeight = 32;                                   // needs to become a variable that we can set from the UI
+/////////////////////////////////                                // needs to become a variable that we can set from the UI
 
 static uint16_t x = 0;
 static uint16_t y = 0;
@@ -4203,11 +4199,8 @@ uint8_t colorLoop = 1;
 uint16_t scale_2d = 30; // scale is set dynamically once we've started up
 
 
-// Param for different pixel layouts
-const bool    kMatrixSerpentineLayout = true;                       // needs to become a variable that we can set from the UI
-
 #endif // ESP8266
-// Set 'kMatrixSerpentineLayout' to false if your pixels are 
+// Set 'matrixSerpentine' to false if your pixels are 
 // laid out all running the same way, like this:
 //
 //     0 >  1 >  2 >  3 >  4
@@ -4224,7 +4217,7 @@ const bool    kMatrixSerpentineLayout = true;                       // needs to 
 //     |
 //    15 > 16 > 17 > 18 > 19
 //
-// Set 'kMatrixSerpentineLayout' to true if your pixels are 
+// Set 'matrixSerpentine' to true if your pixels are 
 // laid out back-and-forth, like this:
 //
 //     0 >  1 >  2 >  3 >  4
@@ -4250,8 +4243,8 @@ const bool    kMatrixSerpentineLayout = true;                       // needs to 
 //
 // Use the "XY" function like this:
 //
-//    for( uint8_t x = 0; x < kMatrixWidth; x++) {
-//      for( uint8_t y = 0; y < kMatrixHeight; y++) {
+//    for( uint8_t x = 0; x < matrixWidth; x++) {
+//      for( uint8_t y = 0; y < matrixHeight; y++) {
 //      
 //        // Here's the x, y to 'led index' in action: 
 //        leds[ XY( x, y) ] = CHSV( random8(), 255, 255);
@@ -4266,18 +4259,18 @@ uint16_t WS2812FX::XY_2d( int x, int y) {
 
 uint16_t i;
   
-  if( kMatrixSerpentineLayout == false) {
-    i = (y * kMatrixWidth) + x;
+  if( matrixSerpentine == false) {
+    i = (y * matrixWidth) + x;
   }
 
-  if( kMatrixSerpentineLayout == true) {
+  if( matrixSerpentine == true) {
     if( y & 0x01) {
       // Odd rows run backwards
-      uint8_t reverseX = (kMatrixWidth - 1) - x;
-      i = (y * kMatrixWidth) + reverseX;
+      uint8_t reverseX = (matrixWidth - 1) - x;
+      i = (y * matrixWidth) + reverseX;
     } else {
       // Even rows run forwards
-      i = (y * kMatrixWidth) + x;
+      i = (y * matrixWidth) + x;
     }
   }
   
@@ -4319,7 +4312,7 @@ uint16_t WS2812FX::mode_2D01(void) {
 
 uint16_t WS2812FX::mode_2D02(void) {
 #ifndef ESP8266
-
+  fill(0);
 #endif // ESP8266
   return FRAMETIME;
 } // mode_2D02()
@@ -4331,7 +4324,19 @@ uint16_t WS2812FX::mode_2D02(void) {
 
 uint16_t WS2812FX::mode_2D03(void) {
 #ifndef ESP8266
+  uint16_t counter = (now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
+  counter = counter >> 8;
+  uint32_t color = color_blend(color_wheel(counter),WHITE,128-SEGMENT.intensity);
+  fill(0);
+  for( uint8_t y = 0; y < matrixHeight; y++) {
+    setPixelColor(XY_2d(0,y), 255,0,0);
+    setPixelColor(XY_2d(matrixWidth - 1,y), color);
+  }
 
+  for( uint8_t x = 0; x < matrixWidth; x++) {
+    setPixelColor(XY_2d(x,0), 255,0,0);
+    setPixelColor(XY_2d(x,matrixHeight - 1), color);
+  }
 #endif // ESP8266
   return FRAMETIME;
 } // mode_2D03()

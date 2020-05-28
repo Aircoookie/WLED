@@ -549,6 +549,13 @@ class WS2812FX {
       getPixelColor(uint16_t),
       getColor(void);
 
+    #ifndef ESP8266
+    uint16_t
+      matrixWidth,
+      matrixHeight,
+      matrixSerpentine;
+    #endif // ESP8266
+
     WS2812FX::Segment&
       getSegment(uint8_t n);
 
@@ -785,7 +792,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","ASound01","ASound02","ASound03","ASound04","ASound05","ASound06",
 "ASound07","ASound08","ASound09","ASound10","ASound11","ASound12","ASound13","ASound14","ASound15","ASound16",
 "ASound17","ASound18","ASound19","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D_01", "2D_02",
-"2D_03"
+"2D_03_rect"
 ])=====";
 
 
