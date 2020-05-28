@@ -294,12 +294,6 @@ void saveSettingsToEEPROM()
   EEPROM.write(2944+3, strip.matrixHeight & 0xFF);
   EEPROM.write(2944+4, (strip.matrixHeight >> 8) & 0xFF);
   EEPROM.write(2944+5, strip.matrixSerpentine);
-  strip.matrixWidth = EEPROM.read(2944+1) + ((EEPROM.read(2944+2) << 8) & 0xFF00);
-  strip.matrixHeight = EEPROM.read(2944+3) + ((EEPROM.read(2944+4) << 8) & 0xFF00);
-  strip.matrixSerpentine = EEPROM.read(2944+5) > 0;
-  char str[255];
-  sprintf(str, "Written matrix settings %i x %i, %i", strip.matrixWidth, strip.matrixHeight, strip.matrixSerpentine);
-  Serial.println(str);
   #endif EPS8266
 
   commit();
@@ -609,11 +603,8 @@ void loadSettingsFromEEPROM(bool first)
   strip.matrixWidth = EEPROM.read(2944+1) + ((EEPROM.read(2944+2) << 8) & 0xFF00);
   strip.matrixHeight = EEPROM.read(2944+3) + ((EEPROM.read(2944+4) << 8) & 0xFF00);
   strip.matrixSerpentine = EEPROM.read(2944+5) > 0;
-  char str[255];
-  sprintf(str, "Matrix settings %i x %i, %i", strip.matrixWidth, strip.matrixHeight, strip.matrixSerpentine);
-  Serial.println(str);
   #endif // EPS8266
-  
+
   overlayCurrent = overlayDefault;
   savedToPresets();
 }
