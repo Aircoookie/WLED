@@ -4212,25 +4212,13 @@ uint16_t WS2812FX::mode_noisemove(void) {          // Noisemove    By: Andrew Tu
 #ifndef ESP8266
 /////////////////////////////////
 //     START of 2D ROUTINES    //
-<<<<<<< HEAD
 /////////////////////////////////                                // needs to become a variable that we can set from the UI
-=======
-/////////////////////////////////
-
-// We're using the x/y dimensions to map to the x/y pixels on the matrix.  We'll
-// use the z-axis for "time".  speed determines how fast time moves forward.  Try
-// 1 for a very slow moving effect, or 60 for something that ends up looking like
-// water.
-uint16_t speed2D = 20; // speed is set dynamically once we've started up
-
-// Params for width and height
-const uint16_t kMatrixWidth = 8  ;                                    // needs to become a variable that we can set from the UI
-const uint16_t kMatrixHeight = 32;                                   // needs to become a variable that we can set from the UI
->>>>>>> dev
 
 static uint16_t x = 0;
 static uint16_t y = 0;
 static uint16_t z = 0;
+static int speed2D = 20;
+
 uint8_t colorLoop = 1;
 
 // Scale determines how far apart the pixels in our noise matrix are.  Try
@@ -4241,13 +4229,7 @@ uint16_t scale_2d = 30; // scale is set dynamically once we've started up
 
 
 #endif // ESP8266
-<<<<<<< HEAD
 // Set 'matrixSerpentine' to false if your pixels are 
-=======
-
-
-// Set 'kMatrixSerpentineLayout' to false if your pixels are
->>>>>>> dev
 // laid out all running the same way, like this:
 //
 //     0 >  1 >  2 >  3 >  4
@@ -4264,11 +4246,7 @@ uint16_t scale_2d = 30; // scale is set dynamically once we've started up
 //     |
 //    15 > 16 > 17 > 18 > 19
 //
-<<<<<<< HEAD
 // Set 'matrixSerpentine' to true if your pixels are 
-=======
-// Set 'kMatrixSerpentineLayout' to true if your pixels are
->>>>>>> dev
 // laid out back-and-forth, like this:
 //
 //     0 >  1 >  2 >  3 >  4
@@ -4294,17 +4272,10 @@ uint16_t scale_2d = 30; // scale is set dynamically once we've started up
 //
 // Use the "XY" function like this:
 //
-<<<<<<< HEAD
 //    for( uint8_t x = 0; x < matrixWidth; x++) {
 //      for( uint8_t y = 0; y < matrixHeight; y++) {
 //      
 //        // Here's the x, y to 'led index' in action: 
-=======
-//    for( uint8_t x = 0; x < kMatrixWidth; x++) {
-//      for( uint8_t y = 0; y < kMatrixHeight; y++) {
-//
-//        // Here's the x, y to 'led index' in action:
->>>>>>> dev
 //        leds[ XY( x, y) ] = CHSV( random8(), 255, 255);
 //
 //      }
@@ -4356,7 +4327,7 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig.
     prevMillis = curMillis;
 
     uint32_t *noise = ledData;                    // we use the set aside storage array for FFT routines to store temporary 2D data
-    uint8_t MAX_DIMENSION = ((kMatrixWidth>kMatrixHeight) ? kMatrixWidth : kMatrixHeight);
+    uint8_t MAX_DIMENSION = ((matrixWidth>matrixHeight) ? matrixWidth : matrixHeight);
 
     // If we're runing at a low "speed", some 8-bit artifacts become visible
     // from frame-to-frame.  In order to reduce this, we can do some fast data-smoothing.
@@ -4416,15 +4387,7 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig.
 uint16_t WS2812FX::mode_2D02(void) {
   fade_out(240);
 #ifndef ESP8266
-<<<<<<< HEAD
   fill(0);
-=======
-
-
-  fade_out(224);
-#else
-  fade_out(224);
->>>>>>> dev
 #endif // ESP8266
 
   return FRAMETIME;
@@ -4435,7 +4398,6 @@ uint16_t WS2812FX::mode_2D02(void) {
 //     2D03         //
 //////////////////////
 
-<<<<<<< HEAD
 uint16_t WS2812FX::mode_2D03(void) {
 #ifndef ESP8266
   uint16_t counter = (now * ((SEGMENT.speed >> 2) +2)) & 0xFFFF;
@@ -4443,22 +4405,14 @@ uint16_t WS2812FX::mode_2D03(void) {
   uint32_t color = color_blend(color_wheel(counter),WHITE,128-SEGMENT.intensity);
   fill(0);
   for( uint8_t y = 0; y < matrixHeight; y++) {
-    setPixelColor(XY_2d(0,y), 255,0,0);
-    setPixelColor(XY_2d(matrixWidth - 1,y), color);
+    setPixelColor(XY(0,y), 255,0,0);
+    setPixelColor(XY(matrixWidth - 1,y), color);
   }
 
   for( uint8_t x = 0; x < matrixWidth; x++) {
-    setPixelColor(XY_2d(x,0), 255,0,0);
-    setPixelColor(XY_2d(x,matrixHeight - 1), color);
+    setPixelColor(XY(x,0), 255,0,0);
+    setPixelColor(XY(x,matrixHeight - 1), color);
   }
-=======
-uint16_t WS2812FX::mode_2D03(void) {             // Up for grabs.
-
-#ifndef ESP8266
-  fade_out(224);
-#else
-  fade_out(224);
->>>>>>> dev
 #endif // ESP8266
 
   return FRAMETIME;
