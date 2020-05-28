@@ -5,7 +5,7 @@
  */
 
 //build XML response to HTTP /win API request
-char* XML_response(AsyncWebServerRequest *request, char* dest)
+void XML_response(AsyncWebServerRequest *request, char* dest)
 {
   char sbuf[(dest == nullptr)?1024:1]; //allocate local buffer if none passed
   obuf = (dest == nullptr)? sbuf:dest;
@@ -100,9 +100,9 @@ char* XML_response(AsyncWebServerRequest *request, char* dest)
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
-char* URL_response(AsyncWebServerRequest *request)
+void URL_response(AsyncWebServerRequest *request)
 {
-  char sbuf[256]; //allocate local buffer if none passed
+  char sbuf[256];
   char s2buf[100];
   obuf = s2buf;
   olen = 0;

@@ -168,6 +168,8 @@ bool deserializeState(JsonObject root)
     }
   }
 
+  usermods.readFromJsonState(root);
+
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
   //write presets to flash directly?
@@ -232,6 +234,8 @@ void serializeState(JsonObject root)
   root["ps"] = currentPreset;
   root["pss"] = savedPresets;
   root["pl"] = (presetCyclingEnabled) ? 0: -1;
+
+  usermods.addToJsonState(root);
 
   //temporary for preset cycle
   JsonObject ccnf = root.createNestedObject("ccnf");
@@ -362,6 +366,8 @@ void serializeInfo(JsonObject root)
   
   root["freeheap"] = ESP.getFreeHeap();
   root["uptime"] = millis()/1000 + rolloverMillis*4294967;
+
+  usermods.addToJsonInfo(root);
   
   byte os = 0;
   #ifdef WLED_DEBUG

@@ -2,6 +2,13 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2005280
+
+-   Added v2 usermod API
+-   Added v2 example usermod `usermod_v2_example` in the usermods folder as prelimary documentation
+-   Added DS18B20 Temperature usermod with Info page support
+-   Disabled MQTT on ESP01 build to make room in flash
+
 #### Build 2005230
 
 -   Fixed TPM2
