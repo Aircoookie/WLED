@@ -51,6 +51,7 @@ void WLED::loop()
   handleDMX();
 #endif
   userLoop();
+  usermods.loop();
 
   yield();
   handleIO();
@@ -94,35 +95,29 @@ void WLED::loop()
     initMqtt();
   }
 
+
 // DEBUG serial logging
 #ifdef WLED_DEBUG
   if (millis() - debugTime > 9999) {
     DEBUG_PRINTLN("---DEBUG INFO---");
-    DEBUG_PRINT("Runtime: ");
-    DEBUG_PRINTLN(millis());
-    DEBUG_PRINT("Unix time: ");
-    DEBUG_PRINTLN(now());
-    DEBUG_PRINT("Free heap: ");
-    DEBUG_PRINTLN(ESP.getFreeHeap());
-    DEBUG_PRINT("Wifi state: ");
-    DEBUG_PRINTLN(WiFi.status());
+    DEBUG_PRINT("Runtime: ");       DEBUG_PRINTLN(millis());
+    DEBUG_PRINT("Unix time: ");     DEBUG_PRINTLN(now());
+    DEBUG_PRINT("Free heap: ");     DEBUG_PRINTLN(ESP.getFreeHeap());
+    DEBUG_PRINT("Wifi state: ");    DEBUG_PRINTLN(WiFi.status());
+
     if (WiFi.status() != lastWifiState) {
       wifiStateChangedTime = millis();
     }
     lastWifiState = WiFi.status();
-    DEBUG_PRINT("State time: ");
-    DEBUG_PRINTLN(wifiStateChangedTime);
-    DEBUG_PRINT("NTP last sync: ");
-    DEBUG_PRINTLN(ntpLastSyncTime);
-    DEBUG_PRINT("Client IP: ");
-    DEBUG_PRINTLN(WiFi.localIP());
-    DEBUG_PRINT("Loops/sec: ");
-    DEBUG_PRINTLN(loops / 10);
+    DEBUG_PRINT("State time: ");    DEBUG_PRINTLN(wifiStateChangedTime);
+    DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
+    DEBUG_PRINT("Client IP: ");     DEBUG_PRINTLN(WiFi.localIP());
+    DEBUG_PRINT("Loops/sec: ");     DEBUG_PRINTLN(loops / 10);
     loops = 0;
     debugTime = millis();
   }
   loops++;
-#endif        // WLED_DEBU
+#endif        // WLED_DEBUG
 }
 
 void WLED::setup()
@@ -156,6 +151,7 @@ void WLED::setup()
   int heapPreAlloc = ESP.getFreeHeap();
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
+  registerUsermods();
 
   strip.init(EEPROM.read(372), ledCount, EEPROM.read(2204));        // init LEDs quickly
   strip.setBrightness(0);
@@ -174,6 +170,7 @@ void WLED::setup()
   loadSettingsFromEEPROM(true);
   beginStrip();
   userSetup();
+  usermods.setup();
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
@@ -449,6 +446,7 @@ void WLED::handleConnection()
     DEBUG_PRINTLN(WiFi.localIP());
     initInterfaces();
     userConnected();
+    usermods.connected();
 
     // shut down AP
     if (apBehavior != AP_BEHAVIOR_ALWAYS && apActive) {

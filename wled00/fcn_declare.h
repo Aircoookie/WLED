@@ -139,6 +139,40 @@ void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 
+//um_manager.cpp
+class Usermod {
+  public:
+    virtual void loop() {}
+    virtual void setup() {}
+    virtual void connected() {}
+    virtual void addToJsonState(JsonObject& obj) {}
+    virtual void addToJsonInfo(JsonObject& obj) {}
+    virtual void readFromJsonState(JsonObject& obj) {}
+    virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
+};
+
+class UsermodManager {
+  private:
+    Usermod* ums[WLED_MAX_USERMODS];
+    byte numMods = 0;
+
+  public:
+    void loop();
+
+    void setup();
+    void connected();
+
+    void addToJsonState(JsonObject& obj);
+    void addToJsonInfo(JsonObject& obj);
+    void readFromJsonState(JsonObject& obj);
+
+    bool add(Usermod* um);
+    byte getModCount();
+};
+
+//usermods_list.cpp
+void registerUsermods();
+
 //usermod.cpp
 void userSetup();
 void userConnected();
@@ -174,8 +208,8 @@ String dmxProcessor(const String& var);
 void serveSettings(AsyncWebServerRequest* request);
 
 //xml.cpp
-char* XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
-char* URL_response(AsyncWebServerRequest *request);
+void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
+void URL_response(AsyncWebServerRequest *request);
 void sappend(char stype, const char* key, int val);
 void sappends(char stype, const char* key, char* val);
 void getSettingsJS(byte subPage, char* dest);
