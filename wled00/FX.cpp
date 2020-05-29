@@ -4219,13 +4219,13 @@ static uint16_t y = 0;
 static uint16_t z = 0;
 static int speed2D = 20;
 
-uint8_t colorLoop = 1;
+// uint8_t colorLoop = 1;
 
 // Scale determines how far apart the pixels in our noise matrix are.  Try
 // changing these values around to see how it affects the motion of the display.  The
 // higher the value of scale, the more "zoomed out" the noise iwll be.  A value
 // of 1 will be so zoomed in, you'll mostly see solid colors.
-uint16_t scale_2d = 30; // scale is set dynamically once we've started up
+static int scale_2d = 30; // scale is set dynamically once we've started up
 
 
 #endif // ESP8266
@@ -4330,7 +4330,7 @@ uint16_t WS2812FX::mode_2DPlasma(void) {                 // By Andreas Pleschutz
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
     speed2D = SEGMENT.fft3;
-    // scale = SEGMENT.fft2;
+    scale_2d = SEGMENT.fft2;
 
     uint32_t *noise = ledData;                    // we use the set aside storage array for FFT routines to store temporary 2D data
     uint8_t MAX_DIMENSION = ((matrixWidth>matrixHeight) ? matrixWidth : matrixHeight);
@@ -4417,9 +4417,93 @@ uint16_t WS2812FX::mode_2DPlasma(void) {                 // By Andreas Pleschutz
 //     2D02         //
 //////////////////////
 
-uint16_t WS2812FX::mode_2D02(void) {
-  fade_out(240);
+uint16_t WS2812FX::mode_2D02(void) {    // still a WIP, trying to find a version of the previous effect that is sufficiently different
+
 #ifndef ESP8266
+   static uint8_t ihue=0;
+  uint8_t index;
+  uint8_t bri = SEGMENT.fft2;
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+    speed2D = SEGMENT.fft3;
+    scale_2d = SEGMENT.fft2;
+
+    uint32_t *noise = ledData;                    // we use the set aside storage array for FFT routines to store temporary 2D data
+    uint8_t MAX_DIMENSION = ((matrixWidth>matrixHeight) ? matrixWidth : matrixHeight);
+
+    // If we're runing at a low "speed", some 8-bit artifacts become visible
+    // from frame-to-frame.  In order to reduce this, we can do some fast data-smoothing.
+    // The amount of data smoothing we're doing depends on "speed".
+
+    uint8_t dataSmoothing = 0;
+    if( speed2D < 50) {
+      dataSmoothing = 200 - (speed2D * 4);
+      }
+
+    for(int i = 0; i < MAX_DIMENSION; i++) {
+      int ioffset = scale * i;
+      for(int j = 0; j < MAX_DIMENSION; j++) {
+        int joffset = scale * j;
+
+        uint8_t data = inoise8(x + ioffset,y + joffset,z);
+
+          // The range of the inoise8 function is roughly 16-238.
+          // These two operations expand those values out to roughly 0..255
+          // You can comment them out if you want the raw noise data.
+        data = qsub8(data,16);
+        data = qadd8(data,scale8(data,39));
+
+        if( dataSmoothing ) {
+          uint8_t olddata = noise[i * matrixWidth + j];
+          uint8_t newdata = scale8( olddata, dataSmoothing) + scale8( data, 256 - dataSmoothing);
+          data = newdata;
+        }
+
+        noise[i * matrixWidth + j] = data;
+      }
+    }
+
+    z += speed2D;
+
+    // apply slow drift to X and Y, just for visual variation.
+    x += speed2D / 8;
+    y -= speed2D / 16;
+
+ // ---
+  
+  for(int i = 0; i < matrixWidth; i++) {
+    for(int j = 0; j < matrixHeight; j++) {
+      // We use the value at the (i,j) coordinate in the noise
+      // array for our brightness, and the flipped value from (j,i)
+      // for our pixel's index into the color palette.
+
+      uint8_t index = noise[j * matrixWidth + i];
+      uint8_t bri =   noise[i * matrixWidth + j];
+
+      // if this palette is a 'loop', add a slowly-changing base value
+      if (SEGMENT.fft1 > 128) {
+        index += ihue;
+      }
+
+      // brighten up, as the color palette itself often contains the 
+      // light/dark dynamic range desired
+      if( bri > 127 ) {
+        bri = 255;
+      } else {
+        bri = dim8_raw( bri * 2);
+      }
+
+      CRGB color = ColorFromPalette( currentPalette, index, bri);
+      setPixelColor(XY(i, j), color.red, color.green, color.blue);
+      
+      }
+    }
+  ihue+=1;
+  }
+#else
   fill(0);
 #endif // ESP8266
 

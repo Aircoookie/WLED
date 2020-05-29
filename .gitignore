@@ -9,4 +9,5 @@
 .DS_Store
 .gitignore
 .clang-format
+platformio.ini
 node_modules
