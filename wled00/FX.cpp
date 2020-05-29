@@ -3975,7 +3975,7 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
 // The 2 slider that is active in this effect is the general brightness slider, everything else is being computed on the fly.
 // FFT3 sets the cutoff value below which we think its noise
 //
-uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschung.
+uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschutznig.
 
 #ifndef ESP8266
   double maxVal = 0;
@@ -4313,7 +4313,11 @@ uint16_t i;
 //     2D01         //
 //////////////////////
 
-uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig. A work in progress.
+// fft1 slider above 1/2 will shift the colors
+// fft2 slider == scale (how far away are we from the plasma)
+// fft3 slider determines the speed the 'plasma' wafts
+
+uint16_t WS2812FX::mode_2DPlasma(void) {                 // By Andreas Pleschutznig. A work in progress.
 
 #ifndef ESP8266
 
@@ -4325,6 +4329,8 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig.
 
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
+    speed2D = SEGMENT.fft3;
+    // scale = SEGMENT.fft2;
 
     uint32_t *noise = ledData;                    // we use the set aside storage array for FFT routines to store temporary 2D data
     uint8_t MAX_DIMENSION = ((matrixWidth>matrixHeight) ? matrixWidth : matrixHeight);
@@ -4352,12 +4358,12 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig.
         data = qadd8(data,scale8(data,39));
 
         if( dataSmoothing ) {
-          uint8_t olddata = noise[XY(i,j)];
+          uint8_t olddata = noise[i * matrixWidth + j];
           uint8_t newdata = scale8( olddata, dataSmoothing) + scale8( data, 256 - dataSmoothing);
           data = newdata;
         }
 
-        noise[XY(i,j)] = data;
+        noise[i * matrixWidth + j] = data;
       }
     }
 
@@ -4367,8 +4373,35 @@ uint16_t WS2812FX::mode_2D01(void) {                 // By Andreas Pleschutznig.
     x += speed2D / 8;
     y -= speed2D / 16;
 
+ // ---
+  
+  for(int i = 0; i < matrixWidth; i++) {
+    for(int j = 0; j < matrixHeight; j++) {
+      // We use the value at the (i,j) coordinate in the noise
+      // array for our brightness, and the flipped value from (j,i)
+      // for our pixel's index into the color palette.
 
-    setPixelColor(XY(1,1), 255,0,0);
+      uint8_t index = noise[j * matrixWidth + i];
+      uint8_t bri =   noise[i * matrixWidth + j];
+
+      // if this palette is a 'loop', add a slowly-changing base value
+      if (SEGMENT.fft1 > 128) {
+        index += ihue;
+      }
+
+      // brighten up, as the color palette itself often contains the 
+      // light/dark dynamic range desired
+      if( bri > 127 ) {
+        bri = 255;
+      } else {
+        bri = dim8_raw( bri * 2);
+      }
+
+      CRGB color = ColorFromPalette( currentPalette, index, bri);
+      setPixelColor(XY(i, j), color.red, color.green, color.blue);
+      }
+    }
+  ihue+=1;
   }
 
 

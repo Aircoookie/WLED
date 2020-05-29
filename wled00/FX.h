@@ -234,7 +234,7 @@
 #define FX_MODE_NOISEPAL               125
 #define FX_MODE_SINEWAVE               126
 #define FX_MODE_PHASEDNOISE            127
-#define FX_MODE_2D01                   128
+#define FX_MODE_2DPLASMA               128
 #define FX_MODE_2D02                   129
 #define FX_MODE_2D03                   130
 
@@ -468,7 +468,7 @@ class WS2812FX {
       _mode[FX_MODE_NOISEPAL]                = &WS2812FX::mode_noisepal;
       _mode[FX_MODE_SINEWAVE]                = &WS2812FX::mode_sinewave;
       _mode[FX_MODE_PHASEDNOISE]             = &WS2812FX::mode_phased_noise;
-      _mode[FX_MODE_2D01]                    = &WS2812FX::mode_2D01;
+      _mode[FX_MODE_2DPLASMA]                = &WS2812FX::mode_2DPlasma;
       _mode[FX_MODE_2D02]                    = &WS2812FX::mode_2D02;
       _mode[FX_MODE_2D03]                    = &WS2812FX::mode_2D03;
 
@@ -696,7 +696,7 @@ class WS2812FX {
       mode_noisepal(void),
       mode_sinewave(void),
       mode_phased_noise(void),
-      mode_2D01(void),
+      mode_2DPlasma(void),
       mode_2D02(void),
       mode_2D03(void);
       
@@ -789,7 +789,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
 "* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","** Waterfall","** Freqpixel","** Binmap","** Noisespeak",
-"* Noisefire","* Puddlepeak","** Noisemove","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D_01", "2D_02",
+"* Noisefire","* Puddlepeak","** Noisemove","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D Plasma", "2D_02",
 "2D_03"
 ])=====";
 
