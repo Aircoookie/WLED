@@ -7,7 +7,7 @@
  */
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 20
+#define EEPVER 21
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -29,6 +29,7 @@
 //18-> 0.9.1-e131
 //19-> 0.9.1n
 //20-> 0.9.1p
+//21-> 0.10.1p
 
 void commit()
 {
@@ -287,8 +288,8 @@ void saveSettingsToEEPROM()
   //2944 - 3071 reserved
 
   EEPROM.write(2944, soundSquelch);
-  
- 
+
+
   commit();
 }
 
@@ -383,7 +384,7 @@ void loadSettingsFromEEPROM(bool first)
   //374 - strip.paletteFade
 
   apBehavior = EEPROM.read(376);
-    
+
   //377 = lastEEPROMversion
   if (lastEEPROMversion > 3) {
     aOtaEnabled = EEPROM.read(390);
@@ -391,7 +392,7 @@ void loadSettingsFromEEPROM(bool first)
     receiveNotificationEffects = EEPROM.read(392);
   }
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
-  
+
   if (lastEEPROMversion > 4) {
     huePollingEnabled = EEPROM.read(2048);
     //hueUpdatingEnabled = EEPROM.read(2049);
@@ -553,6 +554,7 @@ void loadSettingsFromEEPROM(bool first)
   {
     presetCyclingEnabled = EEPROM.read(2205);
     presetCycleTime = EEPROM.read(2206) + ((EEPROM.read(2207) << 8) & 0xFF00);
+    if (lastEEPROMversion < 21) presetCycleTime /= 100; //was stored in ms, now is in tenths of a second
     presetCycleMin = EEPROM.read(2208);
     presetCycleMax = EEPROM.read(2209);
     presetApplyBri = EEPROM.read(2210);
@@ -580,7 +582,7 @@ void loadSettingsFromEEPROM(bool first)
   DMXChannels = EEPROM.read(2530);
   DMXGap = EEPROM.read(2531) + ((EEPROM.read(2532) << 8) & 0xFF00);
   DMXStart = EEPROM.read(2533) + ((EEPROM.read(2534) << 8) & 0xFF00);
-  
+
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
   } //last used: 2549
@@ -638,7 +640,7 @@ bool applyPreset(byte index, bool loadBri)
     if (ver != 1) return false;
     strip.applyToAllSelected = true;
     if (loadBri) bri = EEPROM.read(i+1);
-    
+
     for (byte j=0; j<4; j++)
     {
       col[j] = EEPROM.read(i+j+2);
@@ -678,7 +680,7 @@ void savePreset(byte index, bool persist)
   if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
   uint16_t i = 380 + index*20;//min400
-  
+
   if (index < 16) {
     EEPROM.write(i, 1);
     EEPROM.write(i+1, bri);
@@ -695,7 +697,7 @@ void savePreset(byte index, bool persist)
     EEPROM.write(i+13, (colTer >>  8) & 0xFF);
     EEPROM.write(i+14, (colTer >>  0) & 0xFF);
     EEPROM.write(i+15, (colTer >> 24) & 0xFF);
-  
+
     EEPROM.write(i+16, effectIntensity);
     EEPROM.write(i+17, effectPalette);
     EEPROM.write(i+18, effectFFT1);
@@ -707,7 +709,7 @@ void savePreset(byte index, bool persist)
     WS2812FX::Segment* seg = strip.getSegments();
     memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
   }
-  
+
   if (persist) commit();
   savedToPresets();
   currentPreset = index;

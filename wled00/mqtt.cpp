@@ -76,7 +76,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 void publishMqtt()
 {
   doPublishMqtt = false;
-  if (mqtt == nullptr || !mqtt->connected()) return;
+  if (!WLED_MQTT_CONNECTED) return;
   DEBUG_PRINTLN("Publish MQTT");
 
   char s[10];

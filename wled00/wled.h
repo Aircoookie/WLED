@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2005100
+#define VERSION 2005280
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -20,17 +20,19 @@
 //#define WLED_DISABLE_OTA         // saves 14kb
 
 // You need to choose some of these features to disable:
-#define WLED_DISABLE_ALEXA       // saves 11kb
-#define WLED_DISABLE_BLYNK       // saves 6kb
-#define WLED_DISABLE_CRONIXIE    // saves 3kb
-#define WLED_DISABLE_HUESYNC     // saves 4kb
-#define WLED_DISABLE_INFRARED    // there is no pin left for this on ESP8266-01, saves 12kb
-//#define WLED_ENABLE_MQTT           // saves 12kb
-//#define WLED_ENABLE_ADALIGHT       // saves 500b only
+#define WLED_DISABLE_ALEXA         // saves 11kb
+#define WLED_DISABLE_BLYNK         // saves 6kb
+#define WLED_DISABLE_CRONIXIE      // saves 3kb
+#define WLED_DISABLE_HUESYNC       // saves 4kb
+#define WLED_DISABLE_INFRARED      // there is no pin left for this on ESP8266-01, saves 12kb
+#ifndef WLED_DISABLE_MQTT
+  #define WLED_ENABLE_MQTT         // saves 12kb
+#endif
+//#define WLED_ENABLE_ADALIGHT     // saves 500b only
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
 //#define WLED_DISABLE_SOUND       // saves 1kb
 
-#define WLED_DISABLE_FILESYSTEM        // SPIFFS is not used by any WLED feature yet
+#define WLED_DISABLE_FILESYSTEM    // SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   // Enable sending html file from SPIFFS before serving progmem version
 //#define WLED_ENABLE_FS_EDITOR    // enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
@@ -421,7 +423,7 @@ WLED_GLOBAL bool blynkEnabled _INIT(false);
 // preset cycling
 WLED_GLOBAL bool presetCyclingEnabled _INIT(false);
 WLED_GLOBAL byte presetCycleMin _INIT(1), presetCycleMax _INIT(5);
-WLED_GLOBAL uint16_t presetCycleTime _INIT(1250);
+WLED_GLOBAL uint16_t presetCycleTime _INIT(12);
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL byte presetCycCurr _INIT(presetCycleMin);
 WLED_GLOBAL bool presetApplyBri _INIT(true);
@@ -432,6 +434,7 @@ WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
 WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);
 WLED_GLOBAL IPAddress realtimeIP _INIT((0, 0, 0, 0));
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
+WLED_GLOBAL uint16_t tpmFirstFrameSize _INIT(0);
 
 // mqtt
 WLED_GLOBAL long lastMqttReconnectAttempt _INIT(0);
@@ -496,6 +499,9 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 // led fx library object
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 
+// Usermod manager
+WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
+
 // debug macro variable definitions
 #ifdef WLED_DEBUG
   WLED_GLOBAL unsigned long debugTime _INIT(0);
@@ -507,6 +513,7 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
+#define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 
 // append new c string to temp buffer efficiently
 bool oappend(const char* txt);

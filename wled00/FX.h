@@ -692,7 +692,7 @@ class WS2812FX {
       mode_2D01(void),
       mode_2D02(void),
       mode_2D03(void);
-      
+
   private:
     NeoPixelWrapper *bus;
 
