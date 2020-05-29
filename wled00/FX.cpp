@@ -4417,20 +4417,23 @@ uint16_t WS2812FX::mode_2DPlasma(void) {                 // By Andreas Pleschutz
 //     2D02         //
 //////////////////////
 
-uint16_t WS2812FX::mode_2D02(void) {    // still a WIP, trying to find a version of the previous effect that is sufficiently different
+uint16_t WS2812FX::mode_2D02(void) {    // somebody can take over hereits not what I envisioned it to be
+
 
 #ifndef ESP8266
    static uint8_t ihue=0;
   uint8_t index;
-  uint8_t bri = SEGMENT.fft2;
+  // uint8_t bri = SEGMENT.fft2;
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
 
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
+
+    int pixBri = sample * SEGMENT.intensity / 128;
     speed2D = SEGMENT.fft3;
     scale_2d = SEGMENT.fft2;
-
+ 
     uint32_t *noise = ledData;                    // we use the set aside storage array for FFT routines to store temporary 2D data
     uint8_t MAX_DIMENSION = ((matrixWidth>matrixHeight) ? matrixWidth : matrixHeight);
 
@@ -4497,7 +4500,10 @@ uint16_t WS2812FX::mode_2D02(void) {    // still a WIP, trying to find a version
       }
 
       CRGB color = ColorFromPalette( currentPalette, index, bri);
-      setPixelColor(XY(i, j), color.red, color.green, color.blue);
+      color.red = color.red * pixBri / 256;
+      color.green = color.green * pixBri / 256;
+      color.blue = color.blue * pixBri / 256;
+      setPixelColor(XY(i, j),color.red, color.green, color.blue);
       
       }
     }
