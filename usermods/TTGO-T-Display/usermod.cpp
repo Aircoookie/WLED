@@ -6,6 +6,18 @@
  * bytes 2400+ are currently ununsed, but might be used for future wled features
  */
 
+/*
+ * Pin 2 of the TTGO T-Display serves as the data line for the LED string.
+ * Pin 35 is set up as the button pin in the platformio_overrides.ini file.
+ * The button can be set up via the macros section in the web interface.
+ * I use the button to cycle between presets.
+ * The Pin 35 button is the one on the RIGHT side of the USB-C port on the board,
+ * when the port is oriented downwards.  See readme.md file for photo.
+ * The display is set up to turn off after 5 minutes, and turns on automatically 
+ * when a change in the dipslayed info is detected (within a 5 second interval).
+ */
+ 
+
 //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
 
 #include "wled.h"
@@ -29,19 +41,18 @@
 #define TFT_RST             23
 
 #define TFT_BL          4  // Display backlight control pin
-#define ADC_EN          14
-#define ADC_PIN         34
-#define BUTTON_1        35
-#define BUTTON_2        0
+#define ADC_EN          14  // Used for enabling battery voltage measurements - not used in this program
 
 TFT_eSPI tft = TFT_eSPI(135, 240); // Invoke custom library
 
 //gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup() {
+//    pinMode(ADC_EN, OUTPUT);  
+//    digitalWrite(ADC_EN, HIGH);  // Allows for measurement of battery voltage when USB connector is powering board 
     Serial.begin(115200);
     Serial.println("Start");
     tft.init();
-    tft.setRotation(1);
+    tft.setRotation(3);  //Rotation here is set up for the text to be readable with the port on the left. Use 1 to flip.
     tft.fillScreen(TFT_BLACK);
     tft.setTextSize(2);
     tft.setTextColor(TFT_WHITE);
@@ -55,7 +66,7 @@ void userSetup() {
          digitalWrite(TFT_BL, HIGH); // Turn backlight on. 
     }
 
-    tft.setRotation(1);
+    // tft.setRotation(3);
 }
 
 // gets called every time WiFi is (re-)connected. Initialize own network
@@ -87,8 +98,8 @@ void userLoop() {
   }
   lastUpdate = millis();
   
-  // Turn off display after 3 minutes with no change.
-   if(!displayTurnedOff && millis() - lastRedraw > 3*60*1000) {
+  // Turn off display after 5 minutes with no change.
+   if(!displayTurnedOff && millis() - lastRedraw > 5*60*1000) {
     digitalWrite(TFT_BL, LOW); // Turn backlight off. 
     displayTurnedOff = true;
   } 
@@ -201,6 +212,7 @@ void userLoop() {
       tft.print(singleJsonSymbol);
       printedChars++;
     }
+    // The following is modified from the code from the u8g2/u8g8 based code (knownPalette was knownMode)
     if ((qComma > knownPalette) || (printedChars > 25 - 2))
       break;
   }
