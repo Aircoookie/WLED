@@ -47,8 +47,6 @@ TFT_eSPI tft = TFT_eSPI(135, 240); // Invoke custom library
 
 //gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup() {
-//    pinMode(ADC_EN, OUTPUT);  
-//    digitalWrite(ADC_EN, HIGH);  // Allows for measurement of battery voltage when USB connector is powering board 
     Serial.begin(115200);
     Serial.println("Start");
     tft.init();
@@ -56,7 +54,7 @@ void userSetup() {
     tft.fillScreen(TFT_BLACK);
     tft.setTextSize(2);
     tft.setTextColor(TFT_WHITE);
-    tft.setCursor(0, 0);
+    tft.setCursor(1, 10);
     tft.setTextDatum(MC_DATUM);
     tft.setTextSize(2);
     tft.print("Loading...");
@@ -83,6 +81,7 @@ IPAddress knownIp;
 uint8_t knownBrightness = 0;
 uint8_t knownMode = 0;
 uint8_t knownPalette = 0;
+uint8_t tftcharwidth = 19;  // Number of chars that fit on screen with text size set to 2
 
 long lastUpdate = 0;
 long lastRedraw = 0;
@@ -141,21 +140,16 @@ void userLoop() {
   knownPalette = strip.getSegment(0).palette;
 
   tft.fillScreen(TFT_BLACK);
-  //u8x8.setFont(u8x8_font_chroma48medium8_r);
   tft.setTextSize(2);
   // First row with Wifi name
-  //u8x8.setCursor(1, 0);
-  tft.setCursor(1, 0);
-  //tft.print(knownSsid.substring(0, tft.width() > 1 ? tft.width() - 2 : 0));
-  tft.print(knownSsid.substring(0, 25 > 1 ? 25 : 0));
-  //u8x8.print(knownSsid.substring(0, u8x8.getCols() > 1 ? u8x8.getCols() - 2 : 0));
-  // Print `~` char to indicate that SSID is longer, than owr dicplay
-  if (knownSsid.length() > 25)
-  //if (knownSsid.length() > tft.width())
+  tft.setCursor(1, 10);
+  tft.print(knownSsid.substring(0, tftcharwidth > 1 ? tftcharwidth - 1 : 0));
+  // Print `~` char to indicate that SSID is longer, than our dicplay
+  if (knownSsid.length() > tftcharwidth)
     tft.print("~");
 
   // Second row with IP or Psssword
-  tft.setCursor(1, 30);
+  tft.setCursor(1, 40);
   // Print password in AP mode and if led is OFF.
   if (apActive && bri == 0)
     tft.print(apPass);
@@ -163,7 +157,7 @@ void userLoop() {
     tft.print(knownIp);
 
   // Third row with mode name
-  tft.setCursor(1, 60);
+  tft.setCursor(1, 70);
   uint8_t qComma = 0;
   bool insideQuotes = false;
   uint8_t printedChars = 0;
@@ -186,11 +180,11 @@ void userLoop() {
       tft.print(singleJsonSymbol);
       printedChars++;
     }
-    if ((qComma > knownMode) || (printedChars > 25 - 2))
+    if ((qComma > knownMode) || (printedChars > tftcharwidth - 1))
       break;
   }
   // Fourth row with palette name
-  tft.setCursor(1, 90);
+  tft.setCursor(1, 100);
   qComma = 0;
   insideQuotes = false;
   printedChars = 0;
@@ -213,9 +207,8 @@ void userLoop() {
       printedChars++;
     }
     // The following is modified from the code from the u8g2/u8g8 based code (knownPalette was knownMode)
-    if ((qComma > knownPalette) || (printedChars > 25 - 2))
+    if ((qComma > knownPalette) || (printedChars > tftcharwidth - 1))
       break;
   }
-
 
 }
