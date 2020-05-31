@@ -4510,7 +4510,7 @@ uint16_t WS2812FX::mode_2D02(void) {    // somebody can take over hereits not wh
   ihue+=1;
   }
 #else
-  fill(0);
+  fade_out(224);
 #endif // ESP8266
 
   return FRAMETIME;
@@ -4536,6 +4536,8 @@ uint16_t WS2812FX::mode_2D03(void) {
     setPixelColor(XY(x,0), 255,0,0);
     setPixelColor(XY(x,matrixHeight - 1), color);
   }
+#else
+  fade_out(224);
 #endif // ESP8266
 
   return FRAMETIME;
