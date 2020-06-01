@@ -4542,3 +4542,154 @@ uint16_t WS2812FX::mode_2D03(void) {
 
   return FRAMETIME;
 } // mode_2D03()
+
+
+
+//////////////////////
+//      A0          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A0(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a0()
+
+
+//////////////////////
+//      A1          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A1(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a1()
+
+
+//////////////////////
+//      A2          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A2(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a2()
+
+
+//////////////////////
+//      A3          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A3(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a3()
+
+
+//////////////////////
+//      A4          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A4(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a4()
+
+
+//////////////////////
+//      A5          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A5(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a5()
+
+
+//////////////////////
+//      A6          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A6(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a6()
+
+
+//////////////////////
+//      A7          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A7(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a7()
+
+
+//////////////////////
+//      A8          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A8(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a8()
+
+
+//////////////////////
+//      A9          //
+//////////////////////
+
+uint16_t WS2812FX::mode_A9(void) {
+#ifndef ESP8266
+  fade_out(224);
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_a9()

@@ -104,7 +104,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                      131
+#define MODE_COUNT                      141
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -237,7 +237,16 @@
 #define FX_MODE_2DPLASMA               128
 #define FX_MODE_2D02                   129
 #define FX_MODE_2D03                   130
-
+#define FX_MODE_A0                     131
+#define FX_MODE_A1                     132
+#define FX_MODE_A2                     133
+#define FX_MODE_A3                     134
+#define FX_MODE_A4                     135
+#define FX_MODE_A5                     136
+#define FX_MODE_A6                     137
+#define FX_MODE_A7                     138
+#define FX_MODE_A8                     139
+#define FX_MODE_A9                     140
 
 
 
@@ -471,6 +480,17 @@ class WS2812FX {
       _mode[FX_MODE_2DPLASMA]                = &WS2812FX::mode_2DPlasma;
       _mode[FX_MODE_2D02]                    = &WS2812FX::mode_2D02;
       _mode[FX_MODE_2D03]                    = &WS2812FX::mode_2D03;
+      _mode[FX_MODE_A0]                      = &WS2812FX::mode_A0;
+      _mode[FX_MODE_A1]                      = &WS2812FX::mode_A1;
+      _mode[FX_MODE_A2]                      = &WS2812FX::mode_A2;
+      _mode[FX_MODE_A3]                      = &WS2812FX::mode_A3;
+      _mode[FX_MODE_A4]                      = &WS2812FX::mode_A4;
+      _mode[FX_MODE_A5]                      = &WS2812FX::mode_A5;
+      _mode[FX_MODE_A6]                      = &WS2812FX::mode_A6;
+      _mode[FX_MODE_A7]                      = &WS2812FX::mode_A7;
+      _mode[FX_MODE_A8]                      = &WS2812FX::mode_A8;
+      _mode[FX_MODE_A9]                      = &WS2812FX::mode_A9;
+      
 
 
       _brightness = DEFAULT_BRIGHTNESS;
@@ -698,8 +718,18 @@ class WS2812FX {
       mode_phased_noise(void),
       mode_2DPlasma(void),
       mode_2D02(void),
-      mode_2D03(void);
-      
+      mode_2D03(void),
+      mode_A0(void),
+      mode_A1(void),
+      mode_A2(void),
+      mode_A3(void),
+      mode_A4(void),
+      mode_A5(void),
+      mode_A6(void),
+      mode_A7(void),
+      mode_A8(void),
+      mode_A9(void);
+                  
   private:
     NeoPixelWrapper *bus;
 
@@ -790,7 +820,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
 "* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","** Waterfall","** Freqpixel","** Binmap","** Noisespeak",
 "* Noisefire","* Puddlepeak","** Noisemove","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D Plasma", "2D Plasma sparks",
-"2D_03"
+"2D_03","A0","A1","A2","A3","A4","A5","A6","A7","A8","A9";
 ])=====";
 
 
