@@ -4549,13 +4549,13 @@ uint16_t WS2812FX::mode_2D03(void) {
 //      A0          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A0(void) {      // noisemove. By Andrew Tuline. Use Perlin Noise instead of sinewaves for movement.
-
-  fade_out(224);
+uint16_t WS2812FX::mode_A0(void) {      // 16 bit noisemove. By Andrew Tuline. Use Perlin Noise instead of sinewaves for movement.
+                                        // Controls are speed, # of pixels, faderate.
+  fade_out(255-SEGMENT.fft1);
   for (int i=0; i<SEGMENT.intensity/16+1; i++) {
-    uint8_t locn = inoise8(millis()*8/SEGMENT.speed+i*500, millis()*8/SEGMENT.speed);   // Get a new pixel location from moving noise.
-    uint8_t pixloc = map(locn,50,192,0,SEGLEN)%(SEGLEN);                                // Map that to the length of the strand, and ensure we don't go over.
-    setPixCol(pixloc, pixloc, 255);                                                     // Use that value for both the location as well as the palette index colour for the pixel.
+    uint16_t locn = inoise16(millis()*128/(260-SEGMENT.speed)+i*15000, millis()*128/(260-SEGMENT.speed));   // Get a new pixel location from moving noise.
+    uint16_t pixloc = map(locn,50*256,192*256,0,SEGLEN)%(SEGLEN);                           // Map that to the length of the strand, and ensure we don't go over.
+    setPixCol(pixloc, pixloc%255, 255);                                                     // Use that value for both the location as well as the palette index colour for the pixel.
   }  
 
   return FRAMETIME;
