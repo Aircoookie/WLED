@@ -4549,12 +4549,14 @@ uint16_t WS2812FX::mode_2D03(void) {
 //      A0          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A0(void) {
-#ifndef ESP8266
+uint16_t WS2812FX::mode_A0(void) {      // noisemove. By Andrew Tuline. Use Perlin Noise instead of sinewaves for movement.
+
   fade_out(224);
-#else
-  fade_out(224);
-#endif // ESP8266
+  for (int i=0; i<SEGMENT.intensity/16+1; i++) {
+    uint8_t locn = inoise8(millis()*8/SEGMENT.speed+i*500, millis()*8/SEGMENT.speed);   // Get a new pixel location from moving noise.
+    uint8_t pixloc = map(locn,50,192,0,SEGLEN)%(SEGLEN);                                // Map that to the length of the strand, and ensure we don't go over.
+    setPixCol(pixloc, pixloc, 255);                                                     // Use that value for both the location as well as the palette index colour for the pixel.
+  }  
 
   return FRAMETIME;
 } // mode_a0()

@@ -820,7 +820,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
 "* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","** Waterfall","** Freqpixel","** Binmap","** Noisespeak",
 "* Noisefire","* Puddlepeak","** Noisemove","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D Plasma", "2D Plasma sparks",
-"2D_03","A0","A1","A2","A3","A4","A5","A6","A7","A8","A9";
+"2D_03","A0","A1","A2","A3","A4","A5","A6","A7","A8","A9"
 ])=====";
 
 
