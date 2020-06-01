@@ -4566,12 +4566,49 @@ uint16_t WS2812FX::mode_A0(void) {      // 16 bit noisemove. By Andrew Tuline. U
 //      A1          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A1(void) {
-#ifndef ESP8266
-  fade_out(224);
-#else
-  fade_out(224);
-#endif // ESP8266
+uint16_t WS2812FX::mode_A1(void) {                            // * Ripple peak. By Andrew Tuline.
+                                                              // This currently has no controls.
+
+  #define maxsteps 16                                         // Case statement wouldn't allow a variable.
+
+  static uint8_t colour;                                      // Ripple colour is randomized.
+  static uint16_t centre;                                     // Center of the current ripple.
+  static int8_t steps = -1;                                   // -1 is the initializing step.
+  static uint8_t ripFade = 255;                               // Starting brightness.
+
+  fade_out(240);                                              // Lower frame rate means less effective fading than FastLED
+  fade_out(240);
+
+  EVERY_N_MILLIS(20) {
+
+     if (samplePeak == 1) {samplePeak = 0; steps = -1;}
+  
+    switch (steps) {
+  
+      case -1:                                                // Initialize ripple variables.
+        centre = random16(SEGLEN);
+        colour = random8();
+        steps = 0;
+        break;
+  
+      case 0:
+        setPixCol(centre, colour, ripFade); 
+        steps ++;
+        break;
+  
+      case maxsteps:                                                    // At the end of the ripples.
+//        steps = -1;
+        break;
+  
+      default:                                                          // Middle of the ripples.
+//        leds[(centre + step + NUM_LEDS) % NUM_LEDS] += ColorFromPalette(currentPalette, colour, myfade/step*2, currentBlending);       // Simple wrap from Marc Miller
+//        leds[(centere - step + NUM_LEDS) % NUM_LEDS] += ColorFromPalette(currentPalette, colour, myfade/step*2, currentBlending);
+        setPixCol((centre + steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2); 
+        setPixCol((centre - steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2); 
+        steps ++;                                                         // Next step.
+        break;  
+    } // switch step
+  }
 
   return FRAMETIME;
 } // mode_a1()
