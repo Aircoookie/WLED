@@ -3736,8 +3736,8 @@ uint16_t WS2812FX::mode_noisemeter(void) {                                  // N
 // I am the god of hellfire. . . Volume (only) reactive fire routine. Oh, look how short this is.
 uint16_t WS2812FX::mode_noisefire(void) {                    // Noisefire. By Andrew Tuline.
 
-#define xscale 20            // How far apart they are
-#define yscale 3             // How fast they move
+  const uint8_t xscale = 20;            // How far apart they are
+  const uint8_t yscale = 3;             // How fast they move
 
   CRGB color;
   uint16_t index;            // Current colour lookup value.
@@ -4601,8 +4601,7 @@ uint16_t WS2812FX::mode_A1(void) {                            // * Ripple peak. 
         break;
   
       default:                                                          // Middle of the ripples.
-//        leds[(centre + step + NUM_LEDS) % NUM_LEDS] += ColorFromPalette(currentPalette, colour, myfade/step*2, currentBlending);       // Simple wrap from Marc Miller
-//        leds[(centere - step + NUM_LEDS) % NUM_LEDS] += ColorFromPalette(currentPalette, colour, myfade/step*2, currentBlending);
+
         setPixCol((centre + steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2); 
         setPixCol((centre - steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2); 
         steps ++;                                                         // Next step.
@@ -4618,9 +4617,29 @@ uint16_t WS2812FX::mode_A1(void) {                            // * Ripple peak. 
 //      A2          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A2(void) {
+uint16_t WS2812FX::mode_A2(void) {                                // firenoise2d. By Andrew Tuline. Yep, yet another short routine.
+  
 #ifndef ESP8266
-  fade_out(224);
+
+  uint32_t xscale = 600;                                          // How far apart they are
+  uint32_t yscale = 1000;                                         // How fast they move
+  uint8_t indexx = 0;
+
+  currentPalette = CRGBPalette16(  CHSV(0,255,2), CHSV(0,255,4), CHSV(0,255,8), CHSV(0, 255, 8),
+                                   CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,                                   
+                                   CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
+                                   CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
+
+  for (int j=0; j < matrixWidth; j++) {
+    for (int i=0; i < matrixHeight; i++) {
+      indexx = inoise8(i*xscale+millis()/4,j*yscale*matrixWidth/255);                                                 // We're moving along our Perlin map.
+//      leds[XY(j,i)] = ColorFromPalette(currentPalette, min(i*(indexx)>>4, 255), i*255/kMatrixWidth, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.      
+
+      CRGB color = ColorFromPalette(currentPalette, min(i*(indexx)>>4, 255), i*255/matrixWidth, LINEARBLEND);          // Use the my own palette.
+      setPixelColor(XY(j,i), color.red, color.green, color.blue);     
+    } // for i
+  } // for j
+
 #else
   fade_out(224);
 #endif // ESP8266
