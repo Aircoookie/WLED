@@ -4731,7 +4731,8 @@ uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegs
                                                 // Speed affects the blur amount.
 #ifndef ESP8266
 
-  CRGB *leds = (CRGB)ledData;
+  CRGB *leds = (CRGB *)ledData;
+//  uint16_t *foo = (uint16_t *)ledData;
   const uint8_t kBorderWidth = 0;
 
   uint8_t blurAmount = dim8_raw( beatsin8(20,64,128) );  //3,64,192
