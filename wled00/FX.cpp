@@ -4222,6 +4222,7 @@ static uint16_t z = 0;
 static int speed2D = 20;
 
 
+
 // uint8_t colorLoop = 1;
 
 // Scale determines how far apart the pixels in our noise matrix are.  Try
@@ -4232,6 +4233,76 @@ static int scale_2d = 30; // scale is set dynamically once we've started up
 
 
 #endif // ESP8266
+
+
+// blur1d: one-dimensional blur filter. Spreads light to 2 line neighbors.
+// blur2d: two-dimensional blur filter. Spreads light to 8 XY neighbors.
+//
+//           0 = no spread at all
+//          64 = moderate spreading
+//         172 = maximum smooth, even spreading
+//
+//         173..255 = wider spreading, but increasing flicker
+//
+//         Total light is NOT entirely conserved, so many repeated
+//         calls to 'blur' will also result in the light fading,
+//         eventually all the way to black; this is by design so that
+//         it can be used to (slowly) clear the LEDs to black.
+void WS2812FX::blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount)
+{
+    uint8_t keep = 255 - blur_amount;
+    uint8_t seep = blur_amount >> 1;
+    CRGB carryover = CRGB::Black;
+    for( uint16_t i = 0; i < numLeds; i++) {
+        CRGB cur = leds[i];
+        CRGB part = cur;
+        part.nscale8( seep);
+        cur.nscale8( keep);
+        cur += carryover;
+        if( i) leds[i-1] += part;
+        leds[i] = cur;
+        carryover = part;
+    }
+}
+
+void WS2812FX::blur2d( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
+{
+    blurRows(leds, width, height, blur_amount);
+    blurColumns(leds, width, height, blur_amount);
+}
+
+// blurRows: perform a blur1d on every row of a rectangular matrix
+void WS2812FX::blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
+{
+    for( uint8_t row = 0; row < height; row++) {
+        CRGB* rowbase = leds + (row * width);
+        blur1d( rowbase, width, blur_amount);
+    }
+}
+
+// blurColumns: perform a blur1d on each column of a rectangular matrix
+void WS2812FX::blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
+{
+    // blur columns
+    uint8_t keep = 255 - blur_amount;
+    uint8_t seep = blur_amount >> 1;
+    for( uint8_t col = 0; col < width; col++) {
+        CRGB carryover = CRGB::Black;
+        for( uint8_t i = 0; i < height; i++) {
+            CRGB cur = leds[XY(col,i)];
+            CRGB part = cur;
+            part.nscale8( seep);
+            cur.nscale8( keep);
+            cur += carryover;
+            if( i) leds[XY(col,i-1)] += part;
+            leds[XY(col,i)] = cur;
+            carryover = part;
+        }
+    }
+}
+
+
+
 // Set 'matrixSerpentine' to false if your pixels are 
 // laid out all running the same way, like this:
 //

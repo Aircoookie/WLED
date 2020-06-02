@@ -525,7 +525,12 @@ class WS2812FX {
       setRgbwPwm(void),
       setPixCol(uint16_t location, uint32_t index, uint8_t intensity),
       noise8_help(uint8_t),
-      mapNoiseToLEDsUsingPalette();
+      mapNoiseToLEDsUsingPalette(),
+      blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount),
+      blur2d( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount),
+      blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount),
+      blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount);
+
 
     bool
       reverseMode = false,
