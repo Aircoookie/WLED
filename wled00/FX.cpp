@@ -4652,9 +4652,31 @@ uint16_t WS2812FX::mode_A2(void) {                                // firenoise2d
 //      A3          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A3(void) {
+uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegsman. https://gist.github.com/kriegsman/368b316c55221134b160 Adapted by: Andrew Tuline
+                                                // Speed affects the blur amount.
 #ifndef ESP8266
-  fade_out(224);
+
+  const uint8_t kBorderWidth = 1;
+
+//  uint8_t blurAmount = dim8_raw( beatsin8(20,64,128) );  //3,64,192
+    blur(255-SEGMENT.speed);
+//  blur2d( leds, matrixWidth, matrixHeight, blurAmount);
+  
+  // Use two out-of-sync sine waves
+  uint8_t  i = beatsin8(19, kBorderWidth, matrixWidth-kBorderWidth);
+  uint8_t  j = beatsin8(22, kBorderWidth, matrixWidth-kBorderWidth);
+  uint8_t  k = beatsin8(17, kBorderWidth, matrixWidth-kBorderWidth);
+  uint8_t  m = beatsin8(18, kBorderWidth, matrixHeight-kBorderWidth); 
+  uint8_t  n = beatsin8(15, kBorderWidth, matrixHeight-kBorderWidth);
+  uint8_t  p = beatsin8(20, kBorderWidth, matrixHeight-kBorderWidth);
+  
+  // The color of each point shifts over time, each at a different speed.
+  uint16_t ms = millis();  
+
+  setPixCol(XY(i,m), ms/29, 255);
+  setPixCol(XY(j,n), ms/41+96, 255);
+  setPixCol(XY(k,p), ms/73+192, 255);
+
 #else
   fade_out(224);
 #endif // ESP8266
