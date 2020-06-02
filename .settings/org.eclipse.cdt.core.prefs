@@ -1,0 +1,11 @@
+eclipse.preferences.version=1
+environment/project/0.910961921/PATH/delimiter=\:
+environment/project/0.910961921/PATH/operation=replace
+environment/project/0.910961921/PATH/value=/usr/local/bin\:/usr/bin\:/bin\:/usr/sbin\:/sbin\:/usr/local/MacGPG2/bin\:/Applications/Server.app/Contents/ServerRoot/usr/bin\:/Applications/Server.app/Contents/ServerRoot/usr/sbin\:/Library/Apple/usr/bin\:/Applications/Wireshark.app/Contents/MacOS${PathDelimiter}${PATH}
+environment/project/0.910961921/append=true
+environment/project/0.910961921/appendContributed=true
+environment/project/0.910961921.1363900502/PATH/delimiter=\:
+environment/project/0.910961921.1363900502/PATH/operation=replace
+environment/project/0.910961921.1363900502/PATH/value=/usr/local/bin\:/usr/bin\:/bin\:/usr/sbin\:/sbin\:/usr/local/MacGPG2/bin\:/Applications/Server.app/Contents/ServerRoot/usr/bin\:/Applications/Server.app/Contents/ServerRoot/usr/sbin\:/Library/Apple/usr/bin\:/Applications/Wireshark.app/Contents/MacOS${PathDelimiter}${PATH}
+environment/project/0.910961921.1363900502/append=true
+environment/project/0.910961921.1363900502/appendContributed=true

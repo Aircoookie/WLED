@@ -1,0 +1,371 @@
+; PlatformIO Project Configuration File
+; Please visit documentation: https://docs.platformio.org/page/projectconf.html
+
+[platformio]
+src_dir  = ./wled00
+data_dir = ./wled00/data
+lib_dir  = ./wled00/src
+build_cache_dir = ~/.buildcache
+extra_configs =
+  platformio_override.ini
+
+# ------------------------------------------------------------------------------
+# ENVIRONMENTS
+#
+# Please uncomment one of the lines below to select your board(s)
+# ------------------------------------------------------------------------------
+
+# Travis CI binaries (comment this out when building for single board)
+default_envs = esp32dev
+
+# Release binaries
+; default_envs = nodemcuv2, esp01, esp01_1m_ota, esp01_1m_full, esp32dev, custom_WS2801, custom_APA102, custom_LEDPIN_16, custom_LEDPIN_4, custom32_LEDPIN_16
+
+# WLED sound-reactive
+; default_envs = soundReactive_esp32dev, soundReactive_nodemcuv2, soundReactive_LEDPIN_4
+
+# Single binaries (uncomment your board)
+; default_envs = nodemcuv2
+; default_envs = esp01
+; default_envs = esp01_1m_ota
+; default_envs = esp01_1m_full
+; default_envs = esp07
+; default_envs = d1_mini
+; default_envs = heltec_wifi_kit_8
+; default_envs = h803wf
+; default_envs = d1_mini_debug
+; default_envs = d1_mini_ota
+; default_envs = esp32dev
+; default_envs = esp8285_4CH_MagicHome
+; default_envs = esp8285_4CH_H801
+; default_envs = esp8285_5CH_H801
+; default_envs = d1_mini_5CH_Shojo_PCB
+; default_envs = wemos_shield_esp32
+; default_envs = m5atom
+
+[common]
+# ------------------------------------------------------------------------------
+# PLATFORM:
+#   !! DO NOT confuse platformio's ESP8266 development platform with Arduino core for ESP8266
+#
+#   arduino core 2.3.0 = platformIO 1.5.0
+#   arduino core 2.4.0 = platformIO 1.6.0
+#   arduino core 2.4.1 = platformIO 1.7.3
+#   arduino core 2.4.2 = platformIO 1.8.0
+#   arduino core 2.5.0 = platformIO 2.0.4
+#   arduino core 2.5.1 = platformIO 2.1.1
+#   arduino core 2.5.2 = platformIO 2.2.3
+#   arduino core 2.6.1 = platformIO 2.3.0
+#   arduino core 2.6.2 = platformIO 2.3.1
+#   arduino core 2.6.3 = platformIO 2.3.2
+#   arduino core 2.7.0 = platformIO 2.5.0
+# ------------------------------------------------------------------------------
+arduino_core_2_3_0 = espressif8266@1.5.0
+arduino_core_2_4_0 = espressif8266@1.6.0
+arduino_core_2_4_1 = espressif8266@1.7.3
+arduino_core_2_4_2 = espressif8266@1.8.0
+arduino_core_2_5_0 = espressif8266@2.0.4
+arduino_core_2_5_1 = espressif8266@2.1.1
+arduino_core_2_5_2 = espressif8266@2.2.3
+arduino_core_2_6_1 = espressif8266@2.3.0
+arduino_core_2_6_2 = espressif8266@2.3.1
+arduino_core_2_6_3 = espressif8266@2.3.3
+arduino_core_2_7_1 = espressif8266@2.5.1
+
+# Development platforms
+arduino_core_develop = https://github.com/platformio/platform-espressif8266#develop
+arduino_core_git = https://github.com/platformio/platform-espressif8266#feature/stage
+
+# Platform to use for ESP8266
+platform_latest = ${common.arduino_core_2_7_1}
+
+# ------------------------------------------------------------------------------
+# FLAGS: DEBUG
+#
+# ------------------------------------------------------------------------------
+debug_flags = -D DEBUG=1 -D WLED_DEBUG -DDEBUG_ESP_WIFI -DDEBUG_ESP_HTTP_CLIENT -DDEBUG_ESP_HTTP_UPDATE -DDEBUG_ESP_HTTP_SERVER -DDEBUG_ESP_UPDATER -DDEBUG_ESP_OTA -DDEBUG_TLS_MEM
+#if needed (for memleaks etc) also add; -DDEBUG_ESP_OOM -include "umm_malloc/umm_malloc_cfg.h"
+#-DDEBUG_ESP_CORE is not working right now
+
+# ------------------------------------------------------------------------------
+# FLAGS: ldscript
+#    ldscript_512k ( 512 KB) =  487 KB sketch, 4 KB eeprom,      no spiffs, 16 KB reserved
+#    ldscript_1m0m (1024 KB) =  999 KB sketch, 4 KB eeprom,      no spiffs, 16 KB reserved
+#    ldscript_2m1m (2048 KB) = 1019 KB sketch, 4 KB eeprom, 1004 KB spiffs, 16 KB reserved
+#    ldscript_4m1m (4096 KB) = 1019 KB sketch, 4 KB eeprom, 1002 KB spiffs, 16 KB reserved, 2048 KB empty/ota?
+#    ldscript_4m3m (4096 KB) = 1019 KB sketch, 4 KB eeprom, 3040 KB spiffs, 16 KB reserved
+#
+# Available lwIP variants (macros):
+#    -DPIO_FRAMEWORK_ARDUINO_LWIP_HIGHER_BANDWIDTH  = v1.4 Higher Bandwidth (default)
+#    -DPIO_FRAMEWORK_ARDUINO_LWIP2_LOW_MEMORY       = v2 Lower Memory
+#    -DPIO_FRAMEWORK_ARDUINO_LWIP2_HIGHER_BANDWIDTH = v2 Higher Bandwidth
+#
+# BearSSL performance:
+#  When building with -DSECURE_CLIENT=SECURE_CLIENT_BEARSSL, please add `board_build.f_cpu = 160000000` to the environment configuration
+#
+# BearSSL ciphers:
+#   When building on core >= 2.5, you can add the build flag -DBEARSSL_SSL_BASIC in order to build BearSSL with a limited set of ciphers:
+#     TLS_RSA_WITH_AES_128_CBC_SHA256 / AES128-SHA256
+#     TLS_RSA_WITH_AES_256_CBC_SHA256 / AES256-SHA256
+#     TLS_RSA_WITH_AES_128_CBC_SHA / AES128-SHA
+#     TLS_RSA_WITH_AES_256_CBC_SHA / AES256-SHA
+#  This reduces the OTA size with ~45KB, so it's especially useful on low memory boards (512k/1m).
+# ------------------------------------------------------------------------------
+build_flags = -g -w -DMQTT_MAX_PACKET_SIZE=1024 -DPIO_FRAMEWORK_ARDUINO_LWIP_HIGHER_BANDWIDTH
+  -DSECURE_CLIENT=SECURE_CLIENT_BEARSSL -DBEARSSL_SSL_BASIC
+  #build_flags for the IRremoteESP8266 library (enabled decoders have to appear here)
+  -D _IR_ENABLE_DEFAULT_=false
+  -D DECODE_HASH=true
+  -D DECODE_NEC=true
+  -D DECODE_SONY=true
+  -D DECODE_SAMSUNG=true
+  -D DECODE_LG=true
+
+build_flags_esp8266 = ${common.build_flags} -DESP8266
+build_flags_esp32   = ${common.build_flags} -DARDUINO_ARCH_ESP32
+
+# enables all features for travis CI
+build_flags_all_features =
+  -D WLED_USE_ANALOG_LED
+  -D WLED_USE_H801
+  -D WLED_ENABLE_5CH_LEDS
+  -D WLED_ENABLE_ADALIGHT
+  -D WLED_ENABLE_DMX
+  -D WLED_ENABLE_MQTT
+
+ldscript_512k = eagle.flash.512k.ld   ;for older versions change this to eagle.flash.512k0.ld
+ldscript_1m0m = eagle.flash.1m.ld     ;for older versions change this to eagle.flash.1m0.ld
+ldscript_2m1m = eagle.flash.2m1m.ld
+ldscript_4m1m = eagle.flash.4m1m.ld
+ldscript_4m3m = eagle.flash.4m3m.ld
+
+shared_libdeps_dir = ./wled00/src
+
+# ------------------------------------------------------------------------------
+# COMMON SETTINGS:
+# ------------------------------------------------------------------------------
+[env]
+framework = arduino
+board_build.flash_mode = dout
+monitor_speed = 115200
+upload_speed = 115200
+lib_extra_dirs =
+    ${common.shared_libdeps_dir}
+
+# ------------------------------------------------------------------------------
+# LIBRARIES: required dependencies
+#   Please note that we don't always use the latest version of a library.
+#
+#   The following libraries have been included (and some of them changd) in the source:
+#     ArduinoJson@5.13.5, Blynk@0.5.4(changed), E131@1.0.0(changed), Time@1.5, Timezone@1.2.1
+# ------------------------------------------------------------------------------
+lib_compat_mode = strict
+lib_deps =
+    FastLED@3.3.2
+    NeoPixelBus@2.5.7
+    ESPAsyncTCP@1.2.0
+    ESPAsyncUDP@697c75a025
+    AsyncTCP@1.0.3
+    Esp Async WebServer@1.2.0
+    IRremoteESP8266@2.7.3
+    arduinoFFT@1.5.5
+  #For use SSD1306 OLED display uncomment following
+    #U8g2@~2.27.2
+  #For Dallas sensor uncomment following 2 lines
+    #OneWire@~2.3.5
+  #For BME280 sensor uncomment following
+    #BME280@~3.0.0
+lib_ignore =
+    AsyncTCP
+
+# ------------------------------------------------------------------------------
+# WLED BUILDS
+# ------------------------------------------------------------------------------
+
+[env:nodemcuv2]
+board = nodemcuv2
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266}
+
+[env:esp01]
+board = esp01
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_512k}
+build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_OTA -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK
+   -D WLED_DISABLE_CRONIXIE -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
+
+[env:esp01_1m_ota]
+board = esp01_1m
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_1m0m}
+build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK -D WLED_DISABLE_CRONIXIE -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
+
+[env:esp01_1m_full]
+board = esp01_1m
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_1m0m}
+build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_OTA
+
+[env:esp07]
+board = esp07
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266}
+
+[env:d1_mini]
+board = d1_mini
+platform = ${common.platform_latest}
+upload_speed = 921500
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266}
+
+[env:heltec_wifi_kit_8]
+board = d1_mini
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266}
+
+[env:h803wf]
+board = d1_mini
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266} -D LEDPIN=1 -D WLED_DISABLE_INFRARED
+
+[env:esp32dev]
+board = esp32dev
+platform = espressif32@1.11.2
+build_flags = ${common.build_flags_esp32}
+upload_port = /dev/cu.SLAB_USBtoUART
+monitor_port = /dev/cu.SLAB_USBtoUART
+upload_speed = 460800
+lib_ignore =
+  ESPAsyncTCP
+  ESPAsyncUDP
+
+[env:esp8285_4CH_MagicHome]
+board = esp8285
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_1m0m}
+build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_HUESYNC -D WLED_USE_ANALOG_LEDS
+
+[env:esp8285_4CH_H801]
+board = esp8285
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_1m0m}
+build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_HUESYNC -D WLED_USE_ANALOG_LEDS -D WLED_USE_H801
+
+[env:esp8285_5CH_H801]
+board = esp8285
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_1m0m}
+build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_HUESYNC -D WLED_USE_ANALOG_LEDS -D WLED_USE_H801 -D WLED_ENABLE_5CH_LEDS
+
+[env:d1_mini_5CH_Shojo_PCB]
+board = d1_mini
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266} -D WLED_USE_ANALOG_LEDS -D WLED_USE_SHOJO_PCB -D WLED_ENABLE_5CH_LEDS
+
+# ------------------------------------------------------------------------------
+# DEVELOPMENT BOARDS
+# ------------------------------------------------------------------------------
+
+[env:d1_mini_debug]
+board = d1_mini
+build_type = debug
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266} ${common.debug_flags}
+
+[env:d1_mini_ota]
+board = d1_mini
+upload_protocol = espota
+# exchange for your WLED IP
+upload_port = "10.10.1.27"
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266}
+
+# ------------------------------------------------------------------------------
+# sound reactive board configurations
+# ------------------------------------------------------------------------------
+
+[env:soundReactive_esp32dev]
+board = esp32dev
+platform = espressif32@1.11.2
+build_flags = ${common.build_flags_esp32} -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK -D WLED_DISABLE_CRONIXIE
+  -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
+lib_ignore =
+  ESPAsyncTCP
+  ESPAsyncUDP
+
+[env:soundReactive_nodemcuv2]
+board = nodemcuv2
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK -D WLED_DISABLE_CRONIXIE
+  -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
+
+[env:soundReactive_LEDPIN_4]
+board = d1_mini
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266} -D LEDPIN=4 -D IRPIN=5 -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK
+  -D WLED_DISABLE_CRONIXIE -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
+
+# ------------------------------------------------------------------------------
+# custom board configurations
+# ------------------------------------------------------------------------------
+
+[env:custom_LEDPIN_4]
+board = d1_mini
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266} -D LEDPIN=4 -D IRPIN=5
+
+[env:custom_LEDPIN_16]
+board = d1_mini
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266} -D LEDPIN=16
+
+[env:custom_APA102]
+board = d1_mini
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266} -D USE_APA102
+
+[env:custom_WS2801]
+board = d1_mini
+platform = ${common.platform_latest}
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags = ${common.build_flags_esp8266} -D USE_WS2801
+
+[env:custom32_LEDPIN_16]
+board = esp32dev
+platform = espressif32@1.11.2
+build_flags = ${common.build_flags_esp32} -D LEDPIN=16
+lib_ignore =
+  ESPAsyncTCP
+  ESPAsyncUDP
+
+[env:wemos_shield_esp32]
+board = esp32dev
+platform = espressif32@1.11.2
+upload_port = /dev/cu.SLAB_USBtoUART
+monitor_port = /dev/cu.SLAB_USBtoUART
+upload_speed = 460800
+build_flags = ${common.build_flags_esp32} -D LEDPIN=16 -D RLYPIN=19 -D BTNPIN=17
+lib_ignore =
+  ESPAsyncTCP
+  ESPAsyncUDP
+
+[env:m5atom]
+board = esp32dev
+build_flags = ${common.build_flags_esp32} -D LEDPIN=27 -D BTNPIN=39
+lib_ignore =
+	ESPAsyncTCP
+	ESPAsyncUDP
+platform = espressif32@1.11.2
+
