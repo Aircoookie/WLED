@@ -4656,7 +4656,7 @@ uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegs
                                                 // Speed affects the blur amount.
 #ifndef ESP8266
 
-  const uint8_t kBorderWidth = 1;
+  const uint8_t kBorderWidth = 0;
 
 //  uint8_t blurAmount = dim8_raw( beatsin8(20,64,128) );  //3,64,192
     blur(255-SEGMENT.speed);
@@ -4689,9 +4689,62 @@ uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegs
 //      A4          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A4(void) {
+uint16_t WS2812FX::mode_A4(void) {                 // Fire2012XY - Reference 3833
 #ifndef ESP8266
-  fade_out(224);
+/*
+
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+  CRGBPalette16 currentPalette  = CRGBPalette16( CRGB::Black, CRGB::Red, CRGB::Orange, CRGB::Yellow);
+  
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint32_t *leds = ledData;
+
+    const uint8_t COOLING = 40;
+    const uint8_t SPARKING = 60;
+
+// Array of temperature readings at each simulation cell
+  static byte heat[matrixWidth][matrixHeight];
+
+    for (int mw = 0; mw < matrixWidth; mw++) {        // Move along the width of the flame
+  
+    // Step 1.  Cool down every cell a little
+      for (int mh = 0; mh < matrixHeight; mh++) {
+        heat[mw][mh] = qsub8( heat[mw][mh],  random16(0, ((COOLING * 10) / matrixHeight) + 2));
+      }
+    
+      // Step 2.  Heat from each cell drifts 'up' and diffuses a little
+      for (int mh = matrixHeight - 1; mh >= 2; mh--) {
+        heat[mw][mh] = (heat[mw][mh - 1] + heat[mw][mh - 2] + heat[mw][mh - 2] ) / 3;
+      }
+      
+      // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
+      if (random8(0,255) < SPARKING ) {
+        int mh = random8(3);
+        heat[mw][mh] = qadd8( heat[mw][mh], random8(160,255) );
+      }
+  
+      // Step 4.  Map from heat cells to LED colors
+      for (int mh = 0; mh < matrixHeight; mh++) {
+        byte colorindex = scale8( heat[mw][mh], 240);
+        leds[ XY(mh, mw)] = ColorFromPalette( currentPalette, colorindex);
+      }
+    } // for mw
+
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
+    }
+  } // if millis
+*/
+
+fade_out(224);
 #else
   fade_out(224);
 #endif // ESP8266
