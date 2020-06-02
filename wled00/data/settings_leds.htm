@@ -57,10 +57,14 @@
 
 	  var LCW = parseInt(d.Sf.LCW.value, 10)
 	  var LCH = parseInt(d.Sf.LCH.value, 10)
-	  if (!isNaN(LCW) && !isNaN(LCH) && LCW * LCH != parseInt(d.Sf.LC.value, 10)) {
+	  if (!isNaN(LCW) && !isNaN(LCH) && (LCW > 0 || LCH > 0) && LCW * LCH != parseInt(d.Sf.LC.value, 10)) {
 		d.getElementById('2dwarning').style.display = 'inline';
+		d.getElementById('submitButton').disabled = true;
+		d.getElementById('submitButton2').disabled = true;
 	  } else {
 		d.getElementById('2dwarning').style.display = 'none';
+		d.getElementById('submitButton').disabled = false;
+		d.getElementById('submitButton2').disabled = false;
 	  }
 
 	  if (d.Sf.LA.value == 255) laprev = 12;
@@ -124,6 +128,9 @@
 			margin: 8px;
 			margin-top: 12px;
 		}
+		button.disabled, button[disabled] {
+			color: #aaa;
+		}
 		.helpB {
 			text-align: left;
 			position: absolute;
@@ -150,7 +157,7 @@
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
-		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+		<button type="button" onclick="B()">Back</button><button type="submit" id="submitButton">Save</button><hr>
 		<h2>LED setup</h2>
 		LED count: <input name="LC" type="number" min="1" max="1500" oninput="UI()" required><br>
     <div id="ledwarning" style="color: orange; display: none;">
@@ -237,10 +244,8 @@
 		</select><br>
 		Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
 		Skip first LED: <input type="checkbox" name="SL"><br>
-
-
 		
-		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+		<button type="button" onclick="B()">Back</button><button type="submit" id="submitButton2">Save</button>
 	</form>
 </body>
 </html>
