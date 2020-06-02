@@ -3799,6 +3799,8 @@ extern double beat;
 extern uint16_t lastSample;
 double volume = 1;
 uint32_t ledData[1500];
+uint32_t dataStore[4096];										// we are declaring a storage area or 64 x 64 (4096) words.
+
 
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max){
@@ -4218,6 +4220,7 @@ static uint16_t x = 0;
 static uint16_t y = 0;
 static uint16_t z = 0;
 static int speed2D = 20;
+
 
 // uint8_t colorLoop = 1;
 
