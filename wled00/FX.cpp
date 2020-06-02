@@ -4759,6 +4759,28 @@ fade_out(224);
 
 uint16_t WS2812FX::mode_A5(void) {
 #ifndef ESP8266
+/*  
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+  
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint32_t *leds = ledData;
+
+// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
+
+
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
+    }
+  } // if millis
+*/
   fade_out(224);
 #else
   fade_out(224);
@@ -4774,6 +4796,28 @@ uint16_t WS2812FX::mode_A5(void) {
 
 uint16_t WS2812FX::mode_A6(void) {
 #ifndef ESP8266
+/*  
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+  
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint32_t *leds = ledData;
+
+// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
+
+
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
+    }
+  } // if
+*/  
   fade_out(224);
 #else
   fade_out(224);
@@ -4789,6 +4833,28 @@ uint16_t WS2812FX::mode_A6(void) {
 
 uint16_t WS2812FX::mode_A7(void) {
 #ifndef ESP8266
+/*  
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+  
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint32_t *leds = ledData;
+
+// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
+
+
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
+    }
+  } // if
+*/
   fade_out(224);
 #else
   fade_out(224);
@@ -4804,6 +4870,28 @@ uint16_t WS2812FX::mode_A7(void) {
 
 uint16_t WS2812FX::mode_A8(void) {
 #ifndef ESP8266
+/*  
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+  
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint32_t *leds = ledData;
+
+// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
+
+
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
+    }
+  } // if
+*/
   fade_out(224);
 #else
   fade_out(224);
@@ -4819,6 +4907,28 @@ uint16_t WS2812FX::mode_A8(void) {
 
 uint16_t WS2812FX::mode_A9(void) {
 #ifndef ESP8266
+/*  
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+  
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint32_t *leds = ledData;
+
+// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
+
+
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
+    }
+  } // if
+*/
   fade_out(224);
 #else
   fade_out(224);
