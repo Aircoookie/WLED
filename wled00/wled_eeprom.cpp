@@ -7,7 +7,7 @@
  */
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 20
+#define EEPVER 21
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -600,9 +600,11 @@ void loadSettingsFromEEPROM(bool first)
   soundSquelch = EEPROM.read(2944);
 
   #ifndef ESP8266
-  strip.matrixWidth = EEPROM.read(2944+1) + ((EEPROM.read(2944+2) << 8) & 0xFF00);
-  strip.matrixHeight = EEPROM.read(2944+3) + ((EEPROM.read(2944+4) << 8) & 0xFF00);
-  strip.matrixSerpentine = EEPROM.read(2944+5) > 0;
+  if (lastEEPROMversion > 20) {
+    strip.matrixWidth = EEPROM.read(2944+1) + ((EEPROM.read(2944+2) << 8) & 0xFF00);
+    strip.matrixHeight = EEPROM.read(2944+3) + ((EEPROM.read(2944+4) << 8) & 0xFF00);
+    strip.matrixSerpentine = EEPROM.read(2944+5) > 0;
+  }
   #endif // EPS8266
 
   overlayCurrent = overlayDefault;
