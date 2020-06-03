@@ -4834,33 +4834,30 @@ uint16_t WS2812FX::mode_A4(void) {                 // Fire2012XY - Reference 383
 //      A5          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A5(void) {
+uint16_t WS2812FX::mode_A5(void) {               // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy and WLED version by Andrew Tuline.
 #ifndef ESP8266
 
   CRGB *leds = (CRGB *)ledData;
 
-  fadeToBlackBy(leds, SEGLEN, 4);
+  fadeToBlackBy(leds, SEGLEN, 64);
   
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
 
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>3)) {
     prevMillis = curMillis;
 
+  for(int i = 0; i < matrixHeight; i++) {
+      leds[XY(beatsin8(10, 0, matrixWidth-1, 0, i*4), i)] = ColorFromPalette(currentPalette, i*5+millis()/17, beatsin8(5, 55, 255, 0, i*10), LINEARBLEND);
+      leds[XY(beatsin8(10, 0, matrixWidth-1, 0, i*4+128), i)] = ColorFromPalette(currentPalette,i*5+128+millis()/17, beatsin8(5, 55, 255, 0, i*10+128), LINEARBLEND);        // 180 degrees (128) out of phase
+  }
 
-    long ms = millis();
-
-    leds[XY(0 ,0)] = ColorFromPalette(currentPalette, ms/73, 255, LINEARBLEND);
-    leds[XY(matrixWidth-1,0)] = ColorFromPalette(currentPalette, ms/65, 255, LINEARBLEND);
-    leds[XY(matrixWidth-1,matrixHeight-1)] = ColorFromPalette(currentPalette, ms/43, 255, LINEARBLEND);
-    leds[XY(0,matrixHeight-1)] = ColorFromPalette(currentPalette, ms/28, 255, LINEARBLEND);
-
-// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
-
+  blur2d(leds, matrixWidth, matrixHeight, 2);
 
    for (int i=0; i<SEGLEN; i++) {
       setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
    }
+  
   } // if millis
 
 #else
