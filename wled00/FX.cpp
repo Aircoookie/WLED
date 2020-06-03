@@ -4732,11 +4732,11 @@ uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegs
 #ifndef ESP8266
 
   CRGB *leds = (CRGB *)ledData;
-//  uint16_t *foo = (uint16_t *)ledData;
-  const uint8_t kBorderWidth = 0;
+  const uint8_t kBorderWidth = 2;
+
+  fadeToBlackBy(leds, SEGLEN, 24);
 
   uint8_t blurAmount = dim8_raw( beatsin8(20,64,128) );  //3,64,192
-//    blur(255-SEGMENT.speed);
   blur2d(leds, matrixWidth, matrixHeight, blurAmount);
   
   // Use two out-of-sync sine waves
@@ -4747,23 +4747,16 @@ uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegs
   uint8_t  n = beatsin8(15, kBorderWidth, matrixHeight-kBorderWidth);
   uint8_t  p = beatsin8(20, kBorderWidth, matrixHeight-kBorderWidth);
   
-  // The color of each point shifts over time, each at a different speed.
   uint16_t ms = millis();  
 
   leds[XY( i, m)] += ColorFromPalette(currentPalette, ms/29, 255, LINEARBLEND);
   leds[XY( j, n)] += ColorFromPalette(currentPalette, ms/41, 255, LINEARBLEND);
   leds[XY( k, p)] += ColorFromPalette(currentPalette, ms/73, 255, LINEARBLEND);
 
-/*
-  setPixCol(XY(i,m), ms/29, 255);
-  setPixCol(XY(j,n), ms/41+96, 255);
-  setPixCol(XY(k,p), ms/73+192, 255);
-*/
-
   for (int i=0; i<SEGLEN; i++) {
     setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
   }
-  
+ 
 #else
   fade_out(224);
 #endif // ESP8266
@@ -4778,8 +4771,8 @@ uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegs
 
 uint16_t WS2812FX::mode_A4(void) {                 // Fire2012XY - Reference 3833
 #ifndef ESP8266
-/*
 
+/*
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
   CRGBPalette16 currentPalette  = CRGBPalette16( CRGB::Black, CRGB::Red, CRGB::Orange, CRGB::Yellow);
@@ -4787,13 +4780,16 @@ uint16_t WS2812FX::mode_A4(void) {                 // Fire2012XY - Reference 383
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
 
-    CRGB *leds = (CRGB)ledData;
+    CRGB *leds = (CRGB *)ledData;
 
     const uint8_t COOLING = 40;
     const uint8_t SPARKING = 60;
 
 // Array of temperature readings at each simulation cell
-  static byte heat[matrixWidth][matrixHeight];
+
+  static byte *heat = (byte *)dataStore;
+  
+//  static byte heat[matrixWidth][matrixHeight];
 
     for (int mw = 0; mw < matrixWidth; mw++) {        // Move along the width of the flame
   
@@ -4820,18 +4816,13 @@ uint16_t WS2812FX::mode_A4(void) {                 // Fire2012XY - Reference 383
       }
     } // for mw
 
-    // DISPLAY ARRAY
-    for (int i= 0; i < SEGLEN; i++) {
-      c.h = (leds[i] >> 16) & 0xFF;
-      c.s = (leds[i] >> 8) &0xFF;
-      c.v = leds[i] & 0xFF;
-      color = c;                                                              // implicit conversion to RGB supplied by FastLED
-      setPixelColor(i, color.red, color.green, color.blue);
-    }
+  for (int i=0; i<SEGLEN; i++) {
+    setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
+  }
+    
   } // if millis
 */
-
-fade_out(224);
+  fade_out(224);
 #else
   fade_out(224);
 #endif // ESP8266
@@ -4846,15 +4837,24 @@ fade_out(224);
 
 uint16_t WS2812FX::mode_A5(void) {
 #ifndef ESP8266
-/*  
+
+  CRGB *leds = (CRGB *)ledData;
+
+  fadeToBlackBy(leds, SEGLEN, 4);
+  
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
-  
+
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
 
-    CRGB *leds = (CRGB)ledData;
 
+    long ms = millis();
+
+    leds[XY(0 ,0)] = ColorFromPalette(currentPalette, ms/73, 255, LINEARBLEND);
+    leds[XY(matrixWidth-1,0)] = ColorFromPalette(currentPalette, ms/65, 255, LINEARBLEND);
+    leds[XY(matrixWidth-1,matrixHeight-1)] = ColorFromPalette(currentPalette, ms/43, 255, LINEARBLEND);
+    leds[XY(0,matrixHeight-1)] = ColorFromPalette(currentPalette, ms/28, 255, LINEARBLEND);
 
 // ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
 
@@ -4863,8 +4863,7 @@ uint16_t WS2812FX::mode_A5(void) {
       setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
    }
   } // if millis
-*/
-  fade_out(224);
+
 #else
   fade_out(224);
 #endif // ESP8266
@@ -4879,14 +4878,15 @@ uint16_t WS2812FX::mode_A5(void) {
 
 uint16_t WS2812FX::mode_A6(void) {
 #ifndef ESP8266
-/*  
+/*
+  CRGB *leds = (CRGB* )ledData;
+  fadeToBlackBy(leds, SEGLEN, 4);
+  
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
   
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
-
-    CRGB *leds = (CRGB)ledData;
 
 
 // ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
@@ -4913,13 +4913,14 @@ uint16_t WS2812FX::mode_A6(void) {
 uint16_t WS2812FX::mode_A7(void) {
 #ifndef ESP8266
 /*  
+  CRGB *leds = (CRGB* )ledData;
+  fadeToBlackBy(leds, SEGLEN, 4);
+
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
   
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
-
-    CRGB *leds = (CRGB)ledData;
 
 
 // ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
@@ -4946,13 +4947,15 @@ uint16_t WS2812FX::mode_A7(void) {
 uint16_t WS2812FX::mode_A8(void) {
 #ifndef ESP8266
 /*  
+
+  CRGB *leds = (CRGB* )ledData;
+  fadeToBlackBy(leds, SEGLEN, 4);
+
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
   
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
-
-    CRGB *leds = (CRGB)ledData;
 
 
 // ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
@@ -4980,13 +4983,14 @@ uint16_t WS2812FX::mode_A9(void) {
 
 #ifndef ESP8266
 /*  
+  CRGB *leds = (CRGB* )ledData;
+  fadeToBlackBy(leds, SEGLEN, 4);
+
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
   
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
-
-    CRGB *leds = (CRGB)ledData;
 
 
 // ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
