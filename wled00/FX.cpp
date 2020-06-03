@@ -4735,7 +4735,6 @@ uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegs
   const uint8_t kBorderWidth = 2;
 
   fadeToBlackBy(leds, SEGLEN, 24);
-
   uint8_t blurAmount = dim8_raw( beatsin8(20,64,128) );  //3,64,192
   blur2d(leds, matrixWidth, matrixHeight, blurAmount);
   
@@ -4876,28 +4875,55 @@ uint16_t WS2812FX::mode_A5(void) {
 //      A6          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A6(void) {
+uint16_t WS2812FX::mode_A6(void) {    // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline.
 #ifndef ESP8266
-/*
+
   CRGB *leds = (CRGB* )ledData;
-  fadeToBlackBy(leds, SEGLEN, 4);
   
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
-  
+
+  if (SEGENV.call == 0) fill_solid(leds,SEGLEN, 0);
+
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
 
+    for (int16_t row=matrixHeight-1; row>=0; row--) {
+      for (int16_t col=0; col<matrixWidth; col++) {      
+        if (leds[XY(col, row)] == CRGB(175,255,175)) {
+          leds[XY(col, row)] = CRGB(27,130,39); // create trail
+          if (row < matrixHeight-1) leds[XY(col, row+1)] = CRGB(175,255,175);
+        }        
+      }
+    }
 
-// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
+    // fade all leds
+    for(int i = 0; i < SEGLEN; i++) {
+      if (leds[i].g != 255) leds[i].nscale8(192); // only fade trail
+    }
 
+    // check for empty screen to ensure code spawn
+    bool emptyScreen = true;
+    for(int i = 0; i < SEGLEN; i++) {
+      if (leds[i])
+      {
+        emptyScreen = false;
+        break;
+      }
+    }
+
+    // spawn new falling code
+    if (random8(3) == 0 || emptyScreen) // lower number == more frequent spawns
+    {
+      uint8_t spawnX = random8(matrixWidth);
+      leds[XY(spawnX, 0)] = CRGB(175,255,175 );
+    }
 
    for (int i=0; i<SEGLEN; i++) {
       setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
    }
   } // if millis
-*/
-  fade_out(224);
+
 #else
   fade_out(224);
 #endif // ESP8266
@@ -4914,7 +4940,6 @@ uint16_t WS2812FX::mode_A7(void) {
 #ifndef ESP8266
 /*  
   CRGB *leds = (CRGB* )ledData;
-  fadeToBlackBy(leds, SEGLEN, 4);
 
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
@@ -4923,7 +4948,7 @@ uint16_t WS2812FX::mode_A7(void) {
     prevMillis = curMillis;
 
 
-// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
+// ADD FASTLED ROUTINE HERE and use matrixWidth, matrixHeight and SEGLEN
 
 
    for (int i=0; i<SEGLEN; i++) {
@@ -4958,7 +4983,7 @@ uint16_t WS2812FX::mode_A8(void) {
     prevMillis = curMillis;
 
 
-// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
+// ADD FASTLED ROUTINE HERE and use matrixWidth, matrixHeight and SEGLEN
 
 
    for (int i=0; i<SEGLEN; i++) {
@@ -4984,7 +5009,7 @@ uint16_t WS2812FX::mode_A9(void) {
 #ifndef ESP8266
 /*  
   CRGB *leds = (CRGB* )ledData;
-  fadeToBlackBy(leds, SEGLEN, 4);
+
 
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
@@ -4993,7 +5018,7 @@ uint16_t WS2812FX::mode_A9(void) {
     prevMillis = curMillis;
 
 
-// ADD FASTLED ROUTINE HERE and use matrixWidth and matrixHeight
+// ADD FASTLED ROUTINE HERE and use matrixWidth, matrixHeight and SEGLEN
 
 
    for (int i=0; i<SEGLEN; i++) {
