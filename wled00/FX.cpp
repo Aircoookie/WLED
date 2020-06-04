@@ -4953,27 +4953,61 @@ uint16_t WS2812FX::mode_A6(void) {    // Matrix2D. By Jeremy Williams. Adapted b
 //      A7          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A7(void) {
+uint16_t WS2812FX::mode_A7(void) {               // Metaballs by Stefan Petrick. Adapted by Andrew Tuline.
 #ifndef ESP8266
-/*  
+
   CRGB *leds = (CRGB* )ledData;
 
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
-  
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
+  float speed = 1;
 
+  // get some 2 random moving points
+  uint8_t x2 = inoise8(millis() * speed, 25355, 685 ) / 16;
+  uint8_t y2 = inoise8(millis() * speed, 355, 11685 ) / 16;
 
-// ADD FASTLED ROUTINE HERE and use matrixWidth, matrixHeight and SEGLEN
+  uint8_t x3 = inoise8(millis() * speed, 55355, 6685 ) / 16;
+  uint8_t y3 = inoise8(millis() * speed, 25355, 22685 ) / 16;
 
+  // and one Lissajou function
+  uint8_t x1 = beatsin8(23 * speed, 0, 15);
+  uint8_t y1 = beatsin8(28 * speed, 0, 15);
+
+  for (uint8_t y = 0; y < matrixHeight; y++) {
+    for (uint8_t x = 0; x < matrixWidth; x++) {
+
+      // calculate distances of the 3 points from actual pixel
+      // and add them together with weightening
+      uint8_t  dx =  abs(x - x1);
+      uint8_t  dy =  abs(y - y1);
+      uint8_t dist = 2 * sqrt((dx * dx) + (dy * dy));
+
+      dx =  abs(x - x2);
+      dy =  abs(y - y2);
+      dist += sqrt((dx * dx) + (dy * dy));
+
+      dx =  abs(x - x3);
+      dy =  abs(y - y3);
+      dist += sqrt((dx * dx) + (dy * dy));
+
+      // inverse result
+      byte color = 1000 / dist;
+
+      // map color between thresholds
+      if (color > 0 and color < 60) {
+        leds[XY(x, y)] = ColorFromPalette(currentPalette, color * 9, 255);
+      } else {
+        leds[XY(x, y)] = ColorFromPalette(currentPalette, 0, 255);
+      }
+        // show the 3 points, too
+        leds[XY(x1,y1)] = CRGB(255, 255,255);
+        leds[XY(x2,y2)] = CRGB(255, 255,255);
+        leds[XY(x3,y3)] = CRGB(255, 255,255);
+    }
+  }
 
    for (int i=0; i<SEGLEN; i++) {
       setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
    }
-  } // if millis
-*/
-  fade_out(224);
+
 #else
   fade_out(224);
 #endif // ESP8266
