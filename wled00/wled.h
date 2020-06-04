@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2005230
+#define VERSION 2005280
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -25,7 +25,9 @@
 //#define WLED_DISABLE_CRONIXIE    // saves 3kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
 //#define WLED_DISABLE_INFRARED    // there is no pin left for this on ESP8266-01, saves 12kb
-#define WLED_ENABLE_MQTT           // saves 12kb
+#ifndef WLED_DISABLE_MQTT
+  #define WLED_ENABLE_MQTT         // saves 12kb
+#endif
 #define WLED_ENABLE_ADALIGHT       // saves 500b only
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
 
@@ -491,6 +493,9 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 // led fx library object
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 
+// Usermod manager
+WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
+
 // debug macro variable definitions
 #ifdef WLED_DEBUG
   WLED_GLOBAL unsigned long debugTime _INIT(0);
@@ -502,6 +507,7 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
+#define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 
 // append new c string to temp buffer efficiently
 bool oappend(const char* txt);
