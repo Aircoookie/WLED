@@ -4768,21 +4768,24 @@ uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegs
 //      A4          //
 //////////////////////
 
-uint16_t WS2812FX::mode_A4(void) {                 // Fire2012XY - Reference 3833
+uint16_t WS2812FX::mode_A4(void) {                 // Fire2012XY by Mark Kriegsman. Converted to WLED by Andrew Tuline.
 #ifndef ESP8266
 
-/*
+ CRGB *leds = (CRGB *)ledData;
+ static byte *heat = (byte *)dataStore;
+  
+  const uint8_t COOLING = 50;
+  const uint8_t SPARKING = 50;
+
+  CRGBPalette16 currentPalette  = CRGBPalette16( CRGB::Black, CRGB::Red, CRGB::Orange, CRGB::Yellow);
+ 
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
-  CRGBPalette16 currentPalette  = CRGBPalette16( CRGB::Black, CRGB::Red, CRGB::Orange, CRGB::Yellow);
   
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
 
-    CRGB *leds = (CRGB *)ledData;
 
-    const uint8_t COOLING = 40;
-    const uint8_t SPARKING = 60;
 
 // Array of temperature readings at each simulation cell
 
@@ -4794,34 +4797,35 @@ uint16_t WS2812FX::mode_A4(void) {                 // Fire2012XY - Reference 383
   
     // Step 1.  Cool down every cell a little
       for (int mh = 0; mh < matrixHeight; mh++) {
-        heat[mw][mh] = qsub8( heat[mw][mh],  random16(0, ((COOLING * 10) / matrixHeight) + 2));
+        heat[mw*matrixWidth+mh] = qsub8( heat[mw*matrixWidth+mh],  random16(0, ((COOLING * 10) / matrixHeight) + 2));
       }
     
       // Step 2.  Heat from each cell drifts 'up' and diffuses a little
       for (int mh = matrixHeight - 1; mh >= 2; mh--) {
-        heat[mw][mh] = (heat[mw][mh - 1] + heat[mw][mh - 2] + heat[mw][mh - 2] ) / 3;
+//        heat[mw][mh] = (heat[mw][mh - 1] + heat[mw][mh - 2] + heat[mw][mh - 2] ) / 3;
+        heat[mw*matrixWidth+mh] = (heat[mw*matrixWidth+mh - 1] + heat[mw*matrixWidth+mh - 2] + heat[mw*matrixWidth+mh - 2] ) / 3;
       }
       
       // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
       if (random8(0,255) < SPARKING ) {
         int mh = random8(3);
-        heat[mw][mh] = qadd8( heat[mw][mh], random8(160,255) );
+//        heat[mw][mh] = qadd8( heat[mw][mh], random8(160,255) );
+        heat[mw*matrixWidth+mh] = qadd8( heat[mw*matrixWidth+mh], random8(160,255) );
       }
   
       // Step 4.  Map from heat cells to LED colors
       for (int mh = 0; mh < matrixHeight; mh++) {
-        byte colorindex = scale8( heat[mw][mh], 240);
-        leds[ XY(mh, mw)] = ColorFromPalette( currentPalette, colorindex);
+        byte colorindex = scale8( heat[mw*matrixWidth+mh], 240);
+        leds[XY(mh,mw)] = ColorFromPalette(currentPalette, colorindex, 255);    // <<- Height/width appear to be reversed!!!!
       }
-    } // for mw
+    } // for mh
 
   for (int i=0; i<SEGLEN; i++) {
     setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
   }
     
   } // if millis
-*/
-  fade_out(224);
+
 #else
   fade_out(224);
 #endif // ESP8266
