@@ -66,7 +66,12 @@ Modify the  `User_Setup_Select.h` file as follows:
 #include <User_Setups/Setup25_TTGO_T_Display.h>    // Setup file for ESP32 and TTGO T-Display ST7789V SPI bus TFT
 ```
 
-Run the build and it should complete correctly.
+Run the build and it should complete correctly.  If you see a failure like this:
+```ini
+xtensa-esp32-elf-g++: error: wled00\wled00.ino.cpp: No such file or directory
+xtensa-esp32-elf-g++: fatal error: no input files
+```
+Just try building again - I find that sometimes this happens on the first build attempt and subsequent attempts will build correctly.
 
 ## Arduino IDE
 - UNTESTED
