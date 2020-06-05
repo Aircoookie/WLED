@@ -4735,7 +4735,8 @@ uint16_t WS2812FX::mode_A3(void) {              // squaredswirl  By: Mark Kriegs
   const uint8_t kBorderWidth = 2;
 
   fadeToBlackBy(leds, SEGLEN, 24);
-  uint8_t blurAmount = dim8_raw( beatsin8(20,64,128) );  //3,64,192
+  // uint8_t blurAmount = dim8_raw( beatsin8(20,64,128) );  //3,64,192
+  uint8_t blurAmount = SEGMENT.fft3;
   blur2d(leds, matrixWidth, matrixHeight, blurAmount);
   
   // Use two out-of-sync sine waves
