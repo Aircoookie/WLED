@@ -37,11 +37,24 @@ lib_deps =
 ...
 ```
 
+Also, while in the `platformio.ini` file, you must change the environment setup to build for just the esp32dev platform as follows:
+
+Comment out the line described below:
+```ini
+# Travis CI binaries (comment this out when building for single board)
+; default_envs = travis_esp8266, esp01, esp01_1m_ota, travis_esp32
+```
+and UNCOMMENT the following line in the 'Single binaries' section:
+```ini
+default_envs = esp32dev
+```
+Save the `platformio.ini` file.  Once this is saved, the required library files should be automatically downloaded for modifications in a later step.
+
 ### Platformio_overrides.ini (added)
 Copy the `platformio_overrides.ini` file which is contained in the `usermods/TTGO-T-Display/` folder into the root of your project folder. This file contains an override that remaps the button pin of WLED to use the on-board button to the right of the USB-C connector (when viewed with the port oriented downward - see hardware photo).
 
 ### TFT_eSPI Library Adjustments (board selection)
-NOTE:  I am relatively new to Platformio and VS Code, but I find that in order to get the project populated with the TFT_eSPI library (so the following changes can be made), I need to attempt an initial build that I know will fail.  There is probably a better way to accomplish this, but it worked for me.  Once the first build fails, the `User_Setup_Select.h` file can be found in the `/.pio/libdeps/esp32dev/TFT_eSPI_ID1559` folder.
+We need to modify a file in the `TFT_eSPI` library to select the correct board.  If you followed the directions to modify and save the `platformio.ini` file above, the `User_Setup_Select.h` file can be found in the `/.pio/libdeps/esp32dev/TFT_eSPI_ID1559` folder.
 
 Modify the  `User_Setup_Select.h` file as follows:
 * Comment out the following line (which is the 'default' setup file):
@@ -53,7 +66,12 @@ Modify the  `User_Setup_Select.h` file as follows:
 #include <User_Setups/Setup25_TTGO_T_Display.h>    // Setup file for ESP32 and TTGO T-Display ST7789V SPI bus TFT
 ```
 
-Run the build again and it should complete correctly.
+Run the build and it should complete correctly.  If you see a failure like this:
+```ini
+xtensa-esp32-elf-g++: error: wled00\wled00.ino.cpp: No such file or directory
+xtensa-esp32-elf-g++: fatal error: no input files
+```
+Just try building again - I find that sometimes this happens on the first build attempt and subsequent attempts will build correctly.
 
 ## Arduino IDE
 - UNTESTED
