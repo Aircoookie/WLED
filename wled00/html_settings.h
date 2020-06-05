@@ -273,6 +273,7 @@ Infrared remote:
 <option value=4>44-key RGB</option>
 <option value=5>21-key RGB</option>
 <option value=6>6-key black</option>
+<option value=7>9-key red</option>
 </select><br>
 <a href=https://github.com/Aircoookie/WLED/wiki/Infrared-Control target=_blank>IR info</a>
 <h3>WLED Broadcast</h3>
