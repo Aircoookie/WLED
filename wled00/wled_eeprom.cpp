@@ -583,8 +583,10 @@ void loadSettingsFromEEPROM(bool first)
   EEPROM.write(2550, DMXStartLED);
   #endif
 
-  //user MOD memory
-  //2944 - 3071 reserved
+  //Usermod memory
+  //2551 - 2559 reserved for Usermods, usable by default
+  //2560 - 2943 usable, NOT reserved (need to increase EEPSIZE accordingly, new WLED core features may override this section)
+  //2944 - 3071 reserved for Usermods (need to increase EEPSIZE to 3072 in const.h)
 
   overlayCurrent = overlayDefault;
 
