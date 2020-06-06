@@ -92,9 +92,9 @@
 
 //EEPROM size
 #ifdef ESP8266
-#define EEPSIZE 2560  //Maximum is 4096
+#define EEPSIZE 4095  //Maximum is 4096
 #else
-#define EEPSIZE 2944+6  //Maximum is 4096
+#define EEPSIZE 4095  //Maximum is 4096
 #endif // ESP8266
 
 

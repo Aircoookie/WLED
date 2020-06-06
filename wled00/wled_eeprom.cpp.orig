@@ -29,7 +29,6 @@
 //18-> 0.9.1-e131
 //19-> 0.9.1n
 //20-> 0.9.1p
-//21-> 0.10.1p
 
 void commit()
 {
@@ -284,6 +283,19 @@ void saveSettingsToEEPROM()
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
   #endif
 
+  //user MOD memory
+  //2944 - 3071 reserved
+
+  EEPROM.write(2944, soundSquelch);
+
+  #ifndef ESP8266
+  EEPROM.write(2944+1, strip.matrixWidth & 0xFF);
+  EEPROM.write(2944+2, (strip.matrixWidth >> 8) & 0xFF);
+  EEPROM.write(2944+3, strip.matrixHeight & 0xFF);
+  EEPROM.write(2944+4, (strip.matrixHeight >> 8) & 0xFF);
+  EEPROM.write(2944+5, strip.matrixSerpentine);
+  #endif EPS8266
+
   commit();
 }
 
@@ -376,7 +388,7 @@ void loadSettingsFromEEPROM(bool first)
   turnOnAtBoot = EEPROM.read(369);
   useRGBW = EEPROM.read(372);
   //374 - strip.paletteFade
-  
+
   apBehavior = EEPROM.read(376);
     
   //377 = lastEEPROMversion
@@ -548,7 +560,6 @@ void loadSettingsFromEEPROM(bool first)
   {
     presetCyclingEnabled = EEPROM.read(2205);
     presetCycleTime = EEPROM.read(2206) + ((EEPROM.read(2207) << 8) & 0xFF00);
-    if (lastEEPROMversion < 21) presetCycleTime /= 100; //was stored in ms, now is in tenths of a second
     presetCycleMin = EEPROM.read(2208);
     presetCycleMax = EEPROM.read(2209);
     presetApplyBri = EEPROM.read(2210);
@@ -580,14 +591,23 @@ void loadSettingsFromEEPROM(bool first)
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
   } //last used: 2549
-  EEPROM.write(2550, DMXStartLED);
+  DMXStartLED = EEPROM.read(2550);
   #endif
 
   //user MOD memory
   //2944 - 3071 reserved
 
-  overlayCurrent = overlayDefault;
+  soundSquelch = EEPROM.read(2944);
 
+  #ifndef ESP8266
+  if (lastEEPROMversion > 20) {
+    strip.matrixWidth = EEPROM.read(2944+1) + ((EEPROM.read(2944+2) << 8) & 0xFF00);
+    strip.matrixHeight = EEPROM.read(2944+3) + ((EEPROM.read(2944+4) << 8) & 0xFF00);
+    strip.matrixSerpentine = EEPROM.read(2944+5) > 0;
+  }
+  #endif // EPS8266
+
+  overlayCurrent = overlayDefault;
   savedToPresets();
 }
 
@@ -644,6 +664,9 @@ bool applyPreset(byte index, bool loadBri)
     effectSpeed = EEPROM.read(i+11);
     effectIntensity = EEPROM.read(i+16);
     effectPalette = EEPROM.read(i+17);
+    effectFFT1 = EEPROM.read(i+18);
+    effectFFT2 = EEPROM.read(i+19);
+    effectFFT3 = EEPROM.read(i+20);
   } else {
     if (ver != 2 && ver != 3) return false;
     strip.applyToAllSelected = false;
@@ -659,35 +682,6 @@ bool applyPreset(byte index, bool loadBri)
     }
     setValuesFromMainSeg();
   }
-
-// Audio Reactive SEGMENT specific read settings
-
-#ifdef ESP8266
-  uint16_t audio_i = 3072+index*4;   // Reserve 4 bytes for ESP8266
-#else
-  uint16_t audio_i = 3072+index*16;  // Reserve 12 bytes for ESP32 (can change in the future)
-#endif
-
-  if (index < 16) {       // These are all SEGMENT specific values. A bit overkill at this time.
-
-    if (EEPVER > 20) {                                 // Version sanity checking
-#ifdef ESP8266
-      soundSquelch =  EEPROM.read(audio_i);
-    // We have 3 more available for ESP8266
-#else
-      effectFFT1 = EEPROM.read(audio_i+4);
-      effectFFT2 = EEPROM.read(audio_i+5);
-      effectFFT3 = EEPROM.read(audio_i+6);
-      strip.matrixWidth = EEPROM.read(audio_i+7) + ((EEPROM.read(audio_i+5) << 8) & 0xFF00);
-      strip.matrixHeight = EEPROM.read(audio_i+9) + ((EEPROM.read(audio_i+7) << 10) & 0xFF00);
-      strip.matrixSerpentine = EEPROM.read(audio_i+11) > 0;
-    // We have 4 more available for ESP32
-#endif
-    }
-  }
-// End of Audio Reactive SEGMENT specific read settings
-
-  
   currentPreset = index;
   isPreset = true;
   return true;
@@ -718,42 +712,15 @@ void savePreset(byte index, bool persist)
   
     EEPROM.write(i+16, effectIntensity);
     EEPROM.write(i+17, effectPalette);
+    EEPROM.write(i+18, effectFFT1);
+    EEPROM.write(i+19, effectFFT2);
+    EEPROM.write(i+20, effectFFT3);
   } else { //segment 16 can save segments
     EEPROM.write(i, 3);
     EEPROM.write(i+1, bri);
     WS2812FX::Segment* seg = strip.getSegments();
     memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
   }
-
-
-// Audio Reactive SEGMENT specific write settings
-
-#ifdef ESP8266
-  uint16_t audio_i = 3072+index*4;   // Reserve 4 bytes for ESP8266
-#else
-  uint16_t audio_i = 3072+index*16;  // Reserve 12 bytes for ESP32 (can change in the future)
-#endif
-
-  if (index < 16) {       // These are all SEGMENT specific values. A bit overkill at this time.
-
-    if (EEPVER > 20) {                                 // Version sanity checking
-#ifdef ESP8266
-      EEPROM.write(audio_i, soundSquelch);
-    // We have 3 more available for ESP8266
-#else
-      EEPROM.write(audio_i+4, effectFFT1);
-      EEPROM.write(audio_i+5, effectFFT2);
-      EEPROM.write(audio_i+6, effectFFT3);
-      EEPROM.write(audio_i+7, strip.matrixWidth & 0xFF);
-      EEPROM.write(audio_i+8, (strip.matrixWidth >> 8) & 0xFF);
-      EEPROM.write(audio_i+9, strip.matrixHeight & 0xFF);
-      EEPROM.write(audio_i+10, (strip.matrixHeight >> 8) & 0xFF);
-      EEPROM.write(audio_i+11, strip.matrixSerpentine);
-    // We have 4 more available for ESP32
-#endif
-    }
-  }
-// End of Audio Reactive SEGMENT specific write settings
   
   if (persist) commit();
   savedToPresets();
