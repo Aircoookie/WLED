@@ -7,11 +7,11 @@
   <a href="https://github.com/Aircoookie/WLED-App"><img src="https://img.shields.io/badge/app-wled-blue.svg?style=flat-square"></a>
   </p>
   
-## Welcome to my project WLED!
+# 👋 Welcome to my project WLED!
 
-A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs!
+A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs or also SPI based chipsets like the WS2801!
 
-### Features:
+## ⚙️ Features:
 - WS2812FX library integrated for over 100 special effects  
 - FastLED noise effects and 50 palettes  
 - Modern UI with color, effect and segment controls  
@@ -26,7 +26,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Configurable analog clock + support for the Cronixie kit by Diamex  
 - Configurable Auto Brightness limit for safer operation  
 
-### Supported light control interfaces:
+## 💡 Supported light control interfaces:
 - WLED app for Android and iOS  
 - JSON and HTTP request APIs  
 - MQTT  
@@ -41,7 +41,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Infrared remotes (24-key RGB, receiver required)  
 - Simple timers/schedules (time from NTP, timezones/DST supported)  
 
-### Quick start guide and documentation:
+## 📲 Quick start guide and documentation:
 
 See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
 
@@ -55,7 +55,7 @@ Russian speakers, check out the videos by Room31:
 [WLED Firmware Overview: Interface and Settings](https://youtu.be/h7lKsczEI7E)  
 [ESP8266 based LED controller for WS2812b strip. WLED Firmware + OpenHAB](https://youtu.be/K4ioTt3XvGc)  
 
-### Other
+## ✌️ Other
 
 Licensed under the MIT license  
 Credits [here](https://github.com/Aircoookie/WLED/wiki/Contributors-&-About)!
