@@ -58,6 +58,20 @@ Russian speakers, check out the videos by Room31:
 ## 🖼️ Images
 <img src="/images/macbook-pro-space-gray-on-the-wooden-table.jpg" width="50%"><img src="/images/walking-with-iphone-x.jpg" width="50%">
 
+## Compatible LED Strips
+Type | Voltage | Comments
+|---|---|---|
+WS2812B | 5v |
+WS2813 | 5v | 
+SK6812 | 5v | RGBW
+APA102 | 5v | C/D
+WS2801 | 5v | C/D
+LPD8806 | 5v | C/D
+TM1814 | 12v | RGBW
+WS2811 | 12v | 3-LED segments
+WS2815 | 12v | 
+GS8208 | 12v |
+
 ## ✌️ Other
 
 Licensed under the MIT license  
