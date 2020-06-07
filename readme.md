@@ -58,7 +58,7 @@ Russian speakers, check out the videos by Room31:
 ## 🖼️ Images
 <img src="/images/macbook-pro-space-gray-on-the-wooden-table.jpg" width="50%"><img src="/images/walking-with-iphone-x.jpg" width="50%">
 
-## Compatible LED Strips
+## 💾 Compatible LED Strips
 Type | Voltage | Comments
 |---|---|---|
 WS2812B | 5v |
