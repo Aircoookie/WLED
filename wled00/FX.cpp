@@ -4890,7 +4890,7 @@ uint16_t WS2812FX::mode_A6(void) {    // Matrix2D. By Jeremy Williams. Adapted b
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
 
-    if (SEGMENT.fft3 < 64) {									// check for orientation, slider in first quarter, default orientation
+    if (SEGMENT.fft3 < 128) {									// check for orientation, slider in first quarter, default orientation
     	for (int16_t row=matrixHeight-1; row>=0; row--) {
     		for (int16_t col=0; col<matrixWidth; col++) {
     			if (leds[XY(col, row)] == CRGB(175,255,175)) {
@@ -4899,7 +4899,7 @@ uint16_t WS2812FX::mode_A6(void) {    // Matrix2D. By Jeremy Williams. Adapted b
     			}
     		}
     	}
-    } else if ((SEGMENT.fft3 >= 64) & (SEGMENT.fft3 < 128))   {	// second quadrant
+    } else if ((SEGMENT.fft3 >= 128))   {	// second quadrant
     	for (int16_t row=matrixHeight-1; row>=0; row--) {
     	    		for (int16_t col=matrixWidth-1; col >= 0; col--) {
     	    			if (leds[XY(col, row)] == CRGB(175,255,175)) {
@@ -4925,12 +4925,12 @@ uint16_t WS2812FX::mode_A6(void) {    // Matrix2D. By Jeremy Williams. Adapted b
     }
 
     // spawn new falling code
-    if (SEGMENT.fft3 < 64) {
+    if (SEGMENT.fft3 < 128) {
     	if (random8(3) == 0 || emptyScreen) {// lower number == more frequent spawns
     	  uint8_t spawnX = random8(matrixWidth);
       	  leds[XY(spawnX, 0)] = CRGB(175,255,175 );
     	}
-    } else if ((SEGMENT.fft3 >= 64) & (SEGMENT.fft3 < 128)) {
+    } else if ((SEGMENT.fft3 >= 128)) {
     	if (random8(3) == 0 || emptyScreen) {// lower number == more frequent spawns
     	  uint8_t spawnX = random8(matrixHeight);
     	  leds[XY(0, spawnX)] = CRGB(175,255,175 );
