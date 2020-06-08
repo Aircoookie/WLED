@@ -130,8 +130,7 @@ function GCH(n){for(d=document,d.getElementById("dmxchannels").innerHTML+="",i=0
 </head><body onload="S()"><form id="form_s" name="Sf" method="post">
 <div class="helpB"><button type="button" onclick="H()">?</button></div><button 
 type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
-<h2>Imma firin ma lazer (if it has DMX support)</h2>
-<!-- TODO: Change to something less-meme-related //--> Proxy Universe <input 
+<h2>Imma firin ma lazer (if it has DMX support)</h2>Proxy Universe <input 
 name="PU" type="number" min="0" max="63999" required>
  from E1.31 to DMX (0=disabled)<br><i>
 This will disable the LED data output to DMX configurable below</i><br><br><i>
@@ -324,7 +323,7 @@ All EEPROM content (settings) will be erased.<br><br>
 HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
 <h3>Software Update</h3><button type="button" onclick="U()">Manual OTA Update
 </button><br>Enable ArduinoOTA: <input type="checkbox" name="AO"><br><h3>About
-</h3><a href="https://github.com/Aircoookie/WLED" target="_blank">WLED</a>
+</h3><a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>
  version 0.10.0<br><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" 
 target="_blank">Contributors, dependencies and special thanks</a><br>
