@@ -110,11 +110,7 @@ bool deserializeState(JsonObject root)
   presetCycleMin = ccnf["min"] | presetCycleMin;
   presetCycleMax = ccnf["max"] | presetCycleMax;
   tr = ccnf["time"] | -1;
-  if (tr >= 2)
-  {
-    presetCycleTime = tr;
-    presetCycleTime *= 100;
-  }
+  if (tr >= 2) presetCycleTime = tr;
 
   JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]   | nightlightActive;
@@ -171,6 +167,8 @@ bool deserializeState(JsonObject root)
       it++;
     }
   }
+
+  usermods.readFromJsonState(root);
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
@@ -237,11 +235,13 @@ void serializeState(JsonObject root)
   root["pss"] = savedPresets;
   root["pl"] = (presetCyclingEnabled) ? 0: -1;
 
-  //temporary for preser cycle
+  usermods.addToJsonState(root);
+
+  //temporary for preset cycle
   JsonObject ccnf = root.createNestedObject("ccnf");
   ccnf["min"] = presetCycleMin;
   ccnf["max"] = presetCycleMax;
-  ccnf["time"] = presetCycleTime/100;
+  ccnf["time"] = presetCycleTime;
   
   JsonObject nl = root.createNestedObject("nl");
   nl["on"] = nightlightActive;
@@ -319,8 +319,9 @@ void serializeInfo(JsonObject root)
     case REALTIME_MODE_UDP:      root["lm"] = "UDP"; break;
     case REALTIME_MODE_HYPERION: root["lm"] = "Hyperion"; break;
     case REALTIME_MODE_E131:     root["lm"] = "E1.31"; break;
-    case REALTIME_MODE_ADALIGHT: root["lm"] = F("USB Adalight");
+    case REALTIME_MODE_ADALIGHT: root["lm"] = F("USB Adalight/TPM2"); break;
     case REALTIME_MODE_ARTNET:   root["lm"] = "Art-Net"; break;
+    case REALTIME_MODE_TPM2NET:  root["lm"] = F("tpm2.net"); break;
   }
 
   if (realtimeIP[0] == 0)
@@ -365,6 +366,8 @@ void serializeInfo(JsonObject root)
   
   root["freeheap"] = ESP.getFreeHeap();
   root["uptime"] = millis()/1000 + rolloverMillis*4294967;
+
+  usermods.addToJsonInfo(root);
   
   byte os = 0;
   #ifdef WLED_DEBUG
