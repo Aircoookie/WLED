@@ -3405,22 +3405,6 @@ uint16_t WS2812FX::mode_phased_noise(void) {
 
 
 
-uint16_t WS2812FX::mode_twinkleup(void) {                 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
-
-  random16_set_seed(535);                                 // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
-
-  for (int i = 0; i<SEGLEN; i++) {
-    uint8_t ranstart = random8();                         // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
-    uint8_t pixBri = sin8(ranstart + 16 * millis()/(255-SEGMENT.speed));
-    if (random8() > SEGMENT.intensity) pixBri = 0;
-    setPixCol(i, random8(), pixBri);
-  }
-
-  return FRAMETIME;
-} // mode_twinkleup()
-
-
-
 // Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls.
 uint16_t WS2812FX::mode_noisepal(void) {                                    // Slow noise palette by Andrew Tuline.
 

@@ -104,7 +104,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                      141
+#define MODE_COUNT                      140
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -230,23 +230,22 @@
 #define FX_MODE_PUDDLEPEAK             121
 #define FX_MODE_NOISEMOVE              122
 #define FX_MODE_PHASED                 123
-#define FX_MODE_TWINKLEUP              124
-#define FX_MODE_NOISEPAL               125
-#define FX_MODE_SINEWAVE               126
-#define FX_MODE_PHASEDNOISE            127
-#define FX_MODE_2DPLASMA               128
-#define FX_MODE_2D02                   129
-#define FX_MODE_2D03                   130
-#define FX_MODE_A0                     131
-#define FX_MODE_A1                     132
-#define FX_MODE_A2                     133
-#define FX_MODE_A3                     134
-#define FX_MODE_A4                     135
-#define FX_MODE_A5                     136
-#define FX_MODE_A6                     137
-#define FX_MODE_A7                     138
-#define FX_MODE_A8                     139
-#define FX_MODE_A9                     140
+#define FX_MODE_NOISEPAL               124
+#define FX_MODE_SINEWAVE               125
+#define FX_MODE_PHASEDNOISE            126
+#define FX_MODE_2DPLASMA               127
+#define FX_MODE_2D02                   128
+#define FX_MODE_2D03                   129
+#define FX_MODE_A0                     130
+#define FX_MODE_A1                     131
+#define FX_MODE_A2                     132
+#define FX_MODE_A3                     133
+#define FX_MODE_A4                     134
+#define FX_MODE_A5                     135
+#define FX_MODE_A6                     136
+#define FX_MODE_A7                     137
+#define FX_MODE_A8                     138
+#define FX_MODE_A9                     139
 
 
 
@@ -473,7 +472,6 @@ class WS2812FX {
       _mode[FX_MODE_PUDDLEPEAK]              = &WS2812FX::mode_puddlepeak;
       _mode[FX_MODE_NOISEMOVE]               = &WS2812FX::mode_noisemove;
       _mode[FX_MODE_PHASED]                  = &WS2812FX::mode_phased;
-      _mode[FX_MODE_TWINKLEUP]               = &WS2812FX::mode_twinkleup;
       _mode[FX_MODE_NOISEPAL]                = &WS2812FX::mode_noisepal;
       _mode[FX_MODE_SINEWAVE]                = &WS2812FX::mode_sinewave;
       _mode[FX_MODE_PHASEDNOISE]             = &WS2812FX::mode_phased_noise;
@@ -717,7 +715,6 @@ class WS2812FX {
       mode_puddlepeak(void),
       mode_noisemove(void),
       mode_phased(void),
-      mode_twinkleup(void),
       mode_noisepal(void),
       mode_sinewave(void),
       mode_phased_noise(void),
@@ -824,8 +821,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
 "* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","** Waterfall","** Freqpixel","** Binmap","** Noisespeak",
-"* Noisefire","* Puddlepeak","** Noisemove","Phased","Twinkleup","NoisePal", "SineWave", "Phased Noise", "2D Plasma", "2D Plasma sparks",
-"2D_03","A0","A1","A2","A3","A4","A5","A6","A7","A8","A9"
+"* Noisefire","* Puddlepeak","** Noisemove","Phased","NoisePal", "SineWave", "Phased Noise", "2D Plasma", "2D Plasma sparks","2D_03",
+"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9"
 ])=====";
 
 
