@@ -81,7 +81,7 @@ Uses Linearicons by Perxis!
 
 Join the Discord server to discuss everything about WLED!
 
-[![WLED Discord](https://discordapp.com/api/guilds/473448917040758787/widget.png?style=banner2)](https://discord.gg/KuqP7NE)
+<img src="https://discordapp.com/api/guilds/473448917040758787/widget.png?style=banner2" width="25%">
 
 Check out the WLED [Discourse forum](https://wled.discourse.group)!  
 You can also send me mails to [dev.aircoookie@gmail.com](mailto:dev.aircoookie@gmail.com), but please only do so if you want to talk to me privately.  
