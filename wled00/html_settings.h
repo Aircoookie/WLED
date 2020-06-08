@@ -179,16 +179,17 @@ type="checkbox" name="BT"><br>Infrared remote: <select name="IR"><option
 value="0">Disabled</option><option value="1">24-key RGB</option><option 
 value="2">24-key with CT</option><option value="3">40-key blue</option><option 
 value="4">44-key RGB</option><option value="5">21-key RGB</option><option 
-value="6">6-key black</option></select><br><a 
-href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">
-IR info</a><h3>WLED Broadcast</h3>UDP Port: <input name="UP" type="number" 
-min="1" max="65535" class="d5" required><br>Receive <input type="checkbox" 
-name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input 
-type="checkbox" name="RX">Effects<br>Send notifications on direct change: <input
- type="checkbox" name="SD"><br>Send notifications on button press: <input 
-type="checkbox" name="SB"><br>Send Alexa notifications: <input type="checkbox" 
-name="SA"><br>Send Philips Hue change notifications: <input type="checkbox" 
-name="SH"><br>Send Macro notifications: <input type="checkbox" name="SM"><br>
+value="6">6-key black</option><option value="7">9-key red</option></select><br>
+<a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" 
+target="_blank">IR info</a><h3>WLED Broadcast</h3>UDP Port: <input name="UP" 
+type="number" min="1" max="65535" class="d5" required><br>Receive <input 
+type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">
+Color, and <input type="checkbox" name="RX">Effects<br>
+Send notifications on direct change: <input type="checkbox" name="SD"><br>
+Send notifications on button press: <input type="checkbox" name="SB"><br>
+Send Alexa notifications: <input type="checkbox" name="SA"><br>
+Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
+Send Macro notifications: <input type="checkbox" name="SM"><br>
 Send notifications twice: <input type="checkbox" name="S2"><h3>Realtime</h3>
 Receive UDP realtime: <input type="checkbox" name="RD"><br><br><i>
 Network DMX input</i><br>Type: <select name="DI" onchange="SP(),adj()"><option 
