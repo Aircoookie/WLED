@@ -71,6 +71,14 @@
     #define BPIN 5   //B pin for analog LED strip
     #define WPIN 15  //W pin for analog LED strip
     #define W2PIN 12 //W2 pin for analog LED strip
+  #elif defined(WLED_USE_PLJAKOBS_PCB)
+  // PWM pins - to use with esp_rgbww_controller from patrickjahns/pljakobs (https://github.com/pljakobs/esp_rgbww_controller)
+    #define RPIN 12  //R pin for analog LED strip
+    #define GPIN 13  //G pin for analog LED strip
+    #define BPIN 14  //B pin for analog LED strip
+    #define WPIN 4   //W pin for analog LED strip
+    #define W2PIN 5  //W2 pin for analog LED strip
+    #undef IR_PIN
   #else
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
     #define RPIN 5   //R pin for analog LED strip

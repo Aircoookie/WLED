@@ -2,6 +2,13 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2006060
+
+-   Added five effects by Andrew Tuline (Phased, Phased Noise, Sine, Noise Pal and Twinkleup)
+-   Added two new effects by Aircoookie (Sunrise and Flow)
+-   Added US-style sequence to traffic light effect
+-   Merged pull request #964 adding 9 key IR remote
+
 #### Build 2005280
 
 -   Added v2 usermod API
