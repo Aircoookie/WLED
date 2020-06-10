@@ -284,8 +284,6 @@ void saveSettingsToEEPROM()
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
   #endif
 
-
-
 // Audio Reactive SEGMENT specific write settings
   uint16_t audio_i = 3072;
   EEPROM.write(audio_i, soundSquelch);
@@ -619,9 +617,6 @@ void loadSettingsFromEEPROM(bool first)
     strip.matrixSerpentine = EEPROM.read(audio_i+11); // > 0;
   }
 // End of Audio Reactive SEGMENT specific read settings
-
-
-
 
   overlayCurrent = overlayDefault;
 
