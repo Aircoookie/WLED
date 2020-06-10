@@ -287,8 +287,10 @@ void saveSettingsToEEPROM()
   //user MOD memory
   //2944 - 3071 reserved
 
-  EEPROM.write(2944, soundSquelch);
 
+// Audio Reactive specific write settings
+  uint16_t audio_i = 3072;
+  EEPROM.write(audio_i, soundSquelch);
 
   commit();
 }
@@ -594,7 +596,10 @@ void loadSettingsFromEEPROM(bool first)
   //2560 - 2943 usable, NOT reserved (need to increase EEPSIZE accordingly, new WLED core features may override this section)
   //2944 - 3071 reserved for Usermods (need to increase EEPSIZE to 3072 in const.h)
 
-  EEPROM.write(2944, soundSquelch);
+// Audio Reactive specific read settings
+  uint16_t audio_i = 3072;
+  soundSquelch =  EEPROM.read(audio_i);
+// End of Audio Reactive Specific read settings
 
   overlayCurrent = overlayDefault;
 

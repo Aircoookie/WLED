@@ -101,7 +101,7 @@
 #define SEG_OPTION_TRANSITIONAL   7
 
 //EEPROM size
-#define EEPSIZE 2560  //Maximum is 4096
+#define EEPSIZE 4095  //Maximum is 4096
 
 #define NTP_PACKET_SIZE 48
 
