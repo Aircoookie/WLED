@@ -23,51 +23,7 @@
 		}
 	</script>
 	<style>
-		:root {
-			--aCol: #D9B310;
-			--bCol: #0B3C5D;
-			--cCol: #1D2731;
-			--dCol: #328CC1;
-			--sCol: #000;
-		}
-		body {
-			font-family: Verdana, Helvetica, sans-serif;
-			text-align: center;
-			background: var(--cCol);
-			color: var(--dCol);
-			line-height: 2em;
-			font-size: 16px;
-			margin: 0;
-			background-attachment: fixed;
-		}
-		hr {
-			border-color: var(--dCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		button {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.3ch solid var(--bCol);
-			display: inline-block;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-size: 20px;
-			margin: 8px;
-			margin-top: 12px;
-		}
-		.helpB {
-			text-align: left;
-			position: absolute;
-			width:60px;
-		}
-		input {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.5ch solid var(--bCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		input[type=number] {
-			width: 3em;
-		}
+		@import url("style.css");
 	</style>
 </head>
 <body onload="GetV()">

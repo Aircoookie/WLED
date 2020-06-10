@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
 	<meta name="viewport" content="width=500">
 	<title>UI Settings</title>
 	<script>
@@ -36,61 +37,7 @@
 		}
 	</script>
 	<style>
-		:root {
-			--aCol: #666;
-			--bCol: #333;
-			--cCol: #222;
-			--dCol: #666;
-      --tCol: #fff;
-			--sCol: #0000;
-			--cFn: Verdana;
-		}
-		body {
-			font-family: var(--cFn), Helvetica, sans-serif;
-			text-align: center;
-			background: var(--cCol);
-			color: var(--tCol);
-			line-height: 200%;
-			margin: 0;
-			background-attachment: fixed;
-		}
-		hr {
-			border-color: var(--dCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		button {
-			background: var(--bCol);
-			color: var(--tCol);
-			border: 0.3ch solid var(--bCol);
-			display: inline-block;
-			font-family: var(--cFn), Helvetica, sans-serif;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-size: 20px;
-			margin: 8px;
-			margin-top: 12px;
-		}
-		.helpB {
-			text-align: left;
-			position: absolute;
-			width:60px;
-		}
-		input {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.5ch solid var(--bCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-family: var(--cFn), Helvetica, sans-serif;
-		}
-		select {
-			background: var(--bCol);
-			color: var(-tCol);
-			border: 0.5ch solid var(--bCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-family: var(--cFn), Helvetica, sans-serif;
-		}
-		input[type=number] {
-			width: 3em;
-		}
+		@import url("style.css");
 	</style>
 </head>
 <body onload="S()">
