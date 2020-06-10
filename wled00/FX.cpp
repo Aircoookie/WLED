@@ -3407,7 +3407,7 @@ uint16_t WS2812FX::mode_phased_noise(void) {
 
 // Peaceful noise that's slow and with gradually changing palettes. Does not support WLED palettes or default colours or controls.
 uint16_t WS2812FX::mode_noisepal(void) {                                    // Slow noise palette by Andrew Tuline.
-
+  
   #define scale 30                                                          // Don't change this programmatically or everything shakes.
 
   static CRGBPalette16 thisPalette;

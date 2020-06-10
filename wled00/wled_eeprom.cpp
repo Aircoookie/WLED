@@ -284,6 +284,22 @@ void saveSettingsToEEPROM()
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
   #endif
 
+
+
+// Audio Reactive SEGMENT specific write settings
+  uint16_t audio_i = 3072;
+  EEPROM.write(audio_i, soundSquelch);
+  // We have 3 more available for ESP8266
+  EEPROM.write(audio_i+4, effectFFT1);
+  EEPROM.write(audio_i+5, effectFFT2);
+  EEPROM.write(audio_i+6, effectFFT3);
+  EEPROM.write(audio_i+7, strip.matrixWidth & 0xFF);
+  EEPROM.write(audio_i+8, (strip.matrixWidth >> 8) & 0xFF);
+  EEPROM.write(audio_i+9, strip.matrixHeight & 0xFF);
+  EEPROM.write(audio_i+10, (strip.matrixHeight >> 8) & 0xFF);
+  EEPROM.write(audio_i+11, strip.matrixSerpentine);
+// End of Audio Reactive SEGMENT specific write settings
+
   commit();
 }
 
@@ -293,6 +309,7 @@ void saveSettingsToEEPROM()
  */
 void loadSettingsFromEEPROM(bool first)
 {
+  
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
     DEBUG_PRINT("Settings invalid, restoring defaults...");
@@ -586,6 +603,26 @@ void loadSettingsFromEEPROM(bool first)
   //user MOD memory
   //2944 - 3071 reserved
 
+
+// Audio Reactive specific read settings
+
+  uint16_t audio_i = 3072;
+
+  if (lastEEPROMversion > 20) {                                   // Version sanity checking
+    soundSquelch =  EEPROM.read(audio_i);
+  // We have 3 more available for ESP8266
+    effectFFT1 = EEPROM.read(audio_i+4);
+    effectFFT2 = EEPROM.read(audio_i+5);
+    effectFFT3 = EEPROM.read(audio_i+6);
+    strip.matrixWidth = EEPROM.read(audio_i+7) + ((EEPROM.read(audio_i+8) << 8) & 0xFF00);
+    strip.matrixHeight = EEPROM.read(audio_i+9) + ((EEPROM.read(audio_i+10) << 10) & 0xFF00);
+    strip.matrixSerpentine = EEPROM.read(audio_i+11); // > 0;
+  }
+// End of Audio Reactive SEGMENT specific read settings
+
+
+
+
   overlayCurrent = overlayDefault;
 
   savedToPresets();
@@ -659,34 +696,6 @@ bool applyPreset(byte index, bool loadBri)
     }
     setValuesFromMainSeg();
   }
-
-// Audio Reactive SEGMENT specific read settings
-
-#ifdef ESP8266
-  uint16_t audio_i = 3072+index*4;   // Reserve 4 bytes for ESP8266
-#else
-  uint16_t audio_i = 3072+index*16;  // Reserve 12 bytes for ESP32 (can change in the future)
-#endif
-
-  if (index < 16) {       // These are all SEGMENT specific values. A bit overkill at this time.
-
-    if (EEPVER > 20) {                                 // Version sanity checking
-#ifdef ESP8266
-      soundSquelch =  EEPROM.read(audio_i);
-    // We have 3 more available for ESP8266
-#else
-      effectFFT1 = EEPROM.read(audio_i+4);
-      effectFFT2 = EEPROM.read(audio_i+5);
-      effectFFT3 = EEPROM.read(audio_i+6);
-      strip.matrixWidth = EEPROM.read(audio_i+7) + ((EEPROM.read(audio_i+5) << 8) & 0xFF00);
-      strip.matrixHeight = EEPROM.read(audio_i+9) + ((EEPROM.read(audio_i+7) << 10) & 0xFF00);
-      strip.matrixSerpentine = EEPROM.read(audio_i+11) > 0;
-    // We have 4 more available for ESP32
-#endif
-    }
-  }
-// End of Audio Reactive SEGMENT specific read settings
-
   
   currentPreset = index;
   isPreset = true;
@@ -724,36 +733,6 @@ void savePreset(byte index, bool persist)
     WS2812FX::Segment* seg = strip.getSegments();
     memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
   }
-
-
-// Audio Reactive SEGMENT specific write settings
-
-#ifdef ESP8266
-  uint16_t audio_i = 3072+index*4;   // Reserve 4 bytes for ESP8266
-#else
-  uint16_t audio_i = 3072+index*16;  // Reserve 12 bytes for ESP32 (can change in the future)
-#endif
-
-  if (index < 16) {       // These are all SEGMENT specific values. A bit overkill at this time.
-
-    if (EEPVER > 20) {                                 // Version sanity checking
-#ifdef ESP8266
-      EEPROM.write(audio_i, soundSquelch);
-    // We have 3 more available for ESP8266
-#else
-      EEPROM.write(audio_i+4, effectFFT1);
-      EEPROM.write(audio_i+5, effectFFT2);
-      EEPROM.write(audio_i+6, effectFFT3);
-      EEPROM.write(audio_i+7, strip.matrixWidth & 0xFF);
-      EEPROM.write(audio_i+8, (strip.matrixWidth >> 8) & 0xFF);
-      EEPROM.write(audio_i+9, strip.matrixHeight & 0xFF);
-      EEPROM.write(audio_i+10, (strip.matrixHeight >> 8) & 0xFF);
-      EEPROM.write(audio_i+11, strip.matrixSerpentine);
-    // We have 4 more available for ESP32
-#endif
-    }
-  }
-// End of Audio Reactive SEGMENT specific write settings
   
   if (persist) commit();
   savedToPresets();
