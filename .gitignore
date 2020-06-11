@@ -9,3 +9,4 @@
 .DS_Store
 .gitignore
 .clang-format
+node_modules

@@ -2,6 +2,7 @@
 <html>
 <head>
 	<meta name="viewport" content="width=500">
+	<meta charset="utf-8">
 	<title>Time Settings</title>
 	<script>
     var d=document;
@@ -76,64 +77,7 @@
 		}
 	</script>
 	<style>
-		:root {
-			--aCol: #D9B310;
-			--bCol: #0B3C5D;
-			--cCol: #1D2731;
-			--dCol: #328CC1;
-			--sCol: #000;
-			--tCol: #328CC1;
-			--cFn: Verdana;
-		}
-		body {
-			font-family: var(--cFn), sans-serif;
-			text-align: center;
-			background: var(--cCol);
-			color: var(--dCol);
-			line-height: 200%;
-			margin: 0;
-			background-attachment: fixed;
-		}
-		hr {
-			border-color: var(--dCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		button {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.3ch solid var(--bCol);
-			font-family: var(--cFn), sans-serif;
-			display: inline-block;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-size: 20px;
-			margin: 8px;
-			margin-top: 12px;
-		}
-		.helpB {
-			text-align: left;
-			position: absolute;
-			width:60px;
-		}
-		input {
-			background: var(--bCol);
-			color: var(--dCol);
-			font-family: var(--cFn), sans-serif;
-			border: 0.5ch solid var(--bCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		select {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.5ch solid var(--bCol);
-			font-family: var(--cFn), sans-serif;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-    td {
-      padding:2px;
-    }
-		input[type=number] {
-			width: 4em;
-		}
+		@import url("style.css");
 	</style>
 </head>
 <body onload="S()">
@@ -207,7 +151,8 @@
 		<i>Use 0 for the default action instead of a macro</i><br>
 		Boot Macro: <input name="MB" type="number" min="0" max="16" required><br>
 		Alexa On/Off Macros: <input name="A0" type="number" min="0" max="16" required> <input name="A1" type="number" min="0" max="16" required><br>
-		Button Macro: <input name="MP" type="number" min="0" max="16" required> Long Press: <input name="ML" type="number" min="0" max="16" required><br>
+		Button short press macro: Macro: <input name="MP" type="number" min="0" max="16" required><br>
+    Long Press: <input name="ML" type="number" min="0" max="16" required> Double press: <input name="MD" type="number" min="0" max="16" required><br>	
 		Countdown-Over Macro: <input name="MC" type="number" min="0" max="16" required><br>
 		Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required><br>
 		Time-Controlled Macros:<br>
