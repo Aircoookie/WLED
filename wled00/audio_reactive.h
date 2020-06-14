@@ -46,6 +46,41 @@ uint16_t lastSample;                                // last audio noise sample
 
 uint8_t myVals[32];                                 // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized
 
+struct audioSyncPacket {
+  char intro[6] = "WLEDP";
+  uint8_t myVals[32];
+  int sampleAgc;
+  int sample;
+  float sampleAvg;
+  bool samplePeak;
+};
+
+void transmitAudioData()
+{
+  if (!udpSyncConnected) return;
+  extern uint8_t myVals[];
+  extern int sampleAgc;
+  extern int sample;
+  extern float sampleAvg;
+  extern bool samplePeak;
+
+  audioSyncPacket transmitData;
+
+  for (int i = 0; i < 32; i++) {
+    transmitData.myVals[i] = myVals[i];
+  }
+
+  transmitData.sampleAgc = sampleAgc;
+  transmitData.sample = sample;
+  transmitData.sampleAvg = sampleAvg;
+  transmitData.samplePeak = samplePeak;
+
+  fftUdp.beginMulticastPacket();
+  fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
+  fftUdp.endPacket();
+  return;
+}
+
 void getSample() {
   static long peakTime;
 
@@ -113,42 +148,6 @@ void agcAvg() {                                                       // A simpl
 ////////////////////
 
 #ifndef ESP8266
-
-  struct fftPacket {
-    char intro[6] = "WLEDP";
-    uint16_t fftBin[512];
-    uint8_t myVals[32];
-  };
-
-  void transmitFFT()
-  {
-    if (!udpConnected) return;
-    DEBUG_PRINTLN("TRANSMITFFT");
-    extern double fftBin[];
-    extern uint8_t myVals[];
-    IPAddress broadcastIp;
-    broadcastIp = ~uint32_t(WiFi.subnetMask()) | uint32_t(WiFi.gatewayIP());
-    uint32_t tempValue;
-    uint16_t cappedValue;
-
-    fftPacket transmitData;
-    // Convert FFTBin from double to uint32_t
-    for (int i = 0; i < 512; i++) {
-      DEBUG_PRINTLN("FFT CONVERSION");
-      tempValue = static_cast<uint32_t>(fftBin[i]);
-      cappedValue = (tempValue > 128000) ? 128000 : tempValue;
-      transmitData.fftBin[i] = cappedValue >> 1;
-    }
-
-    for (int i = 0; i < 32; i++) {
-      transmitData.myVals[i] = myVals[i];
-    }
-
-      // fftUdp.beginPacket(broadcastIp, (uint16_t)5432);
-      fftUdp.beginMulticastPacket();
-    fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
-    fftUdp.endPacket();
-  }
 
   #include "arduinoFFT.h"
   //#include "movingAvg.h"
@@ -245,7 +244,6 @@ void agcAvg() {                                                       // A simpl
       fftResult[13] = fftAdd(248, 312);
       fftResult[14] = fftAdd(313, 393);
       fftResult[15] = fftAdd(394, 470);
-      transmitFFT();
     }
 }
 
