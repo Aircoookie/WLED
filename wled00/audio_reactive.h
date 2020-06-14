@@ -48,11 +48,14 @@ uint8_t myVals[32];                                 // Used to store a pile of s
 
 struct audioSyncPacket {
   char intro[6] = "WLEDP";
-  uint8_t myVals[32];
-  int sampleAgc;
-  int sample;
-  float sampleAvg;
-  bool samplePeak;
+  uint8_t myVals[32];   // 32 Bytes
+  int sampleAgc;        // 04 Bytes
+  int sample;           // 04 Bytes
+  float sampleAvg;      // 04 Bytes
+  bool samplePeak;      // 01 Bytes
+  double fftResult[16]; //128 Bytes
+  double FFT_Magnitude; //  8 Bytes
+  double FFT_MajorPeak;   //  8 Bytes
 };
 
 void transmitAudioData()
@@ -63,6 +66,9 @@ void transmitAudioData()
   extern int sample;
   extern float sampleAvg;
   extern bool samplePeak;
+  extern double fftResult[];
+  extern double FFT_Magnitude;
+  extern double FFT_MajorPeak;
 
   audioSyncPacket transmitData;
 
@@ -74,6 +80,13 @@ void transmitAudioData()
   transmitData.sample = sample;
   transmitData.sampleAvg = sampleAvg;
   transmitData.samplePeak = samplePeak;
+
+  for (int i = 0; i < 16; i++) {
+    transmitData.fftResult[i] = fftResult[i];
+  }
+
+  transmitData.FFT_Magnitude = FFT_Magnitude;
+  transmitData.FFT_MajorPeak = FFT_MajorPeak;
 
   fftUdp.beginMulticastPacket();
   fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));

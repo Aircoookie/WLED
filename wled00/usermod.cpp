@@ -78,6 +78,12 @@ void userLoop() {
           if (!samplePeak) { 
             samplePeak = receivedPacket.samplePeak;
           }
+
+          for (int i = 0; i < 16; i++) {
+            fftResult[i] = receivedPacket.fftResult[i];
+          }
+          FFT_Magnitude = receivedPacket.FFT_Magnitude;
+          FFT_MajorPeak = receivedPacket.FFT_MajorPeak;
           // Serial.println("Finished parsing UDP Sync Packet");
         }
       }
