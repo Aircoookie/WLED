@@ -41,19 +41,22 @@ void userConnected()
 // userLoop. You can use "if (WLED_CONNECTED)" to check for successful connection
 void userLoop() {
 
-  if (millis()-lastTime > delayMs) {                          // I need to run this continuously because the animations are too slow
-    lastTime = millis();
-    getSample();                                              // Sample the microphone
-    agcAvg();                                                 // Calculated the PI adjusted value as sampleAvg
-    myVals[millis()%32] = sampleAgc;
+  if (millis()-lastTime > delayMs) {                       // I need to run this continuously because the animations are too slow   
+    if (!(((audioSyncEnabled)>>(1)) & 1)) {                // Only run the sampling code IF we're not in Receive mode
+      lastTime = millis();
+      getSample();                                              // Sample the microphone
+      agcAvg();                                                 // Calculated the PI adjusted value as sampleAvg
+      myVals[millis()%32] = sampleAgc;
+    }
     if (((audioSyncEnabled)>>(0)) & 1) {
-      // Serial.write("AudioSyncTransmit");
+      // Only run the transmit code IF we're in Transmit mode
       transmitAudioData();
     }
   }
 
   // Begin UDP Microphone Sync
   if (((audioSyncEnabled)>>(1)) & 1) {
+    // Only run the audio listener code if we're in Receive mode
     // Serial.write("AudioSyncReceive");
     if (millis()-lastTime > delayMs) { 
       if (udpSyncConnected) {
