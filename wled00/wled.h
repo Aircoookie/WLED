@@ -376,6 +376,10 @@ WLED_GLOBAL byte effectFFT2 _INIT(128);
 WLED_GLOBAL byte effectFFT3 _INIT(252);
 WLED_GLOBAL byte effectPalette _INIT(0);
 
+//  0th bit - transmit enabled/disabled. 1st bit - receive enabled/disabled
+WLED_GLOBAL byte audioSyncEnabled _INIT(0);
+WLED_GLOBAL uint16_t audioSyncPort _INIT(11988);
+
 // network
 WLED_GLOBAL bool udpConnected _INIT(false), udpRgbConnected _INIT(false), udpSyncConnected _INIT(false);
 

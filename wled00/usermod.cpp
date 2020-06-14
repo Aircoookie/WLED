@@ -46,29 +46,38 @@ void userLoop() {
     getSample();                                              // Sample the microphone
     agcAvg();                                                 // Calculated the PI adjusted value as sampleAvg
     myVals[millis()%32] = sampleAgc;
-    transmitAudioData();
+    if (((audioSyncEnabled)>>(0)) & 1) {
+      // Serial.write("AudioSyncTransmit");
+      transmitAudioData();
+    }
   }
-  // Begin UDP Microphone Sync
-  if (udpSyncConnected) {
-    int packetSize = fftUdp.parsePacket();
-    if (packetSize) {
-      Serial.println("Received UDP Sync Packet");
-      uint8_t fftBuff[packetSize];
-      fftUdp.read(fftBuff, packetSize);
-      audioSyncPacket receivedPacket;
-      memcpy(&receivedPacket, fftBuff, packetSize);
-      for (int i = 0; i < 32; i++ ){
-        myVals[i] = receivedPacket.myVals[i];
-      }
-      sampleAgc = receivedPacket.sampleAgc;
-      sample = receivedPacket.sample;
-      sampleAvg = receivedPacket.sampleAvg;
 
-      // Only change samplePeak IF it's currently false.  If it's true already, then the animation still needs to respond
-      if (!samplePeak) { 
-        samplePeak = receivedPacket.samplePeak;
+  // Begin UDP Microphone Sync
+  if (((audioSyncEnabled)>>(1)) & 1) {
+    // Serial.write("AudioSyncReceive");
+    if (millis()-lastTime > delayMs) { 
+      if (udpSyncConnected) {
+        int packetSize = fftUdp.parsePacket();
+        if (packetSize) {
+          // Serial.println("Received UDP Sync Packet");
+          uint8_t fftBuff[packetSize];
+          fftUdp.read(fftBuff, packetSize);
+          audioSyncPacket receivedPacket;
+          memcpy(&receivedPacket, fftBuff, packetSize);
+          for (int i = 0; i < 32; i++ ){
+            myVals[i] = receivedPacket.myVals[i];
+          }
+          sampleAgc = receivedPacket.sampleAgc;
+          sample = receivedPacket.sample;
+          sampleAvg = receivedPacket.sampleAvg;
+
+          // Only change samplePeak IF it's currently false.  If it's true already, then the animation still needs to respond
+          if (!samplePeak) { 
+            samplePeak = receivedPacket.samplePeak;
+          }
+          // Serial.println("Finished parsing UDP Sync Packet");
+        }
       }
-      Serial.println("Finished parsing UDP Sync Packet");
     }
   }
 
