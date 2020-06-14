@@ -103,6 +103,11 @@
 			if ((wd&254) != 254 || (i<8 && (gN("M"+i).value != 1 || gN("D"+i).value != 1 || gN("P"+i).value != 12 || gN("E"+i).value != 31))) {
 				expand(gId("CB"+i),i); //expand macros with custom DOW or date range set
 			}
+			if (gId("cd").selected)
+			{
+				gId("coc").style.display="none";
+				gId("ccc").style.display="none";
+			}
 		}
 	}
 	function Wd()
@@ -205,6 +210,7 @@
 			<option value="1" id="ca">Analog Clock</option>
 			<option value="2">Single Digit Clock</option>
 			<option value="3" id="cc">Cronixie Clock</option>
+			<option value="4" id="cd">Digital Clock</option>
 		</select><br>
 		<div id="coc">
 		First LED: <input name="O1" type="number" min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" required><br>

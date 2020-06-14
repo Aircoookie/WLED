@@ -28,6 +28,98 @@ void handleOverlays()
   }
 }
 
+/**
+ * Write the encoded number into the led strip at the specified position.
+ * In this case we rely on the regular effect funtion to have enabled/colored the leds according to it's own rules.
+ * Here we simply disable the leds that are supposed to be dark, leading to a number display that animates according to the selected effect.
+ */
+void drawNumberDigitalClock(bool i0, bool i1, bool i2, bool i3, bool i4, bool i5, bool i6, int pos)
+{
+  pos = pos * 7;
+  if (pos > 7)
+  {
+    pos = pos + 2;
+  }
+  if (!i0)
+  {
+    strip.setPixelColor(pos, 0x000000);
+  }
+
+  if (!i1)
+  {
+    strip.setPixelColor(pos + 1, 0x000000);
+  }
+
+  if (!i2)
+  {
+    strip.setPixelColor(pos + 2, 0x000000);
+  }
+  if (!i3)
+  {
+    strip.setPixelColor(pos + 3, 0x000000);
+  }
+  if (!i4)
+  {
+    strip.setPixelColor(pos + 4, 0x000000);
+  }
+  if (!i5)
+  {
+    strip.setPixelColor(pos + 5, 0x000000);
+  }
+  if (!i6)
+  {
+    strip.setPixelColor(pos + 6, 0x000000);
+  }
+}
+/**
+ * Encode a single digit into a 7-segment sequence.
+ */
+void writeDigitDigitalClock(int num, int pos)
+{
+  switch (num)
+  {
+  case 0:
+    drawNumberDigitalClock(false, true, true, true, true, true, true, pos);
+    break;
+  case 1:
+    drawNumberDigitalClock(false, true, false, false, false, false, true, pos);
+    break;
+  case 2:
+    drawNumberDigitalClock(true, true, true, false, true, true, false, pos);
+    break;
+  case 3:
+    drawNumberDigitalClock(true, true, true, false, false, true, true, pos);
+    break;
+  case 4:
+    drawNumberDigitalClock(true, true, false, true, false, false, true, pos);
+    break;
+  case 5:
+    drawNumberDigitalClock(true, false, true, true, false, true, true, pos);
+    break;
+  case 6:
+    drawNumberDigitalClock(true, false, true, true, true, true, true, pos);
+    break;
+  case 7:
+    drawNumberDigitalClock(false, true, true, false, false, false, true, pos);
+    break;
+  case 8:
+    drawNumberDigitalClock(true, true, true, true, true, true, true, pos);
+    break;
+  case 9:
+    drawNumberDigitalClock(true, true, true, true, false, true, true, pos);
+    break;
+  }
+}
+
+void _overlayDigitalClock()
+{
+  // hours
+  writeDigitDigitalClock(hour(localTime) / 10, 0);
+  writeDigitDigitalClock(hour(localTime) - ((hour(localTime) / 10) * 10), 1);
+  // minutes
+  writeDigitDigitalClock(minute(localTime) / 10, 2);
+  writeDigitDigitalClock(minute(localTime) - ((minute(localTime) / 10) * 10), 3);
+}
 
 void _overlayAnalogClock()
 {
@@ -119,6 +211,7 @@ void handleOverlayDraw() {
   {
     case 1: _overlayAnalogClock(); break;
     case 3: _drawOverlayCronixie(); break;
+    case 4: _overlayDigitalClock(); break;
   }
 }
 
