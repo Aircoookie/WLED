@@ -31,7 +31,7 @@ class PIRsensorSwitch : public Usermod {
     // notification mode for colorUpdated()
     const byte NotifyUpdateMode = NOTIFIER_CALL_MODE_NO_NOTIFY; // NOTIFIER_CALL_MODE_DIRECT_CHANGE
     // delay before switch off after the sensor state goes LOW
-    uint32_t m_switchOffDelay = 120000;
+    uint32_t m_switchOffDelay = 600000;
     // off timer start time
     uint32_t m_offTimerStart = 0;
     // current PIR sensor pin state
