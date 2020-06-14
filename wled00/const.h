@@ -18,6 +18,8 @@
 #define USERMOD_ID_UNSPECIFIED    1            //Default value for a general user mod that does not specify a custom ID
 #define USERMOD_ID_EXAMPLE        2            //Usermod "usermod_v2_example.h"
 #define USERMOD_ID_TEMPERATURE    3            //Usermod "usermod_temperature.h"
+#define USERMOD_ID_FIXNETSERVICES 4            //Usermod "usermod_Fix_unreachable_netservices.h"
+#define USERMOD_ID_PIRSWITCH      5            //Usermod "usermod_PIR_sensor_switch.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
