@@ -46,6 +46,54 @@ uint16_t lastSample;                                // last audio noise sample
 
 uint8_t myVals[32];                                 // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized
 
+struct audioSyncPacket {
+  char intro[6] = "WLEDP";
+  uint8_t myVals[32];   // 32 Bytes
+  int sampleAgc;        // 04 Bytes
+  int sample;           // 04 Bytes
+  float sampleAvg;      // 04 Bytes
+  bool samplePeak;      // 01 Bytes
+  double fftResult[16]; //128 Bytes
+  double FFT_Magnitude; //  8 Bytes
+  double FFT_MajorPeak;   //  8 Bytes
+};
+
+void transmitAudioData()
+{
+  if (!udpSyncConnected) return;
+  extern uint8_t myVals[];
+  extern int sampleAgc;
+  extern int sample;
+  extern float sampleAvg;
+  extern bool samplePeak;
+  extern double fftResult[];
+  extern double FFT_Magnitude;
+  extern double FFT_MajorPeak;
+
+  audioSyncPacket transmitData;
+
+  for (int i = 0; i < 32; i++) {
+    transmitData.myVals[i] = myVals[i];
+  }
+
+  transmitData.sampleAgc = sampleAgc;
+  transmitData.sample = sample;
+  transmitData.sampleAvg = sampleAvg;
+  transmitData.samplePeak = samplePeak;
+
+  for (int i = 0; i < 16; i++) {
+    transmitData.fftResult[i] = fftResult[i];
+  }
+
+  transmitData.FFT_Magnitude = FFT_Magnitude;
+  transmitData.FFT_MajorPeak = FFT_MajorPeak;
+
+  fftUdp.beginMulticastPacket();
+  fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
+  fftUdp.endPacket();
+  return;
+}
+
 void getSample() {
   static long peakTime;
 
@@ -113,6 +161,7 @@ void agcAvg() {                                                       // A simpl
 ////////////////////
 
 #ifndef ESP8266
+
   #include "arduinoFFT.h"
   //#include "movingAvg.h"
   const uint16_t samples = 512;                     // This value MUST ALWAYS be a power of 2
@@ -208,7 +257,7 @@ void agcAvg() {                                                       // A simpl
       fftResult[13] = fftAdd(248, 312);
       fftResult[14] = fftAdd(313, 393);
       fftResult[15] = fftAdd(394, 470);
-  }
+    }
 }
 
 #endif

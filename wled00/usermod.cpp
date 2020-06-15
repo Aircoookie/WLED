@@ -41,11 +41,53 @@ void userConnected()
 // userLoop. You can use "if (WLED_CONNECTED)" to check for successful connection
 void userLoop() {
 
-  if (millis()-lastTime > delayMs) {                          // I need to run this continuously because the animations are too slow
-    lastTime = millis();
-    getSample();                                              // Sample the microphone
-    agcAvg();                                                 // Calculated the PI adjusted value as sampleAvg
-    myVals[millis()%32] = sampleAgc;
+  if (millis()-lastTime > delayMs) {                       // I need to run this continuously because the animations are too slow   
+    if (!(((audioSyncEnabled)>>(1)) & 1)) {                // Only run the sampling code IF we're not in Receive mode
+      lastTime = millis();
+      getSample();                                              // Sample the microphone
+      agcAvg();                                                 // Calculated the PI adjusted value as sampleAvg
+      myVals[millis()%32] = sampleAgc;
+    }
+    if (((audioSyncEnabled)>>(0)) & 1) {
+      // Only run the transmit code IF we're in Transmit mode
+      transmitAudioData();
+    }
+  }
+
+  // Begin UDP Microphone Sync
+  if (((audioSyncEnabled)>>(1)) & 1) {
+    // Only run the audio listener code if we're in Receive mode
+    // Serial.write("AudioSyncReceive");
+    if (millis()-lastTime > delayMs) { 
+      if (udpSyncConnected) {
+        int packetSize = fftUdp.parsePacket();
+        if (packetSize) {
+          // Serial.println("Received UDP Sync Packet");
+          uint8_t fftBuff[packetSize];
+          fftUdp.read(fftBuff, packetSize);
+          audioSyncPacket receivedPacket;
+          memcpy(&receivedPacket, fftBuff, packetSize);
+          for (int i = 0; i < 32; i++ ){
+            myVals[i] = receivedPacket.myVals[i];
+          }
+          sampleAgc = receivedPacket.sampleAgc;
+          sample = receivedPacket.sample;
+          sampleAvg = receivedPacket.sampleAvg;
+
+          // Only change samplePeak IF it's currently false.  If it's true already, then the animation still needs to respond
+          if (!samplePeak) { 
+            samplePeak = receivedPacket.samplePeak;
+          }
+
+          for (int i = 0; i < 16; i++) {
+            fftResult[i] = receivedPacket.fftResult[i];
+          }
+          FFT_Magnitude = receivedPacket.FFT_Magnitude;
+          FFT_MajorPeak = receivedPacket.FFT_MajorPeak;
+          // Serial.println("Finished parsing UDP Sync Packet");
+        }
+      }
+    }
   }
 
 } // userLoop()

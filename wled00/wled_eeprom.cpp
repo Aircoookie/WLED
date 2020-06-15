@@ -287,7 +287,11 @@ void saveSettingsToEEPROM()
 // Audio Reactive SEGMENT specific write settings
   uint16_t audio_i = 3072;
   EEPROM.write(audio_i, soundSquelch);
-  // We have 3 more available for ESP8266
+  Serial.print(audioSyncPort);
+  EEPROM.write(audio_i+1, audioSyncPort & 0xFF);
+  EEPROM.write(audio_i+2, (audioSyncPort >> 8) & 0xFF);
+  EEPROM.write(audio_i+3, audioSyncEnabled);
+
   EEPROM.write(audio_i+4, effectFFT1);
   EEPROM.write(audio_i+5, effectFFT2);
   EEPROM.write(audio_i+6, effectFFT3);
@@ -608,7 +612,10 @@ void loadSettingsFromEEPROM(bool first)
 
   if (lastEEPROMversion > 20) {                                   // Version sanity checking
     soundSquelch =  EEPROM.read(audio_i);
-  // We have 3 more available for ESP8266
+    audioSyncPort = EEPROM.read(audio_i+1) + ((EEPROM.read(audio_i+2) << 8) & 0xFF00);
+    Serial.print(audioSyncPort);
+    audioSyncEnabled = EEPROM.read(audio_i + 3);
+
     effectFFT1 = EEPROM.read(audio_i+4);
     effectFFT2 = EEPROM.read(audio_i+5);
     effectFFT3 = EEPROM.read(audio_i+6);

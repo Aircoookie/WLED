@@ -365,6 +365,19 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"AI",alexaInvocationName);
     sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
+    if (!(((audioSyncEnabled)>>(0)) & 1) && !(((audioSyncEnabled)>>(1)) & 1)) {
+      // 0 == udp audio sync off
+      sappend('v',"ASE", 0);
+    }
+    else if ((((audioSyncEnabled)>>(0)) & 1) && !(((audioSyncEnabled)>>(1)) & 1)) {
+      // 1 == transmit only
+      sappend('v',"ASE", 1);
+    }
+    else if (!(((audioSyncEnabled)>>(0)) & 1) && (((audioSyncEnabled)>>(1)) & 1)) {
+      // 2 == receive only
+      sappend('v',"ASE", 2);
+    }
+    sappend('v', "ASP", audioSyncPort);
 
     #ifdef WLED_ENABLE_MQTT
     sappend('c',"MQ",mqttEnabled);
