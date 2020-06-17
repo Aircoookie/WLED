@@ -58,41 +58,7 @@ struct audioSyncPacket {
   double FFT_MajorPeak;   //  8 Bytes
 };
 
-void transmitAudioData()
-{
-  if (!udpSyncConnected) return;
-  extern uint8_t myVals[];
-  extern int sampleAgc;
-  extern int sample;
-  extern float sampleAvg;
-  extern bool samplePeak;
-  extern double fftResult[];
-  extern double FFT_Magnitude;
-  extern double FFT_MajorPeak;
 
-  audioSyncPacket transmitData;
-
-  for (int i = 0; i < 32; i++) {
-    transmitData.myVals[i] = myVals[i];
-  }
-
-  transmitData.sampleAgc = sampleAgc;
-  transmitData.sample = sample;
-  transmitData.sampleAvg = sampleAvg;
-  transmitData.samplePeak = samplePeak;
-
-  for (int i = 0; i < 16; i++) {
-    transmitData.fftResult[i] = fftResult[i];
-  }
-
-  transmitData.FFT_Magnitude = FFT_Magnitude;
-  transmitData.FFT_MajorPeak = FFT_MajorPeak;
-
-  fftUdp.beginMulticastPacket();
-  fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
-  fftUdp.endPacket();
-  return;
-}
 
 void getSample() {
   static long peakTime;
@@ -161,6 +127,42 @@ void agcAvg() {                                                       // A simpl
 ////////////////////
 
 #ifndef ESP8266
+
+void transmitAudioData()
+{
+  if (!udpSyncConnected) return;
+  extern uint8_t myVals[32];
+  extern int sampleAgc;
+  extern int sample;
+  extern float sampleAvg;
+  extern bool samplePeak;
+  extern double fftResult[];
+  extern double FFT_Magnitude;
+  extern double FFT_MajorPeak;
+
+  audioSyncPacket transmitData;
+
+  for (int i = 0; i < 32; i++) {
+    transmitData.myVals[i] = myVals[i];
+  }
+
+  transmitData.sampleAgc = sampleAgc;
+  transmitData.sample = sample;
+  transmitData.sampleAvg = sampleAvg;
+  transmitData.samplePeak = samplePeak;
+
+  for (int i = 0; i < 16; i++) {
+    transmitData.fftResult[i] = fftResult[i];
+  }
+
+  transmitData.FFT_Magnitude = FFT_Magnitude;
+  transmitData.FFT_MajorPeak = FFT_MajorPeak;
+
+  fftUdp.beginMulticastPacket();
+  fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
+  fftUdp.endPacket();
+  return;
+}
 
   #include "arduinoFFT.h"
   //#include "movingAvg.h"

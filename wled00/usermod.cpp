@@ -48,10 +48,12 @@ void userLoop() {
       agcAvg();                                                 // Calculated the PI adjusted value as sampleAvg
       myVals[millis()%32] = sampleAgc;
     }
+    #ifndef ESP8266
     if (((audioSyncEnabled)>>(0)) & 1) {
       // Only run the transmit code IF we're in Transmit mode
       transmitAudioData();
     }
+    #endif
   }
 
   // Begin UDP Microphone Sync
@@ -78,13 +80,14 @@ void userLoop() {
           if (!samplePeak) { 
             samplePeak = receivedPacket.samplePeak;
           }
-
+          #ifndef ESP8266
           for (int i = 0; i < 16; i++) {
             fftResult[i] = receivedPacket.fftResult[i];
           }
           FFT_Magnitude = receivedPacket.FFT_Magnitude;
           FFT_MajorPeak = receivedPacket.FFT_MajorPeak;
           // Serial.println("Finished parsing UDP Sync Packet");
+          #endif
         }
       }
     }
