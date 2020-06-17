@@ -278,7 +278,12 @@ void WLED::initAP(bool resetAP)
       udpRgbConnected = rgbUdp.begin(udpRgbPort);
     }
     if (audioSyncPort > 0 || (((audioSyncEnabled)>>(0)) & 1) || (((audioSyncEnabled)>>(1)) & 1)) {
-      udpSyncConnected = fftUdp.beginMulticast(IPAddress(239,0,0,1), audioSyncPort);
+      #ifndef ESP8266
+        udpSyncConnected = fftUdp.beginMulticast(IPAddress(239,0,0,1), audioSyncPort);
+      #endif
+      #ifdef ESP8266
+        udpSyncConnected = fftUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 0, 0, 1), audioSyncPort);
+      #endif
     }
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
@@ -373,8 +378,13 @@ void WLED::initInterfaces()
       udpRgbConnected = rgbUdp.begin(udpRgbPort);
   }
   if (audioSyncPort > 0 || (((audioSyncEnabled)>>(0)) & 1) || (((audioSyncEnabled)>>(1)) & 1)) {
+    #ifndef ESP8266
       udpSyncConnected = fftUdp.beginMulticast(IPAddress(239,0,0,1), audioSyncPort);
-    }
+    #endif
+    #ifdef ESP8266
+      udpSyncConnected = fftUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 0, 0, 1), audioSyncPort);
+    #endif
+  }
   if (ntpEnabled)
     ntpConnected = ntpUdp.begin(ntpLocalPort);
 
