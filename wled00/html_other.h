@@ -34,8 +34,8 @@ const char PAGE_update[] PROGMEM = R"=====(<!DOCTYPE html><html><head><meta cont
 <style>
 .bt{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}input[type=file]{font-size:16px}body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%}
 </style></head><body><h2>WLED Software Update</h2>Installed version: 0.10.0<br>
-Download the latest binary: <a 
-href="https://github.com/Aircoookie/WLED/releases"><img 
+Download the latest binary: <a href="https://github.com/atuline/WLED/releases">
+<img 
 src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square">
 </a><br><form method="POST" action="/update" enctype="multipart/form-data">
 <input type="file" class="bt" name="update" required><br><input type="submit" 
