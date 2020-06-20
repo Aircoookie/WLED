@@ -56,7 +56,7 @@ Russian speakers, check out the videos by Room31:
 [ESP8266 based LED controller for WS2812b strip. WLED Firmware + OpenHAB](https://youtu.be/K4ioTt3XvGc)  
 
 ## 🖼️ Images
-<img src="/images/macbook-pro-space-gray-on-the-wooden-table.webp" width="50%"><img src="/images/walking-with-iphone-x.webp" width="50%">
+<img src="/images/macbook-pro-space-gray-on-the-wooden-table.jpg" width="50%"><img src="/images/walking-with-iphone-x.jpg" width="50%">
 
 ## 💾 Compatible LED Strips
 Type | Voltage | Comments
