@@ -3342,8 +3342,8 @@ uint16_t WS2812FX::mode_solid_glitter()
  */
 uint16_t WS2812FX::mode_sunrise() {
   //speed 0 - static sun
-  //speed 1 - 120: sunrise time in minutes
-  //speed 121 - 240 : sunset time in minutes - 120;
+  //speed 1 - 60: sunrise time in minutes
+  //speed 60 - 120 : sunset time in minutes - 60;
   //speed above: "breathing" rise and set
   if (SEGENV.call == 0 || SEGMENT.speed != SEGENV.aux0) {
 	  SEGENV.step = millis(); //save starting time, millis() because now can change from sync
@@ -3538,5 +3538,28 @@ uint16_t WS2812FX::mode_flow(void)
     }
   }
 
+  return FRAMETIME;
+}
+
+
+/*
+ * Dots waving around in a sine/pendulum motion.
+ * Little pixel birds flying in a circle. By Aircoookie
+ */
+uint16_t WS2812FX::mode_chunchun(void)
+{
+  fill(SEGCOLOR(1));
+  uint16_t counter = now*(6 + (SEGMENT.speed >> 4));
+  uint16_t numBirds = SEGLEN >> 2;
+  uint16_t span = SEGMENT.intensity << 8;
+
+  for (uint16_t i = 0; i < numBirds; i++)
+  {
+    counter -= span/numBirds;
+    int megumin = sin16(counter) + 0x8000;
+    uint32_t bird = (megumin * SEGLEN) >> 16;
+    uint32_t c = color_from_palette((i * 255)/ numBirds, false, true, 0);
+    setPixelColor(bird, c);
+  }
   return FRAMETIME;
 }

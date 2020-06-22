@@ -103,7 +103,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg("TL").toInt();
     if (t > 0) nightlightDelayMinsDefault = t;
     nightlightDelayMins = nightlightDelayMinsDefault;
-    nightlightFade = request->hasArg("TW");
+    nightlightMode = request->arg("TW").toInt();
 
     t = request->arg("PB").toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
@@ -603,10 +603,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("NF=");
   if (pos > 0)
   {
-    nightlightFade = (req.charAt(pos+3) != '0');
-    nightlightColorFade = (req.charAt(pos+3) == '2');  //NighLightColorFade can only be enabled via API or Macro with "NF=2"
+    nightlightMode = getNumVal(&req, pos);
+
     nightlightActiveOld = false; //re-init
   }
+  if (nightlightMode > NL_MODE_SUN) nightlightMode = NL_MODE_SUN;
 
   #if AUXPIN >= 0
   //toggle general purpose output
@@ -647,8 +648,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     }
   }
 
-  //deactivate nightlight if target brightness is reached
-  if (bri == nightlightTargetBri) nightlightActive = false;
   //set time (unix timestamp)
   pos = req.indexOf("ST=");
   if (pos > 0) {
@@ -660,6 +659,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) {
     countdownTime = getNumVal(&req, pos);
     if (countdownTime - now() > 0) countdownOverTriggered = false;
+  }
+
+  pos = req.indexOf("LO=");
+  if (pos > 0) {
+    realtimeOverride = getNumVal(&req, pos);
+    if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
   }
 
   pos = req.indexOf("RB");

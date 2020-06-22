@@ -118,12 +118,14 @@ name="TD" maxlength="5" size="2"> ms<br>Enable Palette transitions: <input
 type="checkbox" name="PF"><h3>Timed light</h3>Default Duration: <input 
 name="TL" type="number" min="1" max="255" required> min<br>
 Default Target brightness: <input name="TB" type="number" min="0" max="255" 
-required><br>Fade down: <input type="checkbox" name="TW"><br><h3>Advanced</h3>
-Palette blending: <select name="PB"><option value="0">Linear (wrap if moving)
-</option><option value="1">Linear (always wrap)</option><option value="2">
-Linear (never wrap)</option><option value="3">None (not recommended)</option>
-</select><br>Reverse LED order (rotate 180): <input type="checkbox" name="RV">
-<br>Skip first LED: <input type="checkbox" name="SL"><hr><button type="button" 
+required><br>Mode: <select name="TW"><option value="0">Wait and set</option>
+<option value="1">Fade</option><option value="2">Fade Color</option><option 
+value="3">Sunrise</option></select><h3>Advanced</h3>Palette blending: <select 
+name="PB"><option value="0">Linear (wrap if moving)</option><option value="1">
+Linear (always wrap)</option><option value="2">Linear (never wrap)</option>
+<option value="3">None (not recommended)</option></select><br>
+Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
+Skip first LED: <input type="checkbox" name="SL"><hr><button type="button" 
 onclick="B()">Back</button><button type="submit">Save</button></form></body>
 </html>)=====";
 
@@ -335,7 +337,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <h3>Software Update</h3><button type="button" onclick="U()">Manual OTA Update
 </button><br>Enable ArduinoOTA: <input type="checkbox" name="AO"><br><h3>About
 </h3><a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>
- version 0.10.0<br><br><a 
+ version 0.10.1<br><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" 
 target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>

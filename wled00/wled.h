@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.10.0
+   @version 0.10.1
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2006060
+#define VERSION 2006220
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -154,7 +154,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.10.0");
+WLED_GLOBAL char versionString[] _INIT("0.10.1");
 #define WLED_CODENAME "Namigai"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -193,8 +193,7 @@ WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
 
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);
-WLED_GLOBAL bool nightlightFade      _INIT(true);   // if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
-WLED_GLOBAL bool nightlightColorFade _INIT(false);  // if enabled, light will gradually fade color from primary to secondary color.
+WLED_GLOBAL byte nightlightMode      _INIT(NL_MODE_FADE); // See const.h for available modes. Was nightlightFade
 WLED_GLOBAL bool fadeTransition      _INIT(true);   // enable crossfading color transition
 WLED_GLOBAL uint16_t transitionDelay _INIT(750);    // default crossfade duration in ms
 
