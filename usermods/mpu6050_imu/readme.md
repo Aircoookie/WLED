@@ -11,9 +11,10 @@ It is pretty straightforward to comment out some of the variables being read off
 
 _Story:_
 
-I built an icosahedron globe with lights inside to indicate cities I travelled to. I
-wanted to integrate an IMU to allow either on-board, or off-board effects that would
-react to the globes orientation. See TBD BLOG POST.
+As a memento to a long trip I was on, I built an icosahedron globe. I put lights inside to indicate cities I travelled to.
+
+I wanted to integrate an IMU to allow either on-board, or off-board effects that would
+react to the globes orientation. See the blog post on building it <https://www.robopenguins.com/icosahedron-travel-globe/> or a video demo <https://youtu.be/zYjybxHBsHM> .
 
 ## Adding Dependencies
 
