@@ -89,7 +89,6 @@ void userLoop() {
 
           FFT_Magnitude = receivedPacket.FFT_Magnitude;
           FFT_MajorPeak = receivedPacket.FFT_MajorPeak;
-          #endif
           // Serial.println("Finished parsing UDP Sync Packet");
           #endif
         }
