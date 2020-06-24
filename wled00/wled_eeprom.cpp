@@ -614,10 +614,10 @@ void loadSettingsFromEEPROM(bool first)
 
   uint16_t audio_i = 3072;
 
-  if (lastEEPROMversion > 20) {                                   // Version sanity checking
+  if (lastEEPROMversion > 21) {                                   // Version sanity checking
     soundSquelch =  EEPROM.read(audio_i);
     audioSyncPort = EEPROM.read(audio_i+1) + ((EEPROM.read(audio_i+2) << 8) & 0xFF00);
-    Serial.print(audioSyncPort);
+//    Serial.print(audioSyncPort);
     audioSyncEnabled = EEPROM.read(audio_i + 3);
 
     effectFFT1 = EEPROM.read(audio_i+4);

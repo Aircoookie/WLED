@@ -3629,8 +3629,8 @@ uint16_t WS2812FX::mode_pixelwave(void) {                                  // Pi
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
     int pixBri = sample * SEGMENT.intensity / 128;
-    setPixCol(SEGLEN/2, millis(), pixBri);
-
+//    setPixCol(SEGLEN/2, millis(), pixBri);
+    setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
     for (int i=SEGLEN-1; i>SEGLEN/2; i--) {                               // Move to the right.
       setPixelColor(i,getPixelColor(i-1));
     }
@@ -4748,7 +4748,8 @@ uint16_t WS2812FX::mode_A0(void) {      // 16 bit noisemove. By Andrew Tuline. U
   for (int i=0; i<SEGMENT.intensity/16+1; i++) {
     uint16_t locn = inoise16(millis()*128/(260-SEGMENT.speed)+i*15000, millis()*128/(260-SEGMENT.speed));   // Get a new pixel location from moving noise.
     uint16_t pixloc = map(locn,50*256,192*256,0,SEGLEN)%(SEGLEN);                           // Map that to the length of the strand, and ensure we don't go over.
-    setPixCol(pixloc, pixloc%255, 255);                                                     // Use that value for both the location as well as the palette index colour for the pixel.
+//    setPixCol(pixloc, pixloc%255, 255);                                                     // Use that value for both the location as well as the palette index colour for the pixel.
+  setPixelColor(pixloc, color_blend(SEGCOLOR(1), color_from_palette(pixloc%255, false, PALETTE_SOLID_WRAP, 0), 255));    
   }  
 
   return FRAMETIME;
@@ -4785,7 +4786,8 @@ uint16_t WS2812FX::mode_A1(void) {                            // * Ripple peak. 
         break;
   
       case 0:
-        setPixCol(centre, colour, ripFade); 
+//        setPixCol(centre, colour, ripFade); 
+        setPixelColor(centre, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade));            
         steps ++;
         break;
   
@@ -4795,8 +4797,10 @@ uint16_t WS2812FX::mode_A1(void) {                            // * Ripple peak. 
   
       default:                                                          // Middle of the ripples.
 
-        setPixCol((centre + steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2); 
-        setPixCol((centre - steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2); 
+//        setPixCol((centre + steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2);
+        setPixelColor((centre + steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
+//        setPixCol((centre - steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2);
+        setPixelColor((centre - steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
         steps ++;                                                         // Next step.
         break;  
     } // switch step
