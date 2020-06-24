@@ -51,7 +51,7 @@ void userLoop() {
     #ifndef ESP8266
     if (audioSyncEnabled & (1 << 0)) {
       // Only run the transmit code IF we're in Transmit mode
-      Serial.write("Transmitting UDP Mic Packet");
+//      Serial.println("Transmitting UDP Mic Packet");
       transmitAudioData();
     }
     #endif
@@ -62,7 +62,7 @@ void userLoop() {
     // Only run the audio listener code if we're in Receive mode
     if (millis()-lastTime > delayMs) {
       if (udpSyncConnected) {
-        Serial.write("Checking for UDP Microphone Packet");
+//        Serial.println("Checking for UDP Microphone Packet");
         int packetSize = fftUdp.parsePacket();
         if (packetSize) {
           // Serial.println("Received UDP Sync Packet");

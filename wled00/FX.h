@@ -104,7 +104,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                      140
+#define MODE_COUNT                      143
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -246,6 +246,10 @@
 #define FX_MODE_A7                     137
 #define FX_MODE_A8                     138
 #define FX_MODE_A9                     139
+#define FX_MODE_FLOW                   140
+#define FX_MODE_CHUNCHUN               141
+#define FX_MODE_SUNRISE                142
+#define FX_MODE_TWINKLEUP              143
 
 
 
@@ -488,7 +492,10 @@ class WS2812FX {
       _mode[FX_MODE_A7]                      = &WS2812FX::mode_A7;
       _mode[FX_MODE_A8]                      = &WS2812FX::mode_A8;
       _mode[FX_MODE_A9]                      = &WS2812FX::mode_A9;
-      
+      _mode[FX_MODE_FLOW]                    = &WS2812FX::mode_flow;
+      _mode[FX_MODE_CHUNCHUN]                = &WS2812FX::mode_chunchun;
+      _mode[FX_MODE_SUNRISE]                 = &WS2812FX::mode_sunrise;
+      _mode[FX_MODE_TWINKLEUP]               = &WS2812FX::mode_twinkleup;
 
 
       _brightness = DEFAULT_BRIGHTNESS;
@@ -730,7 +737,11 @@ class WS2812FX {
       mode_A6(void),
       mode_A7(void),
       mode_A8(void),
-      mode_A9(void);
+      mode_A9(void),
+      mode_flow(void),
+      mode_chunchun(void),
+      mode_sunrise(void),
+      mode_twinkleup(void);
                   
   private:
     NeoPixelWrapper *bus;
@@ -820,9 +831,10 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
-"* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","** Waterfall","** Freqpixel","** Binmap","** Noisespeak",
+"* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","** Waterfall","** Freqpixel","** Binmap","** Noisepeak",
 "* Noisefire","* Puddlepeak","** Noisemove","Phased","NoisePal", "SineWave", "Phased Noise", "2D Plasma", "2D Plasma sparks","2D_03",
-"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9"
+"A0","A1","A2","A3","A4","A5","A6","A7","A8","A9",
+"Flow", "Chunchun", "Sunrise", "TwinkleUp"
 ])=====";
 
 
