@@ -3341,6 +3341,7 @@ uint16_t WS2812FX::mode_solid_glitter()
  * Mode simulates a gradual sunrise
  */
 uint16_t WS2812FX::mode_sunrise() {
+
   //speed 0 - static sun
   //speed 1 - 60: sunrise time in minutes
   //speed 60 - 120 : sunset time in minutes - 60;
@@ -3419,11 +3420,10 @@ uint16_t WS2812FX::phased_base(uint8_t moder) {                  // We're making
 }
 
 
-
 uint16_t WS2812FX::mode_phased(void) {
   return phased_base(0);
-}
 
+}
 
 
 uint16_t WS2812FX::mode_phased_noise(void) {
@@ -3431,8 +3431,10 @@ uint16_t WS2812FX::mode_phased_noise(void) {
 }
 
 
-
 uint16_t WS2812FX::mode_twinkleup(void) {                 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
+
+  Serial.println("Twinkleup");
+  
   random16_set_seed(535);                                 // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
 
   for (int i = 0; i<SEGLEN; i++) {
