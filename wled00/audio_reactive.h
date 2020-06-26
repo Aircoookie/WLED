@@ -32,7 +32,9 @@ float sampleAvg = 0;                                // Smoothed Average
 float micLev = 0;                                   // Used to convert returned value to have '0' as minimum. A leveller
 uint8_t maxVol = 11;                                // Reasonable value for constant volume for 'peak detector', as it won't always trigger
 bool samplePeak = 0;                                // Boolean flag for peak. Responding routine must reset this flag
-
+#ifndef ESP8266                                     // Transmitting doesn't work on ESP8266, don't bother allocating memory
+bool udpSamplePeak = 0;                             // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
+#endif
 int sampleAgc;                                      // Our AGC sample
 float multAgc;                                      // sample * multAgc = sampleAgc. Our multiplier
 uint8_t targetAgc = 60;                             // This is our setPoint at 20% of max for the adjusted output
@@ -85,6 +87,7 @@ void getSample() {
   if (userVar1 == 0) samplePeak = 0;
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 300)) {   // Poor man's beat detection by seeing if sample > Average + some value.
     samplePeak = 1;                                                   // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
+    udpSamplePeak = 1;
     userVar1 = samplePeak;
     peakTime=millis();
   }
@@ -133,7 +136,7 @@ void agcAvg() {                                                       // A simpl
     extern int sampleAgc;
     extern int sample;
     extern float sampleAvg;
-    extern bool samplePeak;
+    extern bool udpSamplePeak;
     extern double fftResult[];
     extern double FFT_Magnitude;
     extern double FFT_MajorPeak;
@@ -147,7 +150,8 @@ void agcAvg() {                                                       // A simpl
     transmitData.sampleAgc = sampleAgc;
     transmitData.sample = sample;
     transmitData.sampleAvg = sampleAvg;
-    transmitData.samplePeak = samplePeak;
+    transmitData.samplePeak = udpSamplePeak;
+    udpSamplePeak = 0;                              // Reset udpSamplePeak after we've transmitted it
 
     for (int i = 0; i < 16; i++) {
       transmitData.fftResult[i] = fftResult[i];
