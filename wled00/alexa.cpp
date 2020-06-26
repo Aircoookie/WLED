@@ -85,6 +85,7 @@ void onAlexaChange(EspalexaDevice* dev)
       col[0] = ((color >> 16) & 0xFF);
       col[1] = ((color >>  8) & 0xFF);
       col[2] = ( color        & 0xFF);
+      col[3] = 0;
     }
     colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
   }
