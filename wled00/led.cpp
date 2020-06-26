@@ -3,7 +3,6 @@
 /*
  * LED methods
  */
-
 void setValuesFromMainSeg()
 {
   WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
@@ -167,6 +166,7 @@ void colorUpdated(int callMode)
 
 void updateInterfaces(uint8_t callMode)
 {
+  sendDataWs();
   #ifndef WLED_DISABLE_ALEXA
   if (espalexaDevice != nullptr && callMode != NOTIFIER_CALL_MODE_ALEXA) {
     espalexaDevice->setValue(bri);

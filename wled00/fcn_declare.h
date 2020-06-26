@@ -87,7 +87,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id);
 void serializeState(JsonObject root);
 void serializeInfo(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
-void serveLiveLeds(AsyncWebServerRequest* request);
+bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 
 //led.cpp
 void setValuesFromMainSeg();
@@ -209,6 +209,11 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, S
 String settingsProcessor(const String& var);
 String dmxProcessor(const String& var);
 void serveSettings(AsyncWebServerRequest* request);
+
+//ws.cpp
+void handleWs();
+void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
+void sendDataWs(AsyncWebSocketClient * client = nullptr);
 
 //xml.cpp
 void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);

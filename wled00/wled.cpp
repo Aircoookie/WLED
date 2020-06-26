@@ -14,8 +14,11 @@ WLED::WLED()
 void WLED::reset()
 {
   briT = 0;
+  #ifdef WLED_ENABLE_WEBSOCKETS
+  ws.closeAll(1012);
+  #endif
   long dly = millis();
-  while (millis() - dly < 250) {
+  while (millis() - dly < 450) {
     yield();        // enough time to send response to client
   }
   setAllLeds();
@@ -94,7 +97,8 @@ void WLED::loop()
     if (lastMqttReconnectAttempt > millis()) rolloverMillis++; //millis() rolls over every 50 days
     initMqtt();
   }
-
+  yield();
+  handleWs();
 
 // DEBUG serial logging
 #ifdef WLED_DEBUG
@@ -283,6 +287,10 @@ void WLED::initAP(bool resetAP)
 
 void WLED::initConnection()
 {
+  #ifdef WLED_ENABLE_WEBSOCKETS
+  ws.onEvent(wsEvent);
+  #endif
+
   WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
   WiFi.setPhyMode(WIFI_PHY_MODE_11N);
