@@ -12,15 +12,17 @@
 #endif
 
 //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
-
-#ifdef ESP8266
-  #define MIC_PIN   A0
-#else
-  #define MIC_PIN   36    // Changed to direct pin name since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
+#ifndef MIC_PIN
+  #ifdef ESP8266
+    #define MIC_PIN   A0
+  #else
+    #define MIC_PIN   36    // Changed to direct pin name since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
+  #endif
+#endif
 #ifndef LED_BUILTIN       // Set LED_BUILTIN if it is not defined by Arduino framework
   #define LED_BUILTIN 3
 #endif
-#endif
+
 
 // As defined in wled00.h
 // byte soundSquelch = 10;                          // default squelch value for volume reactive routines
