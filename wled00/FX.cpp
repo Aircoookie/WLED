@@ -3983,12 +3983,12 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
 #ifndef ESP8266
 extern double FFT_MajorPeak;
 extern double FFT_Magnitude;
-extern double fftBin[];           // raw FFT data
-extern double fftResult[];        // pre-added result array 0 .. 15
+extern double fftBin[];                     // raw FFT data
+extern double fftResult[];                  // pre-added result array 0 .. 15
 extern double beat;
 extern uint16_t lastSample;
 double volume = 1;
-uint32_t ledData[1500];
+uint32_t ledData[MAX_LEDS];                 // See const.h for a value of 1500.
 uint32_t dataStore[4096];										// we are declaring a storage area or 64 x 64 (4096) words.
 
 
@@ -4344,7 +4344,7 @@ uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By An
 
 
 //////////////////////
-//  ** NOISEPEAK     //
+//  ** NOISEPEAK    //
 //////////////////////
 
 uint16_t WS2812FX::mode_noisepeak(void) {                  // Noisepeak.  Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise across SEGLEN. By Andrew Tuline.
@@ -4580,7 +4580,7 @@ uint16_t i;
 
 
 //////////////////////
-//     2D Plasma    //
+//    2D Plasma     //
 //////////////////////
 
 // fft1 slider above 1/2 will shift the colors
@@ -4831,7 +4831,7 @@ uint16_t WS2812FX::mode_2Dfire2012(void) {                 // Fire2012 by Mark K
 //      2D DNA     //
 /////////////////////
 
-uint16_t WS2812FX::mode_2Ddna(void) {               // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy and WLED version by Andrew Tuline.
+uint16_t WS2812FX::mode_2Ddna(void) {               // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy. WLED version by Andrew Tuline.
 #ifndef ESP8266
 
   CRGB *leds = (CRGB *)ledData;
@@ -4942,9 +4942,9 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {    // Matrix2D. By Jeremy Williams. Ada
 } // mode_2Dmatrix()
 
 
-//////////////////////
-//      A7          //
-//////////////////////
+/////////////////////////
+//     2D Meatballs    //
+/////////////////////////
 
 uint16_t WS2812FX::mode_2Dmeatballs(void) {    // Metaballs by Stefan Petrick. Cannot have one of the dimensions be 2 or less. Adapted by Andrew Tuline.
 #ifndef ESP8266
@@ -5010,7 +5010,7 @@ uint16_t WS2812FX::mode_2Dmeatballs(void) {    // Metaballs by Stefan Petrick. C
 
 
 //////////////////////
-//      ABlank0    //
+//      ABlank0     //
 //////////////////////
 
 uint16_t WS2812FX::mode_ablank0(void) {
@@ -5018,7 +5018,6 @@ uint16_t WS2812FX::mode_ablank0(void) {
 /*  
 
   CRGB *leds = (CRGB* )ledData;
-  fadeToBlackBy(leds, SEGLEN, 4);
 
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
@@ -5053,7 +5052,6 @@ uint16_t WS2812FX::mode_ablank1(void) {
 #ifndef ESP8266
 /*  
   CRGB *leds = (CRGB* )ledData;
-
 
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
