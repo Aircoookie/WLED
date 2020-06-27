@@ -136,6 +136,7 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
   }
   
+  //reorder channels to selected order
   RgbwColor col;
   switch (colorOrder)
   {
@@ -401,7 +402,12 @@ uint8_t WS2812FX::getMaxSegments(void) {
 
 uint8_t WS2812FX::getMainSegmentId(void) {
   if (mainSegment >= MAX_NUM_SEGMENTS) return 0;
-  return mainSegment;
+  if (_segments[mainSegment].isActive()) return mainSegment;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) //get first active
+  {
+    if (_segments[i].isActive()) return i;
+  }
+  return 0;
 }
 
 uint32_t WS2812FX::getColor(void) {
@@ -529,11 +535,14 @@ void WS2812FX::setShowCallback(show_callback cb)
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  _segment_index = getMainSegmentId();
-  SEGMENT.setOption(SEG_OPTION_TRANSITIONAL, t);
-  if (!t) return;
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
-  if (SEGMENT.mode == FX_MODE_STATIC && SEGENV.next_time > waitMax) SEGENV.next_time = waitMax;
+  for (uint16_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    _segment_index = i;
+    SEGMENT.setOption(SEG_OPTION_TRANSITIONAL, t);
+
+    if (t && SEGMENT.mode == FX_MODE_STATIC && SEGENV.next_time > waitMax) SEGENV.next_time = waitMax;
+  }
 }
 
 /*

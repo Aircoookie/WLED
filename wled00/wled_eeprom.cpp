@@ -87,7 +87,7 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(160,     apPass, 64);
 
   EEPROM.write(224, nightlightDelayMinsDefault);
-  EEPROM.write(225, nightlightFade);
+  EEPROM.write(225, nightlightMode);
   EEPROM.write(226, notifyDirectDefault);
   EEPROM.write(227, apChannel);
   EEPROM.write(228, apHide);
@@ -311,7 +311,7 @@ void loadSettingsFromEEPROM(bool first)
 
   nightlightDelayMinsDefault = EEPROM.read(224);
   nightlightDelayMins = nightlightDelayMinsDefault;
-  nightlightFade = EEPROM.read(225);
+  nightlightMode = EEPROM.read(225);
   notifyDirectDefault = EEPROM.read(226);
   notifyDirect = notifyDirectDefault;
 

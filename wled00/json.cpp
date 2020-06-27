@@ -115,7 +115,8 @@ bool deserializeState(JsonObject root)
   JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]   | nightlightActive;
   nightlightDelayMins = nl["dur"]  | nightlightDelayMins;
-  nightlightFade      = nl["fade"] | nightlightFade;
+  nightlightMode      = nl["fade"] | nightlightMode; //deprecated
+  nightlightMode      = nl["mode"] | nightlightMode;
   nightlightTargetBri = nl["tbri"] | nightlightTargetBri;
 
   JsonObject udpn = root["udpn"];
@@ -246,7 +247,8 @@ void serializeState(JsonObject root)
   JsonObject nl = root.createNestedObject("nl");
   nl["on"] = nightlightActive;
   nl["dur"] = nightlightDelayMins;
-  nl["fade"] = nightlightFade;
+  nl["fade"] = (nightlightMode > NL_MODE_SET); //deprecated
+  nl["mode"] = nightlightMode;
   nl["tbri"] = nightlightTargetBri;
   
   JsonObject udpn = root.createNestedObject("udpn");
