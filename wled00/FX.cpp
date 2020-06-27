@@ -3499,7 +3499,6 @@ uint16_t WS2812FX::mode_sinewave(void) {             // Adjustable sinewave. By 
 
   for (int i=0; i<SEGLEN; i++) {                   // For each of the LED's in the strand, set a brightness based on a wave as follows:
     int pixBri = cubicwave8((i*freq)+SEGENV.step);//qsuba(cubicwave8((i*freq)+SEGENV.step), (255-SEGMENT.intensity)); // qsub sets a minimum value called thiscutoff. If < thiscutoff, then bright = 0. Otherwise, bright = 128 (as defined in qsub)..
-    //setPixCol(i, i*colorIndex/255, pixBri);
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*colorIndex/255, false, PALETTE_SOLID_WRAP, 0), pixBri));
   }
 
@@ -3572,33 +3571,6 @@ uint16_t WS2812FX::mode_chunchun(void)
 /////////////////////////////////////////////////////////////////////////////
 
 
-// To remove setPixCol, use the following:
-// setPixCol(i, index, pixBri);  
-//  setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), pixBri));
-
-
-
-//////////////////////////////////////////
-//   Pixel assignment helper routine    //
-//////////////////////////////////////////
-
-// This helper function displays the RGBW SEGCOLOR(0) if no palette has been loaded. Index must be 32 bit because I use millis().
-void WS2812FX::setPixCol(uint16_t location, uint32_t index, uint8_t intensity) {
-
-  CRGB color;
-
-  if (SEGMENT.palette == 0) {                                             // No palette loaded, so let's use the first colour. . . and white.
-    uint32_t myClr = color_blend(SEGCOLOR(1), SEGCOLOR(0), intensity);    // Scale the brightness of the colour.
-    setPixelColor(location, myClr);                                       // This supports RGBW.
-  } else {
-    color = ColorFromPalette(currentPalette, index, intensity);           // This just uses the palettes and just RGB ones at that.
-    setPixelColor(location, color.red, color.green, color.blue);
-  }
-
-} // setPixCol()
-
-
-
 ////////////////////////////////////
 //  Begin non-reactive routines   //
 ////////////////////////////////////
@@ -3614,12 +3586,12 @@ uint16_t WS2812FX::mode_perlinmove(void) {      // 16 bit perlinmove. By Andrew 
   for (int i=0; i<SEGMENT.intensity/16+1; i++) {
     uint16_t locn = inoise16(millis()*128/(260-SEGMENT.speed)+i*15000, millis()*128/(260-SEGMENT.speed));   // Get a new pixel location from moving noise.
     uint16_t pixloc = map(locn,50*256,192*256,0,SEGLEN)%(SEGLEN);                           // Map that to the length of the strand, and ensure we don't go over.
-//    setPixCol(pixloc, pixloc%255, 255);                                                     // Use that value for both the location as well as the palette index colour for the pixel.
-  setPixelColor(pixloc, color_blend(SEGCOLOR(1), color_from_palette(pixloc%255, false, PALETTE_SOLID_WRAP, 0), 255));    
+    setPixelColor(pixloc, color_blend(SEGCOLOR(1), color_from_palette(pixloc%255, false, PALETTE_SOLID_WRAP, 0), 255));    
   }  
 
   return FRAMETIME;
 } // mode_perlinmove()
+
 
 ////////////////////////////////
 //   Begin volume routines    //
@@ -3635,7 +3607,6 @@ uint16_t WS2812FX::mode_pixels(void) {                                   // Pixe
 
   for (int i=0; i <SEGMENT.intensity/16; i++) {
     uint16_t segLoc = random(SEGLEN);                                      // 16 bit for larger strands of LED's.
-//    setPixCol(segLoc, myVals[i%32]+i*4, sampleAgc);
     setPixelColor(segLoc, color_blend(SEGCOLOR(1), color_from_palette(myVals[i%32]+i*4, false, PALETTE_SOLID_WRAP, 0), sampleAgc));    
   }
 
@@ -3653,7 +3624,6 @@ uint16_t WS2812FX::mode_pixelwave(void) {                                  // Pi
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
     int pixBri = sample * SEGMENT.intensity / 128;
-//    setPixCol(SEGLEN/2, millis(), pixBri);
     setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
     for (int i=SEGLEN-1; i>SEGLEN/2; i--) {                               // Move to the right.
       setPixelColor(i,getPixelColor(i-1));
@@ -3683,7 +3653,6 @@ uint16_t WS2812FX::mode_juggles(void) {                                  // Jugg
     fade_out(224);
 
     for (int i=0; i<SEGMENT.intensity/32; i++) {
-//      setPixCol(beatsin16(thistime+i*2,0,SEGLEN-1), millis()/4+i*2, sampleAgc);
       setPixelColor(beatsin16(thistime+i*2,0,SEGLEN-1), color_blend(SEGCOLOR(1), color_from_palette(millis()/4+i*2, false, PALETTE_SOLID_WRAP, 0), sampleAgc));
     }
   }
@@ -3702,7 +3671,6 @@ uint16_t WS2812FX::mode_matripix(void) {                                  // Mat
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!!
     int pixBri = sample * SEGMENT.intensity / 128;
-//    setPixCol(SEGLEN-1, millis(), pixBri);
     setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
 
@@ -3730,7 +3698,6 @@ uint16_t WS2812FX::mode_gravimeter(void) {                               // Grav
 
   for (int i=0; i<tempsamp; i++) {
     uint8_t index = inoise8(i*sampleAvg+millis(), 5000+i*sampleAvg);
-//    setPixCol(i, index, sampleAvg*8);
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), sampleAvg*8));
   }
 
@@ -3740,8 +3707,7 @@ uint16_t WS2812FX::mode_gravimeter(void) {                               // Grav
     topLED--;
 
   if (topLED > 0) {
-//        setPixCol(topLED, millis(), 255);
-        setPixelColor(topLED, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
+    setPixelColor(topLED, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
   }
   gravityCounter = (gravityCounter + 1) % gravity;
 
@@ -3770,8 +3736,6 @@ uint16_t WS2812FX::mode_plasmoid(void) {                                  // Pla
     colorIndex=thisbright;
 
     if (sampleAvg * 8 * SEGMENT.intensity/256 > thisbright) {thisbright = 255;} else {thisbright = 0;}
-
-//    setPixCol(i, colorIndex, thisbright);
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(colorIndex, false, PALETTE_SOLID_WRAP, 0), thisbright));
   }
 
@@ -3797,7 +3761,6 @@ uint16_t WS2812FX::mode_puddles(void) {                                  // Pudd
   }
 
   for(int i=0; i<size; i++) {                                             // Flash the LED's.
-//    setPixCol(pos+i, millis(), 255);
     setPixelColor(pos+i, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
   }
 
@@ -3823,7 +3786,6 @@ uint16_t WS2812FX::mode_midnoise(void) {                                  // Mid
 
   for (int i=(SEGLEN/2-maxLen); i<(SEGLEN/2+maxLen); i++) {
     uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);        // Get a value from the noise function. I'm using both x and y axis.
-//    setPixCol(i, index, 255);
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
   }
 
@@ -3853,7 +3815,6 @@ uint16_t WS2812FX::mode_noisemeter(void) {                                  // N
 
   for (int i=0; i<maxLen; i++) {                                          // The louder the sound, the wider the soundbar. By Andrew Tuline.
     uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);        // Get a value from the noise function. I'm using both x and y axis.
-//    setPixCol(i, index, 255);
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
   }
 
@@ -3913,7 +3874,6 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                                // Pud
   }
 
   for(int i=0; i<size; i++) {                                             // Flash the LED's.
-//    setPixCol(pos+i, millis(), 255);
     setPixelColor(pos+i, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
 
   }
@@ -3951,7 +3911,6 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
         break;
   
       case 0:
-//        setPixCol(centre, colour, ripFade); 
         setPixelColor(centre, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade));            
         steps ++;
         break;
@@ -3962,9 +3921,7 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
   
       default:                                                          // Middle of the ripples.
 
-//        setPixCol((centre + steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2);
         setPixelColor((centre + steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
-//        setPixCol((centre - steps + SEGLEN) % SEGLEN, colour, ripFade/steps*2);
         setPixelColor((centre - steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
         steps ++;                                                         // Next step.
         break;  
@@ -4255,11 +4212,9 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
     } else {
 
 #ifndef ESP8266
-//    setPixCol(SEGLEN-1, pixCol+SEGMENT.intensity, (int)FFT_Magnitude>>8);
   setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
     
 #else
-//    setPixCol(SEGLEN-1, millis(), pixCol);
   setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixCol));
 #endif // ESP8266
     }
@@ -4283,7 +4238,6 @@ uint16_t WS2812FX::mode_freqpixel(void) {                  // Freqpixel. By Andr
   fade_out(fadeRate);
   uint16_t locn = random16(0,SEGLEN);
   uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;                  // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-//  setPixCol(locn, SEGMENT.intensity+pixCol, (int)FFT_Magnitude>>8);           // Shift the colours so we start at blue.
   setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
 
 #else
@@ -4316,23 +4270,21 @@ uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By An
     }
   }
 
-  if (maxVal == 0) maxVal = 255;            // If maxVal is too low, we'll have a mapping issue.
-  if (maxVal > (255-SEGMENT.intensity)*10) maxVal = (255- SEGMENT.intensity)*10;         // That maxVal may be too high, so let's cap it.
+  if (maxVal == 0) maxVal = 255;                        // If maxVal is too low, we'll have a mapping issue.
+  if (maxVal > (256-SEGMENT.intensity)*10) maxVal = (256-SEGMENT.intensity)*10;         // That maxVal may be >2550, so let's cap it.
 
   for (int i=0; i<SEGLEN; i++) {
 
-    uint16_t startBin = 7+i*(samples-8)/SEGLEN;      // Don't use the first 7 bins, and don't overshoot by 8.
-    uint16_t   endBin = 7+(i+1)*(samples-8)/SEGLEN;  // Ditto.
+    uint16_t startBin = 7+i*(samples-8)/SEGLEN;         // Don't use the first 7 bins, and don't overshoot by 8.
+    uint16_t   endBin = 7+(i+1)*(samples-8)/SEGLEN;     // Ditto.
 
     double sumBin = 0;
-    for (int j=startBin; j<=endBin; j++) { sumBin += fftBin[j]; }
-    sumBin = sumBin / (endBin-startBin+1);  // Normalize it
+    for (int j=startBin; j<=endBin; j++) {sumBin += fftBin[j]; }
+    sumBin = sumBin/(endBin-startBin+1);                // Normalize it
 
-    if (sumBin > maxVal) sumBin = maxVal;   // Make sure our bin isn't higher than the max . . which we capped earlier.
-    uint8_t bright = mapf(sumBin, 0, maxVal, 0, 255); // find the brightness in relation to max
-//    setPixCol(i, i*4, bright);               // colour is just an index in the palette. The FFT is the intensity.
-  setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4, false, PALETTE_SOLID_WRAP, 0), bright));
-
+    if (sumBin > maxVal) sumBin = maxVal;               // Make sure our bin isn't higher than the max . . which we capped earlier.
+    uint8_t bright = mapf(sumBin, 0, maxVal, 0, 255);   // find the brightness in relation to max
+  setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity.
   }
 
 #else
@@ -4394,8 +4346,7 @@ uint16_t WS2812FX::mode_noisemove(void) {          // Noisemove    By: Andrew Tu
   for (int i=0; i<3; i++) {     // DO NOT make this > 5 because we only have 15 FFTresult bins.
     uint16_t locn = inoise16(millis()*SEGMENT.speed+i*50000, millis()*SEGMENT.speed);           // Get a new pixel location from moving noise.
     locn = map(locn,0,65535,0,SEGLEN-1);                                         // Map that to the length of the strand, and ensure we don't go over.
-//    setPixCol(locn, i*64, fftResult[i*3]/256);
-  setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i*3]/256)); 
+    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i*3]/256)); 
   }
 
 #else

@@ -523,7 +523,6 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
       setRgbwPwm(void),
-      setPixCol(uint16_t location, uint32_t index, uint8_t intensity),
       noise8_help(uint8_t),
       mapNoiseToLEDsUsingPalette(),
       blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount),
