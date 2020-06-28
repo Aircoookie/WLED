@@ -257,7 +257,7 @@ void agcAvg() {                                                       // A simpl
       fftResult[0] = (fftAdd(7,11) * 0.8) /5;
       fftResult[1] = (fftAdd(12,16)) /5;
       fftResult[2] = (fftAdd(17,21)) /5;
-      fftResult[3] = (fftAdd(22, 30)) 9;
+      fftResult[3] = (fftAdd(22, 30)) /9;
       fftResult[4] = (fftAdd(31, 39)) /9;
       fftResult[5] = (fftAdd(40, 48)) /9;
       fftResult[6] = (fftAdd(49, 61)) /13;
