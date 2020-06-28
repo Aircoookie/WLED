@@ -3571,17 +3571,14 @@ uint16_t WS2812FX::mode_chunchun(void)
 /////////////////////////////////////////////////////////////////////////////
 
 
-////////////////////////////////////
-//  Begin non-reactive routines   //
-////////////////////////////////////
-
-
 /////////////////////////
-//      Perlin Move    //
+//     Perlin Move     //
 /////////////////////////
 
-uint16_t WS2812FX::mode_perlinmove(void) {      // 16 bit perlinmove. By Andrew Tuline. Use Perlin Noise instead of sinewaves for movement.
-                                        // Controls are speed, # of pixels, faderate.
+// 16 bit perlinmove. Use Perlin Noise instead of sinewaves for movement.By Andrew Tuline.
+// Controls are speed, # of pixels, faderate.
+uint16_t WS2812FX::mode_perlinmove(void) {
+                                        
   fade_out(255-SEGMENT.fft1);
   for (int i=0; i<SEGMENT.intensity/16+1; i++) {
     uint16_t locn = inoise16(millis()*128/(260-SEGMENT.speed)+i*15000, millis()*128/(260-SEGMENT.speed));   // Get a new pixel location from moving noise.
@@ -3601,12 +3598,12 @@ uint16_t WS2812FX::mode_perlinmove(void) {      // 16 bit perlinmove. By Andrew 
 //   * PIXELS       //
 //////////////////////
 
-uint16_t WS2812FX::mode_pixels(void) {                                   // Pixels. By Andrew Tuline.
+uint16_t WS2812FX::mode_pixels(void) {              // Pixels. By Andrew Tuline.
 
   fade_out(4);
 
   for (int i=0; i <SEGMENT.intensity/16; i++) {
-    uint16_t segLoc = random(SEGLEN);                                      // 16 bit for larger strands of LED's.
+    uint16_t segLoc = random(SEGLEN);               // 16 bit for larger strands of LED's.
     setPixelColor(segLoc, color_blend(SEGCOLOR(1), color_from_palette(myVals[i%32]+i*4, false, PALETTE_SOLID_WRAP, 0), sampleAgc));    
   }
 
@@ -3960,7 +3957,7 @@ double mapf(double x, double in_min, double in_max, double out_min, double out_m
 //  ** FREQWAVE     //
 //////////////////////
 
-// sound 10: assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT
+// Assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT
 // and then mapping this to the HSV color circle. Currently we are sampling at 10240 Hz, so the highest frequency we can look at is 5120Hz.
 //
 // SEGMENT.fft1: the lower cut off point for the FFT. (many, most time the lowest values have very little information since they are FFT conversion artifacts. Suggested value is close to but above 0
@@ -3970,13 +3967,13 @@ double mapf(double x, double in_min, double in_max, double out_min, double out_m
 // I suggest that for this effect you turn the brightness to 95%-100% but again it depends on your soundprofile you find yourself in.
 // Instead of using colorpalettes, This effect works on the HSV color circle with red being the lowest frequency
 //
-// as a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
+// As a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 
 uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Pleschung.
 // Instead of using colorpalettes, This effect works on the HSV color circle with red being the lowest frequency
 //
-// as a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
+// As a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 
   #ifndef ESP8266
@@ -4188,7 +4185,7 @@ uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschut
 
 
 ///////////////////////
-//  ** WATERFALL     //
+//  * WATERFALL      //
 ///////////////////////
 
 // Experimenting with volume only as a fallback if no FFT.
@@ -4260,7 +4257,7 @@ uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By An
 
   extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
   extern double fftResult[];
-  #define samples 490                       // Don't use the highest bins.
+  #define samples 480                       // Don't use the highest bins.
 
   double maxVal = 0;
 
@@ -4275,11 +4272,11 @@ uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By An
 
   for (int i=0; i<SEGLEN; i++) {
 
-    uint16_t startBin = 7+i*(samples-8)/SEGLEN;         // Don't use the first 7 bins, and don't overshoot by 8.
-    uint16_t   endBin = 7+(i+1)*(samples-8)/SEGLEN;     // Ditto.
+    uint16_t startBin = 7+i*samples/SEGLEN;         // Don't use the first 7 bins.
+    uint16_t   endBin = 7+(i+1)*samples/SEGLEN;     // Ditto.
 
     double sumBin = 0;
-    for (int j=startBin; j<=endBin; j++) {sumBin += fftBin[j]; }
+    for (int j=startBin; j<=endBin; j++) {sumBin += fftBin[j];}
     sumBin = sumBin/(endBin-startBin+1);                // Normalize it
 
     if (sumBin > maxVal) sumBin = maxVal;               // Make sure our bin isn't higher than the max . . which we capped earlier.
@@ -4534,9 +4531,9 @@ uint16_t i;
 //    2D Plasma     //
 //////////////////////
 
+// Effect speed slider determines the speed the 'plasma' wafts
 // fft1 slider above 1/2 will shift the colors
 // fft2 slider == scale (how far away are we from the plasma)
-// fft3 slider determines the speed the 'plasma' wafts
 
 uint16_t WS2812FX::mode_2Dplasma(void) {                 // By Andreas Pleschutznig. A work in progress.
 
@@ -4550,7 +4547,7 @@ uint16_t WS2812FX::mode_2Dplasma(void) {                 // By Andreas Pleschutz
 
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
-    speed2D = SEGMENT.fft3;
+    speed2D = SEGMENT.speed;
     scale_2d = SEGMENT.fft2;
 
     uint32_t *noise = ledData;                    // we use the set aside storage array for FFT routines to store temporary 2D data
@@ -4638,7 +4635,7 @@ uint16_t WS2812FX::mode_2Dplasma(void) {                 // By Andreas Pleschutz
 //     2D Firenoise     //
 //////////////////////////
 
-uint16_t WS2812FX::mode_2Dfirenoise(void) {                                // firenoise2d. By Andrew Tuline. Yep, yet another short routine.
+uint16_t WS2812FX::mode_2Dfirenoise(void) {                                // firenoise2d. By Andrew Tuline. Yet another short routine.
   
 #ifndef ESP8266
 
@@ -4653,14 +4650,23 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {                                // fi
                                    CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
                                    CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
 
+
+  int a = millis();
   for (int j=0; j < matrixWidth; j++) {
     for (int i=0; i < matrixHeight; i++) {
+
+// This perlin fire is by Andrew Tuline
       indexx = inoise8(i*xscale+millis()/4,j*yscale*matrixWidth/255);                                                 // We're moving along our Perlin map.
-      leds[XY(j,i)] = ColorFromPalette(currentPalette, min(i*(indexx)>>4, 255), i*255/matrixWidth, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.      
-//      CRGB color = ColorFromPalette(currentPalette, min(i*(indexx)>>4, 255), i*255/matrixWidth, LINEARBLEND);          // Use the my own palette.
-//      setPixelColor(XY(j,i), color.red, color.green, color.blue);     
+      leds[XY(i,j)] = ColorFromPalette(currentPalette, min(i*(indexx)>>4, 255), i*255/matrixWidth, LINEARBLEND);   // With that value, look up the 8 bit colour palette value and assign it to the current LED.      
+
+// This perlin fire is my /u/ldirko
+//      leds[XY(i,j)] = ColorFromPalette (currentPalette, qsub8(inoise8 (i * 60 , j * 60+ a , a /3), abs8(j - (matrixHeight-1)) * 255 / (matrixHeight-1)), 255);  
+  
     } // for i
   } // for j
+
+
+
 
   for (int i=0; i<SEGLEN; i++) {
     setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
