@@ -5032,3 +5032,25 @@ uint16_t WS2812FX::mode_ablank1(void) {
 
   return FRAMETIME;
 } // mode_ablank1()
+
+
+//////////////////////////////
+//  FFT test  by Yariv-H    //
+//////////////////////////////
+
+uint16_t WS2812FX::fft_test() {
+  double temp[16];
+  memcpy(temp, fftResult, sizeof(fftResult[0])*16);
+  for(int i = 0; i < 16; i++) {
+      int val = constrain(temp[i],0,254);
+      Serial.print(val); Serial.print(" ");
+      if(val<255 && val >0){
+        CRGB newcolor = CHSV(192, 220, val);
+        setPixelColor(i, crgb_to_col(newcolor));
+      } else {
+        CRGB newcolor = CHSV(192, 220, 0);
+        setPixelColor(i, crgb_to_col(newcolor));
+      }
+    }
+    Serial.println(" ");
+} //
