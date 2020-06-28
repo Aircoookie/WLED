@@ -187,6 +187,9 @@ void agcAvg() {                                                       // A simpl
   double vImag[samples];
   double fftBin[samples];
   double fftResult[16];
+  int noise[] = {1233,	1327,	1131,	1008,	1059,	996,	981,	973,	967,	983,	957,	957,	955,	957,	960,	976}; //ESP32 noise - run on quite evn, record FFTResults - by Yariv-H
+  int pinknoise[] = {7922,	6427,	3448,	1645,	1535,	2116,	2729,	1710,	2174,	2262,	2039,	2604,	2848,	2768,	2343,	2188}; //ESP32 pink noise - by Yariv-H
+  int maxChannel[] = {73873,	82224,	84988,	52898,	51754,	51221,	38814,	31443,	29154, 26204,	23953,	23022,	16982,	19399,	14790,	15612.59}; //playing sin wave 0-20khz pick the max value for each channel - by Yariv-H
 
   // Create FFT object
   arduinoFFT FFT = arduinoFFT( vReal, vImag, samples, samplingFrequency );
@@ -240,29 +243,41 @@ void agcAvg() {                                                       // A simpl
        * There could be interesting data at [2 .. 7] but chances are there are too many artifacts
        */
       FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);        // let the effects know which freq was most dominant
+      FFT.DCRemoval();
 
       for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];   // export FFT field
 
       /*
        * Create an array of 16 bins which roughly represent values the human ear
        * can determine as different frequency bands (fftBins[0..6] are already zero'd)
-       */
-      fftResult[0] = fftAdd(7,11) * 0.8;
-      fftResult[1] = fftAdd(12,16);
-      fftResult[2] = fftAdd(17,21);
-      fftResult[3] = fftAdd(22, 30);
-      fftResult[4] = fftAdd(31, 39);
-      fftResult[5] = fftAdd(40, 48);
-      fftResult[6] = fftAdd(49, 61);
-      fftResult[7] = fftAdd(62, 78);
-      fftResult[8] = fftAdd(79, 99);
-      fftResult[9] = fftAdd(100, 124);
-      fftResult[10] = fftAdd(125, 157);
-      fftResult[11] = fftAdd(158, 198);
-      fftResult[12] = fftAdd(199, 247);
-      fftResult[13] = fftAdd(248, 312);
-      fftResult[14] = fftAdd(313, 393);
-      fftResult[15] = fftAdd(394, 470);
+
+       *
+      * set in each bin the average band value - by Yariv-H
+      */
+      fftResult[0] = (fftAdd(7,11) * 0.8) /5;
+      fftResult[1] = (fftAdd(12,16)) /5;
+      fftResult[2] = (fftAdd(17,21)) /5;
+      fftResult[3] = (fftAdd(22, 30)) 9;
+      fftResult[4] = (fftAdd(31, 39)) /9;
+      fftResult[5] = (fftAdd(40, 48)) /9;
+      fftResult[6] = (fftAdd(49, 61)) /13;
+      fftResult[7] = (fftAdd(62, 78)) /17;
+      fftResult[8] = (fftAdd(79, 99)) /21;
+      fftResult[9] = (fftAdd(100, 124)) /25;
+      fftResult[10] = (fftAdd(125, 157)) /33;
+      fftResult[11] = (fftAdd(158, 198)) /41;
+      fftResult[12] = (fftAdd(199, 247)) /49;
+      fftResult[13] = (fftAdd(248, 312)) /65;
+      fftResult[14] = (fftAdd(313, 393)) /81;
+      fftResult[15] = (fftAdd(394, 470)) /77;
+
+      //Remove noise by Yariv-H
+      for(int i=0; i< 16; i++) {
+          if(fftResult[i]-pinknoise[i] < 0 ) fftResult[i]=0;
+          fftResult[i]-=pinknoise[i];
+          fftResult[i] = constrain(map(fftResult[i], 0,  maxChannel[i], 0, 254),0,254);
+          if(fftResult[i]<0) fftResult[i]=0;
+      }
     }
 }
 

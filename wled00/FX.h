@@ -248,7 +248,7 @@
 #define FX_MODE_2DMEATBALLS            139
 #define FX_MODE_ABLANK0                140
 #define FX_MODE_ABLANK1                141
-
+#define FX_FFT_TEST                    141
 
 
 // Sound reactive external variables
@@ -492,6 +492,7 @@ class WS2812FX {
       _mode[FX_MODE_2DMEATBALLS]             = &WS2812FX::mode_2Dmeatballs;
       _mode[FX_MODE_ABLANK0]                 = &WS2812FX::mode_ablank0;
       _mode[FX_MODE_ABLANK1]                 = &WS2812FX::mode_ablank1;
+      _mode[FX_FFT_TEST]                     = &WS2812FX::fft_test;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -733,7 +734,8 @@ class WS2812FX {
       mode_2Dmatrix(void),
       mode_2Dmeatballs(void),
       mode_ablank0(void),
-      mode_ablank1(void);
+      mode_ablank1(void),
+      fft_test(void);
                   
   private:
     NeoPixelWrapper *bus;
@@ -830,7 +832,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Flow","Chunchun","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid","* Puddles","* Midnoise",
 "* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","* Waterfall","** Freqpixel","** Binmap","** Noisepeak","* Noisefire","* Puddlepeak",
 "** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012","2D DNA","2D Matrix","2D Meatballs",
-"A Blank0","A Blank1"
+"A Blank0","A Blank1","FFT_TEST"
 ])=====";
 
 
