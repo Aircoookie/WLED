@@ -4249,12 +4249,31 @@ uint16_t WS2812FX::mode_freqpixel(void) {                  // Freqpixel. By Andr
 //  ** BINMAP     //
 ////////////////////
 
-// Map bins 7 through 490 to the ENTIRE SEGLEN.
-// For some reason, it seems to be mirroring itself. I really don't know why.
+// Map the 16 fftResult bins to the entire segment. I tried all 470, but that didn't work out so well, did it precious.
 uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By Andrew Tuline
 
 #ifndef ESP8266
 
+  extern double fftResult[];
+
+  double maxVal = 0;
+
+  for (int i = 0; i < 16; i++) {            // apleshu's quickie method to to get the max volume.
+    if (fftResult[i] > maxVal) {
+      maxVal = fftResult[i];                // These values aren't normalized though.
+    }
+  }
+
+  if (maxVal == 0) maxVal = 255;                        // If maxVal is too low, we'll have a mapping issue.
+  if (maxVal > (256-SEGMENT.intensity)*10) maxVal = (256-SEGMENT.intensity)*10;         // That maxVal may be >2550, so let's cap it.
+
+  for (int i=0; i<SEGLEN; i++) {
+    uint8_t binNum = i * 16 / SEGLEN;
+    uint8_t bright = mapf(fftResult[binNum], 0, maxVal, 0, 255);   // find the brightness in relation to max
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(millis()/100+i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity. 
+  }
+  
+/*
   extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
   extern double fftResult[];
   #define samples 480                       // Don't use the highest bins.
@@ -4283,6 +4302,7 @@ uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By An
     uint8_t bright = mapf(sumBin, 0, maxVal, 0, 255);   // find the brightness in relation to max
   setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity.
   }
+*/
 
 #else
   fade_out(224);
