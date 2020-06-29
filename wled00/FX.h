@@ -98,7 +98,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  112
+#define MODE_COUNT  113
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -212,13 +212,13 @@
 #define FX_MODE_PHASEDNOISE            109
 #define FX_MODE_FLOW                   110
 #define FX_MODE_CHUNCHUN               111
-
+#define FX_MODE_BALLTRACK              112
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
 
   // pre show callback
   typedef void (*show_callback) (void);
-  
+
   // segment parameters
   public:
     typedef struct Segment { // 24 bytes
@@ -299,7 +299,7 @@ class WS2812FX {
     } segment_runtime;
 
     WS2812FX() {
-      //assign each member of the _mode[] array to its respective function reference 
+      //assign each member of the _mode[] array to its respective function reference
       _mode[FX_MODE_STATIC]                  = &WS2812FX::mode_static;
       _mode[FX_MODE_BLINK]                   = &WS2812FX::mode_blink;
       _mode[FX_MODE_COLOR_WIPE]              = &WS2812FX::mode_color_wipe;
@@ -412,7 +412,7 @@ class WS2812FX {
       _mode[FX_MODE_PHASEDNOISE]             = &WS2812FX::mode_phased_noise;
       _mode[FX_MODE_FLOW]                    = &WS2812FX::mode_flow;
       _mode[FX_MODE_CHUNCHUN]                = &WS2812FX::mode_chunchun;
-
+      _mode[FX_MODE_BALLTRACK]               = &WS2812FX::mode_balltrack;
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
       targetPalette = CloudColors_p;
@@ -607,7 +607,8 @@ class WS2812FX {
       mode_sinewave(void),
       mode_phased_noise(void),
       mode_flow(void),
-      mode_chunchun(void);
+      mode_chunchun(void),
+      mode_balltrack(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -659,16 +660,16 @@ class WS2812FX {
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
-    
+
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
-    
+
     #ifdef WLED_USE_ANALOG_LEDS
     uint32_t _analogLastShow = 0;
     RgbwColor _analogLastColor = 0;
     uint8_t _analogLastBri = 0;
     #endif
-    
+
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;
     segment _segments[MAX_NUM_SEGMENTS] = { // SRAM footprint: 24 bytes per element
@@ -695,7 +696,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun"
+"Flow","Chunchun","Ball Track"
 ])=====";
 
 
