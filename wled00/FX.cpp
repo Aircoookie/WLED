@@ -3774,7 +3774,7 @@ uint16_t WS2812FX::mode_midnoise(void) {                                  // Mid
   static uint16_t xdist;
   static uint16_t ydist;
 
-  fade_out(224);
+  fade_out(SEGMENT.speed);
 
   uint16_t maxLen = sampleAvg * SEGMENT.intensity / 256;                  // Too sensitive.
   maxLen = maxLen * SEGMENT.intensity / 256;                              // Reduce sensitity/length.
@@ -3802,12 +3802,12 @@ uint16_t WS2812FX::mode_noisemeter(void) {                                  // N
   static uint16_t xdist;
   static uint16_t ydist;
 
-  fade_out(240);
+  fade_out(SEGMENT.speed);
 
   int maxLen = sampleAvg;
   if (sample > sampleAvg) maxLen = sample-sampleAvg;
   maxLen = maxLen * SEGMENT.intensity / 256;                              // Still a bit too sensitive.
-  maxLen = maxLen * SEGMENT.intensity / 256;                              // Reduce sensitity/length.
+  maxLen = maxLen * SEGMENT.intensity / 256;                              // Reduce sensitivity/length.
   if (maxLen >SEGLEN) maxLen = SEGLEN;
 
   for (int i=0; i<maxLen; i++) {                                          // The louder the sound, the wider the soundbar. By Andrew Tuline.
@@ -3895,35 +3895,32 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
   fade_out(240);                                              // Lower frame rate means less effective fading than FastLED
   fade_out(240);
 
-  EVERY_N_MILLIS(20) {
+   if (samplePeak == 1) {samplePeak = 0; steps = -1;}
 
-     if (samplePeak == 1) {samplePeak = 0; steps = -1;}
-  
-    switch (steps) {
-  
-      case -1:                                                // Initialize ripple variables.
-        centre = random16(SEGLEN);
-        colour = random8();
-        steps = 0;
-        break;
-  
-      case 0:
-        setPixelColor(centre, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade));            
-        steps ++;
-        break;
-  
-      case maxsteps:                                                    // At the end of the ripples.
+  switch (steps) {
+
+    case -1:                                                // Initialize ripple variables.
+      centre = random16(SEGLEN);
+      colour = random8();
+      steps = 0;
+      break;
+
+    case 0:
+      setPixelColor(centre, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade));            
+      steps ++;
+      break;
+
+    case maxsteps:                                                    // At the end of the ripples.
 //        steps = -1;
-        break;
-  
-      default:                                                          // Middle of the ripples.
+      break;
 
-        setPixelColor((centre + steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
-        setPixelColor((centre - steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
-        steps ++;                                                         // Next step.
-        break;  
-    } // switch step
-  }
+    default:                                                          // Middle of the ripples.
+
+      setPixelColor((centre + steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
+      setPixelColor((centre - steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
+      steps ++;                                                         // Next step.
+      break;  
+  } // switch step
 
   return FRAMETIME;
 } // mode_ripplepeak()
@@ -4255,6 +4252,7 @@ uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By An
 #ifndef ESP8266
 
   extern double fftResult[];
+  uint8_t resultBins = 16;
 
   double maxVal = 0;
 
@@ -4268,7 +4266,7 @@ uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By An
   if (maxVal > (256-SEGMENT.intensity)*10) maxVal = (256-SEGMENT.intensity)*10;         // That maxVal may be >2550, so let's cap it.
 
   for (int i=0; i<SEGLEN; i++) {
-    uint8_t binNum = i * 16 / SEGLEN;
+    uint8_t binNum = i * resultBins / SEGLEN;
     uint8_t bright = mapf(fftResult[binNum], 0, maxVal, 0, 255);   // find the brightness in relation to max
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(millis()/100+i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity. 
   }
@@ -4355,15 +4353,20 @@ uint16_t WS2812FX::mode_noisepeak(void) {                  // Noisepeak.  Freque
 //  ** NOISEMOVE    //
 //////////////////////
 
-uint16_t WS2812FX::mode_noisemove(void) {          // Noisemove    By: Andrew Tuline
+uint16_t WS2812FX::mode_noisemove(void) {          // Noisemove.    By: Andrew Tuline
 #ifndef ESP8266
 
-  fade_out(92);
+  extern double fftResult[];
 
-  for (int i=0; i<3; i++) {     // DO NOT make this > 5 because we only have 15 FFTresult bins.
+  fade_out(SEGMENT.intensity);
+
+  for (int i=0; i<6; i++) {     // DO NOT make this > 5 because we only have 16 FFTresult bins.
     uint16_t locn = inoise16(millis()*SEGMENT.speed+i*50000, millis()*SEGMENT.speed);           // Get a new pixel location from moving noise.
-    locn = map(locn,0,65535,0,SEGLEN-1);                                         // Map that to the length of the strand, and ensure we don't go over.
-    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i*3]/256)); 
+    
+    locn = map(locn,7500,58000,0,SEGLEN-1);                                 // Map that to the length of the strand, and ensure we don't go over.
+    locn = locn % (SEGLEN - 1);                                             // Just to be bloody sure.
+    
+    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i*3]*8)); 
   }
 
 #else
