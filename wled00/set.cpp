@@ -423,7 +423,16 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   WS2812FX::Segment& mainseg = strip.getSegment(main);
   pos = req.indexOf("SV="); //segment selected
-  if (pos > 0) mainseg.setOption(SEG_OPTION_SELECTED, (req.charAt(pos+3) != '0'));
+  if (pos > 0) {
+    byte t = getNumVal(&req, pos);
+    if (t == 2) {
+      for (uint8_t i = 0; i < strip.getMaxSegments(); i++)
+      {
+        strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0);
+      }
+    }
+    mainseg.setOption(SEG_OPTION_SELECTED, t);
+  }
 
   uint16_t startI = mainseg.start;
   uint16_t stopI = mainseg.stop;
