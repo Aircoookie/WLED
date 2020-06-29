@@ -3935,13 +3935,12 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
 extern double FFT_MajorPeak;
 extern double FFT_Magnitude;
 extern double fftBin[];                     // raw FFT data
-extern double fftResult[];                  // pre-added result array 0 .. 15
+extern double fftResult[];                  // summary of bins array. 16 summary bins.
 extern double beat;
 extern uint16_t lastSample;
 double volume = 1;
 uint32_t ledData[MAX_LEDS];                 // See const.h for a value of 1500.
 uint32_t dataStore[4096];										// we are declaring a storage area or 64 x 64 (4096) words.
-
 
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max){
@@ -4128,9 +4127,7 @@ uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschut
   if (SEGENV.call == 0)
     for (int i = 0; i < SEGLEN; i++)
       setPixelColor(i, 0,0,0);                              // turn off all leds
-
-  uint16_t cutoff = 40 * SEGMENT.fft3;                      // read slider3
-
+      
   // Determine max value in bins to normalize
   maxVal = 0;
   for (int i = 0; i < 16; i++) {
@@ -4138,12 +4135,7 @@ uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschut
       maxVal = fftResult[i];
     }
 
-  if (maxVal < cutoff)                                      // we assume this is noise
-    for (int i = 0; i < 16; i++)
-      fftResult[i] = 0;
-
-
-  if (maxVal == 0) maxVal = 255;
+  if (maxVal == 0) maxVal = 16;
   int ledsPerBin = SEGLEN/16;
 
   if (ledsPerBin > 0) {                                     // our led strip is longer or at least than 16 LEDS
@@ -4151,7 +4143,7 @@ uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschut
       if (ledsPerBin > 1) {                                 // more than one led per bin
         for (int l = 0; l < ledsPerBin; l++)  {
           int pos = i*ledsPerBin+l;                                   // which led are we talking about -- Also which bin are we talking about
-          uint8_t angle = map(i*ledsPerBin, 0, SEGLEN, 0, 255);            // the color we are going to display
+          uint8_t angle = map(i*ledsPerBin, 0, SEGLEN, 0, 255);       // the color we are going to display
           uint8_t bright = mapf(fftResult[i], 0, maxVal, 0, 255); // find the brightness in relation to max
           color = CHSV(angle, 240, bright);                   // colculate a color and convert it to RGB
           setPixelColor(pos, color.red, color.green, color.blue);
@@ -4172,6 +4164,8 @@ uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschut
       }
     }
   }
+
+
 
 #else
   fade_out(224);
@@ -5057,12 +5051,14 @@ uint16_t WS2812FX::mode_ablank1(void) {
 } // mode_ablank1()
 
 
-//////////////////////////////
-//  FFT test  by Yariv-H    //
-//////////////////////////////
+////////////////////////////////
+//  ** FFT test  by Yariv-H   //
+////////////////////////////////
 
 uint16_t WS2812FX::fft_test() {
-  double temp[16];
+
+#ifndef ESP8266
+/*  double temp[16];
   memcpy(temp, fftResult, sizeof(fftResult[0])*16);
   for(int i = 0; i < 16; i++) {
       int val = constrain(temp[i],0,254);
@@ -5076,4 +5072,16 @@ uint16_t WS2812FX::fft_test() {
       }
     }
     Serial.println(" ");
+*/
+ for(int i = 0; i < 16; i++) {
+    Serial.print(fftResult[i]); Serial.print(" ");
+  }
+    Serial.println(" ");
+
+    
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
 } //

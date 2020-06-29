@@ -104,7 +104,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  142
+#define MODE_COUNT  143
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -248,7 +248,7 @@
 #define FX_MODE_2DMEATBALLS            139
 #define FX_MODE_ABLANK0                140
 #define FX_MODE_ABLANK1                141
-#define FX_FFT_TEST                    141
+#define FX_FFT_TEST                    142
 
 
 // Sound reactive external variables
@@ -832,7 +832,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Flow","Chunchun","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid","* Puddles","* Midnoise",
 "* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","* Waterfall","** Freqpixel","** Binmap","** Noisepeak","* Noisefire","* Puddlepeak",
 "** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012","2D DNA","2D Matrix","2D Meatballs",
-"A Blank0","A Blank1","FFT_TEST"
+"A Blank0","A Blank1","** FFT_TEST"
 ])=====";
 
 
