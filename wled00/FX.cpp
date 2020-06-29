@@ -2635,8 +2635,13 @@ uint16_t WS2812FX::mode_balltrack(void) {
       balls[i].mass=(float(random16(5000, 10000)) / 10000.0); // from .5 to 1.
     }
 
+
     float timeSinceLastUpdate = (time - balls[i].lastBounceUpdate)/((255-SEGMENT.speed)*8/256 +1); //uses Air Cookie conversion
     balls[i].height += balls[i].velocity * timeSinceLastUpdate/1000/10;
+    // test if intensity level was increased and some balls are way off the track
+    if(balls[i].height<-.5 || balls[i].height> 1.5){
+      balls[i].height=(float(random16(0, 10000)) / 10000.0); // from 0. to 1.
+    }
 
     if (balls[i].height < 0. && balls[i].velocity<0) balls[i].velocity=-balls[i].velocity; //reverse velocity
     if (balls[i].height > 1. && balls[i].velocity>0) balls[i].velocity=-balls[i].velocity; // reverse velocity
