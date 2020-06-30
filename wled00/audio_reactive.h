@@ -89,7 +89,9 @@ void getSample() {
   if (userVar1 == 0) samplePeak = 0;
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 300)) {   // Poor man's beat detection by seeing if sample > Average + some value.
     samplePeak = 1;                                                   // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
+#ifndef ESP8266    
     udpSamplePeak = 1;
+#endif    
     userVar1 = samplePeak;
     peakTime=millis();
   }
