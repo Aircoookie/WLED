@@ -3927,6 +3927,9 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
 
 
 
+
+
+
 ///////////////////////////////
 //     BEGIN FFT ROUTINES    //
 ///////////////////////////////
@@ -3948,6 +3951,243 @@ double mapf(double x, double in_min, double in_max, double out_min, double out_m
 }
 
 #endif // ESP8266
+
+
+
+
+///////////////////////
+//  * WATERFALL      //
+///////////////////////
+
+// Experimenting with volume only as a fallback if no FFT.
+uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: Andrew Tuline
+
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+#ifndef ESP8266
+    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+#else
+    uint8_t pixCol = sample * SEGMENT.intensity / 128;
+#endif // ESP8266
+
+    if (samplePeak) {
+      samplePeak = 0;
+      setPixelColor(SEGLEN-1,92,92,92);
+    } else {
+
+#ifndef ESP8266
+  setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
+    
+#else
+  setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixCol));
+#endif // ESP8266
+    }
+
+    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
+  }
+
+  return FRAMETIME;
+} // mode_waterfall()
+
+
+////////////////////
+//  ** BINMAP     //
+////////////////////
+
+// Map the 16 fftResult bins to the entire segment. I tried all 470, but that didn't work out so well, did it precious.
+uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By Andrew Tuline
+
+#ifndef ESP8266
+
+  extern double fftResult[];
+  uint8_t resultBins = 16;
+
+  double maxVal = 0;
+
+  for (int i = 0; i < 16; i++) {            // apleshu's quickie method to to get the max volume.
+    if (fftResult[i] > maxVal) {
+      maxVal = fftResult[i];                // These values aren't normalized though.
+    }
+  }
+
+  if (maxVal == 0) maxVal = 255;                        // If maxVal is too low, we'll have a mapping issue.
+  if (maxVal > (256-SEGMENT.intensity)*10) maxVal = (256-SEGMENT.intensity)*10;         // That maxVal may be >2550, so let's cap it.
+
+  for (int i=0; i<SEGLEN; i++) {
+    uint8_t binNum = i * resultBins / SEGLEN;
+    uint8_t bright = mapf(fftResult[binNum], 0, maxVal, 0, 255);   // find the brightness in relation to max
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(millis()/100+i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity. 
+  }
+  
+/* Andrew will work on this again down the road.
+
+  extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
+  extern double fftResult[];
+  #define samples 480                       // Don't use the highest bins.
+
+  double maxVal = 0;
+
+  for (int i = 0; i < 16; i++) {            // apleshu's quickie method to to get the max volume.
+    if (fftResult[i] > maxVal) {
+      maxVal = fftResult[i];                // These values aren't normalized though.
+    }
+  }
+
+  if (maxVal == 0) maxVal = 255;                        // If maxVal is too low, we'll have a mapping issue.
+  if (maxVal > (256-SEGMENT.intensity)*10) maxVal = (256-SEGMENT.intensity)*10;         // That maxVal may be >2550, so let's cap it.
+
+  for (int i=0; i<SEGLEN; i++) {
+
+    uint16_t startBin = 7+i*samples/SEGLEN;         // Don't use the first 7 bins.
+    uint16_t   endBin = 7+(i+1)*samples/SEGLEN;     // Ditto.
+
+    double sumBin = 0;
+    for (int j=startBin; j<=endBin; j++) {sumBin += fftBin[j];}
+    sumBin = sumBin/(endBin-startBin+1);                // Normalize it
+
+    if (sumBin > maxVal) sumBin = maxVal;               // Make sure our bin isn't higher than the max . . which we capped earlier.
+    uint8_t bright = mapf(sumBin, 0, maxVal, 0, 255);   // find the brightness in relation to max
+  setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity.
+  }
+*/
+
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_binmap()
+
+
+////////////////////////////////
+//  ** FFT test  by Yariv-H   //
+////////////////////////////////
+
+uint16_t WS2812FX::fft_test() {
+
+#ifndef ESP8266
+/*  double temp[16];
+  memcpy(temp, fftResult, sizeof(fftResult[0])*16);
+  for(int i = 0; i < 16; i++) {
+      int val = constrain(temp[i],0,254);
+      Serial.print(val); Serial.print(" ");
+      if(val<255 && val >0){
+        CRGB newcolor = CHSV(192, 220, val);
+        setPixelColor(i, crgb_to_col(newcolor));
+      } else {
+        CRGB newcolor = CHSV(192, 220, 0);
+        setPixelColor(i, crgb_to_col(newcolor));
+      }
+    }
+    Serial.println(" ");
+*/
+ for(int i = 0; i < 16; i++) {
+    Serial.print(fftResult[i]); Serial.print(" ");
+  }
+    Serial.println(" ");
+
+    
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} //
+
+
+///////////////////////
+//  ** Freqmatrix    //
+///////////////////////
+
+uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Pleschung.
+
+#ifndef ESP8266
+  static unsigned long prevMillis;
+  unsigned long curMillis = millis();
+
+  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
+    prevMillis = curMillis;
+
+    uint32_t *leds = ledData;
+
+    double sensitivity = mapf(SEGMENT.fft3, 1, 255, 1, 10);
+    int pixVal = sampleAvg * SEGMENT.intensity / 256 * sensitivity;
+    if (pixVal > 255) pixVal = 255;
+
+    double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;            // make a brightness from the last avg
+
+    CRGB color = 0;
+    CHSV c;
+
+    if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
+      // MajorPeak holds the freq. value which is most abundant in the last sample.
+      // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
+      // we will treat everything with less than 65Hz as 0
+      //Serial.printf("%5d ", FFT_MajorPeak, 0);
+    if (FFT_MajorPeak < 80) {
+      color = CRGB::Black;
+    } else {
+      int upperLimit = 20 * SEGMENT.fft2;
+      int lowerLimit = 2 * SEGMENT.fft1;
+      int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
+      uint16_t b = 255 * intensity;
+      if (b > 255) b=255;
+      c = CHSV(i, 240, (uint8_t)b);
+    }
+
+    // Serial.println(color);
+    leds[0] =  (c.h << 16) + (c.s << 8)  + (c.v );
+
+// shift the pixels one pixel up
+    for (int i = SEGLEN; i > 0; i--) {                                 // Move up
+      leds[i] = leds[i-1];
+    }
+
+    //fadeval = fade;
+
+    // DISPLAY ARRAY
+    for (int i= 0; i < SEGLEN; i++) {
+      c.h = (leds[i] >> 16) & 0xFF;
+      c.s = (leds[i] >> 8) &0xFF;
+      c.v = leds[i] & 0xFF;
+      color = c;                                                              // implicit conversion to RGB supplied by FastLED
+      setPixelColor(i, color.red, color.green, color.blue);
+    }
+  }
+
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_freqmatrix()
+
+
+//////////////////////
+//  ** FREQPIXEL    //
+//////////////////////
+
+uint16_t WS2812FX::mode_freqpixel(void) {                  // Freqpixel. By Andrew Tuline.
+
+#ifndef ESP8266
+
+  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;      // Get to 255 as quick as you can.
+  fade_out(fadeRate);
+  uint16_t locn = random16(0,SEGLEN);
+  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;                  // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+  setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
+
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_freqpixel()
+
 
 //////////////////////
 //  ** FREQWAVE     //
@@ -4038,64 +4278,24 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 } // mode_freqwave()
 
 
-///////////////////////
-//  ** Freqmatrix    //
-///////////////////////
+//////////////////////
+//  ** NOISEMOVE    //
+//////////////////////
 
-uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Pleschung.
-
+uint16_t WS2812FX::mode_noisemove(void) {          // Noisemove.    By: Andrew Tuline
 #ifndef ESP8266
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
 
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
+  extern double fftResult[];
 
-    uint32_t *leds = ledData;
+  fade_out(SEGMENT.intensity);
 
-    double sensitivity = mapf(SEGMENT.fft3, 1, 255, 1, 10);
-    int pixVal = sampleAvg * SEGMENT.intensity / 256 * sensitivity;
-    if (pixVal > 255) pixVal = 255;
-
-    double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;            // make a brightness from the last avg
-
-    CRGB color = 0;
-    CHSV c;
-
-    if (FFT_MajorPeak > 5120) FFT_MajorPeak = 0;
-      // MajorPeak holds the freq. value which is most abundant in the last sample.
-      // With our sampling rate of 10240Hz we have a usable freq range from roughtly 80Hz to 10240/2 Hz
-      // we will treat everything with less than 65Hz as 0
-      //Serial.printf("%5d ", FFT_MajorPeak, 0);
-    if (FFT_MajorPeak < 80) {
-      color = CRGB::Black;
-    } else {
-      int upperLimit = 20 * SEGMENT.fft2;
-      int lowerLimit = 2 * SEGMENT.fft1;
-      int i =  map(FFT_MajorPeak, lowerLimit, upperLimit, 0, 255);
-      uint16_t b = 255 * intensity;
-      if (b > 255) b=255;
-      c = CHSV(i, 240, (uint8_t)b);
-    }
-
-    // Serial.println(color);
-    leds[0] =  (c.h << 16) + (c.s << 8)  + (c.v );
-
-// shift the pixels one pixel up
-    for (int i = SEGLEN; i > 0; i--) {                                 // Move up
-      leds[i] = leds[i-1];
-    }
-
-    //fadeval = fade;
-
-    // DISPLAY ARRAY
-    for (int i= 0; i < SEGLEN; i++) {
-      c.h = (leds[i] >> 16) & 0xFF;
-      c.s = (leds[i] >> 8) &0xFF;
-      c.v = leds[i] & 0xFF;
-      color = c;                                                              // implicit conversion to RGB supplied by FastLED
-      setPixelColor(i, color.red, color.green, color.blue);
-    }
+  for (int i=0; i<6; i++) {     // DO NOT make this > 5 because we only have 16 FFTresult bins.
+    uint16_t locn = inoise16(millis()*SEGMENT.speed+i*50000, millis()*SEGMENT.speed);           // Get a new pixel location from moving noise.
+    
+    locn = map(locn,7500,58000,0,SEGLEN-1);                                 // Map that to the length of the strand, and ensure we don't go over.
+    locn = locn % (SEGLEN - 1);                                             // Just to be bloody sure.
+    
+    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i*3]*8)); 
   }
 
 #else
@@ -4103,7 +4303,47 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
 #endif // ESP8266
 
   return FRAMETIME;
-} // mode_freqmatrix()
+} // mode_noisemove()
+
+
+
+//////////////////////
+//  ** NOISEPEAK    //
+//////////////////////
+
+uint16_t WS2812FX::mode_noisepeak(void) {                  // Noisepeak.  Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise across SEGLEN. By Andrew Tuline.
+
+#ifndef ESP8266
+
+  static CRGBPalette16 thisPalette;
+  static uint16_t dist;
+  CRGB color;
+
+  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;   // Get to 255 as quick as you can.
+  fade_out(fadeRate);
+
+  uint8_t pixCol = SEGMENT.intensity+(log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+
+   if (samplePeak) {
+      samplePeak = 0;
+
+      // Palette defined on the fly that stays close to the base pixCol.
+      thisPalette = CRGBPalette16(CHSV(pixCol,255,random8(128,255)),CHSV(pixCol+32,255,random8(128,255)),CHSV(pixCol+80,192,random8(128,255)),CHSV(pixCol+16,255,random8(128,255)));
+
+      for (int i = 0; i < SEGLEN; i++) {
+        uint8_t index = inoise8(i*30, dist+i*30);                       // Get a value from the noise function. I'm using both x and y axis.
+        color = ColorFromPalette(thisPalette, index, 255, LINEARBLEND);       // Use the my own palette.
+        setPixelColor(i, color.red, color.green, color.blue);
+      }
+    }
+  dist += beatsin8(10,1,4);
+
+#else
+  fade_out(224);
+#endif // ESP8266
+
+  return FRAMETIME;
+} // mode_noisepeak()
 
 
 //////////////////////
@@ -4165,8 +4405,6 @@ uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschut
     }
   }
 
-
-
 #else
   fade_out(224);
 #endif // ESP8266
@@ -4175,213 +4413,16 @@ uint16_t WS2812FX::mode_spectral(void) {        // Spectral. By Andreas Pleschut
 } // mode_spectral()
 
 
-///////////////////////
-//  * WATERFALL      //
-///////////////////////
-
-// Experimenting with volume only as a fallback if no FFT.
-uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: Andrew Tuline
-
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
-
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
-
-#ifndef ESP8266
-    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-#else
-    uint8_t pixCol = sample * SEGMENT.intensity / 128;
-#endif // ESP8266
-
-    if (samplePeak) {
-      samplePeak = 0;
-      setPixelColor(SEGLEN-1,92,92,92);
-    } else {
-
-#ifndef ESP8266
-  setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
-    
-#else
-  setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixCol));
-#endif // ESP8266
-    }
-
-    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
-  }
-
-  return FRAMETIME;
-} // mode_waterfall()
-
-
-//////////////////////
-//  ** FREQPIXEL    //
-//////////////////////
-
-uint16_t WS2812FX::mode_freqpixel(void) {                  // Freqpixel. By Andrew Tuline.
-
-#ifndef ESP8266
-
-  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;      // Get to 255 as quick as you can.
-  fade_out(fadeRate);
-  uint16_t locn = random16(0,SEGLEN);
-  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;                  // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-  setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
-
-#else
-  fade_out(224);
-#endif // ESP8266
-
-  return FRAMETIME;
-} // mode_freqpixel()
-
-
-////////////////////
-//  ** BINMAP     //
-////////////////////
-
-// Map the 16 fftResult bins to the entire segment. I tried all 470, but that didn't work out so well, did it precious.
-uint16_t WS2812FX::mode_binmap(void) {    // Binmap. Scale bins to SEGLEN. By Andrew Tuline
-
-#ifndef ESP8266
-
-  extern double fftResult[];
-  uint8_t resultBins = 16;
-
-  double maxVal = 0;
-
-  for (int i = 0; i < 16; i++) {            // apleshu's quickie method to to get the max volume.
-    if (fftResult[i] > maxVal) {
-      maxVal = fftResult[i];                // These values aren't normalized though.
-    }
-  }
-
-  if (maxVal == 0) maxVal = 255;                        // If maxVal is too low, we'll have a mapping issue.
-  if (maxVal > (256-SEGMENT.intensity)*10) maxVal = (256-SEGMENT.intensity)*10;         // That maxVal may be >2550, so let's cap it.
-
-  for (int i=0; i<SEGLEN; i++) {
-    uint8_t binNum = i * resultBins / SEGLEN;
-    uint8_t bright = mapf(fftResult[binNum], 0, maxVal, 0, 255);   // find the brightness in relation to max
-    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(millis()/100+i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity. 
-  }
-  
-/*
-  extern double fftBin[];                   // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
-  extern double fftResult[];
-  #define samples 480                       // Don't use the highest bins.
-
-  double maxVal = 0;
-
-  for (int i = 0; i < 16; i++) {            // apleshu's quickie method to to get the max volume.
-    if (fftResult[i] > maxVal) {
-      maxVal = fftResult[i];                // These values aren't normalized though.
-    }
-  }
-
-  if (maxVal == 0) maxVal = 255;                        // If maxVal is too low, we'll have a mapping issue.
-  if (maxVal > (256-SEGMENT.intensity)*10) maxVal = (256-SEGMENT.intensity)*10;         // That maxVal may be >2550, so let's cap it.
-
-  for (int i=0; i<SEGLEN; i++) {
-
-    uint16_t startBin = 7+i*samples/SEGLEN;         // Don't use the first 7 bins.
-    uint16_t   endBin = 7+(i+1)*samples/SEGLEN;     // Ditto.
-
-    double sumBin = 0;
-    for (int j=startBin; j<=endBin; j++) {sumBin += fftBin[j];}
-    sumBin = sumBin/(endBin-startBin+1);                // Normalize it
-
-    if (sumBin > maxVal) sumBin = maxVal;               // Make sure our bin isn't higher than the max . . which we capped earlier.
-    uint8_t bright = mapf(sumBin, 0, maxVal, 0, 255);   // find the brightness in relation to max
-  setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity.
-  }
-*/
-
-#else
-  fade_out(224);
-#endif // ESP8266
-
-  return FRAMETIME;
-} // mode_binmap()
-
-
-//////////////////////
-//  ** NOISEPEAK    //
-//////////////////////
-
-uint16_t WS2812FX::mode_noisepeak(void) {                  // Noisepeak.  Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise across SEGLEN. By Andrew Tuline.
-
-#ifndef ESP8266
-
-  static CRGBPalette16 thisPalette;
-  static uint16_t dist;
-  CRGB color;
-
-  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;   // Get to 255 as quick as you can.
-  fade_out(fadeRate);
-
-  uint8_t pixCol = SEGMENT.intensity+(log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-
-   if (samplePeak) {
-      samplePeak = 0;
-
-      // Palette defined on the fly that stays close to the base pixCol.
-      thisPalette = CRGBPalette16(CHSV(pixCol,255,random8(128,255)),CHSV(pixCol+32,255,random8(128,255)),CHSV(pixCol+80,192,random8(128,255)),CHSV(pixCol+16,255,random8(128,255)));
-
-      for (int i = 0; i < SEGLEN; i++) {
-        uint8_t index = inoise8(i*30, dist+i*30);                       // Get a value from the noise function. I'm using both x and y axis.
-        color = ColorFromPalette(thisPalette, index, 255, LINEARBLEND);       // Use the my own palette.
-        setPixelColor(i, color.red, color.green, color.blue);
-      }
-    }
-  dist += beatsin8(10,1,4);
-
-#else
-  fade_out(224);
-#endif // ESP8266
-
-  return FRAMETIME;
-} // mode_noisepeak()
-
-
-//////////////////////
-//  ** NOISEMOVE    //
-//////////////////////
-
-uint16_t WS2812FX::mode_noisemove(void) {          // Noisemove.    By: Andrew Tuline
-#ifndef ESP8266
-
-  extern double fftResult[];
-
-  fade_out(SEGMENT.intensity);
-
-  for (int i=0; i<6; i++) {     // DO NOT make this > 5 because we only have 16 FFTresult bins.
-    uint16_t locn = inoise16(millis()*SEGMENT.speed+i*50000, millis()*SEGMENT.speed);           // Get a new pixel location from moving noise.
-    
-    locn = map(locn,7500,58000,0,SEGLEN-1);                                 // Map that to the length of the strand, and ensure we don't go over.
-    locn = locn % (SEGLEN - 1);                                             // Just to be bloody sure.
-    
-    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i*3]*8)); 
-  }
-
-#else
-  fade_out(224);
-#endif // ESP8266
-
-  return FRAMETIME;
-} // mode_noisemove()
-
-
 
 #ifndef ESP8266
 /////////////////////////////////
 //     START of 2D ROUTINES    //
-/////////////////////////////////                                // needs to become a variable that we can set from the UI
+/////////////////////////////////
 
 static uint16_t x = 0;
 static uint16_t y = 0;
 static uint16_t z = 0;
 static int speed2D = 20;
-
 
 
 // uint8_t colorLoop = 1;
@@ -4667,7 +4708,6 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {                                // fi
                                    CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
                                    CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
 
-
   int a = millis();
   for (int j=0; j < matrixWidth; j++) {
     for (int i=0; i < matrixHeight; i++) {
@@ -4681,9 +4721,6 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {                                // fi
   
     } // for i
   } // for j
-
-
-
 
   for (int i=0; i<SEGLEN; i++) {
     setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
@@ -5049,39 +5086,3 @@ uint16_t WS2812FX::mode_ablank1(void) {
 
   return FRAMETIME;
 } // mode_ablank1()
-
-
-////////////////////////////////
-//  ** FFT test  by Yariv-H   //
-////////////////////////////////
-
-uint16_t WS2812FX::fft_test() {
-
-#ifndef ESP8266
-/*  double temp[16];
-  memcpy(temp, fftResult, sizeof(fftResult[0])*16);
-  for(int i = 0; i < 16; i++) {
-      int val = constrain(temp[i],0,254);
-      Serial.print(val); Serial.print(" ");
-      if(val<255 && val >0){
-        CRGB newcolor = CHSV(192, 220, val);
-        setPixelColor(i, crgb_to_col(newcolor));
-      } else {
-        CRGB newcolor = CHSV(192, 220, 0);
-        setPixelColor(i, crgb_to_col(newcolor));
-      }
-    }
-    Serial.println(" ");
-*/
- for(int i = 0; i < 16; i++) {
-    Serial.print(fftResult[i]); Serial.print(" ");
-  }
-    Serial.println(" ");
-
-    
-#else
-  fade_out(224);
-#endif // ESP8266
-
-  return FRAMETIME;
-} //
