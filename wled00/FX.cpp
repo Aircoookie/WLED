@@ -3567,7 +3567,7 @@ uint16_t WS2812FX::mode_chunchun(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//    Start of Audio Reactive fork, beginning with Non-reactive routines   //
+//    Start of Audio Reactive fork, beginning with non-reactive routines   //
 /////////////////////////////////////////////////////////////////////////////
 
 
@@ -3575,7 +3575,7 @@ uint16_t WS2812FX::mode_chunchun(void)
 //     Perlin Move     //
 /////////////////////////
 
-// 16 bit perlinmove. Use Perlin Noise instead of sinewaves for movement.By Andrew Tuline.
+// 16 bit perlinmove. Use Perlin Noise instead of sinewaves for movement. By Andrew Tuline.
 // Controls are speed, # of pixels, faderate.
 uint16_t WS2812FX::mode_perlinmove(void) {
                                         
@@ -3926,10 +3926,6 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
 } // mode_ripplepeak()
 
 
-
-
-
-
 ///////////////////////////////
 //     BEGIN FFT ROUTINES    //
 ///////////////////////////////
@@ -3945,14 +3941,10 @@ double volume = 1;
 uint32_t ledData[MAX_LEDS];                 // See const.h for a value of 1500.
 uint32_t dataStore[4096];										// we are declaring a storage area or 64 x 64 (4096) words.
 
-
 double mapf(double x, double in_min, double in_max, double out_min, double out_max){
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-
 #endif // ESP8266
-
-
 
 
 ///////////////////////
@@ -4306,7 +4298,6 @@ uint16_t WS2812FX::mode_noisemove(void) {          // Noisemove.    By: Andrew T
 } // mode_noisemove()
 
 
-
 //////////////////////
 //  ** NOISEPEAK    //
 //////////////////////
@@ -4424,7 +4415,6 @@ static uint16_t y = 0;
 static uint16_t z = 0;
 static int speed2D = 20;
 
-
 // uint8_t colorLoop = 1;
 
 // Scale determines how far apart the pixels in our noise matrix are.  Try
@@ -4433,9 +4423,7 @@ static int speed2D = 20;
 // of 1 will be so zoomed in, you'll mostly see solid colors.
 static int scale_2d = 30; // scale is set dynamically once we've started up
 
-
 #endif // ESP8266
-
 
 // blur1d: one-dimensional blur filter. Spreads light to 2 line neighbors.
 // blur2d: two-dimensional blur filter. Spreads light to 8 XY neighbors.
@@ -4502,8 +4490,6 @@ void WS2812FX::blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blu
         }
     }
 }
-
-
 
 // Set 'matrixSerpentine' to false if your pixels are 
 // laid out all running the same way, like this:
@@ -4582,7 +4568,6 @@ uint16_t i;
   return i;
 #endif // ESP8266
 }
-
 
 
 //////////////////////
@@ -4680,7 +4665,6 @@ uint16_t WS2812FX::mode_2Dplasma(void) {                 // By Andreas Pleschutz
   ihue+=1;
   }
 
-
 #else
   fade_out(224);
 #endif // ESP8266
@@ -4707,7 +4691,6 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {                                // fi
                                    CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,                                   
                                    CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
                                    CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
-
   int a = millis();
   for (int j=0; j < matrixWidth; j++) {
     for (int i=0; i < matrixHeight; i++) {
@@ -4740,7 +4723,7 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {                                // fi
 
 uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://gist.github.com/kriegsman/368b316c55221134b160
                                                 // Modifed by: Andrew Tuline
-                                                // Speed affects the blur amount.
+                                                // fft3 affects the blur amount.
 #ifndef ESP8266
 
   CRGB *leds = (CRGB *)ledData;
@@ -5018,71 +5001,3 @@ uint16_t WS2812FX::mode_2Dmeatballs(void) {    // Metaballs by Stefan Petrick. C
 
   return FRAMETIME;
 } // mode_2Dmeatballs()
-
-
-//////////////////////
-//      ABlank0     //
-//////////////////////
-
-uint16_t WS2812FX::mode_ablank0(void) {
-#ifndef ESP8266
-/*  
-
-  CRGB *leds = (CRGB* )ledData;
-
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
-  
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
-
-
-// ADD FASTLED ROUTINE HERE and use matrixWidth, matrixHeight and SEGLEN
-
-
-   for (int i=0; i<SEGLEN; i++) {
-      setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
-   }
-  } // if millis
-*/
-  fade_out(224);
-#else
-  fade_out(224);
-#endif // ESP8266
-
-  return FRAMETIME;
-} // mode_ablank0()
-
-
-//////////////////////
-//      ABlank1     //
-//////////////////////
-
-uint16_t WS2812FX::mode_ablank1(void) {
-
-#ifndef ESP8266
-/*  
-  CRGB *leds = (CRGB* )ledData;
-
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
-  
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
-
-
-// ADD FASTLED ROUTINE HERE and use matrixWidth, matrixHeight and SEGLEN
-
-
-   for (int i=0; i<SEGLEN; i++) {
-      setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
-   }
-  } // if millis
-*/
-  fade_out(224);
-#else
-  fade_out(224);
-#endif // ESP8266
-
-  return FRAMETIME;
-} // mode_ablank1()
