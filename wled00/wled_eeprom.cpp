@@ -296,13 +296,13 @@ void saveSettingsToEEPROM()
   EEPROM.write(audio_i+5, effectFFT2);
   EEPROM.write(audio_i+6, effectFFT3);
   
-//#ifndef ESP8266
+#ifndef ESP8266
   EEPROM.write(audio_i+7, strip.matrixWidth & 0xFF);
   EEPROM.write(audio_i+8, (strip.matrixWidth >> 8) & 0xFF);
   EEPROM.write(audio_i+9, strip.matrixHeight & 0xFF);
   EEPROM.write(audio_i+10, (strip.matrixHeight >> 8) & 0xFF);
   EEPROM.write(audio_i+11, strip.matrixSerpentine);
-//#endif
+#endif
   
 // End of Audio Reactive SEGMENT specific write settings
 
@@ -624,11 +624,11 @@ void loadSettingsFromEEPROM(bool first)
     effectFFT2 = EEPROM.read(audio_i+5);
     effectFFT3 = EEPROM.read(audio_i+6);
 
-//#ifndef ESP8266    
+#ifndef ESP8266    
     strip.matrixWidth = EEPROM.read(audio_i+7) + ((EEPROM.read(audio_i+8) << 8) & 0xFF00);
     strip.matrixHeight = EEPROM.read(audio_i+9) + ((EEPROM.read(audio_i+10) << 10) & 0xFF00);
     strip.matrixSerpentine = EEPROM.read(audio_i+11); // > 0;
-//#endif
+#endif
     
   }
 // End of Audio Reactive SEGMENT specific read settings
