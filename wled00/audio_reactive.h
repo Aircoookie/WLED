@@ -7,6 +7,9 @@
 
 #include "wled.h"
 
+//#define FFT_SAMPLING_LOG
+//#define MIC_SAMPELING_LOG
+
 #ifndef ESP8266
   TaskHandle_t FFT_Task;
 #endif
@@ -282,3 +285,34 @@ void agcAvg() {                                                       // A simpl
 }
 
 #endif
+
+void logAudio() {
+
+#ifdef MIC_SAMPELING_LOG
+  //------------ Oscilloscope output ---------------------------
+    Serial.print(targetAgc); Serial.print(" ");
+    Serial.print(multAgc); Serial.print(" ");
+    Serial.print(sampleAgc); Serial.print(" ");
+
+    Serial.print(sample); Serial.print(" ");
+    Serial.print(sampleAvg); Serial.print(" ");
+    Serial.print(micLev); Serial.print(" ");
+    Serial.print(samplePeak); Serial.print(" ");    //samplePeak = 0;
+    Serial.print(micIn); Serial.print(" ");
+    Serial.print(100); Serial.print(" ");
+    Serial.print(0); Serial.print(" ");
+    Serial.println(" ");
+  #ifndef ESP8266                                   // if we are on a ESP32
+    Serial.print("running on core ");               // identify core
+    Serial.println(xPortGetCoreID());
+  #endif
+#endif
+
+#ifdef FFT_SAMPLING_LOG
+    for(int i=0; i<16; i++) {
+      Serial.print((int)constrain(fftResult[i],0,254));
+      Serial.print(" ");
+    }
+    Serial.println("");
+#endif
+}
