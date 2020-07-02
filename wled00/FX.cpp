@@ -2606,7 +2606,6 @@ uint16_t WS2812FX::mode_balltrack(void) {
   // non-chosen color is a random color
   uint8_t numBalls = int(((SEGMENT.intensity * (maxNumBalls - 0.8f)) / 255) + 1);
 
-
   unsigned long time = millis();
 
   if (SEGENV.call == 0) {
@@ -2614,38 +2613,72 @@ uint16_t WS2812FX::mode_balltrack(void) {
       balls[i].lastBounceUpdate = time;
       balls[i].velocity = 0;
       while(abs(balls[i].velocity)<.5){
-        balls[i].velocity=10.*(-.5-float(random16(0, 10000)) / 10000.0); // from -5. to 5. note that sqt(2*9.8)= 4.4 max speed in bouncing ball mode
+        balls[i].velocity=10*(-.5-float(random16(0, 10000)) / 10000.0); // time units are ms
       }
       balls[i].height=(float(random16(0, 10000)) / 10000.0); // from 0. to 1.
       balls[i].mass=(float(random16(5000, 10000)) / 10000.0); // from .5 to 1.
     }
   }
 
+  float cfac = float((255-SEGMENT.speed)*8/256 +1)*20000.; // this uses the Air cookie conversion factor for scaling time using speed slider
+
   bool hasCol2 = SEGCOLOR(2);
   fill(hasCol2 ? BLACK : SEGCOLOR(1));
 
   for (uint8_t i = 0; i < numBalls; i++) {
-    if(abs(balls[i].velocity)<.5) { // then I am guessing we have a new ball
+    if(abs(balls[i].velocity)<0) { // then I am guessing we have a new ball as intensity changed
       balls[i].lastBounceUpdate = time;
       balls[i].velocity = 0;
       while(abs(balls[i].velocity)<.5){
-        balls[i].velocity=10.*(-.5-float(random16(0, 10000)) / 10000.0); // from -5. to 5. note that sqt(2*9.8)= 4.4 max speed in bouncing ball mode
+        balls[i].velocity=10*(-.5-float(random16(0, 10000)) / 10000.0); // time units are ms
       }
       balls[i].height=(float(random16(0, 10000)) / 10000.0); // from 0. to 1.
       balls[i].mass=(float(random16(5000, 10000)) / 10000.0); // from .5 to 1.
     }
 
-
-    float timeSinceLastUpdate = (time - balls[i].lastBounceUpdate)/((255-SEGMENT.speed)*8/256 +1); //uses Air Cookie conversion
-    balls[i].height += balls[i].velocity * timeSinceLastUpdate/1000/10;
-    // test if intensity level was increased and some balls are way off the track
-    if(balls[i].height<-.5 || balls[i].height> 1.5){
+    float timeSinceLastUpdate = (time - balls[i].lastBounceUpdate)/cfac;
+    float thisHeight= balls[i].height + balls[i].velocity * timeSinceLastUpdate; // this method keeps higher resolution
+    // test if intensity level was increased and some balls are way off the track so put them back
+    if(thisHeight<-.5 || thisHeight> 1.5){
       balls[i].height=(float(random16(0, 10000)) / 10000.0); // from 0. to 1.
+      thisHeight=balls[i].height;
+      balls[i].lastBounceUpdate = time;
     }
-
-    if (balls[i].height < 0. && balls[i].velocity<0) balls[i].velocity=-balls[i].velocity; //reverse velocity
-    if (balls[i].height > 1. && balls[i].velocity>0) balls[i].velocity=-balls[i].velocity; // reverse velocity
-    balls[i].lastBounceUpdate = time;
+// check if reached ends of the strip
+    if ((thisHeight <= 0. && balls[i].velocity<0)||(thisHeight >= 1. && balls[i].velocity>0)){
+      balls[i].velocity=-balls[i].velocity; // reverse velocity
+      balls[i].lastBounceUpdate = time;
+      balls[i].height=thisHeight;
+    }
+// check for collisions
+    bool docol=true;
+    if(docol){
+      for(uint8_t j= i+1; j < numBalls; j++){
+        float timeSinceLastUpdate2 = (time - balls[j].lastBounceUpdate)/cfac;
+        float thisHeight2= balls[j].height + balls[j].velocity * timeSinceLastUpdate2;
+        bool collided=false;
+        //if((balls[i].height<=balls[j].height)&&(thisHeight>=thisHeight2)) collided=true;
+        //if((balls[i].height>balls[j].height)&&(thisHeight<=thisHeight2)) collided=true;
+        if((balls[i].height<=thisHeight2)&&(thisHeight>=thisHeight2)) collided=true;
+        if((balls[i].height> thisHeight2)&&(thisHeight<=thisHeight2)) collided=true;
+        if(balls[i].velocity==balls[j].velocity) collided=false; // avoid divide by zero
+        if(collided){
+          double tcollided=((balls[j].height*cfac-balls[j].velocity*double(balls[j].lastBounceUpdate))
+                         - (balls[i].height*cfac-balls[i].velocity*double(balls[i].lastBounceUpdate)) )/
+                         ((balls[i].velocity-balls[j].velocity));
+          float hcollided=balls[i].height+ balls[i].velocity*(tcollided-balls[i].lastBounceUpdate)/cfac;
+          balls[i].height=hcollided;
+          balls[j].height=hcollided;
+          balls[i].lastBounceUpdate=(unsigned long)tcollided;
+          balls[j].lastBounceUpdate=(unsigned long)tcollided;
+          float vtmp=balls[i].velocity;
+          balls[i].velocity=((balls[i].mass-balls[j].mass)*vtmp+2.*balls[j].mass*balls[j].velocity)/(balls[i].mass+balls[j].mass);
+          balls[j].velocity=((balls[j].mass-balls[i].mass)*balls[j].velocity + 2.*balls[i].mass*vtmp)/(balls[i].mass+balls[j].mass);
+          timeSinceLastUpdate = (time - tcollided)/cfac; 
+          thisHeight= balls[i].height + balls[i].velocity * timeSinceLastUpdate; // 
+        }
+    }
+    }
 
     uint32_t color = SEGCOLOR(0);
     if (SEGMENT.palette) {
@@ -2654,7 +2687,9 @@ uint16_t WS2812FX::mode_balltrack(void) {
       color = SEGCOLOR(i % NUM_COLORS);
     }
 
-    uint16_t pos = round(balls[i].height * (SEGLEN - 1));
+    if (thisHeight<0) thisHeight=0;
+    if (thisHeight>1) thisHeight=1;
+    uint16_t pos = round(thisHeight * (SEGLEN - 1));
     setPixelColor(pos, color);
   }
 
