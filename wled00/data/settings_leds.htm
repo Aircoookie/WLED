@@ -59,8 +59,8 @@
 	  var LCH = parseInt(d.Sf.LCH.value, 10)
 	  if (!isNaN(LCW) && !isNaN(LCH) && (LCW > 0 || LCH > 0) && LCW * LCH != parseInt(d.Sf.LC.value, 10)) {
 		d.getElementById('2dwarning').style.display = 'inline';
-		d.getElementById('submitButton').disabled = true;
-		d.getElementById('submitButton2').disabled = true;
+		d.getElementById('submitButton').disabled = false;
+		d.getElementById('submitButton2').disabled = false;
 	  } else {
 		d.getElementById('2dwarning').style.display = 'none';
 		d.getElementById('submitButton').disabled = false;
