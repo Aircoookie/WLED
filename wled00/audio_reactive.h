@@ -8,7 +8,7 @@
 #include "wled.h"
 
 //#define FFT_SAMPLING_LOG
-//#define MIC_SAMPELING_LOG
+//#define MIC_SAMPLING_LOG
 
 #ifndef ESP8266
   TaskHandle_t FFT_Task;
@@ -289,7 +289,7 @@ void agcAvg() {                                                       // A simpl
 
 void logAudio() {
 
-#ifdef MIC_SAMPELING_LOG
+#ifdef MIC_SAMPLING_LOG
   //------------ Oscilloscope output ---------------------------
     Serial.print(targetAgc); Serial.print(" ");
     Serial.print(multAgc); Serial.print(" ");
