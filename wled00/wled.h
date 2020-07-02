@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2006251
+#define VERSION 2007020
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -30,6 +30,7 @@
 #endif
 #define WLED_ENABLE_ADALIGHT       // saves 500b only
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
+//#define WLED_ENABLE_WEBSOCKETS
 
 #define WLED_DISABLE_FILESYSTEM        // SPIFFS is not used by any WLED feature yet
 //#define WLED_ENABLE_FS_SERVING   // Enable sending html file from SPIFFS before serving progmem version
@@ -480,6 +481,9 @@ WLED_GLOBAL bool doPublishMqtt _INIT(false);
 
 // server library objects
 WLED_GLOBAL AsyncWebServer server _INIT_N(((80)));
+#ifdef WLED_ENABLE_WEBSOCKETS
+WLED_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
+#endif
 WLED_GLOBAL AsyncClient* hueClient _INIT(NULL);
 WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
 

@@ -333,6 +333,12 @@ void serializeInfo(JsonObject root)
     root["lip"] = realtimeIP.toString();
   }
 
+  #ifdef WLED_ENABLE_WEBSOCKETS
+  root["ws"] = ws.count();
+  #else
+  root["ws"] = -1;
+  #endif
+
   root["fxcount"] = strip.getModeCount();
   root["palcount"] = strip.getPaletteCount();
 
@@ -454,21 +460,37 @@ void serveJson(AsyncWebServerRequest* request)
 
 #define MAX_LIVE_LEDS 180
 
-void serveLiveLeds(AsyncWebServerRequest* request)
+bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 {
+  AsyncWebSocketClient * wsc;
+  if (!request) { //not HTTP, use Websockets
+    #ifdef WLED_ENABLE_WEBSOCKETS
+    wsc = ws.client(wsClient);
+    if (!wsc || wsc->queueLength() > 0) return false; //only send if queue free
+    #endif
+  }
+
   uint16_t used = ledCount;
   uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
   char buffer[2000] = "{\"leds\":[";
-  olen = 9;
   obuf = buffer;
+  olen = 9;
 
   for (uint16_t i= 0; i < used; i += n)
   {
-    olen += sprintf(buffer + olen, "\"%06X\",", strip.getPixelColor(i));
+    olen += sprintf(obuf + olen, "\"%06X\",", strip.getPixelColor(i));
   }
   olen -= 1;
   oappend("],\"n\":");
   oappendi(n);
   oappend("}");
-  request->send(200, "application/json", buffer);
+  if (request) {
+    request->send(200, "application/json", buffer);
+  }
+  #ifdef WLED_ENABLE_WEBSOCKETS
+  else {
+    wsc->text(obuf, olen);
+  }
+  #endif
+  return true;
 }

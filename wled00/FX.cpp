@@ -1599,7 +1599,7 @@ uint16_t WS2812FX::mode_oscillate(void)
 uint16_t WS2812FX::mode_lightning(void)
 {
   uint16_t ledstart = random16(SEGLEN);               // Determine starting location of flash
-  uint16_t ledlen = random16(SEGLEN -1 -ledstart);    // Determine length of flash (not to go beyond NUM_LEDS-1)
+  uint16_t ledlen = 1 + random16(SEGLEN -ledstart);    // Determine length of flash (not to go beyond NUM_LEDS-1)
   uint8_t bri = 255/random8(1, 3);
 
   if (SEGENV.step == 0)
@@ -2247,7 +2247,7 @@ uint16_t WS2812FX::mode_ripple_rainbow(void) {
 CRGB WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat)
 {
   // Overall twinkle speed (changed)
-  uint16_t ticks = ms / (32 - (SEGMENT.speed >> 3));
+  uint16_t ticks = ms / SEGENV.aux0;
   uint8_t fastcycle8 = ticks;
   uint16_t slowcycle16 = (ticks >> 8) + salt;
   slowcycle16 += sin8(slowcycle16);
@@ -2312,10 +2312,11 @@ uint16_t WS2812FX::twinklefox_base(bool cat)
   // numbers that it generates is (paradoxically) stable.
   uint16_t PRNG16 = 11337;
 
+  // Calculate speed
+  if (SEGMENT.speed > 100) SEGENV.aux0 = 3 + ((255 - SEGMENT.speed) >> 3);
+  else SEGENV.aux0 = 22 + ((100 - SEGMENT.speed) >> 1);
+
   // Set up the background color, "bg".
-  // if AUTO_SELECT_BACKGROUND_COLOR == 1, and the first two colors of
-  // the current palette are identical, then a deeply faded version of
-  // that color is used for the background color
   CRGB bg;
   bg = col_to_crgb(SEGCOLOR(1));
   uint8_t bglight = bg.getAverageLight();
