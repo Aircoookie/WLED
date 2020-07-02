@@ -842,8 +842,8 @@ const char JSON_palette_names[] PROGMEM = R"=====([
 "Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
-"Aurora","Atlantica", "bhw1_01_gp", "bhw1_04_gp", "bhw1_05_gp", "bhw1_06_gp", "bhw1_14_gp", "bhw1_three_gp", "bhw1_w00t_gp",
-"bhw2_23_gp", "hw2_xc_gp", "bhw2_45_gp", "bhw2_22_gp", "bhw3_40_gp", "bhw3_52_gp", "bhw4_097_gp", "bhw4_017_gp"
+"Aurora","Atlantica", "Retro Clown", "Candy", "Toxy Reaf", "Fairy Reaf", "Semi Blue", "Pink Candy", "Red Reaf",
+"Red & Flash", "YBlue", "Lite Light", "Pink Plasma", "Blink Red", "Yellow 2 Blue", "Yellow 2 Red", "Candy2"
 ])=====";
 
 #endif

@@ -589,7 +589,7 @@ const byte Atlantica_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 12 bytes of program space.
 
-const byte bhw1_01_gp[] PROGMEM = {
+const byte Retro_Clown[] PROGMEM = {
     0, 227,101,  3,
   117, 194, 18, 19,
   255,  92,  8,192};
@@ -599,7 +599,7 @@ const byte bhw1_01_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 20 bytes of program space.
 
-const byte bhw1_04_gp[] PROGMEM = {
+const byte Candy[] PROGMEM = {
     0, 229,227,  1,
    15, 227,101,  3,
   142,  40,  1, 80,
@@ -611,7 +611,7 @@ const byte bhw1_04_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 8 bytes of program space.
 
-const byte bhw1_05_gp[] PROGMEM = {
+const byte Toxy_Reaf[] PROGMEM = {
     0,   1,221, 53,
   255,  73,  3,178};
 
@@ -620,7 +620,7 @@ const byte bhw1_05_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 16 bytes of program space.
 
-const byte  bhw1_06_gp[] PROGMEM = {
+const byte  Fairy_Reaf[] PROGMEM = {
     0, 184,  1,128,
   160,   1,193,182,
   219, 153,227,190,
@@ -631,7 +631,7 @@ const byte  bhw1_06_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 36 bytes of program space.
 
-const byte bhw1_14_gp[] PROGMEM = {
+const byte Semi_Blue[] PROGMEM = {
     0,   0,  0,  0,
    12,   1,  1,  3,
    53,   8,  1, 22,
@@ -647,7 +647,7 @@ const byte bhw1_14_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 32 bytes of program space.
 
-const byte bhw1_three_gp[] PROGMEM = {
+const byte Pink_Candy[] PROGMEM = {
     0, 255,255,255,
    45,   7, 12,255,
   112, 227,  1,127,
@@ -662,7 +662,7 @@ const byte bhw1_three_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 16 bytes of program space.
 
-const byte bhw1_w00t_gp[] PROGMEM = {
+const byte Red_Reaf[] PROGMEM = {
     0,   3, 13, 43,
   104,  78,141,240,
   188, 255,  0,  0,
@@ -674,7 +674,7 @@ const byte bhw1_w00t_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 28 bytes of program space.
 
-const byte bhw2_23_gp[] PROGMEM = {
+const byte Red_n_Flash[] PROGMEM = {
     0,   0,  0,  0,
    66,  57,227,233,
    96, 255,255,  8,
@@ -688,7 +688,7 @@ const byte bhw2_23_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 28 bytes of program space.
 
-const byte hw2_xc_gp[] PROGMEM = {
+const byte YBlue[] PROGMEM = {
     0,   4,  2,  9,
    58,  16,  0, 47,
   122,  24,  0, 16,
@@ -702,7 +702,7 @@ const byte hw2_xc_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 24 bytes of program space.
 
-const byte bhw2_45_gp[] PROGMEM = {
+const byte Lite_Light[] PROGMEM = {
     0,   0,  0,  0,
     9,   1,  1,  1,
    40,   5,  5,  6,
@@ -715,7 +715,7 @@ const byte bhw2_45_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 20 bytes of program space.
 
-const byte bhw2_22_gp[] PROGMEM = {
+const byte Pink_Plasma[] PROGMEM = {
     0,   0,  0,  0,
    99, 227,  1,  1,
   130, 249,199, 95,
@@ -727,7 +727,7 @@ const byte bhw2_22_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 32 bytes of program space.
 
-const byte bhw3_40_gp[] PROGMEM = {
+const byte Blink_Red[] PROGMEM = {
     0,   1,  1,  1,
    43,   4,  1, 11,
    76,  10,  1,  3,
@@ -742,7 +742,7 @@ const byte bhw3_40_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 28 bytes of program space.
 
-const byte bhw3_52_gp[] PROGMEM = {
+const byte Yellow2Blue[] PROGMEM = {
     0,  31,  1, 27,
    45,  34,  1, 16,
    99, 137,  5,  9,
@@ -756,7 +756,7 @@ const byte bhw3_52_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 44 bytes of program space.
 
-const byte bhw4_097_gp[] PROGMEM = {
+const byte Yellow2Red[] PROGMEM = {
     0, 247,  5,  0,
    28, 255, 67,  1,
    43, 234, 88, 11,
@@ -774,7 +774,7 @@ const byte bhw4_097_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 40 bytes of program space.
 
-const byte bhw4_017_gp[] PROGMEM = {
+const byte Candy2[] PROGMEM = {
     0,  39, 33, 34,
    25,   4,  6, 15,
    48,  49, 29, 22,
@@ -834,21 +834,21 @@ const byte* const gGradientPalettes[] PROGMEM = {
   Sakura_gp,                    //49-36 Sakura
   Aurora_gp,                    //50-37 Aurora
   Atlantica_gp,                 //51-38 Atlantica
-  bhw1_01_gp,
-  bhw1_04_gp,
-  bhw1_05_gp,
-  bhw1_06_gp,
-  bhw1_14_gp,
-  bhw1_three_gp,
-  bhw1_w00t_gp,
-  bhw2_23_gp,
-  hw2_xc_gp,
-  bhw2_45_gp,
-  bhw2_22_gp,
-  bhw3_40_gp,
-  bhw3_52_gp,
-  bhw4_097_gp,
-  bhw4_017_gp
+  Retro_Clown,
+  Candy,
+  Toxy_Reaf,
+  Fairy_Reaf,
+  Semi_Blue,
+  Pink_Candy,
+  Red_Reaf,
+  Red_n_Flash,
+  YBlue,
+  Lite_Light,
+  Pink_Plasma,
+  Blink_Red,
+  Yellow2Blue,
+  Yellow2Red,
+  Candy2
 };
 
 #endif
