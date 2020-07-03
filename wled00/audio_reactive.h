@@ -7,20 +7,25 @@
 
 #include "wled.h"
 
+//#define FFT_SAMPLING_LOG
+//#define MIC_SAMPLING_LOG
+
 #ifndef ESP8266
   TaskHandle_t FFT_Task;
 #endif
 
 //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
-
-#ifdef ESP8266
-  #define MIC_PIN   A0
-#else
-  #define MIC_PIN   36    // Changed to direct pin name since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
+#ifndef MIC_PIN
+  #ifdef ESP8266
+    #define MIC_PIN   A0
+  #else
+    #define MIC_PIN   36    // Changed to direct pin name since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
+  #endif
+#endif
 #ifndef LED_BUILTIN       // Set LED_BUILTIN if it is not defined by Arduino framework
   #define LED_BUILTIN 3
 #endif
-#endif
+
 
 // As defined in wled00.h
 // byte soundSquelch = 10;                          // default squelch value for volume reactive routines
@@ -32,7 +37,9 @@ float sampleAvg = 0;                                // Smoothed Average
 float micLev = 0;                                   // Used to convert returned value to have '0' as minimum. A leveller
 uint8_t maxVol = 11;                                // Reasonable value for constant volume for 'peak detector', as it won't always trigger
 bool samplePeak = 0;                                // Boolean flag for peak. Responding routine must reset this flag
-
+#ifndef ESP8266                                     // Transmitting doesn't work on ESP8266, don't bother allocating memory
+bool udpSamplePeak = 0;                             // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
+#endif
 int sampleAgc;                                      // Our AGC sample
 float multAgc;                                      // sample * multAgc = sampleAgc. Our multiplier
 uint8_t targetAgc = 60;                             // This is our setPoint at 20% of max for the adjusted output
@@ -45,6 +52,18 @@ uint16_t micData;                                   // Analog input for FFT
 uint16_t lastSample;                                // last audio noise sample
 
 uint8_t myVals[32];                                 // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized
+
+struct audioSyncPacket {
+  char intro[6] = "WLEDP";
+  uint8_t myVals[32];     //  32 Bytes
+  int sampleAgc;          //  04 Bytes
+  int sample;             //  04 Bytes
+  float sampleAvg;        //  04 Bytes
+  bool samplePeak;        //  01 Bytes
+  double fftResult[16];   // 128 Bytes
+  double FFT_Magnitude;   //  08 Bytes
+  double FFT_MajorPeak;   //  08 Bytes
+};
 
 void getSample() {
   static long peakTime;
@@ -67,12 +86,15 @@ void getSample() {
 
   lastSample = micIn;
 
-  sample = (micIn <= soundSquelch) ? 0 : (sample*3 + micIn) / 4;   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
-  sampleAvg = ((sampleAvg * 15) + sample) / 16;               // Smooth it out over the last 16 samples.
+  sample = (micIn <= soundSquelch) ? 0 : (sample*3 + micIn) / 4;  // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
+  sampleAvg = ((sampleAvg * 15) + sample) / 16;                   // Smooth it out over the last 16 samples.
 
   if (userVar1 == 0) samplePeak = 0;
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 300)) {   // Poor man's beat detection by seeing if sample > Average + some value.
     samplePeak = 1;                                                   // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
+#ifndef ESP8266
+    udpSamplePeak = 1;
+#endif
     userVar1 = samplePeak;
     peakTime=millis();
   }
@@ -88,24 +110,6 @@ void agcAvg() {                                                       // A simpl
   userVar0 = sampleAvg * 4;
   if (userVar0 > 255) userVar0 = 255;
 
-//------------ Oscilloscope output ---------------------------
-//  Serial.print(targetAgc); Serial.print(" ");
-//  Serial.print(multAgc); Serial.print(" ");
-//  Serial.print(sampleAgc); Serial.print(" ");
-
-//  Serial.print(sample); Serial.print(" ");
-//  Serial.print(sampleAvg); Serial.print(" ");
-//  Serial.print(micLev); Serial.print(" ");
-//  Serial.print(samplePeak); Serial.print(" ");    //samplePeak = 0;
-//  Serial.print(micIn); Serial.print(" ");
-//  Serial.print(100); Serial.print(" ");
-//  Serial.print(0); Serial.print(" ");
-//  Serial.println(" ");
-#ifndef ESP8266                                   // if we are on a ESP32
-//  Serial.print("running on core ");               // identify core
-//  Serial.println(xPortGetCoreID());
-#endif
-
 } // agcAvg()
 
 ////////////////////
@@ -113,8 +117,47 @@ void agcAvg() {                                                       // A simpl
 ////////////////////
 
 #ifndef ESP8266
+
   #include "arduinoFFT.h"
   //#include "movingAvg.h"
+
+  void transmitAudioData()
+  {
+    if (!udpSyncConnected) return;
+    extern uint8_t myVals[];
+    extern int sampleAgc;
+    extern int sample;
+    extern float sampleAvg;
+    extern bool udpSamplePeak;
+    extern double fftResult[];
+    extern double FFT_Magnitude;
+    extern double FFT_MajorPeak;
+
+    audioSyncPacket transmitData;
+
+    for (int i = 0; i < 32; i++) {
+      transmitData.myVals[i] = myVals[i];
+    }
+
+    transmitData.sampleAgc = sampleAgc;
+    transmitData.sample = sample;
+    transmitData.sampleAvg = sampleAvg;
+    transmitData.samplePeak = udpSamplePeak;
+    udpSamplePeak = 0;                              // Reset udpSamplePeak after we've transmitted it
+
+    for (int i = 0; i < 16; i++) {
+      transmitData.fftResult[i] = fftResult[i];
+    }
+
+    transmitData.FFT_Magnitude = FFT_Magnitude;
+    transmitData.FFT_MajorPeak = FFT_MajorPeak;
+
+    fftUdp.beginMulticastPacket();
+    fftUdp.write(reinterpret_cast<uint8_t *>(&transmitData), sizeof(transmitData));
+    fftUdp.endPacket();
+    return;
+  }
+
   const uint16_t samples = 512;                     // This value MUST ALWAYS be a power of 2
   const double samplingFrequency = 10240;           // Sampling frequency in Hz
   unsigned int sampling_period_us;
@@ -132,6 +175,9 @@ void agcAvg() {                                                       // A simpl
   double vImag[samples];
   double fftBin[samples];
   double fftResult[16];
+  int noise[] = {1233,	1327,	1131,	1008,	1059,	996,	981,	973,	967,	983,	957,	957,	955,	957,	960,	976}; //ESP32 noise - run on quite evn, record FFTResults - by Yariv-H
+  int pinknoise[] = {7922,	6427,	3448,	1645,	1535,	2116,	2729,	1710,	2174,	2262,	2039,	2604,	2848,	2768,	2343,	2188}; //ESP32 pink noise - by Yariv-H
+  int maxChannel[] = {73873/2,	82224/2,	84988/2,	52898/2,	51754/2,	51221/2,	38814/2,	31443/2,	29154/2, 26204/2,	23953/2,	23022/2,	16982/2,	19399/2,	14790/2,	15612/2}; //playing sin wave 0-20khz pick the max value for each channel - by Yariv-H
 
   // Create FFT object
   arduinoFFT FFT = arduinoFFT( vReal, vImag, samples, samplingFrequency );
@@ -185,30 +231,72 @@ void agcAvg() {                                                       // A simpl
        * There could be interesting data at [2 .. 7] but chances are there are too many artifacts
        */
       FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);        // let the effects know which freq was most dominant
+      FFT.DCRemoval();
 
       for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];   // export FFT field
 
       /*
        * Create an array of 16 bins which roughly represent values the human ear
        * can determine as different frequency bands (fftBins[0..6] are already zero'd)
+
+       *
+       * set in each bin the average band value - by Yariv-H
        */
-      fftResult[0] = fftAdd(7,11) * 0.8;
-      fftResult[1] = fftAdd(12,16);
-      fftResult[2] = fftAdd(17,21);
-      fftResult[3] = fftAdd(22, 30);
-      fftResult[4] = fftAdd(31, 39);
-      fftResult[5] = fftAdd(40, 48);
-      fftResult[6] = fftAdd(49, 61);
-      fftResult[7] = fftAdd(62, 78);
-      fftResult[8] = fftAdd(79, 99);
-      fftResult[9] = fftAdd(100, 124);
-      fftResult[10] = fftAdd(125, 157);
-      fftResult[11] = fftAdd(158, 198);
-      fftResult[12] = fftAdd(199, 247);
-      fftResult[13] = fftAdd(248, 312);
-      fftResult[14] = fftAdd(313, 393);
-      fftResult[15] = fftAdd(394, 470);
-  }
+      fftResult[0] = (fftAdd(7,11) * 0.8) /5;
+      fftResult[1] = (fftAdd(12,16)) /5;
+      fftResult[2] = (fftAdd(17,21)) /5;
+      fftResult[3] = (fftAdd(22, 30)) /9;
+      fftResult[4] = (fftAdd(31, 39)) /9;
+      fftResult[5] = (fftAdd(40, 48)) /9;
+      fftResult[6] = (fftAdd(49, 61)) /13;
+      fftResult[7] = (fftAdd(62, 78)) /17;
+      fftResult[8] = (fftAdd(79, 99)) /21;
+      fftResult[9] = (fftAdd(100, 124)) /25;
+      fftResult[10] = (fftAdd(125, 157)) /33;
+      fftResult[11] = (fftAdd(158, 198)) /41;
+      fftResult[12] = (fftAdd(199, 247)) /49;
+      fftResult[13] = (fftAdd(248, 312)) /65;
+      fftResult[14] = (fftAdd(313, 393)) /81;
+      fftResult[15] = (fftAdd(394, 470)) /77;
+
+      //Remove noise by Yariv-H
+      for(int i=0; i< 16; i++) {
+          if(fftResult[i]-pinknoise[i] < 0 ) {fftResult[i]=0;} else {fftResult[i]-=pinknoise[i];}
+          fftResult[i] = constrain(map(fftResult[i], 0,  maxChannel[i], 0, 254),0,254);
+          if(fftResult[i]<0) fftResult[i]=0;
+      }
+    }
 }
 
 #endif
+
+void logAudio() {
+
+#ifdef MIC_SAMPLING_LOG
+  //------------ Oscilloscope output ---------------------------
+    Serial.print(targetAgc); Serial.print(" ");
+    Serial.print(multAgc); Serial.print(" ");
+    Serial.print(sampleAgc); Serial.print(" ");
+
+    Serial.print(sample); Serial.print(" ");
+    Serial.print(sampleAvg); Serial.print(" ");
+    Serial.print(micLev); Serial.print(" ");
+    Serial.print(samplePeak); Serial.print(" ");    //samplePeak = 0;
+    Serial.print(micIn); Serial.print(" ");
+    Serial.print(100); Serial.print(" ");
+    Serial.print(0); Serial.print(" ");
+    Serial.println(" ");
+  #ifndef ESP8266                                   // if we are on a ESP32
+    Serial.print("running on core ");               // identify core
+    Serial.println(xPortGetCoreID());
+  #endif
+#endif
+
+#ifdef FFT_SAMPLING_LOG
+    for(int i=0; i<16; i++) {
+      Serial.print((int)constrain(fftResult[i],0,254));
+      Serial.print(" ");
+    }
+    Serial.println("");
+#endif
+}

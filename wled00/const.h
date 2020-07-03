@@ -25,7 +25,7 @@
 #define AP_BEHAVIOR_ALWAYS        2            //Always open
 #define AP_BEHAVIOR_BUTTON_ONLY   3            //Only when button pressed for 6 sec
 
-//Notifier callMode 
+//Notifier callMode
 #define NOTIFIER_CALL_MODE_INIT           0    //no updates on init, can be used to disable updates
 #define NOTIFIER_CALL_MODE_DIRECT_CHANGE  1
 #define NOTIFIER_CALL_MODE_BUTTON         2
@@ -42,7 +42,7 @@
 #define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
 #define RGBW_MODE_AUTO_BRIGHTER   1            //New algorithm. Adds as much white as the darkest RGBW channel
 #define RGBW_MODE_AUTO_ACCURATE   2            //New algorithm. Adds as much white as the darkest RGBW channel and subtracts this amount from each RGB channel
-#define RGBW_MODE_DUAL            3            //Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)  
+#define RGBW_MODE_DUAL            3            //Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)
 #define RGBW_MODE_LEGACY          4            //Old floating algorithm. Too slow for realtime and palette support
 
 //realtime modes
@@ -101,7 +101,12 @@
 #define SEG_OPTION_TRANSITIONAL   7
 
 //EEPROM size
+#ifdef ESP8266
 #define EEPSIZE 4095  //Maximum is 4096
+#else
+#define EEPSIZE 4095  //Maximum is 4096
+#endif // ESP8266
+
 
 #define NTP_PACKET_SIZE 48
 

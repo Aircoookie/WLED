@@ -16,13 +16,13 @@ extra_configs =
 # ------------------------------------------------------------------------------
 
 # Travis CI binaries (comment this out when building for single board)
-; default_envs = travis_esp8266, esp01, esp01_1m_ota, travis_esp32
+default_envs = esp32dev
 
 # Release binaries
 ; default_envs = nodemcuv2, esp01, esp01_1m_ota, esp01_1m_full, esp32dev, custom_WS2801, custom_APA102, custom_LEDPIN_16, custom_LEDPIN_4, custom32_LEDPIN_16
 
-# WLED sound-reactive binaries
-default_envs = soundReactive_esp32dev, soundReactive_nodemcuv2, soundReactive_LEDPIN_4
+# WLED sound-reactive
+; default_envs = soundReactive_esp32dev, soundReactive_nodemcuv2, soundReactive_LEDPIN_4
 
 # Single binaries (uncomment your board)
 ; default_envs = nodemcuv2
@@ -77,8 +77,6 @@ arduino_core_develop = https://github.com/platformio/platform-espressif8266#deve
 arduino_core_git = https://github.com/platformio/platform-espressif8266#feature/stage
 
 # Platform to use for ESP8266
-platform_wled_default = ${common.arduino_core_2_7_1}
-# We use 2.7.0+ on analog boards because of PWM flicker fix
 platform_latest = ${common.arduino_core_2_7_1}
 
 # ------------------------------------------------------------------------------
@@ -171,9 +169,6 @@ lib_deps =
     Esp Async WebServer@1.2.0
     IRremoteESP8266@2.7.3
     arduinoFFT@1.5.5
-
-  #For use of the TTGO T-Display ESP32 Module with integrated TFT display uncomment the following line
-    #TFT_eSPI
   #For use SSD1306 OLED display uncomment following
     #U8g2@~2.27.2
   #For Dallas sensor uncomment following 2 lines
@@ -189,51 +184,51 @@ lib_ignore =
 
 [env:nodemcuv2]
 board = nodemcuv2
-platform = ${common.platform_wled_default}
+platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266}
 
 [env:esp01]
 board = esp01
-platform = ${common.platform_wled_default}
+platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_512k}
 build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_OTA -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK
-   -D WLED_DISABLE_CRONIXIE -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED -D WLED_DISABLE_MQTT
+   -D WLED_DISABLE_CRONIXIE -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
 
 [env:esp01_1m_ota]
 board = esp01_1m
-platform = ${common.platform_wled_default}
+platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_1m0m}
-build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK -D WLED_DISABLE_CRONIXIE -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED -D WLED_DISABLE_MQTT
+build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK -D WLED_DISABLE_CRONIXIE -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
 
 [env:esp01_1m_full]
 board = esp01_1m
-platform = ${common.platform_wled_default}
+platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_1m0m}
 build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_OTA
 
 [env:esp07]
 board = esp07
-platform = ${common.platform_wled_default}
+platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266}
 
 [env:d1_mini]
 board = d1_mini
-platform = ${common.platform_wled_default}
-upload_speed = 921600
+platform = ${common.platform_latest}
+upload_speed = 921500
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266}
 
 [env:heltec_wifi_kit_8]
 board = d1_mini
-platform = ${common.platform_wled_default}
+platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266}
 
 [env:h803wf]
 board = d1_mini
-platform = ${common.platform_wled_default}
+platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266} -D LEDPIN=1 -D WLED_DISABLE_INFRARED
 
@@ -241,15 +236,8 @@ build_flags = ${common.build_flags_esp8266} -D LEDPIN=1 -D WLED_DISABLE_INFRARED
 board = esp32dev
 platform = espressif32@1.11.2
 build_flags = ${common.build_flags_esp32}
-upload_speed = 460800
-lib_ignore =
-  ESPAsyncTCP
-  ESPAsyncUDP
-
-[env:elementv2]
-board = esp32dev
-platform = espressif32@1.11.2
-build_flags = ${common.build_flags_esp32} -D LEDPIN=33 -D BTNPIN=22 -D MIC_PIN=32
+upload_port = /dev/cu.SLAB_USBtoUART
+monitor_port = /dev/cu.SLAB_USBtoUART
 upload_speed = 460800
 lib_ignore =
   ESPAsyncTCP
@@ -286,7 +274,7 @@ build_flags = ${common.build_flags_esp8266} -D WLED_USE_ANALOG_LEDS -D WLED_USE_
 [env:d1_mini_debug]
 board = d1_mini
 build_type = debug
-platform = ${common.platform_wled_default}
+platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266} ${common.debug_flags}
 
@@ -295,7 +283,7 @@ board = d1_mini
 upload_protocol = espota
 # exchange for your WLED IP
 upload_port = "10.10.1.27"
-platform = ${common.platform_wled_default}
+platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266}
 
@@ -307,7 +295,7 @@ build_flags = ${common.build_flags_esp8266}
 board = esp32dev
 platform = espressif32@1.11.2
 build_flags = ${common.build_flags_esp32} -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK -D WLED_DISABLE_CRONIXIE
-  -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED -D WLED_DISABLE_MQTT
+  -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
 lib_ignore =
   ESPAsyncTCP
   ESPAsyncUDP
@@ -317,14 +305,14 @@ board = nodemcuv2
 platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266} -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK -D WLED_DISABLE_CRONIXIE
-  -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED -D WLED_DISABLE_MQTT
+  -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
 
 [env:soundReactive_LEDPIN_4]
 board = d1_mini
 platform = ${common.platform_latest}
 board_build.ldscript = ${common.ldscript_4m1m}
 build_flags = ${common.build_flags_esp8266} -D LEDPIN=4 -D IRPIN=5 -D WLED_DISABLE_ALEXA -D WLED_DISABLE_BLYNK
-  -D WLED_DISABLE_CRONIXIE -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED -D WLED_DISABLE_MQTT
+  -D WLED_DISABLE_CRONIXIE -D WLED_DISABLE_HUESYNC -D WLED_DISABLE_INFRARED
 
 # ------------------------------------------------------------------------------
 # custom board configurations
@@ -381,16 +369,3 @@ lib_ignore =
 	ESPAsyncUDP
 platform = espressif32@1.11.2
 
-# ------------------------------------------------------------------------------
-# travis test board configurations
-# ------------------------------------------------------------------------------
-
-[env:travis_esp8266]
-extends = env:d1_mini
-build_type = debug
-build_flags = ${common.build_flags_esp8266} ${common.debug_flags} ${common.build_flags_all_features}
-
-[env:travis_esp32]
-extends = env:esp32dev
-build_type = debug
-build_flags = ${common.build_flags_esp32} ${common.debug_flags} ${common.build_flags_all_features}

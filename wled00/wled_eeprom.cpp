@@ -284,13 +284,27 @@ void saveSettingsToEEPROM()
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
   #endif
 
-  //user MOD memory
-  //2944 - 3071 reserved
-
-
-// Audio Reactive specific write settings
+// Audio Reactive SEGMENT specific write settings
   uint16_t audio_i = 3072;
   EEPROM.write(audio_i, soundSquelch);
+  Serial.print(audioSyncPort);
+  EEPROM.write(audio_i+1, audioSyncPort & 0xFF);
+  EEPROM.write(audio_i+2, (audioSyncPort >> 8) & 0xFF);
+  EEPROM.write(audio_i+3, audioSyncEnabled);
+
+  EEPROM.write(audio_i+4, effectFFT1);
+  EEPROM.write(audio_i+5, effectFFT2);
+  EEPROM.write(audio_i+6, effectFFT3);
+
+#ifndef ESP8266
+  EEPROM.write(audio_i+7, strip.matrixWidth & 0xFF);
+  EEPROM.write(audio_i+8, (strip.matrixWidth >> 8) & 0xFF);
+  EEPROM.write(audio_i+9, strip.matrixHeight & 0xFF);
+  EEPROM.write(audio_i+10, (strip.matrixHeight >> 8) & 0xFF);
+  EEPROM.write(audio_i+11, strip.matrixSerpentine);
+#endif
+
+// End of Audio Reactive SEGMENT specific write settings
 
   commit();
 }
@@ -301,6 +315,7 @@ void saveSettingsToEEPROM()
  */
 void loadSettingsFromEEPROM(bool first)
 {
+
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
     DEBUG_PRINT("Settings invalid, restoring defaults...");
@@ -596,10 +611,29 @@ void loadSettingsFromEEPROM(bool first)
   //2560 - 2943 usable, NOT reserved (need to increase EEPSIZE accordingly, new WLED core features may override this section)
   //2944 - 3071 reserved for Usermods (need to increase EEPSIZE to 3072 in const.h)
 
+
 // Audio Reactive specific read settings
+
   uint16_t audio_i = 3072;
-  soundSquelch =  EEPROM.read(audio_i);
-// End of Audio Reactive Specific read settings
+
+  if (lastEEPROMversion > 20) {                                   // Version sanity checking
+    soundSquelch =  EEPROM.read(audio_i);
+    audioSyncPort = EEPROM.read(audio_i+1) + ((EEPROM.read(audio_i+2) << 8) & 0xFF00);
+//    Serial.print(audioSyncPort);
+    audioSyncEnabled = EEPROM.read(audio_i + 3);
+
+    effectFFT1 = EEPROM.read(audio_i+4);
+    effectFFT2 = EEPROM.read(audio_i+5);
+    effectFFT3 = EEPROM.read(audio_i+6);
+
+#ifndef ESP8266
+    strip.matrixWidth = EEPROM.read(audio_i+7) + ((EEPROM.read(audio_i+8) << 8) & 0xFF00);
+    strip.matrixHeight = EEPROM.read(audio_i+9) + ((EEPROM.read(audio_i+10) << 10) & 0xFF00);
+    strip.matrixSerpentine = EEPROM.read(audio_i+11); // > 0;
+#endif
+
+  }
+// End of Audio Reactive SEGMENT specific read settings
 
   overlayCurrent = overlayDefault;
 
@@ -659,9 +693,6 @@ bool applyPreset(byte index, bool loadBri)
     effectSpeed = EEPROM.read(i+11);
     effectIntensity = EEPROM.read(i+16);
     effectPalette = EEPROM.read(i+17);
-    effectFFT1 = EEPROM.read(i+18);
-    effectFFT2 = EEPROM.read(i+19);
-    effectFFT3 = EEPROM.read(i+20);
   } else {
     if (ver != 2 && ver != 3) return false;
     strip.applyToAllSelected = false;
@@ -677,6 +708,7 @@ bool applyPreset(byte index, bool loadBri)
     }
     setValuesFromMainSeg();
   }
+
   currentPreset = index;
   isPreset = true;
   return true;
@@ -707,9 +739,6 @@ void savePreset(byte index, bool persist)
 
     EEPROM.write(i+16, effectIntensity);
     EEPROM.write(i+17, effectPalette);
-    EEPROM.write(i+18, effectFFT1);
-    EEPROM.write(i+19, effectFFT2);
-    EEPROM.write(i+20, effectFFT3);
   } else { //segment 16 can save segments
     EEPROM.write(i, 3);
     EEPROM.write(i+1, bri);

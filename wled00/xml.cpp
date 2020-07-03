@@ -320,6 +320,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);
+    #ifdef ESP8266
+    sappends('v',"LCW", "");
+    sappends('v',"LCH", "");
+    sappend('c',"LCWHS", 1);
+    #else
+    sappend('v',"LCW",strip.matrixWidth);
+    sappend('v',"LCH",strip.matrixHeight);
+    sappend('c',"LCWHS",strip.matrixSerpentine);
+    #endif // ESP8266
   }
 
   if (subPage == 3)
@@ -356,6 +365,19 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"AI",alexaInvocationName);
     sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
+    if (!(((audioSyncEnabled)>>(0)) & 1) && !(((audioSyncEnabled)>>(1)) & 1)) {
+      // 0 == udp audio sync off
+      sappend('v',"ASE", 0);
+    }
+    else if ((((audioSyncEnabled)>>(0)) & 1) && !(((audioSyncEnabled)>>(1)) & 1)) {
+      // 1 == transmit only
+      sappend('v',"ASE", 1);
+    }
+    else if (!(((audioSyncEnabled)>>(0)) & 1) && (((audioSyncEnabled)>>(1)) & 1)) {
+      // 2 == receive only
+      sappend('v',"ASE", 2);
+    }
+    sappend('v', "ASP", audioSyncPort);
 
     #ifdef WLED_ENABLE_MQTT
     sappend('c',"MQ",mqttEnabled);
