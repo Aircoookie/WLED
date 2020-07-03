@@ -27,6 +27,12 @@
 #include "FX.h"
 #include "palettes.h"
 
+#define BASE_PALETTE_COUNT 15
+
+#ifdef USE_FASTLED
+  CRGB* leds;
+#endif
+
 //enable custom per-LED mapping. This can allow for better effects on matrices or special displays
 //#define WLED_CUSTOM_LED_MAPPING
 
@@ -65,6 +71,9 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   _segments[0].stop = _length;
 
   setBrightness(_brightness);
+#ifdef USE_FASTLED
+  leds = (CRGB*)bus->GetPixels();  // Pointer to NeoPixelBus led array
+#endif
 }
 
 void WS2812FX::service() {
@@ -284,7 +293,12 @@ void WS2812FX::show(void) {
     bus->SetBrightness(_brightness);
   }
   
-  bus->Show();
+#ifdef USE_FASTLED
+	FastLED.show();
+#else
+	bus->Show();
+#endif
+
   _lastShow = millis();
 }
 
@@ -311,7 +325,7 @@ uint8_t WS2812FX::getModeCount()
 
 uint8_t WS2812FX::getPaletteCount()
 {
-  return 13 + GRADIENT_PALETTE_COUNT;
+  return BASE_PALETTE_COUNT + GRADIENT_PALETTE_COUNT;
 }
 
 //TODO transitions
@@ -794,8 +808,12 @@ void WS2812FX::handle_palette(void)
       targetPalette = RainbowColors_p; break;
     case 12: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
+    case 13:  // Red, White, and Blue
+      targetPalette = RedWhiteBlue_p; break;
+    case 14:  // Bellingham flag
+      targetPalette = BhamFlag_p; break;
     default: //progmem palettes
-      load_gradient_palette(paletteIndex -13);
+      load_gradient_palette(paletteIndex - BASE_PALETTE_COUNT);
   }
   
   if (singleSegmentMode && paletteFade) //only blend if just one segment uses FastLED mode

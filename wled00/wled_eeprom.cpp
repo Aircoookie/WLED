@@ -284,6 +284,10 @@ void saveSettingsToEEPROM()
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
   #endif
 
+  //Usermod memory
+  //2551 - 2559 reserved for Usermods, usable by default
+  EEPROM.write(2551, userVar0);
+
   commit();
 }
 
@@ -585,6 +589,8 @@ void loadSettingsFromEEPROM(bool first)
 
   //Usermod memory
   //2551 - 2559 reserved for Usermods, usable by default
+  userVar0 = EEPROM.read(2551);
+
   //2560 - 2943 usable, NOT reserved (need to increase EEPSIZE accordingly, new WLED core features may override this section)
   //2944 - 3071 reserved for Usermods (need to increase EEPSIZE to 3072 in const.h)
 
