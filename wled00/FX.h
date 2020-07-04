@@ -30,7 +30,6 @@
 #include "NpbWrapper.h"
 #include "const.h"
 
-#define USE_FASTLED  // Use FastLED library to output pixel data
 #define FASTLED_INTERNAL //remove annoying pragma messages
 #include "FastLED.h"
 
@@ -709,9 +708,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 
 const char JSON_palette_names[] PROGMEM = R"=====([
 "Default","* Random Cycle","* Color 1","* Colors 1&2","* Color Gradient","* Colors Only","Party","Cloud","Lava","Ocean",
-"Forest","Rainbow","Rainbow Bands",
-"Red White & Blue", "Bellingham Flag", 
-"Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
+"Forest","Rainbow","Rainbow Bands","Sunset","Rivendell","Breeze","Red & Blue","Yellowout","Analogous","Splash",
 "Pastel","Sunset 2","Beech","Vintage","Departure","Landscape","Beach","Sherbet","Hult","Hult 64",
 "Drywet","Jul","Grintage","Rewhi","Tertiary","Fire","Icefire","Cyane","Light Pink","Autumn",
 "Magenta","Magred","Yelmag","Yelblu","Orange & Teal","Tiamat","April Night","Orangery","C9","Sakura",
