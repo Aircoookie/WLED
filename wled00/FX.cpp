@@ -2650,7 +2650,7 @@ uint16_t WS2812FX::mode_balltrack(void) {
                 balls[i].velocity*float(balls[j].lastBounceUpdate-balls[i].lastBounceUpdate))/
                (balls[j].velocity-balls[i].velocity);
 
-          if( (tcollided>2)&&(tcollided<float(time-balls[j].lastBounceUpdate))){
+          if( (tcollided>2)&&(tcollided<float(time-balls[j].lastBounceUpdate))){ // 2ms minimum to avoid duplicate bounces 
             balls[i].height=balls[i].height + balls[i].velocity*(tcollided+float(balls[j].lastBounceUpdate-balls[i].lastBounceUpdate))/cfac;
             balls[j].height=balls[i].height;
             balls[i].lastBounceUpdate=(unsigned long)(tcollided+.5)+balls[j].lastBounceUpdate;
