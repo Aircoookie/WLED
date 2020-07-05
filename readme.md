@@ -7,7 +7,7 @@
   <a href="https://github.com/Aircoookie/WLED-App"><img src="https://img.shields.io/badge/app-wled-blue.svg?style=flat-square"></a>
   </p>
 
-# 👋 Welcome to my project WLED!
+# Welcome to my project WLED! ✨
 
 NOTE: This is a fork of WLED that provides sound reactivity. We have a [Sound Reactive WLED Wiki](https://github.com/atuline/WLED/wiki).
 
@@ -60,7 +60,7 @@ Russian speakers, check out the videos by Room31:
 [ESP8266 based LED controller for WS2812b strip. WLED Firmware + OpenHAB](https://youtu.be/K4ioTt3XvGc)
 
 ## 🖼️ Images
-<img src="/images/macbook-pro-space-gray-on-the-wooden-table.webp" width="50%"><img src="/images/walking-with-iphone-x.webp" width="50%">
+<img src="/images/macbook-pro-space-gray-on-the-wooden-table.jpg" width="50%"><img src="/images/walking-with-iphone-x.jpg" width="50%">
 
 ## 💾 Compatible LED Strips
 Type | Voltage | Comments

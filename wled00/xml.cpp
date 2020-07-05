@@ -12,7 +12,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
 
   olen = 0;
   oappend((const char*)F("<?xml version=\"1.0\" ?><vs><ac>"));
-  oappendi((nightlightActive && nightlightFade) ? briT : bri);
+  oappendi((nightlightActive && nightlightMode > NL_MODE_SET) ? briT : bri);
   oappend("</ac>");
 
   for (int i = 0; i < 3; i++)
@@ -34,7 +34,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappend("</nr><nl>");
   oappendi(nightlightActive);
   oappend("</nl><nf>");
-  oappendi(nightlightFade);
+  oappendi(nightlightMode > NL_MODE_SET);
   oappend("</nf><nd>");
   oappendi(nightlightDelayMins);
   oappend("</nd><nt>");
@@ -315,7 +315,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"BF",briMultiplier);
     sappend('v',"TB",nightlightTargetBri);
     sappend('v',"TL",nightlightDelayMinsDefault);
-    sappend('c',"TW",nightlightFade);
+    sappend('v',"TW",nightlightMode);
     sappend('v',"SQ",soundSquelch);
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
@@ -494,7 +494,7 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == 7)
   {
     sappend('v',"PU",e131ProxyUniverse);
-    
+
     sappend('v',"CN",DMXChannels);
     sappend('v',"CG",DMXGap);
     sappend('v',"CS",DMXStart);

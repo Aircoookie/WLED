@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.10.0
+   @version 0.10.1
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2006060
+#define VERSION 2007020
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -30,6 +30,7 @@
 #endif
 //#define WLED_ENABLE_ADALIGHT     // saves 500b only
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
+//#define WLED_ENABLE_WEBSOCKETS
 //#define WLED_DISABLE_SOUND       // saves 1kb
 
 #define WLED_DISABLE_FILESYSTEM    // SPIFFS is not used by any WLED feature yet
@@ -155,7 +156,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.10.0");
+WLED_GLOBAL char versionString[] _INIT("0.10.1");
 #define WLED_CODENAME "Namigai"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -196,8 +197,7 @@ WLED_GLOBAL byte soundSquelch _INIT(10);            // default squelch value for
 WLED_GLOBAL uint16_t noiseFloor _INIT(100);         // default squelch value for FFT reactive routines
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);
-WLED_GLOBAL bool nightlightFade      _INIT(true);   // if enabled, light will gradually dim towards the target bri. Otherwise, it will instantly set after delay over
-WLED_GLOBAL bool nightlightColorFade _INIT(false);  // if enabled, light will gradually fade color from primary to secondary color.
+WLED_GLOBAL byte nightlightMode      _INIT(NL_MODE_FADE); // See const.h for available modes. Was nightlightFade
 WLED_GLOBAL bool fadeTransition      _INIT(true);   // enable crossfading color transition
 WLED_GLOBAL uint16_t transitionDelay _INIT(750);    // default crossfade duration in ms
 
@@ -491,6 +491,9 @@ WLED_GLOBAL bool doPublishMqtt _INIT(false);
 
 // server library objects
 WLED_GLOBAL AsyncWebServer server _INIT_N(((80)));
+#ifdef WLED_ENABLE_WEBSOCKETS
+WLED_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
+#endif
 WLED_GLOBAL AsyncClient* hueClient _INIT(NULL);
 WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
 

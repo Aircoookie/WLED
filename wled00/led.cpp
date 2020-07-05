@@ -3,7 +3,6 @@
 /*
  * LED methods
  */
-
 void setValuesFromMainSeg()
 {
   WS2812FX::Segment& seg = strip.getSegment(strip.getMainSegmentId());
@@ -117,7 +116,7 @@ void colorUpdated(int callMode)
   
   if (!colChanged) return; //following code is for e.g. initiating transitions
   
-  if (callMode != NOTIFIER_CALL_MODE_NO_NOTIFY && nightlightActive && nightlightFade)
+  if (callMode != NOTIFIER_CALL_MODE_NO_NOTIFY && nightlightActive && (nightlightMode == NL_MODE_FADE || nightlightMode == NL_MODE_COLORFADE))
   {
     briNlT = bri;
     nightlightDelayMs -= (millis() - nightlightStartTime);
@@ -136,6 +135,9 @@ void colorUpdated(int callMode)
 
   briIT = bri;
   if (bri > 0) briLast = bri;
+
+  //deactivate nightlight if target brightness is reached
+  if (bri == nightlightTargetBri && callMode != NOTIFIER_CALL_MODE_NO_NOTIFY) nightlightActive = false;
   
   if (fadeTransition)
   {
@@ -167,6 +169,7 @@ void colorUpdated(int callMode)
 
 void updateInterfaces(uint8_t callMode)
 {
+  sendDataWs();
   #ifndef WLED_DISABLE_ALEXA
   if (espalexaDevice != nullptr && callMode != NOTIFIER_CALL_MODE_ALEXA) {
     espalexaDevice->setValue(bri);
@@ -226,30 +229,65 @@ void handleNightlight()
       nightlightActiveOld = true;
       briNlT = bri;
       for (byte i=0; i<4; i++) colNlT[i] = col[i];                                     // remember starting color
+      if (nightlightMode == NL_MODE_SUN)
+      {
+        //save current
+        colNlT[0] = effectCurrent;
+        colNlT[1] = effectSpeed;
+        colNlT[2] = effectPalette;
+
+        effectCurrent = FX_MODE_SUNRISE;
+        effectSpeed = nightlightDelayMins;
+        effectPalette = 0;
+        if (effectSpeed > 60) effectSpeed = 60; //currently limited to 60 minutes
+        if (bri) effectSpeed += 60; //sunset if currently on
+        briNlT = !bri; //true == sunrise, false == sunset
+        if (!bri) bri = briLast;
+        colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
+      }
     }
     float nper = (millis() - nightlightStartTime)/((float)nightlightDelayMs);
-    if (nightlightFade)
+    if (nightlightMode == NL_MODE_FADE || nightlightMode == NL_MODE_COLORFADE)
     {
       bri = briNlT + ((nightlightTargetBri - briNlT)*nper);
-      if (nightlightColorFade)                                                         // color fading only is enabled with "NF=2"
+      if (nightlightMode == NL_MODE_COLORFADE)                                         // color fading only is enabled with "NF=2"
       {
         for (byte i=0; i<4; i++) col[i] = colNlT[i]+ ((colSec[i] - colNlT[i])*nper);   // fading from actual color to secondary color
       }
       colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
     }
-    if (nper >= 1)
+    if (nper >= 1) //nightlight duration over
     {
       nightlightActive = false;
-      if (!nightlightFade)
+      if (nightlightMode == NL_MODE_SET)
       {
         bri = nightlightTargetBri;
         colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
       }
-      updateBlynk();
       if (bri == 0) briLast = briNlT;
+      if (nightlightMode == NL_MODE_SUN)
+      {
+        if (!briNlT) { //turn off if sunset
+          effectCurrent = colNlT[0];
+          effectSpeed = colNlT[1];
+          effectPalette = colNlT[2];
+          toggleOnOff();
+          setLedsStandard();
+        }
+      }
+      updateBlynk();
+      if (macroNl > 0)
+        applyMacro(macroNl);
+      nightlightActiveOld = false;
     }
   } else if (nightlightActiveOld) //early de-init
   {
+    if (nightlightMode == NL_MODE_SUN) { //restore previous effect
+      effectCurrent = colNlT[0];
+      effectSpeed = colNlT[1];
+      effectPalette = colNlT[2];
+      colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
+    }
     nightlightActiveOld = false;
   }
 

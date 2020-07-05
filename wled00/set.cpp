@@ -106,7 +106,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg("TL").toInt();
     if (t > 0) nightlightDelayMinsDefault = t;
     nightlightDelayMins = nightlightDelayMinsDefault;
-    nightlightFade = request->hasArg("TW");
+    nightlightMode = request->arg("TW").toInt();
 
     t = request->arg("PB").toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
@@ -454,7 +454,16 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   WS2812FX::Segment& mainseg = strip.getSegment(main);
   pos = req.indexOf("SV="); //segment selected
-  if (pos > 0) mainseg.setOption(SEG_OPTION_SELECTED, (req.charAt(pos+3) != '0'));
+  if (pos > 0) {
+    byte t = getNumVal(&req, pos);
+    if (t == 2) {
+      for (uint8_t i = 0; i < strip.getMaxSegments(); i++)
+      {
+        strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0);
+      }
+    }
+    mainseg.setOption(SEG_OPTION_SELECTED, t);
+  }
 
   uint16_t startI = mainseg.start;
   uint16_t stopI = mainseg.stop;
@@ -637,10 +646,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("NF=");
   if (pos > 0)
   {
-    nightlightFade = (req.charAt(pos+3) != '0');
-    nightlightColorFade = (req.charAt(pos+3) == '2');  //NighLightColorFade can only be enabled via API or Macro with "NF=2"
+    nightlightMode = getNumVal(&req, pos);
+
     nightlightActiveOld = false; //re-init
   }
+  if (nightlightMode > NL_MODE_SUN) nightlightMode = NL_MODE_SUN;
 
   #if AUXPIN >= 0
   //toggle general purpose output
@@ -681,8 +691,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     }
   }
 
-  //deactivate nightlight if target brightness is reached
-  if (bri == nightlightTargetBri) nightlightActive = false;
   //set time (unix timestamp)
   pos = req.indexOf("ST=");
   if (pos > 0) {
@@ -694,6 +702,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) {
     countdownTime = getNumVal(&req, pos);
     if (countdownTime - now() > 0) countdownOverTriggered = false;
+  }
+
+  pos = req.indexOf("LO=");
+  if (pos > 0) {
+    realtimeOverride = getNumVal(&req, pos);
+    if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
   }
 
   pos = req.indexOf("RB");
