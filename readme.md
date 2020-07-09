@@ -1,13 +1,13 @@
 <p align="center">
   <img src="/images/wled_logo.png">
-  <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a>
+  <a href="https://github.com/atuline/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a>
   <a href="https://wled.discourse.group"><img src="https://img.shields.io/discourse/topics?colorB=blue&label=forum&server=https%3A%2F%2Fwled.discourse.group%2F&style=flat-square"></a>
   <a href="https://discord.gg/KuqP7NE"><img src="https://img.shields.io/discord/473448917040758787.svg?colorB=blue&label=discord&style=flat-square"></a>
-  <a href="https://github.com/Aircoookie/WLED/wiki"><img src="https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square"></a>
+  <a href="https://github.com/atuline/WLED/wiki"><img src="https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED-App"><img src="https://img.shields.io/badge/app-wled-blue.svg?style=flat-square"></a>
   </p>
 
-# 👋 Welcome to my project WLED!
+# Welcome to my project WLED! ✨
 
 NOTE: This is a fork of WLED that provides sound reactivity. We have a [Sound Reactive WLED Wiki](https://github.com/atuline/WLED/wiki).
 
@@ -47,7 +47,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 
 ## 📲 Quick start guide and documentation
 
-See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
+See the [wiki](https://github.com/atuline/WLED/wiki)!
 
 DrZzs has made some excellent video guides:
 [Introduction, hardware and installation](https://www.youtube.com/watch?v=tXvtxwK3jRk)
@@ -60,7 +60,7 @@ Russian speakers, check out the videos by Room31:
 [ESP8266 based LED controller for WS2812b strip. WLED Firmware + OpenHAB](https://youtu.be/K4ioTt3XvGc)
 
 ## 🖼️ Images
-<img src="/images/macbook-pro-space-gray-on-the-wooden-table.webp" width="50%"><img src="/images/walking-with-iphone-x.webp" width="50%">
+<img src="/images/macbook-pro-space-gray-on-the-wooden-table.jpg" width="50%"><img src="/images/walking-with-iphone-x.jpg" width="50%">
 
 ## 💾 Compatible LED Strips
 Type | Voltage | Comments

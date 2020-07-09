@@ -2,6 +2,31 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2007020
+
+#### Build 2006251
+
+-   Added `SV=2` to HTTP API, allow selecting single segment only
+
+#### Build 2006250
+
+-   Fix Alexa not turning off white channel (fixes #1012)
+
+#### Build 2006220
+
+-   Added Sunrise nightlight mode
+-   Added Chunchun effect
+-   Added `LO` (live override) command to HTTP API
+-   Added `mode` to `nl` object of JSON state API, deprecating `fade`
+-   Added light color scheme support to web UI (click sun next to brightness slider)
+-   Added option to hide labels in web UI (click flame icon next to intensity slider)
+-   Added hex color input (click palette icon next to palette select) (resolves #506)
+-   Added support for RGB sliders (need to set in localstorage)
+-   Added support for custom background color or image (need to set in localstorage)
+-   Added option to hide bottom tab bar in PC mode (need to set in localstorage)
+-   Fixed transition lag with multiple segments (fixes #985)
+-   Changed Nightlight wording (resolves #940)
+
 #### Build 2006060
 
 -   Added five effects by Andrew Tuline (Phased, Phased Noise, Sine, Noise Pal and Twinkleup)

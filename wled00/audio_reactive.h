@@ -178,9 +178,9 @@ void agcAvg() {                                                       // A simpl
 
   // Andrew would like to know which microphone/configuration was used to calculate these values.
   // Would be nice to support individual calibrations, but would need an easy procedure everyone can use to do so, i.e. a sound meter/generator for Android/iPhone.
-  int noise[] = {1233,	1327,	1131,	1008,	1059,	996,	981,	973,	967,	983,	957,	957,	955,	957,	960,	976}; //ESP32 noise - run on quite evn, record FFTResults - by Yariv-H
-  int pinknoise[] = {7922,	6427,	3448,	1645,	1535,	2116,	2729,	1710,	2174,	2262,	2039,	2604,	2848,	2768,	2343,	2188}; //ESP32 pink noise - by Yariv-H
-  int maxChannel[] = {73873/2,	82224/2,	84988/2,	52898/2,	51754/2,	51221/2,	38814/2,	31443/2,	29154/2, 26204/2,	23953/2,	23022/2,	16982/2,	19399/2,	14790/2,	15612/3}; //playing sin wave 0-20khz pick the max value for each channel - by Yariv-H
+  int noise[] = {1233,  1327, 1131, 1008, 1059, 996,  981,  973,  967,  983,  957,  957,  955,  957,  960,  976}; //ESP32 noise - run on quite evn, record FFTResults - by Yariv-H
+  int pinknoise[] = {7922,  6427, 3448, 1645, 1535, 2116, 2729, 1710, 2174, 2262, 2039, 2604, 2848, 2768, 2343, 2188}; //ESP32 pink noise - by Yariv-H
+  int maxChannel[] = {73873/2,  82224/2,  84988/2,  52898/2,  51754/2,  51221/2,  38814/2,  31443/2,  29154/2, 26204/2, 23953/2,  23022/2,  16982/2,  19399/2,  14790/2,  15612/3}; //playing sin wave 0-20khz pick the max value for each channel - by Yariv-H
 
   // Create FFT object
   arduinoFFT FFT = arduinoFFT( vReal, vImag, samples, samplingFrequency );
@@ -238,7 +238,7 @@ void agcAvg() {                                                       // A simpl
 
       for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];   // export FFT field
 
-      /*
+       /*
        * Create an array of 16 bins which roughly represent values the human ear
        * can determine as different frequency bands (fftBins[0..6] are already zero'd)
 
@@ -269,7 +269,7 @@ void agcAvg() {                                                       // A simpl
 // End frequency = Start frequency * multiplier ^ 16
 // Multiplier = (End frequency/ Start frequency) ^ 1/16
 // Multiplier = 1.320367784
- 
+
       fftResult[0] = (fftAdd(3,4) * 0.8) /2;
       fftResult[1] = (fftAdd(4,5)) /2;
       fftResult[2] = (fftAdd(5,7)) /3;
@@ -287,18 +287,11 @@ void agcAvg() {                                                       // A simpl
       fftResult[14] = (fftAdd(147,194)) /48;
       fftResult[15] = (fftAdd(194, 255)) /62;
 
-
-
-      // Remove noise by Yariv-H. Andrew says that since it gets mapped, the noise was almost 0, so that has been removed.
+// Remove noise by Yariv-H, but Andrew says that once it gets mapped, the noise was almost 0, so that has been removed.
       for(int i=0; i< 16; i++) {
 //          if(fftResult[i]-pinknoise[i] < 0 ) {fftResult[i]=0;} else {fftResult[i]-=pinknoise[i];}
         if(fftResult[i]<0) fftResult[i]=0;
         fftResult[i] = constrain(map(fftResult[i], 0,  maxChannel[i], 0, 254),0,254);
-        
-//        Serial.print(i); Serial.print(" ");
-//        Serial.print(fftResult[i]); Serial.print(" ");
-//        Serial.println(" ");
-          
       }
     }
 }

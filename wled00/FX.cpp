@@ -1599,7 +1599,7 @@ uint16_t WS2812FX::mode_oscillate(void)
 uint16_t WS2812FX::mode_lightning(void)
 {
   uint16_t ledstart = random16(SEGLEN);               // Determine starting location of flash
-  uint16_t ledlen = random16(SEGLEN -1 -ledstart);    // Determine length of flash (not to go beyond NUM_LEDS-1)
+  uint16_t ledlen = 1 + random16(SEGLEN -ledstart);    // Determine length of flash (not to go beyond NUM_LEDS-1)
   uint8_t bri = 255/random8(1, 3);
 
   if (SEGENV.step == 0)
@@ -2247,7 +2247,7 @@ uint16_t WS2812FX::mode_ripple_rainbow(void) {
 CRGB WS2812FX::twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat)
 {
   // Overall twinkle speed (changed)
-  uint16_t ticks = ms / (32 - (SEGMENT.speed >> 3));
+  uint16_t ticks = ms / SEGENV.aux0;
   uint8_t fastcycle8 = ticks;
   uint16_t slowcycle16 = (ticks >> 8) + salt;
   slowcycle16 += sin8(slowcycle16);
@@ -2312,10 +2312,11 @@ uint16_t WS2812FX::twinklefox_base(bool cat)
   // numbers that it generates is (paradoxically) stable.
   uint16_t PRNG16 = 11337;
 
+  // Calculate speed
+  if (SEGMENT.speed > 100) SEGENV.aux0 = 3 + ((255 - SEGMENT.speed) >> 3);
+  else SEGENV.aux0 = 22 + ((100 - SEGMENT.speed) >> 1);
+
   // Set up the background color, "bg".
-  // if AUTO_SELECT_BACKGROUND_COLOR == 1, and the first two colors of
-  // the current palette are identical, then a deeply faded version of
-  // that color is used for the background color
   CRGB bg;
   bg = col_to_crgb(SEGCOLOR(1));
   uint8_t bglight = bg.getAverageLight();
@@ -3662,7 +3663,7 @@ uint16_t WS2812FX::mode_matripix(void) {                                  // Mat
   EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
 
     pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!!
-    int pixBri = sample * SEGMENT.intensity / 128;
+    int pixBri = sample * SEGMENT.intensity / 64;
     setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
 
@@ -3981,6 +3982,7 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 } // mode_waterfall()
 
 
+
 ////////////////////
 //  ** BINMAP     //
 ////////////////////
@@ -3988,34 +3990,31 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 // Map the first 256 bins to the entire segment. The remaining 256 bins are kind of a mirror image to the first 256.
 // Not a great sketch and we don't need to be accurate, but it looks cool (at least to me it does).
 
-uint16_t WS2812FX::mode_binmap(void) {      // Binmap. Scale bins to SEGLEN. By Andrew Tuline.
+uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. By Andrew Tuline.
 
 #ifndef ESP8266
 
-  #define STARTBIN 3                           // The first 3 bins are garbage.
-  #define ENDBIN 255                           // Don't use the highest bins, as they're (almost) a mirror of the first 256.
+  #define FIRSTBIN 3                          // The first 3 bins are garbage.
+  #define LASTBIN 255                         // Don't use the highest bins, as they're (almost) a mirror of the first 256.
 
   float maxVal = 5000;                        // Kind of a guess as to the maximum output value per combined and normalized (but not mapped) bins.
 
   for (int i=0; i<SEGLEN; i++) {
 
-    uint16_t startBin = STARTBIN+i*ENDBIN/SEGLEN;             // This is the START bin for this particular pixel.
-    uint16_t   endBin = STARTBIN+(i+1)*ENDBIN/SEGLEN;         // This is the END bin for this particular pixel.
+    uint16_t startBin = FIRSTBIN+i*LASTBIN/SEGLEN;             // This is the START bin for this particular pixel.
+    uint16_t   endBin = FIRSTBIN+(i+1)*LASTBIN/SEGLEN;         // This is the END bin for this particular pixel.
 
     double sumBin = 0;
 
     for (int j=startBin; j<=endBin; j++) sumBin += fftBin[j];
 
     sumBin = sumBin/(endBin-startBin+1);                // Normalize it.
-    sumBin = sumBin * (i+5) / (endBin-startBin+5);      // Disgusting frequency adjustment. Lows were too bright. Am open to quick 'n dirty alternatives.
-    
-    static float tempMax = 0;
-    if (tempMax < sumBin) {tempMax = sumBin; Serial.println(tempMax);}
-    
+    sumBin = sumBin * (i+5) / (endBin-startBin+5);      // Disgusting frequency adjustment calculation. Lows were too bright. Am open to quick 'n dirty alternatives.
+
     if (sumBin > maxVal) sumBin = maxVal;               // Make sure our bin isn't higher than the max . . which we capped earlier.
-    
+
     uint8_t bright = constrain(mapf(sumBin, 0, maxVal, 0, 255),0,255);   // Map the brightness in relation to maxVal and crunch to 8 bits.
-      
+
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4+160, false, PALETTE_SOLID_WRAP, 0), bright));   // 'i' is just an index in the palette. The FFT value, bright, is the intensity.
                                                                                                                      // The +160 is 'blue' for the Rainbow palette.
   } // for i
@@ -4556,6 +4555,8 @@ uint16_t WS2812FX::mode_2Dplasma(void) {      // By Andreas Pleschutznig. A work
 
 #ifndef ESP8266
 
+  if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
+
   static uint8_t ihue=0;
   uint8_t index;
   uint8_t bri;
@@ -4655,6 +4656,8 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {   // firenoise2d. By Andrew Tuline. 
 
 #ifndef ESP8266
 
+  if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
+
   CRGB *leds = (CRGB *)ledData;
 
   uint32_t xscale = 600;                                          // How far apart they are
@@ -4700,6 +4703,8 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://g
                                                 // fft3 affects the blur amount.
 #ifndef ESP8266
 
+  if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
+
   CRGB *leds = (CRGB *)ledData;
   const uint8_t kBorderWidth = 2;
 
@@ -4741,8 +4746,10 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://g
 uint16_t WS2812FX::mode_2Dfire2012(void) {    // Fire2012 by Mark Kriegsman. Converted to WLED by Andrew Tuline.
 #ifndef ESP8266
 
- CRGB *leds = (CRGB *)ledData;
- static byte *heat = (byte *)dataStore;
+  if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
+
+  CRGB *leds = (CRGB *)ledData;
+  static byte *heat = (byte *)dataStore;
 
   const uint8_t COOLING = 50;
   const uint8_t SPARKING = 50;
@@ -4802,6 +4809,8 @@ uint16_t WS2812FX::mode_2Dfire2012(void) {    // Fire2012 by Mark Kriegsman. Con
 uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy. WLED version by Andrew Tuline.
 #ifndef ESP8266
 
+  if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
+
   CRGB *leds = (CRGB *)ledData;
 
   fadeToBlackBy(leds, SEGLEN, 64);
@@ -4839,6 +4848,8 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 
 uint16_t WS2812FX::mode_2Dmatrix(void) {      // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline.
 #ifndef ESP8266
+
+  if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB* )ledData;
 
@@ -4916,6 +4927,8 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {      // Matrix2D. By Jeremy Williams. A
 
 uint16_t WS2812FX::mode_2Dmeatballs(void) {   // Metaballs by Stefan Petrick. Cannot have one of the dimensions be 2 or less. Adapted by Andrew Tuline.
 #ifndef ESP8266
+
+  if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB* )ledData;
 
