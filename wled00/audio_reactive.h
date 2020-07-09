@@ -175,9 +175,12 @@ void agcAvg() {                                                       // A simpl
   double vImag[samples];
   double fftBin[samples];
   double fftResult[16];
-  int noise[] = {1233,	1327,	1131,	1008,	1059,	996,	981,	973,	967,	983,	957,	957,	955,	957,	960,	976}; //ESP32 noise - run on quite evn, record FFTResults - by Yariv-H
-  int pinknoise[] = {7922,	6427,	3448,	1645,	1535,	2116,	2729,	1710,	2174,	2262,	2039,	2604,	2848,	2768,	2343,	2188}; //ESP32 pink noise - by Yariv-H
-  int maxChannel[] = {73873/2,	82224/2,	84988/2,	52898/2,	51754/2,	51221/2,	38814/2,	31443/2,	29154/2, 26204/2,	23953/2,	23022/2,	16982/2,	19399/2,	14790/2,	15612/2}; //playing sin wave 0-20khz pick the max value for each channel - by Yariv-H
+
+  // Andrew would like to know which microphone/configuration was used to calculate these values.
+  // Would be nice to support individual calibrations, but would need an easy procedure everyone can use to do so, i.e. a sound meter/generator for Android/iPhone.
+  int noise[] = {1233,  1327, 1131, 1008, 1059, 996,  981,  973,  967,  983,  957,  957,  955,  957,  960,  976}; //ESP32 noise - run on quite evn, record FFTResults - by Yariv-H
+  int pinknoise[] = {7922,  6427, 3448, 1645, 1535, 2116, 2729, 1710, 2174, 2262, 2039, 2604, 2848, 2768, 2343, 2188}; //ESP32 pink noise - by Yariv-H
+  int maxChannel[] = {73873/2,  82224/2,  84988/2,  52898/2,  51754/2,  51221/2,  38814/2,  31443/2,  29154/2, 26204/2, 23953/2,  23022/2,  16982/2,  19399/2,  14790/2,  15612/3}; //playing sin wave 0-20khz pick the max value for each channel - by Yariv-H
 
   // Create FFT object
   arduinoFFT FFT = arduinoFFT( vReal, vImag, samples, samplingFrequency );
@@ -235,14 +238,14 @@ void agcAvg() {                                                       // A simpl
 
       for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];   // export FFT field
 
-      /*
+       /*
        * Create an array of 16 bins which roughly represent values the human ear
        * can determine as different frequency bands (fftBins[0..6] are already zero'd)
 
        *
        * set in each bin the average band value - by Yariv-H
        */
-      fftResult[0] = (fftAdd(7,11) * 0.8) /5;
+/*    fftResult[0] = (fftAdd(7,11) * 0.8) /5;
       fftResult[1] = (fftAdd(12,16)) /5;
       fftResult[2] = (fftAdd(17,21)) /5;
       fftResult[3] = (fftAdd(22, 30)) /9;
@@ -258,12 +261,37 @@ void agcAvg() {                                                       // A simpl
       fftResult[13] = (fftAdd(248, 312)) /65;
       fftResult[14] = (fftAdd(313, 393)) /81;
       fftResult[15] = (fftAdd(394, 470)) /77;
+*/
 
-      //Remove noise by Yariv-H
+// Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512.
+// Based on testing, the lowest/Start frequency is 60 Hz (with bin 3) and a highest/End frequency of 5120 Hz in bin 255.
+// Now, Take the 60Hz and multiply by 1.320367784 to get the next frequency and so on until the end. Then detetermine the bins.
+// End frequency = Start frequency * multiplier ^ 16
+// Multiplier = (End frequency/ Start frequency) ^ 1/16
+// Multiplier = 1.320367784
+ 
+      fftResult[0] = (fftAdd(3,4) * 0.8) /2;
+      fftResult[1] = (fftAdd(4,5)) /2;
+      fftResult[2] = (fftAdd(5,7)) /3;
+      fftResult[3] = (fftAdd(7,9)) /3;
+      fftResult[4] = (fftAdd(9,12)) /4;
+      fftResult[5] = (fftAdd(12,16)) /5;
+      fftResult[6] = (fftAdd(16,21)) /6;
+      fftResult[7] = (fftAdd(21,28)) /8;
+      fftResult[8] = (fftAdd(29,37)) /10;
+      fftResult[9] = (fftAdd(37,48)) /12;
+      fftResult[10] = (fftAdd(48,64)) /17;
+      fftResult[11] = (fftAdd(64,84)) /21;
+      fftResult[12] = (fftAdd(84,111)) /28;
+      fftResult[13] = (fftAdd(111,147)) /37;
+      fftResult[14] = (fftAdd(147,194)) /48;
+      fftResult[15] = (fftAdd(194, 255)) /62;
+
+// Remove noise by Yariv-H, but Andrew says that once it gets mapped, the noise was almost 0, so that has been removed.
       for(int i=0; i< 16; i++) {
-          if(fftResult[i]-pinknoise[i] < 0 ) {fftResult[i]=0;} else {fftResult[i]-=pinknoise[i];}
-          fftResult[i] = constrain(map(fftResult[i], 0,  maxChannel[i], 0, 254),0,254);
-          if(fftResult[i]<0) fftResult[i]=0;
+//          if(fftResult[i]-pinknoise[i] < 0 ) {fftResult[i]=0;} else {fftResult[i]-=pinknoise[i];}
+        if(fftResult[i]<0) fftResult[i]=0;
+        fftResult[i] = constrain(map(fftResult[i], 0,  maxChannel[i], 0, 254),0,254);
       }
     }
 }
