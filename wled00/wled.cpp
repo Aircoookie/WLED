@@ -324,15 +324,32 @@ void WLED::initConnection()
   DEBUG_PRINT(clientSSID);
   DEBUG_PRINTLN("...");
 
+  // convert the "serverDescription" into something usable as a DNS hostname
+  String hostname; 
+  const char *pC = serverDescription;
+  while (*pC) { // while !null  
+    if (isAlphaNumeric(*pC)) {          // if the current char is alpha-numeric...
+      hostname += *pC;                  // ...its usable, append it to the hostname
+    } else if (0 < hostname.length()) { // else, if the hostname isn't empty...
+      hostname += '-';                  // ...put in a hyphen.  (hostname can't start with a hypen)
+    }
+    // else do nothing - no leading hyphens.
+    pC++;
+  }
+  // if the hostname is left blank, use the mac address
+  if (0 == hostname.length()) {
+    hostname = escapedMac;
+  }
+  
 #ifdef ESP8266
-  WiFi.hostname(serverDescription);
+  WiFi.hostname(hostname.c_str());
 #endif
 
   WiFi.begin(clientSSID, clientPass);
 
 #ifdef ARDUINO_ARCH_ESP32
   WiFi.setSleep(!noWifiSleep);
-  WiFi.setHostname(serverDescription);
+  WiFi.setHostname(hostname.c_str());
 #else
   wifi_set_sleep_type((noWifiSleep) ? NONE_SLEEP_T : MODEM_SLEEP_T);
 #endif
