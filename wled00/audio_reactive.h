@@ -269,7 +269,7 @@ void agcAvg() {                                                       // A simpl
 // End frequency = Start frequency * multiplier ^ 16
 // Multiplier = (End frequency/ Start frequency) ^ 1/16
 // Multiplier = 1.320367784
- 
+
       fftResult[0] = (fftAdd(3,4) * 0.8) /2;
       fftResult[1] = (fftAdd(4,5)) /2;
       fftResult[2] = (fftAdd(5,7)) /3;

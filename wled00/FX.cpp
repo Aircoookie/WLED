@@ -4010,11 +4010,11 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
 
     sumBin = sumBin/(endBin-startBin+1);                // Normalize it.
     sumBin = sumBin * (i+5) / (endBin-startBin+5);      // Disgusting frequency adjustment calculation. Lows were too bright. Am open to quick 'n dirty alternatives.
-    
+
     if (sumBin > maxVal) sumBin = maxVal;               // Make sure our bin isn't higher than the max . . which we capped earlier.
-    
+
     uint8_t bright = constrain(mapf(sumBin, 0, maxVal, 0, 255),0,255);   // Map the brightness in relation to maxVal and crunch to 8 bits.
-      
+
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4+160, false, PALETTE_SOLID_WRAP, 0), bright));   // 'i' is just an index in the palette. The FFT value, bright, is the intensity.
                                                                                                                      // The +160 is 'blue' for the Rainbow palette.
   } // for i
@@ -4556,7 +4556,7 @@ uint16_t WS2812FX::mode_2Dplasma(void) {      // By Andreas Pleschutznig. A work
 #ifndef ESP8266
 
   if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
-  
+
   static uint8_t ihue=0;
   uint8_t index;
   uint8_t bri;
@@ -4703,8 +4703,8 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://g
                                                 // fft3 affects the blur amount.
 #ifndef ESP8266
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}                 // No, we're not going to overrun the segment.
-  
+  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
+
   CRGB *leds = (CRGB *)ledData;
   const uint8_t kBorderWidth = 2;
 
@@ -4746,8 +4746,8 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://g
 uint16_t WS2812FX::mode_2Dfire2012(void) {    // Fire2012 by Mark Kriegsman. Converted to WLED by Andrew Tuline.
 #ifndef ESP8266
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}                 // No, we're not going to overrun the segment.
-  
+  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
+
   CRGB *leds = (CRGB *)ledData;
   static byte *heat = (byte *)dataStore;
 
@@ -4809,7 +4809,7 @@ uint16_t WS2812FX::mode_2Dfire2012(void) {    // Fire2012 by Mark Kriegsman. Con
 uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy. WLED version by Andrew Tuline.
 #ifndef ESP8266
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}                 // No, we're not going to overrun the segment.
+  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB *)ledData;
 
@@ -4849,8 +4849,8 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 uint16_t WS2812FX::mode_2Dmatrix(void) {      // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline.
 #ifndef ESP8266
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}                 // No, we're not going to overrun the segment.
-  
+  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
+
   CRGB *leds = (CRGB* )ledData;
 
   static unsigned long prevMillis;
@@ -4928,8 +4928,8 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {      // Matrix2D. By Jeremy Williams. A
 uint16_t WS2812FX::mode_2Dmeatballs(void) {   // Metaballs by Stefan Petrick. Cannot have one of the dimensions be 2 or less. Adapted by Andrew Tuline.
 #ifndef ESP8266
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}                 // No, we're not going to overrun the segment.
-  
+  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
+
   CRGB *leds = (CRGB* )ledData;
 
   float speed = 1;
