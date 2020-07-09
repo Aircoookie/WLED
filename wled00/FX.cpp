@@ -3985,62 +3985,40 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 //  ** BINMAP     //
 ////////////////////
 
-// Map the 16 fftResult bins to the entire segment. I tried all 470, but that didn't work out so well, did it precious.
-uint16_t WS2812FX::mode_binmap(void) {      // Binmap. Scale bins to SEGLEN. By Andrew Tuline
+// Map the first 256 bins to the entire segment. The remaining 256 bins are kind of a mirror image to the first 256.
+// Not a great sketch and we don't need to be accurate, but it looks cool (at least to me it does).
+
+uint16_t WS2812FX::mode_binmap(void) {      // Binmap. Scale bins to SEGLEN. By Andrew Tuline.
 
 #ifndef ESP8266
 
-  extern double fftResult[];
-  uint8_t resultBins = 16;
+  #define STARTBIN 3                           // The first 3 bins are garbage.
+  #define ENDBIN 255                           // Don't use the highest bins, as they're (almost) a mirror of the first 256.
 
-  double maxVal = 0;
-
-  for (int i = 0; i < 16; i++) {              // apleshu's quickie method to to get the max volume.
-    if (fftResult[i] > maxVal) {
-      maxVal = fftResult[i];                  // These values aren't normalized though.
-    }
-  }
-
-  if (maxVal == 0) maxVal = 255;              // If maxVal is too low, we'll have a mapping issue.
-  if (maxVal > (256-SEGMENT.intensity)*10) maxVal = (256-SEGMENT.intensity)*10;   // That maxVal may be >2550, so let's cap it.
-
-  for (int i=0; i<SEGLEN; i++) {
-    uint8_t binNum = i * resultBins / SEGLEN;
-    uint8_t bright = mapf(fftResult[binNum], 0, maxVal, 0, 255);   // find the brightness in relation to max
-    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(millis()/100+i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity.
-  }
-
-/* Andrew will work on this again down the road.
-
-  extern double fftBin[];                     // raw FFT data. He uses bins 7 through 470, so we'll limit to around there.
-  extern double fftResult[];
-  #define samples 480                         // Don't use the highest bins.
-
-  double maxVal = 0;
-
-  for (int i = 0; i < 16; i++) {              // apleshu's quickie method to to get the max volume.
-    if (fftResult[i] > maxVal) {
-      maxVal = fftResult[i];                  // These values aren't normalized though.
-    }
-  }
-
-  if (maxVal == 0) maxVal = 255;            // If maxVal is too low, we'll have a mapping issue.
-  if (maxVal > (256-SEGMENT.intensity)*10) maxVal = (256-SEGMENT.intensity)*10;   // That maxVal may be >2550, so let's cap it.
+  float maxVal = 5000;                        // Kind of a guess as to the maximum output value per combined and normalized (but not mapped) bins.
 
   for (int i=0; i<SEGLEN; i++) {
 
-    uint16_t startBin = 7+i*samples/SEGLEN;             // Don't use the first 7 bins.
-    uint16_t   endBin = 7+(i+1)*samples/SEGLEN;         // Ditto.
+    uint16_t startBin = STARTBIN+i*ENDBIN/SEGLEN;             // This is the START bin for this particular pixel.
+    uint16_t   endBin = STARTBIN+(i+1)*ENDBIN/SEGLEN;         // This is the END bin for this particular pixel.
 
     double sumBin = 0;
-    for (int j=startBin; j<=endBin; j++) {sumBin += fftBin[j];}
-    sumBin = sumBin/(endBin-startBin+1);                // Normalize it
 
+    for (int j=startBin; j<=endBin; j++) sumBin += fftBin[j];
+
+    sumBin = sumBin/(endBin-startBin+1);                // Normalize it.
+    sumBin = sumBin * (i+5) / (endBin-startBin+5);      // Disgusting frequency adjustment. Lows were too bright. Am open to quick 'n dirty alternatives.
+    
+    static float tempMax = 0;
+    if (tempMax < sumBin) {tempMax = sumBin; Serial.println(tempMax);}
+    
     if (sumBin > maxVal) sumBin = maxVal;               // Make sure our bin isn't higher than the max . . which we capped earlier.
-    uint8_t bright = mapf(sumBin, 0, maxVal, 0, 255);   // find the brightness in relation to max
-  setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4, false, PALETTE_SOLID_WRAP, 0), bright));   // colour is just an index in the palette. The FFT is the intensity.
-  }
-*/
+    
+    uint8_t bright = constrain(mapf(sumBin, 0, maxVal, 0, 255),0,255);   // Map the brightness in relation to maxVal and crunch to 8 bits.
+      
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4+160, false, PALETTE_SOLID_WRAP, 0), bright));   // 'i' is just an index in the palette. The FFT value, bright, is the intensity.
+                                                                                                                     // The +160 is 'blue' for the Rainbow palette.
+  } // for i
 
 #else
   fade_out(224);
