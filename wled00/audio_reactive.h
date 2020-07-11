@@ -26,6 +26,7 @@
   #define LED_BUILTIN 3
 #endif
 
+#define UDP_SYNC_HEADER "00001"
 
 // As defined in wled00.h
 // byte soundSquelch = 10;                          // default squelch value for volume reactive routines
@@ -54,16 +55,20 @@ uint16_t lastSample;                                // last audio noise sample
 uint8_t myVals[32];                                 // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized
 
 struct audioSyncPacket {
-  char intro[6] = "WLEDP";
+  char header[6] = UDP_SYNC_HEADER;
   uint8_t myVals[32];     //  32 Bytes
   int sampleAgc;          //  04 Bytes
   int sample;             //  04 Bytes
   float sampleAvg;        //  04 Bytes
   bool samplePeak;        //  01 Bytes
-  double fftResult[16];   // 128 Bytes
+  uint8_t fftResult[16];   // 16 Bytes
   double FFT_Magnitude;   //  08 Bytes
   double FFT_MajorPeak;   //  08 Bytes
 };
+
+bool isValidUdpSyncVersion(char header[6]) {
+  return (header == UDP_SYNC_HEADER);
+}
 
 void getSample() {
   static long peakTime;
@@ -146,7 +151,7 @@ void agcAvg() {                                                       // A simpl
     udpSamplePeak = 0;                              // Reset udpSamplePeak after we've transmitted it
 
     for (int i = 0; i < 16; i++) {
-      transmitData.fftResult[i] = fftResult[i];
+      transmitData.fftResult[i] = (uint8_t)constrain(fftResult[i], 0, 254);
     }
 
     transmitData.FFT_Magnitude = FFT_Magnitude;
