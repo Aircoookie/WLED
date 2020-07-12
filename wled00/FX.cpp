@@ -2528,13 +2528,6 @@ typedef struct Ball {
   float impactVelocity;
   float height;
 } ball;
-// modified for balltrack mode
-typedef struct Ballt {
-  unsigned long lastBounceUpdate;
-  float mass; // could fix this to be = 1. if memory is an issue
-  float velocity;
-  float height;
-} ballt;
 /*
 *  Bouncing Balls Effect
 */
@@ -2594,7 +2587,15 @@ uint16_t WS2812FX::mode_bouncing_balls(void) {
 /*
 *  bouncing balls on a track track Effect modified from Air Cookie's bouncing balls
 */
-uint16_t WS2812FX::mode_balltrack(void) {
+// modified for balltrack mode
+typedef struct Ballt {
+  unsigned long lastBounceUpdate;
+  float mass; // could fix this to be = 1. if memory is an issue
+  float velocity;
+  float height;
+} ballt;
+
+uint16_t WS2812FX::ball_track(bool collide) {
   //allocate segment data
   uint16_t maxNumBalls = 16;
   uint16_t dataSize = sizeof(ballt) * maxNumBalls;
@@ -2641,8 +2642,7 @@ uint16_t WS2812FX::mode_balltrack(void) {
       balls[i].height=thisHeight;
     }
 // check for collisions
-    bool docol=true;
-    if(docol){
+    if(collide){
       for(uint8_t j= i+1; j < numBalls; j++){
         if(balls[j].velocity != balls[i].velocity) {
           //  tcollided + balls[j].lastBounceUpdate is acutal time of collision (this keeps precision with long to float conversions)
@@ -2650,14 +2650,14 @@ uint16_t WS2812FX::mode_balltrack(void) {
                 balls[i].velocity*float(balls[j].lastBounceUpdate-balls[i].lastBounceUpdate))/
                (balls[j].velocity-balls[i].velocity);
 
-          if( (tcollided>2)&&(tcollided<float(time-balls[j].lastBounceUpdate))){ // 2ms minimum to avoid duplicate bounces 
+          if( (tcollided>2)&&(tcollided<float(time-balls[j].lastBounceUpdate))){ // 2ms minimum to avoid duplicate bounces
             balls[i].height=balls[i].height + balls[i].velocity*(tcollided+float(balls[j].lastBounceUpdate-balls[i].lastBounceUpdate))/cfac;
             balls[j].height=balls[i].height;
             balls[i].lastBounceUpdate=(unsigned long)(tcollided+.5)+balls[j].lastBounceUpdate;
             balls[j].lastBounceUpdate=balls[i].lastBounceUpdate;
             float vtmp=balls[i].velocity;
             balls[i].velocity=((balls[i].mass-balls[j].mass)*vtmp              + 2.*balls[j].mass*balls[j].velocity)/(balls[i].mass+balls[j].mass);
-            balls[j].velocity=((balls[j].mass-balls[i].mass)*balls[j].velocity + 2.*balls[i].mass*vtmp)             /(balls[i].mass+balls[j].mass);           
+            balls[j].velocity=((balls[j].mass-balls[i].mass)*balls[j].velocity + 2.*balls[i].mass*vtmp)             /(balls[i].mass+balls[j].mass);
             //balls[i].height=balls[i].height + balls[i].velocity*(time-balls[i].lastBounceUpdate)/cfac;
             thisHeight= balls[i].height + balls[i].velocity*(time-balls[i].lastBounceUpdate)/cfac;
           }
@@ -2681,6 +2681,13 @@ uint16_t WS2812FX::mode_balltrack(void) {
   }
 
   return FRAMETIME;
+}
+
+uint16_t WS2812FX::mode_balltrack(void) {
+  return ball_track(false);
+}
+uint16_t WS2812FX::mode_balltrack_collide(void) {
+  return ball_track(true);
 }
 
 

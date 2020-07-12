@@ -98,7 +98,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  113
+#define MODE_COUNT  114
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -213,6 +213,7 @@
 #define FX_MODE_FLOW                   110
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_BALLTRACK              112
+#define FX_MODE_BALLTRACK_COLLIDE      113
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
 
@@ -413,6 +414,7 @@ class WS2812FX {
       _mode[FX_MODE_FLOW]                    = &WS2812FX::mode_flow;
       _mode[FX_MODE_CHUNCHUN]                = &WS2812FX::mode_chunchun;
       _mode[FX_MODE_BALLTRACK]               = &WS2812FX::mode_balltrack;
+      _mode[FX_MODE_BALLTRACK_COLLIDE]       = &WS2812FX::mode_balltrack_collide;
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
       targetPalette = CloudColors_p;
@@ -608,7 +610,8 @@ class WS2812FX {
       mode_phased_noise(void),
       mode_flow(void),
       mode_chunchun(void),
-      mode_balltrack(void);
+      mode_balltrack(void),
+      mode_balltrack_collide(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -656,7 +659,8 @@ class WS2812FX {
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),
       spots_base(uint16_t),
-      phased_base(uint8_t);
+      phased_base(uint8_t),
+      ball_track(bool collide);
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
@@ -696,7 +700,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Ball Track"
+"Flow","Chunchun","Ball Track","Ball Track Collide"
 ])=====";
 
 
