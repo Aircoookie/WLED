@@ -30,7 +30,7 @@
 
 // As defined in wled00.h
 // byte soundSquelch = 10;                          // default squelch value for volume reactive routines
-// uint16_t noiseFloor = 100;                       // default squelch value for FFT reactive routines
+
 
 int micIn;                                          // Current sample starts with negative values and large values, which is why it's 16 bit signed
 int sample;                                         // Current sample
@@ -124,7 +124,6 @@ void agcAvg() {                                                       // A simpl
 #ifndef ESP8266
 
   #include "arduinoFFT.h"
-  //#include "movingAvg.h"
 
   void transmitAudioData()
   {
@@ -172,20 +171,17 @@ void agcAvg() {                                                       // A simpl
   double FFT_Magnitude = 0;
   uint16_t mAvg = 0;
 
-  /*
-  These are the input and output vectors
-  Input vectors receive computed results from FFT
-  */
+  // These are the input and output vectors.  Input vectors receive computed results from FFT.
   double vReal[samples];
   double vImag[samples];
   double fftBin[samples];
   double fftResult[16];
 
-  // Andrew would like to know which microphone/configuration was used to calculate these values.
-  // Would be nice to support individual calibrations, but would need an easy procedure everyone can use to do so, i.e. a sound meter/generator for Android/iPhone.
-  int noise[] = {1233,  1327, 1131, 1008, 1059, 996,  981,  973,  967,  983,  957,  957,  955,  957,  960,  976}; //ESP32 noise - run on quite evn, record FFTResults - by Yariv-H
-  int pinknoise[] = {7922,  6427, 3448, 1645, 1535, 2116, 2729, 1710, 2174, 2262, 2039, 2604, 2848, 2768, 2343, 2188}; //ESP32 pink noise - by Yariv-H
-  int maxChannel[] = {73873/2,  82224/2,  84988/2,  52898/2,  51754/2,  51221/2,  38814/2,  31443/2,  29154/2, 26204/2, 23953/2,  23022/2,  16982/2,  19399/2,  14790/2,  15612/3}; //playing sin wave 0-20khz pick the max value for each channel - by Yariv-H
+  // This is used for normalization of the result bins. It was created by sending the results of a signal generator to within 6" of a MAX9814 @ 40db gain.
+  // This is the maximum raw results for each of the result bins and is used for normalization of the results.
+  uint16_t maxChannel[] = {26000,  44000,  66000,  72000,  60000,  48000,  41000,  30000,  25000, 22000, 16000,  14000,  10000,  8000,  7000,  5000}; // Find maximum value for each bin with MAX9814 @ 40db gain.
+  
+  float avgChannel[16];    // This is a smoothed rolling average value for each bin. Experimental for AGC testing.
 
   // Create FFT object
   arduinoFFT FFT = arduinoFFT( vReal, vImag, samples, samplingFrequency );
@@ -216,57 +212,24 @@ void agcAvg() {                                                       // A simpl
         vReal[i] = micData;                                   // Store Mic Data in an array
         vImag[i] = 0;
 
-  //      rawMicData = rawMicData - mAvg;                     // center
-  //      beatSample = bassFilter(rawMicData);
-  //      if (beatSample < 0) beatSample =-beatSample;        // abs
-  //      envelope = envelopeFilter(beatSample);
-
         while(micros() - microseconds < sampling_period_us){
           //empty loop
           }
         microseconds += sampling_period_us;
       }
 
-  //  beat = beatFilter(envelope);
-  //  if (beat > 50000) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
-
       FFT.Windowing( FFT_WIN_TYP_HAMMING, FFT_FORWARD );    // Weigh data
       FFT.Compute( FFT_FORWARD );                           // Compute FFT
       FFT.ComplexToMagnitude();                             // Compute magnitudes
 
-      /*
-       * vReal[8 .. 511] contain useful data, each a 20Hz interval (140Hz - 10220Hz).
-       * There could be interesting data at [2 .. 7] but chances are there are too many artifacts
-       */
+      //
+      // vReal[3 .. 255] contain useful data, each a 20Hz interval (60Hz - 5120Hz).
+      // There could be interesting data at bins 0 to 2, but there are too many artifacts.
+      //
       FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);        // let the effects know which freq was most dominant
       FFT.DCRemoval();
 
       for (int i = 0; i < samples; i++) fftBin[i] = vReal[i];   // export FFT field
-
-       /*
-       * Create an array of 16 bins which roughly represent values the human ear
-       * can determine as different frequency bands (fftBins[0..6] are already zero'd)
-
-       *
-       * set in each bin the average band value - by Yariv-H
-       */
-/*    fftResult[0] = (fftAdd(7,11) * 0.8) /5;
-      fftResult[1] = (fftAdd(12,16)) /5;
-      fftResult[2] = (fftAdd(17,21)) /5;
-      fftResult[3] = (fftAdd(22, 30)) /9;
-      fftResult[4] = (fftAdd(31, 39)) /9;
-      fftResult[5] = (fftAdd(40, 48)) /9;
-      fftResult[6] = (fftAdd(49, 61)) /13;
-      fftResult[7] = (fftAdd(62, 78)) /17;
-      fftResult[8] = (fftAdd(79, 99)) /21;
-      fftResult[9] = (fftAdd(100, 124)) /25;
-      fftResult[10] = (fftAdd(125, 157)) /33;
-      fftResult[11] = (fftAdd(158, 198)) /41;
-      fftResult[12] = (fftAdd(199, 247)) /49;
-      fftResult[13] = (fftAdd(248, 312)) /65;
-      fftResult[14] = (fftAdd(313, 393)) /81;
-      fftResult[15] = (fftAdd(394, 470)) /77;
-*/
 
 // Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512.
 // Based on testing, the lowest/Start frequency is 60 Hz (with bin 3) and a highest/End frequency of 5120 Hz in bin 255.
@@ -275,28 +238,30 @@ void agcAvg() {                                                       // A simpl
 // Multiplier = (End frequency/ Start frequency) ^ 1/16
 // Multiplier = 1.320367784
 
-      fftResult[0] = (fftAdd(3,4) * 0.8) /2;
-      fftResult[1] = (fftAdd(4,5)) /2;
-      fftResult[2] = (fftAdd(5,7)) /3;
-      fftResult[3] = (fftAdd(7,9)) /3;
-      fftResult[4] = (fftAdd(9,12)) /4;
-      fftResult[5] = (fftAdd(12,16)) /5;
-      fftResult[6] = (fftAdd(16,21)) /6;
-      fftResult[7] = (fftAdd(21,28)) /8;
-      fftResult[8] = (fftAdd(29,37)) /10;
-      fftResult[9] = (fftAdd(37,48)) /12;
-      fftResult[10] = (fftAdd(48,64)) /17;
-      fftResult[11] = (fftAdd(64,84)) /21;
-      fftResult[12] = (fftAdd(84,111)) /28;
-      fftResult[13] = (fftAdd(111,147)) /37;
-      fftResult[14] = (fftAdd(147,194)) /48;
-      fftResult[15] = (fftAdd(194, 255)) /62;
+//                                               Range   |  Freq | Max vol on MAX9814 @ 40db gain.
+      fftResult[0] = (fftAdd(3,4)) /2;       // 60 - 100 -> 82Hz, 26000           
+      fftResult[1] = (fftAdd(4,5)) /2;       // 80 - 120 -> 104Hz, 44000
+      fftResult[2] = (fftAdd(5,7)) /3;       // 100 - 160 -> 130Hz, 66000
+      fftResult[3] = (fftAdd(7,9)) /3;       // 140 - 200 -> 170, 72000
+      fftResult[4] = (fftAdd(9,12)) /4;      // 180 - 260 -> 220, 60000
+      fftResult[5] = (fftAdd(12,16)) /5;     // 240 - 340 -> 290, 48000
+      fftResult[6] = (fftAdd(16,21)) /6;     // 320 - 440 -> 400, 41000
+      fftResult[7] = (fftAdd(21,28)) /8;     // 420 - 600 -> 500, 30000
+      fftResult[8] = (fftAdd(29,37)) /10;    // 580 - 760 ->  580, 25000
+      fftResult[9] = (fftAdd(37,48)) /12;    // 740 - 980 -> 820, 22000
+      fftResult[10] = (fftAdd(48,64)) /17;   // 960 - 1300 -> 1150, 16000
+      fftResult[11] = (fftAdd(64,84)) /21;   // 1280 - 1700 ->  1400, 14000
+      fftResult[12] = (fftAdd(84,111)) /28;  // 1680 - 2240 -> 1800, 10000
+      fftResult[13] = (fftAdd(111,147)) /37; // 2220 - 2960 -> 2500, 8000
+      fftResult[14] = (fftAdd(147,194)) /48; // 2940 - 3900 -> 3500, 7000
+      fftResult[15] = (fftAdd(194, 255)) /62; // 3880 - 5120 -> 4500, 5000
 
-// Remove noise by Yariv-H, but Andrew says that once it gets mapped, the noise was almost 0, so that has been removed.
       for(int i=0; i< 16; i++) {
-//          if(fftResult[i]-pinknoise[i] < 0 ) {fftResult[i]=0;} else {fftResult[i]-=pinknoise[i];}
         if(fftResult[i]<0) fftResult[i]=0;
-        fftResult[i] = constrain(map(fftResult[i], 0,  maxChannel[i], 0, 254),0,254);
+        avgChannel[i] = ((avgChannel[i] * 31) + fftResult[i]) / 32;                         // Smoothing of each result bin. Experimental.
+        fftResult[i] = constrain(map(fftResult[i], 0,  maxChannel[i], 0, 255),0,255);       // Map result bin to 8 bits.
+//        fftResult[i] = constrain(map(fftResult[i], 0,  avgChannel[i]*2, 0, 255),0,255);   // AGC map result bin to 8 bits. Can be noisy at low volumes. Experimental.
+
       }
     }
 }
