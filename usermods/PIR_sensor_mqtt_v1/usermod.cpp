@@ -12,6 +12,8 @@
 
 // PIR sensor pin
 const int MOTION_PIN = 16;
+ // MQTT topic for sensor values
+const char MQTT_TOPIC[] = "/motion";
 
 int prevState = LOW;
 
@@ -33,7 +35,7 @@ void publishMqtt(String state)
   if (mqtt != nullptr){
     char subuf[38];
     strcpy(subuf, mqttDeviceTopic);
-    strcat(subuf, "/kitchen_motion");
+    strcat(subuf, MQTT_TOPIC);
     mqtt->publish(subuf, 0, true, state.c_str());
   }
 }
