@@ -801,6 +801,16 @@ void WS2812FX::handle_palette(void)
   }
 }
 
+
+/*
+ * Gets a single color from the currently selected palette.
+ * @param i Palette Index (if mapping is true, the full palette will be SEGLEN long, if false, 255). Will wrap around automatically.
+ * @param mapping if true, LED position in segment is considered for color
+ * @param wrap FastLED palettes will usally wrap back to the start smoothly. Set false to get a hard edge
+ * @param mcol If the default palette 0 is selected, return the standard color 0, 1 or 2 instead. If >2, Party palette is used instead
+ * @param pbri Value to scale the brightness of the returned color by. Default is 255. (no scaling)
+ * @returns Single color from palette
+ */
 uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
   if (SEGMENT.palette == 0 && mcol < 3) return SEGCOLOR(mcol); //WS2812FX default
@@ -812,6 +822,7 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
   return  fastled_col.r*65536 +  fastled_col.g*256 +  fastled_col.b;
 }
 
+//@returns `true` if color, mode, speed, intensity and palette match
 bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
 {
   //if (a->start != b->start) return false;
