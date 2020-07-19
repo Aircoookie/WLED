@@ -324,15 +324,41 @@ void WLED::initConnection()
   DEBUG_PRINT(clientSSID);
   DEBUG_PRINTLN("...");
 
+  // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
+  char hostname[25] = "wled-";
+  const char *pC = serverDescription;
+  uint8_t pos = 5;
+
+  while (*pC && pos < 24) { // while !null and not over length
+    if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
+      hostname[pos] = *pC;
+      pos++;
+    } else if (*pC == ' ' || *pC == '_' || *pC == '-' || *pC == '+' || *pC == '!' || *pC == '?' || *pC == '*') {
+      hostname[pos] = '-';
+      pos++;
+    }
+    // else do nothing - no leading hyphens and do not include hyphens for all other characters.
+    pC++;
+  }
+  // if the hostname is left blank, use the mac address/default mdns name
+  if (pos < 6) {
+    sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
+  } else { //last character must not be hyphen
+    while (pos > 0 && hostname[pos -1] == '-') {
+      hostname[pos -1] = 0;
+      pos--;
+    }
+  }
+  
 #ifdef ESP8266
-  WiFi.hostname(serverDescription);
+  WiFi.hostname(hostname);
 #endif
 
   WiFi.begin(clientSSID, clientPass);
 
 #ifdef ARDUINO_ARCH_ESP32
   WiFi.setSleep(!noWifiSleep);
-  WiFi.setHostname(serverDescription);
+  WiFi.setHostname(hostname);
 #else
   wifi_set_sleep_type((noWifiSleep) ? NONE_SLEEP_T : MODEM_SLEEP_T);
 #endif
