@@ -2,7 +2,9 @@
 
 ### Development versions after 0.10.0 release
 
-#### Build 2007020
+#### Build 2007190
+
+-   Fixed hostname containing illegal characters (#1035)
 
 #### Build 2006251
 
