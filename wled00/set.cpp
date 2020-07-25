@@ -637,8 +637,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     nightlightActive = false; //always disable nightlight when toggling
     switch (getNumVal(&req, pos))
     {
-      case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off
-      case 1: bri = briLast; break; //on
+      case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off, only if it was previously on
+      case 1: if (bri == 0) bri = briLast; break; //on, only if it was previously off
       default: toggleOnOff(); //toggle
     }
   }
