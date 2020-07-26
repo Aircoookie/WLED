@@ -304,6 +304,9 @@ void saveSettingsToEEPROM()
   EEPROM.write(audio_i+11, strip.matrixSerpentine);
 #endif
 
+  EEPROM.write(audio_i+12, sampleGain);
+
+
 // End of Audio Reactive SEGMENT specific write settings
 
   commit();
@@ -631,6 +634,8 @@ void loadSettingsFromEEPROM(bool first)
     strip.matrixHeight = EEPROM.read(audio_i+9) + ((EEPROM.read(audio_i+10) << 10) & 0xFF00);
     strip.matrixSerpentine = EEPROM.read(audio_i+11); // > 0;
 #endif
+  
+  sampleGain = EEPROM.read(audio_i+12);
 
   }
 // End of Audio Reactive SEGMENT specific read settings

@@ -41,7 +41,9 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappendi(nightlightTargetBri);
   oappend("</nt><sq>");
   oappendi(soundSquelch);
-  oappend("</sq><fx>");
+  oappend("</sq><gn>");
+  oappendi(sampleGain);
+  oappend("</gn><fx>");
   oappendi(effectCurrent);
   oappend("</fx><sx>");
   oappendi(effectSpeed);
@@ -317,6 +319,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"TL",nightlightDelayMinsDefault);
     sappend('v',"TW",nightlightMode);
     sappend('v',"SQ",soundSquelch);
+    sappend('v',"GN",sampleGain);
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);

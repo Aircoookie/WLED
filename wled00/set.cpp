@@ -101,6 +101,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     t = request->arg("SQ").toInt();
     if (t > 0) soundSquelch = t;
+
+    t = request->arg("GN").toInt();
+    if (t > 0) sampleGain = t;
     
     nightlightTargetBri = request->arg("TB").toInt();
     t = request->arg("TL").toInt();

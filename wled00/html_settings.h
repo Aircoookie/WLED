@@ -119,10 +119,11 @@ type="checkbox" name="PF"><h3>Timed light</h3>Default Duration: <input
 name="TL" type="number" min="1" max="255" required> min<br>
 Default Target brightness: <input name="TB" type="number" min="0" max="255" 
 required><br>Fade down: <input type="checkbox" name="TW"><br><h3>Sound</h3>
-Squelch: <input name="SQ" type="number" min="1" max="255" required><br><h3>
-2D Matrix</h3><input name="LCW" type="number" min="1" max="255" required 
-oninput="UI()"> x <input name="LCH" type="number" min="1" max="255" required 
-oninput="UI()"><br><div id="2dwarning" style="color:orange;display:inline">
+Squelch: <input name="SQ" type="number" min="1" max="255" required><br>Gain: 
+<input name="GN" type="number" min="1" max="255" required><br><h3>2D Matrix</h3>
+<input name="LCW" type="number" min="1" max="255" required oninput="UI()"> x 
+<input name="LCH" type="number" min="1" max="255" required oninput="UI()"><br>
+<div id="2dwarning" style="color:orange;display:inline">
 &#9888; width x height should match LED count!<br></div>Serpentine: <input 
 type="checkbox" name="LCWHS" checked="checked">(how leds connected)<br><h3>
 Advanced</h3>Palette blending: <select name="PB"><option value="0">

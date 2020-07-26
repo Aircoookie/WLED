@@ -28,9 +28,9 @@
 
 #define UDP_SYNC_HEADER "00001"
 
-// As defined in wled00.h
+// As defined in wled.h
 // byte soundSquelch = 10;                          // default squelch value for volume reactive routines
-
+// byte sampleGain = 0;                             // Define a 'gain' for different types of ADC input devices.
 
 int micIn;                                          // Current sample starts with negative values and large values, which is why it's 16 bit signed
 int sample;                                         // Current sample
@@ -38,6 +38,7 @@ float sampleAvg = 0;                                // Smoothed Average
 float micLev = 0;                                   // Used to convert returned value to have '0' as minimum. A leveller
 uint8_t maxVol = 11;                                // Reasonable value for constant volume for 'peak detector', as it won't always trigger
 bool samplePeak = 0;                                // Boolean flag for peak. Responding routine must reset this flag
+int sampleAdj;                                      // Gain adjusted sample value.
 #ifndef ESP8266                                     // Transmitting doesn't work on ESP8266, don't bother allocating memory
 bool udpSamplePeak = 0;                             // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
 #endif
@@ -92,6 +93,11 @@ void getSample() {
   lastSample = micIn;
 
   sample = (micIn <= soundSquelch) ? 0 : (sample*3 + micIn) / 4;  // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
+
+  sampleAdj = sample*sampleGain/64 + sample;
+  sampleAdj = min(sampleAdj, 255);
+  sample = sampleAdj;                                             // We'll now make our rebase our sample to be adjusted.
+
   sampleAvg = ((sampleAvg * 15) + sample) / 16;                   // Smooth it out over the last 16 samples.
 
   if (userVar1 == 0) samplePeak = 0;
@@ -106,6 +112,8 @@ void getSample() {
 
 }  // getSample()
 
+
+
 void agcAvg() {                                                       // A simple averaging multiplier to automatically adjust sound sensitivity.
 
   multAgc = (sampleAvg < 1) ? targetAgc : targetAgc / sampleAvg;      // Make the multiplier so that sampleAvg * multiplier = setpoint
@@ -116,6 +124,8 @@ void agcAvg() {                                                       // A simpl
   if (userVar0 > 255) userVar0 = 255;
 
 } // agcAvg()
+
+
 
 ////////////////////
 // Begin FFT Code //
