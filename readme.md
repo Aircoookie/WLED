@@ -27,12 +27,12 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Configurable Auto Brightness limit for safer operation  
 
 ## 💡 Supported light control interfaces
-- WLED app for Android and iOS  
+- WLED app for [Android](https://play.google.com/store/apps/details?id=com.aircoookie.WLED) and [iOS](https://apps.apple.com/us/app/wled/id1475695033)
 - JSON and HTTP request APIs  
 - MQTT  
 - Blynk IoT  
 - E1.31  
-- Hyperion  
+- [Hyperion](https://github.com/hyperion-project/hyperion.ng)
 - UDP realtime  
 - Alexa voice control (including dimming and color)  
 - Sync to Philips hue lights  
