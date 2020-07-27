@@ -202,6 +202,13 @@ writeChunks(
       append: ")=====",
       method: "plaintext",
       filter: "html-minify",
+      mangle: (str) => `
+#ifdef WLED_ENABLE_DMX
+${str}
+#else
+${str.replace(/\<form action\=\"\/settings\/dmx\"\>.*DMX Output\<\/button\>\<\/form\>/gms, "")}
+#endif
+`,
     },
     {
       file: "settings_wifi.htm",
