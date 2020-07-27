@@ -94,7 +94,7 @@ void getSample() {
 
   sample = (micIn <= soundSquelch) ? 0 : (sample*3 + micIn) / 4;  // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
 
-  sampleAdj = sample*sampleGain/64 + sample;
+  sampleAdj = sample*sampleGain/64 + sample/16;                   // Adjust the gain.
   sampleAdj = min(sampleAdj, 255);
   sample = sampleAdj;                                             // We'll now make our rebase our sample to be adjusted.
 
