@@ -109,8 +109,8 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
       colSec[2]       = e131_data[DMXAddress+10];
       if (dmxChannels-DMXAddress+1 > 11)
       {
-        col[3]          = e131_data[DMXAddress+11]; //white
-        colSec[3]       = e131_data[DMXAddress+12];
+        col[3]        = e131_data[DMXAddress+11]; //white
+        colSec[3]     = e131_data[DMXAddress+12];
       }
       transitionDelayTemp = 0;                        // act fast
       colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);  // don't send UDP
@@ -122,23 +122,23 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
       {
         realtimeLock(realtimeTimeoutMs, mde);
         if (realtimeOverride) return;
-        uint16_t previousLEDs, dmxOffset;
+        uint16_t previousLeds, dmxOffset;
         if (previousUniverses == 0) {
           if (dmxChannels-DMXAddress < 1) return;
           dmxOffset = DMXAddress;
-          previousLEDs = 0;
+          previousLeds = 0;
           // First DMX address is dimmer in DMX_MODE_MULTIPLE_DRGB mode.
           if (DMXMode == DMX_MODE_MULTIPLE_DRGB) {
-              strip.setBrightness( e131_data[dmxOffset++]);
+            strip.setBrightness(e131_data[dmxOffset++]);
           }
         } else {
           // All subsequent universes start at the first channel.
           dmxOffset = isArtnet ? 0 : 1;
-          uint16_t possibleLEDsFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / 3;
-          previousLEDs = possibleLEDsFirstUniverse + (previousUniverses - 1) * MAX_LEDS_PER_UNIVERSE;
+          uint16_t ledsInFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / 3;
+          previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * MAX_LEDS_PER_UNIVERSE;
         }
-        uint16_t ledCount = previousLEDs + (dmxChannels - dmxOffset) / 3;
-        for (uint16_t i = previousLEDs; i < ledCount; i++) {
+        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset) / 3;
+        for (uint16_t i = previousLeds; i < ledsTotal; i++) {
           setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], 0);
         }
         break;
