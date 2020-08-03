@@ -202,13 +202,8 @@ writeChunks(
       append: ")=====",
       method: "plaintext",
       filter: "html-minify",
-      mangle: (str) => `
-#ifdef WLED_ENABLE_DMX
-${str}
-#else
-${str.replace(/\<form action\=\"\/settings\/dmx\"\>.*DMX Output\<\/button\>\<\/form\>/gms, "")}
-#endif
-`,
+      mangle: (str) =>
+        str.replace(/User Interface\<\/button\>\<\/form\>/gms, "User Interface\<\/button\>\<\/form\>%DMXMENU%"),
     },
     {
       file: "settings_wifi.htm",
