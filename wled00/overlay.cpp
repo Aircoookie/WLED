@@ -40,10 +40,10 @@ void _overlayAnalogClock()
   {
     _overlayAnalogCountdown(); return;
   }
-  double hourP = ((double)(hour(local)%12))/12;
-  double minuteP = ((double)minute(local))/60;
+  double hourP = ((double)(hour(localTime)%12))/12;
+  double minuteP = ((double)minute(localTime))/60;
   hourP = hourP + minuteP/12;
-  double secondP = ((double)second(local))/60;
+  double secondP = ((double)second(localTime))/60;
   int hourPixel = floor(analogClock12pixel + overlaySize*hourP);
   if (hourPixel > overlayMax) hourPixel = overlayMin -1 + hourPixel - overlayMax;
   int minutePixel = floor(analogClock12pixel + overlaySize*minuteP);
@@ -279,13 +279,13 @@ void setCronixie()
 
 void _overlayCronixie()
 {
-  byte h = hour(local);
+  byte h = hour(localTime);
   byte h0 = h;
-  byte m = minute(local);
-  byte s = second(local);
-  byte d = day(local);
-  byte mi = month(local);
-  int y = year(local);
+  byte m = minute(localTime);
+  byte s = second(localTime);
+  byte d = day(localTime);
+  byte mi = month(localTime);
+  int y = year(localTime);
   //this has to be changed in time for 22nd century
   y -= 2000; if (y<0) y += 30; //makes countdown work
 
@@ -310,7 +310,7 @@ void _overlayCronixie()
           case 24: _digitOut[i] = m/10; break; //M
           case 30: _digitOut[i] = s/10; break; //S
           
-          case 43: _digitOut[i] = weekday(local); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //D
+          case 43: _digitOut[i] = weekday(localTime); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //D
           case 44: _digitOut[i] = d/10; _digitOut[i+1] = d- _digitOut[i]*10; i++; break; //DD
           case 40: _digitOut[i] = mi/10; _digitOut[i+1] = mi- _digitOut[i]*10; i++; break; //II
           case 37: _digitOut[i] = y/10; _digitOut[i+1] = y- _digitOut[i]*10; i++; break; //YY
@@ -331,7 +331,7 @@ void _overlayCronixie()
           //case 65: _digitOut[i+1] = (h0>17 || (h0>5 && h0<12))?1:10; i++; //bb
           case 64: _digitOut[i] = (h0>11)?1:10; break; //b
 
-          case 93: _digitOut[i] = weekday(local); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //d
+          case 93: _digitOut[i] = weekday(localTime); _digitOut[i]--; if (_digitOut[i]<1) _digitOut[i]= 7; break; //d
           case 94: _digitOut[i] = d/10; _digitOut[i+1] = d- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //dd
           case 90: _digitOut[i] = mi/10; _digitOut[i+1] = mi- _digitOut[i]*10; if(_digitOut[i] == 0) _digitOut[i]=10; i++; break; //ii
           case 87: _digitOut[i] = y/10; _digitOut[i+1] = y- _digitOut[i]*10; i++; break; //yy
