@@ -405,7 +405,7 @@ void serializeInfo(JsonObject root)
   root["opt"] = os;
   
   root["brand"] = "WLED";
-  root["product"] = "FOSS";
+  root["product"] = root["arch"].as<String>() + ' ' + root["core"].as<String>() + " (" + root["lwip"].as<String>() + ')';
   root["mac"] = escapedMac;
 }
 
