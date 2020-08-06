@@ -12,6 +12,15 @@
 
 #ifndef ESP8266
   TaskHandle_t FFT_Task;
+  #include <driver/i2s.h>
+
+  #define I2S_WS 17         // aka LRCL
+  #define I2S_SD 26         // aka DOUT
+  #define I2S_SCK 18        // aka BCLK
+
+  const i2s_port_t I2S_PORT = I2S_NUM_0;
+  const int BLOCK_SIZE = 64;
+  const int SAMPLE_RATE = 16000;
 #endif
 
 //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
@@ -79,30 +88,32 @@ void getSample() {
   #else
   #ifdef ESP32
     micIn = micData;
-    micIn = micIn >> 2;                                       // ESP32 has 2 more bits of A/D, so we need to normalize
+    // micIn = micIn >> 2;                                       // ESP32 has 2 more bits of A/D, so we need to normalize
   #endif
   #ifdef ESP8266
     micIn = analogRead(MIC_PIN);                              // Poor man's analog read
   #endif
   #endif
+    Serial.println(micIn);
+    micLev = ((micLev * 31) + micIn) / 32; // Smooth it out over the last 32 samples for automatic centering
+    micIn -= micLev;                       // Let's center it to 0 now
+    micIn = abs(micIn);                    // And get the absolute value of each sample
 
-  micLev = ((micLev * 31) + micIn) / 32;                      // Smooth it out over the last 32 samples for automatic centering
-  micIn -= micLev;                                            // Let's center it to 0 now
-  micIn = abs(micIn);                                         // And get the absolute value of each sample
+    lastSample = micIn;
 
-  lastSample = micIn;
+    sample = (micIn <= soundSquelch) ? 0 : (sample * 3 + micIn) / 4; // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
 
-  sample = (micIn <= soundSquelch) ? 0 : (sample*3 + micIn) / 4;  // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
+    sampleAdj = sample * sampleGain / 40 + sample / 16; // Adjust the gain.
+    sampleAdj = min(sampleAdj, 255);
+    sample = sampleAdj; // We'll now make our rebase our sample to be adjusted.
 
-  sampleAdj = sample*sampleGain/40 + sample/16;                   // Adjust the gain.
-  sampleAdj = min(sampleAdj, 255);
-  sample = sampleAdj;                                             // We'll now make our rebase our sample to be adjusted.
+    sampleAvg = ((sampleAvg * 15) + sample) / 16; // Smooth it out over the last 16 samples.
 
-  sampleAvg = ((sampleAvg * 15) + sample) / 16;                   // Smooth it out over the last 16 samples.
-
-  if (userVar1 == 0) samplePeak = 0;
-  if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 300)) {   // Poor man's beat detection by seeing if sample > Average + some value.
-    samplePeak = 1;                                                   // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
+    if (userVar1 == 0)
+      samplePeak = 0;
+    if (sample > (sampleAvg + maxVol) && millis() > (peakTime + 300))
+    {                 // Poor man's beat detection by seeing if sample > Average + some value.
+      samplePeak = 1; // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
 #ifndef ESP8266
     udpSamplePeak = 1;
 #endif
@@ -194,7 +205,7 @@ void agcAvg() {                                                       // A simpl
   float avgChannel[16];    // This is a smoothed rolling average value for each bin. Experimental for AGC testing.
 
   // Create FFT object
-  arduinoFFT FFT = arduinoFFT( vReal, vImag, samples, samplingFrequency );
+  arduinoFFT FFT = arduinoFFT( vReal, vImag, samples, SAMPLE_RATE );
 
   double fftAdd( int from, int to) {
     int i = from;
@@ -217,8 +228,14 @@ void agcAvg() {                                                       // A simpl
       extern double volume;
 
       for(int i=0; i<samples; i++) {
-        micData = analogRead(MIC_PIN);                        // Analog Read
-        rawMicData = micData >> 2;                            // ESP32 has 12 bit ADC
+        // micData = analogRead(MIC_PIN);                        // Analog Read
+        int32_t digitalSample = 0;
+        int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&digitalSample, portMAX_DELAY); // no timeout
+        if (bytes_read > 0) {
+          micData = abs(digitalSample >> 16);
+          // Serial.println(micData);
+          rawMicData = micData;
+        }                           // ESP32 has 12 bit ADC
         vReal[i] = micData;                                   // Store Mic Data in an array
         vImag[i] = 0;
 
