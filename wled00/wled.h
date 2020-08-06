@@ -455,7 +455,7 @@ WLED_GLOBAL DNSServer dnsServer;
 
 // network time
 WLED_GLOBAL bool ntpConnected _INIT(false);
-WLED_GLOBAL time_t local _INIT(0);
+WLED_GLOBAL time_t localTime _INIT(0);
 WLED_GLOBAL unsigned long ntpLastSyncTime _INIT(999000000L);
 WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(999000000L);
 WLED_GLOBAL IPAddress ntpServerIP;

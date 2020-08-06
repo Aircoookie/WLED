@@ -2,7 +2,7 @@
 <html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>Sync Settings</title>
 <script>var d=document;
 function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}
-function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.DA.value == 1) d.Sf.DA.value = 0; if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;} 
+function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.DA.value == 1) d.Sf.DA.value = 0; if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
                else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
 function SP(){var p = d.Sf.DI.value; d.getElementById("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
 function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; }; SP();}
@@ -41,7 +41,7 @@ Send notifications twice: <input type="checkbox" name="S2">
 <h3>Realtime</h3>
 Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
 <i>Network DMX input</i><br>
-Type: 
+Type:
 <select name=DI onchange="SP(); adj();">
 <option value=5568>E1.31 (sACN)</option>
 <option value=6454>Art-Net</option>
@@ -60,7 +60,7 @@ DMX mode:
 <option value=2>Single DRGB</option>
 <option value=3>Effect</option>
 <option value=4>Multi RGB</option>
-<option value=5>Multi DRGB</option>
+<option value=5>Dimmer + Multi RGB</option>
 </select><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/E1.31-DMX" target="_blank">E1.31 info</a><br>
 Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>

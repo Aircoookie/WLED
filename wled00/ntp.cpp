@@ -142,24 +142,24 @@ bool checkNTPResponse()
 void updateLocalTime()
 {
   unsigned long tmc = now()+ utcOffsetSecs;
-  local = timezones[currentTimezone]->toLocal(tmc);
+  localTime = timezones[currentTimezone]->toLocal(tmc);
 }
 
 void getTimeString(char* out)
 {
   updateLocalTime();
-  byte hr = hour(local);
+  byte hr = hour(localTime);
   if (useAMPM)
   {
     if (hr > 11) hr -= 12;
     if (hr == 0) hr  = 12;
   }
-  sprintf(out,"%i-%i-%i, %i:%s%i:%s%i",year(local), month(local), day(local), 
-                                       hr,(minute(local)<10)?"0":"",minute(local),
-                                       (second(local)<10)?"0":"",second(local));
+  sprintf(out,"%i-%i-%i, %i:%s%i:%s%i",year(localTime), month(localTime), day(localTime), 
+                                       hr,(minute(localTime)<10)?"0":"",minute(localTime),
+                                       (second(localTime)<10)?"0":"",second(localTime));
   if (useAMPM)
   {
-    strcat(out,(hour(local) > 11)? " PM":" AM");
+    strcat(out,(hour(localTime) > 11)? " PM":" AM");
   }
 }
 
@@ -173,9 +173,9 @@ void setCountdown()
 bool checkCountdown()
 {
   unsigned long n = now();
-  if (countdownMode) local = countdownTime - n + utcOffsetSecs;
+  if (countdownMode) localTime = countdownTime - n + utcOffsetSecs;
   if (n > countdownTime) {
-    if (countdownMode) local = n - countdownTime + utcOffsetSecs;
+    if (countdownMode) localTime = n - countdownTime + utcOffsetSecs;
     if (!countdownOverTriggered)
     {
       if (macroCountdown != 0) applyMacro(macroCountdown);
@@ -188,21 +188,21 @@ bool checkCountdown()
 
 byte weekdayMondayFirst()
 {
-  byte wd = weekday(local) -1;
+  byte wd = weekday(localTime) -1;
   if (wd == 0) wd = 7;
   return wd;
 }
 
 void checkTimers()
 {
-  if (lastTimerMinute != minute(local)) //only check once a new minute begins
+  if (lastTimerMinute != minute(localTime)) //only check once a new minute begins
   {
-    lastTimerMinute = minute(local);
+    lastTimerMinute = minute(localTime);
     for (uint8_t i = 0; i < 8; i++)
     {
       if (timerMacro[i] != 0
-          && (timerHours[i] == hour(local) || timerHours[i] == 24) //if hour is set to 24, activate every hour 
-          && timerMinutes[i] == minute(local)
+          && (timerHours[i] == hour(localTime) || timerHours[i] == 24) //if hour is set to 24, activate every hour 
+          && timerMinutes[i] == minute(localTime)
           && (timerWeekday[i] & 0x01) //timer is enabled
           && timerWeekday[i] >> weekdayMondayFirst() & 0x01) //timer should activate at current day of week
       {
