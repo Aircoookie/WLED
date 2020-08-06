@@ -180,9 +180,11 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       #ifdef WLED_CUSTOM_LED_MAPPING
       if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
       #endif
-      if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
-      if (IS_MIRROR)  //set the corresponding mirrored pixel
-        bus->SetPixelColor(SEGMENT.stop - (indexSet + skip) + SEGMENT.start - 1, col);
+      if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) {
+        bus->SetPixelColor(indexSet + skip, col);
+        if (IS_MIRROR)  //set the corresponding mirrored pixel
+          bus->SetPixelColor(SEGMENT.stop - (indexSet + skip) + SEGMENT.start - 1, col);
+      }
     }
   } else { //live data, etc.
     if (reverseMode) i = _length - 1 - i;

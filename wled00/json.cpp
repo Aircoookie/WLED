@@ -59,6 +59,7 @@ void deserializeSegment(JsonObject elem, byte it)
     //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
     seg.setOption(SEG_OPTION_SELECTED, elem["sel"] | seg.getOption(SEG_OPTION_SELECTED));
     seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
+    seg.setOption(SEG_OPTION_MIRROR  , elem["mi"]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
     //temporary, strip object gets updated via colorUpdated()
     if (id == strip.getMainSegmentId()) {
@@ -215,12 +216,13 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
     }
 	}
 
-	root["fx"] = seg.mode;
-	root["sx"] = seg.speed;
-	root["ix"] = seg.intensity;
+	root["fx"]  = seg.mode;
+	root["sx"]  = seg.speed;
+	root["ix"]  = seg.intensity;
 	root["pal"] = seg.palette;
 	root["sel"] = seg.isSelected();
 	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
+  root["mi"]  = seg.getOption(SEG_OPTION_MIRROR);
 }
 
 

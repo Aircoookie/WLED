@@ -647,6 +647,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf("RV=");
   if (pos > 0) strip.getSegment(main).setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
 
+  //Segment reverse
+  pos = req.indexOf("MI=");
+  if (pos > 0) strip.getSegment(main).setOption(SEG_OPTION_MIRROR, req.charAt(pos+3) != '0');
+
   //Segment brightness/opacity
   pos = req.indexOf("SB=");
   if (pos > 0) {

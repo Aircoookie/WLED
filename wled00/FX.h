@@ -267,10 +267,9 @@ class WS2812FX {
       uint16_t virtualLength()
       {
         uint16_t groupLen = groupLength();
-        uint16_t vLength;
-        vLength = (length() + groupLen - 1) / groupLen;
+        uint16_t vLength = (length() + groupLen - 1) / groupLen;
         if (options & MIRROR)
-          vLength /= 2;  // divide by 2 if mirror; leaves a blank LED in the middle if length is odd
+          vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a signle LED
         return vLength;
       }
     } segment;

@@ -2,6 +2,13 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2008070
+
+-   Added segment mirroring (`mi` property) (#1017)
+-   Fixed DMX settings page not displayed (#1070)
+-   Fixed ArtNet multi universe and improve code style (#1076)
+-   Renamed global var `local` to `localTime` (#1078)
+
 #### Build 2007190
 
 -   Fixed hostname containing illegal characters (#1035)
