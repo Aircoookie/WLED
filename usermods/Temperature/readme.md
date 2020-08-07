@@ -8,7 +8,7 @@ This usermod will be expanded with support for different sensor types in the fut
 ## Installation
 
 Copy `usermod_temperature.h` to the wled00 directory.  
-Uncomment the corresponding lines in `usermods_list.h` and compile!  
+Uncomment the corresponding lines in `usermods_list.cpp` and compile!  
 If this is the only v2 usermod you plan to use, you can alternatively replace `usermods_list.h` in wled00 with the one in this folder.
 
 ## Project link
