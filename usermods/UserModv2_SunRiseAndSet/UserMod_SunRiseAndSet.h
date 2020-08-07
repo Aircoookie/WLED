@@ -110,7 +110,7 @@ public:
                             m_nUserSunset = m_pD2D->sunset(tmNow.Year + 1970, tmNow.Month, tmNow.Day, false);
                         }                    
                     }
-
+#if 0
                     {   // debug block..
 
                         // for debugging, convert everything to "local" time
@@ -122,7 +122,7 @@ public:
                         Serial.printf("NEXT SUNRISE:  %d:%d\n", srMin / 60, srMin % 60);
                         Serial.printf("NEXT SUNSET:   %d:%d\n", ssMin / 60, ssMin % 60);
                     }   // end debug block
-
+#endif
                     // offset by user provided values.  becuase the offsets are signed bytes, the max offset is just over 2 hours.
                     m_nUserSunrise += m_sunriseOffset;
                     m_nUserSunset += m_sunsetOffset;
