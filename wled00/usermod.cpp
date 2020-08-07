@@ -18,53 +18,54 @@
 // This gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
-  esp_err_t err;
+  #ifdef I2S_WS
+    // Attempt to configure INMP441 Microphone
+    esp_err_t err;
+    const i2s_config_t i2s_config = {
+        .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX), // Receive, not transfer
+        .sample_rate = SAMPLE_RATE,                         // 16KHz
+        .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT, // could only get it to work with 32bits
+        .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // LEFT when pin is tied to ground.
+        .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
+        .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,     // Interrupt level 1
+        .dma_buf_count = 8,                           // number of buffers
+        .dma_buf_len = BLOCK_SIZE                     // samples per buffer
+    };
+    const i2s_pin_config_t pin_config = {
+      .bck_io_num = I2S_SCK,       // BCLK aka SCK
+      .ws_io_num = I2S_WS,        // LRCL aka WS
+      .data_out_num = -1,         // not used (only for speakers)
+      .data_in_num = I2S_SD       // DOUT aka SD
+    };
+    // Configuring the I2S driver and pins.
+    // This function must be called before any I2S driver read/write operations.
+    err = i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
+    if (err != ESP_OK) {
+      Serial.printf("Failed installing driver: %d\n", err);
+      while (true);
+    }
+    err = i2s_set_pin(I2S_PORT, &pin_config);
+    if (err != ESP_OK) {
+      Serial.printf("Failed setting pin: %d\n", err);
+      while (true);
+    }
+    Serial.println("I2S driver installed.");
+  #endif
+  #ifndef ESP8266
+    pinMode(LED_BUILTIN, OUTPUT);
 
-  // The I2S config as per the example
-  const i2s_config_t i2s_config = {
-      .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX), // Receive, not transfer
-      .sample_rate = SAMPLE_RATE,                         // 16KHz
-      .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT, // could only get it to work with 32bits
-      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // LEFT when pin is tied to ground.
-      .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
-      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,     // Interrupt level 1
-      .dma_buf_count = 8,                           // number of buffers
-      .dma_buf_len = BLOCK_SIZE                     // samples per buffer
-  };
-  const i2s_pin_config_t pin_config = {
-    .bck_io_num = I2S_SCK,       // BCLK aka SCK
-    .ws_io_num = I2S_WS,        // LRCL aka WS
-    .data_out_num = -1,         // not used (only for speakers)
-    .data_in_num = I2S_SD       // DOUT aka SD
-  };
-  // Configuring the I2S driver and pins.
-  // This function must be called before any I2S driver read/write operations.
-  err = i2s_driver_install(I2S_PORT, &i2s_config, 0, NULL);
-  if (err != ESP_OK) {
-    Serial.printf("Failed installing driver: %d\n", err);
-    while (true);
-  }
-  err = i2s_set_pin(I2S_PORT, &pin_config);
-  if (err != ESP_OK) {
-    Serial.printf("Failed setting pin: %d\n", err);
-    while (true);
-  }  
-  Serial.println("I2S driver installed.");
-#ifndef ESP8266
-  pinMode(LED_BUILTIN, OUTPUT);
+    sampling_period_us = round(1000000*(1.0/SAMPLE_RATE));
 
- sampling_period_us = round(1000000*(1.0/samplingFrequency));
-
-// Define the FFT Task and lock it to core 0
-xTaskCreatePinnedToCore(
-      FFTcode,                          // Function to implement the task
-      "FFT",                            // Name of the task
-      10000,                            // Stack size in words
-      NULL,                             // Task input parameter
-      1,                                // Priority of the task
-      &FFT_Task,                        // Task handle
-      0);                               // Core where the task should run
-#endif
+    // Define the FFT Task and lock it to core 0
+    xTaskCreatePinnedToCore(
+          FFTcode,                          // Function to implement the task
+          "FFT",                            // Name of the task
+          10000,                            // Stack size in words
+          NULL,                             // Task input parameter
+          1,                                // Priority of the task
+          &FFT_Task,                        // Task handle
+          0);                               // Core where the task should run
+  #endif
 }
 
 // This gets called every time WiFi is (re-)connected. Initialize own network interfaces here

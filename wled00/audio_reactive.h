@@ -10,20 +10,24 @@
 //#define FFT_SAMPLING_LOG
 //#define MIC_SAMPLING_LOG
 
-#ifndef ESP8266
-  TaskHandle_t FFT_Task;
+// Uncomment the following 3 lines for Digital Microphone support.  Enabling this will disable support for analog microphones
+// #define I2S_WS 17         // aka LRCL
+// #define I2S_SD 26         // aka DOUT
+// #define I2S_SCK 18        // aka BCLK
+
+#ifdef I2S_WS
   #include <driver/i2s.h>
-
-  #define I2S_WS 17         // aka LRCL
-  #define I2S_SD 26         // aka DOUT
-  #define I2S_SCK 18        // aka BCLK
-
   const i2s_port_t I2S_PORT = I2S_NUM_0;
   const int BLOCK_SIZE = 64;
-  const int SAMPLE_RATE = 16000;
 #endif
 
-//Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
+const int SAMPLE_RATE = 16000;
+
+#ifndef ESP8266
+  TaskHandle_t FFT_Task;
+#endif
+
+  //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
 #ifndef MIC_PIN
   #ifdef ESP8266
     #define MIC_PIN   A0
@@ -86,37 +90,40 @@ void getSample() {
   #ifdef WLED_DISABLE_SOUND
     micIn = inoise8(millis(), millis());                      // Simulated analog read
   #else
-  #ifdef ESP32
-    micIn = micData;
-    // micIn = micIn >> 2;                                       // ESP32 has 2 more bits of A/D, so we need to normalize
+    #ifdef ESP32
+      #ifndef I2S_WS
+        micIn = micData;
+        micIn = micIn >> 2;                                       // ESP32 has 2 more bits of A/D, so we need to normalize
+      #else
+        micIn = micData;
+      #endif
+    #endif
+    #ifdef ESP8266
+        micIn = analogRead(MIC_PIN);                              // Poor man's analog read
+    #endif
   #endif
-  #ifdef ESP8266
-    micIn = analogRead(MIC_PIN);                              // Poor man's analog read
-  #endif
-  #endif
-    Serial.println(micIn);
-    micLev = ((micLev * 31) + micIn) / 32; // Smooth it out over the last 32 samples for automatic centering
-    micIn -= micLev;                       // Let's center it to 0 now
-    micIn = abs(micIn);                    // And get the absolute value of each sample
+  micLev = ((micLev * 31) + micIn) / 32; // Smooth it out over the last 32 samples for automatic centering
+  micIn -= micLev;                       // Let's center it to 0 now
+  micIn = abs(micIn);                    // And get the absolute value of each sample
 
-    lastSample = micIn;
+  lastSample = micIn;
 
-    sample = (micIn <= soundSquelch) ? 0 : (sample * 3 + micIn) / 4; // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
+  sample = (micIn <= soundSquelch) ? 0 : (sample * 3 + micIn) / 4; // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
 
-    sampleAdj = sample * sampleGain / 40 + sample / 16; // Adjust the gain.
-    sampleAdj = min(sampleAdj, 255);
-    sample = sampleAdj; // We'll now make our rebase our sample to be adjusted.
+  sampleAdj = sample * sampleGain / 40 + sample / 16; // Adjust the gain.
+  sampleAdj = min(sampleAdj, 255);
+  sample = sampleAdj; // We'll now make our rebase our sample to be adjusted.
 
-    sampleAvg = ((sampleAvg * 15) + sample) / 16; // Smooth it out over the last 16 samples.
+  sampleAvg = ((sampleAvg * 15) + sample) / 16; // Smooth it out over the last 16 samples.
 
-    if (userVar1 == 0)
-      samplePeak = 0;
-    if (sample > (sampleAvg + maxVol) && millis() > (peakTime + 300))
-    {                 // Poor man's beat detection by seeing if sample > Average + some value.
-      samplePeak = 1; // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
-#ifndef ESP8266
-    udpSamplePeak = 1;
-#endif
+  if (userVar1 == 0)
+    samplePeak = 0;
+  if (sample > (sampleAvg + maxVol) && millis() > (peakTime + 300))
+  {                 // Poor man's beat detection by seeing if sample > Average + some value.
+    samplePeak = 1; // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
+    #ifndef ESP8266
+      udpSamplePeak = 1;
+    #endif
     userVar1 = samplePeak;
     peakTime=millis();
   }
@@ -228,14 +235,18 @@ void agcAvg() {                                                       // A simpl
       extern double volume;
 
       for(int i=0; i<samples; i++) {
-        // micData = analogRead(MIC_PIN);                        // Analog Read
-        int32_t digitalSample = 0;
-        int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&digitalSample, portMAX_DELAY); // no timeout
-        if (bytes_read > 0) {
-          micData = abs(digitalSample >> 16);
-          // Serial.println(micData);
-          rawMicData = micData;
-        }                           // ESP32 has 12 bit ADC
+        #ifndef I2S_WS
+          micData = analogRead(MIC_PIN);                        // Analog Read
+          rawMicData = micData >> 2;                            // ESP32 has 12 bit ADC
+        #else
+          int32_t digitalSample = 0;
+          int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&digitalSample, portMAX_DELAY); // no timeout
+          if (bytes_read > 0) {
+            micData = abs(digitalSample >> 16);
+            // Serial.println(micData);
+            rawMicData = micData;
+          }                           // ESP32 has 12 bit ADC
+        #endif
         vReal[i] = micData;                                   // Store Mic Data in an array
         vImag[i] = 0;
 
