@@ -166,7 +166,7 @@ public:
         vars["rise_mac"] = m_sunriseMacro;
         vars["set_mac"] = m_sunsetMacro;
         vars["rise_off"] = m_sunriseOffset;
-        vars["set_off"] = m_sunsetMacro;
+        vars["set_off"] = m_sunsetOffset;
     }
 
     ~UserMod_SunRiseAndSet(void)
