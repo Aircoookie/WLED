@@ -144,6 +144,30 @@ public:
         }  // if (m_pD2D && (999000000L != ntpLastSyncTime))
     }
 
+   void addToJsonState(JsonObject& root)
+    {
+        JsonObject user = root["SunRiseAndSet"];
+        if (user.isNull()) user = root.createNestedObject("SunRiseAndSet");
+
+        char buf[10];
+        if (-1 != m_nUserSunrise)
+        {
+            snprintf(buf, 10, "%02d:%02d UTC", m_nUserSunrise / 60, m_nUserSunrise % 60);
+            user["rise"] = buf;
+        }
+        if (-1 != m_nUserSunset)
+        {
+            snprintf(buf, 10, "%02d:%02d UTC", m_nUserSunset / 60, m_nUserSunset % 60);
+            user["set"] = buf;
+        }
+        JsonObject vars = user.createNestedObject("vars");
+        vars["lat"] = m_fLatitude;
+        vars["long"] = m_fLongitude;
+        vars["rise_mac"] = m_sunriseMacro;
+        vars["set_mac"] = m_sunsetMacro;
+        vars["rise_off"] = m_sunriseOffset;
+        vars["set_off"] = m_sunsetMacro;
+    }
 
     ~UserMod_SunRiseAndSet(void)
     {
