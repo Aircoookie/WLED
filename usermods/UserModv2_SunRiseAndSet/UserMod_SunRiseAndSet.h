@@ -99,30 +99,17 @@ public:
                 // are set.  That happens when the device has just stated, and after both sunrise/sunset have already run.
                 if ((-1 == m_nUserSunrise) && (-1 == m_nUserSunset))
                 {                
-                    m_nUserSunrise = m_pD2D->sunrise(tmNow.Year + 1970, tmNow.Month, tmNow.Day, false);
-                    m_nUserSunset = m_pD2D->sunset(tmNow.Year + 1970, tmNow.Month, tmNow.Day, false);
+                    m_nUserSunrise = m_pD2D->sunrise(tmNow.Year + 1970, tmNow.Month, tmNow.Day, false) % 1440;
+                    m_nUserSunset = m_pD2D->sunset(tmNow.Year + 1970, tmNow.Month, tmNow.Day, false) % 1440;
                     if (m_nUserSunrise > numMinutes) // has sunrise already passed?  if so, recompute for tomorrow
                     {
                         breakTime(timeUTC + (60*60*24), tmNow);
-                        m_nUserSunrise = m_pD2D->sunrise(tmNow.Year + 1970, tmNow.Month, tmNow.Day, false);
+                        m_nUserSunrise = m_pD2D->sunrise(tmNow.Year + 1970, tmNow.Month, tmNow.Day, false) % 1440;
                         if (m_nUserSunset > numMinutes) // if sunset has also passed, recompute that as well
                         {
-                            m_nUserSunset = m_pD2D->sunset(tmNow.Year + 1970, tmNow.Month, tmNow.Day, false);
+                            m_nUserSunset = m_pD2D->sunset(tmNow.Year + 1970, tmNow.Month, tmNow.Day, false) % 1440;
                         }                    
                     }
-#if 0
-                    {   // debug block..
-
-                        // for debugging, convert everything to "local" time
-                        updateLocalTime();
-                        int offset = (localTime - timeUTC) / 60;
-                        int srMin = m_nUserSunrise + offset;
-                        int ssMin = m_nUserSunset + offset;
-
-                        Serial.printf("NEXT SUNRISE:  %d:%d\n", srMin / 60, srMin % 60);
-                        Serial.printf("NEXT SUNSET:   %d:%d\n", ssMin / 60, ssMin % 60);
-                    }   // end debug block
-#endif
                     // offset by user provided values.  becuase the offsets are signed bytes, the max offset is just over 2 hours.
                     m_nUserSunrise += m_sunriseOffset;
                     m_nUserSunset += m_sunsetOffset;
@@ -166,7 +153,7 @@ public:
         vars["rise_mac"] = m_sunriseMacro;
         vars["set_mac"] = m_sunsetMacro;
         vars["rise_off"] = m_sunriseOffset;
-        vars["set_off"] = m_sunsetMacro;
+        vars["set_off"] = m_sunsetOffset;
     }
 
     ~UserMod_SunRiseAndSet(void)
