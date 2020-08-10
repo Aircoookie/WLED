@@ -100,32 +100,34 @@ id="la" oninput="UI()" required> mA<br></span><i>
 Keep at default if you are unsure about your type of LEDs.</i><br></div><br>
 LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW" 
 onchange="UI()" id="rgbw"><br><span class="wc">
-Auto-calculate white channel from RGB: <input type="checkbox" name="AW"><br>
-</span>Color order: <select name="CO"><option value="0">GRB</option><option 
-value="1">RGB</option><option value="2">BRG</option><option value="3">RBG
-</option><option value="4">BGR</option><option value="5">GBR</option></select>
-<h3>Defaults</h3>Turn LEDs on after power up/reset: <input type="checkbox" 
-name="BO"><br>Default brightness: <input name="CA" type="number" min="0" 
-max="255" required> (0-255)<br><br>Apply preset <input name="BP" type="number" 
-min="0" max="16" required> at boot (0 uses defaults)<br>- <i>or</i> -<br>
-Set current preset cycle setting as boot default: <input type="checkbox" 
-name="PC"><br><br>Use Gamma correction for color: <input type="checkbox" 
-name="GC"> (strongly recommended)<br>Use Gamma correction for brightness: <input
- type="checkbox" name="GB"> (not recommended)<br><br>Brightness factor: <input 
-name="BF" type="number" min="1" max="255" required> %<h3>Transitions</h3>
-Crossfade: <input type="checkbox" name="TF"><br>Transition Time: <input 
-name="TD" maxlength="5" size="2"> ms<br>Enable Palette transitions: <input 
-type="checkbox" name="PF"><h3>Timed light</h3>Default Duration: <input 
-name="TL" type="number" min="1" max="255" required> min<br>
-Default Target brightness: <input name="TB" type="number" min="0" max="255" 
-required><br>Mode: <select name="TW"><option value="0">Wait and set</option>
-<option value="1">Fade</option><option value="2">Fade Color</option><option 
-value="3">Sunrise</option></select><h3>Advanced</h3>Palette blending: <select 
-name="PB"><option value="0">Linear (wrap if moving)</option><option value="1">
-Linear (always wrap)</option><option value="2">Linear (never wrap)</option>
-<option value="3">None (not recommended)</option></select><br>
-Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
-Skip first LED: <input type="checkbox" name="SL"><hr><button type="button" 
+Auto-calculate white channel from RGB:<br><select name="AW"><option value="0">
+None</option><option value="1">Brighter</option><option value="2">Accurate
+</option><option value="3">Dual</option><option value="4">Legacy</option>
+</select><br></span>Color order: <select name="CO"><option value="0">GRB
+</option><option value="1">RGB</option><option value="2">BRG</option><option 
+value="3">RBG</option><option value="4">BGR</option><option value="5">GBR
+</option></select><h3>Defaults</h3>Turn LEDs on after power up/reset: <input 
+type="checkbox" name="BO"><br>Default brightness: <input name="CA" 
+type="number" min="0" max="255" required> (0-255)<br><br>Apply preset <input 
+name="BP" type="number" min="0" max="16" required> at boot (0 uses defaults)<br>
+- <i>or</i> -<br>Set current preset cycle setting as boot default: <input 
+type="checkbox" name="PC"><br><br>Use Gamma correction for color: <input 
+type="checkbox" name="GC"> (strongly recommended)<br>
+Use Gamma correction for brightness: <input type="checkbox" name="GB">
+ (not recommended)<br><br>Brightness factor: <input name="BF" type="number" 
+min="1" max="255" required> %<h3>Transitions</h3>Crossfade: <input 
+type="checkbox" name="TF"><br>Transition Time: <input name="TD" maxlength="5" 
+size="2"> ms<br>Enable Palette transitions: <input type="checkbox" name="PF">
+<h3>Timed light</h3>Default Duration: <input name="TL" type="number" min="1" 
+max="255" required> min<br>Default Target brightness: <input name="TB" 
+type="number" min="0" max="255" required><br>Mode: <select name="TW"><option 
+value="0">Wait and set</option><option value="1">Fade</option><option value="2">
+Fade Color</option><option value="3">Sunrise</option></select><h3>Advanced</h3>
+Palette blending: <select name="PB"><option value="0">Linear (wrap if moving)
+</option><option value="1">Linear (always wrap)</option><option value="2">
+Linear (never wrap)</option><option value="3">None (not recommended)</option>
+</select><br>Reverse LED order (rotate 180): <input type="checkbox" name="RV">
+<br>Skip first LED: <input type="checkbox" name="SL"><hr><button type="button" 
 onclick="B()">Back</button><button type="submit">Save</button></form></body>
 </html>)=====";
 
@@ -213,7 +215,7 @@ type="checkbox" name="ES"><br>DMX start address: <input name="DA" type="number"
 min="0" max="510" required><br>DMX mode: <select name="DM"><option value="0">
 Disabled</option><option value="1">Single RGB</option><option value="2">
 Single DRGB</option><option value="3">Effect</option><option value="4">Multi RGB
-</option><option value="5">Multi DRGB</option></select><br><a 
+</option><option value="5">Dimmer + Multi RGB</option></select><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/E1.31-DMX" target="_blank">
 E1.31 info</a><br>Timeout: <input name="ET" type="number" min="1" max="65000" 
 required> ms<br>Force max brightness: <input type="checkbox" name="FB"><br>

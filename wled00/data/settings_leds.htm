@@ -130,7 +130,15 @@
     <br>
 		LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW" onchange=UI() id="rgbw"><br>
     <span class="wc">
-		Auto-calculate white channel from RGB: <input type="checkbox" name="AW"><br></span>
+    Auto-calculate white channel from RGB:<br>
+    <select name=AW>
+      <option value=0>None</option>
+      <option value=1>Brighter</option>
+      <option value=2>Accurate</option>
+      <option value=3>Dual</option>
+      <option value=4>Legacy</option>
+    </select>
+    <br></span>
 		Color order:
 		<select name="CO">
 			<option value=0>GRB</option>

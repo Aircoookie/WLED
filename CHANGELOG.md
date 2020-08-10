@@ -2,6 +2,10 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2008100
+
+-   Fixed Auto White calculation dropdown (fixed #1088)
+
 #### Build 2008070
 
 -   Added segment mirroring (`mi` property) (#1017)
