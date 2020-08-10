@@ -935,6 +935,8 @@ input[type=number]::-webkit-outer-spin-button {
 				<div class="sliderdisplay"></div>
 			</div><br>
 		</div>
+		<input name="HC" type="text" placeholder="#000000" onkeyup="hcUpdate()" />
+		<p class="labels" style="display: none;" id="invalidHexColor">Invalid hex color</p>
 		<div id="wwrap">
 			<p class="labels">White channel</p>
 			<div class="sliderwrap il">
@@ -2120,6 +2122,22 @@ function mergeDeep(target, ...sources) {
 	}
 	return mergeDeep(target, ...sources);
 }
+
+function hcUpdate() {
+	const regex = /^#([0-9a-f]{6})$/i;
+	if (regex.test(document.getElementsByName("HC")[0].value)) {
+		document.getElementById("invalidHexColor").style.display = "none";
+		cpick.color.set(document.getElementsByName("HC")[0].value);
+		cpick.forceUpdate();
+		setColor(1);
+	} else {
+		document.getElementById("invalidHexColor").style.display = "block";
+	}
+}
+
+cpick.on('color:change', function(color) {
+	document.getElementsByName("HC")[0].value = color.hexString;
+});
 
 size();
 _C.style.setProperty('--n', N);
