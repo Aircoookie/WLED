@@ -10,12 +10,12 @@
 //#define FFT_SAMPLING_LOG
 //#define MIC_SAMPLING_LOG
 
-// Uncomment the following 3 lines for Digital Microphone support.  Enabling this will disable support for analog microphones
-// #define I2S_WS 17         // aka LRCL
-// #define I2S_SD 26         // aka DOUT
-// #define I2S_SCK 18        // aka BCLK
+// The following 3 lines are for Digital Microphone support.
+ #define I2S_WS 15         // aka LRCL
+ #define I2S_SD 32         // aka DOUT
+ #define I2S_SCK 14        // aka BCLK
 
-#ifdef I2S_WS
+#ifndef ESP8266
   #include <driver/i2s.h>
   const i2s_port_t I2S_PORT = I2S_NUM_0;
   const int BLOCK_SIZE = 64;
@@ -91,15 +91,11 @@ void getSample() {
     micIn = inoise8(millis(), millis());                      // Simulated analog read
   #else
     #ifdef ESP32
-      #ifndef I2S_WS
-        micIn = micData;
-        micIn = micIn >> 2;                                       // ESP32 has 2 more bits of A/D, so we need to normalize
-      #else
-        micIn = micData;
-      #endif
+      micIn = micData;
+      if (digitalMic == false) micIn = micIn >> 2;            // ESP32 has 2 more bits of A/D, so we need to normalize
     #endif
     #ifdef ESP8266
-        micIn = analogRead(MIC_PIN);                              // Poor man's analog read
+        micIn = analogRead(MIC_PIN);                          // Poor man's analog read
     #endif
   #endif
   micLev = ((micLev * 31) + micIn) / 32; // Smooth it out over the last 32 samples for automatic centering
@@ -235,10 +231,11 @@ void agcAvg() {                                                       // A simpl
       extern double volume;
 
       for(int i=0; i<samples; i++) {
-        #ifndef I2S_WS
+
+        if (digitalMic == false) {
           micData = analogRead(MIC_PIN);                        // Analog Read
           rawMicData = micData >> 2;                            // ESP32 has 12 bit ADC
-        #else
+        } else {
           int32_t digitalSample = 0;
           int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&digitalSample, portMAX_DELAY); // no timeout
           if (bytes_read > 0) {
@@ -246,7 +243,8 @@ void agcAvg() {                                                       // A simpl
             // Serial.println(micData);
             rawMicData = micData;
           }                           // ESP32 has 12 bit ADC
-        #endif
+        }
+
         vReal[i] = micData;                                   // Store Mic Data in an array
         vImag[i] = 0;
 

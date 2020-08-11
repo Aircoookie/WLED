@@ -18,7 +18,7 @@
 // This gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
-  #ifdef I2S_WS
+  #ifndef ESP8266
     // Attempt to configure INMP441 Microphone
     esp_err_t err;
     const i2s_config_t i2s_config = {
@@ -50,7 +50,35 @@ void userSetup()
       while (true);
     }
     Serial.println("I2S driver installed.");
+
+  delay(100);
+
+
+  // Test to see if we have a digital microphone installed or not.
+
+  float mean = 0.0;
+  int32_t samples[BLOCK_SIZE];
+  int num_bytes_read = i2s_read_bytes(I2S_PORT, 
+                                      (char *)samples, 
+                                      BLOCK_SIZE,     // the doc says bytes, but its elements.
+                                      portMAX_DELAY); // no timeout
+  
+  int samples_read = num_bytes_read / 8;
+  if (samples_read > 0) {
+    for (int i = 0; i < samples_read; ++i) {
+      mean += samples[i];
+    }
+    mean = mean/BLOCK_SIZE/16384;
+    if (mean != 0.0) {
+      Serial.println("Digital microphone is present.");
+      digitalMic = true;
+    } else {
+      Serial.println("Digital microphone is NOT present.");
+    }
+  }
   #endif
+
+
   #ifndef ESP8266
     pinMode(LED_BUILTIN, OUTPUT);
 
