@@ -15,7 +15,7 @@
  #define I2S_SD 32         // aka DOUT
  #define I2S_SCK 14        // aka BCLK
 
-#ifndef ESP8266
+#ifdef ESP32
   #include <driver/i2s.h>
   const i2s_port_t I2S_PORT = I2S_NUM_0;
   const int BLOCK_SIZE = 64;
@@ -23,18 +23,21 @@
 
 const int SAMPLE_RATE = 16000;
 
-#ifndef ESP8266
+#ifdef ESP32
   TaskHandle_t FFT_Task;
 #endif
 
-  //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
+//Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
 #ifndef MIC_PIN
   #ifdef ESP8266
     #define MIC_PIN   A0
-  #else
-    #define MIC_PIN   36    // Changed to direct pin name since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
   #endif
+  
+  #ifdef ESP32
+    #define MIC_PIN   36    // Changed to direct pin name since ESP32 has multiple ADCs 8266: A0  ESP32: 36(ADC1_0) Analog port for microphone
+  #endif 
 #endif
+
 #ifndef LED_BUILTIN       // Set LED_BUILTIN if it is not defined by Arduino framework
   #define LED_BUILTIN 3
 #endif
@@ -52,7 +55,7 @@ float micLev = 0;                                   // Used to convert returned 
 uint8_t maxVol = 11;                                // Reasonable value for constant volume for 'peak detector', as it won't always trigger
 bool samplePeak = 0;                                // Boolean flag for peak. Responding routine must reset this flag
 int sampleAdj;                                      // Gain adjusted sample value.
-#ifndef ESP8266                                     // Transmitting doesn't work on ESP8266, don't bother allocating memory
+#ifdef ESP32                                        // Transmitting doesn't work on ESP8266, don't bother allocating memory
 bool udpSamplePeak = 0;                             // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
 #endif
 int sampleAgc;                                      // Our AGC sample
@@ -75,7 +78,7 @@ struct audioSyncPacket {
   int sample;             //  04 Bytes
   float sampleAvg;        //  04 Bytes
   bool samplePeak;        //  01 Bytes
-  uint8_t fftResult[16];   // 16 Bytes
+  uint8_t fftResult[16];  //  16 Bytes
   double FFT_Magnitude;   //  08 Bytes
   double FFT_MajorPeak;   //  08 Bytes
 };
@@ -117,7 +120,7 @@ void getSample() {
   if (sample > (sampleAvg + maxVol) && millis() > (peakTime + 300))
   {                 // Poor man's beat detection by seeing if sample > Average + some value.
     samplePeak = 1; // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
-    #ifndef ESP8266
+    #ifdef ESP32
       udpSamplePeak = 1;
     #endif
     userVar1 = samplePeak;
@@ -145,7 +148,7 @@ void agcAvg() {                                                       // A simpl
 // Begin FFT Code //
 ////////////////////
 
-#ifndef ESP8266
+#ifdef ESP32
 
   #include "arduinoFFT.h"
 
@@ -320,7 +323,7 @@ void logAudio() {
     Serial.print(100); Serial.print(" ");
     Serial.print(0); Serial.print(" ");
     Serial.println(" ");
-  #ifndef ESP8266                                   // if we are on a ESP32
+  #ifdef ESP32                                   // if we are on a ESP32
     Serial.print("running on core ");               // identify core
     Serial.println(xPortGetCoreID());
   #endif

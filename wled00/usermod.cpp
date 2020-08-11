@@ -18,7 +18,7 @@
 // This gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
-  #ifndef ESP8266
+  #ifdef ESP32
     // Attempt to configure INMP441 Microphone
     esp_err_t err;
     const i2s_config_t i2s_config = {
@@ -79,7 +79,7 @@ void userSetup()
   #endif
 
 
-  #ifndef ESP8266
+  #ifdef ESP32
     pinMode(LED_BUILTIN, OUTPUT);
 
     sampling_period_us = round(1000000*(1.0/SAMPLE_RATE));
@@ -112,7 +112,7 @@ void userLoop() {
       myVals[millis()%32] = sampleAgc;
       logAudio();
     }
-    #ifndef ESP8266
+    #ifdef ESP32
     if (audioSyncEnabled & (1 << 0)) {
       // Only run the transmit code IF we're in Transmit mode
 //      Serial.println("Transmitting UDP Mic Packet");
@@ -157,7 +157,7 @@ void userLoop() {
               samplePeak = receivedPacket.samplePeak;
             }
 
-            #ifndef ESP8266   //These values are only available on the ESP32
+            #ifdef ESP32   //These values are only available on the ESP32
               for (int i = 0; i < 16; i++) {
                 fftResult[i] = receivedPacket.fftResult[i];
               }
