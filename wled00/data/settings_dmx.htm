@@ -31,6 +31,9 @@ function mMap(){
 function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/DMX");}function B(){window.history.back();}
 function GetV(){}
 </script>
+<style>
+	@import url("style.css");
+</style>
 </head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post">
@@ -48,7 +51,7 @@ Spacing between start channels: <input type="number" min="1" max="512" name="CG"
 <div id="gapwarning" style="color: orange; display: none;">WARNING: Channel gap is lower than channels per fixture.<br />This will cause overlap.</div>
 <button type="button" onclick="location.href='/dmxmap';">DMX Map</button><br>
 DMX fixtures start LED: <input type="number" min="0" max="1500" name="SL">
-<h3>channel functions</h3>
+<h3>Channel functions</h3>
 <div id="dmxchannels"></div>
 <hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form>

@@ -51,25 +51,13 @@
 			for (i = 0; i < l; i++) {
 				myC[i].style.display = (d.getElementById('rgbw').checked) ? 'inline':'none';
 			}
-      
+
       d.getElementById('ledwarning').style.display = (d.Sf.LC.value > 1000) ? 'inline':'none';
       d.getElementById('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
 
-	  var LCW = parseInt(d.Sf.LCW.value, 10)
-	  var LCH = parseInt(d.Sf.LCH.value, 10)
-	  if (!isNaN(LCW) && !isNaN(LCH) && (LCW > 0 || LCH > 0) && LCW * LCH != parseInt(d.Sf.LC.value, 10)) {
-		d.getElementById('2dwarning').style.display = 'inline';
-		d.getElementById('submitButton').disabled = false;
-		d.getElementById('submitButton2').disabled = false;
-	  } else {
-		d.getElementById('2dwarning').style.display = 'none';
-		d.getElementById('submitButton').disabled = false;
-		d.getElementById('submitButton2').disabled = false;
-	  }
-
 	  if (d.Sf.LA.value == 255) laprev = 12;
 	  else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
-			
+
 			var val = Math.ceil((100 + d.Sf.LC.value * laprev)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
 			var s = "";
@@ -91,73 +79,32 @@
       s2 += "A is enough)<br>";
 			d.getElementById('psu').innerHTML = s;
       d.getElementById('psu2').innerHTML = isWS2815 ? "" : s2;
-		}
+
+      var LCW = parseInt(d.Sf.LCW.value, 10)
+	  var LCH = parseInt(d.Sf.LCH.value, 10)
+	  if (!isNaN(LCW) && !isNaN(LCH) && (LCW > 0 || LCH > 0) && LCW * LCH != parseInt(d.Sf.LC.value, 10)) {
+		d.getElementById('2dwarning').style.display = 'inline';
+		d.getElementById('submitButton').disabled = false;
+		d.getElementById('submitButton2').disabled = false;
+	  } else {
+		d.getElementById('2dwarning').style.display = 'none';
+		d.getElementById('submitButton').disabled = false;
+		d.getElementById('submitButton2').disabled = false;
+	  }
+	    }
 		function GetV()
 		{
 			//values injected by server while sending HTML
 		}
 	</script>
 	<style>
-		:root {
-			--aCol: #fff;
-			--bCol: #333;
-			--cCol: #222;
-			--dCol: #fff;
-			--sCol: #0000;
-		}
-		body {
-			font-family: Verdana, Helvetica, sans-serif;
-			text-align: center;
-			background: var(--cCol);
-			color: var(--dCol);
-			line-height: 200%;
-			margin: 0;
-			background-attachment: fixed;
-		}
-		hr {
-			border-color: var(--dCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		button {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.3ch solid var(--bCol);
-			display: inline-block;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-size: 20px;
-			margin: 8px;
-			margin-top: 12px;
-		}
-		button.disabled, button[disabled] {
-			color: #aaa;
-		}
-		.helpB {
-			text-align: left;
-			position: absolute;
-			width:60px;
-		}
-		select {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.5ch solid var(--bCol);
-			font-family: var(--cFn), sans-serif;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		input {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.5ch solid var(--bCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		input[type=number] {
-			width: 4em;
-		}
+		@import url("style.css");
 	</style>
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
-		<button type="button" onclick="B()">Back</button><button type="submit" id="submitButton">Save</button><hr>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 		<h2>LED setup</h2>
 		LED count: <input name="LC" type="number" min="1" max="1500" oninput="UI()" required><br>
     <div id="ledwarning" style="color: orange; display: none;">
@@ -195,7 +142,15 @@
     <br>
 		LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW" onchange=UI() id="rgbw"><br>
     <span class="wc">
-		Auto-calculate white channel from RGB: <input type="checkbox" name="AW"><br></span>
+    Auto-calculate white channel from RGB:<br>
+    <select name=AW>
+      <option value=0>None</option>
+      <option value=1>Brighter</option>
+      <option value=2>Accurate</option>
+      <option value=3>Dual</option>
+      <option value=4>Legacy</option>
+    </select>
+    <br></span>
 		Color order:
 		<select name="CO">
 			<option value=0>GRB</option>
@@ -221,11 +176,15 @@
 		<h3>Timed light</h3>
 		Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
 		Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
-		Fade down: <input type="checkbox" name="TW"><br>
+		Mode:
+    <select name="TW">
+			<option value="0">Wait and set</option>
+			<option value="1">Fade</option>
+			<option value="2">Fade Color</option>
+			<option value="3">Sunrise</option>
+		</select>
 		<h3>Sound</h3>
 		Squelch: <input name="SQ" type="number" min="1" max="255" required><br>
-
-		
 		<h3>2D Matrix</h3>
 		<input name="LCW" type="number" min="1" max="255" required oninput="UI()"> x
 		<input name="LCH" type="number" min="1" max="255" required oninput="UI()"><br>
@@ -233,7 +192,6 @@
 			&#9888; width x height should match LED count!<br>
 		</div>
 		Serpentine: <input type="checkbox" name="LCWHS" checked>(how leds connected)<br>
-
 		<h3>Advanced</h3>
 		Palette blending:
 		<select name="PB">
@@ -243,9 +201,8 @@
 			<option value="3">None (not recommended)</option>
 		</select><br>
 		Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
-		Skip first LED: <input type="checkbox" name="SL"><br>
-		
-		<button type="button" onclick="B()">Back</button><button type="submit" id="submitButton2">Save</button>
+		Skip first LED: <input type="checkbox" name="SL"><hr>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
 </body>
 </html>
