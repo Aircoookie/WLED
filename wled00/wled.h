@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2007020
+#define VERSION 2008140
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -196,7 +196,7 @@ WLED_GLOBAL byte briS     _INIT(128);                     // default brightness
 WLED_GLOBAL byte soundSquelch   _INIT(10);          // default squelch value for volume reactive routines
 WLED_GLOBAL byte sampleGain     _INIT(1);           // default sample gain
 WLED_GLOBAL uint16_t noiseFloor _INIT(100);         // default squelch value for FFT reactive routines
-WLED_GLOBAL bool digitalMic      _INIT(false);      // do we have a digital microphone or not
+WLED_GLOBAL bool digitalMic     _INIT(false);       // do we have a digital microphone or not
 
 WLED_GLOBAL byte nightlightTargetBri _INIT(0);      // brightness after nightlight is over
 WLED_GLOBAL byte nightlightDelayMins _INIT(60);
@@ -468,7 +468,7 @@ WLED_GLOBAL DNSServer dnsServer;
 
 // network time
 WLED_GLOBAL bool ntpConnected _INIT(false);
-WLED_GLOBAL time_t local _INIT(0);
+WLED_GLOBAL time_t localTime _INIT(0);
 WLED_GLOBAL unsigned long ntpLastSyncTime _INIT(999000000L);
 WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(999000000L);
 WLED_GLOBAL IPAddress ntpServerIP;

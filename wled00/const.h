@@ -99,7 +99,7 @@
 #define SEG_OPTION_SELECTED       0
 #define SEG_OPTION_REVERSED       1
 #define SEG_OPTION_ON             2
-#define SEG_OPTION_PAUSED         3            //unused
+#define SEG_OPTION_MIRROR         3            //Indicates that the effect will be mirrored within the segment
 #define SEG_OPTION_NONUNITY       4            //Indicates that the effect does not use FRAMETIME or needs getPixelColor
 #define SEG_OPTION_TRANSITIONAL   7
 
@@ -111,10 +111,10 @@
 
 //EEPROM size
 #ifdef ESP8266
-#define EEPSIZE 4095  //Maximum is 4096
-#else
-#define EEPSIZE 4095  //Maximum is 4096
-#endif // ESP8266
+#define EEPSIZE 3300  //Maximum is 4096
+#else // ESP8266
+#define EEPSIZE 3300  //Maximum is 4096
+#endif // ESP32
 
 
 #define NTP_PACKET_SIZE 48
