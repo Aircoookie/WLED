@@ -113,7 +113,7 @@
 #ifdef ESP8266
 #define EEPSIZE 3300  //Maximum is 4096
 #else // ESP8266
-#define EEPSIZE 4095  //Maximum is 4096
+#define EEPSIZE 3300  //Maximum is 4096
 #endif // ESP32
 
 
