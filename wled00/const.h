@@ -111,10 +111,10 @@
 
 //EEPROM size
 #ifdef ESP8266
+#define EEPSIZE 3300  //Maximum is 4096
+#else // ESP8266
 #define EEPSIZE 4095  //Maximum is 4096
-#else
-#define EEPSIZE 4095  //Maximum is 4096
-#endif // ESP8266
+#endif // ESP32
 
 
 #define NTP_PACKET_SIZE 48
