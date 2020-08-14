@@ -287,7 +287,6 @@ void saveSettingsToEEPROM()
   #endif
 
 // Audio Reactive SEGMENT specific write settings
-  //uint16_t audio_i = 3072;
   EEPROM.write(EEP_AUDIO, soundSquelch);
   Serial.print(audioSyncPort);
   EEPROM.write(EEP_AUDIO+1, audioSyncPort & 0xFF);
@@ -622,24 +621,20 @@ void loadSettingsFromEEPROM(bool first)
 
 // Audio Reactive specific read settings
 
-  //uint16_t audio_i = 3072;
-
   if (lastEEPROMversion > 20) {                                   // Version sanity checking
     soundSquelch =  EEPROM.read(EEP_AUDIO);
     audioSyncPort = EEPROM.read(EEP_AUDIO+1) + ((EEPROM.read(EEP_AUDIO+2) << 8) & 0xFF00);
-//    Serial.print(audioSyncPort);
     audioSyncEnabled = EEPROM.read(EEP_AUDIO + 3);
 
     effectFFT1 = EEPROM.read(EEP_AUDIO+4);
     effectFFT2 = EEPROM.read(EEP_AUDIO+5);
     effectFFT3 = EEPROM.read(EEP_AUDIO+6);
 
-#ifndef ESP8266
-    strip.matrixWidth = EEPROM.read(EEP_AUDIO+7) + ((EEPROM.read(EEP_AUDIO+8) << 8) & 0xFF00);
-    strip.matrixHeight = EEPROM.read(EEP_AUDIO+9) + ((EEPROM.read(EEP_AUDIO+10) << 10) & 0xFF00);
-    strip.matrixSerpentine = EEPROM.read(EEP_AUDIO+11); // > 0;
-#endif
-
+    #ifndef ESP8266
+      strip.matrixWidth = EEPROM.read(EEP_AUDIO+7) + ((EEPROM.read(EEP_AUDIO+8) << 8) & 0xFF00); if (strip.matrixWidth == 0) strip.matrixWidth = 1;
+      strip.matrixHeight = EEPROM.read(EEP_AUDIO+9) + ((EEPROM.read(EEP_AUDIO+10) << 10) & 0xFF00); if (strip.matrixHeight == 0) strip.matrixHeight = ledCount;
+      strip.matrixSerpentine = EEPROM.read(EEP_AUDIO+11); // > 0;
+    #endif
   }
 
 // FFT Slider Data Preset Protocol 5 bytes, 25 "slots"
