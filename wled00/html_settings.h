@@ -78,11 +78,16 @@ id="ledwarning" style="color:orange;display:none">
 &#9888; You might run into stability or lag issues.<br>
 Use less than 1000 LEDs per ESP for the best experience!<br></div><i>
 Recommended power supply for brightest white:</i><br><b><span id="psu">?</span>
-</b><br><span id="psu2"><br></span><br>Enable automatic brightness limiter: 
-<input type="checkbox" name="ABen" onchange="enABL()" id="able"><br><div 
-id="abl">Maximum Current: <input name="MA" type="number" min="250" max="65000" 
-oninput="UI()" required> mA<br><div id="ampwarning" 
-style="color:orange;display:none">
+</b><br><span id="psu2"><br></span><h3>2D Matrix</h3><input name="LCW" 
+type="number" min="1" max="255" oninput="UI()"> x <input name="LCH" 
+type="number" min="1" max="255" oninput="UI()"><br><div id="2dwarning" 
+style="color:orange;display:inline">
+&#9888; width x height should match LED count!<br></div>Serpentine: <input 
+type="checkbox" name="LCWHS" checked="checked">(how leds connected)<br><br>
+Enable automatic brightness limiter: <input type="checkbox" name="ABen" 
+onchange="enABL()" id="able"><br><div id="abl">Maximum Current: <input 
+name="MA" type="number" min="250" max="65000" oninput="UI()" required> mA<br>
+<div id="ampwarning" style="color:orange;display:none">
 &#9888; Your power supply provides high current.<br>
 To improve the safety of your setup,<br>please use thick cables,<br>
 multiple power injection points and a fuse!<br></div><i>
@@ -124,19 +129,14 @@ type="number" min="0" max="255" required><br>Mode: <select name="TW"><option
 value="0">Wait and set</option><option value="1">Fade</option><option value="2">
 Fade Color</option><option value="3">Sunrise</option></select><h3>Sound</h3>
 Squelch: <input name="SQ" type="number" min="1" max="255" required><br>Gain: 
-<input name="GN" type="number" min="1" max="255" required><br><h3>2D Matrix</h3>
-<input name="LCW" type="number" min="1" max="255" oninput="UI()"> x <input 
-name="LCH" type="number" min="1" max="255" oninput="UI()"><br><div 
-id="2dwarning" style="color:orange;display:inline">
-&#9888; width x height should match LED count!<br></div>Serpentine: <input 
-type="checkbox" name="LCWHS" checked="checked">(how leds connected)<br><h3>
-Advanced</h3>Palette blending: <select name="PB"><option value="0">
-Linear (wrap if moving)</option><option value="1">Linear (always wrap)</option>
-<option value="2">Linear (never wrap)</option><option value="3">
-None (not recommended)</option></select><br>Reverse LED order (rotate 180): 
-<input type="checkbox" name="RV"><br>Skip first LED: <input type="checkbox" 
-name="SL"><hr><button type="button" onclick="B()">Back</button><button 
-type="submit">Save</button></form></body></html>)=====";
+<input name="GN" type="number" min="1" max="255" required><br><h3>Advanced</h3>
+Palette blending: <select name="PB"><option value="0">Linear (wrap if moving)
+</option><option value="1">Linear (always wrap)</option><option value="2">
+Linear (never wrap)</option><option value="3">None (not recommended)</option>
+</select><br>Reverse LED order (rotate 180): <input type="checkbox" name="RV">
+<br>Skip first LED: <input type="checkbox" name="SL"><hr><button type="button" 
+onclick="B()">Back</button><button type="submit">Save</button></form></body>
+</html>)=====";
 
 
 #ifdef WLED_ENABLE_DMX
