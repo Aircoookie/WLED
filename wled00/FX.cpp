@@ -2612,12 +2612,14 @@ uint16_t WS2812FX::ball_track(bool collide) {
   if (SEGENV.call == 0) {
     for (uint8_t i = 0; i < maxNumBalls; i++) {
       balls[i].lastBounceUpdate = time;
-      balls[i].velocity = 0;
-      while(abs(balls[i].velocity)<.5){ // at the start make sure they are all moving
-        balls[i].velocity=10*(-.5-float(random16(0, 10000)) / 10000.0); // time units are ms
-      }
+      balls[i].velocity = 20.*float(random16(1000, 10000))/10000.;// number from 1 to 10
+      if(random16(0,10000)<5000)balls[i].velocity=-balls[i].velocity;
+//      balls[i].velocity = 0;
+//      while(abs(balls[i].velocity)<.5){ // at the start make sure they are all moving
+//        balls[i].velocity=10*(-.5-float(random16(0, 10000)) / 10000.0); // time units are ms
+//      }
       balls[i].height=(float(random16(0, 10000)) / 10000.0); // from 0. to 1.
-      balls[i].mass=(float(random16(5000, 10000)) / 10000.0); // from .5 to 1.
+      balls[i].mass=(float(random16(1000, 10000)) / 10000.0); // from .5 to 1.
     }
   }
 
