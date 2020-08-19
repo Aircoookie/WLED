@@ -2,6 +2,11 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2008200
+
+-   Added segment mirroring to web UI
+-   Fixed segment mirroring when in reverse mode
+
 #### Build 2008140
 
 -   Removed verbose live mode info from `<ds>` in HTTP API response
