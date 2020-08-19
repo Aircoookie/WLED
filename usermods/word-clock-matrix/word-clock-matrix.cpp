@@ -55,7 +55,7 @@ void hourChime()
   }
 }
 
-void displayTimeHSHL(byte hour, byte minute)
+void displayTime(byte hour, byte minute)
 {
   bool isToHour = false;      //true if minute > 30
   strip.setSegment(0, 0, 64); // background
@@ -244,8 +244,8 @@ void timeOfDay() {
 
   //monday to thursday and sunday
 
-  if ((weekday(local) == 6) | (weekday(local) == 7)) {
-    if (hour(local) > 0 | hour(local) < 8) {
+  if ((weekday(localTime) == 6) | (weekday(localTime) == 7)) {
+    if (hour(localTime) > 0 | hour(localTime) < 8) {
       strip.setBrightness(nightBrightness);
     }
     else {
@@ -253,7 +253,7 @@ void timeOfDay() {
     }
   }
   else {
-    if (hour(local) < 6 | hour(local) >= 22) {
+    if (hour(localTime) < 6 | hour(localTime) >= 22) {
       strip.setBrightness(nightBrightness);
     }
     else {
@@ -269,12 +269,12 @@ void userLoop()
   {
     updateLocalTime();
     timeOfDay();
-    minuteLast = minute(local);
-    displayTimeHSHL(hour(local), minute(local));
-    if (minute(local) == 0){
+    minuteLast = minute(localTime);
+    displayTime(hour(localTime), minute(localTime));
+    if (minute(localTime) == 0){
       //hourChime();
     }
-    if (minute(local) == 1){
+    if (minute(localTime) == 1){
       //userSetup();
     }
   }
