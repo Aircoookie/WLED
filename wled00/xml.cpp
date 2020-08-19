@@ -60,39 +60,10 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappend("</ps><cy>");
   oappendi(presetCyclingEnabled);
   oappend("</cy><ds>");
+  oappend(serverDescription);
   if (realtimeMode)
   {
-    String mesg = "Live ";
-    if (realtimeMode == REALTIME_MODE_E131 || realtimeMode == REALTIME_MODE_ARTNET)
-    {
-      mesg += (realtimeMode == REALTIME_MODE_E131) ? "E1.31" : "Art-Net";
-      mesg += " mode ";
-      mesg += DMXMode;
-      mesg += F(" at DMX Address ");
-      mesg += DMXAddress;
-      mesg += " from ";
-      mesg += realtimeIP[0];
-      for (int i = 1; i < 4; i++)
-      {
-        mesg += ".";
-        mesg += realtimeIP[i];
-      }
-    } else if (realtimeMode == REALTIME_MODE_UDP || realtimeMode == REALTIME_MODE_HYPERION || realtimeMode == REALTIME_MODE_TPM2NET) {
-      mesg += "UDP from ";
-      mesg += realtimeIP[0];
-      for (int i = 1; i < 4; i++)
-      {
-        mesg += ".";
-        mesg += realtimeIP[i];
-      }
-    } else if (realtimeMode == REALTIME_MODE_ADALIGHT) {
-      mesg += F("USB Adalight");
-    } else { //generic
-      mesg += "data";
-    }
-    oappend((char*)mesg.c_str());
-  } else {
-    oappend(serverDescription);
+    oappend(" (live)");
   }
   oappend("</ds><ss>");
   oappendi(strip.getMainSegmentId());
