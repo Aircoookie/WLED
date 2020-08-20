@@ -2,9 +2,18 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2008200
+
+-   Added segment mirroring to web UI
+-   Fixed segment mirroring when in reverse mode
+
+#### Build 2008140
+
+-   Removed verbose live mode info from `<ds>` in HTTP API response
+
 #### Build 2008100
 
--   Fixed Auto White calculation dropdown (fixed #1088)
+-   Fixed Auto White mode setting (fixes #1088)
 
 #### Build 2008070
 

@@ -478,26 +478,6 @@ input[type=range]::-moz-range-thumb {
 	background: var(--c-f);
 	transform: translateY(7px);
 }
-input[type=range]::-ms-track {
-	width: 100%;
-	height: 30px;
-	background: transparent;
-	border-color: transparent;
-	color: transparent;
-}
-input[type=range]::-ms-fill-lower {
-	background: transparent;
-}
-input[type=range]::-ms-fill-upper {
-	background: transparent;
-}
-input[type=range]::-ms-thumb {
-	height: 16px;
-	width: 16px;
-	border-radius: 16px;
-	background: var(--c-f);
-	margin-top: -12px;
-}
 
 #wwrap {
 	display: none;
@@ -1422,6 +1402,11 @@ function populateSegments(s)
 					<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
 					<span class="checkmark schk"></span>
 				</label>
+				<label class="check revchkl">
+					Mirror effect
+					<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
+					<span class="checkmark schk"></span>
+				</label>
 			</div>
 		</div><br>`;
 	}
@@ -1780,6 +1765,12 @@ function delSeg(s){
 function setRev(s){
 	var rev = d.getElementById(`seg${s}rev`).checked;
 	var obj = {"seg": {"id": s, "rev": rev}};
+	requestJson(obj, false);
+}
+
+function setMi(s){
+	var mi = d.getElementById(`seg${s}mi`).checked;
+	var obj = {"seg": {"id": s, "mi": mi}};
 	requestJson(obj, false);
 }
 

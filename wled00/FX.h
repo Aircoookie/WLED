@@ -269,7 +269,7 @@ class WS2812FX {
         uint16_t groupLen = groupLength();
         uint16_t vLength = (length() + groupLen - 1) / groupLen;
         if (options & MIRROR)
-          vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a signle LED
+          vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vLength;
       }
     } segment;
@@ -450,7 +450,7 @@ class WS2812FX {
       setRgbwPwm(void);
 
     bool
-      reverseMode = false,
+      reverseMode = false,      //is the entire LED strip reversed?
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,
