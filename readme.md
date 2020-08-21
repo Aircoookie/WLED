@@ -12,27 +12,32 @@
 
 Welcome to our Sound Reactive fork of WLED. In addition to the features of WLED below, we also support:
 
-- Audio input from several devices including MAX4466, MAX9814, MAX9184, INMP401, INMP441 (for ESP32) and line-in.
+- Audio input from several source including MAX4466, MAX9814, MAX9184, INMP401, INMP441 (for ESP32) and line-in.
 - Volume reactive visual effects for ESP32 and ESP8266 devices.
 - Frequency reactive visual effects for ESP32 devices.
 - UDP sound synchronization with transmit for ESP32 and receive for ESP8266 and ESP32 devices.
 - 2D visual effects for ESP32 devices.
-- Squelch and gain settings for ESP8266 and ESP32 devices.
+- Squelch and gain settings for ESP8266 and ESP32 devices for the volume reactive visual effects.
 - 2D settings for ESP32 devices.
 - Frequency reactive sliders for ESP32 devices.
 
 We currently have 3 active forks for our Sound Reactive WLED. They are:
 
-- [ESP32 version (ESP8266 is being deprecated)](https://github.com/atuline/WLED)
+- [ESP32 standard version (ESP8266 is being deprecated)](https://github.com/atuline/WLED)
 - [ESP32 development version (ESP8266 is being deprecated)](https://github.com/atuline/WLED/tree/dev)
 - [ESP8266 version](https://github.com/atuline/WLED/tree/ESP8266)
 
 In additon, we have a [Sound Reactive WLED Wiki](https://github.com/atuline/WLED/wiki).
 
 
-Here is an [invite to our #soundreactive channel on the WLED Discord](https://discord.gg/ZZBy5y).
+Join the Discord server to discuss everything about WLED!
+
+<a href="https://discord.gg/KuqP7NE"><img src="https://discordapp.com/api/guilds/473448917040758787/widget.png?style=banner2" width="25%"></a>
+
 
 Here is an [invite to our dedicated Sound Reactive WLED Discord beta users group](https://discord.gg/yJ3Efy).
+
+And now onto regular WLED . . . 
 
 
 
