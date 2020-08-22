@@ -206,7 +206,7 @@ void agcAvg() {                                                       // A simpl
 
   // This is used for normalization of the result bins. It was created by sending the results of a signal generator to within 6" of a MAX9814 @ 40db gain.
   // This is the maximum raw results for each of the result bins and is used for normalization of the results.
-  uint16_t maxChannel[] = {26000,  44000,  66000,  72000,  60000,  48000,  41000,  30000,  25000, 22000, 16000,  14000,  10000,  8000,  7000,  5000}; // Find maximum value for each bin with MAX9814 @ 40db gain.
+  long maxChannel[] = {26000,  44000,  66000,  72000,  60000,  48000,  41000,  30000,  25000, 22000, 16000,  14000,  10000,  8000,  7000,  5000}; // Find maximum value for each bin with MAX9814 @ 40db gain.
   
   float avgChannel[16];    // This is a smoothed rolling average value for each bin. Experimental for AGC testing.
 
