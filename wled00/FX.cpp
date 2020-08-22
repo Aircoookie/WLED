@@ -3564,3 +3564,152 @@ uint16_t WS2812FX::mode_chunchun(void)
   }
   return FRAMETIME;
 }
+
+typedef struct Spotlight {
+  float speed;
+  uint8_t colorIdx;
+  int16_t position;
+  unsigned long lastUpdateTime;
+  uint8_t width;
+  uint8_t type;
+} spotlight;
+
+static const uint8_t SPOT_TYPE_SOLID       = 0;
+static const uint8_t SPOT_TYPE_GRADIENT    = 1;
+static const uint8_t SPOT_TYPE_2X_GRADIENT = 2;
+static const uint8_t SPOT_TYPE_2X_DOT      = 3;
+static const uint8_t SPOT_TYPE_3X_DOT      = 4;
+static const uint8_t SPOT_TYPE_4X_DOT      = 5;
+static const uint8_t SPOT_TYPES_COUNT      = 6;
+
+/*
+ * Blends the specified color with the existing pixel color.
+ */
+void WS2812FX::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend)
+{
+  setPixelColor(n, color_blend(getPixelColor(n), color, blend));
+}
+
+/*
+ * Spotlights moving back and forth that cast dancing shadows.
+ * Shine this through tree branches/leaves or other close-up objects that cast
+ * interesting shadows onto a ceiling or tarp.
+ *
+ * By Steve Pomeroy @xxv
+ */
+uint16_t WS2812FX::mode_dancing_shadows(void)
+{
+  uint8_t numSpotlights = map(SEGMENT.intensity, 0, 255, 2, 50);
+  bool initialize = SEGENV.aux0 != numSpotlights;
+  SEGENV.aux0 = numSpotlights;
+
+  uint16_t dataSize = sizeof(spotlight) * numSpotlights;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Spotlight* spotlights = reinterpret_cast<Spotlight*>(SEGENV.data);
+
+  fill(BLACK);
+
+  unsigned long time = millis();
+  bool respawn = false;
+
+  for (uint8_t i = 0; i < numSpotlights; i++) {
+    if (!initialize) {
+      // advance the position of the spotlight
+      int16_t delta = (float)(time - spotlights[i].lastUpdateTime) *
+                  (spotlights[i].speed * ((1.0 + SEGMENT.speed)/100.0));
+
+      if (abs(delta) >= 1) {
+        spotlights[i].position += delta;
+        spotlights[i].lastUpdateTime = time;
+      }
+
+      respawn = (spotlights[i].speed > 0.0 && spotlights[i].position > (SEGLEN + 2))
+             || (spotlights[i].speed < 0.0 && spotlights[i].position < -(spotlights[i].width + 2));
+    }
+
+    if (initialize || respawn) {
+      spotlights[i].colorIdx = random8();
+      spotlights[i].width = random8(1, 10);
+
+      spotlights[i].speed = 1.0/random8(4, 50);
+
+      if (initialize) {
+        spotlights[i].position = random16(SEGLEN);
+        spotlights[i].speed *= random8(2) ? 1.0 : -1.0;
+      } else {
+        if (random8(2)) {
+          spotlights[i].position = SEGLEN + spotlights[i].width;
+          spotlights[i].speed *= -1.0;
+        }else {
+          spotlights[i].position = -spotlights[i].width;
+        }
+      }
+
+      spotlights[i].lastUpdateTime = time;
+      spotlights[i].type = random8(SPOT_TYPES_COUNT);
+    }
+
+    uint32_t color = color_from_palette(spotlights[i].colorIdx, false, false, 0);
+    int start = spotlights[i].position;
+
+    if (spotlights[i].width <= 1) {
+      if (start >= 0 && start < SEGLEN) {
+        blendPixelColor(start, color, 128);
+      }
+    } else {
+      switch (spotlights[i].type) {
+        case SPOT_TYPE_SOLID:
+          for (uint8_t j = 0; j < spotlights[i].width; j++) {
+            if ((start + j) >= 0 && (start + j) < SEGLEN) {
+              blendPixelColor(start + j, color, 128);
+            }
+          }
+        break;
+
+        case SPOT_TYPE_GRADIENT:
+          for (uint8_t j = 0; j < spotlights[i].width; j++) {
+            if ((start + j) >= 0 && (start + j) < SEGLEN) {
+              blendPixelColor(start + j, color,
+                              cubicwave8(map(j, 0, spotlights[i].width - 1, 0, 255)));
+            }
+          }
+        break;
+
+        case SPOT_TYPE_2X_GRADIENT:
+          for (uint8_t j = 0; j < spotlights[i].width; j++) {
+            if ((start + j) >= 0 && (start + j) < SEGLEN) {
+              blendPixelColor(start + j, color,
+                              cubicwave8(2 * map(j, 0, spotlights[i].width - 1, 0, 255)));
+            }
+          }
+        break;
+
+        case SPOT_TYPE_2X_DOT:
+          for (uint8_t j = 0; j < spotlights[i].width; j += 2) {
+            if ((start + j) >= 0 && (start + j) < SEGLEN) {
+              blendPixelColor(start + j, color, 128);
+            }
+          }
+        break;
+
+        case SPOT_TYPE_3X_DOT:
+          for (uint8_t j = 0; j < spotlights[i].width; j += 3) {
+            if ((start + j) >= 0 && (start + j) < SEGLEN) {
+              blendPixelColor(start + j, color, 128);
+            }
+          }
+        break;
+
+        case SPOT_TYPE_4X_DOT:
+          for (uint8_t j = 0; j < spotlights[i].width; j += 4) {
+            if ((start + j) >= 0 && (start + j) < SEGLEN) {
+              blendPixelColor(start + j, color, 128);
+            }
+          }
+        break;
+      }
+    }
+  }
+
+  return FRAMETIME;
+}
