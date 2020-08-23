@@ -23,19 +23,22 @@ Welcome to our Sound Reactive fork of WLED. In addition to the features of WLED 
 
 We currently have 3 active forks for our Sound Reactive WLED. They are:
 
-- [ESP32 standard version (ESP8266 is being deprecated)](https://github.com/atuline/WLED)
-- [ESP32 development version (ESP8266 is being deprecated)](https://github.com/atuline/WLED/tree/dev)
+- [ESP32 standard version (ESP8266 will be deprecated)](https://github.com/atuline/WLED)
+- [ESP32 development version (ESP8266 will be deprecated)](https://github.com/atuline/WLED/tree/dev)
 - [ESP8266 version](https://github.com/atuline/WLED/tree/ESP8266)
 
-In additon, we have a [Sound Reactive WLED Wiki](https://github.com/atuline/WLED/wiki).
+In addition, we have a [Sound Reactive WLED Wiki](https://github.com/atuline/WLED/wiki).
+
+Join Discord to discuss beta testing of our sound reactive fork of WLED:
+
+<a href="https://discord.gg/xH3uJp"><img src="https://discordapp.com/api/guilds/700041398778331156/widget.png?style=banner2" width="25%"></a>
 
 
-Join the Discord server to discuss everything about WLED!
+Join Discord to discuss AirCookie's WLED:
 
 <a href="https://discord.gg/KuqP7NE"><img src="https://discordapp.com/api/guilds/473448917040758787/widget.png?style=banner2" width="25%"></a>
 
 
-Here is an invite to our dedicated [Sound Reactive WLED Discord beta users group](https://discord.gg/yJ3Efy).
 
 And now onto regular WLED . . . 
 
