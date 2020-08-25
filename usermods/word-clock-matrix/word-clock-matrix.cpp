@@ -18,8 +18,6 @@ int nightBrightness = 16;
 //gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
-
-// creaate macros
 saveMacro(14, "A=128", false);
 saveMacro(15, "A=64", false);
 saveMacro(16, "A=16", false);
@@ -264,7 +262,6 @@ applyMacro(1);
 
 void timeOfDay() {
 // NOT USED: use timed macros instead
-
   //Used to set brightness dependant of time of day - lights dimmed at night
 
   //monday to thursday and sunday
@@ -303,7 +300,6 @@ void userLoop()
       //turn off background segment;
         strip.getSegment(0).setOption(2, false);
         //applyPreset(13);
-
     }
   }
 }
