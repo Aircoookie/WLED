@@ -79,8 +79,8 @@ id="ledwarning" style="color:orange;display:none">
 Use less than 1000 LEDs per ESP for the best experience!<br></div><i>
 Recommended power supply for brightest white:</i><br><b><span id="psu">?</span>
 </b><br><span id="psu2"><br></span><h3>2D Matrix</h3><input name="LCW" 
-type="number" min="1" max="255" oninput="UI()"> x <input name="LCH" 
-type="number" min="1" max="255" oninput="UI()"><br><div id="2dwarning" 
+type="number" min="1" max="1500" oninput="UI()"> x <input name="LCH" 
+type="number" min="1" max="1500" oninput="UI()"><br><div id="2dwarning" 
 style="color:orange;display:inline">
 &#9888; width x height should match LED count!<br></div>Serpentine: <input 
 type="checkbox" name="LCWHS" checked="checked">(how leds connected)<br><br>
