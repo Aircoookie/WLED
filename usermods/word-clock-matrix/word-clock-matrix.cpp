@@ -18,6 +18,16 @@ int nightBrightness = 16;
 //gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
+
+// creaate macros
+saveMacro(14, "A=128", false);
+saveMacro(15, "A=64", false);
+saveMacro(16, "A=16", false);
+
+saveMacro(1, "&FX=0&R=255&G=255&B=255", false);
+
+//strip.getSegment(1).setOption(SEG_OPTION_SELECTED, true);
+
   //select first two segments (background color + FX settable)
   WS2812FX::Segment &seg = strip.getSegment(0);
   seg.colors[0] = ((0 << 24) | ((0 & 0xFF) << 16) | ((0 & 0xFF) << 8) | ((0 & 0xFF)));
@@ -38,24 +48,34 @@ void userConnected()
 {
 }
 
+void selectWordSegments(bool state)
+{
+  for (int i = 1; i < 10; i++)
+  {
+    //WS2812FX::Segment &seg = strip.getSegment(i);
+    strip.getSegment(i).setOption(0, state);
+    // strip.getSegment(1).setOption(SEG_OPTION_SELECTED, true);
+    //seg.mode = 12;
+    //seg.palette = 1;
+    //strip.setBrightness(255);
+  }
+  strip.getSegment(0).setOption(0, !state);
+}
 
 void hourChime()
 {
-  strip.resetSegments();
-
-  WS2812FX::Segment &seg = strip.getSegment(0);
-  seg.colors[0] = ((0 << 24) | ((0 & 0xFF) << 16) | ((0 & 0xFF) << 8) | ((0 & 0xFF)));
-  for (int i = 1; i < 10; i++)
-  {
-    WS2812FX::Segment &seg = strip.getSegment(i);
-    strip.getSegment(i).setOption(0, true);
-    seg.mode = 12;
-    seg.palette = 1;
-    strip.setBrightness(255);
-  }
+  //strip.resetSegments();
+  selectWordSegments(true);
+  colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+  savePreset(13, false);
+  selectWordSegments(false);
+  //strip.getSegment(0).setOption(0, true);
+  strip.getSegment(0).setOption(2, true);
+  applyPreset(12);
+  colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
 }
 
-void displayTimeHSHL(byte hour, byte minute)
+void displayTime(byte hour, byte minute)
 {
   bool isToHour = false;      //true if minute > 30
   strip.setSegment(0, 0, 64); // background
@@ -237,15 +257,20 @@ void displayTimeHSHL(byte hour, byte minute)
     strip.setSegment(7, 56, 60);
     break; //twelve
   }
+
+selectWordSegments(true);
+applyMacro(1);
 }
 
 void timeOfDay() {
+// NOT USED: use timed macros instead
+
   //Used to set brightness dependant of time of day - lights dimmed at night
 
   //monday to thursday and sunday
 
-  if ((weekday(local) == 6) | (weekday(local) == 7)) {
-    if (hour(local) > 0 | hour(local) < 8) {
+  if ((weekday(localTime) == 6) | (weekday(localTime) == 7)) {
+    if (hour(localTime) > 0 | hour(localTime) < 8) {
       strip.setBrightness(nightBrightness);
     }
     else {
@@ -253,7 +278,7 @@ void timeOfDay() {
     }
   }
   else {
-    if (hour(local) < 6 | hour(local) >= 22) {
+    if (hour(localTime) < 6 | hour(localTime) >= 22) {
       strip.setBrightness(nightBrightness);
     }
     else {
@@ -265,17 +290,20 @@ void timeOfDay() {
 //loop. You can use "if (WLED_CONNECTED)" to check for successful connection
 void userLoop()
 {
-  if (minute(local) != minuteLast)
+  if (minute(localTime) != minuteLast)
   {
     updateLocalTime();
-    timeOfDay();
-    minuteLast = minute(local);
-    displayTimeHSHL(hour(local), minute(local));
-    if (minute(local) == 0){
-      //hourChime();
+    //timeOfDay();
+    minuteLast = minute(localTime);
+    displayTime(hour(localTime), minute(localTime));
+    if (minute(localTime) == 0){
+      hourChime();
     }
-    if (minute(local) == 1){
-      //userSetup();
+    if (minute(localTime) == 1){
+      //turn off background segment;
+        strip.getSegment(0).setOption(2, false);
+        //applyPreset(13);
+
     }
   }
 }
