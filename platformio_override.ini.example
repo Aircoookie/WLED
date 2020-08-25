@@ -4,6 +4,9 @@
 # ------------------------------------------------------------------------------
 # Please visit documentation: https://docs.platformio.org/page/projectconf.html
 
+[platformio]
+default_envs = esp8266_1m_custom
+
 [env:esp8266_1m_custom]
 board = esp01_1m
 platform = ${common.arduino_core_2_4_2}
