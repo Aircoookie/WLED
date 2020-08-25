@@ -4,6 +4,8 @@
  * Receives client input
  */
 
+bool handleLx(int lxValue, bool segGiven, int segMain, bool primary);
+
 void _setRandomColor(bool _sec,bool fromButton)
 {
   lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
@@ -196,6 +198,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     hueStoreAllowed = true;
     reconnectHue();
     #endif
+
+    // UDP Api
+    udpApiEnabled = request->hasArg("UAE");
+    t = request->arg("UAP").toInt();
+    if (t > 0) udpApiPort = t;
   }
 
   //TIME
@@ -416,10 +423,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   byte main = strip.getMainSegmentId();
   if (main != prevMain) setValuesFromMainSeg();
 
+  bool segGiven = false;
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
     if (t < strip.getMaxSegments()) main = t;
+    segGiven = true;
   }
 
   WS2812FX::Segment& mainseg = strip.getSegment(main);
@@ -724,5 +733,102 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf(F("&NN")); //do not send UDP notifications this time
   colorUpdated((pos > 0) ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
+  // todo: a better segment determination should be used
+  pos = req.indexOf("LX="); // Loxone primary color
+  if (pos > 0) {
+    int lxValue = getNumVal(&req, pos);
+    handleLx(lxValue, segGiven, main, true);
+    DEBUG_PRINT("LX: Loxone primary = ");
+    DEBUG_PRINTLN(lxValue);
+  }
+  pos = req.indexOf("LY"); // Loxone secondary color
+  if (pos > 0) {
+    int lxValue = getNumVal(&req, pos);
+    handleLx(lxValue, segGiven, main, false);
+    DEBUG_PRINT("LX: Loxone secondary = ");
+    DEBUG_PRINTLN(lxValue);
+  }
+
   return true;
 }
+
+
+bool handleLx(int lxValue, bool segGiven, int segMain, bool primary)
+{
+  bool ok = false;
+  uint8_t lxRed = 0;
+  uint8_t lxGreen = 0;
+  uint8_t lxBlue = 0;
+
+  if (lxValue < 200000000) { 
+    // Loxone RGB
+    ok = true;
+    lxRed = (uint8_t)round(((uint8_t)(lxValue % 1000)) * 2.55);
+    lxGreen = (uint8_t)round(((uint8_t)((lxValue / 1000) % 1000)) * 2.55);
+    lxBlue = (uint8_t)round(((uint8_t)((lxValue / 1000000) % 1000)) * 2.55);
+    if (segGiven) {
+      byte segbri = 255;
+      strip.getSegment(segMain).setOption(SEG_OPTION_ON, segbri);
+      strip.getSegment(segMain).opacity = segbri;
+    }
+
+  } else if ((lxValue >= 200000000) && (lxValue <= 201006500)) { 
+    // Loxone Lumitech
+    ok = true;
+    float bri = floor((lxValue - 200000000) / 10000); ;
+    int ct = floor((lxValue - 200000000) - (bri * 10000));
+    float temp = 0;
+
+    bri *= 2.55;
+    if (bri < 0) {
+      bri = 0;
+    } else if (bri > 255) {
+      bri = 255;
+    }    
+    if (ct < 2700) {
+      ct = 2700;
+    } else if (ct > 6500) {
+      ct = 6500;
+    }
+
+    temp = ct / 100;
+    if (temp <= 66) {
+      lxRed = 255;
+      lxGreen = (uint8_t)round(99.4708025861 * log(temp) - 161.1195681661);
+      if (temp <= 19) {
+        lxBlue = 0;
+      } else {
+        lxBlue = (uint8_t)round(138.5177312231 * log((temp - 10)) - 305.0447927307);
+      }
+    } else {
+      lxRed = (uint8_t)round(329.698727446 * pow((temp - 60), -0.1332047592));
+      lxGreen = (uint8_t)round(288.1221695283 * pow((temp - 60), -0.0755148492));
+      lxBlue = 255;
+    } 
+    if (segGiven) {
+      strip.getSegment(segMain).setOption(SEG_OPTION_ON, bri);
+      if (bri) {
+        strip.getSegment(segMain).opacity = bri;
+      }
+    } else {
+      lxRed *= (float)(bri/255);
+      lxGreen *= (float)(bri/255);
+      lxBlue *= (float)(bri/255);
+    }
+  }
+
+  if (ok) {
+    if (primary) {
+      col[0] = lxRed;
+      col[1] = lxGreen;
+      col[2] = lxBlue;    
+    } else {
+      colSec[0] = lxRed;
+      colSec[1] = lxGreen;
+      colSec[2] = lxBlue; 
+    }
+    return true;
+  }
+  return false;
+}
+

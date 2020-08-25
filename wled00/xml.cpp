@@ -316,6 +316,10 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("SA"),notifyAlexa);
     sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
 
+    // UDP Api
+    sappend('c',"UAE",udpApiEnabled);
+    sappend('v',"UAP",udpApiPort);
+
     #ifdef WLED_ENABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);
     sappends('s',SET_F("MS"),mqttServer);

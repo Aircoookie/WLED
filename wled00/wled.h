@@ -215,6 +215,7 @@ WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
 WLED_GLOBAL uint16_t udpRgbPort _INIT(19446); // Hyperion port
+WLED_GLOBAL uint16_t udpApiPort _INIT(7000); // Udp api port
 
 WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);       // apply brightness from incoming notifications
 WLED_GLOBAL bool receiveNotificationColor      _INIT(true);       // apply color
@@ -258,6 +259,8 @@ WLED_GLOBAL char mqttUser[41] _INIT("");                   // optional: username
 WLED_GLOBAL char mqttPass[41] _INIT("");                   // optional: password for MQTT auth
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
 WLED_GLOBAL uint16_t mqttPort _INIT(1883);
+
+WLED_GLOBAL bool udpApiEnabled _INIT(true);
 
 WLED_GLOBAL bool huePollingEnabled _INIT(false);           // poll hue bridge for light state
 WLED_GLOBAL uint16_t huePollIntervalMs _INIT(2500);        // low values (< 1sec) may cause lag but offer quicker response
@@ -377,7 +380,7 @@ WLED_GLOBAL byte effectIntensity _INIT(128);
 WLED_GLOBAL byte effectPalette _INIT(0);
 
 // network
-WLED_GLOBAL bool udpConnected _INIT(false), udpRgbConnected _INIT(false);
+WLED_GLOBAL bool udpConnected _INIT(false), udpRgbConnected _INIT(false), udpApiConnected _INIT(false);;
 
 // ui style
 WLED_GLOBAL bool showWelcomePage _INIT(false);
@@ -493,7 +496,7 @@ WLED_GLOBAL AsyncClient* hueClient _INIT(NULL);
 WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
 
 // udp interface objects
-WLED_GLOBAL WiFiUDP notifierUdp, rgbUdp;
+WLED_GLOBAL WiFiUDP notifierUdp, rgbUdp, apiUdp;
 WLED_GLOBAL WiFiUDP ntpUdp;
 WLED_GLOBAL ESPAsyncE131 e131 _INIT_N(((handleE131Packet)));
 WLED_GLOBAL bool e131NewData _INIT(false);
