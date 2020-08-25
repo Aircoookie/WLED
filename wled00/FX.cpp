@@ -3240,6 +3240,8 @@ uint16_t WS2812FX::mode_heartbeat(void) {
 //
 uint16_t WS2812FX::mode_pacifica()
 {
+  uint32_t nowOld = now;
+
   CRGBPalette16 pacifica_palette_1 = 
     { 0x000507, 0x000409, 0x00030B, 0x00030D, 0x000210, 0x000212, 0x000114, 0x000117, 
       0x000019, 0x00001C, 0x000026, 0x000031, 0x00003B, 0x000046, 0x14554B, 0x28AA50 };
@@ -3260,8 +3262,11 @@ uint16_t WS2812FX::mode_pacifica()
   // Each is incremented at a different speed, and the speeds vary over time.
   uint16_t sCIStart1 = SEGENV.aux0, sCIStart2 = SEGENV.aux1, sCIStart3 = SEGENV.step, sCIStart4 = SEGENV.step >> 16;
   //static uint16_t sCIStart1, sCIStart2, sCIStart3, sCIStart4;
-  uint32_t deltams = 26 + (SEGMENT.speed >> 3);
-  
+  //uint32_t deltams = 26 + (SEGMENT.speed >> 3);
+  uint32_t deltams = (FRAMETIME >> 2) + ((FRAMETIME * SEGMENT.speed) >> 7);
+  uint64_t deltat = (now >> 2) + ((now * SEGMENT.speed) >> 7);
+  now = deltat;
+
   uint16_t speedfactor1 = beatsin16(3, 179, 269);
   uint16_t speedfactor2 = beatsin16(4, 179, 269);
   uint32_t deltams1 = (deltams * speedfactor1) / 256;
@@ -3306,6 +3311,7 @@ uint16_t WS2812FX::mode_pacifica()
     setPixelColor(i, c.red, c.green, c.blue);
   }
 
+  now = nowOld;
   return FRAMETIME;
 }
 

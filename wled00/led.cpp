@@ -299,3 +299,9 @@ void handleNightlight()
     presetCycledTime = millis();
   }
 }
+
+//utility for FastLED to use our custom timer
+uint32_t get_millisecond_timer()
+{
+  return strip.now;
+}

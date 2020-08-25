@@ -31,6 +31,7 @@
 #include "const.h"
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
+#define USE_GET_MILLISECOND_TIMER
 #include "FastLED.h"
 
 #define DEFAULT_BRIGHTNESS (uint8_t)127
@@ -481,6 +482,7 @@ class WS2812FX {
       triwave16(uint16_t);
 
     uint32_t
+      now,
       timebase,
       color_wheel(uint8_t),
       color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255),
@@ -623,7 +625,6 @@ class WS2812FX {
     CRGBPalette16 currentPalette;
     CRGBPalette16 targetPalette;
 
-    uint32_t now;
     uint16_t _length, _lengthRaw, _virtualSegmentLength;
     uint16_t _rand16seed;
     uint8_t _brightness;
@@ -686,7 +687,6 @@ class WS2812FX {
 
     uint16_t realPixelIndex(uint16_t i);
 };
-
 
 //10 names per line
 const char JSON_mode_names[] PROGMEM = R"=====([
