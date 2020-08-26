@@ -318,8 +318,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"TB",nightlightTargetBri);
     sappend('v',"TL",nightlightDelayMinsDefault);
     sappend('v',"TW",nightlightMode);
-    sappend('v',"SQ",soundSquelch);
-    sappend('v',"GN",sampleGain);
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);

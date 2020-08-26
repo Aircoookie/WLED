@@ -352,7 +352,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
   #endif
 
-    //SOUND SETTINGS
+  //SOUND SETTINGS
   if (subPage == 8)
   {
     int t;
