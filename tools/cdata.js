@@ -88,7 +88,7 @@ function writeHtmlGzipped(sourceFile, resultFile) {
  * Binary array for the Web UI.
  * gzip is used for smaller size and improved speeds.
  *
- * Please see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#web-ui
+ * Please see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#changing-web-ui
  * to find out how to easily modify the web UI source!
  */
 
@@ -163,7 +163,7 @@ function writeChunks(srcDir, specs, resultFile) {
   let src = `/*
  * More web UI HTML source arrays.
  * This file is auto generated, please don't make any changes manually.
- * Instead, see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#web-ui
+ * Instead, see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#changing-web-ui
  * to find out how to easily modify the web UI source!
  */
 `;
@@ -226,6 +226,22 @@ writeChunks(
     {
       file: "settings_leds.htm",
       name: "PAGE_settings_leds",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "html-minify",
+      mangle: (str) =>
+        str
+          .replace(/\<link rel="stylesheet".*\>/gms, "")
+          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          .replace(
+            /function GetV().*\<\/script\>/gms,
+            "function GetV() {var d=document;\n"
+          ),
+    },
+    {
+      file: "settings_sound.htm",
+      name: "PAGE_settings_sound",
       prepend: "=====(",
       append: ")=====",
       method: "plaintext",

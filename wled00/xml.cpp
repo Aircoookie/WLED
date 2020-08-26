@@ -226,7 +226,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >7) return;
+  if (subPage <1 || subPage >8) return;
 
   if (subPage == 1) {
     sappends('s',"CS",clientSSID);
@@ -520,5 +520,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',"CH15",DMXFixtureMap[14]);
     }
   #endif
+
+  if (subPage == 8)
+  {
+    sappend('v',"SQ",soundSquelch);
+    sappend('v',"GN",sampleGain);
+    }
   oappend("}</script>");
 }

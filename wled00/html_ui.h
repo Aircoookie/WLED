@@ -2,7 +2,7 @@
  * Binary array for the Web UI.
  * gzip is used for smaller size and improved speeds.
  *
- * Please see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#web-ui
+ * Please see https://github.com/Aircoookie/WLED/wiki/Add-own-functionality#changing-web-ui
  * to find out how to easily modify the web UI source!
  */
 
