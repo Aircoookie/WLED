@@ -128,9 +128,7 @@ size="2"> ms<br>Enable Palette transitions: <input type="checkbox" name="PF">
 max="255" required> min<br>Default Target brightness: <input name="TB" 
 type="number" min="0" max="255" required><br>Mode: <select name="TW"><option 
 value="0">Wait and set</option><option value="1">Fade</option><option value="2">
-Fade Color</option><option value="3">Sunrise</option></select><h3>Sound</h3>
-Squelch: <input name="SQ" type="number" min="1" max="255" required><br>Gain: 
-<input name="GN" type="number" min="1" max="255" required><br><h3>Advanced</h3>
+Fade Color</option><option value="3">Sunrise</option></select><h3>Advanced</h3>
 Palette blending: <select name="PB"><option value="0">Linear (wrap if moving)
 </option><option value="1">Linear (always wrap)</option><option value="2">
 Linear (never wrap)</option><option value="3">None (not recommended)</option>

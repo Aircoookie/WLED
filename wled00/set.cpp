@@ -31,7 +31,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
 
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX
-  if (subPage <1 || subPage >7) return;
+  if (subPage <1 || subPage >8) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -79,7 +79,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     #endif
     strip.ablMilliampsMax = request->arg("MA").toInt();
     strip.milliampsPerLed = request->arg("LA").toInt();
-    
+
     useRGBW = request->hasArg("EW");
     strip.colorOrder = request->arg("CO").toInt();
     strip.rgbwMode = request->arg("AW").toInt();
@@ -99,12 +99,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     transitionDelayDefault = t;
     strip.paletteFade = request->hasArg("PF");
 
-    t = request->arg("SQ").toInt();
-    if (t > 0) soundSquelch = t;
-
-    t = request->arg("GN").toInt();
-    if (t > 0) sampleGain = t;
-    
     nightlightTargetBri = request->arg("TB").toInt();
     t = request->arg("TL").toInt();
     if (t > 0) nightlightDelayMinsDefault = t;
@@ -356,15 +350,25 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       DMXFixtureMap[i] = t;
     }
   }
-  
   #endif
+
+    //SOUND SETTINGS
+  if (subPage == 8)
+  {
+    int t;
+    t = request->arg("SQ").toInt();
+    if (t > 0) soundSquelch = t;
+
+    t = request->arg("GN").toInt();
+    if (t > 0) sampleGain = t;
+  }
+
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
   if (subPage == 2) {
     strip.init(useRGBW,ledCount,skipFirstLed);
   }
   if (subPage == 4) alexaInit();
 }
-
 
 
 //helper to get int value at a position in string
@@ -725,7 +729,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   //mode, 1 countdown
   pos = req.indexOf("NM=");
   if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
-  
+
   pos = req.indexOf("NX="); //sets digits to code
   if (pos > 0) {
     strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
@@ -753,7 +757,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   pos = req.indexOf("DX="); // delay in ms  050720 ajn
   if (pos > 0) delay(getNumVal(&req,pos));
- 
+
   //internal call, does not send XML response
   pos = req.indexOf("IN");
   if (pos < 1) XML_response(request);
@@ -762,6 +766,5 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   colorUpdated((pos > 0) ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
 
-  
   return true;
 }
