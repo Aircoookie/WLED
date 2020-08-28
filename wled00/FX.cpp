@@ -2147,7 +2147,7 @@ uint16_t WS2812FX::mode_railway()
 
 //4 bytes
 typedef struct Ripple {
-  uint8_t state;
+  int8_t state;
   uint8_t color;
   uint16_t pos;
 } ripple;
@@ -3880,43 +3880,72 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                                // Pud
 /////////////////////////////////
 
 uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. By Andrew Tuline.
+
+  #ifdef ESP32
+  extern double FFT_MajorPeak;
+//  Serial.println(FFT_MajorPeak);
+  Serial.println(log10(FFT_MajorPeak)*128-140);
+//  Serial.println(pow(FFT_MajorPeak, .3));
+  #endif
+  
                                                               // This currently has no controls.
   #define maxsteps 16                                         // Case statement wouldn't allow a variable.
 
-  static uint8_t colour;                                      // Ripple colour is randomized.
-  static uint16_t centre;                                     // Center of the current ripple.
-  static int8_t steps = -1;                                   // -1 is the initializing step.
+  uint16_t maxRipples = 32;
+  uint16_t dataSize = sizeof(ripple) * maxRipples;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+ 
+  Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
+
+//  static uint8_t colour;                                      // Ripple colour is randomized.
+//  static uint16_t centre;                                     // Center of the current ripple.
+//  static int8_t steps = -1;                                   // -1 is the initializing step.
   static uint8_t ripFade = 255;                               // Starting brightness.
 
   fade_out(240);                                              // Lower frame rate means less effective fading than FastLED
   fade_out(240);
 
-   if (samplePeak == 1) {samplePeak = 0; steps = -1;}
 
-  switch (steps) {
+  for (uint16_t i = 0; i < maxRipples; i++) {
 
-    case -1:                                                  // Initialize ripple variables.
-      centre = random16(SEGLEN);
-      colour = random8();
-      steps = 0;
-      break;
+    if (samplePeak) {samplePeak = 0; ripples[i].state = -1;}
 
-    case 0:
-      setPixelColor(centre, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade));
-      steps ++;
-      break;
+    switch (ripples[i].state) {
 
-    case maxsteps:                                            // At the end of the ripples.
-//        steps = -1;
-      break;
+       case -2:     // Inactive mode
+        break;
+        
+       case -1:                                                  // Initialize ripple variables.
+        ripples[i].pos = random16(SEGLEN);
 
-    default:                                                  // Middle of the ripples.
+        #ifdef ESP32
+          ripples[i].color = (int)(log10(FFT_MajorPeak)*128);
+        #else
+          ripples[i].color = random8();
+        #endif
+        
+        ripples[i].state = 0;
+        break;
+  
+      case 0:
+        setPixelColor(ripples[i].pos, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade));
+        ripples[i].state++;
+        break;
+  
+      case maxsteps:                                            // At the end of the ripples. -2 is an inactive mode.
+          ripples[i].state = -2;
+        break;
+  
+      default:                                                  // Middle of the ripples.
+  
+        setPixelColor((ripples[i].pos + ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade/ripples[i].state*2));
+        setPixelColor((ripples[i].pos - ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade/ripples[i].state*2));
+        ripples[i].state++;                                               // Next step.
+        break;
+    } // switch step
+   } // for i
 
-      setPixelColor((centre + steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
-      setPixelColor((centre - steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
-      steps ++;                                               // Next step.
-      break;
-  } // switch step
 
   return FRAMETIME;
 } // mode_ripplepeak()
