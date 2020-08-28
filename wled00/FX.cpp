@@ -3861,7 +3861,7 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                                // Pud
   fade_out(fadeVal);
 
   if (samplePeak == 1 ) {
-    size = sample * SEGMENT.intensity /256 /8 + 1;                        // Determine size of the flash based on the volume.
+    size = sampleAgc * SEGMENT.intensity /256 /4 + 1;                        // Determine size of the flash based on the volume.
     if (pos+size>= SEGLEN) size=SEGLEN-pos;
     samplePeak = 0;
   }
