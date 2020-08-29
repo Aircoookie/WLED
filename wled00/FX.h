@@ -434,6 +434,7 @@ class WS2812FX {
       init(bool supportWhite, uint16_t countPixels, bool skipFirst),
       service(void),
       blur(uint8_t),
+      fill(uint32_t),
       fade_out(uint8_t r),
       setMode(uint8_t segid, uint8_t m),
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
@@ -448,7 +449,8 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
-      setRgbwPwm(void);
+      setRgbwPwm(void),
+      setPixelSegment(uint8_t n);
 
     bool
       reverseMode = false,      //is the entire LED strip reversed?
@@ -632,7 +634,6 @@ class WS2812FX {
 
     void load_gradient_palette(uint8_t);
     void handle_palette(void);
-    void fill(uint32_t);
 
     bool
       _useRgbw = false,

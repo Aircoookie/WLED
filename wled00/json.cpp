@@ -74,6 +74,53 @@ void deserializeSegment(JsonObject elem, byte it)
       seg.intensity = elem["ix"] | seg.intensity;
       seg.palette = elem["pal"] | seg.palette;
     }
+
+    JsonArray iarr = elem["i"]; //set individual LEDs
+    if (!iarr.isNull()) {
+      strip.setPixelSegment(id);
+
+      //freeze and init to black
+      if (!seg.getOption(SEG_OPTION_FREEZE)) {
+        seg.setOption(SEG_OPTION_FREEZE, true);
+        strip.fill(0);
+      }
+
+      uint16_t start = 0, stop = 0;
+      byte set = 0; //0 nothing set, 1 start set, 2 range set
+
+      for (uint16_t i = 0; i < iarr.size(); i++) {
+        if(iarr[i].is<JsonInteger>()) {
+          if (!set) {
+            start = iarr[i];
+            set = 1;
+          } else {
+            stop = iarr[i];
+            set = 2;
+          }
+        } else {
+          JsonArray icol = iarr[i];
+          if (icol.isNull()) break;
+
+          byte sz = icol.size();
+          if (sz == 0 && sz > 4) break;
+
+          int rgbw[] = {0,0,0,0};
+          byte cp = copyArray(icol, rgbw);
+
+          if (set < 2) stop = start + 1;
+          for (uint16_t i = start; i < stop; i++) {
+            strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+          }
+          if (!set) start++;
+          set = 0;
+        }
+      }
+      strip.setPixelSegment(255);
+      strip.trigger();
+    } else { //return to regular effect
+      seg.setOption(SEG_OPTION_FREEZE, false);
+    }
+
   }
 }
 
