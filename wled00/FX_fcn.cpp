@@ -598,6 +598,14 @@ void WS2812FX::fill(uint32_t c) {
 }
 
 /*
+ * Blends the specified color with the existing pixel color.
+ */
+void WS2812FX::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend)
+{
+  setPixelColor(n, color_blend(getPixelColor(n), color, blend));
+}
+
+/*
  * fade out function, higher rate = quicker fade
  */
 void WS2812FX::fade_out(uint8_t rate) {

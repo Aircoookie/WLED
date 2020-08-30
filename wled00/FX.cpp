@@ -3565,6 +3565,7 @@ uint16_t WS2812FX::mode_chunchun(void)
   return FRAMETIME;
 }
 
+
 typedef struct Spotlight {
   float speed;
   uint8_t colorIdx;
@@ -3574,21 +3575,13 @@ typedef struct Spotlight {
   uint8_t type;
 } spotlight;
 
-static const uint8_t SPOT_TYPE_SOLID       = 0;
-static const uint8_t SPOT_TYPE_GRADIENT    = 1;
-static const uint8_t SPOT_TYPE_2X_GRADIENT = 2;
-static const uint8_t SPOT_TYPE_2X_DOT      = 3;
-static const uint8_t SPOT_TYPE_3X_DOT      = 4;
-static const uint8_t SPOT_TYPE_4X_DOT      = 5;
-static const uint8_t SPOT_TYPES_COUNT      = 6;
-
-/*
- * Blends the specified color with the existing pixel color.
- */
-void WS2812FX::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend)
-{
-  setPixelColor(n, color_blend(getPixelColor(n), color, blend));
-}
+#define SPOT_TYPE_SOLID       0
+#define SPOT_TYPE_GRADIENT    1
+#define SPOT_TYPE_2X_GRADIENT 2
+#define SPOT_TYPE_2X_DOT      3
+#define SPOT_TYPE_3X_DOT      4
+#define SPOT_TYPE_4X_DOT      5
+#define SPOT_TYPES_COUNT      6
 
 /*
  * Spotlights moving back and forth that cast dancing shadows.
