@@ -182,10 +182,6 @@ function writeChunks(srcDir, specs, resultFile) {
   fs.writeFileSync(resultFile, src);
 }
 
-const args = process.argv.slice(2);
-
-const useBrotli = (args && args.length != 0);
-
 writeHtmlGzipped("wled00/data/index.htm", "wled00/html_ui.h");
 
 writeChunks(
