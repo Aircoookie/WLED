@@ -75,12 +75,12 @@ function writeHtmlGzipped(sourceFile, resultFile) {
       throw error;
     }
 
-    html = adoptVersionAndRepo(html);
-    zlib.gzip(html, function (error, result) {
-      if (error) {
-        console.warn(error);
-        throw error;
-      }
+    html = adoptVersionAndRepo(html); 
+    zlib.gzip(html, { level: zlib.constants.Z_BEST_COMPRESSION }, function (error, result) {
+        if (error) {
+          console.warn(error);
+          throw error;
+        }
 
       console.info("Compressed " + result.length + " bytes");
       const array = hexdump(result);
@@ -181,6 +181,10 @@ function writeChunks(srcDir, specs, resultFile) {
   console.info("Writing " + src.length + " characters into " + resultFile);
   fs.writeFileSync(resultFile, src);
 }
+
+const args = process.argv.slice(2);
+
+const useBrotli = (args && args.length != 0);
 
 writeHtmlGzipped("wled00/data/index.htm", "wled00/html_ui.h");
 
