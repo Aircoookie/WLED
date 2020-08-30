@@ -75,7 +75,7 @@ function writeHtmlGzipped(sourceFile, resultFile) {
       throw error;
     }
 
-    html = adoptVersionAndRepo(html); 
+    html = adoptVersionAndRepo(html);
     zlib.gzip(html, { level: zlib.constants.Z_BEST_COMPRESSION }, function (error, result) {
       if (error) {
         console.warn(error);
