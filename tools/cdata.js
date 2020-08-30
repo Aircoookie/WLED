@@ -77,10 +77,10 @@ function writeHtmlGzipped(sourceFile, resultFile) {
 
     html = adoptVersionAndRepo(html); 
     zlib.gzip(html, { level: zlib.constants.Z_BEST_COMPRESSION }, function (error, result) {
-        if (error) {
-          console.warn(error);
-          throw error;
-        }
+      if (error) {
+        console.warn(error);
+        throw error;
+      }
 
       console.info("Compressed " + result.length + " bytes");
       const array = hexdump(result);
