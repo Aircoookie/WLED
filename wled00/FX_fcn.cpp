@@ -81,12 +81,17 @@ void WS2812FX::service() {
       if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
       {
         if (SEGMENT.grouping == 0) SEGMENT.grouping = 1; //sanity check
-        _virtualSegmentLength = SEGMENT.virtualLength();
         doShow = true;
-        handle_palette();
-        uint16_t delay = (this->*_mode[SEGMENT.mode])();
+        uint16_t delay = FRAMETIME;
+
+        if (!SEGMENT.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
+          _virtualSegmentLength = SEGMENT.virtualLength();
+          handle_palette();
+          delay = (this->*_mode[SEGMENT.mode])(); //effect function
+          if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
+        }
+
         SEGENV.next_time = nowUp + delay;
-        if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
       }
     }
   }
@@ -386,6 +391,12 @@ void WS2812FX::setBrightness(uint8_t b) {
   if (_brightness == b) return;
   _brightness = (gammaCorrectBri) ? gamma8(b) : b;
   _segment_index = 0;
+  if (b == 0) { //unfreeze all segments on power off
+    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+    {
+      _segments[i].setOption(SEG_OPTION_FREEZE, false);
+    }
+  }
   if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
 }
 
@@ -535,6 +546,18 @@ void WS2812FX::resetSegments() {
   _segment_runtimes[0].reset();
 }
 
+//After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
+void WS2812FX::setPixelSegment(uint8_t n)
+{
+  if (n < MAX_NUM_SEGMENTS) {
+    _segment_index = n;
+    _virtualSegmentLength = SEGMENT.length();
+  } else {
+    _segment_index = 0;
+    _virtualSegmentLength = 0;
+  }
+}
+
 void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
 {
   if (i2 >= i)
@@ -595,6 +618,14 @@ void WS2812FX::fill(uint32_t c) {
   for(uint16_t i = 0; i < SEGLEN; i++) {
     setPixelColor(i, c);
   }
+}
+
+/*
+ * Blends the specified color with the existing pixel color.
+ */
+void WS2812FX::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend)
+{
+  setPixelColor(n, color_blend(getPixelColor(n), color, blend));
 }
 
 /*

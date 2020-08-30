@@ -102,7 +102,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  112
+#define MODE_COUNT  113
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -216,6 +216,7 @@
 #define FX_MODE_PHASEDNOISE            109
 #define FX_MODE_FLOW                   110
 #define FX_MODE_CHUNCHUN               111
+#define FX_MODE_DANCING_SHADOWS        112
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -419,6 +420,7 @@ class WS2812FX {
       _mode[FX_MODE_PHASEDNOISE]             = &WS2812FX::mode_phased_noise;
       _mode[FX_MODE_FLOW]                    = &WS2812FX::mode_flow;
       _mode[FX_MODE_CHUNCHUN]                = &WS2812FX::mode_chunchun;
+      _mode[FX_MODE_DANCING_SHADOWS]         = &WS2812FX::mode_dancing_shadows;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -434,6 +436,7 @@ class WS2812FX {
       init(bool supportWhite, uint16_t countPixels, bool skipFirst),
       service(void),
       blur(uint8_t),
+      fill(uint32_t),
       fade_out(uint8_t r),
       setMode(uint8_t segid, uint8_t m),
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
@@ -448,7 +451,8 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
-      setRgbwPwm(void);
+      setRgbwPwm(void),
+      setPixelSegment(uint8_t n);
 
     bool
       reverseMode = false,      //is the entire LED strip reversed?
@@ -615,7 +619,8 @@ class WS2812FX {
       mode_sinewave(void),
       mode_phased_noise(void),
       mode_flow(void),
-      mode_chunchun(void);
+      mode_chunchun(void),
+      mode_dancing_shadows(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -632,7 +637,6 @@ class WS2812FX {
 
     void load_gradient_palette(uint8_t);
     void handle_palette(void);
-    void fill(uint32_t);
 
     bool
       _useRgbw = false,
@@ -666,6 +670,8 @@ class WS2812FX {
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
+
+    void blendPixelColor(uint16_t n, uint32_t color, uint8_t blend);
     
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
@@ -701,7 +707,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun"
+"Flow","Chunchun","Dancing Shadows"
 ])=====";
 
 

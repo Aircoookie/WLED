@@ -2,11 +2,17 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2008290
+
+-   Added individual LED control support to JSON API
+-   Added internal Segment Freeze/Pause option
+
 #### Build 2008250
 
 -   Made `platformio_override.ini` example easier to use by including the `default_envs` property
 -   FastLED uses `now` as timer, so effects using e.g. `beatsin88()` will sync correctly
 -   Extended the speed range of Pacifica effect
+-   Improved TPM2.net receiving (#1100)
 -   Fixed exception on empty MQTT payload (#1101)
 
 #### Build 2008200
