@@ -2,6 +2,13 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2008300 (v0.10.2 release candidate)
+
+-   Added new UI customization options to UI settings
+-   Added Dancing Shadows effect (#1108)
+-   Preset cycle is now paused if lights turned off or nightlight active
+-   Removed `esp01` and `esp01_ota` envs from travis build (need too much flash)
+
 #### Build 2008290
 
 -   Added individual LED control support to JSON API
