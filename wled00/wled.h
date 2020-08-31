@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.10.1
+   @version 0.10.2 (release candidate)
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2008140
+#define VERSION 2008300
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -156,8 +156,8 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.10.1");
-#define WLED_CODENAME "Namigai"
+WLED_GLOBAL char versionString[] _INIT("0.10.2");
+#define WLED_CODENAME "Fumikiri"
 
 // AP and OTA default passwords (for maximum security change them!)
 WLED_GLOBAL char apPass[65]  _INIT(DEFAULT_AP_PASS);
@@ -441,7 +441,8 @@ WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
 WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);
 WLED_GLOBAL IPAddress realtimeIP _INIT((0, 0, 0, 0));
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
-WLED_GLOBAL uint16_t tpmFirstFrameSize _INIT(0);
+WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
+WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
 
 // mqtt
 WLED_GLOBAL long lastMqttReconnectAttempt _INIT(0);

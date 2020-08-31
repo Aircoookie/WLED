@@ -2,9 +2,38 @@
 
 ### Development versions after 0.10.0 release
 
+#### Build 2008300 (v0.10.2 release candidate)
+
+-   Added new UI customization options to UI settings
+-   Added Dancing Shadows effect (#1108)
+-   Preset cycle is now paused if lights turned off or nightlight active
+-   Removed `esp01` and `esp01_ota` envs from travis build (need too much flash)
+
+#### Build 2008290
+
+-   Added individual LED control support to JSON API
+-   Added internal Segment Freeze/Pause option
+
+#### Build 2008250
+
+-   Made `platformio_override.ini` example easier to use by including the `default_envs` property
+-   FastLED uses `now` as timer, so effects using e.g. `beatsin88()` will sync correctly
+-   Extended the speed range of Pacifica effect
+-   Improved TPM2.net receiving (#1100)
+-   Fixed exception on empty MQTT payload (#1101)
+
+#### Build 2008200
+
+-   Added segment mirroring to web UI
+-   Fixed segment mirroring when in reverse mode
+
+#### Build 2008140
+
+-   Removed verbose live mode info from `<ds>` in HTTP API response
+
 #### Build 2008100
 
--   Fixed Auto White calculation dropdown (fixed #1088)
+-   Fixed Auto White mode setting (fixes #1088)
 
 #### Build 2008070
 

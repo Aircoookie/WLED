@@ -294,11 +294,19 @@ void handleNightlight()
   //also handle preset cycle here
   if (presetCyclingEnabled && (millis() - presetCycledTime > (100*presetCycleTime)))
   {
-    if (presetCycCurr < presetCycleMin) presetCycCurr = presetCycleMin;
+    presetCycledTime = millis();
+    if (bri == 0 || nightlightActive) return;
+
+    if (presetCycCurr < presetCycleMin || presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
     applyPreset(presetCycCurr,presetApplyBri);
-    presetCycCurr++; if (presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
+    presetCycCurr++;
     if (presetCycCurr > 16) presetCycCurr = 1;
     colorUpdated(NOTIFIER_CALL_MODE_PRESET_CYCLE);
-    presetCycledTime = millis();
   }
+}
+
+//utility for FastLED to use our custom timer
+uint32_t get_millisecond_timer()
+{
+  return strip.now;
 }

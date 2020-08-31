@@ -219,6 +219,8 @@ void handleNotifications()
   //TPM2.NET
   if (udpIn[0] == 0x9c)
   {
+    //WARNING: this code assumes that the final TMP2.NET payload is evenly distributed if using multiple packets (ie. frame size is constant)
+    //if the number of LEDs in your installation doesn't allow that, please include padding bytes at the end of the last packet
     byte tpmType = udpIn[1];
     if (tpmType == 0xaa) { //TPM2.NET polling, expect answer
       sendTPM2Ack(); return;
@@ -229,18 +231,26 @@ void handleNotifications()
     realtimeLock(realtimeTimeoutMs, REALTIME_MODE_TPM2NET);
     if (realtimeOverride) return;
 
-    uint16_t frameSize = (udpIn[2] << 8) + udpIn[3];
+    tpmPacketCount++; //increment the packet count
+    if (tpmPacketCount == 1) tpmPayloadFrameSize = (udpIn[2] << 8) + udpIn[3]; //save frame size for the whole payload if this is the first packet
     byte packetNum = udpIn[4]; //starts with 1!
     byte numPackets = udpIn[5];
 
-    uint16_t id = ((tpmFirstFrameSize/3)*(packetNum-1)) / 3; //start LED
-    for (uint16_t i = 6; i < frameSize + 4; i += 3)
+    uint16_t id = (tpmPayloadFrameSize/3)*(packetNum-1); //start LED
+    for (uint16_t i = 6; i < tpmPayloadFrameSize + 4; i += 3)
     {
-      setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-      id++; if (id >= ledCount) break;
+      if (id < ledCount)
+      {
+        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+        id++;
+      }
+      else break;
     }
-    if (packetNum == 1) tpmFirstFrameSize = frameSize;
-    if (packetNum == numPackets) {strip.show(); } //show if last packet 
+    if (tpmPacketCount == numPackets) //reset packet count and show if all packets were received
+    {
+      tpmPacketCount = 0;
+      strip.show();
+    }
   }
 
   //UDP realtime: 1 warls 2 drgb 3 drgbw
