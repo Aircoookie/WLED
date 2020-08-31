@@ -231,26 +231,26 @@ else if (s[i+'LABEL']) lb = s[i+'LABEL'];
 if (i.indexOf('LABEL') > 0) continue;
 var t = typeof s[i];
 if (gId(fk)) { //already exists
-  if(t === 'boolean')
-  {
-    gId(fk).checked = s[i];
-  } else {
-    gId(fk).value = s[i];
-  }
-  if (gId(fk).previousElementSibling.matches('.l')) {
-    gId(fk).previousElementSibling.innerHTML = lb;
-  }
+if(t === 'boolean')
+{
+  gId(fk).checked = s[i];
 } else {
-  if(t === 'boolean')
-  {
-    str += `${lb}: <input class="agi cb" type="checkbox" id=${fk} ${s[i]?"checked":""}><br>`;
-  } else if (t === 'number')
-  {
-    str += `${lb}: <input class="agi" type="number" id=${fk} value=${s[i]}><br>`;
-  } else if (t === 'string')
-  {
-    str += `${lb}:<br><input class="agi" id=${fk} value=${s[i]}><br>`;
-  }
+  gId(fk).value = s[i];
+}
+if (gId(fk).previousElementSibling.matches('.l')) {
+  gId(fk).previousElementSibling.innerHTML = lb;
+}
+} else {
+if(t === 'boolean')
+{
+  str += `${lb}: <input class="agi cb" type="checkbox" id=${fk} ${s[i]?"checked":""}><br>`;
+} else if (t === 'number')
+{
+  str += `${lb}: <input class="agi" type="number" id=${fk} value=${s[i]}><br>`;
+} else if (t === 'string')
+{
+  str += `${lb}:<br><input class="agi" id=${fk} value=${s[i]}><br>`;
+}
 }
 }
 }
@@ -515,7 +515,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <h3>Software Update</h3><button type="button" onclick="U()">Manual OTA Update
 </button><br>Enable ArduinoOTA: <input type="checkbox" name="AO"><br><h3>About
 </h3><a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>
- version 0.10.1<br><br><a 
+ version 0.10.2<br><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" 
 target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>

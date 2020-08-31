@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/images/wled_logo.png">
+  <img src="/images/wled_logo_akemi.png">
   <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a>
   <a href="https://wled.discourse.group"><img src="https://img.shields.io/discourse/topics?colorB=blue&label=forum&server=https%3A%2F%2Fwled.discourse.group%2F&style=flat-square"></a>
   <a href="https://discord.gg/KuqP7NE"><img src="https://img.shields.io/discord/473448917040758787.svg?colorB=blue&label=discord&style=flat-square"></a>
@@ -31,12 +31,12 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - JSON and HTTP request APIs  
 - MQTT  
 - Blynk IoT  
-- E1.31  
+- E1.31, Art-Net and TPM2.net
 - [Hyperion](https://github.com/hyperion-project/hyperion.ng)
 - UDP realtime  
 - Alexa voice control (including dimming and color)  
 - Sync to Philips hue lights  
-- Adalight (PC ambilight via serial)  
+- Adalight (PC ambilight via serial) and TPM2  
 - Sync color of multiple WLED devices (UDP notifier)  
 - Infrared remotes (24-key RGB, receiver required)  
 - Simple timers/schedules (time from NTP, timezones/DST supported)  
