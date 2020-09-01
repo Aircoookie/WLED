@@ -16,8 +16,7 @@ var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0;
-var d = document;
-const ranges = RangeTouch.setup('input[type="range"]', {});
+var d;
 var lastinfo = {};
 
 var cfg = {
@@ -155,7 +154,7 @@ function onLoad() {
 	loadBg(cfg.theme.bg.url);
 	
 	var cd = d.getElementById('csl').children;
-	for (i = 0; i < cd.length; i++) {
+	for (let i = 0; i < cd.length; i++) {
 		cd[i].style.backgroundColor = "rgb(0, 0, 0)";
 	}
 	selectSlot(0);
@@ -173,8 +172,8 @@ function onLoad() {
 
 function updateTablinks(tabI)
 {
-	tablinks = d.getElementsByClassName("tablinks");
-	for (i = 0; i < tablinks.length; i++) {
+	const tablinks = d.getElementsByClassName("tablinks");
+	for (let i = 0; i < tablinks.length; i++) {
 		tablinks[i].className = tablinks[i].className.replace(" active", "");
 	}
 	if (pcMode) return;
@@ -183,7 +182,6 @@ function updateTablinks(tabI)
 
 function openTab(tabI, force = false) {
 	if (pcMode && !force) return;
-	var i, tabcontent, tablinks;
 	iSlide = tabI;
 	_C.classList.toggle('smooth', false);
 	_C.style.setProperty('--i', iSlide);
@@ -240,7 +238,7 @@ function populateInfo(i)
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
 	var urows="";
-	for (var k in i.u)
+	for (let k in i.u)
 	{
 		var val = i.u[k];
 		if (val[1]) {
@@ -272,7 +270,7 @@ function populateSegments(s)
 	var cn = "";
 	segCount = 0, lowestUnused = 0; lSeg = 0;
  
-	for (y in s.seg)
+	for (let y in s.seg)
 	{
 		segCount++;
 		
@@ -343,7 +341,7 @@ function populateSegments(s)
 		resetUtil();
 		noNewSegs = false;
 	}
-	for (i = 0; i <= lSeg; i++) {
+	for (let i = 0; i <= lSeg; i++) {
 	updateLen(i);
 	updateTrail(d.getElementById(`seg${i}bri`));
 	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
@@ -406,13 +404,13 @@ function updateUI()
 	if (isRgbw) d.getElementById('wwrap').style.display = "block";
 	
 	var btns = document.getElementsByClassName("psts");
-	for (i = 0; i < btns.length; i++) {
+	for (let i = 0; i < btns.length; i++) {
 		btns[i].className = btns[i].className.replace(" active", "");
 		if ((savedPresets >> i) & 0x01) btns[i].className += " stored";
 	}
 	if (currentPreset > 0 && currentPreset <= btns.length) btns[currentPreset -1].className += " active";
 
-	spal = d.getElementById("selectPalette");
+	const spal = d.getElementById("selectPalette");
 	spal.style.backgroundColor = (spal.selectedIndex > 0) ? "var(--c-6)":"var(--c-3)";
 	updateHex();
 	updateRgb();
@@ -439,15 +437,15 @@ function requestJson(command, rinfo = true, verbose = true) {
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
-	e1 = d.getElementById('fxlist');
-	e2 = d.getElementById('selectPalette');
+	const e1 = d.getElementById('fxlist');
+	const e2 = d.getElementById('selectPalette');
 
-	url = rinfo ? '/json/si': (command ? '/json/state':'/json');
+	let url = rinfo ? '/json/si': (command ? '/json/state':'/json');
 	if (loc) {
 		url = `http://${locip}${url}`;
 	}
 	
-	type = command ? 'post':'get';
+	const type = command ? 'post':'get';
 	if (command)
 	{
 		command.v = verbose;
@@ -479,16 +477,16 @@ function requestJson(command, rinfo = true, verbose = true) {
 		if (!rinfo) {
 		var x='',y='<option value="0">Default</option>';
 		json.effects.shift(); //remove solid
-		for (i in json.effects) json.effects[i] = {id: parseInt(i)+1, name:json.effects[i]};
+		for (let i in json.effects) json.effects[i] = {id: parseInt(i)+1, name:json.effects[i]};
 		json.effects.sort(compare);
-		for (i in json.effects) {
+		for (let i in json.effects) {
 		x += `<button class="btn${(i==0)?" first":""}" id="fxb${json.effects[i].id}" onclick="setX(${json.effects[i].id});">${json.effects[i].name}</button><br>`;
 		}
 
 		json.palettes.shift(); //remove default
-		for (i in json.palettes) json.palettes[i] = {"id": parseInt(i)+1, "name":json.palettes[i]};
+		for (let i in json.palettes) json.palettes[i] = {"id": parseInt(i)+1, "name":json.palettes[i]};
 		json.palettes.sort(compare);
-		for (i in json.palettes) {
+		for (let i in json.palettes) {
 		y += `<option value="${json.palettes[i].id}">${json.palettes[i].name}</option>`;
 		}
 		e1.innerHTML=x; e2.innerHTML=y;
@@ -527,7 +525,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 		
 		var selc=0; var ind=0;
 		populateSegments(s);
-		for (i in s.seg)
+		for (let i in s.seg)
 		{
 			if(s.seg[i].sel) {selc = ind; break;} ind++;
 		}
@@ -538,7 +536,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 			return;
 		}
 		var cd = d.getElementById('csl').children;
-		for (e = 2; e >= 0; e--)
+		for (let e = 2; e >= 0; e--)
 		{
 			cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
 			if (isRgbw) whites[e] = parseInt(i.col[e][3]);
@@ -648,7 +646,7 @@ function resetUtil() {
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
-	for(i=0; i<=lSeg; i++){
+	for(let i=0; i<=lSeg; i++){
 		obj.seg.push({"sel":(i==s)?true:false});
 	}
 	requestJson(obj);
@@ -755,7 +753,7 @@ function togglePS() {
 	ps = !ps;
 	
 	var btns = document.getElementsByClassName("psts");
-	for (i = 0; i < btns.length; i++) {
+	for (let i = 0; i < btns.length; i++) {
 		if (ps) {
 			btns[i].className += " saving";
 		} else {
@@ -783,7 +781,7 @@ function setPreset(i) {
 function selectSlot(b) {
 	csel = b;
 	var cd = d.getElementById('csl').children;
-	for (i = 0; i < cd.length; i++) {
+	for (let i = 0; i < cd.length; i++) {
 		cd[i].style.border="2px solid white";
 		cd[i].style.margin="5px";
 		cd[i].style.width="42px";
@@ -916,8 +914,8 @@ function rSegs()
 	cnfrS = false;
 	bt.style.color = "#fff";
 	bt.innerHTML = "Reset segments";
-	var obj = {"seg":[{"start":0,"stop":ledCount,"sel":true}]};
-	for(i=1; i<=lSeg; i++){
+	let obj = {"seg":[{"start":0,"stop":ledCount,"sel":true}]};
+	for(let i=1; i<=lSeg; i++){
 		obj.seg.push({"stop":0});
 	}
 	requestJson(obj);
@@ -1040,6 +1038,7 @@ function mergeDeep(target, ...sources) {
 window.addEventListener('DOMContentLoaded', (event) => { 
     const document = event.target;
 
+	d = document;
 	cpick = new iro.ColorPicker("#picker", { 
 		width: 260, 
 		wheelLightness: false 
@@ -1065,57 +1064,57 @@ window.addEventListener('DOMContentLoaded', (event) => {
     _C.addEventListener('touchend', move, false);
 });
 
-
-window.applyCfg = applyCfg;
-window.cTheme = cTheme;
-window.clearErrorToast = clearErrorToast;
+// function commented out below are not used on event handlers in the html
+//window.applyCfg = applyCfg;
+//window.cTheme = cTheme;
+//window.clearErrorToast = clearErrorToast;
 window.cnfReset = clearErrorToast;
-window.compare = compare;
-window.delSeg = delSeg;
-window.displayRover = displayRover;
-window.drag = drag;
-window.expand = expand;
+//window.compare = compare;
+//window.delSeg = delSeg;
+//window.displayRover = displayRover;
+//window.drag = drag;
+//window.expand = expand;
 window.fromHex = fromHex;
 window.fromRgb = fromRgb;
-window.getRuntimeStr = getRuntimeStr;
-window.handleVisibilityChange = handleVisibilityChange;
+//window.getRuntimeStr = getRuntimeStr;
+//window.handleVisibilityChange = handleVisibilityChange;
 window.hexEnter = hexEnter;
-window.inforow = hexEnter;
-window.isObject = isObject;
-window.loadBgloadBg;
-window.lock = lock;
-window.makeSeg = makeSeg;
-window.mergeDeep = mergeDeep;
-window.move = move;
+//window.inforow = hexEnter;
+//window.isObject = isObject;
+//window.loadBgloadBg;
+//window.lock = lock;
+//window.makeSeg = makeSeg;
+//window.mergeDeep = mergeDeep;
+//window.move = move;
 window.onLoad = onLoad;
 window.openGH = openGH;
 window.openTab = openTab;
 window.pC = pC;
-window.populateInfo = populateInfo;
-window.populateSegments = populateSegments;
+//window.populateInfo = populateInfo;
+//window.populateSegments = populateSegments;
 window.rSegs = rSegs;
-window.requestJson = requestJson;
-window.resetUtil = resetUtil;
-window.sCol = sCol;
-window.selSeg = selSeg;
-window.selSegEx = selSegEx;
+//window.requestJson = requestJson;
+//window.resetUtil = resetUtil;
+//window.sCol = sCol;
+//window.selSeg = selSeg;
+//window.selSegEx = selSegEx;
 window.selectSlot = selectSlot;
 window.setBri = setBri;
 window.setColor = setColor;
 window.setIntensity = setIntensity;
 window.setLor = setLor;
-window.setMi = setMi;
+//window.setMi = setMi;
 window.setPalette = setPalette;
 window.setPreset = setPreset;
-window.setRev = setRev;
-window.setSeg = setSeg;
-window.setSegBri = setSegBri;
-window.setSegPwr = setSegPwr;
+//window.setRev = setRev;
+//window.setSeg = setSeg;
+//window.setSegBri = setSegBri;
+//window.setSegPwr = setSegPwr;
 window.setSpeed = setSpeed;
 window.setX = setX;
-window.showErrorToast = showErrorToast;
+//window.showErrorToast = showErrorToast;
 window.showToast = showToast;
-window.size = size;
+//window.size = size;
 window.tglHex = tglHex;
 window.tglLabels = tglLabels;
 window.tglTheme = tglTheme;
@@ -1127,11 +1126,11 @@ window.togglePS = togglePS;
 window.togglePcMode = togglePcMode;
 window.togglePower = togglePower;
 window.toggleSync = toggleSync;
-window.unfocusSliders = unfocusSliders;
-window.unify = unify;
-window.updateHex = updateHex;
-window.updateLen = updateLen;
-window.updateRgb = updateRgb;
-window.updateTablinks =updateTablinks;
+//window.unfocusSliders = unfocusSliders;
+//window.unify = unify;
+//window.updateHex = updateHex;
+//window.updateLen = updateLen;
+//window.updateRgb = updateRgb;
+//window.updateTablinks =updateTablinks;
 window.updateTrail = updateTrail;
-window.updateUI = updateUI;
+//window.updateUI = updateUI;
