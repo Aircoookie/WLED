@@ -182,7 +182,7 @@ function writeChunks(srcDir, specs, resultFile) {
   fs.writeFileSync(resultFile, src);
 }
 
-writeHtmlGzipped("wled00/data/index.htm", "wled00/html_ui.h");
+writeHtmlGzipped("wled00/data/dist/index.html", "wled00/html_ui.h");
 
 writeChunks(
   "wled00/data",
