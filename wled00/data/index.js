@@ -19,15 +19,13 @@ var pcMode = false, pcModeA = false, lastw = 0;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 var lastinfo = {};
+
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false}
 };
 
-var cpick = new iro.ColorPicker("#picker", {
-	width: 260,
-	wheelLightness: false
-});
+var cpick;
 
 function handleVisibilityChange() {
 	if (!document.hidden && new Date () - lastUpdate > 3000) {
@@ -939,7 +937,8 @@ function unfocusSliders() {
 }
 
 //sliding UI
-const _C = document.querySelector('.container'), N = 4;
+var _C;
+const N = 4;
 
 let iSlide = 0, x0 = null, y0 = null, scrollS = 0, locked = false, w;
 
