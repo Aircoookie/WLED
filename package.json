@@ -9,7 +9,8 @@
   },
   "scripts": {
     "build": "node tools/cdata.js",
-    "dev": "nodemon -e js,html,htm,css,png,jpg,gif,ico,js -w tools/ -w wled00/data/ -x node tools/cdata.js"
+    "dev": "nodemon --ext js,html,htm,css,png,jpg,gif,ico,js --watch tools/ --watch wled00/data/ --exec node tools/cdata.js",
+    "webpack": "webpack --config webpack.config.js"
   },
   "repository": {
     "type": "git",
@@ -22,10 +23,22 @@
   },
   "homepage": "https://github.com/Aircoookie/WLED#readme",
   "dependencies": {
+    "@jaames/iro": "^4.4.0",
+    "rangetouch": "^2.0.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.11.5",
+    "@babel/preset-env": "^7.11.5",
+    "babel-loader": "^8.1.0",
     "clean-css": "^4.2.3",
     "html-minifier": "^4.0.0",
+    "html-webpack-plugin": "^4.4.1",
+    "inline-source-webpack-plugin": "^1.4.1",
     "inliner": "^1.13.1",
     "nodemon": "^2.0.4",
+    "uglifyjs-webpack-plugin": "^2.2.0",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12",
     "zlib": "^1.0.5"
   }
 }
