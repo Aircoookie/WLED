@@ -33,7 +33,7 @@
 	--c-tb : rgba(34, 34, 34, var(--t-b));
 	--c-tba: rgba(102, 102, 102, var(--t-b));
 	--c-tbh: rgba(51, 51, 51, var(--t-b));
-	//following are internal
+	/*following are internal*/
 	--th: 70px;
 	--tp: 70px;
 	--bh: 63px;
@@ -202,7 +202,7 @@ button {
 .tab {
 	background-color: transparent;
 	color: var(--c-d);
-	//filter: drop-shadow(0px 0px 0px #111);
+	/*filter: drop-shadow(0px 0px 0px #111);*/
 }
 
 .bot {
@@ -1094,7 +1094,7 @@ var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 var lastinfo = {};
 var cfg = {
-	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.6}, color:{bg:""}},
+	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false}
 };
 
@@ -1327,7 +1327,7 @@ function populateInfo(i)
 	}
 	var vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.10.")) vcn = "Namigai";
-	if (i.ver.startsWith("0.11.")) vcn = "Akatsuki";
+	if (i.ver.startsWith("0.10.2")) vcn = "Fumikiri";
 	if (i.cn) vcn = i.cn;
 	
 	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
