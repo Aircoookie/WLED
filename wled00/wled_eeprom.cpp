@@ -304,6 +304,7 @@ void saveSettingsToEEPROM()
   EEPROM.write(EEP_AUDIO+10, (strip.matrixHeight >> 8) & 0xFF);
   EEPROM.write(EEP_AUDIO+11, strip.matrixSerpentine);
 #endif
+  EEPROM.write(EEP_AUDIO+12, sampleGain);
 
 // RESERVE 3175-3299 for FFT Preset saves and future expansion
 // 3175:      FFT1
@@ -635,6 +636,8 @@ void loadSettingsFromEEPROM(bool first)
       strip.matrixHeight = EEPROM.read(EEP_AUDIO+9) + ((EEPROM.read(EEP_AUDIO+10) << 10) & 0xFF00); if (strip.matrixHeight == 0) strip.matrixHeight = ledCount;
       strip.matrixSerpentine = EEPROM.read(EEP_AUDIO+11); // > 0;
     #endif
+
+    sampleGain = EEPROM.read(EEP_AUDIO+12);
   }
 
 // FFT Slider Data Preset Protocol 5 bytes, 25 "slots"

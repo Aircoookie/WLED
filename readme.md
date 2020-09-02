@@ -40,7 +40,7 @@ Join Discord to discuss AirCookie's WLED:
 
 
 
-And now onto regular WLED . . . 
+And now onto regular WLED . . .
 
 
 

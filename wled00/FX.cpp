@@ -2147,7 +2147,7 @@ uint16_t WS2812FX::mode_railway()
 
 //4 bytes
 typedef struct Ripple {
-  uint8_t state;
+  int8_t state;
   uint8_t color;
   uint16_t pos;
 } ripple;
@@ -4011,7 +4011,7 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                                // Pud
   fade_out(fadeVal);
 
   if (samplePeak == 1 ) {
-    size = sample * SEGMENT.intensity /256 /8 + 1;                        // Determine size of the flash based on the volume.
+    size = sampleAgc * SEGMENT.intensity /256 /4 + 1;                        // Determine size of the flash based on the volume.
     if (pos+size>= SEGLEN) size=SEGLEN-pos;
     samplePeak = 0;
   }
@@ -4030,43 +4030,72 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                                // Pud
 /////////////////////////////////
 
 uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. By Andrew Tuline.
+
+  #ifdef ESP32
+  extern double FFT_MajorPeak;
+//  Serial.println(FFT_MajorPeak);
+  Serial.println(log10(FFT_MajorPeak)*128-140);
+//  Serial.println(pow(FFT_MajorPeak, .3));
+  #endif
+  
                                                               // This currently has no controls.
   #define maxsteps 16                                         // Case statement wouldn't allow a variable.
 
-  static uint8_t colour;                                      // Ripple colour is randomized.
-  static uint16_t centre;                                     // Center of the current ripple.
-  static int8_t steps = -1;                                   // -1 is the initializing step.
+  uint16_t maxRipples = 32;
+  uint16_t dataSize = sizeof(ripple) * maxRipples;
+
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+ 
+  Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
+
+//  static uint8_t colour;                                      // Ripple colour is randomized.
+//  static uint16_t centre;                                     // Center of the current ripple.
+//  static int8_t steps = -1;                                   // -1 is the initializing step.
   static uint8_t ripFade = 255;                               // Starting brightness.
 
   fade_out(240);                                              // Lower frame rate means less effective fading than FastLED
   fade_out(240);
 
-   if (samplePeak == 1) {samplePeak = 0; steps = -1;}
 
-  switch (steps) {
+  for (uint16_t i = 0; i < maxRipples; i++) {
 
-    case -1:                                                  // Initialize ripple variables.
-      centre = random16(SEGLEN);
-      colour = random8();
-      steps = 0;
-      break;
+    if (samplePeak) {samplePeak = 0; ripples[i].state = -1;}
 
-    case 0:
-      setPixelColor(centre, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade));
-      steps ++;
-      break;
+    switch (ripples[i].state) {
 
-    case maxsteps:                                            // At the end of the ripples.
-//        steps = -1;
-      break;
+       case -2:     // Inactive mode
+        break;
+        
+       case -1:                                                  // Initialize ripple variables.
+        ripples[i].pos = random16(SEGLEN);
 
-    default:                                                  // Middle of the ripples.
+        #ifdef ESP32
+          ripples[i].color = (int)(log10(FFT_MajorPeak)*128);
+        #else
+          ripples[i].color = random8();
+        #endif
+        
+        ripples[i].state = 0;
+        break;
+  
+      case 0:
+        setPixelColor(ripples[i].pos, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade));
+        ripples[i].state++;
+        break;
+  
+      case maxsteps:                                            // At the end of the ripples. -2 is an inactive mode.
+          ripples[i].state = -2;
+        break;
+  
+      default:                                                  // Middle of the ripples.
+  
+        setPixelColor((ripples[i].pos + ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade/ripples[i].state*2));
+        setPixelColor((ripples[i].pos - ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade/ripples[i].state*2));
+        ripples[i].state++;                                               // Next step.
+        break;
+    } // switch step
+   } // for i
 
-      setPixelColor((centre + steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
-      setPixelColor((centre - steps + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(colour, false, PALETTE_SOLID_WRAP, 0), ripFade/steps*2));
-      steps ++;                                               // Next step.
-      break;
-  } // switch step
 
   return FRAMETIME;
 } // mode_ripplepeak()
@@ -4076,7 +4105,7 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
 //     BEGIN FFT ROUTINES    //
 ///////////////////////////////
 
-#ifndef ESP8266
+#ifdef ESP32
 extern double FFT_MajorPeak;
 extern double FFT_Magnitude;
 extern double fftBin[];                     // raw FFT data
@@ -4106,7 +4135,7 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
   if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
     prevMillis = curMillis;
 
-#ifndef ESP8266
+#ifdef ESP32
     uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 #else
     uint8_t pixCol = sample * SEGMENT.intensity / 128;
@@ -4117,7 +4146,7 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
       setPixelColor(SEGLEN-1,92,92,92);
     } else {
 
-#ifndef ESP8266
+#ifdef ESP32
   setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
 
 #else
@@ -4142,7 +4171,7 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 
 uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. By Andrew Tuline.
 
-#ifndef ESP8266
+#ifdef ESP32
 
   #define FIRSTBIN 3                          // The first 3 bins are garbage.
   #define LASTBIN 255                         // Don't use the highest bins, as they're (almost) a mirror of the first 256.
@@ -4183,7 +4212,7 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
 
 uint16_t WS2812FX::fft_test() {
 
-#ifndef ESP8266
+#ifdef ESP32
 /*  double temp[16];
   memcpy(temp, fftResult, sizeof(fftResult[0])*16);
   for(int i = 0; i < 16; i++) {
@@ -4219,7 +4248,7 @@ uint16_t WS2812FX::fft_test() {
 
 uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Pleschung.
 
-#ifndef ESP8266
+#ifdef ESP32
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
 
@@ -4287,7 +4316,7 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
 
 uint16_t WS2812FX::mode_freqpixel(void) {                                 // Freqpixel. By Andrew Tuline.
 
-#ifndef ESP8266
+#ifdef ESP32
 
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;  // Get to 255 as quick as you can.
   fade_out(fadeRate);
@@ -4327,7 +4356,7 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 // As a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 
-  #ifndef ESP8266
+  #ifdef ESP32
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
 
@@ -4398,7 +4427,7 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 //////////////////////
 
 uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove    By: Andrew Tuline
-#ifndef ESP8266
+#ifdef ESP32
 
   extern double fftResult[];
 
@@ -4427,7 +4456,7 @@ uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove    By: Andrew Tuline
 
 uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise across SEGLEN. By Andrew Tuline.
 
-#ifndef ESP8266
+#ifdef ESP32
 
   static CRGBPalette16 thisPalette;
   static uint16_t dist;
@@ -4473,7 +4502,7 @@ uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat
 //
 uint16_t WS2812FX::mode_spectral(void) {      // Spectral. By Andreas Pleschutznig.
 
-#ifndef ESP8266
+#ifdef ESP32
   double maxVal = 0;
   CHSV c;
   CRGB color;
@@ -4528,7 +4557,7 @@ uint16_t WS2812FX::mode_spectral(void) {      // Spectral. By Andreas Pleschutzn
 
 
 
-#ifndef ESP8266
+#ifdef ESP32
 /////////////////////////////////
 //     START of 2D ROUTINES    //
 /////////////////////////////////
@@ -4669,7 +4698,7 @@ void WS2812FX::blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blu
 //
 uint16_t WS2812FX::XY( int x, int y) {
 
-#ifndef ESP8266
+#ifdef ESP32
 
 uint16_t i;
 
@@ -4703,7 +4732,7 @@ uint16_t i;
 
 uint16_t WS2812FX::mode_2Dplasma(void) {      // By Andreas Pleschutznig. A work in progress.
 
-#ifndef ESP8266
+#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
 
@@ -4804,7 +4833,7 @@ uint16_t WS2812FX::mode_2Dplasma(void) {      // By Andreas Pleschutznig. A work
 
 uint16_t WS2812FX::mode_2Dfirenoise(void) {   // firenoise2d. By Andrew Tuline. Yet another short routine.
 
-#ifndef ESP8266
+#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}                 // No, we're not going to overrun the segment.
 
@@ -4851,7 +4880,7 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {   // firenoise2d. By Andrew Tuline. 
 uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://gist.github.com/kriegsman/368b316c55221134b160
                                                 // Modifed by: Andrew Tuline
                                                 // fft3 affects the blur amount.
-#ifndef ESP8266
+#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
@@ -4894,7 +4923,7 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://g
 /////////////////////////
 
 uint16_t WS2812FX::mode_2Dfire2012(void) {    // Fire2012 by Mark Kriegsman. Converted to WLED by Andrew Tuline.
-#ifndef ESP8266
+#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
@@ -4957,7 +4986,7 @@ uint16_t WS2812FX::mode_2Dfire2012(void) {    // Fire2012 by Mark Kriegsman. Con
 /////////////////////
 
 uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy. WLED version by Andrew Tuline.
-#ifndef ESP8266
+#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
@@ -4997,7 +5026,7 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 ///////////////////////
 
 uint16_t WS2812FX::mode_2Dmatrix(void) {      // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline.
-#ifndef ESP8266
+#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
@@ -5076,7 +5105,7 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {      // Matrix2D. By Jeremy Williams. A
 /////////////////////////
 
 uint16_t WS2812FX::mode_2Dmeatballs(void) {   // Metaballs by Stefan Petrick. Cannot have one of the dimensions be 2 or less. Adapted by Andrew Tuline.
-#ifndef ESP8266
+#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 

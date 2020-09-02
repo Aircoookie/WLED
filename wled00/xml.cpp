@@ -41,7 +41,9 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappendi(nightlightTargetBri);
   oappend("</nt><sq>");
   oappendi(soundSquelch);
-  oappend("</sq><fx>");
+  oappend("</sq><gn>");
+  oappendi(sampleGain);
+  oappend("</gn><fx>");
   oappendi(effectCurrent);
   oappend("</fx><sx>");
   oappendi(effectSpeed);
@@ -195,7 +197,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >7) return;
+  if (subPage <1 || subPage >8) return;
 
   if (subPage == 1) {
     sappends('s',"CS",clientSSID);
@@ -287,7 +289,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',"TB",nightlightTargetBri);
     sappend('v',"TL",nightlightDelayMinsDefault);
     sappend('v',"TW",nightlightMode);
-    sappend('v',"SQ",soundSquelch);
     sappend('i',"PB",strip.paletteBlend);
     sappend('c',"RV",strip.reverseMode);
     sappend('c',"SL",skipFirstLed);
@@ -488,5 +489,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',"CH15",DMXFixtureMap[14]);
     }
   #endif
+
+  if (subPage == 8)
+  {
+    sappend('v',"SQ",soundSquelch);
+    sappend('v',"GN",sampleGain);
+    }
   oappend("}</script>");
 }

@@ -113,7 +113,14 @@
       </div>
 		<i>Recommended power supply for brightest white:</i><br>
 		<b><span id="psu">?</span></b><br>
-    <span id="psu2"><br></span>
+	<span id="psu2"><br></span>
+	<h3>2D Matrix</h3>
+		<input name="LCW" type="number" min="1" max="1500" oninput="UI()"> x
+		<input name="LCH" type="number" min="1" max="1500" oninput="UI()"><br>
+		<div id="2dwarning" style="color: orange; display: inline;">
+			&#9888; width x height should match LED count!<br>
+		</div>
+		Serpentine: <input type="checkbox" name="LCWHS" checked> (how leds are layed out)<br>
     <br>
     Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
     <div id="abl">
@@ -183,15 +190,6 @@
 			<option value="2">Fade Color</option>
 			<option value="3">Sunrise</option>
 		</select>
-		<h3>Sound</h3>
-		Squelch: <input name="SQ" type="number" min="1" max="255" required><br>
-		<h3>2D Matrix</h3>
-		<input name="LCW" type="number" min="1" max="255" required oninput="UI()"> x
-		<input name="LCH" type="number" min="1" max="255" required oninput="UI()"><br>
-		<div id="2dwarning" style="color: orange; display: inline;">
-			&#9888; width x height should match LED count!<br>
-		</div>
-		Serpentine: <input type="checkbox" name="LCWHS" checked>(how leds connected)<br>
 		<h3>Advanced</h3>
 		Palette blending:
 		<select name="PB">
