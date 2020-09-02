@@ -118,8 +118,10 @@
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
  #elif defined(USE_TM1814)
+  #define PIXELMETHOD NeoTm1814Method
  #elif defined(USE_P9813)
   #define PIXELMETHOD P9813Method
+ #elif LEDPIN == 2
   #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
  #elif LEDPIN == 3
   #define PIXELMETHOD NeoEsp8266Dma800KbpsMethod
