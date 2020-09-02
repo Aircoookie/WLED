@@ -1,5 +1,5 @@
-import iro from '@jaames/iro'; 
-import RangeTouch from "rangetouch"; 
+import iro from '@jaames/iro';
+import RangeTouch from "rangetouch";
 
 var loc = false, locip;
 var ps = false, noNewSegs = false;
@@ -24,10 +24,22 @@ var cfg = {
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false}
 };
 
+/** color picker */
 var cpick;
 
+/** shortcut for document.getElementById */
+function getElementById(id) {
+	return d.getElementById(id);
+}
+
+/** shortcut for document.getElementsByClassName */
+function getElementsByClassName(name) {
+	return d.getElementsByClassName(name);
+}
+
+
 function handleVisibilityChange() {
-	if (!document.hidden && new Date () - lastUpdate > 3000) {
+	if (!d.hidden && new Date () - lastUpdate > 3000) {
 		requestJson(null);
 	}
 }
@@ -42,13 +54,13 @@ function applyCfg()
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
 	var ccfg = cfg.comp.colors;
-	d.getElementById('hexw').style.display = ccfg.hex ? "block":"none";
-	d.getElementById('picker').style.display = ccfg.picker ? "block":"none";
-	d.getElementById('rgbwrap').style.display = ccfg.rgb ? "block":"none";
-	d.getElementById('qcs-w').style.display = ccfg.quick ? "block":"none";
+	getElementById('hexw').style.display = ccfg.hex ? "block":"none";
+	getElementById('picker').style.display = ccfg.picker ? "block":"none";
+	getElementById('rgbwrap').style.display = ccfg.rgb ? "block":"none";
+	getElementById('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels;
 	var e = d.querySelectorAll('.tab-label');
-	for(var i=0; i<e.length; i++)
+	for(let i=0; i<e.length; i++)
 		e[i].style.display = l ? "block":"none";
 	e = d.querySelector('.hd');
 	e.style.display = l ? "block":"none";
@@ -80,6 +92,7 @@ function tglLabels()
 }
 
 function cTheme(light) {
+	let imgwStyle = getElementById('imgw').style;
 	if (light) {
 	sCol('--c-1','#eee');
 	sCol('--c-f','#000');
@@ -99,7 +112,7 @@ function cTheme(light) {
 	sCol('--c-tb','rgba(204, 204, 204, var(--t-b))');
 	sCol('--c-tba','rgba(170, 170, 170, var(--t-b))');
 	sCol('--c-tbh','rgba(204, 204, 204, var(--t-b))');
-	d.getElementById('imgw').style.filter = "invert(0.8)";
+	imgwStyle.filter = "invert(0.8)";
 	} else {
 	sCol('--c-1','#111');
 	sCol('--c-f','#fff');
@@ -119,17 +132,17 @@ function cTheme(light) {
 	sCol('--c-tb','rgba(34, 34, 34, var(--t-b))');
 	sCol('--c-tba','rgba(102, 102, 102, var(--t-b))');
 	sCol('--c-tbh','rgba(51, 51, 51, var(--t-b))');
-	d.getElementById('imgw').style.filter = "unset";
+	imgwStyle.filter = "unset";
 	}
 }
 
 function loadBg(iUrl) {
-	let bg = document.getElementById('bg');
-	let img = document.createElement("img");
+	let bg = getElementById('bg');
+	let img = d.createElement("img");
 	img.src = iUrl;
 	img.addEventListener('load', (event) => {
-		var a = parseFloat(cfg.theme.alpha.bg);
-		d.getElementById('staytop2').style.background = "transparent";
+		let a = parseFloat(cfg.theme.alpha.bg);
+		getElementById('staytop2').style.background = "transparent";
 		if (isNaN(a)) a = 0.6;
 		bg.style.opacity = a;
 		bg.style.backgroundImage = `url(${iUrl})`;
@@ -147,37 +160,35 @@ function onLoad() {
 		localStorage.setItem('locIp', locip);
 	}
 	}
-	var sett = localStorage.getItem('wledUiCfg');
+	let sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
-	
+
 	applyCfg();
 	loadBg(cfg.theme.bg.url);
-	
-	var cd = d.getElementById('csl').children;
+
+	let cd = getElementById('csl').children;
 	for (let i = 0; i < cd.length; i++) {
 		cd[i].style.backgroundColor = "rgb(0, 0, 0)";
 	}
 	selectSlot(0);
 	updateTablinks(0);
 	resetUtil();
-	cpick.on("input:end", function() {
-		setColor(1);
-	});
-	setTimeout(function(){requestJson(null, false)}, 25);
+	cpick.on("input:end", () => { setColor(1); });
+	setTimeout(() => {requestJson(null, false)}, 25);
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
-	d.getElementById("cv").style.opacity=0;
+	getElementById("cv").style.opacity=0;
 	if (localStorage.getItem('pcm') == "true") togglePcMode(true);
 }
 
 function updateTablinks(tabI)
 {
-	const tablinks = d.getElementsByClassName("tablinks");
+	let tablinks = getElementsByClassName("tablinks");
 	for (let i = 0; i < tablinks.length; i++) {
-		tablinks[i].className = tablinks[i].className.replace(" active", "");
+		tablinks[i].classList.remove("active");
 	}
 	if (pcMode) return;
-	tablinks[tabI].className += " active";
+	tablinks[tabI].classList.add("active");
 }
 
 function openTab(tabI, force = false) {
@@ -190,36 +201,36 @@ function openTab(tabI, force = false) {
 
 var timeout;
 function showToast(text, error = false) {
-	if (error) d.getElementById('connind').style.backgroundColor = "#831";
-	var x = d.getElementById("toast");
+	if (error) getElementById('connind').style.backgroundColor = "#831";
+	let x = getElementById("toast");
 	x.innerHTML = text;
 	x.className = error ? "error":"show";
 	clearTimeout(timeout);
 	x.style.animation = 'none';
 	x.offsetHeight;
-	x.style.animation = null; 
-	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+	x.style.animation = null;
+	timeout = setTimeout(() => { x.classList.remove("show"); }, 2900);
 }
 
 function showErrorToast() {
 	showToast('Connection to light failed!', true);
 }
 function clearErrorToast() {
-	d.getElementById("toast").className = d.getElementById("toast").className.replace("error", "");
+	getElementById("toast").classList.remove("error");
 }
 
 function getRuntimeStr(rt)
 {
-	var t = parseInt(rt);
-	var days = Math.floor(t/86400);
-	var hrs = Math.floor((t - days*86400)/3600);
-	var mins = Math.floor((t - days*86400 - hrs*3600)/60);
-	var str = days ? (days + " " + (days == 1 ? "day" : "days") + ", ") : "";
+	let t = parseInt(rt);
+	let days = Math.floor(t/86400);
+	let hrs = Math.floor((t - days*86400)/3600);
+	let mins = Math.floor((t - days*86400 - hrs*3600)/60);
+	let str = days ? (days + " " + (days == 1 ? "day" : "days") + ", ") : "";
 	str += (hrs || days) ? (hrs + " " + (hrs == 1 ? "hour" : "hours")) : "";
 	if (!days && hrs) str += ", ";
 	if (t > 59 && !days) str += mins + " min";
 	if (t < 3600 && t > 59) str += ", ";
-	if (t < 3600) str += (t - mins*60) + " sec"; 
+	if (t < 3600) str += (t - mins*60) + " sec";
 	return str;
 }
 
@@ -230,28 +241,28 @@ function inforow(key, val, unit = "")
 
 function populateInfo(i)
 {
-	var cn="";
-	var heap = i.freeheap/1000;
+	let cn="";
+	let heap = i.freeheap/1000;
 	heap = heap.toFixed(1);
-	var pwr = i.leds.pwr;
-	var pwru = "Not calculated";
+	let pwr = i.leds.pwr;
+	let pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
-	var urows="";
+	let urows="";
 	for (let k in i.u)
 	{
-		var val = i.u[k];
+		let val = i.u[k];
 		if (val[1]) {
 			urows += inforow(k,val[0],val[1]);
 		} else {
 			urows += inforow(k,val);
 		}
 	}
-	var vcn = "Kuuhaku";
+	let vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.10.")) vcn = "Namigai";
 	if (i.ver.startsWith("0.10.2")) vcn = "Fumikiri";
 	if (i.cn) vcn = i.cn;
-	
+
 	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
 	${urows}
 	${inforow("Build",i.vid)}
@@ -262,24 +273,23 @@ function populateInfo(i)
 	${inforow("MAC address",i.mac)}
 	${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
 	</table>`;
-	d.getElementById('kv').innerHTML = cn;
+	getElementById('kv').innerHTML = cn;
 }
 
-function populateSegments(s)
-{
-	var cn = "";
+function populateSegments(s) {
+	let cn = "";
 	segCount = 0, lowestUnused = 0; lSeg = 0;
- 
+
 	for (let y in s.seg)
 	{
 		segCount++;
-		
-		var inst=s.seg[y];
-		var i = parseInt(inst.id);
+
+		let inst=s.seg[y];
+		let i = parseInt(inst.id);
 		powered[i] = inst.on;
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
-		
+
 		cn += `<div class="seg">
 			<label class="check schkl">
 				&nbsp;
@@ -333,9 +343,9 @@ function populateSegments(s)
 		</div><br>`;
 	}
 
-	d.getElementById('segcont').innerHTML = cn;
+	getElementById('segcont').innerHTML = cn;
 	if (lowestUnused >= maxSeg) {
-		d.getElementById('segutil').innerHTML = '<span class="h">Maximum number of segments reached.</span>';
+		getElementById('segutil').innerHTML = '<span class="h">Maximum number of segments reached.</span>';
 		noNewSegs = true;
 	} else if (noNewSegs) {
 		resetUtil();
@@ -343,10 +353,10 @@ function populateSegments(s)
 	}
 	for (let i = 0; i <= lSeg; i++) {
 	updateLen(i);
-	updateTrail(d.getElementById(`seg${i}bri`));
-	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
+	updateTrail(getElementById(`seg${i}bri`));
+	if (segCount < 2) getElementById(`segd${lSeg}`).style.display = "none";
 	}
-	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
+	getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
 function updateTrail(e, slidercol)
@@ -367,9 +377,10 @@ function updateTrail(e, slidercol)
 
 function updateLen(s)
 {
-	if (!d.getElementById(`seg${s}s`)) return;
-	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
+	let e = getElementById(`seg${s}s`);
+	if (!e) return;
+	var start = parseInt(e.value);
+	var stop	= parseInt(getElementById(`seg${s}e`).value);
 	var len = stop - start;
 	var out = "(delete)"
 	if (len > 1) {
@@ -377,40 +388,41 @@ function updateLen(s)
 	} else if (len == 1) {
 		out = "1 LED"
 	}
-	
-	if (d.getElementById(`seg${s}grp`) != null)
+
+	e = getElementById(`seg${s}grp`);
+	if (e)
 	{
-		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
-		var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+		var grp = parseInt(e.value);
+		var spc = parseInt(getElementById(`seg${s}spc`).value);
 		if (grp == 0) grp = 1;
 		var virt = Math.ceil(len/(grp + spc));
 		if (!isNaN(virt) && (grp > 1 || spc > 0)) out += ` (${virt} virtual)`;
 	}
-	
-	d.getElementById(`seg${s}len`).innerHTML = out;
+
+	getElementById(`seg${s}len`).innerHTML = out;
 }
 
 function updateUI()
 {
-	d.getElementById('buttonPower').className = (isOn) ? "active":"";
-	d.getElementById('buttonNl').className = (nlA) ? "active":"";
-	d.getElementById('buttonSync').className = (syncSend) ? "active":"";
+	getElementById('buttonPower').className = (isOn) ? "active":"";
+	getElementById('buttonNl').className = (nlA) ? "active":"";
+	getElementById('buttonSync').className = (syncSend) ? "active":"";
 
-	d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-6)";
-	updateTrail(d.getElementById('sliderBri'));
-	updateTrail(d.getElementById('sliderSpeed'));
-	updateTrail(d.getElementById('sliderIntensity'));
-	updateTrail(d.getElementById('sliderW'));
-	if (isRgbw) d.getElementById('wwrap').style.display = "block";
-	
-	var btns = document.getElementsByClassName("psts");
+	getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-6)";
+	updateTrail(getElementById('sliderBri'));
+	updateTrail(getElementById('sliderSpeed'));
+	updateTrail(getElementById('sliderIntensity'));
+	updateTrail(getElementById('sliderW'));
+	if (isRgbw) getElementById('wwrap').style.display = "block";
+
+	var btns = getElementsByClassName("psts");
 	for (let i = 0; i < btns.length; i++) {
-		btns[i].className = btns[i].className.replace(" active", "");
-		if ((savedPresets >> i) & 0x01) btns[i].className += " stored";
+		btns[i].classList.remove("active");
+		if ((savedPresets >> i) & 0x01) btns[i].classList.add("stored");
 	}
-	if (currentPreset > 0 && currentPreset <= btns.length) btns[currentPreset -1].className += " active";
+	if (currentPreset > 0 && currentPreset <= btns.length) btns[currentPreset -1].classList.add("active");
 
-	const spal = d.getElementById("selectPalette");
+	let spal = getElementById("selectPalette");
 	spal.style.backgroundColor = (spal.selectedIndex > 0) ? "var(--c-6)":"var(--c-3)";
 	updateHex();
 	updateRgb();
@@ -418,10 +430,10 @@ function updateUI()
 
 function displayRover(i,s)
 {
-	d.getElementById('rover').style.transform = (i.live && s.lor == 0) ? "translateY(0px)":"translateY(100%)";
+	getElementById('rover').style.transform = (i.live && s.lor == 0) ? "translateY(0px)":"translateY(100%)";
 	var sour = i.lip ? i.lip:""; if (sour.length > 2) sour = " from " + sour;
-	d.getElementById('lv').innerHTML = `WLED is receiving live ${i.lm} data${sour}`;
-	d.getElementById('roverstar').style.display = (i.live && s.lor) ? "block":"none";
+	getElementById('lv').innerHTML = `WLED is receiving live ${i.lm} data${sour}`;
+	getElementById('roverstar').style.display = (i.live && s.lor) ? "block":"none";
 }
 
 function compare(a, b) {
@@ -433,19 +445,19 @@ function compare(a, b) {
 var jsonTimeout;
 var reqC = 0;
 function requestJson(command, rinfo = true, verbose = true) {
-	d.getElementById('connind').style.backgroundColor = "#a90";
+	getElementById('connind').style.backgroundColor = "#a90";
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
-	const e1 = d.getElementById('fxlist');
-	const e2 = d.getElementById('selectPalette');
+	let e1 = getElementById('fxlist');
+	let e2 = getElementById('selectPalette');
 
 	let url = rinfo ? '/json/si': (command ? '/json/state':'/json');
 	if (loc) {
 		url = `http://${locip}${url}`;
 	}
-	
-	const type = command ? 'post':'get';
+
+	let type = command ? 'post':'get';
 	if (command)
 	{
 		command.v = verbose;
@@ -469,7 +481,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
 		clearErrorToast();
-		d.getElementById('connind').style.backgroundColor = "#070";
+		getElementById('connind').style.backgroundColor = "#070";
 		if (!json) showToast('Empty response', true);
 		if (json.success) return;
 		var s = json;
@@ -491,10 +503,10 @@ function requestJson(command, rinfo = true, verbose = true) {
 		}
 		e1.innerHTML=x; e2.innerHTML=y;
 		}
-		
+
 			var info = json.info;
 			var name = info.name;
-			d.getElementById('namelabel').innerHTML = name;
+			getElementById('namelabel').innerHTML = name;
 			if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
 			if (info.live) name = "(Live) " + name;
 		if (loc) name = "(L) " + name;
@@ -509,7 +521,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 			displayRover(info, s);
 		}
 		isOn = s.on;
-		d.getElementById('sliderBri').value= s.bri;
+		getElementById('sliderBri').value= s.bri;
 		nlA = s.nl.on;
 		nlDur = s.nl.dur;
 	nlTar = s.nl.tbri;
@@ -517,12 +529,12 @@ function requestJson(command, rinfo = true, verbose = true) {
 		syncSend = s.udpn.send;
 		savedPresets = s.pss;
 		currentPreset = s.ps;
-		d.getElementById('cyToggle').checked = (s.pl < 0) ? false : true;
-		d.getElementById('cycs').value = s.ccnf.min;
-		d.getElementById('cyce').value = s.ccnf.max;
-		d.getElementById('cyct').value = s.ccnf.time /10;
-		d.getElementById('cyctt').value = s.transition /10;
-		
+		getElementById('cyToggle').checked = (s.pl < 0) ? false : true;
+		getElementById('cycs').value = s.ccnf.min;
+		getElementById('cyce').value = s.ccnf.max;
+		getElementById('cyct').value = s.ccnf.time /10;
+		getElementById('cyctt').value = s.transition /10;
+
 		var selc=0; var ind=0;
 		populateSegments(s);
 		for (let i in s.seg)
@@ -535,22 +547,22 @@ function requestJson(command, rinfo = true, verbose = true) {
 			updateUI();
 			return;
 		}
-		var cd = d.getElementById('csl').children;
+		var cd = getElementById('csl').children;
 		for (let e = 2; e >= 0; e--)
 		{
 			cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
 			if (isRgbw) whites[e] = parseInt(i.col[e][3]);
 			selectSlot(csel);
 		}
-		d.getElementById('sliderSpeed').value = whites[csel];
+		getElementById('sliderSpeed').value = whites[csel];
 
-		d.getElementById('sliderSpeed').value = i.sx;
-		d.getElementById('sliderIntensity').value = i.ix;
+		getElementById('sliderSpeed').value = i.sx;
+		getElementById('sliderIntensity').value = i.ix;
 
-		d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-3)";
+		getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-3)";
 		selectedFx = i.fx;
 		e2.value = i.pal;
-		if (!command) d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
+		if (!command) getElementById('Effects').scrollTop = getElementById('fxb' + selectedFx).offsetTop - getElementById('Effects').clientHeight/1.8;
 
 		if (s.error) showToast('WLED error ' + s.error, true);
 		updateUI();
@@ -564,7 +576,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 function togglePower() {
 	isOn = !isOn;
 	var obj = {"on": isOn};
-	obj.transition = parseInt(d.getElementById('cyctt').value*10);
+	obj.transition = parseInt(getElementById('cyctt').value*10);
 	requestJson(obj);
 }
 
@@ -595,24 +607,24 @@ function toggleSync() {
 
 function toggleLiveview() {
 	isLv = !isLv;
-	d.getElementById('liveview').style.display = (isLv) ? "block":"none";
+	getElementById('liveview').style.display = (isLv) ? "block":"none";
 	var url = loc ? `http://${locip}/liveview`:"/liveview";
-	d.getElementById('liveview').src = (isLv) ? url:"about:blank";
-	d.getElementById('buttonSr').className = (isLv) ? "active":"";
+	getElementById('liveview').src = (isLv) ? url:"about:blank";
+	getElementById('buttonSr').className = (isLv) ? "active":"";
 	size();
 }
 
 function toggleInfo() {
 	isInfo = !isInfo;
 	if (isInfo) populateInfo(lastinfo);
-	d.getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
-	d.getElementById('buttonI').className = (isInfo) ? "active":"";
+	getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
+	getElementById('buttonI').className = (isInfo) ? "active":"";
 }
 
 function makeSeg() {
 	var ns = 0;
 	if (lowestUnused > 0) {
-		var pend = d.getElementById(`seg${lowestUnused -1}e`).value;
+		var pend = getElementById(`seg${lowestUnused -1}e`).value;
 		if (pend < ledCount) ns = pend;
 	}
 	var cn = `<div class="seg">
@@ -635,12 +647,12 @@ function makeSeg() {
 				<i class="icons e-icon cnf half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
 			</div>
 		</div>`;
-	d.getElementById('segutil').innerHTML = cn;
+	getElementById('segutil').innerHTML = cn;
 }
 
 function resetUtil() {
 	var cn = `<button class="btn btn-s btn-i rect" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>`;
-	d.getElementById('segutil').innerHTML = cn;
+	getElementById('segutil').innerHTML = cn;
 }
 
 function selSegEx(s)
@@ -653,20 +665,20 @@ function selSegEx(s)
 }
 
 function selSeg(s){
-	var sel = d.getElementById(`seg${s}sel`).checked;
+	var sel = getElementById(`seg${s}sel`).checked;
 	var obj = {"seg": {"id": s, "sel": sel}};
 	requestJson(obj, false);
 }
 
 function setSeg(s){
-	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
+	var start = parseInt(getElementById(`seg${s}s`).value);
+	var stop	= parseInt(getElementById(`seg${s}e`).value);
 	if (stop <= start) {delSeg(s); return;};
 	var obj = {"seg": {"id": s, "start": start, "stop": stop}};
-	if (d.getElementById(`seg${s}grp`))
+	if (getElementById(`seg${s}grp`))
 	{
-		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
-		var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+		var grp = parseInt(getElementById(`seg${s}grp`).value);
+		var spc = parseInt(getElementById(`seg${s}spc`).value);
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 	}
@@ -685,13 +697,13 @@ function delSeg(s){
 }
 
 function setRev(s){
-	var rev = d.getElementById(`seg${s}rev`).checked;
+	var rev = getElementById(`seg${s}rev`).checked;
 	var obj = {"seg": {"id": s, "rev": rev}};
 	requestJson(obj, false);
 }
 
 function setMi(s){
-	var mi = d.getElementById(`seg${s}mi`).checked;
+	var mi = getElementById(`seg${s}mi`).checked;
 	var obj = {"seg": {"id": s, "mi": mi}};
 	requestJson(obj, false);
 }
@@ -702,7 +714,7 @@ function setSegPwr(s){
 }
 
 function setSegBri(s){
-	var obj = {"seg": {"id": s, "bri": parseInt(d.getElementById(`seg${s}bri`).value)}};
+	var obj = {"seg": {"id": s, "bri": parseInt(getElementById(`seg${s}bri`).value)}};
 	requestJson(obj);
 }
 
@@ -713,23 +725,23 @@ function setX(ind) {
 
 function setPalette()
 {
-	var obj = {"seg": {"pal": parseInt(d.getElementById('selectPalette').value)}};
+	var obj = {"seg": {"pal": parseInt(getElementById('selectPalette').value)}};
 	requestJson(obj);
 }
 
 function setBri() {
-	var obj = {"bri": parseInt(d.getElementById('sliderBri').value)};
-	obj.transition = parseInt(d.getElementById('cyctt').value*10);
+	var obj = {"bri": parseInt(getElementById('sliderBri').value)};
+	obj.transition = parseInt(getElementById('cyctt').value*10);
 	requestJson(obj);
 }
 
 function setSpeed() {
-	var obj = {"seg": {"sx": parseInt(d.getElementById('sliderSpeed').value)}};
+	var obj = {"seg": {"sx": parseInt(getElementById('sliderSpeed').value)}};
 	requestJson(obj, false);
 }
 
 function setIntensity() {
-	var obj = {"seg": {"ix": parseInt(d.getElementById('sliderIntensity').value)}};
+	var obj = {"seg": {"ix": parseInt(getElementById('sliderIntensity').value)}};
 	requestJson(obj, false);
 }
 
@@ -740,28 +752,28 @@ function setLor(i) {
 
 function toggleCY() {
 	var obj = {"pl" : -1};
-	if (d.getElementById('cyToggle').checked)
+	if (getElementById('cyToggle').checked)
 	{
-		obj = {"pl": 0, "ccnf": {"min": parseInt(d.getElementById('cycs').value), "max": parseInt(d.getElementById('cyce').value), "time": parseInt(d.getElementById('cyct').value*10)}};
-		obj.transition = parseInt(d.getElementById('cyctt').value*10);
+		obj = {"pl": 0, "ccnf": {"min": parseInt(getElementById('cycs').value), "max": parseInt(getElementById('cyce').value), "time": parseInt(getElementById('cyct').value*10)}};
+		obj.transition = parseInt(getElementById('cyctt').value*10);
 	}
-	
+
 	requestJson(obj);
 }
 
 function togglePS() {
 	ps = !ps;
-	
-	var btns = document.getElementsByClassName("psts");
+
+	var btns = d.getElementsByClassName("psts");
 	for (let i = 0; i < btns.length; i++) {
 		if (ps) {
-			btns[i].className += " saving";
+			btns[i].classList.add("saving");
 		} else {
-			btns[i].className = btns[i].className.replace(" saving", "");
+			 btns[i].classList.remove("saving");
 		}
 	}
-	
-	d.getElementById("psLabel").innerHTML = (ps) ? "Save to slot":"Load from slot";
+
+	getElementById("psLabel").innerHTML = (ps) ? "Save to slot":"Load from slot";
 }
 
 function setPreset(i) {
@@ -780,7 +792,7 @@ function setPreset(i) {
 
 function selectSlot(b) {
 	csel = b;
-	var cd = d.getElementById('csl').children;
+	var cd = getElementById('csl').children;
 	for (let i = 0; i < cd.length; i++) {
 		cd[i].style.border="2px solid white";
 		cd[i].style.margin="5px";
@@ -790,13 +802,13 @@ function selectSlot(b) {
 	cd[csel].style.margin="2px";
 	cd[csel].style.width="50px";
 	cpick.color.set(cd[csel].style.backgroundColor);
-	d.getElementById('sliderW').value = whites[csel];
-	updateTrail(d.getElementById('sliderW'));
+	getElementById('sliderW').value = whites[csel];
+	updateTrail(getElementById('sliderW'));
 	updateHex();
 	updateRgb();
 }
 
-var lasth = 0;
+let lasth = 0;
 function pC(col)
 {
 	if (col == "rnd")
@@ -814,33 +826,33 @@ function pC(col)
 
 function updateRgb()
 {
-	var col = cpick.color.rgb;
-	var s = d.getElementById('sliderR');
+	let col = cpick.color.rgb;
+	let s = getElementById('sliderR');
 	s.value = col.r; updateTrail(s,1);
-	s = d.getElementById('sliderG');
+	s = getElementById('sliderG');
 	s.value = col.g; updateTrail(s,2);
-	s = d.getElementById('sliderB');
+	s = getElementById('sliderB');
 	s.value = col.b; updateTrail(s,3);
 }
 
 function updateHex()
 {
-	var str = cpick.color.hexString;
+	let str = cpick.color.hexString;
 	str = str.substring(1);
-	var w = whites[csel];
+	let w = whites[csel];
 	if (w > 0) str += w.toString(16);
-	d.getElementById('hexc').value = str;
-	d.getElementById('hexcnf').style.backgroundColor = "var(--c-3)";
+	getElementById('hexc').value = str;
+	getElementById('hexcnf').style.backgroundColor = "var(--c-3)";
 }
 
 function hexEnter() {
-	d.getElementById('hexcnf').style.backgroundColor = "var(--c-6)";
+	getElementById('hexcnf').style.backgroundColor = "var(--c-6)";
 	if(event.keyCode == 13) fromHex();
 }
 
 function fromHex()
 {
-	var str = d.getElementById('hexc').value;
+	var str = getElementById('hexc').value;
 	console.log(str);
 	whites[csel] = parseInt(str.substring(6), 16);
 	try {
@@ -854,18 +866,18 @@ function fromHex()
 
 function fromRgb()
 {
-	var r = d.getElementById('sliderR').value;
-	var g = d.getElementById('sliderG').value;
-	var b = d.getElementById('sliderB').value;
+	var r = getElementById('sliderR').value;
+	var g = getElementById('sliderG').value;
+	var b = getElementById('sliderB').value;
 	cpick.color.set(`rgb(${r},${g},${b})`);
 	setColor(0);
 }
 
 function setColor(sr) {
-	var cd = d.getElementById('csl').children;
+	var cd = getElementById('csl').children;
 	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') cpick.color.setChannel('hsv', 'v', 100);
 	cd[csel].style.backgroundColor = cpick.color.rgbString;
-	if (sr != 2) whites[csel] = d.getElementById('sliderW').value;
+	if (sr != 2) whites[csel] = getElementById('sliderW').value;
 	var col = cpick.color.rgb;
 	var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
 	if (csel == 1) {
@@ -875,13 +887,13 @@ function setColor(sr) {
 	}
 	updateHex();
 	updateRgb();
-	obj.transition = parseInt(d.getElementById('cyctt').value*10);
+	obj.transition = parseInt(getElementById('cyctt').value*10);
 	requestJson(obj);
 }
 
 var hc = 0;
-setInterval(function(){if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
-d.getElementById('heart').style.color = `hsl(${hc}, 100%, 50%)`}, 910);
+setInterval(() => {if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
+getElementById('heart').style.color = `hsl(${hc}, 100%, 50%)`}, 910);
 
 function openGH()
 {
@@ -893,7 +905,7 @@ function cnfReset()
 {
 	if (!cnfr)
 	{
-		var bt = d.getElementById('resetbtn');
+		var bt = getElementById('resetbtn');
 	bt.style.color = "#f00";
 	bt.innerHTML = "Confirm Reboot";
 	cnfr = true; return;
@@ -904,7 +916,7 @@ function cnfReset()
 var cnfrS = false;
 function rSegs()
 {
-	var bt = d.getElementById('rsbtn');
+	var bt = getElementById('rsbtn');
 	if (!cnfrS)
 	{
 	bt.style.color = "#f00";
@@ -924,18 +936,19 @@ function rSegs()
 function expand(i)
 {
 	expanded[i] = !expanded[i];
-	d.getElementById('seg' +i).style.display = (expanded[i]) ? "block":"none";
-	d.getElementById('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)"
+	getElementById('seg' +i).style.display = (expanded[i]) ? "block":"none";
+	getElementById('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)"
 }
 
 function unfocusSliders() {
-	d.getElementById("sliderBri").blur();
-	d.getElementById("sliderSpeed").blur();
-	d.getElementById("sliderIntensity").blur();
+	getElementById("sliderBri").blur();
+	getElementById("sliderSpeed").blur();
+	getElementById("sliderIntensity").blur();
 }
 
 //sliding UI
-var _C;
+/** container */
+let _C; // this cant be const because we have to set during the DOMContentLoaded event
 const N = 4;
 
 let iSlide = 0, x0 = null, y0 = null, scrollS = 0, locked = false, w;
@@ -948,23 +961,23 @@ function lock(e) {
 	if (l.contains('noslide') || l.contains('iro__wheel__saturation') || l.contains('iro__slider__value')	|| l.contains('iro__slider')) return;
 	x0 = unify(e).clientX;
 	y0 = unify(e).clientY;
-	scrollS = d.getElementsByClassName("tabcontent")[iSlide].scrollTop;
+	scrollS = getElementsByClassName("tabcontent")[iSlide].scrollTop;
 
 	_C.classList.toggle('smooth', !(locked = true))
 }
 
 function drag(e) {
 	if (!locked || pcMode) return;
-	if (d.getElementsByClassName("tabcontent")[iSlide].scrollTop != scrollS) {
+	if (getElementsByClassName("tabcontent")[iSlide].scrollTop != scrollS) {
 		move(e); return;
 	}
-			
+
 	_C.style.setProperty('--tx', `${Math.round(unify(e).clientX - x0)}px`)
 }
 
 function move(e) {
 	if(!locked || pcMode) return;
-	var dx = unify(e).clientX - x0, s = Math.sign(dx), 
+	var dx = unify(e).clientX - x0, s = Math.sign(dx),
 			f = +(s*dx/w).toFixed(2);
 
 	if((iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) && f > .12) {
@@ -972,18 +985,18 @@ function move(e) {
 		f = 1 - f;
 		updateTablinks(iSlide);
 	}
-	
+
 	_C.style.setProperty('--tx', '0px');
 	_C.style.setProperty('--f', f);
 	_C.classList.toggle('smooth', !(locked = false));
 	x0 = null
 }
 
-function size() { 
+function size() {
 	w = window.innerWidth;
-	var h = d.getElementById('top').clientHeight;
+	var h = getElementById('top').clientHeight;
 	sCol('--th', h + "px");
-	sCol('--bh', d.getElementById('bot').clientHeight + "px");
+	sCol('--bh', getElementById('bot').clientHeight + "px");
 	if (isLv) h -= 4;
 	sCol('--tp', h + "px");
 	togglePcMode();
@@ -1002,9 +1015,9 @@ function togglePcMode(fromB = false)
 	if (w < 1250) {pcMode = false;}
 	else if (pcModeA && !fromB) pcMode = pcModeA;
 	updateTablinks(0);
-	d.getElementById('buttonPcm').className = (pcMode) ? "active":"";
-	d.getElementById('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
-	sCol('--bh', d.getElementById('bot').clientHeight + "px");
+	getElementById('buttonPcm').className = (pcMode) ? "active":"";
+	getElementById('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
+	sCol('--bh', getElementById('bot').clientHeight + "px");
 	if (pcMode)
 	{
 		_C.style.width = '100%';
@@ -1020,10 +1033,10 @@ function isObject(item) {
 
 function mergeDeep(target, ...sources) {
 	if (!sources.length) return target;
-	const source = sources.shift();
+	let source = sources.shift();
 
 	if (isObject(target) && isObject(source)) {
-		for (const key in source) {
+		for (let key in source) {
 			if (isObject(source[key])) {
 				if (!target[key]) Object.assign(target, { [key]: {} });
 				mergeDeep(target[key], source[key]);
@@ -1035,18 +1048,16 @@ function mergeDeep(target, ...sources) {
 	return mergeDeep(target, ...sources);
 }
 
-window.addEventListener('DOMContentLoaded', (event) => { 
-    const document = event.target;
+window.addEventListener('DOMContentLoaded', (event) => {
+	d = event.target;
+	cpick = new iro.ColorPicker("#picker", {
+		width: 260,
+		wheelLightness: false
+	});
 
-	d = document;
-	cpick = new iro.ColorPicker("#picker", { 
-		width: 260, 
-		wheelLightness: false 
-	}); 
- 
-	RangeTouch.setup('input[type="range"]', {}); 
- 
-	_C = document.querySelector('.container'); 
+	RangeTouch.setup('input[type="range"]', {});
+
+	_C = d.querySelector('.container');
 
     size();
     _C.style.setProperty('--n', N);
