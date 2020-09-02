@@ -260,7 +260,8 @@ void WLED::initAP(bool resetAP)
     return;
 
   if (!apSSID[0] || resetAP)
-    strcpy(apSSID, "WLED-AP");
+    strcpy(apSSID, "WLED-");
+    sprintf(apSSID + 5, "%*s", 6, escapedMac.c_str() + 6);
   if (resetAP)
     strcpy(apPass, DEFAULT_AP_PASS);
   DEBUG_PRINT("Opening access point ");

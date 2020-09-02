@@ -270,7 +270,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (request->hasArg("RS")) //complete factory reset
     {
       clearEEPROM();
-      serveMessage(request, 200, "All Settings erased.", "Connect to WLED-AP to setup again",255);
+      escapedMac = WiFi.macAddress();
+      escapedMac.replace(":", "");
+      escapedMac.toLowerCase();
+      strcpy(apSSID, "WLED-");
+      sprintf(apSSID + 5, "%*s", 6, escapedMac.c_str() + 6);
+      serveMessage(request, 200, "All Settings erased.", "Connect to " + String(apSSID) + " to setup again", 255);
       doReboot = true;
     }
 
