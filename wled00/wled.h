@@ -34,9 +34,9 @@
   #define WLED_ENABLE_WEBSOCKETS
 #endif
 
-#define WLED_DISABLE_FILESYSTEM        // SPIFFS is not used by any WLED feature yet
-//#define WLED_ENABLE_FS_SERVING   // Enable sending html file from SPIFFS before serving progmem version
-//#define WLED_ENABLE_FS_EDITOR    // enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
+//#define WLED_DISABLE_FILESYSTEM        // SPIFFS is not used by any WLED feature yet
+#define WLED_ENABLE_FS_SERVING   // Enable sending html file from SPIFFS before serving progmem version
+#define WLED_ENABLE_FS_EDITOR    // enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 // to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
@@ -166,6 +166,8 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware CONFIG (only changeble HERE, not at runtime)
 // LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
+
+WLED_GLOBAL byte presetToApply _INIT(0); 
 
 WLED_GLOBAL byte auxDefaultState _INIT(0);                         // 0: input 1: high 2: low
 WLED_GLOBAL byte auxTriggeredState _INIT(0);                       // 0: input 1: high 2: low

@@ -85,6 +85,14 @@ void WLED::loop()
     handleHue();
     handleBlynk();
 
+    if (presetToApply) {
+      StaticJsonDocument<1024> temp;
+      errorFlag = !readObjectFromFileUsingId("/presets.json", presetToApply, &temp);
+      serializeJson(temp, Serial);
+      deserializeState(temp.as<JsonObject>());
+      presetToApply = 0;
+    }
+
     yield();
     if (!offMode)
       strip.service();
