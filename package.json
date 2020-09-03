@@ -10,7 +10,8 @@
   "scripts": {
     "build": "node tools/cdata.js",
     "dev": "nodemon --ext js,html,htm,css,png,jpg,gif,ico,js --watch tools/ --watch wled00/data/ --exec node tools/cdata.js",
-    "webpack": "webpack --config webpack.config.js -p"
+    "webpack-dev": "webpack --config webpack.dev.js",
+    "webpack": "webpack --config webpack.prod.js"
   },
   "repository": {
     "type": "git",
@@ -31,6 +32,7 @@
     "@babel/preset-env": "^7.11.5",
     "babel-loader": "^8.1.0",
     "clean-css": "^4.2.3",
+    "clean-webpack-plugin": "^3.0.0",
     "html-minifier": "^4.0.0",
     "html-webpack-plugin": "^4.4.1",
     "inline-source-webpack-plugin": "^1.4.1",
@@ -40,6 +42,7 @@
     "terser-webpack-plugin": "^4.1.0",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12",
+    "webpack-merge": "^5.1.3",
     "zlib": "^1.0.5"
   }
 }

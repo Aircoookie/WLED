@@ -1,4 +1,5 @@
 var path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const InlineSourceWebpackPlugin = require('inline-source-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
@@ -14,11 +15,10 @@ module.exports = {
     path: path.resolve(__dirname, 'wled00/data/dist'),
     filename: 'index.js'
   },
-  mode: 'development',
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.m?js$/,
         exclude: /(node_modules|bower_components)/,
         use: {
           loader: 'babel-loader',
@@ -29,23 +29,10 @@ module.exports = {
       }
     ]
   },
-  optimization: {
-    minimize: true,
-    minimizer: [new TerserPlugin()]
-  },
   plugins: [
     new HtmlWebpackPlugin({
       inlineSource: '.(js|css)$', // embed all javascript and css inline,
-      template: path.resolve(__dirname, "wled00/data", "index.htm"),
-      hash: false,
-      minify: {
-        collapseWhitespace: true,
-        conservativeCollapse: true,
-        preserveLineBreaks: true,
-        minifyCSS: true,
-        sortAttributes: true,
-        sortClassName: true
-      }
+      template: path.resolve(__dirname, "wled00/data", "index.htm")
     }),
     new InlineSourceWebpackPlugin({
       compress: false,
