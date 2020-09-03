@@ -7,7 +7,7 @@
  */
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 19
+#define EEPVER 21
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -28,6 +28,8 @@
 //17-> 0.9.1-dmx
 //18-> 0.9.1-e131
 //19-> 0.9.1n
+//20-> 0.9.1p
+//21-> 0.10.1p
 
 void commit()
 {
@@ -85,7 +87,7 @@ void saveSettingsToEEPROM()
   writeStringToEEPROM(160,     apPass, 64);
 
   EEPROM.write(224, nightlightDelayMinsDefault);
-  EEPROM.write(225, nightlightFade);
+  EEPROM.write(225, nightlightMode);
   EEPROM.write(226, notifyDirectDefault);
   EEPROM.write(227, apChannel);
   EEPROM.write(228, apHide);
@@ -211,6 +213,11 @@ void saveSettingsToEEPROM()
   EEPROM.write(2181, macroNl);
   EEPROM.write(2182, macroDoublePress);
 
+  #ifdef WLED_ENABLE_DMX
+  EEPROM.write(2185, e131ProxyUniverse & 0xFF);
+  EEPROM.write(2186, (e131ProxyUniverse >> 8) & 0xFF);
+  #endif
+
   EEPROM.write(2187, e131Port & 0xFF);
   EEPROM.write(2188, (e131Port >> 8) & 0xFF);
 
@@ -304,7 +311,7 @@ void loadSettingsFromEEPROM(bool first)
 
   nightlightDelayMinsDefault = EEPROM.read(224);
   nightlightDelayMins = nightlightDelayMinsDefault;
-  nightlightFade = EEPROM.read(225);
+  nightlightMode = EEPROM.read(225);
   notifyDirectDefault = EEPROM.read(226);
   notifyDirect = notifyDirectDefault;
 
@@ -524,6 +531,13 @@ void loadSettingsFromEEPROM(bool first)
     e131Port = EEPROM.read(2187) + ((EEPROM.read(2188) << 8) & 0xFF00);
   }
 
+  #ifdef WLED_ENABLE_DMX
+  if (lastEEPROMversion > 19)
+  {
+    e131ProxyUniverse = EEPROM.read(2185) + ((EEPROM.read(2186) << 8) & 0xFF00);
+  }
+  #endif
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
@@ -534,6 +548,7 @@ void loadSettingsFromEEPROM(bool first)
   {
     presetCyclingEnabled = EEPROM.read(2205);
     presetCycleTime = EEPROM.read(2206) + ((EEPROM.read(2207) << 8) & 0xFF00);
+    if (lastEEPROMversion < 21) presetCycleTime /= 100; //was stored in ms, now is in tenths of a second
     presetCycleMin = EEPROM.read(2208);
     presetCycleMax = EEPROM.read(2209);
     presetApplyBri = EEPROM.read(2210);
@@ -568,8 +583,10 @@ void loadSettingsFromEEPROM(bool first)
   EEPROM.write(2550, DMXStartLED);
   #endif
 
-  //user MOD memory
-  //2944 - 3071 reserved
+  //Usermod memory
+  //2551 - 2559 reserved for Usermods, usable by default
+  //2560 - 2943 usable, NOT reserved (need to increase EEPSIZE accordingly, new WLED core features may override this section)
+  //2944 - 3071 reserved for Usermods (need to increase EEPSIZE to 3072 in const.h)
 
   overlayCurrent = overlayDefault;
 

@@ -8,11 +8,12 @@
  */
 
 #ifdef WLED_ENABLE_DMX
-#include "src/dependencies/dmx/ESPDMX.h"
-DMXESPSerial dmx;
 
 void handleDMX()
 {
+  // don't act, when in DMX Proxy mode
+  if (e131ProxyUniverse != 0) return;
+
   // TODO: calculate brightness manually if no shutter channel is set
 
   uint8_t brightness = strip.getBrightness();
@@ -60,6 +61,10 @@ void handleDMX()
 void initDMX() {
   dmx.init(512);        // initialize with bus length
 }
+
+#if (LEDPIN == 2)
+  #pragma message "Pin conflict compiling with DMX and LEDs on pin 2. Please set a different LEDPIN."
+#endif
 
 #else
 void handleDMX() {}

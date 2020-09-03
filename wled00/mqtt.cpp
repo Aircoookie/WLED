@@ -56,6 +56,12 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
   DEBUG_PRINT("MQTT msg: ");
   DEBUG_PRINTLN(topic);
+
+  // paranoia check to avoid npe if no payload
+  if (payload==nullptr) {
+    DEBUG_PRINTLN("no payload -> leave");
+    return;
+  }
   DEBUG_PRINTLN(payload);
 
   //no need to check the topic because we only get topics we are subscribed to
@@ -76,7 +82,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 void publishMqtt()
 {
   doPublishMqtt = false;
-  if (mqtt == nullptr || !mqtt->connected()) return;
+  if (!WLED_MQTT_CONNECTED) return;
   DEBUG_PRINTLN("Publish MQTT");
 
   char s[10];

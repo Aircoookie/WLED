@@ -31,6 +31,7 @@
 #include "const.h"
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
+#define USE_GET_MILLISECOND_TIMER
 #include "FastLED.h"
 
 #define DEFAULT_BRIGHTNESS (uint8_t)127
@@ -84,21 +85,24 @@
 
 // options
 // bit    7: segment is in transition mode
-// bits 3-6: TBD
+// bits 4-6: TBD
+// bit    3: mirror effect within segment
 // bit    2: segment is on
 // bit    1: reverse segment
 // bit    0: segment is selected
 #define NO_OPTIONS   (uint8_t)0x00
 #define TRANSITIONAL (uint8_t)0x80
+#define MIRROR       (uint8_t)0x08
 #define SEGMENT_ON   (uint8_t)0x04
 #define REVERSE      (uint8_t)0x02
 #define SELECTED     (uint8_t)0x01
 #define IS_TRANSITIONAL ((SEGMENT.options & TRANSITIONAL) == TRANSITIONAL)
+#define IS_MIRROR       ((SEGMENT.options & MIRROR      ) == MIRROR      )
 #define IS_SEGMENT_ON   ((SEGMENT.options & SEGMENT_ON  ) == SEGMENT_ON  )
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  103
+#define MODE_COUNT  113
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -203,6 +207,16 @@
 #define FX_MODE_HEARTBEAT              100
 #define FX_MODE_PACIFICA               101
 #define FX_MODE_CANDLE_MULTI           102
+#define FX_MODE_SOLID_GLITTER          103
+#define FX_MODE_SUNRISE                104
+#define FX_MODE_PHASED                 105
+#define FX_MODE_TWINKLEUP              106
+#define FX_MODE_NOISEPAL               107
+#define FX_MODE_SINEWAVE               108
+#define FX_MODE_PHASEDNOISE            109
+#define FX_MODE_FLOW                   110
+#define FX_MODE_CHUNCHUN               111
+#define FX_MODE_DANCING_SHADOWS        112
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -219,7 +233,7 @@ class WS2812FX {
       uint8_t intensity;
       uint8_t palette;
       uint8_t mode;
-      uint8_t options; //bit pattern: msb first: transitional tbd tbd tbd tbd paused reverse selected
+      uint8_t options; //bit pattern: msb first: transitional needspixelstate tbd tbd (paused) on reverse selected
       uint8_t grouping, spacing;
       uint8_t opacity;
       uint32_t colors[NUM_COLORS];
@@ -255,7 +269,10 @@ class WS2812FX {
       uint16_t virtualLength()
       {
         uint16_t groupLen = groupLength();
-        return (length() + groupLen -1) / groupLen;
+        uint16_t vLength = (length() + groupLen - 1) / groupLen;
+        if (options & MIRROR)
+          vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
+        return vLength;
       }
     } segment;
 
@@ -394,6 +411,16 @@ class WS2812FX {
       _mode[FX_MODE_HEARTBEAT]               = &WS2812FX::mode_heartbeat;
       _mode[FX_MODE_PACIFICA]                = &WS2812FX::mode_pacifica;
       _mode[FX_MODE_CANDLE_MULTI]            = &WS2812FX::mode_candle_multi;
+      _mode[FX_MODE_SOLID_GLITTER]           = &WS2812FX::mode_solid_glitter;
+      _mode[FX_MODE_SUNRISE]                 = &WS2812FX::mode_sunrise;
+      _mode[FX_MODE_PHASED]                  = &WS2812FX::mode_phased;
+      _mode[FX_MODE_TWINKLEUP]               = &WS2812FX::mode_twinkleup;
+      _mode[FX_MODE_NOISEPAL]                = &WS2812FX::mode_noisepal;
+      _mode[FX_MODE_SINEWAVE]                = &WS2812FX::mode_sinewave;
+      _mode[FX_MODE_PHASEDNOISE]             = &WS2812FX::mode_phased_noise;
+      _mode[FX_MODE_FLOW]                    = &WS2812FX::mode_flow;
+      _mode[FX_MODE_CHUNCHUN]                = &WS2812FX::mode_chunchun;
+      _mode[FX_MODE_DANCING_SHADOWS]         = &WS2812FX::mode_dancing_shadows;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -409,6 +436,7 @@ class WS2812FX {
       init(bool supportWhite, uint16_t countPixels, bool skipFirst),
       service(void),
       blur(uint8_t),
+      fill(uint32_t),
       fade_out(uint8_t r),
       setMode(uint8_t segid, uint8_t m),
       setColor(uint8_t slot, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
@@ -423,10 +451,11 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
-      setRgbwPwm(void);
+      setRgbwPwm(void),
+      setPixelSegment(uint8_t n);
 
     bool
-      reverseMode = false,
+      reverseMode = false,      //is the entire LED strip reversed?
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,
@@ -457,9 +486,10 @@ class WS2812FX {
       triwave16(uint16_t);
 
     uint32_t
+      now,
       timebase,
       color_wheel(uint8_t),
-      color_from_palette(uint16_t, bool, bool, uint8_t, uint8_t pbri = 255),
+      color_from_palette(uint16_t, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri = 255),
       color_blend(uint32_t,uint32_t,uint8_t),
       gamma32(uint32_t),
       getLastShow(void),
@@ -562,7 +592,7 @@ class WS2812FX {
       mode_twinklecat(void),
       mode_halloween_eyes(void),
       mode_static_pattern(void),
-	    mode_tri_static_pattern(void),
+      mode_tri_static_pattern(void),
       mode_spots(void),
       mode_spots_fade(void),
       mode_glitter(void),
@@ -580,8 +610,17 @@ class WS2812FX {
       mode_ripple_rainbow(void),
       mode_heartbeat(void),
       mode_pacifica(void),
-      mode_candle_multi(void);
-      
+      mode_candle_multi(void),
+      mode_solid_glitter(void),
+      mode_sunrise(void),
+      mode_phased(void),
+      mode_twinkleup(void),
+      mode_noisepal(void),
+      mode_sinewave(void),
+      mode_phased_noise(void),
+      mode_flow(void),
+      mode_chunchun(void),
+      mode_dancing_shadows(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -591,7 +630,6 @@ class WS2812FX {
     CRGBPalette16 currentPalette;
     CRGBPalette16 targetPalette;
 
-    uint32_t now;
     uint16_t _length, _lengthRaw, _virtualSegmentLength;
     uint16_t _rand16seed;
     uint8_t _brightness;
@@ -599,7 +637,6 @@ class WS2812FX {
 
     void load_gradient_palette(uint8_t);
     void handle_palette(void);
-    void fill(uint32_t);
 
     bool
       _useRgbw = false,
@@ -628,10 +665,13 @@ class WS2812FX {
       running(uint32_t, uint32_t),
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),
-      spots_base(uint16_t);
+      spots_base(uint16_t),
+      phased_base(uint8_t);
 
     CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat);
     CRGB pacifica_one_layer(uint16_t i, CRGBPalette16& p, uint16_t cistart, uint16_t wavescale, uint8_t bri, uint16_t ioff);
+
+    void blendPixelColor(uint16_t n, uint32_t color, uint8_t blend);
     
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
@@ -654,7 +694,6 @@ class WS2812FX {
     uint16_t realPixelIndex(uint16_t i);
 };
 
-
 //10 names per line
 const char JSON_mode_names[] PROGMEM = R"=====([
 "Solid","Blink","Breathe","Wipe","Wipe Random","Random Colors","Sweep","Dynamic","Colorloop","Rainbow",
@@ -667,7 +706,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat","Pacifica","Candle Multi"
+"Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
+"Flow","Chunchun","Dancing Shadows"
 ])=====";
 
 

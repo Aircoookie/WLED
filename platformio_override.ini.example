@@ -4,6 +4,9 @@
 # ------------------------------------------------------------------------------
 # Please visit documentation: https://docs.platformio.org/page/projectconf.html
 
+[platformio]
+default_envs = esp8266_1m_custom
+
 [env:esp8266_1m_custom]
 board = esp01_1m
 platform = ${common.arduino_core_2_4_2}
@@ -25,6 +28,9 @@ build_flags = ${common.build_flags_esp8266}
 ;   -D USE_APA102
 ;   -D USE_WS2801
 ;   -D USE_LPD8806
+; PIN defines for 2 wire LEDs
+;   -D CLKPIN=0
+;   -D DATAPIN=2
 ; to drive analog LED strips (aka 5050), uncomment the following
 ; PWM pins 5,12,13,15 are used with Magic Home LED Controller (default)
 ;   -D WLED_USE_ANALOG_LEDS

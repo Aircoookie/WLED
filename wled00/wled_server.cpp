@@ -205,10 +205,10 @@ void initServer()
   } else
   {
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
+      serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254);
     });
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
+      serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254);
     });
   }
 
@@ -226,6 +226,10 @@ void initServer()
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
+
+  #ifdef WLED_ENABLE_WEBSOCKETS
+  server.addHandler(&ws);
+  #endif
   
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
@@ -374,7 +378,7 @@ void serveSettings(AsyncWebServerRequest* request)
 
   if (subPage == 1 && wifiLock && otaLock)
   {
-    serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254); return;
+    serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254); return;
   }
   
   #ifdef WLED_DISABLE_MOBILE_UI //disable welcome page if not enough storage
