@@ -1,5 +1,11 @@
 ## WLED changelog
 
+### Development versions after the 0.10.2 release
+
+#### Build 2009030
+
+-   Fixed bootloop if mDNS is used on builds without OTA support
+
 ### WLED version 0.10.2
 
 #### Build 2008310
