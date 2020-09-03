@@ -386,8 +386,12 @@ void WLED::initInterfaces()
   strip.service();
   // Set up mDNS responder:
   if (strlen(cmDNS) > 0) {
-    if (!aOtaEnabled)
+  #ifndef WLED_DISABLE_OTA
+    if (!aOtaEnabled) //ArduinoOTA begins mDNS for us if enabled
       MDNS.begin(cmDNS);
+  #else
+    MDNS.begin(cmDNS);
+  #endif
 
     DEBUG_PRINTLN("mDNS started");
     MDNS.addService("http", "tcp", 80);
