@@ -27,10 +27,10 @@ var cfg = {
 };
 
 // moved into DOMContentLoaded
-// var cpick = new iro.ColorPicker("#picker", {
+//var cpick = new iro.ColorPicker("#picker", {
 // 	width: 260,
 // 	wheelLightness: false
-// });
+//});
 let cpick;
 
 function handleVisibilityChange() {

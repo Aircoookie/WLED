@@ -29,15 +29,7 @@ module.exports = {
       }
     ]
   },
-  plugins: [
-    new HtmlWebpackPlugin({
-      inlineSource: '.(js|css)$', // embed all javascript and css inline,
-      template: path.resolve(__dirname, "wled00/data", "index.htm")
-    }),
-    new InlineSourceWebpackPlugin({
-      compress: false,
-      rootpath: './wled00/data/dist',
-      noAssetMatch: 'warn'
-    })
-  ]
+  optimization: {
+    minimizer: [new TerserPlugin()] // used to minify JavaScript
+  }
 };
