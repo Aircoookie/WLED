@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "npm-run-all webpack cdata",
-    "dev": "nodemon --ext js,html,htm,css,png,jpg,gif,ico,js --watch tools/ --watch wled00/data/ --exec node tools/cdata.js",
+    "dev": "nodemon -e js,html,htm,css,png,jpg,gif,ico,js -w tools/ -w wled00/data/ -x node tools/cdata.js",
     "webpack-dev": "webpack --config webpack.dev.js",
     "webpack": "webpack --config webpack.prod.js",
     "cdata": "node tools/cdata.js"
@@ -34,6 +34,7 @@
     "babel-loader": "^8.1.0",
     "clean-css": "^4.2.3",
     "clean-webpack-plugin": "^3.0.0",
+    "html-loader": "^1.3.0",
     "html-minifier": "^4.0.0",
     "html-webpack-plugin": "^4.4.1",
     "inline-source-webpack-plugin": "^1.4.1",

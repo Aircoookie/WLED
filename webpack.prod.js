@@ -8,7 +8,8 @@ const TerserPlugin = require('terser-webpack-plugin');
 module.exports = merge(common, {
   mode: 'production',
   optimization: {
-    minimize: true
+    minimize: true,
+    minimizer: [new TerserPlugin()] // used to minify JavaScript
   },  
   plugins: [
     new HtmlWebpackPlugin({
@@ -16,10 +17,12 @@ module.exports = merge(common, {
       template: path.resolve(__dirname, "wled00/data", "index.htm"),
       hash: false,
       minify: {
+        // see https://github.com/kangax/html-minifier#options-quick-reference
         collapseWhitespace: true,
         conservativeCollapse: true,
-        preserveLineBreaks: true,
         minifyCSS: true,
+        removeComments: true,
+        removeRedundantAttributes: false, // if true, will remove type="text" from <input> which breaks some css
         sortAttributes: true,
         sortClassName: true
       }
@@ -27,8 +30,7 @@ module.exports = merge(common, {
     new InlineSourceWebpackPlugin({
       compress: true,
       rootpath: './wled00/data/dist',
-      noAssetMatch: 'warn'
+      noAssetMatch: 'error'
     })
   ]
-
 });
