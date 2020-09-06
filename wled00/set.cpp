@@ -160,8 +160,16 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     alexaEnabled = request->hasArg("AL");
     strlcpy(alexaInvocationName, request->arg("AI").c_str(), 33);
 
-    if (request->hasArg("BK") && !request->arg("BK").equals("Hidden")) {
-      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey);
+    if ((request->hasArg("BK") && !request->arg("BK").equals("Hidden")) &&
+        (request->hasArg("BKS") && !request->arg("BKS").equals("Hidden")) &&
+        (request->hasArg("BKP") && !request->arg("BKP").equals("Hidden"))) {
+      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36);
+      strlcpy(blynkServerAdr, request->arg("BKS").c_str(), 36);
+      blynkServerPort = request->arg("BKP").toInt();
+      initLocalBlynk(blynkApiKey, blynkServerAdr, blynkServerPort);
+    } else if (request->hasArg("BK") && !request->arg("BK").equals("Hidden")) {
+      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36);
+      initBlynk(blynkApiKey);
     }
 
     #ifdef WLED_ENABLE_MQTT
