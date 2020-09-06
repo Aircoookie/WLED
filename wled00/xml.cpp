@@ -312,6 +312,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',"AI",alexaInvocationName);
     sappend('c',"SA",notifyAlexa);
     sappends('s',"BK",(char*)((blynkEnabled)?"Hidden":""));
+    sappends('s',"BKS", (char*)((blynkEnabled)?"Hidden":""));
+    sappends('v',"BKP", (char*)((blynkEnabled)?"Hidden":""));
+
 
     #ifdef WLED_ENABLE_MQTT
     sappend('c',"MQ",mqttEnabled);
