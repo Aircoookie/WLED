@@ -235,6 +235,8 @@ WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable devi
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 
 WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
+WLED_GLOBAL char blynkServerAdr[36] _INIT("");                    // Server address for a local blynk server. If empty, the default blynk server is used.
+WLED_GLOBAL int blynkServerPort _INIT(0);                         // Serer port for a local blynk server. 
 
 WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
 WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset
