@@ -313,9 +313,7 @@ void getSettingsJS(byte subPage, char *dest) {
     sappends('s',"BKS", (char*)(blynkServerAdr);
     sappend('v',"BKP", blynkServerPort);
 
->>>>>>> 94b7581... Update xml.cpp
-
-    #ifdef WLED_ENABLE_MQTT
+#ifdef WLED_ENABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);
     sappends('s',SET_F("MS"),mqttServer);
     sappend('v',SET_F("MQPORT"),mqttPort);
