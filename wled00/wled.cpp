@@ -408,7 +408,12 @@ void WLED::initInterfaces()
   if (ntpEnabled)
     ntpConnected = ntpUdp.begin(ntpLocalPort);
 
-  initBlynk(blynkApiKey);
+  if (blynkServerAdr[0] != ' ' && blynkServerPort > 0) {
+    initLocalBlynk(blynkApiKey, blynkServerAdr, blynkServerPort);
+  } else {
+    initBlynk(blynkApiKey);
+  }
+  
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
   reconnectHue();
   initMqtt();
