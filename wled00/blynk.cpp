@@ -17,6 +17,22 @@ void initBlynk(const char* auth)
   #endif
 }
 
+void initLocalBlynk(const char* auth, const char* addr, const int port)
+{
+  #ifndef WLED_DISABLE_BLYNK
+  if (!WLED_CONNECTED) return;
+  blynkEnabled = (auth[0] != 0);
+  if (!blynkEnabled) return;
+  IPAddress blynkIP;
+  if (blynkIP.fromString(addr)) //see if server is IP or domain
+  {
+    Blynk.config(auth, blynkIP, port);
+  } else {
+    Blynk.config(auth, addr, port);
+  }
+  #endif
+}
+
 void handleBlynk()
 {
   #ifndef WLED_DISABLE_BLYNK
