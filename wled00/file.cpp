@@ -18,7 +18,9 @@
 //find() that reads and buffers data from file stream in 256-byte blocks.
 //Significantly faster, f.find(key) can take SECONDS for multi-kB files
 bool bufferedFind(const char *target, File f) {
+  if (!f || !f.size()) return false;
   size_t targetLen = strlen(target);
+  Serial.print("bfind ");
   Serial.println(target);
   //Serial.println(f.position());
   size_t index = 0;
@@ -28,7 +30,7 @@ bool bufferedFind(const char *target, File f) {
 
   while (f.position() < f.size() -1) {
     //c = f.read();
-    //Serial.println(f.position());
+    Serial.println(f.position());
     bufsize = f.read(buf, 256);
     count = 0;
     while (count < bufsize) {
@@ -44,13 +46,15 @@ bool bufferedFind(const char *target, File f) {
       count++;
     }
   }
+  Serial.println("No match");
   return false;
 }
 
 //find empty spots in file stream in 256-byte blocks.
 bool bufferedFindSpace(uint16_t targetLen, File f) {
-  size_t index = 0;
-  byte c;
+  Serial.print("bfs ");
+  if (!f || !f.size()) return false;
+  uint16_t index = 0;
   uint16_t bufsize = 0, count = 0;
   byte buf[256];
 
@@ -64,6 +68,7 @@ bool bufferedFindSpace(uint16_t targetLen, File f) {
       if(buf[count] == ' ') {
         if(++index >= targetLen) { // return true if space long enough
           f.seek(f.position() - targetLen);
+           Serial.print("SPAAAACE!");
           return true;
         }
       }
@@ -88,31 +93,50 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   if (!f) return false;
   //f.setTimeout(1);
   f.seek(0, SeekSet);
+
+  Serial.print("Writing to ");
+  Serial.print(file);
+  Serial.print(" with key ");
+  Serial.print(key);
+  Serial.print(" > ");
+  serializeJson(*content, Serial);
+  Serial.println();
   
   if (!bufferedFind(key, f)) //key does not exist in file
   {
+    Serial.println("Key not found");
     return appendObjectToFile(file, key, content, f);
   } 
   
+  Serial.println("Key found!");
   //exists
   pos = f.position();
+  Serial.println(pos);
   //measure out end of old object
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<1024> doc;
   deserializeJson(doc, f);
   uint32_t pos2 = f.position();
   uint32_t oldLen = pos2 - pos;
+  Serial.print("Old obj len: ");
+  Serial.print(oldLen);
+  Serial.print(" > ");
+  serializeJson(doc, Serial);
+  Serial.println();
   
   if (!content->isNull() && measureJson(*content) <= oldLen)  //replace
   {
+    Serial.println("replace");
+    f.seek(pos);
     serializeJson(*content, f);
     //pad rest
     for (uint32_t i = f.position(); i < pos2; i++) {
       f.write(' ');
     }
   } else { //delete
-    pos -+ strlen(key);
+    Serial.println("delete");
+    pos -= strlen(key);
     oldLen = pos2 - pos;
-    f.seek(pos, SeekSet);
+    f.seek(pos);
     for (uint32_t i = pos; i < pos2; i++) {
       f.write(' ');
     }
@@ -133,8 +157,10 @@ bool appendObjectToFile(const char* file, const char* key, JsonDocument* content
   //if there is enough empty space in file, insert there instead of appending
   uint32_t contentLen = measureJson(*content);
   Serial.print("clen"); Serial.println(contentLen);
-  if (bufferedFindSpace(contentLen, f)) {
+  if (bufferedFindSpace(contentLen + strlen(key) + 1, f)) {
     Serial.println("space");
+    f.write(",");
+    f.print(key);
     serializeJson(*content, f);
     return true;
   }
@@ -152,9 +178,9 @@ bool appendObjectToFile(const char* file, const char* key, JsonDocument* content
     }
   }
   Serial.print("pos"); Serial.println(pos);
-  if (pos < 3)
+  if (pos > 2)
   {
-    f.seek(pos -1, SeekSet);
+    f.seek(pos, SeekSet);
     f.write(',');
   } else { //file content is not valid JSON object
     f.seek(0, SeekSet);

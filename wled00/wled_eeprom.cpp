@@ -675,9 +675,9 @@ bool applyPreset(byte index, bool loadBri)
 void savePreset(byte index, bool persist)
 {
   StaticJsonDocument<1024> doc;
-  serializeState(doc.to<JsonObject>());
+  serializeState(doc.to<JsonObject>(), true);
   doc["p"]=50;
-  serializeJson(doc, Serial);
+  //serializeJson(doc, Serial);
   writeObjectToFileUsingId("/presets.json", index, &doc);
   return;
   if (index > 16) return;

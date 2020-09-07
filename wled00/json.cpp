@@ -273,38 +273,40 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
 }
 
 
-void serializeState(JsonObject root)
-{
-  if (errorFlag) root["error"] = errorFlag;
-  
+void serializeState(JsonObject root, bool forPreset)
+{ 
   root["on"] = (bri > 0);
   root["bri"] = briLast;
   root["transition"] = transitionDelay/100; //in 100ms
 
-  root["ps"] = currentPreset;
-  root["pss"] = savedPresets;
-  root["pl"] = (presetCyclingEnabled) ? 0: -1;
+  if (!forPreset) {
+    if (errorFlag) root["error"] = errorFlag;
 
-  usermods.addToJsonState(root);
+    root["ps"] = currentPreset;
+    root["pss"] = savedPresets;
+    root["pl"] = (presetCyclingEnabled) ? 0: -1;
 
-  //temporary for preset cycle
-  JsonObject ccnf = root.createNestedObject("ccnf");
-  ccnf["min"] = presetCycleMin;
-  ccnf["max"] = presetCycleMax;
-  ccnf["time"] = presetCycleTime;
-  
-  JsonObject nl = root.createNestedObject("nl");
-  nl["on"] = nightlightActive;
-  nl["dur"] = nightlightDelayMins;
-  nl["fade"] = (nightlightMode > NL_MODE_SET); //deprecated
-  nl["mode"] = nightlightMode;
-  nl["tbri"] = nightlightTargetBri;
-  
-  JsonObject udpn = root.createNestedObject("udpn");
-  udpn["send"] = notifyDirect;
-  udpn["recv"] = receiveNotifications;
+    usermods.addToJsonState(root);
 
-  root["lor"] = realtimeOverride;
+    //temporary for preset cycle
+    JsonObject ccnf = root.createNestedObject("ccnf");
+    ccnf["min"] = presetCycleMin;
+    ccnf["max"] = presetCycleMax;
+    ccnf["time"] = presetCycleTime;
+    
+    JsonObject nl = root.createNestedObject("nl");
+    nl["on"] = nightlightActive;
+    nl["dur"] = nightlightDelayMins;
+    nl["fade"] = (nightlightMode > NL_MODE_SET); //deprecated
+    nl["mode"] = nightlightMode;
+    nl["tbri"] = nightlightTargetBri;
+    
+    JsonObject udpn = root.createNestedObject("udpn");
+    udpn["send"] = notifyDirect;
+    udpn["recv"] = receiveNotifications;
+
+    root["lor"] = realtimeOverride;
+  }
 
   root["mainseg"] = strip.getMainSegmentId();
   
