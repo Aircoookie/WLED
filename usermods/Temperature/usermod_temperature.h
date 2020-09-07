@@ -70,7 +70,7 @@ class UsermodTemperature : public Usermod {
       {
         requestTemperatures();
       }
-      else if (waitingForConversion && elapsed(lastTempRequest) > 94 /* 93.75ms per the datasheet */)
+      else if (waitingForConversion && elapsed(lastTempRequest) >= 94 /* 93.75ms per the datasheet */)
       {
         getReading(); // this will reset waitingForConversion = false
  
