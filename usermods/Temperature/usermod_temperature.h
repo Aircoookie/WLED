@@ -23,7 +23,7 @@ class UsermodTemperature : public Usermod {
     // set last reading as "40 sec before boot", so first reading is taken after 20 sec
     unsigned long lastMeasurement = UINT32_MAX - 40000;
     // last time requestTemperatures was called
-    unsigned long lastTempRequest;
+    unsigned long lastTemperatureRequest;
     // indicates requestTemperatures has been called but the sensor measurement is not complete
     bool waitingForConversion = false;
 
@@ -33,7 +33,7 @@ class UsermodTemperature : public Usermod {
     void requestTemperatures() {
       sensor.requestTemperatures();
       waitingForConversion = true;
-      lastTempRequest = millis();
+      lastTemperatureRequest = millis();
     }
 
   public:
@@ -59,14 +59,25 @@ class UsermodTemperature : public Usermod {
 
     void loop() {
       unsigned long now = millis();
-      if (!waitingForConversion && ELAPSED(now, lastMeasurement) > MEASUREMENT_INTERVAL)
+
+      // lastMeasurement only gets updated after we finish our measurement
+      if (ELAPSED(now, lastMeasurement) < MEASUREMENT_INTERVAL)
       {
-        requestTemperatures();
+        return;
       }
-      else if (waitingForConversion && ELAPSED(now, lastTempRequest) >= 94 /* 93.75ms per the datasheet */)
+
+      if (!waitingForConversion)
+      {
+        // haven't requested the temperature yet
+        requestTemperatures();
+        return;
+      }
+
+      if (ELAPSED(now, lastTemperatureRequest) >= 94 /* 93.75ms per the datasheet */)
       {
         getReading(); // this will reset waitingForConversion = false
- 
+        lastMeasurement = millis();
+
         if (WLED_MQTT_CONNECTED) {
           char subuf[38];
           strcpy(subuf, mqttDeviceTopic);
@@ -78,7 +89,6 @@ class UsermodTemperature : public Usermod {
             // publish something else to indicate status?
           }
         }
-        lastMeasurement = millis();
       }
     }
 
