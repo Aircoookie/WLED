@@ -1,8 +1,22 @@
 ## WLED changelog
 
-### Development versions after 0.10.0 release
+### Development versions after the 0.10.2 release
 
-#### Build 2008300 (v0.10.2 release candidate)
+#### Build 2009030
+
+-   Fixed bootloop if mDNS is used on builds without OTA support
+
+### WLED version 0.10.2
+
+#### Build 2008310
+
+-   Added new logo
+-   Maximum GZIP compression (#1126)
+-   Enable WebSockets by default
+
+### Development versions between 0.10.0 and 0.10.2 releases
+
+#### Build 2008300
 
 -   Added new UI customization options to UI settings
 -   Added Dancing Shadows effect (#1108)
