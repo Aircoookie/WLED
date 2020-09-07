@@ -31,7 +31,7 @@ In addition, we have a [Sound Reactive WLED Wiki](https://github.com/atuline/WLE
 
 Join Discord to discuss beta testing of our sound reactive fork of WLED:
 
-<a href="https://discord.gg/xH3uJp"><img src="https://discordapp.com/api/guilds/700041398778331156/widget.png?style=banner2" width="25%"></a>
+<a href="https://discord.gg/4CQRmfR"><img src="https://discordapp.com/api/guilds/700041398778331156/widget.png?style=banner2" width="25%"></a>
 
 
 Join Discord to discuss AirCookie's WLED:
