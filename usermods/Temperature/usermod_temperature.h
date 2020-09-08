@@ -35,6 +35,9 @@ class UsermodTemperature : public Usermod {
     bool waitingForConversion = false;
     // simple flag to indicate we have finished the first getTemperature call
     bool getTemperatureComplete = false;
+    // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
+    // temperature if flashed to a board without a sensor attached
+    bool disabled = false;
 
     void requestTemperatures() {
         // there is requestTemperaturesByAddress however it 
@@ -62,15 +65,24 @@ class UsermodTemperature : public Usermod {
 
     void setup() {
       sensor.begin();
+
       // get the unique 64-bit serial code stored in on-board ROM
-      sensor.getAddress(sensorDeviceAddress, 0);
-      // set the resolution for this specific device
-      sensor.setResolution(sensorDeviceAddress, 9, true);
-      // do not block waiting for reading
-      sensor.setWaitForConversion(false); 
+      // if getAddress returns false, the sensor was not found
+      disabled = !sensor.getAddress(sensorDeviceAddress, 0);
+
+      if (!disabled) {
+        // set the resolution for this specific device
+        sensor.setResolution(sensorDeviceAddress, 9, true);
+        // do not block waiting for reading
+        sensor.setWaitForConversion(false); 
+      }
     }
 
     void loop() {
+      if (disabled) {
+        return;
+      }
+      
       unsigned long now = millis();
 
       // check to see if we are due for taking a measurement
