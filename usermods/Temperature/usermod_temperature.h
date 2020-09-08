@@ -11,78 +11,96 @@
 #define TEMPERATURE_PIN 14
 #endif
 
-#define MEASUREMENT_INTERVAL 60000 //1 Minute
-
-#define ELAPSED(current, previous) ((previous) <= (current) ? (current) - (previous) : (UINT32_MAX - previous) + current)
+// the frequency to check temperature, 1 minute
+#define MEASUREMENT_INTERVAL 60000
+// how many seconds after boot to take first measurement, 20 seconds
+#define FIRST_MEASUREMENT_AT 20000 
 
 OneWire oneWire(TEMPERATURE_PIN);
 DallasTemperature sensor(&oneWire);
 
 class UsermodTemperature : public Usermod {
   private:
+    // The device's unique 64-bit serial code stored in on-board ROM.
+    // Reading directly from the sensor device address is faster than
+    // reading from index. When reading by index, DallasTemperature
+    // must first look up the device address at the specified index.
+    DeviceAddress sensorDeviceAddress;
     // set last reading as "40 sec before boot", so first reading is taken after 20 sec
-    unsigned long lastMeasurement = UINT32_MAX - 40000;
+    unsigned long lastMeasurement = UINT32_MAX - (MEASUREMENT_INTERVAL - FIRST_MEASUREMENT_AT);
     // last time requestTemperatures was called
-    unsigned long lastTemperatureRequest;
+    unsigned long lastTemperaturesRequest;
+    float temperature = -100; // default to -100, DS18B20 only goes down to -50C
     // indicates requestTemperatures has been called but the sensor measurement is not complete
     bool waitingForConversion = false;
-
-    float temperature = DEVICE_DISCONNECTED_C;
-	  DeviceAddress deviceAddress;
+    // simple flag to indicate we have finished the first getTemperature call
+    bool getTemperatureComplete = false;
 
     void requestTemperatures() {
-      sensor.requestTemperatures();
-      waitingForConversion = true;
-      lastTemperatureRequest = millis();
+        // there is requestTemperaturesByAddress however it 
+        // appears to do more work, 
+        // TODO: measure exection time difference
+        sensor.requestTemperatures(); 
+        lastTemperaturesRequest = millis();
+        waitingForConversion = true;
+    }
+
+    void getTemperature() {
+      #ifdef USERMOD_DALLASTEMPERATURE_CELSIUS
+      temperature = sensor.getTempC(sensorDeviceAddress);
+      #else
+      temperature = sensor.getTempF(sensorDeviceAddress);
+      #endif
+
+      lastMeasurement = millis();
+      waitingForConversion = false;
+      getTemperatureComplete = true;
     }
 
   public:
-    void getReading() {
-      #ifdef USERMOD_DALLASTEMPERATURE_CELSIUS
-      //temperature = sensor.getTempCByIndex(0);
-      temperature = sensor.getTempC((uint8_t*) deviceAddress);
-      #else
-      temperature = sensor.getTempFByIndex(0);
-      #endif
-      waitingForConversion = false;
-    }
+
 
     void setup() {
       sensor.begin();
-      sensor.setResolution(9);
-      sensor.setWaitForConversion(false); // do not block waiting for reading
-      // get the device's address to avoid getTemp(C|F)ByIndex calling this every time
-      if (!sensor.getAddress(deviceAddress, 0)) {
-        // ...
-      }
+      // get the unique 64-bit serial code stored in on-board ROM
+      sensor.getAddress(sensorDeviceAddress, 0);
+      // set the resolution for this specific device
+      sensor.setResolution(sensorDeviceAddress, 9, true);
+      // do not block waiting for reading
+      sensor.setWaitForConversion(false); 
     }
 
     void loop() {
       unsigned long now = millis();
 
-      // lastMeasurement only gets updated after we finish our measurement
-      if (ELAPSED(now, lastMeasurement) < MEASUREMENT_INTERVAL)
+      // check to see if we are due for taking a measurement
+      // lastMeasurement will not be updated until the conversion
+      // is complete the the reading is finished
+      if (now - lastMeasurement < MEASUREMENT_INTERVAL)
       {
         return;
       }
 
+      // we are due for a measurement, if we are not already waiting 
+      // for a conversion to complete, then make a new request for temps
       if (!waitingForConversion)
       {
-        // haven't requested the temperature yet
         requestTemperatures();
         return;
       }
 
-      if (ELAPSED(now, lastTemperatureRequest) >= 94 /* 93.75ms per the datasheet */)
+      // we were waiting for a conversion to complete, have we waited log enough?
+      if (now - lastTemperaturesRequest >= 94 /* 93.75ms per the datasheet */)
       {
-        getReading(); // this will reset waitingForConversion = false
-        lastMeasurement = millis();
-
+        getTemperature();
+ 
         if (WLED_MQTT_CONNECTED) {
           char subuf[38];
           strcpy(subuf, mqttDeviceTopic);
-          if (temperature != DEVICE_DISCONNECTED_C) {
-            // dont publish -127 as the graph will get messed up
+          if (-100 <= temperature) {
+            // dont publish super low temperature as the graph will get messed up
+            // the DallasTemperature library returns -127C or -196.6F when problem
+            // reading the sensor
             strcat(subuf, "/temperature");
             mqtt->publish(subuf, 0, true, String(temperature).c_str());
           } else {
@@ -97,7 +115,16 @@ class UsermodTemperature : public Usermod {
       if (user.isNull()) user = root.createNestedObject("u");
 
       JsonArray temp = user.createNestedArray("Temperature");
-      if (temperature == DEVICE_DISCONNECTED_C) {
+
+      if (!getTemperatureComplete) {
+        // if we haven't read the sensor yet, let the user know
+        // that we are still waiting for the first measurement
+        temp.add((FIRST_MEASUREMENT_AT - millis()) / 1000);
+        temp.add(" sec until read");
+        return;
+      }
+
+      if (temperature <= -100) {
         temp.add(0);
         temp.add(" Sensor Error!");
         return;
