@@ -115,4 +115,12 @@ BLYNK_WRITE(V8) {
   // Sync (range: 0-1)
   notifyDirect = param.asInt(); // send notifications
 }
+
+BLYNK_WRITE(V9) {
+  // RGB Input (range: 0-255)
+  col[0] = param[0].asInt(); // red
+  col[1] = param[1].asInt(); // green
+  col[2] = param[2].asInt(); // blue
+  colorUpdated(NOTIFIER_CALL_MODE_BLYNK);
+}
 #endif
