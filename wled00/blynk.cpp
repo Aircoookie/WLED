@@ -80,8 +80,8 @@ BLYNK_WRITE(V2) {
 
 BLYNK_WRITE(V3) {
   // Power (range: 0-1)
-  bool on = (param.asInt() > 0);
-  if (!on != !bri) {
+  bool on = param.asInt();
+  if (on ^ bri) {
     toggleOnOff();
     colorUpdated(NOTIFIER_CALL_MODE_BLYNK);
   }
@@ -108,11 +108,11 @@ BLYNK_WRITE(V6) {
 
 BLYNK_WRITE(V7) {
   // Nightlight (range: 0-1)
-  nightlightActive = (param.asInt() > 0);
+  nightlightActive = param.asInt();
 }
 
 BLYNK_WRITE(V8) {
   // Sync (range: 0-1)
-  notifyDirect = (param.asInt() > 0); // send notifications
+  notifyDirect = param.asInt(); // send notifications
 }
 #endif
