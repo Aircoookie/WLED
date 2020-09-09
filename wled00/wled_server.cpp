@@ -157,13 +157,13 @@ void initServer()
   if (!otaLock){
     #if !defined WLED_DISABLE_FILESYSTEM && defined WLED_ENABLE_FS_EDITOR
      #ifdef ARDUINO_ARCH_ESP32
-      server.addHandler(new SPIFFSEditor(SPIFFS));//http_username,http_password));
+      server.addHandler(new SPIFFSEditor(WLED_FS));//http_username,http_password));
      #else
       server.addHandler(new SPIFFSEditor());//http_username,http_password));
      #endif
     #else
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("The SPIFFS editor is disabled in this build."), 254);
+      serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
     });
     #endif
     //init ota page

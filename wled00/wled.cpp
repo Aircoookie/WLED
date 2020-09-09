@@ -24,6 +24,7 @@ void WLED::reset()
   setAllLeds();
   DEBUG_PRINTLN("MODULE RESET");
   ESP.restart();
+  SPIFFS.begin();
 }
 
 bool oappendi(int i)

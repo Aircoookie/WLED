@@ -27,6 +27,7 @@ bool bufferedFind(const char *target, File f) {
   byte c;
   uint16_t bufsize = 0, count = 0;
   byte buf[256];
+  f.seek(0);
 
   while (f.position() < f.size() -1) {
     //c = f.read();
@@ -54,21 +55,26 @@ bool bufferedFind(const char *target, File f) {
 bool bufferedFindSpace(uint16_t targetLen, File f) {
   Serial.print("bfs ");
   if (!f || !f.size()) return false;
+  Serial.print(targetLen);
   uint16_t index = 0;
   uint16_t bufsize = 0, count = 0;
   byte buf[256];
+  f.seek(0);
 
   while (f.position() < f.size() -1) {
     bufsize = f.read(buf, 256);
     count = 0;
     while (count < bufsize) {
+      Serial.print(count);
+      Serial.write(' ');
+      Serial.println(index);
       if(buf[count] != ' ')
       index = 0; // reset index if not space
 
       if(buf[count] == ' ') {
         if(++index >= targetLen) { // return true if space long enough
-          f.seek(f.position() - targetLen);
-           Serial.print("SPAAAACE!");
+          f.seek((f.position() - bufsize) + count +1 - targetLen);
+          Serial.print("SPAAAACE!");
           return true;
         }
       }
@@ -88,10 +94,10 @@ bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* conte
 bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
 {
   uint32_t pos = 0;
-  File f = SPIFFS.open(file, "r+");
-  if (!f) f = SPIFFS.open(file,"w");
+  File    f = WLED_FS.open(file, "r+");
+  if (!f) f = WLED_FS.open(file, "w");
   if (!f) return false;
-  //f.setTimeout(1);
+
   f.seek(0, SeekSet);
 
   Serial.print("Writing to ");
@@ -116,6 +122,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   StaticJsonDocument<1024> doc;
   deserializeJson(doc, f);
   uint32_t pos2 = f.position();
+
   uint32_t oldLen = pos2 - pos;
   Serial.print("Old obj len: ");
   Serial.print(oldLen);
@@ -135,7 +142,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   } else { //delete
     Serial.println("delete");
     pos -= strlen(key);
-    oldLen = pos2 - pos;
+    if (pos > 3) pos--; //also delete leading comma if not first object
     f.seek(pos);
     for (uint32_t i = pos; i < pos2; i++) {
       f.write(' ');
@@ -149,8 +156,8 @@ bool appendObjectToFile(const char* file, const char* key, JsonDocument* content
 {
   Serial.println("Append");
   uint32_t pos = 0;
-  File f = (input) ? input : SPIFFS.open(file, "r+");
-  if (!f) f = SPIFFS.open(file,"w");
+  File f = (input) ? input : WLED_FS.open(file, "r+");
+  if (!f) f = WLED_FS.open(file,"w");
   if (!f) return false;
   if (f.size() < 3) f.print("{}");
   
@@ -159,7 +166,7 @@ bool appendObjectToFile(const char* file, const char* key, JsonDocument* content
   Serial.print("clen"); Serial.println(contentLen);
   if (bufferedFindSpace(contentLen + strlen(key) + 1, f)) {
     Serial.println("space");
-    f.write(",");
+    if (f.position() > 2) f.write(","); //add comma if not first object
     f.print(key);
     serializeJson(*content, f);
     return true;
@@ -187,13 +194,12 @@ bool appendObjectToFile(const char* file, const char* key, JsonDocument* content
     f.write('{'); //start JSON
   }
 
-  //f.print("\"");
   f.print(key);
-  //f.print("\":");
+
   //Append object
   serializeJson(*content, f);
-  
   f.write('}');
+
   f.close();
 }
 
@@ -206,13 +212,10 @@ bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest
 
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
 {
-  //if (id == playlistId) return true;
-  //playlist is already loaded, but we can't be sure that file hasn't changed since loading
-  
-  File f = SPIFFS.open(file, "r");
+  File f = WLED_FS.open(file, "r");
   if (!f) return false;
   //f.setTimeout(0);
-  //Serial.println(key);
+
   if (!bufferedFind(key, f)) //key does not exist in file
   {
     f.close();
@@ -251,12 +254,12 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
   if(path.endsWith("/")) path += "index.htm";
   String contentType = getContentType(request, path);
   /*String pathWithGz = path + ".gz";
-  if(SPIFFS.exists(pathWithGz)){
-    request->send(SPIFFS, pathWithGz, contentType);
+  if(WLED_FS.exists(pathWithGz)){
+    request->send(WLED_FS, pathWithGz, contentType);
     return true;
   }*/
-  if(SPIFFS.exists(path)) {
-    request->send(SPIFFS, path, contentType);
+  if(WLED_FS.exists(path)) {
+    request->send(WLED_FS, path, contentType);
     return true;
   }
   return false;

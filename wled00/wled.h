@@ -10,9 +10,9 @@
 // version code in format yymmddb (b = daily build)
 #define VERSION 2009070
 
-// ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
+// ESP8266-01 (blue) got too little storage space to work with WLED. 0.10.2 is the last release supporting this unit.
 
-// ESP8266-01 (black) has 1MB flash and can thus fit the whole program. Use 1M(64K SPIFFS).
+// ESP8266-01 (black) has 1MB flash and can thus fit the whole program, although OTA update is not possible. Use 1M(128K SPIFFS).
 // Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
 // Alternatively, with platformio pass your chosen flags to your custom build target in platformio.ini.override
 
@@ -118,24 +118,13 @@
   #include <IRutils.h>
 #endif
 
+//Filesystem to use for preset and config files. SPIFFS or LittleFS on ESP8266, SPIFFS only on ESP32
+#define WLED_FS SPIFFS
+
 // remove flicker because PWM signal of RGB channels can become out of phase (part of core as of Arduino core v2.7.0)
 //#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
 //  #include "src/dependencies/arduino/core_esp8266_waveform.h"
 //#endif
-
-// enable additional debug output
-#ifdef WLED_DEBUG
-  #ifndef ESP8266
-  #include <rom/rtc.h>
-  #endif
-  #define DEBUG_PRINT(x) Serial.print(x)
-  #define DEBUG_PRINTLN(x) Serial.println(x)
-  #define DEBUG_PRINTF(x) Serial.printf(x)
-#else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTLN(x)
-  #define DEBUG_PRINTF(x)
-#endif
 
 // GLOBAL VARIABLES
 // both declared and defined in header (solution from http://www.keil.com/support/docs/1868.htm)
@@ -504,6 +493,30 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
+// enable additional debug output
+#ifdef WLED_DEBUG
+  #ifndef ESP8266
+  #include <rom/rtc.h>
+  #endif
+  #define DEBUG_PRINT(x) Serial.print(x)
+  #define DEBUG_PRINTLN(x) Serial.println(x)
+  #define DEBUG_PRINTF(x) Serial.printf(x)
+#else
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINTF(x)
+#endif
+
+#ifdef WLED_DEBUG_FS
+  #define DEBUGFS_PRINT(x) Serial.print(x)
+  #define DEBUGFS_PRINTLN(x) Serial.println(x)
+  #define DEBUGFS_PRINTF(x) Serial.printf(x)
+#else
+  #define DEBUGFS_PRINT(x)
+  #define DEBUGFS_PRINTLN(x)
+  #define DEBUGFS_PRINTF(x)
+#endif
+
 // debug macro variable definitions
 #ifdef WLED_DEBUG
   WLED_GLOBAL unsigned long debugTime _INIT(0);
@@ -511,7 +524,6 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   WLED_GLOBAL unsigned long wifiStateChangedTime _INIT(0);
   WLED_GLOBAL int loops _INIT(0);
 #endif
-
 
 #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)

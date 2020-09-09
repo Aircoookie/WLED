@@ -88,7 +88,7 @@ void handleIR();
 
 void deserializeSegment(JsonObject elem, byte it);
 bool deserializeState(JsonObject root);
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id);
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false);
 void serializeState(JsonObject root, bool forPreset = false);
 void serializeInfo(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
@@ -195,7 +195,7 @@ void saveSettingsToEEPROM();
 void loadSettingsFromEEPROM(bool first);
 void savedToPresets();
 bool applyPreset(byte index, bool loadBri = true);
-void savePreset(byte index, bool persist = true);
+void savePreset(byte index, bool persist = true, const char* pname = nullptr, byte prio = 50);
 void loadMacro(byte index, char* m);
 void applyMacro(byte index);
 void saveMacro(byte index, String mc, bool persist = true); //only commit on single save, not in settings

@@ -225,17 +225,17 @@ bool deserializeState(JsonObject root)
   bool persistSaves = !(root["np"] | false);
 
   ps = root["psave"] | -1;
-  if (ps >= 0) savePreset(ps, persistSaves);
+  if (ps >= 0) savePreset(ps, persistSaves, root["n"], root["p"]);
 
   return stateResponse;
 }
 
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset)
 {
 	root["id"] = id;
 	root["start"] = seg.start;
 	root["stop"] = seg.stop;
-	root["len"] = seg.stop - seg.start;
+	if (!forPreset) root["len"] = seg.stop - seg.start;
   root["grp"] = seg.grouping;
   root["spc"] = seg.spacing;
   root["on"] = seg.getOption(SEG_OPTION_ON);
@@ -317,7 +317,7 @@ void serializeState(JsonObject root, bool forPreset)
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();
-      serializeSegment(seg0, sg, s);
+      serializeSegment(seg0, sg, s, forPreset);
     }
   }
 }

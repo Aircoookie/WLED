@@ -33,7 +33,7 @@
 
 void commit()
 {
-  if (!EEPROM.commit()) errorFlag = 2;
+  if (!EEPROM.commit()) errorFlag = ERR_EEP_COMMIT;
 }
 
 /*
@@ -622,7 +622,7 @@ void savedToPresets()
 bool applyPreset(byte index, bool loadBri)
 {
   StaticJsonDocument<1024> temp;
-  errorFlag = !readObjectFromFileUsingId("/presets.json", index, &temp);
+  if (!readObjectFromFileUsingId("/presets.json", index, &temp)) errorFlag = ERR_FS_PLOAD;
   serializeJson(temp, Serial);
   deserializeState(temp.as<JsonObject>());
   //presetToApply = index;
@@ -672,11 +672,13 @@ bool applyPreset(byte index, bool loadBri)
   return true;
 }
 
-void savePreset(byte index, bool persist)
+void savePreset(byte index, bool persist, const char* pname, byte priority)
 {
   StaticJsonDocument<1024> doc;
   serializeState(doc.to<JsonObject>(), true);
-  doc["p"]=50;
+  doc["p"] = priority;
+  if (pname) doc["n"] = pname;
+
   //serializeJson(doc, Serial);
   writeObjectToFileUsingId("/presets.json", index, &doc);
   return;

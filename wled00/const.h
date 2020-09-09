@@ -126,4 +126,11 @@
 
 #define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
 
+// WLED Error modes
+#define ERR_NONE         0  // All good :)
+#define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
+#define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
+#define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
+#define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
+
 #endif
