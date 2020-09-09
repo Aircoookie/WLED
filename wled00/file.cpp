@@ -166,7 +166,7 @@ bool appendObjectToFile(const char* file, const char* key, JsonDocument* content
   Serial.print("clen"); Serial.println(contentLen);
   if (bufferedFindSpace(contentLen + strlen(key) + 1, f)) {
     Serial.println("space");
-    if (f.position() > 2) f.write(","); //add comma if not first object
+    if (f.position() > 2) f.write(','); //add comma if not first object
     f.print(key);
     serializeJson(*content, f);
     return true;
