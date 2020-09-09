@@ -128,6 +128,7 @@
 
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
+#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
 #define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist

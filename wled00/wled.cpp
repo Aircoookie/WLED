@@ -24,7 +24,6 @@ void WLED::reset()
   setAllLeds();
   DEBUG_PRINTLN("MODULE RESET");
   ESP.restart();
-  SPIFFS.begin();
 }
 
 bool oappendi(int i)
@@ -174,9 +173,9 @@ void WLED::setup()
 
 #ifndef WLED_DISABLE_FILESYSTEM
   #ifdef ARDUINO_ARCH_ESP32
-    SPIFFS.begin(true);
+    WLED_FS.begin(true);
   #endif
-    SPIFFS.begin();
+    WLED_FS.begin();
 #endif
 
   DEBUG_PRINTLN("Load EEPROM");
