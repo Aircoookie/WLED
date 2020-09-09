@@ -54,6 +54,13 @@ void initServer()
       request->send_P(200, "image/x-icon", favicon, 156);
     }
   });
+
+   server.on("/wled_akemi_original.png", HTTP_GET, [](AsyncWebServerRequest *request){
+    if(!handleFileRead(request, "/wled_akemi_original.png"))
+    {
+      request->send_P(200, "image/png", wled_akemi_original, 1354);
+    }
+  });
   
   server.on("/sliders", HTTP_GET, [](AsyncWebServerRequest *request){
     serveIndex(request);

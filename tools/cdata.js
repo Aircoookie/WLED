@@ -391,6 +391,11 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
       name: "favicon",
       method: "binary",
     },
+    {
+      file: "wled_akemi_original.png",
+      name: "wled_akemi_original",
+      method: "binary",
+    },
   ],
   "wled00/html_other.h"
 );
