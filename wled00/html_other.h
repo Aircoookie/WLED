@@ -53,24 +53,15 @@ onclick="B()">Back</button></body></html>)=====";
 const char PAGE_welcome[] PROGMEM = R"=====(<!DOCTYPE html><html><head><meta charset="utf-8"><meta 
 content="width=device-width" name="viewport"><meta name="theme-color" 
 content="#333333"><title>WLED Setup</title><style>
-body{font-family:Verdana,Helvetica,sans-serif;text-align:center;background-color:#333;margin:0;color:#fff}button{outline:0;cursor:pointer;padding:8px;margin:10px;width:230px;text-transform:uppercase;font-family:helvetica;font-size:19px;background-color:#222;color:#fff;border:0 solid #fff;border-radius:5px}svg{fill:#fff}
-</style></head><body><svg 
-style="position:absolute;width:0;height:0;overflow:hidden" version="1.1" 
-xmlns="http://www.w3.org/2000/svg"><defs><symbol id="lnr-smile" 
-viewBox="0 0 1024 1024"><path 
-d="M486.4 1024c-129.922 0-252.067-50.594-343.936-142.464s-142.464-214.014-142.464-343.936c0-129.923 50.595-252.067 142.464-343.936s214.013-142.464 343.936-142.464c129.922 0 252.067 50.595 343.936 142.464s142.464 214.014 142.464 343.936-50.594 252.067-142.464 343.936c-91.869 91.87-214.014 142.464-343.936 142.464zM486.4 102.4c-239.97 0-435.2 195.23-435.2 435.2s195.23 435.2 435.2 435.2 435.2-195.23 435.2-435.2-195.23-435.2-435.2-435.2z">
-</path><path 
-d="M332.8 409.6c-42.347 0-76.8-34.453-76.8-76.8s34.453-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.453 76.8-76.8 76.8zM332.8 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z">
-</path><path 
-d="M640 409.6c-42.349 0-76.8-34.453-76.8-76.8s34.451-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.451 76.8-76.8 76.8zM640 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z">
-</path><path 
-d="M486.4 870.4c-183.506 0-332.8-149.294-332.8-332.8 0-14.139 11.462-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 155.275 126.325 281.6 281.6 281.6s281.6-126.325 281.6-281.6c0-14.139 11.461-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 183.506-149.294 332.8-332.8 332.8z">
-</path></symbol></defs></svg><br><br><svg><use xlink:href="#lnr-smile"></use>
-</svg><h1>Welcome to WLED!</h1><h3>Thank you for installing my application!</h3>
-If you encounter a bug or have a question/feature suggestion, feel free to open a GitHub issue!
-<br><br><b>Next steps:</b><br><br>Connect the module to your local WiFi here!
-<br><button onclick='window.location.href="/settings/wifi"'>WiFi settings
-</button><br><i>Just trying this out in AP mode?</i><br><button 
+body{font-family:Verdana,Helvetica,sans-serif;text-align:center;background-color:#333;margin:0;color:#fff}button{outline:0;cursor:pointer;padding:8px;margin:10px;width:230px;text-transform:uppercase;font-family:helvetica;font-size:19px;background-color:#222;color:#fff;border:0 solid #fff;border-radius:25px}img{width:400px;max-width:50%;image-rendering:pixelated;image-rendering:crisp-edges;margin:25px 0 -10px 0}
+</style></head><body><img alt="" 
+src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAAFRSURBVFhH7ZXNbcMwDIXlIAv05kMXcIFcOk4mMNAu0JuHaAFP5aO9QA7eItFTRUOmJVuUEgRt8gGCGOqHjxLlqIensL2Y/qjO1Ys2Xt/N7+KrS9pLvAiB0ZvgLolCRJOnrNfQQiQioidGBScEIna2vxtRKmfZf5sSUOqTLeX+yFMQncDw0VtLQwE1IX8Md78CsYBhGEzjhPxbiAVUP2+mcUL+LeRFGMstinABCk5YdJw8AXhy/DkK2TVNk5dCBoht5LsitL1I6Zo1wGPNJtR1fS7LcibCBD/8/tOl4Iqg4O7+cTVw6tKah3EcrRUAp+AeEwE/GrfB2hiBPX37il4BrodwbbA2RviyXwho27bARFctMuK1EcK3HjZ8GLOuib3tvbBNNoMTCATR7voQ3iugLKhJghN8D1/2yfDsYrP1kfcpvgJPAUnk3Dnnb57AP0KpC41E1Lrp2uFLAAAAAElFTkSuQmCC">
+<h1>Welcome to WLED!</h1><h3>Thank you for installing my application!</h3>
+If you encounter a bug or have a question/feature suggestion,<br>
+feel free to open a GitHub issue!<br><br><b>Next steps:</b><br><br>
+Connect the module to your local WiFi here!<br><button 
+onclick='window.location.href="/settings/wifi"'>WiFi settings</button><br><i>
+Just trying this out in AP mode?</i><br><button 
 onclick='window.location.href="/sliders"'>To the controls!</button></body>
 </html>)=====";
 
