@@ -37,6 +37,7 @@
 #define DEFAULT_BRIGHTNESS (uint8_t)127
 #define DEFAULT_MODE       (uint8_t)0
 #define DEFAULT_SPEED      (uint8_t)128
+#define DEFAULT_INTENSITY  (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
