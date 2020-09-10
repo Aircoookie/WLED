@@ -22,7 +22,8 @@ bool isAsterisksOnly(const char* str, byte maxLen)
     if (str[i] == 0) break;
     if (str[i] != '*') return false;
   }
-  return true;
+  //at this point the password contains asterisks only
+  return (str[0] != 0); //false on empty string
 }
 
 

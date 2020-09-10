@@ -225,7 +225,7 @@ void handleNightlight()
       nightlightDelayMs = (int)(nightlightDelayMins*60000);
       nightlightActiveOld = true;
       briNlT = bri;
-      for (byte i=0; i<4; i++) colNlT[i] = col[i];                                     // remember starting color
+      for (byte i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color
       if (nightlightMode == NL_MODE_SUN)
       {
         //save current
@@ -233,6 +233,7 @@ void handleNightlight()
         colNlT[1] = effectSpeed;
         colNlT[2] = effectPalette;
 
+        strip.setMode(strip.getMainSegmentId(), FX_MODE_STATIC); //make sure seg runtime is reset if left in sunrise mode
         effectCurrent = FX_MODE_SUNRISE;
         effectSpeed = nightlightDelayMins;
         effectPalette = 0;
