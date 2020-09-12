@@ -196,6 +196,22 @@ writeChunks(
       filter: "css-minify",
     },
     {
+      file: "index.css",
+      name: "PAGE_html_uiCss",
+      prepend: "=====(<style>",
+      append: "</style>)=====",
+      method: "plaintext",
+      filter: "css-minify",
+    },
+    {
+      file: "index.js",
+      name: "PAGE_html_uiJs",
+      prepend: "=====(<script>",
+      append: "</script>)=====",
+      method: "plaintext",
+      filter: "js-minify",
+    },
+    {
       file: "settings.htm",
       name: "PAGE_settings",
       prepend: "=====(",
