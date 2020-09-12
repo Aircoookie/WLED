@@ -12,9 +12,14 @@
 #endif
 
 // the frequency to check temperature, 1 minute
-#define MEASUREMENT_INTERVAL 60000
+#ifndef USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL
+#define USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL 60000
+#endif
+
 // how many seconds after boot to take first measurement, 20 seconds
-#define FIRST_MEASUREMENT_AT 20000 
+#ifndef USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT
+#define USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT 20000 
+#endif
 
 OneWire oneWire(TEMPERATURE_PIN);
 DallasTemperature sensor(&oneWire);
@@ -27,13 +32,17 @@ class UsermodTemperature : public Usermod {
     // must first look up the device address at the specified index.
     DeviceAddress sensorDeviceAddress;
     // set last reading as "40 sec before boot", so first reading is taken after 20 sec
-    unsigned long lastMeasurement = UINT32_MAX - (MEASUREMENT_INTERVAL - FIRST_MEASUREMENT_AT);
+    unsigned long lastMeasurement = UINT32_MAX - (USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL - USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT);
     // last time requestTemperatures was called
+    // used to determine when we can read the sensors temperature
+    // we have to wait at least 93.75 ms after requestTemperatures() is called
     unsigned long lastTemperaturesRequest;
     float temperature = -100; // default to -100, DS18B20 only goes down to -50C
     // indicates requestTemperatures has been called but the sensor measurement is not complete
     bool waitingForConversion = false;
-    // simple flag to indicate we have finished the first getTemperature call
+    // flag to indicate we have finished the first getTemperature call
+    // allows this library to report to the user how long until the first
+    // measurement
     bool getTemperatureComplete = false;
     // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
     // temperature if flashed to a board without a sensor attached
@@ -71,10 +80,13 @@ class UsermodTemperature : public Usermod {
       disabled = !sensor.getAddress(sensorDeviceAddress, 0);
 
       if (!disabled) {
+        DEBUG_PRINTLN("Dallas Temperature found");
         // set the resolution for this specific device
         sensor.setResolution(sensorDeviceAddress, 9, true);
         // do not block waiting for reading
         sensor.setWaitForConversion(false); 
+      } else {
+        DEBUG_PRINTLN("Dallas Temperature not found");
       }
     }
 
@@ -88,7 +100,7 @@ class UsermodTemperature : public Usermod {
       // check to see if we are due for taking a measurement
       // lastMeasurement will not be updated until the conversion
       // is complete the the reading is finished
-      if (now - lastMeasurement < MEASUREMENT_INTERVAL)
+      if (now - lastMeasurement < USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL)
       {
         return;
       }
@@ -123,6 +135,11 @@ class UsermodTemperature : public Usermod {
     }
 
     void addToJsonInfo(JsonObject& root) {
+      // dont add temperature to info if we are disabled
+      if (disabled) {
+        return;
+      }
+
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
@@ -131,7 +148,7 @@ class UsermodTemperature : public Usermod {
       if (!getTemperatureComplete) {
         // if we haven't read the sensor yet, let the user know
         // that we are still waiting for the first measurement
-        temp.add((FIRST_MEASUREMENT_AT - millis()) / 1000);
+        temp.add((USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT - millis()) / 1000);
         temp.add(" sec until read");
         return;
       }
