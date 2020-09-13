@@ -123,7 +123,11 @@
 #endif
 
 //Filesystem to use for preset and config files. SPIFFS or LittleFS on ESP8266, SPIFFS only on ESP32
-#define WLED_FS LittleFS
+#ifdef ESP8266
+  #define WLED_FS LittleFS
+#else
+  #define WLED_FS SPIFFS
+#endif
 
 // remove flicker because PWM signal of RGB channels can become out of phase (part of core as of Arduino core v2.7.0)
 //#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)

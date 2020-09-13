@@ -4,15 +4,6 @@
  * Utility for SPIFFS filesystem
  */
 
-//filesystem
-#ifndef WLED_DISABLE_FILESYSTEM
-#include <FS.h>
-#ifdef ARDUINO_ARCH_ESP32
-#include "SPIFFS.h"
-#endif
-#include "SPIFFSEditor.h"
-#endif
-
 #ifndef WLED_DISABLE_FILESYSTEM
 
 //find() that reads and buffers data from file stream in 256-byte blocks.
@@ -62,7 +53,6 @@ bool bufferedFindSpace(uint16_t targetLen, File f) {
   #endif
 
   if (!f || !f.size()) return false;
-  DEBUGFS_PRINTF("Filesize %d\n", f.size());
 
   uint16_t index = 0;
   uint16_t bufsize = 0, count = 0;
@@ -94,7 +84,7 @@ bool bufferedFindSpace(uint16_t targetLen, File f) {
 bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t s)
 {
   #ifdef WLED_DEBUG_FS
-    DEBUG_PRINTLN("Append");
+    DEBUGFS_PRINTLN("Append");
     uint32_t s1 = millis();
   #endif
   uint32_t pos = 0;
@@ -108,6 +98,7 @@ bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t
     if (f.position() > 2) f.write(','); //add comma if not first object
     f.print(key);
     serializeJson(*content, f);
+    DEBUGFS_PRINTF("Inserted, took %d ms (total %d)", millis() - s1, millis() - s);
     return true;
   }
   
@@ -188,7 +179,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   
   if (!content->isNull() && measureJson(*content) <= oldLen)  //replace
   {
-    DEBUG_PRINTLN("replace");
+    DEBUGFS_PRINTLN("replace");
     f.seek(pos);
     serializeJson(*content, f);
     //pad rest
@@ -196,7 +187,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
       f.write(' ');
     }
   } else { //delete
-    DEBUG_PRINTLN("delete");
+    DEBUGFS_PRINTLN("delete");
     pos -= strlen(key);
     if (pos > 3) pos--; //also delete leading comma if not first object
     f.seek(pos);

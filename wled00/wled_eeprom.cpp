@@ -675,15 +675,17 @@ bool applyPreset(byte index, bool loadBri)
 void savePreset(byte index, bool persist, const char* pname, byte priority, JsonObject saveobj)
 {
   StaticJsonDocument<1024> doc;
+  JsonObject sObj = doc.to<JsonObject>();
+
   if (saveobj.isNull()) {
-    Serial.println("Save current state");
+    DEBUGFS_PRINTLN("Save current state");
     serializeState(doc.to<JsonObject>(), true);
   } else {
-    Serial.println("Save custom");
-    doc = saveobj;
+    DEBUGFS_PRINTLN("Save custom");
+    sObj.set(saveobj);
   }
-  doc["p"] = priority;
-  if (pname) doc["n"] = pname;
+  sObj["p"] = priority;
+  if (pname) sObj["n"] = pname;
 
   //serializeJson(doc, Serial);
   writeObjectToFileUsingId("/presets.json", index, &doc);
