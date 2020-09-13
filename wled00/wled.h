@@ -41,12 +41,16 @@
 // to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
 
+// filesystem specific debugging
+#define WLED_DEBUG_FS
+
 // Library inclusions. 
 #include <Arduino.h>
 #ifdef ESP8266
   #include <ESP8266WiFi.h>
   #include <ESP8266mDNS.h>
   #include <ESPAsyncTCP.h>
+  #include <LittleFS.h>
   extern "C"
   {
   #include <user_interface.h>
@@ -119,7 +123,7 @@
 #endif
 
 //Filesystem to use for preset and config files. SPIFFS or LittleFS on ESP8266, SPIFFS only on ESP32
-#define WLED_FS SPIFFS
+#define WLED_FS LittleFS
 
 // remove flicker because PWM signal of RGB channels can become out of phase (part of core as of Arduino core v2.7.0)
 //#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
@@ -500,7 +504,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   #endif
   #define DEBUG_PRINT(x) Serial.print(x)
   #define DEBUG_PRINTLN(x) Serial.println(x)
-  #define DEBUG_PRINTF(x) Serial.printf(x)
+  #define DEBUG_PRINTF(x...) Serial.printf(x)
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
@@ -510,7 +514,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #ifdef WLED_DEBUG_FS
   #define DEBUGFS_PRINT(x) Serial.print(x)
   #define DEBUGFS_PRINTLN(x) Serial.println(x)
-  #define DEBUGFS_PRINTF(x) Serial.printf(x)
+  #define DEBUGFS_PRINTF(x...) Serial.printf(x)
 #else
   #define DEBUGFS_PRINT(x)
   #define DEBUGFS_PRINTLN(x)

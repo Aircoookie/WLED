@@ -622,7 +622,7 @@ void savedToPresets()
 bool applyPreset(byte index, bool loadBri)
 {
   StaticJsonDocument<1024> temp;
-  if (!readObjectFromFileUsingId("/presets.json", index, &temp)) errorFlag = ERR_FS_PLOAD;
+  errorFlag = readObjectFromFileUsingId("/presets.json", index, &temp) ? ERR_NONE : ERR_FS_PLOAD;
   serializeJson(temp, Serial);
   deserializeState(temp.as<JsonObject>());
   //presetToApply = index;
@@ -672,16 +672,24 @@ bool applyPreset(byte index, bool loadBri)
   return true;
 }
 
-void savePreset(byte index, bool persist, const char* pname, byte priority)
+void savePreset(byte index, bool persist, const char* pname, byte priority, JsonObject saveobj)
 {
   StaticJsonDocument<1024> doc;
-  serializeState(doc.to<JsonObject>(), true);
+  if (saveobj.isNull()) {
+    Serial.println("Save current state");
+    serializeState(doc.to<JsonObject>(), true);
+  } else {
+    Serial.println("Save custom");
+    doc = saveobj;
+  }
   doc["p"] = priority;
   if (pname) doc["n"] = pname;
 
   //serializeJson(doc, Serial);
   writeObjectToFileUsingId("/presets.json", index, &doc);
+  //Serial.println("Done!");
   return;
+  
   if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
   uint16_t i = 380 + index*20;//min400

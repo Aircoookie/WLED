@@ -159,7 +159,7 @@ void initServer()
      #ifdef ARDUINO_ARCH_ESP32
       server.addHandler(new SPIFFSEditor(WLED_FS));//http_username,http_password));
      #else
-      server.addHandler(new SPIFFSEditor());//http_username,http_password));
+      server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
      #endif
     #else
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){

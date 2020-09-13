@@ -18,11 +18,15 @@
 //find() that reads and buffers data from file stream in 256-byte blocks.
 //Significantly faster, f.find(key) can take SECONDS for multi-kB files
 bool bufferedFind(const char *target, File f) {
+  #ifdef WLED_DEBUG_FS
+    DEBUGFS_PRINT("Find ");
+    DEBUGFS_PRINTLN(target);
+    uint32_t s = millis();
+  #endif
+
   if (!f || !f.size()) return false;
   size_t targetLen = strlen(target);
-  Serial.print("bfind ");
-  Serial.println(target);
-  //Serial.println(f.position());
+
   size_t index = 0;
   byte c;
   uint16_t bufsize = 0, count = 0;
@@ -30,8 +34,6 @@ bool bufferedFind(const char *target, File f) {
   f.seek(0);
 
   while (f.position() < f.size() -1) {
-    //c = f.read();
-    Serial.println(f.position());
     bufsize = f.read(buf, 256);
     count = 0;
     while (count < bufsize) {
@@ -41,21 +43,27 @@ bool bufferedFind(const char *target, File f) {
       if(buf[count] == target[index]) {
         if(++index >= targetLen) { // return true if all chars in the target match
           f.seek((f.position() - bufsize) + count +1);
+          DEBUGFS_PRINTF("Found at pos %d, took %d ms", f.position(), millis() - s);
           return true;
         }
       }
       count++;
     }
   }
-  Serial.println("No match");
+  DEBUGFS_PRINTF("No match, took %d ms\n", millis() - s);
   return false;
 }
 
 //find empty spots in file stream in 256-byte blocks.
 bool bufferedFindSpace(uint16_t targetLen, File f) {
-  Serial.print("bfs ");
+  #ifdef WLED_DEBUG_FS
+    DEBUGFS_PRINTF("Find %d spaces\n", targetLen);
+    uint32_t s = millis();
+  #endif
+
   if (!f || !f.size()) return false;
-  Serial.print(targetLen);
+  DEBUGFS_PRINTF("Filesize %d\n", f.size());
+
   uint16_t index = 0;
   uint16_t bufsize = 0, count = 0;
   byte buf[256];
@@ -64,108 +72,39 @@ bool bufferedFindSpace(uint16_t targetLen, File f) {
   while (f.position() < f.size() -1) {
     bufsize = f.read(buf, 256);
     count = 0;
+    
     while (count < bufsize) {
-      Serial.print(count);
-      Serial.write(' ');
-      Serial.println(index);
       if(buf[count] != ' ')
       index = 0; // reset index if not space
 
       if(buf[count] == ' ') {
         if(++index >= targetLen) { // return true if space long enough
           f.seek((f.position() - bufsize) + count +1 - targetLen);
-          Serial.print("SPAAAACE!");
+          DEBUGFS_PRINTF("Found at pos %d, took %d ms", f.position(), millis() - s);
           return true;
         }
       }
       count++;
     }
   }
+  DEBUGFS_PRINTF("No match, took %d ms\n", millis() - s);
   return false;
 }
 
-bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content)
+bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t s)
 {
-  char objKey[10];
-  sprintf(objKey, "\"%ld\":", id);
-  writeObjectToFile(file, objKey, content);
-}
-
-bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
-{
+  #ifdef WLED_DEBUG_FS
+    DEBUG_PRINTLN("Append");
+    uint32_t s1 = millis();
+  #endif
   uint32_t pos = 0;
-  File    f = WLED_FS.open(file, "r+");
-  if (!f) f = WLED_FS.open(file, "w");
-  if (!f) return false;
-
-  f.seek(0, SeekSet);
-
-  Serial.print("Writing to ");
-  Serial.print(file);
-  Serial.print(" with key ");
-  Serial.print(key);
-  Serial.print(" > ");
-  serializeJson(*content, Serial);
-  Serial.println();
-  
-  if (!bufferedFind(key, f)) //key does not exist in file
-  {
-    Serial.println("Key not found");
-    return appendObjectToFile(file, key, content, f);
-  } 
-  
-  Serial.println("Key found!");
-  //exists
-  pos = f.position();
-  Serial.println(pos);
-  //measure out end of old object
-  StaticJsonDocument<1024> doc;
-  deserializeJson(doc, f);
-  uint32_t pos2 = f.position();
-
-  uint32_t oldLen = pos2 - pos;
-  Serial.print("Old obj len: ");
-  Serial.print(oldLen);
-  Serial.print(" > ");
-  serializeJson(doc, Serial);
-  Serial.println();
-  
-  if (!content->isNull() && measureJson(*content) <= oldLen)  //replace
-  {
-    Serial.println("replace");
-    f.seek(pos);
-    serializeJson(*content, f);
-    //pad rest
-    for (uint32_t i = f.position(); i < pos2; i++) {
-      f.write(' ');
-    }
-  } else { //delete
-    Serial.println("delete");
-    pos -= strlen(key);
-    if (pos > 3) pos--; //also delete leading comma if not first object
-    f.seek(pos);
-    for (uint32_t i = pos; i < pos2; i++) {
-      f.write(' ');
-    }
-    if (!content->isNull()) return appendObjectToFile(file, key, content, f);
-  }
-  f.close();
-}
-
-bool appendObjectToFile(const char* file, const char* key, JsonDocument* content, File input)
-{
-  Serial.println("Append");
-  uint32_t pos = 0;
-  File f = (input) ? input : WLED_FS.open(file, "r+");
-  if (!f) f = WLED_FS.open(file,"w");
   if (!f) return false;
   if (f.size() < 3) f.print("{}");
   
   //if there is enough empty space in file, insert there instead of appending
   uint32_t contentLen = measureJson(*content);
-  Serial.print("clen"); Serial.println(contentLen);
+  DEBUGFS_PRINTF("CLen %d\n", contentLen);
   if (bufferedFindSpace(contentLen + strlen(key) + 1, f)) {
-    Serial.println("space");
     if (f.position() > 2) f.write(','); //add comma if not first object
     f.print(key);
     serializeJson(*content, f);
@@ -178,13 +117,13 @@ bool appendObjectToFile(const char* file, const char* key, JsonDocument* content
   
   if (pos == 0) //not found
   {
-    Serial.println("not}");
+    DEBUGFS_PRINTLN("not }");
     while (bufferedFind("}",f)) //find last closing bracket in JSON if not last char
     {
       pos = f.position();
     }
   }
-  Serial.print("pos"); Serial.println(pos);
+  DEBUGFS_PRINT("pos "); DEBUGFS_PRINTLN(pos);
   if (pos > 2)
   {
     f.seek(pos, SeekSet);
@@ -201,6 +140,74 @@ bool appendObjectToFile(const char* file, const char* key, JsonDocument* content
   f.write('}');
 
   f.close();
+  DEBUGFS_PRINTF("Appended, took %d ms (total %d)", millis() - s1, millis() - s);
+}
+
+bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content)
+{
+  char objKey[10];
+  sprintf(objKey, "\"%ld\":", id);
+  writeObjectToFile(file, objKey, content);
+}
+
+bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
+{
+  uint32_t s = 0; //timing
+  #ifdef WLED_DEBUG_FS
+    DEBUGFS_PRINTF("Write to %s with key %s >>>\n", file, key);
+    serializeJson(*content, Serial); DEBUGFS_PRINTLN();
+    s = millis();
+  #endif
+
+  uint32_t pos = 0;
+  File    f = WLED_FS.open(file, "r+");
+  if (!f && !WLED_FS.exists(file)) f = WLED_FS.open(file, "w+");
+  if (!f) {
+    DEBUGFS_PRINTLN("Failed to open!");
+    return false;
+  }
+  
+  if (!bufferedFind(key, f)) //key does not exist in file
+  {
+    return appendObjectToFile(f, key, content, s);
+  } 
+  
+  //exists
+  pos = f.position();
+  //measure out end of old object
+  StaticJsonDocument<1024> doc;
+  deserializeJson(doc, f);
+  uint32_t pos2 = f.position();
+
+  uint32_t oldLen = pos2 - pos;
+  #ifdef WLED_DEBUG_FS
+    DEBUGFS_PRINTF("Old obj len %d >>> ", oldLen);
+    serializeJson(doc, Serial);
+    DEBUGFS_PRINTLN();
+  #endif
+  
+  if (!content->isNull() && measureJson(*content) <= oldLen)  //replace
+  {
+    DEBUG_PRINTLN("replace");
+    f.seek(pos);
+    serializeJson(*content, f);
+    //pad rest
+    for (uint32_t i = f.position(); i < pos2; i++) {
+      f.write(' ');
+    }
+  } else { //delete
+    DEBUG_PRINTLN("delete");
+    pos -= strlen(key);
+    if (pos > 3) pos--; //also delete leading comma if not first object
+    f.seek(pos);
+    for (uint32_t i = pos; i < pos2; i++) {
+      f.write(' ');
+    }
+    if (!content->isNull()) return appendObjectToFile(f, key, content, s);
+  }
+  f.close();
+  DEBUGFS_PRINTF("Deleted, took %d ms\n", millis() - s);
+  return true;
 }
 
 bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest)
@@ -212,19 +219,24 @@ bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest
 
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
 {
+  #ifdef WLED_DEBUG_FS
+    DEBUGFS_PRINTF("Read from %s with key %s >>>\n", file, key);
+    uint32_t s = millis();
+  #endif
   File f = WLED_FS.open(file, "r");
   if (!f) return false;
-  //f.setTimeout(0);
 
   if (!bufferedFind(key, f)) //key does not exist in file
   {
     f.close();
+    DEBUGFS_PRINTLN("Obj not found.");
     return false;
   }
 
   deserializeJson(*dest, f);
 
   f.close();
+  DEBUGFS_PRINTF("Read, took %d ms\n", millis() - s);
   return true;
 }
 #endif

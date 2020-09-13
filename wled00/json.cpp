@@ -225,7 +225,7 @@ bool deserializeState(JsonObject root)
   bool persistSaves = !(root["np"] | false);
 
   ps = root["psave"] | -1;
-  if (ps >= 0) savePreset(ps, persistSaves, root["n"], root["p"]);
+  if (ps >= 0) savePreset(ps, persistSaves, root["n"], root["p"] | 50, root["o"].as<JsonObject>());
 
   return stateResponse;
 }
