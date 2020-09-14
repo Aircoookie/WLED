@@ -1,10 +1,9 @@
 #include "wled.h"
 
+
 /*
  * Receives client input
  */
-
-bool handleLx(int lxValue, bool primary);
 
 void _setRandomColor(bool _sec,bool fromButton)
 {
@@ -515,20 +514,33 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   updateVal(&req, "B2=", &colSec[2]);
   updateVal(&req, "W2=", &colSec[3]);
 
-  //loxone parser
-  pos = req.indexOf("LX="); // Loxone primary color
+  //lox parser
+  int rgbw[4] = {0,0,0,0};
+  pos = req.indexOf("LX="); // Lox primary color
   if (pos > 0) {
     int lxValue = getNumVal(&req, pos);
-    handleLx(lxValue, true);
-    DEBUG_PRINT("LX: Loxone primary = ");
-    DEBUG_PRINTLN(lxValue);
+    if (parseLx(lxValue, rgbw)) {
+      col[0] = rgbw[0];
+      col[1] = rgbw[1];
+      col[2] = rgbw[2];
+      bri = 255;
+      nightlightActive = false; //always disable nightlight when toggling
+      DEBUG_PRINT("LX: Lox primary = ");
+      DEBUG_PRINTLN(lxValue);
+    }
   }
-  pos = req.indexOf("LY"); // Loxone secondary color
+  pos = req.indexOf("LY"); // Lox secondary color
   if (pos > 0) {
     int lxValue = getNumVal(&req, pos);
-    handleLx(lxValue, false);
-    DEBUG_PRINT("LX: Loxone secondary = ");
-    DEBUG_PRINTLN(lxValue);
+    if(parseLx(lxValue, rgbw)) {
+      colSec[0] = rgbw[0];
+      colSec[1] = rgbw[1];
+      colSec[2] = rgbw[2];
+      bri = 255;
+      nightlightActive = false; //always disable nightlight when toggling
+      DEBUG_PRINT("LY: Lox secondary = ");
+      DEBUG_PRINTLN(lxValue);
+    }
   }
 
   //set hue
@@ -750,89 +762,3 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   return true;
 }
-
-
- //todo: segment determination
-bool handleLx(int lxValue, bool primary)
-{
-  bool ok = false;
-  float lxRed = 0;
-  float lxGreen = 0;
-  float lxBlue = 0;
-
-  if (lxValue < 200000000) { 
-    // Loxone RGB
-    ok = true;
-    lxRed = round((lxValue % 1000) * 2.55);
-    lxGreen = round(((lxValue / 1000) % 1000) * 2.55);
-    lxBlue = round(((lxValue / 1000000) % 1000) * 2.55);
-  } else if ((lxValue >= 200000000) && (lxValue <= 201006500)) { 
-    // Loxone Lumitech
-    ok = true;
-    float tmpBri = floor((lxValue - 200000000) / 10000); ;
-    uint16_t ct = (lxValue - 200000000) - (((uint8_t)tmpBri) * 10000);
-    float temp = 0;
-
-    tmpBri *= 2.55;
-    if (tmpBri < 0) {
-      tmpBri = 0;
-    } else if (tmpBri > 255) {
-      tmpBri = 255;
-    }
-    if (ct < 2700) {
-      ct = 2700;
-    } else if (ct > 6500) {
-      ct = 6500;
-    }
-
-    temp = ct / 100;
-    if (temp <= 66) {
-      lxRed = 255;
-      lxGreen = round(99.4708025861 * log(temp) - 161.1195681661);
-      if (temp <= 19) {
-        lxBlue = 0;
-      } else {
-        lxBlue = round(138.5177312231 * log((temp - 10)) - 305.0447927307);
-      }
-    } else {
-      lxRed = round(329.698727446 * pow((temp - 60), -0.1332047592));
-      lxGreen = round(288.1221695283 * pow((temp - 60), -0.0755148492));
-      lxBlue = 255;
-    } 
-    lxRed *= (tmpBri/255);
-    lxGreen *= (tmpBri/255);
-    lxBlue *= (tmpBri/255);
-  }
-
-  if (ok) {
-    bri = 255;
-    nightlightActive = false; //always disable nightlight when toggling
-    if (lxRed > 255) {
-      lxRed = 255;
-    } else if (lxRed < 0) {
-      lxRed = 0;
-    }
-    if (lxGreen > 255) {
-      lxGreen = 255;
-    } else if (lxGreen < 0) {
-      lxGreen = 0;
-    }
-    if (lxBlue > 255) {
-      lxBlue = 255;
-    } else if (lxBlue < 0) {
-      lxBlue = 0;
-    }
-    if (primary) {
-      col[0] = (uint8_t)lxRed;
-      col[1] = (uint8_t)lxGreen;
-      col[2] = (uint8_t)lxBlue;
-    } else {
-      colSec[0] = (uint8_t)lxRed;
-      colSec[1] = (uint8_t)lxGreen;
-      colSec[2] = (uint8_t)lxBlue;
-    }
-    return true;
-  }
-  return false;
-}
-
