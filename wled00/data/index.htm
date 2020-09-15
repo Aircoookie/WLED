@@ -1432,7 +1432,8 @@ function populateSegments(s)
 function updateTrail(e, slidercol)
 {
 	if (e==null) return;
-	var progress = e.value *100 /255;
+	var max = e.hasAttribute('max') ? e.attributes['max'].value : 255;
+	var progress = e.value * 100 / max;
 	progress = parseInt(progress);
 	var scol;
 	switch (slidercol) {
