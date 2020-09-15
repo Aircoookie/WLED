@@ -399,6 +399,12 @@ void serializeInfo(JsonObject root)
   wifi_info["rssi"] = qrssi;
   wifi_info["signal"] = getSignalQuality(qrssi);
   wifi_info["channel"] = WiFi.channel();
+
+  JsonObject fs_info = root.createNestedObject("fs");
+  FSInfo fsi;
+  WLED_FS.info(fsi);
+  fs_info["u"] = fsi.usedBytes;
+  fs_info["t"] = fsi.totalBytes;
   
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
