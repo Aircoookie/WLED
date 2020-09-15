@@ -26,7 +26,7 @@
 #ifdef ESP32
 
 
-class TouchBrightnessControl {
+class TouchBrightnessControl : public Usermod {
   private:
     unsigned long lastTime = 0;         //Interval
     unsigned long lastTouch = 0;        //Timestamp of last Touch
@@ -43,9 +43,9 @@ class TouchBrightnessControl {
     }
 
     void loop() {
-      if (millis() - lastTime > 50) {                 //Check every 50ms if a touch accures
+      if (millis() - lastTime >= 50) {                 //Check every 50ms if a touch occurs
         lastTime = millis();
-        touchReading = touchRead(T0);                 //Read touchsensor on pin T0 (GPIO4 / D4)
+        touchReading = touchRead(T0);                 //Read touch sensor on pin T0 (GPIO4 / D4)
         
         if(touchReading < threshold && released) {    //Touch started
           released = false;
@@ -84,11 +84,5 @@ class TouchBrightnessControl {
         
       }
     }
-    
-    uint16_t getId()                                             //Needed???
-    {
-      return USERMOD_ID_EXAMPLE;
-    }
-
 };
 #endif
