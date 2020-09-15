@@ -84,10 +84,12 @@ void WLED::loop()
 
     handleHue();
     handleBlynk();
-
     yield();
+
     if (!offMode)
       strip.service();
+    else if (offMode && !noWifiSleep)
+      delay(1);
   }
   yield();
 #ifdef ESP8266
