@@ -12,7 +12,8 @@
 
 #include "wled.h"
 
-#define threshold 30                    //Increase value if touches falsely accur. Decrease value if actual touches are not recognized
+#define threshold 40                    //Increase value if touches falsely accur. Decrease value if actual touches are not recognized
+#define touchPin T0                     //T0 = D4 / GPIO4
 
 //Define the 5 brightness levels
 //Long press to turn off / on
@@ -43,18 +44,18 @@ class TouchBrightnessControl : public Usermod {
     }
 
     void loop() {
-      if (millis() - lastTime >= 50) {                 //Check every 50ms if a touch occurs
+      if (millis() - lastTime >= 50) {                           //Check every 50ms if a touch occurs
         lastTime = millis();
-        touchReading = touchRead(T0);                 //Read touch sensor on pin T0 (GPIO4 / D4)
+        touchReading = touchRead(touchPin);                      //Read touch sensor on pin T0 (GPIO4 / D4)
         
-        if(touchReading < threshold && released) {    //Touch started
+        if(touchReading < threshold && released) {               //Touch started
           released = false;
           lastTouch = millis();
         }
-        else if(touchReading >= threshold && !released) {       //Touch released
+        else if(touchReading >= threshold && !released) {        //Touch released
           released = true;
           lastRelease = millis();
-          touchDuration = lastRelease - lastTouch;              //Calculate duration
+          touchDuration = lastRelease - lastTouch;               //Calculate duration
         }
         
         //Serial.println(touchDuration);
