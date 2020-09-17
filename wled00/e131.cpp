@@ -137,7 +137,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
           uint16_t ledsInFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / 3;
           previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * MAX_LEDS_PER_UNIVERSE;
         }
-        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset) / 3;
+        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset +1) / 3;
         for (uint16_t i = previousLeds; i < ledsTotal; i++) {
           setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], 0);
         }

@@ -72,7 +72,7 @@ WS2811 | 12v | 3-LED segments
 WS2815 | 12v | 
 GS8208 | 12v |
 
-## 🧊 Compatibe PC RGB Fans and ARGB accessories
+## 🧊 Compatible PC RGB Fans and ARGB accessories
 Brand | Model | Comments
 |---|---|---|
 Corsair | HD120 Fan | Uses WS2812B, data-in only

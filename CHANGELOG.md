@@ -2,6 +2,11 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2009170
+
+-   New WLED logo on Welcome screen (#1164)
+-   Fixed 170th pixel dark in E1.31
+
 #### Build 2009100
 
 -   Fixed sunrise mode not reinitializing
