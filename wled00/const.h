@@ -126,4 +126,6 @@
 
 #define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
 
+#define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
+
 #endif
