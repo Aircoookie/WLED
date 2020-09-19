@@ -144,7 +144,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
         break;
       }
     default:
-      DEBUG_PRINTLN("unknown E1.31 DMX mode");
+      DEBUG_PRINTLN(F("unknown E1.31 DMX mode"));
       return;  // nothing to do
       break;
   }

@@ -126,4 +126,11 @@
 
 #define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
 
+// Size of buffer for API JSON object (increase for more segments)
+#ifdef ESP8266
+  #define JSON_BUFFER_SIZE 9216
+#else
+  #define JSON_BUFFER_SIZE 16384
+#endif
+
 #endif
