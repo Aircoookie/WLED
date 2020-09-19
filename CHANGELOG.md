@@ -2,6 +2,20 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2009170
+
+-   New WLED logo on Welcome screen (#1164)
+-   Fixed 170th pixel dark in E1.31
+
+#### Build 2009100
+
+-   Fixed sunrise mode not reinitializing
+-   Fixed passwords not clearable
+
+#### Build 2009070
+
+-   New Segments are now initialized with default speed and intensity
+
 #### Build 2009030
 
 -   Fixed bootloop if mDNS is used on builds without OTA support

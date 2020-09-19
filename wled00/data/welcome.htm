@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
 	<meta content='width=device-width' name='viewport'>
-  <meta name="theme-color" content="#333333">
-	<title>WLED Setup</title>
+  <meta name="theme-color" content="#222222">
+	<title>Welcome!</title>
 	<style>
 		body {
 			font-family: Verdana, Helvetica, sans-serif;
 			text-align: center;
-			background-color: #333;
+			background-color: #222;
 			margin: 0;
 			color: #fff;
 		}
@@ -23,32 +23,42 @@
       text-transform: uppercase;
       font-family: helvetica;
       font-size: 19px;
-      background-color: #222;
+      background-color: #333;
       color: white;
       border: 0px solid white;
-      border-radius: 5px;
+      border-radius: 25px;
+      filter: drop-shadow(0px 0px 1px #000);
     }
 
-		svg {
-			fill: #fff;
-		}
+    img {
+      width: 999px;
+      max-width: 85%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      margin: 25px 0 -10px 0;
+      animation: fi 1s;
+    }
+    
+    @keyframes fi {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+    }
+    
+    .main {
+      animation: fi 1.5s .7s both;
+    }
 	</style>
 </head>
 <body>
-<svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1" xmlns="http://www.w3.org/2000/svg">
-<defs>
-	<symbol id="lnr-smile" viewBox="0 0 1024 1024"><path d="M486.4 1024c-129.922 0-252.067-50.594-343.936-142.464s-142.464-214.014-142.464-343.936c0-129.923 50.595-252.067 142.464-343.936s214.013-142.464 343.936-142.464c129.922 0 252.067 50.595 343.936 142.464s142.464 214.014 142.464 343.936-50.594 252.067-142.464 343.936c-91.869 91.87-214.014 142.464-343.936 142.464zM486.4 102.4c-239.97 0-435.2 195.23-435.2 435.2s195.23 435.2 435.2 435.2 435.2-195.23 435.2-435.2-195.23-435.2-435.2-435.2z"></path><path d="M332.8 409.6c-42.347 0-76.8-34.453-76.8-76.8s34.453-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.453 76.8-76.8 76.8zM332.8 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M640 409.6c-42.349 0-76.8-34.453-76.8-76.8s34.451-76.8 76.8-76.8 76.8 34.453 76.8 76.8-34.451 76.8-76.8 76.8zM640 307.2c-14.115 0-25.6 11.485-25.6 25.6s11.485 25.6 25.6 25.6 25.6-11.485 25.6-25.6-11.485-25.6-25.6-25.6z"></path><path d="M486.4 870.4c-183.506 0-332.8-149.294-332.8-332.8 0-14.139 11.462-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 155.275 126.325 281.6 281.6 281.6s281.6-126.325 281.6-281.6c0-14.139 11.461-25.6 25.6-25.6s25.6 11.461 25.6 25.6c0 183.506-149.294 332.8-332.8 332.8z"></path></symbol>
-</defs></svg>
-<br><br>
-<svg><use xlink:href="#lnr-smile"></use></svg>
+<img alt="" src=" data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHEAAAAjCAYAAACjOOUsAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsAAAA7AAWrWiQkAAATfSURBVGhD7ZlPaBVHHMdnS2Ox5iKYGIyYJwQlUTHG6kUwtSAIBsEiBopgKR5i68mbIPgEwZun0uYgouIlobQIKQheIsSLaBSaRFoEc3gtMa9HLaiH7X4n81tn583u/HkTaZ/7gR+zMzvv93bfZ3/777GSkpL/AJFo3Tg/H7OuPtGxY7CTsZnjkd/3lRTi/qMKgfGXt8TAO6KfT2TG1f7u6ROlyBXgI9HaQRW4+JR3ox92Z1p1XO3PLCUVORHHvFMSDDeJBuJvH4mlZdS+C3c7B+Ln3fvivw59w0MMOzP/FYvj75K4PMhDDDszdbM7rk1V4hcPD/MQw858MbEnPvJgf3x29hQPMdwUbqc2qRIhCBVGrQk+Lzm9mq6NkIe2t20N7xOf7NjK2w13rlltM+Sh7VvLu+/YOMib6NyMVR7IQ9u7qY33ibb2bbxd/9mvVnkgD217ZTXvE72fbuHtle1X3VxIuH1QOZ2mmG5yaH4yr0giBKryVCDTJBICG+SpJDJNIiFQlacCmSaREKjKU4FMX5F+p1NIk8OExTwbgeD1b7+zotOrlUBQm2FFp1cbgeDtyzlWdHq1EQie/fMH8z29Br0myiwdr7PkWpSGC2se/8IqtWnRa+y7Ur+Q3FF97/X7ZFjV/4B1Dz1Pw5WrlZ/Y7T330gjFikkE9Xo9jSJ0Vah+Ru7nVWNRFWq3Iacai6qQ9kfOl1eNuirUfZ7wrcbgEqkCOyc6MmEDVdyrXUd5ENR3rUiqwI6LnTx8oQp8M783E66cWjiWCarMZlnRSix5PwSTSBXY0WFXdf9HfK+FKlSBoX6rjEQ8XMutD3nn+1Yg5L755Mrzk0qkh2xMwLOYr0iXa6CJZu9KQ+N7LSSoAuma6EKRn1TiwaUn0bO3r/gy7v42/3nf+cEzxFGq5jD1TYTYJhAqj4pt3iI/mdMpTbQRqD4HhqhA9S40r28L3ZWmz4kUjlAFNvucSNBzomtF5vlJJVarVb53mMgHLMBRRBEaNWez3xFqW5vN0+znyQ/5Ahlho6OjcVdXl+jxiVmhHn8Gq+jendq+cpPRvUO1fuUmo3mHavvKTUb3DtX2lZtM3jtUWRqQ3TRMBrLMjMgVkAiB2waX/1nwgURygTv885BICOzrH+BjPpBICBzo38nHfJBFksDFxUU2NjaWjhMNAwSJ1Ems/n2RDQ0NsQNzn4sVjF1vvyGWGOvp6cmsk+frJLpWISFXo1cVElI1+lQhIVejTxUSajVCYp5AoB0k6AhIRQqJo7OnGRe87gIfxl9N1Y8nlpcTKpUK+/rlSdFLDghpft5fUTho0GJD5WW0RetUWi1PgwMNmbtTFdhXaRBowdj2H3kuVGQeyIkg5GVQtE6mFfPoPMgUSqSjgo4Gdqk/whfxpGeSaqJIxjFGsbCwkF2fBHJh3ZH5RpE2RxtBedJtkmi1PLSMdXwgh0KJAIkBEiLQV5MODw9ndiBvp/I2VIwZd5T4EPJQLvRNGCVSYgr0xSotIyMjYkkPfV7eUFNOHa2cx+X3BkaJAIkoxJAWCBwfHxc9PdhBbFzSRgixzHfahVbNA2x/b8JKoi0QaKpE7KC8cVjGmOha06p5fAgq0aYSS8ITROLk5GRUq9UyAt/XUVgSGNyl0kNrMyBHchCUeSwJejotKSkp+VBh7F9fIy7OdlOyMwAAAABJRU5ErkJggg==">
+<div class="main">
 <h1>Welcome to WLED!</h1>
 <h3>Thank you for installing my application!</h3>
-If you encounter a bug or have a question/feature suggestion, feel free to open a GitHub issue!<br><br>
 <b>Next steps:</b><br><br>
 Connect the module to your local WiFi here!<br>
 <button onclick="window.location.href='/settings/wifi'">WiFi settings</button><br>
 <i>Just trying this out in AP mode?</i><br>
-<button onclick="window.location.href='/sliders'">To the controls!</button>
-
+<button onclick="window.location.href='/sliders'">To the controls!</button><br>
+</div>
 </body>
 </html>
