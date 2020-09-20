@@ -89,8 +89,8 @@ void WLED::loop()
     if (!offMode)
       strip.service();
 #ifdef ESP8266
-    else if (offMode && !noWifiSleep)
-      delay(1);
+    else if (!noWifiSleep)
+      delay(1); //required to make sure ESP enters modem sleep (see #1184)
 #endif
   }
   yield();
