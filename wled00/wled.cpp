@@ -84,10 +84,14 @@ void WLED::loop()
 
     handleHue();
     handleBlynk();
-
     yield();
+
     if (!offMode)
       strip.service();
+#ifdef ESP8266
+    else if (!noWifiSleep)
+      delay(1); //required to make sure ESP enters modem sleep (see #1184)
+#endif
   }
   yield();
 #ifdef ESP8266
@@ -160,7 +164,7 @@ void WLED::setup()
   strip.init(EEPROM.read(372), ledCount, EEPROM.read(2204));        // init LEDs quickly
   strip.setBrightness(0);
 
-  DEBUG_PRINT("LEDs inited. heap usage ~");
+  DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
 #ifndef WLED_DISABLE_FILESYSTEM
@@ -170,7 +174,7 @@ void WLED::setup()
     SPIFFS.begin();
 #endif
 
-  DEBUG_PRINTLN("Load EEPROM");
+  DEBUG_PRINTLN(F("Load EEPROM"));
   loadSettingsFromEEPROM(true);
   beginStrip();
   userSetup();
@@ -181,7 +185,7 @@ void WLED::setup()
 
   if (macroBoot > 0)
     applyMacro(macroBoot);
-  Serial.println("Ada");
+  Serial.println(F("Ada"));
 
   // generate module IDs
   escapedMac = WiFi.macAddress();
@@ -189,15 +193,15 @@ void WLED::setup()
   escapedMac.toLowerCase();
   if (strcmp(cmDNS, "x") == 0)        // fill in unique mdns default
   {
-    strcpy(cmDNS, "wled-");
+    strcpy_P(cmDNS, PSTR("wled-"));
     sprintf(cmDNS + 5, "%*s", 6, escapedMac.c_str() + 6);
   }
   if (mqttDeviceTopic[0] == 0) {
-    strcpy(mqttDeviceTopic, "wled/");
+    strcpy_P(mqttDeviceTopic, PSTR("wled/"));
     sprintf(mqttDeviceTopic + 5, "%*s", 6, escapedMac.c_str() + 6);
   }
   if (mqttClientID[0] == 0) {
-    strcpy(mqttClientID, "WLED-");
+    strcpy_P(mqttClientID, PSTR("WLED-"));
     sprintf(mqttClientID + 5, "%*s", 6, escapedMac.c_str() + 6);
   }
 
@@ -209,7 +213,7 @@ void WLED::setup()
 #ifdef ESP8266
       wifi_set_sleep_type(NONE_SLEEP_T);
 #endif
-      DEBUG_PRINTLN("Start ArduinoOTA");
+      DEBUG_PRINTLN(F("Start ArduinoOTA"));
     });
     if (strlen(cmDNS) > 0)
       ArduinoOTA.setHostname(cmDNS);
@@ -260,17 +264,17 @@ void WLED::initAP(bool resetAP)
     return;
 
   if (!apSSID[0] || resetAP)
-    strcpy(apSSID, "WLED-AP");
+    strcpy(apSSID, (const char*)F("WLED-AP"));
   if (resetAP)
     strcpy(apPass, DEFAULT_AP_PASS);
-  DEBUG_PRINT("Opening access point ");
+  DEBUG_PRINT(F("Opening access point "));
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
 
   if (!apActive)        // start captive portal if AP active
   {
-    DEBUG_PRINTLN("Init AP interfaces");
+    DEBUG_PRINTLN(F("Init AP interfaces"));
     server.begin();
     if (udpPort > 0 && udpPort != ntpLocalPort) {
       udpConnected = notifierUdp.begin(udpPort);
@@ -305,7 +309,7 @@ void WLED::initConnection()
   lastReconnectAttempt = millis();
 
   if (!WLED_WIFI_CONFIGURED) {
-    DEBUG_PRINT("No connection configured. ");
+    DEBUG_PRINT(F("No connection configured. "));
     if (!apActive)
       initAP();        // instantly go to ap mode
     return;
@@ -313,14 +317,14 @@ void WLED::initConnection()
     if (apBehavior == AP_BEHAVIOR_ALWAYS) {
       initAP();
     } else {
-      DEBUG_PRINTLN("Access point disabled.");
+      DEBUG_PRINTLN(F("Access point disabled."));
       WiFi.softAPdisconnect(true);
       WiFi.mode(WIFI_STA);
     }
   }
   showWelcomePage = false;
 
-  DEBUG_PRINT("Connecting to ");
+  DEBUG_PRINT(F("Connecting to "));
   DEBUG_PRINT(clientSSID);
   DEBUG_PRINTLN("...");
 
@@ -366,7 +370,7 @@ void WLED::initConnection()
 
 void WLED::initInterfaces()
 {
-  DEBUG_PRINTLN("Init STA interfaces");
+  DEBUG_PRINTLN(F("Init STA interfaces"));
 
   if (hueIP[0] == 0) {
     hueIP[0] = WiFi.localIP()[0];
@@ -393,7 +397,7 @@ void WLED::initInterfaces()
     MDNS.begin(cmDNS);
   #endif
 
-    DEBUG_PRINTLN("mDNS started");
+    DEBUG_PRINTLN(F("mDNS started"));
     MDNS.addService("http", "tcp", 80);
     MDNS.addService("wled", "tcp", 80);
     MDNS.addServiceTxt("wled", "tcp", "mac", escapedMac.c_str());
@@ -431,7 +435,7 @@ void WLED::handleConnection()
   if (millis() - heapTime > 5000) {
     uint32_t heap = ESP.getFreeHeap();
     if (heap < 9000 && lastHeap < 9000) {
-      DEBUG_PRINT("Heap too low! ");
+      DEBUG_PRINT(F("Heap too low! "));
       DEBUG_PRINTLN(heap);
       forceReconnect = true;
     }
@@ -450,7 +454,7 @@ void WLED::handleConnection()
 #endif
     if (stac != stacO) {
       stacO = stac;
-      DEBUG_PRINT("Connected AP clients: ");
+      DEBUG_PRINT(F("Connected AP clients: "));
       DEBUG_PRINTLN(stac);
       if (!WLED_CONNECTED && WLED_WIFI_CONFIGURED) {        // trying to connect, but not connected
         if (stac)
@@ -461,7 +465,7 @@ void WLED::handleConnection()
     }
   }
   if (forceReconnect) {
-    DEBUG_PRINTLN("Forcing reconnect.");
+    DEBUG_PRINTLN(F("Forcing reconnect."));
     initConnection();
     interfacesInited = false;
     forceReconnect = false;
@@ -470,7 +474,7 @@ void WLED::handleConnection()
   }
   if (!WLED_CONNECTED) {
     if (interfacesInited) {
-      DEBUG_PRINTLN("Disconnected!");
+      DEBUG_PRINTLN(F("Disconnected!"));
       interfacesInited = false;
       initConnection();
     }
@@ -480,7 +484,7 @@ void WLED::handleConnection()
       initAP();
   } else if (!interfacesInited) {        // newly connected
     DEBUG_PRINTLN("");
-    DEBUG_PRINT("Connected! IP address: ");
+    DEBUG_PRINT(F("Connected! IP address: "));
     DEBUG_PRINTLN(WiFi.localIP());
     initInterfaces();
     userConnected();
@@ -491,7 +495,7 @@ void WLED::handleConnection()
       dnsServer.stop();
       WiFi.softAPdisconnect(true);
       apActive = false;
-      DEBUG_PRINTLN("Access point disabled.");
+      DEBUG_PRINTLN(F("Access point disabled."));
     }
   }
 }

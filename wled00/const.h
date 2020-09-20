@@ -128,4 +128,11 @@
 
 #define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
 
+// Size of buffer for API JSON object (increase for more segments)
+#ifdef ESP8266
+  #define JSON_BUFFER_SIZE 9216
+#else
+  #define JSON_BUFFER_SIZE 16384
+#endif
+
 #endif
