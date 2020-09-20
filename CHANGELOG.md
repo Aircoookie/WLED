@@ -2,6 +2,14 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2009200
+
+-   Increased available heap memory by 4kB
+-   Use F() macro for the majority of strings
+-   Restructure timezone code
+-   Restructured settings saved code
+-   Updated ArduinoJSON to 6.16.1
+
 #### Build 2009170
 
 -   New WLED logo on Welcome screen (#1164)
