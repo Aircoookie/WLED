@@ -250,8 +250,8 @@ void WLED::beginStrip()
 #endif
 
   // disable button if it is "pressed" unintentionally
-#ifdef BTNPIN
-  if (digitalRead(BTNPIN) == LOW)
+#if defined(BTNPIN) || defined(TOUCHPIN)
+  if (isButtonPressed())
     buttonEnabled = false;
 #else
   buttonEnabled = false;

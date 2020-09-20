@@ -21,6 +21,7 @@ void updateBlynk();
 
 //button.cpp
 void shortPressAction();
+bool isButtonPressed();
 void handleButton();
 void handleIO();
 
