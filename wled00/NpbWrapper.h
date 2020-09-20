@@ -142,6 +142,7 @@
  #define PIXELFEATURE4 DotStarLbgrFeature
 #elif defined(USE_LPD8806)
  #define PIXELFEATURE3 Lpd8806GrbFeature 
+ #define PIXELFEATURE4 Lpd8806GrbFeature 
 #elif defined(USE_WS2801)
  #define PIXELFEATURE3 NeoRbgFeature
  #define PIXELFEATURE4 NeoRbgFeature

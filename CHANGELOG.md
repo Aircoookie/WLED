@@ -2,6 +2,10 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2009202
+
+-   Fixed LPD8806 compilation
+
 #### Build 2009201
 
 -   Added support for preset cycle toggling using CY=2
