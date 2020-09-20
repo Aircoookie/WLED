@@ -97,7 +97,7 @@ If WLED really brightens up your every day, you can [![](https://img.shields.io/
 
 
 *Disclaimer:*   
-If you are sensitive to photoeleptic seizures it is not recommended that you use this software.  
+If you are sensitive to photosensitive epilepsy it is not recommended that you use this software.  
 In case you still want to try, don't use strobe, lighting or noise modes or high effect speed settings.
-As per the MIT license, i assume no liability for any damage to you or any other person or equipment.  
+As per the MIT license, I assume no liability for any damage to you or any other person or equipment.  
 

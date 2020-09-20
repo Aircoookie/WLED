@@ -21,6 +21,10 @@
 #define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
 #endif
 
+#ifndef TOUCHPIN
+//#define TOUCHPIN T0 //touch pin. Behaves the same as button. ESP32 only.
+#endif
+
 #ifndef IR_PIN
 #define IR_PIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
 #endif

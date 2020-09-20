@@ -471,7 +471,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf(F("CY="));
   if (pos > 0)
   {
-    presetCyclingEnabled = (req.charAt(pos+3) != '0');
+    char cmd = req.charAt(pos+3);
+    if (cmd == '2') presetCyclingEnabled = !presetCyclingEnabled;
+    else presetCyclingEnabled = (cmd != '0');
     presetCycCurr = presetCycleMin;
   }
 
