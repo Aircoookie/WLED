@@ -84,6 +84,15 @@ void WLED::loop()
 
     handleHue();
     handleBlynk();
+
+    if (presetToApply) {
+      StaticJsonDocument<1024> temp;
+      errorFlag = !readObjectFromFileUsingId("/presets.json", presetToApply, &temp);
+      serializeJson(temp, Serial);
+      deserializeState(temp.as<JsonObject>());
+      presetToApply = 0;
+    }
+
     yield();
 
     if (!offMode)
@@ -169,9 +178,9 @@ void WLED::setup()
 
 #ifndef WLED_DISABLE_FILESYSTEM
   #ifdef ARDUINO_ARCH_ESP32
-    SPIFFS.begin(true);
+    WLED_FS.begin(true);
   #endif
-    SPIFFS.begin();
+    WLED_FS.begin();
 #endif
 
   DEBUG_PRINTLN(F("Load EEPROM"));
