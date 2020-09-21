@@ -84,10 +84,14 @@ void WLED::loop()
 
     handleHue();
     handleBlynk();
-
     yield();
+
     if (!offMode)
       strip.service();
+#ifdef ESP8266
+    else if (!noWifiSleep)
+      delay(1); //required to make sure ESP enters modem sleep (see #1184)
+#endif
   }
   yield();
 #ifdef ESP8266
@@ -246,8 +250,8 @@ void WLED::beginStrip()
 #endif
 
   // disable button if it is "pressed" unintentionally
-#ifdef BTNPIN
-  if (digitalRead(BTNPIN) == LOW)
+#if defined(BTNPIN) || defined(TOUCHPIN)
+  if (isButtonPressed())
     buttonEnabled = false;
 #else
   buttonEnabled = false;

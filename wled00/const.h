@@ -126,6 +126,8 @@
 
 #define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
 
+#define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
+
 // Size of buffer for API JSON object (increase for more segments)
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 9216

@@ -2,6 +2,16 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2009202
+
+-   Fixed LPD8806 compilation
+
+#### Build 2009201
+
+-   Added support for preset cycle toggling using CY=2
+-   Added ESP32 touch pin support (#1190)
+-   Fixed modem sleep on ESP8266 (#1184)
+
 #### Build 2009200
 
 -   Increased available heap memory by 4kB
