@@ -516,7 +516,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   //lox parser
   int rgbw[4] = {0,0,0,0};
-  pos = req.indexOf("LX="); // Lox primary color
+  pos = req.indexOf(F("LX=")); // Lox primary color
   if (pos > 0) {
     int lxValue = getNumVal(&req, pos);
     if (parseLx(lxValue, rgbw)) {
@@ -525,11 +525,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       col[2] = rgbw[2];
       bri = 255;
       nightlightActive = false; //always disable nightlight when toggling
-      DEBUG_PRINT("LX: Lox primary = ");
+      DEBUG_PRINT(F("LX: Lox primary = "));
       DEBUG_PRINTLN(lxValue);
     }
   }
-  pos = req.indexOf("LY"); // Lox secondary color
+  pos = req.indexOf(F("LY")); // Lox secondary color
   if (pos > 0) {
     int lxValue = getNumVal(&req, pos);
     if(parseLx(lxValue, rgbw)) {
@@ -538,7 +538,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       colSec[2] = rgbw[2];
       bri = 255;
       nightlightActive = false; //always disable nightlight when toggling
-      DEBUG_PRINT("LY: Lox secondary = ");
+      DEBUG_PRINT(F("LY: Lox secondary = "));
       DEBUG_PRINTLN(lxValue);
     }
   }
