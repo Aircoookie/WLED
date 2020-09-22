@@ -2,6 +2,29 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2009202
+
+-   Fixed LPD8806 compilation
+
+#### Build 2009201
+
+-   Added support for preset cycle toggling using CY=2
+-   Added ESP32 touch pin support (#1190)
+-   Fixed modem sleep on ESP8266 (#1184)
+
+#### Build 2009200
+
+-   Increased available heap memory by 4kB
+-   Use F() macro for the majority of strings
+-   Restructure timezone code
+-   Restructured settings saved code
+-   Updated ArduinoJSON to 6.16.1
+
+#### Build 2009170
+
+-   New WLED logo on Welcome screen (#1164)
+-   Fixed 170th pixel dark in E1.31
+
 #### Build 2009100
 
 -   Fixed sunrise mode not reinitializing

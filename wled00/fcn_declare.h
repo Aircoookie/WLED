@@ -21,6 +21,7 @@ void updateBlynk();
 
 //button.cpp
 void shortPressAction();
+bool isButtonPressed();
 void handleButton();
 void handleIO();
 
@@ -197,7 +198,7 @@ bool applyPreset(byte index, bool loadBri = true);
 void savePreset(byte index, bool persist = true, const char* pname = nullptr, byte prio = 50, JsonObject saveobj = JsonObject());
 void loadMacro(byte index, char* m);
 void applyMacro(byte index);
-void saveMacro(byte index, String mc, bool persist = true); //only commit on single save, not in settings
+void saveMacro(byte index, const String& mc, bool persist = true); //only commit on single save, not in settings
 
 //wled_serial.cpp
 void handleSerial();
@@ -209,10 +210,10 @@ void initServer();
 void serveIndexOrWelcome(AsyncWebServerRequest *request);
 void serveIndex(AsyncWebServerRequest* request);
 String msgProcessor(const String& var);
-void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", byte optionT=255);
+void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);
 String settingsProcessor(const String& var);
 String dmxProcessor(const String& var);
-void serveSettings(AsyncWebServerRequest* request);
+void serveSettings(AsyncWebServerRequest* request, bool post = false);
 
 //ws.cpp
 void handleWs();

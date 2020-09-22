@@ -758,7 +758,7 @@ void applyMacro(byte index)
 }
 
 
-void saveMacro(byte index, String mc, bool persist) //only commit on single save, not in settings
+void saveMacro(byte index, const String& mc, bool persist) //only commit on single save, not in settings
 {
   index-=1;
   if (index > 15) return;

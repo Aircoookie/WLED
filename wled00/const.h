@@ -104,6 +104,15 @@
 #define SEG_OPTION_FREEZE         5            //Segment contents will not be refreshed
 #define SEG_OPTION_TRANSITIONAL   7
 
+// WLED Error modes
+#define ERR_NONE         0  // All good :)
+#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
+#define ERR_JSON         9  // JSON parsing failed (input too large?)
+#define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
+#define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
+#define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
+#define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
+
 //Timer mode types
 #define NL_MODE_SET               0            //After nightlight time elapsed, set to target brightness
 #define NL_MODE_FADE              1            //Fade to target brightness gradually
@@ -126,12 +135,14 @@
 
 #define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
 
-// WLED Error modes
-#define ERR_NONE         0  // All good :)
-#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
-#define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
-#define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
-#define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
-#define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
+
+#define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
+
+// Size of buffer for API JSON object (increase for more segments)
+#ifdef ESP8266
+  #define JSON_BUFFER_SIZE 9216
+#else
+  #define JSON_BUFFER_SIZE 16384
+#endif
 
 #endif
