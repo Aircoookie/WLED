@@ -88,11 +88,20 @@
     #define W2PIN 5  //W2 pin for analog LED strip
     #undef IR_PIN
   #else
+  //Enable override of Pins by using the platformio_override.ini file
   //PWM pins - PINs 5,12,13,15 are used with Magic Home LED Controller
-    #define RPIN 5   //R pin for analog LED strip
-    #define GPIN 12  //G pin for analog LED strip
-    #define BPIN 15  //B pin for analog LED strip
-    #define WPIN 13  //W pin for analog LED strip
+    #ifndef RPIN
+      #define RPIN 5   //R pin for analog LED strip
+    #endif
+    #ifndef GPIN
+      #define GPIN 12  //G pin for analog LED strip
+    #endif
+    #ifndef BPIN
+      #define BPIN 15  //B pin for analog LED strip
+    #endif
+    #ifndef WPIN
+      #define WPIN 13  //W pin for analog LED strip
+    #endif
   #endif
   #undef RLYPIN
   #define RLYPIN -1 //disable as pin 12 is used by analog LEDs
