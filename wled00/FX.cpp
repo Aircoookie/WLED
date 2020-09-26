@@ -3712,3 +3712,48 @@ uint16_t WS2812FX::mode_dancing_shadows(void)
 
   return FRAMETIME;
 }
+
+/*
+ * Generates a tristate square wave w/ attac & decay 
+ * @param x input value 0-255
+ * @param pulsewidth 0-127 
+ * @param attdec attac & decay, max. pulsewidth / 2
+ * @returns signed waveform value
+ */
+int8_t tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
+  int8_t a;
+  if (x > 127) {
+    a = -127;
+    x -= 127;
+  }
+  else
+    a = 127;
+
+  if (x < attdec) { //inc to max
+    return (int16_t) x * a / attdec;
+  }
+  else if (x < pulsewidth - attdec) { //max
+    return a;
+  }  
+  else if (x < pulsewidth) { //dec to 0
+    return (int16_t) (pulsewidth - x) * a / attdec;
+  }
+  return 0;
+}
+
+/*
+  Imitates a washing machine, rotating same waves forward, then pause, then backward.
+  By Stefan Seegel
+*/
+uint16_t WS2812FX::mode_washing_machine(void) {
+  int8_t speed= tristate_square8((uint16_t) (SEGMENT.speed + 100) * now / 20000, 90, 15) / 15;
+  
+  SEGENV.step += speed;
+  
+  for (int i=0; i<SEGLEN; i++) {
+    uint8_t col = sin8(((SEGMENT.intensity / 25 + 1) * 255 * i / SEGLEN) + SEGENV.step);
+    setPixelColor(i, color_from_palette(col, false, PALETTE_SOLID_WRAP, 3));
+  }
+
+  return FRAMETIME;
+}
