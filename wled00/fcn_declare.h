@@ -30,6 +30,7 @@ void colorFromUint32(uint32_t in, bool secondary = false);
 void colorFromUint24(uint32_t in, bool secondary = false);
 void relativeChangeWhite(int8_t amount, byte lowerBoundary = 0);
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
+void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
 
 void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disabled TODO
@@ -101,6 +102,10 @@ void colorUpdated(int callMode);
 void updateInterfaces(uint8_t callMode);
 void handleTransitions();
 void handleNightlight();
+
+//lx_parser.cpp
+bool parseLx(int lxValue, byte* rgbw);
+void parseLxJson(int lxValue, byte segId, bool secondary);
 
 //mqtt.cpp
 bool initMqtt();
@@ -222,8 +227,5 @@ void URL_response(AsyncWebServerRequest *request);
 void sappend(char stype, const char* key, int val);
 void sappends(char stype, const char* key, char* val);
 void getSettingsJS(byte subPage, char* dest);
-
-//lx_parser.cpp
-bool parseLx(int lxValue, int rgbw[4]);
 
 #endif

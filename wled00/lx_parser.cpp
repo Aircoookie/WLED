@@ -1,11 +1,16 @@
 #include "wled.h"
 
-bool parseLx(int lxValue, int rgbw[4])
+/*
+ * Parser for Loxone formats
+ */
+bool parseLx(int lxValue, byte rgbw[4])
 {
+  #ifdef WLED_ENABLE_LOXONE
+  DEBUG_PRINT(F("LX: Lox = "));
+  DEBUG_PRINTLN(lxValue);
+
   bool ok = false;
-  float lxRed = 0;
-  float lxGreen = 0;
-  float lxBlue = 0;
+  float lxRed = 0, lxGreen = 0, lxBlue = 0;
 
   if (lxValue < 200000000) { 
     // Loxone RGB
@@ -21,58 +26,52 @@ bool parseLx(int lxValue, int rgbw[4])
     float temp = 0;
 
     tmpBri *= 2.55;
-    if (tmpBri < 0) {
-      tmpBri = 0;
-    } else if (tmpBri > 255) {
-      tmpBri = 255;
-    }
-    if (ct < 2700) {
-      ct = 2700;
-    } else if (ct > 6500) {
-      ct = 6500;
-    }
+    constrain(tmpBri, 0, 255);
 
-    temp = ct / 100;
-    if (temp <= 66) {
-      lxRed = 255;
-      lxGreen = round(99.4708025861 * log(temp) - 161.1195681661);
-      if (temp <= 19) {
-        lxBlue = 0;
-      } else {
-        lxBlue = round(138.5177312231 * log((temp - 10)) - 305.0447927307);
-      }
-    } else {
-      lxRed = round(329.698727446 * pow((temp - 60), -0.1332047592));
-      lxGreen = round(288.1221695283 * pow((temp - 60), -0.0755148492));
-      lxBlue = 255;
-    } 
+    colorKtoRGB(ct, rgbw);
+    lxRed = rgbw[0]; lxGreen = rgbw[1]; lxBlue = rgbw[2];
+
     lxRed *= (tmpBri/255);
     lxGreen *= (tmpBri/255);
     lxBlue *= (tmpBri/255);
   }
 
   if (ok) {
-    if (lxRed > 255) {
-      lxRed = 255;
-    } else if (lxRed < 0) {
-      lxRed = 0;
-    }
-    if (lxGreen > 255) {
-      lxGreen = 255;
-    } else if (lxGreen < 0) {
-      lxGreen = 0;
-    }
-    if (lxBlue > 255) {
-      lxBlue = 255;
-    } else if (lxBlue < 0) {
-      lxBlue = 0;
-    }
-    rgbw[0] = (uint8_t)lxRed;
-    rgbw[1] = (uint8_t)lxGreen;
-    rgbw[2] = (uint8_t)lxBlue;
+    rgbw[0] = (uint8_t) constrain(lxRed, 0, 255);
+    rgbw[1] = (uint8_t) constrain(lxGreen, 0, 255);
+    rgbw[2] = (uint8_t) constrain(lxBlue, 0, 255);
     rgbw[3] = 0;
     return true;
   }
+  #endif
   return false;
+}
+
+void parseLxJson(int lxValue, byte segId, bool secondary)
+{
+  if (secondary) {
+    DEBUG_PRINT(F("LY: Lox secondary = "));
+  } else {
+    DEBUG_PRINT(F("LX: Lox primary = "));
+  }
+  DEBUG_PRINTLN(lxValue);
+  byte rgbw[] = {0,0,0,0};
+  if (parseLx(lxValue, rgbw)) {
+    if (bri == 0) {
+      DEBUG_PRINTLN(F("LX: turn on"));
+      toggleOnOff();
+    }
+    bri = 255;
+    nightlightActive = false; //always disable nightlight when toggling
+    if (segId == strip.getMainSegmentId()) {
+      DEBUG_PRINTLN(F("LX: main segment"));
+      if (secondary) for (byte i = 0; i < 4; i++) colSec[i] = rgbw[i];
+      else           for (byte i = 0; i < 4; i++) col[i]    = rgbw[i];
+    } else {
+      DEBUG_PRINT(F("LX: segment "));
+      DEBUG_PRINTLN(segId);
+      strip.getSegment(segId).colors[secondary] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
+    }
+  }
 }
 

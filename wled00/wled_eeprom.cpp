@@ -7,7 +7,7 @@
  */
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 21
+#define EEPVER 22
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -30,6 +30,7 @@
 //19-> 0.9.1n
 //20-> 0.9.1p
 //21-> 0.10.1p
+//22-> 2009260
 
 void commit()
 {
@@ -145,6 +146,9 @@ void saveSettingsToEEPROM()
   EEPROM.write(376, apBehavior);
 
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
+
+  EEPROM.write(378, udpPort2 & 0xFF);
+  EEPROM.write(379, (udpPort2 >> 8) & 0xFF);
 
   EEPROM.write(382, strip.paletteBlend);
   EEPROM.write(383, strip.colorOrder);
@@ -283,10 +287,6 @@ void saveSettingsToEEPROM()
     EEPROM.write(2535+i, DMXFixtureMap[i]);
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
   #endif
-
-  EEPROM.write(2550, udpApiEnabled);
-  EEPROM.write(2551, udpApiPort & 0xFF);
-  EEPROM.write(2552, (udpApiPort >> 8) & 0xFF);
 
   commit();
 }
@@ -542,9 +542,8 @@ void loadSettingsFromEEPROM(bool first)
   }
   #endif
 
-  if (lastEEPROMversion > 19) {
-    udpApiEnabled = EEPROM.read(2550);
-    udpApiPort = EEPROM.read(2551) + ((EEPROM.read(2552) << 8) & 0xFF00);
+  if (lastEEPROMversion > 21) {
+    udpPort2 = EEPROM.read(378) + ((EEPROM.read(379) << 8) & 0xFF00);
   } 
   
   receiveDirect = !EEPROM.read(2200);

@@ -292,6 +292,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("BT"),buttonEnabled);
     sappend('v',SET_F("IR"),irEnabled);
     sappend('v',SET_F("UP"),udpPort);
+    sappend('v',SET_F("U2"),udpPort2);
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
     sappend('c',SET_F("RC"),receiveNotificationColor);
     sappend('c',SET_F("RX"),receiveNotificationEffects);
@@ -315,10 +316,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
     sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
-
-    // UDP Api
-    sappend('c',"UAE",udpApiEnabled);
-    sappend('v',"UAP",udpApiPort);
 
     #ifdef WLED_ENABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);

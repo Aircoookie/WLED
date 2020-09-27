@@ -44,7 +44,14 @@ void deserializeSegment(JsonObject elem, byte it)
           int rgbw[] = {0,0,0,0};
           byte cp = copyArray(colX, rgbw);
           
-          if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
+          if (cp == 1) {
+            if (rgbw[0] == 0) seg.colors[i] = 0;
+            else {
+              byte ctrgb[] = {0,0,0,0};
+              colorKtoRGB(rgbw[0], ctrgb);
+              for (uint8_t c = 0; c < 3; c++) rgbw[c] = ctrgb[c];
+            }
+          }
           if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
           { 
             if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
@@ -57,56 +64,16 @@ void deserializeSegment(JsonObject elem, byte it)
     }
 
     // lx parser
+    #ifdef WLED_ENABLE_LOXONE
     int lx = elem[F("lx")] | -1;
     if (lx > 0) {
-      DEBUG_PRINT(F("LX: Lox primary = "));
-      DEBUG_PRINTLN(lx);
-      int rgbw[] = {0,0,0,0};
-      if (parseLx(lx, rgbw)) {
-        if (bri == 0) {
-          DEBUG_PRINTLN(F("LX: turn on"));
-          toggleOnOff();
-        }
-        bri = 255;
-        nightlightActive = false; //always disable nightlight when toggling
-        if (id == strip.getMainSegmentId()) {
-          DEBUG_PRINTLN(F("LX: main segment"));
-          col[0] = rgbw[0];
-          col[1] = rgbw[1];
-          col[2] = rgbw[2];
-          col[3] = rgbw[3];
-        } else {
-          DEBUG_PRINT(F("LX: segment "));
-          DEBUG_PRINTLN(id);
-          seg.colors[0] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
-        }
-      }
+      parseLxJson(lx, id, false);
     }
     int ly = elem[F("ly")] | -1;
     if (ly > 0) {
-      DEBUG_PRINT(F("LY: Lox secondary = "));
-      Serial.println(ly);
-      int rgbw[] = {0,0,0,0};
-      if (parseLx(ly, rgbw)) {
-        if (bri == 0) {
-          DEBUG_PRINTLN(F("LY: turn on"));
-          toggleOnOff();
-        }
-        bri = 255;
-        nightlightActive = false; //always disable nightlight when toggling
-        if (id == strip.getMainSegmentId()) {
-          DEBUG_PRINTLN(F("LY: main segment"));
-          colSec[0] = rgbw[0];
-          colSec[1] = rgbw[1];
-          colSec[2] = rgbw[2];
-          colSec[3] = rgbw[3];
-        } else {
-          DEBUG_PRINT(F("LY: segment "));
-          DEBUG_PRINTLN(id);
-          seg.colors[1] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
-        }
-      }
+      parseLxJson(ly, id, true);
     }
+    #endif
     
     //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
     seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
@@ -507,7 +474,7 @@ void serializeInfo(JsonObject root)
   
   root[F("brand")] = "WLED";
   root[F("product")] = F("FOSS");
-  root[F("mac")] = escapedMac;
+  root["mac"] = escapedMac;
 }
 
 void serveJson(AsyncWebServerRequest* request)

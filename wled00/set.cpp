@@ -129,6 +129,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     irEnabled = request->arg(F("IR")).toInt();
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
+    t = request->arg(F("U2")).toInt();
+    if (t > 0) udpPort2 = t;
     receiveNotificationBrightness = request->hasArg(F("RB"));
     receiveNotificationColor = request->hasArg(F("RC"));
     receiveNotificationEffects = request->hasArg(F("RX"));
@@ -197,11 +199,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     hueStoreAllowed = true;
     reconnectHue();
     #endif
-
-    // UDP Api
-    udpApiEnabled = request->hasArg("UAE");
-    t = request->arg("UAP").toInt();
-    if (t > 0) udpApiPort = t;
   }
 
   //TIME
@@ -514,34 +511,26 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   updateVal(&req, "B2=", &colSec[2]);
   updateVal(&req, "W2=", &colSec[3]);
 
+  #ifdef WLED_ENABLE_LOXONE
   //lox parser
-  int rgbw[4] = {0,0,0,0};
   pos = req.indexOf(F("LX=")); // Lox primary color
   if (pos > 0) {
     int lxValue = getNumVal(&req, pos);
-    if (parseLx(lxValue, rgbw)) {
-      col[0] = rgbw[0];
-      col[1] = rgbw[1];
-      col[2] = rgbw[2];
+    if (parseLx(lxValue, col)) {
       bri = 255;
       nightlightActive = false; //always disable nightlight when toggling
-      DEBUG_PRINT(F("LX: Lox primary = "));
-      DEBUG_PRINTLN(lxValue);
     }
   }
-  pos = req.indexOf(F("LY")); // Lox secondary color
+  pos = req.indexOf(F("LY=")); // Lox secondary color
   if (pos > 0) {
     int lxValue = getNumVal(&req, pos);
-    if(parseLx(lxValue, rgbw)) {
-      colSec[0] = rgbw[0];
-      colSec[1] = rgbw[1];
-      colSec[2] = rgbw[2];
+    if(parseLx(lxValue, colSec)) {
       bri = 255;
       nightlightActive = false; //always disable nightlight when toggling
-      DEBUG_PRINT(F("LY: Lox secondary = "));
-      DEBUG_PRINTLN(lxValue);
     }
   }
+
+  #endif
 
   //set hue
   pos = req.indexOf(F("HU="));
@@ -553,6 +542,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       tempsat = getNumVal(&req, pos);
     }
     colorHStoRGB(temphue,tempsat,(req.indexOf(F("H2"))>0)? colSec:col);
+  }
+
+  //set white spectrum (kelvin)
+  pos = req.indexOf(F("&K="));
+  if (pos > 0) {
+    colorKtoRGB(getNumVal(&req, pos),(req.indexOf(F("K2"))>0)? colSec:col);
   }
 
   //set color from HEX or 32bit DEC

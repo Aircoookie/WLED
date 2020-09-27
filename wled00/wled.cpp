@@ -264,15 +264,15 @@ void WLED::initAP(bool resetAP)
     return;
 
   if (!apSSID[0] || resetAP)
-    strcpy(apSSID, (const char*)F("WLED-AP"));
+    strcpy_P(apSSID, PSTR("WLED-AP"));
   if (resetAP)
-    strcpy(apPass, DEFAULT_AP_PASS);
+    strcpy_P(apPass, PSTR(DEFAULT_AP_PASS));
   DEBUG_PRINT(F("Opening access point "));
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
 
-  if (!apActive)        // start captive portal if AP active
+  if (!apActive) // start captive portal if AP active
   {
     DEBUG_PRINTLN(F("Init AP interfaces"));
     server.begin();
@@ -282,8 +282,8 @@ void WLED::initAP(bool resetAP)
     if (udpRgbPort > 0 && udpRgbPort != ntpLocalPort && udpRgbPort != udpPort) {
       udpRgbConnected = rgbUdp.begin(udpRgbPort);
     }
-    if (udpApiEnabled && udpApiPort > 0 && udpApiPort != ntpLocalPort && udpApiPort != udpPort && udpApiPort != udpRgbPort) {
-      udpApiConnected = apiUdp.begin(udpApiPort);
+    if (udpPort2 > 0 && udpPort2 != ntpLocalPort && udpPort2 != udpPort && udpPort2 != udpRgbPort) {
+      udp2Connected = notifier2Udp.begin(udpPort2);
     }
   
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
@@ -411,8 +411,8 @@ void WLED::initInterfaces()
     udpConnected = notifierUdp.begin(udpPort);
     if (udpConnected && udpRgbPort != udpPort)
       udpRgbConnected = rgbUdp.begin(udpRgbPort);
-    if (udpApiEnabled && udpConnected && udpApiPort != udpPort && udpApiPort != udpRgbPort)
-      udpApiConnected = apiUdp.begin(udpApiPort);
+    if (udpConnected && udpPort2 != udpPort && udpPort2 != udpRgbPort)
+      udp2Connected = notifier2Udp.begin(udpPort2);
   }
   if (ntpEnabled)
     ntpConnected = ntpUdp.begin(ntpLocalPort);
