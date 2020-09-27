@@ -284,6 +284,10 @@ void saveSettingsToEEPROM()
   } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
   #endif
 
+  EEPROM.write(2550, udpApiEnabled);
+  EEPROM.write(2551, udpApiPort & 0xFF);
+  EEPROM.write(2552, (udpApiPort >> 8) & 0xFF);
+
   commit();
 }
 
@@ -538,6 +542,11 @@ void loadSettingsFromEEPROM(bool first)
   }
   #endif
 
+  if (lastEEPROMversion > 19) {
+    udpApiEnabled = EEPROM.read(2550);
+    udpApiPort = EEPROM.read(2551) + ((EEPROM.read(2552) << 8) & 0xFF00);
+  } 
+  
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 

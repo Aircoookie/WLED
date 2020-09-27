@@ -223,4 +223,7 @@ void sappend(char stype, const char* key, int val);
 void sappends(char stype, const char* key, char* val);
 void getSettingsJS(byte subPage, char* dest);
 
+//lx_parser.cpp
+bool parseLx(int lxValue, int rgbw[4]);
+
 #endif

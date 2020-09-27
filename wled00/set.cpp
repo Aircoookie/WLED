@@ -1,5 +1,6 @@
 #include "wled.h"
 
+
 /*
  * Receives client input
  */
@@ -196,6 +197,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     hueStoreAllowed = true;
     reconnectHue();
     #endif
+
+    // UDP Api
+    udpApiEnabled = request->hasArg("UAE");
+    t = request->arg("UAP").toInt();
+    if (t > 0) udpApiPort = t;
   }
 
   //TIME
@@ -416,6 +422,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   byte main = strip.getMainSegmentId();
   if (main != prevMain) setValuesFromMainSeg();
 
+  bool segGiven = false;
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
@@ -506,6 +513,35 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   updateVal(&req, "G2=", &colSec[1]);
   updateVal(&req, "B2=", &colSec[2]);
   updateVal(&req, "W2=", &colSec[3]);
+
+  //lox parser
+  int rgbw[4] = {0,0,0,0};
+  pos = req.indexOf(F("LX=")); // Lox primary color
+  if (pos > 0) {
+    int lxValue = getNumVal(&req, pos);
+    if (parseLx(lxValue, rgbw)) {
+      col[0] = rgbw[0];
+      col[1] = rgbw[1];
+      col[2] = rgbw[2];
+      bri = 255;
+      nightlightActive = false; //always disable nightlight when toggling
+      DEBUG_PRINT(F("LX: Lox primary = "));
+      DEBUG_PRINTLN(lxValue);
+    }
+  }
+  pos = req.indexOf(F("LY")); // Lox secondary color
+  if (pos > 0) {
+    int lxValue = getNumVal(&req, pos);
+    if(parseLx(lxValue, rgbw)) {
+      colSec[0] = rgbw[0];
+      colSec[1] = rgbw[1];
+      colSec[2] = rgbw[2];
+      bri = 255;
+      nightlightActive = false; //always disable nightlight when toggling
+      DEBUG_PRINT(F("LY: Lox secondary = "));
+      DEBUG_PRINTLN(lxValue);
+    }
+  }
 
   //set hue
   pos = req.indexOf(F("HU="));

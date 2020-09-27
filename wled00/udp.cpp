@@ -105,7 +105,7 @@ void handleNotifications()
   if(udpConnected && notificationTwoRequired && millis()-notificationSentTime > 250){
     notify(notificationSentCallMode,true);
   }
-
+  
   if (e131NewData && millis() - strip.getLastShow() > 15)
   {
     e131NewData = false;
@@ -129,25 +129,43 @@ void handleNotifications()
   //hyperion / raw RGB
   if (!packetSize && udpRgbConnected) {
     packetSize = rgbUdp.parsePacket();
-    if (!receiveDirect) return;
-    if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;
-    realtimeIP = rgbUdp.remoteIP();
-    DEBUG_PRINTLN(rgbUdp.remoteIP());
-    uint8_t lbuf[packetSize];
-    rgbUdp.read(lbuf, packetSize);
-    realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
-    if (realtimeOverride) return;
-    uint16_t id = 0;
-    for (uint16_t i = 0; i < packetSize -2; i += 3)
-    {
-      setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
-      
-      id++; if (id >= ledCount) break;
-    }
-    strip.show();
-    return;
+    if (packetSize) {
+      if (!receiveDirect) return;
+      if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;
+      realtimeIP = rgbUdp.remoteIP();
+      DEBUG_PRINTLN(rgbUdp.remoteIP());
+      uint8_t lbuf[packetSize];
+      rgbUdp.read(lbuf, packetSize);
+      realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
+      if (realtimeOverride) return;
+      uint16_t id = 0;
+      for (uint16_t i = 0; i < packetSize -2; i += 3)
+      {
+        setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
+        
+        id++; if (id >= ledCount) break;
+      }
+      strip.show();
+      return;
+    } 
   }
-
+  
+  // udp api
+  if (udpApiEnabled && !packetSize && udpApiConnected) {
+    packetSize = apiUdp.parsePacket();
+    if (packetSize) {
+      if (!receiveDirect) return;
+      if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;
+      uint8_t lbuf[packetSize];
+      apiUdp.read(lbuf, packetSize);
+      lbuf[packetSize] = '\0';
+      String apireq = "win&";
+      apireq += (char*)lbuf;
+      handleSet(nullptr, apireq);
+      return;
+    }
+  }
+  
   //notifier and UDP realtime
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) return;
   if (notifierUdp.remoteIP() == WiFi.localIP())   return; //don't process broadcasts we send ourselves
