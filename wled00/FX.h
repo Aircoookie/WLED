@@ -487,6 +487,9 @@ class WS2812FX {
       gamma8(uint8_t),
       get_random_wheel_index(uint8_t);
 
+    int8_t
+      tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec);
+
     uint16_t
       ablMilliampsMax,
       currentMilliamps,
@@ -715,7 +718,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows", "Washing machine"
+"Flow","Chunchun","Dancing Shadows","Washing Machine"
 ])=====";
 
 
