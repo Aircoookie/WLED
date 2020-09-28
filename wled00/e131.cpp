@@ -24,8 +24,8 @@ void handleDDPPacket(e131_packet_t* p) {
     }
   }
 
-  uint16_t offsetLeds = p->channelOffset /3;
-  uint16_t packetLeds = p->dataLen /3;
+  uint32_t offsetLeds = htonl(p->channelOffset) /3;
+  uint16_t packetLeds = htons(p->dataLen) /3;
   uint8_t* data = p->data;
   uint16_t c = 0;
   if (p->flags & DDP_TIMECODE_FLAG) c = 4; //packet has timecode flag, we do not support it, but data starts 4 bytes later

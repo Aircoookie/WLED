@@ -2,9 +2,14 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2009290
+
+-   Added basic DDP protocol support
+-   Added Washing Machine effect (PR #1208)
+
 #### Build 2009260
 
--   Added Loxone parser
+-   Added Loxone parser (PR #1185)
 -   Added support for kelvin input via `K=` HTTP and `"col":[[val]]` JSON API calls
 -   Added supplementary UDP socket (#1205)
 -   TMP2.net receivable by default

@@ -106,7 +106,7 @@ void ESPAsyncE131::parsePacket(AsyncUDPPacket _packet) {
   if (memcmp(sbuff->acn_id, ESPAsyncE131::ACN_ID, sizeof(sbuff->acn_id)))
     protocol = P_ARTNET;
 	
-	if (protocol = P_ARTNET) {
+	if (protocol == P_ARTNET) {
 		if (memcmp(sbuff->art_id, ESPAsyncE131::ART_ID, sizeof(sbuff->art_id)))
 			error = true; //not "Art-Net"
 		if (sbuff->art_opcode != ARTNET_OPCODE_OPDMX)
