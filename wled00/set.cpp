@@ -1,5 +1,6 @@
 #include "wled.h"
 
+
 /*
  * Receives client input
  */
@@ -128,6 +129,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     irEnabled = request->arg(F("IR")).toInt();
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
+    t = request->arg(F("U2")).toInt();
+    if (t > 0) udpPort2 = t;
     receiveNotificationBrightness = request->hasArg(F("RB"));
     receiveNotificationColor = request->hasArg(F("RC"));
     receiveNotificationEffects = request->hasArg(F("RX"));
@@ -416,6 +419,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   byte main = strip.getMainSegmentId();
   if (main != prevMain) setValuesFromMainSeg();
 
+  bool segGiven = false;
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
@@ -507,6 +511,27 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   updateVal(&req, "B2=", &colSec[2]);
   updateVal(&req, "W2=", &colSec[3]);
 
+  #ifdef WLED_ENABLE_LOXONE
+  //lox parser
+  pos = req.indexOf(F("LX=")); // Lox primary color
+  if (pos > 0) {
+    int lxValue = getNumVal(&req, pos);
+    if (parseLx(lxValue, col)) {
+      bri = 255;
+      nightlightActive = false; //always disable nightlight when toggling
+    }
+  }
+  pos = req.indexOf(F("LY=")); // Lox secondary color
+  if (pos > 0) {
+    int lxValue = getNumVal(&req, pos);
+    if(parseLx(lxValue, colSec)) {
+      bri = 255;
+      nightlightActive = false; //always disable nightlight when toggling
+    }
+  }
+
+  #endif
+
   //set hue
   pos = req.indexOf(F("HU="));
   if (pos > 0) {
@@ -517,6 +542,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       tempsat = getNumVal(&req, pos);
     }
     colorHStoRGB(temphue,tempsat,(req.indexOf(F("H2"))>0)? colSec:col);
+  }
+
+  //set white spectrum (kelvin)
+  pos = req.indexOf(F("&K="));
+  if (pos > 0) {
+    colorKtoRGB(getNumVal(&req, pos),(req.indexOf(F("K2"))>0)? colSec:col);
   }
 
   //set color from HEX or 32bit DEC

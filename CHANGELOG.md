@@ -2,6 +2,15 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2009260
+
+-   Added Loxone parser
+-   Added support for kelvin input via `K=` HTTP and `"col":[[val]]` JSON API calls
+-   Added supplementary UDP socket (#1205)
+-   TMP2.net receivable by default
+-   UDP sockets accept HTTP and JSON API commands
+-   Fixed missing timezones (#1201)
+
 #### Build 2009202
 
 -   Fixed LPD8806 compilation
