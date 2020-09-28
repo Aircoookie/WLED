@@ -44,7 +44,7 @@ void initDMX();
 void handleDMX();
 
 //e131.cpp
-void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet);
+void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
 
 //file.cpp
 bool handleFileRead(AsyncWebServerRequest*, String path);
