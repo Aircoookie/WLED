@@ -361,10 +361,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     int t;
     t = request->arg(F("SQ")).toInt();
-    if (t > 0) soundSquelch = t;
+    if (t >= 0) soundSquelch = t;
 
     t = request->arg(F("GN")).toInt();
-    if (t > 0) sampleGain = t;
+    if (t >= 0) sampleGain = t;
   }
 
   if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
