@@ -419,7 +419,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   byte main = strip.getMainSegmentId();
   if (main != prevMain) setValuesFromMainSeg();
 
-  bool segGiven = false;
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
