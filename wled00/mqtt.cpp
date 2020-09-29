@@ -100,7 +100,7 @@ void publishMqtt()
 
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/status");
-  mqtt->publish(subuf, 0, true, (const char*)F("online"));
+  mqtt->publish(subuf, 0, true, "online");
 
   char apires[1024];
   XML_response(nullptr, apires);
@@ -137,7 +137,7 @@ bool initMqtt()
 
   strcpy(mqttStatusTopic, mqttDeviceTopic);
   strcat(mqttStatusTopic, "/status");
-  mqtt->setWill(mqttStatusTopic, 0, true, (const char*)F("offline"));
+  mqtt->setWill(mqttStatusTopic, 0, true, "offline");
   mqtt->setKeepAlive(MQTT_KEEP_ALIVE_TIME);
   mqtt->connect();
   return true;

@@ -123,12 +123,8 @@ void ESPAsyncE131::parsePacket(AsyncUDPPacket _packet) {
 	} 
   
   if (error && _packet.localPort() == DDP_DEFAULT_PORT) { //DDP packet
-    int pushSeq = 0;
     error = false;
     protocol = P_DDP;
-    //bool push = sbuff->flags & DDP_PUSH_FLAG;
-    //if (push) pushSeq = sbuff->sequenceNum;
-    //else if (sbuff->sequenceNum > pushSeq -5) error = true;
   }
 
   if (!error) {
