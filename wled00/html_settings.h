@@ -146,8 +146,8 @@ var d=document;function H(){window.open("https://github.com/atuline/WLED/wiki/Sq
 <form id="form_s" name="Sf" method="post"><div class="helpB"><button 
 type="button" onclick="H()">?</button></div><button type="button" onclick="B()">
 Back</button><button type="submit">Save</button><hr><h2>Sound Input Settings
-</h2>Squelch: <input name="SQ" type="number" min="1" max="255" required><br>
-Gain: <input name="GN" type="number" min="1" max="255" required><br><button 
+</h2>Squelch: <input name="SQ" type="number" min="0" max="255" required><br>
+Gain: <input name="GN" type="number" min="0" max="255" required><br><button 
 type="button" onclick="B()">Back</button><button type="submit">Save</button>
 </form></body></html>)=====";
 

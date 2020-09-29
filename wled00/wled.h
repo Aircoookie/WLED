@@ -31,7 +31,7 @@
 #define WLED_ENABLE_ADALIGHT     // saves 500b only
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
 #ifndef WLED_DISABLE_WEBSOCKETS
-  #define WLED_ENABLE_WEBSOCKETS
+//  #define WLED_ENABLE_WEBSOCKETS
 #endif
 //#define WLED_DISABLE_SOUND       // saves 1kb
 
