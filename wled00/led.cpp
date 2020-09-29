@@ -226,7 +226,7 @@ void handleNightlight()
       nightlightActiveOld = true;
       briNlT = bri;
       for (byte i=0; i<4; i++) colNlT[i] = col[i]; // remember starting color
-      if (nightlightMode == NL_MODE_SUN)
+      if (nightlightMode >= NL_MODE_SUN && nightlightMode <= NL_MODE_SUNSET)
       {
         //save current
         colNlT[0] = effectCurrent;
@@ -237,10 +237,26 @@ void handleNightlight()
         effectCurrent = FX_MODE_SUNRISE;
         effectSpeed = nightlightDelayMins;
         effectPalette = 0;
+
+        //ensure nightlight mode is either sunrise or sunset
+        if (nightlightMode == NL_MODE_SUN) {
+          nightlightMode = bri ? NL_MODE_SUNSET : NL_MODE_SUNRISE;
+        }
+        if (nightlightMode == NL_MODE_SUNSET && bri == 0) {
+          // For sunset, if LEDs were off, use last brightness as starting point
+          bri = briLast;
+        }
+
+        // The effectSpeed appears to be overloaded to also store sunrise or sunset, where
+        //     effectSpeed from [0..60] is sunrise, and
+        //     effectSpeed from [61..120] is sunset
         if (effectSpeed > 60) effectSpeed = 60; //currently limited to 60 minutes
-        if (bri) effectSpeed += 60; //sunset if currently on
-        briNlT = !bri; //true == sunrise, false == sunset
-        if (!bri) bri = briLast;
+        if (nightlightMode == NL_MODE_SUNRISE) {
+          briNlT = 0; // sunrise starts dark
+        } else {
+          effectSpeed += 60;
+          briNlT = bri; // sunset starts bright
+        }
         colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
       }
     }
@@ -263,7 +279,7 @@ void handleNightlight()
         colorUpdated(NOTIFIER_CALL_MODE_NO_NOTIFY);
       }
       if (bri == 0) briLast = briNlT;
-      if (nightlightMode == NL_MODE_SUN)
+      if (nightlightMode >= NL_MODE_SUN && nightlightMode <= NL_MODE_SUNSET)
       {
         if (!briNlT) { //turn off if sunset
           effectCurrent = colNlT[0];
@@ -280,7 +296,7 @@ void handleNightlight()
     }
   } else if (nightlightActiveOld) //early de-init
   {
-    if (nightlightMode == NL_MODE_SUN) { //restore previous effect
+    if (nightlightMode >= NL_MODE_SUN && nightlightMode <= NL_MODE_SUNSET) { //restore previous effect
       effectCurrent = colNlT[0];
       effectSpeed = colNlT[1];
       effectPalette = colNlT[2];

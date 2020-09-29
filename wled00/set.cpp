@@ -646,11 +646,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf(F("NF="));
   if (pos > 0)
   {
-    nightlightMode = getNumVal(&req, pos);
-
+    byte tmp = getNumVal(&req, pos);
+    if (tmp > NL_MODE_SUNSET) {
+      tmp = NL_MODE_SUNSET;
+    }
+    nightlightMode = (tmp <= NL_MODE_SUNSET) ? tmp : NL_MODE_SUNSET;
     nightlightActiveOld = false; //re-init
   }
-  if (nightlightMode > NL_MODE_SUN) nightlightMode = NL_MODE_SUN;
 
   #if AUXPIN >= 0
   //toggle general purpose output

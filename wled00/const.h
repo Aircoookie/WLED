@@ -109,6 +109,8 @@
 #define NL_MODE_FADE              1            //Fade to target brightness gradually
 #define NL_MODE_COLORFADE         2            //Fade to target brightness and secondary color gradually
 #define NL_MODE_SUN               3            //Sunrise/sunset. Target brightness is set immediately, then Sunrise effect is started. Max 60 min.
+#define NL_MODE_SUNRISE           4            //Explicit choide of sunrise, else identical to NL_MODE_SUN
+#define NL_MODE_SUNSET            5            //Explicit choide of sunset,  else identical to NL_MODE_SUN
 
 //EEPROM size
 #define EEPSIZE 2560  //Maximum is 4096
