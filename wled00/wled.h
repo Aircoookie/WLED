@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2009170
+#define VERSION 2009290
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -30,6 +30,7 @@
 #endif
 #define WLED_ENABLE_ADALIGHT     // saves 500b only
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
+#define WLED_ENABLE_LOXONE         // uses 1.2kb
 #ifndef WLED_DISABLE_WEBSOCKETS
   #define WLED_ENABLE_WEBSOCKETS
 #endif
@@ -88,6 +89,8 @@
 
 #include "src/dependencies/e131/ESPAsyncE131.h"
 #include "src/dependencies/async-mqtt-client/AsyncMqttClient.h"
+
+#define ARDUINOJSON_DECODE_UNICODE 0
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
 
@@ -218,6 +221,7 @@ WLED_GLOBAL bool buttonEnabled  _INIT(true);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
+WLED_GLOBAL uint16_t udpPort2   _INIT(65506); // WLED notifier supplemental port
 WLED_GLOBAL uint16_t udpRgbPort _INIT(19446); // Hyperion port
 
 WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);       // apply brightness from incoming notifications
@@ -388,7 +392,7 @@ WLED_GLOBAL byte audioSyncEnabled _INIT(0);
 WLED_GLOBAL uint16_t audioSyncPort _INIT(11988);
 
 // network
-WLED_GLOBAL bool udpConnected _INIT(false), udpRgbConnected _INIT(false), udpSyncConnected _INIT(false);
+WLED_GLOBAL bool udpConnected _INIT(false), udp2Connected _INIT(false), udpRgbConnected _INIT(false), udpSyncConnected _INIT(false);
 
 // ui style
 WLED_GLOBAL bool showWelcomePage _INIT(false);
@@ -504,7 +508,7 @@ WLED_GLOBAL AsyncClient* hueClient _INIT(NULL);
 WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
 
 // udp interface objects
-WLED_GLOBAL WiFiUDP notifierUdp, rgbUdp;
+WLED_GLOBAL WiFiUDP notifierUdp, rgbUdp, notifier2Udp;
 WLED_GLOBAL WiFiUDP ntpUdp;
 WLED_GLOBAL WiFiUDP fftUdp;
 WLED_GLOBAL ESPAsyncE131 e131 _INIT_N(((handleE131Packet)));

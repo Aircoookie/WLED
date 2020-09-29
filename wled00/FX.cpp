@@ -3596,6 +3596,25 @@ uint16_t WS2812FX::mode_dancing_shadows(void)
   return FRAMETIME;
 }
 
+/*
+  Imitates a washing machine, rotating same waves forward, then pause, then backward.
+  By Stefan Seegel
+*/
+uint16_t WS2812FX::mode_washing_machine(void) {
+  float speed = tristate_square8(now >> 7, 90, 15);
+  float quot  = 32.0f - ((float)SEGMENT.speed / 16.0f);
+  speed /= quot;
+
+  SEGENV.step += (speed * 128.0f);
+
+  for (int i=0; i<SEGLEN; i++) {
+    uint8_t col = sin8(((SEGMENT.intensity / 25 + 1) * 255 * i / SEGLEN) + (SEGENV.step >> 7));
+    setPixelColor(i, color_from_palette(col, false, PALETTE_SOLID_WRAP, 3));
+  }
+
+  return FRAMETIME;
+}
+
 
 /*
  * Effects by Andrew Tuline
@@ -4037,7 +4056,7 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
   Serial.println(log10(FFT_MajorPeak)*128-140);
 //  Serial.println(pow(FFT_MajorPeak, .3));
   #endif
-  
+
                                                               // This currently has no controls.
   #define maxsteps 16                                         // Case statement wouldn't allow a variable.
 
@@ -4045,7 +4064,7 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
   uint16_t dataSize = sizeof(ripple) * maxRipples;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
- 
+
   Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
 
 //  static uint8_t colour;                                      // Ripple colour is randomized.
@@ -4065,7 +4084,7 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
 
        case -2:     // Inactive mode
         break;
-        
+
        case -1:                                                  // Initialize ripple variables.
         ripples[i].pos = random16(SEGLEN);
 
@@ -4074,21 +4093,21 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
         #else
           ripples[i].color = random8();
         #endif
-        
+
         ripples[i].state = 0;
         break;
-  
+
       case 0:
         setPixelColor(ripples[i].pos, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade));
         ripples[i].state++;
         break;
-  
+
       case maxsteps:                                            // At the end of the ripples. -2 is an inactive mode.
           ripples[i].state = -2;
         break;
-  
+
       default:                                                  // Middle of the ripples.
-  
+
         setPixelColor((ripples[i].pos + ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade/ripples[i].state*2));
         setPixelColor((ripples[i].pos - ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade/ripples[i].state*2));
         ripples[i].state++;                                               // Next step.

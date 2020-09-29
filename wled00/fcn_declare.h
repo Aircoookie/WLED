@@ -26,6 +26,7 @@ void updateBlynk();
 
 //button.cpp
 void shortPressAction();
+bool isButtonPressed();
 void handleButton();
 void handleIO();
 
@@ -34,6 +35,7 @@ void colorFromUint32(uint32_t in, bool secondary = false);
 void colorFromUint24(uint32_t in, bool secondary = false);
 void relativeChangeWhite(int8_t amount, byte lowerBoundary = 0);
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
+void colorKtoRGB(uint16_t kelvin, byte* rgb);
 void colorCTtoRGB(uint16_t mired, byte* rgb); //white spectrum to rgb
 
 void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disabled TODO
@@ -47,7 +49,7 @@ void initDMX();
 void handleDMX();
 
 //e131.cpp
-void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet);
+void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
 
 //file.cpp
 bool handleFileRead(AsyncWebServerRequest*, String path);
@@ -105,6 +107,10 @@ void colorUpdated(int callMode);
 void updateInterfaces(uint8_t callMode);
 void handleTransitions();
 void handleNightlight();
+
+//lx_parser.cpp
+bool parseLx(int lxValue, byte* rgbw);
+void parseLxJson(int lxValue, byte segId, bool secondary);
 
 //mqtt.cpp
 bool initMqtt();
@@ -198,7 +204,7 @@ bool applyPreset(byte index, bool loadBri = true);
 void savePreset(byte index, bool persist = true);
 void loadMacro(byte index, char* m);
 void applyMacro(byte index);
-void saveMacro(byte index, String mc, bool persist = true); //only commit on single save, not in settings
+void saveMacro(byte index, const String& mc, bool persist = true); //only commit on single save, not in settings
 
 //wled_serial.cpp
 void handleSerial();
@@ -210,10 +216,10 @@ void initServer();
 void serveIndexOrWelcome(AsyncWebServerRequest *request);
 void serveIndex(AsyncWebServerRequest* request);
 String msgProcessor(const String& var);
-void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl="", byte optionT=255);
+void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl="", byte optionT=255);
 String settingsProcessor(const String& var);
 String dmxProcessor(const String& var);
-void serveSettings(AsyncWebServerRequest* request);
+void serveSettings(AsyncWebServerRequest* request, bool post = false);
 
 //ws.cpp
 void handleWs();
