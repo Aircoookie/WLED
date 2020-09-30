@@ -2,6 +2,10 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2009291
+
+-   Fixed MQTT bootloop (no F() macro, #1199)
+
 #### Build 2009290
 
 -   Added basic DDP protocol support
