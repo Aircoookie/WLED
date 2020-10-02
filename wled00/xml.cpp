@@ -153,7 +153,7 @@ void sappend(char stype, const char* key, int val)
 }
 
 //append a string setting to buffer
-void sappends(char stype, const char* key, char* val)
+void sappends(char stype, const char* key, const char* val)
 {
   switch(stype)
   {
@@ -253,7 +253,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
     if (strip.currentMilliamps)
     {
-      sappends('m',SET_F("(\"pow\")[0]"),"");
+      sappends('m',SET_F("(\"pow\")[0]"),std::string("").c_str());
       olen -= 2; //delete ";
       oappendi(strip.currentMilliamps);
       oappend(SET_F("mA\";"));
@@ -387,11 +387,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("CM"),countdownMin);
     sappend('v',SET_F("CS"),countdownSec);
     char k[4]; k[0]= 'M';
-    for (int i=1;i<17;i++)
+    for (byte i=1;i<17;i++)
     {
       char m[65];
       loadMacro(i, m);
-      sprintf(k+1,"%i",i);
+      sprintf(k+1,"%hhu",i);
       sappends('s',k,m);
     }
 

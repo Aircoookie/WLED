@@ -276,8 +276,8 @@ void decodeIR24CT(uint32_t code)
     case IR24_CT_CTPLUS     : colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0;  break;
     case IR24_CT_CTMINUS    : colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0;  break;
     case IR24_CT_MEMORY   : {
-      if (col[3] > 0) col[3] = 0; 
-      else colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }                   break;
+      if (col[3] > 0) { col[3] = 0; }
+      else { colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; } }                   break;
     default: return; 
   }
   lastValidCode = code;
@@ -459,7 +459,7 @@ void decodeIR6(uint32_t code)
         default:                                  break;
       }
       lastIR6ColourIdx++;
-      if(lastIR6ColourIdx > 12) lastIR6ColourIdx = 0;                      break;
+      if(lastIR6ColourIdx > 12) { lastIR6ColourIdx = 0; }                   break;
     case IR6_MUTE: effectCurrent = 0; effectPalette = 0; colorFromUint32(COLOR_WHITE); bri=255; break;
   }
   lastValidCode = code;

@@ -15,9 +15,10 @@ void UsermodManager::readFromJsonState(JsonObject& obj) { for (byte i = 0; i < n
 
 bool UsermodManager::add(Usermod* um)
 {
-  if (numMods >= WLED_MAX_USERMODS || um == nullptr) return false;
+  if (numMods >= WLED_MAX_USERMODS || um == nullptr) { return false; }
   ums[numMods] = um;
   numMods++;
+  return true;
 }
 
 byte UsermodManager::getModCount() {return numMods;}

@@ -335,7 +335,6 @@ uint8_t WS2812FX::getPaletteCount()
 
 
 bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
-  uint8_t mainSeg = getMainSegmentId();
   Segment& seg = _segments[getMainSegmentId()];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
 
@@ -778,7 +777,7 @@ CRGB WS2812FX::col_to_crgb(uint32_t color)
 
 void WS2812FX::load_gradient_palette(uint8_t index)
 {
-  byte i = constrain(index, 0, GRADIENT_PALETTE_COUNT -1);
+  byte i = constrain(index, 0, (uint8_t)GRADIENT_PALETTE_COUNT -1);
   byte tcp[72]; //support gradient palettes with up to 18 entries
   memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i])), 72);
   targetPalette.loadDynamicGradientPalette(tcp);

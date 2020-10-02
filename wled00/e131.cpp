@@ -33,7 +33,8 @@ void handleDDPPacket(e131_packet_t* p) {
   realtimeLock(realtimeTimeoutMs, REALTIME_MODE_DDP);
   
   for (uint16_t i = offsetLeds; i < offsetLeds + packetLeds; i++) {
-    setRealtimePixel(i, data[c++], data[c++], data[c++], 0);
+    setRealtimePixel(i, data[c], data[c], data[c], 0);
+    c++;
   }
 
   bool push = p->flags & DDP_PUSH_FLAG;
@@ -180,7 +181,8 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         }
         uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset +1) / 3;
         for (uint16_t i = previousLeds; i < ledsTotal; i++) {
-          setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], 0);
+          setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset], e131_data[dmxOffset], 0);
+          dmxOffset++;
         }
         break;
       }

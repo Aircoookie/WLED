@@ -156,7 +156,7 @@ void WLED::setup()
   DEBUG_PRINT("esp8266 ");
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif
-  int heapPreAlloc = ESP.getFreeHeap();
+ // int heapPreAlloc = ESP.getFreeHeap(); UNUSED
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
