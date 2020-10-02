@@ -613,6 +613,18 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf(F("RD="));
   if (pos > 0) receiveDirect = (req.charAt(pos+3) != '0');
 
+  //main toggle on/off (parse before nightlight, #1214)
+  pos = req.indexOf(F("&T="));
+  if (pos > 0) {
+    nightlightActive = false; //always disable nightlight when toggling
+    switch (getNumVal(&req, pos))
+    {
+      case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off, only if it was previously on
+      case 1: if (bri == 0) bri = briLast; break; //on, only if it was previously off
+      default: toggleOnOff(); //toggle
+    }
+  }
+
   //toggle nightlight mode
   bool aNlDef = false;
   if (req.indexOf(F("&ND")) > 0) aNlDef = true;
@@ -622,7 +634,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     if (req.charAt(pos+3) == '0')
     {
       nightlightActive = false;
-      bri = briT;
     } else {
       nightlightActive = true;
       if (!aNlDef) nightlightDelayMins = getNumVal(&req, pos);
@@ -663,18 +674,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
-
-  //main toggle on/off
-  pos = req.indexOf(F("&T="));
-  if (pos > 0) {
-    nightlightActive = false; //always disable nightlight when toggling
-    switch (getNumVal(&req, pos))
-    {
-      case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off, only if it was previously on
-      case 1: if (bri == 0) bri = briLast; break; //on, only if it was previously off
-      default: toggleOnOff(); //toggle
-    }
-  }
 
   //Segment reverse
   pos = req.indexOf(F("RV="));

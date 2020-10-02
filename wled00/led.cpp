@@ -134,7 +134,7 @@ void colorUpdated(int callMode)
   if (bri > 0) briLast = bri;
 
   //deactivate nightlight if target brightness is reached
-  if (bri == nightlightTargetBri && callMode != NOTIFIER_CALL_MODE_NO_NOTIFY) nightlightActive = false;
+  if (bri == nightlightTargetBri && callMode != NOTIFIER_CALL_MODE_NO_NOTIFY && nightlightMode != NL_MODE_SUN) nightlightActive = false;
   
   if (fadeTransition)
   {
