@@ -3712,3 +3712,22 @@ uint16_t WS2812FX::mode_dancing_shadows(void)
 
   return FRAMETIME;
 }
+
+/*
+  Imitates a washing machine, rotating same waves forward, then pause, then backward.
+  By Stefan Seegel
+*/
+uint16_t WS2812FX::mode_washing_machine(void) {
+  float speed = tristate_square8(now >> 7, 90, 15);
+  float quot  = 32.0f - ((float)SEGMENT.speed / 16.0f);
+  speed /= quot;
+
+  SEGENV.step += (speed * 128.0f);
+  
+  for (int i=0; i<SEGLEN; i++) {
+    uint8_t col = sin8(((SEGMENT.intensity / 25 + 1) * 255 * i / SEGLEN) + (SEGENV.step >> 7));
+    setPixelColor(i, color_from_palette(col, false, PALETTE_SOLID_WRAP, 3));
+  }
+
+  return FRAMETIME;
+}

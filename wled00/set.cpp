@@ -1,5 +1,6 @@
 #include "wled.h"
 
+
 /*
  * Receives client input
  */
@@ -128,6 +129,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     irEnabled = request->arg(F("IR")).toInt();
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
+    t = request->arg(F("U2")).toInt();
+    if (t > 0) udpPort2 = t;
     receiveNotificationBrightness = request->hasArg(F("RB"));
     receiveNotificationColor = request->hasArg(F("RC"));
     receiveNotificationEffects = request->hasArg(F("RX"));
@@ -507,6 +510,27 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   updateVal(&req, "B2=", &colSec[2]);
   updateVal(&req, "W2=", &colSec[3]);
 
+  #ifdef WLED_ENABLE_LOXONE
+  //lox parser
+  pos = req.indexOf(F("LX=")); // Lox primary color
+  if (pos > 0) {
+    int lxValue = getNumVal(&req, pos);
+    if (parseLx(lxValue, col)) {
+      bri = 255;
+      nightlightActive = false; //always disable nightlight when toggling
+    }
+  }
+  pos = req.indexOf(F("LY=")); // Lox secondary color
+  if (pos > 0) {
+    int lxValue = getNumVal(&req, pos);
+    if(parseLx(lxValue, colSec)) {
+      bri = 255;
+      nightlightActive = false; //always disable nightlight when toggling
+    }
+  }
+
+  #endif
+
   //set hue
   pos = req.indexOf(F("HU="));
   if (pos > 0) {
@@ -517,6 +541,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       tempsat = getNumVal(&req, pos);
     }
     colorHStoRGB(temphue,tempsat,(req.indexOf(F("H2"))>0)? colSec:col);
+  }
+
+  //set white spectrum (kelvin)
+  pos = req.indexOf(F("&K="));
+  if (pos > 0) {
+    colorKtoRGB(getNumVal(&req, pos),(req.indexOf(F("K2"))>0)? colSec:col);
   }
 
   //set color from HEX or 32bit DEC
@@ -583,6 +613,18 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   pos = req.indexOf(F("RD="));
   if (pos > 0) receiveDirect = (req.charAt(pos+3) != '0');
 
+  //main toggle on/off (parse before nightlight, #1214)
+  pos = req.indexOf(F("&T="));
+  if (pos > 0) {
+    nightlightActive = false; //always disable nightlight when toggling
+    switch (getNumVal(&req, pos))
+    {
+      case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off, only if it was previously on
+      case 1: if (bri == 0) bri = briLast; break; //on, only if it was previously off
+      default: toggleOnOff(); //toggle
+    }
+  }
+
   //toggle nightlight mode
   bool aNlDef = false;
   if (req.indexOf(F("&ND")) > 0) aNlDef = true;
@@ -592,7 +634,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     if (req.charAt(pos+3) == '0')
     {
       nightlightActive = false;
-      bri = briT;
     } else {
       nightlightActive = true;
       if (!aNlDef) nightlightDelayMins = getNumVal(&req, pos);
@@ -633,18 +674,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
-
-  //main toggle on/off
-  pos = req.indexOf(F("&T="));
-  if (pos > 0) {
-    nightlightActive = false; //always disable nightlight when toggling
-    switch (getNumVal(&req, pos))
-    {
-      case 0: if (bri != 0){briLast = bri; bri = 0;} break; //off, only if it was previously on
-      case 1: if (bri == 0) bri = briLast; break; //on, only if it was previously off
-      default: toggleOnOff(); //toggle
-    }
-  }
 
   //Segment reverse
   pos = req.indexOf(F("RV="));

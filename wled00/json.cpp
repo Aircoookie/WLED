@@ -44,7 +44,14 @@ void deserializeSegment(JsonObject elem, byte it)
           int rgbw[] = {0,0,0,0};
           byte cp = copyArray(colX, rgbw);
           
-          if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
+          if (cp == 1) {
+            if (rgbw[0] == 0) seg.colors[i] = 0;
+            else {
+              byte ctrgb[] = {0,0,0,0};
+              colorKtoRGB(rgbw[0], ctrgb);
+              for (uint8_t c = 0; c < 3; c++) rgbw[c] = ctrgb[c];
+            }
+          }
           if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
           { 
             if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
@@ -55,6 +62,18 @@ void deserializeSegment(JsonObject elem, byte it)
         }
       }
     }
+
+    // lx parser
+    #ifdef WLED_ENABLE_LOXONE
+    int lx = elem[F("lx")] | -1;
+    if (lx > 0) {
+      parseLxJson(lx, id, false);
+    }
+    int ly = elem[F("ly")] | -1;
+    if (ly > 0) {
+      parseLxJson(ly, id, true);
+    }
+    #endif
     
     //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
     seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
@@ -161,7 +180,7 @@ bool deserializeState(JsonObject root)
   if (tr >= 2) presetCycleTime = tr;
 
   JsonObject nl = root[F("nl")];
-  nightlightActive    = nl["on"]   | nightlightActive;
+  nightlightActive    = nl["on"]      | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
   nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated
   nightlightMode      = nl[F("mode")] | nightlightMode;
@@ -375,6 +394,7 @@ void serializeInfo(JsonObject root)
     case REALTIME_MODE_ADALIGHT: root["lm"] = F("USB Adalight/TPM2"); break;
     case REALTIME_MODE_ARTNET:   root["lm"] = F("Art-Net"); break;
     case REALTIME_MODE_TPM2NET:  root["lm"] = F("tpm2.net"); break;
+    case REALTIME_MODE_DDP:      root["lm"] = F("DDP"); break;
   }
 
   if (realtimeIP[0] == 0)
@@ -465,7 +485,7 @@ void serializeInfo(JsonObject root)
   
   root[F("brand")] = "WLED";
   root[F("product")] = F("FOSS");
-  root[F("mac")] = escapedMac;
+  root["mac"] = escapedMac;
 }
 
 void serveJson(AsyncWebServerRequest* request)

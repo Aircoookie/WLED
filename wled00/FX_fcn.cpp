@@ -700,6 +700,32 @@ uint16_t WS2812FX::triwave16(uint16_t in)
 }
 
 /*
+ * Generates a tristate square wave w/ attac & decay 
+ * @param x input value 0-255
+ * @param pulsewidth 0-127 
+ * @param attdec attac & decay, max. pulsewidth / 2
+ * @returns signed waveform value
+ */
+int8_t WS2812FX::tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
+  int8_t a = 127;
+  if (x > 127) {
+    a = -127;
+    x -= 127;
+  }
+
+  if (x < attdec) { //inc to max
+    return (int16_t) x * a / attdec;
+  }
+  else if (x < pulsewidth - attdec) { //max
+    return a;
+  }  
+  else if (x < pulsewidth) { //dec to 0
+    return (int16_t) (pulsewidth - x) * a / attdec;
+  }
+  return 0;
+}
+
+/*
  * Put a value 0 to 255 in to get a color value.
  * The colours are a transition r -> g -> b -> back to r
  * Inspired by the Adafruit examples.
@@ -844,7 +870,7 @@ void WS2812FX::handle_palette(void)
       load_gradient_palette(paletteIndex -13);
   }
   
-  if (singleSegmentMode && paletteFade) //only blend if just one segment uses FastLED mode
+  if (singleSegmentMode && paletteFade && SEGENV.call > 0) //only blend if just one segment uses FastLED mode
   {
     nblendPaletteTowardPalette(currentPalette, targetPalette, 48);
   } else
