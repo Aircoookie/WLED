@@ -29,7 +29,7 @@ void WLED::reset()
 bool oappendi(int i)
 {
   char s[11];
-  sprintf(s, "%ld", i);
+  sprintf(s, "%d", i);
   return oappend(s);
 }
 

@@ -2,6 +2,11 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2010020
+
+-   Fixed interaction of `T` and `NL` HTTP API commands (#1214)
+-   Fixed an issue where Sunrise mode nightlight does not activate if toggled on simultaneously 
+
 #### Build 2009291
 
 -   Fixed MQTT bootloop (no F() macro, #1199)
