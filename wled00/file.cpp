@@ -6,6 +6,21 @@
 
 #ifndef WLED_DISABLE_FILESYSTEM
 
+#define FS_BUFSIZE 256
+
+/*
+ * Structural requirements for files managed by writeObjectToFile() and readObjectFromFile() utilities:
+ * 1. File must be a string representation of a valid JSON object
+ * 2. File must have '{' as first character
+ * 3. There must not be any additional characters between a root-level key and its value object (e.g. space, tab, newline)
+ * 4. There must not be any characters between an root object-separating ',' and the next object key string
+ * 5. There may be any number of spaces, tabs, and/or newlines before such object-separating ','
+ * 6. There must not be more than 5 consecutive spaces at any point except for those permitted in condition 5
+ * 7. If it is desired to delete the first usable object (e.g. preset file), a dummy object '"0":{}' is inserted at the beginning.
+ *    It shall be disregarded by receiving software.
+ *    The reason for it is that deleting the first preset would require special code to handle commas between it and the 2nd preset
+ */
+
 //find() that reads and buffers data from file stream in 256-byte blocks.
 //Significantly faster, f.find(key) can take SECONDS for multi-kB files
 bool bufferedFind(const char *target, File f) {
@@ -21,11 +36,11 @@ bool bufferedFind(const char *target, File f) {
   size_t index = 0;
   byte c;
   uint16_t bufsize = 0, count = 0;
-  byte buf[256];
+  byte buf[FS_BUFSIZE];
   f.seek(0);
 
   while (f.position() < f.size() -1) {
-    bufsize = f.read(buf, 256);
+    bufsize = f.read(buf, FS_BUFSIZE);
     count = 0;
     while (count < bufsize) {
       if(buf[count] != target[index])
@@ -56,11 +71,11 @@ bool bufferedFindSpace(uint16_t targetLen, File f) {
 
   uint16_t index = 0;
   uint16_t bufsize = 0, count = 0;
-  byte buf[256];
+  byte buf[FS_BUFSIZE];
   f.seek(0);
 
   while (f.position() < f.size() -1) {
-    bufsize = f.read(buf, 256);
+    bufsize = f.read(buf, FS_BUFSIZE);
     count = 0;
     
     while (count < bufsize) {
@@ -81,15 +96,71 @@ bool bufferedFindSpace(uint16_t targetLen, File f) {
   return false;
 }
 
+//find the closing bracket corresponding to the opening bracket at the file pos when calling this function
+bool bufferedFindObjectEnd(File f) {
+  #ifdef WLED_DEBUG_FS
+    DEBUGFS_PRINTLN(F("Find obj end"));
+    uint32_t s = millis();
+  #endif
+
+  if (!f || !f.size()) return false;
+
+  uint16_t objDepth = 0; //num of '{' minus num of '}'. return once 0
+  uint16_t bufsize = 0, count = 0;
+  //size_t start = f.position();
+  byte buf[256];
+
+  while (f.position() < f.size() -1) {
+    bufsize = f.read(buf, FS_BUFSIZE);
+    count = 0;
+    
+    while (count < bufsize) {
+      if (buf[count] == '{') objDepth++;
+      if (buf[count] == '}') objDepth--;
+      if (objDepth == 0) {
+        f.seek((f.position() - bufsize) + count +1);
+        DEBUGFS_PRINTF("} at pos %d, took %d ms", f.position(), millis() - s);
+        return true;
+      }
+      count++;
+    }
+  }
+  DEBUGFS_PRINTF("No match, took %d ms\n", millis() - s);
+  return false;
+}
+
+//fills n bytes from current file pos with ' ' characters
+void writeSpace(File f, uint16_t l)
+{
+  byte buf[FS_BUFSIZE];
+  memset(buf, ' ', FS_BUFSIZE);
+
+  while (l > 0) {
+    uint16_t block = (l>FS_BUFSIZE) ? FS_BUFSIZE : l;
+    f.write(buf, block);
+    l -= block;
+  }
+}
+
 bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t s)
 {
   #ifdef WLED_DEBUG_FS
-    DEBUGFS_PRINTLN("Append");
+    DEBUGFS_PRINTLN(F("Append"));
     uint32_t s1 = millis();
   #endif
   uint32_t pos = 0;
   if (!f) return false;
-  if (f.size() < 3) f.print("{}");
+
+  if (f.size() < 3) {
+    char init[10];
+    strcpy_P(init, PSTR("{\"0\":{}}"));
+    f.print(init);
+  }
+
+  if (content->isNull()) {
+    f.close();
+    return true; //nothing  to append
+  }
   
   //if there is enough empty space in file, insert there instead of appending
   uint32_t contentLen = measureJson(*content);
@@ -137,7 +208,7 @@ bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t
 bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content)
 {
   char objKey[10];
-  sprintf(objKey, "\"%ld\":", id);
+  sprintf(objKey, "\"%d\":", id);
   writeObjectToFile(file, objKey, content);
 }
 
@@ -154,7 +225,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   File    f = WLED_FS.open(file, "r+");
   if (!f && !WLED_FS.exists(file)) f = WLED_FS.open(file, "w+");
   if (!f) {
-    DEBUGFS_PRINTLN("Failed to open!");
+    DEBUGFS_PRINTLN(F("Failed to open!"));
     return false;
   }
   
@@ -166,34 +237,24 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   //exists
   pos = f.position();
   //measure out end of old object
-  StaticJsonDocument<1024> doc;
-  deserializeJson(doc, f);
+  bufferedFindObjectEnd(f);
   uint32_t pos2 = f.position();
 
   uint32_t oldLen = pos2 - pos;
-  #ifdef WLED_DEBUG_FS
-    DEBUGFS_PRINTF("Old obj len %d >>> ", oldLen);
-    serializeJson(doc, Serial);
-    DEBUGFS_PRINTLN();
-  #endif
+  DEBUGFS_PRINTF("Old obj len %d\n", oldLen);
   
   if (!content->isNull() && measureJson(*content) <= oldLen)  //replace
   {
-    DEBUGFS_PRINTLN("replace");
+    DEBUGFS_PRINTLN(F("replace"));
     f.seek(pos);
     serializeJson(*content, f);
-    //pad rest
-    for (uint32_t i = f.position(); i < pos2; i++) {
-      f.write(' ');
-    }
+    writeSpace(f, pos2 - f.position());
   } else { //delete
-    DEBUGFS_PRINTLN("delete");
+    DEBUGFS_PRINTLN(F("delete"));
     pos -= strlen(key);
     if (pos > 3) pos--; //also delete leading comma if not first object
     f.seek(pos);
-    for (uint32_t i = pos; i < pos2; i++) {
-      f.write(' ');
-    }
+    writeSpace(f, pos2 - pos);
     if (!content->isNull()) return appendObjectToFile(f, key, content, s);
   }
   f.close();
@@ -204,7 +265,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
 bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest)
 {
   char objKey[10];
-  sprintf(objKey, "\"%ld\":", id);
+  sprintf(objKey, "\"%d\":", id);
   readObjectFromFile(file, objKey, dest);
 }
 

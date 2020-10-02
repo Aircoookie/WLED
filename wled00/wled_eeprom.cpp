@@ -633,8 +633,12 @@ bool applyPreset(byte index, bool loadBri)
   errorFlag = readObjectFromFileUsingId("/presets.json", index, &temp) ? ERR_NONE : ERR_FS_PLOAD;
   serializeJson(temp, Serial);
   deserializeState(temp.as<JsonObject>());
-  //presetToApply = index;
-  return true;
+  if (!errorFlag) {
+    currentPreset = index;
+    isPreset = true;
+    return true;
+  }
+  return false;
   if (index == 255 || index == 0)
   {
     loadSettingsFromEEPROM(false);//load boot defaults
@@ -688,6 +692,7 @@ void savePreset(byte index, bool persist, const char* pname, byte priority, Json
   if (saveobj.isNull()) {
     DEBUGFS_PRINTLN("Save current state");
     serializeState(doc.to<JsonObject>(), true);
+    currentPreset = index;
   } else {
     DEBUGFS_PRINTLN("Save custom");
     sObj.set(saveobj);
@@ -695,9 +700,8 @@ void savePreset(byte index, bool persist, const char* pname, byte priority, Json
   sObj["p"] = priority;
   if (pname) sObj["n"] = pname;
 
-  //serializeJson(doc, Serial);
   writeObjectToFileUsingId("/presets.json", index, &doc);
-  //Serial.println("Done!");
+  presetsModifiedTime = now(); //unix time
   return;
   
   if (index > 16) return;
@@ -734,6 +738,12 @@ void savePreset(byte index, bool persist, const char* pname, byte priority, Json
   savedToPresets();
   currentPreset = index;
   isPreset = true;
+}
+
+void deletePreset(byte index) {
+  StaticJsonDocument<24> empty;
+  writeObjectToFileUsingId("/presets.json", index, &empty);
+  presetsModifiedTime = now(); //unix time
 }
 
 

@@ -36,8 +36,8 @@
 #endif
 
 //#define WLED_DISABLE_FILESYSTEM  // FS used by new preset functionality
-//#define WLED_ENABLE_FS_SERVING   // Enable sending html file from SPIFFS before serving progmem version
-//#define WLED_ENABLE_FS_EDITOR    // enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
+#define WLED_ENABLE_FS_SERVING     // Enable sending html file from SPIFFS before serving progmem version
+#define WLED_ENABLE_FS_EDITOR      // enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 // to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
@@ -474,8 +474,10 @@ WLED_GLOBAL uint16_t olen _INIT(0);
 
 // presets
 WLED_GLOBAL uint16_t savedPresets _INIT(0);
-WLED_GLOBAL int8_t currentPreset _INIT(-1);
+WLED_GLOBAL int16_t currentPreset _INIT(-1);
 WLED_GLOBAL bool isPreset _INIT(false);
+
+WLED_GLOBAL unsigned long presetsModifiedTime _INIT(0L);
 
 WLED_GLOBAL byte errorFlag _INIT(0);
 

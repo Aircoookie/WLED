@@ -142,7 +142,7 @@ void _drawOverlayCronixie();
 void _setRandomColor(bool _sec,bool fromButton=false);
 bool isAsterisksOnly(const char* str, byte maxLen);
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage);
-bool handleSet(AsyncWebServerRequest *request, const String& req);
+bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=true);
 int getNumVal(const String* req, uint16_t pos);
 bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 
@@ -200,7 +200,8 @@ void saveSettingsToEEPROM();
 void loadSettingsFromEEPROM(bool first);
 void savedToPresets();
 bool applyPreset(byte index, bool loadBri = true);
-void savePreset(byte index, bool persist = true, const char* pname = nullptr, byte prio = 50, JsonObject saveobj = JsonObject());
+void savePreset(byte index, bool persist = true, const char* pname = nullptr, byte prio = 5, JsonObject saveobj = JsonObject());
+void deletePreset(byte index);
 void loadMacro(byte index, char* m);
 void applyMacro(byte index);
 void saveMacro(byte index, const String& mc, bool persist = true); //only commit on single save, not in settings

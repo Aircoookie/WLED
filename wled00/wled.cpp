@@ -177,10 +177,17 @@ void WLED::setup()
   DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
 #ifndef WLED_DISABLE_FILESYSTEM
+    bool fsinit = false;
+    DEBUGFS_PRINTLN(F("Mount FS"));
   #ifdef ARDUINO_ARCH_ESP32
-    WLED_FS.begin(true);
+    fsinit = WLED_FS.begin(true);
+  #else
+    fsinit = WLED_FS.begin();
   #endif
-    WLED_FS.begin();
+    if (!fsinit) {
+      DEBUGFS_PRINTLN(F("FS failed!"));
+      errorFlag = ERR_FS_BEGIN;
+    }
 #endif
 
   DEBUG_PRINTLN(F("Load EEPROM"));

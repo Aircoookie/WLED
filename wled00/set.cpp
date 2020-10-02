@@ -375,7 +375,7 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv, byte ma
 
 
 //HTTP API request parser
-bool handleSet(AsyncWebServerRequest *request, const String& req)
+bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 {
   if (!(req.indexOf("win") >= 0)) return false;
 
@@ -746,6 +746,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   }
   //you can add more if you need
 
+  if (!apply) return true; //when called by JSON API, do not call colorUpdated() here
+  
   //internal call, does not send XML response
   pos = req.indexOf(F("IN"));
   if (pos < 1) XML_response(request);

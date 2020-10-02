@@ -1,5 +1,9 @@
 #include "wled.h"
 
+#ifdef ARDUINO_ARCH_ESP32
+#include "esp_spiffs.h" //FS info bare IDF function until FS wrapper is available for ESP32
+#endif
+
 /*
  * JSON API (De)serialization
  */
@@ -148,6 +152,14 @@ bool deserializeState(JsonObject root)
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
 
+  //HTTP API commands
+  const char* httpwin = root[F("win")];
+  if (httpwin) {
+    String apireq = "win&";
+    apireq += httpwin;
+    handleSet(nullptr, apireq, false);
+  }
+
   int ps = root[F("ps")] | -1;
   if (ps >= 0) applyPreset(ps);
   
@@ -192,7 +204,7 @@ bool deserializeState(JsonObject root)
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
   int timein = root[F("time")] | -1;
-  if (timein != -1) setTime(timein);
+  if (timein != -1 && millis() - ntpLastSyncTime > 50000000L) setTime(timein);
   doReboot = root[F("rb")] | doReboot;
 
   realtimeOverride = root[F("lor")] | realtimeOverride;
@@ -244,7 +256,14 @@ bool deserializeState(JsonObject root)
   bool persistSaves = !(root[F("np")] | false);
 
   ps = root[F("psave")] | -1;
-  if (ps >= 0) savePreset(ps, persistSaves, root["n"], root["p"] | 50, root["o"].as<JsonObject>());
+  if (ps > 0) {
+    savePreset(ps, persistSaves, root["n"], root["p"] | 50, root["o"].as<JsonObject>());
+  } else {
+    ps = root[F("pdel")] | -1; //deletion
+    if (ps > 0) {
+      deletePreset(ps);
+    }
+  }
 
   return stateResponse;
 }
@@ -422,10 +441,18 @@ void serializeInfo(JsonObject root)
   wifi_info[F("channel")] = WiFi.channel();
 
   JsonObject fs_info = root.createNestedObject("fs");
-  FSInfo fsi;
-  WLED_FS.info(fsi);
-  fs_info["u"] = fsi.usedBytes;
-  fs_info["t"] = fsi.totalBytes;
+  #ifdef ARDUINO_ARCH_ESP32
+    size_t used, total;
+    esp_spiffs_info(nullptr, &total, &used);
+    fs_info["u"] = used;
+    fs_info["t"] = total;
+  #else
+    FSInfo fsi;
+    WLED_FS.info(fsi);
+    fs_info["u"] = fsi.usedBytes;
+    fs_info["t"] = fsi.totalBytes;
+  #endif
+  fs_info[F("pmt")] = presetsModifiedTime;
   
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
