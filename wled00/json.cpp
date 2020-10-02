@@ -244,17 +244,17 @@ bool deserializeState(JsonObject root)
   bool persistSaves = !(root[F("np")] | false);
 
   ps = root[F("psave")] | -1;
-  if (ps >= 0) savePreset(ps, persistSaves);
+  if (ps >= 0) savePreset(ps, persistSaves, root["n"], root["p"] | 50, root["o"].as<JsonObject>());
 
   return stateResponse;
 }
 
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset)
 {
 	root[F("id")] = id;
 	root[F("start")] = seg.start;
 	root[F("stop")] = seg.stop;
-	root[F("len")] = seg.stop - seg.start;
+	if (!forPreset)  root[F("len")] = seg.stop - seg.start;
   root[F("grp")] = seg.grouping;
   root[F("spc")] = seg.spacing;
   root["on"] = seg.getOption(SEG_OPTION_ON);
@@ -291,39 +291,41 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
 }
 
-
-void serializeState(JsonObject root)
-{
+void serializeState(JsonObject root, bool forPreset)
+{ 
   if (errorFlag) root[F("error")] = errorFlag;
-  
   root["on"] = (bri > 0);
   root["bri"] = briLast;
   root[F("transition")] = transitionDelay/100; //in 100ms
 
-  root[F("ps")] = currentPreset;
-  root[F("pss")] = savedPresets;
-  root[F("pl")] = (presetCyclingEnabled) ? 0: -1;
+  if (!forPreset) {
+    if (errorFlag) root["error"] = errorFlag;
+    
+    root[F("ps")] = currentPreset;
+    root[F("pss")] = savedPresets;
+    root[F("pl")] = (presetCyclingEnabled) ? 0: -1;
+    
+    usermods.addToJsonState(root);
 
-  usermods.addToJsonState(root);
+    //temporary for preset cycle
+    JsonObject ccnf = root.createNestedObject("ccnf");
+    ccnf[F("min")] = presetCycleMin;
+    ccnf[F("max")] = presetCycleMax;
+    ccnf[F("time")] = presetCycleTime;
 
-  //temporary for preset cycle
-  JsonObject ccnf = root.createNestedObject("ccnf");
-  ccnf[F("min")] = presetCycleMin;
-  ccnf[F("max")] = presetCycleMax;
-  ccnf[F("time")] = presetCycleTime;
-  
-  JsonObject nl = root.createNestedObject("nl");
-  nl["on"] = nightlightActive;
-  nl[F("dur")] = nightlightDelayMins;
-  nl[F("fade")] = (nightlightMode > NL_MODE_SET); //deprecated
-  nl[F("mode")] = nightlightMode;
-  nl[F("tbri")] = nightlightTargetBri;
-  
-  JsonObject udpn = root.createNestedObject("udpn");
-  udpn[F("send")] = notifyDirect;
-  udpn[F("recv")] = receiveNotifications;
+    JsonObject nl = root.createNestedObject("nl");
+    nl["on"] = nightlightActive;
+    nl[F("dur")] = nightlightDelayMins;
+    nl[F("fade")] = (nightlightMode > NL_MODE_SET); //deprecated
+    nl[F("mode")] = nightlightMode;
+    nl[F("tbri")] = nightlightTargetBri;
 
-  root[F("lor")] = realtimeOverride;
+    JsonObject udpn = root.createNestedObject("udpn");
+    udpn[F("send")] = notifyDirect;
+    udpn[F("recv")] = receiveNotifications;
+
+    root[F("lor")] = realtimeOverride;
+  }
 
   root[F("mainseg")] = strip.getMainSegmentId();
   
@@ -334,7 +336,7 @@ void serializeState(JsonObject root)
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();
-      serializeSegment(seg0, sg, s);
+      serializeSegment(seg0, sg, s, forPreset);
     }
   }
 }
@@ -414,9 +416,16 @@ void serializeInfo(JsonObject root)
   JsonObject wifi_info = root.createNestedObject("wifi");
   wifi_info[F("bssid")] = WiFi.BSSIDstr();
   int qrssi = WiFi.RSSI();
+
   wifi_info[F("rssi")] = qrssi;
   wifi_info[F("signal")] = getSignalQuality(qrssi);
   wifi_info[F("channel")] = WiFi.channel();
+
+  JsonObject fs_info = root.createNestedObject("fs");
+  FSInfo fsi;
+  WLED_FS.info(fsi);
+  fs_info["u"] = fsi.usedBytes;
+  fs_info["t"] = fsi.totalBytes;
   
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
@@ -444,6 +453,7 @@ void serializeInfo(JsonObject root)
   root[F("freeheap")] = ESP.getFreeHeap();
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 
+  
   usermods.addToJsonInfo(root);
   
   byte os = 0;

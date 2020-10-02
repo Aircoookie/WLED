@@ -34,7 +34,7 @@
 
 void commit()
 {
-  if (!EEPROM.commit()) errorFlag = 2;
+  if (!EEPROM.commit()) errorFlag = ERR_EEP_COMMIT;
 }
 
 /*
@@ -629,6 +629,12 @@ void savedToPresets()
 
 bool applyPreset(byte index, bool loadBri)
 {
+  StaticJsonDocument<1024> temp;
+  errorFlag = readObjectFromFileUsingId("/presets.json", index, &temp) ? ERR_NONE : ERR_FS_PLOAD;
+  serializeJson(temp, Serial);
+  deserializeState(temp.as<JsonObject>());
+  //presetToApply = index;
+  return true;
   if (index == 255 || index == 0)
   {
     loadSettingsFromEEPROM(false);//load boot defaults
@@ -674,8 +680,26 @@ bool applyPreset(byte index, bool loadBri)
   return true;
 }
 
-void savePreset(byte index, bool persist)
+void savePreset(byte index, bool persist, const char* pname, byte priority, JsonObject saveobj)
 {
+  StaticJsonDocument<1024> doc;
+  JsonObject sObj = doc.to<JsonObject>();
+
+  if (saveobj.isNull()) {
+    DEBUGFS_PRINTLN("Save current state");
+    serializeState(doc.to<JsonObject>(), true);
+  } else {
+    DEBUGFS_PRINTLN("Save custom");
+    sObj.set(saveobj);
+  }
+  sObj["p"] = priority;
+  if (pname) sObj["n"] = pname;
+
+  //serializeJson(doc, Serial);
+  writeObjectToFileUsingId("/presets.json", index, &doc);
+  //Serial.println("Done!");
+  return;
+  
   if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
   uint16_t i = 380 + index*20;//min400

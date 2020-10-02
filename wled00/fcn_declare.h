@@ -48,6 +48,10 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
 
 //file.cpp
 bool handleFileRead(AsyncWebServerRequest*, String path);
+bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content);
+bool writeObjectToFile(const char* file, const char* key, JsonDocument* content);
+bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest);
+bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest);
 
 //hue.cpp
 void handleHue();
@@ -85,8 +89,8 @@ void handleIR();
 
 void deserializeSegment(JsonObject elem, byte it);
 bool deserializeState(JsonObject root);
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id);
-void serializeState(JsonObject root);
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false);
+void serializeState(JsonObject root, bool forPreset = false);
 void serializeInfo(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
@@ -196,7 +200,7 @@ void saveSettingsToEEPROM();
 void loadSettingsFromEEPROM(bool first);
 void savedToPresets();
 bool applyPreset(byte index, bool loadBri = true);
-void savePreset(byte index, bool persist = true);
+void savePreset(byte index, bool persist = true, const char* pname = nullptr, byte prio = 50, JsonObject saveobj = JsonObject());
 void loadMacro(byte index, char* m);
 void applyMacro(byte index);
 void saveMacro(byte index, const String& mc, bool persist = true); //only commit on single save, not in settings
