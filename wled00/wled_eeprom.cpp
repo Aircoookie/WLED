@@ -7,7 +7,7 @@
  */
 
 //eeprom Version code, enables default settings instead of 0 init on update
-#define EEPVER 21
+#define EEPVER 22
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -30,6 +30,7 @@
 //19-> 0.9.1n
 //20-> 0.9.1p
 //21-> 0.10.1p
+//22-> 2009260
 
 void commit()
 {
@@ -145,6 +146,9 @@ void saveSettingsToEEPROM()
   EEPROM.write(376, apBehavior);
 
   EEPROM.write(377, EEPVER); //eeprom was updated to latest
+
+  EEPROM.write(378, udpPort2 & 0xFF);
+  EEPROM.write(379, (udpPort2 >> 8) & 0xFF);
 
   EEPROM.write(382, strip.paletteBlend);
   EEPROM.write(383, strip.colorOrder);
@@ -538,6 +542,10 @@ void loadSettingsFromEEPROM(bool first)
   }
   #endif
 
+  if (lastEEPROMversion > 21) {
+    udpPort2 = EEPROM.read(378) + ((EEPROM.read(379) << 8) & 0xFF00);
+  } 
+  
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
@@ -734,7 +742,7 @@ void applyMacro(byte index)
 }
 
 
-void saveMacro(byte index, String mc, bool persist) //only commit on single save, not in settings
+void saveMacro(byte index, const String& mc, bool persist) //only commit on single save, not in settings
 {
   index-=1;
   if (index > 15) return;

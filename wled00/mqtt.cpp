@@ -48,18 +48,18 @@ void onMqttConnect(bool sessionPresent)
   }
 
   doPublishMqtt = true;
-  DEBUG_PRINTLN("MQTT ready");
+  DEBUG_PRINTLN(F("MQTT ready"));
 }
 
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
-  DEBUG_PRINT("MQTT msg: ");
+  DEBUG_PRINT(F("MQTT msg: "));
   DEBUG_PRINTLN(topic);
 
   // paranoia check to avoid npe if no payload
   if (payload==nullptr) {
-    DEBUG_PRINTLN("no payload -> leave");
+    DEBUG_PRINTLN(F("no payload -> leave"));
     return;
   }
   DEBUG_PRINTLN(payload);
@@ -83,7 +83,7 @@ void publishMqtt()
 {
   doPublishMqtt = false;
   if (!WLED_MQTT_CONNECTED) return;
-  DEBUG_PRINTLN("Publish MQTT");
+  DEBUG_PRINTLN(F("Publish MQTT"));
 
   char s[10];
   char subuf[38];
@@ -124,7 +124,7 @@ bool initMqtt()
   }
   if (mqtt->connected()) return true;
 
-  DEBUG_PRINTLN("Reconnecting MQTT");
+  DEBUG_PRINTLN(F("Reconnecting MQTT"));
   IPAddress mqttIP;
   if (mqttIP.fromString(mqttServer)) //see if server is IP or domain
   {

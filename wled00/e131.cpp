@@ -7,25 +7,66 @@
  * E1.31 handler
  */
 
-void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
-  //E1.31 protocol support
+//DDP protocol support, called by handleE131Packet
+//handles RGB data only
+void handleDDPPacket(e131_packet_t* p) {
+  int lastPushSeq = e131LastSequenceNumber[0];
+  
+  //reject late packets belonging to previous frame (assuming 4 packets max. before push)
+  if (e131SkipOutOfSequence && lastPushSeq) {
+    int sn = p->sequenceNum & 0xF;
+    if (sn) {
+      if (lastPushSeq > 5) {
+        if (sn > (lastPushSeq -5) && sn < lastPushSeq) return;
+      } else {
+        if (sn > (10 + lastPushSeq) || sn < lastPushSeq) return;
+      }
+    }
+  }
+
+  uint32_t offsetLeds = htonl(p->channelOffset) /3;
+  uint16_t packetLeds = htons(p->dataLen) /3;
+  uint8_t* data = p->data;
+  uint16_t c = 0;
+  if (p->flags & DDP_TIMECODE_FLAG) c = 4; //packet has timecode flag, we do not support it, but data starts 4 bytes later
+
+  realtimeLock(realtimeTimeoutMs, REALTIME_MODE_DDP);
+  
+  for (uint16_t i = offsetLeds; i < offsetLeds + packetLeds; i++) {
+    setRealtimePixel(i, data[c++], data[c++], data[c++], 0);
+  }
+
+  bool push = p->flags & DDP_PUSH_FLAG;
+  if (push) {
+    e131NewData = true;
+    byte sn = p->sequenceNum & 0xF;
+    if (sn) e131LastSequenceNumber[0] = sn;
+  }
+}
+
+//E1.31 and Art-Net protocol support
+void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
   uint16_t uni = 0, dmxChannels = 0;
   uint8_t* e131_data = nullptr;
   uint8_t seq = 0, mde = REALTIME_MODE_E131;
 
-  if (isArtnet)
+  if (protocol == P_ARTNET)
   {
     uni = p->art_universe;
     dmxChannels = htons(p->art_length);
     e131_data = p->art_data;
     seq = p->art_sequence_number;
     mde = REALTIME_MODE_ARTNET;
-  } else {
+  } else if (protocol == P_E131) {
     uni = htons(p->universe);
     dmxChannels = htons(p->property_value_count) -1;
     e131_data = p->property_values;
     seq = p->sequence_number;
+  } else { //DDP
+    realtimeIP = clientIP;
+    handleDDPPacket(p);
+    return;
   }
 
   #ifdef WLED_ENABLE_DMX
@@ -133,18 +174,18 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
           }
         } else {
           // All subsequent universes start at the first channel.
-          dmxOffset = isArtnet ? 0 : 1;
+          dmxOffset = (protocol == P_ARTNET) ? 0 : 1;
           uint16_t ledsInFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / 3;
           previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * MAX_LEDS_PER_UNIVERSE;
         }
-        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset) / 3;
+        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset +1) / 3;
         for (uint16_t i = previousLeds; i < ledsTotal; i++) {
           setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], 0);
         }
         break;
       }
     default:
-      DEBUG_PRINTLN("unknown E1.31 DMX mode");
+      DEBUG_PRINTLN(F("unknown E1.31 DMX mode"));
       return;  // nothing to do
       break;
   }

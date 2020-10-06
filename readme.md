@@ -1,10 +1,12 @@
 <p align="center">
   <img src="/images/wled_logo_akemi.png">
   <a href="https://github.com/Aircoookie/WLED/releases"><img src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square"></a>
+  <a href="https://raw.githubusercontent.com/Aircoookie/WLED/master/LICENSE"><img src="https://img.shields.io/github/license/Aircoookie/wled?color=blue&style=flat-square"></a>
   <a href="https://wled.discourse.group"><img src="https://img.shields.io/discourse/topics?colorB=blue&label=forum&server=https%3A%2F%2Fwled.discourse.group%2F&style=flat-square"></a>
   <a href="https://discord.gg/KuqP7NE"><img src="https://img.shields.io/discord/473448917040758787.svg?colorB=blue&label=discord&style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED/wiki"><img src="https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED-App"><img src="https://img.shields.io/badge/app-wled-blue.svg?style=flat-square"></a>
+
   </p>
   
 # Welcome to my project WLED! ✨
@@ -72,7 +74,7 @@ WS2811 | 12v | 3-LED segments
 WS2815 | 12v | 
 GS8208 | 12v |
 
-## 🧊 Compatibe PC RGB Fans and ARGB accessories
+## 🧊 Compatible PC RGB Fans and ARGB accessories
 Brand | Model | Comments
 |---|---|---|
 Corsair | HD120 Fan | Uses WS2812B, data-in only
@@ -97,7 +99,7 @@ If WLED really brightens up your every day, you can [![](https://img.shields.io/
 
 
 *Disclaimer:*   
-If you are sensitive to photoeleptic seizures it is not recommended that you use this software.  
+If you are sensitive to photosensitive epilepsy it is not recommended that you use this software.  
 In case you still want to try, don't use strobe, lighting or noise modes or high effect speed settings.
-As per the MIT license, i assume no liability for any damage to you or any other person or equipment.  
+As per the MIT license, I assume no liability for any damage to you or any other person or equipment.  
 

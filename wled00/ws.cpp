@@ -29,7 +29,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       {
         bool verboseResponse = false;
         { //scope JsonDocument so it releases its buffer
-          DynamicJsonDocument jsonBuffer(8192);
+          DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
           DeserializationError error = deserializeJson(jsonBuffer, data, len);
           JsonObject root = jsonBuffer.as<JsonObject>();
           if (error || root.isNull()) return;
@@ -57,7 +57,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       if((info->index + len) == info->len){
         if(info->final){
           if(info->message_opcode == WS_TEXT) {
-            client->text("{\"error\":10}"); //we do not handle split packets right now
+            client->text(F("{\"error\":9}")); //we do not handle split packets right now
           }
         }
       }
@@ -77,7 +77,7 @@ void sendDataWs(AsyncWebSocketClient * client)
   AsyncWebSocketMessageBuffer * buffer;
 
   { //scope JsonDocument so it releases its buffer
-    DynamicJsonDocument doc(8192);
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     JsonObject state = doc.createNestedObject("state");
     serializeState(state);
     JsonObject info  = doc.createNestedObject("info");
