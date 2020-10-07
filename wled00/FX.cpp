@@ -2732,7 +2732,7 @@ uint16_t WS2812FX::candle(bool multi)
 
   //max. flicker range controlled by intensity
   uint8_t valrange = SEGMENT.intensity;
-  uint8_t rndval = valrange >> 1;
+  uint8_t rndval = valrange >> 1; //max 127
 
   //step (how much to move closer to target per frame) coarsely set by speed
   uint8_t speedFactor = 4;
@@ -2769,9 +2769,9 @@ uint16_t WS2812FX::candle(bool multi)
     }
 
     if (newTarget) {
-      s_target = random8(rndval) + random8(rndval);
+      s_target = random8(rndval) + random8(rndval); //between 0 and rndval*2 -2 = 252
       if (s_target < (rndval >> 1)) s_target = (rndval >> 1) + random8(rndval);
-      uint8_t offset = (255 - valrange) >> 1;
+      uint8_t offset = (255 - valrange);
       s_target += offset;
 
       uint8_t dif = (s_target > s) ? s_target - s : s - s_target;

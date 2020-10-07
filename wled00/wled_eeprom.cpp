@@ -702,9 +702,10 @@ void savePreset(byte index, bool persist, const char* pname, byte priority, Json
 
   writeObjectToFileUsingId("/presets.json", index, &doc);
   presetsModifiedTime = now(); //unix time
+  updateFSInfo();
   return;
   
-  if (index > 16) return;
+  /*if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}
   uint16_t i = 380 + index*20;//min400
   
@@ -737,13 +738,14 @@ void savePreset(byte index, bool persist, const char* pname, byte priority, Json
   if (persist) commit();
   savedToPresets();
   currentPreset = index;
-  isPreset = true;
+  isPreset = true;*/
 }
 
 void deletePreset(byte index) {
   StaticJsonDocument<24> empty;
   writeObjectToFileUsingId("/presets.json", index, &empty);
   presetsModifiedTime = now(); //unix time
+  updateFSInfo();
 }
 
 

@@ -188,6 +188,7 @@ void WLED::setup()
       DEBUGFS_PRINTLN(F("FS failed!"));
       errorFlag = ERR_FS_BEGIN;
     }
+    updateFSInfo();
 #endif
 
   DEBUG_PRINTLN(F("Load EEPROM"));

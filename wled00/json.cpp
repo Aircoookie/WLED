@@ -1,9 +1,5 @@
 #include "wled.h"
 
-#ifdef ARDUINO_ARCH_ESP32
-#include "esp_spiffs.h" //FS info bare IDF function until FS wrapper is available for ESP32
-#endif
-
 /*
  * JSON API (De)serialization
  */
@@ -152,14 +148,6 @@ bool deserializeState(JsonObject root)
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
 
-  //HTTP API commands
-  const char* httpwin = root[F("win")];
-  if (httpwin) {
-    String apireq = "win&";
-    apireq += httpwin;
-    handleSet(nullptr, apireq, false);
-  }
-
   int ps = root[F("ps")] | -1;
   if (ps >= 0) applyPreset(ps);
   
@@ -262,6 +250,13 @@ bool deserializeState(JsonObject root)
     ps = root[F("pdel")] | -1; //deletion
     if (ps > 0) {
       deletePreset(ps);
+    }
+    //HTTP API commands
+    const char* httpwin = root["win"];
+    if (httpwin) {
+      String apireq = "win&";
+      apireq += httpwin;
+      handleSet(nullptr, apireq, false);
     }
   }
 
@@ -435,23 +430,13 @@ void serializeInfo(JsonObject root)
   JsonObject wifi_info = root.createNestedObject("wifi");
   wifi_info[F("bssid")] = WiFi.BSSIDstr();
   int qrssi = WiFi.RSSI();
-
   wifi_info[F("rssi")] = qrssi;
   wifi_info[F("signal")] = getSignalQuality(qrssi);
   wifi_info[F("channel")] = WiFi.channel();
 
   JsonObject fs_info = root.createNestedObject("fs");
-  #ifdef ARDUINO_ARCH_ESP32
-    size_t used, total;
-    esp_spiffs_info(nullptr, &total, &used);
-    fs_info["u"] = used;
-    fs_info["t"] = total;
-  #else
-    FSInfo fsi;
-    WLED_FS.info(fsi);
-    fs_info["u"] = fsi.usedBytes;
-    fs_info["t"] = fsi.totalBytes;
-  #endif
+  fs_info["u"] = fsBytesUsed / 1000;
+  fs_info["t"] = fsBytesTotal / 1000;
   fs_info[F("pmt")] = presetsModifiedTime;
   
   #ifdef ARDUINO_ARCH_ESP32

@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2010020
+#define VERSION 2010030
 
 // ESP8266-01 (blue) got too little storage space to work with WLED. 0.10.2 is the last release supporting this unit.
 
@@ -157,8 +157,8 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.10.2");
-#define WLED_CODENAME "Fumikiri"
+WLED_GLOBAL char versionString[] _INIT("0.11.0p");
+#define WLED_CODENAME "Mirai"
 
 // AP and OTA default passwords (for maximum security change them!)
 WLED_GLOBAL char apPass[65]  _INIT(DEFAULT_AP_PASS);
@@ -472,12 +472,15 @@ WLED_GLOBAL uint16_t rolloverMillis _INIT(0);
 WLED_GLOBAL char* obuf;
 WLED_GLOBAL uint16_t olen _INIT(0);
 
+// General filesystem
+WLED_GLOBAL size_t fsBytesUsed _INIT(0);
+WLED_GLOBAL size_t fsBytesTotal _INIT(0);
+WLED_GLOBAL unsigned long presetsModifiedTime _INIT(0L);
+
 // presets
 WLED_GLOBAL uint16_t savedPresets _INIT(0);
 WLED_GLOBAL int16_t currentPreset _INIT(-1);
 WLED_GLOBAL bool isPreset _INIT(false);
-
-WLED_GLOBAL unsigned long presetsModifiedTime _INIT(0L);
 
 WLED_GLOBAL byte errorFlag _INIT(0);
 

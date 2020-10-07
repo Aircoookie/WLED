@@ -6,7 +6,14 @@
 
 #ifndef WLED_DISABLE_FILESYSTEM
 
+#ifdef ARDUINO_ARCH_ESP32
+#include "esp_spiffs.h" //FS info bare IDF function until FS wrapper is available for ESP32
+#endif
+
 #define FS_BUFSIZE 256
+
+//allow presets to be added until this percentage of FS space is used
+#define FS_QUOTA 75
 
 /*
  * Structural requirements for files managed by writeObjectToFile() and readObjectFromFile() utilities:
@@ -172,6 +179,14 @@ bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t
     DEBUGFS_PRINTF("Inserted, took %d ms (total %d)", millis() - s1, millis() - s);
     return true;
   }
+
+  //not enough space, append at end
+
+  if ((fsBytesUsed*100)/fsBytesTotal > FS_QUOTA) { //permitted space for presets exceeded
+    errorFlag = ERR_FS_QUOTA;
+    f.close();
+    return false;
+  }
   
   //check if last character in file is '}' (typical)
   f.seek(1, SeekEnd);
@@ -203,13 +218,14 @@ bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t
 
   f.close();
   DEBUGFS_PRINTF("Appended, took %d ms (total %d)", millis() - s1, millis() - s);
+  return true;
 }
 
 bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content)
 {
   char objKey[10];
   sprintf(objKey, "\"%d\":", id);
-  writeObjectToFile(file, objKey, content);
+  return writeObjectToFile(file, objKey, content);
 }
 
 bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
@@ -266,7 +282,7 @@ bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest
 {
   char objKey[10];
   sprintf(objKey, "\"%d\":", id);
-  readObjectFromFile(file, objKey, dest);
+  return readObjectFromFile(file, objKey, dest);
 }
 
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
@@ -290,6 +306,17 @@ bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
   f.close();
   DEBUGFS_PRINTF("Read, took %d ms\n", millis() - s);
   return true;
+}
+
+void updateFSInfo() {
+  #ifdef ARDUINO_ARCH_ESP32
+    esp_spiffs_info(nullptr, &fsBytesTotal, &fsBytesUsed);
+  #else
+    FSInfo fsi;
+    WLED_FS.info(fsi);
+    fsBytesUsed  = fsi.usedBytes;
+    fsBytesTotal = fsi.totalBytes;
+  #endif
 }
 #endif
 
@@ -316,6 +343,7 @@ String getContentType(AsyncWebServerRequest* request, String filename){
 bool handleFileRead(AsyncWebServerRequest* request, String path){
   DEBUG_PRINTLN("FileRead: " + path);
   if(path.endsWith("/")) path += "index.htm";
+  if(path.indexOf("sec") > -1) return false;
   String contentType = getContentType(request, path);
   /*String pathWithGz = path + ".gz";
   if(WLED_FS.exists(pathWithGz)){
