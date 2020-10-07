@@ -85,13 +85,10 @@ void WLED::loop()
     handleHue();
     handleBlynk();
 
-    if (presetToApply) {
-      StaticJsonDocument<1024> temp;
-      errorFlag = !readObjectFromFileUsingId("/presets.json", presetToApply, &temp);
-      serializeJson(temp, Serial);
-      deserializeState(temp.as<JsonObject>());
+    /*if (presetToApply) {
+      applyPreset(presetToApply);
       presetToApply = 0;
-    }
+    }*/
 
     yield();
 
@@ -192,7 +189,7 @@ void WLED::setup()
 #endif
 
   DEBUG_PRINTLN(F("Load EEPROM"));
-  loadSettingsFromEEPROM(true);
+  loadSettingsFromEEPROM();
   beginStrip();
   userSetup();
   usermods.setup();
@@ -252,8 +249,7 @@ void WLED::beginStrip()
   pinMode(BTNPIN, INPUT_PULLUP);
 #endif
 
-  if (bootPreset > 0)
-    applyPreset(bootPreset, turnOnAtBoot);
+  if (bootPreset > 0) applyPreset(bootPreset);
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
 // init relay pin

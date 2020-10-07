@@ -249,7 +249,7 @@ void saveSettingsToEEPROM()
     EEPROM.write(2207, (presetCycleTime >> 8) & 0xFF);
     EEPROM.write(2208, presetCycleMin);
     EEPROM.write(2209, presetCycleMax);
-    EEPROM.write(2210, presetApplyBri);
+    // was EEPROM.write(2210, presetApplyBri);
     // was EEPROM.write(2211, presetApplyCol);
     // was EEPROM.write(2212, presetApplyFx);
     saveCurrPresetCycConf = false;
@@ -295,7 +295,7 @@ void saveSettingsToEEPROM()
 /*
  * Read all configuration from flash
  */
-void loadSettingsFromEEPROM(bool first)
+void loadSettingsFromEEPROM()
 {
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
@@ -343,7 +343,7 @@ void loadSettingsFromEEPROM(bool first)
   staticSubnet[3] = EEPROM.read(245);
 
   briS = EEPROM.read(249); bri = briS;
-  if (!EEPROM.read(369) && first)
+  if (!EEPROM.read(369))
   {
     bri = 0; briLast = briS;
   }
@@ -559,7 +559,7 @@ void loadSettingsFromEEPROM(bool first)
     if (lastEEPROMversion < 21) presetCycleTime /= 100; //was stored in ms, now is in tenths of a second
     presetCycleMin = EEPROM.read(2208);
     presetCycleMax = EEPROM.read(2209);
-    presetApplyBri = EEPROM.read(2210);
+    //was presetApplyBri = EEPROM.read(2210);
     //was presetApplyCol = EEPROM.read(2211);
     //was presetApplyFx = EEPROM.read(2212);
   }
@@ -627,19 +627,31 @@ void savedToPresets()
   }
 }
 
-bool applyPreset(byte index, bool loadBri)
+bool applyPreset(byte index)
 {
-  StaticJsonDocument<1024> temp;
-  errorFlag = readObjectFromFileUsingId("/presets.json", index, &temp) ? ERR_NONE : ERR_FS_PLOAD;
-  serializeJson(temp, Serial);
-  deserializeState(temp.as<JsonObject>());
+  if (fileDoc) {
+    errorFlag = readObjectFromFileUsingId("/presets.json", index, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    #ifdef WLED_DEBUG_FS
+      serializeJson(*fileDoc, Serial);
+    #endif
+    deserializeState(fileDoc->as<JsonObject>());
+  } else {
+    WLED_DEBUG_FS(F("Make read buf"));
+    DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
+    errorFlag = readObjectFromFileUsingId("/presets.json", index, &fDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    #ifdef WLED_DEBUG_FS
+      serializeJson(fDoc, Serial);
+    #endif
+    deserializeState(fDoc.as<JsonObject>());
+  }
+
   if (!errorFlag) {
     currentPreset = index;
     isPreset = true;
     return true;
   }
   return false;
-  if (index == 255 || index == 0)
+  /*if (index == 255 || index == 0)
   {
     loadSettingsFromEEPROM(false);//load boot defaults
     return true;
@@ -681,29 +693,36 @@ bool applyPreset(byte index, bool loadBri)
   }
   currentPreset = index;
   isPreset = true;
-  return true;
+  return true;*/
 }
 
-void savePreset(byte index, bool persist, const char* pname, byte priority, JsonObject saveobj)
+void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
-  StaticJsonDocument<1024> doc;
-  JsonObject sObj = doc.to<JsonObject>();
+  bool docAlloc = fileDoc;
+  JsonObject sObj = saveobj;
 
-  if (saveobj.isNull()) {
-    DEBUGFS_PRINTLN("Save current state");
-    serializeState(doc.to<JsonObject>(), true);
-    currentPreset = index;
+  if (!docAlloc) {
+    DEBUGFS_PRINTLN(F("Allocating saving buffer"));
+    fileDoc = new DynamicJsonDocument(JSON_BUFFER_SIZE);
+    sObj = fileDoc->to<JsonObject>();
+    if (pname) sObj["n"] = pname;
   } else {
-    DEBUGFS_PRINTLN("Save custom");
-    sObj.set(saveobj);
+    DEBUGFS_PRINTLN(F("Reuse recv buffer"));
+    sObj.remove(F("psave"));
+    sObj.remove(F("v"));
   }
-  sObj["p"] = priority;
-  if (pname) sObj["n"] = pname;
 
-  writeObjectToFileUsingId("/presets.json", index, &doc);
+  if (!sObj["o"]) {
+    DEBUGFS_PRINTLN(F("Save current state"));
+    serializeState(sObj, true);
+    currentPreset = index;
+  }
+  sObj.remove("o");
+
+  writeObjectToFileUsingId("/presets.json", index, fileDoc);
+  if (!docAlloc) delete fileDoc;
   presetsModifiedTime = now(); //unix time
   updateFSInfo();
-  return;
   
   /*if (index > 16) return;
   if (index < 1) {saveSettingsToEEPROM();return;}

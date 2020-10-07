@@ -486,15 +486,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if (v > 100) presetCycleTime = v/100;
   }
 
-  pos = req.indexOf(F("PA=")); //apply brightness from preset
-  if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
-
   pos = req.indexOf(F("PS=")); //saves current in preset
-  if (pos > 0) savePreset(getNumVal(&req, pos), persistSaves);
+  if (pos > 0) savePreset(getNumVal(&req, pos));
 
   //apply preset
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
-    applyPreset(presetCycCurr, presetApplyBri);
+    applyPreset(presetCycCurr);
   }
 
   //set brightness

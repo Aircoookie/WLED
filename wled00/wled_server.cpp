@@ -85,7 +85,9 @@ void initServer()
       if (error || root.isNull()) {
         request->send(400, "application/json", F("{\"error\":9}")); return;
       }
+      fileDoc = &jsonBuffer;
       verboseResponse = deserializeState(root);
+      fileDoc = nullptr;
     }
     if (verboseResponse) { //if JSON contains "v"
       serveJson(request); return; 

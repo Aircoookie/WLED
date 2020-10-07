@@ -147,9 +147,6 @@ bool deserializeState(JsonObject root)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
-
-  int ps = root[F("ps")] | -1;
-  if (ps >= 0) applyPreset(ps);
   
   bri = root["bri"] | bri;
   
@@ -240,17 +237,17 @@ bool deserializeState(JsonObject root)
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
-  //write presets to flash directly?
-  bool persistSaves = !(root[F("np")] | false);
-
-  ps = root[F("psave")] | -1;
+  int ps = root[F("psave")] | -1;
   if (ps > 0) {
-    savePreset(ps, persistSaves, root["n"], root["p"] | 50, root["o"].as<JsonObject>());
+    savePreset(ps, true, nullptr, root);
   } else {
     ps = root[F("pdel")] | -1; //deletion
     if (ps > 0) {
       deletePreset(ps);
     }
+    ps = root[F("ps")] | -1; //load preset (clears state request!)
+    if (ps >= 0) applyPreset(ps);
+
     //HTTP API commands
     const char* httpwin = root["win"];
     if (httpwin) {

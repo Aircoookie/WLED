@@ -167,10 +167,12 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 // Hardware CONFIG (only changeble HERE, not at runtime)
 // LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
 
-WLED_GLOBAL byte presetToApply _INIT(0); 
+//WLED_GLOBAL byte presetToApply _INIT(0); 
 
+#if AUXPIN >= 0
 WLED_GLOBAL byte auxDefaultState _INIT(0);                         // 0: input 1: high 2: low
 WLED_GLOBAL byte auxTriggeredState _INIT(0);                       // 0: input 1: high 2: low
+#endif
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use
 
 // WiFi CONFIG (all these can be changed via web UI, no need to set them here)
@@ -425,7 +427,6 @@ WLED_GLOBAL byte presetCycleMin _INIT(1), presetCycleMax _INIT(5);
 WLED_GLOBAL uint16_t presetCycleTime _INIT(12);
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL byte presetCycCurr _INIT(presetCycleMin);
-WLED_GLOBAL bool presetApplyBri _INIT(true);
 WLED_GLOBAL bool saveCurrPresetCycConf _INIT(false);
 
 // realtime
@@ -476,6 +477,7 @@ WLED_GLOBAL uint16_t olen _INIT(0);
 WLED_GLOBAL size_t fsBytesUsed _INIT(0);
 WLED_GLOBAL size_t fsBytesTotal _INIT(0);
 WLED_GLOBAL unsigned long presetsModifiedTime _INIT(0L);
+WLED_GLOBAL JsonDocument* fileDoc;
 
 // presets
 WLED_GLOBAL uint16_t savedPresets _INIT(0);

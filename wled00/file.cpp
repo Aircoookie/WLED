@@ -10,7 +10,7 @@
 #include "esp_spiffs.h" //FS info bare IDF function until FS wrapper is available for ESP32
 #endif
 
-#define FS_BUFSIZE 256
+#define FS_BUFSIZE 512
 
 //allow presets to be added until this percentage of FS space is used
 #define FS_QUOTA 75
@@ -86,16 +86,16 @@ bool bufferedFindSpace(uint16_t targetLen, File f) {
     count = 0;
     
     while (count < bufsize) {
-      if(buf[count] != ' ')
-      index = 0; // reset index if not space
-
       if(buf[count] == ' ') {
         if(++index >= targetLen) { // return true if space long enough
           f.seek((f.position() - bufsize) + count +1 - targetLen);
           DEBUGFS_PRINTF("Found at pos %d, took %d ms", f.position(), millis() - s);
           return true;
         }
+      } else {
+        index = 0; // reset index if not space
       }
+
       count++;
     }
   }
@@ -115,7 +115,7 @@ bool bufferedFindObjectEnd(File f) {
   uint16_t objDepth = 0; //num of '{' minus num of '}'. return once 0
   uint16_t bufsize = 0, count = 0;
   //size_t start = f.position();
-  byte buf[256];
+  byte buf[FS_BUFSIZE];
 
   while (f.position() < f.size() -1) {
     bufsize = f.read(buf, FS_BUFSIZE);
@@ -297,7 +297,7 @@ bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
   if (!bufferedFind(key, f)) //key does not exist in file
   {
     f.close();
-    DEBUGFS_PRINTLN("Obj not found.");
+    DEBUGFS_PRINTLN(F("Obj not found."));
     return false;
   }
 
