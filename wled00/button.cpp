@@ -96,8 +96,10 @@ void handleIO()
   } else if (millis() - lastOnTime > 600)
   {
      if (!offMode) {
-      pinMode(LEDPIN, OUTPUT);
-      digitalWrite(LEDPIN, HIGH);
+      #if LEDPIN == LED_BUILTIN
+        pinMode(LEDPIN, OUTPUT);
+        digitalWrite(LEDPIN, HIGH);
+      #endif
       #if RLYPIN >= 0
        digitalWrite(RLYPIN, !RLYMDE);
       #endif
