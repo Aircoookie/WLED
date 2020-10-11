@@ -650,6 +650,8 @@ class WS2812FX {
     void handle_palette(void);
 
     bool
+      firstRun = true,
+      shouldStartBus = false,
       _useRgbw = false,
       _skipFirstMode,
       _triggered;
