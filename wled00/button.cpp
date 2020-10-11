@@ -97,8 +97,8 @@ void handleIO()
   {
      if (!offMode) {
       #if LEDPIN == LED_BUILTIN
-        pinMode(LEDPIN, OUTPUT);
-        digitalWrite(LEDPIN, HIGH);
+        pinMode(LED_BUILTIN, OUTPUT);
+        digitalWrite(LED_BUILTIN, HIGH);
       #endif
       #if RLYPIN >= 0
        digitalWrite(RLYPIN, !RLYMDE);
