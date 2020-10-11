@@ -396,7 +396,8 @@ void WS2812FX::setBrightness(uint8_t b) {
     {
       _segments[i].setOption(SEG_OPTION_FREEZE, false);
     }
-    (!shouldStartBus) ? (shouldStartBus = true) : (firstRun = false);
+    if (!shouldStartBus)
+      shouldStartBus = true;
   } else {
     if (shouldStartBus) {
       shouldStartBus = false;
