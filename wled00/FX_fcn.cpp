@@ -396,6 +396,18 @@ void WS2812FX::setBrightness(uint8_t b) {
     {
       _segments[i].setOption(SEG_OPTION_FREEZE, false);
     }
+    #if LEDPIN == LED_BUILTIN
+      if (!shouldStartBus)
+        shouldStartBus = true;
+    #endif
+  } else {
+    #if LEDPIN == LED_BUILTIN
+      if (shouldStartBus) {
+        shouldStartBus = false;
+        const uint8_t ty = _useRgbw ? 2 : 1;
+        bus->Begin((NeoPixelType)ty, _lengthRaw);
+      }
+    #endif
   }
   if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
 }
