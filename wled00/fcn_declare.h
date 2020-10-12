@@ -53,6 +53,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
 bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest);
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest);
 void updateFSInfo();
+void closeFile();
 
 //hue.cpp
 void handleHue();
@@ -90,8 +91,8 @@ void handleIR();
 
 void deserializeSegment(JsonObject elem, byte it);
 bool deserializeState(JsonObject root);
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false);
-void serializeState(JsonObject root, bool forPreset = false);
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
+void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);

@@ -714,10 +714,13 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 
   if (!sObj["o"]) {
     DEBUGFS_PRINTLN(F("Save current state"));
-    serializeState(sObj, true);
+    serializeState(sObj, true, sObj["ib"], sObj["sb"]);
     currentPreset = index;
   }
   sObj.remove("o");
+  sObj.remove("ib");
+  sObj.remove("sb");
+  sObj.remove(F("error"));
 
   writeObjectToFileUsingId("/presets.json", index, fileDoc);
   if (!docAlloc) delete fileDoc;

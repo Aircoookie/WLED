@@ -70,6 +70,10 @@ void WLED::loop()
 
   if (doReboot)
     reset();
+  if (doCloseFile) {
+    closeFile();
+    yield();
+  }
 
   if (!realtimeMode || realtimeOverride)  // block stuff if WARLS/Adalight is enabled
   {

@@ -10,7 +10,7 @@
 #include "esp_spiffs.h" //FS info bare IDF function until FS wrapper is available for ESP32
 #endif
 
-#define FS_BUFSIZE 512
+#define FS_BUFSIZE 256
 
 //allow presets to be added until this percentage of FS space is used
 #define FS_QUOTA 75
@@ -28,9 +28,24 @@
  *    The reason for it is that deleting the first preset would require special code to handle commas between it and the 2nd preset
  */
 
+// There are no consecutive spaces longer than this in the file, so if more space is required, findSpace() can return false immediately
+// Actual space may be lower
+uint16_t knownLargestSpace = UINT16_MAX;
+
+File f;
+
+//wrapper to find out how long closing takes
+void closeFile() {
+  DEBUGFS_PRINT(F("Close -> "));
+  uint32_t s = millis();
+  f.close();
+  DEBUGFS_PRINTF("took %d ms\n", millis() - s);
+  doCloseFile = false;
+}
+
 //find() that reads and buffers data from file stream in 256-byte blocks.
 //Significantly faster, f.find(key) can take SECONDS for multi-kB files
-bool bufferedFind(const char *target, File f) {
+bool bufferedFind(const char *target, bool fromStart = true) {
   #ifdef WLED_DEBUG_FS
     DEBUGFS_PRINT("Find ");
     DEBUGFS_PRINTLN(target);
@@ -44,7 +59,7 @@ bool bufferedFind(const char *target, File f) {
   byte c;
   uint16_t bufsize = 0, count = 0;
   byte buf[FS_BUFSIZE];
-  f.seek(0);
+  if (fromStart) f.seek(0);
 
   while (f.position() < f.size() -1) {
     bufsize = f.read(buf, FS_BUFSIZE);
@@ -68,18 +83,25 @@ bool bufferedFind(const char *target, File f) {
 }
 
 //find empty spots in file stream in 256-byte blocks.
-bool bufferedFindSpace(uint16_t targetLen, File f) {
+bool bufferedFindSpace(uint16_t targetLen, bool fromStart = true) {
+
   #ifdef WLED_DEBUG_FS
     DEBUGFS_PRINTF("Find %d spaces\n", targetLen);
     uint32_t s = millis();
   #endif
+
+  if (knownLargestSpace < targetLen) {
+    DEBUGFS_PRINT(F("No match, KLS "));
+    DEBUGFS_PRINTLN(knownLargestSpace);
+    return false;
+  }
 
   if (!f || !f.size()) return false;
 
   uint16_t index = 0;
   uint16_t bufsize = 0, count = 0;
   byte buf[FS_BUFSIZE];
-  f.seek(0);
+  if (fromStart) f.seek(0);
 
   while (f.position() < f.size() -1) {
     bufsize = f.read(buf, FS_BUFSIZE);
@@ -88,12 +110,19 @@ bool bufferedFindSpace(uint16_t targetLen, File f) {
     while (count < bufsize) {
       if(buf[count] == ' ') {
         if(++index >= targetLen) { // return true if space long enough
-          f.seek((f.position() - bufsize) + count +1 - targetLen);
+          if (fromStart) {
+            f.seek((f.position() - bufsize) + count +1 - targetLen);
+            knownLargestSpace = UINT16_MAX; //there may be larger spaces after, so we don't know
+          }
           DEBUGFS_PRINTF("Found at pos %d, took %d ms", f.position(), millis() - s);
           return true;
         }
       } else {
-        index = 0; // reset index if not space
+        if (!fromStart) return false;
+        if (index) {
+          if (knownLargestSpace < index || knownLargestSpace == UINT16_MAX) knownLargestSpace = index;
+          index = 0; // reset index if not space
+        }
       }
 
       count++;
@@ -104,7 +133,7 @@ bool bufferedFindSpace(uint16_t targetLen, File f) {
 }
 
 //find the closing bracket corresponding to the opening bracket at the file pos when calling this function
-bool bufferedFindObjectEnd(File f) {
+bool bufferedFindObjectEnd() {
   #ifdef WLED_DEBUG_FS
     DEBUGFS_PRINTLN(F("Find obj end"));
     uint32_t s = millis();
@@ -137,7 +166,7 @@ bool bufferedFindObjectEnd(File f) {
 }
 
 //fills n bytes from current file pos with ' ' characters
-void writeSpace(File f, uint16_t l)
+void writeSpace(uint16_t l)
 {
   byte buf[FS_BUFSIZE];
   memset(buf, ' ', FS_BUFSIZE);
@@ -147,9 +176,11 @@ void writeSpace(File f, uint16_t l)
     f.write(buf, block);
     l -= block;
   }
+
+  if (knownLargestSpace < l) knownLargestSpace = l;
 }
 
-bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t s)
+bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint32_t contentLen = 0)
 {
   #ifdef WLED_DEBUG_FS
     DEBUGFS_PRINTLN(F("Append"));
@@ -165,18 +196,19 @@ bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t
   }
 
   if (content->isNull()) {
-    f.close();
+    doCloseFile = true;
     return true; //nothing  to append
   }
   
   //if there is enough empty space in file, insert there instead of appending
-  uint32_t contentLen = measureJson(*content);
+  if (!contentLen) contentLen = measureJson(*content);
   DEBUGFS_PRINTF("CLen %d\n", contentLen);
-  if (bufferedFindSpace(contentLen + strlen(key) + 1, f)) {
+  if (bufferedFindSpace(contentLen + strlen(key) + 1)) {
     if (f.position() > 2) f.write(','); //add comma if not first object
     f.print(key);
     serializeJson(*content, f);
     DEBUGFS_PRINTF("Inserted, took %d ms (total %d)", millis() - s1, millis() - s);
+    doCloseFile = true;
     return true;
   }
 
@@ -184,7 +216,7 @@ bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t
 
   if ((fsBytesUsed*100)/fsBytesTotal > FS_QUOTA) { //permitted space for presets exceeded
     errorFlag = ERR_FS_QUOTA;
-    f.close();
+    doCloseFile = true;
     return false;
   }
   
@@ -195,7 +227,7 @@ bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t
   if (pos == 0) //not found
   {
     DEBUGFS_PRINTLN("not }");
-    while (bufferedFind("}",f)) //find last closing bracket in JSON if not last char
+    while (bufferedFind("}", false)) //find last closing bracket in JSON if not last char
     {
       pos = f.position();
     }
@@ -216,7 +248,7 @@ bool appendObjectToFile(File f, const char* key, JsonDocument* content, uint32_t
   serializeJson(*content, f);
   f.write('}');
 
-  f.close();
+  doCloseFile = true;
   DEBUGFS_PRINTF("Appended, took %d ms (total %d)", millis() - s1, millis() - s);
   return true;
 }
@@ -238,43 +270,56 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
   #endif
 
   uint32_t pos = 0;
-  File    f = WLED_FS.open(file, "r+");
+  f = WLED_FS.open(file, "r+");
   if (!f && !WLED_FS.exists(file)) f = WLED_FS.open(file, "w+");
   if (!f) {
     DEBUGFS_PRINTLN(F("Failed to open!"));
     return false;
   }
   
-  if (!bufferedFind(key, f)) //key does not exist in file
+  if (!bufferedFind(key)) //key does not exist in file
   {
-    return appendObjectToFile(f, key, content, s);
+    return appendObjectToFile(key, content, s);
   } 
   
-  //exists
+  //an object with this key already exists, replace or delete it
   pos = f.position();
   //measure out end of old object
-  bufferedFindObjectEnd(f);
+  bufferedFindObjectEnd();
   uint32_t pos2 = f.position();
 
   uint32_t oldLen = pos2 - pos;
   DEBUGFS_PRINTF("Old obj len %d\n", oldLen);
+
+  //Three cases:
+  //1. The new content is null, overwrite old obj with spaces
+  //2. The new content is smaller than the old, overwrite and fill diff with spaces
+  //3. The new content is larger than the old, but smaller than old + trailing spaces, overwrite with new
+  //4. The new content is larger than old + trailing spaces, delete old and append
   
-  if (!content->isNull() && measureJson(*content) <= oldLen)  //replace
-  {
+  uint32_t contentLen = 0;
+  if (!content->isNull()) contentLen = measureJson(*content);
+
+  if (contentLen && contentLen <= oldLen) { //replace and fill diff with spaces
     DEBUGFS_PRINTLN(F("replace"));
     f.seek(pos);
     serializeJson(*content, f);
-    writeSpace(f, pos2 - f.position());
-  } else { //delete
+    writeSpace(pos2 - f.position());
+  } else if (contentLen && bufferedFindSpace(contentLen - oldLen, false)) { //enough leading spaces to replace
+    DEBUGFS_PRINTLN(F("replace (trailing)"));
+    f.seek(pos);
+    serializeJson(*content, f);
+  } else {
     DEBUGFS_PRINTLN(F("delete"));
     pos -= strlen(key);
     if (pos > 3) pos--; //also delete leading comma if not first object
     f.seek(pos);
-    writeSpace(f, pos2 - pos);
-    if (!content->isNull()) return appendObjectToFile(f, key, content, s);
+    writeSpace(pos2 - pos);
+    if (contentLen) return appendObjectToFile(key, content, s, contentLen);
   }
-  f.close();
-  DEBUGFS_PRINTF("Deleted, took %d ms\n", millis() - s);
+
+  doCloseFile = true;
+  DEBUGFS_PRINTF("Replaced/deleted, took %d ms\n", millis() - s);
   return true;
 }
 
@@ -287,16 +332,18 @@ bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest
 
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
 {
+  if (doCloseFile) closeFile();
   #ifdef WLED_DEBUG_FS
     DEBUGFS_PRINTF("Read from %s with key %s >>>\n", file, key);
     uint32_t s = millis();
   #endif
-  File f = WLED_FS.open(file, "r");
+  f = WLED_FS.open(file, "r");
   if (!f) return false;
 
-  if (!bufferedFind(key, f)) //key does not exist in file
+  if (!bufferedFind(key)) //key does not exist in file
   {
     f.close();
+    dest->clear();
     DEBUGFS_PRINTLN(F("Obj not found."));
     return false;
   }

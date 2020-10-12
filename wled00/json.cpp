@@ -260,7 +260,7 @@ bool deserializeState(JsonObject root)
   return stateResponse;
 }
 
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset)
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
 	root[F("id")] = id;
 	root[F("start")] = seg.start;
@@ -302,15 +302,16 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
 }
 
-void serializeState(JsonObject root, bool forPreset)
+void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
 { 
-  if (errorFlag) root[F("error")] = errorFlag;
-  root["on"] = (bri > 0);
-  root["bri"] = briLast;
-  root[F("transition")] = transitionDelay/100; //in 100ms
+  if (includeBri) {
+    root["on"] = (bri > 0);
+    root["bri"] = briLast;
+    root[F("transition")] = transitionDelay/100; //in 100ms
+  }
 
   if (!forPreset) {
-    if (errorFlag) root["error"] = errorFlag;
+    if (errorFlag) root[F("error")] = errorFlag;
     
     root[F("ps")] = currentPreset;
     root[F("pss")] = savedPresets;
@@ -347,7 +348,7 @@ void serializeState(JsonObject root, bool forPreset)
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();
-      serializeSegment(seg0, sg, s, forPreset);
+      serializeSegment(seg0, sg, s, forPreset, segmentBounds);
     }
   }
 }
