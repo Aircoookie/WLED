@@ -129,6 +129,11 @@
 
 #define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
 
+// int to be send over MQTT to depict button clicks 
+#define BTN_SIMPLE_CLICK      1001 //sent to broker when short click
+#define BTN_DOUBLE_CLICK      1002 //sent to broker when double click
+#define BTN_LONG_CLICK        1003 //sent to broker when long click
+
 // Size of buffer for API JSON object (increase for more segments)
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 9216
