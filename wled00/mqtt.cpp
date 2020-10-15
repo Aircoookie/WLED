@@ -107,7 +107,6 @@ void publishMqtt()
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/v");
   mqtt->publish(subuf, 0, true, apires);
-  
 }
 
 // publish button state
