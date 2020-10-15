@@ -13,7 +13,7 @@ void shortPressAction()
   } else {
     applyMacro(macroButton);
   }
-  mqttBTNState = BTN_SIMPLE_CLICK;
+  publishMQTTBTNClick(BTN_SIMPLE_CLICK);
 }
 
 bool isButtonPressed()
@@ -46,7 +46,7 @@ void handleButton()
         else _setRandomColor(false,true);
 
         buttonLongPressed = true;
-         mqttBTNState = BTN_LONG_CLICK;
+         publishMQTTBTNClick(BTN_LONG_CLICK);
       }
     }
   }
@@ -67,7 +67,7 @@ void handleButton()
         if (doublePress)
         {
           applyMacro(macroDoublePress);
-          mqttBTNState = BTN_DOUBLE_CLICK;
+          publishMQTTBTNClick(BTN_DOUBLE_CLICK);
         }
         else buttonWaitTime = millis();
       } else shortPressAction();
