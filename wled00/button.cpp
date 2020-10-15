@@ -1,5 +1,20 @@
 #include "wled.h"
 
+/* 
+ * Sending button state over MQTT
+ * User cont define in const.h
+ */
+
+void publishMQTTBTNClick(int clickTypeBtn)
+{
+  if (!WLED_MQTT_CONNECTED ) return; // ajout de || !buttonMQTTEnabled qud pret
+  //if(mqtt == nullptr) return;
+  char subuf[38];
+  strcpy(subuf, mqttDeviceTopic);
+  strcat(subuf, "/btn");
+  mqtt->publish(subuf, 0, true, String(clickTypeBtn).c_str());
+}
+
 /*
  * Physical IO
  */
@@ -13,6 +28,7 @@ void shortPressAction()
   } else {
     applyMacro(macroButton);
   }
+  publishMQTTBTNClick(BTN_SIMPLE_CLICK);
 }
 
 bool isButtonPressed()
@@ -45,6 +61,7 @@ void handleButton()
         else _setRandomColor(false,true);
 
         buttonLongPressed = true;
+         publishMQTTBTNClick(BTN_LONG_CLICK);
       }
     }
   }
@@ -62,7 +79,11 @@ void handleButton()
     else if (!buttonLongPressed) { //short press
       if (macroDoublePress)
       {
-        if (doublePress) applyMacro(macroDoublePress);
+        if (doublePress)
+        {
+          applyMacro(macroDoublePress);
+          publishMQTTBTNClick(BTN_DOUBLE_CLICK);
+        }
         else buttonWaitTime = millis();
       } else shortPressAction();
     }
