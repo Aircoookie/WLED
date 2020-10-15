@@ -112,7 +112,7 @@ void publishMqtt()
   char subuf[38];
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/btn");             // publish in /btn topic
-  mqtt->publish(subuf, 0, true, String(mqttBTNState ).c_str()); // send MQTT publication
+  mqtt->publish(subuf, 0, true, String(mqttBTNState).c_str()); // send MQTT publication
 }
 
 
