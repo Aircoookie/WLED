@@ -110,6 +110,7 @@ void parseLxJson(int lxValue, byte segId, bool secondary);
 //mqtt.cpp
 bool initMqtt();
 void publishMqtt();
+void publishMQTTBTNClick(int clickTypeBtn);
 
 //ntp.cpp
 void handleNetworkTime();
