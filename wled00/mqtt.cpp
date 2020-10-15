@@ -108,14 +108,17 @@ void publishMqtt()
   strcat(subuf, "/v");
   mqtt->publish(subuf, 0, true, apires);
   
- // publish button state
-  char subuf[38];
-  strcpy(subuf, mqttDeviceTopic);
-  strcat(subuf, "/btn");             // publish in /btn topic
-  mqtt->publish(subuf, 0, true, String(mqttBTNState).c_str()); // send MQTT publication
-  mqttBTNState = 0; // to prevent updating button state to the next publishing outside a click event
 }
 
+// publish button state
+void publishMQTTBTNClick(int clickTypeBtn)
+{
+  if (!WLED_MQTT_CONNECTED) return;
+  char subuf[38];
+  strcpy(subuf, mqttDeviceTopic);
+  strcat(subuf, "/btn");
+  mqtt->publish(subuf, 0, true, String(clickTypeBtn).c_str());
+}
 
 //HA autodiscovery was removed in favor of the native integration in HA v0.102.0
 
@@ -153,4 +156,5 @@ bool initMqtt()
 #else
 bool initMqtt(){return false;}
 void publishMqtt(){}
+void publishMQTTBTNClick(int clickTypeBtn){}
 #endif
