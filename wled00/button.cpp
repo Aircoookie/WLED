@@ -2,17 +2,16 @@
 
 /* 
  * Sending button state over MQTT
- * User cont define in const.h
+ * User const define in const.h
  */
 
 void publishMQTTBTNClick(int clickTypeBtn)
 {
-  if (!WLED_MQTT_CONNECTED ) return; // ajout de || !buttonMQTTEnabled qud pret
-  //if(mqtt == nullptr) return;
+  if (!WLED_MQTT_CONNECTED ) return; // if MQTT is not connected stop
   char subuf[38];
   strcpy(subuf, mqttDeviceTopic);
-  strcat(subuf, "/btn");
-  mqtt->publish(subuf, 0, true, String(clickTypeBtn).c_str());
+  strcat(subuf, "/btn");             // publish in /btn topic
+  mqtt->publish(subuf, 0, true, String(clickTypeBtn).c_str()); // send MQTT publication
 }
 
 /*
