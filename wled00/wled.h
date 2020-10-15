@@ -260,7 +260,6 @@ WLED_GLOBAL char mqttUser[41] _INIT("");                   // optional: username
 WLED_GLOBAL char mqttPass[41] _INIT("");                   // optional: password for MQTT auth
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
 WLED_GLOBAL uint16_t mqttPort _INIT(1883);
-WLED_GLOBAL uint16_t mqttBTNState _INIT(0);                //depict btn state / valorized with const in const.h
 
 WLED_GLOBAL bool huePollingEnabled _INIT(false);           // poll hue bridge for light state
 WLED_GLOBAL uint16_t huePollIntervalMs _INIT(2500);        // low values (< 1sec) may cause lag but offer quicker response
