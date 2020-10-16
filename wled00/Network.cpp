@@ -2,7 +2,7 @@
 
 IPAddress NetworkClass::localIP()
 {
-#ifndef ESP8266
+#ifdef ARDUINO_ARCH_ESP32
     if (ETH.localIP()[0] != 0) {
         return ETH.localIP();
     }
@@ -15,7 +15,7 @@ IPAddress NetworkClass::localIP()
 
 IPAddress NetworkClass::subnetMask()
 {
-#ifndef ESP8266
+#ifdef ARDUINO_ARCH_ESP32
     if (ETH.localIP()[0] != 0) {
         return ETH.subnetMask();
     }
@@ -28,7 +28,7 @@ IPAddress NetworkClass::subnetMask()
 
 IPAddress NetworkClass::gatewayIP()
 {
-#ifndef ESP8266
+#ifdef ARDUINO_ARCH_ESP32
     if (ETH.localIP()[0] != 0) {
         return ETH.gatewayIP();
     }
@@ -41,10 +41,10 @@ IPAddress NetworkClass::gatewayIP()
 
 bool NetworkClass::isConnected()
 {
-#ifdef ESP8266
-    return WiFi.localIP()[0] != 0;
-#else // ESP32
+#ifdef ARDUINO_ARCH_ESP32
     return WiFi.localIP()[0] != 0 || ETH.localIP()[0] != 0;
+#else
+    return WiFi.localIP()[0] != 0;
 #endif
 }
 

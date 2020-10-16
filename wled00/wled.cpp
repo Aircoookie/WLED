@@ -77,7 +77,7 @@ void WiFiEvent(WiFiEvent_t event)
   prepareHostname(hostname);
 
   switch (event) {
-#ifndef ESP8266
+#ifdef ARDUINO_ARCH_ESP32
     case SYSTEM_EVENT_ETH_START:
       DEBUG_PRINT("ETH Started");
       break;

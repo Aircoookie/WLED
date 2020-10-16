@@ -524,10 +524,10 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   WLED_GLOBAL int loops _INIT(0);
 #endif
 
-#ifdef ESP8266
-  #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
-#else // ESP32
+#ifdef ARDUINO_ARCH_ESP32
   #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED || ETH.localIP()[0] != 0)
+#else
+  #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #endif
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
