@@ -12,9 +12,6 @@
 
 #define FS_BUFSIZE 256
 
-//allow presets to be added until this percentage of FS space is used
-#define FS_QUOTA 75
-
 /*
  * Structural requirements for files managed by writeObjectToFile() and readObjectFromFile() utilities:
  * 1. File must be a string representation of a valid JSON object
@@ -214,7 +211,10 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
 
   //not enough space, append at end
 
-  if ((fsBytesUsed*100)/fsBytesTotal > FS_QUOTA) { //permitted space for presets exceeded
+  //permitted space for presets exceeded
+  updateFSInfo();
+  
+  if (f.size() + 9000 > (fsBytesTotal - fsBytesUsed)) { //make sure there is enough space to at least copy the file once
     errorFlag = ERR_FS_QUOTA;
     doCloseFile = true;
     return false;
