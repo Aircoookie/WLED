@@ -54,6 +54,7 @@
   }
 #else // ESP32
   #include <WiFi.h>
+  #include <ETH.h>
   #include "esp_wifi.h"
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
@@ -522,7 +523,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #endif
 
 
-#define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
+#define WLED_CONNECTED (WiFi.status() == WL_CONNECTED || ETH.localIP()[0] != 0)
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 

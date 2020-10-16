@@ -43,6 +43,51 @@ bool oappend(const char* txt)
   return true;
 }
 
+void prepareHostname(char* hostname)
+{
+  const char *pC = serverDescription;
+  uint8_t pos = 5;
+
+  while (*pC && pos < 24) { // while !null and not over length
+    if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
+      hostname[pos] = *pC;
+      pos++;
+    } else if (*pC == ' ' || *pC == '_' || *pC == '-' || *pC == '+' || *pC == '!' || *pC == '?' || *pC == '*') {
+      hostname[pos] = '-';
+      pos++;
+    }
+      // else do nothing - no leading hyphens and do not include hyphens for all other characters.
+      pC++;
+    }
+    // if the hostname is left blank, use the mac address/default mdns name
+    if (pos < 6) {
+      sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
+    } else { //last character must not be hyphen
+      while (pos > 0 && hostname[pos -1] == '-') {
+        hostname[pos -1] = 0;
+        pos--;
+      }
+    }
+}
+
+void WiFiEvent(WiFiEvent_t event)
+{
+  // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
+  char hostname[25] = "wled-";
+  prepareHostname(hostname);
+
+  switch (event) {
+    case SYSTEM_EVENT_ETH_START:
+      DEBUG_PRINT("ETH Started");
+      break;
+    case SYSTEM_EVENT_ETH_CONNECTED:
+      DEBUG_PRINT("ETH Connected");
+      ETH.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
+      ETH.setHostname(hostname);
+      break;
+    }
+}
+
 void WLED::loop()
 {
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
@@ -187,6 +232,7 @@ void WLED::setup()
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
+  WiFi.onEvent(WiFiEvent);
 
   if (macroBoot > 0)
     applyMacro(macroBoot);
@@ -303,6 +349,10 @@ void WLED::initConnection()
   ws.onEvent(wsEvent);
   #endif
 
+#ifdef ARDUINO_ARCH_ESP32
+  ETH.begin();
+#endif
+
   WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
   WiFi.setPhyMode(WIFI_PHY_MODE_11N);
@@ -338,29 +388,7 @@ void WLED::initConnection()
 
   // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
   char hostname[25] = "wled-";
-  const char *pC = serverDescription;
-  uint8_t pos = 5;
-
-  while (*pC && pos < 24) { // while !null and not over length
-    if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
-      hostname[pos] = *pC;
-      pos++;
-    } else if (*pC == ' ' || *pC == '_' || *pC == '-' || *pC == '+' || *pC == '!' || *pC == '?' || *pC == '*') {
-      hostname[pos] = '-';
-      pos++;
-    }
-    // else do nothing - no leading hyphens and do not include hyphens for all other characters.
-    pC++;
-  }
-  // if the hostname is left blank, use the mac address/default mdns name
-  if (pos < 6) {
-    sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
-  } else { //last character must not be hyphen
-    while (pos > 0 && hostname[pos -1] == '-') {
-      hostname[pos -1] = 0;
-      pos--;
-    }
-  }
+  prepareHostname(hostname);
   
 #ifdef ESP8266
   WiFi.hostname(hostname);
