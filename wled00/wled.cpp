@@ -83,7 +83,14 @@ void WiFiEvent(WiFiEvent_t event)
       break;
     case SYSTEM_EVENT_ETH_CONNECTED:
       DEBUG_PRINT("ETH Connected");
-      ETH.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
+      if (!apActive) {
+        WiFi.disconnect(true);
+      }
+      if (staticIP != (uint32_t)0x00000000 && staticGateway != (uint32_t)0x00000000) {
+        ETH.config(staticIP, staticGateway, staticSubnet, IPAddress(8, 8, 8, 8));
+      } else {
+        ETH.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
+      }
       ETH.setHostname(hostname);
       break;
     case SYSTEM_EVENT_ETH_DISCONNECTED:
