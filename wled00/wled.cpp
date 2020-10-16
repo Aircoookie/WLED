@@ -77,6 +77,7 @@ void WiFiEvent(WiFiEvent_t event)
   prepareHostname(hostname);
 
   switch (event) {
+#ifndef ESP8266
     case SYSTEM_EVENT_ETH_START:
       DEBUG_PRINT("ETH Started");
       break;
@@ -84,6 +85,13 @@ void WiFiEvent(WiFiEvent_t event)
       DEBUG_PRINT("ETH Connected");
       ETH.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
       ETH.setHostname(hostname);
+      break;
+    case SYSTEM_EVENT_ETH_DISCONNECTED:
+      DEBUG_PRINT("ETH Disconnected");
+      forceReconnect = true;
+      break;
+#endif
+    default:
       break;
     }
 }
@@ -165,7 +173,7 @@ void WLED::loop()
     lastWifiState = WiFi.status();
     DEBUG_PRINT("State time: ");    DEBUG_PRINTLN(wifiStateChangedTime);
     DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
-    DEBUG_PRINT("Client IP: ");     DEBUG_PRINTLN(WiFi.localIP());
+    DEBUG_PRINT("Client IP: ");     DEBUG_PRINTLN(Network.localIP());
     DEBUG_PRINT("Loops/sec: ");     DEBUG_PRINTLN(loops / 10);
     loops = 0;
     debugTime = millis();
@@ -409,9 +417,9 @@ void WLED::initInterfaces()
   DEBUG_PRINTLN(F("Init STA interfaces"));
 
   if (hueIP[0] == 0) {
-    hueIP[0] = WiFi.localIP()[0];
-    hueIP[1] = WiFi.localIP()[1];
-    hueIP[2] = WiFi.localIP()[2];
+    hueIP[0] = Network.localIP()[0];
+    hueIP[1] = Network.localIP()[1];
+    hueIP[2] = Network.localIP()[2];
   }
 
   // init Alexa hue emulation
@@ -510,7 +518,7 @@ void WLED::handleConnection()
     wasConnected = false;
     return;
   }
-  if (!WLED_CONNECTED) {
+  if (!Network.isConnected()) {
     if (interfacesInited) {
       DEBUG_PRINTLN(F("Disconnected!"));
       interfacesInited = false;
@@ -523,7 +531,7 @@ void WLED::handleConnection()
   } else if (!interfacesInited) {        // newly connected
     DEBUG_PRINTLN("");
     DEBUG_PRINT(F("Connected! IP address: "));
-    DEBUG_PRINTLN(WiFi.localIP());
+    DEBUG_PRINTLN(Network.localIP());
     initInterfaces();
     userConnected();
     usermods.connected();

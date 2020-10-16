@@ -83,7 +83,7 @@ void URL_response(AsyncWebServerRequest *request)
 
   char s[16];
   oappend(SET_F("http://"));
-  IPAddress localIP = WiFi.localIP();
+  IPAddress localIP = Network.localIP();
   sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
   oappend(s);
   oappend(SET_F("/win&A="));
