@@ -1,0 +1,13 @@
+.pio
+.cache
+.pioenvs
+.piolibdeps
+.vscode
+/wled00/Release
+/wled00/extLibs
+/wled00/user_config_override.h 
+/build_output
+.DS_Store
+.gitignore
+.clang-format
+node_modules

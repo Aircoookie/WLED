@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+	<meta name="viewport" content="width=500">
+	<title>WiFi Settings</title>
+	<script>
+		function H()
+		{
+			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings");
+		}
+		function B()
+		{
+			window.open("/settings","_self");
+		}
+		function GetV()
+		{
+			//values injected by server while sending HTML
+		}
+	</script>
+	<style>
+		@import url("style.css");
+	</style>
+</head>
+<body onload="GetV()">
+	<form id="form_s" name="Sf" method="post">
+		<div class="helpB"><button type="button" onclick="H()">?</button></div>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button><hr>
+		<h2>WiFi setup</h2>
+		<h3>Connect to existing network</h3>
+		Network name (SSID, empty to not connect): <br><input name="CS" maxlength="32"><br>
+		Network password: <br> <input type="password" name="CP" maxlength="63"><br>
+		Static IP (leave at 0.0.0.0 for DHCP):<br>
+		<input name="I0" type="number" min="0" max="255" required> .
+		<input name="I1" type="number" min="0" max="255" required> .
+		<input name="I2" type="number" min="0" max="255" required> .
+		<input name="I3" type="number" min="0" max="255" required><br>
+		Static gateway:<br>
+		<input name="G0" type="number" min="0" max="255" required> .
+		<input name="G1" type="number" min="0" max="255" required> .
+		<input name="G2" type="number" min="0" max="255" required> .
+		<input name="G3" type="number" min="0" max="255" required><br>
+		Static subnet mask:<br>
+		<input name="S0" type="number" min="0" max="255" required> .
+		<input name="S1" type="number" min="0" max="255" required> .
+		<input name="S2" type="number" min="0" max="255" required> .
+		<input name="S3" type="number" min="0" max="255" required><br>
+		mDNS address (leave empty for no mDNS):<br/>
+		http:// <input name="CM" maxlength="32"> .local<br>
+		Client IP: <span class="sip"> Not connected </span> <br>
+		<h3>Configure Access Point</h3>
+		AP SSID (leave empty for no AP):<br> <input name="AS" maxlength="32"><br>
+		Hide AP name: <input type="checkbox" name="AH"><br>
+		AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63"><br>
+		Access Point WiFi channel: <input name="AC" type="number" min="1" max="13" required><br>
+    AP opens:
+    <select name="AB">
+    <option value="0">No connection after boot</option>
+    <option value="1">Disconnected</option>
+    <option value="2">Always</option>
+    <option value="3">Never (not recommended)</option></select><br>
+		AP IP: <span class="sip"> Not active </span><br>
+		<h3>Experimental</h3>
+		Disable WiFi sleep: <input type="checkbox" name="WS"><br>
+		<i>Can help with connectivity issues.<br>
+		Do not enable if WiFi is working correctly, increases power consumption.</i>
+		<hr>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
+	</form>
+</body>
+</html>

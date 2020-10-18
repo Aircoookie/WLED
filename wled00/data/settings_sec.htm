@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=500">
+	<meta charset="utf-8">
+	<title>Misc Settings</title>
+	<script>
+		function H()
+		{
+			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings");
+		}
+		function B()
+		{
+			window.open("/settings","_self");
+		}
+		function U()
+		{
+			window.open("/update","_self");
+		}
+		function GetV()
+		{
+			//values injected by server while sending HTML
+		}
+	</script>
+	<style>
+		@import url("style.css");
+	</style>
+</head>
+<body onload="GetV()">
+	<form id="form_s" name="Sf" method="post">
+		<div class="helpB"><button type="button" onclick="H()">?</button></div>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
+		<h2>Security & Update setup</h2>
+		Lock wireless (OTA) software update: <input type="checkbox" name="NO"><br>
+		Passphrase: <input type="password" name="OP" maxlength="32"><br>
+		To enable OTA, for security reasons you need to also enter the correct password!<br>
+		The password should be changed when OTA is enabled.<br>
+		<b>Disable OTA when not in use, otherwise an attacker can reflash device software!</b><br>
+		<i>Settings on this page are only changable if OTA lock is disabled!</i><br>
+		Deny access to WiFi settings if locked: <input type="checkbox" name="OW"><br><br>
+		Factory reset: <input type="checkbox" name="RS"><br>
+		All EEPROM content (settings) will be erased.<br><br>
+		HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
+		<h3>Software Update</h3>
+		<button type="button" onclick="U()">Manual OTA Update</button><br>
+		Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
+		<h3>About</h3>
+		<a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a> version ##VERSION##<!-- Autoreplaced from package.json --><br><br>
+		<a href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" target="_blank">Contributors, dependencies and special thanks</a><br>
+		A huge thank you to everyone who helped me create WLED!<br><br>
+		(c) 2016-2019 Christian Schwinne <br>
+		<i>Licensed under the MIT license</i><br><br>
+		Server message: <span class="sip"> Response error! </span><hr>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
+	</form>
+</body>
+</html>

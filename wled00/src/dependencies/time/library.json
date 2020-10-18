@@ -1,0 +1,26 @@
+{
+    "name": "Time",
+    "description": "Time keeping library",
+    "keywords": "Time, date, hour, minute, second, day, week, month, year, RTC",
+    "authors": [
+        {
+            "name": "Michael Margolis"
+        },
+        {
+            "name": "Paul Stoffregen",
+            "email": "paul@pjrc.com",
+            "url": "http://www.pjrc.com",
+            "maintainer": true
+        }
+    ],
+    "repository": {
+        "type": "git",
+         "url": "https://github.com/PaulStoffregen/Time"
+    },
+    "version": "1.5",
+    "homepage": "http://playground.arduino.cc/Code/Time",
+    "frameworks": "Arduino",
+    "examples": [
+        "examples/*/*.ino"
+    ]
+}

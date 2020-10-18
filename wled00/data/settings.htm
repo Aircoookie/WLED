@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+	<title>WLED Settings</title>
+	<style>
+		body {
+			text-align: center;
+			background: #222;
+			height: 100;
+			margin: 0;
+		}
+		html {
+			--h: 11.55vh;
+		}
+		button {
+			background: #333;
+			color: #fff;
+			font-family: Verdana, Helvetica, sans-serif;
+			border: 0.3ch solid #333;
+			display: inline-block;
+			font-size: 8vmin;
+			height: var(--h);
+			width: 95%;
+			margin-top: 2.4vh;
+		}
+	</style>
+	<script>
+	function BB()
+	{
+		if (window.frameElement) {
+			document.getElementById("b").style.display = "none";
+			document.documentElement.style.setProperty('--h',"13.86vh");
+		}
+	}
+	</script>
+</head>
+<body onload="BB()">
+<form action="/"><button type=submit id="b">Back</button></form>
+<form action="/settings/wifi"><button type="submit">WiFi Setup</button></form>
+<form action="/settings/leds"><button type="submit">LED Preferences</button></form>
+<form action="/settings/ui"><button type="submit">User Interface</button></form>
+<form action="/settings/sync"><button type="submit">Sync Interfaces</button></form>
+<form action="/settings/time"><button type="submit">Time & Macros</button></form>
+<form action="/settings/sec"><button type="submit">Security & Updates</button></form>
+</body>
+</html>
