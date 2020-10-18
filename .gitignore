@@ -3,8 +3,10 @@
 .pioenvs
 .piolibdeps
 .vscode
+!.vscode/extensions.json
 /wled00/Release
 /wled00/extLibs
+/platformio_override.ini
 /wled00/user_config_override.h 
 /build_output
 .DS_Store
