@@ -3877,6 +3877,43 @@ uint16_t WS2812FX::mode_gravimeter(void) {                                // Gra
 } // mode_gravimeter()
 
 
+///////////////////////
+//   * GRAVCENTER    //
+///////////////////////
+
+uint16_t WS2812FX::mode_gravcenter(void) {                                // Gravcenter. By Andrew Tuline.
+
+  static int topLED;
+  static int gravityCounter = 0;
+
+  fade_out(240);
+
+  sampleAvg = sampleAvg * SEGMENT.intensity / 255;
+
+  int tempsamp = constrain(sampleAvg*2,0,SEGLEN/2-1);                       // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+    uint8_t index = inoise8(i*sampleAvg+millis(), 5000+i*sampleAvg);
+    setPixelColor(i+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), sampleAvg*8));
+    setPixelColor(SEGLEN/2-i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), sampleAvg*8));
+  }
+
+  if (tempsamp >= topLED)
+    topLED = tempsamp;
+  else if (gravityCounter % gravity == 0)
+    topLED--;
+
+  if (topLED > 0) {
+    setPixelColor(topLED+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
+    setPixelColor(SEGLEN/2-topLED, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));    
+  }
+  gravityCounter = (gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravcenter()
+
+
 //////////////////////
 //   * PLASMOID     //
 //////////////////////
