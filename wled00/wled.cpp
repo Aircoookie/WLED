@@ -103,6 +103,7 @@ void WLED::loop()
   }
   yield();
   handleWs();
+  handleStatusLED();
 
 // DEBUG serial logging
 #ifdef WLED_DEBUG
@@ -172,6 +173,10 @@ void WLED::setup()
     SPIFFS.begin(true);
   #endif
     SPIFFS.begin();
+#endif
+
+#if STATUSLED && STATUSLED != LEDPIN
+  pinMode(STATUSLED, OUTPUT);
 #endif
 
   DEBUG_PRINTLN(F("Load EEPROM"));
@@ -503,4 +508,27 @@ void WLED::handleConnection()
       DEBUG_PRINTLN(F("Access point disabled."));
     }
   }
+}
+
+void WLED::handleStatusLED()
+{
+  #if STATUSLED && STATUSLED != LEDPIN
+  ledStatusType = WLED_CONNECTED ? 0 : 2;
+  if (mqttEnabled && ledStatusType != 2) // Wi-Fi takes presendence over MQTT
+    ledStatusType = WLED_MQTT_CONNECTED ? 0 : 4;
+  if (ledStatusType) {
+    if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
+      ledStatusLastMillis = millis();
+      ledStatusState = ledStatusState ? 0 : 1;
+      digitalWrite(STATUSLED, ledStatusState);
+    }
+  } else {
+    #ifdef STATUSLEDINVERTED
+      digitalWrite(STATUSLED, HIGH);
+    #else
+      digitalWrite(STATUSLED, LOW);
+    #endif
+    
+  }
+  #endif
 }

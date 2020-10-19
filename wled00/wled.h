@@ -506,6 +506,13 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
+// Status LED
+#if STATUSLED && STATUSLED != LEDPIN
+  WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
+  WLED_GLOBAL unsigned short ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
+  WLED_GLOBAL bool ledStatusState _INIT(0); // the current LED state
+#endif
+
 // debug macro variable definitions
 #ifdef WLED_DEBUG
   WLED_GLOBAL unsigned long debugTime _INIT(0);
@@ -544,5 +551,6 @@ public:
   void initAP(bool resetAP = false);
   void initConnection();
   void initInterfaces();
+  void handleStatusLED();
 };
 #endif        // WLED_H
