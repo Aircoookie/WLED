@@ -123,9 +123,17 @@ void _overlayStatusPixel()
 {
   if (briT == 0) {
     strip.setRange(1, ledCount-1, 0);
-    strip.setBrightness(255);
+    #ifdef STATUSPIXELBRI
+      strip.setBrightness(STATUSPIXELBRI);
+    #else
+      strip.setBrightness(255);
+    #endif
   }
-  strip.setPixelColor(0, (ledStatusState ? 255 : 0));
+  #ifdef STATUSPIXELCOL
+    strip.setPixelColor(0, (ledStatusState ? STATUSPIXELCOL : 0));
+  #else
+    strip.setPixelColor(0, (ledStatusState ? 255 : 0));
+  #endif
 }
 
 void handleOverlayDraw() {
