@@ -175,7 +175,7 @@ void WLED::setup()
     SPIFFS.begin();
 #endif
 
-#if STATUSLED && STATUSLED != LEDPIN
+#if STATUSLED && STATUSLED != LEDPIN && STATUSLED != -1
   pinMode(STATUSLED, OUTPUT);
 #endif
 
@@ -513,22 +513,36 @@ void WLED::handleConnection()
 void WLED::handleStatusLED()
 {
   #if STATUSLED && STATUSLED != LEDPIN
-  ledStatusType = WLED_CONNECTED ? 0 : 2;
-  if (mqttEnabled && ledStatusType != 2) // Wi-Fi takes presendence over MQTT
-    ledStatusType = WLED_MQTT_CONNECTED ? 0 : 4;
-  if (ledStatusType) {
-    if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
-      ledStatusLastMillis = millis();
-      ledStatusState = ledStatusState ? 0 : 1;
-      digitalWrite(STATUSLED, ledStatusState);
+    ledStatusType = WLED_CONNECTED ? 0 : 1;
+    if (mqttEnabled && ledStatusType != 2) // Wi-Fi takes presendence over MQTT
+      ledStatusType = WLED_MQTT_CONNECTED ? 0 : 2;
+    if (ledStatusType) {
+      if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
+        ledStatusLastMillis = millis();
+        ledStatusState = !ledStatusState;
+        #if STATUSLED != -1
+          digitalWrite(STATUSLED, ledStatusState);
+        #else
+          if (overlayCurrent != 4) {
+            lastOverlay = overlayCurrent;
+            overlayCurrent = 4;
+            lastActive = true;
+          }
+        #endif
+      }
+    } else {
+      #if STATUSLED != -1
+        #ifdef STATUSLEDINVERTED
+          digitalWrite(STATUSLED, HIGH);
+        #else
+          digitalWrite(STATUSLED, LOW);
+        #endif
+      #else
+        if (lastActive) {
+          lastActive = false;
+          overlayCurrent = 0;
+        }
+      #endif
     }
-  } else {
-    #ifdef STATUSLEDINVERTED
-      digitalWrite(STATUSLED, HIGH);
-    #else
-      digitalWrite(STATUSLED, LOW);
-    #endif
-    
-  }
   #endif
 }

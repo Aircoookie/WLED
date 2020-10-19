@@ -276,7 +276,7 @@ WLED_GLOBAL bool useAMPM _INIT(false);            // 12h/24h clock format
 WLED_GLOBAL byte currentTimezone _INIT(0);        // Timezone ID. Refer to timezones array in wled10_ntp.ino
 WLED_GLOBAL int utcOffsetSecs _INIT(0);           // Seconds to offset from UTC before timzone calculation
 
-WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
+WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie 4: status pixel
 WLED_GLOBAL byte overlayMin _INIT(0), overlayMax _INIT(ledCount - 1);   // boundaries of overlay mode
 
 WLED_GLOBAL byte analogClock12pixel _INIT(0);               // The pixel in your strip where "midnight" would be
@@ -511,6 +511,10 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
   WLED_GLOBAL unsigned short ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
   WLED_GLOBAL bool ledStatusState _INIT(0); // the current LED state
+  #if STATUSLED == -1
+    WLED_GLOBAL bool lastActive _INIT(0); // if the overlay was last active
+    WLED_GLOBAL byte lastOverlay _INIT(overlayDefault); // last active overlay (before status pixel overlay)
+  #endif
 #endif
 
 // debug macro variable definitions

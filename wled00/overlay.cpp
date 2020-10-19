@@ -119,6 +119,10 @@ void _overlayAnalogCountdown()
   overlayRefreshMs = 998;
 }
 
+void _overlayStatusPixel()
+{
+  strip.setPixelColor(0, (ledStatusState ? 255 : 0));
+}
 
 void handleOverlayDraw() {
   if (!overlayCurrent) return;
@@ -126,6 +130,7 @@ void handleOverlayDraw() {
   {
     case 1: _overlayAnalogClock(); break;
     case 3: _drawOverlayCronixie(); break;
+    case 4: _overlayStatusPixel(); break;
   }
 }
 
