@@ -509,7 +509,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 // Status LED
 #if STATUSLED && STATUSLED != LEDPIN
   WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
-  WLED_GLOBAL int ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
+  WLED_GLOBAL unsigned short ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
   WLED_GLOBAL bool ledStatusState _INIT(0); // the current LED state
 #endif
 
