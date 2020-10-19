@@ -514,8 +514,8 @@ void WLED::handleStatusLED()
 {
   #if STATUSLED && STATUSLED != LEDPIN
     // Check Wi-Fi connection
-    ledStatusType = WLED_MQTT_CONNECTED ? 0 : 1;
-    ledStatusErrorMessage = WLED_MQTT_CONNECTED ? "OK" : "Unable to connect to Wi-Fi.";
+    ledStatusType = WLED_CONNECTED ? 0 : 1;
+    ledStatusErrorMessage = WLED_CONNECTED ? "OK" : "Unable to connect to Wi-Fi.";
 
     // Check MQTT connection
     if (mqttEnabled && ledStatusType != 1) { // Wi-Fi takes presendence over MQTT

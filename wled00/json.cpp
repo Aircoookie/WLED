@@ -383,6 +383,8 @@ void serializeInfo(JsonObject root)
   root[F("udpport")] = udpPort;
   root[F("live")] = (bool)realtimeMode;
 
+  root[F("ledStatusErrorMessage")] = ledStatusErrorMessage;
+
   switch (realtimeMode) {
     case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;
     case REALTIME_MODE_GENERIC:  root["lm"] = ""; break;

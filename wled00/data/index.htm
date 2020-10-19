@@ -1551,6 +1551,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 		clearErrorToast();
 		d.getElementById('connind').style.backgroundColor = "#070";
 		if (!json) showToast('Empty response', true);
+		json.info.ledStatusErrorMessage != "OK" ? showToast(json.info.ledStatusErrorMessage, true) : clearErrorToast();
 		if (json.success) return;
 		var s = json;
 		if (!command || rinfo) {
