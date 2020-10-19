@@ -514,7 +514,7 @@ void WLED::handleStatusLED()
 {
   #if STATUSLED && STATUSLED != LEDPIN
     ledStatusType = WLED_CONNECTED ? 0 : 1;
-    if (mqttEnabled && ledStatusType != 2) // Wi-Fi takes presendence over MQTT
+    if (mqttEnabled && ledStatusType != 1) // Wi-Fi takes presendence over MQTT
       ledStatusType = WLED_MQTT_CONNECTED ? 0 : 2;
     if (ledStatusType) {
       if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
