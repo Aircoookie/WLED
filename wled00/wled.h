@@ -507,6 +507,7 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
 // Status LED
+WLED_GLOBAL String ledStatusErrorMessage _INIT("OK");
 #if STATUSLED && STATUSLED != LEDPIN
   WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
   WLED_GLOBAL unsigned short ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
