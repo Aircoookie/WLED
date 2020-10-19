@@ -110,7 +110,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                     144
+#define MODE_COUNT                     146
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -256,6 +256,8 @@
 #define FX_MODE_2DMEATBALLS            141
 #define FX_FFT_TEST                    142
 #define FX_MODE_GRAVCENTER             143
+#define FX_MODE_GRAVCENTRIC            144
+#define FX_MODE_GRAVFREQ               145
 
 
 // Sound reactive external variables
@@ -503,6 +505,8 @@ class WS2812FX {
       _mode[FX_MODE_2DMEATBALLS]             = &WS2812FX::mode_2Dmeatballs;
       _mode[FX_FFT_TEST]                     = &WS2812FX::fft_test;
       _mode[FX_MODE_GRAVCENTER]              = &WS2812FX::mode_gravcenter;
+      _mode[FX_MODE_GRAVCENTRIC]             = &WS2812FX::mode_gravcentric;
+      _mode[FX_MODE_GRAVFREQ]                = &WS2812FX::mode_gravfreq;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -751,7 +755,9 @@ class WS2812FX {
       mode_2Dmatrix(void),
       mode_2Dmeatballs(void),
       fft_test(void),
-      mode_gravcenter(void);
+      mode_gravcenter(void),
+      mode_gravcentric(void),
+      mode_gravfreq(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -841,7 +847,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Phased Noise","TwinkleUp","Noise Pal","Sine","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
 "* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","* Waterfall","** Freqpixel","** Binmap","** Noisepeak",
 "* Noisefire","* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012","2D DNA",
-"2D Matrix","2D Meatballs","** FFT_TEST","* Gravcenter"
+"2D Matrix","2D Meatballs","** FFT_TEST","* Gravcenter","* Gravcentric","** Gravfreq"
 ])=====";
 
 
