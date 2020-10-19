@@ -519,13 +519,8 @@ void WLED::handleStatusLED()
   if (ledStatusType) {
     if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
       ledStatusLastMillis = millis();
-      if (ledStatusState) {
-        ledStatusState = 0;
-        digitalWrite(STATUSLED, ledStatusState);
-      } else {
-        ledStatusState = 1;
-        digitalWrite(STATUSLED, ledStatusState);
-      }
+      ledStatusState ? 0 : 1;
+      digitalWrite(STATUSLED, ledStatusState);
     }
   } else {
     #ifdef STATUSLEDINVERTED
