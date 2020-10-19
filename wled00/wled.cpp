@@ -519,7 +519,7 @@ void WLED::handleStatusLED()
   if (ledStatusType) {
     if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
       ledStatusLastMillis = millis();
-      ledStatusState ? 0 : 1;
+      ledStatusState = ledStatusState ? 0 : 1;
       digitalWrite(STATUSLED, ledStatusState);
     }
   } else {
