@@ -296,7 +296,7 @@ void handleNightlight()
     if (bri == 0 || nightlightActive) return;
 
     if (presetCycCurr < presetCycleMin || presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
-    applyPreset(presetCycCurr,presetApplyBri);
+    applyPreset(presetCycCurr);
     presetCycCurr++;
     if (presetCycCurr > 16) presetCycCurr = 1;
     colorUpdated(NOTIFIER_CALL_MODE_PRESET_CYCLE);
