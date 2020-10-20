@@ -225,7 +225,7 @@ void sendDataWs(AsyncWebSocketClient * client = nullptr);
 void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
 void URL_response(AsyncWebServerRequest *request);
 void sappend(char stype, const char* key, int val);
-void sappends(char stype, const char* key, char* val);
+void sappends(char stype, const char* key, const char* val);
 void getSettingsJS(byte subPage, char* dest);
 
 #endif

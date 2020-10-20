@@ -58,10 +58,10 @@
 #ifdef WLED_USE_ANALOG_LEDS
   //PWM pins - PINs 15,13,12,14 (W2 = 04)are used with H801 Wifi LED Controller
   #ifdef WLED_USE_H801
-    #define RPIN 15   //R pin for analog LED strip   
+    #define RPIN 15   //R pin for analog LED strip
     #define GPIN 13   //G pin for analog LED strip
     #define BPIN 12   //B pin for analog LED strip
-    #define WPIN 14   //W pin for analog LED strip 
+    #define WPIN 14   //W pin for analog LED strip
     #define W2PIN 04  //W2 pin for analog LED strip
     #undef BTNPIN
     #undef IR_PIN
@@ -116,9 +116,9 @@
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
  #elif defined(USE_TM1814)
-  #define PIXELMETHOD NeoTm1814Method  
+  #define PIXELMETHOD NeoTm1814Method
  #elif defined(USE_P9813)
-  #define PIXELMETHOD P9813Method  
+  #define PIXELMETHOD P9813Method
  #else
   #define PIXELMETHOD NeoEsp32Rmt0Ws2812xMethod
  #endif
@@ -131,9 +131,9 @@
  #elif defined(USE_LPD8806)
   #define PIXELMETHOD Lpd8806Method
  #elif defined(USE_TM1814)
-  #define PIXELMETHOD NeoTm1814Method  
+  #define PIXELMETHOD NeoTm1814Method
  #elif defined(USE_P9813)
-  #define PIXELMETHOD P9813Method  
+  #define PIXELMETHOD P9813Method
  #elif LEDPIN == 2
   #define PIXELMETHOD NeoEsp8266Uart1Ws2813Method //if you get an error here, try to change to NeoEsp8266UartWs2813Method or update Neopixelbus
  #elif LEDPIN == 3
@@ -150,8 +150,8 @@
  #define PIXELFEATURE3 DotStarBgrFeature
  #define PIXELFEATURE4 DotStarLbgrFeature
 #elif defined(USE_LPD8806)
- #define PIXELFEATURE3 Lpd8806GrbFeature 
- #define PIXELFEATURE4 Lpd8806GrbFeature 
+ #define PIXELFEATURE3 Lpd8806GrbFeature
+ #define PIXELFEATURE4 Lpd8806GrbFeature
 #elif defined(USE_WS2801)
  #define PIXELFEATURE3 NeoRbgFeature
  #define PIXELFEATURE4 NeoRbgFeature
@@ -159,8 +159,8 @@
   #define PIXELFEATURE3 NeoWrgbTm1814Feature
   #define PIXELFEATURE4 NeoWrgbTm1814Feature
 #elif defined(USE_P9813)
- #define PIXELFEATURE3 P9813BgrFeature 
- #define PIXELFEATURE4 NeoGrbwFeature   
+ #define PIXELFEATURE3 P9813BgrFeature
+ #define PIXELFEATURE4 NeoGrbwFeature
 #else
  #define PIXELFEATURE3 NeoGrbFeature
  #define PIXELFEATURE4 NeoGrbwFeature
@@ -182,9 +182,9 @@ class NeoPixelWrapper
 public:
   NeoPixelWrapper() :
     // initialize each member to null
+    _type(NeoPixelType_None),
     _pGrb(NULL),
-    _pGrbw(NULL),
-    _type(NeoPixelType_None)
+    _pGrbw(NULL)
   {
 
   }
@@ -218,9 +218,14 @@ public:
       #endif
         _pGrbw->Begin();
       break;
+        case NeoPixelType_None:
+            break;
+        case NeoPixelType_End:
+            break;
+
     }
 
-    #ifdef WLED_USE_ANALOG_LEDS 
+    #ifdef WLED_USE_ANALOG_LEDS
       #ifdef ARDUINO_ARCH_ESP32
         ledcSetup(0, 5000, 8);
         ledcAttachPin(RPIN, 0);
@@ -233,7 +238,7 @@ public:
           ledcSetup(3, 5000, 8);        
           ledcAttachPin(WPIN, 3);
           #ifdef WLED_USE_5CH_LEDS
-            ledcSetup(4, 5000, 8);        
+            ledcSetup(4, 5000, 8);
             ledcAttachPin(W2PIN, 4);
           #endif
         }
@@ -241,21 +246,21 @@ public:
         //init PWM pins
         pinMode(RPIN, OUTPUT);
         pinMode(GPIN, OUTPUT);
-        pinMode(BPIN, OUTPUT); 
-        if(_type == NeoPixelType_Grbw) 
+        pinMode(BPIN, OUTPUT);
+        if(_type == NeoPixelType_Grbw)
         {
-          pinMode(WPIN, OUTPUT); 
+          pinMode(WPIN, OUTPUT);
           #ifdef WLED_USE_5CH_LEDS
             pinMode(W2PIN, OUTPUT);
           #endif
         }
         analogWriteRange(255);  //same range as one RGB channel
         analogWriteFreq(880);   //PWM frequency proven as good for LEDs
-      #endif 
+      #endif
     #endif
   }
 
-#ifdef WLED_USE_ANALOG_LEDS      
+#ifdef WLED_USE_ANALOG_LEDS
     void SetRgbwPwm(uint8_t r, uint8_t g, uint8_t b, uint8_t w, uint8_t w2=0)
     {
       #ifdef ARDUINO_ARCH_ESP32
@@ -267,9 +272,11 @@ public:
           #ifdef WLED_USE_5CH_LEDS
             case NeoPixelType_Grbw: ledcWrite(3, w); ledcWrite(4, w2);            break;
           #else
-            case NeoPixelType_Grbw: ledcWrite(3, w);                              break;
+            case NeoPixelType_Grbw: ledcWrite(3, w);
+            case NeoPixelType_None: break;
+            case NeoPixelType_End: break;
           #endif
-        }        
+        }
       #else   // ESP8266
         analogWrite(RPIN, r);
         analogWrite(GPIN, g);
@@ -282,17 +289,20 @@ public:
             case NeoPixelType_Grbw: analogWrite(WPIN, w);                         break;
           #endif
         }
-      #endif 
+      #endif
     }
 #endif
 
   void Show()
   {
-    byte b;
     switch (_type)
     {
       case NeoPixelType_Grb:  _pGrb->Show();  break;
       case NeoPixelType_Grbw: _pGrbw->Show(); break;
+      case NeoPixelType_None:
+            break;
+      case NeoPixelType_End:
+            break;
     }
   }
 
@@ -311,8 +321,10 @@ public:
         #endif
       }
       break;
+        case NeoPixelType_None: break;
+        case NeoPixelType_End: break;
     }
-    
+
   }
 
   void SetBrightness(byte b)
@@ -320,6 +332,8 @@ public:
     switch (_type) {
       case NeoPixelType_Grb: _pGrb->SetBrightness(b);   break;
       case NeoPixelType_Grbw:_pGrbw->SetBrightness(b);  break;
+      case NeoPixelType_None: break;
+      case NeoPixelType_End: break;
     }
   }
 
@@ -330,6 +344,8 @@ public:
     switch (_type) {
       case NeoPixelType_Grb:  return _pGrb->GetPixelColor(indexPixel);  break;
       case NeoPixelType_Grbw: return _pGrbw->GetPixelColor(indexPixel); break;
+      case NeoPixelType_None: break;
+      case NeoPixelType_End: break;
     }
     return 0;
   }
@@ -339,6 +355,8 @@ public:
     switch (_type) {
       case NeoPixelType_Grb:  return _pGrb->Pixels();  break;
       case NeoPixelType_Grbw: return _pGrbw->Pixels(); break;
+      case NeoPixelType_None: break;
+      case NeoPixelType_End: break;
     }
     return 0;
   }
@@ -356,6 +374,10 @@ private:
     switch (_type) {
       case NeoPixelType_Grb:  delete _pGrb ; _pGrb  = NULL; break;
       case NeoPixelType_Grbw: delete _pGrbw; _pGrbw = NULL; break;
+      case NeoPixelType_None:
+            break;
+      case NeoPixelType_End:
+            break;
     }
   }
 };

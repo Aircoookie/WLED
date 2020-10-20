@@ -26,7 +26,7 @@ bool parseLx(int lxValue, byte rgbw[4])
     float temp = 0;
 
     tmpBri *= 2.55;
-    constrain(tmpBri, 0, 255);
+    int foo = constrain(tmpBri, 0, 255);
 
     colorKtoRGB(ct, rgbw);
     lxRed = rgbw[0]; lxGreen = rgbw[1]; lxBlue = rgbw[2];

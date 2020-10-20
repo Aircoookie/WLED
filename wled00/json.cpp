@@ -124,7 +124,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (sz == 0 && sz > 4) break;
 
           int rgbw[] = {0,0,0,0};
-          byte cp = copyArray(icol, rgbw);
+         // byte cp = copyArray(icol, rgbw); Unused variable.
 
           if (set < 2) stop = start + 1;
           for (uint16_t i = start; i < stop; i++) {
@@ -180,7 +180,7 @@ bool deserializeState(JsonObject root)
   if (tr >= 2) presetCycleTime = tr;
 
   JsonObject nl = root[F("nl")];
-  nightlightActive    = nl["on"]      | nightlightActive;
+  nightlightActive    = nl["on"]   | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
   nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated
   nightlightMode      = nl[F("mode")] | nightlightMode;
