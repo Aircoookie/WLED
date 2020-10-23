@@ -263,8 +263,10 @@ bool deserializeState(JsonObject root)
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
 	root[F("id")] = id;
-	root[F("start")] = seg.start;
-	root[F("stop")] = seg.stop;
+  if (segmentBounds) {
+    root[F("start")] = seg.start;
+    root[F("stop")] = seg.stop;
+  }
 	if (!forPreset)  root[F("len")] = seg.stop - seg.start;
   root[F("grp")] = seg.grouping;
   root[F("spc")] = seg.spacing;

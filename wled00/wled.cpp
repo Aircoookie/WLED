@@ -189,7 +189,7 @@ void WLED::setup()
     if (!fsinit) {
       DEBUGFS_PRINTLN(F("FS failed!"));
       errorFlag = ERR_FS_BEGIN;
-    }
+    } else deEEP();
     updateFSInfo();
 #endif
 

@@ -207,6 +207,7 @@ void deletePreset(byte index);
 void loadMacro(byte index, char* m);
 void applyMacro(byte index);
 void saveMacro(byte index, const String& mc, bool persist = true); //only commit on single save, not in settings
+void deEEP();
 
 //wled_serial.cpp
 void handleSerial();

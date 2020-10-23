@@ -43,7 +43,7 @@
 //#define WLED_DEBUG
 
 // filesystem specific debugging
-#define WLED_DEBUG_FS
+//#define WLED_DEBUG_FS
 
 // Library inclusions. 
 #include <Arduino.h>
@@ -541,7 +541,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #else
   #define DEBUGFS_PRINT(x)
   #define DEBUGFS_PRINTLN(x)
-  #define DEBUGFS_PRINTF(x)
+  #define DEBUGFS_PRINTF(x...)
 #endif
 
 // debug macro variable definitions

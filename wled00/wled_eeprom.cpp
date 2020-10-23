@@ -636,7 +636,7 @@ bool applyPreset(byte index)
     #endif
     deserializeState(fileDoc->as<JsonObject>());
   } else {
-    WLED_DEBUG_FS(F("Make read buf"));
+    DEBUGFS_PRINTLN(F("Make read buf"));
     DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
     errorFlag = readObjectFromFileUsingId("/presets.json", index, &fDoc) ? ERR_NONE : ERR_FS_PLOAD;
     #ifdef WLED_DEBUG_FS
@@ -726,41 +726,6 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
   if (!docAlloc) delete fileDoc;
   presetsModifiedTime = now(); //unix time
   updateFSInfo();
-  
-  /*if (index > 16) return;
-  if (index < 1) {saveSettingsToEEPROM();return;}
-  uint16_t i = 380 + index*20;//min400
-  
-  if (index < 16) {
-    EEPROM.write(i, 1);
-    EEPROM.write(i+1, bri);
-    for (uint16_t j=0; j<4; j++)
-    {
-      EEPROM.write(i+j+2, col[j]);
-      EEPROM.write(i+j+6, colSec[j]);
-    }
-    EEPROM.write(i+10, effectCurrent);
-    EEPROM.write(i+11, effectSpeed);
-
-    uint32_t colTer = strip.getSegment(strip.getMainSegmentId()).colors[2];
-    EEPROM.write(i+12, (colTer >> 16) & 0xFF);
-    EEPROM.write(i+13, (colTer >>  8) & 0xFF);
-    EEPROM.write(i+14, (colTer >>  0) & 0xFF);
-    EEPROM.write(i+15, (colTer >> 24) & 0xFF);
-  
-    EEPROM.write(i+16, effectIntensity);
-    EEPROM.write(i+17, effectPalette);
-  } else { //segment 16 can save segments
-    EEPROM.write(i, 3);
-    EEPROM.write(i+1, bri);
-    WS2812FX::Segment* seg = strip.getSegments();
-    memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
-  }
-  
-  if (persist) commit();
-  savedToPresets();
-  currentPreset = index;
-  isPreset = true;*/
 }
 
 void deletePreset(byte index) {
@@ -810,4 +775,98 @@ void saveMacro(byte index, const String& mc, bool persist) //only commit on sing
     EEPROM.write(i, mc.charAt(i-s));
   }
   if (persist) commit();
+}
+
+
+// De-EEPROM routine, upgrade from previous versions to v0.11
+void deEEP() {
+  if (WLED_FS.exists("/presets.json")) return;
+  
+  DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
+  DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
+  DynamicJsonDocument dDoc(JSON_BUFFER_SIZE);
+  JsonObject sObj = dDoc.to<JsonObject>();
+  sObj.createNestedObject("0");
+
+  //EEPROM.begin(EEPSIZE);
+  if (EEPROM.read(233) == 233) { //valid EEPROM save
+    for (uint16_t index = 1; index <= 16; index++) { //copy presets to presets.json
+      uint16_t i = 380 + index*20;
+      byte ver = EEPROM.read(i);
+
+      if ((index < 16 && ver != 1) || (index == 16 && (ver < 2 || ver > 3))) continue;
+
+      char nbuf[16];
+      sprintf(nbuf, "%d", index);
+
+      JsonObject pObj = sObj.createNestedObject(nbuf);
+
+      pObj["q"] = nbuf;
+      sprintf_P(nbuf, "Preset %d", index);
+      pObj["n"] = nbuf;
+
+      pObj["bri"] = EEPROM.read(i+1);
+
+      if (index < 16) {
+        JsonObject segObj = pObj.createNestedObject("seg");
+
+        JsonArray colarr = segObj.createNestedArray("col");
+
+        byte numChannels = (useRGBW)? 4:3;
+
+        for (uint8_t k = 0; k < 3; k++) //k=0 primary (i+2) k=1 secondary (i+6) k=2 tertiary color (i+12)
+        {
+          JsonArray colX = colarr.createNestedArray();
+          uint16_t memloc = i + 6*k;
+          if (k == 0) memloc += 2;
+
+          for (byte j = 0; j < numChannels; j++) colX.add(EEPROM.read(memloc + j));
+        }
+        
+        segObj[F("fx")]  = EEPROM.read(i+10);
+        segObj[F("sx")]  = EEPROM.read(i+11);
+        segObj[F("ix")]  = EEPROM.read(i+16);
+        segObj[F("pal")] = EEPROM.read(i+17);
+      } else {
+        WS2812FX::Segment* seg = strip.getSegments();
+        memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
+        if (ver == 2) { //versions before 2004230 did not have opacity
+          for (byte j = 0; j < strip.getMaxSegments(); j++)
+          {
+            strip.getSegment(j).opacity = 255;
+            strip.getSegment(j).setOption(SEG_OPTION_ON, 1);
+          }
+        }
+        serializeState(pObj, true, false, true);
+
+        strip.resetSegments();
+      }
+    }
+
+    
+    
+    for (uint16_t index = 1; index <= 16; index++) { //copy macros to presets.json
+      char m[65];
+      readStringFromEEPROM(1024+64*(index-1), m, 64);
+      if (m[0]) { //macro exists
+        char nbuf[16];
+        sprintf(nbuf, "%d", index + 16);
+        JsonObject pObj = sObj.createNestedObject(nbuf);
+        sprintf_P(nbuf, "ZMacro %d", index);
+        pObj["n"] = nbuf;
+        pObj["win"] = m;
+      }
+    }
+  }
+
+  //EEPROM.end();
+
+  File f = WLED_FS.open("/presets.json", "w");
+  if (!f) {
+    errorFlag = ERR_FS_GENERAL;
+    return;
+  }
+  serializeJson(dDoc, f);
+  f.close();
+  DEBUG_PRINTLN(F("deEEP complete!"));
 }
