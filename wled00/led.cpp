@@ -34,13 +34,20 @@ void toggleOnOff()
 }
 
 
+//scales the brightness with the briMultiplier factor
+byte scaledBri(byte in)
+{
+  uint32_t d = in*briMultiplier;
+  uint32_t val = d/100;
+  if (val > 255) val = 255;
+  return (byte)val;
+}
+
+
 void setAllLeds() {
   if (!realtimeMode || !arlsForceMaxBri)
   {
-    double d = briT*briMultiplier;
-    int val = d/100;
-    if (val > 255) val = 255;
-    strip.setBrightness(val);
+    strip.setBrightness(scaledBri(briT));
   }
   if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY)
   {

@@ -13,7 +13,7 @@
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
 
-#define GRADIENT_PALETTE_COUNT 39
+#define GRADIENT_PALETTE_COUNT 40
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
@@ -551,14 +551,14 @@ const byte Orangery_gp[] PROGMEM = {
 
 //inspired by Mark Kriegsman https://gist.github.com/kriegsman/756ea6dcae8e30845b5a
 const byte C9_gp[] PROGMEM = {
-    0, 184,  4,  0, //red
-   60, 184,  4,  0,
-   65, 144, 44,  2, //amber
-  125, 144, 44,  2,
-  130,   4, 96,  2, //green
-  190,   4, 96,  2,
-  195,   7,  7, 88, //blue
-  255,   7,  7, 88};
+    0, 255,   5,   0, //red
+   60, 255,   5,   0,
+   60, 196,  57,   2, //amber (start 61?)
+  120, 196,  57,   2, 
+  120,   6, 126,   2, //green (start 126?)
+  180,   6, 126,   2,
+  180,   4,  30, 114, //blue (start 191?)
+  255,   4,  30, 114};
 
 const byte Sakura_gp[] PROGMEM = {
     0, 196, 19, 10,
@@ -582,6 +582,18 @@ const byte Atlantica_gp[] PROGMEM = {
   150,  12, 95, 82, //#0C5F52
   200,  25,190, 95, //#19BE5F
   255,  40,170, 80};//#28AA50
+
+  const byte C9_2_gp[] PROGMEM = {
+    0,   6, 126,   2, //green
+   45,   6, 126,   2,
+   45,   4,  30, 114, //blue
+   90,   4,  30, 114,
+   90, 255,   5,   0, //red
+  135, 255,   5,   0,
+  135, 196,  57,   2, //amber
+  180, 196,  57,   2,
+  180, 137,  85,   2, //yellow
+  255, 137,  85,   2};
   
 
 // Single array of defined cpt-city color palettes.
@@ -628,6 +640,7 @@ const byte* const gGradientPalettes[] PROGMEM = {
   Sakura_gp,                    //49-36 Sakura
   Aurora_gp,                    //50-37 Aurora
   Atlantica_gp,                 //51-38 Atlantica
+  C9_2_gp                       //52-39 C9 2
 };
 
 #endif
