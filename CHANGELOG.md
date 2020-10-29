@@ -2,6 +2,16 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2010290
+
+-   Colorful effect now supports palettes
+-   Added C9 2 palette (#1291)
+-   Improved C9 palette brightness by 12%
+-   Disable onboard LED if LEDs are off (PR #1245)
+-   Added optional status LED (PR #1264)
+-   Realtime max. brightness now honors brightness factor (fixes #1271)
+-   Updated ArduinoJSON to 6.17.0
+
 #### Build 2010020
 
 -   Fixed interaction of `T` and `NL` HTTP API commands (#1214)
