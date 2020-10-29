@@ -297,6 +297,8 @@ WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates wit
 WLED_GLOBAL bool wifiLock    _INIT(false);  // prevents access to WiFi settings when OTA lock is enabled
 WLED_GLOBAL bool aOtaEnabled _INIT(false);   // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
 
+WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use in usermod
+
 #ifdef WLED_ENABLE_DMX
   // dmx CONFIG
   WLED_GLOBAL byte DMXChannels _INIT(7);        // number of channels per fixture
