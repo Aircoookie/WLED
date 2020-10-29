@@ -11,7 +11,6 @@
 // Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
 // Alternatively, with platformio pass your chosen flags to your custom build target in platformio.ini.override
 
-
 // You are required to disable over-the-air updates:
 //#define WLED_DISABLE_OTA         // saves 14kb
 
@@ -168,7 +167,7 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 WLED_GLOBAL byte auxDefaultState _INIT(0);                         // 0: input 1: high 2: low
 WLED_GLOBAL byte auxTriggeredState _INIT(0);                       // 0: input 1: high 2: low
-WLED_GLOBAL char ntpServerName[33] _INIT("Ntp.lan");               // NTP server to use
+WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use
 
 // WiFi CONFIG (all these can be changed via web UI, no need to set them here)
 WLED_GLOBAL char clientSSID[33] _INIT(CLIENT_SSID);
@@ -297,8 +296,6 @@ WLED_GLOBAL byte macroButton _INIT(0), macroLongPress _INIT(0), macroDoublePress
 WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
 WLED_GLOBAL bool wifiLock    _INIT(false);  // prevents access to WiFi settings when OTA lock is enabled
 WLED_GLOBAL bool aOtaEnabled _INIT(false);   // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
-
-WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use in usermod
 
 #ifdef WLED_ENABLE_DMX
   // dmx CONFIG
@@ -502,6 +499,13 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
+// Status LED
+#if STATUSLED && STATUSLED != LEDPIN
+  WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
+  WLED_GLOBAL unsigned short ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
+  WLED_GLOBAL bool ledStatusState _INIT(0); // the current LED state
+#endif
+
 // debug macro variable definitions
 #ifdef WLED_DEBUG
   WLED_GLOBAL unsigned long debugTime _INIT(0);
@@ -540,4 +544,5 @@ public:
   void initAP(bool resetAP = false);
   void initConnection();
   void initInterfaces();
+  void handleStatusLED();
 };
