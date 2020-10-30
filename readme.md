@@ -50,8 +50,11 @@ See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
 DrZzs has made some excellent video guides:  
 [Introduction, hardware and installation](https://www.youtube.com/watch?v=tXvtxwK3jRk)  
 [Settings, tips and tricks](https://www.youtube.com/watch?v=6eCE2BpLaUQ)  
+[Holiday LEDs Step-by-step with WLED & Home Assistant](https://youtu.be/zepNvlN4gEc) by KPeyanski.
 
-If you'd rather read, here is a very [detailed step-by-step beginner tutorial](https://tynick.com/blog/11-03-2019/getting-started-with-wled-on-esp8266/) by tynick!  
+If you'd rather read, here is a very [detailed step-by-step beginner tutorial](https://tynick.com/blog/11-03-2019/getting-started-with-wled-on-esp8266/) by tynick!
+
+[HOW-TO: Holiday LED Strip Lights, Home Assistant & WLED](https://peyanski.com/holiday-led-strip-lights-home-assistant-and-wled/) by KPeyanski.
 
 Russian speakers, check out the videos by Room31:
 [WLED Firmware Overview: Interface and Settings](https://youtu.be/h7lKsczEI7E)  
