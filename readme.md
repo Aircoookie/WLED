@@ -73,6 +73,7 @@ TM1814 | 12v | RGBW
 WS2811 | 12v | 3-LED segments
 WS2815 | 12v | 
 GS8208 | 12v |
+Analog/non-addressable | any | Requires additional circuitry
 
 ## 🧊 Compatible PC RGB Fans and ARGB accessories
 Brand | Model | Comments
