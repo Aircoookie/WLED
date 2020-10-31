@@ -147,9 +147,6 @@ bool deserializeState(JsonObject root)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
-
-  int ps = root[F("ps")] | -1;
-  if (ps >= 0) applyPreset(ps);
   
   bri = root["bri"] | bri;
   
@@ -192,7 +189,7 @@ bool deserializeState(JsonObject root)
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
   int timein = root[F("time")] | -1;
-  if (timein != -1) setTime(timein);
+  if (timein != -1 && millis() - ntpLastSyncTime > 50000000L) setTime(timein);
   doReboot = root[F("rb")] | doReboot;
 
   realtimeOverride = root[F("lor")] | realtimeOverride;
@@ -240,21 +237,37 @@ bool deserializeState(JsonObject root)
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
-  //write presets to flash directly?
-  bool persistSaves = !(root[F("np")] | false);
+  int ps = root[F("psave")] | -1;
+  if (ps > 0) {
+    savePreset(ps, true, nullptr, root);
+  } else {
+    ps = root[F("pdel")] | -1; //deletion
+    if (ps > 0) {
+      deletePreset(ps);
+    }
+    ps = root[F("ps")] | -1; //load preset (clears state request!)
+    if (ps >= 0) applyPreset(ps);
 
-  ps = root[F("psave")] | -1;
-  if (ps >= 0) savePreset(ps, persistSaves);
+    //HTTP API commands
+    const char* httpwin = root["win"];
+    if (httpwin) {
+      String apireq = "win&";
+      apireq += httpwin;
+      handleSet(nullptr, apireq, false);
+    }
+  }
 
   return stateResponse;
 }
 
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
 	root[F("id")] = id;
-	root[F("start")] = seg.start;
-	root[F("stop")] = seg.stop;
-	root[F("len")] = seg.stop - seg.start;
+  if (segmentBounds) {
+    root[F("start")] = seg.start;
+    root[F("stop")] = seg.stop;
+  }
+	if (!forPreset)  root[F("len")] = seg.stop - seg.start;
   root[F("grp")] = seg.grouping;
   root[F("spc")] = seg.spacing;
   root["on"] = seg.getOption(SEG_OPTION_ON);
@@ -291,39 +304,42 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
 }
 
+void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
+{ 
+  if (includeBri) {
+    root["on"] = (bri > 0);
+    root["bri"] = briLast;
+    root[F("transition")] = transitionDelay/100; //in 100ms
+  }
 
-void serializeState(JsonObject root)
-{
-  if (errorFlag) root[F("error")] = errorFlag;
-  
-  root["on"] = (bri > 0);
-  root["bri"] = briLast;
-  root[F("transition")] = transitionDelay/100; //in 100ms
+  if (!forPreset) {
+    if (errorFlag) root[F("error")] = errorFlag;
+    
+    root[F("ps")] = currentPreset;
+    root[F("pss")] = savedPresets;
+    root[F("pl")] = (presetCyclingEnabled) ? 0: -1;
+    
+    usermods.addToJsonState(root);
 
-  root[F("ps")] = currentPreset;
-  root[F("pss")] = savedPresets;
-  root[F("pl")] = (presetCyclingEnabled) ? 0: -1;
+    //temporary for preset cycle
+    JsonObject ccnf = root.createNestedObject("ccnf");
+    ccnf[F("min")] = presetCycleMin;
+    ccnf[F("max")] = presetCycleMax;
+    ccnf[F("time")] = presetCycleTime;
 
-  usermods.addToJsonState(root);
+    JsonObject nl = root.createNestedObject("nl");
+    nl["on"] = nightlightActive;
+    nl[F("dur")] = nightlightDelayMins;
+    nl[F("fade")] = (nightlightMode > NL_MODE_SET); //deprecated
+    nl[F("mode")] = nightlightMode;
+    nl[F("tbri")] = nightlightTargetBri;
 
-  //temporary for preset cycle
-  JsonObject ccnf = root.createNestedObject("ccnf");
-  ccnf[F("min")] = presetCycleMin;
-  ccnf[F("max")] = presetCycleMax;
-  ccnf[F("time")] = presetCycleTime;
-  
-  JsonObject nl = root.createNestedObject("nl");
-  nl["on"] = nightlightActive;
-  nl[F("dur")] = nightlightDelayMins;
-  nl[F("fade")] = (nightlightMode > NL_MODE_SET); //deprecated
-  nl[F("mode")] = nightlightMode;
-  nl[F("tbri")] = nightlightTargetBri;
-  
-  JsonObject udpn = root.createNestedObject("udpn");
-  udpn[F("send")] = notifyDirect;
-  udpn[F("recv")] = receiveNotifications;
+    JsonObject udpn = root.createNestedObject("udpn");
+    udpn[F("send")] = notifyDirect;
+    udpn[F("recv")] = receiveNotifications;
 
-  root[F("lor")] = realtimeOverride;
+    root[F("lor")] = realtimeOverride;
+  }
 
   root[F("mainseg")] = strip.getMainSegmentId();
   
@@ -334,7 +350,7 @@ void serializeState(JsonObject root)
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();
-      serializeSegment(seg0, sg, s);
+      serializeSegment(seg0, sg, s, forPreset, segmentBounds);
     }
   }
 }
@@ -417,6 +433,11 @@ void serializeInfo(JsonObject root)
   wifi_info[F("rssi")] = qrssi;
   wifi_info[F("signal")] = getSignalQuality(qrssi);
   wifi_info[F("channel")] = WiFi.channel();
+
+  JsonObject fs_info = root.createNestedObject("fs");
+  fs_info["u"] = fsBytesUsed / 1000;
+  fs_info["t"] = fsBytesTotal / 1000;
+  fs_info[F("pmt")] = presetsModifiedTime;
   
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
@@ -444,6 +465,7 @@ void serializeInfo(JsonObject root)
   root[F("freeheap")] = ESP.getFreeHeap();
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 
+  
   usermods.addToJsonInfo(root);
   
   byte os = 0;

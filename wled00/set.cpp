@@ -375,7 +375,7 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv, byte ma
 
 
 //HTTP API request parser
-bool handleSet(AsyncWebServerRequest *request, const String& req)
+bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 {
   if (!(req.indexOf("win") >= 0)) return false;
 
@@ -486,15 +486,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
     if (v > 100) presetCycleTime = v/100;
   }
 
-  pos = req.indexOf(F("PA=")); //apply brightness from preset
-  if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
-
   pos = req.indexOf(F("PS=")); //saves current in preset
-  if (pos > 0) savePreset(getNumVal(&req, pos), persistSaves);
+  if (pos > 0) savePreset(getNumVal(&req, pos));
 
   //apply preset
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
-    applyPreset(presetCycCurr, presetApplyBri);
+    applyPreset(presetCycCurr);
   }
 
   //set brightness
@@ -746,6 +743,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   }
   //you can add more if you need
 
+  if (!apply) return true; //when called by JSON API, do not call colorUpdated() here
+  
   //internal call, does not send XML response
   pos = req.indexOf(F("IN"));
   if (pos < 1) XML_response(request);

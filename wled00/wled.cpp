@@ -70,6 +70,10 @@ void WLED::loop()
 
   if (doReboot)
     reset();
+  if (doCloseFile) {
+    closeFile();
+    yield();
+  }
 
   if (!realtimeMode || realtimeOverride)  // block stuff if WARLS/Adalight is enabled
   {
@@ -84,6 +88,12 @@ void WLED::loop()
 
     handleHue();
     handleBlynk();
+
+    /*if (presetToApply) {
+      applyPreset(presetToApply);
+      presetToApply = 0;
+    }*/
+
     yield();
 
     if (!offMode)
@@ -169,10 +179,18 @@ void WLED::setup()
   DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
 #ifndef WLED_DISABLE_FILESYSTEM
+    bool fsinit = false;
+    DEBUGFS_PRINTLN(F("Mount FS"));
   #ifdef ARDUINO_ARCH_ESP32
-    SPIFFS.begin(true);
+    fsinit = WLED_FS.begin(true);
+  #else
+    fsinit = WLED_FS.begin();
   #endif
-    SPIFFS.begin();
+    if (!fsinit) {
+      DEBUGFS_PRINTLN(F("FS failed!"));
+      errorFlag = ERR_FS_BEGIN;
+    } else deEEP();
+    updateFSInfo();
 #endif
 
 #if STATUSLED && STATUSLED != LEDPIN
@@ -180,7 +198,7 @@ void WLED::setup()
 #endif
 
   DEBUG_PRINTLN(F("Load EEPROM"));
-  loadSettingsFromEEPROM(true);
+  loadSettingsFromEEPROM();
   beginStrip();
   userSetup();
   usermods.setup();
@@ -240,8 +258,7 @@ void WLED::beginStrip()
   pinMode(BTNPIN, INPUT_PULLUP);
 #endif
 
-  if (bootPreset > 0)
-    applyPreset(bootPreset, turnOnAtBoot);
+  if (bootPreset > 0) applyPreset(bootPreset);
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
 // init relay pin
