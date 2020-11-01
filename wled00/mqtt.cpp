@@ -64,18 +64,34 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   }
   DEBUG_PRINTLN(payload);
 
-  //no need to check the topic because we only get topics we are subscribed to
+  size_t topicPrefixLen = strlen(mqttDeviceTopic);
+  if (strncmp(topic, mqttDeviceTopic, topicPrefixLen) == 0) {
+      topic += topicPrefixLen;
+  } else {
+      size_t topic_prefix_len = strlen(mqttGroupTopic);
+      if (strncmp(topic, mqttGroupTopic, topicPrefixLen) == 0) {
+          topic += topicPrefixLen;
+      } else {
+          // Topic not used here. Probably a usermod subscribed to this topic.
+          return;
+      }
+  }
 
-  if (strstr(topic, "/col"))
+  //Prefix is stripped from the topic at this point
+
+  if (strcmp(topic, "/col") == 0)
   {
     colorFromDecOrHexString(col, (char*)payload);
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
-  } else if (strstr(topic, "/api"))
+  } else if (strcmp(topic, "/api") == 0)
   {
     String apireq = "win&";
     apireq += (char*)payload;
     handleSet(nullptr, apireq);
-  } else parseMQTTBriPayload(payload);
+  } else if (strcmp(topic, "") == 0)
+  {
+      parseMQTTBriPayload(payload);
+  }
 }
 
 
