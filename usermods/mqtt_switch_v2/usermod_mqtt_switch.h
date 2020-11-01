@@ -6,14 +6,31 @@
 #endif
 
 #ifndef MQTTSWITCHPINS
+#error "Please define MQTTSWITCHPINS in platformio_override.ini. e.g. -D MQTTSWITCHPINS="12, 0, 2" "
+// The following define helps Eclipse's C++ parser but is never used in production due to the #error statement on the line before
 #define MQTTSWITCHPINS 12, 0, 2
-//#error "Please define MQTTSWITCHPINS in platformio_override.ini. e.g. -D MQTTSWITCHPINS="12, 0, 2" "
 #endif
 
+// Default behavior: All outputs active high
+#ifndef MQTTSWITCHINVERT
+#define MQTTSWITCHINVERT
+#endif
 
-static const uint8_t switchPins[] = {MQTTSWITCHPINS};
+// Default behavior: All outputs off
+#ifndef MQTTSWITCHDEFAULTS
+#define MQTTSWITCHDEFAULTS
+#endif
+
+static const uint8_t switchPins[] = { MQTTSWITCHPINS };
 //This is a hack to get the number of pins defined by the user
 #define NUM_SWITCH_PINS (sizeof(switchPins))
+static const bool switchInvert[NUM_SWITCH_PINS] = { MQTTSWITCHINVERT};
+//Make settings in config file more readable
+#define ON 1
+#define OFF 0
+static const bool switchDefaults[NUM_SWITCH_PINS] = { MQTTSWITCHDEFAULTS};
+#undef ON
+#undef OFF
 
 class UsermodMqttSwitch: public Usermod
 {
@@ -30,8 +47,8 @@ public:
     void setup()
     {
         for (int pinNr = 0; pinNr < NUM_SWITCH_PINS; pinNr++) {
+            setState(pinNr, switchDefaults[pinNr]);
             pinMode(switchPins[pinNr], OUTPUT);
-            setState(pinNr, false);
         }
     }
 
@@ -64,7 +81,7 @@ public:
         if (pinNr > NUM_SWITCH_PINS)
             return;
         switchState[pinNr] = active;
-        digitalWrite((char) switchPins[pinNr], (char) active);
+        digitalWrite((char) switchPins[pinNr], (char) (switchInvert[pinNr] ? !active : active));
         updateState(pinNr);
     }
 };

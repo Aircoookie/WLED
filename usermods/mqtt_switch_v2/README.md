@@ -21,7 +21,7 @@ void registerUsermods()
 
 ## Define pins
 Add a define for MQTTSWITCHPINS to platformio_override.ini.
-The following example defines 3 switches connected to the GPIO pins 13, 0 and 2:
+The following example defines 3 switches connected to the GPIO pins 13, 5 and 2:
 
 ```
 [env:livingroom]
@@ -34,8 +34,12 @@ build_flags = ${common.build_flags_esp8266}
    -D RLYPIN=12
    -D RLYMDE=1
    -D STATUSPIN=15
-   -D MQTTSWITCHPINS="13, 0, 2"
+   -D MQTTSWITCHPINS="13, 5, 2"
 ```
+
+Pins can be inverted by setting `MQTTSWITCHINVERT`. For example `-D MQTTSWITCHINVERT="false, false, true"` would invert the switch on pin 2 in the previous example.
+
+The default state after booting before any MQTT message can be set by `MQTTSWITCHDEFAULTS`. For example `-D MQTTSWITCHDEFAULTS="ON, OFF, OFF"` would power on the switch on pin 13 and power off switches on pins 5 and 2.
    
 ## MQTT topics
 This usermod listens on `[mqttDeviceTopic]/switch/0/set` (where 0 is replaced with the index of the switch) for commands. Anything starting with `ON` turns on the switch, everything else turns it off.
