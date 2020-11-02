@@ -4108,7 +4108,7 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                                // Pud
   if (samplePeak == 1 ) {
     size = sampleAgc * SEGMENT.intensity /256 /4 + 1;                        // Determine size of the flash based on the volume.
     if (pos+size>= SEGLEN) size=SEGLEN-pos;
-    samplePeak = 0;
+//    samplePeak = 0;
   }
 
   for(int i=0; i<size; i++) {                                             // Flash the LED's.
@@ -4154,7 +4154,10 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
 
   for (uint16_t i = 0; i < maxRipples; i++) {
 
-    if (samplePeak) {samplePeak = 0; ripples[i].state = -1;}
+    if (samplePeak) {
+//      samplePeak = 0;
+      ripples[i].state = -1;
+    }
 
     switch (ripples[i].state) {
 
@@ -4237,7 +4240,7 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 #endif // ESP8266
 
     if (samplePeak) {
-      samplePeak = 0;
+//      samplePeak = 0;
       setPixelColor(SEGLEN-1,92,92,92);
     } else {
 
@@ -4563,7 +4566,7 @@ uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat
   uint8_t pixCol = SEGMENT.intensity+(log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
    if (samplePeak) {
-      samplePeak = 0;
+//      samplePeak = 0;
 
       // Palette defined on the fly that stays close to the base pixCol.
       thisPalette = CRGBPalette16(CHSV(pixCol,255,random8(128,255)),CHSV(pixCol+32,255,random8(128,255)),CHSV(pixCol+80,192,random8(128,255)),CHSV(pixCol+16,255,random8(128,255)));

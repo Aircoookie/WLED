@@ -62,6 +62,7 @@ int sampleAgc;                                      // Our AGC sample
 float multAgc;                                      // sample * multAgc = sampleAgc. Our multiplier
 uint8_t targetAgc = 60;                             // This is our setPoint at 20% of max for the adjusted output
 
+long timeOfPeak = 0;
 long lastTime = 0;
 int delayMs = 10;                                   // I don't want to sample too often and overload WLED.
 double beat = 0;                                    // beat Detection
@@ -116,12 +117,20 @@ void getSample() {
 
   sampleAvg = ((sampleAvg * 15) + sample) / 16;       // Smooth it out over the last 16 samples.
 
+  if (millis() - timeOfPeak > MIN_SHOW_DELAY) {       // Auto-reset of samplePeak after a complete frame has passed.
+    samplePeak = 0;
+    #ifdef ESP32
+      udpSamplePeak = 0;
+    #endif
+    }
+    
   if (userVar1 == 0)
     samplePeak = 0;
   // Poor man's beat detection by seeing if sample > Average + some value.
   if (sampleAgc > (sampleAvg + maxVol) && millis() > (peakTime + 100)) {
   // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
     samplePeak = 1;
+    timeOfPeak = millis();
     #ifdef ESP32
       udpSamplePeak = 1;
     #endif
