@@ -246,6 +246,8 @@ void getSettingsJS(byte subPage, char* dest)
     #ifdef ESP8266
     #if LEDPIN == 3
     oappend(SET_F("d.Sf.LC.max=500;"));
+    #else
+    oappend(SET_F("d.Sf.LC.max=1500;"));
     #endif
     #endif
     sappend('v',SET_F("LC"),ledCount);

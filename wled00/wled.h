@@ -113,6 +113,12 @@
   #define CLIENT_PASS ""
 #endif
 
+/*#ifndef SPIFFS_EDITOR_AIRCOOOKIE
+  #error You are not using the Aircoookie fork of the ESPAsyncWebserver library.\
+  Using upstream puts your WiFi password at risk of being served by the filesystem.\
+  Comment out this error message to build regardless.
+#endif*/
+
 #if IR_PIN < 0
   #ifndef WLED_DISABLE_INFRARED
     #define WLED_DISABLE_INFRARED
