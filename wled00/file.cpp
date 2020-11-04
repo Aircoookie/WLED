@@ -330,6 +330,7 @@ bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest
   return readObjectFromFile(file, objKey, dest);
 }
 
+//if the key is a nullptr, deserialize entire object
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
 {
   if (doCloseFile) closeFile();
@@ -340,7 +341,7 @@ bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
   f = WLED_FS.open(file, "r");
   if (!f) return false;
 
-  if (!bufferedFind(key)) //key does not exist in file
+  if (key != nullptr && !bufferedFind(key)) //key does not exist in file
   {
     f.close();
     dest->clear();

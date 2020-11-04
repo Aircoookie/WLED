@@ -786,7 +786,7 @@ void deEEP() {
   
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
-  DynamicJsonDocument dDoc(JSON_BUFFER_SIZE);
+  DynamicJsonDocument dDoc(JSON_BUFFER_SIZE *2);
   JsonObject sObj = dDoc.to<JsonObject>();
   sObj.createNestedObject("0");
 

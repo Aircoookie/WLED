@@ -15,6 +15,13 @@ void getStringFromJson(char* dest, const char* src, size_t len) {
 void deserializeSettings() {
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 
+  DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
+
+  bool success = readObjectFromFile("/cfg.json", nullptr, &doc);
+  if (!success) { //if file does not exist, try reading from EEPROM
+    loadSettingsFromEEPROM();
+  }
+
   //deserializeJson(doc, json);
 
   //int rev_major = doc["rev"][0]; // 1
@@ -229,6 +236,7 @@ void deserializeSettings() {
   getStringFromJson(ntpServerName, if_ntp["host"], 33); // "1.wled.pool.ntp.org"
   CJSON(currentTimezone, if_ntp["tz"]);
   CJSON(utcOffsetSecs, if_ntp["offset"]);
+  CJSON(useAMPM, if_ntp["ampm"]);
 
   JsonObject ol = doc["ol"];
   CJSON(overlayDefault ,ol["clock"]); // 0
@@ -280,6 +288,13 @@ void deserializeSettings() {
     CJSON(wifiLock, ota["lock-wifi"]);
     CJSON(aOtaEnabled, ota["aota"]);
     getStringFromJson(otaPass, pwd, 33); //normally not present due to security
+  }
+
+  DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
+
+  success = readObjectFromFile("/wsec.json", nullptr, &doc);
+  if (!success) { //if file does not exist, try reading from EEPROM
+    loadSettingsFromEEPROM();
   }
 }
 
@@ -510,6 +525,7 @@ void serializeSettings() {
   if_ntp["host"] = ntpServerName;
   if_ntp["tz"] = currentTimezone;
   if_ntp["offset"] = utcOffsetSecs;
+  if_ntp["ampm"] = useAMPM;
 
   JsonObject ol = doc.createNestedObject("ol");
   ol["clock"] = overlayDefault;
@@ -542,4 +558,27 @@ void serializeSettings() {
   ota["aota"] = aOtaEnabled;
 
   serializeJson(doc, Serial);
+}
+
+//settings in /wsec.json, not accessible via webserver, for passwords and tokens
+void deserializeSettingsSec() {
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+
+  JsonObject nw_ins_0 = doc["nw"]["ins"][0];
+  getStringFromJson(clientPass, nw_ins_0["psk"], 65);
+
+  JsonObject ap = doc["ap"];
+  getStringFromJson(apPass, ap["psk"] , 65);
+
+  //mqtt pass
+
+  //blynk token
+
+  //hue token
+
+  //ota pass
+}
+
+void serializeSettingsSec() {
+
 }
