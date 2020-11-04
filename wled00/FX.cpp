@@ -3782,9 +3782,9 @@ uint16_t WS2812FX::mode_pixels(void) {              // Pixels. By Andrew Tuline.
 
 uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pixelwave. By Andrew Tuline.
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
-
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
+  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
     int pixBri = sample * SEGMENT.intensity / 128;
     setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
     for (int i=SEGLEN-1; i>SEGLEN/2; i--) {                               // Move to the right.
@@ -3806,21 +3806,23 @@ uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pix
 
 uint16_t WS2812FX::mode_juggles(void) {                                   // Juggles. By Andrew Tuline.
 
-  static int thistime = 20;
-
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to
-
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!! By Andrew Tuline.
-
-    fade_out(224);
-
-    for (int i=0; i<SEGMENT.intensity/32; i++) {
-      setPixelColor(beatsin16(thistime+i*2,0,SEGLEN-1), color_blend(SEGCOLOR(1), color_from_palette(millis()/4+i*2, false, PALETTE_SOLID_WRAP, 0), sampleAgc));
-    }
+  fade_out(224);
+  for (int i=0; i<SEGMENT.intensity/32+1; i++) {
+          setPixelColor(beatsin16(SEGMENT.speed/4+i*2,0,SEGLEN-1), color_blend(SEGCOLOR(1), color_from_palette(millis()/4+i*2, false, PALETTE_SOLID_WRAP, 0), sampleAgc));
   }
 
   return FRAMETIME;
 } // mode_juggles()
+
+
+
+/*
+  uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
+  uint32_t perc = now % cycleTime;
+  uint16_t prog = (perc * 65535) / cycleTime;
+  bool back = (prog > 32767);
+  if (back) {
+ */
 
 
 //////////////////////
@@ -3829,13 +3831,12 @@ uint16_t WS2812FX::mode_juggles(void) {                                   // Jug
 
 uint16_t WS2812FX::mode_matripix(void) {                                  // Matripix. By Andrew Tuline.
 
-  EVERY_N_MILLISECONDS_I(pixTimer, SEGMENT.speed) {                       // Using FastLED's timer. You want to change speed? You need to . .
-
-    pixTimer.setPeriod((256 - SEGMENT.speed) >> 2);                       // change it down here!!!
+  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
     int pixBri = sample * SEGMENT.intensity / 64;
     setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
-    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
-
+    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));  
   }
 
   return FRAMETIME;
@@ -4227,11 +4228,9 @@ double mapf(double x, double in_min, double in_max, double out_min, double out_m
 // Experimenting with volume only as a fallback if no FFT.
 uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: Andrew Tuline
 
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
-
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
+  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
 
 #ifdef ESP32
     uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
@@ -4347,11 +4346,10 @@ uint16_t WS2812FX::fft_test() {
 uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Pleschung.
 
 #ifdef ESP32
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
 
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
+  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
 
     uint32_t *leds = ledData;
 
@@ -4455,11 +4453,10 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 
   #ifdef ESP32
-  static unsigned long prevMillis;
-  unsigned long curMillis = millis();
 
-  if ((curMillis - prevMillis) >= ((256-SEGMENT.speed) >>2)) {
-    prevMillis = curMillis;
+  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
 
     uint32_t* leds = ledData;
 
