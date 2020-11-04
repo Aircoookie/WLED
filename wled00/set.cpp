@@ -1,6 +1,5 @@
 #include "wled.h"
 
-
 /*
  * Receives client input
  */

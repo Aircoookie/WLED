@@ -452,6 +452,7 @@ class WS2812FX {
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setShowCallback(show_callback cb),
       setTransitionMode(bool t),
+      calcGammaTable(float),
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0),
       resetSegments(),
@@ -485,6 +486,7 @@ class WS2812FX {
       //getFirstSelectedSegment(void),
       getMainSegmentId(void),
       gamma8(uint8_t),
+      gamma8_cal(uint8_t, float),
       get_random_wheel_index(uint8_t);
 
     int8_t

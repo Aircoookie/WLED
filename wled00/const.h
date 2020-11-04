@@ -72,20 +72,45 @@
 #define DMX_MODE_MULTIPLE_RGB     4            //every LED is addressed with its own RGB (ledCount * 3 channels)
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 
-//Light capability byte (unused)
+//Light capability byte (unused) 0bRRCCTTTT
+//bits 0/1/2/3: specifies a type of LED driver. A single "driver" may have different chip models but must have the same protocol/behavior
+//bits 4/5: specifies the class of LED driver - 0b00 (dec. 0-15)  unconfigured/reserved
+//                                            - 0b01 (dec. 16-31) digital (data pin only)
+//                                            - 0b10 (dec. 32-47) analog (PWM)
+//                                            - 0b11 (dec. 48-63) digital (data + clock / SPI)
+//bits 6/7 are reserved and set to 0b00
+
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
-#define TYPE_WS2812_RGB           2
-#define TYPE_SK6812_RGBW          3
-#define TYPE_WS2812_WWA           4            //amber + warm + cold white
-#define TYPE_WS2801               5
-#define TYPE_ANALOG_1CH           6            //single channel PWM. Uses value of brightest RGBW channel
-#define TYPE_ANALOG_2CH           7            //analog WW + CW
-#define TYPE_ANALOG_3CH           8            //analog RGB
-#define TYPE_ANALOG_4CH           9            //analog RGBW
-#define TYPE_ANALOG_5CH          10            //analog RGB + WW + CW
-#define TYPE_APA102              11
-#define TYPE_LPD8806             12
+//Digital types (data pin only) (16-31)
+#define TYPE_WS2812_1CH          20            //white-only chips
+#define TYPE_WS2812_WWA          21            //amber + warm + cold white
+#define TYPE_WS2812_RGB          22
+#define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
+#define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
+#define TYPE_SK6812_RGBW         30
+//Analog types (PWM) (32-47)
+#define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
+#define TYPE_ANALOG_2CH          42            //analog WW + CW
+#define TYPE_ANALOG_3CH          43            //analog RGB
+#define TYPE_ANALOG_4CH          44            //analog RGBW
+#define TYPE_ANALOG_5CH          45            //analog RGB + WW + CW
+//Digital types (data + clock / SPI) (48-63)
+#define TYPE_WS2801              50
+#define TYPE_APA102              51
+#define TYPE_LPD8806             52
+#define TYPE_P9813               53
+#define TYPE_TM1814              54
+
+
+//Button type
+#define BTN_TYPE_NONE             0
+#define BTN_TYPE_RESERVED         1
+#define BTN_TYPE_PUSH             2
+#define BTN_TYPE_PUSH_ACT_HIGH    3 //not implemented
+#define BTN_TYPE_SWITCH           4 //not implemented
+#define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
+
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
