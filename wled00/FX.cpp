@@ -3755,6 +3755,8 @@ uint16_t WS2812FX::mode_perlinmove(void) {
   return FRAMETIME;
 } // mode_perlinmove()
 
+
+
 ////////////////////////////////
 //   Begin volume routines    //
 ////////////////////////////////
@@ -3813,16 +3815,6 @@ uint16_t WS2812FX::mode_juggles(void) {                                   // Jug
 
   return FRAMETIME;
 } // mode_juggles()
-
-
-
-/*
-  uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
-  uint32_t perc = now % cycleTime;
-  uint16_t prog = (perc * 65535) / cycleTime;
-  bool back = (prog > 32767);
-  if (back) {
- */
 
 
 //////////////////////
