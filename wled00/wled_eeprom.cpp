@@ -790,7 +790,7 @@ void deEEP() {
   JsonObject sObj = dDoc.to<JsonObject>();
   sObj.createNestedObject("0");
 
-  //EEPROM.begin(EEPSIZE);
+  EEPROM.begin(EEPSIZE);
   if (EEPROM.read(233) == 233) { //valid EEPROM save
     for (uint16_t index = 1; index <= 16; index++) { //copy presets to presets.json
       uint16_t i = 380 + index*20;
@@ -861,7 +861,7 @@ void deEEP() {
     }
   }
 
-  //EEPROM.end();
+  EEPROM.end();
 
   File f = WLED_FS.open("/presets.json", "w");
   if (!f) {
@@ -871,4 +871,13 @@ void deEEP() {
   serializeJson(dDoc, f);
   f.close();
   DEBUG_PRINTLN(F("deEEP complete!"));
+}
+
+void deEEPSettings() {
+  DEBUG_PRINTLN(F("Restore settings from EEPROM"));
+  EEPROM.begin(EEPSIZE);
+  loadSettingsFromEEPROM();
+  EEPROM.end();
+
+  serializeConfig();
 }

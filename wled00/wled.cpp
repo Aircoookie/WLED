@@ -172,33 +172,33 @@ void WLED::setup()
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
 
-  strip.init(EEPROM.read(372), ledCount, EEPROM.read(2204));        // init LEDs quickly
-  strip.setBrightness(0);
+  //strip.init(EEPROM.read(372), ledCount, EEPROM.read(2204));        // init LEDs quickly
+  //strip.setBrightness(0);
 
-  DEBUG_PRINT(F("LEDs inited. heap usage ~"));
-  DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
+  //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
+  //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
-#ifndef WLED_DISABLE_FILESYSTEM
-    bool fsinit = false;
-    DEBUGFS_PRINTLN(F("Mount FS"));
-  #ifdef ARDUINO_ARCH_ESP32
-    fsinit = WLED_FS.begin(true);
-  #else
-    fsinit = WLED_FS.begin();
-  #endif
-    if (!fsinit) {
-      DEBUGFS_PRINTLN(F("FS failed!"));
-      errorFlag = ERR_FS_BEGIN;
-    } else deEEP();
-    updateFSInfo();
+
+  bool fsinit = false;
+  DEBUGFS_PRINTLN(F("Mount FS"));
+#ifdef ARDUINO_ARCH_ESP32
+  fsinit = WLED_FS.begin(true);
+#else
+  fsinit = WLED_FS.begin();
 #endif
+  if (!fsinit) {
+    DEBUGFS_PRINTLN(F("FS failed!"));
+    errorFlag = ERR_FS_BEGIN;
+  } else deEEP();
+  updateFSInfo();
+  deserializeConfig();
 
 #if STATUSLED && STATUSLED != LEDPIN
   pinMode(STATUSLED, OUTPUT);
 #endif
 
-  DEBUG_PRINTLN(F("Load EEPROM"));
-  loadSettingsFromEEPROM();
+  //DEBUG_PRINTLN(F("Load EEPROM"));
+  //loadSettingsFromEEPROM();
   beginStrip();
   userSetup();
   usermods.setup();
@@ -252,6 +252,8 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
+  strip.init(useRGBW, ledCount, skipFirstLed);
+  strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
 #ifdef BTNPIN

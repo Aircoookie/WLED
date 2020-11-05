@@ -25,6 +25,12 @@ bool isButtonPressed();
 void handleButton();
 void handleIO();
 
+//cfg.cpp
+void deserializeConfig();
+bool deserializeConfigSec();
+void serializeConfig();
+void serializeConfigSec();
+
 //colors.cpp
 void colorFromUint32(uint32_t in, bool secondary = false);
 void colorFromUint24(uint32_t in, bool secondary = false);
@@ -209,6 +215,7 @@ void loadMacro(byte index, char* m);
 void applyMacro(byte index);
 void saveMacro(byte index, const String& mc, bool persist = true); //only commit on single save, not in settings
 void deEEP();
+void deEEPSettings();
 
 //wled_serial.cpp
 void handleSerial();

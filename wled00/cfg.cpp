@@ -12,14 +12,22 @@ void getStringFromJson(char* dest, const char* src, size_t len) {
   if (src != nullptr) strlcpy(dest, src, len);
 }
 
-void deserializeSettings() {
+void deserializeConfig() {
+  bool fromeep = false;
+  bool success = deserializeConfigSec();
+  if (!success) { //if file does not exist, try reading from EEPROM
+    loadSettingsFromEEPROM();
+    fromeep = true;
+  }
+
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 
   DEBUG_PRINTLN(F("Reading settings from /cfg.json..."));
 
-  bool success = readObjectFromFile("/cfg.json", nullptr, &doc);
+  success = readObjectFromFile("/cfg.json", nullptr, &doc);
   if (!success) { //if file does not exist, try reading from EEPROM
-    loadSettingsFromEEPROM();
+    if (!fromeep) deEEP();
+    return;
   }
 
   //deserializeJson(doc, json);
@@ -298,7 +306,7 @@ void deserializeSettings() {
   }
 }
 
-void serializeSettings() {
+void serializeConfig() {
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 
   JsonArray rev = doc.createNestedArray("rev");
@@ -561,7 +569,7 @@ void serializeSettings() {
 }
 
 //settings in /wsec.json, not accessible via webserver, for passwords and tokens
-void deserializeSettingsSec() {
+bool deserializeConfigSec() {
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 
   JsonObject nw_ins_0 = doc["nw"]["ins"][0];
@@ -570,15 +578,25 @@ void deserializeSettingsSec() {
   JsonObject ap = doc["ap"];
   getStringFromJson(apPass, ap["psk"] , 65);
 
-  //mqtt pass
+  JsonObject interfaces = doc["if"];
 
-  //blynk token
+  const char* apikey = interfaces["blynk"]["token"] | "Hidden";
+  int tdd = strnlen(apikey, 36);
+  if (tdd > 20 || tdd == 0)
+    getStringFromJson(blynkApiKey, apikey, 36);
 
-  //hue token
+  JsonObject if_mqtt = interfaces["mqtt"];
+  getStringFromJson(mqttPass, if_mqtt["psk"], 41);
 
-  //ota pass
+  getStringFromJson(hueApiKey, interfaces["hue"]["key"], 47);
+
+  JsonObject ota = doc["ota"];
+  getStringFromJson(otaPass, ota["pwd"], 33);
+  CJSON(otaLock, ota["lock"]);
+  CJSON(wifiLock, ota["lock-wifi"]);
+  CJSON(aOtaEnabled, ota["aota"]);
 }
 
-void serializeSettingsSec() {
+void serializeConfigSec() {
 
 }
