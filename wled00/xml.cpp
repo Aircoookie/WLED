@@ -388,16 +388,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("CH"),countdownHour);
     sappend('v',SET_F("CM"),countdownMin);
     sappend('v',SET_F("CS"),countdownSec);
-    char k[4]; k[0]= 'M';
-    for (int i=1;i<17;i++)
-    {
-      char m[65];
-      loadMacro(i, m);
-      sprintf(k+1,"%i",i);
-      sappends('s',k,m);
-    }
 
-    sappend('v',SET_F("MB"),macroBoot);
     sappend('v',SET_F("A0"),macroAlexaOn);
     sappend('v',SET_F("A1"),macroAlexaOff);
     sappend('v',SET_F("MP"),macroButton);
@@ -406,6 +397,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("MN"),macroNl);
     sappend('v',SET_F("MD"),macroDoublePress);
 
+    char k[4];
     k[2] = 0; //Time macros
     for (int i = 0; i<8; i++)
     {

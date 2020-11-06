@@ -16,7 +16,7 @@ void deserializeConfig() {
   bool fromeep = false;
   bool success = deserializeConfigSec();
   if (!success) { //if file does not exist, try reading from EEPROM
-    loadSettingsFromEEPROM();
+    deEEPSettings();
     fromeep = true;
   }
 
@@ -26,7 +26,7 @@ void deserializeConfig() {
 
   success = readObjectFromFile("/cfg.json", nullptr, &doc);
   if (!success) { //if file does not exist, try reading from EEPROM
-    if (!fromeep) deEEP();
+    if (!fromeep) deEEPSettings();
     return;
   }
 
@@ -298,17 +298,15 @@ void deserializeConfig() {
     getStringFromJson(otaPass, pwd, 33); //normally not present due to security
   }
 
-  DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
-
-  success = readObjectFromFile("/wsec.json", nullptr, &doc);
-  if (!success) { //if file does not exist, try reading from EEPROM
-    loadSettingsFromEEPROM();
-  }
+  //DMX missing!
 }
 
 void serializeConfig() {
+  DEBUG_PRINTLN(F("Writing settings to /cfg.json..."));
+
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 
+  //{ //scope this to reduce stack size
   JsonArray rev = doc.createNestedArray("rev");
   rev.add(1); //major settings revision
   rev.add(0); //minor settings revision
@@ -564,13 +562,21 @@ void serializeConfig() {
   ota["lock-wifi"] = wifiLock;
   ota["pskl"] = strlen(otaPass);
   ota["aota"] = aOtaEnabled;
+  //}
 
-  serializeJson(doc, Serial);
+  File f = WLED_FS.open("/cfg.json", "w");
+  if (f) serializeJson(doc, f);
+  f.close();
 }
 
 //settings in /wsec.json, not accessible via webserver, for passwords and tokens
 bool deserializeConfigSec() {
+  DEBUG_PRINTLN(F("Reading settings from /wsec.json..."));
+
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+
+  bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
+  if (!success) return false;
 
   JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
@@ -595,8 +601,40 @@ bool deserializeConfigSec() {
   CJSON(otaLock, ota["lock"]);
   CJSON(wifiLock, ota["lock-wifi"]);
   CJSON(aOtaEnabled, ota["aota"]);
+
+  return true;
 }
 
 void serializeConfigSec() {
+  DEBUG_PRINTLN(F("Writing settings to /wsec.json..."));
 
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+
+  JsonObject nw = doc.createNestedObject("nw");
+
+  JsonArray nw_ins = nw.createNestedArray("ins");
+
+  JsonObject nw_ins_0 = nw_ins.createNestedObject();
+  nw_ins_0["psk"] = clientPass;
+
+  JsonObject ap = doc.createNestedObject("ap");
+  ap["psk"] = apPass;
+
+  JsonObject interfaces = doc.createNestedObject("if");
+  JsonObject if_blynk = interfaces.createNestedObject("blynk");
+  if_blynk["token"] = blynkApiKey;
+  JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
+  if_mqtt["psk"] = mqttPass;
+  JsonObject if_hue = interfaces.createNestedObject("hue");
+  if_hue["key"] = hueApiKey;
+
+  JsonObject ota = doc.createNestedObject("ota");
+  ota["pwd"] = otaPass;
+  ota["lock"] = otaLock;
+  ota["lock-wifi"] = wifiLock;
+  ota["aota"] = aOtaEnabled;
+
+  File f = WLED_FS.open("/wsec.json", "w");
+  if (f) serializeJson(doc, f);
+  f.close();
 }

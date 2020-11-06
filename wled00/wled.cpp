@@ -141,17 +141,6 @@ void WLED::loop()
 
 void WLED::setup()
 {
-  EEPROM.begin(EEPSIZE);
-  ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00);
-  if (ledCount > MAX_LEDS || ledCount == 0)
-    ledCount = 30;
-
-#ifdef ESP8266
-  #if LEDPIN == 3
-    if (ledCount > MAX_LEDS_DMA)
-      ledCount = MAX_LEDS_DMA;        // DMA method uses too much ram
-  #endif
-#endif
   Serial.begin(115200);
   Serial.setTimeout(50);
   DEBUG_PRINTLN();
@@ -206,8 +195,6 @@ void WLED::setup()
     showWelcomePage = true;
   WiFi.persistent(false);
 
-  if (macroBoot > 0)
-    applyMacro(macroBoot);
   Serial.println(F("Ada"));
 
   // generate module IDs
@@ -252,6 +239,16 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
+  #ifdef ESP8266
+  #if LEDPIN == 3
+    if (ledCount > MAX_LEDS_DMA)
+      ledCount = MAX_LEDS_DMA;        // DMA method uses too much ram
+  #endif
+  #endif
+
+  if (ledCount > MAX_LEDS || ledCount == 0)
+    ledCount = 30;
+
   strip.init(useRGBW, ledCount, skipFirstLed);
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);

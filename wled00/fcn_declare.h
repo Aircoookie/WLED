@@ -147,6 +147,11 @@ void setCronixie();
 void _overlayCronixie();    
 void _drawOverlayCronixie();
 
+//presets.cpp
+bool applyPreset(byte index);
+void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
+void deletePreset(byte index);
+
 //set.cpp
 void _setRandomColor(bool _sec,bool fromButton=false);
 bool isAsterisksOnly(const char* str, byte maxLen);
@@ -201,19 +206,7 @@ void userConnected();
 void userLoop();
 
 //wled_eeprom.cpp
-void commit();
-void clearEEPROM();
-void writeStringToEEPROM(uint16_t pos, char* str, uint16_t len);
-void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len);
-void saveSettingsToEEPROM();
-void loadSettingsFromEEPROM();
-void savedToPresets();
-bool applyPreset(byte index);
-void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
-void deletePreset(byte index);
-void loadMacro(byte index, char* m);
 void applyMacro(byte index);
-void saveMacro(byte index, const String& mc, bool persist = true); //only commit on single save, not in settings
 void deEEP();
 void deEEPSettings();
 

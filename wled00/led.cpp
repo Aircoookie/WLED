@@ -282,7 +282,7 @@ void handleNightlight()
       }
       updateBlynk();
       if (macroNl > 0)
-        applyMacro(macroNl);
+        applyPreset(macroNl);
       nightlightActiveOld = false;
     }
   } else if (nightlightActiveOld) //early de-init

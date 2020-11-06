@@ -233,13 +233,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     countdownMin = request->arg(F("CM")).toInt();
     countdownSec = request->arg(F("CS")).toInt();
 
-    for (int i=1;i<17;i++)
-    {
-      String a = "M"+String(i);
-      if (request->hasArg(a.c_str())) saveMacro(i,request->arg(a),false);
-    }
-
-    macroBoot = request->arg(F("MB")).toInt();
     macroAlexaOn = request->arg(F("A0")).toInt();
     macroAlexaOff = request->arg(F("A1")).toInt();
     macroButton = request->arg(F("MP")).toInt();
@@ -272,7 +265,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     if (request->hasArg(F("RS"))) //complete factory reset
     {
-      clearEEPROM();
+      WLED_FS.format();
       serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
       doReboot = true;
     }
@@ -327,7 +320,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
   
   #endif
-  if (subPage != 6 || !doReboot) saveSettingsToEEPROM(); //do not save if factory reset
+  if (subPage != 6 || !doReboot) serializeConfig(); //do not save if factory reset
   if (subPage == 2) {
     strip.init(useRGBW,ledCount,skipFirstLed);
   }
@@ -381,31 +374,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   int pos = 0;
   DEBUG_PRINT(F("API req: "));
   DEBUG_PRINTLN(req);
-
-  //write presets and macros saved to flash directly?
-  bool persistSaves = true;
-  pos = req.indexOf(F("NP"));
-  if (pos > 0) {
-    persistSaves = false;
-  }
-
-  //save macro, requires &MS=<slot>(<macro>) format
-  pos = req.indexOf(F("&MS="));
-  if (pos > 0) {
-    int i = req.substring(pos + 4).toInt();
-    pos = req.indexOf('(') +1;
-    if (pos > 0) {
-      int en = req.indexOf(')');
-      String mc = req.substring(pos);
-      if (en > 0) mc = req.substring(pos, en);
-      saveMacro(i, mc, persistSaves);
-    }
-
-    pos = req.indexOf(F("IN"));
-    if (pos < 1) XML_response(request);
-    return true;
-    //if you save a macro in one request, other commands in that request are ignored due to unwanted behavior otherwise
-  }
 
   strip.applyToAllSelected = true;
 
@@ -591,10 +559,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     overlayCurrent = getNumVal(&req, pos);
   }
 
-  //apply macro
+  //apply macro (deprecated, added for compatibility with pre-0.11 automations)
   pos = req.indexOf(F("&M="));
   if (pos > 0) {
-    applyMacro(getNumVal(&req, pos));
+    applyPreset(getNumVal(&req, pos) + 16);
   }
 
   //toggle send UDP direct notifications
