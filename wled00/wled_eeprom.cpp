@@ -178,7 +178,7 @@ void loadSettingsFromEEPROM()
     readStringFromEEPROM(2165, cronixieDisplay, 6);
     cronixieBacklight = EEPROM.read(2171);
 
-    macroBoot = EEPROM.read(2175);
+    //macroBoot = EEPROM.read(2175);
     macroAlexaOn = EEPROM.read(2176);
     macroAlexaOff = EEPROM.read(2177);
     macroButton = EEPROM.read(2178);
@@ -208,8 +208,9 @@ void loadSettingsFromEEPROM()
       timerHours[i]   = EEPROM.read(2260 + i);
       timerMinutes[i] = EEPROM.read(2270 + i);
       timerWeekday[i] = EEPROM.read(2280 + i);
-      timerMacro[i]   = EEPROM.read(2290 + i);
+      timerMacro[i]   = EEPROM.read(2290 + i) + 16; //add 16 to work with macro --> preset mapping
       if (timerWeekday[i] == 0) timerWeekday[i] = 255;
+      if (timerMacro[i] == 0) timerWeekday[i] = timerWeekday[i] & 0b11111110; 
     }
   }
 
@@ -432,7 +433,7 @@ void deEEP() {
         char nbuf[16];
         sprintf(nbuf, "%d", index + 16);
         JsonObject pObj = sObj.createNestedObject(nbuf);
-        sprintf_P(nbuf, "ZMacro %d", index);
+        sprintf_P(nbuf, "Z Macro %d", index);
         pObj["n"] = nbuf;
         pObj["win"] = m;
       }

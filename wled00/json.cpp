@@ -176,7 +176,7 @@ bool deserializeState(JsonObject root)
   tr = ccnf[F("time")] | -1;
   if (tr >= 2) presetCycleTime = tr;
 
-  JsonObject nl = root[F("nl")];
+  JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
   nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated

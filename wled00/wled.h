@@ -298,7 +298,6 @@ WLED_GLOBAL byte countdownYear _INIT(20), countdownMonth _INIT(1);   // Countdow
 WLED_GLOBAL byte countdownDay  _INIT(1) , countdownHour  _INIT(0);
 WLED_GLOBAL byte countdownMin  _INIT(0) , countdownSec   _INIT(0);
 
-WLED_GLOBAL byte macroBoot _INIT(0);        // macro loaded after startup
 WLED_GLOBAL byte macroNl   _INIT(0);        // after nightlight delay over
 WLED_GLOBAL byte macroCountdown _INIT(0);
 WLED_GLOBAL byte macroAlexaOn _INIT(0), macroAlexaOff _INIT(0);
