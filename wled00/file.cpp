@@ -229,7 +229,8 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
   if (pos == 0) //not found
   {
     DEBUGFS_PRINTLN("not }");
-    while (bufferedFind("}", false)) //find last closing bracket in JSON if not last char
+    f.seek(0);
+    while (bufferedFind("}",false)) //find last closing bracket in JSON if not last char
     {
       pos = f.position();
     }
@@ -237,11 +238,11 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
   DEBUGFS_PRINT("pos "); DEBUGFS_PRINTLN(pos);
   if (pos > 2)
   {
-    f.seek(pos, SeekSet);
+    f.seek(pos -1, SeekSet);
     f.write(',');
   } else { //file content is not valid JSON object
     f.seek(0, SeekSet);
-    f.write('{'); //start JSON
+    f.print('{'); //start JSON
   }
 
   f.print(key);
@@ -266,7 +267,7 @@ bool writeObjectToFile(const char* file, const char* key, JsonDocument* content)
 {
   uint32_t s = 0; //timing
   #ifdef WLED_DEBUG_FS
-    DEBUGFS_PRINTF("Write to %s with key %s >>>\n", file, key);
+    DEBUGFS_PRINTF("Write to %s with key %s >>>\n", file, (key==nullptr)?"nullptr":key);
     serializeJson(*content, Serial); DEBUGFS_PRINTLN();
     s = millis();
   #endif
@@ -337,7 +338,7 @@ bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
 {
   if (doCloseFile) closeFile();
   #ifdef WLED_DEBUG_FS
-    DEBUGFS_PRINTF("Read from %s with key %s >>>\n", file, key);
+    DEBUGFS_PRINTF("Read from %s with key %s >>>\n", file, (key==nullptr)?"nullptr":key);
     uint32_t s = millis();
   #endif
   f = WLED_FS.open(file, "r");

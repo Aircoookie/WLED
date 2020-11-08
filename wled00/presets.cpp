@@ -8,18 +8,22 @@ bool applyPreset(byte index)
 {
   if (fileDoc) {
     errorFlag = readObjectFromFileUsingId("/presets.json", index, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    JsonObject fdo = fileDoc->as<JsonObject>();
+    if (fdo["ps"] == index) fdo.remove("ps"); //remove load request for same presets to prevent recursive crash
     #ifdef WLED_DEBUG_FS
       serializeJson(*fileDoc, Serial);
     #endif
-    deserializeState(fileDoc->as<JsonObject>());
+    deserializeState(fdo);
   } else {
     DEBUGFS_PRINTLN(F("Make read buf"));
     DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
     errorFlag = readObjectFromFileUsingId("/presets.json", index, &fDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    JsonObject fdo = fileDoc->as<JsonObject>();
+    if (fdo["ps"] == index) fdo.remove("ps");
     #ifdef WLED_DEBUG_FS
       serializeJson(fDoc, Serial);
     #endif
-    deserializeState(fDoc.as<JsonObject>());
+    deserializeState(fdo);
   }
 
   if (!errorFlag) {

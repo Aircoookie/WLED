@@ -243,7 +243,7 @@ bool deserializeState(JsonObject root)
     if (ps > 0) {
       deletePreset(ps);
     }
-    ps = root[F("ps")] | -1; //load preset (clears state request!)
+    ps = root["ps"] | -1; //load preset (clears state request!)
     if (ps >= 0) {applyPreset(ps); return stateResponse;}
 
     //HTTP API commands

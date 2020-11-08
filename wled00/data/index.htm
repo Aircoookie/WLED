@@ -1719,12 +1719,6 @@ function updateUI()
 	updateTrail(d.getElementById('sliderIntensity'));
 	updateTrail(d.getElementById('sliderW'));
 	if (isRgbw) d.getElementById('wwrap').style.display = "block";
-	
-	var btns = d.getElementsByClassName("psts");
-	for (i = 0; i < btns.length; i++) {
-		btns[i].className = btns[i].className.replace(" active", "");
-	}
-	if (currentPreset > 0 && currentPreset <= btns.length) btns[currentPreset -1].className += " active";
 
 	spal = d.getElementById("selectPalette");
 	spal.style.backgroundColor = (spal.selectedIndex > 0) ? "var(--c-6)":"var(--c-3)";
@@ -1876,7 +1870,16 @@ function requestJson(command, rinfo = true, verbose = true) {
 		e2.value = i.pal;
 		if (!command) d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
 
-		if (s.error) showToast('WLED error ' + s.error, true);
+		if (s.error && s.error != 0) {
+      var errstr = "";
+      switch (s.error) {
+        case 10: errstr = "Could not mount filesystem!"; break;
+        case 11: errstr = "Not enough space to save preset!"; break;
+        case 12: errstr = "The requested preset does not exist."; break;
+        case 19: errstr = "A filesystem error has occured."; break;
+      }
+      showToast('Error ' + s.error + ": " + errstr, true);
+    }
 		updateUI();
 	})
 	.catch(function (error) {
