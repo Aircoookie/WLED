@@ -11,7 +11,7 @@ void deserializeSegment(JsonObject elem, byte it)
   {
     WS2812FX::Segment& seg = strip.getSegment(id);
     uint16_t start = elem[F("start")] | seg.start;
-    int stop = elem[F("stop")] | -1;
+    int stop = elem["stop"] | -1;
 
     if (stop < 0) {
       uint16_t len = elem[F("len")];
@@ -170,7 +170,7 @@ bool deserializeState(JsonObject root)
   
   int cy = root[F("pl")] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);
-  JsonObject ccnf = root[F("ccnf")];
+  JsonObject ccnf = root["ccnf"];
   presetCycleMin = ccnf[F("min")] | presetCycleMin;
   presetCycleMax = ccnf[F("max")] | presetCycleMax;
   tr = ccnf[F("time")] | -1;
@@ -183,7 +183,7 @@ bool deserializeState(JsonObject root)
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
-  JsonObject udpn = root[F("udpn")];
+  JsonObject udpn = root["udpn"];
   notifyDirect         = udpn[F("send")] | notifyDirect;
   receiveNotifications = udpn[F("recv")] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
@@ -200,7 +200,7 @@ bool deserializeState(JsonObject root)
   if (strip.getMainSegmentId() != prevMain) setValuesFromMainSeg();
 
   int it = 0;
-  JsonVariant segVar = root[F("seg")];
+  JsonVariant segVar = root["seg"];
   if (segVar.is<JsonObject>())
   {
     int id = segVar[F("id")] | -1;
@@ -235,8 +235,6 @@ bool deserializeState(JsonObject root)
 
   usermods.readFromJsonState(root);
 
-  colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
-
   int ps = root[F("psave")] | -1;
   if (ps > 0) {
     savePreset(ps, true, nullptr, root);
@@ -246,7 +244,7 @@ bool deserializeState(JsonObject root)
       deletePreset(ps);
     }
     ps = root[F("ps")] | -1; //load preset (clears state request!)
-    if (ps >= 0) applyPreset(ps);
+    if (ps >= 0) {applyPreset(ps); return stateResponse;}
 
     //HTTP API commands
     const char* httpwin = root["win"];
@@ -257,6 +255,8 @@ bool deserializeState(JsonObject root)
     }
   }
 
+  colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
+
   return stateResponse;
 }
 
@@ -265,7 +265,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 	root[F("id")] = id;
   if (segmentBounds) {
     root[F("start")] = seg.start;
-    root[F("stop")] = seg.stop;
+    root["stop"] = seg.stop;
   }
 	if (!forPreset)  root[F("len")] = seg.stop - seg.start;
   root[F("grp")] = seg.grouping;
@@ -351,6 +351,9 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     {
       JsonObject seg0 = seg.createNestedObject();
       serializeSegment(seg0, sg, s, forPreset, segmentBounds);
+    } else if (forPreset && segmentBounds) { //disable segments not part of preset
+      JsonObject seg0 = seg.createNestedObject();
+      seg0["stop"] = 0;
     }
   }
 }

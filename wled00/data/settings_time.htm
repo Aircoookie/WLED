@@ -46,7 +46,7 @@
       var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Preset</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";
       for (i=0;i<8;i++)
       {
-        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"16\"></td>";
+        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"250\"></td>";
         for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";
       }
       gId("TMT").innerHTML=ih;
@@ -139,11 +139,11 @@
     <i>Presets now also can be used as macros to save both JSON and HTTP API commands.<br>
     Just enter the preset id below!</i>
 		<i>Use 0 for the default action instead of a preset</i><br>
-		Alexa On/Off Preset: <input name="A0" type="number" min="0" max="16" required> <input name="A1" type="number" min="0" max="16" required><br>
-		Button short press Preset: Macro: <input name="MP" type="number" min="0" max="16" required><br>
-    Long Press: <input name="ML" type="number" min="0" max="16" required> Double press: <input name="MD" type="number" min="0" max="16" required><br>	
-		Countdown-Over Preset: <input name="MC" type="number" min="0" max="16" required><br>
-		Timed-Light-Over Presets: <input name="MN" type="number" min="0" max="16" required><br>
+		Alexa On/Off Preset: <input name="A0" type="number" min="0" max="250" required> <input name="A1" type="number" min="0" max="250" required><br>
+		Button short press Preset: Macro: <input name="MP" type="number" min="0" max="250" required><br>
+    Long Press: <input name="ML" type="number" min="0" max="250" required> Double press: <input name="MD" type="number" min="0" max="250" required><br>	
+		Countdown-Over Preset: <input name="MC" type="number" min="0" max="250" required><br>
+		Timed-Light-Over Presets: <input name="MN" type="number" min="0" max="250" required><br>
 		<h3>Time-controlled presets</h3>
     <div style="display: inline-block">
     <table id="TMT">

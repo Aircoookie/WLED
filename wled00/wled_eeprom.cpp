@@ -341,7 +341,7 @@ void loadSettingsFromEEPROM()
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
   } //last used: 2549
-  EEPROM.write(2550, DMXStartLED);
+  EEPROM.read(2550, DMXStartLED);
   #endif
 
   //Usermod memory

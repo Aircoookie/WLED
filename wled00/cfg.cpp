@@ -298,7 +298,7 @@ void deserializeConfig() {
     getStringFromJson(otaPass, pwd, 33); //normally not present due to security
   }
 
-  //DMX missing!
+  
 }
 
 void serializeConfig() {
@@ -564,6 +564,18 @@ void serializeConfig() {
   ota[F("lock-wifi")] = wifiLock;
   ota[F("pskl")] = strlen(otaPass);
   ota[F("aota")] = aOtaEnabled;
+
+  #ifdef WLED_ENABLE_DMX
+  JsonObject dmx = doc.createNestedObject("dmx");
+  dmx[F("chan")] = DMXChannels;
+  dmx[F("gap")] = DMXGap;
+  dmx[F("start")] = DMXStart;
+  dmx[F("start-led")] = DMXStartLED;
+
+  JsonArray dmx_fixmap = dmx.createNestedArray("fixmap");
+  for (byte i = 0; i < 15; i++)
+    dmx_fixmap.add(DMXFixtureMap[i]);
+  #endif
   //}
 
   File f = WLED_FS.open("/cfg.json", "w");

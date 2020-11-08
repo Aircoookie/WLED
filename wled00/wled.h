@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.10.2
+   @version 0.11.0p
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2010300
+#define VERSION 2011080
 
 // ESP8266-01 (blue) got too little storage space to work with WLED. 0.10.2 is the last release supporting this unit.
 
@@ -61,7 +61,9 @@
   #include "esp_wifi.h"
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
-  #include "SPIFFS.h"
+  //#include "SPIFFS.h"
+  #define CONFIG_LITTLEFS_FOR_IDF_3_2
+  #include <LITTLEFS.h>
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -131,11 +133,11 @@
   #include <IRutils.h>
 #endif
 
-//Filesystem to use for preset and config files. SPIFFS or LittleFS on ESP8266, SPIFFS only on ESP32
+//Filesystem to use for preset and config files. SPIFFS or LittleFS on ESP8266, SPIFFS only on ESP32 (now using LITTLEFS port by lorol)
 #ifdef ESP8266
   #define WLED_FS LittleFS
 #else
-  #define WLED_FS SPIFFS
+  #define WLED_FS LITTLEFS
 #endif
 
 // remove flicker because PWM signal of RGB channels can become out of phase (part of core as of Arduino core v2.7.0)

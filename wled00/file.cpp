@@ -6,8 +6,10 @@
 
 #ifndef WLED_DISABLE_FILESYSTEM
 
-#ifdef ARDUINO_ARCH_ESP32
-#include "esp_spiffs.h" //FS info bare IDF function until FS wrapper is available for ESP32
+#ifdef ARDUINO_ARCH_ESP32 //FS info bare IDF function until FS wrapper is available for ESP32
+#if WLED_FS != LITTLEFS
+  #include "esp_spiffs.h"
+#endif
 #endif
 
 #define FS_BUFSIZE 256
@@ -358,7 +360,12 @@ bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest)
 
 void updateFSInfo() {
   #ifdef ARDUINO_ARCH_ESP32
+    #if WLED_FS == LITTLEFS
+    fsBytesTotal = LITTLEFS.totalBytes();
+    fsBytesUsed = LITTLEFS.usedBytes();
+    #else
     esp_spiffs_info(nullptr, &fsBytesTotal, &fsBytesUsed);
+    #endif
   #else
     FSInfo fsi;
     WLED_FS.info(fsi);
