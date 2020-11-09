@@ -208,7 +208,8 @@ void loadSettingsFromEEPROM()
       timerHours[i]   = EEPROM.read(2260 + i);
       timerMinutes[i] = EEPROM.read(2270 + i);
       timerWeekday[i] = EEPROM.read(2280 + i);
-      timerMacro[i]   = EEPROM.read(2290 + i) + 16; //add 16 to work with macro --> preset mapping
+      timerMacro[i]   = EEPROM.read(2290 + i);
+      if (timerMacro[i] > 0) timerMacro[i] += 16; //add 16 to work with macro --> preset mapping
       if (timerWeekday[i] == 0) timerWeekday[i] = 255;
       if (timerMacro[i] == 0) timerWeekday[i] = timerWeekday[i] & 0b11111110; 
     }
