@@ -19,6 +19,11 @@
 // You are required to disable over-the-air updates:
 //#define WLED_DISABLE_OTA         // saves 14kb
 
+#ifndef ESP32
+  #error This sound reactive branch is for the ESP32 platform only.
+  #error Please use the ESP8266 branch at https://github.com/atuline/WLED/tree/ESP8266.
+#endif
+
 // You need to choose some of these features to disable:
 #define WLED_DISABLE_ALEXA         // saves 11kb
 #define WLED_DISABLE_BLYNK         // saves 6kb
