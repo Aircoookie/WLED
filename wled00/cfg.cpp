@@ -298,7 +298,21 @@ void deserializeConfig() {
     getStringFromJson(otaPass, pwd, 33); //normally not present due to security
   }
 
-  
+  #ifdef WLED_ENABLE_DMX
+  JsonObject dmx = doc["dmx"];
+  CJSON(DMXChannels, dmx[F("chan")]);
+  CJSON(DMXGap,dmx[F("gap")]);
+  CJSON(DMXStart, dmx[F("start")]);
+  CJSON(DMXStartLED,dmx[F("start-led")]);
+
+  JsonArray dmx_fixmap = dmx.createNestedArray("fixmap");
+  it = 0;
+  for (int i : dmx_fixmap) {
+    if (it > 14) break;
+    DMXFixtureMap[i] = i;
+    it++;
+  }
+  #endif
 }
 
 void serializeConfig() {

@@ -234,11 +234,12 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
     {
       pos = f.position();
     }
+    if (pos > 0) pos--;
   }
   DEBUGFS_PRINT("pos "); DEBUGFS_PRINTLN(pos);
   if (pos > 2)
   {
-    f.seek(pos -1, SeekSet);
+    f.seek(pos, SeekSet);
     f.write(',');
   } else { //file content is not valid JSON object
     f.seek(0, SeekSet);

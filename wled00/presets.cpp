@@ -18,7 +18,7 @@ bool applyPreset(byte index)
     DEBUGFS_PRINTLN(F("Make read buf"));
     DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
     errorFlag = readObjectFromFileUsingId("/presets.json", index, &fDoc) ? ERR_NONE : ERR_FS_PLOAD;
-    JsonObject fdo = fileDoc->as<JsonObject>();
+    JsonObject fdo = fDoc.as<JsonObject>();
     if (fdo["ps"] == index) fdo.remove("ps");
     #ifdef WLED_DEBUG_FS
       serializeJson(fDoc, Serial);

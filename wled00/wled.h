@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2011090
+#define VERSION 2011091
 
 // ESP8266-01 (blue) got too little storage space to work with WLED. 0.10.2 is the last release supporting this unit.
 
@@ -115,11 +115,11 @@
   #define CLIENT_PASS ""
 #endif
 
-/*#ifndef SPIFFS_EDITOR_AIRCOOOKIE
+#ifndef SPIFFS_EDITOR_AIRCOOOKIE
   #error You are not using the Aircoookie fork of the ESPAsyncWebserver library.\
   Using upstream puts your WiFi password at risk of being served by the filesystem.\
   Comment out this error message to build regardless.
-#endif*/
+#endif
 
 #if IR_PIN < 0
   #ifndef WLED_DISABLE_INFRARED
