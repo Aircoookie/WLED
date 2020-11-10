@@ -368,7 +368,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" 
 target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
-(c) 2016-2019 Christian Schwinne<br><i>Licensed under the MIT license</i><br>
+(c) 2016-2020 Christian Schwinne<br><i>Licensed under the <a href="https://github.com/Aircoookie/WLED/blob/master/LICENSE" target="_blank">MIT license</a></i><br>
 <br>Server message: <span class="sip">Response error!</span><hr><button 
 type="button" onclick="B()">Back</button><button type="submit">Save & Reboot
 </button></form></body></html>)=====";
