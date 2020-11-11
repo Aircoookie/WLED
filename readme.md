@@ -10,7 +10,7 @@
   </p>
 # Welcome to my project WLED! ✨
 
-A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs or also SPI based chipsets like the WS2801!
+A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812) LEDs or also SPI based chipsets like the WS2801 and APA102!
 
 ## ⚙️ Features
 - WS2812FX library integrated for over 100 special effects  
@@ -46,15 +46,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 
 See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
 
-DrZzs has made some excellent video guides:  
-[Introduction, hardware and installation](https://www.youtube.com/watch?v=tXvtxwK3jRk)  
-[Settings, tips and tricks](https://www.youtube.com/watch?v=6eCE2BpLaUQ)  
-
-If you'd rather read, here is a very [detailed step-by-step beginner tutorial](https://tynick.com/blog/11-03-2019/getting-started-with-wled-on-esp8266/) by tynick!  
-
-Russian speakers, check out the videos by Room31:
-[WLED Firmware Overview: Interface and Settings](https://youtu.be/h7lKsczEI7E)  
-[ESP8266 based LED controller for WS2812b strip. WLED Firmware + OpenHAB](https://youtu.be/K4ioTt3XvGc)  
+[On this page](https://github.com/Aircoookie/WLED/wiki/Learning-the-ropes) you can find excellent tutorials made by the community and helpful tools to help you get your new lamp up and running!
 
 ## 🖼️ Images
 <img src="/images/macbook-pro-space-gray-on-the-wooden-table.jpg" width="50%"><img src="/images/walking-with-iphone-x.jpg" width="50%">
