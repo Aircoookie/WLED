@@ -84,6 +84,7 @@ void WLED::loop()
       ArduinoOTA.handle();
 #endif
     handleNightlight();
+    handlePlaylist();
     yield();
 
     handleHue();

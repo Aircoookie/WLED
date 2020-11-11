@@ -147,6 +147,10 @@ void setCronixie();
 void _overlayCronixie();    
 void _drawOverlayCronixie();
 
+//playlist.cpp
+void loadPlaylist(JsonObject playlistObject);
+void handlePlaylist();
+
 //presets.cpp
 bool applyPreset(byte index);
 void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());

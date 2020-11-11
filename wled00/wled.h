@@ -436,6 +436,8 @@ WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL byte presetCycCurr _INIT(presetCycleMin);
 WLED_GLOBAL bool saveCurrPresetCycConf _INIT(false);
 
+WLED_GLOBAL int16_t currentPlaylist _INIT(0);
+
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
 WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);

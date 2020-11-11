@@ -255,6 +255,11 @@ bool deserializeState(JsonObject root)
     }
   }
 
+  JsonObject playlist = root[F("playlist")];
+  if (!playlist.isNull()) {
+    loadPlaylist(playlist); return stateResponse;
+  }
+
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
   return stateResponse;

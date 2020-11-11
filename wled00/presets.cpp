@@ -36,7 +36,7 @@ bool applyPreset(byte index)
 
 void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
-  if (index == 0) return;
+  if (index == 0 || index > 250) return;
   bool docAlloc = fileDoc;
   JsonObject sObj = saveobj;
 
