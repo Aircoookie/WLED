@@ -64,7 +64,7 @@ uint8_t targetAgc = 60;                             // This is our setPoint at 2
 
 long timeOfPeak = 0;
 long lastTime = 0;
-int delayMs = 10;                                   // I don't want to sample too often and overload WLED.
+int delayMs = 1;                                   // I don't want to sample too often and overload WLED.
 double beat = 0;                                    // beat Detection
 
 uint16_t micData;                                   // Analog input for FFT
@@ -91,11 +91,14 @@ bool isValidUdpSyncVersion(char header[6]) {
 void getSample() {
   static long peakTime;
 
+  extern double FFT_Magnitude;                      // Optional inclusion for our volume routines.
+  extern double FFT_MajorPeak;                      // Same here. Not currently used though.
+
   #ifdef WLED_DISABLE_SOUND
     micIn = inoise8(millis(), millis());            // Simulated analog read
   #else
     #ifdef ESP32
-      micIn = micData;
+      micIn = micData;   
       if (digitalMic == false) micIn = micIn >> 2;  // ESP32 has 2 more bits of A/D, so we need to normalize
     #endif
     #ifdef ESP8266
@@ -242,6 +245,8 @@ void agcAvg() {                                                     // A simple 
 
     for(;;) {
       delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
+                          // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
+      
       microseconds = micros();
       extern double volume;
 

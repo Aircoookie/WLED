@@ -20,8 +20,7 @@
 //#define WLED_DISABLE_OTA         // saves 14kb
 
 #ifndef ESP32
-  #error This sound reactive branch is for the ESP32 platform only.
-  #error Please use the ESP8266 branch at https://github.com/atuline/WLED/tree/ESP8266.
+  #error This sound reactive branch no longer supports the ESP8266. Please try https://github.com/atuline/WLED/tree/ESP8266.
 #endif
 
 // You need to choose some of these features to disable:

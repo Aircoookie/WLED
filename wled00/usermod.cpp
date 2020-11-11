@@ -104,7 +104,7 @@ void userConnected()
 // userLoop. You can use "if (WLED_CONNECTED)" to check for successful connection
 void userLoop() {
 
-  if (millis()-lastTime > delayMs) {                        // I need to run this continuously because the animations are too slow
+
     if (!(audioSyncEnabled & (1 << 1))) {                   // Only run the sampling code IF we're not in Receive mode
       lastTime = millis();
       getSample();                                          // Sample the microphone
@@ -119,7 +119,6 @@ void userLoop() {
       transmitAudioData();
     }
     #endif
-  }
 
   // Begin UDP Microphone Sync
   if (audioSyncEnabled & (1 << 1)) {
