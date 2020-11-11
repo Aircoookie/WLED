@@ -313,6 +313,9 @@ void deserializeConfig() {
     it++;
   }
   #endif
+
+  JsonObject usermods_settings = doc["um"];
+  usermods.readFromConfig(usermods_settings);
 }
 
 void serializeConfig() {
@@ -591,6 +594,9 @@ void serializeConfig() {
     dmx_fixmap.add(DMXFixtureMap[i]);
   #endif
   //}
+
+  JsonObject usermods_settings = doc.createNestedObject("um");
+  usermods.addToConfig(usermods_settings);
 
   File f = WLED_FS.open("/cfg.json", "w");
   if (f) serializeJson(doc, f);

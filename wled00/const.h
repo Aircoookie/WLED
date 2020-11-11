@@ -89,7 +89,8 @@
 #define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
 #define TYPE_SK6812_RGBW         30
-//Analog types (PWM) (32-47)
+//"Analog" types (PWM) (32-47)
+#define TYPE_ONOFF               40            //binary output (relays etc.)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
 #define TYPE_ANALOG_2CH          42            //analog WW + CW
 #define TYPE_ANALOG_3CH          43            //analog RGB

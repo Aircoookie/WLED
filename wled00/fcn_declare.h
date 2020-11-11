@@ -175,6 +175,8 @@ class Usermod {
     virtual void addToJsonState(JsonObject& obj) {}
     virtual void addToJsonInfo(JsonObject& obj) {}
     virtual void readFromJsonState(JsonObject& obj) {}
+    virtual void addToConfig(JsonObject& obj) {}
+    virtual void readFromConfig(JsonObject& obj) {}
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
@@ -192,6 +194,9 @@ class UsermodManager {
     void addToJsonState(JsonObject& obj);
     void addToJsonInfo(JsonObject& obj);
     void readFromJsonState(JsonObject& obj);
+
+    void addToConfig(JsonObject& obj);
+    void readFromConfig(JsonObject& obj);
 
     bool add(Usermod* um);
     byte getModCount();
