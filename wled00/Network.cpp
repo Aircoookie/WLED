@@ -2,50 +2,58 @@
 
 IPAddress NetworkClass::localIP()
 {
-#ifdef ARDUINO_ARCH_ESP32
-    if (ETH.localIP()[0] != 0) {
-        return ETH.localIP();
-    }
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+  if (ETH.localIP()[0] != 0) {
+    return ETH.localIP();
+  }
 #endif
-    if (WiFi.localIP()[0] != 0) {
-        return WiFi.localIP();
-    }
-    return INADDR_NONE;
+  if (WiFi.localIP()[0] != 0) {
+    return WiFi.localIP();
+  }
+  return INADDR_NONE;
 }
 
 IPAddress NetworkClass::subnetMask()
 {
-#ifdef ARDUINO_ARCH_ESP32
-    if (ETH.localIP()[0] != 0) {
-        return ETH.subnetMask();
-    }
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+  if (ETH.localIP()[0] != 0) {
+    return ETH.subnetMask();
+  }
 #endif
-    if (WiFi.localIP()[0] != 0) {
-        return WiFi.subnetMask();
-    }
-    return IPAddress(255, 255, 255, 0);
+  if (WiFi.localIP()[0] != 0) {
+    return WiFi.subnetMask();
+  }
+  return IPAddress(255, 255, 255, 0);
 }
 
 IPAddress NetworkClass::gatewayIP()
 {
-#ifdef ARDUINO_ARCH_ESP32
-    if (ETH.localIP()[0] != 0) {
-        return ETH.gatewayIP();
-    }
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+  if (ETH.localIP()[0] != 0) {
+      return ETH.gatewayIP();
+  }
 #endif
-    if (WiFi.localIP()[0] != 0) {
-        return WiFi.gatewayIP();
-    }
-    return INADDR_NONE;
+  if (WiFi.localIP()[0] != 0) {
+      return WiFi.gatewayIP();
+  }
+  return INADDR_NONE;
 }
 
 bool NetworkClass::isConnected()
 {
-#ifdef ARDUINO_ARCH_ESP32
-    return WiFi.localIP()[0] != 0 || ETH.localIP()[0] != 0;
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+  return (WiFi.localIP()[0] != 0 && WiFi.status() == WL_CONNECTED) || ETH.localIP()[0] != 0;
 #else
-    return WiFi.localIP()[0] != 0;
+  return (WiFi.localIP()[0] != 0 && WiFi.status() == WL_CONNECTED);
 #endif
+}
+
+bool NetworkClass::isEthernet()
+{
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+  return (ETH.localIP()[0] != 0);
+#endif
+  return false;
 }
 
 NetworkClass Network;

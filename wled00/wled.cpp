@@ -70,14 +70,13 @@ void prepareHostname(char* hostname)
     }
 }
 
+//handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
-  // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
   char hostname[25] = "wled-";
-  prepareHostname(hostname);
 
   switch (event) {
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
       DEBUG_PRINT("ETH Started");
       break;
@@ -91,7 +90,10 @@ void WiFiEvent(WiFiEvent_t event)
       } else {
         ETH.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
       }
+      // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
+      prepareHostname(hostname);
       ETH.setHostname(hostname);
+      showWelcomePage = false;
       break;
     case SYSTEM_EVENT_ETH_DISCONNECTED:
       DEBUG_PRINT("ETH Disconnected");
@@ -100,7 +102,7 @@ void WiFiEvent(WiFiEvent_t event)
 #endif
     default:
       break;
-    }
+  }
 }
 
 void WLED::loop()
@@ -364,7 +366,7 @@ void WLED::initConnection()
   ws.onEvent(wsEvent);
   #endif
 
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   ETH.begin();
 #endif
 
