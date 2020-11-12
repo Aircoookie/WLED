@@ -68,7 +68,7 @@ int delayMs = 1;                                   // I don't want to sample too
 double beat = 0;                                    // beat Detection
 
 uint16_t micData;                                   // Analog input for FFT
-uint16_t lastSample;                                // last audio noise sample
+// uint16_t lastSample;                                // last audio noise sample
 
 uint8_t myVals[32];                                 // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized
 
@@ -99,7 +99,7 @@ void getSample() {
   #else
     #ifdef ESP32
       micIn = micData;   
-      if (digitalMic == false) micIn = micIn >> 2;  // ESP32 has 2 more bits of A/D, so we need to normalize
+      if (digitalMic == false) micIn = micIn >> 2;  // ESP32 has 2 more bits of A/D than ESP8266, so we need to normalize to 10 bit.
     #endif
     #ifdef ESP8266
         micIn = analogRead(MIC_PIN);                // Poor man's analog read
@@ -109,7 +109,7 @@ void getSample() {
   micIn -= micLev;                                  // Let's center it to 0 now
   micIn = abs(micIn);                               // And get the absolute value of each sample
 
-  lastSample = micIn;
+//  lastSample = micIn;
 
   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
   sample = (micIn <= soundSquelch) ? 0 : (sample * 3 + micIn) / 4;
