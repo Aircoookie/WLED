@@ -1128,12 +1128,12 @@ uint16_t WS2812FX::mode_rain()
   SEGENV.step += FRAMETIME;
   if (SEGENV.step > SPEED_FORMULA_L) {
     SEGENV.step = 0;
-    //shift all leds right
-    uint32_t ctemp = getPixelColor(SEGLEN -1);
-    for(uint16_t i = SEGLEN -1; i > 0; i--) {
-      setPixelColor(i, getPixelColor(i-1));
+    //shift all leds left
+    uint32_t ctemp = getPixelColor(0);
+    for(uint16_t i = 0; i < SEGLEN - 1; i++) {
+      setPixelColor(i, getPixelColor(i+1));
     }
-    setPixelColor(0, ctemp);
+    setPixelColor(SEGLEN -1, ctemp);
     SEGENV.aux0++;
     SEGENV.aux1++;
     if (SEGENV.aux0 == 0) SEGENV.aux0 = UINT16_MAX;

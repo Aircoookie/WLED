@@ -338,6 +338,11 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     nl[F("fade")] = (nightlightMode > NL_MODE_SET); //deprecated
     nl[F("mode")] = nightlightMode;
     nl[F("tbri")] = nightlightTargetBri;
+    if (nightlightActive) {
+      nl[F("rem")] = (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000; // seconds remaining
+    } else {
+      nl[F("rem")] = -1;
+    }
 
     JsonObject udpn = root.createNestedObject("udpn");
     udpn[F("send")] = notifyDirect;
@@ -347,7 +352,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   }
 
   root[F("mainseg")] = strip.getMainSegmentId();
-  
+
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++)
   {
