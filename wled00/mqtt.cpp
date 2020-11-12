@@ -85,9 +85,15 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp(topic, "/api") == 0)
   {
-    String apireq = "win&";
-    apireq += (char*)payload;
-    handleSet(nullptr, apireq);
+    if (payload[0] == '{') { //JSON API
+      DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+      deserializeJson(doc, payload);
+      deserializeState(doc.as<JsonObject>());
+    } else { //HTTP API
+      String apireq = "win&";
+      apireq += (char*)payload;
+      handleSet(nullptr, apireq);
+    }
   } else if (strcmp(topic, "") == 0)
   {
       parseMQTTBriPayload(payload);
