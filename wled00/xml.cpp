@@ -83,9 +83,10 @@ void URL_response(AsyncWebServerRequest *request)
 
   char s[16];
   oappend(SET_F("http://"));
-  IPAddress localIP = WiFi.localIP();
+  IPAddress localIP = Network.localIP();
   sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
   oappend(s);
+
   oappend(SET_F("/win&A="));
   oappendi(bri);
   oappend(SET_F("&CL=h"));
@@ -219,11 +220,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("WS"),noWifiSleep);
 
 
-    if (WiFi.localIP()[0] != 0) //is connected
+    if (Network.isConnected()) //is connected
     {
-      char s[16];
-      IPAddress localIP = WiFi.localIP();
+      char s[32];
+      IPAddress localIP = Network.localIP();
       sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+
+      #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+      if (Network.isEthernet()) strcat_P(s ,SET_F(" (Ethernet)"));
+      #endif
       sappends('m',SET_F("(\"sip\")[0]"),s);
     } else
     {
