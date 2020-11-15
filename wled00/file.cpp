@@ -4,8 +4,6 @@
  * Utility for SPIFFS filesystem
  */
 
-#ifndef WLED_DISABLE_FILESYSTEM
-
 #ifdef ARDUINO_ARCH_ESP32 //FS info bare IDF function until FS wrapper is available for ESP32
 #if WLED_FS != LITTLEFS
   #include "esp_spiffs.h"
@@ -375,9 +373,8 @@ void updateFSInfo() {
     fsBytesTotal = fsi.totalBytes;
   #endif
 }
-#endif
 
-#if !defined WLED_DISABLE_FILESYSTEM && defined WLED_ENABLE_FS_SERVING
+
 //Un-comment any file types you need
 String getContentType(AsyncWebServerRequest* request, String filename){
   if(request->hasArg("download")) return "application/octet-stream";
@@ -413,7 +410,3 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
   }
   return false;
 }
-
-#else
-bool handleFileRead(AsyncWebServerRequest*, String path){return false;}
-#endif

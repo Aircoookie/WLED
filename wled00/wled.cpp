@@ -323,6 +323,11 @@ void WLED::beginStrip()
 #endif
 
   if (bootPreset > 0) applyPreset(bootPreset);
+  if (turnOnAtBoot) {
+    bri = (briS > 0) ? briS : 128;
+  } else {
+    briLast = briS; bri = 0;
+  }
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
 // init relay pin

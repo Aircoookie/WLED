@@ -124,7 +124,7 @@ void initServer()
     
   //if OTA is allowed
   if (!otaLock){
-    #if !defined WLED_DISABLE_FILESYSTEM && defined WLED_ENABLE_FS_EDITOR
+    #ifdef WLED_ENABLE_FS_EDITOR
      #ifdef ARDUINO_ARCH_ESP32
       server.addHandler(new SPIFFSEditor(WLED_FS));//http_username,http_password));
      #else
@@ -216,9 +216,7 @@ void initServer()
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
-    #ifdef WLED_ENABLE_FS_SERVING
     if(handleFileRead(request, request->url())) return;
-    #endif
     request->send(404, "text/plain", "Not Found");
   });
 }
@@ -236,9 +234,7 @@ void serveIndexOrWelcome(AsyncWebServerRequest *request)
 
 void serveIndex(AsyncWebServerRequest* request)
 {
-  #ifdef WLED_ENABLE_FS_SERVING
   if (handleFileRead(request, "/index.htm")) return;
-  #endif
 
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 

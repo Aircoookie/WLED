@@ -2,6 +2,32 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2011152
+
+-   Version bump to 0.11.0p "Mirai"
+-   Increased max. num of segments to 12 (ESP8266) / 16 (ESP32)
+-   Up to 250 presets stored in the `presets.json` file in filesystem
+-   Complete overhaul of the Presets UI tab
+-   Updated iro.js to v5 (fixes black color wheel)
+-   Added white temperature slider to color wheel
+-   Add JSON settings serialization/deserialization to cfg.json and wsec.json
+-   Playlist support - JSON only for now
+-   New v2 usermod methods `addToConfig()` and `readFromConfig()` (see EXAMPLE_v2 for doc)
+-   Added Ethernet support for ESP32 (PR #1316)
+-   IP addresses are now handled by the `Network` class
+-   New `esp32_poe` PIO environment
+-   Use EspAsyncWebserver Aircoookie fork v.2.0.0 (hiding wsec.json)
+-   Removed `WLED_DISABLE_FILESYSTEM` and `WLED_ENABLE_FS_SERVING` defines as they are now required
+-   Added pin manager
+-   UI performance improvements (no drop shadows)
+-   More explanatory error messages in UI
+-   Improved candle brightness
+-   Return remaining nightlight time `nl.rem` in JSON API (PR #1302)
+-   Added gamma calculation (yet unused)
+-   Added LED type definitions to const.h (yet unused)
+-   Removed `NP` and `MS=` macro HTTP API commands
+-   Removed macros from Time settings
+
 #### Build 2011120
 
 -   Added the ability for the /api MQTT topic to receive JSON API payloads

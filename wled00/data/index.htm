@@ -204,7 +204,6 @@ button {
 .tab {
 	background-color: transparent;
 	color: var(--c-d);
-	/*filter: drop-shadow(0px 0px 0px #111);*/
 }
 
 .bot {
@@ -511,7 +510,6 @@ input[type=range]::-moz-range-thumb {
 #picker {
 	margin: 10px auto;
 	width: 260px;
-	/*filter: drop-shadow(0px 0px 1px #000);*/
 }
 
 #rgbwrap {
@@ -527,7 +525,6 @@ input[type=range]::-moz-range-thumb {
 	color: var(--c-f);
 	border: 0px solid white;
 	border-radius: 25px;
-	/*filter: drop-shadow(0px 0px 1px #000);*/
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
@@ -838,7 +835,6 @@ input[type=number]::-webkit-outer-spin-button {
 	color: var(--c-f);
 	border: 0px solid white;
 	border-radius: 20px;
-	/*filter: drop-shadow(0px 0px 1px #000);*/
 	text-align: left;
 	transition: background-color 0.5s;
 }
@@ -1367,7 +1363,8 @@ function getLowestUnusedP()
 	for (var key in pJson)
 	{
 		if (key == l) l++;
-	}
+  }
+  if (l > 250) l = 250; 
 	return l;
 }
 
@@ -2005,7 +2002,7 @@ function makeP(i) {
 			<span class="checkmark schk"></span>
 		</label>
 	</div>
-	<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
+	<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 	<div class="c">
 		<button class="btn btn-i btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>${(i>0)?"Save changes":"Save preset"}</button>
 		${(i>0)?'<button class="btn btn-i btn-p" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':

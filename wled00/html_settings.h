@@ -109,8 +109,8 @@ value="3">RBG</option><option value="4">BGR</option><option value="5">GBR
 </option></select><h3>Defaults</h3>Turn LEDs on after power up/reset: <input 
 type="checkbox" name="BO"><br>Default brightness: <input name="CA" 
 type="number" min="0" max="255" required> (0-255)<br><br>Apply preset <input 
-name="BP" type="number" min="0" max="16" required> at boot (0 uses defaults)<br>
-- <i>or</i> -<br>Set current preset cycle setting as boot default: <input 
+name="BP" type="number" min="0" max="250" required> at boot (0 uses defaults)
+<br>- <i>or</i> -<br>Set current preset cycle setting as boot default: <input 
 type="checkbox" name="PC"><br><br>Use Gamma correction for color: <input 
 type="checkbox" name="GC"> (strongly recommended)<br>
 Use Gamma correction for brightness: <input type="checkbox" name="GB">
