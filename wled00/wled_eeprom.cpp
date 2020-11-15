@@ -383,8 +383,7 @@ void deEEP() {
 
       JsonObject pObj = sObj.createNestedObject(nbuf);
 
-      pObj["q"] = nbuf;
-      sprintf_P(nbuf, "Preset %d", index);
+      sprintf_P(nbuf, (char*)F("Preset %d"), index);
       pObj["n"] = nbuf;
 
       pObj["bri"] = EEPROM.read(i+1);

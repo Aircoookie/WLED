@@ -221,8 +221,9 @@ bool appendObjectToFile(const char* key, JsonDocument* content, uint32_t s, uint
   }
   
   //check if last character in file is '}' (typical)
-  f.seek(1, SeekEnd);
-  if (f.read() == '}') pos = f.size() -1;
+  uint32_t eof = f.size() -1;
+  f.seek(eof, SeekSet);
+  if (f.read() == '}') pos = eof;
   
   if (pos == 0) //not found
   {

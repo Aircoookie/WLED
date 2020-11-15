@@ -102,7 +102,7 @@ void deserializeConfig() {
   strip.colorOrder = hw_led_ins_0[F("order")];
   //bool hw_led_ins_0_rev = hw_led_ins_0[F("rev")]; // false
   skipFirstLed = hw_led_ins_0[F("skip")]; // 0
-  //int hw_led_ins_0_type = hw_led_ins_0[F("type")]; // 2*/
+  useRGBW = (hw_led_ins_0[F("type")] == TYPE_SK6812_RGBW);
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   buttonEnabled = hw_btn_ins_0[F("en")] | buttonEnabled;

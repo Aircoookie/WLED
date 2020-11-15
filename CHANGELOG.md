@@ -2,6 +2,11 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2011153
+
+-   Fixed an ESP32 end-of-file issue
+-   Fixed useRGBW not read from cfg.json 
+
 #### Build 2011152
 
 -   Version bump to 0.11.0p "Mirai"
