@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2011151
+#define VERSION 2011152
 
 // ESP8266-01 (blue) got too little storage space to work with WLED. 0.10.2 is the last release supporting this unit.
 
@@ -58,6 +58,7 @@
   }
 #else // ESP32
   #include <WiFi.h>
+  #include <ETH.h>
   #include "esp_wifi.h"
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
@@ -65,6 +66,8 @@
   #define CONFIG_LITTLEFS_FOR_IDF_3_2
   #include <LITTLEFS.h>
 #endif
+
+#include "Network.h"
 
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
@@ -563,7 +566,11 @@ WLED_GLOBAL PinManagerClass pinManager _INIT(PinManagerClass());
   WLED_GLOBAL int loops _INIT(0);
 #endif
 
-#define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
+#ifdef ARDUINO_ARCH_ESP32
+  #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED || ETH.localIP()[0] != 0)
+#else
+  #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
+#endif
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 
