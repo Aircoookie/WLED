@@ -11,7 +11,7 @@ void shortPressAction()
     toggleOnOff();
     colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
   } else {
-    applyMacro(macroButton);
+    applyPreset(macroButton);
   }
 }
 
@@ -41,7 +41,7 @@ void handleButton()
     {
       if (!buttonLongPressed) 
       {
-        if (macroLongPress) {applyMacro(macroLongPress);}
+        if (macroLongPress) {applyPreset(macroLongPress);}
         else _setRandomColor(false,true);
 
         buttonLongPressed = true;
@@ -62,7 +62,7 @@ void handleButton()
     else if (!buttonLongPressed) { //short press
       if (macroDoublePress)
       {
-        if (doublePress) applyMacro(macroDoublePress);
+        if (doublePress) applyPreset(macroDoublePress);
         else buttonWaitTime = millis();
       } else shortPressAction();
     }
