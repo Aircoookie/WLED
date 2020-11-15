@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2011121
+#define VERSION 2011151
 
 // ESP8266-01 (blue) got too little storage space to work with WLED. 0.10.2 is the last release supporting this unit.
 
@@ -521,6 +521,8 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
+
+WLED_GLOBAL PinManagerClass pinManager _INIT(PinManagerClass());
 
 // Status LED
 #if STATUSLED && STATUSLED != LEDPIN

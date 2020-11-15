@@ -254,7 +254,7 @@ button {
 	width: calc(var(--n)*100%);
 	height: calc(100% - var(--tp) - var(--bh));
 	margin-top: var(--tp);
-	transform: translate(calc(var(--tx, 0px) + var(--i, 0)/var(--n)*-100%));
+	transform: translate(calc(var(--i, 0)/var(--n)*-100%));
 	overscroll-behavior: none;
 }
 
@@ -511,7 +511,7 @@ input[type=range]::-moz-range-thumb {
 #picker {
 	margin: 10px auto;
 	width: 260px;
-	filter: drop-shadow(0px 0px 1px #000);
+	/*filter: drop-shadow(0px 0px 1px #000);*/
 }
 
 #rgbwrap {
@@ -527,7 +527,7 @@ input[type=range]::-moz-range-thumb {
 	color: var(--c-f);
 	border: 0px solid white;
 	border-radius: 25px;
-	filter: drop-shadow(0px 0px 1px #000);
+	/*filter: drop-shadow(0px 0px 1px #000);*/
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
@@ -603,7 +603,7 @@ input[type=number], input[type=text] {
 	padding: 8px;
 	margin: 6px 6px 6px 0;
 	font-size: 19px;
-	transition: background 0.2s;
+	transition: background-color 0.2s;
 	outline: none;
 	width: 50px;
 	-webkit-appearance: textfield;
@@ -838,9 +838,9 @@ input[type=number]::-webkit-outer-spin-button {
 	color: var(--c-f);
 	border: 0px solid white;
 	border-radius: 20px;
-	filter: drop-shadow(0px 0px 1px #000);
+	/*filter: drop-shadow(0px 0px 1px #000);*/
 	text-align: left;
-	transition: background 0.5s;
+	transition: background-color 0.5s;
 }
 
 .pres {
@@ -1122,7 +1122,7 @@ var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 var pJson = {};
 var pO = null, pN = "", pI = 0;
-var pmt = 1, pmtLS = 0;
+var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
@@ -1147,7 +1147,9 @@ var cpick = new iro.ColorPicker("#picker", {
     { 
       component: iro.ui.Slider,
       options: {
-        sliderType: 'kelvin'
+        sliderType: 'kelvin',
+        minTemperature: 2100,
+        maxTemperature: 10000
       }
     }
   ]
@@ -1762,7 +1764,8 @@ function requestJson(command, rinfo = true, verbose = true) {
 	type = command ? 'post':'get';
 	if (command)
 	{
-		command.v = verbose;
+    command.v = verbose;
+    command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
 		//console.log(req);
 	}
@@ -1791,7 +1794,10 @@ function requestJson(command, rinfo = true, verbose = true) {
 		if (!command || rinfo) {
 		if (!rinfo) {
 		pmt = json.info.fs.pmt;
-		if (pmt != pmtLS || pmt == 0) setTimeout(loadPresets,99);
+    if (pmt != pmtLS || pmt == 0) {
+      setTimeout(loadPresets,99);
+      pmtLast = pmt;
+    }
 		else populatePresets(true);
 		var x='',y='<option value="0">Default</option>';
 		json.effects.shift(); //remove solid
@@ -1820,7 +1826,10 @@ function requestJson(command, rinfo = true, verbose = true) {
 			isRgbw = info.leds.wv;
 			ledCount = info.leds.count;
 			syncTglRecv = info.str;
-			maxSeg = info.leds.maxseg;
+      maxSeg = info.leds.maxseg;
+      pmt = info.fs.pmt;
+      if (pmt != pmtLast) setTimeout(loadPresets,99);
+      pmtLast = pmt;
 		lastinfo = info;
 		if (isInfo) populateInfo(info);
 			s = json.state;
@@ -1884,7 +1893,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 	})
 	.catch(function (error) {
 		showToast(error, true);
-	console.log(error);
+	  console.log(error);
 	})
 }
 
@@ -2358,7 +2367,7 @@ function unfocusSliders() {
 //sliding UI
 const _C = document.querySelector('.container'), N = 4;
 
-let iSlide = 0, x0 = null, y0 = null, scrollS = 0, locked = false, w;
+let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
 
 function unify(e) {	return e.changedTouches ? e.changedTouches[0] : e }
 
@@ -2367,19 +2376,9 @@ function lock(e) {
 	var l = e.target.classList;
 	if (l.contains('noslide') || l.contains('iro__wheel__saturation') || l.contains('iro__slider__value')	|| l.contains('iro__slider')) return;
 	x0 = unify(e).clientX;
-	y0 = unify(e).clientY;
 	scrollS = d.getElementsByClassName("tabcontent")[iSlide].scrollTop;
 
 	_C.classList.toggle('smooth', !(locked = true))
-}
-
-function drag(e) {
-	if (!locked || pcMode) return;
-	if (d.getElementsByClassName("tabcontent")[iSlide].scrollTop != scrollS) {
-		move(e); return;
-	}
-			
-	_C.style.setProperty('--tx', `${Math.round(unify(e).clientX - x0)}px`)
 }
 
 function move(e) {
@@ -2387,13 +2386,13 @@ function move(e) {
 	var dx = unify(e).clientX - x0, s = Math.sign(dx), 
 			f = +(s*dx/w).toFixed(2);
 
-	if((iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) && f > .12) {
+  if((iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0)
+     && f > .12
+     && d.getElementsByClassName("tabcontent")[iSlide].scrollTop == scrollS) {
 		_C.style.setProperty('--i', iSlide -= s);
 		f = 1 - f;
 		updateTablinks(iSlide);
 	}
-	
-	_C.style.setProperty('--tx', '0px');
 	_C.style.setProperty('--f', f);
 	_C.classList.toggle('smooth', !(locked = false));
 	x0 = null
@@ -2425,12 +2424,7 @@ function togglePcMode(fromB = false)
 	d.getElementById('buttonPcm').className = (pcMode) ? "active":"";
 	d.getElementById('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', d.getElementById('bot').clientHeight + "px");
-	if (pcMode)
-	{
-		_C.style.width = '100%';
-	} else {
-		_C.style.width = '400%';
-	}
+  _C.style.width = (pcMode)?'100%':'400%';
 	lastw = w;
 }
 
@@ -2462,9 +2456,6 @@ window.addEventListener('resize', size, false);
 
 _C.addEventListener('mousedown', lock, false);
 _C.addEventListener('touchstart', lock, false);
-
-_C.addEventListener('mousemove', drag, false);
-_C.addEventListener('touchmove', drag, false);
 
 _C.addEventListener('mouseout', move, false);
 _C.addEventListener('mouseup', move, false);

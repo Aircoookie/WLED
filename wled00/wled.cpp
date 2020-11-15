@@ -255,6 +255,7 @@ void WLED::beginStrip()
   strip.setShowCallback(handleOverlayDraw);
 
 #ifdef BTNPIN
+  pinManager.allocatePin(BTNPIN, false);
   pinMode(BTNPIN, INPUT_PULLUP);
 #endif
 
@@ -263,6 +264,7 @@ void WLED::beginStrip()
 
 // init relay pin
 #if RLYPIN >= 0
+  pinManager.allocatePin(RLYPIN);
   pinMode(RLYPIN, OUTPUT);
 #if RLYMDE
   digitalWrite(RLYPIN, bri);

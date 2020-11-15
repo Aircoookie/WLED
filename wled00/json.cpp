@@ -188,8 +188,12 @@ bool deserializeState(JsonObject root)
   receiveNotifications = udpn[F("recv")] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
-  int timein = root[F("time")] | -1;
-  if (timein != -1 && millis() - ntpLastSyncTime > 50000000L) setTime(timein);
+  unsigned long timein = root[F("time")] | -1;
+  if (timein != -1) {
+    if (millis() - ntpLastSyncTime > 50000000L) setTime(timein);
+    if (presetsModifiedTime == 0) presetsModifiedTime = timein;
+  }
+
   doReboot = root[F("rb")] | doReboot;
 
   realtimeOverride = root[F("lor")] | realtimeOverride;
