@@ -217,7 +217,7 @@ void initServer()
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
     if(handleFileRead(request, request->url())) return;
-    request->send(404, "text/plain", "Not Found");
+    request->send_P(404, "text/html", PAGE_404);
   });
 }
 

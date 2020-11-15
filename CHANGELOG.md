@@ -25,6 +25,7 @@
 -   Return remaining nightlight time `nl.rem` in JSON API (PR #1302)
 -   Added gamma calculation (yet unused)
 -   Added LED type definitions to const.h (yet unused)
+-   Added nicer 404 page
 -   Removed `NP` and `MS=` macro HTTP API commands
 -   Removed macros from Time settings
 
