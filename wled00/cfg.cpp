@@ -105,17 +105,12 @@ void deserializeConfig() {
   skipFirstLed = hw_led_ins_0[F("skip")]; // 0
   useRGBW = (hw_led_ins_0[F("type")] == TYPE_SK6812_RGBW);
 
-  JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
-  buttonEnabled = hw_btn_ins_0[F("en")] | buttonEnabled;
-
-  //int hw_btn_ins_0_pin_0 = hw_btn_ins_0[F("pin")][0]; // 0
-
-  JsonArray hw_btn_ins_0_macros = hw_btn_ins_0[F("macros")];
-  CJSON(macroButton, hw_btn_ins_0_macros[0]);
-  CJSON(macroLongPress,hw_btn_ins_0_macros[1]);
-  CJSON(macroDoublePress, hw_btn_ins_0_macros[2]);
-
-  //int hw_btn_ins_0_type = hw_btn_ins_0[F("type")]; // 0
+  for (int i = 0; i < WLED_INPUTS; i++) {
+    JsonObject iobj = hw[F("btn")][F("ins")][i];
+    if (iobj) {
+      inputConfigs[i].deSerialize(iobj);
+    }
+  }
 
   //int hw_ir_pin = hw[F("ir")][F("pin")]; // 4
   CJSON(irEnabled, hw[F("ir")][F("type")]); // 0
@@ -428,18 +423,10 @@ void serializeConfig() {
 
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
-  #if defined(BTNPIN) && BTNPIN > -1
-  JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
-  hw_btn_ins_0[F("type")] = (buttonEnabled) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
-
-  JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
-  hw_btn_ins_0_pin.add(BTNPIN);
-
-  JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
-  hw_btn_ins_0_macros.add(macroButton);
-  hw_btn_ins_0_macros.add(macroLongPress);
-  hw_btn_ins_0_macros.add(macroDoublePress);
-  #endif
+  for (int i = 0; i < WLED_INPUTS; i++) {
+      JsonObject obj = hw_btn_ins.createNestedObject();
+      inputConfigs[i].serialize(obj);
+  }
 
   #if defined(IRPIN) && IRPIN > -1
   JsonObject hw_ir = hw.createNestedObject("ir");
@@ -692,4 +679,32 @@ void serializeConfigSec() {
   File f = WLED_FS.open("/wsec.json", "w");
   if (f) serializeJson(doc, f);
   f.close();
+}
+
+void
+InputConfig::serialize(JsonObject& obj)
+{
+  obj[F("pin")] = pin;
+  obj[F("type")] = inputType;
+
+  JsonArray pins = obj.createNestedArray("pin");
+  pins.add(pin);
+
+  JsonArray p = obj.createNestedArray("preset");
+  for (int i = 0; i <= MAX_INPUT_IDX; i++) {
+    p.add(preset[i]);
+  }
+}
+
+void
+InputConfig::deSerialize(JsonObject& obj)
+{
+  CJSON(pin, obj[F("pin")]);
+  CJSON(inputType, obj[F("type")]);
+  JsonArray p = obj[F("preset")];
+  if (p) {
+    for (int i = 0; i <= MAX_INPUT_IDX; i++) {
+      CJSON(preset[i], p[i]);
+    }
+  }
 }

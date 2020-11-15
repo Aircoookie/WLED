@@ -1,0 +1,16 @@
+{
+  "mqtt": [
+    {
+      "topic": "cmnd/plug4/POWER1",
+      "msg": "ON",
+      "qos": 0,
+      "retain": false
+    },
+    {
+      "topic": "cmnd/plug4/POWER2",
+      "msg": "ON",
+      "qos": 0,
+      "retain": false
+    }
+  ]
+}

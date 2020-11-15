@@ -296,7 +296,14 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 4)
   {
-    sappend('c',SET_F("BT"),buttonEnabled);
+    for (int i = 0; i < WLED_INPUTS; i++) {
+      char k[4];
+      k[0] = 'B';
+      k[1] = 'T';
+      k[2] = '1' + i;
+      k[3] = '\0';
+      sappend('c', k, inputConfigs[i].inputType != BTN_TYPE_NONE);
+    }
     sappend('v',SET_F("IR"),irEnabled);
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
@@ -395,11 +402,17 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('v',SET_F("A0"),macroAlexaOn);
     sappend('v',SET_F("A1"),macroAlexaOff);
-    sappend('v',SET_F("MP"),macroButton);
-    sappend('v',SET_F("ML"),macroLongPress);
     sappend('v',SET_F("MC"),macroCountdown);
     sappend('v',SET_F("MN"),macroNl);
-    sappend('v',SET_F("MD"),macroDoublePress);
+    for (int i = 0; i < WLED_INPUTS; i++) {
+        char k[4];
+        k[0] = 'M';
+        k[2] = '1' + i;
+        k[3] = '\0';
+        k[1] = 'P'; sappend('v', k, inputConfigs[i].preset[PUSH_SHORT]);
+        k[1] = 'L'; sappend('v', k, inputConfigs[i].preset[PUSH_LONG]);
+        k[1] = 'D'; sappend('v', k, inputConfigs[i].preset[PUSH_DOUBLE]);
+    }
 
     char k[4];
     k[2] = 0; //Time macros

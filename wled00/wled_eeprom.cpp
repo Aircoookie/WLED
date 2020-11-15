@@ -93,7 +93,7 @@ void loadSettingsFromEEPROM()
 
   notifyButton = EEPROM.read(230);
   notifyTwice = EEPROM.read(231);
-  buttonEnabled = EEPROM.read(232);
+  inputConfigs[0].inputType = EEPROM.read(232) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
   staticIP[0] = EEPROM.read(234);
   staticIP[1] = EEPROM.read(235);
@@ -195,12 +195,13 @@ void loadSettingsFromEEPROM()
     //macroBoot = EEPROM.read(2175);
     macroAlexaOn = EEPROM.read(2176);
     macroAlexaOff = EEPROM.read(2177);
-    macroButton = EEPROM.read(2178);
-    macroLongPress = EEPROM.read(2179);
+    inputConfigs[0].preset[PUSH_SHORT] = EEPROM.read(2178);
+    inputConfigs[0].preset[PUSH_LONG] = EEPROM.read(2179);
     macroCountdown = EEPROM.read(2180);
     macroNl = EEPROM.read(2181);
-    macroDoublePress = EEPROM.read(2182);
-    if (macroDoublePress > 16) macroDoublePress = 0;
+    byte dpm = EEPROM.read(2182);
+    if (dpm > 16) dpm = 16;
+    inputConfigs[0].preset[PUSH_DOUBLE] = dpm;
   }
 
   if (lastEEPROMversion > 6)
@@ -312,8 +313,8 @@ void loadSettingsFromEEPROM()
 
   if (lastEEPROMversion > 21) {
     udpPort2 = EEPROM.read(378) + ((EEPROM.read(379) << 8) & 0xFF00);
-  } 
-  
+  }
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 

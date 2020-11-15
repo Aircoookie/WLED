@@ -1,0 +1,20 @@
+{
+  "name": "multibutton",
+  "version": "1.0.0",
+  "description": "Utilities for WLED multibutton",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Eric Varsanyi",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.0",
+    "form-data": "^3.0.0"
+  },
+  "bin": {
+    "getPresets": "bin/getPresets.js",
+    "putPresets": "bin/putPresets.js",
+    "renumberPresets": "bin/renumberPresets.js"
+  }
+}

@@ -124,7 +124,15 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //SYNC
   if (subPage == 4)
   {
-    buttonEnabled = request->hasArg(F("BT"));
+    for (int i = 0; i < WLED_INPUTS; i++) {
+        char k[4];
+        k[0] = 'B';
+        k[1] = 'T';
+        k[2] = '1' + i;
+        k[3] = '\0';
+        inputConfigs[i].inputType =
+         request->hasArg(k) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
+    }
     irEnabled = request->arg(F("IR")).toInt();
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
@@ -235,11 +243,21 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     macroAlexaOn = request->arg(F("A0")).toInt();
     macroAlexaOff = request->arg(F("A1")).toInt();
-    macroButton = request->arg(F("MP")).toInt();
-    macroLongPress = request->arg(F("ML")).toInt();
     macroCountdown = request->arg(F("MC")).toInt();
     macroNl = request->arg(F("MN")).toInt();
-    macroDoublePress = request->arg(F("MD")).toInt();
+
+    for (int i = 0; i < WLED_INPUTS; i++) {
+        char k[4];
+        k[0] = 'M';
+        k[2] = '1' + i;
+        k[3] = '\0';
+        k[1] = 'P'; inputConfigs[i].preset[PUSH_SHORT] =
+                    request->arg(k).toInt();
+        k[1] = 'L'; inputConfigs[i].preset[PUSH_LONG] =
+                    request->arg(k).toInt();
+        k[1] = 'D'; inputConfigs[i].preset[PUSH_DOUBLE] =
+                    request->arg(k).toInt();
+    }
 
     char k[3]; k[2] = 0;
     for (int i = 0; i<8; i++)

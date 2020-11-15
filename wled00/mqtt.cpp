@@ -131,6 +131,76 @@ void publishMqtt()
   mqtt->publish(subuf, 0, true, apires);
 }
 
+/*
+ * Send MQTT messages from an array in a JSON object
+ *   type: 'array', items: {
+ *      type: 'object', additionalProperties: false,
+ *      required: [ 'msg' ]
+ *      properties: {
+ *        topic: { type: 'string' },
+ *        subtopic: { type: 'string' },
+ *        msg: { type: 'string' }
+ *        qos: { type: 'integer', default: 0 },
+ *        retain: { type: 'boolean', default: false },
+ *      }
+ *    }
+ *   }
+ * Either topic or subtopic must be given. Topic is the
+ *  full topic, subtopic gets the configured device topic
+ *  prepended.
+ *
+ * @returns true if no errors
+ */
+bool sendMqttMessages(JsonArray msgs)
+{
+  char topbuf[40];
+  const char* topic;
+
+  if (mqtt == nullptr || !mqtt->connected()) return true;
+
+  bool err = false;
+  for (JsonVariant v : msgs) {
+    if (!v.is<JsonObject>()) {
+      DEBUG_PRINTLN("MQ: array element not object");
+      err = true;
+      continue;
+    }
+    if (!v.containsKey("topic")) {
+      if (!v.containsKey("subtopic")) {
+        DEBUG_PRINTLN("MQ: topic and subtopic missing");
+        err = true;
+        continue;
+      } else {
+        topbuf[sizeof(topbuf) - 1] = '\0';
+        strncpy(topbuf, mqttDeviceTopic, sizeof(topbuf) - 1);
+        strncat(topbuf, v["subtopic"].as<char*>(), sizeof(topbuf) - 1);
+        topic = topbuf;
+      }
+    } else {
+        topic = v["topic"].as<char*>();
+    }
+    if (!v.containsKey("topic")) {
+      DEBUG_PRINTLN("MQ: topic missing");
+      err = true;
+      continue;
+    }
+    if (!v.containsKey("msg")) {
+      DEBUG_PRINTLN("MQ: msg missing");
+      err = true;
+      continue;
+    }
+    uint8_t qos{0};
+    if (v.containsKey("qos")) {
+      qos = v.as<int>();
+    }
+    bool retain = false;
+    if (v.containsKey("retain")) {
+      retain = v.as<bool>();
+    }
+    mqtt->publish(topic, qos, retain, v["msg"].as<char*>());
+  }
+  return err;
+}
 
 //HA autodiscovery was removed in favor of the native integration in HA v0.102.0
 

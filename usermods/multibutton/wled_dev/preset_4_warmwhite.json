@@ -1,0 +1,77 @@
+{
+  "on": true,
+  "bri": 128,
+  "transition": 7,
+  "mainseg": 0,
+  "seg": [
+    {
+      "id": 0,
+      "start": 0,
+      "stop": 10,
+      "grp": 1,
+      "spc": 0,
+      "on": true,
+      "bri": 255,
+      "col": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "fx": 0,
+      "sx": 155,
+      "ix": 218,
+      "pal": 0,
+      "sel": true,
+      "rev": false,
+      "mi": false
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    },
+    {
+      "stop": 0
+    }
+  ]
+}
