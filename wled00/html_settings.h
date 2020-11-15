@@ -323,9 +323,9 @@ Presets now also can be used as macros to save both JSON and HTTP API commands.
 <br>Just enter the preset id below!</i> <i>
 Use 0 for the default action instead of a preset</i><br>Alexa On/Off Preset: 
 <input name="A0" type="number" min="0" max="250" required> <input name="A1" 
-type="number" min="0" max="250" required><br>Button short press Preset: Macro: 
-<input name="MP" type="number" min="0" max="250" required><br>Long Press: <input
- name="ML" type="number" min="0" max="250" required> Double press: <input 
+type="number" min="0" max="250" required><br>Button short press Preset: <input 
+name="MP" type="number" min="0" max="250" required><br>Long Press: <input 
+name="ML" type="number" min="0" max="250" required> Double press: <input 
 name="MD" type="number" min="0" max="250" required><br>Countdown-Over Preset: 
 <input name="MC" type="number" min="0" max="250" required><br>
 Timed-Light-Over Presets: <input name="MN" type="number" min="0" max="250" 

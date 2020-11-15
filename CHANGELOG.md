@@ -2,10 +2,16 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2011154
+
+-   Fixed RGBW saved incorrectly
+-   Fixed pmt caching requesting /presets.json too often
+-   Fixed deEEP not copying the first segment of EEPROM preset 16
+
 #### Build 2011153
 
 -   Fixed an ESP32 end-of-file issue
--   Fixed useRGBW not read from cfg.json 
+-   Fixed useRGBW not read from cfg.json
 
 #### Build 2011152
 
@@ -16,6 +22,7 @@
 -   Updated iro.js to v5 (fixes black color wheel)
 -   Added white temperature slider to color wheel
 -   Add JSON settings serialization/deserialization to cfg.json and wsec.json
+-   Added deEEP to convert the EEPROM settings and presets to files
 -   Playlist support - JSON only for now
 -   New v2 usermod methods `addToConfig()` and `readFromConfig()` (see EXAMPLE_v2 for doc)
 -   Added Ethernet support for ESP32 (PR #1316)

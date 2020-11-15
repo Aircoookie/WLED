@@ -1795,9 +1795,9 @@ function requestJson(command, rinfo = true, verbose = true) {
 		pmt = json.info.fs.pmt;
     if (pmt != pmtLS || pmt == 0) {
       setTimeout(loadPresets,99);
-      pmtLast = pmt;
     }
-		else populatePresets(true);
+    else populatePresets(true);
+    pmtLast = pmt;
 		var x='',y='<option value="0">Default</option>';
 		json.effects.shift(); //remove solid
 		for (i in json.effects) json.effects[i] = {id: parseInt(i)+1, name:json.effects[i]};
@@ -1827,7 +1827,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 			syncTglRecv = info.str;
       maxSeg = info.leds.maxseg;
       pmt = info.fs.pmt;
-      if (pmt != pmtLast) setTimeout(loadPresets,99);
+      if (!command && pmt != pmtLast) setTimeout(loadPresets,99);
       pmtLast = pmt;
 		lastinfo = info;
 		if (isInfo) populateInfo(info);

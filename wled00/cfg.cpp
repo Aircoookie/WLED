@@ -396,7 +396,7 @@ void serializeConfig() {
 
   //this is very crude and temporary
   byte ledType = TYPE_WS2812_RGB;
-  if (strip.rgbwMode) ledType = TYPE_SK6812_RGBW;
+  if (useRGBW) ledType = TYPE_SK6812_RGBW;
   #ifdef USE_WS2801
     ledType = TYPE_WS2801;
   #endif

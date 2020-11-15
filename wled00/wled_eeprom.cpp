@@ -418,9 +418,11 @@ void deEEP() {
             strip.getSegment(j).setOption(SEG_OPTION_ON, 1);
           }
         }
+        setValuesFromMainSeg();
         serializeState(pObj, true, false, true);
 
         strip.resetSegments();
+        setValuesFromMainSeg();
       }
     }
 
