@@ -583,7 +583,7 @@ public:
     return perc / 255;
   }
   
-  ~Espalexa(){delete devices;} //note: Espalexa is NOT meant to be destructed
+  ~Espalexa(){} //note: Espalexa is NOT meant to be destructed
 };
 
 #endif

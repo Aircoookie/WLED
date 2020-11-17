@@ -4,7 +4,7 @@
 #include "Arduino.h"
 #include <functional>
 
-typedef class EspalexaDevice;
+class EspalexaDevice;
 
 typedef std::function<void(uint8_t b)> BrightnessCallbackFunction;
 typedef std::function<void(EspalexaDevice* d)> DeviceCallbackFunction;
