@@ -419,6 +419,7 @@ void serializeConfig() {
 
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
+  #if defined(BTNPIN) && BTNPIN > -1
   JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
   hw_btn_ins_0[F("type")] = (buttonEnabled) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
@@ -429,16 +430,21 @@ void serializeConfig() {
   hw_btn_ins_0_macros.add(macroButton);
   hw_btn_ins_0_macros.add(macroLongPress);
   hw_btn_ins_0_macros.add(macroDoublePress);
+  #endif
 
+  #if defined(IRPIN) && IRPIN > -1
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir[F("pin")] = IR_PIN;
   hw_ir[F("type")] = 0;
+  #endif
 
+  #if defined(RLYPIN) && RLYPIN > -1
   JsonObject hw_relay = hw.createNestedObject("relay");
   hw_relay[F("pin")] = RLYPIN;
   hw_relay[F("rev")] = (RLYMDE) ? false : true;
   JsonObject hw_status = hw.createNestedObject("status");
   hw_status[F("pin")] = -1;
+  #endif
 
   JsonObject light = doc.createNestedObject("light");
   light[F("scale-bri")] = briMultiplier;
