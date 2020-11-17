@@ -61,7 +61,7 @@
   #include "SPIFFS.h"
 #endif
 
-#include "Network.h"
+#include "src/dependencies/network/Network.h"
 
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
