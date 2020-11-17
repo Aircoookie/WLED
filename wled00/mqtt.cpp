@@ -96,7 +96,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     }
   } else if (strcmp(topic, "") == 0)
   {
-      parseMQTTBriPayload(payload);
+    parseMQTTBriPayload(payload);
   }
 }
 

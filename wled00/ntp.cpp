@@ -266,7 +266,7 @@ void checkTimers()
           && (timerWeekday[i] & 0x01) //timer is enabled
           && timerWeekday[i] >> weekdayMondayFirst() & 0x01) //timer should activate at current day of week
       {
-        applyMacro(timerMacro[i]);
+        applyPreset(timerMacro[i]);
       }
     }
   }
