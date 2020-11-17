@@ -3,6 +3,39 @@
 #include "wled.h"
 
 /*
+ * --------------------
+ * Rawframe edit:
+ * - TESTED ON WLED VS.0.10.1 - WHERE ONLY PRESET 16 SAVES SEGMENTS - some macros may not be needed if this changes.
+ * - Code has been modified as my usage changed, as such it has poor use of functions vs if thens, but feel free to change it for me :)
+ * 
+ * Edited to SWITCH between two lighting scenes/modes : STANDBY and HIGHLIGHT
+ * 
+ * Usage:
+ *  - Standby is the default mode and Highlight is activated when the PIR detects activity.
+ *  - PIR delay now set to same value as Nightlight feature on boot but otherwise controlled as normal.
+ *  - Standby and Highlight brightness can be set on the fly (default values set on boot via macros calling presets).
+ *  - Macros are used to set Standby and Highlight states (macros can load saved presets etc).
+ * 
+ *    - Macro short button press   =  Highlight state default (used on boot only and sets default brightness).
+ *    - Macro double button press  =  Standby state default   (used on boot only and sets default brightness).
+ *    - Macro long button press    =  Highlight state         (after boot).
+ *    - Macro 16                   =  Standby state           (after boot).
+ *
+ *    ! It is advised not to set 'Apply preset at boot' or a boot macro (that activates a preset) as we will call our own macros on boot.
+ * 
+ *  - When the strip is off before PIR activates the strip will return to off for Standby mode, and vice versa.
+ *  - When the strip is turned off while in Highlight mode, it will return to standby mode. (This behaviour could be changed easily if for some reason you wanted the lights to go out when the pir is activated).
+ *  - Macros can be chained so you could do almost anything, such as have standby mode also turn on the nightlight function with a new time delay.
+ * 
+ * Segment Notes:
+ * - It's easier to save the segment selections in preset than apply via macro while we a limited to preset 16. (Ie, instead of selecting sections at the point of activating standby/highlight modes). 
+ * - Because only preset 16 saves segments, for now we are having to use addiotional macros to control segments where they are involved. Macros can be chained so this works but it would be better if macros also accepted json-api commands. (Testing http api segement behaviour of SS with SB left me a little confused).
+ * 
+ * Future:
+ *  - Maybe a second timer/timetable that turns on/off standby mode also after set inactivity period / date & times. For now this can be achieved others ways so may not be worth eating more processing power.
+ * 
+ * --------------------
+ * 
  * This usermod handles PIR sensor states.
  * The strip will be switched on and the off timer will be resetted when the sensor goes HIGH. 
  * When the sensor state goes LOW, the off timer is started and when it expires, the strip is switched off. 
@@ -30,14 +63,22 @@ class PIRsensorSwitch : public Usermod {
     const uint8_t PIRsensorPin = 13; // D7 on D1 mini
     // notification mode for colorUpdated()
     const byte NotifyUpdateMode = NOTIFIER_CALL_MODE_NO_NOTIFY; // NOTIFIER_CALL_MODE_DIRECT_CHANGE
-    // delay before switch off after the sensor state goes LOW
-    uint32_t m_switchOffDelay = 600000;
+    // 1 min delay before switch off after the sensor state goes LOW
+    uint32_t m_switchOffDelay = 60000;
     // off timer start time
     uint32_t m_offTimerStart = 0;
     // current PIR sensor pin state
     byte m_PIRsensorPinState = LOW;
     // PIR sensor enabled - ISR attached
     bool m_PIRenabled = true;
+    // temp standby brightness store. initial value set as nightlight default target brightness
+    byte briStandby _INIT(nightlightTargetBri);
+    // temp hightlight brightness store. initial value set as current brightness
+    byte briHighlight _INIT(bri);
+    // highlight active/deactive monitor 
+    bool highlightActive = false;
+    // wled on/off state in standby mode
+    bool standbyoff = false;
 
     /*
      * return or change if new PIR sensor state is available
@@ -60,15 +101,64 @@ class PIRsensorSwitch : public Usermod {
     /*
      * switch strip on/off
      */
+    // now allowing adjustable standby and highlight brightness
     void switchStrip(bool switchOn) {
-      if (switchOn && bri == 0) {
-        bri = briLast;
+      //if (switchOn && bri == 0) {
+      if (switchOn) { // **pir sensor is on and activated** 
+        //bri = briLast;
+        if (bri != 0) { // is WLED currently on
+          if (highlightActive) { // and is Highlight already on
+            briHighlight = bri; // then update highlight brightness with current brightness
+          }
+          else {
+            briStandby = bri; // else update standby brightness with current brightness
+          }
+        }
+        else { // WLED is currently off
+          if (!highlightActive) { // and Highlight is not already on
+            briStandby = briLast; // then update standby brightness with last active brightness (before turned off)
+            standbyoff = true;
+          }
+          else { // and Highlight is already on
+            briHighlight = briLast; // then set hightlight brightness to last active brightness (before turned off)
+          }
+        }
+        applyMacro(16); // apply highlight lighting without brightness
+        if (bri != briHighlight) { 
+          bri = briHighlight; // set current highlight brightness to last set highlight brightness
+        }
         colorUpdated(NotifyUpdateMode);
+        highlightActive = true; // flag highlight is on
       }    
-      else if (!switchOn && bri != 0) {
-        briLast = bri;
-        bri = 0;
+      else { // **pir timer has elapsed**
+        //briLast = bri;
+        //bri = 0;
+        if (bri != 0) { // is WLED currently on
+          briHighlight = bri; // update highlight brightness with current brightness
+          if (!standbyoff) { // 
+            bri = briStandby; // set standby brightness to last set standby brightness
+          }
+          else { // 
+            briLast = briStandby; // set standby off brightness
+            bri = 0; // set power off in standby
+            standbyoff = false; // turn off flag
+          }
+          applyMacro(macroLongPress); // apply standby lighting without brightness
+        }
+        else { // WLED is currently off
+          briHighlight = briLast; // set last active brightness (before turned off) to highlight lighting brightness
+          if (!standbyoff) { // 
+            bri = briStandby; // set standby brightness to last set standby brightness
+          }
+          else { // 
+            briLast = briStandby; // set standby off brightness 
+            bri = 0; // set power off in standby
+            standbyoff = false; // turn off flag 
+          }
+          applyMacro(macroLongPress); // apply standby lighting without brightness
+        }
         colorUpdated(NotifyUpdateMode);
+        highlightActive = false; // flag highlight is off
       }
     }
 
@@ -98,12 +188,12 @@ class PIRsensorSwitch : public Usermod {
      * switch off the strip if the delay has elapsed 
      */
     bool handleOffTimer() {
-      if (m_offTimerStart > 0 && millis() - m_offTimerStart > m_switchOffDelay) {
-        if (m_PIRenabled == true){
-          switchStrip(false);
-        }
+      if (m_offTimerStart > 0) {
+        if ((millis() - m_offTimerStart > m_switchOffDelay) || bri == 0 ) { // now also checking for manual power off during highlight mode
+        switchStrip(false);
         m_offTimerStart = 0;        
         return true;
+        }
       }
       return false;
     }
@@ -120,6 +210,12 @@ class PIRsensorSwitch : public Usermod {
       pinMode(PIRsensorPin, INPUT_PULLUP);
       // assign interrupt function and set CHANGE mode
       attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
+      // set delay to nightlight default duration on boot (after which json PIRoffSec overides if needed)
+      m_switchOffDelay = (nightlightDelayMins*60000);
+      applyMacro(macroButton); // apply default highlight lighting
+      briHighlight = bri;
+      applyMacro(macroDoublePress); // apply default standby lighting with brightness
+      briStandby = bri;
     }
 
 

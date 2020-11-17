@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2009290
+#define VERSION 2011120
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
@@ -55,11 +55,14 @@
   }
 #else // ESP32
   #include <WiFi.h>
+  #include <ETH.h>
   #include "esp_wifi.h"
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
   #include "SPIFFS.h"
 #endif
+
+#include "Network.h"
 
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
@@ -520,6 +523,13 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
+// Status LED
+#if STATUSLED && STATUSLED != LEDPIN
+  WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
+  WLED_GLOBAL unsigned short ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
+  WLED_GLOBAL bool ledStatusState _INIT(0); // the current LED state
+#endif
+
 // debug macro variable definitions
 #ifdef WLED_DEBUG
   WLED_GLOBAL unsigned long debugTime _INIT(0);
@@ -528,8 +538,11 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   WLED_GLOBAL int loops _INIT(0);
 #endif
 
-
-#define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
+#ifdef ARDUINO_ARCH_ESP32
+  #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED || ETH.localIP()[0] != 0)
+#else
+  #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
+#endif
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 
@@ -558,5 +571,6 @@ public:
   void initAP(bool resetAP = false);
   void initConnection();
   void initInterfaces();
+  void handleStatusLED();
 };
 #endif        // WLED_H

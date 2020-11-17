@@ -2,6 +2,38 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2011120
+
+-   Added the ability for the /api MQTT topic to receive JSON API payloads
+
+#### Build 2011040
+
+-   Inversed Rain direction (fixes #1147)
+
+#### Build 2011010
+
+-   Re-added previous C9 palette
+-   Renamed new C9 palette
+
+#### Build 2010290
+
+-   Colorful effect now supports palettes
+-   Added C9 2 palette (#1291)
+-   Improved C9 palette brightness by 12%
+-   Disable onboard LED if LEDs are off (PR #1245)
+-   Added optional status LED (PR #1264)
+-   Realtime max. brightness now honors brightness factor (fixes #1271)
+-   Updated ArduinoJSON to 6.17.0
+
+#### Build 2010020
+
+-   Fixed interaction of `T` and `NL` HTTP API commands (#1214)
+-   Fixed an issue where Sunrise mode nightlight does not activate if toggled on simultaneously 
+
+#### Build 2009291
+
+-   Fixed MQTT bootloop (no F() macro, #1199)
+
 #### Build 2009290
 
 -   Added basic DDP protocol support

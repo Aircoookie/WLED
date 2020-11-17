@@ -186,7 +186,7 @@ bool deserializeState(JsonObject root)
   if (tr >= 2) presetCycleTime = tr;
 
   JsonObject nl = root[F("nl")];
-  nightlightActive    = nl["on"]   | nightlightActive;
+  nightlightActive    = nl["on"]      | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
   nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated
   nightlightMode      = nl[F("mode")] | nightlightMode;
@@ -327,6 +327,11 @@ void serializeState(JsonObject root)
   nl[F("fade")] = (nightlightMode > NL_MODE_SET); //deprecated
   nl[F("mode")] = nightlightMode;
   nl[F("tbri")] = nightlightTargetBri;
+  if (nightlightActive) {
+      nl[F("rem")] = (nightlightDelayMs - (millis() - nightlightStartTime)) / 1000; // seconds remaining
+  } else {
+      nl[F("rem")] = -1;
+  }
 
   JsonObject udpn = root.createNestedObject("udpn");
   udpn[F("send")] = notifyDirect;

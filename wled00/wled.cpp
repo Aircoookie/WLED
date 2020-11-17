@@ -29,7 +29,7 @@ void WLED::reset()
 bool oappendi(int i)
 {
   char s[11];
-  sprintf(s, "%ld", i);
+  sprintf(s, "%d", i);
   return oappend(s);
 }
 
@@ -41,6 +41,68 @@ bool oappend(const char* txt)
   strcpy(obuf + olen, txt);
   olen += len;
   return true;
+}
+
+void prepareHostname(char* hostname)
+{
+  const char *pC = serverDescription;
+  uint8_t pos = 5;
+
+  while (*pC && pos < 24) { // while !null and not over length
+    if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
+      hostname[pos] = *pC;
+      pos++;
+    } else if (*pC == ' ' || *pC == '_' || *pC == '-' || *pC == '+' || *pC == '!' || *pC == '?' || *pC == '*') {
+      hostname[pos] = '-';
+      pos++;
+    }
+      // else do nothing - no leading hyphens and do not include hyphens for all other characters.
+      pC++;
+    }
+    // if the hostname is left blank, use the mac address/default mdns name
+    if (pos < 6) {
+      sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
+    } else { //last character must not be hyphen
+      while (pos > 0 && hostname[pos -1] == '-') {
+        hostname[pos -1] = 0;
+        pos--;
+      }
+    }
+}
+
+//handle Ethernet connection event
+void WiFiEvent(WiFiEvent_t event)
+{
+  char hostname[25] = "wled-";
+
+  switch (event) {
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+    case SYSTEM_EVENT_ETH_START:
+      DEBUG_PRINT("ETH Started");
+      break;
+    case SYSTEM_EVENT_ETH_CONNECTED:
+      DEBUG_PRINT("ETH Connected");
+      if (!apActive) {
+        WiFi.disconnect(true);
+      }
+      if (staticIP != (uint32_t)0x00000000 && staticGateway != (uint32_t)0x00000000) {
+        ETH.config(staticIP, staticGateway, staticSubnet, IPAddress(8, 8, 8, 8));
+      } else {
+        ETH.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
+      }
+      // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
+      prepareHostname(hostname);
+      ETH.setHostname(hostname);
+      showWelcomePage = false;
+      break;
+    case SYSTEM_EVENT_ETH_DISCONNECTED:
+      DEBUG_PRINT("ETH Disconnected");
+      forceReconnect = true;
+      break;
+#endif
+    default:
+      break;
+  }
 }
 
 void WLED::loop()
@@ -103,6 +165,7 @@ void WLED::loop()
   }
   yield();
   handleWs();
+  handleStatusLED();
 
 // DEBUG serial logging
 #ifdef WLED_DEBUG
@@ -119,7 +182,7 @@ void WLED::loop()
     lastWifiState = WiFi.status();
     DEBUG_PRINT("State time: ");    DEBUG_PRINTLN(wifiStateChangedTime);
     DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
-    DEBUG_PRINT("Client IP: ");     DEBUG_PRINTLN(WiFi.localIP());
+    DEBUG_PRINT("Client IP: ");     DEBUG_PRINTLN(Network.localIP());
     DEBUG_PRINT("Loops/sec: ");     DEBUG_PRINTLN(loops / 10);
     loops = 0;
     debugTime = millis();
@@ -174,6 +237,10 @@ void WLED::setup()
     SPIFFS.begin();
 #endif
 
+#if STATUSLED && STATUSLED != LEDPIN
+  pinMode(STATUSLED, OUTPUT);
+#endif
+
   DEBUG_PRINTLN(F("Load EEPROM"));
   loadSettingsFromEEPROM(true);
   beginStrip();
@@ -182,6 +249,7 @@ void WLED::setup()
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
+  WiFi.onEvent(WiFiEvent);
 
   if (macroBoot > 0)
     applyMacro(macroBoot);
@@ -286,7 +354,7 @@ void WLED::initAP(bool resetAP)
     if (udpPort2 > 0 && udpPort2 != ntpLocalPort && udpPort2 != udpPort && udpPort2 != udpRgbPort) {
       udp2Connected = notifier2Udp.begin(udpPort2);
     }
-    
+
     if (audioSyncPort > 0 || (((audioSyncEnabled)>>(0)) & 1) || (((audioSyncEnabled)>>(1)) & 1)) {
     #ifndef ESP8266
       udpSyncConnected = fftUdp.beginMulticast(IPAddress(239,0,0,1), audioSyncPort);
@@ -305,6 +373,10 @@ void WLED::initConnection()
   #ifdef WLED_ENABLE_WEBSOCKETS
   ws.onEvent(wsEvent);
   #endif
+
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+  ETH.begin();
+#endif
 
   WiFi.disconnect(true);        // close old connections
 #ifdef ESP8266
@@ -341,29 +413,7 @@ void WLED::initConnection()
 
   // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
   char hostname[25] = "wled-";
-  const char *pC = serverDescription;
-  uint8_t pos = 5;
-
-  while (*pC && pos < 24) { // while !null and not over length
-    if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
-      hostname[pos] = *pC;
-      pos++;
-    } else if (*pC == ' ' || *pC == '_' || *pC == '-' || *pC == '+' || *pC == '!' || *pC == '?' || *pC == '*') {
-      hostname[pos] = '-';
-      pos++;
-    }
-    // else do nothing - no leading hyphens and do not include hyphens for all other characters.
-    pC++;
-  }
-  // if the hostname is left blank, use the mac address/default mdns name
-  if (pos < 6) {
-    sprintf(hostname + 5, "%*s", 6, escapedMac.c_str() + 6);
-  } else { //last character must not be hyphen
-    while (pos > 0 && hostname[pos -1] == '-') {
-      hostname[pos -1] = 0;
-      pos--;
-    }
-  }
+  prepareHostname(hostname);
 
 #ifdef ESP8266
   WiFi.hostname(hostname);
@@ -384,9 +434,9 @@ void WLED::initInterfaces()
   DEBUG_PRINTLN(F("Init STA interfaces"));
 
   if (hueIP[0] == 0) {
-    hueIP[0] = WiFi.localIP()[0];
-    hueIP[1] = WiFi.localIP()[1];
-    hueIP[2] = WiFi.localIP()[2];
+    hueIP[0] = Network.localIP()[0];
+    hueIP[1] = Network.localIP()[1];
+    hueIP[2] = Network.localIP()[2];
   }
 
   // init Alexa hue emulation
@@ -492,7 +542,7 @@ void WLED::handleConnection()
     wasConnected = false;
     return;
   }
-  if (!WLED_CONNECTED) {
+  if (!Network.isConnected()) {
     if (interfacesInited) {
       DEBUG_PRINTLN(F("Disconnected!"));
       interfacesInited = false;
@@ -505,7 +555,7 @@ void WLED::handleConnection()
   } else if (!interfacesInited) {        // newly connected
     DEBUG_PRINTLN("");
     DEBUG_PRINT(F("Connected! IP address: "));
-    DEBUG_PRINTLN(WiFi.localIP());
+    DEBUG_PRINTLN(Network.localIP());
     initInterfaces();
     userConnected();
     usermods.connected();
@@ -518,4 +568,27 @@ void WLED::handleConnection()
       DEBUG_PRINTLN(F("Access point disabled."));
     }
   }
+}
+
+void WLED::handleStatusLED()
+{
+  #if STATUSLED && STATUSLED != LEDPIN
+  ledStatusType = WLED_CONNECTED ? 0 : 2;
+  if (mqttEnabled && ledStatusType != 2) // Wi-Fi takes presendence over MQTT
+    ledStatusType = WLED_MQTT_CONNECTED ? 0 : 4;
+  if (ledStatusType) {
+    if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
+      ledStatusLastMillis = millis();
+      ledStatusState = ledStatusState ? 0 : 1;
+      digitalWrite(STATUSLED, ledStatusState);
+    }
+  } else {
+    #ifdef STATUSLEDINVERTED
+      digitalWrite(STATUSLED, HIGH);
+    #else
+      digitalWrite(STATUSLED, LOW);
+    #endif
+
+  }
+  #endif
 }
