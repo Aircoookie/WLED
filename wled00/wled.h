@@ -10,9 +10,11 @@
 // version code in format yymmddb (b = daily build)
 #define VERSION 2011120
 
+//uncomment this if you have a "my_config.h" file you'd like to use
+//#define WLED_USE_MY_CONFIG
+
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
-#ifndef USE_CONFIG_OVERRIDE
 // ESP8266-01 (black) has 1MB flash and can thus fit the whole program. Use 1M(64K SPIFFS).
 // Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
 // Alternatively, with platformio pass your chosen flags to your custom build target in platformio.ini.override
@@ -63,6 +65,10 @@
 #endif
 
 #include "src/dependencies/network/Network.h"
+
+#ifdef WLED_USE_MY_CONFIG
+  #include "my_config.h"
+#endif
 
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
@@ -560,11 +566,4 @@ public:
   void initInterfaces();
   void handleStatusLED();
 };
-#endif        // USE_CONFIG_OVERRIDE 
-
-// User settings in file "user_config_override.h" added in gitignore so it will not be overwritten
-#ifdef USE_CONFIG_OVERRIDE
-  #include "user_config_override.h"         // Configuration overrides
-#endif
-
 #endif        // WLED_H
