@@ -1,18 +1,12 @@
-#ifndef WLED_H
-#define WLED_H
-/*
-   Main sketch, global variable declarations
-   @title WLED project sketch
-   @version 0.10.2
-   @author Christian Schwinne
- */
+// force the compiler to show a warning to confirm that this file is included
+#warning **** user_config_override.h: Using Settings from this File ****
 
-// version code in format yymmddb (b = daily build)
-#define VERSION 2011120
+/* Uncomment and use your WIFI settings
+#define CLIENT_SSID "Your_SSID"
+#define CLIENT_PASS "Your_Password"
+*/
 
 // ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
-
-#ifndef USE_CONFIG_OVERRIDE
 // ESP8266-01 (black) has 1MB flash and can thus fit the whole program. Use 1M(64K SPIFFS).
 // Uncomment some of the following lines to disable features to compile for ESP8266-01 (max flash size 434kB):
 // Alternatively, with platformio pass your chosen flags to your custom build target in platformio.ini.override
@@ -55,14 +49,11 @@
   }
 #else // ESP32
   #include <WiFi.h>
-  #include <ETH.h>
   #include "esp_wifi.h"
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
   #include "SPIFFS.h"
 #endif
-
-#include "src/dependencies/network/Network.h"
 
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
@@ -256,12 +247,12 @@ WLED_GLOBAL byte e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT]; // to detect p
 WLED_GLOBAL bool e131Multicast _INIT(false);                      // multicast or unicast
 WLED_GLOBAL bool e131SkipOutOfSequence _INIT(false);              // freeze instead of flickering
 
-WLED_GLOBAL bool mqttEnabled _INIT(false);
+WLED_GLOBAL bool mqttEnabled _INIT(true);
 WLED_GLOBAL char mqttDeviceTopic[33] _INIT("");            // main MQTT topic (individual per device, default is wled/mac)
 WLED_GLOBAL char mqttGroupTopic[33] _INIT("wled/all");     // second MQTT topic (for example to group devices)
-WLED_GLOBAL char mqttServer[33] _INIT("");                 // both domains and IPs should work (no SSL)
-WLED_GLOBAL char mqttUser[41] _INIT("");                   // optional: username for MQTT auth
-WLED_GLOBAL char mqttPass[41] _INIT("");                   // optional: password for MQTT auth
+WLED_GLOBAL char mqttServer[33] _INIT("your_broker.ip");   // both domains and IPs should work (no SSL)
+WLED_GLOBAL char mqttUser[41] _INIT("your_mqtt_user");     // optional: username for MQTT auth
+WLED_GLOBAL char mqttPass[41] _INIT("your_mqtt_pwd");      // optional: password for MQTT auth
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
 WLED_GLOBAL uint16_t mqttPort _INIT(1883);
 
@@ -275,9 +266,9 @@ WLED_GLOBAL bool hueApplyBri _INIT(true);
 WLED_GLOBAL bool hueApplyColor _INIT(true);
 
 // Time CONFIG
-WLED_GLOBAL bool ntpEnabled _INIT(false);         // get internet time. Only required if you use clock overlays or time-activated macros
+WLED_GLOBAL bool ntpEnabled _INIT(true);          // get internet time. Only required if you use clock overlays or time-activated macros
 WLED_GLOBAL bool useAMPM _INIT(false);            // 12h/24h clock format
-WLED_GLOBAL byte currentTimezone _INIT(0);        // Timezone ID. Refer to timezones array in wled10_ntp.ino
+WLED_GLOBAL byte currentTimezone _INIT(2);        // Timezone ID. Refer to timezones array in wled10_ntp.ino
 WLED_GLOBAL int utcOffsetSecs _INIT(0);           // Seconds to offset from UTC before timzone calculation
 
 WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
@@ -304,7 +295,7 @@ WLED_GLOBAL byte macroButton _INIT(0), macroLongPress _INIT(0), macroDoublePress
 // Security CONFIG
 WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
 WLED_GLOBAL bool wifiLock    _INIT(false);  // prevents access to WiFi settings when OTA lock is enabled
-WLED_GLOBAL bool aOtaEnabled _INIT(true);   // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
+WLED_GLOBAL bool aOtaEnabled _INIT(false);   // ArduinoOTA allows easy updates directly from the IDE. Careful, it does not auto-disable when OTA lock is on
 
 WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use in usermod
 
@@ -525,11 +516,8 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   WLED_GLOBAL int loops _INIT(0);
 #endif
 
-#ifdef ARDUINO_ARCH_ESP32
-  #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED || ETH.localIP()[0] != 0)
-#else
-  #define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
-#endif
+
+#define WLED_CONNECTED (WiFi.status() == WL_CONNECTED)
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 
@@ -560,11 +548,3 @@ public:
   void initInterfaces();
   void handleStatusLED();
 };
-#endif        // USE_CONFIG_OVERRIDE 
-
-// User settings in file "user_config_override.h" added in gitignore so it will not be overwritten
-#ifdef USE_CONFIG_OVERRIDE
-  #include "user_config_override.h"         // Configuration overrides
-#endif
-
-#endif        // WLED_H
