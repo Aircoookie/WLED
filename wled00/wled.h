@@ -274,8 +274,8 @@ WLED_GLOBAL char blynkApiKey[36] _INIT(
 WLED_GLOBAL char
     blynkServerAdr[36] _INIT(""); // Server address for a local blynk server. If
                                   // empty, the default blynk server is used.
-                                  // Serer port for a local blynk server.
-WLED_GLOBAL uint16_t blynkServerPort _INIT(8080);
+WLED_GLOBAL uint16_t blynkServerPort
+    _INIT(8080); // Serer port for a local blynk server.
 
 WLED_GLOBAL uint16_t realtimeTimeoutMs
     _INIT(2500); // ms timeout of realtime mode before returning to normal mode
