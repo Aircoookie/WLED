@@ -1475,13 +1475,20 @@ function populateQL()
 	var cn = "";
 	if (pQL.length > 0) {
 	cn += `<p class="labels">Quick load</p>`;
-	
+  
+  var it = 0;
 	for (var key in pQL)
 	{
-		cn += `<button class="xxs btn psts" id="p${pQL[key][0]}qlb" onclick="setPreset(${pQL[key][0]});">${pQL[key][1]}</button>`;
-	}
+    cn += `<button class="xxs btn psts" id="p${pQL[key][0]}qlb" onclick="setPreset(${pQL[key][0]});">${pQL[key][1]}</button>`;
+    it++;
+    if (it > 4) {
+      it = 0;
+      cn += '<br>';
+    }
+  }
+  if (it != 0) cn+= '<br>';
 	
-	cn += `<br><p class="labels">All presets</p>`;
+	cn += `<p class="labels">All presets</p>`;
 	}
 	d.getElementById('pql').innerHTML = cn;
 }
