@@ -310,8 +310,8 @@ void getSettingsJS(byte subPage, char *dest) {
     sappends('s', SET_F("AI"), alexaInvocationName);
     sappend('c', SET_F("SA"), notifyAlexa);
     sappends('s', SET_F("BK"), (char *)((blynkEnabled) ? SET_F("Hidden") : ""));
-    sappends('s',"BKS", (char*)(blynkServerAdr);
-    sappend('v',"BKP", blynkServerPort);
+    sappends('s',SET_F("BKS"), (char*)(blynkServerAdr);
+    sappend('v',SET_F("BKP"), blynkServerPort);
 
 #ifdef WLED_ENABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);
