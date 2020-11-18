@@ -310,39 +310,38 @@ void getSettingsJS(byte subPage, char *dest) {
     sappends('s', SET_F("AI"), alexaInvocationName);
     sappend('c', SET_F("SA"), notifyAlexa);
     sappends('s', SET_F("BK"), (char *)((blynkEnabled) ? SET_F("Hidden") : ""));
-    sappends('s',SET_F("BKS"), (char*)(blynkServerAdr);
-    sappend('v',SET_F("BKP"), blynkServerPort);
+    sappends('s', SET_F("BKS"), (char *)(blynkServerAdr));
+    sappend('v', SET_F("BKP"), blynkServerPort);
 
 #ifdef WLED_ENABLE_MQTT
-    sappend('c',SET_F("MQ"),mqttEnabled);
-    sappends('s',SET_F("MS"),mqttServer);
-    sappend('v',SET_F("MQPORT"),mqttPort);
-    sappends('s',SET_F("MQUSER"),mqttUser);
-    sappends('s',SET_F("MQPASS"),mqttPass);
+    sappend('c', SET_F("MQ"), mqttEnabled);
+    sappends('s', SET_F("MS"), mqttServer);
+    sappend('v', SET_F("MQPORT"), mqttPort);
+    sappends('s', SET_F("MQUSER"), mqttUser);
+    sappends('s', SET_F("MQPASS"), mqttPass);
     byte l = strlen(mqttPass);
-    char fpass[l+1]; //fill password field with ***
+    char fpass[l + 1]; // fill password field with ***
     fpass[l] = 0;
-    memset(fpass,'*',l);
-    sappends('s',SET_F("MQPASS"),fpass);
-    sappends('s',SET_F("MQCID"),mqttClientID);
-    sappends('s',SET_F("MD"),mqttDeviceTopic);
-    sappends('s',SET_F("MG"),mqttGroupTopic);
+    memset(fpass, '*', l);
+    sappends('s', SET_F("MQPASS"), fpass);
+    sappends('s', SET_F("MQCID"), mqttClientID);
+    sappends('s', SET_F("MD"), mqttDeviceTopic);
+    sappends('s', SET_F("MG"), mqttGroupTopic);
 #endif
 
 #ifndef WLED_DISABLE_HUESYNC
-    sappend('v',SET_F("H0"),hueIP[0]);
-    sappend('v',SET_F("H1"),hueIP[1]);
-    sappend('v',SET_F("H2"),hueIP[2]);
-    sappend('v',SET_F("H3"),hueIP[3]);
-    sappend('v',SET_F("HL"),huePollLightId);
-    sappend('v',SET_F("HI"),huePollIntervalMs);
-    sappend('c',SET_F("HP"),huePollingEnabled);
-    sappend('c',SET_F("HO"),hueApplyOnOff);
-    sappend('c',SET_F("HB"),hueApplyBri);
-    sappend('c',SET_F("HC"),hueApplyColor);
+    sappend('v', SET_F("H0"), hueIP[0]);
+    sappend('v', SET_F("H1"), hueIP[1]);
+    sappend('v', SET_F("H2"), hueIP[2]);
+    sappend('v', SET_F("H3"), hueIP[3]);
+    sappend('v', SET_F("HL"), huePollLightId);
+    sappend('v', SET_F("HI"), huePollIntervalMs);
+    sappend('c', SET_F("HP"), huePollingEnabled);
+    sappend('c', SET_F("HO"), hueApplyOnOff);
+    sappend('c', SET_F("HB"), hueApplyBri);
+    sappend('c', SET_F("HC"), hueApplyColor);
     char hueErrorString[25];
-    switch (hueError)
-    {
+    switch (hueError) {
     case HUE_ERROR_INACTIVE:
       strcpy(hueErrorString, (char *)F("Inactive"));
       break;
@@ -367,8 +366,8 @@ void getSettingsJS(byte subPage, char *dest) {
     default:
       sprintf(hueErrorString, (char *)F("Bridge Error %i"), hueError);
     }
-    
-    sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
+
+    sappends('m', SET_F("(\"sip\")[0]"), hueErrorString);
 #endif
   }
 

@@ -181,15 +181,18 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage) {
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
 
     if ((request->hasArg("BK") && !request->arg("BK").equals("Hidden")) &&
-        (request->hasArg("BKS") && !request->arg("BKS").equals("Hidden")) &&
-        (request->hasArg("BKP") && !request->arg("BKP").equals("Hidden"))) {
+        (request->hasArg("BKS") && !request->arg("BKS").equals("")) &&
+        request->hasArg("BKP") && request->arg("BKP").toInt()) {
       strlcpy(blynkApiKey, request->arg("BK").c_str(), 36);
       strlcpy(blynkServerAdr, request->arg("BKS").c_str(), 36);
       blynkServerPort = request->arg("BKP").toInt();
       initLocalBlynk(blynkApiKey, blynkServerAdr, blynkServerPort);
-    } else if (request->hasArg("BK") && !request->arg("BK").equals("Hidden")) {
+      saveSettingsToEEPROM();
+    } else if (request->hasArg("BK") && !request->arg("BK").equals("Hidden") &&
+               !request->hasArg("BKS") && !request->hasArg("BKP")) {
       strlcpy(blynkApiKey, request->arg("BK").c_str(), 36);
       initBlynk(blynkApiKey);
+      saveSettingsToEEPROM();
     }
 
 #ifdef WLED_ENABLE_MQTT
