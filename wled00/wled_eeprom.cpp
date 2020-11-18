@@ -2,12 +2,16 @@
 #include "wled.h"
 
 /*
+ * DEPRECATED, do not use for new settings
+ * Only used to restore config from pre-0.11 installations using the deEEP() methods
+ * 
  * Methods to handle saving and loading to non-volatile memory
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
 
 //eeprom Version code, enables default settings instead of 0 init on update
 #define EEPVER 22
+#define EEPSIZE 2560  //Maximum is 4096
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -32,34 +36,6 @@
 //21-> 0.10.1p
 //22-> 2009260
 
-void commit()
-{
-  if (!EEPROM.commit()) errorFlag = 2;
-}
-
-/*
- * Erase all configuration data
- */
-void clearEEPROM()
-{
-  for (int i = 0; i < EEPSIZE; i++)
-  {
-    EEPROM.write(i, 0);
-  }
-  commit();
-}
-
-
-void writeStringToEEPROM(uint16_t pos, char* str, uint16_t len)
-{
-  for (int i = 0; i < len; ++i)
-  {
-    EEPROM.write(pos + i, str[i]);
-    if (str[i] == 0) return;
-  }
-}
-
-
 void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
 {
   for (int i = 0; i < len; ++i)
@@ -71,237 +47,13 @@ void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
 }
 
 /*
- * Write configuration to flash
- */
-void saveSettingsToEEPROM()
-{
-  if (EEPROM.read(233) != 233) //set no first boot flag
-  {
-    clearEEPROM();
-    EEPROM.write(233, 233);
-  }
-
-  writeStringToEEPROM(  0, clientSSID, 32);
-  writeStringToEEPROM( 32, clientPass, 64);
-  writeStringToEEPROM( 96,      cmDNS, 32);
-  writeStringToEEPROM(128,     apSSID, 32);
-  writeStringToEEPROM(160,     apPass, 64);
-
-  EEPROM.write(224, nightlightDelayMinsDefault);
-  EEPROM.write(225, nightlightMode);
-  EEPROM.write(226, notifyDirectDefault);
-  EEPROM.write(227, apChannel);
-  EEPROM.write(228, apHide);
-  EEPROM.write(229, ledCount & 0xFF);
-  EEPROM.write(230, notifyButton);
-  EEPROM.write(231, notifyTwice);
-  EEPROM.write(232, buttonEnabled);
-  //233 reserved for first boot flag
-
-  for (int i = 0; i<4; i++) //ip addresses
-  {
-    EEPROM.write(234+i, staticIP[i]);
-    EEPROM.write(238+i, staticGateway[i]);
-    EEPROM.write(242+i, staticSubnet[i]);
-  }
-
-  EEPROM.write(249, briS);
-
-  EEPROM.write(250, receiveNotificationBrightness);
-  EEPROM.write(251, fadeTransition);
-  EEPROM.write(252, strip.reverseMode);
-  EEPROM.write(253, transitionDelayDefault & 0xFF);
-  EEPROM.write(254, (transitionDelayDefault >> 8) & 0xFF);
-  EEPROM.write(255, briMultiplier);
-
-  //255,250,231,230,226 notifier bytes
-  writeStringToEEPROM(256, otaPass, 32);
-
-  EEPROM.write(288, nightlightTargetBri);
-  EEPROM.write(289, otaLock);
-  EEPROM.write(290, udpPort & 0xFF);
-  EEPROM.write(291, (udpPort >> 8) & 0xFF);
-  writeStringToEEPROM(292, serverDescription, 32);
-
-  EEPROM.write(327, ntpEnabled);
-  EEPROM.write(328, currentTimezone);
-  EEPROM.write(329, useAMPM);
-  EEPROM.write(330, strip.gammaCorrectBri);
-  EEPROM.write(331, strip.gammaCorrectCol);
-  EEPROM.write(332, overlayDefault);
-
-  EEPROM.write(333, alexaEnabled);
-  writeStringToEEPROM(334, alexaInvocationName, 32);
-  EEPROM.write(366, notifyAlexa);
-
-  EEPROM.write(367, (arlsOffset>=0));
-  EEPROM.write(368, abs(arlsOffset));
-  EEPROM.write(369, turnOnAtBoot);
-
-  EEPROM.write(370, noWifiSleep);
-
-  EEPROM.write(372, useRGBW);
-  EEPROM.write(374, strip.paletteFade);
-  EEPROM.write(375, strip.milliampsPerLed); //was apWaitTimeSecs up to 0.8.5
-  EEPROM.write(376, apBehavior);
-
-  EEPROM.write(377, EEPVER); //eeprom was updated to latest
-
-  EEPROM.write(378, udpPort2 & 0xFF);
-  EEPROM.write(379, (udpPort2 >> 8) & 0xFF);
-
-  EEPROM.write(382, strip.paletteBlend);
-  EEPROM.write(383, strip.colorOrder);
-
-  EEPROM.write(385, irEnabled);
-
-  EEPROM.write(387, strip.ablMilliampsMax & 0xFF);
-  EEPROM.write(388, (strip.ablMilliampsMax >> 8) & 0xFF);
-  EEPROM.write(389, bootPreset);
-  EEPROM.write(390, aOtaEnabled);
-  EEPROM.write(391, receiveNotificationColor);
-  EEPROM.write(392, receiveNotificationEffects);
-  EEPROM.write(393, wifiLock);
-
-  EEPROM.write(394, abs(utcOffsetSecs) & 0xFF);
-  EEPROM.write(395, (abs(utcOffsetSecs) >> 8) & 0xFF);
-  EEPROM.write(396, (utcOffsetSecs<0)); //is negative
-  EEPROM.write(397, syncToggleReceive);
-  EEPROM.write(398, (ledCount >> 8) & 0xFF);
-  //EEPROM.write(399, was !enableSecTransition);
-
-  //favorite setting (preset) memory (25 slots/ each 20byte)
-  //400 - 940 reserved
-  writeStringToEEPROM(990, ntpServerName, 32);
-
-  EEPROM.write(2048, huePollingEnabled);
-  //EEPROM.write(2049, hueUpdatingEnabled);
-  for (int i = 2050; i < 2054; ++i)
-  {
-    EEPROM.write(i, hueIP[i-2050]);
-  }
-  writeStringToEEPROM(2054, hueApiKey, 46);
-  EEPROM.write(2100, huePollIntervalMs & 0xFF);
-  EEPROM.write(2101, (huePollIntervalMs >> 8) & 0xFF);
-  EEPROM.write(2102, notifyHue);
-  EEPROM.write(2103, hueApplyOnOff);
-  EEPROM.write(2104, hueApplyBri);
-  EEPROM.write(2105, hueApplyColor);
-  EEPROM.write(2106, huePollLightId);
-
-  EEPROM.write(2150, overlayMin);
-  EEPROM.write(2151, overlayMax);
-  EEPROM.write(2152, analogClock12pixel);
-  EEPROM.write(2153, analogClock5MinuteMarks);
-  EEPROM.write(2154, analogClockSecondsTrail);
-
-  EEPROM.write(2155, countdownMode);
-  EEPROM.write(2156, countdownYear);
-  EEPROM.write(2157, countdownMonth);
-  EEPROM.write(2158, countdownDay);
-  EEPROM.write(2159, countdownHour);
-  EEPROM.write(2160, countdownMin);
-  EEPROM.write(2161, countdownSec);
-  setCountdown();
-
-  writeStringToEEPROM(2165, cronixieDisplay, 6);
-  EEPROM.write(2171, cronixieBacklight);
-  setCronixie();
-
-  EEPROM.write(2175, macroBoot);
-  EEPROM.write(2176, macroAlexaOn);
-  EEPROM.write(2177, macroAlexaOff);
-  EEPROM.write(2178, macroButton);
-  EEPROM.write(2179, macroLongPress);
-  EEPROM.write(2180, macroCountdown);
-  EEPROM.write(2181, macroNl);
-  EEPROM.write(2182, macroDoublePress);
-
-  #ifdef WLED_ENABLE_DMX
-  EEPROM.write(2185, e131ProxyUniverse & 0xFF);
-  EEPROM.write(2186, (e131ProxyUniverse >> 8) & 0xFF);
-  #endif
-
-  EEPROM.write(2187, e131Port & 0xFF);
-  EEPROM.write(2188, (e131Port >> 8) & 0xFF);
-
-  EEPROM.write(2189, e131SkipOutOfSequence);
-  EEPROM.write(2190, e131Universe & 0xFF);
-  EEPROM.write(2191, (e131Universe >> 8) & 0xFF);
-  EEPROM.write(2192, e131Multicast);
-  EEPROM.write(2193, realtimeTimeoutMs & 0xFF);
-  EEPROM.write(2194, (realtimeTimeoutMs >> 8) & 0xFF);
-  EEPROM.write(2195, arlsForceMaxBri);
-  EEPROM.write(2196, arlsDisableGammaCorrection);
-  EEPROM.write(2197, DMXAddress & 0xFF);
-  EEPROM.write(2198, (DMXAddress >> 8) & 0xFF);
-  EEPROM.write(2199, DMXMode);
-
-  EEPROM.write(2200, !receiveDirect);
-  EEPROM.write(2201, notifyMacro); //was enableRealtime
-  EEPROM.write(2203, strip.rgbwMode);
-  EEPROM.write(2204, skipFirstLed);
-
-  if (saveCurrPresetCycConf)
-  {
-    EEPROM.write(2205, presetCyclingEnabled);
-    EEPROM.write(2206, presetCycleTime & 0xFF);
-    EEPROM.write(2207, (presetCycleTime >> 8) & 0xFF);
-    EEPROM.write(2208, presetCycleMin);
-    EEPROM.write(2209, presetCycleMax);
-    EEPROM.write(2210, presetApplyBri);
-    // was EEPROM.write(2211, presetApplyCol);
-    // was EEPROM.write(2212, presetApplyFx);
-    saveCurrPresetCycConf = false;
-  }
-
-  writeStringToEEPROM(2220, blynkApiKey, 35);
-
-  for (int i = 0; i < 8; ++i)
-  {
-    EEPROM.write(2260 + i, timerHours[i]  );
-    EEPROM.write(2270 + i, timerMinutes[i]);
-    EEPROM.write(2280 + i, timerWeekday[i]);
-    EEPROM.write(2290 + i, timerMacro[i]  );
-  }
-
-  EEPROM.write(2299, mqttEnabled);
-  writeStringToEEPROM(2300, mqttServer, 32);
-  writeStringToEEPROM(2333, mqttDeviceTopic, 32);
-  writeStringToEEPROM(2366, mqttGroupTopic, 32);
-  writeStringToEEPROM(2399, mqttUser, 40);
-  writeStringToEEPROM(2440, mqttPass, 40);
-  writeStringToEEPROM(2481, mqttClientID, 40);
-  EEPROM.write(2522, mqttPort & 0xFF);
-  EEPROM.write(2523, (mqttPort >> 8) & 0xFF);
-
-  // DMX (2530 - 2549)
-  #ifdef WLED_ENABLE_DMX
-  EEPROM.write(2530, DMXChannels);
-  EEPROM.write(2531, DMXGap & 0xFF);
-  EEPROM.write(2532, (DMXGap >> 8) & 0xFF);
-  EEPROM.write(2533, DMXStart & 0xFF);
-  EEPROM.write(2534, (DMXStart >> 8) & 0xFF);
-
-  for (int i=0; i<15; i++) {
-    EEPROM.write(2535+i, DMXFixtureMap[i]);
-  } // last used: 2549. maybe leave a few bytes for future expansion and go on with 2600 kthxbye.
-  #endif
-
-  commit();
-}
-
-
-/*
  * Read all configuration from flash
  */
-void loadSettingsFromEEPROM(bool first)
+void loadSettingsFromEEPROM()
 {
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
-    DEBUG_PRINT("Settings invalid, restoring defaults...");
-    saveSettingsToEEPROM();
-    DEBUG_PRINTLN("done");
+    DEBUG_PRINTLN(F("EEPROM settings invalid, using defaults..."));
     return;
   }
   int lastEEPROMversion = EEPROM.read(377); //last EEPROM version before update
@@ -343,7 +95,7 @@ void loadSettingsFromEEPROM(bool first)
   staticSubnet[3] = EEPROM.read(245);
 
   briS = EEPROM.read(249); bri = briS;
-  if (!EEPROM.read(369) && first)
+  if (!EEPROM.read(369))
   {
     bri = 0; briLast = briS;
   }
@@ -426,7 +178,7 @@ void loadSettingsFromEEPROM(bool first)
     readStringFromEEPROM(2165, cronixieDisplay, 6);
     cronixieBacklight = EEPROM.read(2171);
 
-    macroBoot = EEPROM.read(2175);
+    //macroBoot = EEPROM.read(2175);
     macroAlexaOn = EEPROM.read(2176);
     macroAlexaOff = EEPROM.read(2177);
     macroButton = EEPROM.read(2178);
@@ -457,7 +209,9 @@ void loadSettingsFromEEPROM(bool first)
       timerMinutes[i] = EEPROM.read(2270 + i);
       timerWeekday[i] = EEPROM.read(2280 + i);
       timerMacro[i]   = EEPROM.read(2290 + i);
+      if (timerMacro[i] > 0) timerMacro[i] += 16; //add 16 to work with macro --> preset mapping
       if (timerWeekday[i] == 0) timerWeekday[i] = 255;
+      if (timerMacro[i] == 0) timerWeekday[i] = timerWeekday[i] & 0b11111110; 
     }
   }
 
@@ -559,7 +313,7 @@ void loadSettingsFromEEPROM(bool first)
     if (lastEEPROMversion < 21) presetCycleTime /= 100; //was stored in ms, now is in tenths of a second
     presetCycleMin = EEPROM.read(2208);
     presetCycleMax = EEPROM.read(2209);
-    presetApplyBri = EEPROM.read(2210);
+    //was presetApplyBri = EEPROM.read(2210);
     //was presetApplyCol = EEPROM.read(2211);
     //was presetApplyFx = EEPROM.read(2212);
   }
@@ -588,7 +342,7 @@ void loadSettingsFromEEPROM(bool first)
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
   } //last used: 2549
-  EEPROM.write(2550, DMXStartLED);
+  DMXStartLED = EEPROM.read(2550);
   #endif
 
   //Usermod memory
@@ -597,159 +351,114 @@ void loadSettingsFromEEPROM(bool first)
   //2944 - 3071 reserved for Usermods (need to increase EEPSIZE to 3072 in const.h)
 
   overlayCurrent = overlayDefault;
-
-  savedToPresets();
 }
 
 
-//PRESET PROTOCOL 20 bytes
-//0: preset purpose byte 0:invalid 1:valid preset 2:segment preset 2.0
-//1:a 2:r 3:g 4:b 5:w 6:er 7:eg 8:eb 9:ew 10:fx 11:sx | custom chase 12:numP 13:numS 14:(0:fs 1:both 2:fe) 15:step 16:ix 17: fp 18-19:Zeros
-//determines which presets already contain save data
-void savedToPresets()
-{
-  for (byte index = 1; index < 16; index++)
-  {
-    uint16_t i = 380 + index*20;
-
-    if (EEPROM.read(i) == 1) {
-      savedPresets |= 0x01 << (index-1);
-    } else
-    {
-      savedPresets &= ~(0x01 << (index-1));
-    }
-  }
-  if (EEPROM.read(700) == 2 || EEPROM.read(700) == 3) {
-    savedPresets |= 0x01 << 15;
-  } else
-  {
-    savedPresets &= ~(0x01 << 15);
-  }
+//provided for increased compatibility with usermods written for v0.10
+void applyMacro(byte index) {
+  applyPreset(index+16);
 }
 
-bool applyPreset(byte index, bool loadBri)
-{
-  if (index == 255 || index == 0)
-  {
-    loadSettingsFromEEPROM(false);//load boot defaults
-    return true;
-  }
-  if (index > 16 || index < 1) return false;
-  uint16_t i = 380 + index*20;
-  byte ver = EEPROM.read(i);
 
-  if (index < 16) {
-    if (ver != 1) return false;
-    strip.applyToAllSelected = true;
-    if (loadBri) bri = EEPROM.read(i+1);
-    
-    for (byte j=0; j<4; j++)
-    {
-      col[j] = EEPROM.read(i+j+2);
-      colSec[j] = EEPROM.read(i+j+6);
-    }
-    strip.setColor(2, EEPROM.read(i+12), EEPROM.read(i+13), EEPROM.read(i+14), EEPROM.read(i+15)); //tertiary color
+// De-EEPROM routine, upgrade from previous versions to v0.11
+void deEEP() {
+  if (WLED_FS.exists("/presets.json")) return;
+  
+  DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
+  DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
+  DynamicJsonDocument dDoc(JSON_BUFFER_SIZE *2);
+  JsonObject sObj = dDoc.to<JsonObject>();
+  sObj.createNestedObject("0");
 
-    effectCurrent = EEPROM.read(i+10);
-    effectSpeed = EEPROM.read(i+11);
-    effectIntensity = EEPROM.read(i+16);
-    effectPalette = EEPROM.read(i+17);
-  } else {
-    if (ver != 2 && ver != 3) return false;
-    strip.applyToAllSelected = false;
-    if (loadBri) bri = EEPROM.read(i+1);
-    WS2812FX::Segment* seg = strip.getSegments();
-    memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
-    if (ver == 2) { //versions before 2004230 did not have opacity
-      for (byte j = 0; j < strip.getMaxSegments(); j++)
-      {
-        strip.getSegment(j).opacity = 255;
-        strip.getSegment(j).setOption(SEG_OPTION_ON, 1);
+  EEPROM.begin(EEPSIZE);
+  if (EEPROM.read(233) == 233) { //valid EEPROM save
+    for (uint16_t index = 1; index <= 16; index++) { //copy presets to presets.json
+      uint16_t i = 380 + index*20;
+      byte ver = EEPROM.read(i);
+
+      if ((index < 16 && ver != 1) || (index == 16 && (ver < 2 || ver > 3))) continue;
+
+      char nbuf[16];
+      sprintf(nbuf, "%d", index);
+
+      JsonObject pObj = sObj.createNestedObject(nbuf);
+
+      sprintf_P(nbuf, (char*)F("Preset %d"), index);
+      pObj["n"] = nbuf;
+
+      pObj["bri"] = EEPROM.read(i+1);
+
+      if (index < 16) {
+        JsonObject segObj = pObj.createNestedObject("seg");
+
+        JsonArray colarr = segObj.createNestedArray("col");
+
+        byte numChannels = (useRGBW)? 4:3;
+
+        for (uint8_t k = 0; k < 3; k++) //k=0 primary (i+2) k=1 secondary (i+6) k=2 tertiary color (i+12)
+        {
+          JsonArray colX = colarr.createNestedArray();
+          uint16_t memloc = i + 6*k;
+          if (k == 0) memloc += 2;
+
+          for (byte j = 0; j < numChannels; j++) colX.add(EEPROM.read(memloc + j));
+        }
+        
+        segObj[F("fx")]  = EEPROM.read(i+10);
+        segObj[F("sx")]  = EEPROM.read(i+11);
+        segObj[F("ix")]  = EEPROM.read(i+16);
+        segObj[F("pal")] = EEPROM.read(i+17);
+      } else {
+        WS2812FX::Segment* seg = strip.getSegments();
+        memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
+        if (ver == 2) { //versions before 2004230 did not have opacity
+          for (byte j = 0; j < strip.getMaxSegments(); j++)
+          {
+            strip.getSegment(j).opacity = 255;
+            strip.getSegment(j).setOption(SEG_OPTION_ON, 1);
+          }
+        }
+        setValuesFromMainSeg();
+        serializeState(pObj, true, false, true);
+
+        strip.resetSegments();
+        setValuesFromMainSeg();
       }
     }
-    setValuesFromMainSeg();
-  }
-  currentPreset = index;
-  isPreset = true;
-  return true;
-}
 
-void savePreset(byte index, bool persist)
-{
-  if (index > 16) return;
-  if (index < 1) {saveSettingsToEEPROM();return;}
-  uint16_t i = 380 + index*20;//min400
-  
-  if (index < 16) {
-    EEPROM.write(i, 1);
-    EEPROM.write(i+1, bri);
-    for (uint16_t j=0; j<4; j++)
-    {
-      EEPROM.write(i+j+2, col[j]);
-      EEPROM.write(i+j+6, colSec[j]);
+    
+    
+    for (uint16_t index = 1; index <= 16; index++) { //copy macros to presets.json
+      char m[65];
+      readStringFromEEPROM(1024+64*(index-1), m, 64);
+      if (m[0]) { //macro exists
+        char nbuf[16];
+        sprintf(nbuf, "%d", index + 16);
+        JsonObject pObj = sObj.createNestedObject(nbuf);
+        sprintf_P(nbuf, "Z Macro %d", index);
+        pObj["n"] = nbuf;
+        pObj["win"] = m;
+      }
     }
-    EEPROM.write(i+10, effectCurrent);
-    EEPROM.write(i+11, effectSpeed);
-
-    uint32_t colTer = strip.getSegment(strip.getMainSegmentId()).colors[2];
-    EEPROM.write(i+12, (colTer >> 16) & 0xFF);
-    EEPROM.write(i+13, (colTer >>  8) & 0xFF);
-    EEPROM.write(i+14, (colTer >>  0) & 0xFF);
-    EEPROM.write(i+15, (colTer >> 24) & 0xFF);
-  
-    EEPROM.write(i+16, effectIntensity);
-    EEPROM.write(i+17, effectPalette);
-  } else { //segment 16 can save segments
-    EEPROM.write(i, 3);
-    EEPROM.write(i+1, bri);
-    WS2812FX::Segment* seg = strip.getSegments();
-    memcpy(EEPROM.getDataPtr() +i+2, seg, 240);
   }
-  
-  if (persist) commit();
-  savedToPresets();
-  currentPreset = index;
-  isPreset = true;
-}
 
+  EEPROM.end();
 
-void loadMacro(byte index, char* m)
-{
-  index-=1;
-  if (index > 15) return;
-  readStringFromEEPROM(1024+64*index, m, 64);
-}
-
-
-void applyMacro(byte index)
-{
-  index-=1;
-  if (index > 15) return;
-  String mc="win&";
-  char m[65];
-  loadMacro(index+1, m);
-  mc += m;
-  mc += "&IN"; //internal, no XML response
-  if (!notifyMacro) mc += "&NN";
-  String forbidden = "&M="; //dont apply if called by the macro itself to prevent loop
-  /*
-   * NOTE: loop is still possible if you call a different macro from a macro, which then calls the first macro again.
-   * To prevent that, but also disable calling macros within macros, comment the next line out.
-   */
-  forbidden = forbidden + index;
-  if (mc.indexOf(forbidden) >= 0) return;
-  handleSet(nullptr, mc);
-}
-
-
-void saveMacro(byte index, const String& mc, bool persist) //only commit on single save, not in settings
-{
-  index-=1;
-  if (index > 15) return;
-  int s = 1024+index*64;
-  for (int i = s; i < s+64; i++)
-  {
-    EEPROM.write(i, mc.charAt(i-s));
+  File f = WLED_FS.open("/presets.json", "w");
+  if (!f) {
+    errorFlag = ERR_FS_GENERAL;
+    return;
   }
-  if (persist) commit();
+  serializeJson(dDoc, f);
+  f.close();
+  DEBUG_PRINTLN(F("deEEP complete!"));
+}
+
+void deEEPSettings() {
+  DEBUG_PRINTLN(F("Restore settings from EEPROM"));
+  EEPROM.begin(EEPSIZE);
+  loadSettingsFromEEPROM();
+  EEPROM.end();
+
+  serializeConfig();
 }
