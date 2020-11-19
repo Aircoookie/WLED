@@ -2,6 +2,13 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2011180
+
+-   Platformio.ini updates and streamlining (PR #1266)
+-   my_config.h custom compile settings system (not yet used for much, adapted from PR #1266)
+-   Added Hawaii timezone (HST)
+-   Linebreak after 5 quick select buttons
+
 #### Build 2011154
 
 -   Fixed RGBW saved incorrectly

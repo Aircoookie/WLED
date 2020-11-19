@@ -8,7 +8,10 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2011154
+#define VERSION 2011180
+
+//uncomment this if you have a "my_config.h" file you'd like to use
+//#define WLED_USE_MY_CONFIG
 
 // ESP8266-01 (blue) got too little storage space to work with WLED. 0.10.2 is the last release supporting this unit.
 
@@ -66,7 +69,11 @@
   #include <LITTLEFS.h>
 #endif
 
-#include "Network.h"
+#include "src/dependencies/network/Network.h"
+
+#ifdef WLED_USE_MY_CONFIG
+  #include "my_config.h"
+#endif
 
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>

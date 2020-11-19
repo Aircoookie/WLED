@@ -47,7 +47,7 @@
  #endif
 #endif
 #include <WiFiUdp.h>
-#include "Network.h"
+#include "../network/Network.h"
 
 #ifdef ESPALEXA_DEBUG
  #pragma message "Espalexa 2.4.6 debug mode"
@@ -583,7 +583,7 @@ public:
     return perc / 255;
   }
   
-  ~Espalexa(){delete devices;} //note: Espalexa is NOT meant to be destructed
+  ~Espalexa(){} //note: Espalexa is NOT meant to be destructed
 };
 
 #endif
