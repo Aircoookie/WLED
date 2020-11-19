@@ -995,17 +995,9 @@ input[type=number]::-webkit-outer-spin-button {
       <button class="xxs cl btn" onclick="selectSlot(1);">2</button>
       <button class="xxs cl btn" onclick="selectSlot(2);">3</button>
 	</div>
-
-	<div id="Segments" class="tabcontent">
-		<div id="segcont">
-			Loading...
-		</div>
-		<div id="segutil">
-
-		</div>
-		<div id="segutil2">
-			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
-		</div>
+	<div id="hexw">
+		<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
+		<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons btna-icon">&#xe390;</i></button>
 	</div>
     <p class="labels">Color palette</p>
     <div class="il">
@@ -1074,6 +1066,12 @@ input[type=number]::-webkit-outer-spin-button {
     </div>
     <div id="segutil">
 
+		</div>
+		<div id="segutil2">
+			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
+		</div>
+	</div>
+
 	<div id="Favorites" class="tabcontent">
 		<div id="putil">
 
@@ -1094,45 +1092,6 @@ input[type=number]::-webkit-outer-spin-button {
 		Time per preset: <input id="cyct" class="noslide" type="number" min="0.2" max="6553.5" step="0.1" value="1.2">s<br>
 		Transition: <input id="cyctt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s
 	</div>
-	<div id="segutil2">
-		<button class="btn btn-s rect" id="rsbtn" onclick="rSegs()">Reset segments</button>
-	</div>
-</div>
-
-  <div id="Favorites" class="tabcontent">
-    <p id="psLabel" class="labels">Load from slot</p>
-    <button class="xxs btn psts" onclick="setPreset(1);">1</button>
-    <button class="xxs btn psts" onclick="setPreset(2);">2</button>
-    <button class="xxs btn psts" onclick="setPreset(3);">3</button>
-    <button class="xxs btn psts" onclick="setPreset(4);">4</button><br>
-    <button class="xxs btn psts" onclick="setPreset(5);">5</button>
-    <button class="xxs btn psts" onclick="setPreset(6);">6</button>
-    <button class="xxs btn psts" onclick="setPreset(7);">7</button>
-    <button class="xxs btn psts" onclick="setPreset(8);">8</button><br>
-    <button class="xxs btn psts" onclick="setPreset(9);">9</button>
-    <button class="xxs btn psts" onclick="setPreset(10);">10</button>
-    <button class="xxs btn psts" onclick="setPreset(11);">11</button>
-    <button class="xxs btn psts" onclick="setPreset(12);">12</button><br>
-    <button class="xxs btn psts" onclick="setPreset(13);">13</button>
-    <button class="xxs btn psts" onclick="setPreset(14);">14</button>
-    <button class="xxs btn psts" onclick="setPreset(15);">15</button>
-    <button class="xxs btn psts" onclick="setPreset(16);">16</button><br>
-    <label class="check psvl">
-      Saving mode
-      <input type="checkbox" id="psToggle" onchange="togglePS()">
-      <span class="checkmark psv"></span>
-    </label><br>
-    <span class="h">Slot 16 can save all segments.</span><br><br>
-     <label class="check psvl">
-      Preset cycle
-      <input type="checkbox" id="cyToggle" onchange="toggleCY()">
-      <span class="checkmark psv"></span>
-    </label><br>
-    First preset: <input id="cycs" class="noslide" type="number" min="1" max="14" value="1"><br>
-    Last preset: <input id="cyce" class="noslide" type="number" min="2" max="15" value="3"><br>
-    Time per preset: <input id="cyct" class="noslide" type="number" min="0.2" max="6553.5" step="0.1" value="1.2">s<br>
-    Transition: <input id="cyctt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s
-  </div>
 </div>
 
 <div class="tab bot" id="bot">
