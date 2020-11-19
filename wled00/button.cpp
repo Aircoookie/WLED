@@ -17,7 +17,7 @@ void shortPressAction()
 
 bool isButtonPressed()
 {
-  #ifdef BTNPIN
+  #if defined(BTNPIN) && BTNPIN > -1
     if (digitalRead(BTNPIN) == LOW) return true;
   #endif
   #ifdef TOUCHPIN
@@ -29,7 +29,7 @@ bool isButtonPressed()
 
 void handleButton()
 {
-#if defined(BTNPIN) || defined(TOUCHPIN)
+#if (defined(BTNPIN) && BTNPIN > -1) || defined(TOUCHPIN)
   if (!buttonEnabled) return;
 
   if (isButtonPressed()) //pressed

@@ -96,7 +96,6 @@ void initServer()
   });
   server.addHandler(handler);
 
-  //*******DEPRECATED*******
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)VERSION);
     });
@@ -108,7 +107,6 @@ void initServer()
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
     });
-  //*******END*******/
   
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", PAGE_usermod);

@@ -2,6 +2,14 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2011200
+
+-   Added HEX color receiving to JSON API with `"col":["RRGGBBWW"]` format
+-   Moved Kelvin color receiving in JSON API from `"col":[[val]]` to `"col":[val]` format
+    _Notice:_ This is technically a breaking change. Since no release was made since the introduction and the Kelvin property was not previously documented in the wiki,
+    impact should be minimal. 
+-   BTNPIN can now be disabled by setting to -1 (fixes #1237)
+
 #### Build 2011180
 
 -   Platformio.ini updates and streamlining (PR #1266)
@@ -42,6 +50,7 @@
 -   More explanatory error messages in UI
 -   Improved candle brightness
 -   Return remaining nightlight time `nl.rem` in JSON API (PR #1302)
+-   UI sends timestamp with every command, allowing for timed presets without using NTP
 -   Added gamma calculation (yet unused)
 -   Added LED type definitions to const.h (yet unused)
 -   Added nicer 404 page
@@ -89,6 +98,7 @@
 
 -   Added Loxone parser (PR #1185)
 -   Added support for kelvin input via `K=` HTTP and `"col":[[val]]` JSON API calls
+    _Notice:_ `"col":[[val]]` removed in build 2011200, use `"col":[val]`
 -   Added supplementary UDP socket (#1205)
 -   TMP2.net receivable by default
 -   UDP sockets accept HTTP and JSON API commands

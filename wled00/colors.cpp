@@ -177,7 +177,7 @@ void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.develo
 }
 #endif // WLED_DISABLE_HUESYNC
 
-
+//RRGGBB / WWRRGGBB order for hex
 void colorFromDecOrHexString(byte* rgb, char* in)
 {
   if (in[0] == 0) return;
@@ -196,6 +196,27 @@ void colorFromDecOrHexString(byte* rgb, char* in)
   rgb[0] = (c >> 16) & 0xFF;
   rgb[1] = (c >>  8) & 0xFF;
   rgb[2] =  c        & 0xFF;
+}
+
+//contrary to the colorFromDecOrHexString() function, this uses the more standard RRGGBB / RRGGBBWW order
+bool colorFromHexString(byte* rgb, const char* in) {
+  if (in == nullptr) return false;
+  size_t inputSize = strnlen(in, 9);
+  if (inputSize != 6 && inputSize != 8) return false;
+
+  uint32_t c = strtoul(in, NULL, 16);
+
+  if (inputSize == 6) {
+    rgb[0] = (c >> 16) & 0xFF;
+    rgb[1] = (c >>  8) & 0xFF;
+    rgb[2] =  c        & 0xFF;
+  } else {
+    rgb[0] = (c >> 24) & 0xFF;
+    rgb[1] = (c >> 16) & 0xFF;
+    rgb[2] = (c >>  8) & 0xFF;
+    rgb[3] =  c        & 0xFF;
+  }
+  return true;
 }
 
 float minf (float v, float w)

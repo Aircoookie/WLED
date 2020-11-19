@@ -36,29 +36,38 @@ void deserializeSegment(JsonObject elem, byte it)
     {
       for (uint8_t i = 0; i < 3; i++)
       {
+        int rgbw[] = {0,0,0,0};
+        bool colValid = false;
         JsonArray colX = colarr[i];
-        if (colX.isNull()) break;
-        byte sz = colX.size();
-        if (sz > 0 && sz < 5)
-        {
-          int rgbw[] = {0,0,0,0};
-          byte cp = copyArray(colX, rgbw);
-          
-          if (cp == 1) {
-            if (rgbw[0] == 0) seg.colors[i] = 0;
-            else {
-              byte ctrgb[] = {0,0,0,0};
-              colorKtoRGB(rgbw[0], ctrgb);
-              for (uint8_t c = 0; c < 3; c++) rgbw[c] = ctrgb[c];
-            }
+        if (colX.isNull()) {
+          byte brgbw[] = {0,0,0,0};
+          const char* hexCol = colarr[i];
+          if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
+            int kelvin = colarr[i] | -1;
+            if (kelvin <  0) continue;
+            if (kelvin == 0) seg.colors[i] = 0;
+            if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+            colValid = true;
+          } else { //HEX string, e.g. "FFAA00"
+            colValid = colorFromHexString(brgbw, hexCol);
           }
-          if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
-          { 
-            if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
-            if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
-          } else {
-            seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
-          }
+          for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+        } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
+          byte sz = colX.size();
+          if (sz == 0) continue; //do nothing on empty array
+
+          byte cp = copyArray(colX, rgbw, 4);      
+          if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
+          colValid = true;
+        }
+
+        if (!colValid) continue;
+        if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
+        { 
+          if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
+          if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
+        } else { //normal case, apply directly to segment (=> no transition!)
+          seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
         }
       }
     }
@@ -179,7 +188,7 @@ bool deserializeState(JsonObject root)
   JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
-  nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated
+  nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated, remove for v0.12.0
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
