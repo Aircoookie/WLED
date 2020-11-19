@@ -68,7 +68,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   if (strncmp(topic, mqttDeviceTopic, topicPrefixLen) == 0) {
       topic += topicPrefixLen;
   } else {
-      size_t topic_prefix_len = strlen(mqttGroupTopic);
+      topicPrefixLen = strlen(mqttGroupTopic);
       if (strncmp(topic, mqttGroupTopic, topicPrefixLen) == 0) {
           topic += topicPrefixLen;
       } else {

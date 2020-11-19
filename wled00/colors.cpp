@@ -164,7 +164,7 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   rgb[0] = 255.0*r;
   rgb[1] = 255.0*g;
   rgb[2] = 255.0*b;
-  if (useRGBW) colorRGBtoRGBW(col);
+  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
