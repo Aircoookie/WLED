@@ -25,6 +25,12 @@ bool isButtonPressed();
 void handleButton();
 void handleIO();
 
+//cfg.cpp
+void deserializeConfig();
+bool deserializeConfigSec();
+void serializeConfig();
+void serializeConfigSec();
+
 //colors.cpp
 void colorFromUint32(uint32_t in, bool secondary = false);
 void colorFromUint24(uint32_t in, bool secondary = false);
@@ -37,6 +43,7 @@ void colorXYtoRGB(float x, float y, byte* rgb); // only defined if huesync disab
 void colorRGBtoXY(byte* rgb, float* xy); // only defined if huesync disabled TODO
 
 void colorFromDecOrHexString(byte* rgb, char* in);
+bool colorFromHexString(byte* rgb, const char* in);
 void colorRGBtoRGBW(byte* rgb); //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_MODE_LEGACY)
 
 //dmx.cpp
@@ -48,6 +55,12 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol);
 
 //file.cpp
 bool handleFileRead(AsyncWebServerRequest*, String path);
+bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* content);
+bool writeObjectToFile(const char* file, const char* key, JsonDocument* content);
+bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest);
+bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest);
+void updateFSInfo();
+void closeFile();
 
 //hue.cpp
 void handleHue();
@@ -85,8 +98,8 @@ void handleIR();
 
 void deserializeSegment(JsonObject elem, byte it);
 bool deserializeState(JsonObject root);
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id);
-void serializeState(JsonObject root);
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
+void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
@@ -135,11 +148,36 @@ void setCronixie();
 void _overlayCronixie();    
 void _drawOverlayCronixie();
 
+//pin_manager.cpp
+class PinManagerClass {
+  private:
+  #ifdef ESP8266
+  uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
+  #else
+  uint8_t pinAlloc[5] = {0x00, 0x00, 0x00, 0x00, 0x00}; //40bit, 1 bit per pin, we use all bits
+  #endif
+
+  public:
+  void deallocatePin(byte gpio);
+  bool allocatePin(byte gpio, bool output = true);
+  bool isPinAllocated(byte gpio);
+  bool isPinOk(byte gpio, bool output = true);
+};
+
+//playlist.cpp
+void loadPlaylist(JsonObject playlistObject);
+void handlePlaylist();
+
+//presets.cpp
+bool applyPreset(byte index);
+void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
+void deletePreset(byte index);
+
 //set.cpp
 void _setRandomColor(bool _sec,bool fromButton=false);
 bool isAsterisksOnly(const char* str, byte maxLen);
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage);
-bool handleSet(AsyncWebServerRequest *request, const String& req);
+bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=true);
 int getNumVal(const String* req, uint16_t pos);
 bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 
@@ -158,6 +196,8 @@ class Usermod {
     virtual void addToJsonState(JsonObject& obj) {}
     virtual void addToJsonInfo(JsonObject& obj) {}
     virtual void readFromJsonState(JsonObject& obj) {}
+    virtual void addToConfig(JsonObject& obj) {}
+    virtual void readFromConfig(JsonObject& obj) {}
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
@@ -176,6 +216,9 @@ class UsermodManager {
     void addToJsonInfo(JsonObject& obj);
     void readFromJsonState(JsonObject& obj);
 
+    void addToConfig(JsonObject& obj);
+    void readFromConfig(JsonObject& obj);
+
     bool add(Usermod* um);
     byte getModCount();
 };
@@ -189,18 +232,9 @@ void userConnected();
 void userLoop();
 
 //wled_eeprom.cpp
-void commit();
-void clearEEPROM();
-void writeStringToEEPROM(uint16_t pos, char* str, uint16_t len);
-void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len);
-void saveSettingsToEEPROM();
-void loadSettingsFromEEPROM(bool first);
-void savedToPresets();
-bool applyPreset(byte index, bool loadBri = true);
-void savePreset(byte index, bool persist = true);
-void loadMacro(byte index, char* m);
 void applyMacro(byte index);
-void saveMacro(byte index, const String& mc, bool persist = true); //only commit on single save, not in settings
+void deEEP();
+void deEEPSettings();
 
 //wled_serial.cpp
 void handleSerial();

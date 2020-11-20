@@ -6,6 +6,7 @@
   <a href="https://discord.gg/KuqP7NE"><img src="https://img.shields.io/discord/473448917040758787.svg?colorB=blue&label=discord&style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED/wiki"><img src="https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED-App"><img src="https://img.shields.io/badge/app-wled-blue.svg?style=flat-square"></a>
+  <a href="https://gitpod.io/#https://github.com/Aircoookie/WLED"><img src="https://img.shields.io/badge/Gitpod-ready--to--code-blue?style=flat-square&logo=gitpod"></a>
 
   </p>
 # Welcome to my project WLED! ✨
@@ -20,19 +21,20 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Settings page - configuration over network  
 - Access Point and station mode - automatic failsafe AP  
 - Support for RGBW strips  
-- 16 user presets to save and load colors/effects easily, supports cycling through them.  
-- Macro functions to automatically execute API calls  
+- Up to 250 user presets to save and load colors/effects easily, supports cycling through them.  
+- Presets can be used to automatically execute API calls  
 - Nightlight function (gradually dims down)  
 - Full OTA software updatability (HTTP + ArduinoOTA), password protectable  
 - Configurable analog clock + support for the Cronixie kit by Diamex  
 - Configurable Auto Brightness limit for safer operation  
+- Filesystem-based config for easier backup of presets and settings  
 
 ## 💡 Supported light control interfaces
 - WLED app for [Android](https://play.google.com/store/apps/details?id=com.aircoookie.WLED) and [iOS](https://apps.apple.com/us/app/wled/id1475695033)
 - JSON and HTTP request APIs  
 - MQTT  
 - Blynk IoT  
-- E1.31, Art-Net and TPM2.net
+- E1.31, Art-Net, DDP and TPM2.net
 - [Hyperion](https://github.com/hyperion-project/hyperion.ng)
 - UDP realtime  
 - Alexa voice control (including dimming and color)  

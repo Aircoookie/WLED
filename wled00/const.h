@@ -72,20 +72,46 @@
 #define DMX_MODE_MULTIPLE_RGB     4            //every LED is addressed with its own RGB (ledCount * 3 channels)
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 
-//Light capability byte (unused)
+//Light capability byte (unused) 0bRRCCTTTT
+//bits 0/1/2/3: specifies a type of LED driver. A single "driver" may have different chip models but must have the same protocol/behavior
+//bits 4/5: specifies the class of LED driver - 0b00 (dec. 0-15)  unconfigured/reserved
+//                                            - 0b01 (dec. 16-31) digital (data pin only)
+//                                            - 0b10 (dec. 32-47) analog (PWM)
+//                                            - 0b11 (dec. 48-63) digital (data + clock / SPI)
+//bits 6/7 are reserved and set to 0b00
+
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
-#define TYPE_WS2812_RGB           2
-#define TYPE_SK6812_RGBW          3
-#define TYPE_WS2812_WWA           4            //amber + warm + cold white
-#define TYPE_WS2801               5
-#define TYPE_ANALOG_1CH           6            //single channel PWM. Uses value of brightest RGBW channel
-#define TYPE_ANALOG_2CH           7            //analog WW + CW
-#define TYPE_ANALOG_3CH           8            //analog RGB
-#define TYPE_ANALOG_4CH           9            //analog RGBW
-#define TYPE_ANALOG_5CH          10            //analog RGB + WW + CW
-#define TYPE_APA102              11
-#define TYPE_LPD8806             12
+//Digital types (data pin only) (16-31)
+#define TYPE_WS2812_1CH          20            //white-only chips
+#define TYPE_WS2812_WWA          21            //amber + warm + cold white
+#define TYPE_WS2812_RGB          22
+#define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
+#define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
+#define TYPE_SK6812_RGBW         30
+//"Analog" types (PWM) (32-47)
+#define TYPE_ONOFF               40            //binary output (relays etc.)
+#define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
+#define TYPE_ANALOG_2CH          42            //analog WW + CW
+#define TYPE_ANALOG_3CH          43            //analog RGB
+#define TYPE_ANALOG_4CH          44            //analog RGBW
+#define TYPE_ANALOG_5CH          45            //analog RGB + WW + CW
+//Digital types (data + clock / SPI) (48-63)
+#define TYPE_WS2801              50
+#define TYPE_APA102              51
+#define TYPE_LPD8806             52
+#define TYPE_P9813               53
+#define TYPE_TM1814              54
+
+
+//Button type
+#define BTN_TYPE_NONE             0
+#define BTN_TYPE_RESERVED         1
+#define BTN_TYPE_PUSH             2
+#define BTN_TYPE_PUSH_ACT_HIGH    3 //not implemented
+#define BTN_TYPE_SWITCH           4 //not implemented
+#define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
+
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
@@ -105,19 +131,29 @@
 #define SEG_OPTION_FREEZE         5            //Segment contents will not be refreshed
 #define SEG_OPTION_TRANSITIONAL   7
 
+// WLED Error modes
+#define ERR_NONE         0  // All good :)
+#define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
+#define ERR_JSON         9  // JSON parsing failed (input too large?)
+#define ERR_FS_BEGIN    10  // Could not init filesystem (no partition?)
+#define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
+#define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
+#define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
+
 //Timer mode types
 #define NL_MODE_SET               0            //After nightlight time elapsed, set to target brightness
 #define NL_MODE_FADE              1            //Fade to target brightness gradually
 #define NL_MODE_COLORFADE         2            //Fade to target brightness and secondary color gradually
 #define NL_MODE_SUN               3            //Sunrise/sunset. Target brightness is set immediately, then Sunrise effect is started. Max 60 min.
 
-//EEPROM size
-#define EEPSIZE 2560  //Maximum is 4096
 
 #define NTP_PACKET_SIZE 48
 
-// maximum number of LEDs - MAX_LEDS is coming from the JSON response getting too big, MAX_LEDS_DMA will become a timing issue
+// maximum number of LEDs - more than 1500 LEDs (or 500 DMA "LEDPIN 3" driven ones) will cause a low memory condition on ESP8266
+#ifndef MAX_LEDS
 #define MAX_LEDS 1500
+#endif
+
 #define MAX_LEDS_DMA 500
 
 // string temp buffer (now stored in stack locally)
@@ -126,6 +162,7 @@
 #define E131_MAX_UNIVERSE_COUNT 9
 
 #define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
+
 
 #define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
 
