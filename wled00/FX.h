@@ -40,8 +40,12 @@
 #define DEFAULT_INTENSITY  (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
 
+#ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
+#ifndef MAX
 #define MAX(a,b) ((a)>(b)?(a):(b))
+#endif
 
 /* Not used in all effects yet */
 #define WLED_FPS         42
@@ -50,9 +54,9 @@
 /* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #ifdef ESP8266
-  #define MAX_NUM_SEGMENTS 10
+  #define MAX_NUM_SEGMENTS 12
 #else
-  #define MAX_NUM_SEGMENTS 10
+  #define MAX_NUM_SEGMENTS 16
 #endif
 
 /* How much data bytes all segments combined may allocate */
@@ -452,6 +456,7 @@ class WS2812FX {
       setRange(uint16_t i, uint16_t i2, uint32_t col),
       setShowCallback(show_callback cb),
       setTransitionMode(bool t),
+      calcGammaTable(float),
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0),
       resetSegments(),
@@ -485,6 +490,7 @@ class WS2812FX {
       //getFirstSelectedSegment(void),
       getMainSegmentId(void),
       gamma8(uint8_t),
+      gamma8_cal(uint8_t, float),
       get_random_wheel_index(uint8_t);
 
     int8_t

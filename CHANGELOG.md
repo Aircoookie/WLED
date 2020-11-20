@@ -2,6 +2,61 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2011200
+
+-   Added HEX color receiving to JSON API with `"col":["RRGGBBWW"]` format
+-   Moved Kelvin color receiving in JSON API from `"col":[[val]]` to `"col":[val]` format
+    _Notice:_ This is technically a breaking change. Since no release was made since the introduction and the Kelvin property was not previously documented in the wiki,
+    impact should be minimal. 
+-   BTNPIN can now be disabled by setting to -1 (fixes #1237)
+
+#### Build 2011180
+
+-   Platformio.ini updates and streamlining (PR #1266)
+-   my_config.h custom compile settings system (not yet used for much, adapted from PR #1266)
+-   Added Hawaii timezone (HST)
+-   Linebreak after 5 quick select buttons
+
+#### Build 2011154
+
+-   Fixed RGBW saved incorrectly
+-   Fixed pmt caching requesting /presets.json too often
+-   Fixed deEEP not copying the first segment of EEPROM preset 16
+
+#### Build 2011153
+
+-   Fixed an ESP32 end-of-file issue
+-   Fixed useRGBW not read from cfg.json
+
+#### Build 2011152
+
+-   Version bump to 0.11.0p "Mirai"
+-   Increased max. num of segments to 12 (ESP8266) / 16 (ESP32)
+-   Up to 250 presets stored in the `presets.json` file in filesystem
+-   Complete overhaul of the Presets UI tab
+-   Updated iro.js to v5 (fixes black color wheel)
+-   Added white temperature slider to color wheel
+-   Add JSON settings serialization/deserialization to cfg.json and wsec.json
+-   Added deEEP to convert the EEPROM settings and presets to files
+-   Playlist support - JSON only for now
+-   New v2 usermod methods `addToConfig()` and `readFromConfig()` (see EXAMPLE_v2 for doc)
+-   Added Ethernet support for ESP32 (PR #1316)
+-   IP addresses are now handled by the `Network` class
+-   New `esp32_poe` PIO environment
+-   Use EspAsyncWebserver Aircoookie fork v.2.0.0 (hiding wsec.json)
+-   Removed `WLED_DISABLE_FILESYSTEM` and `WLED_ENABLE_FS_SERVING` defines as they are now required
+-   Added pin manager
+-   UI performance improvements (no drop shadows)
+-   More explanatory error messages in UI
+-   Improved candle brightness
+-   Return remaining nightlight time `nl.rem` in JSON API (PR #1302)
+-   UI sends timestamp with every command, allowing for timed presets without using NTP
+-   Added gamma calculation (yet unused)
+-   Added LED type definitions to const.h (yet unused)
+-   Added nicer 404 page
+-   Removed `NP` and `MS=` macro HTTP API commands
+-   Removed macros from Time settings
+
 #### Build 2011120
 
 -   Added the ability for the /api MQTT topic to receive JSON API payloads
@@ -43,6 +98,7 @@
 
 -   Added Loxone parser (PR #1185)
 -   Added support for kelvin input via `K=` HTTP and `"col":[[val]]` JSON API calls
+    _Notice:_ `"col":[[val]]` removed in build 2011200, use `"col":[val]`
 -   Added supplementary UDP socket (#1205)
 -   TMP2.net receivable by default
 -   UDP sockets accept HTTP and JSON API commands
