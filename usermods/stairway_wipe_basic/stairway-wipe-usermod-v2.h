@@ -8,7 +8,7 @@
  * 
  * Using this usermod:
  * 1. Copy the usermod into the sketch folder (same folder as wled00.ino)
- * 2. Register the usermod by adding #include "stairway-wipe-usermod.h" in the top and registerUsermod(new StairwayWipeUsermod()) in the bottom of usermods_list.cpp
+ * 2. Register the usermod by adding #include "stairway-wipe-usermod-v2.h" in the top and registerUsermod(new StairwayWipeUsermod()) in the bottom of usermods_list.cpp
  */
 
 class StairwayWipeUsermod : public Usermod {
