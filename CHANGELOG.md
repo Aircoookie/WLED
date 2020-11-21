@@ -2,6 +2,11 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2011210
+
+-   Fixed Brightness slider beneath color wheel not working (fixes #1360)
+-   Fixed invalid UI state after saving modified preset
+
 #### Build 2011200
 
 -   Added HEX color receiving to JSON API with `"col":["RRGGBBWW"]` format
