@@ -1,6 +1,14 @@
 ## WLED changelog
 
-### Development versions after the 0.10.2 release
+### WLED version 0.11.0
+
+#### Build 2011230
+
+-   Version bump to 0.11.0 "Mirai"
+-   Improved preset name sorting
+-   Fixed Preset cycle not working beyond preset 16
+
+### Development versions between 0.10.2 and 0.11.0 releases
 
 #### Build 2011220
 
