@@ -2,6 +2,12 @@
 
 ### Development versions after the 0.10.2 release
 
+#### Build 2011220
+
+-   Fixed invalid save when modifying preset before refresh (might be related to #1361)
+-   Fixed brightness factor ignored on realtime timeout (fixes #1363)
+-   Fixed Phase and Chase effects with LED counts >256 (PR #1366)
+
 #### Build 2011210
 
 -   Fixed Brightness slider beneath color wheel not working (fixes #1360)

@@ -2181,7 +2181,10 @@ function saveP(i) {
 			} else if (raw.indexOf('{') > -1) {
 				d.getElementById(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
 				return;
-			}
+			} else if (raw.indexOf("Please") == 0) {
+        d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
+				return;
+      }
 		}
 		obj["o"] = true;
 	} else {
@@ -2367,9 +2370,11 @@ function expand(i,a)
 		var p = i-100;
 		d.getElementById(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
 		if (d.getElementById('seg' +i).innerHTML == "") {
-			d.getElementById('seg' +i).innerHTML = makeP(p);
-			d.getElementById(`p${p}api`).value = papiVal(p);
-			tglCs(p);
+      d.getElementById('seg' +i).innerHTML = makeP(p);
+      var papi = papiVal(p);
+      d.getElementById(`p${p}api`).value = papi;
+      if (papi.indexOf("Please") == 0) d.getElementById(`p${p}cstgl`).checked = true;
+      tglCs(p);
 		}
 	}
 }
