@@ -24,6 +24,7 @@ Timezone* tz;
 #define TZ_SASKACHEWAN         15
 #define TZ_AUSTRALIA_NORTHERN  16
 #define TZ_AUSTRALIA_SOUTHERN  17
+#define TZ_HAWAII              18
 #define TZ_INIT               255
 
 byte tzCurrent = TZ_INIT; //uninitialized
@@ -117,6 +118,11 @@ void updateTimezone() {
     case TZ_AUSTRALIA_SOUTHERN : {
       tcrDaylight = {First, Sun, Oct, 2, 630};   //ACDT = UTC + 10.5 hours
       tcrStandard = {First, Sun, Apr, 3, 570};   //ACST = UTC + 9.5 hours
+      break;
+    }
+    case TZ_HAWAII : {
+      tcrDaylight = {Last, Sun, Mar, 1, -600};   //HST =  UTC - 10 hours
+      tcrStandard = tcrDaylight;
       break;
     }
   }
@@ -266,7 +272,7 @@ void checkTimers()
           && (timerWeekday[i] & 0x01) //timer is enabled
           && timerWeekday[i] >> weekdayMondayFirst() & 0x01) //timer should activate at current day of week
       {
-        applyMacro(timerMacro[i]);
+        applyPreset(timerMacro[i]);
       }
     }
   }

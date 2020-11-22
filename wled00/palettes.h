@@ -13,7 +13,7 @@
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
 
-#define GRADIENT_PALETTE_COUNT 54
+#define GRADIENT_PALETTE_COUNT 55
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
@@ -516,7 +516,7 @@ const byte Tiamat_gp[] PROGMEM = {
   220,  39,252,135, //gc from 177,254,255
   240, 193,213,253, //gc from 203,239,253
   255, 255,249,255};
-  
+
 //Custom palette by Aircoookie
 
 const byte April_Night_gp[] PROGMEM = {
@@ -582,7 +582,30 @@ const byte Atlantica_gp[] PROGMEM = {
   150,  12, 95, 82, //#0C5F52
   200,  25,190, 95, //#19BE5F
   255,  40,170, 80};//#28AA50
-  
+
+  const byte C9_2_gp[] PROGMEM = {
+    0,   6, 126,   2, //green
+   45,   6, 126,   2,
+   45,   4,  30, 114, //blue
+   90,   4,  30, 114,
+   90, 255,   5,   0, //red
+  135, 255,   5,   0,
+  135, 196,  57,   2, //amber
+  180, 196,  57,   2,
+  180, 137,  85,   2, //yellow
+  255, 137,  85,   2};
+
+  //C9, but brighter and with a less purple blue
+  const byte C9_new_gp[] PROGMEM = {
+    0, 255,   5,   0, //red
+   60, 255,   5,   0,
+   60, 196,  57,   2, //amber (start 61?)
+  120, 196,  57,   2,
+  120,   6, 126,   2, //green (start 126?)
+  180,   6, 126,   2,
+  180,   4,  30, 114, //blue (start 191?)
+  255,   4,  30, 114};
+
 
  // Gradient palette "bhw1_01_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_01.png.index.html
@@ -834,6 +857,8 @@ const byte* const gGradientPalettes[] PROGMEM = {
   Sakura_gp,                    //49-36 Sakura
   Aurora_gp,                    //50-37 Aurora
   Atlantica_gp,                 //51-38 Atlantica
+  C9_2_gp,                      //52-39 C9 2
+  C9_new_gp,                    //53-40 C9 New
   Retro_Clown,
   Candy,
   Toxy_Reaf,

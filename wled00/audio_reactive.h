@@ -68,7 +68,7 @@ int delayMs = 1;                                   // I don't want to sample too
 double beat = 0;                                    // beat Detection
 
 uint16_t micData;                                   // Analog input for FFT
-// uint16_t lastSample;                                // last audio noise sample
+uint16_t micDataSm;                                 // Smoothed mic data, as it's a bit twitchy.
 
 uint8_t myVals[32];                                 // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized
 
@@ -98,7 +98,7 @@ void getSample() {
     micIn = inoise8(millis(), millis());            // Simulated analog read
   #else
     #ifdef ESP32
-      micIn = micData;   
+      micIn = micDataSm;   
       if (digitalMic == false) micIn = micIn >> 2;  // ESP32 has 2 more bits of A/D than ESP8266, so we need to normalize to 10 bit.
     #endif
     #ifdef ESP8266
@@ -264,7 +264,8 @@ void agcAvg() {                                                     // A simple 
             rawMicData = micData;
           } // ESP32 has 12 bit ADC
         }
-
+        
+        micDataSm = ((micData * 3) + micData)/4;             // We'll be passing smoothed micData to the volume routines as the A/D is a bit twitchy.
         vReal[i] = micData;                                   // Store Mic Data in an array
         vImag[i] = 0;
 

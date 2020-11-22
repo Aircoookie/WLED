@@ -93,9 +93,10 @@ void URL_response(AsyncWebServerRequest *request)
 
   char s[16];
   oappend(SET_F("http://"));
-  IPAddress localIP = WiFi.localIP();
+  IPAddress localIP = Network.localIP();
   sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
   oappend(s);
+
   oappend(SET_F("/win&A="));
   oappendi(bri);
   oappend(SET_F("&CL=h"));
@@ -235,11 +236,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("WS"),noWifiSleep);
 
 
-    if (WiFi.localIP()[0] != 0) //is connected
+    if (Network.isConnected()) //is connected
     {
-      char s[16];
-      IPAddress localIP = WiFi.localIP();
+      char s[32];
+      IPAddress localIP = Network.localIP();
       sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+
+      #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+      if (Network.isEthernet()) strcat_P(s ,SET_F(" (Ethernet)"));
+      #endif
       sappends('m',SET_F("(\"sip\")[0]"),s);
     } else
     {
@@ -262,6 +267,8 @@ void getSettingsJS(byte subPage, char* dest)
     #ifdef ESP8266
     #if LEDPIN == 3
     oappend(SET_F("d.Sf.LC.max=500;"));
+    #else
+    oappend(SET_F("d.Sf.LC.max=1500;"));
     #endif
     #endif
     sappend('v',SET_F("LC"),ledCount);
@@ -424,16 +431,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("CH"),countdownHour);
     sappend('v',SET_F("CM"),countdownMin);
     sappend('v',SET_F("CS"),countdownSec);
-    char k[4]; k[0]= 'M';
-    for (int i=1;i<17;i++)
-    {
-      char m[65];
-      loadMacro(i, m);
-      sprintf(k+1,"%i",i);
-      sappends('s',k,m);
-    }
 
-    sappend('v',SET_F("MB"),macroBoot);
     sappend('v',SET_F("A0"),macroAlexaOn);
     sappend('v',SET_F("A1"),macroAlexaOff);
     sappend('v',SET_F("MP"),macroButton);
@@ -442,6 +440,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("MN"),macroNl);
     sappend('v',SET_F("MD"),macroDoublePress);
 
+    char k[4];
     k[2] = 0; //Time macros
     for (int i = 0; i<8; i++)
     {

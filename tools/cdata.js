@@ -105,7 +105,7 @@ ${array}
 }
 
 const CleanCSS = require("clean-css");
-const MinifyHTML = require("html-minifier").minify;
+const MinifyHTML = require("html-minifier-terser").minify;
 
 function filter(str, type) {
   str = adoptVersionAndRepo(str);
@@ -119,7 +119,7 @@ function filter(str, type) {
       collapseWhitespace: true,
       maxLineLength: 80,
       minifyCSS: true,
-      minifyJS: true,
+      minifyJS: true, 
       continueOnParseError: false,
       removeComments: true,
     });
@@ -397,6 +397,14 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
     {
       file: "liveview.htm",
       name: "PAGE_liveview",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "html-minify",
+    },
+    {
+      file: "404.htm",
+      name: "PAGE_404",
       prepend: "=====(",
       append: ")=====",
       method: "plaintext",

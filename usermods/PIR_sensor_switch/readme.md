@@ -72,4 +72,26 @@ void registerUsermods()
 }
 ```
 
+## Usermod installation (advanced mode)
+
+In this mode IR sensor will disable PIR when light ON by remote controller and enable PIR when light OFF.
+
+1. Copy the file `usermod_PIR_sensor_switch.h` to the `wled00` directory.
+2. Register the usermod by adding `#include "usermod_PIR_sensor_switch.h"` in the top and `registerUsermod(new PIRsensorSwitch());` in the bottom of `usermods_list.cpp`.
+3. Add to the line 237, on `wled.h` in the `wled00` directory:
+
+	`WLED_GLOBAL bool m_PIRenabled _INIT(true);                        // enable PIR sensor`
+  
+4. On `ir.cpp` in the `wled00` directory, add to the IR controller's mapping (beyond line 200):
+	
+- To the off button:
+		`m_PIRenabled = true;`
+    
+- To the on button:
+		`m_PIRenabled = false;`
+    
+5. Edit line 40, on `usermod_PIR_sensor_switch.h` in the `wled00` directory:
+    
+    `\\bool m_PIRenabled = true;`
+
 Have fun - @gegu

@@ -13,7 +13,7 @@ void handleHue()
     colorUpdated(NOTIFIER_CALL_MODE_HUE); hueReceived = false;
     if (hueStoreAllowed && hueNewKey)
     {
-      saveSettingsToEEPROM(); //save api key
+      serializeConfigSec(); //save api key
       hueStoreAllowed = false;
       hueNewKey = false;
     }

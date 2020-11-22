@@ -24,15 +24,16 @@ void handleDDPPacket(e131_packet_t* p) {
     }
   }
 
-  uint32_t offsetLeds = htonl(p->channelOffset) /3;
-  uint16_t packetLeds = htons(p->dataLen) /3;
+  uint32_t start = htonl(p->channelOffset) /3;
+  start += DMXAddress /3;
+  uint16_t stop = start + htons(p->dataLen) /3;
   uint8_t* data = p->data;
   uint16_t c = 0;
   if (p->flags & DDP_TIMECODE_FLAG) c = 4; //packet has timecode flag, we do not support it, but data starts 4 bytes later
 
   realtimeLock(realtimeTimeoutMs, REALTIME_MODE_DDP);
   
-  for (uint16_t i = offsetLeds; i < offsetLeds + packetLeds; i++) {
+  for (uint16_t i = start; i < stop; i++) {
     setRealtimePixel(i, data[c++], data[c++], data[c++], 0);
   }
 

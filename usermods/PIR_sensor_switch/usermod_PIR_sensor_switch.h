@@ -99,7 +99,9 @@ class PIRsensorSwitch : public Usermod {
      */
     bool handleOffTimer() {
       if (m_offTimerStart > 0 && millis() - m_offTimerStart > m_switchOffDelay) {
-        switchStrip(false);
+        if (m_PIRenabled == true){
+          switchStrip(false);
+        }
         m_offTimerStart = 0;        
         return true;
       }
