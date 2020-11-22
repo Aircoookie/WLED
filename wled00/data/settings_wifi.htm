@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
 	<meta name="viewport" content="width=500">
 	<title>WiFi Settings</title>
 	<script>
@@ -18,57 +19,13 @@
 		}
 	</script>
 	<style>
-		:root {
-			--aCol: #D9B310;
-			--bCol: #0B3C5D;
-			--cCol: #1D2731;
-			--dCol: #328CC1;
-			--sCol: #000;
-			--cFn: Verdana;
-		}
-		body {
-			font-family: Verdana, Helvetica, sans-serif;
-			text-align: center;
-			background: var(--cCol);
-			color: var(--dCol);
-			line-height: 200%;
-			margin: 0;
-			background-attachment: fixed;
-		}
-		hr {
-			border-color: var(--dCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		button {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.3ch solid var(--bCol);
-			display: inline-block;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-size: 20px;
-			margin: 8px;
-			margin-top: 12px;
-		}
-		.helpB {
-			text-align: left;
-			position: absolute;
-			width:60px;
-		}
-		input {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.5ch solid var(--bCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		input[type=number] {
-			width: 3em;
-		}
+		@import url("style.css");
 	</style>
 </head>
 <body onload="GetV()">
 	<form id="form_s" name="Sf" method="post">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
-		<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button><hr>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button><hr>
 		<h2>WiFi setup</h2>
 		<h3>Connect to existing network</h3>
 		Network name (SSID, empty to not connect): <br><input name="CS" maxlength="32"><br>
@@ -102,8 +59,13 @@
     <option value="1">Disconnected</option>
     <option value="2">Always</option>
     <option value="3">Never (not recommended)</option></select><br>
-		AP IP: <span class="sip"> Not active </span><hr>
-		<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
+		AP IP: <span class="sip"> Not active </span><br>
+		<h3>Experimental</h3>
+		Disable WiFi sleep: <input type="checkbox" name="WS"><br>
+		<i>Can help with connectivity issues.<br>
+		Do not enable if WiFi is working correctly, increases power consumption.</i>
+		<hr>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
 	</form>
 </body>
 </html>

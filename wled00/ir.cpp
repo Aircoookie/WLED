@@ -15,6 +15,8 @@ decode_results results;
 
 unsigned long irCheckedTime = 0;
 uint32_t lastValidCode = 0;
+byte lastRepeatableAction = ACTION_NONE;
+uint8_t lastRepeatableValue = 0;
 uint16_t irTimesRepeated = 0;
 uint8_t lastIR6ColourIdx = 0;
 
@@ -27,7 +29,7 @@ bool decodeIRCustom(uint32_t code)
   {
     //just examples, feel free to modify or remove
     case IRCUSTOM_ONOFF : toggleOnOff(); break;
-    case IRCUSTOM_MACRO1 : applyMacro(1); break;
+    case IRCUSTOM_MACRO1 : applyPreset(1); break;
 
     default: return false;
   }
@@ -36,13 +38,23 @@ bool decodeIRCustom(uint32_t code)
 }
 
 
-//relatively change brightness, minumum A=5
+
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
   int16_t new_val = (int16_t) *property + amount;
   if (new_val > higherBoundary) new_val = higherBoundary;
   else if (new_val < lowerBoundary) new_val = lowerBoundary;
   *property = (byte)constrain(new_val,0.1,255.1);
+}
+
+void changeBrightness(int8_t amount)
+{
+  int16_t new_val = bri + amount;
+  if (new_val < 5) new_val = 5; //minimum brightness A=5
+  bri = (byte)constrain(new_val,0.1,255.1);
+  if(amount > 0) lastRepeatableAction = ACTION_BRIGHT_UP;
+  if(amount < 0) lastRepeatableAction = ACTION_BRIGHT_DOWN;
+  lastRepeatableValue = amount;
 }
 
 void changeEffectSpeed(int8_t amount)
@@ -65,6 +77,10 @@ void changeEffectSpeed(int8_t amount)
     col[1] = fastled_col.green; 
     col[2] = fastled_col.blue;
   }
+
+  if(amount > 0) lastRepeatableAction = ACTION_SPEED_UP;
+  if(amount < 0) lastRepeatableAction = ACTION_SPEED_DOWN;
+  lastRepeatableValue = amount;
 }
 
 void changeEffectIntensity(int8_t amount)
@@ -85,6 +101,10 @@ void changeEffectIntensity(int8_t amount)
     col[1] = fastled_col.green; 
     col[2] = fastled_col.blue;
   }
+
+  if(amount > 0) lastRepeatableAction = ACTION_INTENSITY_UP;
+  if(amount < 0) lastRepeatableAction = ACTION_INTENSITY_DOWN;
+  lastRepeatableValue = amount;
 }
 
 void decodeIR(uint32_t code)
@@ -92,14 +112,61 @@ void decodeIR(uint32_t code)
   if (code == 0xFFFFFFFF) //repeated code, continue brightness up/down
   {
     irTimesRepeated++;
-    if (lastValidCode == IR24_BRIGHTER || lastValidCode == IR40_BPLUS )
+    applyRepeatActions();
+    return;
+  }
+  lastValidCode = 0; irTimesRepeated = 0;
+  if (decodeIRCustom(code)) return;
+  if      (code > 0xFFFFFF) return; //invalid code
+  else if (code > 0xF70000 && code < 0xF80000) decodeIR24(code); //is in 24-key remote range
+  else if (code > 0xFF0000) {
+    switch (irEnabled) {
+      case 1: decodeIR24OLD(code); break;  // white 24-key remote (old) - it sends 0xFF0000 values
+      case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
+      case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
+      case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
+      case 5: decodeIR21(code);    break;  // white 21-key remote  
+      case 6: decodeIR6(code);     break;  // black 6-key learning remote defaults: "CH" controls brightness,
+                                           // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
+                                           // sets bright plain white
+      case 7: decodeIR9(code);    break;
+      default: return;
+    }
+  }
+  if (nightlightActive && bri == 0) nightlightActive = false;
+  colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
+  //code <= 0xF70000 also invalid
+}
+
+void applyRepeatActions(){
+  
+    if (lastRepeatableAction == ACTION_BRIGHT_UP)
     { 
-      relativeChange(&bri, 10); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      changeBrightness(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
-    else if (lastValidCode == IR24_DARKER || lastValidCode == IR40_BMINUS )
+    else if (lastRepeatableAction == ACTION_BRIGHT_DOWN )
     {
-      relativeChange(&bri, -10, 5); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      changeBrightness(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
+
+    if (lastRepeatableAction == ACTION_SPEED_UP)
+    { 
+      changeEffectSpeed(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+    }
+    else if (lastRepeatableAction == ACTION_SPEED_DOWN )
+    {
+      changeEffectSpeed(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+    }
+
+    if (lastRepeatableAction == ACTION_INTENSITY_UP)
+    { 
+      changeEffectIntensity(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+    }
+    else if (lastRepeatableAction == ACTION_INTENSITY_DOWN )
+    {
+      changeEffectIntensity(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+    }
+
     if (lastValidCode == IR40_WPLUS)
     { 
       relativeChangeWhite(10); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
@@ -114,37 +181,14 @@ void decodeIR(uint32_t code)
       nightlightStartTime = millis();
       colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
-    return;
-  }
-  lastValidCode = 0; irTimesRepeated = 0;
-
-  if (decodeIRCustom(code)) return;
-  if      (code > 0xFFFFFF) return; //invalid code
-  else if (code > 0xF70000 && code < 0xF80000) decodeIR24(code); //is in 24-key remote range
-  else if (code > 0xFF0000) {
-    switch (irEnabled) {
-      case 1: decodeIR24OLD(code); break;  // white 24-key remote (old) - it sends 0xFF0000 values
-      case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
-      case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
-      case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
-      case 5: decodeIR21(code);    break;  // white 21-key remote  
-      case 6: decodeIR6(code);     break;  // black 6-key learning remote defaults: "CH" controls brightness,
-                                           // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
-                                           // sets bright plain white
-      default: return;
-    }
-  }
-  if (nightlightActive && bri == 0) nightlightActive = false;
-  colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
-  //code <= 0xF70000 also invalid
 }
 
 
 void decodeIR24(uint32_t code)
 {
   switch (code) {
-    case IR24_BRIGHTER  : relativeChange(&bri, 10);         break;
-    case IR24_DARKER    : relativeChange(&bri, -10, 5);     break;
+    case IR24_BRIGHTER  : changeBrightness(10);             break;
+    case IR24_DARKER    : changeBrightness(-10);            break;
     case IR24_OFF       : briLast = bri; bri = 0;           break;
     case IR24_ON        : bri = briLast;                    break;
     case IR24_RED       : colorFromUint32(COLOR_RED);       break;
@@ -175,8 +219,8 @@ void decodeIR24(uint32_t code)
 void decodeIR24OLD(uint32_t code)
 {
   switch (code) {
-    case IR24_OLD_BRIGHTER  : relativeChange(&bri, 10);            break;
-    case IR24_OLD_DARKER    : relativeChange(&bri, -10, 5);        break;
+    case IR24_OLD_BRIGHTER  : changeBrightness(10);                break;
+    case IR24_OLD_DARKER    : changeBrightness(-10);               break;
     case IR24_OLD_OFF       : briLast = bri; bri = 0;              break;
     case IR24_OLD_ON        : bri = briLast;                       break;
     case IR24_OLD_RED       : colorFromUint32(COLOR_RED);          break;
@@ -208,8 +252,8 @@ void decodeIR24OLD(uint32_t code)
 void decodeIR24CT(uint32_t code)
 {
   switch (code) {
-    case IR24_CT_BRIGHTER   : relativeChange(&bri, 10);            break;
-    case IR24_CT_DARKER     : relativeChange(&bri, -10, 5);        break;
+    case IR24_CT_BRIGHTER   : changeBrightness(10);                break;
+    case IR24_CT_DARKER     : changeBrightness(-10);               break;
     case IR24_CT_OFF        : briLast = bri; bri = 0;              break;
     case IR24_CT_ON         : bri = briLast;                       break;
     case IR24_CT_RED        : colorFromUint32(COLOR_RED);          break;
@@ -243,8 +287,8 @@ void decodeIR24CT(uint32_t code)
 void decodeIR40(uint32_t code)
 {
   switch (code) {
-    case IR40_BPLUS        : relativeChange(&bri, 10);                                   break;
-    case IR40_BMINUS       : relativeChange(&bri, -10, 5);                               break;
+    case IR40_BPLUS        : changeBrightness(10);                                       break;
+    case IR40_BMINUS       : changeBrightness(-10);                                      break;
     case IR40_OFF          : briLast = bri; bri = 0;                                     break;
     case IR40_ON           : bri = briLast;                                              break;
     case IR40_RED          : colorFromUint24(COLOR_RED);                                 break;
@@ -300,8 +344,8 @@ void decodeIR40(uint32_t code)
 void decodeIR44(uint32_t code)
 {
   switch (code) {
-    case IR44_BPLUS       : relativeChange(&bri, 10);                                   break;
-    case IR44_BMINUS      : relativeChange(&bri, -10, 5);                               break;
+    case IR44_BPLUS       : changeBrightness(10);                                       break;
+    case IR44_BMINUS      : changeBrightness(-10);                                      break;
     case IR44_OFF         : briLast = bri; bri = 0;                                     break;
     case IR44_ON          : bri = briLast;                                              break;
     case IR44_RED         : colorFromUint24(COLOR_RED);                                 break;
@@ -363,8 +407,8 @@ void decodeIR44(uint32_t code)
 void decodeIR21(uint32_t code)
 {
     switch (code) {
-    case IR21_BRIGHTER:  relativeChange(&bri, 10);         break;
-    case IR21_DARKER:    relativeChange(&bri, -10, 5);     break;
+    case IR21_BRIGHTER:  changeBrightness(10);             break;
+    case IR21_DARKER:    changeBrightness(-10);            break;
     case IR21_OFF:       briLast = bri; bri = 0;           break;
     case IR21_ON:        bri = briLast;                    break;
     case IR21_RED:       colorFromUint32(COLOR_RED);       break;
@@ -392,9 +436,9 @@ void decodeIR21(uint32_t code)
 void decodeIR6(uint32_t code)
 {
   switch (code) {
-    case IR6_POWER: toggleOnOff();                                         break;
-    case IR6_CHANNEL_UP: relativeChange(&bri, 10);                         break;
-    case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);                   break;
+    case IR6_POWER: toggleOnOff();                                          break;
+    case IR6_CHANNEL_UP: changeBrightness(10);                              break;
+    case IR6_CHANNEL_DOWN: changeBrightness(-10);                           break;
     case IR6_VOLUME_UP:   relativeChange(&effectCurrent, 1, 0, MODE_COUNT); break;  // next effect
     case IR6_VOLUME_DOWN:                                                           // next palette
       relativeChange(&effectPalette, 1, 0, strip.getPaletteCount() -1); 
@@ -421,6 +465,24 @@ void decodeIR6(uint32_t code)
   lastValidCode = code;
 }
 
+void decodeIR9(uint32_t code)
+{
+  switch (code) {
+    case IR9_POWER      : toggleOnOff();  break;
+    case IR9_A          : if (!applyPreset(1)) effectCurrent = FX_MODE_COLORTWINKLE;  break;
+    case IR9_B          : if (!applyPreset(2)) effectCurrent = FX_MODE_RAINBOW_CYCLE; break;
+    case IR9_C          : if (!applyPreset(3)) effectCurrent = FX_MODE_BREATH;        break;
+    case IR9_UP         : changeBrightness(16);                                       break;
+    case IR9_DOWN       : changeBrightness(-16);                                      break;
+    //case IR9_UP         : changeEffectIntensity(16);         break;
+    //case IR9_DOWN       : changeEffectIntensity(-16);     break;
+    case IR9_LEFT       : changeEffectSpeed(-16);                                     break;
+    case IR9_RIGHT      : changeEffectSpeed(16);                                      break;
+    case IR9_SELECT     : relativeChange(&effectCurrent, 1, 0, MODE_COUNT);           break;
+    default: return;
+  }
+  lastValidCode = code;
+}
 
 void initIR()
 {

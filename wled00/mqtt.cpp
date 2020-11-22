@@ -48,36 +48,64 @@ void onMqttConnect(bool sessionPresent)
   }
 
   doPublishMqtt = true;
-  DEBUG_PRINTLN("MQTT ready");
+  DEBUG_PRINTLN(F("MQTT ready"));
 }
 
 
 void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
-  DEBUG_PRINT("MQTT msg: ");
+  DEBUG_PRINT(F("MQTT msg: "));
   DEBUG_PRINTLN(topic);
+
+  // paranoia check to avoid npe if no payload
+  if (payload==nullptr) {
+    DEBUG_PRINTLN(F("no payload -> leave"));
+    return;
+  }
   DEBUG_PRINTLN(payload);
 
-  //no need to check the topic because we only get topics we are subscribed to
+  size_t topicPrefixLen = strlen(mqttDeviceTopic);
+  if (strncmp(topic, mqttDeviceTopic, topicPrefixLen) == 0) {
+      topic += topicPrefixLen;
+  } else {
+      topicPrefixLen = strlen(mqttGroupTopic);
+      if (strncmp(topic, mqttGroupTopic, topicPrefixLen) == 0) {
+          topic += topicPrefixLen;
+      } else {
+          // Topic not used here. Probably a usermod subscribed to this topic.
+          return;
+      }
+  }
 
-  if (strstr(topic, "/col"))
+  //Prefix is stripped from the topic at this point
+
+  if (strcmp(topic, "/col") == 0)
   {
     colorFromDecOrHexString(col, (char*)payload);
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
-  } else if (strstr(topic, "/api"))
+  } else if (strcmp(topic, "/api") == 0)
   {
-    String apireq = "win&";
-    apireq += (char*)payload;
-    handleSet(nullptr, apireq);
-  } else parseMQTTBriPayload(payload);
+    if (payload[0] == '{') { //JSON API
+      DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+      deserializeJson(doc, payload);
+      deserializeState(doc.as<JsonObject>());
+    } else { //HTTP API
+      String apireq = "win&";
+      apireq += (char*)payload;
+      handleSet(nullptr, apireq);
+    }
+  } else if (strcmp(topic, "") == 0)
+  {
+    parseMQTTBriPayload(payload);
+  }
 }
 
 
 void publishMqtt()
 {
   doPublishMqtt = false;
-  if (mqtt == nullptr || !mqtt->connected()) return;
-  DEBUG_PRINTLN("Publish MQTT");
+  if (!WLED_MQTT_CONNECTED) return;
+  DEBUG_PRINTLN(F("Publish MQTT"));
 
   char s[10];
   char subuf[38];
@@ -118,7 +146,7 @@ bool initMqtt()
   }
   if (mqtt->connected()) return true;
 
-  DEBUG_PRINTLN("Reconnecting MQTT");
+  DEBUG_PRINTLN(F("Reconnecting MQTT"));
   IPAddress mqttIP;
   if (mqttIP.fromString(mqttServer)) //see if server is IP or domain
   {

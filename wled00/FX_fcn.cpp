@@ -72,6 +72,7 @@ void WS2812FX::service() {
   now = nowUp + timebase;
   if (nowUp - _lastShow < MIN_SHOW_DELAY) return;
   bool doShow = false;
+
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
     _segment_index = i;
@@ -80,12 +81,17 @@ void WS2812FX::service() {
       if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
       {
         if (SEGMENT.grouping == 0) SEGMENT.grouping = 1; //sanity check
-        _virtualSegmentLength = SEGMENT.virtualLength();
         doShow = true;
-        handle_palette();
-        uint16_t delay = (this->*_mode[SEGMENT.mode])();
+        uint16_t delay = FRAMETIME;
+
+        if (!SEGMENT.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
+          _virtualSegmentLength = SEGMENT.virtualLength();
+          handle_palette();
+          delay = (this->*_mode[SEGMENT.mode])(); //effect function
+          if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
+        }
+
         SEGENV.next_time = nowUp + delay;
-        if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
       }
     }
   }
@@ -105,16 +111,25 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   setPixelColor(n, r, g, b, w);
 }
 
+#define REV(i) (_length - 1 - (i))
+
+//used to map from segment index to physical pixel, taking into account grouping, offsets, reverse and mirroring
 uint16_t WS2812FX::realPixelIndex(uint16_t i) {
   int16_t iGroup = i * SEGMENT.groupLength();
 
   /* reverse just an individual segment */
   int16_t realIndex = iGroup;
-  if (IS_REVERSE) realIndex = SEGMENT.length() -iGroup -1;
+  if (IS_REVERSE) {
+    if (IS_MIRROR) {
+      realIndex = (SEGMENT.length() -1) / 2 - iGroup;  //only need to index half the pixels
+    } else {
+      realIndex = SEGMENT.length() - iGroup - 1;
+    }
+  }
 
   realIndex += SEGMENT.start;
   /* Reverse the whole string */
-  if (reverseMode) realIndex = _length - 1 - realIndex;
+  if (reverseMode) realIndex = REV(realIndex);
 
   return realIndex;
 }
@@ -135,6 +150,7 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
   }
   
+  //reorder channels to selected order
   RgbwColor col;
   switch (colorOrder)
   {
@@ -146,11 +162,23 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     default: col.G = g; col.R = b; col.B = r; break; //5 = GBR
   }
   col.W = w;
-
-  //color_blend(BLACK, (uint32_t)col, SEGMENT.opacity);
   
   uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
+
+    //color_blend(getpixel, col, SEGMENT.opacity); (pseudocode for future blending of segments)
+    if (IS_SEGMENT_ON)
+    {
+      if (SEGMENT.opacity < 255) {  
+        col.R = scale8(col.R, SEGMENT.opacity);
+        col.G = scale8(col.G, SEGMENT.opacity);
+        col.B = scale8(col.B, SEGMENT.opacity);
+        col.W = scale8(col.W, SEGMENT.opacity);
+      }
+    } else {
+      col = BLACK;
+    }
+
     /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
     bool reversed = reverseMode ^ IS_REVERSE;
     uint16_t realIndex = realPixelIndex(i);
@@ -158,14 +186,23 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
       int16_t indexSet = realIndex + (reversed ? -j : j);
       int16_t indexSetRev = indexSet;
-      if (reverseMode) indexSetRev = _length - 1 - indexSet;
+      if (reverseMode) indexSetRev = REV(indexSet);
       #ifdef WLED_CUSTOM_LED_MAPPING
       if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
       #endif
-      if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
+      if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) {
+        bus->SetPixelColor(indexSet + skip, col);
+        if (IS_MIRROR) { //set the corresponding mirrored pixel
+          if (reverseMode) {
+            bus->SetPixelColor(REV(SEGMENT.start) - indexSet + skip + REV(SEGMENT.stop) + 1, col);
+          } else {
+            bus->SetPixelColor(SEGMENT.stop - indexSet + skip + SEGMENT.start - 1, col);
+          }
+        }
+      }
     }
   } else { //live data, etc.
-    if (reverseMode) i = _length - 1 - i;
+    if (reverseMode) i = REV(i);
     #ifdef WLED_CUSTOM_LED_MAPPING
     if (i < customMappingSize) i = customMappingTable[i];
     #endif
@@ -354,6 +391,24 @@ void WS2812FX::setBrightness(uint8_t b) {
   if (_brightness == b) return;
   _brightness = (gammaCorrectBri) ? gamma8(b) : b;
   _segment_index = 0;
+  if (b == 0) { //unfreeze all segments on power off
+    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+    {
+      _segments[i].setOption(SEG_OPTION_FREEZE, false);
+    }
+    #if LEDPIN == LED_BUILTIN
+      if (!shouldStartBus)
+        shouldStartBus = true;
+    #endif
+  } else {
+    #if LEDPIN == LED_BUILTIN
+      if (shouldStartBus) {
+        shouldStartBus = false;
+        const uint8_t ty = _useRgbw ? 2 : 1;
+        bus->Begin((NeoPixelType)ty, _lengthRaw);
+      }
+    #endif
+  }
   if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
 }
 
@@ -388,7 +443,12 @@ uint8_t WS2812FX::getMaxSegments(void) {
 
 uint8_t WS2812FX::getMainSegmentId(void) {
   if (mainSegment >= MAX_NUM_SEGMENTS) return 0;
-  return mainSegment;
+  if (_segments[mainSegment].isActive()) return mainSegment;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) //get first active
+  {
+    if (_segments[i].isActive()) return i;
+  }
+  return 0;
 }
 
 uint32_t WS2812FX::getColor(void) {
@@ -481,16 +541,36 @@ void WS2812FX::resetSegments() {
   _segments[0].colors[0] = DEFAULT_COLOR;
   _segments[0].start = 0;
   _segments[0].speed = DEFAULT_SPEED;
+  _segments[0].intensity = DEFAULT_INTENSITY;
   _segments[0].stop = _length;
   _segments[0].grouping = 1;
-  _segments[0].setOption(0, 1); //select
+  _segments[0].setOption(SEG_OPTION_SELECTED, 1);
+  _segments[0].setOption(SEG_OPTION_ON, 1);
+  _segments[0].opacity = 255;
+
   for (uint16_t i = 1; i < MAX_NUM_SEGMENTS; i++)
   {
     _segments[i].colors[0] = color_wheel(i*51);
     _segments[i].grouping = 1;
+    _segments[i].setOption(SEG_OPTION_ON, 1);
+    _segments[i].opacity = 255;
+    _segments[i].speed = DEFAULT_SPEED;
+    _segments[i].intensity = DEFAULT_INTENSITY;
     _segment_runtimes[i].reset();
   }
   _segment_runtimes[0].reset();
+}
+
+//After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
+void WS2812FX::setPixelSegment(uint8_t n)
+{
+  if (n < MAX_NUM_SEGMENTS) {
+    _segment_index = n;
+    _virtualSegmentLength = SEGMENT.length();
+  } else {
+    _segment_index = 0;
+    _virtualSegmentLength = 0;
+  }
 }
 
 void WS2812FX::setRange(uint16_t i, uint16_t i2, uint32_t col)
@@ -511,11 +591,14 @@ void WS2812FX::setShowCallback(show_callback cb)
 
 void WS2812FX::setTransitionMode(bool t)
 {
-  _segment_index = getMainSegmentId();
-  SEGMENT.setOption(7,t);
-  if (!t) return;
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
-  if (SEGMENT.mode == FX_MODE_STATIC && SEGENV.next_time > waitMax) SEGENV.next_time = waitMax;
+  for (uint16_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    _segment_index = i;
+    SEGMENT.setOption(SEG_OPTION_TRANSITIONAL, t);
+
+    if (t && SEGMENT.mode == FX_MODE_STATIC && SEGENV.next_time > waitMax) SEGENV.next_time = waitMax;
+  }
 }
 
 /*
@@ -550,6 +633,14 @@ void WS2812FX::fill(uint32_t c) {
   for(uint16_t i = 0; i < SEGLEN; i++) {
     setPixelColor(i, c);
   }
+}
+
+/*
+ * Blends the specified color with the existing pixel color.
+ */
+void WS2812FX::blendPixelColor(uint16_t n, uint32_t color, uint8_t blend)
+{
+  setPixelColor(n, color_blend(getPixelColor(n), color, blend));
 }
 
 /*
@@ -621,6 +712,32 @@ uint16_t WS2812FX::triwave16(uint16_t in)
 }
 
 /*
+ * Generates a tristate square wave w/ attac & decay 
+ * @param x input value 0-255
+ * @param pulsewidth 0-127 
+ * @param attdec attac & decay, max. pulsewidth / 2
+ * @returns signed waveform value
+ */
+int8_t WS2812FX::tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec) {
+  int8_t a = 127;
+  if (x > 127) {
+    a = -127;
+    x -= 127;
+  }
+
+  if (x < attdec) { //inc to max
+    return (int16_t) x * a / attdec;
+  }
+  else if (x < pulsewidth - attdec) { //max
+    return a;
+  }  
+  else if (x < pulsewidth) { //dec to 0
+    return (int16_t) (pulsewidth - x) * a / attdec;
+  }
+  return 0;
+}
+
+/*
  * Put a value 0 to 255 in to get a color value.
  * The colours are a transition r -> g -> b -> back to r
  * Inspired by the Adafruit examples.
@@ -689,26 +806,28 @@ void WS2812FX::handle_palette(void)
   _segment_index_palette_last = _segment_index;
 
   byte paletteIndex = SEGMENT.palette;
-  if (SEGMENT.mode == FX_MODE_GLITTER && paletteIndex == 0) paletteIndex = 11;
+  if (paletteIndex == 0) //default palette. Differs depending on effect
+  {
+    switch (SEGMENT.mode)
+    {
+      case FX_MODE_FIRE_2012  : paletteIndex = 35; break; //heat palette
+      case FX_MODE_COLORWAVES : paletteIndex = 26; break; //landscape 33
+      case FX_MODE_FILLNOISE8 : paletteIndex =  9; break; //ocean colors
+      case FX_MODE_NOISE16_1  : paletteIndex = 20; break; //Drywet
+      case FX_MODE_NOISE16_2  : paletteIndex = 43; break; //Blue cyan yellow
+      case FX_MODE_NOISE16_3  : paletteIndex = 35; break; //heat palette
+      case FX_MODE_NOISE16_4  : paletteIndex = 26; break; //landscape 33
+      case FX_MODE_GLITTER    : paletteIndex = 11; break; //rainbow colors
+      case FX_MODE_SUNRISE    : paletteIndex = 35; break; //heat palette
+      case FX_MODE_FLOW       : paletteIndex =  6; break; //party
+    }
+  }
   if (SEGMENT.mode >= FX_MODE_METEOR && paletteIndex == 0) paletteIndex = 4;
   
   switch (paletteIndex)
   {
-    case 0: {//default palette. Differs depending on effect
-      switch (SEGMENT.mode)
-      {
-        case FX_MODE_FIRE_2012  : load_gradient_palette(22); break;//heat palette
-        case FX_MODE_COLORWAVES : load_gradient_palette(13); break;//landscape 33
-        case FX_MODE_FILLNOISE8 : targetPalette = OceanColors_p;         break;
-        case FX_MODE_NOISE16_1  : load_gradient_palette(17); break;//Drywet
-        case FX_MODE_NOISE16_2  : load_gradient_palette(30); break;//Blue cyan yellow
-        case FX_MODE_NOISE16_3  : load_gradient_palette(22); break;//heat palette
-        case FX_MODE_NOISE16_4  : load_gradient_palette(13); break;//landscape 33
-        //case FX_MODE_GLITTER    : targetPalette = RainbowColors_p;       break;
-        
-        default: targetPalette = PartyColors_p; break;//palette, bpm
-      }
-      break;}
+    case 0: //default palette. Exceptions for specific effects above
+      targetPalette = PartyColors_p; break;
     case 1: {//periodically replace palette with a random one. Doesn't work with multiple FastLED segments
       if (!singleSegmentMode)
       {
@@ -726,25 +845,25 @@ void WS2812FX::handle_palette(void)
     case 2: {//primary color only
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       targetPalette = CRGBPalette16(prim); break;}
-    case 3: {//based on primary
-      //considering performance implications
-      CRGB prim = col_to_crgb(SEGCOLOR(0));
-      CHSV prim_hsv = rgb2hsv_approximate(prim);
-      targetPalette = CRGBPalette16(
-                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v), //color itself
-                      CHSV(prim_hsv.h, MAX(prim_hsv.s - 50,0), prim_hsv.v), //less saturated
-                      CHSV(prim_hsv.h, prim_hsv.s, MAX(prim_hsv.v - 50,0)), //darker
-                      CHSV(prim_hsv.h, prim_hsv.s, prim_hsv.v)); //color itself
-      break;}
-    case 4: {//primary + secondary
+    case 3: {//primary + secondary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
-      targetPalette = CRGBPalette16(sec,prim); break;}
-    case 5: {//based on primary + secondary
+      targetPalette = CRGBPalette16(prim,prim,sec,sec); break;}
+    case 4: {//primary + secondary + tertiary
       CRGB prim = col_to_crgb(SEGCOLOR(0));
       CRGB sec  = col_to_crgb(SEGCOLOR(1));
       CRGB ter  = col_to_crgb(SEGCOLOR(2));
       targetPalette = CRGBPalette16(ter,sec,prim); break;}
+    case 5: {//primary + secondary (+tert if not off), more distinct
+      CRGB prim = col_to_crgb(SEGCOLOR(0));
+      CRGB sec  = col_to_crgb(SEGCOLOR(1));
+      if (SEGCOLOR(2)) {
+        CRGB ter = col_to_crgb(SEGCOLOR(2));
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,ter,ter,ter,ter,ter,prim);
+      } else {
+        targetPalette = CRGBPalette16(prim,prim,prim,prim,prim,prim,prim,prim,sec,sec,sec,sec,sec,sec,sec,sec);
+      }
+      break;}
     case 6: //Party colors
       targetPalette = PartyColors_p; break;
     case 7: //Cloud colors
@@ -760,10 +879,10 @@ void WS2812FX::handle_palette(void)
     case 12: //Rainbow stripe colors
       targetPalette = RainbowStripeColors_p; break;
     default: //progmem palettes
-      load_gradient_palette(SEGMENT.palette -13);
+      load_gradient_palette(paletteIndex -13);
   }
   
-  if (singleSegmentMode && paletteFade) //only blend if just one segment uses FastLED mode
+  if (singleSegmentMode && paletteFade && SEGENV.call > 0) //only blend if just one segment uses FastLED mode
   {
     nblendPaletteTowardPalette(currentPalette, targetPalette, 48);
   } else
@@ -772,6 +891,16 @@ void WS2812FX::handle_palette(void)
   }
 }
 
+
+/*
+ * Gets a single color from the currently selected palette.
+ * @param i Palette Index (if mapping is true, the full palette will be SEGLEN long, if false, 255). Will wrap around automatically.
+ * @param mapping if true, LED position in segment is considered for color
+ * @param wrap FastLED palettes will usally wrap back to the start smoothly. Set false to get a hard edge
+ * @param mcol If the default palette 0 is selected, return the standard color 0, 1 or 2 instead. If >2, Party palette is used instead
+ * @param pbri Value to scale the brightness of the returned color by. Default is 255. (no scaling)
+ * @returns Single color from palette
+ */
 uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
   if (SEGMENT.palette == 0 && mcol < 3) return SEGCOLOR(mcol); //WS2812FX default
@@ -783,6 +912,7 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
   return  fastled_col.r*65536 +  fastled_col.g*256 +  fastled_col.b;
 }
 
+//@returns `true` if color, mode, speed, intensity and palette match
 bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
 {
   //if (a->start != b->start) return false;
@@ -795,7 +925,7 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
   if (a->speed != b->speed) return false;
   if (a->intensity != b->intensity) return false;
   if (a->palette != b->palette) return false;
-  //if (a->getOption(1) != b->getOption(1)) return false; //reverse
+  //if (a->getOption(SEG_OPTION_REVERSED) != b->getOption(SEG_OPTION_REVERSED)) return false;
   return true;
 }
 
@@ -835,8 +965,8 @@ void WS2812FX::setRgbwPwm(void) {
 void WS2812FX::setRgbwPwm() {}
 #endif
 
-//gamma 2.4 lookup table used for color correction
-const byte gammaT[] = {
+//gamma 2.8 lookup table used for color correction
+byte gammaT[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -853,6 +983,17 @@ const byte gammaT[] = {
   144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
   177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
+
+uint8_t WS2812FX::gamma8_cal(uint8_t b, float gamma) {
+  return (int)(pow((float)b / 255.0, gamma) * 255 + 0.5);
+}
+
+void WS2812FX::calcGammaTable(float gamma)
+{
+  for (uint16_t i = 0; i < 256; i++) {
+    gammaT[i] = gamma8_cal(i, gamma);
+  }
+}
 
 uint8_t WS2812FX::gamma8(uint8_t b)
 {

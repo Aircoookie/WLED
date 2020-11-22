@@ -15,7 +15,11 @@
 #include "ArduinoJson-v6.h"
 #include <Print.h>
 
-#define DYNAMIC_JSON_DOCUMENT_SIZE 8192
+#ifdef ESP8266
+  #define DYNAMIC_JSON_DOCUMENT_SIZE 8192
+#else
+  #define DYNAMIC_JSON_DOCUMENT_SIZE 16384
+#endif
 
 constexpr const char* JSON_MIMETYPE = "application/json";
 
