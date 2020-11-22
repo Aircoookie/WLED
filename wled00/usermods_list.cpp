@@ -15,6 +15,10 @@
 #endif
 //#include "usermod_v2_empty.h"
 
+#ifdef WLED_ENABLE_SOUND
+  #include "usermod_sr.h"
+#endif
+
 void registerUsermods()
 {
   /*
@@ -27,4 +31,8 @@ void registerUsermods()
   usermods.add(new UsermodTemperature());
   #endif
   //usermods.add(new UsermodRenameMe());
+
+  #ifdef WLED_ENABLE_SOUND
+    usermods.add(new UsermodSoundReactive());
+  #endif
 }
