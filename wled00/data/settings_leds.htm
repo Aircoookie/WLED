@@ -78,20 +78,20 @@
       s2 += val2;
       s2 += "A is enough)<br>";
 			d.getElementById('psu').innerHTML = s;
-      d.getElementById('psu2').innerHTML = isWS2815 ? "" : s2;
+			d.getElementById('psu2').innerHTML = isWS2815 ? "" : s2;
 
-      var LCW = parseInt(d.Sf.LCW.value, 10)
-	  var LCH = parseInt(d.Sf.LCH.value, 10)
-	  if (!isNaN(LCW) && !isNaN(LCH) && (LCW > 0 || LCH > 0) && LCW * LCH != parseInt(d.Sf.LC.value, 10)) {
-		d.getElementById('2dwarning').style.display = 'inline';
-		d.getElementById('submitButton').disabled = false;
-		d.getElementById('submitButton2').disabled = false;
-	  } else {
-		d.getElementById('2dwarning').style.display = 'none';
-		d.getElementById('submitButton').disabled = false;
-		d.getElementById('submitButton2').disabled = false;
-	  }
-	    }
+			var LCW = parseInt(d.Sf.LCW.value, 10)
+			var LCH = parseInt(d.Sf.LCH.value, 10)
+			if (!isNaN(LCW) && !isNaN(LCH) && (LCW > 0 || LCH > 0) && LCW * LCH != parseInt(d.Sf.LC.value, 10)) {
+			d.getElementById('2dwarning').style.display = 'inline';
+			d.getElementById('submitButton').disabled = false;
+			d.getElementById('submitButton2').disabled = false;
+			} else {
+			d.getElementById('2dwarning').style.display = 'none';
+			d.getElementById('submitButton').disabled = false;
+			d.getElementById('submitButton2').disabled = false;
+			}
+		}
 		function GetV()
 		{
 			//values injected by server while sending HTML
@@ -113,14 +113,14 @@
       </div>
 		<i>Recommended power supply for brightest white:</i><br>
 		<b><span id="psu">?</span></b><br>
-	<span id="psu2"><br></span>
-	<h3>2D Matrix</h3>
-		<input name="LCW" type="number" min="1" max="1500" oninput="UI()"> x
-		<input name="LCH" type="number" min="1" max="1500" oninput="UI()"><br>
-		<div id="2dwarning" style="color: orange; display: inline;">
-			&#9888; width x height should match LED count!<br>
-		</div>
-		Serpentine: <input type="checkbox" name="LCWHS" checked> (how leds are layed out)<br>
+		<span id="psu2"><br></span>
+		<h3>2D Matrix</h3>
+			<input name="LCW" type="number" min="1" max="1500" oninput="UI()"> x
+			<input name="LCH" type="number" min="1" max="1500" oninput="UI()"><br>
+			<div id="2dwarning" style="color: orange; display: inline;">
+				&#9888; width x height should match LED count!<br>
+			</div>
+			Serpentine: <input type="checkbox" name="LCWHS" checked> (how leds are layed out)<br>
     <br>
     Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
     <div id="abl">
@@ -170,7 +170,7 @@
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
     Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>
-    Apply preset <input name="BP" type="number" min="0" max="16" required> at boot (0 uses defaults)
+    Apply preset <input name="BP" type="number" min="0" max="250" required> at boot (0 uses defaults)
     <br>- <i>or</i> -<br>
     Set current preset cycle setting as boot default: <input type="checkbox" name="PC"><br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>

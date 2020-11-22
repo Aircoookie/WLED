@@ -12,6 +12,8 @@ void UsermodManager::connected() { for (byte i = 0; i < numMods; i++) ums[i]->co
 void UsermodManager::addToJsonState(JsonObject& obj)    { for (byte i = 0; i < numMods; i++) ums[i]->addToJsonState(obj); }
 void UsermodManager::addToJsonInfo(JsonObject& obj)     { for (byte i = 0; i < numMods; i++) ums[i]->addToJsonInfo(obj); }
 void UsermodManager::readFromJsonState(JsonObject& obj) { for (byte i = 0; i < numMods; i++) ums[i]->readFromJsonState(obj); }
+void UsermodManager::addToConfig(JsonObject& obj)       { for (byte i = 0; i < numMods; i++) ums[i]->addToConfig(obj); }
+void UsermodManager::readFromConfig(JsonObject& obj)    { for (byte i = 0; i < numMods; i++) ums[i]->readFromConfig(obj); }
 
 bool UsermodManager::add(Usermod* um)
 {

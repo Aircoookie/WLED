@@ -61,7 +61,7 @@ void notify(byte callMode, bool followUp)
   udpOut[28] = (t >>  0) & 0xFF;
   
   IPAddress broadcastIp;
-  broadcastIp = ~uint32_t(WiFi.subnetMask()) | uint32_t(WiFi.gatewayIP());
+  broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
 
   notifierUdp.beginPacket(broadcastIp, udpPort);
   notifierUdp.write(udpOut, WLEDPACKETSIZE);
@@ -85,7 +85,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
   if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
   realtimeMode = md;
 
-  if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(255);
+  if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
 }
 
 
@@ -157,7 +157,7 @@ void handleNotifications()
   
   //notifier and UDP realtime
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) return;
-  if (!isSupp && notifierUdp.remoteIP() == WiFi.localIP())   return; //don't process broadcasts we send ourselves
+  if (!isSupp && notifierUdp.remoteIP() == Network.localIP())   return; //don't process broadcasts we send ourselves
 
   uint8_t udpIn[packetSize +1];
   if (isSupp) notifier2Udp.read(udpIn, packetSize);

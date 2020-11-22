@@ -402,6 +402,18 @@ void WS2812FX::setBrightness(uint8_t b) {
     {
       _segments[i].setOption(SEG_OPTION_FREEZE, false);
     }
+    #if LEDPIN == LED_BUILTIN
+      if (!shouldStartBus)
+        shouldStartBus = true;
+    #endif
+  } else {
+    #if LEDPIN == LED_BUILTIN
+      if (shouldStartBus) {
+        shouldStartBus = false;
+        const uint8_t ty = _useRgbw ? 2 : 1;
+        bus->Begin((NeoPixelType)ty, _lengthRaw);
+      }
+    #endif
   }
   if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
 }
@@ -989,8 +1001,8 @@ void WS2812FX::setRgbwPwm(void) {
 void WS2812FX::setRgbwPwm() {}
 #endif
 
-//gamma 2.4 lookup table used for color correction
-const byte gammaT[] = {
+//gamma 2.8 lookup table used for color correction
+byte gammaT[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -1007,6 +1019,17 @@ const byte gammaT[] = {
   144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
   177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
+
+uint8_t WS2812FX::gamma8_cal(uint8_t b, float gamma) {
+  return (int)(pow((float)b / 255.0, gamma) * 255 + 0.5);
+}
+
+void WS2812FX::calcGammaTable(float gamma)
+{
+  for (uint16_t i = 0; i < 256; i++) {
+    gammaT[i] = gamma8_cal(i, gamma);
+  }
+}
 
 uint8_t WS2812FX::gamma8(uint8_t b)
 {
