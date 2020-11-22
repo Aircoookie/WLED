@@ -4216,7 +4216,10 @@ double mapf(double x, double in_min, double in_max, double out_min, double out_m
 // Experimenting with volume only as a fallback if no FFT.
 uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: Andrew Tuline
 
-  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+//  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 + 1 % 16;
+  
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
