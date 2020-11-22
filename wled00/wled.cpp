@@ -317,7 +317,7 @@ void WLED::beginStrip()
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
-#ifdef BTNPIN
+#if defined(BTNPIN) && BTNPIN > -1
   pinManager.allocatePin(BTNPIN, false);
   pinMode(BTNPIN, INPUT_PULLUP);
 #endif
@@ -342,7 +342,7 @@ void WLED::beginStrip()
 #endif
 
   // disable button if it is "pressed" unintentionally
-#if defined(BTNPIN) || defined(TOUCHPIN)
+#if (defined(BTNPIN) && BTNPIN > -1) || defined(TOUCHPIN)
   if (isButtonPressed())
     buttonEnabled = false;
 #else
