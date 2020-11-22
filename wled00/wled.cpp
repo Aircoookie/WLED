@@ -132,6 +132,10 @@ void WLED::loop()
 
   if (doReboot)
     reset();
+  if (doCloseFile) {
+    closeFile();
+    yield();
+  }
 
   if (!realtimeMode || realtimeOverride)  // block stuff if WARLS/Adalight is enabled
   {
@@ -142,10 +146,17 @@ void WLED::loop()
       ArduinoOTA.handle();
 #endif
     handleNightlight();
+    handlePlaylist();
     yield();
 
     handleHue();
     handleBlynk();
+
+    /*if (presetToApply) {
+      applyPreset(presetToApply);
+      presetToApply = 0;
+    }*/
+
     yield();
 
     if (!offMode)
@@ -193,17 +204,6 @@ void WLED::loop()
 
 void WLED::setup()
 {
-  EEPROM.begin(EEPSIZE);
-  ledCount = EEPROM.read(229) + ((EEPROM.read(398) << 8) & 0xFF00);
-  if (ledCount > MAX_LEDS || ledCount == 0)
-    ledCount = 30;
-
-#ifdef ESP8266
-  #if LEDPIN == 3
-    if (ledCount > MAX_LEDS_DMA)
-      ledCount = MAX_LEDS_DMA;        // DMA method uses too much ram
-  #endif
-#endif
   Serial.begin(115200);
   Serial.setTimeout(50);
   DEBUG_PRINTLN();
@@ -224,25 +224,33 @@ void WLED::setup()
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
 
-  strip.init(EEPROM.read(372), ledCount, EEPROM.read(2204));        // init LEDs quickly
-  strip.setBrightness(0);
+  //strip.init(EEPROM.read(372), ledCount, EEPROM.read(2204));        // init LEDs quickly
+  //strip.setBrightness(0);
 
-  DEBUG_PRINT(F("LEDs inited. heap usage ~"));
-  DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
+  //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
+  //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
-#ifndef WLED_DISABLE_FILESYSTEM
-  #ifdef ARDUINO_ARCH_ESP32
-    SPIFFS.begin(true);
-  #endif
-    SPIFFS.begin();
+
+  bool fsinit = false;
+  DEBUGFS_PRINTLN(F("Mount FS"));
+#ifdef ARDUINO_ARCH_ESP32
+  fsinit = WLED_FS.begin(true);
+#else
+  fsinit = WLED_FS.begin();
 #endif
+  if (!fsinit) {
+    DEBUGFS_PRINTLN(F("FS failed!"));
+    errorFlag = ERR_FS_BEGIN;
+  } else deEEP();
+  updateFSInfo();
+  deserializeConfig();
 
 #if STATUSLED && STATUSLED != LEDPIN
   pinMode(STATUSLED, OUTPUT);
 #endif
 
-  DEBUG_PRINTLN(F("Load EEPROM"));
-  loadSettingsFromEEPROM(true);
+  //DEBUG_PRINTLN(F("Load EEPROM"));
+  //loadSettingsFromEEPROM();
   beginStrip();
   userSetup();
   usermods.setup();
@@ -251,8 +259,6 @@ void WLED::setup()
   WiFi.persistent(false);
   WiFi.onEvent(WiFiEvent);
 
-  if (macroBoot > 0)
-    applyMacro(macroBoot);
   Serial.println(F("Ada"));
 
   // generate module IDs
@@ -297,18 +303,36 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
+  #ifdef ESP8266
+  #if LEDPIN == 3
+    if (ledCount > MAX_LEDS_DMA)
+      ledCount = MAX_LEDS_DMA;        // DMA method uses too much ram
+  #endif
+  #endif
+
+  if (ledCount > MAX_LEDS || ledCount == 0)
+    ledCount = 30;
+
+  strip.init(useRGBW, ledCount, skipFirstLed);
+  strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
-#ifdef BTNPIN
+#if defined(BTNPIN) && BTNPIN > -1
+  pinManager.allocatePin(BTNPIN, false);
   pinMode(BTNPIN, INPUT_PULLUP);
 #endif
 
-  if (bootPreset > 0)
-    applyPreset(bootPreset, turnOnAtBoot);
+  if (bootPreset > 0) applyPreset(bootPreset);
+  if (turnOnAtBoot) {
+    bri = (briS > 0) ? briS : 128;
+  } else {
+    briLast = briS; bri = 0;
+  }
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
 // init relay pin
 #if RLYPIN >= 0
+  pinManager.allocatePin(RLYPIN);
   pinMode(RLYPIN, OUTPUT);
 #if RLYMDE
   digitalWrite(RLYPIN, bri);
@@ -318,7 +342,7 @@ void WLED::beginStrip()
 #endif
 
   // disable button if it is "pressed" unintentionally
-#if defined(BTNPIN) || defined(TOUCHPIN)
+#if (defined(BTNPIN) && BTNPIN > -1) || defined(TOUCHPIN)
   if (isButtonPressed())
     buttonEnabled = false;
 #else

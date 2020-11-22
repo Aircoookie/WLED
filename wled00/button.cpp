@@ -11,13 +11,13 @@ void shortPressAction()
     toggleOnOff();
     colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
   } else {
-    applyMacro(macroButton);
+    applyPreset(macroButton);
   }
 }
 
 bool isButtonPressed()
 {
-  #ifdef BTNPIN
+  #if defined(BTNPIN) && BTNPIN > -1
     if (digitalRead(BTNPIN) == LOW) return true;
   #endif
   #ifdef TOUCHPIN
@@ -29,7 +29,7 @@ bool isButtonPressed()
 
 void handleButton()
 {
-#if defined(BTNPIN) || defined(TOUCHPIN)
+#if (defined(BTNPIN) && BTNPIN > -1) || defined(TOUCHPIN)
   if (!buttonEnabled) return;
 
   if (isButtonPressed()) //pressed
@@ -41,7 +41,7 @@ void handleButton()
     {
       if (!buttonLongPressed) 
       {
-        if (macroLongPress) {applyMacro(macroLongPress);}
+        if (macroLongPress) {applyPreset(macroLongPress);}
         else _setRandomColor(false,true);
 
         buttonLongPressed = true;
@@ -62,7 +62,7 @@ void handleButton()
     else if (!buttonLongPressed) { //short press
       if (macroDoublePress)
       {
-        if (doublePress) applyMacro(macroDoublePress);
+        if (doublePress) applyPreset(macroDoublePress);
         else buttonWaitTime = millis();
       } else shortPressAction();
     }
