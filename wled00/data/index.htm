@@ -1139,7 +1139,7 @@ var cpick = new iro.ColorPicker("#picker", {
     { 
       component: iro.ui.Slider,
       options: {
-        sliderType: 'brightness'
+        sliderType: 'value'
       }
     },
     { 
@@ -1501,21 +1501,23 @@ function populatePresets(fromls)
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
 	var added = false;
-	pQL = [];
+  pQL = [];
+  var is = [];
 
 	for (var key in arr)
 	{
 		if (!isObject(arr[key][1])) continue;
 		var i = parseInt(arr[key][0]);
 		var qll = arr[key][1]["ql"];
-		if (qll) pQL.push([i, qll]);
+    if (qll) pQL.push([i, qll]);
+    is.push(i);
 		
 		cn += `<div class="seg pres" id="p${i}o">
 			<div class="segname pname" onclick="setPreset(${i})">
 				${pName(i)}
 			</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
-			<div class="segin ${expanded[i+100] ? "expanded":""}" id="seg${i+100}">${expanded[i+100] ? makeP(i):""}</div>
+			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
 		added = true;
 	}
@@ -1527,7 +1529,11 @@ function populatePresets(fromls)
 			pJson["0"] = {};
 			localStorage.setItem("wledP", JSON.stringify(pJson));
 		}
-		pmtLS = pmt;
+    pmtLS = pmt;
+    for (var a in is) {
+      var i = is[a];
+      if (expanded[i+100]) expand(i+100, true);
+    }
 	} else { presetError(true); }
 	updatePA();
 	populateQL();
@@ -2184,12 +2190,16 @@ function saveP(i) {
 	}
 	obj["psave"] = pI; obj["n"] = pN;
 	var pQN = d.getElementById(`p${i}ql`).value;
-	if (pQN.length > 0) obj["ql"] = pQN; 
+	if (pQN.length > 0) obj["ql"] = pQN;
 
+  showToast("Saving " + pN +" (" + pI + ")");
 	requestJson(obj);
 	if (obj["o"]) {
 		pJson[pI] = obj;
-		delete pJson[pI]["psave"];
+    delete pJson[pI]["psave"];
+    delete pJson[pI]["o"];
+    delete pJson[pI]["v"];
+    delete pJson[pI]["time"];
 	} else {
 		pJson[pI] = {"n":pN, "win":"Please refresh the page to see this newly saved command."};
 		if (obj["win"]) pJson[pI]["win"] = obj["win"];
@@ -2348,9 +2358,9 @@ function rSegs()
 	requestJson(obj);
 }
 
-function expand(i)
+function expand(i,a)
 {
-	expanded[i] = !expanded[i];
+	if (!a) expanded[i] = !expanded[i];
 	d.getElementById('seg' +i).style.display = (expanded[i]) ? "block":"none";
 	d.getElementById('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)"
 	if (i > 100) { //presets
