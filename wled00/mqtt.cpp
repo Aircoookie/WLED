@@ -64,18 +64,40 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   }
   DEBUG_PRINTLN(payload);
 
-  //no need to check the topic because we only get topics we are subscribed to
+  size_t topicPrefixLen = strlen(mqttDeviceTopic);
+  if (strncmp(topic, mqttDeviceTopic, topicPrefixLen) == 0) {
+      topic += topicPrefixLen;
+  } else {
+      topicPrefixLen = strlen(mqttGroupTopic);
+      if (strncmp(topic, mqttGroupTopic, topicPrefixLen) == 0) {
+          topic += topicPrefixLen;
+      } else {
+          // Topic not used here. Probably a usermod subscribed to this topic.
+          return;
+      }
+  }
 
-  if (strstr(topic, "/col"))
+  //Prefix is stripped from the topic at this point
+
+  if (strcmp(topic, "/col") == 0)
   {
     colorFromDecOrHexString(col, (char*)payload);
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
-  } else if (strstr(topic, "/api"))
+  } else if (strcmp(topic, "/api") == 0)
   {
-    String apireq = "win&";
-    apireq += (char*)payload;
-    handleSet(nullptr, apireq);
-  } else parseMQTTBriPayload(payload);
+    if (payload[0] == '{') { //JSON API
+      DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+      deserializeJson(doc, payload);
+      deserializeState(doc.as<JsonObject>());
+    } else { //HTTP API
+      String apireq = "win&";
+      apireq += (char*)payload;
+      handleSet(nullptr, apireq);
+    }
+  } else if (strcmp(topic, "") == 0)
+  {
+    parseMQTTBriPayload(payload);
+  }
 }
 
 
@@ -100,7 +122,7 @@ void publishMqtt()
 
   strcpy(subuf, mqttDeviceTopic);
   strcat(subuf, "/status");
-  mqtt->publish(subuf, 0, true, (const char*)F("online"));
+  mqtt->publish(subuf, 0, true, "online");
 
   char apires[1024];
   XML_response(nullptr, apires);
@@ -137,7 +159,7 @@ bool initMqtt()
 
   strcpy(mqttStatusTopic, mqttDeviceTopic);
   strcat(mqttStatusTopic, "/status");
-  mqtt->setWill(mqttStatusTopic, 0, true, (const char*)F("offline"));
+  mqtt->setWill(mqttStatusTopic, 0, true, "offline");
   mqtt->setKeepAlive(MQTT_KEEP_ALIVE_TIME);
   mqtt->connect();
   return true;

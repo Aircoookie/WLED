@@ -29,7 +29,7 @@ bool decodeIRCustom(uint32_t code)
   {
     //just examples, feel free to modify or remove
     case IRCUSTOM_ONOFF : toggleOnOff(); break;
-    case IRCUSTOM_MACRO1 : applyMacro(1); break;
+    case IRCUSTOM_MACRO1 : applyPreset(1); break;
 
     default: return false;
   }
