@@ -153,4 +153,42 @@ class UsermodSoundReactive : public Usermod {
       }
     }
   }
+
+    void addToJsonInfo(JsonObject& root)
+    {
+      // Add information to the Info-page
+      JsonObject user = root["u"];
+      if (user.isNull()) user = root.createNestedObject("u");
+
+      JsonArray srArr = user.createNestedArray("Sound reactive");
+      srArr.add("Enabled");
+
+      // Add information to the Info-json-object
+      JsonObject sr = root.createNestedObject("sr");
+      sr[F("Mic level")] = String(micLev,3);
+      sr[F("AGC multiplier")] = multAgc;
+    }
+
+
+    void addToJsonState(JsonObject& root)
+    {
+      JsonObject sr = root.createNestedObject("sr");    
+      sr["soundSquelch"] = soundSquelch;
+      sr["sampleGain"] = sampleGain;
+    }
+
+
+    void readFromJsonState(JsonObject& root)
+    {
+      JsonObject sr = root["sr"];
+      if (sr) {
+        soundSquelch = sr["soundSquelch"];
+        sampleGain = sr["sampleGain"];
+      }
+    }  
+
+    uint16_t getId()
+    {
+      return USERMOD_ID_SOUNDREACTIVE;
+    }
 };
