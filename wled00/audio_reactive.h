@@ -288,6 +288,14 @@ void agcAvg() {                                                     // A simple 
 
       for (int i = 0; i < samples; i++) fftBin[i] = vReal[i]; // export FFT field
 
+      for (int i = 0; i < samples; i++) {
+        double t = 0.0;
+        t = abs(vReal[i]);
+        t = 16*log(t);
+        fftBin[i] = t;
+      }
+      
+
 // Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512.
 // Based on testing, the lowest/Start frequency is 60 Hz (with bin 3) and a highest/End frequency of 5120 Hz in bin 255.
 // Now, Take the 60Hz and multiply by 1.320367784 to get the next frequency and so on until the end. Then detetermine the bins.

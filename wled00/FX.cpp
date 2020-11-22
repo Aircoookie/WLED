@@ -3778,10 +3778,11 @@ uint16_t WS2812FX::mode_pixels(void) {              // Pixels. By Andrew Tuline.
 
 uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pixelwave. By Andrew Tuline.
 
-  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
+  
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
-    int pixBri = sample * SEGMENT.intensity / 128;
+    int pixBri = sample * SEGMENT.intensity / 64;
     setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
     for (int i=SEGLEN-1; i>SEGLEN/2; i--) {                               // Move to the right.
       setPixelColor(i,getPixelColor(i-1));
@@ -3817,7 +3818,7 @@ uint16_t WS2812FX::mode_juggles(void) {                                   // Jug
 
 uint16_t WS2812FX::mode_matripix(void) {                                  // Matripix. By Andrew Tuline.
 
-  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
     int pixBri = sample * SEGMENT.intensity / 64;
@@ -4005,7 +4006,7 @@ uint16_t WS2812FX::mode_midnoise(void) {                                  // Mid
   fade_out(SEGMENT.speed);
 
   uint16_t maxLen = sampleAvg * SEGMENT.intensity / 256;                  // Too sensitive.
-  maxLen = maxLen * SEGMENT.intensity / 256;                              // Reduce sensitity/length.
+  maxLen = maxLen * SEGMENT.intensity / 128;                              // Reduce sensitity/length.
 
   if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
 
@@ -4030,12 +4031,13 @@ uint16_t WS2812FX::mode_noisemeter(void) {                                // Noi
   static uint16_t xdist;
   static uint16_t ydist;
 
-  fade_out(SEGMENT.speed);
+  uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
+  fade_out(fadeRate);
 
-  int maxLen = sampleAvg;
-  if (sample > sampleAvg) maxLen = sample-sampleAvg;
+  int maxLen = sample;
+    
   maxLen = maxLen * SEGMENT.intensity / 256;                              // Still a bit too sensitive.
-  maxLen = maxLen * SEGMENT.intensity / 256;                              // Reduce sensitivity/length.
+
   if (maxLen >SEGLEN) maxLen = SEGLEN;
 
   for (int i=0; i<maxLen; i++) {                                          // The louder the sound, the wider the soundbar. By Andrew Tuline.
