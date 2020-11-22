@@ -13,3 +13,4 @@
 .gitignore
 .clang-format
 node_modules
+my_config.h
