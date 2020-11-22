@@ -2,13 +2,9 @@
 	"name": "WLED",
 	"dockerFile": "Dockerfile",
 
-	// The device-parameter is to attach an ESP-device (attached to your host) to the container. Remove this parameter if no ESP-device is connected.
-	"runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined","--device=/dev/ttyUSB0"],
-	"mounts": [
-		"source=wled-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume",
-		"source=wled-pio,target=${containerWorkspaceFolder}/.pio,type=volume"
-	],
-
+	// The device-parameter is to attach an ESP-device (attached to your host) to the container. 
+	// Remove this parameter if no ESP-device is connected.
+	"runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ,"--device=/dev/ttyUSB0"],
 	"settings": { 
 		"terminal.integrated.shell.linux": "/bin/bash"
 	},
@@ -18,13 +14,5 @@
 		"platformio.platformio-ide"
 	],
 
-	/*"remoteEnv": {
-	 	"PATH": "${containerEnv:PATH}:/root/.platformio/penv/bin/pio",
-	},*/
-
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [8008],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "gcc -v",
-}
+	"forwardPorts": [8008]
