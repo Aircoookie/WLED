@@ -778,6 +778,7 @@ uint16_t WS2812FX::mode_chase_random(void) {
  */
 uint16_t WS2812FX::mode_chase_rainbow(void) {
   uint8_t color_sep = 256 / SEGLEN;
+  if (color_sep == 0) color_sep = 1;                                           // correction for segments longer than 256 LEDs
   uint8_t color_index = SEGENV.call & 0xFF;
   uint32_t color = color_wheel(((SEGENV.step * color_sep) + color_index) & 0xFF);
 
@@ -3414,6 +3415,7 @@ uint16_t WS2812FX::phased_base(uint8_t moder) {                  // We're making
     b = (b > cutOff) ? (b - cutOff) : 0;                         // A ternary operator to cutoff the light.
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, false, 0), b));
     index += 256 / SEGLEN;
+    if (SEGLEN > 256) index ++;                                  // Correction for segments longer than 256 LEDs
   }
 
   return FRAMETIME;
