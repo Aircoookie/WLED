@@ -1050,8 +1050,8 @@ input[type=number]::-webkit-outer-spin-button {
 			<input type="checkbox" id="cyToggle" onchange="toggleCY()">
 			<span class="checkmark psv"></span>
 		</label><br>
-		First preset: <input id="cycs" class="noslide" type="number" min="1" max="14" value="1"><br>
-		Last preset: <input id="cyce" class="noslide" type="number" min="2" max="15" value="3"><br>
+		First preset: <input id="cycs" class="noslide" type="number" min="1" max="249" value="1"><br>
+		Last preset: <input id="cyce" class="noslide" type="number" min="2" max="250" value="3"><br>
 		Time per preset: <input id="cyct" class="noslide" type="number" min="0.2" max="6553.5" step="0.1" value="1.2">s<br>
 		Transition: <input id="cyctt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s
 	</div>
@@ -1755,7 +1755,7 @@ function compare(a, b) {
 }
 function cmpP(a, b) {
 	if (!a[1].n) return (a[0] > b[0]);
-	return a[1].n.localeCompare(b[1].n);
+  return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
 var jsonTimeout;
@@ -2181,7 +2181,10 @@ function saveP(i) {
 			} else if (raw.indexOf('{') > -1) {
 				d.getElementById(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
 				return;
-			}
+			} else if (raw.indexOf("Please") == 0) {
+        d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
+				return;
+      }
 		}
 		obj["o"] = true;
 	} else {
@@ -2367,9 +2370,11 @@ function expand(i,a)
 		var p = i-100;
 		d.getElementById(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
 		if (d.getElementById('seg' +i).innerHTML == "") {
-			d.getElementById('seg' +i).innerHTML = makeP(p);
-			d.getElementById(`p${p}api`).value = papiVal(p);
-			tglCs(p);
+      d.getElementById('seg' +i).innerHTML = makeP(p);
+      var papi = papiVal(p);
+      d.getElementById(`p${p}api`).value = papi;
+      if (papi.indexOf("Please") == 0) d.getElementById(`p${p}cstgl`).checked = true;
+      tglCs(p);
 		}
 	}
 }

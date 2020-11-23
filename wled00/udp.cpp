@@ -116,7 +116,7 @@ void handleNotifications()
   if (realtimeMode && millis() > realtimeTimeout)
   {
     if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
-    strip.setBrightness(bri);
+    strip.setBrightness(scaledBri(bri));
     realtimeMode = REALTIME_MODE_INACTIVE;
     realtimeIP[0] = 0;
   }

@@ -305,7 +305,7 @@ void handleNightlight()
     if (presetCycCurr < presetCycleMin || presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
     applyPreset(presetCycCurr);
     presetCycCurr++;
-    if (presetCycCurr > 16) presetCycCurr = 1;
+    if (presetCycCurr > 250) presetCycCurr = 1;
     colorUpdated(NOTIFIER_CALL_MODE_PRESET_CYCLE);
   }
 }

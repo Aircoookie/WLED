@@ -27,7 +27,12 @@
 #ifndef WS2812FX_h
 #define WS2812FX_h
 
-#include "NpbWrapper.h"
+#ifdef ESP32_MULTISTRIP
+  #include "../usermods/esp32_multistrip/NpbWrapper.h"
+#else
+  #include "NpbWrapper.h"
+#endif
+
 #include "const.h"
 
 #define FASTLED_INTERNAL //remove annoying pragma messages

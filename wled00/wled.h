@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.11.0p
+   @version 0.11.0
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2011210
+#define VERSION 2011230
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -173,7 +173,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.11.0p");
+WLED_GLOBAL char versionString[] _INIT("0.11.0");
 #define WLED_CODENAME "Mirai"
 
 // AP and OTA default passwords (for maximum security change them!)

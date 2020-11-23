@@ -39,7 +39,7 @@ const char PAGE_update[] PROGMEM = R"=====(<!DOCTYPE html><html><head><meta cont
 <title>WLED Update</title><script>function B(){window.history.back()}</script>
 <style>
 .bt{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}input[type=file]{font-size:16px}body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%}
-</style></head><body><h2>WLED Software Update</h2>Installed version: 0.11.0p<br>
+</style></head><body><h2>WLED Software Update</h2>Installed version: 0.11.0<br>
 Download the latest binary: <a 
 href="https://github.com/Aircoookie/WLED/releases" target="_blank"><img 
 src="https://img.shields.io/github/release/Aircoookie/WLED.svg?style=flat-square">
