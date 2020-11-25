@@ -94,13 +94,13 @@
       #define RPIN 5   //R pin for analog LED strip
     #endif
     #ifndef GPIN
-      #define GPIN 12  //G pin for analog LED strip
+      #define GPIN 13  //G pin for analog LED strip
     #endif
     #ifndef BPIN
-      #define BPIN 15  //B pin for analog LED strip
+      #define BPIN 12  //B pin for analog LED strip
     #endif
     #ifndef WPIN
-      #define WPIN 13  //W pin for analog LED strip
+      #define WPIN 15  //W pin for analog LED strip
     #endif
   #endif
   #undef RLYPIN
