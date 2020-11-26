@@ -86,6 +86,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
   realtimeMode = md;
 
   if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
+  if (md == REALTIME_MODE_GENERIC) strip.show();
 }
 
 
