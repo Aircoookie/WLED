@@ -442,14 +442,16 @@ img {
 }
 
 .sliderbubble {
-	width: 30px;
-	line-height: 24px;
-	background: var(--c-3);
-	position: absolute;
-	transform: translateX(-50%);
-	border-radius: 6px;
-	margin-left: 10px;
-	display: inline;
+    width: 36px;
+    line-height: 24px;
+    background: var(--c-3);
+    position: absolute;
+    transform: translateX(-50%);
+    border-radius: 12px;
+    margin-left: 12px;
+    margin-top: 3px;
+    padding: 0px;
+    display: inline;
 }
 
 .hidden {
@@ -899,6 +901,12 @@ input[type=number]::-webkit-outer-spin-button {
 }
 ::-webkit-scrollbar-thumb:hover {
 	background: var(--c-sbh);
+}
+
+@media all and (max-width: 335px) {
+	.sliderbubble {
+    display: none;
+  }
 }
 
 @media all and (max-width: 550px) and (min-width: 374px) {
