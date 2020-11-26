@@ -2,6 +2,11 @@
 
 ### WLED version 0.11.0
 
+#### Build 2011260
+
+-   Add `live` property to state, allowing toggling of realtime (not incl. in state resp.)
+-   PIO environment changes
+
 #### Build 2011230
 
 -   Version bump to 0.11.0 "Mirai"
