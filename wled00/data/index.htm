@@ -441,6 +441,23 @@ img {
 	z-index: -1;
 }
 
+.sliderbubble {
+    width: 36px;
+    line-height: 24px;
+    background: var(--c-3);
+    position: absolute;
+    transform: translateX(-50%);
+    border-radius: 12px;
+    margin-left: 12px;
+    margin-top: 3px;
+    padding: 0px;
+    display: inline;
+}
+
+.hidden {
+	display: none;
+}
+
 input[type=range] {
 	-webkit-appearance: none;
 	width: 220px;
@@ -479,6 +496,10 @@ input[type=range]::-moz-range-thumb {
 	border-radius: 17px;
 	background: var(--c-f);
 	transform: translateY(7px);
+}
+input[type=range]:active + .sliderbubble {
+	display: inline;
+	transform: translateX(-50%);
 }
 
 #wwrap {
@@ -882,6 +903,12 @@ input[type=number]::-webkit-outer-spin-button {
 	background: var(--c-sbh);
 }
 
+@media all and (max-width: 335px) {
+	.sliderbubble {
+    display: none;
+  }
+}
+
 @media all and (max-width: 550px) and (min-width: 374px) {
 	.infobtn {
 		width: 155px;
@@ -1002,6 +1029,7 @@ input[type=number]::-webkit-outer-spin-button {
 			<i class="icons slider-icon">&#xe325;</i>
 			<div class="sliderwrap il">
 				<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+				<output class="sliderbubble hidden"></output>
 				<div class="sliderdisplay"></div>
 			</div>
 		</div>
@@ -1010,6 +1038,7 @@ input[type=number]::-webkit-outer-spin-button {
 			<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
 			<div class="sliderwrap il">
 				<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+				<output class="sliderbubble hidden"></output>
 				<div class="sliderdisplay"></div>
 			</div>
 		</div>
@@ -1298,6 +1327,13 @@ function onLoad() {
 	size();
 	d.getElementById("cv").style.opacity=0;
 	if (localStorage.getItem('pcm') == "true") togglePcMode(true);
+	var sls = d.querySelectorAll('input[type="range"]');
+	for (var sl of sls) {
+		sl.addEventListener('input', updateBubble, true);
+		sl.addEventListener('touchstart', toggleBubble);
+		sl.addEventListener('touchend', toggleBubble);
+	}
+
 }
 
 function updateTablinks(tabI)
@@ -1675,6 +1711,21 @@ function updateTrail(e, slidercol)
 	}
 	var val = `linear-gradient(90deg, ${scol} ${progress}%, var(--c-4) ${progress}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
+}
+
+function updateBubble(e)
+{
+	var bubble = e.target.parentNode.getElementsByTagName('output')[0]
+	var max = e.target.hasAttribute('max') ? e.target.attributes.max.value : 255;
+
+	if (bubble) {
+		bubble.innerHTML = e.target.value
+	}
+}
+
+function toggleBubble(e)
+{
+	e.target.parentNode.querySelector('output').classList.toggle('hidden');
 }
 
 function updateLen(s)
