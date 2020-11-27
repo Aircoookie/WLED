@@ -185,6 +185,28 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         }
         break;
       }
+      case DMX_MODE_MULTIPLE_RGBW:   //Implementation of RGBW leds
+      {
+        const byte dmxChannelsperLed=4;   //4 DMX Channels/Led
+        const byte ledsPerUniverse=128;   //Max.128 leds/Universe      
+        realtimeLock(realtimeTimeoutMs, mde);
+        if (realtimeOverride) return;
+        uint16_t previousLeds, dmxOffset;
+        if (previousUniverses == 0) {
+          if (dmxChannels-DMXAddress < 1) return;
+          dmxOffset = DMXAddress;
+          previousLeds = 0;
+        } else{
+          dmxOffset = (protocol == P_ARTNET) ? 0 : 1;
+          uint16_t ledsInFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / dmxChannelsperLed;   
+          previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * ledsPerUniverse; // Max leds/universe is only 128 with 4 Ch./led
+        }
+        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset +1) / dmxChannelsperLed;
+        for (uint16_t i = previousLeds; i < ledsTotal; i++) {
+          setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++]);
+        }
+        break;         
+      }
     default:
       DEBUG_PRINTLN(F("unknown E1.31 DMX mode"));
       return;  // nothing to do
