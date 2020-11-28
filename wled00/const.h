@@ -104,6 +104,15 @@
 #define TYPE_TM1814              54
 
 
+//Color orders
+#define COL_ORDER_GRB             0           //GRB(w),defaut
+#define COL_ORDER_RGB             1           //common for WS2811
+#define COL_ORDER_BRG             2
+#define COL_ORDER_RBG             3
+#define COL_ORDER_BGR             4
+#define COL_ORDER_GBR             5
+
+
 //Button type
 #define BTN_TYPE_NONE             0
 #define BTN_TYPE_RESERVED         1

@@ -41,6 +41,13 @@
 #define RLYMDE  1  //mode for relay, 0: LOW if LEDs are on 1: HIGH if LEDs are on
 #endif
 
+//enable color order override for a specific range of the strip
+//This can be useful if you want to chain multiple strings with incompatible color order
+//#define COLOR_ORDER_OVERRIDE
+#define COO_MIN    0
+#define COO_MAX   27 //not inclusive, this would set the override for LEDs 0-26
+#define COO_ORDER COL_ORDER_GRB
+
 //END CONFIGURATION
 
 #if defined(USE_APA102) || defined(USE_WS2801) || defined(USE_LPD8806) || defined(USE_P9813)
@@ -168,6 +175,7 @@
 
 
 #include <NeoPixelBrightnessBus.h>
+#include "const.h"
 
 enum NeoPixelType
 {
@@ -296,23 +304,41 @@ public:
     }
   }
 
-  void SetPixelColor(uint16_t indexPixel, RgbwColor color)
+  void SetPixelColor(uint16_t indexPixel, RgbwColor c)
   {
+    RgbwColor col;
+
+    uint8_t co = _colorOrder;
+    #ifdef COLOR_ORDER_OVERRIDE
+    if (indexPixel >= COO_MIN && indexPixel < COO_MAX) co = COO_ORDER;
+    #endif
+
+    //reorder channels to selected order
+    switch (co)
+    {
+      case  0: col.G = c.G; col.R = c.R; col.B = c.B; break; //0 = GRB, default
+      case  1: col.G = c.R; col.R = c.G; col.B = c.B; break; //1 = RGB, common for WS2811
+      case  2: col.G = c.B; col.R = c.R; col.B = c.G; break; //2 = BRG
+      case  3: col.G = c.R; col.R = c.B; col.B = c.G; break; //3 = RBG
+      case  4: col.G = c.B; col.R = c.G; col.B = c.R; break; //4 = BGR
+      default: col.G = c.G; col.R = c.B; col.B = c.R; break; //5 = GBR
+    }
+    col.W = c.W;
+
     switch (_type) {
       case NeoPixelType_Grb: {
-        _pGrb->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
+        _pGrb->SetPixelColor(indexPixel, RgbColor(col.R,col.G,col.B));
       }
       break;
       case NeoPixelType_Grbw: {
         #if defined(USE_LPD8806) || defined(USE_WS2801)
-        _pGrbw->SetPixelColor(indexPixel, RgbColor(color.R,color.G,color.B));
+        _pGrbw->SetPixelColor(indexPixel, RgbColor(col.R,col.G,col.B));
         #else
-        _pGrbw->SetPixelColor(indexPixel, color);
+        _pGrbw->SetPixelColor(indexPixel, col);
         #endif
       }
       break;
-    }
-    
+    } 
   }
 
   void SetBrightness(byte b)
@@ -323,13 +349,47 @@ public:
     }
   }
 
-  // NOTE:  Due to feature differences, some support RGBW but the method name
-  // here needs to be unique, thus GetPixeColorRgbw
-  RgbwColor GetPixelColorRgbw(uint16_t indexPixel) const
+  void SetColorOrder(byte colorOrder) {
+    _colorOrder = colorOrder;
+  }
+
+  uint8_t GetColorOrder() {
+    return _colorOrder;
+  }
+
+  RgbwColor GetPixelColorRaw(uint16_t indexPixel) const
   {
     switch (_type) {
       case NeoPixelType_Grb:  return _pGrb->GetPixelColor(indexPixel);  break;
       case NeoPixelType_Grbw: return _pGrbw->GetPixelColor(indexPixel); break;
+    }
+    return 0;
+  }
+
+  // NOTE:  Due to feature differences, some support RGBW but the method name
+  // here needs to be unique, thus GetPixeColorRgbw
+  uint32_t GetPixelColorRgbw(uint16_t indexPixel) const
+  {
+    RgbwColor col(0,0,0,0);
+    switch (_type) {
+      case NeoPixelType_Grb:  col = _pGrb->GetPixelColor(indexPixel);  break;
+      case NeoPixelType_Grbw: col = _pGrbw->GetPixelColor(indexPixel); break;
+    }
+
+    uint8_t co = _colorOrder;
+    #ifdef COLOR_ORDER_OVERRIDE
+    if (indexPixel >= COO_MIN && indexPixel < COO_MAX) co = COO_ORDER;
+    #endif
+
+    switch (co)
+    {
+      //                    W               G              R               B
+      case  0: return ((col.W << 24) | (col.G << 8) | (col.R << 16) | (col.B)); //0 = GRB, default
+      case  1: return ((col.W << 24) | (col.R << 8) | (col.G << 16) | (col.B)); //1 = RGB, common for WS2811
+      case  2: return ((col.W << 24) | (col.B << 8) | (col.R << 16) | (col.G)); //2 = BRG
+      case  3: return ((col.W << 24) | (col.B << 8) | (col.G << 16) | (col.R)); //3 = RBG
+      case  4: return ((col.W << 24) | (col.R << 8) | (col.B << 16) | (col.G)); //4 = BGR
+      case  5: return ((col.W << 24) | (col.G << 8) | (col.B << 16) | (col.R)); //5 = GBR
     }
     return 0;
   }
@@ -350,6 +410,8 @@ private:
   // have a member for every possible type
   NeoPixelBrightnessBus<PIXELFEATURE3,PIXELMETHOD>*  _pGrb;
   NeoPixelBrightnessBus<PIXELFEATURE4,PIXELMETHOD>* _pGrbw;
+
+  byte _colorOrder = 0;
 
   void cleanup()
   {

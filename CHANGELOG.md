@@ -2,6 +2,12 @@
 
 ### WLED version 0.11.0
 
+#### Build 2011270
+
+-   Added tooltips for speed and intensity sliders (PR #1378)
+-   Moved color order to NpbWrapper.h
+-   Added compile time define to override the color order for a specific range
+
 #### Build 2011260
 
 -   Add `live` property to state, allowing toggling of realtime (not incl. in state resp.)

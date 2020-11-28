@@ -82,7 +82,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
     useRGBW = request->hasArg(F("EW"));
-    strip.colorOrder = request->arg(F("CO")).toInt();
+    strip.setColorOrder(request->arg(F("CO")).toInt());
     strip.rgbwMode = request->arg(F("AW")).toInt();
 
     briS = request->arg(F("CA")).toInt();
