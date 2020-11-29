@@ -208,6 +208,12 @@ bool deserializeState(JsonObject root)
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
 
+  if (root.containsKey("live")) {
+    bool lv = root["live"];
+    if (lv) realtimeLock(65000); //enter realtime without timeout
+    else    realtimeTimeout = 0; //cancel realtime mode immediately
+  }
+
   byte prevMain = strip.getMainSegmentId();
   strip.mainSegment = root[F("mainseg")] | prevMain;
   if (strip.getMainSegmentId() != prevMain) setValuesFromMainSeg();
@@ -423,7 +429,7 @@ void serializeInfo(JsonObject root)
   
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;
-  root[F("live")] = (bool)realtimeMode;
+  root["live"] = (bool)realtimeMode;
 
   switch (realtimeMode) {
     case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;
