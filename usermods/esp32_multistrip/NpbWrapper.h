@@ -41,6 +41,7 @@
 #endif
 
 #include <NeoPixelBrightnessBus.h>
+#include "const.h"
 
 const uint8_t numStrips = NUM_STRIPS;  // max 8 strips allowed on esp32
 const uint16_t pixelCounts[numStrips] = {PIXEL_COUNTS}; // number of pixels on each strip
@@ -190,7 +191,7 @@ public:
     }
   }
 
-  void SetPixelColor(uint16_t indexPixel, RgbwColor color)
+  void SetPixelColorRaw(uint16_t indexPixel, RgbwColor c)
   {
     // figure out which strip this pixel index is on
     uint8_t stripIdx = 0;
@@ -211,17 +212,17 @@ public:
     {
       case NeoPixelType_Grb:
       {
-        RgbColor c = RgbColor(color.R, color.G, color.B);
+        RgbColor rgb = RgbColor(c.R, c.G, c.B);
         switch (stripIdx)
         {
-          case 0: pGrb0->SetPixelColor(indexPixel, c); break;
-          case 1: pGrb1->SetPixelColor(indexPixel, c); break;
-          case 2: pGrb2->SetPixelColor(indexPixel, c); break;
-          case 3: pGrb3->SetPixelColor(indexPixel, c); break;
-          case 4: pGrb4->SetPixelColor(indexPixel, c); break;
-          case 5: pGrb5->SetPixelColor(indexPixel, c); break;
-          case 6: pGrb6->SetPixelColor(indexPixel, c); break;
-          case 7: pGrb7->SetPixelColor(indexPixel, c); break;
+          case 0: pGrb0->SetPixelColor(indexPixel, rgb); break;
+          case 1: pGrb1->SetPixelColor(indexPixel, rgb); break;
+          case 2: pGrb2->SetPixelColor(indexPixel, rgb); break;
+          case 3: pGrb3->SetPixelColor(indexPixel, rgb); break;
+          case 4: pGrb4->SetPixelColor(indexPixel, rgb); break;
+          case 5: pGrb5->SetPixelColor(indexPixel, rgb); break;
+          case 6: pGrb6->SetPixelColor(indexPixel, rgb); break;
+          case 7: pGrb7->SetPixelColor(indexPixel, rgb); break;
         }
         break;
       }
@@ -229,18 +230,46 @@ public:
       {
         switch (stripIdx)
         {
-          case 0: pGrbw0->SetPixelColor(indexPixel, color); break;
-          case 1: pGrbw1->SetPixelColor(indexPixel, color); break;
-          case 2: pGrbw2->SetPixelColor(indexPixel, color); break;
-          case 3: pGrbw3->SetPixelColor(indexPixel, color); break;
-          case 4: pGrbw4->SetPixelColor(indexPixel, color); break;
-          case 5: pGrbw5->SetPixelColor(indexPixel, color); break;
-          case 6: pGrbw6->SetPixelColor(indexPixel, color); break;
-          case 7: pGrbw7->SetPixelColor(indexPixel, color); break;
+          case 0: pGrbw0->SetPixelColor(indexPixel, c); break;
+          case 1: pGrbw1->SetPixelColor(indexPixel, c); break;
+          case 2: pGrbw2->SetPixelColor(indexPixel, c); break;
+          case 3: pGrbw3->SetPixelColor(indexPixel, c); break;
+          case 4: pGrbw4->SetPixelColor(indexPixel, c); break;
+          case 5: pGrbw5->SetPixelColor(indexPixel, c); break;
+          case 6: pGrbw6->SetPixelColor(indexPixel, c); break;
+          case 7: pGrbw7->SetPixelColor(indexPixel, c); break;
         }
         break;
       }
     }
+  }
+
+  void SetPixelColor(uint16_t indexPixel, RgbwColor c)
+  {
+    /*
+    Set pixel color with necessary color order conversion.
+    */
+
+    RgbwColor col;
+
+    uint8_t co = _colorOrder;
+    #ifdef COLOR_ORDER_OVERRIDE
+    if (indexPixel >= COO_MIN && indexPixel < COO_MAX) co = COO_ORDER;
+    #endif
+
+    //reorder channels to selected order
+    switch (co)
+    {
+      case  0: col.G = c.G; col.R = c.R; col.B = c.B; break; //0 = GRB, default
+      case  1: col.G = c.R; col.R = c.G; col.B = c.B; break; //1 = RGB, common for WS2811
+      case  2: col.G = c.B; col.R = c.R; col.B = c.G; break; //2 = BRG
+      case  3: col.G = c.R; col.R = c.B; col.B = c.G; break; //3 = RBG
+      case  4: col.G = c.B; col.R = c.G; col.B = c.R; break; //4 = BGR
+      default: col.G = c.G; col.R = c.B; col.B = c.R; break; //5 = GBR
+    }
+    col.W = c.W;
+
+    SetPixelColorRaw(indexPixel, col);
   }
 
   void SetBrightness(byte b)
@@ -286,9 +315,17 @@ public:
     }
   }
 
-  // NOTE: Due to feature differences, some support RGBW but the method name
-  // here needs to be unique, thus GetPixeColorRgbw
-  RgbwColor GetPixelColorRgbw(uint16_t indexPixel) const
+  void SetColorOrder(byte colorOrder)
+  {
+    _colorOrder = colorOrder;
+  }
+
+  uint8_t GetColorOrder()
+  {
+    return _colorOrder;
+  }
+
+  RgbwColor GetPixelColorRaw(uint16_t indexPixel) const
   {
     // figure out which strip this pixel index is on
     uint8_t stripIdx = 0;
@@ -339,8 +376,35 @@ public:
     return 0;
   }
 
+  // NOTE: Due to feature differences, some support RGBW but the method name
+  // here needs to be unique, thus GetPixeColorRgbw
+  uint32_t GetPixelColorRgbw(uint16_t indexPixel) const
+  {
+    RgbwColor col = GetPixelColorRaw(indexPixel);
+    uint8_t co = _colorOrder;
+    #ifdef COLOR_ORDER_OVERRIDE
+    if (indexPixel >= COO_MIN && indexPixel < COO_MAX) co = COO_ORDER;
+    #endif
+
+    switch (co)
+    {
+      //                    W               G              R               B
+      case  0: return ((col.W << 24) | (col.G << 8) | (col.R << 16) | (col.B)); //0 = GRB, default
+      case  1: return ((col.W << 24) | (col.R << 8) | (col.G << 16) | (col.B)); //1 = RGB, common for WS2811
+      case  2: return ((col.W << 24) | (col.B << 8) | (col.R << 16) | (col.G)); //2 = BRG
+      case  3: return ((col.W << 24) | (col.B << 8) | (col.G << 16) | (col.R)); //3 = RBG
+      case  4: return ((col.W << 24) | (col.R << 8) | (col.B << 16) | (col.G)); //4 = BGR
+      case  5: return ((col.W << 24) | (col.G << 8) | (col.B << 16) | (col.R)); //5 = GBR
+    }
+
+    return 0;
+
+  }
+  
+
 private:
   NeoPixelType _type;
+  byte _colorOrder = 0;
 
   uint16_t pixelStripStartIdx[numStrips];
 
