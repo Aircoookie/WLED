@@ -129,7 +129,7 @@
   Comment out this error message to build regardless.
 #endif
 
-#if IR_PIN < 0
+#if IRPIN < 0
   #ifndef WLED_DISABLE_INFRARED
     #define WLED_DISABLE_INFRARED
   #endif

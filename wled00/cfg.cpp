@@ -434,7 +434,7 @@ void serializeConfig() {
 
   #if defined(IRPIN) && IRPIN > -1
   JsonObject hw_ir = hw.createNestedObject("ir");
-  hw_ir[F("pin")] = IR_PIN;
+  hw_ir[F("pin")] = IRPIN;
   hw_ir[F("type")] = 0;
   #endif
 
