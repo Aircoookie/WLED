@@ -13,6 +13,12 @@
 //increase if you need more
 #define WLED_MAX_USERMODS 4
 
+#ifdef ESP8266
+#define WLED_MAX_BUSSES 2
+#else
+#define WLED_MAX_BUSSES 8
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED       0            //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED    1            //Default value for a general user mod that does not specify a custom ID
@@ -103,6 +109,10 @@
 #define TYPE_P9813               53
 #define TYPE_TM1814              54
 
+#define IS_DIGITAL(t) (t & 0x10) //digital are 16-31 and 48-63
+#define IS_ANALOG(t)  (t > 39 && t < 46)
+#define NUM_PWM_PINS(t) (t - 40) //for analog PWM 40-45 only
+#define IS_2PIN(t)      (t > 47)
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut
