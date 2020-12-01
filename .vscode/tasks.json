@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "PlatformIO",
+      "task": "Build",
+      "group": {
+        "kind": "build",
+        "isDefault": true,
+      },
+      "problemMatcher": [
+        "$platformio"
+      ],
+      "presentation": {
+        "panel": "shared",
+      },
+      "dependsOn": [
+        "npm: build"
+      ],
+    },
+    {
+      "type": "npm",
+      "script": "build",
+      "group": "build",
+      "problemMatcher": [],
+      "label": "npm: build",
+      "detail": "npm run build",
+      "presentation": {
+        "panel": "shared",
+      },
+    }
+  ]
+}
