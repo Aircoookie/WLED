@@ -68,6 +68,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
         } else { //normal case, apply directly to segment (=> no transition!)
           seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
+          if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
         }
       }
     }
@@ -213,6 +214,12 @@ bool deserializeState(JsonObject root)
 
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
+
+  if (root.containsKey("live")) {
+    bool lv = root["live"];
+    if (lv) realtimeLock(65000); //enter realtime without timeout
+    else    realtimeTimeout = 0; //cancel realtime mode immediately
+  }
 
   byte prevMain = strip.getMainSegmentId();
   strip.mainSegment = root[F("mainseg")] | prevMain;
@@ -432,7 +439,7 @@ void serializeInfo(JsonObject root)
 
   root[F("name")] = serverDescription;
   root[F("udpport")] = udpPort;
-  root[F("live")] = (bool)realtimeMode;
+  root["live"] = (bool)realtimeMode;
 
   switch (realtimeMode) {
     case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;

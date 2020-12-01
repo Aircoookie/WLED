@@ -104,7 +104,7 @@ void deserializeConfig() {
 
   //int hw_led_ins_0_pin_0 = hw_led_ins_0[F("pin")][0]; // 2
 
-  strip.colorOrder = hw_led_ins_0[F("order")];
+  strip.setColorOrder(hw_led_ins_0[F("order")]);
   //bool hw_led_ins_0_rev = hw_led_ins_0[F("rev")]; // false
   skipFirstLed = hw_led_ins_0[F("skip")]; // 0
   useRGBW = (hw_led_ins_0[F("type")] == TYPE_SK6812_RGBW);
@@ -418,7 +418,7 @@ void serializeConfig() {
   #ifdef DATAPIN
   hw_led_ins_0_pin.add(DATAPIN);
   #endif
-  hw_led_ins_0[F("order")] = strip.colorOrder; //color order
+  hw_led_ins_0[F("order")] = strip.getColorOrder();
   hw_led_ins_0[F("rev")] = false;
   hw_led_ins_0[F("skip")] = skipFirstLed ? 1 : 0;
 
@@ -467,7 +467,7 @@ void serializeConfig() {
 
   #if defined(IRPIN) && IRPIN > -1
   JsonObject hw_ir = hw.createNestedObject("ir");
-  hw_ir[F("pin")] = IR_PIN;
+  hw_ir[F("pin")] = IRPIN;
   hw_ir[F("type")] = 0;
   #endif
 

@@ -86,6 +86,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
   realtimeMode = md;
 
   if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
+  if (md == REALTIME_MODE_GENERIC) strip.show();
 }
 
 
@@ -116,7 +117,7 @@ void handleNotifications()
   if (realtimeMode && millis() > realtimeTimeout)
   {
     if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
-    strip.setBrightness(bri);
+    strip.setBrightness(scaledBri(bri));
     realtimeMode = REALTIME_MODE_INACTIVE;
     realtimeIP[0] = 0;
   }
