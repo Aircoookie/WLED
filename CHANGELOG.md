@@ -1,6 +1,38 @@
 ## WLED changelog
 
-### Development versions after the 0.10.2 release
+### WLED version 0.11.0
+
+#### Build 2011290
+
+-   Release of WLED 0.11.0 "Mirai"
+-   Workaround for weird empty %f Espalexa issue
+-   Fixed crash on saving preset with HTTP API `PS`
+-   Improved performance for color changes in non-main segment
+
+#### Build 2011270
+
+-   Added tooltips for speed and intensity sliders (PR #1378)
+-   Moved color order to NpbWrapper.h
+-   Added compile time define to override the color order for a specific range
+
+#### Build 2011260
+
+-   Add `live` property to state, allowing toggling of realtime (not incl. in state resp.)
+-   PIO environment changes
+
+#### Build 2011230
+
+-   Version bump to 0.11.0 "Mirai"
+-   Improved preset name sorting
+-   Fixed Preset cycle not working beyond preset 16
+
+### Development versions between 0.10.2 and 0.11.0 releases
+
+#### Build 2011220
+
+-   Fixed invalid save when modifying preset before refresh (might be related to #1361)
+-   Fixed brightness factor ignored on realtime timeout (fixes #1363)
+-   Fixed Phase and Chase effects with LED counts >256 (PR #1366)
 
 #### Build 2011210
 

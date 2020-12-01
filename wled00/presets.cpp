@@ -37,33 +37,37 @@ bool applyPreset(byte index)
 void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
   if (index == 0 || index > 250) return;
-  bool docAlloc = fileDoc;
+  bool docAlloc = (fileDoc != nullptr);
   JsonObject sObj = saveobj;
 
   if (!docAlloc) {
     DEBUGFS_PRINTLN(F("Allocating saving buffer"));
-    fileDoc = new DynamicJsonDocument(JSON_BUFFER_SIZE);
-    sObj = fileDoc->to<JsonObject>();
+    DynamicJsonDocument lDoc(JSON_BUFFER_SIZE);
+    sObj = lDoc.to<JsonObject>();
     if (pname) sObj["n"] = pname;
-  } else {
+    DEBUGFS_PRINTLN(F("Save current state"));
+    serializeState(sObj, true);
+    currentPreset = index;
+
+    writeObjectToFileUsingId("/presets.json", index, &lDoc);
+  } else { //from JSON API
     DEBUGFS_PRINTLN(F("Reuse recv buffer"));
     sObj.remove(F("psave"));
     sObj.remove(F("v"));
-  }
 
-  if (!sObj["o"]) {
-    DEBUGFS_PRINTLN(F("Save current state"));
-    serializeState(sObj, true, sObj["ib"], sObj["sb"]);
-    currentPreset = index;
-  }
-  sObj.remove("o");
-  sObj.remove("ib");
-  sObj.remove("sb");
-  sObj.remove(F("error"));
-  sObj.remove(F("time"));
+    if (!sObj["o"]) {
+      DEBUGFS_PRINTLN(F("Save current state"));
+      serializeState(sObj, true, sObj["ib"], sObj["sb"]);
+      currentPreset = index;
+    }
+    sObj.remove("o");
+    sObj.remove("ib");
+    sObj.remove("sb");
+    sObj.remove(F("error"));
+    sObj.remove(F("time"));
 
-  writeObjectToFileUsingId("/presets.json", index, fileDoc);
-  if (!docAlloc) delete fileDoc;
+    writeObjectToFileUsingId("/presets.json", index, fileDoc);
+  }
   presetsModifiedTime = now(); //unix time
   updateFSInfo();
 }
