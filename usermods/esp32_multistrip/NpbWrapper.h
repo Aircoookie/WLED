@@ -24,8 +24,8 @@
   #define LEDPIN 1  // Legacy pin def required by some other portions of code. This pin is not used do drive LEDs.
 #endif
 
-#ifndef IR_PIN
-  #define IR_PIN -1  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#ifndef IRPIN
+  #define IRPIN -1  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
 #endif
 
 #ifndef RLYPIN

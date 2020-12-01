@@ -2,6 +2,17 @@
 
 ### WLED version 0.11.0
 
+#### Build 2012010
+
+-   Fixed compilation for analog (PWM) LEDs
+
+#### Build 2011290
+
+-   Release of WLED 0.11.0 "Mirai"
+-   Workaround for weird empty %f Espalexa issue
+-   Fixed crash on saving preset with HTTP API `PS`
+-   Improved performance for color changes in non-main segment
+
 #### Build 2011270
 
 -   Added tooltips for speed and intensity sliders (PR #1378)

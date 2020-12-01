@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2011270
+#define VERSION 2012010
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -129,7 +129,7 @@
   Comment out this error message to build regardless.
 #endif
 
-#if IR_PIN < 0
+#if IRPIN < 0
   #ifndef WLED_DISABLE_INFRARED
     #define WLED_DISABLE_INFRARED
   #endif
