@@ -238,7 +238,8 @@ type="checkbox" name="ES"><br>DMX start address: <input name="DA" type="number"
 min="0" max="510" required><br>DMX mode: <select name="DM"><option value="0">
 Disabled</option><option value="1">Single RGB</option><option value="2">
 Single DRGB</option><option value="3">Effect</option><option value="4">Multi RGB
-</option><option value="5">Dimmer + Multi RGB</option></select><br><a 
+</option><option value="5">Dimmer + Multi RGB</option><option value="6">
+Multi RGBW</option></select><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/E1.31-DMX" target="_blank">
 E1.31 info</a><br>Timeout: <input name="ET" type="number" min="1" max="65000" 
 required> ms<br>Force max brightness: <input type="checkbox" name="FB"><br>
