@@ -98,7 +98,7 @@ void getSample() {
     micIn = inoise8(millis(), millis());            // Simulated analog read
   #else
     #ifdef ESP32
-      micIn = micDataSm;   
+      micIn = micDataSm;
       if (digitalMic == false) micIn = micIn >> 2;  // ESP32 has 2 more bits of A/D than ESP8266, so we need to normalize to 10 bit.
     #endif
     #ifdef ESP8266
@@ -126,7 +126,7 @@ void getSample() {
       udpSamplePeak = 0;
     #endif
     }
-    
+
   if (userVar1 == 0)
     samplePeak = 0;
   // Poor man's beat detection by seeing if sample > Average + some value.
@@ -239,6 +239,7 @@ void agcAvg() {                                                     // A simple 
 
   // FFT main code
   void FFTcode( void * parameter) {
+    DEBUG_PRINT(F("FFT running on core: ")); DEBUG_PRINTLN(xPortGetCoreID());
     double beatSample = 0;
     double envelope = 0;
     uint16_t rawMicData = 0;
@@ -246,7 +247,7 @@ void agcAvg() {                                                     // A simple 
     for(;;) {
       delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
                           // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
-      
+
       microseconds = micros();
       extern double volume;
 
@@ -264,7 +265,7 @@ void agcAvg() {                                                     // A simple 
             rawMicData = micData;
           } // ESP32 has 12 bit ADC
         }
-        
+
         micDataSm = ((micData * 3) + micData)/4;             // We'll be passing smoothed micData to the volume routines as the A/D is a bit twitchy.
         vReal[i] = micData;                                   // Store Mic Data in an array
         vImag[i] = 0;
@@ -294,7 +295,7 @@ void agcAvg() {                                                     // A simple 
         t = 16*log(t);
         fftBin[i] = t;
       }
-      
+
 
 // Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512.
 // Based on testing, the lowest/Start frequency is 60 Hz (with bin 3) and a highest/End frequency of 5120 Hz in bin 255.
@@ -349,10 +350,6 @@ void logAudio() {
     Serial.print(100); Serial.print(" ");
     Serial.print(0); Serial.print(" ");
     Serial.println(" ");
-  #ifdef ESP32                                   // if we are on a ESP32
-    Serial.print("running on core ");               // identify core
-    Serial.println(xPortGetCoreID());
-  #endif
 #endif
 
 #ifdef FFT_SAMPLING_LOG
