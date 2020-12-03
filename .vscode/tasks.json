@@ -3,6 +3,7 @@
   "tasks": [
     {
       "type": "PlatformIO",
+      "label": "Build: binary",
       "task": "Build",
       "group": {
         "kind": "build",
@@ -12,22 +13,19 @@
         "$platformio"
       ],
       "presentation": {
-        "panel": "shared",
-      },
-      "dependsOn": [
-        "npm: build"
-      ],
+        "panel": "shared"
+      }
     },
     {
       "type": "npm",
       "script": "build",
       "group": "build",
       "problemMatcher": [],
-      "label": "npm: build",
+      "label": "Build: HTML",
       "detail": "npm run build",
       "presentation": {
-        "panel": "shared",
-      },
+        "panel": "shared"
+      }
     }
   ]
 }
