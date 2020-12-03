@@ -123,7 +123,7 @@ void handleNotifications()
   }
 
   //receive UDP notifications
-  if (!udpConnected || !(receiveNotifications || receiveDirect)) return;
+  if (!udpConnected) return;
     
   bool isSupp = false;
   uint16_t packetSize = notifierUdp.parsePacket();
@@ -155,16 +155,18 @@ void handleNotifications()
       return;
     } 
   }
+
+  if (!(receiveNotifications || receiveDirect)) return;
   
   //notifier and UDP realtime
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) return;
-  if (!isSupp && notifierUdp.remoteIP() == Network.localIP())   return; //don't process broadcasts we send ourselves
+  if (!isSupp && notifierUdp.remoteIP() == Network.localIP()) return; //don't process broadcasts we send ourselves
 
   uint8_t udpIn[packetSize +1];
   if (isSupp) notifier2Udp.read(udpIn, packetSize);
   else         notifierUdp.read(udpIn, packetSize);
 
-  //wled notifier, block if realtime packets active
+  //wled notifier, ignore if realtime packets active
   if (udpIn[0] == 0 && !realtimeMode && receiveNotifications)
   {
     //ignore notification if received within a second after sending a notification ourselves
@@ -223,6 +225,7 @@ void handleNotifications()
     colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
     return;
   }
+
   if (!receiveDirect) return;
   
   //TPM2.NET
