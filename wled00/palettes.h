@@ -676,7 +676,7 @@ const byte* const gGradientPalettes[] PROGMEM = {
   Aurora_gp,                    //50-37 Aurora
   Atlantica_gp,                 //51-38 Atlantica
   C9_2_gp,                      //52-39 C9 2
-  C9_new_gp                     //53-40 C9 New
+  C9_new_gp,                    //53-40 C9 New
   temperature_gp                //54-41 Temperature
 };
 
