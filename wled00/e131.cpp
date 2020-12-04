@@ -1,6 +1,7 @@
 #include "wled.h"
 
-#define MAX_LEDS_PER_UNIVERSE 170
+#define MAX_3_CH_LEDS_PER_UNIVERSE 170
+#define MAX_4_CH_LEDS_PER_UNIVERSE 128
 #define MAX_CHANNELS_PER_UNIVERSE 512
 
 /*
@@ -161,8 +162,12 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
     case DMX_MODE_MULTIPLE_DRGB:
     case DMX_MODE_MULTIPLE_RGB:
+    case DMX_MODE_MULTIPLE_RGBW:
       {
         realtimeLock(realtimeTimeoutMs, mde);
+        bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
+        const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
+        const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
         if (realtimeOverride) return;
         uint16_t previousLeds, dmxOffset;
         if (previousUniverses == 0) {
@@ -176,12 +181,18 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         } else {
           // All subsequent universes start at the first channel.
           dmxOffset = (protocol == P_ARTNET) ? 0 : 1;
-          uint16_t ledsInFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / 3;
-          previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * MAX_LEDS_PER_UNIVERSE;
+          uint16_t ledsInFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / dmxChannelsPerLed;
+          previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * ledsPerUniverse;
         }
-        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset +1) / 3;
-        for (uint16_t i = previousLeds; i < ledsTotal; i++) {
-          setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], 0);
+        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset +1) / dmxChannelsPerLed;
+        if (!is4Chan) {
+          for (uint16_t i = previousLeds; i < ledsTotal; i++) {
+            setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], 0);
+          }
+        } else {
+          for (uint16_t i = previousLeds; i < ledsTotal; i++) {
+            setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++]);
+          }
         }
         break;
       }

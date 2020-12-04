@@ -2,6 +2,15 @@
 
 ### WLED version 0.11.0
 
+#### Build 2012020
+
+-   UDP `parsePacket()` with sync disabled (#1390)
+-   Added Multi RGBW DMX mode (PR #1383)
+
+#### Build 2012010
+
+-   Fixed compilation for analog (PWM) LEDs
+
 #### Build 2011290
 
 -   Release of WLED 0.11.0 "Mirai"
