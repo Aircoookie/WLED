@@ -13,7 +13,7 @@
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
 
-#define GRADIENT_PALETTE_COUNT 41
+#define GRADIENT_PALETTE_COUNT 42
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
@@ -606,6 +606,30 @@ const byte Atlantica_gp[] PROGMEM = {
   180,   4,  30, 114, //blue (start 191?)
   255,   4,  30, 114};
   
+// Gradient palette "temperature_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/arendal/tn/temperature.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 144 bytes of program space.  
+
+const byte temperature_gp[] PROGMEM = {
+    0,   1, 27,105,
+   14,   1, 40,127,
+   28,   1, 70,168,
+   42,   1, 92,197,
+   56,   1,119,221,
+   70,   3,130,151,
+   84,  23,156,149,
+   99,  67,182,112,
+  113, 121,201, 52,
+  127, 142,203, 11,
+  141, 224,223,  1,
+  155, 252,187,  2,
+  170, 247,147,  1,
+  184, 237, 87,  1,
+  198, 229, 43,  1,
+  226, 171,  2,  2,
+  240,  80,  3,  3,
+  255,  80,  3,  3};
 
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on
@@ -652,7 +676,8 @@ const byte* const gGradientPalettes[] PROGMEM = {
   Aurora_gp,                    //50-37 Aurora
   Atlantica_gp,                 //51-38 Atlantica
   C9_2_gp,                      //52-39 C9 2
-  C9_new_gp                     //53-40 C9 New
+  C9_new_gp,                    //53-40 C9 New
+  temperature_gp                //54-41 Temperature
 };
 
 #endif
