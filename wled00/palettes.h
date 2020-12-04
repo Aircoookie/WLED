@@ -13,7 +13,7 @@
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
 
-#define GRADIENT_PALETTE_COUNT 55
+#define GRADIENT_PALETTE_COUNT 56
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
@@ -606,8 +606,32 @@ const byte Atlantica_gp[] PROGMEM = {
   180,   4,  30, 114, //blue (start 191?)
   255,   4,  30, 114};
 
+// Gradient palette "temperature_gp", originally from
+// http://soliton.vm.bytemark.co.uk/pub/cpt-city/arendal/tn/temperature.png.index.html
+// converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Size: 144 bytes of program space.
 
- // Gradient palette "bhw1_01_gp", originally from
+const byte temperature_gp[] PROGMEM = {
+    0,   1, 27,105,
+   14,   1, 40,127,
+   28,   1, 70,168,
+   42,   1, 92,197,
+   56,   1,119,221,
+   70,   3,130,151,
+   84,  23,156,149,
+   99,  67,182,112,
+  113, 121,201, 52,
+  127, 142,203, 11,
+  141, 224,223,  1,
+  155, 252,187,  2,
+  170, 247,147,  1,
+  184, 237, 87,  1,
+  198, 229, 43,  1,
+  226, 171,  2,  2,
+  240,  80,  3,  3,
+  255,  80,  3,  3};
+
+// Gradient palette "bhw1_01_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_01.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 12 bytes of program space.
@@ -617,7 +641,7 @@ const byte Retro_Clown[] PROGMEM = {
   117, 194, 18, 19,
   255,  92,  8,192};
 
-  // Gradient palette "bhw1_04_gp", originally from
+// Gradient palette "bhw1_04_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_04.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 20 bytes of program space.
@@ -629,7 +653,7 @@ const byte Candy[] PROGMEM = {
   198,  17,  1, 79,
   255,   0,  0, 45};
 
-  // Gradient palette "bhw1_05_gp", originally from
+// Gradient palette "bhw1_05_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_05.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 8 bytes of program space.
@@ -649,7 +673,7 @@ const byte  Fairy_Reaf[] PROGMEM = {
   219, 153,227,190,
   255, 255,255,255};
 
-  // Gradient palette "bhw1_14_gp", originally from
+// Gradient palette "bhw1_14_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_14.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 36 bytes of program space.
@@ -733,7 +757,7 @@ const byte Lite_Light[] PROGMEM = {
   101,  10,  1, 12,
   255,   0,  0,  0};
 
-  // Gradient palette "bhw2_22_gp", originally from
+// Gradient palette "bhw2_22_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_22.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 20 bytes of program space.
@@ -760,7 +784,7 @@ const byte Blink_Red[] PROGMEM = {
   204,  35, 13,223,
   255,  18,  2, 18};
 
-  // Gradient palette "bhw3_52_gp", originally from
+// Gradient palette "bhw3_52_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw3/tn/bhw3_52.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 28 bytes of program space.
@@ -774,7 +798,7 @@ const byte Yellow2Blue[] PROGMEM = {
   201, 199,  9,  6,
   255,   1,  0,  1};
 
-  // Gradient palette "bhw4_097_gp", originally from
+// Gradient palette "bhw4_097_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw4/tn/bhw4_097.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 44 bytes of program space.
@@ -792,7 +816,7 @@ const byte Yellow2Red[] PROGMEM = {
   216, 255, 28,  1,
   255,  53,  1,  1};
 
-  // Gradient palette "bhw4_017_gp", originally from
+// Gradient palette "bhw4_017_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw4/tn/bhw4_017.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 40 bytes of program space.
@@ -859,6 +883,7 @@ const byte* const gGradientPalettes[] PROGMEM = {
   Atlantica_gp,                 //51-38 Atlantica
   C9_2_gp,                      //52-39 C9 2
   C9_new_gp,                    //53-40 C9 New
+  temperature_gp,               //54-41 Temperature
   Retro_Clown,
   Candy,
   Toxy_Reaf,
