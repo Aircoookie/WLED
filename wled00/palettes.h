@@ -13,7 +13,7 @@
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
 
-#define GRADIENT_PALETTE_COUNT 41
+#define GRADIENT_PALETTE_COUNT 42
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
