@@ -9,7 +9,7 @@
 #include <driver/i2s.h>
 
 // Comment/Uncomment to toggle usb serial debugging
-#define SR_DEBUG
+//#define SR_DEBUG
 
 #ifdef SR_DEBUG
   #define DEBUGSR_PRINT(x) Serial.print(x)

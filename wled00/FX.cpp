@@ -3780,7 +3780,7 @@ uint16_t WS2812FX::mode_pixels(void) {              // Pixels. By Andrew Tuline.
 uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pixelwave. By Andrew Tuline.
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
-  
+
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
     int pixBri = sample * SEGMENT.intensity / 64;
@@ -3824,7 +3824,7 @@ uint16_t WS2812FX::mode_matripix(void) {                                  // Mat
     SEGENV.aux0 = secondHand;
     int pixBri = sample * SEGMENT.intensity / 64;
     setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
-    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));  
+    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
   }
 
   return FRAMETIME;
@@ -3895,7 +3895,7 @@ uint16_t WS2812FX::mode_gravcenter(void) {                                // Gra
 
   if (topLED > 0) {
     setPixelColor(topLED+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
-    setPixelColor(SEGLEN/2-topLED, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));    
+    setPixelColor(SEGLEN/2-topLED, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
   }
   gravityCounter = (gravityCounter + 1) % gravity;
 
@@ -3934,7 +3934,7 @@ uint16_t WS2812FX::mode_gravcentric(void) {                                // Gr
 
   if (topLED > 0) {
     setPixelColor(topLED+SEGLEN/2, CRGB::Gray);
-    setPixelColor(SEGLEN/2-topLED, CRGB::Gray);    
+    setPixelColor(SEGLEN/2-topLED, CRGB::Gray);
   }
   gravityCounter = (gravityCounter + 1) % gravity;
 
@@ -4036,7 +4036,7 @@ uint16_t WS2812FX::mode_noisemeter(void) {                                // Noi
   fade_out(fadeRate);
 
   int maxLen = sample;
-    
+
   maxLen = maxLen * SEGMENT.intensity / 256;                              // Still a bit too sensitive.
 
   if (maxLen >SEGLEN) maxLen = SEGLEN;
@@ -4119,7 +4119,7 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
   #ifdef ESP32
   extern double FFT_MajorPeak;
 //  Serial.println(FFT_MajorPeak);
-  Serial.println(log10(FFT_MajorPeak)*128-140);
+//  Serial.println(log10(FFT_MajorPeak)*128-140);
 //  Serial.println(pow(FFT_MajorPeak, .3));
   #endif
 
@@ -4220,7 +4220,7 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 //  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 + 1 % 16;
-  
+
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
@@ -4676,7 +4676,7 @@ uint16_t WS2812FX::mode_gravfreq(void) {                                // Gravc
 
   if (topLED > 0) {
     setPixelColor(topLED+SEGLEN/2, CRGB::Gray);
-    setPixelColor(SEGLEN/2-topLED, CRGB::Gray);    
+    setPixelColor(SEGLEN/2-topLED, CRGB::Gray);
   }
   gravityCounter = (gravityCounter + 1) % gravity;
 
