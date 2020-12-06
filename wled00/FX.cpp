@@ -990,6 +990,12 @@ uint16_t WS2812FX::mode_merry_christmas(void) {
   return running(RED, GREEN);
 }
 
+/*
+ * Alternating red/white pixels running.
+ */
+uint16_t WS2812FX::mode_candy_cane(void) {
+  return running(RED, WHITE);
+}
 
 /*
  * Alternating orange/purple pixels running.
