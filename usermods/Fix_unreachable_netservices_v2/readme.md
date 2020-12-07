@@ -1,5 +1,7 @@
 # Fix unreachable net services V2
 
+**Attention: This usermod compiles only for ESP8266**
+
 This usermod-v2 modification performs a ping request to the local IP address every 60 seconds. By this procedure the net services of WLED remains accessible in some problematic WLAN environments.
 
 The modification works with static or DHCP IP address configuration.

@@ -1,7 +1,14 @@
 #pragma once
 
 #include "wled.h"
-#include <ping.h>
+#if defined(ESP32)
+  #warning "Usermod FixUnreachableNetServices works only with ESP8266 builds"
+class FixUnreachableNetServices : public Usermod {
+};
+#endif
+
+#if defined(ESP8266)
+  #include <ping.h>
 
 /*
  * This usermod performs a ping request to the local IP address every 60 seconds. 
@@ -132,7 +139,5 @@ class FixUnreachableNetServices : public Usermod {
     {
       return USERMOD_ID_FIXNETSERVICES;
     }
-
-   //More methods can be added in the future, this example will then be extended.
-   //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
 };
+#endif  
