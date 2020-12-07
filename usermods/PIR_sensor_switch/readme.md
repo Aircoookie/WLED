@@ -55,7 +55,7 @@ Example **usermods_list.cpp**:
 //#include "usermod_v2_example.h"
 //#include "usermod_temperature.h"
 //#include "usermod_v2_empty.h"
-#include  "usermod_PIR_sensor_switch.h"
+#include "usermod_PIR_sensor_switch.h"
 
 void registerUsermods()
 {
@@ -72,26 +72,36 @@ void registerUsermods()
 }
 ```
 
-## Usermod installation (advanced mode)
+## API to enable/disable the PIR sensor from outside. For example from another usermod.
 
-In this mode IR sensor will disable PIR when light ON by remote controller and enable PIR when light OFF.
+The class provides the static method `PIRsensorSwitch* PIRsensorSwitch::GetInstance()` to get a pointer to the usermod object.
 
-1. Copy the file `usermod_PIR_sensor_switch.h` to the `wled00` directory.
-2. Register the usermod by adding `#include "usermod_PIR_sensor_switch.h"` in the top and `registerUsermod(new PIRsensorSwitch());` in the bottom of `usermods_list.cpp`.
-3. Add to the line 237, on `wled.h` in the `wled00` directory:
+To query or change the PIR sensor state the methods `bool PIRSensorEnabled()` and `void EnablePIRSensor(bool enable)` are available. 
 
-	`WLED_GLOBAL bool m_PIRenabled _INIT(true);                        // enable PIR sensor`
-  
-4. On `ir.cpp` in the `wled00` directory, add to the IR controller's mapping (beyond line 200):
-	
-- To the off button:
-		`m_PIRenabled = true;`
-    
-- To the on button:
-		`m_PIRenabled = false;`
-    
-5. Edit line 40, on `usermod_PIR_sensor_switch.h` in the `wled00` directory:
-    
-    `\\bool m_PIRenabled = true;`
+### There are two options to get access to the usermod instance:
+
+1. Include `usermod_PIR_sensor_switch.h` **before** you include the other usermod in `usermods_list.cpp'
+
+or
+
+2. Use `#include "usermod_PIR_sensor_switch.h"` at the top of the `usermod.h` where you need it.
+
+**Example usermod.h :**
+```cpp
+#include "wled.h"
+
+#include "usermod_PIR_sensor_switch.h"
+
+class MyUsermod : public Usermod {
+  //...
+
+  void togglePIRSensor() {
+    if (PIRsensorSwitch::GetInstance() != nullptr) {
+      PIRsensorSwitch::GetInstance()->EnablePIRSensor(!PIRsensorSwitch::GetInstance()->PIRSensorEnabled());
+    }
+  }
+  //...
+};
+```
 
 Have fun - @gegu
