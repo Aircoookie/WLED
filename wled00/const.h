@@ -122,6 +122,14 @@
 #define BTN_TYPE_SWITCH           4 //not implemented
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
 
+// Input preset indexes
+#define PUSH_SHORT                0
+#define PUSH_DOUBLE               1
+#define PUSH_LONG                 2
+#define SWITCH_OFF                0
+#define SWITCH_ON                 1
+#define SWITCH_DOUBLE_FLIP        2
+#define MAX_INPUT_IDX             2
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0

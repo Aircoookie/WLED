@@ -230,6 +230,7 @@ void WLED::setup()
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
+  inputEarlyConfig();
 
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));
@@ -317,10 +318,7 @@ void WLED::beginStrip()
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
-#if defined(BTNPIN) && BTNPIN > -1
-  pinManager.allocatePin(BTNPIN, false);
-  pinMode(BTNPIN, INPUT_PULLUP);
-#endif
+  inputInit();
 
   if (bootPreset > 0) applyPreset(bootPreset);
   if (turnOnAtBoot) {
@@ -341,13 +339,6 @@ void WLED::beginStrip()
 #endif
 #endif
 
-  // disable button if it is "pressed" unintentionally
-#if (defined(BTNPIN) && BTNPIN > -1) || defined(TOUCHPIN)
-  if (isButtonPressed())
-    buttonEnabled = false;
-#else
-  buttonEnabled = false;
-#endif
 }
 
 void WLED::initAP(bool resetAP)

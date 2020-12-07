@@ -40,6 +40,11 @@
 
 #define WLED_ENABLE_FS_EDITOR      // enable /edit page for editing FS content. Will also be disabled with OTA lock
 
+/*
+ * Maximum number of supported inputs (buttons/etc)
+ */
+#define WLED_INPUTS 3
+
 // to toggle usb serial debug (un)comment the following line
 //#define WLED_DEBUG
 
@@ -181,7 +186,7 @@ WLED_GLOBAL char apPass[65]  _INIT(DEFAULT_AP_PASS);
 WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware CONFIG (only changeble HERE, not at runtime)
-// LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
+// LED strip pin, button pins and IR pin changeable in NpbWrapper.h!
 
 //WLED_GLOBAL byte presetToApply _INIT(0); 
 
@@ -228,7 +233,6 @@ WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 // Sync CONFIG
-WLED_GLOBAL bool buttonEnabled  _INIT(true);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
@@ -311,7 +315,19 @@ WLED_GLOBAL byte countdownMin  _INIT(0) , countdownSec   _INIT(0);
 WLED_GLOBAL byte macroNl   _INIT(0);        // after nightlight delay over
 WLED_GLOBAL byte macroCountdown _INIT(0);
 WLED_GLOBAL byte macroAlexaOn _INIT(0), macroAlexaOff _INIT(0);
-WLED_GLOBAL byte macroButton _INIT(0), macroLongPress _INIT(0), macroDoublePress _INIT(0);
+
+// Button/switch config
+struct InputConfig {
+  byte pin;                   // -1 means do not use
+  byte inputType;             // BTN_TYPE
+  byte preset[MAX_INPUT_IDX + 1]; // index is is PUSH_xxx, SWITCH_xxx
+
+  // Used by configuration system
+  void serialize(JsonObject&);
+  void deSerialize(JsonObject&);
+};
+
+WLED_GLOBAL InputConfig inputConfigs[WLED_INPUTS];
 
 // Security CONFIG
 WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks

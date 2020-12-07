@@ -1,0 +1,20 @@
+{
+  "1": {
+    "enabled": true,
+    "short": "Toggle",
+    "double": "mqtest",
+    "long": "noop"
+  },
+  "2": {
+    "enabled": true,
+    "short": "warmwhite",
+    "double": "rainbow",
+    "long": "noop"
+  },
+  "3": {
+    "enabled": true,
+    "short": "5seg",
+    "double": "Toggle",
+    "long": "flashy"
+  }
+}

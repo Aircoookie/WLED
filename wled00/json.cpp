@@ -282,6 +282,13 @@ bool deserializeState(JsonObject root)
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
+#ifdef WLED_ENABLE_MQTT
+  JsonVariant mqtt = root[F("mqtt")];
+  if (mqtt.is<JsonArray>()) {
+    sendMqttMessages(mqtt.as<JsonArray>());
+  }
+#endif
+
   return stateResponse;
 }
 

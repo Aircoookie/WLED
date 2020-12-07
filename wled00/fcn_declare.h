@@ -20,10 +20,10 @@ void handleBlynk();
 void updateBlynk();
 
 //button.cpp
-void shortPressAction();
 bool isButtonPressed();
-void handleButton();
 void handleIO();
+void inputEarlyConfig();
+void inputInit();
 
 //cfg.cpp
 void deserializeConfig();
@@ -124,6 +124,7 @@ void parseLxJson(int lxValue, byte segId, bool secondary);
 //mqtt.cpp
 bool initMqtt();
 void publishMqtt();
+bool sendMqttMessages(JsonArray root);
 
 //ntp.cpp
 void handleNetworkTime();

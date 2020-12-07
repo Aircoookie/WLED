@@ -20,6 +20,12 @@
 #ifndef BTNPIN
 #define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
 #endif
+#ifndef BTNPIN2
+#define BTNPIN2 -1
+#endif
+#ifndef BTNPIN3
+#define BTNPIN3 -1
+#endif
 
 #ifndef TOUCHPIN
 //#define TOUCHPIN T0 //touch pin. Behaves the same as button. ESP32 only.

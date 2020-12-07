@@ -1,0 +1,36 @@
+[platformio]
+;default_envs = neo4ch, mini13
+default_envs = mini13
+
+[env:neo4ch]
+board = nodemcuv2
+platform = ${common.platform_wled_default}
+board_build.ldscript = ${common.ldscript_4m1m}
+upload_port = /dev/ttyS3
+build_flags =
+	${common.build_flags_esp8266}
+	-D LEDPIN=3
+	-D BTNPIN=5
+	-D BTNPIN2=16
+	-D BTNPIN3=13
+#	-D WLED_DEBUG
+
+[env:mini13]
+board = d1_mini
+platform = ${common.platform_wled_default}
+upload_speed = 921600
+board_build.ldscript = ${common.ldscript_4m1m}
+build_flags =
+	${common.build_flags_esp8266}
+	-D LEDPIN=2
+	-D BTNPIN=5
+	-D BTNPIN2=16
+	-D BTNPIN3=13
+#	-D WLED_DEBUG
+#	-D WLED_DEBUG_FS
+
+# esptool.py.exe --port COM4 -b 921600 --before default_reset --after hard_reset --chip esp8266 write_flash 0x0 .pio/build/mini13/firmware.bin
+# esptool.py.exe --port COM3 -b 921600 --before default_reset --after hard_reset --chip esp8266 write_flash 0x0 .pio/build/neo4ch/firmware.bin
+# py.exe 'D:\Python\Scripts\miniterm.py' COM3 115200
+# esptool.py --port /dev/cu.usbserial-1410 -b 1000000 --before default_reset --after hard_reset --chip esp8266 write_flash 0x0 .pio/build/mini13/firmware.bin
+# miniterm.py /dev/cu.usbserial-1410 115200
