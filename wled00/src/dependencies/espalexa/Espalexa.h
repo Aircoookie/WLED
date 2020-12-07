@@ -47,6 +47,7 @@
  #endif
 #endif
 #include <WiFiUdp.h>
+#include "../network/Network.h"
 
 #ifdef ESPALEXA_DEBUG
  #pragma message "Espalexa 2.4.6 debug mode"
@@ -143,8 +144,11 @@ private:
     char buf_col[80] = "";
     //color support
     if (static_cast<uint8_t>(dev->getType()) > 2)
-      sprintf_P(buf_col,PSTR(",\"hue\":%u,\"sat\":%u,\"effect\":\"none\",\"xy\":[%f,%f]")
-        ,dev->getHue(), dev->getSat(), dev->getX(), dev->getY());
+      //TODO: %f is not working for some reason on ESP8266 in v0.11.0 (was fine in 0.10.2). Need to investigate
+      //sprintf_P(buf_col,PSTR(",\"hue\":%u,\"sat\":%u,\"effect\":\"none\",\"xy\":[%f,%f]")
+      //  ,dev->getHue(), dev->getSat(), dev->getX(), dev->getY());
+      sprintf_P(buf_col,PSTR(",\"hue\":%u,\"sat\":%u,\"effect\":\"none\",\"xy\":[%s,%s]"),dev->getHue(), dev->getSat(),
+        ((String)dev->getX()).c_str(), ((String)dev->getY()).c_str());
       
     char buf_ct[16] = "";
     //white spectrum support
@@ -207,7 +211,7 @@ private:
   void serveDescription()
   {
     EA_DEBUGLN("# Responding to description.xml ... #\n");
-    IPAddress localIP = WiFi.localIP();
+    IPAddress localIP = Network.localIP();
     char s[16];
     sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
     char buf[1024];
@@ -281,7 +285,7 @@ private:
   //respond to UDP SSDP M-SEARCH
   void respondToSearch()
   {
-    IPAddress localIP = WiFi.localIP();
+    IPAddress localIP = Network.localIP();
     char s[16];
     sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
 
@@ -333,7 +337,7 @@ public:
     #ifdef ARDUINO_ARCH_ESP32
     udpConnected = espalexaUdp.beginMulticast(IPAddress(239, 255, 255, 250), 1900);
     #else
-    udpConnected = espalexaUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 255, 255, 250), 1900);
+    udpConnected = espalexaUdp.beginMulticast(Network.localIP(), IPAddress(239, 255, 255, 250), 1900);
     #endif
 
     if (udpConnected){
@@ -582,7 +586,7 @@ public:
     return perc / 255;
   }
   
-  ~Espalexa(){delete devices;} //note: Espalexa is NOT meant to be destructed
+  ~Espalexa(){} //note: Espalexa is NOT meant to be destructed
 };
 
 #endif

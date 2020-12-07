@@ -46,7 +46,7 @@ void onAlexaChange(EspalexaDevice* dev)
         bri = briLast;
         colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
       }
-    } else applyMacro(macroAlexaOn);
+    } else applyPreset(macroAlexaOn);
   } else if (m == EspalexaDeviceProperty::off)
   {
     if (!macroAlexaOff)
@@ -57,7 +57,7 @@ void onAlexaChange(EspalexaDevice* dev)
         bri = 0;
         colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
       }
-    } else applyMacro(macroAlexaOff);
+    } else applyPreset(macroAlexaOff);
   } else if (m == EspalexaDeviceProperty::bri)
   {
     bri = espalexaDevice->getValue();

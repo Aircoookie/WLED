@@ -68,7 +68,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   if (strncmp(topic, mqttDeviceTopic, topicPrefixLen) == 0) {
       topic += topicPrefixLen;
   } else {
-      size_t topic_prefix_len = strlen(mqttGroupTopic);
+      topicPrefixLen = strlen(mqttGroupTopic);
       if (strncmp(topic, mqttGroupTopic, topicPrefixLen) == 0) {
           topic += topicPrefixLen;
       } else {
@@ -85,12 +85,18 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp(topic, "/api") == 0)
   {
-    String apireq = "win&";
-    apireq += (char*)payload;
-    handleSet(nullptr, apireq);
+    if (payload[0] == '{') { //JSON API
+      DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+      deserializeJson(doc, payload);
+      deserializeState(doc.as<JsonObject>());
+    } else { //HTTP API
+      String apireq = "win&";
+      apireq += (char*)payload;
+      handleSet(nullptr, apireq);
+    }
   } else if (strcmp(topic, "") == 0)
   {
-      parseMQTTBriPayload(payload);
+    parseMQTTBriPayload(payload);
   }
 }
 
