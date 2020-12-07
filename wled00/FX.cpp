@@ -4260,8 +4260,6 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 
 uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. By Andrew Tuline.
 
-#ifdef ESP32
-
   #define FIRSTBIN 3                          // The first 3 bins are garbage.
   #define LASTBIN 255                         // Don't use the highest bins, as they're (almost) a mirror of the first 256.
 
@@ -4287,10 +4285,6 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
                                                                                                                      // The +160 is 'blue' for the Rainbow palette.
   } // for i
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_binmap()
 
@@ -4301,7 +4295,7 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
 
 uint16_t WS2812FX::fft_test() {
 
-#ifdef ESP32
+
 /*  double temp[16];
   memcpy(temp, fftResult, sizeof(fftResult[0])*16);
   for(int i = 0; i < 16; i++) {
@@ -4322,11 +4316,6 @@ uint16_t WS2812FX::fft_test() {
   }
     Serial.println(" ");
 
-
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } //
 
@@ -4336,8 +4325,6 @@ uint16_t WS2812FX::fft_test() {
 ///////////////////////
 
 uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Pleschung.
-
-#ifdef ESP32
 
   uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
   if(SEGENV.aux0 != secondHand) {
@@ -4390,10 +4377,6 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
     }
   }
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_freqmatrix()
 
@@ -4404,17 +4387,11 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
 
 uint16_t WS2812FX::mode_freqpixel(void) {                                 // Freqpixel. By Andrew Tuline.
 
-#ifdef ESP32
-
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;  // Get to 255 as quick as you can.
   fade_out(fadeRate);
   uint16_t locn = random16(0,SEGLEN);
   uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;              // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
   setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
-
-#else
-  fade_out(224);
-#endif // ESP8266
 
   return FRAMETIME;
 } // mode_freqpixel()
@@ -4443,8 +4420,6 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 //
 // As a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
-
-  #ifdef ESP32
 
   uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
   if(SEGENV.aux0 != secondHand) {
@@ -4501,10 +4476,6 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
     }
   }
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_freqwave()
 
@@ -4514,7 +4485,6 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 //////////////////////
 
 uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove    By: Andrew Tuline
-#ifdef ESP32
 
   extern double fftResult[];
 
@@ -4529,10 +4499,6 @@ uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove    By: Andrew Tuline
     setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i*3]*8));
   }
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_noisemove()
 
@@ -4543,7 +4509,6 @@ uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove    By: Andrew Tuline
 
 uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise across SEGLEN. By Andrew Tuline.
 
-#ifdef ESP32
 
   static CRGBPalette16 thisPalette;
   static uint16_t dist;
@@ -4568,10 +4533,6 @@ uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat
     }
   dist += beatsin8(10,1,4);
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_noisepeak()
 
@@ -4589,7 +4550,6 @@ uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat
 //
 uint16_t WS2812FX::mode_spectral(void) {      // Spectral. By Andreas Pleschutznig.
 
-#ifdef ESP32
   double maxVal = 0;
   CHSV c;
   CRGB color;
@@ -4634,10 +4594,6 @@ uint16_t WS2812FX::mode_spectral(void) {      // Spectral. By Andreas Pleschutzn
       }
     }
   }
-
-#else
-  fade_out(224);
-#endif // ESP8266
 
   return FRAMETIME;
 } // mode_spectral()
@@ -4685,7 +4641,6 @@ uint16_t WS2812FX::mode_gravfreq(void) {                                // Gravc
 
 
 
-#ifdef ESP32
 /////////////////////////////////
 //     START of 2D ROUTINES    //
 /////////////////////////////////
@@ -4702,8 +4657,6 @@ static int speed2D = 20;
 // higher the value of scale, the more "zoomed out" the noise iwll be.  A value
 // of 1 will be so zoomed in, you'll mostly see solid colors.
 static int scale_2d = 30; // scale is set dynamically once we've started up
-
-#endif // ESP8266
 
 // blur1d: one-dimensional blur filter. Spreads light to 2 line neighbors.
 // blur2d: two-dimensional blur filter. Spreads light to 8 XY neighbors.
@@ -4826,8 +4779,6 @@ void WS2812FX::blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blu
 //
 uint16_t WS2812FX::XY( int x, int y) {
 
-#ifdef ESP32
-
 uint16_t i;
 
   if( matrixSerpentine == false) {
@@ -4846,7 +4797,6 @@ uint16_t i;
   }
 
   return i;
-#endif // ESP8266
 }
 
 
@@ -4859,8 +4809,6 @@ uint16_t i;
 // fft2 slider == scale (how far away are we from the plasma)
 
 uint16_t WS2812FX::mode_2Dplasma(void) {      // By Andreas Pleschutznig. A work in progress.
-
-#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
 
@@ -4947,10 +4895,6 @@ uint16_t WS2812FX::mode_2Dplasma(void) {      // By Andreas Pleschutznig. A work
   ihue+=1;
   }
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_2Dplasma()
 
@@ -4960,8 +4904,6 @@ uint16_t WS2812FX::mode_2Dplasma(void) {      // By Andreas Pleschutznig. A work
 //////////////////////////
 
 uint16_t WS2812FX::mode_2Dfirenoise(void) {   // firenoise2d. By Andrew Tuline. Yet another short routine.
-
-#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}                 // No, we're not going to overrun the segment.
 
@@ -4993,10 +4935,6 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {   // firenoise2d. By Andrew Tuline. 
     setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
   }
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_2Dfirenoise()
 
@@ -5008,7 +4946,6 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {   // firenoise2d. By Andrew Tuline. 
 uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://gist.github.com/kriegsman/368b316c55221134b160
                                                 // Modifed by: Andrew Tuline
                                                 // fft3 affects the blur amount.
-#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
@@ -5038,10 +4975,6 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://g
     setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
   }
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_2Dsquaredswirl()
 
@@ -5051,7 +4984,6 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {  // By: Mark Kriegsman. https://g
 /////////////////////////
 
 uint16_t WS2812FX::mode_2Dfire2012(void) {    // Fire2012 by Mark Kriegsman. Converted to WLED by Andrew Tuline.
-#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
@@ -5101,10 +5033,6 @@ uint16_t WS2812FX::mode_2Dfire2012(void) {    // Fire2012 by Mark Kriegsman. Con
 
   } // if millis
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_2Dfire2012()
 
@@ -5114,7 +5042,6 @@ uint16_t WS2812FX::mode_2Dfire2012(void) {    // Fire2012 by Mark Kriegsman. Con
 /////////////////////
 
 uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy. WLED version by Andrew Tuline.
-#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
@@ -5141,10 +5068,6 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 
   } // if millis
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_2Ddna()
 
@@ -5154,7 +5077,6 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 ///////////////////////
 
 uint16_t WS2812FX::mode_2Dmatrix(void) {      // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline.
-#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
@@ -5220,10 +5142,6 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {      // Matrix2D. By Jeremy Williams. A
    }
   } // if millis
 
-#else
-  fade_out(224);
-#endif // ESP8266
-
   return FRAMETIME;
 } // mode_2Dmatrix()
 
@@ -5233,7 +5151,6 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {      // Matrix2D. By Jeremy Williams. A
 /////////////////////////
 
 uint16_t WS2812FX::mode_2Dmeatballs(void) {   // Metaballs by Stefan Petrick. Cannot have one of the dimensions be 2 or less. Adapted by Andrew Tuline.
-#ifdef ESP32
 
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
@@ -5288,10 +5205,6 @@ uint16_t WS2812FX::mode_2Dmeatballs(void) {   // Metaballs by Stefan Petrick. Ca
    for (int i=0; i<SEGLEN; i++) {
       setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
    }
-
-#else
-  fade_out(224);
-#endif // ESP8266
 
   return FRAMETIME;
 } // mode_2Dmeatballs()
