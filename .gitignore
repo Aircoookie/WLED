@@ -14,3 +14,4 @@
 .clang-format
 node_modules
 my_config.h
+wled00/NpbWrapper.h.bak
