@@ -85,7 +85,9 @@ void initServer()
       if (error || root.isNull()) {
         request->send(400, "application/json", F("{\"error\":9}")); return;
       }
+      fileDoc = &jsonBuffer;
       verboseResponse = deserializeState(root);
+      fileDoc = nullptr;
     }
     if (verboseResponse) { //if JSON contains "v"
       serveJson(request); return; 
@@ -94,7 +96,6 @@ void initServer()
   });
   server.addHandler(handler);
 
-  //*******DEPRECATED*******
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)VERSION);
     });
@@ -106,7 +107,6 @@ void initServer()
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
     });
-  //*******END*******/
   
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", PAGE_usermod);
@@ -122,15 +122,15 @@ void initServer()
     
   //if OTA is allowed
   if (!otaLock){
-    #if !defined WLED_DISABLE_FILESYSTEM && defined WLED_ENABLE_FS_EDITOR
+    #ifdef WLED_ENABLE_FS_EDITOR
      #ifdef ARDUINO_ARCH_ESP32
-      server.addHandler(new SPIFFSEditor(SPIFFS));//http_username,http_password));
+      server.addHandler(new SPIFFSEditor(WLED_FS));//http_username,http_password));
      #else
-      server.addHandler(new SPIFFSEditor());//http_username,http_password));
+      server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
      #endif
     #else
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("The SPIFFS editor is disabled in this build."), 254);
+      serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
     });
     #endif
     //init ota page
@@ -214,10 +214,8 @@ void initServer()
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
-    #ifdef WLED_ENABLE_FS_SERVING
     if(handleFileRead(request, request->url())) return;
-    #endif
-    request->send(404, "text/plain", "Not Found");
+    request->send_P(404, "text/html", PAGE_404);
   });
 }
 
@@ -234,9 +232,7 @@ void serveIndexOrWelcome(AsyncWebServerRequest *request)
 
 void serveIndex(AsyncWebServerRequest* request)
 {
-  #ifdef WLED_ENABLE_FS_SERVING
   if (handleFileRead(request, "/index.htm")) return;
-  #endif
 
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 

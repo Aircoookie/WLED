@@ -5,24 +5,31 @@
 # Please visit documentation: https://docs.platformio.org/page/projectconf.html
 
 [platformio]
-default_envs = esp8266_1m_custom
+default_envs = WLED_tasmota_1M
 
-[env:esp8266_1m_custom]
+[env:WLED_tasmota_1M]
 board = esp01_1m
-platform = ${common.arduino_core_2_4_2}
+platform = ${common.platform_wled_default}
+platform_packages = ${common.platform_packages}
 board_build.ldscript = ${common.ldscript_1m0m}
-build_flags = ${common.build_flags_esp8266} 
-  -D WLED_DISABLE_OTA 
-  -D WLED_DISABLE_ALEXA 
-  -D WLED_DISABLE_BLYNK
-  -D WLED_DISABLE_CRONIXIE 
-  -D WLED_DISABLE_HUESYNC 
-  -D WLED_DISABLE_INFRARED
+build_unflags = ${common.build_unflags}
+build_flags = ${common.build_flags_esp8266}
+; *********************************************************************
+; *** Use custom settings from file my_config.h
+   -DWLED_USE_MY_CONFIG
+; *********************************************************************
+;  -D WLED_DISABLE_OTA
+;  -D WLED_DISABLE_ALEXA
+;  -D WLED_DISABLE_BLYNK
+;  -D WLED_DISABLE_CRONIXIE
+;  -D WLED_DISABLE_HUESYNC
+;  -D WLED_DISABLE_INFRARED
+;  -D WLED_DISABLE_WEBSOCKETS
 ; PIN defines - uncomment and change, if needed:
 ;   -D LEDPIN=2
 ;   -D BTNPIN=0
 ;   -D TOUCHPIN=T0
-;   -D IR_PIN=4
+;   -D IRPIN=4
 ;   -D RLYPIN=12
 ;   -D RLYMDE=1
 ; digital LED strip types - uncomment only one ! - this will disable WS281x / SK681x support
@@ -30,11 +37,11 @@ build_flags = ${common.build_flags_esp8266}
 ;   -D USE_WS2801
 ;   -D USE_LPD8806
 ; PIN defines for 2 wire LEDs
-;   -D CLKPIN=0
-;   -D DATAPIN=2
+   -D CLKPIN=0
+   -D DATAPIN=2
 ; to drive analog LED strips (aka 5050), uncomment the following
 ; PWM pins 5,12,13,15 are used with Magic Home LED Controller (default)
-;   -D WLED_USE_ANALOG_LEDS
+   -D WLED_USE_ANALOG_LEDS
 ; for the H801 controller (PINs 15,13,12,14 (W2 = 04)) uncomment this
 ;   -D WLED_USE_H801
 ; for the BW-LT11 controller (PINs 12,4,14,5 ) uncomment this

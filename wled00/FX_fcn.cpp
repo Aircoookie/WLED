@@ -150,18 +150,8 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
   }
   
-  //reorder channels to selected order
   RgbwColor col;
-  switch (colorOrder)
-  {
-    case  0: col.G = g; col.R = r; col.B = b; break; //0 = GRB, default
-    case  1: col.G = r; col.R = g; col.B = b; break; //1 = RGB, common for WS2811
-    case  2: col.G = b; col.R = r; col.B = g; break; //2 = BRG
-    case  3: col.G = r; col.R = b; col.B = g; break; //3 = RBG
-    case  4: col.G = b; col.R = g; col.B = r; break; //4 = BGR
-    default: col.G = g; col.R = b; col.B = r; break; //5 = GBR
-  }
-  col.W = w;
+  col.R = r; col.G = g; col.B = b; col.W = w;
   
   uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
@@ -258,7 +248,7 @@ void WS2812FX::show(void) {
 
     for (uint16_t i = 0; i < _length; i++) //sum up the usage of each LED
     {
-      RgbwColor c = bus->GetPixelColorRgbw(i);
+      RgbwColor c = bus->GetPixelColorRaw(i);
 
       if(useWackyWS2815PowerModel)
       {
@@ -467,18 +457,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   
   if (i >= _lengthRaw) return 0;
   
-  RgbwColor col = bus->GetPixelColorRgbw(i);
-  switch (colorOrder)
-  {
-    //                    W               G              R               B
-    case  0: return ((col.W << 24) | (col.G << 8) | (col.R << 16) | (col.B)); //0 = GRB, default
-    case  1: return ((col.W << 24) | (col.R << 8) | (col.G << 16) | (col.B)); //1 = RGB, common for WS2811
-    case  2: return ((col.W << 24) | (col.B << 8) | (col.R << 16) | (col.G)); //2 = BRG
-    case  3: return ((col.W << 24) | (col.B << 8) | (col.G << 16) | (col.R)); //3 = RBG
-    case  4: return ((col.W << 24) | (col.R << 8) | (col.B << 16) | (col.G)); //4 = BGR
-    case  5: return ((col.W << 24) | (col.G << 8) | (col.B << 16) | (col.R)); //5 = GBR
-  }
-  return 0;
+  return bus->GetPixelColorRgbw(i);
 }
 
 WS2812FX::Segment& WS2812FX::getSegment(uint8_t id) {
@@ -496,6 +475,14 @@ WS2812FX::Segment* WS2812FX::getSegments(void) {
 
 uint32_t WS2812FX::getLastShow(void) {
   return _lastShow;
+}
+
+uint8_t WS2812FX::getColorOrder(void) {
+  return bus->GetColorOrder();
+}
+
+void WS2812FX::setColorOrder(uint8_t co) {
+  bus->SetColorOrder(co);
 }
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing) {
@@ -936,37 +923,40 @@ void WS2812FX::setRgbwPwm(void) {
 
   _analogLastShow = nowUp;
 
-  RgbwColor color = bus->GetPixelColorRgbw(0);
+  RgbwColor c;
+  uint32_t col = bus->GetPixelColorRgbw(0);
+  c.R = col >> 16; c.G = col >> 8; c.B = col; c.W = col >> 24;
+
   byte b = getBrightness();
-  if (color == _analogLastColor && b == _analogLastBri) return;
+  if (c == _analogLastColor && b == _analogLastBri) return;
   
   // check color values for Warm / Cold white mix (for RGBW)  // EsplanexaDevice.cpp
   #ifdef WLED_USE_5CH_LEDS
-    if        (color.R == 255 && color.G == 255 && color.B == 255 && color.W == 255) {  
-      bus->SetRgbwPwm(0, 0, 0,                  0, color.W * b / 255);
-    } else if (color.R == 127 && color.G == 127 && color.B == 127 && color.W == 255) {  
-      bus->SetRgbwPwm(0, 0, 0, color.W * b / 512, color.W * b / 255);
-    } else if (color.R ==   0 && color.G ==   0 && color.B ==   0 && color.W == 255) {  
-      bus->SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
-    } else if (color.R == 130 && color.G ==  90 && color.B ==   0 && color.W == 255) {  
-      bus->SetRgbwPwm(0, 0, 0, color.W * b / 255, color.W * b / 512);
-    } else if (color.R == 255 && color.G == 153 && color.B ==   0 && color.W == 255) {  
-      bus->SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
+    if        (c.R == 255 && c.G == 255 && c.B == 255 && c.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0,                  0, c.W * b / 255);
+    } else if (c.R == 127 && c.G == 127 && c.B == 127 && c.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, c.W * b / 512, c.W * b / 255);
+    } else if (c.R ==   0 && c.G ==   0 && c.B ==   0 && c.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, c.W * b / 255,                  0);
+    } else if (c.R == 130 && c.G ==  90 && c.B ==   0 && c.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, c.W * b / 255, c.W * b / 512);
+    } else if (c.R == 255 && c.G == 153 && c.B ==   0 && c.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, c.W * b / 255,                  0);
     } else {  // not only white colors
-      bus->SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
+      bus->SetRgbwPwm(c.R * b / 255, c.G * b / 255, c.B * b / 255, c.W * b / 255);
     }
   #else
-    bus->SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
+    bus->SetRgbwPwm(c.R * b / 255, c.G * b / 255, c.B * b / 255, c.W * b / 255);
   #endif   
-  _analogLastColor = color;
+  _analogLastColor = c;
   _analogLastBri = b;
 }
 #else
 void WS2812FX::setRgbwPwm() {}
 #endif
 
-//gamma 2.4 lookup table used for color correction
-const byte gammaT[] = {
+//gamma 2.8 lookup table used for color correction
+byte gammaT[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
@@ -983,6 +973,17 @@ const byte gammaT[] = {
   144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
   177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
   215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
+
+uint8_t WS2812FX::gamma8_cal(uint8_t b, float gamma) {
+  return (int)(pow((float)b / 255.0, gamma) * 255 + 0.5);
+}
+
+void WS2812FX::calcGammaTable(float gamma)
+{
+  for (uint16_t i = 0; i < 256; i++) {
+    gammaT[i] = gamma8_cal(i, gamma);
+  }
+}
 
 uint8_t WS2812FX::gamma8(uint8_t b)
 {

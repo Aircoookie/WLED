@@ -6,12 +6,13 @@
   <a href="https://discord.gg/KuqP7NE"><img src="https://img.shields.io/discord/473448917040758787.svg?colorB=blue&label=discord&style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED/wiki"><img src="https://img.shields.io/badge/quick_start-wiki-blue.svg?style=flat-square"></a>
   <a href="https://github.com/Aircoookie/WLED-App"><img src="https://img.shields.io/badge/app-wled-blue.svg?style=flat-square"></a>
+  <a href="https://gitpod.io/#https://github.com/Aircoookie/WLED"><img src="https://img.shields.io/badge/Gitpod-ready--to--code-blue?style=flat-square&logo=gitpod"></a>
 
   </p>
   
 # Welcome to my project WLED! ✨
 
-A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812, APA102) LEDs or also SPI based chipsets like the WS2801!
+A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control NeoPixel (WS2812B, WS2811, SK6812) LEDs or also SPI based chipsets like the WS2801 and APA102!
 
 ## ⚙️ Features
 - WS2812FX library integrated for over 100 special effects  
@@ -21,19 +22,20 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Settings page - configuration over network  
 - Access Point and station mode - automatic failsafe AP  
 - Support for RGBW strips  
-- 16 user presets to save and load colors/effects easily, supports cycling through them.  
-- Macro functions to automatically execute API calls  
+- Up to 250 user presets to save and load colors/effects easily, supports cycling through them.  
+- Presets can be used to automatically execute API calls  
 - Nightlight function (gradually dims down)  
 - Full OTA software updatability (HTTP + ArduinoOTA), password protectable  
 - Configurable analog clock + support for the Cronixie kit by Diamex  
 - Configurable Auto Brightness limit for safer operation  
+- Filesystem-based config for easier backup of presets and settings  
 
 ## 💡 Supported light control interfaces
 - WLED app for [Android](https://play.google.com/store/apps/details?id=com.aircoookie.WLED) and [iOS](https://apps.apple.com/us/app/wled/id1475695033)
 - JSON and HTTP request APIs  
 - MQTT  
 - Blynk IoT  
-- E1.31, Art-Net and TPM2.net
+- E1.31, Art-Net, DDP and TPM2.net
 - [Hyperion](https://github.com/hyperion-project/hyperion.ng)
 - UDP realtime  
 - Alexa voice control (including dimming and color)  
@@ -47,15 +49,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 
 See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
 
-DrZzs has made some excellent video guides:  
-[Introduction, hardware and installation](https://www.youtube.com/watch?v=tXvtxwK3jRk)  
-[Settings, tips and tricks](https://www.youtube.com/watch?v=6eCE2BpLaUQ)  
-
-If you'd rather read, here is a very [detailed step-by-step beginner tutorial](https://tynick.com/blog/11-03-2019/getting-started-with-wled-on-esp8266/) by tynick!  
-
-Russian speakers, check out the videos by Room31:
-[WLED Firmware Overview: Interface and Settings](https://youtu.be/h7lKsczEI7E)  
-[ESP8266 based LED controller for WS2812b strip. WLED Firmware + OpenHAB](https://youtu.be/K4ioTt3XvGc)  
+[On this page](https://github.com/Aircoookie/WLED/wiki/Learning-the-ropes) you can find excellent tutorials made by the community and helpful tools to help you get your new lamp up and running!
 
 ## 🖼️ Images
 <img src="/images/macbook-pro-space-gray-on-the-wooden-table.jpg" width="50%"><img src="/images/walking-with-iphone-x.jpg" width="50%">

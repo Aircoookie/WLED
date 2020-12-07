@@ -61,7 +61,7 @@ void notify(byte callMode, bool followUp)
   udpOut[28] = (t >>  0) & 0xFF;
   
   IPAddress broadcastIp;
-  broadcastIp = ~uint32_t(WiFi.subnetMask()) | uint32_t(WiFi.gatewayIP());
+  broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
 
   notifierUdp.beginPacket(broadcastIp, udpPort);
   notifierUdp.write(udpOut, WLEDPACKETSIZE);
@@ -86,6 +86,7 @@ void realtimeLock(uint32_t timeoutMs, byte md)
   realtimeMode = md;
 
   if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
+  if (md == REALTIME_MODE_GENERIC) strip.show();
 }
 
 
@@ -116,13 +117,13 @@ void handleNotifications()
   if (realtimeMode && millis() > realtimeTimeout)
   {
     if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
-    strip.setBrightness(bri);
+    strip.setBrightness(scaledBri(bri));
     realtimeMode = REALTIME_MODE_INACTIVE;
     realtimeIP[0] = 0;
   }
 
   //receive UDP notifications
-  if (!udpConnected || !(receiveNotifications || receiveDirect)) return;
+  if (!udpConnected) return;
     
   bool isSupp = false;
   uint16_t packetSize = notifierUdp.parsePacket();
@@ -154,16 +155,18 @@ void handleNotifications()
       return;
     } 
   }
+
+  if (!(receiveNotifications || receiveDirect)) return;
   
   //notifier and UDP realtime
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) return;
-  if (!isSupp && notifierUdp.remoteIP() == WiFi.localIP())   return; //don't process broadcasts we send ourselves
+  if (!isSupp && notifierUdp.remoteIP() == Network.localIP()) return; //don't process broadcasts we send ourselves
 
   uint8_t udpIn[packetSize +1];
   if (isSupp) notifier2Udp.read(udpIn, packetSize);
   else         notifierUdp.read(udpIn, packetSize);
 
-  //wled notifier, block if realtime packets active
+  //wled notifier, ignore if realtime packets active
   if (udpIn[0] == 0 && !realtimeMode && receiveNotifications)
   {
     //ignore notification if received within a second after sending a notification ourselves
@@ -222,6 +225,7 @@ void handleNotifications()
     colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
     return;
   }
+
   if (!receiveDirect) return;
   
   //TPM2.NET
