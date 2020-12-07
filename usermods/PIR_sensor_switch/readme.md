@@ -11,18 +11,20 @@ The LED strip is switched [using a relay](https://github.com/Aircoookie/WLED/wik
 
 The info page in the web interface shows the items below
 
-- the state of the sensor. By clicking on the state the sensor can be deactivated/activated. 
-**I recommend to deactivate the sensor before installing an OTA update**.
+- the state of the sensor. By clicking on the state the sensor can be deactivated/activated. Changes persist after a reboot.
+**I recommend to deactivate the sensor before an OTA update and activate it again afterwards**.
 - the remaining time of the off timer. 
 
 ## JSON API
 
-The usermod supports  the following state changes:
+The usermod supports the following state changes:
 
 | JSON key   | Value range | Description                     |
 |------------|-------------|---------------------------------|
 | PIRenabled | bool        | Deactivdate/activate the sensor |
 | PIRoffSec  | 60 to 43200 | Off timer seconds               |
+
+ Changes also persist after a reboot.
 
 ## Sensor connection
 
@@ -76,7 +78,7 @@ void registerUsermods()
 
 The class provides the static method `PIRsensorSwitch* PIRsensorSwitch::GetInstance()` to get a pointer to the usermod object.
 
-To query or change the PIR sensor state the methods `bool PIRSensorEnabled()` and `void EnablePIRSensor(bool enable)` are available. 
+To query or change the PIR sensor state the methods `bool PIRsensorEnabled()` and `void EnablePIRsensor(bool enable)` are available. 
 
 ### There are two options to get access to the usermod instance:
 
@@ -97,7 +99,7 @@ class MyUsermod : public Usermod {
 
   void togglePIRSensor() {
     if (PIRsensorSwitch::GetInstance() != nullptr) {
-      PIRsensorSwitch::GetInstance()->EnablePIRSensor(!PIRsensorSwitch::GetInstance()->PIRSensorEnabled());
+      PIRsensorSwitch::GetInstance()->EnablePIRsensor(!PIRsensorSwitch::GetInstance()->PIRsensorEnabled());
     }
   }
   //...
