@@ -95,6 +95,7 @@
 #define TYPE_WS2812_RGB          22
 #define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
+#define TYPE_TM1814              25
 #define TYPE_SK6812_RGBW         30
 //"Analog" types (PWM) (32-47)
 #define TYPE_ONOFF               40            //binary output (relays etc.)
@@ -108,11 +109,10 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
-#define TYPE_TM1814              54
 
 #define IS_DIGITAL(t) (t & 0x10) //digital are 16-31 and 48-63
-#define IS_ANALOG(t)  (t > 39 && t < 46)
-#define NUM_PWM_PINS(t) (t - 40) //for analog PWM 40-45 only
+#define IS_PWM(t)     (t > 40 && t < 46)
+#define NUM_PWM_PINS(t) (t - 40) //for analog PWM 41-45 only
 #define IS_2PIN(t)      (t > 47)
 
 //Color orders
@@ -181,7 +181,11 @@
 
 #define E131_MAX_UNIVERSE_COUNT 9
 
-#define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
+#define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
+
+// PWM settings
+#define WLED_PWM_FREQ_ESP8266  880 //PWM frequency proven as good for LEDs
+#define WLED_PWM_FREQ_ESP32   5000
 
 
 #define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
