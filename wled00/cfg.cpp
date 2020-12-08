@@ -221,7 +221,7 @@ void deserializeConfig() {
   getStringFromJson(mqttClientID, if_mqtt[F("cid")], 41);
 
   getStringFromJson(mqttDeviceTopic, if_mqtt[F("topics")][F("device")], 33); // "wled/test"
-  getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], 33); // "" 
+  getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], 33); // ""
 
   JsonObject if_hue = interfaces[F("hue")];
   CJSON(huePollingEnabled, if_hue[F("en")]);
@@ -250,6 +250,13 @@ void deserializeConfig() {
   CJSON(overlayDefault ,ol[F("clock")]); // 0
   CJSON(countdownMode, ol[F("cntdwn")]);
   overlayCurrent = overlayDefault;
+
+  CJSON(overlayMin, ol[F("O1")]);
+  CJSON(overlayMax, ol[F("O2")]);
+  CJSON(analogClock12pixel, ol[F("OM")]);
+  CJSON(analogClock5MinuteMarks, ol[F("O5")]);
+  CJSON(analogClockSecondsTrail, ol[F("OS")]);
+
 
   JsonArray ol_cntdwn = ol[F("cntdwn")]; //[20,12,31,23,59,59]
 
@@ -561,6 +568,12 @@ void serializeConfig() {
   JsonObject ol = doc.createNestedObject("ol");
   ol[F("clock")] = overlayDefault;
   ol[F("cntdwn")] = countdownMode;
+
+  ol[F("O1")] = overlayMin;
+  ol[F("O2")] = overlayMax;
+  ol[F("OM")] = analogClock12pixel;
+  ol[F("O5")] = analogClock5MinuteMarks;
+  ol[F("OS")] = analogClockSecondsTrail;
 
   JsonObject timers = doc.createNestedObject("timers");
 
