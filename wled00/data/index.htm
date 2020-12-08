@@ -1550,7 +1550,7 @@ function populatePresets(fromls)
 		
 		cn += `<div class="seg pres" id="p${i}o">
 			<div class="segname pname" onclick="setPreset(${i})">
-				${pName(i)}
+				${i}: ${pName(i)}
 			</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
