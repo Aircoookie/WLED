@@ -2443,10 +2443,23 @@ let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
 
 function unify(e) {	return e.changedTouches ? e.changedTouches[0] : e }
 
+function hasIroClass(classList) {
+	for (var i = 0; i < classList.length; i++) {
+		var element = classList[i];
+		if (element.startsWith('Iro')) return true;
+	}
+
+	return false;
+}
+
+
 function lock(e) {
 	if (pcMode) return;
 	var l = e.target.classList;
-	if (l.contains('noslide') || l.contains('iro__wheel__saturation') || l.contains('iro__slider__value')	|| l.contains('iro__slider')) return;
+	var pl = e.target.parentElement.classList;
+
+	if (l.contains('noslide') || hasIroClass(l) || hasIroClass(pl)) return;
+
 	x0 = unify(e).clientX;
 	scrollS = d.getElementsByClassName("tabcontent")[iSlide].scrollTop;
 
