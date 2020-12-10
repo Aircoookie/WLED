@@ -162,7 +162,7 @@ void deserializeConfig() {
   CJSON(presetCycleMax, def_cy[F("range")][1]);
 
   tdd = def_cy[F("dur")] | -1;
-  if (tdd >= 0) presetCycleTime = tdd * 100;
+  if (tdd > 0) presetCycleTime = tdd;
 
   JsonObject interfaces = doc["if"];
 
@@ -482,7 +482,7 @@ void serializeConfig() {
     JsonArray def_cy_range = def_cy.createNestedArray("range");
     def_cy_range.add(presetCycleMin);
     def_cy_range.add(presetCycleMax);
-    def_cy[F("dur")] = presetCycleTime / 100;
+    def_cy[F("dur")] = presetCycleTime;
   }
 
   JsonObject interfaces = doc.createNestedObject("if");

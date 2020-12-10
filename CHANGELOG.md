@@ -2,6 +2,11 @@
 
 ### Development versions after 0.11.0 release
 
+#### Build 2012101
+
+-   Fixed preset cycle default duration rounded down to nearest 10sec interval (#1458)
+-   Enabled E1.31/DDP/Art-Net in AP mode
+
 #### Build 2012100
 
 -   Fixed multi-segment preset cycle
