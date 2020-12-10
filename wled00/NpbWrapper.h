@@ -296,11 +296,26 @@ public:
 
   void Show()
   {
-    byte b;
     switch (_type)
     {
       case NeoPixelType_Grb:  _pGrb->Show();  break;
       case NeoPixelType_Grbw: _pGrbw->Show(); break;
+    }
+  }
+
+  /** 
+   * This will return true if enough time has passed since the last time Show() was called. 
+   * This also means that calling Show() will not cause any undue waiting. If the method for 
+   * the defined bus is hardware that sends asynchronously, then call CanShow() will let 
+   * you know if it has finished sending the data from the last Show().
+   */
+  bool CanShow()
+  {
+    switch (_type)
+    {
+      case NeoPixelType_Grb:  return _pGrb->CanShow();
+      case NeoPixelType_Grbw: return _pGrbw->CanShow();
+      default: return true;
     }
   }
 
