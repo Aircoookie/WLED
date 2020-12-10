@@ -76,6 +76,11 @@ void WS2812FX::service() {
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
     _segment_index = i;
+
+    // reset the segment runtime data if needed, called before isActive to ensure deleted
+    // segment's buffers are cleared
+    SEGENV.resetIfRequired();
+
     if (SEGMENT.isActive())
     {
       if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
