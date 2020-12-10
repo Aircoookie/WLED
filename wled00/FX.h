@@ -317,9 +317,31 @@ class WS2812FX {
         WS2812FX::_usedSegmentData -= _dataLen;
         _dataLen = 0;
       }
-      void reset(){next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; deallocateData();}
+
+      /** 
+       * If reset of this segment was request, clears runtime
+       * settings of this segment.
+       * Must not be called while an effect mode function is running
+       * because it could access the data buffer and this method 
+       * may free that data buffer.
+       */
+      void resetIfRequired() {
+        if (_requiresReset) {
+          next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
+          deallocateData();
+          _requiresReset = false;
+        }
+      }
+
+      /** 
+       * Flags that before the next effect is calculated,
+       * the internal segment state should be reset. 
+       * Call resetIfRequired before calling the next effect function.
+       */
+      void reset() { _requiresReset = true; }
       private:
         uint16_t _dataLen = 0;
+        bool _requiresReset = false;
     } segment_runtime;
 
     WS2812FX() {
@@ -480,7 +502,9 @@ class WS2812FX {
       gammaCorrectCol = true,
       applyToAllSelected = true,
       segmentsAreIdentical(Segment* a, Segment* b),
-      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p);
+      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p),
+      // return true if the strip is being sent pixel updates
+      isUpdating(void);
 
     uint8_t
       mainSegment = 0,
