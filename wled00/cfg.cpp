@@ -251,14 +251,11 @@ void deserializeConfig() {
   CJSON(countdownMode, ol[F("cntdwn")]);
   overlayCurrent = overlayDefault;
 
-  CJSON(overlayMin, ol[F("O1")]);
-  CJSON(overlayMax, ol[F("O2")]);
-  CJSON(analogClock12pixel, ol[F("OM")]);
-  CJSON(analogClock5MinuteMarks, ol[F("O5")]);
-  CJSON(analogClockSecondsTrail, ol[F("OS")]);
-
-
-  JsonArray ol_cntdwn = ol[F("cntdwn")]; //[20,12,31,23,59,59]
+  CJSON(overlayMin, ol[F("min")]);
+  CJSON(overlayMax, ol[F("max")]);
+  CJSON(analogClock12pixel, ol[F("o12pix")]);
+  CJSON(analogClock5MinuteMarks, ol[F("o5m")]);
+  CJSON(analogClockSecondsTrail, ol[F("osec")]);
 
   //timed macro rules
   JsonObject tm = doc[F("timers")];
@@ -569,11 +566,11 @@ void serializeConfig() {
   ol[F("clock")] = overlayDefault;
   ol[F("cntdwn")] = countdownMode;
 
-  ol[F("O1")] = overlayMin;
-  ol[F("O2")] = overlayMax;
-  ol[F("OM")] = analogClock12pixel;
-  ol[F("O5")] = analogClock5MinuteMarks;
-  ol[F("OS")] = analogClockSecondsTrail;
+  ol[F("min")] = overlayMin;
+  ol[F("max")] = overlayMax;
+  ol[F("o12pix")] = analogClock12pixel;
+  ol[F("o5m")] = analogClock5MinuteMarks;
+  ol[F("osec")] = analogClockSecondsTrail;
 
   JsonObject timers = doc.createNestedObject("timers");
 
