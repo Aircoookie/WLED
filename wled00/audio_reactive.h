@@ -209,11 +209,21 @@ double vImag[samples];
 double fftBin[samples];
 double fftResult[16];
 
+
+
 // This is used for normalization of the result bins. It was created by sending the results of a signal generator to within 6" of a MAX9814 @ 40db gain.
 // This is the maximum raw results for each of the result bins and is used for normalization of the results.
 long maxChannel[] = {26000,  44000,  66000,  72000,  60000,  48000,  41000,  30000,  25000, 22000, 16000,  14000,  10000,  8000,  7000,  5000}; // Find maximum value for each bin with MAX9814 @ 40db gain.
 
+// From Yariv
+int logarithmicNoise[16] = { 120, 117, 115, 110, 105, 100, 90, 80, 75, 70, 70, 70, 70, 70, 70, 70 };
+
+
+double fftResultLogarithmicNoiseless[16];
+
 float avgChannel[16];    // This is a smoothed rolling average value for each bin. Experimental for AGC testing.
+
+
 
 // Create FFT object
 arduinoFFT FFT = arduinoFFT( vReal, vImag, samples, SAMPLE_RATE );
@@ -232,7 +242,6 @@ void FFTcode( void * parameter) {
   //DEBUG_PRINT("FFT running on core: "); DEBUG_PRINTLN(xPortGetCoreID());
   double beatSample = 0;
   double envelope = 0;
-  uint16_t rawMicData = 0;  // UNUSED???
 
   for(;;) {
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
@@ -244,19 +253,18 @@ void FFTcode( void * parameter) {
     for(int i=0; i<samples; i++) {
       if (digitalMic == false) {
         micData = analogRead(MIC_PIN);          // Analog Read
-        rawMicData = micData >> 2;  // UNUSED??? ESP32 has 12 bit ADC
       } else {
         int32_t digitalSample = 0;
         int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&digitalSample, portMAX_DELAY); // no timeout
         if (bytes_read > 0) {
           micData = abs(digitalSample >> 16);
           // Serial.println(micData);
-          rawMicData = micData;   // UNUSED??? ESP32 has 12 bit ADC
         }
       }
 
       micDataSm = ((micData * 3) + micData)/4;  // We'll be passing smoothed micData to the volume routines as the A/D is a bit twitchy.
       vReal[i] = micData;                       // Store Mic Data in an array
+
       vImag[i] = 0;
 
       // MIC DATA DEBUGGING
@@ -281,16 +289,14 @@ void FFTcode( void * parameter) {
     // There could be interesting data at bins 0 to 2, but there are too many artifacts.
     //
     FFT.MajorPeak(&FFT_MajorPeak, &FFT_Magnitude);          // let the effects know which freq was most dominant
-    FFT.DCRemoval();
 
-    for (int i = 0; i < samples; i++) fftBin[i] = vReal[i]; // export FFT field
-
-    for (int i = 0; i < samples; i++) {
+    for (int i = 0; i < samples; i++) {                     // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
       double t = 0.0;
       t = abs(vReal[i]);
-      t = 16*log(t);
+      t = 16*log(t);                                        // Yariv log method.
       fftBin[i] = t;
-    }
+      // if (fftBin[i] < soundSquelch*4) fftBin[i] = 0;       // I use this in binmap, becuase it's the only routine to use ALL the bins.
+     }
 
 
 /* Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512.
@@ -319,15 +325,36 @@ void FFTcode( void * parameter) {
     fftResult[14] = (fftAdd(147,194)) /48;  // 2940 - 3900 -> 3500,  7000
     fftResult[15] = (fftAdd(194, 255)) /62; // 3880 - 5120 -> 4500,  5000
 
+/*  Linear bin by bin noise supression of fftResult.
     for(int i=0; i< 16; i++) {
       if(fftResult[i]<0) fftResult[i]=0;
       avgChannel[i] = ((avgChannel[i] * 31) + fftResult[i]) / 32;                         // Smoothing of each result bin. Experimental.
       fftResult[i] = constrain(map(fftResult[i], 0,  maxChannel[i], 0, 255),0,255);       // Map result bin to 8 bits.
-    //fftResult[i] = constrain(map(fftResult[i], 0,  avgChannel[i]*2, 0, 255),0,255);     // AGC map result bin to 8 bits. Can be noisy at low volumes. Experimental.
-
+      Serial.print(fftResult[i]); Serial.print(" ");
+      //fftResult[i] = constrain(map(fftResult[i], 0,  avgChannel[i]*2, 0, 255),0,255);     // AGC map result bin to 8 bits. Can be noisy at low volumes. Experimental.
     }
+    Serial.println(" ");
+*/
+
+    for (int i = 0; i< 16; i++) { Serial.print(logarithmicNoise[i]);Serial.print("\t");}
+    Serial.println(" ");
+
+    for (int i = 0; i< 16; i++) { Serial.print(fftResult[i]); Serial.print("\t"); }
+    Serial.println(" ");
+
+//  Logarithmic bin by bin noise suppression of fftResult. Don't forget to use soundSquelch
+    memcpy(fftResultLogarithmicNoiseless, fftResult, sizeof(fftResult[0])*16);      
+    for(int i=0; i<16; i++) {
+//      fftResultLogarithmicNoiseless[i] = fftResultLogarithmicNoiseless[i]-logarithmicNoise[i] <= 0? 0 : fftResultLogarithmicNoiseless[i]-logarithmicNoise[i];
+      fftResultLogarithmicNoiseless[i] = fftResultLogarithmicNoiseless[i]-logarithmicNoise[i]*(float)soundSquelch/10 <= 0? 0 : fftResultLogarithmicNoiseless[i]-logarithmicNoise[i]*(float)soundSquelch/10;
+      Serial.print(fftResultLogarithmicNoiseless[i]); Serial.print("\t");
+    }
+    Serial.println(" "); Serial.println(" ");
+//  End of Logarithmic bin by bin noise suppression.
+
   }
 } // FFTcode( void * parameter)
+
 
 
 void logAudio() {

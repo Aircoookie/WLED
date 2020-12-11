@@ -4224,25 +4224,13 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
-#ifdef ESP32
     uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-#else
-    uint8_t pixCol = sample * SEGMENT.intensity / 128;
-#endif // ESP8266
 
     if (samplePeak) {
-//      samplePeak = 0;
       setPixelColor(SEGLEN-1,92,92,92);
     } else {
-
-#ifdef ESP32
-  setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
-
-#else
-  setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixCol));
-#endif // ESP8266
+      setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
     }
-
     for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
   }
 
@@ -4258,10 +4246,15 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 // Map the first 256 bins to the entire segment. The remaining 256 bins are kind of a mirror image to the first 256.
 // Not a great sketch and we don't need to be accurate, but it looks cool (at least to me it does).
 
+// If we need squelch, use this:
+//    if (fftBin[i] < soundSquelch*4) fftBin[i] = 0;       // Very simple squelch. Should really be used with the result bins and on a bin by bin basis.
+
 uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. By Andrew Tuline.
 
   #define FIRSTBIN 3                          // The first 3 bins are garbage.
   #define LASTBIN 255                         // Don't use the highest bins, as they're (almost) a mirror of the first 256.
+
+  extern byte soundSquelch;
 
   float maxVal = 5000;                        // Kind of a guess as to the maximum output value per combined and normalized (but not mapped) bins.
 
@@ -4272,16 +4265,20 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
 
     double sumBin = 0;
 
-    for (int j=startBin; j<=endBin; j++) sumBin += fftBin[j];
+    for (int j=startBin; j<=endBin; j++) {                     
+      sumBin += (fftBin[j] < soundSquelch*4) ? 0 : fftBin[j];  // We need some sound temporary squelch for fftBin, because we didn't do it for the raw bins in audio_reactive.h
+    }
 
     sumBin = sumBin/(endBin-startBin+1);                // Normalize it.
     sumBin = sumBin * (i+5) / (endBin-startBin+5);      // Disgusting frequency adjustment calculation. Lows were too bright. Am open to quick 'n dirty alternatives.
+
+    sumBin = sumBin * 6;                                // Need to use the 'log' version for this to not overflow.
 
     if (sumBin > maxVal) sumBin = maxVal;               // Make sure our bin isn't higher than the max . . which we capped earlier.
 
     uint8_t bright = constrain(mapf(sumBin, 0, maxVal, 0, 255),0,255);   // Map the brightness in relation to maxVal and crunch to 8 bits.
 
-    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*4+160, false, PALETTE_SOLID_WRAP, 0), bright));   // 'i' is just an index in the palette. The FFT value, bright, is the intensity.
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*8+millis()/50, false, PALETTE_SOLID_WRAP, 0), bright));   // 'i' is just an index in the palette. The FFT value, bright, is the intensity.
                                                                                                                      // The +160 is 'blue' for the Rainbow palette.
   } // for i
 
@@ -4311,6 +4308,7 @@ uint16_t WS2812FX::fft_test() {
     }
     Serial.println(" ");
 */
+
  for(int i = 0; i < 16; i++) {
     Serial.print(fftResult[i]); Serial.print(" ");
   }
