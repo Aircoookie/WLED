@@ -293,9 +293,9 @@ void FFTcode( void * parameter) {
     for (int i = 0; i < samples; i++) {                     // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
       double t = 0.0;
       t = abs(vReal[i]);
-      t = 16*log(t);                                        // Yariv log method.
+      t = 16*log(t);                                        // Yariv log method. As a result, we will need to amplify signal in routines.
       fftBin[i] = t;
-      // if (fftBin[i] < soundSquelch*4) fftBin[i] = 0;       // I use this in binmap, becuase it's the only routine to use ALL the bins.
+      // if (fftBin[i] < soundSquelch*4) fftBin[i] = 0;     // I use this in binmap, becuase it's the only routine to use ALL the bins.
      }
 
 
@@ -336,20 +336,24 @@ void FFTcode( void * parameter) {
     Serial.println(" ");
 */
 
-    for (int i = 0; i< 16; i++) { Serial.print(logarithmicNoise[i]);Serial.print("\t");}
-    Serial.println(" ");
+//  Print the pre-calculated noise values.
+//    for (int i = 0; i< 16; i++) { Serial.print(logarithmicNoise[i]);Serial.print("\t");}
+//    Serial.println(" ");
 
-    for (int i = 0; i< 16; i++) { Serial.print(fftResult[i]); Serial.print("\t"); }
-    Serial.println(" ");
+// Print the fftResults
+//    for (int i = 0; i< 16; i++) { Serial.print(fftResult[i]); Serial.print("\t"); }
+//    Serial.println(" ");
+
 
 //  Logarithmic bin by bin noise suppression of fftResult. Don't forget to use soundSquelch
     memcpy(fftResultLogarithmicNoiseless, fftResult, sizeof(fftResult[0])*16);      
     for(int i=0; i<16; i++) {
 //      fftResultLogarithmicNoiseless[i] = fftResultLogarithmicNoiseless[i]-logarithmicNoise[i] <= 0? 0 : fftResultLogarithmicNoiseless[i]-logarithmicNoise[i];
-      fftResultLogarithmicNoiseless[i] = fftResultLogarithmicNoiseless[i]-logarithmicNoise[i]*(float)soundSquelch/10 <= 0? 0 : fftResultLogarithmicNoiseless[i]-logarithmicNoise[i]*(float)soundSquelch/10;
-      Serial.print(fftResultLogarithmicNoiseless[i]); Serial.print("\t");
+      fftResultLogarithmicNoiseless[i] = fftResultLogarithmicNoiseless[i]-logarithmicNoise[i]*(float)soundSquelch/15.0 <= 0? 0 : fftResultLogarithmicNoiseless[i]-logarithmicNoise[i]*(float)soundSquelch/15.0;
+//    Print the noise suppressed results.
+//      Serial.print(fftResultLogarithmicNoiseless[i]); Serial.print("\t");
     }
-    Serial.println(" "); Serial.println(" ");
+//    Serial.println(" "); Serial.println(" ");
 //  End of Logarithmic bin by bin noise suppression.
 
   }

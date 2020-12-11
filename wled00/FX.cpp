@@ -4116,12 +4116,10 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                                // Pud
 
 uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. By Andrew Tuline.
 
-  #ifdef ESP32
   extern double FFT_MajorPeak;
 //  Serial.println(FFT_MajorPeak);
 //  Serial.println(log10(FFT_MajorPeak)*128-140);
 //  Serial.println(pow(FFT_MajorPeak, .3));
-  #endif
 
                                                               // This currently has no controls.
   #define maxsteps 16                                         // Case statement wouldn't allow a variable.
@@ -4198,6 +4196,7 @@ extern double FFT_MajorPeak;
 extern double FFT_Magnitude;
 extern double fftBin[];                     // raw FFT data
 extern double fftResult[];                  // summary of bins array. 16 summary bins.
+extern double fftResultLogarithmicNoiseless[];
 extern double beat;
 extern uint16_t lastSample;
 double volume = 1;
@@ -4256,7 +4255,7 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
 
   extern byte soundSquelch;
 
-  float maxVal = 5000;                        // Kind of a guess as to the maximum output value per combined and normalized (but not mapped) bins.
+  float maxVal = 512;                        // Kind of a guess as to the maximum output value per combined logarithmic bins.
 
   for (int i=0; i<SEGLEN; i++) {
 
@@ -4266,13 +4265,13 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
     double sumBin = 0;
 
     for (int j=startBin; j<=endBin; j++) {                     
-      sumBin += (fftBin[j] < soundSquelch*4) ? 0 : fftBin[j];  // We need some sound temporary squelch for fftBin, because we didn't do it for the raw bins in audio_reactive.h
+      sumBin += (fftBin[j] < soundSquelch*6) ? 0 : fftBin[j];  // We need some sound temporary squelch for fftBin, because we didn't do it for the raw bins in audio_reactive.h
     }
 
     sumBin = sumBin/(endBin-startBin+1);                // Normalize it.
     sumBin = sumBin * (i+5) / (endBin-startBin+5);      // Disgusting frequency adjustment calculation. Lows were too bright. Am open to quick 'n dirty alternatives.
 
-    sumBin = sumBin * 6;                                // Need to use the 'log' version for this to not overflow.
+    sumBin = sumBin * 8;                                // Need to use the 'log' version for this.
 
     if (sumBin > maxVal) sumBin = maxVal;               // Make sure our bin isn't higher than the max . . which we capped earlier.
 
@@ -4287,30 +4286,14 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
 
 
 ////////////////////////////////
-//  ** FFT test  by Yariv-H   //
+//  ** FFT_test               //
 ////////////////////////////////
 
 uint16_t WS2812FX::fft_test() {
 
-
-/*  double temp[16];
-  memcpy(temp, fftResult, sizeof(fftResult[0])*16);
-  for(int i = 0; i < 16; i++) {
-      int val = constrain(temp[i],0,254);
-      Serial.print(val); Serial.print(" ");
-      if(val<255 && val >0){
-        CRGB newcolor = CHSV(192, 220, val);
-        setPixelColor(i, crgb_to_col(newcolor));
-      } else {
-        CRGB newcolor = CHSV(192, 220, 0);
-        setPixelColor(i, crgb_to_col(newcolor));
-      }
-    }
-    Serial.println(" ");
-*/
-
  for(int i = 0; i < 16; i++) {
-    Serial.print(fftResult[i]); Serial.print(" ");
+//    Serial.print(fftResult[i]); Serial.print(" ");
+    Serial.print(fftResultLogarithmicNoiseless[i]); Serial.print(" ");
   }
     Serial.println(" ");
 
