@@ -912,7 +912,17 @@ void WS2812FX::handle_palette(void)
  */
 uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
-  if (SEGMENT.palette == 0 && mcol < 3) return SEGCOLOR(mcol); //WS2812FX default
+  if (SEGMENT.palette == 0 && mcol < 3) {
+    uint32_t color = SEGCOLOR(mcol);
+    if (pbri != 255) {
+      CRGB crgb_color = col_to_crgb(color);
+      crgb_color.nscale8_video(pbri);
+      return crgb_to_col(crgb_color);
+    } else {
+      return color;
+    }
+  }
+
   uint8_t paletteIndex = i;
   if (mapping) paletteIndex = (i*255)/(SEGLEN -1);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
