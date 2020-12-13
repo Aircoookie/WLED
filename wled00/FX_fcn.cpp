@@ -44,6 +44,10 @@ const uint16_t customMappingTable[] = {
 const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); //30 in example
 #endif
 
+#ifndef PWM_INDEX
+#define PWM_INDEX 0
+#endif
+
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
   if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
@@ -957,7 +961,7 @@ void WS2812FX::setRgbwPwm(void) {
   _analogLastShow = nowUp;
 
   RgbwColor c;
-  uint32_t col = bus->GetPixelColorRgbw(0);
+  uint32_t col = bus->GetPixelColorRgbw(PWM_INDEX);
   c.R = col >> 16; c.G = col >> 8; c.B = col; c.W = col >> 24;
 
   byte b = getBrightness();

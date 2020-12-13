@@ -91,6 +91,7 @@ void deserializeConfig() {
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   CJSON(strip.reverseMode, hw_led[F("rev")]);
+  CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonObject hw_led_ins_0 = hw_led[F("ins")][0];
   //bool hw_led_ins_0_en = hw_led_ins_0[F("en")]; // true
@@ -382,6 +383,7 @@ void serializeConfig() {
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
   hw_led[F("rev")] = strip.reverseMode;
+  hw_led[F("rgbwm")] = strip.rgbwMode;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
