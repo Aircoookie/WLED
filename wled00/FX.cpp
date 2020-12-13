@@ -26,6 +26,8 @@
 
 #include "FX.h"
 
+#include "wled.h"
+
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
 
@@ -3729,6 +3731,78 @@ uint16_t WS2812FX::mode_washing_machine(void) {
   for (int i=0; i<SEGLEN; i++) {
     uint8_t col = sin8(((SEGMENT.intensity / 25 + 1) * 255 * i / SEGLEN) + (SEGENV.step >> 7));
     setPixelColor(i, color_from_palette(col, false, PALETTE_SOLID_WRAP, 3));
+  }
+
+  return FRAMETIME;
+}
+
+/*
+  Effect similiar to Analog Clock Overlay
+*/
+uint16_t WS2812FX::mode_strip_clock(void) {
+  auto h = (hour(localTime));
+  auto m = (minute(localTime));
+  auto s = (second(localTime));
+
+  int leds_per_minute = SEGLEN / 60;
+  int margin_leds = SEGLEN - (leds_per_minute * 60);
+  int lmargin = margin_leds / 2;
+  int rmargin = margin_leds - lmargin;
+
+  for (int i = 0; i < SEGLEN; i++)
+  {
+    if (i < lmargin || i > SEGLEN - rmargin)
+    {
+      setPixelColor(i, BLACK);
+      continue;
+    }
+
+    auto clock_led = i - lmargin;
+    if (clock_led % leds_per_minute != 0)
+    {
+      setPixelColor(i, BLACK);
+      continue;
+    }
+
+    clock_led /= leds_per_minute;
+
+    if (clock_led == (((h % 12) * 5 - 1) % 60))
+    {
+      // current hour
+      setPixelColor(i, SEGCOLOR(2));
+      continue;
+    }
+
+    if (clock_led < m - 1)
+    {
+      if (clock_led % 5 == 4)
+      {
+        // 5-minute step
+        setPixelColor(i, color_from_palette(i, true, false, 0));
+      }
+      else
+      {
+        // past minute
+        setPixelColor(i, color_from_palette(i, true, false, 0, 32));
+      }
+    }
+    else if (clock_led == m - 1)
+    {
+      // current minute
+      setPixelColor(i, SEGCOLOR(1));
+    }
+    else
+    {
+      if (clock_led % 5 == 4)
+      {
+        // 5-minute step
+        setPixelColor(i, color_from_palette(i, true, false, 0));
+      }
+      else
+      {
+        setPixelColor(i, BLACK);
+      }
+    }
   }
 
   return FRAMETIME;
