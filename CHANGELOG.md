@@ -1,6 +1,28 @@
 ## WLED changelog
 
-### WLED version 0.11.0
+### Development versions after 0.11.0 release
+
+#### Build 2012130
+
+-   Fixed RGBW mode not saved between reboots (fixes #1457)
+-   Added brightness scaling in palette function for default (PR #1484)
+-   
+
+#### Build 2012101
+
+-   Fixed preset cycle default duration rounded down to nearest 10sec interval (#1458)
+-   Enabled E1.31/DDP/Art-Net in AP mode
+
+#### Build 2012100
+
+-   Fixed multi-segment preset cycle
+-   Fixed EEPROM (pre-0.11 settings) not cleared on factory reset
+-   Fixed an issue with intermittent crashes on FX change (PR #1465)
+-   Added function to know if strip is updating (PR #1466)
+-   Fixed using colorwheel sliding the UI (PR #1459)
+-   Fixed analog clock settings not saving (PR #1448)
+-   Added Temperature palette (PR #1430)
+-   Added Candy cane FX (PR #1445)
 
 #### Build 2012020
 
@@ -10,6 +32,8 @@
 #### Build 2012010
 
 -   Fixed compilation for analog (PWM) LEDs
+
+### WLED version 0.11.0
 
 #### Build 2011290
 

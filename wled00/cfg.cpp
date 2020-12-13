@@ -91,6 +91,7 @@ void deserializeConfig() {
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   CJSON(strip.reverseMode, hw_led[F("rev")]);
+  CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonObject hw_led_ins_0 = hw_led[F("ins")][0];
   //bool hw_led_ins_0_en = hw_led_ins_0[F("en")]; // true
@@ -162,7 +163,7 @@ void deserializeConfig() {
   CJSON(presetCycleMax, def_cy[F("range")][1]);
 
   tdd = def_cy[F("dur")] | -1;
-  if (tdd >= 0) presetCycleTime = tdd * 100;
+  if (tdd > 0) presetCycleTime = tdd;
 
   JsonObject interfaces = doc["if"];
 
@@ -221,7 +222,7 @@ void deserializeConfig() {
   getStringFromJson(mqttClientID, if_mqtt[F("cid")], 41);
 
   getStringFromJson(mqttDeviceTopic, if_mqtt[F("topics")][F("device")], 33); // "wled/test"
-  getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], 33); // "" 
+  getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], 33); // ""
 
   JsonObject if_hue = interfaces[F("hue")];
   CJSON(huePollingEnabled, if_hue[F("en")]);
@@ -251,7 +252,11 @@ void deserializeConfig() {
   CJSON(countdownMode, ol[F("cntdwn")]);
   overlayCurrent = overlayDefault;
 
-  JsonArray ol_cntdwn = ol[F("cntdwn")]; //[20,12,31,23,59,59]
+  CJSON(overlayMin, ol[F("min")]);
+  CJSON(overlayMax, ol[F("max")]);
+  CJSON(analogClock12pixel, ol[F("o12pix")]);
+  CJSON(analogClock5MinuteMarks, ol[F("o5m")]);
+  CJSON(analogClockSecondsTrail, ol[F("osec")]);
 
   //timed macro rules
   JsonObject tm = doc[F("timers")];
@@ -378,6 +383,7 @@ void serializeConfig() {
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
   hw_led[F("rev")] = strip.reverseMode;
+  hw_led[F("rgbwm")] = strip.rgbwMode;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
@@ -478,7 +484,7 @@ void serializeConfig() {
     JsonArray def_cy_range = def_cy.createNestedArray("range");
     def_cy_range.add(presetCycleMin);
     def_cy_range.add(presetCycleMax);
-    def_cy[F("dur")] = presetCycleTime / 100;
+    def_cy[F("dur")] = presetCycleTime;
   }
 
   JsonObject interfaces = doc.createNestedObject("if");
@@ -561,6 +567,12 @@ void serializeConfig() {
   JsonObject ol = doc.createNestedObject("ol");
   ol[F("clock")] = overlayDefault;
   ol[F("cntdwn")] = countdownMode;
+
+  ol[F("min")] = overlayMin;
+  ol[F("max")] = overlayMax;
+  ol[F("o12pix")] = analogClock12pixel;
+  ol[F("o5m")] = analogClock5MinuteMarks;
+  ol[F("osec")] = analogClockSecondsTrail;
 
   JsonObject timers = doc.createNestedObject("timers");
 

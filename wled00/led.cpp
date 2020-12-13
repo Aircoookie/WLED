@@ -107,7 +107,7 @@ void colorUpdated(int callMode)
     notify(callMode);
     
     //set flag to update blynk and mqtt
-    if (callMode != NOTIFIER_CALL_MODE_PRESET_CYCLE) interfaceUpdateCallMode = callMode;
+    interfaceUpdateCallMode = callMode;
   } else {
     if (nightlightActive && !nightlightActiveOld && 
         callMode != NOTIFIER_CALL_MODE_NOTIFICATION && 
@@ -303,10 +303,10 @@ void handleNightlight()
     if (bri == 0 || nightlightActive) return;
 
     if (presetCycCurr < presetCycleMin || presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
-    applyPreset(presetCycCurr);
+    applyPreset(presetCycCurr); //this handles colorUpdated() for us
     presetCycCurr++;
     if (presetCycCurr > 250) presetCycCurr = 1;
-    colorUpdated(NOTIFIER_CALL_MODE_PRESET_CYCLE);
+    interfaceUpdateCallMode = 0; //disable updates to MQTT and Blynk
   }
 }
 
