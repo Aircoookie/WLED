@@ -692,6 +692,17 @@ input[type=number]::-webkit-outer-spin-button {
 	text-overflow: clip;
 }
 
+.segid {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  padding: 10px 0px 0px 12px;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+	color: var(--c-b);
+}
+
 .newseg {
 	cursor: default;
 }
@@ -1548,10 +1559,9 @@ function populatePresets(fromls)
     if (qll) pQL.push([i, qll]);
     is.push(i);
 		
-		cn += `<div class="seg pres" id="p${i}o">
-			<div class="segname pname" onclick="setPreset(${i})">
-				${i}: ${pName(i)}
-			</div>
+    cn += `<div class="seg pres" id="p${i}o">
+      <div class="segid">${i}</div>
+			<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
