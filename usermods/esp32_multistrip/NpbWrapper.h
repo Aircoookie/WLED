@@ -149,7 +149,6 @@ public:
 
   void Show()
   {
-    byte b;
     switch (_type)
     {
       case NeoPixelType_Grb:
@@ -189,6 +188,51 @@ public:
         break;
       }
     }
+  }
+
+  bool CanShow()
+  {
+    bool canShow = true;
+    switch (_type)
+    {
+      case NeoPixelType_Grb:
+      {
+        for (uint8_t idx = 0; idx < numStrips; idx++)
+        {
+          switch (idx)
+          {
+            case 0: canShow &= pGrb0->CanShow(); break;
+            case 1: canShow &= pGrb1->CanShow(); break;
+            case 2: canShow &= pGrb2->CanShow(); break;
+            case 3: canShow &= pGrb3->CanShow(); break;
+            case 4: canShow &= pGrb4->CanShow(); break;
+            case 5: canShow &= pGrb5->CanShow(); break;
+            case 6: canShow &= pGrb6->CanShow(); break;
+            case 7: canShow &= pGrb7->CanShow(); break;
+          }
+        }
+        break;
+      }
+      case NeoPixelType_Grbw:
+      {
+        for (uint8_t idx = 0; idx < numStrips; idx++)
+        {
+          switch (idx)
+          {
+            case 0: canShow &= pGrbw0->CanShow(); break;
+            case 1: canShow &= pGrbw1->CanShow(); break;
+            case 2: canShow &= pGrbw2->CanShow(); break;
+            case 3: canShow &= pGrbw3->CanShow(); break;
+            case 4: canShow &= pGrbw4->CanShow(); break;
+            case 5: canShow &= pGrbw5->CanShow(); break;
+            case 6: canShow &= pGrbw6->CanShow(); break;
+            case 7: canShow &= pGrbw7->CanShow(); break;
+          }
+        }
+        break;
+      }
+    }
+    return canShow;
   }
 
   void SetPixelColorRaw(uint16_t indexPixel, RgbwColor c)
