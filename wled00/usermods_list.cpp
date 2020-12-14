@@ -14,6 +14,9 @@
 #include "../usermods/Temperature/usermod_temperature.h"
 #endif
 //#include "usermod_v2_empty.h"
+#ifdef USERMOD_BUZZER
+#include "../usermods/buzzer/usermod_v2_buzzer.h"
+#endif
 
 void registerUsermods()
 {
@@ -27,4 +30,7 @@ void registerUsermods()
   usermods.add(new UsermodTemperature());
   #endif
   //usermods.add(new UsermodRenameMe());
+  #ifdef USERMOD_BUZZER
+  usermods.add(new BuzzerUsermod());
+  #endif
 }
