@@ -3733,3 +3733,26 @@ uint16_t WS2812FX::mode_washing_machine(void) {
 
   return FRAMETIME;
 }
+
+/*
+  Blends random colors across palette
+  Modified, originally by Mark Kriegsman https://gist.github.com/kriegsman/1f7ccbbfa492a73c015e
+*/
+uint16_t WS2812FX::mode_blends(void) {
+  if (millis() >= (unsigned long)(SEGENV.step)) {
+    uint16_t speed = map(UINT8_MAX - SEGMENT.speed, 0, UINT8_MAX, 1, 1000);
+    SEGENV.step = millis() + speed;
+    SEGENV.aux0 = (uint8_t)(SEGENV.aux0 + 1);
+  }
+  SEGENV.aux1 = (uint8_t)(SEGENV.aux0);
+
+  for (int i = 0; i < SEGLEN; i++) {
+    CRGB a = col_to_crgb(getPixelColor(i));
+    CRGB b = ColorFromPalette(currentPalette, SEGENV.aux1 + quadwave8((i + 1) * 16), 255, LINEARBLEND);
+    CRGB c = blend(a, b, SEGMENT.intensity);
+    setPixelColor(i, crgb_to_col(c));
+    SEGENV.aux1 = (uint8_t)(SEGENV.aux1 + 3);
+  }
+
+  return FRAMETIME;
+}
