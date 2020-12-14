@@ -94,9 +94,21 @@ void colorUpdated(int callMode)
   if (callMode != NOTIFIER_CALL_MODE_INIT && 
       callMode != NOTIFIER_CALL_MODE_DIRECT_CHANGE && 
       callMode != NOTIFIER_CALL_MODE_NO_NOTIFY) strip.applyToAllSelected = true; //if not from JSON api, which directly sets segments
+
+  bool someSel = false;
+
+  if (callMode == NOTIFIER_CALL_MODE_NOTIFICATION) {
+    someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
+  }
   
+  //Notifier: apply received FX to selected segments only if actually receiving FX
+  if (someSel) strip.applyToAllSelected = receiveNotificationEffects;
+
   bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
   bool colChanged = colorChanged();
+
+  //Notifier: apply received color to selected segments only if actually receiving color
+  if (someSel) strip.applyToAllSelected = receiveNotificationColor;
 
   if (fxChanged || colChanged)
   {

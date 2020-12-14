@@ -404,17 +404,17 @@ void WS2812FX::setColor(uint8_t slot, uint32_t c) {
 }
 
 void WS2812FX::setBrightness(uint8_t b) {
+  if (gammaCorrectBri) b = gamma8(b);
   if (_brightness == b) return;
-  _brightness = (gammaCorrectBri) ? gamma8(b) : b;
+  _brightness = b;
   _segment_index = 0;
-  if (b == 0) { //unfreeze all segments on power off
+  if (_brightness == 0) { //unfreeze all segments on power off
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
       _segments[i].setOption(SEG_OPTION_FREEZE, false);
     }
     #if LEDPIN == LED_BUILTIN
-      if (!shouldStartBus)
-        shouldStartBus = true;
+      shouldStartBus = true;
     #endif
   } else {
     #if LEDPIN == LED_BUILTIN
