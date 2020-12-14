@@ -2,6 +2,12 @@
 
 ### Development versions after 0.11.0 release
 
+#### Build 2012130
+
+-   Fixed RGBW mode not saved between reboots (fixes #1457)
+-   Added brightness scaling in palette function for default (PR #1484)
+-   
+
 #### Build 2012101
 
 -   Fixed preset cycle default duration rounded down to nearest 10sec interval (#1458)
