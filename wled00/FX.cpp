@@ -3742,16 +3742,28 @@ uint16_t WS2812FX::mode_blends(void) {
   uint16_t dataSize = sizeof(uint32_t) * SEGLEN;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   uint32_t* pixels = reinterpret_cast<uint32_t*>(SEGENV.data);
+  uint8_t blendSpeed = map(SEGMENT.intensity, 0, UINT8_MAX, 10, 128);
 
   if (millis() >= (unsigned long)(SEGENV.step)) {
-    uint16_t speed = UINT8_MAX - SEGMENT.speed;
-    SEGENV.step = millis() + speed;
-    SEGENV.aux0 = (uint8_t)(SEGENV.aux0 + 1);
+    uint8_t stepDelay = UINT8_MAX - SEGMENT.speed;
+    if (stepDelay < 64) {
+      SEGENV.step = millis() + (stepDelay * 2);
+      SEGENV.aux0 = (uint8_t)(SEGENV.aux0 + 4);
+    } else if (stepDelay < 128) {
+      SEGENV.step = millis() + ((stepDelay - 64) * 2);
+      SEGENV.aux0 = (uint8_t)(SEGENV.aux0 + 3);
+    } else if (stepDelay < 192) {
+      SEGENV.step = millis() + ((stepDelay - 128) * 2);
+      SEGENV.aux0 = (uint8_t)(SEGENV.aux0 + 2);
+    } else {
+      SEGENV.step = millis() + ((stepDelay - 192) * 2);
+      SEGENV.aux0 = (uint8_t)(SEGENV.aux0 + 1);
+    }
   }
   SEGENV.aux1 = (uint8_t)(SEGENV.aux0);
 
   for (int i = 0; i < SEGLEN; i++) {
-    pixels[i] = color_blend(pixels[i], color_from_palette(SEGENV.aux1 + quadwave8((i + 1) * 16), false, PALETTE_SOLID_WRAP, 0), SEGMENT.intensity);
+    pixels[i] = color_blend(pixels[i], color_from_palette(SEGENV.aux1 + quadwave8((i + 1) * 16), false, PALETTE_SOLID_WRAP, 0), blendSpeed);
     setPixelColor(i, pixels[i]);
     SEGENV.aux1 = (uint8_t)(SEGENV.aux1 + 3);
   }
