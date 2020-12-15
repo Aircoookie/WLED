@@ -215,11 +215,9 @@ double fftResult[16];
 // This is the maximum raw results for each of the result bins and is used for normalization of the results.
 long maxChannel[] = {26000,  44000,  66000,  72000,  60000,  48000,  41000,  30000,  25000, 22000, 16000,  14000,  10000,  8000,  7000,  5000}; // Find maximum value for each bin with MAX9814 @ 40db gain.
 
-// From Yariv
-int logarithmicNoise[16] = { 120, 117, 115, 110, 105, 100, 90, 80, 75, 70, 70, 70, 70, 70, 70, 70 };
+// Table of linearNoise results to be multiplied by soundSquelch in order to reduce squelch across fftResult bins.
+int linearNoise[16] = { 30, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
 
-
-double fftResultLogarithmicNoiseless[16];
 
 float avgChannel[16];    // This is a smoothed rolling average value for each bin. Experimental for AGC testing.
 
@@ -258,7 +256,6 @@ void FFTcode( void * parameter) {
         int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&digitalSample, portMAX_DELAY); // no timeout
         if (bytes_read > 0) {
           micData = abs(digitalSample >> 16);
-          // Serial.println(micData);
         }
       }
 
@@ -293,10 +290,9 @@ void FFTcode( void * parameter) {
     for (int i = 0; i < samples; i++) {                     // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
       double t = 0.0;
       t = abs(vReal[i]);
-      t = 16*log(t);                                        // Yariv log method. As a result, we will need to amplify signal in routines.
+      t = t / 16.0;
       fftBin[i] = t;
-      // if (fftBin[i] < soundSquelch*4) fftBin[i] = 0;     // I use this in binmap, becuase it's the only routine to use ALL the bins.
-     }
+    }
 
 
 /* Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512.
@@ -308,56 +304,37 @@ void FFTcode( void * parameter) {
  */
 
 //                                              Range      |  Freq | Max vol on MAX9814 @ 40db gain.
-    fftResult[0] = (fftAdd(3,4)) /2;        // 60 - 100    -> 82Hz,  26000
-    fftResult[1] = (fftAdd(4,5)) /2;        // 80 - 120    -> 104Hz, 44000
-    fftResult[2] = (fftAdd(5,7)) /3;        // 100 - 160   -> 130Hz, 66000
-    fftResult[3] = (fftAdd(7,9)) /3;        // 140 - 200   -> 170,   72000
-    fftResult[4] = (fftAdd(9,12)) /4;       // 180 - 260   -> 220,   60000
-    fftResult[5] = (fftAdd(12,16)) /5;      // 240 - 340   -> 290,   48000
-    fftResult[6] = (fftAdd(16,21)) /6;      // 320 - 440   -> 400,   41000
-    fftResult[7] = (fftAdd(21,28)) /8;      // 420 - 600   -> 500,   30000
-    fftResult[8] = (fftAdd(29,37)) /10;     // 580 - 760   -> 580,   25000
-    fftResult[9] = (fftAdd(37,48)) /12;     // 740 - 980   -> 820,   22000
-    fftResult[10] = (fftAdd(48,64)) /17;    // 960 - 1300  -> 1150,  16000
-    fftResult[11] = (fftAdd(64,84)) /21;    // 1280 - 1700 -> 1400,  14000
-    fftResult[12] = (fftAdd(84,111)) /28;   // 1680 - 2240 -> 1800,  10000
-    fftResult[13] = (fftAdd(111,147)) /37;  // 2220 - 2960 -> 2500,  8000
-    fftResult[14] = (fftAdd(147,194)) /48;  // 2940 - 3900 -> 3500,  7000
-    fftResult[15] = (fftAdd(194, 255)) /62; // 3880 - 5120 -> 4500,  5000
+      fftResult[0] = (fftAdd(3,4)) /2;        // 60 - 100    -> 82Hz,  26000
+      fftResult[1] = (fftAdd(4,5)) /2;        // 80 - 120    -> 104Hz, 44000
+      fftResult[2] = (fftAdd(5,7)) /3;        // 100 - 160   -> 130Hz, 66000
+      fftResult[3] = (fftAdd(7,9)) /3;        // 140 - 200   -> 170,   72000
+      fftResult[4] = (fftAdd(9,12)) /4;       // 180 - 260   -> 220,   60000
+      fftResult[5] = (fftAdd(12,16)) /5;      // 240 - 340   -> 290,   48000
+      fftResult[6] = (fftAdd(16,21)) /6;      // 320 - 440   -> 400,   41000
+      fftResult[7] = (fftAdd(21,28)) /8;      // 420 - 600   -> 500,   30000
+      fftResult[8] = (fftAdd(29,37)) /10;     // 580 - 760   -> 580,   25000
+      fftResult[9] = (fftAdd(37,48)) /12;     // 740 - 980   -> 820,   22000
+      fftResult[10] = (fftAdd(48,64)) /17;    // 960 - 1300  -> 1150,  16000
+      fftResult[11] = (fftAdd(64,84)) /21;    // 1280 - 1700 -> 1400,  14000
+      fftResult[12] = (fftAdd(84,111)) /28;   // 1680 - 2240 -> 1800,  10000
+      fftResult[13] = (fftAdd(111,147)) /37;  // 2220 - 2960 -> 2500,  8000
+      fftResult[14] = (fftAdd(147,194)) /48;  // 2940 - 3900 -> 3500,  7000
+      fftResult[15] = (fftAdd(194, 255)) /62; // 3880 - 5120 -> 4500,  5000
 
-/*  Linear bin by bin noise supression of fftResult.
-    for(int i=0; i< 16; i++) {
-      if(fftResult[i]<0) fftResult[i]=0;
-      avgChannel[i] = ((avgChannel[i] * 31) + fftResult[i]) / 32;                         // Smoothing of each result bin. Experimental.
-      fftResult[i] = constrain(map(fftResult[i], 0,  maxChannel[i], 0, 255),0,255);       // Map result bin to 8 bits.
-      Serial.print(fftResult[i]); Serial.print(" ");
-      //fftResult[i] = constrain(map(fftResult[i], 0,  avgChannel[i]*2, 0, 255),0,255);     // AGC map result bin to 8 bits. Can be noisy at low volumes. Experimental.
+  //  Linear noise supression of fftResult bins.
+    for (int i=0; i < 16; i++) {
+        fftResult[i] = fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0;
     }
-    Serial.println(" ");
-*/
 
-//  Print the pre-calculated noise values.
-//    for (int i = 0; i< 16; i++) { Serial.print(logarithmicNoise[i]);Serial.print("\t");}
-//    Serial.println(" ");
-
-// Print the fftResults
+  // Print the fftResults
 //    for (int i = 0; i< 16; i++) { Serial.print(fftResult[i]); Serial.print("\t"); }
 //    Serial.println(" ");
 
+  // Normalization of fftResult bins.
 
-//  Logarithmic bin by bin noise suppression of fftResult. Don't forget to use soundSquelch
-    memcpy(fftResultLogarithmicNoiseless, fftResult, sizeof(fftResult[0])*16);      
-    for(int i=0; i<16; i++) {
-//      fftResultLogarithmicNoiseless[i] = fftResultLogarithmicNoiseless[i]-logarithmicNoise[i] <= 0? 0 : fftResultLogarithmicNoiseless[i]-logarithmicNoise[i];
-      fftResultLogarithmicNoiseless[i] = fftResultLogarithmicNoiseless[i]-logarithmicNoise[i]*(float)soundSquelch/15.0 <= 0? 0 : fftResultLogarithmicNoiseless[i]-logarithmicNoise[i]*(float)soundSquelch/15.0;
-//    Print the noise suppressed results.
-//      Serial.print(fftResultLogarithmicNoiseless[i]); Serial.print("\t");
-    }
-//    Serial.println(" "); Serial.println(" ");
-//  End of Logarithmic bin by bin noise suppression.
 
-  }
-} // FFTcode( void * parameter)
+  } // for
+} // FFTcode()
 
 
 

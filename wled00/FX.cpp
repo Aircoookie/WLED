@@ -4289,13 +4289,45 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
 //  ** FFT_test               //
 ////////////////////////////////
 
+// Variables required:
+// SEGENV.aux0  - A uint16_t persistent value
+// SEGMENT.fft3 - A uint8_t slider
+// I need a floating point persistent value.
+
+// float expAdjF;              -- Needs to be persistent.
+// uint8_t weighting = 128;    -- from a slider.
+// float weightingF = 0.02;    -- a calculated value from the slider.
+
+
+
 uint16_t WS2812FX::fft_test() {
 
- for(int i = 0; i < 16; i++) {
-//    Serial.print(fftResult[i]); Serial.print(" ");
-    Serial.print(fftResultLogarithmicNoiseless[i]); Serial.print(" ");
+/*  // Configure decay for volume based 'sample'
+  if (!SEGENV.allocateData(sizeof(float))) return mode_static();
+  float* expAdjF = reinterpret_cast<float*>(SEGENV.data);
+  float weightingF = (float)(SEGMENT.fft3+1)/500.0;            // Take 0 to 255 and recalculate to be << 1.0
+  *expAdjF = (weightingF * (float)sample + (1.0-weightingF) * *expAdjF);
+  Serial.print("Sample:\t"); Serial.print(sample);
+  Serial.print(",expAdjF:\t"); Serial.print(*expAdjF,3);
+  Serial.println(" ");
+*/
+
+  // Configure decay for FFT based 'fftResult[16]'
+  if (!SEGENV.allocateData(sizeof(float) * 16)) return mode_static();
+  float* expAdjF = reinterpret_cast<float*>(SEGENV.data);
+  float weightingF = (float)(SEGMENT.fft3+1)/500.0;            // Take 0 to 255 and recalculate to be << 1.0
+
+  for (int i = 0; i < 16; i++) {
+    expAdjF[i] = (weightingF * (float)sample + (1.0-weightingF) * expAdjF[i]);
+    Serial.print(fftResult[i]);
+    Serial.print("\t"); Serial.print(expAdjF[i],3);Serial.print("\t");
   }
-    Serial.println(" ");
+  Serial.println(" "); Serial.println(" ");
+
+
+
+
+//    for (int i = 0; i< 16; i++) { Serial.print(fftResult[i]); Serial.print("\t"); }
 
   return FRAMETIME;
 } //
