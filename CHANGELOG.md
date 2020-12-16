@@ -2,11 +2,21 @@
 
 ### Development versions after 0.11.0 release
 
+#### Build 2012150
+
+-   Added Blends FX (PR #1491)
+-   Fixed an issue that made it impossible to deactivate timed presets
+
+#### Build 2012140
+
+-   Added Preset ID quick display option (PR #1462)
+-   Fixed LEDs not turning on when using gamma correct brightness and LEDPIN 2 (default)
+-   Fixed notifier applying main segment to selected segments on notification with FX/Col disabled 
+
 #### Build 2012130
 
 -   Fixed RGBW mode not saved between reboots (fixes #1457)
 -   Added brightness scaling in palette function for default (PR #1484)
--   
 
 #### Build 2012101
 

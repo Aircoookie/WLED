@@ -692,11 +692,11 @@ input[type=number]::-webkit-outer-spin-button {
 	text-overflow: clip;
 }
 
-.segid {
+.pid {
   position: absolute;
   top: 0px;
   left: 0px;
-  padding: 10px 0px 0px 12px;
+  padding: 11px 0px 0px 11px;
   font-size: 16px;
   width: 20px;
   text-align: center;
@@ -1164,7 +1164,7 @@ var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
-	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false}
+	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true}
 };
 
 var cpick = new iro.ColorPicker("#picker", {
@@ -1559,9 +1559,9 @@ function populatePresets(fromls)
     if (qll) pQL.push([i, qll]);
     is.push(i);
 		
-    cn += `<div class="seg pres" id="p${i}o">
-      <div class="segid">${i}</div>
-			<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
+    cn += `<div class="seg pres" id="p${i}o">`;
+    if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
+    cn += `<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
