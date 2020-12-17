@@ -2,6 +2,10 @@
 
 ### Development versions after 0.11.0 release
 
+#### Build 2012160
+
+-   Bump Espalexa to 2.5.0, fixing discovery (PR Espalexa/#152, originally PR #1497)
+
 #### Build 2012150
 
 -   Added Blends FX (PR #1491)
