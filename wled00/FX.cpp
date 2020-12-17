@@ -4291,6 +4291,7 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
 
 // Variables required:
 // SEGENV.aux0  - A uint16_t persistent value
+// SEGMENT.fft2 - A unit_t slider
 // SEGMENT.fft3 - A uint8_t slider
 // I need a floating point persistent value.
 
@@ -4302,32 +4303,66 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
 
 uint16_t WS2812FX::fft_test() {
 
-/*  // Configure decay for volume based 'sample'
-  if (!SEGENV.allocateData(sizeof(float))) return mode_static();
+// Configure decay for volume based variable sample
+/*  if (!SEGENV.allocateData(sizeof(float))) return mode_static();
   float* expAdjF = reinterpret_cast<float*>(SEGENV.data);
-  float weightingF = (float)(SEGMENT.fft3+1)/500.0;            // Take 0 to 255 and recalculate to be << 1.0
-  *expAdjF = (weightingF * (float)sample + (1.0-weightingF) * *expAdjF);
-  Serial.print("Sample:\t"); Serial.print(sample);
+  
+  float weightingF = (float)(SEGMENT.fft3+40)/1000.0;            // Take 0 to 255 from slider and recalculate to be << 1.0, and with a reasonable range of decay throughout.
+
+  if ((float)sample > *expAdjF) {
+    *expAdjF = (float)sample;
+  } else {
+    *expAdjF = (weightingF * (float)sample + (1.0-weightingF) * *expAdjF);
+  }
+
+//  Serial.print("Sample:\t"); Serial.print(sample);
   Serial.print(",expAdjF:\t"); Serial.print(*expAdjF,3);
   Serial.println(" ");
 */
 
-  // Configure decay for FFT based 'fftResult[16]'
-  if (!SEGENV.allocateData(sizeof(float) * 16)) return mode_static();
+// Configure decay for FFT based variable fftResult[16]
+/*  if (!SEGENV.allocateData(sizeof(float) * 16)) return mode_static();
   float* expAdjF = reinterpret_cast<float*>(SEGENV.data);
-  float weightingF = (float)(SEGMENT.fft3+1)/500.0;            // Take 0 to 255 and recalculate to be << 1.0
+  float weightingF = (float)(SEGMENT.fft3+40)/1000.0;            // Take 0 to 255 and recalculate to be << 1.0
 
   for (int i = 0; i < 16; i++) {
+
+   if ((float)sample > *expAdjF[i]) {
+    *expAdjF[i] = (float)sample;
+  } else {   
     expAdjF[i] = (weightingF * (float)sample + (1.0-weightingF) * expAdjF[i]);
+  }
+
     Serial.print(fftResult[i]);
     Serial.print("\t"); Serial.print(expAdjF[i],3);Serial.print("\t");
   }
   Serial.println(" "); Serial.println(" ");
-
-
+*/
 
 
 //    for (int i = 0; i< 16; i++) { Serial.print(fftResult[i]); Serial.print("\t"); }
+
+
+// Testing fftResult values.
+
+// Select a bin to display
+uint8_t binVal = map(SEGMENT.fft3,0,255,0,15);
+
+// Display smoothed results of selected bin.
+SEGENV.aux0 = ((SEGENV.aux0 * 15) + fftResult[binVal]) / 16;
+
+
+Serial.print("binVal:\t"); Serial.print(binVal);
+//Serial.print(",fftResult:\t"); Serial.print(fftResult[binVal]);
+Serial.print(",Avg:\t"); Serial.print(SEGENV.aux0);
+Serial.println(" ");
+
+
+//    for (int i=0; i < 16; i++) {
+//        fftResult[i] = fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0;
+//    }
+
+
 
   return FRAMETIME;
 } //
