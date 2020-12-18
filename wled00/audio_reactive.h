@@ -207,7 +207,10 @@ uint16_t mAvg = 0;
 double vReal[samples];
 double vImag[samples];
 double fftBin[samples];
+
+// fft-tuning test with FT_MajorPeak
 double fftBinMax[samples];
+double fftMajorPeakMax[samples];
 
 double fftResult[16];
 
@@ -307,6 +310,15 @@ void FFTcode( void * parameter) {
       t = t / 16.0;                                         // Reduce magnitude somewhat.
       fftBin[i] = t;
 
+// fft-tuning test with FFT_MajorPeak
+//double fftBinMax[samples];
+// double fftMajorPeakMax[samples];
+      if (fftBin[i] > fftBinMax[i] ) {
+        fftBinMax[i] = t;
+        fftMajorPeakMax[i] = FFT_MajorPeak;
+      }
+
+
       fftBin[i] = fftBin[i]*fftBinMult[i];                  // Normalize the resultant values to 5000.
 
     }
@@ -315,7 +327,7 @@ void FFTcode( void * parameter) {
     if (millis() > 100000 && millis() <100500) {
 
       for (int i=3; i<256; i++) {
-        Serial.print(i); Serial.print("\t"); Serial.println(fftBinMax[i]);
+        Serial.print(i); Serial.print("\t"); Serial.print(fftMajorPeakMax[i]); Serial.print("\t"); Serial.println(fftBinMax[i]);
       }
 
     }
