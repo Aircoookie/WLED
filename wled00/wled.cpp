@@ -387,6 +387,8 @@ void WLED::initAP(bool resetAP)
       udpSyncConnected = fftUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 0, 0, 1), audioSyncPort);
     #endif
     }
+    e131.begin(false, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
+
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
   }

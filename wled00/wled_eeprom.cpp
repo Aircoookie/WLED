@@ -37,6 +37,19 @@
 //22-> 2009260
 
 #define EEP_AUDIO 3072         // Start of Audio Reactive EEPROM Settings - END 3299
+/*
+ * Erase all (pre 0.11) configuration data on factory reset
+ */
+void clearEEPROM()
+{
+  EEPROM.begin(EEPSIZE);
+  for (int i = 0; i < EEPSIZE; i++)
+  {
+    EEPROM.write(i, 0);
+  }
+  EEPROM.end();
+}
+
 
 void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
 {

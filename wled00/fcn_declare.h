@@ -240,6 +240,7 @@ void userLoop();
 void applyMacro(byte index);
 void deEEP();
 void deEEPSettings();
+void clearEEPROM();
 
 //wled_serial.cpp
 void handleSerial();

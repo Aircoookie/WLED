@@ -119,7 +119,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                     146
+#define MODE_COUNT                     148
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -235,38 +235,40 @@
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_DANCING_SHADOWS        112
 #define FX_MODE_WASHING_MACHINE        113
-#define FX_MODE_PIXELS                 114
-#define FX_MODE_PIXELWAVE              115
-#define FX_MODE_JUGGLES                116
-#define FX_MODE_MATRIPIX               117
-#define FX_MODE_GRAVIMETER             118
-#define FX_MODE_PLASMOID               119
-#define FX_MODE_PUDDLES                120
-#define FX_MODE_MIDNOISE               121
-#define FX_MODE_NOISEMETER             122
-#define FX_MODE_FREQWAVE               123
-#define FX_MODE_FREQMATRIX             124
-#define FX_MODE_SPECTRAL               125
-#define FX_MODE_WATERFALL              126
-#define FX_MODE_FREQPIXEL              127
-#define FX_MODE_BINMAP                 128
-#define FX_MODE_NOISEPEAK              129
-#define FX_MODE_NOISEFIRE              130
-#define FX_MODE_PUDDLEPEAK             131
-#define FX_MODE_NOISEMOVE              132
-#define FX_MODE_2DPLASMA               133
-#define FX_MODE_PERLINMOVE             134
-#define FX_MODE_RIPPLEPEAK             135
-#define FX_MODE_2DFIRENOISE            136
-#define FX_MODE_2DSQUAREDSWIRL         137
-#define FX_MODE_2DFIRE2012             138
-#define FX_MODE_2DDNA                  139
-#define FX_MODE_2DMATRIX               140
-#define FX_MODE_2DMEATBALLS            141
-#define FX_FFT_TEST                    142
-#define FX_MODE_GRAVCENTER             143
-#define FX_MODE_GRAVCENTRIC            144
-#define FX_MODE_GRAVFREQ               145
+#define FX_MODE_CANDY_CANE             114
+#define FX_MODE_BLENDS                 115
+#define FX_MODE_PIXELS                 116
+#define FX_MODE_PIXELWAVE              117
+#define FX_MODE_JUGGLES                118
+#define FX_MODE_MATRIPIX               119
+#define FX_MODE_GRAVIMETER             120
+#define FX_MODE_PLASMOID               121
+#define FX_MODE_PUDDLES                122
+#define FX_MODE_MIDNOISE               123
+#define FX_MODE_NOISEMETER             124
+#define FX_MODE_FREQWAVE               125
+#define FX_MODE_FREQMATRIX             126
+#define FX_MODE_SPECTRAL               127
+#define FX_MODE_WATERFALL              128
+#define FX_MODE_FREQPIXEL              129
+#define FX_MODE_BINMAP                 130
+#define FX_MODE_NOISEPEAK              131
+#define FX_MODE_NOISEFIRE              132
+#define FX_MODE_PUDDLEPEAK             133
+#define FX_MODE_NOISEMOVE              134
+#define FX_MODE_2DPLASMA               135
+#define FX_MODE_PERLINMOVE             136
+#define FX_MODE_RIPPLEPEAK             137
+#define FX_MODE_2DFIRENOISE            138
+#define FX_MODE_2DSQUAREDSWIRL         139
+#define FX_MODE_2DFIRE2012             140
+#define FX_MODE_2DDNA                  141
+#define FX_MODE_2DMATRIX               142
+#define FX_MODE_2DMEATBALLS            143
+#define FX_FFT_TEST                    144
+#define FX_MODE_GRAVCENTER             145
+#define FX_MODE_GRAVCENTRIC            146
+#define FX_MODE_GRAVFREQ               147
 
 
 // Sound reactive external variables
@@ -363,9 +365,31 @@ class WS2812FX {
         WS2812FX::_usedSegmentData -= _dataLen;
         _dataLen = 0;
       }
-      void reset(){next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; deallocateData();}
+
+      /**
+       * If reset of this segment was request, clears runtime
+       * settings of this segment.
+       * Must not be called while an effect mode function is running
+       * because it could access the data buffer and this method
+       * may free that data buffer.
+       */
+      void resetIfRequired() {
+        if (_requiresReset) {
+          next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
+          deallocateData();
+          _requiresReset = false;
+        }
+      }
+
+      /**
+       * Flags that before the next effect is calculated,
+       * the internal segment state should be reset.
+       * Call resetIfRequired before calling the next effect function.
+       */
+      void reset() { _requiresReset = true; }
       private:
         uint16_t _dataLen = 0;
+        bool _requiresReset = false;
     } segment_runtime;
 
      WS2812FX() {
@@ -484,6 +508,8 @@ class WS2812FX {
       _mode[FX_MODE_CHUNCHUN]                = &WS2812FX::mode_chunchun;
       _mode[FX_MODE_DANCING_SHADOWS]         = &WS2812FX::mode_dancing_shadows;
       _mode[FX_MODE_WASHING_MACHINE]         = &WS2812FX::mode_washing_machine;
+      _mode[FX_MODE_CANDY_CANE]              = &WS2812FX::mode_candy_cane;
+      _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
       _mode[FX_MODE_PIXELS]                  = &WS2812FX::mode_pixels;
       _mode[FX_MODE_PIXELWAVE]               = &WS2812FX::mode_pixelwave;
       _mode[FX_MODE_JUGGLES]                 = &WS2812FX::mode_juggles;
@@ -564,8 +590,9 @@ class WS2812FX {
       gammaCorrectCol = true,
       applyToAllSelected = true,
       segmentsAreIdentical(Segment* a, Segment* b),
-      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t f1, uint8_t f2, uint8_t f3, uint8_t p);
-
+      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t f1, uint8_t f2, uint8_t f3, uint8_t p),
+      // return true if the strip is being sent pixel updates
+      isUpdating(void);
     uint8_t
       mainSegment = 0,
       rgbwMode = RGBW_MODE_DUAL,
@@ -738,6 +765,8 @@ class WS2812FX {
       mode_chunchun(void),
       mode_dancing_shadows(void),
       mode_washing_machine(void),
+      mode_candy_cane(void),
+      mode_blends(void),
       mode_pixels(void),
       mode_pixelwave(void),
       mode_juggles(void),
@@ -857,10 +886,10 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","Sunrise","Phased","Phased Noise","TwinkleUp","Noise Pal","Sine",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
-"* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","* Waterfall","** Freqpixel","** Binmap","** Noisepeak",
-"* Noisefire","* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012","2D DNA",
-"2D Matrix","2D Meatballs","** FFT_TEST","* Gravcenter","* Gravcentric","** Gravfreq"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","* Pixels","* Pixelwave","* Juggles","* Matripix",
+"* Gravimeter","* Plasmoid","* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","* Waterfall","** Freqpixel",
+"** Binmap","** Noisepeak","* Noisefire","* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl",
+"2D Fire2012","2D DNA","2D Matrix","2D Meatballs","** FFT_TEST","* Gravcenter","* Gravcentric","** Gravfreq"
 ])=====";
 
 
