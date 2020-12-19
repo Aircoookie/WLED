@@ -53,8 +53,9 @@ maxlength="32"> .local<br>Client IP: <span class="sip">Not connected</span><br>
 <h3>Configure Access Point</h3>AP SSID (leave empty for no AP):<br><input 
 name="AS" maxlength="32"><br>Hide AP name: <input type="checkbox" name="AH"><br>
 AP password (leave empty for open):<br><input type="password" name="AP" 
-maxlength="63"><br>Access Point WiFi channel: <input name="AC" type="number" 
-min="1" max="13" required><br>AP opens: <select name="AB"><option value="0">
+maxlength="63" pattern="(.{8,63})|()" title="Empty or min. 8 characters"><br>
+Access Point WiFi channel: <input name="AC" type="number" min="1" max="13" 
+required><br>AP opens: <select name="AB"><option value="0">
 No connection after boot</option><option value="1">Disconnected</option><option 
 value="2">Always</option><option value="3">Never (not recommended)</option>
 </select><br>AP IP: <span class="sip">Not active</span><br><h3>Experimental</h3>
@@ -359,7 +360,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <h3>Software Update</h3><button type="button" onclick="U()">Manual OTA Update
 </button><br>Enable ArduinoOTA: <input type="checkbox" name="AO"><br><h3>About
 </h3><a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>
- version 0.11.0<br><br><a 
+ version 0.11.1<br><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/Contributors-&-About" 
 target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
