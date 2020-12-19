@@ -387,6 +387,14 @@ const char PAGE_dmxmap[] PROGMEM = R"=====()=====";
       filter: "html-minify",
     },
     {
+      file: "liveviewws.htm",
+      name: "PAGE_liveviewws",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "html-minify",
+    },
+    {
       file: "404.htm",
       name: "PAGE_404",
       prepend: "=====(",
