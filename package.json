@@ -26,6 +26,7 @@
     "html-minifier-terser": "^5.1.1",
     "inliner": "^1.13.1",
     "nodemon": "^2.0.4",
+    "webfont": "^9.0.0",
     "zlib": "^1.0.5"
   }
 }
