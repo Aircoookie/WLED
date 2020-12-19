@@ -65,6 +65,30 @@ function adoptVersionAndRepo(html) {
   return html;
 }
 
+async function addIconFont(html) {
+  const webfont = require("webfont").default;
+  var result = await webfont({
+    files: "icons/**/*.svg",
+    fontName: "WIcons",
+    formats: ["woff"],
+    template: null,
+    startUnicode: 0xea01
+  });
+
+  console.info("Font metadata:");
+  result.glyphsData.forEach(glyph=>{
+    console.info("\t" + escape(glyph.metadata.unicode).replace("%u","&#x") + " = " + glyph.srcPath);
+  });
+  
+  
+  let buff = new Buffer.from(result.woff);
+  
+  let base64data = buff.toString('base64');  
+  html = strReplace(html, "[ICONFONT_REPLACE]", base64data);
+  return html;
+}
+  
+
 function writeHtmlGzipped(sourceFile, resultFile) {
   console.info("Reading " + sourceFile);
   new inliner(sourceFile, function (error, html) {
@@ -76,6 +100,8 @@ function writeHtmlGzipped(sourceFile, resultFile) {
     }
 
     html = adoptVersionAndRepo(html);
+    html = addIconFont(html);
+
     zlib.gzip(html, { level: zlib.constants.Z_BEST_COMPRESSION }, function (error, result) {
       if (error) {
         console.warn(error);
