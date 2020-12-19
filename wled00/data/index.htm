@@ -1292,14 +1292,18 @@ function cTheme(light) {
 
 function loadBg(iUrl) {
 	let bg = document.getElementById('bg');
-	let img = document.createElement("img");
-	img.src = iUrl;
+  let img = document.createElement("img");
+  img.src = iUrl;
+  if (iUrl == "") {
+    var today = new Date();
+    if (today.getMonth() == 11 && (today.getDate() > 23 && today.getDate() < 28)) img.src = "https://aircoookie.github.io/xmas.png";
+  }
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
 		d.getElementById('staytop2').style.background = "transparent";
 		if (isNaN(a)) a = 0.6;
 		bg.style.opacity = a;
-		bg.style.backgroundImage = `url(${iUrl})`;
+		bg.style.backgroundImage = `url(${img.src})`;
 		img = null;
 	});
 }

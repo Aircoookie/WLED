@@ -329,7 +329,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("MS"),mqttServer);
     sappend('v',SET_F("MQPORT"),mqttPort);
     sappends('s',SET_F("MQUSER"),mqttUser);
-    sappends('s',SET_F("MQPASS"),mqttPass);
     byte l = strlen(mqttPass);
     char fpass[l+1]; //fill password field with ***
     fpass[l] = 0;
