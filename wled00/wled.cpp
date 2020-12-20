@@ -324,7 +324,8 @@ void WLED::beginStrip()
 
   if (bootPreset > 0) applyPreset(bootPreset);
   if (turnOnAtBoot) {
-    bri = (briS > 0) ? briS : 128;
+    if (briS > 0) bri = briS;
+    else if (bri == 0) bri = 128;
   } else {
     briLast = briS; bri = 0;
   }
