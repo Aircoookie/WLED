@@ -1,5 +1,12 @@
 ## WLED changelog
 
+### Development versions after 0.11.1 release
+
+#### Build 2012180
+
+-  Boot brightness 0 will now use the brightness from preset
+-  Add iOS scrolling momentum (from PR #1528)
+
 ### WLED release 0.11.1
 
 #### Build 2012180
