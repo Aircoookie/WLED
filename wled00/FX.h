@@ -546,9 +546,7 @@ class WS2812FX {
       gamma32(uint32_t),
       getLastShow(void),
       getPixelColor(uint16_t),
-      getColor(void),
-      hsb2rgbAN1(uint16_t index, uint8_t sat, uint8_t bright),
-      hsb2rgbAN2(uint16_t index, uint8_t sat, uint8_t bright);
+      getColor(void);
 
     WS2812FX::Segment&
       getSegment(uint8_t n);
