@@ -234,9 +234,9 @@ uint16_t WS2812FX::mode_random_color(void) {
 
 /*
  * Lights every LED in a random color. Changes all LED at the same time
-// * to new random colors.
+ * to new random colors.
  */
-uint16_t WS2812FX::mode_dynamic(void) {
+uint16_t WS2812FX::dynamic(boolean smooth=false) {
   if (!SEGENV.allocateData(SEGLEN)) return mode_static(); //allocation failed
   
   if(SEGENV.call == 0) {
@@ -253,12 +253,31 @@ uint16_t WS2812FX::mode_dynamic(void) {
     SEGENV.step = it;
   }
   
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-    setPixelColor(i, color_wheel(SEGENV.data[i]));
-  }
+  if (smooth) {
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+      blendPixelColor(i, color_wheel(SEGENV.data[i]),16);
+    }
+  } else {
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+      setPixelColor(i, color_wheel(SEGENV.data[i]));
+    }
+  } 
   return FRAMETIME;
 }
 
+/*
+ * Original effect "Dynamic"
+ */
+uint16_t WS2812FX::mode_dynamic(void) {
+  return dynamic(false);
+}
+
+/*
+ * effect "Dynamic" with smoth color-fading
+ */
+uint16_t WS2812FX::mode_dynamic_smooth(void) {
+  return dynamic(true);
+ }
 
 /*
  * Does the "standby-breathing" of well known i-Devices.
