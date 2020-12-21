@@ -1,0 +1,8 @@
+* wled.cpp:
+	In "void prepareHostname(char* hostname)" -> (Zeile 49) uint8_t pos = 5; => uint8_t pos = 0;       // HOSTNAME Ohne vorangestelltem "wled-"
+
+* platformio.ini
+	Selektion löschen
+
+* platformio_override.ini
+

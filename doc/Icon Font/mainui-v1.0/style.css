@@ -1,0 +1,134 @@
+@font-face {
+  font-family: 'mainui';
+  src:
+    url('fonts/mainui.ttf?w5qh8o') format('truetype'),
+    url('fonts/mainui.woff?w5qh8o') format('woff'),
+    url('fonts/mainui.svg?w5qh8o#mainui') format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'mainui' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-pattern:before {
+  content: "\e23d";
+}
+.icon-uniE34B:before {
+  content: "\e34b";
+}
+.icon-uniE333:before {
+  content: "\e333";
+}
+.icon-next:before {
+  content: "\e137";
+}
+.icon-palette:before {
+  content: "\e2b3";
+}
+.icon-uniE0E8:before {
+  content: "\e0e8";
+}
+.icon-speed:before {
+  content: "\e325";
+}
+.icon-uniE039:before {
+  content: "\e039";
+}
+.icon-uniE03C:before {
+  content: "\e03c";
+}
+.icon-uniE0A9:before {
+  content: "\e0a9";
+}
+.icon-uniE13F:before {
+  content: "\e13f";
+}
+.icon-power:before {
+  content: "\e08f";
+}
+.icon-settings:before {
+  content: "\e0a2";
+}
+.icon-uniE2E3:before {
+  content: "\e2e3";
+}
+.icon-uniE139:before {
+  content: "\e139";
+}
+.icon-uniE17C:before {
+  content: "\e17c";
+}
+.icon-uniE2A2:before {
+  content: "\e2a2";
+}
+.icon-uniE34C:before {
+  content: "\e34c";
+}
+.icon-uniE38F:before {
+  content: "\e38f";
+}
+.icon-sync:before {
+  content: "\e116";
+}
+.icon-uniE0E9:before {
+  content: "\e0e9";
+}
+.icon-uniE390:before {
+  content: "\e390";
+}
+.icon-pause:before {
+  content: "\e3d6";
+}
+.icon-uniE3F1:before {
+  content: "\e3f1";
+}
+.icon-brightness:before {
+  content: "\e2a6";
+}
+.icon-uniE22D:before {
+  content: "\e22d";
+}
+.icon-uniE18A:before {
+  content: "\e18a";
+}
+.icon-edit:before {
+  content: "\e2c6";
+}
+.icon-intensity:before {
+  content: "\e409";
+}
+.icon-star:before {
+  content: "\e410";
+}
+.icon-uniE0BB:before {
+  content: "\e0bb";
+}
+.icon-uniE0D4:before {
+  content: "\e0d4";
+}
+.icon-prev:before {
+  content: "\e138";
+}
+.icon-sym:before {
+  content: "\e2e4";
+}
+.icon-del:before {
+  content: "\e037";
+}
+.icon-uniE04C:before {
+  content: "\e04c";
+}
