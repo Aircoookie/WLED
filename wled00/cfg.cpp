@@ -311,11 +311,11 @@ void deserializeConfig() {
   CJSON(DMXStart, dmx[F("start")]);
   CJSON(DMXStartLED,dmx[F("start-led")]);
 
-  JsonArray dmx_fixmap = dmx.createNestedArray("fixmap");
+  JsonArray dmx_fixmap = dmx[F("fixmap")];
   it = 0;
   for (int i : dmx_fixmap) {
     if (it > 14) break;
-    DMXFixtureMap[i] = i;
+    CJSON(DMXFixtureMap[i],dmx_fixmap[i]);
     it++;
   }
   #endif
