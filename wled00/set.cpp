@@ -163,7 +163,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     alexaEnabled = request->hasArg(F("AL"));
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
 
-    strlcpy(blynkHost, request->arg("BH").c_str(), 128);
+    strlcpy(blynkHost, request->arg("BH").c_str(), 33);
     t = request->arg(F("BP")).toInt();
     if (t > 0) blynkPort = t;
 

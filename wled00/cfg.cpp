@@ -214,7 +214,7 @@ void deserializeConfig() {
     getStringFromJson(blynkApiKey, apikey, 36); //normally not present due to security
 
   JsonObject if_blynk = interfaces[F("blynk")];
-  getStringFromJson(blynkHost, if_blynk[F("host")], 128);
+  getStringFromJson(blynkHost, if_blynk[F("host")], 33);
   CJSON(blynkPort, if_blynk[F("port")]);
 
   JsonObject if_mqtt = interfaces[F("mqtt")];

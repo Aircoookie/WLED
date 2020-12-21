@@ -252,11 +252,10 @@ maxlength="32"><h3>Blynk</h3><b>
 Blynk, MQTT and Hue sync all connect to external hosts!<br>
 This may impact the responsiveness of the ESP8266.</b><br>
 For best results, only use one of these services at a time.<br>
-(alternatively, connect a second ESP to them and use the UDP sync)<br><br>
-Host: <input name="BH" maxlength="128">
-Port: <input name="BP" type="number" min="1" max="65535"><br>
-Device Auth token: <input name="BK" maxlength="33"><br><i>
-Clear the token field to disable. </i><a 
+(alternatively, connect a second ESP to them and use the UDP sync)<br><br>Host: 
+<input name="BH" maxlength="32"> Port: <input name="BP" type="number" min="1" 
+max="65535" value="80" class="d5"><br>Device Auth token: <input name="BK" 
+maxlength="33"><br><i>Clear the token field to disable. </i><a 
 href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info
 </a><h3>MQTT</h3>Enable MQTT: <input type="checkbox" name="MQ"><br>Broker: 
 <input name="MS" maxlength="32"> Port: <input name="MQPORT" type="number" 
