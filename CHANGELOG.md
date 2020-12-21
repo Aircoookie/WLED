@@ -2,6 +2,12 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2012210
+
+-  Split index.htm in separate CSS + JS files (PR #1542)
+-  Minify UI HTML, saving >1.5kB flash
+-  Fixed JShint warnings
+
 #### Build 2012180
 
 -  Boot brightness 0 will now use the brightness from preset
