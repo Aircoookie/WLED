@@ -116,7 +116,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  116
+#define MODE_COUNT  117
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -234,6 +234,7 @@
 #define FX_MODE_WASHING_MACHINE        113
 #define FX_MODE_CANDY_CANE             114
 #define FX_MODE_BLENDS                 115
+#define FX_MODE_TV_SIMULATOR           116
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -463,6 +464,7 @@ class WS2812FX {
       _mode[FX_MODE_WASHING_MACHINE]         = &WS2812FX::mode_washing_machine;
       _mode[FX_MODE_CANDY_CANE]              = &WS2812FX::mode_candy_cane;
       _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
+      _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -544,7 +546,9 @@ class WS2812FX {
       gamma32(uint32_t),
       getLastShow(void),
       getPixelColor(uint16_t),
-      getColor(void);
+      getColor(void),
+      hsb2rgbAN1(uint16_t index, uint8_t sat, uint8_t bright),
+      hsb2rgbAN2(uint16_t index, uint8_t sat, uint8_t bright);
 
     WS2812FX::Segment&
       getSegment(uint8_t n);
@@ -673,7 +677,8 @@ class WS2812FX {
       mode_dancing_shadows(void),
       mode_washing_machine(void),
       mode_candy_cane(void),
-      mode_blends(void);
+      mode_blends(void),
+      mode_tv_simulator(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -761,7 +766,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator"
 ])=====";
 
 

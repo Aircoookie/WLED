@@ -1042,3 +1042,34 @@ uint32_t WS2812FX::gamma32(uint32_t color)
 }
 
 uint16_t WS2812FX::_usedSegmentData = 0;
+
+uint32_t WS2812FX::hsb2rgbAN1(uint16_t index, uint8_t sat, uint8_t bright) {
+  // Source: https://blog.adafruit.com/2012/03/14/constant-brightness-hsb-to-rgb-algorithm/
+  uint8_t temp[5], n = (index >> 8) % 3;
+  uint8_t r, g, b, w;
+  temp[0] = temp[3] = (uint8_t)((                                         (sat ^ 255)  * bright) / 255);
+  temp[1] = temp[4] = (uint8_t)((((( (index & 255)        * sat) / 255) + (sat ^ 255)) * bright) / 255);
+  temp[2] =           (uint8_t)(((((((index & 255) ^ 255) * sat) / 255) + (sat ^ 255)) * bright) / 255);
+  w = 0;
+  r = temp[n + 2];
+  g = temp[n + 1];
+  b = temp[n];
+  return ((w << 24) | (r << 16) | (g << 8) | (b));
+}
+
+uint32_t WS2812FX::hsb2rgbAN2(uint16_t index, uint8_t sat, uint8_t bright) {
+  // Source: https://blog.adafruit.com/2012/03/14/constant-brightness-hsb-to-rgb-algorithm/
+  uint8_t temp[5], n = (index >> 8) % 3;
+  uint8_t r, g, b, w;
+  uint8_t x = ((((index & 255) * sat) >> 8) * bright) >> 8;
+  // shifts may be added for added speed and precision at the end if fast 32 bit calculation is available
+  uint8_t s = ((256 - sat) * bright) >> 8;
+  temp[0] = temp[3] = s;
+  temp[1] = temp[4] = x + s;
+  temp[2] = bright - x ;
+  w = 0;
+  r = temp[n + 2];
+  g = temp[n + 1];
+  b = temp[n ];
+  return ((w << 24) | (r << 16) | (g << 8) | (b));
+}
