@@ -208,37 +208,22 @@ double vReal[samples];
 double vImag[samples];
 double fftBin[samples];
 
-// fft-tuning test with FT_MajorPeak
-double fftBinMax[samples];
-double fftMajorPeakMax[samples];
-
 double fftResult[16];
+double fftResultMax[16];
+double fftResultPink[16] = {1.70,1.71,1.73,1.78,1.68,1.56,1.55,1.63,1.79,1.62,1.80,2.06,2.47,3.35,6.83,9.55};
+
+
+double fftMajorPeakMax[16];
 
 // Table of linearNoise results to be multiplied by soundSquelch in order to reduce squelch across fftResult bins.
-int linearNoise[16] = { 30, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
+int linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
 
 
-// Try and normalize to a max value of 4096, so that 4096/16 = 256
-float fftBinMult[256] = {0,0,0,
-0.842,0.938,1.010,0.995,0.966,0.899,0.970,0.982,0.835,0.906,0.872,0.981,0.961,0.948,1.027,1.015,
-0.820,0.859,0.643,0.656,0.695,0.739,0.647,0.572,0.463,0.413,0.455,0.494,0.440,0.366,0.457,0.364,
-0.336,0.308,0.300,0.398,0.421,0.327,0.455,0.319,0.319,0.328,0.318,0.293,0.385,0.369,0.381,0.395,
-0.475,0.342,0.363,0.357,0.366,0.360,0.399,0.380,0.446,0.417,0.390,0.413,0.280,0.345,0.406,0.498,
-0.433,0.441,0.472,0.409,0.370,0.416,0.429,0.383,0.414,0.434,0.471,0.388,0.337,0.325,0.313,0.277,
-0.265,0.305,0.275,0.316,0.284,0.266,0.337,0.290,0.330,0.337,0.417,0.398,0.362,0.306,0.332,0.315,
-0.287,0.311,0.356,0.326,0.363,0.278,0.283,0.301,0.300,0.267,0.285,0.330,0.324,0.321,0.330,0.306,
-0.282,0.239,0.234,0.235,0.209,0.237,0.222,0.211,0.210,0.169,0.181,0.206,0.177,0.156,0.153,0.156,
-0.132,0.137,0.118,0.133,0.140,0.142,0.121,0.110,0.118,0.117,0.117,0.112,0.112,0.116,0.126,0.132,
-0.137,0.137,0.146,0.147,0.155,0.144,0.149,0.145,0.165,0.139,0.143,0.150,0.150,0.138,0.143,0.159,
-0.150,0.151,0.160,0.159,0.157,0.151,0.172,0.166,0.156,0.157,0.152,0.154,0.159,0.149,0.146,0.147,
-0.170,0.136,0.161,0.136,0.152,0.140,0.147,0.172,0.143,0.157,0.162,0.161,0.165,0.200,0.240,0.193,
-0.202,0.227,0.250,0.290,0.277,0.277,0.229,0.266,0.223,0.246,0.225,0.234,0.211,0.196,0.197,0.178,
-0.185,0.198,0.185,0.195,0.156,0.163,0.182,0.166,0.163,0.129,0.157,0.142,0.147,0.160,0.146,0.123,
-0.138,0.133,0.109,0.144,0.122,0.133,0.138,0.123,0.144,0.113,0.132,0.134,0.150,0.152,0.144,0.165,
-0.170,0.166,0.171,0.139,0.172,0.156,0.150,0.145,0.157,0.154,0.161,0.157,0.181};
+// Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
+// Oh, and bins 0,1,2 are no good, so we'll zero them out.
 
-float avgChannel[16];    // This is a smoothed rolling average value for each bin. Experimental for AGC testing.
 
+float avgChannel[16];    // This is a smoothed rolling average value for each bin.
 
 
 // Create FFT object
@@ -289,7 +274,7 @@ void FFTcode( void * parameter) {
       // DEBUGSR_PRINT(micDataSm);
       // DEBUGSR_PRINT("\n");
 
-      while(micros() - microseconds < sampling_period_us){/*empty loop*/}
+      if (digitalMic == false) { while(micros() - microseconds < sampling_period_us){/*empty loop*/} }
 
       microseconds += sampling_period_us;
     }
@@ -307,42 +292,19 @@ void FFTcode( void * parameter) {
     for (int i = 0; i < samples; i++) {                     // Values for bins 0 and 1 are WAY too large. Might as well start at 3.
       double t = 0.0;
       t = abs(vReal[i]);
-      t = t / 16.0;                                         // Reduce magnitude somewhat.
+      t = t / 16.0;                                         // Reduce magnitude. Want end result to be linear and ~4096 max.
       fftBin[i] = t;
-
-// fft-tuning test with FFT_MajorPeak
-//double fftBinMax[samples];
-// double fftMajorPeakMax[samples];
-      if (fftBin[i] > fftBinMax[i] ) {
-        fftBinMax[i] = t;
-        fftMajorPeakMax[i] = FFT_MajorPeak;
-      }
+    } // for()
 
 
-      fftBin[i] = fftBin[i]*fftBinMult[i];                  // Normalize the resultant values to 5000.
-
-    }
-
-
-    if (millis() > 100000 && millis() <100500) {
-
-      for (int i=3; i<256; i++) {
-        Serial.print(i); Serial.print("\t"); Serial.print(fftMajorPeakMax[i]); Serial.print("\t"); Serial.println(fftBinMax[i]);
-      }
-
-    }
-
-
-/* Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512.
+/* Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512 and some overlap.
  * Based on testing, the lowest/Start frequency is 60 Hz (with bin 3) and a highest/End frequency of 5120 Hz in bin 255.
  * Now, Take the 60Hz and multiply by 1.320367784 to get the next frequency and so on until the end. Then detetermine the bins.
  * End frequency = Start frequency * multiplier ^ 16
  * Multiplier = (End frequency/ Start frequency) ^ 1/16
  * Multiplier = 1.320367784
  */
-
-//                                              Range      |  Freq | Max vol on MAX9814 @ 40db gain.
-/*
+//                                               Range      |   Freq | Max vol on MAX9814 @ 40db gain.
       fftResult[0] = (fftAdd(3,4)) /2;        // 60 - 100    -> 82Hz,  26000
       fftResult[1] = (fftAdd(4,5)) /2;        // 80 - 120    -> 104Hz, 44000
       fftResult[2] = (fftAdd(5,7)) /3;        // 100 - 160   -> 130Hz, 66000
@@ -359,46 +321,25 @@ void FFTcode( void * parameter) {
       fftResult[13] = (fftAdd(111,147)) /37;  // 2220 - 2960 -> 2500,  8000
       fftResult[14] = (fftAdd(147,194)) /48;  // 2940 - 3900 -> 3500,  7000
       fftResult[15] = (fftAdd(194, 255)) /62; // 3880 - 5120 -> 4500,  5000
-*/
-
-// Not_Matt version from LedFx                  Range      |  Freq | Max vol on MAX9814 @ 40db gain.
-      fftResult[0] = (fftAdd(2,4)) /3;
-      fftResult[1] = (fftAdd(4,6)) /3;
-      fftResult[2] = (fftAdd(6,9)) /4;
-      fftResult[3] = (fftAdd(9,13)) /5;
-      fftResult[4] = (fftAdd(13,18)) /5;
-      fftResult[5] = (fftAdd(18,24)) /6;
-      fftResult[6] = (fftAdd(24,31)) /8;
-      fftResult[7] = (fftAdd(31,40)) /10;
-      fftResult[8] = (fftAdd(40,50)) /11;
-      fftResult[9] = (fftAdd(50,63)) /14;
-      fftResult[10] = (fftAdd(63,78)) /16;
-      fftResult[11] = (fftAdd(78,97)) /20;
-      fftResult[12] = (fftAdd(97,120)) /24;
-      fftResult[13] = (fftAdd(120,148)) /29;
-      fftResult[14] = (fftAdd(148,182)) /35;
-      fftResult[15] = (fftAdd(182, 255)) /74;
 
 
+// Looking for fftResultMax for each bin using Pink Noise
+//      for (int i=0; i<16; i++) {
+//          fftResultMax[i] = ((fftResultMax[i] * 63.0) + fftResult[i]) / 64.0; 
+//         Serial.print(fftResultMax[i]*fftResultPink[i]); Serial.print("\t");
+//        }
+//      Serial.println(" ");
 
-
-
-
-
-
-  //  Linear noise supression of fftResult bins.
-/*
+//   Noise supression of fftResult bins. 
     for (int i=0; i < 16; i++) {
-        fftResult[i] = fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0;
+        fftResult[i] = fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftResult[i];
     }
-*/
 
-  // Print the fftResults
-//    for (int i = 0; i< 16; i++) { Serial.print(fftResult[i]); Serial.print("\t"); }
-//    Serial.println(" ");
 
-  // Normalization of fftResult bins.
-
+// Manual adjustment of gain.
+    for (int i=0; i < 16; i++) {
+        fftResult[i] = fftResult[i] * sampleGain / 40 + fftResult[i]/16.0;
+    }
 
   } // for
 } // FFTcode()

@@ -21,7 +21,7 @@ void userSetup() {
   esp_err_t err;
   const i2s_config_t i2s_config = {
     .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX),  // Receive, not transfer
-    .sample_rate = SAMPLE_RATE,                         // 10240, was 16KHz
+    .sample_rate = SAMPLE_RATE*2,                         // 10240, was 16KHz
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,       // could only get it to work with 32bits
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,        // LEFT when pin is tied to ground.
     .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),

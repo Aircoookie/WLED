@@ -4320,6 +4320,8 @@ uint16_t WS2812FX::fft_test() {
   Serial.println(" ");
 */
 
+
+
 // Configure decay for FFT based variable fftResult[16]
 /*  if (!SEGENV.allocateData(sizeof(float) * 16)) return mode_static();
   float* expAdjF = reinterpret_cast<float*>(SEGENV.data);
@@ -4340,11 +4342,9 @@ uint16_t WS2812FX::fft_test() {
 */
 
 
-//    for (int i = 0; i< 16; i++) { Serial.print(fftResult[i]); Serial.print("\t"); }
 
-
-// Testing fftResult values.
-
+// Testing fftResult values to see if/how we can normalize results.
+/*
 // Select a bin to display
 uint8_t binVal = map(SEGMENT.fft3,0,255,0,15);
 
@@ -4356,6 +4356,7 @@ Serial.print("binVal:\t"); Serial.print(binVal);
 //Serial.print(",fftResult:\t"); Serial.print(fftResult[binVal]);
 Serial.print(",Avg:\t"); Serial.print(SEGENV.aux0);
 Serial.println(" ");
+*/
 
 
 //    for (int i=0; i < 16; i++) {
