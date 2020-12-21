@@ -3766,7 +3766,7 @@ typedef struct TvSim {
   uint16_t pb = 0;
 } tvSim;
 
-#define  numTVPixels (sizeof(tv_colors) / sizeof(tv_colors[0]))
+#define  numTVPixels (sizeof(tv_colors) / 2)  // 2 bytes per Pixel (5/6/5)
 
 /*
   TV Simulator
@@ -3774,14 +3774,14 @@ typedef struct TvSim {
 */
 uint16_t WS2812FX::mode_tv_simulator(void) {
   uint16_t nr, ng, nb, r, g, b, i;
-  uint8_t  hi, lo, r8, g8, b8, frac;
+  uint8_t  hi, lo, r8, g8, b8;
 
   if (!SEGENV.allocateData(sizeof(tvSim))) return mode_static(); //allocation failed
   TvSim* tvSimulator = reinterpret_cast<TvSim*>(SEGENV.data);
 
   // initialize start of the TV-Colors
   if (SEGENV.call == 0) { 
-    tvSimulator->pixelNum = random(numTVPixels); // Begin at random point
+    tvSimulator->pixelNum = ((uint8_t)random(18)) * numTVPixels / 18; // Begin at random movie (18 in total)
   }
 
   // Read next 16-bit (5/6/5) color
@@ -3790,8 +3790,8 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
 
   // Expand to 24-bit (8/8/8)
   r8 = (hi & 0xF8) | (hi >> 5);
-  g8 = (hi << 5) | ((lo & 0xE0) >> 3) | ((hi & 0x06) >> 1);
-  b8 = (lo << 3) | ((lo & 0x1F) >> 2);
+  g8 = ((hi << 5) & 0xff) | ((lo & 0xE0) >> 3) | ((hi & 0x06) >> 1);
+  b8 = ((lo << 3) & 0xff) | ((lo & 0x1F) >> 2);
 
   // Apply gamma correction, further expand to 16/16/16
   nr = (uint8_t)gamma8(r8) * 257; // New R/G/B
@@ -3807,7 +3807,7 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
 
     // randomize total duration and fade duration for the actual color
     tvSimulator->totalTime = random(250, 2500);                   // Semi-random pixel-to-pixel time
-    tvSimulator->fadeTime  = random(250, tvSimulator->totalTime); // Pixel-to-pixel transition time
+    tvSimulator->fadeTime  = random(0, tvSimulator->totalTime);   // Pixel-to-pixel transition time
     if (random(10) < 3) tvSimulator->fadeTime = 0;                // Force scene cut 30% of time
 
     tvSimulator->startTime = millis();
