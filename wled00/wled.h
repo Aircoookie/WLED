@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.11.0
+   @version 0.11.1
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2012020
+#define VERSION 2012210
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -173,7 +173,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.11.0");
+WLED_GLOBAL char versionString[] _INIT("0.11.1");
 #define WLED_CODENAME "Mirai"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -249,6 +249,8 @@ WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable devi
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 
 WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
+WLED_GLOBAL char blynkHost[33] _INIT("blynk-cloud.com");          // Default Blynk host
+WLED_GLOBAL uint16_t blynkPort _INIT(80);                         // Default Blynk port
 
 WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
 WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset

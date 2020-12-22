@@ -990,6 +990,12 @@ uint16_t WS2812FX::mode_merry_christmas(void) {
   return running(RED, GREEN);
 }
 
+/*
+ * Alternating red/white pixels running.
+ */
+uint16_t WS2812FX::mode_candy_cane(void) {
+  return running(RED, WHITE);
+}
 
 /*
  * Alternating orange/purple pixels running.
@@ -3723,6 +3729,26 @@ uint16_t WS2812FX::mode_washing_machine(void) {
   for (int i=0; i<SEGLEN; i++) {
     uint8_t col = sin8(((SEGMENT.intensity / 25 + 1) * 255 * i / SEGLEN) + (SEGENV.step >> 7));
     setPixelColor(i, color_from_palette(col, false, PALETTE_SOLID_WRAP, 3));
+  }
+
+  return FRAMETIME;
+}
+
+/*
+  Blends random colors across palette
+  Modified, originally by Mark Kriegsman https://gist.github.com/kriegsman/1f7ccbbfa492a73c015e
+*/
+uint16_t WS2812FX::mode_blends(void) {
+  uint16_t dataSize = sizeof(uint32_t) * SEGLEN;
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  uint32_t* pixels = reinterpret_cast<uint32_t*>(SEGENV.data);
+  uint8_t blendSpeed = map(SEGMENT.intensity, 0, UINT8_MAX, 10, 128);
+    uint8_t shift = (now * ((SEGMENT.speed >> 3) +1)) >> 8;
+
+  for (int i = 0; i < SEGLEN; i++) {
+    pixels[i] = color_blend(pixels[i], color_from_palette(shift + quadwave8((i + 1) * 16), false, PALETTE_SOLID_WRAP, 255), blendSpeed);
+    setPixelColor(i, pixels[i]);
+    shift += 3;
   }
 
   return FRAMETIME;

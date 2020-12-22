@@ -44,6 +44,10 @@ const uint16_t customMappingTable[] = {
 const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); //30 in example
 #endif
 
+#ifndef PWM_INDEX
+#define PWM_INDEX 0
+#endif
+
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
   if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
@@ -76,6 +80,11 @@ void WS2812FX::service() {
   for(uint8_t i=0; i < MAX_NUM_SEGMENTS; i++)
   {
     _segment_index = i;
+
+    // reset the segment runtime data if needed, called before isActive to ensure deleted
+    // segment's buffers are cleared
+    SEGENV.resetIfRequired();
+
     if (SEGMENT.isActive())
     {
       if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
@@ -218,8 +227,11 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
                               //you can set it to 0 if the ESP is powered by USB and the LEDs by external
 
 void WS2812FX::show(void) {
-  if (_callback) _callback();
-  
+
+  // avoid race condition, caputre _callback value
+  show_callback callback = _callback;
+  if (callback) callback();
+
   //power limit calculation
   //each LED can draw up 195075 "power units" (approx. 53mA)
   //one PU is the power it takes to have 1 channel 1 step brighter per brightness step
@@ -291,10 +303,24 @@ void WS2812FX::show(void) {
     bus->SetBrightness(_brightness);
   }
   
+  // some buses send asynchronously and this method will return before
+  // all of the data has been sent.
+  // See https://github.com/Makuna/NeoPixelBus/wiki/ESP32-NeoMethods#neoesp32rmt-methods
   bus->Show();
   _lastShow = millis();
 }
 
+/**
+ * Returns a true value if any of the strips are still being updated.
+ * On some hardware (ESP32), strip updates are done asynchronously.
+ */
+bool WS2812FX::isUpdating() {
+  return !bus->CanShow();
+}
+
+/**
+ * Forces the next frame to be computed on all active segments.
+ */
 void WS2812FX::trigger() {
   _triggered = true;
 }
@@ -378,17 +404,17 @@ void WS2812FX::setColor(uint8_t slot, uint32_t c) {
 }
 
 void WS2812FX::setBrightness(uint8_t b) {
+  if (gammaCorrectBri) b = gamma8(b);
   if (_brightness == b) return;
-  _brightness = (gammaCorrectBri) ? gamma8(b) : b;
+  _brightness = b;
   _segment_index = 0;
-  if (b == 0) { //unfreeze all segments on power off
+  if (_brightness == 0) { //unfreeze all segments on power off
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
       _segments[i].setOption(SEG_OPTION_FREEZE, false);
     }
     #if LEDPIN == LED_BUILTIN
-      if (!shouldStartBus)
-        shouldStartBus = true;
+      shouldStartBus = true;
     #endif
   } else {
     #if LEDPIN == LED_BUILTIN
@@ -890,13 +916,24 @@ void WS2812FX::handle_palette(void)
  */
 uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8_t mcol, uint8_t pbri)
 {
-  if (SEGMENT.palette == 0 && mcol < 3) return SEGCOLOR(mcol); //WS2812FX default
+  if (SEGMENT.palette == 0 && mcol < 3) {
+    uint32_t color = SEGCOLOR(mcol);
+    if (pbri != 255) {
+      CRGB crgb_color = col_to_crgb(color);
+      crgb_color.nscale8_video(pbri);
+      return crgb_to_col(crgb_color);
+    } else {
+      return color;
+    }
+  }
+
   uint8_t paletteIndex = i;
   if (mapping) paletteIndex = (i*255)/(SEGLEN -1);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
   fastled_col = ColorFromPalette( currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);
-  return  fastled_col.r*65536 +  fastled_col.g*256 +  fastled_col.b;
+
+  return crgb_to_col(fastled_col);
 }
 
 //@returns `true` if color, mode, speed, intensity and palette match
@@ -924,7 +961,7 @@ void WS2812FX::setRgbwPwm(void) {
   _analogLastShow = nowUp;
 
   RgbwColor c;
-  uint32_t col = bus->GetPixelColorRgbw(0);
+  uint32_t col = bus->GetPixelColorRgbw(PWM_INDEX);
   c.R = col >> 16; c.G = col >> 8; c.B = col; c.W = col >> 24;
 
   byte b = getBrightness();

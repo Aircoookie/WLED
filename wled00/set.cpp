@@ -163,8 +163,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     alexaEnabled = request->hasArg(F("AL"));
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
 
+    strlcpy(blynkHost, request->arg("BH").c_str(), 33);
+    t = request->arg(F("BP")).toInt();
+    if (t > 0) blynkPort = t;
+
     if (request->hasArg("BK") && !request->arg("BK").equals(F("Hidden"))) {
-      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey);
+      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey, blynkHost, blynkPort);
     }
 
     #ifdef WLED_ENABLE_MQTT
@@ -266,6 +270,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (request->hasArg(F("RS"))) //complete factory reset
     {
       WLED_FS.format();
+      clearEEPROM();
       serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
       doReboot = true;
     }
