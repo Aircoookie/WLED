@@ -3773,6 +3773,9 @@ typedef struct TvSim {
   Modified and adapted to WLED by Def3nder, based on "Fake TV Light for Engineers" by Phillip Burgess https://learn.adafruit.com/fake-tv-light-for-engineers/arduino-sketch
 */
 uint16_t WS2812FX::mode_tv_simulator(void) {
+  #ifdef WLED_DISABLE_FX_HIGH_FLASH_USE
+  return mode_static();
+  #else
   uint16_t nr, ng, nb, r, g, b, i;
   uint8_t  hi, lo, r8, g8, b8;
 
@@ -3841,4 +3844,5 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
   }
   
   return FRAMETIME;
+  #endif
 }

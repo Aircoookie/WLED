@@ -1,3 +1,6 @@
+#ifndef tv_colors_h
+#define tv_colors_h
+
 const byte tv_colors[] PROGMEM = {
   0X5B, 0XCF, 0X63, 0XED, 0X53, 0XAC, 0X53, 0X6C, 0X9C, 0X72, 0XAC, 0X71,
   0X94, 0X0E, 0X83, 0X6C, 0X69, 0X86, 0X71, 0XE6, 0X8B, 0XAC, 0X9B, 0XEE,
@@ -1499,3 +1502,5 @@ const byte tv_colors[] PROGMEM = {
   0XD1, 0XA6, 0XD1, 0X87, 0XDA, 0X27, 0XC2, 0XC3, 0XC2, 0XE2, 0XC2, 0XC2,
   0XBA, 0XC1, 0XBA, 0XA1, 0XC3, 0XA9, 0XD3, 0XEC, 0XE2, 0XC2, 0XCB, 0X0A,
   0XBA, 0XA8, 0XB2, 0X04, 0XC9, 0X49, 0XE1, 0X67, 0XC1, 0X43, 0X88, 0XE1, };
+
+#endif
