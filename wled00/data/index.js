@@ -1,6 +1,6 @@
 //page js
 var loc = false, locip;
-var ps = false, noNewSegs = false;
+var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
 var expanded = [false];
@@ -16,7 +16,7 @@ var pcMode = false, pcModeA = false, lastw = 0;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 var pJson = {};
-var pO = null, pN = "", pI = 0;
+var pN = "", pI = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var cfg = {
@@ -72,7 +72,7 @@ function applyCfg()
 	d.getElementById('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels;
 	var e = d.querySelectorAll('.tab-label');
-	for(var i=0; i<e.length; i++)
+	for (var i=0; i<e.length; i++)
 		e[i].style.display = l ? "block":"none";
 	e = d.querySelector('.hd');
 	e.style.display = l ? "block":"none";
@@ -184,7 +184,7 @@ function onLoad() {
 	loadBg(cfg.theme.bg.url);
 	
 	var cd = d.getElementById('csl').children;
-	for (i = 0; i < cd.length; i++) {
+	for (var i = 0; i < cd.length; i++) {
 		cd[i].style.backgroundColor = "rgb(0, 0, 0)";
 	}
 	selectSlot(0);
@@ -194,7 +194,7 @@ function onLoad() {
 		setColor(1);
 	});
 	pmtLS = localStorage.getItem('wledPmt');
-	setTimeout(function(){requestJson(null, false)}, 25);
+	setTimeout(function(){requestJson(null, false);}, 25);
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
 	d.getElementById("cv").style.opacity=0;
@@ -205,14 +205,13 @@ function onLoad() {
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
-
 }
 
 function updateTablinks(tabI)
 {
-	tablinks = d.getElementsByClassName("tablinks");
-	for (i = 0; i < tablinks.length; i++) {
-		tablinks[i].className = tablinks[i].className.replace(" active", "");
+	var tablinks = d.getElementsByClassName("tablinks");
+	for (var i of tablinks) {
+		i.className = i.className.replace(" active", "");
 	}
 	if (pcMode) return;
 	tablinks[tabI].className += " active";
@@ -220,7 +219,6 @@ function updateTablinks(tabI)
 
 function openTab(tabI, force = false) {
 	if (pcMode && !force) return;
-	var i, tabcontent, tablinks;
 	iSlide = tabI;
 	_C.classList.toggle('smooth', false);
 	_C.style.setProperty('--i', iSlide);
@@ -235,7 +233,6 @@ function showToast(text, error = false) {
 	x.className = error ? "error":"show";
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-	x.offsetHeight;
 	x.style.animation = null; 
 	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 }
@@ -281,7 +278,7 @@ function getLowestUnusedP()
 function checkUsed(i) {
 	var id = d.getElementById(`p${i}id`).value;
 	if (pJson[id] && (i == 0 || id != i)) {
-		d.getElementById(`p${i}warn`).innerHTML = `&#9888; Overwriting ${pName(id)}!`
+		d.getElementById(`p${i}warn`).innerHTML = `&#9888; Overwriting ${pName(id)}!`;
 	} else {
 		d.getElementById(`p${i}warn`).innerHTML = "";
 	}
@@ -315,7 +312,7 @@ function cpBck() {
 
   document.execCommand("copy");
 	
-	showToast("Copied to clipboard!")
+	showToast("Copied to clipboard!");
 }
 
 function presetError(empty)
@@ -341,7 +338,7 @@ function presetError(empty)
 		else
 			cn += `Here is a backup of the last known good state:`;
 		cn += `<textarea id="bck"></textarea><br>
-			<button class="btn btn-p" onclick="cpBck()">Copy to clipboard</button>`
+			<button class="btn btn-p" onclick="cpBck()">Copy to clipboard</button>`;
 	}
 	cn += `</div>`;
 	d.getElementById('pcont').innerHTML = cn;
@@ -373,7 +370,7 @@ function loadPresets()
 		showToast(error, true);
 		console.log(error);
 		presetError(false);
-	})
+	});
 }
 
 var pQL = [];
@@ -385,9 +382,9 @@ function populateQL()
 	cn += `<p class="labels">Quick load</p>`;
   
   var it = 0;
-	for (var key in pQL)
+	for (var key of (pQL||[]))
 	{
-    cn += `<button class="xxs btn psts" id="p${pQL[key][0]}qlb" onclick="setPreset(${pQL[key][0]});">${pQL[key][1]}</button>`;
+    cn += `<button class="xxs btn psts" id="p${key[0]}qlb" onclick="setPreset(${key[0]});">${key[1]}</button>`;
     it++;
     if (it > 4) {
       it = 0;
@@ -412,11 +409,11 @@ function populatePresets(fromls)
   pQL = [];
   var is = [];
 
-	for (var key in arr)
+	for (var key of (arr||[]))
 	{
-		if (!isObject(arr[key][1])) continue;
-		var i = parseInt(arr[key][0]);
-		var qll = arr[key][1]["ql"];
+		if (!isObject(key[1])) continue;
+		let i = parseInt(key[0]);
+		var qll = key[1].ql;
     if (qll) pQL.push([i, qll]);
     is.push(i);
 		
@@ -437,8 +434,8 @@ function populatePresets(fromls)
 			localStorage.setItem("wledP", JSON.stringify(pJson));
 		}
     pmtLS = pmt;
-    for (var a in is) {
-      var i = is[a];
+    for (var a = 0; a < is.length; a++) {
+      let i = is[a];
       if (expanded[i+100]) expand(i+100, true);
     }
 	} else { presetError(true); }
@@ -455,16 +452,18 @@ function populateInfo(i)
 	var pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
-	var urows="";
-	for (var k in i.u)
-	{
-		var val = i.u[k];
-		if (val[1]) {
-			urows += inforow(k,val[0],val[1]);
-		} else {
-			urows += inforow(k,val);
-		}
-	}
+  var urows="";
+  if (i.u) {
+    for (var k = 0; k < i.u.length; k++)
+    {
+      var val = i.u[k];
+      if (val[1]) {
+        urows += inforow(k,val[0],val[1]);
+      } else {
+        urows += inforow(k,val);
+      }
+    }
+  }
 	var vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.11.")) vcn = "Mirai";
 	if (i.cn) vcn = i.cn;
@@ -486,14 +485,14 @@ function populateInfo(i)
 function populateSegments(s)
 {
 	var cn = "";
-	segCount = 0, lowestUnused = 0; lSeg = 0;
+	segCount = 0; lowestUnused = 0; lSeg = 0;
  
-	for (y in s.seg)
+	for (var y = 0; y < (s.seg||[]).length; y++)
 	{
 		segCount++;
 		
 		var inst=s.seg[y];
-		var i = parseInt(inst.id);
+		let i = parseInt(inst.id);
 		powered[i] = inst.on;
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
@@ -559,7 +558,7 @@ function populateSegments(s)
 		resetUtil();
 		noNewSegs = false;
 	}
-	for (i = 0; i <= lSeg; i++) {
+	for (var i = 0; i <= lSeg; i++) {
 	updateLen(i);
 	updateTrail(d.getElementById(`seg${i}bri`));
 	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
@@ -570,7 +569,7 @@ function populateSegments(s)
 function updateTrail(e, slidercol)
 {
 	if (e==null) return;
-	var max = e.hasAttribute('max') ? e.attributes['max'].value : 255;
+	var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
 	var progress = e.value * 100 / max;
 	progress = parseInt(progress);
 	var scol;
@@ -586,11 +585,10 @@ function updateTrail(e, slidercol)
 
 function updateBubble(e)
 {
-	var bubble = e.target.parentNode.getElementsByTagName('output')[0]
-	var max = e.target.hasAttribute('max') ? e.target.attributes.max.value : 255;
+	var bubble = e.target.parentNode.getElementsByTagName('output')[0];
 
 	if (bubble) {
-		bubble.innerHTML = e.target.value
+		bubble.innerHTML = e.target.value;
 	}
 }
 
@@ -605,11 +603,11 @@ function updateLen(s)
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
 	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
 	var len = stop - start;
-	var out = "(delete)"
+	var out = "(delete)";
 	if (len > 1) {
 		out = `${len} LEDs`;
 	} else if (len == 1) {
-		out = "1 LED"
+		out = "1 LED";
 	}
 	
 	if (d.getElementById(`seg${s}grp`) != null)
@@ -627,11 +625,11 @@ function updateLen(s)
 function updatePA()
 {
 	var ps = d.getElementsByClassName("seg");
-	for (i = 0; i < ps.length; i++) {
+	for (let i = 0; i < ps.length; i++) {
 		ps[i].style.backgroundColor = "var(--c-2)";
 	}
 	ps = d.getElementsByClassName("psts");
-	for (i = 0; i < ps.length; i++) {
+	for (let i = 0; i < ps.length; i++) {
 		ps[i].style.backgroundColor = "var(--c-2)";
 	}
 	if (currentPreset > 0) {
@@ -656,7 +654,7 @@ function updateUI()
 	updateTrail(d.getElementById('sliderW'));
 	if (isRgbw) d.getElementById('wwrap').style.display = "block";
 
-	spal = d.getElementById("selectPalette");
+	var spal = d.getElementById("selectPalette");
 	spal.style.backgroundColor = (spal.selectedIndex > 0) ? "var(--c-6)":"var(--c-3)";
 	updatePA();
 	updateHex();
@@ -681,21 +679,20 @@ function cmpP(a, b) {
 }
 
 var jsonTimeout;
-var reqC = 0;
 function requestJson(command, rinfo = true, verbose = true) {
 	d.getElementById('connind').style.backgroundColor = "#a90";
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
-	e1 = d.getElementById('fxlist');
-	e2 = d.getElementById('selectPalette');
+	var e1 = d.getElementById('fxlist');
+	var e2 = d.getElementById('selectPalette');
 
-	url = rinfo ? '/json/si': (command ? '/json/state':'/json');
+	var url = rinfo ? '/json/si': (command ? '/json/state':'/json');
 	if (loc) {
 		url = `http://${locip}${url}`;
 	}
 	
-	type = command ? 'post':'get';
+	var type = command ? 'post':'get';
 	if (command)
 	{
     command.v = verbose;
@@ -735,16 +732,16 @@ function requestJson(command, rinfo = true, verbose = true) {
     pmtLast = pmt;
 		var x='',y='<option value="0">Default</option>';
 		json.effects.shift(); //remove solid
-		for (i in json.effects) json.effects[i] = {id: parseInt(i)+1, name:json.effects[i]};
+		for (let i = 0; i < json.effects.length; i++) json.effects[i] = {id: parseInt(i)+1, name:json.effects[i]};
 		json.effects.sort(compare);
-		for (i in json.effects) {
+		for (let i = 0; i < json.effects.length; i++) {
 		x += `<button class="btn${(i==0)?" first":""}" id="fxb${json.effects[i].id}" onclick="setX(${json.effects[i].id});">${json.effects[i].name}</button><br>`;
 		}
 
 		json.palettes.shift(); //remove default
-		for (i in json.palettes) json.palettes[i] = {"id": parseInt(i)+1, "name":json.palettes[i]};
+		for (let i = 0; i < json.palettes.length; i++) json.palettes[i] = {"id": parseInt(i)+1, "name":json.palettes[i]};
 		json.palettes.sort(compare);
-		for (i in json.palettes) {
+		for (let i = 0; i < json.palettes.length; i++) {
 		y += `<option value="${json.palettes[i].id}">${json.palettes[i].name}</option>`;
 		}
 		e1.innerHTML=x; e2.innerHTML=y;
@@ -776,7 +773,6 @@ function requestJson(command, rinfo = true, verbose = true) {
 		nlTar = s.nl.tbri;
 		nlFade = s.nl.fade;
 		syncSend = s.udpn.send;
-		savedPresets = s.pss;
 		currentPreset = s.ps;
 		d.getElementById('cyToggle').checked = (s.pl < 0) ? false : true;
 		d.getElementById('cycs').value = s.ccnf.min;
@@ -786,7 +782,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 		
 		var selc=0; var ind=0;
 		populateSegments(s);
-		for (i in s.seg)
+		for (let i = 0; i < (s.seg||[]).length; i++)
 		{
 			if(s.seg[i].sel) {selc = ind; break;} ind++;
 		}
@@ -797,7 +793,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 			return;
 		}
 		var cd = d.getElementById('csl').children;
-		for (e = 2; e >= 0; e--)
+		for (let e = 2; e >= 0; e--)
 		{
 			cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
 			if (isRgbw) whites[e] = parseInt(i.col[e][3]);
@@ -828,7 +824,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 	.catch(function (error) {
 		showToast(error, true);
 	  console.log(error);
-	})
+	});
 }
 
 function togglePower() {
@@ -974,7 +970,7 @@ function tglCs(i){
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
-	for(i=0; i<=lSeg; i++){
+	for (let i=0; i<=lSeg; i++){
 		obj.seg.push({"sel":(i==s)?true:false});
 	}
 	requestJson(obj);
@@ -989,7 +985,7 @@ function selSeg(s){
 function setSeg(s){
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
 	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
-	if (stop <= start) {delSeg(s); return;};
+	if (stop <= start) {delSeg(s); return;}
 	var obj = {"seg": {"id": s, "start": start, "stop": stop}};
 	if (d.getElementById(`seg${s}grp`))
 	{
@@ -1078,7 +1074,7 @@ function toggleCY() {
 }
 
 function setPreset(i) {
-	var obj = {"ps": i}
+	var obj = {"ps": i};
 
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
 
@@ -1096,7 +1092,7 @@ function saveP(i) {
 		try {
 			obj = JSON.parse(raw);
 		} catch (e) {
-			obj["win"] = raw;
+			obj.win = raw;
 			if (raw.length < 2) {
 				d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please enter your API command first";
 				return;
@@ -1108,27 +1104,27 @@ function saveP(i) {
 				return;
       }
 		}
-		obj["o"] = true;
+		obj.o = true;
 	} else {
-		obj["ib"] = d.getElementById(`p${i}ibtgl`).checked;
-		obj["sb"] = d.getElementById(`p${i}sbtgl`).checked;
+		obj.ib = d.getElementById(`p${i}ibtgl`).checked;
+		obj.sb = d.getElementById(`p${i}sbtgl`).checked;
 	}
-	obj["psave"] = pI; obj["n"] = pN;
+	obj.psave = pI; obj.n = pN;
 	var pQN = d.getElementById(`p${i}ql`).value;
-	if (pQN.length > 0) obj["ql"] = pQN;
+	if (pQN.length > 0) obj.ql = pQN;
 
   showToast("Saving " + pN +" (" + pI + ")");
 	requestJson(obj);
-	if (obj["o"]) {
+	if (obj.o) {
 		pJson[pI] = obj;
-    delete pJson[pI]["psave"];
-    delete pJson[pI]["o"];
-    delete pJson[pI]["v"];
-    delete pJson[pI]["time"];
+    delete pJson[pI].psave;
+    delete pJson[pI].o;
+    delete pJson[pI].v;
+    delete pJson[pI].time;
 	} else {
 		pJson[pI] = {"n":pN, "win":"Please refresh the page to see this newly saved command."};
-		if (obj["win"]) pJson[pI]["win"] = obj["win"];
-		if (obj["ql"])  pJson[pI]["ql"] = obj["ql"];
+		if (obj.win) pJson[pI].win = obj.win;
+		if (obj.ql)  pJson[pI].ql = obj.ql;
 	}
 	populatePresets();
 	resetPUtil();
@@ -1144,7 +1140,7 @@ function delP(i) {
 function selectSlot(b) {
 	csel = b;
 	var cd = d.getElementById('csl').children;
-	for (i = 0; i < cd.length; i++) {
+	for (let i = 0; i < cd.length; i++) {
 		cd[i].style.border="2px solid white";
 		cd[i].style.margin="5px";
 		cd[i].style.width="42px";
@@ -1243,7 +1239,7 @@ function setColor(sr) {
 
 var hc = 0;
 setInterval(function(){if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
-d.getElementById('heart').style.color = `hsl(${hc}, 100%, 50%)`}, 910);
+d.getElementById('heart').style.color = `hsl(${hc}, 100%, 50%)`;}, 910);
 
 function openGH()
 {
@@ -1277,7 +1273,7 @@ function rSegs()
 	bt.style.color = "#fff";
 	bt.innerHTML = "Reset segments";
 	var obj = {"seg":[{"start":0,"stop":ledCount,"sel":true}]};
-	for(i=1; i<=lSeg; i++){
+	for (let i=1; i<=lSeg; i++){
 		obj.seg.push({"stop":0});
 	}
 	requestJson(obj);
@@ -1287,7 +1283,7 @@ function expand(i,a)
 {
 	if (!a) expanded[i] = !expanded[i];
 	d.getElementById('seg' +i).style.display = (expanded[i]) ? "block":"none";
-	d.getElementById('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)"
+	d.getElementById('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
 	if (i > 100) { //presets
 		var p = i-100;
 		d.getElementById(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
@@ -1312,7 +1308,7 @@ const _C = document.querySelector('.container'), N = 4;
 
 let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
 
-function unify(e) {	return e.changedTouches ? e.changedTouches[0] : e }
+function unify(e) {	return e.changedTouches ? e.changedTouches[0] : e; }
 
 function hasIroClass(classList) {
 	for (var i = 0; i < classList.length; i++) {
@@ -1334,7 +1330,7 @@ function lock(e) {
 	x0 = unify(e).clientX;
 	scrollS = d.getElementsByClassName("tabcontent")[iSlide].scrollTop;
 
-	_C.classList.toggle('smooth', !(locked = true))
+	_C.classList.toggle('smooth', !(locked = true));
 }
 
 function move(e) {
@@ -1342,16 +1338,16 @@ function move(e) {
 	var dx = unify(e).clientX - x0, s = Math.sign(dx), 
 			f = +(s*dx/w).toFixed(2);
 
-  if((iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0)
-     && f > .12
-     && d.getElementsByClassName("tabcontent")[iSlide].scrollTop == scrollS) {
+  if((iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
+     f > 0.12 &&
+     d.getElementsByClassName("tabcontent")[iSlide].scrollTop == scrollS) {
 		_C.style.setProperty('--i', iSlide -= s);
 		f = 1 - f;
 		updateTablinks(iSlide);
 	}
 	_C.style.setProperty('--f', f);
 	_C.classList.toggle('smooth', !(locked = false));
-	x0 = null
+	x0 = null;
 }
 
 function size() { 

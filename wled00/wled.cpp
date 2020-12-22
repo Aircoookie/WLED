@@ -493,7 +493,7 @@ void WLED::initInterfaces()
   if (ntpEnabled)
     ntpConnected = ntpUdp.begin(ntpLocalPort);
 
-  initBlynk(blynkApiKey);
+  initBlynk(blynkApiKey, blynkHost, blynkPort);
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
   reconnectHue();
   initMqtt();
