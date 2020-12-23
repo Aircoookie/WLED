@@ -393,7 +393,31 @@ void WLED::initConnection()
   #endif
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
+  #ifndef WLED_WT32_SUPPORT
+  // Default POE ethernet board support
   ETH.begin();
+  #else
+  // ETH.begin funciton signature:
+  //   ETH.begin(uint8_t, int, int, int, eth_phy_type_t, eth_clock_mode_t)
+  
+  // Please note, from my testing only these pins work for LED outputs:
+  //   IO2, IO4, IO12, IO14, IO15
+  // These pins do not appear to work from my testing:
+  //   IO35, IO36, IO39
+
+  // Config taken from Tasmota
+  // Force to output 16 high
+  pinMode(16, OUTPUT);
+  digitalWrite(16, HIGH);
+  ETH.begin(
+    (uint8_t) 1, // Settings.eth_address, 
+    (int)    -1, // eth_power, 
+    (int)    23, // eth_mdc, 
+    (int)    18, // eth_mdio, 
+    (eth_phy_type_t)   0,  // (eth_phy_type_t)Settings.eth_type,
+    (eth_clock_mode_t) 0   // (eth_clock_mode_t)Settings.eth_clk_mode)
+  );
+  #endif
 #endif
 
   WiFi.disconnect(true);        // close old connections
