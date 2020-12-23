@@ -265,10 +265,10 @@ href="https://github.com/Aircoookie/WLED/wiki/Blynk" target="_blank">Setup info
 min="1" max="65535" class="d5"><br><b>
 The MQTT credentials are sent over an unsecured connection.<br>
 Never use the MQTT password for another service!</b><br>Username: <input 
-name="MQUSER" maxlength="40"><br>Password: <input type="password" input 
-name="MQPASS" maxlength="40"><br>Client ID: <input name="MQCID" maxlength="40">
-<br>Device Topic: <input name="MD" maxlength="32"><br>Group Topic: <input 
-name="MG" maxlength="32"><br><i>Reboot required to apply changes. </i><a 
+name="MQUSER" maxlength="40"><br>Password: <input type="password" name="MQPASS" 
+maxlength="40"><br>Client ID: <input name="MQCID" maxlength="40"><br>
+Device Topic: <input name="MD" maxlength="32"><br>Group Topic: <input name="MG" 
+maxlength="32"><br><i>Reboot required to apply changes. </i><a 
 href="https://github.com/Aircoookie/WLED/wiki/MQTT" target="_blank">MQTT info
 </a><h3>Philips Hue</h3><i>
 You can find the bridge IP and the light number in the 'About' section of the hue app.
