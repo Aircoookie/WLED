@@ -5,5 +5,6 @@ Fork of the WLED project where the Adalight USB serial protocol @115200 speed is
 <p align="center"> <img src="https://i.postimg.cc/CdT7hsG6/esp8266-flashing.jpg"/></p><br/>
 <p align="center"> <img src="https://i.postimg.cc/C5fJpQqq/esp8266working.jpg"/></p><br/>
 <p align="center"> <img src="https://i.postimg.cc/76RXckf4/esp-rec.jpg"/></p><br/>
+
 # Disclaimer
 You use it on your own risk. As per the MIT license, I assume no liability for any damage to you or any other person or equipment.
