@@ -29,6 +29,171 @@
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
 
+/*
+  Aurora effect
+*/
+
+//LED CONFIG
+#define BACKLIGHT 5
+
+//WAVE CONFIG
+#define W_MAX_COUNT 20            //Number of simultaneous waves
+#define W_MAX_SPEED 6             //Higher number, higher speed
+#define W_WIDTH_FACTOR 3          //Higher number, smaller waves
+
+class BorealisWave {
+  private:
+    uint32_t segment_length;
+    uint ttl = random(500, 1501);
+    CRGB basecolor;
+    float basealpha = random(50, 101) / (float)100;
+    uint age = 0;
+    uint width;
+    float center;
+    bool goingleft = random(0, 2) == 0;
+    float speed;
+    bool alive = true;
+
+  public:
+    BorealisWave(uint32_t segment_length, uint32_t wave_speed, CRGB color) {
+      this -> segment_length = segment_length;
+
+      width = random(segment_length / 10, segment_length / W_WIDTH_FACTOR);
+      center = random(101) / (float)100 * segment_length;
+      speed = (random(10, 31) / (float)100 * W_MAX_SPEED / 255) * wave_speed;
+
+      basecolor = color;
+    }
+
+    CRGB* getColorForLED(int ledIndex) {      
+      if(ledIndex < center - width / 2 || ledIndex > center + width / 2) {
+        //Position out of range of this wave
+        return NULL;
+      } else {
+        CRGB* rgb = new CRGB();
+
+        //Offset of this led from center of wave
+        //The further away from the center, the dimmer the LED
+        int offset = abs(ledIndex - center);
+        float offsetFactor = (float)offset / (width / 2);
+
+        //The age of the wave determines it brightness.
+        //At half its maximum age it will be the brightest.
+        float ageFactor = 0.1;        
+        if((float)age / ttl < 0.5) {
+          ageFactor = (float)age / (ttl / 2);
+        } else {
+          ageFactor = (float)(ttl - age) / ((float)ttl * 0.5);
+        }
+
+        //Calculate color based on above factors and basealpha value
+        rgb -> r = basecolor.r * (1 - offsetFactor) * ageFactor * basealpha;
+        rgb -> g = basecolor.g * (1 - offsetFactor) * ageFactor * basealpha;
+        rgb -> b = basecolor.b * (1 - offsetFactor) * ageFactor * basealpha;
+      
+        return rgb;
+      }
+    };
+
+    //Change position and age of wave
+    //Determine if its sill "alive"
+    void update() {
+      if(goingleft) {
+        center -= speed;
+      } else {
+        center += speed;
+      }
+
+      age++;
+
+      if(age > ttl) {
+        alive = false;
+      } else {
+        if(goingleft) {
+          if(center + width / 2 < 0) {
+            alive = false;
+          }
+        } else {
+          if(center - width / 2 > segment_length) {
+            alive = false;
+          }
+        }
+      }
+    };
+
+    bool stillAlive() {
+      return alive;
+    };
+};
+
+bool areWavesInitialized = false;
+int8_t lastIntensity = -1;
+uint8_t waveCount = 0;
+BorealisWave* waves[W_MAX_COUNT];
+
+uint16_t WS2812FX::mode_aurora(void) {
+
+  if(lastIntensity != SEGMENT.intensity) {
+    waveCount = ((float)SEGMENT.intensity / 255) * W_MAX_COUNT;
+    lastIntensity = SEGMENT.intensity;
+  }
+
+  if(!areWavesInitialized) {    
+    for(int i = 0; i < W_MAX_COUNT; i++) {
+      waves[i] = 0;
+    }
+    
+    for(int i = 0; i < waveCount; i++) {
+      waves[i] = new BorealisWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+    }
+
+    areWavesInitialized = true;
+  }
+
+  for(int i = 0; i < W_MAX_COUNT; i++) {
+    //Update values of wave
+    if(waves[i] != 0) {
+      waves[i] -> update();
+
+      if(!(waves[i] -> stillAlive())) {
+        //If a wave dies, remove it from memory and spawn a new one
+        delete waves[i];
+
+        if(i < waveCount) {
+          waves[i] = new BorealisWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+        } else {
+          waves[i] = 0;
+        }
+      }
+    } else if(i < waveCount) {
+      waves[i] = new BorealisWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+    }
+  }
+
+  //Loop through LEDs to determine color
+  for(int i = 0; i < SEGMENT.length(); i++) {    
+    CRGB mixedRgb = CRGB(BACKLIGHT, BACKLIGHT, BACKLIGHT);
+
+    //For each LED we must check each wave if it is "active" at this position.
+    //If there are multiple waves active on a LED we multiply their values.
+    for(int  j = 0; j < W_MAX_COUNT; j++) {
+      if(waves[j] != 0) {
+        CRGB* rgb = waves[j] -> getColorForLED(i);
+        
+        if(rgb != NULL) {       
+          mixedRgb += *rgb;
+        }
+        
+        delete []rgb;
+      }
+    }
+
+    setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2], BACKLIGHT);
+  }
+  
+  return FRAMETIME;
+}
+
 
 /*
  * No blinking. Just plain old static light.
