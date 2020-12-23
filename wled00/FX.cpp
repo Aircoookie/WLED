@@ -34,15 +34,13 @@
   Aurora effect
 */
 
-//LED CONFIG
+//CONFIG
 #define BACKLIGHT 5
-
-//WAVE CONFIG
 #define W_MAX_COUNT 20            //Number of simultaneous waves
 #define W_MAX_SPEED 6             //Higher number, higher speed
 #define W_WIDTH_FACTOR 3          //Higher number, smaller waves
 
-class BorealisWave {
+class AuroraWave {
   private:
     uint32_t segment_length;
     uint ttl = random(500, 1501);
@@ -56,7 +54,7 @@ class BorealisWave {
     bool alive = true;
 
   public:
-    BorealisWave(uint32_t segment_length, uint32_t wave_speed, CRGB color) {
+    AuroraWave(uint32_t segment_length, uint32_t wave_speed, CRGB color) {
       this -> segment_length = segment_length;
 
       width = random(segment_length / 10, segment_length / W_WIDTH_FACTOR);
@@ -127,28 +125,26 @@ class BorealisWave {
     };
 };
 
-bool areWavesInitialized = false;
-int8_t lastIntensity = -1;
-uint8_t waveCount = 0;
-BorealisWave* waves[W_MAX_COUNT];
+AuroraWave* waves[W_MAX_COUNT];
 
 uint16_t WS2812FX::mode_aurora(void) {
+  //aux1 = Wavecount
+  //aux2 = Intensity in last loop
 
-  if(lastIntensity != SEGMENT.intensity) {
-    waveCount = ((float)SEGMENT.intensity / 255) * W_MAX_COUNT;
-    lastIntensity = SEGMENT.intensity;
+  if(SEGENV.aux0 != SEGMENT.intensity) {
+    SEGENV.aux1 = ((float)SEGMENT.intensity / 255) * W_MAX_COUNT;
+    SEGENV.aux0 = SEGMENT.intensity;
   }
 
-  if(!areWavesInitialized) {    
+  if(SEGENV.call == 0) {   
+    //Initialize waves on first call 
     for(int i = 0; i < W_MAX_COUNT; i++) {
-      waves[i] = 0;
+      if(i < SEGENV.aux1) {
+        waves[i] = new AuroraWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+      } else {
+        waves[i] = 0;
+      }
     }
-    
-    for(int i = 0; i < waveCount; i++) {
-      waves[i] = new BorealisWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
-    }
-
-    areWavesInitialized = true;
   }
 
   for(int i = 0; i < W_MAX_COUNT; i++) {
@@ -160,14 +156,14 @@ uint16_t WS2812FX::mode_aurora(void) {
         //If a wave dies, remove it from memory and spawn a new one
         delete waves[i];
 
-        if(i < waveCount) {
-          waves[i] = new BorealisWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+        if(i < SEGENV.aux1) {
+          waves[i] = new AuroraWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
         } else {
           waves[i] = 0;
         }
       }
-    } else if(i < waveCount) {
-      waves[i] = new BorealisWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+    } else if(i < SEGENV.aux1) {
+      waves[i] = new AuroraWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
     }
   }
 
