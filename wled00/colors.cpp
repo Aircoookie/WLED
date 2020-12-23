@@ -62,7 +62,31 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
   if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
-void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb
+void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
+{
+  float r = 0, g = 0, b = 0;
+  float temp = kelvin / 100;
+  if (temp <= 66) {
+    r = 255;
+    g = round(99.4708025861 * log(temp) - 161.1195681661);
+    if (temp <= 19) {
+      b = 0;
+    } else {
+      b = round(138.5177312231 * log((temp - 10)) - 305.0447927307);
+    }
+  } else {
+    r = round(329.698727446 * pow((temp - 60), -0.1332047592));
+    g = round(288.1221695283 * pow((temp - 60), -0.0755148492));
+    b = 255;
+  } 
+  g += 15; //mod by Aircoookie, a bit less accurate but visibly less pinkish
+  rgb[0] = (uint8_t) constrain(r, 0, 255);
+  rgb[1] = (uint8_t) constrain(g, 0, 255);
+  rgb[2] = (uint8_t) constrain(b, 0, 255);
+  rgb[3] = 0;
+}
+
+void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb, bins
 {
   //this is only an approximation using WS2812B with gamma correction enabled
   if (mired > 475) {
@@ -140,7 +164,7 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   rgb[0] = 255.0*r;
   rgb[1] = 255.0*g;
   rgb[2] = 255.0*b;
-  if (useRGBW) colorRGBtoRGBW(col);
+  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
@@ -153,7 +177,7 @@ void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.develo
 }
 #endif // WLED_DISABLE_HUESYNC
 
-
+//RRGGBB / WWRRGGBB order for hex
 void colorFromDecOrHexString(byte* rgb, char* in)
 {
   if (in[0] == 0) return;
@@ -172,6 +196,27 @@ void colorFromDecOrHexString(byte* rgb, char* in)
   rgb[0] = (c >> 16) & 0xFF;
   rgb[1] = (c >>  8) & 0xFF;
   rgb[2] =  c        & 0xFF;
+}
+
+//contrary to the colorFromDecOrHexString() function, this uses the more standard RRGGBB / RRGGBBWW order
+bool colorFromHexString(byte* rgb, const char* in) {
+  if (in == nullptr) return false;
+  size_t inputSize = strnlen(in, 9);
+  if (inputSize != 6 && inputSize != 8) return false;
+
+  uint32_t c = strtoul(in, NULL, 16);
+
+  if (inputSize == 6) {
+    rgb[0] = (c >> 16) & 0xFF;
+    rgb[1] = (c >>  8) & 0xFF;
+    rgb[2] =  c        & 0xFF;
+  } else {
+    rgb[0] = (c >> 24) & 0xFF;
+    rgb[1] = (c >> 16) & 0xFF;
+    rgb[2] = (c >>  8) & 0xFF;
+    rgb[3] =  c        & 0xFF;
+  }
+  return true;
 }
 
 float minf (float v, float w)

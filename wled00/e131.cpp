@@ -1,28 +1,74 @@
 #include "wled.h"
 
+#define MAX_3_CH_LEDS_PER_UNIVERSE 170
+#define MAX_4_CH_LEDS_PER_UNIVERSE 128
+#define MAX_CHANNELS_PER_UNIVERSE 512
+
 /*
  * E1.31 handler
  */
 
-void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
-  //E1.31 protocol support
+//DDP protocol support, called by handleE131Packet
+//handles RGB data only
+void handleDDPPacket(e131_packet_t* p) {
+  int lastPushSeq = e131LastSequenceNumber[0];
+  
+  //reject late packets belonging to previous frame (assuming 4 packets max. before push)
+  if (e131SkipOutOfSequence && lastPushSeq) {
+    int sn = p->sequenceNum & 0xF;
+    if (sn) {
+      if (lastPushSeq > 5) {
+        if (sn > (lastPushSeq -5) && sn < lastPushSeq) return;
+      } else {
+        if (sn > (10 + lastPushSeq) || sn < lastPushSeq) return;
+      }
+    }
+  }
+
+  uint32_t start = htonl(p->channelOffset) /3;
+  start += DMXAddress /3;
+  uint16_t stop = start + htons(p->dataLen) /3;
+  uint8_t* data = p->data;
+  uint16_t c = 0;
+  if (p->flags & DDP_TIMECODE_FLAG) c = 4; //packet has timecode flag, we do not support it, but data starts 4 bytes later
+
+  realtimeLock(realtimeTimeoutMs, REALTIME_MODE_DDP);
+  
+  for (uint16_t i = start; i < stop; i++) {
+    setRealtimePixel(i, data[c++], data[c++], data[c++], 0);
+  }
+
+  bool push = p->flags & DDP_PUSH_FLAG;
+  if (push) {
+    e131NewData = true;
+    byte sn = p->sequenceNum & 0xF;
+    if (sn) e131LastSequenceNumber[0] = sn;
+  }
+}
+
+//E1.31 and Art-Net protocol support
+void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
 
   uint16_t uni = 0, dmxChannels = 0;
   uint8_t* e131_data = nullptr;
   uint8_t seq = 0, mde = REALTIME_MODE_E131;
 
-  if (isArtnet)
+  if (protocol == P_ARTNET)
   {
     uni = p->art_universe;
     dmxChannels = htons(p->art_length);
     e131_data = p->art_data;
     seq = p->art_sequence_number;
     mde = REALTIME_MODE_ARTNET;
-  } else {
+  } else if (protocol == P_E131) {
     uni = htons(p->universe);
     dmxChannels = htons(p->property_value_count) -1;
     e131_data = p->property_values;
     seq = p->sequence_number;
+  } else { //DDP
+    realtimeIP = clientIP;
+    handleDDPPacket(p);
+    return;
   }
 
   #ifdef WLED_ENABLE_DMX
@@ -38,7 +84,6 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
   if (uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
 
   uint8_t previousUniverses = uni - e131Universe;
-  uint16_t possibleLEDsInCurrentUniverse;
 
   if (e131SkipOutOfSequence)
     if (seq < e131LastSequenceNumber[uni-e131Universe] && seq > 20 && e131LastSequenceNumber[uni-e131Universe] < 250){
@@ -56,7 +101,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
   // update status info
   realtimeIP = clientIP;
   byte wChannel = 0;
-  
+
   switch (DMXMode) {
     case DMX_MODE_DISABLED:
       return;  // nothing to do
@@ -107,67 +152,52 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, bool isArtnet){
       colSec[2]       = e131_data[DMXAddress+10];
       if (dmxChannels-DMXAddress+1 > 11)
       {
-        col[3]          = e131_data[DMXAddress+11]; //white
-        colSec[3]       = e131_data[DMXAddress+12];
+        col[3]        = e131_data[DMXAddress+11]; //white
+        colSec[3]     = e131_data[DMXAddress+12];
       }
       transitionDelayTemp = 0;                        // act fast
       colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);  // don't send UDP
       return;                                         // don't activate realtime live mode
       break;
 
-    case DMX_MODE_MULTIPLE_RGB:
-      realtimeLock(realtimeTimeoutMs, mde);
-      if (realtimeOverride) return;
-      if (previousUniverses == 0) {
-        // first universe of this fixture
-        possibleLEDsInCurrentUniverse = (dmxChannels - DMXAddress + 1) / 3;
-        for (uint16_t i = 0; i < ledCount; i++) {
-          if (i >= possibleLEDsInCurrentUniverse) break;  // more LEDs will follow in next universe(s)
-          setRealtimePixel(i, e131_data[DMXAddress+i*3+0], e131_data[DMXAddress+i*3+1], e131_data[DMXAddress+i*3+2], 0);
-        }
-      } else if (previousUniverses > 0 && uni < (e131Universe + E131_MAX_UNIVERSE_COUNT)) {
-        // additional universe(s) of this fixture
-        uint16_t numberOfLEDsInPreviousUniverses = ((512 - DMXAddress + 1) / 3);                            // first universe
-        if (previousUniverses > 1) numberOfLEDsInPreviousUniverses += (512 / 3) * (previousUniverses - 1);  // extended universe(s) before current
-        possibleLEDsInCurrentUniverse = dmxChannels / 3;
-        for (uint16_t i = numberOfLEDsInPreviousUniverses; i < ledCount; i++) {
-          uint8_t j = i - numberOfLEDsInPreviousUniverses;
-          if (j >= possibleLEDsInCurrentUniverse) break;   // more LEDs will follow in next universe(s)
-          setRealtimePixel(i, e131_data[j*3+1], e131_data[j*3+2], e131_data[j*3+3], 0);
-        }
-      }
-      break;
-
     case DMX_MODE_MULTIPLE_DRGB:
-      realtimeLock(realtimeTimeoutMs, mde);
-      if (realtimeOverride) return;
-      if (previousUniverses == 0) {
-        // first universe of this fixture
-        if (DMXOldDimmer != e131_data[DMXAddress+0]) {
-          DMXOldDimmer = e131_data[DMXAddress+0];
-          bri = e131_data[DMXAddress+0];
-          strip.setBrightness(bri);
+    case DMX_MODE_MULTIPLE_RGB:
+    case DMX_MODE_MULTIPLE_RGBW:
+      {
+        realtimeLock(realtimeTimeoutMs, mde);
+        bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
+        const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
+        const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
+        if (realtimeOverride) return;
+        uint16_t previousLeds, dmxOffset;
+        if (previousUniverses == 0) {
+          if (dmxChannels-DMXAddress < 1) return;
+          dmxOffset = DMXAddress;
+          previousLeds = 0;
+          // First DMX address is dimmer in DMX_MODE_MULTIPLE_DRGB mode.
+          if (DMXMode == DMX_MODE_MULTIPLE_DRGB) {
+            strip.setBrightness(e131_data[dmxOffset++]);
+          }
+        } else {
+          // All subsequent universes start at the first channel.
+          dmxOffset = (protocol == P_ARTNET) ? 0 : 1;
+          uint16_t ledsInFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / dmxChannelsPerLed;
+          previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * ledsPerUniverse;
         }
-        possibleLEDsInCurrentUniverse = (dmxChannels - DMXAddress) / 3;
-        for (uint16_t i = 0; i < ledCount; i++) {
-          if (i >= possibleLEDsInCurrentUniverse) break;  // more LEDs will follow in next universe(s)
-          setRealtimePixel(i, e131_data[DMXAddress+i*3+1], e131_data[DMXAddress+i*3+2], e131_data[DMXAddress+i*3+3], 0);
+        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset +1) / dmxChannelsPerLed;
+        if (!is4Chan) {
+          for (uint16_t i = previousLeds; i < ledsTotal; i++) {
+            setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], 0);
+          }
+        } else {
+          for (uint16_t i = previousLeds; i < ledsTotal; i++) {
+            setRealtimePixel(i, e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++], e131_data[dmxOffset++]);
+          }
         }
-      } else if (previousUniverses > 0 && uni < (e131Universe + E131_MAX_UNIVERSE_COUNT)) {
-        // additional universe(s) of this fixture
-        uint16_t numberOfLEDsInPreviousUniverses = ((512 - DMXAddress + 1) / 3);                            // first universe
-        if (previousUniverses > 1) numberOfLEDsInPreviousUniverses += (512 / 3) * (previousUniverses - 1);  // extended universe(s) before current
-        possibleLEDsInCurrentUniverse = dmxChannels / 3;
-        for (uint16_t i = numberOfLEDsInPreviousUniverses; i < ledCount; i++) {
-          uint8_t j = i - numberOfLEDsInPreviousUniverses;
-          if (j >= possibleLEDsInCurrentUniverse) break;   // more LEDs will follow in next universe(s)
-          setRealtimePixel(i, e131_data[j*3+1], e131_data[j*3+2], e131_data[j*3+3], 0);
-        }
+        break;
       }
-      break;
-
     default:
-      DEBUG_PRINTLN("unknown E1.31 DMX mode");
+      DEBUG_PRINTLN(F("unknown E1.31 DMX mode"));
       return;  // nothing to do
       break;
   }

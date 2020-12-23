@@ -18,6 +18,7 @@
 */
 
 #include "ESPAsyncE131.h"
+#include "../network/Network.h"
 #include <string.h>
 
 // E1.17 ACN Packet Identifier
@@ -38,15 +39,15 @@ ESPAsyncE131::ESPAsyncE131(e131_packet_callback_function callback) {
 /////////////////////////////////////////////////////////
 
 bool ESPAsyncE131::begin(bool multicast, uint16_t port, uint16_t universe, uint8_t n) {
-    bool success = false;
+  bool success = false;
 
-    if (multicast) {
+  if (multicast) {
 		success = initMulticast(port, universe, n);
 	} else {
-        success = initUnicast(port);
+    success = initUnicast(port);
 	}
 
-    return success;
+  return success;
 }
 
 /////////////////////////////////////////////////////////
@@ -56,40 +57,38 @@ bool ESPAsyncE131::begin(bool multicast, uint16_t port, uint16_t universe, uint8
 /////////////////////////////////////////////////////////
 
 bool ESPAsyncE131::initUnicast(uint16_t port) {
-    bool success = false;
+  bool success = false;
 
-    if (udp.listen(port)) {
-        udp.onPacket(std::bind(&ESPAsyncE131::parsePacket, this,
-                std::placeholders::_1));
-        success = true;
-    }
-    return success;
+  if (udp.listen(port)) {
+    udp.onPacket(std::bind(&ESPAsyncE131::parsePacket, this, std::placeholders::_1));
+    success = true;
+  }
+  return success;
 }
 
 bool ESPAsyncE131::initMulticast(uint16_t port, uint16_t universe, uint8_t n) {
-    bool success = false;
+  bool success = false;
 
-    IPAddress address = IPAddress(239, 255, ((universe >> 8) & 0xff),
-        ((universe >> 0) & 0xff));
+  IPAddress address = IPAddress(239, 255, ((universe >> 8) & 0xff),
+    ((universe >> 0) & 0xff));
 
-    if (udp.listenMulticast(address, port)) {
-        ip4_addr_t ifaddr;
-        ip4_addr_t multicast_addr;
+  if (udp.listenMulticast(address, port)) {
+    ip4_addr_t ifaddr;
+    ip4_addr_t multicast_addr;
 
-        ifaddr.addr = static_cast<uint32_t>(WiFi.localIP());
-        for (uint8_t i = 1; i < n; i++) {
-            multicast_addr.addr = static_cast<uint32_t>(IPAddress(239, 255,
-                    (((universe + i) >> 8) & 0xff), (((universe + i) >> 0)
-                    & 0xff)));
-            igmp_joingroup(&ifaddr, &multicast_addr);
-        }
-
-        udp.onPacket(std::bind(&ESPAsyncE131::parsePacket, this,
-                std::placeholders::_1));
-
-        success = true;
+    ifaddr.addr = static_cast<uint32_t>(Network.localIP());
+    for (uint8_t i = 1; i < n; i++) {
+        multicast_addr.addr = static_cast<uint32_t>(IPAddress(239, 255,
+          (((universe + i) >> 8) & 0xff), (((universe + i) >> 0)
+          & 0xff)));
+      igmp_joingroup(&ifaddr, &multicast_addr);
     }
-    return success;
+
+    udp.onPacket(std::bind(&ESPAsyncE131::parsePacket, this, std::placeholders::_1));
+
+    success = true;
+  }
+  return success;
 }
 
 /////////////////////////////////////////////////////////
@@ -99,15 +98,16 @@ bool ESPAsyncE131::initMulticast(uint16_t port, uint16_t universe, uint8_t n) {
 /////////////////////////////////////////////////////////
 
 void ESPAsyncE131::parsePacket(AsyncUDPPacket _packet) {
-    bool error = false, isArtnet = false;
+  bool error = false;
+  uint8_t protocol = P_E131;
 
-    sbuff = reinterpret_cast<e131_packet_t *>(_packet.data());
+  sbuff = reinterpret_cast<e131_packet_t *>(_packet.data());
 	
 	//E1.31 packet identifier ("ACS-E1.17")
-    if (memcmp(sbuff->acn_id, ESPAsyncE131::ACN_ID, sizeof(sbuff->acn_id)))
-        isArtnet = true; //not E1.31
+  if (memcmp(sbuff->acn_id, ESPAsyncE131::ACN_ID, sizeof(sbuff->acn_id)))
+    protocol = P_ARTNET;
 	
-	if (isArtnet) {
+	if (protocol == P_ARTNET) {
 		if (memcmp(sbuff->art_id, ESPAsyncE131::ART_ID, sizeof(sbuff->art_id)))
 			error = true; //not "Art-Net"
 		if (sbuff->art_opcode != ARTNET_OPCODE_OPDMX)
@@ -121,9 +121,14 @@ void ESPAsyncE131::parsePacket(AsyncUDPPacket _packet) {
 			error = true;
 		if (sbuff->property_values[0] != 0)
 			error = true;
-	}
+	} 
+  
+  if (error && _packet.localPort() == DDP_DEFAULT_PORT) { //DDP packet
+    error = false;
+    protocol = P_DDP;
+  }
 
-    if (!error) {
-      _callback(sbuff, _packet.remoteIP(), isArtnet);
-    }
+  if (!error) {
+    _callback(sbuff, _packet.remoteIP(), protocol);
+  }
 }

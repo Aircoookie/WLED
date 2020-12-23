@@ -2,6 +2,7 @@
 <html>
 <head>
 	<meta name="viewport" content="width=500">
+	<meta charset="utf-8">
 	<title>Time Settings</title>
 	<script>
     var d=document;
@@ -42,10 +43,10 @@
 		}
     function BTa()
     {
-      var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Macro</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";
+      var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Preset</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";
       for (i=0;i<8;i++)
       {
-        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"16\"></td>";
+        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"250\"></td>";
         for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";
       }
       gId("TMT").innerHTML=ih;
@@ -76,64 +77,7 @@
 		}
 	</script>
 	<style>
-		:root {
-			--aCol: #D9B310;
-			--bCol: #0B3C5D;
-			--cCol: #1D2731;
-			--dCol: #328CC1;
-			--sCol: #000;
-			--tCol: #328CC1;
-			--cFn: Verdana;
-		}
-		body {
-			font-family: var(--cFn), sans-serif;
-			text-align: center;
-			background: var(--cCol);
-			color: var(--dCol);
-			line-height: 200%;
-			margin: 0;
-			background-attachment: fixed;
-		}
-		hr {
-			border-color: var(--dCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		button {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.3ch solid var(--bCol);
-			font-family: var(--cFn), sans-serif;
-			display: inline-block;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-			font-size: 20px;
-			margin: 8px;
-			margin-top: 12px;
-		}
-		.helpB {
-			text-align: left;
-			position: absolute;
-			width:60px;
-		}
-		input {
-			background: var(--bCol);
-			color: var(--dCol);
-			font-family: var(--cFn), sans-serif;
-			border: 0.5ch solid var(--bCol);
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-		select {
-			background: var(--bCol);
-			color: var(--dCol);
-			border: 0.5ch solid var(--bCol);
-			font-family: var(--cFn), sans-serif;
-			filter: drop-shadow( -5px -5px 5px var(--sCol) );
-		}
-    td {
-      padding:2px;
-    }
-		input[type=number] {
-			width: 4em;
-		}
+		@import url("style.css");
 	</style>
 </head>
 <body onload="S()">
@@ -159,7 +103,12 @@
 			<option value="10">JST(KST)</option>
 			<option value="11">AEST/AEDT</option>
 			<option value="12">NZST/NZDT</option>
-			<option value="13">North Korea</option>
+      <option value="13">North Korea</option>
+      <option value="14">IST (India)</option>
+      <option value="15">CA-Saskatchewan</option>
+      <option value="16">ACST</option>
+      <option value="17">ACST/ACDT</option>
+      <option value="18">HST (Hawaii)</option>
 		</select><br>
 		UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 		Current local time is <span class="times">unknown</span>.
@@ -186,31 +135,17 @@
 		Countdown Goal:<br>
 		Year: 20 <input name="CY" type="number" min="0" max="99" required> Month: <input name="CI" type="number" min="1" max="12" required> Day: <input name="CD" type="number" min="1" max="31" required><br>
 		Hour: <input name="CH" type="number" min="0" max="23" required> Minute: <input name="CM" type="number" min="0" max="59" required> Second: <input name="CS" type="number" min="0" max="59" required><br>
-		<h3>Advanced Macros</h3>
-		Define API macros here:<br>
-		1: <input name="M1" maxlength="64"><br>
-		2: <input name="M2" maxlength="64"><br>
-		3: <input name="M3" maxlength="64"><br>
-		4: <input name="M4" maxlength="64"><br>
-		5: <input name="M5" maxlength="64"><br>
-		6: <input name="M6" maxlength="64"><br>
-		7: <input name="M7" maxlength="64"><br>
-		8: <input name="M8" maxlength="64"><br>
-		9: <input name="M9" maxlength="64"><br>
-		10: <input name="M10" maxlength="64"><br>
-		11: <input name="M11" maxlength="64"><br>
-		12: <input name="M12" maxlength="64"><br>
-		13: <input name="M13" maxlength="64"><br>
-		14: <input name="M14" maxlength="64"><br>
-		15: <input name="M15" maxlength="64"><br>
-		16: <input name="M16" maxlength="64"><br><br>
-		<i>Use 0 for the default action instead of a macro</i><br>
-		Boot Macro: <input name="MB" type="number" min="0" max="16" required><br>
-		Alexa On/Off Macros: <input name="A0" type="number" min="0" max="16" required> <input name="A1" type="number" min="0" max="16" required><br>
-		Button Macro: <input name="MP" type="number" min="0" max="16" required> Long Press: <input name="ML" type="number" min="0" max="16" required><br>
-		Countdown-Over Macro: <input name="MC" type="number" min="0" max="16" required><br>
-		Timed-Light-Over Macro: <input name="MN" type="number" min="0" max="16" required><br>
-		Time-Controlled Macros:<br>
+		<h3>Macro presets</h3>
+    <b>Macros have moved!</b><br>
+    <i>Presets now also can be used as macros to save both JSON and HTTP API commands.<br>
+    Just enter the preset id below!</i>
+		<i>Use 0 for the default action instead of a preset</i><br>
+		Alexa On/Off Preset: <input name="A0" type="number" min="0" max="250" required> <input name="A1" type="number" min="0" max="250" required><br>
+		Button short press Preset: <input name="MP" type="number" min="0" max="250" required><br>
+    Long Press: <input name="ML" type="number" min="0" max="250" required> Double press: <input name="MD" type="number" min="0" max="250" required><br>	
+		Countdown-Over Preset: <input name="MC" type="number" min="0" max="250" required><br>
+		Timed-Light-Over Presets: <input name="MN" type="number" min="0" max="250" required><br>
+		<h3>Time-controlled presets</h3>
     <div style="display: inline-block">
     <table id="TMT">
     </table></div><hr>

@@ -25,7 +25,7 @@ bool captivePortal(AsyncWebServerRequest *request)
   if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
     DEBUG_PRINTLN("Captive portal");
     AsyncWebServerResponse *response = request->beginResponse(302);
-    response->addHeader("Location", "http://4.3.2.1");
+    response->addHeader(F("Location"), F("http://4.3.2.1"));
     request->send(response);
     return true;
   }
@@ -35,9 +35,9 @@ bool captivePortal(AsyncWebServerRequest *request)
 void initServer()
 {
   //CORS compatiblity
-  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
-  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "*");
-  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "*");
+  DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Origin"), "*");
+  DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Methods"), "*");
+  DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Headers"), "*");
 
   server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", PAGE_liveview);
@@ -64,45 +64,12 @@ void initServer()
   });
   
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 200,"Rebooting now...",F("Please wait ~10 seconds..."),129);
+    serveMessage(request, 200,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
     doReboot = true;
   });
   
-  server.on("/settings/wifi", HTTP_POST, [](AsyncWebServerRequest *request){
-    if (!(wifiLock && otaLock)) handleSettingsSet(request, 1);
-    serveMessage(request, 200,F("WiFi settings saved."),F("Please connect to the new IP (if changed)"),129);
-    forceReconnect = true;
-  });
-
-  server.on("/settings/leds", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleSettingsSet(request, 2);
-    serveMessage(request, 200,F("LED settings saved."),"Redirecting...",1);
-  });
-
-  server.on("/settings/ui", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleSettingsSet(request, 3);
-    serveMessage(request, 200,F("UI settings saved."),"Redirecting...",1);
-  });
-
-  server.on("/settings/dmx", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleSettingsSet(request, 7);
-    serveMessage(request, 200,F("UI settings saved."),"Redirecting...",1);
-  });
-
-  server.on("/settings/sync", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleSettingsSet(request, 4);
-    serveMessage(request, 200,F("Sync settings saved."),"Redirecting...",1);
-  });
-
-  server.on("/settings/time", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleSettingsSet(request, 5);
-    serveMessage(request, 200,F("Time settings saved."),"Redirecting...",1);
-  });
-
-  server.on("/settings/sec", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleSettingsSet(request, 6);
-    if (!doReboot) serveMessage(request, 200,F("Security settings saved."),F("Rebooting, please wait ~10 seconds..."),129);
-    doReboot = true;
+  server.on("/settings", HTTP_POST, [](AsyncWebServerRequest *request){
+    serveSettings(request, true);
   });
 
   server.on("/json", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -112,22 +79,23 @@ void initServer()
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
     { //scope JsonDocument so it releases its buffer
-      DynamicJsonDocument jsonBuffer(8192);
+      DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
       DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
       JsonObject root = jsonBuffer.as<JsonObject>();
       if (error || root.isNull()) {
-        request->send(400, "application/json", "{\"error\":10}"); return;
+        request->send(400, "application/json", F("{\"error\":9}")); return;
       }
+      fileDoc = &jsonBuffer;
       verboseResponse = deserializeState(root);
+      fileDoc = nullptr;
     }
     if (verboseResponse) { //if JSON contains "v"
       serveJson(request); return; 
     } 
-    request->send(200, "application/json", "{\"success\":true}");
+    request->send(200, "application/json", F("{\"success\":true}"));
   });
   server.addHandler(handler);
 
-  //*******DEPRECATED*******
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)VERSION);
     });
@@ -139,7 +107,6 @@ void initServer()
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", (String)ESP.getFreeHeap());
     });
-  //*******END*******/
   
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", PAGE_usermod);
@@ -155,15 +122,15 @@ void initServer()
     
   //if OTA is allowed
   if (!otaLock){
-    #if !defined WLED_DISABLE_FILESYSTEM && defined WLED_ENABLE_FS_EDITOR
+    #ifdef WLED_ENABLE_FS_EDITOR
      #ifdef ARDUINO_ARCH_ESP32
-      server.addHandler(new SPIFFSEditor(SPIFFS));//http_username,http_password));
+      server.addHandler(new SPIFFSEditor(WLED_FS));//http_username,http_password));
      #else
-      server.addHandler(new SPIFFSEditor());//http_username,http_password));
+      server.addHandler(new SPIFFSEditor("","",WLED_FS));//http_username,http_password));
      #endif
     #else
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("The SPIFFS editor is disabled in this build."), 254);
+      serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
     });
     #endif
     //init ota page
@@ -181,7 +148,7 @@ void initServer()
       doReboot = true;
     },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
       if(!index){
-        DEBUG_PRINTLN("OTA Update Start");
+        DEBUG_PRINTLN(F("OTA Update Start"));
         #ifdef ESP8266
         Update.runAsync(true);
         #endif
@@ -190,9 +157,9 @@ void initServer()
       if(!Update.hasError()) Update.write(data, len);
       if(final){
         if(Update.end(true)){
-          DEBUG_PRINTLN("Update Success");
+          DEBUG_PRINTLN(F("Update Success"));
         } else {
-          DEBUG_PRINTLN("Update Failed");
+          DEBUG_PRINTLN(F("Update Failed"));
         }
       }
     });
@@ -205,10 +172,10 @@ void initServer()
   } else
   {
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
+      serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254);
     });
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254);
+      serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254);
     });
   }
 
@@ -226,6 +193,10 @@ void initServer()
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
   });
+
+  #ifdef WLED_ENABLE_WEBSOCKETS
+  server.addHandler(&ws);
+  #endif
   
   //called when the url is not defined here, ajax-in; get-settings
   server.onNotFound([](AsyncWebServerRequest *request){
@@ -243,10 +214,8 @@ void initServer()
     #ifndef WLED_DISABLE_ALEXA
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
-    #ifdef WLED_ENABLE_FS_SERVING
     if(handleFileRead(request, request->url())) return;
-    #endif
-    request->send(404, "text/plain", "Not Found");
+    request->send_P(404, "text/html", PAGE_404);
   });
 }
 
@@ -263,13 +232,11 @@ void serveIndexOrWelcome(AsyncWebServerRequest *request)
 
 void serveIndex(AsyncWebServerRequest* request)
 {
-  #ifdef WLED_ENABLE_FS_SERVING
   if (handleFileRead(request, "/index.htm")) return;
-  #endif
 
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 
-  response->addHeader("Content-Encoding","gzip");
+  response->addHeader(F("Content-Encoding"),"gzip");
   
   request->send(response);
 }
@@ -279,19 +246,23 @@ String msgProcessor(const String& var)
 {
   if (var == "MSG") {
     String messageBody = messageHead;
-    messageBody += "</h2>";
+    messageBody += F("</h2>");
     messageBody += messageSub;
     uint32_t optt = optionType;
 
     if (optt < 60) //redirect to settings after optionType seconds
     {
-      messageBody += "<script>setTimeout(RS," + String(optt*1000) + ")</script>";
+      messageBody += F("<script>setTimeout(RS,");
+      messageBody +=String(optt*1000);
+      messageBody += F(")</script>");
     } else if (optt < 120) //redirect back after optionType-60 seconds, unused
     {
       //messageBody += "<script>setTimeout(B," + String((optt-60)*1000) + ")</script>";
     } else if (optt < 180) //reload parent after optionType-120 seconds
     {
-      messageBody += "<script>setTimeout(RP," + String((optt-120)*1000) + ")</script>";
+      messageBody += F("<script>setTimeout(RP,");
+      messageBody += String((optt-120)*1000);
+      messageBody += F(")</script>");
     } else if (optt == 253)
     {
       messageBody += F("<br><br><form action=/settings><button class=\"bt\" type=submit>Back</button></form>"); //button to settings
@@ -305,7 +276,7 @@ String msgProcessor(const String& var)
 }
 
 
-void serveMessage(AsyncWebServerRequest* request, uint16_t code, String headl, String subl, byte optionT)
+void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& headl, const String& subl, byte optionT)
 {
   messageHead = headl;
   messageSub = subl;
@@ -355,7 +326,7 @@ String dmxProcessor(const String& var)
 }
 
 
-void serveSettings(AsyncWebServerRequest* request)
+void serveSettings(AsyncWebServerRequest* request, bool post)
 {
   byte subPage = 0;
   const String& url = request->url();
@@ -374,7 +345,32 @@ void serveSettings(AsyncWebServerRequest* request)
 
   if (subPage == 1 && wifiLock && otaLock)
   {
-    serveMessage(request, 500, "Access Denied", "Please unlock OTA in security settings!", 254); return;
+    serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254); return;
+  }
+
+  if (post) { //settings/set POST request, saving
+    if (subPage != 1 || !(wifiLock && otaLock)) handleSettingsSet(request, subPage);
+
+    char s[32];
+    char s2[45] = "";
+
+    switch (subPage) {
+      case 1: strcpy_P(s, PSTR("WiFi")); strcpy_P(s2, PSTR("Please connect to the new IP (if changed)")); forceReconnect = true; break;
+      case 2: strcpy_P(s, PSTR("LED")); break;
+      case 3: strcpy_P(s, PSTR("UI")); break;
+      case 4: strcpy_P(s, PSTR("Sync")); break;
+      case 5: strcpy_P(s, PSTR("Time")); break;
+      case 6: strcpy_P(s, PSTR("Security")); strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
+      case 7: strcpy_P(s, PSTR("DMX")); break;
+    }
+
+    strcat_P(s, PSTR(" settings saved."));
+    if (!s2[0]) strcpy_P(s2, PSTR("Redirecting..."));
+
+    if (!doReboot) serveMessage(request, 200, s, s2, (subPage == 1 || subPage == 6) ? 129 : 1);
+    if (subPage == 6) doReboot = true;
+
+    return;
   }
   
   #ifdef WLED_DISABLE_MOBILE_UI //disable welcome page if not enough storage
