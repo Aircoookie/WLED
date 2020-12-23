@@ -19,6 +19,8 @@ Usermod based on a rework of the ssd1306_i2c_oled_u8g2 usermod from the WLED rep
 ![Hardware](assets/ttgo_hardware1.png)
 ![Hardware](assets/ttgo-tdisplay-enclosure1a.png)
 ![Hardware](assets/ttgo-tdisplay-enclosure2a.png)
+![Hardware](assets/ttgo-tdisplay-enclosure3a.png)
+![Hardware](assets/ttgo-tdisplay-enclosure3a.png)
 
 ## Github reference for TTGO-Tdisplay
 
@@ -28,7 +30,11 @@ Usermod based on a rework of the ssd1306_i2c_oled_u8g2 usermod from the WLED rep
 Functionality checked with:
 * TTGO T-Display
 * PlatformIO
-* Group of 4 individual Neopixels from Adafruit, and a full string of 68 LEDs.
+* Group of 4 individual Neopixels from Adafruit, and a several full strings of 12v WS2815 LEDs.
+* The hardware design shown above should be limited to shorter strings.  For larger strings, I use a different setup with a dedicated 12v power supply and power them directly off the supply (in addition to dropping the 12v supply down to 5v with a buck regulator for the ESP module and level shifter).
+
+## Setup Needed:
+* As with all usermods, copy the usermod.cpp file from the TTGO-T-Display usermod folder to the wled00 folder (replacing the default usermod.cpp file).
 
 ## Platformio Requirements
 ### Platformio.ini changes
