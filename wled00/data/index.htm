@@ -1598,7 +1598,7 @@ function populateInfo(i)
 	if (i.ver.startsWith("0.11.")) vcn = "Mirai";
 	if (i.cn) vcn = i.cn;
 	
-	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
+	cn += `v${i.ver} "${vcn}" (HyperSerialWLED)<br><br><table class="infot">
 	${urows}
 	${inforow("Build",i.vid)}
 	${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
