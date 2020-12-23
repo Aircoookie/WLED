@@ -69,6 +69,8 @@ function writeHtmlGzipped(sourceFile, resultFile) {
   console.info("Reading " + sourceFile);
   new inliner(sourceFile, function (error, html) {
     console.info("Inlined " + html.length + " characters");
+    html = filter(html, "html-minify-ui");
+    console.info("Minified to " + html.length + " characters");
 
     if (error) {
       console.warn(error);
@@ -117,6 +119,16 @@ function filter(str, type) {
   } else if (type == "html-minify") {
     return MinifyHTML(str, {
       collapseWhitespace: true,
+      maxLineLength: 80,
+      minifyCSS: true,
+      minifyJS: true, 
+      continueOnParseError: false,
+      removeComments: true,
+    });
+  } else if (type == "html-minify-ui") {
+    return MinifyHTML(str, {
+      collapseWhitespace: true,
+      conservativeCollapse: true,
       maxLineLength: 80,
       minifyCSS: true,
       minifyJS: true, 
