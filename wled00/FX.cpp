@@ -4191,64 +4191,23 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
 //     BEGIN FFT ROUTINES    //
 ///////////////////////////////
 
-#ifdef ESP32
 extern double FFT_MajorPeak;
 extern double FFT_Magnitude;
 extern double fftBin[];                     // raw FFT data
 extern double fftResult[];                  // summary of bins array. 16 summary bins.
-extern double fftResultLogarithmicNoiseless[];
-extern double beat;
-extern uint16_t lastSample;
-double volume = 1;
 uint32_t ledData[MAX_LEDS];                 // See const.h for a value of 1500.
 uint32_t dataStore[4096];										// we are declaring a storage area or 64 x 64 (4096) words.
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max){
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-#endif // ESP8266
-
-
-///////////////////////
-//  * WATERFALL      //
-///////////////////////
-
-// Experimenting with volume only as a fallback if no FFT.
-uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: Andrew Tuline
-
-//  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
-
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 + 1 % 16;
-
-  if(SEGENV.aux0 != secondHand) {
-    SEGENV.aux0 = secondHand;
-
-    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-
-    if (samplePeak) {
-      setPixelColor(SEGLEN-1,92,92,92);
-    } else {
-      setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
-    }
-    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
-  }
-
-  return FRAMETIME;
-} // mode_waterfall()
-
 
 
 ////////////////////
-//  ** BINMAP     //
+//  ** Binmap     //
 ////////////////////
 
-// Map the first 256 bins to the entire segment. The remaining 256 bins are kind of a mirror image to the first 256.
-// Not a great sketch and we don't need to be accurate, but it looks cool (at least to me it does).
-
-// If we need squelch, use this:
-//    if (fftBin[i] < soundSquelch*4) fftBin[i] = 0;       // Very simple squelch. Should really be used with the result bins and on a bin by bin basis.
-
-uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. By Andrew Tuline.
+uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale raw fftBin[] values to SEGLEN. Shows just how noisy those bins are.
 
   #define FIRSTBIN 3                          // The first 3 bins are garbage.
   #define LASTBIN 255                         // Don't use the highest bins, as they're (almost) a mirror of the first 256.
@@ -4278,95 +4237,32 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale bins to SEGLEN. B
     uint8_t bright = constrain(mapf(sumBin, 0, maxVal, 0, 255),0,255);   // Map the brightness in relation to maxVal and crunch to 8 bits.
 
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*8+millis()/50, false, PALETTE_SOLID_WRAP, 0), bright));   // 'i' is just an index in the palette. The FFT value, bright, is the intensity.
-                                                                                                                     // The +160 is 'blue' for the Rainbow palette.
+
   } // for i
 
   return FRAMETIME;
 } // mode_binmap()
 
 
-////////////////////////////////
-//  ** FFT_test               //
-////////////////////////////////
+////////////////////
+//  ** Freqmap    //
+////////////////////
 
-// Variables required:
-// SEGENV.aux0  - A uint16_t persistent value
-// SEGMENT.fft2 - A unit_t slider
-// SEGMENT.fft3 - A uint8_t slider
-// I need a floating point persistent value.
+uint16_t WS2812FX::mode_freqmap(void) {        // Map FFT_MajorPeak to SEGLEN. Would be better if a higher framerate.
+  // Start frequency = 60 Hz and log10(60) = 1.78
+  // End frequency = 5120 Hz and lo10(5120) = 3.71
 
-// float expAdjF;              -- Needs to be persistent.
-// uint8_t weighting = 128;    -- from a slider.
-// float weightingF = 0.02;    -- a calculated value from the slider.
+  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;  // Get to 255 as quick as you can.
+  fade_out(fadeRate);
 
+  uint16_t locn = (log10(FFT_MajorPeak) - 1.78) * (float)SEGLEN/(3.71-1.78);              // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
+  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 1.78) * 255.0/(3.71-1.78);               // Scale log10 of frequency values to the 255 colour index.
+  uint8_t bright = (int)FFT_Magnitude>>8;
 
-
-uint16_t WS2812FX::fft_test() {
-
-// Configure decay for volume based variable sample
-/*  if (!SEGENV.allocateData(sizeof(float))) return mode_static();
-  float* expAdjF = reinterpret_cast<float*>(SEGENV.data);
-  
-  float weightingF = (float)(SEGMENT.fft3+40)/1000.0;            // Take 0 to 255 from slider and recalculate to be << 1.0, and with a reasonable range of decay throughout.
-
-  if ((float)sample > *expAdjF) {
-    *expAdjF = (float)sample;
-  } else {
-    *expAdjF = (weightingF * (float)sample + (1.0-weightingF) * *expAdjF);
-  }
-
-//  Serial.print("Sample:\t"); Serial.print(sample);
-  Serial.print(",expAdjF:\t"); Serial.print(*expAdjF,3);
-  Serial.println(" ");
-*/
-
-
-
-// Configure decay for FFT based variable fftResult[16]
-/*  if (!SEGENV.allocateData(sizeof(float) * 16)) return mode_static();
-  float* expAdjF = reinterpret_cast<float*>(SEGENV.data);
-  float weightingF = (float)(SEGMENT.fft3+40)/1000.0;            // Take 0 to 255 and recalculate to be << 1.0
-
-  for (int i = 0; i < 16; i++) {
-
-   if ((float)sample > *expAdjF[i]) {
-    *expAdjF[i] = (float)sample;
-  } else {   
-    expAdjF[i] = (weightingF * (float)sample + (1.0-weightingF) * expAdjF[i]);
-  }
-
-    Serial.print(fftResult[i]);
-    Serial.print("\t"); Serial.print(expAdjF[i],3);Serial.print("\t");
-  }
-  Serial.println(" "); Serial.println(" ");
-*/
-
-
-
-// Testing fftResult values to see if/how we can normalize results.
-/*
-// Select a bin to display
-uint8_t binVal = map(SEGMENT.fft3,0,255,0,15);
-
-// Display smoothed results of selected bin.
-SEGENV.aux0 = ((SEGENV.aux0 * 15) + fftResult[binVal]) / 16;
-
-
-Serial.print("binVal:\t"); Serial.print(binVal);
-//Serial.print(",fftResult:\t"); Serial.print(fftResult[binVal]);
-Serial.print(",Avg:\t"); Serial.print(SEGENV.aux0);
-Serial.println(" ");
-*/
-
-
-//    for (int i=0; i < 16; i++) {
-//        fftResult[i] = fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0;
-//    }
-
-
+  setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
 
   return FRAMETIME;
-} //
+} // mode_freqmap()
 
 
 ///////////////////////
@@ -4431,15 +4327,24 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
 
 
 //////////////////////
-//  ** FREQPIXEL    //
+//  ** Freqpixel    //
 //////////////////////
+
+// Start frequency = 60 Hz and log10(60) = 1.78
+// End frequency = 5120 Hz and lo10(5120) = 3.71
+
+//  SEGMENT.speed select faderate
+//  SEGMENT.intensity select colour index
+
 
 uint16_t WS2812FX::mode_freqpixel(void) {                                 // Freqpixel. By Andrew Tuline.
 
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;  // Get to 255 as quick as you can.
   fade_out(fadeRate);
+
   uint16_t locn = random16(0,SEGLEN);
-  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;              // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 1.78) * 255.0/(3.71-1.78);               // Scale log10 of frequency values to the 255 colour index.
+
   setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
 
   return FRAMETIME;
@@ -4447,7 +4352,7 @@ uint16_t WS2812FX::mode_freqpixel(void) {                                 // Fre
 
 
 //////////////////////
-//  ** FREQWAVE     //
+//  ** Freqwave     //
 //////////////////////
 
 // Assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT
@@ -4529,35 +4434,79 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 } // mode_freqwave()
 
 
+///////////////////////
+//   ** Gravfreq     //
+///////////////////////
+
+uint16_t WS2812FX::mode_gravfreq(void) {                                // Gravfreq. By Andrew Tuline.
+
+  static int topLED;
+  static int gravityCounter = 0;
+
+  fade_out(240);
+
+  sampleAvg = sampleAvg * SEGMENT.intensity / 255;
+
+  int tempsamp = constrain(sampleAvg*2,0,SEGLEN/2-1);                       // Keep the sample from overflowing.
+  uint8_t gravity = 8 - SEGMENT.speed/32;
+
+  for (int i=0; i<tempsamp; i++) {
+
+    uint8_t index = (log10((int)FFT_MajorPeak) - (3.71-1.78)) * 255;
+
+    setPixelColor(i+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
+    setPixelColor(SEGLEN/2-i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
+  }
+
+  if (tempsamp >= topLED)
+    topLED = tempsamp;
+  else if (gravityCounter % gravity == 0)
+    topLED--;
+
+  if (topLED > 0) {
+    setPixelColor(topLED+SEGLEN/2, CRGB::Gray);
+    setPixelColor(SEGLEN/2-topLED, CRGB::Gray);
+  }
+  gravityCounter = (gravityCounter + 1) % gravity;
+
+  return FRAMETIME;
+} // mode_gravfreq()
+
+
 //////////////////////
-//  ** NOISEMOVE    //
+//  ** Noisemove    //
 //////////////////////
 
-uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove    By: Andrew Tuline
+uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove.    By: Andrew Tuline
 
   extern double fftResult[];
 
-  fade_out(SEGMENT.intensity);
+  fade_out(224);                                    // Just in case something doesn't get faded.
 
-  for (int i=0; i<6; i++) {                   // DO NOT make this > 5 because we only have 16 FFTresult bins.
+  uint8_t numBins = map(SEGMENT.intensity,0,255,0,16);   // Map slider to fftResult bins.
+
+  for (int i=0; i<numBins; i++) {                   // How many active bins are we using.
     uint16_t locn = inoise16(millis()*SEGMENT.speed+i*50000, millis()*SEGMENT.speed);   // Get a new pixel location from moving noise.
 
     locn = map(locn,7500,58000,0,SEGLEN-1);   // Map that to the length of the strand, and ensure we don't go over.
     locn = locn % (SEGLEN - 1);               // Just to be bloody sure.
 
-    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i*3]*8));
+    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i]));
+
+    Serial.print(fftResult[i]); Serial.print("\t");
+
   }
+    Serial.println(" ");
 
   return FRAMETIME;
 } // mode_noisemove()
 
 
 //////////////////////
-//  ** NOISEPEAK    //
+//  ** Noisepeak    //
 //////////////////////
 
 uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise across SEGLEN. By Andrew Tuline.
-
 
   static CRGBPalette16 thisPalette;
   static uint16_t dist;
@@ -4586,107 +4535,67 @@ uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat
 } // mode_noisepeak()
 
 
-//////////////////////
-//  ** SPECTRAL     //
-//////////////////////
+/////////////////////////
+// ** 2D EQ            //
+/////////////////////////
 
-// This delivers a spectral "analysis" of the audio signal compressed into 16 bins which are supposed to be at least half way similar log (human ear is log as well)
-//
-// this effect is best being displayed on strips in multiples of 16 leds (and only in multiples of 16), you can use it on strips shorter than 16 leds but then the higher frequency bins are just cut off
-//
-// The 2 slider that is active in this effect is the general brightness slider, everything else is being computed on the fly.
-// FFT3 sets the cutoff value below which we think its noise
-//
-uint16_t WS2812FX::mode_spectral(void) {      // Spectral. By Andreas Pleschutznig.
+uint16_t WS2812FX::mode_2DGEQ(void) {                // By Netmindz.
+   
+  int barWidth = (matrixWidth / 16);
+  int bandInc = 1;
+  if(barWidth == 0) {
+    // Matrix narrower than fft bands
+    barWidth = 1;
+    bandInc = (16 / matrixWidth);
+  }
 
-  double maxVal = 0;
-  CHSV c;
-  CRGB color;
-
-  if (SEGENV.call == 0)
-    for (int i = 0; i < SEGLEN; i++)
-      setPixelColor(i, 0,0,0);                                      // turn off all leds
-
-  // Determine max value in bins to normalize
-  maxVal = 0;
-  for (int i = 0; i < 16; i++) {
-    if (fftResult[i] > maxVal) {
-      maxVal = fftResult[i];
-    }
-
-  if (maxVal == 0) maxVal = 16;
-  int ledsPerBin = SEGLEN/16;
-
-  if (ledsPerBin > 0) {                                             // our led strip is longer or at least than 16 LEDS
-    for (int i = 0; i < 16; i++ )                                   // walk through all bins and display
-      if (ledsPerBin > 1) {                                         // more than one led per bin
-        for (int l = 0; l < ledsPerBin; l++)  {
-          int pos = i*ledsPerBin+l;                                 // which led are we talking about -- Also which bin are we talking about
-          uint8_t angle = map(i*ledsPerBin, 0, SEGLEN, 0, 255);     // the color we are going to display
-          uint8_t bright = mapf(fftResult[i], 0, maxVal, 0, 255);   // find the brightness in relation to max
-          color = CHSV(angle, 240, bright);                         // colculate a color and convert it to RGB
-          setPixelColor(pos, color.red, color.green, color.blue);
+  int b = 0;
+  for (int band = 0; band < 16; band += bandInc) {
+    int count = map(fftResult[band], 0, 255, 0, matrixHeight);
+    for (int w = 0; w < barWidth; w++) {
+      int xpos = (barWidth * b) + w;
+      for (int i = 0; i <= matrixHeight; i++) {
+        if (i <= count) {
+          CRGB color = CHSV((band * 35), 255, 255);
+          setPixelColor(XY(xpos, i), color.red, color.green, color.blue);
         }
-      } else {                                                      // only one led per bin
-        int pos = i;                                                // which led are we talking about -- Also which bin are we talking about
-        uint8_t angle = map(pos, 0, SEGLEN, 0, 255);                // the color we are going to display
-        uint8_t bright = mapf(fftResult[i], 0, maxVal, 0, 255);     // find the brightness in relation to max
-        color = CHSV(angle, 240, bright);                           // calculate a color and convert it to RGB
-        setPixelColor(pos, color.red, color.green, color.blue);
-      }
-    } else {                                                        // our led strip is shorter than 16LEDS
-    for (int i = 0; i < SEGLEN; i++ )  {                            // which led are we talking about -- Also which bin are we talking about
-        uint8_t angle = map(i, 0, SEGLEN, 0, 255);                  // the color we are going to display
-        uint8_t bright = mapf(fftResult[i], 0, maxVal, 0, 255);     // find the brightness in relation to max
-        color = CHSV(angle, 240, bright);                           // calculate a color and convert it to RGB
-        setPixelColor(i, color.red, color.green, color.blue);
+        else {
+          setPixelColor(XY(xpos, i), 0,0,0);
+        }
       }
     }
+    b++;
+  }
+  return FRAMETIME;
+}
+
+
+///////////////////////
+//  ** Waterfall     //
+///////////////////////
+
+// Combines peak detection with FFT_MajorPeak and FFT_Magnitude.
+uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: Andrew Tuline
+
+//  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+
+  uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
+
+  if (SEGENV.aux0 != secondHand) {           // Triggered millis timing.
+    SEGENV.aux0 = secondHand;
+
+    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+
+    if (samplePeak) {
+      setPixelColor(SEGLEN-1,92,92,92);
+    } else {
+      setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
+    }
+    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
   }
 
   return FRAMETIME;
-} // mode_spectral()
-
-///////////////////////
-//   ** GRAVFREQ     //
-///////////////////////
-
-uint16_t WS2812FX::mode_gravfreq(void) {                                // Gravcenter. By Andrew Tuline.
-
-  static int topLED;
-  static int gravityCounter = 0;
-
-  fade_out(240);
-
-  sampleAvg = sampleAvg * SEGMENT.intensity / 255;
-
-  int tempsamp = constrain(sampleAvg*2,0,SEGLEN/2-1);                       // Keep the sample from overflowing.
-  uint8_t gravity = 8 - SEGMENT.speed/32;
-
-  for (int i=0; i<tempsamp; i++) {
-
-    #ifdef ESP32
-      uint8_t index = (log10((int)FFT_MajorPeak) - 2.26) * 255;
-    #else
-      uint8_t index = inoise8(i*sampleAvg+millis(), 5000+i*sampleAvg);
-    #endif
-    setPixelColor(i+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
-    setPixelColor(SEGLEN/2-i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
-  }
-
-  if (tempsamp >= topLED)
-    topLED = tempsamp;
-  else if (gravityCounter % gravity == 0)
-    topLED--;
-
-  if (topLED > 0) {
-    setPixelColor(topLED+SEGLEN/2, CRGB::Gray);
-    setPixelColor(SEGLEN/2-topLED, CRGB::Gray);
-  }
-  gravityCounter = (gravityCounter + 1) % gravity;
-
-  return FRAMETIME;
-} // mode_gravfreq()
+} // mode_waterfall()
 
 
 
@@ -5257,3 +5166,82 @@ uint16_t WS2812FX::mode_2Dmeatballs(void) {   // Metaballs by Stefan Petrick. Ca
 
   return FRAMETIME;
 } // mode_2Dmeatballs()
+
+
+
+////////////////////////////////
+//  ** FFT_test               //
+////////////////////////////////
+
+// This is our internal testing routine, which has been exposed for use with debugging.
+
+// Some variables
+// SEGENV.aux0  - A uint16_t persistent value
+// SEGMENT.fft2 - A unit_t slider
+// SEGMENT.fft3 - A uint8_t slider
+// FFT_MajorPeak
+// FFT_Magnitude
+
+
+// uint16_t WS2812FX::fft_test() {
+
+// Configure decay for volume based variable sample
+/*  if (!SEGENV.allocateData(sizeof(float))) return mode_static();
+  float* expAdjF = reinterpret_cast<float*>(SEGENV.data);
+  
+  float weightingF = (float)(SEGMENT.fft3+40)/1000.0;            // Take 0 to 255 from slider and recalculate to be << 1.0, and with a reasonable range of decay throughout.
+
+  if ((float)sample > *expAdjF) {
+    *expAdjF = (float)sample;
+  } else {
+    *expAdjF = (weightingF * (float)sample + (1.0-weightingF) * *expAdjF);
+  }
+
+//  Serial.print("Sample:\t"); Serial.print(sample);
+  Serial.print(",expAdjF:\t"); Serial.print(*expAdjF,3);
+  Serial.println(" ");
+*/
+
+
+
+// Configure decay for FFT based variable fftResult[16]
+/*  if (!SEGENV.allocateData(sizeof(float) * 16)) return mode_static();
+  float* expAdjF = reinterpret_cast<float*>(SEGENV.data);
+  float weightingF = (float)(SEGMENT.fft3+40)/1000.0;            // Take 0 to 255 and recalculate to be << 1.0
+
+  for (int i = 0; i < 16; i++) {
+
+   if ((float)sample > *expAdjF[i]) {
+    *expAdjF[i] = (float)sample;
+  } else {   
+    expAdjF[i] = (weightingF * (float)sample + (1.0-weightingF) * expAdjF[i]);
+  }
+
+    Serial.print(fftResult[i]);
+    Serial.print("\t"); Serial.print(expAdjF[i],3);Serial.print("\t");
+  }
+  Serial.println(" "); Serial.println(" ");
+*/
+
+// Testing fftResult values to see if/how we can normalize results.
+/*
+// Select a bin to display
+uint8_t binVal = map(SEGMENT.fft3,0,255,0,15);
+
+// Display smoothed results of selected bin.
+SEGENV.aux0 = ((SEGENV.aux0 * 15) + fftResult[binVal]) / 16;
+
+
+Serial.print("binVal:\t"); Serial.print(binVal);
+//Serial.print(",fftResult:\t"); Serial.print(fftResult[binVal]);
+Serial.print(",Avg:\t"); Serial.print(SEGENV.aux0);
+Serial.println(" ");
+*/
+
+//    for (int i=0; i < 16; i++) {
+//        fftResult[i] = fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0;
+//    }
+
+//  return FRAMETIME;
+//} //
+

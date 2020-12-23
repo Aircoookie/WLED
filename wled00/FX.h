@@ -246,7 +246,7 @@
 #define FX_MODE_NOISEMETER             122
 #define FX_MODE_FREQWAVE               123
 #define FX_MODE_FREQMATRIX             124
-#define FX_MODE_SPECTRAL               125
+#define FX_MODE_2DGEQ                  125
 #define FX_MODE_WATERFALL              126
 #define FX_MODE_FREQPIXEL              127
 #define FX_MODE_BINMAP                 128
@@ -263,7 +263,7 @@
 #define FX_MODE_2DDNA                  139
 #define FX_MODE_2DMATRIX               140
 #define FX_MODE_2DMEATBALLS            141
-#define FX_FFT_TEST                    142
+#define FX_MODE_FREQMAP                142
 #define FX_MODE_GRAVCENTER             143
 #define FX_MODE_GRAVCENTRIC            144
 #define FX_MODE_GRAVFREQ               145
@@ -495,7 +495,7 @@ class WS2812FX {
       _mode[FX_MODE_NOISEMETER]              = &WS2812FX::mode_noisemeter;
       _mode[FX_MODE_FREQWAVE]                = &WS2812FX::mode_freqwave;
       _mode[FX_MODE_FREQMATRIX]              = &WS2812FX::mode_freqmatrix;
-      _mode[FX_MODE_SPECTRAL]                = &WS2812FX::mode_spectral;
+      _mode[FX_MODE_2DGEQ]                   = &WS2812FX::mode_2DGEQ;
       _mode[FX_MODE_WATERFALL]               = &WS2812FX::mode_waterfall;
       _mode[FX_MODE_FREQPIXEL]               = &WS2812FX::mode_freqpixel;
       _mode[FX_MODE_BINMAP]                  = &WS2812FX::mode_binmap;
@@ -512,7 +512,7 @@ class WS2812FX {
       _mode[FX_MODE_2DDNA]                   = &WS2812FX::mode_2Ddna;
       _mode[FX_MODE_2DMATRIX]                = &WS2812FX::mode_2Dmatrix;
       _mode[FX_MODE_2DMEATBALLS]             = &WS2812FX::mode_2Dmeatballs;
-      _mode[FX_FFT_TEST]                     = &WS2812FX::fft_test;
+      _mode[FX_MODE_FREQMAP]                 = &WS2812FX::mode_freqmap;
       _mode[FX_MODE_GRAVCENTER]              = &WS2812FX::mode_gravcenter;
       _mode[FX_MODE_GRAVCENTRIC]             = &WS2812FX::mode_gravcentric;
       _mode[FX_MODE_GRAVFREQ]                = &WS2812FX::mode_gravfreq;
@@ -749,7 +749,7 @@ class WS2812FX {
       mode_noisemeter(void),
       mode_freqwave(void),
       mode_freqmatrix(void),
-      mode_spectral(void),
+      mode_2DGEQ(void),
       mode_waterfall(void),
       mode_freqpixel(void),
       mode_binmap(void),
@@ -766,7 +766,7 @@ class WS2812FX {
       mode_2Ddna(void),
       mode_2Dmatrix(void),
       mode_2Dmeatballs(void),
-      fft_test(void),
+      mode_freqmap(void),
       mode_gravcenter(void),
       mode_gravcentric(void),
       mode_gravfreq(void);
@@ -858,9 +858,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","Sunrise","Phased","Phased Noise","TwinkleUp","Noise Pal","Sine",
 "Flow","Chunchun","Dancing Shadows","Washing Machine","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
-"* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","* Waterfall","** Freqpixel","** Binmap","** Noisepeak",
+"* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** 2D GEQ","** Waterfall","** Freqpixel","** Binmap","** Noisepeak",
 "* Noisefire","* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012","2D DNA",
-"2D Matrix","2D Meatballs","** FFT_TEST","* Gravcenter","* Gravcentric","** Gravfreq"
+"2D Matrix","2D Meatballs","** Freqmap","* Gravcenter","* Gravcentric","** Gravfreq"
 ])=====";
 
 

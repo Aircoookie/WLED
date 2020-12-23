@@ -49,7 +49,7 @@ TaskHandle_t FFT_Task;
 
 uint8_t maxVol = 6;                             // Reasonable value for constant volume for 'peak detector', as it won't always trigger
 uint8_t targetAgc = 60;                         // This is our setPoint at 20% of max for the adjusted output
-uint8_t myVals[32];                             // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized
+uint8_t myVals[32];                             // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
 bool samplePeak = 0;                            // Boolean flag for peak. Responding routine must reset this flag
 bool udpSamplePeak = 0;                         // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
 int delayMs = 1;                                // I don't want to sample too often and overload WLED
@@ -105,8 +105,7 @@ void getSample() {
   micIn = abs(micIn);                             // And get the absolute value of each sample
 //////
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(micIn);
-  //lastSample = micIn;
-
+  
   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
   sample = (micIn <= soundSquelch) ? 0 : (sample * 3 + micIn) / 4;
 //////
@@ -335,11 +334,18 @@ void FFTcode( void * parameter) {
         fftResult[i] = fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftResult[i];
     }
 
+// Adjustment for frequency curves.
+  for (int i=0; i < 16; i++) {
+    fftResult[i] = fftResult[i] * fftResultPink[i];
+  }
 
 // Manual adjustment of gain.
     for (int i=0; i < 16; i++) {
         fftResult[i] = fftResult[i] * sampleGain / 40 + fftResult[i]/16.0;
     }
+
+
+
 
   } // for
 } // FFTcode()
