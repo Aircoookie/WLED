@@ -25,6 +25,7 @@
 */
 
 #include "FX.h"
+#include "tv_colors.h"
 
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
@@ -233,9 +234,9 @@ uint16_t WS2812FX::mode_random_color(void) {
 
 /*
  * Lights every LED in a random color. Changes all LED at the same time
-// * to new random colors.
+ * to new random colors.
  */
-uint16_t WS2812FX::mode_dynamic(void) {
+uint16_t WS2812FX::dynamic(boolean smooth=false) {
   if (!SEGENV.allocateData(SEGLEN)) return mode_static(); //allocation failed
   
   if(SEGENV.call == 0) {
@@ -252,12 +253,31 @@ uint16_t WS2812FX::mode_dynamic(void) {
     SEGENV.step = it;
   }
   
-  for (uint16_t i = 0; i < SEGLEN; i++) {
-    setPixelColor(i, color_wheel(SEGENV.data[i]));
-  }
+  if (smooth) {
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+      blendPixelColor(i, color_wheel(SEGENV.data[i]),16);
+    }
+  } else {
+    for (uint16_t i = 0; i < SEGLEN; i++) {
+      setPixelColor(i, color_wheel(SEGENV.data[i]));
+    }
+  } 
   return FRAMETIME;
 }
 
+/*
+ * Original effect "Dynamic"
+ */
+uint16_t WS2812FX::mode_dynamic(void) {
+  return dynamic(false);
+}
+
+/*
+ * effect "Dynamic" with smoth color-fading
+ */
+uint16_t WS2812FX::mode_dynamic_smooth(void) {
+  return dynamic(true);
+ }
 
 /*
  * Does the "standby-breathing" of well known i-Devices.
@@ -3752,4 +3772,98 @@ uint16_t WS2812FX::mode_blends(void) {
   }
 
   return FRAMETIME;
+}
+
+#ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
+typedef struct TvSim {
+  uint32_t totalTime = 0;
+  uint32_t fadeTime  = 0;
+  uint32_t startTime = 0;
+  uint32_t elapsed   = 0;
+  uint32_t pixelNum  = 0;
+  uint16_t pr = 0; // Prev R, G, B
+  uint16_t pg = 0;
+  uint16_t pb = 0;
+} tvSim;
+
+#define  numTVPixels (sizeof(tv_colors) / 2)  // 2 bytes per Pixel (5/6/5)
+#endif
+
+/*
+  TV Simulator
+  Modified and adapted to WLED by Def3nder, based on "Fake TV Light for Engineers" by Phillip Burgess https://learn.adafruit.com/fake-tv-light-for-engineers/arduino-sketch
+*/
+uint16_t WS2812FX::mode_tv_simulator(void) {
+  #ifdef WLED_DISABLE_FX_HIGH_FLASH_USE
+  return mode_static();
+  #else
+  uint16_t nr, ng, nb, r, g, b, i;
+  uint8_t  hi, lo, r8, g8, b8;
+
+  if (!SEGENV.allocateData(sizeof(tvSim))) return mode_static(); //allocation failed
+  TvSim* tvSimulator = reinterpret_cast<TvSim*>(SEGENV.data);
+
+  // initialize start of the TV-Colors
+  if (SEGENV.call == 0) { 
+    tvSimulator->pixelNum = ((uint8_t)random(18)) * numTVPixels / 18; // Begin at random movie (18 in total)
+  }
+
+  // Read next 16-bit (5/6/5) color
+  hi = pgm_read_byte(&tv_colors[tvSimulator->pixelNum * 2    ]);
+  lo = pgm_read_byte(&tv_colors[tvSimulator->pixelNum * 2 + 1]);
+
+  // Expand to 24-bit (8/8/8)
+  r8 = (hi & 0xF8) | (hi >> 5);
+  g8 = ((hi << 5) & 0xff) | ((lo & 0xE0) >> 3) | ((hi & 0x06) >> 1);
+  b8 = ((lo << 3) & 0xff) | ((lo & 0x1F) >> 2);
+
+  // Apply gamma correction, further expand to 16/16/16
+  nr = (uint8_t)gamma8(r8) * 257; // New R/G/B
+  ng = (uint8_t)gamma8(g8) * 257;
+  nb = (uint8_t)gamma8(b8) * 257;
+
+  if (SEGENV.aux0 == 0) {  // initialize next iteration 
+    SEGENV.aux0 = 1;
+    
+    // increase color-index for next loop
+    tvSimulator->pixelNum++;
+    if (tvSimulator->pixelNum >= numTVPixels) tvSimulator->pixelNum = 0;
+
+    // randomize total duration and fade duration for the actual color
+    tvSimulator->totalTime = random(250, 2500);                   // Semi-random pixel-to-pixel time
+    tvSimulator->fadeTime  = random(0, tvSimulator->totalTime);   // Pixel-to-pixel transition time
+    if (random(10) < 3) tvSimulator->fadeTime = 0;                // Force scene cut 30% of time
+
+    tvSimulator->startTime = millis();
+  } // end of initialization
+
+  // how much time is elapsed ?
+  tvSimulator->elapsed = millis() - tvSimulator->startTime;
+
+  // fade from prev volor to next color
+  if (tvSimulator->elapsed < tvSimulator->fadeTime) {
+    r = map(tvSimulator->elapsed, 0, tvSimulator->fadeTime, tvSimulator->pr, nr); 
+    g = map(tvSimulator->elapsed, 0, tvSimulator->fadeTime, tvSimulator->pg, ng);
+    b = map(tvSimulator->elapsed, 0, tvSimulator->fadeTime, tvSimulator->pb, nb);
+  } else { // Avoid divide-by-zero in map()
+    r = nr;
+    g = ng;
+    b = nb;
+  }
+
+  // set strip color
+  for (i = 0; i < SEGLEN; i++) {
+    setPixelColor(i, r >> 8, g >> 8, b >> 8);  // Quantize to 8-bit
+  }
+
+  // if total duration has passed, remember last color and restart the loop
+  if ( tvSimulator->elapsed >= tvSimulator->totalTime) {
+    tvSimulator->pr = nr; // Prev RGB = new RGB
+    tvSimulator->pg = ng;
+    tvSimulator->pb = nb;
+    SEGENV.aux0 = 0;
+  }
+  
+  return FRAMETIME;
+  #endif
 }
