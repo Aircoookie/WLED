@@ -3770,7 +3770,6 @@ uint16_t WS2812FX::mode_perlinmove(void) {
 } // mode_perlinmove()
 
 
-
 ////////////////////////////////
 //   Begin volume routines    //
 ////////////////////////////////
@@ -4640,11 +4639,14 @@ uint16_t WS2812FX::mode_2DDJLight(void) {   // Written by ??? Adapted by Will Ta
     leds[i] = leds[i + 1];
   }
 
+  
   EVERY_N_MILLISECONDS(300) {
     for (int i = 0; i < NUM_LEDS; i++) {
       leds[i].fadeToBlackBy(10); // TODO: map to fade
     } 
   }
+
+
   setPixels(leds);
   return FRAMETIME;
 }
