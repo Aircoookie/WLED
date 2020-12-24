@@ -3727,9 +3727,28 @@ uint16_t WS2812FX::mode_washing_machine(void) {
 }
 
 
-/////////////////////////////////////////////////////////////////////////////
-//    Start of Audio Reactive fork, beginning with non-reactive routines   //
-/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////
+//    Start of Audio Reactive fork     //
+/////////////////////////////////////////
+
+
+///////////////////////////////////////
+// Helper function(s)                //
+///////////////////////////////////////
+
+////////////////////////////
+// set Pixels             //
+////////////////////////////
+
+void WS2812FX::setPixels(CRGB* leds) {
+   for (int i=0; i<SEGLEN; i++) {
+      setPixelColor(i, leds[i].red, leds[i].green, leds[i].blue);
+   }  
+}
+
+/////////////////////////////
+// Non Reactive Routines   //
+/////////////////////////////
 
 
 /////////////////////////
@@ -4535,11 +4554,39 @@ uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat
 } // mode_noisepeak()
 
 
+///////////////////////
+//  ** Waterfall     //
+///////////////////////
+
+// Combines peak detection with FFT_MajorPeak and FFT_Magnitude.
+uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: Andrew Tuline
+
+//  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+
+  uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
+
+  if (SEGENV.aux0 != secondHand) {           // Triggered millis timing.
+    SEGENV.aux0 = secondHand;
+
+    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
+
+    if (samplePeak) {
+      setPixelColor(SEGLEN-1,92,92,92);
+    } else {
+      setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
+    }
+    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
+  }
+
+  return FRAMETIME;
+} // mode_waterfall()
+
+
 /////////////////////////
-// ** 2D EQ            //
+// ** 2D GEQ            //
 /////////////////////////
 
-uint16_t WS2812FX::mode_2DGEQ(void) {                // By Netmindz.
+uint16_t WS2812FX::mode_2DGEQ(void) {                // By Will Tatam.
    
   int barWidth = (matrixWidth / 16);
   int bandInc = 1;
@@ -4570,38 +4617,87 @@ uint16_t WS2812FX::mode_2DGEQ(void) {                // By Netmindz.
 }
 
 
-///////////////////////
-//  ** Waterfall     //
-///////////////////////
+/////////////////////////
+//     2D DJLight      //
+/////////////////////////
 
-// Combines peak detection with FFT_MajorPeak and FFT_Magnitude.
-uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: Andrew Tuline
+uint16_t WS2812FX::mode_2DDJLight(void) {   // Written by ??? Adapted by Will Tatam.
+  int NUM_LEDS = (matrixWidth * matrixHeight);
+  int mid = NUM_LEDS / 2;
+  CRGB *leds = (CRGB* )ledData;
 
-//  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
-
-  uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
-
-  if (SEGENV.aux0 != secondHand) {           // Triggered millis timing.
-    SEGENV.aux0 = secondHand;
-
-    uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-
-    if (samplePeak) {
-      setPixelColor(SEGLEN-1,92,92,92);
-    } else {
-      setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
-    }
-    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
+//  Serial.printf("Mid = %u\n", mid);
+  
+  leds[mid] = CRGB(fftResult[16]/2, fftResult[5]/2, fftResult[0]/2);
+  leds[mid].fadeToBlackBy(map(fftResult[1], 0, 255, 255, 10)); // TODO - Update
+    
+  //move to the left
+  for (int i = NUM_LEDS - 1; i > mid; i--) {
+    leds[i] = leds[i - 1];
+  }
+  // move to the right
+  for (int i = 0; i < mid; i++) {
+    leds[i] = leds[i + 1];
   }
 
+  EVERY_N_MILLISECONDS(300) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i].fadeToBlackBy(10); // TODO: map to fade
+    } 
+  }
+  setPixels(leds);
   return FRAMETIME;
-} // mode_waterfall()
+}
+
+/////////////////////////
+// 2D Funky plank      //
+/////////////////////////
+
+uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will Tatam.
+
+  CRGB *leds = (CRGB*) ledData;
+
+  int barWidth = (matrixWidth / 16);
+  int bandInc = 1;
+  if(barWidth == 0) {
+    // Matrix narrower than fft bands
+    barWidth = 1;
+    bandInc = (16 / matrixWidth);
+  }
+
+    // display values of
+    int b = 0; 
+    for (int band = 0; band < 16; band += bandInc) {
+      int hue = fftResult[band];
+      int v = map(fftResult[band], 0, 255, 10, 255);
+     if(hue > 0) Serial.printf("Band: %u Value: %u\n", band, hue);
+     for (int w = 0; w < barWidth; w++) {
+         int xpos = (barWidth * b) + w;
+         leds[XY(xpos, 0)] = CHSV(hue, 255, v);
+      }
+      b++;
+    }
+
+   // Update the display:
+  for (int i = (matrixHeight - 1); i > 0; i--) {
+    for (int j = (matrixWidth - 1); j >= 0; j--) {
+      int src = XY(j, (i - 1));
+      int dst = XY(j, i);
+      leds[dst] = leds[src];
+    }
+  }
+
+  setPixels(leds);
+  
+  return FRAMETIME;
+}
 
 
 
-/////////////////////////////////
-//     START of 2D ROUTINES    //
-/////////////////////////////////
+
+//////////////////////////////////////////////
+//     START of 2D NON-REACTIVE ROUTINES    //
+//////////////////////////////////////////////
 
 static uint16_t x = 0;
 static uint16_t y = 0;
