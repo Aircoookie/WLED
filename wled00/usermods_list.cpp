@@ -14,6 +14,13 @@
 #include "../usermods/Temperature/usermod_temperature.h"
 #endif
 //#include "usermod_v2_empty.h"
+#ifdef USERMOD_BUZZER
+#include "../usermods/buzzer/usermod_v2_buzzer.h"
+#endif
+// BME280 v2 usermod. Define "USERMOD_BME280" in my_config.h
+#ifdef USERMOD_BME280
+#include "../usermods/BME280_v2/usermod_bme280.h"
+#endif
 
 void registerUsermods()
 {
@@ -27,4 +34,10 @@ void registerUsermods()
   usermods.add(new UsermodTemperature());
   #endif
   //usermods.add(new UsermodRenameMe());
+  #ifdef USERMOD_BUZZER
+  usermods.add(new BuzzerUsermod());
+  #endif
+  #ifdef USERMOD_BME280
+  usermods.add(new UsermodBME280());
+  #endif
 }
