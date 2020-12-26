@@ -3801,7 +3801,7 @@ uint16_t WS2812FX::mode_pixels(void) {              // Pixels. By Andrew Tuline.
 uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pixelwave. By Andrew Tuline.
 
   CRGB *leds = (CRGB*) ledData;
-
+  if (SEGENV.call == 0) fill_solid(leds,SEGLEN, 0);
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
 
   if(SEGENV.aux0 != secondHand) {
@@ -3820,27 +3820,6 @@ uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pix
   setPixels(leds);
   return FRAMETIME;
 } // mode_pixelwave()
-
-/*uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pixelwave. By Andrew Tuline.
-
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
-
-  if(SEGENV.aux0 != secondHand) {
-    SEGENV.aux0 = secondHand;
-    int pixBri = sample * SEGMENT.intensity / 64;
-    setPixelColor(SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
-    for (int i=SEGLEN-1; i>SEGLEN/2; i--) {                               // Move to the right.
-      setPixelColor(i,getPixelColor(i-1));
-    }
-
-    for (int i=0; i<SEGLEN/2; i++) {                                      // Move to the left.
-      setPixelColor(i,getPixelColor(i+1));
-    }
-  }
-
-  return FRAMETIME;
-} // mode_pixelwave()
-*/
 
 //////////////////////
 //   * JUGGLES      //
@@ -3862,15 +3841,18 @@ uint16_t WS2812FX::mode_juggles(void) {                                   // Jug
 //////////////////////
 
 uint16_t WS2812FX::mode_matripix(void) {                                  // Matripix. By Andrew Tuline.
+  CRGB *leds = (CRGB*) ledData;
+  if (SEGENV.call == 0) fill_solid(leds,SEGLEN, 0);
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
     int pixBri = sample * SEGMENT.intensity / 64;
-    setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri));
-    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
+    leds[SEGLEN-1] = color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri);
+    for (int i=0; i<SEGLEN-1; i++) leds[i] = leds[i+1];
   }
 
+  setPixels(leds);
   return FRAMETIME;
 } // mode_matripix()
 
@@ -4583,7 +4565,11 @@ uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat
 ///////////////////////
 
 // Combines peak detection with FFT_MajorPeak and FFT_Magnitude.
+
 uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: Andrew Tuline
+
+  CRGB *leds = (CRGB*) ledData;
+  if (SEGENV.call == 0) fill_solid(leds,SEGLEN, 0);
 
 //  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
 
@@ -4595,15 +4581,17 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
     uint8_t pixCol = (log10((int)FFT_MajorPeak) - 2.26) * 177;       // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
 
     if (samplePeak) {
-      setPixelColor(SEGLEN-1,92,92,92);
+      leds[SEGLEN-1] = CHSV(92,92,92);
     } else {
-      setPixelColor(SEGLEN-1, color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
+      leds[SEGLEN-1] = color_blend(SEGCOLOR(1), color_from_palette(pixCol+SEGMENT.intensity, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8);
     }
-    for (int i=0; i<SEGLEN-1; i++) setPixelColor(i,getPixelColor(i+1));
+      for (int i=0; i<SEGLEN-1; i++) leds[i] = leds[i+1];
   }
 
+  setPixels(leds);
   return FRAMETIME;
 } // mode_waterfall()
+
 
 
 /////////////////////////
