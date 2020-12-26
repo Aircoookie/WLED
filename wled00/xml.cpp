@@ -219,6 +219,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AC"),apChannel);
     sappend('c',SET_F("WS"),noWifiSleep);
 
+    sappend('i',SET_F("ETH"),ethernetType);
 
     if (Network.isConnected()) //is connected
     {
