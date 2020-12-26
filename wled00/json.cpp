@@ -341,7 +341,6 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     if (errorFlag) root[F("error")] = errorFlag;
     
     root[F("ps")] = currentPreset;
-    root[F("pss")] = savedPresets;
     root[F("pl")] = (presetCyclingEnabled) ? 0: -1;
     
     usermods.addToJsonState(root);
@@ -603,7 +602,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 
   for (uint16_t i= 0; i < used; i += n)
   {
-    olen += sprintf(obuf + olen, "\"%06X\",", strip.getPixelColor(i));
+    olen += sprintf(obuf + olen, "\"%06X\",", strip.getPixelColor(i) & 0xFFFFFF);
   }
   olen -= 1;
   oappend((const char*)F("],\"n\":"));
