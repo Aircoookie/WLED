@@ -8,8 +8,8 @@ Fork of the WLED project where the Adalight USB serial protocol @115200 speed is
 
 <p align="center"> <b>ESP32:</b><br/><img src="https://i.postimg.cc/dQrq3JrZ/esp32.jpg"/></p><br/>
 <p align="center"> <img src="https://i.postimg.cc/1XrhH5rW/esp2.jpg"/></p><br/>
-<b>WLED is receiving data from the USB serial port at @2000000 baud:</b><br/>
-<p align="center"> <img src="https://i.postimg.cc/76RXckf4/esp-rec.jpg"/></p><br/>
+
+<p align="center"> <b>WLED is receiving data from the USB serial port at @2000000 baud:</b><br/><img src="https://i.postimg.cc/76RXckf4/esp-rec.jpg"/></p><br/>
 
 
 # Disclaimer
