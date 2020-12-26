@@ -3731,6 +3731,9 @@ uint16_t WS2812FX::mode_washing_machine(void) {
 //    Start of Audio Reactive fork     //
 /////////////////////////////////////////
 
+// FastLED array, so we can refer to leds[i] instead of the lossy getPixel() and setPixel()
+uint32_t ledData[MAX_LEDS];                 // See const.h for a value of 1500.
+uint32_t dataStore[4096];										// we are declaring a storage area or 64 x 64 (4096) words.
 
 ///////////////////////////////////////
 // Helper function(s)                //
@@ -3797,6 +3800,29 @@ uint16_t WS2812FX::mode_pixels(void) {              // Pixels. By Andrew Tuline.
 
 uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pixelwave. By Andrew Tuline.
 
+  CRGB *leds = (CRGB*) ledData;
+
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
+
+  if(SEGENV.aux0 != secondHand) {
+    SEGENV.aux0 = secondHand;
+    int pixBri = sample * SEGMENT.intensity / 64;
+    leds[SEGLEN/2] = color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), pixBri);
+
+    for (int i=SEGLEN-1; i>SEGLEN/2; i--) {                               // Move to the right.
+      leds[i] = leds[i-1];
+    }
+    for (int i=0; i<SEGLEN/2; i++) {                                      // Move to the left.
+      leds[i]=leds[i+1];
+    }
+  }
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_pixelwave()
+
+/*uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pixelwave. By Andrew Tuline.
+
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
 
   if(SEGENV.aux0 != secondHand) {
@@ -3814,7 +3840,7 @@ uint16_t WS2812FX::mode_pixelwave(void) {                                 // Pix
 
   return FRAMETIME;
 } // mode_pixelwave()
-
+*/
 
 //////////////////////
 //   * JUGGLES      //
@@ -4213,8 +4239,7 @@ extern double FFT_MajorPeak;
 extern double FFT_Magnitude;
 extern double fftBin[];                     // raw FFT data
 extern double fftResult[];                  // summary of bins array. 16 summary bins.
-uint32_t ledData[MAX_LEDS];                 // See const.h for a value of 1500.
-uint32_t dataStore[4096];										// we are declaring a storage area or 64 x 64 (4096) words.
+
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max){
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -4638,7 +4663,6 @@ uint16_t WS2812FX::mode_2DDJLight(void) {   // Written by ??? Adapted by Will Ta
   for (int i = 0; i < mid; i++) {
     leds[i] = leds[i + 1];
   }
-
   
   EVERY_N_MILLISECONDS(300) {
     for (int i = 0; i < NUM_LEDS; i++) {
@@ -4646,10 +4670,10 @@ uint16_t WS2812FX::mode_2DDJLight(void) {   // Written by ??? Adapted by Will Ta
     } 
   }
 
-
   setPixels(leds);
   return FRAMETIME;
 }
+
 
 /////////////////////////
 // 2D Funky plank      //
