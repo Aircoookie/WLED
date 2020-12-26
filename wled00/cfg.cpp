@@ -71,7 +71,9 @@ void deserializeConfig() {
   if (apHide > 1) apHide = 1;
 
   CJSON(apBehavior, ap[F("behav")]);
-  CJSON(ethernetType, ap[F("eth")]);
+  
+  JsonObject ethernet = doc[F("ethernet")];
+  CJSON(ethernetType, ethernet[F("type")]);
 
   /*
   JsonArray ap_ip = ap[F("ip")];
@@ -382,7 +384,9 @@ void serializeConfig() {
   JsonObject wifi = doc.createNestedObject("wifi");
   wifi[F("sleep")] = !noWifiSleep;
   wifi[F("phy")] = 1;
-  wifi[F("eth")] = ethernetType;
+
+  JsonObject ethernet = doc.createNestedObject("ethernet");
+  ethernet[F("type")] = ethernetType;
 
   JsonObject hw = doc.createNestedObject("hw");
 

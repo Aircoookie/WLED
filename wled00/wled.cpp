@@ -22,6 +22,9 @@ typedef struct EthernetSettings {
 } ethernet_settings;
 
 ethernet_settings ethernetBoards[] = {
+  // None
+  {
+  },
   // WT32-EHT01
   // Please note, from my testing only these pins work for LED outputs:
   //   IO2, IO4, IO12, IO14, IO15
@@ -432,15 +435,18 @@ void WLED::initConnection()
   #endif
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
-  ethernet_settings es = ethernetBoards[ethernetType];
-  ETH.begin(
-    (uint8_t) es.eth_address, 
-    (int)     es.eth_power, 
-    (int)     es.eth_mdc, 
-    (int)     es.eth_mdio, 
-    (eth_phy_type_t)   es.eth_type,
-    (eth_clock_mode_t) es.eth_clk_mode
-  );
+  // Only initialize ethernet board if not NONE
+  if (ethernetType != WLED_ETH_NONE) {
+    ethernet_settings es = ethernetBoards[ethernetType];
+    ETH.begin(
+      (uint8_t) es.eth_address, 
+      (int)     es.eth_power, 
+      (int)     es.eth_mdc, 
+      (int)     es.eth_mdio, 
+      (eth_phy_type_t)   es.eth_type,
+      (eth_clock_mode_t) es.eth_clk_mode
+    );
+  }
 #endif
 
   WiFi.disconnect(true);        // close old connections
