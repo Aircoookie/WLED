@@ -4296,7 +4296,9 @@ uint16_t WS2812FX::mode_freqmap(void) {        // Map FFT_MajorPeak to SEGLEN. W
 
 uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Pleschung.
 
-  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+
+//  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
@@ -4400,7 +4402,9 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 // As a compromise between speed and accuracy we are currently sampling with 10240Hz, from which we can then determine with a 512bin FFT our max frequency is 5120Hz.
 // Depending on the music stream you have you might find it useful to change the frequency mapping.
 
-  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+
+//  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
@@ -4518,46 +4522,11 @@ uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove.    By: Andrew Tuline
 
     setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i]));
 
-    Serial.print(fftResult[i]); Serial.print("\t");
-
   }
-    Serial.println(" ");
 
   return FRAMETIME;
 } // mode_noisemove()
 
-
-//////////////////////
-//  ** Noisepeak    //
-//////////////////////
-
-uint16_t WS2812FX::mode_noisepeak(void) {     // Noisepeak  Frequency noise beat (err. . . OK peak) to blast out palette based perlin noise across SEGLEN. By Andrew Tuline.
-
-  static CRGBPalette16 thisPalette;
-  static uint16_t dist;
-  CRGB color;
-
-  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;          // Get to 255 as quick as you can.
-  fade_out(fadeRate);
-
-  uint8_t pixCol = SEGMENT.intensity+(log10((int)FFT_MajorPeak) - 2.26) * 177;    // log10 frequency range is from 2.26 to 3.7. Let's scale accordingly.
-
-   if (samplePeak) {
-//      samplePeak = 0;
-
-      // Palette defined on the fly that stays close to the base pixCol.
-      thisPalette = CRGBPalette16(CHSV(pixCol,255,random8(128,255)),CHSV(pixCol+32,255,random8(128,255)),CHSV(pixCol+80,192,random8(128,255)),CHSV(pixCol+16,255,random8(128,255)));
-
-      for (int i = 0; i < SEGLEN; i++) {
-        uint8_t index = inoise8(i*30, dist+i*30);                                 // Get a value from the noise function. I'm using both x and y axis.
-        color = ColorFromPalette(thisPalette, index, 255, LINEARBLEND);           // Use the my own palette.
-        setPixelColor(i, color.red, color.green, color.blue);
-      }
-    }
-  dist += beatsin8(10,1,4);
-
-  return FRAMETIME;
-} // mode_noisepeak()
 
 
 ///////////////////////
@@ -4570,8 +4539,6 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 
   CRGB *leds = (CRGB*) ledData;
   if (SEGENV.call == 0) fill_solid(leds,SEGLEN, 0);
-
-//  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
 
   uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
 
@@ -4638,24 +4605,25 @@ uint16_t WS2812FX::mode_2DDJLight(void) {   // Written by ??? Adapted by Will Ta
   int mid = NUM_LEDS / 2;
   CRGB *leds = (CRGB* )ledData;
 
-//  Serial.printf("Mid = %u\n", mid);
-  
-  leds[mid] = CRGB(fftResult[16]/2, fftResult[5]/2, fftResult[0]/2);
-  leds[mid].fadeToBlackBy(map(fftResult[1], 0, 255, 255, 10)); // TODO - Update
-    
-  //move to the left
-  for (int i = NUM_LEDS - 1; i > mid; i--) {
-    leds[i] = leds[i - 1];
-  }
-  // move to the right
-  for (int i = 0; i < mid; i++) {
-    leds[i] = leds[i + 1];
-  }
-  
-  EVERY_N_MILLISECONDS(300) {
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i].fadeToBlackBy(10); // TODO: map to fade
-    } 
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
+
+  if (SEGENV.aux0 != secondHand) {           // Triggered millis timing.
+    SEGENV.aux0 = secondHand;
+
+    Serial.println("x");
+
+
+    leds[mid] = CRGB(fftResult[16]/2, fftResult[5]/2, fftResult[0]/2);
+    leds[mid].fadeToBlackBy(map(fftResult[1], 0, 255, 255, 10)); // TODO - Update
+      
+    //move to the left
+    for (int i = NUM_LEDS - 1; i > mid; i--) {
+      leds[i] = leds[i - 1];
+    }
+    // move to the right
+    for (int i = 0; i < mid; i++) {
+      leds[i] = leds[i + 1];
+    }
   }
 
   setPixels(leds);
@@ -4679,12 +4647,17 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will
     bandInc = (16 / matrixWidth);
   }
 
+  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
+
+  if (SEGENV.aux0 != secondHand) {           // Triggered millis timing.
+    SEGENV.aux0 = secondHand;
+
     // display values of
     int b = 0; 
     for (int band = 0; band < 16; band += bandInc) {
       int hue = fftResult[band];
       int v = map(fftResult[band], 0, 255, 10, 255);
-     if(hue > 0) Serial.printf("Band: %u Value: %u\n", band, hue);
+//     if(hue > 0) Serial.printf("Band: %u Value: %u\n", band, hue);
      for (int w = 0; w < barWidth; w++) {
          int xpos = (barWidth * b) + w;
          leds[XY(xpos, 0)] = CHSV(hue, 255, v);
@@ -4692,21 +4665,20 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will
       b++;
     }
 
-   // Update the display:
-  for (int i = (matrixHeight - 1); i > 0; i--) {
-    for (int j = (matrixWidth - 1); j >= 0; j--) {
-      int src = XY(j, (i - 1));
-      int dst = XY(j, i);
-      leds[dst] = leds[src];
+    // Update the display:
+    for (int i = (matrixHeight - 1); i > 0; i--) {
+      for (int j = (matrixWidth - 1); j >= 0; j--) {
+        int src = XY(j, (i - 1));
+        int dst = XY(j, i);
+        leds[dst] = leds[src];
+      }
     }
+
   }
 
   setPixels(leds);
-  
   return FRAMETIME;
 }
-
-
 
 
 //////////////////////////////////////////////

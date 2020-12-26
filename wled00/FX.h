@@ -119,7 +119,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                     148
+#define MODE_COUNT                     147
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -250,25 +250,24 @@
 #define FX_MODE_WATERFALL              126
 #define FX_MODE_FREQPIXEL              127
 #define FX_MODE_BINMAP                 128
-#define FX_MODE_NOISEPEAK              129
-#define FX_MODE_NOISEFIRE              130
-#define FX_MODE_PUDDLEPEAK             131
-#define FX_MODE_NOISEMOVE              132
-#define FX_MODE_2DPLASMA               133
-#define FX_MODE_PERLINMOVE             134
-#define FX_MODE_RIPPLEPEAK             135
-#define FX_MODE_2DFIRENOISE            136
-#define FX_MODE_2DSQUAREDSWIRL         137
-#define FX_MODE_2DFIRE2012             138
-#define FX_MODE_2DDNA                  139
-#define FX_MODE_2DMATRIX               140
-#define FX_MODE_2DMEATBALLS            141
-#define FX_MODE_FREQMAP                142
-#define FX_MODE_GRAVCENTER             143
-#define FX_MODE_GRAVCENTRIC            144
-#define FX_MODE_GRAVFREQ               145
-#define FX_MODE_2DDJLIGHT              146
-#define FX_MODE_2DFUNKYPLANK           147
+#define FX_MODE_NOISEFIRE              129
+#define FX_MODE_PUDDLEPEAK             130
+#define FX_MODE_NOISEMOVE              131
+#define FX_MODE_2DPLASMA               132
+#define FX_MODE_PERLINMOVE             133
+#define FX_MODE_RIPPLEPEAK             134
+#define FX_MODE_2DFIRENOISE            135
+#define FX_MODE_2DSQUAREDSWIRL         136
+#define FX_MODE_2DFIRE2012             137
+#define FX_MODE_2DDNA                  138
+#define FX_MODE_2DMATRIX               139
+#define FX_MODE_2DMEATBALLS            140
+#define FX_MODE_FREQMAP                141
+#define FX_MODE_GRAVCENTER             142
+#define FX_MODE_GRAVCENTRIC            143
+#define FX_MODE_GRAVFREQ               144
+#define FX_MODE_2DDJLIGHT              145
+#define FX_MODE_2DFUNKYPLANK           146
 
 
 // Sound reactive external variables
@@ -501,7 +500,6 @@ class WS2812FX {
       _mode[FX_MODE_WATERFALL]               = &WS2812FX::mode_waterfall;
       _mode[FX_MODE_FREQPIXEL]               = &WS2812FX::mode_freqpixel;
       _mode[FX_MODE_BINMAP]                  = &WS2812FX::mode_binmap;
-      _mode[FX_MODE_NOISEPEAK]               = &WS2812FX::mode_noisepeak;
       _mode[FX_MODE_NOISEFIRE]               = &WS2812FX::mode_noisefire;
       _mode[FX_MODE_PUDDLEPEAK]              = &WS2812FX::mode_puddlepeak;
       _mode[FX_MODE_NOISEMOVE]               = &WS2812FX::mode_noisemove;
@@ -758,7 +756,6 @@ class WS2812FX {
       mode_waterfall(void),
       mode_freqpixel(void),
       mode_binmap(void),
-      mode_noisepeak(void),
       mode_noisefire(void),
       mode_puddlepeak(void),
       mode_noisemove(void),
@@ -865,9 +862,9 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","Sunrise","Phased","Phased Noise","TwinkleUp","Noise Pal","Sine",
 "Flow","Chunchun","Dancing Shadows","Washing Machine","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
-"* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** 2D GEQ","** Waterfall","** Freqpixel","** Binmap","** Noisepeak",
-"* Noisefire","* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012","2D DNA",
-"2D Matrix","2D Meatballs","** Freqmap","* Gravcenter","* Gravcentric","** Gravfreq","** 2D DJ Light","** 2D Funky Plank"
+"* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** 2D GEQ","** Waterfall","** Freqpixel","** Binmap","* Noisefire",
+"* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012","2D DNA","2D Matrix",
+"2D Meatballs","** Freqmap","* Gravcenter","* Gravcentric","** Gravfreq","** 2D DJ Light","** 2D Funky Plank"
 ])=====";
 
 
