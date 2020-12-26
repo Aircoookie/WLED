@@ -52,6 +52,9 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
+/* Disable effects with high flash memory usage (currently TV simulator) - saves 18.5kB */
+//#define WLED_DISABLE_FX_HIGH_FLASH_USE
+
 /* Not used in all effects yet */
 #define WLED_FPS         42
 #define FRAMETIME        (1000/WLED_FPS)
@@ -116,7 +119,8 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT  114
+
+#define MODE_COUNT  118
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -232,6 +236,10 @@
 #define FX_MODE_CHUNCHUN               111
 #define FX_MODE_DANCING_SHADOWS        112
 #define FX_MODE_WASHING_MACHINE        113
+#define FX_MODE_CANDY_CANE             114
+#define FX_MODE_BLENDS                 115
+#define FX_MODE_TV_SIMULATOR           116
+#define FX_MODE_DYNAMIC_SMOOTH         117
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -316,9 +324,31 @@ class WS2812FX {
         WS2812FX::_usedSegmentData -= _dataLen;
         _dataLen = 0;
       }
-      void reset(){next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; deallocateData();}
+
+      /** 
+       * If reset of this segment was request, clears runtime
+       * settings of this segment.
+       * Must not be called while an effect mode function is running
+       * because it could access the data buffer and this method 
+       * may free that data buffer.
+       */
+      void resetIfRequired() {
+        if (_requiresReset) {
+          next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
+          deallocateData();
+          _requiresReset = false;
+        }
+      }
+
+      /** 
+       * Flags that before the next effect is calculated,
+       * the internal segment state should be reset. 
+       * Call resetIfRequired before calling the next effect function.
+       */
+      void reset() { _requiresReset = true; }
       private:
         uint16_t _dataLen = 0;
+        bool _requiresReset = false;
     } segment_runtime;
 
     WS2812FX() {
@@ -437,6 +467,10 @@ class WS2812FX {
       _mode[FX_MODE_CHUNCHUN]                = &WS2812FX::mode_chunchun;
       _mode[FX_MODE_DANCING_SHADOWS]         = &WS2812FX::mode_dancing_shadows;
       _mode[FX_MODE_WASHING_MACHINE]         = &WS2812FX::mode_washing_machine;
+      _mode[FX_MODE_CANDY_CANE]              = &WS2812FX::mode_candy_cane;
+      _mode[FX_MODE_BLENDS]                  = &WS2812FX::mode_blends;
+      _mode[FX_MODE_TV_SIMULATOR]            = &WS2812FX::mode_tv_simulator;
+      _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -478,7 +512,9 @@ class WS2812FX {
       gammaCorrectCol = true,
       applyToAllSelected = true,
       segmentsAreIdentical(Segment* a, Segment* b),
-      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p);
+      setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p),
+      // return true if the strip is being sent pixel updates
+      isUpdating(void);
 
     uint8_t
       mainSegment = 0,
@@ -643,7 +679,11 @@ class WS2812FX {
       mode_flow(void),
       mode_chunchun(void),
       mode_dancing_shadows(void),
-      mode_washing_machine(void);
+      mode_washing_machine(void),
+      mode_candy_cane(void),
+      mode_blends(void),
+      mode_tv_simulator(void),
+      mode_dynamic_smooth(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -676,6 +716,7 @@ class WS2812FX {
       blink(uint32_t, uint32_t, bool strobe, bool),
       candle(bool),
       color_wipe(bool, bool),
+      dynamic(bool),
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
       running_base(bool),
@@ -731,7 +772,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows","Washing Machine"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth"
 ])=====";
 
 

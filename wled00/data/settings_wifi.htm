@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
 	<meta name="viewport" content="width=500">
@@ -51,7 +51,7 @@
 		<h3>Configure Access Point</h3>
 		AP SSID (leave empty for no AP):<br> <input name="AS" maxlength="32"><br>
 		Hide AP name: <input type="checkbox" name="AH"><br>
-		AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63"><br>
+		AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63" pattern="(.{8,63})|()" title="Empty or min. 8 characters"><br>
 		Access Point WiFi channel: <input name="AC" type="number" min="1" max="13" required><br>
     AP opens:
     <select name="AB">
