@@ -213,6 +213,7 @@ void WLED::setup()
   DEBUG_PRINT(VERSION);
   DEBUG_PRINTLN(" INIT---");
 #ifdef ARDUINO_ARCH_ESP32
+  Serial.setRxBufferSize(1024);
   DEBUG_PRINT("esp32 ");
   DEBUG_PRINTLN(ESP.getSdkVersion());
 #else
