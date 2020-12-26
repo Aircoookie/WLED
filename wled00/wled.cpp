@@ -41,12 +41,12 @@ ethernet_settings ethernetBoards[] = {
 
   // ESP32-POE
   {
-     0,                // eth_address, 
-    -1,                // eth_power, 
-    23,                // eth_mdc, 
-    18,                // eth_mdio, 
-    ETH_PHY_LAN8720,   // eth_type,
-    ETH_CLOCK_GPIO0_IN // eth_clk_mode
+     0,                  // eth_address, 
+    12,                  // eth_power, 
+    23,                  // eth_mdc, 
+    18,                  // eth_mdio, 
+    ETH_PHY_LAN8720,     // eth_type,
+    ETH_CLOCK_GPIO17_OUT // eth_clk_mode
   }
 };
 
