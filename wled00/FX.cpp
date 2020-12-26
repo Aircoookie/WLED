@@ -1780,19 +1780,22 @@ uint16_t WS2812FX::mode_fire_2012()
 
   if (it != SEGENV.step)
   {
+    uint8_t ignition = max(7,SEGLEN/10);  // ignition area: 10% of segment length or minimum 7 pixels
+    
     // Step 1.  Cool down every cell a little
     for (uint16_t i = 0; i < SEGLEN; i++) {
-      SEGENV.data[i] = qsub8(heat[i],  random8(0, (((20 + SEGMENT.speed /3) * 10) / SEGLEN) + 2));
+      uint8_t temp = qsub8(heat[i], random8(0, (((20 + SEGMENT.speed /3) * 10) / SEGLEN) + 2));
+      heat[i] = (temp==0 && i<ignition) ? 2 : temp; // prevent ignition area from becoming black
     }
   
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
     for (uint16_t k= SEGLEN -1; k > 1; k--) {
-      heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2] ) / 3;
+      heat[k] = (heat[k - 1] + (heat[k - 2]<<1) ) / 3;  // heat[k-2] multiplied by 2
     }
     
     // Step 3.  Randomly ignite new 'sparks' of heat near the bottom
     if (random8() <= SEGMENT.intensity) {
-      uint8_t y = random8(7);
+      uint8_t y = random8(ignition);
       if (y < SEGLEN) heat[y] = qadd8(heat[y], random8(160,255));
     }
     SEGENV.step = it;
