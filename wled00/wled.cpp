@@ -25,6 +25,7 @@ ethernet_settings ethernetBoards[] = {
   // None
   {
   },
+  
   // WT32-EHT01
   // Please note, from my testing only these pins work for LED outputs:
   //   IO2, IO4, IO12, IO14, IO15
