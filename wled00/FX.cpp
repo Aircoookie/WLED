@@ -3969,10 +3969,97 @@ uint16_t WS2812FX::mode_gravcentric(void) {                                // Gr
 
 
 //////////////////////
+//   * MIDNOISE     //
+//////////////////////
+
+uint16_t WS2812FX::mode_midnoise(void) {                                  // Midnoise. By Andrew Tuline.
+
+  static uint16_t xdist;
+  static uint16_t ydist;
+
+  fade_out(SEGMENT.speed);
+
+  uint16_t maxLen = sampleAvg * SEGMENT.intensity / 256;                  // Too sensitive.
+  maxLen = maxLen * SEGMENT.intensity / 128;                              // Reduce sensitity/length.
+
+  if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
+
+  for (int i=(SEGLEN/2-maxLen); i<(SEGLEN/2+maxLen); i++) {
+    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);        // Get a value from the noise function. I'm using both x and y axis.
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
+  }
+
+  xdist=xdist+beatsin8(5,0,10);
+  ydist=ydist+beatsin8(4,0,10);
+
+  return FRAMETIME;
+} // mode_midnoise()
+
+
+//////////////////////
+//   * NOISEFIRE    //
+//////////////////////
+
+// I am the god of hellfire. . . Volume (only) reactive fire routine. Oh, look how short this is.
+uint16_t WS2812FX::mode_noisefire(void) {     // Noisefire. By Andrew Tuline.
+
+  CRGB *leds = (CRGB*) ledData;
+
+  currentPalette = CRGBPalette16(CHSV(0,255,2), CHSV(0,255,4), CHSV(0,255,8), CHSV(0, 255, 8),    // Fire palette definition. Lower value = darker.
+                                 CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,
+                                 CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
+                                 CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
+
+  for (int i = 0; i < SEGLEN; i++) {
+    uint16_t index = inoise8(i*SEGMENT.speed/64,millis()*SEGMENT.speed/64*SEGLEN/255);      // X location is constant, but we move along the Y at the rate of millis(). By Andrew Tuline.
+    index = (255 - i*256/SEGLEN) * index/(256-SEGMENT.intensity);                           // Now we need to scale index so that it gets blacker as we get close to one of the ends.
+                                                                                            // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
+    CRGB color = ColorFromPalette(currentPalette, index, sampleAvg*2, LINEARBLEND);         // Use the my own palette.
+    leds[i] = color;
+  }
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_noisefire()
+
+
+///////////////////////
+//   * Noisemeter    //
+///////////////////////
+
+uint16_t WS2812FX::mode_noisemeter(void) {                                // Noisemeter. By Andrew Tuline.
+
+  static uint16_t xdist;
+  static uint16_t ydist;
+
+  uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
+  fade_out(fadeRate);
+
+  int maxLen = sample*8;
+
+  maxLen = maxLen * SEGMENT.intensity / 256;                              // Still a bit too sensitive.
+
+  if (maxLen >SEGLEN) maxLen = SEGLEN;
+
+  for (int i=0; i<maxLen; i++) {                                          // The louder the sound, the wider the soundbar. By Andrew Tuline.
+    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);        // Get a value from the noise function. I'm using both x and y axis.
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
+  }
+
+  xdist+=beatsin8(5,0,10);
+  ydist+=beatsin8(4,0,10);
+
+  return FRAMETIME;
+} // mode_noisemeter()
+
+
+//////////////////////
 //   * PLASMOID     //
 //////////////////////
 
 uint16_t WS2812FX::mode_plasmoid(void) {                                  // Plasmoid. By Andrew Tuline.
+
+  fade_out(224);
 
   static int16_t thisphase = 0;                                           // Phase of a cubicwave8.
   static int16_t thatphase = 0;                                           // Phase of the cos8.
@@ -4021,91 +4108,6 @@ uint16_t WS2812FX::mode_puddles(void) {                                   // Pud
 } // mode_puddles()
 
 
-//////////////////////
-//   * MIDNOISE     //
-//////////////////////
-
-uint16_t WS2812FX::mode_midnoise(void) {                                  // Midnoise. By Andrew Tuline.
-
-  static uint16_t xdist;
-  static uint16_t ydist;
-
-  fade_out(SEGMENT.speed);
-
-  uint16_t maxLen = sampleAvg * SEGMENT.intensity / 256;                  // Too sensitive.
-  maxLen = maxLen * SEGMENT.intensity / 128;                              // Reduce sensitity/length.
-
-  if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
-
-  for (int i=(SEGLEN/2-maxLen); i<(SEGLEN/2+maxLen); i++) {
-    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);        // Get a value from the noise function. I'm using both x and y axis.
-    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
-  }
-
-  xdist=xdist+beatsin8(5,0,10);
-  ydist=ydist+beatsin8(4,0,10);
-
-  return FRAMETIME;
-} // mode_midnoise()
-
-
-///////////////////////
-//   * Noisemeter    //
-///////////////////////
-
-uint16_t WS2812FX::mode_noisemeter(void) {                                // Noisemeter. By Andrew Tuline.
-
-  static uint16_t xdist;
-  static uint16_t ydist;
-
-  uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
-  fade_out(fadeRate);
-
-  int maxLen = sample;
-
-  maxLen = maxLen * SEGMENT.intensity / 256;                              // Still a bit too sensitive.
-
-  if (maxLen >SEGLEN) maxLen = SEGLEN;
-
-  for (int i=0; i<maxLen; i++) {                                          // The louder the sound, the wider the soundbar. By Andrew Tuline.
-    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);        // Get a value from the noise function. I'm using both x and y axis.
-    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
-  }
-
-  xdist+=beatsin8(5,0,10);
-  ydist+=beatsin8(4,0,10);
-
-  return FRAMETIME;
-} // mode_noisemeter()
-
-
-//////////////////////
-//   * NOISEFIRE    //
-//////////////////////
-
-// I am the god of hellfire. . . Volume (only) reactive fire routine. Oh, look how short this is.
-uint16_t WS2812FX::mode_noisefire(void) {     // Noisefire. By Andrew Tuline.
-
-  const uint8_t xscale = 20;                  // How far apart they are
-  const uint8_t yscale = 3;                   // How fast they move
-
-  CRGB color;
-  uint16_t index;                             // Current colour lookup value.
-
-  currentPalette = CRGBPalette16(CHSV(0,255,2), CHSV(0,255,4), CHSV(0,255,8), CHSV(0, 255, 8),    // Fire palette definition. Lower value = darker.
-                                 CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,
-                                 CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
-                                 CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
-
-  for (int i = 0; i < SEGLEN; i++) {
-    index = inoise8(i*xscale,millis()*yscale*SEGLEN/255);                       // X location is constant, but we move along the Y at the rate of millis(). By Andrew Tuline.
-    index = (255 - i*256/SEGLEN) * index/128;                                   // Now we need to scale index so that it gets blacker as we get close to one of the ends.
-    color = ColorFromPalette(currentPalette, index, sampleAvg*2, LINEARBLEND);  // Use the my own palette.
-    setPixelColor(i, color.red, color.green, color.blue);                       // This is a simple y=mx+b equation that's been scaled. index/128 is another scaling.
-  }
-
-  return FRAMETIME;
-} // mode_noisefire()
 
 
 ///////////////////////
