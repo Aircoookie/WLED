@@ -1,6 +1,65 @@
 ## WLED changelog
 
-### WLED version 0.11.0
+### Development versions after 0.11.1 release
+
+#### Build 2012210
+
+-  Split index.htm in separate CSS + JS files (PR #1542)
+-  Minify UI HTML, saving >1.5kB flash
+-  Fixed JShint warnings
+
+#### Build 2012180
+
+-  Boot brightness 0 will now use the brightness from preset
+-  Add iOS scrolling momentum (from PR #1528)
+
+### WLED release 0.11.1
+
+#### Build 2012180
+
+-   Release of WLED 0.11.1 "Mirai"
+-   Fixed AP hide not saving (fixes #1520)
+-   Fixed MQTT password re-transmitted to HTML
+-   Hide Update buttons while uploading, accept .bin
+-   Make sure AP password is at least 8 characters long
+
+### Development versions after 0.11.0 release
+
+#### Build 2012160
+
+-   Bump Espalexa to 2.5.0, fixing discovery (PR Espalexa/#152, originally PR #1497)
+
+#### Build 2012150
+
+-   Added Blends FX (PR #1491)
+-   Fixed an issue that made it impossible to deactivate timed presets
+
+#### Build 2012140
+
+-   Added Preset ID quick display option (PR #1462)
+-   Fixed LEDs not turning on when using gamma correct brightness and LEDPIN 2 (default)
+-   Fixed notifier applying main segment to selected segments on notification with FX/Col disabled 
+
+#### Build 2012130
+
+-   Fixed RGBW mode not saved between reboots (fixes #1457)
+-   Added brightness scaling in palette function for default (PR #1484)
+
+#### Build 2012101
+
+-   Fixed preset cycle default duration rounded down to nearest 10sec interval (#1458)
+-   Enabled E1.31/DDP/Art-Net in AP mode
+
+#### Build 2012100
+
+-   Fixed multi-segment preset cycle
+-   Fixed EEPROM (pre-0.11 settings) not cleared on factory reset
+-   Fixed an issue with intermittent crashes on FX change (PR #1465)
+-   Added function to know if strip is updating (PR #1466)
+-   Fixed using colorwheel sliding the UI (PR #1459)
+-   Fixed analog clock settings not saving (PR #1448)
+-   Added Temperature palette (PR #1430)
+-   Added Candy cane FX (PR #1445)
 
 #### Build 2012020
 
@@ -10,6 +69,8 @@
 #### Build 2012010
 
 -   Fixed compilation for analog (PWM) LEDs
+
+### WLED version 0.11.0
 
 #### Build 2011290
 

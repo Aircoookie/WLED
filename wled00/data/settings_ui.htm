@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head>
+<head lang="en">
   <meta charset="utf-8">
 	<meta name="viewport" content="width=500">
 	<title>UI Settings</title>
@@ -18,7 +18,8 @@
 				"quick": "Quick color selectors",
 				"hex": "HEX color input"
 			},
-			"pcmbot": "Show bottom tab bar in PC mode"
+      "pcmbot": "Show bottom tab bar in PC mode",
+      "pid": "Show preset IDs"
 			},
 			"theme":{
 				"alpha": {
@@ -26,7 +27,8 @@
 					"tab":"Button opacity"
 				},
 				"bg":{
-					"url":"BG image URL"
+					"url":"BG image URL",
+					"random":"Random BG image"
 				},
 				"color":{
 					"bg":"BG HEX color"
@@ -162,6 +164,24 @@
 			var f = gId('theme_base');
 			if (f) f.value = (gId('dm').checked) ? 'light':'dark';
 		}
+
+		// random BG image
+		function setRandomBg() {
+			if (gId("theme_bg_random").checked) {
+				gId("theme_bg_url").value = "https://picsum.photos/1920/1080";
+			} else {
+				gId("theme_bg_url").value = "";
+			}
+			
+		}
+		function checkRandomBg() {
+			if (gId("theme_bg_url").value === "https://picsum.photos/1920/1080") {
+				gId("theme_bg_random").checked = true;
+			} else {
+				gId("theme_bg_random").checked = false;
+			}
+		}
+
 		function GetV()
 		{
 		}
@@ -189,13 +209,15 @@
 		
 		<h3>UI Appearance</h3>
 		<span class="l"></span>: <input type="checkbox" id="comp_labels" class="agi cb"><br>
-		<span class="l"></span>: <input type="checkbox" id="comp_pcmbot" class="agi cb"><br>
+    <span class="l"></span>: <input type="checkbox" id="comp_pcmbot" class="agi cb"><br>
+    <span class="l"></span>: <input type="checkbox" id="comp_pid" class="agi cb"><br>
 		I hate dark mode: <input type="checkbox" id="dm" onchange="UI()"><br>
 		<span id="idonthateyou" style="display:none"><i>Why would you? </i>&#x1F97A;<br></span>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_tab" class="agi"><br>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_bg" class="agi"><br>
 		<span class="l"></span>: <input id="theme_color_bg" maxlength="9" class="agi"><br>
-		<span class="l">BG image URL</span>: <input id="theme_bg_url" class="agi">
+		<span class="l">BG image URL</span>: <input id="theme_bg_url" class="agi" oninput="checkRandomBg()"><br>
+		<span class="l">Random BG image</span>: <input type="checkbox" id="theme_bg_random" class="agi cb" onchange="setRandomBg()"><br>
 		<input id="theme_base" class="agi" style="display:none">
 		<hr><button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button>
 	</form>
