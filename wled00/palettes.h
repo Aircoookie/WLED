@@ -639,14 +639,6 @@ const byte temperature_gp[] PROGMEM = {
     255, 171, 101, 221  //Purple
   };
 
-  
-/*const byte Blue_Cyan_Yellow_gp[] PROGMEM = {
-    0,   0,  0,255,
-   63,   0, 55,255,
-  127,   0,255,255,
-  191,  42,255, 45,
-  255, 255,255,  0};*/
-
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on
 // a number, rather than having to activate each explicitly
