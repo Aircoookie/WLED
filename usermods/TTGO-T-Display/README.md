@@ -3,14 +3,24 @@ This usermod allows use of the TTGO T-Display ESP32 module with integrated 240x1
 for controlling WLED and showing the following information: 
 * Current SSID
 * IP address if obtained
-  * in AP mode and turned off lightning AP password is shown
+  * If connected to a network, current brightness % is shown 
+  * in AP mode AP IP and password are shown
 * Current effect
 * Current palette
+* Estimated current in mA is shown (NOTE: for this to be a reasonable value, the correct LED type must be specified in the LED Prefs section)
+
+Button pin is mapped to the onboard button next to the side actuated reset button of the TTGO T-Display board.
+
+I have designed a 3D printed case around this board and an ["ElectroCookie"](https://amzn.to/2WCNeeA) project board, a [level shifter](https://amzn.to/3hbKu18), a [buck regulator](https://amzn.to/3mLMy0W), and a DC [power jack](https://amzn.to/3phj9NZ).  I use 12V WS2815 LED strips for my projects, and power them with 12V power supplies, so the regulator drops the voltage to the 5V level I need to power the ESP module and the level shifter.  If there is any interest in this case, which elevates the board and display on some custom extended headers to make place the screen at the top of the enclosure (with accessible buttons), let me know, and I could post the STL files.  It is a bit tricky to get the height correct, so I also designed a one-time use 3D printed solder fixture to set the board in the right location and at the correct height for the housing.  (It is one-time use because it has to be cut off after soldering to be able to remove it).  I didn't think the effort to make it in multiple pieces was worthwhile.
 
 Usermod based on a rework of the ssd1306_i2c_oled_u8g2 usermod from the WLED repo.
 
 ## Hardware
 ![Hardware](assets/ttgo_hardware1.png)
+![Hardware](assets/ttgo-tdisplay-enclosure1a.png)
+![Hardware](assets/ttgo-tdisplay-enclosure2a.png)
+![Hardware](assets/ttgo-tdisplay-enclosure3a.png)
+![Hardware](assets/ttgo-tdisplay-enclosure3a.png)
 
 ## Github reference for TTGO-Tdisplay
 
@@ -20,7 +30,11 @@ Usermod based on a rework of the ssd1306_i2c_oled_u8g2 usermod from the WLED rep
 Functionality checked with:
 * TTGO T-Display
 * PlatformIO
-* Group of 4 individual Neopixels from Adafruit, and a full string of 68 LEDs.
+* Group of 4 individual Neopixels from Adafruit, and a several full strings of 12v WS2815 LEDs.
+* The hardware design shown above should be limited to shorter strings.  For larger strings, I use a different setup with a dedicated 12v power supply and power them directly off the supply (in addition to dropping the 12v supply down to 5v with a buck regulator for the ESP module and level shifter).
+
+## Setup Needed:
+* As with all usermods, copy the usermod.cpp file from the TTGO-T-Display usermod folder to the wled00 folder (replacing the default usermod.cpp file).
 
 ## Platformio Requirements
 ### Platformio.ini changes
