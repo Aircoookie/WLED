@@ -119,7 +119,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                     147
+#define MODE_COUNT                     148
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -268,6 +268,7 @@
 #define FX_MODE_GRAVFREQ               144
 #define FX_MODE_2DDJLIGHT              145
 #define FX_MODE_2DFUNKYPLANK           146
+#define FX_MODE_2DCENTERBARS           147
 
 
 // Sound reactive external variables
@@ -517,7 +518,8 @@ class WS2812FX {
       _mode[FX_MODE_GRAVCENTRIC]             = &WS2812FX::mode_gravcentric;
       _mode[FX_MODE_GRAVFREQ]                = &WS2812FX::mode_gravfreq;
       _mode[FX_MODE_2DDJLIGHT]               = &WS2812FX::mode_2DDJLight;
-      _mode[FX_MODE_2DFUNKYPLANK]            = &WS2812FX::mode_2DFunkyPlank;
+      _mode[FX_MODE_2DFUNKYPLANK]            = &WS2812FX::mode_2DFunkyPlank,
+      _mode[FX_MODE_2DCENTERBARS]            = &WS2812FX::mode_2DCenterBars;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -773,7 +775,8 @@ class WS2812FX {
       mode_gravcentric(void),
       mode_gravfreq(void),
       mode_2DDJLight(void),
-      mode_2DFunkyPlank(void);
+      mode_2DFunkyPlank(void),
+      mode_2DCenterBars(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -864,7 +867,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Flow","Chunchun","Dancing Shadows","Washing Machine","* Pixels","* Pixelwave","* Juggles","* Matripix","* Gravimeter","* Plasmoid",
 "* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** 2D GEQ","** Waterfall","** Freqpixel","** Binmap","* Noisefire",
 "* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012","2D DNA","2D Matrix",
-"2D Meatballs","** Freqmap","* Gravcenter","* Gravcentric","** Gravfreq","** 2D DJ Light","** 2D Funky Plank"
+"2D Meatballs","** Freqmap","* Gravcenter","* Gravcentric","** Gravfreq","** 2D DJ Light","** 2D Funky Plank","** 2D CenterBars"
 ])=====";
 
 

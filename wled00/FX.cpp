@@ -4564,7 +4564,7 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 
 
 /////////////////////////
-// ** 2D GEQ            //
+// ** 2D GEQ           //
 /////////////////////////
 
 uint16_t WS2812FX::mode_2DGEQ(void) {                // By Will Tatam.
@@ -4599,7 +4599,7 @@ uint16_t WS2812FX::mode_2DGEQ(void) {                // By Will Tatam.
 
 
 /////////////////////////
-//     2D DJLight      //
+//   ** 2D DJLight     //
 /////////////////////////
 
 uint16_t WS2812FX::mode_2DDJLight(void) {   // Written by ??? Adapted by Will Tatam.
@@ -4634,7 +4634,7 @@ uint16_t WS2812FX::mode_2DDJLight(void) {   // Written by ??? Adapted by Will Ta
 
 
 /////////////////////////
-// 2D Funky plank      //
+// ** 2D Funky plank   //
 /////////////////////////
 
 uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will Tatam.
@@ -4678,6 +4678,41 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will
 
   }
 
+  setPixels(leds);
+  return FRAMETIME;
+}
+
+
+/////////////////////////
+// ** 2D CenterBars    //
+/////////////////////////
+
+uint16_t WS2812FX::mode_2DCenterBars(void) {                // Written by Scott Marley Adapted by Will Spiro-C..
+
+  CRGB *leds = (CRGB*) ledData;
+  fadeToBlackBy(leds, SEGLEN, 255);
+  int barWidth = (matrixWidth / 16);
+  int bandInc = 1;
+  if(barWidth == 0) {
+    // Matrix narrower than fft bands
+    barWidth = 1;
+    bandInc = (16 / matrixWidth);
+  }
+
+  int b = 0;
+  for (int band = 0; band < 16; band += bandInc) {
+    int hight = map(fftResult[band], 0, 255, 0, matrixHeight);
+    if (hight % 2 == 0) hight--;
+    int yStart = ((matrixHeight - hight) / 2 );
+    for (int w = 0; w < barWidth; w++) {
+      int x = (barWidth * b) + w;
+      for (int y = yStart; y <= (yStart + hight); y++) {
+//        leds[XY(x, y)] = CHSV((band * 35), 255, 255);
+         leds[XY(x, y)] = color_blend(SEGCOLOR(1), color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0), 255);
+      }
+    }
+    b++;
+  }
   setPixels(leds);
   return FRAMETIME;
 }
