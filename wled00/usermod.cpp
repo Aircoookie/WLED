@@ -48,7 +48,7 @@ void userSetup() {
     while (true);
   }
   Serial.println("I2S driver installed.");
-delay(100);
+  delay(100);
 
 
 // Test to see if we have a digital microphone installed or not.
