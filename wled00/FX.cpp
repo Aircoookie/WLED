@@ -119,6 +119,79 @@ uint16_t WS2812FX::mode_color_staircase_down(void) {
   return FRAMETIME;
 }
 
+/*
+ * Fades the LEDs between two colors
+ */
+uint16_t WS2812FX::mode_health_status_left(void) {
+  uint16_t var = 0;
+  uint16_t counter = (now * ((SEGMENT.speed >> 3) +10));
+  uint8_t lum = triwave16(counter) >> 10;
+  
+  for(uint16_t i = 0; i < SEGLEN; i++) {
+    uint16_t opacity = i * 255 / SEGLEN;
+    if(opacity > 255) opacity = 255;
+
+    if(opacity < 30) opacity = 30;
+
+    opacity = lum % 100 * opacity / 100;
+
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), opacity));
+  }
+
+  return FRAMETIME;
+}
+
+/*
+ * Fades the LEDs between two colors
+ */
+uint16_t WS2812FX::mode_health_status_right(void) {
+  uint16_t counter = (now * ((SEGMENT.speed >> 3) +10));
+  uint8_t lum = triwave16(counter) >> 10;
+  
+  for(uint16_t i = 0; i < SEGLEN; i++) {
+    uint16_t opacity = i * 255 / SEGLEN;
+    if(opacity > 255) opacity = 255;
+    opacity = 255 - opacity;
+
+    if(opacity < 30) opacity = 30;
+
+    opacity = lum % 100 * opacity / 100;
+
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), opacity));
+  }
+
+  return FRAMETIME;
+}
+
+/*
+ * Fades the LEDs between two colors
+ */
+uint16_t WS2812FX::mode_health_status(void) {
+  uint16_t counter = (now * ((SEGMENT.speed >> 3) +10));
+  uint8_t lum = triwave16(counter) >> 10;
+  
+  for(uint16_t i = 0; i < SEGLEN; i++) {
+    uint16_t opacity;
+    
+    if(i > (SEGLEN/2)){
+        opacity = (i - (SEGLEN/2)) * 255 / (SEGLEN/2);
+        if(opacity > 255) opacity = 255;
+        opacity = 255 - opacity;
+    } else {
+        opacity = i * 255 / (SEGLEN/2);
+        if(opacity > 255) opacity = 255;
+    }
+
+    if(opacity < 30) opacity = 30;
+
+    opacity = lum % 100 * opacity / 100;
+
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), opacity));
+  }
+
+  return FRAMETIME;
+}
+
 
 /*
  * Blink/strobe function

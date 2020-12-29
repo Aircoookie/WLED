@@ -120,7 +120,7 @@
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
 
-#define MODE_COUNT  120
+#define MODE_COUNT  123
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -242,6 +242,9 @@
 #define FX_MODE_DYNAMIC_SMOOTH         117
 #define FX_MODE_COLOR_STAIRCASE        118
 #define FX_MODE_COLOR_STAIRCASE_DOWN   119
+#define FX_MODE_HEALTH_STATUS_LEFT     120
+#define FX_MODE_HEALTH_STATUS_RIGHT    121
+#define FX_MODE_HEALTH_STATUS          122
 
 class WS2812FX {
   typedef uint16_t (WS2812FX::*mode_ptr)(void);
@@ -475,6 +478,9 @@ class WS2812FX {
       _mode[FX_MODE_DYNAMIC_SMOOTH]          = &WS2812FX::mode_dynamic_smooth;
       _mode[FX_MODE_COLOR_STAIRCASE]         = &WS2812FX::mode_color_staircase;
       _mode[FX_MODE_COLOR_STAIRCASE_DOWN]    = &WS2812FX::mode_color_staircase_down;
+      _mode[FX_MODE_HEALTH_STATUS_LEFT]      = &WS2812FX::mode_health_status_left;
+      _mode[FX_MODE_HEALTH_STATUS_RIGHT]     = &WS2812FX::mode_health_status_right;
+      _mode[FX_MODE_HEALTH_STATUS]           = &WS2812FX::mode_health_status;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -692,7 +698,10 @@ class WS2812FX {
       mode_tv_simulator(void),
       mode_dynamic_smooth(void),
       mode_color_staircase(void),
-      mode_color_staircase_down(void);
+      mode_color_staircase_down(void),
+      mode_health_status_left(void),
+      mode_health_status_right(void),
+      mode_health_status(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -781,7 +790,8 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth", "Staircase", "Staircase Down"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth", "Staircase", "Staircase Down", 
+"Health Status Left", "Health Status Right", "Health Status"
 ])=====";
 
 
