@@ -4641,12 +4641,13 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will
 
   CRGB *leds = (CRGB*) ledData;
 
-  int barWidth = (matrixWidth / 16);
+  int NUMB_BANDS = map(SEGMENT.fft3, 0, 255, 1, 16);
+  int barWidth = (matrixWidth / NUMB_BANDS);
   int bandInc = 1;
   if(barWidth == 0) {
     // Matrix narrower than fft bands
     barWidth = 1;
-    bandInc = (16 / matrixWidth);
+    bandInc = (NUMB_BANDS / matrixWidth);
   }
 
   uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
@@ -4656,7 +4657,7 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will
 
     // display values of
     int b = 0; 
-    for (int band = 0; band < 16; band += bandInc) {
+    for (int band = 0; band < NUMB_BANDS; band += bandInc) {
       int hue = fftResult[band];
       int v = map(fftResult[band], 0, 255, 10, 255);
 //     if(hue > 0) Serial.printf("Band: %u Value: %u\n", band, hue);
@@ -4687,20 +4688,22 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will
 // ** 2D CenterBars    //
 /////////////////////////
 
-uint16_t WS2812FX::mode_2DCenterBars(void) {                // Written by Scott Marley Adapted by Will Spiro-C..
+uint16_t WS2812FX::mode_2DCenterBars(void) {                // Written by Scott Marley Adapted by  Spiro-C..
 
   CRGB *leds = (CRGB*) ledData;
   fadeToBlackBy(leds, SEGLEN, SEGMENT.speed);
-  int barWidth = (matrixWidth / 16);
+
+  int NUMB_BANDS = map(SEGMENT.fft3, 0, 255, 1, 16);
+  int barWidth = (matrixWidth / NUMB_BANDS);
   int bandInc = 1;
   if(barWidth == 0) {
     // Matrix narrower than fft bands
     barWidth = 1;
-    bandInc = (16 / matrixWidth);
+    bandInc = (NUMB_BANDS / matrixWidth);
   }
 
   int b = 0;
-  for (int band = 0; band < 16; band += bandInc) {
+  for (int band = 0; band < NUMB_BANDS; band += bandInc) {
     int hight = map(fftResult[band], 0, 255, 0, matrixHeight);
     if (hight % 2 == 0) hight--;
     int yStart = ((matrixHeight - hight) / 2 );
@@ -4716,7 +4719,6 @@ uint16_t WS2812FX::mode_2DCenterBars(void) {                // Written by Scott 
   setPixels(leds);
   return FRAMETIME;
 }
-
 
 //////////////////////////////////////////////
 //     START of 2D NON-REACTIVE ROUTINES    //
