@@ -39,6 +39,86 @@ uint16_t WS2812FX::mode_static(void) {
   return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : 500; //update faster if in transition
 }
 
+/*
+ * Color staircase function
+ * LEDs are turned on (color1) in sequence
+ */
+uint16_t WS2812FX::mode_color_staircase(void) {
+
+  uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
+
+  if (SEGENV.call == 0) {
+    start = now;
+    end = start + cycleTime;
+    prog = 0;
+  }
+
+  uint32_t perc = now - start;
+  uint16_t prog = perc * 65535 / cycleTime;
+/*  uint16_t prog100 = ((end - start) * 65535) / cycleTime; */
+  
+  uint16_t ledIndex = (prog * SEGLEN) >> 15;
+
+  uint32_t col1 = SEGCOLOR(1);
+
+  if(end > now){
+    for (uint16_t i = 0; i < SEGLEN; i++)
+    {
+      uint16_t index = SEGLEN -1 -i;
+      uint32_t col0 = color_from_palette(index, true, PALETTE_SOLID_WRAP, 0);
+
+      if (i < ledIndex) 
+      {
+        setPixelColor(index, col0);
+      } else
+      {
+        setPixelColor(index, col1);
+      }
+    }
+  }else {
+    fill(SEGCOLOR(0));
+  }
+  return FRAMETIME;
+}
+
+/*
+ * Color staircase down function
+ * Turns off all LEDs one after another.
+ */
+uint16_t WS2812FX::mode_color_staircase_down(void) {
+   uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
+
+  if (SEGENV.call == 0) {
+    start = now;
+    end = start + cycleTime;
+    prog = 0;
+  }
+
+  uint32_t perc = now - start;
+  uint16_t prog = (perc * 65535) / cycleTime;
+  uint16_t ledIndex = (prog * SEGLEN) >> 15;
+
+  uint32_t col1 = SEGCOLOR(1);
+
+  if(end > now){
+    for (uint16_t i = 0; i < SEGLEN; i++)
+    {
+      uint32_t col0 = color_from_palette(i, true, PALETTE_SOLID_WRAP, 0);
+
+      if (i < ledIndex) 
+      {
+        setPixelColor(i, col1);
+      } else
+      {
+        setPixelColor(i, col0);
+      }
+    }
+  }else {
+    fill(col1);
+  }
+  return FRAMETIME;
+}
+
 
 /*
  * Blink/strobe function
