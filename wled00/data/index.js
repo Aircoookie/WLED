@@ -452,18 +452,16 @@ function populateInfo(i)
 	var pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
-  var urows="";
-  if (i.u) {
-    for (var k = 0; k < i.u.length; k++)
-    {
-      var val = i.u[k];
-      if (val[1]) {
-        urows += inforow(k,val[0],val[1]);
-      } else {
-        urows += inforow(k,val);
-      }
-    }
-  }
+	var urows="";
+	if (i.u) {
+		for (const [k, v] of Object.entries(i.u)) {
+			if (v[1]) {
+				urows += inforow(k,v[0],v[1]);
+			} else {
+				urows += inforow(k,v);
+			}
+		}
+	}
 	var vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.11.")) vcn = "Mirai";
 	if (i.cn) vcn = i.cn;
