@@ -3760,6 +3760,7 @@ void WS2812FX::setPixels(CRGB* leds) {
 
 // 16 bit perlinmove. Use Perlin Noise instead of sinewaves for movement. By Andrew Tuline.
 // Controls are speed, # of pixels, faderate.
+
 uint16_t WS2812FX::mode_perlinmove(void) {
 
   fade_out(255-SEGMENT.fft1);
@@ -4108,8 +4109,6 @@ uint16_t WS2812FX::mode_puddles(void) {                                   // Pud
 } // mode_puddles()
 
 
-
-
 ///////////////////////
 //   * PUDDLEPEAK    //
 ///////////////////////
@@ -4152,7 +4151,7 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
                                                               // This currently has no controls.
   #define maxsteps 16                                         // Case statement wouldn't allow a variable.
 
-  uint16_t maxRipples = 32;
+  uint16_t maxRipples = 16;
   uint16_t dataSize = sizeof(ripple) * maxRipples;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -4168,10 +4167,10 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
   fade_out(240);
 
 
-  for (uint16_t i = 0; i < maxRipples; i++) {
+  for (uint16_t i = 0; i < SEGMENT.intensity/16; i++) {          // Limit the number of ripples.
 
     if (samplePeak) {
-//      samplePeak = 0;
+
       ripples[i].state = -1;
     }
 
@@ -4279,12 +4278,11 @@ uint16_t WS2812FX::mode_freqmap(void) {        // Map FFT_MajorPeak to SEGLEN. W
   // Start frequency = 60 Hz and log10(60) = 1.78
   // End frequency = 5120 Hz and lo10(5120) = 3.71
 
-  uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;  // Get to 255 as quick as you can.
-  fade_out(fadeRate);
+  fade_out(SEGMENT.speed);
 
   uint16_t locn = (log10(FFT_MajorPeak) - 1.78) * (float)SEGLEN/(3.71-1.78);              // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
-  uint8_t pixCol = (log10((int)FFT_MajorPeak) - 1.78) * 255.0/(3.71-1.78);               // Scale log10 of frequency values to the 255 colour index.
-  uint8_t bright = (int)FFT_Magnitude>>8;
+  uint16_t pixCol = (log10((int)FFT_MajorPeak) - 1.78) * 255.0/(3.71-1.78);               // Scale log10 of frequency values to the 255 colour index.
+  uint16_t bright = (int)FFT_Magnitude>>7;
 
   setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), bright));
 
@@ -4356,7 +4354,7 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
 
 
 //////////////////////
-//  ** Freqpixel    //
+//  ** Freqpixels    //
 //////////////////////
 
 // Start frequency = 60 Hz and log10(60) = 1.78
@@ -4366,7 +4364,7 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
 //  SEGMENT.intensity select colour index
 
 
-uint16_t WS2812FX::mode_freqpixel(void) {                                 // Freqpixel. By Andrew Tuline.
+uint16_t WS2812FX::mode_freqpixels(void) {                                 // Freqpixel. By Andrew Tuline.
 
   uint16_t fadeRate = 2*SEGMENT.speed - SEGMENT.speed*SEGMENT.speed/255;  // Get to 255 as quick as you can.
   fade_out(fadeRate);
@@ -4377,7 +4375,7 @@ uint16_t WS2812FX::mode_freqpixel(void) {                                 // Fre
   setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(SEGMENT.intensity+pixCol, false, PALETTE_SOLID_WRAP, 0), (int)FFT_Magnitude>>8));
 
   return FRAMETIME;
-} // mode_freqpixel()
+} // mode_freqpixels()
 
 
 //////////////////////
@@ -4466,7 +4464,7 @@ uint16_t WS2812FX::mode_freqwave(void) {          // Freqwave. By Andreas Plesch
 
 
 ///////////////////////
-//   ** Gravfreq     //
+//   **Gravfreq      //
 ///////////////////////
 
 uint16_t WS2812FX::mode_gravfreq(void) {                                // Gravfreq. By Andrew Tuline.
@@ -4568,7 +4566,8 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 /////////////////////////
 
 uint16_t WS2812FX::mode_2DGEQ(void) {                // By Will Tatam.
-   CRGB *leds = (CRGB*) ledData;
+
+  CRGB *leds = (CRGB*) ledData;
   fadeToBlackBy(leds, SEGLEN, SEGMENT.speed);
 
   int NUMB_BANDS = map(SEGMENT.fft3, 0, 255, 1, 16);
@@ -4593,6 +4592,7 @@ uint16_t WS2812FX::mode_2DGEQ(void) {                // By Will Tatam.
     }
     b++;
   }
+  
   setPixels(leds);
   return FRAMETIME;
 }

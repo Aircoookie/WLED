@@ -126,7 +126,7 @@ void getSample() {
 
   if (userVar1 == 0) samplePeak = 0;
   // Poor man's beat detection by seeing if sample > Average + some value.
-  if (sampleAgc > (sampleAvg + maxVol) && millis() > (peakTime + 100)) {
+  if (sample > (sampleAvg + maxVol) && millis() > (peakTime + 100)) {
   // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
     samplePeak = 1;
     timeOfPeak = millis();
@@ -207,22 +207,17 @@ double vReal[samples];
 double vImag[samples];
 double fftBin[samples];
 
-double fftResult[16];
-double fftResultMax[16];
-double fftResultPink[16] = {1.70,1.71,1.73,1.78,1.68,1.56,1.55,1.63,1.79,1.62,1.80,2.06,2.47,3.35,6.83,9.55};
-
-
-double fftMajorPeakMax[16];
+// Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
+// Oh, and bins 0,1,2 are no good, so we'll zero them out.
+double fftResult[16];                // Our calculated result table, which we feed to the animations.
+double fftResultMax[16];             // A table used for testing to determine how our post-processing is working.
 
 // Table of linearNoise results to be multiplied by soundSquelch in order to reduce squelch across fftResult bins.
 int linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
 
+// Table of multiplication factors so that we can even out the frequency response.
+double fftResultPink[16] = {1.70,1.71,1.73,1.78,1.68,1.56,1.55,1.63,1.79,1.62,1.80,2.06,2.47,3.35,6.83,9.55};
 
-// Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
-// Oh, and bins 0,1,2 are no good, so we'll zero them out.
-
-
-float avgChannel[16];    // This is a smoothed rolling average value for each bin.
 
 
 // Create FFT object
@@ -296,40 +291,37 @@ void FFTcode( void * parameter) {
     } // for()
 
 
-/* Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512 and some overlap.
+/* This FFT post processing is a DIY endeavour. What we really need is someone with sound engineering expertise to do a great job here AND most importantly, that the animations look GREAT as a result.
+ *
+ *
+ * Andrew's updated mapping of 256 bins down to the 16 result bins with Sample Freq = 10240, samples = 512 and some overlap.
  * Based on testing, the lowest/Start frequency is 60 Hz (with bin 3) and a highest/End frequency of 5120 Hz in bin 255.
  * Now, Take the 60Hz and multiply by 1.320367784 to get the next frequency and so on until the end. Then detetermine the bins.
  * End frequency = Start frequency * multiplier ^ 16
  * Multiplier = (End frequency/ Start frequency) ^ 1/16
  * Multiplier = 1.320367784
  */
-//                                               Range      |   Freq | Max vol on MAX9814 @ 40db gain.
-      fftResult[0] = (fftAdd(3,4)) /2;        // 60 - 100    -> 82Hz,  26000
-      fftResult[1] = (fftAdd(4,5)) /2;        // 80 - 120    -> 104Hz, 44000
-      fftResult[2] = (fftAdd(5,7)) /3;        // 100 - 160   -> 130Hz, 66000
-      fftResult[3] = (fftAdd(7,9)) /3;        // 140 - 200   -> 170,   72000
-      fftResult[4] = (fftAdd(9,12)) /4;       // 180 - 260   -> 220,   60000
-      fftResult[5] = (fftAdd(12,16)) /5;      // 240 - 340   -> 290,   48000
-      fftResult[6] = (fftAdd(16,21)) /6;      // 320 - 440   -> 400,   41000
-      fftResult[7] = (fftAdd(21,28)) /8;      // 420 - 600   -> 500,   30000
-      fftResult[8] = (fftAdd(29,37)) /10;     // 580 - 760   -> 580,   25000
-      fftResult[9] = (fftAdd(37,48)) /12;     // 740 - 980   -> 820,   22000
-      fftResult[10] = (fftAdd(48,64)) /17;    // 960 - 1300  -> 1150,  16000
-      fftResult[11] = (fftAdd(64,84)) /21;    // 1280 - 1700 -> 1400,  14000
-      fftResult[12] = (fftAdd(84,111)) /28;   // 1680 - 2240 -> 1800,  10000
-      fftResult[13] = (fftAdd(111,147)) /37;  // 2220 - 2960 -> 2500,  8000
-      fftResult[14] = (fftAdd(147,194)) /48;  // 2940 - 3900 -> 3500,  7000
-      fftResult[15] = (fftAdd(194, 255)) /62; // 3880 - 5120 -> 4500,  5000
+
+//                                               Range
+      fftResult[0] = (fftAdd(3,4)) /2;        // 60 - 100
+      fftResult[1] = (fftAdd(4,5)) /2;        // 80 - 120
+      fftResult[2] = (fftAdd(5,7)) /3;        // 100 - 160
+      fftResult[3] = (fftAdd(7,9)) /3;        // 140 - 200
+      fftResult[4] = (fftAdd(9,12)) /4;       // 180 - 260
+      fftResult[5] = (fftAdd(12,16)) /5;      // 240 - 340
+      fftResult[6] = (fftAdd(16,21)) /6;      // 320 - 440
+      fftResult[7] = (fftAdd(21,28)) /8;      // 420 - 600
+      fftResult[8] = (fftAdd(29,37)) /10;     // 580 - 760
+      fftResult[9] = (fftAdd(37,48)) /12;     // 740 - 980
+      fftResult[10] = (fftAdd(48,64)) /17;    // 960 - 1300
+      fftResult[11] = (fftAdd(64,84)) /21;    // 1280 - 1700
+      fftResult[12] = (fftAdd(84,111)) /28;   // 1680 - 2240
+      fftResult[13] = (fftAdd(111,147)) /37;  // 2220 - 2960
+      fftResult[14] = (fftAdd(147,194)) /48;  // 2940 - 3900
+      fftResult[15] = (fftAdd(194, 255)) /62; // 3880 - 5120
 
 
-// Looking for fftResultMax for each bin using Pink Noise
-//      for (int i=0; i<16; i++) {
-//          fftResultMax[i] = ((fftResultMax[i] * 63.0) + fftResult[i]) / 64.0; 
-//         Serial.print(fftResultMax[i]*fftResultPink[i]); Serial.print("\t");
-//        }
-//      Serial.println(" ");
-
-//   Noise supression of fftResult bins. 
+//   Noise supression of fftResult bins using soundSquelch adjustment for different input types.
     for (int i=0; i < 16; i++) {
         fftResult[i] = fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftResult[i];
     }
@@ -339,15 +331,20 @@ void FFTcode( void * parameter) {
     fftResult[i] = fftResult[i] * fftResultPink[i];
   }
 
-// Manual adjustment of gain.
+// Manual linear adjustment of gain using sampleGain adjustment for different input types.
     for (int i=0; i < 16; i++) {
         fftResult[i] = fftResult[i] * sampleGain / 40 + fftResult[i]/16.0;
     }
 
 
+// Looking for fftResultMax for each bin using Pink Noise
+//      for (int i=0; i<16; i++) {
+//          fftResultMax[i] = ((fftResultMax[i] * 63.0) + fftResult[i]) / 64.0; 
+//         Serial.print(fftResultMax[i]*fftResultPink[i]); Serial.print("\t");
+//        }
+//      Serial.println(" ");
 
-
-  } // for
+  } // for(;;)
 } // FFTcode()
 
 
