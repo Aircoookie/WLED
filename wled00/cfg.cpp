@@ -272,6 +272,7 @@ void deserializeConfig() {
   CJSON(countdownMin,   cntdwn_goal[4]);
   CJSON(countdownSec,   cntdwn_goal[5]);
   CJSON(macroCountdown, cntdwn[F("macro")]);
+  setCountdown();
 
   JsonArray timers = tm[F("ins")];
   uint8_t it = 0;
