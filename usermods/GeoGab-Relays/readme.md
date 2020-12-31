@@ -186,7 +186,9 @@ MAXRELAYS defines the maximum ammount of relays.
 # Usage
 ## Webpage: Use the new page/column `Relays`
 I think/hope the use of the web user interface is self-explanatory. 
-Configure your relays in the web interface (preferred methode). Alternatively, they can also be defined via JSON (see JSON API). 
+Configure your relays in the web interface (preferred methode). Alternatively, they can also be defined via JSON (see JSON API).
+
+<img src="examples/Webpage.png" width="50%"><img src="examples/Webpage4.png" width="50%">
 
 ## ALEXA
 Not implemented yet.
