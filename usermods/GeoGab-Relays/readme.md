@@ -40,7 +40,7 @@ I have tried to intervene as little as possible in the main code. Unfortunately,
 Add the corresponding lines in the file: `wled00\usermods_list.cpp`. An example of the necessary lines is in the file `usermods_list.cpp` in this folder. 
 
 ## Step II 
-Add the corresponding Defines in `platform_override.ini` or `platform.ini`. An example of the file: `platformio_override.ini` is in this folder. It can also be simply copied to the root directory (the directory where `platformio.ini` is). The necessary build flag is:`build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4` (While 4 defines the maximum number of relays)
+Add the corresponding Defines in `platform_override.ini` or `platform.ini`. An example of the file: `platformio_override.ini` is in this folder. It can also be simply copied to the root directory (the directory where `platformio.ini` is). The necessary build flag are:`build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4` (While 4 defines the maximum number of relays)
 
 ## Step III
 Perform the following changes:
@@ -174,14 +174,8 @@ Compile and flash....
 
 ## Step V  
 Run your Device
-    1. Setup your Relay in the Webfrondend or using json. 
-    2. Have fun with your extended relay function.
-
-
-# Build Options
-Example: `build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4`
-
-MAXRELAYS defines the maximum ammount of relays.
+1. Setup your Relay in the Webfrondend or using json. 
+2. Have fun with your extended relay function.
 
 # Usage
 ## Webpage: Use the new page/column `Relays`
@@ -206,10 +200,10 @@ Not implemented yet.
 #### Control 
 Fuction | JSON example | Comment
 -------- | ----------- | ------------
-switch (1=on, 0=off) | {"relays":{"switch":[0,0,0,0]}} | Sets the state of all relais
-toggle (0=unchanged, 1=toggle) | {"relays":{"toggle":[0,0,0,0]}} | 1: toggles the relay, 0: keeps the status untouched
-on (1=on, 0=unchanged) | {"relays":{"on":[0,0,0,0]}} | 1: Turns the relay on, 0: keeps the status untouched
-off (1=off, 0=unchanged) | {"relays":{"off":[0,0,0,0]}} | 1: Turns the relay off, 0: keeps the status untouched
+switch | {"relays":{"switch":[0,0,0,0]}} | Sets the state of all relais
+toggle | {"relays":{"toggle":[0,0,0,0]}} | 1: toggles the relay, 0: keeps the status untouched
+on | {"relays":{"on":[0,0,0,0]}} | 1: Turns the relay on, 0: keeps the status untouched
+off | {"relays":{"off":[0,0,0,0]}} | 1: Turns the relay off, 0: keeps the status untouched
   
 The `array [0,0,...]` must match correspond to the number of relays. Otherwise the command is discarded. 
 
@@ -233,5 +227,5 @@ The relay states are part of the JSON response.
  - http://[Device-IP]/json/status -> Shows the current switching state of the relays and the settings. 
  - http://[Device.IP]/json/info   -> Shows the current switching state of the relays.
 
-## MQTT: 
+## MQTT 
 Not implemented yet. 
