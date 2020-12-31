@@ -202,11 +202,12 @@ Not implemented yet.
  - The relays can be defined. This is very practical if you want to configure several identical devices easily. 
 
 #### The relays control 
-
- - switch (1=on, 0=off):           {"relays":{"switch":[0,0,0,0]}}   Sets the state of all relais
- - toggle (0=unchanged, 1=toggle): {"relays":{"toggle":[0,0,0,0]}}   1: toggles the relay, 0: keeps the status untouched
- - on (1=on, 0=unchanged):         {"relays":{"on":[0,0,0,0]}}       1: Turns the relay on, 0: keeps the status untouched
- - off (1=off, 0=unchanged):       {"relays":{"off":[0,0,0,0]}}      1: Turns the relay off, 0: keeps the status untouched
+Fuction | JSON example | Comment
+-------- | ----------- | ------------
+switch (1=on, 0=off) | {"relays":{"switch":[0,0,0,0]}} | Sets the state of all relais
+toggle (0=unchanged, 1=toggle) | {"relays":{"toggle":[0,0,0,0]}} | 1: toggles the relay, 0: keeps the status untouched
+on (1=on, 0=unchanged) | {"relays":{"on":[0,0,0,0]}} | 1: Turns the relay on, 0: keeps the status untouched
+off (1=off, 0=unchanged) | {"relays":{"off":[0,0,0,0]}} | 1: Turns the relay off, 0: keeps the status untouched
   
 The `array [0,0,...]` must match correspond to the number of relays. Otherwise the command is discarded. 
   
