@@ -398,6 +398,7 @@ Please keep in mind that some GPIO's are already occupied. Act with care in orde
 <br>E.g.:<br><i>* GPIO 0: Button / LED Clock (when used)<br>
 * GPIO 2: Data / WS2812b Stripe<br>* GPIO 14: DS18B20 / IF Temperature Mod<br>
 * GPIO 12: Stripe Power Switch Mosfet/Relay<br></i><i>
-Sugested PINs for hte Wemos D1: 5, 13, 15, 16</i><hr><button type="button" 
-onclick="B()">Back</button><button onclick="save()">Save</button></body></html>)=====";
+Suggested configuration for the Wemos D1: 5, 13, 15, 16</i><hr><button 
+type="button" onclick="B()">Back</button><button onclick="save()">Save</button>
+</body></html>)=====";
 
