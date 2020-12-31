@@ -188,6 +188,7 @@ I think/hope the use of the web user interface is self-explanatory.
 Configure your relays in the web interface (preferred methode). Alternatively, they can also be defined via JSON (see JSON API). 
 
 ## ALEXA:
+Not implemented yet.
 Use the relay names for Alexa. Please note: To use the relays with Alexa, the device must be restarted after the relay setup. 
 
 ## HTTP API:
@@ -196,8 +197,8 @@ Not implemented yet.
 ## JSON API: 
 ### The Json API has two functionalities. 
 
- - The relays can be defined. This is very practical if you want to configure several identical devices easily. 
  - The relays can be control/switch. 
+ - The relays can be defined. This is very practical if you want to configure several identical devices easily. 
 
 #### The relays control 
 
