@@ -1,4 +1,4 @@
-### Usermod GeoGab
+# Usermod GeoGab
 
 +++ 31/12/2020 by Gabriel Sieben (GeoGab) +++
 
@@ -8,14 +8,14 @@ Extends WLED with a function to control relays via all available interfaces (MQT
 The code was written for the ESP8266 D1 Mini and may have to be adapted to other devices. Currently the number of maximum relays  
 limited to 4 by the code. If you need more, you have to increase the value of MAXRELAYS in the build flag set in file `platformio_override.ini` or `platformio.ini`.
 
-### ToDo's
+# ToDo's
     * HTML API (Server.on)
     * MQTT  Function
     * ALEXA Function
 
 !!!!!!!!!!!!!!!!!!!!! Attention. Not yet fully tested !!!!!!!!!!!!!!!!!!!!!
 
-### PINS
+# PINS
 
 The pins for this usermod are defined while configuration (Webpage or JSON)
 
@@ -33,14 +33,16 @@ Pinsetting ON a D1 Mini Device:
     * D8 (GPIO 15): Relay 4
 
 
-### Installation
+# Installation
 I have tried to intervene as little as possible in the main code. Unfortunately, however, some interventions in the main code are still necessary. However, it shows very well which functions might still be advantageous for such a deep integration.
 
-I: Add the corresponding lines in the file: `wled00\usermods_list.cpp`. An example of the necessary lines is in the file `usermods_list.cpp` in this folder. 
+## Step I: 
+Add the corresponding lines in the file: `wled00\usermods_list.cpp`. An example of the necessary lines is in the file `usermods_list.cpp` in this folder. 
 
-II: Add the corresponding Defines in `platform_override.ini` or platform.ini. An example of the file: platformio_override.ini is in this folder. It can also be simply copied to the root directory (the directory where platformio.ini is). The necessary build flag is:`build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D WLED_USE_MY_CONFIG` 
+## Step II: 
+Add the corresponding Defines in `platform_override.ini` or platform.ini. An example of the file: platformio_override.ini is in this folder. It can also be simply copied to the root directory (the directory where platformio.ini is). The necessary build flag is:`build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4`
 
-III:
+## Step III:
 Perform the following changes:
     
     1.      Modify the core files:
@@ -165,36 +167,38 @@ Perform the following changes:
 
     2.2.    Run in Command Line: npm install (only once)
 
->   2.3.    Run in Command Line: npm run build
+    2.3.    Run in Command Line: npm run build
 
-IV: Compile and flash....
+## Step IV: 
+Compile and flash....
 
-V:  Run your Device
+## Step V:  
+Run your Device
     1. Setup your Relay in the Webfrondend or using json. 
     2. Have fun with your extended relay function.
 
 
-### Build Options
+# Build Options
 Example: build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4
+MAXRELAYS defines the maximum ammount of relays.
 
+# Usage
+## Webpage: Use the new page/column `Relays`
+I think/hope the use of the web user interface is self-explanatory. 
+Configure your relays in the web interface (preferred methode). Alternatively, they can also be defined via JSON (see JSON API). 
 
-### Usage
-* Webpage: Use the new page/column `Relays`
-  I think/hope the use of the web user interface is self-explanatory. 
-  Configure your relays in the web interface (preferred methode). Alternatively, they can also be defined via JSON (see JSON API). 
+## ALEXA:
+Use the relay names for Alexa. Please note: To use the relays with Alexa, the device must be restarted after the relay setup. 
 
-* ALEXA:
-  Use the relay names for Alexa. Please note: To use the relays with Alexa, the device must be restarted after the relay setup. 
+## HTTP API:
+Not implemented yet.
 
-* HTTP API:
-
-
-* JSON API: 
-  The Json API has two functionalities. 
+## JSON API: 
+### The Json API has two functionalities. 
     - The relays can be defined. This is very practical if you want to configure several identical devices easily. 
     - The relays can be control/switch. 
 
-  o The relays control 
+#### The relays control 
     - switch (1=on, 0=off):           {"relays":{"switch":[0,0,0,0]}}   Sets the state of all relais
     - toggle (0=unchanged, 1=toggle): {"relays":{"toggle":[0,0,0,0]}}   1: toggles the relay, 0: keeps the status untouched
     - on (1=on, 0=unchanged):         {"relays":{"on":[0,0,0,0]}}       1: Turns the relay on, 0: keeps the status untouched
@@ -202,7 +206,7 @@ Example: build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXREL
   
   The array [0,0,...] must correspond to the number of relays. Otherwise the command is discarded. 
   
-  o Setup of the Relays (perfered methode is the web interface):
+#### Setup of the Relays (perfered methode is the web interface):
     Be careful when configuring with JSON. There is no error detection. Think very carefully. Incorrect settings can put the device out of operation. In the worst case the hardware can be damaged. 
 
     Structure of json setup example: 
@@ -213,11 +217,11 @@ Example: build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXREL
     - 1 Relay (Dev1,gpio:16,Boot Status off, HighActiv): 
       Send to [Device-IP]/json/status: 
           {"relays":{"config":1,"no":1,"name":["Dev1"],"gpio":[16],"sactive":[0],"invert":[1]}}
-
-  o Status:
+          
+#### Status:
     The relay states are part of the JSON response.
     http://[Device-IP]/json/status -> Shows the current switching state of the relays and the settings. 
     http://[Device.IP]/json/info   -> Shows the current switching state of the relays.
 
-* MQTT: 
-  Send a json (switch/toggle/on/off) message as mentioned in the json part via MQTT. For security reasons, the setup as it is possible in json is not possible. 
+## MQTT: 
+Not implemented yet. 
