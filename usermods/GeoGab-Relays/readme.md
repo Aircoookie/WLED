@@ -21,16 +21,16 @@ The pins for this usermod are defined while configuration (Webpage or JSON)
 
 If you want to connect a relay, search for the appropriate circuit on the web. By default, the relays are set to LowActive. To reverse this, there is a corresponding define (GEOGAB_ACTIVEHIGH). Please also note: https://github.com/Aircoookie/WLED/wiki/Control-a-relay-with-WLED
 
-Pinsetting ON a D1 Mini Device: 
-    * D0 (GPIO 16): Relay 1
-    * D1 (GPIO 5):  Relay 2
-    * D2 (GPIO 4):  IR Remote
-    * D3 (GPIO 0):  Button / LED Clock (when used)
-    * D4 (GPIO 2):  Data / WS2812b Stripe
-    * D5 (GPIO 14): DS18B20 / IF Temperature Mod
-    * D6 (GPIO 12): Stripe Power Switch Relay / Mosfet circuit (Should be preferred)
-    * D7 (GPIO 13): Relay 3
-    * D8 (GPIO 15): Relay 4
+Pinsetting ON a D1 Mini Device (as an example): 
+  - D0 (GPIO 16): Relay 1
+  - D1 (GPIO 5):  Relay 2
+  - D2 (GPIO 4):  IR Remote
+  - D3 (GPIO 0):  Button / LED Clock (when used)
+  - D4 (GPIO 2):  Data / WS2812b Stripe
+  - D5 (GPIO 14): DS18B20 / IF Temperature Mod
+  - D6 (GPIO 12): Stripe Power Switch Relay / Mosfet circuit (Should be preferred)
+  - D7 (GPIO 13): Relay 3
+  - D8 (GPIO 15): Relay 4
 
 
 # Installation
@@ -195,21 +195,24 @@ Not implemented yet.
 
 ## JSON API: 
 ### The Json API has two functionalities. 
-    - The relays can be defined. This is very practical if you want to configure several identical devices easily. 
-    - The relays can be control/switch. 
+
+ - The relays can be defined. This is very practical if you want to configure several identical devices easily. 
+ - The relays can be control/switch. 
 
 #### The relays control 
-    - switch (1=on, 0=off):           {"relays":{"switch":[0,0,0,0]}}   Sets the state of all relais
-    - toggle (0=unchanged, 1=toggle): {"relays":{"toggle":[0,0,0,0]}}   1: toggles the relay, 0: keeps the status untouched
-    - on (1=on, 0=unchanged):         {"relays":{"on":[0,0,0,0]}}       1: Turns the relay on, 0: keeps the status untouched
-    - off (1=off, 0=unchanged):       {"relays":{"off":[0,0,0,0]}}      1: Turns the relay off, 0: keeps the status untouched
+
+ - switch (1=on, 0=off):           {"relays":{"switch":[0,0,0,0]}}   Sets the state of all relais
+ - toggle (0=unchanged, 1=toggle): {"relays":{"toggle":[0,0,0,0]}}   1: toggles the relay, 0: keeps the status untouched
+ - on (1=on, 0=unchanged):         {"relays":{"on":[0,0,0,0]}}       1: Turns the relay on, 0: keeps the status untouched
+ - off (1=off, 0=unchanged):       {"relays":{"off":[0,0,0,0]}}      1: Turns the relay off, 0: keeps the status untouched
   
-  The array [0,0,...] must correspond to the number of relays. Otherwise the command is discarded. 
+The array [0,0,...] must correspond to the number of relays. Otherwise the command is discarded. 
   
 #### Setup of the Relays (perfered methode is the web interface):
-    Be careful when configuring with JSON. There is no error detection. Think very carefully. Incorrect settings can put the device out of operation. In the worst case the hardware can be damaged. 
+Be careful when configuring with JSON. There is no error detection. Think very carefully. Incorrect settings can put the device out of operation. In the worst case the hardware can be damaged. 
 
-    Structure of json setup example: 
+Structure of json setup example: 
+
     - 4 Relays (Dev1,gpio:16,Boot Status off, LowActive,...) 
       Send to [Device-IP]/json/status: 
           {"relays":{"config":1,"no":4,"name":["Dev1","Dev2","Dev3","Dev4"],"gpio":[16,5,13,15],"sactive":[0,0,0,0],"invert":[1,1,1,1]}}
@@ -219,9 +222,9 @@ Not implemented yet.
           {"relays":{"config":1,"no":1,"name":["Dev1"],"gpio":[16],"sactive":[0],"invert":[1]}}
           
 #### Status:
-    The relay states are part of the JSON response.
-    http://[Device-IP]/json/status -> Shows the current switching state of the relays and the settings. 
-    http://[Device.IP]/json/info   -> Shows the current switching state of the relays.
+The relay states are part of the JSON response.
+ - http://[Device-IP]/json/status -> Shows the current switching state of the relays and the settings. 
+ - http://[Device.IP]/json/info   -> Shows the current switching state of the relays.
 
 ## MQTT: 
 Not implemented yet. 
