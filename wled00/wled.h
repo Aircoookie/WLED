@@ -88,7 +88,7 @@
 #ifndef WLED_DISABLE_ALEXA
   #define ESPALEXA_ASYNC
   #define ESPALEXA_NO_SUBPAGE
-  #define ESPALEXA_MAXDEVICES 5
+  #define ESPALEXA_MAXDEVICES MAXRELAYS
   // #define ESPALEXA_DEBUG
   #include "src/dependencies/espalexa/Espalexa.h"
 #endif

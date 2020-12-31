@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+	<meta name="viewport" content="width=500">
+	<title>Relais Settings</title>
+	<style>
+		/*  The routine getSettingsJS in the file "xlm.cpp" sets the styles. 
+			But due to a minor bug (#1585), the routine also replaces the content of the "function GetV()" in this htm page. 
+			Here the buffen of the last call is used. As a workaround the style is inserted hardcoded here. */
+			
+		body {
+		font-family: Verdana, sans-serif;
+		text-align: center;
+		background: #222;
+		color: #fff;
+		line-height: 200%;
+		margin: 0;
+		}
+		hr {
+		border-color: #666;
+		}
+		button {
+		background: #333;
+		color: #fff;
+		font-family: Verdana, sans-serif;
+		border: 0.3ch solid #333;
+		display: inline-block;
+		font-size: 20px;
+		margin: 0 8px;
+		}
+		button.ext {
+		border-radius: 5px;
+		font-size: 18px;
+		}
+		.helpB {
+		text-align: left;
+		position: absolute;
+		width: 60px;
+		}
+		input {
+		background: #333;
+		color: #fff;
+		font-family: Verdana, sans-serif;
+		font-size:large;
+		border: 0.5ch solid #333;
+		}
+		input[type="number"] {
+			width: 2em;
+		}
+		input[type="text"] {
+			width: 10em;
+		}
+		select {
+		background: #333;
+		color: #fff;
+		font-family: Verdana, sans-serif;
+		border: 0.5ch solid #333;
+		}
+		td {
+		padding: 2px;
+		}
+		.d5 {
+		width: 4.5em !important;
+		}
+		#toast {
+		opacity: 0;
+		background-color: #555;
+		max-width: 90%;
+		color: #fff;
+		text-align: center;
+		border-radius: 5px;
+		padding: 16px;
+		position: fixed;
+		z-index: 5;
+		left: 50%;
+		transform: translateX(-50%);
+		bottom: 75px;
+		pointer-events: none;
+		}
+		#toast.show {
+		opacity: 1;
+		animation: fadein 0.5s, fadein 0.5s 2.5s reverse;
+		}
+		#toast.error {
+		opacity: 1;
+		background-color: #b21;
+		animation: fadein 0.5s, fadein 0.5s 2.5s reverse;
+		}
+
+		/****** Special Styles ******/
+		.devtab {
+		background-color:#052A33;
+		border:1px solid;
+		width: 500px;
+		padding: 5px;
+		margin: 0 auto;
+		}
+		input[type="checkbox"] {
+		display:none;
+		position: absolute;
+		}
+		input[type="checkbox"] + label::before {
+		width: 15px;
+		height: 15px;
+		border-radius: 3px;
+		border: 2px solid #676864;
+		background-color: #fff;
+		display:inline-block;
+		content: " ";
+		vertical-align:middle;
+		}
+		input[type="checkbox"]:checked+label::before {
+		box-shadow: inset 0px 0px 0px 3px #fff;
+		background-color: #1b801b;
+		}
+		input::-webkit-outer-spin-button,
+		input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+		}
+		input[type=number] {
+		-moz-appearance: textfield;
+		}		
+	</style>
+	<script>
+		// Globals
+		var resp;
+		var jsetup={};
+		var max=0;
+		var seq=0;
+		
+		function H()
+		{
+			window.open("https://github.com/Aircoookie/WLED/wiki/");					// So far there is no help for this usermod in wiki
+		}
+		function B()
+		{
+			window.open("/settings","_self");
+		}
+
+		var timeout;
+		function showToast(text, error = false) {
+			if (error) document.getElementById('connind').style.backgroundColor = "#831";
+			var x = document.getElementById("toast");
+			x.innerHTML = text;
+			x.className = error ? "error":"show";
+			clearTimeout(timeout);
+			x.style.animation = 'none';
+			x.style.animation = null; 
+			timeout = setTimeout(function(){ x.classList.remove("show");x.classList.remove("error"); }, 2900);
+		}
+
+		function GetJson() {			
+			jsetup.relays={"no":0};
+			jsetup.relays={"config":1};
+			jsetup.relays.name=[];
+			jsetup.relays.gpio=[];
+			jsetup.relays.sactive=[];
+			jsetup.relays.invert=[];
+
+			fetch('http://10.7.7.4/json/state')
+				.then( (resp) => {return resp.json();})									// Convert the json text into an object. Write the data into the HTML form.
+				.then( (jdata) =>  {
+					//Setup: {"relays":{"no":3,"name":["Dev1","Dev2","Dev3"],"gpio":[16,5,13,15],"sactive":[0,0,0,0],"invert":[0,0,0,0]}}    
+					max=jdata.relays.max;
+					jsetup.relays.no=jdata.relays.no;
+					if(jdata.relays.no) {
+						for (i=0; i<jsetup.relays.no; i++ ) {
+							jsetup.relays.name[i]=jdata.relays.name[i];
+							jsetup.relays.gpio[i]=jdata.relays.gpio[i];
+							jsetup.relays.sactive[i]=jdata.relays.sactive[i];
+							jsetup.relays.invert[i]=jdata.relays.invert[i];
+						}
+					}
+					list();
+				});
+		}		
+		
+		function list(){
+			var cont="<tr><th>Name</th><th>GPIO</th><th>Starup</th><th>Invert</th><th>Delete</th></tr>";
+			if(jsetup.relays.no) {
+				for (i=0; i<jsetup.relays.no; i++ ) {
+					cont += '<tr><td><input type="text" onchange="change(this,'+i+')" id="name'+i+'" value="'+jsetup.relays.name[i]+'"></td>';
+					cont += '<td><input type="number" onchange="change(this,'+i+')" min="0" max="99" id="gpio'+i+'" value="'+jsetup.relays.gpio[i]+'"></td>';
+					cont += '<td><input type="checkbox" onchange="change(this,'+i+')" id="sactive'+i+'" ' + ( jsetup.relays.sactive[i] ? 'checked="checked"' :'') +'"><label for="sactive'+i+'"></label></td>';
+					cont += '<td><input type="checkbox" onchange="change(this,'+i+')" id="invert'+i+'" '+ ( jsetup.relays.invert[i] ? 'checked="checked"' :'') +'"><label for="invert'+i+'"></label></td>';
+					cont += '<td><button class="ext" onclick="del('+i+')">DEL</button></td></tr>';
+				}
+			} 
+			if(max>jsetup.relays.no) {
+				document.getElementById('AddButton').innerHTML='<button class="ext" onclick="add();">ADD Relay</button><br>';
+			} else {
+				document.getElementById('AddButton').innerHTML="";
+			}
+			document.getElementById('ListOfRelays').innerHTML=cont;
+			document.getElementById('maxdev').innerHTML=max;
+		}
+
+		function change(elmnt,no) {
+			noexitflag=false;
+			// Grap the complete Line
+			jsetup.relays.name[no]=document.getElementById("name"+no).value;
+			jsetup.relays.gpio[no]=document.getElementById("gpio"+no).value;
+			jsetup.relays.sactive[no]= (document.getElementById("sactive"+no).checked ? 1:0);
+			jsetup.relays.invert[no]= (document.getElementById("invert"+no).checked ? 1: 0);
+		}
+
+		function validate() {
+			var error=false;
+			// Search vor duplicate Names
+			for (var i=0;i<jsetup.relays.no;i++) {
+				document.getElementById("name"+i).setCustomValidity("");
+			}
+			for (var i=0;i<jsetup.relays.no;i++) {
+				for (var j=i+1;j<jsetup.relays.no;j++) {
+					if(jsetup.relays.name[i]==jsetup.relays.name[j]) {
+						error=true;
+						document.getElementById("name"+j).setCustomValidity("duplicate");
+					}
+				}
+			}
+			// Search for duplicate GPIOs
+			for (var i=0;i<jsetup.relays.no;i++) {
+				document.getElementById("gpio"+i).setCustomValidity("");
+			}
+			for (var i=0;i<jsetup.relays.no;i++) {
+				for (var j=i+1;j<jsetup.relays.no;j++) {
+					if(jsetup.relays.gpio[i]==jsetup.relays.gpio[j]) {
+						error=true;
+						document.getElementById("gpio"+j).setCustomValidity("duplicate");
+						console.error("Duplicate gpio found in Line: " + j)
+					}
+				}
+			}
+			return error;
+		}
+
+		function add() {
+			seq++;
+			jsetup.relays.name[jsetup.relays.no]="Relay "+ (seq);
+			jsetup.relays.gpio[jsetup.relays.no]=0;
+			jsetup.relays.sactive[jsetup.relays.no]=0;
+			jsetup.relays.invert[jsetup.relays.no]=1;
+			jsetup.relays.no++;
+			list();
+		}
+
+		function del(no) {
+			jsetup.relays.name.splice(no, 1); 
+			jsetup.relays.gpio.splice(no, 1); 
+			jsetup.relays.sactive.splice(no, 1); 
+			jsetup.relays.invert.splice(no, 1); 
+			jsetup.relays.no--;		
+			list();
+		}
+
+		function save(){
+			if (validate()) {
+				showToast("Duplicates in Name/GPIO are not allowed!",true)
+			} else {
+				// {"relays":{"no":1,"name":["Relay 1"],"gpio":[0],"sactive":[0],"invert":[1]}}  
+				console.log("Sending: " + JSON.stringify(jsetup));
+
+				fetch('http://10.7.7.4/json', {
+				method: "POST",
+				body: JSON.stringify(jsetup),
+				headers: {"Content-type": "application/json; charset=UTF-8"}
+				})
+				.then(response => response.json()) 
+				.then(function(json) {
+					console.log(json)
+					if (json.success) {
+						showToast("Successfully saved!");
+					} else {
+						showToast("Error Saving Settings!",false);
+					}
+				});				
+			}
+			// check no exit flag and Fetch Push JSON
+		}
+
+		function GetV()
+		{
+			// The old fashioned way is no longer necessary. I use Json. As the Mandalorians say, "This is the way."
+
+		}
+	</script>
+</head>
+<body onload="GetJson();">
+	<div class="helpB"><button type="button" onclick="H()">?</button></div>
+	<button type="button" onclick="B()">Back</button><button onclick="save()">Save</button><hr>
+	<h2>Relay setup</h2>
+	<div id="connind"></div>
+	<div id="toast"></div>
+	<h3>Relays Definitions</h3>
+	<table class="devtab" id="ListOfRelays">
+		
+	</table>
+	<div id="AddButton"></div>
+	<br>
+	<i>
+	Max Devices: <span id="maxdev"></span> <br>
+	<b>Name</b>: The Name of the Relay is used for Alexa too. Please use unique names.<br>
+	<b>GPIO</b>: Pin number to which the relay is connected. Please refer to the notes below.<br>
+	<b>Startup</b>: Determines if the relay is on or off on startup/reboot.<br>
+	<b>Invert</b>: Most relays are active when the pin is low (active low). Invert to operate these relays correctly.<br>
+	</i><br>
+
+	<h3>Important Note</h3>
+	Please keep in mind that some GPIO's are already occupied. Act with care in order to avoid destroying something on your hardware.<br>
+	E.g.:<br>
+	
+	<i>
+	* GPIO 0: Button / LED Clock (when used)<br>
+    * GPIO 2: Data / WS2812b Stripe<br>
+    * GPIO 14: DS18B20 / IF Temperature Mod<br>
+    * GPIO 12: Stripe Power Switch Mosfet/Relay<br>
+	</i>
+
+	<i>Suggested configuration for the Wemos D1: 5, 13, 15, 16</i>
+		
+	<hr>
+	<button type="button" onclick="B()">Back</button><button onclick="save()">Save</button>
+
+</body>
+</html>

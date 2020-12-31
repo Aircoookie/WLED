@@ -341,6 +341,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     else if (url.indexOf("dmx")  > 0) subPage = 7;
     #endif
+    else if (url.indexOf("relay") > 0) subPage = 8;       // GeoGab-Relays Usermod
   } else subPage = 255; //welcome page
 
   if (subPage == 1 && wifiLock && otaLock)
@@ -362,6 +363,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 5: strcpy_P(s, PSTR("Time")); break;
       case 6: strcpy_P(s, PSTR("Security")); strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
       case 7: strcpy_P(s, PSTR("DMX")); break;
+      case 8: strcpy_P(s, PSTR("Relay")); break;          // GeoGab-Relays Usermod
     }
 
     strcat_P(s, PSTR(" settings saved."));
@@ -388,6 +390,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 5:   request->send_P(200, "text/html", PAGE_settings_time, settingsProcessor); break;
     case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
     case 7:   request->send_P(200, "text/html", PAGE_settings_dmx , settingsProcessor); break;
+    case 8:   request->send_P(200, "text/html", PAGE_settings_relay ); break;                       // GeoGab-Relays Usermod: Because Json is used there is no need for SettingsProcessor.  However for the style it would be necessary. But here there is a small bug. Therefore, the styling was hardcoded into the mod.htm.  
     case 255: request->send_P(200, "text/html", PAGE_welcome); break;
     default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor); 
   }

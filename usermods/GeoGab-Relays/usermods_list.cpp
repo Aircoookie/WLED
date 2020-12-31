@@ -10,7 +10,7 @@
  */
 //#include "usermod_v2_example.h"
 #ifdef USERMOD_GEOGAB
-#include "../usermods/GeoGab/usermod_GeoGab.h"
+#include "../usermods/GeoGab-Relays/usermod_GeoGab.h"
 #endif
 
 //#include "usermod_v2_empty.h"

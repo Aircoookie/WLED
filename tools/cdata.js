@@ -333,6 +333,22 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
             "function GetV() {var d=document;\n"
           ),
     },
+    {
+      file: "../../usermods/GeoGab-Relays/settings_relay.htm",
+      name: "PAGE_settings_relay",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "html-minify",
+      mangle: (str) =>
+        str
+          // .replace(/\<link rel="stylesheet".*\>/gms, "")
+          // .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+          // .replace(                           // Not needed since I transfer the settings via JSON. 
+          //  /function GetV().*\<\/script\>/gms,
+          //  "function GetV() {var d=document;\n"
+          //),
+    },
   ],
   "wled00/html_settings.h"
 );

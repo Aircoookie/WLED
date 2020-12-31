@@ -19,7 +19,7 @@
 #endif
 
 #ifdef USERMOD_GEOGAB
-#include "../usermods/GeoGab/usermod_GeoGab.h"
+#include "../usermods/GeoGab-Relays/usermod_GeoGab.h"
 #endif
 
 void registerUsermods()
@@ -38,6 +38,6 @@ void registerUsermods()
   usermods.add(new BuzzerUsermod());
   #endif
   #ifdef USERMOD_GEOGAB
-  usermods.add(new UsermodGeoGab());
+  usermods.add(new UsermodGeoGab()); 
   #endif
 }

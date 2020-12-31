@@ -21,6 +21,7 @@
 #define USERMOD_ID_FIXNETSERVICES 4            //Usermod "usermod_Fix_unreachable_netservices.h"
 #define USERMOD_ID_PIRSWITCH      5            //Usermod "usermod_PIR_sensor_switch.h"
 #define USERMOD_ID_IMU            6            //Usermod "usermod_mpu6050_imu.h"
+#define USERMOD_ID_GEOGABRELAY    7            //Usermod "Usermod_geogab_relay"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot

@@ -807,6 +807,26 @@ function requestJson(command, rinfo = true, verbose = true) {
 		d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-3)";
 		selectedFx = i.fx;
 		e2.value = i.pal;
+
+		/*****  GeoGab Relays: Start *****/
+		var e3 = d.getElementById('ListOfRelays');
+		var norelays=s.relays.no;						// Number of relays (can be undefined too)
+		var cont="";
+
+		if(norelays) {
+			for (i=0; i<norelays; i++ ) {
+				cont+= '<button class="btn';
+				if (s.relays.status[i]) cont+= ' active';
+				cont+= '" onclick="RelayToggle('+i+','+norelays+');">'+s.relays.name[i]+'</button><br>';
+			}
+			e3.innerHTML=cont;
+
+		} else {
+			e3.innerHTML='<button class="btn btn-s btn-i" onclick="RelaySettings()"><i class="icons btn-icon">&#xe18a;</i>Add Relays</button><br>';
+							
+		}
+		/***** GeoGab Relays: END *****/
+
 		if (!command) d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
 
 		if (s.error && s.error != 0) {
@@ -817,8 +837,10 @@ function requestJson(command, rinfo = true, verbose = true) {
         case 12: errstr = "The requested preset does not exist."; break;
         case 19: errstr = "A filesystem error has occured."; break;
       }
-      showToast('Error ' + s.error + ": " + errstr, true);
-    }
+	  showToast('Error ' + s.error + ": " + errstr, true);
+
+
+	}
 		updateUI();
 	})
 	.catch(function (error) {
@@ -826,6 +848,24 @@ function requestJson(command, rinfo = true, verbose = true) {
 	  console.log(error);
 	});
 }
+
+/***** GeoGab Relays Fuctions: Start *****/
+function RelaySettings() {
+	window.open("/settings/relays","_self");
+}
+
+function RelayToggle(no,anz){
+	// {"relays":{"toggle":[0,0,0,....]}}
+	var arr=[];
+
+	for (var i = 0; i<anz ; i++) {
+		i==no ? arr[i]=1 : arr[i]=0 ;
+	}
+
+	var obj = {"relays":{"toggle":arr}};
+	requestJson(obj);
+}
+/***** GeoGab Relays Fuctions: End *****/
 
 function togglePower() {
 	isOn = !isOn;
@@ -1304,7 +1344,7 @@ function unfocusSliders() {
 }
 
 //sliding UI
-const _C = document.querySelector('.container'), N = 4;
+const _C = document.querySelector('.container'), N = 5;
 
 let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
 
@@ -1376,7 +1416,7 @@ function togglePcMode(fromB = false)
 	d.getElementById('buttonPcm').className = (pcMode) ? "active":"";
 	d.getElementById('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', d.getElementById('bot').clientHeight + "px");
-  _C.style.width = (pcMode)?'100%':'400%';
+  _C.style.width = (pcMode)?'100%':'500%';
 	lastw = w;
 }
 

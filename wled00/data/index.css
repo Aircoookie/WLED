@@ -218,7 +218,7 @@ button {
 
 .bot button {
 	padding: var(--bbp);
-	width:25%;
+	width:20%;
 }
 
 .tab button:hover {
