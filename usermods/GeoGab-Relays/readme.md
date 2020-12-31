@@ -182,7 +182,8 @@ Run your Device
 I think/hope the use of the web user interface is self-explanatory. 
 Configure your relays in the web interface (preferred methode). Alternatively, they can also be defined via JSON (see JSON API).
 
-<img src="examples/Webpage.png" width="50%"><img src="examples/Webpage4.png" width="50%">
+<img src="examples/Webpage.png" width="100%">
+<img src="examples/Webpage4.png" width="100%">
 
 ## ALEXA
 Not implemented yet.
@@ -208,6 +209,8 @@ off | {"relays":{"off":[0,0,0,0]}} | 1: Turns the relay off, 0: keeps the status
 The `array [0,0,...]` must match correspond to the number of relays. Otherwise the command is discarded. 
 
 In the folder `examples` you can find an example of a fow in `Red Node`. This also works via json. 
+
+<img src="examples/Node Red Example.png" width="100%">  
   
 #### Setup (perfered methode is the web interface)
 Be careful when configuring with JSON. There is no error detection. Think very carefully. Incorrect settings can put the device out of operation. In the worst case the hardware can be damaged. 
