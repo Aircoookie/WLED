@@ -1,4 +1,4 @@
-# Usermod GeoGab
+# Usermod GeoGab-Relays
 
 +++ 31/12/2020 by Gabriel Sieben (GeoGab) +++
 
@@ -36,13 +36,13 @@ Pinsetting ON a D1 Mini Device (as an example):
 # Integration of the usermod
 I have tried to intervene as little as possible in the main code. Unfortunately, however, some interventions in the main code are still necessary. However, it shows very well which functions might still be advantageous for such a deep integration.
 
-## Step I: 
+## Step I
 Add the corresponding lines in the file: `wled00\usermods_list.cpp`. An example of the necessary lines is in the file `usermods_list.cpp` in this folder. 
 
-## Step II: 
+## Step II 
 Add the corresponding Defines in `platform_override.ini` or `platform.ini`. An example of the file: `platformio_override.ini` is in this folder. It can also be simply copied to the root directory (the directory where `platformio.ini` is). The necessary build flag is:`build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4` (While 4 defines the maximum number of relays)
 
-## Step III:
+## Step III
 Perform the following changes:
     
     1.      Modify the core files:
@@ -169,10 +169,10 @@ Perform the following changes:
 
     2.3.    Run in Command Line: npm run build
 
-## Step IV: 
+## Step IV 
 Compile and flash....
 
-## Step V:  
+## Step V  
 Run your Device
     1. Setup your Relay in the Webfrondend or using json. 
     2. Have fun with your extended relay function.
@@ -188,20 +188,20 @@ MAXRELAYS defines the maximum ammount of relays.
 I think/hope the use of the web user interface is self-explanatory. 
 Configure your relays in the web interface (preferred methode). Alternatively, they can also be defined via JSON (see JSON API). 
 
-## ALEXA:
+## ALEXA
 Not implemented yet.
 Use the relay names for Alexa. Please note: To use the relays with Alexa, the device must be restarted after the relay setup. 
 
-## HTTP API:
+## HTTP API
 Not implemented yet.
 
-## JSON API: 
+## JSON API 
 ### The Json API has two functionalities. 
 
- - The relays can be control/switch. 
- - The relays can be defined. This is very practical if you want to configure several identical devices easily. 
+ - The relays can be switched/controlled
+ - The relays can be defined (setup). This is very convenient if you want to provide several devices with the same configuration. 
 
-#### The relays control 
+#### Control 
 Fuction | JSON example | Comment
 -------- | ----------- | ------------
 switch (1=on, 0=off) | {"relays":{"switch":[0,0,0,0]}} | Sets the state of all relais
@@ -210,8 +210,10 @@ on (1=on, 0=unchanged) | {"relays":{"on":[0,0,0,0]}} | 1: Turns the relay on, 0:
 off (1=off, 0=unchanged) | {"relays":{"off":[0,0,0,0]}} | 1: Turns the relay off, 0: keeps the status untouched
   
 The `array [0,0,...]` must match correspond to the number of relays. Otherwise the command is discarded. 
+
+In the folder `examples` you can find an example of a fow in `Red Node`. This also works via json. 
   
-#### Setup of the Relays (perfered methode is the web interface):
+#### Setup (perfered methode is the web interface)
 Be careful when configuring with JSON. There is no error detection. Think very carefully. Incorrect settings can put the device out of operation. In the worst case the hardware can be damaged. 
 
 Structure of json setup example: 
@@ -224,7 +226,7 @@ Structure of json setup example:
       Send to [Device-IP]/json/status: 
           {"relays":{"config":1,"no":1,"name":["Dev1"],"gpio":[16],"sactive":[0],"invert":[1]}}
           
-#### Status:
+#### Status
 The relay states are part of the JSON response.
  - http://[Device-IP]/json/status -> Shows the current switching state of the relays and the settings. 
  - http://[Device.IP]/json/info   -> Shows the current switching state of the relays.
