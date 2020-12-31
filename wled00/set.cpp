@@ -236,6 +236,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     countdownHour = request->arg(F("CH")).toInt();
     countdownMin = request->arg(F("CM")).toInt();
     countdownSec = request->arg(F("CS")).toInt();
+    setCountdown();
 
     macroAlexaOn = request->arg(F("A0")).toInt();
     macroAlexaOff = request->arg(F("A1")).toInt();

@@ -2,6 +2,10 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2012311
+
+-   Fixed Countdown mode
+
 #### Build 2012310
 
 -   (Hopefully actually) fixed display of usermod values in info screen
