@@ -4230,7 +4230,7 @@ double mapf(double x, double in_min, double in_max, double out_min, double out_m
 
 
 ////////////////////
-//  ** Binmap     //
+//  **Binmap      //
 ////////////////////
 
 uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale raw fftBin[] values to SEGLEN. Shows just how noisy those bins are.
@@ -4271,7 +4271,7 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale raw fftBin[] valu
 
 
 ////////////////////
-//  ** Freqmap    //
+//  **Freqmap     //
 ////////////////////
 
 uint16_t WS2812FX::mode_freqmap(void) {        // Map FFT_MajorPeak to SEGLEN. Would be better if a higher framerate.
@@ -4291,14 +4291,13 @@ uint16_t WS2812FX::mode_freqmap(void) {        // Map FFT_MajorPeak to SEGLEN. W
 
 
 ///////////////////////
-//  ** Freqmatrix    //
+//  **Freqmatrix     //
 ///////////////////////
 
 uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Pleschung.
 
    uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
 
-//  uint8_t secondHand = millis()/(256-SEGMENT.speed) % 10;
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
@@ -4354,7 +4353,7 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
 
 
 //////////////////////
-//  ** Freqpixels    //
+//  **Freqpixels    //
 //////////////////////
 
 // Start frequency = 60 Hz and log10(60) = 1.78
@@ -4379,7 +4378,7 @@ uint16_t WS2812FX::mode_freqpixels(void) {                                 // Fr
 
 
 //////////////////////
-//  ** Freqwave     //
+//  **Freqwave      //
 //////////////////////
 
 // Assign a color to the central (starting pixels) based on the predominant frequencies and the volume. The color is being determined by mapping the MajorPeak from the FFT
@@ -4503,7 +4502,7 @@ uint16_t WS2812FX::mode_gravfreq(void) {                                // Gravf
 
 
 //////////////////////
-//  ** Noisemove    //
+//  **Noisemove     //
 //////////////////////
 
 uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove.    By: Andrew Tuline
@@ -4528,9 +4527,8 @@ uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove.    By: Andrew Tuline
 } // mode_noisemove()
 
 
-
 ///////////////////////
-//  ** Waterfall     //
+//  **Waterfall      //
 ///////////////////////
 
 // Combines peak detection with FFT_MajorPeak and FFT_Magnitude.
@@ -4560,9 +4558,8 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 } // mode_waterfall()
 
 
-
 /////////////////////////
-// ** 2D GEQ           //
+// **2D GEQ            //
 /////////////////////////
 
 uint16_t WS2812FX::mode_2DGEQ(void) {                // By Will Tatam.
@@ -4595,14 +4592,14 @@ uint16_t WS2812FX::mode_2DGEQ(void) {                // By Will Tatam.
   
   setPixels(leds);
   return FRAMETIME;
-}
+} // mode_2DGEQ()
 
 
 /////////////////////////
-//   ** 2D DJLight     //
+//   **DJLight         //
 /////////////////////////
 
-uint16_t WS2812FX::mode_2DDJLight(void) {   // Written by ??? Adapted by Will Tatam.
+uint16_t WS2812FX::mode_DJLight(void) {   // Written by ??? Adapted by Will Tatam.
   int NUM_LEDS = (matrixWidth * matrixHeight);
   int mid = NUM_LEDS / 2;
   CRGB *leds = (CRGB* )ledData;
@@ -4630,11 +4627,11 @@ uint16_t WS2812FX::mode_2DDJLight(void) {   // Written by ??? Adapted by Will Ta
 
   setPixels(leds);
   return FRAMETIME;
-}
+} // mode_DJLight()
 
 
 /////////////////////////
-// ** 2D Funky plank   //
+// **2D Funky plank    //
 /////////////////////////
 
 uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will Tatam.
@@ -4681,11 +4678,11 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {   // Written by ??? Adapted by Will
 
   setPixels(leds);
   return FRAMETIME;
-}
+} // mode_2DFunkyPlank
 
 
 /////////////////////////
-// ** 2D CenterBars    //
+// **2D CenterBars     //
 /////////////////////////
 
 uint16_t WS2812FX::mode_2DCenterBars(void) {                // Written by Scott Marley Adapted by  Spiro-C..
@@ -4718,7 +4715,7 @@ uint16_t WS2812FX::mode_2DCenterBars(void) {                // Written by Scott 
   }
   setPixels(leds);
   return FRAMETIME;
-}
+} // mode_2DCenterBars()
 
 //////////////////////////////////////////////
 //     START of 2D NON-REACTIVE ROUTINES    //
@@ -5289,9 +5286,8 @@ uint16_t WS2812FX::mode_2Dmeatballs(void) {   // Metaballs by Stefan Petrick. Ca
 } // mode_2Dmeatballs()
 
 
-
 ////////////////////////////////
-//  ** FFT_test               //
+//  **FFT_test                //
 ////////////////////////////////
 
 // This is our internal testing routine, which has been exposed for use with debugging.

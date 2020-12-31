@@ -266,7 +266,7 @@
 #define FX_MODE_GRAVCENTER             142
 #define FX_MODE_GRAVCENTRIC            143
 #define FX_MODE_GRAVFREQ               144
-#define FX_MODE_2DDJLIGHT              145
+#define FX_MODE_DJLIGHT                145
 #define FX_MODE_2DFUNKYPLANK           146
 #define FX_MODE_2DCENTERBARS           147
 
@@ -517,7 +517,7 @@ class WS2812FX {
       _mode[FX_MODE_GRAVCENTER]              = &WS2812FX::mode_gravcenter;
       _mode[FX_MODE_GRAVCENTRIC]             = &WS2812FX::mode_gravcentric;
       _mode[FX_MODE_GRAVFREQ]                = &WS2812FX::mode_gravfreq;
-      _mode[FX_MODE_2DDJLIGHT]               = &WS2812FX::mode_2DDJLight;
+      _mode[FX_MODE_DJLIGHT]                 = &WS2812FX::mode_DJLight;
       _mode[FX_MODE_2DFUNKYPLANK]            = &WS2812FX::mode_2DFunkyPlank,
       _mode[FX_MODE_2DCENTERBARS]            = &WS2812FX::mode_2DCenterBars;
 
@@ -774,7 +774,7 @@ class WS2812FX {
       mode_gravcenter(void),
       mode_gravcentric(void),
       mode_gravfreq(void),
-      mode_2DDJLight(void),
+      mode_DJLight(void),
       mode_2DFunkyPlank(void),
       mode_2DCenterBars(void);
 
@@ -867,7 +867,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Flow","Chunchun","Dancing Shadows","Washing Machine","*Pixels","*Pixelwave","*Juggles","*Matripix","*Gravimeter","*Plasmoid",
 "*Puddles","*Midnoise","*Noisemeter","**Freqwave","**Freqmatrix","**2D GEQ","**Waterfall","**Freqpixels","**Binmap","*Noisefire",
 "*Puddlepeak","**Noisemove","2D Plasma","Perlin Move","*Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012","2D DNA","2D Matrix",
-"2D Meatballs","**Freqmap","*Gravcenter","*Gravcentric","**Gravfreq","**2D DJ Light","**2D Funky Plank","**2D CenterBars"
+"2D Meatballs","**Freqmap","*Gravcenter","*Gravcentric","**Gravfreq","**DJ Light","**2D Funky Plank","**2D CenterBars"
 ])=====";
 
 
