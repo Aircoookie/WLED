@@ -454,9 +454,8 @@ function populateInfo(i)
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
   var urows="";
   if (i.u) {
-    for (var k = 0; k < i.u.length; k++)
+    for (const [k, val] of Object.entries(i.u))
     {
-      var val = i.u[k];
       if (val[1]) {
         urows += inforow(k,val[0],val[1]);
       } else {

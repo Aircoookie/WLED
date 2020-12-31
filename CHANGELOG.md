@@ -2,6 +2,12 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2012240
+
+-  Fixed display of usermod values in info screen
+-  4 more effects now use FRAMETIME
+-  Remove unsupported environments from platformio.ini
+
 #### Build 2012210
 
 -  Split index.htm in separate CSS + JS files (PR #1542)
