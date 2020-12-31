@@ -3883,25 +3883,28 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
 class AuroraWave {
   private:
     uint32_t segment_length;
-    uint ttl = random(500, 1501);
+    uint ttl;
     CRGB basecolor;
-    float basealpha = random(50, 101) / (float)100;
-    uint age = 0;
+    float basealpha;
+    uint age;
     uint width;
     float center;
-    bool goingleft = random(0, 2) == 0;
+    bool goingleft;
     float speed;
     bool alive = true;
 
   public:
-    AuroraWave(uint32_t segment_length, uint32_t wave_speed, CRGB color) {
+    void init(uint32_t segment_length, uint32_t wave_speed, CRGB color) {
       this -> segment_length = segment_length;
-
+      ttl = random(500, 1501);
+      basecolor = color;
+      basealpha = random(50, 101) / (float)100;
+      age = 0;
       width = random(segment_length / 10, segment_length / W_WIDTH_FACTOR);
       center = random(101) / (float)100 * segment_length;
+      goingleft = random(0, 2) == 0;
       speed = (random(10, 31) / (float)100 * W_MAX_SPEED / 255) * wave_speed;
-
-      basecolor = color;
+      alive = true;
     }
 
     CRGB* getColorForLED(int ledIndex) {      
@@ -3965,45 +3968,37 @@ class AuroraWave {
     };
 };
 
-AuroraWave* waves[W_MAX_COUNT];
-
 uint16_t WS2812FX::mode_aurora(void) {
   //aux1 = Wavecount
   //aux2 = Intensity in last loop
 
-  if(SEGENV.aux0 != SEGMENT.intensity) {
+  AuroraWave* waves;
+
+  if(SEGENV.aux0 != SEGMENT.intensity || SEGENV.call == 0) {
+    //Intensity slider changed or first call
     SEGENV.aux1 = ((float)SEGMENT.intensity / 255) * W_MAX_COUNT;
     SEGENV.aux0 = SEGMENT.intensity;
-  }
 
-  if(SEGENV.call == 0) {   
-    //Initialize waves on first call 
-    for(int i = 0; i < W_MAX_COUNT; i++) {
-      if(i < SEGENV.aux1) {
-        waves[i] = new AuroraWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
-      } else {
-        waves[i] = 0;
-      }
+    if(!SEGENV.allocateData(sizeof(AuroraWave) * SEGENV.aux1)) {
+      return mode_static(); //allocation failed
     }
+
+    waves = reinterpret_cast<AuroraWave*>(SEGENV.data);
+
+    for(int i = 0; i < SEGENV.aux1; i++) {
+      waves[i].init(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+    }
+  } else {
+    waves = reinterpret_cast<AuroraWave*>(SEGENV.data);
   }
 
-  for(int i = 0; i < W_MAX_COUNT; i++) {
+  for(int i = 0; i < SEGENV.aux1; i++) {
     //Update values of wave
-    if(waves[i] != 0) {
-      waves[i] -> update();
+    waves[i].update();
 
-      if(!(waves[i] -> stillAlive())) {
-        //If a wave dies, remove it from memory and spawn a new one
-        delete waves[i];
-
-        if(i < SEGENV.aux1) {
-          waves[i] = new AuroraWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
-        } else {
-          waves[i] = 0;
-        }
-      }
-    } else if(i < SEGENV.aux1) {
-      waves[i] = new AuroraWave(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+    if(!(waves[i].stillAlive())) {
+      //If a wave dies, reinitialize it starts over.
+      waves[i].init(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
     }
   }
 
@@ -4013,16 +4008,14 @@ uint16_t WS2812FX::mode_aurora(void) {
 
     //For each LED we must check each wave if it is "active" at this position.
     //If there are multiple waves active on a LED we multiply their values.
-    for(int  j = 0; j < W_MAX_COUNT; j++) {
-      if(waves[j] != 0) {
-        CRGB* rgb = waves[j] -> getColorForLED(i);
-        
-        if(rgb != NULL) {       
-          mixedRgb += *rgb;
-        }
-        
-        delete []rgb;
+    for(int  j = 0; j < SEGENV.aux1; j++) {
+      CRGB* rgb = waves[j].getColorForLED(i);
+      
+      if(rgb != NULL) {       
+        mixedRgb += *rgb;
       }
+      
+      delete []rgb;
     }
 
     setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2], BACKLIGHT);
