@@ -33,14 +33,14 @@ Pinsetting ON a D1 Mini Device (as an example):
   - D8 (GPIO 15): Relay 4
 
 
-# Installation
+# Integration of the usermod
 I have tried to intervene as little as possible in the main code. Unfortunately, however, some interventions in the main code are still necessary. However, it shows very well which functions might still be advantageous for such a deep integration.
 
 ## Step I: 
 Add the corresponding lines in the file: `wled00\usermods_list.cpp`. An example of the necessary lines is in the file `usermods_list.cpp` in this folder. 
 
 ## Step II: 
-Add the corresponding Defines in `platform_override.ini` or platform.ini. An example of the file: platformio_override.ini is in this folder. It can also be simply copied to the root directory (the directory where platformio.ini is). The necessary build flag is:`build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4`
+Add the corresponding Defines in `platform_override.ini` or `platform.ini`. An example of the file: `platformio_override.ini` is in this folder. It can also be simply copied to the root directory (the directory where `platformio.ini` is). The necessary build flag is:`build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4` (While 4 defines the maximum number of relays)
 
 ## Step III:
 Perform the following changes:
@@ -179,7 +179,8 @@ Run your Device
 
 
 # Build Options
-Example: build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4
+Example: `build_flags = ${common.build_flags_esp8266} -D USERMOD_GEOGAB -D MAXRELAYS=4`
+
 MAXRELAYS defines the maximum ammount of relays.
 
 # Usage
@@ -207,7 +208,7 @@ Not implemented yet.
  - on (1=on, 0=unchanged):         {"relays":{"on":[0,0,0,0]}}       1: Turns the relay on, 0: keeps the status untouched
  - off (1=off, 0=unchanged):       {"relays":{"off":[0,0,0,0]}}      1: Turns the relay off, 0: keeps the status untouched
   
-The array [0,0,...] must correspond to the number of relays. Otherwise the command is discarded. 
+The `array [0,0,...]` must match correspond to the number of relays. Otherwise the command is discarded. 
   
 #### Setup of the Relays (perfered methode is the web interface):
 Be careful when configuring with JSON. There is no error detection. Think very carefully. Incorrect settings can put the device out of operation. In the worst case the hardware can be damaged. 
