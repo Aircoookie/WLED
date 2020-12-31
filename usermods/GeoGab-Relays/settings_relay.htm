@@ -159,7 +159,7 @@
 			jsetup.relays.sactive=[];
 			jsetup.relays.invert=[];
 
-			fetch('http://10.7.7.4/json/state')
+			fetch('/json/state')
 				.then( (resp) => {return resp.json();})									// Convert the json text into an object. Write the data into the HTML form.
 				.then( (jdata) =>  {
 					//Setup: {"relays":{"no":3,"name":["Dev1","Dev2","Dev3"],"gpio":[16,5,13,15],"sactive":[0,0,0,0],"invert":[0,0,0,0]}}    
@@ -262,7 +262,7 @@
 				// {"relays":{"no":1,"name":["Relay 1"],"gpio":[0],"sactive":[0],"invert":[1]}}  
 				console.log("Sending: " + JSON.stringify(jsetup));
 
-				fetch('http://10.7.7.4/json', {
+				fetch('/json', {
 				method: "POST",
 				body: JSON.stringify(jsetup),
 				headers: {"Content-type": "application/json; charset=UTF-8"}
