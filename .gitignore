@@ -6,7 +6,6 @@
 !.vscode/extensions.json
 /wled00/Release
 /wled00/extLibs
-/platformio_override.ini
 /wled00/my_config.h 
 /build_output
 .DS_Store
