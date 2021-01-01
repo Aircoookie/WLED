@@ -590,6 +590,7 @@ void serializeConfig() {
   goal.add(countdownYear); goal.add(countdownMonth); goal.add(countdownDay);
   goal.add(countdownHour); goal.add(countdownMin); goal.add(countdownSec);
   cntdwn[F("macro")] = macroCountdown;
+  setCountdown();
 
   JsonArray timers_ins = timers.createNestedArray("ins");
 
