@@ -109,7 +109,7 @@ void URL_response(AsyncWebServerRequest *request)
   oappendi(effectIntensity);
   oappend(SET_F("&FP="));
   oappendi(effectPalette);
-
+  
   obuf = sbuf;
   olen = 0;
 

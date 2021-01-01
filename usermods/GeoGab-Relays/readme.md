@@ -9,7 +9,6 @@ The code was written for the ESP8266 D1 Mini and may have to be adapted to other
 limited to 4 by the code. If you need more, you have to increase the value of MAXRELAYS in the build flag set in file `platformio_override.ini` or `platformio.ini`.
 
 # ToDo's
-    * HTML API (Server.on)
     * MQTT  Function
     * ALEXA Function
 
@@ -190,7 +189,21 @@ Not implemented yet.
 Use the relay names for Alexa. Please note: To use the relays with Alexa, the device must be restarted after the relay setup. 
 
 ## HTTP API
-Not implemented yet.
+All responses are returned as JSON. 
+
+Status Request: `http://[device-ip]/relays`
+Switch Command: `http://[device-ip]/relays?switch=1,0,1,1`   
+The number of numbers behind the switch parameter must correspond to the number of relays. The number 1 switches the relay on. The number 0 switches the relay off. 
+
+Toggle Command: `http://[device-ip]/relays?toggle=1,0,1,1`
+The number of numbers behind the parameter switch must correspond to the number of relays. The number 1 causes a toggling of the relay. The number 0 leaves the state of the device.
+
+Examples
+1. 4 relays at all, relay 2 will be toggled: `http://[device-ip]/relays?toggle=0,1,0,0`
+2. 3 relays at all, relay 1&3 will be switched on: `http://[device-ip]/relays?switch=1,0,1`
+
+Translated with www.DeepL.com/Translator (free version)
+
 
 ## JSON API 
 ### The Json API has two functionalities. 

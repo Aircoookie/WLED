@@ -4,13 +4,17 @@
 
 /*
  * Usermods allow to controll relais over Webpage & APP / JSON API / HTTP API / MQTT / ALEXA
- * Coded by Gabriel Sieben 12/20, Version 1.0.0
+ * Coded by Gabriel Sieben 12/20
  */
 
 /* User Mod Fuctions */
 
+#define GEOGABVERSION "0.1.1"
+
 /*  Declarations */
 void InitRelais(); 
+void InitHtmlAPIHandle();
+void InitAlexa();
 
 class UsermodGeoGab : public Usermod {
   private:
@@ -29,18 +33,17 @@ class UsermodGeoGab : public Usermod {
 
   public:  
     void setup() {
-      DEBUG_PRINT(F("GeoGab-Relays: Starting UserMod ID: "));
+      DEBUG_PRINT(F("GeoGab-Relays: Initialize UserMod ID: "));
       DEBUG_PRINTLN(getId());
       InitRelais();                      /* Initialization of the settings */
     }
 
     void connected() {
-      Serial.println("Connected to WiFi!");
 
       // TODO: ALEXA
       // TODO: MQTT
       // TODO: Server.on for /Relay? calls. Just ON/OFF but not setup
-
+      InitHtmlAPIHandle();      
     }
 
 
@@ -48,9 +51,91 @@ class UsermodGeoGab : public Usermod {
       /* No necessary yet */
     }
 
-  /***************** INIT *****************/
+  /***************** HTTP API *****************/
+  void InitHtmlAPIHandle() {                  // https://github.com/me-no-dev/ESPAsyncWebServer
+    Serial.println(F("GeoGab-Relays: Initialize HTML API"));
+
+    server.on("/relays", HTTP_GET, [this](AsyncWebServerRequest *request){
+      Serial.println("GeoGab-Relays: HTML API");
+      String janswer;
+      String error="";
+      int params = request->params();
+      janswer = "{\"NoOfRelays\":" + String(relaysno) + ",";
+
+      if (relaysno) {
+        // Commands
+        if(request->hasParam("switch")) {
+          /**** Switch ****/
+          AsyncWebParameter* p = request->getParam("switch");
+          // Get Values
+          for (int i=0;i<relaysno;i++) {
+            int value = getValue(p->value(), ',', i);
+            if (value==-1) {
+              error="There must be as mutch arugments as relays";
+            } else {
+              // Switch
+              digitalWrite(relays[i].gpio, value xor relays[i].invert);
+              value ? relays[i].status=1 : relays[i].status=0;
+            }
+          }
+
+        } else if(request->hasParam("toggle")) {
+          /**** Toggle ****/
+          AsyncWebParameter* p = request->getParam("toggle");
+          // Get Values
+          for (int i=0;i<relaysno;i++) {
+            int value = getValue(p->value(), ',', i);
+            if (value==-1) {
+              error="There must be as mutch arugments as relays";
+            } else {
+              // Switch
+              if (value) {
+                relays[i].status=!relays[i].status;
+                digitalWrite(relays[i].gpio, relays[i].status xor relays[i].invert);
+              } 
+            }
+          }
+
+
+        } else {
+          error="No valid command found";
+        }
+      } else {
+        error="No relays defined";
+      }
+
+      // Status response
+      for (int i=0;i<relaysno;i++) {
+        janswer += "\""+relays[i].name+"\":\"" + relays[i].status + "\",";
+      }
+      janswer += "\"error\":\"" + error + "\",";
+      janswer += "\"SW Version\":\"" + String(GEOGABVERSION) + "\"}";;
+      request->send(200, "application/json", janswer);
+    });
+
+  }
+
+  int getValue(String data, char separator, int index)
+  {
+    int found = 0;
+    int strIndex[] = {0, -1};
+    int maxIndex = data.length()-1;
+
+    for(int i=0; i<=maxIndex && found<=index; i++){
+      if(data.charAt(i)==separator || i==maxIndex){
+          found++;
+          strIndex[0] = strIndex[1]+1;
+          strIndex[1] = (i == maxIndex) ? i+1 : i;
+      }
+    }
+
+    return found>index ? data.substring(strIndex[0], strIndex[1]).toInt() : -1;
+  }
+
+
+  /***************** INIT Relays *****************/
     void InitRelais() {
-      DEBUG_PRINTLN(F("GeoGab-Relays: InitRelais - Setting up the relais."));
+      DEBUG_PRINTLN(F("GeoGab-Relays: Initialize Relays."));
       for (uint8_t i = 0 ; i<relaysno; i++) {
         pinMode(relays[i].gpio, OUTPUT);
         digitalWrite(relays[i].gpio, (relays[i].sactive xor relays[i].invert));
@@ -58,9 +143,9 @@ class UsermodGeoGab : public Usermod {
     }
 
   /***************** ALEXA *****************/
-    void addAlexaDevices()
+    void InitAlexa()
     {
-        Serial.println("Fick Dich");
+        Serial.println("Initialize Alexa");
     }
 
   /***************** JSON & Webpage *****************/
@@ -203,6 +288,7 @@ class UsermodGeoGab : public Usermod {
       DEBUG_PRINTLN(F("GeoGab-Relays: Write config."));
       JsonObject top = root.createNestedObject("relays");
       top[F("no")] = relaysno;
+      top[F("umodvers")] =GEOGABVERSION;
       JsonArray name = top.createNestedArray("name");
       JsonArray gpio = top.createNestedArray("gpio");
       JsonArray sactive = top.createNestedArray("sactive");

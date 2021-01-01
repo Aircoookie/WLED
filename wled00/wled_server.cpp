@@ -219,7 +219,6 @@ void initServer()
   });
 }
 
-
 void serveIndexOrWelcome(AsyncWebServerRequest *request)
 {
   if (!showWelcomePage){
