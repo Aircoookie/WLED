@@ -9,12 +9,13 @@
 
 /* User Mod Fuctions */
 
-#define GEOGABVERSION "0.1.1"
+#define GEOGABVERSION "0.1.2"
 
 /*  Declarations */
 void InitRelais(); 
 void InitHtmlAPIHandle();
 void InitAlexa();
+int getValue(String data, char separator, int index);
 
 class UsermodGeoGab : public Usermod {
   private:
@@ -53,10 +54,10 @@ class UsermodGeoGab : public Usermod {
 
   /***************** HTTP API *****************/
   void InitHtmlAPIHandle() {                  // https://github.com/me-no-dev/ESPAsyncWebServer
-    Serial.println(F("GeoGab-Relays: Initialize HTML API"));
+    DEBUG_PRINTLN(F("GeoGab-Relays: Initialize HTML API"));
 
     server.on("/relays", HTTP_GET, [this](AsyncWebServerRequest *request){
-      Serial.println("GeoGab-Relays: HTML API");
+      DEBUG_PRINTLN("GeoGab-Relays: HTML API");
       String janswer;
       String error="";
       int params = request->params();
@@ -128,7 +129,6 @@ class UsermodGeoGab : public Usermod {
           strIndex[1] = (i == maxIndex) ? i+1 : i;
       }
     }
-
     return found>index ? data.substring(strIndex[0], strIndex[1]).toInt() : -1;
   }
 
@@ -145,7 +145,7 @@ class UsermodGeoGab : public Usermod {
   /***************** ALEXA *****************/
     void InitAlexa()
     {
-        Serial.println("Initialize Alexa");
+        DEBUG_PRINTLN("Initialize Alexa");
     }
 
   /***************** JSON & Webpage *****************/
