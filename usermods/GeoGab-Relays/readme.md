@@ -202,9 +202,6 @@ Examples
 1. 4 relays at all, relay 2 will be toggled: `http://[device-ip]/relays?toggle=0,1,0,0`
 2. 3 relays at all, relay 1&3 will be switched on: `http://[device-ip]/relays?switch=1,0,1`
 
-Translated with www.DeepL.com/Translator (free version)
-
-
 ## JSON API 
 ### The Json API has two functionalities. 
 
