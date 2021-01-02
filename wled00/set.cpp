@@ -52,7 +52,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     noWifiSleep = request->hasArg(F("WS"));
 
+    #ifdef WLED_USE_ETHERNET
     ethernetType = request->arg(F("ETH")).toInt();
+    #endif
 
     char k[3]; k[2] = 0;
     for (int i = 0; i<4; i++)
