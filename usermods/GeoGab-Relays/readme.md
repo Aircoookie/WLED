@@ -16,7 +16,7 @@ limited to 4 by the code. If you need more, you have to increase the value of MA
 
 The pins for this usermod are defined while configuration (Webpage or JSON)
 
-If you want to connect a relay, search for the appropriate circuit on the web. By default, the relays are set to LowActive. To reverse this, there is a corresponding define (GEOGAB_ACTIVEHIGH). Please also note: https://github.com/Aircoookie/WLED/wiki/Control-a-relay-with-WLED
+If you want to connect a relay, search for the appropriate circuit on the web. By default, the relays are set to LowActive (invert). You can change this in the relay configuration at any time. Please also note: https://github.com/Aircoookie/WLED/wiki/Control-a-relay-with-WLED
 
 Pinsetting ON a D1 Mini Device (as an example): 
   - D0 (GPIO 16): Relay 1
