@@ -31,7 +31,7 @@ Pinsetting ON a D1 Mini Device (as an example):
 
 
 # Integration of the usermod
-I have tried to intervene as little as possible in the main code. Unfortunately, however, some interventions in the main code are still necessary. However, it shows very well which functions might still be advantageous for such a deep integration.
+I have tried to intervene as little as possible in the main code. Unfortunately some interventions in the main code are still necessary.
 
 ## Step I
 Add the corresponding lines in the file: `wled00\usermods_list.cpp`. An example of the necessary lines is in the file `usermods_list.cpp` in this folder. 
