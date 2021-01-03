@@ -12,8 +12,6 @@ limited to 4 by the code. If you need more, you have to increase the value of MA
     * MQTT  Function
     * ALEXA Function
 
-!!!!!!!!!!!!!!!!!!!!! Attention. Not yet fully tested !!!!!!!!!!!!!!!!!!!!!
-
 # PINS
 
 The pins for this usermod are defined while configuration (Webpage or JSON)
