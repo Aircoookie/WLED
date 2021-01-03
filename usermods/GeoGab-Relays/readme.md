@@ -231,7 +231,7 @@ Structure of json setup example:
     
     - 1 Relay (Dev1,gpio:16,Boot Status off, HighActiv): 
       Send to [Device-IP]/json/status: 
-          {"relays":{"config":1,"no":1,"name":["Dev1"],"gpio":[16],"sactive":[0],"invert":[1]}}
+          {"relays":{"config":1,"no":1,"name":["Dev1"],"gpio":[16],"sactive":[0],"invert":[0]}}
           
 #### Status
 The relay states are part of the JSON response.
