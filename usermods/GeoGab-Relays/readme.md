@@ -12,13 +12,11 @@ limited to 4 by the code. If you need more, you have to increase the value of MA
     * MQTT  Function
     * ALEXA Function
 
-!!!!!!!!!!!!!!!!!!!!! Attention. Not yet fully tested !!!!!!!!!!!!!!!!!!!!!
-
 # PINS
 
 The pins for this usermod are defined while configuration (Webpage or JSON)
 
-If you want to connect a relay, search for the appropriate circuit on the web. By default, the relays are set to LowActive. To reverse this, there is a corresponding define (GEOGAB_ACTIVEHIGH). Please also note: https://github.com/Aircoookie/WLED/wiki/Control-a-relay-with-WLED
+If you want to connect a relay, search for the appropriate circuit on the web. By default, the relays are set to LowActive (invert). You can change this in the relay configuration at any time. Please also note: https://github.com/Aircoookie/WLED/wiki/Control-a-relay-with-WLED
 
 Pinsetting ON a D1 Mini Device (as an example): 
   - D0 (GPIO 16): Relay 1
@@ -33,7 +31,7 @@ Pinsetting ON a D1 Mini Device (as an example):
 
 
 # Integration of the usermod
-I have tried to intervene as little as possible in the main code. Unfortunately, however, some interventions in the main code are still necessary. However, it shows very well which functions might still be advantageous for such a deep integration.
+I have tried to intervene as little as possible in the main code. Unfortunately some interventions in the main code are still necessary.
 
 ## Step I
 Add the corresponding lines in the file: `wled00\usermods_list.cpp`. An example of the necessary lines is in the file `usermods_list.cpp` in this folder. 
@@ -231,9 +229,9 @@ Structure of json setup example:
       Send to [Device-IP]/json/status: 
           {"relays":{"config":1,"no":4,"name":["Dev1","Dev2","Dev3","Dev4"],"gpio":[16,5,13,15],"sactive":[0,0,0,0],"invert":[1,1,1,1]}}
     
-    - 1 Relay (Dev1,gpio:16,Boot Status off, HighActiv): 
+    - 1 Relay (Dev1,gpio:16,Boot Status on, HighActiv): 
       Send to [Device-IP]/json/status: 
-          {"relays":{"config":1,"no":1,"name":["Dev1"],"gpio":[16],"sactive":[0],"invert":[1]}}
+          {"relays":{"config":1,"no":1,"name":["Dev1"],"gpio":[16],"sactive":[1],"invert":[0]}}
           
 #### Status
 The relay states are part of the JSON response.
