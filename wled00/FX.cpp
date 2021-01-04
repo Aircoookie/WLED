@@ -25,7 +25,6 @@
 */
 
 #include "FX.h"
-#include "tv_colors.h"
 
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)
@@ -3778,19 +3777,31 @@ uint16_t WS2812FX::mode_blends(void) {
   return FRAMETIME;
 }
 
-#ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
 typedef struct TvSim {
   uint32_t totalTime = 0;
   uint32_t fadeTime  = 0;
   uint32_t startTime = 0;
   uint32_t elapsed   = 0;
   uint32_t pixelNum  = 0;
+  uint16_t sliderValues = 0;
+  uint32_t sceeneStart    = 0;
+  uint32_t sceeneDuration = 0;
+  uint16_t sceeneColorHue = 0;
+  uint8_t  sceeneColorSat = 0;
+  uint8_t  sceeneColorBri = 0;
+  uint8_t  actualColorR = 0;
+  uint8_t  actualColorG = 0;
+  uint8_t  actualColorB = 0;
   uint16_t pr = 0; // Prev R, G, B
   uint16_t pg = 0;
   uint16_t pb = 0;
 } tvSim;
 
-#define  numTVPixels (sizeof(tv_colors) / 2)  // 2 bytes per Pixel (5/6/5)
+#define WLED_DISABLE_FX_HIGH_FLASH_USE
+
+#ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
+  #include "tv_colors.h"
+  #define  numTVPixels (sizeof(tv_colors) / 2)  // 2 bytes per Pixel (5/6/5)
 #endif
 
 /*
@@ -3798,45 +3809,109 @@ typedef struct TvSim {
   Modified and adapted to WLED by Def3nder, based on "Fake TV Light for Engineers" by Phillip Burgess https://learn.adafruit.com/fake-tv-light-for-engineers/arduino-sketch
 */
 uint16_t WS2812FX::mode_tv_simulator(void) {
-  #ifdef WLED_DISABLE_FX_HIGH_FLASH_USE
-  return mode_static();
-  #else
-  uint16_t nr, ng, nb, r, g, b, i;
-  uint8_t  hi, lo, r8, g8, b8;
+  uint16_t nr, ng, nb, r, g, b, i, hue;
+  uint8_t  hi, lo, r8, g8, b8, sat, bri, j;
 
   if (!SEGENV.allocateData(sizeof(tvSim))) return mode_static(); //allocation failed
   TvSim* tvSimulator = reinterpret_cast<TvSim*>(SEGENV.data);
 
-  // initialize start of the TV-Colors
-  if (SEGENV.call == 0) { 
-    tvSimulator->pixelNum = ((uint8_t)random(18)) * numTVPixels / 18; // Begin at random movie (18 in total)
+  uint8_t colorSpeed     = map(SEGMENT.speed,     0, UINT8_MAX,  1, 20);
+  uint8_t colorIntensity = map(SEGMENT.intensity, 0, UINT8_MAX, 10, 30);
+
+  i = SEGMENT.speed << 8 | SEGMENT.intensity;
+  if (i != tvSimulator->sliderValues) {
+    tvSimulator->sliderValues = i;
+    SEGENV.aux1 = 0;
   }
 
-  // Read next 16-bit (5/6/5) color
-  hi = pgm_read_byte(&tv_colors[tvSimulator->pixelNum * 2    ]);
-  lo = pgm_read_byte(&tv_colors[tvSimulator->pixelNum * 2 + 1]);
+  #ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
+  /*
+   * this code uses the real color data from tv_colos.h 
+   */
 
-  // Expand to 24-bit (8/8/8)
-  r8 = (hi & 0xF8) | (hi >> 5);
-  g8 = ((hi << 5) & 0xff) | ((lo & 0xE0) >> 3) | ((hi & 0x06) >> 1);
-  b8 = ((lo << 3) & 0xff) | ((lo & 0x1F) >> 2);
+    // initialize start of the TV-Colors
+    if (SEGENV.aux1 == 0) { 
+      tvSimulator->pixelNum = ((uint8_t)random8(18)) * numTVPixels / 18; // Begin at random movie (18 in total)
+      SEGENV.aux1 = 1;
+    }
+    
+    // Read next 16-bit (5/6/5) color
+    hi = pgm_read_byte(&tv_colors[tvSimulator->pixelNum * 2    ]);
+    lo = pgm_read_byte(&tv_colors[tvSimulator->pixelNum * 2 + 1]);
+    
+    // Expand to 24-bit (8/8/8)
+    r8 = (hi & 0xF8) | (hi >> 5);
+    g8 = ((hi << 5) & 0xff) | ((lo & 0xE0) >> 3) | ((hi & 0x06) >> 1);
+    b8 = ((lo << 3) & 0xff) | ((lo & 0x1F) >> 2);
 
-  // Apply gamma correction, further expand to 16/16/16
-  nr = (uint8_t)gamma8(r8) * 257; // New R/G/B
-  ng = (uint8_t)gamma8(g8) * 257;
-  nb = (uint8_t)gamma8(b8) * 257;
+    // Apply gamma correction, further expand to 16/16/16
+    nr = (uint8_t)gamma8(r8) * 257; // New R/G/B
+    ng = (uint8_t)gamma8(g8) * 257;
+    nb = (uint8_t)gamma8(b8) * 257;
+  #else
+  /*
+   * this code calculates the color to be used and save 18k of flash memory
+   */
+
+    // create a new sceene
+    if (((millis() - tvSimulator->sceeneStart) >= tvSimulator->sceeneDuration) || SEGENV.aux1 == 0) {
+      tvSimulator->sceeneStart    = millis();                                               // remember the start of the new sceene
+      tvSimulator->sceeneDuration = random16(60* 250* colorSpeed, 60* 750 * colorSpeed);    // duration of a "movie sceene" which has similar colors (5 to 15 minutes with max speed slider)
+      tvSimulator->sceeneColorHue = random16(   0, 768);                                    // random start color-tone for the sceene
+      tvSimulator->sceeneColorSat = random8 ( 100, 130 + colorIntensity);                   // random start color-saturation for the sceene
+      tvSimulator->sceeneColorBri = random8 ( 200, 240);                                    // random start color-brightness for the sceene
+      SEGENV.aux1 = 1;
+      SEGENV.aux0 = 0;
+    } 
+    
+    // slightly change the color-tone in this sceene
+    if ( SEGENV.aux0 == 0) {
+      // hue change in both directions
+      j = random8(4 * colorIntensity);
+      hue = (random8() < 128) ? ((j < tvSimulator->sceeneColorHue)       ? tvSimulator->sceeneColorHue - j : 767 - tvSimulator->sceeneColorHue - j) :  // negative
+                                ((j + tvSimulator->sceeneColorHue) < 767 ? tvSimulator->sceeneColorHue + j : tvSimulator->sceeneColorHue + j - 767) ;  // positive
+      
+      // saturation
+      j = random8(2 * colorIntensity);
+      sat = (tvSimulator->sceeneColorSat - j) < 0 ? 0 : tvSimulator->sceeneColorSat - j;
+      
+      // brightness
+      j = random8(100);
+      bri = (tvSimulator->sceeneColorBri - j) < 0 ? 0 : tvSimulator->sceeneColorBri - j;
+
+      // calculate R,G,B from HSV
+      // Source: https://blog.adafruit.com/2012/03/14/constant-brightness-hsb-to-rgb-algorithm/
+      { // just to create a local scope for  the variables
+        uint8_t temp[5], n = (hue >> 8) % 3;
+        uint8_t x = ((((hue & 255) * sat) >> 8) * bri) >> 8;
+        uint8_t s = (  (256 - sat) * bri) >> 8;
+        temp[0] = temp[3] =       s;
+        temp[1] = temp[4] =   x + s;
+        temp[2] =           bri - x;
+        tvSimulator->actualColorR = temp[n + 2];
+        tvSimulator->actualColorG = temp[n + 1];
+        tvSimulator->actualColorB = temp[n    ];
+      }
+    }
+    // Apply gamma correction, further expand to 16/16/16
+    nr = (uint8_t)gamma8(tvSimulator->actualColorR) * 257; // New R/G/B
+    ng = (uint8_t)gamma8(tvSimulator->actualColorG) * 257;
+    nb = (uint8_t)gamma8(tvSimulator->actualColorB) * 257;
+  #endif
 
   if (SEGENV.aux0 == 0) {  // initialize next iteration 
     SEGENV.aux0 = 1;
     
-    // increase color-index for next loop
-    tvSimulator->pixelNum++;
-    if (tvSimulator->pixelNum >= numTVPixels) tvSimulator->pixelNum = 0;
+    #ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
+      // increase color-index for next loop
+      tvSimulator->pixelNum++;
+      if (tvSimulator->pixelNum >= numTVPixels) tvSimulator->pixelNum = 0;
+    #endif
 
     // randomize total duration and fade duration for the actual color
-    tvSimulator->totalTime = random(250, 2500);                   // Semi-random pixel-to-pixel time
-    tvSimulator->fadeTime  = random(0, tvSimulator->totalTime);   // Pixel-to-pixel transition time
-    if (random(10) < 3) tvSimulator->fadeTime = 0;                // Force scene cut 30% of time
+    tvSimulator->totalTime = random16(250, 2500);                   // Semi-random pixel-to-pixel time
+    tvSimulator->fadeTime  = random16(0, tvSimulator->totalTime);   // Pixel-to-pixel transition time
+    if (random8(10) < 3) tvSimulator->fadeTime = 0;                 // Force scene cut 30% of time
 
     tvSimulator->startTime = millis();
   } // end of initialization
@@ -3869,7 +3944,6 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
   }
   
   return FRAMETIME;
-  #endif
 }
 
 /*
