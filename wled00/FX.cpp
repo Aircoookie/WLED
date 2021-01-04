@@ -3797,7 +3797,6 @@ typedef struct TvSim {
   uint16_t pb = 0;
 } tvSim;
 
-#define WLED_DISABLE_FX_HIGH_FLASH_USE
 
 #ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
   #include "tv_colors.h"
