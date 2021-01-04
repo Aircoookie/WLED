@@ -995,14 +995,6 @@ uint16_t WS2812FX::mode_running_color(void) {
 
 
 /*
- * Alternating red/blue pixels running.
- */
-uint16_t WS2812FX::mode_running_red_blue(void) {
-  return running(RED, BLUE);
-}
-
-
-/*
  * Alternating red/green pixels running.
  */
 uint16_t WS2812FX::mode_merry_christmas(void) {
@@ -3878,72 +3870,70 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
 #define BACKLIGHT 5
 #define W_MAX_COUNT 20            //Number of simultaneous waves
 #define W_MAX_SPEED 6             //Higher number, higher speed
-#define W_WIDTH_FACTOR 3          //Higher number, smaller waves
+#define W_WIDTH_FACTOR 6          //Higher number, smaller waves
 
 class AuroraWave {
   private:
-    uint32_t segment_length;
-    uint ttl;
+    uint16_t ttl;
     CRGB basecolor;
     float basealpha;
-    uint age;
-    uint width;
+    uint16_t age;
+    uint16_t width;
     float center;
     bool goingleft;
-    float speed;
+    float speed_factor;
     bool alive = true;
 
   public:
-    void init(uint32_t segment_length, uint32_t wave_speed, CRGB color) {
-      this -> segment_length = segment_length;
+    void init(uint32_t segment_length, CRGB color) {
       ttl = random(500, 1501);
       basecolor = color;
-      basealpha = random(50, 101) / (float)100;
+      basealpha = random(60, 101) / (float)100;
       age = 0;
-      width = random(segment_length / 10, segment_length / W_WIDTH_FACTOR);
+      width = random(segment_length / 20, segment_length / W_WIDTH_FACTOR); //half of width to make math easier
+      if (!width) width = 1;
       center = random(101) / (float)100 * segment_length;
       goingleft = random(0, 2) == 0;
-      speed = (random(10, 31) / (float)100 * W_MAX_SPEED / 255) * wave_speed;
+      speed_factor = (random(10, 31) / (float)100 * W_MAX_SPEED / 255);
       alive = true;
     }
 
-    CRGB* getColorForLED(int ledIndex) {      
-      if(ledIndex < center - width / 2 || ledIndex > center + width / 2) {
-        //Position out of range of this wave
-        return NULL;
+    CRGB getColorForLED(int ledIndex) {      
+      if(ledIndex < center - width || ledIndex > center + width) return 0; //Position out of range of this wave
+
+      CRGB rgb;
+
+      //Offset of this led from center of wave
+      //The further away from the center, the dimmer the LED
+      float offset = ledIndex - center;
+      if (offset < 0) offset = -offset;
+      float offsetFactor = offset / width;
+
+      //The age of the wave determines it brightness.
+      //At half its maximum age it will be the brightest.
+      float ageFactor = 0.1;        
+      if((float)age / ttl < 0.5) {
+        ageFactor = (float)age / (ttl / 2);
       } else {
-        CRGB* rgb = new CRGB();
-
-        //Offset of this led from center of wave
-        //The further away from the center, the dimmer the LED
-        int offset = abs(ledIndex - center);
-        float offsetFactor = (float)offset / (width / 2);
-
-        //The age of the wave determines it brightness.
-        //At half its maximum age it will be the brightest.
-        float ageFactor = 0.1;        
-        if((float)age / ttl < 0.5) {
-          ageFactor = (float)age / (ttl / 2);
-        } else {
-          ageFactor = (float)(ttl - age) / ((float)ttl * 0.5);
-        }
-
-        //Calculate color based on above factors and basealpha value
-        rgb -> r = basecolor.r * (1 - offsetFactor) * ageFactor * basealpha;
-        rgb -> g = basecolor.g * (1 - offsetFactor) * ageFactor * basealpha;
-        rgb -> b = basecolor.b * (1 - offsetFactor) * ageFactor * basealpha;
-      
-        return rgb;
+        ageFactor = (float)(ttl - age) / ((float)ttl * 0.5);
       }
+
+      //Calculate color based on above factors and basealpha value
+      float factor = (1 - offsetFactor) * ageFactor * basealpha;
+      rgb.r = basecolor.r * factor;
+      rgb.g = basecolor.g * factor;
+      rgb.b = basecolor.b * factor;
+    
+      return rgb;
     };
 
     //Change position and age of wave
     //Determine if its sill "alive"
-    void update() {
+    void update(uint32_t segment_length, uint32_t speed) {
       if(goingleft) {
-        center -= speed;
+        center -= speed_factor * speed;
       } else {
-        center += speed;
+        center += speed_factor * speed;
       }
 
       age++;
@@ -3952,11 +3942,11 @@ class AuroraWave {
         alive = false;
       } else {
         if(goingleft) {
-          if(center + width / 2 < 0) {
+          if(center + width < 0) {
             alive = false;
           }
         } else {
-          if(center - width / 2 > segment_length) {
+          if(center - width > segment_length) {
             alive = false;
           }
         }
@@ -3986,7 +3976,7 @@ uint16_t WS2812FX::mode_aurora(void) {
     waves = reinterpret_cast<AuroraWave*>(SEGENV.data);
 
     for(int i = 0; i < SEGENV.aux1; i++) {
-      waves[i].init(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+      waves[i].init(SEGLEN, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
     }
   } else {
     waves = reinterpret_cast<AuroraWave*>(SEGENV.data);
@@ -3994,28 +3984,26 @@ uint16_t WS2812FX::mode_aurora(void) {
 
   for(int i = 0; i < SEGENV.aux1; i++) {
     //Update values of wave
-    waves[i].update();
+    waves[i].update(SEGLEN, SEGMENT.speed);
 
     if(!(waves[i].stillAlive())) {
       //If a wave dies, reinitialize it starts over.
-      waves[i].init(SEGMENT.length(), SEGMENT.speed, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
+      waves[i].init(SEGLEN, col_to_crgb(color_from_palette(random8(), false, false, random(0, 3))));
     }
   }
 
   //Loop through LEDs to determine color
-  for(int i = 0; i < SEGMENT.length(); i++) {    
+  for(int i = 0; i < SEGLEN; i++) {    
     CRGB mixedRgb = CRGB(BACKLIGHT, BACKLIGHT, BACKLIGHT);
 
     //For each LED we must check each wave if it is "active" at this position.
     //If there are multiple waves active on a LED we multiply their values.
     for(int  j = 0; j < SEGENV.aux1; j++) {
-      CRGB* rgb = waves[j].getColorForLED(i);
+      CRGB rgb = waves[j].getColorForLED(i);
       
-      if(rgb != NULL) {       
-        mixedRgb += *rgb;
+      if(rgb != CRGB(0)) {       
+        mixedRgb += rgb;
       }
-      
-      delete []rgb;
     }
 
     setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2], BACKLIGHT);

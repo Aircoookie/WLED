@@ -632,11 +632,11 @@ const byte temperature_gp[] PROGMEM = {
   255,  80,  3,  3};
 
   const byte Aurora2[] PROGMEM = {
-    0, 17, 177, 13,    //Greenish
-    64, 148, 242, 5,    //Greenish
-    128, 25, 173, 121,    //Turquoise
-    192, 250, 77, 127,   //Pink
-    255, 171, 101, 221  //Purple
+      0,  17, 177,  13,    //Greenish
+     64, 121, 242,   5,    //Greenish
+    128,  25, 173, 121,    //Turquoise
+    192, 250,  77, 127,    //Pink
+    255, 171, 101, 221     //Purple
   };
 
 // Single array of defined cpt-city color palettes.
