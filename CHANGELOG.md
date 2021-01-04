@@ -2,16 +2,30 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2012311
+
+-   Fixed Countdown mode
+
+#### Build 2012310
+
+-   (Hopefully actually) fixed display of usermod values in info screen
+
+#### Build 2012240
+
+-   Fixed display of usermod values in info screen
+-   4 more effects now use FRAMETIME
+-   Remove unsupported environments from platformio.ini
+
 #### Build 2012210
 
--  Split index.htm in separate CSS + JS files (PR #1542)
--  Minify UI HTML, saving >1.5kB flash
--  Fixed JShint warnings
+-   Split index.htm in separate CSS + JS files (PR #1542)
+-   Minify UI HTML, saving >1.5kB flash
+-   Fixed JShint warnings
 
 #### Build 2012180
 
--  Boot brightness 0 will now use the brightness from preset
--  Add iOS scrolling momentum (from PR #1528)
+-   Boot brightness 0 will now use the brightness from preset
+-   Add iOS scrolling momentum (from PR #1528)
 
 ### WLED release 0.11.1
 
