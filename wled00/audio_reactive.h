@@ -209,6 +209,7 @@ double fftBin[samples];
 
 // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
 // Oh, and bins 0,1,2 are no good, so we'll zero them out.
+double fftCalc[16];
 double fftResult[16];                // Our calculated result table, which we feed to the animations.
 double fftResultMax[16];             // A table used for testing to determine how our post-processing is working.
 
@@ -303,37 +304,43 @@ void FFTcode( void * parameter) {
  */
 
 //                                               Range
-      fftResult[0] = (fftAdd(3,4)) /2;        // 60 - 100
-      fftResult[1] = (fftAdd(4,5)) /2;        // 80 - 120
-      fftResult[2] = (fftAdd(5,7)) /3;        // 100 - 160
-      fftResult[3] = (fftAdd(7,9)) /3;        // 140 - 200
-      fftResult[4] = (fftAdd(9,12)) /4;       // 180 - 260
-      fftResult[5] = (fftAdd(12,16)) /5;      // 240 - 340
-      fftResult[6] = (fftAdd(16,21)) /6;      // 320 - 440
-      fftResult[7] = (fftAdd(21,28)) /8;      // 420 - 600
-      fftResult[8] = (fftAdd(29,37)) /10;     // 580 - 760
-      fftResult[9] = (fftAdd(37,48)) /12;     // 740 - 980
-      fftResult[10] = (fftAdd(48,64)) /17;    // 960 - 1300
-      fftResult[11] = (fftAdd(64,84)) /21;    // 1280 - 1700
-      fftResult[12] = (fftAdd(84,111)) /28;   // 1680 - 2240
-      fftResult[13] = (fftAdd(111,147)) /37;  // 2220 - 2960
-      fftResult[14] = (fftAdd(147,194)) /48;  // 2940 - 3900
-      fftResult[15] = (fftAdd(194, 255)) /62; // 3880 - 5120
+      fftCalc[0] = (fftAdd(3,4)) /2;        // 60 - 100
+      fftCalc[1] = (fftAdd(4,5)) /2;        // 80 - 120
+      fftCalc[2] = (fftAdd(5,7)) /3;        // 100 - 160
+      fftCalc[3] = (fftAdd(7,9)) /3;        // 140 - 200
+      fftCalc[4] = (fftAdd(9,12)) /4;       // 180 - 260
+      fftCalc[5] = (fftAdd(12,16)) /5;      // 240 - 340
+      fftCalc[6] = (fftAdd(16,21)) /6;      // 320 - 440
+      fftCalc[7] = (fftAdd(21,28)) /8;      // 420 - 600
+      fftCalc[8] = (fftAdd(29,37)) /10;     // 580 - 760
+      fftCalc[9] = (fftAdd(37,48)) /12;     // 740 - 980
+      fftCalc[10] = (fftAdd(48,64)) /17;    // 960 - 1300
+      fftCalc[11] = (fftAdd(64,84)) /21;    // 1280 - 1700
+      fftCalc[12] = (fftAdd(84,111)) /28;   // 1680 - 2240
+      fftCalc[13] = (fftAdd(111,147)) /37;  // 2220 - 2960
+      fftCalc[14] = (fftAdd(147,194)) /48;  // 2940 - 3900
+      fftCalc[15] = (fftAdd(194, 255)) /62; // 3880 - 5120
 
 
-//   Noise supression of fftResult bins using soundSquelch adjustment for different input types.
+//   Noise supression of fftCalc bins using soundSquelch adjustment for different input types.
     for (int i=0; i < 16; i++) {
-        fftResult[i] = fftResult[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftResult[i];
+        fftCalc[i] = fftCalc[i]-(float)soundSquelch*(float)linearNoise[i]/4.0 <= 0? 0 : fftCalc[i];
     }
 
 // Adjustment for frequency curves.
   for (int i=0; i < 16; i++) {
-    fftResult[i] = fftResult[i] * fftResultPink[i];
+    fftCalc[i] = fftCalc[i] * fftResultPink[i];
   }
 
 // Manual linear adjustment of gain using sampleGain adjustment for different input types.
     for (int i=0; i < 16; i++) {
-        fftResult[i] = fftResult[i] * sampleGain / 40 + fftResult[i]/16.0;
+        fftCalc[i] = fftCalc[i] * sampleGain / 40 + fftCalc[i]/16.0;
+    }
+
+
+// Now, let's dump it all into fftResult. Need to do this, otherwise other routines might grab fftResult values prematurely.
+    for (int i=0; i < 16; i++) {
+        fftResult[i] = fftCalc[i];
     }
 
 
