@@ -394,7 +394,10 @@ void WS2812FX::setColor(uint8_t slot, uint32_t c) {
   if (applyToAllSelected) {
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
-      if (_segments[i].isSelected()) _segments[i].colors[slot] = c;
+      if (_segments[i].isSelected()) {
+        _segments[i].colors[slot] = c;
+        applied = true;
+      }
     }
   }
 
