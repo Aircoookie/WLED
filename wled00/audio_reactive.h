@@ -23,7 +23,7 @@
 
 //#define MIC_LOGGER
 //#define MIC_SAMPLING_LOG
-//#define FFT_SAMPLING_LOG
+#define FFT_SAMPLING_LOG
 
 // The following 3 lines are for Digital Microphone support
 #define I2S_WS 15        // aka LRCL
@@ -210,7 +210,7 @@ double fftBin[samples];
 // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
 // Oh, and bins 0,1,2 are no good, so we'll zero them out.
 double fftCalc[16];
-double fftResult[16];                // Our calculated result table, which we feed to the animations.
+int fftResult[16];                // Our calculated result table, which we feed to the animations.
 double fftResultMax[16];             // A table used for testing to determine how our post-processing is working.
 
 // Table of linearNoise results to be multiplied by soundSquelch in order to reduce squelch across fftResult bins.
@@ -340,7 +340,8 @@ void FFTcode( void * parameter) {
 
 // Now, let's dump it all into fftResult. Need to do this, otherwise other routines might grab fftResult values prematurely.
     for (int i=0; i < 16; i++) {
-        fftResult[i] = fftCalc[i];
+//        fftResult[i] = (int)fftCalc[i];
+        fftResult[i] = constrain((int)fftCalc[i],0,254);
     }
 
 
@@ -384,8 +385,8 @@ void logAudio() {
 
 #ifdef FFT_SAMPLING_LOG
   for(int i=0; i<16; i++) {
-    Serial.print((int)constrain(fftResult[i],0,254));
-    Serial.print(" ");
+    Serial.print(fftResult[i]);
+    Serial.print("\t");
   }
   Serial.println("");
 #endif
