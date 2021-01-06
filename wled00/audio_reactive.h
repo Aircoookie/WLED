@@ -90,6 +90,8 @@ struct audioSyncPacket {
   double FFT_MajorPeak;   //  08 Bytes
 };
 
+double mapf(double x, double in_min, double in_max, double out_min, double out_max);
+
 bool isValidUdpSyncVersion(char header[6]) {
   return (header == UDP_SYNC_HEADER);
 }
@@ -407,10 +409,43 @@ void logAudio() {
 #endif
 
 #ifdef FFT_SAMPLING_LOG
-  for(int i=0; i<16; i++) {
-    Serial.print(fftResult[i]);
-    Serial.print("\t");
+  #if 0
+    for(int i=0; i<16; i++) {
+      Serial.print(fftResult[i]);
+      Serial.print("\t");
+    }
+    Serial.println("");
+  #endif
+
+  // options
+  const bool mapValuesToPlotterSpace = false; // Set true if wanting to see all the bands in their own vertical space on the Serial Plotter, false if wanting to see values in Serial Monitor
+  const bool scaleValuesFromCurrentMaxVal = false; // Set true to apply an auto-gain like setting to to the data (this hasn't been tested recently)
+  const bool printMaxVal = false; // prints the max value seen in the current data 
+  const bool printMinVal = false; // prints the min value seen in the current data
+  const int defaultScalingFromHighValue = 256; // if !scaleValuesFromCurrentMaxVal, we scale values from [0..defaultScalingFromHighValue] to [0..scalingToHighValue], lower this if you want to see smaller values easier
+  const int scalingToHighValue = 256; // Print values to terminal in range of [0..scalingToHighValue] if !mapValuesToPlotterSpace, or [(i)*scalingToHighValue..(i+1)*scalingToHighValue] if mapValuesToPlotterSpace
+  const int minimumMaxVal = 1; // set higher if using scaleValuesFromCurrentMaxVal and you want a small value that's also the current maxVal to look small on the plotter (can't be 0 to avoid divide by zero error)
+
+  int maxVal = minimumMaxVal;
+  int minVal = 0;
+  for(int i = 0; i < 16; i++) {
+    if(fftResult[i] > maxVal) maxVal = fftResult[i];
+    if(fftResult[i] < minVal) minVal = fftResult[i];
   }
-  Serial.println("");
-#endif
+  for(int i = 0; i < 16; i++) {
+    Serial.print(i); Serial.print(":");
+    Serial.printf("%04d ", map(fftResult[i], 0, (scaleValuesFromCurrentMaxVal ? maxVal : defaultScalingFromHighValue), (mapValuesToPlotterSpace*i*scalingToHighValue)+0, (mapValuesToPlotterSpace*i*scalingToHighValue)+scalingToHighValue-1));
+  }
+  if(printMaxVal) {
+    Serial.printf("maxVal:%04d ", maxVal + (mapValuesToPlotterSpace ? 16*256 : 0));
+  }
+  if(printMinVal) {
+    Serial.printf("%04d:minVal ", minVal);  // printed with value first, then label, so negative values can be seen in Serial Monitor but don't throw off y axis in Serial Plotter
+  }
+  if(mapValuesToPlotterSpace)
+    Serial.printf("max:%04d ", (printMaxVal ? 17 : 16)*256); // print line above the maximum value we expect to see on the plotter to avoid autoscaling y axis
+  else
+    Serial.printf("max:%04d ", 256);
+  Serial.println();
+#endif // FFT_SAMPLING_LOG
 } // logAudio()
