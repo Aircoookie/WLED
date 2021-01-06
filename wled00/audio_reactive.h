@@ -5,11 +5,21 @@
  * bytes 2400+ are currently ununsed, but might be used for future wled features
  */
 
+// WARNING Sound reactive variables that are used by the animations or other asynchronous routines must NOT
+// have interim values, but only updated in a single calculation. These are:
+//
+// sample     sampleAvg     sampleAgc       samplePeak    myVals[]
+// 
+// fftBin[]   fftResult[]   FFT_MajorPeak   FFT_Magnitude
+//
+// Otherwise, the animations may asynchronously read interim values of these variables.
+//
+
 #include "wled.h"
 #include <driver/i2s.h>
 
 // Comment/Uncomment to toggle usb serial debugging
-//#define SR_DEBUG
+// #define SR_DEBUG
 
 #ifdef SR_DEBUG
   #define DEBUGSR_PRINT(x) Serial.print(x)
@@ -23,7 +33,7 @@
 
 //#define MIC_LOGGER
 //#define MIC_SAMPLING_LOG
-#define FFT_SAMPLING_LOG
+// #define FFT_SAMPLING_LOG
 
 // The following 3 lines are for Digital Microphone support
 #define I2S_WS 15        // aka LRCL
@@ -47,14 +57,15 @@ TaskHandle_t FFT_Task;
 
 #define UDP_SYNC_HEADER "00001"
 
-uint8_t maxVol = 6;                             // Reasonable value for constant volume for 'peak detector', as it won't always trigger
+uint8_t maxVol = 10;                             // Reasonable value for constant volume for 'peak detector', as it won't always trigger
 uint8_t targetAgc = 60;                         // This is our setPoint at 20% of max for the adjusted output
-uint8_t myVals[32];                             // Used to store a pile of samples as WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
+uint8_t myVals[32];                             // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
 bool samplePeak = 0;                            // Boolean flag for peak. Responding routine must reset this flag
 bool udpSamplePeak = 0;                         // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
 int delayMs = 1;                                // I don't want to sample too often and overload WLED
 int micIn;                                      // Current sample starts with negative values and large values, which is why it's 16 bit signed
-int sample;                                     // Current sample
+int sample;                                     // Current sample. Must only be updated ONCE!!!
+int tmpSample;                                  // An interim sample variable used for calculatioins.
 int sampleAdj;                                  // Gain adjusted sample value
 int sampleAgc;                                  // Our AGC sample
 uint16_t micData;                               // Analog input for FFT
@@ -107,15 +118,22 @@ void getSample() {
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(micIn);
   
   // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
-  sample = (micIn <= soundSquelch) ? 0 : (sample * 3 + micIn) / 4;
+  tmpSample = (micIn <= soundSquelch) ? 0 : (tmpSample * 3 + micIn) / 4;
 //////
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(sample);
 
-  sampleAdj = sample * sampleGain / 40 + sample / 16; // Adjust the gain.
+
+  sampleAdj = tmpSample * sampleGain / 40 + tmpSample / 16; // Adjust the gain.
   sampleAdj = min(sampleAdj, 255);
-  sample = sampleAdj;                                 // We'll now make our rebase our sample to be adjusted.
+  sample = sampleAdj;                                 // ONLY update sample ONCE!!!!
+
   sampleAvg = ((sampleAvg * 15) + sample) / 16;       // Smooth it out over the last 16 samples.
 //////
+
+  Serial.print(0); Serial.print(" "); Serial.print(255); Serial.print(" ");
+  Serial.print(sample); Serial.print(" ");
+  Serial.print(sampleAvg); Serial.println(" ");
+
   DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(sample);
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(sampleAvg); DEBUGSR_PRINT("\n\n");
 
@@ -142,8 +160,9 @@ void getSample() {
 void agcAvg() {
 
   multAgc = (sampleAvg < 1) ? targetAgc : targetAgc / sampleAvg;  // Make the multiplier so that sampleAvg * multiplier = setpoint
-  sampleAgc = sample * multAgc;
-  if (sampleAgc > 255) sampleAgc = 0;
+  int tmpAgc = sample * multAgc;
+  if (tmpAgc > 255) tmpAgc = 0;
+  sampleAgc = tmpAgc;                                             // ONLY update sampleAgc ONCE because it's used elsewhere asynchronously!!!!
   userVar0 = sampleAvg * 4;
   if (userVar0 > 255) userVar0 = 255;
 } // agcAvg()
@@ -359,12 +378,16 @@ void FFTcode( void * parameter) {
 
 void logAudio() {
 #ifdef MIC_LOGGER
-  Serial.print(micIn);      Serial.print(" ");
-  Serial.print(sample);     Serial.print(" ");
-  Serial.print(sampleAvg);  Serial.print(" ");
-  Serial.print(sampleAgc);  Serial.print(" ");
-  Serial.print(micData);    Serial.print(" ");
-  Serial.print(micDataSm);  Serial.print(" ");
+
+
+//  Serial.print(micIn);      Serial.print(" ");
+//  Serial.print(sample); Serial.print(" ");
+//  Serial.print(sampleAvg); Serial.print(" ");
+//  Serial.print(sampleAgc);  Serial.print(" ");
+//  Serial.print(micData);    Serial.print(" ");
+//  Serial.print(micDataSm);  Serial.print(" ");
+  Serial.println(" ");
+
 #endif
 
 #ifdef MIC_SAMPLING_LOG
