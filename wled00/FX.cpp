@@ -3733,6 +3733,17 @@ uint16_t WS2812FX::mode_washing_machine(void) {
 uint32_t ledData[MAX_LEDS];                 // See const.h for a value of 1500.
 uint32_t dataStore[4096];										// we are declaring a storage area or 64 x 64 (4096) words.
 
+extern byte soundSquelch;
+
+// FFT based variables
+extern double FFT_MajorPeak;
+extern double FFT_Magnitude;
+extern double fftBin[];                     // raw FFT data
+extern int fftResult[];                  // summary of bins array. 16 summary bins.
+
+
+
+
 ///////////////////////////////////////
 // Helper function(s)                //
 ///////////////////////////////////////
@@ -4140,12 +4151,7 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                                // Pud
 
 uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. By Andrew Tuline.
 
-  extern double FFT_MajorPeak;
-//  Serial.println(FFT_MajorPeak);
-//  Serial.println(log10(FFT_MajorPeak)*128-140);
-//  Serial.println(pow(FFT_MajorPeak, .3));
-
-                                                              // This currently has no controls.
+                                                             // This currently has no controls.
   #define maxsteps 16                                         // Case statement wouldn't allow a variable.
 
   uint16_t maxRipples = 16;
@@ -4215,11 +4221,6 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                    // * Ripple peak. 
 //     BEGIN FFT ROUTINES    //
 ///////////////////////////////
 
-extern double FFT_MajorPeak;
-extern double FFT_Magnitude;
-extern double fftBin[];                     // raw FFT data
-extern double fftResult[];                  // summary of bins array. 16 summary bins.
-
 
 double mapf(double x, double in_min, double in_max, double out_min, double out_max){
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -4234,8 +4235,6 @@ uint16_t WS2812FX::mode_binmap(void) {        // Binmap. Scale raw fftBin[] valu
 
   #define FIRSTBIN 3                          // The first 3 bins are garbage.
   #define LASTBIN 255                         // Don't use the highest bins, as they're (almost) a mirror of the first 256.
-
-  extern byte soundSquelch;
 
   float maxVal = 512;                        // Kind of a guess as to the maximum output value per combined logarithmic bins.
 
@@ -4301,7 +4300,7 @@ uint16_t WS2812FX::mode_freqmatrix(void) {        // Freqmatrix. By Andreas Ples
     uint32_t *leds = ledData;
 
     double sensitivity = mapf(SEGMENT.fft3, 1, 255, 1, 10);
-    int pixVal = sampleAvg * SEGMENT.intensity / 256 * sensitivity;
+    int pixVal = sampleAgc * SEGMENT.intensity / 256 * sensitivity;
     if (pixVal > 255) pixVal = 255;
 
     double intensity = map(pixVal, 0, 255, 0, 100) / 100.0;     // make a brightness from the last avg
@@ -4504,9 +4503,7 @@ uint16_t WS2812FX::mode_gravfreq(void) {                                // Gravf
 
 uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove.    By: Andrew Tuline
 
-  extern double fftResult[];
-
-  fade_out(224);                                    // Just in case something doesn't get faded.
+  fade_out(224);                               // Just in case something doesn't get faded.
 
   uint8_t numBins = map(SEGMENT.intensity,0,255,0,16);   // Map slider to fftResult bins.
 
@@ -4516,7 +4513,7 @@ uint16_t WS2812FX::mode_noisemove(void) {     // Noisemove.    By: Andrew Tuline
     locn = map(locn,7500,58000,0,SEGLEN-1);   // Map that to the length of the strand, and ensure we don't go over.
     locn = locn % (SEGLEN - 1);               // Just to be bloody sure.
 
-    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i]));
+    setPixelColor(locn, color_blend(SEGCOLOR(1), color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i]*4));
 
   }
 
@@ -4561,6 +4558,8 @@ uint16_t WS2812FX::mode_waterfall(void) {                  // Waterfall. By: And
 
 uint16_t WS2812FX::mode_2DGEQ(void) {                // By Will Tatam.
 
+  fade_out(224);                               // Just in case something doesn't get faded.
+
   CRGB *leds = (CRGB*) ledData;
   fadeToBlackBy(leds, SEGLEN, SEGMENT.speed);
 
@@ -4597,7 +4596,7 @@ uint16_t WS2812FX::mode_2DGEQ(void) {                // By Will Tatam.
 /////////////////////////
 
 uint16_t WS2812FX::mode_DJLight(void) {   // Written by ??? Adapted by Will Tatam.
-  int NUM_LEDS = (matrixWidth * matrixHeight);
+  int NUM_LEDS = SEGLEN;        // aka SEGLEN
   int mid = NUM_LEDS / 2;
   CRGB *leds = (CRGB* )ledData;
 
@@ -4606,11 +4605,8 @@ uint16_t WS2812FX::mode_DJLight(void) {   // Written by ??? Adapted by Will Tata
   if (SEGENV.aux0 != secondHand) {           // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
-    Serial.println("x");
-
-
     leds[mid] = CRGB(fftResult[16]/2, fftResult[5]/2, fftResult[0]/2);
-    leds[mid].fadeToBlackBy(map(fftResult[1], 0, 255, 255, 10)); // TODO - Update
+    leds[mid].fadeToBlackBy(map(fftResult[1*4], 0, 255, 255, 10)); // TODO - Update
       
     //move to the left
     for (int i = NUM_LEDS - 1; i > mid; i--) {

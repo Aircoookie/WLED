@@ -55,7 +55,7 @@ TaskHandle_t FFT_Task;
   #define LED_BUILTIN 3
 #endif
 
-#define UDP_SYNC_HEADER "00001"
+#define UDP_SYNC_HEADER "00002"
 
 uint8_t maxVol = 10;                             // Reasonable value for constant volume for 'peak detector', as it won't always trigger
 uint8_t targetAgc = 60;                         // This is our setPoint at 20% of max for the adjusted output
@@ -132,10 +132,6 @@ void getSample() {
   sampleAvg = ((sampleAvg * 15) + sample) / 16;       // Smooth it out over the last 16 samples.
 //////
 
-  Serial.print(0); Serial.print(" "); Serial.print(255); Serial.print(" ");
-  Serial.print(sample); Serial.print(" ");
-  Serial.print(sampleAvg); Serial.println(" ");
-
   DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(sample);
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(sampleAvg); DEBUGSR_PRINT("\n\n");
 
@@ -184,7 +180,7 @@ void transmitAudioData() {
   extern int sample;
   extern float sampleAvg;
   extern bool udpSamplePeak;
-  extern double fftResult[];
+  extern int fftResult[];
   extern double FFT_Magnitude;
   extern double FFT_MajorPeak;
 
