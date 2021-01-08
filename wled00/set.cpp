@@ -541,7 +541,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       strip.applyToAllSelected = true;
       strip.setColor(2, t[0], t[1], t[2], t[3]);
     } else {
-      strip.getSegment(selectedSeg).colors[2] = ((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24));
+      strip.getSegment(selectedSeg).setColor(2,((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24)), selectedSeg);
     }
   }
 
@@ -667,9 +667,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("SB="));
   if (pos > 0) {
     byte segbri = getNumVal(&req, pos);
-    strip.getSegment(selectedSeg).setOption(SEG_OPTION_ON, segbri);
+    strip.getSegment(selectedSeg).setOption(SEG_OPTION_ON, segbri, selectedSeg);
     if (segbri) {
-      strip.getSegment(selectedSeg).opacity = segbri;
+      strip.getSegment(selectedSeg).setOpacity(segbri, selectedSeg);
     }
   }
 

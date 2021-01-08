@@ -6,6 +6,7 @@
 
 bool applyPreset(byte index)
 {
+  if (index == 0) return false;
   if (fileDoc) {
     errorFlag = readObjectFromFileUsingId("/presets.json", index, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = fileDoc->as<JsonObject>();
