@@ -1339,8 +1339,6 @@ function move(e) {
 	var s = Math.sign(dx);
 	var f = +(s*dx/w).toFixed(2);
 
-	console.log(x0, clientX)
-
   if((clientX != 0) &&
 	 (iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
      f > 0.12 &&
