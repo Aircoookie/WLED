@@ -1334,10 +1334,13 @@ function lock(e) {
 
 function move(e) {
 	if(!locked || pcMode) return;
-	var dx = unify(e).clientX - x0, s = Math.sign(dx), 
-			f = +(s*dx/w).toFixed(2);
+	var clientX = unify(e).clientX;
+	var dx = clientX - x0;
+	var s = Math.sign(dx);
+	var f = +(s*dx/w).toFixed(2);
 
-  if((iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
+  if((clientX != 0) &&
+	 (iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
      f > 0.12 &&
      d.getElementsByClassName("tabcontent")[iSlide].scrollTop == scrollS) {
 		_C.style.setProperty('--i', iSlide -= s);
