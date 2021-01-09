@@ -3908,6 +3908,8 @@ uint16_t WS2812FX::mode_gravimeter(void) {                                // Gra
 
 uint16_t WS2812FX::mode_gravcenter(void) {                                // Gravcenter. By Andrew Tuline.
 
+  Serial.println(millis());
+  
   static int topLED;
   static int gravityCounter = 0;
 
