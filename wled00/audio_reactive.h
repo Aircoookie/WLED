@@ -77,6 +77,9 @@ float multAgc;                                  // sample * multAgc = sampleAgc.
 float sampleAvg = 0;                            // Smoothed Average
 double beat = 0;                                // beat Detection
 
+float expAdjF;                                  // Used for exponential filter.
+float weighting = 0.2;                          // Exponential filter weighting. Will be adjustable in a future release.
+
 
 struct audioSyncPacket {
   char header[6] = UDP_SYNC_HEADER;
@@ -118,12 +121,15 @@ void getSample() {
   micIn = abs(micIn);                             // And get the absolute value of each sample
 //////
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(micIn);
-  
-  // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
-  tmpSample = (micIn <= soundSquelch) ? 0 : (tmpSample * 3 + micIn) / 4;
+
+// Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
+  expAdjF = (weighting * sample + (1.0-weighting) * expAdjF);
+  expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF;
+
+  tmpSample = (int)expAdjF;
+
 //////
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(sample);
-
 
   sampleAdj = tmpSample * sampleGain / 40 + tmpSample / 16; // Adjust the gain.
   sampleAdj = min(sampleAdj, 255);
