@@ -709,7 +709,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 	})
 	.then(res => {
 		if (!res.ok) {
-			 showErrorToast();
+			showErrorToast();
 		}
 		return res.json();
 	})
@@ -718,53 +718,77 @@ function requestJson(command, rinfo = true, verbose = true) {
 		jsonTimeout = null;
 		clearErrorToast();
 		d.getElementById('connind').style.backgroundColor = "#070";
-		if (!json) showToast('Empty response', true);
-		if (json.success) return;
+		if (!json) {
+			showToast('Empty response', true);
+		}
+		if (json.success) {
+			return;
+		}
 		var s = json;
 		if (!command || rinfo) {
-		if (!rinfo) {
-		pmt = json.info.fs.pmt;
-    if (pmt != pmtLS || pmt == 0) {
-      setTimeout(loadPresets,99);
-    }
-    else populatePresets(true);
-    pmtLast = pmt;
-		var x='',y='<option value="0">Default</option>';
-		json.effects.shift(); //remove solid
-		for (let i = 0; i < json.effects.length; i++) json.effects[i] = {id: parseInt(i)+1, name:json.effects[i]};
-		json.effects.sort(compare);
-		for (let i = 0; i < json.effects.length; i++) {
-		x += `<button class="btn${(i==0)?" first":""}" id="fxb${json.effects[i].id}" onclick="setX(${json.effects[i].id});">${json.effects[i].name}</button><br>`;
-		}
+			if (!rinfo) {
+				pmt = json.info.fs.pmt;
+				if (pmt != pmtLS || pmt == 0) {
+					setTimeout(loadPresets,99);
+				}
+				else {
+					populatePresets(true);
+				}
+				pmtLast = pmt;
+				
+				var x = '';
+				var y = '<option value="0">Default</option>';
 
-		json.palettes.shift(); //remove default
-		for (let i = 0; i < json.palettes.length; i++) json.palettes[i] = {"id": parseInt(i)+1, "name":json.palettes[i]};
-		json.palettes.sort(compare);
-		for (let i = 0; i < json.palettes.length; i++) {
-		y += `<option value="${json.palettes[i].id}">${json.palettes[i].name}</option>`;
-		}
-		e1.innerHTML=x; e2.innerHTML=y;
-		}
+				json.effects.shift(); //remove solid
+				for (let i = 0; i < json.effects.length; i++) {
+					json.effects[i] = {id: parseInt(i)+1, name:json.effects[i]};
+				}
+				json.effects.sort(compare);
+				for (let i = 0; i < json.effects.length; i++) {
+					x += `<button class="btn${(i==0)?" first":""}" id="fxb${json.effects[i].id}" onclick="setX(${json.effects[i].id});">${json.effects[i].name}</button><br>`;
+				}
+
+				json.palettes.shift(); //remove default
+				for (let i = 0; i < json.palettes.length; i++) {
+					json.palettes[i] = {"id": parseInt(i)+1, "name":json.palettes[i]};
+				}
+				json.palettes.sort(compare);
+				for (let i = 0; i < json.palettes.length; i++) {
+					y += `<option value="${json.palettes[i].id}">${json.palettes[i].name}</option>`;
+				}
+				e1.innerHTML=x; e2.innerHTML=y;
+			}
 		
 			var info = json.info;
 			var name = info.name;
 			d.getElementById('namelabel').innerHTML = name;
-			if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-			if (info.live) name = "(Live) " + name;
-		if (loc) name = "(L) " + name;
+			if (name === "Dinnerbone") {
+				d.documentElement.style.transform = "rotate(180deg)";
+			}
+			if (info.live) {
+				name = "(Live) " + name;
+			}
+			if (loc) {
+				name = "(L) " + name;
+			}
 			d.title = name;
 			isRgbw = info.leds.wv;
 			ledCount = info.leds.count;
 			syncTglRecv = info.str;
-      maxSeg = info.leds.maxseg;
-      pmt = info.fs.pmt;
-      if (!command && pmt != pmtLast) setTimeout(loadPresets,99);
-      pmtLast = pmt;
-		lastinfo = info;
-		if (isInfo) populateInfo(info);
-			s = json.state;
-			displayRover(info, s);
+			maxSeg = info.leds.maxseg;
+			pmt = info.fs.pmt;
+			if (!command && pmt != pmtLast) {
+				setTimeout(loadPresets,99);
+			}
+			pmtLast = pmt;
+			lastinfo = info;
+			if (isInfo) {
+				populateInfo(info);
+			}
+				s = json.state;
+				displayRover(info, s);
 		}
+
 		isOn = s.on;
 		d.getElementById('sliderBri').value= s.bri;
 		nlA = s.nl.on;
@@ -806,23 +830,33 @@ function requestJson(command, rinfo = true, verbose = true) {
 		d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-3)";
 		selectedFx = i.fx;
 		e2.value = i.pal;
-		if (!command) d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
+		if (!command) {
+			d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
+		}
 
 		if (s.error && s.error != 0) {
-      var errstr = "";
-      switch (s.error) {
-        case 10: errstr = "Could not mount filesystem!"; break;
-        case 11: errstr = "Not enough space to save preset!"; break;
-        case 12: errstr = "The requested preset does not exist."; break;
-        case 19: errstr = "A filesystem error has occured."; break;
-      }
-      showToast('Error ' + s.error + ": " + errstr, true);
-    }
+      		var errstr = "";
+      		switch (s.error) {
+				case 10: 
+					errstr = "Could not mount filesystem!"; 
+					break;
+				case 11: 
+					errstr = "Not enough space to save preset!"; 
+					break;
+				case 12: 
+					errstr = "The requested preset does not exist."; 
+					break;
+				case 19: 
+					errstr = "A filesystem error has occured."; 
+					break;
+      		}
+      		showToast('Error ' + s.error + ": " + errstr, true);
+    	}
 		updateUI();
 	})
 	.catch(function (error) {
 		showToast(error, true);
-	  console.log(error);
+		console.log(error);
 	});
 }
 
