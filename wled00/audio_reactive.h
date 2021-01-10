@@ -55,14 +55,14 @@ TaskHandle_t FFT_Task;
   #define LED_BUILTIN 3
 #endif
 
-#define UDP_SYNC_HEADER "00002"
+#define UDP_SYNC_HEADER "00001"
 
 uint8_t maxVol = 10;                             // Reasonable value for constant volume for 'peak detector', as it won't always trigger
 uint8_t targetAgc = 60;                         // This is our setPoint at 20% of max for the adjusted output
 uint8_t myVals[32];                             // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
 bool samplePeak = 0;                            // Boolean flag for peak. Responding routine must reset this flag
 bool udpSamplePeak = 0;                         // Boolean flag for peak. Set at the same tiem as samplePeak, but reset by transmitAudioData
-int delayMs = 1;                                // I don't want to sample too often and overload WLED
+int delayMs = 10;                                // I don't want to sample too often and overload WLED
 int micIn;                                      // Current sample starts with negative values and large values, which is why it's 16 bit signed
 int sample;                                     // Current sample. Must only be updated ONCE!!!
 int tmpSample;                                  // An interim sample variable used for calculatioins.
@@ -377,7 +377,6 @@ void FFTcode( void * parameter) {
 
   } // for(;;)
 } // FFTcode()
-
 
 
 void logAudio() {

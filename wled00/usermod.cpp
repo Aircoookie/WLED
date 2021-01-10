@@ -104,7 +104,11 @@ void userLoop() {
   }
   if (audioSyncEnabled & (1 << 0)) {    // Only run the transmit code IF we're in Transmit mode
     //Serial.println("Transmitting UDP Mic Packet");
-    transmitAudioData();
+
+      EVERY_N_MILLIS(20) {
+        transmitAudioData();
+      }
+
   }
 
   // Begin UDP Microphone Sync
@@ -146,6 +150,7 @@ void userLoop() {
             for (int i = 0; i < 16; i++) {
               fftResult[i] = receivedPacket.fftResult[i];
             }
+
             FFT_Magnitude = receivedPacket.FFT_Magnitude;
             FFT_MajorPeak = receivedPacket.FFT_MajorPeak;
             //Serial.println("Finished parsing UDP Sync Packet");
