@@ -123,7 +123,7 @@ void getSample() {
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(micIn);
 
 // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
-  expAdjF = (weighting * sample + (1.0-weighting) * expAdjF);
+  expAdjF = (weighting * micIn + (1.0-weighting) * expAdjF);
   expAdjF = (expAdjF <= soundSquelch) ? 0: expAdjF;
 
   tmpSample = (int)expAdjF;
