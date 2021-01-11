@@ -87,13 +87,31 @@
 			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons btna-icon">&#xe390;</i></button>
 		</div>
-		<p class="labels">Color palette</p> 
+		<p class="labels">Color palette</p>
 		<div class="il">
 			<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i>
-			<select class="btn sel" id="selectPalette" onchange="setPalette()">
-				<option>Default</option>
-				<option>Error!</option>
-			</select>
+			<div id="selectPalette" class="list">
+				<div class="lstI" data-id="0">
+					<label class="check schkl">
+						&nbsp;
+						<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
+						<span class="checkmark schk"></span>
+					</label>
+					<div class="lstIcontent">
+						<span class="lstIname">
+							Default
+						</span>
+					</div>
+				</div>
+				<div class="lstI">
+					<div class="lstIcontent">
+						<span class="lstIname">
+							Error!
+						</span>
+					</div>
+				</div>
+
+			</div>
 		</div>
 	</div>
 
@@ -117,21 +135,17 @@
 			</div>
 		</div>
 		<p class="labels">Effect mode</p>
-		<div class="staytop" id="staytop2">
-			<button class="btn" id="fxb0" onclick="setX(0);">Solid</button>
-		</div>
-		<div id="fxlist">
+		<div id="fxlist" class="list">
 			Loading...
 		</div>
-		<br>
 	</div>
-	
+
 	<div id="Segments" class="tabcontent">
 		<div id="segcont">
 			Loading...
 		</div>
 		<div id="segutil">
-			
+
 		</div>
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
@@ -140,7 +154,7 @@
 
 	<div id="Favorites" class="tabcontent">
 		<div id="putil">
-			
+
 		</div>
 		<div id="pql">
 
