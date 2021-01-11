@@ -266,6 +266,10 @@ void FFTcode( void * parameter) {
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
                         // taskYIELD(), yield(), vTaskDelay() and esp_task_wdt_feed() didn't seem to work.
 
+    // Only run the FFT computing code if we're not in Receive mode
+    if (audioSyncEnabled & (1 << 1))
+      continue;
+
     microseconds = micros();
     extern double volume;
 
