@@ -158,7 +158,6 @@ function loadBg(iUrl) {
   }
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
-		d.getElementById('staytop2').style.background = "transparent";
 		if (isNaN(a)) a = 0.6;
 		bg.style.opacity = a;
 		bg.style.backgroundImage = `url(${img.src})`;
