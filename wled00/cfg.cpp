@@ -394,6 +394,7 @@ void serializeConfig() {
   ap[F("ssid")] = apSSID;
   ap[F("pskl")] = strlen(apPass);
   ap[F("chan")] = apChannel;
+  ap[F("hide")] = apHide;
   ap[F("behav")] = apBehavior;
 
   JsonArray ap_ip = ap.createNestedArray("ip");
