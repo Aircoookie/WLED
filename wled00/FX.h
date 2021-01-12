@@ -119,7 +119,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                     148
+#define MODE_COUNT                     150
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -248,27 +248,29 @@
 #define FX_MODE_NOISEMETER             124
 #define FX_MODE_FREQWAVE               125
 #define FX_MODE_FREQMATRIX             126
-#define FX_MODE_SPECTRAL               127
+#define FX_MODE_2DGEQ                  127
 #define FX_MODE_WATERFALL              128
-#define FX_MODE_FREQPIXEL              129
+#define FX_MODE_FREQPIXELS             129
 #define FX_MODE_BINMAP                 130
-#define FX_MODE_NOISEPEAK              131
-#define FX_MODE_NOISEFIRE              132
-#define FX_MODE_PUDDLEPEAK             133
-#define FX_MODE_NOISEMOVE              134
-#define FX_MODE_2DPLASMA               135
-#define FX_MODE_PERLINMOVE             136
-#define FX_MODE_RIPPLEPEAK             137
-#define FX_MODE_2DFIRENOISE            138
-#define FX_MODE_2DSQUAREDSWIRL         139
-#define FX_MODE_2DFIRE2012             140
-#define FX_MODE_2DDNA                  141
-#define FX_MODE_2DMATRIX               142
-#define FX_MODE_2DMEATBALLS            143
-#define FX_FFT_TEST                    144
-#define FX_MODE_GRAVCENTER             145
-#define FX_MODE_GRAVCENTRIC            146
-#define FX_MODE_GRAVFREQ               147
+#define FX_MODE_NOISEFIRE              131
+#define FX_MODE_PUDDLEPEAK             132
+#define FX_MODE_NOISEMOVE              133
+#define FX_MODE_2DPLASMA               134
+#define FX_MODE_PERLINMOVE             135
+#define FX_MODE_RIPPLEPEAK             136
+#define FX_MODE_2DFIRENOISE            137
+#define FX_MODE_2DSQUAREDSWIRL         138
+#define FX_MODE_2DFIRE2012             139
+#define FX_MODE_2DDNA                  140
+#define FX_MODE_2DMATRIX               141
+#define FX_MODE_2DMEATBALLS            142
+#define FX_MODE_FREQMAP                143
+#define FX_MODE_GRAVCENTER             144
+#define FX_MODE_GRAVCENTRIC            145
+#define FX_MODE_GRAVFREQ               146
+#define FX_MODE_DJLIGHT                147
+#define FX_MODE_2DFUNKYPLANK           148
+#define FX_MODE_2DCENTERBARS           149
 
 
 // Sound reactive external variables
@@ -521,11 +523,10 @@ class WS2812FX {
       _mode[FX_MODE_NOISEMETER]              = &WS2812FX::mode_noisemeter;
       _mode[FX_MODE_FREQWAVE]                = &WS2812FX::mode_freqwave;
       _mode[FX_MODE_FREQMATRIX]              = &WS2812FX::mode_freqmatrix;
-      _mode[FX_MODE_SPECTRAL]                = &WS2812FX::mode_spectral;
+      _mode[FX_MODE_2DGEQ]                   = &WS2812FX::mode_2DGEQ;
       _mode[FX_MODE_WATERFALL]               = &WS2812FX::mode_waterfall;
-      _mode[FX_MODE_FREQPIXEL]               = &WS2812FX::mode_freqpixel;
+      _mode[FX_MODE_FREQPIXELS]              = &WS2812FX::mode_freqpixels;
       _mode[FX_MODE_BINMAP]                  = &WS2812FX::mode_binmap;
-      _mode[FX_MODE_NOISEPEAK]               = &WS2812FX::mode_noisepeak;
       _mode[FX_MODE_NOISEFIRE]               = &WS2812FX::mode_noisefire;
       _mode[FX_MODE_PUDDLEPEAK]              = &WS2812FX::mode_puddlepeak;
       _mode[FX_MODE_NOISEMOVE]               = &WS2812FX::mode_noisemove;
@@ -538,10 +539,13 @@ class WS2812FX {
       _mode[FX_MODE_2DDNA]                   = &WS2812FX::mode_2Ddna;
       _mode[FX_MODE_2DMATRIX]                = &WS2812FX::mode_2Dmatrix;
       _mode[FX_MODE_2DMEATBALLS]             = &WS2812FX::mode_2Dmeatballs;
-      _mode[FX_FFT_TEST]                     = &WS2812FX::fft_test;
+      _mode[FX_MODE_FREQMAP]                 = &WS2812FX::mode_freqmap;
       _mode[FX_MODE_GRAVCENTER]              = &WS2812FX::mode_gravcenter;
       _mode[FX_MODE_GRAVCENTRIC]             = &WS2812FX::mode_gravcentric;
       _mode[FX_MODE_GRAVFREQ]                = &WS2812FX::mode_gravfreq;
+      _mode[FX_MODE_DJLIGHT]                 = &WS2812FX::mode_DJLight;
+      _mode[FX_MODE_2DFUNKYPLANK]            = &WS2812FX::mode_2DFunkyPlank,
+      _mode[FX_MODE_2DCENTERBARS]            = &WS2812FX::mode_2DCenterBars;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -582,7 +586,8 @@ class WS2812FX {
       blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount),
       blur2d( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount),
       blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount),
-      blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount);
+      blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount),
+      setPixels(CRGB* leds);
 
     bool
       reverseMode = false,      //is the entire LED strip reversed?
@@ -778,11 +783,10 @@ class WS2812FX {
       mode_noisemeter(void),
       mode_freqwave(void),
       mode_freqmatrix(void),
-      mode_spectral(void),
+      mode_2DGEQ(void),
       mode_waterfall(void),
-      mode_freqpixel(void),
+      mode_freqpixels(void),
       mode_binmap(void),
-      mode_noisepeak(void),
       mode_noisefire(void),
       mode_puddlepeak(void),
       mode_noisemove(void),
@@ -795,10 +799,13 @@ class WS2812FX {
       mode_2Ddna(void),
       mode_2Dmatrix(void),
       mode_2Dmeatballs(void),
-      fft_test(void),
+      mode_freqmap(void),
       mode_gravcenter(void),
       mode_gravcentric(void),
-      mode_gravfreq(void);
+      mode_gravfreq(void),
+      mode_DJLight(void),
+      mode_2DFunkyPlank(void),
+      mode_2DCenterBars(void);
 
   private:
     NeoPixelWrapper *bus;
@@ -886,10 +893,10 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","Sunrise","Phased","Phased Noise","TwinkleUp","Noise Pal","Sine",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","* Pixels","* Pixelwave","* Juggles","* Matripix",
-"* Gravimeter","* Plasmoid","* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** Spectral","* Waterfall","** Freqpixel",
-"** Binmap","** Noisepeak","* Noisefire","* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl",
-"2D Fire2012","2D DNA","2D Matrix","2D Meatballs","** FFT_TEST","* Gravcenter","* Gravcentric","** Gravfreq"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","*Pixels","*Pixelwave","*Juggles","*Matripix",
+"*Gravimeter","*Plasmoid","*Puddles","*Midnoise","*Noisemeter","**Freqwave","**Freqmatrix","**2D GEQ","**Waterfall","**Freqpixels",
+"**Binmap","*Noisefire","*Puddlepeak","**Noisemove","2D Plasma","Perlin Move","*Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012",
+"2D DNA","2D Matrix","2D Meatballs","**Freqmap","*Gravcenter","*Gravcentric","**Gravfreq","**DJ Light","**2D Funky Plank","**2D CenterBars"
 ])=====";
 
 
