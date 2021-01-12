@@ -535,12 +535,52 @@ void serializeInfo(JsonObject root)
   root["mac"] = escapedMac;
 }
 
+void setPaletteColors(JsonArray json, CRGBPalette16 palette)
+{
+    for (int i = 0; i < 16; i++) {
+      JsonArray colors =  json.createNestedArray();
+      CRGB color = palette[i];
+      colors.add((((float)i / (float)16) * 255));
+      colors.add(color.red);
+      colors.add(color.green);
+      colors.add(color.blue);
+    }
+}
+
+void setPaletteColors(JsonArray json, byte* tcp)
+{
+    TRGBGradientPaletteEntryUnion* ent = (TRGBGradientPaletteEntryUnion*)(tcp);
+    TRGBGradientPaletteEntryUnion u;
+
+    // Count entries
+    uint16_t count = 0;
+    do {
+        u = *(ent + count);
+        count++;
+    } while ( u.index != 255);
+
+    u = *ent;
+    int indexstart = 0;
+    while( indexstart < 255) {
+      indexstart = u.index;
+
+      JsonArray colors =  json.createNestedArray();
+      colors.add(u.index);
+      colors.add(u.r);
+      colors.add(u.g);
+      colors.add(u.b);
+
+      ent++;
+      u = *ent;
+    }
+}
+
 void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
 {
   #ifdef ESP8266
-  int itemPerPage = 10;
+  int itemPerPage = 5;
   #else
-  int itemPerPage = 15;
+  int itemPerPage = 8;
   #endif
 
   int page;
@@ -550,49 +590,109 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
     page = 1;
   }
 
-  int maxPage = ceil((float)GRADIENT_PALETTE_COUNT / (float)itemPerPage);
+  int palettesCount = strip.getPaletteCount();
+
+  int maxPage = ceil((float)palettesCount / (float)itemPerPage);
   if (page > maxPage) {
     page = maxPage;
   }
 
   int start = itemPerPage * (page - 1);
   int end = start + itemPerPage;
-  if (end > GRADIENT_PALETTE_COUNT - 1) {
-    end = GRADIENT_PALETTE_COUNT;
+  if (end > palettesCount - 1) {
+    end = palettesCount;
   }
 
   root[F("m")] = maxPage;
   JsonObject palettes  = root.createNestedObject("p");
 
   for (int i = start; i < end; i++) {
-    JsonArray curPalette = palettes.createNestedArray(String(i + 13));
+    JsonArray curPalette = palettes.createNestedArray(String(i));
+    CRGB prim;
+    CRGB sec;
+    CRGB ter;
+    switch (i) {
+      case 0: //default palette
+        setPaletteColors(curPalette, PartyColors_p); 
+        break;
+      case 1: //random
+          curPalette.add(F("r"));
+          curPalette.add(F("r"));
+          curPalette.add(F("r"));
+          curPalette.add(F("r"));
+          /**setPaletteColors(
+            curPalette, 
+            CRGBPalette16(
+              CHSV(random8(), 255, random8(128, 255)),
+              CHSV(random8(), 255, random8(128, 255)),
+              CHSV(random8(), 192, random8(128, 255)),
+              CHSV(random8(), 255, random8(128, 255))
+            )
+          );**/
+        break;
+      case 2: //primary color only
+        curPalette.add(F("c1"));
+        break;
+      case 3: //primary + secondary
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        break;
+      case 4: //primary + secondary + tertiary
+        curPalette.add(F("c3"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c1"));
+        break;
+      case 5: {//primary + secondary (+tert if not off), more distinct
+      
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c1"));
+        break;}
+      case 6: //Party colors
+        setPaletteColors(curPalette, PartyColors_p);
+        break;
+      case 7: //Cloud colors
+        setPaletteColors(curPalette, CloudColors_p);
+        break;
+      case 8: //Lava colors
+        setPaletteColors(curPalette, LavaColors_p);
+        break;
+      case 9: //Ocean colors
+        setPaletteColors(curPalette, OceanColors_p);
+        break;
+      case 10: //Forest colors
+        setPaletteColors(curPalette, ForestColors_p);
+        break;
+      case 11: //Rainbow colors
+        setPaletteColors(curPalette, RainbowColors_p);
+        break;
+      case 12: //Rainbow stripe colors
+        setPaletteColors(curPalette, RainbowStripeColors_p);
+        break;
 
-    byte tcp[72];
-    memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i])), 72);
-
-    TRGBGradientPaletteEntryUnion* ent = (TRGBGradientPaletteEntryUnion*)(tcp);
-    TRGBGradientPaletteEntryUnion u;
-
-    // Count entries
-    uint16_t count = 0;
-    do {
-        u = *(ent + count);
-        count++;;
-    } while ( u.index != 255);
-
-    u = *ent;
-    int indexstart = 0;
-    while( indexstart < 255) {
-      indexstart = u.index;
-
-      JsonArray colors =  curPalette.createNestedArray();
-      colors.add(u.index);
-      colors.add(u.r);
-      colors.add(u.g);
-      colors.add(u.b);
-
-      ent++;
-      u = *ent;
+      default:
+        if (i < 13) {
+          break;
+        }
+        byte tcp[72];
+        memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
+        setPaletteColors(curPalette, tcp);
+        break;
     }
   }
 }
