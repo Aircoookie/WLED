@@ -613,7 +613,7 @@ function populatePalettes(palettes)
 	
 	var paletteHtml = `<input type="text" class="search" placeholder="Search" oninput="search(this)" />`;
 	for (let i = 0; i < palettes.length; i++) {
-		let previewCss = genPalPrevCss();
+		let previewCss = genPalPrevCss(palettes[i].id);
 		paletteHtml += generateListItemHtml(
 			'palette',
 		    palettes[i].id,
@@ -1497,9 +1497,9 @@ function loadPalettesData()
 	getPalettesData(1, function() {
 		localStorage.setItem(lsKey, JSON.stringify({
 			p: palettesData,
-			expiration: dateExpiration.getTime() + 86400
+			expiration: dateExpiration.getTime() + (24 * 60 * 60 * 1000) // 24 hrs expiration
 		}));
-		requestJson(null, false);
+		redrawPalPrev();
 	});
 }
 
