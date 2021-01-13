@@ -4021,3 +4021,284 @@ uint16_t WS2812FX::mode_aurora(void) {
   
   return FRAMETIME;
 }
+
+/*
+ * Custom FX - Window Matrix
+ * by Christopher Baker
+ * 12/24/2020 - v1.0
+ *
+ * Called from mode_custom_matrix15 to display actual array on maxtrix
+ * Passed the color array for the display array, Display array, and the
+ * last argument = pixel array processing order: 0 for sequencial, 1 for visual 
+*/ 
+uint16_t WS2812FX::custom_matrix15(uint32_t pix_color[], uint8_t pix_img[], uint8_t seq_order) {
+
+  /* 15x20 = 300 pixels */
+  if (SEGLEN >= 300) {
+    /* 300 pixels but index starts at 0, so 0-299 */
+    if (seq_order == 1) {
+      // Select Visual Order (Img Array Arranged Visualy 0-299 = L to R / T to B)
+      bool a_row_odd = 0;
+      uint16_t a_pix = 0;
+      uint16_t p_pix = 0;
+
+      // a_row= visual arng array row (top to btm), phys row is from (btm to top)
+      // phy pixel starts at btm left and snakes to top (20 row = 0-19)
+      for(uint16_t a_row = 0; a_row <= 19; a_row++) {
+        for (uint16_t a_col = 0; a_col <=14; a_col++) {
+          //a_pix = array pixel, processed in visual order (0-19 rows, 0-14 col)
+          a_pix = (a_row*15) + a_col;
+
+          if (a_row_odd == 1) {
+            // odd array rows process (RtoL) same as phys (RtoL)  (14 to 0)
+            // p_pix = phys matrix pixel location
+            p_pix = (((19-a_row)*15)+(14-(14-a_col)));
+          } else {
+            // even array rows process (LtoR) same as phys (LtoR) (0 to 14) 
+            p_pix = (((19-a_row)*15)+(14-a_col));
+          }
+
+          uint32_t pix_color_index = pix_img[a_pix];
+          /* color array index: img value 0 = color array index 0, ... */
+          if (pix_color_index <= 6)
+          {       
+            uint32_t pix_color_value = pix_color[pix_color_index];
+            setPixelColor(p_pix, pix_color_value);
+          }
+        }
+        if (a_row_odd ==1){
+          a_row_odd = 0; //set next row even
+        } else {
+          a_row_odd = 1; //set next row odd
+        }
+      }
+
+    } else {
+      // Default to Sequential (Img Array 0-299 = Snake Back/Forth, Btm to Top, Start Btm L)
+      for(uint16_t i = 0; i < 299; i++) {
+        uint32_t pix_color_index = pix_img[i];
+
+        /* Debug */
+        //printf("In Seq Order");
+        //printf("Loop i=%u\n", i);
+        //printf("pix_img[i] as s=%u\n", pix_img[i]);
+        //printf("pix_color_index=%u \n", pix_color_index);
+
+        /* color array index: img value 0 = color array index 0, ... */
+        if (pix_color_index <= 6)
+        {       
+          uint32_t pix_color_value = pix_color[pix_color_index];
+          setPixelColor(i, pix_color_value);
+        }
+      }
+    }
+  } else {
+    /* segment to small, set first 16 red for debug */
+    for (uint8_t i = 0; i < 16; i++)
+    {
+      setPixelColor(i, RED);
+    }
+  }
+  return FRAMETIME;
+}
+
+/*
+ * Custom FX - Window Matrix
+ * by Christopher Baker
+ * 12/24/2020 - v1.0
+ *
+ * This could be space optimized by some char/string array solution but easy to see
+ * matrix pixels this way and use array, without crazy char/string type conversions.
+ * Assuming max 6 color codes of unint32_t at 15x20 (300) pixels ... 
+ * arrays start 0 so 0-299. Each digit rep color 0-6 with 0 off.  
+ * SEQ_ORDER determines if image pixel array processed in:
+ * 0 = sequential (0-299 ... 0 btm left going right to 14, then up 1 row doing 15 to 29 going left)
+ * 1 = visual (299-0 ... top left to right, 299->285, then down 1 row going l to r, 270->284)
+ * Physical Matrix layout bottom (going L to R) to top... in btn left 0, out top left 299
+ */ 
+uint16_t WS2812FX::mode_custom_matrix15(void) {
+
+  /* 1st Choice - Candy Cane */
+  // Color1 = primary1, Color2 = primary2, Color3 = bckgrnd1, pallet0 = bg2, ...)
+  uint32_t pix_color_1 [7] = {
+    SEGCOLOR(2), SEGCOLOR(0), SEGCOLOR(1),
+    color_from_palette(0, true, PALETTE_SOLID_WRAP, 0), 
+    color_from_palette(1, true, PALETTE_SOLID_WRAP, 0),
+    color_from_palette(2, true, PALETTE_SOLID_WRAP, 0), 
+    BLACK};
+
+  uint8_t pix_img_1 [300] = {
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,1,1,1,2,0,0,0,0,0,
+    0,0,0,0,0,1,1,1,2,1,1,0,0,0,0,
+    0,0,0,0,1,1,1,2,1,1,1,1,0,0,0,
+    0,0,0,2,1,1,1,0,0,1,1,1,2,0,0,
+    0,0,0,1,2,1,0,0,0,0,1,2,1,0,0,
+    0,0,0,1,1,2,0,0,0,0,2,1,1,0,0,
+    0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,
+    0,0,0,1,1,1,0,0,0,0,1,1,2,0,0,
+    0,0,0,0,0,0,0,0,0,0,1,2,1,0,0,
+    0,0,0,0,0,0,0,0,0,0,2,1,1,0,0,
+    0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,
+    0,0,0,0,0,0,0,0,0,0,1,1,2,0,0,
+    0,0,0,0,0,0,0,0,0,0,1,2,1,0,0,
+    0,0,0,0,0,0,0,0,0,0,2,1,1,0,0,
+    0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,
+    0,0,0,0,0,0,0,0,0,0,1,1,2,0,0,
+    0,0,0,0,0,0,0,0,0,0,1,2,1,0,0,
+    0,0,0,0,0,0,0,0,0,0,2,1,1,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    };
+
+  /* 2nd Choice - Star */
+  // Color1 = primary1, Color2 = primary2, Color3 = bckgrnd1, pallet0 = bg2, ...)
+  uint32_t pix_color_2 [7] = {
+    SEGCOLOR(2), SEGCOLOR(0), SEGCOLOR(1),
+    color_from_palette(0, true, PALETTE_SOLID_WRAP, 0), 
+    color_from_palette(1, true, PALETTE_SOLID_WRAP, 0),
+    color_from_palette(2, true, PALETTE_SOLID_WRAP, 0), 
+    BLACK};
+ 
+  uint8_t pix_img_2 [300] = {
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+    0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+    0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+    0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+    0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+    0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+    0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+    0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+    0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,
+    0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,
+    0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    };
+
+  /* 3rd Choice - Snowflake */
+  // Color1 = primary1, Color2 = primary2, Color3 = bckgrnd1, pallet0 = bg2, ...)
+  uint32_t pix_color_3 [7] = {
+    SEGCOLOR(2), SEGCOLOR(0), SEGCOLOR(1),
+    color_from_palette(0, true, PALETTE_SOLID_WRAP, 0), 
+    color_from_palette(1, true, PALETTE_SOLID_WRAP, 0),
+    color_from_palette(2, true, PALETTE_SOLID_WRAP, 0), 
+    BLACK};
+ 
+  uint8_t pix_img_3 [300] = {
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,
+    0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+    0,0,2,0,2,0,0,1,0,0,2,0,2,0,0,
+    0,0,0,2,2,0,0,1,0,0,2,2,0,0,0,
+    0,0,2,2,2,0,0,1,0,0,2,2,2,0,0,
+    1,0,0,0,0,2,0,1,0,2,0,0,0,0,1,
+    0,1,0,0,0,0,2,1,2,0,0,0,0,1,0,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    0,1,0,0,0,0,2,1,2,0,0,0,0,1,0,
+    1,0,0,0,0,2,0,1,0,2,0,0,0,0,1,
+    0,0,2,2,2,0,0,1,0,0,2,2,2,0,0,
+    0,0,0,2,2,0,0,1,0,0,2,2,0,0,0,
+    0,0,2,0,2,0,0,1,0,0,2,0,2,0,0,
+    0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+    0,0,0,0,0,1,0,1,0,1,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    };
+
+  /* 4th Choice - Tree */
+  // Color1 = primary1, Color2 = primary2, Color3 = bckgrnd1, pallet0 = bg2, ...)
+  uint32_t pix_color_4 [7] = {
+    SEGCOLOR(2), SEGCOLOR(0), SEGCOLOR(1),
+    RED, BLUE, PINK, 
+    WHITE};
+ 
+  uint8_t pix_img_4 [300] = {
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,6,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+    0,0,0,0,0,1,3,1,1,1,0,0,0,0,0,
+    0,0,0,0,0,0,1,1,5,0,0,0,0,0,0,
+    0,0,0,0,0,1,1,3,1,1,0,0,0,0,0,
+    0,0,0,0,1,1,4,1,1,3,1,0,0,0,0,
+    0,0,0,0,0,1,3,1,5,1,0,0,0,0,0,
+    0,0,0,0,1,5,1,1,1,4,1,0,0,0,0,
+    0,0,0,1,4,1,1,3,1,4,1,1,0,0,0,
+    0,0,0,0,1,3,1,1,5,1,1,0,0,0,0,
+    0,0,0,1,5,1,1,4,1,1,3,1,0,0,0,
+    0,0,1,4,1,5,1,1,3,1,1,4,1,0,0,
+    0,1,3,1,4,1,1,4,1,1,5,1,1,1,0,
+    0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,
+    0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,
+    0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    };
+
+  /* 5th Choice - Heart */
+  // Color1 = primary1, Color2 = primary2, Color3 = bckgrnd1, pallet0 = bg2, ...)
+  uint32_t pix_color_5 [7] = {
+    SEGCOLOR(2), SEGCOLOR(0), SEGCOLOR(1),
+    color_from_palette(0, true, PALETTE_SOLID_WRAP, 0), 
+    color_from_palette(1, true, PALETTE_SOLID_WRAP, 0),
+    color_from_palette(2, true, PALETTE_SOLID_WRAP, 0), 
+    BLACK};
+ 
+  uint8_t pix_img_5 [300] = {
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,
+    0,0,1,1,1,1,0,0,0,1,1,1,1,0,0,
+    0,1,1,1,1,1,1,0,1,1,1,1,1,1,0,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+    0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,
+    0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,
+    0,0,0,0,1,1,1,1,1,1,1,0,2,0,0,
+    0,0,0,0,0,1,1,1,1,1,0,0,0,2,0,
+    0,0,0,0,0,0,1,1,1,0,0,0,0,0,2,
+    0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  };
+
+/* Display Choosen Array */
+  // candy cane
+  if(SEGMENT.intensity >= 200){
+    return custom_matrix15(pix_color_1, pix_img_1, 1);
+  }
+
+  // star
+  if(SEGMENT.intensity >= 150 && SEGMENT.intensity < 200){
+    return custom_matrix15(pix_color_2, pix_img_2, 1);
+  }
+
+  // snowflake
+  if(SEGMENT.intensity >= 100 && SEGMENT.intensity < 150){
+    return custom_matrix15(pix_color_3, pix_img_3, 1);
+  }
+
+  // tree
+  if(SEGMENT.intensity >= 50 && SEGMENT.intensity < 100){
+    return custom_matrix15(pix_color_4, pix_img_4, 1);
+  }
+
+  // heart
+  if(SEGMENT.intensity < 50){
+    return custom_matrix15(pix_color_5, pix_img_5, 1);
+  }
+
+}
