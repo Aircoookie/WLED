@@ -85,23 +85,31 @@ void WS2812FX::service() {
     // segment's buffers are cleared
     SEGENV.resetIfRequired();
 
-    if (SEGMENT.isActive())
+    if (!SEGMENT.isActive()) continue;
+
+    if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
     {
-      if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
-      {
-        if (SEGMENT.grouping == 0) SEGMENT.grouping = 1; //sanity check
-        doShow = true;
-        uint16_t delay = FRAMETIME;
+      if (SEGMENT.grouping == 0) SEGMENT.grouping = 1; //sanity check
+      doShow = true;
+      uint16_t delay = FRAMETIME;
 
-        if (!SEGMENT.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
-          _virtualSegmentLength = SEGMENT.virtualLength();
-          handle_palette();
-          delay = (this->*_mode[SEGMENT.mode])(); //effect function
-          if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
+      if (!SEGMENT.getOption(SEG_OPTION_FREEZE)) { //only run effect function if not frozen
+        _virtualSegmentLength = SEGMENT.virtualLength();
+        _bri_t = SEGMENT.opacity; _colors_t[0] = SEGMENT.colors[0]; _colors_t[1] = SEGMENT.colors[1]; _colors_t[2] = SEGMENT.colors[2];
+        if (!IS_SEGMENT_ON) _bri_t = 0;
+        for (uint8_t t = 0; t < MAX_NUM_TRANSITIONS; t++) {
+          if ((transitions[t].segment & 0x3F) != i) continue;
+          uint8_t slot = transitions[t].segment >> 6;
+          if (slot == 0) _bri_t = transitions[t].currentBri();
+          _colors_t[slot] = transitions[t].currentColor(SEGMENT.colors[slot]);
         }
-
-        SEGENV.next_time = nowUp + delay;
+        for (uint8_t c = 0; c < 3; c++) _colors_t[c] = gamma32(_colors_t[c]);
+        handle_palette();
+        delay = (this->*_mode[SEGMENT.mode])(); //effect function
+        if (SEGMENT.mode != FX_MODE_HALLOWEEN_EYES) SEGENV.call++;
       }
+
+      SEGENV.next_time = nowUp + delay;
     }
   }
   _virtualSegmentLength = 0;
@@ -165,17 +173,12 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
 
-    //color_blend(getpixel, col, SEGMENT.opacity); (pseudocode for future blending of segments)
-    if (IS_SEGMENT_ON)
-    {
-      if (SEGMENT.opacity < 255) {  
-        col.R = scale8(col.R, SEGMENT.opacity);
-        col.G = scale8(col.G, SEGMENT.opacity);
-        col.B = scale8(col.B, SEGMENT.opacity);
-        col.W = scale8(col.W, SEGMENT.opacity);
-      }
-    } else {
-      col = BLACK;
+    //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
+    if (_bri_t < 255) {  
+      col.R = scale8(col.R, _bri_t);
+      col.G = scale8(col.G, _bri_t);
+      col.B = scale8(col.B, _bri_t);
+      col.W = scale8(col.W, _bri_t);
     }
 
     /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
@@ -347,7 +350,7 @@ uint8_t WS2812FX::getPaletteCount()
   return 13 + GRADIENT_PALETTE_COUNT;
 }
 
-//TODO transitions
+//TODO effect transitions
 
 
 bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
@@ -395,14 +398,15 @@ void WS2812FX::setColor(uint8_t slot, uint32_t c) {
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
     {
       if (_segments[i].isSelected()) {
-        _segments[i].colors[slot] = c;
+        _segments[i].setColor(slot, c, i);
         applied = true;
       }
     }
   }
 
   if (!applyToAllSelected || !applied) {
-    _segments[getMainSegmentId()].colors[slot] = c;
+    uint8_t mainseg = getMainSegmentId();
+    _segments[mainseg].setColor(slot, c, mainseg);
   }
 }
 
@@ -605,6 +609,11 @@ void WS2812FX::setShowCallback(show_callback cb)
   _callback = cb;
 }
 
+void WS2812FX::setTransition(uint16_t t)
+{
+  _transitionDur = t;
+}
+
 void WS2812FX::setTransitionMode(bool t)
 {
   unsigned long waitMax = millis() + 20; //refresh after 20 ms if transition enabled
@@ -620,24 +629,26 @@ void WS2812FX::setTransitionMode(bool t)
 /*
  * color blend function
  */
-uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint8_t blend) {
+uint32_t WS2812FX::color_blend(uint32_t color1, uint32_t color2, uint16_t blend, bool b16) {
   if(blend == 0)   return color1;
-  if(blend == 255) return color2;
+  uint16_t blendmax = b16 ? 0xFFFF : 0xFF;
+  if(blend == blendmax) return color2;
+  uint8_t shift = b16 ? 16 : 8;
 
-  uint32_t w1 = (color1 >> 24) & 0xff;
-  uint32_t r1 = (color1 >> 16) & 0xff;
-  uint32_t g1 = (color1 >>  8) & 0xff;
-  uint32_t b1 =  color1        & 0xff;
+  uint32_t w1 = (color1 >> 24) & 0xFF;
+  uint32_t r1 = (color1 >> 16) & 0xFF;
+  uint32_t g1 = (color1 >>  8) & 0xFF;
+  uint32_t b1 =  color1        & 0xFF;
 
-  uint32_t w2 = (color2 >> 24) & 0xff;
-  uint32_t r2 = (color2 >> 16) & 0xff;
-  uint32_t g2 = (color2 >>  8) & 0xff;
-  uint32_t b2 =  color2        & 0xff;
+  uint32_t w2 = (color2 >> 24) & 0xFF;
+  uint32_t r2 = (color2 >> 16) & 0xFF;
+  uint32_t g2 = (color2 >>  8) & 0xFF;
+  uint32_t b2 =  color2        & 0xFF;
 
-  uint32_t w3 = ((w2 * blend) + (w1 * (255 - blend))) >> 8;
-  uint32_t r3 = ((r2 * blend) + (r1 * (255 - blend))) >> 8;
-  uint32_t g3 = ((g2 * blend) + (g1 * (255 - blend))) >> 8;
-  uint32_t b3 = ((b2 * blend) + (b1 * (255 - blend))) >> 8;
+  uint32_t w3 = ((w2 * blend) + (w1 * (blendmax - blend))) >> shift;
+  uint32_t r3 = ((r2 * blend) + (r1 * (blendmax - blend))) >> shift;
+  uint32_t g3 = ((g2 * blend) + (g1 * (blendmax - blend))) >> shift;
+  uint32_t b3 = ((b2 * blend) + (b1 * (blendmax - blend))) >> shift;
 
   return ((w3 << 24) | (r3 << 16) | (g3 << 8) | (b3));
 }
@@ -1044,4 +1055,4 @@ uint32_t WS2812FX::gamma32(uint32_t color)
   return ((w << 24) | (r << 16) | (g << 8) | (b));
 }
 
-uint16_t WS2812FX::_usedSegmentData = 0;
+WS2812FX* WS2812FX::instance = nullptr;
