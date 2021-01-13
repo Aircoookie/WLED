@@ -640,7 +640,6 @@ function redrawPalPrev()
 
 function genPalPrevCss(id)
 {
-	console.log('genPal');
 	if (!palettesData) {
 		return;
 	}
@@ -649,6 +648,14 @@ function genPalPrevCss(id)
 
 	if (!paletteData) {
 		return 'display: none';
+	}
+
+	// We need at least two colors for a gradient
+	if (paletteData.length == 1) {
+		paletteData[1] = paletteData[0];
+		if (Array.isArray(paletteData[1])) {
+			paletteData[1][0] = 255;
+		}
 	}
 
 	var gradient = [];
@@ -1477,16 +1484,21 @@ function loadPalettesData()
 	var palettesDataJson = localStorage.getItem(lsKey);
 	if (palettesDataJson) {
 		try {
-			palettesData = JSON.parse(palettesDataJson);
-			if (palettesData) {
+			palettesDataJson = JSON.parse(palettesDataJson);
+			var d = new Date();
+			if (palettesDataJson && palettesDataJson.expiration && palettesDataJson.expiration > d.getTime()) {
+				palettesData = palettesDataJson.p;
 				return;
 			}
 		} catch (e) {}
 	}
+	var dateExpiration = new Date();
 	palettesData = {};
 	getPalettesData(1, function() {
-		console.log("done palettes X");
-		localStorage.setItem(lsKey, JSON.stringify(palettesData));
+		localStorage.setItem(lsKey, JSON.stringify({
+			p: palettesData,
+			expiration: dateExpiration.getTime() + 86400
+		}));
 		requestJson(null, false);
 	});
 }
