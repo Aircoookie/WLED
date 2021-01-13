@@ -1523,7 +1523,6 @@ function getPalettesData(page, callback)
 		return res.json();
 	})
 	.then(json => {
-		console.log(json);
 		palettesData = Object.assign({}, palettesData, json.p);
 		if (page < json.m) {
 			getPalettesData(page + 1, callback);
