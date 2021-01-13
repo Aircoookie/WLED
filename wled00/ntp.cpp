@@ -244,7 +244,7 @@ bool checkCountdown()
     if (countdownMode) localTime = n - countdownTime + utcOffsetSecs;
     if (!countdownOverTriggered)
     {
-      if (macroCountdown != 0) applyMacro(macroCountdown);
+      if (macroCountdown != 0) applyPreset(macroCountdown);
       countdownOverTriggered = true;
       return true;
     }
