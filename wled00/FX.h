@@ -270,30 +270,31 @@ class WS2812FX {
       void setOpacity(uint8_t o, uint8_t segn) {
         if (segn >= MAX_NUM_SEGMENTS) return;
         if (opacity == o) return;
-        ColorTransition::startTransition(o, colors[0], instance->_transitionDur, segn, 0);
+        ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
         opacity = o;
       }
-      uint8_t actualOpacity() { //respects On/Off state
+      /*uint8_t actualOpacity() { //respects On/Off state
         if (!getOption(SEG_OPTION_ON)) return 0;
         return opacity;
-      }
+      }*/
       void setOption(uint8_t n, bool val, uint8_t segn = 255)
       {
-        bool prevOn = false;
-        if (n == SEG_OPTION_ON) prevOn = getOption(SEG_OPTION_ON);
+        //bool prevOn = false;
+        //if (n == SEG_OPTION_ON) prevOn = getOption(SEG_OPTION_ON);
         if (val) {
           options |= 0x01 << n;
         } else
         {
           options &= ~(0x01 << n);
         }
-        if (n == SEG_OPTION_ON && segn < MAX_NUM_SEGMENTS && getOption(SEG_OPTION_ON) != prevOn) {
+        //transitions on segment on/off don't work correctly at this point
+        /*if (n == SEG_OPTION_ON && segn < MAX_NUM_SEGMENTS && getOption(SEG_OPTION_ON) != prevOn) {
           if (getOption(SEG_OPTION_ON)) {
             ColorTransition::startTransition(0, colors[0], instance->_transitionDur, segn, 0);
           } else {
             ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
           }
-        }
+        }*/
       }
       bool getOption(uint8_t n)
       {
@@ -384,8 +385,8 @@ class WS2812FX {
       uint8_t segment = 0xFF; //lower 6 bits: the segment this transition is for (255 indicates transition not in use/available) upper 2 bits: color channel
       uint8_t briOld = 0;
       static void startTransition(uint8_t oldBri, uint32_t oldCol, uint16_t dur, uint8_t segn, uint8_t slot) {
-        Serial.printf("Starting t: Bri %u Col %u Dur %u Seg %u Slot %u\n", oldBri, oldCol, dur, segn, slot);
-        if (segn >= MAX_NUM_SEGMENTS || slot >= NUM_COLORS || dur == 0) return; 
+        if (segn >= MAX_NUM_SEGMENTS || slot >= NUM_COLORS || dur == 0) return;
+        if (instance->_brightness == 0) return; //do not need transitions if master bri is off
         uint8_t tIndex = 0xFF; //none found
         uint16_t tProgression = 0;
         uint8_t s = segn + (slot << 6); //merge slot and segment into one byte
@@ -426,21 +427,21 @@ class WS2812FX {
         t.transitionStart = millis();
         t.segment = s;
         instance->_segments[segn].setOption(SEG_OPTION_TRANSITIONAL, true);
-        //Serial.printf("S: %u, TNr: %u, St: %u\n", s, tIndex, t.transitionStart);
-        //instance->transitions[tIndex] = t;
+        //refresh immediately, required for Solid mode
+        if (instance->_segment_runtimes[segn].next_time > t.transitionStart + 22) instance->_segment_runtimes[segn].next_time = t.transitionStart;
       }
       uint16_t progress(bool allowEnd = false) { //transition progression between 0-65535
         uint32_t timeNow = millis();
-        //Serial.printf("ProgressR %u, St: %u, S: %u\n",timeNow - transitionStart, transitionStart, segment);
-        if (timeNow - transitionStart > transitionDur) return 0xFFFF;
+        if (timeNow - transitionStart > transitionDur) {
+          if (allowEnd) {
+            uint8_t segn = segment & 0x3F;
+            if (segn < MAX_NUM_SEGMENTS) instance->_segments[segn].setOption(SEG_OPTION_TRANSITIONAL, false);
+            segment = 0xFF;
+          }
+          return 0xFFFF;
+        }
         uint32_t elapsed = timeNow - transitionStart;
         uint32_t prog = elapsed * 0xFFFF / transitionDur;
-        //Serial.printf("Progress %u\n",prog);
-        if (prog > 0xFFFF && allowEnd) {
-          uint8_t segn = segment & 0x3F;
-          if (segn < MAX_NUM_SEGMENTS) instance->_segments[segn].setOption(SEG_OPTION_TRANSITIONAL, false);
-          segment = 0xFF;
-        } 
         return (prog > 0xFFFF) ? 0xFFFF : prog;
       }
       uint32_t currentColor(uint32_t colorNew) {
@@ -449,9 +450,9 @@ class WS2812FX {
       uint8_t currentBri() {
         uint8_t segn = segment & 0x3F;
         if (segn >= MAX_NUM_SEGMENTS) return 0;
-        uint8_t briNew = instance->_segments[segn].actualOpacity();
-        uint32_t prog = progress();
-        return ((briNew * prog) + (briOld * (0xFFFF - prog))) >> 16;
+        uint8_t briNew = instance->_segments[segn].opacity;
+        uint32_t prog = progress() + 1;
+        return ((briNew * prog) + (briOld * (0x10000 - prog))) >> 16;
       }
     } color_transition;
 

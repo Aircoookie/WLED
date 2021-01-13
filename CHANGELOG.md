@@ -2,6 +2,11 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2101130
+
+-   Added color transitions for all segments and slots and for segment brightness
+-   Fixed bug that prevented setting a boot preset higher than 25
+
 #### Build 2101040
 
 -   Replaced Red & Blue effect with Aurora effect (PR #1589)
