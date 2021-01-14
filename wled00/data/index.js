@@ -580,15 +580,17 @@ function populateEffects(effects)
 	effects.unshift({
 		"id": 0,
 		"name": "Solid",
+		"class": "sticky"
 	});
 
 	for (let i = 0; i < effects.length; i++) {
-		//x += `<button class="btn${(i==0)?" first":""}" id="fxb${effects[i].id}" onclick="setX(${effects[i].id});">${effects[i].name}</button><br>`;
 		html += generateListItemHtml(
 			'fx',
 			effects[i].id,
 			effects[i].name,
-			'setX'
+			'setX',
+			'',
+			effects[i].class,
 		);
 	}
 
@@ -609,6 +611,7 @@ function populatePalettes(palettes)
 	palettes.unshift({
 		"id": 0,
 		"name": "Default",
+		"class": "sticky"
 	});
 	
 	var paletteHtml = `<input type="text" class="search" placeholder="Search" oninput="search(this)" />`;
@@ -619,7 +622,8 @@ function populatePalettes(palettes)
 		    palettes[i].id,
             palettes[i].name,
             'setPalette',
-            `<div class="lstIprev" style="${previewCss}"></div>`
+			`<div class="lstIprev" style="${previewCss}"></div>`,
+			palettes[i].class,
         );
 	}
 
@@ -692,9 +696,9 @@ function genPalPrevCss(id)
 	return `background: linear-gradient(to right,${gradient.join()});`;
 }
 
-function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
+function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraClass = '')
 {
-    return `<div class="lstI" data-id="${id}" onClick="${clickAction}(${id})">
+    return `<div class="lstI ${extraClass}" data-id="${id}" onClick="${clickAction}(${id})">
 			<label class="check schkl">
 				&nbsp;
 				<input type="radio" value="${id}" name="${listName}" onChange="${clickAction}()">

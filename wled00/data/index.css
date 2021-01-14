@@ -307,10 +307,6 @@ button {
 	top: 28px;
 }
 
-#staytop2 {
-	top: 56px;
-}
-
 #fxb0 {
 	margin-bottom: 2px;
   filter: drop-shadow(0 0 1px #000);
@@ -869,7 +865,6 @@ input[type=number]::-webkit-outer-spin-button {
 	border-radius: 20px;
 	background-color: var(--c-2);
 	transition: background-color 0.5s;
-	overflow: hidden;
     margin: auto auto 100px;
     padding-bottom: 10px;
 }
@@ -879,6 +874,7 @@ input[type=number]::-webkit-outer-spin-button {
 	display: flex;
 	align-items: center;
 	padding: 8px 10px;
+	background-color: var(--c-2);
     cursor: pointer;
 }
 
@@ -890,9 +886,29 @@ input[type=number]::-webkit-outer-spin-button {
 	border: none;
 }
 
+.lstI.sticky, .lstI.selected {
+	position: sticky;
+	z-index: 1;
+}
+
+#selectPalette .lstI.selected {
+	top: 36px;
+	bottom: -11px;
+}
+
+#selectPalette .lstI.sticky {
+	top: -11px;
+}
+
 .lstI.selected {
 	background: var(--c-5);
+	top: 97px;
 }
+
+.lstI.sticky {
+	top: 58px;
+}
+
 
 .lstIcontent {
 	width: 100%;
