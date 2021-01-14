@@ -972,7 +972,10 @@ function requestJson(command, rinfo = true, verbose = true) {
 		e2.querySelector(`.lstI[data-id="${i.pal}"]`).classList.add('selected');
 
 		if (!command) {
-			d.getElementById('Effects').scrollTop = selectedEffect.offsetTop - d.getElementById('Effects').clientHeight/1.8;
+			selectedEffect.scrollIntoView({
+				behavior: 'smooth',
+				block: 'nearest',
+			});
 		}
 
 		if (s.error && s.error != 0) {
