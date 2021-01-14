@@ -893,10 +893,10 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi","Solid Glitter","Sunrise","Phased","Phased Noise","TwinkleUp","Noise Pal","Sine",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","*Pixels","*Pixelwave","*Juggles","*Matripix",
-"*Gravimeter","*Plasmoid","*Puddles","*Midnoise","*Noisemeter","**Freqwave","**Freqmatrix","**2D GEQ","**Waterfall","**Freqpixels",
-"**Binmap","*Noisefire","*Puddlepeak","**Noisemove","2D Plasma","Perlin Move","*Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012",
-"2D DNA","2D Matrix","2D Meatballs","**Freqmap","*Gravcenter","*Gravcentric","**Gravfreq","**DJ Light","**2D Funky Plank","**2D CenterBars"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","* Pixels","* Pixelwave","* Juggles","* Matripix",
+"* Gravimeter","* Plasmoid","* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** 2D GEQ","** Waterfall","** Freqpixels",
+"** Binmap","* Noisefire","* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise","2D Squared Swirl","2D Fire2012",
+"2D DNA","2D Matrix","2D Meatballs","** Freqmap","*Gravcenter","* Gravcentric","** Gravfreq","** DJ Light","** 2D Funky Plank","** 2D CenterBars"
 ])=====";
 
 
