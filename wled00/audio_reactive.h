@@ -35,10 +35,17 @@
 // #define MIC_SAMPLING_LOG
 // #define FFT_SAMPLING_LOG
 
-// The following 3 lines are for Digital Microphone support
-#define I2S_WS 15        // aka LRCL
-#define I2S_SD 32        // aka DOUT
-#define I2S_SCK 14       // aka BCLK
+// The following 3 defines are for Digital Microphone support
+#ifndef I2S_WS
+  #define I2S_WS 15        // aka LRCL
+#endif
+#ifndef I2S_SD
+  #define I2S_SD 32        // aka DOUT
+#endif
+#ifndef I2S_SCK
+  #define I2S_SCK 14       // aka BCLK
+#endif
+
 const i2s_port_t I2S_PORT = I2S_NUM_0;
 const int BLOCK_SIZE = 64;
 
