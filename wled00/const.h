@@ -122,6 +122,10 @@
 #define BTN_TYPE_SWITCH           4 //not implemented
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
 
+//Ethernet board types
+#define WLED_ETH_NONE             0
+#define WLED_ETH_WT32_ETH01       1
+#define WLED_ETH_ESP32_POE        2
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
