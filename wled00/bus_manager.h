@@ -6,7 +6,7 @@
  */
 
 #include "const.h"
-#include "wled.h"
+#include "pin_manager.h"
 #include "bus_wrapper.h"
 
 //parent class of BusDigital and BusPwm
@@ -58,7 +58,7 @@ class Bus {
   protected:
   uint8_t _type = TYPE_NONE;
   uint8_t _bri = 255;
-  uint16_t _start;
+  uint16_t _start = 0;
   bool _valid = false;
 };
 
@@ -69,11 +69,15 @@ class BusDigital : public Bus {
     if (!IS_DIGITAL(type) || !len) return;
     _pins[0] = pins[0];
     if (IS_2PIN(type)) _pins[1] = pins[1];
+    //TODO allocate pins with pin manager
     _len = len;
     _iType = PolyBus::getI(type, _pins, nr);
     if (_iType == I_NONE) return;
-    _valid = true;
+    _busPtr = PolyBus::begin(_iType, _pins, _len);
+    _valid = (_busPtr != nullptr);
+    Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
   };
+  //TODO clean up stuff (destructor)
 
   void show() {
     PolyBus::show(_busPtr, _iType);
@@ -83,8 +87,13 @@ class BusDigital : public Bus {
     return PolyBus::canShow(_busPtr, _iType);
   }
 
+  void setBrightness(uint8_t b) {
+    PolyBus::setBrightness(_busPtr, _iType, b);
+  }
+
   void setPixelColor(uint16_t pix, uint32_t c) {
     //TODO color order
+    PolyBus::setPixelColor(_busPtr, _iType, pix, c);
   }
 
   uint32_t getPixelColor(uint16_t pix) {

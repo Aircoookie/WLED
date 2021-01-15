@@ -115,6 +115,7 @@
 #include "FX.h"
 #include "ir_codes.h"
 #include "const.h"
+#include "pin_manager.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
@@ -530,8 +531,6 @@ WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
-
-WLED_GLOBAL PinManagerClass pinManager _INIT(PinManagerClass());
 
 // Status LED
 #if STATUSLED && STATUSLED != LEDPIN

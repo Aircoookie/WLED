@@ -1,7 +1,6 @@
 #ifndef BusWrapper_h
 #define BusWrapper_h
 
-#include "wled.h"
 #include "NeoPixelBrightnessBus.h"
 
 //Hardware SPI Pins
@@ -192,9 +191,83 @@
 //handles pointer type conversion for all possible bus types
 class PolyBus {
   public:
+  static void* begin(uint8_t busType, uint8_t* pins, uint16_t len) {
+    void* busPtr;
+    //delete busPtr; //TODO this needs type handling or destructor isn't called
+    switch (busType) {
+      case I_NONE: busPtr = new B_8266_U0_NEO_3(len, pins[0]); break;
+    #ifdef ESP8266
+      case I_8266_U0_NEO_3: busPtr = new B_8266_U0_NEO_3(len, pins[0]); (static_cast<B_8266_U0_NEO_3*>(busPtr))->Begin(); break;
+      case I_8266_U1_NEO_3: busPtr = new B_8266_U1_NEO_3(len, pins[0]); (static_cast<B_8266_U1_NEO_3*>(busPtr))->Begin(); break;
+      case I_8266_DM_NEO_3: busPtr = new B_8266_DM_NEO_3(len, pins[0]); (static_cast<B_8266_DM_NEO_3*>(busPtr))->Begin(); break;
+      case I_8266_BB_NEO_3: busPtr = new B_8266_BB_NEO_3(len, pins[0]); (static_cast<B_8266_BB_NEO_3*>(busPtr))->Begin(); break;
+      case I_8266_U0_NEO_4: busPtr = new B_8266_U0_NEO_4(len, pins[0]); (static_cast<B_8266_U0_NEO_4*>(busPtr))->Begin(); break;
+      case I_8266_U1_NEO_4: busPtr = new B_8266_U1_NEO_4(len, pins[0]); (static_cast<B_8266_U1_NEO_4*>(busPtr))->Begin(); break;
+      case I_8266_DM_NEO_4: busPtr = new B_8266_DM_NEO_4(len, pins[0]); (static_cast<B_8266_DM_NEO_4*>(busPtr))->Begin(); break;
+      case I_8266_BB_NEO_4: busPtr = new B_8266_BB_NEO_4(len, pins[0]); (static_cast<B_8266_BB_NEO_4*>(busPtr))->Begin(); break;
+      case I_8266_U0_400_3: busPtr = new B_8266_U0_400_3(len, pins[0]); (static_cast<B_8266_U0_400_3*>(busPtr))->Begin(); break;
+      case I_8266_U1_400_3: busPtr = new B_8266_U1_400_3(len, pins[0]); (static_cast<B_8266_U1_400_3*>(busPtr))->Begin(); break;
+      case I_8266_DM_400_3: busPtr = new B_8266_DM_400_3(len, pins[0]); (static_cast<B_8266_DM_400_3*>(busPtr))->Begin(); break;
+      case I_8266_BB_400_3: busPtr = new B_8266_BB_400_3(len, pins[0]); (static_cast<B_8266_BB_400_3*>(busPtr))->Begin(); break;
+      case I_8266_U0_TM1_4: busPtr = new B_8266_U0_TM1_4(len, pins[0]); (static_cast<B_8266_U0_TM1_4*>(busPtr))->Begin(); break;
+      case I_8266_U1_TM1_4: busPtr = new B_8266_U1_TM1_4(len, pins[0]); (static_cast<B_8266_U1_TM1_4*>(busPtr))->Begin(); break;
+      case I_8266_DM_TM1_4: busPtr = new B_8266_DM_TM1_4(len, pins[0]); (static_cast<B_8266_DM_TM1_4*>(busPtr))->Begin(); break;
+      case I_8266_BB_TM1_4: busPtr = new B_8266_BB_TM1_4(len, pins[0]); (static_cast<B_8266_BB_TM1_4*>(busPtr))->Begin(); break;
+    #endif
+    #ifdef ARDUINO_ARCH_ESP32
+      case I_32_R0_NEO_3: busPtr = new B_32_R0_NEO_3(len, pins[0]); (static_cast<B_32_R0_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_R1_NEO_3: busPtr = new B_32_R1_NEO_3(len, pins[0]); (static_cast<B_32_R1_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_R2_NEO_3: busPtr = new B_32_R2_NEO_3(len, pins[0]); (static_cast<B_32_R2_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_R3_NEO_3: busPtr = new B_32_R3_NEO_3(len, pins[0]); (static_cast<B_32_R3_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_R4_NEO_3: busPtr = new B_32_R4_NEO_3(len, pins[0]); (static_cast<B_32_R4_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_R5_NEO_3: busPtr = new B_32_R5_NEO_3(len, pins[0]); (static_cast<B_32_R5_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_R6_NEO_3: busPtr = new B_32_R6_NEO_3(len, pins[0]); (static_cast<B_32_R6_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_R7_NEO_3: busPtr = new B_32_R7_NEO_3(len, pins[0]); (static_cast<B_32_R7_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_I0_NEO_3: busPtr = new B_32_I0_NEO_3(len, pins[0]); (static_cast<B_32_I0_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_I1_NEO_3: busPtr = new B_32_I1_NEO_3(len, pins[0]); (static_cast<B_32_I1_NEO_3*>(busPtr))->Begin(); break;
+      case I_32_R0_NEO_4: busPtr = new B_32_R0_NEO_4(len, pins[0]); (static_cast<B_32_R0_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_R1_NEO_4: busPtr = new B_32_R1_NEO_4(len, pins[0]); (static_cast<B_32_R1_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_R2_NEO_4: busPtr = new B_32_R2_NEO_4(len, pins[0]); (static_cast<B_32_R2_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_R3_NEO_4: busPtr = new B_32_R3_NEO_4(len, pins[0]); (static_cast<B_32_R3_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_R4_NEO_4: busPtr = new B_32_R4_NEO_4(len, pins[0]); (static_cast<B_32_R4_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_R5_NEO_4: busPtr = new B_32_R5_NEO_4(len, pins[0]); (static_cast<B_32_R5_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_R6_NEO_4: busPtr = new B_32_R6_NEO_4(len, pins[0]); (static_cast<B_32_R6_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_R7_NEO_4: busPtr = new B_32_R7_NEO_4(len, pins[0]); (static_cast<B_32_R7_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_I0_NEO_4: busPtr = new B_32_I0_NEO_4(len, pins[0]); (static_cast<B_32_I0_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_I1_NEO_4: busPtr = new B_32_I1_NEO_4(len, pins[0]); (static_cast<B_32_I1_NEO_4*>(busPtr))->Begin(); break;
+      case I_32_R0_400_3: busPtr = new B_32_R0_400_3(len, pins[0]); (static_cast<B_32_R0_400_3*>(busPtr))->Begin(); break;
+      case I_32_R1_400_3: busPtr = new B_32_R1_400_3(len, pins[0]); (static_cast<B_32_R1_400_3*>(busPtr))->Begin(); break;
+      case I_32_R2_400_3: busPtr = new B_32_R2_400_3(len, pins[0]); (static_cast<B_32_R2_400_3*>(busPtr))->Begin(); break;
+      case I_32_R3_400_3: busPtr = new B_32_R3_400_3(len, pins[0]); (static_cast<B_32_R3_400_3*>(busPtr))->Begin(); break;
+      case I_32_R4_400_3: busPtr = new B_32_R4_400_3(len, pins[0]); (static_cast<B_32_R4_400_3*>(busPtr))->Begin(); break;
+      case I_32_R5_400_3: busPtr = new B_32_R5_400_3(len, pins[0]); (static_cast<B_32_R5_400_3*>(busPtr))->Begin(); break;
+      case I_32_R6_400_3: busPtr = new B_32_R6_400_3(len, pins[0]); (static_cast<B_32_R6_400_3*>(busPtr))->Begin(); break;
+      case I_32_R7_400_3: busPtr = new B_32_R7_400_3(len, pins[0]); (static_cast<B_32_R7_400_3*>(busPtr))->Begin(); break;
+      case I_32_I0_400_3: busPtr = new B_32_I0_400_3(len, pins[0]); (static_cast<B_32_I0_400_3*>(busPtr))->Begin(); break;
+      case I_32_I1_400_3: busPtr = new B_32_I1_400_3(len, pins[0]); (static_cast<B_32_I1_400_3*>(busPtr))->Begin(); break;
+      case I_32_R0_TM1_4: busPtr = new B_32_R0_TM1_4(len, pins[0]); (static_cast<B_32_R0_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_R1_TM1_4: busPtr = new B_32_R1_TM1_4(len, pins[0]); (static_cast<B_32_R1_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_R2_TM1_4: busPtr = new B_32_R2_TM1_4(len, pins[0]); (static_cast<B_32_R2_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_R3_TM1_4: busPtr = new B_32_R3_TM1_4(len, pins[0]); (static_cast<B_32_R3_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_R4_TM1_4: busPtr = new B_32_R4_TM1_4(len, pins[0]); (static_cast<B_32_R4_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_R5_TM1_4: busPtr = new B_32_R5_TM1_4(len, pins[0]); (static_cast<B_32_R5_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_R6_TM1_4: busPtr = new B_32_R6_TM1_4(len, pins[0]); (static_cast<B_32_R6_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_R7_TM1_4: busPtr = new B_32_R7_TM1_4(len, pins[0]); (static_cast<B_32_R7_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_I0_TM1_4: busPtr = new B_32_I0_TM1_4(len, pins[0]); (static_cast<B_32_I0_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_I1_TM1_4: busPtr = new B_32_I1_TM1_4(len, pins[0]); (static_cast<B_32_I1_TM1_4*>(busPtr))->Begin(); break;
+    #endif
+      case I_HS_DOT_3: busPtr = new B_HS_DOT_3(len, pins[0], pins[1]); (static_cast<B_HS_DOT_3*>(busPtr))->Begin(); break;
+      case I_SS_DOT_3: busPtr = new B_SS_DOT_3(len, pins[0], pins[1]); (static_cast<B_SS_DOT_3*>(busPtr))->Begin(); break;
+      case I_HS_LPD_3: busPtr = new B_HS_LPD_3(len, pins[0], pins[1]); (static_cast<B_HS_LPD_3*>(busPtr))->Begin(); break;
+      case I_SS_LPD_3: busPtr = new B_SS_LPD_3(len, pins[0], pins[1]); (static_cast<B_SS_LPD_3*>(busPtr))->Begin(); break;
+      case I_HS_WS1_3: busPtr = new B_HS_WS1_3(len, pins[0], pins[1]); (static_cast<B_HS_WS1_3*>(busPtr))->Begin(); break;
+      case I_SS_WS1_3: busPtr = new B_SS_WS1_3(len, pins[0], pins[1]); (static_cast<B_SS_WS1_3*>(busPtr))->Begin(); break;
+      case I_HS_P98_3: busPtr = new B_HS_P98_3(len, pins[0], pins[1]); (static_cast<B_HS_P98_3*>(busPtr))->Begin(); break;
+      case I_SS_P98_3: busPtr = new B_SS_P98_3(len, pins[0], pins[1]); (static_cast<B_SS_P98_3*>(busPtr))->Begin(); break;
+    }
+    return busPtr;
+  };
   static void show(void* busPtr, uint8_t busType) {
-    (static_cast<B_8266_U1_NEO_3*>(busPtr))->Show();
-
     switch (busType) {
       case I_NONE: break;
     #ifdef ESP8266
@@ -268,8 +341,232 @@ class PolyBus {
     }
   };
   static bool canShow(void* busPtr, uint8_t busType) {
-    return (static_cast<B_8266_U1_NEO_3*>(busPtr))->CanShow();
+    switch (busType) {
+      case I_NONE: return true;
+    #ifdef ESP8266
+      case I_8266_U0_NEO_3: return (static_cast<B_8266_U0_NEO_3*>(busPtr))->CanShow(); break;
+      case I_8266_U1_NEO_3: return (static_cast<B_8266_U1_NEO_3*>(busPtr))->CanShow(); break;
+      case I_8266_DM_NEO_3: return (static_cast<B_8266_DM_NEO_3*>(busPtr))->CanShow(); break;
+      case I_8266_BB_NEO_3: return (static_cast<B_8266_BB_NEO_3*>(busPtr))->CanShow(); break;
+      case I_8266_U0_NEO_4: return (static_cast<B_8266_U0_NEO_4*>(busPtr))->CanShow(); break;
+      case I_8266_U1_NEO_4: return (static_cast<B_8266_U1_NEO_4*>(busPtr))->CanShow(); break;
+      case I_8266_DM_NEO_4: return (static_cast<B_8266_DM_NEO_4*>(busPtr))->CanShow(); break;
+      case I_8266_BB_NEO_4: return (static_cast<B_8266_BB_NEO_4*>(busPtr))->CanShow(); break;
+      case I_8266_U0_400_3: return (static_cast<B_8266_U0_400_3*>(busPtr))->CanShow(); break;
+      case I_8266_U1_400_3: return (static_cast<B_8266_U1_400_3*>(busPtr))->CanShow(); break;
+      case I_8266_DM_400_3: return (static_cast<B_8266_DM_400_3*>(busPtr))->CanShow(); break;
+      case I_8266_BB_400_3: return (static_cast<B_8266_BB_400_3*>(busPtr))->CanShow(); break;
+      case I_8266_U0_TM1_4: return (static_cast<B_8266_U0_TM1_4*>(busPtr))->CanShow(); break;
+      case I_8266_U1_TM1_4: return (static_cast<B_8266_U1_TM1_4*>(busPtr))->CanShow(); break;
+      case I_8266_DM_TM1_4: return (static_cast<B_8266_DM_TM1_4*>(busPtr))->CanShow(); break;
+      case I_8266_BB_TM1_4: return (static_cast<B_8266_BB_TM1_4*>(busPtr))->CanShow(); break;
+    #endif
+    #ifdef ARDUINO_ARCH_ESP32
+      case I_32_R0_NEO_3: return (static_cast<B_32_R0_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_R1_NEO_3: return (static_cast<B_32_R1_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_R2_NEO_3: return (static_cast<B_32_R2_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_R3_NEO_3: return (static_cast<B_32_R3_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_R4_NEO_3: return (static_cast<B_32_R4_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_R5_NEO_3: return (static_cast<B_32_R5_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_R6_NEO_3: return (static_cast<B_32_R6_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_R7_NEO_3: return (static_cast<B_32_R7_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_I0_NEO_3: return (static_cast<B_32_I0_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_I1_NEO_3: return (static_cast<B_32_I1_NEO_3*>(busPtr))->CanShow(); break;
+      case I_32_R0_NEO_4: return (static_cast<B_32_R0_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_R1_NEO_4: return (static_cast<B_32_R1_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_R2_NEO_4: return (static_cast<B_32_R2_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_R3_NEO_4: return (static_cast<B_32_R3_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_R4_NEO_4: return (static_cast<B_32_R4_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_R5_NEO_4: return (static_cast<B_32_R5_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_R6_NEO_4: return (static_cast<B_32_R6_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_R7_NEO_4: return (static_cast<B_32_R7_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_I0_NEO_4: return (static_cast<B_32_I0_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_I1_NEO_4: return (static_cast<B_32_I1_NEO_4*>(busPtr))->CanShow(); break;
+      case I_32_R0_400_3: return (static_cast<B_32_R0_400_3*>(busPtr))->CanShow(); break;
+      case I_32_R1_400_3: return (static_cast<B_32_R1_400_3*>(busPtr))->CanShow(); break;
+      case I_32_R2_400_3: return (static_cast<B_32_R2_400_3*>(busPtr))->CanShow(); break;
+      case I_32_R3_400_3: return (static_cast<B_32_R3_400_3*>(busPtr))->CanShow(); break;
+      case I_32_R4_400_3: return (static_cast<B_32_R4_400_3*>(busPtr))->CanShow(); break;
+      case I_32_R5_400_3: return (static_cast<B_32_R5_400_3*>(busPtr))->CanShow(); break;
+      case I_32_R6_400_3: return (static_cast<B_32_R6_400_3*>(busPtr))->CanShow(); break;
+      case I_32_R7_400_3: return (static_cast<B_32_R7_400_3*>(busPtr))->CanShow(); break;
+      case I_32_I0_400_3: return (static_cast<B_32_I0_400_3*>(busPtr))->CanShow(); break;
+      case I_32_I1_400_3: return (static_cast<B_32_I1_400_3*>(busPtr))->CanShow(); break;
+      case I_32_R0_TM1_4: return (static_cast<B_32_R0_TM1_4*>(busPtr))->CanShow(); break;
+      case I_32_R1_TM1_4: return (static_cast<B_32_R1_TM1_4*>(busPtr))->CanShow(); break;
+      case I_32_R2_TM1_4: return (static_cast<B_32_R2_TM1_4*>(busPtr))->CanShow(); break;
+      case I_32_R3_TM1_4: return (static_cast<B_32_R3_TM1_4*>(busPtr))->CanShow(); break;
+      case I_32_R4_TM1_4: return (static_cast<B_32_R4_TM1_4*>(busPtr))->CanShow(); break;
+      case I_32_R5_TM1_4: return (static_cast<B_32_R5_TM1_4*>(busPtr))->CanShow(); break;
+      case I_32_R6_TM1_4: return (static_cast<B_32_R6_TM1_4*>(busPtr))->CanShow(); break;
+      case I_32_R7_TM1_4: return (static_cast<B_32_R7_TM1_4*>(busPtr))->CanShow(); break;
+      case I_32_I0_TM1_4: return (static_cast<B_32_I0_TM1_4*>(busPtr))->CanShow(); break;
+      case I_32_I1_TM1_4: return (static_cast<B_32_I1_TM1_4*>(busPtr))->CanShow(); break;
+    #endif
+      case I_HS_DOT_3: return (static_cast<B_HS_DOT_3*>(busPtr))->CanShow(); break;
+      case I_SS_DOT_3: return (static_cast<B_SS_DOT_3*>(busPtr))->CanShow(); break;
+      case I_HS_LPD_3: return (static_cast<B_HS_LPD_3*>(busPtr))->CanShow(); break;
+      case I_SS_LPD_3: return (static_cast<B_SS_LPD_3*>(busPtr))->CanShow(); break;
+      case I_HS_WS1_3: return (static_cast<B_HS_WS1_3*>(busPtr))->CanShow(); break;
+      case I_SS_WS1_3: return (static_cast<B_SS_WS1_3*>(busPtr))->CanShow(); break;
+      case I_HS_P98_3: return (static_cast<B_HS_P98_3*>(busPtr))->CanShow(); break;
+      case I_SS_P98_3: return (static_cast<B_SS_P98_3*>(busPtr))->CanShow(); break;
+    }
+    return true;
   };
+  static void setPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint32_t c) {
+    uint8_t r = c >> 16;
+    uint8_t g = c >> 8;
+    uint8_t b = c >> 0;
+    uint8_t w = c >> 24;
+    switch (busType) {
+      case I_NONE: break;
+    #ifdef ESP8266
+      case I_8266_U0_NEO_3: (static_cast<B_8266_U0_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_8266_U1_NEO_3: (static_cast<B_8266_U1_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_8266_DM_NEO_3: (static_cast<B_8266_DM_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_8266_BB_NEO_3: (static_cast<B_8266_BB_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_8266_U0_NEO_4: (static_cast<B_8266_U0_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_8266_U1_NEO_4: (static_cast<B_8266_U1_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_8266_DM_NEO_4: (static_cast<B_8266_DM_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_8266_BB_NEO_4: (static_cast<B_8266_BB_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_8266_U0_400_3: (static_cast<B_8266_U0_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_8266_U1_400_3: (static_cast<B_8266_U1_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_8266_DM_400_3: (static_cast<B_8266_DM_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_8266_BB_400_3: (static_cast<B_8266_BB_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_8266_U0_TM1_4: (static_cast<B_8266_U0_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_8266_U1_TM1_4: (static_cast<B_8266_U1_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_8266_DM_TM1_4: (static_cast<B_8266_DM_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_8266_BB_TM1_4: (static_cast<B_8266_BB_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+    #endif
+    #ifdef ARDUINO_ARCH_ESP32
+      case I_32_R0_NEO_3: (static_cast<B_32_R0_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R1_NEO_3: (static_cast<B_32_R1_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R2_NEO_3: (static_cast<B_32_R2_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R3_NEO_3: (static_cast<B_32_R3_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R4_NEO_3: (static_cast<B_32_R4_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R5_NEO_3: (static_cast<B_32_R5_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R6_NEO_3: (static_cast<B_32_R6_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R7_NEO_3: (static_cast<B_32_R7_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_I0_NEO_3: (static_cast<B_32_I0_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R0_NEO_4: (static_cast<B_32_R0_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R1_NEO_4: (static_cast<B_32_R1_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R2_NEO_4: (static_cast<B_32_R2_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R3_NEO_4: (static_cast<B_32_R3_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R4_NEO_4: (static_cast<B_32_R4_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R5_NEO_4: (static_cast<B_32_R5_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R6_NEO_4: (static_cast<B_32_R6_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R7_NEO_4: (static_cast<B_32_R7_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_I0_NEO_4: (static_cast<B_32_I0_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_I1_NEO_4: (static_cast<B_32_I1_NEO_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R0_400_3: (static_cast<B_32_R0_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R1_400_3: (static_cast<B_32_R1_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R2_400_3: (static_cast<B_32_R2_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R3_400_3: (static_cast<B_32_R3_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R4_400_3: (static_cast<B_32_R4_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R5_400_3: (static_cast<B_32_R5_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R6_400_3: (static_cast<B_32_R6_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R7_400_3: (static_cast<B_32_R7_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_32_R0_TM1_4: (static_cast<B_32_R0_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R1_TM1_4: (static_cast<B_32_R1_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R2_TM1_4: (static_cast<B_32_R2_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R3_TM1_4: (static_cast<B_32_R3_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R4_TM1_4: (static_cast<B_32_R4_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R5_TM1_4: (static_cast<B_32_R5_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R6_TM1_4: (static_cast<B_32_R6_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_R7_TM1_4: (static_cast<B_32_R7_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_I0_TM1_4: (static_cast<B_32_I0_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+      case I_32_I1_TM1_4: (static_cast<B_32_I1_TM1_4*>(busPtr))->SetPixelColor(pix, RgbwColor(r,g,b,w)); break;
+    #endif
+      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+      case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->SetPixelColor(pix, RgbColor(r,g,b)); break;
+    }
+  };
+  static void setBrightness(void* busPtr, uint8_t busType, uint8_t b) {
+    switch (busType) {
+      case I_NONE: break;
+    #ifdef ESP8266
+      case I_8266_U0_NEO_3: (static_cast<B_8266_U0_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_8266_U1_NEO_3: (static_cast<B_8266_U1_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_8266_DM_NEO_3: (static_cast<B_8266_DM_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_8266_BB_NEO_3: (static_cast<B_8266_BB_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_8266_U0_NEO_4: (static_cast<B_8266_U0_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_8266_U1_NEO_4: (static_cast<B_8266_U1_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_8266_DM_NEO_4: (static_cast<B_8266_DM_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_8266_BB_NEO_4: (static_cast<B_8266_BB_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_8266_U0_400_3: (static_cast<B_8266_U0_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_8266_U1_400_3: (static_cast<B_8266_U1_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_8266_DM_400_3: (static_cast<B_8266_DM_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_8266_BB_400_3: (static_cast<B_8266_BB_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_8266_U0_TM1_4: (static_cast<B_8266_U0_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_8266_U1_TM1_4: (static_cast<B_8266_U1_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_8266_DM_TM1_4: (static_cast<B_8266_DM_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_8266_BB_TM1_4: (static_cast<B_8266_BB_TM1_4*>(busPtr))->SetBrightness(b); break;
+    #endif
+    #ifdef ARDUINO_ARCH_ESP32
+      case I_32_R0_NEO_3: (static_cast<B_32_R0_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R1_NEO_3: (static_cast<B_32_R1_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R2_NEO_3: (static_cast<B_32_R2_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R3_NEO_3: (static_cast<B_32_R3_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R4_NEO_3: (static_cast<B_32_R4_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R5_NEO_3: (static_cast<B_32_R5_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R6_NEO_3: (static_cast<B_32_R6_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R7_NEO_3: (static_cast<B_32_R7_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_NEO_3: (static_cast<B_32_I0_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_NEO_3: (static_cast<B_32_I1_NEO_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R0_NEO_4: (static_cast<B_32_R0_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R1_NEO_4: (static_cast<B_32_R1_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R2_NEO_4: (static_cast<B_32_R2_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R3_NEO_4: (static_cast<B_32_R3_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R4_NEO_4: (static_cast<B_32_R4_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R5_NEO_4: (static_cast<B_32_R5_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R6_NEO_4: (static_cast<B_32_R6_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R7_NEO_4: (static_cast<B_32_R7_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_NEO_4: (static_cast<B_32_I0_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_NEO_4: (static_cast<B_32_I1_NEO_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R0_400_3: (static_cast<B_32_R0_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R1_400_3: (static_cast<B_32_R1_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R2_400_3: (static_cast<B_32_R2_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R3_400_3: (static_cast<B_32_R3_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R4_400_3: (static_cast<B_32_R4_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R5_400_3: (static_cast<B_32_R5_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R6_400_3: (static_cast<B_32_R6_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R7_400_3: (static_cast<B_32_R7_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->SetBrightness(b); break;
+      case I_32_R0_TM1_4: (static_cast<B_32_R0_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R1_TM1_4: (static_cast<B_32_R1_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R2_TM1_4: (static_cast<B_32_R2_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R3_TM1_4: (static_cast<B_32_R3_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R4_TM1_4: (static_cast<B_32_R4_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R5_TM1_4: (static_cast<B_32_R5_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R6_TM1_4: (static_cast<B_32_R6_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_R7_TM1_4: (static_cast<B_32_R7_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_I0_TM1_4: (static_cast<B_32_I0_TM1_4*>(busPtr))->SetBrightness(b); break;
+      case I_32_I1_TM1_4: (static_cast<B_32_I1_TM1_4*>(busPtr))->SetBrightness(b); break;
+    #endif
+      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetBrightness(b); break;
+      case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetBrightness(b); break;
+      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->SetBrightness(b); break;
+      case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->SetBrightness(b); break;
+      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->SetBrightness(b); break;
+      case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->SetBrightness(b); break;
+      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->SetBrightness(b); break;
+      case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->SetBrightness(b); break;
+    }
+  };
+  static uint32_t getPixelColor() {
+    return 0; //TODO
+  }
   //gives back the internal type index (I_XX_XXX_X above) for the input 
   static uint8_t getI(uint8_t busType, uint8_t* pins, uint8_t num = 0) {
     if (!IS_DIGITAL(busType)) return I_NONE;

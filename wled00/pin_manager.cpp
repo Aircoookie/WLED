@@ -1,8 +1,5 @@
+#include "pin_manager.h"
 #include "wled.h"
-
-/*
- * Registers pins so there is no attempt for two interfaces to use the same pin
- */
 
 void PinManagerClass::deallocatePin(byte gpio)
 {
@@ -90,3 +87,5 @@ void PinManagerClass::deallocateLedc(byte pos, byte channels)
   }
 }
 #endif
+
+PinManagerClass pinManager = PinManagerClass();
