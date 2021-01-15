@@ -27,10 +27,40 @@
 #ifndef WS2812FX_h
 #define WS2812FX_h
 
+//TEMPORARY DEFINES FOR TESTING - MAKE THESE RUNTIME CONFIGURABLE TOO!
+#ifndef LEDPIN
+#define LEDPIN 2
+#endif
+
+#ifndef BTNPIN
+#define BTNPIN  0  //button pin. Needs to have pullup (gpio0 recommended)
+#endif
+
+#ifndef TOUCHPIN
+//#define TOUCHPIN T0 //touch pin. Behaves the same as button. ESP32 only.
+#endif
+
+#ifndef IRPIN
+#define IRPIN  4  //infrared pin (-1 to disable)  MagicHome: 4, H801 Wifi: 0
+#endif
+
+#ifndef RLYPIN
+#define RLYPIN 12  //pin for relay, will be set HIGH if LEDs are on (-1 to disable). Also usable for standby leds, triggers,...
+#endif
+
+#ifndef AUXPIN
+#define AUXPIN -1  //debug auxiliary output pin (-1 to disable)
+#endif
+
+#ifndef RLYMDE
+#define RLYMDE  1  //mode for relay, 0: LOW if LEDs are on 1: HIGH if LEDs are on
+#endif
+//END OF TEMP DEFINES
+
 #ifdef ESP32_MULTISTRIP
   #include "../usermods/esp32_multistrip/NpbWrapper.h"
 #else
-  #include "NpbWrapper.h"
+  #include "bus_manager.h"
 #endif
 
 #include "const.h"
@@ -584,7 +614,7 @@ class WS2812FX {
       ablMilliampsMax = 850;
       currentMilliamps = 0;
       timebase = 0;
-      bus = new NeoPixelWrapper();
+      busses = new BusManager();
       resetSegments();
     }
 
@@ -794,7 +824,7 @@ class WS2812FX {
       mode_dynamic_smooth(void);
 
   private:
-    NeoPixelWrapper *bus;
+    BusManager *busses;
 
     uint32_t crgb_to_col(CRGB fastled);
     CRGB col_to_crgb(uint32_t);
@@ -854,12 +884,6 @@ class WS2812FX {
 
     uint32_t _colors_t[3];
     uint8_t _bri_t;
-    
-    #ifdef WLED_USE_ANALOG_LEDS
-    uint32_t _analogLastShow = 0;
-    RgbwColor _analogLastColor = 0;
-    uint8_t _analogLastBri = 0;
-    #endif
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;

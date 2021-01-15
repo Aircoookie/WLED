@@ -5,57 +5,9 @@
  * Class for addressing various light types
  */
 
+#include "const.h"
 #include "wled.h"
 #include "bus_wrapper.h"
-
-class BusManager {
-  public:
-  BusManager() {
-
-  };
-  
-  int add(uint8_t busType, uint8_t* pins, uint16_t len = 1) {
-    if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (IS_DIGITAL(busType)) {
-      busses[numBusses] = new BusDigital(busType, pins, len, numBusses);
-    } else {
-      busses[numBusses] = new BusPwm(busType, pins);
-    }
-    numBusses++;
-    return numBusses -1;
-  }
-
-  void removeAll() {
-    for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
-    numBusses = 0;
-  }
-  //void remove(uint8_t id);
-
-  void show() {
-    for (uint8_t i = 0; i < numBusses; i++) {
-      busses[i]->show();
-    }
-  }
-
-  void setPixelColor(uint16_t pix, uint32_t c) {
-    for (uint8_t i = 0; i < numBusses; i++) {
-      Bus* b = busses[i];
-      uint16_t bstart = b->getStart();
-      if (pix < bstart) continue;
-      busses[i]->setPixelColor(pix - bstart, c);
-    }
-  }
-
-  void setBrightness(uint8_t b) {
-    for (uint8_t i = 0; i < numBusses; i++) {
-      busses[i]->setBrightness(b);
-    }
-  }
-
-  private:
-  uint8_t numBusses = 0;
-  Bus* busses[WLED_MAX_BUSSES];
-};
 
 //parent class of BusDigital and BusPwm
 class Bus {
@@ -65,6 +17,7 @@ class Bus {
   };
   
   virtual void show() {}
+  virtual bool canShow() { return true; }
 
   virtual void setPixelColor(uint16_t pix, uint32_t c) {};
 
@@ -86,6 +39,10 @@ class Bus {
 
   virtual uint8_t getColorOrder() {
     return COL_ORDER_RGB;
+  }
+
+  virtual uint16_t getLength() {
+    return 1;
   }
 
   virtual void setColorOrder() {}
@@ -122,12 +79,25 @@ class BusDigital : public Bus {
     PolyBus::show(_busPtr, _iType);
   }
 
-  void setPixelColor(uint16_t pix, uint32_t c) {
+  bool canShow() {
+    return PolyBus::canShow(_busPtr, _iType);
+  }
 
+  void setPixelColor(uint16_t pix, uint32_t c) {
+    //TODO color order
+  }
+
+  uint32_t getPixelColor(uint16_t pix) {
+    //TODO
+    return 0;
   }
 
   uint8_t getColorOrder() {
     return _colorOrder;
+  }
+
+  uint16_t getLength() {
+    return _len;
   }
 
   void setColorOrder(uint8_t colorOrder) {
@@ -242,4 +212,69 @@ class BusPwm : public Bus {
   }
 };
 
+class BusManager {
+  public:
+  BusManager() {
+
+  };
+  
+  int add(uint8_t busType, uint8_t* pins, uint16_t len = 1) {
+    if (numBusses >= WLED_MAX_BUSSES) return -1;
+    if (IS_DIGITAL(busType)) {
+      busses[numBusses] = new BusDigital(busType, pins, len, numBusses);
+    } else {
+      busses[numBusses] = new BusPwm(busType, pins);
+    }
+    numBusses++;
+    return numBusses -1;
+  }
+
+  void removeAll() {
+    for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
+    numBusses = 0;
+  }
+  //void remove(uint8_t id);
+
+  void show() {
+    for (uint8_t i = 0; i < numBusses; i++) {
+      busses[i]->show();
+    }
+  }
+
+  void setPixelColor(uint16_t pix, uint32_t c) {
+    for (uint8_t i = 0; i < numBusses; i++) {
+      Bus* b = busses[i];
+      uint16_t bstart = b->getStart();
+      if (pix < bstart) continue;
+      busses[i]->setPixelColor(pix - bstart, c);
+    }
+  }
+
+  void setBrightness(uint8_t b) {
+    for (uint8_t i = 0; i < numBusses; i++) {
+      busses[i]->setBrightness(b);
+    }
+  }
+
+  uint32_t getPixelColor(uint16_t pix) {
+    for (uint8_t i = 0; i < numBusses; i++) {
+      Bus* b = busses[i];
+      uint16_t bstart = b->getStart();
+      if (pix < bstart || pix >= bstart + b->getLength()) continue;
+      return b->getPixelColor(pix - bstart);
+    }
+    return 0;
+  }
+
+  bool canAllShow() {
+    for (uint8_t i = 0; i < numBusses; i++) {
+      if (busses[i]->canShow()) return false;
+    }
+    return true;
+  }
+
+  private:
+  uint8_t numBusses = 0;
+  Bus* busses[WLED_MAX_BUSSES];
+};
 #endif
