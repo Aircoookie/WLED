@@ -19,6 +19,9 @@
 #ifdef USERMOD_BUZZER
 #include "../usermods/buzzer/usermod_v2_buzzer.h"
 #endif
+#ifdef USERMOD_SENSORSTOMQTT
+#include "usermod_v2_SensorsToMqtt.h"
+#endif
 
 // BME280 v2 usermod. Define "USERMOD_BME280" in my_config.h
 #ifdef USERMOD_BME280
@@ -27,7 +30,7 @@
 
 void registerUsermods()
 {
-  /*
+/*
    * Add your usermod class name here
    * || || ||
    * \/ \/ \/

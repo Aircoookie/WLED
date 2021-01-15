@@ -70,7 +70,7 @@ void parseLxJson(int lxValue, byte segId, bool secondary)
     } else {
       DEBUG_PRINT(F("LX: segment "));
       DEBUG_PRINTLN(segId);
-      strip.getSegment(segId).colors[secondary] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
+      strip.getSegment(segId).setColor(secondary, ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF))), segId);
     }
   }
 }

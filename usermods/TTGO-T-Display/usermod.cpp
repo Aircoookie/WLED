@@ -56,7 +56,7 @@ void userSetup() {
     tft.setTextColor(TFT_WHITE);
     tft.setCursor(1, 10);
     tft.setTextDatum(MC_DATUM);
-    tft.setTextSize(2);
+    tft.setTextSize(3);
     tft.print("Loading...");
 
     if (TFT_BL > 0) { // TFT_BL has been set in the TFT_eSPI library in the User Setup file TTGO_T_Display.h
@@ -142,22 +142,41 @@ void userLoop() {
   tft.fillScreen(TFT_BLACK);
   tft.setTextSize(2);
   // First row with Wifi name
-  tft.setCursor(1, 10);
+  tft.setCursor(1, 1);
   tft.print(knownSsid.substring(0, tftcharwidth > 1 ? tftcharwidth - 1 : 0));
   // Print `~` char to indicate that SSID is longer, than our dicplay
   if (knownSsid.length() > tftcharwidth)
     tft.print("~");
 
-  // Second row with IP or Psssword
-  tft.setCursor(1, 40);
-  // Print password in AP mode and if led is OFF.
-  if (apActive && bri == 0)
-    tft.print(apPass);
-  else
+  // Second row with AP IP and Password or IP
+  tft.setTextSize(2);
+  tft.setCursor(1, 24);
+  // Print AP IP and password in AP mode or knownIP if AP not active.
+  // if (apActive && bri == 0)
+  //   tft.print(apPass);
+  // else
+  //   tft.print(knownIp);
+
+  if (apActive) {
+    tft.print("AP IP: ");
     tft.print(knownIp);
+    tft.setCursor(1,46);
+    tft.print("AP Pass:");
+    tft.print(apPass);
+  }
+  else {
+    tft.print("IP: ");
+    tft.print(knownIp);
+    tft.setCursor(1,46);
+    //tft.print("Signal Strength: ");
+    //tft.print(i.wifi.signal);
+    tft.print("Brightness: ");
+    tft.print(((float(bri)/255)*100));
+    tft.print("%");
+  }
 
   // Third row with mode name
-  tft.setCursor(1, 70);
+  tft.setCursor(1, 68);
   uint8_t qComma = 0;
   bool insideQuotes = false;
   uint8_t printedChars = 0;
@@ -184,7 +203,7 @@ void userLoop() {
       break;
   }
   // Fourth row with palette name
-  tft.setCursor(1, 100);
+  tft.setCursor(1, 90);
   qComma = 0;
   insideQuotes = false;
   printedChars = 0;
@@ -210,5 +229,10 @@ void userLoop() {
     if ((qComma > knownPalette) || (printedChars > tftcharwidth - 1))
       break;
   }
-
+  // Fifth row with estimated mA usage
+  tft.setCursor(1, 112);
+  // Print estimated milliamp usage (must specify the LED type in LED prefs for this to be a reasonable estimate).
+  tft.print(strip.currentMilliamps);
+  tft.print("mA (estimated)");
+  
 }

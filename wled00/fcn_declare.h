@@ -34,6 +34,7 @@ void serializeConfigSec();
 //colors.cpp
 void colorFromUint32(uint32_t in, bool secondary = false);
 void colorFromUint24(uint32_t in, bool secondary = false);
+uint32_t colorFromRgbw(byte* rgbw);
 void relativeChangeWhite(int8_t amount, byte lowerBoundary = 0);
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb); //hue, sat to rgb
 void colorKtoRGB(uint16_t kelvin, byte* rgb);
@@ -109,7 +110,7 @@ void setValuesFromMainSeg();
 void resetTimebase();
 void toggleOnOff();
 void setAllLeds();
-void setLedsStandard(bool justColors = false);
+void setLedsStandard();
 bool colorChanged();
 void colorUpdated(int callMode);
 void updateInterfaces(uint8_t callMode);

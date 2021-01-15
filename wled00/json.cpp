@@ -23,13 +23,13 @@ void deserializeSegment(JsonObject elem, byte it)
 
     int segbri = elem["bri"] | -1;
     if (segbri == 0) {
-      seg.setOption(SEG_OPTION_ON, 0);
+      seg.setOption(SEG_OPTION_ON, 0, id);
     } else if (segbri > 0) {
-      seg.opacity = segbri;
-      seg.setOption(SEG_OPTION_ON, 1);
+      seg.setOpacity(segbri, id);
+      seg.setOption(SEG_OPTION_ON, 1, id);
     }
   
-    seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON));
+    seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON), id);
     
     JsonArray colarr = elem[F("col")];
     if (!colarr.isNull())
@@ -45,7 +45,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
             int kelvin = colarr[i] | -1;
             if (kelvin <  0) continue;
-            if (kelvin == 0) seg.colors[i] = 0;
+            if (kelvin == 0) seg.setColor(i, 0, id);
             if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
             colValid = true;
           } else { //HEX string, e.g. "FFAA00"
@@ -57,7 +57,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (sz == 0) continue; //do nothing on empty array
 
           byte cp = copyArray(colX, rgbw, 4);      
-          if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
+          if (cp == 1 && rgbw[0] == 0) seg.setColor(i, 0, id);
           colValid = true;
         }
 
@@ -66,8 +66,8 @@ void deserializeSegment(JsonObject elem, byte it)
         { 
           if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
           if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
-        } else { //normal case, apply directly to segment (=> no transition!)
-          seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
+        } else { //normal case, apply directly to segment
+          seg.setColor(i, ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF))), id);
           if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
         }
       }
@@ -168,6 +168,7 @@ bool deserializeState(JsonObject root)
   {
     transitionDelay = tr;
     transitionDelay *= 100;
+    transitionDelayTemp = transitionDelay;
   }
 
   tr = root[F("tt")] | -1;
@@ -177,6 +178,7 @@ bool deserializeState(JsonObject root)
     transitionDelayTemp *= 100;
     jsonTransitionOnce = true;
   }
+  strip.setTransition(transitionDelayTemp);
   
   int cy = root[F("pl")] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);

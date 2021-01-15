@@ -454,9 +454,8 @@ function populateInfo(i)
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
   var urows="";
   if (i.u) {
-    for (var k = 0; k < i.u.length; k++)
+    for (const [k, val] of Object.entries(i.u))
     {
-      var val = i.u[k];
       if (val[1]) {
         urows += inforow(k,val[0],val[1]);
       } else {
@@ -1335,10 +1334,13 @@ function lock(e) {
 
 function move(e) {
 	if(!locked || pcMode) return;
-	var dx = unify(e).clientX - x0, s = Math.sign(dx), 
-			f = +(s*dx/w).toFixed(2);
+	var clientX = unify(e).clientX;
+	var dx = clientX - x0;
+	var s = Math.sign(dx);
+	var f = +(s*dx/w).toFixed(2);
 
-  if((iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
+  if((clientX != 0) &&
+	 (iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
      f > 0.12 &&
      d.getElementsByClassName("tabcontent")[iSlide].scrollTop == scrollS) {
 		_C.style.setProperty('--i', iSlide -= s);

@@ -33,6 +33,11 @@ void colorFromUint24(uint32_t in, bool secondary)
   }
 }
 
+//store color components in uint32_t
+uint32_t colorFromRgbw(byte* rgbw) {
+  return (rgbw[0] << 16) + (rgbw[1] << 8) + rgbw[2] + (rgbw[3] << 24);
+}
+
 //relatively change white brightness, minumum A=5
 void relativeChangeWhite(int8_t amount, byte lowerBoundary)
 {
