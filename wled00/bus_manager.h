@@ -12,8 +12,9 @@
 //parent class of BusDigital and BusPwm
 class Bus {
   public:
-  Bus(uint8_t type) {
+  Bus(uint8_t type, uint16_t start) {
     _type = type;
+    _start = start;
   };
   
   virtual void show() {}
@@ -25,8 +26,10 @@ class Bus {
 
   virtual uint32_t getPixelColor(uint16_t pix) { return 0; };
 
+  virtual void cleanup() {};
+
   virtual ~Bus() { //throw the bus under the bus
-    
+    cleanup();
   }
 
   uint16_t getStart() {
@@ -37,15 +40,15 @@ class Bus {
     _start = start;
   }
 
-  virtual uint8_t getColorOrder() {
-    return COL_ORDER_RGB;
-  }
-
   virtual uint16_t getLength() {
     return 1;
   }
 
   virtual void setColorOrder() {}
+
+  virtual uint8_t getColorOrder() {
+    return COL_ORDER_RGB;
+  }
 
   uint8_t getType() {
     return _type;
@@ -65,19 +68,24 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-  BusDigital(uint8_t type, uint8_t* pins, uint16_t len, uint8_t nr) : Bus(type) {
+  BusDigital(uint8_t type, uint8_t* pins, uint16_t start, uint16_t len, uint8_t colorOrder, uint8_t nr) : Bus(type, start) {
     if (!IS_DIGITAL(type) || !len) return;
     _pins[0] = pins[0];
-    if (IS_2PIN(type)) _pins[1] = pins[1];
-    //TODO allocate pins with pin manager
+    if (!pinManager.allocatePin(_pins[0])) return;
+    if (IS_2PIN(type)) {
+      _pins[1] = pins[1];
+      if (!pinManager.allocatePin(_pins[1])) {
+        cleanup(); return;
+      }
+    }
     _len = len;
     _iType = PolyBus::getI(type, _pins, nr);
     if (_iType == I_NONE) return;
-    _busPtr = PolyBus::begin(_iType, _pins, _len);
+    _busPtr = PolyBus::create(_iType, _pins, _len);
     _valid = (_busPtr != nullptr);
+    _colorOrder = colorOrder;
     Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
   };
-  //TODO clean up stuff (destructor)
 
   void show() {
     PolyBus::show(_busPtr, _iType);
@@ -112,6 +120,15 @@ class BusDigital : public Bus {
     _colorOrder = colorOrder;
   }
 
+  void cleanup() {
+    PolyBus::cleanup(_busPtr, _iType);
+    _iType = I_NONE;
+    _valid = false;
+    _busPtr = nullptr;
+    pinManager.deallocatePin(_pins[0]);
+    pinManager.deallocatePin(_pins[1]);
+  }
+
   private: 
   uint8_t _colorOrder = COL_ORDER_GRB;
   uint8_t _pins[2] = {255, 255};
@@ -123,7 +140,7 @@ class BusDigital : public Bus {
 
 class BusPwm : public Bus {
   public:
-  BusPwm(uint8_t type, uint8_t* pins) : Bus(type) {
+  BusPwm(uint8_t type, uint8_t* pins, uint16_t start) : Bus(type, start) {
     if (!IS_PWM(type)) return;
     uint8_t numPins = NUM_PWM_PINS(type);
 
@@ -149,7 +166,6 @@ class BusPwm : public Bus {
       ledcAttachPin(_pins[i], _ledcStart + i);
       #endif
     }
-
     _valid = true;
   };
 
@@ -191,12 +207,12 @@ class BusPwm : public Bus {
     }
   }
 
-  ~BusPwm() {
+  void cleanup() {
     deallocatePins();
-  };
+  }
 
   private: 
-  uint8_t _pins[5];
+  uint8_t _pins[5] = {255, 255, 255, 255, 255};
   uint8_t _data[5] = {255, 255, 255, 255, 255};
   #ifdef ARDUINO_ARCH_ESP32
   uint8_t _ledcStart = 255;
@@ -209,7 +225,7 @@ class BusPwm : public Bus {
       #ifdef ESP8266
       digitalWrite(_pins[i], LOW); //turn off PWM interrupt
       #else
-      if (_ledcStart < 16) ledcDetachPin(_pins[i], _ledcStart + i);
+      if (_ledcStart < 16) ledcDetachPin(_pins[i]);
       #endif
       pinManager.deallocatePin(_pins[i]);
     }
@@ -225,12 +241,12 @@ class BusManager {
 
   };
   
-  int add(uint8_t busType, uint8_t* pins, uint16_t len = 1) {
+  int add(uint8_t busType, uint8_t* pins, uint16_t start, uint16_t len = 1, uint8_t colorOrder = COL_ORDER_GRB) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
     if (IS_DIGITAL(busType)) {
-      busses[numBusses] = new BusDigital(busType, pins, len, numBusses);
+      busses[numBusses] = new BusDigital(busType, pins, start, len, colorOrder, numBusses);
     } else {
-      busses[numBusses] = new BusPwm(busType, pins);
+      busses[numBusses] = new BusPwm(busType, pins, start);
     }
     numBusses++;
     return numBusses -1;
@@ -278,6 +294,15 @@ class BusManager {
       if (busses[i]->canShow()) return false;
     }
     return true;
+  }
+
+  Bus* getBus(uint8_t busNr) {
+    if (busNr >= numBusses) return nullptr;
+    return busses[busNr];
+  }
+
+  uint8_t getNumBusses() {
+    return numBusses;
   }
 
   private:
