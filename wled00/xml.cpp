@@ -254,14 +254,66 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   if (subPage == 2) {
+    char nS[3];
+
+    // add usermod pins as d.um_p array
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+    JsonObject mods = doc.createNestedObject(F("mods"));
+    usermods.addToJsonState(mods);
+    if (!mods.isNull()) {
+      uint8_t i=0;
+      oappend(SET_F("d.um_p=["));
+      for (JsonPair kv : mods) {
+        if (strncmp_P(kv.key().c_str(),PSTR("pin_"),4) == 0) {
+          if (i++) oappend(SET_F(","));
+          oappend(itoa((int)kv.value(),nS,10));
+        }
+      }
+      oappend(SET_F("];"));
+    }
+
+    #if defined(WLED_MAX_BUSSES) && WLED_MAX_BUSSES>1
+      oappend(SET_F("addLEDs("));
+      oappend(itoa(WLED_MAX_BUSSES,nS,10));
+      oappend(SET_F(");"));
+    #endif
+
+    Bus *bus = busses->getBus(0);
     #ifdef ESP8266
-    #if LEDPIN == 3
-    oappend(SET_F("d.Sf.LC.max=500;"));
-    #else
-    oappend(SET_F("d.Sf.LC.max=1500;"));
+    if (bus->getPins()[0]==3)
+      oappend(SET_F("d.Sf.LC.max=500;"));
+    else
+      oappend(SET_F("d.Sf.LC.max=1500;"));
     #endif
-    #endif
-    sappend('v',SET_F("LC"),ledCount);
+    //sappend('v',SET_F("LC"),ledCount);
+    sappend('v',SET_F("LP"),bus->getPins()[0]);
+    if (bus->getPins()[1]>=0) sappend('v',SET_F("LK"),bus->getPins()[1]);
+    sappend('v',SET_F("LC"),bus->getLength());
+    sappend('v',SET_F("LTsel"),bus->getType());
+    sappend('v',SET_F("CO"),bus->getColorOrder());
+
+    for (uint8_t s=1; s<busses->getNumBusses(); s++){
+      bus = busses->getBus(s);
+      String LP = F("LP"), LK = F("LK"), LC = F("LC"), CO = F("CO"), LTsel = F("LTsel");
+      LP += s; LK += s; LC += s; CO += s; LTsel += s;
+      oappend(SET_F("addLEDs(1);"));
+      sappend('v',LP.c_str(),bus->getPins()[0]);
+      if (bus->getPins()[1]>=0) sappend('v',LK.c_str(),bus->getPins()[1]);
+      sappend('v',LC.c_str(),bus->getLength());
+      #ifdef ESP8266
+      if (bus->getPins()[0]==3) {
+        oappend(SET_F("d.Sf."));
+        oappend(LC.c_str());
+        oappend(SET_F(".max=500;"));
+      } else {
+        oappend(SET_F("d.Sf."));
+        oappend(LC.c_str());
+        oappend(SET_F(".max=1500;"));
+      }
+      #endif
+      sappend('v',LTsel.c_str(),bus->getType());
+      sappend('v',CO.c_str(),bus->getColorOrder());
+    }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
     if (strip.currentMilliamps)
@@ -292,6 +344,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("PB"),strip.paletteBlend);
     sappend('c',SET_F("RV"),strip.reverseMode);
     sappend('c',SET_F("SL"),skipFirstLed);
+    sappend('v',SET_F("RL"),rlyPin);
+    sappend('c',SET_F("RM"),rlyMde);
+    sappend('v',SET_F("BT"),btnPin);
+    sappend('v',SET_F("IR"),irPin);
+    sappend('v',SET_F("AX"),auxPin);
   }
 
   if (subPage == 3)

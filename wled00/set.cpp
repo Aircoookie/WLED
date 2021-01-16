@@ -75,18 +75,123 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //LED SETTINGS
   if (subPage == 2)
   {
-    int t = request->arg(F("LC")).toInt();
+    String LC=F("LC"), LP=F("LP"), LK=F("LK"), CO=F("CO"), LTsel=F("LTsel");
+    int8_t pin;
+    int t;
+
+    // deallocate all pins
+    for (uint8_t s=0; s<busses->getNumBuses(); s++) {
+      Bus *bus = busses->getBus(s);
+      pinManager.deallocatePin(bus->getPins()[0]);
+      pinManager.deallocatePin(bus->getPins()[1]);
+    }
+    if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
+    #ifndef WLED_DISABLE_INFRARED
+    if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
+    #endif
+    if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
+    // remove all busses
+    busses->removeAll();
+
+    // initial bus
+    uint8_t colorOrder, type;
+    uint8_t ledType = request->arg(LTsel).toInt();
+    uint16_t length;
+    int8_t pins[2] = {-1,-1};
+    pins[0] = request->arg(LP).toInt();
+    if (pinManager.allocatePin(pins[0])) {
+      t = length = request->arg(LC).toInt();
+      if ( request->hasArg(LK.c_str()) ) {
+        pins[1] = (request->arg(LK)).length() > 0 ? request->arg(LK).toInt() : -1;
+        if (pinManager.allocatePin(pins[1])) {
+        } else {
+          // fallback
+          pins[1] = -1;
+        }
+      }
+      colorOrder = request->arg(CO).toInt();
+      type = request->arg(LTsel).toInt();
+
+      busses->add(type? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, length, colorOrder);
+    } else {
+      // fallback
+    }
+
+    // secondary busses
+    for (uint8_t i=1; i<WLED_MAX_BUSSES; i++) {
+      if ( request->hasArg((LP+i).c_str()) ) {
+        pins[0] = request->arg((LP+i).c_str()).toInt();
+        if (pinManager.allocatePin(pins[0])) {
+          if ( request->hasArg((LK+i).c_str()) ) {
+            pins[1] = (request->arg(LK+i)).length() > 0 ? request->arg((LK+i).c_str()).toInt() : -1;
+            if (pins[1]>=0) {
+              pinManager.allocatePin(pins[1]);
+            }
+          }
+        } else {
+          DEBUG_PRINTLN(F("Pin not ok."));
+          type = TYPE_NONE;
+          break; // pin not ok
+        }
+        type = request->arg((LTsel+i).c_str()).toInt();
+      } else {
+        DEBUG_PRINTLN("No data.");
+        type = TYPE_NONE;
+        break;  // no parameter
+      }
+      if ( request->hasArg((LC+i).c_str()) && request->arg((LC+i).c_str()).toInt() > 0 ) {
+        t += lenght = request->arg((LC+i).c_str()).toInt();
+      } else {
+        type = TYPE_NONE;
+        break;  // no parameter
+      }
+      colorOrder = request->arg((CO+i).c_str()).toInt();
+      busses->add(type? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, length, colorOrder);
+    }
+
+    // what to do with these?
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
     #ifdef ESP8266
-    #if LEDPIN == 3
-    if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
+    if ( pinManager.isPinAllocated(3) && ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
     #endif
+
+    // upate other pins
+    #ifndef WLED_DISABLE_INFRARED
+    int hw_ir_pin = request->arg(F("IR")).toInt();
+    if (pinManager.isPinOk(hw_ir_pin) && pinManager.allocatePin(hw_ir_pin,false)) {
+      irPin = hw_ir_pin;
+    } else {
+      irPin = -1;
+    }
     #endif
+
+    int hw_rly_pin = request->arg(F("RL")).toInt();
+    if (pinManager.allocatePin(hw_rly_pin,true)) {
+      rlyPin = hw_rly_pin;
+    } else {
+      rlyPin = -1;
+    }
+    rlyMde = (bool)request->hasArg(F("RM"));
+
+    int hw_btn_pin = request->arg(F("BT")).toInt();
+    if (pinManager.allocatePin(hw_btn_pin,false)) {
+      btnPin = hw_btn_pin;
+      pinMode(btnPin, INPUT_PULLUP);
+    } else {
+      btnPin = -1;
+    }
+
+    int hw_aux_pin = request->arg(F("AX")).toInt();
+    if (pinManager.allocatePin(hw_aux_pin,true)) {
+      auxPin = hw_aux_pin;
+    } else {
+      auxPin = -1;
+    }
+
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
     useRGBW = request->hasArg(F("EW"));
-    strip.setColorOrder(request->arg(F("CO")).toInt());
     strip.rgbwMode = request->arg(F("AW")).toInt();
 
     briS = request->arg(F("CA")).toInt();
@@ -328,8 +433,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       DMXFixtureMap[i] = t;
     }
   }
-  
   #endif
+
   if (subPage != 6 || !doReboot) serializeConfig(); //do not save if factory reset
   if (subPage == 2) {
     strip.init(useRGBW,ledCount,skipFirstLed);
@@ -646,15 +751,15 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
   if (nightlightMode > NL_MODE_SUN) nightlightMode = NL_MODE_SUN;
 
-  #if AUXPIN >= 0
   //toggle general purpose output
-  pos = req.indexOf(F("AX="));
-  if (pos > 0) {
-    auxTime = getNumVal(&req, pos);
-    auxActive = true;
-    if (auxTime == 0) auxActive = false;
+  if (auxPin>=0) {
+    pos = req.indexOf(F("AX="));
+    if (pos > 0) {
+      auxTime = getNumVal(&req, pos);
+      auxActive = true;
+      if (auxTime == 0) auxActive = false;
+    }
   }
-  #endif
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);

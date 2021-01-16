@@ -89,31 +89,59 @@ void deserializeConfig() {
 
   JsonObject hw = doc[F("hw")];
 
+  // initialize LED pins and lengths prior to other HW
   JsonObject hw_led = hw[F("led")];
-  CJSON(ledCount, hw_led[F("total")]);
-  if (ledCount > MAX_LEDS) ledCount = MAX_LEDS;
 
+//  CJSON(ledCount, hw_led[F("total")]);
+  ledCount = 0;
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   CJSON(strip.reverseMode, hw_led[F("rev")]);
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
-  JsonObject hw_led_ins_0 = hw_led[F("ins")][0];
-  //bool hw_led_ins_0_en = hw_led_ins_0[F("en")]; // true
-  //int hw_led_ins_0_start = hw_led_ins_0[F("start")]; // 0
-  //int hw_led_ins_0_len = hw_led_ins_0[F("len")]; // 1200
-
-  //int hw_led_ins_0_pin_0 = hw_led_ins_0[F("pin")][0]; // 2
-
-  strip.setColorOrder(hw_led_ins_0[F("order")]);
-  //bool hw_led_ins_0_rev = hw_led_ins_0[F("rev")]; // false
-  skipFirstLed = hw_led_ins_0[F("skip")]; // 0
-  useRGBW = (hw_led_ins_0[F("type")] == TYPE_SK6812_RGBW);
+  JsonVariant strVar = hw_led["ins"];
+  if (strVar.is<JsonObject>()) {
+    // some safety measures here?
+  } else {
+    JsonArray elms = strVar.as<JsonArray>();
+    uint8_t s=0;
+    for ( JsonObject elm : elms ) {
+      if (s>=WLED_MAX_BUSSES) break;
+      int8_t pins[2] = {-1,-1};
+      pins[0] = elm[F("pin")][0];
+      if (pins[0] >= 0 && pinManager.allocatePin(pins[0])) {
+        if (elm[F("pin")].size()==2) {
+          pins[1] = elm[F("pin")][1];
+          if (pins[1] >= 0)
+            if (!pinManager.allocatePin(pins[1])) {
+              pinManager.deallocatePin(pins[0]);
+              break; // pin not ok
+            }
+        }
+      } else {
+        break; // pin not ok
+      }
+      uint16_t length = elm[F("len")]);
+      if (length==0) break;
+      uint8_t colorOrder = (int)elm[F("order")];
+      uint8_t skipFirstLed = elm[F("skip")]; // 0
+      uint8_t ledType = elm[F("type")];
+      uint8_t useRGBW = ((ledType == TYPE_SK6812_RGBW) || ledType == TYPE_TM1814);
+      ledCount += length;
+      busses->add(ledType? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, ledCount, colorOrder);
+    }
+  }
+  if (ledCount > MAX_LEDS) ledCount = MAX_LEDS;
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
-  buttonEnabled = hw_btn_ins_0[F("en")] | buttonEnabled;
-
-  //int hw_btn_ins_0_pin_0 = hw_btn_ins_0[F("pin")][0]; // 0
+  CJSON(buttonEnabled, hw_btn_ins_0[F("type")]);
+  int hw_btn_pin = hw_btn_ins_0[F("pin")][0];
+  if (pinManager.allocatePin(hw_btn_pin,false)) {
+    btnPin = hw_btn_pin;
+    pinMode(btnPin, INPUT_PULLUP);
+  } else {
+    btnPin = -1;
+  }
 
   JsonArray hw_btn_ins_0_macros = hw_btn_ins_0[F("macros")];
   CJSON(macroButton, hw_btn_ins_0_macros[0]);
@@ -122,11 +150,24 @@ void deserializeConfig() {
 
   //int hw_btn_ins_0_type = hw_btn_ins_0[F("type")]; // 0
 
-  //int hw_ir_pin = hw[F("ir")][F("pin")]; // 4
-  CJSON(irEnabled, hw[F("ir")][F("type")]); // 0
+  #ifndef WLED_DISABLE_INFRARED
+  int hw_ir_pin = hw[F("ir")][F("pin")]; // 4
+  if (pinManager.allocatePin(hw_ir_pin,false)) {
+    irPin = hw_ir_pin;
+  } else {
+    irPin = -1;
+  }
+  #endif
+  CJSON(irEnabled, hw[F("ir")][F("type")]);
 
-  //int hw_relay_pin = hw[F("relay")][F("pin")]; // 12
-  //bool hw_relay_rev = hw[F("relay")][F("rev")]; // false
+  int hw_relay_pin = hw[F("relay")][F("pin")];
+  if (pinManager.allocatePin(hw_relay_pin,true)) {
+    rlyPin = hw_relay_pin;
+    pinMode(rlyPin, OUTPUT);
+  } else {
+    rlyPin = -1;
+  }
+  CJSON(rlyMde, hw[F("relay")][F("rev")]);
 
   //int hw_status_pin = hw[F("status")][F("pin")]; // -1
 
@@ -404,70 +445,57 @@ void serializeConfig() {
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
-  JsonObject hw_led_ins_0 = hw_led_ins.createNestedObject();
-  hw_led_ins_0[F("en")] = true;
-  hw_led_ins_0[F("start")] = 0;
-  hw_led_ins_0[F("len")] = ledCount;
-  JsonArray hw_led_ins_0_pin = hw_led_ins_0.createNestedArray("pin");
-  hw_led_ins_0_pin.add(LEDPIN);
-  #ifdef DATAPIN
-  hw_led_ins_0_pin.add(DATAPIN);
-  #endif
-  hw_led_ins_0[F("order")] = strip.getColorOrder();
-  hw_led_ins_0[F("rev")] = false;
-  hw_led_ins_0[F("skip")] = skipFirstLed ? 1 : 0;
-
-  //this is very crude and temporary
-  byte ledType = TYPE_WS2812_RGB;
-  if (useRGBW) ledType = TYPE_SK6812_RGBW;
-  #ifdef USE_WS2801
-    ledType = TYPE_WS2801;
-  #endif
-  #ifdef USE_APA102
-    ledType = TYPE_APA102;
-  #endif
-  #ifdef USE_LPD8806
-    ledType = TYPE_LPD8806;
-  #endif
-  #ifdef USE_P9813
-    ledType = TYPE_P9813;
-  #endif
-  #ifdef USE_TM1814
-    ledType = TYPE_TM1814;
-  #endif
-
-  hw_led_ins_0[F("type")] = ledType;
+  uint16_t start = 0;
+  for (uint8_t s=0; s<busses->getNumBusses(); s++) {
+    Bus *bus = busses->getBus(s);
+    if (!bus || bus->getLength()==0) break;
+    JsonObject hw_led_ins_0 = hw_led_ins.createNestedObject();
+    hw_led_ins_0[F("en")] = true;
+    hw_led_ins_0[F("start")] = start;
+    start += bus->getLength();
+    hw_led_ins_0[F("len")] = bus->getLength();
+    JsonArray hw_led_ins_0_pin = hw_led_ins_0.createNestedArray("pin");
+    hw_led_ins_0_pin.add(bus->getBusPins(s)[0]);
+    if (bus->getBusPins(s)[1]>=0) hw_led_ins_0_pin.add(bus->getBusPins(s)[1]);
+    hw_led_ins_0[F("order")] = bus->getColorOrder();
+    hw_led_ins_0[F("rev")] = false;
+    hw_led_ins_0[F("skip")] = skipFirstLed ? 1 : 0;
+    hw_led_ins_0[F("type")] = bus->getType();
+  }
 
   JsonObject hw_btn = hw.createNestedObject("btn");
 
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
-  #if defined(BTNPIN) && BTNPIN > -1
+  // button BTNPIN
   JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
   hw_btn_ins_0[F("type")] = (buttonEnabled) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
   JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
-  hw_btn_ins_0_pin.add(BTNPIN);
+  hw_btn_ins_0_pin.add(btnPin);
 
   JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
   hw_btn_ins_0_macros.add(macroButton);
   hw_btn_ins_0_macros.add(macroLongPress);
   hw_btn_ins_0_macros.add(macroDoublePress);
+
+  #ifndef WLED_DISABLE_INFRARED
+  if (irPin>=0) {
+    JsonObject hw_ir = hw.createNestedObject("ir");
+    hw_ir[F("pin")] = irPin;
+    hw_ir[F("type")] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
+  }
   #endif
 
-  #if defined(IRPIN) && IRPIN > -1
-  JsonObject hw_ir = hw.createNestedObject("ir");
-  hw_ir[F("pin")] = IRPIN;
-  hw_ir[F("type")] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
-  #endif
-
-  #if defined(RLYPIN) && RLYPIN > -1
   JsonObject hw_relay = hw.createNestedObject("relay");
-  hw_relay[F("pin")] = RLYPIN;
-  hw_relay[F("rev")] = (RLYMDE) ? false : true;
-  JsonObject hw_status = hw.createNestedObject("status");
-  hw_status[F("pin")] = -1;
-  #endif
+  hw_relay[F("pin")] = rlyPin;
+  hw_relay[F("rev")] = rlyMde;
+
+  //JsonObject hw_status = hw.createNestedObject("status");
+  //hw_status[F("pin")] = -1;
+
+  JsonObject hw_aux = hw.createNestedObject("aux");
+  hw_aux[F("pin")] = auxPin;
 
   JsonObject light = doc.createNestedObject("light");
   light[F("scale-bri")] = briMultiplier;
