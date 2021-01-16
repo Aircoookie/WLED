@@ -8,12 +8,12 @@
 uint16_t blHue = 0;
 byte blSat = 255;
 
-void initBlynk(const char* auth)
+void initBlynk(const char *auth, const char *host, uint16_t port)
 {
   #ifndef WLED_DISABLE_BLYNK
   if (!WLED_CONNECTED) return;
   blynkEnabled = (auth[0] != 0);
-  if (blynkEnabled) Blynk.config(auth);
+  if (blynkEnabled) Blynk.config(auth, host, port);
   #endif
 }
 

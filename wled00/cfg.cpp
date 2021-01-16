@@ -75,6 +75,11 @@ void deserializeConfig() {
   if (apHide > 1) apHide = 1;
 
   CJSON(apBehavior, ap[F("behav")]);
+  
+  #ifdef WLED_USE_ETHERNET
+  JsonObject ethernet = doc[F("eth")];
+  CJSON(ethernetType, ethernet[F("type")]);
+  #endif
 
   /*
   JsonArray ap_ip = ap[F("ip")];
@@ -164,7 +169,6 @@ void deserializeConfig() {
   CJSON(bootPreset, def[F("ps")]);
   CJSON(turnOnAtBoot, def["on"]); // true
   CJSON(briS, def["bri"]); // 128
-  if (briS == 0) briS = 255;
 
   JsonObject def_cy = def[F("cy")];
   CJSON(presetCyclingEnabled, def_cy["on"]);
@@ -224,6 +228,10 @@ void deserializeConfig() {
   if (tdd > 20 || tdd == 0)
     getStringFromJson(blynkApiKey, apikey, 36); //normally not present due to security
 
+  JsonObject if_blynk = interfaces[F("blynk")];
+  getStringFromJson(blynkHost, if_blynk[F("host")], 33);
+  CJSON(blynkPort, if_blynk[F("port")]);
+
   JsonObject if_mqtt = interfaces[F("mqtt")];
   CJSON(mqttEnabled, if_mqtt[F("en")]);
   getStringFromJson(mqttServer, if_mqtt[F("broker")], 33);
@@ -281,6 +289,7 @@ void deserializeConfig() {
   CJSON(countdownMin,   cntdwn_goal[4]);
   CJSON(countdownSec,   cntdwn_goal[5]);
   CJSON(macroCountdown, cntdwn[F("macro")]);
+  setCountdown();
 
   JsonArray timers = tm[F("ins")];
   uint8_t it = 0;
@@ -324,11 +333,11 @@ void deserializeConfig() {
   CJSON(DMXStart, dmx[F("start")]);
   CJSON(DMXStartLED,dmx[F("start-led")]);
 
-  JsonArray dmx_fixmap = dmx.createNestedArray("fixmap");
+  JsonArray dmx_fixmap = dmx[F("fixmap")];
   it = 0;
   for (int i : dmx_fixmap) {
     if (it > 14) break;
-    DMXFixtureMap[i] = i;
+    CJSON(DMXFixtureMap[i],dmx_fixmap[i]);
     it++;
   }
   #endif
@@ -406,6 +415,11 @@ void serializeConfig() {
   JsonObject wifi = doc.createNestedObject("wifi");
   wifi[F("sleep")] = !noWifiSleep;
   wifi[F("phy")] = 1;
+
+  #ifdef WLED_USE_ETHERNET
+  JsonObject ethernet = doc.createNestedObject("eth");
+  ethernet[F("type")] = ethernetType;
+  #endif
 
   JsonObject hw = doc.createNestedObject("hw");
 
@@ -565,6 +579,8 @@ void serializeConfig() {
   if_va_macros.add(macroAlexaOff);
   JsonObject if_blynk = interfaces.createNestedObject("blynk");
   if_blynk[F("token")] = strlen(blynkApiKey) ? "Hidden":"";
+  if_blynk[F("host")] = blynkHost;
+  if_blynk[F("port")] = blynkPort;
 
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt[F("en")] = mqttEnabled;

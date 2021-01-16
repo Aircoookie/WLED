@@ -235,6 +235,12 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AC"),apChannel);
     sappend('c',SET_F("WS"),noWifiSleep);
 
+    #ifdef WLED_USE_ETHERNET
+    sappend('i',SET_F("ETH"),ethernetType);
+    #else
+    //hide ethernet setting if not compiled in
+    oappend(SET_F("document.getElementById('ethd').style.display='none';"));
+    #endif
 
     if (Network.isConnected()) //is connected
     {
@@ -348,6 +354,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
     sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
+    sappends('s',SET_F("BH"),blynkHost);
+    sappend('v',SET_F("BP"),blynkPort);
     if (!(((audioSyncEnabled)>>(0)) & 1) && !(((audioSyncEnabled)>>(1)) & 1)) {
       // 0 == udp audio sync off
       sappend('v',SET_F("ASE"), 0);

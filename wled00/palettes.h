@@ -13,7 +13,7 @@
 #ifndef PalettesWLED_h
 #define PalettesWLED_h
 
-#define GRADIENT_PALETTE_COUNT 56
+#define GRADIENT_PALETTE_COUNT 57
 
 const byte ib_jul01_gp[] PROGMEM = {
     0, 194,  1,  1,
@@ -631,6 +631,14 @@ const byte temperature_gp[] PROGMEM = {
   240,  80,  3,  3,
   255,  80,  3,  3};
 
+  const byte Aurora2[] PROGMEM = {
+      0,  17, 177,  13,    //Greenish
+     64, 121, 242,   5,    //Greenish
+    128,  25, 173, 121,    //Turquoise
+    192, 250,  77, 127,    //Pink
+    255, 171, 101, 221     //Purple
+  };
+
 // Gradient palette "bhw1_01_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw1/tn/bhw1_01.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
@@ -884,6 +892,7 @@ const byte* const gGradientPalettes[] PROGMEM = {
   C9_2_gp,                      //52-39 C9 2
   C9_new_gp,                    //53-40 C9 New
   temperature_gp,               //54-41 Temperature
+  Aurora2,                       //55-42 Aurora 2
   Retro_Clown,
   Candy,
   Toxy_Reaf,
@@ -899,6 +908,7 @@ const byte* const gGradientPalettes[] PROGMEM = {
   Yellow2Blue,
   Yellow2Red,
   Candy2
+
 };
 
 #endif
