@@ -8,6 +8,7 @@
 #include "const.h"
 #include "pin_manager.h"
 #include "bus_wrapper.h"
+#include <Arduino.h>
 
 //parent class of BusDigital and BusPwm
 class Bus {
@@ -97,7 +98,9 @@ class BusDigital : public Bus {
 
   void setBrightness(uint8_t b) {
     //Fix for turning off onboard LED breaking bus
+    #ifdef LED_BUILTIN
     if (_bri == 0 && b > 0 && (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN)) PolyBus::begin(_busPtr, _iType); 
+    #endif
     _bri = b;
     PolyBus::setBrightness(_busPtr, _iType, b);
   }
