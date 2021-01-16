@@ -587,7 +587,7 @@ void serveJson(AsyncWebServerRequest* request)
 
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 {
-  AsyncWebSocketClient * wsc;
+  AsyncWebSocketClient * wsc = nullptr;
   if (!request) { //not HTTP, use Websockets
     #ifdef WLED_ENABLE_WEBSOCKETS
     wsc = ws.client(wsClient);

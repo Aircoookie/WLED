@@ -266,7 +266,6 @@ class PolyBus {
   };
   static void* create(uint8_t busType, uint8_t* pins, uint16_t len) {
     void* busPtr = nullptr;
-    //delete busPtr; //TODO this needs type handling or destructor isn't called
     switch (busType) {
       case I_NONE: break;
     #ifdef ESP8266
@@ -658,7 +657,7 @@ class PolyBus {
     }
   };
   static uint32_t getPixelColor(void* busPtr, uint8_t busType, uint16_t pix, uint8_t co) {
-    RgbwColor col; 
+    RgbwColor col(0,0,0,0); 
     switch (busType) {
       case I_NONE: break;
     #ifdef ESP8266

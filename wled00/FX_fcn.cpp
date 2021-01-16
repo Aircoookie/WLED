@@ -62,7 +62,7 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   }
 
   uint8_t pins[] = {2};
-  busses->add(supportWhite? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, countPixels);
+  busses->add(supportWhite? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, countPixels, COL_ORDER_GRB);
   
   _segments[0].start = 0;
   _segments[0].stop = _length;
@@ -418,18 +418,6 @@ void WS2812FX::setBrightness(uint8_t b) {
     {
       _segments[i].setOption(SEG_OPTION_FREEZE, false);
     }
-    #if LEDPIN == LED_BUILTIN
-      shouldStartBus = true;
-    #endif
-  } else {
-    #if LEDPIN == LED_BUILTIN
-      if (shouldStartBus) {
-        shouldStartBus = false;
-        const uint8_t ty = _useRgbw ? 2 : 1;
-        //TODO add re-init method for any bus type that uses GPIO2 on ESP8266 here
-        //bus->Begin((NeoPixelType)ty, _lengthRaw);
-      }
-    #endif
   }
   if (SEGENV.next_time > millis() + 22 && millis() - _lastShow > MIN_SHOW_DELAY) show();//apply brightness change immediately if no refresh soon
 }
