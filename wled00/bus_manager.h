@@ -92,13 +92,11 @@ class BusDigital : public Bus {
   }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
-    //TODO color order
-    PolyBus::setPixelColor(_busPtr, _iType, pix, c);
+    PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrder);
   }
 
   uint32_t getPixelColor(uint16_t pix) {
-    //TODO
-    return 0;
+    return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrder);
   }
 
   uint8_t getColorOrder() {
