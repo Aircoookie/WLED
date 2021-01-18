@@ -48,6 +48,7 @@ const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); 
 #define PWM_INDEX 0
 #endif
 
+//do not call this method from system context (network callback)
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
   if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
@@ -62,8 +63,11 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   }
 
   uint8_t pins[] = {2};
+
+  while (!busses->canAllShow()) yield();
+  busses->removeAll();
   busses->add(supportWhite? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, countPixels, COL_ORDER_GRB);
-  
+
   _segments[0].start = 0;
   _segments[0].stop = _length;
 

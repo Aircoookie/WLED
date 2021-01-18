@@ -195,10 +195,10 @@ void WLED::loop()
     handleHue();
     handleBlynk();
 
-    /*if (presetToApply) {
-      applyPreset(presetToApply);
-      presetToApply = 0;
-    }*/
+    if (doInitStrip) {
+      strip.init(useRGBW, ledCount, skipFirstLed);
+      doInitStrip = false;
+    }
 
     yield();
 
@@ -267,12 +267,9 @@ void WLED::setup()
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
 
-  //strip.init(EEPROM.read(372), ledCount, EEPROM.read(2204));        // init LEDs quickly
-  //strip.setBrightness(0);
 
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
-
 
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));

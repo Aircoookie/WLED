@@ -24,6 +24,8 @@
   Modified for WLED
 */
 
+#include "wled.h"
+
 #ifndef WS2812FX_h
 #define WS2812FX_h
 

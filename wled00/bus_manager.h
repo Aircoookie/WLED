@@ -30,7 +30,7 @@ class Bus {
   virtual void cleanup() {};
 
   virtual ~Bus() { //throw the bus under the bus
-    cleanup();
+    //Serial.println("Destructor!");
   }
 
   uint16_t getStart() {
@@ -85,7 +85,7 @@ class BusDigital : public Bus {
     _busPtr = PolyBus::create(_iType, _pins, _len);
     _valid = (_busPtr != nullptr);
     _colorOrder = colorOrder;
-    Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
+    //Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
   };
 
   void show() {
@@ -127,12 +127,17 @@ class BusDigital : public Bus {
   }
 
   void cleanup() {
+    //Serial.println("Digital Cleanup");
     PolyBus::cleanup(_busPtr, _iType);
     _iType = I_NONE;
     _valid = false;
     _busPtr = nullptr;
     pinManager.deallocatePin(_pins[0]);
     pinManager.deallocatePin(_pins[1]);
+  }
+
+  ~BusDigital() {
+    cleanup();
   }
 
   private: 
@@ -263,6 +268,7 @@ class BusManager {
   }
 
   void removeAll() {
+    //Serial.println("Removing all.");
     for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
     numBusses = 0;
   }
@@ -278,7 +284,7 @@ class BusManager {
     for (uint8_t i = 0; i < numBusses; i++) {
       Bus* b = busses[i];
       uint16_t bstart = b->getStart();
-      if (pix < bstart) continue;
+      if (pix < bstart || pix >= bstart + b->getLength()) continue;
       busses[i]->setPixelColor(pix - bstart, c);
     }
   }
@@ -301,7 +307,7 @@ class BusManager {
 
   bool canAllShow() {
     for (uint8_t i = 0; i < numBusses; i++) {
-      if (busses[i]->canShow()) return false;
+      if (!busses[i]->canShow()) return false;
     }
     return true;
   }

@@ -528,6 +528,7 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 
 // led fx library object
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
+WLED_GLOBAL bool doInitStrip _INIT(false);
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());

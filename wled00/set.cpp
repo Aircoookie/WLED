@@ -331,9 +331,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   
   #endif
   if (subPage != 6 || !doReboot) serializeConfig(); //do not save if factory reset
-  if (subPage == 2) {
-    strip.init(useRGBW,ledCount,skipFirstLed);
-  }
+  if (subPage == 2) doInitStrip = true;
   if (subPage == 4) alexaInit();
 }
 
