@@ -52,13 +52,53 @@
 				myC[i].style.display = (d.getElementById('rgbw').checked) ? 'inline':'none';
 			}
       
-      d.getElementById('ledwarning').style.display = (d.Sf.LC.value > 1000) ? 'inline':'none';
       d.getElementById('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
 	  
-	  if (d.Sf.LA.value == 255) laprev = 12;
-	  else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
-			
-			var val = Math.ceil((100 + d.Sf.LC.value * laprev)/500)/2;
+	    if (d.Sf.LA.value == 255) laprev = 12;
+	    else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
+      
+      var s = d.getElementsByTagName("select");
+      for (i=0; i<s.length; i++) {
+        if (s[i].name.substring(0,5)=="LTsel") {
+          n=s[i].name.substring(5);
+          d.getElementsByName("EW"+n)[0].checked = (parseInt(s[i].value)==30||parseInt(s[i].value)==54); // TYPE_xxxx values from const.h
+          var LK = d.getElementsByName("LK"+n)[0];
+          var o = d.getElementsByName("iLK");
+          n=(n==""?0:parseInt(n,10));
+          if (s[i].value>49 && s[i].value!=54) // TYPE_xxxx values from const.h
+          {
+              o[n].style = "display:inline;";
+              LK.required = true;
+          } else {
+              o[n].style = "display:none;";
+              LK.required = false;
+              LK.value="";
+          }
+        }
+      }
+
+      var LCs = d.getElementsByTagName("input");
+      var sLC = 0;
+      for (i=0; i<LCs.length; i++) {
+        var nm = LCs[i].name.substring(0,2);
+        if (nm=="LC") {sLC+=parseInt(LCs[i].value,10);continue;}
+        if (nm=="LP") {var lc=d.getElementsByName("LC"+LCs[i].name.substring(2))[0]; if(LCs[i].value==3) lc.max=500; else lc.max=1500;}
+        if (nm=="LP" || nm=="LK" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
+          if (LCs[i].value!="" && LCs[i].value!="-1") {
+            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert("Usermod pin clash!");LCs[i].value="";LCs[i].focus();continue;}
+            for (j=0; j<LCs.length; j++)
+            {
+              if (i==j) continue;
+              var n2 = LCs[j].name.substring(0,2);
+              if (n2=="LP" || n2=="LK" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
+                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert("Pin clash!");LCs[i].value="";LCs[i].focus();break;}
+            }
+          }
+      }
+      d.getElementById('ledwarning').style.display = (sLC > 1000) ? 'inline':'none';
+
+      //var val = Math.ceil((100 + d.Sf.LC.value * laprev)/500)/2;
+      var val = Math.ceil((100 + sLC * laprev)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
 			var s = "";
       var is12V = (d.Sf.LAsel.value == 30);
@@ -79,11 +119,91 @@
       s2 += "A is enough)<br>";
 			d.getElementById('psu').innerHTML = s;
       d.getElementById('psu2').innerHTML = isWS2815 ? "" : s2;
-		}
+    }
+    function addLEDs(n)
+    {
+      if (n>1) {d.maxST=n; d.getElementById("+").style="display:inline;"; return;}
+
+      var o = d.getElementsByName("iST");
+      var i = o.length;
+
+      if ((n==1 && i>=d.maxST) || (n==-1 && i<=1)) return;
+
+      var f = d.getElementById("mLC");
+      if (n==1) {
+        var s, t = d.createElement("div");
+        t.setAttribute("name","iST");
+
+        t.appendChild(d.createTextNode((i+1)+": "));
+
+        s = d.createElement("select");
+        s.setAttribute("name","LTsel"+i);
+        s.onchange = function(){UI()}
+        o = d.createElement("option"); o.text = "WS281x";  o.value = "22"; s.add(o);
+        o = d.createElement("option"); o.text = "SK6812";  o.value = "30"; s.add(o);
+        o = d.createElement("option"); o.text = "WS2801";  o.value = "50"; s.add(o);
+        o = d.createElement("option"); o.text = "APA102";  o.value = "51"; s.add(o);
+        o = d.createElement("option"); o.text = "LPD8806"; o.value = "52"; s.add(o);
+        o = d.createElement("option"); o.text = "P9813";   o.value = "53"; s.add(o);
+        o = d.createElement("option"); o.text = "TM1814";  o.value = "54"; s.add(o);
+        t.appendChild(s);
+
+        t.appendChild(d.createTextNode(" CO: "));
+        s = d.createElement("select");
+        s.setAttribute("name","CO"+i);
+        o = d.createElement("option"); o.text = "GRB"; o.value = "0"; s.add(o);
+        o = d.createElement("option"); o.text = "RGB"; o.value = "1"; s.add(o);
+        o = d.createElement("option"); o.text = "BRG"; o.value = "2"; s.add(o);
+        o = d.createElement("option"); o.text = "RBG"; o.value = "3"; s.add(o);
+        o = d.createElement("option"); o.text = "BGR"; o.value = "4"; s.add(o);
+        o = d.createElement("option"); o.text = "GBR"; o.value = "5"; s.add(o);
+        t.appendChild(s);
+
+        t.appendChild(d.createTextNode(" RGBW: "));
+        s = d.createElement("input");
+        s.type = "checkbox";
+        s.setAttribute("name","EW"+i);
+        t.appendChild(s);
+
+        t.appendChild(d.createElement("br"));
+
+        t.appendChild(d.createTextNode("pin:"));
+        var e = d.createElement("input");
+        e.type = "number"; e.value = ""; e.name = "LP"+i; e.min=0; e.max=40; e.required=true; e.onchange=function(){UI()};
+        t.appendChild(e);
+
+        var b = d.createElement("div");
+        b.setAttribute("name","iLK");
+        b.appendChild(d.createTextNode(" clk:"));
+        e = d.createElement("input");
+        e.type = "number"; e.value = ""; e.name = "LK"+i; e.min=0; e.max=40; e.onchange=function(){UI()};
+        if (d.getElementsByName("LTsel")[0].value>49) e.required = true;
+        b.appendChild(e);
+        t.appendChild(b);
+
+        t.appendChild(d.createTextNode(" count:"));
+        e = d.createElement("input");
+        e.type = "number"; e.value = "0"; e.name = "LC"+i; e.min=0; e.max=1000; e.required=true; e.oninput = function(){UI()};
+        t.appendChild(e);
+
+        t.appendChild(d.createElement("br"));
+        f.appendChild(t);
+      }
+      if (n==-1) {
+        o[--i].remove();--i;
+      }
+
+      var p = d.getElementById("+");
+      var m = d.getElementById("-");
+      if (i<d.maxST-1) {p.style="display:inline";} else {p.style="display:none";}
+      if (i>0) {m.style="display:inline";} else {m.style="display:none";}
+
+      UI();
+    }
 		function GetV()
 		{
-			//values injected by server while sending HTML
-		}
+      //values injected by server while sending HTML
+    }
 	</script>
 	<style>
 		@import url("style.css");
@@ -93,12 +213,44 @@
 	<form id="form_s" name="Sf" method="post">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
-		<h2>LED setup</h2>
-		LED count: <input name="LC" type="number" min="1" max="1500" oninput="UI()" required><br>
+    <h2>LED &amp; HW setup</h2>
+    LED strips
+    <button type="button" id="+" onclick="addLEDs(1)" style="display:none;">+</button><button type="button" id="-" onclick="addLEDs(-1)" style="display:none;">-</button><br>
+    <div id="mLC">
+      <div name="iST">
+      1:
+      <select name="LTsel" onchange="UI()">
+        <option value="22">WS281x</option><!--TYPE_WS2812_RGB-->
+        <option value="30">SK6812</option><!--TYPE_WS2812_RGB-->
+        <option value="50">WS2801</option><!--TYPE_WS2801-->
+        <option value="51">APA102</option><!--TYPE_APA102-->
+        <option value="52">LPD8806</option><!--TYPE_LPD8806-->
+        <option value="53">P9813</option><!--TYPE_P9813-->
+        <option value="54">TM1814</option><!--TYPE_TM1814-->
+      </select>
+      CO:
+      <select name="CO">
+        <option value=0>GRB</option>
+        <option value=1>RGB</option>
+        <option value=2>BRG</option>
+        <option value=3>RBG</option>
+        <option value=4>BGR</option>
+        <option value=5>GBR</option>
+      </select>
+      RGBW: <input type="checkbox" name="EW" onchange=UI() id="rgbw"><br>
+      pin:<input name="LP" type="number" min="0" max="40" required onchange="UI()">
+      <div name="iLK" style="display:inline;">clk:<input name="LK" type="number" min="0" max="40" onchange="UI()"></div>
+      count:<input name="LC" type="number" min="1" max="1500" oninput="UI()" required>
+      </div>
+    </div><hr>
+    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"> Active high? <input type="checkbox" name="RM"><br>
+    Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><br>
+    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><br>
+    AUX pin: <input type="number" min="-1" max="40" name="AX" onchange="UI()"><hr>
     <div id="ledwarning" style="color: orange; display: none;">
         &#9888; You might run into stability or lag issues.<br>
         Use less than 1000 LEDs per ESP for the best experience!<br>
-      </div>
+    </div>
 		<i>Recommended power supply for brightest white:</i><br>
 		<b><span id="psu">?</span></b><br>
     <span id="psu2"><br></span>
@@ -128,10 +280,9 @@
       <i>Keep at default if you are unsure about your type of LEDs.</i><br>
     </div>
     <br>
-		LEDs are 4-channel type (RGBW): <input type="checkbox" name="EW" onchange=UI() id="rgbw"><br>
     <span class="wc">
     Auto-calculate white channel from RGB:<br>
-    <select name=AW>
+    <select name="AW">
       <option value=0>None</option>
       <option value=1>Brighter</option>
       <option value=2>Accurate</option>
@@ -139,15 +290,6 @@
       <option value=4>Legacy</option>
     </select>
     <br></span>
-		Color order:
-		<select name="CO">
-			<option value=0>GRB</option>
-      <option value=1>RGB</option>
-      <option value=2>BRG</option>
-      <option value=3>RBG</option>
-      <option value=4>BGR</option>
-      <option value=5>GBR</option>
-		</select>
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
     Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>
@@ -180,7 +322,7 @@
 			<option value="3">None (not recommended)</option>
 		</select><br>
 		Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
-		Skip first LED: <input type="checkbox" name="SL"><hr>
+    Skip first LED: <input type="checkbox" name="SL"><hr>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
 </body>
