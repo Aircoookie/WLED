@@ -33,6 +33,8 @@ class Bus {
     //Serial.println("Destructor!");
   }
 
+  virtual uint8_t getPins(uint8_t* pinArray) { return 0; }
+
   uint16_t getStart() {
     return _start;
   }
@@ -59,6 +61,8 @@ class Bus {
     return _valid;
   }
 
+  bool reversed = false;
+
   protected:
   uint8_t _type = TYPE_NONE;
   uint8_t _bri = 255;
@@ -69,7 +73,7 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-  BusDigital(uint8_t type, uint8_t* pins, uint16_t start, uint16_t len, uint8_t colorOrder, uint8_t nr) : Bus(type, start) {
+  BusDigital(uint8_t type, uint8_t* pins, uint16_t start, uint16_t len, uint8_t colorOrder, uint8_t nr, bool rev) : Bus(type, start) {
     if (!IS_DIGITAL(type) || !len) return;
     _pins[0] = pins[0];
     if (!pinManager.allocatePin(_pins[0])) return;
@@ -80,6 +84,7 @@ class BusDigital : public Bus {
       }
     }
     _len = len;
+    reversed = rev;
     _iType = PolyBus::getI(type, _pins, nr);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len);
@@ -97,19 +102,23 @@ class BusDigital : public Bus {
   }
 
   void setBrightness(uint8_t b) {
-    //Fix for turning off onboard LED breaking bus
+    //Fix for turning off onboard LED breaking bus and quick fix for DMA not initializing correctly
     #ifdef LED_BUILTIN
-    if (_bri == 0 && b > 0 && (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN)) PolyBus::begin(_busPtr, _iType); 
+    if (_bri == 0 && b > 0) {
+      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN || (_pins[0] == 3 && _iType < 17)) PolyBus::begin(_busPtr, _iType); 
+    }
     #endif
     _bri = b;
     PolyBus::setBrightness(_busPtr, _iType, b);
   }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
+    if (reversed) pix = _len - pix -1;
     PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrder);
   }
 
   uint32_t getPixelColor(uint16_t pix) {
+    if (reversed) pix = _len - pix -1;
     return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrder);
   }
 
@@ -119,6 +128,12 @@ class BusDigital : public Bus {
 
   uint16_t getLength() {
     return _len;
+  }
+
+  uint8_t getPins(uint8_t* pinArray) {
+    uint8_t numPins = IS_2PIN(_type) ? 2 : 1;
+    for (uint8_t i = 0; i < numPins; i++) pinArray[i] = _pins[i];
+    return numPins;
   }
 
   void setColorOrder(uint8_t colorOrder) {
@@ -222,6 +237,12 @@ class BusPwm : public Bus {
     _bri = b;
   }
 
+  uint8_t getPins(uint8_t* pinArray) {
+    uint8_t numPins = NUM_PWM_PINS(_type);
+    for (uint8_t i = 0; i < numPins; i++) pinArray[i] = _pins[i];
+    return numPins;
+  }
+
   void cleanup() {
     deallocatePins();
   }
@@ -256,10 +277,10 @@ class BusManager {
 
   };
   
-  int add(uint8_t busType, uint8_t* pins, uint16_t start, uint16_t len = 1, uint8_t colorOrder = COL_ORDER_GRB) {
+  int add(uint8_t busType, uint8_t* pins, uint16_t start, uint16_t len = 1, uint8_t colorOrder = COL_ORDER_GRB, bool rev = false) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
     if (IS_DIGITAL(busType)) {
-      busses[numBusses] = new BusDigital(busType, pins, start, len, colorOrder, numBusses);
+      busses[numBusses] = new BusDigital(busType, pins, start, len, colorOrder, numBusses, rev);
     } else {
       busses[numBusses] = new BusPwm(busType, pins, start);
     }
