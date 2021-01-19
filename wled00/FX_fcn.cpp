@@ -62,7 +62,7 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
     _lengthRaw += LED_SKIP_AMOUNT;
   }
 
-  uint8_t pins[] = {2};
+  uint8_t pins[] = {LEDPIN};
 
   while (!busses->canAllShow()) yield();
   busses->removeAll();
@@ -72,6 +72,17 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   _segments[0].stop = _length;
 
   setBrightness(_brightness);
+
+  #ifdef ESP8266
+  for (uint8_t i = 0; i < busses->getNumBusses(); i++) {
+    Bus* b = busses->getBus(i);
+    if ((!IS_DIGITAL(b->getType()) || IS_2PIN(b->getType()))) continue;
+    uint8_t pins[5];
+    b->getPins(pins);
+    BusDigital* bd = static_cast<BusDigital*>(b);
+    if (pins[0] == 3) bd->reinit();
+  }
+  #endif
 }
 
 void WS2812FX::service() {

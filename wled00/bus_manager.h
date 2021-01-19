@@ -102,10 +102,10 @@ class BusDigital : public Bus {
   }
 
   void setBrightness(uint8_t b) {
-    //Fix for turning off onboard LED breaking bus and quick fix for DMA not initializing correctly
+    //Fix for turning off onboard LED breaking bus
     #ifdef LED_BUILTIN
     if (_bri == 0 && b > 0) {
-      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN || (_pins[0] == 3 && _iType < 17)) PolyBus::begin(_busPtr, _iType); 
+      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType); 
     }
     #endif
     _bri = b;
@@ -139,6 +139,10 @@ class BusDigital : public Bus {
   void setColorOrder(uint8_t colorOrder) {
     if (colorOrder > 5) return;
     _colorOrder = colorOrder;
+  }
+
+  void reinit() {
+    PolyBus::begin(_busPtr, _iType);
   }
 
   void cleanup() {
