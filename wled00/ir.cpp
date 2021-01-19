@@ -488,7 +488,7 @@ void initIR()
 {
   if (irEnabled > 0)
   {
-    irrecv = new IRrecv(IRPIN);
+    irrecv = new IRrecv(irPin);
     irrecv->enableIRIn();
   }
 }

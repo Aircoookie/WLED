@@ -285,8 +285,16 @@ void WLED::setup()
   updateFSInfo();
   deserializeConfig();
 
-#if STATUSLED && STATUSLED != LEDPIN
-  pinMode(STATUSLED, OUTPUT);
+#if STATUSLED
+  bool lStatusLed = false;
+  for (uint8_t i=0; i<strip.numStrips; i++) {
+    if (strip.getStripPin(i)==STATUSLED) {
+      lStatusLed = true;
+      break;
+    }
+  }
+  if (!lStatusLed)
+    pinMode(STATUSLED, OUTPUT);
 #endif
 
   //DEBUG_PRINTLN(F("Load EEPROM"));
@@ -299,7 +307,8 @@ void WLED::setup()
   WiFi.persistent(false);
   WiFi.onEvent(WiFiEvent);
 
-  Serial.println(F("Ada"));
+  // Serial.println(F("Ada"));
+  DEBUG_PRINTLN(F("Ada"));
 
   // generate module IDs
   escapedMac = WiFi.macAddress();
@@ -343,12 +352,6 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
-  #ifdef ESP8266
-  #if LEDPIN == 3
-    if (ledCount > MAX_LEDS_DMA)
-      ledCount = MAX_LEDS_DMA;        // DMA method uses too much ram
-  #endif
-  #endif
 
   if (ledCount > MAX_LEDS || ledCount == 0)
     ledCount = 30;
@@ -356,11 +359,6 @@ void WLED::beginStrip()
   strip.init(useRGBW, ledCount, skipFirstLed);
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
-
-#if defined(BTNPIN) && BTNPIN > -1
-  pinManager.allocatePin(BTNPIN, false);
-  pinMode(BTNPIN, INPUT_PULLUP);
-#endif
 
   if (bootPreset > 0) applyPreset(bootPreset);
   if (turnOnAtBoot) {
@@ -371,24 +369,13 @@ void WLED::beginStrip()
   }
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
-// init relay pin
-#if RLYPIN >= 0
-  pinManager.allocatePin(RLYPIN);
-  pinMode(RLYPIN, OUTPUT);
-#if RLYMDE
-  digitalWrite(RLYPIN, bri);
-#else
-  digitalWrite(RLYPIN, !bri);
-#endif
-#endif
+  // init relay pin
+  if (rlyPin>=0)
+    digitalWrite(rlyPin, (rlyMde ? bri : !bri));
 
   // disable button if it is "pressed" unintentionally
-#if (defined(BTNPIN) && BTNPIN > -1) || defined(TOUCHPIN)
-  if (isButtonPressed())
+  if (btnPin>=0 && isButtonPressed())
     buttonEnabled = false;
-#else
-  buttonEnabled = false;
-#endif
 }
 
 void WLED::initAP(bool resetAP)
@@ -419,7 +406,7 @@ void WLED::initAP(bool resetAP)
       udp2Connected = notifier2Udp.begin(udpPort2);
     }
     e131.begin(false, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
-  
+
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
   }
@@ -483,7 +470,7 @@ void WLED::initConnection()
   // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
   char hostname[25] = "wled-";
   prepareHostname(hostname);
-  
+
 #ifdef ESP8266
   WiFi.hostname(hostname);
 #endif
@@ -634,7 +621,13 @@ void WLED::handleConnection()
 
 void WLED::handleStatusLED()
 {
-  #if STATUSLED && STATUSLED != LEDPIN
+  #if STATUSLED
+  for (uint8_t s=0; s<strip.numStrips; s++) {
+    if (strip.getStripPin(s)==STATUSLED) {
+      return; // pin used for strip
+    }
+  }
+
   ledStatusType = WLED_CONNECTED ? 0 : 2;
   if (mqttEnabled && ledStatusType != 2) // Wi-Fi takes presendence over MQTT
     ledStatusType = WLED_MQTT_CONNECTED ? 0 : 4;
@@ -650,7 +643,7 @@ void WLED::handleStatusLED()
     #else
       digitalWrite(STATUSLED, LOW);
     #endif
-    
+
   }
   #endif
 }
