@@ -75,85 +75,50 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //LED SETTINGS
   if (subPage == 2)
   {
-    String LC=F("LC"), LP=F("LP"), LK=F("LK"), CO=F("CO"), LTsel=F("LTsel");
-    int8_t pin;
-    int t;
+    int t = 0;
 
-    // deallocate all pins
-    for (uint8_t s=0; s<busses->getNumBuses(); s++) {
-      Bus *bus = busses->getBus(s);
-      pinManager.deallocatePin(bus->getPins()[0]);
-      pinManager.deallocatePin(bus->getPins()[1]);
-    }
     if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
     #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
     #endif
     if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
-    // remove all busses
-    busses->removeAll();
+    //TODO remove all busses, but not in this system call
+    //busses->removeAll();
 
-    // initial bus
     uint8_t colorOrder, type;
-    uint8_t ledType = request->arg(LTsel).toInt();
     uint16_t length;
-    int8_t pins[2] = {-1,-1};
-    pins[0] = request->arg(LP).toInt();
-    if (pinManager.allocatePin(pins[0])) {
-      t = length = request->arg(LC).toInt();
-      if ( request->hasArg(LK.c_str()) ) {
-        pins[1] = (request->arg(LK)).length() > 0 ? request->arg(LK).toInt() : -1;
-        if (pinManager.allocatePin(pins[1])) {
-        } else {
-          // fallback
-          pins[1] = -1;
-        }
-      }
-      colorOrder = request->arg(CO).toInt();
-      type = request->arg(LTsel).toInt();
+    uint8_t pins[2] = {255, 255};
 
-      busses->add(type? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, length, colorOrder);
-    } else {
-      // fallback
-    }
-
-    // secondary busses
-    for (uint8_t i=1; i<WLED_MAX_BUSSES; i++) {
-      if ( request->hasArg((LP+i).c_str()) ) {
-        pins[0] = request->arg((LP+i).c_str()).toInt();
-        if (pinManager.allocatePin(pins[0])) {
-          if ( request->hasArg((LK+i).c_str()) ) {
-            pins[1] = (request->arg(LK+i)).length() > 0 ? request->arg((LK+i).c_str()).toInt() : -1;
-            if (pins[1]>=0) {
-              pinManager.allocatePin(pins[1]);
-            }
-          }
-        } else {
-          DEBUG_PRINTLN(F("Pin not ok."));
-          type = TYPE_NONE;
-          break; // pin not ok
-        }
-        type = request->arg((LTsel+i).c_str()).toInt();
-      } else {
-        DEBUG_PRINTLN("No data.");
-        type = TYPE_NONE;
-        break;  // no parameter
+    for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
+      char lp[4] = "LP"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9
+      char lk[4] = "LK"; lk[2] = 48+s; lk[3] = 0;
+      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0;
+      char co[4] = "CO"; co[2] = 48+s; co[3] = 0;
+      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0;
+      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0;
+      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0;
+      if (!request->hasArg(lp)) {
+        DEBUG_PRINTLN("No data."); break;
       }
-      if ( request->hasArg((LC+i).c_str()) && request->arg((LC+i).c_str()).toInt() > 0 ) {
-        t += lenght = request->arg((LC+i).c_str()).toInt();
+      pins[0] = request->arg(lp).toInt();
+      if ( request->hasArg(lk) ) {
+        pins[1] = (request->arg(lk).length() > 0) ? request->arg(lk).toInt() : 255;
+      }
+      type = request->arg(lt).toInt();
+      
+      if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
+        length = request->arg(lc).toInt();
       } else {
         type = TYPE_NONE;
         break;  // no parameter
       }
-      colorOrder = request->arg((CO+i).c_str()).toInt();
-      busses->add(type? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, length, colorOrder);
+      colorOrder = request->arg(co).toInt();
+      //busses.add(type, pins, 0, length, colorOrder, request->hasArg(cv));
     }
 
-    // what to do with these?
+    ledCount = request->arg(F("LC")).toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
-    #ifdef ESP8266
-    if ( pinManager.isPinAllocated(3) && ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
-    #endif
+    //DMA method uses too much ram, TODO: limit!
 
     // upate other pins
     #ifndef WLED_DISABLE_INFRARED

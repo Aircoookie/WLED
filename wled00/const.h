@@ -205,4 +205,9 @@
   #define JSON_BUFFER_SIZE 16384
 #endif
 
+//this is merely a default now and can be changed at runtime
+#ifndef LEDPIN
+#define LEDPIN 2
+#endif
+
 #endif

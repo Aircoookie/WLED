@@ -292,8 +292,11 @@ class BusManager {
     return numBusses -1;
   }
 
+  //do not call this method from system context (network callback)
   void removeAll() {
     //Serial.println("Removing all.");
+    //prevents crashes due to deleting busses while in use. 
+    while (!canAllShow()) yield();
     for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
     numBusses = 0;
   }
@@ -344,6 +347,12 @@ class BusManager {
 
   uint8_t getNumBusses() {
     return numBusses;
+  }
+
+  static bool isRgbw(uint8_t type) {
+    if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
+    if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
+    return false;
   }
 
   private:

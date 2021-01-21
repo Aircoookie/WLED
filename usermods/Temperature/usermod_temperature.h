@@ -97,19 +97,14 @@ class UsermodTemperature : public Usermod {
     }
 
     void loop() {
-      if (disabled || strip.isUpdating()) {
-        return;
-      }
+      if (disabled || strip.isUpdating()) return;
       
       unsigned long now = millis();
 
       // check to see if we are due for taking a measurement
       // lastMeasurement will not be updated until the conversion
       // is complete the the reading is finished
-      if (now - lastMeasurement < USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL)
-      {
-        return;
-      }
+      if (now - lastMeasurement < USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL) return;
 
       // we are due for a measurement, if we are not already waiting 
       // for a conversion to complete, then make a new request for temps
@@ -142,9 +137,7 @@ class UsermodTemperature : public Usermod {
 
     void addToJsonInfo(JsonObject& root) {
       // dont add temperature to info if we are disabled
-      if (disabled) {
-        return;
-      }
+      if (disabled) return;
 
       JsonObject user = root[F("u")];
       if (user.isNull()) user = root.createNestedObject(F("u"));
@@ -171,32 +164,6 @@ class UsermodTemperature : public Usermod {
       #else
       temp.add(F("°F"));
       #endif
-    }
-
-    /**
-     * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     * Add "pin_Temperature" to json state. This can be used to check which GPIO pin usermod uses.
-     */
-    void addToJsonState(JsonObject &root)
-    {
-      root[F("pin_Temperature")] = TEMPERATURE_PIN;
-    }
-
-    /**
-     * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
-     * Values in the state object may be modified by connected clients
-     * Read "pin_Temperature" from json state and and change GPIO pin used.
-     */
-    void readFromJsonState(JsonObject &root)
-    {
-      /*
-      if (root[F("pin_Temperature")] != nullptr)
-      {
-        if (pinManager.allocatePin((int)root[F("pin_Temperature")],false))
-          temperaturePin = (int)root["PIRenabled"];
-      }
-      */
     }
 
     uint16_t getId()

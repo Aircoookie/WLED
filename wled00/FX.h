@@ -29,12 +29,6 @@
 #ifndef WS2812FX_h
 #define WS2812FX_h
 
-#ifdef ESP32_MULTISTRIP
-  #include "../usermods/esp32_multistrip/NpbWrapper.h"
-#else
-  #include "bus_manager.h"
-#endif
-
 #include "const.h"
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
@@ -586,7 +580,6 @@ class WS2812FX {
       ablMilliampsMax = 850;
       currentMilliamps = 0;
       timebase = 0;
-      busses = new BusManager();
       resetSegments();
     }
 
@@ -804,8 +797,6 @@ class WS2812FX {
       mode_dynamic_smooth(void);
 
   private:
-    BusManager *busses;
-
     uint32_t crgb_to_col(CRGB fastled);
     CRGB col_to_crgb(uint32_t);
     CRGBPalette16 currentPalette;

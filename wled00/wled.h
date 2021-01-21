@@ -116,6 +116,7 @@
 #include "ir_codes.h"
 #include "const.h"
 #include "pin_manager.h"
+#include "bus_manager.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
@@ -549,13 +550,12 @@ WLED_GLOBAL ESPAsyncE131 e131 _INIT_N(((handleE131Packet)));
 WLED_GLOBAL bool e131NewData _INIT(false);
 
 // led fx library object
+WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
 WLED_GLOBAL bool doInitStrip _INIT(false);
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
-
-WLED_GLOBAL PinManagerClass pinManager _INIT(PinManagerClass());
 
 // Status LED
 #if STATUSLED

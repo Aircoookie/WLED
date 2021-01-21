@@ -46,10 +46,11 @@
     }
 		function UI()
 		{
+      var isRGBW = false; //TODO check all strips for rgbw (old d.getElementById('rgbw').checked)
 			var myC = d.querySelectorAll('.wc'),
 			l = myC.length;
 			for (i = 0; i < l; i++) {
-				myC[i].style.display = (d.getElementById('rgbw').checked) ? 'inline':'none';
+				myC[i].style.display = (isRGBW) ? 'inline':'none';
 			}
       
       d.getElementById('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
@@ -59,8 +60,8 @@
       
       var s = d.getElementsByTagName("select");
       for (i=0; i<s.length; i++) {
-        if (s[i].name.substring(0,5)=="LTsel") {
-          n=s[i].name.substring(5);
+        if (s[i].name.substring(0,2)=="LT") {
+          n=s[i].name.substring(3);
           d.getElementsByName("EW"+n)[0].checked = (parseInt(s[i].value)==30||parseInt(s[i].value)==54); // TYPE_xxxx values from const.h
           var LK = d.getElementsByName("LK"+n)[0];
           var o = d.getElementsByName("iLK");
@@ -127,7 +128,7 @@
       var o = d.getElementsByName("iST");
       var i = o.length;
 
-      if ((n==1 && i>=d.maxST) || (n==-1 && i<=1)) return;
+      if ((n==1 && i>=d.maxST) || (n==-1 && i==0)) return;
 
       var f = d.getElementById("mLC");
       if (n==1) {
@@ -137,7 +138,7 @@
         t.appendChild(d.createTextNode((i+1)+": "));
 
         s = d.createElement("select");
-        s.setAttribute("name","LTsel"+i);
+        s.setAttribute("name","LT"+i);
         s.onchange = function(){UI()}
         o = d.createElement("option"); o.text = "WS281x";  o.value = "22"; s.add(o);
         o = d.createElement("option"); o.text = "SK6812";  o.value = "30"; s.add(o);
@@ -177,7 +178,7 @@
         b.appendChild(d.createTextNode(" clk:"));
         e = d.createElement("input");
         e.type = "number"; e.value = ""; e.name = "LK"+i; e.min=0; e.max=40; e.onchange=function(){UI()};
-        if (d.getElementsByName("LTsel")[0].value>49) e.required = true;
+        //if (d.getElementsByName("LT"+i)[0].value>49) e.required = true;
         b.appendChild(e);
         t.appendChild(b);
 
@@ -214,34 +215,12 @@
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
     <h2>LED &amp; HW setup</h2>
+    Total LED count: <input name="LC" type="number" min="1" max="1500" oninput="UI()" required><br>
+
     LED strips
-    <button type="button" id="+" onclick="addLEDs(1)" style="display:none;">+</button><button type="button" id="-" onclick="addLEDs(-1)" style="display:none;">-</button><br>
+    <button type="button" id="+" onclick="addLEDs(1)" style="display:none;">+</button><button type="button" id="-" onclick="addLEDs(-1)" style="display:none;"> - </button><br>
     <div id="mLC">
-      <div name="iST">
-      1:
-      <select name="LTsel" onchange="UI()">
-        <option value="22">WS281x</option><!--TYPE_WS2812_RGB-->
-        <option value="30">SK6812</option><!--TYPE_WS2812_RGB-->
-        <option value="50">WS2801</option><!--TYPE_WS2801-->
-        <option value="51">APA102</option><!--TYPE_APA102-->
-        <option value="52">LPD8806</option><!--TYPE_LPD8806-->
-        <option value="53">P9813</option><!--TYPE_P9813-->
-        <option value="54">TM1814</option><!--TYPE_TM1814-->
-      </select>
-      CO:
-      <select name="CO">
-        <option value=0>GRB</option>
-        <option value=1>RGB</option>
-        <option value=2>BRG</option>
-        <option value=3>RBG</option>
-        <option value=4>BGR</option>
-        <option value=5>GBR</option>
-      </select>
-      RGBW: <input type="checkbox" name="EW" onchange=UI() id="rgbw"><br>
-      pin:<input name="LP" type="number" min="0" max="40" required onchange="UI()">
-      <div name="iLK" style="display:inline;">clk:<input name="LK" type="number" min="0" max="40" onchange="UI()"></div>
-      count:<input name="LC" type="number" min="1" max="1500" oninput="UI()" required>
-      </div>
+      Loading...
     </div><hr>
     Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"> Active high? <input type="checkbox" name="RM"><br>
     Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><br>
