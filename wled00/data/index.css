@@ -49,8 +49,8 @@ body {
 				-ms-user-select: none;
 						user-select: none;
 	-webkit-tap-highlight-color: transparent;
-  scrollbar-width: 6px;
-  scrollbar-color: var(--c-sb) transparent;
+	scrollbar-width: 6px;
+	scrollbar-color: var(--c-sb) transparent;
 }
 
 html,
@@ -272,7 +272,7 @@ button {
 	padding-top: 0;
 	margin-top: 11px;
 	height: calc(100% - 11px);
-  -webkit-overflow-scrolling: touch;
+	-webkit-overflow-scrolling: touch;
 }
 
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
@@ -318,7 +318,7 @@ button {
 
 #fxb0 {
 	margin-bottom: 2px;
-  filter: drop-shadow(0 0 1px #000);
+	filter: drop-shadow(0 0 1px #000);
 }
 
 .first {
@@ -449,16 +449,16 @@ img {
 }
 
 .sliderbubble {
-    width: 36px;
-    line-height: 24px;
-    background: var(--c-3);
-    position: absolute;
-    transform: translateX(-50%);
-    border-radius: 12px;
-    margin-left: 12px;
-    margin-top: 3px;
-    padding: 0px;
-    display: inline;
+  width: 36px;
+  line-height: 24px;
+  background: var(--c-3);
+  position: absolute;
+  transform: translateX(-50%);
+  border-radius: 12px;
+  margin-left: 12px;
+  margin-top: 3px;
+  padding: 0px;
+  display: inline;
 }
 
 .hidden {
@@ -651,7 +651,7 @@ textarea {
 }
 
 ::selection {
-  background: var(--c-b);
+	background: var(--c-b);
 }
 
 input[type=text] {
@@ -701,13 +701,13 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .pid {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  padding: 11px 0px 0px 11px;
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	padding: 11px 0px 0px 11px;
+	font-size: 16px;
+	width: 20px;
+	text-align: center;
 	color: var(--c-b);
 }
 
@@ -988,6 +988,7 @@ input[type="text"].search:focus {
 
 input[type="text"].search:not(:placeholder-shown) {
 	background-color: var(--c-5);
+	filter: brightness(1);
 }
 
 .pres {
@@ -1033,8 +1034,8 @@ input[type="text"].search:not(:placeholder-shown) {
 
 @media all and (max-width: 335px) {
 	.sliderbubble {
-    display: none;
-  }
+		display: none;
+	}
 }
 
 @media all and (max-width: 550px) and (min-width: 374px) {
