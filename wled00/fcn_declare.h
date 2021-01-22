@@ -187,6 +187,8 @@ void notify(byte callMode, bool followUp=false);
 void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
+void refreshNodeList();
+void sendSysInfoUDP(uint8_t repeats=1);
 
 //um_manager.cpp
 class Usermod {

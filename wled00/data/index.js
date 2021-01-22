@@ -463,6 +463,16 @@ function populateInfo(i)
       }
     }
   }
+	if (i.nodes) {
+		for (var x=0;x<i.nodes.length;x++)
+		{
+			var o = i.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${o.name}</button>`;
+				urows += inforow(url,o.type);
+			}
+		}
+	}
 	var vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.11.")) vcn = "Mirai";
 	if (i.cn) vcn = i.cn;

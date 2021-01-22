@@ -533,6 +533,24 @@ void serializeInfo(JsonObject root)
   root[F("brand")] = "WLED";
   root[F("product")] = F("FOSS");
   root["mac"] = escapedMac;
+
+  JsonArray nodes = root.createNestedArray("nodes");
+  IPAddress ip = WiFi.localIP();
+  for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it)
+  {
+    if (it->second.ip[0] != 0)
+    {
+      bool isThisUnit = it->first == ip[3];
+
+      if (isThisUnit) continue;
+
+      JsonObject node = nodes.createNestedObject();
+      node[F("name")] = it->second.nodeName;
+      node[F("type")] = getNodeTypeDisplayString(it->second.nodeType);
+      node[F("ip")]   = it->second.ip.toString();
+      node[F("age")]  = it->second.age;
+    }
+  }
 }
 
 void serveJson(AsyncWebServerRequest* request)

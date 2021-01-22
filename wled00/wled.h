@@ -115,6 +115,7 @@
 #include "FX.h"
 #include "ir_codes.h"
 #include "const.h"
+#include "NodeStruct.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
@@ -232,6 +233,8 @@ WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 // Sync CONFIG
+WLED_GLOBAL NodesMap Nodes;
+
 WLED_GLOBAL bool buttonEnabled  _INIT(true);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
