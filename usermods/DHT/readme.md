@@ -10,7 +10,7 @@ Copy the example `platformio_override.ini` to the root directory.  This file sho
 
 You might need to change the file `wled00\usermods_list.cpp` to add this usermod as shown in the file `usermods\DHT\usermods_list.cpp`
 
-##$ TIP
+### TIP
 
 I could only get this to work with the flag `-D DHT_DEBUG` enabled, otherwise the DHT module lib would not load with the usermod.
 
