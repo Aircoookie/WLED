@@ -307,7 +307,7 @@ button {
 	top: -1px;
 	z-index: 1;
 	margin-top: 1px;
-	width: 272px;
+	width: auto;
 	margin: auto;
 	border-radius: 25px;
 }
@@ -449,20 +449,23 @@ img {
 }
 
 .sliderbubble {
-  width: 36px;
-  line-height: 24px;
-  background: var(--c-3);
-  position: absolute;
-  transform: translateX(-50%);
-  border-radius: 12px;
-  margin-left: 12px;
-  margin-top: 3px;
-  padding: 0px;
-  display: inline;
+	width: 24px;
+	position: relative;
+	display: inline-block;
+	border-radius: 4px;
+	background: var(--c-3);
+	color: white;
+	padding: 2px 5px;
+	font-size: 14px;
+	right: 5px;
+	transition: visibility 0.25s ease, opacity 0.25s ease;
+	opacity: 0;
+	visibility: hidden;
 }
 
-.hidden {
-	display: none;
+output.sliderbubbleshow {
+	visibility: visible;
+	opacity: 1;
 }
 
 input[type=range] {
@@ -503,10 +506,6 @@ input[type=range]::-moz-range-thumb {
 	border-radius: 17px;
 	background: var(--c-f);
 	transform: translateY(7px);
-}
-input[type=range]:active + .sliderbubble {
-	display: inline;
-	transform: translateX(-50%);
 }
 
 #wwrap {
@@ -1030,6 +1029,13 @@ input[type="text"].search:not(:placeholder-shown) {
 }
 ::-webkit-scrollbar-thumb:hover {
 	background: var(--c-sbh);
+}
+
+@media not all and (hover: none) {
+	.sliderwrap:hover + output.sliderbubble {
+		visibility: visible;
+		opacity: 1;
+	}
 }
 
 @media all and (max-width: 335px) {

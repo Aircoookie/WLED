@@ -36,6 +36,7 @@
 					<input id="sliderBri" onchange="setBri()" oninput="updateTrail(this)" max="255" min="1" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
+				<output class="sliderbubble"></output>
 			</div>
 		</div>
 		<iframe id="liveview" src="about:blank"></iframe>
@@ -46,18 +47,30 @@
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
 		<div id="rgbwrap">
-			<div class="sliderwrap il">
-				<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
-			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
-			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
-			</div><br>
+			<div id="rwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
+		  </div>
+			<br>
+			<div id="gwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
+			</div>
+			<br>
+			<div id="bwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
+			</div>
+			<br>
 		</div>
 		<div id="wwrap">
 			<p class="labels">White channel</p>
@@ -65,6 +78,7 @@
 				<input id="sliderW" class="noslide" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
+			<output class="sliderbubble"></output>
 		</div>
 		<div id="qcs-w">
 			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
@@ -124,18 +138,18 @@
 			<i class="icons slider-icon">&#xe325;</i>
 			<div class="sliderwrap il">
 				<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<output class="sliderbubble hidden"></output>
 				<div class="sliderdisplay"></div>
 			</div>
+			<output class="sliderbubble"></output>
 		</div>
 		<p class="labels">Effect intensity</p>
 		<div class="staytop" id="staytop1">
 			<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
 			<div class="sliderwrap il">
 				<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<output class="sliderbubble hidden"></output>
 				<div class="sliderdisplay"></div>
 			</div>
+			<output class="sliderbubble"></output>
 		</div>
 		<p class="labels">Effect mode</p>
 		<div id="fxlist" class="list">

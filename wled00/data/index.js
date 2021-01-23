@@ -202,7 +202,6 @@ function onLoad() {
 	if (localStorage.getItem('pcm') == "true") togglePcMode(true);
 	var sls = d.querySelectorAll('input[type="range"]');
 	for (var sl of sls) {
-		sl.addEventListener('input', updateBubble, true);
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
@@ -790,20 +789,14 @@ function updateTrail(e, slidercol)
 	}
 	var val = `linear-gradient(90deg, ${scol} ${progress}%, var(--c-4) ${progress}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
-}
-
-function updateBubble(e)
-{
-	var bubble = e.target.parentNode.getElementsByTagName('output')[0];
-
-	if (bubble) {
-		bubble.innerHTML = e.target.value;
-	}
+	var bubble = e.parentNode.parentNode.getElementsByTagName('output')[0];
+	if (bubble) bubble.innerHTML = e.value;
 }
 
 function toggleBubble(e)
 {
-	e.target.parentNode.querySelector('output').classList.toggle('hidden');
+	var bubble = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
+	bubble.classList.toggle('sliderbubbleshow');
 }
 
 function updateLen(s)
