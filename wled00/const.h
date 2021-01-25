@@ -163,6 +163,9 @@
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
 #define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
+#define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
+#define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
+#define ERR_UNDERVOLT   32  // An attached voltmeter has measured a voltage below the threshold (not implemented)
 
 //Timer mode types
 #define NL_MODE_SET               0            //After nightlight time elapsed, set to target brightness

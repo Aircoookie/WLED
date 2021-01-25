@@ -61,17 +61,16 @@
       var s = d.getElementsByTagName("select");
       for (i=0; i<s.length; i++) {
         if (s[i].name.substring(0,2)=="LT") {
-          n=s[i].name.substring(3);
-          d.getElementsByName("EW"+n)[0].checked = (parseInt(s[i].value)==30||parseInt(s[i].value)==54); // TYPE_xxxx values from const.h
+          n=s[i].name.substring(2);
           var LK = d.getElementsByName("LK"+n)[0];
           var o = d.getElementsByName("iLK");
           n=(n==""?0:parseInt(n,10));
           if (s[i].value>49 && s[i].value!=54) // TYPE_xxxx values from const.h
           {
-              o[n].style = "display:inline;";
+              o[n].style.display = "inline";
               LK.required = true;
           } else {
-              o[n].style = "display:none;";
+              o[n].style.display = "none";
               LK.required = false;
               LK.value="";
           }
@@ -123,7 +122,7 @@
     }
     function addLEDs(n)
     {
-      if (n>1) {d.maxST=n; d.getElementById("+").style="display:inline;"; return;}
+      if (n>1) {d.maxST=n; d.getElementById("+").style.display="inline"; return;}
 
       var o = d.getElementsByName("iST");
       var i = o.length;
@@ -141,7 +140,7 @@
         s.setAttribute("name","LT"+i);
         s.onchange = function(){UI()}
         o = d.createElement("option"); o.text = "WS281x";  o.value = "22"; s.add(o);
-        o = d.createElement("option"); o.text = "SK6812";  o.value = "30"; s.add(o);
+        o = d.createElement("option"); o.text = "SK6812 RGBW";  o.value = "30"; s.add(o);
         o = d.createElement("option"); o.text = "WS2801";  o.value = "50"; s.add(o);
         o = d.createElement("option"); o.text = "APA102";  o.value = "51"; s.add(o);
         o = d.createElement("option"); o.text = "LPD8806"; o.value = "52"; s.add(o);
@@ -160,29 +159,23 @@
         o = d.createElement("option"); o.text = "GBR"; o.value = "5"; s.add(o);
         t.appendChild(s);
 
-        t.appendChild(d.createTextNode(" RGBW: "));
-        s = d.createElement("input");
-        s.type = "checkbox";
-        s.setAttribute("name","EW"+i);
-        t.appendChild(s);
-
         t.appendChild(d.createElement("br"));
 
-        t.appendChild(d.createTextNode("pin:"));
+        t.appendChild(d.createTextNode("Pin: "));
         var e = d.createElement("input");
         e.type = "number"; e.value = ""; e.name = "LP"+i; e.min=0; e.max=40; e.required=true; e.onchange=function(){UI()};
         t.appendChild(e);
 
         var b = d.createElement("div");
         b.setAttribute("name","iLK");
-        b.appendChild(d.createTextNode(" clk:"));
+        b.appendChild(d.createTextNode(" Clk: "));
         e = d.createElement("input");
         e.type = "number"; e.value = ""; e.name = "LK"+i; e.min=0; e.max=40; e.onchange=function(){UI()};
         //if (d.getElementsByName("LT"+i)[0].value>49) e.required = true;
         b.appendChild(e);
         t.appendChild(b);
 
-        t.appendChild(d.createTextNode(" count:"));
+        t.appendChild(d.createTextNode(" Count: "));
         e = d.createElement("input");
         e.type = "number"; e.value = "0"; e.name = "LC"+i; e.min=0; e.max=1000; e.required=true; e.oninput = function(){UI()};
         t.appendChild(e);
@@ -194,16 +187,17 @@
         o[--i].remove();--i;
       }
 
-      var p = d.getElementById("+");
-      var m = d.getElementById("-");
-      if (i<d.maxST-1) {p.style="display:inline";} else {p.style="display:none";}
-      if (i>0) {m.style="display:inline";} else {m.style="display:none";}
+      d.getElementById("+").style.display = (i<d.maxST-1) ? "inline":"none";
+      d.getElementById("-").style.display = (i>0) ? "inline":"none";
 
       UI();
     }
 		function GetV()
 		{
       //values injected by server while sending HTML
+      var d=document;
+      d.um_p=[];addLEDs(3);d.Sf.LC.max=1536;d.Sf.LC.value=120;addLEDs(1);d.Sf.LP0.value=2;d.Sf.LC0.value=120;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.MA.value=5400;d.Sf.LA.value=0;d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RV.checked=0;d.Sf.SL.checked=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;d.Sf.BT.value=0;d.Sf.IR.value=-1;d.Sf.AX.value=-1;
+
     }
 	</script>
 	<style>
@@ -214,51 +208,40 @@
 	<form id="form_s" name="Sf" method="post">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
-    <h2>LED &amp; HW setup</h2>
+    <h2>LED &amp; Hardware setup</h2>
     Total LED count: <input name="LC" type="number" min="1" max="1500" oninput="UI()" required><br>
-
-    LED strips
-    <button type="button" id="+" onclick="addLEDs(1)" style="display:none;">+</button><button type="button" id="-" onclick="addLEDs(-1)" style="display:none;"> - </button><br>
-    <div id="mLC">
-      Loading...
-    </div><hr>
-    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"> Active high? <input type="checkbox" name="RM"><br>
-    Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><br>
-    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><br>
-    AUX pin: <input type="number" min="-1" max="40" name="AX" onchange="UI()"><hr>
     <div id="ledwarning" style="color: orange; display: none;">
-        &#9888; You might run into stability or lag issues.<br>
-        Use less than 1000 LEDs per ESP for the best experience!<br>
+      &#9888; You might run into stability or lag issues.<br>
+      Use less than 1000 LEDs per ESP for the best experience!<br>
+  </div>
+  <i>Recommended power supply for brightest white:</i><br>
+  <b><span id="psu">?</span></b><br>
+  <span id="psu2"><br></span>
+  <br>
+  Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
+  <div id="abl">
+    Maximum Current: <input name="MA" type="number" min="250" max="65000" oninput="UI()" required> mA<br>
+    <div id="ampwarning" style="color: orange; display: none;">
+      &#9888; Your power supply provides high current.<br>
+      To improve the safety of your setup,<br>
+      please use thick cables,<br>
+      multiple power injection points and a fuse!<br>
     </div>
-		<i>Recommended power supply for brightest white:</i><br>
-		<b><span id="psu">?</span></b><br>
-    <span id="psu2"><br></span>
-    <br>
-    Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
-    <div id="abl">
-      Maximum Current: <input name="MA" type="number" min="250" max="65000" oninput="UI()" required> mA<br>
-      <div id="ampwarning" style="color: orange; display: none;">
-        &#9888; Your power supply provides high current.<br>
-        To improve the safety of your setup,<br>
-        please use thick cables,<br>
-        multiple power injection points and a fuse!<br>
-      </div>
-      <i>Automatically limits brightness to stay close to the limit.<br>
-      Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
-      If you are using an external power supply, enter its rating.<br>
-      (Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
-      LED voltage (Max. current for a single LED):<br>
-      <select name="LAsel" onchange="enLA()">
-        <option value="55" selected>5V default (55mA)</option>
-        <option value="35">5V efficient (35mA)</option>
-        <option value="30">12V (30mA)</option>
-        <option value="255">WS2815 (12mA)</option>
-        <option value="50">Custom</option>
-      </select><br>
-      <span id="LAdis" style="display: none;">Custom max. current per LED: <input name="LA" type="number" min="0" max="255" id="la" oninput="UI()" required> mA<br></span>
-      <i>Keep at default if you are unsure about your type of LEDs.</i><br>
-    </div>
-    <br>
+    <i>Automatically limits brightness to stay close to the limit.<br>
+    Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
+    If you are using an external power supply, enter its rating.<br>
+    (Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
+    LED voltage (Max. current for a single LED):<br>
+    <select name="LAsel" onchange="enLA()">
+      <option value="55" selected>5V default (55mA)</option>
+      <option value="35">5V efficient (35mA)</option>
+      <option value="30">12V (30mA)</option>
+      <option value="255">WS2815 (12mA)</option>
+      <option value="50">Custom</option>
+    </select><br>
+    <span id="LAdis" style="display: none;">Custom max. current per LED: <input name="LA" type="number" min="0" max="255" id="la" oninput="UI()" required> mA<br></span>
+    <i>Keep at default if you are unsure about your type of LEDs.</i><br>
+  </div>
     <span class="wc">
     Auto-calculate white channel from RGB:<br>
     <select name="AW">
@@ -269,6 +252,14 @@
       <option value=4>Legacy</option>
     </select>
     <br></span>
+    <h3>Hardware setup</h3>
+    <div id="mLC">LED outputs:</div>
+    <button type="button" id="+" onclick="addLEDs(1)" style="display:none;border-radius:20px;height:36px;">+</button>
+    <button type="button" id="-" onclick="addLEDs(-1)" style="display:none;border-radius:20px;width:36px;height:36px;">-</button><br><br>
+    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"> Active high? <input type="checkbox" name="RM"><br>
+    Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><br>
+    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><br>
+    AUX pin: <input type="number" min="-1" max="40" name="AX" onchange="UI()">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
     Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>

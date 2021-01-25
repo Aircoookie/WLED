@@ -290,11 +290,13 @@ void getSettingsJS(byte subPage, char* dest)
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++){
       Bus* bus = busses.getBus(s);
-      char lp[4] = "LP"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9
-      char lk[4] = "LK"; lk[2] = 48+s; lp[3] = 0;
-      char lc[4] = "LC"; lc[2] = 48+s; lp[3] = 0;
-      char co[4] = "CO"; co[2] = 48+s; lp[3] = 0;
-      char lt[4] = "LT"; lt[2] = 48+s; lp[3] = 0;
+      char lp[4] = "LP"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lk[4] = "LK"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
+      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -303,6 +305,8 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v', lc, bus->getLength());
       sappend('v',lt,bus->getType());
       sappend('v',co,bus->getColorOrder());
+      sappend('v',ls,bus->getStart());
+      sappend('c',ls,bus->reversed);
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
@@ -315,7 +319,7 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     sappend('v',SET_F("CA"),briS);
-    sappend('c',SET_F("EW"),useRGBW);
+    //sappend('c',SET_F("EW"),useRGBW);
     //sappend('i',SET_F("CO"),strip.getColorOrder());
     sappend('v',SET_F("AW"),strip.rgbwMode);
 

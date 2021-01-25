@@ -86,22 +86,22 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     //busses->removeAll();
 
     uint8_t colorOrder, type;
-    uint16_t length;
+    uint16_t length, start;
     uint8_t pins[2] = {255, 255};
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
-      char lp[4] = "LP"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9
-      char lk[4] = "LK"; lk[2] = 48+s; lk[3] = 0;
-      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0;
-      char co[4] = "CO"; co[2] = 48+s; co[3] = 0;
-      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0;
-      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0;
-      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0;
+      char lp[4] = "LP"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lk[4] = "LK"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
+      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN("No data."); break;
       }
       pins[0] = request->arg(lp).toInt();
-      if ( request->hasArg(lk) ) {
+      if (request->hasArg(lk)) {
         pins[1] = (request->arg(lk).length() > 0) ? request->arg(lk).toInt() : 255;
       }
       type = request->arg(lt).toInt();
@@ -113,7 +113,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         break;  // no parameter
       }
       colorOrder = request->arg(co).toInt();
-      //busses.add(type, pins, 0, length, colorOrder, request->hasArg(cv));
+      start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
+      //busses.add(type, pins, start, length, colorOrder, request->hasArg(cv));
     }
 
     ledCount = request->arg(F("LC")).toInt();
