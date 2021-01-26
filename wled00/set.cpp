@@ -90,8 +90,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     uint8_t pins[2] = {255, 255};
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
-      char lp[4] = "LP"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
-      char lk[4] = "LK"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
+      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lk[4] = "L1"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
       char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
