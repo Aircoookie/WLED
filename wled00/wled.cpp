@@ -195,9 +195,15 @@ void WLED::loop()
     handleHue();
     handleBlynk();
 
-    if (ledDoc != nullptr) {
-      initBusInstances(ledDoc->as<JsonArray>());
-      delete ledDoc; ledDoc = nullptr;
+    //LED settings have been saved, re-init busses
+    if (busConfigs[0] != nullptr) {
+      busses.removeAll();
+      for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
+        if (busConfigs[i] == nullptr) break;
+        busses.add(*busConfigs[i]);
+        delete busConfigs[i]; busConfigs[i] = nullptr;
+      }
+      strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
     }
 
     yield();
@@ -356,7 +362,7 @@ void WLED::beginStrip()
   if (ledCount > MAX_LEDS || ledCount == 0)
     ledCount = 30;
 
-  strip.init(useRGBW, ledCount, skipFirstLed);
+  strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 

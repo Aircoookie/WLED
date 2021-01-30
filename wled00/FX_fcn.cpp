@@ -49,7 +49,7 @@ const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); 
 #endif
 
 //do not call this method from system context (network callback)
-void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
+void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
   if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
   RESET_RUNTIME;
@@ -62,11 +62,12 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
     _lengthRaw += LED_SKIP_AMOUNT;
   }
 
-  uint8_t pins[] = {2};
-
-  while (!busses.canAllShow()) yield();
-  busses.removeAll();
-  busses.add(supportWhite? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, countPixels, COL_ORDER_GRB);
+  //if busses failed to load (FS issue...)
+  if (busses.getNumBusses() == 0) {
+    uint8_t defPin[] = {LEDPIN};
+    BusConfig defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, _lengthRaw, COL_ORDER_GRB);
+    busses.add(defCfg);
+  }
 
   _segments[0].start = 0;
   _segments[0].stop = _length;

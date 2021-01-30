@@ -89,50 +89,33 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     uint16_t length, start;
     uint8_t pins[2] = {255, 255};
 
-    if (ledDoc != nullptr) delete ledDoc;
-    ledDoc = new DynamicJsonDocument(1024);
-
-    if (ledDoc) {
-      JsonArray ledO = ledDoc->to<JsonArray>();
-      //[{"en":true,"start":0,"len":120,"pin":[2],"order":0,"rev":false,"skip":0,"type":22}]
-      for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
-        char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
-        char lk[4] = "L1"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
-        char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
-        char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
-        char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
-        char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
-        char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
-        if (!request->hasArg(lp)) {
-          DEBUG_PRINTLN("No data."); break;
-        }
-        pins[0] = request->arg(lp).toInt();
-        if (request->hasArg(lk)) {
-          pins[1] = (request->arg(lk).length() > 0) ? request->arg(lk).toInt() : 255;
-        }
-        type = request->arg(lt).toInt();
-        
-        if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
-          length = request->arg(lc).toInt();
-        } else {
-          break;  // no parameter
-        }
-        colorOrder = request->arg(co).toInt();
-        start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
-
-        JsonObject ins = ledO.createNestedObject();
-        ins[F("en")] = true;
-        ins[F("start")] = start;
-        ins[F("len")] = length;
-        JsonArray ins_pin = ins.createNestedArray("pin");
-        uint8_t nPins = pins[1] < 100 ? 2 : 1; //TODO 3,4,5 pin types
-        for (uint8_t i = 0; i < nPins; i++) ins_pin.add(pins[i]);
-        ins[F("order")] = colorOrder;
-        ins[F("rev")] = request->hasArg(cv);
-        ins[F("skip")] = (skipFirstLed && s == 0) ? 1 : 0;
-        ins[F("type")] = type;
-        //temporary: add this info to a JSON object and re-init the strips after network callback
+    for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
+      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lk[4] = "L1"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
+      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
+      if (!request->hasArg(lp)) {
+        DEBUG_PRINTLN("No data."); break;
       }
+      pins[0] = request->arg(lp).toInt();
+      if (request->hasArg(lk)) {
+        pins[1] = (request->arg(lk).length() > 0) ? request->arg(lk).toInt() : 255;
+      }
+      type = request->arg(lt).toInt();
+      
+      if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
+        length = request->arg(lc).toInt();
+      } else {
+        break;  // no parameter
+      }
+      colorOrder = request->arg(co).toInt();
+      start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
+
+      if (busConfigs[s] != nullptr) delete busConfigs[s];
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
     }
 
     ledCount = request->arg(F("LC")).toInt();

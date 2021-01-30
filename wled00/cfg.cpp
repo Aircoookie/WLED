@@ -44,12 +44,14 @@ bool initBusInstances(JsonArray ins) {
     //RGBW mode is enabled if at least one of the strips is RGBW
     useRGBW = (useRGBW || BusManager::isRgbw(ledType));
     s++;
-    busses.add(ledType, pins, start, ledCount, colorOrder, reversed);
+    BusConfig bc = BusConfig(ledType, pins, start, ledCount, colorOrder, reversed);
+    busses.add(bc);
   }
   //if no bus inited successfully (empty cfg or invalid), init default
   if (s==0) {
     uint8_t defPin[] = {LEDPIN};
-    busses.add(TYPE_WS2812_RGB, defPin, 0, ledCount, COL_ORDER_GRB);
+    BusConfig defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, ledCount, COL_ORDER_GRB);
+    busses.add(defCfg);
   }
   return s;
 }
@@ -71,8 +73,6 @@ void deserializeConfig() {
     if (!fromeep) deEEPSettings();
     return;
   }
-
-  //deserializeJson(doc, json);
 
   //int rev_major = doc[F("rev")][0]; // 1
   //int rev_minor = doc[F("rev")][1]; // 0
