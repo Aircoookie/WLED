@@ -2,6 +2,10 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2101310
+
+-   First alpha configurable multipin
+
 #### Build 2101130
 
 -   Added color transitions for all segments and slots and for segment brightness

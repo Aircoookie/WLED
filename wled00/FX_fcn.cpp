@@ -62,7 +62,7 @@ void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFi
     _lengthRaw += LED_SKIP_AMOUNT;
   }
 
-  //if busses failed to load (FS issue...)
+  //if busses failed to load, add default (FS issue...)
   if (busses.getNumBusses() == 0) {
     uint8_t defPin[] = {LEDPIN};
     BusConfig defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, _lengthRaw, COL_ORDER_GRB);

@@ -204,6 +204,8 @@ void WLED::loop()
         delete busConfigs[i]; busConfigs[i] = nullptr;
       }
       strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+      yield();
+      serializeConfig();
     }
 
     yield();

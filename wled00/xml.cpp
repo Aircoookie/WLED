@@ -306,7 +306,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',lt,bus->getType());
       sappend('v',co,bus->getColorOrder());
       sappend('v',ls,bus->getStart());
-      sappend('c',ls,bus->reversed);
+      sappend('c',cv,bus->reversed);
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
