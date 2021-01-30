@@ -95,8 +95,8 @@
 #define TYPE_WS2812_RGB          22
 #define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
-#define TYPE_TM1814              25
 #define TYPE_SK6812_RGBW         30
+#define TYPE_TM1814              31
 //"Analog" types (PWM) (32-47)
 #define TYPE_ONOFF               40            //binary output (relays etc.)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
@@ -163,6 +163,9 @@
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
 #define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
+#define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
+#define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
+#define ERR_UNDERVOLT   32  // An attached voltmeter has measured a voltage below the threshold (not implemented)
 
 //Timer mode types
 #define NL_MODE_SET               0            //After nightlight time elapsed, set to target brightness
@@ -203,6 +206,11 @@
   #define JSON_BUFFER_SIZE 9216
 #else
   #define JSON_BUFFER_SIZE 16384
+#endif
+
+//this is merely a default now and can be changed at runtime
+#ifndef LEDPIN
+#define LEDPIN 2
 #endif
 
 #endif

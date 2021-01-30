@@ -116,6 +116,7 @@
 #include "ir_codes.h"
 #include "const.h"
 #include "pin_manager.h"
+#include "bus_manager.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
@@ -131,7 +132,7 @@
   Comment out this error message to build regardless.
 #endif
 
-#if IRPIN < 0
+#if !defined(IRPIN) || IRPIN < 0
   #ifndef WLED_DISABLE_INFRARED
     #define WLED_DISABLE_INFRARED
   #endif
@@ -184,13 +185,29 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
 // Hardware CONFIG (only changeble HERE, not at runtime)
 // LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
+#ifndef BTNPIN
+WLED_GLOBAL int8_t btnPin _INIT(-1);
+#else
+WLED_GLOBAL int8_t btnPin _INIT(BTNPIN);
+#endif
+#ifndef RLYPIN
+WLED_GLOBAL int8_t rlyPin _INIT(-1);
+#else
+WLED_GLOBAL int8_t rlyPin _INIT(RLYPIN);
+#endif
+#ifndef RLYMDE
+WLED_GLOBAL bool rlyMde _INIT(1);
+#else
+WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
+#endif
+#ifndef IRPIN
+WLED_GLOBAL int8_t irPin _INIT(-1);
+#else
+WLED_GLOBAL int8_t irPin _INIT(IRPIN);
+#endif
 
 //WLED_GLOBAL byte presetToApply _INIT(0); 
 
-#if AUXPIN >= 0
-WLED_GLOBAL byte auxDefaultState _INIT(0);                         // 0: input 1: high 2: low
-WLED_GLOBAL byte auxTriggeredState _INIT(0);                       // 0: input 1: high 2: low
-#endif
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use
 
 // WiFi CONFIG (all these can be changed via web UI, no need to set them here)
@@ -463,12 +480,18 @@ WLED_GLOBAL long lastInterfaceUpdate _INIT(0);
 WLED_GLOBAL byte interfaceUpdateCallMode _INIT(NOTIFIER_CALL_MODE_INIT);
 WLED_GLOBAL char mqttStatusTopic[40] _INIT("");        // this must be global because of async handlers
 
-#if AUXPIN >= 0
-  // auxiliary debug pin
-  WLED_GLOBAL byte auxTime _INIT(0);
-  WLED_GLOBAL unsigned long auxStartTime _INIT(0);
-  WLED_GLOBAL bool auxActive _INIT(false, auxActiveBefore _INIT(false);
+// auxiliary debug pin
+#ifndef AUXPIN
+WLED_GLOBAL int8_t auxPin _INIT(-1);
+#else
+WLED_GLOBAL int8_t auxPin _INIT(AUXPIN);
 #endif
+WLED_GLOBAL byte auxTime _INIT(0);
+WLED_GLOBAL unsigned long auxStartTime _INIT(0);
+WLED_GLOBAL bool auxActive _INIT(false);
+WLED_GLOBAL bool auxActiveBefore _INIT(false);
+WLED_GLOBAL byte auxDefaultState _INIT(0);                         // 0: input 1: high 2: low
+WLED_GLOBAL byte auxTriggeredState _INIT(0);                       // 0: input 1: high 2: low
 
 // alexa udp
 WLED_GLOBAL String escapedMac;
@@ -527,14 +550,15 @@ WLED_GLOBAL ESPAsyncE131 e131 _INIT_N(((handleE131Packet)));
 WLED_GLOBAL bool e131NewData _INIT(false);
 
 // led fx library object
+WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
-WLED_GLOBAL bool doInitStrip _INIT(false);
+WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES]; //temporary, to remember values from network callback until after 
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
 // Status LED
-#if STATUSLED && STATUSLED != LEDPIN
+#if STATUSLED
   WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
   WLED_GLOBAL unsigned short ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
   WLED_GLOBAL bool ledStatusState _INIT(0); // the current LED state

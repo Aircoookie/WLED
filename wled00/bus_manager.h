@@ -10,6 +10,23 @@
 #include "bus_wrapper.h"
 #include <Arduino.h>
 
+//temporary struct for passing bus configuration to bus
+struct BusConfig {
+  uint8_t type = TYPE_WS2812_RGB;
+  uint16_t count = 1;
+  uint16_t start = 0;
+  uint8_t colorOrder = COL_ORDER_GRB;
+  bool reversed = false;
+  uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false) {
+    type = busType; count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev;
+    uint8_t nPins = 1;
+    if (type > 47) nPins = 2;
+    else if (type > 41 && type < 46) nPins = NUM_PWM_PINS(type);
+    for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
+  }
+};
+
 //parent class of BusDigital and BusPwm
 class Bus {
   public:
@@ -73,23 +90,23 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-  BusDigital(uint8_t type, uint8_t* pins, uint16_t start, uint16_t len, uint8_t colorOrder, uint8_t nr, bool rev) : Bus(type, start) {
-    if (!IS_DIGITAL(type) || !len) return;
-    _pins[0] = pins[0];
+  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
+    if (!IS_DIGITAL(bc.type) || !bc.count) return;
+    _pins[0] = bc.pins[0];
     if (!pinManager.allocatePin(_pins[0])) return;
-    if (IS_2PIN(type)) {
-      _pins[1] = pins[1];
+    if (IS_2PIN(bc.type)) {
+      _pins[1] = bc.pins[1];
       if (!pinManager.allocatePin(_pins[1])) {
         cleanup(); return;
       }
     }
-    _len = len;
-    reversed = rev;
-    _iType = PolyBus::getI(type, _pins, nr);
+    _len = bc.count;
+    reversed = bc.reversed;
+    _iType = PolyBus::getI(bc.type, _pins, nr);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len);
     _valid = (_busPtr != nullptr);
-    _colorOrder = colorOrder;
+    _colorOrder = bc.colorOrder;
     //Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
   };
 
@@ -170,9 +187,9 @@ class BusDigital : public Bus {
 
 class BusPwm : public Bus {
   public:
-  BusPwm(uint8_t type, uint8_t* pins, uint16_t start) : Bus(type, start) {
-    if (!IS_PWM(type)) return;
-    uint8_t numPins = NUM_PWM_PINS(type);
+  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start) {
+    if (!IS_PWM(bc.type)) return;
+    uint8_t numPins = NUM_PWM_PINS(bc.type);
 
     #ifdef ESP8266
     analogWriteRange(255);  //same range as one RGB channel
@@ -185,7 +202,7 @@ class BusPwm : public Bus {
     #endif
 
     for (uint8_t i = 0; i < numPins; i++) {
-      _pins[i] = pins[i];
+      _pins[i] = bc.pins[i];
       if (!pinManager.allocatePin(_pins[i])) {
         deallocatePins(); return;
       }
@@ -281,19 +298,22 @@ class BusManager {
 
   };
   
-  int add(uint8_t busType, uint8_t* pins, uint16_t start, uint16_t len = 1, uint8_t colorOrder = COL_ORDER_GRB, bool rev = false) {
+  int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (IS_DIGITAL(busType)) {
-      busses[numBusses] = new BusDigital(busType, pins, start, len, colorOrder, numBusses, rev);
+    if (IS_DIGITAL(bc.type)) {
+      busses[numBusses] = new BusDigital(bc, numBusses);
     } else {
-      busses[numBusses] = new BusPwm(busType, pins, start);
+      busses[numBusses] = new BusPwm(bc);
     }
     numBusses++;
     return numBusses -1;
   }
 
+  //do not call this method from system context (network callback)
   void removeAll() {
     //Serial.println("Removing all.");
+    //prevents crashes due to deleting busses while in use. 
+    while (!canAllShow()) yield();
     for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
     numBusses = 0;
   }
@@ -344,6 +364,12 @@ class BusManager {
 
   uint8_t getNumBusses() {
     return numBusses;
+  }
+
+  static bool isRgbw(uint8_t type) {
+    if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
+    if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
+    return false;
   }
 
   private:

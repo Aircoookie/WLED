@@ -49,7 +49,7 @@ const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); 
 #endif
 
 //do not call this method from system context (network callback)
-void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
+void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
   if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
   RESET_RUNTIME;
@@ -62,11 +62,12 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
     _lengthRaw += LED_SKIP_AMOUNT;
   }
 
-  uint8_t pins[] = {LEDPIN};
-
-  while (!busses->canAllShow()) yield();
-  busses->removeAll();
-  busses->add(supportWhite? TYPE_SK6812_RGBW : TYPE_WS2812_RGB, pins, 0, countPixels, COL_ORDER_GRB);
+  //if busses failed to load, add default (FS issue...)
+  if (busses.getNumBusses() == 0) {
+    uint8_t defPin[] = {LEDPIN};
+    BusConfig defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, _lengthRaw, COL_ORDER_GRB);
+    busses.add(defCfg);
+  }
 
   _segments[0].start = 0;
   _segments[0].stop = _length;
@@ -74,8 +75,8 @@ void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
   setBrightness(_brightness);
 
   #ifdef ESP8266
-  for (uint8_t i = 0; i < busses->getNumBusses(); i++) {
-    Bus* b = busses->getBus(i);
+  for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
+    Bus* b = busses.getBus(i);
     if ((!IS_DIGITAL(b->getType()) || IS_2PIN(b->getType()))) continue;
     uint8_t pins[5];
     b->getPins(pins);
@@ -205,12 +206,12 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
       #endif
       if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) {
-        busses->setPixelColor(indexSet + skip, col);
+        busses.setPixelColor(indexSet + skip, col);
         if (IS_MIRROR) { //set the corresponding mirrored pixel
           if (reverseMode) {
-            busses->setPixelColor(REV(SEGMENT.start) - indexSet + skip + REV(SEGMENT.stop) + 1, col);
+            busses.setPixelColor(REV(SEGMENT.start) - indexSet + skip + REV(SEGMENT.stop) + 1, col);
           } else {
-            busses->setPixelColor(SEGMENT.stop - indexSet + skip + SEGMENT.start - 1, col);
+            busses.setPixelColor(SEGMENT.stop - indexSet + skip + SEGMENT.start - 1, col);
           }
         }
       }
@@ -221,11 +222,11 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     if (i < customMappingSize) i = customMappingTable[i];
     #endif
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
-    busses->setPixelColor(i + skip, col);
+    busses.setPixelColor(i + skip, col);
   }
   if (skip && i == 0) {
     for (uint16_t j = 0; j < skip; j++) {
-      busses->setPixelColor(j, BLACK);
+      busses.setPixelColor(j, BLACK);
     }
   }
 }
@@ -276,7 +277,7 @@ void WS2812FX::show(void) {
 
     for (uint16_t i = 0; i < _length; i++) //sum up the usage of each LED
     {
-      RgbwColor c = busses->getPixelColor(i);
+      RgbwColor c = busses.getPixelColor(i);
 
       if(useWackyWS2815PowerModel)
       {
@@ -305,24 +306,24 @@ void WS2812FX::show(void) {
       uint16_t scaleI = scale * 255;
       uint8_t scaleB = (scaleI > 255) ? 255 : scaleI;
       uint8_t newBri = scale8(_brightness, scaleB);
-      busses->setBrightness(newBri);
+      busses.setBrightness(newBri);
       currentMilliamps = (powerSum0 * newBri) / puPerMilliamp;
     } else
     {
       currentMilliamps = powerSum / puPerMilliamp;
-      busses->setBrightness(_brightness);
+      busses.setBrightness(_brightness);
     }
     currentMilliamps += MA_FOR_ESP; //add power of ESP back to estimate
     currentMilliamps += _length; //add standby power back to estimate
   } else {
     currentMilliamps = 0;
-    busses->setBrightness(_brightness);
+    busses.setBrightness(_brightness);
   }
   
   // some buses send asynchronously and this method will return before
   // all of the data has been sent.
   // See https://github.com/Makuna/NeoPixelBus/wiki/ESP32-NeoMethods#neoesp32rmt-methods
-  busses->show();
+  busses.show();
   _lastShow = millis();
 }
 
@@ -331,7 +332,7 @@ void WS2812FX::show(void) {
  * On some hardware (ESP32), strip updates are done asynchronously.
  */
 bool WS2812FX::isUpdating() {
-  return !busses->canAllShow();
+  return !busses.canAllShow();
 }
 
 /**
@@ -492,7 +493,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   
   if (i >= _lengthRaw) return 0;
   
-  return busses->getPixelColor(i);
+  return busses.getPixelColor(i);
 }
 
 WS2812FX::Segment& WS2812FX::getSegment(uint8_t id) {
