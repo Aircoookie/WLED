@@ -12,6 +12,48 @@ void getStringFromJson(char* dest, const char* src, size_t len) {
   if (src != nullptr) strlcpy(dest, src, len);
 }
 
+//populates bus objects from instance JsonArray, called by deserializeConfig() and by doInitStrip
+bool initBusInstances(JsonArray ins) {
+  uint8_t s = 0;
+  useRGBW = false;
+  busses.removeAll();
+  for (JsonObject elm : ins) {
+    if (s >= WLED_MAX_BUSSES) break;
+    uint8_t pins[5] = {255, 255, 255, 255, 255};
+    JsonArray pinArr = elm[F("pin")];
+    if (pinArr.size() == 0) continue;
+    pins[0] = pinArr[0];
+    uint8_t i = 0;
+    for (int p : pinArr) {
+      pins[i] = p;
+      i++;
+      if (i>4) break;
+    }
+
+    uint16_t length = elm[F("len")];
+    if (length==0) continue;
+    uint8_t colorOrder = (int)elm[F("order")];
+    //only use skip from the first strip (this shouldn't have been in ins obj. but remains here for compatibility)
+    if (s==0) skipFirstLed = elm[F("skip")];
+    uint16_t start = elm[F("start")] | 0;
+    if (start >= ledCount) continue;
+    //limit length of strip if it would exceed total configured LEDs
+    if (start + length > ledCount) length = ledCount - start;
+    uint8_t ledType = elm[F("type")] | TYPE_WS2812_RGB;
+    bool reversed = elm[F("rev")];
+    //RGBW mode is enabled if at least one of the strips is RGBW
+    useRGBW = (useRGBW || BusManager::isRgbw(ledType));
+    s++;
+    busses.add(ledType, pins, start, ledCount, colorOrder, reversed);
+  }
+  //if no bus inited successfully (empty cfg or invalid), init default
+  if (s==0) {
+    uint8_t defPin[] = {LEDPIN};
+    busses.add(TYPE_WS2812_RGB, defPin, 0, ledCount, COL_ORDER_GRB);
+  }
+  return s;
+}
+
 void deserializeConfig() {
   bool fromeep = false;
   bool success = deserializeConfigSec();
@@ -101,46 +143,7 @@ void deserializeConfig() {
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonVariant strVar = hw_led["ins"];
-  if (strVar.is<JsonObject>()) {
-    // some safety measures here?
-  } else {
-    JsonArray elms = strVar.as<JsonArray>();
-    uint8_t s = 0;
-    useRGBW = false;
-    busses.removeAll();
-    for (JsonObject elm : elms) {
-      if (s >= WLED_MAX_BUSSES) break;
-      uint8_t pins[5] = {255, 255, 255, 255, 255};
-      JsonArray pinArr = elm[F("pin")];
-      if (pinArr.size() == 0) continue;
-      pins[0] = pinArr[0];
-      uint8_t i = 0;
-      for (int p : pinArr) {
-        pins[i] = p;
-        i++;
-        if (i>4) break;
-      }
-
-      uint16_t length = elm[F("len")];
-      if (length==0) continue;
-      uint8_t colorOrder = (int)elm[F("order")];
-      //only use skip from the first strip (this shouldn't have been in ins obj. but remains here for compatibility)
-      if (s==0) skipFirstLed = elm[F("skip")];
-      uint16_t start = elm[F("start")] | 0;
-      if (start >= ledCount) continue;
-      //limit length of strip if it would exceed total configured LEDs
-      if (start + length > ledCount) length = ledCount - start;
-      uint8_t ledType = elm[F("type")] | TYPE_WS2812_RGB;
-      bool reversed = elm[F("rev")];
-      //RGBW mode is enabled if at least one of the strips is RGBW
-      useRGBW = (useRGBW || BusManager::isRgbw(ledType));
-      busses.add(ledType, pins, start, ledCount, colorOrder, reversed);
-    }
-    //if no bus inited successfully (empty cfg or invalid), init default
-    uint8_t defPin[] = {LEDPIN};
-    busses.add(TYPE_WS2812_RGB, defPin, 0, ledCount, COL_ORDER_GRB);
-  }
-  if (ledCount > MAX_LEDS) ledCount = MAX_LEDS;
+  initBusInstances(strVar.as<JsonArray>());
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonEnabled, hw_btn_ins_0[F("type")]);

@@ -552,7 +552,7 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 // led fx library object
 WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
-WLED_GLOBAL bool doInitStrip _INIT(false);
+WLED_GLOBAL JsonDocument* ledDoc; //temporary, to remember values from network callback until after 
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());

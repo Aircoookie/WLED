@@ -195,9 +195,9 @@ void WLED::loop()
     handleHue();
     handleBlynk();
 
-    if (doInitStrip) {
-      strip.init(useRGBW, ledCount, skipFirstLed);
-      doInitStrip = false;
+    if (ledDoc != nullptr) {
+      initBusInstances(ledDoc->as<JsonArray>());
+      delete ledDoc; ledDoc = nullptr;
     }
 
     yield();

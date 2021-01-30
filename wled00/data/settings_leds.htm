@@ -144,12 +144,12 @@
 
       d.getElementById('m0').innerHTML = memu;
       bquot = memu / bmax * 100;
-      d.getElementById('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? bquot > 90 ? "red":"orange":"#ccc"} 0 ${bquot}%, #444 ${bquot}% 100%)`;
+      d.getElementById('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? bquot > 90 ? "red":"orange":"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
       d.getElementById('ledwarning').style.display = (maxLC > 800 || bquot > 80) ? 'inline':'none';
       //TODO add warning "Recommended pins on ESP8266 are 1 and 2 (3 only with low LED count)"
       //TODO add overmemory warning
       //TODO block disallowed pins 6-11
-      d.getElementById('wreason').innerHTML = (bquot > 80) ? "than 60% of max. LED memory" : "800 LEDs per pin";
+      d.getElementById('wreason').innerHTML = (bquot > 80) ? "than 60%% of max. LED memory" : "800 LEDs per pin";
 
       //var val = Math.ceil((100 + d.Sf.LC.value * laprev)/500)/2;
       var val = Math.ceil((100 + sLC * laprev)/500)/2;

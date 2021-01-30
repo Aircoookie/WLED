@@ -26,6 +26,7 @@ void handleButton();
 void handleIO();
 
 //cfg.cpp
+bool initBusInstances(JsonArray ins);
 void deserializeConfig();
 bool deserializeConfigSec();
 void serializeConfig();
