@@ -21,6 +21,8 @@ Open 'usermods_list.cpp' and
 2. Mount a PIR sensor at the bottom of the stairs and connect it to D6
 3. Mount a PIR sensor at the top of the stairs and connect it to D5
 
+You may need to use 1k pull-down resistors on pins D5 and D6 depending on the sensor.
+
 ## WLED configuration
 In the web interface, confgure  segments such that the lowest step
 of the stairs is the lowest segment id.
