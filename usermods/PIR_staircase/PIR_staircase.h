@@ -18,11 +18,11 @@ const unsigned long ON_TIME = 5 * 1000;
 // Time between checking of the PIRs
 const int scanDelay = 50;
 
-// Please add #ifdef for your board configuration or just change the pins
-#if defined(D5) && defined(D6)
+// Please add/fix #ifdef for your board configuration or just change the pins
+#if defined(ESP8266)
 const int topPIR_PIN    = D6;
 const int bottomPIR_PIN = D5;
-#elif ARDUINO_ARCH_ESP32
+#elif defined(ARDUINO_ARCH_ESP32)
 const int topPIR_PIN    = GPIO_NUM_17; // d1_mini esp32
 const int bottomPIR_PIN = GPIO_NUM_16; // d1_mini esp32
 #else

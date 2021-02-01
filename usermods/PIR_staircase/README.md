@@ -27,7 +27,7 @@ Connect the sensors to your board:
 |-----------------|------------|---------|
 | NodeMCU         | D5         | D6      |
 | d1_mini esp32   | GPIO 16    | GPIO 17 |
-| d1_mini esp8266 | GPIO 0     | GPIO 2  |
+| others          | GPIO 0     | GPIO 2  |
 
 You may need to use 1k pull-down resistors on pins D5 and D6 depending on the sensor.
 
