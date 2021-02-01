@@ -18,8 +18,16 @@ Open 'usermods_list.cpp' and
 
 ## Hardware installation
 1. Stick the led strip under each step of the stairs
-2. Mount a PIR sensor at the bottom of the stairs and connect it to D6
-3. Mount a PIR sensor at the top of the stairs and connect it to D5
+2. Mount a PIR sensor at the bottom of the stairs
+3. Mount a PIR sensor at the top of the stairs
+
+Connect the sensors to your board:
+
+| Board           | Bottom PIR | Top PIR |
+|-----------------|------------|---------|
+| NodeMCU         | D5         | D6      |
+| d1_mini esp32   | GPIO 16    | GPIO 17 |
+| d1_mini esp8266 | GPIO 0     | GPIO 2  |
 
 You may need to use 1k pull-down resistors on pins D5 and D6 depending on the sensor.
 
