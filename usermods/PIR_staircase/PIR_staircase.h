@@ -18,8 +18,13 @@ const unsigned long ON_TIME = 5 * 1000;
 // Time between checking of the PIRs
 const int scanDelay = 50;
 
+#ifndef D6
+const int bottomPIR_PIN = 6;
+const int topPIR_PIN = 7;
+#else
 const int bottomPIR_PIN = D6;
 const int topPIR_PIN = D7;
+#endif
 
 class PIR_staircase : public Usermod {
  private:
