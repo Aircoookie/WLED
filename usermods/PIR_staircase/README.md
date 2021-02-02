@@ -26,7 +26,7 @@ Connect the sensors to your board:
 | Board           | Bottom PIR | Top PIR |
 |-----------------|------------|---------|
 | NodeMCU         | D5         | D6      |
-| d1_mini esp32   | GPIO 12    | GPIO 13 |
+| d1_mini esp32   | GPIO 15    | GPIO 16 |
 | others          | GPIO 0     | GPIO 2  |
 
 You may need to use 1k pull-down resistors on pins D5 and D6 depending on the sensor.

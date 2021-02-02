@@ -23,8 +23,8 @@ const int scanDelay = 50;
 const int topPIR_PIN    = D6;
 const int bottomPIR_PIN = D5;
 #elif defined(ARDUINO_ARCH_ESP32)
-const int topPIR_PIN    = GPIO_NUM_13; // d1_mini esp32
-const int bottomPIR_PIN = GPIO_NUM_12; // d1_mini esp32
+const int topPIR_PIN    = GPIO_NUM_16; // d1_mini esp32
+const int bottomPIR_PIN = GPIO_NUM_15; // d1_mini esp32
 #else
 const int topPIR_PIN    = GPIO_NUM_2; // d1_mini ESP8266
 const int bottomPIR_PIN = GPIO_NUM_0; // d1_mini ESP8266
