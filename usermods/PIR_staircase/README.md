@@ -14,27 +14,21 @@ This usermod makes your staircase look cool:
 
 Open 'usermods_list.cpp' and
 1. add `#include "../usermods/PIR_staircase/PIR_staircase.h"` to the top
-2. add `usermods.add(new PIR_staircase())` to the end of the `void registerUsermods()` function.
+2. add `usermods.add(new PIR_staircase());` to the end of the `void registerUsermods()` function.
+3. Change the PIR pinnumbers (D6 and D7) in `usermods/PIR_staircase/PIR_staircase.h` to whatever
+   is supported by your board:
+   ```
+     const int topPIR_PIN    = D7;
+     const int bottomPIR_PIN = D6;
+   ```
 
 ## Hardware installation
 1. Stick the led strip under each step of the stairs
 2. Mount a PIR sensor at the bottom of the stairs
 3. Mount a PIR sensor at the top of the stairs
 
-Connect the sensors to your board:
-
-| Board           | Bottom PIR | Top PIR |
-|-----------------|------------|---------|
-| NodeMCU         | D5         | D6      |
-| d1_mini esp32   | GPIO 15    | GPIO 16 |
-| others          | GPIO 0     | GPIO 2  |
-
 You may need to use 1k pull-down resistors on pins D5 and D6 depending on the sensor.
 
 ## WLED configuration
 In the web interface, confgure  segments such that the lowest step
 of the stairs is the lowest segment id.
-
-
-## TODO:
-- Store settings in flash (swipe speed, on-time)
