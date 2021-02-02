@@ -66,7 +66,6 @@ class UsermodDHT : public Usermod {
     float humidity, temperature = 0;
     DHTTYPE sensor;
     bool initializing = true;
-    bool disable_posted = false;
     bool disabled = false;
   public:
     void setup() {
@@ -106,7 +105,7 @@ class UsermodDHT : public Usermod {
 
 
     void addToJsonInfo(JsonObject& root) {
-      if (disabled && disable_posted) {
+      if (disabled) {
         return;
       }
       JsonObject user = root["u"];
@@ -114,15 +113,6 @@ class UsermodDHT : public Usermod {
 
       JsonArray temp = user.createNestedArray("Temperature");
       JsonArray hum = user.createNestedArray("Humidity");
-
-      if (disabled) {
-        disable_posted = true;
-        temp.add(0);
-        temp.add(" DHT Sensor Disabled!");
-        hum.add(0);
-        hum.add(" DHT Sensor Disabled!");
-        return;
-      }
 
       if (sensor_result == -1) {
         temp.add(sensor_error);
