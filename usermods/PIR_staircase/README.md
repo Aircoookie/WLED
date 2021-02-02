@@ -23,9 +23,9 @@ Open 'usermods_list.cpp' and
    ```
 
 ## Hardware installation
-1. Stick the led strip under each step of the stairs
-2. Mount a PIR sensor at the bottom of the stairs
-3. Mount a PIR sensor at the top of the stairs
+1. Stick the led strip under each step of the stairs.
+2. Mount a PIR sensor at the bottom of the stairs and connect it to bottomPIR_PIN.
+3. Mount a PIR sensor at the top of the stairs and connect it to topPIR_PIN.
 
 You may need to use 1k pull-down resistors on pins D5 and D6 depending on the sensor.
 
