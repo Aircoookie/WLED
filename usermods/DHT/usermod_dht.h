@@ -2,9 +2,9 @@
 
 #include "wled.h"
 
-// DHT Library 
+// DHT Library
 // lib_deps = adafruit/DHT sensor library@^1.4.1
-#include <DHT.h>  
+#include <DHT.h>
 
 #ifndef USERMOD_DHT_PIN
   #ifdef ARDUINO_ARCH_ESP32
@@ -64,14 +64,14 @@ class UsermodDht : public Usermod {
     float temperature = -100; // default to -100, DHT22 only goes down to -40C
 
     float humidity = 0;
-    
-    void readDht(){    
+
+    void readDht(){
         getTemperature();
         getHumidity();
     }
 
     void getTemperature() {
-      temperature = sensor.readTemperature(USERMOD_DHT_FAHRENHEIT); 
+      temperature = sensor.readTemperature(USERMOD_DHT_FAHRENHEIT);
 
       USERMOD_DHT_DEBUG_PRINT("Temperature ");
       USERMOD_DHT_DEBUG_PRINTLN(temperature);
@@ -134,7 +134,7 @@ class UsermodDht : public Usermod {
         }
       }
 
-      
+
     }
 
     void addToJsonInfo(JsonObject& root) {
@@ -145,17 +145,17 @@ class UsermodDht : public Usermod {
       JsonArray hum = user.createNestedArray("Humidity");
 
       if(!isnan(temperature) || temperature < -50){
-        temp.add(temperature);
-        #ifndef USERMOD_DHT_FAHRENHEIT
-        temp.add("°C");
-        #else
-        temp.add("°F");
-        #endif
+        temp.add(temperature);        
+        if(USERMOD_DHT_FAHRENHEIT){
+          temp.add("°F");
+        }else{
+          temp.add("°C");
+        }
       }else{
         temp.add(0);
         temp.add(" Sensor Error!");
       }
-      
+
       if(!isnan(humidity) || humidity < 0){
         hum.add(humidity);
         hum.add("%");
