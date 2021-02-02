@@ -42,11 +42,11 @@
 #define USERMOD_DHT_FIRST_MEASUREMENT_AT 20000 
 #endif
 
-
 volatile float sensor_humidity = 0;
 volatile float sensor_temperature = 0;
 volatile uint8_t sensor_error = 0;
 volatile int8_t sensor_result = 0;
+volatile uint16_t sensor_error_count = 0;
 
 void ICACHE_RAM_ATTR handleData(float h, float t) {
   sensor_humidity = h;
@@ -57,6 +57,7 @@ void ICACHE_RAM_ATTR handleData(float h, float t) {
 void ICACHE_RAM_ATTR handleError(uint8_t e) {
   sensor_error = e;
   sensor_result = -1;
+  sensor_error_count++;
 }
 
 class UsermodDHT : public Usermod {
@@ -67,6 +68,7 @@ class UsermodDHT : public Usermod {
     DHTTYPE sensor;
     bool initializing = true;
     bool disabled = false;
+    bool error_retried = false;
   public:
     void setup() {
       // non-blocking sensor with callbacks
@@ -74,7 +76,7 @@ class UsermodDHT : public Usermod {
       sensor.onData(handleData);
       sensor.onError(handleError);
       nextReadTime = millis() + USERMOD_DHT_FIRST_MEASUREMENT_AT;
-      lastReadTime = millis() + USERMOD_DHT_FIRST_MEASUREMENT_AT;
+      lastReadTime = nextReadTime;
     }
 
 
@@ -86,11 +88,18 @@ class UsermodDHT : public Usermod {
         sensor_result = 0;
         lastReadTime = millis();
         initializing = false;
+        error_retried = false;
         humidity = sensor_humidity;
         temperature = sensor_temperature;
         #ifndef USERMOD_DHT_CELSIUS
         temperature = (temperature * 9 / 5) + 32;
         #endif
+      } else if (sensor_result == -1) {
+        // retry right away on error - but only once
+        if (!error_retried) {
+          nextReadTime = 0;
+          error_retried = true;
+        }
       }
       if (millis() >= nextReadTime) {
         if ((millis() - lastReadTime)
@@ -113,6 +122,11 @@ class UsermodDHT : public Usermod {
 
       JsonArray temp = user.createNestedArray("Temperature");
       JsonArray hum = user.createNestedArray("Humidity");
+      if (sensor_error_count > 0) {
+        JsonArray err = user.createNestedArray("DHTErrors");
+        err.add(sensor_error_count);
+        err.add("Errors");
+      }
 
       if (sensor_result == -1) {
         temp.add(sensor_error);
