@@ -20,6 +20,9 @@
 #ifdef USERMOD_SENSORSTOMQTT
 #include "usermod_v2_SensorsToMqtt.h"
 #endif
+#ifdef USERMOD_DHT
+#include "../usermods/DHT/usermod_dht.h"
+#endif
 
 void registerUsermods()
 {
@@ -38,5 +41,8 @@ void registerUsermods()
 #endif
 #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());
+#endif
+#ifdef USERMOD_DHT
+  usermods.add(new UsermodDHT());
 #endif
 }
