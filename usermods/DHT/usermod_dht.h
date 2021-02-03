@@ -2,7 +2,11 @@
 
 #include "wled.h"
 
+#ifdef ARDUINO_ARCH_ESP32
+#include <esp32DHT.h>
+#else
 #include <DHT.h>
+#endif
 
 // USERMOD_DHT_DHTTYPE:
 //   DHT11   // DHT 11
@@ -32,15 +36,23 @@
 #endif
 #endif
 
+// Avoid conflict with other WLED uses
+#ifndef USERMOD_DHT_RMT_CHANNEL
+#define USERMOD_DHT_RMT_CHANNEL RMT_CHANNEL_1
+#endif
+
 // the frequency to check sensor, 1 minute
 #ifndef USERMOD_DHT_MEASUREMENT_INTERVAL
 #define USERMOD_DHT_MEASUREMENT_INTERVAL 60000
 #endif
 
-// how many seconds after boot to take first measurement, 20 seconds
+// how many seconds after boot to take first measurement, 90 seconds
+// 90 gives enough time to OTA update firmware if this crashses
 #ifndef USERMOD_DHT_FIRST_MEASUREMENT_AT
-#define USERMOD_DHT_FIRST_MEASUREMENT_AT 20000 
+#define USERMOD_DHT_FIRST_MEASUREMENT_AT 90000
 #endif
+
+DHTTYPE sensor;
 
 volatile float sensor_humidity = 0;
 volatile float sensor_temperature = 0;
@@ -65,14 +77,17 @@ class UsermodDHT : public Usermod {
     unsigned long nextReadTime = 0;
     unsigned long lastReadTime = 0;
     float humidity, temperature = 0;
-    DHTTYPE sensor;
     bool initializing = true;
     bool disabled = false;
     bool error_retried = false;
   public:
     void setup() {
       // non-blocking sensor with callbacks
+      #ifdef ARDUINO_ARCH_ESP32
+      sensor.setup(DHTPIN, USERMOD_DHT_RMT_CHANNEL);
+      #else
       sensor.setPin(DHTPIN);
+      #endif
       sensor.onData(handleData);
       sensor.onError(handleError);
       nextReadTime = millis() + USERMOD_DHT_FIRST_MEASUREMENT_AT;

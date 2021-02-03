@@ -16,7 +16,8 @@ Copy the example `platformio_override.ini` to the root directory.  This file sho
 * `USERMOD_DHT_PIN`                  - pin to which DTH is connected, defaults to Q4 pin on QuinLed Dig-Uno's board
 * `USERMOD_DHT_CELSIUS`              - define this to report temperatures in degrees celsious, otherwise fahrenheit will be reported
 * `USERMOD_DHT_MEASUREMENT_INTERVAL` - the number of milliseconds between measurements, defaults to 60 seconds
-* `USERMOD_DHT_FIRST_MEASUREMENT_AT` - the number of milliseconds after boot to take first measurement, defaults to 20 seconds
+* `USERMOD_DHT_FIRST_MEASUREMENT_AT` - the number of milliseconds after boot to take first measurement, defaults to 90 seconds
+* `USERMOD_DHT_RMT_CHANNEL`          - RMT channel, defaults to RMT_CHANEL_1
 
 ## Project link
 
