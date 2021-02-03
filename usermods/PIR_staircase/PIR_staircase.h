@@ -129,7 +129,7 @@ class PIR_staircase : public Usermod {
   }
 
   void autoPowerOff() {
-    if (on && (millis() - lastSwitchTime) > on_time_ms) {
+    if (on && ((millis() - lastSwitchTime) > on_time_ms)) {
       // Swipe OFF in the direction of the last PIR detection
       swipe = lastPIR;
       on = false;
@@ -216,16 +216,16 @@ class PIR_staircase : public Usermod {
    */
   void readFromJsonState(JsonObject& root) {
     JsonObject staircase = root["staircase"];
-    unsigned long s = staircase["segment-delay-ms"] | 150;
-    unsigned long o = (staircase["on-time-s"] | 5) * 1000;
 
+    unsigned long s = staircase["segment-delay-ms"] | 150;
     if (s != segment_delay_ms) {
       segment_delay_ms = s;
       saveState = true;
     }
 
-    if (o != on_time_ms / 1000) {
-      on_time_ms = s * 1000;
+    unsigned long o = (staircase["on-time-s"] | 5) * 1000;
+    if (o != on_time_ms) {
+      on_time_ms = o;
       saveState = true;
     }
 
