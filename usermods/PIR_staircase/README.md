@@ -46,3 +46,47 @@ You may need to use 1k pull-down resistors on the selected PIR pins, depending o
 2. Save your segments into a preset. 
 3. Ideally, add the subsequent preset ìn the config > LED setup menu to the "apply 
    preset `x` at boot" setting.
+
+## Changing settings through API
+
+The PIR Staircase settings can be changed through the api. There are two settings that
+can be changed:
+
+| Setting          | Description                                                             |
+|------------------|-------------------------------------------------------------------------|
+| segment-delay-ms | The delay in milliseconds between turning on steps                      |
+| on-time-s        | The number of seconds the stairs stay lit after the last PIR detection. |
+
+
+To read the settings, open a browser to `http://192.168.0.19/json/state` (where you need to change 
+192.168.0.19 into the ip address of your WLED device). The device will respond with a json object
+containing all WLED settings. The PIR staircase settings are in the status element:
+
+```json
+{
+    "state": {
+        "on": true,
+        "bri": 128,
+...
+        "staircase": {
+            "segment-delay-ms": 150,
+            "on-time-s": 5
+        },
+        "ccnf": {
+            "min": 1,
+            "max": 5,
+            "time": 12
+        },
+...
+}
+
+Changing these settings can be done by sending a POST to your WLED device:
+
+```bash
+curl -X POST -H "Content-Type: application/json" \
+     -d {"staircase":{"segment-delay-ms":100",on-time-s":10}} \
+     192.168.0.19/json/state
+```
+
+In this case, we change the delay between steps to 100 milliseconds and the power-off time
+to 10 seconds.
