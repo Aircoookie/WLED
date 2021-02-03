@@ -2,19 +2,22 @@
 
 #include "wled.h"
 
-#ifdef ARDUINO_ARCH_ESP32
-#include <esp32DHT.h>
-#else
-#include <DHT.h>
-#endif
+#include <dht_nonblocking.h>
 
 // USERMOD_DHT_DHTTYPE:
-//   DHT11   // DHT 11
-//   DHT22   // DHT 22  (AM2302), AM2321 *** default
-#ifdef USERMOD_DHT_DHTTYPE
-#define DHTTYPE USERMOD_DHT_DHTTYPE
-#else
-#define DHTTYPE DHT22
+//   11   // DHT 11
+//   21   // DHT 21
+//   22   // DHT 22  (AM2302), AM2321 *** default
+#ifndef USERMOD_DHT_DHTTYPE
+#define USERMOD_DHT_DHTTYPE 22
+#endif
+
+#if USERMOD_DHT_DHTTYPE == 11
+#define DHTTYPE DHT_TYPE_11
+#elif USERMOD_DHT_DHTTYPE == 21
+#define DHTTYPE DHT_TYPE_21
+#elif USERMOD_DHT_DHTTYPE == 22
+#define DHTTYPE DHT_TYPE_22
 #endif
 
 // Connect pin 1 (on the left) of the sensor to +5V
@@ -36,11 +39,6 @@
 #endif
 #endif
 
-// Avoid conflict with other WLED uses
-#ifndef USERMOD_DHT_RMT_CHANNEL
-#define USERMOD_DHT_RMT_CHANNEL RMT_CHANNEL_1
-#endif
-
 // the frequency to check sensor, 1 minute
 #ifndef USERMOD_DHT_MEASUREMENT_INTERVAL
 #define USERMOD_DHT_MEASUREMENT_INTERVAL 60000
@@ -52,25 +50,7 @@
 #define USERMOD_DHT_FIRST_MEASUREMENT_AT 90000
 #endif
 
-DHTTYPE sensor;
-
-volatile float sensor_humidity = 0;
-volatile float sensor_temperature = 0;
-volatile uint8_t sensor_error = 0;
-volatile int8_t sensor_result = 0;
-volatile uint16_t sensor_error_count = 0;
-
-void ICACHE_RAM_ATTR handleData(float h, float t) {
-  sensor_humidity = h;
-  sensor_temperature = t;
-  sensor_result = 1;
-}
-
-void ICACHE_RAM_ATTR handleError(uint8_t e) {
-  sensor_error = e;
-  sensor_result = -1;
-  sensor_error_count++;
-}
+DHT_nonblocking dht_sensor(DHTPIN, DHTTYPE);
 
 class UsermodDHT : public Usermod {
   private:
@@ -79,54 +59,65 @@ class UsermodDHT : public Usermod {
     float humidity, temperature = 0;
     bool initializing = true;
     bool disabled = false;
-    bool error_retried = false;
+    #ifdef USERMOD_DHT_STATS
+    unsigned long maxDelay = 0;
+    unsigned long currentIteration = 0;
+    unsigned long maxIteration = 0;
+    #endif
+
   public:
     void setup() {
-      // non-blocking sensor with callbacks
-      #ifdef ARDUINO_ARCH_ESP32
-      sensor.setup(DHTPIN, USERMOD_DHT_RMT_CHANNEL);
-      #else
-      sensor.setPin(DHTPIN);
-      #endif
-      sensor.onData(handleData);
-      sensor.onError(handleError);
       nextReadTime = millis() + USERMOD_DHT_FIRST_MEASUREMENT_AT;
-      lastReadTime = nextReadTime;
+      lastReadTime = millis();
     }
-
 
     void loop() {
       if (disabled) {
         return;
       }
-      if (sensor_result == 1) {
-        sensor_result = 0;
+      if (millis() < nextReadTime) {
+        return;
+      }
+
+      #ifdef USERMOD_DHT_STATS
+      unsigned long dcalc = millis();
+      if (currentIteration == 0) {
+        currentIteration = millis();
+      }
+      #endif
+
+      float tempC;
+      if (dht_sensor.measure(&tempC, &humidity)) {
+        #ifdef USERMOD_DHT_CELSIUS
+        temperature = tempC;
+        #else
+        temperature = tempC * 9 / 5 + 32;
+        #endif
+
+        nextReadTime += USERMOD_DHT_MEASUREMENT_INTERVAL;
         lastReadTime = millis();
         initializing = false;
-        error_retried = false;
-        humidity = sensor_humidity;
-        temperature = sensor_temperature;
-        #ifndef USERMOD_DHT_CELSIUS
-        temperature = (temperature * 9 / 5) + 32;
+        
+        #ifdef USERMOD_DHT_STATS
+        unsigned long icalc = millis() - currentIteration;
+        if (icalc > maxIteration) {
+          maxIteration = icalc;
+        }
+        currentIteration = 0;
         #endif
-      } else if (sensor_result == -1) {
-        // retry right away on error - but only once
-        if (!error_retried) {
-          nextReadTime = 0;
-          error_retried = true;
-        }
       }
-      if (millis() >= nextReadTime) {
-        if ((millis() - lastReadTime)
-            > 10*USERMOD_DHT_MEASUREMENT_INTERVAL) {
-          disabled = true;
-        } else {
-          nextReadTime = millis() + USERMOD_DHT_MEASUREMENT_INTERVAL;
-          sensor.read();
-        }
-      } 
-    }
 
+      #ifdef USERMOD_DHT_STATS
+      dcalc = millis() - dcalc;
+      if (dcalc > maxDelay) {
+        maxDelay = dcalc;
+      } 
+      #endif
+
+      if (((millis() - lastReadTime) > 10*USERMOD_DHT_MEASUREMENT_INTERVAL)) {
+        disabled = true;
+      }
+    }
 
     void addToJsonInfo(JsonObject& root) {
       if (disabled) {
@@ -137,19 +128,29 @@ class UsermodDHT : public Usermod {
 
       JsonArray temp = user.createNestedArray("Temperature");
       JsonArray hum = user.createNestedArray("Humidity");
-      if (sensor_error_count > 0) {
-        JsonArray err = user.createNestedArray("DHTErrors");
-        err.add(sensor_error_count);
-        err.add("Errors");
+
+      #ifdef USERMOD_DHT_STATS
+      JsonArray next = user.createNestedArray("next");
+      if (nextReadTime >= millis()) {
+        next.add((nextReadTime - millis()) / 1000);
+        next.add(" sec until read");
+      } else {
+        next.add((millis() - nextReadTime) / 1000);
+        next.add(" sec active reading");
       }
 
-      if (sensor_result == -1) {
-        temp.add(sensor_error);
-        temp.add(" DHT Sensor Error!");
-        hum.add(sensor_error);
-        hum.add(" DHT Sensor Error!");
-        return;
-      }
+      JsonArray last = user.createNestedArray("last");
+      last.add((millis() - lastReadTime) / 60000);
+      last.add(" min since read");
+
+      JsonArray iter = user.createNestedArray("maxIter");
+      iter.add(maxIteration);
+      iter.add(" ms");
+
+      JsonArray delay = user.createNestedArray("maxDelay");
+      delay.add(maxDelay);
+      delay.add(" ms");
+      #endif
 
       if (initializing) {
         // if we haven't read the sensor yet, let the user know
@@ -160,7 +161,6 @@ class UsermodDHT : public Usermod {
         hum.add(" sec until read");
         return;
       }
-
 
       hum.add(humidity);
       hum.add("%");
@@ -173,7 +173,7 @@ class UsermodDHT : public Usermod {
       #endif
     }
    
-      uint16_t getId()
+    uint16_t getId()
     {
       return USERMOD_ID_DHT;
     }
