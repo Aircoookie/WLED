@@ -43,11 +43,11 @@ var cpick = new iro.ColorPicker("#picker", {
       component: iro.ui.Slider,
       options: {
         sliderType: 'kelvin',
-        minTemperature: 2100,
+				minTemperature: 2100,
         maxTemperature: 10000
-      }
+			}
     }
-  ]
+	]
 });
 
 function handleVisibilityChange() {
