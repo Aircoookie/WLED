@@ -55,6 +55,12 @@ U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
 #define FLD_LINE_3_EFFECT_INTENSITY 2
 #define FLD_LINE_3_PALETTE          3
 
+// If you aren't also including RotaryEncoderUIUsermod
+// you probably want to set both
+//     SLEEP_MODE_ENABLED false
+//     CLOCK_MODE_ENABLED false
+// as you will never be able wake the display / disable the clock.
+#define SLEEP_MODE_ENABLED true
 #define CLOCK_MODE_ENABLED true
 #define TIME_INDENT        0
 #define DATE_INDENT        2
@@ -174,7 +180,8 @@ class FourLineDisplayUsermod : public Usermod {
       if (!needRedraw) {
         // Nothing to change.
         // Turn off display after 3 minutes with no change.
-        if(!displayTurnedOff && millis() - lastRedraw > SCREEN_TIMEOUT_MS) {
+        if(SLEEP_MODE_ENABLED && !displayTurnedOff &&
+            (millis() - lastRedraw > SCREEN_TIMEOUT_MS)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
           sleepOrClock(true);
@@ -449,7 +456,7 @@ class FourLineDisplayUsermod : public Usermod {
       sprintf(lineBuffer, "%02d:%02d %s", showHour, minuteCurrent, useAMPM ? (isAM ? "AM" : "PM") : "");
       // For time, we always use LINE_HEIGHT of 2 since
       // we are printing it big.
-      u8x8.DRAW_BIG_STRING(TIME_INDENT + (useAMPM ? 0 : 1), (TIME_LINE + 1) * 2, lineBuffer);
+      u8x8.DRAW_BIG_STRING(TIME_INDENT + (useAMPM ? 0 : 2), (TIME_LINE + 1) * 2, lineBuffer);
     }
 
     /*
