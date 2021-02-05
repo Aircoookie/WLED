@@ -48,7 +48,7 @@ U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
 #define DRAW_BIG_STRING draw2x2String
 #endif
 
-// Extra char for null
+// Extra char (+1) for null
 #define LINE_BUFFER_SIZE            16+1
 #define FLD_LINE_3_BRIGHTNESS       0
 #define FLD_LINE_3_EFFECT_SPEED     1

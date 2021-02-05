@@ -37,6 +37,14 @@
 // Hint: you do.
 #define USE_FOUR_LINE_DISPLAY
 
+#ifndef USE_FOUR_LINE_DISPLAY
+// These constants won't be defined if we aren't using FourLineDisplay.
+#define FLD_LINE_3_BRIGHTNESS       0
+#define FLD_LINE_3_EFFECT_SPEED     0
+#define FLD_LINE_3_EFFECT_INTENSITY 0
+#define FLD_LINE_3_PALETTE          0
+#endif
+
 // The last UI state
 #define LAST_UI_STATE 4
 
@@ -82,6 +90,8 @@ private:
   
 #ifdef USE_FOUR_LINE_DISPLAY
   FourLineDisplayUsermod* display;
+#else
+  void* display = nullptr;
 #endif
   unsigned char Enc_A;
   unsigned char Enc_B;
@@ -104,9 +114,9 @@ public:
     currentTime = millis();
     loopTime = currentTime;
 
-    // This plugin uses FourLineDisplayUsermod for the best experience.
-    // But it's optional.
 #ifdef USE_FOUR_LINE_DISPLAY    
+    // This Usermod uses FourLineDisplayUsermod for the best experience.
+    // But it's optional. But you want it.
     display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_FOUR_LINE_DISP);
     if (display != nullptr) {
       display->setLineThreeType(FLD_LINE_3_BRIGHTNESS);
@@ -256,6 +266,7 @@ public:
   }
 
   boolean changeState(const char *stateName, byte lineThreeMode, byte markedLine) {
+#ifdef USE_FOUR_LINE_DISPLAY
     if (display != nullptr) {
       if (display->wakeDisplay()) {
         // Throw away wake up input
@@ -265,6 +276,7 @@ public:
       display->setLineThreeType(lineThreeMode);
       display->setMarkLine(markedLine);
     }
+  #endif
     return true;
   }
 
@@ -278,10 +290,12 @@ public:
   }
 
   void changeBrightness(bool increase) {
+#ifdef USE_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
     }
+#endif
     if (increase) {
       bri = (bri + fadeAmount <= 255) ? (bri + fadeAmount) : 255;
     }
@@ -292,10 +306,12 @@ public:
   }
 
   void changeEffect(bool increase) {
+#ifdef USE_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
     }
+#endif
     if (increase) {
       effectCurrentIndex = (effectCurrentIndex + 1 >= strip.getModeCount()) ? 0 : (effectCurrentIndex + 1);
     }
@@ -307,10 +323,12 @@ public:
   }
 
   void changeEffectSpeed(bool increase) {
+#ifdef USE_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
     }
+#endif
     if (increase) {
       effectSpeed = (effectSpeed + fadeAmount <= 255) ? (effectSpeed + fadeAmount) : 255;
     }
@@ -321,10 +339,12 @@ public:
   }
 
   void changeEffectIntensity(bool increase) {
+#ifdef USE_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
     }
+#endif
     if (increase) {
       effectIntensity = (effectIntensity + fadeAmount <= 255) ? (effectIntensity + fadeAmount) : 255;
     }
@@ -335,10 +355,12 @@ public:
   }
 
   void changePalette(bool increase) {
+#ifdef USE_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
     }
+#endif
     if (increase) {
       effectPaletteIndex = (effectPaletteIndex + 1 >= strip.getPaletteCount()) ? 0 : (effectPaletteIndex + 1);
     }
