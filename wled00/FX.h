@@ -651,7 +651,8 @@ class WS2812FX {
       currentMilliamps,
 //      setStripLen(uint8_t strip, uint16_t len),
 //      getStripLen(uint8_t strip=0),
-      triwave16(uint16_t);
+      triwave16(uint16_t),
+      getFps();
 
     uint32_t
       now,
@@ -807,6 +808,8 @@ class WS2812FX {
     uint8_t _brightness;
     uint16_t _usedSegmentData = 0;
     uint16_t _transitionDur = 750;
+
+    uint16_t _cumulativeFps = 2;
 
     void load_gradient_palette(uint8_t);
     void handle_palette(void);

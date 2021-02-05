@@ -324,7 +324,12 @@ void WS2812FX::show(void) {
   // all of the data has been sent.
   // See https://github.com/Makuna/NeoPixelBus/wiki/ESP32-NeoMethods#neoesp32rmt-methods
   busses.show();
-  _lastShow = millis();
+  unsigned long now = millis();
+  unsigned long diff = now - _lastShow;
+  uint16_t fpsCurr = 200;
+  if (diff > 0) fpsCurr = 1000 / diff;
+  _cumulativeFps = (3 * _cumulativeFps + fpsCurr) >> 2;
+  _lastShow = now;
 }
 
 /**
@@ -333,6 +338,15 @@ void WS2812FX::show(void) {
  */
 bool WS2812FX::isUpdating() {
   return !busses.canAllShow();
+}
+
+/**
+ * Returns the refresh rate of the LED strip. Useful for finding out whether a given setup is fast enough.
+ * Only updates on show() or is set to 0 fps if last show is more than 2 secs ago, so accurary varies
+ */
+uint16_t WS2812FX::getFps() {
+  if (millis() - _lastShow > 2000) return 0;
+  return _cumulativeFps +1;
 }
 
 /**

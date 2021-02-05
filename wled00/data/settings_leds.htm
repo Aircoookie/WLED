@@ -35,7 +35,7 @@
       if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (bmax < 10000) msg += " Consider using an ESP32."; alert(msg); return;}
       if (d.Sf.reportValidity()) d.Sf.submit();
     }
-		function S(){GetV();setABL(); if (maxST>4) bmax=32000; d.getElementById('m1').innerHTML = bmax;}
+		function S(){GetV();setABL(); if (maxST>4) bmax=64000; d.getElementById('m1').innerHTML = bmax;}
     function enABL()
     {
       var en = d.getElementById('able').checked;
