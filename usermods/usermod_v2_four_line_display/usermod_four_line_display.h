@@ -179,7 +179,7 @@ class FourLineDisplayUsermod : public Usermod {
           // and turn it back on if it changed.
           sleepOrClock(true);
         }
-        if(displayTurnedOff && CLOCK_MODE_ENABLED) {
+        else if (displayTurnedOff && CLOCK_MODE_ENABLED) {
           showTime();
         }
         return;
