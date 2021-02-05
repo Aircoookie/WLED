@@ -8,7 +8,6 @@
 // * rotary_encoder_change_effect
 //
 // v2 usermod that provides a rotary encoder-based UI.
-// Originally based on the v1 usermod: ssd1306_i2c_oled_u8g2
 //
 // This Usermod works best coupled with FourLineDisplayUsermod.
 //
@@ -32,6 +31,11 @@
 #define ENCODER_CLK_PIN 14
 #define ENCODER_SW_PIN 13
 #endif
+
+// Define this if you want to use this Usermod in
+// concert with FourLineDisplayUsermod.
+// Hint: you do.
+#define USE_FOUR_LINE_DISPLAY
 
 // The last UI state
 #define LAST_UI_STATE 4
@@ -64,8 +68,7 @@ const byte palettes_alpha_order[] = {
   25, 8, 38, 40, 41, 9, 44, 47, 6, 20, 11, 12, 16, 33, 
   14, 49, 27, 19, 13, 21, 54, 34, 45, 23, 43, 17, 42 };
 
-class RotaryEncoderUIUsermod : public Usermod
-{
+class RotaryEncoderUIUsermod : public Usermod {
 private:
   int fadeAmount = 10;             // Amount to change every step (brightness)
   unsigned long currentTime;
@@ -77,8 +80,9 @@ private:
   unsigned char button_state = HIGH;
   unsigned char prev_button_state = HIGH;
   
+#ifdef USE_FOUR_LINE_DISPLAY
   FourLineDisplayUsermod* display;
-
+#endif
   unsigned char Enc_A;
   unsigned char Enc_B;
   unsigned char Enc_A_prev = 0;
@@ -102,11 +106,13 @@ public:
 
     // This plugin uses FourLineDisplayUsermod for the best experience.
     // But it's optional.
+#ifdef USE_FOUR_LINE_DISPLAY    
     display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_FOUR_LINE_DISP);
     if (display != nullptr) {
       display->setLineThreeType(FLD_LINE_3_BRIGHTNESS);
       display->setMarkLine(3);
     }
+#endif
   }
 
   /*

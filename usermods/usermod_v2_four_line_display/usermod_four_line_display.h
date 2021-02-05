@@ -6,13 +6,16 @@
 //
 // Insired by the v1 usermod: ssd1306_i2c_oled_u8g2
 //
-// This Usermod works best, by far, when coupled with RotaryEncoderUIUsermod.
-//
 // v2 usermod for using 128x32 or 128x64 i2c
 // OLED displays to provide a four line display
 // for WLED.
 //
+// This Usermod works best, by far, when coupled with RotaryEncoderUIUsermod.
+//
 // Make sure to enable NTP and set your time zone in WLED Config | Time.
+//
+// REQUIREMENT: uncomment the "U8g2" library option from the
+// REQUIREMENT: "lib_deps" section of platformio.ini
 //
 
 //The SCL and SDA pins are defined here. 
@@ -24,7 +27,6 @@
 #define U8X8_PIN_SDA 4
 #endif
 
-// Pins are Reset, SCL, SDA
 // U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(
 //   U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); 
 U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
@@ -46,7 +48,8 @@ U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
 #define DRAW_BIG_STRING draw2x2String
 #endif
 
-#define LINE_BUFFER_SIZE                16+1   // Extra char for null
+// Extra char for null
+#define LINE_BUFFER_SIZE            16+1
 #define FLD_LINE_3_BRIGHTNESS       0
 #define FLD_LINE_3_EFFECT_SPEED     1
 #define FLD_LINE_3_EFFECT_INTENSITY 2
@@ -62,9 +65,11 @@ U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
 #define TIME_LINE  0
 #endif
 
-// 3 minutes = 3*60*1000
+// When to time out to the clock or blank the screen
 #define SCREEN_TIMEOUT_MS  15*1000
-#define HOUR_OFFSET        -6
+
+// How often we are redrawing screen in ms
+#define USER_LOOP_REFRESH_RATE_MS 1000
 
 class FourLineDisplayUsermod : public Usermod {
   private:
@@ -90,11 +95,8 @@ class FourLineDisplayUsermod : public Usermod {
     long lastRedraw = 0;
     long overlayUntil = 0;
     byte lineThreeType = FLD_LINE_3_BRIGHTNESS;
-    // Set to 2 or 3 to mark lines 2 or 3
-    // Other values are not used.    
+    // Set to 2 or 3 to mark lines 2 or 3. Other values ignored.
     byte markLineNum = 0;
-    // How often we are redrawing screen in ms
-    #define USER_LOOP_REFRESH_RATE_MS 1000
 
     char lineBuffer[LINE_BUFFER_SIZE];
 
@@ -120,6 +122,9 @@ class FourLineDisplayUsermod : public Usermod {
     // interfaces here
     void connected() {}
 
+    /**
+     * Da loop.
+     */
     void loop() {
       if (millis() - lastUpdate < USER_LOOP_REFRESH_RATE_MS) {
         return;
@@ -129,6 +134,10 @@ class FourLineDisplayUsermod : public Usermod {
       redraw(false);
     }
 
+    /**
+     * Redraw the screen (but only if things have changed
+     * or if forceRedraw).
+     */
     void redraw(bool forceRedraw) {
       if (overlayUntil > 0) {
         if (millis() >= overlayUntil) {
@@ -248,6 +257,13 @@ class FourLineDisplayUsermod : public Usermod {
       u8x8.DRAW_GLYPH(0, 1*LINE_HEIGHT, 68); // home icon
     }
 
+    /**
+     * Display the current effect or palette (desiredEntry) 
+     * on the appropriate line (row).
+     * 
+     * TODO: Should we cache the current effect and 
+     * TODO: palette name? This seems expensive.
+     */
     void showCurrentEffectOrPalette(const char json[], uint8_t row, uint8_t desiredEntry) {
       uint8_t qComma = 0;
       bool insideQuotes = false;
@@ -297,8 +313,9 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     /**
-     * Allows you to show up to two lines as overlay.
-     * Clears the screen and prints on lines 1, 2 (zero based).
+     * Allows you to show up to two lines as overlay for a
+     * period of time.
+     * Clears the screen and prints on the middle two lines.
      */
     void overlay(const char* line1, const char *line2, long showHowLong) {
       if (displayTurnedOff) {
@@ -318,6 +335,10 @@ class FourLineDisplayUsermod : public Usermod {
       overlayUntil = millis() + showHowLong;
     }
 
+    /**
+     * Specify what data should be defined on line 3
+     * (the last line).
+     */
     void setLineThreeType(byte newLineThreeType) {
       if (newLineThreeType == FLD_LINE_3_BRIGHTNESS || 
           newLineThreeType == FLD_LINE_3_EFFECT_SPEED || 
@@ -331,6 +352,12 @@ class FourLineDisplayUsermod : public Usermod {
       }
     }
 
+    /**
+     * Line 2 or 3 (last two lines) can be marked with an
+     * arrow in the first column. Pass 2 or 3 to this to
+     * specify which line to mark with an arrow.
+     * Any other values are ignored.
+     */
     void setMarkLine(byte newMarkLineNum) {
       if (newMarkLineNum == 2 || newMarkLineNum == 3) {
         markLineNum = newMarkLineNum;
@@ -359,6 +386,9 @@ class FourLineDisplayUsermod : public Usermod {
     }
     */
 
+    /**
+     * Enable sleep (turn the display off) or clock mode.
+     */
     void sleepOrClock(bool enabled) {
       if (enabled) {
         if (CLOCK_MODE_ENABLED) {
@@ -377,56 +407,49 @@ class FourLineDisplayUsermod : public Usermod {
       }
     }
 
+    /**
+     * Display the current date and time in large characters
+     * on the middle rows. Based 24 or 12 hour depending on
+     * the useAMPM configuration.
+     */
     void showTime() {
       updateLocalTime();
       byte minuteCurrent = minute(localTime);
       byte hourCurrent = hour(localTime);
       if (minuteLast == minuteCurrent && hourLast == hourCurrent) {
+        // Time hasn't changed.
         return;
       }
-      minuteLast = minute(localTime);
-      hourLast = hour(localTime);
+      minuteLast = minuteCurrent;
+      hourLast = hourCurrent;
 
       u8x8.clear();
       u8x8.setFont(u8x8_font_chroma48medium8_r);
 
       int currentMonth = month(localTime);
-      const char *monthStr;
-      switch(currentMonth) {
-        case 1:  monthStr = "Jan"; break;
-        case 2:  monthStr = "Feb"; break;
-        case 3:  monthStr = "Mar"; break;
-        case 4:  monthStr = "Apr"; break;
-        case 5:  monthStr = "May"; break;
-        case 6:  monthStr = "Jun"; break;
-        case 7:  monthStr = "Jul"; break;
-        case 8:  monthStr = "Aug"; break;
-        case 9:  monthStr = "Sep"; break;
-        case 10: monthStr = "Oct"; break;
-        case 11: monthStr = "Nov"; break;
-        case 12: monthStr = "Dec"; break;
-        default: monthStr = "\0";  break;
-      }
-      sprintf(lineBuffer, "%s %d", monthStr, day(localTime));
+      sprintf(lineBuffer, "%s %d", monthShortStr(currentMonth), day(localTime));
       u8x8.DRAW_BIG_STRING(DATE_INDENT, TIME_LINE*LINE_HEIGHT, lineBuffer);
 
       byte showHour = hourCurrent;
       boolean isAM = false;
-      if (showHour == 0) {
-        showHour = 12;
-        isAM = true;
-      } 
-      else if (showHour > 12) {
-        showHour -= 12;
-        isAM = false;
+      if (useAMPM) {
+        if (showHour == 0) {
+          showHour = 12;
+          isAM = true;
+        } 
+        else if (showHour > 12) {
+          showHour -= 12;
+          isAM = false;
+        }
+        else {
+          isAM = true;
+        }
       }
-      else {
-        isAM = true;
-      }
-      sprintf(lineBuffer, "%2d:%02d %s", showHour, minuteCurrent, isAM ? "AM" : "PM");
+
+      sprintf(lineBuffer, "%02d:%02d %s", showHour, minuteCurrent, useAMPM ? (isAM ? "AM" : "PM") : "");
       // For time, we always use LINE_HEIGHT of 2 since
       // we are printing it big.
-      u8x8.DRAW_BIG_STRING(TIME_INDENT, (TIME_LINE + 1) * 2, lineBuffer);
+      u8x8.DRAW_BIG_STRING(TIME_INDENT + (useAMPM ? 0 : 1), (TIME_LINE + 1) * 2, lineBuffer);
     }
 
     /*
