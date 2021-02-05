@@ -24,7 +24,7 @@
 //   NOTE: If using a board with 3.3V logic like an Arduino Due connect pin 1
 //   to 3.3V instead of 5V!
 // Connect pin 2 of the sensor to whatever your DHTPIN is
-//   NOTE: Pin defaults below are for QuinLed Dig-Uno's Q4 on the board
+//   NOTE: Pin defaults below are for QuinLed Dig-Uno's Q2 on the board
 // Connect pin 4 (on the right) of the sensor to GROUND
 //   NOTE: If using a bare sensor (AM*), Connect a 10K resistor from pin 2
 //   (data) to pin 1 (power) of the sensor. DHT* boards have the pullup already
@@ -33,9 +33,9 @@
 #define DHTPIN USERMOD_DHT_PIN
 #else
 #ifdef ARDUINO_ARCH_ESP32
-#define DHTPIN 23
+#define DHTPIN 21
 #else //ESP8266 boards
-#define DHTPIN 13
+#define DHTPIN 4
 #endif
 #endif
 
@@ -50,6 +50,9 @@
 #define USERMOD_DHT_FIRST_MEASUREMENT_AT 90000
 #endif
 
+// from COOLDOWN_TIME in dht_nonblocking.cpp
+#define DHT_TIMEOUT_TIME  10000
+
 DHT_nonblocking dht_sensor(DHTPIN, DHTTYPE);
 
 class UsermodDHT : public Usermod {
@@ -60,6 +63,10 @@ class UsermodDHT : public Usermod {
     bool initializing = true;
     bool disabled = false;
     #ifdef USERMOD_DHT_STATS
+    unsigned long nextResetStatsTime = 0;
+    uint16_t updates = 0;
+    uint16_t clean_updates = 0;
+    uint16_t errors = 0;
     unsigned long maxDelay = 0;
     unsigned long currentIteration = 0;
     unsigned long maxIteration = 0;
@@ -69,6 +76,9 @@ class UsermodDHT : public Usermod {
     void setup() {
       nextReadTime = millis() + USERMOD_DHT_FIRST_MEASUREMENT_AT;
       lastReadTime = millis();
+      #ifdef USERMOD_DHT_STATS
+      nextResetStatsTime = millis() + 60*60*1000;
+      #endif
     }
 
     void loop() {
@@ -80,6 +90,12 @@ class UsermodDHT : public Usermod {
       }
 
       #ifdef USERMOD_DHT_STATS
+      if (millis() >= nextResetStatsTime) {
+        nextResetStatsTime += 60*60*1000;
+        errors = 0;
+        updates = 0;
+        clean_updates = 0;
+      }
       unsigned long dcalc = millis();
       if (currentIteration == 0) {
         currentIteration = millis();
@@ -94,7 +110,7 @@ class UsermodDHT : public Usermod {
         temperature = tempC * 9 / 5 + 32;
         #endif
 
-        nextReadTime += USERMOD_DHT_MEASUREMENT_INTERVAL;
+        nextReadTime = millis() + USERMOD_DHT_MEASUREMENT_INTERVAL;
         lastReadTime = millis();
         initializing = false;
         
@@ -103,7 +119,14 @@ class UsermodDHT : public Usermod {
         if (icalc > maxIteration) {
           maxIteration = icalc;
         }
+        if (icalc > DHT_TIMEOUT_TIME) {
+          errors += icalc/DHT_TIMEOUT_TIME;
+        } else {
+          clean_updates += 1;
+        }
+        updates += 1;
         currentIteration = 0;
+
         #endif
       }
 
@@ -142,6 +165,18 @@ class UsermodDHT : public Usermod {
       JsonArray last = user.createNestedArray("last");
       last.add((millis() - lastReadTime) / 60000);
       last.add(" min since read");
+
+      JsonArray err = user.createNestedArray("errors");
+      err.add(errors);
+      err.add(" Errors");
+
+      JsonArray upd = user.createNestedArray("updates");
+      upd.add(updates);
+      upd.add(" Updates");
+
+      JsonArray cupd = user.createNestedArray("cleanUpdates");
+      cupd.add(clean_updates);
+      cupd.add(" Updates");
 
       JsonArray iter = user.createNestedArray("maxIter");
       iter.add(maxIteration);
