@@ -32,11 +32,29 @@
 U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
   U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); 
 
+// Screen upside down? Change to 0 or 1
 #define FLIP_MODE 0
 
 // LINE_HEIGHT 1 is single height, for 128x32 displays.
 // LINE_HEIGHT 2 makes the 128x64 screen display at double height.
 #define LINE_HEIGHT 2
+
+// If you aren't also including RotaryEncoderUIUsermod
+// you probably want to set both
+//     SLEEP_MODE_ENABLED false
+//     CLOCK_MODE_ENABLED false
+// as you will never be able wake the display / disable the clock.
+#define SLEEP_MODE_ENABLED true
+#define CLOCK_MODE_ENABLED true
+#define TIME_INDENT        0
+#define DATE_INDENT        2
+
+// When to time out to the clock or blank the screen
+// if SLEEP_MODE_ENABLED.
+#define SCREEN_TIMEOUT_MS  15*1000
+
+// Minimum time between redrawing screen in ms
+#define USER_LOOP_REFRESH_RATE_MS 1000
 
 #if LINE_HEIGHT == 2
 #define DRAW_STRING draw1x2String
@@ -55,27 +73,11 @@ U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
 #define FLD_LINE_3_EFFECT_INTENSITY 2
 #define FLD_LINE_3_PALETTE          3
 
-// If you aren't also including RotaryEncoderUIUsermod
-// you probably want to set both
-//     SLEEP_MODE_ENABLED false
-//     CLOCK_MODE_ENABLED false
-// as you will never be able wake the display / disable the clock.
-#define SLEEP_MODE_ENABLED true
-#define CLOCK_MODE_ENABLED true
-#define TIME_INDENT        0
-#define DATE_INDENT        2
-
 #if LINE_HEIGHT == 2
 #define TIME_LINE  1
 #else
 #define TIME_LINE  0
 #endif
-
-// When to time out to the clock or blank the screen
-#define SCREEN_TIMEOUT_MS  15*1000
-
-// How often we are redrawing screen in ms
-#define USER_LOOP_REFRESH_RATE_MS 1000
 
 class FourLineDisplayUsermod : public Usermod {
   private:
