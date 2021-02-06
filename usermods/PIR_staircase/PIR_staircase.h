@@ -193,6 +193,17 @@ class PIR_staircase : public Usermod {
       pinMode(topPIR_PIN, INPUT);
 
     } else {
+      // Restore segment options
+      WS2812FX::Segment mainsegment = strip.getSegment(mainSegmentId);
+      WS2812FX::Segment* segments = strip.getSegments();
+      for (int i = 0; i < MAX_NUM_SEGMENTS; i++, segments++) {
+        if (!segments->isActive()) {
+          maxSegmentId = i - 1;
+          break;
+        }
+        segments->setOption(SEG_OPTION_ON, 1, 1);
+      }
+      colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
       Serial.println("PIR Staircase disabled.");
     }
     enabled = enable;
@@ -223,6 +234,7 @@ class PIR_staircase : public Usermod {
    * Shows configuration settings to the json API. This object looks like:
    *
    * "staircase" : {
+   *   "enabled" : true
    *   "segment-delay-ms" : 150,
    *   "on-time-s" : 5
    * }
