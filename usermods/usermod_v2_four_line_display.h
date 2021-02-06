@@ -14,8 +14,10 @@
 //
 // Make sure to enable NTP and set your time zone in WLED Config | Time.
 //
-// REQUIREMENT: uncomment the "U8g2" library option from the
-// REQUIREMENT: "lib_deps" section of platformio.ini
+// REQUIREMENT: You must add the following requirements to
+// REQUIREMENT: "lib_deps" within platformio.ini / platformio_override.ini
+// REQUIREMENT: *  U8g2  (the version already in platformio.ini is fine)
+// REQUIREMENT: *  Wire
 //
 
 //The SCL and SDA pins are defined here. 
@@ -95,8 +97,8 @@ class FourLineDisplayUsermod : public Usermod {
     uint8_t knownEffectIntensity = 0;
     uint8_t knownMode = 0;
     uint8_t knownPalette = 0;
-    uint8_t minuteLast = 99;
-    uint8_t hourLast = 99;
+    uint8_t knownMinute = 99;
+    uint8_t knownHour = 99;
 
     bool displayTurnedOff = false;
     long lastUpdate = 0;
@@ -425,12 +427,12 @@ class FourLineDisplayUsermod : public Usermod {
       updateLocalTime();
       byte minuteCurrent = minute(localTime);
       byte hourCurrent = hour(localTime);
-      if (minuteLast == minuteCurrent && hourLast == hourCurrent) {
+      if (knownMinute == minuteCurrent && knownHour == hourCurrent) {
         // Time hasn't changed.
         return;
       }
-      minuteLast = minuteCurrent;
-      hourLast = hourCurrent;
+      knownMinute = minuteCurrent;
+      knownHour = hourCurrent;
 
       u8x8.clear();
       u8x8.setFont(u8x8_font_chroma48medium8_r);

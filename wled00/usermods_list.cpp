@@ -21,8 +21,8 @@
 #include "usermod_v2_SensorsToMqtt.h"
 #endif
 
-// #include "usermod_four_line_display.h"
-// #include "usermod_rotary_encoder_ui.h"
+// #include "../usermods/usermod_v2_four_line_display.h"
+// #include "../usermods/usermod_v2_rotary_encoder_ui.h"
 
 void registerUsermods()
 {
