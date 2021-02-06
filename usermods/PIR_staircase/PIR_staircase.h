@@ -1,15 +1,14 @@
 #pragma once
-
-#include "math.h"
 #include "wled.h"
 #define USERMOD_ID_PIR_STAIRCASE 1011
-
 /*
  * Usermod for detecting people entering/leaving a staircase and switching the
- * staircase on/off. See the accompanying README.md file.
+ * staircase on/off.
+ * 
+ * See the accompanying README.md file for more info.
  */
 
-// Please change the pin numbering to match your board.
+// Please change the pin numbering below to match your board.
 const int topPIR_PIN = D7;
 const int bottomPIR_PIN = D6;
 
@@ -74,10 +73,10 @@ class PIR_staircase : public Usermod {
       if (i >= onIndex && i < offIndex) {
         segments->setOption(SEG_OPTION_ON, 1, 1);
 
-        // We need to mode and colors from segment 0 to make sure changes
+        // We may need to copy mode and colors from segment 0 to make sure changes
         // are propagated even when the config is changed during a wipe
-        segments->mode = mainsegment.mode;
-        segments->colors[0] = mainsegment.colors[0];
+        // segments->mode = mainsegment.mode;
+        // segments->colors[0] = mainsegment.colors[0];
       } else {
         segments->setOption(SEG_OPTION_ON, 0, 1);
       }
@@ -91,12 +90,6 @@ class PIR_staircase : public Usermod {
 
       bool bottomPIR = digitalRead(bottomPIR_PIN) == HIGH;
       bool topPIR = digitalRead(topPIR_PIN) == HIGH;
-
-      // Serial.print(millis(),DEC);
-      // Serial.print(" ");
-      // Serial.print(bottomPIR);
-      // Serial.print(" ");
-      // Serial.println(topPIR);
 
       if (bottomPIR != topPIR) {
         lastSwitchTime = millis();
@@ -165,6 +158,21 @@ class PIR_staircase : public Usermod {
     }
   }
 
+  void writeSettingsToJson(JsonObject& root) {
+    JsonObject staircase = root["staircase"];
+    if (staircase.isNull()) {
+      staircase = root.createNestedObject("staircase");
+    }
+    staircase["segment-delay-ms"] = segment_delay_ms;
+    staircase["on-time-s"] = on_time_ms / 1000;
+  }
+
+  void readSettingsFromJson(JsonObject& root) {
+    JsonObject staircase = root["staircase"];
+    segment_delay_ms = staircase["segment-delay-ms"] | 150;
+    on_time_ms = (staircase["on-time-s"] | 5) * 1000;
+  }
+
  public:
   void setup() {
     Serial.println("PIR Staircase enabled.");
@@ -183,7 +191,7 @@ class PIR_staircase : public Usermod {
     autoPowerOff();
     updateSwipe();
 
-    // Write changed settings from the json api into flash now
+    // Write changed settings from the json api into flash
     if (saveState) {
       serializeConfig();
       saveState = false;
@@ -202,12 +210,8 @@ class PIR_staircase : public Usermod {
    *
    */
   void addToJsonState(JsonObject& root) {
-    JsonObject staircase = root["staircase"];
-    if (staircase.isNull()) {
-      staircase = root.createNestedObject("staircase");
-    }
-    staircase["segment-delay-ms"] = segment_delay_ms;
-    staircase["on-time-s"] = on_time_ms / 1000;
+    writeSettingsToJson(root);
+    Serial.println("Staircase config exposed in API.");
   }
 
   /*
@@ -215,36 +219,20 @@ class PIR_staircase : public Usermod {
    * See void addToJsonState(JsonObject& root)
    */
   void readFromJsonState(JsonObject& root) {
-    JsonObject staircase = root["staircase"];
+    readSettingsFromJson(root);
 
-    unsigned long s = staircase["segment-delay-ms"] | 150;
-    if (s != segment_delay_ms) {
-      segment_delay_ms = s;
-      saveState = true;
-    }
+    // The call to serializeConfig() must be done in the main loop,
+    // so we set a flag to signal the main loop to save state.
+    saveState = true;
 
-    unsigned long o = (staircase["on-time-s"] | 5) * 1000;
-    if (o != on_time_ms) {
-      on_time_ms = o;
-      saveState = true;
-    }
-
-    if (saveState) {
-      Serial.println("Staircase settings changed by API call.");
-    }
+    Serial.println("Staircase config read from API.");
   }
 
   /*
    * Writes the configuration to internal flash memory.
    */
   void addToConfig(JsonObject& root) {
-    JsonObject staircase = root["staircase"];
-    if (staircase.isNull()) {
-      staircase = root.createNestedObject("staircase");
-    }
-
-    staircase["segment-delay-ms"] = segment_delay_ms;
-    staircase["on-time-s"] = on_time_ms / 1000;
+    writeSettingsToJson(root);
     Serial.println("Staircase config saved.");
   }
 
@@ -252,9 +240,7 @@ class PIR_staircase : public Usermod {
    * Reads the configuration to internal flash memory before setup() is called.
    */
   void readFromConfig(JsonObject& root) {
-    JsonObject staircase = root["staircase"];
-    segment_delay_ms = staircase["segment-delay-ms"] | 150;
-    on_time_ms = (staircase["on-time-s"] | 5) * 1000;
+    readSettingsFromJson(root);
     Serial.println("Staircase config loaded.");
   }
 
@@ -263,8 +249,6 @@ class PIR_staircase : public Usermod {
    * tab of the web-UI.
    */
   void addToJsonInfo(JsonObject& root) {
-    int reading = 20;
-    // this code adds "u":{"Light":[20," lux"]} to the info object
     JsonObject staircase = root["u"];
     if (staircase.isNull()) {
       staircase = root.createNestedObject("u");

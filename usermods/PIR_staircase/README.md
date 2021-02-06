@@ -60,25 +60,17 @@ can be changed:
 
 To read the settings, open a browser to `http://192.168.0.19/json/state` (where you need to change 
 192.168.0.19 into the ip address of your WLED device). The device will respond with a json object
-containing all WLED settings. The PIR staircase settings are in the status element:
+containing all WLED settings. The PIR staircase settings are inside the WLED status element:
 
 ```json
 {
     "state": {
-        "on": true,
-        "bri": 128,
-...
         "staircase": {
             "segment-delay-ms": 150,
             "on-time-s": 5
         },
-        "ccnf": {
-            "min": 1,
-            "max": 5,
-            "time": 12
-        },
-...
 }
+```
 
 Changing these settings can be done by sending a POST to your WLED device:
 
@@ -88,5 +80,5 @@ curl -X POST -H "Content-Type: application/json" \
      192.168.0.19/json/state
 ```
 
-In this case, we change the delay between steps to 100 milliseconds and the power-off time
+In the example above we change the delay between steps to 100 milliseconds and the power-off time
 to 10 seconds.
