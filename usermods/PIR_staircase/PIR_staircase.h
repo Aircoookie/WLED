@@ -86,6 +86,7 @@ class PIR_staircase : public Usermod {
       } else {
         segments->setOption(SEG_OPTION_ON, 0, 1);
       }
+      segments->setOption(SEG_OPTION_TRANSITIONAL, 1, 1);
     }
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
   }
