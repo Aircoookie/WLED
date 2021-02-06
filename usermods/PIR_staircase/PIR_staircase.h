@@ -19,7 +19,10 @@ unsigned long segment_delay_ms =
 unsigned long on_time_ms = 5 * 1000;  // The time for the light to stay on
 
 // Time between checking of the PIRs
-const int scanDelay = 50;
+const int scanDelay = 10;
+
+// Number of times to detect PIR
+const int debounceLimit = 5;
 
 class PIR_staircase : public Usermod {
  private:
@@ -60,6 +63,9 @@ class PIR_staircase : public Usermod {
 
   bool saveState = false;
 
+  // Number of times we have a PIR detected.
+  int detectcount = 0;
+
   void updateSegments() {
     mainSegmentId = strip.getMainSegmentId();
     WS2812FX::Segment mainsegment = strip.getSegment(mainSegmentId);
@@ -92,6 +98,11 @@ class PIR_staircase : public Usermod {
       bool topPIR = digitalRead(topPIR_PIN) == HIGH;
 
       if (bottomPIR != topPIR) {
+        detectcount++;
+      }
+
+      if ((bottomPIR != topPIR) && (detectcount >= debounceLimit)) {
+        detectcount = 0;
         lastSwitchTime = millis();
 
         if (on) {
