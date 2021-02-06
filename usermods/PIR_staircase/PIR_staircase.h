@@ -17,20 +17,23 @@
 #ifndef topPIR_PIN
 #define topSignalPin D2
 #define topEchoPin D3
-unsigned int topMaxTimeUs = 1749;  // default echo timout, stored in config
 #endif
 
 #ifndef bottomPIR_PIN
 #define bottomSignalPin D0
 #define bottomEchoPin D1
-unsigned int bottomMaxTimeUs = 1749;  // default echo timout, stored in config
 #endif
 
 /* Initial configuration (available in API and stored in flash) */
-bool enabled = true;  // Enable this usermod
-unsigned long segment_delay_ms =
-    150;  // Time between switching on/off each segment, stored in config
-unsigned long on_time_ms = 5 * 1000;  // The time for the light to stay on
+bool enabled = true;                   // Enable this usermod
+unsigned long segment_delay_ms = 150;  // Time between switching each segment
+unsigned long on_time_ms = 5 * 1000;   // The time for the light to stay on
+#ifndef topPIR_PIN
+unsigned int topMaxTimeUs = 1749;  // default echo timout, top
+#endif
+#ifndef bottomPIR_PIN
+unsigned int bottomMaxTimeUs = 1749;  // default echo timout, bottom
+#endif
 
 // Time between checking of the PIRs (or ultrasonic sensors)
 const int scanDelay = 50;
