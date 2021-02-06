@@ -21,8 +21,8 @@
 #include "usermod_v2_SensorsToMqtt.h"
 #endif
 
-// #include "../usermods/usermod_v2_four_line_display.h"
-// #include "../usermods/usermod_v2_rotary_encoder_ui.h"
+// #include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
+// #include "../usermods/usermod_v2_rotary_encoder_ui/usermod_v2_rotary_encoder_ui.h"
 
 void registerUsermods()
 {
@@ -43,6 +43,6 @@ void registerUsermods()
   usermods.add(new UserMod_SensorsToMQTT());
 #endif
 
-// usermods.add(new FourLineDisplayUsermod());
-// usermods.add(new RotaryEncoderUIUsermod());
+  // usermods.add(new FourLineDisplayUsermod());
+  // usermods.add(new RotaryEncoderUIUsermod());
 }
