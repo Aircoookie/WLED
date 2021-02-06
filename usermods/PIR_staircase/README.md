@@ -110,13 +110,14 @@ curl -X POST -H "Content-Type: application/json" \
      192.168.0.19/json/state
 ```
 
-## Replacing a PIR sensor with an ultrasonic HR04 sensor
+## Replacing a PIR sensor with an ultrasonic HC-SR04 sensor
 
 This usermod can handle both PIR and Ultrasonic sensors for detecting
 movement. PIR sensors are the easiest, and the default. Should you want
 to use an ultrasonic distance sensor instead of the default PIR sensor
 at one or both ends of the stairs, there is a bit more editting involved.
-In this example we will replace the _bottom_ PIR sensor with an HR04
+In this example we will replace the _bottom_ PIR sensor with an 
+[HC-SR04](https://components101.com/ultrasonic-sensor-working-pinout-datasheet)
 ultrasonic sensor.
 
 Comment out the line that defines the bottomPIR_PIN, like so:
@@ -126,7 +127,7 @@ Comment out the line that defines the bottomPIR_PIN, like so:
 ```
 
 A few lines below that, you'll find two lines defining where the `Signal`
-and `Echo` pins of your HR04 sensor are connected to. Change them to match
+and `Echo` pins of your HC-SR04 sensor are connected to. Change them to match
 your connections:
 
 ```
@@ -152,7 +153,7 @@ setting appear in the json api:
 }
 ```
 
-If the HR04 sensor detects an echo within 1749 microseconds (within 30 cm from
+If the HC-SR04 sensor detects an echo within 1749 microseconds (within 30 cm from
 the sensor), it will trigger switching on the staircase. This setting can be changed
 through the API with an HTTP POST:
 
@@ -177,7 +178,7 @@ has to travel back and forth, the detection distance for the sensor in cm is
 |    50 cm |         2915 uS |
 |   100 cm |         5831 uS |
 
-**Please note:** that using an HR04 sensor, particularly when detecting echos at longer
+**Please note:** that using an HC-SR04 sensor, particularly when detecting echos at longer
 distances creates delays, and might introduce timing hickups in your animations or
 a less responsive web interface.
 
