@@ -9,8 +9,22 @@
  */
 
 // Please change the pin numbering below to match your board.
-const int topPIR_PIN = D7;
-const int bottomPIR_PIN = D6;
+#define topPIR_PIN D7
+#define bottomPIR_PIN D6
+
+// Or uncumment and a pir and use an ultrasound HR04 sensor,
+// see README.md for details
+#ifndef topPIR_PIN
+#define topSignalPin D2
+#define topEchoPin D3
+unsigned int topMaxTimeUs = 1749;  // default echo timout, stored in config
+#endif
+
+#ifndef bottomPIR_PIN
+#define bottomSignalPin D0
+#define bottomEchoPin D1
+unsigned int bottomMaxTimeUs = 1749;  // default echo timout, stored in config
+#endif
 
 /* Initial configuration (available in API and stored in flash) */
 bool enabled = true;  // Enable this usermod
@@ -18,11 +32,8 @@ unsigned long segment_delay_ms =
     150;  // Time between switching on/off each segment, stored in config
 unsigned long on_time_ms = 5 * 1000;  // The time for the light to stay on
 
-// Time between checking of the PIRs
-const int scanDelay = 10;
-
-// Number of times to detect PIR
-const int debounceLimit = 5;
+// Time between checking of the PIRs (or ultrasonic sensors)
+const int scanDelay = 50;
 
 class PIR_staircase : public Usermod {
  private:
@@ -63,9 +74,6 @@ class PIR_staircase : public Usermod {
 
   bool saveState = false;
 
-  // Number of times we have a PIR detected.
-  int detectcount = 0;
-
   void updateSegments() {
     mainSegmentId = strip.getMainSegmentId();
     WS2812FX::Segment mainsegment = strip.getSegment(mainSegmentId);
@@ -92,19 +100,55 @@ class PIR_staircase : public Usermod {
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
   }
 
+  /*
+   * Detects if an object is within ultrasound range.
+   * signalPin: The pin where the pulse is sent
+   * echoPin:   The pin where the echo is received
+   * maxTimeUs: Detection timeout in microseconds. If an echo is
+   *            received within this time, an object is detected
+   *            and the function will return true.
+   *
+   * The speed of sound is 343 meters per second at 20 degress Celcius.
+   * Since the sound has to travel back and forth, the detection
+   * distance for the sensor in cm is (0.0343 * maxTimeUs) / 2.
+   *
+   * For practical reasons, here are some useful distances:
+   *
+   * Distance =	maxtime
+   *     5 cm =  292 uS
+   *    10 cm =  583 uS
+   *    20 cm = 1166 uS
+   *    30 cm = 1749 uS
+   *    50 cm = 2915 uS
+   *   100 cm = 5831 uS
+   */
+  bool ultrasoundRead(uint8_t signalPin,
+                      uint8_t echoPin,
+                      unsigned int maxTimeUs) {
+    digitalWrite(signalPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(signalPin, LOW);
+    return pulseIn(echoPin, HIGH, maxTimeUs) > 0;
+  }
+
   void checkPIRs() {
     if ((millis() - lastScanTime) > scanDelay) {
       lastScanTime = millis();
 
+#ifdef bottomPIR_PIN
       bool bottomPIR = digitalRead(bottomPIR_PIN) == HIGH;
+#else
+      bool bottomPIR =
+          ultrasoundRead(bottomSignalPin, bottomEchoPin, bottomMaxTimeUs);
+#endif
+
+#ifdef topPIR_PIN
       bool topPIR = digitalRead(topPIR_PIN) == HIGH;
+#else
+      bool topPIR = ultrasoundRead(topSignalPin, topEchoPin, topMaxTimeUs);
+#endif
 
       if (bottomPIR != topPIR) {
-        detectcount++;
-      }
-
-      if ((bottomPIR != topPIR) && (detectcount >= debounceLimit)) {
-        detectcount = 0;
         lastSwitchTime = millis();
 
         if (on) {
@@ -179,6 +223,13 @@ class PIR_staircase : public Usermod {
     staircase["enabled"] = enabled;
     staircase["segment-delay-ms"] = segment_delay_ms;
     staircase["on-time-s"] = on_time_ms / 1000;
+
+#ifdef topSignalPin
+    staircase["top-echo-us"] = topMaxTimeUs;
+#endif
+#ifdef bottomSignalPin
+    staircase["bottom-echo-us"] = bottomMaxTimeUs;
+#endif
   }
 
   void readSettingsFromJson(JsonObject& root) {
@@ -191,6 +242,13 @@ class PIR_staircase : public Usermod {
 
     segment_delay_ms = staircase["segment-delay-ms"] | segment_delay_ms;
     on_time_ms = (staircase["on-time-s"] | (on_time_ms / 1000)) * 1000;
+
+#ifdef topSignalPin
+    topMaxTimeUs = staircase["top-echo-us"] | topMaxTimeUs;
+#endif
+#ifdef bottomSignalPin
+    bottomMaxTimeUs = staircase["bottom-echo-us"] | bottomMaxTimeUs;
+#endif
   }
 
   void enable(bool enable) {
@@ -202,9 +260,19 @@ class PIR_staircase : public Usermod {
       Serial.print(on_time_ms / 1000, DEC);
       Serial.println(" seconds.");
 
+#ifdef bottomPIR_PIN
       pinMode(bottomPIR_PIN, INPUT);
-      pinMode(topPIR_PIN, INPUT);
+#else
+      pinMode(bottomSignalPin, OUTPUT);
+      pinMode(bottomEchoPin, INPUT);
+#endif
 
+#ifdef topPIR_PIN
+      pinMode(topPIR_PIN, INPUT);
+#else
+      pinMode(topSignalPin, OUTPUT);
+      pinMode(topEchoPin, INPUT);
+#endif
     } else {
       // Restore segment options
       WS2812FX::Segment mainsegment = strip.getSegment(mainSegmentId);
