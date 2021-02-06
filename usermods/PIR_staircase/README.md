@@ -66,13 +66,18 @@ containing all WLED settings. The PIR staircase settings are inside the WLED sta
 {
     "state": {
         "staircase": {
+            "enabled": true
             "segment-delay-ms": 150,
             "on-time-s": 5
         },
 }
 ```
 
-Changing these settings can be done by sending a POST to your WLED device:
+
+### Changing animation parameters
+
+To change the delay between the steps to 100 milliseconds and the on-time to
+10 seconds:
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
@@ -80,5 +85,27 @@ curl -X POST -H "Content-Type: application/json" \
      192.168.0.19/json/state
 ```
 
-In the example above we change the delay between steps to 100 milliseconds and the power-off time
-to 10 seconds.
+(where 192.168.0.19 is the address of your WLED device)
+
+
+### Enable/disable the plugin through API
+
+By disabling the plugin you will be able to control the
+status of the leds yourself, and play with the WLED settings
+without interference of this usermod.
+
+To enable the plugin:
+
+```bash
+curl -X POST -H "Content-Type: application/json" \
+     -d {"staircase":{"enabled":true}} \
+     192.168.0.19/json/state
+```
+
+To disable the plugin:
+
+```bash
+curl -X POST -H "Content-Type: application/json" \
+     -d {"staircase":{"enabled":false}} \
+     192.168.0.19/json/state
+```

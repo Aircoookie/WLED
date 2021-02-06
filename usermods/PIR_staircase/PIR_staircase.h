@@ -4,7 +4,7 @@
 /*
  * Usermod for detecting people entering/leaving a staircase and switching the
  * staircase on/off.
- * 
+ *
  * See the accompanying README.md file for more info.
  */
 
@@ -12,11 +12,11 @@
 const int topPIR_PIN = D7;
 const int bottomPIR_PIN = D6;
 
-// Time between switching on/off each segment, stored in config
-unsigned long segment_delay_ms = 150;
-
-// The time for the light to stay on
-unsigned long on_time_ms = 5 * 1000;
+/* Initial configuration (available in API and stored in flash) */
+bool enabled = true;  // Enable this usermod
+unsigned long segment_delay_ms =
+    150;  // Time between switching on/off each segment, stored in config
+unsigned long on_time_ms = 5 * 1000;  // The time for the light to stay on
 
 // Time between checking of the PIRs
 const int scanDelay = 50;
@@ -73,8 +73,8 @@ class PIR_staircase : public Usermod {
       if (i >= onIndex && i < offIndex) {
         segments->setOption(SEG_OPTION_ON, 1, 1);
 
-        // We may need to copy mode and colors from segment 0 to make sure changes
-        // are propagated even when the config is changed during a wipe
+        // We may need to copy mode and colors from segment 0 to make sure
+        // changes are propagated even when the config is changed during a wipe
         // segments->mode = mainsegment.mode;
         // segments->colors[0] = mainsegment.colors[0];
       } else {
@@ -163,30 +163,49 @@ class PIR_staircase : public Usermod {
     if (staircase.isNull()) {
       staircase = root.createNestedObject("staircase");
     }
+    staircase["enabled"] = enabled;
     staircase["segment-delay-ms"] = segment_delay_ms;
     staircase["on-time-s"] = on_time_ms / 1000;
   }
 
   void readSettingsFromJson(JsonObject& root) {
     JsonObject staircase = root["staircase"];
-    segment_delay_ms = staircase["segment-delay-ms"] | 150;
-    on_time_ms = (staircase["on-time-s"] | 5) * 1000;
+
+    bool shouldEnable = staircase["enabled"] | enabled;
+    if (shouldEnable != enabled) {
+      enable(shouldEnable);
+    }
+
+    segment_delay_ms = staircase["segment-delay-ms"] | segment_delay_ms;
+    on_time_ms = (staircase["on-time-s"] | (on_time_ms / 1000)) * 1000;
+  }
+
+  void enable(bool enable) {
+    if (enable) {
+      Serial.println("PIR Staircase enabled.");
+      Serial.print("Delay between steps: ");
+      Serial.print(segment_delay_ms, DEC);
+      Serial.print(" milliseconds.\nStairs switch off after: ");
+      Serial.print(on_time_ms / 1000, DEC);
+      Serial.println(" seconds.");
+
+      pinMode(bottomPIR_PIN, INPUT);
+      pinMode(topPIR_PIN, INPUT);
+
+    } else {
+      Serial.println("PIR Staircase disabled.");
+    }
+    enabled = enable;
   }
 
  public:
-  void setup() {
-    Serial.println("PIR Staircase enabled.");
-    Serial.print("Delay between steps: ");
-    Serial.print(segment_delay_ms, DEC);
-    Serial.print(" milliseconds.\nStairs switch off after: ");
-    Serial.print(on_time_ms / 1000, DEC);
-    Serial.println(" seconds.");
-
-    pinMode(bottomPIR_PIN, INPUT);
-    pinMode(topPIR_PIN, INPUT);
-  }
+  void setup() { enable(enabled); }
 
   void loop() {
+    if (!enabled) {
+      return;
+    }
+
     checkPIRs();
     autoPowerOff();
     updateSwipe();
@@ -254,14 +273,24 @@ class PIR_staircase : public Usermod {
       staircase = root.createNestedObject("u");
     }
 
-    JsonArray segmentDelay =
-        staircase.createNestedArray("Delay between stairs");  // name
-    segmentDelay.add(segment_delay_ms);                       // value
-    segmentDelay.add(" milliseconds");                        // unit
+    if (enabled) {
+      JsonArray usermodEnabled =
+          staircase.createNestedArray("Staircase enabled");  // name
+      usermodEnabled.add("yes");                             // value
 
-    JsonArray onTime =
-        staircase.createNestedArray("Power-off stairs after");  // name
-    onTime.add(on_time_ms / 1000);                              // value
-    onTime.add(" seconds");                                     // unit
+      JsonArray segmentDelay =
+          staircase.createNestedArray("Delay between stairs");  // name
+      segmentDelay.add(segment_delay_ms);                       // value
+      segmentDelay.add(" milliseconds");                        // unit
+
+      JsonArray onTime =
+          staircase.createNestedArray("Power-off stairs after");  // name
+      onTime.add(on_time_ms / 1000);                              // value
+      onTime.add(" seconds");                                     // unit
+    } else {
+      JsonArray usermodEnabled =
+          staircase.createNestedArray("Staircase enabled");  // name
+      usermodEnabled.add("no");                              // value
+    }
   }
 };
