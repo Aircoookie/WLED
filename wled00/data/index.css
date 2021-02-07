@@ -259,6 +259,10 @@ button {
 	overscroll-behavior: none;
 }
 
+.icon {
+	font-size: large;
+}
+
 #Effects {
 	padding-top: 0;
 	margin-top: 11px;
