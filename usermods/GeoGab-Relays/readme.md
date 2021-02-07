@@ -59,7 +59,7 @@ Perform the following changes:
                     * Search for: `.bot button {`
                       Change value of width to 20% (2 rows down): `width:25%` => `witdth:20%`
 
-    1.3         File: `wled00/data/index.js`  
+    1.3         File: `wled00/data/index.hmt` (since index.js is itegrated File: `wled00/data/index.js`)
                     * Search for: `const _C = document.querySelector('.container'), N = 4;`
                       Replace by: `const _C = document.querySelector('.container'), N = 5;`
                     
@@ -161,6 +161,8 @@ Perform the following changes:
             To do this, perform the following steps.
 
     2.1.    Install the Software: https://nodejs.org/en/download/ (only once)
+
+    2.2.    Open Command Prompt and change in Directore "wled00"
 
     2.2.    Run in Command Line: npm install (only once)
 
