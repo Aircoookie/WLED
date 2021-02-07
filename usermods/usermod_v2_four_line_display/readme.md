@@ -35,5 +35,5 @@ UI usermod folder for how to include these using `platformio_override.ini`.
 
 ## Change Log
 
-2020-02
+2021-02
 * First public release
