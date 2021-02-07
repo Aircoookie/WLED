@@ -9,7 +9,7 @@ a relatively complete on-device UI when paired with the
 Rotary Encoder UI usermod. I strongly encourage you to use 
 them together.
 
-See the pair of usermods in action: https://www.youtube.com/watch?v=tITQY80rIOA
+[See the pair of usermods in action](https://www.youtube.com/watch?v=tITQY80rIOA)
 
 ## Installation
 

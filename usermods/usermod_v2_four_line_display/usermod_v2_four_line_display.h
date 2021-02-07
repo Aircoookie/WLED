@@ -50,8 +50,17 @@ U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
 //     SLEEP_MODE_ENABLED false
 //     CLOCK_MODE_ENABLED false
 // as you will never be able wake the display / disable the clock.
+#ifdef USERMOD_ROTARY_ENCODER_UI
+#ifndef SLEEP_MODE_ENABLED
 #define SLEEP_MODE_ENABLED true
+#endif
+#ifndef SLEEP_MODE_ENABLED
 #define CLOCK_MODE_ENABLED true
+#endif
+#else
+#define SLEEP_MODE_ENABLED false
+#define CLOCK_MODE_ENABLED false
+#endif
 
 // When to time out to the clock or blank the screen
 // if SLEEP_MODE_ENABLED.

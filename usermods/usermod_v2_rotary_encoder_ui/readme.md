@@ -6,7 +6,7 @@ This usermod starts to provide a relatively complete on-device
 UI when paired with the Four Line Display usermod. I strongly
 encourage you to try them together.
 
-See the pair of usermods in action: https://www.youtube.com/watch?v=tITQY80rIOA
+[See the pair of usermods in action](https://www.youtube.com/watch?v=tITQY80rIOA)
 
 ## Installation
 
