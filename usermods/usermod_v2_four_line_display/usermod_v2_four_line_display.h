@@ -21,11 +21,11 @@
 //
 
 //The SCL and SDA pins are defined here. 
-#ifdef ESP32
-#define U8X8_PIN_SCL 22
-#define U8X8_PIN_SDA 21
-#else
+#ifndef U8X8_PIN_SCL
 #define U8X8_PIN_SCL 5
+#endif
+
+#ifndef U8X8_PIN_SDA
 #define U8X8_PIN_SDA 4
 #endif
 
@@ -35,11 +35,15 @@ U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
   U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); 
 
 // Screen upside down? Change to 0 or 1
+#ifndef FLIP_MODE
 #define FLIP_MODE 0
+#endif
 
 // LINE_HEIGHT 1 is single height, for 128x32 displays.
 // LINE_HEIGHT 2 makes the 128x64 screen display at double height.
+#ifndef LINE_HEIGHT
 #define LINE_HEIGHT 2
+#endif
 
 // If you aren't also including RotaryEncoderUIUsermod
 // you probably want to set both
@@ -48,12 +52,13 @@ U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
 // as you will never be able wake the display / disable the clock.
 #define SLEEP_MODE_ENABLED true
 #define CLOCK_MODE_ENABLED true
-#define TIME_INDENT        0
-#define DATE_INDENT        2
 
 // When to time out to the clock or blank the screen
 // if SLEEP_MODE_ENABLED.
 #define SCREEN_TIMEOUT_MS  15*1000
+
+#define TIME_INDENT        0
+#define DATE_INDENT        2
 
 // Minimum time between redrawing screen in ms
 #define USER_LOOP_REFRESH_RATE_MS 1000

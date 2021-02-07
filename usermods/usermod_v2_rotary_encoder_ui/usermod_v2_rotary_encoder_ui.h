@@ -22,22 +22,19 @@
 // Change between modes by pressing a button.
 //
 
-#ifdef ESP32
-#define ENCODER_DT_PIN 18
-#define ENCODER_CLK_PIN 5
-#define ENCODER_SW_PIN 19
-#else
+#ifndef ENCODER_DT_PIN
 #define ENCODER_DT_PIN 12
+#endif
+
+#ifndef ENCODER_CLK_PIN
 #define ENCODER_CLK_PIN 14
+#endif
+
+#ifndef ENCODER_SW_PIN
 #define ENCODER_SW_PIN 13
 #endif
 
-// Define this if you want to use this Usermod in
-// concert with FourLineDisplayUsermod.
-// Hint: you do.
-#define USE_FOUR_LINE_DISPLAY
-
-#ifndef USE_FOUR_LINE_DISPLAY
+#ifndef USERMOD_FOUR_LINE_DISLAY
 // These constants won't be defined if we aren't using FourLineDisplay.
 #define FLD_LINE_3_BRIGHTNESS       0
 #define FLD_LINE_3_EFFECT_SPEED     0
@@ -88,7 +85,7 @@ private:
   unsigned char button_state = HIGH;
   unsigned char prev_button_state = HIGH;
   
-#ifdef USE_FOUR_LINE_DISPLAY
+#ifdef USERMOD_FOUR_LINE_DISLAY
   FourLineDisplayUsermod* display;
 #else
   void* display = nullptr;
@@ -114,7 +111,7 @@ public:
     currentTime = millis();
     loopTime = currentTime;
 
-#ifdef USE_FOUR_LINE_DISPLAY    
+#ifdef USERMOD_FOUR_LINE_DISLAY    
     // This Usermod uses FourLineDisplayUsermod for the best experience.
     // But it's optional. But you want it.
     display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_FOUR_LINE_DISP);
@@ -266,7 +263,7 @@ public:
   }
 
   boolean changeState(const char *stateName, byte lineThreeMode, byte markedLine) {
-#ifdef USE_FOUR_LINE_DISPLAY
+#ifdef USERMOD_FOUR_LINE_DISLAY
     if (display != nullptr) {
       if (display->wakeDisplay()) {
         // Throw away wake up input
@@ -290,7 +287,7 @@ public:
   }
 
   void changeBrightness(bool increase) {
-#ifdef USE_FOUR_LINE_DISPLAY
+#ifdef USERMOD_FOUR_LINE_DISLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -306,7 +303,7 @@ public:
   }
 
   void changeEffect(bool increase) {
-#ifdef USE_FOUR_LINE_DISPLAY
+#ifdef USERMOD_FOUR_LINE_DISLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -323,7 +320,7 @@ public:
   }
 
   void changeEffectSpeed(bool increase) {
-#ifdef USE_FOUR_LINE_DISPLAY
+#ifdef USERMOD_FOUR_LINE_DISLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -339,7 +336,7 @@ public:
   }
 
   void changeEffectIntensity(bool increase) {
-#ifdef USE_FOUR_LINE_DISPLAY
+#ifdef USERMOD_FOUR_LINE_DISLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -355,7 +352,7 @@ public:
   }
 
   void changePalette(bool increase) {
-#ifdef USE_FOUR_LINE_DISPLAY
+#ifdef USERMOD_FOUR_LINE_DISLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
