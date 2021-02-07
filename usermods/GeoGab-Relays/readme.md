@@ -45,21 +45,21 @@ Perform the following changes:
     1.      Modify the core files:
 
     1.1         File: `wled00/data/index.hmt` 
-                    * Search for: `<button class="tablinks" onclick="openTab(3)">"` ...
+                    * Search for: `<button class="tablinks" onclick="openTab(3)">` ...
                       Add after:  `<button class="tablinks" onclick="openTab(4)"><i class="icons">&#xe0bb;</i><p class="tab-label">Relays</p></button>`
 
                     * Search for: `<div id="Favorites" class="tabcontent">`
                       Add after the closing </div> of that div section:
                                   `<div id="Relay" class="tabcontent">
                                     <p class="labels">Relays</p>
-                                    <div id="relaylist">Loading...</div>
+                                    <div id="ListOfRelays">Loading...</div>
                                   </div>`
 
     1.2         File: `wled00/data/index.css`             
                     * Search for: `.bot button {`
                       Change value of width to 20% (2 rows down): `width:25%` => `witdth:20%`
 
-    1.3         File: `wled00/data/index.hmt` (since index.js is itegrated File: `wled00/data/index.js`)
+    1.3         File: `wled00/data/index.js`)
                     * Search for: `const _C = document.querySelector('.container'), N = 4;`
                       Replace by: `const _C = document.querySelector('.container'), N = 5;`
                     
