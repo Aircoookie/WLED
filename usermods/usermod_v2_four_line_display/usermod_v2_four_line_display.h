@@ -21,18 +21,18 @@
 //
 
 //The SCL and SDA pins are defined here. 
-#ifndef U8X8_PIN_SCL
-#define U8X8_PIN_SCL 5
+#ifndef FLD_PIN_SCL
+#define FLD_PIN_SCL 5
 #endif
 
-#ifndef U8X8_PIN_SDA
-#define U8X8_PIN_SDA 4
+#ifndef FLD_PIN_SDA
+#define FLD_PIN_SDA 4
 #endif
 
 // U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(
-//   U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); 
+//   U8X8_PIN_NONE, FLD_PIN_SCL, FLD_PIN_SDA); 
 U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
-  U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_SDA); 
+  U8X8_PIN_NONE, FLD_PIN_SCL, FLD_PIN_SDA); 
 
 // Screen upside down? Change to 0 or 1
 #ifndef FLIP_MODE
