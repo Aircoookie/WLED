@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2012210
+#define VERSION 2101130
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -204,6 +204,9 @@ WLED_GLOBAL IPAddress staticIP      _INIT_N(((  0,   0,  0,  0))); // static IP 
 WLED_GLOBAL IPAddress staticGateway _INIT_N(((  0,   0,  0,  0))); // gateway (router) IP
 WLED_GLOBAL IPAddress staticSubnet  _INIT_N(((255, 255, 255, 0))); // most common subnet in home networks
 WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
+#ifdef WLED_USE_ETHERNET
+WLED_GLOBAL int ethernetType _INIT(WLED_ETH_ESP32_POE);            // ethernet board type
+#endif
 
 // LED CONFIG
 WLED_GLOBAL uint16_t ledCount _INIT(30);          // overcurrent prevented by ABL
@@ -342,11 +345,7 @@ WLED_GLOBAL bool interfacesInited _INIT(false);
 WLED_GLOBAL bool wasConnected _INIT(false);
 
 // color
-WLED_GLOBAL byte colOld[]    _INIT_N(({ 0, 0, 0, 0 }));        // color before transition
-WLED_GLOBAL byte colT[]      _INIT_N(({ 0, 0, 0, 0 }));          // color that is currently displayed on the LEDs
 WLED_GLOBAL byte colIT[]     _INIT_N(({ 0, 0, 0, 0 }));         // color that was last sent to LEDs
-WLED_GLOBAL byte colSecT[]   _INIT_N(({ 0, 0, 0, 0 }));
-WLED_GLOBAL byte colSecOld[] _INIT_N(({ 0, 0, 0, 0 }));
 WLED_GLOBAL byte colSecIT[]  _INIT_N(({ 0, 0, 0, 0 }));
 
 WLED_GLOBAL byte lastRandomIndex _INIT(0);        // used to save last random color so the new one is not the same

@@ -219,6 +219,12 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("AC"),apChannel);
     sappend('c',SET_F("WS"),noWifiSleep);
 
+    #ifdef WLED_USE_ETHERNET
+    sappend('i',SET_F("ETH"),ethernetType);
+    #else
+    //hide ethernet setting if not compiled in
+    oappend(SET_F("document.getElementById('ethd').style.display='none';"));
+    #endif
 
     if (Network.isConnected()) //is connected
     {

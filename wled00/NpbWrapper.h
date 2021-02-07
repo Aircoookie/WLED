@@ -45,7 +45,7 @@
 //This can be useful if you want to chain multiple strings with incompatible color order
 //#define COLOR_ORDER_OVERRIDE
 #define COO_MIN    0
-#define COO_MAX   35 //not inclusive, this would set the override for LEDs 0-26
+#define COO_MAX   35 //not inclusive, this would set the override for LEDs 0-34
 #define COO_ORDER COL_ORDER_GRB
 
 //END CONFIGURATION
