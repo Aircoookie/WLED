@@ -270,14 +270,60 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   if (subPage == 2) {
-    #ifdef ESP8266
-    #if LEDPIN == 3
-    oappend(SET_F("d.Sf.LC.max=500;"));
+    char nS[3];
+
+    // add usermod pins as d.um_p array (TODO: usermod config shouldn't use state. instead we should load "um" object from cfg.json)
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+    JsonObject mods = doc.createNestedObject(F("mods"));
+    usermods.addToJsonState(mods);
+    if (!mods.isNull()) {
+      uint8_t i=0;
+      oappend(SET_F("d.um_p=["));
+      for (JsonPair kv : mods) {
+        if (strncmp_P(kv.key().c_str(),PSTR("pin_"),4) == 0) {
+          if (i++) oappend(SET_F(","));
+          oappend(itoa((int)kv.value(),nS,10));
+        }
+      }
+      oappend(SET_F("];"));
+    }
+
+    #if defined(WLED_MAX_BUSSES) && WLED_MAX_BUSSES>1
+      oappend(SET_F("addLEDs("));
+      oappend(itoa(WLED_MAX_BUSSES,nS,10));
+      oappend(SET_F(");"));
+    #endif
+
+    oappend(SET_F("d.Sf.LC.max=")); //TODO Formula for max LEDs on ESP8266 depending on types. 500 DMA or 1500 UART (about 4kB mem usage)
+    #if defined(ESP8266) && LEDPIN == 3
+    oappendi(MAX_LEDS_DMA);
     #else
-    oappend(SET_F("d.Sf.LC.max=1500;"));
+    oappendi(MAX_LEDS);
     #endif
-    #endif
+    oappend(";");
+
     sappend('v',SET_F("LC"),ledCount);
+
+    for (uint8_t s=0; s < busses.getNumBusses(); s++){
+      Bus* bus = busses.getBus(s);
+      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lk[4] = "L1"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
+      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
+      oappend(SET_F("addLEDs(1);"));
+      uint8_t pins[5];
+      uint8_t nPins = bus->getPins(pins);
+      sappend('v', lp, pins[0]);
+      if (pinManager.isPinOk(pins[1])) sappend('v', lk, pins[1]);
+      sappend('v', lc, bus->getLength());
+      sappend('v',lt,bus->getType());
+      sappend('v',co,bus->getColorOrder());
+      sappend('v',ls,bus->getStart());
+      sappend('c',cv,bus->reversed);
+    }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
     if (strip.currentMilliamps)
@@ -289,8 +335,8 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     sappend('v',SET_F("CA"),briS);
-    sappend('c',SET_F("EW"),useRGBW);
-    sappend('i',SET_F("CO"),strip.getColorOrder());
+    //sappend('c',SET_F("EW"),useRGBW);
+    //sappend('i',SET_F("CO"),strip.getColorOrder());
     sappend('v',SET_F("AW"),strip.rgbwMode);
 
     sappend('c',SET_F("BO"),turnOnAtBoot);
@@ -308,15 +354,14 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("PB"),strip.paletteBlend);
     sappend('c',SET_F("RV"),strip.reverseMode);
     sappend('c',SET_F("SL"),skipFirstLed);
-    #ifdef ESP8266
-    sappends('v',SET_F("LCW"), "");
-    sappends('v',SET_F("LCH"), "");
-    sappend('c',SET_F("LCWHS"), 1);
-    #else
+    sappend('v',SET_F("RL"),rlyPin);
+    sappend('c',SET_F("RM"),rlyMde);
+    sappend('v',SET_F("BT"),btnPin);
+    sappend('v',SET_F("IR"),irPin);
+    sappend('v',SET_F("AX"),auxPin);
     sappend('v',SET_F("LCW"),strip.matrixWidth);
     sappend('v',SET_F("LCH"),strip.matrixHeight);
     sappend('c',SET_F("LCWHS"),strip.matrixSerpentine);
-    #endif // ESP8266
   }
 
   if (subPage == 3)

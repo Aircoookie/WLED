@@ -2,6 +2,16 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2102050
+
+-   Version bump to 0.12.0-a0 "Hikari"
+-   Added FPS indication in info
+-   Bumped max outputs from 7 to 10 busses for ESP32
+
+#### Build 2101310
+
+-   First alpha configurable multipin
+
 #### Build 2101130
 
 -   Added color transitions for all segments and slots and for segment brightness
