@@ -87,6 +87,9 @@ curl -X POST -H "Content-Type: application/json" \
 
 (where 192.168.0.19 is the address of your WLED device)
 
+**NOTE:** If you're using Windows and want to use the curl commands in this README, 
+replace the `\` with a `^` or remove them and put everything on one line.
+
 
 ### Enable/disable the plugin through API
 
@@ -182,5 +185,24 @@ has to travel back and forth, the detection distance for the sensor in cm is
 distances creates delays, and might introduce timing hickups in your animations or
 a less responsive web interface.
 
-Have fun with this usermod.
+## Triggering through the API
+
+Instead of PIR or Ultrasonic sensors, you can also trigger the animation through
+the API. To simulate triggering the bottom sensor, use:
+
+```bash
+curl -X POST -H "Content-Type: application/json" \
+     -d {"staircase":{"bottomsensor":true}} \
+     192.168.0.19/json/state
+```
+
+Likewise, to trigger the top sensor, use:
+
+```bash
+curl -X POST -H "Content-Type: application/json" \
+     -d {"staircase":{"topsensor":true}} \
+     192.168.0.19/json/state
+```
+
+Have fun with this usermod.<br/>
 www.rolfje.com

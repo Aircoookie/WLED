@@ -49,11 +49,11 @@ class PIR_staircase : public Usermod {
 #define SWIPE_DOWN false
   bool swipe = SWIPE_UP;
 
-  // Indicates which PIR was seen last (to determine
+  // Indicates which Sensor was seen last (to determine
   // the direction when swiping off)
 #define LOWER false
 #define UPPER true
-  bool lastPIR = LOWER;
+  bool lastSensor = LOWER;
 
   // Time of the last transition action
   unsigned long lastTime = 0;
@@ -76,6 +76,14 @@ class PIR_staircase : public Usermod {
   byte mainSegmentId = 0;
 
   bool saveState = false;
+
+  // These values are used by the API to read the
+  // last sensor state, or trigger a sensor
+  // through the API
+  bool topSensorRead = false;
+  bool topSensorWrite = false;
+  bool bottomSensorRead = false;
+  bool bottomSensorWrite = false;  
 
   void updateSegments() {
     mainSegmentId = strip.getMainSegmentId();
@@ -134,31 +142,35 @@ class PIR_staircase : public Usermod {
     return pulseIn(echoPin, HIGH, maxTimeUs) > 0;
   }
 
-  void checkPIRs() {
+  void checkSensors() {
     if ((millis() - lastScanTime) > scanDelay) {
       lastScanTime = millis();
 
 #ifdef bottomPIR_PIN
-      bool bottomPIR = digitalRead(bottomPIR_PIN) == HIGH;
+      bottomSensorRead = bottomSensorWrite || ((bottomPIR_PIN) == HIGH);
 #else
-      bool bottomPIR =
+      bottomSensorRead = bottomSensorWrite ||
           ultrasoundRead(bottomSignalPin, bottomEchoPin, bottomMaxTimeUs);
 #endif
 
 #ifdef topPIR_PIN
-      bool topPIR = digitalRead(topPIR_PIN) == HIGH;
+      topSensorRead = topSensorWrite || (digitalRead(topPIR_PIN) == HIGH);
 #else
-      bool topPIR = ultrasoundRead(topSignalPin, topEchoPin, topMaxTimeUs);
+      topSensorRead = topSensorWrite || ultrasoundRead(topSignalPin, topEchoPin, topMaxTimeUs);
 #endif
 
-      if (bottomPIR != topPIR) {
+      // Values read, reset the flags for next API call
+      topSensorWrite = false;
+      bottomSensorWrite = false;
+
+      if (bottomSensorRead != bottomSensorRead) {
         lastSwitchTime = millis();
 
         if (on) {
-          lastPIR = topPIR;
+          lastSensor = topSensorRead;
         } else {
           // If the bottom PIR triggered, we need to swipe up, ON
-          swipe = bottomPIR;
+          swipe = bottomSensorRead;
 
           if (swipe) {
             Serial.println("ON -> Swipe up.");
@@ -184,7 +196,7 @@ class PIR_staircase : public Usermod {
   void autoPowerOff() {
     if (on && ((millis() - lastSwitchTime) > on_time_ms)) {
       // Swipe OFF in the direction of the last PIR detection
-      swipe = lastPIR;
+      swipe = lastSensor;
       on = false;
 
       if (swipe) {
@@ -235,6 +247,15 @@ class PIR_staircase : public Usermod {
 #endif
   }
 
+  void writeSensorsToJson(JsonObject& root) {
+    JsonObject staircase = root["staircase"];
+    if (staircase.isNull()) {
+      staircase = root.createNestedObject("staircase");
+    }
+    staircase["topsensor"] = topSensorRead;
+    staircase["bottomsensor"] = bottomSensorRead;
+  }
+
   void readSettingsFromJson(JsonObject& root) {
     JsonObject staircase = root["staircase"];
 
@@ -252,6 +273,12 @@ class PIR_staircase : public Usermod {
 #ifdef bottomSignalPin
     bottomMaxTimeUs = staircase["bottom-echo-us"] | bottomMaxTimeUs;
 #endif
+  }
+
+  void readSensorsFromJson(JsonObject& root) {
+    JsonObject staircase = root["staircase"];
+    bottomSensorRead = bottomSensorRead || staircase["bottomsensor"];
+    topSensorRead = topSensorRead || staircase["topsensor"];
   }
 
   void enable(bool enable) {
@@ -301,7 +328,7 @@ class PIR_staircase : public Usermod {
       return;
     }
 
-    checkPIRs();
+    checkSensors();
     autoPowerOff();
     updateSwipe();
 
@@ -326,6 +353,7 @@ class PIR_staircase : public Usermod {
    */
   void addToJsonState(JsonObject& root) {
     writeSettingsToJson(root);
+    writeSensorsToJson(root);
     Serial.println("Staircase config exposed in API.");
   }
 
@@ -335,6 +363,7 @@ class PIR_staircase : public Usermod {
    */
   void readFromJsonState(JsonObject& root) {
     readSettingsFromJson(root);
+    readSensorsFromJson(root);
 
     // The call to serializeConfig() must be done in the main loop,
     // so we set a flag to signal the main loop to save state.
