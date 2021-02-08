@@ -17,10 +17,7 @@
 // extend the "settle" window).
 //
 // It will additionally load preset AUTOSAVE_PRESET_NUM at startup.
-// during it's first `loop()`. The reasoning for this is the brightness 
-// isn't set with the preset that is auto-loaded at startup by WLED
-// instead it sets to default brightness level. I'd prefer to
-// use the brightness from the preset.
+// during the first `loop()`.  Reasoning below.
 //
 // AutoSaveUsermod is standalone, but if FourLineDisplayUsermod 
 // is installed, it will notify the user of the saved changes.
