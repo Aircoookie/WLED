@@ -4,7 +4,7 @@
 
 //
 // v2 Usermod automatically to automatically save settings 
-// to preset 1 after a change to any of
+// to preset AUTOSAVE_PRESET_NUM after a change to any of
 //
 // * brightness
 // * effect speed
@@ -12,15 +12,26 @@
 // * mode (effect)
 // * palette
 //
-// happens, but it will wait for SETTINGS_SETTLE_MS 
+// happens, but it will wait for AUTOSAVE_SETTLE_MS 
 // milliseconds "settle" period in case there are other changes.
+//
+// It will additionally load preset AUTOSAVE_PRESET_NUM at startup.
+// The reasoning for this is the brightness isn't set
+// with the preset that is auto-loaded at startup by WLED
+// instead it sets to default brightness level. I'd prefer to
+// use the brightness frmo the preset.
 //
 // Functionality is enhanced when paired with the
 // Four Line Display Usermod.
 
 //How long to wait after settings change to auto-save
-#ifndef SETTINGS_SETTLE_MS
-#define SETTINGS_SETTLE_MS 10*1000
+#ifndef AUTOSAVE_SETTLE_MS
+#define AUTOSAVE_SETTLE_MS 10*1000
+#endif
+
+//Preset number to save to
+#ifndef AUTOSAVE_PRESET_NUM
+#define AUTOSAVE_PRESET_NUM 99
 #endif
 
 //  "Auto save MM-DD HH:MM:SS"
@@ -34,8 +45,6 @@ class AutoSaveUsermod : public Usermod {
 
     char presetNameBuffer[PRESET_NAME_BUFFER_SIZE];
 
-    // Don't start auto saving for 10 seconds
-    unsigned long dontStartUntil = millis() + 10*1000;
     bool firstLoop = true;
 
     uint8_t knownBrightness = 0;
@@ -68,13 +77,11 @@ class AutoSaveUsermod : public Usermod {
      */
     void loop() {
       unsigned long now = millis();
-      if (firstLoop && now < dontStartUntil) {
-        return;
-      }
       uint8_t currentMode = strip.getMode();
       uint8_t currentPalette = strip.getSegment(0).palette;
       if (firstLoop) {
         firstLoop = false;
+        applyPreset(AUTOSAVE_PRESET_NUM);
         knownBrightness = bri;
         knownEffectSpeed = effectSpeed;
         knownEffectIntensity = effectIntensity;
@@ -83,7 +90,7 @@ class AutoSaveUsermod : public Usermod {
         return;
       }
 
-      unsigned long wouldAutoSaveAfter = now + SETTINGS_SETTLE_MS;
+      unsigned long wouldAutoSaveAfter = now + AUTOSAVE_SETTLE_MS;
       if (knownBrightness != bri) {
         knownBrightness = bri;
         autoSaveAfter = wouldAutoSaveAfter;
@@ -115,7 +122,7 @@ class AutoSaveUsermod : public Usermod {
         "Auto save %02d-%02d %02d:%02d:%02d",
         month(localTime), day(localTime),
         hour(localTime), minute(localTime), second(localTime));
-      savePreset(1, true, presetNameBuffer);
+      savePreset(AUTOSAVE_PRESET_NUM, true, presetNameBuffer);
     }
 
     void displayOverlay() {
