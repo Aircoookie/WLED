@@ -54,7 +54,7 @@ U8X8_SH1106_128X64_WINSTAR_HW_I2C u8x8(
 #ifndef SLEEP_MODE_ENABLED
 #define SLEEP_MODE_ENABLED true
 #endif
-#ifndef SLEEP_MODE_ENABLED
+#ifndef CLOCK_MODE_ENABLED
 #define CLOCK_MODE_ENABLED true
 #endif
 #else
@@ -524,7 +524,7 @@ class FourLineDisplayUsermod : public Usermod {
      * This could be used in the future for the system to determine whether your usermod is installed.
      */
     uint16_t getId() {
-      return USERMOD_FOUR_LINE_DISP;
+      return USERMOD_ID_FOUR_LINE_DISP;
     }
 
 };

@@ -114,7 +114,7 @@ public:
 #ifdef USERMOD_FOUR_LINE_DISLAY    
     // This Usermod uses FourLineDisplayUsermod for the best experience.
     // But it's optional. But you want it.
-    display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_FOUR_LINE_DISP);
+    display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
     if (display != nullptr) {
       display->setLineThreeType(FLD_LINE_3_BRIGHTNESS);
       display->setMarkLine(3);

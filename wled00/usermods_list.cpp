@@ -27,6 +27,9 @@
 #ifdef USERMOD_ROTARY_ENCODER_UI
 #include "../usermods/usermod_v2_rotary_encoder_ui/usermod_v2_rotary_encoder_ui.h"
 #endif
+#ifdef USERMOD_AUTO_SAVE
+#include "../usermods/usermod_v2_auto_save/usermod_v2_auto_save.h"
+#endif
 
 void registerUsermods()
 {
@@ -52,5 +55,8 @@ void registerUsermods()
 #endif
 #ifdef USERMOD_ROTARY_ENCODER_UI
   usermods.add(new RotaryEncoderUIUsermod());
+#endif
+#ifdef USERMOD_AUTO_SAVE
+  usermods.add(new AutoSaveUsermod());
 #endif
 }
