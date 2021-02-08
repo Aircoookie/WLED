@@ -3,8 +3,8 @@
 #include "wled.h"
 
 //
-// v2 Usermod automatically to automatically save settings 
-// to preset AUTOSAVE_PRESET_NUM after a change to any of
+// v2 Usermod to automatically save settings 
+// to preset number AUTOSAVE_PRESET_NUM after a change to any of
 //
 // * brightness
 // * effect speed
@@ -12,17 +12,25 @@
 // * mode (effect)
 // * palette
 //
-// happens, but it will wait for AUTOSAVE_SETTLE_MS 
-// milliseconds "settle" period in case there are other changes.
+// but it will wait for AUTOSAVE_SETTLE_MS milliseconds, a "settle" 
+// period in case there are other changes (any change will 
+// extend the "settle" window).
 //
 // It will additionally load preset AUTOSAVE_PRESET_NUM at startup.
-// The reasoning for this is the brightness isn't set
-// with the preset that is auto-loaded at startup by WLED
+// during it's first `loop()`. The reasoning for this is the brightness 
+// isn't set with the preset that is auto-loaded at startup by WLED
 // instead it sets to default brightness level. I'd prefer to
-// use the brightness frmo the preset.
+// use the brightness from the preset.
 //
-// Functionality is enhanced when paired with the
-// Four Line Display Usermod.
+// AutoSaveUsermod is standalone, but if FourLineDisplayUsermod 
+// is installed, it will notify the user of the saved changes.
+//
+// Note: I don't love that WLED doesn't respect the brightness 
+// of the preset being auto loaded, so the AutoSaveUsermod 
+// will set the AUTOSAVE_PRESET_NUM preset in the first loop, 
+// so brightness IS honored. This means WLED will effectively 
+// ignore Default brightness and Apply N preset at boot when 
+// the AutoSaveUsermod is installed.
 
 //How long to wait after settings change to auto-save
 #ifndef AUTOSAVE_SETTLE_MS
