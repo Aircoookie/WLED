@@ -163,7 +163,7 @@ class PIR_staircase : public Usermod {
       topSensorWrite = false;
       bottomSensorWrite = false;
 
-      if (bottomSensorRead != bottomSensorRead) {
+      if (topSensorRead != bottomSensorRead) {
         lastSwitchTime = millis();
 
         if (on) {
