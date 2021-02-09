@@ -1,3 +1,4 @@
+#include "../usermods/PIR_staircase/PIR_staircase.h"
 #include "wled.h"
 /*
  * Register your v2 usermods here!
@@ -39,4 +40,5 @@ void registerUsermods()
 #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());
 #endif
+usermods.add(new PIR_staircase());
 }
