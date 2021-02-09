@@ -549,6 +549,11 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappend('v',SET_F("SQ"),soundSquelch);
     sappend('v',SET_F("GN"),sampleGain);
+    sappend('v',SET_F("SI"),audioPin);
+    sappend('c',SET_F("DMM"),dmEnabled);
+    sappend('v',SET_F("DI"),i2ssdPin);
+    sappend('v',SET_F("LR"),i2swsPin);
+    sappend('v',SET_F("CK"),i2sckPin);
     }
   oappend(SET_F("}</script>"));
 }

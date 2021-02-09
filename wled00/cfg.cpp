@@ -180,6 +180,35 @@ void deserializeConfig() {
   }
   CJSON(rlyMde, hw[F("relay")][F("rev")]);
 
+  int hw_audio_pin = hw[F("audio")][F("pin")];
+  if (pinManager.allocatePin(hw_audio_pin,false)) {
+    audioPin = hw_audio_pin;
+  } else {
+    audioPin = 36;
+  }
+
+  CJSON(dmEnabled, hw[F("digitalmic")][F("en")]);
+  int hw_i2ssd_pin = hw[F("i2ssd")][F("pin")];
+  if (pinManager.allocatePin(hw_i2ssd_pin,false)) {
+    i2ssdPin = hw_i2ssd_pin;
+  } else {
+    i2ssdPin = 36;
+  }
+
+  int hw_i2sws_pin = hw[F("i2sws")][F("pin")];
+  if (pinManager.allocatePin(hw_i2sws_pin,false)) {
+    i2swsPin = hw_i2sws_pin;
+  } else {
+    i2swsPin = 36;
+  }
+
+  int hw_i2sck_pin = hw[F("i2sck")][F("pin")];
+  if (pinManager.allocatePin(hw_i2sck_pin,false)) {
+    i2sckPin = hw_i2sck_pin;
+  } else {
+    i2sckPin = 36;
+  }
+
   //int hw_status_pin = hw[F("status")][F("pin")]; // -1
 
   JsonObject light = doc[F("light")];
@@ -524,6 +553,21 @@ void serializeConfig() {
   JsonObject hw_relay = hw.createNestedObject("relay");
   hw_relay[F("pin")] = rlyPin;
   hw_relay[F("rev")] = rlyMde;
+
+  JsonObject hw_audio = hw.createNestedObject("audio");
+  hw_audio[F("pin")] = audioPin;
+
+  JsonObject hw_dmic = hw.createNestedObject("digitalmic");
+  hw_dmic[F("en")] = dmEnabled;
+
+  JsonObject hw_i2ssd = hw.createNestedObject("i2ssd");
+  hw_i2ssd[F("pin")] = i2ssdPin;
+
+  JsonObject hw_i2sws = hw.createNestedObject("i2sws");
+  hw_i2sws[F("pin")] = i2swsPin;
+
+  JsonObject hw_i2sck = hw.createNestedObject("i2sck");
+  hw_i2sck[F("pin")] = i2sckPin;
 
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status[F("pin")] = -1;

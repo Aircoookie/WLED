@@ -31,7 +31,7 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
 
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: sound
   if (subPage <1 || subPage >8) return;
 
   //WIFI SETTINGS
@@ -433,12 +433,45 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //SOUND SETTINGS
   if (subPage == 8)
   {
+
+    // if (btnPin>=0 && pinManager.isPinAllocated(audioPin)) pinManager.deallocatePin(audioPin);
+
     int t;
     t = request->arg(F("SQ")).toInt();
     if (t >= 0) soundSquelch = t;
 
     t = request->arg(F("GN")).toInt();
     if (t >= 0) sampleGain = t;
+    // Analog input pin
+    int hw_audio_pin = request->arg(F("SI")).toInt();
+    if (pinManager.allocatePin(hw_audio_pin,false)) {
+      audioPin = hw_audio_pin;
+    } else {
+      audioPin = 36;
+    }
+    // Digital mic mode
+    dmEnabled = (bool)request->hasArg(F("DMM"));
+    // Digital Mic I2S SD pin
+    int hw_i2ssd_pin = request->arg(F("DI")).toInt();
+    if (pinManager.allocatePin(hw_i2ssd_pin,false)) {
+      i2ssdPin = hw_i2ssd_pin;
+    } else {
+      i2ssdPin = 32;
+    }
+    // Digital Mic I2S WS pin
+    int hw_i2sws_pin = request->arg(F("LR")).toInt();
+    if (pinManager.allocatePin(hw_i2sws_pin,false)) {
+      i2swsPin = hw_i2sws_pin;
+    } else {
+      i2swsPin = 15;
+    }
+    // Digital Mic I2S SCK pin
+    int hw_i2sck_pin = request->arg(F("CK")).toInt();
+    if (pinManager.allocatePin(hw_i2sck_pin,false)) {
+      i2sckPin = hw_i2sck_pin;
+    } else {
+      i2sckPin = 14;
+    }
   }
 
   if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
