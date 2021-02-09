@@ -1,28 +1,16 @@
-#pragma once
-#include "wled.h"
-#define USERMOD_ID_PIR_STAIRCASE 1011
 /*
  * Usermod for detecting people entering/leaving a staircase and switching the
  * staircase on/off.
  *
+ * Edit the PIR_staircase_config.h file to compile this usermod for your
+ * specific configuration.
+ * 
  * See the accompanying README.md file for more info.
  */
-
-// Please change the pin numbering below to match your board.
-#define topPIR_PIN D7
-#define bottomPIR_PIN D6
-
-// Or uncumment and a pir and use an ultrasound HC-SR04 sensor,
-// see README.md for details
-#ifndef topPIR_PIN
-#define topSignalPin D2
-#define topEchoPin D3
-#endif
-
-#ifndef bottomPIR_PIN
-#define bottomSignalPin D0
-#define bottomEchoPin D1
-#endif
+#pragma once
+#include "wled.h"
+#include "PIR_staircase_config.h"
+#define USERMOD_ID_PIR_STAIRCASE 1011
 
 /* Initial configuration (available in API and stored in flash) */
 bool enabled = true;                   // Enable this usermod
