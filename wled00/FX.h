@@ -164,7 +164,7 @@
 #define FX_MODE_COMET                   41
 #define FX_MODE_FIREWORKS               42
 #define FX_MODE_RAIN                    43
-#define FX_MODE_MERRY_CHRISTMAS         44
+#define FX_MODE_TETRIX                  44
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_GRADIENT                46
 #define FX_MODE_LOADING                 47
@@ -501,7 +501,7 @@ class WS2812FX {
       _mode[FX_MODE_COMET]                   = &WS2812FX::mode_comet;
       _mode[FX_MODE_FIREWORKS]               = &WS2812FX::mode_fireworks;
       _mode[FX_MODE_RAIN]                    = &WS2812FX::mode_rain;
-      _mode[FX_MODE_MERRY_CHRISTMAS]         = &WS2812FX::mode_merry_christmas;
+      _mode[FX_MODE_TETRIX]                  = &WS2812FX::mode_tetrix;
       _mode[FX_MODE_FIRE_FLICKER]            = &WS2812FX::mode_fire_flicker;
       _mode[FX_MODE_GRADIENT]                = &WS2812FX::mode_gradient;
       _mode[FX_MODE_LOADING]                 = &WS2812FX::mode_loading;
@@ -717,7 +717,7 @@ class WS2812FX {
       mode_comet(void),
       mode_fireworks(void),
       mode_rain(void),
-      mode_merry_christmas(void),
+      mode_tetrix(void),
       mode_halloween(void),
       mode_fire_flicker(void),
       mode_gradient(void),
@@ -884,7 +884,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Scan","Scan Dual","Fade","Theater","Theater Rainbow","Running","Saw","Twinkle","Dissolve","Dissolve Rnd",
 "Sparkle","Sparkle Dark","Sparkle+","Strobe","Strobe Rainbow","Strobe Mega","Blink Rainbow","Android","Chase","Chase Random",
 "Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Aurora","Stream",
-"Scanner","Lighthouse","Fireworks","Rain","Merry Christmas","Fire Flicker","Gradient","Loading","Police","Police All",
+"Scanner","Lighthouse","Fireworks","Rain","Tetrix","Fire Flicker","Gradient","Loading","Police","Police All",
 "Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
