@@ -138,13 +138,13 @@ class PIR_staircase : public Usermod {
       bottomSensorRead = bottomSensorWrite || ((bottomPIR_PIN) == HIGH);
 #else
       bottomSensorRead = bottomSensorWrite ||
-          ultrasoundRead(bottomSignalPin, bottomEchoPin, bottomMaxTimeUs);
+          ultrasoundRead(bottomTriggerPin, bottomEchoPin, bottomMaxTimeUs);
 #endif
 
 #ifdef topPIR_PIN
       topSensorRead = topSensorWrite || (digitalRead(topPIR_PIN) == HIGH);
 #else
-      topSensorRead = topSensorWrite || ultrasoundRead(topSignalPin, topEchoPin, topMaxTimeUs);
+      topSensorRead = topSensorWrite || ultrasoundRead(topTriggerPin, topEchoPin, topMaxTimeUs);
 #endif
 
       // Values read, reset the flags for next API call
@@ -227,10 +227,10 @@ class PIR_staircase : public Usermod {
     staircase["segment-delay-ms"] = segment_delay_ms;
     staircase["on-time-s"] = on_time_ms / 1000;
 
-#ifdef topSignalPin
+#ifdef topTriggerPin
     staircase["top-echo-us"] = topMaxTimeUs;
 #endif
-#ifdef bottomSignalPin
+#ifdef bottomTriggerPin
     staircase["bottom-echo-us"] = bottomMaxTimeUs;
 #endif
   }
@@ -255,10 +255,10 @@ class PIR_staircase : public Usermod {
     segment_delay_ms = staircase["segment-delay-ms"] | segment_delay_ms;
     on_time_ms = (staircase["on-time-s"] | (on_time_ms / 1000)) * 1000;
 
-#ifdef topSignalPin
+#ifdef topTriggerPin
     topMaxTimeUs = staircase["top-echo-us"] | topMaxTimeUs;
 #endif
-#ifdef bottomSignalPin
+#ifdef bottomTriggerPin
     bottomMaxTimeUs = staircase["bottom-echo-us"] | bottomMaxTimeUs;
 #endif
   }
@@ -281,14 +281,14 @@ class PIR_staircase : public Usermod {
 #ifdef bottomPIR_PIN
       pinMode(bottomPIR_PIN, INPUT);
 #else
-      pinMode(bottomSignalPin, OUTPUT);
+      pinMode(bottomTriggerPin, OUTPUT);
       pinMode(bottomEchoPin, INPUT);
 #endif
 
 #ifdef topPIR_PIN
       pinMode(topPIR_PIN, INPUT);
 #else
-      pinMode(topSignalPin, OUTPUT);
+      pinMode(topTriggerPin, OUTPUT);
       pinMode(topEchoPin, INPUT);
 #endif
     } else {

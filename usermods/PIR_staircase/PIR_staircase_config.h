@@ -11,11 +11,11 @@
 // Or uncumment and a pir and use an ultrasound HC-SR04 sensor,
 // see README.md for details
 #ifndef topPIR_PIN
-#define topSignalPin D2
+#define topTriggerPin D2
 #define topEchoPin D3
 #endif
 
 #ifndef bottomPIR_PIN
-#define bottomSignalPin D0
+#define bottomTriggerPin D0
 #define bottomEchoPin D1
 #endif
