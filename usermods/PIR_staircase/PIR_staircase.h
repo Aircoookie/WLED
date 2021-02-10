@@ -265,8 +265,8 @@ class PIR_staircase : public Usermod {
 
   void readSensorsFromJson(JsonObject& root) {
     JsonObject staircase = root["staircase"];
-    bottomSensorRead = bottomSensorRead || staircase["bottomsensor"];
-    topSensorRead = topSensorRead || staircase["topsensor"];
+    bottomSensorWrite = bottomSensorRead || (staircase["bottomsensor"].as<bool>());
+    topSensorWrite = topSensorRead || (staircase["topsensor"].as<bool>());
   }
 
   void enable(bool enable) {
