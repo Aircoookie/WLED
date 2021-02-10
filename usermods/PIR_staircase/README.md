@@ -15,7 +15,7 @@ This usermod makes your staircase look cool:
 1. Open `wled00/usermods_list.cpp`
 2. add `#include "../usermods/PIR_staircase/PIR_staircase.h"` to the top
 3. add `usermods.add(new PIR_staircase());` to the end of the `void registerUsermods()` function.
-4. Open `usermods/PIR_staircase/PIR_staircase.h` 
+4. Open `usermods/PIR_staircase/PIR_staircase_config.h` 
 5. Change the PIR pinnumbers from line 13 and 14 into whatever
    pins are supported by your board.
 
@@ -23,14 +23,14 @@ This usermod makes your staircase look cool:
 
    Using D7 and D6 pin notation as used on several boards:
    ```
-     const int topPIR_PIN    = D7;
-     const int bottomPIR_PIN = D6;
+     #define topPIR_PIN    D7
+     #define bottomPIR_PIN D6
    ```
 
    Using GPIO 25 and 26 pins:
    ```
-     const int topPIR_PIN    = 25;
-     const int bottomPIR_PIN = 26;
+     #define topPIR_PIN    26
+     #define bottomPIR_PIN 25
    ```
 
 ## Hardware installation
@@ -123,18 +123,18 @@ In this example we will replace the _bottom_ PIR sensor with an
 [HC-SR04](https://components101.com/ultrasonic-sensor-working-pinout-datasheet)
 ultrasonic sensor.
 
-Comment out the line that defines the bottomPIR_PIN, like so:
+Comment out the line in `PIR_staircase_config.h` that defines the bottomPIR_PIN, like so:
 
 ```
 // #define bottomPIR_PIN D6
 ```
 
-A few lines below that, you'll find two lines defining where the `Signal`
+A few lines below that, you'll find two lines defining where the `Trigger`
 and `Echo` pins of your HC-SR04 sensor are connected to. Change them to match
 your connections:
 
 ```
-#define bottomSignalPin D0
+#define bottomTriggerPin D0
 #define bottomEchoPin D1
 ```
 
