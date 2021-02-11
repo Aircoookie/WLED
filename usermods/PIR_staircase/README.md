@@ -1,11 +1,9 @@
-## Usermod automatic Staircase
+# Usermod automatic Staircase
+This usermod makes your staircase look cool with animated lights. PIR or ultrasonic sensors 
+at the top and bottom of your stairs are required:
 
-This usermod makes your staircase look cool animated lights. PIR or ultrasonic sensors at the top and bottom of your stairs are required:
-
-- When the bottom sensor detects movement, the stairs will light up bottom-to-top
-  step by step in the selected color effect.
-- When the top sensor detects movement, the stairs will light up top-to-bottom
-  step by step in the selected color effect.
+- When the bottom or top sensor detects movement, the stairs will light up bottom-to-top
+  or vice versa step by step in the selected color effect.
 - The stairs lights will switch off in the direction of the last sensor detection, and
   will always switch on when one of the sensors detects movement, even if an effect
   is still running. It can therewith handle multiple people on the stairs gracefully.
@@ -13,8 +11,7 @@ This usermod makes your staircase look cool animated lights. PIR or ultrasonic s
   the WLED JSON API via a HTTP request.
 
 ## WLED integration
-
-To include this usermod in your WLED setup, you have to compile WLED from source. Instructions how to compile WLED are found here: `https://github.com/Aircoookie/WLED/wiki/Compiling-WLED`.
+To include this usermod in your WLED setup, you have to [compile WLED from source](https://github.com/Aircoookie/WLED/wiki/Compiling-WLED).
 
 To include/enable this usermod, you have to make the following modifications:
 
@@ -25,7 +22,7 @@ Edit `usermods_list.cpp`:
 
 Edit `PIR_staircase_config.h`:
 1. Open `usermods/PIR_staircase/PIR_staircase_config.h` 
-5. To use PIR sensors, change these lines to match your setup:
+2. To use PIR sensors, change these lines to match your setup:
    Using D7 and D6 pin notation as used on several boards:
   
    ```cpp
@@ -44,15 +41,15 @@ Edit `PIR_staircase_config.h`:
 
    ```cpp
    #define topPIR_PIN 32
-   //#define bottomPIR_PIN D6    <-- The PIR sensor at the bottom is disabled here
+   //#define bottomPIR_PIN D6 /* This PIR sensor is disabled   */
 
    #ifndef topPIR_PIN
    #define topSignalPin D2
    #define topEchoPin D3
    #endif
 
-   #ifndef bottomPIR_PIN
-   #define bottomSignalPin 25
+   #ifndef bottomPIR_PIN      /* If the bottom PIR is disabled, */
+   #define bottomSignalPin 25 /* This Ultrasonic sensor is used */
    #define bottomEchoPin 26
    #endif
    ```
@@ -81,21 +78,21 @@ You _may_ need to use 10k pull-down resistors on the selected PIR pins, dependin
 ## Changing behavior through API
 The Staircase settings can be changed through the WLED JSON api.
 
-**NOTE:** We are using [curl](https://curl.se/) to send HTTP POSTs to the WLED API.If you're using Windows and want to use the curl commands, 
+**NOTE:** We are using [curl](https://curl.se/) to send HTTP POSTs to the WLED API. If you're using Windows and want to use the curl commands, 
 replace the `\` with a `^` or remove them and put everything on one line.
 
 
 | Setting          | Description                                                   | Default |
 |------------------|---------------------------------------------------------------|---------|
 | enabled          | Enable or disable the usermod                                 | true    |
-| segment-delay-ms | Delay (milliseconds) between switching on/off each step steps | 150     |
+| segment-delay-ms | Delay (milliseconds) between switching on/off each step       | 150     |
 | on-time-s        | Time (seconds) the stairs stay lit after last detection       | 5       |
 | bottom-echo-us   | Detection range of ultrasonic sensor                          | 1749    |
 | bottomsensor     | Manually trigger a down to up animation via API               | false   | 
 | topsensor        | Manually trigger an up to down animation via API              | false   |
 
 
-To read the settings, open a browser to `http://xxx.xxx.xxx.xxx/json/state` (use your WLED 
+To read the current settings, open a browser to `http://xxx.xxx.xxx.xxx/json/state` (use your WLED 
 device IP address). The device will respond with a json object containing all WLED settings. 
 The staircase settings and sensor states are inside the WLED status element:
 
@@ -135,7 +132,7 @@ curl -X POST -H "Content-Type: application/json" \
      xxx.xxx.xxx.xxx/json/state
 ```
 
-## Changing detection range of the ultrasonic HC-SR04 sensor
+### Changing detection range of the ultrasonic HC-SR04 sensor
 When an ultrasonic sensor is enable in `PIR_staircase_config.h`, you'll see a 
 `bottom-echo-us` setting appear in the json api:
 
@@ -177,7 +174,7 @@ sensor in cm is (0.0343 * maxTimeUs) / 2. To get you started, please find delays
 distances creates delays in the WLED software, and _might_ introduce timing hickups in your animations or
 a less responsive web interface. It is therefore advised to keep the detection time as short as possible.
 
-## Animation triggering through the API
+### Animation triggering through the API
 Instead of stairs activation by one of the sensors, you can also trigger the animation through
 the API. To simulate triggering the bottom sensor, use:
 
