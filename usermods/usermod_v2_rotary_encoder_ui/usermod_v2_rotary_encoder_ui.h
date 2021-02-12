@@ -1,6 +1,8 @@
 #pragma once
 
+#ifndef NATIVE_TESTING
 #include "wled.h"
+#endif // NATIVE_TESTING
 
 //
 // Inspired by the v1 usermods
@@ -60,6 +62,8 @@ const byte modes_alpha_order[] = {
     15, 37, 16, 10, 11, 40, 60, 108, 92, 93, 94, 103, 83, 84, 20,
     21, 22, 85, 86, 39, 61, 23, 25, 24, 104, 6, 36, 13, 14, 35,
     54, 56, 55, 116, 17, 81, 80, 106, 51, 50, 113, 3, 4 };
+byte **modes_alpha_order_gen;
+char **modes_qstrings;
 
 /**
  * Array of palette indexes in alphabetical order.
@@ -72,6 +76,11 @@ const byte palettes_alpha_order[] = {
   48, 52, 53, 7, 37, 24, 30, 35, 10, 32, 28, 29, 36, 31,
   25, 8, 38, 40, 41, 9, 44, 47, 6, 20, 11, 12, 16, 33, 
   14, 49, 27, 19, 13, 21, 54, 34, 45, 23, 43, 17, 42 };
+byte **palettes_alpha_order_gen;
+char **palettes_qstrings;
+
+
+#ifndef NATIVE_TESTING
 
 class RotaryEncoderUIUsermod : public Usermod {
 private:
@@ -105,6 +114,8 @@ public:
      */
   void setup()
   {
+    modes_qstrings =  re_findModeStrings(JSON_mode_names, NUM_MODES);
+    palettes_qstrings =  re_findModeStrings(PALETTES_mode_names,  strip.getPaletteCount());
     pinMode(pinA, INPUT_PULLUP);
     pinMode(pinB, INPUT_PULLUP);
     pinMode(pinC, INPUT_PULLUP);
@@ -418,3 +429,112 @@ public:
   //More methods can be added in the future, this example will then be extended.
   //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
 };
+
+#endif // NATIVE_TESTING
+
+/**
+ * Return an array of mode names. They don't end in '\0',
+ * they end in '"'. 
+ */
+char **re_findModeStrings(const char json[], int numModes) {
+  char **modeStrings = (char **)malloc(sizeof (char *) * numModes);
+  uint8_t qComma = 0;
+  bool insideQuotes = false;
+  // advance past the mark for markLineNum that may exist.
+  char singleJsonSymbol;
+
+  // Find the mode name in JSON
+  bool complete = false;
+  for (size_t i = 0; i < strlen_P(json); i++) {
+    singleJsonSymbol = pgm_read_byte_near(json + i);
+    switch (singleJsonSymbol) {
+      case '"':
+        insideQuotes = !insideQuotes;
+        if (insideQuotes) {
+          modeStrings[i] = (char*)(json + i + 1);
+          printf("New modeStrings[%d]: %c%c%c\n", i, 
+            pgm_read_byte_near(modeStrings[i]), 
+            pgm_read_byte_near(modeStrings[i]+1), 
+            pgm_read_byte_near(modeStrings[i]+2));
+        }
+        break;
+      case '[':
+        break;
+      case ']':
+        complete = true;
+        break;
+      case ',':
+        qComma++;
+      default:
+        if (!insideQuotes) {
+          break;
+        }
+    }
+    if (complete) {
+      break;
+    }
+  }
+  return modeStrings;
+}
+
+// int re_modeStringCmp(const char a[], const char b[]) {
+//     int i = 0;
+//     do {
+//         const char aVal = pgm_read_byte_near(a + i);
+//         const char bVal = pgm_read_byte_near(b + i);
+//         // Relly we shouldn't ever get to '\0'
+//         if (aVal == '"' || bVal == '"' || aVal == '\0' || bVal == '\0') {
+//           // We're done. one is a substring of the other
+//           // or something happenend and the quote didn't stop us.
+//           if (aVal == bVal) {
+//             // Same value, probably shouldn't happen
+//             // with this dataset
+//             return 0;
+//           }
+//           else if (aVal == '"') {
+//             return -1;
+//           }
+//           else if (bVal == '"') {
+//             return 1;
+//           }
+//           else {
+//             // We shouldn't get here.
+//             return 0;
+//           }
+//         }
+//         if (aVal == bVal) {
+//           // Same characters. Move to the next.
+//           i++;
+//           continue;
+//         }
+//         // We're done
+//         return (aVal > bVal) ? -1 : 1;
+//     } while (true);
+//     // We shouldn't get here.
+//     return 0;
+// }
+
+
+// void re_sortModes(const char json[], byte *idx[], int n) {
+//   char *modeNames[] = re_findModeNames(arr, n);
+//   int i, j;
+
+//   for (i=0; i<n; i++)
+//   {
+//     // wrong?
+//     (*idx)[i] = i;
+//   }
+
+//   for (i=0; i<n; i++)
+//   {
+//     for (j=i+1; j<n; j++)
+//     {
+//       int order = strcmp(modeNames[idx[i],] modeNames[idx[j]]);
+//       if (order == 1) {
+//         swap(&idx[i], &idx[j]);
+//       }
+//     }
+//   }
+
+//   return idx;
+// }
