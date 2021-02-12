@@ -240,33 +240,54 @@ class PIR_staircase : public Usermod {
     if (staircase.isNull()) {
       staircase = root.createNestedObject("staircase");
     }
-    staircase["topsensor"] = topSensorRead;
-    staircase["bottomsensor"] = bottomSensorRead;
+    staircase["top-sensor"] = topSensorRead;
+    staircase["bottom-sensor"] = bottomSensorRead;
   }
 
-  void readSettingsFromJson(JsonObject& root) {
+  bool readSettingsFromJson(JsonObject& root) {
     JsonObject staircase = root["staircase"];
+    bool changed = false;
 
     bool shouldEnable = staircase["enabled"] | enabled;
     if (shouldEnable != enabled) {
       enable(shouldEnable);
+      changed = true;
     }
 
-    segment_delay_ms = staircase["segment-delay-ms"] | segment_delay_ms;
-    on_time_ms = (staircase["on-time-s"] | (on_time_ms / 1000)) * 1000;
+    unsigned long c_segment_delay_ms = staircase["segment-delay-ms"] | segment_delay_ms;
+    if (c_segment_delay_ms != segment_delay_ms) {
+      segment_delay_ms = c_segment_delay_ms;
+      changed = true;
+    }
+
+    unsigned long c_on_time_ms = (staircase["on-time-s"] | (on_time_ms / 1000)) * 1000;
+    if (c_on_time_ms != on_time_ms) {
+      on_time_ms = c_on_time_ms;
+      changed = true;
+    }
 
 #ifdef topTriggerPin
-    topMaxTimeUs = staircase["top-echo-us"] | topMaxTimeUs;
+    unsigned int c_topMaxTimeUs = staircase["top-echo-us"] | topMaxTimeUs;
+    if (c_topMaxTimeUs != topMaxTimeUs) {
+      topMaxTimeUs = c_topMaxTimeUs;
+      changed = true;
+    }
 #endif
 #ifdef bottomTriggerPin
-    bottomMaxTimeUs = staircase["bottom-echo-us"] | bottomMaxTimeUs;
+    unsigned int c_bottomMaxTimeUs = staircase["bottom-echo-us"] | bottomMaxTimeUs;
+    if (c_bottomMaxTimeUs != bottomMaxTimeUs) {
+      bottomMaxTimeUs = c_bottomMaxTimeUs;
+      changed = true;
+    }
 #endif
+
+    return changed;
   }
 
   void readSensorsFromJson(JsonObject& root) {
     JsonObject staircase = root["staircase"];
-    bottomSensorWrite = bottomSensorRead || (staircase["bottomsensor"].as<bool>());
-    topSensorWrite = topSensorRead || (staircase["topsensor"].as<bool>());
+    bottomSensorWrite = bottomSensorRead || (staircase["bottom-sensor"].as<bool>());
+    topSensorWrite = topSensorRead || (staircase["top-sensor"].as<bool>());
   }
 
   void enable(bool enable) {
@@ -312,6 +333,12 @@ class PIR_staircase : public Usermod {
   void setup() { enable(enabled); }
 
   void loop() {
+    // Write changed settings from to flash (see readFromJsonState())
+    if (saveState) {
+      serializeConfig();
+      saveState = false;
+    }
+
     if (!enabled) {
       return;
     }
@@ -320,11 +347,6 @@ class PIR_staircase : public Usermod {
     autoPowerOff();
     updateSwipe();
 
-    // Write changed settings from the json api into flash
-    if (saveState) {
-      serializeConfig();
-      saveState = false;
-    }
   }
 
   uint16_t getId() { return USERMOD_ID_PIR_STAIRCASE; }
@@ -350,13 +372,10 @@ class PIR_staircase : public Usermod {
    * See void addToJsonState(JsonObject& root)
    */
   void readFromJsonState(JsonObject& root) {
-    readSettingsFromJson(root);
-    readSensorsFromJson(root);
-
     // The call to serializeConfig() must be done in the main loop,
     // so we set a flag to signal the main loop to save state.
-    saveState = true;
-
+    saveState = readSettingsFromJson(root);
+    readSensorsFromJson(root);
     Serial.println("Staircase config read from API.");
   }
 
