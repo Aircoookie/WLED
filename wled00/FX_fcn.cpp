@@ -27,50 +27,25 @@
 #include "FX.h"
 #include "palettes.h"
 
-//enable custom per-LED mapping. This can allow for better effects on matrices or special displays
-/*
-//this is just an example (30 LEDs). It will first set all even, then all uneven LEDs.
-const uint16_t customMappingTable[] = {
-  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
-  1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29};
-
-//another example. Switches direction every 5 LEDs.
-const uint16_t customMappingTable[] = {
-  0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14,
-  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25};
-
-const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); //30 in example
-*/
-uint16_t* customMappingTable = nullptr;
-uint16_t  customMappingSize  = 0;
-
 #ifndef PWM_INDEX
 #define PWM_INDEX 0
 #endif
 
-void WS2812FX::deserializeMap(void) {
-  DynamicJsonDocument doc(JSON_BUFFER_SIZE);  // full sized buffer for larger maps
+/*
+  Custom per-LED mapping has moved!
 
-  DEBUG_PRINTLN(F("Reading LED map from /ledmap.json..."));
+  Create a file "ledmap.json" using the edit page.
 
-  if (!readObjectFromFile("/ledmap.json", nullptr, &doc)) return; //if file does not exist just exit
+  this is just an example (30 LEDs). It will first set all even, then all uneven LEDs.
+  {"map":[
+  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
+  1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29]}
 
-  if (customMappingTable != nullptr) {
-    delete[] customMappingTable;
-    customMappingTable = nullptr;
-    customMappingSize = 0;
-  }
-
-  JsonArray map = doc[F("map")];
-  if (!map.isNull() && map.size()) {  // not an empty map
-    customMappingSize  = map.size();
-    customMappingTable = new uint16_t[customMappingSize];
-    for (uint16_t i=0; i<customMappingSize; i++) {
-      customMappingTable[i] = (uint16_t) map[i];
-    }
-  }
-}
-
+  another example. Switches direction every 5 LEDs.
+  {"map":[
+  0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14,
+  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]
+*/
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
@@ -1025,6 +1000,31 @@ void WS2812FX::setRgbwPwm(void) {
 #else
 void WS2812FX::setRgbwPwm() {}
 #endif
+
+//load custom mapping table from JSON file
+void WS2812FX::deserializeMap(void) {
+  if (!WLED_FS.exists("/ledmap.json")) return;
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);  // full sized buffer for larger maps
+
+  DEBUG_PRINTLN(F("Reading LED map from /ledmap.json..."));
+
+  if (!readObjectFromFile("/ledmap.json", nullptr, &doc)) return; //if file does not exist just exit
+
+  if (customMappingTable != nullptr) {
+    delete[] customMappingTable;
+    customMappingTable = nullptr;
+    customMappingSize = 0;
+  }
+
+  JsonArray map = doc[F("map")];
+  if (!map.isNull() && map.size()) {  // not an empty map
+    customMappingSize  = map.size();
+    customMappingTable = new uint16_t[customMappingSize];
+    for (uint16_t i=0; i<customMappingSize; i++) {
+      customMappingTable[i] = (uint16_t) map[i];
+    }
+  }
+}
 
 //gamma 2.8 lookup table used for color correction
 byte gammaT[] = {

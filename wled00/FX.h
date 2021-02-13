@@ -24,6 +24,8 @@
   Modified for WLED
 */
 
+#include "wled.h"
+
 #ifndef WS2812FX_h
 #define WS2812FX_h
 
@@ -847,7 +849,11 @@ class WS2812FX {
 
     void
       blendPixelColor(uint16_t n, uint32_t color, uint8_t blend),
-      startTransition(uint8_t oldBri, uint32_t oldCol, uint16_t dur, uint8_t segn, uint8_t slot);
+      startTransition(uint8_t oldBri, uint32_t oldCol, uint16_t dur, uint8_t segn, uint8_t slot),
+      deserializeMap(void);
+
+    uint16_t* customMappingTable = nullptr;
+    uint16_t  customMappingSize  = 0;
     
     uint32_t _lastPaletteChange = 0;
     uint32_t _lastShow = 0;
