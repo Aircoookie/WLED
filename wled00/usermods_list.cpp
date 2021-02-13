@@ -20,6 +20,17 @@
 #ifdef USERMOD_SENSORSTOMQTT
 #include "usermod_v2_SensorsToMqtt.h"
 #endif
+
+#ifdef USERMOD_FOUR_LINE_DISLAY
+#include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
+#endif
+#ifdef USERMOD_ROTARY_ENCODER_UI
+#include "../usermods/usermod_v2_rotary_encoder_ui/usermod_v2_rotary_encoder_ui.h"
+#endif
+#ifdef USERMOD_AUTO_SAVE
+#include "../usermods/usermod_v2_auto_save/usermod_v2_auto_save.h"
+#endif
+
 #ifdef USERMOD_DHT
 #include "../usermods/DHT/usermod_dht.h"
 #endif
@@ -42,7 +53,16 @@ void registerUsermods()
 #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());
 #endif
+#ifdef USERMOD_FOUR_LINE_DISLAY
+  usermods.add(new FourLineDisplayUsermod());
+#endif
+#ifdef USERMOD_ROTARY_ENCODER_UI
+  usermods.add(new RotaryEncoderUIUsermod());
+#endif
+#ifdef USERMOD_AUTO_SAVE
+  usermods.add(new AutoSaveUsermod());
+#endif
 #ifdef USERMOD_DHT
-  usermods.add(new UsermodDHT());
+usermods.add(new UsermodDHT());
 #endif
 }
