@@ -204,6 +204,9 @@ WLED_GLOBAL IPAddress staticIP      _INIT_N(((  0,   0,  0,  0))); // static IP 
 WLED_GLOBAL IPAddress staticGateway _INIT_N(((  0,   0,  0,  0))); // gateway (router) IP
 WLED_GLOBAL IPAddress staticSubnet  _INIT_N(((255, 255, 255, 0))); // most common subnet in home networks
 WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
+#ifdef WLED_USE_ETHERNET
+WLED_GLOBAL int ethernetType _INIT(WLED_ETH_ESP32_POE);            // ethernet board type
+#endif
 
 // LED CONFIG
 WLED_GLOBAL uint16_t ledCount _INIT(30);          // overcurrent prevented by ABL

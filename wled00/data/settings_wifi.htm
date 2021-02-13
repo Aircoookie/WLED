@@ -63,7 +63,13 @@
 		<h3>Experimental</h3>
 		Disable WiFi sleep: <input type="checkbox" name="WS"><br>
 		<i>Can help with connectivity issues.<br>
-		Do not enable if WiFi is working correctly, increases power consumption.</i>
+    Do not enable if WiFi is working correctly, increases power consumption.</i>
+    <div id="ethd">
+		<h3>Ethernet Type</h3>
+		<select name="ETH">
+		<option value="0">None</option>
+		<option value="1">WT32-ETH01</option>
+		<option value="2">ESP32-POE</option></select><br><br></div>
 		<hr>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
 	</form>
