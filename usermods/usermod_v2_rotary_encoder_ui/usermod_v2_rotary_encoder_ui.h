@@ -1,8 +1,6 @@
 #pragma once
 
-#ifndef NATIVE_TESTING
 #include "wled.h"
-#endif // NATIVE_TESTING
 
 //
 // Inspired by the v1 usermods
@@ -44,43 +42,81 @@
 #define FLD_LINE_3_PALETTE          0
 #endif
 
+
 // The last UI state
 #define LAST_UI_STATE 4
 
-/**
- * Array of mode indexes in alphabetical order.
- * Should be ordered from JSON_mode_names array in FX.h.
- * 
- * NOTE: If JSON_mode_names changes, this will need to be updated.
- */
-const byte modes_alpha_order[] = {
-    0, 27, 38, 115, 1, 26, 91, 68, 2, 88, 102, 114, 28, 31, 32,
-    30, 29, 111, 52, 34, 8, 74, 67, 112, 18, 19, 96, 7, 117, 12,
-    69, 66, 45, 42, 90, 89, 110, 87, 46, 53, 82, 100, 58, 64, 75,
-    41, 57, 47, 44, 76, 77, 59, 70, 71, 72, 73, 107, 62, 101, 65,
-    98, 105, 109, 97, 48, 49, 95, 63, 78, 43, 9, 33, 5, 79, 99,
-    15, 37, 16, 10, 11, 40, 60, 108, 92, 93, 94, 103, 83, 84, 20,
-    21, 22, 85, 86, 39, 61, 23, 25, 24, 104, 6, 36, 13, 14, 35,
-    54, 56, 55, 116, 17, 81, 80, 106, 51, 50, 113, 3, 4 };
-byte **modes_alpha_order_gen;
-char **modes_qstrings;
+// Number of modes at the start of the list to not sort
+#define MODE_SORT_SKIP_COUNT 1
+
+// Pointers the start of the mode names within JSON_mode_names
+char **modes_qstrings = nullptr;
+
+// Array of mode indexes in alphabetical order.
+byte *modes_alpha_indexes = nullptr;
+
+// Pointers the start of the palette names within JSON_palette_names
+char **palettes_qstrings = nullptr;
+
+// Which list is being sorted
+char **listBeingSorted = nullptr;
+
+// Array of palette indexes in alphabetical order.
+byte *palettes_alpha_indexes = nullptr;
 
 /**
- * Array of palette indexes in alphabetical order.
- * Should be ordered from JSON_palette_names array in FX.h.
- *
- * NOTE: If JSON_palette_names changes, this will need to be updated.
+ * Modes and palettes are stored as strings that
+ * end in a quote character. Compare two of them.
+ * We are comparing directly within either
+ * JSON_mode_names or JSON_palette_names.
  */
-const byte palettes_alpha_order[] = { 
-  0, 1, 2, 3, 4, 5, 18, 46, 51, 50, 55, 39, 26, 22, 15,
-  48, 52, 53, 7, 37, 24, 30, 35, 10, 32, 28, 29, 36, 31,
-  25, 8, 38, 40, 41, 9, 44, 47, 6, 20, 11, 12, 16, 33, 
-  14, 49, 27, 19, 13, 21, 54, 34, 45, 23, 43, 17, 42 };
-byte **palettes_alpha_order_gen;
-char **palettes_qstrings;
-
-
-#ifndef NATIVE_TESTING
+int re_qstringCmp(const void *ap, const void *bp) {
+    char *a = listBeingSorted[*((byte*)ap)];
+    char *b  = listBeingSorted[*((byte*)bp)];
+    int i = 0;
+    do {
+        char aVal = pgm_read_byte_near(a + i);
+        if (aVal >= 97 && aVal <= 122) {
+          // Lowercase
+          aVal -= 32;
+        }
+        char bVal = pgm_read_byte_near(b + i);
+        if (bVal >= 97 && bVal <= 122) {
+          // Lowercase
+          bVal -= 32;
+        }
+        // Relly we shouldn't ever get to '\0'
+        if (aVal == '"' || bVal == '"' || aVal == '\0' || bVal == '\0') {
+          // We're done. one is a substring of the other
+          // or something happenend and the quote didn't stop us.
+          if (aVal == bVal) {
+            // Same value, probably shouldn't happen
+            // with this dataset
+            return 0;
+          }
+          else if (aVal == '"' || aVal == '\0' ) {
+            return -1;
+          }
+          else {
+            return 1;
+          }
+        }
+        if (aVal == bVal) {
+          // Same characters. Move to the next.
+          i++;
+          continue;
+        }
+        // We're done
+        if (aVal < bVal) {
+          return -1;
+        }
+        else {
+          return 1;
+        }
+    } while (true);
+    // We shouldn't get here.
+    return 0;
+}
 
 class RotaryEncoderUIUsermod : public Usermod {
 private:
@@ -114,8 +150,12 @@ public:
      */
   void setup()
   {
-    modes_qstrings =  re_findModeStrings(JSON_mode_names, NUM_MODES);
-    palettes_qstrings =  re_findModeStrings(PALETTES_mode_names,  strip.getPaletteCount());
+    /**
+     * Sort the modes and palettes on startup
+     * as they are guarantted to change.
+     */
+    sortModesAndPalettes();
+
     pinMode(pinA, INPUT_PULLUP);
     pinMode(pinB, INPUT_PULLUP);
     pinMode(pinC, INPUT_PULLUP);
@@ -132,6 +172,37 @@ public:
     }
 #endif
   }
+
+/**
+ * Sort the modes and palettes to the index arrays
+ * modes_alpha_indexes and palettes_alpha_indexes.
+ */
+void sortModesAndPalettes() {
+    modes_qstrings = re_findModeStrings(JSON_mode_names, strip.getModeCount());    
+    modes_alpha_indexes = re_initIndexArray(strip.getModeCount());
+    re_sortModes(modes_qstrings, modes_alpha_indexes, strip.getModeCount(), MODE_SORT_SKIP_COUNT);
+    free(modes_qstrings);
+    modes_qstrings = nullptr;
+
+    palettes_qstrings = re_findModeStrings(JSON_palette_names, strip.getPaletteCount());
+    palettes_alpha_indexes = re_initIndexArray(strip.getPaletteCount());
+
+    int skipPaletteCount = 1;
+    while (true) {
+      // How many palette names start with '*' and should not be sorted?
+      // (Also skipping the first one, 'Default').
+      if (pgm_read_byte_near(palettes_qstrings[skipPaletteCount]) == '*') {
+        skipPaletteCount++;
+      }
+      else {
+        break;  
+      }
+    }
+
+    re_sortModes(palettes_qstrings, palettes_alpha_indexes, strip.getPaletteCount(), skipPaletteCount);
+    free(palettes_qstrings);
+    palettes_qstrings = nullptr;
+}
 
   /*
      * connected() is called every time the WiFi is (re)connected
@@ -257,16 +328,16 @@ public:
   void findCurrentEffectAndPalette() {
     currentEffectAndPaleeteInitialized = true;
     for (uint8_t i = 0; i < strip.getModeCount(); i++) {
-      byte value = modes_alpha_order[i];
-      if (modes_alpha_order[i] == effectCurrent) {
+      byte value = modes_alpha_indexes[i];
+      if (modes_alpha_indexes[i] == effectCurrent) {
         effectCurrentIndex = i;
         break;
       }
     }
 
     for (uint8_t i = 0; i < strip.getPaletteCount(); i++) {
-      byte value = palettes_alpha_order[i];
-      if (palettes_alpha_order[i] == strip.getSegment(0).palette) {
+      byte value = palettes_alpha_indexes[i];
+      if (palettes_alpha_indexes[i] == strip.getSegment(0).palette) {
         effectPaletteIndex = i;
         break;
       }
@@ -326,7 +397,7 @@ public:
     else {
       effectCurrentIndex = (effectCurrentIndex - 1 < 0) ? (strip.getModeCount() - 1) : (effectCurrentIndex - 1);
     }
-    effectCurrent = modes_alpha_order[effectCurrentIndex];
+    effectCurrent = modes_alpha_indexes[effectCurrentIndex];
     lampUdated();
   }
 
@@ -375,8 +446,67 @@ public:
     else {
       effectPaletteIndex = (effectPaletteIndex - 1 < 0) ? (strip.getPaletteCount() - 1) : (effectPaletteIndex - 1);
     }
-    effectPalette = palettes_alpha_order[effectPaletteIndex];
+    effectPalette = palettes_alpha_indexes[effectPaletteIndex];
     lampUdated();
+  }
+
+  byte *re_initIndexArray(int numModes) {
+    byte *indexes = (byte *)malloc(sizeof (byte) * numModes);  
+    for (byte i = 0; i < numModes; i++) {
+      indexes[i] = i;
+    }
+    return indexes;
+  }
+
+  /**
+   * Return an array of mode or palette names from the JSON string.
+   * They don't end in '\0', they end in '"'. 
+   */
+  char **re_findModeStrings(const char json[], int numModes) {
+    char **modeStrings = (char **)malloc(sizeof (char *) * numModes);
+    uint8_t modeIndex = 0;
+    bool insideQuotes = false;
+    // advance past the mark for markLineNum that may exist.
+    char singleJsonSymbol;
+
+    // Find the mode name in JSON
+    bool complete = false;
+    for (size_t i = 0; i < strlen_P(json); i++) {
+      singleJsonSymbol = pgm_read_byte_near(json + i);
+      switch (singleJsonSymbol) {
+        case '"':
+          insideQuotes = !insideQuotes;
+          if (insideQuotes) {
+            // We have a new mode or palette
+            modeStrings[modeIndex] = (char*)(json + i + 1);
+          }
+          break;
+        case '[':
+          break;
+        case ']':
+          complete = true;
+          break;
+        case ',':
+          modeIndex++;
+        default:
+          if (!insideQuotes) {
+            break;
+          }
+      }
+      if (complete) {
+        break;
+      }
+    }
+    return modeStrings;
+  }
+
+  /**
+   * Sort either the modes or the palettes using quicksort.
+   */
+  void re_sortModes(char **modeNames, byte *indexes, int count, int numSkip) {
+    listBeingSorted = modeNames;
+    qsort(indexes + numSkip, count - numSkip, sizeof(byte), re_qstringCmp);
+    listBeingSorted = nullptr;
   }
 
   /*
@@ -429,112 +559,3 @@ public:
   //More methods can be added in the future, this example will then be extended.
   //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
 };
-
-#endif // NATIVE_TESTING
-
-/**
- * Return an array of mode names. They don't end in '\0',
- * they end in '"'. 
- */
-char **re_findModeStrings(const char json[], int numModes) {
-  char **modeStrings = (char **)malloc(sizeof (char *) * numModes);
-  uint8_t qComma = 0;
-  bool insideQuotes = false;
-  // advance past the mark for markLineNum that may exist.
-  char singleJsonSymbol;
-
-  // Find the mode name in JSON
-  bool complete = false;
-  for (size_t i = 0; i < strlen_P(json); i++) {
-    singleJsonSymbol = pgm_read_byte_near(json + i);
-    switch (singleJsonSymbol) {
-      case '"':
-        insideQuotes = !insideQuotes;
-        if (insideQuotes) {
-          modeStrings[i] = (char*)(json + i + 1);
-          printf("New modeStrings[%d]: %c%c%c\n", i, 
-            pgm_read_byte_near(modeStrings[i]), 
-            pgm_read_byte_near(modeStrings[i]+1), 
-            pgm_read_byte_near(modeStrings[i]+2));
-        }
-        break;
-      case '[':
-        break;
-      case ']':
-        complete = true;
-        break;
-      case ',':
-        qComma++;
-      default:
-        if (!insideQuotes) {
-          break;
-        }
-    }
-    if (complete) {
-      break;
-    }
-  }
-  return modeStrings;
-}
-
-// int re_modeStringCmp(const char a[], const char b[]) {
-//     int i = 0;
-//     do {
-//         const char aVal = pgm_read_byte_near(a + i);
-//         const char bVal = pgm_read_byte_near(b + i);
-//         // Relly we shouldn't ever get to '\0'
-//         if (aVal == '"' || bVal == '"' || aVal == '\0' || bVal == '\0') {
-//           // We're done. one is a substring of the other
-//           // or something happenend and the quote didn't stop us.
-//           if (aVal == bVal) {
-//             // Same value, probably shouldn't happen
-//             // with this dataset
-//             return 0;
-//           }
-//           else if (aVal == '"') {
-//             return -1;
-//           }
-//           else if (bVal == '"') {
-//             return 1;
-//           }
-//           else {
-//             // We shouldn't get here.
-//             return 0;
-//           }
-//         }
-//         if (aVal == bVal) {
-//           // Same characters. Move to the next.
-//           i++;
-//           continue;
-//         }
-//         // We're done
-//         return (aVal > bVal) ? -1 : 1;
-//     } while (true);
-//     // We shouldn't get here.
-//     return 0;
-// }
-
-
-// void re_sortModes(const char json[], byte *idx[], int n) {
-//   char *modeNames[] = re_findModeNames(arr, n);
-//   int i, j;
-
-//   for (i=0; i<n; i++)
-//   {
-//     // wrong?
-//     (*idx)[i] = i;
-//   }
-
-//   for (i=0; i<n; i++)
-//   {
-//     for (j=i+1; j<n; j++)
-//     {
-//       int order = strcmp(modeNames[idx[i],] modeNames[idx[j]]);
-//       if (order == 1) {
-//         swap(&idx[i], &idx[j]);
-//       }
-//     }
-//   }
-
-//   return idx;
-// }
