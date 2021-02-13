@@ -64,7 +64,6 @@ void registerUsermods()
   #ifdef USERMOD_BME280
   usermods.add(new UsermodBME280());
   #endif
-#endif
 #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());
 #endif
