@@ -10,7 +10,10 @@
 // OLED displays to provide a four line display
 // for WLED.
 //
-// This Usermod works best, by far, when coupled with RotaryEncoderUIUsermod.
+// Dependencies
+// * This usermod REQURES the ModeSortUsermod
+// * This Usermod works best, by far, when coupled 
+//   with RotaryEncoderUIUsermod.
 //
 // Make sure to enable NTP and set your time zone in WLED Config | Time.
 //
@@ -124,6 +127,9 @@ class FourLineDisplayUsermod : public Usermod {
 
     char lineBuffer[LINE_BUFFER_SIZE];
 
+    char **modes_qstrings = nullptr;
+    char **palettes_qstrings = nullptr;
+
     // If display does not work or looks corrupted check the
     // constructor reference:
     // https://github.com/olikraus/u8g2/wiki/u8x8setupcpp
@@ -140,6 +146,10 @@ class FourLineDisplayUsermod : public Usermod {
       u8x8.setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       u8x8.setFont(u8x8_font_chroma48medium8_r);
       u8x8.DRAW_STRING(0, 0*LINE_HEIGHT, "Loading...");
+
+      ModeSortUsermod *modeSortUsermod = (ModeSortUsermod*) usermods.lookup(USERMOD_ID_MODE_SORT);
+      modes_qstrings = modeSortUsermod->getModesQStrings();
+      palettes_qstrings = modeSortUsermod->getPalettesQStrings();
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -254,7 +264,7 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       // Third row with mode name
-      showCurrentEffectOrPalette(JSON_mode_names, 2, knownMode);
+      showCurrentEffectOrPalette(modes_qstrings[knownMode], 2);
 
       switch(lineThreeType) {
         case FLD_LINE_3_BRIGHTNESS:
@@ -270,7 +280,7 @@ class FourLineDisplayUsermod : public Usermod {
           u8x8.DRAW_STRING(1, 3*LINE_HEIGHT, lineBuffer);
           break;
         case FLD_LINE_3_PALETTE:
-          showCurrentEffectOrPalette(JSON_palette_names, 3, knownPalette);
+          showCurrentEffectOrPalette(palettes_qstrings[knownPalette], 3);
           break;
       }
 
@@ -289,35 +299,21 @@ class FourLineDisplayUsermod : public Usermod {
      * TODO: Should we cache the current effect and 
      * TODO: palette name? This seems expensive.
      */
-    void showCurrentEffectOrPalette(const char json[], uint8_t row, uint8_t desiredEntry) {
-      uint8_t qComma = 0;
-      bool insideQuotes = false;
-      // advance past the mark for markLineNum that may exist.
+    void showCurrentEffectOrPalette(char *qstring, uint8_t row) {
       uint8_t printedChars = 1;
       char singleJsonSymbol;
-
-      // Find the mode name in JSON
-      for (size_t i = 0; i < strlen_P(json); i++) {
-        singleJsonSymbol = pgm_read_byte_near(json + i);
-        switch (singleJsonSymbol) {
-        case '"':
-          insideQuotes = !insideQuotes;
-          break;
-        case '[':
-        case ']':
-          break;
-        case ',':
-          qComma++;
-        default:
-          if (!insideQuotes || (qComma != desiredEntry)) {
-            break;
-          }
-          u8x8.DRAW_GLYPH(printedChars, row * LINE_HEIGHT, singleJsonSymbol);
-          printedChars++;
-        }
-        if ((qComma > desiredEntry) || (printedChars > u8x8.getCols() - 2)) {
+      int i = 0;
+      while (true) {
+        singleJsonSymbol = pgm_read_byte_near(qstring + i);
+        if (singleJsonSymbol == '"' || singleJsonSymbol == '\0' ) {
           break;
         }
+        u8x8.DRAW_GLYPH(printedChars, row * LINE_HEIGHT, singleJsonSymbol);
+        printedChars++;
+        if ( (printedChars > u8x8.getCols() - 2)) {
+          break;
+        }
+        i++;
       }
     }
 
