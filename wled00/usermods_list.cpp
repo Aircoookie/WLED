@@ -30,6 +30,7 @@
 #ifdef USERMOD_AUTO_SAVE
 #include "../usermods/usermod_v2_auto_save/usermod_v2_auto_save.h"
 #endif
+#include "usermod_PIR_LDR_MQTT.h"
 
 void registerUsermods()
 {
@@ -59,4 +60,5 @@ void registerUsermods()
 #ifdef USERMOD_AUTO_SAVE
   usermods.add(new AutoSaveUsermod());
 #endif
+usermods.add(new PIRsensorSwitch);
 }
