@@ -1568,9 +1568,9 @@ uint16_t WS2812FX::mode_oscillate(void)
 
   if (SEGENV.call == 0)
   {
-    oscillators[0] = {SEGLEN/4,   SEGLEN/8,  1, 1};
-    oscillators[1] = {SEGLEN/4*3, SEGLEN/8,  1, 2};
-    oscillators[2] = {SEGLEN/4*2, SEGLEN/8, -1, 1};
+    oscillators[0] = {(int16_t)(SEGLEN/4),   (int8_t)(SEGLEN/8),  1, 1};
+    oscillators[1] = {(int16_t)(SEGLEN/4*3), (int8_t)(SEGLEN/8),  1, 2};
+    oscillators[2] = {(int16_t)(SEGLEN/4*2), (int8_t)(SEGLEN/8), -1, 1};
   }
 
   uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
@@ -1919,7 +1919,6 @@ uint16_t WS2812FX::mode_noise16_2()
   for (uint16_t i = 0; i < SEGLEN; i++) {
 
     uint16_t shift_x = SEGENV.step >> 6;                         // x as a function of time
-    uint16_t shift_y = SEGENV.step/42;
 
     uint32_t real_x = (i + shift_x) * scale;                  // calculate the coordinates within the noise field
 
