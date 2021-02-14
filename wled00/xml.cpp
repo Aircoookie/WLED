@@ -299,7 +299,7 @@ void getSettingsJS(byte subPage, char* dest)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
-      uint8_t nPins = bus->getPins(pins);
+      bus->getPins(pins);
       sappend('v', lp, pins[0]);
       if (pinManager.isPinOk(pins[1])) sappend('v', lk, pins[1]);
       sappend('v', lc, bus->getLength());
@@ -312,7 +312,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
     if (strip.currentMilliamps)
     {
-      sappends('m',SET_F("(\"pow\")[0]"),"");
+      sappends('m',SET_F("(\"pow\")[0]"),(char*)"");
       olen -= 2; //delete ";
       oappendi(strip.currentMilliamps);
       oappend(SET_F("mA\";"));
