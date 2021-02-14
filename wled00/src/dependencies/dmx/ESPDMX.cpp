@@ -77,7 +77,6 @@ void DMXESPSerial::write(int Channel, uint8_t value) {
 }
 
 void DMXESPSerial::end() {
-  delete dmxData;
   chanSize = 0;
   Serial1.end();
   dmxStarted = false;
