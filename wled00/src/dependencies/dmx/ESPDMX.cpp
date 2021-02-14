@@ -80,7 +80,7 @@ void DMXESPSerial::end() {
   delete dmxData;
   chanSize = 0;
   Serial1.end();
-  dmxStarted == false;
+  dmxStarted = false;
 }
 
 void DMXESPSerial::update() {
