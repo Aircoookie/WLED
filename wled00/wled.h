@@ -65,7 +65,9 @@
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
   //#include "SPIFFS.h"
-  #define CONFIG_LITTLEFS_FOR_IDF_3_2
+  #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
+    #define CONFIG_LITTLEFS_FOR_IDF_3_2
+  #endif
   #include <LITTLEFS.h>
 #endif
 
