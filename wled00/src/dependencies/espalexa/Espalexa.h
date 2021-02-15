@@ -116,6 +116,14 @@ private:
     }
     return "";
   }
+
+  String getLightIdFromURI(String uri) {
+      String lightIdAndState = uri.substring(uri.indexOf("lights") + 7);
+      String lightId = lightIdAndState.substring(0, lightIdAndState.indexOf("/"));
+      if(lightId.endsWith("/")) lightId.remove(lightId.length() - 1);
+
+      return lightId;
+  } 
   
   uint8_t decodeLightId(String idx) {
       if(idx.length() < 12) return 0;
@@ -469,12 +477,10 @@ public:
 
     if ((req.indexOf("state") > 0) && (body.length() > 0)) //client wants to control light
     {
-      String devIdAndState = req.substring(req.indexOf("lights")+7);
-      String devIdStr = devIdAndState.substring(0, devIdAndState.indexOf("/"));
-      if(devIdStr.endsWith("/")) devIdStr.remove(devIdStr.length() - 1);
-      uint8_t devId = decodeLightId(devIdStr);
+      String lightId = getLightIdFromURI(req);
+      uint8_t devId = decodeLightId(lightId);
 
-      String success = "[{\"success\":{\"/lights/" + devIdStr + "/state/\": true}}]";
+      String success = "[{\"success\":{\"/lights/" + lightId + "/state/\": true}}]";
 
       server->send(200, "application/json", success);
 
@@ -541,12 +547,11 @@ public:
     int pos = req.indexOf("lights");
     if (pos > 0) //client wants light info
     {
-      String devIdStr = req.substring(pos+7);
-      if(devIdStr.endsWith("/")) devIdStr.remove(devIdStr.length() - 1);
+      String lightId = getLightIdFromURI(req);
 
-      EA_DEBUG("l"); EA_DEBUGLN(devIdStr);
+      EA_DEBUG("l"); EA_DEBUGLN(lightId);
 
-      if (devIdStr == "0" || !devIdStr.length()) //client wants all lights
+      if (lightId.isEmpty()) //client wants all lights
       {
         EA_DEBUGLN("lAll");
         String jsonTemp = "{";
@@ -565,7 +570,7 @@ public:
         server->send(200, "application/json", jsonTemp);
       } else //client wants one light (devId)
       {
-        uint8_t devId = decodeLightId(devIdStr);
+        uint8_t devId = decodeLightId(lightId);
 
         EA_DEBUGLN(devId);
         if (devId > currentDeviceCount)
