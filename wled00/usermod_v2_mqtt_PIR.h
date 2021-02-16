@@ -212,7 +212,7 @@ after <input type=\"number\" min=\"1\" max=\"1024\" value=\"";
     }
     if (root["LDRadjust"] != nullptr)
     {
-      m_lightTreshold = root["PIRoffSec"].as<int>();
+      m_lightTreshold = max(0, min(1024, root["LDRadjust"].as<int>()));
       m_updateConfig = true;
     }
 
