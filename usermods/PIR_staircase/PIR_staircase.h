@@ -135,7 +135,7 @@ class PIR_staircase : public Usermod {
       lastScanTime = millis();
 
 #ifdef bottomPIR_PIN
-      bottomSensorRead = bottomSensorWrite || ((bottomPIR_PIN) == HIGH);
+      bottomSensorRead = bottomSensorWrite || (digitalRead(bottomPIR_PIN) == HIGH);
 #else
       bottomSensorRead = bottomSensorWrite ||
           ultrasoundRead(bottomTriggerPin, bottomEchoPin, bottomMaxTimeUs);
