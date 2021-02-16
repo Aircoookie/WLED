@@ -226,6 +226,7 @@ class UsermodManager {
     void readFromConfig(JsonObject& obj);
 
     bool add(Usermod* um);
+    Usermod* lookup(uint16_t mod_id);
     byte getModCount();
 };
 
