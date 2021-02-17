@@ -20,6 +20,16 @@
 #ifdef USERMOD_SENSORSTOMQTT
 #include "usermod_v2_SensorsToMqtt.h"
 #endif
+#ifdef USERMOD_SHIELD_DISPLAY
+#include "../usermods/wemos_shield_display/usermod_shield_display.h"
+#endif
+#ifdef USERMOD_SHIELD_DISP_TEMP
+#include "../usermods/wemos_shield_display/usermod_shield_disp_temp.h"
+#endif
+#ifdef USERMOD_ST7789_DISPLAY
+#include "../usermods/ST7789_display/ST7789_display.h"
+#endif
+
 
 #ifdef USERMOD_FOUR_LINE_DISLAY
 #include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
@@ -52,6 +62,15 @@ void registerUsermods()
 #endif
 #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());
+#endif
+#ifdef USERMOD_SHIELD_DISPLAY
+  usermods.add(new ShieldDisplayUsermod());
+#endif
+#ifdef USERMOD_SHIELD_DISP_TEMP
+  usermods.add(new ShieldDispTempUsermod());
+#endif
+#ifdef USERMOD_ST7789_DISPLAY
+  usermods.add(new St7789DisplayUsermod());
 #endif
 #ifdef USERMOD_FOUR_LINE_DISLAY
   usermods.add(new FourLineDisplayUsermod());
