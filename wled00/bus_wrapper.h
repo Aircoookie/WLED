@@ -328,14 +328,15 @@ class PolyBus {
       case I_32_I0_TM1_4: busPtr = new B_32_I0_TM1_4(len, pins[0]); break;
       case I_32_I1_TM1_4: busPtr = new B_32_I1_TM1_4(len, pins[0]); break;
     #endif
-      case I_HS_DOT_3: busPtr = new B_HS_DOT_3(len, pins[0], pins[1]); break;
-      case I_SS_DOT_3: busPtr = new B_SS_DOT_3(len, pins[0], pins[1]); break;
-      case I_HS_LPD_3: busPtr = new B_HS_LPD_3(len, pins[0], pins[1]); break;
-      case I_SS_LPD_3: busPtr = new B_SS_LPD_3(len, pins[0], pins[1]); break;
-      case I_HS_WS1_3: busPtr = new B_HS_WS1_3(len, pins[0], pins[1]); break;
-      case I_SS_WS1_3: busPtr = new B_SS_WS1_3(len, pins[0], pins[1]); break;
-      case I_HS_P98_3: busPtr = new B_HS_P98_3(len, pins[0], pins[1]); break;
-      case I_SS_P98_3: busPtr = new B_SS_P98_3(len, pins[0], pins[1]); break;
+      // for 2-wire: pins[1] is clk, pins[0] is dat.  begin expects (len, clk, dat)
+      case I_HS_DOT_3: busPtr = new B_HS_DOT_3(len, pins[1], pins[0]); break;
+      case I_SS_DOT_3: busPtr = new B_SS_DOT_3(len, pins[1], pins[0]); break;
+      case I_HS_LPD_3: busPtr = new B_HS_LPD_3(len, pins[1], pins[0]); break;
+      case I_SS_LPD_3: busPtr = new B_SS_LPD_3(len, pins[1], pins[0]); break;
+      case I_HS_WS1_3: busPtr = new B_HS_WS1_3(len, pins[1], pins[0]); break;
+      case I_SS_WS1_3: busPtr = new B_SS_WS1_3(len, pins[1], pins[0]); break;
+      case I_HS_P98_3: busPtr = new B_HS_P98_3(len, pins[1], pins[0]); break;
+      case I_SS_P98_3: busPtr = new B_SS_P98_3(len, pins[1], pins[0]); break;
     }
     begin(busPtr, busType);
     return busPtr;
@@ -835,10 +836,11 @@ class PolyBus {
       #endif
       uint8_t t = I_NONE;
       switch (busType) {
-        case TYPE_APA102:  t = I_SS_DOT_3;
-        case TYPE_LPD8806: t = I_SS_LPD_3;
-        case TYPE_WS2801:  t = I_SS_WS1_3;
-        case TYPE_P9813:   t = I_SS_P98_3;
+        case TYPE_APA102:  t = I_SS_DOT_3; break;
+        case TYPE_LPD8806: t = I_SS_LPD_3; break;
+        case TYPE_WS2801:  t = I_SS_WS1_3; break;
+        case TYPE_P9813:   t = I_SS_P98_3; break;
+        default: t=I_NONE;
       }
       if (t > I_NONE && isHSPI) t--; //hardware SPI has one smaller ID than software
       return t;
