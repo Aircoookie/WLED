@@ -122,7 +122,7 @@ class BusDigital : public Bus {
     //Fix for turning off onboard LED breaking bus
     #ifdef LED_BUILTIN
     if (_bri == 0 && b > 0) {
-      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType); 
+      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins); 
     }
     #endif
     _bri = b;
@@ -159,7 +159,7 @@ class BusDigital : public Bus {
   }
 
   void reinit() {
-    PolyBus::begin(_busPtr, _iType);
+    PolyBus::begin(_busPtr, _iType, _pins);
   }
 
   void cleanup() {
