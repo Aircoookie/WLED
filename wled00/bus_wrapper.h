@@ -191,7 +191,7 @@
 //handles pointer type conversion for all possible bus types
 class PolyBus {
   public:
-  static void begin(void* busPtr, uint8_t busType) {
+  static void begin(void* busPtr, uint8_t busType, uint8_t* pins) {
     switch (busType) {
       case I_NONE: break;
     #ifdef ESP8266
@@ -211,6 +211,10 @@ class PolyBus {
       case I_8266_U1_TM1_4: (static_cast<B_8266_U1_TM1_4*>(busPtr))->Begin(); break;
       case I_8266_DM_TM1_4: (static_cast<B_8266_DM_TM1_4*>(busPtr))->Begin(); break;
       case I_8266_BB_TM1_4: (static_cast<B_8266_BB_TM1_4*>(busPtr))->Begin(); break;
+      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(); break;
+      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(); break;
+      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(); break;
+      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->Begin(); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_R0_NEO_3: (static_cast<B_32_R0_NEO_3*>(busPtr))->Begin(); break;
@@ -253,14 +257,15 @@ class PolyBus {
       case I_32_R7_TM1_4: (static_cast<B_32_R7_TM1_4*>(busPtr))->Begin(); break;
       case I_32_I0_TM1_4: (static_cast<B_32_I0_TM1_4*>(busPtr))->Begin(); break;
       case I_32_I1_TM1_4: (static_cast<B_32_I1_TM1_4*>(busPtr))->Begin(); break;
+      // ESP32 can (and should, to avoid inadvertantly driving the chip select signal) specify the pins used for SPI, but only in begin()
+      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
+      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
+      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
+      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
     #endif
-      case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(); break;
       case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->Begin(); break;
-      case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(); break;
       case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->Begin(); break;
-      case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(); break;
       case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->Begin(); break;
-      case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->Begin(); break;
       case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->Begin(); break;
     }
   };
@@ -338,7 +343,7 @@ class PolyBus {
       case I_HS_P98_3: busPtr = new B_HS_P98_3(len, pins[1], pins[0]); break;
       case I_SS_P98_3: busPtr = new B_SS_P98_3(len, pins[1], pins[0]); break;
     }
-    begin(busPtr, busType);
+    begin(busPtr, busType, pins);
     return busPtr;
   };
   static void show(void* busPtr, uint8_t busType) {
@@ -831,8 +836,7 @@ class PolyBus {
       #ifdef ESP8266
       if (pins[0] == P_8266_HS_MOSI && pins[1] == P_8266_HS_CLK) isHSPI = true;
       #else
-      if (pins[0] == P_32_HS_MOSI && pins[1] == P_32_HS_CLK) isHSPI = true;
-      if (pins[0] == P_32_VS_MOSI && pins[1] == P_32_VS_CLK) isHSPI = true;
+        if(!num) isHSPI = true; // temporary hack to limit use of hardware SPI to a single SPI peripheral: only allow ESP32 hardware serial on segment 0
       #endif
       uint8_t t = I_NONE;
       switch (busType) {
