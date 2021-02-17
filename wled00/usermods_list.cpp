@@ -21,6 +21,9 @@
 #include "usermod_v2_SensorsToMqtt.h"
 #endif
 
+#ifdef USERMOD_MODE_SORT
+#include "../usermods/usermod_v2_mode_sort/usermod_v2_mode_sort.h"
+#endif
 #ifdef USERMOD_FOUR_LINE_DISLAY
 #include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
 #endif
@@ -53,6 +56,10 @@ void registerUsermods()
 #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());
 #endif
+
+#ifdef USERMOD_MODE_SORT
+  usermods.add(new ModeSortUsermod());
+#endif
 #ifdef USERMOD_FOUR_LINE_DISLAY
   usermods.add(new FourLineDisplayUsermod());
 #endif
@@ -62,6 +69,7 @@ void registerUsermods()
 #ifdef USERMOD_AUTO_SAVE
   usermods.add(new AutoSaveUsermod());
 #endif
+
 #ifdef USERMOD_DHT
 usermods.add(new UsermodDHT());
 #endif
