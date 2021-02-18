@@ -1,5 +1,5 @@
 /*
- * PIR_Staircase compiletime confguration.
+ * Animated_Staircase compiletime confguration.
  *
  * Please see README.md on how to change this file.
  */

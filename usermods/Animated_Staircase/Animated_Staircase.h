@@ -2,15 +2,15 @@
  * Usermod for detecting people entering/leaving a staircase and switching the
  * staircase on/off.
  *
- * Edit the PIR_staircase_config.h file to compile this usermod for your
+ * Edit the Animated_Staircase_config.h file to compile this usermod for your
  * specific configuration.
  * 
  * See the accompanying README.md file for more info.
  */
 #pragma once
 #include "wled.h"
-#include "PIR_staircase_config.h"
-#define USERMOD_ID_PIR_STAIRCASE 1011
+#include "Animated_Staircase_config.h"
+#define USERMOD_ID_ANIMATED_STAIRCASE 1011
 
 /* Initial configuration (available in API and stored in flash) */
 bool enabled = true;                   // Enable this usermod
@@ -23,10 +23,10 @@ unsigned int topMaxTimeUs = 1749;  // default echo timout, top
 unsigned int bottomMaxTimeUs = 1749;  // default echo timout, bottom
 #endif
 
-// Time between checking of the PIRs (or ultrasonic sensors)
+// Time between checking of the sensors
 const int scanDelay = 50;
 
-class PIR_staircase : public Usermod {
+class Animated_Staircase : public Usermod {
  private:
   // Lights on or off.
   // Flipping this will start a transition.
@@ -46,7 +46,7 @@ class PIR_staircase : public Usermod {
   // Time of the last transition action
   unsigned long lastTime = 0;
 
-  // Time of the last PIR check
+  // Time of the last sensor check
   unsigned long lastScanTime = 0;
 
   // Last time the lights were switched on or off
@@ -157,7 +157,7 @@ class PIR_staircase : public Usermod {
         if (on) {
           lastSensor = topSensorRead;
         } else {
-          // If the bottom PIR triggered, we need to swipe up, ON
+          // If the bottom sensor triggered, we need to swipe up, ON
           swipe = bottomSensorRead;
 
           if (swipe) {
@@ -183,7 +183,7 @@ class PIR_staircase : public Usermod {
 
   void autoPowerOff() {
     if (on && ((millis() - lastSwitchTime) > on_time_ms)) {
-      // Swipe OFF in the direction of the last PIR detection
+      // Swipe OFF in the direction of the last sensor detection
       swipe = lastSensor;
       on = false;
 
@@ -292,7 +292,7 @@ class PIR_staircase : public Usermod {
 
   void enable(bool enable) {
     if (enable) {
-      Serial.println("PIR Staircase enabled.");
+      Serial.println("Animated Staircase enabled.");
       Serial.print("Delay between steps: ");
       Serial.print(segment_delay_ms, DEC);
       Serial.print(" milliseconds.\nStairs switch off after: ");
@@ -324,7 +324,7 @@ class PIR_staircase : public Usermod {
         segments->setOption(SEG_OPTION_ON, 1, 1);
       }
       colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
-      Serial.println("PIR Staircase disabled.");
+      Serial.println("Animated Staircase disabled.");
     }
     enabled = enable;
   }
@@ -349,7 +349,7 @@ class PIR_staircase : public Usermod {
 
   }
 
-  uint16_t getId() { return USERMOD_ID_PIR_STAIRCASE; }
+  uint16_t getId() { return USERMOD_ID_ANIMATED_STAIRCASE; }
 
   /*
    * Shows configuration settings to the json API. This object looks like:
