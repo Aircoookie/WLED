@@ -10,6 +10,12 @@ PIR or ultrasonic sensors at the top and bottom of your stairs to:
 The Animated Staircase can be controlled by the WLED API. Change settings such as
 speed, on/off time and distance settings by sending an HTTP request, see below.
 
+## NOTE ON ULTRASONIC SENSORS AND ESP-32
+For unknown reasons Ultrasonic sensors only work on the ESP8266 based boards.
+The ESP32 boards seem to give a problem with detecting the echo pin. Until I figure
+out why this is, the PIR sensor is the most reliable option for this usermod.
+
+
 ## WLED integration
 To include this usermod in your WLED setup, you have to be able to [compile WLED from source](https://github.com/Aircoookie/WLED/wiki/Compiling-WLED).
 
