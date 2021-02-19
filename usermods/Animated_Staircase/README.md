@@ -10,12 +10,6 @@ PIR or ultrasonic sensors at the top and bottom of your stairs to:
 The Animated Staircase can be controlled by the WLED API. Change settings such as
 speed, on/off time and distance settings by sending an HTTP request, see below.
 
-## NOTE ON ULTRASONIC SENSORS AND ESP-32
-For unknown reasons Ultrasonic sensors only work on the ESP8266 based boards.
-The ESP32 boards seem to give a problem with detecting the echo pin. Until I figure
-out why this is, the PIR sensor is the most reliable option for this usermod.
-
-
 ## WLED integration
 To include this usermod in your WLED setup, you have to be able to [compile WLED from source](https://github.com/Aircoookie/WLED/wiki/Compiling-WLED).
 
@@ -32,14 +26,14 @@ Edit `Animated_Staircase_config.h`:
    Using D7 and D6 pin notation as used on several boards:
   
    ```cpp
-     #define topPIR_PIN    D7
-     #define bottomPIR_PIN D6
+     #define TOP_PIR_PIN    D7
+     #define BOTTOM_PIR_PIN D6
    ```
    
    Or using GPIO numbering for pins 25 and 26:
    ```cpp
-     #define topPIR_PIN    26
-     #define bottomPIR_PIN 25
+     #define TOP_PIR_PIN    26
+     #define BOTTOM_PIR_PIN 25
    ```
 
    To use Ultrasonic HC-SR04 sensors instead of (one of the) PIR sensors,
@@ -48,17 +42,17 @@ Edit `Animated_Staircase_config.h`:
    sensor at the bottom of the stairs:
 
    ```cpp
-   #define topPIR_PIN 32
-   //#define bottomPIR_PIN D6 /* This PIR sensor is disabled   */
+   #define TOP_PIR_PIN 32
+   //#define BOTTOM_PIR_PIN D6 /* This PIR sensor is disabled   */
 
-   #ifndef topPIR_PIN
-   #define topSignalPin D2
-   #define topEchoPin D3
+   #ifndef TOP_PIR_PIN
+   #define TOP_SIGNAL_PIN D2
+   #define TOP_ECHO_PIN   D3
    #endif
 
-   #ifndef bottomPIR_PIN      /* If the bottom PIR is disabled, */
-   #define bottomSignalPin 25 /* This Ultrasonic sensor is used */
-   #define bottomEchoPin 26
+   #ifndef BOTTOM_PIR_PIN      /* If the bottom PIR is disabled, */
+   #define BOTTOM_SIGNAL_PIN 25 /* This Ultrasonic sensor is used */
+   #define BOTTOM_ECHO_PIN   26
    #endif
    ```
 

@@ -16,10 +16,10 @@
 bool enabled = true;                   // Enable this usermod
 unsigned long segment_delay_ms = 150;  // Time between switching each segment
 unsigned long on_time_ms = 5 * 1000;   // The time for the light to stay on
-#ifndef topPIR_PIN
+#ifndef TOP_PIR_PIN
 unsigned int topMaxTimeUs = 1749;  // default echo timout, top
 #endif
-#ifndef bottomPIR_PIN
+#ifndef BOTTOM_PIR_PIN
 unsigned int bottomMaxTimeUs = 1749;  // default echo timout, bottom
 #endif
 
@@ -134,17 +134,16 @@ class Animated_Staircase : public Usermod {
     if ((millis() - lastScanTime) > scanDelay) {
       lastScanTime = millis();
 
-#ifdef bottomPIR_PIN
-      bottomSensorRead = bottomSensorWrite || (digitalRead(bottomPIR_PIN) == HIGH);
+#ifdef BOTTOM_PIR_PIN
+      bottomSensorRead = bottomSensorWrite || (digitalRead(BOTTOM_PIR_PIN) == HIGH);
 #else
-      bottomSensorRead = bottomSensorWrite ||
-          ultrasoundRead(bottomTriggerPin, bottomEchoPin, bottomMaxTimeUs);
+      bottomSensorRead = bottomSensorWrite || ultrasoundRead(BOTTOM_TRIGGER_PIN, BOTTOM_ECHO_PIN, bottomMaxTimeUs);
 #endif
 
-#ifdef topPIR_PIN
-      topSensorRead = topSensorWrite || (digitalRead(topPIR_PIN) == HIGH);
+#ifdef TOP_PIR_PIN
+      topSensorRead = topSensorWrite || (digitalRead(TOP_PIR_PIN) == HIGH);
 #else
-      topSensorRead = topSensorWrite || ultrasoundRead(topTriggerPin, topEchoPin, topMaxTimeUs);
+      topSensorRead = topSensorWrite || ultrasoundRead(TOP_TRIGGER_PIN, TOP_ECHO_PIN, topMaxTimeUs);
 #endif
 
       // Values read, reset the flags for next API call
@@ -227,10 +226,10 @@ class Animated_Staircase : public Usermod {
     staircase["segment-delay-ms"] = segment_delay_ms;
     staircase["on-time-s"] = on_time_ms / 1000;
 
-#ifdef topTriggerPin
+#ifdef TOP_TRIGGER_PIN
     staircase["top-echo-us"] = topMaxTimeUs;
 #endif
-#ifdef bottomTriggerPin
+#ifdef BOTTOM_TRIGGER_PIN
     staircase["bottom-echo-us"] = bottomMaxTimeUs;
 #endif
   }
@@ -266,14 +265,14 @@ class Animated_Staircase : public Usermod {
       changed = true;
     }
 
-#ifdef topTriggerPin
+#ifdef TOP_TRIGGER_PIN
     unsigned int c_topMaxTimeUs = staircase["top-echo-us"] | topMaxTimeUs;
     if (c_topMaxTimeUs != topMaxTimeUs) {
       topMaxTimeUs = c_topMaxTimeUs;
       changed = true;
     }
 #endif
-#ifdef bottomTriggerPin
+#ifdef BOTTOM_TRIGGER_PIN
     unsigned int c_bottomMaxTimeUs = staircase["bottom-echo-us"] | bottomMaxTimeUs;
     if (c_bottomMaxTimeUs != bottomMaxTimeUs) {
       bottomMaxTimeUs = c_bottomMaxTimeUs;
@@ -299,18 +298,18 @@ class Animated_Staircase : public Usermod {
       Serial.print(on_time_ms / 1000, DEC);
       Serial.println(" seconds.");
 
-#ifdef bottomPIR_PIN
-      pinMode(bottomPIR_PIN, INPUT);
+#ifdef BOTTOM_PIR_PIN
+      pinMode(BOTTOM_PIR_PIN, INPUT);
 #else
-      pinMode(bottomTriggerPin, OUTPUT);
-      pinMode(bottomEchoPin, INPUT);
+      pinMode(BOTTOM_TRIGGER_PIN, OUTPUT);
+      pinMode(BOTTOM_ECHO_PIN, INPUT);
 #endif
 
-#ifdef topPIR_PIN
-      pinMode(topPIR_PIN, INPUT);
+#ifdef TOP_PIR_PIN
+      pinMode(TOP_PIR_PIN, INPUT);
 #else
-      pinMode(topTriggerPin, OUTPUT);
-      pinMode(topEchoPin, INPUT);
+      pinMode(TOP_TRIGGER_PIN, OUTPUT);
+      pinMode(TOP_ECHO_PIN, INPUT);
 #endif
     } else {
       // Restore segment options
