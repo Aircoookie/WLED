@@ -112,6 +112,15 @@
   #endif
   #undef RLYPIN
   #define RLYPIN -1 //disable as pin 12 is used by analog LEDs
+  
+  #ifndef PWM_FREQUENCY
+    #ifdef ARDUINO_ARCH_ESP32
+    #define PWM_FREQUENCY 19531
+    #else
+    #define PWM_FREQUENCY 880
+    #endif
+  #endif
+  
 #endif
 
 //automatically uses the right driver method for each platform
@@ -230,18 +239,18 @@ public:
 
     #ifdef WLED_USE_ANALOG_LEDS 
       #ifdef ARDUINO_ARCH_ESP32
-        ledcSetup(0, 5000, 8);
+        ledcSetup(0, PWM_FREQUENCY, 8);
         ledcAttachPin(RPIN, 0);
-        ledcSetup(1, 5000, 8);
+        ledcSetup(1, PWM_FREQUENCY, 8);
         ledcAttachPin(GPIN, 1);
-        ledcSetup(2, 5000, 8);        
+        ledcSetup(2, PWM_FREQUENCY, 8);        
         ledcAttachPin(BPIN, 2);
         if(_type == NeoPixelType_Grbw) 
         {
-          ledcSetup(3, 5000, 8);        
+          ledcSetup(3, PWM_FREQUENCY, 8);        
           ledcAttachPin(WPIN, 3);
           #ifdef WLED_USE_5CH_LEDS
-            ledcSetup(4, 5000, 8);        
+            ledcSetup(4, PWM_FREQUENCY, 8);        
             ledcAttachPin(W2PIN, 4);
           #endif
         }
@@ -258,7 +267,7 @@ public:
           #endif
         }
         analogWriteRange(255);  //same range as one RGB channel
-        analogWriteFreq(880);   //PWM frequency proven as good for LEDs
+        analogWriteFreq(PWM_FREQUENCY);   //PWM frequency proven as good for LEDs
       #endif 
     #endif
   }
