@@ -134,7 +134,7 @@ To change the delay between the steps to (for example) 100 milliseconds and the 
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
-     -d {"staircase":{"segment-delay-ms":100,on-time-s":10}} \
+     -d '{"staircase":{"segment-delay-ms":100,"on-time-s":10}}' \
      xxx.xxx.xxx.xxx/json/state
 ```
 
@@ -160,7 +160,7 @@ can be changed through the API with an HTTP POST:
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
-     -d {"staircase":{"bottom-echo-us":1166}} \
+     -d '{"staircase":{"bottom-echo-us":1166}}' \
      xxx.xxx.xxx.xxx/json/state
 ```
 
@@ -187,7 +187,7 @@ the API. To simulate triggering the bottom sensor, use:
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
-     -d {"staircase":{"bottomsensor":true}} \
+     -d '{"staircase":{"bottomsensor":true}}' \
      xxx.xxx.xxx.xxx/json/state
 ```
 
@@ -195,7 +195,7 @@ Likewise, to trigger the top sensor, use:
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
-     -d {"staircase":{"topsensor":true}} \
+     -d '{"staircase":{"topsensor":true}}' \
      xxx.xxx.xxx.xxx/json/state
 ```
 

@@ -170,7 +170,7 @@ class Animated_Staircase : public Usermod {
             if (swipe == SWIPE_UP) {
               onIndex = mainSegmentId;
             } else {
-              onIndex = maxSegmentId;
+              onIndex = maxSegmentId+1;
             }
             offIndex = onIndex;
           }
