@@ -138,10 +138,13 @@
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
 
 //Ethernet board types
+#define WLED_NUM_ETH_TYPES        5
+
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
 #define WLED_ETH_ESP32_POE        2
 #define WLED_ETH_WESP32           3
+#define WLED_ETH_QUINLED          4
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
@@ -201,9 +204,13 @@
 #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
 
 // PWM settings
-#define WLED_PWM_FREQ_ESP8266  880 //PWM frequency proven as good for LEDs
-#define WLED_PWM_FREQ_ESP32   5000
-
+#ifndef WLED_PWM_FREQ
+#ifdef ESP8266
+  #define WLED_PWM_FREQ    880 //PWM frequency proven as good for LEDs
+#else
+  #define WLED_PWM_FREQ  19531
+#endif
+#endif
 
 #define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
 
