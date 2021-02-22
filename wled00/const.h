@@ -13,6 +13,12 @@
 //increase if you need more
 #define WLED_MAX_USERMODS 4
 
+#ifdef ESP8266
+#define WLED_MAX_BUSSES 3
+#else
+#define WLED_MAX_BUSSES 10
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED       0            //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED    1            //Default value for a general user mod that does not specify a custom ID
@@ -95,6 +101,7 @@
 #define TYPE_GS8608              23            //same driver as WS2812, but will require signal 2x per second (else displays test pattern)
 #define TYPE_WS2811_400KHZ       24            //half-speed WS2812 protocol, used by very old WS2811 units
 #define TYPE_SK6812_RGBW         30
+#define TYPE_TM1814              31
 //"Analog" types (PWM) (32-47)
 #define TYPE_ONOFF               40            //binary output (relays etc.)
 #define TYPE_ANALOG_1CH          41            //single channel PWM. Uses value of brightest RGBW channel
@@ -107,8 +114,11 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
-#define TYPE_TM1814              54
 
+#define IS_DIGITAL(t) (t & 0x10) //digital are 16-31 and 48-63
+#define IS_PWM(t)     (t > 40 && t < 46)
+#define NUM_PWM_PINS(t) (t - 40) //for analog PWM 41-45 only
+#define IS_2PIN(t)      (t > 47)
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut
@@ -159,6 +169,9 @@
 #define ERR_FS_QUOTA    11  // The FS is full or the maximum file size is reached
 #define ERR_FS_PLOAD    12  // It was attempted to load a preset that does not exist
 #define ERR_FS_GENERAL  19  // A general unspecified filesystem error occured
+#define ERR_OVERTEMP    30  // An attached temperature sensor has measured above threshold temperature (not implemented)
+#define ERR_OVERCURRENT 31  // An attached current sensor has measured a current above the threshold (not implemented)
+#define ERR_UNDERVOLT   32  // An attached voltmeter has measured a voltage below the threshold (not implemented)
 
 //Timer mode types
 #define NL_MODE_SET               0            //After nightlight time elapsed, set to target brightness
@@ -171,7 +184,11 @@
 
 // maximum number of LEDs - more than 1500 LEDs (or 500 DMA "LEDPIN 3" driven ones) will cause a low memory condition on ESP8266
 #ifndef MAX_LEDS
-#define MAX_LEDS 1500
+#ifdef ESP8266
+#define MAX_LEDS 1536
+#else
+#define MAX_LEDS 8192
+#endif
 #endif
 
 #define MAX_LEDS_DMA 500
@@ -181,7 +198,11 @@
 
 #define E131_MAX_UNIVERSE_COUNT 9
 
-#define ABL_MILLIAMPS_DEFAULT 850; // auto lower brightness to stay close to milliampere limit
+#define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
+
+// PWM settings
+#define WLED_PWM_FREQ_ESP8266  880 //PWM frequency proven as good for LEDs
+#define WLED_PWM_FREQ_ESP32   5000
 
 
 #define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
@@ -191,6 +212,11 @@
   #define JSON_BUFFER_SIZE 9216
 #else
   #define JSON_BUFFER_SIZE 16384
+#endif
+
+//this is merely a default now and can be changed at runtime
+#ifndef LEDPIN
+#define LEDPIN 2
 #endif
 
 #endif
