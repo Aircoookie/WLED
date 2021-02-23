@@ -4133,7 +4133,10 @@ uint16_t WS2812FX::mode_perlinmove(void) {
 
 uint16_t WS2812FX::mode_pixels(void) {                    // Pixels. By Andrew Tuline.
 
-  fade_out(4);
+//  fade_out(4);
+
+  fade_out(SEGMENT.speed);
+
 
   for (int i=0; i <SEGMENT.intensity/16; i++) {
     uint16_t segLoc = random(SEGLEN);                     // 16 bit for larger strands of LED's.
@@ -4327,6 +4330,7 @@ uint16_t WS2812FX::mode_midnoise(void) {                  // Midnoise. By Andrew
   static uint16_t xdist;
   static uint16_t ydist;
 
+  fade_out(SEGMENT.speed);
   fade_out(SEGMENT.speed);
 
   uint16_t maxLen = sampleAvg * SEGMENT.intensity / 256;  // Too sensitive.
