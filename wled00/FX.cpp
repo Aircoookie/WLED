@@ -4617,6 +4617,7 @@ uint16_t WS2812FX::mode_freqmap(void) {                   // Map FFT_MajorPeak t
   fade_out(SEGMENT.speed);
 
   uint16_t locn = (log10(FFT_MajorPeak) - 1.78) * (float)SEGLEN/(3.71-1.78);  // log10 frequency range is from 1.78 to 3.71. Let's scale to SEGLEN.
+  if (locn >=SEGLEN) locn = SEGLEN-1;
   uint16_t pixCol = (log10((int)FFT_MajorPeak) - 1.78) * 255.0/(3.71-1.78);   // Scale log10 of frequency values to the 255 colour index.
   uint16_t bright = (int)FFT_Magnitude>>7;
 
