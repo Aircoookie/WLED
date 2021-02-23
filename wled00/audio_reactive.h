@@ -287,7 +287,6 @@ void FFTcode( void * parameter) {
           micData = abs(digitalSample >> 16);
         }
       }
-
       micDataSm = ((micData * 3) + micData)/4;    // We'll be passing smoothed micData to the volume routines as the A/D is a bit twitchy.
       vReal[i] = micData;                         // Store Mic Data in an array
       vImag[i] = 0;
