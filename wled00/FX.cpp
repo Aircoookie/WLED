@@ -4133,10 +4133,7 @@ uint16_t WS2812FX::mode_perlinmove(void) {
 
 uint16_t WS2812FX::mode_pixels(void) {                    // Pixels. By Andrew Tuline.
 
-//  fade_out(4);
-
   fade_out(SEGMENT.speed);
-
 
   for (int i=0; i <SEGMENT.intensity/16; i++) {
     uint16_t segLoc = random(SEGLEN);                     // 16 bit for larger strands of LED's.
@@ -4814,7 +4811,7 @@ uint16_t WS2812FX::mode_gravfreq(void) {                  // Gravfreq. By Andrew
 
   sampleAvg = sampleAvg * SEGMENT.intensity / 255;
 
-  int tempsamp = constrain(sampleAvg*2,0,SEGLEN/2-1);     // Keep the sample from overflowing.
+  int tempsamp = constrain(sampleAvg*2,0,SEGLEN/2);     // Keep the sample from overflowing.
   uint8_t gravity = 8 - SEGMENT.speed/32;
 
   for (int i=0; i<tempsamp; i++) {
@@ -4822,17 +4819,17 @@ uint16_t WS2812FX::mode_gravfreq(void) {                  // Gravfreq. By Andrew
     uint8_t index = (log10((int)FFT_MajorPeak) - (3.71-1.78)) * 255;
 
     setPixelColor(i+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
-    setPixelColor(SEGLEN/2-i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
+    setPixelColor(SEGLEN/2-i-1, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
   }
 
   if (tempsamp >= topLED)
-    topLED = tempsamp;
+    topLED = tempsamp-1;
   else if (gravityCounter % gravity == 0)
     topLED--;
 
-  if (topLED > 0) {
+  if (topLED >= 0) {
     setPixelColor(topLED+SEGLEN/2, CRGB::Gray);
-    setPixelColor(SEGLEN/2-topLED, CRGB::Gray);
+    setPixelColor(SEGLEN/2-1-topLED, CRGB::Gray);
   }
   gravityCounter = (gravityCounter + 1) % gravity;
 
