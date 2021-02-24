@@ -14,10 +14,12 @@ button {
   color: #fff;
   font-family: Verdana, sans-serif;
   border: 0.3ch solid #333;
+	border-radius: 24px;
   display: inline-block;
   font-size: 20px;
-  margin: 8px;
-  margin-top: 12px;
+  margin: 12px 8px 8px;
+  padding: 8px 12px;
+  min-width: 48px;
 }
 .helpB {
   text-align: left;
@@ -32,6 +34,20 @@ input {
 }
 input[type="number"] {
   width: 4em;
+  font-size: medium;
+  margin: 2px;
+}
+select {
+  margin: 2px;
+  font-size: medium;
+}
+input[type="checkbox"] {
+  /* Double-sized Checkboxes */
+  -ms-transform: scale(2); /* IE */
+  -moz-transform: scale(2); /* FF */
+  -webkit-transform: scale(2); /* Safari and Chrome */
+  -o-transform: scale(2); /* Opera */
+  transform: scale(2);
 }
 select {
   background: #333;

@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2102050
+#define VERSION 2102240
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -117,6 +117,7 @@
 #include "const.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
+#include "NodeStruct.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
@@ -130,12 +131,6 @@
   #error You are not using the Aircoookie fork of the ESPAsyncWebserver library.\
   Using upstream puts your WiFi password at risk of being served by the filesystem.\
   Comment out this error message to build regardless.
-#endif
-
-#if !defined(IRPIN) || IRPIN < 0
-  #ifndef WLED_DISABLE_INFRARED
-    #define WLED_DISABLE_INFRARED
-  #endif
 #endif
 
 #ifndef WLED_DISABLE_INFRARED
@@ -250,6 +245,8 @@ WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 // Sync CONFIG
+WLED_GLOBAL NodesMap Nodes;
+
 WLED_GLOBAL bool buttonEnabled  _INIT(true);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
@@ -475,7 +472,7 @@ WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
 WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
 
 // mqtt
-WLED_GLOBAL long lastMqttReconnectAttempt _INIT(0);
+WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);
 WLED_GLOBAL long lastInterfaceUpdate _INIT(0);
 WLED_GLOBAL byte interfaceUpdateCallMode _INIT(NOTIFIER_CALL_MODE_INIT);
 WLED_GLOBAL char mqttStatusTopic[40] _INIT("");        // this must be global because of async handlers
@@ -603,6 +600,10 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #endif
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
+
+#define GET_BIT(var,bit)    ((var>>bit)&0x01)
+#define SET_BIT(var,bit)    (var|=(uint16_t)(0x0001<<bit))
+#define UNSET_BIT(var,bit)  (var&=(~(uint16_t)(0x0001<<bit)))
 
 // append new c string to temp buffer efficiently
 bool oappend(const char* txt);

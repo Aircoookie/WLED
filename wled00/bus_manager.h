@@ -17,12 +17,14 @@ struct BusConfig {
   uint16_t start = 0;
   uint8_t colorOrder = COL_ORDER_GRB;
   bool reversed = false;
+  bool skipFirst = false;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false) {
-    type = busType; count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev;
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, bool skip = false) {
+    type = busType; count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipFirst = skip;
     uint8_t nPins = 1;
-    if (type > 47) nPins = 2;
-    else if (type > 41 && type < 46) nPins = NUM_PWM_PINS(type);
+    // bit 7 is hacked to include RGBW info (1=RGBW, 0=RGB)
+    if ((type&0x7F) > 47) nPins = 2;
+    else if ((type&0x7F) > 41 && (type&0x7F) < 46) nPins = NUM_PWM_PINS((type&0x7F));
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 };
@@ -61,13 +63,17 @@ class Bus {
   }
 
   virtual uint16_t getLength() {
-    return 1;
+    return 1; // is this ok? shouldn't it be 0 in virtual function?
   }
 
   virtual void setColorOrder() {}
 
   virtual uint8_t getColorOrder() {
     return COL_ORDER_RGB;
+  }
+
+  virtual bool isRgbw() {
+    return false;
   }
 
   uint8_t getType() {
@@ -90,19 +96,22 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
-    if (!IS_DIGITAL(bc.type) || !bc.count) return;
+  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type&0x7F, bc.start) {
+    uint8_t type = bc.type & 0x7F;  // bit 7 is hacked to include RGBW info
+    if (!IS_DIGITAL(type) || !bc.count) return;
     _pins[0] = bc.pins[0];
     if (!pinManager.allocatePin(_pins[0])) return;
-    if (IS_2PIN(bc.type)) {
+    if (IS_2PIN(type)) {
       _pins[1] = bc.pins[1];
       if (!pinManager.allocatePin(_pins[1])) {
         cleanup(); return;
       }
     }
-    _len = bc.count;
+    _skip = bc.skipFirst ? LED_SKIP_AMOUNT : 0; //sacrificial pixels
+    _len = bc.count + _skip;
     reversed = bc.reversed;
-    _iType = PolyBus::getI(bc.type, _pins, nr);
+    _rgbw = (bool)((bc.type>>7) & 0x01); // RGBW override in bit 7
+    _iType = PolyBus::getI(type, _pins, nr, _rgbw);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len);
     _valid = (_busPtr != nullptr);
@@ -131,11 +140,13 @@ class BusDigital : public Bus {
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (reversed) pix = _len - pix -1;
+    pix += _skip;
     PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrder);
   }
 
   uint32_t getPixelColor(uint16_t pix) {
     if (reversed) pix = _len - pix -1;
+    pix += _skip;
     return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrder);
   }
 
@@ -144,7 +155,7 @@ class BusDigital : public Bus {
   }
 
   uint16_t getLength() {
-    return _len;
+    return _len - _skip;
   }
 
   uint8_t getPins(uint8_t* pinArray) {
@@ -156,6 +167,10 @@ class BusDigital : public Bus {
   void setColorOrder(uint8_t colorOrder) {
     if (colorOrder > 5) return;
     _colorOrder = colorOrder;
+  }
+
+  bool isRgbw() {
+    return _rgbw;
   }
 
   void reinit() {
@@ -181,6 +196,8 @@ class BusDigital : public Bus {
   uint8_t _pins[2] = {255, 255};
   uint8_t _iType = I_NONE;
   uint16_t _len = 0;
+  uint8_t _skip = 0;
+  bool _rgbw = false;
   void * _busPtr = nullptr;
 };
 
@@ -264,6 +281,10 @@ class BusPwm : public Bus {
     return numPins;
   }
 
+  bool isRgbw() {
+    return (_type > TYPE_ONOFF && _type <= TYPE_ANALOG_5CH && _type != TYPE_ANALOG_3CH);
+  }
+
   void cleanup() {
     deallocatePins();
   }
@@ -305,8 +326,9 @@ class BusManager {
     } else {
       busses[numBusses] = new BusPwm(bc);
     }
-    numBusses++;
-    return numBusses -1;
+//    numBusses++;
+//    return numBusses -1;
+    return numBusses++;
   }
 
   //do not call this method from system context (network callback)
@@ -331,6 +353,7 @@ class BusManager {
       uint16_t bstart = b->getStart();
       if (pix < bstart || pix >= bstart + b->getLength()) continue;
       busses[i]->setPixelColor(pix - bstart, c);
+      break;
     }
   }
 

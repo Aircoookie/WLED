@@ -256,10 +256,10 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == 2) {
     char nS[3];
 
-    // add usermod pins as d.um_p array (TODO: usermod config shouldn't use state. instead we should load "um" object from cfg.json)
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-    JsonObject mods = doc.createNestedObject(F("mods"));
-    usermods.addToJsonState(mods);
+    // add usermod pins as d.um_p array
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
+    JsonObject mods = doc.createNestedObject(F("um"));
+    usermods.addToConfig(mods);
     if (!mods.isNull()) {
       uint8_t i=0;
       oappend(SET_F("d.um_p=["));
@@ -267,26 +267,44 @@ void getSettingsJS(byte subPage, char* dest)
         if (strncmp_P(kv.key().c_str(),PSTR("pin_"),4) == 0) {
           if (i++) oappend(SET_F(","));
           oappend(itoa((int)kv.value(),nS,10));
+        } else if (!kv.value().isNull()) {
+          // element is an JsonObject
+          JsonObject obj = kv.value();
+          if (obj[F("pin")] != nullptr) {
+            if (i++) oappend(SET_F(","));
+            oappend(itoa((int)obj[F("pin")],nS,10));
+          }
         }
       }
+      #ifdef ESP8266
+      #ifdef WLED_DEBUG
+      if (i==0)
+        oappend(SET_F("1"));
+      else
+        oappend(SET_F(",1"));
+      #endif
+      oappend(SET_F(",6,7,8,9,10,11];")); // flash memory pins
+      #else
       oappend(SET_F("];"));
+      #endif
     }
 
     #if defined(WLED_MAX_BUSSES) && WLED_MAX_BUSSES>1
-      oappend(SET_F("addLEDs("));
-      oappend(itoa(WLED_MAX_BUSSES,nS,10));
-      oappend(SET_F(");"));
+    oappend(SET_F("addLEDs("));
+    oappendi(WLED_MAX_BUSSES);
+    oappend(SET_F(");"));
     #endif
 
-    oappend(SET_F("d.Sf.LC.max=")); //TODO Formula for max LEDs on ESP8266 depending on types. 500 DMA or 1500 UART (about 4kB mem usage)
-    #if defined(ESP8266) && LEDPIN == 3
-    oappendi(MAX_LEDS_DMA);
-    #else
+    oappend(SET_F("d.LCmax="));
     oappendi(MAX_LEDS);
-    #endif
     oappend(";");
+    #ifdef ESP8266
+    oappend(SET_F("d.LDmax="));
+    oappendi(MAX_LEDS_DMA);
+    oappend(";");
+    #endif
 
-    sappend('v',SET_F("LC"),ledCount);
+//    sappend('v',SET_F("LC"),ledCount);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++){
       Bus* bus = busses.getBus(s);
@@ -297,16 +315,18 @@ void getSettingsJS(byte subPage, char* dest)
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
+      char ew[4] = "EW"; ew[2] = 48+s; ew[3] = 0; //strip RGBW override
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
       sappend('v', lp, pins[0]);
       if (pinManager.isPinOk(pins[1])) sappend('v', lk, pins[1]);
-      sappend('v', lc, bus->getLength());
+      sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());
       sappend('v',co,bus->getColorOrder());
       sappend('v',ls,bus->getStart());
       sappend('c',cv,bus->reversed);
+      sappend('c',ew,bus->isRgbw());
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
@@ -336,7 +356,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
     sappend('v',SET_F("TW"),nightlightMode);
     sappend('i',SET_F("PB"),strip.paletteBlend);
-    sappend('c',SET_F("RV"),strip.reverseMode);
+//    sappend('c',SET_F("RV"),strip.reverseMode);
     sappend('c',SET_F("SL"),skipFirstLed);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);

@@ -214,7 +214,7 @@ button {
 
 .top button {
 	padding: var(--tbp);
-}											 
+}
 
 .bot button {
 	padding: var(--bbp);
@@ -251,7 +251,6 @@ button {
 	position: relative;
 	width: 100%;
 	width: calc(100%/var(--n));
-	padding: 11px 0;
 	box-sizing: border-box;
 	border: 0px;
 	overflow: auto;
@@ -260,10 +259,7 @@ button {
 }
 
 #Effects {
-	padding-top: 0;
-	margin-top: 11px;
-	height: calc(100% - 11px);
-  -webkit-overflow-scrolling: touch;
+	-webkit-overflow-scrolling: touch;
 }
 
 .smooth { transition: transform	calc(var(--f, 1)*.5s) ease-out }
@@ -297,10 +293,7 @@ button {
 	background: var(--c-1);
 	top: -1px;
 	z-index: 1;
-	margin-top: 1px;
-	width: 274px;
-	margin: auto;
-	border-radius: 25px;
+    margin: 1px auto auto;
 }
 
 #staytop1 {
@@ -432,16 +425,23 @@ img {
 }
 
 .sliderbubble {
-    width: 36px;
-    line-height: 24px;
-    background: var(--c-3);
-    position: absolute;
-    transform: translateX(-50%);
-    border-radius: 12px;
-    margin-left: 12px;
-    margin-top: 3px;
-    padding: 0px;
-    display: inline;
+	width: 24px;
+	position: relative;
+	display: inline-block;
+	border-radius: 5px;
+	background: var(--c-3);
+	color: white;
+	padding: 2px 5px;
+	font-size: 14px;
+	right: 5px;
+	transition: visibility 0.25s ease, opacity 0.25s ease;
+	opacity: 0;
+	visibility: hidden;
+}
+
+output.sliderbubbleshow {
+	visibility: visible;
+	opacity: 1;
 }
 
 .hidden {
@@ -487,11 +487,6 @@ input[type=range]::-moz-range-thumb {
 	background: var(--c-f);
 	transform: translateY(7px);
 }
-input[type=range]:active + .sliderbubble {
-	display: inline;
-	transform: translateX(-50%);
-}
-
 #wwrap {
 	display: none;
 }
@@ -633,7 +628,7 @@ textarea {
 }
 
 ::selection {
-  background: var(--c-b);
+	background: var(--c-b);
 }
 
 input[type=text] {
@@ -655,8 +650,8 @@ input[type=number]:focus, input[type=text]:focus {
 	background: var(--c-6);
 }
 
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
 	-webkit-appearance: none;
 }
 
@@ -683,13 +678,13 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .pid {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  padding: 11px 0px 0px 11px;
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	padding: 11px 0px 0px 11px;
+	font-size: 16px;
+	width: 20px;
+	text-align: center;
 	color: var(--c-b);
 }
 
@@ -729,7 +724,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .pwr {
-	color: var(--c-6); 
+	color: var(--c-6);
 	transform: translate(2px, 3px);
 	cursor: pointer;
 }
@@ -761,7 +756,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .schkl {
-	padding: 2px 22px 0px 35px;
+	padding: 2px 5px 0px 35px;
 	margin: 0 0 0 2px;
 }
 
@@ -860,7 +855,101 @@ input[type=number]::-webkit-outer-spin-button {
 	border-radius: 20px;
 	text-align: left;
 	transition: background-color 0.5s;
-  filter: brightness(1);
+  	filter: brightness(1);
+}
+
+.list {
+	position: relative;
+	width: 260px;
+	border-radius: 20px;
+	background-color: var(--c-2);
+	transition: background-color 0.5s;
+	overflow: hidden;
+    margin: auto auto 20px;
+    padding-bottom: 5px;
+}
+.lstI {
+	position: relative;
+	border-bottom: 1px solid var(--c-3);
+	display: flex;
+	align-items: center;
+	padding: 8px 10px;
+    cursor: pointer;
+}
+
+.lstI:hover {
+    background: var(--c-4);
+}
+
+.lstI:last-child {
+	border: none;
+}
+
+.lstI.selected {
+	background: var(--c-5);
+}
+
+.lstIcontent {
+	width: 100%;
+	vertical-align: middle;
+	padding: 0 20px 0 5px;
+	text-align: left;
+}
+
+.lstIname {
+	margin: 3px 0;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.lstIprev {
+	border: 1px solid var(--c-4);
+	border-radius: 4px;
+	width: 100%;
+	height: 8px;
+	margin: auto;
+}
+
+.fndIcn { /* needed for magnifier SVG, can be removed when magnifier is in Wicons font */
+	width: 24px;
+	height: 24px;
+	stroke: var(--c-e);
+	stroke-width: 3px;
+	fill-opacity: 0;
+}
+
+div.fnd div {
+	position: absolute;
+	top: 10px;
+	left: 13px;
+}
+
+div.fnd span {
+	position: absolute;
+	display: none;
+	top: 10px;
+	right: 13px;
+	cursor: pointer;
+}
+
+input[type="text"].fnd {
+	display: block;
+	width: 260px;
+	box-sizing: border-box;
+    padding: 8px 48px 8px 60px;
+    margin: 0 auto 10px;
+	text-align: left;
+	border-radius: 0;
+	background: var(--c-1);
+    border-bottom: 1px solid var(--c-3);
+}
+
+input[type="text"].fnd:focus {
+	background-color: var(--c-5);
+}
+
+input[type="text"].fnd:not(:placeholder-shown) {
+	background-color: var(--c-4);
 }
 
 .pres {
@@ -893,7 +982,7 @@ input[type=number]::-webkit-outer-spin-button {
 	width: 6px;
 }
 ::-webkit-scrollbar-track {
-	background: transparent; 
+	background: transparent;
 }
 ::-webkit-scrollbar-thumb {
 	background: var(--c-sb);
@@ -902,6 +991,13 @@ input[type=number]::-webkit-outer-spin-button {
 }
 ::-webkit-scrollbar-thumb:hover {
 	background: var(--c-sbh);
+}
+
+@media not all and (hover: none) {
+	.sliderwrap:hover + output.sliderbubble {
+		visibility: visible;
+		opacity: 1;
+	}
 }
 
 @media all and (max-width: 335px) {

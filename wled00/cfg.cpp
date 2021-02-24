@@ -90,16 +90,18 @@ void deserializeConfig() {
   // initialize LED pins and lengths prior to other HW
   JsonObject hw_led = hw[F("led")];
 
-  CJSON(ledCount, hw_led[F("total")]);
-  if (ledCount > MAX_LEDS) ledCount = MAX_LEDS;
+//  CJSON(ledCount, hw_led[F("total")]);
+//  if (ledCount > MAX_LEDS) ledCount = MAX_LEDS;
+  ledCount = 0;
 
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  CJSON(strip.reverseMode, hw_led[F("rev")]);
+  //CJSON(strip.reverseMode, hw_led[F("rev")]);
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonArray ins = hw_led["ins"];
   uint8_t s = 0;
+  bool skipFirst = skipFirstLed = false;
   useRGBW = false;
   busses.removeAll();
   for (JsonObject elm : ins) {
@@ -107,32 +109,36 @@ void deserializeConfig() {
     uint8_t pins[5] = {255, 255, 255, 255, 255};
     JsonArray pinArr = elm[F("pin")];
     if (pinArr.size() == 0) continue;
-    pins[0] = pinArr[0];
+//    pins[0] = pinArr[0];
     uint8_t i = 0;
     for (int p : pinArr) {
-      pins[i] = p;
-      i++;
+      pins[i++] = p;
+//      i++;
       if (i>4) break;
     }
 
     uint16_t length = elm[F("len")];
-    if (length==0) continue;
-    uint8_t colorOrder = (int)elm[F("order")];
-    //only use skip from the first strip (this shouldn't have been in ins obj. but remains here for compatibility)
-    if (s==0) skipFirstLed = elm[F("skip")];
+    if (length==0 || length+ledCount > MAX_LEDS) continue;  // zero length or we reached max. number of LEDs, just stop
+    // maybe we should have
+    // start = ledCount;  // length of previous strips
     uint16_t start = elm[F("start")] | 0;
-    if (start >= ledCount) continue;
+    if (start >= ledCount+length) continue; // something is very wrong :)
     //limit length of strip if it would exceed total configured LEDs
-    if (start + length > ledCount) length = ledCount - start;
+    //if (start + length > ledCount) length = ledCount - start;
+    uint8_t colorOrder = (int)elm[F("order")];
+    //(this shouldn't have been in ins obj. but remains here for compatibility)
+    skipFirstLed |= skipFirst = (bool) elm[F("skip")];
     uint8_t ledType = elm[F("type")] | TYPE_WS2812_RGB;
     bool reversed = elm[F("rev")];
     //RGBW mode is enabled if at least one of the strips is RGBW
-    useRGBW = (useRGBW || BusManager::isRgbw(ledType));
+    if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
+    useRGBW |= (bool)elm[F("rgbw")];
     s++;
-    BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed);
+    ledCount += length;
+    BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
     busses.add(bc);
   }
-  strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+  strip.finalizeInit();
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonEnabled, hw_btn_ins_0[F("type")]);
@@ -441,7 +447,7 @@ void serializeConfig() {
   hw_led[F("total")] = ledCount;
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
-  hw_led[F("rev")] = strip.reverseMode;
+  hw_led[F("rev")] = false; //strip.reverseMode;  // not used anymore, reversing per-strip
   hw_led[F("rgbwm")] = strip.rgbwMode;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
@@ -452,16 +458,17 @@ void serializeConfig() {
     if (!bus || bus->getLength()==0) break;
     JsonObject ins = hw_led_ins.createNestedObject();
     ins[F("en")] = true;
-    ins[F("start")] = bus->getStart();
+    ins[F("start")] = bus->getStart();  // really needed?
     ins[F("len")] = bus->getLength();
     JsonArray ins_pin = ins.createNestedArray("pin");
     uint8_t pins[5];
     uint8_t nPins = bus->getPins(pins);
     for (uint8_t i = 0; i < nPins; i++) ins_pin.add(pins[i]);
     ins[F("order")] = bus->getColorOrder();
-    ins[F("rev")] = bus->reversed;
-    ins[F("skip")] = (skipFirstLed && s == 0) ? 1 : 0;
+    ins[F("rev")]  = bus->reversed;
+    ins[F("skip")] = skipFirstLed ? 1 : 0;
     ins[F("type")] = bus->getType();
+    ins[F("rgbw")] = bus->isRgbw();
   }
 
   JsonObject hw_btn = hw.createNestedObject("btn");

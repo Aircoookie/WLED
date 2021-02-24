@@ -79,23 +79,25 @@
 #define I_32_R7_TM1_4 54
 #define I_32_I0_TM1_4 55
 #define I_32_I1_TM1_4 56
-//Bit Bang theoratically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
+//Bit Bang theoretically possible, but very undesirable and not needed (no pin restrictions on RMT and I2S)
 
 //APA102
 #define I_HS_DOT_3 57 //hardware SPI
 #define I_SS_DOT_3 58 //soft SPI
+#define I_HS_DOT_4 59 //hardware SPI, RGBW?
+#define I_SS_DOT_4 60 //soft SPI, RGBW?
 
 //LPD8806
-#define I_HS_LPD_3 59
-#define I_SS_LPD_3 60
+#define I_HS_LPD_3 61
+#define I_SS_LPD_3 62
 
 //WS2801
-#define I_HS_WS1_3 61
-#define I_SS_WS1_3 62
+#define I_HS_WS1_3 63
+#define I_SS_WS1_3 64
 
 //P9813
-#define I_HS_P98_3 63
-#define I_SS_P98_3 64
+#define I_HS_P98_3 65
+#define I_SS_P98_3 66
 
 
 /*** ESP8266 Neopixel methods ***/
@@ -173,8 +175,10 @@
 #endif
 
 //APA102
-#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpiMethod> //hardware SPI
-#define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod> //soft SPI
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpiMethod> // hardware SPI
+#define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod>    // soft SPI
+#define B_HS_DOT_4 NeoPixelBrightnessBus<DotStarLbgrFeature,DotStarSpiMethod> // HW SPI, RGBW mode?
+#define B_SS_DOT_4 NeoPixelBrightnessBus<DotStarLbgrFeature,DotStarMethod>    // soft SPI, RGBW mode?
 
 //LPD8806
 #define B_HS_LPD_3 NeoPixelBrightnessBus<Lpd8806GrbFeature, Lpd8806SpiMethod>
@@ -212,6 +216,7 @@ class PolyBus {
       case I_8266_DM_TM1_4: (static_cast<B_8266_DM_TM1_4*>(busPtr))->Begin(); break;
       case I_8266_BB_TM1_4: (static_cast<B_8266_BB_TM1_4*>(busPtr))->Begin(); break;
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(); break;
+      case I_HS_DOT_4: (static_cast<B_HS_DOT_4*>(busPtr))->Begin(); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(); break;
       case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(); break;
       case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->Begin(); break;
@@ -259,11 +264,13 @@ class PolyBus {
       case I_32_I1_TM1_4: (static_cast<B_32_I1_TM1_4*>(busPtr))->Begin(); break;
       // ESP32 can (and should, to avoid inadvertantly driving the chip select signal) specify the pins used for SPI, but only in begin()
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
+      case I_HS_DOT_4: (static_cast<B_HS_DOT_4*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
       case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
       case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
     #endif
       case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->Begin(); break;
+      case I_SS_DOT_4: (static_cast<B_SS_DOT_4*>(busPtr))->Begin(); break;
       case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->Begin(); break;
       case I_SS_WS1_3: (static_cast<B_SS_WS1_3*>(busPtr))->Begin(); break;
       case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->Begin(); break;
@@ -336,6 +343,8 @@ class PolyBus {
       // for 2-wire: pins[1] is clk, pins[0] is dat.  begin expects (len, clk, dat)
       case I_HS_DOT_3: busPtr = new B_HS_DOT_3(len, pins[1], pins[0]); break;
       case I_SS_DOT_3: busPtr = new B_SS_DOT_3(len, pins[1], pins[0]); break;
+      case I_HS_DOT_4: busPtr = new B_HS_DOT_4(len, pins[1], pins[0]); break;
+      case I_SS_DOT_4: busPtr = new B_SS_DOT_4(len, pins[1], pins[0]); break;
       case I_HS_LPD_3: busPtr = new B_HS_LPD_3(len, pins[1], pins[0]); break;
       case I_SS_LPD_3: busPtr = new B_SS_LPD_3(len, pins[1], pins[0]); break;
       case I_HS_WS1_3: busPtr = new B_HS_WS1_3(len, pins[1], pins[0]); break;
@@ -411,6 +420,8 @@ class PolyBus {
     #endif
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Show(); break;
       case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->Show(); break;
+      case I_HS_DOT_4: (static_cast<B_HS_DOT_4*>(busPtr))->Show(); break;
+      case I_SS_DOT_4: (static_cast<B_SS_DOT_4*>(busPtr))->Show(); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Show(); break;
       case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->Show(); break;
       case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Show(); break;
@@ -484,6 +495,8 @@ class PolyBus {
     #endif
       case I_HS_DOT_3: return (static_cast<B_HS_DOT_3*>(busPtr))->CanShow(); break;
       case I_SS_DOT_3: return (static_cast<B_SS_DOT_3*>(busPtr))->CanShow(); break;
+      case I_HS_DOT_4: return (static_cast<B_HS_DOT_4*>(busPtr))->CanShow(); break;
+      case I_SS_DOT_4: return (static_cast<B_SS_DOT_4*>(busPtr))->CanShow(); break;
       case I_HS_LPD_3: return (static_cast<B_HS_LPD_3*>(busPtr))->CanShow(); break;
       case I_SS_LPD_3: return (static_cast<B_SS_LPD_3*>(busPtr))->CanShow(); break;
       case I_HS_WS1_3: return (static_cast<B_HS_WS1_3*>(busPtr))->CanShow(); break;
@@ -499,11 +512,6 @@ class PolyBus {
     uint8_t b = c >> 0;
     uint8_t w = c >> 24;
     RgbwColor col;
-
-    //TODO make color order override possible on a per-strip basis
-    #ifdef COLOR_ORDER_OVERRIDE
-    if (indexPixel >= COO_MIN && indexPixel < COO_MAX) co = COO_ORDER;
-    #endif
 
     //reorder channels to selected order
     switch (co)
@@ -581,6 +589,8 @@ class PolyBus {
     #endif
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
       case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_HS_DOT_4: (static_cast<B_HS_DOT_4*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
+      case I_SS_DOT_4: (static_cast<B_SS_DOT_4*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
       case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
       case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->SetPixelColor(pix, RgbColor(col.R,col.G,col.B)); break;
@@ -654,6 +664,8 @@ class PolyBus {
     #endif
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->SetBrightness(b); break;
       case I_SS_DOT_3: (static_cast<B_SS_DOT_3*>(busPtr))->SetBrightness(b); break;
+      case I_HS_DOT_4: (static_cast<B_HS_DOT_4*>(busPtr))->SetBrightness(b); break;
+      case I_SS_DOT_4: (static_cast<B_SS_DOT_4*>(busPtr))->SetBrightness(b); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->SetBrightness(b); break;
       case I_SS_LPD_3: (static_cast<B_SS_LPD_3*>(busPtr))->SetBrightness(b); break;
       case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->SetBrightness(b); break;
@@ -728,6 +740,8 @@ class PolyBus {
     #endif
       case I_HS_DOT_3: col = (static_cast<B_HS_DOT_3*>(busPtr))->GetPixelColor(pix); break;
       case I_SS_DOT_3: col = (static_cast<B_SS_DOT_3*>(busPtr))->GetPixelColor(pix); break;
+      case I_HS_DOT_4: col = (static_cast<B_HS_DOT_4*>(busPtr))->GetPixelColor(pix); break;
+      case I_SS_DOT_4: col = (static_cast<B_SS_DOT_4*>(busPtr))->GetPixelColor(pix); break;
       case I_HS_LPD_3: col = (static_cast<B_HS_LPD_3*>(busPtr))->GetPixelColor(pix); break;
       case I_SS_LPD_3: col = (static_cast<B_SS_LPD_3*>(busPtr))->GetPixelColor(pix); break;
       case I_HS_WS1_3: col = (static_cast<B_HS_WS1_3*>(busPtr))->GetPixelColor(pix); break;
@@ -736,10 +750,6 @@ class PolyBus {
       case I_SS_P98_3: col = (static_cast<B_SS_P98_3*>(busPtr))->GetPixelColor(pix); break;
     }
     
-    #ifdef COLOR_ORDER_OVERRIDE
-    if (indexPixel >= COO_MIN && indexPixel < COO_MAX) co = COO_ORDER;
-    #endif
-
     switch (co)
     {
       //                    W               G              R               B
@@ -819,6 +829,8 @@ class PolyBus {
     #endif
       case I_HS_DOT_3: delete (static_cast<B_HS_DOT_3*>(busPtr)); break;
       case I_SS_DOT_3: delete (static_cast<B_SS_DOT_3*>(busPtr)); break;
+      case I_HS_DOT_4: delete (static_cast<B_HS_DOT_4*>(busPtr)); break;
+      case I_SS_DOT_4: delete (static_cast<B_SS_DOT_4*>(busPtr)); break;
       case I_HS_LPD_3: delete (static_cast<B_HS_LPD_3*>(busPtr)); break;
       case I_SS_LPD_3: delete (static_cast<B_SS_LPD_3*>(busPtr)); break;
       case I_HS_WS1_3: delete (static_cast<B_HS_WS1_3*>(busPtr)); break;
@@ -829,7 +841,7 @@ class PolyBus {
   }
 
   //gives back the internal type index (I_XX_XXX_X above) for the input 
-  static uint8_t getI(uint8_t busType, uint8_t* pins, uint8_t num = 0) {
+  static uint8_t getI(uint8_t busType, uint8_t* pins, uint8_t num = 0, bool rgbwOverride = false) {
     if (!IS_DIGITAL(busType)) return I_NONE;
     if (IS_2PIN(busType)) { //SPI LED chips
       bool isHSPI = false;
@@ -840,7 +852,7 @@ class PolyBus {
       #endif
       uint8_t t = I_NONE;
       switch (busType) {
-        case TYPE_APA102:  t = I_SS_DOT_3; break;
+        case TYPE_APA102:  t = rgbwOverride ? I_SS_DOT_4 : I_SS_DOT_3; break;
         case TYPE_LPD8806: t = I_SS_LPD_3; break;
         case TYPE_WS2801:  t = I_SS_WS1_3; break;
         case TYPE_P9813:   t = I_SS_P98_3; break;
@@ -855,9 +867,9 @@ class PolyBus {
       switch (busType) {
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
-          return I_8266_U0_NEO_3 + offset;
+//          return I_8266_U0_NEO_3 + offset;
         case TYPE_SK6812_RGBW:
-          return I_8266_U0_NEO_4 + offset;
+          return (rgbwOverride ? I_8266_U0_NEO_4 : I_8266_U0_NEO_3) + offset;
         case TYPE_WS2811_400KHZ:
           return I_8266_U0_400_3 + offset;
       }
@@ -867,9 +879,9 @@ class PolyBus {
       switch (busType) {
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
-          return I_32_R0_NEO_3 + offset;
+//          return I_32_R0_NEO_3 + offset;
         case TYPE_SK6812_RGBW:
-          return I_32_R0_NEO_4 + offset;
+          return (rgbwOverride ? I_32_R0_NEO_4 : I_32_R0_NEO_3) + offset;
         case TYPE_WS2811_400KHZ:
           return I_32_R0_400_3 + offset;
       }

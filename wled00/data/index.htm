@@ -35,6 +35,7 @@
 					<input id="sliderBri" onchange="setBri()" oninput="updateTrail(this)" max="255" min="1" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
+				<output class="sliderbubble"></output>
 			</div>
 		</div>
 		<iframe id="liveview" src="about:blank"></iframe>
@@ -45,17 +46,26 @@
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
 		<div id="rgbwrap">
-			<div class="sliderwrap il">
-				<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+			<div id="rwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+			<div id="gwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+			<div id="bwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div><br>
 		</div>
 		<div id="wwrap">
@@ -63,6 +73,7 @@
 			<div class="sliderwrap il">
 				<input id="sliderW" class="noslide" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
+				<output class="sliderbubble"></output>
 			</div>
 		</div>
 		<div id="qcs-w">
@@ -87,51 +98,77 @@
 			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons btna-icon">&#xe390;</i></button>
 		</div>
-		<p class="labels">Color palette</p> 
+		<p class="labels">Color palette</p>
 		<div class="il">
 			<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i>
-			<select class="btn sel" id="selectPalette" onchange="setPalette()">
-				<option>Default</option>
-				<option>Error!</option>
-			</select>
+			<div class="staytop fnd">
+				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'selectPalette')" onfocus="search(this)" />
+				<span onclick="clean(this)" class="icons">&#xe38f;</span>
+				<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+			</div>
+			<div id="selectPalette" class="list">
+				<div class="lstI" data-id="0">
+					<label class="check schkl">
+						&nbsp;
+						<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
+						<span class="checkmark schk"></span>
+					</label>
+					<div class="lstIcontent">
+						<span class="lstIname">
+							Default
+						</span>
+					</div>
+				</div>
+				<div class="lstI">
+					<div class="lstIcontent">
+						<span class="lstIname">
+							Loading
+						</span>
+					</div>
+				</div>
+
+			</div>
 		</div>
 	</div>
 
 	<div id="Effects" class="tabcontent">
 		<p class="labels">Effect speed</p>
-		<div class="staytop">
+		<div class="staytop" id="staytop">
 			<i class="icons slider-icon">&#xe325;</i>
 			<div class="sliderwrap il">
 				<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<output class="sliderbubble hidden"></output>
 				<div class="sliderdisplay"></div>
 			</div>
+			<output class="sliderbubble"></output>
 		</div>
 		<p class="labels">Effect intensity</p>
 		<div class="staytop" id="staytop1">
 			<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
 			<div class="sliderwrap il">
 				<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<output class="sliderbubble hidden"></output>
 				<div class="sliderdisplay"></div>
 			</div>
+			<output class="sliderbubble"></output>
 		</div>
-		<p class="labels">Effect mode</p>
-		<div class="staytop" id="staytop2">
-			<button class="btn" id="fxb0" onclick="setX(0);">Solid</button>
+		<div class="il">
+			<div class="staytop fnd" id="staytop2">
+				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this)" />
+				<span onclick="clean(this);" class="icons">&#xe38f;</span>
+				<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+			</div>
+			<p class="labels">Effect mode</p>
+			<div id="fxlist" class="list">
+				Loading...
+			</div>
 		</div>
-		<div id="fxlist">
-			Loading...
-		</div>
-		<br>
 	</div>
-	
+
 	<div id="Segments" class="tabcontent">
+		<div id="segutil" class="staytop">
+
+		</div>
 		<div id="segcont">
 			Loading...
-		</div>
-		<div id="segutil">
-			
 		</div>
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
@@ -139,8 +176,8 @@
 	</div>
 
 	<div id="Favorites" class="tabcontent">
-		<div id="putil">
-			
+		<div id="putil" class="staytop">
+
 		</div>
 		<div id="pql">
 
@@ -148,7 +185,7 @@
 		<div id="pcont">
 			Loading...
 		</div><br>
-		 <label class="check psvl">
+		<label class="check psvl">
 			Preset cycle
 			<input type="checkbox" id="cyToggle" onchange="toggleCY()">
 			<span class="checkmark psv"></span>
@@ -156,7 +193,7 @@
 		First preset: <input id="cycs" class="noslide" type="number" min="1" max="249" value="1"><br>
 		Last preset: <input id="cyce" class="noslide" type="number" min="2" max="250" value="3"><br>
 		Time per preset: <input id="cyct" class="noslide" type="number" min="0.2" max="6553.5" step="0.1" value="1.2">s<br>
-		Transition: <input id="cyctt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s
+		Transition: <input id="cyctt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s<br><br>
 	</div>
 </div>
 

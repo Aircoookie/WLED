@@ -85,26 +85,39 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     //TODO remove all busses, but not in this system call
     //busses->removeAll();
 
+    skipFirstLed = request->hasArg(F("SL"));
+    useRGBW = false;
+    ledCount = 0;
+
     uint8_t colorOrder, type;
     uint16_t length, start;
-    uint8_t pins[2] = {255, 255};
+    uint8_t pins[5] = {255, 255, 255, 255, 255};
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
-      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
-      char lk[4] = "L1"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
+      char l0[4] = "L0"; l0[2] = 48+s; l0[3] = 0; //ascii 0-9 //strip data pin
+      char l1[4] = "L1"; l1[2] = 48+s; l1[3] = 0; //strip clock pin. 255 for none
+      char l2[4] = "L2"; l2[2] = 48+s; l2[3] = 0; //strip pin. 255 for none
+      char l3[4] = "L3"; l3[2] = 48+s; l3[3] = 0; //strip pin. 255 for none
+      char l4[4] = "L4"; l4[2] = 48+s; l4[3] = 0; //strip pin. 255 for none
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
       char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
-      if (!request->hasArg(lp)) {
+      char ew[4] = "EW"; ew[2] = 48+s; ew[3] = 0; //strip RGBW override
+
+      if (!request->hasArg(l0)) {
         DEBUG_PRINTLN("No data."); break;
       }
-      pins[0] = request->arg(lp).toInt();
-      if (request->hasArg(lk)) {
-        pins[1] = (request->arg(lk).length() > 0) ? request->arg(lk).toInt() : 255;
-      }
+      pins[0] = request->arg(l0).toInt();
+      if (request->hasArg(l1)) pins[1] = (request->arg(l1).length() > 0) ? request->arg(l1).toInt() : 255;
+      if (request->hasArg(l2)) pins[2] = (request->arg(l2).length() > 0) ? request->arg(l2).toInt() : 255;
+      if (request->hasArg(l3)) pins[3] = (request->arg(l3).length() > 0) ? request->arg(l3).toInt() : 255;
+      if (request->hasArg(l4)) pins[4] = (request->arg(l4).length() > 0) ? request->arg(l4).toInt() : 255;
+
       type = request->arg(lt).toInt();
+      if (request->hasArg(ew)) SET_BIT(type,7); else UNSET_BIT(type,7); // hack bit 7 to indicate RGBW (as a LED type override if necessary)
+      useRGBW |= request->hasArg(ew);
       
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
         length = request->arg(lc).toInt();
@@ -113,19 +126,21 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
+      ledCount += length;
 
+      // actual finalization is done in loop()
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skipFirstLed);
     }
 
-    ledCount = request->arg(F("LC")).toInt();
-    if (t > 0 && t <= MAX_LEDS) ledCount = t;
+//    ledCount = request->arg(F("LC")).toInt();
+//    if (t > 0 && t <= MAX_LEDS) ledCount = t;
     //DMA method uses too much ram, TODO: limit!
 
     // upate other pins
     #ifndef WLED_DISABLE_INFRARED
     int hw_ir_pin = request->arg(F("IR")).toInt();
-    if (pinManager.isPinOk(hw_ir_pin) && pinManager.allocatePin(hw_ir_pin,false)) {
+    if (pinManager.allocatePin(hw_ir_pin,false)) {
       irPin = hw_ir_pin;
     } else {
       irPin = -1;
@@ -158,8 +173,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
-    useRGBW = request->hasArg(F("EW"));
-    strip.rgbwMode = request->arg(F("AW")).toInt();
+//    useRGBW = request->hasArg(F("EW"));
+    strip.rgbwMode = request->arg(F("AW")).toInt(); // auto white calculation
 
     briS = request->arg(F("CA")).toInt();
 
@@ -184,8 +199,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     t = request->arg(F("PB")).toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
-    strip.reverseMode = request->hasArg(F("RV"));
-    skipFirstLed = request->hasArg(F("SL"));
+//    strip.reverseMode = request->hasArg(F("RV"));
+//    skipFirstLed = request->hasArg(F("SL"));
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
   }

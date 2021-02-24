@@ -203,7 +203,7 @@ void WLED::loop()
         busses.add(*busConfigs[i]);
         delete busConfigs[i]; busConfigs[i] = nullptr;
       }
-      strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+      strip.finalizeInit();
       yield();
       serializeConfig();
     }
@@ -221,10 +221,20 @@ void WLED::loop()
 #ifdef ESP8266
   MDNS.update();
 #endif
-  if (millis() - lastMqttReconnectAttempt > 30000) {
-    if (lastMqttReconnectAttempt > millis()) rolloverMillis++; //millis() rolls over every 50 days
-    initMqtt();
+
+  //millis() rolls over every 50 days
+  if (lastMqttReconnectAttempt > millis()) {
+    rolloverMillis++;
+    lastMqttReconnectAttempt = 0;
   }
+  if (millis() - lastMqttReconnectAttempt > 30000) {
+//    lastMqttReconnectAttempt = millis();  // don't do it in initMqtt()
+    initMqtt();
+    // refresh WLED nodes list
+    refreshNodeList();
+    sendSysInfoUDP();
+  }
+
   yield();
   handleWs();
   handleStatusLED();
@@ -269,6 +279,9 @@ void WLED::setup()
 #else
   DEBUG_PRINT("esp8266 ");
   DEBUG_PRINTLN(ESP.getCoreVersion());
+  #ifdef WLED_DEBUG
+  pinManager.allocatePin(1,true); // GPIO1 reserved for debug output
+  #endif
 #endif
   int heapPreAlloc = ESP.getFreeHeap();
   DEBUG_PRINT("heap ");
@@ -360,16 +373,13 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
-
-  if (ledCount > MAX_LEDS || ledCount == 0)
-    ledCount = 30;
-
-  strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+  strip.finalizeInit(); // busses created during deserializeConfig()
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
-  if (bootPreset > 0) applyPreset(bootPreset);
-  if (turnOnAtBoot) {
+  if (bootPreset > 0) {
+    applyPreset(bootPreset);
+  } else if (turnOnAtBoot) {
     if (briS > 0) bri = briS;
     else if (bri == 0) bri = 128;
   } else {
@@ -378,12 +388,10 @@ void WLED::beginStrip()
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
   // init relay pin
-  if (rlyPin>=0)
-    digitalWrite(rlyPin, (rlyMde ? bri : !bri));
+  if (rlyPin>=0) digitalWrite(rlyPin, (bri ? rlyMde : !rlyMde));
 
   // disable button if it is "pressed" unintentionally
-  if (btnPin>=0 && isButtonPressed())
-    buttonEnabled = false;
+  if (btnPin>=0 && isButtonPressed()) buttonEnabled = false;
 }
 
 void WLED::initAP(bool resetAP)

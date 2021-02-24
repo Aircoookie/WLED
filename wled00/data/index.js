@@ -1,13 +1,16 @@
 //page js
+const lsPalKey = "wledPalx";
 var loc = false, locip;
 var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
+var selColors;
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
 var nlFade = false;
 var selectedFx = 0;
+var selectedPal = 0;
 var csel = 0;
 var currentPreset = -1;
 var lastUpdate = 0;
@@ -15,7 +18,8 @@ var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
-var pJson = {};
+var palettesData;
+var pJson = {}, eJson = {}, lJson = {};
 var pN = "", pI = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
@@ -29,17 +33,17 @@ var cpick = new iro.ColorPicker("#picker", {
 	wheelLightness: false,
   wheelAngle: 90,
   layout: [
-    { 
+    {
       component: iro.ui.Wheel,
       options: {}
     },
-    { 
+    {
       component: iro.ui.Slider,
       options: {
         sliderType: 'value'
       }
     },
-    { 
+    {
       component: iro.ui.Slider,
       options: {
         sliderType: 'kelvin',
@@ -157,7 +161,6 @@ function loadBg(iUrl) {
   }
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
-		d.getElementById('staytop2').style.background = "transparent";
 		if (isNaN(a)) a = 0.6;
 		bg.style.opacity = a;
 		bg.style.backgroundImage = `url(${img.src})`;
@@ -167,22 +170,22 @@ function loadBg(iUrl) {
 
 function onLoad() {
 	if (window.location.protocol == "file:") {
-	loc = true;
-	locip = localStorage.getItem('locIp');
-	if (!locip)
-	{
-		locip = prompt("File Mode. Please enter WLED IP!");
-		localStorage.setItem('locIp', locip);
-	}
+		loc = true;
+		locip = localStorage.getItem('locIp');
+		if (!locip)
+		{
+			locip = prompt("File Mode. Please enter WLED IP!");
+			localStorage.setItem('locIp', locip);
+		}
 	}
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
-	
+
 	resetPUtil();
-	
+
 	applyCfg();
 	loadBg(cfg.theme.bg.url);
-	
+
 	var cd = d.getElementById('csl').children;
 	for (var i = 0; i < cd.length; i++) {
 		cd[i].style.backgroundColor = "rgb(0, 0, 0)";
@@ -194,14 +197,26 @@ function onLoad() {
 		setColor(1);
 	});
 	pmtLS = localStorage.getItem('wledPmt');
-	setTimeout(function(){requestJson(null, false);}, 25);
+
+	// Load initial data
+	getPalettesDataCached();
+	loadPalettes(function() {
+		loadFX(function() {
+			loadPresets(function() {
+				requestJson(null, false, true, function() {
+					loadPalettesData();
+				});
+			});
+		});
+	});
+	
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
 	d.getElementById("cv").style.opacity=0;
 	if (localStorage.getItem('pcm') == "true") togglePcMode(true);
 	var sls = d.querySelectorAll('input[type="range"]');
 	for (var sl of sls) {
-		sl.addEventListener('input', updateBubble, true);
+		//sl.addEventListener('input', updateBubble, true);
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
@@ -233,7 +248,7 @@ function showToast(text, error = false) {
 	x.className = error ? "error":"show";
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-	x.style.animation = null; 
+	x.style.animation = null;
 	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 }
 
@@ -255,23 +270,21 @@ function getRuntimeStr(rt)
 	if (!days && hrs) str += ", ";
 	if (t > 59 && !days) str += mins + " min";
 	if (t < 3600 && t > 59) str += ", ";
-	if (t < 3600) str += (t - mins*60) + " sec"; 
+	if (t < 3600) str += (t - mins*60) + " sec";
 	return str;
 }
 
-function inforow(key, val, unit = "")
-{
+function inforow(key, val, unit = "") {
 	return `<tr><td class="keytd">${key}</td><td class="valtd">${val}${unit}</td></tr>`;
 }
 
-function getLowestUnusedP()
-{
+function getLowestUnusedP() {
 	var l = 1;
 	for (var key in pJson)
 	{
 		if (key == l) l++;
-  }
-  if (l > 250) l = 250; 
+	}
+	if (l > 250) l = 250;
 	return l;
 }
 
@@ -285,13 +298,14 @@ function checkUsed(i) {
 }
 
 function pName(i) {
+	if (!pJson || !pJson[i]) return "";
 	var n = "Preset " + i;
 	if (pJson[i].n) n = pJson[i].n;
 	return n;
 }
 
 function papiVal(i) {
-	if (!pJson[i]) return "";
+	if (!pJson || !pJson[i]) return "";
 	var o = Object.assign({},pJson[i]);
 	if (o.win) return o.win;
 	delete o.n; delete o.p; delete o.ql;
@@ -299,9 +313,8 @@ function papiVal(i) {
 }
 
 function qlName(i) {
-	if (!pJson[i]) return "";
-  if (!pJson[i].ql) return "";
-  return pJson[i].ql;
+	if (!pJson || !pJson[i] || !pJson[i].ql) return "";
+	return pJson[i].ql;
 }
 
 function cpBck() {
@@ -311,7 +324,7 @@ function cpBck() {
   copyText.setSelectionRange(0, 999999);
 
   document.execCommand("copy");
-	
+
 	showToast("Copied to clipboard!");
 }
 
@@ -322,12 +335,12 @@ function presetError(empty)
 		bckstr = localStorage.getItem("wledP");
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {
-	
+
 	}
 	var cn = `<div class="seg c">`;
-	if (empty) 
+	if (empty)
 		cn += `You have no presets yet!`;
-	else 
+	else
 		cn += `Sorry, there was an issue loading your presets!`;
 
 	if (hasBackup) {
@@ -345,13 +358,13 @@ function presetError(empty)
 	if (hasBackup) d.getElementById('bck').value = bckstr;
 }
 
-function loadPresets()
+function loadPresets(callback = null)
 {
 	var url = '/presets.json';
 	if (loc) {
 		url = `http://${locip}/presets.json`;
 	}
-	
+
 	fetch
 	(url, {
 		method: 'get'
@@ -365,11 +378,87 @@ function loadPresets()
 	.then(json => {
 		pJson = json;
 		populatePresets();
+		if (callback) {
+			callback();
+		}
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
 		presetError(false);
+		if (callback) {
+			callback();
+		}
+	});
+}
+
+function loadPalettes(callback = null)
+{
+	var url = '/json/palettes';
+	if (loc) {
+		url = `http://${locip}/json/palettes`;
+	}
+
+	fetch
+	(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) {
+			 showErrorToast();
+		}
+		return res.json();
+	})
+	.then(json => {
+		lJson = Object.entries(json);
+		populatePalettes();
+		updateUI();
+		if (callback) {
+			callback();
+		}
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+		presetError(false);
+		if (callback) {
+			callback();
+		}
+	});
+}
+
+function loadFX(callback = null)
+{
+	var url = '/json/effects';
+	if (loc) {
+		url = `http://${locip}/json/effects`;
+	}
+
+	fetch
+	(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) {
+			 showErrorToast();
+		}
+		return res.json();
+	})
+	.then(json => {
+		eJson = Object.entries(json);
+		populateEffects();
+		updateUI();
+		if (callback) {
+			callback();
+		}
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+		presetError(false);
+		if (callback) {
+			callback();
+		}
 	});
 }
 
@@ -380,7 +469,7 @@ function populateQL()
 	var cn = "";
 	if (pQL.length > 0) {
 	cn += `<p class="labels">Quick load</p>`;
-  
+
   var it = 0;
 	for (var key of (pQL||[]))
 	{
@@ -392,7 +481,7 @@ function populateQL()
     }
   }
   if (it != 0) cn+= '<br>';
-	
+
 	cn += `<p class="labels">All presets</p>`;
 	}
 	d.getElementById('pql').innerHTML = cn;
@@ -401,13 +490,14 @@ function populateQL()
 function populatePresets(fromls)
 {
 	if (fromls) pJson = JSON.parse(localStorage.getItem("wledP"));
+	if (!pJson) {pJson={};return};
 	delete pJson["0"];
 	var cn = "";
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
 	var added = false;
-  pQL = [];
-  var is = [];
+	pQL = [];
+	var is = [];
 
 	for (var key of (arr||[]))
 	{
@@ -416,7 +506,7 @@ function populatePresets(fromls)
 		var qll = key[1].ql;
     if (qll) pQL.push([i, qll]);
     is.push(i);
-		
+
     cn += `<div class="seg pres" id="p${i}o">`;
     if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
     cn += `<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
@@ -452,29 +542,39 @@ function populateInfo(i)
 	var pwru = "Not calculated";
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
-  var urows="";
-  if (i.u) {
-    for (const [k, val] of Object.entries(i.u))
-    {
-      if (val[1]) {
-        urows += inforow(k,val[0],val[1]);
-      } else {
-        urows += inforow(k,val);
-      }
-    }
-  }
+  	var urows="";
+	if (i.nodes) {
+		i.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		for (var x=0;x<i.nodes.length;x++)
+		{
+			var o = i.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${o.name}</button>`;
+				urows += inforow(url,o.type);
+			}
+		}
+	}
+	if (i.u) {
+		for (const [k, val] of Object.entries(i.u))
+		{
+			if (val[1]) {
+			urows += inforow(k,val[0],val[1]);
+			} else {
+			urows += inforow(k,val);
+			}
+		}
+	}
 	var vcn = "Kuuhaku";
-	if (i.ver.startsWith("0.12.")) vcn = "Hikari";
+	if (i.ver.startsWith("0.11.")) vcn = "Mirai";
 	if (i.cn) vcn = i.cn;
-	
+
 	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
 	${urows}
 	${inforow("Build",i.vid)}
 	${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 	${inforow("Uptime",getRuntimeStr(i.uptime))}
 	${inforow("Free heap",heap," kB")}
-  ${inforow("Estimated current",pwru)}
-  ${inforow("Frames / second",i.leds.fps)}
+	${inforow("Estimated current",pwru)}
 	${inforow("MAC address",i.mac)}
 	${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 	${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
@@ -486,17 +586,17 @@ function populateSegments(s)
 {
 	var cn = "";
 	segCount = 0; lowestUnused = 0; lSeg = 0;
- 
+
 	for (var y = 0; y < (s.seg||[]).length; y++)
 	{
 		segCount++;
-		
+
 		var inst=s.seg[y];
 		let i = parseInt(inst.id);
 		powered[i] = inst.on;
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
-		
+
 		cn += `<div class="seg">
 			<label class="check schkl">
 				&nbsp;
@@ -566,6 +666,149 @@ function populateSegments(s)
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
+function populateEffects()
+{
+    var effects = eJson;
+	var html = "";
+
+	effects.shift(); //remove solid
+	for (let i = 0; i < effects.length; i++) {
+		effects[i] = {id: effects[i][0], name:effects[i][1]};
+	}
+	effects.sort((a,b) => (a.name).localeCompare(b.name));
+
+	effects.unshift({
+		"id": 0,
+		"name": "Solid",
+	});
+
+	for (let i = 0; i < effects.length; i++) {
+		html += generateListItemHtml(
+			'fx',
+			effects[i].id,
+			effects[i].name,
+			'setX'
+		);
+	}
+
+	d.getElementById('fxlist').innerHTML=html;
+}
+
+function populatePalettes()
+{
+    var palettes = lJson;
+	palettes.shift(); //remove default
+	for (let i = 0; i < palettes.length; i++) {
+		palettes[i] = {
+			"id": palettes[i][0],
+			"name": palettes[i][1]
+		};
+	}
+	palettes.sort((a,b) => (a.name).localeCompare(b.name));
+
+	palettes.unshift({
+		"id": 0,
+		"name": "Default",
+	});
+	
+	var paletteHtml = "";
+	for (let i = 0; i < palettes.length; i++) {
+		let previewCss = genPalPrevCss(palettes[i].id);
+		paletteHtml += generateListItemHtml(
+			'palette',
+		    palettes[i].id,
+            palettes[i].name,
+            'setPalette',
+            `<div class="lstIprev" style="${previewCss}"></div>`
+        );
+	}
+
+	d.getElementById('selectPalette').innerHTML=paletteHtml;
+}
+
+function redrawPalPrev()
+{
+	let palettes = d.querySelectorAll('#selectPalette .lstI');
+	for (let i = 0; i < palettes.length; i++) {
+		let id = palettes[i].dataset.id;
+		let lstPrev = palettes[i].querySelector('.lstIprev');
+		if (lstPrev) {
+			lstPrev.style = genPalPrevCss(id);
+		}
+	}
+}
+
+function genPalPrevCss(id)
+{
+	if (!palettesData) {
+		return;
+	}
+	var paletteData = palettesData[id];
+	var previewCss = "";
+
+	if (!paletteData) {
+		return 'display: none';
+	}
+
+	// We need at least two colors for a gradient
+	if (paletteData.length == 1) {
+		paletteData[1] = paletteData[0];
+		if (Array.isArray(paletteData[1])) {
+			paletteData[1][0] = 255;
+		}
+	}
+
+	var gradient = [];
+	for (let j = 0; j < paletteData.length; j++) {
+		const element = paletteData[j];
+		let r;
+		let g;
+		let b;
+		let index = false;
+		if (Array.isArray(element)) {
+			index = element[0]/255*100;
+			r = element[1];
+			g = element[2];
+			b = element[3];
+		} else if (element == 'r') {
+			r = Math.random() * 255;
+			g = Math.random() * 255;
+			b = Math.random() * 255;
+		} else {
+			if (selColors) {
+				let pos = element[1] - 1;
+				r = selColors[pos][0];
+				g = selColors[pos][1];
+				b = selColors[pos][2];
+			}
+		}
+		if (index === false) {
+			index = j / paletteData.length * 100;
+		}
+		
+		gradient.push(`rgb(${r},${g},${b}) ${index}%`);
+	}
+
+	return `background: linear-gradient(to right,${gradient.join()});`;
+}
+
+function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
+{
+    return `<div class="lstI" data-id="${id}">
+			<label class="check schkl">
+				&nbsp;
+				<input type="radio" value="${id}" name="${listName}" onChange="${clickAction}()">
+				<span class="checkmark schk"></span>
+			</label>
+			<div class="lstIcontent" onClick="${clickAction}(${id})">
+				<span class="lstIname">
+					${name}
+				</span>
+				${extraHtml}
+			</div>
+		</div>`;
+}
+
 function updateTrail(e, slidercol)
 {
 	if (e==null) return;
@@ -581,20 +824,14 @@ function updateTrail(e, slidercol)
 	}
 	var val = `linear-gradient(90deg, ${scol} ${progress}%, var(--c-4) ${progress}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
-}
-
-function updateBubble(e)
-{
-	var bubble = e.target.parentNode.getElementsByTagName('output')[0];
-
-	if (bubble) {
-		bubble.innerHTML = e.target.value;
-	}
+	var bubble = e.parentNode.parentNode.getElementsByTagName('output')[0];
+	if (bubble) bubble.innerHTML = e.value;
 }
 
 function toggleBubble(e)
 {
-	e.target.parentNode.querySelector('output').classList.toggle('hidden');
+	var bubble = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
+	bubble.classList.toggle('sliderbubbleshow');
 }
 
 function updateLen(s)
@@ -609,7 +846,7 @@ function updateLen(s)
 	} else if (len == 1) {
 		out = "1 LED";
 	}
-	
+
 	if (d.getElementById(`seg${s}grp`) != null)
 	{
 		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
@@ -618,7 +855,7 @@ function updateLen(s)
 		var virt = Math.ceil(len/(grp + spc));
 		if (!isNaN(virt) && (grp > 1 || spc > 0)) out += ` (${virt} virtual)`;
 	}
-	
+
 	d.getElementById(`seg${s}len`).innerHTML = out;
 }
 
@@ -641,24 +878,72 @@ function updatePA()
 	}
 }
 
-function updateUI()
+function updateUI(scrollto=false)
 {
 	d.getElementById('buttonPower').className = (isOn) ? "active":"";
 	d.getElementById('buttonNl').className = (nlA) ? "active":"";
 	d.getElementById('buttonSync').className = (syncSend) ? "active":"";
 
-	d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-6)";
+	updateSelectedPalette();
+	updateSelectedFx(scrollto);
+
+//	d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-6)";
+	//if (d.getElementById('fxb' + selectedFx))
+	//{
+	//	d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-6)";
+	//	if (scrollto) d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
+	//}
 	updateTrail(d.getElementById('sliderBri'));
 	updateTrail(d.getElementById('sliderSpeed'));
 	updateTrail(d.getElementById('sliderIntensity'));
 	updateTrail(d.getElementById('sliderW'));
 	if (isRgbw) d.getElementById('wwrap').style.display = "block";
 
-	var spal = d.getElementById("selectPalette");
-	spal.style.backgroundColor = (spal.selectedIndex > 0) ? "var(--c-6)":"var(--c-3)";
 	updatePA();
 	updateHex();
 	updateRgb();
+}
+
+function updateSelectedPalette()
+{
+	var parent = d.getElementById('selectPalette');
+	var selectedPalette = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
+	if (selectedPalette) {
+		selectedPalette.checked = true;
+	}
+	selElement = parent.querySelector('.selected');
+	if (selElement) {
+		selElement.classList.remove('selected')
+	}
+	var selectedPalette = parent.querySelector(`.lstI[data-id="${selectedPal}"]`);
+	if (selectedPalette) {
+		parent.querySelector(`.lstI[data-id="${selectedPal}"]`).classList.add('selected');
+	}
+}
+
+function updateSelectedFx(scrollto=false)
+{
+	var parent = d.getElementById('fxlist');
+
+	var selectedEffectInput = parent.querySelector(`input[name="fx"][value="${selectedFx}"]`);
+	if (selectedEffectInput) {
+		parent.querySelector(`input[name="fx"][value="${selectedFx}"]`).checked = true;
+	}
+	var selElement = parent.querySelector('.selected');
+	if (selElement) {
+		selElement.classList.remove('selected')
+	}
+	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
+	if (selectedEffect) {
+		selectedEffect.classList.add('selected');
+	}
+	
+	if (scrollto && selectedEffect) {
+		selectedEffect.scrollIntoView({
+			behavior: 'smooth',
+			block: 'center',
+		});
+	}	
 }
 
 function displayRover(i,s)
@@ -669,17 +954,13 @@ function displayRover(i,s)
 	d.getElementById('roverstar').style.display = (i.live && s.lor) ? "block":"none";
 }
 
-function compare(a, b) {
-	if (a.name < b.name) return -1;
-	return 1;
-}
 function cmpP(a, b) {
 	if (!a[1].n) return (a[0] > b[0]);
   return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
 var jsonTimeout;
-function requestJson(command, rinfo = true, verbose = true) {
+function requestJson(command, rinfo = true, verbose = true, callback = null) {
 	d.getElementById('connind').style.backgroundColor = "#a90";
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
@@ -687,16 +968,16 @@ function requestJson(command, rinfo = true, verbose = true) {
 	var e1 = d.getElementById('fxlist');
 	var e2 = d.getElementById('selectPalette');
 
-	var url = rinfo ? '/json/si': (command ? '/json/state':'/json');
+	var url = rinfo ? '/json/si': (command ? '/json/state':'/json/si');
 	if (loc) {
 		url = `http://${locip}${url}`;
 	}
-	
+
 	var type = command ? 'post':'get';
 	if (command)
 	{
-    command.v = verbose;
-    command.time = Math.floor(Date.now() / 1000);
+		command.v = verbose;
+		command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
 		//console.log(req);
 	}
@@ -710,7 +991,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 	})
 	.then(res => {
 		if (!res.ok) {
-			 showErrorToast();
+			showErrorToast();
 		}
 		return res.json();
 	})
@@ -719,53 +1000,54 @@ function requestJson(command, rinfo = true, verbose = true) {
 		jsonTimeout = null;
 		clearErrorToast();
 		d.getElementById('connind').style.backgroundColor = "#070";
-		if (!json) showToast('Empty response', true);
-		if (json.success) return;
+		if (!json) {
+			showToast('Empty response', true);
+		}
+		if (json.success) {
+			if (callback) {
+				callback();
+			}
+			return;
+		}
 		var s = json;
-		if (!command || rinfo) {
-		if (!rinfo) {
-		pmt = json.info.fs.pmt;
-    if (pmt != pmtLS || pmt == 0) {
-      setTimeout(loadPresets,99);
-    }
-    else populatePresets(true);
-    pmtLast = pmt;
-		var x='',y='<option value="0">Default</option>';
-		json.effects.shift(); //remove solid
-		for (let i = 0; i < json.effects.length; i++) json.effects[i] = {id: parseInt(i)+1, name:json.effects[i]};
-		json.effects.sort(compare);
-		for (let i = 0; i < json.effects.length; i++) {
-		x += `<button class="btn${(i==0)?" first":""}" id="fxb${json.effects[i].id}" onclick="setX(${json.effects[i].id});">${json.effects[i].name}</button><br>`;
-		}
-
-		json.palettes.shift(); //remove default
-		for (let i = 0; i < json.palettes.length; i++) json.palettes[i] = {"id": parseInt(i)+1, "name":json.palettes[i]};
-		json.palettes.sort(compare);
-		for (let i = 0; i < json.palettes.length; i++) {
-		y += `<option value="${json.palettes[i].id}">${json.palettes[i].name}</option>`;
-		}
-		e1.innerHTML=x; e2.innerHTML=y;
-		}
 		
+		if (!command || rinfo) {
+			if (!rinfo) {
+				pmt = json.info.fs.pmt;
+				populatePresets(true);
+				pmtLast = pmt;
+			}
+
 			var info = json.info;
 			var name = info.name;
 			d.getElementById('namelabel').innerHTML = name;
-			if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-			if (info.live) name = "(Live) " + name;
-		if (loc) name = "(L) " + name;
+			if (name === "Dinnerbone") {
+				d.documentElement.style.transform = "rotate(180deg)";
+			}
+			if (info.live) {
+				name = "(Live) " + name;
+			}
+			if (loc) {
+				name = "(L) " + name;
+			}
 			d.title = name;
 			isRgbw = info.leds.wv;
 			ledCount = info.leds.count;
 			syncTglRecv = info.str;
-      maxSeg = info.leds.maxseg;
-      pmt = info.fs.pmt;
-      if (!command && pmt != pmtLast) setTimeout(loadPresets,99);
-      pmtLast = pmt;
-		lastinfo = info;
-		if (isInfo) populateInfo(info);
-			s = json.state;
-			displayRover(info, s);
+			maxSeg = info.leds.maxseg;
+			pmt = info.fs.pmt;
+			if (!command && pmt != pmtLast) {
+				setTimeout(loadPresets,99);
+			}
+			pmtLast = pmt;
+			lastinfo = info;
+			if (isInfo) {
+				populateInfo(info);
+			}
+				s = json.state;
+				displayRover(info, s);
 		}
+
 		isOn = s.on;
 		d.getElementById('sliderBri').value= s.bri;
 		nlA = s.nl.on;
@@ -774,12 +1056,12 @@ function requestJson(command, rinfo = true, verbose = true) {
 		nlFade = s.nl.fade;
 		syncSend = s.udpn.send;
 		currentPreset = s.ps;
-		d.getElementById('cyToggle').checked = (s.pl < 0) ? false : true;
+		d.getElementById('cyToggle').checked = (s.pl >= 0);
 		d.getElementById('cycs').value = s.ccnf.min;
 		d.getElementById('cyce').value = s.ccnf.max;
 		d.getElementById('cyct').value = s.ccnf.time /10;
 		d.getElementById('cyctt').value = s.transition /10;
-		
+
 		var selc=0; var ind=0;
 		populateSegments(s);
 		for (let i = 0; i < (s.seg||[]).length; i++)
@@ -789,9 +1071,14 @@ function requestJson(command, rinfo = true, verbose = true) {
 		var i=s.seg[selc];
 		if (!i) {
 			showToast('No Segments!', true);
-			updateUI();
+			updateUI(false);
+			if (callback) {
+				callback();
+			}
 			return;
 		}
+		
+		selColors = i.col;
 		var cd = d.getElementById('csl').children;
 		for (let e = 2; e >= 0; e--)
 		{
@@ -804,26 +1091,38 @@ function requestJson(command, rinfo = true, verbose = true) {
 		d.getElementById('sliderSpeed').value = i.sx;
 		d.getElementById('sliderIntensity').value = i.ix;
 
-		d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-3)";
+		selectedPal = i.pal;
 		selectedFx = i.fx;
-		e2.value = i.pal;
-		if (!command) d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
 
 		if (s.error && s.error != 0) {
-      var errstr = "";
-      switch (s.error) {
-        case 10: errstr = "Could not mount filesystem!"; break;
-        case 11: errstr = "Not enough space to save preset!"; break;
-        case 12: errstr = "The requested preset does not exist."; break;
-        case 19: errstr = "A filesystem error has occured."; break;
-      }
-      showToast('Error ' + s.error + ": " + errstr, true);
-    }
-		updateUI();
+      		var errstr = "";
+      		switch (s.error) {
+				case 10:
+					errstr = "Could not mount filesystem!";
+					break;
+				case 11:
+					errstr = "Not enough space to save preset!";
+					break;
+				case 12:
+					errstr = "The requested preset does not exist.";
+					break;
+				case 19:
+					errstr = "A filesystem error has occured.";
+					break;
+      		}
+      		showToast('Error ' + s.error + ": " + errstr, true);
+    	}
+        updateUI(true);
+		if (callback) {
+			callback();
+		}
 	})
 	.catch(function (error) {
 		showToast(error, true);
-	  console.log(error);
+		console.log(error);
+		if (callback) {
+			callback();
+		}
 	});
 }
 
@@ -1030,14 +1329,35 @@ function setSegBri(s){
 	requestJson(obj);
 }
 
-function setX(ind) {
+function setX(ind = null) {
+	if (ind === null) {
+		ind = parseInt(d.querySelector('#fxlist input[name="fx"]:checked').value);
+	} else {
+		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
+	}
+	var selElement = d.querySelector('#fxlist .selected');
+	if (selElement) {
+		selElement.classList.remove('selected')
+	}
+	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
+
 	var obj = {"seg": {"fx": parseInt(ind)}};
 	requestJson(obj);
 }
 
-function setPalette()
+function setPalette(paletteId = null)
 {
-	var obj = {"seg": {"pal": parseInt(d.getElementById('selectPalette').value)}};
+	if (paletteId === null) {
+		paletteId = parseInt(d.querySelector('#selectPalette input[name="palette"]:checked').value);
+	} else {
+		d.querySelector(`#selectPalette input[name="palette"][value="${paletteId}`).checked = true;
+	}
+	var selElement = d.querySelector('#selectPalette .selected');
+	if (selElement) {
+		selElement.classList.remove('selected')
+	}
+	d.querySelector(`#selectPalette .lstI[data-id="${paletteId}"]`).classList.add('selected');
+	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj);
 }
 
@@ -1069,7 +1389,7 @@ function toggleCY() {
 		obj = {"pl": 0, "ccnf": {"min": parseInt(d.getElementById('cycs').value), "max": parseInt(d.getElementById('cyce').value), "time": parseInt(d.getElementById('cyct').value*10)}};
 		obj.transition = parseInt(d.getElementById('cyctt').value*10);
 	}
-	
+
 	requestJson(obj);
 }
 
@@ -1113,14 +1433,14 @@ function saveP(i) {
 	var pQN = d.getElementById(`p${i}ql`).value;
 	if (pQN.length > 0) obj.ql = pQN;
 
-  showToast("Saving " + pN +" (" + pI + ")");
+	showToast("Saving " + pN +" (" + pI + ")");
 	requestJson(obj);
 	if (obj.o) {
 		pJson[pI] = obj;
-    delete pJson[pI].psave;
-    delete pJson[pI].o;
-    delete pJson[pI].v;
-    delete pJson[pI].time;
+		delete pJson[pI].psave;
+		delete pJson[pI].o;
+		delete pJson[pI].v;
+		delete pJson[pI].time;
 	} else {
 		pJson[pI] = {"n":pN, "win":"Please refresh the page to see this newly saved command."};
 		if (obj.win) pJson[pI].win = obj.win;
@@ -1153,6 +1473,7 @@ function selectSlot(b) {
 	updateTrail(d.getElementById('sliderW'));
 	updateHex();
 	updateRgb();
+	redrawPalPrev();
 }
 
 var lasth = 0;
@@ -1279,6 +1600,98 @@ function rSegs()
 	requestJson(obj);
 }
 
+function loadPalettesData()
+{
+	if (palettesData) {
+		return;
+	}
+	
+	if (getPalettesDataCached()) {
+		return;
+	}
+
+	var dateExpiration = new Date();
+	palettesData = {};
+	getPalettesData(1, function() {
+		localStorage.setItem(lsPalKey, JSON.stringify({
+			p: palettesData,
+			expiration: dateExpiration.getTime() + (24 * 60 * 60 * 1000) // 24 hrs expiration
+		}));
+		requestJson(null, false);
+	});
+}
+
+function getPalettesDataCached() {
+	var palettesDataJson = localStorage.getItem(lsPalKey);
+	if (palettesDataJson) {
+		try {
+			palettesDataJson = JSON.parse(palettesDataJson);
+			var d = new Date();
+			if (palettesDataJson && palettesDataJson.expiration && palettesDataJson.expiration > d.getTime()) {
+				palettesData = palettesDataJson.p;
+				redrawPalPrev();
+				return true;
+			}
+		} catch (e) {}
+	}
+
+	return false;
+}
+
+function getPalettesData(page, callback)
+{
+	var url = `/json/palx?page=${page}`;
+	if (loc) {
+		url = `http://${locip}${url}`;
+	}
+
+	fetch(url, {
+		method: 'get',
+		headers: {
+			"Content-type": "application/json; charset=UTF-8"
+		}
+	})
+	.then(res => {
+		if (!res.ok) {
+			showErrorToast();
+		}
+		return res.json();
+	})
+	.then(json => {
+		palettesData = Object.assign({}, palettesData, json.p);
+		if (page < json.m) {
+			setTimeout(function() { getPalettesData(page + 1, callback); }, 100);
+			
+		} else {
+			callback();
+		}
+	})
+	.catch(function(error) {
+		showToast(error, true);
+		console.log(error);
+		presetError(false);
+	});
+}
+
+function search(f,l=null) {
+	f.nextElementSibling.style.display=(f.value!=='')?'block':'none'; 
+	if (!l) return;
+	var el = d.getElementById(l).querySelectorAll('.lstI');
+	for (i = 0; i < el.length; i++) {
+		var it = el[i];
+		var itT = it.querySelector('.lstIname').innerText.toUpperCase();
+		it.style.display = itT.indexOf(f.value.toUpperCase())>-1?'':'none';
+	}
+}
+
+function clean(c) {
+	c.style.display='none';
+	var i=c.previousElementSibling;
+	i.value='';
+	i.focus();
+	i.dispatchEvent(new Event('input'));
+}
+
 function expand(i,a)
 {
 	if (!a) expanded[i] = !expanded[i];
@@ -1353,7 +1766,7 @@ function move(e) {
 	x0 = null;
 }
 
-function size() { 
+function size() {
 	w = window.innerWidth;
 	var h = d.getElementById('top').clientHeight;
 	sCol('--th', h + "px");

@@ -24,8 +24,6 @@
   Modified for WLED
 */
 
-#include "wled.h"
-
 #ifndef WS2812FX_h
 #define WS2812FX_h
 
@@ -58,11 +56,11 @@
 /* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #ifdef ESP8266
-  #define MAX_NUM_SEGMENTS    12
+  #define MAX_NUM_SEGMENTS    13
   /* How many color transitions can run at once */
   #define MAX_NUM_TRANSITIONS  8
   /* How much data bytes all segments combined may allocate */
-  #define MAX_SEGMENT_DATA  2048
+  #define MAX_SEGMENT_DATA  2560
 #else
   #define MAX_NUM_SEGMENTS    16
   #define MAX_NUM_TRANSITIONS 16
@@ -584,7 +582,7 @@ class WS2812FX {
     }
 
     void
-      finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst),
+      finalizeInit(void),
       service(void),
       blur(uint8_t),
       fill(uint32_t),
@@ -609,7 +607,6 @@ class WS2812FX {
       setPixelSegment(uint8_t n);
 
     bool
-      reverseMode = false,      //is the entire LED strip reversed?
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,
@@ -624,8 +621,6 @@ class WS2812FX {
       paletteFade = 0,
       paletteBlend = 0,
       milliampsPerLed = 55,
-//      getStripType(uint8_t strip=0),
-//      setStripType(uint8_t type, uint8_t strip=0),
       getBrightness(void),
       getMode(void),
       getSpeed(void),
@@ -640,17 +635,11 @@ class WS2812FX {
       get_random_wheel_index(uint8_t);
 
     int8_t
-//      setStripPin(uint8_t strip, int8_t pin),
-//      getStripPin(uint8_t strip=0),
-//      setStripPinClk(uint8_t strip, int8_t pin),
-//      getStripPinClk(uint8_t strip=0),
       tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec);
 
     uint16_t
       ablMilliampsMax,
       currentMilliamps,
-//      setStripLen(uint8_t strip, uint16_t len),
-//      getStripLen(uint8_t strip=0),
       triwave16(uint16_t),
       getFps();
 
@@ -803,7 +792,7 @@ class WS2812FX {
     CRGBPalette16 currentPalette;
     CRGBPalette16 targetPalette;
 
-    uint16_t _length, _lengthRaw, _virtualSegmentLength;
+    uint16_t _length, _virtualSegmentLength;
     uint16_t _rand16seed;
     uint8_t _brightness;
     uint16_t _usedSegmentData = 0;
@@ -816,7 +805,6 @@ class WS2812FX {
 
     bool
       _useRgbw = false,
-      _skipFirstMode,
       _triggered;
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
@@ -830,7 +818,6 @@ class WS2812FX {
       color_wipe(bool, bool),
       dynamic(bool),
       scan(bool),
-      theater_chase(uint32_t, uint32_t, bool),
       running_base(bool),
       larson_scanner(bool),
       sinelon_base(bool,bool),
@@ -839,7 +826,7 @@ class WS2812FX {
       gradient_base(bool),
       ripple_base(bool),
       police_base(uint32_t, uint32_t, bool),
-      running(uint32_t, uint32_t),
+      running(uint32_t, uint32_t, bool theatre=false),
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),
       spots_base(uint16_t),
