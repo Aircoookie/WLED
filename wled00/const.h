@@ -31,6 +31,7 @@
 #define USERMOD_ID_ROTARY_ENC_UI  8            //Usermod "usermod_v2_rotary_encoder_ui.h"
 #define USERMOD_ID_AUTO_SAVE      9            //Usermod "usermod_v2_auto_save.h"
 #define USERMOD_ID_DHT           10            //Usermod "usermod_dht.h"
+#define USERMOD_ID_MODE_SORT     11            //Usermod "usermod_v2_mode_sort.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
@@ -137,9 +138,13 @@
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
 
 //Ethernet board types
+#define WLED_NUM_ETH_TYPES        5
+
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
 #define WLED_ETH_ESP32_POE        2
+#define WLED_ETH_WESP32           3
+#define WLED_ETH_QUINLED          4
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
@@ -199,9 +204,13 @@
 #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
 
 // PWM settings
-#define WLED_PWM_FREQ_ESP8266  880 //PWM frequency proven as good for LEDs
-#define WLED_PWM_FREQ_ESP32   5000
-
+#ifndef WLED_PWM_FREQ
+#ifdef ESP8266
+  #define WLED_PWM_FREQ    880 //PWM frequency proven as good for LEDs
+#else
+  #define WLED_PWM_FREQ  19531
+#endif
+#endif
 
 #define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
 

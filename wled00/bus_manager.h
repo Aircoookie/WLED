@@ -210,7 +210,7 @@ class BusPwm : public Bus {
 
     #ifdef ESP8266
     analogWriteRange(255);  //same range as one RGB channel
-    analogWriteFreq(WLED_PWM_FREQ_ESP8266);
+    analogWriteFreq(WLED_PWM_FREQ);
     #else
     _ledcStart = pinManager.allocateLedc(numPins);
     if (_ledcStart == 255) { //no more free LEDC channels
@@ -226,7 +226,7 @@ class BusPwm : public Bus {
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
       #else
-      ledcSetup(_ledcStart + i, WLED_PWM_FREQ_ESP32, 8);
+      ledcSetup(_ledcStart + i, WLED_PWM_FREQ, 8);
       ledcAttachPin(_pins[i], _ledcStart + i);
       #endif
     }
