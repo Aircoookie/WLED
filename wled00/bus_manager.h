@@ -140,13 +140,13 @@ class BusDigital : public Bus {
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (reversed) pix = _len - pix -1;
-    pix += _skip;
+    else pix += _skip;
     PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrder);
   }
 
   uint32_t getPixelColor(uint16_t pix) {
     if (reversed) pix = _len - pix -1;
-    pix += _skip;
+    else pix += _skip;
     return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrder);
   }
 

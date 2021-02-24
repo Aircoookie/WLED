@@ -126,14 +126,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
-      ledCount += length;
+//      ledCount += length;
 
       // actual finalization is done in loop()
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skipFirstLed);
     }
 
-//    ledCount = request->arg(F("LC")).toInt();
+    ledCount = request->arg(F("LC")).toInt();
 //    if (t > 0 && t <= MAX_LEDS) ledCount = t;
     //DMA method uses too much ram, TODO: limit!
 

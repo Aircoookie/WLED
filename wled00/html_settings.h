@@ -134,9 +134,8 @@ required><br>Mode: <select name="TW"><option value="0">Wait and set</option>
 value="3">Sunrise</option></select><h3>Advanced</h3>Palette blending: <select 
 name="PB"><option value="0">Linear (wrap if moving)</option><option value="1">
 Linear (always wrap)</option><option value="2">Linear (never wrap)</option>
-<option value="3">None (not recommended)</option></select><br>
-Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
-Skip first LED: <input type="checkbox" name="SL"><br><span class="wc">
+<option value="3">None (not recommended)</option></select><br>Skip first LED: 
+<input type="checkbox" name="SL"><br><span class="wc">
 Auto-calculate white channel from RGB:<br><select name="AW"><option value="0">
 None</option><option value="1">Brighter</option><option value="2">Accurate
 </option><option value="3">Dual</option><option value="4">Legacy</option>
