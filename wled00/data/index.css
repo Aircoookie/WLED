@@ -290,12 +290,15 @@ button {
 	display: block;
 	position: -webkit-sticky;
 	position: sticky;
-	background: var(--c-1);
 	top: -1px;
 	z-index: 1;
     margin: 1px auto auto;
 }
-
+/*
+#staytop, #staytop1 {
+	background: var(--c-1);
+}
+*/
 #staytop1 {
 	top: 28px;
 }
@@ -940,8 +943,17 @@ input[type="text"].fnd {
     margin: 0 auto 10px;
 	text-align: left;
 	border-radius: 0;
-	background: var(--c-1);
     border-bottom: 1px solid var(--c-3);
+	position: relative;
+}
+input[type="text"].fnd::before {
+	opacity: 0.33;
+	background: var(--c-1);
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
 }
 
 input[type="text"].fnd:focus {

@@ -115,10 +115,10 @@
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
 
-#define IS_DIGITAL(t) (t & 0x10) //digital are 16-31 and 48-63
-#define IS_PWM(t)     (t > 40 && t < 46)
-#define NUM_PWM_PINS(t) (t - 40) //for analog PWM 41-45 only
-#define IS_2PIN(t)      (t > 47)
+#define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
+#define IS_PWM(t)     ((t) > 40 && (t) < 46)
+#define NUM_PWM_PINS(t) ((t) - 40) //for analog PWM 41-45 only
+#define IS_2PIN(t)      ((t) > 47)
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut

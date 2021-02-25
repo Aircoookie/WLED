@@ -116,7 +116,6 @@ class BusDigital : public Bus {
     _busPtr = PolyBus::create(_iType, _pins, _len);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
-    //Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
   };
 
   inline void show() {
@@ -178,7 +177,6 @@ class BusDigital : public Bus {
   }
 
   void cleanup() {
-    //Serial.println("Digital Cleanup");
     PolyBus::cleanup(_busPtr, _iType);
     _iType = I_NONE;
     _valid = false;
@@ -204,9 +202,9 @@ class BusDigital : public Bus {
 
 class BusPwm : public Bus {
   public:
-  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start) {
-    if (!IS_PWM(bc.type)) return;
-    uint8_t numPins = NUM_PWM_PINS(bc.type);
+  BusPwm(BusConfig &bc) : Bus(bc.type&0x7F, bc.start) {  // bit 7 is hacked to include RGBW info
+    if (!IS_PWM(bc.type&0x7F)) return;  // bit 7 is hacked to include RGBW info
+    uint8_t numPins = NUM_PWM_PINS(bc.type&0x7F);  // bit 7 is hacked to include RGBW info
 
     #ifdef ESP8266
     analogWriteRange(255);  //same range as one RGB channel
@@ -321,7 +319,7 @@ class BusManager {
   
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (IS_DIGITAL(bc.type)) {
+    if (IS_DIGITAL(bc.type&0x7F)) {
       busses[numBusses] = new BusDigital(bc, numBusses);
     } else {
       busses[numBusses] = new BusPwm(bc);
