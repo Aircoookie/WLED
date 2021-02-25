@@ -87,7 +87,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     skipFirstLed = request->hasArg(F("SL"));
     useRGBW = false;
-    ledCount = 0;
 
     uint8_t colorOrder, type;
     uint16_t length, start;
@@ -113,14 +112,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       if (request->hasArg(ew)) SET_BIT(type,7); else UNSET_BIT(type,7); // hack bit 7 to indicate RGBW (as a LED type override if necessary)
       useRGBW |= request->hasArg(ew);
 
+      colorOrder = request->arg(co).toInt();
+      start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
-        length = request->arg(lc).toInt();
+        t += length = request->arg(lc).toInt();
       } else {
         break;  // no parameter
       }
-      colorOrder = request->arg(co).toInt();
-      start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
-//      ledCount += length;
 
       // actual finalization is done in loop()
       if (busConfigs[s] != nullptr) delete busConfigs[s];

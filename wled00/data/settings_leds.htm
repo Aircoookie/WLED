@@ -117,10 +117,10 @@
               LK.value="";
             }
           }
-          d.getElementById("ls"+n).readOnly = !(type >= 32 && type < 48); // not analog
-          d.getElementById("LC").readOnly = !(type >= 32 && type < 48);   // not analog
+          d.getElementById("ls"+n).readOnly = !(type > 31 && type < 48); // not analog
+          d.getElementById("LC").readOnly = !(type > 31 && type < 48);   // not analog
           if (change) {
-            d.getElementById("ew"+n).checked = (type == 30 || type == 31 || type == 44 || type == 45); // TYPE_xxxx values from const.h
+            d.getElementById("ew"+n).checked = (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
           }
           isRGBW |= d.getElementById("ew"+n).checked;
           d.getElementById("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
@@ -138,7 +138,12 @@
       var sLC = 0, maxLC = 0;
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
-        if (nm=="LC" && LCs[i].name !== "LC") {var c=parseInt(LCs[i].value,10);d.getElementById("ls"+n).value=sLC;if(c){sLC+=c;if(c>maxLC)maxLC=c;}continue;}
+        if (nm=="LC" && LCs[i].name !== "LC") {
+          var c=parseInt(LCs[i].value,10);
+          if(d.getElementById("ls"+n).readOnly) d.getElementById("ls"+n).value=sLC;
+          if(c){sLC+=c;if(c>maxLC)maxLC=c;}
+          continue;
+        }
         if (nm=="L0" || nm=="L1") {
           var lc=d.getElementsByName("LC"+LCs[i].name.substring(2))[0];
           p3u|=(LCs[i].value==3);
@@ -207,45 +212,47 @@
 
       var f = d.getElementById("mLC");
       if (n==1) {
-        var cn = `<div class="iST">
-          ${i>0?'<hr style="width:260px">':''}
-          ${i+1}:
-          <select name="LT${i}" onchange="UI(true)">
-            <option value="22">WS281x</option>
-            <option value="30">SK6812 RGBW</option>
-            <option value="31">TM1814</option>
-            <option value="24">400kHz</option>
-            <option value="50">WS2801</option>
-            <option value="51">APA102</option>
-            <option value="52">LPD8806</option>
-            <option value="53">P9813</option>
-            <option value="41">PWM White</option>
-            <option value="42">PWM WWCW</option>
-            <option value="43">PWM RGB</option>
-            <option value="44">PWM RGBW</option>
-            <option value="45">PWM RGBWC</option>
-          </select>&nbsp;
-          Color Order:
-          <select name="CO${i}">
-            <option value="0">GRB</option>
-            <option value="1">RGB</option>
-            <option value="2">BRG</option>
-            <option value="3">RBG</option>
-            <option value="4">BGR</option>
-            <option value="5">GBR</option>
-          </select><!--br-->
-          RGBW: <input id="ew${i}" type="checkbox" name="EW${i}"><br>
-          <span id="p0d${i}">Pin:</span> <input type="number" name="L0${i}" min="0" max="40" required style="width:35px" onchange="UI()"/>
-          <span id="p1d${i}">Clock:</span> <input type="number" name="L1${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
-          <span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
-          <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
-          <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
-          <br>
-          <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="0" required />&nbsp;
-          <div id="dig${i}" style="display:inline">
-          Count: <input type="number" name="LC${i}" min="0" max="2048" value="1" required oninput="UI()" /><br>
-          Reverse: <input type="checkbox" name="CV${i}"></div><br>
-        </div>`;
+// npm run build has trouble minimizing spaces inside string
+        var cn = 
+`<div class="iST">
+  ${i>0?'<hr style="width:260px">':''}
+  ${i+1}:
+  <select name="LT${i}" onchange="UI(true)">
+    <option value="22">WS281x</option>
+    <option value="30">SK6812 RGBW</option>
+    <option value="31">TM1814</option>
+    <option value="24">400kHz</option>
+    <option value="50">WS2801</option>
+    <option value="51">APA102</option>
+    <option value="52">LPD8806</option>
+    <option value="53">P9813</option>
+    <option value="41">PWM White</option>
+    <option value="42">PWM WWCW</option>
+    <option value="43">PWM RGB</option>
+    <option value="44">PWM RGBW</option>
+    <option value="45">PWM RGBWC</option>
+  </select>&nbsp;
+  Color Order:
+  <select name="CO${i}">
+    <option value="0">GRB</option>
+    <option value="1">RGB</option>
+    <option value="2">BRG</option>
+    <option value="3">RBG</option>
+    <option value="4">BGR</option>
+    <option value="5">GBR</option>
+  </select><!--br-->
+  RGBW: <input id="ew${i}" type="checkbox" name="EW${i}"><br>
+  <span id="p0d${i}">Pin:</span> <input type="number" name="L0${i}" min="0" max="40" required style="width:35px" onchange="UI()"/>
+  <span id="p1d${i}">Clock:</span> <input type="number" name="L1${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
+  <span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
+  <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
+  <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
+  <br>
+  <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="0" required />&nbsp;
+  <div id="dig${i}" style="display:inline">
+  Count: <input type="number" name="LC${i}" min="0" max="2048" value="1" required oninput="UI()" /><br>
+  Reverse: <input type="checkbox" name="CV${i}"></div><br>
+</div>`;
         f.insertAdjacentHTML("beforeend", cn);
       }
       if (n==-1) {

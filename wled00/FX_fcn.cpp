@@ -511,14 +511,14 @@ uint32_t WS2812FX::getLastShow(void) {
   return _lastShow;
 }
 
-//TODO these need to be on a per-strip basis
-uint8_t WS2812FX::getColorOrder(void) {
-  return COL_ORDER_GRB;
-}
-
-void WS2812FX::setColorOrder(uint8_t co) {
-  //bus->SetColorOrder(co);
-}
+// there is no longer any need for these two
+//uint8_t WS2812FX::getColorOrder(void) {
+//  return COL_ORDER_GRB;
+//}
+//
+//void WS2812FX::setColorOrder(uint8_t co) {
+//  //bus->SetColorOrder(co);
+//}
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing) {
   if (n >= MAX_NUM_SEGMENTS) return;

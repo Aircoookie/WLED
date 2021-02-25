@@ -187,7 +187,8 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage <1 || subPage >7) return;
 
-  if (subPage == 1) {
+  if (subPage == 1)
+  {
     sappends('s',SET_F("CS"),clientSSID);
 
     byte l = strlen(clientPass);
@@ -253,52 +254,51 @@ void getSettingsJS(byte subPage, char* dest)
     }
   }
 
-  if (subPage == 2) {
-    char nS[3];
-
+  if (subPage == 2)
+  {
     // add usermod pins as d.um_p array
     DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
     JsonObject mods = doc.createNestedObject(F("um"));
     usermods.addToConfig(mods);
+    oappend(SET_F("d.um_p=["));
     if (!mods.isNull()) {
       uint8_t i=0;
-      oappend(SET_F("d.um_p=["));
       for (JsonPair kv : mods) {
         if (strncmp_P(kv.key().c_str(),PSTR("pin_"),4) == 0) {
           if (i++) oappend(SET_F(","));
-          oappend(itoa((int)kv.value(),nS,10));
+          oappendi((int)kv.value());
         } else if (!kv.value().isNull()) {
           // element is an JsonObject
           JsonObject obj = kv.value();
           if (obj[F("pin")] != nullptr) {
             if (i++) oappend(SET_F(","));
-            oappend(itoa((int)obj[F("pin")],nS,10));
+            oappendi((int)obj[F("pin")]);
           }
         }
       }
       #ifdef ESP8266
-      #ifdef WLED_DEBUG
-      if (i==0)
-        oappend(SET_F("1"));
-      else
-        oappend(SET_F(",1"));
-      #endif
-      oappend(SET_F(",6,7,8,9,10,11];")); // flash memory pins
-      #else
-      oappend(SET_F("];"));
+        if (i) oappend(SET_F(","));
+        oappend(SET_F("6,7,8,9,10,11")); // flash memory pins
+        #ifdef WLED_DEBUG
+          oappend(SET_F("1"));
+        #endif
       #endif
     }
+    oappend(SET_F("];"));
 
+    // set limit for number of busses
     #if defined(WLED_MAX_BUSSES) && WLED_MAX_BUSSES>1
     oappend(SET_F("addLEDs("));
     oappendi(WLED_MAX_BUSSES);
     oappend(SET_F(");"));
     #endif
 
+    // set limit for LED count
     oappend(SET_F("d.LCmax="));
     oappendi(MAX_LEDS);
     oappend(";");
     #ifdef ESP8266
+    // set limit for DMA LED count
     oappend(SET_F("d.LDmax="));
     oappendi(MAX_LEDS_DMA);
     oappend(";");
@@ -320,7 +320,7 @@ void getSettingsJS(byte subPage, char* dest)
       uint8_t nPins = bus->getPins(pins);
       for (uint8_t i = 0; i < nPins; i++) {
         lp[1] = 48+i;
-        if (pinManager.isPinOk(pins[i])) sappend('v', lp, pins[i]);
+        if (pinManager.isPinOk(pins[i])) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());

@@ -54,7 +54,7 @@ class Bus {
 
   virtual uint8_t getPins(uint8_t* pinArray) { return 0; }
 
-  uint16_t getStart() {
+  inline uint16_t getStart() {
     return _start;
   }
 
@@ -76,11 +76,11 @@ class Bus {
     return false;
   }
 
-  uint8_t getType() {
+  inline uint8_t getType() {
     return _type;
   }
 
-  bool isOk() {
+  inline bool isOk() {
     return _valid;
   }
 
@@ -119,11 +119,11 @@ class BusDigital : public Bus {
     //Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
   };
 
-  void show() {
+  inline void show() {
     PolyBus::show(_busPtr, _iType);
   }
 
-  bool canShow() {
+  inline bool canShow() {
     return PolyBus::canShow(_busPtr, _iType);
   }
 
@@ -150,11 +150,11 @@ class BusDigital : public Bus {
     return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrder);
   }
 
-  uint8_t getColorOrder() {
+  inline uint8_t getColorOrder() {
     return _colorOrder;
   }
 
-  uint16_t getLength() {
+  inline uint16_t getLength() {
     return _len - _skip;
   }
 
@@ -169,11 +169,11 @@ class BusDigital : public Bus {
     _colorOrder = colorOrder;
   }
 
-  bool isRgbw() {
+  inline bool isRgbw() {
     return _rgbw;
   }
 
-  void reinit() {
+  inline void reinit() {
     PolyBus::begin(_busPtr, _iType, _pins);
   }
 
@@ -271,7 +271,7 @@ class BusPwm : public Bus {
     }
   }
 
-  void setBrightness(uint8_t b) {
+  inline void setBrightness(uint8_t b) {
     _bri = b;
   }
 
@@ -285,7 +285,7 @@ class BusPwm : public Bus {
     return (_type > TYPE_ONOFF && _type <= TYPE_ANALOG_5CH && _type != TYPE_ANALOG_3CH);
   }
 
-  void cleanup() {
+  inline void cleanup() {
     deallocatePins();
   }
 
@@ -326,8 +326,6 @@ class BusManager {
     } else {
       busses[numBusses] = new BusPwm(bc);
     }
-//    numBusses++;
-//    return numBusses -1;
     return numBusses++;
   }
 
@@ -385,7 +383,7 @@ class BusManager {
     return busses[busNr];
   }
 
-  uint8_t getNumBusses() {
+  inline uint8_t getNumBusses() {
     return numBusses;
   }
 

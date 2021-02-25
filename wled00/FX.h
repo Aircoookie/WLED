@@ -603,7 +603,7 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
       setRgbwPwm(void),
-      setColorOrder(uint8_t co),
+//      setColorOrder(uint8_t co),
       setPixelSegment(uint8_t n);
 
     bool
@@ -629,7 +629,7 @@ class WS2812FX {
       getMaxSegments(void),
       //getFirstSelectedSegment(void),
       getMainSegmentId(void),
-      getColorOrder(void),
+//      getColorOrder(void),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),
       get_random_wheel_index(uint8_t);
