@@ -86,7 +86,7 @@
     }
 		function UI(change=false)
 		{
-      var isRGBW = false, memu = 0, p3u = false, lCount = 0;
+      var isRGBW = false, memu = 0, p3u = false;
       
       d.getElementById('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
 	  
@@ -157,7 +157,7 @@
               if (i==j) continue;
               var n2 = LCs[j].name.substring(0,2);
               if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
-                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert("Pin clash!");LCs[i].value="";LCs[i].focus();break;}
+                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert("Pin clash!");LCs[j].value="";LCs[j].focus();break;}
             }
           }
       }
@@ -212,47 +212,46 @@
 
       var f = d.getElementById("mLC");
       if (n==1) {
-// npm run build has trouble minimizing spaces inside string
-        var cn = 
-`<div class="iST">
-  ${i>0?'<hr style="width:260px">':''}
-  ${i+1}:
-  <select name="LT${i}" onchange="UI(true)">
-    <option value="22">WS281x</option>
-    <option value="30">SK6812 RGBW</option>
-    <option value="31">TM1814</option>
-    <option value="24">400kHz</option>
-    <option value="50">WS2801</option>
-    <option value="51">APA102</option>
-    <option value="52">LPD8806</option>
-    <option value="53">P9813</option>
-    <option value="41">PWM White</option>
-    <option value="42">PWM WWCW</option>
-    <option value="43">PWM RGB</option>
-    <option value="44">PWM RGBW</option>
-    <option value="45">PWM RGBWC</option>
-  </select>&nbsp;
-  Color Order:
-  <select name="CO${i}">
-    <option value="0">GRB</option>
-    <option value="1">RGB</option>
-    <option value="2">BRG</option>
-    <option value="3">RBG</option>
-    <option value="4">BGR</option>
-    <option value="5">GBR</option>
-  </select><!--br-->
-  RGBW: <input id="ew${i}" type="checkbox" name="EW${i}"><br>
-  <span id="p0d${i}">Pin:</span> <input type="number" name="L0${i}" min="0" max="40" required style="width:35px" onchange="UI()"/>
-  <span id="p1d${i}">Clock:</span> <input type="number" name="L1${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
-  <span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
-  <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
-  <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
-  <br>
-  <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="0" required />&nbsp;
-  <div id="dig${i}" style="display:inline">
-  Count: <input type="number" name="LC${i}" min="0" max="2048" value="1" required oninput="UI()" /><br>
-  Reverse: <input type="checkbox" name="CV${i}"></div><br>
-</div>`;
+        // npm run build has trouble minimizing spaces inside string
+        var cn = '<div class="iST">'+
+          i>0?'<hr style="width:260px">':''+
+          i+1 + ':'+
+          `<select name="LT${i}" onchange="UI(true)">`+
+            '<option value="22">WS281x</option>'+
+            '<option value="30">SK6812 RGBW</option>'+
+            '<option value="31">TM1814</option>'+
+            '<option value="24">400kHz</option>'+
+            '<option value="50">WS2801</option>'+
+            '<option value="51">APA102</option>'+
+            '<option value="52">LPD8806</option>'+
+            '<option value="53">P9813</option>'+
+            '<option value="41">PWM White</option>'+
+            '<option value="42">PWM WWCW</option>'+
+            '<option value="43">PWM RGB</option>'+
+            '<option value="44">PWM RGBW</option>'+
+            '<option value="45">PWM RGBWC</option>'+
+          '</select>&nbsp;'+
+          'Color Order:'+
+          `<select name="CO${i}">`+
+            '<option value="0">GRB</option>'+
+            '<option value="1">RGB</option>'+
+            '<option value="2">BRG</option>'+
+            '<option value="3">RBG</option>'+
+            '<option value="4">BGR</option>'+
+            '<option value="5">GBR</option>'+
+          '</select>&nbsp;'+
+          `RGBW: <input id="ew${i}" type="checkbox" name="EW${i}"><br>`+
+          `<span id="p0d${i}">Pin: </span><input type="number" name="L0${i}" min="0" max="40" required style="width:35px" onchange="UI()"/>`+
+          `<span id="p1d${i}">Clock: </span><input type="number" name="L1${i}" min="0" max="40" style="width:35px" onchange="UI()"/>`+
+          `<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="40" style="width:35px" onchange="UI()"/>`+
+          `<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="40" style="width:35px" onchange="UI()"/>`+
+          `<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="40" style="width:35px" onchange="UI()"/>`+
+          '<br>'+
+          `<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="0" required />&nbsp;`+
+          `<div id="dig${i}" style="display:inline">`+
+          `Count: <input type="number" name="LC${i}" min="0" max="2048" value="1" required oninput="UI()" /><br>`+
+          `Reverse: <input type="checkbox" name="CV${i}"></div><br>`+
+        '</div>';
         f.insertAdjacentHTML("beforeend", cn);
       }
       if (n==-1) {
@@ -279,35 +278,35 @@
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="button" onclick="trySubmit()">Save</button><hr>
     <h2>LED &amp; Hardware setup</h2>
-    Total LED count: <input name="LC" id="LC" type="number" min="1" max="8192" oninput="UI()" required readonly><br>
-  <i>Recommended power supply for brightest white:</i><br>
-  <b><span id="psu">?</span></b><br>
-  <span id="psu2"><br></span>
-  <br>
-  Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
-  <div id="abl">
-    Maximum Current: <input name="MA" type="number" min="250" max="65000" oninput="UI()" required> mA<br>
-    <div id="ampwarning" style="color: orange; display: none;">
-      &#9888; Your power supply provides high current.<br>
-      To improve the safety of your setup,<br>
-      please use thick cables,<br>
-      multiple power injection points and a fuse!<br>
+    Total LED count: <input name="LC" id="LC" type="number" min="1" max="8192" oninput="UI()" size="4" required readonly><br>
+    <i>Recommended power supply for brightest white:</i><br>
+    <b><span id="psu">?</span></b><br>
+    <span id="psu2"><br></span>
+    <br>
+    Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
+    <div id="abl">
+      Maximum Current: <input name="MA" type="number" min="250" max="65000" oninput="UI()" required> mA<br>
+      <div id="ampwarning" style="color: orange; display: none;">
+        &#9888; Your power supply provides high current.<br>
+        To improve the safety of your setup,<br>
+        please use thick cables,<br>
+        multiple power injection points and a fuse!<br>
+      </div>
+      <i>Automatically limits brightness to stay close to the limit.<br>
+      Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
+      If you are using an external power supply, enter its rating.<br>
+      (Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
+      LED voltage (Max. current for a single LED):<br>
+      <select name="LAsel" onchange="enLA()">
+        <option value="55" selected>5V default (55mA)</option>
+        <option value="35">5V efficient (35mA)</option>
+        <option value="30">12V (30mA)</option>
+        <option value="255">WS2815 (12mA)</option>
+        <option value="50">Custom</option>
+      </select><br>
+      <span id="LAdis" style="display: none;">Custom max. current per LED: <input name="LA" type="number" min="0" max="255" id="la" oninput="UI()" required> mA<br></span>
+      <i>Keep at default if you are unsure about your type of LEDs.</i><br>
     </div>
-    <i>Automatically limits brightness to stay close to the limit.<br>
-    Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
-    If you are using an external power supply, enter its rating.<br>
-    (Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
-    LED voltage (Max. current for a single LED):<br>
-    <select name="LAsel" onchange="enLA()">
-      <option value="55" selected>5V default (55mA)</option>
-      <option value="35">5V efficient (35mA)</option>
-      <option value="30">12V (30mA)</option>
-      <option value="255">WS2815 (12mA)</option>
-      <option value="50">Custom</option>
-    </select><br>
-    <span id="LAdis" style="display: none;">Custom max. current per LED: <input name="LA" type="number" min="0" max="255" id="la" oninput="UI()" required> mA<br></span>
-    <i>Keep at default if you are unsure about your type of LEDs.</i><br>
-  </div>
     <h3>Hardware setup</h3>
     <div id="mLC">LED outputs:</div>
     <button type="button" id="+" onclick="addLEDs(1)">+</button>
