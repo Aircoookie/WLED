@@ -280,7 +280,7 @@ void getSettingsJS(byte subPage, char* dest)
         if (i) oappend(SET_F(","));
         oappend(SET_F("6,7,8,9,10,11")); // flash memory pins
         #ifdef WLED_DEBUG
-          oappend(SET_F("1"));
+          oappend(SET_F(",1"));
         #endif
       #endif
     }
