@@ -279,11 +279,7 @@ void getSettingsJS(byte subPage, char* dest)
     #endif
 
     oappend(SET_F("d.Sf.LC.max=")); //TODO Formula for max LEDs on ESP8266 depending on types. 500 DMA or 1500 UART (about 4kB mem usage)
-    #if defined(ESP8266) && LEDPIN == 3
-    oappendi(MAX_LEDS_DMA);
-    #else
     oappendi(MAX_LEDS);
-    #endif
     oappend(";");
 
     sappend('v',SET_F("LC"),ledCount);

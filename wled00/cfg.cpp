@@ -99,9 +99,10 @@ void deserializeConfig() {
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonArray ins = hw_led["ins"];
-  uint8_t s = 0;
+  uint8_t s = 0; //bus iterator
   useRGBW = false;
   busses.removeAll();
+  uint32_t mem = 0;
   for (JsonObject elm : ins) {
     if (s >= WLED_MAX_BUSSES) break;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
@@ -130,7 +131,8 @@ void deserializeConfig() {
     useRGBW = (useRGBW || BusManager::isRgbw(ledType));
     s++;
     BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed);
-    busses.add(bc);
+    mem += busses.memUsage(bc);
+    if (mem <= MAX_LED_MEMORY) busses.add(bc);
   }
   strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
 

@@ -70,6 +70,7 @@ void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFi
   
   deserializeMap();
 
+  //make segment 0 cover the entire strip
   _segments[0].start = 0;
   _segments[0].stop = _length;
 
