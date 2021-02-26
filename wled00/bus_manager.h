@@ -18,13 +18,15 @@ struct BusConfig {
   uint8_t colorOrder = COL_ORDER_GRB;
   bool reversed = false;
   bool skipFirst = false;
+  bool rgbwOverride = false;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
   BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, bool skip = false) {
-    type = busType; count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipFirst = skip;
+    rgbwOverride = GET_BIT(busType,7);
+    type = busType & 0x7F;  // bit 7 is hacked to include RGBW info (1=RGBW, 0=RGB)
+    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipFirst = skip;
     uint8_t nPins = 1;
-    // bit 7 is hacked to include RGBW info (1=RGBW, 0=RGB)
-    if ((type&0x7F) > 47) nPins = 2;
-    else if ((type&0x7F) > 41 && (type&0x7F) < 46) nPins = NUM_PWM_PINS((type&0x7F));
+    if (type > 47) nPins = 2;
+    else if (type > 41 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 };
@@ -96,8 +98,8 @@ class Bus {
 
 class BusDigital : public Bus {
   public:
-  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type&0x7F, bc.start) {
-    uint8_t type = bc.type & 0x7F;  // bit 7 is hacked to include RGBW info
+  BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
+    uint8_t type = bc.type;
     if (!IS_DIGITAL(type) || !bc.count) return;
     _pins[0] = bc.pins[0];
     if (!pinManager.allocatePin(_pins[0])) return;
@@ -110,7 +112,7 @@ class BusDigital : public Bus {
     _skip = bc.skipFirst ? LED_SKIP_AMOUNT : 0; //sacrificial pixels
     _len = bc.count + _skip;
     reversed = bc.reversed;
-    _rgbw = (bool)((bc.type>>7) & 0x01); // RGBW override in bit 7
+    _rgbw = bc.rgbwOverride; // RGBW override in bit 7
     _iType = PolyBus::getI(type, _pins, nr, _rgbw);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len);
@@ -202,9 +204,9 @@ class BusDigital : public Bus {
 
 class BusPwm : public Bus {
   public:
-  BusPwm(BusConfig &bc) : Bus(bc.type&0x7F, bc.start) {  // bit 7 is hacked to include RGBW info
-    if (!IS_PWM(bc.type&0x7F)) return;  // bit 7 is hacked to include RGBW info
-    uint8_t numPins = NUM_PWM_PINS(bc.type&0x7F);  // bit 7 is hacked to include RGBW info
+  BusPwm(BusConfig &bc) : Bus(bc.type, bc.start) {
+    if (!IS_PWM(bc.type)) return;
+    uint8_t numPins = NUM_PWM_PINS(bc.type);
 
     #ifdef ESP8266
     analogWriteRange(255);  //same range as one RGB channel
@@ -319,7 +321,7 @@ class BusManager {
   
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (IS_DIGITAL(bc.type&0x7F)) {
+    if (IS_DIGITAL(bc.type)) {
       busses[numBusses] = new BusDigital(bc, numBusses);
     } else {
       busses[numBusses] = new BusPwm(bc);

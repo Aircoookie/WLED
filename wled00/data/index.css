@@ -294,11 +294,16 @@ button {
 	z-index: 1;
     margin: 1px auto auto;
 }
-/*
+
 #staytop, #staytop1 {
 	background: var(--c-1);
+/*	margin-top: 1px;*/
+	width: 310px;
+	margin: auto;
+	border-radius: 15px;
 }
-*/
+}
+
 #staytop1 {
 	top: 28px;
 }
