@@ -220,7 +220,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("WS"),noWifiSleep);
 
     #ifdef WLED_USE_ETHERNET
-    sappend('i',SET_F("ETH"),ethernetType);
+    sappend('v',SET_F("ETH"),ethernetType);
     #else
     //hide ethernet setting if not compiled in
     oappend(SET_F("document.getElementById('ethd').style.display='none';"));
@@ -257,7 +257,7 @@ void getSettingsJS(byte subPage, char* dest)
     char nS[3];
 
     // add usermod pins as d.um_p array (TODO: usermod config shouldn't use state. instead we should load "um" object from cfg.json)
-    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+    /*DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     JsonObject mods = doc.createNestedObject(F("mods"));
     usermods.addToJsonState(mods);
     if (!mods.isNull()) {
@@ -270,7 +270,7 @@ void getSettingsJS(byte subPage, char* dest)
         }
       }
       oappend(SET_F("];"));
-    }
+    }*/
 
     #if defined(WLED_MAX_BUSSES) && WLED_MAX_BUSSES>1
       oappend(SET_F("addLEDs("));
@@ -291,7 +291,6 @@ void getSettingsJS(byte subPage, char* dest)
     for (uint8_t s=0; s < busses.getNumBusses(); s++){
       Bus* bus = busses.getBus(s);
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
-      char lk[4] = "L1"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
       char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
@@ -299,9 +298,11 @@ void getSettingsJS(byte subPage, char* dest)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
-      bus->getPins(pins);
-      sappend('v', lp, pins[0]);
-      if (pinManager.isPinOk(pins[1])) sappend('v', lk, pins[1]);
+      uint8_t nPins = bus->getPins(pins);
+      for (uint8_t i = 0; i < nPins; i++) {
+        lp[1] = 48+i;
+        if (pinManager.isPinOk(pins[i])) sappend('v', lp, pins[i]);
+      }
       sappend('v', lc, bus->getLength());
       sappend('v',lt,bus->getType());
       sappend('v',co,bus->getColorOrder());

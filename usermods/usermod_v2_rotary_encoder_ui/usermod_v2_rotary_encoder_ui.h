@@ -9,8 +9,6 @@
 //
 // v2 usermod that provides a rotary encoder-based UI.
 //
-// This Usermod works best coupled with FourLineDisplayUsermod.
-//
 // This usermod allows you to control:
 // 
 // * Brightness
@@ -20,6 +18,11 @@
 // * Palette
 // 
 // Change between modes by pressing a button.
+//
+// Dependencies
+// * This usermod REQURES the ModeSortUsermod
+// * This Usermod works best coupled with 
+//   FourLineDisplayUsermod.
 //
 
 #ifndef ENCODER_DT_PIN
@@ -42,36 +45,10 @@
 #define FLD_LINE_3_PALETTE          0
 #endif
 
+
 // The last UI state
 #define LAST_UI_STATE 4
 
-/**
- * Array of mode indexes in alphabetical order.
- * Should be ordered from JSON_mode_names array in FX.h.
- * 
- * NOTE: If JSON_mode_names changes, this will need to be updated.
- */
-const byte modes_alpha_order[] = {
-    0, 27, 38, 115, 1, 26, 91, 68, 2, 88, 102, 114, 28, 31, 32,
-    30, 29, 111, 52, 34, 8, 74, 67, 112, 18, 19, 96, 7, 117, 12,
-    69, 66, 45, 42, 90, 89, 110, 87, 46, 53, 82, 100, 58, 64, 75,
-    41, 57, 47, 44, 76, 77, 59, 70, 71, 72, 73, 107, 62, 101, 65,
-    98, 105, 109, 97, 48, 49, 95, 63, 78, 43, 9, 33, 5, 79, 99,
-    15, 37, 16, 10, 11, 40, 60, 108, 92, 93, 94, 103, 83, 84, 20,
-    21, 22, 85, 86, 39, 61, 23, 25, 24, 104, 6, 36, 13, 14, 35,
-    54, 56, 55, 116, 17, 81, 80, 106, 51, 50, 113, 3, 4 };
-
-/**
- * Array of palette indexes in alphabetical order.
- * Should be ordered from JSON_palette_names array in FX.h.
- *
- * NOTE: If JSON_palette_names changes, this will need to be updated.
- */
-const byte palettes_alpha_order[] = { 
-  0, 1, 2, 3, 4, 5, 18, 46, 51, 50, 55, 39, 26, 22, 15,
-  48, 52, 53, 7, 37, 24, 30, 35, 10, 32, 28, 29, 36, 31,
-  25, 8, 38, 40, 41, 9, 44, 47, 6, 20, 11, 12, 16, 33, 
-  14, 49, 27, 19, 13, 21, 54, 34, 45, 23, 43, 17, 42 };
 
 class RotaryEncoderUIUsermod : public Usermod {
 private:
@@ -86,10 +63,14 @@ private:
   unsigned char prev_button_state = HIGH;
   
 #ifdef USERMOD_FOUR_LINE_DISLAY
-  FourLineDisplayUsermod* display;
+  FourLineDisplayUsermod *display;
 #else
   void* display = nullptr;
 #endif
+
+  byte *modes_alpha_indexes = nullptr;
+  byte *palettes_alpha_indexes = nullptr;
+
   unsigned char Enc_A;
   unsigned char Enc_B;
   unsigned char Enc_A_prev = 0;
@@ -110,6 +91,10 @@ public:
     pinMode(pinC, INPUT_PULLUP);
     currentTime = millis();
     loopTime = currentTime;
+
+    ModeSortUsermod *modeSortUsermod = (ModeSortUsermod*) usermods.lookup(USERMOD_ID_MODE_SORT);
+    modes_alpha_indexes = modeSortUsermod->getModesAlphaIndexes();
+    palettes_alpha_indexes = modeSortUsermod->getPalettesAlphaIndexes();
 
 #ifdef USERMOD_FOUR_LINE_DISLAY    
     // This Usermod uses FourLineDisplayUsermod for the best experience.
@@ -246,16 +231,16 @@ public:
   void findCurrentEffectAndPalette() {
     currentEffectAndPaleeteInitialized = true;
     for (uint8_t i = 0; i < strip.getModeCount(); i++) {
-      byte value = modes_alpha_order[i];
-      if (modes_alpha_order[i] == effectCurrent) {
+      byte value = modes_alpha_indexes[i];
+      if (modes_alpha_indexes[i] == effectCurrent) {
         effectCurrentIndex = i;
         break;
       }
     }
 
     for (uint8_t i = 0; i < strip.getPaletteCount(); i++) {
-      byte value = palettes_alpha_order[i];
-      if (palettes_alpha_order[i] == strip.getSegment(0).palette) {
+      byte value = palettes_alpha_indexes[i];
+      if (palettes_alpha_indexes[i] == strip.getSegment(0).palette) {
         effectPaletteIndex = i;
         break;
       }
@@ -315,7 +300,7 @@ public:
     else {
       effectCurrentIndex = (effectCurrentIndex - 1 < 0) ? (strip.getModeCount() - 1) : (effectCurrentIndex - 1);
     }
-    effectCurrent = modes_alpha_order[effectCurrentIndex];
+    effectCurrent = modes_alpha_indexes[effectCurrentIndex];
     lampUdated();
   }
 
@@ -364,7 +349,7 @@ public:
     else {
       effectPaletteIndex = (effectPaletteIndex - 1 < 0) ? (strip.getPaletteCount() - 1) : (effectPaletteIndex - 1);
     }
-    effectPalette = palettes_alpha_order[effectPaletteIndex];
+    effectPalette = palettes_alpha_indexes[effectPaletteIndex];
     lampUdated();
   }
 
@@ -380,7 +365,6 @@ public:
       //this code adds "u":{"Light":[20," lux"]} to the info object
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
-
       JsonArray lightArr = user.createNestedArray("Light"); //name
       lightArr.add(reading); //value
       lightArr.add(" lux"); //unit
@@ -414,7 +398,4 @@ public:
   {
     return USERMOD_ID_ROTARY_ENC_UI;
   }
-
-  //More methods can be added in the future, this example will then be extended.
-  //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
 };
