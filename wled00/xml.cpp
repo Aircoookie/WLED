@@ -313,7 +313,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
     if (strip.currentMilliamps)
     {
-      sappends('m',SET_F("(\"pow\")[0]"),"");
+      sappends('m',SET_F("(\"pow\")[0]"),(char*)"");
       olen -= 2; //delete ";
       oappendi(strip.currentMilliamps);
       oappend(SET_F("mA\";"));

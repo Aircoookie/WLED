@@ -136,8 +136,6 @@ void prepareHostname(char* hostname)
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
-  char hostname[25] = "wled-";
-
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
@@ -290,7 +288,6 @@ void WLED::setup()
   DEBUG_PRINT("esp8266 ");
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif
-  int heapPreAlloc = ESP.getFreeHeap();
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();

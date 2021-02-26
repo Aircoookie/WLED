@@ -1568,9 +1568,9 @@ uint16_t WS2812FX::mode_oscillate(void)
 
   if (SEGENV.call == 0)
   {
-    oscillators[0] = {SEGLEN/4,   SEGLEN/8,  1, 1};
-    oscillators[1] = {SEGLEN/4*3, SEGLEN/8,  1, 2};
-    oscillators[2] = {SEGLEN/4*2, SEGLEN/8, -1, 1};
+    oscillators[0] = {(int16_t)(SEGLEN/4),   (int8_t)(SEGLEN/8),  1, 1};
+    oscillators[1] = {(int16_t)(SEGLEN/4*3), (int8_t)(SEGLEN/8),  1, 2};
+    oscillators[2] = {(int16_t)(SEGLEN/4*2), (int8_t)(SEGLEN/8), -1, 1};
   }
 
   uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
@@ -1919,7 +1919,6 @@ uint16_t WS2812FX::mode_noise16_2()
   for (uint16_t i = 0; i < SEGLEN; i++) {
 
     uint16_t shift_x = SEGENV.step >> 6;                         // x as a function of time
-    uint16_t shift_y = SEGENV.step/42;
 
     uint32_t real_x = (i + shift_x) * scale;                  // calculate the coordinates within the noise field
 
@@ -3198,8 +3197,8 @@ uint16_t WS2812FX::mode_plasma(void) {
   uint8_t thatPhase = beatsin8(7,-64,64);
 
   for (int i = 0; i < SEGLEN; i++) {   // For each of the LED's in the strand, set color &  brightness based on a wave as follows:
-    uint8_t colorIndex = cubicwave8((i*(1+ 3*(SEGMENT.speed >> 5)))+(thisPhase) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
-                             + cos8((i*(1+ 2*(SEGMENT.speed >> 5)))+(thatPhase) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
+    uint8_t colorIndex = cubicwave8(((i*(1+ 3*(SEGMENT.speed >> 5)))+(thisPhase)) & 0xFF)/2   // factor=23 // Create a wave and add a phase change and add another wave with its own phase change.
+                             + cos8(((i*(1+ 2*(SEGMENT.speed >> 5)))+(thatPhase)) & 0xFF)/2;  // factor=15 // Hey, you can even change the frequencies if you wish.
     uint8_t thisBright = qsub8(colorIndex, beatsin8(6,0, (255 - SEGMENT.intensity)|0x01 ));
     CRGB color = ColorFromPalette(currentPalette, colorIndex, thisBright, LINEARBLEND);
     setPixelColor(i, color.red, color.green, color.blue);

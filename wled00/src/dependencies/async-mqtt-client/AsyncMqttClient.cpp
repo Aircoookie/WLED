@@ -37,10 +37,10 @@ AsyncMqttClient::AsyncMqttClient()
   _client.onPoll([](void* obj, AsyncClient* c) { (static_cast<AsyncMqttClient*>(obj))->_onPoll(c); }, this);
 
 #ifdef ESP32
-  sprintf(_generatedClientId, "esp32%06x", ESP.getEfuseMac());
+  sprintf(_generatedClientId, "esp32%06x", (uint32_t)ESP.getEfuseMac());
   _xSemaphore = xSemaphoreCreateMutex();
 #elif defined(ESP8266)
-  sprintf(_generatedClientId, "esp8266%06x", ESP.getChipId());
+  sprintf(_generatedClientId, "esp8266%06x", (uint32_t)ESP.getChipId());
 #endif
   _clientId = _generatedClientId;
 

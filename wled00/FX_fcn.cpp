@@ -380,7 +380,6 @@ uint8_t WS2812FX::getPaletteCount()
 
 
 bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
-  uint8_t mainSeg = getMainSegmentId();
   Segment& seg = _segments[getMainSegmentId()];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
 
