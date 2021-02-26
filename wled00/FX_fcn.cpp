@@ -32,19 +32,41 @@
 #endif
 
 /*
-  Custom per-LED mapping has moved!
+  Custom per-LED mapping has moved and is now a runtime configurable option!
 
-  Create a file "ledmap.json" using the edit page.
-
-  this is just an example (30 LEDs). It will first set all even, then all uneven LEDs.
+  To enable, navigate to the edit page at http://wled-device/edit where wled-device
+  is either an mDNS name or IP address of the WLED device you desire to remap.
+  Use this edit page to create a file "ledmap.json"
+  
+  ledmap.json needs to be a JSON formatted file with "map" being a key, 
+  with the value containing an array of numbers representing the new order of pixels.
+  
+  The ArduinoJSON library is *extremely* whitespace sensitive.
+  If your ledmap.json is not working, check for whitespaces where they should not be.
+  
+  In the below example (formated multiple ways), we remap four LEDs from a physical order
+  of 1 2 3 4 into a logical order of 1 3 2 4. 
+  Effects and realtime modes will behave as if the LED strip is wired as 1 3 2 4.
+  
+  {"map":[1,3,2,4]}
+  
   {"map":[
-  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
-  1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29]}
+  1,3,2,4
+  ]}
+  
+  {"map":[
+  1,3,
+  2,4
+  ]}
 
-  another example. Switches direction every 5 LEDs.
+  This is another example that switches direction every 5 LEDs.
+  It could be formatted any of the three ways demonstrated above.
+  
   {"map":[
   0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14,
-  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]
+  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25
+  ]}
+  
 */
 
 //do not call this method from system context (network callback)
