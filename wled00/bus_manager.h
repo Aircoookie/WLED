@@ -10,6 +10,10 @@
 #include "bus_wrapper.h"
 #include <Arduino.h>
 
+#define GET_BIT(var,bit)    ((var>>bit)&0x01)
+#define SET_BIT(var,bit)    (var|=(uint16_t)(0x0001<<bit))
+#define UNSET_BIT(var,bit)  (var&=(~(uint16_t)(0x0001<<bit)))
+
 //temporary struct for passing bus configuration to bus
 struct BusConfig {
   uint8_t type = TYPE_WS2812_RGB;
@@ -21,7 +25,7 @@ struct BusConfig {
   bool rgbwOverride = false;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
   BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, bool skip = false) {
-    rgbwOverride = GET_BIT(busType,7);
+    rgbwOverride = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 is hacked to include RGBW info (1=RGBW, 0=RGB)
     count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipFirst = skip;
     uint8_t nPins = 1;
