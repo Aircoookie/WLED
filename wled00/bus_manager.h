@@ -10,9 +10,9 @@
 #include "bus_wrapper.h"
 #include <Arduino.h>
 
-#define GET_BIT(var,bit)    ((var>>bit)&0x01)
-#define SET_BIT(var,bit)    (var|=(uint16_t)(0x0001<<bit))
-#define UNSET_BIT(var,bit)  (var&=(~(uint16_t)(0x0001<<bit)))
+#define GET_BIT(var,bit)    (((var)>>(bit))&0x01)
+#define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
+#define UNSET_BIT(var,bit)  ((var)&=(~(uint16_t)(0x0001<<(bit))))
 
 //temporary struct for passing bus configuration to bus
 struct BusConfig {

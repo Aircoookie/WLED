@@ -121,8 +121,8 @@
           d.getElementById("LC").readOnly = !(type > 31 && type < 48);    // not analog
           if (change) {
             d.getElementById("ew"+n).checked = (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
+            d.getElementById("ew"+n).onclick = (type > 31 && type < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
           }
-          d.getElementById("ew"+n).readOnly = (type > 31 && type < 48);   // analog
           isRGBW |= d.getElementById("ew"+n).checked;
           d.getElementById("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
           d.getElementById("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
