@@ -831,7 +831,7 @@ class PolyBus {
   //gives back the internal type index (I_XX_XXX_X above) for the input 
   static uint8_t getI(uint8_t busType, uint8_t* pins, uint8_t num = 0) {
     if (!IS_DIGITAL(busType)) return I_NONE;
-    if (IS_2PIN(busType)) { //SPI LED chips
+    if (NUM_PINS(busType) > 1) { //SPI LED chips
       bool isHSPI = false;
       #ifdef ESP8266
       if (pins[0] == P_8266_HS_MOSI && pins[1] == P_8266_HS_CLK) isHSPI = true;

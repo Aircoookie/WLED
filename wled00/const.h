@@ -114,11 +114,15 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
+// Pixelvation Engine uses 2-bit/4-bit SPI: temporary hack using bits 6/7=0b01, digital: bits 4/5: 0b01, range 80-95
+#define TYPE_APA102_2BIT         80
+#define TYPE_APA102_4BIT         81
+
 
 #define IS_DIGITAL(t) (t & 0x10) //digital are 16-31 and 48-63
 #define IS_PWM(t)     (t > 40 && t < 46)
 #define NUM_PWM_PINS(t) (t - 40) //for analog PWM 41-45 only
-#define IS_2PIN(t)      (t > 47)
+#define NUM_PINS(t)     ((t < 48) ? 1 : (t < 64) ? 2 : (t == TYPE_APA102_2BIT) ? 3 : 5)
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut

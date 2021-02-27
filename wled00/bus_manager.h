@@ -21,7 +21,7 @@ struct BusConfig {
   BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false) {
     type = busType; count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev;
     uint8_t nPins = 1;
-    if (type > 47) nPins = 2;
+    if (type > 47) nPins = NUM_PINS(type);
     else if (type > 41 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
@@ -92,11 +92,12 @@ class BusDigital : public Bus {
   public:
   BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
-    _pins[0] = bc.pins[0];
-    if (!pinManager.allocatePin(_pins[0])) return;
-    if (IS_2PIN(bc.type)) {
-      _pins[1] = bc.pins[1];
-      if (!pinManager.allocatePin(_pins[1])) {
+    for(int i=0; i<NUM_PINS(bc.type); i++) {
+      _pins[i] = bc.pins[i];
+      Serial.print(" ");
+      Serial.print(_pins[i]);
+      if (!pinManager.allocatePin(_pins[i])) {
+        Serial.println("failed");
         cleanup(); return;
       }
     }
@@ -148,7 +149,7 @@ class BusDigital : public Bus {
   }
 
   uint8_t getPins(uint8_t* pinArray) {
-    uint8_t numPins = IS_2PIN(_type) ? 2 : 1;
+    uint8_t numPins = NUM_PINS(_type);
     for (uint8_t i = 0; i < numPins; i++) pinArray[i] = _pins[i];
     return numPins;
   }
@@ -170,6 +171,9 @@ class BusDigital : public Bus {
     _busPtr = nullptr;
     pinManager.deallocatePin(_pins[0]);
     pinManager.deallocatePin(_pins[1]);
+    pinManager.deallocatePin(_pins[2]);
+    pinManager.deallocatePin(_pins[3]);
+    pinManager.deallocatePin(_pins[4]);
   }
 
   ~BusDigital() {
@@ -178,12 +182,12 @@ class BusDigital : public Bus {
 
   private: 
   uint8_t _colorOrder = COL_ORDER_GRB;
-  uint8_t _pins[2] = {255, 255};
+  uint8_t _pins[5] = {255, 255, 255, 255, 255};
   uint8_t _iType = I_NONE;
   uint16_t _len = 0;
+  uint16_t _clkSpeed = 5000UL;
   void * _busPtr = nullptr;
 };
-
 
 class BusPwm : public Bus {
   public:
