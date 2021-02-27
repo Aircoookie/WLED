@@ -67,17 +67,7 @@ void WS2812FX::finalizeInit(void)
     Bus *bus = busses.getBus(i);
     if (bus == nullptr) continue;
     _useRgbw |= bus->isRgbw();
-    _segments[i].start = bus->getStart();
     _length += bus->getLength();
-    _segments[i].stop = _segments[i].start + bus->getLength();
-    _segments[i].mode = DEFAULT_MODE;
-    _segments[i].colors[0] = DEFAULT_COLOR;
-    _segments[i].speed = DEFAULT_SPEED;
-    _segments[i].intensity = DEFAULT_INTENSITY;
-    _segments[i].grouping = 1;
-    _segments[i].setOption(SEG_OPTION_SELECTED, 1);
-    _segments[i].setOption(SEG_OPTION_ON, 1);
-    _segments[i].opacity = 255;
   }
 
   setBrightness(_brightness);
@@ -581,6 +571,25 @@ void WS2812FX::resetSegments() {
     _segment_runtimes[i].reset();
   }
   _segment_runtimes[0].reset();
+}
+
+void WS2812FX::populateDefaultSegments() {
+  uint16_t length = 0;
+  for (uint8_t i=0; i<busses.getNumBusses(); i++) {
+    Bus *bus = busses.getBus(i);
+    if (bus == nullptr) continue;
+    _segments[i].start = bus->getStart();
+    length += bus->getLength();
+    _segments[i].stop = _segments[i].start + bus->getLength();
+    _segments[i].mode = DEFAULT_MODE;
+    _segments[i].colors[0] = DEFAULT_COLOR;
+    _segments[i].speed = DEFAULT_SPEED;
+    _segments[i].intensity = DEFAULT_INTENSITY;
+    _segments[i].grouping = 1;
+    _segments[i].setOption(SEG_OPTION_SELECTED, 1);
+    _segments[i].setOption(SEG_OPTION_ON, 1);
+    _segments[i].opacity = 255;
+  }
 }
 
 //After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)

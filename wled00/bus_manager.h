@@ -391,6 +391,12 @@ class BusManager {
     return numBusses;
   }
 
+  uint16_t getTotalLength() {
+    uint16_t len = 0;
+    for (uint8_t i=0; i<numBusses; i++ ) len += busses[i]->getLength();
+    return len;
+  }
+
   static bool isRgbw(uint8_t type) {
     if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
     if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
