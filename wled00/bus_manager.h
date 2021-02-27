@@ -19,7 +19,7 @@ struct BusConfig {
   bool reversed = false;
   uint16_t clkspeed;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint16_t clkSpeed = 5001UL) {
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint16_t clkSpeed = 5000UL) {
     type = busType; count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; clkspeed = clkSpeed;
     uint8_t nPins = 1;
     if (type > 47) nPins = NUM_PINS(type);
@@ -95,10 +95,7 @@ class BusDigital : public Bus {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
     for(int i=0; i<NUM_PINS(bc.type); i++) {
       _pins[i] = bc.pins[i];
-      Serial.print(" ");
-      Serial.print(_pins[i]);
       if (!pinManager.allocatePin(_pins[i])) {
-        Serial.println("failed");
         cleanup(); return;
       }
     }
@@ -180,11 +177,9 @@ class BusDigital : public Bus {
     _valid = false;
     _busPtr = nullptr;
     _clkSpeed = 5000UL;
-    pinManager.deallocatePin(_pins[0]);
-    pinManager.deallocatePin(_pins[1]);
-    pinManager.deallocatePin(_pins[2]);
-    pinManager.deallocatePin(_pins[3]);
-    pinManager.deallocatePin(_pins[4]);
+    for(int i=0; i<5; i++) {
+      pinManager.deallocatePin(_pins[i]);
+    }
   }
 
   ~BusDigital() {
