@@ -545,7 +545,7 @@ uint16_t WS2812FX::dissolve(uint32_t color) {
     }
   }
 
-  if (SEGENV.call > (255 - SEGMENT.speed) + 15) 
+  if (SEGENV.call > (255 - SEGMENT.speed) + 15U) 
   {
     SEGENV.aux0 = !SEGENV.aux0;
     SEGENV.call = 0;
@@ -1034,7 +1034,7 @@ uint16_t WS2812FX::mode_running_random(void) {
   }
 
   SEGENV.step++;
-  if (SEGENV.step > ((255-SEGMENT.intensity) >> 4))
+  if (SEGENV.step > (uint8_t)((255-SEGMENT.intensity) >> 4))
   {
     SEGENV.step = 0;
   }
