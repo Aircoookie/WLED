@@ -33,7 +33,10 @@ File f;
 
 //wrapper to find out how long closing takes
 void closeFile() {
-  DEBUGFS_PRINT(F("Close -> "));
+  #ifdef WLED_DEBUG_FS
+    DEBUGFS_PRINT(F("Close -> "));
+    uint32_t s = millis();
+  #endif
   f.close();
   DEBUGFS_PRINTF("took %d ms\n", millis() - s);
   doCloseFile = false;

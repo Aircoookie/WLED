@@ -136,6 +136,10 @@ void prepareHostname(char* hostname)
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
+  #ifdef WLED_USE_ETHERNET
+  char hostname[25] = "wled-";
+  #endif
+  
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:

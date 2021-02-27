@@ -134,6 +134,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (sz == 0 && sz > 4) break;
 
           int rgbw[] = {0,0,0,0};
+          copyArray(icol, rgbw);
 
           if (set < 2) stop = start + 1;
           for (uint16_t i = start; i < stop; i++) {
