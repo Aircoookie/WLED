@@ -191,7 +191,7 @@
 //handles pointer type conversion for all possible bus types
 class PolyBus {
   public:
-  static void begin(void* busPtr, uint8_t busType, uint8_t* pins) {
+  static void begin(void* busPtr, uint8_t busType, uint8_t* pins, uint16_t clkspeed) {
     switch (busType) {
       case I_NONE: break;
     #ifdef ESP8266
@@ -269,7 +269,7 @@ class PolyBus {
       case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->Begin(); break;
     }
   };
-  static void* create(uint8_t busType, uint8_t* pins, uint16_t len) {
+  static void* create(uint8_t busType, uint8_t* pins, uint16_t len, uint16_t clkspeed) {
     void* busPtr = nullptr;
     switch (busType) {
       case I_NONE: break;
@@ -343,7 +343,7 @@ class PolyBus {
       case I_HS_P98_3: busPtr = new B_HS_P98_3(len, pins[1], pins[0]); break;
       case I_SS_P98_3: busPtr = new B_SS_P98_3(len, pins[1], pins[0]); break;
     }
-    begin(busPtr, busType, pins);
+    begin(busPtr, busType, pins, clkspeed);
     return busPtr;
   };
   static void show(void* busPtr, uint8_t busType) {
