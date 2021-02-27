@@ -448,7 +448,6 @@ void serializeConfig() {
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
-  uint16_t start = 0;
   for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
     Bus *bus = busses.getBus(s);
     if (!bus || bus->getLength()==0) break;

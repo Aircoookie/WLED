@@ -65,7 +65,9 @@
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
   //#include "SPIFFS.h"
-  #define CONFIG_LITTLEFS_FOR_IDF_3_2
+  #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
+    #define CONFIG_LITTLEFS_FOR_IDF_3_2
+  #endif
   #include <LITTLEFS.h>
 #endif
 
@@ -310,7 +312,7 @@ WLED_GLOBAL bool huePollingEnabled _INIT(false);           // poll hue bridge fo
 WLED_GLOBAL uint16_t huePollIntervalMs _INIT(2500);        // low values (< 1sec) may cause lag but offer quicker response
 WLED_GLOBAL char hueApiKey[47] _INIT("api");               // key token will be obtained from bridge
 WLED_GLOBAL byte huePollLightId _INIT(1);                  // ID of hue lamp to sync to. Find the ID in the hue app ("about" section)
-WLED_GLOBAL IPAddress hueIP _INIT((0, 0, 0, 0));           // IP address of the bridge
+WLED_GLOBAL IPAddress hueIP _INIT_N(((0, 0, 0, 0))); // IP address of the bridge
 WLED_GLOBAL bool hueApplyOnOff _INIT(true);
 WLED_GLOBAL bool hueApplyBri _INIT(true);
 WLED_GLOBAL bool hueApplyColor _INIT(true);
@@ -473,14 +475,14 @@ WLED_GLOBAL int16_t currentPlaylist _INIT(0);
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
 WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);
-WLED_GLOBAL IPAddress realtimeIP _INIT((0, 0, 0, 0));
+WLED_GLOBAL IPAddress realtimeIP _INIT_N(((0, 0, 0, 0)));;
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
 WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
 WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
 
 // mqtt
-WLED_GLOBAL long lastMqttReconnectAttempt _INIT(0);
-WLED_GLOBAL long lastInterfaceUpdate _INIT(0);
+WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);
+WLED_GLOBAL unsigned long lastInterfaceUpdate _INIT(0);
 WLED_GLOBAL byte interfaceUpdateCallMode _INIT(NOTIFIER_CALL_MODE_INIT);
 WLED_GLOBAL char mqttStatusTopic[40] _INIT("");        // this must be global because of async handlers
 

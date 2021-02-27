@@ -45,8 +45,7 @@ public:
         }
         BLYNK_LOG1(BLYNK_F("Connected to WiFi"));
 
-        IPAddress myip = WiFi.localIP();
-        BLYNK_LOG_IP("IP: ", myip);
+        BLYNK_LOG_IP("IP: ", WiFi.localIP());
     }
 
     void config(const char* auth,
