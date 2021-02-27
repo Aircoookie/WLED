@@ -79,7 +79,7 @@ void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFi
   #ifdef ESP8266
   for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
     Bus* b = busses.getBus(i);
-    if ((!IS_DIGITAL(b->getType()) || IS_2PIN(b->getType()))) continue;
+    if ((!IS_DIGITAL(b->getType()) || (NUM_PINS(b->getType() > 1)))) continue;
     uint8_t pins[5];
     b->getPins(pins);
     BusDigital* bd = static_cast<BusDigital*>(b);
