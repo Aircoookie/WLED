@@ -2,7 +2,7 @@
 const lsPalKey = "wledPalx";
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, isInfo = false, syncSend = false, syncTglRecv = true, isRgbw = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
 var selColors;
 var expanded = [false];
@@ -533,6 +533,35 @@ function populatePresets(fromls)
 	populateQL();
 }
 
+function populateNodes(i)
+{
+	var cn="";
+	var urows="";
+	if (i.nodes) {
+		i.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		for (var x=0;x<i.nodes.length;x++) {
+			var o = i.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${o.name}</button>`;
+				urows += inforow(url,o.type);
+			}
+		}
+		if (i.nodes.length>0) {
+			var botButtons = d.querySelectorAll('.bot button');
+			for (btn of botButtons) {
+				btn.style.width = '20%';
+			}
+			d.getElementById('btnNodes').style.display = "inline";
+		} else
+			d.getElementById('btnNodes').style.display = "none";
+	}
+	cn += `<table class="infot">
+${urows}
+${inforow("Current node:",i.name)}
+</table>`;
+	d.getElementById('kn').innerHTML = cn;
+}
+
 function populateInfo(i)
 {
 	var cn="";
@@ -543,17 +572,6 @@ function populateInfo(i)
 	if (pwr > 1000) {pwr /= 1000; pwr = pwr.toFixed((pwr > 10) ? 0 : 1); pwru = pwr + " A";}
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
   	var urows="";
-	if (i.nodes) {
-		i.nodes.sort((a,b) => (a.name).localeCompare(b.name));
-		for (var x=0;x<i.nodes.length;x++)
-		{
-			var o = i.nodes[x];
-			if (o.name) {
-				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${o.name}</button>`;
-				urows += inforow(url,o.type);
-			}
-		}
-	}
 	if (i.u) {
 		for (const [k, val] of Object.entries(i.u))
 		{
@@ -569,16 +587,16 @@ function populateInfo(i)
 	if (i.cn) vcn = i.cn;
 
 	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
-	${urows}
-	${inforow("Build",i.vid)}
-	${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
-	${inforow("Uptime",getRuntimeStr(i.uptime))}
-	${inforow("Free heap",heap," kB")}
-	${inforow("Estimated current",pwru)}
-	${inforow("MAC address",i.mac)}
-	${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
-	${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
-	</table>`;
+${urows}
+${inforow("Build",i.vid)}
+${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
+${inforow("Uptime",getRuntimeStr(i.uptime))}
+${inforow("Free heap",heap," kB")}
+${inforow("Estimated current",pwru)}
+${inforow("MAC address",i.mac)}
+${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
+${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
+</table>`;
 	d.getElementById('kv').innerHTML = cn;
 }
 
@@ -884,15 +902,9 @@ function updateUI(scrollto=false)
 	d.getElementById('buttonNl').className = (nlA) ? "active":"";
 	d.getElementById('buttonSync').className = (syncSend) ? "active":"";
 
-	updateSelectedPalette();
+	updateSelectedPalette(scrollto);
 	updateSelectedFx(scrollto);
 
-//	d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-6)";
-	//if (d.getElementById('fxb' + selectedFx))
-	//{
-	//	d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-6)";
-	//	if (scrollto) d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
-	//}
 	updateTrail(d.getElementById('sliderBri'));
 	updateTrail(d.getElementById('sliderSpeed'));
 	updateTrail(d.getElementById('sliderIntensity'));
@@ -904,7 +916,7 @@ function updateUI(scrollto=false)
 	updateRgb();
 }
 
-function updateSelectedPalette()
+function updateSelectedPalette(scrollto=false)
 {
 	var parent = d.getElementById('selectPalette');
 	var selectedPalette = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
@@ -919,6 +931,14 @@ function updateSelectedPalette()
 	if (selectedPalette) {
 		parent.querySelector(`.lstI[data-id="${selectedPal}"]`).classList.add('selected');
 	}
+/*
+	if (scrollto && selectedPalette) {
+		selectedPalette.scrollIntoView({
+			behavior: 'smooth',
+			block: 'center',
+		});
+	}
+*/
 }
 
 function updateSelectedFx(scrollto=false)
@@ -1010,7 +1030,6 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 			return;
 		}
 		var s = json;
-		
 		if (!command || rinfo) {
 			if (!rinfo) {
 				pmt = json.info.fs.pmt;
@@ -1041,11 +1060,10 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 			}
 			pmtLast = pmt;
 			lastinfo = info;
-			if (isInfo) {
-				populateInfo(info);
-			}
-				s = json.state;
-				displayRover(info, s);
+			if (isInfo) populateInfo(info);
+			populateNodes(info);
+			s = json.state;
+			displayRover(info, s);
 		}
 
 		isOn = s.on;
@@ -1172,6 +1190,13 @@ function toggleInfo() {
 	if (isInfo) populateInfo(lastinfo);
 	d.getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
 	d.getElementById('buttonI').className = (isInfo) ? "active":"";
+}
+
+function toggleNodes() {
+	isNodes = !isNodes;
+	if (isNodes) populateNodes(lastinfo);
+	d.getElementById('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
+	d.getElementById('buttonNo').className = (isNodes) ? "active":"";
 }
 
 function makeSeg() {
@@ -1779,9 +1804,9 @@ function size() {
 function togglePcMode(fromB = false)
 {
 	if (fromB) {
-	pcModeA = !pcModeA;
-	localStorage.setItem('pcm', pcModeA);
-	pcMode = pcModeA;
+		pcModeA = !pcModeA;
+		localStorage.setItem('pcm', pcModeA);
+		pcMode = pcModeA;
 	}
 	if (w < 1250 && !pcMode) return;
 	if (!fromB && ((w < 1250 && lastw < 1250) || (w >= 1250 && lastw >= 1250))) return;
@@ -1792,7 +1817,8 @@ function togglePcMode(fromB = false)
 	d.getElementById('buttonPcm').className = (pcMode) ? "active":"";
 	d.getElementById('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', d.getElementById('bot').clientHeight + "px");
-  _C.style.width = (pcMode)?'100%':'400%';
+	d.getElementById('buttonNo').style.display = (pcMode) ? "":"none";
+	_C.style.width = (pcMode)?'100%':'400%';
 	lastw = w;
 }
 

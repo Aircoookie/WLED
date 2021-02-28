@@ -221,6 +221,10 @@ button {
 	width:25%;
 }
 
+#btnNodes {
+	display: none;	
+}
+
 .tab button:hover {
 	background-color: var(--c-tbh);
 	color: var(--c-e);
@@ -365,7 +369,7 @@ button {
 	z-index: 3;
 }
 
-#rover {
+#rover, #nodes {
 	z-index: 2;
 }
 
@@ -393,7 +397,7 @@ button {
 	display: inline-block;
 }
 
-#kv {
+#kv, #kn {
 	max-width: 490px;
 	display: inline-block;
 }
@@ -1033,7 +1037,7 @@ input[type="text"].fnd:not(:placeholder-shown) {
 }
 
 @media all and (max-width: 1249px) {
-	#buttonPcm {
+	#buttonPcm, #buttonNo {
 	display: none;
 	}
 }
