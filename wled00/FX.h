@@ -294,19 +294,19 @@ class WS2812FX {
       {
         return ((options >> n) & 0x01);
       }
-      bool isSelected()
+      inline bool isSelected()
       {
         return getOption(0);
       }
-      bool isActive()
+      inline bool isActive()
       {
         return stop > start;
       }
-      uint16_t length()
+      inline uint16_t length()
       {
         return stop - start;
       }
-      uint16_t groupLength()
+      inline uint16_t groupLength()
       {
         return grouping + spacing;
       }
@@ -366,7 +366,7 @@ class WS2812FX {
        * the internal segment state should be reset. 
        * Call resetIfRequired before calling the next effect function.
        */
-      void reset() { _requiresReset = true; }
+      inline void reset() { _requiresReset = true; }
       private:
         uint16_t _dataLen = 0;
         bool _requiresReset = false;

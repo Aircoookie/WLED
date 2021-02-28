@@ -2506,7 +2506,6 @@ uint16_t WS2812FX::mode_spots_fade()
 
 
 //each needs 12 bytes
-//Spark type is used for popcorn and 1D fireworks
 typedef struct Ball {
   unsigned long lastBounceTime;
   float impactVelocity;
@@ -2635,7 +2634,7 @@ uint16_t WS2812FX::mode_glitter()
 
 
 
-//each needs 12 bytes
+//each needs 11 bytes
 //Spark type is used for popcorn, 1D fireworks, and drip
 typedef struct Spark {
   float pos;

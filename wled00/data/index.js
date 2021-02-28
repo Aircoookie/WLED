@@ -919,11 +919,11 @@ function updateUI(scrollto=false)
 function updateSelectedPalette(scrollto=false)
 {
 	var parent = d.getElementById('selectPalette');
-	var selectedPalette = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
-	if (selectedPalette) {
-		selectedPalette.checked = true;
+	var selectedPaletteInput = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
+	if (selectedPaletteInput) {
+		selectedPaletteInput.checked = true;
 	}
-	selElement = parent.querySelector('.selected');
+	var selElement = parent.querySelector('.selected');
 	if (selElement) {
 		selElement.classList.remove('selected')
 	}
@@ -947,7 +947,7 @@ function updateSelectedFx(scrollto=false)
 
 	var selectedEffectInput = parent.querySelector(`input[name="fx"][value="${selectedFx}"]`);
 	if (selectedEffectInput) {
-		parent.querySelector(`input[name="fx"][value="${selectedFx}"]`).checked = true;
+		selectedEffectInput.checked = true;
 	}
 	var selElement = parent.querySelector('.selected');
 	if (selElement) {
@@ -999,7 +999,6 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 		command.v = verbose;
 		command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
-		//console.log(req);
 	}
 	fetch
 	(url, {
