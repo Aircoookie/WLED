@@ -1,7 +1,7 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, isInfo = false, syncSend = false, syncTglRecv = true, isRgbw = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
 var expanded = [false];
 var powered = [true];
@@ -443,6 +443,35 @@ function populatePresets(fromls)
 	populateQL();
 }
 
+function populateNodes(i)
+{
+	var cn="";
+	var urows="";
+	if (i.nodes) {
+		i.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		for (var x=0;x<i.nodes.length;x++) {
+			var o = i.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${o.name}</button>`;
+				urows += inforow(url,o.type);
+			}
+		}
+		if (i.nodes.length>0) {
+			var botButtons = d.querySelectorAll('.bot button');
+			for (btn of botButtons) {
+				btn.style.width = '20%';
+			}
+			d.getElementById('btnNodes').style.display = "inline";
+		} else
+			d.getElementById('btnNodes').style.display = "none";
+	}
+	cn += `<table class="infot">
+${urows}
+${inforow("Current node:",i.name)}
+</table>`;
+	d.getElementById('kn').innerHTML = cn;
+}
+
 function populateInfo(i)
 {
 	var cn="";
@@ -775,6 +804,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 			s = json.state;
 			displayRover(info, s);
 		}
+		populateNodes(info);
 		isOn = s.on;
 		d.getElementById('sliderBri').value= s.bri;
 		nlA = s.nl.on;
@@ -882,6 +912,13 @@ function toggleInfo() {
 	if (isInfo) populateInfo(lastinfo);
 	d.getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
 	d.getElementById('buttonI').className = (isInfo) ? "active":"";
+}
+
+function toggleNodes() {
+	isNodes = !isNodes;
+	if (isNodes) populateNodes(lastinfo);
+	d.getElementById('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
+	d.getElementById('buttonNo').className = (isNodes) ? "active":"";
 }
 
 function makeSeg() {

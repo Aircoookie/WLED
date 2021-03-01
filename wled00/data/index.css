@@ -203,6 +203,10 @@ button {
 	background-color: var(--c-tb);
 }
 
+#btnNodes {
+	display: none;	
+}
+
 .tab button {
 	background-color: transparent;
 	float: left;
@@ -366,7 +370,7 @@ button {
 	z-index: 3;
 }
 
-#rover {
+#rover, #nodes {
 	z-index: 2;
 }
 
@@ -394,7 +398,7 @@ button {
 	display: inline-block;
 }
 
-#kv {
+#kv, #kn {
 	max-width: 490px;
 	display: inline-block;
 }
@@ -931,7 +935,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 @media all and (max-width: 1249px) {
-	#buttonPcm {
+	#buttonPcm, #buttonNo {
 	display: none;
 	}
 }
