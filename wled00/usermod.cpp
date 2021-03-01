@@ -23,8 +23,8 @@ void userSetup() {
     .mode = i2s_mode_t(I2S_MODE_MASTER | I2S_MODE_RX),  // Receive, not transfer
     .sample_rate = SAMPLE_RATE*2,                       // 10240 * 2 (20480) Hz
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,       // could only get it to work with 32bits
-//    .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,        // LEFT when pin is tied to ground.
-    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,       // Potential fix for some issues from DevilTiger
+    .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,        // LEFT when pin is tied to ground.
+//    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,       // Although detected, FFT broke when using this.
     .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
     .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,           // Interrupt level 1
     .dma_buf_count = 8,                                 // number of buffers
