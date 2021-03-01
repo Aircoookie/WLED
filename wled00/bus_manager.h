@@ -229,21 +229,10 @@ class BusPwm : public Bus {
 
     for (uint8_t i = 0; i < numPins; i++) {
       _pins[i] = bc.pins[i];
-      #ifdef WLED_DEBUG
-      Serial.print(F("Init: Allocating pin #"));
-      Serial.println(i);
-      #endif
       if (!pinManager.allocatePin(_pins[i])) {
-        #ifdef WLED_DEBUG
-        Serial.print(F("Init: Wooooow!!!! Allocation failed for pin="));
-        Serial.println(_pins[i]);
-        #endif
-        deallocatePins(); return;
+        //deallocatePins(); return;
+        _pins[i] = 255; break;
       }
-      #ifdef WLED_DEBUG
-      Serial.print(F("Init: Allocation successful for pin="));
-      Serial.println(bc.pins[i]);
-      #endif
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
       #else
@@ -253,6 +242,10 @@ class BusPwm : public Bus {
     }
     _valid = true;
   };
+
+  ~BusPwm() {
+    cleanup();
+  }
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (pix != 0 || !_valid) return; //only react to first pixel
@@ -325,25 +318,13 @@ class BusPwm : public Bus {
 
   void deallocatePins() {
     uint8_t numPins = NUM_PWM_PINS(_type);
-    #ifdef WLED_DEBUG
-    Serial.print(F("DeAllocating pin "));
-    Serial.println(numPins);
-    #endif
     for (uint8_t i = 0; i < numPins; i++) {
+      pinManager.deallocatePin(_pins[i]);
       if (!pinManager.isPinOk(_pins[i])) continue;
-      #ifdef WLED_DEBUG
-      Serial.print(F("DeAllocating pin #"));
-      Serial.println(i);
-      #endif
       #ifdef ESP8266
       digitalWrite(_pins[i], LOW); //turn off PWM interrupt
       #else
       if (_ledcStart < 16) ledcDetachPin(_pins[i]);
-      #endif
-      pinManager.deallocatePin(_pins[i]);
-      #ifdef WLED_DEBUG
-      Serial.print(F("DeAllocatied pin="));
-      Serial.println(_pins[i]);
       #endif
     }
     #ifdef ARDUINO_ARCH_ESP32
