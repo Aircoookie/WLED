@@ -322,11 +322,11 @@ class WS2812FX {
 
   // segment runtime parameters
     typedef struct Segment_runtime { // 28 bytes
-      unsigned long next_time;
-      uint32_t step;
-      uint32_t call;
-      uint16_t aux0;
-      uint16_t aux1;
+      unsigned long next_time;  // millis() of next update
+      uint32_t step;  // custom "step" var
+      uint32_t call;  // call counter
+      uint16_t aux0;  // custom var
+      uint16_t aux1;  // custom var
       byte* data = nullptr;
       bool allocateData(uint16_t len){
         if (data && _dataLen == len) return true; //already allocated
