@@ -4310,7 +4310,7 @@ uint16_t WS2812FX::mode_gravcentric(void) {               // Gravcenter. By Andr
 
   if (topLED >= 0) {
     setPixelColor(topLED+SEGLEN/2, CRGB::Gray);
-    setPixelColor(SEGLEN/2-1-topLED, CRGB::Red);
+    setPixelColor(SEGLEN/2-1-topLED, CRGB::Gray);
   }
   gravityCounter = (gravityCounter + 1) % gravity;
 
