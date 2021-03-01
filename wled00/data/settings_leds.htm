@@ -20,14 +20,14 @@
         var nm = LCs[i].name.substring(0,2);
 
         //check for pin conflicts
-        if (nm=="L0" || nm=="L1" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
+        if (nm=="L0" || nm=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
-            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert("Usermod pin conflict!");LCs[i].focus();return;}
+            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert("Usermod/reserved pin conflict!");LCs[i].focus();return;}
             for (j=i+1; j<LCs.length; j++)
             {
               var n2 = LCs[j].name.substring(0,2);
-              if (n2=="L0" || n2=="L1" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
-                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert("Pin conflict!");LCs[i].focus();return;}
+              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
+                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert("Pin conflict!");LCs[j].focus();return;}
             }
           }
       }
@@ -98,7 +98,7 @@
         if (s[i].name.substring(0,2)=="LT") {
           n=s[i].name.substring(2);
           var type = parseInt(s[i].value,10);
-          d.getElementById("p0d"+n).innerHTML = (type > 49) ? "Data pin:" : (type >41) ? "Pins:" : "Pin:";
+          d.getElementById("p0d"+n).innerHTML = (type > 49) ? "Data:" : (type >41) ? "Pins:" : "Pin:";
           d.getElementById("p1d"+n).innerHTML = (type > 49) ? "Clk:" : "";
           var LK = d.getElementsByName("L1"+n)[0];
 
@@ -121,8 +121,9 @@
           d.getElementById("LC").readOnly = !(type > 31 && type < 48);    // not analog
           if (change) {
             d.getElementById("ew"+n).checked = (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
-            d.getElementById("ew"+n).onclick = (type > 31 && type < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
+            d.getElementById("ls"+n).value = n+1;
           }
+          d.getElementById("ew"+n).onclick = (type > 31 && type < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
           isRGBW |= d.getElementById("ew"+n).checked;
           d.getElementById("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
           d.getElementById("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
@@ -140,6 +141,7 @@
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
         if (nm=="LC" && LCs[i].name !== "LC") {
+          var n=LCs[i].name.substring(2);
           var c=parseInt(LCs[i].value,10);
           if(d.getElementById("ls"+n).readOnly) d.getElementById("ls"+n).value=sLC;
           if(c){sLC+=c;if(c>maxLC)maxLC=c;}
