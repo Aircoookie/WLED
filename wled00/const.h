@@ -188,13 +188,19 @@
 // maximum number of LEDs - more than 1500 LEDs (or 500 DMA "LEDPIN 3" driven ones) will cause a low memory condition on ESP8266
 #ifndef MAX_LEDS
 #ifdef ESP8266
-#define MAX_LEDS 1536
+#define MAX_LEDS 1664
 #else
 #define MAX_LEDS 8192
 #endif
 #endif
 
-#define MAX_LEDS_DMA 500
+#ifndef MAX_LED_MEMORY
+#ifdef ESP8266
+#define MAX_LED_MEMORY 5000
+#else
+#define MAX_LED_MEMORY 64000
+#endif
+#endif
 
 // string temp buffer (now stored in stack locally)
 #define OMAX 2048

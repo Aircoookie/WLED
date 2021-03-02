@@ -69,6 +69,11 @@ void WS2812FX::finalizeInit(void)
     _useRgbw |= bus->isRgbw();
     _length += bus->getLength();
   }
+/*
+  //make segment 0 cover the entire strip
+  _segments[0].start = 0;
+  _segments[0].stop = _length;
+*/
 
   setBrightness(_brightness);
 
@@ -360,7 +365,6 @@ uint8_t WS2812FX::getPaletteCount()
 
 
 bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t p) {
-  uint8_t mainSeg = getMainSegmentId();
   Segment& seg = _segments[getMainSegmentId()];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, palettePrev = seg.palette;
 

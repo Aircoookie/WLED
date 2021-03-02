@@ -294,15 +294,13 @@ void getSettingsJS(byte subPage, char* dest)
     #endif
 
     // set limit for LED count
-    oappend(SET_F("d.LCmax="));
+    oappend(SET_F("LCmax="));
     oappendi(MAX_LEDS);
     oappend(";");
-    #ifdef ESP8266
-    // set limit for DMA LED count
-    oappend(SET_F("d.LDmax="));
-    oappendi(MAX_LEDS_DMA);
+    // set limit for LED memory
+    oappend(SET_F("bmax="));
+    oappendi(MAX_LED_MEMORY);
     oappend(";");
-    #endif
 
     sappend('v',SET_F("LC"),ledCount);
 
@@ -333,7 +331,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
     if (strip.currentMilliamps)
     {
-      sappends('m',SET_F("(\"pow\")[0]"),"");
+      sappends('m',SET_F("(\"pow\")[0]"),(char*)"");
       olen -= 2; //delete ";
       oappendi(strip.currentMilliamps);
       oappend(SET_F("mA\";"));

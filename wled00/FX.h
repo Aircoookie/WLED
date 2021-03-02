@@ -76,7 +76,7 @@
 #define SEGENV           _segment_runtimes[_segment_index]
 #define SEGLEN           _virtualSegmentLength
 #define SEGACT           SEGMENT.stop
-#define SPEED_FORMULA_L  5 + (50*(255 - SEGMENT.speed))/SEGLEN
+#define SPEED_FORMULA_L  (uint16_t)(5 + (50*(255 - SEGMENT.speed))/SEGLEN)
 #define RESET_RUNTIME    memset(_segment_runtimes, 0, sizeof(_segment_runtimes))
 
 // some common colors

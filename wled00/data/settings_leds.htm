@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=500">
 	<title>LED Settings</title>
 	<script>
-    var d=document,laprev=55,maxST=1,bmax=5000,bquot=0; //maximum bytes for LED allocation: 5kB for 8266, 32kB for 32
+    var d=document,laprev=55,maxST=2,bmax=5000,LCmax=1536,bquot=0; //maximum bytes for LED allocation: 5kB for 8266, 32kB for 32
 		function H()
 		{
 			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");
@@ -31,10 +31,10 @@
             }
           }
       }
-      if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (bmax < 10000) msg += " Consider using an ESP32."; alert(msg); return;}
+      if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (bmax < 10000) msg += "\n\rConsider using an ESP32."; alert(msg); return;}
       if (d.Sf.reportValidity()) d.Sf.submit();
     }
-		function S(){GetV();setABL(); if (maxST>4) bmax=64000; d.getElementById('m1').innerHTML = bmax;}
+		function S(){GetV();setABL(); d.getElementById('m1').innerHTML = bmax;}
     function enABL()
     {
       var en = d.getElementById('able').checked;
@@ -62,19 +62,17 @@
         case 255: d.Sf.LAsel.value = 255; break;
         default: d.getElementById('LAdis').style.display = 'inline';
       }
-      d.getElementById('wreason2').innerText = d.LDmax?d.LDmax:'500';
       UI();
     }
     //returns mem usage
     function getMem(type, len, p0) {
       //len = parseInt(len);
       if (type < 32) {
-        if (bmax < 10000 && p0 ==3) { //8266 DMA uses 5x the mem
+        if (bmax < 10000 && p0==3) {    //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
           return len*15;
-        } else if (bmax > 10000) //ESP32 RMT uses double buffer?
-        {
-          if (type > 29) return len*8; //RGBW
+        } else if (bmax > 10000) {      //ESP32 RMT uses double buffer?
+          if (type > 29) return len*8;  //RGBW
           return len*6;
         }
         if (type > 29) return len*4; //RGBW
@@ -149,13 +147,11 @@
         }
         if (nm=="L0" || nm=="L1") {
           var lc=d.getElementsByName("LC"+LCs[i].name.substring(2))[0];
-          p3u|=(LCs[i].value==3);
-          if(d.LDmax && p3u) lc.max=d.LDmax;
-          else lc.max=d.LCmax;
+          lc.max=LCmax;
         }
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
-            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert("Usermod/reserved pin conflict!");LCs[i].value="";LCs[i].focus();continue;}
+            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert("Usermod/reserved pin conflict!");/*LCs[i].value=""*/;LCs[i].focus();continue;}
             for (j=0; j<LCs.length; j++) {
               if (i==j) continue;
               var n2 = LCs[j].name.substring(0,2);
@@ -174,14 +170,11 @@
 
       d.getElementById('m0').innerHTML = memu;
       bquot = memu / bmax * 100;
-      d.getElementById('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? bquot > 90 ? "red":"orange":"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
-      d.getElementById('ledwarning').style.display = (sLC > d.LCmax || maxLC > 800 || bquot > 80) ? 'inline':'none';
-      d.getElementById('ledwarning2').style.display = (d.LDmax && p3u && (sLC > d.LDmax || maxLC > d.LDmax)) ? 'inline':'none';
-      //TODO add warning "Recommended pins on ESP8266 are 1 and 2 (3 only with low LED count)"
-      //TODO add overmemory warning
-      d.getElementById('wreason').innerHTML = (bquot > 80) ? "than 60%% of max. LED memory" : "800 LEDs per pin";
+      d.getElementById('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
+      d.getElementById('ledwarning').style.display = (sLC > LCmax || maxLC > 800 || bquot > 80) ? 'inline':'none';
+      d.getElementById('ledwarning').style.color = (sLC > LCmax || maxLC > LCmax || bquot > 100) ? 'red':'orange';
+      d.getElementById('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>WARNING: Using over ${bmax}B!</b>)` : "") : "800 LEDs per pin";
 
-      //var val = Math.ceil((100 + d.Sf.LC.value * laprev)/500)/2;
       var val = Math.ceil((100 + sLC * laprev)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
 			var s = "";
@@ -270,7 +263,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 		function GetV()
 		{
       //values injected by server while sending HTML
-      //d.LCmax=1536;d.LDmax=500;d.um_p=[1,6,7,8,9,10,...];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RV.checked=0;d.Sf.SL.checked=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;d.Sf.BT.value=-1;d.Sf.IR.value=-1;d.Sf.AX.value=-1;
+      //bmax=5000;LCmax=1536;d.um_p=[1,6,7,8,9,10,...];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RV.checked=0;d.Sf.SL.checked=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;d.Sf.BT.value=-1;d.Sf.IR.value=-1;d.Sf.AX.value=-1;
     }
 	</script>
 	<style>
@@ -320,10 +313,6 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     <div id="ledwarning" style="color: orange; display: none;">
       &#9888; You might run into stability or lag issues.<br>
       Use less than <span id="wreason">800 LEDs per pin</span> for the best experience!<br>
-    </div>
-    <div id="ledwarning2" style="color: orangered; display: none;">
-      &#9888; Pin 3 has memory restrictions.<br>
-      Use less than <span id="wreason2">500</span> LEDs in total to avoid memory issues!<br>
     </div><hr style="width:260px">
     Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"> Active high <input type="checkbox" name="RM"><br>
     Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><br>

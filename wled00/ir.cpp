@@ -42,7 +42,7 @@ const size_t numBrightnessSteps = sizeof(brightnessSteps) / sizeof(uint8_t);
 void incBrightness()
 {
   // dumb incremental search is efficient enough for so few items
-  for (int index = 0; index < numBrightnessSteps; ++index)
+  for (uint8_t index = 0; index < numBrightnessSteps; ++index)
   {
     if (brightnessSteps[index] > bri)
     {

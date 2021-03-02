@@ -136,7 +136,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (sz == 0 && sz > 4) break;
 
           int rgbw[] = {0,0,0,0};
-          byte cp = copyArray(icol, rgbw);
+          copyArray(icol, rgbw);
 
           if (set < 2) stop = start + 1;
           for (uint16_t i = start; i < stop; i++) {
@@ -202,8 +202,8 @@ bool deserializeState(JsonObject root)
   receiveNotifications = udpn[F("recv")] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
-  unsigned long timein = root[F("time")] | -1;
-  if (timein != -1) {
+  unsigned long timein = root[F("time")] | UINT32_MAX;
+  if (timein != UINT32_MAX) {
     if (millis() - ntpLastSyncTime > 50000000L) setTime(timein);
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }

@@ -516,7 +516,7 @@ uint16_t WS2812FX::dissolve(uint32_t color) {
     }
   }
 
-  if (SEGENV.call > (255 - SEGMENT.speed) + 15) 
+  if (SEGENV.call > (255 - SEGMENT.speed) + 15U) 
   {
     SEGENV.aux0 = !SEGENV.aux0;
     SEGENV.call = 0;
@@ -1003,7 +1003,7 @@ uint16_t WS2812FX::mode_running_random(void) {
   }
 
   SEGENV.step++;
-  if (SEGENV.step > ((255-SEGMENT.intensity) >> 4))
+  if (SEGENV.step > (uint8_t)((255-SEGMENT.intensity) >> 4))
   {
     SEGENV.step = 0;
   }
@@ -1537,9 +1537,9 @@ uint16_t WS2812FX::mode_oscillate(void)
 
   if (SEGENV.call == 0)
   {
-    oscillators[0] = {SEGLEN/4,   SEGLEN/8,  1, 1};
-    oscillators[1] = {SEGLEN/4*3, SEGLEN/8,  1, 2};
-    oscillators[2] = {SEGLEN/4*2, SEGLEN/8, -1, 1};
+    oscillators[0] = {(int16_t)(SEGLEN/4),   (int8_t)(SEGLEN/8),  1, 1};
+    oscillators[1] = {(int16_t)(SEGLEN/4*3), (int8_t)(SEGLEN/8),  1, 2};
+    oscillators[2] = {(int16_t)(SEGLEN/4*2), (int8_t)(SEGLEN/8), -1, 1};
   }
 
   uint32_t cycleTime = 20 + (2 * (uint32_t)(255 - SEGMENT.speed));
@@ -1888,7 +1888,6 @@ uint16_t WS2812FX::mode_noise16_2()
   for (uint16_t i = 0; i < SEGLEN; i++) {
 
     uint16_t shift_x = SEGENV.step >> 6;                         // x as a function of time
-    uint16_t shift_y = SEGENV.step/42;
 
     uint32_t real_x = (i + shift_x) * scale;                  // calculate the coordinates within the noise field
 
@@ -3126,7 +3125,7 @@ uint16_t WS2812FX::mode_tetrix(void) {
   }
   
   if (SEGENV.step == 0) {             //init
-    drop->speed = 0.0238 * (SEGMENT.speed ? (SEGMENT.speed>>3)+1 : random8(6,40)); // set speed
+    drop->speed = 0.0238 * (SEGMENT.speed ? (SEGMENT.speed>>2)+1 : random8(6,64)); // set speed
     drop->pos   = SEGLEN;             // start at end of segment (no need to subtract 1)
     drop->col   = color_from_palette(random8(0,15)<<4,false,false,0);     // limit color choices so there is enough HUE gap
     SEGENV.step = 1;                  // drop state (0 init, 1 forming, 2 falling)

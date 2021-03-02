@@ -136,8 +136,10 @@ void prepareHostname(char* hostname)
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
+  #ifdef WLED_USE_ETHERNET
   char hostname[25] = "wled-";
-
+  #endif
+  
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
@@ -218,9 +220,11 @@ void WLED::loop()
     //LED settings have been saved, re-init busses
     if (busConfigs[0] != nullptr) {
       busses.removeAll();
+      uint32_t mem = 0;
       for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
         if (busConfigs[i] == nullptr) break;
-        busses.add(*busConfigs[i]);
+        mem += busses.memUsage(*busConfigs[i]);
+        if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
         delete busConfigs[i]; busConfigs[i] = nullptr;
       }
       strip.finalizeInit();
@@ -303,7 +307,6 @@ void WLED::setup()
   pinManager.allocatePin(1,true); // GPIO1 reserved for debug output
   #endif
 #endif
-  int heapPreAlloc = ESP.getFreeHeap();
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();

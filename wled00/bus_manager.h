@@ -338,6 +338,29 @@ class BusManager {
   BusManager() {
 
   };
+
+  //utility to get the approx. memory usage of a given BusConfig
+  uint32_t memUsage(BusConfig &bc) {
+    uint8_t type = bc.type;
+    uint16_t len = bc.count;
+    if (type < 32) {
+      #ifdef ESP8266
+        if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
+          if (type > 29) return len*20; //RGBW
+          return len*15;
+        }
+        if (type > 29) return len*4; //RGBW
+        return len*3;
+      #else //ESP32 RMT uses double buffer?
+        if (type > 29) return len*8; //RGBW
+        return len*6;
+      #endif
+    }
+
+    if (type > 31 && type < 48) return 5;
+    if (type == 44 || type == 45) return len*4; //RGBW
+    return len*3;
+  }
   
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
@@ -357,7 +380,6 @@ class BusManager {
     for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
     numBusses = 0;
   }
-  //void remove(uint8_t id);
 
   void show() {
     for (uint8_t i = 0; i < numBusses; i++) {

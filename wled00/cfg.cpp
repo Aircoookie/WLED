@@ -100,10 +100,11 @@ void deserializeConfig() {
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonArray ins = hw_led["ins"];
-  uint8_t s = 0;
+  uint8_t s = 0;  // bus iterator
   bool skipFirst = skipFirstLed = false;
   useRGBW = false;
   busses.removeAll();
+  uint32_t mem = 0;
   for (JsonObject elm : ins) {
     if (s >= WLED_MAX_BUSSES) break;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
@@ -132,7 +133,8 @@ void deserializeConfig() {
     s++;
     lC += length;
     BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
-    busses.add(bc);
+    mem += busses.memUsage(bc);
+    if (mem <= MAX_LED_MEMORY) busses.add(bc);
   }
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
   strip.finalizeInit();
@@ -449,7 +451,6 @@ void serializeConfig() {
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
-  uint16_t start = 0;
   for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
     Bus *bus = busses.getBus(s);
     if (!bus || bus->getLength()==0) break;
