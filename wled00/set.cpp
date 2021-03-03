@@ -82,8 +82,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
     #endif
     if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
-    //TODO remove all busses, but not in this system call
-    //busses->removeAll();
 
     skipFirstLed = request->hasArg(F("SL"));
     useRGBW = false;
@@ -120,14 +118,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         break;  // no parameter
       }
 
-      // actual finalization is done in loop()
+      // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skipFirstLed);
     }
 
     ledCount = request->arg(F("LC")).toInt();
-//    if (t > 0 && t <= MAX_LEDS) ledCount = t;
-    //DMA method uses too much ram, TODO: limit!
 
     // upate other pins
     #ifndef WLED_DISABLE_INFRARED

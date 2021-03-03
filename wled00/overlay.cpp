@@ -80,7 +80,7 @@ void _overlayAnalogClock()
 
 void _overlayAnalogCountdown()
 {
-  if (now() < countdownTime)
+  if ((unsigned long)now() < countdownTime)
   {
     long diff = countdownTime - now();
     double pval = 60;

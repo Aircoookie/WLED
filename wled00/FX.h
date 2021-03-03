@@ -60,11 +60,11 @@
   /* How many color transitions can run at once */
   #define MAX_NUM_TRANSITIONS  8
   /* How much data bytes all segments combined may allocate */
-  #define MAX_SEGMENT_DATA  2560
+  #define MAX_SEGMENT_DATA  4096
 #else
-  #define MAX_NUM_SEGMENTS    16
-  #define MAX_NUM_TRANSITIONS 16
-  #define MAX_SEGMENT_DATA  8192
+  #define MAX_NUM_SEGMENTS    18
+  #define MAX_NUM_TRANSITIONS 18
+  #define MAX_SEGMENT_DATA  16384
 #endif
 
 #define LED_SKIP_AMOUNT  1

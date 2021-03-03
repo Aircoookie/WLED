@@ -2808,7 +2808,7 @@ typedef struct particle {
 
 uint16_t WS2812FX::mode_starburst(void) {
   uint8_t numStars = 1 + (SEGLEN >> 3);
-  if (numStars > 15) numStars = 15;
+  if (numStars > 11) numStars = 11; // allowing for more segments
   uint16_t dataSize = sizeof(star) * numStars;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed

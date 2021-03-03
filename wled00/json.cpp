@@ -246,7 +246,7 @@ bool deserializeState(JsonObject root)
       }
       if (!didSet && lowestActive < strip.getMaxSegments()) deserializeSegment(segVar, lowestActive);
     } else { //set only the segment with the specified ID
-      deserializeSegment(segVar, it);
+      deserializeSegment(segVar, id);
     }
   } else {
     JsonArray segs = segVar.as<JsonArray>();

@@ -256,7 +256,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 2)
   {
-    // add usermod pins as d.um_p array
+    // add reserved and usermod pins as d.um_p array
     DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
     JsonObject mods = doc.createNestedObject(F("um"));
     usermods.addToConfig(mods);
@@ -279,7 +279,7 @@ void getSettingsJS(byte subPage, char* dest)
       if (i) oappend(SET_F(","));
       oappend(SET_F("6,7,8,9,10,11")); // flash memory pins
       #ifdef WLED_DEBUG
-        oappend(SET_F(",1"));
+        oappend(SET_F(",1")); // debug output (TX) pin
       #endif
     }
     oappend(SET_F("];"));
@@ -336,8 +336,6 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     sappend('v',SET_F("CA"),briS);
-    //sappend('c',SET_F("EW"),useRGBW);
-    //sappend('i',SET_F("CO"),strip.getColorOrder());
     sappend('v',SET_F("AW"),strip.rgbwMode);
 
     sappend('c',SET_F("BO"),turnOnAtBoot);
@@ -353,7 +351,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
     sappend('v',SET_F("TW"),nightlightMode);
     sappend('i',SET_F("PB"),strip.paletteBlend);
-//    sappend('c',SET_F("RV"),strip.reverseMode);
     sappend('c',SET_F("SL"),skipFirstLed);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);

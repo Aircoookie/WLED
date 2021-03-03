@@ -79,7 +79,8 @@ void deserializeConfig() {
   JsonArray ap_ip = ap[F("ip")];
   for (byte i = 0; i < 4; i++) {
     apIP[i] = ap_ip;
-  }*/
+  }
+  */
 
   noWifiSleep = doc[F("wifi")][F("sleep")] | !noWifiSleep; // inverted
   noWifiSleep = !noWifiSleep;
@@ -137,7 +138,7 @@ void deserializeConfig() {
     if (mem <= MAX_LED_MEMORY) busses.add(bc);
   }
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
-  strip.finalizeInit();
+  //strip.finalizeInit(); // will be done in WLED::beginStrip()
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonEnabled, hw_btn_ins_0[F("type")]);

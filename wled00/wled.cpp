@@ -593,7 +593,7 @@ void WLED::handleConnection()
   // reconnect WiFi to clear stale allocations if heap gets too low
   if (millis() - heapTime > 5000) {
     uint32_t heap = ESP.getFreeHeap();
-    if (heap < 9000 && lastHeap < 9000) {
+    if (heap < JSON_BUFFER_SIZE+512 && lastHeap < JSON_BUFFER_SIZE+512) {
       DEBUG_PRINT(F("Heap too low! "));
       DEBUG_PRINTLN(heap);
       forceReconnect = true;

@@ -153,12 +153,12 @@ function cTheme(light) {
 
 function loadBg(iUrl) {
 	let bg = document.getElementById('bg');
-  let img = document.createElement("img");
-  img.src = iUrl;
-  if (iUrl == "") {
-    var today = new Date();
-    if (today.getMonth() == 11 && (today.getDate() > 23 && today.getDate() < 28)) img.src = "https://aircoookie.github.io/xmas.png";
-  }
+	let img = document.createElement("img");
+	img.src = iUrl;
+	if (iUrl == "") {
+		var today = new Date();
+		if (today.getMonth() == 11 && (today.getDate() > 23 && today.getDate() < 28)) img.src = "https://aircoookie.github.io/xmas.png";
+	}
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
 		if (isNaN(a)) a = 0.6;
@@ -468,21 +468,20 @@ function populateQL()
 {
 	var cn = "";
 	if (pQL.length > 0) {
-	cn += `<p class="labels">Quick load</p>`;
+		cn += `<p class="labels">Quick load</p>`;
 
-  var it = 0;
-	for (var key of (pQL||[]))
-	{
-    cn += `<button class="xxs btn psts" id="p${key[0]}qlb" onclick="setPreset(${key[0]});">${key[1]}</button>`;
-    it++;
-    if (it > 4) {
-      it = 0;
-      cn += '<br>';
-    }
-  }
-  if (it != 0) cn+= '<br>';
+		var it = 0;
+		for (var key of (pQL||[])) {
+			cn += `<button class="xxs btn psts" id="p${key[0]}qlb" onclick="setPreset(${key[0]});">${key[1]}</button>`;
+			it++;
+			if (it > 4) {
+				it = 0;
+				cn += '<br>';
+			}
+		}
+		if (it != 0) cn+= '<br>';
 
-	cn += `<p class="labels">All presets</p>`;
+		cn += `<p class="labels">All presets</p>`;
 	}
 	d.getElementById('pql').innerHTML = cn;
 }
@@ -504,12 +503,12 @@ function populatePresets(fromls)
 		if (!isObject(key[1])) continue;
 		let i = parseInt(key[0]);
 		var qll = key[1].ql;
-    if (qll) pQL.push([i, qll]);
-    is.push(i);
+		if (qll) pQL.push([i, qll]);
+		is.push(i);
 
-    cn += `<div class="seg pres" id="p${i}o">`;
-    if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-    cn += `<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
+		cn += `<div class="seg pres" id="p${i}o">`;
+		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
+		cn += `<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
@@ -593,6 +592,7 @@ ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 ${inforow("Uptime",getRuntimeStr(i.uptime))}
 ${inforow("Free heap",heap," kB")}
 ${inforow("Estimated current",pwru)}
+${inforow("Average FPS",i.leds.fps)}
 ${inforow("MAC address",i.mac)}
 ${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 ${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
@@ -616,56 +616,56 @@ function populateSegments(s)
 		if (i > lSeg) lSeg = i;
 
 		cn += `<div class="seg">
-			<label class="check schkl">
-				&nbsp;
-				<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
-				<span class="checkmark schk"></span>
-			</label>
-			<div class="segname" onclick="selSegEx(${i})">
-				Segment ${i}
-			</div>
-			<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
-			<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
-			<table class="segt">
-				<tr>
-					<td class="segtd">Start LED</td>
-					<td class="segtd">Stop LED</td>
-				</tr>
-				<tr>
-					<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
-					<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(${i})"></td>
-				</tr>
-			</table>
-			<table class="segt">
-				<tr>
-					<td class="segtd">Grouping</td>
-					<td class="segtd">Spacing</td>
-				</tr>
-				<tr>
-					<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
-					<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
-				</tr>
-			</table>
-			<div class="h bp" id="seg${i}len"></div>
-			<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
-			<div class="sliderwrap il sws">
-				<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
-				<div class="sliderdisplay"></div>
-			</div>
-				<i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i>
-				<i class="icons e-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
-				<label class="check revchkl">
-					Reverse direction
-					<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
-					<span class="checkmark schk"></span>
-				</label>
-				<label class="check revchkl">
-					Mirror effect
-					<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
-					<span class="checkmark schk"></span>
-				</label>
-			</div>
-		</div><br>`;
+	<label class="check schkl">
+		&nbsp;
+		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
+		<span class="checkmark schk"></span>
+	</label>
+	<div class="segname" onclick="selSegEx(${i})">
+		Segment ${i}
+	</div>
+	<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
+	<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
+	<table class="segt">
+		<tr>
+			<td class="segtd">Start LED</td>
+			<td class="segtd">Stop LED</td>
+		</tr>
+		<tr>
+			<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
+			<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(${i})"></td>
+		</tr>
+	</table>
+	<table class="segt">
+		<tr>
+			<td class="segtd">Grouping</td>
+			<td class="segtd">Spacing</td>
+		</tr>
+		<tr>
+			<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
+			<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+		</tr>
+	</table>
+	<div class="h bp" id="seg${i}len"></div>
+	<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
+	<div class="sliderwrap il sws">
+		<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+		<div class="sliderdisplay"></div>
+	</div>
+		<i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i>
+		<i class="icons e-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
+		<label class="check revchkl">
+			Reverse direction
+			<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
+			<span class="checkmark schk"></span>
+		</label>
+		<label class="check revchkl">
+			Mirror effect
+			<input type="checkbox" id="seg${i}mi" onchange="setMi(${i})" ${inst.mi ? "checked":""}>
+			<span class="checkmark schk"></span>
+		</label>
+	</div>
+</div><br>`;
 	}
 
 	d.getElementById('segcont').innerHTML = cn;
@@ -677,9 +677,9 @@ function populateSegments(s)
 		noNewSegs = false;
 	}
 	for (var i = 0; i <= lSeg; i++) {
-	updateLen(i);
-	updateTrail(d.getElementById(`seg${i}bri`));
-	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
+		updateLen(i);
+		updateTrail(d.getElementById(`seg${i}bri`));
+		if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
 	}
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
@@ -813,18 +813,18 @@ function genPalPrevCss(id)
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
 {
     return `<div class="lstI" data-id="${id}">
-			<label class="check schkl">
-				&nbsp;
-				<input type="radio" value="${id}" name="${listName}" onChange="${clickAction}()">
-				<span class="checkmark schk"></span>
-			</label>
-			<div class="lstIcontent" onClick="${clickAction}(${id})">
-				<span class="lstIname">
-					${name}
-				</span>
-				${extraHtml}
-			</div>
-		</div>`;
+	<label class="check schkl">
+		&nbsp;
+		<input type="radio" value="${id}" name="${listName}" onChange="${clickAction}()">
+		<span class="checkmark schk"></span>
+	</label>
+	<div class="lstIcontent" onClick="${clickAction}(${id})">
+		<span class="lstIname">
+			${name}
+		</span>
+		${extraHtml}
+	</div>
+</div>`;
 }
 
 function updateTrail(e, slidercol)
@@ -919,9 +919,9 @@ function updateUI(scrollto=false)
 function updateSelectedPalette(scrollto=false)
 {
 	var parent = d.getElementById('selectPalette');
-	var selectedPaletteInput = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
-	if (selectedPaletteInput) {
-		selectedPaletteInput.checked = true;
+	var selPaletteInput = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
+	if (selPaletteInput) {
+		selPaletteInput.checked = true;
 	}
 	var selElement = parent.querySelector('.selected');
 	if (selElement) {
@@ -945,9 +945,9 @@ function updateSelectedFx(scrollto=false)
 {
 	var parent = d.getElementById('fxlist');
 
-	var selectedEffectInput = parent.querySelector(`input[name="fx"][value="${selectedFx}"]`);
-	if (selectedEffectInput) {
-		selectedEffectInput.checked = true;
+	var selEffectInput = parent.querySelector(`input[name="fx"][value="${selectedFx}"]`);
+	if (selEffectInput) {
+		selEffectInput.checked = true;
 	}
 	var selElement = parent.querySelector('.selected');
 	if (selElement) {
@@ -1089,9 +1089,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 		if (!i) {
 			showToast('No Segments!', true);
 			updateUI(false);
-			if (callback) {
-				callback();
-			}
+			if (callback) callback();
 			return;
 		}
 		
@@ -1205,25 +1203,25 @@ function makeSeg() {
 		if (pend < ledCount) ns = pend;
 	}
 	var cn = `<div class="seg">
-			<div class="segname newseg">
-				New segment ${lowestUnused}
-			</div>
-			<br>
-			<div class="segin expanded">
-				<table class="segt">
-					<tr>
-						<td class="segtd">Start LED</td>
-						<td class="segtd">Stop LED</td>
-					</tr>
-					<tr>
-						<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
-						<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(${lowestUnused})"></td>
-					</tr>
-				</table>
-				<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
-				<i class="icons e-icon cnf cnf-s half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
-			</div>
-		</div>`;
+	<div class="segname newseg">
+		New segment ${lowestUnused}
+	</div>
+	<br>
+	<div class="segin expanded">
+		<table class="segt">
+			<tr>
+				<td class="segtd">Start LED</td>
+				<td class="segtd">Stop LED</td>
+			</tr>
+			<tr>
+				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
+				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(${lowestUnused})"></td>
+			</tr>
+		</table>
+		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
+		<i class="icons e-icon cnf cnf-s half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
+	</div>
+</div>`;
 	d.getElementById('segutil').innerHTML = cn;
 }
 
@@ -1233,41 +1231,38 @@ function resetUtil() {
 }
 
 function makeP(i) {
-	return `
-	<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/><br>
-	<div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
-	<div class="h">(leave empty for no Quick load button)</div>
+	return `<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/><br>
+<div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
+<div class="h">(leave empty for no Quick load button)</div>
+<label class="check revchkl">
+	${(i>0)?"Overwrite with state":"Use current state"}
+	<input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i>0)?"":"checked"}>
+	<span class="checkmark schk"></span>
+</label><br>
+<div class="po2" id="p${i}o2">
+	API command<br>
+	<textarea class="noslide" id="p${i}api"></textarea>
+</div>
+<div class="po1" id="p${i}o1">
 	<label class="check revchkl">
-		${(i>0)?"Overwrite with state":"Use current state"}
-		<input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i>0)?"":"checked"}>
+		Include brightness
+		<input type="checkbox" id="p${i}ibtgl" checked>
 		<span class="checkmark schk"></span>
-	</label><br>
-	<div class="po2" id="p${i}o2">
-		API command<br>
-		<textarea class="noslide" id="p${i}api"></textarea>
-	</div>
-	<div class="po1" id="p${i}o1">
-		<label class="check revchkl">
-			Include brightness
-			<input type="checkbox" id="p${i}ibtgl" checked>
-			<span class="checkmark schk"></span>
-		</label>
-		<label class="check revchkl">
-			Save segment bounds
-			<input type="checkbox" id="p${i}sbtgl" checked>
-			<span class="checkmark schk"></span>
-		</label>
-	</div>
-	<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
-	<div class="c">
-		<button class="btn btn-i btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>${(i>0)?"Save changes":"Save preset"}</button>
-		${(i>0)?'<button class="btn btn-i btn-p" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':
-						'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
-	</div>
-	<div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn">
-
-	</div>
-	${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
+	</label>
+	<label class="check revchkl">
+		Save segment bounds
+		<input type="checkbox" id="p${i}sbtgl" checked>
+		<span class="checkmark schk"></span>
+	</label>
+</div>
+<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
+<div class="c">
+	<button class="btn btn-i btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>${(i>0)?"Save changes":"Save preset"}</button>
+	${(i>0)?'<button class="btn btn-i btn-p" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
+</div>
+<div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn">
+</div>
+${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 }
 
 function makePUtil() {
@@ -1419,9 +1414,7 @@ function toggleCY() {
 
 function setPreset(i) {
 	var obj = {"ps": i};
-
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
-
 	requestJson(obj);
 }
 
@@ -1444,9 +1437,9 @@ function saveP(i) {
 				d.getElementById(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
 				return;
 			} else if (raw.indexOf("Please") == 0) {
-        d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
+        		d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
 				return;
-      }
+			}
 		}
 		obj.o = true;
 	} else {
@@ -1646,13 +1639,13 @@ function loadPalettesData()
 }
 
 function getPalettesDataCached() {
-	var palettesDataJson = localStorage.getItem(lsPalKey);
-	if (palettesDataJson) {
+	var palDataJson = localStorage.getItem(lsPalKey);
+	if (palDataJson) {
 		try {
-			palettesDataJson = JSON.parse(palettesDataJson);
+			palDataJson = JSON.parse(palDataJson);
 			var d = new Date();
-			if (palettesDataJson && palettesDataJson.expiration && palettesDataJson.expiration > d.getTime()) {
-				palettesData = palettesDataJson.p;
+			if (palDataJson && palDataJson.expiration && palDataJson.expiration > d.getTime()) {
+				palettesData = palDataJson.p;
 				redrawPalPrev();
 				return true;
 			}
@@ -1718,20 +1711,26 @@ function clean(c) {
 
 function expand(i,a)
 {
+	var seg = d.getElementById('seg' +i);
 	if (!a) expanded[i] = !expanded[i];
-	d.getElementById('seg' +i).style.display = (expanded[i]) ? "block":"none";
+	seg.style.display = (expanded[i]) ? "block":"none";
 	d.getElementById('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
 	if (i > 100) { //presets
 		var p = i-100;
 		d.getElementById(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
-		if (d.getElementById('seg' +i).innerHTML == "") {
-      d.getElementById('seg' +i).innerHTML = makeP(p);
-      var papi = papiVal(p);
-      d.getElementById(`p${p}api`).value = papi;
-      if (papi.indexOf("Please") == 0) d.getElementById(`p${p}cstgl`).checked = true;
-      tglCs(p);
+		if (seg.innerHTML == "") {
+			seg.innerHTML = makeP(p);
+			var papi = papiVal(p);
+			d.getElementById(`p${p}api`).value = papi;
+			if (papi.indexOf("Please") == 0) d.getElementById(`p${p}cstgl`).checked = true;
+			tglCs(p);
 		}
+		seg = seg.parentElement;
 	}
+	if (expanded[i]) seg.scrollIntoView({
+		behavior: 'smooth',
+		block: 'center',
+	});
 }
 
 function unfocusSliders() {
