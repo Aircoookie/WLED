@@ -27,7 +27,12 @@
 #define USERMOD_ID_FIXNETSERVICES 4            //Usermod "usermod_Fix_unreachable_netservices.h"
 #define USERMOD_ID_PIRSWITCH      5            //Usermod "usermod_PIR_sensor_switch.h"
 #define USERMOD_ID_IMU            6            //Usermod "usermod_mpu6050_imu.h"
-#define USERMOD_ID_GEOGABRELAY    7            //Usermod "Usermod_geogab_relay"
+#define USERMOD_ID_FOUR_LINE_DISP 7            //Usermod "usermod_v2_four_line_display.h 
+#define USERMOD_ID_ROTARY_ENC_UI  8            //Usermod "usermod_v2_rotary_encoder_ui.h"
+#define USERMOD_ID_AUTO_SAVE      9            //Usermod "usermod_v2_auto_save.h"
+#define USERMOD_ID_DHT           10            //Usermod "usermod_dht.h"
+#define USERMOD_ID_MODE_SORT     11            //Usermod "usermod_v2_mode_sort.h"
+#define USERMOD_ID_GEOGABRELAY   77            //Usermod "Usermod_geogab_relay"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
@@ -137,6 +142,7 @@
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
 #define WLED_ETH_ESP32_POE        2
+#define WLED_ETH_WESP32           3
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
