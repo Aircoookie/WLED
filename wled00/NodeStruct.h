@@ -27,6 +27,7 @@ struct NodeStruct
   uint8_t   unit;
   uint8_t   age;
   uint8_t   nodeType;
+  uint32_t  build;
 };
 typedef std::map<uint8_t, NodeStruct> NodesMap;
 

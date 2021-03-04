@@ -549,6 +549,7 @@ void serializeInfo(JsonObject root)
       node[F("type")] = getNodeTypeDisplayString(it->second.nodeType);
       node[F("ip")]   = it->second.ip.toString();
       node[F("age")]  = it->second.age;
+      node[F("build")] = it->second.build;
     }
   }
 }

@@ -148,6 +148,10 @@ button {
 	padding-bottom: 8px;
 }
 
+.valtd i {
+	font-size: small;
+}
+
 .slider-icon
 {
 	transform: translate(6px,3px);

@@ -453,7 +453,7 @@ function populateNodes(i)
 			var o = i.nodes[x];
 			if (o.name) {
 				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${o.name}</button>`;
-				urows += inforow(url,o.type);
+				urows += inforow(url,`${o.type}<br><i>${o.build==0?"N/A":o.build}</i>`);
 			}
 		}
 		if (i.nodes.length>0) {
