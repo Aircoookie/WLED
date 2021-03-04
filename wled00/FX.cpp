@@ -25,7 +25,9 @@
 */
 
 #include "FX.h"
+#ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
 #include "tv_colors.h"
+#endif
 
 #define IBN 5100
 #define PALETTE_SOLID_WRAP (paletteBlend == 1 || paletteBlend == 3)

@@ -219,6 +219,7 @@ void WLED::loop()
 
     //LED settings have been saved, re-init busses
     if (busConfigs[0] != nullptr) {
+      DEBUG_PRINTLN(F("Re-init busses."));
       busses.removeAll();
       uint32_t mem = 0;
       for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
@@ -254,6 +255,7 @@ void WLED::loop()
   if (millis() - lastMqttReconnectAttempt > 30000) {
 //    lastMqttReconnectAttempt = millis();  // don't do it in initMqtt()
     initMqtt();
+    yield();
     // refresh WLED nodes list
     refreshNodeList();
     sendSysInfoUDP();

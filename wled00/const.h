@@ -13,10 +13,12 @@
 //increase if you need more
 #define WLED_MAX_USERMODS 4
 
+#ifndef WLED_MAX_BUSSES
 #ifdef ESP8266
 #define WLED_MAX_BUSSES 3
 #else
 #define WLED_MAX_BUSSES 10
+#endif
 #endif
 
 //Usermod IDs
