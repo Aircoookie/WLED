@@ -10,7 +10,7 @@ String getNodeTypeDisplayString(uint8_t nodeType) {
 }
 
 NodeStruct::NodeStruct() :
-  age(0), nodeType(0)
+  age(0), nodeType(0), build(0)
 {
   for (uint8_t i = 0; i < 4; ++i) { ip[i] = 0; }
 }

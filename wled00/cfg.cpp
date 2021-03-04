@@ -167,14 +167,17 @@ void deserializeConfig() {
   #endif
   CJSON(irEnabled, hw[F("ir")][F("type")]);
 
-  int hw_relay_pin = hw[F("relay")][F("pin")];
+  JsonObject relay = hw[F("relay")];
+  int hw_relay_pin = relay[F("pin")];
   if (pinManager.allocatePin(hw_relay_pin,true)) {
     rlyPin = hw_relay_pin;
     pinMode(rlyPin, OUTPUT);
   } else {
     rlyPin = -1;
   }
-  CJSON(rlyMde, hw[F("relay")][F("rev")]);
+  if (relay.containsKey("rev")) {
+    rlyMde = !relay["rev"];
+  }
 
   //int hw_status_pin = hw[F("status")][F("pin")]; // -1
 
@@ -496,7 +499,7 @@ void serializeConfig() {
 
   JsonObject hw_relay = hw.createNestedObject("relay");
   hw_relay[F("pin")] = rlyPin;
-  hw_relay[F("rev")] = rlyMde;
+  hw_relay[F("rev")] = !rlyMde;
 
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status[F("pin")] = -1;
