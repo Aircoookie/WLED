@@ -2,6 +2,10 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103041
+
+-   Added destructor for BusPwm (fixes #1789)
+
 #### Build 2103040
 
 -   Fixed relay mode inverted when upgrading from 0.11.0

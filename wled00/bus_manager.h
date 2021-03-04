@@ -268,6 +268,10 @@ class BusPwm : public Bus {
     deallocatePins();
   }
 
+  ~BusPwm() {
+    cleanup();
+  }
+
   private: 
   uint8_t _pins[5] = {255, 255, 255, 255, 255};
   uint8_t _data[5] = {255, 255, 255, 255, 255};
