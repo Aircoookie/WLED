@@ -17,6 +17,7 @@
 
 // This gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup() {
+  delay(100);                                 // Give that poor microphone some time to setup.
   // Attempt to configure INMP441 Microphone
   esp_err_t err;
   const i2s_config_t i2s_config = {
@@ -24,7 +25,6 @@ void userSetup() {
     .sample_rate = SAMPLE_RATE*2,                       // 10240 * 2 (20480) Hz
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,       // could only get it to work with 32bits
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,        // LEFT when pin is tied to ground.
-//    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,       // Although detected, FFT broke when using this.
     .communication_format = i2s_comm_format_t(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
     .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,           // Interrupt level 1
     .dma_buf_count = 8,                                 // number of buffers
@@ -49,7 +49,7 @@ void userSetup() {
     while (true);
   }
   Serial.println("I2S driver installed.");
-  delay(100);
+  delay(250);
 
 
 // Test to see if we have a digital microphone installed or not.
