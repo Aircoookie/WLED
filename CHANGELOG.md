@@ -2,6 +2,20 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103040
+
+-   Fixed relay mode inverted when upgrading from 0.11.0
+-   Fixed no more than 2 pins per bus configurable in UI
+-   Changed to non-linear IR brightness steps (PR #1742)
+-   Fixed various warnings (PR #1744)
+-   Added UDP DNRGBW Mode (PR #1704)
+-   Added dynamic LED mapping with ledmap.json file (PR #1738)
+-   Added support for QuinLED-ESP32-Ethernet board
+-   Added support for WESP32 ethernet board (PR #1764)
+-   Added Caching for main UI (PR #1704)
+-   Added Tetrix mode (PR #1729)
+-   Added memory check on Bus creation
+
 #### Build 2102050
 
 -   Version bump to 0.12.0-a0 "Hikari"

@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2102050
+#define VERSION 2103040
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -197,8 +197,9 @@ WLED_GLOBAL int8_t rlyPin _INIT(-1);
 #else
 WLED_GLOBAL int8_t rlyPin _INIT(RLYPIN);
 #endif
+//Relay mode (1 = active high, 0 = active low, flipped in cfg.json)
 #ifndef RLYMDE
-WLED_GLOBAL bool rlyMde _INIT(1);
+WLED_GLOBAL bool rlyMde _INIT(true);
 #else
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
