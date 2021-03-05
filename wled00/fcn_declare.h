@@ -135,6 +135,7 @@ bool checkCountdown();
 void setCountdown();
 byte weekdayMondayFirst();
 void checkTimers();
+bool isDayTime();
 
 //overlay.cpp
 void initCronixie();

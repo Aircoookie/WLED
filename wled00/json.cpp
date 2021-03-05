@@ -509,6 +509,7 @@ void serializeInfo(JsonObject root)
   
   root[F("freeheap")] = ESP.getFreeHeap();
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
+  root[F("isday")] = daytime;
 
   usermods.addToJsonInfo(root);
   

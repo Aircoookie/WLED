@@ -305,6 +305,8 @@ void deserializeConfig() {
   CJSON(currentTimezone, if_ntp[F("tz")]);
   CJSON(utcOffsetSecs, if_ntp[F("offset")]);
   CJSON(useAMPM, if_ntp[F("ampm")]);
+  CJSON(longitude, if_ntp[F("ln")]);
+  CJSON(latitude, if_ntp[F("lt")]);
 
   JsonObject ol = doc[F("ol")];
   CJSON(overlayDefault ,ol[F("clock")]); // 0
@@ -620,6 +622,8 @@ void serializeConfig() {
   if_ntp[F("tz")] = currentTimezone;
   if_ntp[F("offset")] = utcOffsetSecs;
   if_ntp[F("ampm")] = useAMPM;
+  if_ntp[F("ln")] = longitude;
+  if_ntp[F("lt")] = latitude;
 
   JsonObject ol = doc.createNestedObject("ol");
   ol[F("clock")] = overlayDefault;

@@ -448,6 +448,10 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("TZ"),currentTimezone);
     sappend('v',SET_F("UO"),utcOffsetSecs);
     char tm[32];
+    dtostrf(longitude,5,2,tm);
+    sappends('s',SET_F("LN"),tm);
+    dtostrf(latitude,5,2,tm);
+    sappends('s',SET_F("LT"),tm);
     getTimeString(tm);
     sappends('m',SET_F("(\"times\")[0]"),tm);
     sappend('i',SET_F("OL"),overlayCurrent);

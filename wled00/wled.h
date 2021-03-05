@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2103050
+#define VERSION 2103051
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -515,6 +515,10 @@ WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(999000000L);
 WLED_GLOBAL IPAddress ntpServerIP;
 WLED_GLOBAL uint16_t ntpLocalPort _INIT(2390);
 WLED_GLOBAL uint16_t rolloverMillis _INIT(0);
+WLED_GLOBAL bool daytime _INIT(false);
+WLED_GLOBAL bool prevDaytime _INIT(false);
+WLED_GLOBAL float longitude _INIT(0.0);
+WLED_GLOBAL float latitude _INIT(0.0);
 
 // Temp buffer
 WLED_GLOBAL char* obuf;
