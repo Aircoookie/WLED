@@ -21,6 +21,12 @@ button {
   padding: 8px 12px;
   min-width: 48px;
 }
+.toprow {
+  top: 0;
+  position: sticky;
+  background-color:#222;
+  z-index:1;
+}
 .helpB {
   text-align: left;
   position: absolute;

@@ -272,8 +272,10 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
+    <div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="button" onclick="trySubmit()">Save</button><hr>
+    </div>
     <h2>LED &amp; Hardware setup</h2>
     Total LED count: <input name="LC" id="LC" type="number" min="1" max="8192" oninput="UI()" required readonly><br>
     <i>Recommended power supply for brightest white:</i><br>
