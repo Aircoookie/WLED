@@ -7,6 +7,11 @@
 #define WLEDPACKETSIZE 29
 #define UDP_IN_MAXSIZE 1472
 
+#ifdef WLED_USE_REALTIME_SMOOTHING
+#include "realtime_smooth.h"
+void setRealtimeFrame(RealtimeSmooth::rts_frame*);
+#endif
+
 void notify(byte callMode, bool followUp)
 {
   if (!udpConnected) return;
@@ -83,8 +88,12 @@ void realtimeLock(uint32_t timeoutMs, byte md)
 
   realtimeTimeout = millis() + timeoutMs;
   if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
+  
+  if (bri == 0 && realtimeMode == REALTIME_MODE_INACTIVE && md != realtimeMode) {
+    strip.setBrightness(scaledBri(255)); // Turn on if it was off
+  }
   realtimeMode = md;
-
+  
   if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
   if (md == REALTIME_MODE_GENERIC) strip.show();
 }
@@ -99,27 +108,109 @@ void sendTPM2Ack() {
   notifierUdp.endPacket();
 }
 
+#ifdef WLED_USE_REALTIME_SMOOTHING
+inline void setRealtimeFrame(RealtimeSmooth::rts_frame* frame) {
+  for(uint16_t i=0; i < RTS_MAX_PACKETS_PER_UPDATE; i++) {
+    setRealtime(frame->packets[i], frame->len[i]);
+#ifdef DEBUG_RTS
+    if(frame->len[i] == 0) rts.missed++;
+#endif
+  }
+}
+#endif
+
+void setRealtime(uint8_t *udpIn, uint16_t packetSize) {
+  if (packetSize < 2) return;
+  uint16_t i, id=0;
+  switch (udpIn[0]) {
+  case 1: //warls
+    for (i = 2; i < packetSize -3; i += 4) 
+      setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
+    break;
+
+  case 2: //drgb
+    for (i = 2; i < packetSize -2; i += 3) {
+	  setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+	  id++; if (id >= ledCount) break;
+    }
+    break;
+
+  case 3: //drgbw
+    for (i = 2; i < packetSize -3; i += 4) {
+	  setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+	  id++; if (id >= ledCount) break;
+    }
+    break;
+
+  case 4: //dnrgb
+    id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+    for (i = 4; i < packetSize -2; i += 3) {
+      if (id >= ledCount) break;
+      setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
+      id++;
+    }
+    break;
+
+  case 5: //dnrgbw
+    id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+    for (i = 4; i < packetSize -2; i += 4) {
+      if (id >= ledCount) break;
+      setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+      id++;
+    }
+    break;
+    
+  case 6: //irgbw (=warlsw), with 2byte index
+    for (i = 2; i < packetSize - 5; i += 6) {
+      id = ((udpIn[i+1] << 0) & 0xFF) + ((udpIn[i] << 8) & 0xFF00);
+      setRealtimePixel(id, udpIn[i+2], udpIn[i+3], udpIn[i+4], udpIn[i+5]);
+    }
+    break;
+  }
+}
 
 void handleNotifications()
 {
+  uint32_t now = millis();
+
+#ifdef WLED_USE_REALTIME_SMOOTHING
+#ifdef DEBUG_RTS
+  rts.log(now); 
+#endif 
+  // Play back buffered realtime frames at the calculated interval
+  // (or, during training, as soon as target buffer fullness is reached)
+  if ((rts.sample_cnt >= RTS_N_TRAIN && now - rts.last_remove > rts.mean_deltaT()) || 
+      (rts.sample_cnt <  RTS_N_TRAIN && rts.frame_cnt >= RTS_TARGET)) {
+    RealtimeSmooth::rts_frame* send = rts.remove(now);
+    if (send != NULL) {
+      setRealtimeFrame(send);
+      strip.show();
+    } // If buffer ran dry, we can just wait...
+  }
+#endif
+  
   //send second notification if enabled
-  if(udpConnected && notificationTwoRequired && millis()-notificationSentTime > 250){
+  if(udpConnected && notificationTwoRequired && now-notificationSentTime > 250){
     notify(notificationSentCallMode,true);
   }
-  
-  if (e131NewData && millis() - strip.getLastShow() > 15)
+
+  // Show any new ES131 data
+  if (e131NewData && now - strip.getLastShow() > 15)
   {
     e131NewData = false;
     strip.show();
   }
 
   //unlock strip when realtime UDP times out
-  if (realtimeMode && millis() > realtimeTimeout)
+  if (realtimeMode && now > realtimeTimeout)
   {
     if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
     strip.setBrightness(scaledBri(bri));
     realtimeMode = REALTIME_MODE_INACTIVE;
     realtimeIP[0] = 0;
+#ifdef WLED_USE_REALTIME_SMOOTHING
+    rts.reset();
+#endif
   }
 
   //receive UDP notifications
@@ -160,17 +251,64 @@ void handleNotifications()
   
   //notifier and UDP realtime
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) return;
-  if (!isSupp && notifierUdp.remoteIP() == Network.localIP()) return; //don't process broadcasts we send ourselves
 
-  uint8_t udpIn[packetSize +1];
+  realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
+
+#ifdef WLED_USE_REALTIME_SMOOTHING
+  uint8_t *udpIn = rts.get_free_buffer();
+#else
+  uint8_t udpIn[packetSize+1];
+#endif
   if (isSupp) notifier2Udp.read(udpIn, packetSize);
-  else         notifierUdp.read(udpIn, packetSize);
+  else notifierUdp.read(udpIn, packetSize); 
 
+  if (receiveDirect && !isSupp) { // notifications OR realtime on main UDP port
+    if (udpIn[0] > 0 && udpIn[0] <= 6) {
+      if (udpIn[1] == 0) {
+	realtimeTimeout = 0;
+	return;
+      } else {
+	realtimeLock(udpIn[1]*1000 + 1, REALTIME_MODE_UDP);
+      }
+      if (realtimeOverride || realtimeIP == Network.localIP())
+	return;
+    
+      do { // Read ALL pending realtime packets!
+	if(udpIn[0] > 0 && udpIn[0] <= 6) {  // just skip non-realtime
+#ifdef WLED_USE_REALTIME_SMOOTHING
+	  if (packetSize > RTS_MAX_SIZE) continue;
+	  if (!rts.add(udpIn, packetSize, now)) { // ring overflowed: remove & show one
+	    RealtimeSmooth::rts_frame* show_now = rts.remove(now); 
+	    setRealtimeFrame(show_now);
+	    strip.show();
+	    rts.add(udpIn, packetSize, now, true); // try again
+	  }
+	  //DEBUG_PRINTF("addPacket+overflow took %u ms\n", millis() - now2);
+#else // If not RealtimeSmoothing, just display each packet immediately
+	  setRealtime(udpIn,packetSize); // Show realtime packet immediately
+	  strip.show();
+#endif
+	}
+	packetSize = notifierUdp.parsePacket();
+	if(packetSize) { // A packet is waiting... read it!
+#ifdef WLED_USE_REALTIME_SMOOTHING
+	  udpIn = rts.get_free_buffer();
+	  #if DEBUG_RTS
+	  rts.waiting++;
+	  #endif
+#endif
+	  notifierUdp.read(udpIn, packetSize);
+	}
+      } while (packetSize);
+      return;
+    }
+  }
+  
   //wled notifier, ignore if realtime packets active
   if (udpIn[0] == 0 && !realtimeMode && receiveNotifications)
   {
     //ignore notification if received within a second after sending a notification ourselves
-    if (millis() - notificationSentTime < 1000) return;
+    if (now - notificationSentTime < 1000) return;
     if (udpIn[1] > 199) return; //do not receive custom versions
     
     bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
@@ -263,69 +401,6 @@ void handleNotifications()
       tpmPacketCount = 0;
       strip.show();
     }
-    return;
-  }
-
-  //UDP realtime: 1 warls 2 drgb 3 drgbw
-  if (udpIn[0] > 0 && udpIn[0] < 5)
-  {
-    realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
-    DEBUG_PRINTLN(realtimeIP);
-    if (packetSize < 2) return;
-
-    if (udpIn[1] == 0)
-    {
-      realtimeTimeout = 0;
-      return;
-    } else {
-      realtimeLock(udpIn[1]*1000 +1, REALTIME_MODE_UDP);
-    }
-    if (realtimeOverride) return;
-
-    if (udpIn[0] == 1) //warls
-    {
-      for (uint16_t i = 2; i < packetSize -3; i += 4)
-      {
-        setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
-      }
-    } else if (udpIn[0] == 2) //drgb
-    {
-      uint16_t id = 0;
-      for (uint16_t i = 2; i < packetSize -2; i += 3)
-      {
-        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-
-        id++; if (id >= ledCount) break;
-      }
-    } else if (udpIn[0] == 3) //drgbw
-    {
-      uint16_t id = 0;
-      for (uint16_t i = 2; i < packetSize -3; i += 4)
-      {
-        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-        
-        id++; if (id >= ledCount) break;
-      }
-    } else if (udpIn[0] == 4) //dnrgb
-    {
-      uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (uint16_t i = 4; i < packetSize -2; i += 3)
-      {
-          if (id >= ledCount) break;
-        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-        id++;
-      }
-    } else if (udpIn[0] == 5) //dnrgbw
-    {
-      uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-      for (uint16_t i = 4; i < packetSize -2; i += 4)
-      {
-          if (id >= ledCount) break;
-        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-        id++;
-      }
-    }
-    strip.show();
     return;
   }
 

@@ -169,6 +169,7 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte 
 void notify(byte callMode, bool followUp=false);
 void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void handleNotifications();
+void setRealtime(uint8_t* udpIn, uint16_t packetSize);
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 
 //um_manager.cpp
