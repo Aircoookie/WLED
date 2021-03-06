@@ -509,7 +509,15 @@ void serializeInfo(JsonObject root)
   
   root[F("freeheap")] = ESP.getFreeHeap();
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
+
   root[F("isday")] = daytime;
+#ifdef WLED_DEBUG
+  char tmp[30];
+  sprintf(tmp,"%02d:%02d",hour(sunrise),minute(sunrise));
+  root[F("sunrise")] = String(tmp);
+  sprintf(tmp,"%02d:%02d",hour(sunset),minute(sunset));
+  root[F("sunset")] = String(tmp);
+#endif
 
   usermods.addToJsonInfo(root);
   

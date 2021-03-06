@@ -219,9 +219,7 @@ void getTimeString(char* out)
     if (hr > 11) hr -= 12;
     if (hr == 0) hr  = 12;
   }
-  sprintf(out,"%i-%i-%i, %i:%s%i:%s%i",year(localTime), month(localTime), day(localTime), 
-                                       hr,(minute(localTime)<10)?"0":"",minute(localTime),
-                                       (second(localTime)<10)?"0":"",second(localTime));
+  sprintf(out,"%i-%i-%i, %02d:%02d:%02d",year(localTime), month(localTime), day(localTime), hr, minute(localTime), second(localTime));
   if (useAMPM)
   {
     strcat(out,(hour(localTime) > 11)? " PM":" AM");
@@ -259,16 +257,37 @@ byte weekdayMondayFirst()
   return wd;
 }
 
+int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset=false);
+
 void checkTimers()
 {
   if (lastTimerMinute != minute(localTime)) //only check once a new minute begins
   {
-    daytime = isDayTime();
-    if (prevDaytime != daytime) {
-      // sunrise or sunset
-      DEBUG_PRINTLN(daytime?F("Sunrise"):F("Sunset"));
-    }
     lastTimerMinute = minute(localTime);
+
+    // calculate sunrise and sunset at midnight (if longitude and latitude are set)
+    if (((int)longitude || (int)latitude) && ((!hour(localTime) && !minute(localTime)) || !sunrise)) {
+      struct tm tim_0;
+      tim_0.tm_year = year(localTime)-1900;
+      tim_0.tm_mon = month(localTime)-1;
+      tim_0.tm_mday = day(localTime);
+      tim_0.tm_sec = 0;
+      tim_0.tm_isdst = 0;
+
+      int minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude);
+      tim_0.tm_hour = minUTC / 60;
+      tim_0.tm_min = minUTC % 60;
+      sunrise = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
+      DEBUG_PRINTF("Sunrise: %02d:%02d\n", hour(sunrise),minute(sunrise));
+
+      minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude, true);
+      tim_0.tm_hour = minUTC / 60;
+      tim_0.tm_min = minUTC % 60;
+      sunset = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
+      DEBUG_PRINTF("Sunset: %02d:%02d\n", hour(sunset),minute(sunset));
+    }
+    if (sunrise && sunset) daytime = difftime(localTime, sunrise) > 0 && difftime(localTime, sunset) < 0;
+
     for (uint8_t i = 0; i < 8; i++)
     {
       if (timerMacro[i] != 0
@@ -280,54 +299,77 @@ void checkTimers()
         applyPreset(timerMacro[i]);
       }
     }
+    // sunrise macro
+    if (sunrise && timerMacro[8] != 0
+        && (hour(sunrise) == hour(localTime))
+        && (minute(sunrise) + timerMinutes[8]) == minute(localTime)
+        && (timerWeekday[8] & 0x01) //timer is enabled
+        && timerWeekday[8] >> weekdayMondayFirst() & 0x01) //timer should activate at current day of week
+    {
+      applyPreset(timerMacro[8]);
+    }
+    // sunset macro
+    if (sunset && timerMacro[9] != 0
+        && (hour(sunrise) == hour(localTime))
+        && (minute(sunrise) + timerMinutes[9]) == minute(localTime)
+        && (timerWeekday[9] & 0x01) //timer is enabled
+        && timerWeekday[9] >> weekdayMondayFirst() & 0x01) //timer should activate at current day of week
+    {
+      applyPreset(timerMacro[9]);
+    }
   }
 }
 
-/*
- * This program calculates solar positions as a function of location, date, and time.
- * The equations are from Jean Meeus, Astronomical Algorithms, Willmann-Bell, Inc., Richmond, VA
- * (C) 2015, David Brooks, Institute for Earth Science Research and Education.
- * http://www.instesre.org/ArduinoUnoSolarCalculations.pdf
- */
-//#define DEG_TO_RAD 0.01745329
-//#define PI 3.141592654
-#define TWOPI 6.28318531
+#define ZENITH -.83
+int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset) {
+  //1. first calculate the day of the year
+  float N1 = floor(275 * month / 9);
+  float N2 = floor((month + 9) / 12);
+  float N3 = (1 + floor((year - 4 * floor(year / 4) + 2) / 3));
+  float N = N1 - (N2 * N3) + day - 30;
 
-long JulianDate(int year, int month, int day) {
-	if (month<=2) {
-		year--; month+=12;
-	}
-	int A=year/100;
-	int B=2-A+A/4;
-	return (long)(365.25*(year + 4716)) + (int)(30.6001*(month + 1)) + day + B - 1524;
-}
+  //2. convert the longitude to hour value and calculate an approximate time
+  float lngHour = lon / 15.0;      
+  float t = N + (((sunset ? 18 : 6) - lngHour) / 24);
+  
+  //3. calculate the Sun's mean anomaly   
+  float M = (0.9856 * t) - 3.289;
 
-bool isDayTime() {
-	float JD_frac,T,L0,M,C,L_true,GrHrAngle,Obl,RA,Decl,HrAngle,elev;
-	long JD_whole,JDx;
+  //4. calculate the Sun's true longitude
+  float L = fmod(M + (1.916 * sin((PI/180)*M)) + (0.020 * sin(2 *(PI/180) * M)) + 282.634,360.0);
 
-	float Lon = longitude*DEG_TO_RAD;
-	float Lat = latitude*DEG_TO_RAD;
+  //5a. calculate the Sun's right ascension      
+  float RA = fmod(180/PI*atan(0.91764 * tan((PI/180)*L)),360.0);
 
-  // calculate elevation of the sun (>0 daytime, <0 nighttime)
-	JD_whole  = JulianDate(year(localTime), month(localTime), day(localTime));
-	JD_frac   = (hour(localTime) + minute(localTime)/60. + second(localTime)/3600.)/24. - .5;
-	JDx       = JD_whole - 2451545;
-	T         = (JDx + JD_frac)/36525.;
-	L0        = DEG_TO_RAD*fmod(280.46645 + 36000.76983*T, 360);
-	M         = DEG_TO_RAD*fmod(357.5291 + 35999.0503*T, 360);
-	C         = DEG_TO_RAD*((1.9146-0.004847*T)*sin(M) + (0.019993-0.000101*T)*sin(2*M) + 0.00029*sin(3*M));
-	Obl       = DEG_TO_RAD*(23 + 26/60. + 21.448/3600. - 46.815/3600*T);
-	GrHrAngle = 280.46061837 + (360*JDx)%360 + .98564736629*JDx + 360.98564736629*JD_frac;
-	GrHrAngle = fmod(GrHrAngle, 360.);
-	L_true    = fmod(C + L0, TWOPI);
-	RA        = atan2(sin(L_true)*cos(Obl), cos(L_true));
-	Decl      = asin(sin(Obl)*sin(L_true));
-	HrAngle   = DEG_TO_RAD*GrHrAngle + Lon - RA;
+  //5b. right ascension value needs to be in the same quadrant as L   
+  float Lquadrant  = floor( L/90) * 90;
+  float RAquadrant = floor(RA/90) * 90;
+  RA = RA + (Lquadrant - RAquadrant);
 
-	elev = asin(sin(Lat)*sin(Decl) + cos(Lat)*(cos(Decl)*cos(HrAngle)));
-	// Azimuth measured eastward from north.
-	// azimuth = PI+atan2(sin(HrAngle),cos(HrAngle)*sin(Lat)-tan(Decl)*cos(Lat));
-	
-	return elev > 0.; // if elevation is gt 0 then it is a day
+  //5c. right ascension value needs to be converted into hours   
+  RA = RA / 15;
+
+  //6. calculate the Sun's declination
+  float sinDec = 0.39782 * sin((PI/180)*L);
+  float cosDec = cos(asin(sinDec));
+
+  //7a. calculate the Sun's local hour angle
+  float cosH = (sin((PI/180)*ZENITH) - (sinDec * sin((PI/180)*lat))) / (cosDec * cos((PI/180)*lat));
+  /*   
+  if (cosH >  1) the sun never rises on this location (on the specified date)
+  if (cosH < -1) the sun never sets on this location (on the specified date)
+  */
+
+  //7b. finish calculating H and convert into hours
+  float H = sunset ? (180/PI)*acos(cosH) : 360 - (180/PI)*acos(cosH);
+  H = H / 15;
+
+  //8. calculate local mean time of rising/setting      
+  float T = H + RA - (0.06571 * t) - 6.622;
+
+  //9. adjust back to UTC
+  float UT = fmod(T - lngHour,24.0);
+
+  // return in minutes from midnight
+	return UT*60;
 }

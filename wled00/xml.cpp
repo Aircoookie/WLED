@@ -480,10 +480,10 @@ void getSettingsJS(byte subPage, char* dest)
 
     char k[4];
     k[2] = 0; //Time macros
-    for (int i = 0; i<8; i++)
+    for (int i = 0; i<10; i++)
     {
       k[1] = 48+i; //ascii 0,1,2,3
-      k[0] = 'H'; sappend('v',k,timerHours[i]);
+      if (i<8) { k[0] = 'H'; sappend('v',k,timerHours[i]); }
       k[0] = 'N'; sappend('v',k,timerMinutes[i]);
       k[0] = 'T'; sappend('v',k,timerMacro[i]);
       k[0] = 'W'; sappend('v',k,timerWeekday[i]);

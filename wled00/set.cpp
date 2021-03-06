@@ -328,7 +328,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     macroDoublePress = request->arg(F("MD")).toInt();
 
     char k[3]; k[2] = 0;
-    for (int i = 0; i<8; i++)
+    for (int i = 0; i<10; i++)
     {
       k[1] = i+48;//ascii 0,1,2,3
 
