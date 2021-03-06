@@ -1,6 +1,6 @@
 /*
  * Realtime Smoothing with Active Interval Control.  J.D. Smith, 2021
- * Smooths playback intervals of (single packet) UDP realtime frames
+ * Smooths playback intervals of (single or multi-packet) UDP realtime frames
  */
 
 #ifndef RTS_N_FRAME  //Number of buffered frames to store
