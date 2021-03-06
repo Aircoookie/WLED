@@ -2,6 +2,10 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103050
+
+-   Fixed incorrect over-memory indication in LED settings on ESP32
+
 #### Build 2103041
 
 -   Added destructor for BusPwm (fixes #1789)

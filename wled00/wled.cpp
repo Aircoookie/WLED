@@ -66,7 +66,7 @@ ethernet_settings ethernetBoards[] = {
     5,			              // eth_power,
     23,			              // eth_mdc,
     18,			              // eth_mdio,
-    ETH_PHY_LAN8720,      // eth_type, (confirm this is right?)
+    ETH_PHY_LAN8720,      // eth_type,
     ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
   }
 };
@@ -338,8 +338,7 @@ void WLED::setup()
   WiFi.persistent(false);
   WiFi.onEvent(WiFiEvent);
 
-  // Serial.println(F("Ada"));
-  DEBUG_PRINTLN(F("Ada"));
+  Serial.println(F("Ada"));
 
   // generate module IDs
   escapedMac = WiFi.macAddress();

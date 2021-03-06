@@ -120,7 +120,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     ledCount = request->arg(F("LC")).toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
-    //DMA method uses too much ram, TODO: limit!
 
     // upate other pins
     #ifndef WLED_DISABLE_INFRARED

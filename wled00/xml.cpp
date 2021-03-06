@@ -254,7 +254,7 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   if (subPage == 2) {
-    char nS[3];
+    char nS[8];
 
     // add usermod pins as d.um_p array (TODO: usermod config shouldn't use state. instead we should load "um" object from cfg.json)
     /*DynamicJsonDocument doc(JSON_BUFFER_SIZE);
@@ -273,8 +273,10 @@ void getSettingsJS(byte subPage, char* dest)
     }*/
 
     #if defined(WLED_MAX_BUSSES) && WLED_MAX_BUSSES>1
-      oappend(SET_F("addLEDs("));
+      oappend(SET_F("bLimits("));
       oappend(itoa(WLED_MAX_BUSSES,nS,10));
+      oappend(",");
+      oappend(itoa(MAX_LED_MEMORY,nS,10));
       oappend(SET_F(");"));
     #endif
 
