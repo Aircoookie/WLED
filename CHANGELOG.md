@@ -2,6 +2,10 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103060
+
+-   Auto start field population in bus config
+
 #### Build 2103050
 
 -   Fixed incorrect over-memory indication in LED settings on ESP32
