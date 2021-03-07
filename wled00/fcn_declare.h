@@ -135,7 +135,7 @@ bool checkCountdown();
 void setCountdown();
 byte weekdayMondayFirst();
 void checkTimers();
-bool isDayTime();
+int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset=false);
 
 //overlay.cpp
 void initCronixie();

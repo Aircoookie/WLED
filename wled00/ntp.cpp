@@ -257,8 +257,6 @@ byte weekdayMondayFirst()
   return wd;
 }
 
-int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset=false);
-
 void checkTimers()
 {
   if (lastTimerMinute != minute(localTime)) //only check once a new minute begins
@@ -331,6 +329,7 @@ void checkTimers()
 }
 
 #define ZENITH -0.83
+// get sunrise (or sunset) time (in minutes) for a given day at a given geo location
 int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset) {
   //1. first calculate the day of the year
   float N1 = floor(275 * month / 9);
