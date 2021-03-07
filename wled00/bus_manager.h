@@ -47,7 +47,6 @@ class Bus {
   virtual void cleanup() {};
 
   virtual ~Bus() { //throw the bus under the bus
-    //Serial.println("Destructor!");
   }
 
   virtual uint8_t getPins(uint8_t* pinArray) { return 0; }
@@ -266,6 +265,10 @@ class BusPwm : public Bus {
 
   void cleanup() {
     deallocatePins();
+  }
+
+  ~BusPwm() {
+    cleanup();
   }
 
   private: 

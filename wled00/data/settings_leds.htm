@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=500">
 	<title>LED Settings</title>
 	<script>
-    var d=document,laprev=55,maxST=1,bmax=5000,bquot=0; //maximum bytes for LED allocation: 5kB for 8266, 32kB for 32
+    var d=document,laprev=55,maxB=1,maxM=5000,maxPB=4096,bquot=0; //maximum bytes for LED allocation: 5kB for 8266, 32kB for 32
 		function H()
 		{
 			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");
@@ -13,6 +13,9 @@
 		function B()
 		{
 			window.open("/settings","_self");
+    }
+    function bLimits(b,p,m) {
+      maxB = b; maxM = m; maxPB = p;
     }
     function trySubmit() {
       var LCs = d.getElementsByTagName("input");
@@ -32,10 +35,10 @@
             }
           }
       }
-      if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (bmax < 10000) msg += " Consider using an ESP32."; alert(msg); return;}
+      if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += " Consider using an ESP32."; alert(msg); return;}
       if (d.Sf.reportValidity()) d.Sf.submit();
     }
-		function S(){GetV();setABL(); if (maxST>4) bmax=64000; d.getElementById('m1').innerHTML = bmax;}
+		function S(){GetV();setABL();}
     function enABL()
     {
       var en = d.getElementById('able').checked;
@@ -63,16 +66,17 @@
         case 255: d.Sf.LAsel.value = 255; break;
         default: d.getElementById('LAdis').style.display = 'inline';
       }
+      d.getElementById('m1').innerHTML = maxM;
       UI();
     }
     //returns mem usage
     function getMem(type, len, p0) {
       //len = parseInt(len);
       if (type < 32) {
-        if (bmax < 10000 && p0 ==3) { //8266 DMA uses 5x the mem
+        if (maxM < 10000 && p0 ==3) { //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
           return len*15;
-        } else if (bmax > 10000) //ESP32 RMT uses double buffer?
+        } else if (maxM >= 10000) //ESP32 RMT uses double buffer?
         {
           if (type > 29) return len*8; //RGBW
           return len*6;
@@ -117,7 +121,7 @@
               LK.value="";
             }
           }
-          if (type == 30 || type == 31 || type == 44 || type == 45) isRGBW = true;
+          if (type == 30 || type == 31 || (type > 40 && type < 46 && type != 43)) isRGBW = true;
           d.getElementById("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
           d.getElementById("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
         }
@@ -143,7 +147,7 @@
       }
 
       d.getElementById('m0').innerHTML = memu;
-      bquot = memu / bmax * 100;
+      bquot = memu / maxM * 100;
       d.getElementById('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? bquot > 90 ? "red":"orange":"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
       d.getElementById('ledwarning').style.display = (maxLC > 800 || bquot > 80) ? 'inline':'none';
       //TODO add warning "Recommended pins on ESP8266 are 1 and 2 (3 only with low LED count)"
@@ -174,14 +178,20 @@
 			d.getElementById('psu').innerHTML = s;
       d.getElementById('psu2').innerHTML = isWS2815 ? "" : s2;
     }
+    function lastEnd(i) {
+      if (i<1) return 0;
+      v = parseInt(d.getElementsByName("LS"+(i-1))[0].value) + parseInt(d.getElementsByName("LC"+(i-1))[0].value);
+      if (isNaN(v)) return 0;
+      return v;
+    }
     function addLEDs(n)
     {
-      if (n>1) {maxST=n; d.getElementById("+").style.display="inline"; return;}
+      if (n>1) {maxB=n; d.getElementById("+").style.display="inline"; return;}
 
       var o = d.getElementsByClassName("iST");
       var i = o.length;
 
-      if ((n==1 && i>=maxST) || (n==-1 && i==0)) return;
+      if ((n==1 && i>=maxB) || (n==-1 && i==0)) return;
 
       var f = d.getElementById("mLC");
       if (n==1) {
@@ -218,9 +228,9 @@
           <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="40" style="width:35px"/>
           <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="40" style="width:35px"/>
           <br>
-          <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" min="0" max="8191" value="0" required />&nbsp;
+          <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" min="0" max="8191" value="${lastEnd(i)}" required />&nbsp;
           <div id="dig${i}" style="display:inline">
-          Count: <input type="number" name="LC${i}" min="0" max="2048" value="1" required oninput="UI()" /><br>
+          Count: <input type="number" name="LC${i}" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br>
           Reverse: <input type="checkbox" name="CV${i}"></div><br>
         </div>`;
         f.insertAdjacentHTML("beforeend", cn);
@@ -229,7 +239,7 @@
         o[--i].remove();--i;
       }
 
-      d.getElementById("+").style.display = (i<maxST-1) ? "inline":"none";
+      d.getElementById("+").style.display = (i<maxB-1) ? "inline":"none";
       d.getElementById("-").style.display = (i>0) ? "inline":"none";
 
       UI();

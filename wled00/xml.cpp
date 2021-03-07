@@ -254,7 +254,7 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   if (subPage == 2) {
-    char nS[3];
+    char nS[8];
 
     // add usermod pins as d.um_p array (TODO: usermod config shouldn't use state. instead we should load "um" object from cfg.json)
     /*DynamicJsonDocument doc(JSON_BUFFER_SIZE);
@@ -272,11 +272,13 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(SET_F("];"));
     }*/
 
-    #if defined(WLED_MAX_BUSSES) && WLED_MAX_BUSSES>1
-      oappend(SET_F("addLEDs("));
-      oappend(itoa(WLED_MAX_BUSSES,nS,10));
-      oappend(SET_F(");"));
-    #endif
+    oappend(SET_F("bLimits("));
+    oappend(itoa(WLED_MAX_BUSSES,nS,10));
+    oappend(",");
+    oappend(itoa(MAX_LEDS_PER_BUS,nS,10));
+    oappend(",");
+    oappend(itoa(MAX_LED_MEMORY,nS,10));
+    oappend(SET_F(");"));
 
     oappend(SET_F("d.Sf.LC.max=")); //TODO Formula for max LEDs on ESP8266 depending on types. 500 DMA or 1500 UART (about 4kB mem usage)
     oappendi(MAX_LEDS);
