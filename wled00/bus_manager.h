@@ -287,10 +287,6 @@ class BusPwm : public Bus {
   uint8_t getPins(uint8_t* pinArray) {
     uint8_t numPins = NUM_PWM_PINS(_type);
     for (uint8_t i = 0; i < numPins; i++) {
-      #ifdef WLED_DEBUG
-      Serial.print(F("Getting pin="));
-      Serial.println(_pins[i]);
-      #endif
       pinArray[i] = _pins[i];
     }
     return numPins;
