@@ -55,7 +55,6 @@ class Bus {
   virtual void cleanup() {};
 
   virtual ~Bus() { //throw the bus under the bus
-    //Serial.println("Destructor!");
   }
 
   virtual uint8_t getPins(uint8_t* pinArray) { return 0; }
@@ -243,10 +242,6 @@ class BusPwm : public Bus {
     _valid = true;
   };
 
-  ~BusPwm() {
-    cleanup();
-  }
-
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (pix != 0 || !_valid) return; //only react to first pixel
     uint8_t r = c >> 16;
@@ -307,6 +302,10 @@ class BusPwm : public Bus {
 
   inline void cleanup() {
     deallocatePins();
+  }
+
+  ~BusPwm() {
+    cleanup();
   }
 
   private: 

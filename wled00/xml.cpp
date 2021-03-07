@@ -256,6 +256,9 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 2)
   {
+    char nS[8];
+
+    // (TODO: usermod config shouldn't use state. instead we should load "um" object from cfg.json)
     // add reserved and usermod pins as d.um_p array
     DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
     JsonObject mods = doc.createNestedObject(F("um"));
@@ -284,21 +287,14 @@ void getSettingsJS(byte subPage, char* dest)
     }
     oappend(SET_F("];"));
 
-    // set limit for number of busses
-    #if defined(WLED_MAX_BUSSES) && WLED_MAX_BUSSES>1
-    oappend(SET_F("addLEDs("));
-    oappendi(WLED_MAX_BUSSES);
+    // set limits
+    oappend(SET_F("bLimits("));
+    oappend(itoa(WLED_MAX_BUSSES,nS,10));
+    oappend(",");
+    oappend(itoa(MAX_LEDS_PER_BUS,nS,10));
+    oappend(",");
+    oappend(itoa(MAX_LED_MEMORY,nS,10));
     oappend(SET_F(");"));
-    #endif
-
-    // set limit for LED count
-    oappend(SET_F("LCmax="));
-    oappendi(MAX_LEDS);
-    oappend(";");
-    // set limit for LED memory
-    oappend(SET_F("bmax="));
-    oappendi(MAX_LED_MEMORY);
-    oappend(";");
 
     sappend('v',SET_F("LC"),ledCount);
 

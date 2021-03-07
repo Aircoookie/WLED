@@ -30,8 +30,8 @@ void deserializeConfig() {
     return;
   }
 
-  //int rev_major = doc[F("rev")][0]; // 1
-  //int rev_minor = doc[F("rev")][1]; // 0
+  //int rev_major = doc["rev"][0]; // 1
+  //int rev_minor = doc["rev"][1]; // 0
 
   //long vid = doc[F("vid")]; // 2010020
 
@@ -127,7 +127,7 @@ void deserializeConfig() {
     //(this shouldn't have been in ins obj. but remains here for compatibility)
     skipFirstLed |= skipFirst = (bool) elm[F("skip")];
     uint8_t ledType = elm[F("type")] | TYPE_WS2812_RGB;
-    bool reversed = elm[F("rev")];
+    bool reversed = elm["rev"];
     //RGBW mode is enabled if at least one of the strips is RGBW
     if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
     useRGBW |= (bool)elm[F("rgbw")];
