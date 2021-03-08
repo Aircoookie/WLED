@@ -296,6 +296,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (ntpEnabled && WLED_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
+    // force a sunrise/sunset re-calculation
+    sunrise = sunset =0; 
 
     if (request->hasArg(F("OL"))) {
       overlayDefault = request->arg(F("OL")).toInt();
