@@ -264,7 +264,7 @@ void checkTimers()
     lastTimerMinute = minute(localTime);
 
     // calculate sunrise and sunset at midnight (if longitude and latitude are set)
-    if (((int)longitude || (int)latitude) && ((!hour(localTime) && !minute(localTime)) || (!sunrise && !sunset))) {
+    if (((int)longitude || (int)latitude) /*&& ((!hour(localTime) && !minute(localTime)) || (!sunrise && !sunset))*/) {
       struct tm tim_0;
       tim_0.tm_year = year(localTime)-1900;
       tim_0.tm_mon = month(localTime)-1;
