@@ -316,11 +316,11 @@ US-MST/MDT</option><option value="7">US-AZ</option><option value="8">US-PST/PDT
 </option><option value="17">ACST/ACDT</option><option value="18">HST (Hawaii)
 </option></select><br>UTC offset: <input name="UO" type="number" min="-65500" 
 max="65500" required> seconds (max. 18 hours)<br>Current local time is <span 
-class="times">unknown</span>.<br>Longitude: <input name="LN" type="number" 
-min="-180" max="180" step="0.01"> Latitude: <input name="LT" type="number" 
-min="-66.6" max="66.6" step="0.01"><h3>Clock</h3>Clock Overlay: <select 
-name="OL" onchange="Cs()"><option value="0" id="cn" selected="selected">None
-</option><option value="1" id="ca">Analog Clock</option><option value="2">
+class="times">unknown</span>.<br>Latitude (N): <input name="LT" type="number" 
+min="-66.6" max="66.6" step="0.01"> Longitude (E): <input name="LN" 
+type="number" min="-180" max="180" step="0.01"><h3>Clock</h3>Clock Overlay: 
+<select name="OL" onchange="Cs()"><option value="0" id="cn" selected="selected">
+None</option><option value="1" id="ca">Analog Clock</option><option value="2">
 Single Digit Clock</option><option value="3" id="cc">Cronixie Clock</option>
 </select><br><div id="coc">First LED: <input name="O1" type="number" min="0" 
 max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" 
