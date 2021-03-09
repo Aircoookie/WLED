@@ -875,7 +875,7 @@ input[type=number]::-webkit-outer-spin-button {
 .list {
 	position: relative;
 	width: 260px;
-	border-radius: 20px;
+	border-radius: 0 0 20px 20px;
 	background-color: var(--c-2);
 	transition: background-color 0.5s;
 	overflow: hidden;
@@ -951,9 +951,9 @@ input[type="text"].fnd {
 	width: 260px;
 	box-sizing: border-box;
     padding: 8px 48px 8px 60px;
-    margin: 5px auto;
+    margin: 5px auto 0;
 	text-align: left;
-	border-radius: 0;
+	border-radius: 20px 20px 0 0;
 	background: var(--c-2);
     border-bottom: 1px solid var(--c-3);
 }
