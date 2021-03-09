@@ -336,7 +336,7 @@ void deserializeConfig() {
   uint8_t it = 0;
   for (JsonObject timer : timers) {
     if (it > 9) break;
-    if (it<8 && timer[F("hour")]==255) it=8;
+    if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset 
     CJSON(timerHours[it], timer[F("hour")]);
     CJSON(timerMinutes[it], timer[F("min")]);
     CJSON(timerMacro[it], timer[F("macro")]);
@@ -647,7 +647,7 @@ void serializeConfig() {
   JsonArray timers_ins = timers.createNestedArray("ins");
 
   for (byte i = 0; i < 10; i++) {
-    if (timerMacro[i] == 0 && (timerHours[i] == 0 || timerHours[i] == 255) && timerMinutes[i] == 0) continue;
+    if (timerMacro[i] == 0 && timerHours[i] == 0 && timerMinutes[i] == 0) continue; // sunrise/sunset get saved always (timerHours=255)
     JsonObject timers_ins0 = timers_ins.createNestedObject();
     timers_ins0[F("en")] = (timerWeekday[i] & 0x01);
     timers_ins0[F("hour")] = timerHours[i];

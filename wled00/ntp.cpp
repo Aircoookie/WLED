@@ -198,6 +198,9 @@ bool checkNTPResponse()
     setTime(epoch);
     DEBUG_PRINTLN(epoch);
     if (countdownTime - now() > 0) countdownOverTriggered = false;
+    // if time changed re-calculate sunrise/sunset
+    updateLocalTime();
+    calculateSunriseAndSunset();
     return true;
   }
   return false;
@@ -263,37 +266,8 @@ void checkTimers()
   {
     lastTimerMinute = minute(localTime);
 
-    // calculate sunrise and sunset at midnight (if longitude and latitude are set)
-    if (((int)longitude || (int)latitude) && ((!hour(localTime) && !minute(localTime)) || (!sunrise && !sunset))) {
-      struct tm tim_0;
-      tim_0.tm_year = year(localTime)-1900;
-      tim_0.tm_mon = month(localTime)-1;
-      tim_0.tm_mday = day(localTime);
-      tim_0.tm_sec = 0;
-      tim_0.tm_isdst = 0;
-
-      int minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude);
-      if (minUTC) {
-        // there is a sunrise
-        tim_0.tm_hour = minUTC / 60;
-        tim_0.tm_min = minUTC % 60;
-        sunrise = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
-        DEBUG_PRINTF("Sunrise: %02d:%02d\n", hour(sunrise), minute(sunrise));
-      } else {
-        sunrise = 0;
-      }
-
-      minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude, true);
-      if (minUTC) {
-        // there is a sunset
-        tim_0.tm_hour = minUTC / 60;
-        tim_0.tm_min = minUTC % 60;
-        sunset = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
-        DEBUG_PRINTF("Sunset: %02d:%02d\n", hour(sunset), minute(sunset));
-      } else {
-        sunset = 0;
-      }
-    }
+    // re-calculate sunrise and sunset just after midnight
+    if (!hour(localTime) && minute(localTime)==1) calculateSunriseAndSunset();
     if (sunrise && sunset) daytime = difftime(localTime, sunrise) > 0 && difftime(localTime, sunset) < 0;
 
     DEBUG_PRINTF("Local time: %02d:%02d\n", hour(localTime), minute(localTime));
@@ -341,7 +315,7 @@ void checkTimers()
 
 #define ZENITH -0.83
 // get sunrise (or sunset) time (in minutes) for a given day at a given geo location
-int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset) {
+int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset=false) {
   //1. first calculate the day of the year
   float N1 = floor(275 * month / 9);
   float N2 = floor((month + 9) / 12);
@@ -390,4 +364,38 @@ int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunse
 
   // return in minutes from midnight
 	return UT*60;
+}
+
+// calculate sunrise and sunset (if longitude and latitude are set)
+void calculateSunriseAndSunset() {
+  if ((int)(longitude*10.) || (int)(latitude*10.)) {
+    struct tm tim_0;
+    tim_0.tm_year = year(localTime)-1900;
+    tim_0.tm_mon = month(localTime)-1;
+    tim_0.tm_mday = day(localTime);
+    tim_0.tm_sec = 0;
+    tim_0.tm_isdst = 0;
+
+    int minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude);
+    if (minUTC) {
+      // there is a sunrise
+      tim_0.tm_hour = minUTC / 60;
+      tim_0.tm_min = minUTC % 60;
+      sunrise = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
+      DEBUG_PRINTF("Sunrise: %02d:%02d\n", hour(sunrise), minute(sunrise));
+    } else {
+      sunrise = 0;
+    }
+
+    minUTC = getSunriseUTC(year(localTime), month(localTime), day(localTime), latitude, longitude, true);
+    if (minUTC) {
+      // there is a sunset
+      tim_0.tm_hour = minUTC / 60;
+      tim_0.tm_min = minUTC % 60;
+      sunset = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
+      DEBUG_PRINTF("Sunset: %02d:%02d\n", hour(sunset), minute(sunset));
+    } else {
+      sunset = 0;
+    }
+  }
 }
