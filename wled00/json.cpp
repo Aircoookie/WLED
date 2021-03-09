@@ -540,7 +540,7 @@ void serializeInfo(JsonObject root)
 void serializeNodes(JsonObject root)
 {
   JsonArray nodes = root.createNestedArray("nodes");
-  IPAddress ip = WiFi.localIP();
+
   for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it)
   {
     if (it->second.ip[0] != 0)
