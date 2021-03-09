@@ -1,7 +1,7 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, isInfo = false, syncSend = false, syncTglRecv = true, isRgbw = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
 var selColors;
 var expanded = [false];
@@ -465,8 +465,9 @@ function populateInfo(i)
       }
     }
   }
+
 	var vcn = "Kuuhaku";
-	if (i.ver.startsWith("0.11.")) vcn = "Mirai";
+	if (i.ver.startsWith("0.12.")) vcn = "Hikari";
 	if (i.cn) vcn = i.cn;
 
 	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
@@ -475,7 +476,8 @@ function populateInfo(i)
 	${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 	${inforow("Uptime",getRuntimeStr(i.uptime))}
 	${inforow("Free heap",heap," kB")}
-	${inforow("Estimated current",pwru)}
+  ${inforow("Estimated current",pwru)}
+  ${inforow("Frames / second",i.leds.fps)}
 	${inforow("MAC address",i.mac)}
 	${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 	${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
@@ -712,6 +714,68 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', e
 			</div>
 			
 		</div>`;
+}
+  
+function btype(b){
+  switch (b) {
+    case 32: return "ESP32";
+    case 82: return "ESP8266";
+  }
+  return "?";
+}
+function bname(o){
+  if (o.name=="WLED") return o.ip;
+  return o.name;
+}
+
+function populateNodes(i,n)
+{
+	var cn="";
+	var urows="";
+  var nnodes = 0;
+	if (n.nodes) {
+		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		for (var x=0;x<n.nodes.length;x++) {
+			var o = n.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+        nnodes++;
+			}
+		}
+	}
+  if (nnodes == 0) cn += `No other instances found.`;
+	cn += `<table class="infot">
+    ${urows}
+    ${inforow("Current instance:",i.name)}
+  </table>`;
+	d.getElementById('kn').innerHTML = cn;
+}
+
+function loadNodes()
+{
+	var url = '/json/nodes';
+	if (loc) {
+		url = `http://${locip}/json/nodes`;
+	}
+	
+	fetch
+	(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) {
+			showToast('Could not load Node list!', true);
+		}
+		return res.json();
+	})
+	.then(json => {
+		populateNodes(lastinfo, json);
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+	});
 }
 
 function updateTrail(e, slidercol)
@@ -1050,10 +1114,19 @@ function toggleLiveview() {
 }
 
 function toggleInfo() {
+  if (isNodes) toggleNodes();
 	isInfo = !isInfo;
 	if (isInfo) populateInfo(lastinfo);
 	d.getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
 	d.getElementById('buttonI').className = (isInfo) ? "active":"";
+}
+
+function toggleNodes() {
+  if (isInfo) toggleInfo();
+	isNodes = !isNodes;
+	d.getElementById('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
+  d.getElementById('buttonNodes').className = (isNodes) ? "active":"";
+  if (isNodes) loadNodes();
 }
 
 function makeSeg() {

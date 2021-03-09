@@ -90,7 +90,7 @@ void deserializeSegment(JsonObject elem, byte it)
 
     //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
     seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
-    seg.setOption(SEG_OPTION_REVERSED, elem[F("rev")] | seg.getOption(SEG_OPTION_REVERSED));
+    seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
     seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
     //temporary, strip object gets updated via colorUpdated()
@@ -137,7 +137,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (sz == 0 && sz > 4) break;
 
           int rgbw[] = {0,0,0,0};
-          byte cp = copyArray(icol, rgbw);
+          copyArray(icol, rgbw);
 
           if (set < 2) stop = start + 1;
           for (uint16_t i = start; i < stop; i++) {
@@ -203,8 +203,8 @@ bool deserializeState(JsonObject root)
   receiveNotifications = udpn[F("recv")] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
-  unsigned long timein = root[F("time")] | -1;
-  if (timein != -1) {
+  unsigned long timein = root[F("time")] | UINT32_MAX;
+  if (timein != UINT32_MAX) {
     if (millis() - ntpLastSyncTime > 50000000L) setTime(timein);
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
@@ -330,7 +330,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 	root[F("ix")]  = seg.intensity;
 	root[F("pal")] = seg.palette;
 	root[F("sel")] = seg.isSelected();
-	root[F("rev")] = seg.getOption(SEG_OPTION_REVERSED);
+	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
 }
 
@@ -346,7 +346,6 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     if (errorFlag) root[F("error")] = errorFlag;
 
     root[F("ps")] = currentPreset;
-    root[F("pss")] = savedPresets;
     root[F("pl")] = (presetCyclingEnabled) ? 0: -1;
 
     usermods.addToJsonState(root);
@@ -427,6 +426,7 @@ void serializeInfo(JsonObject root)
   leds_pin.add(LEDPIN);
 
   leds[F("pwr")] = strip.currentMilliamps;
+  leds[F("fps")] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
   leds[F("maxseg")] = strip.getMaxSegments();
   leds[F("seglock")] = false; //will be used in the future to prevent modifications to segment config
@@ -477,6 +477,8 @@ void serializeInfo(JsonObject root)
   fs_info["t"] = fsBytesTotal / 1000;
   fs_info[F("pmt")] = presetsModifiedTime;
 
+  root[F("ndc")] = Nodes.size();
+  
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
@@ -700,6 +702,24 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
   }
 }
 
+void serializeNodes(JsonObject root)
+{
+  JsonArray nodes = root.createNestedArray("nodes");
+
+  for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it)
+  {
+    if (it->second.ip[0] != 0)
+    {
+      JsonObject node = nodes.createNestedObject();
+      node[F("name")] = it->second.nodeName;
+      node[F("type")] = it->second.nodeType;
+      node[F("ip")]   = it->second.ip.toString();
+      node[F("age")]  = it->second.age;
+      node[F("vid")] = it->second.build;
+    }
+  }
+}
+
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
@@ -707,7 +727,8 @@ void serveJson(AsyncWebServerRequest* request)
   if      (url.indexOf("state") > 0) subJson = 1;
   else if (url.indexOf("info")  > 0) subJson = 2;
   else if (url.indexOf("si") > 0) subJson = 3;
-  else if (url.indexOf("palx") > 0) subJson = 4;
+  else if (url.indexOf("nodes") > 0) subJson = 4;
+  else if (url.indexOf("palx") > 0) subJson = 5;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
@@ -734,7 +755,9 @@ void serveJson(AsyncWebServerRequest* request)
       serializeState(doc); break;
     case 2: //info
       serializeInfo(doc); break;
-    case 4: //palettes
+    case 4: //node list
+      serializeNodes(doc); break;
+    case 5: //palettes
       serializePalettes(doc, request); break;
     default: //all
       JsonObject state = doc.createNestedObject("state");
@@ -756,7 +779,7 @@ void serveJson(AsyncWebServerRequest* request)
 
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 {
-  AsyncWebSocketClient * wsc;
+  AsyncWebSocketClient * wsc = nullptr;
   if (!request) { //not HTTP, use Websockets
     #ifdef WLED_ENABLE_WEBSOCKETS
     wsc = ws.client(wsClient);
@@ -773,7 +796,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
 
   for (uint16_t i= 0; i < used; i += n)
   {
-    olen += sprintf(obuf + olen, "\"%06X\",", strip.getPixelColor(i));
+    olen += sprintf(obuf + olen, "\"%06X\",", strip.getPixelColor(i) & 0xFFFFFF);
   }
   olen -= 1;
   oappend((const char*)F("],\"n\":"));
