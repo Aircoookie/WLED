@@ -169,11 +169,14 @@ void handleNotifications()
 
   // WLED nodes info notifications
   if (isSupp && udpIn[0] == 255 && udpIn[1] == 1 && len >= 40) {
-//    IPAddress remoteIP = notifier2Udp.remoteIP();
+    if (notifier2Udp.remoteIP() == Network.localIP()) return;
 
     uint8_t unit = udpIn[39];
-    Nodes[unit].age = 0; // Create a new element when not present
     NodesMap::iterator it = Nodes.find(unit);
+    if (it == Nodes.end() && Nodes.size() < WLED_MAX_NODES) { // Create a new element when not present
+      Nodes[unit].age = 0;
+      it = Nodes.find(unit);
+    }
 
     if (it != Nodes.end()) {
       for (byte x = 0; x < 4; x++) {
@@ -190,7 +193,7 @@ void handleNotifications()
       if (len >= 44)
         for (byte i=0; i<sizeof(uint32_t); i++)
           build |= udpIn[40+i]<<(8*i);
-      it->second.build    = build;
+      it->second.build = build;
     }
     return;
   }
@@ -410,7 +413,7 @@ void sendSysInfoUDP(uint8_t repeats)
     return;
   }
 
-  IPAddress ip = WiFi.localIP();
+  IPAddress ip = Network.localIP();
 
   // TODO: make a nice struct of it and clean up
   //  0: 1 byte 'binary token 255'
@@ -423,60 +426,29 @@ void sendSysInfoUDP(uint8_t repeats)
   // 44 bytes total
 
   // send my info to the world...
-  for (;repeats--;)
-  {
-    /*
-    escapedMac  // mac address
-    */
-
-    uint8_t data[44] = {0};
-    data[0] = 255;
-    data[1] = 1;
-    
-    for (byte x = 0; x < 4; x++) {
-      data[x + 2] = ip[x];
-    }
-    memcpy((byte *)data + 6, serverDescription, 32);
-    #ifdef ESP8266
-    data[38] = NODE_TYPE_ID_ESP8266;
-    #elif defined(ARDUINO_ARCH_ESP32)
-    data[38] = NODE_TYPE_ID_ESP32;
-    #else
-    data[38] = NODE_TYPE_ID_UNDEFINED;
-    #endif
-    data[39] = ip[3]; // unit ID == last IP number
-
-    uint32_t build = VERSION;
-    for (byte i=0; i<sizeof(uint32_t); i++)
-      data[40+i] = (build>>(8*i)) & 0xFF;
-
-    IPAddress broadcastIP(255, 255, 255, 255);
-    notifier2Udp.beginPacket(broadcastIP, udpPort2);
-    notifier2Udp.write(data, sizeof(data));
-    notifier2Udp.endPacket();
-
-    if (repeats) delay(500);
+  uint8_t data[44] = {0};
+  data[0] = 255;
+  data[1] = 1;
+  
+  for (byte x = 0; x < 4; x++) {
+    data[x + 2] = ip[x];
   }
+  memcpy((byte *)data + 6, serverDescription, 32);
+  #ifdef ESP8266
+  data[38] = NODE_TYPE_ID_ESP8266;
+  #elif defined(ARDUINO_ARCH_ESP32)
+  data[38] = NODE_TYPE_ID_ESP32;
+  #else
+  data[38] = NODE_TYPE_ID_UNDEFINED;
+  #endif
+  data[39] = ip[3]; // unit ID == last IP number
 
-  Nodes[ip[3]].age = 0; // Create new node when not already present.
-  // store my own info also in the list
-  NodesMap::iterator it = Nodes.find(ip[3]);
+  uint32_t build = VERSION;
+  for (byte i=0; i<sizeof(uint32_t); i++)
+    data[40+i] = (build>>(8*i)) & 0xFF;
 
-  if (it != Nodes.end())
-  {
-    for (byte x = 0; x < 4; x++) {
-      it->second.ip[x] = ip[x];
-    }
-    it->second.age      = 0;
-    it->second.nodeName = serverDescription;
-    #ifdef ESP8266
-    it->second.nodeType = NODE_TYPE_ID_ESP8266;
-    #elif defined(ARDUINO_ARCH_ESP32)
-    it->second.nodeType = NODE_TYPE_ID_ESP32;
-    #else
-    it->second.nodeType = NODE_TYPE_ID_UNDEFINED;
-    #endif
-    it->second.unit     = ip[3];
-    it->second.build    = VERSION; 
-  }
+  IPAddress broadcastIP(255, 255, 255, 255);
+  notifier2Udp.beginPacket(broadcastIP, udpPort2);
+  notifier2Udp.write(data, sizeof(data));
+  notifier2Udp.endPacket();
 }

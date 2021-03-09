@@ -443,35 +443,6 @@ function populatePresets(fromls)
 	populateQL();
 }
 
-function populateNodes(i)
-{
-	var cn="";
-	var urows="";
-	if (i.nodes) {
-		i.nodes.sort((a,b) => (a.name).localeCompare(b.name));
-		for (var x=0;x<i.nodes.length;x++) {
-			var o = i.nodes[x];
-			if (o.name) {
-				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${o.name}</button>`;
-				urows += inforow(url,`${o.type}<br><i>${o.build==0?"N/A":o.build}</i>`);
-			}
-		}
-		if (i.nodes.length>0) {
-			var botButtons = d.querySelectorAll('.bot button');
-			for (btn of botButtons) {
-				btn.style.width = '20%';
-			}
-			d.getElementById('btnNodes').style.display = "inline";
-		} else
-			d.getElementById('btnNodes').style.display = "none";
-	}
-	cn += `<table class="infot">
-${urows}
-${inforow("Current node:",i.name)}
-</table>`;
-	d.getElementById('kn').innerHTML = cn;
-}
-
 function populateInfo(i)
 {
 	var cn="";
@@ -492,16 +463,7 @@ function populateInfo(i)
       }
     }
   }
-	if (i.nodes) {
-		for (var x=0;x<i.nodes.length;x++)
-		{
-			var o = i.nodes[x];
-			if (o.name) {
-				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${o.name}</button>`;
-				urows += inforow(url,o.type);
-			}
-		}
-	}
+
 	var vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.11.")) vcn = "Mirai";
 	if (i.cn) vcn = i.cn;
@@ -602,6 +564,69 @@ function populateSegments(s)
 	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
 	}
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
+}
+
+function btype(b){
+  switch (b) {
+    case 1: return "ESP8266";
+    case 32: return "ESP32";
+    case 8266: return "ESP8266";
+  }
+  return "?";
+}
+function bname(o){
+  if (o.name=="WLED") return o.ip;
+  return o.name;
+}
+
+function populateNodes(i,n)
+{
+	var cn="";
+	var urows="";
+  var nnodes = 0;
+	if (n.nodes) {
+		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		for (var x=0;x<n.nodes.length;x++) {
+			var o = n.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+        nnodes++;
+			}
+		}
+	}
+  if (nnodes == 0) cn += `No other instances found.`;
+	cn += `<table class="infot">
+    ${urows}
+    ${inforow("Current node:",i.name)}
+  </table>`;
+	d.getElementById('kn').innerHTML = cn;
+}
+
+function loadNodes()
+{
+	var url = '/json/nodes';
+	if (loc) {
+		url = `http://${locip}/json/nodes`;
+	}
+	
+	fetch
+	(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) {
+			showToast('Could not load Node list!', true);
+		}
+		return res.json();
+	})
+	.then(json => {
+		populateNodes(lastinfo, json);
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+	});
 }
 
 function updateTrail(e, slidercol)
@@ -804,7 +829,6 @@ function requestJson(command, rinfo = true, verbose = true) {
 			s = json.state;
 			displayRover(info, s);
 		}
-		populateNodes(info);
 		isOn = s.on;
 		d.getElementById('sliderBri').value= s.bri;
 		nlA = s.nl.on;
@@ -908,6 +932,7 @@ function toggleLiveview() {
 }
 
 function toggleInfo() {
+  if (isNodes) toggleNodes();
 	isInfo = !isInfo;
 	if (isInfo) populateInfo(lastinfo);
 	d.getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
@@ -915,10 +940,11 @@ function toggleInfo() {
 }
 
 function toggleNodes() {
+  if (isInfo) toggleInfo();
 	isNodes = !isNodes;
-	if (isNodes) populateNodes(lastinfo);
 	d.getElementById('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
-	d.getElementById('buttonNo').className = (isNodes) ? "active":"";
+  d.getElementById('buttonNodes').className = (isNodes) ? "active":"";
+  if (isNodes) loadNodes();
 }
 
 function makeSeg() {
