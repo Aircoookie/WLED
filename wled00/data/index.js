@@ -465,7 +465,7 @@ function populateInfo(i)
   }
 
 	var vcn = "Kuuhaku";
-	if (i.ver.startsWith("0.11.")) vcn = "Mirai";
+	if (i.ver.startsWith("0.12.")) vcn = "Hikari";
 	if (i.cn) vcn = i.cn;
 	
 	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
@@ -474,7 +474,8 @@ function populateInfo(i)
 	${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 	${inforow("Uptime",getRuntimeStr(i.uptime))}
 	${inforow("Free heap",heap," kB")}
-	${inforow("Estimated current",pwru)}
+  ${inforow("Estimated current",pwru)}
+  ${inforow("Frames / second",i.leds.fps)}
 	${inforow("MAC address",i.mac)}
 	${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 	${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}

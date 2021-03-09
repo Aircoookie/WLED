@@ -39,9 +39,15 @@ void initServer()
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Methods"), "*");
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Headers"), "*");
 
-  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/html", PAGE_liveview);
-  });
+ #ifdef WLED_ENABLE_WEBSOCKETS
+    server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send_P(200, "text/html", PAGE_liveviewws);
+    });
+ #else
+    server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send_P(200, "text/html", PAGE_liveview);
+    });
+  #endif
   
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -229,14 +235,32 @@ void serveIndexOrWelcome(AsyncWebServerRequest *request)
   }
 }
 
+bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
+{
+  AsyncWebHeader* header = request->getHeader("If-None-Match");
+  if (header && header->value() == String(VERSION)) {
+    request->send(304);
+    return true;
+  }
+  return false;
+}
+
+void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
+{
+  response->addHeader(F("Cache-Control"),"max-age=2592000");
+  response->addHeader(F("ETag"), String(VERSION));
+}
 
 void serveIndex(AsyncWebServerRequest* request)
 {
   if (handleFileRead(request, "/index.htm")) return;
 
+  if (handleIfNoneMatchCacheHeader(request)) return;
+
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 
   response->addHeader(F("Content-Encoding"),"gzip");
+  setStaticContentCacheHeaders(response);
   
   request->send(response);
 }

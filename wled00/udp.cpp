@@ -347,6 +347,15 @@ void handleNotifications()
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
         id++;
       }
+    } else if (udpIn[0] == 5) //dnrgbw
+    {
+      uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+      for (uint16_t i = 4; i < packetSize -2; i += 4)
+      {
+          if (id >= ledCount) break;
+        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+        id++;
+      }
     }
     strip.show();
     return;
