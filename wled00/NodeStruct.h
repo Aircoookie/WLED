@@ -8,9 +8,9 @@
 #include <map>
 #include <IPAddress.h>
 
-#define NODE_TYPE_ID_UNDEFINED          0
-#define NODE_TYPE_ID_ESP8266         8266
-#define NODE_TYPE_ID_ESP32             32
+#define NODE_TYPE_ID_UNDEFINED        0
+#define NODE_TYPE_ID_ESP8266         82
+#define NODE_TYPE_ID_ESP32           32
 
 /*********************************************************************************************\
 * NodeStruct

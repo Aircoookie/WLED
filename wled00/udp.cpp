@@ -407,11 +407,9 @@ void refreshNodeList()
 /*********************************************************************************************\
    Broadcast system info to other nodes. (to update node lists)
 \*********************************************************************************************/
-void sendSysInfoUDP(uint8_t repeats)
+void sendSysInfoUDP()
 {
-  if (!udpConnected || !repeats) {
-    return;
-  }
+  if (!udp2Connected) return;
 
   IPAddress ip = Network.localIP();
 

@@ -568,9 +568,8 @@ function populateSegments(s)
 
 function btype(b){
   switch (b) {
-    case 1: return "ESP8266";
     case 32: return "ESP32";
-    case 8266: return "ESP8266";
+    case 82: return "ESP8266";
   }
   return "?";
 }
@@ -598,7 +597,7 @@ function populateNodes(i,n)
   if (nnodes == 0) cn += `No other instances found.`;
 	cn += `<table class="infot">
     ${urows}
-    ${inforow("Current node:",i.name)}
+    ${inforow("Current instance:",i.name)}
   </table>`;
 	d.getElementById('kn').innerHTML = cn;
 }

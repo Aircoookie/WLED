@@ -408,6 +408,10 @@ button {
 	display: inline-block;
 }
 
+#kn td {
+  padding-bottom: 12px;
+}
+
 #lv {
 	max-width: 600px;
 	display: inline-block;
