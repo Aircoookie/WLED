@@ -2,6 +2,15 @@
 
 #include "wled.h"
 
+#ifndef PIR_SENSOR_PIN
+  // compatible with QuinLED-Dig-Uno
+  #ifdef ARDUINO_ARCH_ESP32
+    #define PIR_SENSOR_PIN 23 // Q4
+  #else //ESP8266 boards
+    #define PIR_SENSOR_PIN 13 // Q4 (D7 on D1 mini)
+  #endif
+#endif
+
 /*
  * This usermod handles PIR sensor states.
  * The strip will be switched on and the off timer will be resetted when the sensor goes HIGH. 
@@ -23,6 +32,9 @@
  * 1. Copy the usermod into the sketch folder (same folder as wled00.ino)
  * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
  */
+
+// MQTT topic for sensor values
+const char MQTT_TOPIC[] = "/motion";
 
 class PIRsensorSwitch : public Usermod
 {
@@ -60,7 +72,7 @@ public:
 
 private:
   // PIR sensor pin
-  const uint8_t PIRsensorPin = 13; // D7 on D1 mini
+  int8_t PIRsensorPin = PIR_SENSOR_PIN;
   // notification mode for colorUpdated()
   const byte NotifyUpdateMode = NOTIFIER_CALL_MODE_NO_NOTIFY; // NOTIFIER_CALL_MODE_DIRECT_CHANGE
   // delay before switch off after the sensor state goes LOW
@@ -107,6 +119,17 @@ private:
     }
   }
 
+  void publishMqtt(const char* state)
+  {
+    //Check if MQTT Connected, otherwise it will crash the 8266
+    if (mqtt != nullptr){
+      char subuf[64];
+      strcpy(subuf, mqttDeviceTopic);
+      strcat(subuf, MQTT_TOPIC);
+      mqtt->publish(subuf, 0, true, state);
+    }
+  }
+
   /**
    * Read and update PIR sensor state.
    * Initilize/reset switch off timer
@@ -121,6 +144,7 @@ private:
       {
         m_offTimerStart = 0;
         switchStrip(true);
+        publishMqtt("on");
       }
       else if (bri != 0)
       {
@@ -143,6 +167,7 @@ private:
       if (m_PIRenabled == true)
       {
         switchStrip(false);
+        publishMqtt("off");
       }
       m_offTimerStart = 0;
       return true;
@@ -159,12 +184,19 @@ public:
    */
   void setup()
   {
-    // PIR Sensor mode INPUT_PULLUP
-    pinMode(PIRsensorPin, INPUT_PULLUP);
-    if (m_PIRenabled)
-    {
-      // assign interrupt function and set CHANGE mode
-      attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
+    // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
+    if (!pinManager.allocatePin(PIRsensorPin,false)) {
+      PIRsensorPin = -1;  // allocation failed
+      m_PIRenabled = false;
+      DEBUG_PRINTLN(F("PIRSensorSwitch pin allocation failed."));
+    } else {
+      // PIR Sensor mode INPUT_PULLUP
+      pinMode(PIRsensorPin, INPUT_PULLUP);
+      if (m_PIRenabled)
+      {
+        // assign interrupt function and set CHANGE mode
+        attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
+      }
     }
   }
 
@@ -273,8 +305,8 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
    */
   void addToJsonState(JsonObject &root)
   {
-    root["PIRenabled"] = m_PIRenabled;
-    root["PIRoffSec"] = (m_switchOffDelay / 1000);
+    root[F("PIRenabled")] = m_PIRenabled;
+    root[F("PIRoffSec")] = (m_switchOffDelay / 1000);
   }
 
   /**
@@ -285,15 +317,37 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
    */
   void readFromJsonState(JsonObject &root)
   {
-    if (root["PIRoffSec"] != nullptr)
+    if (root[F("PIRoffSec")] != nullptr)
     {
-      m_switchOffDelay = (1000 * max(60UL, min(43200UL, root["PIRoffSec"].as<unsigned long>())));
+      m_switchOffDelay = (1000 * max(60UL, min(43200UL, root[F("PIRoffSec")].as<unsigned long>())));
       m_updateConfig = true;
     }
 
-    if (root["PIRenabled"] != nullptr)
+    if (root[F("pin")] != nullptr)
     {
-      if (root["PIRenabled"] && !m_PIRenabled)
+      int8_t pin = (int)root[F("pin")];
+      // check if pin is OK
+      if (pin != PIRsensorPin && pin>=0 && pinManager.allocatePin(pin,false)) {
+        // deallocate old pin
+        pinManager.deallocatePin(PIRsensorPin);
+        // PIR Sensor mode INPUT_PULLUP
+        pinMode(pin, INPUT_PULLUP);
+        if (m_PIRenabled)
+        {
+          // remove old ISR
+          detachInterrupt(PIRsensorPin);
+          // assign interrupt function and set CHANGE mode
+          attachInterrupt(digitalPinToInterrupt(pin), ISR_PIRstateChange, CHANGE);
+          newPIRsensorState(true, true);
+        }
+        PIRsensorPin = pin;
+        m_updateConfig = true;
+      }
+    }
+
+    if (root[F("PIRenabled")] != nullptr)
+    {
+      if (root[F("PIRenabled")] && !m_PIRenabled)
       {
         attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
         newPIRsensorState(true, true);
@@ -302,7 +356,7 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
       {
         detachInterrupt(PIRsensorPin);
       }
-      m_PIRenabled = root["PIRenabled"];
+      m_PIRenabled = root[F("PIRenabled")];
       m_updateConfig = true;
     }
   }
@@ -312,19 +366,24 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
    */
   void addToConfig(JsonObject &root)
   {
-    JsonObject top = root.createNestedObject("PIRsensorSwitch");
-    top["PIRenabled"] = m_PIRenabled;
-    top["PIRoffSec"] = m_switchOffDelay;
+    JsonObject top = root.createNestedObject(F("PIRsensorSwitch"));
+    top[F("PIRenabled")] = m_PIRenabled;
+    top[F("PIRoffSec")] = m_switchOffDelay;
+    top[F("pin")] = PIRsensorPin;
   }
 
   /**
    * restore the changeable values
+   * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
    */
   void readFromConfig(JsonObject &root)
   {
-    JsonObject top = root["PIRsensorSwitch"];
-    m_PIRenabled = (top["PIRenabled"] != nullptr ? top["PIRenabled"] : true);
-    m_switchOffDelay = top["PIRoffSec"] | m_switchOffDelay;
+    JsonObject top = root[F("PIRsensorSwitch")];
+    if (!top.isNull() && top[F("pin")] != nullptr) {
+      PIRsensorPin = (int)top[F("pin")];
+    }
+    m_PIRenabled = (top[F("PIRenabled")] != nullptr ? top[F("PIRenabled")] : true);
+    m_switchOffDelay = top[F("PIRoffSec")] | m_switchOffDelay;
   }
 
   /**

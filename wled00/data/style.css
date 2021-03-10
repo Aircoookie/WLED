@@ -43,6 +43,12 @@ input[type="number"] {
   font-size: medium;
   margin: 2px;
 }
+input[type="number"].big {
+  width: 80px;
+}
+input[type="number"].small {
+  width: 40px;
+}
 select {
   margin: 2px;
   font-size: medium;
