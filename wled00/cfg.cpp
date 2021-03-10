@@ -183,6 +183,7 @@ void deserializeConfig() {
   }
   if (relay.containsKey("rev")) {
     rlyMde = !relay["rev"];
+  }
 
   int hw_audio_pin = hw[F("audio")][F("pin")];
   if (pinManager.allocatePin(hw_audio_pin,false)) {
