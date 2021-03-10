@@ -1,7 +1,7 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, isInfo = false, syncSend = false, syncTglRecv = true, isRgbw = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
 var expanded = [false];
 var powered = [true];
@@ -463,6 +463,7 @@ function populateInfo(i)
       }
     }
   }
+
 	var vcn = "Kuuhaku";
 	if (i.ver.startsWith("0.12.")) vcn = "Hikari";
 	if (i.cn) vcn = i.cn;
@@ -564,6 +565,68 @@ function populateSegments(s)
 	if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
 	}
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
+}
+
+function btype(b){
+  switch (b) {
+    case 32: return "ESP32";
+    case 82: return "ESP8266";
+  }
+  return "?";
+}
+function bname(o){
+  if (o.name=="WLED") return o.ip;
+  return o.name;
+}
+
+function populateNodes(i,n)
+{
+	var cn="";
+	var urows="";
+  var nnodes = 0;
+	if (n.nodes) {
+		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		for (var x=0;x<n.nodes.length;x++) {
+			var o = n.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+        nnodes++;
+			}
+		}
+	}
+  if (nnodes == 0) cn += `No other instances found.`;
+	cn += `<table class="infot">
+    ${urows}
+    ${inforow("Current instance:",i.name)}
+  </table>`;
+	d.getElementById('kn').innerHTML = cn;
+}
+
+function loadNodes()
+{
+	var url = '/json/nodes';
+	if (loc) {
+		url = `http://${locip}/json/nodes`;
+	}
+	
+	fetch
+	(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) {
+			showToast('Could not load Node list!', true);
+		}
+		return res.json();
+	})
+	.then(json => {
+		populateNodes(lastinfo, json);
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+	});
 }
 
 function updateTrail(e, slidercol)
@@ -875,10 +938,19 @@ function toggleLiveview() {
 }
 
 function toggleInfo() {
+  if (isNodes) toggleNodes();
 	isInfo = !isInfo;
 	if (isInfo) populateInfo(lastinfo);
 	d.getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
 	d.getElementById('buttonI').className = (isInfo) ? "active":"";
+}
+
+function toggleNodes() {
+  if (isInfo) toggleInfo();
+	isNodes = !isNodes;
+	d.getElementById('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
+  d.getElementById('buttonNodes').className = (isNodes) ? "active":"";
+  if (isNodes) loadNodes();
 }
 
 function makeSeg() {

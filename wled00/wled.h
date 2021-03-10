@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2102050
+#define VERSION 2103090
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -70,7 +70,9 @@
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
   //#include "SPIFFS.h"
-  #define CONFIG_LITTLEFS_FOR_IDF_3_2
+  #ifndef CONFIG_LITTLEFS_FOR_IDF_3_2
+    #define CONFIG_LITTLEFS_FOR_IDF_3_2
+  #endif
   #include <LITTLEFS.h>
 #endif
 
@@ -120,6 +122,7 @@
 #include "FX.h"
 #include "ir_codes.h"
 #include "const.h"
+#include "NodeStruct.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
 
@@ -200,8 +203,9 @@ WLED_GLOBAL int8_t rlyPin _INIT(-1);
 #else
 WLED_GLOBAL int8_t rlyPin _INIT(RLYPIN);
 #endif
+//Relay mode (1 = active high, 0 = active low, flipped in cfg.json)
 #ifndef RLYMDE
-WLED_GLOBAL bool rlyMde _INIT(1);
+WLED_GLOBAL bool rlyMde _INIT(true);
 #else
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
@@ -254,7 +258,11 @@ WLED_GLOBAL IPAddress staticGateway _INIT_N(((  0,   0,  0,  0))); // gateway (r
 WLED_GLOBAL IPAddress staticSubnet  _INIT_N(((255, 255, 255, 0))); // most common subnet in home networks
 WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
 #ifdef WLED_USE_ETHERNET
-WLED_GLOBAL int ethernetType _INIT(WLED_ETH_ESP32_POE);            // ethernet board type
+  #ifdef WLED_ETH_DEFAULT                                          // default ethernet board type if specified
+    WLED_GLOBAL int ethernetType _INIT(WLED_ETH_DEFAULT);          // ethernet board type
+  #else
+    WLED_GLOBAL int ethernetType _INIT(WLED_ETH_NONE);             // use none for ethernet board type if default not defined
+  #endif
 #endif
 
 // LED CONFIG
@@ -282,10 +290,12 @@ WLED_GLOBAL bool skipFirstLed  _INIT(false);        // ignore first LED in strip
 WLED_GLOBAL byte briMultiplier _INIT(100);          // % of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 // User Interface CONFIG
-WLED_GLOBAL char serverDescription[33] _INIT("WLED-AudioReactive");  // Name of module
+WLED_GLOBAL char serverDescription[33] _INIT("WLED-SoundReactive");  // Name of module
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 // Sync CONFIG
+WLED_GLOBAL NodesMap Nodes;
+
 WLED_GLOBAL bool buttonEnabled  _INIT(true);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
@@ -342,7 +352,7 @@ WLED_GLOBAL bool huePollingEnabled _INIT(false);           // poll hue bridge fo
 WLED_GLOBAL uint16_t huePollIntervalMs _INIT(2500);        // low values (< 1sec) may cause lag but offer quicker response
 WLED_GLOBAL char hueApiKey[47] _INIT("api");               // key token will be obtained from bridge
 WLED_GLOBAL byte huePollLightId _INIT(1);                  // ID of hue lamp to sync to. Find the ID in the hue app ("about" section)
-WLED_GLOBAL IPAddress hueIP _INIT((0, 0, 0, 0));           // IP address of the bridge
+WLED_GLOBAL IPAddress hueIP _INIT_N(((0, 0, 0, 0))); // IP address of the bridge
 WLED_GLOBAL bool hueApplyOnOff _INIT(true);
 WLED_GLOBAL bool hueApplyBri _INIT(true);
 WLED_GLOBAL bool hueApplyColor _INIT(true);
@@ -512,14 +522,14 @@ WLED_GLOBAL int16_t currentPlaylist _INIT(0);
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
 WLED_GLOBAL byte realtimeOverride _INIT(REALTIME_OVERRIDE_NONE);
-WLED_GLOBAL IPAddress realtimeIP _INIT((0, 0, 0, 0));
+WLED_GLOBAL IPAddress realtimeIP _INIT_N(((0, 0, 0, 0)));;
 WLED_GLOBAL unsigned long realtimeTimeout _INIT(0);
 WLED_GLOBAL uint8_t tpmPacketCount _INIT(0);
 WLED_GLOBAL uint16_t tpmPayloadFrameSize _INIT(0);
 
 // mqtt
-WLED_GLOBAL long lastMqttReconnectAttempt _INIT(0);
-WLED_GLOBAL long lastInterfaceUpdate _INIT(0);
+WLED_GLOBAL unsigned long lastMqttReconnectAttempt _INIT(0);
+WLED_GLOBAL unsigned long lastInterfaceUpdate _INIT(0);
 WLED_GLOBAL byte interfaceUpdateCallMode _INIT(NOTIFIER_CALL_MODE_INIT);
 WLED_GLOBAL char mqttStatusTopic[40] _INIT("");        // this must be global because of async handlers
 

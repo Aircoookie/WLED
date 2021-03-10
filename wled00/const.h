@@ -27,6 +27,11 @@
 #define USERMOD_ID_FIXNETSERVICES 4            //Usermod "usermod_Fix_unreachable_netservices.h"
 #define USERMOD_ID_PIRSWITCH      5            //Usermod "usermod_PIR_sensor_switch.h"
 #define USERMOD_ID_IMU            6            //Usermod "usermod_mpu6050_imu.h"
+#define USERMOD_ID_FOUR_LINE_DISP 7            //Usermod "usermod_v2_four_line_display.h
+#define USERMOD_ID_ROTARY_ENC_UI  8            //Usermod "usermod_v2_rotary_encoder_ui.h"
+#define USERMOD_ID_AUTO_SAVE      9            //Usermod "usermod_v2_auto_save.h"
+#define USERMOD_ID_DHT           10            //Usermod "usermod_dht.h"
+#define USERMOD_ID_MODE_SORT     11            //Usermod "usermod_v2_mode_sort.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
@@ -133,9 +138,13 @@
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
 
 //Ethernet board types
+#define WLED_NUM_ETH_TYPES        5
+
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
 #define WLED_ETH_ESP32_POE        2
+#define WLED_ETH_WESP32           3
+#define WLED_ETH_QUINLED          4
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
@@ -186,13 +195,23 @@
 // maximum number of LEDs - more than 1500 LEDs (or 500 DMA "LEDPIN 3" driven ones) will cause a low memory condition on ESP8266
 #ifndef MAX_LEDS
 #ifdef ESP8266
-#define MAX_LEDS 1536
+#define MAX_LEDS 8192 //rely on memory limit to limit this to 1600 LEDs
 #else
 #define MAX_LEDS 8192
 #endif
 #endif
 
-#define MAX_LEDS_DMA 500
+#ifndef MAX_LED_MEMORY
+#ifdef ESP8266
+#define MAX_LED_MEMORY 5000
+#else
+#define MAX_LED_MEMORY 64000
+#endif
+#endif
+
+#ifndef MAX_LEDS_PER_BUS
+#define MAX_LEDS_PER_BUS 4096
+#endif
 
 // string temp buffer (now stored in stack locally)
 #define OMAX 2048
@@ -202,9 +221,13 @@
 #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
 
 // PWM settings
-#define WLED_PWM_FREQ_ESP8266  880 //PWM frequency proven as good for LEDs
-#define WLED_PWM_FREQ_ESP32   5000
-
+#ifndef WLED_PWM_FREQ
+#ifdef ESP8266
+  #define WLED_PWM_FREQ    880 //PWM frequency proven as good for LEDs
+#else
+  #define WLED_PWM_FREQ  19531
+#endif
+#endif
 
 #define TOUCH_THRESHOLD 32 // limit to recognize a touch, higher value means more sensitive
 
@@ -213,6 +236,13 @@
   #define JSON_BUFFER_SIZE 9216
 #else
   #define JSON_BUFFER_SIZE 16384
+#endif
+
+// Maximum size of node map (list of other WLED instances)
+#ifdef ESP8266
+  #define WLED_MAX_NODES 15
+#else
+  #define WLED_MAX_NODES 150
 #endif
 
 //this is merely a default now and can be changed at runtime

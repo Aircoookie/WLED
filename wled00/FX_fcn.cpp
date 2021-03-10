@@ -27,26 +27,25 @@
 #include "FX.h"
 #include "palettes.h"
 
-//enable custom per-LED mapping. This can allow for better effects on matrices or special displays
-//#define WLED_CUSTOM_LED_MAPPING
-
-#ifdef WLED_CUSTOM_LED_MAPPING
-//this is just an example (30 LEDs). It will first set all even, then all uneven LEDs.
-const uint16_t customMappingTable[] = {
-  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
-  1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29};
-
-//another example. Switches direction every 5 LEDs.
-/*const uint16_t customMappingTable[] = {
-  0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14,
-  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25};*/
-
-const uint16_t customMappingSize = sizeof(customMappingTable)/sizeof(uint16_t); //30 in example
-#endif
-
 #ifndef PWM_INDEX
 #define PWM_INDEX 0
 #endif
+
+/*
+  Custom per-LED mapping has moved!
+
+  Create a file "ledmap.json" using the edit page.
+
+  this is just an example (30 LEDs). It will first set all even, then all uneven LEDs.
+  {"map":[
+  0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
+  1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29]}
+
+  another example. Switches direction every 5 LEDs.
+  {"map":[
+  0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14,
+  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]
+*/
 
 //do not call this method from system context (network callback)
 void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst)
@@ -69,6 +68,9 @@ void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFi
     busses.add(defCfg);
   }
 
+  deserializeMap();
+
+  //make segment 0 cover the entire strip
   _segments[0].start = 0;
   _segments[0].stop = _length;
 
@@ -181,6 +183,7 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       r -= w; g -= w; b -= w;
     }
   }
+
   uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
 
@@ -201,9 +204,7 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       int16_t indexSet = realIndex + (reversed ? -j : j);
       int16_t indexSetRev = indexSet;
       if (reverseMode) indexSetRev = REV(indexSet);
-      #ifdef WLED_CUSTOM_LED_MAPPING
       if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
-      #endif
       if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) {
         busses.setPixelColor(indexSet + skip, col);
         if (IS_MIRROR) { //set the corresponding mirrored pixel
@@ -217,9 +218,8 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
   } else { //live data, etc.
     if (reverseMode) i = REV(i);
-    #ifdef WLED_CUSTOM_LED_MAPPING
     if (i < customMappingSize) i = customMappingTable[i];
-    #endif
+
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
     busses.setPixelColor(i + skip, col);
   }
@@ -379,9 +379,8 @@ uint8_t WS2812FX::getPaletteCount()
 
 //TODO effect transitions
 
-bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t f1, uint8_t f2, uint8_t f3, uint8_t p) {
 
-  uint8_t mainSeg = getMainSegmentId();
+bool WS2812FX::setEffectConfig(uint8_t m, uint8_t s, uint8_t in, uint8_t f1, uint8_t f2, uint8_t f3, uint8_t p) {
   Segment& seg = _segments[getMainSegmentId()];
   uint8_t modePrev = seg.mode, speedPrev = seg.speed, intensityPrev = seg.intensity, fft1Prev = seg.fft1, fft2Prev = seg.fft2, fft3Prev = seg.fft3, palettePrev = seg.palette;
 
@@ -504,9 +503,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   i = realPixelIndex(i);
 
-  #ifdef WLED_CUSTOM_LED_MAPPING
   if (i < customMappingSize) i = customMappingTable[i];
-  #endif
 
   if (_skipFirstMode) i += LED_SKIP_AMOUNT;
 
@@ -1020,6 +1017,31 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
   return true;
 }
 
+
+//load custom mapping table from JSON file
+void WS2812FX::deserializeMap(void) {
+  if (!WLED_FS.exists("/ledmap.json")) return;
+  DynamicJsonDocument doc(JSON_BUFFER_SIZE);  // full sized buffer for larger maps
+
+  DEBUG_PRINTLN(F("Reading LED map from /ledmap.json..."));
+
+  if (!readObjectFromFile("/ledmap.json", nullptr, &doc)) return; //if file does not exist just exit
+
+  if (customMappingTable != nullptr) {
+    delete[] customMappingTable;
+    customMappingTable = nullptr;
+    customMappingSize = 0;
+  }
+
+  JsonArray map = doc[F("map")];
+  if (!map.isNull() && map.size()) {  // not an empty map
+    customMappingSize  = map.size();
+    customMappingTable = new uint16_t[customMappingSize];
+    for (uint16_t i=0; i<customMappingSize; i++) {
+      customMappingTable[i] = (uint16_t) map[i];
+    }
+  }
+}
 
 //gamma 2.8 lookup table used for color correction
 byte gammaT[] = {

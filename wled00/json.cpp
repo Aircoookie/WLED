@@ -87,7 +87,7 @@ void deserializeSegment(JsonObject elem, byte it)
 
     //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
     seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
-    seg.setOption(SEG_OPTION_REVERSED, elem[F("rev")] | seg.getOption(SEG_OPTION_REVERSED));
+    seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
     seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
     //temporary, strip object gets updated via colorUpdated()
@@ -140,7 +140,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (sz == 0 && sz > 4) break;
 
           int rgbw[] = {0,0,0,0};
-          byte cp = copyArray(icol, rgbw);
+          copyArray(icol, rgbw);
 
           if (set < 2) stop = start + 1;
           for (uint16_t i = start; i < stop; i++) {
@@ -206,8 +206,8 @@ bool deserializeState(JsonObject root)
   receiveNotifications = udpn[F("recv")] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
-  unsigned long timein = root[F("time")] | -1;
-  if (timein != -1) {
+  unsigned long timein = root[F("time")] | UINT32_MAX;
+  if (timein != UINT32_MAX) {
     if (millis() - ntpLastSyncTime > 50000000L) setTime(timein);
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
@@ -328,15 +328,15 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     }
 	}
 
-	root[F("fx")] = seg.mode;
-	root[F("sx")] = seg.speed;
-	root[F("ix")] = seg.intensity;
+	root[F("fx")]  = seg.mode;
+	root[F("sx")]  = seg.speed;
+	root[F("ix")]  = seg.intensity;
   root[F("f1x")] = seg.fft1;
   root[F("f2x")] = seg.fft2;
   root[F("f3x")] = seg.fft3;
 	root[F("pal")] = seg.palette;
 	root[F("sel")] = seg.isSelected();
-	root[F("rev")] = seg.getOption(SEG_OPTION_REVERSED);
+	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
 }
 
@@ -483,6 +483,8 @@ void serializeInfo(JsonObject root)
   fs_info["t"] = fsBytesTotal / 1000;
   fs_info[F("pmt")] = presetsModifiedTime;
 
+  root[F("ndc")] = Nodes.size();
+
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
@@ -544,6 +546,24 @@ void serializeInfo(JsonObject root)
   root["mac"] = escapedMac;
 }
 
+void serializeNodes(JsonObject root)
+{
+  JsonArray nodes = root.createNestedArray("nodes");
+
+  for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it)
+  {
+    if (it->second.ip[0] != 0)
+    {
+      JsonObject node = nodes.createNestedObject();
+      node[F("name")] = it->second.nodeName;
+      node[F("type")] = it->second.nodeType;
+      node[F("ip")]   = it->second.ip.toString();
+      node[F("age")]  = it->second.age;
+      node[F("vid")] = it->second.build;
+    }
+  }
+}
+
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
@@ -551,6 +571,7 @@ void serveJson(AsyncWebServerRequest* request)
   if      (url.indexOf("state") > 0) subJson = 1;
   else if (url.indexOf("info")  > 0) subJson = 2;
   else if (url.indexOf("si") > 0) subJson = 3;
+  else if (url.indexOf("nodes") > 0) subJson = 4;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
@@ -577,6 +598,8 @@ void serveJson(AsyncWebServerRequest* request)
       serializeState(doc); break;
     case 2: //info
       serializeInfo(doc); break;
+    case 4: //node list
+      serializeNodes(doc); break;
     default: //all
       JsonObject state = doc.createNestedObject("state");
       serializeState(state);

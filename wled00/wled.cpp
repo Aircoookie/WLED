@@ -25,29 +25,49 @@ ethernet_settings ethernetBoards[] = {
   // None
   {
   },
-  
+
   // WT32-EHT01
   // Please note, from my testing only these pins work for LED outputs:
   //   IO2, IO4, IO12, IO14, IO15
   // These pins do not appear to work from my testing:
   //   IO35, IO36, IO39
   {
-    1,                 // eth_address, 
-    16,                // eth_power, 
-    23,                // eth_mdc, 
-    18,                // eth_mdio, 
+    1,                 // eth_address,
+    16,                // eth_power,
+    23,                // eth_mdc,
+    18,                // eth_mdio,
     ETH_PHY_LAN8720,   // eth_type,
     ETH_CLOCK_GPIO0_IN // eth_clk_mode
   },
 
   // ESP32-POE
   {
-     0,                  // eth_address, 
-    12,                  // eth_power, 
-    23,                  // eth_mdc, 
-    18,                  // eth_mdio, 
+     0,                  // eth_address,
+    12,                  // eth_power,
+    23,                  // eth_mdc,
+    18,                  // eth_mdio,
     ETH_PHY_LAN8720,     // eth_type,
     ETH_CLOCK_GPIO17_OUT // eth_clk_mode
+  },
+
+   // WESP32
+  {
+    0,			              // eth_address,
+    -1,			              // eth_power,
+    16,			              // eth_mdc,
+    17,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO0_IN	  // eth_clk_mode
+  },
+
+  // QuinLed-ESP32-Ethernet
+  {
+    0,			              // eth_address,
+    5,			              // eth_power,
+    23,			              // eth_mdc,
+    18,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
   }
 };
 
@@ -116,7 +136,9 @@ void prepareHostname(char* hostname)
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
+  #ifdef WLED_USE_ETHERNET
   char hostname[25] = "wled-";
+  #endif
 
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
@@ -198,9 +220,11 @@ void WLED::loop()
     //LED settings have been saved, re-init busses
     if (busConfigs[0] != nullptr) {
       busses.removeAll();
+      uint32_t mem = 0;
       for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
         if (busConfigs[i] == nullptr) break;
-        busses.add(*busConfigs[i]);
+        mem += busses.memUsage(*busConfigs[i]);
+        if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
         delete busConfigs[i]; busConfigs[i] = nullptr;
       }
       strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
@@ -224,6 +248,8 @@ void WLED::loop()
   if (millis() - lastMqttReconnectAttempt > 30000) {
     if (lastMqttReconnectAttempt > millis()) rolloverMillis++; //millis() rolls over every 50 days
     initMqtt();
+    refreshNodeList();
+    sendSysInfoUDP();
   }
   yield();
   handleWs();
@@ -271,7 +297,6 @@ void WLED::setup()
   DEBUG_PRINT("esp8266 ");
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif
-  int heapPreAlloc = ESP.getFreeHeap();
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
@@ -316,8 +341,7 @@ void WLED::setup()
   WiFi.persistent(false);
   WiFi.onEvent(WiFiEvent);
 
-  // Serial.println(F("Ada"));
-  DEBUG_PRINTLN(F("Ada"));
+  Serial.println(F("Ada"));
 
   // generate module IDs
   escapedMac = WiFi.macAddress();
@@ -411,7 +435,6 @@ void WLED::initAP(bool resetAP)
     if (udpRgbPort > 0 && udpRgbPort != ntpLocalPort && udpRgbPort != udpPort) {
       udpRgbConnected = rgbUdp.begin(udpRgbPort);
     }
-
     if (udpPort2 > 0 && udpPort2 != ntpLocalPort && udpPort2 != udpPort && udpPort2 != udpRgbPort) {
       udp2Connected = notifier2Udp.begin(udpPort2);
     }
@@ -439,13 +462,13 @@ void WLED::initConnection()
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   // Only initialize ethernet board if not NONE
-  if (ethernetType != WLED_ETH_NONE) {
+  if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     ethernet_settings es = ethernetBoards[ethernetType];
     ETH.begin(
-      (uint8_t) es.eth_address, 
-      (int)     es.eth_power, 
-      (int)     es.eth_mdc, 
-      (int)     es.eth_mdio, 
+      (uint8_t) es.eth_address,
+      (int)     es.eth_power,
+      (int)     es.eth_mdc,
+      (int)     es.eth_mdio,
       (eth_phy_type_t)   es.eth_type,
       (eth_clock_mode_t) es.eth_clk_mode
     );

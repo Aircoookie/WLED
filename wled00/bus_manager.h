@@ -34,7 +34,7 @@ class Bus {
     _type = type;
     _start = start;
   };
-  
+
   virtual void show() {}
   virtual bool canShow() { return true; }
 
@@ -47,7 +47,6 @@ class Bus {
   virtual void cleanup() {};
 
   virtual ~Bus() { //throw the bus under the bus
-    //Serial.println("Destructor!");
   }
 
   virtual uint8_t getPins(uint8_t* pinArray) { return 0; }
@@ -122,7 +121,7 @@ class BusDigital : public Bus {
     //Fix for turning off onboard LED breaking bus
     #ifdef LED_BUILTIN
     if (_bri == 0 && b > 0) {
-      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType); 
+      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins);
     }
     #endif
     _bri = b;
@@ -159,7 +158,7 @@ class BusDigital : public Bus {
   }
 
   void reinit() {
-    PolyBus::begin(_busPtr, _iType);
+    PolyBus::begin(_busPtr, _iType, _pins);
   }
 
   void cleanup() {
@@ -176,7 +175,7 @@ class BusDigital : public Bus {
     cleanup();
   }
 
-  private: 
+  private:
   uint8_t _colorOrder = COL_ORDER_GRB;
   uint8_t _pins[2] = {255, 255};
   uint8_t _iType = I_NONE;
@@ -193,7 +192,7 @@ class BusPwm : public Bus {
 
     #ifdef ESP8266
     analogWriteRange(255);  //same range as one RGB channel
-    analogWriteFreq(WLED_PWM_FREQ_ESP8266);
+    analogWriteFreq(WLED_PWM_FREQ);
     #else
     _ledcStart = pinManager.allocateLedc(numPins);
     if (_ledcStart == 255) { //no more free LEDC channels
@@ -209,7 +208,7 @@ class BusPwm : public Bus {
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
       #else
-      ledcSetup(_ledcStart + i, WLED_PWM_FREQ_ESP32, 8);
+      ledcSetup(_ledcStart + i, WLED_PWM_FREQ, 8);
       ledcAttachPin(_pins[i], _ledcStart + i);
       #endif
     }
@@ -226,7 +225,7 @@ class BusPwm : public Bus {
     switch (_type) {
       case TYPE_ANALOG_1CH: //one channel (white), use highest RGBW value
         _data[0] = max(r, max(g, max(b, w))); break;
-      
+
       case TYPE_ANALOG_2CH: //warm white + cold white, we'll need some nice handling here, for now just R+G channels
       case TYPE_ANALOG_3CH: //standard dumb RGB
       case TYPE_ANALOG_4CH: //RGBW
@@ -268,7 +267,11 @@ class BusPwm : public Bus {
     deallocatePins();
   }
 
-  private: 
+  ~BusPwm() {
+    cleanup();
+  }
+
+  private:
   uint8_t _pins[5] = {255, 255, 255, 255, 255};
   uint8_t _data[5] = {255, 255, 255, 255, 255};
   #ifdef ARDUINO_ARCH_ESP32
@@ -297,7 +300,30 @@ class BusManager {
   BusManager() {
 
   };
-  
+
+  //utility to get the approx. memory usage of a given BusConfig
+  uint32_t memUsage(BusConfig &bc) {
+    uint8_t type = bc.type;
+    uint16_t len = bc.count;
+    if (type < 32) {
+      #ifdef ESP8266
+        if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
+          if (type > 29) return len*20; //RGBW
+          return len*15;
+        }
+        if (type > 29) return len*4; //RGBW
+        return len*3;
+      #else //ESP32 RMT uses double buffer?
+        if (type > 29) return len*8; //RGBW
+        return len*6;
+      #endif
+    }
+
+    if (type > 31 && type < 48) return 5;
+    if (type == 44 || type == 45) return len*4; //RGBW
+    return len*3;
+  }
+
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
     if (IS_DIGITAL(bc.type)) {
@@ -312,12 +338,11 @@ class BusManager {
   //do not call this method from system context (network callback)
   void removeAll() {
     //Serial.println("Removing all.");
-    //prevents crashes due to deleting busses while in use. 
+    //prevents crashes due to deleting busses while in use.
     while (!canAllShow()) yield();
     for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
     numBusses = 0;
   }
-  //void remove(uint8_t id);
 
   void show() {
     for (uint8_t i = 0; i < numBusses; i++) {

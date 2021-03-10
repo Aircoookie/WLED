@@ -33,8 +33,10 @@ File f;
 
 //wrapper to find out how long closing takes
 void closeFile() {
-  DEBUGFS_PRINT(F("Close -> "));
-  uint32_t s = millis();
+  #ifdef WLED_DEBUG_FS
+    DEBUGFS_PRINT(F("Close -> "));
+    uint32_t s = millis();
+  #endif
   f.close();
   DEBUGFS_PRINTF("took %d ms\n", millis() - s);
   doCloseFile = false;
@@ -53,7 +55,6 @@ bool bufferedFind(const char *target, bool fromStart = true) {
   size_t targetLen = strlen(target);
 
   size_t index = 0;
-  byte c;
   uint16_t bufsize = 0, count = 0;
   byte buf[FS_BUFSIZE];
   if (fromStart) f.seek(0);

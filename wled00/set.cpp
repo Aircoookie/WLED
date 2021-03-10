@@ -87,11 +87,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     uint8_t colorOrder, type;
     uint16_t length, start;
-    uint8_t pins[2] = {255, 255};
+    uint8_t pins[5] = {255, 255, 255, 255, 255};
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
-      char lk[4] = "L1"; lk[2] = 48+s; lk[3] = 0; //strip clock pin. 255 for none
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
       char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
@@ -100,9 +99,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN("No data."); break;
       }
-      pins[0] = request->arg(lp).toInt();
-      if (request->hasArg(lk)) {
-        pins[1] = (request->arg(lk).length() > 0) ? request->arg(lk).toInt() : 255;
+      for (uint8_t i = 0; i < 5; i++) {
+        lp[1] = 48+i;
+        if (!request->hasArg(lp)) break;
+        pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
 
@@ -120,7 +120,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     ledCount = request->arg(F("LC")).toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
-    //DMA method uses too much ram, TODO: limit!
 
     // upate other pins
     #ifndef WLED_DISABLE_INFRARED
@@ -477,6 +476,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }
+
 
 
 //helper to get int value at a position in string
@@ -919,7 +919,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   pos = req.indexOf(F("&NN")); //do not send UDP notifications this time
   colorUpdated((pos > 0) ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
-
 
   return true;
 }
