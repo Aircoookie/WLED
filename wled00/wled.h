@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2103091
+#define VERSION 2103100
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -117,9 +117,9 @@
 #include "FX.h"
 #include "ir_codes.h"
 #include "const.h"
+#include "NodeStruct.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
-#include "NodeStruct.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID

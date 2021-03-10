@@ -532,35 +532,6 @@ function populatePresets(fromls)
 	populateQL();
 }
 
-function populateNodes(i)
-{
-	var cn="";
-	var urows="";
-	if (i.nodes) {
-		i.nodes.sort((a,b) => (a.name).localeCompare(b.name));
-		for (var x=0;x<i.nodes.length;x++) {
-			var o = i.nodes[x];
-			if (o.name) {
-				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${o.name}</button>`;
-				urows += inforow(url,`${o.type}<br><i>${o.build==0?"N/A":o.build}</i>`);
-			}
-		}
-		if (i.nodes.length>0) {
-			var botButtons = d.querySelectorAll('.bot button');
-			for (btn of botButtons) {
-				btn.style.width = '20%';
-			}
-			d.getElementById('btnNodes').style.display = "inline";
-		} else
-			d.getElementById('btnNodes').style.display = "none";
-	}
-	cn += `<table class="infot">
-${urows}
-${inforow("Current node:",i.name)}
-</table>`;
-	d.getElementById('kn').innerHTML = cn;
-}
-
 function populateInfo(i)
 {
 	var cn="";
@@ -682,6 +653,63 @@ function populateSegments(s)
 		if (segCount < 2) d.getElementById(`segd${lSeg}`).style.display = "none";
 	}
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
+}
+
+function btype(b) {
+	switch (b) {
+		case 2:
+		case 32: return "ESP32";
+		case 1:
+		case 82: return "ESP8266";
+	}
+	return "?";
+}
+
+function bname(o) {
+	if (o.name=="WLED") return o.ip;
+	return o.name;
+}
+  
+function populateNodes(i,n)
+{
+	var cn="";
+	var urows="";
+	var nnodes = 0;
+	if (n.nodes) {
+		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		for (var x=0;x<n.nodes.length;x++) {
+			var o = n.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+				nnodes++;
+			}
+		}
+	}
+	if (nnodes == 0) cn += `No other instances found.`;
+	cn += `<table class="infot">${urows}${inforow("Current instance:",i.name)}</table>`;
+	d.getElementById('kn').innerHTML = cn;
+}
+  
+function loadNodes()
+{
+	var url = loc ? `http://${locip}/json/nodes` : '/json/nodes';
+	fetch(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) {
+			showToast('Could not load Node list!', true);
+		}
+		return res.json();
+	})
+	.then(json => {
+		populateNodes(lastinfo, json);
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+	});
 }
 
 function populateEffects()
@@ -1060,7 +1088,6 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 			pmtLast = pmt;
 			lastinfo = info;
 			if (isInfo) populateInfo(info);
-			populateNodes(info);
 			s = json.state;
 			displayRover(info, s);
 		}
@@ -1183,6 +1210,7 @@ function toggleLiveview() {
 }
 
 function toggleInfo() {
+	if (isNodes) toggleNodes();
 	isInfo = !isInfo;
 	if (isInfo) populateInfo(lastinfo);
 	d.getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
@@ -1190,10 +1218,11 @@ function toggleInfo() {
 }
 
 function toggleNodes() {
+	if (isInfo) toggleInfo();
 	isNodes = !isNodes;
-	if (isNodes) populateNodes(lastinfo);
+	if (isNodes) loadNodes();
 	d.getElementById('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
-	d.getElementById('buttonNo').className = (isNodes) ? "active":"";
+	d.getElementById('buttonNodes').className = (isNodes) ? "active":"";
 }
 
 function makeSeg() {
@@ -1815,7 +1844,7 @@ function togglePcMode(fromB = false)
 	d.getElementById('buttonPcm').className = (pcMode) ? "active":"";
 	d.getElementById('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', d.getElementById('bot').clientHeight + "px");
-	d.getElementById('buttonNo').style.display = (pcMode) ? "":"none";
+	d.getElementById('buttonNodes').style.display = (pcMode) ? "":"none";
 	_C.style.width = (pcMode)?'100%':'400%';
 	lastw = w;
 }

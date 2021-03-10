@@ -483,6 +483,8 @@ void serializeInfo(JsonObject root)
   fs_info["u"] = fsBytesUsed / 1000;
   fs_info["t"] = fsBytesTotal / 1000;
   fs_info[F("pmt")] = presetsModifiedTime;
+
+  root[F("ndc")] = Nodes.size();
   
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
@@ -543,26 +545,6 @@ void serializeInfo(JsonObject root)
   root[F("brand")] = "WLED";
   root[F("product")] = F("FOSS");
   root["mac"] = escapedMac;
-
-  JsonArray nodes = root.createNestedArray("nodes");
-  IPAddress ip = Network.localIP();
-  for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it)
-  {
-    if (it->second.ip[0] != 0)
-    {
-      bool isThisUnit = it->first == ip[3];
-
-      if (isThisUnit) continue;
-
-      JsonObject node  = nodes.createNestedObject();
-      node[F("name")]  = it->second.nodeName;
-      node[F("type")]  = getNodeTypeDisplayString(it->second.nodeType);
-      node[F("ip")]    = it->second.ip.toString();
-      node[F("age")]   = it->second.age;
-      node[F("build")] = it->second.build;
-    }
-  }
-
 }
 
 void setPaletteColors(JsonArray json, CRGBPalette16 palette)
@@ -727,6 +709,24 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
   }
 }
 
+void serializeNodes(JsonObject root)
+{
+  JsonArray nodes = root.createNestedArray("nodes");
+
+  for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end(); ++it)
+  {
+    if (it->second.ip[0] != 0)
+    {
+      JsonObject node = nodes.createNestedObject();
+      node[F("name")] = it->second.nodeName;
+      node[F("type")] = it->second.nodeType;
+      node[F("ip")]   = it->second.ip.toString();
+      node[F("age")]  = it->second.age;
+      node[F("vid")] = it->second.build;
+    }
+  }
+}
+
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
@@ -734,7 +734,8 @@ void serveJson(AsyncWebServerRequest* request)
   if      (url.indexOf("state") > 0) subJson = 1;
   else if (url.indexOf("info")  > 0) subJson = 2;
   else if (url.indexOf("si") > 0)    subJson = 3;
-  else if (url.indexOf("palx") > 0)  subJson = 4;
+  else if (url.indexOf("nodes") > 0) subJson = 4;
+  else if (url.indexOf("palx") > 0)  subJson = 5;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
@@ -761,7 +762,9 @@ void serveJson(AsyncWebServerRequest* request)
       serializeState(doc); break;
     case 2: //info
       serializeInfo(doc); break;
-    case 4: //palettes
+    case 4: //node list
+      serializeNodes(doc); break;
+    case 5: //palettes
       serializePalettes(doc, request); break;
     default: //all
       JsonObject state = doc.createNestedObject("state");
