@@ -4073,7 +4073,16 @@ uint16_t WS2812FX::mode_aurora(void) {
 uint32_t ledData[MAX_LEDS];                     // See const.h for a value of 1500.
 uint32_t dataStore[4096];                       // we are declaring a storage area or 64 x 64 (4096) words.
 
+
+// Sound reactive external variables
+extern int sample;
+extern float sampleAvg;
+extern bool samplePeak;
+extern uint8_t myVals[32];
+extern int sampleAgc;
+extern uint8_t squelch;
 extern byte soundSquelch;
+
 
 // FFT based variables
 extern double FFT_MajorPeak;
