@@ -4082,6 +4082,8 @@ extern uint8_t myVals[32];
 extern int sampleAgc;
 extern uint8_t squelch;
 extern byte soundSquelch;
+extern uint8_t maxVol;
+extern uint8_t binNum;
 
 
 // FFT based variables
@@ -4089,7 +4091,7 @@ extern double FFT_MajorPeak;
 extern double FFT_Magnitude;
 extern double fftBin[];                         // raw FFT data
 extern int fftResult[];                         // summary of bins array. 16 summary bins.
-
+extern float fftAvg[];
 
 
 ///////////////////////////////////////
@@ -4479,6 +4481,10 @@ uint16_t WS2812FX::mode_puddlepeak(void) {                // Puddlepeak. By Andr
   uint8_t fadeVal = map(SEGMENT.speed,0,255, 224, 255);
   uint16_t pos = random(SEGLEN);                          // Set a random starting position.
 
+  binNum = SEGMENT.fft2;                               // Select a bin.
+  maxVol = SEGMENT.fft3/2;                             // Our volume comparator.
+
+
   fade_out(fadeVal);
 
   if (samplePeak == 1 ) {
@@ -4511,10 +4517,15 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By A
 
   Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
 
+
 //  static uint8_t colour;                                  // Ripple colour is randomized.
 //  static uint16_t centre;                                 // Center of the current ripple.
 //  static int8_t steps = -1;                               // -1 is the initializing step.
   static uint8_t ripFade = 255;                           // Starting brightness.
+
+
+  binNum = SEGMENT.fft2;                               // Select a bin.
+  maxVol = SEGMENT.fft3/2;                             // Our volume comparator.
 
   fade_out(240);                                          // Lower frame rate means less effective fading than FastLED
   fade_out(240);
@@ -4882,6 +4893,9 @@ uint16_t WS2812FX::mode_waterfall(void) {                   // Waterfall. By: An
 
   CRGB *leds = (CRGB*) ledData;
   if (SEGENV.call == 0) fill_solid(leds,SEGLEN, 0);
+
+  binNum = SEGMENT.fft2;                               // Select a bin.
+  maxVol = SEGMENT.fft3/2;                             // Our volume comparator.
 
   uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
 

@@ -65,6 +65,7 @@ TaskHandle_t FFT_Task;
 #define UDP_SYNC_HEADER "00001"
 
 uint8_t maxVol = 10;                            // Reasonable value for constant volume for 'peak detector', as it won't always trigger
+uint8_t binNum;                                 // Used to select the bin for FFT based beat detection.
 uint8_t targetAgc = 60;                         // This is our setPoint at 20% of max for the adjusted output
 uint8_t myVals[32];                             // Used to store a pile of samples because WLED frame rate and WLED sample rate are not synchronized. Frame rate is too low.
 bool samplePeak = 0;                            // Boolean flag for peak. Responding routine must reset this flag
@@ -86,6 +87,38 @@ double beat = 0;                                // beat Detection
 
 float expAdjF;                                  // Used for exponential filter.
 float weighting = 0.2;                          // Exponential filter weighting. Will be adjustable in a future release.
+
+
+// FFT Variables
+
+const uint16_t samples = 512;                     // This value MUST ALWAYS be a power of 2
+unsigned int sampling_period_us;
+unsigned long microseconds;
+
+double FFT_MajorPeak = 0;
+double FFT_Magnitude = 0;
+uint16_t mAvg = 0;
+
+// These are the input and output vectors.  Input vectors receive computed results from FFT.
+double vReal[samples];
+double vImag[samples];
+double fftBin[samples];
+
+// Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
+// Oh, and bins 0,1,2 are no good, so we'll zero them out.
+double fftCalc[16];
+int fftResult[16];                      // Our calculated result table, which we feed to the animations.
+double fftResultMax[16];                // A table used for testing to determine how our post-processing is working.
+float fftAvg[16];
+
+// Table of linearNoise results to be multiplied by soundSquelch in order to reduce squelch across fftResult bins.
+int linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
+
+// Table of multiplication factors so that we can even out the frequency response.
+double fftResultPink[16] = {1.70,1.71,1.73,1.78,1.68,1.56,1.55,1.63,1.79,1.62,1.80,2.06,2.47,3.35,6.83,9.55};
+
+
+
 
 
 struct audioSyncPacket {
@@ -155,8 +188,10 @@ void getSample() {
 
   if (userVar1 == 0) samplePeak = 0;
   // Poor man's beat detection by seeing if sample > Average + some value.
-  if (sample > (sampleAvg + maxVol) && millis() > (peakTime + 100)) {
-  // Then we got a peak, else we don't. Display routines need to reset the samplepeak value in case they miss the trigger.
+  //  Serial.print(binNum); Serial.print("\t"); Serial.print(fftBin[binNum]); Serial.print("\t"); Serial.print(fftAvg[binNum/16]); Serial.print("\t"); Serial.print(maxVol); Serial.print("\t"); Serial.println(samplePeak);
+    if (fftBin[binNum] > ( maxVol) && millis() > (peakTime + 100)) {                     // This goe through ALL of the 255 bins
+  //  if (sample > (sampleAvg + maxVol) && millis() > (peakTime + 200)) {
+  // Then we got a peak, else we don't. The peak has to time out on its own in order to support UDP sound sync.
     samplePeak = 1;
     timeOfPeak = millis();
     udpSamplePeak = 1;
@@ -222,31 +257,7 @@ void transmitAudioData() {
   return;
 } // transmitAudioData()
 
-const uint16_t samples = 512;                     // This value MUST ALWAYS be a power of 2
-unsigned int sampling_period_us;
-unsigned long microseconds;
 
-double FFT_MajorPeak = 0;
-double FFT_Magnitude = 0;
-uint16_t mAvg = 0;
-
-// These are the input and output vectors.  Input vectors receive computed results from FFT.
-double vReal[samples];
-double vImag[samples];
-double fftBin[samples];
-
-// Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
-// Oh, and bins 0,1,2 are no good, so we'll zero them out.
-double fftCalc[16];
-int fftResult[16];                      // Our calculated result table, which we feed to the animations.
-double fftResultMax[16];                // A table used for testing to determine how our post-processing is working.
-float fftAvg[16];
-
-// Table of linearNoise results to be multiplied by soundSquelch in order to reduce squelch across fftResult bins.
-int linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
-
-// Table of multiplication factors so that we can even out the frequency response.
-double fftResultPink[16] = {1.70,1.71,1.73,1.78,1.68,1.56,1.55,1.63,1.79,1.62,1.80,2.06,2.47,3.35,6.83,9.55};
 
 
 // Create FFT object
@@ -373,7 +384,7 @@ void FFTcode( void * parameter) {
     for (int i=0; i < 16; i++) {
         // fftResult[i] = (int)fftCalc[i];
         fftResult[i] = constrain((int)fftCalc[i],0,254);
-        fftAvg[i] = (float)fftresult[i]*.05 + (1-.05)*fftAvg[i]);
+        fftAvg[i] = (float)fftResult[i]*.05 + (1-.05)*fftAvg[i];
     }
 
 
