@@ -423,8 +423,8 @@ void serializeInfo(JsonObject root)
   leds[F("count")] = ledCount;
   leds[F("rgbw")] = useRGBW;
   leds[F("wv")] = useRGBW && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
+
   JsonArray leds_pin = leds.createNestedArray("pin");
-  //leds_pin.add(LEDPIN);
   for (uint8_t s=0; s<busses.getNumBusses(); s++) {
     Bus *bus = busses.getBus(s);
     uint8_t pins[5];

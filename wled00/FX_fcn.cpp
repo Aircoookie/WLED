@@ -53,11 +53,26 @@ void WS2812FX::finalizeInit(void)
   RESET_RUNTIME;
   _useRgbw = false;
 
-  //if busses failed to load, add default (FS issue...)
+  //if busses failed to load, add default (fresh install, FS issue, ...)
   if (busses.getNumBusses() == 0) {
     uint8_t defPin[] = {LEDPIN};
     BusConfig defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, 30, COL_ORDER_GRB, false, false);
     busses.add(defCfg);
+    #ifdef LEDPIN1
+    defPin[0] = {LEDPIN1};
+    defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, 30, COL_ORDER_GRB, false, false);
+    busses.add(defCfg);
+    #endif
+    #ifdef LEDPIN2
+    defPin[0] = {LEDPIN2};
+    defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, 30, COL_ORDER_GRB, false, false);
+    busses.add(defCfg);
+    #endif
+    #ifdef LEDPIN3
+    defPin[0] = {LEDPIN3};
+    defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, 30, COL_ORDER_GRB, false, false);
+    busses.add(defCfg);
+    #endif
   }
   
   deserializeMap();
