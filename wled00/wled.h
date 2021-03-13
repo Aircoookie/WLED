@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2103090
+#define VERSION 2103130
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -259,6 +259,8 @@ WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a 
 
 // Sync CONFIG
 WLED_GLOBAL NodesMap Nodes;
+WLED_GLOBAL bool nodeListEnabled _INIT(true);
+WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
 WLED_GLOBAL bool buttonEnabled  _INIT(true);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver

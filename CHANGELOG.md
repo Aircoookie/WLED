@@ -2,6 +2,11 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103130
+
+-   Added options for Auto Node discovery
+-   Optimized strings (no string both F() and raw)
+
 #### Build 2103090
 
 -   Added Auto Node discovery (PR #1683)

@@ -943,12 +943,6 @@ input[type=number]::-webkit-outer-spin-button {
 	}
 }
 
-@media all and (max-width: 770px) {
-	#buttonNodes {
-	display: none;
-	}
-}
-
 @media all and (max-width: 1249px) {
 	#buttonPcm {
 	display: none;
