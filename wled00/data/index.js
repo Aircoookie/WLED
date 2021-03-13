@@ -53,7 +53,7 @@ var cpick = new iro.ColorPicker("#picker", {
 });
 
 function handleVisibilityChange() {
-	if (!document.hidden && new Date () - lastUpdate > 3000) {
+	if (!d.hidden && new Date () - lastUpdate > 3000) {
 		requestJson(null);
 	}
 }
@@ -150,8 +150,8 @@ function cTheme(light) {
 }
 
 function loadBg(iUrl) {
-	let bg = document.getElementById('bg');
-  let img = document.createElement("img");
+	let bg = d.getElementById('bg');
+  let img = d.createElement("img");
   img.src = iUrl;
   if (iUrl == "") {
     var today = new Date();
@@ -307,13 +307,12 @@ function qlName(i) {
 }
 
 function cpBck() {
-	var copyText = document.getElementById("bck");
+	var copyText = d.getElementById("bck");
 
   copyText.select();
   copyText.setSelectionRange(0, 999999);
-
-  document.execCommand("copy");
-
+  d.execCommand("copy");
+	
 	showToast("Copied to clipboard!");
 }
 
@@ -744,7 +743,8 @@ function populateNodes(i,n)
 			}
 		}
 	}
-  if (nnodes == 0) cn += `No other instances found.`;
+  if (i.ndc < 0) cn += `Instance List is disabled.`;
+  else if (nnodes == 0) cn += `No other instances found.`;
 	cn += `<table class="infot">
     ${urows}
     ${inforow("Current instance:",i.name)}
@@ -967,18 +967,20 @@ function requestJson(command, rinfo = true, verbose = true) {
 			isRgbw = info.leds.wv;
 			ledCount = info.leds.count;
 			syncTglRecv = info.str;
-			maxSeg = info.leds.maxseg;
+      maxSeg = info.leds.maxseg;
 			pmt = info.fs.pmt;
+
 			if (!command && pmt != pmtLast) {
 				setTimeout(loadPresets,99);
 			}
 			pmtLast = pmt;
+      d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
 			lastinfo = info;
 			if (isInfo) {
 				populateInfo(info);
 			}
-				s = json.state;
-				displayRover(info, s);
+			s = json.state;
+			displayRover(info, s);
 		}
 
 		isOn = s.on;
@@ -1656,7 +1658,7 @@ function unfocusSliders() {
 }
 
 //sliding UI
-const _C = document.querySelector('.container'), N = 4;
+const _C = d.querySelector('.container'), N = 4;
 
 let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
 
@@ -1707,6 +1709,7 @@ function move(e) {
 
 function size() {
 	w = window.innerWidth;
+  d.getElementById('buttonNodes').style.display = (lastinfo.ndc > 0 && w > 770) ? "block":"none";
 	var h = d.getElementById('top').clientHeight;
 	sCol('--th', h + "px");
 	sCol('--bh', d.getElementById('bot').clientHeight + "px");

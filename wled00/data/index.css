@@ -1049,12 +1049,6 @@ input[type="text"].search:not(:placeholder-shown) {
 	}
 }
 
-@media all and (max-width: 770px) {
-	#buttonNodes {
-	display: none;
-	}
-}
-
 @media all and (max-width: 1249px) {
 	#buttonPcm {
 	display: none;
