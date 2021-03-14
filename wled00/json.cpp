@@ -1,12 +1,14 @@
 #include "wled.h"
 
+#include "palettes.h"
+
 /*
  * JSON API (De)serialization
  */
 
 void deserializeSegment(JsonObject elem, byte it)
 {
-  byte id = elem[F("id")] | it;
+  byte id = elem["id"] | it;
   if (id < strip.getMaxSegments())
   {
     WS2812FX::Segment& seg = strip.getSegment(id);
@@ -31,7 +33,7 @@ void deserializeSegment(JsonObject elem, byte it)
 
     seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON), id);
 
-    JsonArray colarr = elem[F("col")];
+    JsonArray colarr = elem["col"];
     if (!colarr.isNull())
     {
       for (uint8_t i = 0; i < 3; i++)
@@ -57,7 +59,8 @@ void deserializeSegment(JsonObject elem, byte it)
           if (sz == 0) continue; //do nothing on empty array
 
           byte cp = copyArray(colX, rgbw, 4);
-          if (cp == 1 && rgbw[0] == 0) seg.setColor(i, 0, id);
+          if (cp == 1 && rgbw[0] == 0)
+            seg.setColor(i, 0, id);
           colValid = true;
         }
 
@@ -202,8 +205,8 @@ bool deserializeState(JsonObject root)
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn = root["udpn"];
-  notifyDirect         = udpn[F("send")] | notifyDirect;
-  receiveNotifications = udpn[F("recv")] | receiveNotifications;
+  notifyDirect         = udpn["send"] | notifyDirect;
+  receiveNotifications = udpn["recv"] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
   unsigned long timein = root[F("time")] | UINT32_MAX;
@@ -231,7 +234,7 @@ bool deserializeState(JsonObject root)
   JsonVariant segVar = root["seg"];
   if (segVar.is<JsonObject>())
   {
-    int id = segVar[F("id")] | -1;
+    int id = segVar["id"] | -1;
 
     if (id < 0) { //set all selected segments
       bool didSet = false;
@@ -285,7 +288,8 @@ bool deserializeState(JsonObject root)
 
   JsonObject playlist = root[F("playlist")];
   if (!playlist.isNull()) {
-    loadPlaylist(playlist); return stateResponse;
+    loadPlaylist(playlist);
+    noNotification = true; //do not notify both for this request and the first playlist entry
   }
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
@@ -295,7 +299,7 @@ bool deserializeState(JsonObject root)
 
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
-	root[F("id")] = id;
+	root["id"] = id;
   if (segmentBounds) {
     root[F("start")] = seg.start;
     root["stop"] = seg.stop;
@@ -375,8 +379,8 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     }
 
     JsonObject udpn = root.createNestedObject("udpn");
-    udpn[F("send")] = notifyDirect;
-    udpn[F("recv")] = receiveNotifications;
+    udpn["send"] = notifyDirect;
+    udpn["recv"] = receiveNotifications;
 
     root[F("lor")] = realtimeOverride;
   }
@@ -483,7 +487,7 @@ void serializeInfo(JsonObject root)
   fs_info["t"] = fsBytesTotal / 1000;
   fs_info[F("pmt")] = presetsModifiedTime;
 
-  root[F("ndc")] = Nodes.size();
+  root[F("ndc")] = nodeListEnabled ? (int)Nodes.size() : -1;
 
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
@@ -546,6 +550,168 @@ void serializeInfo(JsonObject root)
   root["mac"] = escapedMac;
 }
 
+void setPaletteColors(JsonArray json, CRGBPalette16 palette)
+{
+    for (int i = 0; i < 16; i++) {
+      JsonArray colors =  json.createNestedArray();
+      CRGB color = palette[i];
+      colors.add((((float)i / (float)16) * 255));
+      colors.add(color.red);
+      colors.add(color.green);
+      colors.add(color.blue);
+    }
+}
+
+void setPaletteColors(JsonArray json, byte* tcp)
+{
+    TRGBGradientPaletteEntryUnion* ent = (TRGBGradientPaletteEntryUnion*)(tcp);
+    TRGBGradientPaletteEntryUnion u;
+
+    // Count entries
+    uint16_t count = 0;
+    do {
+        u = *(ent + count);
+        count++;
+    } while ( u.index != 255);
+
+    u = *ent;
+    int indexstart = 0;
+    while( indexstart < 255) {
+      indexstart = u.index;
+
+      JsonArray colors =  json.createNestedArray();
+      colors.add(u.index);
+      colors.add(u.r);
+      colors.add(u.g);
+      colors.add(u.b);
+
+      ent++;
+      u = *ent;
+    }
+}
+
+void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
+{
+  #ifdef ESP8266
+  int itemPerPage = 5;
+  #else
+  int itemPerPage = 8;
+  #endif
+
+  int page;
+  if (request->hasParam("page")) {
+    page = request->getParam("page")->value().toInt();
+  } else {
+    page = 1;
+  }
+
+  int palettesCount = strip.getPaletteCount();
+
+  int maxPage = ceil((float)palettesCount / (float)itemPerPage);
+  if (page > maxPage) {
+    page = maxPage;
+  }
+
+  int start = itemPerPage * (page - 1);
+  int end = start + itemPerPage;
+  if (end > palettesCount - 1) {
+    end = palettesCount;
+  }
+
+  root[F("m")] = maxPage;
+  JsonObject palettes  = root.createNestedObject("p");
+
+  for (int i = start; i < end; i++) {
+    JsonArray curPalette = palettes.createNestedArray(String(i));
+    CRGB prim;
+    CRGB sec;
+    CRGB ter;
+    switch (i) {
+      case 0: //default palette
+        setPaletteColors(curPalette, PartyColors_p);
+        break;
+      case 1: //random
+          curPalette.add(F("r"));
+          curPalette.add(F("r"));
+          curPalette.add(F("r"));
+          curPalette.add(F("r"));
+          /**setPaletteColors(
+            curPalette,
+            CRGBPalette16(
+              CHSV(random8(), 255, random8(128, 255)),
+              CHSV(random8(), 255, random8(128, 255)),
+              CHSV(random8(), 192, random8(128, 255)),
+              CHSV(random8(), 255, random8(128, 255))
+            )
+          );**/
+        break;
+      case 2: //primary color only
+        curPalette.add(F("c1"));
+        break;
+      case 3: //primary + secondary
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        break;
+      case 4: //primary + secondary + tertiary
+        curPalette.add(F("c3"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c1"));
+        break;
+      case 5: {//primary + secondary (+tert if not off), more distinct
+
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c1"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c2"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c3"));
+        curPalette.add(F("c1"));
+        break;}
+      case 6: //Party colors
+        setPaletteColors(curPalette, PartyColors_p);
+        break;
+      case 7: //Cloud colors
+        setPaletteColors(curPalette, CloudColors_p);
+        break;
+      case 8: //Lava colors
+        setPaletteColors(curPalette, LavaColors_p);
+        break;
+      case 9: //Ocean colors
+        setPaletteColors(curPalette, OceanColors_p);
+        break;
+      case 10: //Forest colors
+        setPaletteColors(curPalette, ForestColors_p);
+        break;
+      case 11: //Rainbow colors
+        setPaletteColors(curPalette, RainbowColors_p);
+        break;
+      case 12: //Rainbow stripe colors
+        setPaletteColors(curPalette, RainbowStripeColors_p);
+        break;
+
+      default:
+        if (i < 13) {
+          break;
+        }
+        byte tcp[72];
+        memcpy_P(tcp, (byte*)pgm_read_dword(&(gGradientPalettes[i - 13])), 72);
+        setPaletteColors(curPalette, tcp);
+        break;
+    }
+  }
+}
+
 void serializeNodes(JsonObject root)
 {
   JsonArray nodes = root.createNestedArray("nodes");
@@ -556,10 +722,10 @@ void serializeNodes(JsonObject root)
     {
       JsonObject node = nodes.createNestedObject();
       node[F("name")] = it->second.nodeName;
-      node[F("type")] = it->second.nodeType;
-      node[F("ip")]   = it->second.ip.toString();
+      node["type"]    = it->second.nodeType;
+      node["ip"]      = it->second.ip.toString();
       node[F("age")]  = it->second.age;
-      node[F("vid")] = it->second.build;
+      node[F("vid")]  = it->second.build;
     }
   }
 }
@@ -572,6 +738,7 @@ void serveJson(AsyncWebServerRequest* request)
   else if (url.indexOf("info")  > 0) subJson = 2;
   else if (url.indexOf("si") > 0) subJson = 3;
   else if (url.indexOf("nodes") > 0) subJson = 4;
+  else if (url.indexOf("palx") > 0) subJson = 5;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
@@ -600,10 +767,12 @@ void serveJson(AsyncWebServerRequest* request)
       serializeInfo(doc); break;
     case 4: //node list
       serializeNodes(doc); break;
+    case 5: //palettes
+      serializePalettes(doc, request); break;
     default: //all
       JsonObject state = doc.createNestedObject("state");
       serializeState(state);
-      JsonObject info  = doc.createNestedObject("info");
+      JsonObject info = doc.createNestedObject("info");
       serializeInfo(info);
       if (subJson != 3)
       {

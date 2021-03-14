@@ -154,6 +154,7 @@ void _overlayCronixie();
 void _drawOverlayCronixie();
 
 //playlist.cpp
+void unloadPlaylist();
 void loadPlaylist(JsonObject playlistObject);
 void handlePlaylist();
 

@@ -169,7 +169,7 @@ void handleNotifications()
 
   // WLED nodes info notifications
   if (isSupp && udpIn[0] == 255 && udpIn[1] == 1 && len >= 40) {
-    if (notifier2Udp.remoteIP() == Network.localIP()) return;
+    if (!nodeListEnabled || notifier2Udp.remoteIP() == Network.localIP()) return;
 
     uint8_t unit = udpIn[39];
     NodesMap::iterator it = Nodes.find(unit);
