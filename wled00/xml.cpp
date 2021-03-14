@@ -42,13 +42,23 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappendi(nightlightDelayMins);
   oappend(SET_F("</nd><nt>"));
   oappendi(nightlightTargetBri);
-  oappend(SET_F("</nt><fx>"));
+  oappend(SET_F("</nt><sq>"));
+  oappendi(soundSquelch);
+  oappend(SET_F("</sq><gn>"));
+  oappendi(sampleGain);
+  oappend(SET_F("</gn><fx>"));
   oappendi(effectCurrent);
   oappend(SET_F("</fx><sx>"));
   oappendi(effectSpeed);
   oappend(SET_F("</sx><ix>"));
   oappendi(effectIntensity);
-  oappend(SET_F("</ix><fp>"));
+  oappend(SET_F("</ix><f1>"));
+  oappendi(effectFFT1);
+  oappend(SET_F("</f1><f2>"));
+  oappendi(effectFFT2);
+  oappend(SET_F("</f2><f3>"));
+  oappendi(effectFFT3);
+  oappend(SET_F("</f3><fp>"));
   oappendi(effectPalette);
   oappend(SET_F("</fp><wv>"));
   if (strip.rgbwMode) {
@@ -93,7 +103,7 @@ void URL_response(AsyncWebServerRequest *request)
   for (int i = 0; i < 3; i++)
   {
    sprintf(s,"%02X", col[i]);
-   oappend(s); 
+   oappend(s);
   }
   oappend(SET_F("&C2=h"));
   for (int i = 0; i < 3; i++)
@@ -107,6 +117,12 @@ void URL_response(AsyncWebServerRequest *request)
   oappendi(effectSpeed);
   oappend(SET_F("&IX="));
   oappendi(effectIntensity);
+  oappend(SET_F("&F1="));
+  oappendi(effectFFT1);
+  oappend(SET_F("&F2="));
+  oappendi(effectFFT2);
+  oappend(SET_F("&F3="));
+  oappendi(effectFFT3);
   oappend(SET_F("&FP="));
   oappendi(effectPalette);
 
@@ -116,7 +132,7 @@ void URL_response(AsyncWebServerRequest *request)
   oappend(SET_F("<html><body><a href=\""));
   oappend(s2buf);
   oappend(SET_F("\" target=\"_blank\">"));
-  oappend(s2buf);  
+  oappend(s2buf);
   oappend(SET_F("</a></body></html>"));
 
   if (request != nullptr) request->send(200, "text/html", obuf);
@@ -185,7 +201,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >7) return;
+  if (subPage <1 || subPage >8) return;
 
   if (subPage == 1) {
     sappends('s',SET_F("CS"),clientSSID);
@@ -342,6 +358,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("BT"),btnPin);
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("AX"),auxPin);
+    #ifdef ESP8266
+    sappends('v',SET_F("LCW"), "");
+    sappends('v',SET_F("LCH"), "");
+    sappend('c',SET_F("LCWHS"), 1);
+    #else
+    sappend('v',SET_F("LCW"),strip.matrixWidth);
+    sappend('v',SET_F("LCH"),strip.matrixHeight);
+    sappend('c',SET_F("LCWHS"),strip.matrixSerpentine);
+    #endif // ESP8266
   }
 
   if (subPage == 3)
@@ -381,6 +406,19 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
     sappends('s',SET_F("BH"),blynkHost);
     sappend('v',SET_F("BP"),blynkPort);
+    if (!(((audioSyncEnabled)>>(0)) & 1) && !(((audioSyncEnabled)>>(1)) & 1)) {
+      // 0 == udp audio sync off
+      sappend('v',SET_F("ASE"), 0);
+    }
+    else if ((((audioSyncEnabled)>>(0)) & 1) && !(((audioSyncEnabled)>>(1)) & 1)) {
+      // 1 == transmit only
+      sappend('v',SET_F("ASE"), 1);
+    }
+    else if (!(((audioSyncEnabled)>>(0)) & 1) && (((audioSyncEnabled)>>(1)) & 1)) {
+      // 2 == receive only
+      sappend('v',SET_F("ASE"), 2);
+    }
+    sappend('v',SET_F("ASP"), audioSyncPort);
 
     #ifdef WLED_ENABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);
@@ -420,7 +458,7 @@ void getSettingsJS(byte subPage, char* dest)
       case HUE_ERROR_TIMEOUT      : strcpy(hueErrorString,(char*)F("Timeout"));                 break;
       default: sprintf(hueErrorString,(char*)F("Bridge Error %i"),hueError);
     }
-    
+
     sappends('m',SET_F("(\"sip\")[0]"),hueErrorString);
     #endif
   }
@@ -483,17 +521,17 @@ void getSettingsJS(byte subPage, char* dest)
     oappendi(VERSION);
     oappend(SET_F(")\";"));
   }
-  
+
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)
   {
     sappend('v',SET_F("PU"),e131ProxyUniverse);
-    
+
     sappend('v',SET_F("CN"),DMXChannels);
     sappend('v',SET_F("CG"),DMXGap);
     sappend('v',SET_F("CS"),DMXStart);
     sappend('v',SET_F("SL"),DMXStartLED);
-    
+
     sappend('i',SET_F("CH1"),DMXFixtureMap[0]);
     sappend('i',SET_F("CH2"),DMXFixtureMap[1]);
     sappend('i',SET_F("CH3"),DMXFixtureMap[2]);
@@ -511,5 +549,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("CH15"),DMXFixtureMap[14]);
     }
   #endif
+
+  if (subPage == 8)
+  {
+    sappend('v',SET_F("SQ"),soundSquelch);
+    sappend('v',SET_F("GN"),sampleGain);
+    }
   oappend(SET_F("}</script>"));
 }

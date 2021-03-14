@@ -91,12 +91,12 @@
 		function UI()
 		{
       var isRGBW = false, memu = 0;
-      
+
       d.getElementById('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
-	  
+
 	    if (d.Sf.LA.value == 255) laprev = 12;
 	    else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
-      
+
       var s = d.getElementsByTagName("select");
       for (i=0; i<s.length; i++) {
         if (s[i].name.substring(0,2)=="LT") {

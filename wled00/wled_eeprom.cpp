@@ -4,14 +4,14 @@
 /*
  * DEPRECATED, do not use for new settings
  * Only used to restore config from pre-0.11 installations using the deEEP() methods
- * 
+ *
  * Methods to handle saving and loading to non-volatile memory
  * EEPROM Map: https://github.com/Aircoookie/WLED/wiki/EEPROM-Map
  */
 
 //eeprom Version code, enables default settings instead of 0 init on update
 #define EEPVER 22
-#define EEPSIZE 2560  //Maximum is 4096
+#define EEPSIZE 3300  //Maximum is 4096
 //0 -> old version, default
 //1 -> 0.4p 1711272 and up
 //2 -> 0.4p 1711302 and up
@@ -36,6 +36,7 @@
 //21-> 0.10.1p
 //22-> 2009260
 
+#define EEP_AUDIO 3072         // Start of Audio Reactive EEPROM Settings - END 3299
 /*
  * Erase all (pre 0.11) configuration data on factory reset
  */
@@ -65,6 +66,7 @@ void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
  */
 void loadSettingsFromEEPROM()
 {
+
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
     DEBUG_PRINTLN(F("EEPROM settings invalid, using defaults..."));
@@ -146,9 +148,9 @@ void loadSettingsFromEEPROM()
   turnOnAtBoot = EEPROM.read(369);
   useRGBW = EEPROM.read(372);
   //374 - strip.paletteFade
-  
+
   apBehavior = EEPROM.read(376);
-    
+
   //377 = lastEEPROMversion
   if (lastEEPROMversion > 3) {
     aOtaEnabled = EEPROM.read(390);
@@ -156,7 +158,7 @@ void loadSettingsFromEEPROM()
     receiveNotificationEffects = EEPROM.read(392);
   }
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
-  
+
   if (lastEEPROMversion > 4) {
     huePollingEnabled = EEPROM.read(2048);
     //hueUpdatingEnabled = EEPROM.read(2049);
@@ -225,7 +227,7 @@ void loadSettingsFromEEPROM()
       timerMacro[i]   = EEPROM.read(2290 + i);
       if (timerMacro[i] > 0) timerMacro[i] += 16; //add 16 to work with macro --> preset mapping
       if (timerWeekday[i] == 0) timerWeekday[i] = 255;
-      if (timerMacro[i] == 0) timerWeekday[i] = timerWeekday[i] & 0b11111110; 
+      if (timerMacro[i] == 0) timerWeekday[i] = timerWeekday[i] & 0b11111110;
     }
   }
 
@@ -312,8 +314,8 @@ void loadSettingsFromEEPROM()
 
   if (lastEEPROMversion > 21) {
     udpPort2 = EEPROM.read(378) + ((EEPROM.read(379) << 8) & 0xFF00);
-  } 
-  
+  }
+
   receiveDirect = !EEPROM.read(2200);
   notifyMacro = EEPROM.read(2201);
 
@@ -352,7 +354,7 @@ void loadSettingsFromEEPROM()
   DMXChannels = EEPROM.read(2530);
   DMXGap = EEPROM.read(2531) + ((EEPROM.read(2532) << 8) & 0xFF00);
   DMXStart = EEPROM.read(2533) + ((EEPROM.read(2534) << 8) & 0xFF00);
-  
+
   for (int i=0;i<15;i++) {
     DMXFixtureMap[i] = EEPROM.read(2535+i);
   } //last used: 2549
@@ -363,6 +365,36 @@ void loadSettingsFromEEPROM()
   //2551 - 2559 reserved for Usermods, usable by default
   //2560 - 2943 usable, NOT reserved (need to increase EEPSIZE accordingly, new WLED core features may override this section)
   //2944 - 3071 reserved for Usermods (need to increase EEPSIZE to 3072 in const.h)
+
+
+// Audio Reactive specific read settings
+
+  if (lastEEPROMversion > 20) {                                   // Version sanity checking
+    soundSquelch =  EEPROM.read(EEP_AUDIO);
+    audioSyncPort = EEPROM.read(EEP_AUDIO+1) + ((EEPROM.read(EEP_AUDIO+2) << 8) & 0xFF00);
+    audioSyncEnabled = EEPROM.read(EEP_AUDIO + 3);
+
+    effectFFT1 = EEPROM.read(EEP_AUDIO+4);
+    effectFFT2 = EEPROM.read(EEP_AUDIO+5);
+    effectFFT3 = EEPROM.read(EEP_AUDIO+6);
+
+    #ifndef ESP8266
+      strip.matrixWidth = EEPROM.read(EEP_AUDIO+7) + ((EEPROM.read(EEP_AUDIO+8) << 8) & 0xFF00); if (strip.matrixWidth == 0) strip.matrixWidth = 1;
+      strip.matrixHeight = EEPROM.read(EEP_AUDIO+9) + ((EEPROM.read(EEP_AUDIO+10) << 10) & 0xFF00); if (strip.matrixHeight == 0) strip.matrixHeight = ledCount;
+      strip.matrixSerpentine = EEPROM.read(EEP_AUDIO+11); // > 0;
+    #endif
+
+    sampleGain = EEPROM.read(EEP_AUDIO+12);
+  }
+
+// FFT Slider Data Preset Protocol 5 bytes, 25 "slots"
+// RESERVE 3175-3299 for FFT Preset saves and future expansion
+// 3175:      FFT1
+// 3176:      FFT2
+// 3177:      FFT3
+// 3178-3179: ZEROs
+
+// End of Audio Reactive SEGMENT specific read settings
 
   overlayCurrent = overlayDefault;
 }
@@ -377,7 +409,7 @@ void applyMacro(byte index) {
 // De-EEPROM routine, upgrade from previous versions to v0.11
 void deEEP() {
   if (WLED_FS.exists("/presets.json")) return;
-  
+
   DEBUG_PRINTLN(F("Preset file not found, attempting to load from EEPROM"));
   DEBUGFS_PRINTLN(F("Allocating saving buffer for dEEP"));
   DynamicJsonDocument dDoc(JSON_BUFFER_SIZE *2);
@@ -387,7 +419,8 @@ void deEEP() {
   EEPROM.begin(EEPSIZE);
   if (EEPROM.read(233) == 233) { //valid EEPROM save
     for (uint16_t index = 1; index <= 16; index++) { //copy presets to presets.json
-      uint16_t i = 380 + index*20;
+      uint16_t i = 380 + index*20;        // Begin main WLED preset data - min400
+      uint16_t k = 3170 + index*5;        // Begin FFT slider preset data - min3175
       byte ver = EEPROM.read(i);
 
       if ((index < 16 && ver != 1) || (index == 16 && (ver < 2 || ver > 3))) continue;
@@ -417,11 +450,14 @@ void deEEP() {
 
           for (byte j = 0; j < numChannels; j++) colX.add(EEPROM.read(memloc + j));
         }
-        
+
         segObj[F("fx")]  = EEPROM.read(i+10);
         segObj[F("sx")]  = EEPROM.read(i+11);
         segObj[F("ix")]  = EEPROM.read(i+16);
         segObj[F("pal")] = EEPROM.read(i+17);
+        segObj[F("f1x")] = EEPROM.read(k);      // Read FFT Slider values from EEPROM for presets
+        segObj[F("f2x")] = EEPROM.read(k+1);    // Read FFT Slider values from EEPROM for presets
+        segObj[F("f3x")] = EEPROM.read(k+2);    // Read FFT Slider values from EEPROM for presets
       } else {
         WS2812FX::Segment* seg = strip.getSegments();
         memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
@@ -440,8 +476,8 @@ void deEEP() {
       }
     }
 
-    
-    
+
+
     for (uint16_t index = 1; index <= 16; index++) { //copy macros to presets.json
       char m[65];
       readStringFromEEPROM(1024+64*(index-1), m, 64);

@@ -39,7 +39,7 @@
 #define AP_BEHAVIOR_ALWAYS        2            //Always open
 #define AP_BEHAVIOR_BUTTON_ONLY   3            //Only when button pressed for 6 sec
 
-//Notifier callMode 
+//Notifier callMode
 #define NOTIFIER_CALL_MODE_INIT           0    //no updates on init, can be used to disable updates
 #define NOTIFIER_CALL_MODE_DIRECT_CHANGE  1
 #define NOTIFIER_CALL_MODE_BUTTON         2
@@ -56,7 +56,7 @@
 #define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
 #define RGBW_MODE_AUTO_BRIGHTER   1            //New algorithm. Adds as much white as the darkest RGBW channel
 #define RGBW_MODE_AUTO_ACCURATE   2            //New algorithm. Adds as much white as the darkest RGBW channel and subtracts this amount from each RGB channel
-#define RGBW_MODE_DUAL            3            //Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)  
+#define RGBW_MODE_DUAL            3            //Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)
 #define RGBW_MODE_LEGACY          4            //Old floating algorithm. Too slow for realtime and palette support
 
 //realtime modes
@@ -181,6 +181,13 @@
 #define NL_MODE_FADE              1            //Fade to target brightness gradually
 #define NL_MODE_COLORFADE         2            //Fade to target brightness and secondary color gradually
 #define NL_MODE_SUN               3            //Sunrise/sunset. Target brightness is set immediately, then Sunrise effect is started. Max 60 min.
+
+//EEPROM size
+#ifdef ESP8266
+#define EEPSIZE 3300  //Maximum is 4096
+#else // ESP8266
+#define EEPSIZE 3300  //Maximum is 4096
+#endif // ESP32
 
 
 #define NTP_PACKET_SIZE 48

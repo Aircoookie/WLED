@@ -269,6 +269,7 @@ void WLED::loop()
     }
     lastWifiState = WiFi.status();
     DEBUG_PRINT("State time: ");    DEBUG_PRINTLN(wifiStateChangedTime);
+    DEBUG_PRINT("WiFi running on core: "); DEBUG_PRINTLN(xPortGetCoreID());
     DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
     DEBUG_PRINT("Client IP: ");     DEBUG_PRINTLN(Network.localIP());
     DEBUG_PRINT("Loops/sec: ");     DEBUG_PRINTLN(loops / 10);
@@ -434,8 +435,17 @@ void WLED::initAP(bool resetAP)
     if (udpRgbPort > 0 && udpRgbPort != ntpLocalPort && udpRgbPort != udpPort) {
       udpRgbConnected = rgbUdp.begin(udpRgbPort);
     }
+
     if (udpPort2 > 0 && udpPort2 != ntpLocalPort && udpPort2 != udpPort && udpPort2 != udpRgbPort) {
       udp2Connected = notifier2Udp.begin(udpPort2);
+    }
+
+    if (audioSyncPort > 0 || (((audioSyncEnabled)>>(0)) & 1) || (((audioSyncEnabled)>>(1)) & 1)) {
+    #ifndef ESP8266
+      udpSyncConnected = fftUdp.beginMulticast(IPAddress(239,0,0,1), audioSyncPort);
+    #else
+      udpSyncConnected = fftUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 0, 0, 1), audioSyncPort);
+    #endif
     }
     e131.begin(false, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
 
@@ -559,6 +569,13 @@ void WLED::initInterfaces()
       udpRgbConnected = rgbUdp.begin(udpRgbPort);
     if (udpConnected && udpPort2 != udpPort && udpPort2 != udpRgbPort)
       udp2Connected = notifier2Udp.begin(udpPort2);
+  }
+  if (audioSyncPort > 0 || (((audioSyncEnabled)>>(0)) & 1) || (((audioSyncEnabled)>>(1)) & 1)) {
+    #ifndef ESP8266
+      udpSyncConnected = fftUdp.beginMulticast(IPAddress(239,0,0,1), audioSyncPort);
+    #else
+      udpSyncConnected = fftUdp.beginMulticast(WiFi.localIP(), IPAddress(239, 0, 0, 1), audioSyncPort);
+    #endif
   }
   if (ntpEnabled)
     ntpConnected = ntpUdp.begin(ntpLocalPort);

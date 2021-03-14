@@ -40,6 +40,8 @@ void deserializeConfig() {
   getStringFromJson(serverDescription, id[F("name")], 33);
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
 
+  // nw   == network
+  // ins  == instance, Future versions MAY have more than 1 network configuration. Not at this time.
   JsonObject nw_ins_0 = doc["nw"][F("ins")][0];
   getStringFromJson(clientSSID, nw_ins_0[F("ssid")], 33);
   //int nw_ins_0_pskl = nw_ins_0[F("pskl")];
@@ -47,9 +49,10 @@ void deserializeConfig() {
   //If it is present however, we will use it
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
 
-  JsonArray nw_ins_0_ip = nw_ins_0[F("ip")];
-  JsonArray nw_ins_0_gw = nw_ins_0[F("gw")];
-  JsonArray nw_ins_0_sn = nw_ins_0[F("sn")];
+
+  JsonArray nw_ins_0_ip = nw_ins_0[F("ip")];  // ip == IP Address
+  JsonArray nw_ins_0_gw = nw_ins_0[F("gw")];  // gw == gateway
+  JsonArray nw_ins_0_sn = nw_ins_0[F("sn")];  // sn == subnet
 
   for (byte i = 0; i < 4; i++) {
     CJSON(staticIP[i], nw_ins_0_ip[i]);
@@ -57,6 +60,7 @@ void deserializeConfig() {
     CJSON(staticSubnet[i], nw_ins_0_sn[i]);
   }
 
+  // ap   == access point
   JsonObject ap = doc[F("ap")];
   getStringFromJson(apSSID, ap[F("ssid")], 33);
   getStringFromJson(apPass, ap["psk"] , 65); //normally not present due to security
@@ -85,6 +89,7 @@ void deserializeConfig() {
   noWifiSleep = !noWifiSleep;
   //int wifi_phy = doc[F("wifi")][F("phy")]; //force phy mode n?
 
+  // hw   == hardware
   JsonObject hw = doc[F("hw")];
 
   // initialize LED pins and lengths prior to other HW
@@ -135,6 +140,11 @@ void deserializeConfig() {
     if (mem <= MAX_LED_MEMORY) busses.add(bc);
   }
   strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+
+  // 2D Matrix Settings
+  strip.matrixWidth = hw_led_ins_0[F("mxw")]; //
+  strip.matrixHeight = hw_led_ins_0[F("mxh")];
+  strip.matrixSerpentine = hw_led_ins_0[F("mxs")];
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonEnabled, hw_btn_ins_0[F("type")]);
@@ -217,6 +227,7 @@ void deserializeConfig() {
   tdd = def_cy[F("dur")] | -1;
   if (tdd > 0) presetCycleTime = tdd;
 
+  // if   == interfaces
   JsonObject interfaces = doc["if"];
 
   JsonObject if_sync = interfaces[F("sync")];
@@ -303,6 +314,7 @@ void deserializeConfig() {
   CJSON(utcOffsetSecs, if_ntp[F("offset")]);
   CJSON(useAMPM, if_ntp[F("ampm")]);
 
+  // ol   == overlay
   JsonObject ol = doc[F("ol")];
   CJSON(overlayDefault ,ol[F("clock")]); // 0
   CJSON(countdownMode, ol[F("cntdwn")]);
@@ -377,6 +389,22 @@ void deserializeConfig() {
     it++;
   }
   #endif
+
+  // Begin Sound Reactive specific settings - 1st attempt
+  JsonObject sound = doc["snd"];
+
+  JsonObject snd_cfg = sound[F("cfg")]; // Sound Reactive Configuration
+  CJSON(soundSquelch, snd_cfg[F("sq")]);
+  CJSON(sampleGain, snd_cfg[F("gn")]);
+
+  JsonObject snd_fft = sound[F("fft")]; // FFT Settings
+  CJSON(effectFFT1, snd_fft[F("f1")]);
+  CJSON(effectFFT2, snd_fft[F("f2")]);
+  CJSON(effectFFT3, snd_fft[F("f3")]);
+
+  JsonObject snd_sync = sound[F("sync")]; // Sound Reactive audio sync
+  CJSON(audioSyncPort, snd_sync[F("port")]); // 11988
+  CJSON(audioSyncEnabled, snd_sync[F("en")]);
 
   JsonObject usermods_settings = doc["um"];
   usermods.readFromConfig(usermods_settings);
@@ -468,6 +496,11 @@ void serializeConfig() {
     ins[F("skip")] = (skipFirstLed && s == 0) ? 1 : 0;
     ins[F("type")] = bus->getType();
   }
+
+  // 2D Matrix Settings
+  hw_led_ins_0[F("mxw")] = strip.matrixWidth; //
+  hw_led_ins_0[F("mxh")] = strip.matrixHeight;
+  hw_led_ins_0[F("mxs")] = strip.matrixSerpentine;
 
   JsonObject hw_btn = hw.createNestedObject("btn");
 
@@ -664,7 +697,23 @@ void serializeConfig() {
   for (byte i = 0; i < 15; i++)
     dmx_fixmap.add(DMXFixtureMap[i]);
   #endif
-  //}
+
+
+  // Begin Sound Reactive specific settings - 1st attempt
+  JsonObject sound = doc.createNestedObject("snd");
+
+  JsonObject snd_cfg = sound.createNestedObject("cfg"); // Sound Reactive Configuration
+  snd_cfg[F("sq")] = soundSquelch;
+  snd_cfg[F("gn")] = sampleGain;
+
+  JsonObject snd_fft = sound.createNestedObject("fft"); // FFT Settings
+  snd_fft[F("f1")] = effectFFT1;
+  snd_fft[F("f2")] = effectFFT2;
+  snd_fft[F("f3")] = effectFFT3;
+
+  JsonObject snd_sync = sound.createNestedObject("sync"); // Sound Reactive audio sync
+  snd_sync[F("port")] = audioSyncPort; // 11988
+  snd_sync[F("en")] = audioSyncEnabled;
 
   JsonObject usermods_settings = doc.createNestedObject("um");
   usermods.addToConfig(usermods_settings);
