@@ -258,7 +258,7 @@ void WLED::loop()
     yield();
     // refresh WLED nodes list
     refreshNodeList();
-    sendSysInfoUDP();
+    if (nodeBroadcastEnabled) sendSysInfoUDP();
   }
 
   yield();
@@ -313,9 +313,12 @@ void WLED::setup()
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
 
-
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
+
+#ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
+  pinManager.allocatePin(2);
+#endif
 
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));
@@ -351,7 +354,9 @@ void WLED::setup()
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
+  #ifdef WLED_USE_ETHERNET
   WiFi.onEvent(WiFiEvent);
+  #endif
 
   Serial.println(F("Ada"));
 

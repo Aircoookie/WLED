@@ -282,6 +282,9 @@ void getSettingsJS(byte subPage, char* dest)
       }
       if (i) oappend(SET_F(","));
       oappend(SET_F("6,7,8,9,10,11")); // flash memory pins
+      #ifdef WLED_ENABLE_DMX
+        oappend(SET_F(",2")); // DMX hardcoded pin
+      #endif
       #ifdef WLED_DEBUG
         oappend(SET_F(",1")); // debug output (TX) pin
       #endif
@@ -376,6 +379,10 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("SH"),notifyHue);
     sappend('c',SET_F("SM"),notifyMacro);
     sappend('c',SET_F("S2"),notifyTwice);
+
+    sappend('c',SET_F("NL"),nodeListEnabled);
+    sappend('c',SET_F("NB"),nodeBroadcastEnabled);
+
     sappend('c',SET_F("RD"),receiveDirect);
     sappend('v',SET_F("EP"),e131Port);
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);

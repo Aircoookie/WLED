@@ -221,6 +221,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyMacro = request->hasArg(F("SM"));
     notifyTwice = request->hasArg(F("S2"));
 
+    nodeListEnabled = request->hasArg(F("NL"));
+    if (!nodeListEnabled) Nodes.clear();
+    nodeBroadcastEnabled = request->hasArg(F("NB"));
+
     receiveDirect = request->hasArg(F("RD"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));

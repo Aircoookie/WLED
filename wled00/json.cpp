@@ -8,7 +8,7 @@
 
 void deserializeSegment(JsonObject elem, byte it)
 {
-  byte id = elem[F("id")] | it;
+  byte id = elem["id"] | it;
   if (id < strip.getMaxSegments())
   {
     WS2812FX::Segment& seg = strip.getSegment(id);
@@ -33,7 +33,7 @@ void deserializeSegment(JsonObject elem, byte it)
   
     seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON), id);
     
-    JsonArray colarr = elem[F("col")];
+    JsonArray colarr = elem["col"];
     if (!colarr.isNull())
     {
       for (uint8_t i = 0; i < 3; i++)
@@ -89,7 +89,7 @@ void deserializeSegment(JsonObject elem, byte it)
     
     //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
     seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
-    seg.setOption(SEG_OPTION_REVERSED, elem[F("rev")] | seg.getOption(SEG_OPTION_REVERSED));
+    seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
     seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
     //temporary, strip object gets updated via colorUpdated()
@@ -198,8 +198,8 @@ bool deserializeState(JsonObject root)
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
   JsonObject udpn = root["udpn"];
-  notifyDirect         = udpn[F("send")] | notifyDirect;
-  receiveNotifications = udpn[F("recv")] | receiveNotifications;
+  notifyDirect         = udpn["send"] | notifyDirect;
+  receiveNotifications = udpn["recv"] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
   unsigned long timein = root[F("time")] | UINT32_MAX;
@@ -227,7 +227,7 @@ bool deserializeState(JsonObject root)
   JsonVariant segVar = root["seg"];
   if (segVar.is<JsonObject>())
   {
-    int id = segVar[F("id")] | -1;
+    int id = segVar["id"] | -1;
     
     if (id < 0) { //set all selected segments
       bool didSet = false;
@@ -281,7 +281,8 @@ bool deserializeState(JsonObject root)
 
   JsonObject playlist = root[F("playlist")];
   if (!playlist.isNull()) {
-    loadPlaylist(playlist); return stateResponse; //maybe we need not return here
+    loadPlaylist(playlist);
+    noNotification = true; //do not notify both for this request and the first playlist entry
   }
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
@@ -291,7 +292,7 @@ bool deserializeState(JsonObject root)
 
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
-	root[F("id")] = id;
+	root["id"] = id;
   if (segmentBounds) {
     root[F("start")] = seg.start;
     root["stop"] = seg.stop;
@@ -329,7 +330,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 	root[F("ix")]  = seg.intensity;
 	root[F("pal")] = seg.palette;
 	root[F("sel")] = seg.isSelected();
-	root[F("rev")] = seg.getOption(SEG_OPTION_REVERSED);
+	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
 }
 
@@ -370,8 +371,8 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     }
 
     JsonObject udpn = root.createNestedObject("udpn");
-    udpn[F("send")] = notifyDirect;
-    udpn[F("recv")] = receiveNotifications;
+    udpn["send"] = notifyDirect;
+    udpn["recv"] = receiveNotifications;
 
     root[F("lor")] = realtimeOverride;
   }
@@ -484,7 +485,7 @@ void serializeInfo(JsonObject root)
   fs_info["t"] = fsBytesTotal / 1000;
   fs_info[F("pmt")] = presetsModifiedTime;
 
-  root[F("ndc")] = Nodes.size();
+  root[F("ndc")] = nodeListEnabled ? (int)Nodes.size() : -1;
   
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
@@ -719,10 +720,10 @@ void serializeNodes(JsonObject root)
     {
       JsonObject node = nodes.createNestedObject();
       node[F("name")] = it->second.nodeName;
-      node[F("type")] = it->second.nodeType;
-      node[F("ip")]   = it->second.ip.toString();
+      node["type"]    = it->second.nodeType;
+      node["ip"]      = it->second.ip.toString();
       node[F("age")]  = it->second.age;
-      node[F("vid")] = it->second.build;
+      node[F("vid")]  = it->second.build;
     }
   }
 }

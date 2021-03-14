@@ -30,12 +30,12 @@ void deserializeConfig() {
     return;
   }
 
-  //int rev_major = doc[F("rev")][0]; // 1
-  //int rev_minor = doc[F("rev")][1]; // 0
+  //int rev_major = doc["rev"][0]; // 1
+  //int rev_minor = doc["rev"][1]; // 0
 
   //long vid = doc[F("vid")]; // 2010020
 
-  JsonObject id = doc[F("id")];
+  JsonObject id = doc["id"];
   getStringFromJson(cmDNS, id[F("mdns")], 33);
   getStringFromJson(serverDescription, id[F("name")], 33);
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
@@ -47,9 +47,9 @@ void deserializeConfig() {
   //If it is present however, we will use it
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
 
-  JsonArray nw_ins_0_ip = nw_ins_0[F("ip")];
-  JsonArray nw_ins_0_gw = nw_ins_0[F("gw")];
-  JsonArray nw_ins_0_sn = nw_ins_0[F("sn")];
+  JsonArray nw_ins_0_ip = nw_ins_0["ip"];
+  JsonArray nw_ins_0_gw = nw_ins_0["gw"];
+  JsonArray nw_ins_0_sn = nw_ins_0["sn"];
 
   for (byte i = 0; i < 4; i++) {
     CJSON(staticIP[i], nw_ins_0_ip[i]);
@@ -57,7 +57,7 @@ void deserializeConfig() {
     CJSON(staticSubnet[i], nw_ins_0_sn[i]);
   }
 
-  JsonObject ap = doc[F("ap")];
+  JsonObject ap = doc["ap"];
   getStringFromJson(apSSID, ap[F("ssid")], 33);
   getStringFromJson(apPass, ap["psk"] , 65); //normally not present due to security
   //int ap_pskl = ap[F("pskl")];
@@ -72,11 +72,11 @@ void deserializeConfig() {
   
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc[F("eth")];
-  CJSON(ethernetType, ethernet[F("type")]);
+  CJSON(ethernetType, ethernet["type"]);
   #endif
 
   /*
-  JsonArray ap_ip = ap[F("ip")];
+  JsonArray ap_ip = ap["ip"];
   for (byte i = 0; i < 4; i++) {
     apIP[i] = ap_ip;
   }
@@ -97,7 +97,7 @@ void deserializeConfig() {
 
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  //CJSON(strip.reverseMode, hw_led[F("rev")]);
+  //CJSON(strip.reverseMode, hw_led["rev"]);
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonArray ins = hw_led["ins"];
@@ -109,7 +109,7 @@ void deserializeConfig() {
   for (JsonObject elm : ins) {
     if (s >= WLED_MAX_BUSSES) break;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
-    JsonArray pinArr = elm[F("pin")];
+    JsonArray pinArr = elm["pin"];
     if (pinArr.size() == 0) continue;
     uint8_t i = 0;
     for (int p : pinArr) {
@@ -126,8 +126,8 @@ void deserializeConfig() {
     uint8_t colorOrder = (int)elm[F("order")];
     //(this shouldn't have been in ins obj. but remains here for compatibility)
     skipFirstLed |= skipFirst = (bool) elm[F("skip")];
-    uint8_t ledType = elm[F("type")] | TYPE_WS2812_RGB;
-    bool reversed = elm[F("rev")];
+    uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
+    bool reversed = elm["rev"];
     //RGBW mode is enabled if at least one of the strips is RGBW
     if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
     useRGBW |= (bool)elm[F("rgbw")];
@@ -141,8 +141,8 @@ void deserializeConfig() {
   //strip.finalizeInit(); // will be done in WLED::beginStrip()
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
-  CJSON(buttonEnabled, hw_btn_ins_0[F("type")]);
-  int hw_btn_pin = hw_btn_ins_0[F("pin")][0];
+  CJSON(buttonEnabled, hw_btn_ins_0["type"]);
+  int hw_btn_pin = hw_btn_ins_0["pin"][0];
   if (pinManager.allocatePin(hw_btn_pin,false)) {
     btnPin = hw_btn_pin;
     pinMode(btnPin, INPUT_PULLUP);
@@ -155,20 +155,20 @@ void deserializeConfig() {
   CJSON(macroLongPress,hw_btn_ins_0_macros[1]);
   CJSON(macroDoublePress, hw_btn_ins_0_macros[2]);
 
-  //int hw_btn_ins_0_type = hw_btn_ins_0[F("type")]; // 0
+  //int hw_btn_ins_0_type = hw_btn_ins_0["type"]; // 0
 
   #ifndef WLED_DISABLE_INFRARED
-  int hw_ir_pin = hw[F("ir")][F("pin")]; // 4
+  int hw_ir_pin = hw["ir"]["pin"]; // 4
   if (pinManager.allocatePin(hw_ir_pin,false)) {
     irPin = hw_ir_pin;
   } else {
     irPin = -1;
   }
   #endif
-  CJSON(irEnabled, hw[F("ir")][F("type")]);
+  CJSON(irEnabled, hw["ir"]["type"]);
 
   JsonObject relay = hw[F("relay")];
-  int hw_relay_pin = relay[F("pin")];
+  int hw_relay_pin = relay["pin"];
   if (pinManager.allocatePin(hw_relay_pin,true)) {
     rlyPin = hw_relay_pin;
     pinMode(rlyPin, OUTPUT);
@@ -176,17 +176,17 @@ void deserializeConfig() {
     rlyPin = -1;
   }
   if (relay.containsKey("rev")) {
-    rlyMde = !relay[F("rev")];
+    rlyMde = !relay["rev"];
   }
 
-  //int hw_status_pin = hw[F("status")][F("pin")]; // -1
+  //int hw_status_pin = hw[F("status")]["pin"]; // -1
 
   JsonObject light = doc[F("light")];
   CJSON(briMultiplier, light[F("scale-bri")]);
   CJSON(strip.paletteBlend, light[F("pal-mode")]);
 
   float light_gc_bri = light[F("gc")]["bri"];
-  float light_gc_col = light[F("gc")][F("col")]; // 2.8
+  float light_gc_col = light[F("gc")]["col"]; // 2.8
   if (light_gc_bri > 1.5) strip.gammaCorrectBri = true;
   else if (light_gc_bri > 0.5) strip.gammaCorrectBri = false;
   if (light_gc_col > 1.5) strip.gammaCorrectCol = true;
@@ -226,13 +226,13 @@ void deserializeConfig() {
   CJSON(udpPort, if_sync[F("port0")]); // 21324
   CJSON(udpPort2, if_sync[F("port1")]); // 65506
 
-  JsonObject if_sync_recv = if_sync[F("recv")];
+  JsonObject if_sync_recv = if_sync["recv"];
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
-  CJSON(receiveNotificationColor, if_sync_recv[F("col")]);
+  CJSON(receiveNotificationColor, if_sync_recv["col"]);
   CJSON(receiveNotificationEffects, if_sync_recv[F("fx")]);
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
 
-  JsonObject if_sync_send = if_sync[F("send")];
+  JsonObject if_sync_send = if_sync["send"];
   CJSON(notifyDirectDefault, if_sync_send[F("dir")]);
   notifyDirect = notifyDirectDefault;
   CJSON(notifyButton, if_sync_send[F("btn")]);
@@ -241,9 +241,13 @@ void deserializeConfig() {
   CJSON(notifyMacro, if_sync_send[F("macro")]);
   CJSON(notifyTwice, if_sync_send[F("twice")]);
 
-  JsonObject if_live = interfaces[F("live")];
-  CJSON(receiveDirect, if_live[F("en")]);
-  CJSON(e131Port, if_live[F("port")]); // 5568
+  JsonObject if_nodes = interfaces["nodes"];
+  CJSON(nodeListEnabled, if_nodes[F("list")]);
+  CJSON(nodeBroadcastEnabled, if_nodes[F("bcast")]);
+
+  JsonObject if_live = interfaces["live"];
+  CJSON(receiveDirect, if_live["en"]);
+  CJSON(e131Port, if_live["port"]); // 5568
   CJSON(e131Multicast, if_live[F("mc")]);
 
   JsonObject if_live_dmx = if_live[F("dmx")];
@@ -263,19 +267,19 @@ void deserializeConfig() {
   CJSON(macroAlexaOn, interfaces[F("va")][F("macros")][0]);
   CJSON(macroAlexaOff, interfaces[F("va")][F("macros")][1]);
 
-  const char* apikey = interfaces[F("blynk")][F("token")] | "Hidden";
+  const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
   tdd = strnlen(apikey, 36);
   if (tdd > 20 || tdd == 0)
     getStringFromJson(blynkApiKey, apikey, 36); //normally not present due to security
 
-  JsonObject if_blynk = interfaces[F("blynk")];
+  JsonObject if_blynk = interfaces["blynk"];
   getStringFromJson(blynkHost, if_blynk[F("host")], 33);
-  CJSON(blynkPort, if_blynk[F("port")]);
+  CJSON(blynkPort, if_blynk["port"]);
 
-  JsonObject if_mqtt = interfaces[F("mqtt")];
-  CJSON(mqttEnabled, if_mqtt[F("en")]);
+  JsonObject if_mqtt = interfaces["mqtt"];
+  CJSON(mqttEnabled, if_mqtt["en"]);
   getStringFromJson(mqttServer, if_mqtt[F("broker")], 33);
-  CJSON(mqttPort, if_mqtt[F("port")]); // 1883
+  CJSON(mqttPort, if_mqtt["port"]); // 1883
   getStringFromJson(mqttUser, if_mqtt[F("user")], 41);
   getStringFromJson(mqttPass, if_mqtt["psk"], 41); //normally not present due to security
   getStringFromJson(mqttClientID, if_mqtt[F("cid")], 41);
@@ -284,23 +288,23 @@ void deserializeConfig() {
   getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], 33); // ""
 
   JsonObject if_hue = interfaces[F("hue")];
-  CJSON(huePollingEnabled, if_hue[F("en")]);
-  CJSON(huePollLightId, if_hue[F("id")]);
+  CJSON(huePollingEnabled, if_hue["en"]);
+  CJSON(huePollLightId, if_hue["id"]);
   tdd = if_hue[F("iv")] | -1;
   if (tdd >= 2) huePollIntervalMs = tdd * 100;
 
-  JsonObject if_hue_recv = if_hue[F("recv")];
+  JsonObject if_hue_recv = if_hue["recv"];
   CJSON(hueApplyOnOff, if_hue_recv["on"]);
   CJSON(hueApplyBri, if_hue_recv["bri"]);
-  CJSON(hueApplyColor, if_hue_recv[F("col")]);
+  CJSON(hueApplyColor, if_hue_recv["col"]);
 
-  JsonArray if_hue_ip = if_hue[F("ip")];
+  JsonArray if_hue_ip = if_hue["ip"];
 
   for (byte i = 0; i < 4; i++)
     CJSON(hueIP[i], if_hue_ip[i]);
 
   JsonObject if_ntp = interfaces[F("ntp")];
-  CJSON(ntpEnabled, if_ntp[F("en")]);
+  CJSON(ntpEnabled, if_ntp["en"]);
   getStringFromJson(ntpServerName, if_ntp[F("host")], 33); // "1.wled.pool.ntp.org"
   CJSON(currentTimezone, if_ntp[F("tz")]);
   CJSON(utcOffsetSecs, if_ntp[F("offset")]);
@@ -348,7 +352,7 @@ void deserializeConfig() {
     CJSON(timerWeekday[it], timer[F("dow")]);
     if (timerWeekday[it] != dowPrev) { //present in JSON
       timerWeekday[it] <<= 1; //add active bit
-      int act = timer[F("en")] | actPrev;
+      int act = timer["en"] | actPrev;
       if (act) timerWeekday[it]++;
     }
 
@@ -395,7 +399,6 @@ void serializeConfig() {
 
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 
-  //{ //scope this to reduce stack size
   JsonArray rev = doc.createNestedArray("rev");
   rev.add(1); //major settings revision
   rev.add(0); //minor settings revision
@@ -444,7 +447,7 @@ void serializeConfig() {
 
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc.createNestedObject("eth");
-  ethernet[F("type")] = ethernetType;
+  ethernet["type"] = ethernetType;
   #endif
 
   JsonObject hw = doc.createNestedObject("hw");
@@ -453,7 +456,7 @@ void serializeConfig() {
   hw_led[F("total")] = ledCount;
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
-  hw_led[F("rev")] = false; //strip.reverseMode;  // not used anymore, reversing per-strip
+  hw_led["rev"] = false; //strip.reverseMode;  // not used anymore, reversing per-strip
   hw_led[F("rgbwm")] = strip.rgbwMode;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
@@ -462,7 +465,7 @@ void serializeConfig() {
     Bus *bus = busses.getBus(s);
     if (!bus || bus->getLength()==0) break;
     JsonObject ins = hw_led_ins.createNestedObject();
-    ins[F("en")] = true;
+    ins["en"] = true;
     ins[F("start")] = bus->getStart();
     ins[F("len")] = bus->getLength();
     JsonArray ins_pin = ins.createNestedArray("pin");
@@ -470,9 +473,9 @@ void serializeConfig() {
     uint8_t nPins = bus->getPins(pins);
     for (uint8_t i = 0; i < nPins; i++) ins_pin.add(pins[i]);
     ins[F("order")] = bus->getColorOrder();
-    ins[F("rev")]  = bus->reversed;
+    ins["rev"]  = bus->reversed;
     ins[F("skip")] = skipFirstLed ? 1 : 0;
-    ins[F("type")] = bus->getType();
+    ins["type"] = bus->getType();
     ins[F("rgbw")] = bus->isRgbw();
   }
 
@@ -482,7 +485,7 @@ void serializeConfig() {
 
   // button BTNPIN
   JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
-  hw_btn_ins_0[F("type")] = (buttonEnabled) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
+  hw_btn_ins_0["type"] = (buttonEnabled) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
   JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
   hw_btn_ins_0_pin.add(btnPin);
@@ -495,28 +498,28 @@ void serializeConfig() {
   #ifndef WLED_DISABLE_INFRARED
   if (irPin>=0) {
     JsonObject hw_ir = hw.createNestedObject("ir");
-    hw_ir[F("pin")] = irPin;
-    hw_ir[F("type")] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
+    hw_ir["pin"] = irPin;
+    hw_ir["type"] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
   }
   #endif
 
-  JsonObject hw_relay = hw.createNestedObject("relay");
-  hw_relay[F("pin")] = rlyPin;
-  hw_relay[F("rev")] = !rlyMde;
+  JsonObject hw_relay = hw.createNestedObject(F("relay"));
+  hw_relay["pin"] = rlyPin;
+  hw_relay["rev"] = !rlyMde;
 
   //JsonObject hw_status = hw.createNestedObject("status");
-  //hw_status[F("pin")] = -1;
+  //hw_status["pin"] = -1;
 
   JsonObject hw_aux = hw.createNestedObject("aux");
-  hw_aux[F("pin")] = auxPin;
+  hw_aux["pin"] = auxPin;
 
-  JsonObject light = doc.createNestedObject("light");
+  JsonObject light = doc.createNestedObject(F("light"));
   light[F("scale-bri")] = briMultiplier;
   light[F("pal-mode")] = strip.paletteBlend;
 
   JsonObject light_gc = light.createNestedObject("gc");
   light_gc["bri"] = (strip.gammaCorrectBri) ? 2.8 : 1.0;
-  light_gc[F("col")] = (strip.gammaCorrectCol) ? 2.8 : 1.0;
+  light_gc["col"] = (strip.gammaCorrectCol) ? 2.8 : 1.0;
 
   JsonObject light_tr = light.createNestedObject("tr");
   light_tr[F("mode")] = fadeTransition;
@@ -539,7 +542,7 @@ void serializeConfig() {
     JsonObject def_cy = def.createNestedObject("cy");
     def_cy["on"] = presetCyclingEnabled;
 
-    JsonArray def_cy_range = def_cy.createNestedArray("range");
+    JsonArray def_cy_range = def_cy.createNestedArray(F("range"));
     def_cy_range.add(presetCycleMin);
     def_cy_range.add(presetCycleMax);
     def_cy[F("dur")] = presetCycleTime;
@@ -553,7 +556,7 @@ void serializeConfig() {
 
   JsonObject if_sync_recv = if_sync.createNestedObject("recv");
   if_sync_recv["bri"] = receiveNotificationBrightness;
-  if_sync_recv[F("col")] = receiveNotificationColor;
+  if_sync_recv["col"] = receiveNotificationColor;
   if_sync_recv[F("fx")] = receiveNotificationEffects;
 
   JsonObject if_sync_send = if_sync.createNestedObject("send");
@@ -564,9 +567,13 @@ void serializeConfig() {
   if_sync_send[F("macro")] = notifyMacro;
   if_sync_send[F("twice")] = notifyTwice;
 
+  JsonObject if_nodes = interfaces.createNestedObject("nodes");
+  if_nodes[F("list")] = nodeListEnabled;
+  if_nodes[F("bcast")] = nodeBroadcastEnabled;
+
   JsonObject if_live = interfaces.createNestedObject("live");
-  if_live[F("en")] = receiveDirect;
-  if_live[F("port")] = e131Port;
+  if_live["en"] = receiveDirect;
+  if_live["port"] = e131Port;
   if_live[F("mc")] = e131Multicast;
 
   JsonObject if_live_dmx = if_live.createNestedObject("dmx");
@@ -588,29 +595,29 @@ void serializeConfig() {
   JsonObject if_blynk = interfaces.createNestedObject("blynk");
   if_blynk[F("token")] = strlen(blynkApiKey) ? "Hidden":"";
   if_blynk[F("host")] = blynkHost;
-  if_blynk[F("port")] = blynkPort;
+  if_blynk["port"] = blynkPort;
 
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
-  if_mqtt[F("en")] = mqttEnabled;
+  if_mqtt["en"] = mqttEnabled;
   if_mqtt[F("broker")] = mqttServer;
-  if_mqtt[F("port")] = mqttPort;
+  if_mqtt["port"] = mqttPort;
   if_mqtt[F("user")] = mqttUser;
   if_mqtt[F("pskl")] = strlen(mqttPass);
   if_mqtt[F("cid")] = mqttClientID;
 
-  JsonObject if_mqtt_topics = if_mqtt.createNestedObject("topics");
+  JsonObject if_mqtt_topics = if_mqtt.createNestedObject(F("topics"));
   if_mqtt_topics[F("device")] = mqttDeviceTopic;
   if_mqtt_topics[F("group")] = mqttGroupTopic;
 
   JsonObject if_hue = interfaces.createNestedObject("hue");
-  if_hue[F("en")] = huePollingEnabled;
-  if_hue[F("id")] = huePollLightId;
+  if_hue["en"] = huePollingEnabled;
+  if_hue["id"] = huePollLightId;
   if_hue[F("iv")] = huePollIntervalMs / 100;
 
   JsonObject if_hue_recv = if_hue.createNestedObject("recv");
   if_hue_recv["on"] = hueApplyOnOff;
   if_hue_recv["bri"] = hueApplyBri;
-  if_hue_recv[F("col")] = hueApplyColor;
+  if_hue_recv["col"] = hueApplyColor;
 
   JsonArray if_hue_ip = if_hue.createNestedArray("ip");
   for (byte i = 0; i < 4; i++) {
@@ -618,7 +625,7 @@ void serializeConfig() {
   }
 
   JsonObject if_ntp = interfaces.createNestedObject("ntp");
-  if_ntp[F("en")] = ntpEnabled;
+  if_ntp["en"] = ntpEnabled;
   if_ntp[F("host")] = ntpServerName;
   if_ntp[F("tz")] = currentTimezone;
   if_ntp[F("offset")] = utcOffsetSecs;
@@ -636,10 +643,10 @@ void serializeConfig() {
   ol[F("o5m")] = analogClock5MinuteMarks;
   ol[F("osec")] = analogClockSecondsTrail;
 
-  JsonObject timers = doc.createNestedObject("timers");
+  JsonObject timers = doc.createNestedObject(F("timers"));
 
-  JsonObject cntdwn = timers.createNestedObject("cntdwn");
-  JsonArray goal = cntdwn.createNestedArray("goal");
+  JsonObject cntdwn = timers.createNestedObject(F("cntdwn"));
+  JsonArray goal = cntdwn.createNestedArray(F("goal"));
   goal.add(countdownYear); goal.add(countdownMonth); goal.add(countdownDay);
   goal.add(countdownHour); goal.add(countdownMin); goal.add(countdownSec);
   cntdwn[F("macro")] = macroCountdown;
@@ -649,7 +656,7 @@ void serializeConfig() {
   for (byte i = 0; i < 10; i++) {
     if (timerMacro[i] == 0 && timerHours[i] == 0 && timerMinutes[i] == 0) continue; // sunrise/sunset get saved always (timerHours=255)
     JsonObject timers_ins0 = timers_ins.createNestedObject();
-    timers_ins0[F("en")] = (timerWeekday[i] & 0x01);
+    timers_ins0["en"] = (timerWeekday[i] & 0x01);
     timers_ins0[F("hour")] = timerHours[i];
     timers_ins0[F("min")] = timerMinutes[i];
     timers_ins0[F("macro")] = timerMacro[i];
@@ -669,7 +676,7 @@ void serializeConfig() {
   dmx[F("start")] = DMXStart;
   dmx[F("start-led")] = DMXStartLED;
 
-  JsonArray dmx_fixmap = dmx.createNestedArray("fixmap");
+  JsonArray dmx_fixmap = dmx.createNestedArray(F("fixmap"));
   for (byte i = 0; i < 15; i++)
     dmx_fixmap.add(DMXFixtureMap[i]);
   #endif
@@ -695,7 +702,7 @@ bool deserializeConfigSec() {
   JsonObject nw_ins_0 = doc["nw"][F("ins")][0];
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
 
-  JsonObject ap = doc[F("ap")];
+  JsonObject ap = doc["ap"];
   getStringFromJson(apPass, ap["psk"] , 65);
 
   JsonObject interfaces = doc["if"];
@@ -705,7 +712,7 @@ bool deserializeConfigSec() {
   if (tdd > 20 || tdd == 0)
     getStringFromJson(blynkApiKey, apikey, 36);
 
-  JsonObject if_mqtt = interfaces[F("mqtt")];
+  JsonObject if_mqtt = interfaces["mqtt"];
   getStringFromJson(mqttPass, if_mqtt["psk"], 41);
 
   getStringFromJson(hueApiKey, interfaces[F("hue")][F("key")], 47);
