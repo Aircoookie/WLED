@@ -31,10 +31,10 @@ void userSetup() {
     .dma_buf_len = BLOCK_SIZE                           // samples per buffer
   };
   const i2s_pin_config_t pin_config = {
-    .bck_io_num = I2S_SCK,      // BCLK aka SCK
-    .ws_io_num = I2S_WS,        // LRCL aka WS
+    .bck_io_num = i2sckPin,     // BCLK aka SCK
+    .ws_io_num = i2swsPin,      // LRCL aka WS
     .data_out_num = -1,         // not used (only for speakers)
-    .data_in_num = I2S_SD       // DOUT aka SD
+    .data_in_num = i2ssdPin     // DOUT aka SD
   };
   // Configuring the I2S driver and pins.
   // This function must be called before any I2S driver read/write operations.

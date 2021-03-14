@@ -34,7 +34,7 @@ class Bus {
     _type = type;
     _start = start;
   };
-  
+
   virtual void show() {}
   virtual bool canShow() { return true; }
 
@@ -121,7 +121,7 @@ class BusDigital : public Bus {
     //Fix for turning off onboard LED breaking bus
     #ifdef LED_BUILTIN
     if (_bri == 0 && b > 0) {
-      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins); 
+      if (_pins[0] == LED_BUILTIN || _pins[1] == LED_BUILTIN) PolyBus::begin(_busPtr, _iType, _pins);
     }
     #endif
     _bri = b;
@@ -175,7 +175,7 @@ class BusDigital : public Bus {
     cleanup();
   }
 
-  private: 
+  private:
   uint8_t _colorOrder = COL_ORDER_GRB;
   uint8_t _pins[2] = {255, 255};
   uint8_t _iType = I_NONE;
@@ -225,7 +225,7 @@ class BusPwm : public Bus {
     switch (_type) {
       case TYPE_ANALOG_1CH: //one channel (white), use highest RGBW value
         _data[0] = max(r, max(g, max(b, w))); break;
-      
+
       case TYPE_ANALOG_2CH: //warm white + cold white, we'll need some nice handling here, for now just R+G channels
       case TYPE_ANALOG_3CH: //standard dumb RGB
       case TYPE_ANALOG_4CH: //RGBW
@@ -271,7 +271,7 @@ class BusPwm : public Bus {
     cleanup();
   }
 
-  private: 
+  private:
   uint8_t _pins[5] = {255, 255, 255, 255, 255};
   uint8_t _data[5] = {255, 255, 255, 255, 255};
   #ifdef ARDUINO_ARCH_ESP32
@@ -323,7 +323,7 @@ class BusManager {
     if (type == 44 || type == 45) return len*4; //RGBW
     return len*3;
   }
-  
+
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
     if (IS_DIGITAL(bc.type)) {
@@ -338,7 +338,7 @@ class BusManager {
   //do not call this method from system context (network callback)
   void removeAll() {
     //Serial.println("Removing all.");
-    //prevents crashes due to deleting busses while in use. 
+    //prevents crashes due to deleting busses while in use.
     while (!canAllShow()) yield();
     for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
     numBusses = 0;

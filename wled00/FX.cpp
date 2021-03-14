@@ -3207,6 +3207,7 @@ uint16_t WS2812FX::mode_plasma(void) {
   return FRAMETIME;
 }
 
+
 /*
  * Percentage display
  * Intesity values from 0-100 turn on the leds.
@@ -3496,7 +3497,6 @@ uint16_t WS2812FX::phased_base(uint8_t moder) {                  // We're making
 
 uint16_t WS2812FX::mode_phased(void) {
   return phased_base(0);
-
 }
 
 
@@ -3506,7 +3506,6 @@ uint16_t WS2812FX::mode_phased_noise(void) {
 
 
 uint16_t WS2812FX::mode_twinkleup(void) {                 // A very short twinkle routine with fade-in and dual controls. By Andrew Tuline.
-
   random16_set_seed(535);                                 // The randomizer needs to be re-set each time through the loop in order for the same 'random' numbers to be the same each time through.
 
   for (int i = 0; i<SEGLEN; i++) {

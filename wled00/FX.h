@@ -1,5 +1,5 @@
-  /*
-   * WS2812FX.h - Library for WS2812 LED effects.
+/*
+  WS2812FX.h - Library for WS2812 LED effects.
   Harm Aldick - 2016
   www.aldick.org
   LICENSE

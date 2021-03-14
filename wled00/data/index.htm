@@ -43,30 +43,30 @@
 </div>
 
 <div class ="container">
-	<div id="Colors" class="tabcontent">
-		<div id="picker" class="noslide"></div>
-		<div id="rgbwrap">
-			<div class="sliderwrap il">
-				<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
-			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
-			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
-			</div><br>
+  <div id="Colors" class="tabcontent">
+	<div id="picker" class="noslide"></div>
+	<div id="rgbwrap">
+		<div class="sliderwrap il">
+			<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
+			<div class="sliderdisplay"></div>
+		</div><br>
+		<div class="sliderwrap il">
+			<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
+			<div class="sliderdisplay"></div>
+		</div><br>
+		<div class="sliderwrap il">
+			<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
+			<div class="sliderdisplay"></div>
+		</div><br>
+	</div>
+	<div id="wwrap">
+		<p class="labels">White channel</p>
+		<div class="sliderwrap il">
+			<input id="sliderW" class="noslide" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+			<div class="sliderdisplay"></div>
 		</div>
-		<div id="wwrap">
-			<p class="labels">White channel</p>
-			<div class="sliderwrap il">
-				<input id="sliderW" class="noslide" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
-			</div>
-		</div>
-		<div id="qcs-w">
+	</div>
+	<div id="qcs-w">
 			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
 			<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
 			<div class="qcs" onclick="pC('#ffc800');" title="Yellow" style="background-color:#ffc800;"></div>

@@ -25,27 +25,27 @@ ethernet_settings ethernetBoards[] = {
   // None
   {
   },
-  
+
   // WT32-EHT01
   // Please note, from my testing only these pins work for LED outputs:
   //   IO2, IO4, IO12, IO14, IO15
   // These pins do not appear to work from my testing:
   //   IO35, IO36, IO39
   {
-    1,                 // eth_address, 
-    16,                // eth_power, 
-    23,                // eth_mdc, 
-    18,                // eth_mdio, 
+    1,                 // eth_address,
+    16,                // eth_power,
+    23,                // eth_mdc,
+    18,                // eth_mdio,
     ETH_PHY_LAN8720,   // eth_type,
     ETH_CLOCK_GPIO0_IN // eth_clk_mode
   },
 
   // ESP32-POE
   {
-     0,                  // eth_address, 
-    12,                  // eth_power, 
-    23,                  // eth_mdc, 
-    18,                  // eth_mdio, 
+     0,                  // eth_address,
+    12,                  // eth_power,
+    23,                  // eth_mdc,
+    18,                  // eth_mdio,
     ETH_PHY_LAN8720,     // eth_type,
     ETH_CLOCK_GPIO17_OUT // eth_clk_mode
   },
@@ -139,7 +139,7 @@ void WiFiEvent(WiFiEvent_t event)
   #ifdef WLED_USE_ETHERNET
   char hostname[25] = "wled-";
   #endif
-  
+
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
@@ -435,7 +435,6 @@ void WLED::initAP(bool resetAP)
     if (udpRgbPort > 0 && udpRgbPort != ntpLocalPort && udpRgbPort != udpPort) {
       udpRgbConnected = rgbUdp.begin(udpRgbPort);
     }
-
     if (udpPort2 > 0 && udpPort2 != ntpLocalPort && udpPort2 != udpPort && udpPort2 != udpRgbPort) {
       udp2Connected = notifier2Udp.begin(udpPort2);
     }
@@ -466,10 +465,10 @@ void WLED::initConnection()
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     ethernet_settings es = ethernetBoards[ethernetType];
     ETH.begin(
-      (uint8_t) es.eth_address, 
-      (int)     es.eth_power, 
-      (int)     es.eth_mdc, 
-      (int)     es.eth_mdio, 
+      (uint8_t) es.eth_address,
+      (int)     es.eth_power,
+      (int)     es.eth_mdc,
+      (int)     es.eth_mdio,
       (eth_phy_type_t)   es.eth_type,
       (eth_clock_mode_t) es.eth_clk_mode
     );

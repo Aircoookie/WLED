@@ -328,9 +328,9 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     }
 	}
 
-	root[F("fx")] = seg.mode;
-	root[F("sx")] = seg.speed;
-	root[F("ix")] = seg.intensity;
+	root[F("fx")]  = seg.mode;
+	root[F("sx")]  = seg.speed;
+	root[F("ix")]  = seg.intensity;
   root[F("f1x")] = seg.fft1;
   root[F("f2x")] = seg.fft2;
   root[F("f3x")] = seg.fft3;

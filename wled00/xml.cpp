@@ -358,15 +358,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("BT"),btnPin);
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("AX"),auxPin);
-    #ifdef ESP8266
-    sappends('v',SET_F("LCW"), "");
-    sappends('v',SET_F("LCH"), "");
-    sappend('c',SET_F("LCWHS"), 1);
-    #else
     sappend('v',SET_F("LCW"),strip.matrixWidth);
     sappend('v',SET_F("LCH"),strip.matrixHeight);
     sappend('c',SET_F("LCWHS"),strip.matrixSerpentine);
-    #endif // ESP8266
   }
 
   if (subPage == 3)
@@ -554,6 +548,11 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappend('v',SET_F("SQ"),soundSquelch);
     sappend('v',SET_F("GN"),sampleGain);
+    sappend('v',SET_F("SI"),audioPin);
+    sappend('c',SET_F("DMM"),dmEnabled);
+    sappend('v',SET_F("DI"),i2ssdPin);
+    sappend('v',SET_F("LR"),i2swsPin);
+    sappend('v',SET_F("CK"),i2sckPin);
     }
   oappend(SET_F("}</script>"));
 }

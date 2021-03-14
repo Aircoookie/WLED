@@ -49,7 +49,6 @@ void deserializeConfig() {
   //If it is present however, we will use it
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
 
-
   JsonArray nw_ins_0_ip = nw_ins_0[F("ip")];  // ip == IP Address
   JsonArray nw_ins_0_gw = nw_ins_0[F("gw")];  // gw == gateway
   JsonArray nw_ins_0_sn = nw_ins_0[F("sn")];  // sn == subnet
@@ -73,7 +72,7 @@ void deserializeConfig() {
   if (apHide > 1) apHide = 1;
 
   CJSON(apBehavior, ap[F("behav")]);
-  
+
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc[F("eth")];
   CJSON(ethernetType, ethernet[F("type")]);
@@ -141,10 +140,10 @@ void deserializeConfig() {
   }
   strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
 
-  // 2D Matrix Settings
-  strip.matrixWidth = hw_led_ins_0[F("mxw")]; //
-  strip.matrixHeight = hw_led_ins_0[F("mxh")];
-  strip.matrixSerpentine = hw_led_ins_0[F("mxs")];
+  // 2D Matrix Settings - BROKEN WITH MULTIPIN CHANGES
+  // strip.matrixWidth = hw_led_ins_0[F("mxw")]; //
+  // strip.matrixHeight = hw_led_ins_0[F("mxh")];
+  // strip.matrixSerpentine = hw_led_ins_0[F("mxs")];
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonEnabled, hw_btn_ins_0[F("type")]);
@@ -184,6 +183,35 @@ void deserializeConfig() {
   }
   if (relay.containsKey("rev")) {
     rlyMde = !relay["rev"];
+  }
+
+  int hw_audio_pin = hw[F("audio")][F("pin")];
+  if (pinManager.allocatePin(hw_audio_pin,false)) {
+    audioPin = hw_audio_pin;
+  } else {
+    audioPin = 36;
+  }
+
+  CJSON(dmEnabled, hw[F("digitalmic")][F("en")]);
+  int hw_i2ssd_pin = hw[F("i2ssd")][F("pin")];
+  if (pinManager.allocatePin(hw_i2ssd_pin,false)) {
+    i2ssdPin = hw_i2ssd_pin;
+  } else {
+    i2ssdPin = 36;
+  }
+
+  int hw_i2sws_pin = hw[F("i2sws")][F("pin")];
+  if (pinManager.allocatePin(hw_i2sws_pin,false)) {
+    i2swsPin = hw_i2sws_pin;
+  } else {
+    i2swsPin = 36;
+  }
+
+  int hw_i2sck_pin = hw[F("i2sck")][F("pin")];
+  if (pinManager.allocatePin(hw_i2sck_pin,false)) {
+    i2sckPin = hw_i2sck_pin;
+  } else {
+    i2sckPin = 36;
   }
 
   //int hw_status_pin = hw[F("status")][F("pin")]; // -1
@@ -497,10 +525,10 @@ void serializeConfig() {
     ins[F("type")] = bus->getType();
   }
 
-  // 2D Matrix Settings
-  hw_led_ins_0[F("mxw")] = strip.matrixWidth; //
-  hw_led_ins_0[F("mxh")] = strip.matrixHeight;
-  hw_led_ins_0[F("mxs")] = strip.matrixSerpentine;
+  // 2D Matrix Settings - BROKEN WITH MULTIPIN CHANGES
+  // hw_led_ins_0[F("mxw")] = strip.matrixWidth;
+  // hw_led_ins_0[F("mxh")] = strip.matrixHeight;
+  // hw_led_ins_0[F("mxs")] = strip.matrixSerpentine;
 
   JsonObject hw_btn = hw.createNestedObject("btn");
 
@@ -529,6 +557,21 @@ void serializeConfig() {
   JsonObject hw_relay = hw.createNestedObject("relay");
   hw_relay[F("pin")] = rlyPin;
   hw_relay["rev"] = !rlyMde;
+
+  JsonObject hw_audio = hw.createNestedObject("audio");
+  hw_audio[F("pin")] = audioPin;
+
+  JsonObject hw_dmic = hw.createNestedObject("digitalmic");
+  hw_dmic[F("en")] = dmEnabled;
+
+  JsonObject hw_i2ssd = hw.createNestedObject("i2ssd");
+  hw_i2ssd[F("pin")] = i2ssdPin;
+
+  JsonObject hw_i2sws = hw.createNestedObject("i2sws");
+  hw_i2sws[F("pin")] = i2swsPin;
+
+  JsonObject hw_i2sck = hw.createNestedObject("i2sck");
+  hw_i2sck[F("pin")] = i2sckPin;
 
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status[F("pin")] = -1;
@@ -697,7 +740,6 @@ void serializeConfig() {
   for (byte i = 0; i < 15; i++)
     dmx_fixmap.add(DMXFixtureMap[i]);
   #endif
-
 
   // Begin Sound Reactive specific settings - 1st attempt
   JsonObject sound = doc.createNestedObject("snd");

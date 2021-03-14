@@ -214,6 +214,32 @@ WLED_GLOBAL int8_t irPin _INIT(-1);
 #else
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 #endif
+// SR-WLED HARDWARE PIN CONFIGURATION
+#ifndef AUDIOPIN
+WLED_GLOBAL int8_t audioPin _INIT(36);
+#else
+WLED_GLOBAL int8_t audioPin _INIT(AUDIOPIN);
+#endif
+#ifndef DMENABLED // aka DOUT
+WLED_GLOBAL int8_t dmEnabled _INIT(-1);
+#else
+WLED_GLOBAL int8_t dmEnabled _INIT(DMENABLED);
+#endif
+#ifndef I2S_SDPIN // aka DOUT
+WLED_GLOBAL int8_t i2ssdPin _INIT(32);
+#else
+WLED_GLOBAL int8_t i2ssdPin _INIT(I2S_SDPIN);
+#endif
+#ifndef I2S_WSPIN // aka LRCL
+WLED_GLOBAL int8_t i2swsPin _INIT(15);
+#else
+WLED_GLOBAL int8_t i2swsPin _INIT(I2S_WSPIN);
+#endif
+#ifndef I2S_CKPIN // aka BCLK
+WLED_GLOBAL int8_t i2sckPin _INIT(14);
+#else
+WLED_GLOBAL int8_t i2sckPin _INIT(I2S_CKPIN);
+#endif
 
 //WLED_GLOBAL byte presetToApply _INIT(0);
 
@@ -236,7 +262,7 @@ WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling 
     WLED_GLOBAL int ethernetType _INIT(WLED_ETH_DEFAULT);          // ethernet board type
   #else
     WLED_GLOBAL int ethernetType _INIT(WLED_ETH_NONE);             // use none for ethernet board type if default not defined
-  #endif               
+  #endif
 #endif
 
 // LED CONFIG
@@ -264,7 +290,7 @@ WLED_GLOBAL bool skipFirstLed  _INIT(false);        // ignore first LED in strip
 WLED_GLOBAL byte briMultiplier _INIT(100);          // % of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 // User Interface CONFIG
-WLED_GLOBAL char serverDescription[33] _INIT("WLED-AudioReactive");  // Name of module
+WLED_GLOBAL char serverDescription[33] _INIT("WLED-SoundReactive");  // Name of module
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 // Sync CONFIG
@@ -580,7 +606,7 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 // led fx library object
 WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
-WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES]; //temporary, to remember values from network callback until after 
+WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES]; //temporary, to remember values from network callback until after
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());

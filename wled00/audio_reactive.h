@@ -36,14 +36,14 @@
 // #define FFT_SAMPLING_LOG
 
 // The following 3 defines are for Digital Microphone support
-#ifndef I2S_WS
-  #define I2S_WS 15        // aka LRCL
+#ifndef I2S_WSPIN
+  #define I2S_WSPIN 15        // aka LRCL
 #endif
-#ifndef I2S_SD
-  #define I2S_SD 32        // aka DOUT
+#ifndef I2S_SDPIN
+  #define I2S_SDPIN 32        // aka DOUT
 #endif
-#ifndef I2S_SCK
-  #define I2S_SCK 14       // aka BCLK
+#ifndef I2S_SCKPIN
+  #define I2S_SCKPIN 14       // aka BCLK
 #endif
 
 const i2s_port_t I2S_PORT = I2S_NUM_0;
@@ -279,7 +279,7 @@ void FFTcode( void * parameter) {
 
     for(int i=0; i<samples; i++) {
       if (digitalMic == false) {
-        micData = analogRead(MIC_PIN);            // Analog Read
+        micData = analogRead(audioPin);           // Analog Read
       } else {
         int32_t digitalSample = 0;
         int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&digitalSample, portMAX_DELAY); // no timeout
