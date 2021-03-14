@@ -1011,10 +1011,12 @@ function cmpP(a, b) {
   return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
-var jsonTimeout;
+var jsonTimeout, refreshTimer;
 function requestJson(command, rinfo = true, verbose = true, callback = null) {
 	d.getElementById('connind').style.backgroundColor = "#a90";
 	lastUpdate = new Date();
+	if (refreshTimer) clearTimeout(refreshTimer);
+	refreshTimer = setTimeout(function(){requestJson({'v':true},false)},15000);
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
 	var e1 = d.getElementById('fxlist');
