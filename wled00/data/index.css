@@ -523,7 +523,7 @@ input[type=range]:active + .sliderbubble {
 }
 
 .sliderwrap {
-	height: 30px;
+	height: 31px;
 	width: 240px;
 	position: relative;
 }
@@ -948,7 +948,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .lstI.selected {
 	background: var(--c-5);
-	top: 97px;
+	top: 189px;
 }
 
 .lstI.sticky {
