@@ -589,25 +589,19 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
   int itemPerPage = 8;
   #endif
 
-  int page;
+  int page = 0;
   if (request->hasParam("page")) {
     page = request->getParam("page")->value().toInt();
-  } else {
-    page = 1;
   }
 
   int palettesCount = strip.getPaletteCount();
 
-  int maxPage = ceil((float)palettesCount / (float)itemPerPage);
-  if (page > maxPage) {
-    page = maxPage;
-  }
+  int maxPage = (palettesCount -1) / itemPerPage;
+  if (page > maxPage) page = maxPage;
 
-  int start = itemPerPage * (page - 1);
+  int start = itemPerPage * page;
   int end = start + itemPerPage;
-  if (end > palettesCount - 1) {
-    end = palettesCount;
-  }
+  if (end >= palettesCount) end = palettesCount;
 
   root[F("m")] = maxPage;
   JsonObject palettes  = root.createNestedObject("p");
@@ -626,15 +620,6 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
           curPalette.add(F("r"));
           curPalette.add(F("r"));
           curPalette.add(F("r"));
-          /**setPaletteColors(
-            curPalette, 
-            CRGBPalette16(
-              CHSV(random8(), 255, random8(128, 255)),
-              CHSV(random8(), 255, random8(128, 255)),
-              CHSV(random8(), 192, random8(128, 255)),
-              CHSV(random8(), 255, random8(128, 255))
-            )
-          );**/
         break;
       case 2: //primary color only
         curPalette.add(F("c1"));

@@ -891,20 +891,21 @@ input[type=number]::-webkit-outer-spin-button {
 .list {
 	position: relative;
 	width: 260px;
-	border-radius: 20px;
-	background-color: var(--c-2);
 	transition: background-color 0.5s;
-    margin: auto auto 100px;
-    padding-bottom: 10px;
+  margin: auto auto 100px;
+  padding-bottom: 10px;
 }
+
 .lstI {
 	position: relative;
-	border-bottom: 1px solid var(--c-3);
+  border-radius: 25px;
 	display: flex;
 	align-items: center;
-	padding: 8px 10px;
+  padding: 8px 6px 9px 6px;
+  margin: 20px 0;
 	background-color: var(--c-2);
-    cursor: pointer;
+  cursor: pointer;
+  overflow: hidden;
 }
 
 .lstI:hover {
@@ -953,25 +954,26 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .lstIprev {
-	border: 1px solid var(--c-4);
-	border-radius: 4px;
 	width: 100%;
-	height: 8px;
+	height: 5px;
 	margin: auto;
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
 }
 
 input[type="text"].search {
 	display: block;
 	width: 100%;
 	box-sizing: border-box;
-    padding: 8px 8px 8px 60px;
-    margin: 0;
+  padding: 8px 8px 8px 56px;
+  margin: 6px 0 0 0;
 	text-align: left;
-	border-radius: 0;
-    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' stroke='white'><ellipse fill-opacity='0' stroke-width='10' cx='35' cy='35' id='svg_1' rx='25' ry='25' /><line stroke-width='10' x1='48.5' y1='70.75' x2='92.5' y2='70.75' transform='rotate(45, 70.5, 70.75)' /></svg>")
-                no-repeat 15px 10px;
-    background-size: 20px;
-    border-bottom: 1px solid var(--c-3);
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' stroke='white'><ellipse fill-opacity='0' stroke-width='10' cx='35' cy='35' id='svg_1' rx='25' ry='25' /><line stroke-width='10' x1='48.5' y1='70.75' x2='92.5' y2='70.75' transform='rotate(45, 70.5, 70.75)' /></svg>")
+                no-repeat 10px 10px;
+  background-size: 20px;
+  border-bottom: 1px solid var(--c-2);
+  background-color: var(--c-2);
 }
 
 input[type="text"].search:focus {
@@ -979,7 +981,7 @@ input[type="text"].search:focus {
 }
 
 input[type="text"].search:not(:placeholder-shown) {
-	background-color: var(--c-4);
+	background-color: var(--c-5);
 }
 
 .pres {
