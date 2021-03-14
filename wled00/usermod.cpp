@@ -17,6 +17,7 @@
 
 // This gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup() {
+  delay(100);                                 // Give that poor microphone some time to setup.
   // Attempt to configure INMP441 Microphone
   esp_err_t err;
   const i2s_config_t i2s_config = {
@@ -48,7 +49,7 @@ void userSetup() {
     while (true);
   }
   Serial.println("I2S driver installed.");
-  delay(100);
+  delay(250);
 
 
 // Test to see if we have a digital microphone installed or not.
