@@ -119,6 +119,24 @@ void _overlayAnalogCountdown()
   overlayRefreshMs = 998;
 }
 
+void _overlayStatusPixel()
+{
+  #if STATUSLED == -1
+    if (briT == 0) {
+      strip.setRange(1, ledCount-1, 0);
+      #ifdef STATUSPIXELBRI
+        strip.setBrightness(STATUSPIXELBRI);
+      #else
+        strip.setBrightness(255);
+      #endif
+    }
+    #ifdef STATUSPIXELCOL
+      strip.setPixelColor(0, (ledStatusState ? STATUSPIXELCOL : 0));
+    #else
+      strip.setPixelColor(0, (ledStatusState ? 255 : 0));
+    #endif
+  #endif
+}
 
 void handleOverlayDraw() {
   if (!overlayCurrent) return;
@@ -126,6 +144,7 @@ void handleOverlayDraw() {
   {
     case 1: _overlayAnalogClock(); break;
     case 3: _drawOverlayCronixie(); break;
+    case 4: _overlayStatusPixel(); break;
   }
 }
 
