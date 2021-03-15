@@ -1016,7 +1016,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 	d.getElementById('connind').style.backgroundColor = "#a90";
 	lastUpdate = new Date();
 	if (refreshTimer) clearTimeout(refreshTimer);
-	refreshTimer = setTimeout(function(){requestJson({'v':true},false)},15000);
+	refreshTimer = setTimeout(function(){requestJson({'v':true},false);},15000);
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
 	var e1 = d.getElementById('fxlist');
