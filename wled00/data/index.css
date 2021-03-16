@@ -90,9 +90,10 @@ button {
 
 #namelabel {
 	position: fixed;
-	bottom: calc(var(--bh) + 5px);
+	bottom: calc(var(--bh) + 6px);
 	right: 4px;
 	color: var(--c-6);
+  cursor: pointer;
 	writing-mode: vertical-rl;
 }
 
@@ -214,7 +215,7 @@ button {
 
 .top button {
 	padding: var(--tbp);
-}											 
+}
 
 .bot button {
 	padding: var(--bbp);
@@ -289,7 +290,8 @@ button {
 	transition: 0.7s;
 	pointer-events: none;
 }
-
+/* Keep sliders on top when scrolling
+Effect Speed */
 .staytop {
 	display: block;
 	position: -webkit-sticky;
@@ -302,13 +304,25 @@ button {
 	margin: auto;
 	border-radius: 25px;
 }
-
+/* Effect Intensity */
 #staytop1 {
-	top: 28px;
+	top: 30px;
 }
-
+/* FFT Low */
 #staytop2 {
-	top: 56px;
+	top: 60px;
+}
+/* FFT High */
+#staytop3 {
+	top: 90px;
+}
+/* FFT Custom */
+#staytop4 {
+	top: 120px;
+}
+/* Solid Effect Mode */
+#staytop5 {
+	top: 150px;
 }
 
 #fxb0 {
@@ -366,8 +380,16 @@ button {
 	z-index: 3;
 }
 
-#rover {
+#rover, #nodes {
 	z-index: 2;
+}
+
+#ndlt {
+  margin: 12px 0;
+}
+
+.valtd i {
+	font-size: 14px;
 }
 
 #roverstar {
@@ -394,9 +416,13 @@ button {
 	display: inline-block;
 }
 
-#kv {
+#kv, #kn {
 	max-width: 490px;
 	display: inline-block;
+}
+
+#kn td {
+  padding-bottom: 12px;
 }
 
 #lv {
@@ -655,8 +681,8 @@ input[type=number]:focus, input[type=text]:focus {
 	background: var(--c-6);
 }
 
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
 	-webkit-appearance: none;
 }
 
@@ -729,7 +755,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .pwr {
-	color: var(--c-6); 
+	color: var(--c-6);
 	transform: translate(2px, 3px);
 	cursor: pointer;
 }
@@ -893,7 +919,7 @@ input[type=number]::-webkit-outer-spin-button {
 	width: 6px;
 }
 ::-webkit-scrollbar-track {
-	background: transparent; 
+	background: transparent;
 }
 ::-webkit-scrollbar-thumb {
 	background: var(--c-sb);

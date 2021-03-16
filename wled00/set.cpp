@@ -31,8 +31,8 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
 
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX
-  if (subPage <1 || subPage >7) return;
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: sound
+  if (subPage <1 || subPage >8) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -75,18 +75,89 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //LED SETTINGS
   if (subPage == 2)
   {
-    int t = request->arg(F("LC")).toInt();
+    int t = 0;
+
+    if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
+    #ifndef WLED_DISABLE_INFRARED
+    if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
+    #endif
+    if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
+    //TODO remove all busses, but not in this system call
+    //busses->removeAll();
+
+    uint8_t colorOrder, type;
+    uint16_t length, start;
+    uint8_t pins[5] = {255, 255, 255, 255, 255};
+
+    for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
+      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
+      if (!request->hasArg(lp)) {
+        DEBUG_PRINTLN("No data."); break;
+      }
+      for (uint8_t i = 0; i < 5; i++) {
+        lp[1] = 48+i;
+        if (!request->hasArg(lp)) break;
+        pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
+      }
+      type = request->arg(lt).toInt();
+
+      if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
+        length = request->arg(lc).toInt();
+      } else {
+        break;  // no parameter
+      }
+      colorOrder = request->arg(co).toInt();
+      start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
+
+      if (busConfigs[s] != nullptr) delete busConfigs[s];
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
+    }
+
+    ledCount = request->arg(F("LC")).toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
-    #ifdef ESP8266
-    #if LEDPIN == 3
-    if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
+
+    // upate other pins
+    #ifndef WLED_DISABLE_INFRARED
+    int hw_ir_pin = request->arg(F("IR")).toInt();
+    if (pinManager.isPinOk(hw_ir_pin) && pinManager.allocatePin(hw_ir_pin,false)) {
+      irPin = hw_ir_pin;
+    } else {
+      irPin = -1;
+    }
     #endif
-    #endif
+
+    int hw_rly_pin = request->arg(F("RL")).toInt();
+    if (pinManager.allocatePin(hw_rly_pin,true)) {
+      rlyPin = hw_rly_pin;
+    } else {
+      rlyPin = -1;
+    }
+    rlyMde = (bool)request->hasArg(F("RM"));
+
+    int hw_btn_pin = request->arg(F("BT")).toInt();
+    if (pinManager.allocatePin(hw_btn_pin,false)) {
+      btnPin = hw_btn_pin;
+      pinMode(btnPin, INPUT_PULLUP);
+    } else {
+      btnPin = -1;
+    }
+
+    int hw_aux_pin = request->arg(F("AX")).toInt();
+    if (pinManager.allocatePin(hw_aux_pin,true)) {
+      auxPin = hw_aux_pin;
+    } else {
+      auxPin = -1;
+    }
+
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
-    
+
     useRGBW = request->hasArg(F("EW"));
-    strip.setColorOrder(request->arg(F("CO")).toInt());
     strip.rgbwMode = request->arg(F("AW")).toInt();
 
     briS = request->arg(F("CA")).toInt();
@@ -116,6 +187,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     skipFirstLed = request->hasArg(F("SL"));
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
+
+    #ifndef ESP8266
+    strip.matrixWidth = request->arg(F("LCW")).toInt();
+    strip.matrixHeight = request->arg(F("LCH")).toInt();
+    strip.matrixSerpentine = request->hasArg(F("LCWHS"));
+    #endif // ESP8266
   }
 
   //UI
@@ -146,6 +223,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyMacro = request->hasArg(F("SM"));
     notifyTwice = request->hasArg(F("S2"));
 
+    nodeListEnabled = request->hasArg(F("NL"));
+    if (!nodeListEnabled) Nodes.clear();
+    nodeBroadcastEnabled = request->hasArg(F("NB"));
+
     receiveDirect = request->hasArg(F("RD"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
@@ -174,6 +255,28 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (request->hasArg("BK") && !request->arg("BK").equals(F("Hidden"))) {
       strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey, blynkHost, blynkPort);
     }
+    t = request->arg(F("ASE")).toInt();
+    if (t == 0) {
+      // 0 == udp audio sync off
+      Serial.print("Setting audio sync settings");
+      audioSyncEnabled &= ~(1 << 0);
+      audioSyncEnabled &= ~(1 << 1);
+    }
+    else if (t == 1) {
+      // 1 == transmit only
+      Serial.print("Setting audio sync settings");
+      audioSyncEnabled |= 1 << 0;
+      audioSyncEnabled &= ~(1 << 1);
+    }
+    else if (t == 2) {
+      // 2 == receive only
+      Serial.print("Setting audio sync settings");
+      audioSyncEnabled &= ~(1 << 0);
+      audioSyncEnabled |= 1 << 1;
+    }
+    Serial.print(audioSyncEnabled);
+    t = request->arg(F("ASP")).toInt();
+    audioSyncPort = t;
 
     #ifdef WLED_ENABLE_MQTT
     mqttEnabled = request->hasArg(F("MQ"));
@@ -333,12 +436,53 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       DMXFixtureMap[i] = t;
     }
   }
-  
   #endif
-  if (subPage != 6 || !doReboot) serializeConfig(); //do not save if factory reset
-  if (subPage == 2) {
-    strip.init(useRGBW,ledCount,skipFirstLed);
+
+  //SOUND SETTINGS
+  if (subPage == 8)
+  {
+
+    // if (btnPin>=0 && pinManager.isPinAllocated(audioPin)) pinManager.deallocatePin(audioPin);
+
+    int t;
+    t = request->arg(F("SQ")).toInt();
+    if (t >= 0) soundSquelch = t;
+
+    t = request->arg(F("GN")).toInt();
+    if (t >= 0) sampleGain = t;
+    // Analog input pin
+    int hw_audio_pin = request->arg(F("SI")).toInt();
+    if (pinManager.allocatePin(hw_audio_pin,false)) {
+      audioPin = hw_audio_pin;
+    } else {
+      audioPin = 36;
+    }
+    // Digital mic mode
+    dmEnabled = (bool)request->hasArg(F("DMM"));
+    // Digital Mic I2S SD pin
+    int hw_i2ssd_pin = request->arg(F("DI")).toInt();
+    if (pinManager.allocatePin(hw_i2ssd_pin,false)) {
+      i2ssdPin = hw_i2ssd_pin;
+    } else {
+      i2ssdPin = 32;
+    }
+    // Digital Mic I2S WS pin
+    int hw_i2sws_pin = request->arg(F("LR")).toInt();
+    if (pinManager.allocatePin(hw_i2sws_pin,false)) {
+      i2swsPin = hw_i2sws_pin;
+    } else {
+      i2swsPin = 15;
+    }
+    // Digital Mic I2S SCK pin
+    int hw_i2sck_pin = request->arg(F("CK")).toInt();
+    if (pinManager.allocatePin(hw_i2sck_pin,false)) {
+      i2sckPin = hw_i2sck_pin;
+    } else {
+      i2sckPin = 14;
+    }
   }
+
+  if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }
 
@@ -397,6 +541,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   byte prevEffect = effectCurrent;
   byte prevSpeed = effectSpeed;
   byte prevIntensity = effectIntensity;
+  byte prevFFT1 = effectFFT1;
+  byte prevFFT2 = effectFFT2;
+  byte prevFFT3 = effectFFT3;
   byte prevPalette = effectPalette;
 
   //segment select (sets main segment)
@@ -576,6 +723,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) presetCyclingEnabled = false;
   updateVal(&req, "SX=", &effectSpeed);
   updateVal(&req, "IX=", &effectIntensity);
+  updateVal(&req, "F1=", &effectFFT1);
+  updateVal(&req, "F2=", &effectFFT2);
+  updateVal(&req, "F3=", &effectFFT3);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
 
   //set advanced overlay
@@ -651,15 +801,15 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
   if (nightlightMode > NL_MODE_SUN) nightlightMode = NL_MODE_SUN;
 
-  #if AUXPIN >= 0
   //toggle general purpose output
-  pos = req.indexOf(F("AX="));
-  if (pos > 0) {
-    auxTime = getNumVal(&req, pos);
-    auxActive = true;
-    if (auxTime == 0) auxActive = false;
+  if (auxPin>=0) {
+    pos = req.indexOf(F("AX="));
+    if (pos > 0) {
+      auxTime = getNumVal(&req, pos);
+      auxActive = true;
+      if (auxTime == 0) auxActive = false;
+    }
   }
-  #endif
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
@@ -709,7 +859,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //mode, 1 countdown
   pos = req.indexOf(F("NM="));
   if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
-  
+
   pos = req.indexOf(F("NX=")); //sets digits to code
   if (pos > 0) {
     strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
@@ -748,6 +898,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if (effectCurrent != prevEffect) seg.mode = effectCurrent;
     if (effectSpeed != prevSpeed) seg.speed = effectSpeed;
     if (effectIntensity != prevIntensity) seg.intensity = effectIntensity;
+    if (effectFFT1 != prevFFT1) seg.fft1 = effectFFT1;
+    if (effectFFT2 != prevFFT2) seg.fft2 = effectFFT2;
+    if (effectFFT3 != prevFFT3) seg.fft3 = effectFFT3;
     if (effectPalette != prevPalette) seg.palette = effectPalette;
   }
 
@@ -766,7 +919,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //end of temporary fix code
 
   if (!apply) return true; //when called by JSON API, do not call colorUpdated() here
-  
+
   //internal call, does not send XML response
   pos = req.indexOf(F("IN"));
   if (pos < 1) XML_response(request);

@@ -14,6 +14,11 @@ void alexaInit();
 void handleAlexa();
 void onAlexaChange(EspalexaDevice* dev);
 
+//audio_reactive.cpp                               // Which functions do we declare here???
+//void agcAvg();
+//void FFTcode(void * parameter);
+//void getSample();
+
 //blynk.cpp
 void initBlynk(const char* auth, const char* host, uint16_t port);
 void handleBlynk();
@@ -76,7 +81,6 @@ bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
 void changeEffectSpeed(int8_t amount);
-void changeBrightness(int8_t amount);
 void changeEffectIntensity(int8_t amount);
 void decodeIR(uint32_t code);
 void decodeIR24(uint32_t code);
@@ -129,7 +133,7 @@ void publishMqtt();
 //ntp.cpp
 void handleNetworkTime();
 void sendNTPPacket();
-bool checkNTPResponse();    
+bool checkNTPResponse();
 void updateLocalTime();
 void getTimeString(char* out);
 bool checkCountdown();
@@ -147,26 +151,11 @@ void _overlayAnalogClock();
 
 byte getSameCodeLength(char code, int index, char const cronixieDisplay[]);
 void setCronixie();
-void _overlayCronixie();    
+void _overlayCronixie();
 void _drawOverlayCronixie();
 
-//pin_manager.cpp
-class PinManagerClass {
-  private:
-  #ifdef ESP8266
-  uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
-  #else
-  uint8_t pinAlloc[5] = {0x00, 0x00, 0x00, 0x00, 0x00}; //40bit, 1 bit per pin, we use all bits
-  #endif
-
-  public:
-  void deallocatePin(byte gpio);
-  bool allocatePin(byte gpio, bool output = true);
-  bool isPinAllocated(byte gpio);
-  bool isPinOk(byte gpio, bool output = true);
-};
-
 //playlist.cpp
+void unloadPlaylist();
 void loadPlaylist(JsonObject playlistObject);
 void handlePlaylist();
 
@@ -188,6 +177,8 @@ void notify(byte callMode, bool followUp=false);
 void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
+void refreshNodeList();
+void sendSysInfoUDP();
 
 //um_manager.cpp
 class Usermod {

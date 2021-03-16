@@ -1,7 +1,7 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, nlA = false, isLv = false, isInfo = false, syncSend = false, syncTglRecv = true, isRgbw = false;
+var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
 var expanded = [false];
 var powered = [true];
@@ -29,29 +29,29 @@ var cpick = new iro.ColorPicker("#picker", {
 	wheelLightness: false,
   wheelAngle: 90,
   layout: [
-    { 
+    {
       component: iro.ui.Wheel,
       options: {}
     },
-    { 
+    {
       component: iro.ui.Slider,
       options: {
         sliderType: 'value'
       }
     },
-    { 
+    {
       component: iro.ui.Slider,
       options: {
         sliderType: 'kelvin',
-        minTemperature: 2100,
+				minTemperature: 2100,
         maxTemperature: 10000
-      }
+			}
     }
-  ]
+	]
 });
 
 function handleVisibilityChange() {
-	if (!document.hidden && new Date () - lastUpdate > 3000) {
+	if (!d.hidden && new Date () - lastUpdate > 3000) {
 		requestJson(null);
 	}
 }
@@ -148,8 +148,8 @@ function cTheme(light) {
 }
 
 function loadBg(iUrl) {
-	let bg = document.getElementById('bg');
-  let img = document.createElement("img");
+	let bg = d.getElementById('bg');
+  let img = d.createElement("img");
   img.src = iUrl;
   if (iUrl == "") {
     var today = new Date();
@@ -177,12 +177,12 @@ function onLoad() {
 	}
 	var sett = localStorage.getItem('wledUiCfg');
 	if (sett) cfg = mergeDeep(cfg, JSON.parse(sett));
-	
+
 	resetPUtil();
-	
+
 	applyCfg();
 	loadBg(cfg.theme.bg.url);
-	
+
 	var cd = d.getElementById('csl').children;
 	for (var i = 0; i < cd.length; i++) {
 		cd[i].style.backgroundColor = "rgb(0, 0, 0)";
@@ -233,7 +233,7 @@ function showToast(text, error = false) {
 	x.className = error ? "error":"show";
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-	x.style.animation = null; 
+	x.style.animation = null;
 	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 }
 
@@ -255,7 +255,7 @@ function getRuntimeStr(rt)
 	if (!days && hrs) str += ", ";
 	if (t > 59 && !days) str += mins + " min";
 	if (t < 3600 && t > 59) str += ", ";
-	if (t < 3600) str += (t - mins*60) + " sec"; 
+	if (t < 3600) str += (t - mins*60) + " sec";
 	return str;
 }
 
@@ -271,7 +271,7 @@ function getLowestUnusedP()
 	{
 		if (key == l) l++;
   }
-  if (l > 250) l = 250; 
+  if (l > 250) l = 250;
 	return l;
 }
 
@@ -305,13 +305,13 @@ function qlName(i) {
 }
 
 function cpBck() {
-	var copyText = document.getElementById("bck");
+	var copyText = d.getElementById("bck");
 
   copyText.select();
   copyText.setSelectionRange(0, 999999);
 
-  document.execCommand("copy");
-	
+  d.execCommand("copy");
+
 	showToast("Copied to clipboard!");
 }
 
@@ -322,12 +322,12 @@ function presetError(empty)
 		bckstr = localStorage.getItem("wledP");
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {
-	
+
 	}
 	var cn = `<div class="seg c">`;
-	if (empty) 
+	if (empty)
 		cn += `You have no presets yet!`;
-	else 
+	else
 		cn += `Sorry, there was an issue loading your presets!`;
 
 	if (hasBackup) {
@@ -351,7 +351,7 @@ function loadPresets()
 	if (loc) {
 		url = `http://${locip}/presets.json`;
 	}
-	
+
 	fetch
 	(url, {
 		method: 'get'
@@ -380,7 +380,7 @@ function populateQL()
 	var cn = "";
 	if (pQL.length > 0) {
 	cn += `<p class="labels">Quick load</p>`;
-  
+
   var it = 0;
 	for (var key of (pQL||[]))
 	{
@@ -392,7 +392,7 @@ function populateQL()
     }
   }
   if (it != 0) cn+= '<br>';
-	
+
 	cn += `<p class="labels">All presets</p>`;
 	}
 	d.getElementById('pql').innerHTML = cn;
@@ -416,7 +416,7 @@ function populatePresets(fromls)
 		var qll = key[1].ql;
     if (qll) pQL.push([i, qll]);
     is.push(i);
-		
+
     cn += `<div class="seg pres" id="p${i}o">`;
     if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
     cn += `<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
@@ -463,17 +463,19 @@ function populateInfo(i)
       }
     }
   }
+
 	var vcn = "Kuuhaku";
-	if (i.ver.startsWith("0.11.")) vcn = "Mirai";
+	if (i.ver.startsWith("0.12.")) vcn = "Hikari";
 	if (i.cn) vcn = i.cn;
-	
+
 	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
 	${urows}
 	${inforow("Build",i.vid)}
 	${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 	${inforow("Uptime",getRuntimeStr(i.uptime))}
 	${inforow("Free heap",heap," kB")}
-	${inforow("Estimated current",pwru)}
+  ${inforow("Estimated current",pwru)}
+  ${inforow("Frames / second",i.leds.fps)}
 	${inforow("MAC address",i.mac)}
 	${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 	${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
@@ -485,17 +487,17 @@ function populateSegments(s)
 {
 	var cn = "";
 	segCount = 0; lowestUnused = 0; lSeg = 0;
- 
+
 	for (var y = 0; y < (s.seg||[]).length; y++)
 	{
 		segCount++;
-		
+
 		var inst=s.seg[y];
 		let i = parseInt(inst.id);
 		powered[i] = inst.on;
 		if (i == lowestUnused) lowestUnused = i+1;
 		if (i > lSeg) lSeg = i;
-		
+
 		cn += `<div class="seg">
 			<label class="check schkl">
 				&nbsp;
@@ -565,6 +567,69 @@ function populateSegments(s)
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
+function btype(b){
+  switch (b) {
+    case 32: return "ESP32";
+    case 82: return "ESP8266";
+  }
+  return "?";
+}
+function bname(o){
+  if (o.name=="WLED") return o.ip;
+  return o.name;
+}
+
+function populateNodes(i,n)
+{
+	var cn="";
+	var urows="";
+  var nnodes = 0;
+	if (n.nodes) {
+		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		for (var x=0;x<n.nodes.length;x++) {
+			var o = n.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn btna-icon tab" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+        nnodes++;
+			}
+		}
+	}
+  if (i.ndc < 0) cn += `Instance List is disabled.`;
+  else if (nnodes == 0) cn += `No other instances found.`;
+	cn += `<table class="infot">
+    ${urows}
+    ${inforow("Current instance:",i.name)}
+  </table>`;
+	d.getElementById('kn').innerHTML = cn;
+}
+
+function loadNodes()
+{
+	var url = '/json/nodes';
+	if (loc) {
+		url = `http://${locip}/json/nodes`;
+	}
+
+	fetch
+	(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) {
+			showToast('Could not load Node list!', true);
+		}
+		return res.json();
+	})
+	.then(json => {
+		populateNodes(lastinfo, json);
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+	});
+}
+
 function updateTrail(e, slidercol)
 {
 	if (e==null) return;
@@ -608,7 +673,7 @@ function updateLen(s)
 	} else if (len == 1) {
 		out = "1 LED";
 	}
-	
+
 	if (d.getElementById(`seg${s}grp`) != null)
 	{
 		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
@@ -617,7 +682,7 @@ function updateLen(s)
 		var virt = Math.ceil(len/(grp + spc));
 		if (!isNaN(virt) && (grp > 1 || spc > 0)) out += ` (${virt} virtual)`;
 	}
-	
+
 	d.getElementById(`seg${s}len`).innerHTML = out;
 }
 
@@ -650,6 +715,9 @@ function updateUI()
 	updateTrail(d.getElementById('sliderBri'));
 	updateTrail(d.getElementById('sliderSpeed'));
 	updateTrail(d.getElementById('sliderIntensity'));
+	updateTrail(d.getElementById('sliderFFT1'));
+	updateTrail(d.getElementById('sliderFFT2'));
+	updateTrail(d.getElementById('sliderFFT3'));
 	updateTrail(d.getElementById('sliderW'));
 	if (isRgbw) d.getElementById('wwrap').style.display = "block";
 
@@ -690,7 +758,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 	if (loc) {
 		url = `http://${locip}${url}`;
 	}
-	
+
 	var type = command ? 'post':'get';
 	if (command)
 	{
@@ -745,7 +813,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 		}
 		e1.innerHTML=x; e2.innerHTML=y;
 		}
-		
+
 			var info = json.info;
 			var name = info.name;
 			d.getElementById('namelabel').innerHTML = name;
@@ -760,6 +828,7 @@ function requestJson(command, rinfo = true, verbose = true) {
       pmt = info.fs.pmt;
       if (!command && pmt != pmtLast) setTimeout(loadPresets,99);
       pmtLast = pmt;
+      d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
 		lastinfo = info;
 		if (isInfo) populateInfo(info);
 			s = json.state;
@@ -778,7 +847,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 		d.getElementById('cyce').value = s.ccnf.max;
 		d.getElementById('cyct').value = s.ccnf.time /10;
 		d.getElementById('cyctt').value = s.transition /10;
-		
+
 		var selc=0; var ind=0;
 		populateSegments(s);
 		for (let i = 0; i < (s.seg||[]).length; i++)
@@ -802,6 +871,9 @@ function requestJson(command, rinfo = true, verbose = true) {
 
 		d.getElementById('sliderSpeed').value = i.sx;
 		d.getElementById('sliderIntensity').value = i.ix;
+		d.getElementById('sliderFFT1').value = i.f1x;
+		d.getElementById('sliderFFT2').value = i.f2x;
+		d.getElementById('sliderFFT3').value = i.f3x;
 
 		d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-3)";
 		selectedFx = i.fx;
@@ -868,10 +940,19 @@ function toggleLiveview() {
 }
 
 function toggleInfo() {
+  if (isNodes) toggleNodes();
 	isInfo = !isInfo;
 	if (isInfo) populateInfo(lastinfo);
 	d.getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
 	d.getElementById('buttonI').className = (isInfo) ? "active":"";
+}
+
+function toggleNodes() {
+  if (isInfo) toggleInfo();
+	isNodes = !isNodes;
+	d.getElementById('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
+  d.getElementById('buttonNodes').className = (isNodes) ? "active":"";
+  if (isNodes) loadNodes();
 }
 
 function makeSeg() {
@@ -1061,6 +1142,21 @@ function setLor(i) {
 	requestJson(obj);
 }
 
+function setFFT1() {
+  var obj = {"seg": {"f1x": parseInt(d.getElementById('sliderFFT1').value)}};
+  requestJson(obj);
+}
+
+function setFFT2() {
+  var obj = {"seg": {"f2x": parseInt(d.getElementById('sliderFFT2').value)}};
+  requestJson(obj);
+}
+
+function setFFT3() {
+  var obj = {"seg": {"f3x": parseInt(d.getElementById('sliderFFT3').value)}};
+  requestJson(obj);
+}
+
 function toggleCY() {
 	var obj = {"pl" : -1};
 	if (d.getElementById('cyToggle').checked)
@@ -1068,7 +1164,7 @@ function toggleCY() {
 		obj = {"pl": 0, "ccnf": {"min": parseInt(d.getElementById('cycs').value), "max": parseInt(d.getElementById('cyce').value), "time": parseInt(d.getElementById('cyct').value*10)}};
 		obj.transition = parseInt(d.getElementById('cyctt').value*10);
 	}
-	
+
 	requestJson(obj);
 }
 
@@ -1242,7 +1338,7 @@ d.getElementById('heart').style.color = `hsl(${hc}, 100%, 50%)`;}, 910);
 
 function openGH()
 {
-	window.open("https://github.com/Aircoookie/WLED/wiki");
+	window.open("https://github.com/atuline/WLED/wiki");
 }
 
 var cnfr = false;
@@ -1300,10 +1396,14 @@ function unfocusSliders() {
 	d.getElementById("sliderBri").blur();
 	d.getElementById("sliderSpeed").blur();
 	d.getElementById("sliderIntensity").blur();
+	d.getElementById("sliderFFT1").blur();
+	d.getElementById("sliderFFT2").blur();
+	d.getElementById("sliderFFT3").blur();
+
 }
 
 //sliding UI
-const _C = document.querySelector('.container'), N = 4;
+const _C = d.querySelector('.container'), N = 4;
 
 let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
 
@@ -1352,8 +1452,9 @@ function move(e) {
 	x0 = null;
 }
 
-function size() { 
+function size() {
 	w = window.innerWidth;
+  d.getElementById('buttonNodes').style.display = (lastinfo.ndc > 0 && w > 770) ? "block":"none";
 	var h = d.getElementById('top').clientHeight;
 	sCol('--th', h + "px");
 	sCol('--bh', d.getElementById('bot').clientHeight + "px");

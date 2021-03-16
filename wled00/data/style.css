@@ -19,6 +19,9 @@ button {
   margin: 8px;
   margin-top: 12px;
 }
+button.disabled, button[disabled] {
+  color: #aaa;
+}
 .helpB {
   text-align: left;
   position: absolute;

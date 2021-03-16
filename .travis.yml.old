@@ -41,3 +41,4 @@ install:
 script:
     # - platformio ci --project-conf=./platformio.ini
     - platformio run
+

@@ -163,8 +163,40 @@ void handleNotifications()
   if (!isSupp && notifierUdp.remoteIP() == Network.localIP()) return; //don't process broadcasts we send ourselves
 
   uint8_t udpIn[packetSize +1];
-  if (isSupp) notifier2Udp.read(udpIn, packetSize);
-  else         notifierUdp.read(udpIn, packetSize);
+  uint16_t len;
+  if (isSupp) len = notifier2Udp.read(udpIn, packetSize);
+  else        len =  notifierUdp.read(udpIn, packetSize);
+
+  // WLED nodes info notifications
+  if (isSupp && udpIn[0] == 255 && udpIn[1] == 1 && len >= 40) {
+    if (!nodeListEnabled || notifier2Udp.remoteIP() == Network.localIP()) return;
+
+    uint8_t unit = udpIn[39];
+    NodesMap::iterator it = Nodes.find(unit);
+    if (it == Nodes.end() && Nodes.size() < WLED_MAX_NODES) { // Create a new element when not present
+      Nodes[unit].age = 0;
+      it = Nodes.find(unit);
+    }
+
+    if (it != Nodes.end()) {
+      for (byte x = 0; x < 4; x++) {
+        it->second.ip[x] = udpIn[x + 2];
+      }
+      it->second.age = 0; // reset 'age counter'
+      char tmpNodeName[33] = { 0 };
+      memcpy(&tmpNodeName[0], reinterpret_cast<byte *>(&udpIn[6]), 32);
+      tmpNodeName[32]     = 0;
+      it->second.nodeName = tmpNodeName;
+      it->second.nodeName.trim();
+      it->second.nodeType = udpIn[38];
+      uint32_t build = 0;
+      if (len >= 44)
+        for (byte i=0; i<sizeof(uint32_t); i++)
+          build |= udpIn[40+i]<<(8*i);
+      it->second.build = build;
+    }
+    return;
+  }
 
   //wled notifier, ignore if realtime packets active
   if (udpIn[0] == 0 && !realtimeMode && receiveNotifications)
@@ -315,6 +347,15 @@ void handleNotifications()
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
         id++;
       }
+    } else if (udpIn[0] == 5) //dnrgbw
+    {
+      uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
+      for (uint16_t i = 4; i < packetSize -2; i += 4)
+      {
+          if (id >= ledCount) break;
+        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
+        id++;
+      }
     }
     strip.show();
     return;
@@ -348,4 +389,73 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
       strip.setPixelColor(pix, r, g, b, w);
     }
   }
+}
+
+/*********************************************************************************************\
+   Refresh aging for remote units, drop if too old...
+\*********************************************************************************************/
+void refreshNodeList()
+{
+  for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end();) {
+    bool mustRemove = true;
+
+    if (it->second.ip[0] != 0) {
+      if (it->second.age < 10) {
+        it->second.age++;
+        mustRemove = false;
+        ++it;
+      }
+    }
+
+    if (mustRemove) {
+      it = Nodes.erase(it);
+    }
+  }
+}
+
+/*********************************************************************************************\
+   Broadcast system info to other nodes. (to update node lists)
+\*********************************************************************************************/
+void sendSysInfoUDP()
+{
+  if (!udp2Connected) return;
+
+  IPAddress ip = Network.localIP();
+
+  // TODO: make a nice struct of it and clean up
+  //  0: 1 byte 'binary token 255'
+  //  1: 1 byte id '1'
+  //  2: 4 byte ip
+  //  6: 32 char name
+  // 38: 1 byte node type id
+  // 39: 1 byte node id
+  // 40: 4 byte version ID
+  // 44 bytes total
+
+  // send my info to the world...
+  uint8_t data[44] = {0};
+  data[0] = 255;
+  data[1] = 1;
+  
+  for (byte x = 0; x < 4; x++) {
+    data[x + 2] = ip[x];
+  }
+  memcpy((byte *)data + 6, serverDescription, 32);
+  #ifdef ESP8266
+  data[38] = NODE_TYPE_ID_ESP8266;
+  #elif defined(ARDUINO_ARCH_ESP32)
+  data[38] = NODE_TYPE_ID_ESP32;
+  #else
+  data[38] = NODE_TYPE_ID_UNDEFINED;
+  #endif
+  data[39] = ip[3]; // unit ID == last IP number
+
+  uint32_t build = VERSION;
+  for (byte i=0; i<sizeof(uint32_t); i++)
+    data[40+i] = (build>>(8*i)) & 0xFF;
+
+  IPAddress broadcastIP(255, 255, 255, 255);
+  notifier2Udp.beginPacket(broadcastIP, udpPort2);
+  notifier2Udp.write(data, sizeof(data));
+  notifier2Udp.endPacket();
 }

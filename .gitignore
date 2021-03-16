@@ -13,3 +13,5 @@
 .gitignore
 .clang-format
 node_modules
+.cproject
+.project

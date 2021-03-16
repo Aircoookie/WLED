@@ -2,6 +2,52 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103130
+
+-   Added options for Auto Node discovery
+-   Optimized strings (no string both F() and raw)
+
+#### Build 2103090
+
+-   Added Auto Node discovery (PR #1683)
+-   Added tooltips to quick color selectors for accessibility
+
+#### Build 2103060
+
+-   Auto start field population in bus config
+
+#### Build 2103050
+
+-   Fixed incorrect over-memory indication in LED settings on ESP32
+
+#### Build 2103041
+
+-   Added destructor for BusPwm (fixes #1789)
+
+#### Build 2103040
+
+-   Fixed relay mode inverted when upgrading from 0.11.0
+-   Fixed no more than 2 pins per bus configurable in UI
+-   Changed to non-linear IR brightness steps (PR #1742)
+-   Fixed various warnings (PR #1744)
+-   Added UDP DNRGBW Mode (PR #1704)
+-   Added dynamic LED mapping with ledmap.json file (PR #1738)
+-   Added support for QuinLED-ESP32-Ethernet board
+-   Added support for WESP32 ethernet board (PR #1764)
+-   Added Caching for main UI (PR #1704)
+-   Added Tetrix mode (PR #1729)
+-   Added memory check on Bus creation
+
+#### Build 2102050
+
+-   Version bump to 0.12.0-a0 "Hikari"
+-   Added FPS indication in info
+-   Bumped max outputs from 7 to 10 busses for ESP32
+
+#### Build 2101310
+
+-   First alpha configurable multipin
+
 #### Build 2101130
 
 -   Added color transitions for all segments and slots and for segment brightness
@@ -63,7 +109,7 @@
 
 -   Added Preset ID quick display option (PR #1462)
 -   Fixed LEDs not turning on when using gamma correct brightness and LEDPIN 2 (default)
--   Fixed notifier applying main segment to selected segments on notification with FX/Col disabled 
+-   Fixed notifier applying main segment to selected segments on notification with FX/Col disabled
 
 #### Build 2012130
 
@@ -139,7 +185,7 @@
 -   Added HEX color receiving to JSON API with `"col":["RRGGBBWW"]` format
 -   Moved Kelvin color receiving in JSON API from `"col":[[val]]` to `"col":[val]` format
     _Notice:_ This is technically a breaking change. Since no release was made since the introduction and the Kelvin property was not previously documented in the wiki,
-    impact should be minimal. 
+    impact should be minimal.
 -   BTNPIN can now be disabled by setting to -1 (fixes #1237)
 
 #### Build 2011180
@@ -215,7 +261,7 @@
 #### Build 2010020
 
 -   Fixed interaction of `T` and `NL` HTTP API commands (#1214)
--   Fixed an issue where Sunrise mode nightlight does not activate if toggled on simultaneously 
+-   Fixed an issue where Sunrise mode nightlight does not activate if toggled on simultaneously
 
 #### Build 2009291
 
@@ -476,6 +522,25 @@
 #### Build 2003222
 
 -   Fixed Alexa Whites on non-RGBW lights (bump Espalexa to 2.4.5)
+
+#### Build 2003262
+
+  - Fixed compilation for Analog LEDs
+  - Fixed sync settings network port fields too small
+
+#### Build 2003261
+
+  - Fixed live preview not displaying whole light if over 255 LEDs
+
+#### Build 2003251
+
+  - Added Pacifica effect (tentative, doesn't yet support other colors)
+  - Added Atlantica palette
+  - Fixed ESP32 build of Espalexa
+
+#### Build 2003222
+
+  - Fixed Alexa Whites on non-RGBW lights (bump Espalexa to 2.4.5)
 
 #### Build 2003221
 
