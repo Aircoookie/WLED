@@ -99,7 +99,7 @@ bool oappend(const char* txt)
 void prepareHostname(char* hostname)
 {
   const char *pC = serverDescription;
-  uint8_t pos = 5;
+  uint8_t pos = 0;
 
   while (*pC && pos < 24) { // while !null and not over length
     if (isalnum(*pC)) {     // if the current char is alpha-numeric append it to the hostname
@@ -494,7 +494,7 @@ void WLED::initConnection()
   DEBUG_PRINTLN("...");
 
   // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
-  char hostname[25] = "wled-";
+  char hostname[25] = "";
   prepareHostname(hostname);
   
 #ifdef ESP8266

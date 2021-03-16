@@ -21,6 +21,10 @@
 #include "usermod_v2_SensorsToMqtt.h"
 #endif
 
+#ifdef USERMOD_GEOGAB
+#include "../usermods/GeoGab-Relays/usermod_GeoGab.h"
+#endif
+
 #ifdef USERMOD_MODE_SORT
 #include "../usermods/usermod_v2_mode_sort/usermod_v2_mode_sort.h"
 #endif
@@ -52,6 +56,9 @@ void registerUsermods()
 //usermods.add(new UsermodRenameMe());
 #ifdef USERMOD_BUZZER
   usermods.add(new BuzzerUsermod());
+#endif
+#ifdef USERMOD_GEOGAB
+  usermods.add(new UsermodGeoGab()); 
 #endif
 #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());

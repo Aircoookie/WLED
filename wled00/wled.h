@@ -89,7 +89,7 @@
 #ifndef WLED_DISABLE_ALEXA
   #define ESPALEXA_ASYNC
   #define ESPALEXA_NO_SUBPAGE
-  #define ESPALEXA_MAXDEVICES 1
+  #define ESPALEXA_MAXDEVICES MAXRELAYS
   // #define ESPALEXA_DEBUG
   #include "src/dependencies/espalexa/Espalexa.h"
 #endif
@@ -504,7 +504,6 @@ WLED_GLOBAL JsonDocument* fileDoc;
 WLED_GLOBAL bool doCloseFile _INIT(false);
 
 // presets
-WLED_GLOBAL uint16_t savedPresets _INIT(0);
 WLED_GLOBAL int16_t currentPreset _INIT(-1);
 WLED_GLOBAL bool isPreset _INIT(false);
 

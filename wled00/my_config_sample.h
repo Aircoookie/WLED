@@ -14,7 +14,7 @@
  */
 
 // force the compiler to show a warning to confirm that this file is included
-#warning **** my_config.h: Settings from this file are honored ****
+//#warning **** my_config.h: Settings from this file are honored ****
 
 /* Uncomment to use your WIFI settings as defaults
   //WARNING: this will hardcode these as the default even after a factory reset
