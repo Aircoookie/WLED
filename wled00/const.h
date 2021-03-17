@@ -138,7 +138,7 @@
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
 
 //Ethernet board types
-#define WLED_NUM_ETH_TYPES        5
+#define WLED_NUM_ETH_TYPES        6
 
 #define WLED_ETH_NONE             0
 #define WLED_ETH_WT32_ETH01       1
