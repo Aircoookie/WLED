@@ -1770,7 +1770,6 @@ function togglePcMode(fromB = false)
 	d.getElementById('buttonPcm').className = (pcMode) ? "active":"";
 	d.getElementById('bot').style.height = (pcMode && !cfg.comp.pcmbot) ? "0":"auto";
 	sCol('--bh', d.getElementById('bot').clientHeight + "px");
-	d.getElementById('buttonNodes').style.display = (pcMode) ? "":"none";
 	_C.style.width = (pcMode)?'100%':'400%';
 	lastw = w;
 }

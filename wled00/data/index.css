@@ -223,11 +223,7 @@ button {
 
 .bot button {
 	padding: var(--bbp);
-	width:25%;
-}
-
-#btnNodes {
-	display: none;	
+	width:20%;
 }
 
 .tab button:hover {
@@ -1054,7 +1050,7 @@ input[type="text"].fnd:not(:placeholder-shown) {
 }
 
 @media all and (max-width: 1249px) {
-	#buttonPcm, #buttonNo {
+	#buttonPcm, #buttonNodes {
 	display: none;
 	}
 }
