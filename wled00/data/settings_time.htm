@@ -49,19 +49,23 @@
         ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"250\"></td>";
         for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";
       }
+	  ih+="<tr><td><input name=\"W8\" id=\"W8\" type=\"number\" style=\"display:none\"><input id=\"W80\" type=\"checkbox\"></td><td>Sunrise<input name=\"H8\" value=\"255\" type=\"hidden\"></td><td><input name=\"N8\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T8\" type=\"number\" min=\"0\" max=\"250\"></td>";
+      for (j=1;j<8;j++) ih+="<td><input id=\"W8"+j+"\" type=\"checkbox\"></td>";
+      ih+="<tr><td><input name=\"W9\" id=\"W9\" type=\"number\" style=\"display:none\"><input id=\"W90\" type=\"checkbox\"></td><td>Sunset<input name=\"H9\" value=\"255\" type=\"hidden\"></td><td><input name=\"N9\" type=\"number\" min=\"-59\" max=\"59\"><td><input name=\"T9\" type=\"number\" min=\"0\" max=\"250\"></td>";
+      for (j=1;j<8;j++) ih+="<td><input id=\"W9"+j+"\" type=\"checkbox\"></td>";
       gId("TMT").innerHTML=ih;
     }
     function FC()
     {
       for(j=0;j<8;j++)
       {
-        for(i=0;i<8;i++) gId("W"+i+j).checked=gId("W"+i).value>>j&1;
+        for(i=0;i<10;i++) gId("W"+i+j).checked=gId("W"+i).value>>j&1;
       }
     }
     function Wd()
     {
-      a=[0,0,0,0,0,0,0,0];
-      for(i=0;i<8;i++)
+      a=[0,0,0,0,0,0,0,0,0,0];
+      for(i=0;i<10;i++)
       {
         m=1;
         for(j=0;j<8;j++)
@@ -111,7 +115,10 @@
       <option value="18">HST (Hawaii)</option>
 		</select><br>
 		UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
-		Current local time is <span class="times">unknown</span>.
+		Current local time is <span class="times">unknown</span>.<br>
+		Latitude (N): <input name="LT" type="number" min="-66.6" max="66.6" step="0.01">
+		Longitude (E): <input name="LN" type="number" min="-180" max="180" step="0.01">
+		<div id="sun" class="times"></div>
 		<h3>Clock</h3>
 		Clock Overlay:
 		<select name="OL" onchange="Cs()">

@@ -140,6 +140,7 @@ bool checkCountdown();
 void setCountdown();
 byte weekdayMondayFirst();
 void checkTimers();
+void calculateSunriseAndSunset();
 
 //overlay.cpp
 void initCronixie();

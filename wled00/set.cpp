@@ -323,6 +323,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     //start ntp if not already connected
     if (ntpEnabled && WLED_CONNECTED && !ntpConnected) ntpConnected = ntpUdp.begin(ntpLocalPort);
 
+    longitude = request->arg(F("LN")).toFloat();
+    latitude = request->arg(F("LT")).toFloat();
+    // force a sunrise/sunset re-calculation
+    calculateSunriseAndSunset(); 
+
     if (request->hasArg(F("OL"))) {
       overlayDefault = request->arg(F("OL")).toInt();
       overlayCurrent = overlayDefault;
@@ -354,7 +359,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     macroDoublePress = request->arg(F("MD")).toInt();
 
     char k[3]; k[2] = 0;
-    for (int i = 0; i<8; i++)
+    for (int i = 0; i<10; i++)
     {
       k[1] = i+48;//ascii 0,1,2,3
 
