@@ -116,6 +116,19 @@ private:
     }
     return "";
   }
+
+  String getLightIdFromURI(String uri) {
+      String lightIdAndState = uri.substring(uri.indexOf("lights") + 7);
+      String lightId = lightIdAndState.substring(0, lightIdAndState.indexOf("/"));
+      if(lightId.endsWith("/")) lightId.remove(lightId.length() - 1);
+
+      return lightId;
+  } 
+  
+  uint8_t decodeLightId(String idx) {
+      if(idx.length() < 12) return 0;
+      return idx.substring(10, 12).toInt();
+  }
   
   void encodeLightId(uint8_t idx, char* out)
   {
@@ -464,9 +477,13 @@ public:
 
     if ((req.indexOf("state") > 0) && (body.length() > 0)) //client wants to control light
     {
-      server->send(200, "application/json", F("[{\"success\":{\"/lights/1/state/\": true}}]"));
+      String lightId = getLightIdFromURI(req);
+      uint8_t devId = decodeLightId(lightId);
 
-      uint32_t devId = req.substring(req.indexOf("lights")+7).toInt();
+      String success = "[{\"success\":{\"/lights/" + lightId + "/state/\": true}}]";
+
+      server->send(200, "application/json", success);
+
       EA_DEBUG("ls"); EA_DEBUGLN(devId);
       EA_DEBUGLN(devId);
       devId--; //zero-based for devices array
@@ -530,16 +547,20 @@ public:
     int pos = req.indexOf("lights");
     if (pos > 0) //client wants light info
     {
-      int devId = req.substring(pos+7).toInt();
-      EA_DEBUG("l"); EA_DEBUGLN(devId);
+      String lightId = getLightIdFromURI(req);
 
-      if (devId == 0) //client wants all lights
+      EA_DEBUG("l"); EA_DEBUGLN(lightId);
+
+      if (lightId.isEmpty()) //client wants all lights
       {
         EA_DEBUGLN("lAll");
         String jsonTemp = "{";
         for (int i = 0; i<currentDeviceCount; i++)
-        {
-          jsonTemp += "\"" + String(i+1) + "\":";
+        {          
+          char buf_lightid[13];
+          encodeLightId(i + 1, buf_lightid);
+
+          jsonTemp += "\"" + String((const char *) buf_lightid) + "\":";
           char buf[512];
           deviceJsonString(i+1, buf);
           jsonTemp += buf;
@@ -549,6 +570,8 @@ public:
         server->send(200, "application/json", jsonTemp);
       } else //client wants one light (devId)
       {
+        uint8_t devId = decodeLightId(lightId);
+
         EA_DEBUGLN(devId);
         if (devId > currentDeviceCount)
         {
