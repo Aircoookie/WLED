@@ -39,9 +39,7 @@ var cpick = new iro.ColorPicker("#picker", {
     },
     {
       component: iro.ui.Slider,
-      options: {
-        sliderType: 'value'
-      }
+      options: { sliderType: 'value' }
     },
     {
       component: iro.ui.Slider,
@@ -54,15 +52,8 @@ var cpick = new iro.ColorPicker("#picker", {
   ]
 });
 
-function handleVisibilityChange() {
-	if (!d.hidden && new Date () - lastUpdate > 3000) {
-		requestJson(null);
-	}
-}
-
-function sCol(na, col) {
-	d.documentElement.style.setProperty(na, col);
-}
+function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson(null);}
+function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 
 function applyCfg()
 {
@@ -76,8 +67,7 @@ function applyCfg()
 	d.getElementById('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels;
 	var e = d.querySelectorAll('.tab-label');
-	for (var i=0; i<e.length; i++)
-		e[i].style.display = l ? "block":"none";
+	for (var i=0; i<e.length; i++) e[i].style.display = l ? "block":"none";
 	e = d.querySelector('.hd');
 	e.style.display = l ? "block":"none";
 	sCol('--tbp',l ? "14px 14px 10px 14px":"10px 22px 4px 22px");
@@ -151,7 +141,8 @@ function cTheme(light) {
 	}
 }
 
-function loadBg(iUrl) {
+function loadBg(iUrl)
+{
 	let bg = document.getElementById('bg');
 	let img = document.createElement("img");
 	img.src = iUrl;
@@ -168,7 +159,8 @@ function loadBg(iUrl) {
 	});
 }
 
-function onLoad() {
+function onLoad()
+{
 	if (window.location.protocol == "file:") {
 		loc = true;
 		locip = localStorage.getItem('locIp');
@@ -187,9 +179,7 @@ function onLoad() {
 	loadBg(cfg.theme.bg.url);
 
 	var cd = d.getElementById('csl').children;
-	for (var i = 0; i < cd.length; i++) {
-		cd[i].style.backgroundColor = "rgb(0, 0, 0)";
-	}
+	for (var i = 0; i < cd.length; i++) cd[i].style.backgroundColor = "rgb(0, 0, 0)";
 	selectSlot(0);
 	updateTablinks(0);
 	resetUtil();
@@ -225,14 +215,13 @@ function onLoad() {
 function updateTablinks(tabI)
 {
 	var tablinks = d.getElementsByClassName("tablinks");
-	for (var i of tablinks) {
-		i.className = i.className.replace(" active", "");
-	}
+	for (var i of tablinks) i.className = i.className.replace(" active", "");
 	if (pcMode) return;
 	tablinks[tabI].className += " active";
 }
 
-function openTab(tabI, force = false) {
+function openTab(tabI, force = false)
+{
 	if (pcMode && !force) return;
 	iSlide = tabI;
 	_C.classList.toggle('smooth', false);
@@ -241,7 +230,8 @@ function openTab(tabI, force = false) {
 }
 
 var timeout;
-function showToast(text, error = false) {
+function showToast(text, error = false)
+{
 	if (error) d.getElementById('connind').style.backgroundColor = "#831";
 	var x = d.getElementById("toast");
 	x.innerHTML = text;
@@ -252,12 +242,8 @@ function showToast(text, error = false) {
 	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 }
 
-function showErrorToast() {
-	showToast('Connection to light failed!', true);
-}
-function clearErrorToast() {
-	d.getElementById("toast").className = d.getElementById("toast").className.replace("error", "");
-}
+function showErrorToast() {showToast('Connection to light failed!', true);}
+function clearErrorToast() {d.getElementById("toast").className = d.getElementById("toast").className.replace("error", "");}
 
 function getRuntimeStr(rt)
 {
@@ -274,37 +260,38 @@ function getRuntimeStr(rt)
 	return str;
 }
 
-function inforow(key, val, unit = "") {
+function inforow(key, val, unit = "")
+{
 	return `<tr><td class="keytd">${key}</td><td class="valtd">${val}${unit}</td></tr>`;
 }
 
-function getLowestUnusedP() {
+function getLowestUnusedP()
+{
 	var l = 1;
-	for (var key in pJson)
-	{
-		if (key == l) l++;
-	}
+	for (var key in pJson) if (key == l) l++;
 	if (l > 250) l = 250;
 	return l;
 }
 
-function checkUsed(i) {
+function checkUsed(i)
+{
 	var id = d.getElementById(`p${i}id`).value;
-	if (pJson[id] && (i == 0 || id != i)) {
+	if (pJson[id] && (i == 0 || id != i))
 		d.getElementById(`p${i}warn`).innerHTML = `&#9888; Overwriting ${pName(id)}!`;
-	} else {
+	else
 		d.getElementById(`p${i}warn`).innerHTML = "";
-	}
 }
 
-function pName(i) {
+function pName(i)
+{
 	if (!pJson || !pJson[i]) return "";
 	var n = "Preset " + i;
 	if (pJson[i].n) n = pJson[i].n;
 	return n;
 }
 
-function papiVal(i) {
+function papiVal(i)
+{
 	if (!pJson || !pJson[i]) return "";
 	var o = Object.assign({},pJson[i]);
 	if (o.win) return o.win;
@@ -312,12 +299,14 @@ function papiVal(i) {
 	return JSON.stringify(o);
 }
 
-function qlName(i) {
+function qlName(i)
+{
 	if (!pJson || !pJson[i] || !pJson[i].ql) return "";
 	return pJson[i].ql;
 }
 
-function cpBck() {
+function cpBck()
+{
 	var copyText = d.getElementById("bck");
 
 	copyText.select();
@@ -334,9 +323,8 @@ function presetError(empty)
 	try {
 		bckstr = localStorage.getItem("wledP");
 		if (bckstr.length > 10) hasBackup = true;
-	} catch (e) {
+	} catch (e) {}
 
-	}
 	var cn = `<div class="seg c">`;
 	if (empty)
 		cn += `You have no presets yet!`;
@@ -360,110 +348,79 @@ function presetError(empty)
 
 function loadPresets(callback = null)
 {
-	var url = '/presets.json';
-	if (loc) {
-		url = `http://${locip}/presets.json`;
-	}
+	var url = (loc?`http://${locip}`:'') + '/presets.json';
 
-	fetch
-	(url, {
+	fetch(url, {
 		method: 'get'
 	})
 	.then(res => {
-		if (!res.ok) {
-			 showErrorToast();
-		}
+		if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
 		pJson = json;
 		populatePresets();
-		if (callback) {
-			callback();
-		}
+		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
 		presetError(false);
-		if (callback) {
-			callback();
-		}
+		if (callback) callback();
 	});
 }
 
 function loadPalettes(callback = null)
 {
-	var url = '/json/palettes';
-	if (loc) {
-		url = `http://${locip}/json/palettes`;
-	}
+	var url = (loc?`http://${locip}`:'') + '/json/palettes';
 
-	fetch
-	(url, {
+	fetch(url, {
 		method: 'get'
 	})
 	.then(res => {
-		if (!res.ok) {
-			 showErrorToast();
-		}
+		if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
 		lJson = Object.entries(json);
 		populatePalettes();
 		updateUI();
-		if (callback) {
-			callback();
-		}
+		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
 		presetError(false);
-		if (callback) {
-			callback();
-		}
+		if (callback) callback();
 	});
 }
 
 function loadFX(callback = null)
 {
-	var url = '/json/effects';
-	if (loc) {
-		url = `http://${locip}/json/effects`;
-	}
+	var url = (loc?`http://${locip}`:'') + '/json/effects';
 
-	fetch
-	(url, {
+	fetch(url, {
 		method: 'get'
 	})
 	.then(res => {
-		if (!res.ok) {
-			 showErrorToast();
-		}
+		if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
 		eJson = Object.entries(json);
 		populateEffects();
 		updateUI();
-		if (callback) {
-			callback();
-		}
+		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
 		presetError(false);
-		if (callback) {
-			callback();
-		}
+		if (callback) callback();
 	});
 }
 
 var pQL = [];
-
 function populateQL()
 {
 	var cn = "";
@@ -522,11 +479,11 @@ function populatePresets(fromls)
 			pJson["0"] = {};
 			localStorage.setItem("wledP", JSON.stringify(pJson));
 		}
-    pmtLS = pmt;
-    for (var a = 0; a < is.length; a++) {
-      let i = is[a];
-      if (expanded[i+100]) expand(i+100, true);
-    }
+		pmtLS = pmt;
+		for (var a = 0; a < is.length; a++) {
+			let i = is[a];
+			if (expanded[i+100]) expand(i+100, true);
+		}
 	} else { presetError(true); }
 	updatePA();
 	populateQL();
@@ -543,13 +500,11 @@ function populateInfo(i)
 	else if (pwr > 0) {pwr = 50 * Math.round(pwr/50); pwru = pwr + " mA";}
   	var urows="";
 	if (i.u) {
-		for (const [k, val] of Object.entries(i.u))
-		{
-			if (val[1]) {
-			urows += inforow(k,val[0],val[1]);
-			} else {
-			urows += inforow(k,val);
-			}
+		for (const [k, val] of Object.entries(i.u)) {
+			if (val[1])
+				urows += inforow(k,val[0],val[1]);
+			else
+				urows += inforow(k,val);
 		}
 	}
 	var vcn = "Kuuhaku";
@@ -655,7 +610,8 @@ function populateSegments(s)
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
-function btype(b) {
+function btype(b)
+{
 	switch (b) {
 		case 2:
 		case 32: return "ESP32";
@@ -665,7 +621,8 @@ function btype(b) {
 	return "?";
 }
 
-function bname(o) {
+function bname(o)
+{
 	if (o.name=="WLED") return o.ip;
 	return o.name;
 }
@@ -697,14 +654,12 @@ function populateNodes(i,n)
   
 function loadNodes()
 {
-	var url = loc ? `http://${locip}/json/nodes` : '/json/nodes';
+	var url = (loc?`http://${locip}`:'') + '/json/nodes';
 	fetch(url, {
 		method: 'get'
 	})
 	.then(res => {
-		if (!res.ok) {
-			showToast('Could not load Node list!', true);
-		}
+		if (!res.ok) showToast('Could not load Node list!', true);
 		return res.json();
 	})
 	.then(json => {
@@ -722,9 +677,7 @@ function populateEffects()
 	var html = "";
 
 	effects.shift(); //remove solid
-	for (let i = 0; i < effects.length; i++) {
-		effects[i] = {id: effects[i][0], name:effects[i][1]};
-	}
+	for (let i = 0; i < effects.length; i++) effects[i] = {id: effects[i][0], name:effects[i][1]};
 	effects.sort((a,b) => (a.name).localeCompare(b.name));
 
 	effects.unshift({
@@ -790,15 +743,12 @@ function redrawPalPrev()
 
 function genPalPrevCss(id)
 {
-	if (!palettesData) {
-		return;
-	}
+	if (!palettesData) return;
+
 	var paletteData = palettesData[id];
 	var previewCss = "";
 
-	if (!paletteData) {
-		return 'display: none';
-	}
+	if (!paletteData) return 'display: none';
 
 	// We need at least two colors for a gradient
 	if (paletteData.length == 1) {
@@ -867,10 +817,10 @@ function updateTrail(e, slidercol)
 	progress = parseInt(progress);
 	var scol;
 	switch (slidercol) {
-	case 1: scol = "#f00"; break;
-	case 2: scol = "#0f0"; break;
-	case 3: scol = "#00f"; break;
-	default: scol = "var(--c-f)";
+		case 1: scol = "#f00"; break;
+		case 2: scol = "#0f0"; break;
+		case 3: scol = "#00f"; break;
+		default: scol = "var(--c-f)";
 	}
 	var val = `linear-gradient(90deg, ${scol} ${progress}%, var(--c-4) ${progress}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
@@ -952,17 +902,14 @@ function updateSelectedPalette(scrollto=false)
 {
 	var parent = d.getElementById('selectPalette');
 	var selPaletteInput = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
-	if (selPaletteInput) {
-		selPaletteInput.checked = true;
-	}
+	if (selPaletteInput) selPaletteInput.checked = true;
+
 	var selElement = parent.querySelector('.selected');
-	if (selElement) {
-		selElement.classList.remove('selected')
-	}
+	if (selElement) selElement.classList.remove('selected');
+
 	var selectedPalette = parent.querySelector(`.lstI[data-id="${selectedPal}"]`);
-	if (selectedPalette) {
-		parent.querySelector(`.lstI[data-id="${selectedPal}"]`).classList.add('selected');
-	}
+	if (selectedPalette) parent.querySelector(`.lstI[data-id="${selectedPal}"]`).classList.add('selected');
+
 /*
 	if (scrollto && selectedPalette) {
 		selectedPalette.scrollIntoView({
@@ -978,17 +925,13 @@ function updateSelectedFx(scrollto=false)
 	var parent = d.getElementById('fxlist');
 
 	var selEffectInput = parent.querySelector(`input[name="fx"][value="${selectedFx}"]`);
-	if (selEffectInput) {
-		selEffectInput.checked = true;
-	}
+	if (selEffectInput) selEffectInput.checked = true;
+
 	var selElement = parent.querySelector('.selected');
-	if (selElement) {
-		selElement.classList.remove('selected')
-	}
+	if (selElement) selElement.classList.remove('selected');
+
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
-	if (selectedEffect) {
-		selectedEffect.classList.add('selected');
-	}
+	if (selectedEffect) selectedEffect.classList.add('selected');
 	
 	if (scrollto && selectedEffect) {
 		selectedEffect.scrollIntoView({
@@ -1006,13 +949,15 @@ function displayRover(i,s)
 	d.getElementById('roverstar').style.display = (i.live && s.lor) ? "block":"none";
 }
 
-function cmpP(a, b) {
+function cmpP(a, b)
+{
 	if (!a[1].n) return (a[0] > b[0]);
-  return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
+	return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
 var jsonTimeout, refreshTimer;
-function requestJson(command, rinfo = true, verbose = true, callback = null) {
+function requestJson(command, rinfo = true, verbose = true, callback = null)
+{
 	d.getElementById('connind').style.backgroundColor = "#a90";
 	lastUpdate = new Date();
 	if (refreshTimer) clearTimeout(refreshTimer);
@@ -1022,10 +967,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 	var e1 = d.getElementById('fxlist');
 	var e2 = d.getElementById('selectPalette');
 
-	var url = rinfo ? '/json/si': (command ? '/json/state':'/json/si');
-	if (loc) {
-		url = `http://${locip}${url}`;
-	}
+	var url = (loc?`http://${locip}`:'') + (rinfo ? '/json/si': (command ? '/json/state':'/json/si'));
 
 	var type = command ? 'post':'get';
 	if (command)
@@ -1034,8 +976,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 		command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
 	}
-	fetch
-	(url, {
+	fetch(url, {
 		method: type,
 		headers: {
 			"Content-type": "application/json; charset=UTF-8"
@@ -1043,9 +984,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 		body: req
 	})
 	.then(res => {
-		if (!res.ok) {
-			showErrorToast();
-		}
+		if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
@@ -1053,13 +992,9 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 		jsonTimeout = null;
 		clearErrorToast();
 		d.getElementById('connind').style.backgroundColor = "#070";
-		if (!json) {
-			showToast('Empty response', true);
-		}
+		if (!json) showToast('Empty response', true);
 		if (json.success) {
-			if (callback) {
-				callback();
-			}
+			if (callback) callback();
 			return;
 		}
 		var s = json;
@@ -1073,15 +1008,10 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 			var info = json.info;
 			var name = info.name;
 			d.getElementById('namelabel').innerHTML = name;
-			if (name === "Dinnerbone") {
-				d.documentElement.style.transform = "rotate(180deg)";
-			}
-			if (info.live) {
-				name = "(Live) " + name;
-			}
-			if (loc) {
-				name = "(L) " + name;
-			}
+			if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+			if (info.live) name = "(Live) " + name;
+			if (loc) name = "(L) " + name;
+
 			d.title = name;
 			isRgbw = info.leds.wv;
 			ledCount = info.leds.count;
@@ -1144,77 +1074,62 @@ function requestJson(command, rinfo = true, verbose = true, callback = null) {
 		if (s.error && s.error != 0) {
       		var errstr = "";
       		switch (s.error) {
-				case 10:
-					errstr = "Could not mount filesystem!";
-					break;
-				case 11:
-					errstr = "Not enough space to save preset!";
-					break;
-				case 12:
-					errstr = "The requested preset does not exist.";
-					break;
-				case 19:
-					errstr = "A filesystem error has occured.";
-					break;
+				case 10: errstr = "Could not mount filesystem!"; break;
+				case 11: errstr = "Not enough space to save preset!"; break;
+				case 12: errstr = "The requested preset does not exist."; break;
+				case 19: errstr = "A filesystem error has occured."; break;
       		}
       		showToast('Error ' + s.error + ": " + errstr, true);
     	}
         updateUI(true);
-		if (callback) {
-			callback();
-		}
+		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
-		if (callback) {
-			callback();
-		}
+		if (callback) callback();
 	});
 }
 
-function togglePower() {
+function togglePower()
+{
 	isOn = !isOn;
 	var obj = {"on": isOn};
 	obj.transition = parseInt(d.getElementById('cyctt').value*10);
 	requestJson(obj);
 }
 
-function toggleNl() {
+function toggleNl()
+{
 	nlA = !nlA;
-	if (nlA)
-	{
-		showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlFade ? "over":"after"} ${nlDur} minutes.`);
-	} else {
-		showToast('Timer deactivated.');
-	}
+	if (nlA) showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlFade ? "over":"after"} ${nlDur} minutes.`);
+	else showToast('Timer deactivated.');
 	var obj = {"nl": {"on": nlA}};
 	requestJson(obj);
 }
 
-function toggleSync() {
+function toggleSync()
+{
 	syncSend = !syncSend;
-	if (syncSend)
-	{
-		showToast('Other lights in the network will now sync to this one.');
-	} else {
-		showToast('This light and other lights in the network will no longer sync.');
-	}
+	if (syncSend) showToast('Other lights in the network will now sync to this one.');
+	else showToast('This light and other lights in the network will no longer sync.');
 	var obj = {"udpn": {"send": syncSend}};
 	if (syncTglRecv) obj.udpn.recv = syncSend;
 	requestJson(obj);
 }
 
-function toggleLiveview() {
+function toggleLiveview()
+{
 	isLv = !isLv;
 	d.getElementById('liveview').style.display = (isLv) ? "block":"none";
-	var url = loc ? `http://${locip}/liveview`:"/liveview";
+	var url = (loc?`http://${locip}`:'') + "/liveview";
 	d.getElementById('liveview').src = (isLv) ? url:"about:blank";
 	d.getElementById('buttonSr').className = (isLv) ? "active":"";
 	size();
 }
 
-function toggleInfo() {
+function toggleInfo()
+{
 	if (isNodes) toggleNodes();
 	isInfo = !isInfo;
 	if (isInfo) populateInfo(lastinfo);
@@ -1222,7 +1137,8 @@ function toggleInfo() {
 	d.getElementById('buttonI').className = (isInfo) ? "active":"";
 }
 
-function toggleNodes() {
+function toggleNodes()
+{
 	if (isInfo) toggleInfo();
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
@@ -1230,7 +1146,8 @@ function toggleNodes() {
 	d.getElementById('buttonNodes').className = (isNodes) ? "active":"";
 }
 
-function makeSeg() {
+function makeSeg()
+{
 	var ns = 0;
 	if (lowestUnused > 0) {
 		var pend = d.getElementById(`seg${lowestUnused -1}e`).value;
@@ -1259,12 +1176,14 @@ function makeSeg() {
 	d.getElementById('segutil').innerHTML = cn;
 }
 
-function resetUtil() {
+function resetUtil()
+{
 	var cn = `<button class="btn btn-s btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>`;
 	d.getElementById('segutil').innerHTML = cn;
 }
 
-function makeP(i) {
+function makeP(i)
+{
 	return `<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/><br>
 <div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
 <div class="h">(leave empty for no Quick load button)</div>
@@ -1299,21 +1218,24 @@ function makeP(i) {
 ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 }
 
-function makePUtil() {
+function makePUtil()
+{
 	d.getElementById('putil').innerHTML = `<div class="seg pres">
-		<div class="segname newseg">
-			New preset</div>
-		<div class="segin expanded">
-		${makeP(0)}</div></div>`;
+<div class="segname newseg">
+	New preset</div>
+<div class="segin expanded">
+${makeP(0)}</div></div>`;
 	updateTrail(d.getElementById('p0p'));
 }
 
-function resetPUtil() {
+function resetPUtil()
+{
 	var cn = `<button class="btn btn-s btn-i" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>Create preset</button><br>`;
 	d.getElementById('putil').innerHTML = cn;
 }
 
-function tglCs(i){
+function tglCs(i)
+{
 	var pss = d.getElementById(`p${i}cstgl`).checked;
 	d.getElementById(`p${i}o1`).style.display = pss? "block" : "none";
 	d.getElementById(`p${i}o2`).style.display = !pss? "block" : "none";
@@ -1322,19 +1244,19 @@ function tglCs(i){
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
-	for (let i=0; i<=lSeg; i++){
-		obj.seg.push({"sel":(i==s)?true:false});
-	}
+	for (let i=0; i<=lSeg; i++) obj.seg.push({"sel":(i==s)?true:false});
 	requestJson(obj);
 }
 
-function selSeg(s){
+function selSeg(s)
+{
 	var sel = d.getElementById(`seg${s}sel`).checked;
 	var obj = {"seg": {"id": s, "sel": sel}};
 	requestJson(obj, false);
 }
 
-function setSeg(s){
+function setSeg(s)
+{
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
 	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
 	if (stop <= start) {delSeg(s); return;}
@@ -1349,7 +1271,8 @@ function setSeg(s){
 	requestJson(obj);
 }
 
-function delSeg(s){
+function delSeg(s)
+{
 	if (segCount < 2) {
 		showToast("You need to have multiple segments to delete one!");
 		return;
@@ -1360,38 +1283,42 @@ function delSeg(s){
 	requestJson(obj, false);
 }
 
-function setRev(s){
+function setRev(s)
+{
 	var rev = d.getElementById(`seg${s}rev`).checked;
 	var obj = {"seg": {"id": s, "rev": rev}};
 	requestJson(obj, false);
 }
 
-function setMi(s){
+function setMi(s)
+{
 	var mi = d.getElementById(`seg${s}mi`).checked;
 	var obj = {"seg": {"id": s, "mi": mi}};
 	requestJson(obj, false);
 }
 
-function setSegPwr(s){
+function setSegPwr(s)
+{
 	var obj = {"seg": {"id": s, "on": !powered[s]}};
 	requestJson(obj);
 }
 
-function setSegBri(s){
+function setSegBri(s)
+{
 	var obj = {"seg": {"id": s, "bri": parseInt(d.getElementById(`seg${s}bri`).value)}};
 	requestJson(obj);
 }
 
-function setX(ind = null) {
+function setX(ind = null)
+{
 	if (ind === null) {
 		ind = parseInt(d.querySelector('#fxlist input[name="fx"]:checked').value);
 	} else {
 		d.querySelector(`#fxlist input[name="fx"][value="${ind}"]`).checked = true;
 	}
 	var selElement = d.querySelector('#fxlist .selected');
-	if (selElement) {
-		selElement.classList.remove('selected')
-	}
+	if (selElement) selElement.classList.remove('selected');
+
 	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
 
 	var obj = {"seg": {"fx": parseInt(ind)}};
@@ -1406,36 +1333,40 @@ function setPalette(paletteId = null)
 		d.querySelector(`#selectPalette input[name="palette"][value="${paletteId}`).checked = true;
 	}
 	var selElement = d.querySelector('#selectPalette .selected');
-	if (selElement) {
-		selElement.classList.remove('selected')
-	}
+	if (selElement) selElement.classList.remove('selected');
+
 	d.querySelector(`#selectPalette .lstI[data-id="${paletteId}"]`).classList.add('selected');
 	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj);
 }
 
-function setBri() {
+function setBri()
+{
 	var obj = {"bri": parseInt(d.getElementById('sliderBri').value)};
 	obj.transition = parseInt(d.getElementById('cyctt').value*10);
 	requestJson(obj);
 }
 
-function setSpeed() {
+function setSpeed()
+{
 	var obj = {"seg": {"sx": parseInt(d.getElementById('sliderSpeed').value)}};
 	requestJson(obj, false);
 }
 
-function setIntensity() {
+function setIntensity()
+{
 	var obj = {"seg": {"ix": parseInt(d.getElementById('sliderIntensity').value)}};
 	requestJson(obj, false);
 }
 
-function setLor(i) {
+function setLor(i)
+{
 	var obj = {"lor": i};
 	requestJson(obj);
 }
 
-function toggleCY() {
+function toggleCY()
+{
 	var obj = {"pl" : -1};
 	if (d.getElementById('cyToggle').checked)
 	{
@@ -1446,13 +1377,15 @@ function toggleCY() {
 	requestJson(obj);
 }
 
-function setPreset(i) {
+function setPreset(i)
+{
 	var obj = {"ps": i};
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
 	requestJson(obj);
 }
 
-function saveP(i) {
+function saveP(i)
+{
 	pI = parseInt(d.getElementById(`p${i}id`).value);
 	if (!pI || pI < 1) pI = (i>0) ? i : getLowestUnusedP();
 	pN = d.getElementById(`p${i}txt`).value;
@@ -1501,14 +1434,16 @@ function saveP(i) {
 	resetPUtil();
 }
 
-function delP(i) {
+function delP(i)
+{
 	var obj = {"pdel": i};
 	requestJson(obj);
 	delete pJson[i];
 	populatePresets();
 }
 
-function selectSlot(b) {
+function selectSlot(b)
+{
 	csel = b;
 	var cd = d.getElementById('csl').children;
 	for (let i = 0; i < cd.length; i++) {
@@ -1530,14 +1465,13 @@ function selectSlot(b) {
 var lasth = 0;
 function pC(col)
 {
-	if (col == "rnd")
-	{
-	col = {h: 0, s: 0, v: 100};
-	col.s = Math.floor((Math.random() * 50) + 50);
-	do {
-		col.h = Math.floor(Math.random() * 360);
-	} while (Math.abs(col.h - lasth) < 50);
-	lasth = col.h;
+	if (col == "rnd") {
+		col = {h: 0, s: 0, v: 100};
+		col.s = Math.floor((Math.random() * 50) + 50);
+		do {
+			col.h = Math.floor(Math.random() * 360);
+		} while (Math.abs(col.h - lasth) < 50);
+		lasth = col.h;
 	}
 	cpick.color.set(col);
 	setColor(0);
@@ -1564,7 +1498,8 @@ function updateHex()
 	d.getElementById('hexcnf').style.backgroundColor = "var(--c-3)";
 }
 
-function hexEnter() {
+function hexEnter()
+{
 	d.getElementById('hexcnf').style.backgroundColor = "var(--c-6)";
 	if(event.keyCode == 13) fromHex();
 }
@@ -1591,7 +1526,8 @@ function fromRgb()
 	setColor(0);
 }
 
-function setColor(sr) {
+function setColor(sr)
+{
 	var cd = d.getElementById('csl').children;
 	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') cpick.color.setChannel('hsv', 'v', 100);
 	cd[csel].style.backgroundColor = cpick.color.rgbString;
@@ -1613,20 +1549,16 @@ var hc = 0;
 setInterval(function(){if (!isInfo) return; hc+=18; if (hc>300) hc=0; if (hc>200)hc=306; if (hc==144) hc+=36; if (hc==108) hc+=18;
 d.getElementById('heart').style.color = `hsl(${hc}, 100%, 50%)`;}, 910);
 
-function openGH()
-{
-	window.open("https://github.com/Aircoookie/WLED/wiki");
-}
+function openGH() { window.open("https://github.com/Aircoookie/WLED/wiki"); }
 
 var cnfr = false;
 function cnfReset()
 {
-	if (!cnfr)
-	{
+	if (!cnfr) {
 		var bt = d.getElementById('resetbtn');
-	bt.style.color = "#f00";
-	bt.innerHTML = "Confirm Reboot";
-	cnfr = true; return;
+		bt.style.color = "#f00";
+		bt.innerHTML = "Confirm Reboot";
+		cnfr = true; return;
 	}
 	window.location.href = "/reset";
 }
@@ -1635,19 +1567,16 @@ var cnfrS = false;
 function rSegs()
 {
 	var bt = d.getElementById('rsbtn');
-	if (!cnfrS)
-	{
-	bt.style.color = "#f00";
-	bt.innerHTML = "Confirm reset";
-	cnfrS = true; return;
+	if (!cnfrS) {
+		bt.style.color = "#f00";
+		bt.innerHTML = "Confirm reset";
+		cnfrS = true; return;
 	}
 	cnfrS = false;
 	bt.style.color = "#fff";
 	bt.innerHTML = "Reset segments";
 	var obj = {"seg":[{"start":0,"stop":ledCount,"sel":true}]};
-	for (let i=1; i<=lSeg; i++){
-		obj.seg.push({"stop":0});
-	}
+	for (let i=1; i<=lSeg; i++) obj.seg.push({"stop":0});
 	requestJson(obj);
 }
 
@@ -1666,7 +1595,8 @@ function loadPalettesData()
 	});
 }
 
-function getPalettesDataCached() {
+function getPalettesDataCached()
+{
 	var palDataJson = localStorage.getItem(lsPalKey);
 	if (palDataJson) {
 		try {
@@ -1679,14 +1609,12 @@ function getPalettesDataCached() {
 			}
 		} catch (e) {}
 	}
-
 	return false;
 }
 
 function getPalettesData(page, callback)
 {
-	var url = `/json/palx?page=${page}`;
-	if (loc) url = `http://${locip}${url}`;
+	var url = (loc?`http://${locip}`:'') + `/json/palx?page=${page}`;
 
 	fetch(url, {
 		method: 'get',
@@ -1695,19 +1623,13 @@ function getPalettesData(page, callback)
 		}
 	})
 	.then(res => {
-		if (!res.ok) {
-			showErrorToast();
-		}
+		if (!res.ok) showErrorToast();
 		return res.json();
 	})
 	.then(json => {
 		palettesData = Object.assign({}, palettesData, json.p);
-		if (page < json.m) {
-			setTimeout(function() { getPalettesData(page + 1, callback); }, 100);
-			
-		} else {
-			callback();
-		}
+		if (page < json.m) setTimeout(function() { getPalettesData(page + 1, callback); }, 100);
+		else callback();
 	})
 	.catch(function(error) {
 		showToast(error, true);
@@ -1716,7 +1638,8 @@ function getPalettesData(page, callback)
 	});
 }
 
-function search(f,l=null) {
+function search(f,l=null)
+{
 	f.nextElementSibling.style.display=(f.value!=='')?'block':'none'; 
 	if (!l) return;
 	var el = d.getElementById(l).querySelectorAll('.lstI');
@@ -1727,7 +1650,8 @@ function search(f,l=null) {
 	}
 }
 
-function clean(c) {
+function clean(c)
+{
 	c.style.display='none';
 	var i=c.previousElementSibling;
 	i.value='';
@@ -1759,7 +1683,8 @@ function expand(i,a)
 	});
 }
 
-function unfocusSliders() {
+function unfocusSliders()
+{
 	d.getElementById("sliderBri").blur();
 	d.getElementById("sliderSpeed").blur();
 	d.getElementById("sliderIntensity").blur();
@@ -1772,17 +1697,17 @@ let iSlide = 0, x0 = null, scrollS = 0, locked = false, w;
 
 function unify(e) {	return e.changedTouches ? e.changedTouches[0] : e; }
 
-function hasIroClass(classList) {
+function hasIroClass(classList)
+{
 	for (var i = 0; i < classList.length; i++) {
 		var element = classList[i];
 		if (element.startsWith('Iro')) return true;
 	}
-
 	return false;
 }
 
-
-function lock(e) {
+function lock(e)
+{
 	if (pcMode) return;
 	var l = e.target.classList;
 	var pl = e.target.parentElement.classList;
@@ -1795,17 +1720,19 @@ function lock(e) {
 	_C.classList.toggle('smooth', !(locked = true));
 }
 
-function move(e) {
+function move(e)
+{
 	if(!locked || pcMode) return;
 	var clientX = unify(e).clientX;
 	var dx = clientX - x0;
 	var s = Math.sign(dx);
 	var f = +(s*dx/w).toFixed(2);
 
-  if((clientX != 0) &&
-	 (iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
-     f > 0.12 &&
-     d.getElementsByClassName("tabcontent")[iSlide].scrollTop == scrollS) {
+	if((clientX != 0) &&
+		(iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
+		f > 0.12 &&
+		d.getElementsByClassName("tabcontent")[iSlide].scrollTop == scrollS)
+	{
 		_C.style.setProperty('--i', iSlide -= s);
 		f = 1 - f;
 		updateTablinks(iSlide);
@@ -1815,7 +1742,8 @@ function move(e) {
 	x0 = null;
 }
 
-function size() {
+function size()
+{
 	w = window.innerWidth;
 	d.getElementById('buttonNodes').style.display = (lastinfo.ndc > 0 && w > 770) ? "block":"none";
 	var h = d.getElementById('top').clientHeight;
@@ -1847,11 +1775,13 @@ function togglePcMode(fromB = false)
 	lastw = w;
 }
 
-function isObject(item) {
+function isObject(item)
+{
 	return (item && typeof item === 'object' && !Array.isArray(item));
 }
 
-function mergeDeep(target, ...sources) {
+function mergeDeep(target, ...sources)
+{
 	if (!sources.length) return target;
 	const source = sources.shift();
 
