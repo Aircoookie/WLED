@@ -616,10 +616,10 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         setPaletteColors(curPalette, PartyColors_p); 
         break;
       case 1: //random
-          curPalette.add(F("r"));
-          curPalette.add(F("r"));
-          curPalette.add(F("r"));
-          curPalette.add(F("r"));
+          curPalette.add("r");
+          curPalette.add("r");
+          curPalette.add("r");
+          curPalette.add("r");
         break;
       case 2: //primary color only
         curPalette.add(F("c1"));

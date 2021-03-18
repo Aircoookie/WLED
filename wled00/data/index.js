@@ -206,7 +206,6 @@ function onLoad() {
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
-	loadPalettesData();
 }
 
 function updateTablinks(tabI)
@@ -979,6 +978,8 @@ function requestJson(command, rinfo = true, verbose = true) {
 			}
 			s = json.state;
 			displayRover(info, s);
+
+      if (!rinfo) loadPalettesData();
 		}
 
 		isOn = s.on;
@@ -1557,27 +1558,25 @@ function rSegs()
 
 function loadPalettesData()
 {
-	if (palettesData) {
-		return;
-	}
+	if (palettesData) return;
 	const lsKey = "wledPalx";
 	var palettesDataJson = localStorage.getItem(lsKey);
 	if (palettesDataJson) {
 		try {
 			palettesDataJson = JSON.parse(palettesDataJson);
 			var d = new Date();
-			if (palettesDataJson && palettesDataJson.expiration && palettesDataJson.expiration > d.getTime()) {
+			if (palettesDataJson && palettesDataJson.vid == lastinfo.vid) {
 				palettesData = palettesDataJson.p;
 				return;
 			}
 		} catch (e) {}
 	}
-	var dateExpiration = new Date();
+
 	palettesData = {};
-	getPalettesData(1, function() {
+	getPalettesData(0, function() {
 		localStorage.setItem(lsKey, JSON.stringify({
 			p: palettesData,
-			expiration: dateExpiration.getTime() + (24 * 60 * 60 * 1000) // 24 hrs expiration
+			vid: lastinfo.vid
 		}));
 		redrawPalPrev();
 	});
