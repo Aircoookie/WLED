@@ -1,10 +1,9 @@
 /*
  * Realtime Smoothing with Active Interval Control.  J.D. Smith, 2021
- * Smooths playback intervals of (single or multi-packet) UDP realtime frames
+ * Smooths playback intervals of single or multi-packet UDP realtime frames
  */
-
 #ifndef RTS_N_FRAME  //Number of buffered frames to store
-#define RTS_N_FRAME 5  // (which can come from multiple packets)
+#define RTS_N_FRAME 5  // (which can be multi-packet)
 #endif
 
 #ifdef RTS_MAX_SIZE  // Max packet size, larger will be silently dropped
@@ -173,7 +172,7 @@ bool RealtimeSmooth::add(uint8_t *udpIn, uint16_t len, uint32_t now, bool re_add
   
   if (udpIn[0] == 4 || udpIn[0] == 5) {  // DN flavors
     start_index = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
-    if (start_index < min_index) min_index = start_index;
+    if (start_index < min_index) min_index = start_index; // watch for minimum index
   }
   
   if(!re_adding) {

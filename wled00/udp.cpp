@@ -230,7 +230,7 @@ void handleNotifications()
       if (!receiveDirect) return;
       if (packetSize > UDP_IN_MAXSIZE || packetSize < 3) return;
       realtimeIP = rgbUdp.remoteIP();
-      DEBUG_PRINTLN(rgbUdp.remoteIP());
+      //DEBUG_PRINTLN(rgbUdp.remoteIP());
       uint8_t lbuf[packetSize];
       rgbUdp.read(lbuf, packetSize);
       realtimeLock(realtimeTimeoutMs, REALTIME_MODE_HYPERION);
@@ -288,7 +288,6 @@ void handleNotifications()
 	    strip.show();
 	    rts.add(udpIn, packetSize, now, true); // try again
 	  }
-	  //DEBUG_PRINTF("addPacket+overflow took %u ms\n", millis() - now2);
 #else // If not RealtimeSmoothing, just display each packet immediately
 	  setRealtime(udpIn,packetSize); // Show realtime packet immediately
 	  strip.show();
@@ -340,7 +339,7 @@ void handleNotifications()
     return;
   }
   
-  //wled notifier, ignore if realtime packets active
+  //WLED Notifier: ignore if realtime packets active
   if (udpIn[0] == 0 && !realtimeMode && receiveNotifications)
   {
     //ignore notification if received within a second after sending a notification ourselves
