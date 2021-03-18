@@ -302,7 +302,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('v',SET_F("LC"),ledCount);
 
-    for (uint8_t s=0; s < busses.getNumBusses(); s++){
+    for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length

@@ -190,7 +190,7 @@
 // maximum number of LEDs - more than 1500 LEDs (or 500 DMA "LEDPIN 3" driven ones) will cause a low memory condition on ESP8266
 #ifndef MAX_LEDS
 #ifdef ESP8266
-#define MAX_LEDS 8192 //rely on memory limit to limit this to 1600 LEDs
+#define MAX_LEDS 1664 // can't rely on memory limit to limit this to 1600 LEDs
 #else
 #define MAX_LEDS 8192
 #endif
@@ -205,7 +205,7 @@
 #endif
 
 #ifndef MAX_LEDS_PER_BUS
-#define MAX_LEDS_PER_BUS 4096
+#define MAX_LEDS_PER_BUS 2048   // may not be enough for fast LEDs (i.e. APA102)
 #endif
 
 // string temp buffer (now stored in stack locally)
@@ -228,7 +228,7 @@
 
 // Size of buffer for API JSON object (increase for more segments)
 #ifdef ESP8266
-  #define JSON_BUFFER_SIZE 10240
+  #define JSON_BUFFER_SIZE 9120
 #else
   #define JSON_BUFFER_SIZE 16384
 #endif

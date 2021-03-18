@@ -247,7 +247,7 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
 
 void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
 {
-  response->addHeader(F("Cache-Control"),"max-age=2592000");
+  response->addHeader(F("Cache-Control"),"max-age=86400"); // max 1 day for caching
   response->addHeader(F("ETag"), String(VERSION));
 }
 

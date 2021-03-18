@@ -64,7 +64,7 @@
 #else
   #define MAX_NUM_SEGMENTS    18
   #define MAX_NUM_TRANSITIONS 18
-  #define MAX_SEGMENT_DATA  16384
+  #define MAX_SEGMENT_DATA  20480
 #endif
 
 #define LED_SKIP_AMOUNT  1
