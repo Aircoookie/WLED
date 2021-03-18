@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2103060
+#define VERSION 2103130
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -117,6 +117,7 @@
 #include "FX.h"
 #include "ir_codes.h"
 #include "const.h"
+#include "NodeStruct.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
 
@@ -257,6 +258,10 @@ WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
 
 // Sync CONFIG
+WLED_GLOBAL NodesMap Nodes;
+WLED_GLOBAL bool nodeListEnabled _INIT(true);
+WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
+
 WLED_GLOBAL bool buttonEnabled  _INIT(true);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 

@@ -231,9 +231,24 @@
   #define JSON_BUFFER_SIZE 16384
 #endif
 
+// Maximum size of node map (list of other WLED instances)
+#ifdef ESP8266
+  #define WLED_MAX_NODES 15
+#else
+  #define WLED_MAX_NODES 150
+#endif
+
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
 #define LEDPIN 2
+#endif
+
+#ifdef WLED_ENABLE_DMX
+#if (LEDPIN == 2)
+  #undef LEDPIN
+  #define LEDPIN 3
+  #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 3."
+#endif
 #endif
 
 #endif

@@ -149,6 +149,7 @@ void _overlayCronixie();
 void _drawOverlayCronixie();
 
 //playlist.cpp
+void unloadPlaylist();
 void loadPlaylist(JsonObject playlistObject);
 void handlePlaylist();
 
@@ -171,6 +172,8 @@ void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void handleNotifications();
 void setRealtime(uint8_t* udpIn, uint16_t packetSize);
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
+void refreshNodeList();
+void sendSysInfoUDP();
 
 //um_manager.cpp
 class Usermod {
