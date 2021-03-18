@@ -166,6 +166,14 @@ button {
 	color: var(--c-d);
 }
 
+.search-cancel-icon {
+  position: absolute;
+  right: 8px;
+  top: 9px;
+  cursor: pointer;
+  display: none;
+}
+
 .flr {
 	float: right;
 	cursor: pointer;
@@ -901,6 +909,7 @@ input[type=number]::-webkit-outer-spin-button {
 	transition: background-color 0.5s;
   margin: auto auto 10px;
   padding-bottom: 10px;
+  width: 230px;
 }
 
 .lstI {

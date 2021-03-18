@@ -570,7 +570,8 @@ function populateSegments(s)
 
 function populateEffects(effects)
 {
-	var html = `<input type="text" class="search" placeholder="Search" oninput="search(this)" />`;
+	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
+    <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
 
 	effects.shift(); //remove solid
 	for (let i = 0; i < effects.length; i++) {
@@ -615,10 +616,11 @@ function populatePalettes(palettes)
 		"class": "sticky"
 	});
 	
-	var paletteHtml = `<input type="text" class="search" placeholder="Search" oninput="search(this)" />`;
+	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
+  <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
 	for (let i = 0; i < palettes.length; i++) {
 		let previewCss = genPalPrevCss(palettes[i].id);
-		paletteHtml += generateListItemHtml(
+		html += generateListItemHtml(
 			'palette',
 		    palettes[i].id,
             palettes[i].name,
@@ -628,7 +630,7 @@ function populatePalettes(palettes)
         );
 	}
 
-	d.getElementById('selectPalette').innerHTML=paletteHtml;
+	d.getElementById('selectPalette').innerHTML=html;
 }
 
 function redrawPalPrev()
@@ -1617,7 +1619,8 @@ function getPalettesData(page, callback)
 
 function search(searchField) {
 	var searchText = searchField.value.toUpperCase();
-	var elements = searchField.parentElement.querySelectorAll('.lstI');
+  searchField.parentElement.getElementsByClassName('search-cancel-icon')[0].style.display = (searchText.length < 1)?"none":"inline";
+	var elements = searchField.parentElement.parentElement.querySelectorAll('.lstI');
 	for (i = 0; i < elements.length; i++) {
 		var item = elements[i];
 		var itemText = item.querySelector('.lstIname').innerText.toUpperCase();
@@ -1627,6 +1630,13 @@ function search(searchField) {
 			item.style.display = "none";
 		}
 	}
+}
+
+function cancelSearch(ic) {
+  var searchField = ic.parentElement.getElementsByClassName('search')[0];
+  searchField.value = "";
+  search(searchField);
+  searchField.focus();
 }
 
 function expand(i,a)
