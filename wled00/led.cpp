@@ -30,6 +30,7 @@ void toggleOnOff()
   {
     briLast = bri;
     bri = 0;
+    unloadPlaylist();
   }
 }
 

@@ -1,8 +1,5 @@
+#include "pin_manager.h"
 #include "wled.h"
-
-/*
- * Registers pins so there is no attempt for two interfaces to use the same pin
- */
 
 void PinManagerClass::deallocatePin(byte gpio)
 {
@@ -52,3 +49,43 @@ bool PinManagerClass::isPinOk(byte gpio, bool output)
   
   return false;
 }
+
+#ifdef ARDUINO_ARCH_ESP32
+byte PinManagerClass::allocateLedc(byte channels)
+{
+  if (channels > 16 || channels == 0) return 255;
+  byte ca = 0;
+  for (byte i = 0; i < 16; i++) {
+    byte by = i >> 3;
+    byte bi = i - 8*by;
+    if (bitRead(ledcAlloc[by], bi)) { //found occupied pin
+      ca = 0;
+    } else {
+      ca++;
+    }
+    if (ca >= channels) { //enough free channels
+      byte in = (i + 1) - ca;
+      for (byte j = 0; j < ca; j++) {
+        byte b = in + j;
+        byte by = b >> 3;
+        byte bi = b - 8*by;
+        bitWrite(ledcAlloc[by], bi, true);
+      }
+      return in;
+    }
+  }
+  return 255; //not enough consecutive free LEDC channels
+}
+
+void PinManagerClass::deallocateLedc(byte pos, byte channels)
+{
+  for (byte j = pos; j < pos + channels; j++) {
+    if (j > 16) return;
+    byte by = j >> 3;
+    byte bi = j - 8*by;
+    bitWrite(ledcAlloc[by], bi, false);
+  }
+}
+#endif
+
+PinManagerClass pinManager = PinManagerClass();

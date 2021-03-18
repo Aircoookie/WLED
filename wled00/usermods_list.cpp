@@ -13,7 +13,9 @@
 #ifdef USERMOD_DALLASTEMPERATURE
 #include "../usermods/Temperature/usermod_temperature.h"
 #endif
+
 //#include "usermod_v2_empty.h"
+
 #ifdef USERMOD_BUZZER
 #include "../usermods/buzzer/usermod_v2_buzzer.h"
 #endif
@@ -21,6 +23,14 @@
 #include "usermod_v2_SensorsToMqtt.h"
 #endif
 
+#ifdef USERMOD_MODE_SORT
+#include "../usermods/usermod_v2_mode_sort/usermod_v2_mode_sort.h"
+#endif
+
+// BME280 v2 usermod. Define "USERMOD_BME280" in my_config.h
+#ifdef USERMOD_BME280
+#include "../usermods/BME280_v2/usermod_bme280.h"
+#endif
 #ifdef USERMOD_FOUR_LINE_DISLAY
 #include "../usermods/usermod_v2_four_line_display/usermod_v2_four_line_display.h"
 #endif
@@ -42,16 +52,27 @@ void registerUsermods()
    * || || ||
    * \/ \/ \/
    */
-//usermods.add(new MyExampleUsermod());
-#ifdef USERMOD_DALLASTEMPERATURE
+  //usermods.add(new MyExampleUsermod());
+  
+  #ifdef USERMOD_DALLASTEMPERATURE
   usermods.add(new UsermodTemperature());
-#endif
-//usermods.add(new UsermodRenameMe());
-#ifdef USERMOD_BUZZER
+  #endif
+  
+  //usermods.add(new UsermodRenameMe());
+  
+  #ifdef USERMOD_BUZZER
   usermods.add(new BuzzerUsermod());
-#endif
+  #endif
+  
+  #ifdef USERMOD_BME280
+  usermods.add(new UsermodBME280());
+  #endif
 #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());
+#endif
+
+#ifdef USERMOD_MODE_SORT
+  usermods.add(new ModeSortUsermod());
 #endif
 #ifdef USERMOD_FOUR_LINE_DISLAY
   usermods.add(new FourLineDisplayUsermod());
@@ -62,6 +83,7 @@ void registerUsermods()
 #ifdef USERMOD_AUTO_SAVE
   usermods.add(new AutoSaveUsermod());
 #endif
+
 #ifdef USERMOD_DHT
 usermods.add(new UsermodDHT());
 #endif

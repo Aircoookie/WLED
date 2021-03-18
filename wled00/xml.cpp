@@ -220,7 +220,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("WS"),noWifiSleep);
 
     #ifdef WLED_USE_ETHERNET
-    sappend('i',SET_F("ETH"),ethernetType);
+    sappend('v',SET_F("ETH"),ethernetType);
     #else
     //hide ethernet setting if not compiled in
     oappend(SET_F("document.getElementById('ethd').style.display='none';"));
@@ -254,27 +254,72 @@ void getSettingsJS(byte subPage, char* dest)
   }
 
   if (subPage == 2) {
-    #ifdef ESP8266
-    #if LEDPIN == 3
-    oappend(SET_F("d.Sf.LC.max=500;"));
-    #else
-    oappend(SET_F("d.Sf.LC.max=1500;"));
-    #endif
-    #endif
+    char nS[8];
+
+    // add usermod pins as d.um_p array (TODO: usermod config shouldn't use state. instead we should load "um" object from cfg.json)
+    /*DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+    JsonObject mods = doc.createNestedObject(F("mods"));
+    usermods.addToJsonState(mods);
+    if (!mods.isNull()) {
+      uint8_t i=0;
+      oappend(SET_F("d.um_p=["));
+      for (JsonPair kv : mods) {
+        if (strncmp_P(kv.key().c_str(),PSTR("pin_"),4) == 0) {
+          if (i++) oappend(SET_F(","));
+          oappend(itoa((int)kv.value(),nS,10));
+        }
+      }
+      oappend(SET_F("];"));
+    }*/
+
+    oappend(SET_F("bLimits("));
+    oappend(itoa(WLED_MAX_BUSSES,nS,10));
+    oappend(",");
+    oappend(itoa(MAX_LEDS_PER_BUS,nS,10));
+    oappend(",");
+    oappend(itoa(MAX_LED_MEMORY,nS,10));
+    oappend(SET_F(");"));
+
+    oappend(SET_F("d.Sf.LC.max=")); //TODO Formula for max LEDs on ESP8266 depending on types. 500 DMA or 1500 UART (about 4kB mem usage)
+    oappendi(MAX_LEDS);
+    oappend(";");
+
     sappend('v',SET_F("LC"),ledCount);
+
+    for (uint8_t s=0; s < busses.getNumBusses(); s++){
+      Bus* bus = busses.getBus(s);
+      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
+      oappend(SET_F("addLEDs(1);"));
+      uint8_t pins[5];
+      uint8_t nPins = bus->getPins(pins);
+      for (uint8_t i = 0; i < nPins; i++) {
+        lp[1] = 48+i;
+        if (pinManager.isPinOk(pins[i])) sappend('v', lp, pins[i]);
+      }
+      sappend('v', lc, bus->getLength());
+      sappend('v',lt,bus->getType());
+      sappend('v',co,bus->getColorOrder());
+      sappend('v',ls,bus->getStart());
+      sappend('c',cv,bus->reversed);
+    }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
     if (strip.currentMilliamps)
     {
-      sappends('m',SET_F("(\"pow\")[0]"),"");
+      sappends('m',SET_F("(\"pow\")[0]"),(char*)"");
       olen -= 2; //delete ";
       oappendi(strip.currentMilliamps);
       oappend(SET_F("mA\";"));
     }
 
     sappend('v',SET_F("CA"),briS);
-    sappend('c',SET_F("EW"),useRGBW);
-    sappend('i',SET_F("CO"),strip.getColorOrder());
+    //sappend('c',SET_F("EW"),useRGBW);
+    //sappend('i',SET_F("CO"),strip.getColorOrder());
     sappend('v',SET_F("AW"),strip.rgbwMode);
 
     sappend('c',SET_F("BO"),turnOnAtBoot);
@@ -292,6 +337,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("PB"),strip.paletteBlend);
     sappend('c',SET_F("RV"),strip.reverseMode);
     sappend('c',SET_F("SL"),skipFirstLed);
+    sappend('v',SET_F("RL"),rlyPin);
+    sappend('c',SET_F("RM"),rlyMde);
+    sappend('v',SET_F("BT"),btnPin);
+    sappend('v',SET_F("IR"),irPin);
+    sappend('v',SET_F("AX"),auxPin);
   }
 
   if (subPage == 3)
@@ -314,6 +364,10 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("SH"),notifyHue);
     sappend('c',SET_F("SM"),notifyMacro);
     sappend('c',SET_F("S2"),notifyTwice);
+
+    sappend('c',SET_F("NL"),nodeListEnabled);
+    sappend('c',SET_F("NB"),nodeBroadcastEnabled);
+
     sappend('c',SET_F("RD"),receiveDirect);
     sappend('v',SET_F("EP"),e131Port);
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);

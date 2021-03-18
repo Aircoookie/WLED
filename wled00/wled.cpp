@@ -48,6 +48,26 @@ ethernet_settings ethernetBoards[] = {
     18,                  // eth_mdio, 
     ETH_PHY_LAN8720,     // eth_type,
     ETH_CLOCK_GPIO17_OUT // eth_clk_mode
+  },
+
+   // WESP32
+  {
+    0,			              // eth_address,
+    -1,			              // eth_power,
+    16,			              // eth_mdc,
+    17,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO0_IN	  // eth_clk_mode
+  },
+
+  // QuinLed-ESP32-Ethernet
+  {
+    0,			              // eth_address,
+    5,			              // eth_power,
+    23,			              // eth_mdc,
+    18,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
   }
 };
 
@@ -116,8 +136,10 @@ void prepareHostname(char* hostname)
 //handle Ethernet connection event
 void WiFiEvent(WiFiEvent_t event)
 {
+  #ifdef WLED_USE_ETHERNET
   char hostname[25] = "wled-";
-
+  #endif
+  
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
@@ -195,10 +217,20 @@ void WLED::loop()
     handleHue();
     handleBlynk();
 
-    /*if (presetToApply) {
-      applyPreset(presetToApply);
-      presetToApply = 0;
-    }*/
+    //LED settings have been saved, re-init busses
+    if (busConfigs[0] != nullptr) {
+      busses.removeAll();
+      uint32_t mem = 0;
+      for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
+        if (busConfigs[i] == nullptr) break;
+        mem += busses.memUsage(*busConfigs[i]);
+        if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
+        delete busConfigs[i]; busConfigs[i] = nullptr;
+      }
+      strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+      yield();
+      serializeConfig();
+    }
 
     yield();
 
@@ -216,6 +248,8 @@ void WLED::loop()
   if (millis() - lastMqttReconnectAttempt > 30000) {
     if (lastMqttReconnectAttempt > millis()) rolloverMillis++; //millis() rolls over every 50 days
     initMqtt();
+    refreshNodeList();
+    if (nodeBroadcastEnabled) sendSysInfoUDP();
   }
   yield();
   handleWs();
@@ -262,17 +296,16 @@ void WLED::setup()
   DEBUG_PRINT("esp8266 ");
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif
-  int heapPreAlloc = ESP.getFreeHeap();
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
 
-  //strip.init(EEPROM.read(372), ledCount, EEPROM.read(2204));        // init LEDs quickly
-  //strip.setBrightness(0);
-
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
+#ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
+  pinManager.allocatePin(2);
+#endif
 
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));
@@ -288,8 +321,16 @@ void WLED::setup()
   updateFSInfo();
   deserializeConfig();
 
-#if STATUSLED && STATUSLED != LEDPIN
-  pinMode(STATUSLED, OUTPUT);
+#if STATUSLED
+  bool lStatusLed = false;
+  for (uint8_t i=0; i<strip.numStrips; i++) {
+    if (strip.getStripPin(i)==STATUSLED) {
+      lStatusLed = true;
+      break;
+    }
+  }
+  if (!lStatusLed)
+    pinMode(STATUSLED, OUTPUT);
 #endif
 
   //DEBUG_PRINTLN(F("Load EEPROM"));
@@ -300,7 +341,9 @@ void WLED::setup()
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
+  #ifdef WLED_USE_ETHERNET
   WiFi.onEvent(WiFiEvent);
+  #endif
 
   Serial.println(F("Ada"));
 
@@ -346,24 +389,13 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
-  #ifdef ESP8266
-  #if LEDPIN == 3
-    if (ledCount > MAX_LEDS_DMA)
-      ledCount = MAX_LEDS_DMA;        // DMA method uses too much ram
-  #endif
-  #endif
 
   if (ledCount > MAX_LEDS || ledCount == 0)
     ledCount = 30;
 
-  strip.init(useRGBW, ledCount, skipFirstLed);
+  strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
-
-#if defined(BTNPIN) && BTNPIN > -1
-  pinManager.allocatePin(BTNPIN, false);
-  pinMode(BTNPIN, INPUT_PULLUP);
-#endif
 
   if (bootPreset > 0) applyPreset(bootPreset);
   if (turnOnAtBoot) {
@@ -374,24 +406,13 @@ void WLED::beginStrip()
   }
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
-// init relay pin
-#if RLYPIN >= 0
-  pinManager.allocatePin(RLYPIN);
-  pinMode(RLYPIN, OUTPUT);
-#if RLYMDE
-  digitalWrite(RLYPIN, bri);
-#else
-  digitalWrite(RLYPIN, !bri);
-#endif
-#endif
+  // init relay pin
+  if (rlyPin>=0)
+    digitalWrite(rlyPin, (rlyMde ? bri : !bri));
 
   // disable button if it is "pressed" unintentionally
-#if (defined(BTNPIN) && BTNPIN > -1) || defined(TOUCHPIN)
-  if (isButtonPressed())
+  if (btnPin>=0 && isButtonPressed())
     buttonEnabled = false;
-#else
-  buttonEnabled = false;
-#endif
 }
 
 void WLED::initAP(bool resetAP)
@@ -422,7 +443,7 @@ void WLED::initAP(bool resetAP)
       udp2Connected = notifier2Udp.begin(udpPort2);
     }
     e131.begin(false, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
-  
+
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
   }
@@ -437,7 +458,7 @@ void WLED::initConnection()
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
   // Only initialize ethernet board if not NONE
-  if (ethernetType != WLED_ETH_NONE) {
+  if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     ethernet_settings es = ethernetBoards[ethernetType];
     ETH.begin(
       (uint8_t) es.eth_address, 
@@ -486,7 +507,7 @@ void WLED::initConnection()
   // convert the "serverDescription" into a valid DNS hostname (alphanumeric)
   char hostname[25] = "wled-";
   prepareHostname(hostname);
-  
+
 #ifdef ESP8266
   WiFi.hostname(hostname);
 #endif
@@ -637,7 +658,13 @@ void WLED::handleConnection()
 
 void WLED::handleStatusLED()
 {
-  #if STATUSLED && STATUSLED != LEDPIN
+  #if STATUSLED
+  for (uint8_t s=0; s<strip.numStrips; s++) {
+    if (strip.getStripPin(s)==STATUSLED) {
+      return; // pin used for strip
+    }
+  }
+
   ledStatusType = WLED_CONNECTED ? 0 : 2;
   if (mqttEnabled && ledStatusType != 2) // Wi-Fi takes presendence over MQTT
     ledStatusType = WLED_MQTT_CONNECTED ? 0 : 4;
@@ -653,7 +680,7 @@ void WLED::handleStatusLED()
     #else
       digitalWrite(STATUSLED, LOW);
     #endif
-    
+
   }
   #endif
 }
