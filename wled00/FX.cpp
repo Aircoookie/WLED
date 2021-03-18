@@ -3627,15 +3627,15 @@ uint16_t WS2812FX::mode_chunchun(void)
 {
   fill(SEGCOLOR(1));
   uint16_t counter = now*(6 + (SEGMENT.speed >> 4));
-  uint16_t numBirds = SEGLEN >> 2;
-  uint16_t span = SEGMENT.intensity << 8;
+  uint16_t numBirds = 2 + (SEGLEN >> 3);  // 2 + 1/8 of a segment
+  uint16_t span = (SEGMENT.intensity << 8) / numBirds;
 
   for (uint16_t i = 0; i < numBirds; i++)
   {
-    counter -= span/numBirds;
-    int megumin = sin16(counter) + 0x8000;
+    counter -= span;
+    uint16_t megumin = sin16(counter) + 0x8000;
     uint32_t bird = (megumin * SEGLEN) >> 16;
-    uint32_t c = color_from_palette((i * 255)/ numBirds, false, true, 0);
+    uint32_t c = color_from_palette((i * 255)/ numBirds, false, false, 0);  // no palette wrapping
     setPixelColor(bird, c);
   }
   return FRAMETIME;
