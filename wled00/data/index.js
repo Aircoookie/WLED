@@ -699,19 +699,15 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraClass = '')
 {
-    return `<div class="lstI ${extraClass}" data-id="${id}" onClick="${clickAction}(${id})">
-			<label class="radio schkl">
-				&nbsp;
-				<input type="radio" value="${id}" name="${listName}" onChange="${clickAction}()">
-				<span class="radiomark schk"></span>
+    return `<div class="lstI btn fxbtn ${extraClass}" data-id="${id}" onClick="${clickAction}(${id})">
+			<label class="radio fxchkl">
+				<input type="radio" value="${id}" name="${listName}">
+				<span class="radiomark"></span>
 			</label>
-			<div class="lstIcontent">
-				<span class="lstIname">
-					${name}
-				</span>
-				${extraHtml}
-			</div>
-			
+      <span class="lstIname">
+        ${name}
+      </span>
+      ${extraHtml}
 		</div>`;
 }
   
