@@ -29,12 +29,6 @@
 #ifndef WS2812FX_h
 #define WS2812FX_h
 
-#ifdef ESP32_MULTISTRIP
-  #include "../usermods/esp32_multistrip/NpbWrapper.h"
-#else
-  #include "NpbWrapper.h"
-#endif
-
 #include "const.h"
 
 #define FASTLED_INTERNAL //remove annoying pragma messages
@@ -586,12 +580,11 @@ class WS2812FX {
       ablMilliampsMax = 850;
       currentMilliamps = 0;
       timebase = 0;
-      bus = new NeoPixelWrapper();
       resetSegments();
     }
 
     void
-      init(bool supportWhite, uint16_t countPixels, bool skipFirst),
+      finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst),
       service(void),
       blur(uint8_t),
       fill(uint32_t),
@@ -631,6 +624,8 @@ class WS2812FX {
       paletteFade = 0,
       paletteBlend = 0,
       milliampsPerLed = 55,
+//      getStripType(uint8_t strip=0),
+//      setStripType(uint8_t type, uint8_t strip=0),
       getBrightness(void),
       getMode(void),
       getSpeed(void),
@@ -645,12 +640,19 @@ class WS2812FX {
       get_random_wheel_index(uint8_t);
 
     int8_t
+//      setStripPin(uint8_t strip, int8_t pin),
+//      getStripPin(uint8_t strip=0),
+//      setStripPinClk(uint8_t strip, int8_t pin),
+//      getStripPinClk(uint8_t strip=0),
       tristate_square8(uint8_t x, uint8_t pulsewidth, uint8_t attdec);
 
     uint16_t
       ablMilliampsMax,
       currentMilliamps,
-      triwave16(uint16_t);
+//      setStripLen(uint8_t strip, uint16_t len),
+//      getStripLen(uint8_t strip=0),
+      triwave16(uint16_t),
+      getFps();
 
     uint32_t
       now,
@@ -796,8 +798,6 @@ class WS2812FX {
       mode_dynamic_smooth(void);
 
   private:
-    NeoPixelWrapper *bus;
-
     uint32_t crgb_to_col(CRGB fastled);
     CRGB col_to_crgb(uint32_t);
     CRGBPalette16 currentPalette;
@@ -809,11 +809,12 @@ class WS2812FX {
     uint16_t _usedSegmentData = 0;
     uint16_t _transitionDur = 750;
 
+    uint16_t _cumulativeFps = 2;
+
     void load_gradient_palette(uint8_t);
     void handle_palette(void);
 
     bool
-      shouldStartBus = false,
       _useRgbw = false,
       _skipFirstMode,
       _triggered;
@@ -860,12 +861,6 @@ class WS2812FX {
 
     uint32_t _colors_t[3];
     uint8_t _bri_t;
-    
-    #ifdef WLED_USE_ANALOG_LEDS
-    uint32_t _analogLastShow = 0;
-    RgbwColor _analogLastColor = 0;
-    uint8_t _analogLastBri = 0;
-    #endif
     
     uint8_t _segment_index = 0;
     uint8_t _segment_index_palette_last = 99;

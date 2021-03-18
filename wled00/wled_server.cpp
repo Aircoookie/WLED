@@ -39,9 +39,15 @@ void initServer()
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Methods"), "*");
   DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Headers"), "*");
 
-  server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/html", PAGE_liveview);
-  });
+ #ifdef WLED_ENABLE_WEBSOCKETS
+    server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send_P(200, "text/html", PAGE_liveviewws);
+    });
+ #else
+    server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send_P(200, "text/html", PAGE_liveview);
+    });
+  #endif
   
   //settings page
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -239,7 +245,7 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
   return false;
 }
 
-bool setStaticContentCacheHeaders(AsyncWebServerResponse *response)
+void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
 {
   response->addHeader(F("Cache-Control"),"max-age=2592000");
   response->addHeader(F("ETag"), String(VERSION));

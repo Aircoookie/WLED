@@ -101,8 +101,8 @@ private:
       case EspalexaDeviceType::whitespectrum: return PSTR("Color temperature light");
       case EspalexaDeviceType::color:         return PSTR("Color light");
       case EspalexaDeviceType::extendedcolor: return PSTR("Extended color light");
+      default: return "";
     }
-    return "";
   }
   
   const char* modelidString(EspalexaDeviceType t)
@@ -113,8 +113,8 @@ private:
       case EspalexaDeviceType::whitespectrum: return "LWT010";
       case EspalexaDeviceType::color:         return "LST001";
       case EspalexaDeviceType::extendedcolor: return "LCT015";
+      default: return "";
     }
-    return "";
   }
   
   void encodeLightId(uint8_t idx, char* out)
