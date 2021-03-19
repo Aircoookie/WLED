@@ -313,7 +313,7 @@ void handleNotifications()
 
   // WLED nodes info notifications
   if (isSupp && udpIn[0] == 255 && udpIn[1] == 1 && len >= 40) {
-    if (!nodeListEnabled || realtimeIP == Network.localIP()) return;
+    if (!nodeListEnabled || notifier2Udp.remoteIP() == Network.localIP()) return;
 
     uint8_t unit = udpIn[39];
     NodesMap::iterator it = Nodes.find(unit);
@@ -415,7 +415,6 @@ void handleNotifications()
     }
     if (tpmType != 0xda) return; //return if notTPM2.NET data
 
-    realtimeIP = (isSupp) ? notifier2Udp.remoteIP() : notifierUdp.remoteIP();
     realtimeLock(realtimeTimeoutMs, REALTIME_MODE_TPM2NET);
     if (realtimeOverride) return;
 
