@@ -812,10 +812,22 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   {
     WS2812FX::Segment& seg = strip.getSegment(i);
     if (!seg.isSelected()) continue;
-    if (effectCurrent != prevEffect) seg.mode = effectCurrent;
-    if (effectSpeed != prevSpeed) seg.speed = effectSpeed;
-    if (effectIntensity != prevIntensity) seg.intensity = effectIntensity;
-    if (effectPalette != prevPalette) seg.palette = effectPalette;
+    if (effectCurrent != prevEffect) {
+      seg.mode = effectCurrent;
+      effectChanged = true;
+    }
+    if (effectSpeed != prevSpeed) {
+      seg.speed = effectSpeed;
+      effectChanged = true;
+    }
+    if (effectIntensity != prevIntensity) {
+      seg.intensity = effectIntensity;
+      effectChanged = true;
+    }
+    if (effectPalette != prevPalette) {
+      seg.palette = effectPalette;
+      effectChanged = true;
+    }
   }
 
   if (col0Changed) {
