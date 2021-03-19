@@ -202,7 +202,6 @@ function onLoad() {
 	if (localStorage.getItem('pcm') == "true") togglePcMode(true);
 	var sls = d.querySelectorAll('input[type="range"]');
 	for (var sl of sls) {
-		sl.addEventListener('input', updateBubble, true);
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
@@ -311,7 +310,7 @@ function cpBck() {
   copyText.select();
   copyText.setSelectionRange(0, 999999);
   d.execCommand("copy");
-	
+
 	showToast("Copied to clipboard!");
 }
 
@@ -614,7 +613,7 @@ function populatePalettes(palettes)
 		"name": "Default",
 		"class": "sticky"
 	});
-	
+
 	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
   <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
 	for (let i = 0; i < palettes.length; i++) {
@@ -691,7 +690,7 @@ function genPalPrevCss(id)
 		if (index === false) {
 			index = j / paletteData.length * 100;
 		}
-		
+
 		gradient.push(`rgb(${r},${g},${b}) ${index}%`);
 	}
 
@@ -711,7 +710,7 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', e
       ${extraHtml}
 		</div>`;
 }
-  
+
 function btype(b){
   switch (b) {
     case 32: return "ESP32";
@@ -755,7 +754,7 @@ function loadNodes()
 	if (loc) {
 		url = `http://${locip}/json/nodes`;
 	}
-	
+
 	fetch
 	(url, {
 		method: 'get'
@@ -790,20 +789,14 @@ function updateTrail(e, slidercol)
 	}
 	var val = `linear-gradient(90deg, ${scol} ${progress}%, var(--c-4) ${progress}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
-}
-
-function updateBubble(e)
-{
-	var bubble = e.target.parentNode.getElementsByTagName('output')[0];
-
-	if (bubble) {
-		bubble.innerHTML = e.target.value;
-	}
+	var bubble = e.parentNode.parentNode.getElementsByTagName('output')[0];
+	if (bubble) bubble.innerHTML = e.value;
 }
 
 function toggleBubble(e)
 {
-	e.target.parentNode.querySelector('output').classList.toggle('hidden');
+	var bubble = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
+	bubble.classList.toggle('sliderbubbleshow');
 }
 
 function updateLen(s)
@@ -932,7 +925,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 			return;
 		}
 		var s = json;
-		
+
 		if (!command || rinfo) {
 			if (!rinfo) {
 				pmt = json.info.fs.pmt;
@@ -1008,7 +1001,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 			updateUI();
 			return;
 		}
-		
+
 		selColors = i.col;
 		var cd = d.getElementById('csl').children;
 		for (let e = 2; e >= 0; e--)
