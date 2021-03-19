@@ -214,7 +214,12 @@ function onLoad()
 	// Creatte UI update WS handler
 	var mySocket = new WebSocket('ws://'+loc?locip:window.location.hostname+'/ws');
 	mySocket.onmessage = function(event) {
-		requestJson({'v':true},false);
+		// event.data contains JSON state/info object
+		// we should parse it instead of calling requestJson()
+		//requestJson(/*{'v':true},false*/);
+		console.log(event.data);
+		handleJson(event.data);
+		updateUI(true);
 	}
 }
 
@@ -961,6 +966,52 @@ function cmpP(a, b)
 	return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
+function handleJson(s)
+{
+	if (!s) return false;
+
+	isOn = s.on;
+	d.getElementById('sliderBri').value= s.bri;
+	nlA = s.nl.on;
+	nlDur = s.nl.dur;
+	nlTar = s.nl.tbri;
+	nlFade = s.nl.fade;
+	syncSend = s.udpn.send;
+	currentPreset = s.ps;
+	d.getElementById('cyToggle').checked = (s.pl >= 0);
+	d.getElementById('cycs').value = s.ccnf.min;
+	d.getElementById('cyce').value = s.ccnf.max;
+	d.getElementById('cyct').value = s.ccnf.time/10;
+	d.getElementById('cyctt').value = s.transition/10;
+
+	var selc=0; var ind=0;
+	populateSegments(s);
+	for (let i = 0; i < (s.seg||[]).length; i++)
+	{
+		if(s.seg[i].sel) {selc = ind; break;} ind++;
+	}
+	var i=s.seg[selc];
+	if (!i) return false; // no segments!
+	
+	selColors = i.col;
+	var cd = d.getElementById('csl').children;
+	for (let e = 2; e >= 0; e--)
+	{
+		cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
+		if (isRgbw) whites[e] = parseInt(i.col[e][3]);
+		selectSlot(csel);
+	}
+	d.getElementById('sliderSpeed').value = whites[csel];
+
+	d.getElementById('sliderSpeed').value = i.sx;
+	d.getElementById('sliderIntensity').value = i.ix;
+
+	selectedPal = i.pal;
+	selectedFx = i.fx;
+
+	return true;
+}
+
 var jsonTimeout, refreshTimer;
 function requestJson(command, rinfo = true, verbose = true, callback = null)
 {
@@ -1035,6 +1086,13 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 			displayRover(info, s);
 		}
 
+		if (!handleJson(s)) {
+			showToast('No Segments!', true);
+			updateUI(false);
+			if (callback) callback();
+			return;
+		}
+/*
 		isOn = s.on;
 		d.getElementById('sliderBri').value= s.bri;
 		nlA = s.nl.on;
@@ -1078,7 +1136,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 
 		selectedPal = i.pal;
 		selectedFx = i.fx;
-
+*/
 		if (s.error && s.error != 0) {
       		var errstr = "";
       		switch (s.error) {
