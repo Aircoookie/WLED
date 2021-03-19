@@ -75,18 +75,89 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //LED SETTINGS
   if (subPage == 2)
   {
-    int t = request->arg(F("LC")).toInt();
+    int t = 0;
+
+    if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
+    #ifndef WLED_DISABLE_INFRARED
+    if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
+    #endif
+    if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
+    //TODO remove all busses, but not in this system call
+    //busses->removeAll();
+
+    uint8_t colorOrder, type;
+    uint16_t length, start;
+    uint8_t pins[5] = {255, 255, 255, 255, 255};
+
+    for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
+      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
+      if (!request->hasArg(lp)) {
+        DEBUG_PRINTLN("No data."); break;
+      }
+      for (uint8_t i = 0; i < 5; i++) {
+        lp[1] = 48+i;
+        if (!request->hasArg(lp)) break;
+        pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
+      }
+      type = request->arg(lt).toInt();
+      
+      if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
+        length = request->arg(lc).toInt();
+      } else {
+        break;  // no parameter
+      }
+      colorOrder = request->arg(co).toInt();
+      start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
+
+      if (busConfigs[s] != nullptr) delete busConfigs[s];
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
+    }
+
+    ledCount = request->arg(F("LC")).toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
-    #ifdef ESP8266
-    #if LEDPIN == 3
-    if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
+
+    // upate other pins
+    #ifndef WLED_DISABLE_INFRARED
+    int hw_ir_pin = request->arg(F("IR")).toInt();
+    if (pinManager.isPinOk(hw_ir_pin) && pinManager.allocatePin(hw_ir_pin,false)) {
+      irPin = hw_ir_pin;
+    } else {
+      irPin = -1;
+    }
     #endif
-    #endif
+
+    int hw_rly_pin = request->arg(F("RL")).toInt();
+    if (pinManager.allocatePin(hw_rly_pin,true)) {
+      rlyPin = hw_rly_pin;
+    } else {
+      rlyPin = -1;
+    }
+    rlyMde = (bool)request->hasArg(F("RM"));
+
+    int hw_btn_pin = request->arg(F("BT")).toInt();
+    if (pinManager.allocatePin(hw_btn_pin,false)) {
+      btnPin = hw_btn_pin;
+      pinMode(btnPin, INPUT_PULLUP);
+    } else {
+      btnPin = -1;
+    }
+
+    int hw_aux_pin = request->arg(F("AX")).toInt();
+    if (pinManager.allocatePin(hw_aux_pin,true)) {
+      auxPin = hw_aux_pin;
+    } else {
+      auxPin = -1;
+    }
+
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
     useRGBW = request->hasArg(F("EW"));
-    strip.setColorOrder(request->arg(F("CO")).toInt());
     strip.rgbwMode = request->arg(F("AW")).toInt();
 
     briS = request->arg(F("CA")).toInt();
@@ -145,6 +216,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyHue = request->hasArg(F("SH"));
     notifyMacro = request->hasArg(F("SM"));
     notifyTwice = request->hasArg(F("S2"));
+
+    nodeListEnabled = request->hasArg(F("NL"));
+    if (!nodeListEnabled) Nodes.clear();
+    nodeBroadcastEnabled = request->hasArg(F("NB"));
 
     receiveDirect = request->hasArg(F("RD"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
@@ -328,12 +403,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       DMXFixtureMap[i] = t;
     }
   }
-  
   #endif
-  if (subPage != 6 || !doReboot) serializeConfig(); //do not save if factory reset
-  if (subPage == 2) {
-    strip.init(useRGBW,ledCount,skipFirstLed);
-  }
+
+  if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }
 
@@ -646,15 +718,15 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
   if (nightlightMode > NL_MODE_SUN) nightlightMode = NL_MODE_SUN;
 
-  #if AUXPIN >= 0
   //toggle general purpose output
-  pos = req.indexOf(F("AX="));
-  if (pos > 0) {
-    auxTime = getNumVal(&req, pos);
-    auxActive = true;
-    if (auxTime == 0) auxActive = false;
+  if (auxPin>=0) {
+    pos = req.indexOf(F("AX="));
+    if (pos > 0) {
+      auxTime = getNumVal(&req, pos);
+      auxActive = true;
+      if (auxTime == 0) auxActive = false;
+    }
   }
-  #endif
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
@@ -740,10 +812,22 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   {
     WS2812FX::Segment& seg = strip.getSegment(i);
     if (!seg.isSelected()) continue;
-    if (effectCurrent != prevEffect) seg.mode = effectCurrent;
-    if (effectSpeed != prevSpeed) seg.speed = effectSpeed;
-    if (effectIntensity != prevIntensity) seg.intensity = effectIntensity;
-    if (effectPalette != prevPalette) seg.palette = effectPalette;
+    if (effectCurrent != prevEffect) {
+      seg.mode = effectCurrent;
+      effectChanged = true;
+    }
+    if (effectSpeed != prevSpeed) {
+      seg.speed = effectSpeed;
+      effectChanged = true;
+    }
+    if (effectIntensity != prevIntensity) {
+      seg.intensity = effectIntensity;
+      effectChanged = true;
+    }
+    if (effectPalette != prevPalette) {
+      seg.palette = effectPalette;
+      effectChanged = true;
+    }
   }
 
   if (col0Changed) {
