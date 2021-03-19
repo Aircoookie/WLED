@@ -212,13 +212,10 @@ function onLoad()
 	}
 
 	// Creatte UI update WS handler
-	var mySocket = new WebSocket('ws://'+loc?locip:window.location.hostname+'/ws');
+	var mySocket = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
 	mySocket.onmessage = function(event) {
-		// event.data contains JSON state/info object
-		// we should parse it instead of calling requestJson()
-		//requestJson(/*{'v':true},false*/);
-		console.log(event.data);
-		handleJson(event.data);
+		var json = JSON.parse(event.data);
+		handleJson(json.state);
 		updateUI(true);
 	}
 }
@@ -1051,12 +1048,13 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 		jsonTimeout = null;
 		clearErrorToast();
 		d.getElementById('connind').style.backgroundColor = "#070";
-		if (!json) showToast('Empty response', true);
+		if (!json) { showToast('Empty response', true); return; }
+		if (json.error && json.error != 0) { showToast('Out of memory!', true); return; }
 		if (json.success) {
 			if (callback) callback();
 			return;
 		}
-		var s = json;
+		var s = json.state;
 		if (!command || rinfo) {
 			if (!rinfo) {
 				pmt = json.info.fs.pmt;
@@ -1082,7 +1080,6 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 			d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
 			lastinfo = info;
 			if (isInfo) populateInfo(info);
-			s = json.state;
 			displayRover(info, s);
 		}
 
@@ -1092,51 +1089,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 			if (callback) callback();
 			return;
 		}
-/*
-		isOn = s.on;
-		d.getElementById('sliderBri').value= s.bri;
-		nlA = s.nl.on;
-		nlDur = s.nl.dur;
-		nlTar = s.nl.tbri;
-		nlFade = s.nl.fade;
-		syncSend = s.udpn.send;
-		currentPreset = s.ps;
-		d.getElementById('cyToggle').checked = (s.pl >= 0);
-		d.getElementById('cycs').value = s.ccnf.min;
-		d.getElementById('cyce').value = s.ccnf.max;
-		d.getElementById('cyct').value = s.ccnf.time /10;
-		d.getElementById('cyctt').value = s.transition /10;
 
-		var selc=0; var ind=0;
-		populateSegments(s);
-		for (let i = 0; i < (s.seg||[]).length; i++)
-		{
-			if(s.seg[i].sel) {selc = ind; break;} ind++;
-		}
-		var i=s.seg[selc];
-		if (!i) {
-			showToast('No Segments!', true);
-			updateUI(false);
-			if (callback) callback();
-			return;
-		}
-		
-		selColors = i.col;
-		var cd = d.getElementById('csl').children;
-		for (let e = 2; e >= 0; e--)
-		{
-			cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
-			if (isRgbw) whites[e] = parseInt(i.col[e][3]);
-			selectSlot(csel);
-		}
-		d.getElementById('sliderSpeed').value = whites[csel];
-
-		d.getElementById('sliderSpeed').value = i.sx;
-		d.getElementById('sliderIntensity').value = i.ix;
-
-		selectedPal = i.pal;
-		selectedFx = i.fx;
-*/
 		if (s.error && s.error != 0) {
       		var errstr = "";
       		switch (s.error) {
