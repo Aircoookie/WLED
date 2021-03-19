@@ -238,7 +238,7 @@ RealtimeSmooth::rts_frame* RealtimeSmooth::remove(uint32_t now) {
 
 #ifdef DEBUG_RTS
 void RealtimeSmooth::log(uint32_t now) {
-  if (sample_cnt <= 1 || now - last_log < 5000 || now - last_add < deltaT/2)
+  if (sample_cnt <= 1 || now - last_log < 3000 || now - last_add < deltaT/2)
     return; // log during the quiet times
   last_log = now;
 
