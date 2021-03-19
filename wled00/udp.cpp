@@ -7,8 +7,6 @@
 #define WLEDPACKETSIZE 29
 #define UDP_IN_MAXSIZE 1472
 
-static bool wasOff = false; // flag if strip was Off (bri==0) when realtime started
-
 void notify(byte callMode, bool followUp)
 {
   if (!udpConnected) return;
@@ -87,8 +85,6 @@ void realtimeLock(uint32_t timeoutMs, byte md)
   if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
   // if strip is off (bri==0) and not already in RTM
   if (bri == 0 && !realtimeMode) {
-    wasOff = true;
-    bri = briLast;  // global brightness awareness
     strip.setBrightness(scaledBri(briLast));
   }
   realtimeMode = md;
@@ -125,10 +121,6 @@ void handleNotifications()
   if (realtimeMode && millis() > realtimeTimeout)
   {
     if (realtimeOverride == REALTIME_OVERRIDE_ONCE) realtimeOverride = REALTIME_OVERRIDE_NONE;
-    if (wasOff) {
-      bri = 0;  // if inital state was off turn strip back off
-      wasOff = false;
-    }
     strip.setBrightness(scaledBri(bri));
     realtimeMode = REALTIME_MODE_INACTIVE;
     realtimeIP[0] = 0;
