@@ -1,5 +1,4 @@
 //page js
-const lsPalKey = "wledPalx";
 var loc = false, locip;
 var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
@@ -189,7 +188,6 @@ function onLoad()
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
-	getPalettesDataCached();
 	loadPalettes(function() {
 		loadFX(function() {
 			loadPresets(function() {
@@ -319,9 +317,7 @@ function cpBck()
 
 	copyText.select();
 	copyText.setSelectionRange(0, 999999);
-
 	d.execCommand("copy");
-	
 	showToast("Copied to clipboard!");
 }
 
@@ -803,10 +799,10 @@ function genPalPrevCss(id)
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
 {
     return `<div class="lstI" data-id="${id}">
-	<label class="check schkl">
+	<label class="radio schkl">
 		&nbsp;
 		<input type="radio" value="${id}" name="${listName}" onChange="${clickAction}()">
-		<span class="checkmark schk"></span>
+		<span class="radiomark schk"></span>
 	</label>
 	<div class="lstIcontent" onClick="${clickAction}(${id})">
 		<span class="lstIname">
@@ -1089,6 +1085,8 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 			lastinfo = info;
 			if (isInfo) populateInfo(info);
 			displayRover(info, s);
+
+			if (!rinfo) loadPalettesData();
 		}
 
 		if (!handleJson(s)) {
@@ -1609,34 +1607,27 @@ function rSegs()
 
 function loadPalettesData()
 {
-	if (palettesData || getPalettesDataCached()) return;
-
-	var dateExpiration = new Date();
-	palettesData = {};
-	getPalettesData(1, function() {
-		localStorage.setItem(lsPalKey, JSON.stringify({
-			p: palettesData,
-			expiration: dateExpiration.getTime() + (24 * 60 * 60 * 1000) // 24 hrs expiration
-		}));
-		requestJson(null, false);
-	});
-}
-
-function getPalettesDataCached()
-{
-	var palDataJson = localStorage.getItem(lsPalKey);
-	if (palDataJson) {
+	if (palettesData) return;
+	const lsKey = "wledPalx";
+	var palettesDataJson = localStorage.getItem(lsKey);
+	if (palettesDataJson) {
 		try {
-			palDataJson = JSON.parse(palDataJson);
-			var d = new Date();
-			if (palDataJson && palDataJson.expiration && palDataJson.expiration > d.getTime()) {
-				palettesData = palDataJson.p;
-				redrawPalPrev();
-				return true;
+			palettesDataJson = JSON.parse(palettesDataJson);
+			if (palettesDataJson && palettesDataJson.vid == lastinfo.vid) {
+				palettesData = palettesDataJson.p;
+				return;
 			}
 		} catch (e) {}
 	}
-	return false;
+
+	palettesData = {};
+	getPalettesData(0, function() {
+		localStorage.setItem(lsKey, JSON.stringify({
+			p: palettesData,
+			vid: lastinfo.vid
+		}));
+		redrawPalPrev();
+	});
 }
 
 function getPalettesData(page, callback)
@@ -1655,7 +1646,7 @@ function getPalettesData(page, callback)
 	})
 	.then(json => {
 		palettesData = Object.assign({}, palettesData, json.p);
-		if (page < json.m) setTimeout(function() { getPalettesData(page + 1, callback); }, 100);
+		if (page < json.m) setTimeout(function() { getPalettesData(page + 1, callback); }, 50);
 		else callback();
 	})
 	.catch(function(error) {

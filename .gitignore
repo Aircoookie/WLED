@@ -7,9 +7,10 @@
 /wled00/Release
 /wled00/extLibs
 /platformio_override.ini
-/wled00/my_config.h 
+/wled00/my_config.h
 /build_output
 .DS_Store
 .gitignore
 .clang-format
 node_modules
+.idea

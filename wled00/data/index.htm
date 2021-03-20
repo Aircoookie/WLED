@@ -99,9 +99,8 @@
 			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons btna-icon">&#xe390;</i></button>
 		</div>
-		<p class="labels">Color palette</p>
+		<p class="labels"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 		<div class="il">
-			<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i>
 			<div class="staytop fnd">
 				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'selectPalette')" onfocus="search(this)" />
 				<span onclick="clean(this)" class="icons">&#xe38f;</span>
@@ -109,10 +108,10 @@
 			</div>
 			<div id="selectPalette" class="list">
 				<div class="lstI" data-id="0">
-					<label class="check schkl">
+					<label class="radio schkl">
 						&nbsp;
 						<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
-						<span class="checkmark schk"></span>
+						<span class="radiomark schk"></span>
 					</label>
 					<div class="lstIcontent">
 						<span class="lstIname">
@@ -123,7 +122,7 @@
 				<div class="lstI">
 					<div class="lstIcontent">
 						<span class="lstIname">
-							Loading
+							Loading...
 						</span>
 					</div>
 				</div>
