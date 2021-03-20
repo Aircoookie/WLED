@@ -173,7 +173,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.12.0-a0");
+WLED_GLOBAL char versionString[] _INIT("0.12.0-b0");
 #define WLED_CODENAME "Hikari"
 
 // AP and OTA default passwords (for maximum security change them!)
