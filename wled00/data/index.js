@@ -215,8 +215,8 @@ function onLoad()
 	var mySocket = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
 	mySocket.onmessage = function(event) {
 		var json = JSON.parse(event.data);
-		handleJson(json.state);
-		updateUI(true);
+		//console.log(json);
+		if (handleJson(json.state)) updateUI(true);
 	}
 }
 
@@ -493,7 +493,7 @@ function populatePresets(fromls)
 			if (expanded[i+100]) expand(i+100, true);
 		}
 	} else { presetError(true); }
-	updatePA();
+	updatePA(true);
 	populateQL();
 }
 
@@ -867,7 +867,7 @@ function updateLen(s)
 	d.getElementById(`seg${s}len`).innerHTML = out;
 }
 
-function updatePA()
+function updatePA(scrollto=false)
 {
 	var ps = d.getElementsByClassName("seg");
 	for (let i = 0; i < ps.length; i++) {
@@ -879,8 +879,16 @@ function updatePA()
 	}
 	if (currentPreset > 0) {
 		var acv = d.getElementById(`p${currentPreset}o`);
-		if (acv && !expanded[currentPreset+100])
+		if (acv && !expanded[currentPreset+100]) {
 			acv.style.background = "var(--c-6)";
+			if (scrollto) {
+				// scroll selected preset into view (on WS refresh)
+				acv.scrollIntoView({
+					behavior: 'smooth',
+					block: 'center',
+				});
+			}
+		}
 		acv = d.getElementById(`p${currentPreset}qlb`);
 		if (acv) acv.style.background = "var(--c-6)";
 	}
@@ -901,7 +909,7 @@ function updateUI(scrollto=false)
 	updateTrail(d.getElementById('sliderW'));
 	if (isRgbw) d.getElementById('wwrap').style.display = "block";
 
-	updatePA();
+	updatePA(scrollto);
 	updateHex();
 	updateRgb();
 }
