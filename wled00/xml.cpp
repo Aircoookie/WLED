@@ -285,6 +285,9 @@ void getSettingsJS(byte subPage, char* dest)
       #ifdef WLED_ENABLE_DMX
         oappend(SET_F(",2")); // DMX hardcoded pin
       #endif
+      #ifdef WLED_ENABLE_ADALIGHT
+        oappend(SET_F(",3")); // ADALight (RX) pin
+      #endif
       #ifdef WLED_DEBUG
         oappend(SET_F(",1")); // debug output (TX) pin
       #endif

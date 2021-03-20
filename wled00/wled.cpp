@@ -319,7 +319,9 @@ void WLED::setup()
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2);
 #endif
-
+#ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
+  pinManager.allocatePin(3);
+#endif
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));
 #ifdef ARDUINO_ARCH_ESP32
