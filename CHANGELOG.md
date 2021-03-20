@@ -2,6 +2,17 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103200
+
+-   Version bump to 0.12.0-b0 "Hikari"
+-   Added palette preview and search (PR #1637)
+-   Added Reverse checkbox for PWM busses - reverses logic level for on
+-   Fixed various problems with the Playlist feature (PR #1724)
+-   Replaced "Layer" icon with "i" icon for Info button
+-   Chunchun effect more fitting for various segment lengths (PR #1804)
+-   Removed global reverse (in favor of individual bus reverse)
+-   Removed some unused icons from UI icon font
+
 #### Build 2103130
 
 -   Added options for Auto Node discovery
