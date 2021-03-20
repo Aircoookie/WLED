@@ -247,7 +247,7 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
 
 void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
 {
-  response->addHeader(F("Cache-Control"),"max-age=86400"); // max 1 day for caching
+  response->addHeader(F("Cache-Control"),"max-age=2592000");
   response->addHeader(F("ETag"), String(VERSION));
 }
 
@@ -260,8 +260,9 @@ void serveIndex(AsyncWebServerRequest* request)
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 
   response->addHeader(F("Content-Encoding"),"gzip");
+  #ifndef WLED_DEBUG
   setStaticContentCacheHeaders(response);
-  
+  #endif
   request->send(response);
 }
 

@@ -452,10 +452,10 @@ img {
 	width: 24px;
 	position: relative;
 	display: inline-block;
-	border-radius: 5px;
+	border-radius: 10px;
 	background: var(--c-3);
-	color: white;
-	padding: 2px 5px;
+	color: var(--c-f);
+	padding: 4px 4px 2px;
 	font-size: 14px;
 	right: 5px;
 	transition: visibility 0.25s ease, opacity 0.25s ease;

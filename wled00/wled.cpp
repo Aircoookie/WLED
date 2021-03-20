@@ -332,6 +332,8 @@ void WLED::setup()
     errorFlag = ERR_FS_BEGIN;
   } else deEEP();
   updateFSInfo();
+
+  DEBUG_PRINTLN(F("Reading config"));
   deserializeConfig();
 
 #if STATUSLED
@@ -348,7 +350,10 @@ void WLED::setup()
 
   //DEBUG_PRINTLN(F("Load EEPROM"));
   //loadSettingsFromEEPROM();
+  DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
+
+  DEBUG_PRINTLN(F("Usermods setup"));
   userSetup();
   usermods.setup();
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)

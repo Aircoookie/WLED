@@ -1018,10 +1018,6 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 {
 	d.getElementById('connind').style.backgroundColor = "#a90";
 	lastUpdate = new Date();
-/*
-	if (refreshTimer) clearTimeout(refreshTimer);
-	refreshTimer = setTimeout(function(){requestJson({'v':true},false);},15000);
-*/
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
 	var e1 = d.getElementById('fxlist');
@@ -1058,7 +1054,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 			if (callback) callback();
 			return;
 		}
-		var s = json.state;
+		var s = json.state ? json.state : json;
 		if (!command || rinfo) {
 			if (!rinfo) {
 				pmt = json.info.fs.pmt;
@@ -1121,7 +1117,7 @@ function togglePower()
 	isOn = !isOn;
 	var obj = {"on": isOn};
 	obj.transition = parseInt(d.getElementById('cyctt').value*10);
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function toggleNl()
@@ -1130,7 +1126,7 @@ function toggleNl()
 	if (nlA) showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlFade ? "over":"after"} ${nlDur} minutes.`);
 	else showToast('Timer deactivated.');
 	var obj = {"nl": {"on": nlA}};
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function toggleSync()
@@ -1140,7 +1136,7 @@ function toggleSync()
 	else showToast('This light and other lights in the network will no longer sync.');
 	var obj = {"udpn": {"send": syncSend}};
 	if (syncTglRecv) obj.udpn.recv = syncSend;
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function toggleLiveview()
@@ -1270,7 +1266,7 @@ function selSegEx(s)
 {
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"sel":(i==s)?true:false});
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function selSeg(s)
@@ -1293,7 +1289,7 @@ function setSeg(s)
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 	}
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function delSeg(s)
@@ -1325,13 +1321,13 @@ function setMi(s)
 function setSegPwr(s)
 {
 	var obj = {"seg": {"id": s, "on": !powered[s]}};
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function setSegBri(s)
 {
 	var obj = {"seg": {"id": s, "bri": parseInt(d.getElementById(`seg${s}bri`).value)}};
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function setX(ind = null)
@@ -1362,14 +1358,14 @@ function setPalette(paletteId = null)
 
 	d.querySelector(`#selectPalette .lstI[data-id="${paletteId}"]`).classList.add('selected');
 	var obj = {"seg": {"pal": paletteId}};
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function setBri()
 {
 	var obj = {"bri": parseInt(d.getElementById('sliderBri').value)};
 	obj.transition = parseInt(d.getElementById('cyctt').value*10);
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function setSpeed()
@@ -1387,7 +1383,7 @@ function setIntensity()
 function setLor(i)
 {
 	var obj = {"lor": i};
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function toggleCY()
@@ -1399,14 +1395,14 @@ function toggleCY()
 		obj.transition = parseInt(d.getElementById('cyctt').value*10);
 	}
 
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function setPreset(i)
 {
 	var obj = {"ps": i};
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function saveP(i)
@@ -1443,7 +1439,7 @@ function saveP(i)
 	if (pQN.length > 0) obj.ql = pQN;
 
 	showToast("Saving " + pN +" (" + pI + ")");
-	requestJson(obj);
+	requestJson(obj, false);
 	if (obj.o) {
 		pJson[pI] = obj;
 		delete pJson[pI].psave;
@@ -1462,7 +1458,7 @@ function saveP(i)
 function delP(i)
 {
 	var obj = {"pdel": i};
-	requestJson(obj);
+	requestJson(obj, false);
 	delete pJson[i];
 	populatePresets();
 }
@@ -1567,7 +1563,7 @@ function setColor(sr)
 	updateHex();
 	updateRgb();
 	obj.transition = parseInt(d.getElementById('cyctt').value*10);
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 var hc = 0;
@@ -1602,7 +1598,7 @@ function rSegs()
 	bt.innerHTML = "Reset segments";
 	var obj = {"seg":[{"start":0,"stop":ledCount,"sel":true}]};
 	for (let i=1; i<=lSeg; i++) obj.seg.push({"stop":0});
-	requestJson(obj);
+	requestJson(obj, false);
 }
 
 function loadPalettesData()
