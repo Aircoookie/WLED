@@ -93,7 +93,7 @@ button {
 	bottom: calc(var(--bh) + 6px);
 	right: 4px;
 	color: var(--c-6);
-  cursor: pointer;
+	cursor: pointer;
 	writing-mode: vertical-rl;
 }
 
@@ -224,7 +224,7 @@ button {
 
 .bot button {
 	padding: var(--bbp);
-	width:20%;
+	width:25%;
 }
 
 .tab button:hover {
