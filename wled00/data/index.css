@@ -688,7 +688,7 @@ input[type=number]::-webkit-outer-spin-button {
 	position: absolute;
 	top: 0px;
 	left: 50%;
-	padding: 9px 0;
+	padding: 10px 0;
 	transform: translateX(-50%);
 	white-space: nowrap;
 	cursor: pointer;
@@ -696,7 +696,6 @@ input[type=number]::-webkit-outer-spin-button {
 
 .pname {
 	width: 208px;
-	padding: 8px 0;
 	text-align: center;
 	overflow: hidden;
 	text-overflow: clip;
