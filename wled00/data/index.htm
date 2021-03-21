@@ -23,9 +23,10 @@
 			<button id="buttonNl" onclick="toggleNl()"><i class="icons">&#xe2a2;</i><p class="tab-label">Timer</p></button>
 			<button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><p class="tab-label">Sync</p></button>
 			<button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">Peek</p></button>
-		<button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe34b;</i><p class="tab-label">Info</p></button>
+		  <button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><p class="tab-label">Info</p></button>
+      <button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button></div>
 			<button onclick="window.location.href = '/settings';"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
-		<button id="buttonPcm" onclick="togglePcMode(true)"><i class="icons">&#xe23d;</i><p class="tab-label">PC Mode</p></button>
+		  <button id="buttonPcm" onclick="togglePcMode(true)"><i class="icons">&#xe23d;</i><p class="tab-label">PC Mode</p></button>
 		</div>
 		<div id="briwrap">
 			<p class="hd">Brightness</p>
@@ -66,17 +67,17 @@
 			</div>
 		</div>
 		<div id="qcs-w">
-			<div class="qcs" onclick="pC('#ff0000');" style="background-color:#ff0000;"></div>
-			<div class="qcs" onclick="pC('#ffa000');" style="background-color:#ffa000;"></div>
-			<div class="qcs" onclick="pC('#ffc800');" style="background-color:#ffc800;"></div>
-			<div class="qcs" onclick="pC('#ffe0a0');" style="background-color:#ffe0a0;"></div>
-			<div class="qcs" onclick="pC('#ffffff');" style="background-color:#ffffff;"></div>
-			<div class="qcs qcsb" onclick="pC('#000000');" style="background-color:#000000;"></div><br>
-			<div class="qcs" onclick="pC('#ff00ff');" style="background-color:#ff00ff;"></div>
-			<div class="qcs" onclick="pC('#0000ff');" style="background-color:#0000ff;"></div>
-			<div class="qcs" onclick="pC('#00ffc8');" style="background-color:#00ffc8;"></div>
-			<div class="qcs" onclick="pC('#08ff00');" style="background-color:#08ff00;"></div>
-			<div class="qcs" onclick="pC('rnd');" style="background-color:var(--c-3); padding: 4px 8px; transform: translateY(-10px);">R</div>
+			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
+			<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
+			<div class="qcs" onclick="pC('#ffc800');" title="Yellow" style="background-color:#ffc800;"></div>
+			<div class="qcs" onclick="pC('#ffe0a0');" title="Warm White" style="background-color:#ffe0a0;"></div>
+			<div class="qcs" onclick="pC('#ffffff');" title="White" style="background-color:#ffffff;"></div>
+			<div class="qcs qcsb" onclick="pC('#000000');" title="Black" style="background-color:#000000;"></div><br>
+			<div class="qcs" onclick="pC('#ff00ff');" title="Pink" style="background-color:#ff00ff;"></div>
+			<div class="qcs" onclick="pC('#0000ff');" title="Blue" style="background-color:#0000ff;"></div>
+			<div class="qcs" onclick="pC('#00ffc8');" title="Cyan" style="background-color:#00ffc8;"></div>
+			<div class="qcs" onclick="pC('#08ff00');" title="Green" style="background-color:#08ff00;"></div>
+			<div class="qcs" onclick="pC('rnd');" title="Random" style="background-color:var(--c-3); padding: 4px 8px; transform: translateY(-10px);">R</div>
 		</div>
 		<div id="csl">
 			<button class="xxs cl btn" onclick="selectSlot(0);">1</button>
@@ -87,13 +88,33 @@
 			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons btna-icon">&#xe390;</i></button>
 		</div>
-		<p class="labels">Color palette</p> 
-		<div class="il">
+		<p class="labels">
 			<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i>
-			<select class="btn sel" id="selectPalette" onchange="setPalette()">
-				<option>Default</option>
-				<option>Error!</option>
-			</select>
+			Color palette
+		</p>
+		<div class="il">
+			<div id="selectPalette" class="list">
+				<div class="lstI" data-id="0">
+					<label class="check schkl">
+						&nbsp;
+						<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
+						<span class="checkmark schk"></span>
+					</label>
+					<div class="lstIcontent">
+						<span class="lstIname">
+							Default
+						</span>
+					</div>
+				</div>
+				<div class="lstI">
+					<div class="lstIcontent">
+						<span class="lstIname">
+							Loading...
+						</span>
+					</div>
+				</div>
+
+			</div>
 		</div>
 	</div>
 
@@ -117,21 +138,17 @@
 			</div>
 		</div>
 		<p class="labels">Effect mode</p>
-		<div class="staytop" id="staytop2">
-			<button class="btn" id="fxb0" onclick="setX(0);">Solid</button>
-		</div>
-		<div id="fxlist">
+		<div id="fxlist" class="list">
 			Loading...
 		</div>
-		<br>
 	</div>
-	
+
 	<div id="Segments" class="tabcontent">
 		<div id="segcont">
 			Loading...
 		</div>
 		<div id="segutil">
-			
+
 		</div>
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
@@ -140,7 +157,7 @@
 
 	<div id="Favorites" class="tabcontent">
 		<div id="putil">
-			
+
 		</div>
 		<div id="pql">
 
@@ -169,7 +186,7 @@
 
 <div id="connind"></div>
 <div id="toast"></div>
-<div id="namelabel"></div>
+<div id="namelabel" onclick="toggleNodes()"></div>
 <div id="info" class="modal">
 	<div id="imgw">
 		<img alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAggAAACMCAYAAAAZQlGEAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAKLSURBVHhe7dgxjtwwEADBpf//5zUDwklnpzFAnKoSTigNFTT0AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGDcOieX+G5nvNLaznil6f1Nv+/tz3c7+3tmen/Tpu/jbe877c85AQD+EQgAQAgEACAEAgAQAgEACIEAAIRAAABCIAAAIRAAgBAIAEAIBAAgBAIAEAIBAAiBAACEQAAAQiAAACEQAIAQCABACAQAINY5+aHvdsYRazvjK9jfM7fvz/0+Y3+/2+336w8CABACAQAIgQAAhEAAAEIgAAAhEACAEAgAQAgEACAEAgAQAgEACIEAAIRAAABCIAAAIRAAgBAIAEAIBAAgBAIAEAIBAAiBAADEOudrfLczXmltZ3yF6fuwv2em9+d+n5ne3zT3cZfp+/AHAQAIgQAAhEAAAEIgAAAhEACAEAgAQAgEACAEAgAQAgEACIEAAIRAAABCIAAAIRAAgBAIAEAIBAAgBAIAEAIBAAiBAACEQAAAYp3zNb7bGUes7Yz8wO334fmeuf35bmd/z9y+v9ufzx8EACAEAgAQAgEACIEAAIRAAABCIAAAIRAAgBAIAEAIBAAgBAIAEAIBAAiBAACEQAAAQiAAACEQAIAQCABACAQAIAQCABACAQCIdc4x3+2MV1rbGfmFpr+/6e/l9ue73fT+pt1+H2/bn+/lGX8QAIAQCABACAQAIAQCABACAQAIgQAAhEAAAEIgAAAhEACAEAgAQAgEACAEAgAQAgEACIEAAIRAAABCIAAAIRAAgBAIAEAIBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgP/u8/kLYCqAxINTyZkAAAAASUVORK5CYII=">
@@ -177,9 +194,16 @@
 <div id="kv">Loading...</div><br>
 <button class="btn infobtn" onclick="requestJson(null)">Refresh</button>
 <button class="btn infobtn" onclick="toggleInfo()">Close Info</button><br>
-<button class="btn infobtn" onclick="openGH()">WLED Wiki</button>
+<button class="btn infobtn" onclick="toggleNodes()">Instance List</button>
 <button class="btn infobtn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button><br>
 <span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the WLED community</span>
+</div>
+
+<div id="nodes" class="modal">
+  <div id="ndlt">WLED instances</div>
+  <div id="kn">Loading...</div><br>
+  <button class="btn infobtn" onclick="loadNodes()">Refresh</button>
+  <button class="btn infobtn" onclick="toggleNodes()">Close list</button><br>
 </div>
 
 <div id="rover" class="modal">
@@ -191,6 +215,7 @@
 	<button class="btn" onclick="setLor(2)">Override until reboot</button><br>
 	<span class="h">For best performance, it is recommended to turn off the streaming source when not in use.</span>
 </div>
+
 <i id="roverstar" class="icons huge" onclick="setLor(0)">&#xe410;</i><br>
 <script src="iro.js"></script>
 <script src="rangetouch.js"></script>
