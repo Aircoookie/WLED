@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.12.0-a0
+   @version 0.12.0-b0
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2103130
+#define VERSION 2103201
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -179,7 +179,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.12.0-a0");
+WLED_GLOBAL char versionString[] _INIT("0.12.0-b0");
 #define WLED_CODENAME "Hikari"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -425,6 +425,7 @@ WLED_GLOBAL byte effectCurrent _INIT(0);
 WLED_GLOBAL byte effectSpeed _INIT(128);
 WLED_GLOBAL byte effectIntensity _INIT(128);
 WLED_GLOBAL byte effectPalette _INIT(0);
+WLED_GLOBAL bool effectChanged _INIT(false);
 
 // network
 WLED_GLOBAL bool udpConnected _INIT(false), udp2Connected _INIT(false), udpRgbConnected _INIT(false);
