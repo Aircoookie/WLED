@@ -546,7 +546,7 @@ function populateSegments(s)
 		if (i > lSeg) lSeg = i;
 
 		cn += `<div class="seg">
-	<label class="check schkl">
+	<label class="check schkl" style="position:absolute">
 		&nbsp;
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark schk"></span>
@@ -996,7 +996,7 @@ function handleJson(s)
 	
 	selColors = i.col;
 	var cd = d.getElementById('csl').children;
-	for (let e = 2; e >= 0; e--)
+	for (let e = cd.length-1; e >= 0; e--)
 	{
 		cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
 		if (isRgbw) whites[e] = parseInt(i.col[e][3]);
@@ -1178,7 +1178,6 @@ function makeSeg()
 	<div class="segname newseg">
 		New segment ${lowestUnused}
 	</div>
-	<br>
 	<div class="segin expanded">
 		<table class="segt">
 			<tr>
@@ -1192,6 +1191,7 @@ function makeSeg()
 		</table>
 		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
 		<i class="icons e-icon cnf cnf-s half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
+		<button class="btn btn-p" onclick="resetUtil()">Cancel</button>
 	</div>
 </div>`;
 	d.getElementById('segutil').innerHTML = cn;
@@ -1468,11 +1468,11 @@ function selectSlot(b)
 	csel = b;
 	var cd = d.getElementById('csl').children;
 	for (let i = 0; i < cd.length; i++) {
-		cd[i].style.border="2px solid white";
+		cd[i].style.border="2px solid var(--c-e)";
 		cd[i].style.margin="5px";
 		cd[i].style.width="42px";
 	}
-	cd[csel].style.border="5px solid white";
+	cd[csel].style.border="5px solid var(--c-e)";
 	cd[csel].style.margin="2px";
 	cd[csel].style.width="50px";
 	cpick.color.set(cd[csel].style.backgroundColor);
