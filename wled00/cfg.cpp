@@ -95,7 +95,6 @@ void deserializeConfig() {
 
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  CJSON(strip.reverseMode, hw_led["rev"]);
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonArray ins = hw_led["ins"];
@@ -135,6 +134,7 @@ void deserializeConfig() {
     if (mem <= MAX_LED_MEMORY) busses.add(bc);
   }
   strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+  if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonEnabled, hw_btn_ins_0["type"]);
@@ -450,7 +450,6 @@ void serializeConfig() {
   hw_led[F("total")] = ledCount;
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
-  hw_led["rev"] = strip.reverseMode;
   hw_led[F("rgbwm")] = strip.rgbwMode;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");

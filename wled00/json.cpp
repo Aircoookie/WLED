@@ -194,7 +194,7 @@ bool deserializeState(JsonObject root)
   JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
-  nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated, remove for v0.12.0
+  nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated, remove for v0.13.0
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
