@@ -143,6 +143,7 @@ void userLoop() {
   tft.setTextSize(2);
   // First row with Wifi name
   tft.setCursor(1, 1);
+  tft.setTextColor(TFT_GREEN);
   tft.print(knownSsid.substring(0, tftcharwidth > 1 ? tftcharwidth - 1 : 0));
   // Print `~` char to indicate that SSID is longer, than our dicplay
   if (knownSsid.length() > tftcharwidth)
@@ -151,6 +152,7 @@ void userLoop() {
   // Second row with AP IP and Password or IP
   tft.setTextSize(2);
   tft.setCursor(1, 24);
+  tft.setTextColor(TFT_GREEN);
   // Print AP IP and password in AP mode or knownIP if AP not active.
   // if (apActive && bri == 0)
   //   tft.print(apPass);
@@ -161,6 +163,7 @@ void userLoop() {
     tft.print("AP IP: ");
     tft.print(knownIp);
     tft.setCursor(1,46);
+    tft.setTextColor(TFT_GREEN);
     tft.print("AP Pass:");
     tft.print(apPass);
   }
@@ -168,6 +171,7 @@ void userLoop() {
     tft.print("IP: ");
     tft.print(knownIp);
     tft.setCursor(1,46);
+    tft.setTextColor(TFT_DARKCYAN);
     //tft.print("Signal Strength: ");
     //tft.print(i.wifi.signal);
     tft.print("Brightness: ");
@@ -177,6 +181,7 @@ void userLoop() {
 
   // Third row with mode name
   tft.setCursor(1, 68);
+  tft.setTextColor(TFT_YELLOW);
   uint8_t qComma = 0;
   bool insideQuotes = false;
   uint8_t printedChars = 0;
@@ -204,6 +209,7 @@ void userLoop() {
   }
   // Fourth row with palette name
   tft.setCursor(1, 90);
+  tft.setTextColor(TFT_YELLOW);
   qComma = 0;
   insideQuotes = false;
   printedChars = 0;
@@ -231,6 +237,7 @@ void userLoop() {
   }
   // Fifth row with estimated mA usage
   tft.setCursor(1, 112);
+  tft.setTextColor(TFT_RED);
   // Print estimated milliamp usage (must specify the LED type in LED prefs for this to be a reasonable estimate).
   tft.print(strip.currentMilliamps);
   tft.print("mA (estimated)");
