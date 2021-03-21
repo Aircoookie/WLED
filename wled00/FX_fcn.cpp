@@ -27,10 +27,6 @@
 #include "FX.h"
 #include "palettes.h"
 
-#ifndef PWM_INDEX
-#define PWM_INDEX 0
-#endif
-
 /*
   Custom per-LED mapping has moved!
 

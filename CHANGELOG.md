@@ -2,6 +2,14 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103210
+
+-   Version bump to 0.12.0-b1 "Hikari"
+-   More colors visible on Palette preview
+-   Fixed chevron icon not included
+-   Fixed color order override
+-   Cleanup
+
 #### Build 2103200
 
 -   Version bump to 0.12.0-b0 "Hikari"

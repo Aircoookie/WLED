@@ -191,9 +191,6 @@ void WLED::loop()
 
   handleOverlays();
   yield();
-#ifdef WLED_USE_ANALOG_LEDS
-  strip.setRgbwPwm();
-#endif
 
   if (doReboot)
     reset();
