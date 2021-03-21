@@ -609,7 +609,6 @@ class WS2812FX {
       setPixelSegment(uint8_t n);
 
     bool
-      reverseMode = false,      //is the entire LED strip reversed?
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,

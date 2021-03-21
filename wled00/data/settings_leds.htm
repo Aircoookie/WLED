@@ -230,8 +230,8 @@
           <br>
           <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" min="0" max="8191" value="${lastEnd(i)}" required />&nbsp;
           <div id="dig${i}" style="display:inline">
-          Count: <input type="number" name="LC${i}" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br>
-          Reverse: <input type="checkbox" name="CV${i}"></div><br>
+          Count: <input type="number" name="LC${i}" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br></div>
+          Reverse: <input type="checkbox" name="CV${i}"><br>
         </div>`;
         f.insertAdjacentHTML("beforeend", cn);
       }
@@ -333,7 +333,6 @@
 			<option value="2">Linear (never wrap)</option>
 			<option value="3">None (not recommended)</option>
 		</select><br>
-		Reverse LED order (rotate 180): <input type="checkbox" name="RV"><br>
     Skip first LED: <input type="checkbox" name="SL"><br>
     <span class="wc">
       Auto-calculate white channel from RGB:<br>
