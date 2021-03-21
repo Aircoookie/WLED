@@ -305,9 +305,6 @@ void WLED::setup()
 #else
   DEBUG_PRINT("esp8266 ");
   DEBUG_PRINTLN(ESP.getCoreVersion());
-  #ifdef WLED_DEBUG
-  pinManager.allocatePin(1,true); // GPIO1 reserved for debug output
-  #endif
 #endif
   DEBUG_PRINT("heap ");
   DEBUG_PRINTLN(ESP.getFreeHeap());
@@ -316,12 +313,16 @@ void WLED::setup()
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
+#ifdef WLED_DEBUG
+  pinManager.allocatePin(1,true); // GPIO1 reserved for debug output
+#endif
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
-  pinManager.allocatePin(2);
+  pinManager.allocatePin(2,false);
 #endif
-#ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
-  pinManager.allocatePin(3);
-#endif
+//#ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
+//  pinManager.allocatePin(3,false);
+//#endif
+
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));
 #ifdef ARDUINO_ARCH_ESP32
@@ -365,7 +366,14 @@ void WLED::setup()
   WiFi.onEvent(WiFiEvent);
   #endif
 
-  Serial.println(F("Ada"));
+#ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
+  if (!pinManager.isPinAllocated(3)) {
+    Serial.println(F("Ada"));
+    pinManager.allocatePin(3,false);
+  } else {
+    DEBUG_PRINTLN(F("ADALight disabled due to GPIO3 being used."));
+  }
+#endif
 
   // generate module IDs
   escapedMac = WiFi.macAddress();
