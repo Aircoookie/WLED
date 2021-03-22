@@ -809,19 +809,20 @@ input[type=number]::-webkit-outer-spin-button {
 	position: absolute;
 	bottom: 0;
 	left: 0;
-	height: 25px;
-	width: 25px;
 	background-color: var(--c-3);
-	border-radius: 10px;
 }
 
 .radiomark {
 	height: 24px;
 	width: 24px;
 	border-radius: 50%;
+	top: -2px;
 }
 
-.schk {
+.checkmark {
+	height: 25px;
+	width: 25px;
+	border-radius: 10px;
 	top: 0;
 }
 
@@ -908,13 +909,10 @@ input[type=number]::-webkit-outer-spin-button {
 .list {
 	position: relative;
 	width: 260px;
-	border-radius: 0 0 20px 20px;
-	background-color: var(--c-2);
 	transition: background-color 0.5s;
-	overflow: hidden;
     margin: auto auto 20px;
-    padding-bottom: 5px;
 }
+
 .lstI {
 	position: relative;
 	border-bottom: 1px solid var(--c-3);
@@ -922,6 +920,7 @@ input[type=number]::-webkit-outer-spin-button {
 	align-items: center;
 	padding: 8px 10px;
     cursor: pointer;
+	background-color: var(--c-2);
 }
 
 .lstI:hover {
@@ -930,10 +929,32 @@ input[type=number]::-webkit-outer-spin-button {
 
 .lstI:last-child {
 	border: none;
+    border-radius: 0 0 20px 20px;
+    padding-bottom: 10px;
 }
 
 .lstI.selected {
 	background: var(--c-5);
+	top: 136px;
+	bottom: 0;
+}
+
+.lstI.sticky, .lstI.selected {
+	position: sticky;
+	z-index: 1;
+}
+
+#selectPalette .lstI.selected {
+	top: 80px;
+	bottom: 0;
+}
+
+#selectPalette .lstI.sticky {
+	top: 40px;
+}
+
+.lstI.sticky {
+	top: 99px;
 }
 
 .lstIcontent {

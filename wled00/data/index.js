@@ -798,7 +798,7 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
 {
-    return `<div class="lstI" data-id="${id}">
+    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}">
 	<label class="radio schkl">
 		&nbsp;
 		<input type="radio" value="${id}" name="${listName}" onChange="${clickAction}()">
