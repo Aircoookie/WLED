@@ -305,7 +305,7 @@ Effect Speed */
 	position: -webkit-sticky;
 	position: sticky;
 	background: var(--c-1);
-	top: -1px;
+	top: 0px;
 	z-index: 1;
 	margin-top: 1px;
 	width: 272px;
@@ -963,13 +963,15 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* Modified for SR-WLED */
+/* Selected Effect */
 .lstI.selected {
 	background: var(--c-5);
-	top: 189px;
+	top: 188px;
   bottom: -11px;
 }
 
 /* Modified for SR-WLED */
+/* Solid Effect */
 .lstI.sticky {
 	top: 150px;
 }
