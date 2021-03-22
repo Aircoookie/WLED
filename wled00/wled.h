@@ -636,7 +636,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
-  #define DEBUG_PRINTF(x)
+  #define DEBUG_PRINTF(x...)
 #endif
 
 #ifdef WLED_DEBUG_FS
