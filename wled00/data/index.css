@@ -530,8 +530,9 @@ input[type=range]:active + .sliderbubble {
 	display: none;
 }
 
+/* Modified for SR-WLED */
 .sliderwrap {
-	height: 30px;
+	height: 31px;
 	width: 240px;
 	position: relative;
 }
@@ -951,8 +952,9 @@ input[type=number]::-webkit-outer-spin-button {
 	z-index: 1;
 }
 
+/* Modified for SR-WLED */
 #selectPalette .lstI.selected {
-	top: 27px;
+	top: 36px;
 	bottom: -11px;
 }
 
@@ -960,14 +962,16 @@ input[type=number]::-webkit-outer-spin-button {
 	top: -11px;
 }
 
+/* Modified for SR-WLED */
 .lstI.selected {
 	background: var(--c-5);
-	top: 95px;
+	top: 189px;
   bottom: -11px;
 }
 
+/* Modified for SR-WLED */
 .lstI.sticky {
-	top: 57px;
+	top: 150px;
 }
 
 .lstIname {
