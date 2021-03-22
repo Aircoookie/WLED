@@ -3,6 +3,7 @@ var loc = false, locip;
 var noNewSegs = false;
 var isOn = false, nlA = false, isLv = false, isInfo = false, isNodes = false, syncSend = false, syncTglRecv = true, isRgbw = false;
 var whites = [0,0,0];
+var selColors;
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
@@ -15,6 +16,7 @@ var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
+var palettesData;
 var pJson = {};
 var pN = "", pI = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
@@ -157,7 +159,6 @@ function loadBg(iUrl) {
   }
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
-		d.getElementById('staytop2').style.background = "transparent";
 		if (isNaN(a)) a = 0.6;
 		bg.style.opacity = a;
 		bg.style.backgroundImage = `url(${img.src})`;
@@ -309,7 +310,6 @@ function cpBck() {
 
   copyText.select();
   copyText.setSelectionRange(0, 999999);
-
   d.execCommand("copy");
 
 	showToast("Copied to clipboard!");
@@ -567,6 +567,151 @@ function populateSegments(s)
 	d.getElementById('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
+function populateEffects(effects)
+{
+	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
+    <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
+
+	effects.shift(); //remove solid
+	for (let i = 0; i < effects.length; i++) {
+		effects[i] = {id: parseInt(i)+1, name:effects[i]};
+	}
+	effects.sort(compare);
+
+	effects.unshift({
+		"id": 0,
+		"name": "Solid",
+		"class": "sticky"
+	});
+
+	for (let i = 0; i < effects.length; i++) {
+		html += generateListItemHtml(
+			'fx',
+			effects[i].id,
+			effects[i].name,
+			'setX',
+			'',
+			effects[i].class,
+		);
+	}
+
+	d.getElementById('fxlist').innerHTML=html;
+}
+
+function populatePalettes(palettes)
+{
+	palettes.shift(); //remove default
+	for (let i = 0; i < palettes.length; i++) {
+		palettes[i] = {
+			"id": parseInt(i)+1,
+			"name": palettes[i]
+		};
+	}
+	palettes.sort(compare);
+
+	palettes.unshift({
+		"id": 0,
+		"name": "Default",
+		"class": "sticky"
+	});
+
+	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
+  <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
+	for (let i = 0; i < palettes.length; i++) {
+		let previewCss = genPalPrevCss(palettes[i].id);
+		html += generateListItemHtml(
+			'palette',
+		    palettes[i].id,
+            palettes[i].name,
+            'setPalette',
+			`<div class="lstIprev" style="${previewCss}"></div>`,
+			palettes[i].class,
+        );
+	}
+
+	d.getElementById('selectPalette').innerHTML=html;
+}
+
+function redrawPalPrev()
+{
+	let palettes = d.querySelectorAll('#selectPalette .lstI');
+	for (let i = 0; i < palettes.length; i++) {
+		let id = palettes[i].dataset.id;
+		let lstPrev = palettes[i].querySelector('.lstIprev');
+		if (lstPrev) {
+			lstPrev.style = genPalPrevCss(id);
+		}
+	}
+}
+
+function genPalPrevCss(id)
+{
+	if (!palettesData) {
+		return;
+	}
+	var paletteData = palettesData[id];
+	var previewCss = "";
+
+	if (!paletteData) {
+		return 'display: none';
+	}
+
+	// We need at least two colors for a gradient
+	if (paletteData.length == 1) {
+		paletteData[1] = paletteData[0];
+		if (Array.isArray(paletteData[1])) {
+			paletteData[1][0] = 255;
+		}
+	}
+
+	var gradient = [];
+	for (let j = 0; j < paletteData.length; j++) {
+		const element = paletteData[j];
+		let r;
+		let g;
+		let b;
+		let index = false;
+		if (Array.isArray(element)) {
+			index = element[0]/255*100;
+			r = element[1];
+			g = element[2];
+			b = element[3];
+		} else if (element == 'r') {
+			r = Math.random() * 255;
+			g = Math.random() * 255;
+			b = Math.random() * 255;
+		} else {
+			if (selColors) {
+				let pos = element[1] - 1;
+				r = selColors[pos][0];
+				g = selColors[pos][1];
+				b = selColors[pos][2];
+			}
+		}
+		if (index === false) {
+			index = j / paletteData.length * 100;
+		}
+
+		gradient.push(`rgb(${r},${g},${b}) ${index}%`);
+	}
+
+	return `background: linear-gradient(to right,${gradient.join()});`;
+}
+
+function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraClass = '')
+{
+    return `<div class="lstI btn fxbtn ${extraClass}" data-id="${id}" onClick="${clickAction}(${id})">
+			<label class="radio fxchkl">
+				<input type="radio" value="${id}" name="${listName}">
+				<span class="radiomark"></span>
+			</label>
+      <span class="lstIname">
+        ${name}
+      </span>
+      ${extraHtml}
+		</div>`;
+}
+
 function btype(b){
   switch (b) {
     case 32: return "ESP32";
@@ -711,7 +856,6 @@ function updateUI()
 	d.getElementById('buttonNl').className = (nlA) ? "active":"";
 	d.getElementById('buttonSync').className = (syncSend) ? "active":"";
 
-	d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-6)";
 	updateTrail(d.getElementById('sliderBri'));
 	updateTrail(d.getElementById('sliderSpeed'));
 	updateTrail(d.getElementById('sliderIntensity'));
@@ -721,8 +865,6 @@ function updateUI()
 	updateTrail(d.getElementById('sliderW'));
 	if (isRgbw) d.getElementById('wwrap').style.display = "block";
 
-	var spal = d.getElementById("selectPalette");
-	spal.style.backgroundColor = (spal.selectedIndex > 0) ? "var(--c-6)":"var(--c-3)";
 	updatePA();
 	updateHex();
 	updateRgb();
@@ -777,7 +919,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 	})
 	.then(res => {
 		if (!res.ok) {
-			 showErrorToast();
+			showErrorToast();
 		}
 		return res.json();
 	})
@@ -786,54 +928,63 @@ function requestJson(command, rinfo = true, verbose = true) {
 		jsonTimeout = null;
 		clearErrorToast();
 		d.getElementById('connind').style.backgroundColor = "#070";
-		if (!json) showToast('Empty response', true);
-		if (json.success) return;
+		if (!json) {
+			showToast('Empty response', true);
+		}
+		if (json.success) {
+			return;
+		}
 		var s = json;
-		if (!command || rinfo) {
-		if (!rinfo) {
-		pmt = json.info.fs.pmt;
-    if (pmt != pmtLS || pmt == 0) {
-      setTimeout(loadPresets,99);
-    }
-    else populatePresets(true);
-    pmtLast = pmt;
-		var x='',y='<option value="0">Default</option>';
-		json.effects.shift(); //remove solid
-		for (let i = 0; i < json.effects.length; i++) json.effects[i] = {id: parseInt(i)+1, name:json.effects[i]};
-		json.effects.sort(compare);
-		for (let i = 0; i < json.effects.length; i++) {
-		x += `<button class="btn${(i==0)?" first":""}" id="fxb${json.effects[i].id}" onclick="setX(${json.effects[i].id});">${json.effects[i].name}</button><br>`;
-		}
 
-		json.palettes.shift(); //remove default
-		for (let i = 0; i < json.palettes.length; i++) json.palettes[i] = {"id": parseInt(i)+1, "name":json.palettes[i]};
-		json.palettes.sort(compare);
-		for (let i = 0; i < json.palettes.length; i++) {
-		y += `<option value="${json.palettes[i].id}">${json.palettes[i].name}</option>`;
-		}
-		e1.innerHTML=x; e2.innerHTML=y;
-		}
+		if (!command || rinfo) {
+			if (!rinfo) {
+				pmt = json.info.fs.pmt;
+				if (pmt != pmtLS || pmt == 0) {
+					setTimeout(loadPresets,99);
+				}
+				else {
+					populatePresets(true);
+				}
+				pmtLast = pmt;
+
+				populateEffects(json.effects);
+				populatePalettes(json.palettes);
+			}
 
 			var info = json.info;
 			var name = info.name;
 			d.getElementById('namelabel').innerHTML = name;
-			if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-			if (info.live) name = "(Live) " + name;
-		if (loc) name = "(L) " + name;
+			if (name === "Dinnerbone") {
+				d.documentElement.style.transform = "rotate(180deg)";
+			}
+			if (info.live) {
+				name = "(Live) " + name;
+			}
+			if (loc) {
+				name = "(L) " + name;
+			}
 			d.title = name;
 			isRgbw = info.leds.wv;
 			ledCount = info.leds.count;
 			syncTglRecv = info.str;
       maxSeg = info.leds.maxseg;
-      pmt = info.fs.pmt;
-      if (!command && pmt != pmtLast) setTimeout(loadPresets,99);
-      pmtLast = pmt;
+			pmt = info.fs.pmt;
+
+			if (!command && pmt != pmtLast) {
+				setTimeout(loadPresets,99);
+			}
+			pmtLast = pmt;
       d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
-		lastinfo = info;
-		if (isInfo) populateInfo(info);
+			lastinfo = info;
+			if (isInfo) {
+				populateInfo(info);
+			}
 			s = json.state;
 			displayRover(info, s);
+
+      if (!rinfo) loadPalettesData();
 		}
+
 		isOn = s.on;
 		d.getElementById('sliderBri').value= s.bri;
 		nlA = s.nl.on;
@@ -842,7 +993,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 		nlFade = s.nl.fade;
 		syncSend = s.udpn.send;
 		currentPreset = s.ps;
-		d.getElementById('cyToggle').checked = (s.pl < 0) ? false : true;
+		d.getElementById('cyToggle').checked = (s.pl >= 0);
 		d.getElementById('cycs').value = s.ccnf.min;
 		d.getElementById('cyce').value = s.ccnf.max;
 		d.getElementById('cyct').value = s.ccnf.time /10;
@@ -860,6 +1011,8 @@ function requestJson(command, rinfo = true, verbose = true) {
 			updateUI();
 			return;
 		}
+
+		selColors = i.col;
 		var cd = d.getElementById('csl').children;
 		for (let e = 2; e >= 0; e--)
 		{
@@ -875,26 +1028,54 @@ function requestJson(command, rinfo = true, verbose = true) {
 		d.getElementById('sliderFFT2').value = i.f2x;
 		d.getElementById('sliderFFT3').value = i.f3x;
 
-		d.getElementById('fxb' + selectedFx).style.backgroundColor = "var(--c-3)";
+		// Effects
+		e1.querySelector(`input[name="fx"][value="${i.fx}"]`).checked = true;
+		var selElement = e1.querySelector('.selected');
+		if (selElement) {
+			selElement.classList.remove('selected')
+		}
+		var selectedEffect = e1.querySelector(`.lstI[data-id="${i.fx}"]`);
+		selectedEffect.classList.add('selected');
 		selectedFx = i.fx;
-		e2.value = i.pal;
-		if (!command) d.getElementById('Effects').scrollTop = d.getElementById('fxb' + selectedFx).offsetTop - d.getElementById('Effects').clientHeight/1.8;
+
+		// Palettes
+		e2.querySelector(`input[name="palette"][value="${i.pal}"]`).checked = true;
+		selElement = e2.querySelector('.selected');
+		if (selElement) {
+			selElement.classList.remove('selected')
+		}
+		e2.querySelector(`.lstI[data-id="${i.pal}"]`).classList.add('selected');
+
+		if (!command) {
+			selectedEffect.scrollIntoView({
+				behavior: 'smooth',
+				block: 'nearest',
+			});
+		}
 
 		if (s.error && s.error != 0) {
-      var errstr = "";
-      switch (s.error) {
-        case 10: errstr = "Could not mount filesystem!"; break;
-        case 11: errstr = "Not enough space to save preset!"; break;
-        case 12: errstr = "The requested preset does not exist."; break;
-        case 19: errstr = "A filesystem error has occured."; break;
-      }
-      showToast('Error ' + s.error + ": " + errstr, true);
-    }
+      		var errstr = "";
+      		switch (s.error) {
+				case 10:
+					errstr = "Could not mount filesystem!";
+					break;
+				case 11:
+					errstr = "Not enough space to save preset!";
+					break;
+				case 12:
+					errstr = "The requested preset does not exist.";
+					break;
+				case 19:
+					errstr = "A filesystem error has occured.";
+					break;
+      		}
+      		showToast('Error ' + s.error + ": " + errstr, true);
+    	}
 		updateUI();
 	})
 	.catch(function (error) {
 		showToast(error, true);
-	  console.log(error);
+		console.log(error);
 	});
 }
 
@@ -1110,14 +1291,35 @@ function setSegBri(s){
 	requestJson(obj);
 }
 
-function setX(ind) {
+function setX(ind = null) {
+	if (ind === null) {
+		ind = parseInt(d.querySelector('#fxlist input[name="fx"]:checked').value);
+	} else {
+		d.querySelector(`#fxlist input[name="fx"][value="${ind}`).checked = true;
+	}
+	var selElement = d.querySelector('#fxlist .selected');
+	if (selElement) {
+		selElement.classList.remove('selected')
+	}
+	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
+
 	var obj = {"seg": {"fx": parseInt(ind)}};
 	requestJson(obj);
 }
 
-function setPalette()
+function setPalette(paletteId = null)
 {
-	var obj = {"seg": {"pal": parseInt(d.getElementById('selectPalette').value)}};
+	if (paletteId === null) {
+		paletteId = parseInt(d.querySelector('#selectPalette input[name="palette"]:checked').value);
+	} else {
+		d.querySelector(`#selectPalette input[name="palette"][value="${paletteId}`).checked = true;
+	}
+	var selElement = d.querySelector('#selectPalette .selected');
+	if (selElement) {
+		selElement.classList.remove('selected')
+	}
+	d.querySelector(`#selectPalette .lstI[data-id="${paletteId}"]`).classList.add('selected');
+	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj);
 }
 
@@ -1248,6 +1450,7 @@ function selectSlot(b) {
 	updateTrail(d.getElementById('sliderW'));
 	updateHex();
 	updateRgb();
+	redrawPalPrev();
 }
 
 var lasth = 0;
@@ -1372,6 +1575,88 @@ function rSegs()
 		obj.seg.push({"stop":0});
 	}
 	requestJson(obj);
+}
+
+function loadPalettesData()
+{
+	if (palettesData) return;
+	const lsKey = "wledPalx";
+	var palettesDataJson = localStorage.getItem(lsKey);
+	if (palettesDataJson) {
+		try {
+			palettesDataJson = JSON.parse(palettesDataJson);
+			var d = new Date();
+			if (palettesDataJson && palettesDataJson.vid == lastinfo.vid) {
+				palettesData = palettesDataJson.p;
+				return;
+			}
+		} catch (e) {}
+	}
+
+	palettesData = {};
+	getPalettesData(0, function() {
+		localStorage.setItem(lsKey, JSON.stringify({
+			p: palettesData,
+			vid: lastinfo.vid
+		}));
+		redrawPalPrev();
+	});
+}
+
+function getPalettesData(page, callback)
+{
+	var url = `/json/palx?page=${page}`;
+	if (loc) {
+		url = `http://${locip}${url}`;
+	}
+
+	fetch(url, {
+		method: 'get',
+		headers: {
+			"Content-type": "application/json; charset=UTF-8"
+		}
+	})
+	.then(res => {
+		if (!res.ok) {
+			showErrorToast();
+		}
+		return res.json();
+	})
+	.then(json => {
+		palettesData = Object.assign({}, palettesData, json.p);
+		if (page < json.m) {
+			getPalettesData(page + 1, callback);
+		} else {
+			callback();
+		}
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+		presetError(false);
+	});
+}
+
+function search(searchField) {
+	var searchText = searchField.value.toUpperCase();
+  searchField.parentElement.getElementsByClassName('search-cancel-icon')[0].style.display = (searchText.length < 1)?"none":"inline";
+	var elements = searchField.parentElement.parentElement.querySelectorAll('.lstI');
+	for (i = 0; i < elements.length; i++) {
+		var item = elements[i];
+		var itemText = item.querySelector('.lstIname').innerText.toUpperCase();
+		if (itemText.indexOf(searchText) > -1) {
+			item.style.display = "";
+		} else {
+			item.style.display = "none";
+		}
+	}
+}
+
+function cancelSearch(ic) {
+  var searchField = ic.parentElement.getElementsByClassName('search')[0];
+  searchField.value = "";
+  search(searchField);
+  searchField.focus();
 }
 
 function expand(i,a)

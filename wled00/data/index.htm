@@ -79,24 +79,44 @@
 			<div class="qcs" onclick="pC('#08ff00');" title="Green" style="background-color:#08ff00;"></div>
 			<div class="qcs" onclick="pC('rnd');" title="Random" style="background-color:var(--c-3); padding: 4px 8px; transform: translateY(-10px);">R</div>
 		</div>
-	<div id="csl">
-		<button class="xxs cl btn" onclick="selectSlot(0);">1</button>
-		<button class="xxs cl btn" onclick="selectSlot(1);">2</button>
-		<button class="xxs cl btn" onclick="selectSlot(2);">3</button>
+		<div id="csl">
+			<button class="xxs cl btn" onclick="selectSlot(0);">1</button>
+			<button class="xxs cl btn" onclick="selectSlot(1);">2</button>
+			<button class="xxs cl btn" onclick="selectSlot(2);">3</button>
+		</div>
+		<div id="hexw">
+			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
+			<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons btna-icon">&#xe390;</i></button>
+		</div>
+		<p class="labels">
+			<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i>
+			Color palette
+		</p>
+		<div class="il">
+			<div id="selectPalette" class="list">
+				<div class="lstI" data-id="0">
+					<label class="check schkl">
+						&nbsp;
+						<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
+						<span class="checkmark schk"></span>
+					</label>
+					<div class="lstIcontent">
+						<span class="lstIname">
+							Default
+						</span>
+					</div>
+				</div>
+				<div class="lstI">
+					<div class="lstIcontent">
+						<span class="lstIname">
+							Loading...
+						</span>
+					</div>
+				</div>
+
+			</div>
+		</div>
 	</div>
-	<div id="hexw">
-		<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
-		<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons btna-icon">&#xe390;</i></button>
-	</div>
-    <p class="labels">Color palette</p>
-    <div class="il">
-      <i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i>
-      <select class="btn sel" id="selectPalette" onchange="setPalette()">
-        <option>Default</option>
-        <option>Error!</option>
-      </select>
-    </div>
-  </div>
 
   <div id="Effects" class="tabcontent">
     <p class="labels">Effect speed</p>
@@ -144,15 +164,11 @@
         <div class="sliderdisplay"></div>
       </div>
     </div>
-    <p class="labels">Effect mode</p>
-    <div class="staytop" id="staytop5">
-      <button class="btn" id="fxb0" onclick="setX(0);">Solid</button>
-    </div>
-    <div id="fxlist">
-      Loading...
-    </div>
-    <br>
-  </div>
+	<p class="labels">Effect mode</p>
+		<div id="fxlist" class="list">
+			Loading...
+		</div>
+	</div>
 
   <div id="Segments" class="tabcontent">
     <div id="segcont">

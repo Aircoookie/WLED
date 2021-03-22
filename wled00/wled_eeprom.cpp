@@ -66,7 +66,6 @@ void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
  */
 void loadSettingsFromEEPROM()
 {
-
   if (EEPROM.read(233) != 233) //first boot/reset to default
   {
     DEBUG_PRINTLN(F("EEPROM settings invalid, using defaults..."));

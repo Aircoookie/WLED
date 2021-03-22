@@ -39,9 +39,9 @@
 #define DEFAULT_MODE       (uint8_t)0
 #define DEFAULT_SPEED      (uint8_t)128
 #define DEFAULT_INTENSITY  (uint8_t)128
-#define DEFAULT_FFT1       (uint8_t)6
+#define DEFAULT_FFT1       (uint8_t)128
 #define DEFAULT_FFT2       (uint8_t)128
-#define DEFAULT_FFT3       (uint8_t)252
+#define DEFAULT_FFT3       (uint8_t)128
 #define DEFAULT_COLOR      (uint32_t)0xFFAA00
 
 #ifndef MIN

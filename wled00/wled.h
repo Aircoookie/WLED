@@ -36,7 +36,7 @@
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
-//#define WLED_ENABLE_ADALIGHT     // saves 500b only
+#define WLED_ENABLE_ADALIGHT     // saves 500b only
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
 //#define WLED_ENABLE_LOXONE       // uses 1.2kb
 #ifndef WLED_DISABLE_WEBSOCKETS
@@ -460,9 +460,9 @@ WLED_GLOBAL bool notificationTwoRequired _INIT(false);
 WLED_GLOBAL byte effectCurrent _INIT(0);
 WLED_GLOBAL byte effectSpeed _INIT(128);
 WLED_GLOBAL byte effectIntensity _INIT(128);
-WLED_GLOBAL byte effectFFT1 _INIT(6);
+WLED_GLOBAL byte effectFFT1 _INIT(128);
 WLED_GLOBAL byte effectFFT2 _INIT(128);
-WLED_GLOBAL byte effectFFT3 _INIT(252);
+WLED_GLOBAL byte effectFFT3 _INIT(128);
 WLED_GLOBAL byte effectPalette _INIT(0);
 
 //  0th bit - transmit enabled/disabled. 1st bit - receive enabled/disabled

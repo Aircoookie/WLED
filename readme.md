@@ -10,7 +10,6 @@
 
   </p>
 
-
 # Sound Reactive WLED! 🎵
 
 Welcome to our Sound Reactive fork of WLED. In addition to the features of WLED below, we also support:
