@@ -190,9 +190,9 @@ bool checkNTPResponse()
     unsigned long highWord = word(pbuf[40], pbuf[41]);
     unsigned long lowWord = word(pbuf[42], pbuf[43]);
     if (highWord == 0 && lowWord == 0) return false;
-
+    
     unsigned long secsSince1900 = highWord << 16 | lowWord;
-
+ 
     DEBUG_PRINT(F("Unix time = "));
     unsigned long epoch = secsSince1900 - 2208988799UL; //subtract 70 years -1sec (on avg. more precision)
     setTime(epoch);
@@ -270,11 +270,11 @@ void checkTimers()
     if (!hour(localTime) && minute(localTime)==1) calculateSunriseAndSunset();
     if (sunrise && sunset) daytime = difftime(localTime, sunrise) > 0 && difftime(localTime, sunset) < 0;
 
-    // DEBUG_PRINTF("Local time: %02d:%02d\n", hour(localTime), minute(localTime));
+    DEBUG_PRINTF("Local time: %02d:%02d\n", hour(localTime), minute(localTime));
     for (uint8_t i = 0; i < 8; i++)
     {
       if (timerMacro[i] != 0
-          && (timerHours[i] == hour(localTime) || timerHours[i] == 24) //if hour is set to 24, activate every hour
+          && (timerHours[i] == hour(localTime) || timerHours[i] == 24) //if hour is set to 24, activate every hour 
           && timerMinutes[i] == minute(localTime)
           && (timerWeekday[i] & 0x01) //timer is enabled
           && ((timerWeekday[i] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
@@ -285,7 +285,7 @@ void checkTimers()
     // sunrise macro
     if (sunrise) {
       time_t tmp = sunrise + timerMinutes[8]*60;  // NOTE: may not be ok
-      // DEBUG_PRINTF("Trigger time: %02d:%02d\n", hour(tmp), minute(tmp));
+      DEBUG_PRINTF("Trigger time: %02d:%02d\n", hour(tmp), minute(tmp));
       if (timerMacro[8] != 0
           && hour(tmp) == hour(localTime)
           && minute(tmp) == minute(localTime)
@@ -293,13 +293,13 @@ void checkTimers()
           && ((timerWeekday[8] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
       {
         applyPreset(timerMacro[8]);
-        // DEBUG_PRINTF("Sunrise macro %d triggered.",timerMacro[8]);
+        DEBUG_PRINTF("Sunrise macro %d triggered.",timerMacro[8]);
       }
     }
     // sunset macro
     if (sunset) {
       time_t tmp = sunset + timerMinutes[9]*60;  // NOTE: may not be ok
-      // DEBUG_PRINTF("Trigger time: %02d:%02d\n", hour(tmp), minute(tmp));
+      DEBUG_PRINTF("Trigger time: %02d:%02d\n", hour(tmp), minute(tmp));
       if (timerMacro[9] != 0
           && hour(tmp) == hour(localTime)
           && minute(tmp) == minute(localTime)
@@ -307,7 +307,7 @@ void checkTimers()
           && ((timerWeekday[9] >> weekdayMondayFirst()) & 0x01)) //timer should activate at current day of week
       {
         applyPreset(timerMacro[9]);
-        // DEBUG_PRINTF("Sunset macro %d triggered.",timerMacro[9]);
+        DEBUG_PRINTF("Sunset macro %d triggered.",timerMacro[9]);
       }
     }
   }
@@ -323,24 +323,24 @@ int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunse
   float N = N1 - (N2 * N3) + day - 30;
 
   //2. convert the longitude to hour value and calculate an approximate time
-  float lngHour = lon / 15.0;
+  float lngHour = lon / 15.0;      
   float t = N + (((sunset ? 18 : 6) - lngHour) / 24);
-
-  //3. calculate the Sun's mean anomaly
+  
+  //3. calculate the Sun's mean anomaly   
   float M = (0.9856 * t) - 3.289;
 
   //4. calculate the Sun's true longitude
   float L = fmod(M + (1.916 * sin(DEG_TO_RAD*M)) + (0.020 * sin(2*DEG_TO_RAD*M)) + 282.634, 360.0);
 
-  //5a. calculate the Sun's right ascension
+  //5a. calculate the Sun's right ascension      
   float RA = fmod(RAD_TO_DEG*atan(0.91764 * tan(DEG_TO_RAD*L)), 360.0);
 
-  //5b. right ascension value needs to be in the same quadrant as L
+  //5b. right ascension value needs to be in the same quadrant as L   
   float Lquadrant  = floor( L/90) * 90;
   float RAquadrant = floor(RA/90) * 90;
   RA = RA + (Lquadrant - RAquadrant);
 
-  //5c. right ascension value needs to be converted into hours
+  //5c. right ascension value needs to be converted into hours   
   RA /= 15.;
 
   //6. calculate the Sun's declination
@@ -356,7 +356,7 @@ int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunse
   float H = sunset ? RAD_TO_DEG*acos(cosH) : 360 - RAD_TO_DEG*acos(cosH);
   H /= 15.;
 
-  //8. calculate local mean time of rising/setting
+  //8. calculate local mean time of rising/setting      
   float T = H + RA - (0.06571 * t) - 6.622;
 
   //9. adjust back to UTC
@@ -382,7 +382,7 @@ void calculateSunriseAndSunset() {
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
       sunrise = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
-      // DEBUG_PRINTF("Sunrise: %02d:%02d\n", hour(sunrise), minute(sunrise));
+      DEBUG_PRINTF("Sunrise: %02d:%02d\n", hour(sunrise), minute(sunrise));
     } else {
       sunrise = 0;
     }
@@ -393,7 +393,7 @@ void calculateSunriseAndSunset() {
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
       sunset = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
-      // DEBUG_PRINTF("Sunset: %02d:%02d\n", hour(sunset), minute(sunset));
+      DEBUG_PRINTF("Sunset: %02d:%02d\n", hour(sunset), minute(sunset));
     } else {
       sunset = 0;
     }
