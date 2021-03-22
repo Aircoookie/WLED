@@ -117,7 +117,7 @@
 #define IS_REVERSE      ((SEGMENT.options & REVERSE     ) == REVERSE     )
 #define IS_SELECTED     ((SEGMENT.options & SELECTED    ) == SELECTED    )
 
-#define MODE_COUNT                     152
+#define MODE_COUNT                     153
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -271,6 +271,7 @@
 #define FX_MODE_DJLIGHT                149
 #define FX_MODE_2DFUNKYPLANK           150
 #define FX_MODE_2DCENTERBARS           151
+#define FX_MODE_2DJULIA                152
 
 
 class WS2812FX {
@@ -647,6 +648,7 @@ class WS2812FX {
       _mode[FX_MODE_DJLIGHT]                 = &WS2812FX::mode_DJLight;
       _mode[FX_MODE_2DFUNKYPLANK]            = &WS2812FX::mode_2DFunkyPlank;
       _mode[FX_MODE_2DCENTERBARS]            = &WS2812FX::mode_2DCenterBars;
+      _mode[FX_MODE_2DJULIA]                 = &WS2812FX::mode_2DJulia;
 
       _brightness = DEFAULT_BRIGHTNESS;
       currentPalette = CRGBPalette16(CRGB::Black);
@@ -918,7 +920,8 @@ class WS2812FX {
       mode_gravfreq(void),
       mode_DJLight(void),
       mode_2DFunkyPlank(void),
-      mode_2DCenterBars(void);
+      mode_2DCenterBars(void),
+      mode_2DJulia(void);
 
   private:
     uint32_t crgb_to_col(CRGB fastled);
@@ -1018,7 +1021,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "* Juggles","* Matripix","* Gravimeter","* Plasmoid","* Puddles","* Midnoise","* Noisemeter","** Freqwave","** Freqmatrix","** 2D GEQ",
 "** Waterfall","** Freqpixels","** Binmap","* Noisefire","* Puddlepeak","** Noisemove","2D Plasma","Perlin Move","* Ripple Peak","2D FireNoise",
 "2D Squared Swirl","2D Fire2012","2D DNA","2D Matrix","2D Meatballs","** Freqmap","* Gravcenter","* Gravcentric","** Gravfreq","** DJ Light",
-"** 2D Funky Plank","** 2D CenterBars"
+"** 2D Funky Plank","** 2D CenterBars","2D Julia"
 ])=====";
 
 

@@ -4132,6 +4132,132 @@ uint16_t WS2812FX::mode_perlinmove(void) {
 } // mode_perlinmove()
 
 
+/////////////////////////
+//     2D Julia        //
+/////////////////////////
+
+// Sliders are:
+//
+// intensity = Maximum number of iterations per pixel.
+// FFT1 = Location of X centerpoint
+// FFT2 = Location of Y centerpoint
+// FFT3 = Size of the area (small value = smaller area)
+
+typedef struct Julia {              // We can't use the 'static' keyword for persistent variables, so we have to go the LONG route to support them.
+  float xcen;
+  float ycen;
+  float xymag;  
+} julia;
+
+
+uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated Julia set by Andrew Tuline
+
+  CRGB *leds = (CRGB*) ledData;
+
+  if (!SEGENV.allocateData(sizeof(julia))) return mode_static();  // We use this method for allocating memory for static variables.
+  Julia* julias = reinterpret_cast<Julia*>(SEGENV.data);          // Because 'static' doesn't work with SEGMENTS.
+
+  float reAl;
+  float imAg;
+
+  if (SEGENV.call == 0) {           // Reset the center if we've just re-started this animation.
+    julias->xcen = 0.;
+    julias->ycen = 0.;
+    julias->xymag = 1.0;
+
+    SEGMENT.fft1 = 128;             // Make sure the location widgets are centered to start. Too bad
+    SEGMENT.fft2 = 128;             // it doesn't show up on the UI.
+    SEGMENT.fft3 = 128;
+    SEGMENT.intensity = 24;
+  }
+
+  julias->xcen = julias->xcen + (float)(SEGMENT.fft1 - 128)/100000.;
+  julias->ycen = julias->ycen + (float)(SEGMENT.fft2 - 128)/100000.;
+  julias->xymag = julias->xymag + (float)(SEGMENT.fft3-128)/100000.;
+  if (julias->xymag < 0.01) julias->xymag = 0.01;
+  if (julias->xymag > 1.0) julias->xymag = 1.0;
+
+  float xmin = julias->xcen - julias->xymag;
+  float xmax = julias->xcen + julias->xymag;
+  float ymin = julias->ycen - julias->xymag;
+  float ymax = julias->ycen + julias->xymag;
+
+// Whole set should be within -1.2,1.2 to -.8 to 1.
+  xmin = constrain(xmin,-1.2,1.2);
+  xmax = constrain(xmax,-1.2,1.2);
+  ymin = constrain(ymin,-.8,1.0);
+  ymax = constrain(ymax,-.8,1.0);
+
+  float dx;                       // Delta x is mapped to the matrix size.
+  float dy;                       // Delta y is mapped to the matrix size.
+
+  int maxIterations = 15;         // How many iterations per pixel before we give up. Make it 8 bits to match our range of colours.
+  float maxCalc = 16.0;           // How big is each calculation allowed to be before we give up.
+
+  maxIterations = SEGMENT.intensity/2;
+
+
+// Resize section on the fly for some animaton.
+  reAl = -0.94299;                // PixelBlaze example
+  imAg = 0.3162;
+
+  reAl += sin((float)millis()/305.)/20.;
+  imAg += sin((float)millis()/405.)/20.;
+
+//  Serial.print(reAl,4); Serial.print("\t"); Serial.print(imAg,4); Serial.println(" ");
+
+  dx = (xmax - xmin) / (matrixWidth);     // Scale the delta x and y values to our matrix size.
+  dy = (ymax - ymin) / (matrixHeight);
+
+  // Start y
+  float y = ymin;
+  for (int j = 0; j < matrixHeight; j++) {
+    
+    // Start x
+    float x = xmin;
+    for (int i = 0; i < matrixWidth; i++) {
+  
+      // Now we test, as we iterate z = z^2 + c does z tend towards infinity?
+      float a = x;
+      float b = y;
+      int iter = 0;
+  
+      while (iter < maxIterations) {    // Here we determine whether or not we're out of bounds.
+        float aa = a * a;
+        float bb = b * b;
+        float len = aa + bb;
+        if (len > maxCalc) {            // |z| = sqrt(a^2+b^2) OR z^2 = a^2+b^2 to save on having to perform a square root.
+          break;  // Bail
+        }
+        
+       // This operation corresponds to z -> z^2+c where z=a+ib c=(x,y). Remember to use 'foil'.      
+        b = 2*a*b + imAg;
+        a = aa - bb + reAl;
+        iter++;
+      } // while
+  
+      // We color each pixel based on how long it takes to get to infinity, or black if it never gets there.
+      if (iter == maxIterations) {
+//        leds[XY(i,j)] = CRGB::Black;            // Calculation kept on going, so it was within the set.
+        setPixelColor(XY(i,j),0);
+      } else {
+//        leds[XY(i,j)] = CHSV(iter*255/maxIterations,255,255);   // Near the edge of the set.
+        setPixelColor(XY(i,j), color_blend(SEGCOLOR(1), color_from_palette(iter*255/maxIterations, false, PALETTE_SOLID_WRAP, 0), 255));
+      }
+      x += dx;
+    }
+    y += dy;
+  }
+
+//  blur2d( leds, matrixWidth, matrixHeight, 64);
+
+//  setPixels(leds);       // Use this ONLY if we're going to display via leds[x] method.
+  return FRAMETIME;
+
+} // mode_2DJulia()
+
+
+
 ////////////////////////////////
 //   Begin volume routines    //
 ////////////////////////////////
