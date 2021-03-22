@@ -206,7 +206,6 @@ function onLoad() {
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
-	loadPalettesData();
 }
 
 function updateTablinks(tabI)
@@ -570,7 +569,8 @@ function populateSegments(s)
 
 function populateEffects(effects)
 {
-	var html = `<input type="text" class="search" placeholder="Search" oninput="search(this)" />`;
+	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
+    <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
 
 	effects.shift(); //remove solid
 	for (let i = 0; i < effects.length; i++) {
@@ -615,10 +615,11 @@ function populatePalettes(palettes)
 		"class": "sticky"
 	});
 
-	var paletteHtml = `<input type="text" class="search" placeholder="Search" oninput="search(this)" />`;
+	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
+  <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
 	for (let i = 0; i < palettes.length; i++) {
 		let previewCss = genPalPrevCss(palettes[i].id);
-		paletteHtml += generateListItemHtml(
+		html += generateListItemHtml(
 			'palette',
 		    palettes[i].id,
             palettes[i].name,
@@ -628,7 +629,7 @@ function populatePalettes(palettes)
         );
 	}
 
-	d.getElementById('selectPalette').innerHTML=paletteHtml;
+	d.getElementById('selectPalette').innerHTML=html;
 }
 
 function redrawPalPrev()
@@ -699,19 +700,15 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraClass = '')
 {
-    return `<div class="lstI ${extraClass}" data-id="${id}" onClick="${clickAction}(${id})">
-			<label class="radio schkl">
-				&nbsp;
-				<input type="radio" value="${id}" name="${listName}" onChange="${clickAction}()">
-				<span class="radiomark schk"></span>
+    return `<div class="lstI btn fxbtn ${extraClass}" data-id="${id}" onClick="${clickAction}(${id})">
+			<label class="radio fxchkl">
+				<input type="radio" value="${id}" name="${listName}">
+				<span class="radiomark"></span>
 			</label>
-			<div class="lstIcontent">
-				<span class="lstIname">
-					${name}
-				</span>
-				${extraHtml}
-			</div>
-
+      <span class="lstIname">
+        ${name}
+      </span>
+      ${extraHtml}
 		</div>`;
 }
 
@@ -984,6 +981,8 @@ function requestJson(command, rinfo = true, verbose = true) {
 			}
 			s = json.state;
 			displayRover(info, s);
+
+      if (!rinfo) loadPalettesData();
 		}
 
 		isOn = s.on;
@@ -1580,27 +1579,25 @@ function rSegs()
 
 function loadPalettesData()
 {
-	if (palettesData) {
-		return;
-	}
+	if (palettesData) return;
 	const lsKey = "wledPalx";
 	var palettesDataJson = localStorage.getItem(lsKey);
 	if (palettesDataJson) {
 		try {
 			palettesDataJson = JSON.parse(palettesDataJson);
 			var d = new Date();
-			if (palettesDataJson && palettesDataJson.expiration && palettesDataJson.expiration > d.getTime()) {
+			if (palettesDataJson && palettesDataJson.vid == lastinfo.vid) {
 				palettesData = palettesDataJson.p;
 				return;
 			}
 		} catch (e) {}
 	}
-	var dateExpiration = new Date();
+
 	palettesData = {};
-	getPalettesData(1, function() {
+	getPalettesData(0, function() {
 		localStorage.setItem(lsKey, JSON.stringify({
 			p: palettesData,
-			expiration: dateExpiration.getTime() + (24 * 60 * 60 * 1000) // 24 hrs expiration
+			vid: lastinfo.vid
 		}));
 		redrawPalPrev();
 	});
@@ -1642,7 +1639,8 @@ function getPalettesData(page, callback)
 
 function search(searchField) {
 	var searchText = searchField.value.toUpperCase();
-	var elements = searchField.parentElement.querySelectorAll('.lstI');
+  searchField.parentElement.getElementsByClassName('search-cancel-icon')[0].style.display = (searchText.length < 1)?"none":"inline";
+	var elements = searchField.parentElement.parentElement.querySelectorAll('.lstI');
 	for (i = 0; i < elements.length; i++) {
 		var item = elements[i];
 		var itemText = item.querySelector('.lstIname').innerText.toUpperCase();
@@ -1652,6 +1650,13 @@ function search(searchField) {
 			item.style.display = "none";
 		}
 	}
+}
+
+function cancelSearch(ic) {
+  var searchField = ic.parentElement.getElementsByClassName('search')[0];
+  searchField.value = "";
+  search(searchField);
+  searchField.focus();
 }
 
 function expand(i,a)
