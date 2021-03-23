@@ -2,6 +2,12 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103220
+
+-   Version bump to 0.12.0-b2 "Hikari"
+-   Worked around an issue causing a critical decrease in framerate (wled.cpp l.240 block)
+-   Bump to Espalexa v2.7.0, fixing discovery
+
 #### Build 2103210
 
 -   Version bump to 0.12.0-b1 "Hikari"
