@@ -2,6 +2,10 @@
 
 ### Development versions after 0.11.1 release
 
+#### Build 2103230
+
+-   Fixed current estimation
+
 #### Build 2103220
 
 -   Version bump to 0.12.0-b2 "Hikari"
