@@ -104,7 +104,7 @@ void colorUpdated(int callMode)
   //Notifier: apply received FX to selected segments only if actually receiving FX
   if (someSel) strip.applyToAllSelected = receiveNotificationEffects;
 
-  bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectFFT1, effectFFT2, effectFFT3, effectPalette);
+  bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectFFT1, effectFFT2, effectFFT3, effectPalette) || effectChanged;
   bool colChanged = colorChanged();
 
   //Notifier: apply received color to selected segments only if actually receiving color
@@ -112,6 +112,7 @@ void colorUpdated(int callMode)
 
   if (fxChanged || colChanged)
   {
+    effectChanged = false;
     if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
     if (isPreset) {isPreset = false;}
         else {currentPreset = -1;}

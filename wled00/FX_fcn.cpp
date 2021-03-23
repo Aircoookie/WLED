@@ -27,10 +27,6 @@
 #include "FX.h"
 #include "palettes.h"
 
-#ifndef PWM_INDEX
-#define PWM_INDEX 0
-#endif
-
 /*
   Custom per-LED mapping has moved!
 
@@ -145,8 +141,6 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   setPixelColor(n, r, g, b, w);
 }
 
-#define REV(i) (_length - 1 - (i))
-
 //used to map from segment index to physical pixel, taking into account grouping, offsets, reverse and mirroring
 uint16_t WS2812FX::realPixelIndex(uint16_t i) {
   int16_t iGroup = i * SEGMENT.groupLength();
@@ -162,8 +156,6 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
   }
 
   realIndex += SEGMENT.start;
-  /* Reverse the whole string */
-  if (reverseMode) realIndex = REV(realIndex);
 
   return realIndex;
 }
@@ -197,27 +189,22 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
 
     /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
-    bool reversed = reverseMode ^ IS_REVERSE;
+    bool reversed = IS_REVERSE;
     uint16_t realIndex = realPixelIndex(i);
 
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
       int16_t indexSet = realIndex + (reversed ? -j : j);
-      int16_t indexSetRev = indexSet;
-      if (reverseMode) indexSetRev = REV(indexSet);
       if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
-      if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) {
+      if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
         busses.setPixelColor(indexSet + skip, col);
         if (IS_MIRROR) { //set the corresponding mirrored pixel
-          if (reverseMode) {
-            busses.setPixelColor(REV(SEGMENT.start) - indexSet + skip + REV(SEGMENT.stop) + 1, col);
-          } else {
-            busses.setPixelColor(SEGMENT.stop - indexSet + skip + SEGMENT.start - 1, col);
-          }
+          uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
+          if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
+          busses.setPixelColor(indexMir + skip, col);
         }
       }
     }
   } else { //live data, etc.
-    if (reverseMode) i = REV(i);
     if (i < customMappingSize) i = customMappingTable[i];
 
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
@@ -276,16 +263,17 @@ void WS2812FX::show(void) {
 
     for (uint16_t i = 0; i < _length; i++) //sum up the usage of each LED
     {
-      RgbwColor c = busses.getPixelColor(i);
+      uint32_t c = busses.getPixelColor(i);
+      byte r = c >> 16, g = c >> 8, b = c, w = c >> 24;
 
       if(useWackyWS2815PowerModel)
       {
         // ignore white component on WS2815 power calculation
-        powerSum += (MAX(MAX(c.R,c.G),c.B)) * 3;
+        powerSum += (MAX(MAX(r,g),b)) * 3;
       }
       else
       {
-        powerSum += (c.R + c.G + c.B + c.W);
+        powerSum += (r + g + b + w);
       }
     }
 

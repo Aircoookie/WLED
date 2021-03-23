@@ -191,9 +191,6 @@ void WLED::loop()
 
   handleOverlays();
   yield();
-#ifdef WLED_USE_ANALOG_LEDS
-  strip.setRgbwPwm();
-#endif
 
   if (doReboot)
     reset();
@@ -217,21 +214,6 @@ void WLED::loop()
     handleHue();
     handleBlynk();
 
-    //LED settings have been saved, re-init busses
-    if (busConfigs[0] != nullptr) {
-      busses.removeAll();
-      uint32_t mem = 0;
-      for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
-        if (busConfigs[i] == nullptr) break;
-        mem += busses.memUsage(*busConfigs[i]);
-        if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
-        delete busConfigs[i]; busConfigs[i] = nullptr;
-      }
-      strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
-      yield();
-      serializeConfig();
-    }
-
     yield();
 
     if (!offMode)
@@ -250,7 +232,26 @@ void WLED::loop()
     initMqtt();
     refreshNodeList();
     if (nodeBroadcastEnabled) sendSysInfoUDP();
+    yield();
   }
+
+  //LED settings have been saved, re-init busses
+  //This code block causes severe FPS drop on ESP32 with the original "if (busConfigs[0] != nullptr)" conditional. Investigate! 
+  if (doInitBusses) {
+    doInitBusses = false;
+    busses.removeAll();
+    uint32_t mem = 0;
+    for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
+      if (busConfigs[i] == nullptr) break;
+      mem += busses.memUsage(*busConfigs[i]);
+      if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
+      delete busConfigs[i]; busConfigs[i] = nullptr;
+    }
+    strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+    yield();
+    serializeConfig();
+  }
+  
   yield();
   handleWs();
   handleStatusLED();

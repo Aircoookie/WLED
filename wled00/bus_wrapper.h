@@ -502,7 +502,7 @@ class PolyBus {
 
     //TODO make color order override possible on a per-strip basis
     #ifdef COLOR_ORDER_OVERRIDE
-    if (indexPixel >= COO_MIN && indexPixel < COO_MAX) co = COO_ORDER;
+    if (pix >= COO_MIN && pix < COO_MAX) co = COO_ORDER;
     #endif
 
     //reorder channels to selected order
@@ -737,7 +737,7 @@ class PolyBus {
     }
 
     #ifdef COLOR_ORDER_OVERRIDE
-    if (indexPixel >= COO_MIN && indexPixel < COO_MAX) co = COO_ORDER;
+    if (pix >= COO_MIN && pix < COO_MAX) co = COO_ORDER;
     #endif
 
     switch (co)

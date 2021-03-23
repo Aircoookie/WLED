@@ -116,6 +116,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
+      doInitBusses = true;
     }
 
     ledCount = request->arg(F("LC")).toInt();
@@ -183,7 +184,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     t = request->arg(F("PB")).toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
-    strip.reverseMode = request->hasArg(F("RV"));
     skipFirstLed = request->hasArg(F("SL"));
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
@@ -326,7 +326,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
     // force a sunrise/sunset re-calculation
-    calculateSunriseAndSunset(); 
+    calculateSunriseAndSunset();
 
     if (request->hasArg(F("OL"))) {
       overlayDefault = request->arg(F("OL")).toInt();
@@ -895,13 +895,34 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   {
     WS2812FX::Segment& seg = strip.getSegment(i);
     if (!seg.isSelected()) continue;
-    if (effectCurrent != prevEffect) seg.mode = effectCurrent;
-    if (effectSpeed != prevSpeed) seg.speed = effectSpeed;
-    if (effectIntensity != prevIntensity) seg.intensity = effectIntensity;
-    if (effectFFT1 != prevFFT1) seg.fft1 = effectFFT1;
-    if (effectFFT2 != prevFFT2) seg.fft2 = effectFFT2;
-    if (effectFFT3 != prevFFT3) seg.fft3 = effectFFT3;
-    if (effectPalette != prevPalette) seg.palette = effectPalette;
+    if (effectCurrent != prevEffect) {
+      seg.mode = effectCurrent;
+      effectChanged = true;
+    }
+    if (effectSpeed != prevSpeed) {
+      seg.speed = effectSpeed;
+      effectChanged = true;
+    }
+    if (effectIntensity != prevIntensity) {
+      seg.intensity = effectIntensity;
+      effectChanged = true;
+    }
+    if (effectFFT1 != prevFFT1) {
+      seg.fft1 = effectFFT1;
+      effectChanged = true;
+    }
+    if (effectFFT2 != prevFFT2) {
+      seg.fft2 = effectFFT2;
+      effectChanged = true;
+    }
+    if (effectFFT3 != prevFFT3) {
+      seg.fft3 = effectFFT3;
+      effectChanged = true;
+    }
+    if (effectPalette != prevPalette) {
+      seg.palette = effectPalette;
+      effectChanged = true;
+    }
   }
 
   if (col0Changed) {
