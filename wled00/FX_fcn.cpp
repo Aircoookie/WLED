@@ -275,16 +275,17 @@ void WS2812FX::show(void) {
 
     for (uint16_t i = 0; i < _length; i++) //sum up the usage of each LED
     {
-      RgbwColor c = busses.getPixelColor(i);
+      uint32_t c = busses.getPixelColor(i);
+      byte r = c >> 16, g = c >> 8, b = c, w = c >> 24;
 
       if(useWackyWS2815PowerModel)
       {
         // ignore white component on WS2815 power calculation
-        powerSum += (MAX(MAX(c.R,c.G),c.B)) * 3;
+        powerSum += (MAX(MAX(r,g),b)) * 3;
       }
       else 
       {
-        powerSum += (c.R + c.G + c.B + c.W);
+        powerSum += (r + g + b + w);
       }
     }
 
