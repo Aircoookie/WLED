@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2103221
+#define VERSION 2103230
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -173,7 +173,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.12.0-b1");
+WLED_GLOBAL char versionString[] _INIT("0.12.0-b2");
 #define WLED_CODENAME "Hikari"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -563,7 +563,8 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 // led fx library object
 WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
-WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES]; //temporary, to remember values from network callback until after 
+WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES]; //temporary, to remember values from network callback until after
+WLED_GLOBAL bool doInitBusses _INIT(false);
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());

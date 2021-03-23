@@ -121,6 +121,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skipFirstLed);
+      doInitBusses = true;
     }
 
     ledCount = request->arg(F("LC")).toInt();
