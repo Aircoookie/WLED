@@ -91,7 +91,7 @@ float weighting = 0.2;                          // Exponential filter weighting.
 
 // FFT Variables
 
-const uint16_t samples = 512;                     // This value MUST ALWAYS be a power of 2
+const uint16_t samples = 512;                   // This value MUST ALWAYS be a power of 2
 unsigned int sampling_period_us;
 unsigned long microseconds;
 
@@ -107,8 +107,8 @@ double fftBin[samples];
 // Try and normalize fftBin values to a max of 4096, so that 4096/16 = 256.
 // Oh, and bins 0,1,2 are no good, so we'll zero them out.
 double fftCalc[16];
-int fftResult[16];                      // Our calculated result table, which we feed to the animations.
-double fftResultMax[16];                // A table used for testing to determine how our post-processing is working.
+int fftResult[16];                              // Our calculated result table, which we feed to the animations.
+double fftResultMax[16];                        // A table used for testing to determine how our post-processing is working.
 float fftAvg[16];
 
 // Table of linearNoise results to be multiplied by soundSquelch in order to reduce squelch across fftResult bins.
@@ -116,9 +116,6 @@ int linearNoise[16] = { 34, 28, 26, 25, 20, 12, 9, 6, 4, 4, 3, 2, 2, 2, 2, 2 };
 
 // Table of multiplication factors so that we can even out the frequency response.
 double fftResultPink[16] = {1.70,1.71,1.73,1.78,1.68,1.56,1.55,1.63,1.79,1.62,1.80,2.06,2.47,3.35,6.83,9.55};
-
-
-
 
 
 struct audioSyncPacket {
@@ -136,31 +133,38 @@ struct audioSyncPacket {
 double mapf(double x, double in_min, double in_max, double out_min, double out_max);
 
 bool isValidUdpSyncVersion(char header[6]) {
-  return (header == UDP_SYNC_HEADER);
+  if (strncmp(header, UDP_SYNC_HEADER, 6) == 0) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void getSample() {
   static long peakTime;
-  extern double FFT_Magnitude;                    // Optional inclusion for our volume routines
-  extern double FFT_MajorPeak;                    // Same here. Not currently used though
+  //extern double FFT_Magnitude;                    // Optional inclusion for our volume routines // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
+  //extern double FFT_MajorPeak;                    // Same here. Not currently used though       // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
 
   #ifdef WLED_DISABLE_SOUND
     micIn = inoise8(millis(), millis());          // Simulated analog read
   #else
     micIn = micDataSm;      // micDataSm = ((micData * 3) + micData)/4;
-//////
+/*---------DEBUG---------*/
     DEBUGSR_PRINT("micIn:\tmicData:\tmicIn>>2:\tmic_In_abs:\tsample:\tsampleAdj:\tsampleAvg:\n");
     DEBUGSR_PRINT(micIn); DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(micData);
+/*-------END DEBUG-------*/
 
     if (digitalMic == false) micIn = micIn >> 2;  // ESP32 has 2 more bits of A/D than ESP8266, so we need to normalize to 10 bit.
-//////
+/*---------DEBUG---------*/
     DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(micIn);
+/*-------END DEBUG-------*/
   #endif
   micLev = ((micLev * 31) + micIn) / 32;          // Smooth it out over the last 32 samples for automatic centering
   micIn -= micLev;                                // Let's center it to 0 now
   micIn = abs(micIn);                             // And get the absolute value of each sample
-//////
+/*---------DEBUG---------*/
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(micIn);
+/*-------END DEBUG-------*/
 
 // Using an exponential filter to smooth out the signal. We'll add controls for this in a future release.
   expAdjF = (weighting * micIn + (1.0-weighting) * expAdjF);
@@ -168,18 +172,20 @@ void getSample() {
 
   tmpSample = (int)expAdjF;
 
-//////
+/*---------DEBUG---------*/
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(sample);
+/*-------END DEBUG-------*/
 
   sampleAdj = tmpSample * sampleGain / 40 + tmpSample / 16; // Adjust the gain.
   sampleAdj = min(sampleAdj, 255);
   sample = sampleAdj;                             // ONLY update sample ONCE!!!!
 
   sampleAvg = ((sampleAvg * 15) + sample) / 16;   // Smooth it out over the last 16 samples.
-//////
 
+/*---------DEBUG---------*/
   DEBUGSR_PRINT("\t"); DEBUGSR_PRINT(sample);
   DEBUGSR_PRINT("\t\t"); DEBUGSR_PRINT(sampleAvg); DEBUGSR_PRINT("\n\n");
+/*-------END DEBUG-------*/
 
   if (millis() - timeOfPeak > MIN_SHOW_DELAY) {   // Auto-reset of samplePeak after a complete frame has passed.
     samplePeak = 0;
@@ -275,8 +281,8 @@ double fftAdd( int from, int to) {
 // FFT main code
 void FFTcode( void * parameter) {
   //DEBUG_PRINT("FFT running on core: "); DEBUG_PRINTLN(xPortGetCoreID());
-  double beatSample = 0;
-  double envelope = 0;
+  //double beatSample = 0;  // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
+  //double envelope = 0;    // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
 
   for(;;) {
     delay(1);           // DO NOT DELETE THIS LINE! It is needed to give the IDLE(0) task enough time and to keep the watchdog happy.
@@ -287,13 +293,14 @@ void FFTcode( void * parameter) {
       continue;
 
     microseconds = micros();
-    extern double volume;
+    //extern double volume;   // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
 
     for(int i=0; i<samples; i++) {
       if (digitalMic == false) {
         micData = analogRead(audioPin);           // Analog Read
       } else {
         int32_t digitalSample = 0;
+        // TODO: I2S_POP_SAMLE DEPRECATED, FIND ALTERNATE SOLUTION
         int bytes_read = i2s_pop_sample(I2S_PORT, (char *)&digitalSample, portMAX_DELAY); // no timeout
         if (bytes_read > 0) {
           micData = abs(digitalSample >> 16);

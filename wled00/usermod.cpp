@@ -55,6 +55,7 @@ void userSetup() {
 // Test to see if we have a digital microphone installed or not.
 float mean = 0.0;
 int32_t samples[BLOCK_SIZE];
+// TODO: I2S_READ_BYTES DEPRECATED, FIND ALTERNATE SOLUTION
 int num_bytes_read = i2s_read_bytes(I2S_PORT,
                                     (char *)samples,
                                     BLOCK_SIZE,     // the doc says bytes, but its elements.

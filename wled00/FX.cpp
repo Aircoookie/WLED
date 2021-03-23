@@ -4146,13 +4146,13 @@ uint16_t WS2812FX::mode_perlinmove(void) {
 typedef struct Julia {              // We can't use the 'static' keyword for persistent variables, so we have to go the LONG route to support them.
   float xcen;
   float ycen;
-  float xymag;  
+  float xymag;
 } julia;
 
 
 uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated Julia set by Andrew Tuline
 
-  CRGB *leds = (CRGB*) ledData;
+  //CRGB *leds = (CRGB*) ledData;   // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
 
   if (!SEGENV.allocateData(sizeof(julia))) return mode_static();  // We use this method for allocating memory for static variables.
   Julia* julias = reinterpret_cast<Julia*>(SEGENV.data);          // Because 'static' doesn't work with SEGMENTS.
@@ -4212,16 +4212,16 @@ uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated
   // Start y
   float y = ymin;
   for (int j = 0; j < matrixHeight; j++) {
-    
+
     // Start x
     float x = xmin;
     for (int i = 0; i < matrixWidth; i++) {
-  
+
       // Now we test, as we iterate z = z^2 + c does z tend towards infinity?
       float a = x;
       float b = y;
       int iter = 0;
-  
+
       while (iter < maxIterations) {    // Here we determine whether or not we're out of bounds.
         float aa = a * a;
         float bb = b * b;
@@ -4229,13 +4229,13 @@ uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated
         if (len > maxCalc) {            // |z| = sqrt(a^2+b^2) OR z^2 = a^2+b^2 to save on having to perform a square root.
           break;  // Bail
         }
-        
-       // This operation corresponds to z -> z^2+c where z=a+ib c=(x,y). Remember to use 'foil'.      
+
+       // This operation corresponds to z -> z^2+c where z=a+ib c=(x,y). Remember to use 'foil'.
         b = 2*a*b + imAg;
         a = aa - bb + reAl;
         iter++;
       } // while
-  
+
       // We color each pixel based on how long it takes to get to infinity, or black if it never gets there.
       if (iter == maxIterations) {
 //        leds[XY(i,j)] = CRGB::Black;            // Calculation kept on going, so it was within the set.
@@ -5343,24 +5343,24 @@ void WS2812FX::blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blu
 //
 uint16_t WS2812FX::XY( int x, int y) {
 
-uint16_t i;
+uint16_t i = 0;
 
-  if( matrixSerpentine == false) {
+if( matrixSerpentine == false) {
+  i = (y * matrixWidth) + x;
+}
+
+if( matrixSerpentine == true) {
+  if( y & 0x01) {
+    // Odd rows run backwards
+    uint8_t reverseX = (matrixWidth - 1) - x;
+    i = (y * matrixWidth) + reverseX;
+  } else {
+    // Even rows run forwards
     i = (y * matrixWidth) + x;
   }
+}
 
-  if( matrixSerpentine == true) {
-    if( y & 0x01) {
-      // Odd rows run backwards
-      uint8_t reverseX = (matrixWidth - 1) - x;
-      i = (y * matrixWidth) + reverseX;
-    } else {
-      // Even rows run forwards
-      i = (y * matrixWidth) + x;
-    }
-  }
-
-  return i;
+return i;
 } // XY()
 
 
@@ -5377,8 +5377,8 @@ uint16_t WS2812FX::mode_2Dplasma(void) {                  // By Andreas Pleschut
   if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
 
   static uint8_t ihue=0;
-  uint8_t index;
-  uint8_t bri;
+  // uint8_t index;   // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
+  // uint8_t bri;     // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
   static unsigned long prevMillis;
   unsigned long curMillis = millis();
 
@@ -5481,7 +5481,7 @@ uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By And
                                    CHSV(0, 255, 16), CRGB::Red, CRGB::Red, CRGB::Red,
                                    CRGB::DarkOrange,CRGB::DarkOrange, CRGB::Orange, CRGB::Orange,
                                    CRGB::Yellow, CRGB::Orange, CRGB::Yellow, CRGB::Yellow);
-  int a = millis();
+  //int a = millis();   // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
   for (int j=0; j < matrixWidth; j++) {
     for (int i=0; i < matrixHeight; i++) {
 
@@ -5552,7 +5552,7 @@ uint16_t WS2812FX::mode_2Dfire2012(void) {                // Fire2012 by Mark Kr
   if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}  // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB *)ledData;
-  static byte *heat = (byte *)dataStore;
+  //static byte *heat = (byte *)dataStore;    // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
 
   const uint8_t COOLING = 50;
   const uint8_t SPARKING = 50;
