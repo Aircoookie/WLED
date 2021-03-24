@@ -30,7 +30,7 @@
 #ifdef USERMOD_AUTO_SAVE
 #include "../usermods/usermod_v2_auto_save/usermod_v2_auto_save.h"
 #endif
-#include "usermod_v2_mqtt_PIR.h"
+
 
 void registerUsermods()
 {
@@ -60,5 +60,5 @@ void registerUsermods()
 #ifdef USERMOD_AUTO_SAVE
   usermods.add(new AutoSaveUsermod());
 #endif
-usermods.add(new mqttPIR);
+
 }
