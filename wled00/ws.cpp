@@ -8,6 +8,7 @@
 uint16_t wsLiveClientId = 0;
 unsigned long wsLastLiveTime = 0;
 //uint8_t* wsFrameBuffer = nullptr;
+uint8_t vAPI = 2;
 
 #define WS_LIVE_INTERVAL 40
 
@@ -27,7 +28,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       //the whole message is in a single frame and we got all of it's data (max. 1450byte)
       if(info->opcode == WS_TEXT)
       {
-        bool verboseResponse = false;
+        uint8_t verboseResponse = 0;
         { //scope JsonDocument so it releases its buffer
           DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
           DeserializationError error = deserializeJson(jsonBuffer, data, len);
@@ -40,6 +41,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           }
 
           verboseResponse = deserializeState(root);
+          if (verboseResponse) vAPI = verboseResponse;
         }
         if (verboseResponse || millis() - lastInterfaceUpdate < 1900) sendDataWs(client); //update if it takes longer than 100ms until next "broadcast"
       }
@@ -79,6 +81,7 @@ void sendDataWs(AsyncWebSocketClient * client)
   { //scope JsonDocument so it releases its buffer
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     JsonObject state = doc.createNestedObject("state");
+    if (vAPI>1) state["rev"] = 2;
     serializeState(state);
     JsonObject info  = doc.createNestedObject("info");
     serializeInfo(info);

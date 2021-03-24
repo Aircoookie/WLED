@@ -26,6 +26,7 @@ var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true}
 };
+var myWS, noWS = false;
 
 var cpick = new iro.ColorPicker("#picker", {
 	width: 260,
@@ -51,7 +52,7 @@ var cpick = new iro.ColorPicker("#picker", {
   ]
 });
 
-function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson(null);}
+function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson({'v':true,'rev':2},false);}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 
 function applyCfg()
@@ -191,8 +192,10 @@ function onLoad()
 	loadPalettes(function() {
 		loadFX(function() {
 			loadPresets(function() {
-				requestJson(null, false, true, function() {
-					loadPalettesData();
+				loadInfo(function() {
+					requestJson({'v':true,'rev':2}, false, true, function() {
+						loadPalettesData();
+					});
 				});
 			});
 		});
@@ -209,11 +212,13 @@ function onLoad()
 		sl.addEventListener('touchend', toggleBubble);
 	}
 
-	// Creatte UI update WS handler
-	var mySocket = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
-	mySocket.onmessage = function(event) {
+	// Create UI update WS handler
+	myWS = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
+    myWS.onopen = function () {
+		myWS.send("{'v':true,'rev':2}");
+	}
+	myWS.onmessage = function(event) {
 		var json = JSON.parse(event.data);
-		//console.log(json);
 		if (handleJson(json.state)) updateUI(true);
 	}
 }
@@ -491,6 +496,40 @@ function populatePresets(fromls)
 	} else { presetError(true); }
 	updatePA(true);
 	populateQL();
+}
+
+function loadInfo(callback=null)
+{
+	var url = (loc?`http://${locip}`:'') + '/json/info';
+	fetch(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) showToast('Could not load Info!', true);
+		return res.json();
+	})
+	.then(json => {
+		lastinfo = json;
+		var name = json.name;
+		d.getElementById('namelabel').innerHTML = name;
+		if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+		if (json.live) name = "(Live) " + name;
+		if (loc) name = "(L) " + name;
+		d.title = name;
+		isRgbw = json.leds.wv;
+		ledCount = json.leds.count;
+		syncTglRecv = json.str;
+		maxSeg = json.leds.maxseg;
+		pmt = json.fs.pmt;
+//		d.getElementById('buttonNodes').style.display = (json.ndc > 0 && window.innerWidth > 770) ? "block":"none";
+		populateInfo(json);
+		if (callback) callback();
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+		if (callback) callback();
+	});
 }
 
 function populateInfo(i)
@@ -780,10 +819,16 @@ function genPalPrevCss(id)
 			b = Math.random() * 255;
 		} else {
 			if (selColors) {
-				let pos = element[1] - 1;
-				r = selColors[pos][0];
-				g = selColors[pos][1];
-				b = selColors[pos][2];
+				let e = element[1] - 1;
+				if (Array.isArray(selColors[e])) {
+					r = selColors[e][0];
+					g = selColors[e][1];
+					b = selColors[e][2];
+				} else {
+					r = (selColors[e]>>16) & 0xFF;
+					g = (selColors[e]>> 8) & 0xFF;
+					b = (selColors[e]    ) & 0xFF;
+				}
 			}
 		}
 		if (index === false) {
@@ -892,9 +937,12 @@ function updatePA(scrollto=false)
 
 function updateUI(scrollto=false)
 {
+	noWS = (myWS.readyState === WebSocket.CLOSED);
+
 	d.getElementById('buttonPower').className = (isOn) ? "active":"";
 	d.getElementById('buttonNl').className = (nlA) ? "active":"";
 	d.getElementById('buttonSync').className = (syncSend) ? "active":"";
+	d.getElementById('buttonNodes').style.display = (lastinfo.ndc > 0 && window.innerWidth > 770) ? "block":"none";
 
 	updateSelectedPalette(scrollto);
 	updateSelectedFx(scrollto);
@@ -944,13 +992,14 @@ function updateSelectedFx(scrollto=false)
 
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
 	if (selectedEffect) selectedEffect.classList.add('selected');
-	
+/*
 	if (scrollto && selectedEffect) {
 		selectedEffect.scrollIntoView({
 			behavior: 'smooth',
 			block: 'center',
 		});
-	}	
+	}
+*/
 }
 
 function displayRover(i,s)
@@ -998,8 +1047,20 @@ function handleJson(s)
 	var cd = d.getElementById('csl').children;
 	for (let e = cd.length-1; e >= 0; e--)
 	{
-		cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
-		if (isRgbw) whites[e] = parseInt(i.col[e][3]);
+		var r,g,b,w;
+		if (Array.isArray(i.col[e])) {
+			r = i.col[e][0];
+			g = i.col[e][1];
+			b = i.col[e][2];
+			if (isRgbw) w = i.col[e][3];
+		} else {
+			r = (i.col[e]>>16) & 0xFF;
+			g = (i.col[e]>> 8) & 0xFF;
+			b = (i.col[e]    ) & 0xFF;
+			if (isRgbw) w = (i.col[e] >> 24) & 0xFF;
+		}
+		cd[e].style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
+		if (isRgbw) whites[e] = parseInt(w);
 		selectSlot(csel);
 	}
 	d.getElementById('sliderSpeed').value = whites[csel];
@@ -1009,6 +1070,8 @@ function handleJson(s)
 
 	selectedPal = i.pal;
 	selectedFx = i.fx;
+
+	displayRover(lastinfo, s);
 
 	return true;
 }
@@ -1029,6 +1092,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 	if (command)
 	{
 		command.v = verbose;
+		command.rev = 2;
 		command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
 	}
@@ -1061,8 +1125,8 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 				populatePresets(true);
 				pmtLast = pmt;
 			}
-
 			var info = json.info;
+/*
 			var name = info.name;
 			d.getElementById('namelabel').innerHTML = name;
 			if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
@@ -1074,10 +1138,10 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 			ledCount = info.leds.count;
 			syncTglRecv = info.str;
 			maxSeg = info.leds.maxseg;
+*/
 			pmt = info.fs.pmt;
 			if (!command && pmt != pmtLast) setTimeout(loadPresets,99);
 			pmtLast = pmt;
-			d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
 			lastinfo = info;
 			if (isInfo) populateInfo(info);
 			displayRover(info, s);
@@ -1117,7 +1181,7 @@ function togglePower()
 	isOn = !isOn;
 	var obj = {"on": isOn};
 	obj.transition = parseInt(d.getElementById('cyctt').value*10);
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function toggleNl()
@@ -1126,7 +1190,7 @@ function toggleNl()
 	if (nlA) showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlFade ? "over":"after"} ${nlDur} minutes.`);
 	else showToast('Timer deactivated.');
 	var obj = {"nl": {"on": nlA}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function toggleSync()
@@ -1136,7 +1200,7 @@ function toggleSync()
 	else showToast('This light and other lights in the network will no longer sync.');
 	var obj = {"udpn": {"send": syncSend}};
 	if (syncTglRecv) obj.udpn.recv = syncSend;
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function toggleLiveview()
@@ -1153,7 +1217,7 @@ function toggleInfo()
 {
 	if (isNodes) toggleNodes();
 	isInfo = !isInfo;
-	if (isInfo) populateInfo(lastinfo);
+	if (isInfo) loadInfo();
 	d.getElementById('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
 	d.getElementById('buttonI').className = (isInfo) ? "active":"";
 }
@@ -1266,14 +1330,14 @@ function selSegEx(s)
 {
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"sel":(i==s)?true:false});
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function selSeg(s)
 {
 	var sel = d.getElementById(`seg${s}sel`).checked;
 	var obj = {"seg": {"id": s, "sel": sel}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setSeg(s)
@@ -1289,7 +1353,7 @@ function setSeg(s)
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 	}
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function delSeg(s)
@@ -1301,33 +1365,33 @@ function delSeg(s)
 	expanded[s] = false;
 	segCount--;
 	var obj = {"seg": {"id": s, "stop": 0}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setRev(s)
 {
 	var rev = d.getElementById(`seg${s}rev`).checked;
 	var obj = {"seg": {"id": s, "rev": rev}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setMi(s)
 {
 	var mi = d.getElementById(`seg${s}mi`).checked;
 	var obj = {"seg": {"id": s, "mi": mi}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setSegPwr(s)
 {
 	var obj = {"seg": {"id": s, "on": !powered[s]}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setSegBri(s)
 {
 	var obj = {"seg": {"id": s, "bri": parseInt(d.getElementById(`seg${s}bri`).value)}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setX(ind = null)
@@ -1343,7 +1407,7 @@ function setX(ind = null)
 	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
 
 	var obj = {"seg": {"fx": parseInt(ind)}};
-	requestJson(obj);
+	requestJson(obj, false, noWS);
 }
 
 function setPalette(paletteId = null)
@@ -1358,32 +1422,32 @@ function setPalette(paletteId = null)
 
 	d.querySelector(`#selectPalette .lstI[data-id="${paletteId}"]`).classList.add('selected');
 	var obj = {"seg": {"pal": paletteId}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setBri()
 {
 	var obj = {"bri": parseInt(d.getElementById('sliderBri').value)};
 	obj.transition = parseInt(d.getElementById('cyctt').value*10);
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setSpeed()
 {
 	var obj = {"seg": {"sx": parseInt(d.getElementById('sliderSpeed').value)}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setIntensity()
 {
 	var obj = {"seg": {"ix": parseInt(d.getElementById('sliderIntensity').value)}};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setLor(i)
 {
 	var obj = {"lor": i};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function toggleCY()
@@ -1395,14 +1459,14 @@ function toggleCY()
 		obj.transition = parseInt(d.getElementById('cyctt').value*10);
 	}
 
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function setPreset(i)
 {
 	var obj = {"ps": i};
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function saveP(i)
@@ -1439,7 +1503,7 @@ function saveP(i)
 	if (pQN.length > 0) obj.ql = pQN;
 
 	showToast("Saving " + pN +" (" + pI + ")");
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 	if (obj.o) {
 		pJson[pI] = obj;
 		delete pJson[pI].psave;
@@ -1458,7 +1522,7 @@ function saveP(i)
 function delP(i)
 {
 	var obj = {"pdel": i};
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 	delete pJson[i];
 	populatePresets();
 }
@@ -1563,7 +1627,7 @@ function setColor(sr)
 	updateHex();
 	updateRgb();
 	obj.transition = parseInt(d.getElementById('cyctt').value*10);
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 var hc = 0;
@@ -1598,7 +1662,7 @@ function rSegs()
 	bt.innerHTML = "Reset segments";
 	var obj = {"seg":[{"start":0,"stop":ledCount,"sel":true}]};
 	for (let i=1; i<=lSeg; i++) obj.seg.push({"stop":0});
-	requestJson(obj, false);
+	requestJson(obj, false, noWS);
 }
 
 function loadPalettesData()

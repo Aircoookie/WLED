@@ -7,7 +7,7 @@
 bool applyPreset(byte index)
 {
   if (index == 0) return false;
-  if (fileDoc) {
+  if (fileDoc) {  // from POST "/json" handler (wled_server.cpp)
     errorFlag = readObjectFromFileUsingId("/presets.json", index, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = fileDoc->as<JsonObject>();
     if (fdo["ps"] == index) fdo.remove("ps"); //remove load request for same presets to prevent recursive crash

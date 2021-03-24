@@ -40,28 +40,37 @@ void deserializeSegment(JsonObject elem, byte it)
       {
         int rgbw[] = {0,0,0,0};
         bool colValid = false;
-        JsonArray colX = colarr[i];
-        if (colX.isNull()) {
-          byte brgbw[] = {0,0,0,0};
-          const char* hexCol = colarr[i];
-          if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
-            int kelvin = colarr[i] | -1;
-            if (kelvin <  0) continue;
-            if (kelvin == 0) seg.setColor(i, 0, id);
-            if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
-            colValid = true;
-          } else { //HEX string, e.g. "FFAA00"
-            colValid = colorFromHexString(brgbw, hexCol);
-          }
-          for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
-        } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
-          byte sz = colX.size();
-          if (sz == 0) continue; //do nothing on empty array
-
-          byte cp = copyArray(colX, rgbw, 4);      
-          if (cp == 1 && rgbw[0] == 0) 
-            seg.setColor(i, 0, id);
+        if (colarr[i].is<unsigned long>()) {
+          // unsigned long RGBW
+          uint32_t colX = colarr[i];
+          rgbw[0] = (colX >> 16) & 0xFF;
+          rgbw[1] = (colX >>  8) & 0xFF;
+          rgbw[2] = (colX      ) & 0xFF;
+          rgbw[3] = (colX >> 24) & 0xFF;
           colValid = true;
+        } else {
+          JsonArray colX = colarr[i];
+          if (colX.isNull()) {
+            byte brgbw[] = {0,0,0,0};
+            const char* hexCol = colarr[i];
+            if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
+              int kelvin = colarr[i] | -1;
+              if (kelvin <  0) continue;
+              if (kelvin == 0) seg.setColor(i, 0, id);
+              if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
+              colValid = true;
+            } else { //HEX string, e.g. "FFAA00"
+              colValid = colorFromHexString(brgbw, hexCol);
+            }
+            for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+          } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
+            byte sz = colX.size();
+            if (sz == 0) continue; //do nothing on empty array
+            byte cp = copyArray(colX, rgbw, 4);      
+            if (cp == 1 && rgbw[0] == 0) 
+              seg.setColor(i, 0, id);
+            colValid = true;
+          }
         }
 
         if (!colValid) continue;
@@ -156,10 +165,11 @@ void deserializeSegment(JsonObject elem, byte it)
   }
 }
 
-bool deserializeState(JsonObject root)
+uint8_t deserializeState(JsonObject root)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
+  uint8_t versionAPI = root["rev"] | 1;
 
   bri = root["bri"] | bri;
 
@@ -269,7 +279,7 @@ bool deserializeState(JsonObject root)
       deletePreset(ps);
     }
     ps = root["ps"] | -1; //load preset (clears state request!)
-    if (ps >= 0) {applyPreset(ps); return stateResponse;}
+    if (ps >= 0) {applyPreset(ps); return stateResponse ? versionAPI : 0;}
 
     //HTTP API commands
     const char* httpwin = root["win"];
@@ -288,10 +298,10 @@ bool deserializeState(JsonObject root)
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
-  return stateResponse;
+  return stateResponse ? versionAPI : 0;
 }
 
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds, uint8_t versionAPI)
 {
 	root["id"] = id;
   if (segmentBounds) {
@@ -307,22 +317,33 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 
 	JsonArray colarr = root.createNestedArray("col");
 
-	for (uint8_t i = 0; i < 3; i++)
-	{
-		JsonArray colX = colarr.createNestedArray();
-    if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
+  if (versionAPI>1) {
+    for (uint8_t i = 0; i < 3; i++)
     {
-      if (i == 0) {
-        colX.add(col[0]); colX.add(col[1]); colX.add(col[2]); if (useRGBW) colX.add(col[3]);
+      if (id==strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
+        if (i==0) colarr.add((unsigned long)((col[0]<<16) | (col[1]<<8) | col[2] | (useRGBW?col[3]<<24:0)));
+        else      colarr.add((unsigned long)((colSec[0]<<16) | (colSec[1]<<8) | colSec[2] | (useRGBW?colSec[3]<<24:0)));
+      else
+        colarr.add((unsigned long)seg.colors[i]);
+    }
+  } else {
+    for (uint8_t i = 0; i < 3; i++)
+    {
+      JsonArray colX = colarr.createNestedArray();
+      if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
+      {
+        if (i == 0) {
+          colX.add(col[0]); colX.add(col[1]); colX.add(col[2]); if (useRGBW) colX.add(col[3]);
+        } else {
+          colX.add(colSec[0]); colX.add(colSec[1]); colX.add(colSec[2]); if (useRGBW) colX.add(colSec[3]);
+        }
       } else {
-         colX.add(colSec[0]); colX.add(colSec[1]); colX.add(colSec[2]); if (useRGBW) colX.add(colSec[3]);
+        colX.add((seg.colors[i] >> 16) & 0xFF);
+        colX.add((seg.colors[i] >> 8) & 0xFF);
+        colX.add((seg.colors[i]) & 0xFF);
+        if (useRGBW)
+          colX.add((seg.colors[i] >> 24) & 0xFF);
       }
-    } else {
-  		colX.add((seg.colors[i] >> 16) & 0xFF);
-  		colX.add((seg.colors[i] >> 8) & 0xFF);
-  		colX.add((seg.colors[i]) & 0xFF);
-  		if (useRGBW)
-  			colX.add((seg.colors[i] >> 24) & 0xFF);
     }
 	}
 
@@ -377,14 +398,17 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
   root[F("mainseg")] = strip.getMainSegmentId();
 
+  uint8_t versionAPI = root["rev"] | 1;
+
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++)
   {
     WS2812FX::Segment sg = strip.getSegment(s);
+    // TODO: add logic to stop at 12 segments if using versionAPI==1 on ESP8266
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();
-      serializeSegment(seg0, sg, s, forPreset, segmentBounds);
+      serializeSegment(seg0, sg, s, forPreset, segmentBounds, versionAPI);
     } else if (forPreset && segmentBounds) { //disable segments not part of preset
       JsonObject seg0 = seg.createNestedObject();
       seg0["stop"] = 0;
@@ -711,7 +735,7 @@ void serializeNodes(JsonObject root)
   }
 }
 
-void serveJson(AsyncWebServerRequest* request)
+void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI)
 {
   byte subJson = 0;
   const String& url = request->url();
@@ -743,6 +767,7 @@ void serveJson(AsyncWebServerRequest* request)
   switch (subJson)
   {
     case 1: //state
+      if (versionAPI>1) doc["rev"] = (int)versionAPI;
       serializeState(doc); break;
     case 2: //info
       serializeInfo(doc); break;
@@ -752,6 +777,7 @@ void serveJson(AsyncWebServerRequest* request)
       serializePalettes(doc, request); break;
     default: //all
       JsonObject state = doc.createNestedObject("state");
+      if (versionAPI>1) state["rev"] = (int)versionAPI;
       serializeState(state);
       JsonObject info = doc.createNestedObject("info");
       serializeInfo(info);

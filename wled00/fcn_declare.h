@@ -97,11 +97,11 @@ void handleIR();
 #include "FX.h"
 
 void deserializeSegment(JsonObject elem, byte it);
-bool deserializeState(JsonObject root);
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
+uint8_t deserializeState(JsonObject root);
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true, uint8_t versionAPI = 1);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
-void serveJson(AsyncWebServerRequest* request);
+void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI = 1);
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 
 //led.cpp
