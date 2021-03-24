@@ -18,6 +18,8 @@
 #include "wled.h"
 #include <driver/i2s.h>
 
+// ALL AUDIO INPUT PINS DEFINED IN wled.h AND CONFIGURABLE VIA UI
+
 // Comment/Uncomment to toggle usb serial debugging
 // #define SR_DEBUG
 
@@ -35,17 +37,6 @@
 // #define MIC_SAMPLING_LOG
 // #define FFT_SAMPLING_LOG
 
-// The following 3 defines are for Digital Microphone support
-#ifndef I2S_WSPIN
-  #define I2S_WSPIN 15        // aka LRCL
-#endif
-#ifndef I2S_SDPIN
-  #define I2S_SDPIN 32        // aka DOUT
-#endif
-#ifndef I2S_SCKPIN
-  #define I2S_SCKPIN 14       // aka BCLK
-#endif
-
 const i2s_port_t I2S_PORT = I2S_NUM_0;
 const int BLOCK_SIZE = 64;
 
@@ -54,9 +45,6 @@ const int SAMPLE_RATE = 10240;                  // Base sample rate in Hz
 TaskHandle_t FFT_Task;
 
 //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
-#ifndef MIC_PIN
-  #define MIC_PIN   36  // Changed to direct pin name - ESP32: 36(ADC1_0) Analog port for microphone
-#endif
 
 #ifndef LED_BUILTIN     // Set LED_BUILTIN if it is not defined by Arduino framework
   #define LED_BUILTIN 3
@@ -90,7 +78,6 @@ float weighting = 0.2;                          // Exponential filter weighting.
 
 
 // FFT Variables
-
 const uint16_t samples = 512;                   // This value MUST ALWAYS be a power of 2
 unsigned int sampling_period_us;
 unsigned long microseconds;
