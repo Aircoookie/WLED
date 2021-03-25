@@ -9,6 +9,10 @@ uint16_t wsLiveClientId = 0;
 unsigned long wsLastLiveTime = 0;
 //uint8_t* wsFrameBuffer = nullptr;
 uint8_t vAPI = 2;
+struct client_api {
+  uint32_t c = 0;
+  uint8_t vAPI = 1;
+} ClientApis[DEFAULT_MAX_WS_CLIENTS];
 
 #define WS_LIVE_INTERVAL 40
 
@@ -16,11 +20,25 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 {
   if(type == WS_EVT_CONNECT){
     //client connected
+    for (uint8_t i=0; i<DEFAULT_MAX_WS_CLIENTS; i++) {
+      if (ClientApis[i].c) continue;  // used slot
+      ClientApis[i].c = client->id();
+      ClientApis[i].vAPI = 1;
+      DEBUG_PRINTF("New WS client [%d]: %ld\n", (int)i, client->id());
+      break;
+    }
     sendDataWs(client);
     //client->ping();
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
+    for (uint8_t i=0; i<DEFAULT_MAX_WS_CLIENTS; i++) {
+      if (ClientApis[i].c != client->id()) continue;
+      ClientApis[i].c = 0; // clear slot
+      ClientApis[i].vAPI = 1;
+      DEBUG_PRINTF("Removed WS client [%d]: %ld\n", (int)i, client->id());
+      break;
+    }
   } else if(type == WS_EVT_DATA){
     //data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
@@ -28,7 +46,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       //the whole message is in a single frame and we got all of it's data (max. 1450byte)
       if(info->opcode == WS_TEXT)
       {
-        uint8_t verboseResponse = 0;
+        bool verboseResponse = false;
         { //scope JsonDocument so it releases its buffer
           DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
           DeserializationError error = deserializeJson(jsonBuffer, data, len);
@@ -39,9 +57,16 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           {
             wsLiveClientId = root["lv"] ? client->id() : 0;
           }
-
+          if (root.containsKey("rev"))
+          {
+            for (uint8_t i=0; i<DEFAULT_MAX_WS_CLIENTS; i++) {
+              if (ClientApis[i].c != client->id()) continue;
+              ClientApis[i].vAPI = root["rev"];
+              DEBUG_PRINTF("API for WS client [%d]: %d\n", (int)i, (int)ClientApis[i].vAPI);
+              break;
+            }
+          }
           verboseResponse = deserializeState(root);
-          if (verboseResponse) vAPI = verboseResponse;
         }
         if (verboseResponse || millis() - lastInterfaceUpdate < 1900) sendDataWs(client); //update if it takes longer than 100ms until next "broadcast"
       }
@@ -81,7 +106,14 @@ void sendDataWs(AsyncWebSocketClient * client)
   { //scope JsonDocument so it releases its buffer
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     JsonObject state = doc.createNestedObject("state");
-    if (vAPI>1) state["rev"] = 2;
+    if (client) {
+      for (uint8_t i=0; i<DEFAULT_MAX_WS_CLIENTS; i++) {
+        if (ClientApis[i].c != client->id()) continue;
+        state["rev"] = ClientApis[i].vAPI;
+        DEBUG_PRINTF("Actual API used [%d]: %d\n", (int)i, (int)ClientApis[i].vAPI);
+        break;
+      }
+    }
     serializeState(state);
     JsonObject info  = doc.createNestedObject("info");
     serializeInfo(info);

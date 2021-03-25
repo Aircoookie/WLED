@@ -165,11 +165,10 @@ void deserializeSegment(JsonObject elem, byte it)
   }
 }
 
-uint8_t deserializeState(JsonObject root)
+bool deserializeState(JsonObject root)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
-  uint8_t versionAPI = root["rev"] | 1;
 
   bri = root["bri"] | bri;
 
@@ -279,7 +278,7 @@ uint8_t deserializeState(JsonObject root)
       deletePreset(ps);
     }
     ps = root["ps"] | -1; //load preset (clears state request!)
-    if (ps >= 0) {applyPreset(ps); return stateResponse ? versionAPI : 0;}
+    if (ps >= 0) {applyPreset(ps); return stateResponse;}
 
     //HTTP API commands
     const char* httpwin = root["win"];
@@ -298,7 +297,7 @@ uint8_t deserializeState(JsonObject root)
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
-  return stateResponse ? versionAPI : 0;
+  return stateResponse;
 }
 
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds, uint8_t versionAPI)
