@@ -190,12 +190,11 @@ function onLoad()
 
 	// Load initial data
 	loadPalettes(function() {
+		loadPalettesData();
 		loadFX(function() {
 			loadPresets(function() {
 				loadInfo(function() {
-					requestJson({'v':true,'rev':2}, false, true, function() {
-						loadPalettesData();
-					});
+					requestJson({'v':true,'rev':2}, false, true);
 				});
 			});
 		});
