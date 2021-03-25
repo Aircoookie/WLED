@@ -290,8 +290,8 @@ WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a 
 
 // Sync CONFIG
 WLED_GLOBAL NodesMap Nodes;
-WLED_GLOBAL bool nodeListEnabled _INIT(true);
-WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
+WLED_GLOBAL bool nodeListEnabled _INIT(false);
+WLED_GLOBAL bool nodeBroadcastEnabled _INIT(false);
 
 WLED_GLOBAL bool buttonEnabled  _INIT(true);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
@@ -307,7 +307,7 @@ WLED_GLOBAL bool notifyDirect _INIT(false);                       // send notifi
 WLED_GLOBAL bool notifyButton _INIT(false);                       // send if updated by button or infrared remote
 WLED_GLOBAL bool notifyAlexa  _INIT(false);                       // send notification if updated via Alexa
 WLED_GLOBAL bool notifyMacro  _INIT(false);                       // send notification for macro
-WLED_GLOBAL bool notifyHue    _INIT(true);                        // send notification if Hue light changes
+WLED_GLOBAL bool notifyHue    _INIT(false);                       // send notification if Hue light changes
 WLED_GLOBAL bool notifyTwice  _INIT(false);                       // notifications use UDP: enable if devices don't sync reliably
 
 WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable device discovery by Amazon Echo
