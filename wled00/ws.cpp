@@ -110,10 +110,17 @@ void sendDataWs(AsyncWebSocketClient * client)
       for (uint8_t i=0; i<DEFAULT_MAX_WS_CLIENTS; i++) {
         if (ClientApis[i].c != client->id()) continue;
         state["rev"] = ClientApis[i].vAPI;
-        DEBUG_PRINTF("Actual API used [%d]: %d\n", (int)i, (int)ClientApis[i].vAPI);
         break;
       }
+    } else {
+      uint8_t minAPI = 2;
+      for (uint8_t i=0; i<DEFAULT_MAX_WS_CLIENTS; i++) {
+        if (!ClientApis[i].c) continue;
+        if (minAPI > ClientApis[i].vAPI) minAPI = ClientApis[i].vAPI;
+      }
+      state["rev"] = minAPI;
     }
+    DEBUG_PRINTF("Actual API used: %d\n", (int)state["rev"]);
     serializeState(state);
     JsonObject info  = doc.createNestedObject("info");
     serializeInfo(info);
