@@ -1330,14 +1330,14 @@ function selSegEx(s)
 {
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"sel":(i==s)?true:false});
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function selSeg(s)
 {
 	var sel = d.getElementById(`seg${s}sel`).checked;
 	var obj = {"seg": {"id": s, "sel": sel}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setSeg(s)
@@ -1353,7 +1353,7 @@ function setSeg(s)
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
 	}
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function delSeg(s)
@@ -1365,33 +1365,33 @@ function delSeg(s)
 	expanded[s] = false;
 	segCount--;
 	var obj = {"seg": {"id": s, "stop": 0}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setRev(s)
 {
 	var rev = d.getElementById(`seg${s}rev`).checked;
 	var obj = {"seg": {"id": s, "rev": rev}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setMi(s)
 {
 	var mi = d.getElementById(`seg${s}mi`).checked;
 	var obj = {"seg": {"id": s, "mi": mi}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setSegPwr(s)
 {
 	var obj = {"seg": {"id": s, "on": !powered[s]}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setSegBri(s)
 {
 	var obj = {"seg": {"id": s, "bri": parseInt(d.getElementById(`seg${s}bri`).value)}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setX(ind = null)
