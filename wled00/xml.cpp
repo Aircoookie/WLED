@@ -358,9 +358,9 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("BT"),btnPin);
     sappend('v',SET_F("IR"),irPin);
     sappend('v',SET_F("AX"),auxPin);
-    sappend('v',SET_F("LCW"),strip.matrixWidth);
-    sappend('v',SET_F("LCH"),strip.matrixHeight);
-    sappend('c',SET_F("LCWHS"),strip.matrixSerpentine);
+    // sappend('v',SET_F("LCW"),strip.matrixWidth);
+    // sappend('v',SET_F("LCH"),strip.matrixHeight);
+    // sappend('c',SET_F("LCWHS"),strip.matrixSerpentine);
   }
 
   if (subPage == 3)

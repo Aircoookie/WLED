@@ -185,33 +185,40 @@ void deserializeConfig() {
     rlyMde = !relay["rev"];
   }
 
-  int hw_audio_pin = hw[F("audio")][F("pin")];
-  if (pinManager.allocatePin(hw_audio_pin,false)) {
-    audioPin = hw_audio_pin;
+  // Sound Reactive Pin Config
+  JsonObject analogmic = hw[F("analogmic")]; // analog mic JsonObject
+
+  int hw_amic_pin = analogmic[F("pin")];
+  if (pinManager.allocatePin(hw_amic_pin,false)) {
+    audioPin = hw_amic_pin;
   } else {
-    audioPin = 36;
+    audioPin = audioPin;
   }
 
-  CJSON(dmEnabled, hw[F("digitalmic")][F("en")]);
-  int hw_i2ssd_pin = hw[F("i2ssd")][F("pin")];
+  JsonObject hw_dmic = hw[F("digitalmic")]; // digital mic JsonObject
+  CJSON(dmEnabled, hw_dmic["en"]);
+
+  JsonObject hw_dmic_pins = hw_dmic["pins"]; // digital mic pins JsonObject
+
+  int hw_i2ssd_pin = hw_dmic_pins[F("i2ssd")];
   if (pinManager.allocatePin(hw_i2ssd_pin,false)) {
     i2ssdPin = hw_i2ssd_pin;
   } else {
-    i2ssdPin = 36;
+    i2ssdPin = i2ssdPin;
   }
 
-  int hw_i2sws_pin = hw[F("i2sws")][F("pin")];
+  int hw_i2sws_pin = hw_dmic_pins[F("i2sws")];
   if (pinManager.allocatePin(hw_i2sws_pin,false)) {
     i2swsPin = hw_i2sws_pin;
   } else {
-    i2swsPin = 36;
+    i2swsPin = i2swsPin;
   }
 
-  int hw_i2sck_pin = hw[F("i2sck")][F("pin")];
+  int hw_i2sck_pin = hw_dmic_pins[F("i2sck")];
   if (pinManager.allocatePin(hw_i2sck_pin,false)) {
     i2sckPin = hw_i2sck_pin;
   } else {
-    i2sckPin = 36;
+    i2sckPin = i2sckPin;
   }
 
   //int hw_status_pin = hw[F("status")][F("pin")]; // -1
@@ -377,7 +384,7 @@ void deserializeConfig() {
   uint8_t it = 0;
   for (JsonObject timer : timers) {
     if (it > 9) break;
-    if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset 
+    if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset
     CJSON(timerHours[it], timer[F("hour")]);
     CJSON(timerMinutes[it], timer[F("min")]);
     CJSON(timerMacro[it], timer[F("macro")]);
@@ -563,26 +570,23 @@ void serializeConfig() {
   hw_relay["pin"] = rlyPin;
   hw_relay["rev"] = !rlyMde;
 
-  JsonObject hw_audio = hw.createNestedObject("audio");
-  hw_audio[F("pin")] = audioPin;
-
-  JsonObject hw_dmic = hw.createNestedObject("digitalmic");
-  hw_dmic[F("en")] = dmEnabled;
-
-  JsonObject hw_i2ssd = hw.createNestedObject("i2ssd");
-  hw_i2ssd[F("pin")] = i2ssdPin;
-
-  JsonObject hw_i2sws = hw.createNestedObject("i2sws");
-  hw_i2sws[F("pin")] = i2swsPin;
-
-  JsonObject hw_i2sck = hw.createNestedObject("i2sck");
-  hw_i2sck[F("pin")] = i2sckPin;
-
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status["pin"] = -1;
 
   JsonObject hw_aux = hw.createNestedObject("aux");
   hw_aux["pin"] = auxPin;
+
+  // Sound Reactive Pin Config
+  JsonObject hw_amic = hw.createNestedObject("analogmic");
+  hw_amic["pin"] = audioPin;
+
+  JsonObject hw_dmic = hw.createNestedObject("digitalmic");
+  hw_dmic["en"] = dmEnabled;
+
+  JsonObject hw_dmic_pins = hw_dmic.createNestedObject("pins");
+  hw_dmic_pins[F("i2ssd")] = i2ssdPin;
+  hw_dmic_pins[F("i2sws")] = i2swsPin;
+  hw_dmic_pins[F("i2sck")] = i2sckPin;
 
   JsonObject light = doc.createNestedObject(F("light"));
   light[F("scale-bri")] = briMultiplier;
