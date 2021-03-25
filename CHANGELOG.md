@@ -1,6 +1,13 @@
 ## WLED changelog
 
-### Development versions after 0.11.1 release
+### WLED release 0.12.0
+
+#### Build 2103250
+
+-   Version bump to 0.12.0 "Hikari"
+-   Fixed RGBW mode disabled after LED settings saved
+
+### Development versions between 0.11.1 and 0.12.0 releases
 
 #### Build 2103230
 

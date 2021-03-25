@@ -88,6 +88,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     uint8_t colorOrder, type;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
+    useRGBW = false;
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
@@ -105,17 +106,20 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
+      //if (BusManager::isRgbw(type)) useRGBW = true; //30fps
       
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
         length = request->arg(lc).toInt();
       } else {
         break;  // no parameter
       }
+
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
 
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
+      //if (BusManager::isRgbw(type)) useRGBW = true; //20fps
       doInitBusses = true;
     }
 
@@ -158,7 +162,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
-    useRGBW = request->hasArg(F("EW"));
     strip.rgbwMode = request->arg(F("AW")).toInt();
 
     briS = request->arg(F("CA")).toInt();
