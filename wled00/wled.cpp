@@ -236,7 +236,9 @@ void WLED::loop()
   }
 
   //LED settings have been saved, re-init busses
-  if (busConfigs[0] != nullptr) {
+  //This code block causes severe FPS drop on ESP32 with the original "if (busConfigs[0] != nullptr)" conditional. Investigate! 
+  if (doInitBusses) {
+    doInitBusses = false;
     busses.removeAll();
     uint32_t mem = 0;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {

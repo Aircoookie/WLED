@@ -116,6 +116,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
+      doInitBusses = true;
     }
 
     ledCount = request->arg(F("LC")).toInt();
