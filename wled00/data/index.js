@@ -1661,7 +1661,7 @@ function rSegs()
 	bt.innerHTML = "Reset segments";
 	var obj = {"seg":[{"start":0,"stop":ledCount,"sel":true}]};
 	for (let i=1; i<=lSeg; i++) obj.seg.push({"stop":0});
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function loadPalettesData()
