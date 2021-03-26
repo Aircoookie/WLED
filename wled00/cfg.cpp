@@ -134,7 +134,7 @@ void deserializeConfig() {
     s++;
     lC += length;
     BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
-    mem += busses.memUsage(bc);
+    mem += BusManager::memUsage(bc);
     if (mem <= MAX_LED_MEMORY) busses.add(bc);
   }
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)

@@ -226,7 +226,7 @@ void WLED::loop()
       uint32_t mem = 0;
       for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
         if (busConfigs[i] == nullptr) break;
-        mem += busses.memUsage(*busConfigs[i]);
+        mem += BusManager::memUsage(*busConfigs[i]);
         if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
         delete busConfigs[i]; busConfigs[i] = nullptr;
       }

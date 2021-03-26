@@ -335,7 +335,7 @@ class BusManager {
   };
 
   //utility to get the approx. memory usage of a given BusConfig
-  uint32_t memUsage(BusConfig &bc) {
+  static uint32_t memUsage(BusConfig &bc) {
     uint8_t type = bc.type;
     uint16_t len = bc.count;
     if (type < 32) {
