@@ -88,7 +88,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     uint8_t colorOrder, type;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
-    useRGBW = false;
 
     for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
@@ -106,7 +105,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
-      //if (BusManager::isRgbw(type)) useRGBW = true; //30fps
+      //if (isRgbw(type)) useRGBW = true; //30fps
+      //useRGBW = true;
       
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
         length = request->arg(lc).toInt();
@@ -120,6 +120,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
       //if (BusManager::isRgbw(type)) useRGBW = true; //20fps
+      //useRGBW = true;
       doInitBusses = true;
     }
 
