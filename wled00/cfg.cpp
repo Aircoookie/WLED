@@ -491,7 +491,7 @@ void serializeConfig() {
   if (irPin>=0) {
     JsonObject hw_ir = hw.createNestedObject("ir");
     hw_ir["pin"] = irPin;
-    hw_ir[F("type"] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
+    hw_ir[F("type")] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
   }
   #endif
 
