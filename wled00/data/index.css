@@ -1104,3 +1104,5 @@ input[type="text"].fnd:not(:placeholder-shown) {
 	display: none;
 	}
 }
+
+@import 'skin.css';
