@@ -185,7 +185,10 @@
 #define B_SS_LPD_3 NeoPixelBrightnessBus<Lpd8806GrbFeature, Lpd8806Method>
 
 //WS2801
-#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801SpiMethod>
+//#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi40MhzMethod>
+//#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi20MhzMethod>
+//#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801SpiMethod>     // 10MHz
+#define B_HS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Spi2MhzMethod> //slower, more compatible
 #define B_SS_WS1_3 NeoPixelBrightnessBus<NeoRbgFeature, NeoWs2801Method>
 
 //P9813
@@ -849,7 +852,8 @@ class PolyBus {
       if (pins[0] == P_8266_HS_MOSI && pins[1] == P_8266_HS_CLK) isHSPI = true;
       #else
       // temporary hack to limit use of hardware SPI to a single SPI peripheral: only allow ESP32 hardware serial on segment 0
-      if (!num && pins[0] == P_32_HS_MOSI && pins[1] == P_32_HS_CLK) isHSPI = true;
+      if (num==0 && pins[0] == P_32_VS_MOSI && pins[1] == P_32_VS_CLK) isHSPI = true;
+      if (num==1 && pins[0] == P_32_HS_MOSI && pins[1] == P_32_HS_CLK) isHSPI = true;
       #endif
       uint8_t t = I_NONE;
       switch (busType) {
