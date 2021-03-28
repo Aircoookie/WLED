@@ -1254,7 +1254,7 @@ function makeSeg()
 		</table>
 		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
 		<i class="icons e-icon cnf cnf-s half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
-		<button class="btn btn-p" onclick="resetUtil()">Cancel</button>
+		<div class="c"><button class="btn btn-p" onclick="resetUtil()">Cancel</button></div>
 	</div>
 </div>`;
 	d.getElementById('segutil').innerHTML = cn;
@@ -1294,8 +1294,8 @@ function makeP(i)
 </div>
 <div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
-	<button class="btn btn-i btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>${(i>0)?"Save changes":"Save preset"}</button>
-	${(i>0)?'<button class="btn btn-i btn-p" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
+	<button class="btn btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>${(i>0)?"Save changes":"Save preset"}</button>
+	${(i>0)?'<button class="btn btn-p" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
 </div>
 <div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn">
 </div>

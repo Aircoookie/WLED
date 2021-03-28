@@ -191,15 +191,15 @@ void initServer()
   }
 
 
-    #ifdef WLED_ENABLE_DMX
-    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
-    });
-    #else
-    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
-    });
-    #endif
+  #ifdef WLED_ENABLE_DMX
+  server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
+  });
+  #else
+  server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+    serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
+  });
+  #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
@@ -252,7 +252,11 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
 
 void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
 {
-  response->addHeader(F("Cache-Control"),"max-age=2592000");
+  #ifndef WLED_DEBUG
+  response->addHeader(F("Cache-Control"),"max-age=604800");     // 7 day caching
+  #else
+  response->addHeader(F("Cache-Control"),"no-store,max-age=0"); // prevent caching if debug build
+  #endif
   response->addHeader(F("ETag"), String(VERSION));
 }
 
@@ -265,9 +269,7 @@ void serveIndex(AsyncWebServerRequest* request)
   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 
   response->addHeader(F("Content-Encoding"),"gzip");
-  #ifndef WLED_DEBUG
   setStaticContentCacheHeaders(response);
-  #endif
   request->send(response);
 }
 
