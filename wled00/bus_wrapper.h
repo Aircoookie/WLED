@@ -852,8 +852,9 @@ class PolyBus {
       if (pins[0] == P_8266_HS_MOSI && pins[1] == P_8266_HS_CLK) isHSPI = true;
       #else
       // temporary hack to limit use of hardware SPI to a single SPI peripheral: only allow ESP32 hardware serial on segment 0
-      if (num==0 && pins[0] == P_32_VS_MOSI && pins[1] == P_32_VS_CLK) isHSPI = true;
-      if (num==1 && pins[0] == P_32_HS_MOSI && pins[1] == P_32_HS_CLK) isHSPI = true;
+      if (!num) isHSPI = true;
+      //if (num==0 && pins[0] == P_32_VS_MOSI && pins[1] == P_32_VS_CLK) isHSPI = true; // no nultiplexing, up to 80MHz clock
+      //if (num==1 && pins[0] == P_32_HS_MOSI && pins[1] == P_32_HS_CLK) isHSPI = true;
       #endif
       uint8_t t = I_NONE;
       switch (busType) {
