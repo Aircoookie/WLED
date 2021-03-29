@@ -143,7 +143,7 @@ void loadSettingsFromEEPROM()
   arlsOffset = EEPROM.read(368);
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
-  useRGBW = EEPROM.read(372);
+  strip.isRgbw = EEPROM.read(372);
   //374 - strip.paletteFade
   
   apBehavior = EEPROM.read(376);
@@ -406,7 +406,7 @@ void deEEP() {
 
         JsonArray colarr = segObj.createNestedArray("col");
 
-        byte numChannels = (useRGBW)? 4:3;
+        byte numChannels = (strip.isRgbw)? 4:3;
 
         for (uint8_t k = 0; k < 3; k++) //k=0 primary (i+2) k=1 secondary (i+6) k=2 tertiary color (i+12)
         {

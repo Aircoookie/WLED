@@ -241,13 +241,16 @@ void WLED::loop()
     doInitBusses = false;
     busses.removeAll();
     uint32_t mem = 0;
+    strip.isRgbw = false;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
       mem += busses.memUsage(*busConfigs[i]);
       if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
+      //if (BusManager::isRgbw(busConfigs[i]->type)) strip.isRgbw = true;
+      strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(busConfigs[i]->type));
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
-    strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+    strip.finalizeInit(ledCount, skipFirstLed);
     yield();
     serializeConfig();
   }
@@ -394,7 +397,7 @@ void WLED::beginStrip()
   if (ledCount > MAX_LEDS || ledCount == 0)
     ledCount = 30;
 
-  strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+  strip.finalizeInit(ledCount, skipFirstLed);
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
