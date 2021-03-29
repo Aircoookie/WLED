@@ -913,6 +913,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .lstI {
+  position: sticky;
   overflow: hidden;
 }
 
@@ -930,7 +931,6 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .lstI.sticky, .lstI.selected {
-	position: sticky;
 	z-index: 1;
 }
 

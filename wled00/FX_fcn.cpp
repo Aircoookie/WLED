@@ -44,11 +44,9 @@
 */
 
 //do not call this method from system context (network callback)
-void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst)
+void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
 {
-  if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
   RESET_RUNTIME;
-  _useRgbw = supportWhite;
   _length = countPixels;
   _skipFirstMode = skipFirst;
 
@@ -163,7 +161,7 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   //auto calculate white channel value if enabled
-  if (_useRgbw) {
+  if (isRgbw) {
     if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || (w == 0 && (rgbwMode == RGBW_MODE_DUAL || rgbwMode == RGBW_MODE_LEGACY)))
     {
       //white value is set to lowest RGB channel
@@ -278,7 +276,7 @@ void WS2812FX::show(void) {
     }
 
 
-    if (_useRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    if (isRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
     {
       powerSum *= 3;
       powerSum = powerSum >> 2; //same as /= 4
