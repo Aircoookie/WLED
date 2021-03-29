@@ -67,7 +67,7 @@ void onAlexaChange(EspalexaDevice* dev)
     if (espalexaDevice->getColorMode() == EspalexaColorMode::ct) //shade of white
     {
       uint16_t ct = espalexaDevice->getCt();
-      if (useRGBW)
+      if (strip.isRgbw)
       {
         switch (ct) { //these values empirically look good on RGBW
           case 199: col[0]=255; col[1]=255; col[2]=255; col[3]=255; break;

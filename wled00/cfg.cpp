@@ -99,7 +99,7 @@ void deserializeConfig() {
 
   JsonArray ins = hw_led["ins"];
   uint8_t s = 0; //bus iterator
-  useRGBW = false;
+  strip.isRgbw = false;
   busses.removeAll();
   uint32_t mem = 0;
   for (JsonObject elm : ins) {
@@ -127,13 +127,13 @@ void deserializeConfig() {
     uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
     bool reversed = elm["rev"];
     //RGBW mode is enabled if at least one of the strips is RGBW
-    useRGBW = (useRGBW || BusManager::isRgbw(ledType));
+    strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(ledType));
     s++;
     BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed);
     mem += busses.memUsage(bc);
     if (mem <= MAX_LED_MEMORY) busses.add(bc);
   }
-  strip.finalizeInit(useRGBW, ledCount, skipFirstLed);
+  strip.finalizeInit(ledCount, skipFirstLed);
   if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
@@ -491,7 +491,7 @@ void serializeConfig() {
   if (irPin>=0) {
     JsonObject hw_ir = hw.createNestedObject("ir");
     hw_ir["pin"] = irPin;
-    hw_ir[F("type"] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
+    hw_ir[F("type")] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
   }
   #endif
 

@@ -105,8 +105,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
-      //if (isRgbw(type)) useRGBW = true; //30fps
-      //useRGBW = true;
+      //if (isRgbw(type)) strip.isRgbw = true; //30fps
+      //strip.isRgbw = true;
       
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
         length = request->arg(lc).toInt();
@@ -119,8 +119,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
-      //if (BusManager::isRgbw(type)) useRGBW = true; //20fps
-      //useRGBW = true;
+      //if (BusManager::isRgbw(type)) strip.isRgbw = true; //20fps
+      //strip.isRgbw = true;
       doInitBusses = true;
     }
 
