@@ -322,6 +322,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('v',SET_F("LC"),ledCount);
 
+    bool skip = false;
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
@@ -344,6 +345,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',ls,bus->getStart());
       sappend('c',cv,bus->reversed);
       sappend('c',ew,bus->isRgbw());
+      skip = skip || bus->skipFirstLed();
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
@@ -371,7 +373,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
     sappend('v',SET_F("TW"),nightlightMode);
     sappend('i',SET_F("PB"),strip.paletteBlend);
-    sappend('c',SET_F("SL"),skipFirstLed);
+    sappend('c',SET_F("SL"),skip);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);
     sappend('v',SET_F("BT"),btnPin);

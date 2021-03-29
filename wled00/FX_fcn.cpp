@@ -27,10 +27,6 @@
 #include "FX.h"
 #include "palettes.h"
 
-#ifndef PWM_INDEX
-#define PWM_INDEX 0
-#endif
-
 /*
   Custom per-LED mapping has moved!
 
@@ -51,7 +47,7 @@
 void WS2812FX::finalizeInit(void)
 {
   RESET_RUNTIME;
-  _useRgbw = false;
+  isRgbw = false;
 
   //if busses failed to load, add default (fresh install, FS issue, ...)
   if (busses.getNumBusses() == 0) {
@@ -81,7 +77,8 @@ void WS2812FX::finalizeInit(void)
   for (uint8_t i=0; i<busses.getNumBusses(); i++) {
     Bus *bus = busses.getBus(i);
     if (bus == nullptr) continue;
-    _useRgbw |= bus->isRgbw();
+    if (_length+bus->getLength() > MAX_LEDS) break;
+    isRgbw |= bus->isRgbw();
     _length += bus->getLength();
   }
 /*
@@ -161,8 +158,6 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   setPixelColor(n, r, g, b, w);
 }
 
-#define REV(i) (_length - 1 - (i))
-
 //used to map from segment index to physical pixel, taking into account grouping, offsets, reverse and mirroring
 uint16_t WS2812FX::realPixelIndex(uint16_t i) {
   int16_t iGroup = i * SEGMENT.groupLength();
@@ -184,7 +179,7 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   //auto calculate white channel value if enabled
-  if (_useRgbw) {
+  if (isRgbw) {
     if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || (w == 0 && (rgbwMode == RGBW_MODE_DUAL || rgbwMode == RGBW_MODE_LEGACY)))
     {
       //white value is set to lowest RGB channel
@@ -290,7 +285,7 @@ void WS2812FX::show(void) {
     }
 
 
-    if (_useRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    if (isRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
     {
       powerSum *= 3;
       powerSum = powerSum >> 2; //same as /= 4

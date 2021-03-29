@@ -102,8 +102,8 @@ void deserializeConfig() {
 
   JsonArray ins = hw_led["ins"];
   uint8_t s = 0;  // bus iterator
-  bool skipFirst = skipFirstLed = false;
-  useRGBW = false;
+  bool skipFirst = false;
+  strip.isRgbw = false;
   busses.removeAll();
   uint32_t mem = 0;
   for (JsonObject elm : ins) {
@@ -125,12 +125,12 @@ void deserializeConfig() {
     //if (start + length > ledCount) length = ledCount - start;
     uint8_t colorOrder = (int)elm[F("order")];
     //(this shouldn't have been in ins obj. but remains here for compatibility)
-    skipFirstLed |= skipFirst = (bool) elm[F("skip")];
+    skipFirst = (bool) elm[F("skip")];
     uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
     bool reversed = elm["rev"];
     //RGBW mode is enabled if at least one of the strips is RGBW
     if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
-    useRGBW |= (bool)elm[F("rgbw")];
+    strip.isRgbw |= (bool)elm[F("rgbw")]; //(strip.isRgbw || BusManager::isRgbw(ledType));
     s++;
     lC += length;
     BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
@@ -139,6 +139,7 @@ void deserializeConfig() {
   }
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
   //strip.finalizeInit(); // will be done in WLED::beginStrip()
+  if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonEnabled, hw_btn_ins_0["type"]);
@@ -456,7 +457,6 @@ void serializeConfig() {
   hw_led[F("total")] = ledCount;
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
-  hw_led["rev"] = false; //strip.reverseMode;  // not used anymore, reversing per-strip
   hw_led[F("rgbwm")] = strip.rgbwMode;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
@@ -474,7 +474,7 @@ void serializeConfig() {
     for (uint8_t i = 0; i < nPins; i++) ins_pin.add(pins[i]);
     ins[F("order")] = bus->getColorOrder();
     ins["rev"]  = bus->reversed;
-    ins[F("skip")] = skipFirstLed ? 1 : 0;
+    ins[F("skip")] = bus->skipFirstLed();
     ins["type"] = bus->getType();
     ins[F("rgbw")] = bus->isRgbw();
   }

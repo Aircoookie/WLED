@@ -24,7 +24,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       if (ClientApis[i].c) continue;  // used slot
       ClientApis[i].c = client->id();
       ClientApis[i].vAPI = 1;
-      DEBUG_PRINTF("New WS client [%d]: %ld\n", (int)i, client->id());
+      DEBUG_PRINTF("New WS client [%d]: %d\n", (int)i, client->id());
       break;
     }
     sendDataWs(client);
@@ -36,7 +36,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       if (ClientApis[i].c != client->id()) continue;
       ClientApis[i].c = 0; // clear slot
       ClientApis[i].vAPI = 1;
-      DEBUG_PRINTF("Removed WS client [%d]: %ld\n", (int)i, client->id());
+      DEBUG_PRINTF("Removed WS client [%d]: %d\n", (int)i, client->id());
       break;
     }
   } else if(type == WS_EVT_DATA){

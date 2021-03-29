@@ -1,6 +1,42 @@
 ## WLED changelog
 
-### Development versions after 0.11.1 release
+### Development versions between 0.11.1 and 0.12.0 releases
+
+#### Build 2103290
+
+-   Version bump to 0.12.0-b4 "Hikari"
+-   Experimental use of espressif32@3.1.1
+-   Fixed RGBW mode disabled after LED settings saved
+-   Fixed infrared support not compiled in if IRPIN is not defined
+
+#### Build 2103230
+
+-   Fixed current estimation
+
+#### Build 2103220
+
+-   Version bump to 0.12.0-b2 "Hikari"
+-   Worked around an issue causing a critical decrease in framerate (wled.cpp l.240 block)
+-   Bump to Espalexa v2.7.0, fixing discovery
+
+#### Build 2103210
+
+-   Version bump to 0.12.0-b1 "Hikari"
+-   More colors visible on Palette preview
+-   Fixed chevron icon not included
+-   Fixed color order override
+-   Cleanup
+
+#### Build 2103200
+
+-   Version bump to 0.12.0-b0 "Hikari"
+-   Added palette preview and search (PR #1637)
+-   Added Reverse checkbox for PWM busses - reverses logic level for on
+-   Fixed various problems with the Playlist feature (PR #1724)
+-   Replaced "Layer" icon with "i" icon for Info button
+-   Chunchun effect more fitting for various segment lengths (PR #1804)
+-   Removed global reverse (in favor of individual bus reverse)
+-   Removed some unused icons from UI icon font
 
 #### Build 2103130
 
@@ -204,7 +240,7 @@
 #### Build 2011153
 
 -   Fixed an ESP32 end-of-file issue
--   Fixed useRGBW not read from cfg.json
+-   Fixed strip.isRgbw not read from cfg.json
 
 #### Build 2011152
 

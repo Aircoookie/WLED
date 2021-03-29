@@ -81,6 +81,10 @@ class Bus {
     return false;
   }
 
+  virtual bool skipFirstLed() {
+    return false;
+  }
+
   inline uint8_t getType() {
     return _type;
   }
@@ -177,6 +181,10 @@ class BusDigital : public Bus {
     return _rgbw;
   }
 
+  inline bool skipFirstLed() {
+    return (bool)_skip;
+  }
+
   inline void reinit() {
     PolyBus::begin(_busPtr, _iType, _pins);
   }
@@ -239,6 +247,7 @@ class BusPwm : public Bus {
       ledcAttachPin(_pins[i], _ledcStart + i);
       #endif
     }
+    reversed = bc.reversed;
     _valid = true;
   };
 
@@ -272,6 +281,7 @@ class BusPwm : public Bus {
     uint8_t numPins = NUM_PWM_PINS(_type);
     for (uint8_t i = 0; i < numPins; i++) {
       uint8_t scaled = (_data[i] * _bri) / 255;
+      if (reversed) scaled = 255 - scaled;
       #ifdef ESP8266
       analogWrite(_pins[i], scaled);
       #else

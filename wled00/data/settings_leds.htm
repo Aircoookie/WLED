@@ -25,6 +25,7 @@
         //check for pin conflicts
         if (nm=="L0" || nm=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
+            /*if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].focus();return;}*/
             if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert("Usermod/reserved pin conflict!");LCs[i].focus();return;}
             for (j=i+1; j<LCs.length; j++)
             {
@@ -37,7 +38,7 @@
       if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg); return;}
       if (d.Sf.reportValidity()) d.Sf.submit();
     }
-		function S(){GetV();setABL(); d.getElementById('m1').innerHTML = maxM;}
+		function S(){GetV();setABL();}
     function enABL()
     {
       var en = d.getElementById('able').checked;
@@ -65,6 +66,7 @@
         case 255: d.Sf.LAsel.value = 255; break;
         default: d.getElementById('LAdis').style.display = 'inline';
       }
+      d.getElementById('m1').innerHTML = maxM;
       UI();
     }
     //returns mem usage
@@ -74,8 +76,9 @@
         if (maxM < 10000 && p0==3) {    //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
           return len*15;
-        } else if (maxM > 10000) {      //ESP32 RMT uses double buffer?
-          if (type > 29) return len*8;  //RGBW
+        } else if (maxM >= 10000) //ESP32 RMT uses double buffer?
+        {
+          if (type > 29) return len*8; //RGBW
           return len*6;
         }
         if (type > 29) return len*4; //RGBW
@@ -88,12 +91,12 @@
 		function UI(change=false)
 		{
       var isRGBW = false, memu = 0;
-      
+
       d.getElementById('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
-	  
+
 	    if (d.Sf.LA.value == 255) laprev = 12;
 	    else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
-      
+
       var s = d.getElementsByTagName("select");
       for (i=0; i<s.length; i++) {
         if (s[i].name.substring(0,2)=="LT") {
@@ -253,7 +256,7 @@ Color Order:
 <br>
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="${lastEnd(i)}" required />&nbsp;
 <div id="dig${i}" style="display:inline">
-Count: <input type="number" name="LC${i}" min="0" max="2048" value="1" required oninput="UI()" /><br>
+Count: <input type="number" name="LC${i}" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br>
 Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 </div>
 &nbsp;RGBW: <input id="ew${i}" type="checkbox" name="EW${i}"><br>

@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.12.0-a0
+   @version 0.12.0-b4
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2103290
+#define VERSION 2103291
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -148,11 +148,6 @@
   #define WLED_FS LITTLEFS
 #endif
 
-// remove flicker because PWM signal of RGB channels can become out of phase (part of core as of Arduino core v2.7.0)
-//#if defined(WLED_USE_ANALOG_LEDS) && defined(ESP8266)
-//  #include "src/dependencies/arduino/core_esp8266_waveform.h"
-//#endif
-
 // GLOBAL VARIABLES
 // both declared and defined in header (solution from http://www.keil.com/support/docs/1868.htm)
 //
@@ -173,7 +168,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.12.0-b3");
+WLED_GLOBAL char versionString[] _INIT("0.12.0-b4");
 #define WLED_CODENAME "Hikari"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -230,7 +225,6 @@ WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling 
 
 // LED CONFIG
 WLED_GLOBAL uint16_t ledCount _INIT(30);          // overcurrent prevented by ABL
-WLED_GLOBAL bool useRGBW      _INIT(false);       // SK6812 strips can contain an extra White channel
 WLED_GLOBAL bool turnOnAtBoot _INIT(true);        // turn on LEDs at power-up
 WLED_GLOBAL byte bootPreset   _INIT(0);           // save preset to load after power-up
 
@@ -244,7 +238,6 @@ WLED_GLOBAL byte nightlightMode      _INIT(NL_MODE_FADE); // See const.h for ava
 WLED_GLOBAL bool fadeTransition      _INIT(true);   // enable crossfading color transition
 WLED_GLOBAL uint16_t transitionDelay _INIT(750);    // default crossfade duration in ms
 
-WLED_GLOBAL bool skipFirstLed  _INIT(false);        // ignore first LED in strip (useful if you need the LED as signal repeater)
 WLED_GLOBAL byte briMultiplier _INIT(100);          // % of brightness to set (to limit power, if you set it to 50 and set bri to 255, actual brightness will be 127)
 
 // User Interface CONFIG
@@ -419,6 +412,7 @@ WLED_GLOBAL byte effectCurrent _INIT(0);
 WLED_GLOBAL byte effectSpeed _INIT(128);
 WLED_GLOBAL byte effectIntensity _INIT(128);
 WLED_GLOBAL byte effectPalette _INIT(0);
+WLED_GLOBAL bool effectChanged _INIT(false);
 
 // network
 WLED_GLOBAL bool udpConnected _INIT(false), udp2Connected _INIT(false), udpRgbConnected _INIT(false);
@@ -563,7 +557,7 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 // led fx library object
 WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
-WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES]; //temporary, to remember values from network callback until after
+WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after 
 WLED_GLOBAL bool doInitBusses _INIT(false);
 
 // Usermod manager

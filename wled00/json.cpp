@@ -203,7 +203,7 @@ bool deserializeState(JsonObject root)
   JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
-  nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated, remove for v0.12.0
+  nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated, remove for v0.13.0
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
@@ -320,8 +320,8 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     for (uint8_t i = 0; i < 3; i++)
     {
       if (id==strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
-        if (i==0) colarr.add((unsigned long)((col[0]<<16) | (col[1]<<8) | col[2] | (useRGBW?col[3]<<24:0)));
-        else      colarr.add((unsigned long)((colSec[0]<<16) | (colSec[1]<<8) | colSec[2] | (useRGBW?colSec[3]<<24:0)));
+        if (i==0) colarr.add((unsigned long)((col[0]<<16) | (col[1]<<8) | col[2] | (strip.isRgbw?col[3]<<24:0)));
+        else      colarr.add((unsigned long)((colSec[0]<<16) | (colSec[1]<<8) | colSec[2] | (strip.isRgbw?colSec[3]<<24:0)));
       else
         colarr.add((unsigned long)seg.colors[i]);
     }
@@ -332,15 +332,15 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
       if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
       {
         if (i == 0) {
-          colX.add(col[0]); colX.add(col[1]); colX.add(col[2]); if (useRGBW) colX.add(col[3]);
+          colX.add(col[0]); colX.add(col[1]); colX.add(col[2]); if (strip.isRgbw) colX.add(col[3]);
         } else {
-          colX.add(colSec[0]); colX.add(colSec[1]); colX.add(colSec[2]); if (useRGBW) colX.add(colSec[3]);
+          colX.add(colSec[0]); colX.add(colSec[1]); colX.add(colSec[2]); if (strip.isRgbw) colX.add(colSec[3]);
         }
       } else {
         colX.add((seg.colors[i] >> 16) & 0xFF);
         colX.add((seg.colors[i] >> 8) & 0xFF);
         colX.add((seg.colors[i]) & 0xFF);
-        if (useRGBW)
+        if (strip.isRgbw)
           colX.add((seg.colors[i] >> 24) & 0xFF);
       }
     }
@@ -443,8 +443,8 @@ void serializeInfo(JsonObject root)
 
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = ledCount;
-  leds[F("rgbw")] = useRGBW;
-  leds[F("wv")] = useRGBW && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
+  leds[F("rgbw")] = strip.isRgbw;
+  leds[F("wv")] = strip.isRgbw && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
 
   JsonArray leds_pin = leds.createNestedArray("pin");
   for (uint8_t s=0; s<busses.getNumBusses(); s++) {

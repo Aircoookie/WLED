@@ -83,8 +83,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     #endif
     if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
 
-    skipFirstLed = request->hasArg(F("SL"));
-    useRGBW = false;
+    bool skip = request->hasArg(F("SL"));
+    strip.isRgbw = false;
 
     uint8_t colorOrder, type;
     uint16_t length, start;
@@ -108,7 +108,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
       type = request->arg(lt).toInt();
       if (request->hasArg(ew)) SET_BIT(type,7); else UNSET_BIT(type,7); // hack bit 7 to indicate RGBW (as a LED type override if necessary)
-      useRGBW |= request->hasArg(ew);
+      strip.isRgbw = strip.isRgbw || request->hasArg(ew);
 
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
@@ -120,7 +120,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skipFirstLed);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
       doInitBusses = true;
     }
 
@@ -162,8 +162,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
-//    useRGBW = request->hasArg(F("EW"));
-    strip.rgbwMode = request->arg(F("AW")).toInt(); // auto white calculation
+    strip.rgbwMode = request->arg(F("AW")).toInt();
 
     briS = request->arg(F("CA")).toInt();
 
@@ -188,8 +187,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     t = request->arg(F("PB")).toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
-//    strip.reverseMode = request->hasArg(F("RV"));
-//    skipFirstLed = request->hasArg(F("SL"));
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
   }
@@ -822,10 +819,22 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   {
     WS2812FX::Segment& seg = strip.getSegment(i);
     if (!seg.isSelected()) continue;
-    if (effectCurrent != prevEffect) seg.mode = effectCurrent;
-    if (effectSpeed != prevSpeed) seg.speed = effectSpeed;
-    if (effectIntensity != prevIntensity) seg.intensity = effectIntensity;
-    if (effectPalette != prevPalette) seg.palette = effectPalette;
+    if (effectCurrent != prevEffect) {
+      seg.mode = effectCurrent;
+      effectChanged = true;
+    }
+    if (effectSpeed != prevSpeed) {
+      seg.speed = effectSpeed;
+      effectChanged = true;
+    }
+    if (effectIntensity != prevIntensity) {
+      seg.intensity = effectIntensity;
+      effectChanged = true;
+    }
+    if (effectPalette != prevPalette) {
+      seg.palette = effectPalette;
+      effectChanged = true;
+    }
   }
 
   if (col0Changed) {
