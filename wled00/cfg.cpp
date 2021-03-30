@@ -154,7 +154,7 @@ void deserializeConfig() {
   //int hw_btn_ins_0_type = hw_btn_ins_0["type"]; // 0
 
   #ifndef WLED_DISABLE_INFRARED
-  int hw_ir_pin = hw["ir"]["pin"]; // 4
+  int hw_ir_pin = hw["ir"]["pin"] | -1; // 4
   if (pinManager.allocatePin(hw_ir_pin,false)) {
     irPin = hw_ir_pin;
   } else {
@@ -488,11 +488,9 @@ void serializeConfig() {
   hw_btn_ins_0_macros.add(macroDoublePress);
 
   #ifndef WLED_DISABLE_INFRARED
-  if (irPin>=0) {
-    JsonObject hw_ir = hw.createNestedObject("ir");
-    hw_ir["pin"] = irPin;
-    hw_ir[F("type")] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
-  }
+  JsonObject hw_ir = hw.createNestedObject("ir");
+  hw_ir["pin"] = irPin;
+  hw_ir[F("type")] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
   #endif
 
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
