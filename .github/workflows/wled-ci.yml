@@ -5,9 +5,17 @@ on: [push, pull_request]
 jobs:
 
   get_default_envs:
+    name: Gather Environments
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
     - uses: actions/setup-python@v2
     - name: Install PlatformIO
       run: pip install -r requirements.txt
@@ -19,6 +27,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
 
   build:
+    name: Build Enviornments
     runs-on: ubuntu-latest
     needs: get_default_envs
     strategy:
@@ -44,3 +53,9 @@ jobs:
       run: pip install -r requirements.txt
     - name: Build firmware
       run: pio run -e ${{ matrix.environment }}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: firmware-${{ matrix.environment }}
+        path: |
+          build_output/firmware/*.bin
+          build_output/firmware/*.gz
