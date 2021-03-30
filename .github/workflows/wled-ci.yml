@@ -3,10 +3,27 @@ name: PlatformIO CI
 on: [push, pull_request]
 
 jobs:
-  build:
 
+  get_default_envs:
     runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+    - name: Install PlatformIO
+      run: pip install -r requirements.txt
+    - name: Get default environments
+      id: set-matrix
+      run: |
+        echo "::set-output name=matrix::$(pio project config --json-output | jq -cr '.[0][1][0][1]')"
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
 
+  build:
+    runs-on: ubuntu-latest
+    needs: get_default_envs
+    strategy:
+      matrix:
+        environment: ${{ fromJSON(needs.get_default_envs.outputs.matrix) }}
     steps:
     - uses: actions/checkout@v2
     - name: Cache pip
@@ -24,8 +41,6 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
     - name: Install PlatformIO
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade platformio
-    - name: Run PlatformIO
-      run: pio run
+      run: pip install -r requirements.txt
+    - name: Build firmware
+      run: pio run -e ${{ matrix.environment }}
