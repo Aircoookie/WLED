@@ -2,6 +2,12 @@
 
 ### Development versions between 0.11.1 and 0.12.0 releases
 
+#### Build 2103300
+
+-   Version bump to 0.12.0-b5 "Hikari"
+-   Update to core espressif32@3.2
+-   Fixed IR pin not configurable
+
 #### Build 2103290
 
 -   Version bump to 0.12.0-b4 "Hikari"
