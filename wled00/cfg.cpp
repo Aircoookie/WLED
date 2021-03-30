@@ -159,7 +159,7 @@ void deserializeConfig() {
   //int hw_btn_ins_0_type = hw_btn_ins_0["type"]; // 0
 
   #ifndef WLED_DISABLE_INFRARED
-  int hw_ir_pin = hw["ir"]["pin"]; // 4
+  int hw_ir_pin = hw["ir"]["pin"] | -1; // 4
   if (pinManager.allocatePin(hw_ir_pin,false)) {
     irPin = hw_ir_pin;
   } else {
