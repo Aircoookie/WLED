@@ -27,10 +27,6 @@
 #include "FX.h"
 #include "palettes.h"
 
-#ifndef PWM_INDEX
-#define PWM_INDEX 0
-#endif
-
 /*
   Custom per-LED mapping has moved!
 
@@ -48,11 +44,9 @@
 */
 
 //do not call this method from system context (network callback)
-void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst)
+void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
 {
-  if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
   RESET_RUNTIME;
-  _useRgbw = supportWhite;
   _length = countPixels;
   _skipFirstMode = skipFirst;
 
@@ -167,7 +161,7 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   //auto calculate white channel value if enabled
-  if (_useRgbw) {
+  if (isRgbw) {
     if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || (w == 0 && (rgbwMode == RGBW_MODE_DUAL || rgbwMode == RGBW_MODE_LEGACY)))
     {
       //white value is set to lowest RGB channel
@@ -267,21 +261,22 @@ void WS2812FX::show(void) {
 
     for (uint16_t i = 0; i < _length; i++) //sum up the usage of each LED
     {
-      RgbwColor c = busses.getPixelColor(i);
+      uint32_t c = busses.getPixelColor(i);
+      byte r = c >> 16, g = c >> 8, b = c, w = c >> 24;
 
       if(useWackyWS2815PowerModel)
       {
         // ignore white component on WS2815 power calculation
-        powerSum += (MAX(MAX(c.R,c.G),c.B)) * 3;
+        powerSum += (MAX(MAX(r,g),b)) * 3;
       }
       else 
       {
-        powerSum += (c.R + c.G + c.B + c.W);
+        powerSum += (r + g + b + w);
       }
     }
 
 
-    if (_useRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    if (isRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
     {
       powerSum *= 3;
       powerSum = powerSum >> 2; //same as /= 4

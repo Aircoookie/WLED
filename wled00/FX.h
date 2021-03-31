@@ -584,7 +584,7 @@ class WS2812FX {
     }
 
     void
-      finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst),
+      finalizeInit(uint16_t countPixels, bool skipFirst),
       service(void),
       blur(uint8_t),
       fill(uint32_t),
@@ -604,11 +604,11 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
-      setRgbwPwm(void),
       setColorOrder(uint8_t co),
       setPixelSegment(uint8_t n);
 
     bool
+      isRgbw = false,
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,
@@ -814,7 +814,6 @@ class WS2812FX {
     void handle_palette(void);
 
     bool
-      _useRgbw = false,
       _skipFirstMode,
       _triggered;
 

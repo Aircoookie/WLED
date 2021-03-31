@@ -4,7 +4,7 @@ default_envs = d1_mini
 
 [env:esp32dev]
 board = esp32dev
-platform = espressif32@2.0
+platform = espressif32@3.2
 build_unflags = ${common.build_unflags}
 build_flags =
     ${common.build_flags_esp32} 
