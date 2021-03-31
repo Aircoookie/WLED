@@ -23,7 +23,7 @@
         var nm = LCs[i].name.substring(0,2);
 
         //check for pin conflicts
-        if (nm=="L0" || nm=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
+        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
             /*if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].focus();return;}*/
             if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert("Usermod/reserved pin conflict!");LCs[i].focus();return;}
@@ -31,7 +31,7 @@
             {
               var n2 = LCs[j].name.substring(0,2);
               if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
-                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert("Pin conflict!");LCs[j].focus();return;}
+                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${nm}/${n2}!`);LCs[j].focus();return;}
             }
           }
       }
@@ -66,6 +66,10 @@
         case 255: d.Sf.LAsel.value = 255; break;
         default: d.getElementById('LAdis').style.display = 'inline';
       }
+      var RL=d.getElementsByName("RL")[0]; if (RL.value=="-1") {RL.readOnly=true;} else {d.getElementById("cRL").checked=true;}
+      var BT=d.getElementsByName("BT")[0]; if (BT.value=="-1") {BT.readOnly=true;} else {d.getElementById("cBT").checked=true;}
+      var IR=d.getElementsByName("IR")[0]; if (IR.value=="-1") {IR.readOnly=true;} else {d.getElementById("cIR").checked=true;}
+      var AX=d.getElementsByName("AX")[0]; if (AX.value=="-1") {AX.readOnly=true;} else {d.getElementById("cAX").checked=true;}
       d.getElementById('m1').innerHTML = maxM;
       UI();
     }
@@ -162,7 +166,7 @@
               if (i==j) continue;
               var n2 = LCs[j].name.substring(0,2);
               if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
-                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert("Pin conflict!");LCs[j].value="";LCs[j].focus();break;}
+                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${nm}/${n2}!`);LCs[j].value="";LCs[j].focus();break;}
             }
           }
       }
@@ -272,6 +276,10 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 
       UI();
     }
+    function tglFld(o)
+    {
+      var f = d.getElementsByName(o.id.substring(1))[0]; f.readOnly = !o.checked; f.value=o.checked?"":"-1";
+    }
 		function GetV()
 		{
       //values injected by server while sending HTML
@@ -328,10 +336,10 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       &#9888; You might run into stability or lag issues.<br>
       Use less than <span id="wreason">800 LEDs per pin</span> for the best experience!<br>
     </div><hr style="width:260px">
-    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"> Active high <input type="checkbox" name="RM"><br>
-    Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><br>
-    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><br>
-    AUX pin: <input type="number" min="-1" max="40" name="AX" onchange="UI()">
+    Relay pin: <input type="checkbox" id="cRL" onchange="tglFld(this)"> <input type="number" min="-1" max="40" name="RL" onchange="UI()"> Active high <input type="checkbox" name="RM"><br>
+    Button pin: <input type="checkbox" id="cBT" onchange="tglFld(this)"> <input type="number" min="-1" max="40" name="BT" onchange="UI()"><br>
+    IR pin: <input type="checkbox" id="cIR" onchange="tglFld(this)"> <input type="number" min="-1" max="40" name="IR" onchange="UI()"><br>
+    AUX pin: <input type="checkbox" id="cAX" onchange="tglFld(this)"> <input type="number" min="-1" max="40" name="AX" onchange="UI()">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
     Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>
