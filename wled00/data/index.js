@@ -1189,7 +1189,7 @@ function toggleNl()
 	if (nlA) showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlFade ? "over":"after"} ${nlDur} minutes.`);
 	else showToast('Timer deactivated.');
 	var obj = {"nl": {"on": nlA}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function toggleSync()
@@ -1199,7 +1199,7 @@ function toggleSync()
 	else showToast('This light and other lights in the network will no longer sync.');
 	var obj = {"udpn": {"send": syncSend}};
 	if (syncTglRecv) obj.udpn.recv = syncSend;
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function toggleLiveview()
