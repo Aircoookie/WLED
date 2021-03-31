@@ -268,7 +268,6 @@ void checkTimers()
 
     // re-calculate sunrise and sunset just after midnight
     if (!hour(localTime) && minute(localTime)==1) calculateSunriseAndSunset();
-    if (sunrise && sunset) daytime = difftime(localTime, sunrise) > 0 && difftime(localTime, sunset) < 0;
 
     DEBUG_PRINTF("Local time: %02d:%02d\n", hour(localTime), minute(localTime));
     for (uint8_t i = 0; i < 8; i++)

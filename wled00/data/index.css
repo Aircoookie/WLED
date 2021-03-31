@@ -937,7 +937,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .lstI.selected {
 	background: var(--c-5);
-	top: 136px;
+	top: 135px;
 	bottom: 0;
 }
 

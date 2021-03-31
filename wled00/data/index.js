@@ -557,7 +557,7 @@ function populateInfo(i)
 ${urows}
 ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
-${inforow("Uptime",getRuntimeStr(i.uptime),(i.isday==null?"":" <span class='icons'>"+(i.isday?"&#xe333;":"&#xe2a2;")+"</span>"))}
+${inforow("Uptime",getRuntimeStr(i.uptime))}
 ${inforow("Free heap",heap," kB")}
 ${inforow("Estimated current",pwru)}
 ${inforow("Average FPS",i.leds.fps)}
