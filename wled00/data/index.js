@@ -24,7 +24,7 @@ var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
-	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true}
+	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true, seglen:false}
 };
 var myWS, noWS = false;
 
@@ -520,7 +520,7 @@ function loadInfo(callback=null)
 		syncTglRecv = json.str;
 		maxSeg = json.leds.maxseg;
 		pmt = json.fs.pmt;
-//		d.getElementById('buttonNodes').style.display = (json.ndc > 0 && window.innerWidth > 770) ? "block":"none";
+		d.getElementById('buttonNodes').style.display = (json.ndc > 0 && window.innerWidth > 770) ? "block":"none";
 		populateInfo(json);
 		if (callback) callback();
 	})
@@ -597,11 +597,11 @@ function populateSegments(s)
 	<table class="segt">
 		<tr>
 			<td class="segtd">Start LED</td>
-			<td class="segtd">Stop LED</td>
+			<td class="segtd">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
 		</tr>
 		<tr>
 			<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
-			<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(${i})"></td>
+			<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
 		</tr>
 	</table>
 	<table class="segt">
@@ -886,8 +886,8 @@ function updateLen(s)
 {
 	if (!d.getElementById(`seg${s}s`)) return;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
-	var len = stop - start;
+	var stop = parseInt(d.getElementById(`seg${s}e`).value);
+	var len = stop - (cfg.comp.seglen?0:start);
 	var out = "(delete)";
 	if (len > 1) {
 		out = `${len} LEDs`;
@@ -1234,7 +1234,7 @@ function makeSeg()
 {
 	var ns = 0;
 	if (lowestUnused > 0) {
-		var pend = d.getElementById(`seg${lowestUnused -1}e`).value;
+		var pend = parseInt(d.getElementById(`seg${lowestUnused -1}e`).value,10) + (cfg.comp.seglen?parseInt(d.getElementById(`seg${lowestUnused -1}s`).value,10):0);
 		if (pend < ledCount) ns = pend;
 	}
 	var cn = `<div class="seg">
@@ -1245,16 +1245,16 @@ function makeSeg()
 		<table class="segt">
 			<tr>
 				<td class="segtd">Start LED</td>
-				<td class="segtd">Stop LED</td>
+				<td class="segtd">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
 			</tr>
 			<tr>
 				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
-				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(${lowestUnused})"></td>
+				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})"></td>
 			</tr>
 		</table>
 		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
 		<i class="icons e-icon cnf cnf-s half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
-		<div class="c"><button class="btn btn-p" onclick="resetUtil()">Cancel</button></div>
+		<div class="c"><button class="btn" onclick="resetUtil()">Cancel</button></div>
 	</div>
 </div>`;
 	d.getElementById('segutil').innerHTML = cn;
@@ -1342,9 +1342,9 @@ function selSeg(s)
 function setSeg(s)
 {
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
-	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
-	if (stop <= start) {delSeg(s); return;}
-	var obj = {"seg": {"id": s, "start": start, "stop": stop}};
+	var stop = parseInt(d.getElementById(`seg${s}e`).value);
+	if (stop == 0) {delSeg(s); return;}
+	var obj = {"seg": {"id": s, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (d.getElementById(`seg${s}grp`))
 	{
 		var grp = parseInt(d.getElementById(`seg${s}grp`).value);

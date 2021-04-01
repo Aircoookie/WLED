@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head lang="en">
-  <meta charset="utf-8">
+	<meta charset="utf-8">
 	<meta name="viewport" content="width=500">
 	<title>UI Settings</title>
 	<script>
@@ -10,16 +10,17 @@
 		var sett = null;
 		var l = {
 			"comp":{
-			"labels":"Show button labels",
-			"colors":{
-				"LABEL":"Color selection methods",
-				"picker": "Color Wheel",
-				"rgb": "RGB sliders",
-				"quick": "Quick color selectors",
-				"hex": "HEX color input"
-			},
-      "pcmbot": "Show bottom tab bar in PC mode",
-      "pid": "Show preset IDs"
+				"labels":"Show button labels",
+				"colors":{
+					"LABEL":"Color selection methods",
+					"picker": "Color Wheel",
+					"rgb": "RGB sliders",
+					"quick": "Quick color selectors",
+					"hex": "HEX color input"
+					},
+				"pcmbot": "Show bottom tab bar in PC mode",
+				"pid": "Show preset IDs",
+				"seglen": "Use LED Count instead of Stop LED on segments"
 			},
 			"theme":{
 				"alpha": {
@@ -34,7 +35,6 @@
 					"bg":"BG HEX color"
 				}
 			}
-			
 		};
 		function gId(s)
 		{
@@ -52,7 +52,6 @@
 				if( !tar[elem] ) tar[elem] = {}
 				tar = tar[elem];
 			}
-
 			tar[pList[len-1]] = val;
 		}
 
@@ -200,7 +199,7 @@
 		</div>
 		<h2>Web Setup</h2>
 		Server description: <input name="DS" maxlength="32"><br>
-    Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
+    	Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
 		<i>The following UI customization settings are unique both to the WLED device and this browser.<br>
 		You will need to set them again if using a different browser, device or WLED IP address.<br>
 		Refresh the main UI to apply changes.</i><br>
@@ -209,8 +208,9 @@
 		
 		<h3>UI Appearance</h3>
 		<span class="l"></span>: <input type="checkbox" id="comp_labels" class="agi cb"><br>
-    <span class="l"></span>: <input type="checkbox" id="comp_pcmbot" class="agi cb"><br>
-    <span class="l"></span>: <input type="checkbox" id="comp_pid" class="agi cb"><br>
+    	<span class="l"></span>: <input type="checkbox" id="comp_pcmbot" class="agi cb"><br>
+    	<span class="l"></span>: <input type="checkbox" id="comp_pid" class="agi cb"><br>
+    	<span class="l"></span>: <input type="checkbox" id="comp_seglen" class="agi cb"><br>
 		I hate dark mode: <input type="checkbox" id="dm" onchange="UI()"><br>
 		<span id="idonthateyou" style="display:none"><i>Why would you? </i>&#x1F97A;<br></span>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_tab" class="agi"><br>
