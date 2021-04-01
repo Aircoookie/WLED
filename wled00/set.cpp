@@ -83,9 +83,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     #endif
     if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
 
-    bool skip = request->hasArg(F("SL"));
     strip.isRgbw = false;
 
+    uint8_t skip = request->hasArg(F("SL")) ? LED_SKIP_AMOUNT : 0;
     uint8_t colorOrder, type;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
@@ -99,7 +99,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char ew[4] = "EW"; ew[2] = 48+s; ew[3] = 0; //strip RGBW override
       if (!request->hasArg(lp)) {
-        DEBUG_PRINTLN("No data."); break;
+        DEBUG_PRINTLN(F("No data.")); break;
       }
       for (uint8_t i = 0; i < 5; i++) {
         lp[1] = 48+i;

@@ -17,17 +17,17 @@
 //temporary struct for passing bus configuration to bus
 struct BusConfig {
   uint8_t type = TYPE_WS2812_RGB;
-  uint16_t count = 1;
-  uint16_t start = 0;
-  uint8_t colorOrder = COL_ORDER_GRB;
-  bool reversed = false;
-  bool skipFirst = false;
-  bool rgbwOverride = false;
+  uint16_t count;
+  uint16_t start;
+  uint8_t colorOrder;
+  bool reversed;
+  uint8_t skipAmount;
+  bool rgbwOverride;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, bool skip = false) {
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0) {
     rgbwOverride = (bool) GET_BIT(busType,7);
     type = busType & 0x7F;  // bit 7 is hacked to include RGBW info (1=RGBW, 0=RGB)
-    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipFirst = skip;
+    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
     if (type > 47) nPins = 2;
     else if (type > 41 && type < 46) nPins = NUM_PWM_PINS(type);
@@ -81,8 +81,8 @@ class Bus {
     return false;
   }
 
-  virtual bool skipFirstLed() {
-    return false;
+  virtual uint8_t skipFirstLed() {
+    return 0;
   }
 
   inline uint8_t getType() {
@@ -116,10 +116,10 @@ class BusDigital : public Bus {
         cleanup(); return;
       }
     }
-    _skip = bc.skipFirst ? LED_SKIP_AMOUNT : 0; //sacrificial pixels
-    _len = bc.count + _skip;
     reversed = bc.reversed;
-    _rgbw = bc.rgbwOverride; // RGBW override in bit 7
+    _skip = bc.skipAmount;    //sacrificial pixels
+    _len = bc.count + _skip;
+    _rgbw = bc.rgbwOverride;  // RGBW override in bit 7
     _iType = PolyBus::getI(type, _pins, nr, _rgbw);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len);
@@ -181,8 +181,8 @@ class BusDigital : public Bus {
     return _rgbw;
   }
 
-  inline bool skipFirstLed() {
-    return (bool)_skip;
+  inline uint8_t skipFirstLed() {
+    return _skip;
   }
 
   inline void reinit() {

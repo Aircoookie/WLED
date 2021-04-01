@@ -102,7 +102,6 @@ void deserializeConfig() {
 
   JsonArray ins = hw_led["ins"];
   uint8_t s = 0;  // bus iterator
-  bool skipFirst = false;
   strip.isRgbw = false;
   busses.removeAll();
   uint32_t mem = 0;
@@ -123,9 +122,8 @@ void deserializeConfig() {
     if (start >= lC+length) continue; // something is very wrong :)
     //limit length of strip if it would exceed total configured LEDs
     //if (start + length > ledCount) length = ledCount - start;
-    uint8_t colorOrder = (int)elm[F("order")];
-    //(this shouldn't have been in ins obj. but remains here for compatibility)
-    skipFirst = (bool) elm[F("skip")];
+    uint8_t colorOrder = elm[F("order")];
+    uint8_t skipFirst = elm[F("skip")];
     uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
     bool reversed = elm["rev"];
     //RGBW mode is enabled if at least one of the strips is RGBW
@@ -144,7 +142,7 @@ void deserializeConfig() {
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonEnabled, hw_btn_ins_0["type"]);
   int hw_btn_pin = hw_btn_ins_0["pin"][0];
-  if (pinManager.allocatePin(hw_btn_pin,false)) {
+  if (hw_btn_pin>=0 && pinManager.allocatePin(hw_btn_pin,false)) {
     btnPin = hw_btn_pin;
     pinMode(btnPin, INPUT_PULLUP);
   } else {
@@ -160,7 +158,7 @@ void deserializeConfig() {
 
   #ifndef WLED_DISABLE_INFRARED
   int hw_ir_pin = hw["ir"]["pin"] | -1; // 4
-  if (pinManager.allocatePin(hw_ir_pin,false)) {
+  if (hw_ir_pin >=0 && pinManager.allocatePin(hw_ir_pin,false)) {
     irPin = hw_ir_pin;
   } else {
     irPin = -1;
@@ -169,8 +167,8 @@ void deserializeConfig() {
   CJSON(irEnabled, hw["ir"]["type"]);
 
   JsonObject relay = hw[F("relay")];
-  int hw_relay_pin = relay["pin"];
-  if (pinManager.allocatePin(hw_relay_pin,true)) {
+  int hw_relay_pin = relay["pin"] | -1;
+  if (hw_relay_pin>=0 && pinManager.allocatePin(hw_relay_pin,true)) {
     rlyPin = hw_relay_pin;
     pinMode(rlyPin, OUTPUT);
   } else {
