@@ -191,6 +191,14 @@
 //handles pointer type conversion for all possible bus types
 class PolyBus {
   public:
+  // Begin & initialize the PixelSettings for TM1814 strips.
+  template <class T>
+  static void beginTM1814(void* busPtr) {
+    T tm1814_strip = static_cast<T>(busPtr);
+    tm1814_strip->Begin();
+    // Max current for each LED (38.0 mA).
+    tm1814_strip->SetPixelSettings(NeoTm1814Settings(380, 380, 380, 380));
+  }
   static void begin(void* busPtr, uint8_t busType, uint8_t* pins) {
     switch (busType) {
       case I_NONE: break;
@@ -207,10 +215,10 @@ class PolyBus {
       case I_8266_U1_400_3: (static_cast<B_8266_U1_400_3*>(busPtr))->Begin(); break;
       case I_8266_DM_400_3: (static_cast<B_8266_DM_400_3*>(busPtr))->Begin(); break;
       case I_8266_BB_400_3: (static_cast<B_8266_BB_400_3*>(busPtr))->Begin(); break;
-      case I_8266_U0_TM1_4: (static_cast<B_8266_U0_TM1_4*>(busPtr))->Begin(); break;
-      case I_8266_U1_TM1_4: (static_cast<B_8266_U1_TM1_4*>(busPtr))->Begin(); break;
-      case I_8266_DM_TM1_4: (static_cast<B_8266_DM_TM1_4*>(busPtr))->Begin(); break;
-      case I_8266_BB_TM1_4: (static_cast<B_8266_BB_TM1_4*>(busPtr))->Begin(); break;
+      case I_8266_U0_TM1_4: beginTM1814<B_8266_U0_TM1_4*>(busPtr); break;
+      case I_8266_U1_TM1_4: beginTM1814<B_8266_U1_TM1_4*>(busPtr); break;
+      case I_8266_DM_TM1_4: beginTM1814<B_8266_DM_TM1_4*>(busPtr); break;
+      case I_8266_BB_TM1_4: beginTM1814<B_8266_BB_TM1_4*>(busPtr); break;
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(); break;
       case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(); break;
@@ -247,16 +255,16 @@ class PolyBus {
       case I_32_R7_400_3: (static_cast<B_32_R7_400_3*>(busPtr))->Begin(); break;
       case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->Begin(); break;
       case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->Begin(); break;
-      case I_32_R0_TM1_4: (static_cast<B_32_R0_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R1_TM1_4: (static_cast<B_32_R1_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R2_TM1_4: (static_cast<B_32_R2_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R3_TM1_4: (static_cast<B_32_R3_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R4_TM1_4: (static_cast<B_32_R4_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R5_TM1_4: (static_cast<B_32_R5_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R6_TM1_4: (static_cast<B_32_R6_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R7_TM1_4: (static_cast<B_32_R7_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_I0_TM1_4: (static_cast<B_32_I0_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_I1_TM1_4: (static_cast<B_32_I1_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_R0_TM1_4: beginTM1814<B_32_R0_TM1_4*>(busPtr); break;
+      case I_32_R1_TM1_4: beginTM1814<B_32_R1_TM1_4*>(busPtr); break;
+      case I_32_R2_TM1_4: beginTM1814<B_32_R2_TM1_4*>(busPtr); break;
+      case I_32_R3_TM1_4: beginTM1814<B_32_R3_TM1_4*>(busPtr); break;
+      case I_32_R4_TM1_4: beginTM1814<B_32_R4_TM1_4*>(busPtr); break;
+      case I_32_R5_TM1_4: beginTM1814<B_32_R5_TM1_4*>(busPtr); break;
+      case I_32_R6_TM1_4: beginTM1814<B_32_R6_TM1_4*>(busPtr); break;
+      case I_32_R7_TM1_4: beginTM1814<B_32_R7_TM1_4*>(busPtr); break;
+      case I_32_I0_TM1_4: beginTM1814<B_32_I0_TM1_4*>(busPtr); break;
+      case I_32_I1_TM1_4: beginTM1814<B_32_I1_TM1_4*>(busPtr); break;
       // ESP32 can (and should, to avoid inadvertantly driving the chip select signal) specify the pins used for SPI, but only in begin()
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
@@ -269,14 +277,6 @@ class PolyBus {
       case I_SS_P98_3: (static_cast<B_SS_P98_3*>(busPtr))->Begin(); break;
     }
   };
-  // Initialize the PixelSettings for TM1814 strips.
-  template <class T>
-  static T* createTM1814(uint16_t len, uint8_t pin) {
-    T* tm1814_strip = new T(len, pin);
-    // Max current for each LED (38.0 mA).
-    tm1814_strip->SetPixelSettings(NeoTm1814Settings(380, 380, 380, 380));
-    return tm1814_strip;
-  }
   static void* create(uint8_t busType, uint8_t* pins, uint16_t len) {
     void* busPtr = nullptr;
     switch (busType) {
@@ -294,10 +294,10 @@ class PolyBus {
       case I_8266_U1_400_3: busPtr = new B_8266_U1_400_3(len, pins[0]); break;
       case I_8266_DM_400_3: busPtr = new B_8266_DM_400_3(len, pins[0]); break;
       case I_8266_BB_400_3: busPtr = new B_8266_BB_400_3(len, pins[0]); break;
-      case I_8266_U0_TM1_4: busPtr = createTM1814<B_8266_U0_TM1_4>(len, pins[0]); break;
-      case I_8266_U1_TM1_4: busPtr = createTM1814<B_8266_U1_TM1_4>(len, pins[0]); break;
-      case I_8266_DM_TM1_4: busPtr = createTM1814<B_8266_DM_TM1_4>(len, pins[0]); break;
-      case I_8266_BB_TM1_4: busPtr = createTM1814<B_8266_BB_TM1_4>(len, pins[0]); break;
+      case I_8266_U0_TM1_4: busPtr = new B_8266_U0_TM1_4(len, pins[0]); break;
+      case I_8266_U1_TM1_4: busPtr = new B_8266_U1_TM1_4(len, pins[0]); break;
+      case I_8266_DM_TM1_4: busPtr = new B_8266_DM_TM1_4(len, pins[0]); break;
+      case I_8266_BB_TM1_4: busPtr = new B_8266_BB_TM1_4(len, pins[0]); break;
     #endif
     #ifdef ARDUINO_ARCH_ESP32
       case I_32_R0_NEO_3: busPtr = new B_32_R0_NEO_3(len, pins[0]); break;
@@ -330,16 +330,16 @@ class PolyBus {
       case I_32_R7_400_3: busPtr = new B_32_R7_400_3(len, pins[0]); break;
       case I_32_I0_400_3: busPtr = new B_32_I0_400_3(len, pins[0]); break;
       case I_32_I1_400_3: busPtr = new B_32_I1_400_3(len, pins[0]); break;
-      case I_32_R0_TM1_4: busPtr = createTM1814<B_32_R0_TM1_4>(len, pins[0]); break;
-      case I_32_R1_TM1_4: busPtr = createTM1814<B_32_R1_TM1_4>(len, pins[0]); break;
-      case I_32_R2_TM1_4: busPtr = createTM1814<B_32_R2_TM1_4>(len, pins[0]); break;
-      case I_32_R3_TM1_4: busPtr = createTM1814<B_32_R3_TM1_4>(len, pins[0]); break;
-      case I_32_R4_TM1_4: busPtr = createTM1814<B_32_R4_TM1_4>(len, pins[0]); break;
-      case I_32_R5_TM1_4: busPtr = createTM1814<B_32_R5_TM1_4>(len, pins[0]); break;
-      case I_32_R6_TM1_4: busPtr = createTM1814<B_32_R6_TM1_4>(len, pins[0]); break;
-      case I_32_R7_TM1_4: busPtr = createTM1814<B_32_R7_TM1_4>(len, pins[0]); break;
-      case I_32_I0_TM1_4: busPtr = createTM1814<B_32_I0_TM1_4>(len, pins[0]); break;
-      case I_32_I1_TM1_4: busPtr = createTM1814<B_32_I1_TM1_4>(len, pins[0]); break;
+      case I_32_R0_TM1_4: busPtr = new B_32_R0_TM1_4(len, pins[0]); break;
+      case I_32_R1_TM1_4: busPtr = new B_32_R1_TM1_4(len, pins[0]); break;
+      case I_32_R2_TM1_4: busPtr = new B_32_R2_TM1_4(len, pins[0]); break;
+      case I_32_R3_TM1_4: busPtr = new B_32_R3_TM1_4(len, pins[0]); break;
+      case I_32_R4_TM1_4: busPtr = new B_32_R4_TM1_4(len, pins[0]); break;
+      case I_32_R5_TM1_4: busPtr = new B_32_R5_TM1_4(len, pins[0]); break;
+      case I_32_R6_TM1_4: busPtr = new B_32_R6_TM1_4(len, pins[0]); break;
+      case I_32_R7_TM1_4: busPtr = new B_32_R7_TM1_4(len, pins[0]); break;
+      case I_32_I0_TM1_4: busPtr = new B_32_I0_TM1_4(len, pins[0]); break;
+      case I_32_I1_TM1_4: busPtr = new B_32_I1_TM1_4(len, pins[0]); break;
     #endif
       // for 2-wire: pins[1] is clk, pins[0] is dat.  begin expects (len, clk, dat)
       case I_HS_DOT_3: busPtr = new B_HS_DOT_3(len, pins[1], pins[0]); break;
