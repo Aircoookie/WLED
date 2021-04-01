@@ -569,7 +569,7 @@ input[type=range]::-moz-range-thumb {
 	width: 276px;
 	background-color: var(--c-2);
 }
-.btn-i, .btn-p {
+.btn-i {
 	padding-bottom: 3px;
 }
 .btn-icon {
