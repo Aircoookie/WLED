@@ -17,7 +17,8 @@
     function bLimits(b,p,m) {
       maxB = b; maxM = m; maxPB = p;
     }
-    function trySubmit() {
+    function trySubmit(event) {
+      event.preventDefault();
       var LCs = d.getElementsByTagName("input");
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
@@ -36,6 +37,7 @@
           }
       }
       if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += " Consider using an ESP32."; alert(msg); return;}
+      if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
       if (d.Sf.reportValidity()) d.Sf.submit();
     }
 		function S(){GetV();setABL();}
@@ -255,9 +257,9 @@
 	</style>
 </head>
 <body onload="S()">
-	<form id="form_s" name="Sf" method="post">
+	<form id="form_s" name="Sf" method="post" onsubmit="trySubmit(event)">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
-		<button type="button" onclick="B()">Back</button><button type="button" onclick="trySubmit()">Save</button><hr>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
     <h2>LED &amp; Hardware setup</h2>
     Total LED count: <input name="LC" type="number" min="1" max="8192" oninput="UI()" required><br>
   <i>Recommended power supply for brightest white:</i><br>
@@ -344,7 +346,7 @@
         <option value=4>Legacy</option>
       </select>
     <br></span><hr>
-		<button type="button" onclick="B()">Back</button><button type="button" onclick="trySubmit()">Save</button>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
 </body>
 </html>

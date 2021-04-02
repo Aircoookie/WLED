@@ -1,5 +1,12 @@
 ## WLED changelog
 
+### WLED release 0.12.0
+
+#### Build 2103310
+
+-   Version bump to 0.12.0 "Hikari"
+-   Fixed LED settings submission in iOS app
+
 ### Development versions between 0.11.1 and 0.12.0 releases
 
 #### Build 2103300
