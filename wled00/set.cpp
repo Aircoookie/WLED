@@ -153,13 +153,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       btnPin = -1;
     }
 
-    int hw_aux_pin = request->arg(F("AX")).toInt();
-    if (pinManager.allocatePin(hw_aux_pin,true)) {
-      auxPin = hw_aux_pin;
-    } else {
-      auxPin = -1;
-    }
-
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
@@ -721,16 +714,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     nightlightActiveOld = false; //re-init
   }
   if (nightlightMode > NL_MODE_SUN) nightlightMode = NL_MODE_SUN;
-
-  //toggle general purpose output
-  if (auxPin>=0) {
-    pos = req.indexOf(F("AX="));
-    if (pos > 0) {
-      auxTime = getNumVal(&req, pos);
-      auxActive = true;
-      if (auxTime == 0) auxActive = false;
-    }
-  }
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
