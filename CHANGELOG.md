@@ -2,12 +2,18 @@
 
 ### WLED release 0.12.0
 
+#### Build 2104020
+
+-   Allow clearing button/IR/relay pin on platforms that don't support negative numbers
+-   Removed AUX pin
+-   Hid some easter eggs, only to be found at easter
+
+### Development versions between 0.11.1 and 0.12.0 releases
+
 #### Build 2103310
 
 -   Version bump to 0.12.0 "Hikari"
 -   Fixed LED settings submission in iOS app
-
-### Development versions between 0.11.1 and 0.12.0 releases
 
 #### Build 2103300
 

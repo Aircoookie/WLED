@@ -21,6 +21,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - Segments to set different effects and colors to parts of the LEDs  
 - Settings page - configuration over network  
 - Access Point and station mode - automatic failsafe AP  
+- Up to 10 LED outputs per instance
 - Support for RGBW strips  
 - Up to 250 user presets to save and load colors/effects easily, supports cycling through them.  
 - Presets can be used to automatically execute API calls  

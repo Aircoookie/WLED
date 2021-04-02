@@ -14,6 +14,9 @@
 		{
 			window.open("/settings","_self");
     }
+    function off(n){
+      d.getElementsByName(n)[0].value = -1;
+    }
     function bLimits(b,p,m) {
       maxB = b; maxM = m; maxPB = p;
     }
@@ -299,11 +302,11 @@
     <div id="ledwarning" style="color: orange; display: none;">
       &#9888; You might run into stability or lag issues.<br>
       Use less than <span id="wreason">800 LEDs per pin</span> for the best experience!<br>
-    </div><br>
-    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"> Active high <input type="checkbox" name="RM"><br>
-    Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><br>
-    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><br>
-    AUX pin: <input type="number" min="-1" max="40" name="AX" onchange="UI()">
+    </div>
+    Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><span style="cursor: pointer;" onclick="off('BT')">&nbsp;&#215;</span><br>
+    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
+    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
+    Active high <input type="checkbox" name="RM">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
     Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>
