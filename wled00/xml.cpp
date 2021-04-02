@@ -335,8 +335,7 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     sappend('v',SET_F("CA"),briS);
-    //sappend('c',SET_F("EW"),useRGBW);
-    //sappend('i',SET_F("CO"),strip.getColorOrder());
+
     sappend('v',SET_F("AW"),strip.rgbwMode);
 
     sappend('c',SET_F("BO"),turnOnAtBoot);

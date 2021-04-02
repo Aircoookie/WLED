@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.12.0-b2
+   @version 0.12.0-b5
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2103240
+#define VERSION 2103300
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -140,12 +140,6 @@
   Comment out this error message to build regardless.
 #endif
 
-#if !defined(IRPIN) || IRPIN < 0
-  #ifndef WLED_DISABLE_INFRARED
-    #define WLED_DISABLE_INFRARED
-  #endif
-#endif
-
 #ifndef WLED_DISABLE_INFRARED
   #include <IRremoteESP8266.h>
   #include <IRrecv.h>
@@ -179,7 +173,7 @@
 #endif
 
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.12.0-b2");
+WLED_GLOBAL char versionString[] _INIT("0.12.0-b5");
 #define WLED_CODENAME "Hikari"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -262,7 +256,6 @@ WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling 
 
 // LED CONFIG
 WLED_GLOBAL uint16_t ledCount _INIT(30);          // overcurrent prevented by ABL
-WLED_GLOBAL bool useRGBW      _INIT(false);       // SK6812 strips can contain an extra White channel
 WLED_GLOBAL bool turnOnAtBoot _INIT(true);        // turn on LEDs at power-up
 WLED_GLOBAL byte bootPreset   _INIT(0);           // save preset to load after power-up
 
