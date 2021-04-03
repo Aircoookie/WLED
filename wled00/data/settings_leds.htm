@@ -14,29 +14,36 @@
 		{
 			window.open("/settings","_self");
     }
+    function off(n){
+      d.getElementsByName(n)[0].value = -1;
+    }
     function bLimits(b,p,m) {
       maxB = b; maxM = m; maxPB = p;
     }
-    function trySubmit() {
+    function pinsOK() {
       var LCs = d.getElementsByTagName("input");
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
-
         //check for pin conflicts
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
-            /*if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].focus();return;}*/
-            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.um_p)} can't be used.`);LCs[i].focus();return;}
+            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.um_p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
+            else if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].value="";LCs[i].focus();return false;}
             for (j=i+1; j<LCs.length; j++)
             {
               var n2 = LCs[j].name.substring(0,2);
               if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
-                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${nm}/${n2}!`);LCs[j].focus();return;}
+                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${nm}/${n2}!`);LCs[j].value="";LCs[j].focus();return false;}
             }
           }
       }
-      if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg); return;}
-      if (d.Sf.reportValidity()) d.Sf.submit();
+      return true;
+    }
+    function trySubmit(e) {
+      e.preventDefault();
+      if (!pinsOK()) {e.stopPropagation();return false;} // Prevent form submission and contact with server
+      if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg);}
+      if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
 		function S(){GetV();setABL();}
     function enABL()
@@ -67,6 +74,7 @@
         default: d.getElementById('LAdis').style.display = 'inline';
       }
       d.getElementById('m1').innerHTML = maxM;
+      d.getElementsByName("Sf")[0].addEventListener("submit", trySubmit);
       UI();
     }
     //returns mem usage
@@ -155,16 +163,6 @@
           var lc=d.getElementsByName("LC"+LCs[i].name.substring(2))[0];
           lc.max=maxPB;
         }
-        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
-          if (LCs[i].value!="" && LCs[i].value!="-1") {
-            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.um_p)} can't be used.`);LCs[i].focus();continue;}
-            for (j=0; j<LCs.length; j++) {
-              if (i==j) continue;
-              var n2 = LCs[j].name.substring(0,2);
-              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
-                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${nm}/${n2}!`);LCs[j].value="";LCs[j].focus();break;}
-            }
-          }
       }
 
       if (d.getElementById("LC").readOnly) d.getElementsByName("LC")[0].value = sLC;
@@ -173,12 +171,6 @@
         var i = o.length;
         if (i == 1) d.getElementsByName("LC0")[0].value = d.getElementsByName("LC")[0].value;
       }
-
-      var RL=d.getElementsByName("RL")[0]; RL.readOnly=(RL.value=="-1"); d.getElementById("cRL").checked=(RL.value!="-1");
-      var BT=d.getElementsByName("BT")[0]; BT.readOnly=(BT.value=="-1"); d.getElementById("cBT").checked=(BT.value!="-1");
-      var IR=d.getElementsByName("IR")[0]; IR.readOnly=(IR.value=="-1"); d.getElementById("cIR").checked=(IR.value!="-1");
-      var AX=d.getElementsByName("AX")[0]; AX.readOnly=(AX.value=="-1"); d.getElementById("cAX").checked=(AX.value!="-1");
-
       d.getElementById('m0').innerHTML = memu;
       bquot = memu / maxM * 100;
       d.getElementById('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
@@ -277,14 +269,10 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 
       UI();
     }
-    function tglFld(o)
-    {
-      var f = d.getElementsByName(o.id.substring(1))[0]; f.readOnly = !o.checked; f.value=o.checked?"":"-1";
-    }
 		function GetV()
 		{
       //values injected by server while sending HTML
-      //maxM=5000;maxPB=1536;d.um_p=[1,6,7,8,9,10,...];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RV.checked=0;d.Sf.SL.checked=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;d.Sf.BT.value=-1;d.Sf.IR.value=-1;d.Sf.AX.value=-1;
+      //maxM=5000;maxPB=1536;d.um_p=[1,6,7,8,9,10,11];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.SL.checked=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;d.Sf.BT.value=-1;d.Sf.IR.value=-1;d.Sf.AX.value=-1;
     }
 	</script>
 	<style>
@@ -295,7 +283,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 	<form id="form_s" name="Sf" method="post">
     <div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
-		<button type="button" onclick="B()">Back</button><button type="button" onclick="trySubmit()">Save</button><hr>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
     </div>
     <h2>LED &amp; Hardware setup</h2>
     Total LED count: <input name="LC" id="LC" type="number" min="1" max="8192" oninput="UI()" required readonly><br>
@@ -337,10 +325,10 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       &#9888; You might run into stability or lag issues.<br>
       Use less than <span id="wreason">800 LEDs per pin</span> for the best experience!<br>
     </div><hr style="width:260px">
-    Relay pin: <input type="checkbox" id="cRL" onchange="tglFld(this)"> <input type="number" min="-1" max="40" name="RL" onchange="UI()"> Active high <input type="checkbox" name="RM"><br>
-    Button pin: <input type="checkbox" id="cBT" onchange="tglFld(this)"> <input type="number" min="-1" max="40" name="BT" onchange="UI()"><br>
-    IR pin: <input type="checkbox" id="cIR" onchange="tglFld(this)"> <input type="number" min="-1" max="40" name="IR" onchange="UI()"><br>
-    AUX pin: <input type="checkbox" id="cAX" onchange="tglFld(this)"> <input type="number" min="-1" max="40" name="AX" onchange="UI()">
+    Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><span style="cursor: pointer;" onclick="off('BT')">&nbsp;&#215;</span><br>
+    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
+    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
+    Active high <input type="checkbox" name="RM">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
     Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>
@@ -383,7 +371,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
         <option value=4>Legacy</option>
       </select>
     <br></span><hr>
-		<button type="button" onclick="B()">Back</button><button type="button" onclick="trySubmit()">Save</button>
+		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
 </body>
 </html>

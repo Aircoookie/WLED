@@ -378,7 +378,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RM"),rlyMde);
     sappend('v',SET_F("BT"),btnPin);
     sappend('v',SET_F("IR"),irPin);
-    sappend('v',SET_F("AX"),auxPin);
   }
 
   if (subPage == 3)

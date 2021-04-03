@@ -506,9 +506,6 @@ void serializeConfig() {
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status["pin"] = -1;
 
-  JsonObject hw_aux = hw.createNestedObject("aux");
-  hw_aux["pin"] = auxPin;
-
   JsonObject light = doc.createNestedObject(F("light"));
   light[F("scale-bri")] = briMultiplier;
   light[F("pal-mode")] = strip.paletteBlend;
