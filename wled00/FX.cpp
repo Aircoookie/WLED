@@ -3081,7 +3081,7 @@ uint16_t WS2812FX::mode_drip(void)
   gravity *= SEGLEN;
   int sourcedrop = 12;
 
-  for (int j=0;j<numDrops;j++) {
+  for (uint8_t j=0;j<numDrops;j++) {
     if (drops[j].colIndex == 0) { //init
       drops[j].pos = SEGLEN-1;    // start at end
       drops[j].vel = 0;           // speed
@@ -3092,7 +3092,7 @@ uint16_t WS2812FX::mode_drip(void)
     setPixelColor(SEGLEN-1,color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
     if (drops[j].colIndex==1) {
       if (drops[j].col>255) drops[j].col=255;
-      setPixelColor(int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
+      setPixelColor(uint16_t(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
       
       drops[j].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
       
@@ -3107,8 +3107,9 @@ uint16_t WS2812FX::mode_drip(void)
         if (drops[j].pos < 0) drops[j].pos = 0;
         drops[j].vel += gravity;
 
-        for (int i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
-          setPixelColor(int(drops[j].pos)+i,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
+        for (uint16_t i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
+          uint16_t pos = uint16_t(drops[j].pos) +i; //this is BAD, returns a pos >= SEGLEN occasionally
+          setPixelColor(pos,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
         }
         
         if (drops[j].colIndex > 2) {       // during bounce, some water is on the floor
