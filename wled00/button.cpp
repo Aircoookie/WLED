@@ -17,9 +17,7 @@ void shortPressAction()
 
 bool isButtonPressed()
 {
-  #if defined(BTNPIN) && BTNPIN > -1
-    if (digitalRead(BTNPIN) == LOW) return true;
-  #endif
+  if (btnPin>=0 && digitalRead(btnPin) == LOW) return true;
   #ifdef TOUCHPIN
     if (touchRead(TOUCHPIN) <= TOUCH_THRESHOLD) return true;
   #endif
@@ -29,8 +27,7 @@ bool isButtonPressed()
 
 void handleButton()
 {
-#if (defined(BTNPIN) && BTNPIN > -1) || defined(TOUCHPIN)
-  if (!buttonEnabled) return;
+  if (btnPin<0 || !buttonEnabled) return;
 
   if (isButtonPressed()) //pressed
   {
@@ -75,7 +72,6 @@ void handleButton()
     buttonWaitTime = 0;
     shortPressAction();
   }
-#endif
 }
 
 void handleIO()
@@ -88,51 +84,25 @@ void handleIO()
     lastOnTime = millis();
     if (offMode)
     {
-      #if RLYPIN >= 0
-       digitalWrite(RLYPIN, RLYMDE);
-      #endif
+      if (rlyPin>=0) {
+        pinMode(rlyPin, OUTPUT);
+        digitalWrite(rlyPin, rlyMde);
+      }
       offMode = false;
     }
   } else if (millis() - lastOnTime > 600)
   {
-     if (!offMode) {
-      #if LEDPIN == LED_BUILTIN
-        pinMode(LED_BUILTIN, OUTPUT);
-        digitalWrite(LED_BUILTIN, HIGH);
+    if (!offMode) {
+      #ifdef ESP8266
+      //turn off built-in LED if strip is turned off
+      pinMode(LED_BUILTIN, OUTPUT);
+      digitalWrite(LED_BUILTIN, HIGH);
       #endif
-      #if RLYPIN >= 0
-       digitalWrite(RLYPIN, !RLYMDE);
-      #endif
-     }
+      if (rlyPin>=0) {
+        pinMode(rlyPin, OUTPUT);
+        digitalWrite(rlyPin, !rlyMde);
+      }
+    }
     offMode = true;
   }
-
-  #if AUXPIN >= 0
-  //output
-  if (auxActive || auxActiveBefore)
-  {
-    if (!auxActiveBefore)
-    {
-      auxActiveBefore = true;
-      switch (auxTriggeredState)
-      {
-        case 0: pinMode(AUXPIN, INPUT); break;
-        case 1: pinMode(AUXPIN, OUTPUT); digitalWrite(AUXPIN, HIGH); break;
-        case 2: pinMode(AUXPIN, OUTPUT); digitalWrite(AUXPIN, LOW); break;
-      }
-      auxStartTime = millis();
-    }
-    if ((millis() - auxStartTime > auxTime*1000 && auxTime != 255) || !auxActive)
-    {
-      auxActive = false;
-      auxActiveBefore = false;
-      switch (auxDefaultState)
-      {
-        case 0: pinMode(AUXPIN, INPUT); break;
-        case 1: pinMode(AUXPIN, OUTPUT); digitalWrite(AUXPIN, HIGH); break;
-        case 2: pinMode(AUXPIN, OUTPUT); digitalWrite(AUXPIN, LOW); break;
-      }
-    }
-  }
-  #endif
 }

@@ -23,10 +23,9 @@ bool parseLx(int lxValue, byte rgbw[4])
     ok = true;
     float tmpBri = floor((lxValue - 200000000) / 10000); ;
     uint16_t ct = (lxValue - 200000000) - (((uint8_t)tmpBri) * 10000);
-    float temp = 0;
 
     tmpBri *= 2.55;
-    constrain(tmpBri, 0, 255);
+    tmpBri = constrain(tmpBri, 0, 255);
 
     colorKtoRGB(ct, rgbw);
     lxRed = rgbw[0]; lxGreen = rgbw[1]; lxBlue = rgbw[2];
@@ -70,7 +69,7 @@ void parseLxJson(int lxValue, byte segId, bool secondary)
     } else {
       DEBUG_PRINT(F("LX: segment "));
       DEBUG_PRINTLN(segId);
-      strip.getSegment(segId).colors[secondary] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
+      strip.getSegment(segId).setColor(secondary, ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF))), segId);
     }
   }
 }

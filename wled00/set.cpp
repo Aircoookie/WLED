@@ -52,6 +52,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     noWifiSleep = request->hasArg(F("WS"));
 
+    #ifdef WLED_USE_ETHERNET
+    ethernetType = request->arg(F("ETH")).toInt();
+    #endif
+
     char k[3]; k[2] = 0;
     for (int i = 0; i<4; i++)
     {
@@ -71,18 +75,87 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //LED SETTINGS
   if (subPage == 2)
   {
-    int t = request->arg(F("LC")).toInt();
+    int t = 0;
+
+    if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
+    #ifndef WLED_DISABLE_INFRARED
+    if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
+    #endif
+    if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
+    //TODO remove all busses, but not in this system call
+    //busses->removeAll();
+
+    uint8_t colorOrder, type;
+    uint16_t length, start;
+    uint8_t pins[5] = {255, 255, 255, 255, 255};
+
+    for (uint8_t s = 0; s < WLED_MAX_BUSSES; s++) {
+      char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
+      char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
+      char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
+      char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
+      char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
+      char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
+      if (!request->hasArg(lp)) {
+        DEBUG_PRINTLN("No data."); break;
+      }
+      for (uint8_t i = 0; i < 5; i++) {
+        lp[1] = 48+i;
+        if (!request->hasArg(lp)) break;
+        pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
+      }
+      type = request->arg(lt).toInt();
+      //if (isRgbw(type)) strip.isRgbw = true; //30fps
+      //strip.isRgbw = true;
+      
+      if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
+        length = request->arg(lc).toInt();
+      } else {
+        break;  // no parameter
+      }
+
+      colorOrder = request->arg(co).toInt();
+      start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
+
+      if (busConfigs[s] != nullptr) delete busConfigs[s];
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
+      //if (BusManager::isRgbw(type)) strip.isRgbw = true; //20fps
+      //strip.isRgbw = true;
+      doInitBusses = true;
+    }
+
+    ledCount = request->arg(F("LC")).toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
-    #ifdef ESP8266
-    #if LEDPIN == 3
-    if (ledCount > MAX_LEDS_DMA) ledCount = MAX_LEDS_DMA; //DMA method uses too much ram
+
+    // upate other pins
+    #ifndef WLED_DISABLE_INFRARED
+    int hw_ir_pin = request->arg(F("IR")).toInt();
+    if (pinManager.isPinOk(hw_ir_pin) && pinManager.allocatePin(hw_ir_pin,false)) {
+      irPin = hw_ir_pin;
+    } else {
+      irPin = -1;
+    }
     #endif
-    #endif
+
+    int hw_rly_pin = request->arg(F("RL")).toInt();
+    if (pinManager.allocatePin(hw_rly_pin,true)) {
+      rlyPin = hw_rly_pin;
+    } else {
+      rlyPin = -1;
+    }
+    rlyMde = (bool)request->hasArg(F("RM"));
+
+    int hw_btn_pin = request->arg(F("BT")).toInt();
+    if (pinManager.allocatePin(hw_btn_pin,false)) {
+      btnPin = hw_btn_pin;
+      pinMode(btnPin, INPUT_PULLUP);
+    } else {
+      btnPin = -1;
+    }
+
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
-    useRGBW = request->hasArg(F("EW"));
-    strip.setColorOrder(request->arg(F("CO")).toInt());
     strip.rgbwMode = request->arg(F("AW")).toInt();
 
     briS = request->arg(F("CA")).toInt();
@@ -90,7 +163,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     saveCurrPresetCycConf = request->hasArg(F("PC"));
     turnOnAtBoot = request->hasArg(F("BO"));
     t = request->arg(F("BP")).toInt();
-    if (t <= 25) bootPreset = t;
+    if (t <= 250) bootPreset = t;
     strip.gammaCorrectBri = request->hasArg(F("GB"));
     strip.gammaCorrectCol = request->hasArg(F("GC"));
 
@@ -108,7 +181,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     t = request->arg(F("PB")).toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
-    strip.reverseMode = request->hasArg(F("RV"));
     skipFirstLed = request->hasArg(F("SL"));
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
@@ -142,6 +214,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyMacro = request->hasArg(F("SM"));
     notifyTwice = request->hasArg(F("S2"));
 
+    nodeListEnabled = request->hasArg(F("NL"));
+    if (!nodeListEnabled) Nodes.clear();
+    nodeBroadcastEnabled = request->hasArg(F("NB"));
+
     receiveDirect = request->hasArg(F("RD"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));
     e131Multicast = request->hasArg(F("EM"));
@@ -152,7 +228,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg(F("DA")).toInt();
     if (t >= 0  && t <= 510) DMXAddress = t;
     t = request->arg(F("DM")).toInt();
-    if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_DRGB) DMXMode = t;
+    if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_RGBW) DMXMode = t;
     t = request->arg(F("ET")).toInt();
     if (t > 99  && t <= 65000) realtimeTimeoutMs = t;
     arlsForceMaxBri = request->hasArg(F("FB"));
@@ -163,8 +239,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     alexaEnabled = request->hasArg(F("AL"));
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
 
+    strlcpy(blynkHost, request->arg("BH").c_str(), 33);
+    t = request->arg(F("BP")).toInt();
+    if (t > 0) blynkPort = t;
+
     if (request->hasArg("BK") && !request->arg("BK").equals(F("Hidden"))) {
-      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey);
+      strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey, blynkHost, blynkPort);
     }
 
     #ifdef WLED_ENABLE_MQTT
@@ -232,6 +312,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     countdownHour = request->arg(F("CH")).toInt();
     countdownMin = request->arg(F("CM")).toInt();
     countdownSec = request->arg(F("CS")).toInt();
+    setCountdown();
 
     macroAlexaOn = request->arg(F("A0")).toInt();
     macroAlexaOff = request->arg(F("A1")).toInt();
@@ -266,6 +347,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (request->hasArg(F("RS"))) //complete factory reset
     {
       WLED_FS.format();
+      clearEEPROM();
       serveMessage(request, 200, F("All Settings erased."), F("Connect to WLED-AP to setup again"),255);
       doReboot = true;
     }
@@ -318,12 +400,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       DMXFixtureMap[i] = t;
     }
   }
-  
   #endif
-  if (subPage != 6 || !doReboot) serializeConfig(); //do not save if factory reset
-  if (subPage == 2) {
-    strip.init(useRGBW,ledCount,skipFirstLed);
-  }
+
+  if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
 }
 
@@ -375,7 +454,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   DEBUG_PRINT(F("API req: "));
   DEBUG_PRINTLN(req);
 
-  strip.applyToAllSelected = true;
+  strip.applyToAllSelected = false;
+  //snapshot to check if request changed values later, temporary.
+  byte prevCol[4] = {col[0], col[1], col[2], col[3]};
+  byte prevColSec[4] = {colSec[0], colSec[1], colSec[2], colSec[3]};
+  byte prevEffect = effectCurrent;
+  byte prevSpeed = effectSpeed;
+  byte prevIntensity = effectIntensity;
+  byte prevPalette = effectPalette;
 
   //segment select (sets main segment)
   byte prevMain = strip.getMainSegmentId();
@@ -383,16 +469,16 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     strip.mainSegment = getNumVal(&req, pos);
   }
-  byte main = strip.getMainSegmentId();
-  if (main != prevMain) setValuesFromMainSeg();
+  byte selectedSeg = strip.getMainSegmentId();
+  if (selectedSeg != prevMain) setValuesFromMainSeg();
 
   pos = req.indexOf(F("SS="));
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
-    if (t < strip.getMaxSegments()) main = t;
+    if (t < strip.getMaxSegments()) selectedSeg = t;
   }
 
-  WS2812FX::Segment& mainseg = strip.getSegment(main);
+  WS2812FX::Segment& mainseg = strip.getSegment(selectedSeg);
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
@@ -426,9 +512,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     spcI = getNumVal(&req, pos);
   }
-  strip.setSegment(main, startI, stopI, grpI, spcI);
-
-  main = strip.getMainSegmentId();
+  strip.setSegment(selectedSeg, startI, stopI, grpI, spcI);
 
    //set presets
   pos = req.indexOf(F("P1=")); //sets first preset for cycle
@@ -526,7 +610,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) {
     byte t[4];
     colorFromDecOrHexString(t, (char*)req.substring(pos + 3).c_str());
-    strip.setColor(2, t[0], t[1], t[2], t[3]);
+    if (selectedSeg != strip.getMainSegmentId()) {
+      strip.applyToAllSelected = true;
+      strip.setColor(2, t[0], t[1], t[2], t[3]);
+    } else {
+      strip.getSegment(selectedSeg).setColor(2,((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24)), selectedSeg);
+    }
   }
 
   //set to random hue SR=0->1st SR=1->2nd
@@ -626,34 +715,24 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
   if (nightlightMode > NL_MODE_SUN) nightlightMode = NL_MODE_SUN;
 
-  #if AUXPIN >= 0
-  //toggle general purpose output
-  pos = req.indexOf(F("AX="));
-  if (pos > 0) {
-    auxTime = getNumVal(&req, pos);
-    auxActive = true;
-    if (auxTime == 0) auxActive = false;
-  }
-  #endif
-
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
 
   //Segment reverse
   pos = req.indexOf(F("RV="));
-  if (pos > 0) strip.getSegment(main).setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
+  if (pos > 0) strip.getSegment(selectedSeg).setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
 
   //Segment reverse
   pos = req.indexOf(F("MI="));
-  if (pos > 0) strip.getSegment(main).setOption(SEG_OPTION_MIRROR, req.charAt(pos+3) != '0');
+  if (pos > 0) strip.getSegment(selectedSeg).setOption(SEG_OPTION_MIRROR, req.charAt(pos+3) != '0');
 
   //Segment brightness/opacity
   pos = req.indexOf(F("SB="));
   if (pos > 0) {
     byte segbri = getNumVal(&req, pos);
-    strip.getSegment(main).setOption(SEG_OPTION_ON, segbri);
+    strip.getSegment(selectedSeg).setOption(SEG_OPTION_ON, segbri, selectedSeg);
     if (segbri) {
-      strip.getSegment(main).opacity = segbri;
+      strip.getSegment(selectedSeg).setOpacity(segbri, selectedSeg);
     }
   }
 
@@ -710,11 +789,55 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
   //you can add more if you need
 
+  //apply to all selected manually to prevent #1618. Temporary
+  bool col0Changed = false, col1Changed = false;
+  for (uint8_t i = 0; i < 4; i++) {
+    if (col[i] != prevCol[i]) col0Changed = true;
+    if (colSec[i] != prevColSec[i]) col1Changed = true;
+  }
+  for (uint8_t i = 0; i < strip.getMaxSegments(); i++)
+  {
+    WS2812FX::Segment& seg = strip.getSegment(i);
+    if (!seg.isSelected()) continue;
+    if (effectCurrent != prevEffect) {
+      seg.mode = effectCurrent;
+      effectChanged = true;
+    }
+    if (effectSpeed != prevSpeed) {
+      seg.speed = effectSpeed;
+      effectChanged = true;
+    }
+    if (effectIntensity != prevIntensity) {
+      seg.intensity = effectIntensity;
+      effectChanged = true;
+    }
+    if (effectPalette != prevPalette) {
+      seg.palette = effectPalette;
+      effectChanged = true;
+    }
+  }
+
+  if (col0Changed) {
+    if (selectedSeg == strip.getMainSegmentId()) {
+      strip.applyToAllSelected = true;
+      strip.setColor(0, colorFromRgbw(col));
+    }
+  }
+  if (col1Changed) {
+    if (selectedSeg == strip.getMainSegmentId()) {
+      strip.applyToAllSelected = true;
+      strip.setColor(1, colorFromRgbw(colSec));
+    }
+  }
+  //end of temporary fix code
+
   if (!apply) return true; //when called by JSON API, do not call colorUpdated() here
   
   //internal call, does not send XML response
   pos = req.indexOf(F("IN"));
   if (pos < 1) XML_response(request);
+
+  strip.applyToAllSelected = false;
 
   pos = req.indexOf(F("&NN")); //do not send UDP notifications this time
   colorUpdated((pos > 0) ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);

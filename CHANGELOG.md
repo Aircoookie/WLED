@@ -1,5 +1,201 @@
 ## WLED changelog
 
+### WLED release 0.12.0
+
+#### Build 2104020
+
+-   Allow clearing button/IR/relay pin on platforms that don't support negative numbers
+-   Removed AUX pin
+-   Hid some easter eggs, only to be found at easter
+
+### Development versions between 0.11.1 and 0.12.0 releases
+
+#### Build 2103310
+
+-   Version bump to 0.12.0 "Hikari"
+-   Fixed LED settings submission in iOS app
+
+#### Build 2103300
+
+-   Version bump to 0.12.0-b5 "Hikari"
+-   Update to core espressif32@3.2
+-   Fixed IR pin not configurable
+
+#### Build 2103290
+
+-   Version bump to 0.12.0-b4 "Hikari"
+-   Experimental use of espressif32@3.1.1
+-   Fixed RGBW mode disabled after LED settings saved
+-   Fixed infrared support not compiled in if IRPIN is not defined
+
+#### Build 2103230
+
+-   Fixed current estimation
+
+#### Build 2103220
+
+-   Version bump to 0.12.0-b2 "Hikari"
+-   Worked around an issue causing a critical decrease in framerate (wled.cpp l.240 block)
+-   Bump to Espalexa v2.7.0, fixing discovery
+
+#### Build 2103210
+
+-   Version bump to 0.12.0-b1 "Hikari"
+-   More colors visible on Palette preview
+-   Fixed chevron icon not included
+-   Fixed color order override
+-   Cleanup
+
+#### Build 2103200
+
+-   Version bump to 0.12.0-b0 "Hikari"
+-   Added palette preview and search (PR #1637)
+-   Added Reverse checkbox for PWM busses - reverses logic level for on
+-   Fixed various problems with the Playlist feature (PR #1724)
+-   Replaced "Layer" icon with "i" icon for Info button
+-   Chunchun effect more fitting for various segment lengths (PR #1804)
+-   Removed global reverse (in favor of individual bus reverse)
+-   Removed some unused icons from UI icon font
+
+#### Build 2103130
+
+-   Added options for Auto Node discovery
+-   Optimized strings (no string both F() and raw)
+
+#### Build 2103090
+
+-   Added Auto Node discovery (PR #1683)
+-   Added tooltips to quick color selectors for accessibility
+
+#### Build 2103060
+
+-   Auto start field population in bus config
+
+#### Build 2103050
+
+-   Fixed incorrect over-memory indication in LED settings on ESP32
+
+#### Build 2103041
+
+-   Added destructor for BusPwm (fixes #1789)
+
+#### Build 2103040
+
+-   Fixed relay mode inverted when upgrading from 0.11.0
+-   Fixed no more than 2 pins per bus configurable in UI
+-   Changed to non-linear IR brightness steps (PR #1742)
+-   Fixed various warnings (PR #1744)
+-   Added UDP DNRGBW Mode (PR #1704)
+-   Added dynamic LED mapping with ledmap.json file (PR #1738)
+-   Added support for QuinLED-ESP32-Ethernet board
+-   Added support for WESP32 ethernet board (PR #1764)
+-   Added Caching for main UI (PR #1704)
+-   Added Tetrix mode (PR #1729)
+-   Added memory check on Bus creation
+
+#### Build 2102050
+
+-   Version bump to 0.12.0-a0 "Hikari"
+-   Added FPS indication in info
+-   Bumped max outputs from 7 to 10 busses for ESP32
+
+#### Build 2101310
+
+-   First alpha configurable multipin
+
+#### Build 2101130
+
+-   Added color transitions for all segments and slots and for segment brightness
+-   Fixed bug that prevented setting a boot preset higher than 25
+
+#### Build 2101040
+
+-   Replaced Red & Blue effect with Aurora effect (PR #1589)
+-   Fixed HTTP changing segments uncommanded (#1618)
+-   Updated copyright year and contributor page link
+
+#### Build 2012311
+
+-   Fixed Countdown mode
+
+#### Build 2012310
+
+-   (Hopefully actually) fixed display of usermod values in info screen
+
+#### Build 2012240
+
+-   Fixed display of usermod values in info screen
+-   4 more effects now use FRAMETIME
+-   Remove unsupported environments from platformio.ini
+
+#### Build 2012210
+
+-   Split index.htm in separate CSS + JS files (PR #1542)
+-   Minify UI HTML, saving >1.5kB flash
+-   Fixed JShint warnings
+
+#### Build 2012180
+
+-   Boot brightness 0 will now use the brightness from preset
+-   Add iOS scrolling momentum (from PR #1528)
+
+### WLED release 0.11.1
+
+#### Build 2012180
+
+-   Release of WLED 0.11.1 "Mirai"
+-   Fixed AP hide not saving (fixes #1520)
+-   Fixed MQTT password re-transmitted to HTML
+-   Hide Update buttons while uploading, accept .bin
+-   Make sure AP password is at least 8 characters long
+
+### Development versions after 0.11.0 release
+
+#### Build 2012160
+
+-   Bump Espalexa to 2.5.0, fixing discovery (PR Espalexa/#152, originally PR #1497)
+
+#### Build 2012150
+
+-   Added Blends FX (PR #1491)
+-   Fixed an issue that made it impossible to deactivate timed presets
+
+#### Build 2012140
+
+-   Added Preset ID quick display option (PR #1462)
+-   Fixed LEDs not turning on when using gamma correct brightness and LEDPIN 2 (default)
+-   Fixed notifier applying main segment to selected segments on notification with FX/Col disabled 
+
+#### Build 2012130
+
+-   Fixed RGBW mode not saved between reboots (fixes #1457)
+-   Added brightness scaling in palette function for default (PR #1484)
+
+#### Build 2012101
+
+-   Fixed preset cycle default duration rounded down to nearest 10sec interval (#1458)
+-   Enabled E1.31/DDP/Art-Net in AP mode
+
+#### Build 2012100
+
+-   Fixed multi-segment preset cycle
+-   Fixed EEPROM (pre-0.11 settings) not cleared on factory reset
+-   Fixed an issue with intermittent crashes on FX change (PR #1465)
+-   Added function to know if strip is updating (PR #1466)
+-   Fixed using colorwheel sliding the UI (PR #1459)
+-   Fixed analog clock settings not saving (PR #1448)
+-   Added Temperature palette (PR #1430)
+-   Added Candy cane FX (PR #1445)
+
+#### Build 2012020
+
+-   UDP `parsePacket()` with sync disabled (#1390)
+-   Added Multi RGBW DMX mode (PR #1383)
+
+#### Build 2012010
+
+-   Fixed compilation for analog (PWM) LEDs
+
 ### WLED version 0.11.0
 
 #### Build 2011290
@@ -63,7 +259,7 @@
 #### Build 2011153
 
 -   Fixed an ESP32 end-of-file issue
--   Fixed useRGBW not read from cfg.json
+-   Fixed strip.isRgbw not read from cfg.json
 
 #### Build 2011152
 

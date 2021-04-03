@@ -33,6 +33,11 @@ void colorFromUint24(uint32_t in, bool secondary)
   }
 }
 
+//store color components in uint32_t
+uint32_t colorFromRgbw(byte* rgbw) {
+  return (rgbw[0] << 16) + (rgbw[1] << 8) + rgbw[2] + (rgbw[3] << 24);
+}
+
 //relatively change white brightness, minumum A=5
 void relativeChangeWhite(int8_t amount, byte lowerBoundary)
 {
@@ -59,7 +64,7 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
     case 4: rgb[0]=t,rgb[1]=p,rgb[2]=255;break;
     case 5: rgb[0]=255,rgb[1]=p,rgb[2]=q;
   }
-  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
+  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
@@ -106,7 +111,7 @@ void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb, bins
   } else {
     rgb[0]=237;rgb[1]=255;rgb[2]=239;//150
   }
-  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
+  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 #ifndef WLED_DISABLE_HUESYNC
@@ -164,7 +169,7 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   rgb[0] = 255.0*r;
   rgb[1] = 255.0*g;
   rgb[2] = 255.0*b;
-  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
+  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)

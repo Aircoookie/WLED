@@ -36,6 +36,20 @@
 //21-> 0.10.1p
 //22-> 2009260
 
+/*
+ * Erase all (pre 0.11) configuration data on factory reset
+ */
+void clearEEPROM()
+{
+  EEPROM.begin(EEPSIZE);
+  for (int i = 0; i < EEPSIZE; i++)
+  {
+    EEPROM.write(i, 0);
+  }
+  EEPROM.end();
+}
+
+
 void readStringFromEEPROM(uint16_t pos, char* str, uint16_t len)
 {
   for (int i = 0; i < len; ++i)
@@ -101,7 +115,6 @@ void loadSettingsFromEEPROM()
   }
   receiveNotificationBrightness = EEPROM.read(250);
   fadeTransition = EEPROM.read(251);
-  strip.reverseMode = EEPROM.read(252);
   transitionDelayDefault = EEPROM.read(253) + ((EEPROM.read(254) << 8) & 0xFF00);
   transitionDelay = transitionDelayDefault;
   briMultiplier = EEPROM.read(255);
@@ -130,7 +143,7 @@ void loadSettingsFromEEPROM()
   arlsOffset = EEPROM.read(368);
   if (!EEPROM.read(367)) arlsOffset = -arlsOffset;
   turnOnAtBoot = EEPROM.read(369);
-  useRGBW = EEPROM.read(372);
+  strip.isRgbw = EEPROM.read(372);
   //374 - strip.paletteFade
   
   apBehavior = EEPROM.read(376);
@@ -393,7 +406,7 @@ void deEEP() {
 
         JsonArray colarr = segObj.createNestedArray("col");
 
-        byte numChannels = (useRGBW)? 4:3;
+        byte numChannels = (strip.isRgbw)? 4:3;
 
         for (uint8_t k = 0; k < 3; k++) //k=0 primary (i+2) k=1 secondary (i+6) k=2 tertiary color (i+12)
         {
