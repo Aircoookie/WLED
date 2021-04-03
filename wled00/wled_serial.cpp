@@ -15,10 +15,11 @@ enum class AwaProtocol {
 };
 
 // static data buffer for the loop
+#define MAX_BUFFER 2048
 
 void handleSerial()
 {
-    static uint8_t     buffer[4096];
+    static uint8_t     buffer[MAX_BUFFER];
     static AwaProtocol state = AwaProtocol::HEADER_A;
     static uint8_t     CRC = 0;
     static uint16_t    count = 0;
@@ -30,7 +31,7 @@ void handleSerial()
     static uint8_t     inputColorB = 0;
 
     uint16_t bufferPointer = 0;
-    uint16_t internalIndex = min(Serial.available(), 4096);
+    uint16_t internalIndex = min(Serial.available(), MAX_BUFFER);
 
     if (internalIndex > 0)
         internalIndex = Serial.readBytes(buffer, internalIndex);
