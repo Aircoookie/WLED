@@ -1,5 +1,5 @@
 # HyperSerialWLED
-Fork of the WLED project where the Adalight USB serial protocol @115200 speed is replaced with the AWA protocol with data integrity check at @2000000 speed for use with [HyperHDR](https://github.com/awawa-dev/HyperHDR). Work for ESP8266 (WLED platform: d1_mini) and ESP32 (WLED platform: esp32dev).<br/><br/>
+Fork of the WLED project where the Adalight USB serial protocol @115200 speed is replaced with the AWA protocol with data integrity check at @2000000 speed for use with [HyperHDR](https://github.com/awawa-dev/HyperHDR).<br/><br/>
 Now it's possible to use HyperSerialWLED with any LED strip/pinout supported by the WLED.<br/>
 1 For installation and configuration of WLED please refer to the WLED project: [link](https://github.com/Aircoookie/WLED)<br/>
 2 For configuration of HyperHDR please refer to the base project of AWA protocol: [link](https://github.com/awawa-dev/HyperSerialEsp8266)<br/><br/>
