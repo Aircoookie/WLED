@@ -1,5 +1,12 @@
 ## WLED changelog
 
+### Builds after release 0.12.0
+
+#### Build 2104030
+
+-   Fixed ESP32 crash on Drip effect with reversed segment (#1854)
+-   Added flag `WLED_DISABLE_BROWNOUT_DET` to disable ESP32 brownout detector (off by default)
+
 ### WLED release 0.12.0
 
 #### Build 2104020

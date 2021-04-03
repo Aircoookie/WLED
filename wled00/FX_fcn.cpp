@@ -191,7 +191,7 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     uint16_t realIndex = realPixelIndex(i);
 
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
-      int16_t indexSet = realIndex + (reversed ? -j : j);
+      int indexSet = realIndex + (reversed ? -j : j);
       if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
       if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
         busses.setPixelColor(indexSet + skip, col);
