@@ -297,9 +297,8 @@ function checkUsed(i)
 
 function pName(i)
 {
-	if (!pJson || !pJson[i]) return "";
 	var n = "Preset " + i;
-	if (pJson[i].n) n = pJson[i].n;
+	if (pJson && pJson[i] && pJson[i].n) n = pJson[i].n;
 	return n;
 }
 
@@ -593,37 +592,36 @@ function populateSegments(s)
 		<span class="checkmark schk"></span>
 	</label>
 	<div class="segname" onclick="selSegEx(${i})">
-		Segment ${i}
+		${inst.n ? inst.n : "Segment "+i}
 	</div>
 	<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 	<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
-	<table class="segt">
-		<tr>
-			<td class="segtd">Start LED</td>
-			<td class="segtd">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
-		</tr>
-		<tr>
-			<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
-			<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
-		</tr>
-	</table>
-	<table class="segt">
-		<tr>
-			<td class="segtd">Grouping</td>
-			<td class="segtd">Spacing</td>
-		</tr>
-		<tr>
-			<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
-			<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
-		</tr>
-	</table>
-	<div class="h bp" id="seg${i}len"></div>
-	<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
-	<div class="sliderwrap il sws">
-		<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
-		<div class="sliderdisplay"></div>
-	</div>
-		<i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i>
+		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/><br>
+		<table class="segt">
+			<tr>
+				<td width="38%">Start LED</td>
+				<td width="38%">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
+			</tr>
+			<tr>
+				<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
+				<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
+				<td rowspan="3"><i class="icons e-icon cnf" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i></td>
+			</tr>
+			<tr>
+				<td>Grouping</td>
+				<td>Spacing</td>
+			</tr>
+			<tr>
+				<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
+				<td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+			</tr>
+		</table>
+		<div class="h bp" id="seg${i}len"></div>
+		<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
+		<div class="sliderwrap il sws">
+			<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+			<div class="sliderdisplay"></div>
+		</div>
 		<i class="icons e-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
 		<label class="check revchkl">
 			Reverse direction
@@ -1244,18 +1242,19 @@ function makeSeg()
 		New segment ${lowestUnused}
 	</div>
 	<div class="segin expanded">
+		<input type="text" class="ptxt noslide" id="seg${lowestUnused}t" autocomplete="off" maxlength=32 value="" placeholder="Enter name..."/><br>
 		<table class="segt">
 			<tr>
-				<td class="segtd">Start LED</td>
-				<td class="segtd">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
+				<td width="38%">Start LED</td>
+				<td width="38%">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
 			</tr>
 			<tr>
-				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
-				<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})"></td>
+				<td><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
+				<td><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})"></td>
+				<td><i class="icons e-icon cnf cnf-s" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused});resetUtil();">&#xe390;</i></td>
 			</tr>
 		</table>
 		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
-		<i class="icons e-icon cnf cnf-s half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused});resetUtil();">&#xe390;</i>
 		<div class="c"><button class="btn btn-p" onclick="resetUtil()">Cancel</button></div>
 	</div>
 </div>`;
@@ -1342,10 +1341,11 @@ function selSeg(s)
 
 function setSeg(s)
 {
+	var name = gId(`seg${s}t`).value;
 	var start = parseInt(gId(`seg${s}s`).value);
 	var stop = parseInt(gId(`seg${s}e`).value);
 	if (stop == 0) {delSeg(s); return;}
-	var obj = {"seg": {"id": s, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (gId(`seg${s}grp`))
 	{
 		var grp = parseInt(gId(`seg${s}grp`).value);

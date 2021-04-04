@@ -55,6 +55,7 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
     DEBUGFS_PRINTLN(F("Reuse recv buffer"));
     sObj.remove(F("psave"));
     sObj.remove(F("v"));
+    sObj.remove("rev"); // TODO: use rev:2 if more than 12 segments on ESP8266
 
     if (!sObj["o"]) {
       DEBUGFS_PRINTLN(F("Save current state"));

@@ -15,6 +15,29 @@ void deserializeSegment(JsonObject elem, byte it)
     uint16_t start = elem[F("start")] | seg.start;
     int stop = elem["stop"] | -1;
 
+    if (elem["n"]) {
+      // name field exists
+      String name = elem["n"];
+      if (name.length()) {
+        if (seg.name) delete seg.name;
+        seg.name = new char[name.length()+1];
+        strcpy(seg.name, name.c_str());
+      } else {
+        // but is empty
+        elem.remove("n");
+        if (seg.name) {
+          delete seg.name;
+          seg.name = nullptr;
+        }
+      }
+    } else if (elem[F("start")] || elem["stop"]) {
+      // clearing or setting segment without name field
+      if (seg.name) {
+        delete seg.name;
+        seg.name = nullptr;
+      }
+    }
+
     if (stop < 0) {
       uint16_t len = elem[F("len")];
       stop = (len > 0) ? start + len : seg.stop;
@@ -318,6 +341,8 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root["on"] = seg.getOption(SEG_OPTION_ON);
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
+
+  if (seg.name != nullptr) root["n"] = String(seg.name);
 
 	JsonArray colarr = root.createNestedArray("col");
 

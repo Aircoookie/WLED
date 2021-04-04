@@ -560,6 +560,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
 }
 
 void WS2812FX::resetSegments() {
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete _segments[i].name;
   mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
   //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
@@ -996,9 +997,9 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
 
 //load custom mapping table from JSON file
 void WS2812FX::deserializeMap(uint8_t n) {
-  String fileName = String("/ledmap");
-  if (n)  fileName += String(n);
-  fileName += String(".json");
+  String fileName = String(F("/ledmap"));
+  if (n) fileName += String(n);
+  fileName += String(F(".json"));
   bool isFile = WLED_FS.exists(fileName);
 
   if (!isFile) {

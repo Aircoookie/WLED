@@ -132,13 +132,14 @@ button {
 
 .segt {
 	table-layout: fixed;
-	width: 76%;
+	width: 100%;
 }
 
-.segtd {
+.segt TD {
 	text-align: center;
 	text-transform: uppercase;
 	font-size: 14px;
+	vertical-align: middle;
 }
 
 .keytd {
@@ -740,13 +741,12 @@ input[type=number]::-webkit-outer-spin-button {
 	cursor: pointer;
 	background: var(--c-3);
 	border-radius: 5px;
+	padding: 42px 8px;
+	margin: -8px 0 0;
 }
 
 .cnf-s {
-	position: absolute;
-	top: 66px;
-	right: 28px;
-	padding: 43px 6px;
+	padding: 8px;
 }
 
 .pwr {
@@ -757,11 +757,6 @@ input[type=number]::-webkit-outer-spin-button {
 
 .act {
 	color: var(--c-f);
-}
-
-.half {
-	padding: 7.5px;
-	top: 64px;
 }
 
 .del {
