@@ -995,18 +995,33 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
 
 
 //load custom mapping table from JSON file
-void WS2812FX::deserializeMap(void) {
-  if (!WLED_FS.exists("/ledmap.json")) return;
+void WS2812FX::deserializeMap(uint8_t n) {
+  String fileName = String("/ledmap");
+  if (n)  fileName += String(n);
+  fileName += String(".json");
+  bool isFile = WLED_FS.exists(fileName);
+
+  if (!isFile) {
+    // erase custom mapping if selecting nonexistent ledmap.json (n==0)
+    if (!n && customMappingTable != nullptr) {
+      customMappingSize = 0;
+      delete[] customMappingTable;
+      customMappingTable = nullptr;
+    }
+    return;
+  }
+
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);  // full sized buffer for larger maps
+  DEBUG_PRINT(F("Reading LED map from "));
+  DEBUG_PRINTLN(fileName);
 
-  DEBUG_PRINTLN(F("Reading LED map from /ledmap.json..."));
+  if (!readObjectFromFile(fileName.c_str(), nullptr, &doc)) return; //if file does not exist just exit
 
-  if (!readObjectFromFile("/ledmap.json", nullptr, &doc)) return; //if file does not exist just exit
-
+  // erase old custom ledmap
   if (customMappingTable != nullptr) {
+    customMappingSize = 0;
     delete[] customMappingTable;
     customMappingTable = nullptr;
-    customMappingSize = 0;
   }
 
   JsonArray map = doc[F("map")];

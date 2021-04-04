@@ -603,7 +603,8 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
-      setPixelSegment(uint8_t n);
+      setPixelSegment(uint8_t n),
+      deserializeMap(uint8_t n=0);
 
     bool
       isRgbw = false,
@@ -835,8 +836,7 @@ class WS2812FX {
 
     void
       blendPixelColor(uint16_t n, uint32_t color, uint8_t blend),
-      startTransition(uint8_t oldBri, uint32_t oldCol, uint16_t dur, uint8_t segn, uint8_t slot),
-      deserializeMap(void);
+      startTransition(uint8_t oldBri, uint32_t oldCol, uint16_t dur, uint8_t segn, uint8_t slot);
 
     uint16_t* customMappingTable = nullptr;
     uint16_t  customMappingSize  = 0;

@@ -269,6 +269,11 @@ bool deserializeState(JsonObject root)
 
   usermods.readFromJsonState(root);
 
+  int8_t ledmap = root[F("ledmap")] | -1;
+  if (ledmap >= 0) {
+    strip.deserializeMap(ledmap);
+  }
+
   int ps = root[F("psave")] | -1;
   if (ps > 0) {
     savePreset(ps, true, nullptr, root);
