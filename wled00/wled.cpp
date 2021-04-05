@@ -2,6 +2,11 @@
 #include "wled.h"
 #include <Arduino.h>
 
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
+#endif
+
 /*
  * Main WLED class implementation. Mostly initialization and connection logic
  */
@@ -285,6 +290,10 @@ void WLED::loop()
 
 void WLED::setup()
 {
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detection
+  #endif
+
   Serial.begin(115200);
   Serial.setTimeout(50);
   DEBUG_PRINTLN();
@@ -337,8 +346,6 @@ void WLED::setup()
     pinMode(STATUSLED, OUTPUT);
 #endif
 
-  //DEBUG_PRINTLN(F("Load EEPROM"));
-  //loadSettingsFromEEPROM();
   beginStrip();
   userSetup();
   usermods.setup();
