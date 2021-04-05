@@ -192,8 +192,8 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
       int16_t indexSet = realIndex + (reversed ? -j : j);
-      if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
       if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
+        if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
         busses.setPixelColor(indexSet + skip, col);
         if (IS_MIRROR) { //set the corresponding mirrored pixel
           uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
