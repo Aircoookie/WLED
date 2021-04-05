@@ -4153,7 +4153,9 @@ typedef struct Julia {              // We can't use the 'static' keyword for per
 
 uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated Julia set by Andrew Tuline
 
-  //CRGB *leds = (CRGB*) ledData;   // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
+
+  CRGB *leds = (CRGB*) ledData;
 
   if (!SEGENV.allocateData(sizeof(julia))) return mode_static();  // We use this method for allocating memory for static variables.
   Julia* julias = reinterpret_cast<Julia*>(SEGENV.data);          // Because 'static' doesn't work with SEGMENTS.
@@ -4343,14 +4345,22 @@ uint16_t WS2812FX::mode_matripix(void) {                  // Matripix. By Andrew
 } // mode_matripix()
 
 
+
+typedef struct Gravity {
+  int    topLED;
+  int    gravityCounter;
+} gravity;
+
+
 ///////////////////////
 //   * GRAVIMETER    //
 ///////////////////////
 
 uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andrew Tuline.
 
-  static int topLED;
-  static int gravityCounter = 0;
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
   fade_out(240);
 
@@ -4364,15 +4374,15 @@ uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andre
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), sampleAvg*8));
   }
 
-  if (tempsamp >= topLED)
-    topLED = tempsamp;
-  else if (gravityCounter % gravity == 0)
-    topLED--;
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
 
-  if (topLED > 0) {
-    setPixelColor(topLED, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
+  if (gravcen->topLED > 0) {
+    setPixelColor(gravcen->topLED, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
   }
-  gravityCounter = (gravityCounter + 1) % gravity;
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 
   return FRAMETIME;
 } // mode_gravimeter()
@@ -4384,8 +4394,9 @@ uint16_t WS2812FX::mode_gravimeter(void) {                // Gravmeter. By Andre
 
 uint16_t WS2812FX::mode_gravcenter(void) {                // Gravcenter. By Andrew Tuline.
 
-  static int topLED;
-  static int gravityCounter = 0;
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
   fade_out(240);
 
@@ -4400,20 +4411,19 @@ uint16_t WS2812FX::mode_gravcenter(void) {                // Gravcenter. By Andr
     setPixelColor(SEGLEN/2-i-1, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), sampleAvg*8));
   }
 
-  if (tempsamp >= topLED)
-    topLED = tempsamp-1;
-  else if (gravityCounter % gravity == 0)
-    topLED--;
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp-1;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
 
-  if (topLED >= 0) {
-    setPixelColor(topLED+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
-    setPixelColor(SEGLEN/2-1-topLED, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
+  if (gravcen->topLED >= 0) {
+    setPixelColor(gravcen->topLED+SEGLEN/2, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
+    setPixelColor(SEGLEN/2-1-gravcen->topLED, color_blend(SEGCOLOR(1), color_from_palette(millis(), false, PALETTE_SOLID_WRAP, 0), 255));
   }
-  gravityCounter = (gravityCounter + 1) % gravity;
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 
   return FRAMETIME;
 } // mode_gravcenter()
-
 
 
 ///////////////////////
@@ -4422,8 +4432,9 @@ uint16_t WS2812FX::mode_gravcenter(void) {                // Gravcenter. By Andr
 
 uint16_t WS2812FX::mode_gravcentric(void) {               // Gravcenter. By Andrew Tuline.
 
-  static int topLED;
-  static int gravityCounter = 0;
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
   fade_out(240);
   fade_out(240);
@@ -4439,19 +4450,20 @@ uint16_t WS2812FX::mode_gravcentric(void) {               // Gravcenter. By Andr
     setPixelColor(SEGLEN/2-1-i, color_blend(SEGCOLOR(0), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
   }
 
-  if (tempsamp >= topLED)
-    topLED = tempsamp-1;
-  else if (gravityCounter % gravity == 0)
-    topLED--;
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp-1;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
 
-  if (topLED >= 0) {
-    setPixelColor(topLED+SEGLEN/2, CRGB::Gray);
-    setPixelColor(SEGLEN/2-1-topLED, CRGB::Gray);
+  if (gravcen->topLED >= 0) {
+    setPixelColor(gravcen->topLED+SEGLEN/2, CRGB::Gray);
+    setPixelColor(SEGLEN/2-1-gravcen->topLED, CRGB::Gray);
   }
-  gravityCounter = (gravityCounter + 1) % gravity;
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 
   return FRAMETIME;
 } // mode_gravcentric()
+
 
 
 //////////////////////
@@ -4460,8 +4472,7 @@ uint16_t WS2812FX::mode_gravcentric(void) {               // Gravcenter. By Andr
 
 uint16_t WS2812FX::mode_midnoise(void) {                  // Midnoise. By Andrew Tuline.
 
-  static uint16_t xdist;
-  static uint16_t ydist;
+// Changing xdist to SEGENV.aux0 and ydist to SEGENV.aux1.
 
   fade_out(SEGMENT.speed);
   fade_out(SEGMENT.speed);
@@ -4472,12 +4483,12 @@ uint16_t WS2812FX::mode_midnoise(void) {                  // Midnoise. By Andrew
   if (maxLen >SEGLEN/2) maxLen = SEGLEN/2;
 
   for (int i=(SEGLEN/2-maxLen); i<(SEGLEN/2+maxLen); i++) {
-    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);  // Get a value from the noise function. I'm using both x and y axis.
+    uint8_t index = inoise8(i*sampleAvg+SEGENV.aux0, SEGENV.aux1+i*sampleAvg);  // Get a value from the noise function. I'm using both x and y axis.
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
   }
 
-  xdist=xdist+beatsin8(5,0,10);
-  ydist=ydist+beatsin8(4,0,10);
+  SEGENV.aux0=SEGENV.aux0+beatsin8(5,0,10);
+  SEGENV.aux1=SEGENV.aux1+beatsin8(4,0,10);
 
   return FRAMETIME;
 } // mode_midnoise()
@@ -4516,9 +4527,6 @@ uint16_t WS2812FX::mode_noisefire(void) {                 // Noisefire. By Andre
 
 uint16_t WS2812FX::mode_noisemeter(void) {                // Noisemeter. By Andrew Tuline.
 
-  static uint16_t xdist;
-  static uint16_t ydist;
-
   uint8_t fadeRate = map(SEGMENT.speed,0,255,224,255);
   fade_out(fadeRate);
 
@@ -4529,16 +4537,21 @@ uint16_t WS2812FX::mode_noisemeter(void) {                // Noisemeter. By Andr
   if (maxLen >SEGLEN) maxLen = SEGLEN;
 
   for (int i=0; i<maxLen; i++) {                                    // The louder the sound, the wider the soundbar. By Andrew Tuline.
-    uint8_t index = inoise8(i*sampleAvg+xdist, ydist+i*sampleAvg);  // Get a value from the noise function. I'm using both x and y axis.
+    uint8_t index = inoise8(i*sampleAvg+SEGENV.aux0, SEGENV.aux1+i*sampleAvg);  // Get a value from the noise function. I'm using both x and y axis.
     setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
   }
 
-  xdist+=beatsin8(5,0,10);
-  ydist+=beatsin8(4,0,10);
+  SEGENV.aux0+=beatsin8(5,0,10);
+  SEGENV.aux1+=beatsin8(4,0,10);
 
   return FRAMETIME;
 } // mode_noisemeter()
 
+
+typedef struct Plasphase {
+  int16_t    thisphase;
+  int16_t    thatphase;
+} plasphase;
 
 //////////////////////
 //   * PLASMOID     //
@@ -4546,20 +4559,25 @@ uint16_t WS2812FX::mode_noisemeter(void) {                // Noisemeter. By Andr
 
 uint16_t WS2812FX::mode_plasmoid(void) {                  // Plasmoid. By Andrew Tuline.
 
-  fade_out(224);
+  uint16_t dataSize = sizeof(plasphase);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Plasphase* plasmoip = reinterpret_cast<Plasphase*>(SEGENV.data);
 
-  static int16_t thisphase = 0;                           // Phase of a cubicwave8.
-  static int16_t thatphase = 0;                           // Phase of the cos8.
+//  static int16_t thisphase = 0;                           // Phase of a cubicwave8.
+//  static int16_t thatphase = 0;                           // Phase of the cos8.
 
   uint8_t thisbright;
   uint8_t colorIndex;
 
-  thisphase += beatsin8(6,-4,4);                          // You can change direction and speed individually.
-  thatphase += beatsin8(7,-4,4);                          // Two phase values to make a complex pattern. By Andrew Tuline.
+  fade_out(224);
+
+
+  plasmoip->thisphase += beatsin8(6,-4,4);                          // You can change direction and speed individually.
+  plasmoip->thatphase += beatsin8(7,-4,4);                          // Two phase values to make a complex pattern. By Andrew Tuline.
 
   for (int i=0; i<SEGLEN; i++) {                          // For each of the LED's in the strand, set a brightness based on a wave as follows.
-    thisbright = cubicwave8((i*13)+thisphase)/2;
-    thisbright += cos8((i*117)+thatphase)/2;              // Let's munge the brightness a bit and animate it all with the phases.
+    thisbright = cubicwave8((i*13)+plasmoip->thisphase)/2;
+    thisbright += cos8((i*117)+plasmoip->thatphase)/2;              // Let's munge the brightness a bit and animate it all with the phases.
     colorIndex=thisbright;
 
     if (sampleAvg * 8 * SEGMENT.intensity/256 > thisbright) {thisbright = 255;} else {thisbright = 0;}
@@ -4646,7 +4664,9 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By A
 //  static uint8_t colour;                                  // Ripple colour is randomized.
 //  static uint16_t centre;                                 // Center of the current ripple.
 //  static int8_t steps = -1;                               // -1 is the initializing step.
-  static uint8_t ripFade = 255;                           // Starting brightness.
+
+//  static uint8_t ripFade = 255;                           // Starting brightness, which we'll say is SEGENV.aux0.
+  if (SEGENV.call == 0) SEGENV.aux0 = 255;
 
 
   binNum = SEGMENT.fft2;                               // Select a bin.
@@ -4681,7 +4701,7 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By A
         break;
 
       case 0:
-        setPixelColor(ripples[i].pos, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade));
+        setPixelColor(ripples[i].pos, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0));
         ripples[i].state++;
         break;
 
@@ -4691,8 +4711,8 @@ uint16_t WS2812FX::mode_ripplepeak(void) {                // * Ripple peak. By A
 
       default:                                            // Middle of the ripples.
 
-        setPixelColor((ripples[i].pos + ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade/ripples[i].state*2));
-        setPixelColor((ripples[i].pos - ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), ripFade/ripples[i].state*2));
+        setPixelColor((ripples[i].pos + ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0/ripples[i].state*2));
+        setPixelColor((ripples[i].pos - ripples[i].state + SEGLEN) % SEGLEN, color_blend(SEGCOLOR(1), color_from_palette(ripples[i].color, false, PALETTE_SOLID_WRAP, 0), SEGENV.aux0/ripples[i].state*2));
         ripples[i].state++;                               // Next step.
         break;
     } // switch step
@@ -4951,8 +4971,9 @@ uint16_t WS2812FX::mode_freqwave(void) {                  // Freqwave. By Andrea
 
 uint16_t WS2812FX::mode_gravfreq(void) {                  // Gravfreq. By Andrew Tuline.
 
-  static int topLED;
-  static int gravityCounter = 0;
+  uint16_t dataSize = sizeof(gravity);
+  if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+  Gravity* gravcen = reinterpret_cast<Gravity*>(SEGENV.data);
 
   fade_out(240);
 
@@ -4969,16 +4990,16 @@ uint16_t WS2812FX::mode_gravfreq(void) {                  // Gravfreq. By Andrew
     setPixelColor(SEGLEN/2-i-1, color_blend(SEGCOLOR(1), color_from_palette(index, false, PALETTE_SOLID_WRAP, 0), 255));
   }
 
-  if (tempsamp >= topLED)
-    topLED = tempsamp-1;
-  else if (gravityCounter % gravity == 0)
-    topLED--;
+  if (tempsamp >= gravcen->topLED)
+    gravcen->topLED = tempsamp-1;
+  else if (gravcen->gravityCounter % gravity == 0)
+    gravcen->topLED--;
 
-  if (topLED >= 0) {
-    setPixelColor(topLED+SEGLEN/2, CRGB::Gray);
-    setPixelColor(SEGLEN/2-1-topLED, CRGB::Gray);
+  if (gravcen->topLED >= 0) {
+    setPixelColor(gravcen->topLED+SEGLEN/2, CRGB::Gray);
+    setPixelColor(SEGLEN/2-1-gravcen->topLED, CRGB::Gray);
   }
-  gravityCounter = (gravityCounter + 1) % gravity;
+  gravcen->gravityCounter = (gravcen->gravityCounter + 1) % gravity;
 
   return FRAMETIME;
 } // mode_gravfreq()
@@ -5085,6 +5106,8 @@ uint16_t WS2812FX::mode_DJLight(void) {                   // Written by ??? Adap
 
 uint16_t WS2812FX::mode_2DGEQ(void) {                     // By Will Tatam.
 
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
+
   fade_out(224);                                          // Just in case something doesn't get faded.
 
   CRGB *leds = (CRGB*) ledData;
@@ -5123,6 +5146,8 @@ uint16_t WS2812FX::mode_2DGEQ(void) {                     // By Will Tatam.
 /////////////////////////
 
 uint16_t WS2812FX::mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Will Tatam.
+
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB*) ledData;
 
@@ -5174,6 +5199,8 @@ uint16_t WS2812FX::mode_2DFunkyPlank(void) {              // Written by ??? Adap
 /////////////////////////
 
 uint16_t WS2812FX::mode_2DCenterBars(void) {              // Written by Scott Marley Adapted by  Spiro-C..
+
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB*) ledData;
   fadeToBlackBy(leds, SEGLEN, SEGMENT.speed);
@@ -5375,7 +5402,7 @@ return i;
 
 uint16_t WS2812FX::mode_2Dplasma(void) {                  // By Andreas Pleschutznig. A work in progress.
 
-  if (matrixWidth * matrixHeight > SEGLEN) {fade_out(224); return FRAMETIME;}                                 // No, we're not going to overrun the segment.
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   static uint8_t ihue=0;
   // uint8_t index;   // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
@@ -5470,7 +5497,7 @@ uint16_t WS2812FX::mode_2Dplasma(void) {                  // By Andreas Pleschut
 
 uint16_t WS2812FX::mode_2Dfirenoise(void) {               // firenoise2d. By Andrew Tuline. Yet another short routine.
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}                 // No, we're not going to overrun the segment.
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB *)ledData;
 
@@ -5512,7 +5539,7 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman.
                                                           // Modifed by: Andrew Tuline
                                                           // fft3 affects the blur amount.
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}  // No, we're not going to overrun the segment.
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB *)ledData;
   const uint8_t kBorderWidth = 2;
@@ -5550,7 +5577,7 @@ uint16_t WS2812FX::mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman.
 
 uint16_t WS2812FX::mode_2Dfire2012(void) {                // Fire2012 by Mark Kriegsman. Converted to WLED by Andrew Tuline.
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}  // No, we're not going to overrun the segment.
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB *)ledData;
   //static byte *heat = (byte *)dataStore;    // COMMENTED OUT - UNUSED VARIABLE COMPILER WARNINGS
@@ -5608,7 +5635,7 @@ uint16_t WS2812FX::mode_2Dfire2012(void) {                // Fire2012 by Mark Kr
 
 uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at https://pastebin.com/pCkkkzcs. Updated by Preyy. WLED version by Andrew Tuline.
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB *)ledData;
 
@@ -5643,7 +5670,7 @@ uint16_t WS2812FX::mode_2Ddna(void) {         // dna originally by by ldirko at 
 
 uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy Williams. Adapted by Andrew Tuline.
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB* )ledData;
 
@@ -5717,7 +5744,7 @@ uint16_t WS2812FX::mode_2Dmatrix(void) {                  // Matrix2D. By Jeremy
 
 uint16_t WS2812FX::mode_2Dmeatballs(void) {   // Metaballs by Stefan Petrick. Cannot have one of the dimensions be 2 or less. Adapted by Andrew Tuline.
 
-  if (matrixWidth * matrixHeight > SEGLEN) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
+  if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
   CRGB *leds = (CRGB* )ledData;
 
