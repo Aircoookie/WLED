@@ -3108,7 +3108,7 @@ uint16_t WS2812FX::mode_drip(void)
         drops[j].vel += gravity;
 
         for (uint16_t i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
-          uint16_t pos = uint16_t(drops[j].pos) +i; //this is BAD, returns a pos >= SEGLEN occasionally
+          uint16_t pos = constrain(uint16_t(drops[j].pos) +i, 0, SEGLEN-1); //this is BAD, returns a pos >= SEGLEN occasionally
           setPixelColor(pos,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
         }
         
