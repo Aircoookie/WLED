@@ -73,9 +73,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\wled00;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\WiFi\src;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\ESPmDNS\src;C:\Program Files (x86)\Arduino\libraries\AsyncTCP;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\SPIFFS\src;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\FS\src;C:\Program Files (x86)\Arduino\libraries\ESPAsyncWebServer\src;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\EEPROM\src;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\DNSServer\src;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\ArduinoOTA\src;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\Update\src;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\AsyncUDP\src;$(ProjectDir)..\..\..\User\Thomas\Documents\Arduino\libraries\NeoPixelBus_by_Makuna\src;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries\SPI\src;$(ProjectDir)..\..\..\User\Thomas\Documents\Arduino\libraries\FastLED;C:\Program Files (x86)\Arduino\libraries;$(ProjectDir)..\..\..\User\Thomas\Documents\Arduino\libraries;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\libraries;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\cores\esp32;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\cores\esp32\apps;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\cores\esp32\libb64;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\variants\esp32;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\config;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\app_trace;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\app_update;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\asio;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\bootloader_support;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\bt;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\coap;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\console;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\driver;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp-tls;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp32;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp_adc_cal;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp_event;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp_http_client;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp_http_server;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp_https_ota;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp_ringbuf;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\ethernet;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\expat;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\fatfs;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\freemodbus;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\freertos;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\heap;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\idf_test;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\jsmn;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\json;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\libsodium;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\log;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\lwip;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\mbedtls;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\mdns;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\micro-ecc;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\mqtt;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\newlib;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\nghttp;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\nvs_flash;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\openssl;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\protobuf-c;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\protocomm;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\pthread;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\sdmmc;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\smartconfig_ack;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\soc;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\spi_flash;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\spiffs;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\tcp_transport;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\tcpip_adapter;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\ulp;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\vfs;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\wear_levelling;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\wifi_provisioning;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\wpa_supplicant;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\xtensa-debug-module;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp32-camera;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\esp-face;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\hardware\esp32\1.0.2\tools\sdk\include\fb_gfx;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\tools\xtensa-esp32-elf-gcc\1.22.0-80-g6c4433a-5.2.0\lib\gcc\xtensa-esp32-elf\5.2.0\include;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\tools\xtensa-esp32-elf-gcc\1.22.0-80-g6c4433a-5.2.0\xtensa-esp32-elf\include\c++\5.2.0\xtensa-esp32-elf;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\tools\xtensa-esp32-elf-gcc\1.22.0-80-g6c4433a-5.2.0\xtensa-esp32-elf\include;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\tools\xtensa-esp32-elf-gcc\1.22.0-80-g6c4433a-5.2.0\xtensa-esp32-elf\include\c++\5.2.0;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\tools\xtensa-esp32-elf-gcc\1.22.0-80-g6c4433a-5.2.0\include\c++\5.2.0;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\tools\xtensa-esp32-elf-gcc\1.22.0-80-g6c4433a-5.2.0\include;C:\Users\thoma\AppData\Local\arduino15\packages\esp32\tools\xtensa-esp32-elf-gcc\1.22.0-80-g6c4433a-5.2.0\include\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\wled00;C:\Program Files (x86)\Arduino\libraries\WiFi\src;C:\Program Files (x86)\Arduino\libraries\WiFi\src\utility;C:\Program Files (x86)\Arduino\hardware\arduino\avr\libraries\EEPROM\src;C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino;C:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\yun;C:\Program Files (x86)\Arduino\hardware\tools\avr\\lib\gcc\avr\7.3.0\include;C:\Program Files (x86)\Arduino\hardware\tools\avr\avr\include;C:\Program Files (x86)\Arduino\hardware\tools\avr\\lib\gcc\avr\7.3.0\include;C:\Program Files (x86)\Arduino\hardware\tools\avr\avr\include-fixed;C:\Program Files (x86)\Arduino\hardware\tools\avr\avr\include\avr;C:\Program Files (x86)\Arduino\hardware\tools\avr\lib\gcc\avr\4.9.2\include;C:\Program Files (x86)\Arduino\hardware\tools\avr\lib\gcc\avr\4.9.2\include;C:\Program Files (x86)\Arduino\hardware\tools\avr\lib\gcc\avr\4.9.3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>$(ProjectDir)__vm\.wled00.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
-      <PreprocessorDefinitions>__ESP32_esp32__;__ESP32_ESP32__;ESP_PLATFORM;HAVE_CONFIG_H;F_CPU=240000000L;ARDUINO=10809;ARDUINO_ESP32_DEV;ARDUINO_ARCH_ESP32;ESP32;CORE_DEBUG_LEVEL=0;__cplusplus=201103L;_VMICRO_INTELLISENSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__AVR_atmega32u4__;__AVR_ATmega32U4__;__AVR_ATmega32u4__;F_CPU=16000000L;ARDUINO=108011;ARDUINO_AVR_YUN;ARDUINO_ARCH_AVR;USB_VID=0x2341;USB_PID=0x8041;__cplusplus=201103L;_VMICRO_INTELLISENSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -104,231 +104,103 @@
     <None Include="wled00.ino">
       <FileType>CppCode</FileType>
     </None>
-    <None Include="wled01_eeprom.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled02_xml.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled03_set.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled04_file.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled05_init.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled06_usermod.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled07_notify.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled08_led.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled09_button.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled10_ntp.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled11_ol.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled12_alexa.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled13_cronixie.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled14_colors.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled15_hue.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled16_blynk.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled17_mqtt.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled18_server.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled19_json.ino">
-      <FileType>CppCode</FileType>
-    </None>
-    <None Include="wled20_ir.ino">
-      <FileType>CppCode</FileType>
-    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="html_classic.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="html_mobile.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="html_other.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="html_settings.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="ir_codes.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="NpbWrapper.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="palettes.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Callbacks.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\DisconnectReasons.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Flags.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Helpers.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\MessageProperties.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\ConnAckPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\Packet.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PingRespPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubAckPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubCompPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PublishPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubRecPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubRelPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\SubAckPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\UnsubAckPacket.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\ParsingInformation.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Storage.hpp">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\BlynkSimpleEsp.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkApi.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkApiArduino.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkArduinoClient.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkConfig.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDateTime.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDebug.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDetectDevice.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkEveryN.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkFifo.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkHandlers.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkParam.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkProtocol.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkProtocolDefs.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkTemplates.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkTimer.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkUtility.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkWidgetBase.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkWiFiCommon.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
+    <ClInclude Include="alexa.h" />
+    <ClInclude Include="blynk.h" />
+    <ClInclude Include="button.h" />
+    <ClInclude Include="colors.h" />
+    <ClInclude Include="const.h" />
+    <ClInclude Include="cronixie.h" />
+    <ClInclude Include="dmx.h" />
+    <ClInclude Include="file.h" />
+    <ClInclude Include="html_classic.h" />
+    <ClInclude Include="html_mobile.h" />
+    <ClInclude Include="html_other.h" />
+    <ClInclude Include="html_settings.h" />
+    <ClInclude Include="html_ui.h" />
+    <ClInclude Include="hue.h" />
+    <ClInclude Include="ir.h" />
+    <ClInclude Include="ir_codes.h" />
+    <ClInclude Include="json.h" />
+    <ClInclude Include="led.h" />
+    <ClInclude Include="mqtt.h" />
+    <ClInclude Include="notify.h" />
+    <ClInclude Include="NpbWrapper.h" />
+    <ClInclude Include="ntp.h" />
+    <ClInclude Include="overlay.h" />
+    <ClInclude Include="palettes.h" />
+    <ClInclude Include="set.h" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient.h" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Callbacks.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\DisconnectReasons.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Flags.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Helpers.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\MessageProperties.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\ConnAckPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\Packet.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PingRespPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubAckPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubCompPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PublishPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubRecPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PubRelPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\SubAckPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\UnsubAckPacket.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\ParsingInformation.hpp" />
+    <ClInclude Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Storage.hpp" />
+    <ClInclude Include="src\dependencies\blynk\BlynkSimpleEsp.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkApi.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkApiArduino.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkArduinoClient.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkConfig.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDateTime.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDebug.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkDetectDevice.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkEveryN.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkFifo.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkHandlers.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkParam.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkProtocol.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkProtocolDefs.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkTemplates.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkTimer.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkUtility.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkWidgetBase.h" />
+    <ClInclude Include="src\dependencies\blynk\Blynk\BlynkWiFiCommon.h" />
     <ClInclude Include="src\dependencies\e131\ESPAsyncE131.h" />
-    <ClInclude Include="src\dependencies\espalexa\Espalexa.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\espalexa\EspalexaDevice.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\json\ArduinoJson-v6.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\json\AsyncJson-v6.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\timezone\Timezone.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\time\Time.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="src\dependencies\time\TimeLib.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
-    <ClInclude Include="FX.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
+    <ClInclude Include="src\dependencies\espalexa\Espalexa.h" />
+    <ClInclude Include="src\dependencies\espalexa\EspalexaDevice.h" />
+    <ClInclude Include="src\dependencies\json\ArduinoJson-v6.h" />
+    <ClInclude Include="src\dependencies\json\AsyncJson-v6.h" />
+    <ClInclude Include="src\dependencies\timezone\Timezone.h" />
+    <ClInclude Include="src\dependencies\time\Time.h" />
+    <ClInclude Include="src\dependencies\time\TimeLib.h" />
+    <ClInclude Include="FX.h" />
+    <ClInclude Include="usermod.h" />
+    <ClInclude Include="wled.h" />
+    <ClInclude Include="wled_eeprom.h" />
+    <ClInclude Include="wled_server.h" />
+    <ClInclude Include="xml.h" />
     <ClInclude Include="__vm\.wled00.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="alexa.cpp" />
+    <ClCompile Include="blynk.cpp" />
+    <ClCompile Include="button.cpp" />
+    <ClCompile Include="colors.cpp" />
+    <ClCompile Include="cronixie.cpp" />
+    <ClCompile Include="file.cpp" />
+    <ClCompile Include="hue.cpp" />
+    <ClCompile Include="ir.cpp" />
+    <ClCompile Include="json.cpp" />
+    <ClCompile Include="led.cpp" />
+    <ClCompile Include="mqtt.cpp" />
+    <ClCompile Include="notify.cpp" />
+    <ClCompile Include="ntp.cpp" />
+    <ClCompile Include="overlay.cpp" />
+    <ClCompile Include="set.cpp" />
     <ClCompile Include="src\dependencies\async-mqtt-client\AsyncMqttClient.cpp" />
     <ClCompile Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\ConnAckPacket.cpp" />
     <ClCompile Include="src\dependencies\async-mqtt-client\AsyncMqttClient\Packets\PingRespPacket.cpp" />
@@ -350,6 +222,11 @@
     <ClCompile Include="src\dependencies\time\Time.cpp" />
     <ClCompile Include="FX.cpp" />
     <ClCompile Include="FX_fcn.cpp" />
+    <ClCompile Include="usermod.cpp" />
+    <ClCompile Include="wled.cpp" />
+    <ClCompile Include="wled_eeprom.cpp" />
+    <ClCompile Include="wled_server.cpp" />
+    <ClCompile Include="xml.cpp" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>

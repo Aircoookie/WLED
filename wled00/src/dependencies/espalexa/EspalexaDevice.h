@@ -2,12 +2,13 @@
 #define EspalexaDevice_h
 
 #include "Arduino.h"
+#include <functional>
 
-typedef class EspalexaDevice;
+class EspalexaDevice;
 
-typedef void (*BrightnessCallbackFunction) (uint8_t b);
-typedef void (*DeviceCallbackFunction) (EspalexaDevice* d);
-typedef void (*ColorCallbackFunction) (uint8_t br, uint32_t col);
+typedef std::function<void(uint8_t b)> BrightnessCallbackFunction;
+typedef std::function<void(EspalexaDevice* d)> DeviceCallbackFunction;
+typedef std::function<void(uint8_t br, uint32_t col)> ColorCallbackFunction;
 
 enum class EspalexaColorMode : uint8_t { none = 0, ct = 1, hs = 2, xy = 3 };
 enum class EspalexaDeviceType : uint8_t { onoff = 0, dimmable = 1, whitespectrum = 2, color = 3, extendedcolor = 4 };
@@ -39,6 +40,8 @@ public:
   uint8_t getId();
   EspalexaDeviceProperty getLastChangedProperty();
   uint8_t getValue();
+  uint8_t getLastValue(); //last value that was not off (1-255)
+  bool    getState();
   uint8_t getPercent();
   uint8_t getDegrees();
   uint16_t getHue();
@@ -58,6 +61,7 @@ public:
   void setId(uint8_t id);
   void setPropertyChanged(EspalexaDeviceProperty p);
   void setValue(uint8_t bri);
+  void setState(bool onoff);
   void setPercent(uint8_t perc);
   void setName(String name);
   void setColor(uint16_t ct);
@@ -66,8 +70,6 @@ public:
   void setColor(uint8_t r, uint8_t g, uint8_t b);
   
   void doCallback();
-  
-  uint8_t getLastValue(); //last value that was not off (1-255)
 };
 
 #endif

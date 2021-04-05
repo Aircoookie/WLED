@@ -15,7 +15,11 @@
 #include "ArduinoJson-v6.h"
 #include <Print.h>
 
-#define DYNAMIC_JSON_DOCUMENT_SIZE 8192
+#ifdef ESP8266
+  #define DYNAMIC_JSON_DOCUMENT_SIZE 8192
+#else
+  #define DYNAMIC_JSON_DOCUMENT_SIZE 16384
+#endif
 
 constexpr const char* JSON_MIMETYPE = "application/json";
 
@@ -140,7 +144,7 @@ public:
   virtual void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) override final {
     if (_onRequest) {
       _contentLength = total;
-      if (total > 0 && request->_tempObject == NULL && total < _maxContentLength) {
+      if (total > 0 && request->_tempObject == NULL && (int)total < _maxContentLength) {
         request->_tempObject = malloc(total);
       }
       if (request->_tempObject != NULL) {
