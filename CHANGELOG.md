@@ -1,6 +1,26 @@
 ## WLED changelog
 
+### Builds after release 0.12.0
+
+#### Build 2104030
+
+-   Fixed ESP32 crash on Drip effect with reversed segment (#1854)
+-   Added flag `WLED_DISABLE_BROWNOUT_DET` to disable ESP32 brownout detector (off by default)
+
+### WLED release 0.12.0
+
+#### Build 2104020
+
+-   Allow clearing button/IR/relay pin on platforms that don't support negative numbers
+-   Removed AUX pin
+-   Hid some easter eggs, only to be found at easter
+
 ### Development versions between 0.11.1 and 0.12.0 releases
+
+#### Build 2103310
+
+-   Version bump to 0.12.0 "Hikari"
+-   Fixed LED settings submission in iOS app
 
 #### Build 2103300
 

@@ -156,6 +156,7 @@ function loadBg(iUrl) {
   if (iUrl == "") {
     var today = new Date();
     if (today.getMonth() == 11 && (today.getDate() > 23 && today.getDate() < 28)) img.src = "https://aircoookie.github.io/xmas.png";
+    else if (today.getMonth() == 3 && (today.getDate() > 3 && today.getDate() < 6)) img.src = "https://aircoookie.github.io/easter.png";
   }
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);

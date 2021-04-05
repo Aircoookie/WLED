@@ -571,9 +571,6 @@ void serializeConfig() {
   //JsonObject hw_status = hw.createNestedObject("status");
   //hw_status["pin"] = -1;
 
-  JsonObject hw_aux = hw.createNestedObject("aux");
-  hw_aux["pin"] = auxPin;
-
   // Sound Reactive Pin Config
   JsonObject hw_amic = hw.createNestedObject("analogmic");
   hw_amic["pin"] = audioPin;
