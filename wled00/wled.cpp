@@ -2,6 +2,11 @@
 #include "wled.h"
 #include <Arduino.h>
 
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
+#endif
+
 /*
  * Main WLED class implementation. Mostly initialization and connection logic
  */
@@ -290,6 +295,10 @@ void WLED::loop()
 
 void WLED::setup()
 {
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detection
+  #endif
+
   Serial.begin(115200);
   Serial.setTimeout(50);
   DEBUG_PRINTLN();
@@ -337,7 +346,7 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfig();
-
+/*
 #if STATUSLED
   bool lStatusLed = false;
   for (uint8_t i=0; i<strip.numStrips; i++) {
@@ -346,12 +355,9 @@ void WLED::setup()
       break;
     }
   }
-  if (!lStatusLed)
-    pinMode(STATUSLED, OUTPUT);
+  if (!lStatusLed) pinMode(STATUSLED, OUTPUT);
 #endif
-
-  //DEBUG_PRINTLN(F("Load EEPROM"));
-  //loadSettingsFromEEPROM();
+*/
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
 
@@ -681,6 +687,7 @@ void WLED::handleConnection()
 
 void WLED::handleStatusLED()
 {
+/*
   #if STATUSLED
   for (uint8_t s=0; s<strip.numStrips; s++) {
     if (strip.getStripPin(s)==STATUSLED) {
@@ -706,4 +713,5 @@ void WLED::handleStatusLED()
 
   }
   #endif
+*/
 }

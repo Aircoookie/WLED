@@ -3034,7 +3034,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
 uint16_t WS2812FX::mode_drip(void)
 {
   //allocate segment data
-  uint16_t numDrops = 4; 
+  uint8_t numDrops = 4; 
   uint16_t dataSize = sizeof(spark) * numDrops;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
@@ -3042,13 +3042,13 @@ uint16_t WS2812FX::mode_drip(void)
   
   Spark* drops = reinterpret_cast<Spark*>(SEGENV.data);
 
-  numDrops = 1 + (SEGMENT.intensity >> 6);
+  numDrops = 1 + (SEGMENT.intensity >> 6); // 255>>6 = 3
 
   float gravity = -0.001 - (SEGMENT.speed/50000.0);
   gravity *= SEGLEN;
   int sourcedrop = 12;
 
-  for (int j=0;j<numDrops;j++) {
+  for (uint8_t j=0;j<numDrops;j++) {
     if (drops[j].colIndex == 0) { //init
       drops[j].pos = SEGLEN-1;    // start at end
       drops[j].vel = 0;           // speed
@@ -3059,8 +3059,8 @@ uint16_t WS2812FX::mode_drip(void)
     setPixelColor(SEGLEN-1,color_blend(BLACK,SEGCOLOR(0), sourcedrop));// water source
     if (drops[j].colIndex==1) {
       if (drops[j].col>255) drops[j].col=255;
-      setPixelColor(int(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
-      
+      setPixelColor(uint16_t(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
+
       drops[j].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
       
       if (random8() < drops[j].col/10) {               // random drop
@@ -3072,12 +3072,12 @@ uint16_t WS2812FX::mode_drip(void)
       if (drops[j].pos > 0) {              // fall until end of segment
         drops[j].pos += drops[j].vel;
         if (drops[j].pos < 0) drops[j].pos = 0;
-        drops[j].vel += gravity;
+        drops[j].vel += gravity;           // gravity is negative
 
-        for (int i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
-          setPixelColor(int(drops[j].pos)+i,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
+        for (uint8_t i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
+          setPixelColor(MIN(uint16_t(drops[j].pos)+i,SEGLEN-1),color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
         }
-        
+
         if (drops[j].colIndex > 2) {       // during bounce, some water is on the floor
           setPixelColor(0,color_blend(SEGCOLOR(0),BLACK,drops[j].col));
         }

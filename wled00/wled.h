@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2104042
+#define VERSION 2104061
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -46,6 +46,10 @@
 
 // filesystem specific debugging
 //#define WLED_DEBUG_FS
+
+//optionally disable brownout detector on ESP32.
+//This is generally a terrible idea, but improves boot success on boards with a 3.3v regulator + cap setup that can't provide 400mA peaks
+//#define WLED_DISABLE_BROWNOUT_DET
 
 // Library inclusions. 
 #include <Arduino.h>
