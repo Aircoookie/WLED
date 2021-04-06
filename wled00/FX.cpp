@@ -4309,6 +4309,7 @@ uint16_t WS2812FX::mode_pixelwave(void) {                 // Pixelwave. By Andre
   return FRAMETIME;
 } // mode_pixelwave()
 
+
 //////////////////////
 //   * JUGGLES      //
 //////////////////////
@@ -4769,6 +4770,31 @@ uint16_t WS2812FX::mode_binmap(void) {                    // Binmap. Scale raw f
 
   return FRAMETIME;
 } // mode_binmap()
+
+
+//////////////////////
+//    * BLURZ       //
+//////////////////////
+
+uint16_t WS2812FX::mode_blurz(void) {                    // Blurz. By Andrew Tuline.
+  
+  CRGB *leds = (CRGB*) ledData;
+  if (SEGENV.call == 0) {fill_solid(leds,SEGLEN, 0); SEGENV.aux0 = 0; }
+
+  uint8_t blurAmt = SEGMENT.intensity;
+
+  fade_out(SEGMENT.speed);
+
+  uint16_t segLoc = random(SEGLEN);
+  leds[segLoc] = color_blend(SEGCOLOR(1), color_from_palette(fftResult[SEGENV.aux0]*240/(SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), fftResult[SEGENV.aux0]);
+  SEGENV.aux0++;
+  SEGENV.aux0 = SEGENV.aux0 % SEGLEN;
+
+  blur1d(leds, SEGLEN, blurAmt);
+
+  setPixels(leds);
+  return FRAMETIME;
+} // mode_blurz()
 
 
 ////////////////////
