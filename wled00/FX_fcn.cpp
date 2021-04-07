@@ -44,16 +44,11 @@
 */
 
 //do not call this method from system context (network callback)
-void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
+void WS2812FX::finalizeInit(uint16_t countPixels)
 {
   RESET_RUNTIME;
   _length = countPixels;
-  _skipFirstMode = skipFirst;
-
   _lengthRaw = _length;
-  if (_skipFirstMode) {
-    _lengthRaw += LED_SKIP_AMOUNT;
-  }
 
   //if busses failed to load, add default (FS issue...)
   if (busses.getNumBusses() == 0) {
@@ -174,7 +169,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
   }
   
-  uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
 
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
@@ -186,7 +180,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
 
-    /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
     bool reversed = IS_REVERSE;
     uint16_t realIndex = realPixelIndex(i);
 
@@ -196,22 +189,17 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
         if (IS_MIRROR) { //set the corresponding mirrored pixel
           uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
-          busses.setPixelColor(indexMir + skip, col);
+          busses.setPixelColor(indexMir, col);
         }
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
-        busses.setPixelColor(indexSet + skip, col);
+        busses.setPixelColor(indexSet, col);
       }
     }
   } else { //live data, etc.
     if (i < customMappingSize) i = customMappingTable[i];
     
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
-    busses.setPixelColor(i + skip, col);
-  }
-  if (skip && i == 0) {
-    for (uint16_t j = 0; j < skip; j++) {
-      busses.setPixelColor(j, BLACK);
-    }
+    busses.setPixelColor(i, col);
   }
 }
 
@@ -484,8 +472,6 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   i = realPixelIndex(i);
   
   if (i < customMappingSize) i = customMappingTable[i];
-
-  if (_skipFirstMode) i += LED_SKIP_AMOUNT;
   
   if (i >= _lengthRaw) return 0;
   

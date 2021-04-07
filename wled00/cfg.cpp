@@ -118,8 +118,7 @@ void deserializeConfig() {
     uint16_t length = elm[F("len")];
     if (length==0) continue;
     uint8_t colorOrder = (int)elm[F("order")];
-    //only use skip from the first strip (this shouldn't have been in ins obj. but remains here for compatibility)
-    if (s==0) skipFirstLed = elm[F("skip")];
+    uint8_t skipFirst = elm[F("skip")];
     uint16_t start = elm[F("start")] | 0;
     if (start >= ledCount) continue;
     //limit length of strip if it would exceed total configured LEDs
@@ -129,11 +128,11 @@ void deserializeConfig() {
     //RGBW mode is enabled if at least one of the strips is RGBW
     strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(ledType));
     s++;
-    BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed);
+    BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
     mem += busses.memUsage(bc);
     if (mem <= MAX_LED_MEMORY) busses.add(bc);
   }
-  strip.finalizeInit(ledCount, skipFirstLed);
+  strip.finalizeInit(ledCount);
   if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
@@ -165,7 +164,7 @@ void deserializeConfig() {
 
   JsonObject relay = hw[F("relay")];
 
-  int hw_relay_pin = relay["pin"];
+  int hw_relay_pin = relay["pin"] | -1;
   if (pinManager.allocatePin(hw_relay_pin,true)) {
     rlyPin = hw_relay_pin;
     pinMode(rlyPin, OUTPUT);
@@ -467,7 +466,7 @@ void serializeConfig() {
     for (uint8_t i = 0; i < nPins; i++) ins_pin.add(pins[i]);
     ins[F("order")] = bus->getColorOrder();
     ins["rev"] = bus->reversed;
-    ins[F("skip")] = (skipFirstLed && s == 0) ? 1 : 0;
+    ins[F("skip")] = bus->skipFirstLed();
     ins["type"] = bus->getType();
   }
 

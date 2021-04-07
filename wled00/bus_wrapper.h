@@ -829,7 +829,7 @@ class PolyBus {
   }
 
   //gives back the internal type index (I_XX_XXX_X above) for the input 
-  static uint8_t getI(uint8_t busType, uint8_t* pins, uint8_t num = 0) {
+  static uint8_t getI(uint8_t busType, uint8_t* pins, uint8_t num = 0, bool rgbwOverride = false) {
     if (!IS_DIGITAL(busType)) return I_NONE;
     if (IS_2PIN(busType)) { //SPI LED chips
       bool isHSPI = false;
@@ -855,7 +855,7 @@ class PolyBus {
       switch (busType) {
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
-          return I_8266_U0_NEO_3 + offset;
+          return (rgbwOverride ? I_8266_U0_NEO_4 : I_8266_U0_NEO_3) + offset;
         case TYPE_SK6812_RGBW:
           return I_8266_U0_NEO_4 + offset;
         case TYPE_WS2811_400KHZ:
@@ -867,7 +867,7 @@ class PolyBus {
       switch (busType) {
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
-          return I_32_R0_NEO_3 + offset;
+          return (rgbwOverride ? I_32_R0_NEO_3 : I_32_R0_NEO_4) + offset;
         case TYPE_SK6812_RGBW:
           return I_32_R0_NEO_4 + offset;
         case TYPE_WS2811_400KHZ:

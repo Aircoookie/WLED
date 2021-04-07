@@ -10,6 +10,10 @@
 #include "bus_wrapper.h"
 #include <Arduino.h>
 
+#define GET_BIT(var,bit)    (((var)>>(bit))&0x01)
+#define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
+#define UNSET_BIT(var,bit)  ((var)&=(~(uint16_t)(0x0001<<(bit))))
+
 //temporary struct for passing bus configuration to bus
 struct BusConfig {
   uint8_t type = TYPE_WS2812_RGB;
@@ -17,9 +21,13 @@ struct BusConfig {
   uint16_t start = 0;
   uint8_t colorOrder = COL_ORDER_GRB;
   bool reversed = false;
+  uint8_t skipAmount;
+  bool rgbwOverride;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
-  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false) {
-    type = busType; count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev;
+  BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip=0) {
+    rgbwOverride = (bool) GET_BIT(busType,7);
+    type = busType & 0x7F;  // bit 7 may be/is hacked to include RGBW info (1=RGBW, 0=RGB)
+    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
     if (type > 47) nPins = 2;
     else if (type > 41 && type < 46) nPins = NUM_PWM_PINS(type);
@@ -51,11 +59,11 @@ class Bus {
 
   virtual uint8_t getPins(uint8_t* pinArray) { return 0; }
 
-  uint16_t getStart() {
+  inline uint16_t getStart() {
     return _start;
   }
 
-  void setStart(uint16_t start) {
+  inline void setStart(uint16_t start) {
     _start = start;
   }
 
@@ -69,12 +77,26 @@ class Bus {
     return COL_ORDER_RGB;
   }
 
-  uint8_t getType() {
+  virtual bool isRgbw() {
+    return false;
+  }
+
+  virtual uint8_t skipFirstLed() {
+    return 0;
+  }
+
+  inline uint8_t getType() {
     return _type;
   }
 
-  bool isOk() {
+  inline bool isOk() {
     return _valid;
+  }
+
+  static bool isRgbw(uint8_t type) {
+    if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
+    if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
+    return false;
   }
 
   bool reversed = false;
@@ -99,9 +121,11 @@ class BusDigital : public Bus {
         cleanup(); return;
       }
     }
-    _len = bc.count;
     reversed = bc.reversed;
-    _iType = PolyBus::getI(bc.type, _pins, nr);
+    _skip = bc.skipAmount;    //sacrificial pixels
+    _len = bc.count + _skip;
+    _rgbw = bc.rgbwOverride || Bus::isRgbw(bc.type);    // RGBW override in bit 7
+    _iType = PolyBus::getI(bc.type, _pins, nr, _rgbw);  // we may need to pass RGBW override to PolyBus::getI(9)
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len);
     _valid = (_busPtr != nullptr);
@@ -109,11 +133,11 @@ class BusDigital : public Bus {
     //Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
   };
 
-  void show() {
+  inline void show() {
     PolyBus::show(_busPtr, _iType);
   }
 
-  bool canShow() {
+  inline bool canShow() {
     return PolyBus::canShow(_busPtr, _iType);
   }
 
@@ -130,20 +154,22 @@ class BusDigital : public Bus {
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (reversed) pix = _len - pix -1;
+    else pix += _skip;
     PolyBus::setPixelColor(_busPtr, _iType, pix, c, _colorOrder);
   }
 
   uint32_t getPixelColor(uint16_t pix) {
     if (reversed) pix = _len - pix -1;
+    else pix += _skip;
     return PolyBus::getPixelColor(_busPtr, _iType, pix, _colorOrder);
   }
 
-  uint8_t getColorOrder() {
+  inline uint8_t getColorOrder() {
     return _colorOrder;
   }
 
-  uint16_t getLength() {
-    return _len;
+  inline uint16_t getLength() {
+    return _len - _skip;
   }
 
   uint8_t getPins(uint8_t* pinArray) {
@@ -157,7 +183,15 @@ class BusDigital : public Bus {
     _colorOrder = colorOrder;
   }
 
-  void reinit() {
+  inline bool isRgbw() {
+    return _rgbw;
+  }
+
+  inline uint8_t skipFirstLed() {
+    return _skip;
+  }
+
+  inline void reinit() {
     PolyBus::begin(_busPtr, _iType, _pins);
   }
 
@@ -180,6 +214,8 @@ class BusDigital : public Bus {
   uint8_t _pins[2] = {255, 255};
   uint8_t _iType = I_NONE;
   uint16_t _len = 0;
+  uint8_t _skip = 0;
+  bool _rgbw = false;
   void * _busPtr = nullptr;
 };
 
@@ -255,7 +291,7 @@ class BusPwm : public Bus {
     }
   }
 
-  void setBrightness(uint8_t b) {
+  inline void setBrightness(uint8_t b) {
     _bri = b;
   }
 
@@ -265,7 +301,11 @@ class BusPwm : public Bus {
     return numPins;
   }
 
-  void cleanup() {
+  bool isRgbw() {
+    return (_type > TYPE_ONOFF && _type <= TYPE_ANALOG_5CH && _type != TYPE_ANALOG_3CH);
+  }
+
+  inline void cleanup() {
     deallocatePins();
   }
 
@@ -304,7 +344,7 @@ class BusManager {
   };
 
   //utility to get the approx. memory usage of a given BusConfig
-  uint32_t memUsage(BusConfig &bc) {
+  static uint32_t memUsage(BusConfig &bc) {
     uint8_t type = bc.type;
     uint16_t len = bc.count;
     if (type < 32) {
@@ -333,8 +373,7 @@ class BusManager {
     } else {
       busses[numBusses] = new BusPwm(bc);
     }
-    numBusses++;
-    return numBusses -1;
+    return numBusses++;
   }
 
   //do not call this method from system context (network callback)
@@ -358,6 +397,7 @@ class BusManager {
       uint16_t bstart = b->getStart();
       if (pix < bstart || pix >= bstart + b->getLength()) continue;
       busses[i]->setPixelColor(pix - bstart, c);
+      break;
     }
   }
 
@@ -389,14 +429,18 @@ class BusManager {
     return busses[busNr];
   }
 
-  uint8_t getNumBusses() {
+  inline uint8_t getNumBusses() {
     return numBusses;
   }
 
-  static bool isRgbw(uint8_t type) {
-    if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
-    if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
-    return false;
+  uint16_t getTotalLength() {
+    uint16_t len = 0;
+    for (uint8_t i=0; i<numBusses; i++ ) len += busses[i]->getLength();
+    return len;
+  }
+
+  static inline bool isRgbw(uint8_t type) {
+    return Bus::isRgbw(type);
   }
 
   private:

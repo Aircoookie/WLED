@@ -294,6 +294,7 @@ void getSettingsJS(byte subPage, char* dest)
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
+      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -306,6 +307,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',co,bus->getColorOrder());
       sappend('v',ls,bus->getStart());
       sappend('c',cv,bus->reversed);
+      sappend('c',sl,bus->skipFirstLed());
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
@@ -334,7 +336,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
     sappend('v',SET_F("TW"),nightlightMode);
     sappend('i',SET_F("PB"),strip.paletteBlend);
-    sappend('c',SET_F("SL"),skipFirstLed);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);
     sappend('v',SET_F("BT"),btnPin);
