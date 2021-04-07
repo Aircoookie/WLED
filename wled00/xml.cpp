@@ -322,7 +322,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('v',SET_F("LC"),ledCount);
 
-    bool skip = false;
+//    bool skip = false;
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
@@ -331,7 +331,8 @@ void getSettingsJS(byte subPage, char* dest)
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
-      char ew[4] = "EW"; ew[2] = 48+s; ew[3] = 0; //strip RGBW override
+      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
+//      char ew[4] = "EW"; ew[2] = 48+s; ew[3] = 0; //strip RGBW override
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -344,8 +345,9 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('v',co,bus->getColorOrder());
       sappend('v',ls,bus->getStart());
       sappend('c',cv,bus->reversed);
-      sappend('c',ew,bus->isRgbw());
-      if (!skip) skip = bus->skipFirstLed()>0;
+      sappend('c',sl,bus->skipFirstLed());
+//      sappend('c',ew,bus->isRgbw());
+//      if (!skip) skip = bus->skipFirstLed()>0;
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
@@ -373,7 +375,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
     sappend('v',SET_F("TW"),nightlightMode);
     sappend('i',SET_F("PB"),strip.paletteBlend);
-    sappend('c',SET_F("SL"),skip);
+//    sappend('c',SET_F("SL"),skip);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);
     sappend('v',SET_F("BT"),btnPin);

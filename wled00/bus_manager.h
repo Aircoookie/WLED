@@ -26,7 +26,7 @@ struct BusConfig {
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
   BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0) {
     rgbwOverride = (bool) GET_BIT(busType,7);
-    type = busType & 0x7F;  // bit 7 is hacked to include RGBW info (1=RGBW, 0=RGB)
+    type = busType & 0x7F;  // bit 7 may be/is hacked to include RGBW info (1=RGBW, 0=RGB)
     count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
     if (type > 47) nPins = 2;
@@ -93,6 +93,12 @@ class Bus {
     return _valid;
   }
 
+  static bool isRgbw(uint8_t type) {
+    if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
+    if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
+    return false;
+  }
+
   bool reversed = false;
 
   protected:
@@ -119,7 +125,7 @@ class BusDigital : public Bus {
     reversed = bc.reversed;
     _skip = bc.skipAmount;    //sacrificial pixels
     _len = bc.count + _skip;
-    _rgbw = bc.rgbwOverride;  // RGBW override in bit 7
+    _rgbw = bc.rgbwOverride || Bus::isRgbw(type);  // RGBW override in bit 7
     _iType = PolyBus::getI(type, _pins, nr, _rgbw);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len);
@@ -440,10 +446,9 @@ class BusManager {
     return len;
   }
 
-  static bool isRgbw(uint8_t type) {
-    if (type == TYPE_SK6812_RGBW || type == TYPE_TM1814) return true;
-    if (type > TYPE_ONOFF && type <= TYPE_ANALOG_5CH && type != TYPE_ANALOG_3CH) return true;
-    return false;
+  // a workaround
+  static inline bool isRgbw(uint8_t type) {
+    return Bus::isRgbw(type);
   }
 
   private:

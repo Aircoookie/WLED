@@ -85,8 +85,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     strip.isRgbw = false;
 
-    uint8_t skip = request->hasArg(F("SL")) ? LED_SKIP_AMOUNT : 0;
-    uint8_t colorOrder, type;
+//    uint8_t skip = request->hasArg(F("SL")) ? LED_SKIP_AMOUNT : 0;
+    uint8_t colorOrder, type, skip;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
@@ -97,7 +97,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
-      char ew[4] = "EW"; ew[2] = 48+s; ew[3] = 0; //strip RGBW override
+      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
+//      char ew[4] = "EW"; ew[2] = 48+s; ew[3] = 0; //strip RGBW override
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN(F("No data.")); break;
       }
@@ -107,8 +108,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
-      if (request->hasArg(ew)) SET_BIT(type,7); else UNSET_BIT(type,7); // hack bit 7 to indicate RGBW (as a LED type override if necessary)
-      strip.isRgbw = strip.isRgbw || request->hasArg(ew);
+//      if (request->hasArg(ew)) SET_BIT(type,7); else UNSET_BIT(type,7); // hack bit 7 to indicate RGBW (as a LED type override if necessary)
+//      strip.isRgbw = strip.isRgbw || request->hasArg(ew);
+      strip.isRgbw = strip.isRgbw || Bus::isRgbw(type);
+      skip = request->hasArg(sl) ? LED_SKIP_AMOUNT : 0;
 
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;

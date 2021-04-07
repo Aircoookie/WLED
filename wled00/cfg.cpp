@@ -127,8 +127,9 @@ void deserializeConfig() {
     uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
     bool reversed = elm["rev"];
     //RGBW mode is enabled if at least one of the strips is RGBW
-    if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
-    strip.isRgbw |= (bool)elm[F("rgbw")]; //(strip.isRgbw || BusManager::isRgbw(ledType));
+//    if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
+//    strip.isRgbw |= (bool)elm[F("rgbw")];
+    strip.isRgbw = (strip.isRgbw || Bus::isRgbw(ledType));
     s++;
     lC += length;
     BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
