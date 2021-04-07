@@ -4788,7 +4788,7 @@ uint16_t WS2812FX::mode_blurz(void) {                    // Blurz. By Andrew Tul
   uint16_t segLoc = random(SEGLEN);
   leds[segLoc] = color_blend(SEGCOLOR(1), color_from_palette(fftResult[SEGENV.aux0]*240/(SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), fftResult[SEGENV.aux0]);
   SEGENV.aux0++;
-  SEGENV.aux0 = SEGENV.aux0 % SEGLEN;
+  SEGENV.aux0 = SEGENV.aux0 % 16;
 
   blur1d(leds, SEGLEN, blurAmt);
 
