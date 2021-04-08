@@ -1,5 +1,30 @@
 #include "wled.h"
 
+#define NUM_DIGITS             4     // Number of connected Digits 
+#define NUM_PIXEL_PER_SEGMENT  2     // Number of LEDs in each Segment
+#define NUM_PIXEL_PER_DOTS     2     // Number of pixel per dots
+
+#define NUM_DOTS               (NUM_DIGITS/2) - 1 //Number of "dots" between digits: 1 for 4 digits, 2 for 6 digits
+//Total number of LEDs:
+//#define NUM_LEDS           (NUM_PIXEL_PER_SEGMENT*7)*NUM_DIGITS + NUM_PIXEL_PER_DOTS 
+
+//Digits array
+byte digitsMatrix[12] = {
+  //abcdefg
+  0b1011111,     // 0
+  0b0000110,     // 1
+  0b1101101,     // 2
+  0b0101111,     // 3
+  0b0110110,     // 4
+  0b0111011,     // 5
+  0b1111011,     // 6
+  0b0001110,     // 7
+  0b1111111,     // 8
+  0b0111111,     // 9
+  0b1011001,     // C
+  0b1111000,     // F
+};
+
 /*
  * Used to draw clock overlays over the strip
  */
@@ -28,10 +53,43 @@ void handleOverlays()
     checkTimers();
     checkCountdown();
     if (overlayCurrent == 3) _overlayCronixie();//Diamex cronixie clock kit
+    //if (overlayCurrent == 4) _overlayDigitalClock(); 
     overlayRefreshedTime = millis();
   }
 }
 
+/*
+ * Support for the 7-Segment style digital clock
+ */
+void writeDigit(int index, int val) {
+  byte digit = digitsMatrix[val];
+  int margin;
+  //Choose margin for dots pixel
+  if (index == 0 || index == 1 ) margin = 0;
+  if (index == 2 || index == 3 ) margin = 1;
+  if (index == 4 || index == 5 ) margin = 2;
+  //Bit vector indexing
+  for (int i = 6; i >= 0; i--) {
+    int offset = (index * (NUM_PIXEL_PER_SEGMENT * 7)) + (i * NUM_PIXEL_PER_SEGMENT) + (margin * NUM_PIXEL_PER_DOTS);
+    //Pixel in a digit indexing
+    for (int j = offset; j < offset + NUM_PIXEL_PER_SEGMENT; j++) {
+      if ((digit & 0x01) != 0) {
+        //Do nothing
+      }
+      else strip.setPixelColor(j, 0x000000);
+    }
+    digit = digit >> 1;
+  }
+}
+
+void blinkDots(void) {
+  int dot;
+  for (int i = 0; i < NUM_PIXEL_PER_DOTS; i++) {
+    // 2 digits before first dots pixel
+    dot = 2 * (NUM_PIXEL_PER_SEGMENT * 7) + i;
+    if(second(localTime) % 2 == 0) strip.setPixelColor(dot, 0x000000);
+  }
+}
 
 void _overlayAnalogClock()
 {
@@ -119,6 +177,15 @@ void _overlayAnalogCountdown()
   overlayRefreshMs = 998;
 }
 
+void _overlayDigitalClock()
+{
+  writeDigit(3, hour(localTime) / 10);
+  writeDigit(2, hour(localTime) % 10);
+  writeDigit(1, minute(localTime) / 10);
+  writeDigit(0, minute(localTime) % 10);
+  blinkDots();
+  //overlayRefreshMs = 998;
+}
 
 void handleOverlayDraw() {
   if (!overlayCurrent) return;
@@ -126,6 +193,7 @@ void handleOverlayDraw() {
   {
     case 1: _overlayAnalogClock(); break;
     case 3: _drawOverlayCronixie(); break;
+    case 4: _overlayDigitalClock(); break;
   }
 }
 

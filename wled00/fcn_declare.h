@@ -142,6 +142,7 @@ void handleOverlays();
 void handleOverlayDraw();
 void _overlayAnalogCountdown();
 void _overlayAnalogClock();
+void _overlayDigitalClock();
 
 byte getSameCodeLength(char code, int index, char const cronixieDisplay[]);
 void setCronixie();
