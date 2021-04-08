@@ -1,5 +1,9 @@
 #include "wled.h"
 
+/*
+ * Digital clock defines and global
+ */
+
 #define NUM_DIGITS             4     // Number of connected Digits 
 #define NUM_PIXEL_PER_SEGMENT  2     // Number of LEDs in each Segment
 #define NUM_PIXEL_PER_DOTS     2     // Number of pixel per dots
@@ -73,10 +77,9 @@ void writeDigit(int index, int val) {
     int offset = (index * (NUM_PIXEL_PER_SEGMENT * 7)) + (i * NUM_PIXEL_PER_SEGMENT) + (margin * NUM_PIXEL_PER_DOTS);
     //Pixel in a digit indexing
     for (int j = offset; j < offset + NUM_PIXEL_PER_SEGMENT; j++) {
-      if ((digit & 0x01) != 0) {
-        //Do nothing
+      if ((digit & 0x01) == 0) {
+        strip.setPixelColor(j, 0x000000);
       }
-      else strip.setPixelColor(j, 0x000000);
     }
     digit = digit >> 1;
   }
