@@ -3075,7 +3075,7 @@ uint16_t WS2812FX::mode_drip(void)
         drops[j].vel += gravity;           // gravity is negative
 
         for (uint8_t i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
-          setPixelColor(MIN(uint16_t(drops[j].pos)+i,SEGLEN-1),color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
+          setPixelColor(constrain(uint16_t(drops[j].pos)+i,0,SEGLEN-1),color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
         }
 
         if (drops[j].colIndex > 2) {       // during bounce, some water is on the floor

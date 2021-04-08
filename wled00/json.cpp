@@ -427,6 +427,14 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
   root[F("mainseg")] = strip.getMainSegmentId();
 
+  // the following is an UGLY construct that does the job
+  #ifdef ESP8266
+  // use rev:2 API if more than 12 segments on ESP8266
+  uint8_t tooMany = 0;
+  for(uint8_t i=0; i < strip.getMaxSegments(); i++) if ((strip.getSegment(i)).isActive()) tooMany++;
+  if (tooMany>12)
+  #endif
+    root.remove("rev"); // remove API revision if ESP32 or ESP8266 with less than 13 segments
   uint8_t versionAPI = root["rev"] | 1;
 
   JsonArray seg = root.createNestedArray("seg");

@@ -46,15 +46,6 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
     DynamicJsonDocument lDoc(JSON_BUFFER_SIZE);
     sObj = lDoc.to<JsonObject>();
     if (pname) sObj["n"] = pname;
-
-    #ifdef ESP8266
-    // use rev:2 API if more than 12 segments on ESP8266
-    uint8_t tooMany = 0;
-    for(uint8_t i=0; i < strip.getMaxSegments(); i++) if ((strip.getSegment(i)).isActive()) tooMany++;
-    if (tooMany>12)
-    #endif
-      sObj.remove("rev"); 
-
     DEBUGFS_PRINTLN(F("Save current state"));
     serializeState(sObj, true);
     currentPreset = index;
@@ -64,16 +55,6 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
     DEBUGFS_PRINTLN(F("Reuse recv buffer"));
     sObj.remove(F("psave"));
     sObj.remove(F("v"));
-
-    // the following is an UGLY construct that does the job
-    #ifdef ESP8266
-    // use rev:2 API if more than 12 segments on ESP8266
-    uint8_t tooMany = 0;
-    for(uint8_t i=0; i < strip.getMaxSegments(); i++) if ((strip.getSegment(i)).isActive()) tooMany++;
-    if (tooMany>12)
-    #endif
-      sObj.remove("rev"); 
-
     if (!sObj["o"]) {
       DEBUGFS_PRINTLN(F("Save current state"));
       serializeState(sObj, true, sObj["ib"], sObj["sb"]);
