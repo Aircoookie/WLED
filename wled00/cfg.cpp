@@ -101,6 +101,11 @@ void deserializeConfig() {
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
+  // 2D Matrix Settings - BROKEN WITH MULTIPIN CHANGES
+  CJSON(strip.matrixWidth, hw_led[F("mxw")]);
+  CJSON(strip.matrixHeight, hw_led[F("mxh")]);
+  CJSON(strip.matrixSerpentine, hw_led[F("mxs")]);
+
   JsonArray ins = hw_led["ins"];
   uint8_t s = 0; //bus iterator
   strip.isRgbw = false;
@@ -139,11 +144,6 @@ void deserializeConfig() {
   }
   strip.finalizeInit(ledCount, skipFirstLed);
   if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
-
-  // 2D Matrix Settings - BROKEN WITH MULTIPIN CHANGES
-  // strip.matrixWidth = hw_led_ins_0[F("mxw")]; //
-  // strip.matrixHeight = hw_led_ins_0[F("mxh")];
-  // strip.matrixSerpentine = hw_led_ins_0[F("mxs")];
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonEnabled, hw_btn_ins_0["type"]);
@@ -518,6 +518,11 @@ void serializeConfig() {
   hw_led[F("ledma")] = strip.milliampsPerLed;
   hw_led[F("rgbwm")] = strip.rgbwMode;
 
+  // 2D Matrix Settings - BROKEN WITH MULTIPIN CHANGES
+  hw_led[F("mxw")] = strip.matrixWidth;
+  hw_led[F("mxs")] = strip.matrixSerpentine;
+  hw_led[F("mxh")] = strip.matrixHeight;
+
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
   for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
@@ -536,11 +541,6 @@ void serializeConfig() {
     ins[F("skip")] = (skipFirstLed && s == 0) ? 1 : 0;
     ins["type"] = bus->getType();
   }
-
-  // 2D Matrix Settings - BROKEN WITH MULTIPIN CHANGES
-  // hw_led_ins_0[F("mxw")] = strip.matrixWidth;
-  // hw_led_ins_0[F("mxh")] = strip.matrixHeight;
-  // hw_led_ins_0[F("mxs")] = strip.matrixSerpentine;
 
   JsonObject hw_btn = hw.createNestedObject("btn");
 

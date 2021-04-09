@@ -356,9 +356,10 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("RM"),rlyMde);
     sappend('v',SET_F("BT"),btnPin);
     sappend('v',SET_F("IR"),irPin);
-    // sappend('v',SET_F("LCW"),strip.matrixWidth);
-    // sappend('v',SET_F("LCH"),strip.matrixHeight);
-    // sappend('c',SET_F("LCWHS"),strip.matrixSerpentine);
+    // 2D Matrix Settings - BROKEN BY MULTI-PIN
+    sappend('v',SET_F("LCW"),strip.matrixWidth);
+    sappend('v',SET_F("LCH"),strip.matrixHeight);
+    sappend('c',SET_F("LCWHS"),strip.matrixSerpentine);
   }
 
   if (subPage == 3)

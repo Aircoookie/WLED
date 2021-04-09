@@ -184,11 +184,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
 
-    // #ifndef ESP8266
-    // strip.matrixWidth = request->arg(F("LCW")).toInt();
-    // strip.matrixHeight = request->arg(F("LCH")).toInt();
-    // strip.matrixSerpentine = request->hasArg(F("LCWHS"));
-    // #endif // ESP8266
+    // 2D Matrix Settings - BROKEN BY MULTI-PIN
+    strip.matrixWidth = request->arg(F("LCW")).toInt();
+    strip.matrixHeight = request->arg(F("LCH")).toInt();
+    strip.matrixSerpentine = request->hasArg(F("LCWHS"));
   }
 
   //UI
