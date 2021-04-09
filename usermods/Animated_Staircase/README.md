@@ -93,8 +93,8 @@ or remove them and put everything on one line.
 | segment-delay-ms | Delay (milliseconds) between switching on/off each step       | 150     |
 | on-time-s        | Time (seconds) the stairs stay lit after last detection       | 5       |
 | bottom-echo-us   | Detection range of ultrasonic sensor                          | 1749    |
-| bottomsensor     | Manually trigger a down to up animation via API               | false   | 
-| topsensor        | Manually trigger an up to down animation via API              | false   |
+| bottom-sensor    | Manually trigger a down to up animation via API               | false   | 
+| top-sensor       | Manually trigger an up to down animation via API              | false   |
 
 
 To read the current settings, open a browser to `http://xxx.xxx.xxx.xxx/json/state` (use your WLED 
@@ -108,8 +108,8 @@ The staircase settings and sensor states are inside the WLED status element:
             "enabled": true,
             "segment-delay-ms": 150,
             "on-time-s": 5,
-            "bottomsensor": false,
-            "topsensor": false
+            "bottom-sensor": false,
+            "tops-ensor": false
         },
 }
 ```
@@ -187,7 +187,7 @@ the API. To simulate triggering the bottom sensor, use:
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
-     -d '{"staircase":{"bottomsensor":true}}' \
+     -d '{"staircase":{"bottom-sensor":true}}' \
      xxx.xxx.xxx.xxx/json/state
 ```
 
@@ -195,7 +195,7 @@ Likewise, to trigger the top sensor, use:
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
-     -d '{"staircase":{"topsensor":true}}' \
+     -d '{"staircase":{"top-sensor":true}}' \
      xxx.xxx.xxx.xxx/json/state
 ```
 
