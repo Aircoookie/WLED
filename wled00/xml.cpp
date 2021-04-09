@@ -274,9 +274,9 @@ void getSettingsJS(byte subPage, char* dest)
         } else if (!kv.value().isNull()) {
           // element is an JsonObject
           JsonObject obj = kv.value();
-          if (obj[F("pin")] != nullptr) {
+          if (obj["pin"] != nullptr) {
             if (i++) oappend(SET_F(","));
-            oappendi((int)obj[F("pin")]);
+            oappendi((int)obj["pin"]);
           }
         }
       }

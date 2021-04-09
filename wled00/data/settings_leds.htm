@@ -163,6 +163,18 @@
           var lc=d.getElementsByName("LC"+LCs[i].name.substring(2))[0];
           lc.max=maxPB;
         }
+        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
+          if (LCs[i].value!="" && LCs[i].value!="-1") {
+            var p = [];
+            if (d.um_p && Array.isArray(d.um_p)) for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]);
+            for (j=0; j<LCs.length; j++) {
+              if (i==j) continue;
+              var n2 = LCs[j].name.substring(0,2);
+              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
+                if (LCs[j].value!="" && LCs[j].value!="-1") p.push(parseInt(LCs[j].value,10));
+            }
+            if (p.some((e)=>e==parseInt(LCs[i].value,10))) LCs[i].style.color="red"; else LCs[i].style.color="#fff";
+          }
       }
 
       if (d.getElementById("LC").readOnly) d.getElementsByName("LC")[0].value = sLC;

@@ -173,45 +173,48 @@ class UsermodTemperature : public Usermod {
     /**
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
-     * Add "pin_Temperature" to json state. This can be used to check which GPIO pin usermod uses.
+     * Add "<usermodename>_<usermodparam>" to json state. This can be used to check which GPIO pin usermod uses.
      */
     void addToJsonState(JsonObject &root)
     {
-      root[F("pin_Temperature")] = temperaturePin;
-      root[F("mode_Temperature")] = degC ? ("C") : ("F");
+      //root[F("Temperature_pin")] = temperaturePin;
+      //root[F("Temperature_degC")] = degC ? ("C") : ("F");
     }
 
     /**
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
-     * Read "pin_Temperature" from json state and and change GPIO pin used.
+     * Read "<usermodname>_<usermodparam>" from json state and and change settings (i.e. GPIO pin) used.
      */
     void readFromJsonState(JsonObject &root) {
-      if (root[F("pin_Temperature")] != nullptr) {
-        int8_t pin = (int)root[F("pin_Temperature")];
-        // deallocate pin and release memory
-        pinManager.deallocatePin(temperaturePin);
-        delete sensor;
-        delete oneWire;
-        // disable usermod
-        temperaturePin = -1;
-        disabled = true;
-        // check if pin is OK
-        if (pin>=0 && pinManager.allocatePin(pin,false)) {
-          // allocat memory
-          oneWire = new OneWire(pin);
-          sensor  = new DallasTemperature(oneWire);
-          if (sensor) {
-            temperaturePin = pin;
-            sensor->begin();
-            disabled = !sensor->getAddress(sensorDeviceAddress, 0);
-          } else {
-            pinManager.deallocatePin(pin);
+      if (root[F("Temperature_pin")] != nullptr) {
+        int8_t pin = (int)root[F("Temperature_pin")];
+        if (pin != temperaturePin) {
+          // deallocate pin and release memory
+          delete sensor;
+          delete oneWire;
+          pinManager.deallocatePin(temperaturePin);
+          // disable usermod
+          temperaturePin = -1;
+          disabled = true;
+          // check if pin is OK
+          if (pin>=0 && pinManager.allocatePin(pin,false)) {
+            // allocat memory
+            oneWire = new OneWire(pin);
+            sensor  = new DallasTemperature(oneWire);
+            if (sensor) {
+              temperaturePin = pin;
+              sensor->begin();
+              disabled = !sensor->getAddress(sensorDeviceAddress, 0);
+            } else {
+              pinManager.deallocatePin(pin);
+            }
           }
         }
       }
-      if (root[F("mode_Temperature")] != nullptr) {
-        degC = (root[F("mode_Temperature")]==String(PSTR("C")));
+      if (root[F("Temperature_degC")] != nullptr) {
+        String strDegC = root[F("Temperature_degC")]; // checkbox -> off or on
+        degC = (bool) (strDegC!="off"); // off is guaranteed to be present
       }
     }
 
@@ -220,9 +223,9 @@ class UsermodTemperature : public Usermod {
      */
     void addToConfig(JsonObject &root) {
       // we add JSON object: {"Temperature": {"pin": 0, "degC": true}}
-      JsonObject top = root.createNestedObject(F("Temperature"));
-      top[F("pin")]  = temperaturePin;
-      top[F("degC")] = degC;
+      JsonObject top = root.createNestedObject(F("Temperature")); // usermodname
+      top["pin"]  = temperaturePin; // usermodparam
+      top[F("degC")] = degC;        // usermodparam
     }
 
     /**
@@ -231,8 +234,8 @@ class UsermodTemperature : public Usermod {
     void readFromConfig(JsonObject &root) {
       // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
       JsonObject top = root[F("Temperature")];
-      if (!top.isNull() && top[F("pin")] != nullptr) {
-        temperaturePin = (int)top[F("pin")];
+      if (!top.isNull() && top["pin"] != nullptr) {
+        temperaturePin = (int)top["pin"];
         degC = top[F("degC")] != nullptr ? top[F("degC")] : true;
       } else {
         DEBUG_PRINTLN(F("No Temperature sensor config found. (Using defaults.)"));

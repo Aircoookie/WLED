@@ -32,7 +32,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
 
   //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX
-  if (subPage <1 || subPage >7) return;
+  if (subPage <1 || subPage >8) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -407,6 +407,26 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
   }
   #endif
+
+  //USERMODS
+  if (subPage == 8)
+  {
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+    JsonObject um = doc.createNestedObject(F("um"));
+
+    size_t args = request->args();
+    for (size_t i=0; i<args; i++) {
+      String name = request->argName(i);
+      String value = request->arg(i);
+
+      um.remove(name);  // checkboxes get two fields (first is always "off", existence of second depends on checkmark and may be "on")
+      um[name] = value;
+      DEBUG_PRINT(name);
+      DEBUG_PRINT(" = ");
+      DEBUG_PRINTLN(value);
+    }
+    usermods.readFromJsonState(um);
+  }
 
   if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)
   if (subPage == 4) alexaInit();
