@@ -120,7 +120,7 @@ class UsermodTemperature : public Usermod {
         getTemperature();
  
         if (WLED_MQTT_CONNECTED) {
-          char subuf[38];
+          char subuf[45];
           strcpy(subuf, mqttDeviceTopic);
           if (-100 <= temperature) {
             // dont publish super low temperature as the graph will get messed up
