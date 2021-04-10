@@ -322,6 +322,7 @@ String settingsProcessor(const String& var)
 {
   if (var == "CSS") {
     char buf[2048];
+    buf[0] = 0;
     getSettingsJS(optionType, buf);
     return String(buf);
   }

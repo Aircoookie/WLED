@@ -10,6 +10,7 @@
     var pins = [6,7,8,9,10,11];
     var pinO = ["reserved","reserved","reserved","reserved","reserved","reserved"], owner;
     var loc = false, locip;
+    var urows;
     function gId(s) { return d.getElementById(s); }
     function isO(i) { return (i && typeof i === 'object' && !Array.isArray(i)); }
     function H() { window.open("https://github.com/Aircoookie/WLED/wiki/Settings#usermod-settings"); }
@@ -26,7 +27,8 @@
         ldS();
     }
     function check(o,k) {
-        if (o.type=="number" && o.name.substr(-4)=="_pin") {
+        var n = o.name.substr(-6);
+        if (o.type=="number" && n.substr(0,4)=="_pin") {
             for (var i=0; i<pins.length; i++) {
                 if (k==pinO[i]) continue;
                 if (o.value==pins[i]) { o.style.color="red"; break; } else o.style.color="#fff";
@@ -53,6 +55,32 @@
             }
         }
     }
+    function addField(k,f,o,a=false) {
+        if (isO(o)) {
+            for (const [s,v] of Object.entries(o)) {
+                addField(k,s,v);
+            }
+        } else if (Array.isArray(o)) {
+            for (var j=0; j<o.length; j++) {
+                addField(k,f,o[j],true);
+            }
+        } else {
+            var t,c;
+            switch (typeof o) {
+                case "boolean":
+                    t = "checkbox"; c = o ? `checked value="on"` : ""; break;
+                case "number":
+                    t = "number"; c = `value="${parseInt(o,10)}"`; break;
+                case "string":
+                    t = "text"; c = `value="${o}"`; break;
+                default:
+                    t = "text"; c = `value="${o}"`; break;
+            }
+            // https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
+            if (t=="checkbox") urows += `<input type="hidden" name="${k}_${f}${a?"[]":""}" value="off">`;
+            urows += `${f}: <input type="${t}" name="${k}_${f}${a?"[]":""}" ${c} oninput="check(this,'${k}')"><br>`;
+        }
+    }
     function ldS() {
         var url = (loc?`http://${locip}`:'') + '/cfg.json';
         fetch(url, {
@@ -65,28 +93,11 @@
         .then(json => {
             umCfg = json.um;
             getPins(json);
-            var urows="";
+            urows="";
             if (isO(umCfg)) {
                 for (const [k,o] of Object.entries(umCfg)) {
                     urows += `<hr><h3>${k}</h3>`;
-                    if (isO(o)) {
-                        for (const [s,v] of Object.entries(o)) {
-                            var t,c;
-                            switch (typeof v) {
-                                case "boolean":
-                                    t = "checkbox"; c = v ? `checked value="on"` : ""; break;
-                                case "number":
-                                    t = "number"; c = `value="${parseInt(v,10)}"`; break;
-                                case "string":
-                                    t = "text"; c = `value="${v}"`; break;
-                                default:
-                                    t = "text"; c = `value="${v}"`; break;
-                            }
-                            // https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
-                            if (t=="checkbox") urows += `<input type="hidden" name="${k}_${s}" value="off">`;
-                            urows += `${s}: <input type="${t}" name="${k}_${s}" ${c} oninput="check(this,'${k}')"><br>`;
-                        }
-                    }
+                    addField(k,'unknown',o);
                 }
                 gId("um").innerHTML = urows;
             }

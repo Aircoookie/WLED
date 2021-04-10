@@ -415,15 +415,33 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     JsonObject um = doc.createNestedObject(F("um"));
 
     size_t args = request->args();
+    uint j=0;
     for (size_t i=0; i<args; i++) {
       String name = request->argName(i);
       String value = request->arg(i);
 
-      um.remove(name);  // checkboxes get two fields (first is always "off", existence of second depends on checkmark and may be "on")
-      um[name] = value;
-      DEBUG_PRINT(name);
-      DEBUG_PRINT(" = ");
-      DEBUG_PRINTLN(value);
+      if (name.endsWith("[]")) {
+        name.replace("[]","");
+        if (!um[name].is<JsonArray>()) {
+          JsonArray ar = um.createNestedArray(name);
+          ar.add(value);
+          j=0;
+        } else {
+          um[name].add(value);
+          j++;
+        }
+        DEBUG_PRINT(name);
+        DEBUG_PRINT("[");
+        DEBUG_PRINT(j);
+        DEBUG_PRINT("] = ");
+        DEBUG_PRINTLN(value);
+      } else {
+        um.remove(name);  // checkboxes get two fields (first is always "off", existence of second depends on checkmark and may be "on")
+        um[name] = value;
+        DEBUG_PRINT(name);
+        DEBUG_PRINT(" = ");
+        DEBUG_PRINTLN(value);
+      }
     }
     usermods.readFromJsonState(um);
   }

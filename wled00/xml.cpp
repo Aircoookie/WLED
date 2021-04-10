@@ -268,15 +268,20 @@ void getSettingsJS(byte subPage, char* dest)
     if (!mods.isNull()) {
       uint8_t i=0;
       for (JsonPair kv : mods) {
-        if (strncmp_P(kv.key().c_str(),PSTR("pin_"),4) == 0) {
-          if (i++) oappend(SET_F(","));
-          oappendi((int)kv.value());
-        } else if (!kv.value().isNull()) {
+        if (!kv.value().isNull()) {
           // element is an JsonObject
           JsonObject obj = kv.value();
           if (obj["pin"] != nullptr) {
-            if (i++) oappend(SET_F(","));
-            oappendi((int)obj["pin"]);
+            if (obj["pin"].is<JsonArray>()) {
+              JsonArray pins = obj["pin"].as<JsonArray>();
+              for (JsonVariant pv : pins) {
+                if (i++) oappend(SET_F(","));
+                oappendi(pv.as<int>());
+              }
+            } else {
+              if (i++) oappend(SET_F(","));
+              oappendi((int)obj["pin"]);
+            }
           }
         }
       }
