@@ -16,7 +16,12 @@ function GetV(){var d=document;}
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
-On/Off button enabled: <input type="checkbox" name="BT"><br>
+Button type:
+<select name=BT>
+  <option value=0>Disabled</option>
+  <option value=2>Pushbutton</option>
+  <option value=4>Switch</option>
+</select><br>
 Infrared remote:
 <select name=IR>
 <option value=0>Disabled</option>

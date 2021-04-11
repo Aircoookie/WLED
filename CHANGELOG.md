@@ -2,6 +2,12 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2104120
+
+-   Added switch support (button macro is switch closing action, long press macro switch opening)
+-   Replaced Circus effect with new Running Dual effect (Circus is Tricolor Chase with Red/White/Black)
+-   Fixed ledmap with multiple segments (PR #1864)
+
 #### Build 2104030
 
 -   Fixed ESP32 crash on Drip effect with reversed segment (#1854)

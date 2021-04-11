@@ -137,7 +137,7 @@ void deserializeConfig() {
   if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
-  CJSON(buttonEnabled, hw_btn_ins_0["type"]);
+  CJSON(buttonType, hw_btn_ins_0["type"]);
   int hw_btn_pin = hw_btn_ins_0[F("pin")][0];
   if (pinManager.allocatePin(hw_btn_pin,false)) {
     btnPin = hw_btn_pin;
@@ -477,7 +477,7 @@ void serializeConfig() {
 
   // button BTNPIN
   JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
-  hw_btn_ins_0["type"] = (buttonEnabled) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
+  hw_btn_ins_0["type"] = buttonType;
 
   JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
   hw_btn_ins_0_pin.add(btnPin);

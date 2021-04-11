@@ -222,12 +222,13 @@ var d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki
  id="form_s" name="Sf" method="post"><div class="helpB"><button type="button" 
 onclick="H()">?</button></div><button type="button" onclick="B()">Back</button>
 <button type="submit">Save</button><hr><h2>Sync setup</h2><h3>Button setup</h3>
-On/Off button enabled: <input type="checkbox" name="BT"><br>Infrared remote: 
-<select name="IR"><option value="0">Disabled</option><option value="1">
-24-key RGB</option><option value="2">24-key with CT</option><option value="3">
-40-key blue</option><option value="4">44-key RGB</option><option value="5">
-21-key RGB</option><option value="6">6-key black</option><option value="7">
-9-key red</option></select><br><a 
+Button: <select name="BT"><option value="0">Disabled</option><option value="2">
+Pushbutton</option><option value="4">Switch</option></select><br>
+Infrared remote: <select name="IR"><option value="0">Disabled</option><option 
+value="1">24-key RGB</option><option value="2">24-key with CT</option><option 
+value="3">40-key blue</option><option value="4">44-key RGB</option><option 
+value="5">21-key RGB</option><option value="6">6-key black</option><option 
+value="7">9-key red</option></select><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">
 IR info</a><h3>WLED Broadcast</h3>UDP Port: <input name="UP" type="number" 
 min="1" max="65535" class="d5" required><br>2nd Port: <input name="U2" 

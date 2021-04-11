@@ -196,7 +196,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //SYNC
   if (subPage == 4)
   {
-    buttonEnabled = request->hasArg(F("BT"));
+    buttonType = request->arg(F("BT")).toInt();
     irEnabled = request->arg(F("IR")).toInt();
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
