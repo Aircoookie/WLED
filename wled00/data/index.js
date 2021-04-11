@@ -149,8 +149,20 @@ function loadBg(iUrl)
 	img.src = iUrl;
 	if (iUrl == "") {
 		var today = new Date();
-		if (today.getMonth() == 11 && (today.getDate() > 23 && today.getDate() < 28)) img.src = "https://aircoookie.github.io/xmas.png";
-		else if (today.getMonth() == 3 && (today.getDate() > 3 && today.getDate() < 13)) img.src = "https://aircoookie.github.io/easter.png";
+		var hol = [
+			[0,11,24,5,"https://aircoookie.github.io/xmas.png"], // christmas
+			[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
+			[2022,3,16,3,"https://aircoookie.github.io/easter.png"],
+			[2023,3,8,3,"https://aircoookie.github.io/easter.png"],
+			[2024,2,30,3,"https://aircoookie.github.io/easter.png"]
+		]
+		for (var i=0; i<hol.length; i++) {
+			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
+			var hs = new Date(yr,hol[i][1],hol[i][2]);
+			var he = new Date(hs)
+			he.setDate(he.getDate() + hol[i][3]);
+			if (today>=hs && today<=he)	img.src = hol[i][4];
+		}
 	}
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
