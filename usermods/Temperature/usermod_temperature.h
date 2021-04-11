@@ -24,7 +24,10 @@
 #endif
 
 class UsermodTemperature : public Usermod {
+
   private:
+
+    bool initDone = false;
     OneWire *oneWire;
     DallasTemperature *sensor;
     // The device's unique 64-bit serial code stored in on-board ROM.
@@ -75,9 +78,7 @@ class UsermodTemperature : public Usermod {
 
   public:
 
-
     void setup() {
-
       // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
       if (!pinManager.allocatePin(temperaturePin,false)) {
         temperaturePin = -1;  // allocation failed
@@ -103,6 +104,7 @@ class UsermodTemperature : public Usermod {
       } else {
         DEBUG_PRINTLN(F("Dallas Temperature not found"));
       }
+      initDone = true;
     }
 
     void loop() {
@@ -123,7 +125,7 @@ class UsermodTemperature : public Usermod {
       }
 
       // we were waiting for a conversion to complete, have we waited log enough?
-      if (now - lastTemperaturesRequest >= 94 /* 93.75ms per the datasheet */) {
+      if (now - lastTemperaturesRequest >= 95 /* 93.75ms per the datasheet */) {
         getTemperature();
 
         if (WLED_MQTT_CONNECTED) {
@@ -187,6 +189,7 @@ class UsermodTemperature : public Usermod {
      * Read "<usermodname>_<usermodparam>" from json state and and change settings (i.e. GPIO pin) used.
      */
     void readFromJsonState(JsonObject &root) {
+      if (!initDone) return;  // prevent crash on boot applyPreset()
       if (root[F("Temperature_pin")] != nullptr) {
         int8_t pin = (int)root[F("Temperature_pin")];
         if (pin != temperaturePin) {
