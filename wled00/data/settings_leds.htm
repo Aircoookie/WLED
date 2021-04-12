@@ -184,16 +184,14 @@
       d.getElementById('psu2').innerHTML = isWS2815 ? "" : s2;
 
       // 2D Matrix Settings - BROKEN BY MULTI-PIN
-      var LCW = parseInt(d.Sf.LCW.value, 10)
-			var LCH = parseInt(d.Sf.LCH.value, 10)
-			if (!isNaN(LCW) && !isNaN(LCH) && (LCW > 0 || LCH > 0) && LCW * LCH > parseInt(sLC, 10)) {
+      var MXW = parseInt(d.Sf.MXW.value, 10);
+			var MXH = parseInt(d.Sf.MXH.value, 10);
+			if (!isNaN(MXW) && !isNaN(MXH) && (MXW > 0 || MXH > 0) && MXW * MXH > parseInt(sLC, 10)) {
 			d.getElementById('2dwarning').style.display = 'inline';
-			d.getElementById('submitButton').disabled = false;
-			d.getElementById('submitButton2').disabled = false;
+      for (let s of d.Sf.querySelectorAll('button[type="submit"]')) s.disabled = true;
 			} else {
 			d.getElementById('2dwarning').style.display = 'none';
-			d.getElementById('submitButton').disabled = false;
-			d.getElementById('submitButton2').disabled = false;
+			for (let s of d.Sf.querySelectorAll('button[type="submit"]')) s.disabled = false;
 			}
     }
     function lastEnd(i) {
@@ -283,12 +281,12 @@
   <span id="psu2"><br></span>
   <!-- 2D Matrix Settings - BROKEN BY MULTI-PIN -->
   <h3>2D Matrix</h3>
-    <input name="LCW" type="number" min="1" max="1500" oninput="UI()"> x
-    <input name="LCH" type="number" min="1" max="1500" oninput="UI()"><br>
+    <input name="MXW" type="number" min="1" max="1500" oninput="UI()"> x
+    <input name="MXH" type="number" min="1" max="1500" oninput="UI()"><br>
     <div id="2dwarning" style="color: orange; display: inline;">
       &#9888; width x height should match LED count!<br>
     </div>
-    Serpentine: <input type="checkbox" name="LCWHS" checked> (how leds are layed out)<br>
+    Serpentine: <input type="checkbox" name="MXWHS" checked> (how leds are layed out)<br>
   <br>
   Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
   <div id="abl">

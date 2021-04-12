@@ -185,9 +185,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t > 0) briMultiplier = t;
 
     // 2D Matrix Settings - BROKEN BY MULTI-PIN
-    strip.matrixWidth = request->arg(F("LCW")).toInt();
-    strip.matrixHeight = request->arg(F("LCH")).toInt();
-    strip.matrixSerpentine = request->hasArg(F("LCWHS"));
+    strip.matrixWidth = request->arg(F("MXW")).toInt();
+    strip.matrixHeight = request->arg(F("MXH")).toInt();
+    strip.matrixSerpentine = request->hasArg(F("MXWHS"));
   }
 
   //UI
