@@ -194,13 +194,13 @@ void deserializeConfig() {
 
   JsonObject light_tr = light[F("tr")];
   CJSON(fadeTransition, light_tr[F("mode")]);
-  int tdd = light_tr[F("dur")] | -1;
+  int tdd = light_tr["dur"] | -1;
   if (tdd >= 0) transitionDelayDefault = tdd * 100;
-  CJSON(strip.paletteFade, light_tr[F("pal")]);
+  CJSON(strip.paletteFade, light_tr["pal"]);
 
   JsonObject light_nl = light["nl"];
   CJSON(nightlightMode, light_nl[F("mode")]);
-  CJSON(nightlightDelayMinsDefault, light_nl[F("dur")]);
+  CJSON(nightlightDelayMinsDefault, light_nl["dur"]);
   nightlightDelayMins = nightlightDelayMinsDefault;
 
   CJSON(nightlightTargetBri, light_nl[F("tbri")]);
@@ -217,7 +217,7 @@ void deserializeConfig() {
   CJSON(presetCycleMin, def_cy[F("range")][0]);
   CJSON(presetCycleMax, def_cy[F("range")][1]);
 
-  tdd = def_cy[F("dur")] | -1;
+  tdd = def_cy["dur"] | -1;
   if (tdd > 0) presetCycleTime = tdd;
 
   JsonObject interfaces = doc["if"];
@@ -229,7 +229,7 @@ void deserializeConfig() {
   JsonObject if_sync_recv = if_sync["recv"];
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
   CJSON(receiveNotificationColor, if_sync_recv["col"]);
-  CJSON(receiveNotificationEffects, if_sync_recv[F("fx")]);
+  CJSON(receiveNotificationEffects, if_sync_recv["fx"]);
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
 
   JsonObject if_sync_send = if_sync["send"];
@@ -317,7 +317,7 @@ void deserializeConfig() {
   CJSON(countdownMode, ol[F("cntdwn")]);
   overlayCurrent = overlayDefault;
 
-  CJSON(overlayMin, ol[F("min")]);
+  CJSON(overlayMin, ol["min"]);
   CJSON(overlayMax, ol[F("max")]);
   CJSON(analogClock12pixel, ol[F("o12pix")]);
   CJSON(analogClock5MinuteMarks, ol[F("o5m")]);
@@ -342,7 +342,7 @@ void deserializeConfig() {
     if (it > 9) break;
     if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset 
     CJSON(timerHours[it], timer[F("hour")]);
-    CJSON(timerMinutes[it], timer[F("min")]);
+    CJSON(timerMinutes[it], timer["min"]);
     CJSON(timerMacro[it], timer[F("macro")]);
 
     byte dowPrev =  timerWeekday[it];
@@ -517,12 +517,12 @@ void serializeConfig() {
 
   JsonObject light_tr = light.createNestedObject("tr");
   light_tr[F("mode")] = fadeTransition;
-  light_tr[F("dur")] = transitionDelayDefault / 100;
-  light_tr[F("pal")] = strip.paletteFade;
+  light_tr["dur"] = transitionDelayDefault / 100;
+  light_tr["pal"] = strip.paletteFade;
 
   JsonObject light_nl = light.createNestedObject("nl");
   light_nl[F("mode")] = nightlightMode;
-  light_nl[F("dur")] = nightlightDelayMinsDefault;
+  light_nl["dur"] = nightlightDelayMinsDefault;
   light_nl[F("tbri")] = nightlightTargetBri;
   light_nl[F("macro")] = macroNl;
 
@@ -539,7 +539,7 @@ void serializeConfig() {
     JsonArray def_cy_range = def_cy.createNestedArray(F("range"));
     def_cy_range.add(presetCycleMin);
     def_cy_range.add(presetCycleMax);
-    def_cy[F("dur")] = presetCycleTime;
+    def_cy["dur"] = presetCycleTime;
   }
 
   JsonObject interfaces = doc.createNestedObject("if");
@@ -551,7 +551,7 @@ void serializeConfig() {
   JsonObject if_sync_recv = if_sync.createNestedObject("recv");
   if_sync_recv["bri"] = receiveNotificationBrightness;
   if_sync_recv["col"] = receiveNotificationColor;
-  if_sync_recv[F("fx")] = receiveNotificationEffects;
+  if_sync_recv["fx"] = receiveNotificationEffects;
 
   JsonObject if_sync_send = if_sync.createNestedObject("send");
   if_sync_send[F("dir")] = notifyDirect;
@@ -631,7 +631,7 @@ void serializeConfig() {
   ol[F("clock")] = overlayDefault;
   ol[F("cntdwn")] = countdownMode;
 
-  ol[F("min")] = overlayMin;
+  ol["min"] = overlayMin;
   ol[F("max")] = overlayMax;
   ol[F("o12pix")] = analogClock12pixel;
   ol[F("o5m")] = analogClock5MinuteMarks;
@@ -652,7 +652,7 @@ void serializeConfig() {
     JsonObject timers_ins0 = timers_ins.createNestedObject();
     timers_ins0["en"] = (timerWeekday[i] & 0x01);
     timers_ins0[F("hour")] = timerHours[i];
-    timers_ins0[F("min")] = timerMinutes[i];
+    timers_ins0["min"] = timerMinutes[i];
     timers_ins0[F("macro")] = timerMacro[i];
     timers_ins0[F("dow")] = timerWeekday[i] >> 1;
   }
@@ -674,7 +674,6 @@ void serializeConfig() {
   for (byte i = 0; i < 15; i++)
     dmx_fixmap.add(DMXFixtureMap[i]);
   #endif
-  //}
 
   JsonObject usermods_settings = doc.createNestedObject("um");
   usermods.addToConfig(usermods_settings);

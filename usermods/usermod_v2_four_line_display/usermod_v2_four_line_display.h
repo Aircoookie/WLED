@@ -67,6 +67,15 @@ typedef enum {
   SH1106    // U8X8_SH1106_128X64_WINSTAR_HW_I2C
 } DisplayType;
 
+// strings
+const char _um_4LineDisplay[]   PROGMEM = "4LineDisplay";
+const char _4LD_contrast[]      PROGMEM = "contrast";
+const char _4LD_refreshRate[]   PROGMEM = "refreshRate";
+const char _4LD_screenTimeOut[] PROGMEM = "screenTimeOut";
+const char _4LD_flip[]          PROGMEM = "flip";
+const char _4LD_sleepMode[]     PROGMEM = "sleepMode";
+const char _4LD_clockMode[]     PROGMEM = "clockMode";
+
 class FourLineDisplayUsermod : public Usermod {
 
   private:
@@ -140,8 +149,7 @@ class FourLineDisplayUsermod : public Usermod {
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
-      String loading = String(F("Loading..."));
-      drawString(0, 0, loading.c_str());
+      drawString(0, 0, "Loading...");
       initDone = true;
     }
 
@@ -153,7 +161,7 @@ class FourLineDisplayUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (millis() - lastUpdate < refreshRate) {
+      if (millis() - lastUpdate < (clockMode?1000:refreshRate)) {
         return;
       }
       lastUpdate = millis();
@@ -602,12 +610,12 @@ class FourLineDisplayUsermod : public Usermod {
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
      */
-    void addToJsonInfo(JsonObject& root) {
+    //void addToJsonInfo(JsonObject& root) {
       //JsonObject user = root["u"];
       //if (user.isNull()) user = root.createNestedObject("u");
       //JsonArray data = user.createNestedArray(F("4LineDisplay"));
       //data.add(F("Loaded."));
-    }
+    //}
 
     /*
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
@@ -623,41 +631,32 @@ class FourLineDisplayUsermod : public Usermod {
     void readFromJsonState(JsonObject& root) {
       if (!initDone) return;  // prevent crash on boot applyPreset()
       DisplayType newType = type;
-      uint8_t newScl = sclPin;
-      uint8_t newSda = sdaPin;
+      int8_t newScl = sclPin;
+      int8_t newSda = sdaPin;
 
-      // just to reduce memory
-      String str4LineDisplay_type = String(F("4LineDisplay_type"));
-      String str4LineDisplay_pin = String(F("4LineDisplay_pin"));
-      String str4LineDisplay_contrast = String(F("4LineDisplay_contrast"));
-      String str4LineDisplay_refreshRate = String(F("4LineDisplay_refreshRate"));
-      String str4LineDisplay_screenTimeOut = String(F("4LineDisplay_screenTimeOut"));
-      String str4LineDisplay_flip = String(F("4LineDisplay_flip"));
-      String str4LineDisplay_sleepMode = String(F("4LineDisplay_sleepMode"));
-      String str4LineDisplay_clockMode = String(F("4LineDisplay_clockMode"));
-
-      if (root[str4LineDisplay_type] != nullptr) newType = (DisplayType)root[str4LineDisplay_type];
-      if (root[str4LineDisplay_pin] != nullptr) {
-        newScl = (int)root[str4LineDisplay_pin][0];
-        newSda = (int)root[str4LineDisplay_pin][1];
+      if (root[F("4LineDisplay_type")] != nullptr) newType = (DisplayType)root[F("4LineDisplay_type")];
+      if (root[F("4LineDisplay_pin")] != nullptr) {
+        newScl = min(39,max(0,(int)root[F("4LineDisplay_pin")][0]));
+        newSda = min(39,max(0,(int)root[F("4LineDisplay_pin")][1]));
+        if (newScl==newSda) newScl = newSda = -1;
       }
-      if (root[str4LineDisplay_contrast] != nullptr) {
-        contrast = (int)root[str4LineDisplay_contrast];
+      if (root[F("4LineDisplay_contrast")] != nullptr) {
+        contrast = min(255,max(1,(int)root[F("4LineDisplay_contrast")]));
         setContrast(contrast);
       }
-      if (root[str4LineDisplay_refreshRate] != nullptr)   refreshRate = (int)root[str4LineDisplay_refreshRate]*1000;
-      if (root[str4LineDisplay_screenTimeOut] != nullptr) screenTimeout = (int)root[str4LineDisplay_screenTimeOut]*1000;
-      if (root[str4LineDisplay_flip] != nullptr) {
-        String str = root[str4LineDisplay_flip]; // checkbox -> off or on
+      if (root[F("4LineDisplay_refreshRate")] != nullptr)   refreshRate = min(60,max(1,(int)root[F("4LineDisplay_refreshRate")]))*1000;
+      if (root[F("4LineDisplay_screenTimeOut")] != nullptr) screenTimeout = min(900,max(0,(int)root[F("4LineDisplay_screenTimeOut")]))*1000;
+      if (root[F("4LineDisplay_flip")] != nullptr) {
+        String str = root[F("4LineDisplay_flip")]; // checkbox -> off or on
         flip = (bool)(str!="off"); // off is guaranteed to be present
         setFlipMode(flip);
       }
-      if (root[str4LineDisplay_sleepMode] != nullptr) {
-        String str = root[str4LineDisplay_sleepMode]; // checkbox -> off or on
+      if (root[F("4LineDisplay_sleepMode")] != nullptr) {
+        String str = root[F("4LineDisplay_sleepMode")]; // checkbox -> off or on
         sleepMode = (bool)(str!="off"); // off is guaranteed to be present
       }
-      if (root[str4LineDisplay_clockMode] != nullptr) {
-        String str = root[str4LineDisplay_clockMode]; // checkbox -> off or on
+      if (root[F("4LineDisplay_clockMode")] != nullptr) {
+        String str = root[F("4LineDisplay_clockMode")]; // checkbox -> off or on
         clockMode = (bool)(str!="off"); // off is guaranteed to be present
         setLineThreeType(clockMode ? FLD_LINE_3_MODE : FLD_LINE_3_BRIGHTNESS);
       }
@@ -669,7 +668,11 @@ class FourLineDisplayUsermod : public Usermod {
         pinManager.deallocatePin(sdaPin);
         sclPin = newScl;
         sdaPin = newSda;
-        type = newType;
+        if (newScl<0 || newSda<0) {
+          type = NONE;
+          return;
+        } else
+          type = newType;
         lineHeight = type==SH1106 ? 2 : 1;
         setup();
       }
@@ -691,17 +694,17 @@ class FourLineDisplayUsermod : public Usermod {
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root) {
-      JsonObject top = root.createNestedObject(F("4LineDisplay"));
+      JsonObject top = root.createNestedObject(FPSTR(_um_4LineDisplay));
       JsonArray i2c_pin = top.createNestedArray("pin");
       i2c_pin.add(sclPin);
       i2c_pin.add(sdaPin);
       top["type"] = type;
-      top[F("flip")] = (bool) flip;
-      top[F("contrast")] = contrast;
-      top[F("refreshRate")] = refreshRate/1000;
-      top[F("screenTimeOut")] = screenTimeout/1000;
-      top[F("sleepMode")] = (bool) sleepMode;
-      top[F("clockMode")] = (bool) clockMode;
+      top[FPSTR(_4LD_flip)] = (bool) flip;
+      top[FPSTR(_4LD_contrast)] = contrast;
+      top[FPSTR(_4LD_refreshRate)] = refreshRate/1000;
+      top[FPSTR(_4LD_screenTimeOut)] = screenTimeout/1000;
+      top[FPSTR(_4LD_sleepMode)] = (bool) sleepMode;
+      top[FPSTR(_4LD_clockMode)] = (bool) clockMode;
     }
 
     /*
@@ -713,18 +716,18 @@ class FourLineDisplayUsermod : public Usermod {
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
      */
     void readFromConfig(JsonObject& root) {
-      JsonObject top = root[F("4LineDisplay")];
+      JsonObject top = root[FPSTR(_um_4LineDisplay)];
       if (!top.isNull() && top["pin"] != nullptr) {
-        sclPin = top["pin"][0] | FLD_PIN_SCL;
-        sdaPin = top["pin"][1] | FLD_PIN_SDA;
-        type = top["type"] | SSD1306;
-        lineHeight = type==SH1106 ? 2 : 1;
-        flip = top[F("flip")] | false ;
-        contrast = top[F("contrast")] | 10;
-        refreshRate = int(top[F("refreshRate")])*1000 | USER_LOOP_REFRESH_RATE_MS;
-        screenTimeout = int(top[F("screenTimeOut")])*1000 | SCREEN_TIMEOUT_MS;
-        sleepMode = top[F("sleepMode")] | true;
-        clockMode = top[F("clockMode")] | false;
+        sclPin        = top["pin"][0];
+        sdaPin        = top["pin"][1];
+        type          = top["type"];
+        lineHeight    = type==SH1106 ? 2 : 1;
+        flip          = top[FPSTR(_4LD_flip)];
+        contrast      = top[FPSTR(_4LD_contrast)];
+        refreshRate   = int(top[FPSTR(_4LD_refreshRate)])*1000;
+        screenTimeout = int(top[FPSTR(_4LD_screenTimeOut)])*1000;
+        sleepMode     = top[FPSTR(_4LD_sleepMode)];
+        clockMode     = top[FPSTR(_4LD_clockMode)];
       } else {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
       }

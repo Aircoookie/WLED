@@ -29,21 +29,24 @@
 // ignore Default brightness and Apply N preset at boot when 
 // the AutoSaveUsermod is installed.
 
-//How long to wait after settings change to auto-save
-#ifndef AUTOSAVE_SETTLE_MS
-#define AUTOSAVE_SETTLE_MS 10*1000
-#endif
-
-//Preset number to save to
-#ifndef AUTOSAVE_PRESET_NUM
-#define AUTOSAVE_PRESET_NUM 99
-#endif
-
-//  "Auto save MM-DD HH:MM:SS"
+//  "~ MM-DD HH:MM:SS ~"
 #define PRESET_NAME_BUFFER_SIZE 25
 
+// strings
+const char _um_AutoSave[]         PROGMEM = "Autosave";
+const char _autoSaveAfterSec[]    PROGMEM = "autoSaveAfterSec";
+const char _autoSavePreset[]      PROGMEM = "autoSavePreset";
+const char _autoSaveApplyOnBoot[] PROGMEM = "autoSaveApplyOnBoot";
+
 class AutoSaveUsermod : public Usermod {
+
   private:
+
+    unsigned long autoSaveAfterSec = 15;  // 15s by default
+    uint8_t autoSavePreset = 250;         // last possible preset
+    bool initDone = false;
+    bool applyAutoSaveOnBoot = false;
+
     // If we've detected the need to auto save, this will
     // be non zero.
     unsigned long autoSaveAfter = 0;
@@ -58,19 +61,39 @@ class AutoSaveUsermod : public Usermod {
     uint8_t knownMode = 0;
     uint8_t knownPalette = 0;
 
-#ifdef USERMOD_FOUR_LINE_DISLAY
+    #ifdef USERMOD_FOUR_LINE_DISPLAY
     FourLineDisplayUsermod* display;
-#endif
+    #endif
+
+    void inline saveSettings() {
+      updateLocalTime();
+      sprintf_P(presetNameBuffer, 
+        PSTR("~ %02d-%02d %02d:%02d:%02d ~"),
+        month(localTime), day(localTime),
+        hour(localTime), minute(localTime), second(localTime));
+      savePreset(autoSavePreset, true, presetNameBuffer);
+    }
+
+    void inline displayOverlay() {
+      #ifdef USERMOD_FOUR_LINE_DISPLAY
+      if (display != nullptr) {
+        display->wakeDisplay();
+        display->overlay("Settings", "Auto Saved", 1500);
+      }
+      #endif
+    }
 
   public:
+
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
     void setup() {
-#ifdef USERMOD_FOUR_LINE_DISLAY    
-    // This Usermod has enhanced funcionality if
-    // FourLineDisplayUsermod is available.
-    display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
-#endif
+      #ifdef USERMOD_FOUR_LINE_DISPLAY    
+      // This Usermod has enhanced funcionality if
+      // FourLineDisplayUsermod is available.
+      display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
+      #endif
+      initDone = true;
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -81,12 +104,14 @@ class AutoSaveUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
+      if (!autoSaveAfterSec || !bri) return;  // setting 0 as autosave seconds disables autosave as does 0 brightness
+
       unsigned long now = millis();
       uint8_t currentMode = strip.getMode();
       uint8_t currentPalette = strip.getSegment(0).palette;
       if (firstLoop) {
         firstLoop = false;
-        applyPreset(AUTOSAVE_PRESET_NUM);
+        if (applyAutoSaveOnBoot) applyPreset(autoSavePreset);
         knownBrightness = bri;
         knownEffectSpeed = effectSpeed;
         knownEffectIntensity = effectIntensity;
@@ -95,7 +120,7 @@ class AutoSaveUsermod : public Usermod {
         return;
       }
 
-      unsigned long wouldAutoSaveAfter = now + AUTOSAVE_SETTLE_MS;
+      unsigned long wouldAutoSaveAfter = now + autoSaveAfterSec*1000;
       if (knownBrightness != bri) {
         knownBrightness = bri;
         autoSaveAfter = wouldAutoSaveAfter;
@@ -121,36 +146,41 @@ class AutoSaveUsermod : public Usermod {
       }
     }
 
-    void saveSettings() {
-      updateLocalTime();
-      sprintf(presetNameBuffer, 
-        "Auto save %02d-%02d %02d:%02d:%02d",
-        month(localTime), day(localTime),
-        hour(localTime), minute(localTime), second(localTime));
-      savePreset(AUTOSAVE_PRESET_NUM, true, presetNameBuffer);
-    }
-
-    void displayOverlay() {
-#ifdef USERMOD_FOUR_LINE_DISLAY
-      if (display != nullptr) {
-        display->wakeDisplay();
-        display->overlay("Settings", "Auto Saved", 1500);
-      }
-#endif
-    }
+    /*
+     * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
+     * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
+     * Below it is shown how this could be used for e.g. a light sensor
+     */
+    //void addToJsonInfo(JsonObject& root) {
+      //JsonObject user = root["u"];
+      //if (user.isNull()) user = root.createNestedObject("u");
+      //JsonArray data = user.createNestedArray(F("Autosave"));
+      //data.add(F("Loaded."));
+    //}
 
     /*
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void addToJsonState(JsonObject& root) {
-    }
+    //void addToJsonState(JsonObject& root) {
+    //}
 
     /*
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
     void readFromJsonState(JsonObject& root) {
+      if (!initDone) return;  // prevent crash on boot applyPreset()
+
+      if (root[F("Autosave_autoSaveAfterSec")] != nullptr) {
+        autoSaveAfterSec = min(60,max(0,(int)root[F("Autosave_autoSaveAfterSec")]));
+      }
+      if (root[F("Autosave_autoSavePreset")] != nullptr) {
+        autoSavePreset = min(250,max(0,(int)root[F("Autosave_autoSavePreset")]));
+      }
+      if (root[F("Autosave_autoSaveApplyOnBoot")] != nullptr) {
+        applyAutoSaveOnBoot = (bool)root[F("Autosave_autoSaveApplyOnBoot")];
+      }
     }
 
     /*
@@ -168,6 +198,11 @@ class AutoSaveUsermod : public Usermod {
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root) {
+      // we add JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
+      JsonObject top = root.createNestedObject(FPSTR(_um_AutoSave)); // usermodname
+      top[FPSTR(_autoSaveAfterSec)]    = autoSaveAfterSec;  // usermodparam
+      top[FPSTR(_autoSavePreset)]      = autoSavePreset;    // usermodparam
+      top[FPSTR(_autoSaveApplyOnBoot)] = applyAutoSaveOnBoot;
     }
 
     /*
@@ -179,7 +214,16 @@ class AutoSaveUsermod : public Usermod {
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
      */
     void readFromConfig(JsonObject& root) {
-    }
+      // we look for JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
+      JsonObject top = root[FPSTR(_um_AutoSave)];
+      if (!top.isNull() && top[FPSTR(_autoSaveAfterSec)] != nullptr) {
+        autoSaveAfterSec    = (int) top[FPSTR(_autoSaveAfterSec)];
+        autoSavePreset      = (int) top[FPSTR(_autoSavePreset)];
+        applyAutoSaveOnBoot = (bool)top[FPSTR(_autoSaveApplyOnBoot)];
+      } else {
+        DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
+      }
+  }
 
     /*
      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).

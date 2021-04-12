@@ -23,6 +23,9 @@
 #define USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT 20000
 #endif
 
+// strings
+const char _um_Temperature[] PROGMEM = "Temperature";
+
 class UsermodTemperature : public Usermod {
 
   private:
@@ -148,10 +151,10 @@ class UsermodTemperature : public Usermod {
       // dont add temperature to info if we are disabled
       if (disabled) return;
 
-      JsonObject user = root[F("u")];
-      if (user.isNull()) user = root.createNestedObject(F("u"));
+      JsonObject user = root["u"];
+      if (user.isNull()) user = root.createNestedObject("u");
 
-      JsonArray temp = user.createNestedArray(F("Temperature"));
+      JsonArray temp = user.createNestedArray(FPSTR(_um_Temperature));
 
       if (!getTemperatureComplete) {
         // if we haven't read the sensor yet, let the user know
@@ -191,7 +194,7 @@ class UsermodTemperature : public Usermod {
     void readFromJsonState(JsonObject &root) {
       if (!initDone) return;  // prevent crash on boot applyPreset()
       if (root[F("Temperature_pin")] != nullptr) {
-        int8_t pin = (int)root[F("Temperature_pin")];
+        int8_t pin = min(39,max(0,(int)root[F("Temperature_pin")]));
         if (pin != temperaturePin) {
           // deallocate pin and release memory
           delete sensor;
@@ -226,9 +229,9 @@ class UsermodTemperature : public Usermod {
      */
     void addToConfig(JsonObject &root) {
       // we add JSON object: {"Temperature": {"pin": 0, "degC": true}}
-      JsonObject top = root.createNestedObject(F("Temperature")); // usermodname
-      top["pin"]  = temperaturePin; // usermodparam
-      top[F("degC")] = degC;        // usermodparam
+      JsonObject top = root.createNestedObject(FPSTR(_um_Temperature)); // usermodname
+      top["pin"]  = temperaturePin;     // usermodparam
+      top["degC"] = degC;  // usermodparam
     }
 
     /**
@@ -236,12 +239,12 @@ class UsermodTemperature : public Usermod {
      */
     void readFromConfig(JsonObject &root) {
       // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
-      JsonObject top = root[F("Temperature")];
+      JsonObject top = root[FPSTR(_um_Temperature)];
       if (!top.isNull() && top["pin"] != nullptr) {
         temperaturePin = (int)top["pin"];
-        degC = top[F("degC")] != nullptr ? top[F("degC")] : true;
+        degC = top["degC"] != nullptr ? top["degC"] : true;
       } else {
-        DEBUG_PRINTLN(F("No Temperature sensor config found. (Using defaults.)"));
+        DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
       }
     }
 

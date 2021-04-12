@@ -1,5 +1,4 @@
 #include "wled.h"
-#include <string.h>
 
 /*
  * Sending XML status files to client

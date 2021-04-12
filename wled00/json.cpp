@@ -127,16 +127,16 @@ void deserializeSegment(JsonObject elem, byte it)
 
     //temporary, strip object gets updated via colorUpdated()
     if (id == strip.getMainSegmentId()) {
-      effectCurrent = elem[F("fx")] | effectCurrent;
+      effectCurrent = elem["fx"] | effectCurrent;
       effectSpeed = elem[F("sx")] | effectSpeed;
       effectIntensity = elem[F("ix")] | effectIntensity;
-      effectPalette = elem[F("pal")] | effectPalette;
+      effectPalette = elem["pal"] | effectPalette;
     } else { //permanent
-      byte fx = elem[F("fx")] | seg.mode;
+      byte fx = elem["fx"] | seg.mode;
       if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
       seg.speed = elem[F("sx")] | seg.speed;
       seg.intensity = elem[F("ix")] | seg.intensity;
-      seg.palette = elem[F("pal")] | seg.palette;
+      seg.palette = elem["pal"] | seg.palette;
     }
 
     JsonArray iarr = elem[F("i")]; //set individual LEDs
@@ -218,14 +218,14 @@ bool deserializeState(JsonObject root)
   int cy = root[F("pl")] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);
   JsonObject ccnf = root["ccnf"];
-  presetCycleMin = ccnf[F("min")] | presetCycleMin;
+  presetCycleMin = ccnf["min"] | presetCycleMin;
   presetCycleMax = ccnf[F("max")] | presetCycleMax;
   tr = ccnf[F("time")] | -1;
   if (tr >= 2) presetCycleTime = tr;
 
   JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
-  nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
+  nightlightDelayMins = nl["dur"]  | nightlightDelayMins;
   nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated, remove for v0.13.0
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
@@ -376,10 +376,10 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     }
 	}
 
-	root[F("fx")]  = seg.mode;
+	root["fx"]  = seg.mode;
 	root[F("sx")]  = seg.speed;
 	root[F("ix")]  = seg.intensity;
-	root[F("pal")] = seg.palette;
+	root["pal"] = seg.palette;
 	root[F("sel")] = seg.isSelected();
 	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
@@ -398,17 +398,18 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
     root[F("ps")] = currentPreset;
     root[F("pl")] = (presetCyclingEnabled) ? 0: -1;
+
     usermods.addToJsonState(root);
 
     //temporary for preset cycle
     JsonObject ccnf = root.createNestedObject("ccnf");
-    ccnf[F("min")] = presetCycleMin;
+    ccnf["min"] = presetCycleMin;
     ccnf[F("max")] = presetCycleMax;
     ccnf[F("time")] = presetCycleTime;
 
     JsonObject nl = root.createNestedObject("nl");
     nl["on"] = nightlightActive;
-    nl[F("dur")] = nightlightDelayMins;
+    nl["dur"] = nightlightDelayMins;
     nl[F("fade")] = (nightlightMode > NL_MODE_SET); //deprecated
     nl[F("mode")] = nightlightMode;
     nl[F("tbri")] = nightlightTargetBri;
@@ -788,7 +789,7 @@ void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI)
     request->send_P(200, "application/json", JSON_mode_names);
     return;
   }
-  else if (url.indexOf(F("pal"))   > 0) {
+  else if (url.indexOf("pal")   > 0) {
     request->send_P(200, "application/json", JSON_palette_names);
     return;
   }

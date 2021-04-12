@@ -417,10 +417,10 @@ void deEEP() {
           for (byte j = 0; j < numChannels; j++) colX.add(EEPROM.read(memloc + j));
         }
         
-        segObj[F("fx")]  = EEPROM.read(i+10);
+        segObj["fx"]  = EEPROM.read(i+10);
         segObj[F("sx")]  = EEPROM.read(i+11);
         segObj[F("ix")]  = EEPROM.read(i+16);
-        segObj[F("pal")] = EEPROM.read(i+17);
+        segObj["pal"] = EEPROM.read(i+17);
       } else {
         WS2812FX::Segment* seg = strip.getSegments();
         memcpy(seg, EEPROM.getDataPtr() +i+2, 240);

@@ -19,7 +19,7 @@ This file should be placed in the same directory as `platformio.ini`.
 
 ### Define Your Options
 
-* `USERMOD_FOUR_LINE_DISLAY`   - define this to have this the Four Line Display mod included wled00\usermods_list.cpp - also tells Rotary Encoder usermod, if installed, that the display is available
+* `USERMOD_FOUR_LINE_DISPLAY`  - define this to have this the Four Line Display mod included wled00\usermods_list.cpp - also tells Rotary Encoder usermod, if installed, that the display is available
 * `FLD_PIN_SCL`                - The display SCL pin, defaults to 5
 * `FLD_PIN_SDA`                - The display SDA pin, defaults to 4
 * `FLIP_MODE`                  - Set to 0 or 1
