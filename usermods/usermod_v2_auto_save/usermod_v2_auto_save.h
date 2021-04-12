@@ -104,7 +104,7 @@ class AutoSaveUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (!autoSaveAfterSec || !bri) return;  // setting 0 as autosave seconds disables autosave as does 0 brightness
+      if (!autoSaveAfterSec) return;  // setting 0 as autosave seconds disables autosave
 
       unsigned long now = millis();
       uint8_t currentMode = strip.getMode();

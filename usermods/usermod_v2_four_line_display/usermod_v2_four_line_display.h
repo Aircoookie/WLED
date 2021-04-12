@@ -630,6 +630,8 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void readFromJsonState(JsonObject& root) {
       if (!initDone) return;  // prevent crash on boot applyPreset()
+
+      bool needsRedraw = false;
       DisplayType newType = type;
       int8_t newScl = sclPin;
       int8_t newSda = sdaPin;
@@ -643,6 +645,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (root[F("4LineDisplay_contrast")] != nullptr) {
         contrast = min(255,max(1,(int)root[F("4LineDisplay_contrast")]));
         setContrast(contrast);
+        needsRedraw |= true;
       }
       if (root[F("4LineDisplay_refreshRate")] != nullptr)   refreshRate = min(60,max(1,(int)root[F("4LineDisplay_refreshRate")]))*1000;
       if (root[F("4LineDisplay_screenTimeOut")] != nullptr) screenTimeout = min(900,max(0,(int)root[F("4LineDisplay_screenTimeOut")]))*1000;
@@ -650,6 +653,7 @@ class FourLineDisplayUsermod : public Usermod {
         String str = root[F("4LineDisplay_flip")]; // checkbox -> off or on
         flip = (bool)(str!="off"); // off is guaranteed to be present
         setFlipMode(flip);
+        needsRedraw |= true;
       }
       if (root[F("4LineDisplay_sleepMode")] != nullptr) {
         String str = root[F("4LineDisplay_sleepMode")]; // checkbox -> off or on
@@ -659,6 +663,7 @@ class FourLineDisplayUsermod : public Usermod {
         String str = root[F("4LineDisplay_clockMode")]; // checkbox -> off or on
         clockMode = (bool)(str!="off"); // off is guaranteed to be present
         setLineThreeType(clockMode ? FLD_LINE_3_MODE : FLD_LINE_3_BRIGHTNESS);
+        needsRedraw |= true;
       }
 
       if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
@@ -675,8 +680,9 @@ class FourLineDisplayUsermod : public Usermod {
           type = newType;
         lineHeight = type==SH1106 ? 2 : 1;
         setup();
+        needRedraw |= true;
       }
-      if (!wakeDisplay()) redraw(true);
+      if (needsRedraw && !wakeDisplay()) redraw(true);
     }
 
     /*
