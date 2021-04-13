@@ -2,6 +2,13 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2104140
+
+-   Added dynamic location-based Sunrise/Sunset macros (PR #1889)
+-   Improved seasonal background handling (PR #1890)
+-   Fixed instance discovery not working if MQTT not compiled in
+-   Fixed Button, IR, Relay pin not assigned by default (resolves #1891)
+
 #### Build 2104120
 
 -   Added switch support (button macro is switch closing action, long press macro switch opening)

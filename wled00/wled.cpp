@@ -234,6 +234,7 @@ void WLED::loop()
 #endif
   if (millis() - lastMqttReconnectAttempt > 30000) {
     if (lastMqttReconnectAttempt > millis()) rolloverMillis++; //millis() rolls over every 50 days
+    lastMqttReconnectAttempt = millis();
     initMqtt();
     refreshNodeList();
     if (nodeBroadcastEnabled) sendSysInfoUDP();
