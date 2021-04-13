@@ -621,8 +621,8 @@ class FourLineDisplayUsermod : public Usermod {
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void addToJsonState(JsonObject& root) {
-    }
+    //void addToJsonState(JsonObject& root) {
+    //}
 
     /*
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).

@@ -2,9 +2,8 @@
 
 #include "wled.h"
 
-//
 // v2 Usermod to automatically save settings 
-// to preset number AUTOSAVE_PRESET_NUM after a change to any of
+// to configurable preset after a change to any of
 //
 // * brightness
 // * effect speed
@@ -12,24 +11,17 @@
 // * mode (effect)
 // * palette
 //
-// but it will wait for AUTOSAVE_SETTLE_MS milliseconds, a "settle" 
+// but it will wait for configurable number of seconds, a "settle" 
 // period in case there are other changes (any change will 
 // extend the "settle" window).
 //
-// It will additionally load preset AUTOSAVE_PRESET_NUM at startup.
-// during the first `loop()`.  Reasoning below.
+// It can be configured to load auto saved preset at startup,
+// during the first `loop()`.
 //
 // AutoSaveUsermod is standalone, but if FourLineDisplayUsermod 
 // is installed, it will notify the user of the saved changes.
-//
-// Note: I don't love that WLED doesn't respect the brightness 
-// of the preset being auto loaded, so the AutoSaveUsermod 
-// will set the AUTOSAVE_PRESET_NUM preset in the first loop, 
-// so brightness IS honored. This means WLED will effectively 
-// ignore Default brightness and Apply N preset at boot when 
-// the AutoSaveUsermod is installed.
 
-//  "~ MM-DD HH:MM:SS ~"
+// format: "~ MM-DD HH:MM:SS ~"
 #define PRESET_NAME_BUFFER_SIZE 25
 
 // strings
@@ -42,18 +34,16 @@ class AutoSaveUsermod : public Usermod {
 
   private:
 
+    bool firstLoop = true;
+    bool initDone = false;
+
+    // configurable parameters
     unsigned long autoSaveAfterSec = 15;  // 15s by default
     uint8_t autoSavePreset = 250;         // last possible preset
-    bool initDone = false;
-    bool applyAutoSaveOnBoot = false;
+    bool applyAutoSaveOnBoot = false;     // do we load auto-saved preset on boot?
 
-    // If we've detected the need to auto save, this will
-    // be non zero.
+    // If we've detected the need to auto save, this will be non zero.
     unsigned long autoSaveAfter = 0;
-
-    char presetNameBuffer[PRESET_NAME_BUFFER_SIZE];
-
-    bool firstLoop = true;
 
     uint8_t knownBrightness = 0;
     uint8_t knownEffectSpeed = 0;
@@ -66,6 +56,7 @@ class AutoSaveUsermod : public Usermod {
     #endif
 
     void inline saveSettings() {
+      char presetNameBuffer[PRESET_NAME_BUFFER_SIZE];
       updateLocalTime();
       sprintf_P(presetNameBuffer, 
         PSTR("~ %02d-%02d %02d:%02d:%02d ~"),
@@ -100,7 +91,7 @@ class AutoSaveUsermod : public Usermod {
     // interfaces here
     void connected() {}
 
-    /**
+    /*
      * Da loop.
      */
     void loop() {

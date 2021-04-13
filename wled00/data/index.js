@@ -159,7 +159,7 @@ function loadBg(iUrl)
 		for (var i=0; i<hol.length; i++) {
 			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
 			var hs = new Date(yr,hol[i][1],hol[i][2]);
-			var he = new Date(hs)
+			var he = new Date(hs);
 			he.setDate(he.getDate() + hol[i][3]);
 			if (today>=hs && today<=he)	img.src = hol[i][4];
 		}

@@ -147,6 +147,11 @@ class UsermodTemperature : public Usermod {
       }
     }
 
+    /*
+     * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
+     * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
+     * Below it is shown how this could be used for e.g. a light sensor
+     */
     void addToJsonInfo(JsonObject& root) {
       // dont add temperature to info if we are disabled
       if (disabled) return;
@@ -155,6 +160,7 @@ class UsermodTemperature : public Usermod {
       if (user.isNull()) user = root.createNestedObject("u");
 
       JsonArray temp = user.createNestedArray(FPSTR(_um_Temperature));
+      //temp.add(F("Loaded."));
 
       if (!getTemperatureComplete) {
         // if we haven't read the sensor yet, let the user know
@@ -178,13 +184,10 @@ class UsermodTemperature : public Usermod {
     /**
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
-     * Add "<usermodename>_<usermodparam>" to json state. This can be used to check which GPIO pin usermod uses.
      */
-    void addToJsonState(JsonObject &root)
-    {
-      //root[F("Temperature_pin")] = temperaturePin;
-      //root[F("Temperature_degC")] = degC ? ("C") : ("F");
-    }
+    //void addToJsonState(JsonObject &root)
+    //{
+    //}
 
     /**
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
