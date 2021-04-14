@@ -2,6 +2,10 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2104141
+
+-   Reduced memory usage by 540b by switching to a different trigonometric approximation
+
 #### Build 2104140
 
 -   Added dynamic location-based Sunrise/Sunset macros (PR #1889)
