@@ -239,7 +239,7 @@ void WLED::loop()
     lastMqttReconnectAttempt = 0;
   }
   if (millis() - lastMqttReconnectAttempt > 30000) {
-    lastMqttReconnectAttempt = millis();  // don't do it in initMqtt() since MQTT may be disabled
+    lastMqttReconnectAttempt = millis();
     initMqtt();
     yield();
     // refresh WLED nodes list
@@ -441,7 +441,8 @@ void WLED::beginStrip()
   if (rlyPin>=0) digitalWrite(rlyPin, (bri ? rlyMde : !rlyMde));
 
   // disable button if it is "pressed" unintentionally
-  if (btnPin>=0 && isButtonPressed()) buttonEnabled = false;
+  if (btnPin>=0 && buttonType == BTN_TYPE_PUSH && isButtonPressed())
+    buttonType = BTN_TYPE_NONE;
 }
 
 void WLED::initAP(bool resetAP)

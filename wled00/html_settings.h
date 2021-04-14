@@ -221,9 +221,10 @@ var d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki
  id="form_s" name="Sf" method="post"><div class="toprow"><div class="helpB">
 <button type="button" onclick="H()">?</button></div><button type="button" 
 onclick="B()">Back</button><button type="submit">Save</button><hr></div><h2>
-Sync setup</h2><h3>Button setup</h3>On/Off button enabled: <input 
-type="checkbox" name="BT"><br>Infrared remote: <select name="IR"><option 
-value="0">Disabled</option><option value="1">24-key RGB</option><option 
+Sync setup</h2><h3>Button setup</h3>Button type: <select name="BT"><option 
+value="0">Disabled</option><option value="2">Pushbutton</option><option 
+value="4">Switch</option></select><br>Infrared remote: <select name="IR"><option
+ value="0">Disabled</option><option value="1">24-key RGB</option><option 
 value="2">24-key with CT</option><option value="3">40-key blue</option><option 
 value="4">44-key RGB</option><option value="5">21-key RGB</option><option 
 value="6">6-key black</option><option value="7">9-key red</option></select><br>

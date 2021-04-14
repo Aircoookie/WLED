@@ -418,25 +418,42 @@ uint16_t WS2812FX::mode_theater_chase_rainbow(void) {
 /*
  * Running lights effect with smooth sine transition base.
  */
-uint16_t WS2812FX::running_base(bool saw) {
+uint16_t WS2812FX::running_base(bool saw, bool dual=false) {
   uint8_t x_scale = SEGMENT.intensity >> 2;
   uint32_t counter = (now * SEGMENT.speed) >> 9;
 
   for(uint16_t i = 0; i < SEGLEN; i++) {
-    uint8_t s = 0;
-    uint8_t a = i*x_scale - counter;
+    uint16_t a = i*x_scale - counter;
     if (saw) {
+      a &= 0xFF;
       if (a < 16)
       {
         a = 192 + a*8;
       } else {
         a = map(a,16,255,64,192);
       }
+      a = 255 - a;
     }
-    s = sin8(a);
-    setPixelColor(i, color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), SEGCOLOR(1), s));
+    uint8_t s = dual ? sin_gap(a) : sin8(a);
+    uint32_t ca = color_blend(SEGCOLOR(1), color_from_palette(i, true, PALETTE_SOLID_WRAP, 0), s);
+    if (dual) {
+      uint16_t b = (SEGLEN-1-i)*x_scale - counter;
+      uint8_t t = sin_gap(b);
+      uint32_t cb = color_blend(SEGCOLOR(1), color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), t);
+      ca = color_blend(ca, cb, 127);
+    }
+    setPixelColor(i, ca);
   }
   return FRAMETIME;
+}
+
+
+/*
+ * Running lights in opposite directions.
+ * Idea: Make the gap width controllable with a third slider in the future
+ */
+uint16_t WS2812FX::mode_running_dual(void) {
+  return running_base(false, true);
 }
 
 
@@ -1303,14 +1320,6 @@ uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2) {
   }
 
   return FRAMETIME;
-}
-
-
-/*
- * Alternating white/red/black pixels running. PLACEHOLDER
- */
-uint16_t WS2812FX::mode_circus_combustus(void) {
-  return tricolor_chase(RED, WHITE);
 }
 
 
@@ -3060,7 +3069,7 @@ uint16_t WS2812FX::mode_drip(void)
     if (drops[j].colIndex==1) {
       if (drops[j].col>255) drops[j].col=255;
       setPixelColor(uint16_t(drops[j].pos),color_blend(BLACK,SEGCOLOR(0),drops[j].col));
-
+      
       drops[j].col += map(SEGMENT.speed, 0, 255, 1, 6); // swelling
       
       if (random8() < drops[j].col/10) {               // random drop
@@ -3074,8 +3083,9 @@ uint16_t WS2812FX::mode_drip(void)
         if (drops[j].pos < 0) drops[j].pos = 0;
         drops[j].vel += gravity;           // gravity is negative
 
-        for (uint8_t i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
-          setPixelColor(constrain(uint16_t(drops[j].pos)+i,0,SEGLEN-1),color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
+        for (uint16_t i=1;i<7-drops[j].colIndex;i++) { // some minor math so we don't expand bouncing droplets
+          uint16_t pos = constrain(uint16_t(drops[j].pos) +i, 0, SEGLEN-1); //this is BAD, returns a pos >= SEGLEN occasionally
+          setPixelColor(pos,color_blend(BLACK,SEGCOLOR(0),drops[j].col/i)); //spread pixel with fade while falling
         }
 
         if (drops[j].colIndex > 2) {       // during bounce, some water is on the floor

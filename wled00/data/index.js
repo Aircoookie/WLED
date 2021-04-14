@@ -150,12 +150,12 @@ function loadBg(iUrl)
 	if (iUrl == "") {
 		var today = new Date();
 		var hol = [
-			[0,11,24,5,"https://aircoookie.github.io/xmas.png"], // christmas
+			[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
 			[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
-			[2022,3,16,3,"https://aircoookie.github.io/easter.png"],
-			[2023,3,8,3,"https://aircoookie.github.io/easter.png"],
-			[2024,2,30,3,"https://aircoookie.github.io/easter.png"]
-		]
+			[2022,3,17,2,"https://aircoookie.github.io/easter.png"],
+			[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
+			[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
+		];
 		for (var i=0; i<hol.length; i++) {
 			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
 			var hs = new Date(yr,hol[i][1],hol[i][2]);

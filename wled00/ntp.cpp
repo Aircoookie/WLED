@@ -1,5 +1,6 @@
 #include "src/dependencies/timezone/Timezone.h"
 #include "wled.h"
+#include "wled_math.h"
 
 /*
  * Acquires time from NTP server
@@ -316,8 +317,8 @@ void checkTimers()
 // get sunrise (or sunset) time (in minutes) for a given day at a given geo location
 int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunset=false) {
   //1. first calculate the day of the year
-  float N1 = floor(275 * month / 9);
-  float N2 = floor((month + 9) / 12);
+  float N1 = 275 * month / 9;
+  float N2 = (month + 9) / 12;
   float N3 = (1 + floor((year - 4 * floor(year / 4) + 2) / 3));
   float N = N1 - (N2 * N3) + day - 30;
 
@@ -329,10 +330,10 @@ int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunse
   float M = (0.9856 * t) - 3.289;
 
   //4. calculate the Sun's true longitude
-  float L = fmod(M + (1.916 * sin(DEG_TO_RAD*M)) + (0.020 * sin(2*DEG_TO_RAD*M)) + 282.634, 360.0);
+  float L = fmod(M + (1.916 * sin_t(DEG_TO_RAD*M)) + (0.020 * sin_t(2*DEG_TO_RAD*M)) + 282.634, 360.0);
 
   //5a. calculate the Sun's right ascension      
-  float RA = fmod(RAD_TO_DEG*atan(0.91764 * tan(DEG_TO_RAD*L)), 360.0);
+  float RA = fmod(RAD_TO_DEG*atan_t(0.91764 * tan_t(DEG_TO_RAD*L)), 360.0);
 
   //5b. right ascension value needs to be in the same quadrant as L   
   float Lquadrant  = floor( L/90) * 90;
@@ -343,16 +344,16 @@ int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunse
   RA /= 15.;
 
   //6. calculate the Sun's declination
-  float sinDec = 0.39782 * sin(DEG_TO_RAD*L);
-  float cosDec = cos(asin(sinDec));
+  float sinDec = 0.39782 * sin_t(DEG_TO_RAD*L);
+  float cosDec = cos_t(asin_t(sinDec));
 
   //7a. calculate the Sun's local hour angle
-  float cosH = (sin(DEG_TO_RAD*ZENITH) - (sinDec * sin(DEG_TO_RAD*lat))) / (cosDec * cos(DEG_TO_RAD*lat));
+  float cosH = (sin_t(DEG_TO_RAD*ZENITH) - (sinDec * sin_t(DEG_TO_RAD*lat))) / (cosDec * cos_t(DEG_TO_RAD*lat));
   if (cosH > 1 && !sunset) return 0;  // the sun never rises on this location (on the specified date)
   if (cosH < -1 && sunset) return 0;  // the sun never sets on this location (on the specified date)
 
   //7b. finish calculating H and convert into hours
-  float H = sunset ? RAD_TO_DEG*acos(cosH) : 360 - RAD_TO_DEG*acos(cosH);
+  float H = sunset ? RAD_TO_DEG*acos_t(cosH) : 360 - RAD_TO_DEG*acos_t(cosH);
   H /= 15.;
 
   //8. calculate local mean time of rising/setting      

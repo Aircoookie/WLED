@@ -34,6 +34,7 @@
 #define USERMOD_ID_AUTO_SAVE      9            //Usermod "usermod_v2_auto_save.h"
 #define USERMOD_ID_DHT           10            //Usermod "usermod_dht.h"
 #define USERMOD_ID_MODE_SORT     11            //Usermod "usermod_v2_mode_sort.h"
+#define USERMOD_ID_VL53L0X       12            //Usermod "usermod_vl53l0x_gestures.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
@@ -136,7 +137,7 @@
 #define BTN_TYPE_RESERVED         1
 #define BTN_TYPE_PUSH             2
 #define BTN_TYPE_PUSH_ACT_HIGH    3 //not implemented
-#define BTN_TYPE_SWITCH           4 //not implemented
+#define BTN_TYPE_SWITCH           4
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
 
 //Ethernet board types

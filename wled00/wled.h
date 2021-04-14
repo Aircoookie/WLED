@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2104121
+#define VERSION 2104141
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -182,12 +182,12 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 // Hardware CONFIG (only changeble HERE, not at runtime)
 // LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
 #ifndef BTNPIN
-WLED_GLOBAL int8_t btnPin _INIT(-1);
+WLED_GLOBAL int8_t btnPin _INIT(0);
 #else
 WLED_GLOBAL int8_t btnPin _INIT(BTNPIN);
 #endif
 #ifndef RLYPIN
-WLED_GLOBAL int8_t rlyPin _INIT(-1);
+WLED_GLOBAL int8_t rlyPin _INIT(12);
 #else
 WLED_GLOBAL int8_t rlyPin _INIT(RLYPIN);
 #endif
@@ -198,7 +198,7 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
 #ifndef IRPIN
-WLED_GLOBAL int8_t irPin _INIT(-1);
+WLED_GLOBAL int8_t irPin _INIT(4);
 #else
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 #endif
@@ -253,7 +253,7 @@ WLED_GLOBAL NodesMap Nodes;
 WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
-WLED_GLOBAL bool buttonEnabled  _INIT(true);
+WLED_GLOBAL byte buttonType     _INIT(BTN_TYPE_PUSH);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port

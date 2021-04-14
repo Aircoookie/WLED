@@ -394,7 +394,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 4)
   {
-    sappend('c',SET_F("BT"),buttonEnabled);
+    sappend('v',SET_F("BT"),buttonType);
     sappend('v',SET_F("IR"),irEnabled);
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);

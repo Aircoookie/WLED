@@ -207,7 +207,7 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
       uint16_t indexSet = realIndex + (IS_REVERSE ? -j : j);
-      if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) { // watch for group out of bounds condition
+      if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
         if (IS_MIRROR) { //set the corresponding mirrored pixel
           uint16_t indexMir = SEGMENT.stop + SEGMENT.start - indexSet - 1;
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
@@ -763,6 +763,12 @@ uint16_t WS2812FX::triwave16(uint16_t in)
 {
   if (in < 0x8000) return in *2;
   return 0xFFFF - (in - 0x8000)*2;
+}
+
+uint8_t WS2812FX::sin_gap(uint16_t in) {
+  if (in & 0x100) return 0;
+  //if (in > 255) return 0;
+  return sin8(in + 192); //correct phase shift of sine so that it starts and stops at 0
 }
 
 /*
