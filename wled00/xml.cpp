@@ -349,7 +349,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 4)
   {
-    sappend('c',SET_F("BT"),buttonEnabled);
+    sappend('v',SET_F("BT"),buttonType);
     sappend('v',SET_F("IR"),irEnabled);
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
@@ -434,8 +434,16 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("TZ"),currentTimezone);
     sappend('v',SET_F("UO"),utcOffsetSecs);
     char tm[32];
+    dtostrf(longitude,4,2,tm);
+    sappends('s',SET_F("LN"),tm);
+    dtostrf(latitude,4,2,tm);
+    sappends('s',SET_F("LT"),tm);
     getTimeString(tm);
     sappends('m',SET_F("(\"times\")[0]"),tm);
+    if ((int)(longitude*10.) || (int)(latitude*10.)) {
+      sprintf_P(tm, PSTR("Sunrise: %02d:%02d Sunset: %02d:%02d"), hour(sunrise), minute(sunrise), hour(sunset), minute(sunset));
+      sappends('m',SET_F("(\"times\")[1]"),tm);
+    }
     sappend('i',SET_F("OL"),overlayCurrent);
     sappend('v',SET_F("O1"),overlayMin);
     sappend('v',SET_F("O2"),overlayMax);
@@ -462,10 +470,10 @@ void getSettingsJS(byte subPage, char* dest)
 
     char k[4];
     k[2] = 0; //Time macros
-    for (int i = 0; i<8; i++)
+    for (int i = 0; i<10; i++)
     {
       k[1] = 48+i; //ascii 0,1,2,3
-      k[0] = 'H'; sappend('v',k,timerHours[i]);
+      if (i<8) { k[0] = 'H'; sappend('v',k,timerHours[i]); }
       k[0] = 'N'; sappend('v',k,timerMinutes[i]);
       k[0] = 'T'; sappend('v',k,timerMacro[i]);
       k[0] = 'W'; sappend('v',k,timerWeekday[i]);

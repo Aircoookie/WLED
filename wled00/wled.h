@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2104030
+#define VERSION 2104141
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -182,12 +182,12 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 // Hardware CONFIG (only changeble HERE, not at runtime)
 // LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
 #ifndef BTNPIN
-WLED_GLOBAL int8_t btnPin _INIT(-1);
+WLED_GLOBAL int8_t btnPin _INIT(0);
 #else
 WLED_GLOBAL int8_t btnPin _INIT(BTNPIN);
 #endif
 #ifndef RLYPIN
-WLED_GLOBAL int8_t rlyPin _INIT(-1);
+WLED_GLOBAL int8_t rlyPin _INIT(12);
 #else
 WLED_GLOBAL int8_t rlyPin _INIT(RLYPIN);
 #endif
@@ -198,7 +198,7 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
 #ifndef IRPIN
-WLED_GLOBAL int8_t irPin _INIT(-1);
+WLED_GLOBAL int8_t irPin _INIT(4);
 #else
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 #endif
@@ -254,7 +254,7 @@ WLED_GLOBAL NodesMap Nodes;
 WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
-WLED_GLOBAL bool buttonEnabled  _INIT(true);
+WLED_GLOBAL byte buttonType     _INIT(BTN_TYPE_PUSH);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
@@ -452,10 +452,10 @@ WLED_GLOBAL bool countdownOverTriggered _INIT(true);
 
 // timer
 WLED_GLOBAL byte lastTimerMinute _INIT(0);
-WLED_GLOBAL byte timerHours[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0 }));
-WLED_GLOBAL byte timerMinutes[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0 }));
-WLED_GLOBAL byte timerMacro[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0 }));
-WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 255 }));        // weekdays to activate on
+WLED_GLOBAL byte timerHours[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+WLED_GLOBAL int8_t timerMinutes[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+WLED_GLOBAL byte timerMacro[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 }));        // weekdays to activate on
 // bit pattern of arr elem: 0b11111111: sun,sat,fri,thu,wed,tue,mon,validity
 
 // blynk
@@ -503,6 +503,10 @@ WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(999000000L);
 WLED_GLOBAL IPAddress ntpServerIP;
 WLED_GLOBAL uint16_t ntpLocalPort _INIT(2390);
 WLED_GLOBAL uint16_t rolloverMillis _INIT(0);
+WLED_GLOBAL float longitude _INIT(0.0);
+WLED_GLOBAL float latitude _INIT(0.0);
+WLED_GLOBAL time_t sunrise _INIT(0);
+WLED_GLOBAL time_t sunset _INIT(0);
 
 // Temp buffer
 WLED_GLOBAL char* obuf;

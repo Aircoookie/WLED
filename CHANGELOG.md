@@ -2,6 +2,23 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2104141
+
+-   Reduced memory usage by 540b by switching to a different trigonometric approximation
+
+#### Build 2104140
+
+-   Added dynamic location-based Sunrise/Sunset macros (PR #1889)
+-   Improved seasonal background handling (PR #1890)
+-   Fixed instance discovery not working if MQTT not compiled in
+-   Fixed Button, IR, Relay pin not assigned by default (resolves #1891)
+
+#### Build 2104120
+
+-   Added switch support (button macro is switch closing action, long press macro switch opening)
+-   Replaced Circus effect with new Running Dual effect (Circus is Tricolor Chase with Red/White/Black)
+-   Fixed ledmap with multiple segments (PR #1864)
+
 #### Build 2104030
 
 -   Fixed ESP32 crash on Drip effect with reversed segment (#1854)

@@ -93,7 +93,7 @@ void loadSettingsFromEEPROM()
 
   notifyButton = EEPROM.read(230);
   notifyTwice = EEPROM.read(231);
-  buttonEnabled = EEPROM.read(232);
+  buttonType = EEPROM.read(232) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
   staticIP[0] = EEPROM.read(234);
   staticIP[1] = EEPROM.read(235);

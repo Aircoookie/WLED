@@ -12,10 +12,11 @@ private:
 // User-defined configuration
 #define Celsius               // Show temperature mesaurement in Celcius. Comment out for Fahrenheit
 #define TemperatureDecimals 1 // Number of decimal places in published temperaure values
-#define HumidityDecimals 0    // Number of decimal places in published humidity values
+#define HumidityDecimals 2    // Number of decimal places in published humidity values
 #define PressureDecimals 2    // Number of decimal places in published pressure values
 #define TemperatureInterval 5 // Interval to measure temperature (and humidity, dew point if available) in seconds
 #define PressureInterval 300  // Interval to measure pressure in seconds
+#define PublishAlways 0       // Publish values even when they have not changed
 
 // Sanity checks
 #if !defined(TemperatureDecimals) || TemperatureDecimals < 0
@@ -32,6 +33,9 @@ private:
 #endif
 #if !defined(PressureInterval) || PressureInterval < 0
   #define PressureInterval TemperatureInterval
+#endif
+#if !defined(PublishAlways)
+  #define PublishAlways 0
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32 // ESP32 boards
@@ -58,7 +62,7 @@ private:
 
   BME280I2C bme{settings};
 
-  uint8_t SensorType;
+  uint8_t sensorType;
 
   // Measurement timers
   long timer;
@@ -66,11 +70,11 @@ private:
   long lastPressureMeasure = 0;
 
   // Current sensor values
-  float SensorTemperature;
-  float SensorHumidity;
-  float SensorHeatIndex;
-  float SensorDewPoint;
-  float SensorPressure;
+  float sensorTemperature;
+  float sensorHumidity;
+  float sensorHeatIndex;
+  float sensorDewPoint;
+  float sensorPressure;
   // Track previous sensor values
   float lastTemperature;
   float lastHumidity;
@@ -96,13 +100,13 @@ private:
 
     bme.read(_pressure, _temperature, _humidity, tempUnit, presUnit);
 
-    SensorTemperature = _temperature;
-    SensorHumidity = _humidity;
-    SensorPressure = _pressure;
-    if (SensorType == 1)
+    sensorTemperature = _temperature;
+    sensorHumidity = _humidity;
+    sensorPressure = _pressure;
+    if (sensorType == 1)
     {
-      SensorHeatIndex = EnvironmentCalculations::HeatIndex(_temperature, _humidity, envTempUnit);
-      SensorDewPoint = EnvironmentCalculations::DewPoint(_temperature, _humidity, envTempUnit);
+      sensorHeatIndex = EnvironmentCalculations::HeatIndex(_temperature, _humidity, envTempUnit);
+      sensorDewPoint = EnvironmentCalculations::DewPoint(_temperature, _humidity, envTempUnit);
     }
   }
 
@@ -113,7 +117,7 @@ public:
 
     if (!bme.begin())
     {
-      SensorType = 0;
+      sensorType = 0;
       Serial.println("Could not find BME280I2C sensor!");
     }
     else
@@ -121,15 +125,15 @@ public:
       switch (bme.chipModel())
       {
       case BME280::ChipModel_BME280:
-        SensorType = 1;
+        sensorType = 1;
         Serial.println("Found BME280 sensor! Success.");
         break;
       case BME280::ChipModel_BMP280:
-        SensorType = 2;
+        sensorType = 2;
         Serial.println("Found BMP280 sensor! No Humidity available.");
         break;
       default:
-        SensorType = 0;
+        sensorType = 0;
         Serial.println("Found UNKNOWN sensor! Error!");
       }
     }
@@ -139,7 +143,7 @@ public:
   {
     // BME280 sensor MQTT publishing
     // Check if sensor present and MQTT Connected, otherwise it will crash the MCU
-    if (SensorType != 0 && mqtt != nullptr)
+    if (sensorType != 0 && mqtt != nullptr)
     {
       // Timer to fetch new temperature, humidity and pressure data at intervals
       timer = millis();
@@ -148,48 +152,48 @@ public:
       {
         lastTemperatureMeasure = timer;
 
-        UpdateBME280Data(SensorType);
+        UpdateBME280Data(sensorType);
 
-        float Temperature = roundf(SensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
-        float Humidity, HeatIndex, DewPoint;
+        float temperature = roundf(sensorTemperature * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+        float humidity, heatIndex, dewPoint;
 
         // If temperature has changed since last measure, create string populated with device topic
         // from the UI and values read from sensor, then publish to broker
-        if (Temperature != lastTemperature)
+        if (temperature != lastTemperature || PublishAlways)
         {
           String topic = String(mqttDeviceTopic) + "/temperature";
-          mqttTemperaturePub = mqtt->publish(topic.c_str(), 0, false, String(Temperature, TemperatureDecimals).c_str());
+          mqttTemperaturePub = mqtt->publish(topic.c_str(), 0, false, String(temperature, TemperatureDecimals).c_str());
         }
 
-        lastTemperature = Temperature; // Update last sensor temperature for next loop
+        lastTemperature = temperature; // Update last sensor temperature for next loop
 
-        if (SensorType == 1) // Only if sensor is a BME280
+        if (sensorType == 1) // Only if sensor is a BME280
         {
-          Humidity = roundf(SensorHumidity * pow(10, HumidityDecimals)) / pow(10, HumidityDecimals);
-          HeatIndex = roundf(SensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
-          DewPoint = roundf(SensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+          humidity = roundf(sensorHumidity * pow(10, HumidityDecimals)) / pow(10, HumidityDecimals);
+          heatIndex = roundf(sensorHeatIndex * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
+          dewPoint = roundf(sensorDewPoint * pow(10, TemperatureDecimals)) / pow(10, TemperatureDecimals);
 
-          if (Humidity != lastHumidity)
+          if (humidity != lastHumidity || PublishAlways)
           {
             String topic = String(mqttDeviceTopic) + "/humidity";
-            mqtt->publish(topic.c_str(), 0, false, String(Humidity, HumidityDecimals).c_str());
+            mqtt->publish(topic.c_str(), 0, false, String(humidity, HumidityDecimals).c_str());
           }
 
-          if (HeatIndex != lastHeatIndex)
+          if (heatIndex != lastHeatIndex || PublishAlways)
           {
             String topic = String(mqttDeviceTopic) + "/heat_index";
-            mqtt->publish(topic.c_str(), 0, false, String(HeatIndex, TemperatureDecimals).c_str());
+            mqtt->publish(topic.c_str(), 0, false, String(heatIndex, TemperatureDecimals).c_str());
           }
 
-          if (DewPoint != lastDewPoint)
+          if (dewPoint != lastDewPoint || PublishAlways)
           {
             String topic = String(mqttDeviceTopic) + "/dew_point";
-            mqtt->publish(topic.c_str(), 0, false, String(DewPoint, TemperatureDecimals).c_str());
+            mqtt->publish(topic.c_str(), 0, false, String(dewPoint, TemperatureDecimals).c_str());
           }
 
-          lastHumidity = Humidity;
-          lastHeatIndex = HeatIndex;
-          lastDewPoint = DewPoint;
+          lastHumidity = humidity;
+          lastHeatIndex = heatIndex;
+          lastDewPoint = dewPoint;
         }
       }
 
@@ -197,15 +201,15 @@ public:
       {
         lastPressureMeasure = timer;
 
-        float Pressure = roundf(SensorPressure * pow(10, PressureDecimals)) / pow(10, PressureDecimals);
+        float pressure = roundf(sensorPressure * pow(10, PressureDecimals)) / pow(10, PressureDecimals);
 
-        if (Pressure != lastPressure)
+        if (pressure != lastPressure || PublishAlways)
         {
           String topic = String(mqttDeviceTopic) + "/pressure";
-          mqttPressurePub = mqtt->publish(topic.c_str(), 0, true, String(Pressure, PressureDecimals).c_str());
+          mqttPressurePub = mqtt->publish(topic.c_str(), 0, true, String(pressure, PressureDecimals).c_str());
         }
 
-        lastPressure = Pressure;
+        lastPressure = pressure;
       }
     }
   }

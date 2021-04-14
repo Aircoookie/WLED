@@ -135,7 +135,7 @@
 #define BTN_TYPE_RESERVED         1
 #define BTN_TYPE_PUSH             2
 #define BTN_TYPE_PUSH_ACT_HIGH    3 //not implemented
-#define BTN_TYPE_SWITCH           4 //not implemented
+#define BTN_TYPE_SWITCH           4
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
 
 //Ethernet board types
