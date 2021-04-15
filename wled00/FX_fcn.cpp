@@ -43,6 +43,23 @@
   19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]}
 */
 
+//factory defaults LED setup (for multistrip boards)
+//#define PIXEL_COUNTS 30, 30, 30, 30
+//#define DATA_PINS 16, 1, 3, 4
+//#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+
+#ifndef PIXEL_COUNTS
+  #define PIXEL_COUNTS 30
+#endif
+
+#ifndef DATA_PINS
+  #define DATA_PINS LEDPIN
+#endif
+
+#ifndef DEFAULT_LED_TYPE
+  #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+#endif
+
 //do not call this method from system context (network callback)
 void WS2812FX::finalizeInit(void)
 {
@@ -51,24 +68,19 @@ void WS2812FX::finalizeInit(void)
 
   //if busses failed to load, add default (fresh install, FS issue, ...)
   if (busses.getNumBusses() == 0) {
-    uint8_t defPin[] = {LEDPIN};
-    BusConfig defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, 30, COL_ORDER_GRB, false, false);
-    busses.add(defCfg);
-    #ifdef LEDPIN1
-    defPin[0] = {LEDPIN1};
-    defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, 30, COL_ORDER_GRB, false, false);
-    busses.add(defCfg);
-    #endif
-    #ifdef LEDPIN2
-    defPin[0] = {LEDPIN2};
-    defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, 30, COL_ORDER_GRB, false, false);
-    busses.add(defCfg);
-    #endif
-    #ifdef LEDPIN3
-    defPin[0] = {LEDPIN3};
-    defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, 30, COL_ORDER_GRB, false, false);
-    busses.add(defCfg);
-    #endif
+    const uint8_t defDataPins[] = {DATA_PINS};
+    const uint16_t defCounts[] = {PIXEL_COUNTS};
+    const uint8_t defDataPinsNo = ((sizeof defDataPins) / (sizeof defDataPins[0]));
+    const uint8_t defCountsNo = ((sizeof defCounts) / (sizeof defCounts[0]));
+    uint16_t prevLen = 0;
+    for (uint8_t i = 0; i < defDataPinsNo; i++) {
+      uint8_t defPin[] = {defDataPins[i]};
+      uint16_t start = prevLen;
+      uint16_t count = (i < defCountsNo) ? defCounts[i] : defCounts[i>0?i-1:0];
+      prevLen += count;
+      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB);
+      busses.add(defCfg);
+    }
   }
   
   deserializeMap();
@@ -81,6 +93,7 @@ void WS2812FX::finalizeInit(void)
     isRgbw |= bus->isRgbw();
     _length += bus->getLength();
   }
+  ledCount = _length; // or we can use busses.getTotalLength()
 /*
   //make segment 0 cover the entire strip
   _segments[0].start = 0;

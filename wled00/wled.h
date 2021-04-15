@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2104141
+#define VERSION 2104150
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -228,7 +228,7 @@ WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling 
 #endif
 
 // LED CONFIG
-WLED_GLOBAL uint16_t ledCount _INIT(30);          // overcurrent prevented by ABL
+WLED_GLOBAL uint16_t ledCount _INIT(0);           // overcurrent prevented by ABL (filled in cfg.cpp, set.cpp or FX_fcn.cpp)
 WLED_GLOBAL bool turnOnAtBoot _INIT(true);        // turn on LEDs at power-up
 WLED_GLOBAL byte bootPreset   _INIT(0);           // save preset to load after power-up
 

@@ -85,7 +85,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     strip.isRgbw = false;
 
-//    uint8_t skip = request->hasArg(F("SL")) ? LED_SKIP_AMOUNT : 0;
     uint8_t colorOrder, type, skip;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
