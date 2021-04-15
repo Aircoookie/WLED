@@ -43,6 +43,28 @@
   19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]
 */
 
+//factory defaults LED setup
+//#define NUM_STRIPS 4
+//#define PIXEL_COUNTS 30, 30, 30, 30
+//#define DATA_PINS 16, 1, 3, 4
+//#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+
+#if (!defined(NUM_STRIPS) || NUM_STRIPS < 1 || NUM_STRIPS > WLED_MAX_BUSSES)
+  #define NUM_STRIPS 1
+#endif
+
+#ifndef PIXEL_COUNTS
+  #define PIXEL_COUNTS 30
+#endif
+
+#ifndef DATA_PINS
+  #define DATA_PINS LEDPIN
+#endif
+
+#ifndef DEFAULT_LED_TYPE
+  #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+#endif
+
 //do not call this method from system context (network callback)
 void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
 {
@@ -57,9 +79,17 @@ void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
 
   //if busses failed to load, add default (FS issue...)
   if (busses.getNumBusses() == 0) {
-    uint8_t defPin[] = {LEDPIN};
-    BusConfig defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, _lengthRaw, COL_ORDER_GRB);
-    busses.add(defCfg);
+    const uint8_t defDataPins[NUM_STRIPS] = {DATA_PINS};
+    const uint16_t defCounts[NUM_STRIPS] = {PIXEL_COUNTS};
+    uint16_t prevLen = 0;
+    for (uint8_t i = 0; i < NUM_STRIPS; i++) {
+      uint8_t defPin[] = {defDataPins[i]};
+      uint16_t start = prevLen;
+      uint16_t count = (NUM_STRIPS > 1) ? defCounts[i] : _lengthRaw;
+      prevLen += count;
+      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB);
+      busses.add(defCfg);
+    }
   }
   
   deserializeMap();

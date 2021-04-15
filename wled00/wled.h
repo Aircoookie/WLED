@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2104141
+#define VERSION 2104150
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -228,9 +228,9 @@ WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling 
 #endif
 
 // LED CONFIG
-WLED_GLOBAL uint16_t ledCount _INIT(30);          // overcurrent prevented by ABL
-WLED_GLOBAL bool turnOnAtBoot _INIT(true);        // turn on LEDs at power-up
-WLED_GLOBAL byte bootPreset   _INIT(0);           // save preset to load after power-up
+WLED_GLOBAL uint16_t ledCount _INIT(DEFAULT_LED_COUNT);   // overcurrent prevented by ABL
+WLED_GLOBAL bool turnOnAtBoot _INIT(true);                // turn on LEDs at power-up
+WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load after power-up
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
