@@ -170,7 +170,8 @@ class AutoSaveUsermod : public Usermod {
         autoSavePreset = min(250,max(0,(int)root[F("Autosave_autoSavePreset")]));
       }
       if (root[F("Autosave_autoSaveApplyOnBoot")] != nullptr) {
-        applyAutoSaveOnBoot = (bool)root[F("Autosave_autoSaveApplyOnBoot")];
+        String str = root[F("Autosave_autoSaveApplyOnBoot")]; // checkbox -> off or on
+        applyAutoSaveOnBoot = (bool)(str!="off"); // off is guaranteed to be present
       }
     }
 
