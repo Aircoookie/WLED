@@ -319,32 +319,32 @@ int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunse
   //1. first calculate the day of the year
   float N1 = 275 * month / 9;
   float N2 = (month + 9) / 12;
-  float N3 = (1 + floor((year - 4 * floor(year / 4) + 2) / 3));
+  float N3 = (1 + floor_t((year - 4 * floor_t(year / 4) + 2) / 3));
   float N = N1 - (N2 * N3) + day - 30;
 
   //2. convert the longitude to hour value and calculate an approximate time
-  float lngHour = lon / 15.0;      
+  float lngHour = lon / 15.0f;      
   float t = N + (((sunset ? 18 : 6) - lngHour) / 24);
   
   //3. calculate the Sun's mean anomaly   
-  float M = (0.9856 * t) - 3.289;
+  float M = (0.9856f * t) - 3.289f;
 
   //4. calculate the Sun's true longitude
-  float L = fmod(M + (1.916 * sin_t(DEG_TO_RAD*M)) + (0.020 * sin_t(2*DEG_TO_RAD*M)) + 282.634, 360.0);
+  float L = fmod_t(M + (1.916f * sin_t(DEG_TO_RAD*M)) + (0.02f * sin_t(2*DEG_TO_RAD*M)) + 282.634f, 360.0f);
 
   //5a. calculate the Sun's right ascension      
-  float RA = fmod(RAD_TO_DEG*atan_t(0.91764 * tan_t(DEG_TO_RAD*L)), 360.0);
+  float RA = fmod_t(RAD_TO_DEG*atan_t(0.91764f * tan_t(DEG_TO_RAD*L)), 360.0f);
 
   //5b. right ascension value needs to be in the same quadrant as L   
-  float Lquadrant  = floor( L/90) * 90;
-  float RAquadrant = floor(RA/90) * 90;
+  float Lquadrant  = floor_t( L/90) * 90;
+  float RAquadrant = floor_t(RA/90) * 90;
   RA = RA + (Lquadrant - RAquadrant);
 
   //5c. right ascension value needs to be converted into hours   
-  RA /= 15.;
+  RA /= 15.0f;
 
   //6. calculate the Sun's declination
-  float sinDec = 0.39782 * sin_t(DEG_TO_RAD*L);
+  float sinDec = 0.39782f * sin_t(DEG_TO_RAD*L);
   float cosDec = cos_t(asin_t(sinDec));
 
   //7a. calculate the Sun's local hour angle
@@ -354,13 +354,13 @@ int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunse
 
   //7b. finish calculating H and convert into hours
   float H = sunset ? RAD_TO_DEG*acos_t(cosH) : 360 - RAD_TO_DEG*acos_t(cosH);
-  H /= 15.;
+  H /= 15.0f;
 
   //8. calculate local mean time of rising/setting      
-  float T = H + RA - (0.06571 * t) - 6.622;
+  float T = H + RA - (0.06571f * t) - 6.622f;
 
   //9. adjust back to UTC
-  float UT = fmod(T - lngHour, 24.0);
+  float UT = fmod_t(T - lngHour, 24.0f);
 
   // return in minutes from midnight
 	return UT*60;

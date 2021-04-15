@@ -44,14 +44,9 @@
 */
 
 //factory defaults LED setup
-//#define NUM_STRIPS 4
 //#define PIXEL_COUNTS 30, 30, 30, 30
 //#define DATA_PINS 16, 1, 3, 4
 //#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
-
-#if (!defined(NUM_STRIPS) || NUM_STRIPS < 1 || NUM_STRIPS > WLED_MAX_BUSSES)
-  #define NUM_STRIPS 1
-#endif
 
 #ifndef PIXEL_COUNTS
   #define PIXEL_COUNTS 30
@@ -79,13 +74,18 @@ void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
 
   //if busses failed to load, add default (FS issue...)
   if (busses.getNumBusses() == 0) {
-    const uint8_t defDataPins[NUM_STRIPS] = {DATA_PINS};
-    const uint16_t defCounts[NUM_STRIPS] = {PIXEL_COUNTS};
+    const uint8_t defDataPins[] = {DATA_PINS};
+    const uint16_t defCounts[] = {PIXEL_COUNTS};
+    const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));
+    const uint8_t defNumCounts = ((sizeof defCounts)   / (sizeof defCounts[0]));
     uint16_t prevLen = 0;
-    for (uint8_t i = 0; i < NUM_STRIPS; i++) {
+    for (uint8_t i = 0; i < defNumBusses; i++) {
       uint8_t defPin[] = {defDataPins[i]};
       uint16_t start = prevLen;
-      uint16_t count = (NUM_STRIPS > 1) ? defCounts[i] : _lengthRaw;
+      uint16_t count = _lengthRaw;
+      if (defNumBusses > 1 && defNumCounts) {
+        count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
+      }
       prevLen += count;
       BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB);
       busses.add(defCfg);
