@@ -353,6 +353,11 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("IR"),irEnabled);
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
+    sappend('c',SET_F("HX"),enableHyperionColorCorrection);
+    
+    sappend('v',SET_F("HS"),hyperionHSVSaturation);
+    sappend('v',SET_F("HV"),hyperionHSVValue);
+
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
     sappend('c',SET_F("RC"),receiveNotificationColor);
     sappend('c',SET_F("RX"),receiveNotificationEffects);
