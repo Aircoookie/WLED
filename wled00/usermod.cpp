@@ -72,6 +72,7 @@ if (samples_read > 0) {
     digitalMic = true;
   } else {
     Serial.println("Digital microphone is NOT present.");
+    analogReadResolution(10);          // Default is 12, which is less linear. We're also only using 10 bits as a result of our ESP8266 history.
   }
 }
 
