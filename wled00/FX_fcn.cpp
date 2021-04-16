@@ -70,13 +70,13 @@ void WS2812FX::finalizeInit(void)
   if (busses.getNumBusses() == 0) {
     const uint8_t defDataPins[] = {DATA_PINS};
     const uint16_t defCounts[] = {PIXEL_COUNTS};
-    const uint8_t defDataPinsNo = ((sizeof defDataPins) / (sizeof defDataPins[0]));
-    const uint8_t defCountsNo = ((sizeof defCounts) / (sizeof defCounts[0]));
+    const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));  // min 1
+    const uint8_t defNumCounts = ((sizeof defCounts) / (sizeof defCounts[0]));      // min 1
     uint16_t prevLen = 0;
-    for (uint8_t i = 0; i < defDataPinsNo; i++) {
+    for (uint8_t i = 0; i < defNumBusses && i < WLED_MAX_BUSSES; i++) {
       uint8_t defPin[] = {defDataPins[i]};
       uint16_t start = prevLen;
-      uint16_t count = (i < defCountsNo) ? defCounts[i] : defCounts[i>0?i-1:0];
+      uint16_t count = (i < defNumCounts) ? defCounts[i] : defCounts[i>0?i-1:0];
       prevLen += count;
       BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB);
       busses.add(defCfg);
