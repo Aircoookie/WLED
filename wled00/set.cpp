@@ -419,14 +419,27 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       String name = request->argName(i);
       String value = request->arg(i);
 
+      // POST request parameters are combined as <usermodname>_<usermodparameter>
+      uint8_t umNameEnd = name.indexOf("_");
+      if (!umNameEnd) break;  // parameter does not contain "_" -> wrong
+
+      JsonObject mod = um[name.substring(0,umNameEnd)]; // get a usermod JSON object
+      if (mod.isNull()) {
+        mod = um.createNestedObject(name.substring(0,umNameEnd)); // if it does not exist create it
+      }
+      DEBUG_PRINT(name.substring(0,umNameEnd));
+      DEBUG_PRINT(":");
+      name = name.substring(umNameEnd+1); // remove mod name from string
+
+      // check if parameters represent array
       if (name.endsWith("[]")) {
         name.replace("[]","");
-        if (!um[name].is<JsonArray>()) {
-          JsonArray ar = um.createNestedArray(name);
+        if (!mod[name].is<JsonArray>()) {
+          JsonArray ar = mod.createNestedArray(name);
           ar.add(value);
           j=0;
         } else {
-          um[name].add(value);
+          mod[name].add(value);
           j++;
         }
         DEBUG_PRINT(name);
@@ -435,14 +448,14 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         DEBUG_PRINT("] = ");
         DEBUG_PRINTLN(value);
       } else {
-        um.remove(name);  // checkboxes get two fields (first is always "off", existence of second depends on checkmark and may be "on")
-        um[name] = value;
+        mod.remove(name);  // checkboxes get two fields (first is always "off", existence of second depends on checkmark and may be "on")
+        mod[name] = value;
         DEBUG_PRINT(name);
         DEBUG_PRINT(" = ");
         DEBUG_PRINTLN(value);
       }
     }
-    usermods.readFromJsonState(um);
+    usermods.readFromConfig(um);  // force change of usermod parameters
   }
 
   if (subPage != 2 && (subPage != 6 || !doReboot)) serializeConfig(); //do not save if factory reset or LED settings (which are saved after LED re-init)

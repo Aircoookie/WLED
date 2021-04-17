@@ -160,20 +160,9 @@ class AutoSaveUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject& root) {
-      if (!initDone) return;  // prevent crash on boot applyPreset()
-
-      if (root[F("Autosave_autoSaveAfterSec")] != nullptr) {
-        autoSaveAfterSec = min(60,max(0,(int)root[F("Autosave_autoSaveAfterSec")]));
-      }
-      if (root[F("Autosave_autoSavePreset")] != nullptr) {
-        autoSavePreset = min(250,max(0,(int)root[F("Autosave_autoSavePreset")]));
-      }
-      if (root[F("Autosave_autoSaveApplyOnBoot")] != nullptr) {
-        String str = root[F("Autosave_autoSaveApplyOnBoot")]; // checkbox -> off or on
-        applyAutoSaveOnBoot = (bool)(str!="off"); // off is guaranteed to be present
-      }
-    }
+    //void readFromJsonState(JsonObject& root) {
+    //  if (!initDone) return;  // prevent crash on boot applyPreset()
+    //}
 
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
@@ -195,6 +184,7 @@ class AutoSaveUsermod : public Usermod {
       top[FPSTR(_autoSaveAfterSec)]    = autoSaveAfterSec;  // usermodparam
       top[FPSTR(_autoSavePreset)]      = autoSavePreset;    // usermodparam
       top[FPSTR(_autoSaveApplyOnBoot)] = applyAutoSaveOnBoot;
+      DEBUG_PRINTLN(F("Autosave config saved."));
     }
 
     /*
@@ -209,9 +199,17 @@ class AutoSaveUsermod : public Usermod {
       // we look for JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
       JsonObject top = root[FPSTR(_um_AutoSave)];
       if (!top.isNull() && top[FPSTR(_autoSaveAfterSec)] != nullptr) {
-        autoSaveAfterSec    = (int) top[FPSTR(_autoSaveAfterSec)];
-        autoSavePreset      = (int) top[FPSTR(_autoSavePreset)];
-        applyAutoSaveOnBoot = (bool)top[FPSTR(_autoSaveApplyOnBoot)];
+        autoSaveAfterSec = top[FPSTR(_autoSaveAfterSec)].as<int>();
+        autoSavePreset   = top[FPSTR(_autoSavePreset)].as<int>();
+        if (top[FPSTR(_autoSaveApplyOnBoot)].is<bool>()) {
+          // reading from cfg.json
+          applyAutoSaveOnBoot = top[FPSTR(_autoSaveApplyOnBoot)].as<bool>();
+        } else {
+          // reading from POST message
+          String str = top[FPSTR(_autoSaveApplyOnBoot)]; // checkbox -> off or on
+          applyAutoSaveOnBoot = (bool)(str!="off"); // off is guaranteed to be present
+        }
+        DEBUG_PRINTLN(F("Autosave config (re)loaded."));
       } else {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
       }

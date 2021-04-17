@@ -50,6 +50,10 @@
 #include "../usermods/VL53L0X_gestures/usermod_vl53l0x_gestures.h"
 #endif
 
+#ifdef USERMOD_ANIMATED_STAIRCASE
+#include "../usermods/Animated_Staircase/Animated_Staircase.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -95,5 +99,9 @@ void registerUsermods()
 
   #ifdef USERMOD_VL53L0X_GESTURES
   usermods.add(new UsermodVL53L0XGestures());
+  #endif
+
+  #ifdef USERMOD_ANIMATED_STAIRCASE
+  usermods.add(new Animated_Staircase());
   #endif
 }

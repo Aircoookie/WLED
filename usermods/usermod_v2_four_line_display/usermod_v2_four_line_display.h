@@ -628,62 +628,9 @@ class FourLineDisplayUsermod : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    void readFromJsonState(JsonObject& root) {
-      if (!initDone) return;  // prevent crash on boot applyPreset()
-
-      bool needsRedraw = false;
-      DisplayType newType = type;
-      int8_t newScl = sclPin;
-      int8_t newSda = sdaPin;
-
-      if (root[F("4LineDisplay_type")] != nullptr) newType = (DisplayType)root[F("4LineDisplay_type")];
-      if (root[F("4LineDisplay_pin")] != nullptr) {
-        newScl = min(39,max(0,(int)root[F("4LineDisplay_pin")][0]));
-        newSda = min(39,max(0,(int)root[F("4LineDisplay_pin")][1]));
-        if (newScl==newSda) newScl = newSda = -1;
-      }
-      if (root[F("4LineDisplay_contrast")] != nullptr) {
-        contrast = min(255,max(1,(int)root[F("4LineDisplay_contrast")]));
-        setContrast(contrast);
-        needsRedraw |= true;
-      }
-      if (root[F("4LineDisplay_refreshRate")] != nullptr)   refreshRate = min(60,max(1,(int)root[F("4LineDisplay_refreshRate")]))*1000;
-      if (root[F("4LineDisplay_screenTimeOut")] != nullptr) screenTimeout = min(900,max(0,(int)root[F("4LineDisplay_screenTimeOut")]))*1000;
-      if (root[F("4LineDisplay_flip")] != nullptr) {
-        String str = root[F("4LineDisplay_flip")]; // checkbox -> off or on
-        flip = (bool)(str!="off"); // off is guaranteed to be present
-        setFlipMode(flip);
-        needsRedraw |= true;
-      }
-      if (root[F("4LineDisplay_sleepMode")] != nullptr) {
-        String str = root[F("4LineDisplay_sleepMode")]; // checkbox -> off or on
-        sleepMode = (bool)(str!="off"); // off is guaranteed to be present
-      }
-      if (root[F("4LineDisplay_clockMode")] != nullptr) {
-        String str = root[F("4LineDisplay_clockMode")]; // checkbox -> off or on
-        clockMode = (bool)(str!="off"); // off is guaranteed to be present
-        setLineThreeType(clockMode ? FLD_LINE_3_MODE : FLD_LINE_3_BRIGHTNESS);
-        needsRedraw |= true;
-      }
-
-      if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
-        if (type==SSD1306) delete (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8));
-        if (type==SH1106)  delete (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8));
-        pinManager.deallocatePin(sclPin);
-        pinManager.deallocatePin(sdaPin);
-        sclPin = newScl;
-        sdaPin = newSda;
-        if (newScl<0 || newSda<0) {
-          type = NONE;
-          return;
-        } else
-          type = newType;
-        lineHeight = type==SH1106 ? 2 : 1;
-        setup();
-        needRedraw |= true;
-      }
-      if (needsRedraw && !wakeDisplay()) redraw(true);
-    }
+    //void readFromJsonState(JsonObject& root) {
+    //  if (!initDone) return;  // prevent crash on boot applyPreset()
+    //}
 
     /*
      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
@@ -711,6 +658,7 @@ class FourLineDisplayUsermod : public Usermod {
       top[FPSTR(_4LD_screenTimeOut)] = screenTimeout/1000;
       top[FPSTR(_4LD_sleepMode)] = (bool) sleepMode;
       top[FPSTR(_4LD_clockMode)] = (bool) clockMode;
+      DEBUG_PRINTLN(F("4 Line Display config saved."));
     }
 
     /*
@@ -722,20 +670,72 @@ class FourLineDisplayUsermod : public Usermod {
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
      */
     void readFromConfig(JsonObject& root) {
+      bool needsRedraw = false;
+      DisplayType newType = type;
+      int8_t newScl = sclPin;
+      int8_t newSda = sdaPin;
+
       JsonObject top = root[FPSTR(_um_4LineDisplay)];
       if (!top.isNull() && top["pin"] != nullptr) {
-        sclPin        = top["pin"][0];
-        sdaPin        = top["pin"][1];
-        type          = top["type"];
+        newScl        = top["pin"][0];
+        newSda        = top["pin"][1];
+        newType       = top["type"];
         lineHeight    = type==SH1106 ? 2 : 1;
-        flip          = top[FPSTR(_4LD_flip)];
-        contrast      = top[FPSTR(_4LD_contrast)];
-        refreshRate   = int(top[FPSTR(_4LD_refreshRate)])*1000;
-        screenTimeout = int(top[FPSTR(_4LD_screenTimeOut)])*1000;
-        sleepMode     = top[FPSTR(_4LD_sleepMode)];
-        clockMode     = top[FPSTR(_4LD_clockMode)];
+        if (top[FPSTR(_4LD_flip)].is<bool>()) {
+          flip        = top[FPSTR(_4LD_flip)].as<bool>();
+        } else {
+          String str = top[FPSTR(_4LD_flip)]; // checkbox -> off or on
+          flip = (bool)(str!="off"); // off is guaranteed to be present
+          needRedraw |= true;
+        }
+        contrast      = top[FPSTR(_4LD_contrast)].as<int>();
+        refreshRate   = top[FPSTR(_4LD_refreshRate)].as<int>() * 1000;
+        screenTimeout = top[FPSTR(_4LD_screenTimeOut)].as<int>() * 1000;
+        if (top[FPSTR(_4LD_sleepMode)].is<bool>()) {
+          sleepMode   = top[FPSTR(_4LD_sleepMode)].as<bool>();
+        } else {
+          String str = top[FPSTR(_4LD_sleepMode)]; // checkbox -> off or on
+          sleepMode = (bool)(str!="off"); // off is guaranteed to be present
+          needRedraw |= true;
+        }
+        if (top[FPSTR(_4LD_clockMode)].is<bool>()) {
+          clockMode   = top[FPSTR(_4LD_clockMode)].as<bool>();
+        } else {
+          String str = top[FPSTR(_4LD_clockMode)]; // checkbox -> off or on
+          clockMode = (bool)(str!="off"); // off is guaranteed to be present
+          needRedraw |= true;
+        }
+        DEBUG_PRINTLN(F("4 Line Display config (re)loaded."));
       } else {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
+      }
+
+      if (!initDone) {
+        // first run: reading from cfg.json
+        sclPin = newScl;
+        sdaPin = newSda;
+        type = newType;
+      } else {
+        // changing paramters from settings page
+        if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
+          if (type==SSD1306) delete (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8));
+          if (type==SH1106)  delete (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8));
+          pinManager.deallocatePin(sclPin);
+          pinManager.deallocatePin(sdaPin);
+          sclPin = newScl;
+          sdaPin = newSda;
+          if (newScl<0 || newSda<0) {
+            type = NONE;
+            return;
+          } else
+            type = newType;
+          lineHeight = type==SH1106 ? 2 : 1;
+          setup();
+          needRedraw |= true;
+        }
+        setContrast(contrast);
+        setFlipMode(flip);
+        if (needsRedraw && !wakeDisplay()) redraw(true);
       }
     }
 
