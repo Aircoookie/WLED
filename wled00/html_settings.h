@@ -246,8 +246,8 @@ Enable instance list: <input type="checkbox" name="NL"><br>
 Make this instance discoverable: <input type="checkbox" name="NB"><br><h3>
 Color Correction:</h3>Enable color correction for UDP signal: <input 
 type="checkbox" name="HX"><br>Saturation (1-30): <input name="HS" type="number" 
-min="1" max="30" value="1" step="1"><br>Value (1-200): <input name="HV" 
-type="number" min="1" max="200" value="100" step="1"><br><h3>Realtime</h3>
+min="1" max="30" value="1" step="1"><br>Value (1-10): <input name="HV" 
+type="number" min="1" max="10" value="5" step="1"><br><h3>Realtime</h3>
 Receive UDP realtime: <input type="checkbox" name="RD"><br><br><i>
 Network DMX input</i><br>Type: <select name="DI" onchange="SP(),adj()"><option 
 value="5568">E1.31 (sACN)</option><option value="6454">Art-Net</option><option 
