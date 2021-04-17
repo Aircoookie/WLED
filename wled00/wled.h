@@ -262,7 +262,7 @@ WLED_GLOBAL uint16_t udpPort2   _INIT(65506); // WLED notifier supplemental port
 WLED_GLOBAL uint16_t udpRgbPort _INIT(19446); // Hyperion port
 WLED_GLOBAL bool enableHyperionColorCorrection _INIT(false);
 WLED_GLOBAL uint16_t hyperionHSVSaturation _INIT(13);
-WLED_GLOBAL uint16_t hyperionHSVValue _INIT(5);
+WLED_GLOBAL uint16_t hyperionHSVValue _INIT(10);
 
 WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);       // apply brightness from incoming notifications
 WLED_GLOBAL bool receiveNotificationColor      _INIT(true);       // apply color

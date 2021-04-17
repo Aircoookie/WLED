@@ -80,7 +80,7 @@ void correctColors(byte r, byte g, byte b, byte* rgb) {
     hsv[1] * ((float)hyperionHSVSaturation / 10) : hsv[1];
   float saturation = saturated < MAX_HSV_SATURATION ? saturated : MAX_HSV_SATURATION;
 
-  float valued = hsv[2] * ((float)hyperionHSVValue);
+  float valued = hsv[2] * ((float)hyperionHSVValue/10);
   float value = valued < MAX_HSV_VALUE ? valued : MAX_HSV_VALUE;
   HsvToRgb(hsv[0], saturation, value, rgb[0], rgb[1], rgb[2]);
 }
