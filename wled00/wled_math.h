@@ -13,7 +13,7 @@
 
 #define modd(x, y) ((x) - (int)((x) / (y)) * (y))
 
-double cos_t(double x)
+float cos_t(float x)
 {
   x = modd(x, TWO_PI);
   char sign = 1;
@@ -22,17 +22,17 @@ double cos_t(double x)
       x -= PI;
       sign = -1;
   }
-  double xx = x * x;
+  float xx = x * x;
 
   return sign * (1 - ((xx) / (2)) + ((xx * xx) / (24)) - ((xx * xx * xx) / (720)) + ((xx * xx * xx * xx) / (40320)) - ((xx * xx * xx * xx * xx) / (3628800)) + ((xx * xx * xx * xx * xx * xx) / (479001600)));
 }
 
-double sin_t(double x) {
+float sin_t(float x) {
   return cos_t(HALF_PI - x);
 }
 
-double tan_t(double x) {
-  double c = cos_t(x);
+float tan_t(float x) {
+  float c = cos_t(x);
   if (c==0.0) return 0;
   return sin_t(x) / c;
 }
@@ -63,9 +63,21 @@ float asin_t(float x) {
 #define B -0.287434475393028
 #define C ((HALF_PI/2) - A - B)
 
-double atan_t(double x) {
-  double xx = x * x;
+float atan_t(float x) {
+  float xx = x * x;
   return ((A*xx + B)*xx + C)*x;
+}
+
+float floor_t(float x) {
+  bool neg = x < 0;
+  int val = x;
+  if (neg) val--;
+  return val;
+}
+
+float fmod_t(float num, float denom) {
+  int tquot = num / denom;
+  return num - tquot * denom;
 }
 
 #endif

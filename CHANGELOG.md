@@ -2,6 +2,15 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2104151
+
+-   `NUM_STRIPS` no longer required with compile-time strip defaults
+-   Further optimizations in wled_math.h
+
+#### Build 2104150
+
+-   Added ability to add multiple busses as compile time defaults using the esp32_multistrip usermod define syntax
+
 #### Build 2104141
 
 -   Reduced memory usage by 540b by switching to a different trigonometric approximation
