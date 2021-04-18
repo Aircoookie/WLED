@@ -2,6 +2,9 @@
 #define BusWrapper_h
 
 #include "NeoPixelBrightnessBus.h"
+#include "FX.h"
+
+extern WS2812FX strip;  // Provides access to global settings for LEDs.
 
 //Hardware SPI Pins
 #define P_8266_HS_MOSI 13
@@ -196,9 +199,8 @@ class PolyBus {
   static void beginTM1814(void* busPtr) {
     T tm1814_strip = static_cast<T>(busPtr);
     tm1814_strip->Begin();
-    // Max current for each LED (38.0 mA).
-    const uint16_t max = NeoTm1814Settings::MaxCurrent;
-    tm1814_strip->SetPixelSettings(NeoTm1814Settings(/*R*/max, /*G*/max, /*B*/max, /*W*/max));
+    const uint16_t mA = strip.milliampsPerLed * 10;
+    tm1814_strip->SetPixelSettings(NeoTm1814Settings(/*R*/mA, /*G*/mA, /*B*/mA, /*W*/mA));
   }
   static void begin(void* busPtr, uint8_t busType, uint8_t* pins) {
     switch (busType) {
