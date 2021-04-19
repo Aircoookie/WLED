@@ -20,7 +20,10 @@
 #include "../usermods/buzzer/usermod_v2_buzzer.h"
 #endif
 #ifdef USERMOD_SENSORSTOMQTT
-#include "usermod_v2_SensorsToMqtt.h"
+#include "../usermods/sensors_to_mqtt/usermod_v2_SensorsToMqtt.h"
+#endif
+#ifdef USERMOD_PIRSWITCH
+#include "../usermods/PIR_sensor_switch/usermod_PIR_sensor_switch.h"
 #endif
 
 #ifdef USERMOD_MODE_SORT
@@ -78,6 +81,9 @@ void registerUsermods()
   #endif
   #ifdef USERMOD_SENSORSTOMQTT
   usermods.add(new UserMod_SensorsToMQTT());
+  #endif
+  #ifdef USERMOD_PIRSWITCH
+  usermods.add(new PIRsensorSwitch());
   #endif
 
   #ifdef USERMOD_MODE_SORT

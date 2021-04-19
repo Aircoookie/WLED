@@ -445,8 +445,6 @@ class Animated_Staircase : public Usermod {
     } else {
       JsonArray usermodEnabled = staircase.createNestedArray(F("Staircase enabled"));  // name
       usermodEnabled.add("no");                              // value
-      JsonArray topPin = staircase.createNestedArray(F("Top pin"));  // name
-      topPin.add(topPIRorTriggerPin);                              // value
     }
   }
 };

@@ -237,7 +237,7 @@ public:
     if (user.isNull())
       user = root.createNestedObject("u");
 
-    JsonArray infoArr = user.createNestedArray("&#x23F2; PIR sensor state"); //name
+    JsonArray infoArr = user.createNestedArray("<i class=\"icons\">&#xe08f;</i> PIR sensor state"); //name
     String uiDomString = "<button class=\"btn infobtn\" onclick=\"requestJson({PIRenabled:";
     String sensorStateInfo;
 
@@ -258,7 +258,7 @@ public:
     infoArr.add(uiDomString); //value
 
     //this code adds "u":{"&#x23F2; switch off timer":uiDomString} to the info object
-    uiDomString = "&#x23F2; switch off timer<span style=\"display:block;padding-left:25px;\">\
+    uiDomString = "<i class=\"icons\">&#xe325;</i> switch off timer<span style=\"display:block;padding-left:25px;\">\
 after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
     uiDomString += (m_switchOffDelay / 60000);
     uiDomString += "\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min</span>";
