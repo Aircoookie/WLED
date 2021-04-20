@@ -1,4 +1,5 @@
 #include "wled.h"
+#include "http.h"
 
 /*
  * Integrated HTTP web server page declarations
@@ -19,13 +20,13 @@ bool captivePortal(AsyncWebServerRequest *request)
 {
   if (ON_STA_FILTER(request)) return false; //only serve captive in AP mode
   String hostH;
-  if (!request->hasHeader("Host")) return false;
-  hostH = request->getHeader("Host")->value();
+  if (!request->hasHeader(HTTP_HDR_HOST)) return false;
+  hostH = request->getHeader(HTTP_HDR_HOST)->value();
   
   if (!isIp(hostH) && hostH.indexOf("wled.me") < 0 && hostH.indexOf(cmDNS) < 0) {
     DEBUG_PRINTLN("Captive portal");
     AsyncWebServerResponse *response = request->beginResponse(302);
-    response->addHeader(F("Location"), F("http://4.3.2.1"));
+    response->addHeader(F(HTTP_HDR_LOCATION), F("http://4.3.2.1"));
     request->send(response);
     return true;
   }
@@ -35,18 +36,18 @@ bool captivePortal(AsyncWebServerRequest *request)
 void initServer()
 {
   //CORS compatiblity
-  DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Origin"), "*");
-  DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Methods"), "*");
-  DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Headers"), "*");
+  DefaultHeaders::Instance().addHeader(F(HTTP_HDR_ACCESS_CONTROL_ALLOW_HEADERS), "*");
+  DefaultHeaders::Instance().addHeader(F(HTTP_HDR_ACCESS_CONTROL_ALLOW_METHODS), "*");
+  DefaultHeaders::Instance().addHeader(F(HTTP_HDR_ACCESS_CONTROL_ALLOW_ORIGIN), "*");
 
  #ifdef WLED_ENABLE_WEBSOCKETS
     server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", PAGE_liveviewws);
+      request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_liveviewws);
     });
  #else
     server.on("/liveview", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", PAGE_liveview);
-    });
+      request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_liveview);
+    }); 
   #endif
   
   //settings page
@@ -57,7 +58,7 @@ void initServer()
   server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
     if(!handleFileRead(request, "/favicon.ico"))
     {
-      request->send_P(200, "image/x-icon", favicon, 156);
+      request->send_P(HTTP_STATUS_OK, CT_IMAGE_XICON, favicon, 156);
     }
   });
   
@@ -70,7 +71,7 @@ void initServer()
   });
   
   server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 200,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
+    serveMessage(request, HTTP_STATUS_OK,F("Rebooting now..."),F("Please wait ~10 seconds..."),129);
     doReboot = true;
   });
   
@@ -90,7 +91,7 @@ void initServer()
       DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
       JsonObject root = jsonBuffer.as<JsonObject>();
       if (error || root.isNull()) {
-        request->send(400, "application/json", F("{\"error\":9}")); return;
+        request->send(HTTP_STATUS_BAD_REQUEST, CT_APPLICATION_JSON, F("{\"error\":9}")); return;
       }
       const String& url = request->url();
       isConfig = url.indexOf("cfg") > -1;
@@ -109,24 +110,24 @@ void initServer()
         serializeConfig(); //Save new settings to FS
       }
     } 
-    request->send(200, "application/json", F("{\"success\":true}"));
+    request->send(HTTP_STATUS_OK, CT_APPLICATION_JSON, F("{\"success\":true}"));
   });
   server.addHandler(handler);
 
   server.on("/version", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)VERSION);
+    request->send(HTTP_STATUS_OK, CT_TEXT_PLAIN, (String)VERSION);
     });
     
   server.on("/uptime", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)millis());
+    request->send(HTTP_STATUS_OK, CT_TEXT_PLAIN, (String)millis());
     });
     
   server.on("/freeheap", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/plain", (String)ESP.getFreeHeap());
+    request->send(HTTP_STATUS_OK, CT_TEXT_PLAIN, (String)ESP.getFreeHeap());
     });
   
   server.on("/u", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/html", PAGE_usermod);
+    request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_usermod);
     });
     
   server.on("/url", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -134,7 +135,7 @@ void initServer()
     });
     
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
-    serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
+    serveMessage(request, HTTP_STATUS_TEAPOT, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
     });
     
   //if OTA is allowed
@@ -147,21 +148,21 @@ void initServer()
      #endif
     #else
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("The FS editor is disabled in this build."), 254);
+      serveMessage(request, HTTP_STATUS_NOT_IMPL, HTTP_MSG_NOT_IMPL F("The FS editor is disabled in this build."), 254);
     });
     #endif
     //init ota page
     #ifndef WLED_DISABLE_OTA
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", PAGE_update);
+      request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_update);
     });
     
     server.on("/update", HTTP_POST, [](AsyncWebServerRequest *request){
       if (Update.hasError())
       {
-        serveMessage(request, 500, F("Failed updating firmware!"), F("Please check your file and retry!"), 254); return;
+        serveMessage(request, HTTP_STATUS_INTERNAL_ERROR, F("Failed updating firmware!"), F("Please check your file and retry!"), 254); return;
       }
-      serveMessage(request, 200, F("Successfully updated firmware!"), F("Please wait while the module reboots..."), 131); 
+      serveMessage(request, HTTP_STATUS_OK, F("Successfully updated firmware!"), F("Please wait while the module reboots..."), 131); 
       doReboot = true;
     },[](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
       if(!index){
@@ -183,27 +184,27 @@ void initServer()
     
     #else
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("OTA updates are disabled in this build."), 254);
+      serveMessage(request, HTTP_STATUS_NOT_IMPL, HTTP_MSG_NOT_IMPL, F("OTA updates are disabled in this build."), 254);
     });
     #endif
   } else
   {
     server.on("/edit", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254);
+      serveMessage(request, HTTP_STATUS_INTERNAL_ERROR, "Access Denied", F("Please unlock OTA in security settings!"), 254);
     });
     server.on("/update", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254);
+      serveMessage(request, HTTP_STATUS_INTERNAL_ERROR, "Access Denied", F("Please unlock OTA in security settings!"), 254);
     });
   }
 
 
     #ifdef WLED_ENABLE_DMX
     server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
+      request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_dmxmap     , dmxProcessor);
     });
     #else
     server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
+      serveMessage(request, HTTP_STATUS_NOT_IMPL, HTTP_MSG_NOT_IMPL, F("DMX support is not enabled in this build."), 254);
     });
     #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -224,7 +225,7 @@ void initServer()
     //make API CORS compatible
     if (request->method() == HTTP_OPTIONS)
     {
-      AsyncWebServerResponse *response = request->beginResponse(200);
+      AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_OK);
       response->addHeader(F("Access-Control-Max-Age"), F("7200"));
       request->send(response);
       return;
@@ -235,7 +236,7 @@ void initServer()
     if(espalexa.handleAlexaApiCall(request)) return;
     #endif
     if(handleFileRead(request, request->url())) return;
-    request->send_P(404, "text/html", PAGE_404);
+    request->send_P(HTTP_STATUS_NOT_FOUND, CT_TEXT_HTML, PAGE_404);
   });
 }
 
@@ -251,7 +252,7 @@ void serveIndexOrWelcome(AsyncWebServerRequest *request)
 
 bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
 {
-  AsyncWebHeader* header = request->getHeader("If-None-Match");
+  AsyncWebHeader* header = request->getHeader(HTTP_HDR_IF_NONE_MATCH);
   if (header && header->value() == String(VERSION)) {
     request->send(304);
     return true;
@@ -261,8 +262,8 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
 
 void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
 {
-  response->addHeader(F("Cache-Control"),"no-cache");
-  response->addHeader(F("ETag"), String(VERSION));
+  response->addHeader(F(HTTP_HDR_CACHE_CONTROL),"no-cache");
+  response->addHeader(F(HTTP_HDR_ETAG), String(VERSION));
 }
 
 void serveIndex(AsyncWebServerRequest* request)
@@ -271,9 +272,9 @@ void serveIndex(AsyncWebServerRequest* request)
 
   if (handleIfNoneMatchCacheHeader(request)) return;
 
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
+  AsyncWebServerResponse *response = request->beginResponse_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_index, PAGE_index_L);
 
-  response->addHeader(F("Content-Encoding"),"gzip");
+  response->addHeader(F(HTTP_HDR_CONTENT_ENCODING),"gzip");
   setStaticContentCacheHeaders(response);
   
   request->send(response);
@@ -320,7 +321,7 @@ void serveMessage(AsyncWebServerRequest* request, uint16_t code, const String& h
   messageSub = subl;
   optionType = optionT;
   
-  request->send_P(code, "text/html", PAGE_msg, msgProcessor);
+  request->send_P(code, CT_TEXT_HTML, PAGE_msg, msgProcessor);
 }
 
 
@@ -385,7 +386,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
 
   if (subPage == 1 && wifiLock && otaLock)
   {
-    serveMessage(request, 500, "Access Denied", F("Please unlock OTA in security settings!"), 254); return;
+    serveMessage(request, HTTP_STATUS_INTERNAL_ERROR, "Access Denied", F("Please unlock OTA in security settings!"), 254); return;
   }
 
   if (post) { //settings/set POST request, saving
@@ -408,7 +409,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     strcat_P(s, PSTR(" settings saved."));
     if (!s2[0]) strcpy_P(s2, PSTR("Redirecting..."));
 
-    if (!doReboot) serveMessage(request, 200, s, s2, (subPage == 1 || subPage == 6) ? 129 : 1);
+    if (!doReboot) serveMessage(request, HTTP_STATUS_OK, s, s2, (subPage == 1 || subPage == 6) ? 129 : 1);
     if (subPage == 6) doReboot = true;
 
     return;
@@ -422,15 +423,15 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
   
   switch (subPage)
   {
-    case 1:   request->send_P(200, "text/html", PAGE_settings_wifi, settingsProcessor); break;
-    case 2:   request->send_P(200, "text/html", PAGE_settings_leds, settingsProcessor); break;
-    case 3:   request->send_P(200, "text/html", PAGE_settings_ui  , settingsProcessor); break;
-    case 4:   request->send_P(200, "text/html", PAGE_settings_sync, settingsProcessor); break;
-    case 5:   request->send_P(200, "text/html", PAGE_settings_time, settingsProcessor); break;
-    case 6:   request->send_P(200, "text/html", PAGE_settings_sec , settingsProcessor); break;
-    case 7:   request->send_P(200, "text/html", PAGE_settings_dmx , settingsProcessor); break;
-    case 8:   request->send_P(200, "text/html", PAGE_settings_um  , settingsProcessor); break;
-    case 255: request->send_P(200, "text/html", PAGE_welcome); break;
-    default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor); 
+    case 2:   request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_settings_leds, settingsProcessor); break;
+    case 3:   request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_settings_ui  , settingsProcessor); break;
+    case 1:   request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_settings_wifi, settingsProcessor); break;
+    case 4:   request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_settings_sync, settingsProcessor); break;
+    case 5:   request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_settings_time, settingsProcessor); break;
+    case 6:   request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_settings_sec , settingsProcessor); break;
+    case 7:   request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_settings_dmx , settingsProcessor); break;
+    case 8:   request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_settings_um  , settingsProcessor); break;
+    case 255: request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_welcome); break;
+    default:  request->send_P(HTTP_STATUS_OK, CT_TEXT_HTML, PAGE_settings     , settingsProcessor); 
   }
 }

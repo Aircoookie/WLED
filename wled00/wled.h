@@ -53,7 +53,6 @@
 // Library inclusions.
 #include <Arduino.h>
 #ifdef ESP8266
-  #include <ESP8266WiFi.h>
   #include <ESP8266mDNS.h>
   #include <ESPAsyncTCP.h>
   #include <LittleFS.h>
@@ -62,8 +61,6 @@
   #include <user_interface.h>
   }
 #else // ESP32
-  #include <WiFi.h>
-  #include <ETH.h>
   #include "esp_wifi.h"
   #include <ESPmDNS.h>
   #include <AsyncTCP.h>
