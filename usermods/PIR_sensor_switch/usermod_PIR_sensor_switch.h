@@ -250,50 +250,53 @@ public:
     else
     {
       uiDomString += "true";
-      sensorStateInfo = "Disabled !";
+      sensorStateInfo = "Disabled!";
     }
     uiDomString += "});return false;\">";
     uiDomString += sensorStateInfo;
     uiDomString += "</button>";
     infoArr.add(uiDomString); //value
 
-    //this code adds "u":{"&#x23F2; switch off timer":uiDomString} to the info object
-    uiDomString = "<i class=\"icons\">&#xe325;</i> switch off timer<span style=\"display:block;padding-left:25px;\">\
+    if (m_PIRenabled)
+    {
+      //this code adds "u":{"&#x23F2; switch off timer":uiDomString} to the info object
+      uiDomString = "<i class=\"icons\">&#xe325;</i> switch off timer<span style=\"display:block;padding-left:25px;\">\
 after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
-    uiDomString += (m_switchOffDelay / 60000);
-    uiDomString += "\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min</span>";
-    infoArr = user.createNestedArray(uiDomString); //name
+      uiDomString += (m_switchOffDelay / 60000);
+      uiDomString += "\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min</span>";
+      infoArr = user.createNestedArray(uiDomString); //name
 
-    // off timer
-    if (m_offTimerStart > 0)
-    {
-      uiDomString = "";
-      unsigned int offSeconds = (m_switchOffDelay - (millis() - m_offTimerStart)) / 1000;
-      if (offSeconds >= 3600)
+      // off timer
+      if (m_offTimerStart > 0)
       {
-        uiDomString += (offSeconds / 3600);
-        uiDomString += " hours ";
-        offSeconds %= 3600;
+        uiDomString = "";
+        unsigned int offSeconds = (m_switchOffDelay - (millis() - m_offTimerStart)) / 1000;
+        if (offSeconds >= 3600)
+        {
+          uiDomString += (offSeconds / 3600);
+          uiDomString += " hours ";
+          offSeconds %= 3600;
+        }
+        if (offSeconds >= 60)
+        {
+          uiDomString += (offSeconds / 60);
+          offSeconds %= 60;
+        }
+        else if (uiDomString.length() > 0)
+        {
+          uiDomString += 0;
+        }
+        if (uiDomString.length() > 0)
+        {
+          uiDomString += " min ";
+        }
+        uiDomString += (offSeconds);
+        infoArr.add(uiDomString + " sec");
       }
-      if (offSeconds >= 60)
+      else
       {
-        uiDomString += (offSeconds / 60);
-        offSeconds %= 60;
+        infoArr.add("inactive");
       }
-      else if (uiDomString.length() > 0)
-      {
-        uiDomString += 0;
-      }
-      if (uiDomString.length() > 0)
-      {
-        uiDomString += " min ";
-      }
-      uiDomString += (offSeconds);
-      infoArr.add(uiDomString + " sec");
-    }
-    else
-    {
-      infoArr.add("inactive");
     }
   }
 
@@ -323,9 +326,9 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
       m_updateConfig = true;
     }
 
-    if (root[F("pin")] != nullptr)
+    if (root["pin"] != nullptr)
     {
-      int8_t pin = (int)root[F("pin")];
+      int8_t pin = (int)root["pin"];
       // check if pin is OK
       if (pin != PIRsensorPin && pin>=0 && pinManager.allocatePin(pin,false)) {
         // deallocate old pin
@@ -379,8 +382,8 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
   void readFromConfig(JsonObject &root)
   {
     JsonObject top = root[F("PIRsensorSwitch")];
-    if (!top.isNull() && top[F("pin")] != nullptr) {
-      PIRsensorPin = (int)top[F("pin")];
+    if (!top.isNull() && top["pin"] != nullptr) {
+      PIRsensorPin = (int)top["pin"];
     }
     m_PIRenabled = (top[F("PIRenabled")] != nullptr ? top[F("PIRenabled")] : true);
     m_switchOffDelay = top[F("PIRoffSec")] | m_switchOffDelay;
