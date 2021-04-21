@@ -2,6 +2,10 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2104211
+
+-   Replace default TV simulator effect with the version that saves 18k of flash and appears visually identical
+
 #### Build 2104210
 
 -   Added `tb` to JSON state, allowing setting the timebase (set tb=0 to start e.g. wipe effect from the beginning). Receive only.
