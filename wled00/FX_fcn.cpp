@@ -43,7 +43,7 @@
   19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]}
 */
 
-//factory defaults LED setup (for multistrip boards)
+//factory defaults LED setup
 //#define PIXEL_COUNTS 30, 30, 30, 30
 //#define DATA_PINS 16, 1, 3, 4
 //#define DEFAULT_LED_TYPE TYPE_WS2812_RGB

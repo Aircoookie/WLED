@@ -330,7 +330,7 @@ int getSunriseUTC(int year, int month, int day, float lat, float lon, bool sunse
   float M = (0.9856f * t) - 3.289f;
 
   //4. calculate the Sun's true longitude
-  float L = fmod_t(M + (1.916f * sin_t(DEG_TO_RAD*M)) + (0.020f * sin_t(2*DEG_TO_RAD*M)) + 282.634f, 360.0f);
+  float L = fmod_t(M + (1.916f * sin_t(DEG_TO_RAD*M)) + (0.02f * sin_t(2*DEG_TO_RAD*M)) + 282.634f, 360.0f);
 
   //5a. calculate the Sun's right ascension      
   float RA = fmod_t(RAD_TO_DEG*atan_t(0.91764f * tan_t(DEG_TO_RAD*L)), 360.0f);

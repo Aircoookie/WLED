@@ -372,7 +372,7 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
     JsonObject top = root.createNestedObject(F("PIRsensorSwitch"));
     top[F("PIRenabled")] = m_PIRenabled;
     top[F("PIRoffSec")] = m_switchOffDelay;
-    top[F("pin")] = PIRsensorPin;
+    top["pin"] = PIRsensorPin;
   }
 
   /**
