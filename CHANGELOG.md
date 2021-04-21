@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2104220
+
+-   Version bump to 0.12.1-b1 "Hikari"
+-   Release and build script improvements (PR #1844)
+
 #### Build 2104211
 
 -   Replace default TV simulator effect with the version that saves 18k of flash and appears visually identical

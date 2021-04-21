@@ -380,7 +380,7 @@ HTTP traffic is unencrypted. An attacker in the same network can intercept form 
 <h3>Software Update</h3><button type="button" onclick="U()">Manual OTA Update
 </button><br>Enable ArduinoOTA: <input type="checkbox" name="AO"><br><h3>About
 </h3><a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>
- version 0.12.0<br><br><a 
+ version 0.12.1-b1<br><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/Contributors-and-credits" 
 target="_blank">Contributors, dependencies and special thanks</a><br>
 A huge thank you to everyone who helped me create WLED!<br><br>
