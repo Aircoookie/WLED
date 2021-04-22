@@ -549,6 +549,13 @@ void serializeInfo(JsonObject root)
   root[F("brand")] = "WLED";
   root[F("product")] = F("FOSS");
   root["mac"] = escapedMac;
+  if (Network.isConnected())
+  {
+    char s[16];
+    IPAddress localIP = Network.localIP();
+    sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+    root[F("sip")] = s;
+  }
 }
 
 void setPaletteColors(JsonArray json, CRGBPalette16 palette)
