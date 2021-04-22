@@ -63,8 +63,9 @@ typedef enum {
 
 typedef enum {
   NONE = 0,
-  SSD1306,  // U8X8_SSD1306_128X32_UNIVISION_HW_I2C
-  SH1106    // U8X8_SH1106_128X64_WINSTAR_HW_I2C
+  SSD1306,    // U8X8_SSD1306_128X32_UNIVISION_HW_I2C
+  SH1106,     // U8X8_SH1106_128X64_WINSTAR_HW_I2C
+  SSD1306_64  // U8X8_SSD1306_128X64_UNIVISION_HW_I2C
 } DisplayType;
 
 class FourLineDisplayUsermod : public Usermod {
@@ -141,6 +142,10 @@ class FourLineDisplayUsermod : public Usermod {
           u8x8 = (void *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
           (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->begin();
           break;
+        case SSD1306_64:
+          u8x8 = (void *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->begin();
+          break;
         default:
           u8x8 = nullptr;
           type = NONE;
@@ -180,6 +185,9 @@ class FourLineDisplayUsermod : public Usermod {
         case SH1106:
           (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setFlipMode(mode);
           break;
+        case SSD1306_64:
+          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setFlipMode(mode);
+          break;
         default:
           return;
       }
@@ -192,21 +200,29 @@ class FourLineDisplayUsermod : public Usermod {
         case SH1106:
           (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setContrast(contrast);
           break;
+        case SSD1306_64:
+          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setContrast(contrast);
+          break;
         default:
           return;
       }
     }
-    void drawString(uint8_t col, uint8_t row, const char *string) {
+    void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
       switch (type) {
         case SSD1306:
           (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
-          if (lineHeight==2) (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->draw1x2String(col, row, string);
-          else               (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->drawString(col, row, string);
+          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->draw1x2String(col, row, string);
+          else                            (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->drawString(col, row, string);
           break;
         case SH1106:
           (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
-          if (lineHeight==2) (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->draw1x2String(col, row, string);
-          else               (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->drawString(col, row, string);
+          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->draw1x2String(col, row, string);
+          else                            (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->drawString(col, row, string);
+          break;
+        case SSD1306_64:
+          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
+          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->draw1x2String(col, row, string);
+          else                            (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->drawString(col, row, string);
           break;
         default:
           return;
@@ -222,21 +238,30 @@ class FourLineDisplayUsermod : public Usermod {
           (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
           (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->draw2x2String(col, row, string);
           break;
+        case SSD1306_64:
+          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
+          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->draw2x2String(col, row, string);
+          break;
         default:
           return;
       }
     }
-    void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font) {
+    void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
       switch (type) {
         case SSD1306:
           (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->setFont(font);
-          if (lineHeight==2) (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->draw1x2Glyph(col, row, glyph);
-          else               (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->drawGlyph(col, row, glyph);
+          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->draw1x2Glyph(col, row, glyph);
+          else                            (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->drawGlyph(col, row, glyph);
           break;
         case SH1106:
           (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setFont(font);
-          if (lineHeight==2) (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->draw1x2Glyph(col, row, glyph);
-          else               (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->drawGlyph(col, row, glyph);
+          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->draw1x2Glyph(col, row, glyph);
+          else                            (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->drawGlyph(col, row, glyph);
+          break;
+        case SSD1306_64:
+          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setFont(font);
+          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->draw1x2Glyph(col, row, glyph);
+          else                            (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->drawGlyph(col, row, glyph);
           break;
         default:
           return;
@@ -248,6 +273,8 @@ class FourLineDisplayUsermod : public Usermod {
           return (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->getCols();
         case SH1106:
           return (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->getCols();
+        case SSD1306_64:
+          return (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->getCols();
         default:
           return 0;
       }
@@ -260,6 +287,9 @@ class FourLineDisplayUsermod : public Usermod {
         case SH1106:
           (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->clear();
           break;
+        case SSD1306_64:
+          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->clear();
+          break;
         default:
           return;
       }
@@ -271,6 +301,9 @@ class FourLineDisplayUsermod : public Usermod {
           break;
         case SH1106:
           (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setPowerSave(save);
+          break;
+        case SSD1306_64:
+          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setPowerSave(save);
           break;
         default:
           return;
@@ -400,7 +433,7 @@ class FourLineDisplayUsermod : public Usermod {
       // Fourth row
       drawLineFour();
 
-      drawGlyph(0, 2, 66 + (bri > 0 ? 3 : 0), u8x8_font_open_iconic_weather_2x2); // sun/moon icon
+      drawGlyph(0, 2*lineHeight, 66 + (bri > 0 ? 3 : 0), u8x8_font_open_iconic_weather_2x2); // sun/moon icon
       drawGlyph(0, 0, 80, u8x8_font_open_iconic_embedded_1x1); // wifi icon
       drawGlyph(0, lineHeight, 68, u8x8_font_open_iconic_embedded_1x1); // home icon
       //if (markLineNum>1) drawGlyph(2, markLineNum*lineHeight, 66, u8x8_font_open_iconic_arrow_1x1); // arrow icon
@@ -599,7 +632,7 @@ class FourLineDisplayUsermod : public Usermod {
         draw2x2String(TIME_INDENT+2, lineHeight*2, lineBuffer);
         if (useAMPM) drawString(12, lineHeight*2, (isAM ? "AM" : "PM"));
         sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
-        drawString(12, lineHeight*2+1, lineBuffer);
+        drawString(12, lineHeight*2+1, lineBuffer, true);
       } else {
         drawString(9, lineHeight*2, lineBuffer);
       }
@@ -680,7 +713,6 @@ class FourLineDisplayUsermod : public Usermod {
         newScl        = top["pin"][0];
         newSda        = top["pin"][1];
         newType       = top["type"];
-        lineHeight    = type==SH1106 ? 2 : 1;
         if (top[FPSTR(_flip)].is<bool>()) {
           flip        = top[FPSTR(_flip)].as<bool>();
         } else {
@@ -715,11 +747,13 @@ class FourLineDisplayUsermod : public Usermod {
         sclPin = newScl;
         sdaPin = newSda;
         type = newType;
+        lineHeight = type==SSD1306 ? 1 : 2;
       } else {
         // changing paramters from settings page
         if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
           if (type==SSD1306) delete (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8));
           if (type==SH1106)  delete (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8));
+          if (type==SSD1306_64) delete (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8));
           pinManager.deallocatePin(sclPin);
           pinManager.deallocatePin(sdaPin);
           sclPin = newScl;
@@ -729,7 +763,7 @@ class FourLineDisplayUsermod : public Usermod {
             return;
           } else
             type = newType;
-          lineHeight = type==SH1106 ? 2 : 1;
+          lineHeight = type==SSD1306 ? 1 : 2;
           setup();
           needRedraw |= true;
         }
