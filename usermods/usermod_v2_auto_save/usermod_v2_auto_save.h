@@ -24,12 +24,6 @@
 // format: "~ MM-DD HH:MM:SS ~"
 #define PRESET_NAME_BUFFER_SIZE 25
 
-// strings
-const char _um_AutoSave[]         PROGMEM = "Autosave";
-const char _autoSaveAfterSec[]    PROGMEM = "autoSaveAfterSec";
-const char _autoSavePreset[]      PROGMEM = "autoSavePreset";
-const char _autoSaveApplyOnBoot[] PROGMEM = "autoSaveApplyOnBoot";
-
 class AutoSaveUsermod : public Usermod {
 
   private:
@@ -54,6 +48,12 @@ class AutoSaveUsermod : public Usermod {
     #ifdef USERMOD_FOUR_LINE_DISPLAY
     FourLineDisplayUsermod* display;
     #endif
+
+    // strings to reduce flash memory usage (used more than twice)
+    static const char _name[];
+    static const char _autoSaveAfterSec[];
+    static const char _autoSavePreset[];
+    static const char _autoSaveApplyOnBoot[];
 
     void inline saveSettings() {
       char presetNameBuffer[PRESET_NAME_BUFFER_SIZE];
@@ -180,7 +180,7 @@ class AutoSaveUsermod : public Usermod {
      */
     void addToConfig(JsonObject& root) {
       // we add JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
-      JsonObject top = root.createNestedObject(FPSTR(_um_AutoSave)); // usermodname
+      JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
       top[FPSTR(_autoSaveAfterSec)]    = autoSaveAfterSec;  // usermodparam
       top[FPSTR(_autoSavePreset)]      = autoSavePreset;    // usermodparam
       top[FPSTR(_autoSaveApplyOnBoot)] = applyAutoSaveOnBoot;
@@ -197,7 +197,7 @@ class AutoSaveUsermod : public Usermod {
      */
     void readFromConfig(JsonObject& root) {
       // we look for JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
-      JsonObject top = root[FPSTR(_um_AutoSave)];
+      JsonObject top = root[FPSTR(_name)];
       if (!top.isNull() && top[FPSTR(_autoSaveAfterSec)] != nullptr) {
         autoSaveAfterSec = top[FPSTR(_autoSaveAfterSec)].as<int>();
         autoSavePreset   = top[FPSTR(_autoSavePreset)].as<int>();
@@ -222,5 +222,10 @@ class AutoSaveUsermod : public Usermod {
     uint16_t getId() {
       return USERMOD_ID_AUTO_SAVE;
     }
-
 };
+
+// strings to reduce flash memory usage (used more than twice)
+const char AutoSaveUsermod::_name[]                PROGMEM = "Autosave";
+const char AutoSaveUsermod::_autoSaveAfterSec[]    PROGMEM = "autoSaveAfterSec";
+const char AutoSaveUsermod::_autoSavePreset[]      PROGMEM = "autoSavePreset";
+const char AutoSaveUsermod::_autoSaveApplyOnBoot[] PROGMEM = "autoSaveApplyOnBoot";

@@ -23,9 +23,6 @@
 #define USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT 20000
 #endif
 
-// strings
-const char _um_Temperature[] PROGMEM = "Temperature";
-
 class UsermodTemperature : public Usermod {
 
   private:
@@ -53,6 +50,11 @@ class UsermodTemperature : public Usermod {
     // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
     // temperature if flashed to a board without a sensor attached
     bool disabled = false;
+
+    // strings to reduce flash memory usage (used more than twice)
+    static const char _name[];
+    static const char _enabled[];
+    static const char _readInterval[];
 
     //Dallas sensor quick reading. Credit to - Author: Peter Scargill, August 17th, 2013
     int16_t readDallas() {
@@ -180,7 +182,7 @@ class UsermodTemperature : public Usermod {
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      JsonArray temp = user.createNestedArray(FPSTR(_um_Temperature));
+      JsonArray temp = user.createNestedArray(FPSTR(_name));
       //temp.add(F("Loaded."));
 
       if (!getTemperatureComplete) {
@@ -215,20 +217,20 @@ class UsermodTemperature : public Usermod {
      * Values in the state object may be modified by connected clients
      * Read "<usermodname>_<usermodparam>" from json state and and change settings (i.e. GPIO pin) used.
      */
-    void readFromJsonState(JsonObject &root) {
-      if (!initDone) return;  // prevent crash on boot applyPreset()
-    }
+    //void readFromJsonState(JsonObject &root) {
+    //  if (!initDone) return;  // prevent crash on boot applyPreset()
+    //}
 
     /**
      * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
      */
     void addToConfig(JsonObject &root) {
       // we add JSON object: {"Temperature": {"pin": 0, "degC": true}}
-      JsonObject top = root.createNestedObject(FPSTR(_um_Temperature)); // usermodname
-      top[F("enabled")] = !disabled;
+      JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
+      top[FPSTR(_enabled)] = !disabled;
       top["pin"]  = temperaturePin;     // usermodparam
       top["degC"] = degC;  // usermodparam
-      top[F("read-interval-s")] = readingInterval / 1000;
+      top[FPSTR(_readInterval)] = readingInterval / 1000;
       DEBUG_PRINTLN(F("Temperature config saved."));
     }
 
@@ -237,27 +239,31 @@ class UsermodTemperature : public Usermod {
      */
     void readFromConfig(JsonObject &root) {
       // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
-      JsonObject top = root[FPSTR(_um_Temperature)];
+      JsonObject top = root[FPSTR(_name)];
       int8_t newTemperaturePin = temperaturePin;
+
       if (!top.isNull() && top["pin"] != nullptr) {
-        if (top[F("enabled")].is<bool>()) {
-          disabled = !top[F("enabled")].as<bool>();
+        if (top[FPSTR(_enabled)].is<bool>()) {
+          disabled = !top[FPSTR(_enabled)].as<bool>();
         } else {
-          String str = top[F("enabled")]; // checkbox -> off or on
+          String str = top[FPSTR(_enabled)]; // checkbox -> off or on
           disabled = (bool)(str=="off"); // off is guaranteed to be present
         }
         newTemperaturePin = min(39,max(-1,top["pin"].as<int>()));
         if (top["degC"].is<bool>()) {
+          // reading from cfg.json
           degC = top["degC"].as<bool>();
         } else {
+          // new configuration from set.cpp
           String str = top["degC"]; // checkbox -> off or on
           degC = (bool)(str!="off"); // off is guaranteed to be present
         }
-        readingInterval = min(120,max(10,top[F("read-interval-s")].as<int>())) * 1000;
-        DEBUG_PRINTLN(F("Temperature config loaded."));
+        readingInterval = min(120,max(10,top[FPSTR(_readInterval)].as<int>())) * 1000;  // convert to ms
+        DEBUG_PRINTLN(F("Temperature config (re)loaded."));
       } else {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
       }
+
       if (!initDone) {
         // first run: reading from cfg.json
         temperaturePin = newTemperaturePin;
@@ -279,3 +285,8 @@ class UsermodTemperature : public Usermod {
       return USERMOD_ID_TEMPERATURE;
     }
 };
+
+// strings to reduce flash memory usage (used more than twice)
+const char UsermodTemperature::_name[]         PROGMEM = "Temperature";
+const char UsermodTemperature::_enabled[]      PROGMEM = "enabled";
+const char UsermodTemperature::_readInterval[] PROGMEM = "read-interval-s";

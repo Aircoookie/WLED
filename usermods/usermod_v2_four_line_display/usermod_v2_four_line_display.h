@@ -67,15 +67,6 @@ typedef enum {
   SH1106    // U8X8_SH1106_128X64_WINSTAR_HW_I2C
 } DisplayType;
 
-// strings
-const char _um_4LineDisplay[]   PROGMEM = "4LineDisplay";
-const char _4LD_contrast[]      PROGMEM = "contrast";
-const char _4LD_refreshRate[]   PROGMEM = "refreshRate";
-const char _4LD_screenTimeOut[] PROGMEM = "screenTimeOut";
-const char _4LD_flip[]          PROGMEM = "flip";
-const char _4LD_sleepMode[]     PROGMEM = "sleepMode";
-const char _4LD_clockMode[]     PROGMEM = "clockMode";
-
 class FourLineDisplayUsermod : public Usermod {
 
   private:
@@ -117,6 +108,15 @@ class FourLineDisplayUsermod : public Usermod {
     Line3Type lineThreeType = FLD_LINE_3_BRIGHTNESS;
     // Set to 2 or 3 to mark lines 2 or 3. Other values ignored.
     byte markLineNum = 0;
+
+    // strings to reduce flash memory usage (used more than twice)
+    static const char _name[];
+    static const char _contrast[];
+    static const char _refreshRate[];
+    static const char _screenTimeOut[];
+    static const char _flip[];
+    static const char _sleepMode[];
+    static const char _clockMode[];
 
     // If display does not work or looks corrupted check the
     // constructor reference:
@@ -647,17 +647,17 @@ class FourLineDisplayUsermod : public Usermod {
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root) {
-      JsonObject top = root.createNestedObject(FPSTR(_um_4LineDisplay));
+      JsonObject top = root.createNestedObject(FPSTR(_name));
       JsonArray i2c_pin = top.createNestedArray("pin");
       i2c_pin.add(sclPin);
       i2c_pin.add(sdaPin);
       top["type"] = type;
-      top[FPSTR(_4LD_flip)] = (bool) flip;
-      top[FPSTR(_4LD_contrast)] = contrast;
-      top[FPSTR(_4LD_refreshRate)] = refreshRate/1000;
-      top[FPSTR(_4LD_screenTimeOut)] = screenTimeout/1000;
-      top[FPSTR(_4LD_sleepMode)] = (bool) sleepMode;
-      top[FPSTR(_4LD_clockMode)] = (bool) clockMode;
+      top[FPSTR(_flip)] = (bool) flip;
+      top[FPSTR(_contrast)] = contrast;
+      top[FPSTR(_refreshRate)] = refreshRate/1000;
+      top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
+      top[FPSTR(_sleepMode)] = (bool) sleepMode;
+      top[FPSTR(_clockMode)] = (bool) clockMode;
       DEBUG_PRINTLN(F("4 Line Display config saved."));
     }
 
@@ -675,33 +675,33 @@ class FourLineDisplayUsermod : public Usermod {
       int8_t newScl = sclPin;
       int8_t newSda = sdaPin;
 
-      JsonObject top = root[FPSTR(_um_4LineDisplay)];
+      JsonObject top = root[FPSTR(_name)];
       if (!top.isNull() && top["pin"] != nullptr) {
         newScl        = top["pin"][0];
         newSda        = top["pin"][1];
         newType       = top["type"];
         lineHeight    = type==SH1106 ? 2 : 1;
-        if (top[FPSTR(_4LD_flip)].is<bool>()) {
-          flip        = top[FPSTR(_4LD_flip)].as<bool>();
+        if (top[FPSTR(_flip)].is<bool>()) {
+          flip        = top[FPSTR(_flip)].as<bool>();
         } else {
-          String str = top[FPSTR(_4LD_flip)]; // checkbox -> off or on
+          String str = top[FPSTR(_flip)]; // checkbox -> off or on
           flip = (bool)(str!="off"); // off is guaranteed to be present
           needRedraw |= true;
         }
-        contrast      = top[FPSTR(_4LD_contrast)].as<int>();
-        refreshRate   = top[FPSTR(_4LD_refreshRate)].as<int>() * 1000;
-        screenTimeout = top[FPSTR(_4LD_screenTimeOut)].as<int>() * 1000;
-        if (top[FPSTR(_4LD_sleepMode)].is<bool>()) {
-          sleepMode   = top[FPSTR(_4LD_sleepMode)].as<bool>();
+        contrast      = top[FPSTR(_contrast)].as<int>();
+        refreshRate   = top[FPSTR(_refreshRate)].as<int>() * 1000;
+        screenTimeout = top[FPSTR(_screenTimeOut)].as<int>() * 1000;
+        if (top[FPSTR(_sleepMode)].is<bool>()) {
+          sleepMode   = top[FPSTR(_sleepMode)].as<bool>();
         } else {
-          String str = top[FPSTR(_4LD_sleepMode)]; // checkbox -> off or on
+          String str = top[FPSTR(_sleepMode)]; // checkbox -> off or on
           sleepMode = (bool)(str!="off"); // off is guaranteed to be present
           needRedraw |= true;
         }
-        if (top[FPSTR(_4LD_clockMode)].is<bool>()) {
-          clockMode   = top[FPSTR(_4LD_clockMode)].as<bool>();
+        if (top[FPSTR(_clockMode)].is<bool>()) {
+          clockMode   = top[FPSTR(_clockMode)].as<bool>();
         } else {
-          String str = top[FPSTR(_4LD_clockMode)]; // checkbox -> off or on
+          String str = top[FPSTR(_clockMode)]; // checkbox -> off or on
           clockMode = (bool)(str!="off"); // off is guaranteed to be present
           needRedraw |= true;
         }
@@ -747,3 +747,12 @@ class FourLineDisplayUsermod : public Usermod {
       return USERMOD_ID_FOUR_LINE_DISP;
     }
 };
+
+// strings to reduce flash memory usage (used more than twice)
+const char FourLineDisplayUsermod::_name[]          PROGMEM = "4LineDisplay";
+const char FourLineDisplayUsermod::_contrast[]      PROGMEM = "contrast";
+const char FourLineDisplayUsermod::_refreshRate[]   PROGMEM = "refreshRate";
+const char FourLineDisplayUsermod::_screenTimeOut[] PROGMEM = "screenTimeOut";
+const char FourLineDisplayUsermod::_flip[]          PROGMEM = "flip";
+const char FourLineDisplayUsermod::_sleepMode[]     PROGMEM = "sleepMode";
+const char FourLineDisplayUsermod::_clockMode[]     PROGMEM = "clockMode";

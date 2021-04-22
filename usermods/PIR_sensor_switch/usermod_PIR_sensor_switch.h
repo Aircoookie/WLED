@@ -33,9 +33,6 @@
  * 2. Register the usermod by adding #include "usermod_filename.h" in the top and registerUsermod(new MyUsermodClass()) in the bottom of usermods_list.cpp
  */
 
-// MQTT topic for sensor values
-const char MQTT_TOPIC[] = "/motion";
-
 class PIRsensorSwitch : public Usermod
 {
 public:
@@ -76,15 +73,22 @@ private:
   // notification mode for colorUpdated()
   const byte NotifyUpdateMode = NOTIFIER_CALL_MODE_NO_NOTIFY; // NOTIFIER_CALL_MODE_DIRECT_CHANGE
   // delay before switch off after the sensor state goes LOW
-  uint32_t m_switchOffDelay = 600000;
+  uint32_t m_switchOffDelay = 600000; // 10min
   // off timer start time
   uint32_t m_offTimerStart = 0;
   // current PIR sensor pin state
   byte m_PIRsensorPinState = LOW;
   // PIR sensor enabled - ISR attached
   bool m_PIRenabled = true;
-  // state if serializeConfig() should be called
-  bool m_updateConfig = false;
+  // status of initialisation
+  bool initDone = false;
+
+  // strings to reduce flash memory usage (used more than twice)
+  static const char _name[];
+  static const char _switchOffDelay[];
+  static const char _enabled[];
+  static const char _active[];
+  static const char _inactive[];
 
   /**
    * return or change if new PIR sensor state is available
@@ -125,7 +129,7 @@ private:
     if (mqtt != nullptr){
       char subuf[64];
       strcpy(subuf, mqttDeviceTopic);
-      strcat(subuf, MQTT_TOPIC);
+      strcat_P(subuf, PSTR("/motion"));
       mqtt->publish(subuf, 0, true, state);
     }
   }
@@ -192,12 +196,12 @@ public:
     } else {
       // PIR Sensor mode INPUT_PULLUP
       pinMode(PIRsensorPin, INPUT_PULLUP);
-      if (m_PIRenabled)
-      {
+      if (m_PIRenabled) {
         // assign interrupt function and set CHANGE mode
         attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
       }
     }
+    initDone = true;
   }
 
   /**
@@ -213,14 +217,8 @@ public:
    */
   void loop()
   {
-    if (!updatePIRsensorState())
-    {
+    if (!updatePIRsensorState()) {
       handleOffTimer();
-      if (m_updateConfig)
-      {
-        serializeConfig();
-        m_updateConfig = false;
-      }
     }
   }
 
@@ -237,33 +235,32 @@ public:
     if (user.isNull())
       user = root.createNestedObject("u");
 
-    JsonArray infoArr = user.createNestedArray("<i class=\"icons\">&#xe08f;</i> PIR sensor state"); //name
-    String uiDomString = "<button class=\"btn infobtn\" onclick=\"requestJson({PIRenabled:";
+    JsonArray infoArr = user.createNestedArray(F("<i class=\"icons\">&#xe08f;</i> PIR sensor state")); //name
+    String uiDomString = F("<button class=\"btn infobtn\" onclick=\"requestJson({PIRenabled:");
     String sensorStateInfo;
 
     // PIR sensor state
     if (m_PIRenabled)
     {
       uiDomString += "false";
-      sensorStateInfo = (m_PIRsensorPinState != LOW ? "active" : "inactive"); //value
+      sensorStateInfo = (m_PIRsensorPinState != LOW ? FPSTR(_active) : FPSTR(_inactive)); //value
     }
     else
     {
       uiDomString += "true";
-      sensorStateInfo = "Disabled!";
+      sensorStateInfo = F("Disabled!");
     }
-    uiDomString += "});return false;\">";
+    uiDomString += F("});return false;\">");
     uiDomString += sensorStateInfo;
-    uiDomString += "</button>";
+    uiDomString += F("</button>");
     infoArr.add(uiDomString); //value
 
     if (m_PIRenabled)
     {
       //this code adds "u":{"&#x23F2; switch off timer":uiDomString} to the info object
-      uiDomString = "<i class=\"icons\">&#xe325;</i> switch off timer<span style=\"display:block;padding-left:25px;\">\
-after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
+      uiDomString = F("<i class=\"icons\">&#xe325;</i> switch off timer<span style=\"display:block;padding-left:25px;\">after <input type=\"number\" min=\"1\" max=\"720\" value=\"");
       uiDomString += (m_switchOffDelay / 60000);
-      uiDomString += "\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min</span>";
+      uiDomString += F("\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min</span>");
       infoArr = user.createNestedArray(uiDomString); //name
 
       // off timer
@@ -274,7 +271,7 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
         if (offSeconds >= 3600)
         {
           uiDomString += (offSeconds / 3600);
-          uiDomString += " hours ";
+          uiDomString += F("h ");
           offSeconds %= 3600;
         }
         if (offSeconds >= 60)
@@ -288,14 +285,14 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
         }
         if (uiDomString.length() > 0)
         {
-          uiDomString += " min ";
+          uiDomString += F("min ");
         }
         uiDomString += (offSeconds);
-        infoArr.add(uiDomString + " sec");
+        infoArr.add(uiDomString + F("s"));
       }
       else
       {
-        infoArr.add("inactive");
+        infoArr.add(FPSTR(_inactive));
       }
     }
   }
@@ -308,8 +305,8 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
    */
   void addToJsonState(JsonObject &root)
   {
-    root[F("PIRenabled")] = m_PIRenabled;
-    root[F("PIRoffSec")] = (m_switchOffDelay / 1000);
+    root[FPSTR(_enabled)] = m_PIRenabled;
+    root[FPSTR(_switchOffDelay)] = (m_switchOffDelay / 1000);
   }
 
   /**
@@ -320,14 +317,11 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
    */
   void readFromJsonState(JsonObject &root)
   {
-    if (root[F("PIRoffSec")] != nullptr)
-    {
-      m_switchOffDelay = (1000 * max(60UL, min(43200UL, root[F("PIRoffSec")].as<unsigned long>())));
-      m_updateConfig = true;
+    if (root[FPSTR(_switchOffDelay)] != nullptr) {
+      m_switchOffDelay = (1000 * max(60UL, min(43200UL, root[FPSTR(_switchOffDelay)].as<unsigned long>())));
     }
-
-    if (root["pin"] != nullptr)
-    {
+/*
+    if (root["pin"] != nullptr) {
       int8_t pin = (int)root["pin"];
       // check if pin is OK
       if (pin != PIRsensorPin && pin>=0 && pinManager.allocatePin(pin,false)) {
@@ -344,23 +338,17 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
           newPIRsensorState(true, true);
         }
         PIRsensorPin = pin;
-        m_updateConfig = true;
       }
     }
-
-    if (root[F("PIRenabled")] != nullptr)
-    {
-      if (root[F("PIRenabled")] && !m_PIRenabled)
-      {
+*/
+    if (root[FPSTR(_enabled)] != nullptr) {
+      if (root[FPSTR(_enabled)] && !m_PIRenabled && PIRsensorPin >= 0) {
         attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
         newPIRsensorState(true, true);
-      }
-      else if (m_PIRenabled)
-      {
+      } else if (m_PIRenabled && PIRsensorPin >= 0) {
         detachInterrupt(PIRsensorPin);
       }
-      m_PIRenabled = root[F("PIRenabled")];
-      m_updateConfig = true;
+      m_PIRenabled = root[FPSTR(_enabled)];
     }
   }
 
@@ -369,10 +357,11 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
    */
   void addToConfig(JsonObject &root)
   {
-    JsonObject top = root.createNestedObject(F("PIRsensorSwitch"));
-    top[F("PIRenabled")] = m_PIRenabled;
-    top[F("PIRoffSec")] = m_switchOffDelay;
+    JsonObject top = root.createNestedObject(FPSTR(_name));
+    top[FPSTR(_enabled)] = m_PIRenabled;
+    top[FPSTR(_switchOffDelay)] = m_switchOffDelay / 1000;
     top["pin"] = PIRsensorPin;
+    DEBUG_PRINTLN(F("PIR config saved."));
   }
 
   /**
@@ -381,12 +370,59 @@ after <input type=\"number\" min=\"1\" max=\"720\" value=\"";
    */
   void readFromConfig(JsonObject &root)
   {
-    JsonObject top = root[F("PIRsensorSwitch")];
-    if (!top.isNull() && top["pin"] != nullptr) {
-      PIRsensorPin = (int)top["pin"];
+    bool oldEnabled = m_PIRenabled;
+    int8_t oldPin = PIRsensorPin;
+
+    JsonObject top = root[FPSTR(_name)];
+    if (top.isNull()) return;
+
+    if (top["pin"] != nullptr) {
+      PIRsensorPin = min(39,max(-1,top["pin"].as<int>())); // check bounds
     }
-    m_PIRenabled = (top[F("PIRenabled")] != nullptr ? top[F("PIRenabled")] : true);
-    m_switchOffDelay = top[F("PIRoffSec")] | m_switchOffDelay;
+
+    if (top[FPSTR(_enabled)] != nullptr) {
+      if (top[FPSTR(_enabled)].is<bool>()) {
+        m_PIRenabled = top[FPSTR(_enabled)].as<bool>(); // reading from cfg.json
+      } else {
+        // change from settings page
+        String str = top[FPSTR(_enabled)]; // checkbox -> off or on
+        m_PIRenabled = (bool)(str!="off"); // off is guaranteed to be present
+      }
+    }
+
+    if (top[FPSTR(_switchOffDelay)] != nullptr) {
+      m_switchOffDelay = (top[FPSTR(_switchOffDelay)].as<int>() * 1000);
+    }
+
+    if (!initDone) {
+      // reading config prior to setup()
+      DEBUG_PRINTLN(F("PIR config loaded."));
+    } else {
+      if (oldPin != PIRsensorPin || oldEnabled != m_PIRenabled) {
+        if (oldEnabled) {
+          // remove old ISR if disabling usermod
+          detachInterrupt(oldPin);
+        }
+        // check if pin is OK
+        if (oldPin != PIRsensorPin && oldPin >= 0) {
+          // if we are changing pin in settings page
+          // deallocate old pin
+          pinManager.deallocatePin(oldPin);
+          if (pinManager.allocatePin(PIRsensorPin,false)) {
+            pinMode(PIRsensorPin, INPUT_PULLUP);
+          } else {
+            // allocation failed
+            PIRsensorPin = -1;
+            m_PIRenabled = false;
+          }
+        }
+        if (m_PIRenabled) {
+          attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
+          newPIRsensorState(true, true);
+        }
+        DEBUG_PRINTLN(F("PIR config (re)loaded."));
+      }
+    }
   }
 
   /**
@@ -425,4 +461,11 @@ PIRsensorSwitch *PIRsensorSwitch::PIRsensorSwitchInstance(PIRsensorSwitch *pInst
     s_pPIRsensorSwitch = pInstance;
   }
   return s_pPIRsensorSwitch;
-}
+};
+
+// strings to reduce flash memory usage (used more than twice)
+const char PIRsensorSwitch::_name[]           PROGMEM = "PIRsensorSwitch";
+const char PIRsensorSwitch::_switchOffDelay[] PROGMEM = "PIRoffSec";
+const char PIRsensorSwitch::_enabled[]        PROGMEM = "PIRenabled";
+const char PIRsensorSwitch::_active[]         PROGMEM = "active";
+const char PIRsensorSwitch::_inactive[]       PROGMEM = "inactive";
