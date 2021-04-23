@@ -77,6 +77,21 @@ class Animated_Staircase : public Usermod {
   bool bottomSensorRead = false;
   bool bottomSensorWrite = false;  
 
+  // strings to reduce flash memory usage (used more than twice)
+  static const char _name[];
+  static const char _enabled[];
+  static const char _segmentDelay[];
+  static const char _onTime[];
+  static const char _useTopUltrasoundSensor[];
+  static const char _topPIRorTrigger_pin[];
+  static const char _topEcho_pin[];
+  static const char _useBottomUltrasoundSensor[];
+  static const char _bottomPIRorTrigger_pin[];
+  static const char _bottomEcho_pin[];
+  static const char _topEchoTime[];
+  static const char _bottomEchoTime[];
+  static const char _[];
+
   void updateSegments() {
 //    mainSegmentId = strip.getMainSegmentId();
 //    WS2812FX::Segment mainsegment = strip.getSegment(mainSegmentId);
@@ -183,6 +198,7 @@ class Animated_Staircase : public Usermod {
   }
 
   void autoPowerOff() {
+    // TODO: add logic to wait until PIR sensor deactivates
     if (on && ((millis() - lastSwitchTime) > on_time_ms)) {
       // Swipe OFF in the direction of the last sensor detection
       swipe = lastSensor;
@@ -219,17 +235,14 @@ class Animated_Staircase : public Usermod {
     }
   }
 
-  void writeSensorsToJson(JsonObject& root) {
-    JsonObject staircase = root[F("staircase")];
-    if (staircase.isNull()) {
-      staircase = root.createNestedObject(F("staircase"));
-    }
+  // send sesnor values to JSON API
+  void writeSensorsToJson(JsonObject& staircase) {
     staircase[F("top-sensor")] = topSensorRead;
     staircase[F("bottom-sensor")] = bottomSensorRead;
   }
 
-  void readSensorsFromJson(JsonObject& root) {
-    JsonObject staircase = root[F("staircase")];
+  // allow overrides from JSON API
+  void readSensorsFromJson(JsonObject& staircase) {
     bottomSensorWrite = bottomSensorRead || (staircase[F("bottom-sensor")].as<bool>());
     topSensorWrite = topSensorRead || (staircase[F("top-sensor")].as<bool>());
   }
@@ -243,6 +256,7 @@ class Animated_Staircase : public Usermod {
       DEBUG_PRINT(on_time_ms / 1000);
       DEBUG_PRINTLN(F(" seconds."));
 
+      // TODO: attach interrupts
       if (!useUSSensorBottom)
         pinMode(bottomPIRorTriggerPin, INPUT);
       else {
@@ -292,6 +306,7 @@ class Animated_Staircase : public Usermod {
       if (!pinManager.allocatePin(bottomPIRorTriggerPin,false))
         bottomEchoPin = -1;
     }
+    // TODO: attach interrupts in enable()
 
     // validate pins
     if ( topPIRorTriggerPin < 0 || bottomPIRorTriggerPin < 0 ||
@@ -312,9 +327,12 @@ class Animated_Staircase : public Usermod {
   uint16_t getId() { return USERMOD_ID_ANIMATED_STAIRCASE; }
 
   void addToJsonState(JsonObject& root) {
-//    writeSettingsToJson(root);
-//    writeSensorsToJson(root);
-//    DEBUG_PRINTLN(F("Staircase config exposed in API."));
+    JsonObject staircase = root[FPSTR(_name)];
+    if (staircase.isNull()) {
+      staircase = root.createNestedObject(FPSTR(_name));
+    }
+    writeSensorsToJson(staircase);
+    DEBUG_PRINTLN(F("Staircase sensor state exposed in API."));
   }
 
   /*
@@ -323,14 +341,16 @@ class Animated_Staircase : public Usermod {
    */
   void readFromJsonState(JsonObject& root) {
     if (!initDone) return;  // prevent crash on boot applyPreset()
-    JsonObject staircase = root[F("staircase")];
+    JsonObject staircase = root[FPSTR(_name)];
     if (!staircase.isNull()) {
-      if (staircase[F("enabled")].is<bool>()) {
-        enabled   = staircase[F("enabled")].as<bool>();
+      if (staircase[FPSTR(_enabled)].is<bool>()) {
+        enabled   = staircase[FPSTR(_enabled)].as<bool>();
       } else {
-        String str = staircase[F("enabled")]; // checkbox -> off or on
+        String str = staircase[FPSTR(_enabled)]; // checkbox -> off or on
         enabled = (bool)(str!="off"); // off is guaranteed to be present
       }
+      readSensorsFromJson(root);
+      DEBUG_PRINTLN(F("Staircase sensor state read from API."));
     }
   }
 
@@ -338,21 +358,21 @@ class Animated_Staircase : public Usermod {
    * Writes the configuration to internal flash memory.
    */
   void addToConfig(JsonObject& root) {
-    JsonObject staircase = root[F("staircase")];
+    JsonObject staircase = root[FPSTR(_name)];
     if (staircase.isNull()) {
-      staircase = root.createNestedObject(F("staircase"));
+      staircase = root.createNestedObject(FPSTR(_name));
     }
-    staircase[F("enabled")] = enabled;
-    staircase[F("segment-delay-ms")] = segment_delay_ms;
-    staircase[F("on-time-s")] = on_time_ms / 1000;
-    staircase[F("useTopUltrasoundSensor")] = useUSSensorTop;
-    staircase[F("topPIRorTrigger_pin")] = topPIRorTriggerPin;
-    staircase[F("topEcho_pin")] = topEchoPin;
-    staircase[F("useBottomUltrasoundSensor")] = useUSSensorBottom;
-    staircase[F("bottomPIRorTrigger_pin")] = bottomPIRorTriggerPin;
-    staircase[F("bottomEcho_pin")] = bottomEchoPin;
-    staircase[F("top-echo-us")] = topMaxTimeUs;
-    staircase[F("bottom-echo-us")] = bottomMaxTimeUs;
+    staircase[FPSTR(_enabled)]                   = enabled;
+    staircase[FPSTR(_segmentDelay)]              = segment_delay_ms;
+    staircase[FPSTR(_onTime)]                    = on_time_ms / 1000;
+    staircase[FPSTR(_useTopUltrasoundSensor)]    = useUSSensorTop;
+    staircase[FPSTR(_topPIRorTrigger_pin)]       = topPIRorTriggerPin;
+    staircase[FPSTR(_topEcho_pin)]               = useUSSensorTop ? topEchoPin : -1;
+    staircase[FPSTR(_useBottomUltrasoundSensor)] = useUSSensorBottom;
+    staircase[FPSTR(_bottomPIRorTrigger_pin)]    = bottomPIRorTriggerPin;
+    staircase[FPSTR(_bottomEcho_pin)]            = useUSSensorBottom ? bottomEchoPin : -1;
+    staircase[FPSTR(_topEchoTime)]               = topMaxTimeUs;
+    staircase[FPSTR(_bottomEchoTime)]            = bottomMaxTimeUs;
     DEBUG_PRINTLN(F("Staircase config saved."));
   }
 
@@ -367,35 +387,37 @@ class Animated_Staircase : public Usermod {
     int8_t oldBottomAPin = bottomPIRorTriggerPin;
     int8_t oldBottomBPin = bottomEchoPin;
 
-    JsonObject staircase = root[F("staircase")];
+    JsonObject staircase = root[FPSTR(_name)];
     if (!staircase.isNull()) {
-      if (staircase[F("enabled")].is<bool>()) {
-        enabled   = staircase[F("enabled")].as<bool>();
+      if (staircase[FPSTR(_enabled)].is<bool>()) {
+        enabled   = staircase[FPSTR(_enabled)].as<bool>();
       } else {
-        String str = staircase[F("enabled")]; // checkbox -> off or on
+        String str = staircase[FPSTR(_enabled)]; // checkbox -> off or on
         enabled = (bool)(str!="off"); // off is guaranteed to be present
       }
-      segment_delay_ms = staircase[F("segment-delay-ms")];
-      on_time_ms = (int)staircase[F("on-time-s")] * 1000;
-      if (staircase[F("useTopUltrasoundSensor")].is<bool>()) {
-        useUSSensorTop = staircase[F("useTopUltrasoundSensor")].as<bool>();
+      segment_delay_ms = min(10000,max(10,staircase[FPSTR(_segmentDelay)].as<int>()));  // max delay 10s
+      on_time_ms = min(900,max(10,staircase[FPSTR(_onTime)].as<int>())) * 1000;    // min 10s, max 15min
+
+      if (staircase[FPSTR(_useTopUltrasoundSensor)].is<bool>()) {
+        useUSSensorTop = staircase[FPSTR(_useTopUltrasoundSensor)].as<bool>();
       } else {
-        String str = staircase[F("useTopUltrasoundSensor")]; // checkbox -> off or on
+        String str = staircase[FPSTR(_useTopUltrasoundSensor)]; // checkbox -> off or on
         useUSSensorTop = (bool)(str!="off"); // off is guaranteed to be present
       }
-      topPIRorTriggerPin = staircase[F("topPIRorTrigger_pin")];
-      topEchoPin = staircase[F("topEcho_pin")];
-      useUSSensorBottom = staircase[F("useBottomUltrasoundSensor")].as<bool>();
-      if (staircase[F("useBottomUltrasoundSensor")].is<bool>()) {
-        useUSSensorBottom = staircase[F("useBottomUltrasoundSensor")].as<bool>();
+
+      topPIRorTriggerPin = min(39,max(-1,staircase[FPSTR(_topPIRorTrigger_pin)].as<int>()));
+      topEchoPin         = min(39,max(-1,staircase[FPSTR(_topEcho_pin)].as<int>()));
+
+      if (staircase[FPSTR(_useBottomUltrasoundSensor)].is<bool>()) {
+        useUSSensorBottom = staircase[FPSTR(_useBottomUltrasoundSensor)].as<bool>();
       } else {
-        String str = staircase[F("useBottomUltrasoundSensor")]; // checkbox -> off or on
+        String str = staircase[FPSTR(_useBottomUltrasoundSensor)]; // checkbox -> off or on
         useUSSensorBottom = (bool)(str!="off"); // off is guaranteed to be present
       }
-      bottomPIRorTriggerPin = staircase[F("bottomPIRorTrigger_pin")];
-      bottomEchoPin = staircase[F("bottomEcho_pin")];
-      topMaxTimeUs = staircase[F("top-echo-us")];
-      bottomMaxTimeUs = staircase[F("bottom-echo-us")];
+      bottomPIRorTriggerPin = min(39,max(-1,staircase[FPSTR(_bottomPIRorTrigger_pin)].as<int>()));
+      bottomEchoPin         = min(39,max(-1,staircase[FPSTR(_bottomEcho_pin)].as<int>()));
+      topMaxTimeUs          = min(18000,max(300,staircase[FPSTR(_topEchoTime)].as<int>()));     // max distnace ~3m (a noticable lag of 18ms may be expected)
+      bottomMaxTimeUs       = min(18000,max(300,staircase[FPSTR(_bottomEchoTime)].as<int>()));  // max distance ~3m (a noticable lag of 18ms may be expected)
       DEBUG_PRINTLN(F("Staircase config (re)loaded."));
     } else {
       DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
@@ -448,3 +470,17 @@ class Animated_Staircase : public Usermod {
     }
   }
 };
+
+// strings to reduce flash memory usage (used more than twice)
+const char Animated_Staircase::_name[]                      PROGMEM = "staircase";
+const char Animated_Staircase::_enabled[]                   PROGMEM = "enabled";
+const char Animated_Staircase::_segmentDelay[]              PROGMEM = "segment-delay-ms";
+const char Animated_Staircase::_onTime[]                    PROGMEM = "on-time-s";
+const char Animated_Staircase::_useTopUltrasoundSensor[]    PROGMEM = "useTopUltrasoundSensor";
+const char Animated_Staircase::_topPIRorTrigger_pin[]       PROGMEM = "topPIRorTrigger_pin";
+const char Animated_Staircase::_topEcho_pin[]               PROGMEM = "topEcho_pin";
+const char Animated_Staircase::_useBottomUltrasoundSensor[] PROGMEM = "useBottomUltrasoundSensor";
+const char Animated_Staircase::_bottomPIRorTrigger_pin[]    PROGMEM = "bottomPIRorTrigger_pin";
+const char Animated_Staircase::_bottomEcho_pin[]            PROGMEM = "bottomEcho_pin";
+const char Animated_Staircase::_topEchoTime[]               PROGMEM = "top-echo-us";
+const char Animated_Staircase::_bottomEchoTime[]            PROGMEM = "bottom-echo-us";
