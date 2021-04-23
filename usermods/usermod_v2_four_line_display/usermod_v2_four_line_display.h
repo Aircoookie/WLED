@@ -625,7 +625,7 @@ class FourLineDisplayUsermod : public Usermod {
         }
       }
 
-      sprintf_P(lineBuffer, (secondCurrent%2) ? PSTR("%2d:%02d") : PSTR("%2d %02d"), (useAMPM && fullScreen ? showHour : hourCurrent), minuteCurrent);
+      sprintf_P(lineBuffer, (secondCurrent%2 || !fullScreen) ? PSTR("%2d:%02d") : PSTR("%2d %02d"), (useAMPM && fullScreen ? showHour : hourCurrent), minuteCurrent);
       // For time, we always use LINE_HEIGHT of 2 since
       // we are printing it big.
       if (fullScreen) {
