@@ -5154,7 +5154,7 @@ uint16_t WS2812FX::mode_2DGEQ(void) {                     // By Will Tatam.
     for (int w = 0; w < barWidth; w++) {
       int xpos = (barWidth * b) + w;
       for (int i = 0; i <=  matrixHeight; i++) {
-        if (i <= count) {
+        if (i < count) {
         leds[XY(xpos, i)] = color_blend(SEGCOLOR(1), color_from_palette((band * 35), false, PALETTE_SOLID_WRAP, 0), 255);
         }
       }
