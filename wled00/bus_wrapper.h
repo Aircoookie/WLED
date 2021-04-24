@@ -28,7 +28,7 @@
 #define I_8266_U1_400_3 10
 #define I_8266_DM_400_3 11
 #define I_8266_BB_400_3 12
-//TM1418 (RGBW)
+//TM1814 (RGBW)
 #define I_8266_U0_TM1_4 13
 #define I_8266_U1_TM1_4 14
 #define I_8266_DM_TM1_4 15
@@ -68,7 +68,7 @@
 #define I_32_R7_400_3 44
 #define I_32_I0_400_3 45
 #define I_32_I1_400_3 46
-//TM1418 (RGBW)
+//TM1814 (RGBW)
 #define I_32_R0_TM1_4 47
 #define I_32_R1_TM1_4 48
 #define I_32_R2_TM1_4 49
@@ -115,7 +115,7 @@
 #define B_8266_U1_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Uart1400KbpsMethod>   //3 chan, esp8266, gpio2
 #define B_8266_DM_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266Dma400KbpsMethod>     //3 chan, esp8266, gpio3
 #define B_8266_BB_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp8266BitBang400KbpsMethod> //3 chan, esp8266, bb (any pin)
-//TM1418 (RGBW)
+//TM1814 (RGBW)
 #define B_8266_U0_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp8266Uart0Tm1814Method>
 #define B_8266_U1_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp8266Uart1Tm1814Method>
 #define B_8266_DM_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp8266DmaTm1814Method>
@@ -157,7 +157,7 @@
 #define B_32_R7_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32Rmt7400KbpsMethod>
 #define B_32_I0_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32I2s0400KbpsMethod>
 #define B_32_I1_400_3 NeoPixelBrightnessBus<NeoGrbFeature, NeoEsp32I2s1400KbpsMethod>
-//TM1418 (RGBW)
+//TM1814 (RGBW)
 #define B_32_R0_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp32Rmt0Tm1814Method>
 #define B_32_R1_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp32Rmt1Tm1814Method>
 #define B_32_R2_TM1_4 NeoPixelBrightnessBus<NeoWrgbTm1814Feature, NeoEsp32Rmt2Tm1814Method>
@@ -191,6 +191,14 @@
 //handles pointer type conversion for all possible bus types
 class PolyBus {
   public:
+  // Begin & initialize the PixelSettings for TM1814 strips.
+  template <class T>
+  static void beginTM1814(void* busPtr) {
+    T tm1814_strip = static_cast<T>(busPtr);
+    tm1814_strip->Begin();
+    // Max current for each LED (22.5 mA).
+    tm1814_strip->SetPixelSettings(NeoTm1814Settings(/*R*/225, /*G*/225, /*B*/225, /*W*/225));
+  }
   static void begin(void* busPtr, uint8_t busType, uint8_t* pins) {
     switch (busType) {
       case I_NONE: break;
@@ -207,10 +215,10 @@ class PolyBus {
       case I_8266_U1_400_3: (static_cast<B_8266_U1_400_3*>(busPtr))->Begin(); break;
       case I_8266_DM_400_3: (static_cast<B_8266_DM_400_3*>(busPtr))->Begin(); break;
       case I_8266_BB_400_3: (static_cast<B_8266_BB_400_3*>(busPtr))->Begin(); break;
-      case I_8266_U0_TM1_4: (static_cast<B_8266_U0_TM1_4*>(busPtr))->Begin(); break;
-      case I_8266_U1_TM1_4: (static_cast<B_8266_U1_TM1_4*>(busPtr))->Begin(); break;
-      case I_8266_DM_TM1_4: (static_cast<B_8266_DM_TM1_4*>(busPtr))->Begin(); break;
-      case I_8266_BB_TM1_4: (static_cast<B_8266_BB_TM1_4*>(busPtr))->Begin(); break;
+      case I_8266_U0_TM1_4: beginTM1814<B_8266_U0_TM1_4*>(busPtr); break;
+      case I_8266_U1_TM1_4: beginTM1814<B_8266_U1_TM1_4*>(busPtr); break;
+      case I_8266_DM_TM1_4: beginTM1814<B_8266_DM_TM1_4*>(busPtr); break;
+      case I_8266_BB_TM1_4: beginTM1814<B_8266_BB_TM1_4*>(busPtr); break;
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(); break;
       case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(); break;
@@ -247,16 +255,16 @@ class PolyBus {
       case I_32_R7_400_3: (static_cast<B_32_R7_400_3*>(busPtr))->Begin(); break;
       case I_32_I0_400_3: (static_cast<B_32_I0_400_3*>(busPtr))->Begin(); break;
       case I_32_I1_400_3: (static_cast<B_32_I1_400_3*>(busPtr))->Begin(); break;
-      case I_32_R0_TM1_4: (static_cast<B_32_R0_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R1_TM1_4: (static_cast<B_32_R1_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R2_TM1_4: (static_cast<B_32_R2_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R3_TM1_4: (static_cast<B_32_R3_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R4_TM1_4: (static_cast<B_32_R4_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R5_TM1_4: (static_cast<B_32_R5_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R6_TM1_4: (static_cast<B_32_R6_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_R7_TM1_4: (static_cast<B_32_R7_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_I0_TM1_4: (static_cast<B_32_I0_TM1_4*>(busPtr))->Begin(); break;
-      case I_32_I1_TM1_4: (static_cast<B_32_I1_TM1_4*>(busPtr))->Begin(); break;
+      case I_32_R0_TM1_4: beginTM1814<B_32_R0_TM1_4*>(busPtr); break;
+      case I_32_R1_TM1_4: beginTM1814<B_32_R1_TM1_4*>(busPtr); break;
+      case I_32_R2_TM1_4: beginTM1814<B_32_R2_TM1_4*>(busPtr); break;
+      case I_32_R3_TM1_4: beginTM1814<B_32_R3_TM1_4*>(busPtr); break;
+      case I_32_R4_TM1_4: beginTM1814<B_32_R4_TM1_4*>(busPtr); break;
+      case I_32_R5_TM1_4: beginTM1814<B_32_R5_TM1_4*>(busPtr); break;
+      case I_32_R6_TM1_4: beginTM1814<B_32_R6_TM1_4*>(busPtr); break;
+      case I_32_R7_TM1_4: beginTM1814<B_32_R7_TM1_4*>(busPtr); break;
+      case I_32_I0_TM1_4: beginTM1814<B_32_I0_TM1_4*>(busPtr); break;
+      case I_32_I1_TM1_4: beginTM1814<B_32_I1_TM1_4*>(busPtr); break;
       // ESP32 can (and should, to avoid inadvertantly driving the chip select signal) specify the pins used for SPI, but only in begin()
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(pins[1], -1, pins[0], -1); break;
@@ -860,6 +868,8 @@ class PolyBus {
           return I_8266_U0_NEO_4 + offset;
         case TYPE_WS2811_400KHZ:
           return I_8266_U0_400_3 + offset;
+        case TYPE_TM1814:
+          return I_8266_U0_TM1_4 + offset;
       }
       #else //ESP32
       uint8_t offset = num; //RMT bus # == bus index in BusManager
@@ -872,6 +882,8 @@ class PolyBus {
           return I_32_R0_NEO_4 + offset;
         case TYPE_WS2811_400KHZ:
           return I_32_R0_400_3 + offset;
+        case TYPE_TM1814:
+          return I_32_R0_TM1_4 + offset;
       }
       #endif
     }
