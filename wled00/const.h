@@ -14,11 +14,15 @@
 #define WLED_MAX_USERMODS 4
 
 #ifndef WLED_MAX_BUSSES
-#ifdef ESP8266
-#define WLED_MAX_BUSSES 3
-#else
-#define WLED_MAX_BUSSES 10
-#endif
+  #ifdef ESP8266
+    #define WLED_MAX_BUSSES 3
+  #else
+    #ifdef ARDUINO_ARCH_ESP32S2
+      #define WLED_MAX_BUSSES 5
+    #else
+      #define WLED_MAX_BUSSES 10
+    #endif
+  #endif
 #endif
 
 //Usermod IDs
