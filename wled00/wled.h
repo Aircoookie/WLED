@@ -321,7 +321,7 @@ WLED_GLOBAL bool useAMPM _INIT(false);            // 12h/24h clock format
 WLED_GLOBAL byte currentTimezone _INIT(0);        // Timezone ID. Refer to timezones array in wled10_ntp.ino
 WLED_GLOBAL int utcOffsetSecs _INIT(0);           // Seconds to offset from UTC before timzone calculation
 
-WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
+WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie 4: digital clock
 WLED_GLOBAL byte overlayMin _INIT(0), overlayMax _INIT(ledCount - 1);   // boundaries of overlay mode
 
 WLED_GLOBAL byte analogClock12pixel _INIT(0);               // The pixel in your strip where "midnight" would be
@@ -330,6 +330,9 @@ WLED_GLOBAL bool analogClock5MinuteMarks _INIT(false);      // Light pixels at e
 
 WLED_GLOBAL char cronixieDisplay[7] _INIT("HHMMSS");        // Cronixie Display mask. See wled13_cronixie.ino
 WLED_GLOBAL bool cronixieBacklight _INIT(true);             // Allow digits to be back-illuminated
+
+WLED_GLOBAL byte digitalLedPerSegment _INIT(7);                    // Amount of LEDs per segment 
+WLED_GLOBAL bool digitalColon _INIT(false);                   // Show a 2 led digit between hours and minutes
 
 WLED_GLOBAL bool countdownMode _INIT(false);                         // Clock will count down towards date
 WLED_GLOBAL byte countdownYear _INIT(20), countdownMonth _INIT(1);   // Countdown target date, year is last two digits

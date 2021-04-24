@@ -459,6 +459,8 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("CH"),countdownHour);
     sappend('v',SET_F("CM"),countdownMin);
     sappend('v',SET_F("CS"),countdownSec);
+    sappend('v',SET_F("DL"),digitalLedPerSegment);
+    sappend('c',SET_F("DC"),digitalColon);
 
     sappend('v',SET_F("A0"),macroAlexaOn);
     sappend('v',SET_F("A1"),macroAlexaOff);

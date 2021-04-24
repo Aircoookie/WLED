@@ -27,6 +27,8 @@
 			gId("cac").style.display="none";
 			gId("coc").style.display="block";
 			gId("ccc").style.display="none";
+			gId("cdc").style.display="none";
+
 			if (gId("ca").selected)
 			{
 				gId("cac").style.display="block";
@@ -35,6 +37,11 @@
 			{
 				gId("coc").style.display="none";
 				gId("ccc").style.display="block";
+			}
+			if (gId("cd").selected)
+			{
+				gId("coc").style.display="none";
+				gId("cdc").style.display="block";
 			}
 			if (gId("cn").selected)
 			{
@@ -126,6 +133,7 @@
 			<option value="1" id="ca">Analog Clock</option>
 			<option value="2">Single Digit Clock</option>
 			<option value="3" id="cc">Cronixie Clock</option>
+			<option value="4" id="cd">Digital Clock</option>
 		</select><br>
 		<div id="coc">
 		First LED: <input name="O1" type="number" min="0" max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" required><br>
@@ -137,6 +145,10 @@
 		<div id="ccc">
 		Cronixie Display: <input name="CX" maxlength="6"><br>
 		Cronixie Backlight: <input type="checkbox" name="CB"><br>
+		</div>
+		<div id="cdc">
+			LED per segment: <input name="DL" type="number" min="0" max="255" value="7"><br>
+			Colon between hours and minutes: <input type="checkbox" name="DC"><br></div>
 		</div>
 		Countdown Mode: <input type="checkbox" name="CE"><br>
 		Countdown Goal:<br>

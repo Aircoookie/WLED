@@ -33,6 +33,75 @@ void handleOverlays()
 }
 
 
+/*
+*  Support for the digital clock
+*
+*  Segments are connected as following:
+*
+*          A
+*        ---->
+*      |       |
+*    F |       | B
+*      |   G   |
+*        ---->
+*      |       |
+*    E |       | C
+*      |   D   |
+*        <----
+*
+*  LEDs are connected in series: tens of hour ABCDEFG -> hour ABCDEFG -> colon (if enabled) -> tens of minute ABCDEFG -> minute ABCDEFG
+*  TODO: custom effects per digit, per number, ...
+*/
+
+void displayDigit(uint16_t start, uint8_t number)
+{
+  // Mapping of the segments
+  // {A, B, C, D, E, F, G}
+  uint8_t ledMapping[10][7] = { 
+    {1, 1, 1, 1, 1, 1, 0},  // 0
+    {0, 1, 1, 0, 0, 0, 0},  // 1
+    {1, 1, 0, 1, 1, 0, 1},  // 2
+    {1, 1, 1, 1, 0, 0, 1},  // 3
+    {0, 1, 1, 0, 0, 1, 1},  // 4
+    {1, 0, 1, 1, 0, 1, 1},  // 5
+    {1, 0, 1, 1, 1, 1, 1},  // 6
+    {1, 1, 1, 0, 0, 0, 0},  // 7
+    {1, 1, 1, 1, 1, 1, 1},  // 8
+    {1, 1, 1, 1, 0, 1, 1}}; // 9
+
+  for (uint8_t i=0; i < 7; i++) 
+  {
+      // If that segment needs to disable it, disable it
+      if(!ledMapping[number][i])
+        strip.setRange(start, start + digitalLedPerSegment - 1 , 0);
+      start += digitalLedPerSegment;
+  }
+}
+
+void _overlayDigitalClock()
+{
+  uint8_t hour10 = hour(localTime)/10;
+  uint8_t hour1 = hour(localTime) - hour10 * 10;
+  uint8_t minute10 = minute(localTime)/10;
+  uint8_t minute1 = minute(localTime) - minute10 * 10;
+
+  uint16_t digitStart = 0;
+  displayDigit(digitStart, hour10);
+  digitStart += digitalLedPerSegment * 7;
+  displayDigit(digitStart, hour1);
+  digitStart += digitalLedPerSegment * 7;
+
+  if (digitalColon)
+    digitStart += 2;
+
+  displayDigit(digitStart, minute10);
+  digitStart += digitalLedPerSegment * 7;
+  displayDigit(digitStart, minute1);
+  
+  overlayRefreshMs = 998;
+}
+
+
 void _overlayAnalogClock()
 {
   int overlaySize = overlayMax - overlayMin +1;
@@ -126,6 +195,7 @@ void handleOverlayDraw() {
   {
     case 1: _overlayAnalogClock(); break;
     case 3: _drawOverlayCronixie(); break;
+    case 4: _overlayDigitalClock(); break;
   }
 }
 

@@ -320,6 +320,9 @@ void deserializeConfig() {
   CJSON(analogClock5MinuteMarks, ol[F("o5m")]);
   CJSON(analogClockSecondsTrail, ol[F("osec")]);
 
+  CJSON(digitalLedPerSegment, ol[F("lps")]);
+  CJSON(digitalColon, ol[F("dc")]);
+
   //timed macro rules
   JsonObject tm = doc[F("timers")];
   JsonObject cntdwn = tm[F("cntdwn")];
