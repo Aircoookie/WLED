@@ -411,7 +411,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   if (subPage == 8)
   {
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-    JsonObject um = doc.createNestedObject(F("um"));
+    JsonObject um = doc.createNestedObject("um");
 
     size_t args = request->args();
     uint j=0;

@@ -90,7 +90,7 @@ void WLED::reset()
     yield();        // enough time to send response to client
   }
   setAllLeds();
-  DEBUG_PRINTLN("MODULE RESET");
+  DEBUG_PRINTLN(F("MODULE RESET"));
   ESP.restart();
 }
 
@@ -148,10 +148,10 @@ void WiFiEvent(WiFiEvent_t event)
   switch (event) {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
     case SYSTEM_EVENT_ETH_START:
-      DEBUG_PRINT("ETH Started");
+      DEBUG_PRINT(F("ETH Started"));
       break;
     case SYSTEM_EVENT_ETH_CONNECTED:
-      DEBUG_PRINT("ETH Connected");
+      DEBUG_PRINT(F("ETH Connected"));
       if (!apActive) {
         WiFi.disconnect(true);
       }
@@ -166,7 +166,7 @@ void WiFiEvent(WiFiEvent_t event)
       showWelcomePage = false;
       break;
     case SYSTEM_EVENT_ETH_DISCONNECTED:
-      DEBUG_PRINT("ETH Disconnected");
+      DEBUG_PRINT(F("ETH Disconnected"));
       forceReconnect = true;
       break;
 #endif
@@ -272,20 +272,26 @@ void WLED::loop()
 // DEBUG serial logging
 #ifdef WLED_DEBUG
   if (millis() - debugTime > 9999) {
-    DEBUG_PRINTLN("---DEBUG INFO---");
-    DEBUG_PRINT("Runtime: ");       DEBUG_PRINTLN(millis());
-    DEBUG_PRINT("Unix time: ");     DEBUG_PRINTLN(now());
-    DEBUG_PRINT("Free heap: ");     DEBUG_PRINTLN(ESP.getFreeHeap());
-    DEBUG_PRINT("Wifi state: ");    DEBUG_PRINTLN(WiFi.status());
+    DEBUG_PRINTLN(F("---DEBUG INFO---"));
+    DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
+    DEBUG_PRINT(F("Unix time: "));     DEBUG_PRINTLN(now());
+    DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
+    #ifdef ARDUINO_ARCH_ESP32
+    if (psramFound()) {
+      DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024/1024); DEBUG_PRINTLN("M");
+    } else
+      DEBUG_PRINTLN(F("No PSRAM"));
+    #endif
+    DEBUG_PRINT(F("Wifi state: "));    DEBUG_PRINTLN(WiFi.status());
 
     if (WiFi.status() != lastWifiState) {
       wifiStateChangedTime = millis();
     }
     lastWifiState = WiFi.status();
-    DEBUG_PRINT("State time: ");    DEBUG_PRINTLN(wifiStateChangedTime);
-    DEBUG_PRINT("NTP last sync: "); DEBUG_PRINTLN(ntpLastSyncTime);
-    DEBUG_PRINT("Client IP: ");     DEBUG_PRINTLN(Network.localIP());
-    DEBUG_PRINT("Loops/sec: ");     DEBUG_PRINTLN(loops / 10);
+    DEBUG_PRINT(F("State time: "));    DEBUG_PRINTLN(wifiStateChangedTime);
+    DEBUG_PRINT(F("NTP last sync: ")); DEBUG_PRINTLN(ntpLastSyncTime);
+    DEBUG_PRINT(F("Client IP: "));     DEBUG_PRINTLN(Network.localIP());
+    DEBUG_PRINT(F("Loops/sec: "));     DEBUG_PRINTLN(loops / 10);
     loops = 0;
     debugTime = millis();
   }
@@ -302,19 +308,19 @@ void WLED::setup()
   Serial.begin(115200);
   Serial.setTimeout(50);
   DEBUG_PRINTLN();
-  DEBUG_PRINT("---WLED ");
+  DEBUG_PRINT(F("---WLED "));
   DEBUG_PRINT(versionString);
   DEBUG_PRINT(" ");
   DEBUG_PRINT(VERSION);
-  DEBUG_PRINTLN(" INIT---");
+  DEBUG_PRINTLN(F(" INIT---"));
 #ifdef ARDUINO_ARCH_ESP32
-  DEBUG_PRINT("esp32 ");
+  DEBUG_PRINT(F("esp32 "));
   DEBUG_PRINTLN(ESP.getSdkVersion());
 #else
-  DEBUG_PRINT("esp8266 ");
+  DEBUG_PRINT(F("esp8266 "));
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif
-  DEBUG_PRINT("heap ");
+  DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
 
