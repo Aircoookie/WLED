@@ -493,11 +493,9 @@ void serializeConfig() {
   hw_btn_ins_0_macros.add(macroLongPress);
   hw_btn_ins_0_macros.add(macroDoublePress);
 
-  #ifndef WLED_DISABLE_INFRARED
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir["pin"] = irPin;
   hw_ir["type"] = irEnabled;  // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
-  #endif
 
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
   hw_relay["pin"] = rlyPin;
