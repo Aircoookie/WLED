@@ -1127,7 +1127,6 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 		clearErrorToast();
 		gId('connind').style.backgroundColor = "#070";
 		if (!json) { showToast('Empty response', true); return; }
-		if (json.error && json.error != 0) { showToast('Out of memory!', true); return; }
 		if (json.success) {
 			if (callback) callback();
 			return;
