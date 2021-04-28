@@ -2,6 +2,21 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2104220
+
+-   Version bump to 0.12.1-b1 "Hikari"
+-   Release and build script improvements (PR #1844)
+
+#### Build 2104211
+
+-   Replace default TV simulator effect with the version that saves 18k of flash and appears visually identical
+
+#### Build 2104210
+
+-   Added `tb` to JSON state, allowing setting the timebase (set tb=0 to start e.g. wipe effect from the beginning). Receive only.
+-   Slightly raised Solid mode refresh rate to work with LEDs (TM1814) that require refresh rates of at least 2fps
+-   Added sunrise and sunset calculation to the backup JSON time source
+
 #### Build 2104151
 
 -   `NUM_STRIPS` no longer required with compile-time strip defaults

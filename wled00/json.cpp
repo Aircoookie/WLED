@@ -182,6 +182,9 @@ bool deserializeState(JsonObject root)
     jsonTransitionOnce = true;
   }
   strip.setTransition(transitionDelayTemp);
+
+  tr = root[F("tb")] | -1;
+  if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
   
   int cy = root[F("pl")] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);
@@ -203,9 +206,16 @@ bool deserializeState(JsonObject root)
   receiveNotifications = udpn["recv"] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
-  unsigned long timein = root[F("time")] | UINT32_MAX;
+  unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
-    if (millis() - ntpLastSyncTime > 50000000L) setTime(timein);
+    time_t prev = now();
+    if (millis() - ntpLastSyncTime > 50000000L) {
+      setTime(timein);
+      if (abs(now() - prev) > 60L) {
+        updateLocalTime();
+        calculateSunriseAndSunset();
+      }
+    }
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
 
@@ -539,6 +549,13 @@ void serializeInfo(JsonObject root)
   root[F("brand")] = "WLED";
   root[F("product")] = F("FOSS");
   root["mac"] = escapedMac;
+  char s[16] = "";
+  if (Network.isConnected())
+  {
+    IPAddress localIP = Network.localIP();
+    sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+  }
+  root["ip"] = s;
 }
 
 void setPaletteColors(JsonArray json, CRGBPalette16 palette)
