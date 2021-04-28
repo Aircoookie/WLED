@@ -12,9 +12,10 @@ DallasTemperature sensor(&oneWire);
 long temptimer = millis();
 long lastMeasure = 0;
 #define Celsius // Show temperature mesaurement in Celcius otherwise is in Fahrenheit
+
 void userSetup()
 {
-// Start the DS18B20 sensor
+  // Start the DS18B20 sensor
   sensor.begin();
 }
     
@@ -24,6 +25,7 @@ void userConnected()
 
 }
 
+//loop. You can use "if (WLED_CONNECTED)" to check for successful connection
 void userLoop()
 {
   temptimer = millis();
@@ -31,7 +33,21 @@ void userLoop()
 // Timer to publishe new temperature every 60 seconds
   if (temptimer - lastMeasure > 60000) {
     lastMeasure = temptimer;
-    
+
+//Check for successful connection
+    if (WLED_CONNECTED){
+      sensor.requestTemperatures();
+
+//Gets prefered temperature scale based on selection in definitions section
+      #ifdef WLED_ENABLE_USERMODXML
+        #ifdef Celsius
+        usermodxml1 = sensor.getTempCByIndex(0);
+        #else
+        usermodxml1 = sensors.getTempFByIndex(0);
+        #endif
+      #endif
+    return;}
+
 //Check if MQTT Connected, otherwise it will crash the 8266
     if (mqtt != nullptr){
       sensor.requestTemperatures();
