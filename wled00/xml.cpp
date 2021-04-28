@@ -14,7 +14,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   obuf = (dest == nullptr)? sbuf:dest;
 
   olen = 0;
-  oappend(SET_F("<?xml version=\"1.0\" ?><vs><ac>"));
+  oappend(SET_F("<?xml version=\"1.0\" ?><dt><ac>"));
   oappendi((nightlightActive && nightlightMode > NL_MODE_SET) ? briT : bri);
   oappend(SET_F("</ac>"));
 
@@ -70,7 +70,25 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   }
   oappend(SET_F("</ds><ss>"));
   oappendi(strip.getMainSegmentId());
-  oappend(SET_F("</ss></vs>"));
+  oappend(SET_F("</ss><vs>"));
+  #ifdef WLED_ENABLE_USERMODXML
+    oappendi(usermodxml1);
+  #else
+    oappendi(-1);
+  #endif
+  oappend(SET_F("</vs><vt>"));
+  #ifdef WLED_ENABLE_USERMODXML
+    oappendi(usermodxml2);
+  #else
+    oappendi(-1);
+  #endif
+  oappend(SET_F("</vt><vu>"));
+  #ifdef WLED_ENABLE_USERMODXML
+    oappendi(usermodxml3);
+  #else
+    oappendi(-1);
+  #endif
+  oappend(SET_F("</vu></dt>"));
   if (request != nullptr) request->send(200, "text/xml", obuf);
 }
 
@@ -107,6 +125,18 @@ void URL_response(AsyncWebServerRequest *request)
   oappendi(effectSpeed);
   oappend(SET_F("&IX="));
   oappendi(effectIntensity);
+  oappend(SET_F("&FP="));
+  oappendi(effectPalette);
+
+  #ifdef WLED_ENABLE_USERMODXML
+    oappend(SET_F("&VS="));
+    oappendi(usermodxml1_s);
+    oappend(SET_F("&VT="));
+    oappendi(usermodxml2_s);
+    oappend(SET_F("&VU="));
+    oappendi(usermodxml3_s);
+  #endif
+
   oappend(SET_F("&FP="));
   oappendi(effectPalette);
 
