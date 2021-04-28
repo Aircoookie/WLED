@@ -525,7 +525,7 @@ function loadInfo(callback=null)
 		lastinfo = json;
 		var name = json.name;
 		gId('namelabel').innerHTML = name;
-		if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+//		if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
 		if (json.live) name = "(Live) " + name;
 		if (loc) name = "(L) " + name;
 		d.title = name;
@@ -1132,34 +1132,22 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 			return;
 		}
 		var s = json.state ? json.state : json;
-		if (!command || rinfo) {
-			if (!rinfo) {
-				pmt = json.info.fs.pmt;
-				populatePresets(true);
-				pmtLast = pmt;
-			}
-			var info = json.info;
 /*
-			var name = info.name;
-			gId('namelabel').innerHTML = name;
-			if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-			if (info.live) name = "(Live) " + name;
-			if (loc) name = "(L) " + name;
-
-			d.title = name;
-			isRgbw = info.leds.wv;
-			ledCount = info.leds.count;
-			syncTglRecv = info.str;
-			maxSeg = info.leds.maxseg;
-*/
+		if (!command || rinfo) {
+//			if (!rinfo) {
+//				pmt = json.info.fs.pmt;
+//				populatePresets(true);
+//				pmtLast = pmt;
+//			}
+			var info = json.info;
 			pmt = info.fs.pmt;
-			if (!command && pmt != pmtLast) setTimeout(loadPresets,99);
+//			if (!command && pmt != pmtLast) setTimeout(loadPresets,99);
 			pmtLast = pmt;
 			lastinfo = info;
-			if (isInfo) populateInfo(info);
-			if (!rinfo) loadPalettesData();
+//			if (isInfo) populateInfo(info);
+//			if (!rinfo) loadPalettesData();
 		}
-
+*/
 		if (!handleJson(s)) {
 			showToast('No Segments!', true);
 			updateUI(false);

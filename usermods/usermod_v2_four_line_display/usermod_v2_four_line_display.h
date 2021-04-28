@@ -54,12 +54,12 @@
 #define LINE_BUFFER_SIZE            16+1
 
 typedef enum {
-  FLD_LINE_3_BRIGHTNESS = 0,
-  FLD_LINE_3_EFFECT_SPEED,
-  FLD_LINE_3_EFFECT_INTENSITY,
-  FLD_LINE_3_MODE,
-  FLD_LINE_3_PALETTE
-} Line3Type;
+  FLD_LINE_4_BRIGHTNESS = 0,
+  FLD_LINE_4_EFFECT_SPEED,
+  FLD_LINE_4_EFFECT_INTENSITY,
+  FLD_LINE_4_MODE,
+  FLD_LINE_4_PALETTE
+} Line4Type;
 
 typedef enum {
   NONE = 0,
@@ -76,7 +76,7 @@ class FourLineDisplayUsermod : public Usermod {
     unsigned long lastTime = 0;
 
     // HW interface & configuration
-    void *u8x8 = nullptr;           // pointer to U8X8 display object
+    U8X8 *u8x8 = nullptr;           // pointer to U8X8 display object
     int8_t sclPin=FLD_PIN_SCL, sdaPin=FLD_PIN_SDA;    // I2C pins for interfacing, get initialised in readFromConfig()
     DisplayType type = SSD1306;     // display type
     bool flip = false;              // flip display 180°
@@ -106,7 +106,7 @@ class FourLineDisplayUsermod : public Usermod {
     unsigned long lastUpdate = 0;
     unsigned long lastRedraw = 0;
     unsigned long overlayUntil = 0;
-    Line3Type lineThreeType = FLD_LINE_3_BRIGHTNESS;
+    Line4Type lineFourType = FLD_LINE_4_BRIGHTNESS;
     // Set to 2 or 3 to mark lines 2 or 3. Other values ignored.
     byte markLineNum = 0;
 
@@ -135,22 +135,20 @@ class FourLineDisplayUsermod : public Usermod {
       if (!pinManager.allocatePin(sdaPin)) { pinManager.deallocatePin(sclPin); sclPin = sdaPin = -1; type = NONE; return; }
       switch (type) {
         case SSD1306:
-          u8x8 = (void *) new U8X8_SSD1306_128X32_UNIVISION_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->begin();
+          u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
           break;
         case SH1106:
-          u8x8 = (void *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
-          (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->begin();
+          u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
           break;
         case SSD1306_64:
-          u8x8 = (void *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->begin();
+          u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
           break;
         default:
           u8x8 = nullptr;
           type = NONE;
           return;
       }
+      (static_cast<U8X8*>(u8x8))->begin();
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
@@ -178,136 +176,41 @@ class FourLineDisplayUsermod : public Usermod {
      * Wrappers for screen drawing
      */
     void setFlipMode(uint8_t mode) {
-      switch (type) {
-        case SSD1306:
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->setFlipMode(mode);
-          break;
-        case SH1106:
-          (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setFlipMode(mode);
-          break;
-        case SSD1306_64:
-          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setFlipMode(mode);
-          break;
-        default:
-          return;
-      }
+      if (type==NONE) return;
+      (static_cast<U8X8*>(u8x8))->setFlipMode(mode);
     }
     void setContrast(uint8_t contrast) {
-      switch (type) {
-        case SSD1306:
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->setContrast(contrast);
-          break;
-        case SH1106:
-          (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setContrast(contrast);
-          break;
-        case SSD1306_64:
-          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setContrast(contrast);
-          break;
-        default:
-          return;
-      }
+      if (type==NONE) return;
+      (static_cast<U8X8*>(u8x8))->setContrast(contrast);
     }
     void drawString(uint8_t col, uint8_t row, const char *string, bool ignoreLH=false) {
-      switch (type) {
-        case SSD1306:
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
-          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->draw1x2String(col, row, string);
-          else                            (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->drawString(col, row, string);
-          break;
-        case SH1106:
-          (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
-          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->draw1x2String(col, row, string);
-          else                            (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->drawString(col, row, string);
-          break;
-        case SSD1306_64:
-          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
-          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->draw1x2String(col, row, string);
-          else                            (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->drawString(col, row, string);
-          break;
-        default:
-          return;
-      }
+      if (type==NONE) return;
+      (static_cast<U8X8*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
+      if (!ignoreLH && lineHeight==2) (static_cast<U8X8*>(u8x8))->draw1x2String(col, row, string);
+      else                            (static_cast<U8X8*>(u8x8))->drawString(col, row, string);
     }
     void draw2x2String(uint8_t col, uint8_t row, const char *string) {
-      switch (type) {
-        case SSD1306:
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->draw2x2String(col, row, string);
-          break;
-        case SH1106:
-          (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
-          (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->draw2x2String(col, row, string);
-          break;
-        case SSD1306_64:
-          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
-          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->draw2x2String(col, row, string);
-          break;
-        default:
-          return;
-      }
+      if (type==NONE) return;
+      (static_cast<U8X8*>(u8x8))->setFont(u8x8_font_chroma48medium8_r);
+      (static_cast<U8X8*>(u8x8))->draw2x2String(col, row, string);
     }
     void drawGlyph(uint8_t col, uint8_t row, char glyph, const uint8_t *font, bool ignoreLH=false) {
-      switch (type) {
-        case SSD1306:
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->setFont(font);
-          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->draw1x2Glyph(col, row, glyph);
-          else                            (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->drawGlyph(col, row, glyph);
-          break;
-        case SH1106:
-          (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setFont(font);
-          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->draw1x2Glyph(col, row, glyph);
-          else                            (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->drawGlyph(col, row, glyph);
-          break;
-        case SSD1306_64:
-          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setFont(font);
-          if (!ignoreLH && lineHeight==2) (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->draw1x2Glyph(col, row, glyph);
-          else                            (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->drawGlyph(col, row, glyph);
-          break;
-        default:
-          return;
-      }
+      if (type==NONE) return;
+      (static_cast<U8X8*>(u8x8))->setFont(font);
+      if (!ignoreLH && lineHeight==2) (static_cast<U8X8*>(u8x8))->draw1x2Glyph(col, row, glyph);
+      else                            (static_cast<U8X8*>(u8x8))->drawGlyph(col, row, glyph);
     }
     uint8_t getCols() {
-      switch (type) {
-        case SSD1306:
-          return (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->getCols();
-        case SH1106:
-          return (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->getCols();
-        case SSD1306_64:
-          return (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->getCols();
-        default:
-          return 0;
-      }
+      if (type==NONE) return 0;
+      return (static_cast<U8X8*>(u8x8))->getCols();
     }
     void clear() {
-      switch (type) {
-        case SSD1306:
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->clear();
-          break;
-        case SH1106:
-          (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->clear();
-          break;
-        case SSD1306_64:
-          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->clear();
-          break;
-        default:
-          return;
-      }
+      if (type==NONE) return;
+      (static_cast<U8X8*>(u8x8))->clear();
     }
     void setPowerSave(uint8_t save) {
-      switch (type) {
-        case SSD1306:
-          (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8))->setPowerSave(save);
-          break;
-        case SH1106:
-          (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8))->setPowerSave(save);
-          break;
-        case SSD1306_64:
-          (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8))->setPowerSave(save);
-          break;
-        default:
-          return;
-      }
+      if (type==NONE) return;
+      (static_cast<U8X8*>(u8x8))->setPowerSave(save);
     }
 
     /**
@@ -316,7 +219,6 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void redraw(bool forceRedraw) {
       if (type==NONE) return;
-
       if (overlayUntil > 0) {
         if (millis() >= overlayUntil) {
           // Time to display the overlay has elapsed.
@@ -360,21 +262,21 @@ class FourLineDisplayUsermod : public Usermod {
           showTime();
         } else if ((millis() - lastRedraw)/1000%3 == 0) {
           // change 4th line every 3s
-          switch (lineThreeType) {
-            case FLD_LINE_3_BRIGHTNESS:
-              setLineThreeType(FLD_LINE_3_EFFECT_SPEED);
+          switch (lineFourType) {
+            case FLD_LINE_4_BRIGHTNESS:
+              setLineFourType(FLD_LINE_4_EFFECT_SPEED);
               break;
-            case FLD_LINE_3_MODE:
-              setLineThreeType(FLD_LINE_3_BRIGHTNESS);
+            case FLD_LINE_4_MODE:
+              setLineFourType(FLD_LINE_4_BRIGHTNESS);
               break;
-            case FLD_LINE_3_PALETTE:
-              setLineThreeType(clockMode ? FLD_LINE_3_MODE : FLD_LINE_3_BRIGHTNESS);
+            case FLD_LINE_4_PALETTE:
+              setLineFourType(clockMode ? FLD_LINE_4_MODE : FLD_LINE_4_BRIGHTNESS);
               break;
-            case FLD_LINE_3_EFFECT_SPEED:
-              setLineThreeType(FLD_LINE_3_EFFECT_INTENSITY);
+            case FLD_LINE_4_EFFECT_SPEED:
+              setLineFourType(FLD_LINE_4_EFFECT_INTENSITY);
               break;
-            case FLD_LINE_3_EFFECT_INTENSITY:
-              setLineThreeType(FLD_LINE_3_PALETTE);
+            case FLD_LINE_4_EFFECT_INTENSITY:
+              setLineFourType(FLD_LINE_4_PALETTE);
               break;
             default:
               break;
@@ -411,6 +313,7 @@ class FourLineDisplayUsermod : public Usermod {
       // Do the actual drawing
 
       // First row with Wifi name
+      drawGlyph(0, 0, 80, u8x8_font_open_iconic_embedded_1x1); // wifi icon
       String ssidString = knownSsid.substring(0, getCols() > 1 ? getCols() - 2 : 0);
       drawString(1, 0, ssidString.c_str());
       // Print `~` char to indicate that SSID is longer, than our display
@@ -419,6 +322,7 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       // Second row with IP or Psssword
+      drawGlyph(0, lineHeight, 68, u8x8_font_open_iconic_embedded_1x1); // home icon
       // Print password in AP mode and if led is OFF.
       if (apActive && bri == 0) {
         drawString(1, lineHeight, apPass);
@@ -434,30 +338,28 @@ class FourLineDisplayUsermod : public Usermod {
       drawLineFour();
 
       drawGlyph(0, 2*lineHeight, 66 + (bri > 0 ? 3 : 0), u8x8_font_open_iconic_weather_2x2); // sun/moon icon
-      drawGlyph(0, 0, 80, u8x8_font_open_iconic_embedded_1x1); // wifi icon
-      drawGlyph(0, lineHeight, 68, u8x8_font_open_iconic_embedded_1x1); // home icon
       //if (markLineNum>1) drawGlyph(2, markLineNum*lineHeight, 66, u8x8_font_open_iconic_arrow_1x1); // arrow icon
     }
 
     void drawLineFour() {
       char lineBuffer[LINE_BUFFER_SIZE];
-      switch(lineThreeType) {
-        case FLD_LINE_3_BRIGHTNESS:
+      switch(lineFourType) {
+        case FLD_LINE_4_BRIGHTNESS:
           sprintf_P(lineBuffer, PSTR("Brightness %3d"), bri);
           drawString(2, 3*lineHeight, lineBuffer);
           break;
-        case FLD_LINE_3_EFFECT_SPEED:
+        case FLD_LINE_4_EFFECT_SPEED:
           sprintf_P(lineBuffer, PSTR("FX Speed   %3d"), effectSpeed);
           drawString(2, 3*lineHeight, lineBuffer);
           break;
-        case FLD_LINE_3_EFFECT_INTENSITY:
+        case FLD_LINE_4_EFFECT_INTENSITY:
           sprintf_P(lineBuffer, PSTR("FX Intens. %3d"), effectIntensity);
           drawString(2, 3*lineHeight, lineBuffer);
           break;
-        case FLD_LINE_3_MODE:
+        case FLD_LINE_4_MODE:
           showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3);
           break;
-        case FLD_LINE_3_PALETTE:
+        case FLD_LINE_4_PALETTE:
         default:
           showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 3);
           break;
@@ -535,24 +437,24 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     /**
-     * Specify what data should be defined on line 3
+     * Specify what data should be defined on line 4
      * (the last line).
      */
-    void setLineThreeType(Line3Type newLineThreeType) {
-      if (newLineThreeType == FLD_LINE_3_BRIGHTNESS || 
-          newLineThreeType == FLD_LINE_3_EFFECT_SPEED || 
-          newLineThreeType == FLD_LINE_3_EFFECT_INTENSITY || 
-          newLineThreeType == FLD_LINE_3_MODE ||
-          newLineThreeType == FLD_LINE_3_PALETTE) {
-        lineThreeType = newLineThreeType;
+    void setLineFourType(Line4Type newLineFourType) {
+      if (newLineFourType == FLD_LINE_4_BRIGHTNESS || 
+          newLineFourType == FLD_LINE_4_EFFECT_SPEED || 
+          newLineFourType == FLD_LINE_4_EFFECT_INTENSITY || 
+          newLineFourType == FLD_LINE_4_MODE ||
+          newLineFourType == FLD_LINE_4_PALETTE) {
+        lineFourType = newLineFourType;
       } else {
         // Unknown value
-        lineThreeType = FLD_LINE_3_BRIGHTNESS;
+        lineFourType = FLD_LINE_4_BRIGHTNESS;
       }
     }
 
     /**
-     * Line 2 or 3 (last two lines) can be marked with an
+     * Line 3 or 4 (last two lines) can be marked with an
      * arrow in the first column. Pass 2 or 3 to this to
      * specify which line to mark with an arrow.
      * Any other values are ignored.
@@ -602,10 +504,10 @@ class FourLineDisplayUsermod : public Usermod {
       knownMinute = minuteCurrent;
       knownHour = hourCurrent;
 
-      int currentMonth = month(localTime);
+      byte currentMonth = month(localTime);
       sprintf_P(lineBuffer, PSTR("%s %2d "), monthShortStr(currentMonth), day(localTime));
       if (fullScreen)
-        draw2x2String(DATE_INDENT, lineHeight==1 ? 0 : lineHeight, lineBuffer);
+        draw2x2String(DATE_INDENT, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays
       else
         drawString(2, lineHeight*2, lineBuffer);
 
@@ -625,17 +527,17 @@ class FourLineDisplayUsermod : public Usermod {
         }
       }
 
-      sprintf_P(lineBuffer, (secondCurrent%2 || !fullScreen) ? PSTR("%2d:%02d") : PSTR("%2d %02d"), (useAMPM && fullScreen ? showHour : hourCurrent), minuteCurrent);
+      sprintf_P(lineBuffer, (secondCurrent%2 || !fullScreen) ? PSTR("%2d:%02d") : PSTR("%2d %02d"), (useAMPM ? showHour : hourCurrent), minuteCurrent);
       // For time, we always use LINE_HEIGHT of 2 since
       // we are printing it big.
       if (fullScreen) {
         draw2x2String(TIME_INDENT+2, lineHeight*2, lineBuffer);
-        if (useAMPM) drawString(12, lineHeight*2, (isAM ? "AM" : "PM"));
         sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
-        drawString(12, lineHeight*2+1, lineBuffer, true);
+        drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
       } else {
-        drawString(9, lineHeight*2, lineBuffer);
+        drawString(9+(useAMPM?0:2), lineHeight*2, lineBuffer);
       }
+      if (useAMPM) drawString(12+(fullScreen?0:2), lineHeight*2, (isAM ? "AM" : "PM"), true);
     }
 
     /*
@@ -680,17 +582,17 @@ class FourLineDisplayUsermod : public Usermod {
      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
      */
     void addToConfig(JsonObject& root) {
-      JsonObject top = root.createNestedObject(FPSTR(_name));
+      JsonObject top    = root.createNestedObject(FPSTR(_name));
       JsonArray i2c_pin = top.createNestedArray("pin");
       i2c_pin.add(sclPin);
       i2c_pin.add(sdaPin);
-      top["type"] = type;
-      top[FPSTR(_flip)] = (bool) flip;
-      top[FPSTR(_contrast)] = contrast;
-      top[FPSTR(_refreshRate)] = refreshRate/1000;
+      top["type"]                = type;
+      top[FPSTR(_flip)]          = (bool) flip;
+      top[FPSTR(_contrast)]      = contrast;
+      top[FPSTR(_refreshRate)]   = refreshRate/1000;
       top[FPSTR(_screenTimeOut)] = screenTimeout/1000;
-      top[FPSTR(_sleepMode)] = (bool) sleepMode;
-      top[FPSTR(_clockMode)] = (bool) clockMode;
+      top[FPSTR(_sleepMode)]     = (bool) sleepMode;
+      top[FPSTR(_clockMode)]     = (bool) clockMode;
       DEBUG_PRINTLN(F("4 Line Display config saved."));
     }
 
@@ -703,10 +605,10 @@ class FourLineDisplayUsermod : public Usermod {
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
      */
     void readFromConfig(JsonObject& root) {
-      bool needsRedraw = false;
+      bool needsRedraw    = false;
       DisplayType newType = type;
-      int8_t newScl = sclPin;
-      int8_t newSda = sdaPin;
+      int8_t newScl       = sclPin;
+      int8_t newSda       = sdaPin;
 
       JsonObject top = root[FPSTR(_name)];
       if (!top.isNull() && top["pin"] != nullptr) {
@@ -751,9 +653,9 @@ class FourLineDisplayUsermod : public Usermod {
       } else {
         // changing paramters from settings page
         if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
-          if (type==SSD1306) delete (static_cast<U8X8_SSD1306_128X32_UNIVISION_HW_I2C*>(u8x8));
-          if (type==SH1106)  delete (static_cast<U8X8_SH1106_128X64_WINSTAR_HW_I2C*>(u8x8));
-          if (type==SSD1306_64) delete (static_cast<U8X8_SSD1306_128X64_NONAME_HW_I2C*>(u8x8));
+          if (type==SSD1306)    delete (static_cast<U8X8*>(u8x8));
+          if (type==SH1106)     delete (static_cast<U8X8*>(u8x8));
+          if (type==SSD1306_64) delete (static_cast<U8X8*>(u8x8));
           pinManager.deallocatePin(sclPin);
           pinManager.deallocatePin(sdaPin);
           sclPin = newScl;
@@ -785,8 +687,8 @@ class FourLineDisplayUsermod : public Usermod {
 // strings to reduce flash memory usage (used more than twice)
 const char FourLineDisplayUsermod::_name[]          PROGMEM = "4LineDisplay";
 const char FourLineDisplayUsermod::_contrast[]      PROGMEM = "contrast";
-const char FourLineDisplayUsermod::_refreshRate[]   PROGMEM = "refreshRate";
-const char FourLineDisplayUsermod::_screenTimeOut[] PROGMEM = "screenTimeOut";
+const char FourLineDisplayUsermod::_refreshRate[]   PROGMEM = "refreshRateSec";
+const char FourLineDisplayUsermod::_screenTimeOut[] PROGMEM = "screenTimeOutSec";
 const char FourLineDisplayUsermod::_flip[]          PROGMEM = "flip";
 const char FourLineDisplayUsermod::_sleepMode[]     PROGMEM = "sleepMode";
 const char FourLineDisplayUsermod::_clockMode[]     PROGMEM = "clockMode";

@@ -9,7 +9,7 @@
  */
 #pragma once
 #include "wled.h"
-#include "Animated_Staircase_config.h"
+
 #define USERMOD_ID_ANIMATED_STAIRCASE 1011
 
 class Animated_Staircase : public Usermod {
@@ -32,7 +32,7 @@ class Animated_Staircase : public Usermod {
   bool initDone = false;
 
   // Time between checking of the sensors
-  const int scanDelay = 50;
+  const unsigned int scanDelay = 50;
 
   // Lights on or off.
   // Flipping this will start a transition.
