@@ -647,6 +647,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   updateVal(&req, "IX=", &effectIntensity);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
 
+  //set USERMODXML _s values
+  #ifdef WLED_ENABLE_USERMODXML
+    updateVal(&req, "VS=", &usermodxml1_s);
+    updateVal(&req, "VT=", &usermodxml2_s);
+    updateVal(&req, "VU=", &usermodxml3_s);
+  #endif
+
   //set advanced overlay
   pos = req.indexOf(F("OL="));
   if (pos > 0) {
