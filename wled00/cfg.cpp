@@ -86,6 +86,8 @@ void deserializeConfig() {
   noWifiSleep = !noWifiSleep;
   //int wifi_phy = doc[F("wifi")][F("phy")]; //force phy mode n?
 
+  DEBUG_PRINTLN(F("  Done network."));
+
   JsonObject hw = doc[F("hw")];
 
   // initialize LED pins and lengths prior to other HW
@@ -120,8 +122,6 @@ void deserializeConfig() {
     if (length==0 || length+lC > MAX_LEDS) continue;  // zero length or we reached max. number of LEDs, just stop
     uint16_t start = elm[F("start")] | 0;
     if (start >= lC+length) continue; // something is very wrong :)
-    //limit length of strip if it would exceed total configured LEDs
-    //if (start + length > ledCount) length = ledCount - start;
     uint8_t colorOrder = elm[F("order")];
     uint8_t skipFirst = elm[F("skip")];
     uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
@@ -134,11 +134,12 @@ void deserializeConfig() {
     lC += length;
     BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
     mem += BusManager::memUsage(bc);
-    if (mem <= MAX_LED_MEMORY) busses.add(bc);
+    DEBUG_PRINT(F("  Adding bus no. "));
+    DEBUG_PRINTLN(busses.getNumBusses());
+    if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
   }
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
-  //strip.finalizeInit(); // will be done in WLED::beginStrip()
-  if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
+  DEBUG_PRINTLN(F("  Done LEDs."));
 
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonType, hw_btn_ins_0["type"]);
@@ -178,6 +179,7 @@ void deserializeConfig() {
   if (relay.containsKey("rev")) {
     rlyMde = !relay["rev"];
   }
+  DEBUG_PRINTLN(F("  Done HW."));
 
   //int hw_status_pin = hw[F("status")]["pin"]; // -1
 
@@ -388,6 +390,7 @@ void deserializeConfig() {
   }
   #endif
 
+  DEBUG_PRINTLN(F("Starting usermod config."));
   JsonObject usermods_settings = doc["um"];
   usermods.readFromConfig(usermods_settings);
 }

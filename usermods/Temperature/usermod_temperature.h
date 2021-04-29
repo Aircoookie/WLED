@@ -57,23 +57,24 @@ class UsermodTemperature : public Usermod {
     static const char _enabled[];
     static const char _readInterval[];
 
-    //Dallas sensor quick reading. Credit to - Author: Peter Scargill, August 17th, 2013
+    //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
     int16_t readDallas() {
       byte i;
       byte data[2];
-      int16_t result;
+      int16_t result;         // raw data from sensor
       oneWire->reset();
-      oneWire->write(0xCC);
-      oneWire->write(0xBE);
-      for (i=0; i < 2; i++) data[i] = oneWire->read();
+      oneWire->write(0xCC);   // skip ROM
+      oneWire->write(0xBE);   // read (temperature) from EEPROM
+      for (i=0; i < 2; i++) data[i] = oneWire->read();  // first 2 bytes contain temperature
+      for (i=2; i < 8; i++) oneWire->read();  // read unused bytes  
       result = (data[1]<<8) | data[0];
-      result >>= 4;
-      if (data[1]&0x80) result |= 61440;
-      if (data[0]&0x08) ++result;
+      result >>= 4;           // 9-bit precision accurate to 1°C (/16)
+      if (data[1]&0x80) result |= 0xF000;     // fix negative value
+      //if (data[0]&0x08) ++result;
       oneWire->reset();
-      oneWire->write(0xCC);
-      oneWire->write(0x44,1);
-      return result*10;
+      oneWire->write(0xCC);   // skip ROM
+      oneWire->write(0x44,0); // request new temperature reading (without parasite power)
+      return result;
     }
 
     void requestTemperatures() {
@@ -84,7 +85,7 @@ class UsermodTemperature : public Usermod {
     }
 
     void getTemperature() {
-      temperature = readDallas()/10.0f;
+      temperature = readDallas();
       if (!degC) temperature = temperature * 1.8f + 32;
       lastMeasurement = millis();
       waitingForConversion = false;
@@ -92,44 +93,45 @@ class UsermodTemperature : public Usermod {
       DEBUG_PRINTF("Read temperature %2.1f.\n", temperature);
     }
 
+    bool findSensor() {
+      DEBUG_PRINTLN(F("Searching for sensor..."));
+      uint8_t deviceAddress[8] = {0,0,0,0,0,0,0,0};
+      // find out if we have DS18xxx sensor attached
+      oneWire->reset_search();
+      while (oneWire->search(deviceAddress)) {
+        if (oneWire->crc8(deviceAddress, 7) == deviceAddress[7]) {
+          switch (deviceAddress[0]) {
+            case 0x10:  // DS18S20
+            case 0x22:  // DS18B20
+            case 0x28:  // DS1822
+            case 0x3B:  // DS1825
+            case 0x42:  // DS28EA00
+              DEBUG_PRINTLN(F("Sensor found."));
+              return true;
+          }
+        }
+      }
+      return false;
+    }
+
   public:
 
     void setup() {
-      //bool sensorFound = false;
-
+      int retries = 10;
       // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
       if (!pinManager.allocatePin(temperaturePin,false)) {
         temperaturePin = -1;  // allocation failed
+        disabled = true;
         DEBUG_PRINTLN(F("Temperature pin allocation failed."));
       } else {
-        //DeviceAddress deviceAddress;
-        oneWire = new OneWire(temperaturePin);
-        oneWire->reset();
-/*
-        // find out if we have DS18xxx sensor attached
-        oneWire->reset_search();
-        while (oneWire->search(deviceAddress)) {
-          if (oneWire->crc8(deviceAddress, 7) == deviceAddress[7]) {
-            switch (deviceAddress[0]) {
-              case 0x10:  // DS18S20
-              case 0x22:  // DS18B20
-              case 0x28:  // DS1822
-              case 0x3B:  // DS1825
-              case 0x42:  // DS28EA00
-                sensorFound = true; // sensor found;
-                DEBUG_PRINTLN(F("Sensor found."));
-                break;
-            }
-          }
+        if (!disabled) {
+          // config says we are enabled
+          oneWire = new OneWire(temperaturePin);
+          if (!oneWire->reset())
+            disabled = true;   // resetting 1-Wire bus yielded an error
+          else
+            while ((disabled=!findSensor()) && retries--) delay(25); // try to find sensor
         }
-*/
-      }
-      disabled = disabled || (temperaturePin==-1);
-
-      if (!disabled) {
-        DEBUG_PRINTLN(F("Dallas Temperature found"));
-      } else {
-        DEBUG_PRINTLN(F("Dallas Temperature not found"));
       }
       initDone = true;
     }
@@ -152,7 +154,7 @@ class UsermodTemperature : public Usermod {
       }
 
       // we were waiting for a conversion to complete, have we waited log enough?
-      if (now - lastTemperaturesRequest >= 800 /* 93.75ms per the datasheet but can be up to 750ms*/) {
+      if (now - lastTemperaturesRequest >= 800 /* 93.75ms per the datasheet but can be up to 750ms */) {
         getTemperature();
 
         if (WLED_MQTT_CONNECTED) {

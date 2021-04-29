@@ -76,9 +76,9 @@ void loadPlaylist(JsonObject playlistObj) {
   for (int i = it; i < playlistLen; i++) entries[i].dur = entries[it -1].dur;
 
   it = 0;
-  JsonArray tr = playlistObj["transition"];
+  JsonArray tr = playlistObj[F("transition")];
   if (tr.isNull()) {
-    entries[0].tr = playlistObj["transition"] | (transitionDelay / 100);
+    entries[0].tr = playlistObj[F("transition")] | (transitionDelay / 100);
     it = 1;
   } else {
     for (int transition : tr) {

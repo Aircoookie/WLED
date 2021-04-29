@@ -258,7 +258,6 @@ void getSettingsJS(byte subPage, char* dest)
   {
     char nS[8];
 
-    // (TODO: usermod config shouldn't use state. instead we should load "um" object from cfg.json)
     // add reserved and usermod pins as d.um_p array
     DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
     JsonObject mods = doc.createNestedObject(F("um"));
@@ -279,7 +278,7 @@ void getSettingsJS(byte subPage, char* dest)
               }
             } else {
               if (i++) oappend(SET_F(","));
-              oappendi((int)obj["pin"]);
+              oappendi(obj["pin"].as<int>());
             }
           }
         }
@@ -317,16 +316,13 @@ void getSettingsJS(byte subPage, char* dest)
 
     // set limits
     oappend(SET_F("bLimits("));
-    oappend(itoa(WLED_MAX_BUSSES,nS,10));
-    oappend(",");
-    oappend(itoa(MAX_LEDS_PER_BUS,nS,10));
-    oappend(",");
+    oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
+    oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));
     oappend(SET_F(");"));
 
     sappend('v',SET_F("LC"),ledCount);
 
-//    bool skip = false;
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
@@ -351,7 +347,6 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('c',cv,bus->reversed);
       sappend('c',sl,bus->skipFirstLed());
 //      sappend('c',ew,bus->isRgbw());
-//      if (!skip) skip = bus->skipFirstLed()>0;
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
@@ -379,7 +374,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("TL"),nightlightDelayMinsDefault);
     sappend('v',SET_F("TW"),nightlightMode);
     sappend('i',SET_F("PB"),strip.paletteBlend);
-//    sappend('c',SET_F("SL"),skip);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);
     sappend('v',SET_F("BT"),btnPin);
