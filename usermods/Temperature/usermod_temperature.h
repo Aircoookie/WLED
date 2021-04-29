@@ -44,10 +44,10 @@ class UsermodTemperature : public Usermod {
     float temperature = -100; // default to -100, DS18B20 only goes down to -50C
     // indicates requestTemperatures has been called but the sensor measurement is not complete
     bool waitingForConversion = false;
-    // flag to indicate we have finished the first getTemperature call
+    // flag to indicate we have finished the first readTemperature call
     // allows this library to report to the user how long until the first
     // measurement
-    bool getTemperatureComplete = false;
+    bool readTemperatureComplete = false;
     // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
     // temperature if flashed to a board without a sensor attached
     bool disabled = false;
@@ -84,12 +84,11 @@ class UsermodTemperature : public Usermod {
       DEBUG_PRINTLN(F("Requested temperature."));
     }
 
-    void getTemperature() {
+    void readTemperature() {
       temperature = readDallas();
-      if (!degC) temperature = temperature * 1.8f + 32;
       lastMeasurement = millis();
       waitingForConversion = false;
-      getTemperatureComplete = true;
+      readTemperatureComplete = true;
       DEBUG_PRINTF("Read temperature %2.1f.\n", temperature);
     }
 
@@ -154,8 +153,8 @@ class UsermodTemperature : public Usermod {
       }
 
       // we were waiting for a conversion to complete, have we waited log enough?
-      if (now - lastTemperaturesRequest >= 800 /* 93.75ms per the datasheet but can be up to 750ms */) {
-        getTemperature();
+      if (now - lastTemperaturesRequest >= 100 /* 93.75ms per the datasheet but can be up to 750ms */) {
+        readTemperature();
 
         if (WLED_MQTT_CONNECTED) {
           char subuf[64];
@@ -166,11 +165,23 @@ class UsermodTemperature : public Usermod {
             // reading the sensor
             strcat_P(subuf, PSTR("/temperature"));
             mqtt->publish(subuf, 0, true, String(temperature).c_str());
+            strcat_P(subuf, PSTR("/temperature_f"));
+            mqtt->publish(subuf, 0, true, String((float)temperature * 1.8f + 32).c_str());
           } else {
             // publish something else to indicate status?
           }
         }
       }
+    }
+
+    /*
+     * API calls te enable data exchange between WLED modules
+     */
+    inline float getTemperatureC() {
+      return (float)temperature;
+    }
+    inline float getTemperatureF() {
+      return (float)temperature * 1.8f + 32;
     }
 
     /*
@@ -188,7 +199,7 @@ class UsermodTemperature : public Usermod {
       JsonArray temp = user.createNestedArray(FPSTR(_name));
       //temp.add(F("Loaded."));
 
-      if (!getTemperatureComplete) {
+      if (!readTemperatureComplete) {
         // if we haven't read the sensor yet, let the user know
         // that we are still waiting for the first measurement
         temp.add((USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT - millis()) / 1000);
@@ -202,7 +213,7 @@ class UsermodTemperature : public Usermod {
         return;
       }
 
-      temp.add(temperature);
+      temp.add(degC ? temperature : (float)temperature * 1.8f + 32);
       if (degC) temp.add(F("°C"));
       else      temp.add(F("°F"));
     }

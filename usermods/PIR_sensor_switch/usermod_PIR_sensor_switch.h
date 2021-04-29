@@ -87,8 +87,6 @@ private:
   static const char _name[];
   static const char _switchOffDelay[];
   static const char _enabled[];
-  static const char _active[];
-  static const char _inactive[];
 
   /**
    * return or change if new PIR sensor state is available
@@ -126,7 +124,7 @@ private:
   void publishMqtt(const char* state)
   {
     //Check if MQTT Connected, otherwise it will crash the 8266
-    if (mqtt != nullptr){
+    if (WLED_MQTT_CONNECTED){
       char subuf[64];
       strcpy(subuf, mqttDeviceTopic);
       strcat_P(subuf, PSTR("/motion"));
@@ -229,12 +227,10 @@ public:
    */
   void addToJsonInfo(JsonObject &root)
   {
-    //this code adds "u":{"&#x23F2; PIR sensor state":uiDomString} to the info object
-    // the value contains a button to toggle the sensor enabled/disabled
     JsonObject user = root["u"];
     if (user.isNull())
       user = root.createNestedObject("u");
-
+/*
     JsonArray infoArr = user.createNestedArray(F("<i class=\"icons\">&#xe08f;</i> PIR sensor state")); //name
     String uiDomString = F("<button class=\"btn infobtn\" onclick=\"requestJson({PIRenabled:");
     String sensorStateInfo;
@@ -243,7 +239,7 @@ public:
     if (m_PIRenabled)
     {
       uiDomString += "false";
-      sensorStateInfo = (m_PIRsensorPinState != LOW ? FPSTR(_active) : FPSTR(_inactive)); //value
+      sensorStateInfo = (m_PIRsensorPinState != LOW ? FPSTR(F("active")) : FPSTR(F("inactive"))); //value
     }
     else
     {
@@ -254,18 +250,20 @@ public:
     uiDomString += sensorStateInfo;
     uiDomString += F("</button>");
     infoArr.add(uiDomString); //value
-
+*/
     if (m_PIRenabled)
     {
-      //this code adds "u":{"&#x23F2; switch off timer":uiDomString} to the info object
-      uiDomString = F("<i class=\"icons\">&#xe325;</i> switch off timer<span style=\"display:block;padding-left:25px;\">after <input type=\"number\" min=\"1\" max=\"720\" value=\"");
+      JsonArray infoArr = user.createNestedArray(F("PIR switch-off timer after")); //name
+      String uiDomString = F("<input type=\"number\" min=\"1\" max=\"720\" value=\"");
       uiDomString += (m_switchOffDelay / 60000);
-      uiDomString += F("\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min</span>");
-      infoArr = user.createNestedArray(uiDomString); //name
+      uiDomString += F("\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min");
+      infoArr.add(uiDomString);
 
       // off timer
       if (m_offTimerStart > 0)
       {
+        uiDomString = F("<i class=\"icons\">&#xe325;</i>");
+        infoArr = user.createNestedArray(uiDomString); // timer value
         uiDomString = "";
         unsigned int offSeconds = (m_switchOffDelay - (millis() - m_offTimerStart)) / 1000;
         if (offSeconds >= 3600)
@@ -289,10 +287,6 @@ public:
         }
         uiDomString += (offSeconds);
         infoArr.add(uiDomString + F("s"));
-      }
-      else
-      {
-        infoArr.add(FPSTR(_inactive));
       }
     }
   }
@@ -340,7 +334,7 @@ public:
         PIRsensorPin = pin;
       }
     }
-*/
+
     if (root[FPSTR(_enabled)] != nullptr) {
       if (root[FPSTR(_enabled)] && !m_PIRenabled && PIRsensorPin >= 0) {
         attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
@@ -350,6 +344,7 @@ public:
       }
       m_PIRenabled = root[FPSTR(_enabled)];
     }
+*/
   }
 
   /**
@@ -467,5 +462,3 @@ PIRsensorSwitch *PIRsensorSwitch::PIRsensorSwitchInstance(PIRsensorSwitch *pInst
 const char PIRsensorSwitch::_name[]           PROGMEM = "PIRsensorSwitch";
 const char PIRsensorSwitch::_switchOffDelay[] PROGMEM = "PIRoffSec";
 const char PIRsensorSwitch::_enabled[]        PROGMEM = "PIRenabled";
-const char PIRsensorSwitch::_active[]         PROGMEM = "active";
-const char PIRsensorSwitch::_inactive[]       PROGMEM = "inactive";
