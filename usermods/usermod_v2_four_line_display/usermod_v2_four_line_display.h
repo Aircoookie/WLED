@@ -533,7 +533,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (fullScreen) {
         draw2x2String(TIME_INDENT+2, lineHeight*2, lineBuffer);
         sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
-        drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
+        if (!useAMPM) drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
       } else {
         drawString(9+(useAMPM?0:2), lineHeight*2, lineBuffer);
       }
