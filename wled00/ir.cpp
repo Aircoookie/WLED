@@ -19,6 +19,8 @@ byte lastRepeatableAction = ACTION_NONE;
 uint8_t lastRepeatableValue = 0;
 uint16_t irTimesRepeated = 0;
 uint8_t lastIR6ColourIdx = 0;
+JsonDocument* irDoc;
+String lastRepeatableCommand = "";
 
 
 // brightnessSteps: a static array of brightness levels following a geometric
@@ -84,8 +86,6 @@ bool decodeIRCustom(uint32_t code)
   if (code != IRCUSTOM_MACRO1) colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //don't update color again if we apply macro, it already does it
   return true;
 }
-
-
 
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
@@ -168,6 +168,7 @@ void decodeIR(uint32_t code)
                                            // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
                                            // sets bright plain white
       case 7: decodeIR9(code);    break;
+      case 8: decodeIRJson(code); break;   // any remote configurable with ir.json file
       default: return;
     }
   }
@@ -217,6 +218,11 @@ void applyRepeatActions(){
     {
       nightlightActive = true;
       nightlightStartTime = millis();
+      colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+    }
+    else if (lastRepeatableCommand) 
+    {
+      handleSet(nullptr, lastRepeatableCommand, false);
       colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
 }
@@ -286,7 +292,6 @@ void decodeIR24OLD(uint32_t code)
   lastValidCode = code;
 }
 
-
 void decodeIR24CT(uint32_t code)
 {
   switch (code) {
@@ -320,7 +325,6 @@ void decodeIR24CT(uint32_t code)
   }
   lastValidCode = code;
 }
-
 
 void decodeIR40(uint32_t code)
 {
@@ -520,6 +524,63 @@ void decodeIR9(uint32_t code)
     default: return;
   }
   lastValidCode = code;
+}
+
+
+/*
+This allows users to customize IR actions without the need to edit C code and compile.
+From the https://github.com/Aircoookie/WLED/wiki/Infrared-Control page, download the starter 
+ir.json file that corresponds to the number of buttons on your remote.
+Many of the remotes with the same number of buttons emit the same codes, but will have
+different labels or colors. Once you edit the ir.json file, upload it to your controller
+using the /edit page.
+
+Each key should be the hex encoded IR code. The "cmd" property should be the HTML API command to 
+execute on button press. If the command contains a relative change (SI=~16), it will register
+as a repeatable command. If the command doesn't contain a "~" but is repeatable, add "rpt" property
+set to true. Other properties are ignored but having labels and positions can assist with editing
+the json file.
+
+Sample:
+{
+  "0xFF629D": {"cmd": "T=2", "rpt": true, "label": "Toggle on/off"},
+  "0xFF9867": {"cmd": "A=~16", "label": "Inc brightness"},
+  "0xFF22DD": {"cmd": "CY=0&PL=1", "label": "Preset 1"}
+}
+*/
+void decodeIRJson(uint32_t code) 
+{
+  char objKey[10];  
+  sprintf(objKey, "0x%X", code);
+  String cmd = "win&";
+  JsonObject fdo;
+  if (irDoc) {
+    errorFlag = readObjectFromFile("/ir.json", nullptr, irDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    fdo = irDoc->as<JsonObject>();
+  } else {
+    DEBUGFS_PRINTLN(F("Make read buf"));
+    DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
+    errorFlag = readObjectFromFile("/ir.json", nullptr, &fDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    fdo = fDoc.as<JsonObject>();
+  }
+  if (!errorFlag) {
+    const char* json_cmd;
+    json_cmd = fdo[objKey]["cmd"];
+    cmd += String(json_cmd);
+    if (cmd != "win&") {
+      if (fdo[objKey]["rpt"]) {
+        lastRepeatableCommand = cmd;
+      } 
+      else if (cmd.indexOf("~")) {
+        lastRepeatableCommand = cmd;
+      } else {
+        lastRepeatableCommand = "";
+      }
+      lastValidCode = code;
+      handleSet(nullptr, cmd, false);
+      colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+    }
+  }
 }
 
 void initIR()
