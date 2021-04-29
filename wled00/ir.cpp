@@ -227,7 +227,6 @@ void applyRepeatActions(){
     }
 }
 
-
 void decodeIR24(uint32_t code)
 {
   switch (code) {
@@ -545,15 +544,20 @@ Sample:
 {
   "0xFF629D": {"cmd": "T=2", "rpt": true, "label": "Toggle on/off"},
   "0xFF9867": {"cmd": "A=~16", "label": "Inc brightness"},
-  "0xFF22DD": {"cmd": "CY=0&PL=1", "label": "Preset 1"}
+  "0xFF22DD": {"cmd": "CY=0&PL=1", "label": "Preset 1"},
+  "0xFF38C7": {"cmd": {"bri": 10}, "label": "Dim to 10"}
 }
 */
 void decodeIRJson(uint32_t code) 
 {
-  char objKey[10];  
-  sprintf(objKey, "0x%X", code);
-  String cmd = "win&";
   JsonObject fdo;
+  char objKey[10];
+  const char* cmd;
+  String htmlCmd;
+  JsonObject jsonCmdObj;
+
+  sprintf(objKey, "0x%X", code);
+
   if (irDoc) {
     errorFlag = readObjectFromFile("/ir.json", nullptr, irDoc) ? ERR_NONE : ERR_FS_PLOAD;
     fdo = irDoc->as<JsonObject>();
@@ -564,21 +568,30 @@ void decodeIRJson(uint32_t code)
     fdo = fDoc.as<JsonObject>();
   }
   if (!errorFlag) {
-    const char* json_cmd;
-    json_cmd = fdo[objKey]["cmd"];
-    cmd += String(json_cmd);
-    if (cmd != "win&") {
+    cmd = fdo[objKey]["cmd"];
+    htmlCmd = String(cmd);
+    jsonCmdObj = fdo[objKey]["cmd"];
+    if (htmlCmd != "") {
+      if (!htmlCmd.startsWith("{") && !htmlCmd.startsWith("win&")) {
+        htmlCmd = "win&" + htmlCmd;
+      }
       if (fdo[objKey]["rpt"]) {
-        lastRepeatableCommand = cmd;
+        lastRepeatableCommand = htmlCmd;
       } 
-      else if (cmd.indexOf("~")) {
-        lastRepeatableCommand = cmd;
+      else if (htmlCmd.indexOf("~")) {
+        lastRepeatableCommand = htmlCmd;
       } else {
         lastRepeatableCommand = "";
       }
+      Serial.println("exec: " + htmlCmd);
+      handleSet(nullptr, htmlCmd, false);
       lastValidCode = code;
-      handleSet(nullptr, cmd, false);
+    } else if (!jsonCmdObj.isNull()) {
+      Serial.println("exec json cmd:");
+      serializeJson(jsonCmdObj, Serial);
+      deserializeState(jsonCmdObj);
       colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      lastValidCode = code;
     }
   }
 }
@@ -591,7 +604,6 @@ void initIR()
     irrecv->enableIRIn();
   }
 }
-
 
 void handleIR()
 {
