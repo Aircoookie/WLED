@@ -156,25 +156,22 @@ void decodeIR(uint32_t code)
   lastValidCode = 0; irTimesRepeated = 0;
   if (decodeIRCustom(code)) return;
   if      (code > 0xFFFFFF) return; //invalid code
-  else if (code > 0xF70000 && code < 0xF80000) decodeIR24(code); //is in 24-key remote range
-  else if (code > 0xFF0000) {
-    switch (irEnabled) {
-      case 1: decodeIR24OLD(code); break;  // white 24-key remote (old) - it sends 0xFF0000 values
-      case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
-      case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
-      case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
-      case 5: decodeIR21(code);    break;  // white 21-key remote  
-      case 6: decodeIR6(code);     break;  // black 6-key learning remote defaults: "CH" controls brightness,
-                                           // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
-                                           // sets bright plain white
-      case 7: decodeIR9(code);    break;
-      case 8: decodeIRJson(code); break;   // any remote configurable with ir.json file
-      default: return;
-    }
+  switch (irEnabled) {
+    case 1: decodeIR24OLD(code); break;  // white 24-key remote (old) - it sends 0xFF0000 values
+    case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
+    case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
+    case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
+    case 5: decodeIR21(code);    break;  // white 21-key remote  
+    case 6: decodeIR6(code);     break;  // black 6-key learning remote defaults: "CH" controls brightness,
+                                          // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
+                                          // sets bright plain white
+    case 7: decodeIR9(code);    break;
+    case 8: decodeIRJson(code); break;   // any remote configurable with ir.json file
+    default: return;
   }
+
   if (nightlightActive && bri == 0) nightlightActive = false;
   colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
-  //code <= 0xF70000 also invalid
 }
 
 void applyRepeatActions(){
@@ -590,7 +587,6 @@ void decodeIRJson(uint32_t code)
       Serial.println("exec json cmd:");
       serializeJson(jsonCmdObj, Serial);
       deserializeState(jsonCmdObj);
-      colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
       lastValidCode = code;
     }
   }
