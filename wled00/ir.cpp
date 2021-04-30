@@ -580,12 +580,12 @@ void decodeIRJson(uint32_t code)
       } else {
         lastRepeatableCommand = "";
       }
-      Serial.println("exec: " + htmlCmd);
+      //Serial.println("exec: " + htmlCmd);
       handleSet(nullptr, htmlCmd, false);
       lastValidCode = code;
     } else if (!jsonCmdObj.isNull()) {
-      Serial.println("exec json cmd:");
-      serializeJson(jsonCmdObj, Serial);
+      //Serial.println("exec json cmd:");
+      //serializeJson(jsonCmdObj, Serial);
       deserializeState(jsonCmdObj);
       lastValidCode = code;
     }
