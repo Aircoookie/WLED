@@ -423,6 +423,10 @@ void WLED::setup()
 #endif
   // HTTP server page init
   initServer();
+
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 1); //enable brownout detector
+  #endif
 }
 
 void WLED::beginStrip()

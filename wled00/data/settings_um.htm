@@ -27,11 +27,11 @@
         ldS();
     }
     function check(o,k) {
-        var n = o.name.replace("[]","").substr(-4);
-        if (o.type=="number" && n.substr(0,4)=="_pin") {
+        var n = o.name.replace("[]","").substr(-3);
+        if (o.type=="number" && n.substr(0,3)=="pin") {
             for (var i=0; i<pins.length; i++) {
                 if (k==pinO[i]) continue;
-                if (o.value==pins[i]) { o.style.color="red"; break; } else o.style.color="#fff";
+                if (o.value==pins[i] || o.value<-1 || o.value>39) { o.style.color="red"; break; } else o.style.color=o.value>33?"orange":"#fff";
             }
         }
     }
@@ -43,7 +43,7 @@
                     getPins(v);
                     continue;
                 }
-                if (k=="pin") {
+                if (k.replace("[]","").substr(-3)=="pin") {
                     if (Array.isArray(v)) {
                         for (var i=0; i<v.length; i++) if (v[i]>=0) { pins.push(v[i]); pinO.push(owner); }
                     } else {
@@ -54,6 +54,7 @@
                 }
             }
         }
+        console.log(pins);
     }
     function addField(k,f,o,a=false) {
         if (isO(o)) {

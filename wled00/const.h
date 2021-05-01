@@ -39,6 +39,7 @@
 #define USERMOD_ID_DHT           10            //Usermod "usermod_dht.h"
 #define USERMOD_ID_MODE_SORT     11            //Usermod "usermod_v2_mode_sort.h"
 #define USERMOD_ID_VL53L0X       12            //Usermod "usermod_vl53l0x_gestures.h"
+#define USERMOD_ID_MULTI_RELAY  101            //Usermod "usermod_multi_relay.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
