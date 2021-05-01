@@ -592,6 +592,9 @@ void decodeIRJson(uint32_t code)
         {
           // repeatable action
           lastValidCode = code;
+        } if (effectCurrent == 0 && cmdStr.indexOf("FP=") > -1) {
+          // setting palette but it wont show because effect is solid
+          effectCurrent = FX_MODE_GRADIENT;
         }
         if (!cmdStr.startsWith("win&")) {
           cmdStr = "win&" + cmdStr;
@@ -599,7 +602,7 @@ void decodeIRJson(uint32_t code)
         handleSet(nullptr, cmdStr, false); 
       }        
     } else if (!jsonCmdObj.isNull()) {
-      serializeJson(jsonCmdObj, Serial);
+      // command is JSON object
       deserializeState(jsonCmdObj);
     }
   }
