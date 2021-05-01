@@ -19,8 +19,6 @@ byte lastRepeatableAction = ACTION_NONE;
 uint8_t lastRepeatableValue = 0;
 uint16_t irTimesRepeated = 0;
 uint8_t lastIR6ColourIdx = 0;
-JsonDocument* irDoc;
-String lastRepeatableCommand = "";
 
 
 // brightnessSteps: a static array of brightness levels following a geometric
@@ -70,6 +68,14 @@ void decBrightness()
   }
 }
 
+// apply preset or fallback to a effect and palette if it doesn't exist
+void presetFallback(int8_t presetID, int8_t effectID, int8_t paletteID) 
+{
+  if (!applyPreset(presetID)) { 
+    effectCurrent = effectID;      
+    effectPalette = paletteID;
+  }
+}
 
 //Add what your custom IR codes should trigger here. Guide: https://github.com/Aircoookie/WLED/wiki/Infrared-Control
 //IR codes themselves can be defined directly after "case" or in "ir_codes.h"
@@ -89,7 +95,7 @@ bool decodeIRCustom(uint32_t code)
 
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
-  int16_t new_val = (int16_t) *property + amount;
+  int16_t new_val = (int16_t) *property + amount;colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
   if (new_val > higherBoundary) new_val = higherBoundary;
   else if (new_val < lowerBoundary) new_val = lowerBoundary;
   *property = (byte)constrain(new_val,0.1,255.1);
@@ -217,10 +223,9 @@ void applyRepeatActions(){
       nightlightStartTime = millis();
       colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
-    else if (lastRepeatableCommand) 
+    else if (irEnabled == 8) 
     {
-      handleSet(nullptr, lastRepeatableCommand, false);
-      colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      decodeIRJson(lastValidCode);
     }
 }
 
@@ -531,63 +536,71 @@ Many of the remotes with the same number of buttons emit the same codes, but wil
 different labels or colors. Once you edit the ir.json file, upload it to your controller
 using the /edit page.
 
-Each key should be the hex encoded IR code. The "cmd" property should be the HTML API command to 
-execute on button press. If the command contains a relative change (SI=~16), it will register
-as a repeatable command. If the command doesn't contain a "~" but is repeatable, add "rpt" property
+Each key should be the hex encoded IR code. The "cmd" property should be the HTTP API 
+or JSON API command to execute on button press. If the command contains a relative change (SI=~16),
+it will register as a repeatable command. If the command doesn't contain a "~" but is repeatable, add "rpt" property
 set to true. Other properties are ignored but having labels and positions can assist with editing
 the json file.
 
 Sample:
 {
-  "0xFF629D": {"cmd": "T=2", "rpt": true, "label": "Toggle on/off"},
-  "0xFF9867": {"cmd": "A=~16", "label": "Inc brightness"},
-  "0xFF22DD": {"cmd": "CY=0&PL=1", "label": "Preset 1"},
-  "0xFF38C7": {"cmd": {"bri": 10}, "label": "Dim to 10"}
+  "0xFF629D": {"cmd": "T=2", "rpt": true, "label": "Toggle on/off"},  // HTTP command
+  "0xFF9867": {"cmd": "A=~16", "label": "Inc brightness"},            // HTTP command with incrementing
+  "0xFF38C7": {"cmd": {"bri": 10}, "label": "Dim to 10"},             // JSON command
+  "0xFF22DD": {"cmd": "!presetFallback", "PL": 1, "FX": 16, "FP": 6,  // Custom command
+               "label": "Preset 1, fallback to Saw - Party if not found"},
 }
 */
 void decodeIRJson(uint32_t code) 
 {
-  JsonObject fdo;
   char objKey[10];
   const char* cmd;
-  String htmlCmd;
+  String cmdStr;
+  DynamicJsonDocument irDoc(JSON_BUFFER_SIZE);
+  JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  sprintf(objKey, "0x%X", code);
+  sprintf(objKey, "\"0x%X\":", code);
 
-  if (irDoc) {
-    errorFlag = readObjectFromFile("/ir.json", nullptr, irDoc) ? ERR_NONE : ERR_FS_PLOAD;
-    fdo = irDoc->as<JsonObject>();
-  } else {
-    DEBUGFS_PRINTLN(F("Make read buf"));
-    DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
-    errorFlag = readObjectFromFile("/ir.json", nullptr, &fDoc) ? ERR_NONE : ERR_FS_PLOAD;
-    fdo = fDoc.as<JsonObject>();
-  }
-  if (!errorFlag) {
-    cmd = fdo[objKey]["cmd"];
-    htmlCmd = String(cmd);
-    jsonCmdObj = fdo[objKey]["cmd"];
-    if (htmlCmd != "") {
-      if (!htmlCmd.startsWith("{") && !htmlCmd.startsWith("win&")) {
-        htmlCmd = "win&" + htmlCmd;
-      }
-      if (fdo[objKey]["rpt"]) {
-        lastRepeatableCommand = htmlCmd;
-      } 
-      else if (htmlCmd.indexOf("~")) {
-        lastRepeatableCommand = htmlCmd;
+  errorFlag = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  fdo = irDoc.as<JsonObject>();
+  lastValidCode = 0;
+  if (!errorFlag) 
+  {
+    cmd = fdo["cmd"];
+    cmdStr = String(cmd);
+    jsonCmdObj = fdo["cmd"];
+    if (!cmdStr.isEmpty()) 
+    {
+      if (cmdStr.startsWith("!")) {
+        // call limited set of C functions
+        if (cmdStr == "!incBrightness") {
+          lastValidCode = code;
+          incBrightness();
+        } else if (cmdStr == "!decBrightness") {
+          lastValidCode = code;
+          decBrightness();
+        } else if (cmdStr == "!presetFallback") {
+          uint8_t p1 = fdo["PL"] ? fdo["PL"] : 1;
+          uint8_t p2 = fdo["FX"] ? fdo["FX"] : random8(100);
+          uint8_t p3 = fdo["FP"] ? fdo["FP"] : 0;
+          presetFallback(p1, p2, p3);
+        }
       } else {
-        lastRepeatableCommand = "";
-      }
-      //Serial.println("exec: " + htmlCmd);
-      handleSet(nullptr, htmlCmd, false);
-      lastValidCode = code;
+        // HTTP API command
+        if (cmdStr.indexOf("~") || fdo["rpt"]) 
+        {
+          // repeatable action
+          lastValidCode = code;
+        }
+        if (!cmdStr.startsWith("win&")) {
+          cmdStr = "win&" + cmdStr;
+        }
+        handleSet(nullptr, cmdStr, false); 
+      }        
     } else if (!jsonCmdObj.isNull()) {
-      //Serial.println("exec json cmd:");
-      //serializeJson(jsonCmdObj, Serial);
+      serializeJson(jsonCmdObj, Serial);
       deserializeState(jsonCmdObj);
-      lastValidCode = code;
     }
   }
 }
