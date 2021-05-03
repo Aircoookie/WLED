@@ -135,13 +135,28 @@ class FourLineDisplayUsermod : public Usermod {
       if (!pinManager.allocatePin(sdaPin)) { pinManager.deallocatePin(sclPin); sclPin = sdaPin = -1; type = NONE; return; }
       switch (type) {
         case SSD1306:
-          u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          #ifdef ESP8266
+          if (!(sclPin==5 && sdaPin==4))
+            u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_SW_I2C(sclPin, sdaPin); // SCL, SDA, reset
+          else
+          #endif
+            u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
           break;
         case SH1106:
-          u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          #ifdef ESP8266
+          if (!(sclPin==5 && sdaPin==4))
+            u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_SW_I2C(sclPin, sdaPin); // SCL, SDA, reset
+          else
+          #endif
+            u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
           break;
         case SSD1306_64:
-          u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          #ifdef ESP8266
+          if (!(sclPin==5 && sdaPin==4))
+            u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_SW_I2C(sclPin, sdaPin); // SCL, SDA, reset
+          else
+          #endif
+            u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
           break;
         default:
           u8x8 = nullptr;
