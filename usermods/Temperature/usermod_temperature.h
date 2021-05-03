@@ -165,7 +165,7 @@ class UsermodTemperature : public Usermod {
             // reading the sensor
             strcat_P(subuf, PSTR("/temperature"));
             mqtt->publish(subuf, 0, true, String(temperature).c_str());
-            strcat_P(subuf, PSTR("/temperature_f"));
+            strcat_P(subuf, PSTR("_f"));
             mqtt->publish(subuf, 0, true, String((float)temperature * 1.8f + 32).c_str());
           } else {
             // publish something else to indicate status?
