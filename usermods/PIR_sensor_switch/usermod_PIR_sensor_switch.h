@@ -39,24 +39,11 @@ public:
   /**
    * constructor
    */
-  PIRsensorSwitch()
-  {
-    // set static instance pointer
-    PIRsensorSwitchInstance(this);
-  }
+  PIRsensorSwitch() {}
   /**
    * desctructor
    */
-  ~PIRsensorSwitch()
-  {
-    PIRsensorSwitchInstance(nullptr, true);
-    ;
-  }
-
-  /**
-   * return the instance pointer of the class
-   */
-  static PIRsensorSwitch *GetInstance() { return PIRsensorSwitchInstance(); }
+  ~PIRsensorSwitch() {}
 
   /**
    * Enable/Disable the PIR sensor
@@ -97,11 +84,6 @@ private:
    * PIR sensor state has changed
    */
   static void IRAM_ATTR ISR_PIRstateChange();
-
-  /**
-   * Set/get instance pointer
-   */
-  static PIRsensorSwitch *PIRsensorSwitchInstance(PIRsensorSwitch *pInstance = nullptr, bool bRemoveInstance = false);
 
   /**
    * switch strip on/off
@@ -253,17 +235,18 @@ public:
 */
     if (m_PIRenabled)
     {
+/*
       JsonArray infoArr = user.createNestedArray(F("PIR switch-off timer after")); //name
       String uiDomString = F("<input type=\"number\" min=\"1\" max=\"720\" value=\"");
       uiDomString += (m_switchOffDelay / 60000);
       uiDomString += F("\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min");
       infoArr.add(uiDomString);
-
+*/
       // off timer
+      String uiDomString = F("PIR <i class=\"icons\">&#xe325;</i>");
+      JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
       if (m_offTimerStart > 0)
       {
-        uiDomString = F("<i class=\"icons\">&#xe325;</i>");
-        infoArr = user.createNestedArray(uiDomString); // timer value
         uiDomString = "";
         unsigned int offSeconds = (m_switchOffDelay - (millis() - m_offTimerStart)) / 1000;
         if (offSeconds >= 3600)
@@ -287,6 +270,8 @@ public:
         }
         uiDomString += (offSeconds);
         infoArr.add(uiDomString + F("s"));
+      } else {
+        infoArr.add(F("inactive"));
       }
     }
   }
@@ -448,17 +433,7 @@ void IRAM_ATTR PIRsensorSwitch::ISR_PIRstateChange()
   newPIRsensorState(true, true);
 }
 
-PIRsensorSwitch *PIRsensorSwitch::PIRsensorSwitchInstance(PIRsensorSwitch *pInstance, bool bRemoveInstance)
-{
-  static PIRsensorSwitch *s_pPIRsensorSwitch = nullptr;
-  if (pInstance != nullptr || bRemoveInstance)
-  {
-    s_pPIRsensorSwitch = pInstance;
-  }
-  return s_pPIRsensorSwitch;
-};
-
 // strings to reduce flash memory usage (used more than twice)
 const char PIRsensorSwitch::_name[]           PROGMEM = "PIRsensorSwitch";
-const char PIRsensorSwitch::_switchOffDelay[] PROGMEM = "PIRoffSec";
 const char PIRsensorSwitch::_enabled[]        PROGMEM = "PIRenabled";
+const char PIRsensorSwitch::_switchOffDelay[] PROGMEM = "PIRoffSec";

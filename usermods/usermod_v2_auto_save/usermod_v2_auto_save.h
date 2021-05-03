@@ -30,6 +30,7 @@ class AutoSaveUsermod : public Usermod {
 
     bool firstLoop = true;
     bool initDone = false;
+    bool enabled = true;
 
     // configurable parameters
     unsigned long autoSaveAfterSec = 15;  // 15s by default
@@ -51,6 +52,7 @@ class AutoSaveUsermod : public Usermod {
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
+    static const char _autoSaveEnabled[];
     static const char _autoSaveAfterSec[];
     static const char _autoSavePreset[];
     static const char _autoSaveApplyOnBoot[];
@@ -95,7 +97,7 @@ class AutoSaveUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (!autoSaveAfterSec) return;  // setting 0 as autosave seconds disables autosave
+      if (!autoSaveAfterSec && !enabled) return;  // setting 0 as autosave seconds disables autosave
 
       unsigned long now = millis();
       uint8_t currentMode = strip.getMode();
@@ -181,6 +183,7 @@ class AutoSaveUsermod : public Usermod {
     void addToConfig(JsonObject& root) {
       // we add JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
+      top[FPSTR(_autoSaveEnabled)]     = enabled;
       top[FPSTR(_autoSaveAfterSec)]    = autoSaveAfterSec;  // usermodparam
       top[FPSTR(_autoSavePreset)]      = autoSavePreset;    // usermodparam
       top[FPSTR(_autoSaveApplyOnBoot)] = applyAutoSaveOnBoot;
@@ -198,21 +201,30 @@ class AutoSaveUsermod : public Usermod {
     void readFromConfig(JsonObject& root) {
       // we look for JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
       JsonObject top = root[FPSTR(_name)];
-      if (!top.isNull() && top[FPSTR(_autoSaveAfterSec)] != nullptr) {
-        autoSaveAfterSec = top[FPSTR(_autoSaveAfterSec)].as<int>();
-        autoSavePreset   = top[FPSTR(_autoSavePreset)].as<int>();
-        if (top[FPSTR(_autoSaveApplyOnBoot)].is<bool>()) {
-          // reading from cfg.json
-          applyAutoSaveOnBoot = top[FPSTR(_autoSaveApplyOnBoot)].as<bool>();
-        } else {
-          // reading from POST message
-          String str = top[FPSTR(_autoSaveApplyOnBoot)]; // checkbox -> off or on
-          applyAutoSaveOnBoot = (bool)(str!="off"); // off is guaranteed to be present
-        }
-        DEBUG_PRINTLN(F("Autosave config (re)loaded."));
-      } else {
+      if (top.isNull()) {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
+        return;
       }
+      
+      if (top[FPSTR(_autoSaveEnabled)].is<bool>()) {
+        // reading from cfg.json
+        enabled = top[FPSTR(_autoSaveEnabled)].as<bool>();
+      } else {
+        // reading from POST message
+        String str = top[FPSTR(_autoSaveEnabled)]; // checkbox -> off or on
+        enabled = (bool)(str!="off"); // off is guaranteed to be present
+      }
+      autoSaveAfterSec = min(3600,max(10,top[FPSTR(_autoSaveAfterSec)].as<int>()));
+      autoSavePreset   = min(250,max(100,top[FPSTR(_autoSavePreset)].as<int>()));
+      if (top[FPSTR(_autoSaveApplyOnBoot)].is<bool>()) {
+        // reading from cfg.json
+        applyAutoSaveOnBoot = top[FPSTR(_autoSaveApplyOnBoot)].as<bool>();
+      } else {
+        // reading from POST message
+        String str = top[FPSTR(_autoSaveApplyOnBoot)]; // checkbox -> off or on
+        applyAutoSaveOnBoot = (bool)(str!="off"); // off is guaranteed to be present
+      }
+      DEBUG_PRINTLN(F("Autosave config (re)loaded."));
   }
 
     /*
@@ -226,6 +238,7 @@ class AutoSaveUsermod : public Usermod {
 
 // strings to reduce flash memory usage (used more than twice)
 const char AutoSaveUsermod::_name[]                PROGMEM = "Autosave";
+const char AutoSaveUsermod::_autoSaveEnabled[]     PROGMEM = "enabled";
 const char AutoSaveUsermod::_autoSaveAfterSec[]    PROGMEM = "autoSaveAfterSec";
 const char AutoSaveUsermod::_autoSavePreset[]      PROGMEM = "autoSavePreset";
 const char AutoSaveUsermod::_autoSaveApplyOnBoot[] PROGMEM = "autoSaveApplyOnBoot";
