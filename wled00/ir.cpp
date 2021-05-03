@@ -95,7 +95,7 @@ bool decodeIRCustom(uint32_t code)
 
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
-  int16_t new_val = (int16_t) *property + amount;colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+  int16_t new_val = (int16_t) *property + amount;
   if (new_val > higherBoundary) new_val = higherBoundary;
   else if (new_val < lowerBoundary) new_val = lowerBoundary;
   *property = (byte)constrain(new_val,0.1,255.1);
