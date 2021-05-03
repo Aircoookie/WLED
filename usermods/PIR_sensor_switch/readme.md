@@ -107,3 +107,7 @@ class MyUsermod : public Usermod {
 ```
 
 Have fun - @gegu
+
+## Change log
+2021-04
+* Adaptation for runtime configuration.

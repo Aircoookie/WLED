@@ -49,3 +49,7 @@ Usermod can be configured in Usermods settings page.
 If there is no MultiRelay section, just save current configuration and re-open Usermods settings page. 
 
 Have fun - @blazoncek
+
+## Change log
+2021-04
+* First implementation.
