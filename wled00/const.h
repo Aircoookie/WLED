@@ -11,10 +11,12 @@
 #define DEFAULT_OTA_PASS    "wledota"
 
 //increase if you need more
-#ifdef ESP8266
-  #define WLED_MAX_USERMODS 4
-#else
-  #define WLED_MAX_USERMODS 6
+#ifndef WLED_MAX_USERMODS
+  #ifdef ESP8266
+    #define WLED_MAX_USERMODS 4
+  #else
+    #define WLED_MAX_USERMODS 6
+  #endif
 #endif
 
 #ifndef WLED_MAX_BUSSES
