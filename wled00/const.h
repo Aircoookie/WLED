@@ -11,13 +11,17 @@
 #define DEFAULT_OTA_PASS    "wledota"
 
 //increase if you need more
-#define WLED_MAX_USERMODS 4
+#ifdef ESP8266
+  #define WLED_MAX_USERMODS 4
+#else
+  #define WLED_MAX_USERMODS 6
+#endif
 
 #ifndef WLED_MAX_BUSSES
   #ifdef ESP8266
     #define WLED_MAX_BUSSES 3
   #else
-    #ifdef ARDUINO_ARCH_ESP32S2
+    #ifdef CONFIG_IDF_TARGET_ESP32S2
       #define WLED_MAX_BUSSES 5
     #else
       #define WLED_MAX_BUSSES 10
