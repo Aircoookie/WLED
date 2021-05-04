@@ -107,7 +107,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       type = request->arg(lt).toInt();
       //if (isRgbw(type)) strip.isRgbw = true; //30fps
       //strip.isRgbw = true;
-      
+
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
         length = request->arg(lc).toInt();
       } else {
@@ -155,7 +155,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
-    
+
     strip.rgbwMode = request->arg(F("AW")).toInt();
 
     briS = request->arg(F("CA")).toInt();
@@ -295,7 +295,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     longitude = request->arg(F("LN")).toFloat();
     latitude = request->arg(F("LT")).toFloat();
     // force a sunrise/sunset re-calculation
-    calculateSunriseAndSunset(); 
+    calculateSunriseAndSunset();
 
     if (request->hasArg(F("OL"))) {
       overlayDefault = request->arg(F("OL")).toInt();
@@ -671,6 +671,40 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("RD="));
   if (pos > 0) receiveDirect = (req.charAt(pos+3) != '0');
 
+  // SYNC SETTINGS endpoints
+  // set sync mode - EP/DI
+  pos = req.indexOf(F("EP="));
+  if (pos > 0) {
+    e131Port = getNumVal(&req, pos);
+  }
+  // start universe
+  pos = req.indexOf(F("EU="));
+  if (pos > 0) {
+    e131Universe = getNumVal(&req, pos);
+  }
+  // DMX start address
+  pos = req.indexOf(F("DA="));
+  if (pos > 0) {
+    DMXAddress = getNumVal(&req, pos);
+  }
+  // DMX mode
+  pos = req.indexOf(F("DM="));
+  if (pos > 0) {
+    DMXMode = getNumVal(&req, pos);
+  }
+  // timeout
+  pos = req.indexOf(F("ET="));
+  if (pos > 0) {
+    realtimeTimeoutMs = getNumVal(&req, pos);
+  }
+  // force max brightness
+  pos = req.indexOf(F("FB="));
+  if (pos > 0) arlsForceMaxBri = (req.charAt(pos+3) != '0');
+  // disable gamma correction
+  pos = req.indexOf(F("RG="));
+  if (pos > 0) arlsDisableGammaCorrection = (req.charAt(pos+3) != '0');
+  
+
   //main toggle on/off (parse before nightlight, #1214)
   pos = req.indexOf(F("&T="));
   if (pos > 0) {
@@ -768,7 +802,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //mode, 1 countdown
   pos = req.indexOf(F("NM="));
   if (pos > 0) countdownMode = (req.charAt(pos+3) != '0');
-  
+
   pos = req.indexOf(F("NX=")); //sets digits to code
   if (pos > 0) {
     strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
@@ -837,7 +871,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //end of temporary fix code
 
   if (!apply) return true; //when called by JSON API, do not call colorUpdated() here
-  
+
   //internal call, does not send XML response
   pos = req.indexOf(F("IN"));
   if (pos < 1) XML_response(request);
