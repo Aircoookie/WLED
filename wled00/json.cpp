@@ -158,22 +158,21 @@ void deserializeSegment(JsonObject elem, byte it)
 
 void deserializeSettings(JsonObject root)
 {
-  JsonObject syncSettings = root["syncsettings"];
-
-  JsonObject bcast = syncSettings["bcast"];
+  // UDP sync settings
+  JsonObject bcast = root["bcast"];
   udpPort       = bcast["udp"]   | udpPort;
   udpPort2      = bcast["udp2"]  | udpPort2;
   receiveDirect = bcast["rtudp"] | receiveDirect;
 
-  // SYNC SETTINGS TEST
-  JsonObject sync = syncSettings["sync"];
+  // DMX Network sync settings
+  JsonObject sync = root["sync"];
   e131Port          = sync["port"]    | e131Port;
   e131Universe      = sync["uni"]     | e131Universe;
   DMXAddress        = sync["addr"]    | DMXAddress;
   DMXMode           = sync["mode"]    | DMXMode;
   realtimeTimeoutMs = sync["tout"]    | realtimeTimeoutMs;
   arlsForceMaxBri   = sync["maxbri"]  | arlsForceMaxBri;
-  arlsDisableGammaCorrection = sync["gamma"] | arlsDisableGammaCorrection;
+  arlsDisableGammaCorrection = sync["no-gc"] | arlsDisableGammaCorrection;
 
 }
 
@@ -227,16 +226,6 @@ bool deserializeState(JsonObject root)
   receiveNotifications = udpn["recv"] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
-  // // SYNC SETTINGS TEST
-  // JsonObject sync = root["sync"];
-  // e131Port          = sync["port"]    | e131Port;
-  // e131Universe      = sync["uni"]     | e131Universe;
-  // DMXAddress        = sync["addr"]    | DMXAddress;
-  // DMXMode           = sync["mode"]    | DMXMode;
-  // realtimeTimeoutMs = sync["tout"]    | realtimeTimeoutMs;
-  // arlsForceMaxBri   = sync["maxbri"]  | arlsForceMaxBri;
-  // arlsDisableGammaCorrection = sync["gamma"] | arlsDisableGammaCorrection;
-
   unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
     time_t prev = now();
@@ -252,8 +241,11 @@ bool deserializeState(JsonObject root)
 
   doReboot = root[F("rb")] | doReboot;
 
-  // deserialize settings here?
-  if (root.containsKey("syncsettings")) deserializeSettings(root); serializeConfig();
+  // send 'settsync' to change sync settings via json api
+  if (root.containsKey("settsync")) {
+    deserializeSettings(root);
+    serializeConfig();
+  }
 
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
@@ -381,22 +373,21 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 
 void serializeSettings(JsonObject root)
 {
-  JsonObject syncSettings = root.createNestedObject("syncsettings");
-
-  JsonObject bcast = syncSettings.createNestedObject("bcast");
+  // UDP sync settings
+  JsonObject bcast = root.createNestedObject("bcast");
   bcast["udp"]    = udpPort;
   bcast["udp2"]   = udpPort2;
   bcast["rtudp"]  = receiveDirect;
 
-  // SYNC SETTINGS TEST
-  JsonObject sync = syncSettings.createNestedObject("sync");
+  // DMX Network sync settings
+  JsonObject sync = root.createNestedObject("sync");
   sync["port"]    = e131Port;
   sync["uni"]     = e131Universe;
   sync["addr"]    = DMXAddress;
   sync["mode"]    = DMXMode;
   sync["tout"]    = realtimeTimeoutMs;
   sync["maxbri"]  = arlsForceMaxBri;
-  sync["gamma"]   = arlsDisableGammaCorrection;
+  sync["no-gc"]   = arlsDisableGammaCorrection;
 
 }
 
@@ -437,16 +428,6 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     JsonObject udpn = root.createNestedObject("udpn");
     udpn["send"] = notifyDirect;
     udpn["recv"] = receiveNotifications;
-
-    // // SYNC SETTINGS TEST
-    // JsonObject sync = root.createNestedObject("sync");
-    // sync["port"]    = e131Port;
-    // sync["uni"]     = e131Universe;
-    // sync["addr"]    = DMXAddress;
-    // sync["mode"]    = DMXMode;
-    // sync["tout"]    = realtimeTimeoutMs;
-    // sync["maxbri"]  = arlsForceMaxBri;
-    // sync["gamma"]   = arlsDisableGammaCorrection;
 
     root[F("lor")] = realtimeOverride;
   }
@@ -797,7 +778,7 @@ void serveJson(AsyncWebServerRequest* request)
   else if (url.indexOf("si") > 0) subJson = 3;
   else if (url.indexOf("nodes") > 0) subJson = 4;
   else if (url.indexOf("palx") > 0) subJson = 5;
-  else if (url.indexOf("settings") > 0) subJson = 6;
+  else if (url.indexOf("sett") > 0) subJson = 6;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
