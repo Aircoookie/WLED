@@ -30,9 +30,9 @@ void deserializeSegment(JsonObject elem, byte it)
       seg.setOpacity(segbri, id);
       seg.setOption(SEG_OPTION_ON, 1, id);
     }
-  
+
     seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON), id);
-    
+
     JsonArray colarr = elem["col"];
     if (!colarr.isNull())
     {
@@ -58,8 +58,8 @@ void deserializeSegment(JsonObject elem, byte it)
           byte sz = colX.size();
           if (sz == 0) continue; //do nothing on empty array
 
-          byte cp = copyArray(colX, rgbw, 4);      
-          if (cp == 1 && rgbw[0] == 0) 
+          byte cp = copyArray(colX, rgbw, 4);
+          if (cp == 1 && rgbw[0] == 0)
             seg.setColor(i, 0, id);
           colValid = true;
         }
@@ -156,6 +156,27 @@ void deserializeSegment(JsonObject elem, byte it)
   }
 }
 
+void deserializeSettings(JsonObject root)
+{
+  JsonObject syncSettings = root["syncsettings"];
+
+  JsonObject bcast = syncSettings["bcast"];
+  udpPort       = bcast["udp"]   | udpPort;
+  udpPort2      = bcast["udp2"]  | udpPort2;
+  receiveDirect = bcast["rtudp"] | receiveDirect;
+
+  // SYNC SETTINGS TEST
+  JsonObject sync = syncSettings["sync"];
+  e131Port          = sync["port"]    | e131Port;
+  e131Universe      = sync["uni"]     | e131Universe;
+  DMXAddress        = sync["addr"]    | DMXAddress;
+  DMXMode           = sync["mode"]    | DMXMode;
+  realtimeTimeoutMs = sync["tout"]    | realtimeTimeoutMs;
+  arlsForceMaxBri   = sync["maxbri"]  | arlsForceMaxBri;
+  arlsDisableGammaCorrection = sync["gamma"] | arlsDisableGammaCorrection;
+
+}
+
 bool deserializeState(JsonObject root)
 {
   strip.applyToAllSelected = false;
@@ -185,7 +206,7 @@ bool deserializeState(JsonObject root)
 
   tr = root[F("tb")] | -1;
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
-  
+
   int cy = root[F("pl")] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);
   JsonObject ccnf = root["ccnf"];
@@ -206,6 +227,16 @@ bool deserializeState(JsonObject root)
   receiveNotifications = udpn["recv"] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
+  // // SYNC SETTINGS TEST
+  // JsonObject sync = root["sync"];
+  // e131Port          = sync["port"]    | e131Port;
+  // e131Universe      = sync["uni"]     | e131Universe;
+  // DMXAddress        = sync["addr"]    | DMXAddress;
+  // DMXMode           = sync["mode"]    | DMXMode;
+  // realtimeTimeoutMs = sync["tout"]    | realtimeTimeoutMs;
+  // arlsForceMaxBri   = sync["maxbri"]  | arlsForceMaxBri;
+  // arlsDisableGammaCorrection = sync["gamma"] | arlsDisableGammaCorrection;
+
   unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
     time_t prev = now();
@@ -220,6 +251,9 @@ bool deserializeState(JsonObject root)
   }
 
   doReboot = root[F("rb")] | doReboot;
+
+  // deserialize settings here?
+  if (root.containsKey("syncsettings")) deserializeSettings(root); serializeConfig();
 
   realtimeOverride = root[F("lor")] | realtimeOverride;
   if (realtimeOverride > 2) realtimeOverride = REALTIME_OVERRIDE_ALWAYS;
@@ -239,7 +273,7 @@ bool deserializeState(JsonObject root)
   if (segVar.is<JsonObject>())
   {
     int id = segVar["id"] | -1;
-    
+
     if (id < 0) { //set all selected segments
       bool didSet = false;
       byte lowestActive = 99;
@@ -345,6 +379,27 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
 }
 
+void serializeSettings(JsonObject root)
+{
+  JsonObject syncSettings = root.createNestedObject("syncsettings");
+
+  JsonObject bcast = syncSettings.createNestedObject("bcast");
+  bcast["udp"]    = udpPort;
+  bcast["udp2"]   = udpPort2;
+  bcast["rtudp"]  = receiveDirect;
+
+  // SYNC SETTINGS TEST
+  JsonObject sync = syncSettings.createNestedObject("sync");
+  sync["port"]    = e131Port;
+  sync["uni"]     = e131Universe;
+  sync["addr"]    = DMXAddress;
+  sync["mode"]    = DMXMode;
+  sync["tout"]    = realtimeTimeoutMs;
+  sync["maxbri"]  = arlsForceMaxBri;
+  sync["gamma"]   = arlsDisableGammaCorrection;
+
+}
+
 void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segmentBounds)
 {
   if (includeBri) {
@@ -382,6 +437,16 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     JsonObject udpn = root.createNestedObject("udpn");
     udpn["send"] = notifyDirect;
     udpn["recv"] = receiveNotifications;
+
+    // // SYNC SETTINGS TEST
+    // JsonObject sync = root.createNestedObject("sync");
+    // sync["port"]    = e131Port;
+    // sync["uni"]     = e131Universe;
+    // sync["addr"]    = DMXAddress;
+    // sync["mode"]    = DMXMode;
+    // sync["tout"]    = realtimeTimeoutMs;
+    // sync["maxbri"]  = arlsForceMaxBri;
+    // sync["gamma"]   = arlsDisableGammaCorrection;
 
     root[F("lor")] = realtimeOverride;
   }
@@ -489,7 +554,7 @@ void serializeInfo(JsonObject root)
   fs_info[F("pmt")] = presetsModifiedTime;
 
   root[F("ndc")] = nodeListEnabled ? (int)Nodes.size() : -1;
-  
+
   #ifdef ARDUINO_ARCH_ESP32
   #ifdef WLED_DEBUG
     wifi_info[F("txPower")] = (int) WiFi.getTxPower();
@@ -630,7 +695,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
     CRGB ter;
     switch (i) {
       case 0: //default palette
-        setPaletteColors(curPalette, PartyColors_p); 
+        setPaletteColors(curPalette, PartyColors_p);
         break;
       case 1: //random
           curPalette.add("r");
@@ -653,7 +718,7 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
         curPalette.add(F("c1"));
         break;
       case 5: {//primary + secondary (+tert if not off), more distinct
-      
+
         curPalette.add(F("c1"));
         curPalette.add(F("c1"));
         curPalette.add(F("c1"));
@@ -732,6 +797,7 @@ void serveJson(AsyncWebServerRequest* request)
   else if (url.indexOf("si") > 0) subJson = 3;
   else if (url.indexOf("nodes") > 0) subJson = 4;
   else if (url.indexOf("palx") > 0) subJson = 5;
+  else if (url.indexOf("settings") > 0) subJson = 6;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
@@ -762,6 +828,8 @@ void serveJson(AsyncWebServerRequest* request)
       serializeNodes(doc); break;
     case 5: //palettes
       serializePalettes(doc, request); break;
+    case 6: //settings
+      serializeSettings(doc); break;
     default: //all
       JsonObject state = doc.createNestedObject("state");
       serializeState(state);

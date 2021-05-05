@@ -673,6 +673,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   // SYNC SETTINGS endpoints
   // set sync mode - EP/DI
+  // int t = request->arg(F("EP")).toInt();
+  // if (t > 0) e131Port = t;
   pos = req.indexOf(F("EP="));
   if (pos > 0) {
     e131Port = getNumVal(&req, pos);
@@ -703,7 +705,8 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   // disable gamma correction
   pos = req.indexOf(F("RG="));
   if (pos > 0) arlsDisableGammaCorrection = (req.charAt(pos+3) != '0');
-  
+  // handleSettingsSet(request, 4);
+
 
   //main toggle on/off (parse before nightlight, #1214)
   pos = req.indexOf(F("&T="));

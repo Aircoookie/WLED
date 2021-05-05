@@ -97,8 +97,10 @@ void handleIR();
 #include "FX.h"
 
 void deserializeSegment(JsonObject elem, byte it);
+void deserializeSettings(JsonObject root);
 bool deserializeState(JsonObject root);
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
+void serializeSettings(JsonObject root);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
 void serveJson(AsyncWebServerRequest* request);
@@ -128,7 +130,7 @@ void publishMqtt();
 //ntp.cpp
 void handleNetworkTime();
 void sendNTPPacket();
-bool checkNTPResponse();    
+bool checkNTPResponse();
 void updateLocalTime();
 void getTimeString(char* out);
 bool checkCountdown();
@@ -146,7 +148,7 @@ void _overlayAnalogClock();
 
 byte getSameCodeLength(char code, int index, char const cronixieDisplay[]);
 void setCronixie();
-void _overlayCronixie();    
+void _overlayCronixie();
 void _drawOverlayCronixie();
 
 //playlist.cpp
