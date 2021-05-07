@@ -269,6 +269,7 @@ void deserializeConfig() {
   CJSON(macroAlexaOn, interfaces[F("va")][F("macros")][0]);
   CJSON(macroAlexaOff, interfaces[F("va")][F("macros")][1]);
 
+#ifndef WLED_DISABLE_BLYNK
   const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
   tdd = strnlen(apikey, 36);
   if (tdd > 20 || tdd == 0)
@@ -277,7 +278,9 @@ void deserializeConfig() {
   JsonObject if_blynk = interfaces["blynk"];
   getStringFromJson(blynkHost, if_blynk[F("host")], 33);
   CJSON(blynkPort, if_blynk["port"]);
+#endif
 
+#ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   CJSON(mqttEnabled, if_mqtt["en"]);
   getStringFromJson(mqttServer, if_mqtt[F("broker")], 33);
@@ -288,7 +291,9 @@ void deserializeConfig() {
 
   getStringFromJson(mqttDeviceTopic, if_mqtt[F("topics")][F("device")], 33); // "wled/test"
   getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], 33); // ""
+#endif
 
+#ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces[F("hue")];
   CJSON(huePollingEnabled, if_hue["en"]);
   CJSON(huePollLightId, if_hue["id"]);
@@ -304,6 +309,7 @@ void deserializeConfig() {
 
   for (byte i = 0; i < 4; i++)
     CJSON(hueIP[i], if_hue_ip[i]);
+#endif
 
   JsonObject if_ntp = interfaces[F("ntp")];
   CJSON(ntpEnabled, if_ntp["en"]);
@@ -586,11 +592,15 @@ void serializeConfig() {
   JsonArray if_va_macros = if_va.createNestedArray("macros");
   if_va_macros.add(macroAlexaOn);
   if_va_macros.add(macroAlexaOff);
+
+#ifndef WLED_DISABLE_BLYNK
   JsonObject if_blynk = interfaces.createNestedObject("blynk");
   if_blynk[F("token")] = strlen(blynkApiKey) ? "Hidden":"";
   if_blynk[F("host")] = blynkHost;
   if_blynk["port"] = blynkPort;
+#endif
 
+#ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["en"] = mqttEnabled;
   if_mqtt[F("broker")] = mqttServer;
@@ -602,7 +612,9 @@ void serializeConfig() {
   JsonObject if_mqtt_topics = if_mqtt.createNestedObject(F("topics"));
   if_mqtt_topics[F("device")] = mqttDeviceTopic;
   if_mqtt_topics[F("group")] = mqttGroupTopic;
+#endif
 
+#ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces.createNestedObject("hue");
   if_hue["en"] = huePollingEnabled;
   if_hue["id"] = huePollLightId;
@@ -617,6 +629,7 @@ void serializeConfig() {
   for (byte i = 0; i < 4; i++) {
     if_hue_ip.add(hueIP[i]);
   }
+#endif
 
   JsonObject if_ntp = interfaces.createNestedObject("ntp");
   if_ntp["en"] = ntpEnabled;
@@ -700,15 +713,21 @@ bool deserializeConfigSec() {
 
   JsonObject interfaces = doc["if"];
 
+#ifndef WLED_DISABLE_BLYNK
   const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
   int tdd = strnlen(apikey, 36);
   if (tdd > 20 || tdd == 0)
     getStringFromJson(blynkApiKey, apikey, 36);
+#endif
 
+#ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   getStringFromJson(mqttPass, if_mqtt["psk"], 41);
+#endif
 
+#ifndef WLED_DISABLE_HUESYNC
   getStringFromJson(hueApiKey, interfaces[F("hue")][F("key")], 47);
+#endif
 
   JsonObject ota = doc["ota"];
   getStringFromJson(otaPass, ota[F("pwd")], 33);
@@ -735,12 +754,18 @@ void serializeConfigSec() {
   ap["psk"] = apPass;
 
   JsonObject interfaces = doc.createNestedObject("if");
+#ifndef WLED_DISABLE_BLYNK
   JsonObject if_blynk = interfaces.createNestedObject("blynk");
   if_blynk[F("token")] = blynkApiKey;
+#endif
+#ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["psk"] = mqttPass;
+#endif
+#ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces.createNestedObject("hue");
   if_hue[F("key")] = hueApiKey;
+#endif
 
   JsonObject ota = doc.createNestedObject("ota");
   ota[F("pwd")] = otaPass;

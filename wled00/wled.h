@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2105061
+#define VERSION 2105071
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -279,9 +279,11 @@ WLED_GLOBAL bool notifyTwice  _INIT(false);                       // notificatio
 WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable device discovery by Amazon Echo
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 
+#ifndef WLED_DISABLE_BLYNK
 WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
 WLED_GLOBAL char blynkHost[33] _INIT("blynk-cloud.com");          // Default Blynk host
 WLED_GLOBAL uint16_t blynkPort _INIT(80);                         // Default Blynk port
+#endif
 
 WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
 WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset
@@ -311,6 +313,7 @@ WLED_GLOBAL char mqttPass[41] _INIT("");                   // optional: password
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
 WLED_GLOBAL uint16_t mqttPort _INIT(1883);
 
+#ifndef WLED_DISABLE_HUESYNC
 WLED_GLOBAL bool huePollingEnabled _INIT(false);           // poll hue bridge for light state
 WLED_GLOBAL uint16_t huePollIntervalMs _INIT(2500);        // low values (< 1sec) may cause lag but offer quicker response
 WLED_GLOBAL char hueApiKey[47] _INIT("api");               // key token will be obtained from bridge
@@ -319,6 +322,7 @@ WLED_GLOBAL IPAddress hueIP _INIT_N(((0, 0, 0, 0))); // IP address of the bridge
 WLED_GLOBAL bool hueApplyOnOff _INIT(true);
 WLED_GLOBAL bool hueApplyBri _INIT(true);
 WLED_GLOBAL bool hueApplyColor _INIT(true);
+#endif
 
 // Time CONFIG
 WLED_GLOBAL bool ntpEnabled _INIT(false);         // get internet time. Only required if you use clock overlays or time-activated macros
@@ -333,8 +337,10 @@ WLED_GLOBAL byte analogClock12pixel _INIT(0);               // The pixel in your
 WLED_GLOBAL bool analogClockSecondsTrail _INIT(false);      // Display seconds as trail of LEDs instead of a single pixel
 WLED_GLOBAL bool analogClock5MinuteMarks _INIT(false);      // Light pixels at every 5-minute position
 
+#ifndef WLED_DISABLE_CRONIXIE
 WLED_GLOBAL char cronixieDisplay[7] _INIT("HHMMSS");        // Cronixie Display mask. See wled13_cronixie.ino
 WLED_GLOBAL bool cronixieBacklight _INIT(true);             // Allow digits to be back-illuminated
+#endif
 
 WLED_GLOBAL bool countdownMode _INIT(false);                         // Clock will count down towards date
 WLED_GLOBAL byte countdownYear _INIT(20), countdownMonth _INIT(1);   // Countdown target date, year is last two digits

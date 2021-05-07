@@ -566,11 +566,13 @@ void WLED::initInterfaces()
 {
   DEBUG_PRINTLN(F("Init STA interfaces"));
 
+#ifndef WLED_DISABLE_HUESYNC
   if (hueIP[0] == 0) {
     hueIP[0] = Network.localIP()[0];
     hueIP[1] = Network.localIP()[1];
     hueIP[2] = Network.localIP()[2];
   }
+#endif
 
   // init Alexa hue emulation
   if (alexaEnabled)
@@ -608,7 +610,9 @@ void WLED::initInterfaces()
   if (ntpEnabled)
     ntpConnected = ntpUdp.begin(ntpLocalPort);
 
+#ifndef WLED_DISABLE_BLYNK
   initBlynk(blynkApiKey, blynkHost, blynkPort);
+#endif
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
   reconnectHue();
   initMqtt();

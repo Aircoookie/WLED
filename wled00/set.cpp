@@ -239,6 +239,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     alexaEnabled = request->hasArg(F("AL"));
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
 
+    #ifndef WLED_DISABLE_BLYNK
     strlcpy(blynkHost, request->arg("BH").c_str(), 33);
     t = request->arg(F("BP")).toInt();
     if (t > 0) blynkPort = t;
@@ -246,6 +247,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (request->hasArg("BK") && !request->arg("BK").equals(F("Hidden"))) {
       strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey, blynkHost, blynkPort);
     }
+    #endif
 
     #ifdef WLED_ENABLE_MQTT
     mqttEnabled = request->hasArg(F("MQ"));
@@ -308,8 +310,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClock5MinuteMarks = request->hasArg(F("O5"));
     analogClockSecondsTrail = request->hasArg(F("OS"));
 
+    #ifndef WLED_DISABLE_CRONIXIE
     strcpy(cronixieDisplay,request->arg(F("CX")).c_str());
     cronixieBacklight = request->hasArg(F("CB"));
+    #endif
     countdownMode = request->hasArg(F("CE"));
     countdownYear = request->arg(F("CY")).toInt();
     countdownMonth = request->arg(F("CI")).toInt();

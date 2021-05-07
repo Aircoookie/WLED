@@ -157,6 +157,7 @@ void loadSettingsFromEEPROM()
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
   
   if (lastEEPROMversion > 4) {
+    #ifndef WLED_DISABLE_HUESYNC
     huePollingEnabled = EEPROM.read(2048);
     //hueUpdatingEnabled = EEPROM.read(2049);
     for (int i = 2050; i < 2054; ++i)
@@ -172,6 +173,7 @@ void loadSettingsFromEEPROM()
     hueApplyBri = EEPROM.read(2104);
     hueApplyColor = EEPROM.read(2105);
     huePollLightId = EEPROM.read(2106);
+    #endif
   }
   if (lastEEPROMversion > 5) {
     overlayMin = EEPROM.read(2150);
@@ -188,8 +190,10 @@ void loadSettingsFromEEPROM()
     countdownSec = EEPROM.read(2161);
     setCountdown();
 
+    #ifndef WLED_DISABLE_CRONIXIE
     readStringFromEEPROM(2165, cronixieDisplay, 6);
     cronixieBacklight = EEPROM.read(2171);
+    #endif
 
     //macroBoot = EEPROM.read(2175);
     macroAlexaOn = EEPROM.read(2176);
@@ -343,8 +347,10 @@ void loadSettingsFromEEPROM()
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
 
+  #ifndef WLED_DISABLE_BLYNK
   readStringFromEEPROM(2220, blynkApiKey, 35);
   if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
+  #endif
 
   #ifdef WLED_ENABLE_DMX
   // DMX (2530 - 2549)2535
