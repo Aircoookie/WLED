@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2105070
+
+-   Fixed not turning on after pressing "Off" on IR remote twice (#1950)
+-   Fixed OTA update file selection from Android app (TODO: file type verification in JS, since android can't deal with accept='.bin' attribute)
+
 #### Build 2104220
 
 -   Version bump to 0.12.1-b1 "Hikari"
