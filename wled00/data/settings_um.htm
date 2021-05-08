@@ -99,8 +99,12 @@
                     urows += `<hr><h3>${k}</h3>`;
                     addField(k,'unknown',o);
                 }
-                gId("um").innerHTML = urows;
+                if (urows==="")
+                    urows = "No Usermods configuration found.<br>Press <i>Save</i> to initialize defaults.";
+            } else {
+                urows = "Usermods configuration not found.<br>Most likely no Usermods exist.<br>Press <i>Save</i> to initialize defaults.";
             }
+            gId("um").innerHTML = urows;
         })
         .catch(function (error) {
             gId('lserr').style.display = "inline"

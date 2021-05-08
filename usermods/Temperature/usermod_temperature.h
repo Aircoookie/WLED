@@ -1,8 +1,6 @@
 #pragma once
 
 #include "wled.h"
-
-//#include <DallasTemperature.h> //DS18B20
 #include "OneWire.h"
 
 //Pin defaults for QuinLed Dig-Uno if not overriden

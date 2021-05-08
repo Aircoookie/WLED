@@ -281,7 +281,7 @@ class MultiRelay : public Usermod {
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      */
     void loop() {
-      if (!enabled) return;
+      if (!enabled || strip.isUpdating()) return;
 
       static unsigned long lastUpdate = 0;
       if (millis() - lastUpdate < 200) return;  // update only 5 times/s

@@ -69,11 +69,16 @@ private:
   bool m_PIRenabled = true;
   // status of initialisation
   bool initDone = false;
+  // on and off presets
+  uint8_t m_onPreset = 0;
+  uint8_t m_offPreset = 0;
 
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
   static const char _switchOffDelay[];
   static const char _enabled[];
+  static const char _onPreset[];
+  static const char _offPreset[];
 
   /**
    * return or change if new PIR sensor state is available
@@ -90,13 +95,14 @@ private:
    */
   void switchStrip(bool switchOn)
   {
-    if (switchOn && bri == 0)
-    {
+    if (switchOn && m_onPreset) {
+      applyPreset(m_onPreset);
+    } else if (!switchOn && m_offPreset) {
+      applyPreset(m_offPreset);
+    } else if (switchOn && bri == 0) {
       bri = briLast;
       colorUpdated(NotifyUpdateMode);
-    }
-    else if (!switchOn && bri != 0)
-    {
+    } else if (!switchOn && bri != 0) {
       briLast = bri;
       bri = 0;
       colorUpdated(NotifyUpdateMode);
@@ -341,6 +347,8 @@ public:
     top[FPSTR(_enabled)] = m_PIRenabled;
     top[FPSTR(_switchOffDelay)] = m_switchOffDelay / 1000;
     top["pin"] = PIRsensorPin;
+    top[FPSTR(_onPreset)] = m_onPreset;
+    top[FPSTR(_offPreset)] = m_offPreset;
     DEBUG_PRINTLN(F("PIR config saved."));
   }
 
@@ -372,6 +380,14 @@ public:
 
     if (top[FPSTR(_switchOffDelay)] != nullptr) {
       m_switchOffDelay = (top[FPSTR(_switchOffDelay)].as<int>() * 1000);
+    }
+
+    if (top[FPSTR(_onPreset)] != nullptr) {
+      m_onPreset = max(0,min(250,top[FPSTR(_onPreset)].as<int>()));
+    }
+
+    if (top[FPSTR(_offPreset)] != nullptr) {
+      m_offPreset = max(0,min(250,top[FPSTR(_offPreset)].as<int>()));
     }
 
     if (!initDone) {
@@ -437,3 +453,5 @@ void IRAM_ATTR PIRsensorSwitch::ISR_PIRstateChange()
 const char PIRsensorSwitch::_name[]           PROGMEM = "PIRsensorSwitch";
 const char PIRsensorSwitch::_enabled[]        PROGMEM = "PIRenabled";
 const char PIRsensorSwitch::_switchOffDelay[] PROGMEM = "PIRoffSec";
+const char PIRsensorSwitch::_onPreset[]       PROGMEM = "on-preset";
+const char PIRsensorSwitch::_offPreset[]      PROGMEM = "off-preset";
