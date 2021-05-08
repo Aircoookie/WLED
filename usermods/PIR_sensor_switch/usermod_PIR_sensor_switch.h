@@ -73,6 +73,8 @@ private:
   uint8_t m_onPreset = 0;
   uint8_t m_offPreset = 0;
 
+  unsigned long lastLoop = 0;
+
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
   static const char _switchOffDelay[];
@@ -126,18 +128,14 @@ private:
    */
   bool updatePIRsensorState()
   {
-    if (newPIRsensorState())
-    {
+    if (newPIRsensorState()) {
       m_PIRsensorPinState = digitalRead(PIRsensorPin);
 
-      if (m_PIRsensorPinState == HIGH)
-      {
+      if (m_PIRsensorPinState == HIGH) {
         m_offTimerStart = 0;
         switchStrip(true);
         publishMqtt("on");
-      }
-      else if (bri != 0)
-      {
+      } else /*if (bri != 0)*/ {
         // start switch off timer
         m_offTimerStart = millis();
       }
@@ -185,6 +183,7 @@ public:
       if (m_PIRenabled) {
         // assign interrupt function and set CHANGE mode
         attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
+        newPIRsensorState(true, false);
       }
     }
     initDone = true;
@@ -203,6 +202,11 @@ public:
    */
   void loop()
   {
+    // only check sensors 10x/s
+    unsigned long now = millis();
+    if (now - lastLoop < 100) return;
+    lastLoop = now;
+
     if (!updatePIRsensorState()) {
       handleOffTimer();
     }
@@ -216,38 +220,10 @@ public:
   void addToJsonInfo(JsonObject &root)
   {
     JsonObject user = root["u"];
-    if (user.isNull())
-      user = root.createNestedObject("u");
-/*
-    JsonArray infoArr = user.createNestedArray(F("<i class=\"icons\">&#xe08f;</i> PIR sensor state")); //name
-    String uiDomString = F("<button class=\"btn infobtn\" onclick=\"requestJson({PIRenabled:");
-    String sensorStateInfo;
+    if (user.isNull()) user = root.createNestedObject("u");
 
-    // PIR sensor state
     if (m_PIRenabled)
     {
-      uiDomString += "false";
-      sensorStateInfo = (m_PIRsensorPinState != LOW ? FPSTR(F("active")) : FPSTR(F("inactive"))); //value
-    }
-    else
-    {
-      uiDomString += "true";
-      sensorStateInfo = F("Disabled!");
-    }
-    uiDomString += F("});return false;\">");
-    uiDomString += sensorStateInfo;
-    uiDomString += F("</button>");
-    infoArr.add(uiDomString); //value
-*/
-    if (m_PIRenabled)
-    {
-/*
-      JsonArray infoArr = user.createNestedArray(F("PIR switch-off timer after")); //name
-      String uiDomString = F("<input type=\"number\" min=\"1\" max=\"720\" value=\"");
-      uiDomString += (m_switchOffDelay / 60000);
-      uiDomString += F("\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min");
-      infoArr.add(uiDomString);
-*/
       // off timer
       String uiDomString = F("PIR <i class=\"icons\">&#xe325;</i>");
       JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
@@ -279,64 +255,32 @@ public:
       } else {
         infoArr.add(F("inactive"));
       }
+    } else {
+      String uiDomString = F("PIR sensor");
+      JsonArray infoArr = user.createNestedArray(uiDomString);
+      infoArr.add(F("disabled"));
     }
   }
 
   /**
    * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
    * Values in the state object may be modified by connected clients
-   * Add "PIRenabled" to json state. This can be used to disable/enable the sensor.
-   * Add "PIRoffSec" to json state. This can be used to adjust <m_switchOffDelay> milliseconds.
    */
+/*
   void addToJsonState(JsonObject &root)
   {
-    root[FPSTR(_enabled)] = m_PIRenabled;
-    root[FPSTR(_switchOffDelay)] = (m_switchOffDelay / 1000);
   }
+*/
 
   /**
    * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
    * Values in the state object may be modified by connected clients
-   * Read "PIRenabled" from json state and switch enable/disable the PIR sensor.
-   * Read "PIRoffSec" from json state and adjust <m_switchOffDelay> milliseconds.
    */
+/*
   void readFromJsonState(JsonObject &root)
   {
-    if (root[FPSTR(_switchOffDelay)] != nullptr) {
-      m_switchOffDelay = (1000 * max(60UL, min(43200UL, root[FPSTR(_switchOffDelay)].as<unsigned long>())));
-    }
-/*
-    if (root["pin"] != nullptr) {
-      int8_t pin = (int)root["pin"];
-      // check if pin is OK
-      if (pin != PIRsensorPin && pin>=0 && pinManager.allocatePin(pin,false)) {
-        // deallocate old pin
-        pinManager.deallocatePin(PIRsensorPin);
-        // PIR Sensor mode INPUT_PULLUP
-        pinMode(pin, INPUT_PULLUP);
-        if (m_PIRenabled)
-        {
-          // remove old ISR
-          detachInterrupt(PIRsensorPin);
-          // assign interrupt function and set CHANGE mode
-          attachInterrupt(digitalPinToInterrupt(pin), ISR_PIRstateChange, CHANGE);
-          newPIRsensorState(true, true);
-        }
-        PIRsensorPin = pin;
-      }
-    }
-
-    if (root[FPSTR(_enabled)] != nullptr) {
-      if (root[FPSTR(_enabled)] && !m_PIRenabled && PIRsensorPin >= 0) {
-        attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
-        newPIRsensorState(true, true);
-      } else if (m_PIRenabled && PIRsensorPin >= 0) {
-        detachInterrupt(PIRsensorPin);
-      }
-      m_PIRenabled = root[FPSTR(_enabled)];
-    }
-*/
   }
+*/
 
   /**
    * provide the changeable values
@@ -414,7 +358,7 @@ public:
         }
         if (m_PIRenabled) {
           attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
-          newPIRsensorState(true, true);
+          newPIRsensorState(true, false);
         }
         DEBUG_PRINTLN(F("PIR config (re)loaded."));
       }
@@ -437,10 +381,7 @@ public:
 volatile bool PIRsensorSwitch::newPIRsensorState(bool changeState, bool newState)
 {
   static volatile bool s_PIRsensorState = false;
-  if (changeState)
-  {
-    s_PIRsensorState = newState;
-  }
+  if (changeState) s_PIRsensorState = newState;
   return s_PIRsensorState;
 }
 
