@@ -192,7 +192,7 @@ class Usermod {
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
-class UsermodManager : public Usermod {
+class UsermodManager {
   private:
     Usermod* ums[WLED_MAX_USERMODS];
     byte numMods = 0;
