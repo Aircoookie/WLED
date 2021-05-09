@@ -333,6 +333,18 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
             "function GetV() {var d=document;\n"
           ),
     },
+    {
+      file: "settings_um.htm",
+      name: "PAGE_settings_um",
+      prepend: "=====(",
+      append: ")=====",
+      method: "plaintext",
+      filter: "html-minify",
+      mangle: (str) =>
+        str
+          .replace(/\<link rel="stylesheet".*\>/gms, "")
+          .replace(/\<style\>.*\<\/style\>/gms, "%CSS%%SCSS%")
+    }
   ],
   "wled00/html_settings.h"
 );

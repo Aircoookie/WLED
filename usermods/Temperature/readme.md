@@ -14,9 +14,9 @@ Copy the example `platformio_override.ini` to the root directory.  This file sho
 ### Define Your Options
 
 * `USERMOD_DALLASTEMPERATURE`                      - define this to have this user mod included wled00\usermods_list.cpp
-* `USERMOD_DALLASTEMPERATURE_CELSIUS`              - define this to report temperatures in degrees celsious, otherwise fahrenheit will be reported
-* `USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL` - the number of milliseconds between measurements, defaults to 60 seconds
 * `USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT` - the number of milliseconds after boot to take first measurement, defaults to 20 seconds
+
+All parameters can be configured at runtime using Usermods settings page.
 
 ## Project link
 
@@ -41,10 +41,7 @@ default_envs = d1_mini
 ...
 lib_deps =
   ...
-  #For use SSD1306 OLED display uncomment following
-  U8g2@~2.27.3
-  #For Dallas sensor uncomment following 2 lines
-  DallasTemperature@~3.8.0
+  #For Dallas sensor uncomment following line
   OneWire@~2.3.5
 ...
 ```
@@ -56,3 +53,5 @@ lib_deps =
 * Do not report low temperatures that indicate an error to mqtt
 * Disable plugin if temperature sensor not detected
 * Report the number of seconds until the first read in the info screen instead of sensor error
+2021-04
+* Adaptation for runtime configuration.
