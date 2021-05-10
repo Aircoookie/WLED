@@ -333,7 +333,7 @@ void WLED::setup()
     errorFlag = ERR_FS_BEGIN;
   } else deEEP();
   updateFSInfo();
-  deserializeConfig();
+  deserializeConfigFromFS();
 
 #if STATUSLED
   bool lStatusLed = false;

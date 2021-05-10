@@ -26,7 +26,8 @@ void handleButton();
 void handleIO();
 
 //cfg.cpp
-void deserializeConfig();
+bool deserializeConfig(JsonObject doc, bool fromFS = false);
+void deserializeConfigFromFS();
 bool deserializeConfigSec();
 void serializeConfig();
 void serializeConfigSec();
