@@ -100,9 +100,9 @@
                     addField(k,'unknown',o);
                 }
                 if (urows==="")
-                    urows = "No Usermods configuration found.<br>Press <i>Save</i> to initialize defaults.";
+                    urows = "No Usermods configuration found.<br>Press <i>Save</i> to initialize defaults if usermods were compiled in.";
             } else {
-                urows = "Usermods configuration not found.<br>Most likely no Usermods exist.<br>Press <i>Save</i> to initialize defaults.";
+                urows = "Usermods configuration not found.<br>Most likely no Usermods exist.<br>Press <i>Save</i> to try to initialize defaults.";
             }
             gId("um").innerHTML = urows;
         })
