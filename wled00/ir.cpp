@@ -227,7 +227,7 @@ void decodeIR24(uint32_t code)
   switch (code) {
     case IR24_BRIGHTER  : incBrightness();                  break;
     case IR24_DARKER    : decBrightness();                  break;
-    case IR24_OFF       : briLast = bri; bri = 0;           break;
+    case IR24_OFF    : if (bri > 0) briLast = bri; bri = 0; break;
     case IR24_ON        : bri = briLast;                    break;
     case IR24_RED       : colorFromUint32(COLOR_RED);       break;
     case IR24_REDDISH   : colorFromUint32(COLOR_REDDISH);   break;
@@ -259,7 +259,7 @@ void decodeIR24OLD(uint32_t code)
   switch (code) {
     case IR24_OLD_BRIGHTER  : incBrightness();                     break;
     case IR24_OLD_DARKER    : decBrightness();                     break;
-    case IR24_OLD_OFF       : briLast = bri; bri = 0;              break;
+    case IR24_OLD_OFF       : if (bri > 0) briLast = bri; bri = 0; break;
     case IR24_OLD_ON        : bri = briLast;                       break;
     case IR24_OLD_RED       : colorFromUint32(COLOR_RED);          break;
     case IR24_OLD_REDDISH   : colorFromUint32(COLOR_REDDISH);      break;
@@ -292,7 +292,7 @@ void decodeIR24CT(uint32_t code)
   switch (code) {
     case IR24_CT_BRIGHTER   : incBrightness();                     break;
     case IR24_CT_DARKER     : decBrightness();                     break;
-    case IR24_CT_OFF        : briLast = bri; bri = 0;              break;
+    case IR24_CT_OFF        : if (bri > 0) briLast = bri; bri = 0; break;
     case IR24_CT_ON         : bri = briLast;                       break;
     case IR24_CT_RED        : colorFromUint32(COLOR_RED);          break;
     case IR24_CT_REDDISH    : colorFromUint32(COLOR_REDDISH);      break;
@@ -327,7 +327,7 @@ void decodeIR40(uint32_t code)
   switch (code) {
     case IR40_BPLUS        : incBrightness();                                            break;
     case IR40_BMINUS       : decBrightness();                                            break;
-    case IR40_OFF          : briLast = bri; bri = 0;                                     break;
+    case IR40_OFF          : if (bri > 0) briLast = bri; bri = 0;                        break;
     case IR40_ON           : bri = briLast;                                              break;
     case IR40_RED          : colorFromUint24(COLOR_RED);                                 break;
     case IR40_REDDISH      : colorFromUint24(COLOR_REDDISH);                             break;
@@ -384,7 +384,7 @@ void decodeIR44(uint32_t code)
   switch (code) {
     case IR44_BPLUS       : incBrightness();                                            break;
     case IR44_BMINUS      : decBrightness();                                            break;
-    case IR44_OFF         : briLast = bri; bri = 0;                                     break;
+    case IR44_OFF         : if (bri > 0) briLast = bri; bri = 0;                        break;
     case IR44_ON          : bri = briLast;                                              break;
     case IR44_RED         : colorFromUint24(COLOR_RED);                                 break;
     case IR44_REDDISH     : colorFromUint24(COLOR_REDDISH);                             break;
@@ -447,7 +447,7 @@ void decodeIR21(uint32_t code)
     switch (code) {
     case IR21_BRIGHTER:  incBrightness();                  break;
     case IR21_DARKER:    decBrightness();                  break;
-    case IR21_OFF:       briLast = bri; bri = 0;           break;
+    case IR21_OFF:    if (bri > 0) briLast = bri; bri = 0; break;
     case IR21_ON:        bri = briLast;                    break;
     case IR21_RED:       colorFromUint32(COLOR_RED);       break;
     case IR21_REDDISH:   colorFromUint32(COLOR_REDDISH);   break;
