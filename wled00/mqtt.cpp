@@ -64,6 +64,13 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   }
   DEBUG_PRINTLN(payload);
 
+  // payload is not always null terminated
+  char *payload0 = new char[len+1];
+  if (payload0==nullptr) return;  // out of memory
+  strncpy(payload0,payload,len);
+  payload0[len] = '\0';
+  DEBUG_PRINTLN(payload0);
+
   size_t topicPrefixLen = strlen(mqttDeviceTopic);
   if (strncmp(topic, mqttDeviceTopic, topicPrefixLen) == 0) {
     topic += topicPrefixLen;
@@ -73,7 +80,8 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
       topic += topicPrefixLen;
     } else {
       // Non-Wled Topic used here. Probably a usermod subscribed to this topic.
-      usermods.onMqttMessage(topic, payload);
+      usermods.onMqttMessage(topic, payload0);
+      delete[] payload0;
       return;
     }
   }
@@ -81,25 +89,26 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   //Prefix is stripped from the topic at this point
 
   if (strcmp_P(topic, PSTR("/col")) == 0) {
-    colorFromDecOrHexString(col, (char*)payload);
+    colorFromDecOrHexString(col, payload0);
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
-    if (payload[0] == '{') { //JSON API
+    if (payload0[0] == '{') { //JSON API
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-      deserializeJson(doc, payload);
+      deserializeJson(doc, payload0);
       deserializeState(doc.as<JsonObject>());
     } else { //HTTP API
       String apireq = "win&";
-      apireq += (char*)payload;
+      apireq += payload0;
       handleSet(nullptr, apireq);
     }
   } else if (strlen(topic) != 0) {
     // non standard topic, check with usermods
-    usermods.onMqttMessage(topic, payload);
+    usermods.onMqttMessage(topic, payload0);
   } else {
     // topmost topic (just wled/MAC)
-    parseMQTTBriPayload(payload);
+    parseMQTTBriPayload(payload0);
   }
+  delete[] payload0;
 }
 
 
