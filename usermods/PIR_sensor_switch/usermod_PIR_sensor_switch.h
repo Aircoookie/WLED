@@ -108,16 +108,21 @@ private:
     uint8_t hr = hour(localTime);
     uint8_t mi = minute(localTime);
 
-    if (sunrise==0 || sunset==0) return false;
-
-    if (hour(sunrise)>hr && hour(sunset)<hr) {
-      isDayTime = true;
-    } else {
-      if (hour(sunrise)==hr && minute(sunrise)<mi) {
+    DEBUG_PRINTF("--Time: %02d:%02d\n", (int)hr, (int)mi);
+    if (sunrise && sunset) {
+      DEBUG_PRINTLN(F("--Sunrise & sunset detected."));
+      if (hour(sunrise)>hr && hour(sunset)<hr) {
         isDayTime = true;
-      }
-      if (hour(sunset)==hr && minute(sunset)>mi) {
-        isDayTime = true;
+        DEBUG_PRINTLN(F("--It is daytime."));
+      } else {
+        if (hour(sunrise)==hr && minute(sunrise)<mi) {
+          isDayTime = true;
+          DEBUG_PRINTLN(F("--It is daytime."));
+        }
+        if (hour(sunset)==hr && minute(sunset)>mi) {
+          isDayTime = true;
+          DEBUG_PRINTLN(F("--It is daytime."));
+        }
       }
     }
     return isDayTime;
