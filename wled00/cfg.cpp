@@ -112,6 +112,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       bool reversed = elm["rev"];
       //RGBW mode is enabled if at least one of the strips is RGBW
       strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(ledType));
+      //refresh is required to remain off if at least one of the strips requires the refresh.
+      strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(ledType);
       s++;
       BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed);
       mem += busses.memUsage(bc);
