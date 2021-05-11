@@ -112,7 +112,7 @@ void updateTimezone() {
       break;
     }
     case TZ_AUSTRALIA_NORTHERN : {
-      tcrStandard = {First, Sun, Apr, 3, 570};   //ACST = UTC + 9.5 hours
+      tcrDaylight = {First, Sun, Apr, 3, 570};   //ACST = UTC + 9.5 hours
       tcrStandard = tcrDaylight;
       break;
     }

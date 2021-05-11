@@ -55,13 +55,12 @@ bool bufferedFind(const char *target, bool fromStart = true) {
   size_t targetLen = strlen(target);
 
   size_t index = 0;
-  uint16_t bufsize = 0, count = 0;
   byte buf[FS_BUFSIZE];
   if (fromStart) f.seek(0);
 
   while (f.position() < f.size() -1) {
-    bufsize = f.read(buf, FS_BUFSIZE);
-    count = 0;
+    uint16_t bufsize = f.read(buf, FS_BUFSIZE);
+    uint16_t count = 0;
     while (count < bufsize) {
       if(buf[count] != target[index])
       index = 0; // reset index if any char does not match

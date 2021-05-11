@@ -84,6 +84,7 @@ void initServer()
 
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
+    bool isConfig = false;
     { //scope JsonDocument so it releases its buffer
       DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
       DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
@@ -91,12 +92,22 @@ void initServer()
       if (error || root.isNull()) {
         request->send(400, "application/json", F("{\"error\":9}")); return;
       }
-      fileDoc = &jsonBuffer;
-      verboseResponse = deserializeState(root);
-      fileDoc = nullptr;
+      const String& url = request->url();
+      isConfig = url.indexOf("cfg") > -1;
+      if (!isConfig) {
+        fileDoc = &jsonBuffer;
+        verboseResponse = deserializeState(root);
+        fileDoc = nullptr;
+      } else {
+        verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
+      }
     }
-    if (verboseResponse) { //if JSON contains "v"
-      serveJson(request); return; 
+    if (verboseResponse) {
+      if (!isConfig) {
+        serveJson(request); return; //if JSON contains "v"
+      } else {
+        serializeConfig(); //Save new settings to FS
+      }
     } 
     request->send(200, "application/json", F("{\"success\":true}"));
   });

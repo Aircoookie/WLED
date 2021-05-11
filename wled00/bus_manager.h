@@ -399,6 +399,11 @@ class BusManager {
     return false;
   }
 
+  //Return true if the strip requires a refresh to stay off.
+  static bool isOffRefreshRequred(uint8_t type) {
+    return type == TYPE_TM1814;
+  }
+
   private:
   uint8_t numBusses = 0;
   Bus* busses[WLED_MAX_BUSSES];

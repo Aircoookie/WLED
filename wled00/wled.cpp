@@ -221,7 +221,7 @@ void WLED::loop()
 
     yield();
 
-    if (!offMode)
+    if (!offMode || strip.isOffRefreshRequred)
       strip.service();
 #ifdef ESP8266
     else if (!noWifiSleep)
@@ -333,7 +333,7 @@ void WLED::setup()
     errorFlag = ERR_FS_BEGIN;
   } else deEEP();
   updateFSInfo();
-  deserializeConfig();
+  deserializeConfigFromFS();
 
 #if STATUSLED
   bool lStatusLed = false;
