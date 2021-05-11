@@ -185,7 +185,7 @@ void getSettingsJS(byte subPage, char* dest)
   obuf = dest;
   olen = 0;
 
-  if (subPage <1 || subPage >7) return;
+  if (subPage <1 || subPage >8) return;
 
   if (subPage == 1) {
     sappends('s',SET_F("CS"),clientSSID);
@@ -518,7 +518,15 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("CH13"),DMXFixtureMap[12]);
     sappend('i',SET_F("CH14"),DMXFixtureMap[13]);
     sappend('i',SET_F("CH15"),DMXFixtureMap[14]);
-    }
+  }
   #endif
+
+  if (subPage == 8) //usermods
+  {
+    oappend(SET_F("numM="));
+    oappendi(usermods.getModCount());
+    oappend(";");
+  }
+
   oappend(SET_F("}</script>"));
 }
