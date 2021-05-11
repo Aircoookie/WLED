@@ -134,7 +134,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (icol.isNull()) break;
 
           byte sz = icol.size();
-          if (sz == 0 && sz > 4) break;
+          if (sz == 0 || sz > 4) break;
 
           int rgbw[] = {0,0,0,0};
           copyArray(icol, rgbw);

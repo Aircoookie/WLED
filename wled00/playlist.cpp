@@ -19,14 +19,14 @@ uint16_t playlistEntryDur = 0;
 
 
 void shufflePlaylist() {
-  int currentIndex = playlistLen, randomIndex;
+  int currentIndex = playlistLen;
 
   PlaylistEntry temporaryValue, *entries = reinterpret_cast<PlaylistEntry*>(playlistEntries);
 
   // While there remain elements to shuffle...
   while (currentIndex--) {
     // Pick a random element...
-    randomIndex = random(0, currentIndex);
+    int randomIndex = random(0, currentIndex);
     // And swap it with the current element.
     temporaryValue = entries[currentIndex];
     entries[currentIndex] = entries[randomIndex];

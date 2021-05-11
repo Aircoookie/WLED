@@ -124,7 +124,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       doInitBusses = true;
     }
 
-    ledCount = request->arg(F("LC")).toInt();
+    t = request->arg(F("LC")).toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
 
     // upate other pins
