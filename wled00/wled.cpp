@@ -221,7 +221,7 @@ void WLED::loop()
 
     yield();
 
-    if (!offMode)
+    if (!offMode || strip.isOffRefreshRequred)
       strip.service();
 #ifdef ESP8266
     else if (!noWifiSleep)
@@ -234,6 +234,7 @@ void WLED::loop()
 #endif
   if (millis() - lastMqttReconnectAttempt > 30000) {
     if (lastMqttReconnectAttempt > millis()) rolloverMillis++; //millis() rolls over every 50 days
+    lastMqttReconnectAttempt = millis();
     initMqtt();
     refreshNodeList();
     if (nodeBroadcastEnabled) sendSysInfoUDP();
@@ -332,7 +333,7 @@ void WLED::setup()
     errorFlag = ERR_FS_BEGIN;
   } else deEEP();
   updateFSInfo();
-  deserializeConfig();
+  deserializeConfigFromFS();
 
 #if STATUSLED
   bool lStatusLed = false;
@@ -422,8 +423,8 @@ void WLED::beginStrip()
     digitalWrite(rlyPin, (rlyMde ? bri : !bri));
 
   // disable button if it is "pressed" unintentionally
-  if (btnPin>=0 && isButtonPressed())
-    buttonEnabled = false;
+  if (btnPin>=0 && buttonType == BTN_TYPE_PUSH && isButtonPressed())
+    buttonType = BTN_TYPE_NONE;
 }
 
 void WLED::initAP(bool resetAP)

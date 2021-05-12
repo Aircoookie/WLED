@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.12.0
+   @version 0.12.1-b1
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2104030
+#define VERSION 2105112
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -26,7 +26,6 @@
 //#define WLED_DISABLE_ALEXA       // saves 11kb
 //#define WLED_DISABLE_BLYNK       // saves 6kb
 //#define WLED_DISABLE_CRONIXIE    // saves 3kb
-//WLED_DISABLE_FX_HIGH_FLASH_USE (need to enable in PIO config or FX.h, saves 18kb)
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
 //#define WLED_DISABLE_INFRARED    // there is no pin left for this on ESP8266-01, saves 12kb
 #ifndef WLED_DISABLE_MQTT
@@ -51,7 +50,7 @@
 //This is generally a terrible idea, but improves boot success on boards with a 3.3v regulator + cap setup that can't provide 400mA peaks
 //#define WLED_DISABLE_BROWNOUT_DET
 
-// Library inclusions. 
+// Library inclusions.
 #include <Arduino.h>
 #ifdef ESP8266
   #include <ESP8266WiFi.h>
@@ -171,8 +170,15 @@
 # define _INIT_N(x) UNPACK x
 #endif
 
+#define STRINGIFY(X) #X
+#define TOSTRING(X) STRINGIFY(X)
+
+#ifndef WLED_VERSION
+  #define WLED_VERSION "dev"
+#endif
+
 // Global Variable definitions
-WLED_GLOBAL char versionString[] _INIT("0.12.0");
+WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
 #define WLED_CODENAME "Hikari"
 
 // AP and OTA default passwords (for maximum security change them!)
@@ -182,12 +188,12 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 // Hardware CONFIG (only changeble HERE, not at runtime)
 // LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
 #ifndef BTNPIN
-WLED_GLOBAL int8_t btnPin _INIT(-1);
+WLED_GLOBAL int8_t btnPin _INIT(0);
 #else
 WLED_GLOBAL int8_t btnPin _INIT(BTNPIN);
 #endif
 #ifndef RLYPIN
-WLED_GLOBAL int8_t rlyPin _INIT(-1);
+WLED_GLOBAL int8_t rlyPin _INIT(12);
 #else
 WLED_GLOBAL int8_t rlyPin _INIT(RLYPIN);
 #endif
@@ -198,12 +204,12 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
 #ifndef IRPIN
-WLED_GLOBAL int8_t irPin _INIT(-1);
+WLED_GLOBAL int8_t irPin _INIT(4);
 #else
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 #endif
 
-//WLED_GLOBAL byte presetToApply _INIT(0); 
+//WLED_GLOBAL byte presetToApply _INIT(0);
 
 WLED_GLOBAL char ntpServerName[33] _INIT("0.wled.pool.ntp.org");   // NTP server to use
 
@@ -224,13 +230,13 @@ WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling 
     WLED_GLOBAL int ethernetType _INIT(WLED_ETH_DEFAULT);          // ethernet board type
   #else
     WLED_GLOBAL int ethernetType _INIT(WLED_ETH_NONE);             // use none for ethernet board type if default not defined
-  #endif               
+  #endif
 #endif
 
 // LED CONFIG
-WLED_GLOBAL uint16_t ledCount _INIT(30);          // overcurrent prevented by ABL
-WLED_GLOBAL bool turnOnAtBoot _INIT(true);        // turn on LEDs at power-up
-WLED_GLOBAL byte bootPreset   _INIT(0);           // save preset to load after power-up
+WLED_GLOBAL uint16_t ledCount _INIT(DEFAULT_LED_COUNT);   // overcurrent prevented by ABL
+WLED_GLOBAL bool turnOnAtBoot _INIT(true);                // turn on LEDs at power-up
+WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load after power-up
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
@@ -253,7 +259,7 @@ WLED_GLOBAL NodesMap Nodes;
 WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
-WLED_GLOBAL bool buttonEnabled  _INIT(true);
+WLED_GLOBAL byte buttonType     _INIT(BTN_TYPE_PUSH);
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
@@ -451,10 +457,10 @@ WLED_GLOBAL bool countdownOverTriggered _INIT(true);
 
 // timer
 WLED_GLOBAL byte lastTimerMinute _INIT(0);
-WLED_GLOBAL byte timerHours[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0 }));
-WLED_GLOBAL byte timerMinutes[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0 }));
-WLED_GLOBAL byte timerMacro[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0 }));
-WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 255 }));        // weekdays to activate on
+WLED_GLOBAL byte timerHours[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+WLED_GLOBAL int8_t timerMinutes[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+WLED_GLOBAL byte timerMacro[] _INIT_N(({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 }));        // weekdays to activate on
 // bit pattern of arr elem: 0b11111111: sun,sat,fri,thu,wed,tue,mon,validity
 
 // blynk
@@ -502,6 +508,10 @@ WLED_GLOBAL unsigned long ntpPacketSentTime _INIT(999000000L);
 WLED_GLOBAL IPAddress ntpServerIP;
 WLED_GLOBAL uint16_t ntpLocalPort _INIT(2390);
 WLED_GLOBAL uint16_t rolloverMillis _INIT(0);
+WLED_GLOBAL float longitude _INIT(0.0);
+WLED_GLOBAL float latitude _INIT(0.0);
+WLED_GLOBAL time_t sunrise _INIT(0);
+WLED_GLOBAL time_t sunset _INIT(0);
 
 // Temp buffer
 WLED_GLOBAL char* obuf;
@@ -543,7 +553,7 @@ WLED_GLOBAL bool e131NewData _INIT(false);
 // led fx library object
 WLED_GLOBAL BusManager busses _INIT(BusManager());
 WLED_GLOBAL WS2812FX strip _INIT(WS2812FX());
-WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after 
+WLED_GLOBAL BusConfig* busConfigs[WLED_MAX_BUSSES] _INIT({nullptr}); //temporary, to remember values from network callback until after
 WLED_GLOBAL bool doInitBusses _INIT(false);
 
 // Usermod manager
@@ -567,7 +577,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #else
   #define DEBUG_PRINT(x)
   #define DEBUG_PRINTLN(x)
-  #define DEBUG_PRINTF(x)
+  #define DEBUG_PRINTF(x...)
 #endif
 
 #ifdef WLED_DEBUG_FS

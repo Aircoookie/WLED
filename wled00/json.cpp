@@ -98,13 +98,13 @@ void deserializeSegment(JsonObject elem, byte it)
       effectCurrent = elem[F("fx")] | effectCurrent;
       effectSpeed = elem[F("sx")] | effectSpeed;
       effectIntensity = elem[F("ix")] | effectIntensity;
-      effectPalette = elem[F("pal")] | effectPalette;
+      effectPalette = elem["pal"] | effectPalette;
     } else { //permanent
       byte fx = elem[F("fx")] | seg.mode;
       if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
       seg.speed = elem[F("sx")] | seg.speed;
       seg.intensity = elem[F("ix")] | seg.intensity;
-      seg.palette = elem[F("pal")] | seg.palette;
+      seg.palette = elem["pal"] | seg.palette;
     }
 
     JsonArray iarr = elem[F("i")]; //set individual LEDs
@@ -134,7 +134,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (icol.isNull()) break;
 
           byte sz = icol.size();
-          if (sz == 0 && sz > 4) break;
+          if (sz == 0 || sz > 4) break;
 
           int rgbw[] = {0,0,0,0};
           copyArray(icol, rgbw);
@@ -182,6 +182,9 @@ bool deserializeState(JsonObject root)
     jsonTransitionOnce = true;
   }
   strip.setTransition(transitionDelayTemp);
+
+  tr = root[F("tb")] | -1;
+  if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
   
   int cy = root[F("pl")] | -2;
   if (cy > -2) presetCyclingEnabled = (cy >= 0);
@@ -203,9 +206,16 @@ bool deserializeState(JsonObject root)
   receiveNotifications = udpn["recv"] | receiveNotifications;
   bool noNotification  = udpn[F("nn")]; //send no notification just for this request
 
-  unsigned long timein = root[F("time")] | UINT32_MAX;
+  unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
-    if (millis() - ntpLastSyncTime > 50000000L) setTime(timein);
+    time_t prev = now();
+    if (millis() - ntpLastSyncTime > 50000000L) {
+      setTime(timein);
+      if (abs(now() - prev) > 60L) {
+        updateLocalTime();
+        calculateSunriseAndSunset();
+      }
+    }
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
 
@@ -329,7 +339,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 	root[F("fx")]  = seg.mode;
 	root[F("sx")]  = seg.speed;
 	root[F("ix")]  = seg.intensity;
-	root[F("pal")] = seg.palette;
+	root["pal"] = seg.palette;
 	root[F("sel")] = seg.isSelected();
 	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
@@ -539,6 +549,13 @@ void serializeInfo(JsonObject root)
   root[F("brand")] = "WLED";
   root[F("product")] = F("FOSS");
   root["mac"] = escapedMac;
+  char s[16] = "";
+  if (Network.isConnected())
+  {
+    IPAddress localIP = Network.localIP();
+    sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+  }
+  root["ip"] = s;
 }
 
 void setPaletteColors(JsonArray json, CRGBPalette16 palette)
@@ -712,19 +729,22 @@ void serveJson(AsyncWebServerRequest* request)
   const String& url = request->url();
   if      (url.indexOf("state") > 0) subJson = 1;
   else if (url.indexOf("info")  > 0) subJson = 2;
-  else if (url.indexOf("si") > 0) subJson = 3;
+  else if (url.indexOf("si")    > 0) subJson = 3;
   else if (url.indexOf("nodes") > 0) subJson = 4;
-  else if (url.indexOf("palx") > 0) subJson = 5;
+  else if (url.indexOf("palx")  > 0) subJson = 5;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
   }
-  else if (url.indexOf(F("eff"))   > 0) {
+  else if (url.indexOf(F("eff")) > 0) {
     request->send_P(200, "application/json", JSON_mode_names);
     return;
   }
-  else if (url.indexOf(F("pal"))   > 0) {
+  else if (url.indexOf("pal") > 0) {
     request->send_P(200, "application/json", JSON_palette_names);
+    return;
+  }
+  else if (url.indexOf("cfg") > 0 && handleFileRead(request, "/cfg.json")) {
     return;
   }
   else if (url.length() > 6) { //not just /json

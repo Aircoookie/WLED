@@ -20,44 +20,10 @@ Edit `usermods_list.cpp`:
 2. add `#include "../usermods/Animated_Staircase/Animated_Staircase.h"` to the top of the file
 3. add `usermods.add(new Animated_Staircase());` to the end of the `void registerUsermods()` function.
 
-Edit `Animated_Staircase_config.h`:
-1. Open `usermods/Animated_Staircase/Animated_Staircase_config.h` 
-2. To use PIR sensors, change these lines to match your setup:
-   Using D7 and D6 pin notation as used on several boards:
-  
-   ```cpp
-     #define TOP_PIR_PIN    D7
-     #define BOTTOM_PIR_PIN D6
-   ```
-   
-   Or using GPIO numbering for pins 25 and 26:
-   ```cpp
-     #define TOP_PIR_PIN    26
-     #define BOTTOM_PIR_PIN 25
-   ```
-
-   To use Ultrasonic HC-SR04 sensors instead of (one of the) PIR sensors,
-   uncomment one of the PIR sensor lines and adjust the pin numbers for the
-   connected Ultrasonic sensor. In the example below we use an Ultrasonic
-   sensor at the bottom of the stairs:
-
-   ```cpp
-   #define TOP_PIR_PIN 32
-   //#define BOTTOM_PIR_PIN D6 /* This PIR sensor is disabled   */
-
-   #ifndef TOP_PIR_PIN
-   #define TOP_SIGNAL_PIN D2
-   #define TOP_ECHO_PIN   D3
-   #endif
-
-   #ifndef BOTTOM_PIR_PIN      /* If the bottom PIR is disabled, */
-   #define BOTTOM_SIGNAL_PIN 25 /* This Ultrasonic sensor is used */
-   #define BOTTOM_ECHO_PIN   26
-   #endif
-   ```
-
-After these modifications, compile and upload your WLED binary to your board
-and check the WLED info page to see if this usermod is enabled.
+You can configure usermod using Usermods settings page.
+Please enter GPIO pins for PIR sensors or ultrasonic sensor (trigger and echo).
+If you use PIR sensor enter -1 for echo pin.
+Maximum distance for ultrasonic sensor can be configured as a time needed for echo (see below).
 
 ## Hardware installation
 1. Stick the LED strip under each step of the stairs.
@@ -93,8 +59,8 @@ or remove them and put everything on one line.
 | segment-delay-ms | Delay (milliseconds) between switching on/off each step       | 150     |
 | on-time-s        | Time (seconds) the stairs stay lit after last detection       | 5       |
 | bottom-echo-us   | Detection range of ultrasonic sensor                          | 1749    |
-| bottomsensor     | Manually trigger a down to up animation via API               | false   | 
-| topsensor        | Manually trigger an up to down animation via API              | false   |
+| bottom-sensor    | Manually trigger a down to up animation via API               | false   | 
+| top-sensor       | Manually trigger an up to down animation via API              | false   |
 
 
 To read the current settings, open a browser to `http://xxx.xxx.xxx.xxx/json/state` (use your WLED 
@@ -108,8 +74,8 @@ The staircase settings and sensor states are inside the WLED status element:
             "enabled": true,
             "segment-delay-ms": 150,
             "on-time-s": 5,
-            "bottomsensor": false,
-            "topsensor": false
+            "bottom-sensor": false,
+            "tops-ensor": false
         },
 }
 ```
@@ -187,7 +153,7 @@ the API. To simulate triggering the bottom sensor, use:
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
-     -d '{"staircase":{"bottomsensor":true}}' \
+     -d '{"staircase":{"bottom-sensor":true}}' \
      xxx.xxx.xxx.xxx/json/state
 ```
 
@@ -195,9 +161,13 @@ Likewise, to trigger the top sensor, use:
 
 ```bash
 curl -X POST -H "Content-Type: application/json" \
-     -d '{"staircase":{"topsensor":true}}' \
+     -d '{"staircase":{"top-sensor":true}}' \
      xxx.xxx.xxx.xxx/json/state
 ```
 
 Have fun with this usermod.<br/>
 www.rolfje.com
+
+## Change log
+2021-04
+* Adaptation for runtime configuration.

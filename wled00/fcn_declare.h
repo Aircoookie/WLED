@@ -26,7 +26,8 @@ void handleButton();
 void handleIO();
 
 //cfg.cpp
-void deserializeConfig();
+bool deserializeConfig(JsonObject doc, bool fromFS = false);
+void deserializeConfigFromFS();
 bool deserializeConfigSec();
 void serializeConfig();
 void serializeConfigSec();
@@ -135,6 +136,7 @@ bool checkCountdown();
 void setCountdown();
 byte weekdayMondayFirst();
 void checkTimers();
+void calculateSunriseAndSunset();
 
 //overlay.cpp
 void initCronixie();
@@ -149,6 +151,7 @@ void _overlayCronixie();
 void _drawOverlayCronixie();
 
 //playlist.cpp
+void shufflePlaylist();
 void unloadPlaylist();
 void loadPlaylist(JsonObject playlistObject);
 void handlePlaylist();
@@ -185,6 +188,8 @@ class Usermod {
     virtual void readFromJsonState(JsonObject& obj) {}
     virtual void addToConfig(JsonObject& obj) {}
     virtual void readFromConfig(JsonObject& obj) {}
+    virtual void onMqttConnect(bool sessionPresent) {}
+    virtual bool onMqttMessage(char* topic, char* payload) { return false; }
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
@@ -205,7 +210,8 @@ class UsermodManager {
 
     void addToConfig(JsonObject& obj);
     void readFromConfig(JsonObject& obj);
-
+    void onMqttConnect(bool sessionPresent);
+    bool onMqttMessage(char* topic, char* payload);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
     byte getModCount();
