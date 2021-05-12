@@ -3085,7 +3085,7 @@ uint16_t WS2812FX::mode_drip(void)
 
   numDrops = 1 + (SEGMENT.intensity >> 6);
 
-  float gravity = -0.001 - (SEGMENT.speed/50000.0);
+  float gravity = -0.0005 - (SEGMENT.speed/50000.0);
   gravity *= SEGLEN;
   int sourcedrop = 12;
 
@@ -4196,7 +4196,8 @@ uint16_t WS2812FX::mode_2DJulia(void) {                           // An animated
 
   if (matrixWidth * matrixHeight > SEGLEN || matrixWidth < 4 || matrixHeight < 4) {return blink(CRGB::Red, CRGB::Black, false, false);}    // No, we're not going to overrun the segment.
 
-  CRGB *leds = (CRGB*) ledData;
+  // UNUSED VARIABLE WARNING
+  // CRGB *leds = (CRGB*) ledData;
 
   if (!SEGENV.allocateData(sizeof(julia))) return mode_static();  // We use this method for allocating memory for static variables.
   Julia* julias = reinterpret_cast<Julia*>(SEGENV.data);          // Because 'static' doesn't work with SEGMENTS.
