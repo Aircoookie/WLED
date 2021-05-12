@@ -370,7 +370,7 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 4)
   {
-    sappend('c',SET_F("BT"),buttonEnabled);
+    sappend('v',SET_F("BT"),buttonType);
     sappend('v',SET_F("IR"),irEnabled);
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
@@ -555,7 +555,14 @@ void getSettingsJS(byte subPage, char* dest)
     }
   #endif
 
-  if (subPage == 8)
+  if (subPage == 8) //usermods
+  {
+    oappend(SET_F("numM="));
+    oappendi(usermods.getModCount());
+    oappend(";");
+  }
+
+  if (subPage == 9) // sound reactive
   {
     sappend('v',SET_F("SQ"),soundSquelch);
     sappend('v',SET_F("GN"),sampleGain);
@@ -565,5 +572,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("LR"),i2swsPin);
     sappend('v',SET_F("CK"),i2sckPin);
     }
+    
   oappend(SET_F("}</script>"));
 }

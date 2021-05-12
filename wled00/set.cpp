@@ -31,8 +31,8 @@ bool isAsterisksOnly(const char* str, byte maxLen)
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {
 
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: sound
-  if (subPage <1 || subPage >8) return;
+  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec 7: DMX 8: usermods 9: sound
+  if (subPage <1 || subPage >9) return;
 
   //WIFI SETTINGS
   if (subPage == 1)
@@ -124,7 +124,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       doInitBusses = true;
     }
 
-    ledCount = request->arg(F("LC")).toInt();
+    t = request->arg(F("LC")).toInt();
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
 
     // upate other pins
@@ -200,7 +200,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //SYNC
   if (subPage == 4)
   {
-    buttonEnabled = request->hasArg(F("BT"));
+    buttonType = request->arg(F("BT")).toInt();
     irEnabled = request->arg(F("IR")).toInt();
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
@@ -433,8 +433,59 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   }
   #endif
 
-  //SOUND SETTINGS
+  //USERMODS
   if (subPage == 8)
+  {
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+    JsonObject um = doc.createNestedObject("um");
+
+    size_t args = request->args();
+    uint j=0;
+    for (size_t i=0; i<args; i++) {
+      String name = request->argName(i);
+      String value = request->arg(i);
+
+      // POST request parameters are combined as <usermodname>_<usermodparameter>
+      uint8_t umNameEnd = name.indexOf("_");
+      if (!umNameEnd) break;  // parameter does not contain "_" -> wrong
+
+      JsonObject mod = um[name.substring(0,umNameEnd)]; // get a usermod JSON object
+      if (mod.isNull()) {
+        mod = um.createNestedObject(name.substring(0,umNameEnd)); // if it does not exist create it
+      }
+      DEBUG_PRINT(name.substring(0,umNameEnd));
+      DEBUG_PRINT(":");
+      name = name.substring(umNameEnd+1); // remove mod name from string
+
+      // check if parameters represent array
+      if (name.endsWith("[]")) {
+        name.replace("[]","");
+        if (!mod[name].is<JsonArray>()) {
+          JsonArray ar = mod.createNestedArray(name);
+          ar.add(value);
+          j=0;
+        } else {
+          mod[name].add(value);
+          j++;
+        }
+        DEBUG_PRINT(name);
+        DEBUG_PRINT("[");
+        DEBUG_PRINT(j);
+        DEBUG_PRINT("] = ");
+        DEBUG_PRINTLN(value);
+      } else {
+        mod.remove(name);  // checkboxes get two fields (first is always "off", existence of second depends on checkmark and may be "on")
+        mod[name] = value;
+        DEBUG_PRINT(name);
+        DEBUG_PRINT(" = ");
+        DEBUG_PRINTLN(value);
+      }
+    }
+    usermods.readFromConfig(um);  // force change of usermod parameters
+  }
+
+  //SOUND SETTINGS
+  if (subPage == 9)
   {
 
     if (audioPin>=0 && pinManager.isPinAllocated(audioPin)) pinManager.deallocatePin(audioPin);

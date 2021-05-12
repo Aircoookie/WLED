@@ -43,6 +43,23 @@
   19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]
 */
 
+//factory defaults LED setup
+//#define PIXEL_COUNTS 30, 30, 30, 30
+//#define DATA_PINS 16, 1, 3, 4
+//#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+
+#ifndef PIXEL_COUNTS
+  #define PIXEL_COUNTS 30
+#endif
+
+#ifndef DATA_PINS
+  #define DATA_PINS LEDPIN
+#endif
+
+#ifndef DEFAULT_LED_TYPE
+  #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+#endif
+
 //do not call this method from system context (network callback)
 void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
 {
@@ -57,9 +74,22 @@ void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
 
   //if busses failed to load, add default (FS issue...)
   if (busses.getNumBusses() == 0) {
-    uint8_t defPin[] = {LEDPIN};
-    BusConfig defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, _lengthRaw, COL_ORDER_GRB);
-    busses.add(defCfg);
+    const uint8_t defDataPins[] = {DATA_PINS};
+    const uint16_t defCounts[] = {PIXEL_COUNTS};
+    const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));
+    const uint8_t defNumCounts = ((sizeof defCounts)   / (sizeof defCounts[0]));
+    uint16_t prevLen = 0;
+    for (uint8_t i = 0; i < defNumBusses; i++) {
+      uint8_t defPin[] = {defDataPins[i]};
+      uint16_t start = prevLen;
+      uint16_t count = _lengthRaw;
+      if (defNumBusses > 1 && defNumCounts) {
+        count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
+      }
+      prevLen += count;
+      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB);
+      busses.add(defCfg);
+    }
   }
 
   deserializeMap();
@@ -192,14 +222,14 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
       int indexSet = realIndex + (reversed ? -j : j);
-      if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
       if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
-        busses.setPixelColor(indexSet + skip, col);
         if (IS_MIRROR) { //set the corresponding mirrored pixel
           uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
           busses.setPixelColor(indexMir + skip, col);
         }
+        if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
+        busses.setPixelColor(indexSet + skip, col);
       }
     }
   } else { //live data, etc.
@@ -769,6 +799,12 @@ uint16_t WS2812FX::triwave16(uint16_t in)
 {
   if (in < 0x8000) return in *2;
   return 0xFFFF - (in - 0x8000)*2;
+}
+
+uint8_t WS2812FX::sin_gap(uint16_t in) {
+  if (in & 0x100) return 0;
+  //if (in > 255) return 0;
+  return sin8(in + 192); //correct phase shift of sine so that it starts and stops at 0
 }
 
 /*

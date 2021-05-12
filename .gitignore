@@ -16,3 +16,4 @@ node_modules
 .cproject
 .project
 .idea
+.direnv

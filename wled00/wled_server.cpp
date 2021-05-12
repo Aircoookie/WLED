@@ -84,6 +84,7 @@ void initServer()
 
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
+    bool isConfig = false;
     { //scope JsonDocument so it releases its buffer
       DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
       DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
@@ -91,12 +92,22 @@ void initServer()
       if (error || root.isNull()) {
         request->send(400, "application/json", F("{\"error\":9}")); return;
       }
-      fileDoc = &jsonBuffer;
-      verboseResponse = deserializeState(root);
-      fileDoc = nullptr;
+      const String& url = request->url();
+      isConfig = url.indexOf("cfg") > -1;
+      if (!isConfig) {
+        fileDoc = &jsonBuffer;
+        verboseResponse = deserializeState(root);
+        fileDoc = nullptr;
+      } else {
+        verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
+      }
     }
-    if (verboseResponse) { //if JSON contains "v"
-      serveJson(request); return;
+    if (verboseResponse) {
+      if (!isConfig) {
+        serveJson(request); return; //if JSON contains "v"
+      } else {
+        serializeConfig(); //Save new settings to FS
+      }
     }
     request->send(200, "application/json", F("{\"success\":true}"));
   });
@@ -314,6 +325,7 @@ String settingsProcessor(const String& var)
 {
   if (var == "CSS") {
     char buf[2048];
+    buf[0] = 0;
     getSettingsJS(optionType, buf);
     return String(buf);
   }
@@ -365,7 +377,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
     else if (url.indexOf("dmx")  > 0) subPage = 7;
     #endif
-    else if (url.indexOf("sound")> 0) subPage = 8;  // add sound settings page
+    else if (url.indexOf("um")   > 0) subPage = 8;
+    else if (url.indexOf("sound")> 0) subPage = 9;  // add sound settings page
   } else subPage = 255; //welcome page
 
   if (subPage == 1 && wifiLock && otaLock)
@@ -387,7 +400,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
       case 5: strcpy_P(s, PSTR("Time")); break;
       case 6: strcpy_P(s, PSTR("Security")); strcpy_P(s2, PSTR("Rebooting, please wait ~10 seconds...")); break;
       case 7: strcpy_P(s, PSTR("DMX")); break;
-      case 8: strcpy_P(s, PSTR("Sound")); break;
+      case 8: strcpy_P(s, PSTR("Usermods")); break;
+      case 9: strcpy_P(s, PSTR("Sound")); break;
     }
 
     strcat_P(s, PSTR(" settings saved."));
@@ -414,7 +428,8 @@ void serveSettings(AsyncWebServerRequest* request, bool post)
     case 5:   request->send_P(200, "text/html", PAGE_settings_time , settingsProcessor); break;
     case 6:   request->send_P(200, "text/html", PAGE_settings_sec  , settingsProcessor); break;
     case 7:   request->send_P(200, "text/html", PAGE_settings_dmx  , settingsProcessor); break;
-    case 8:   request->send_P(200, "text/html", PAGE_settings_sound, settingsProcessor); break;  // add sound settings page
+    case 8:   request->send_P(200, "text/html", PAGE_settings_um   , settingsProcessor); break;
+    case 9:   request->send_P(200, "text/html", PAGE_settings_sound, settingsProcessor); break;  // add sound settings page
     case 255: request->send_P(200, "text/html", PAGE_welcome); break;
     default:  request->send_P(200, "text/html", PAGE_settings     , settingsProcessor);
   }
