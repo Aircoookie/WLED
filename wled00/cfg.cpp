@@ -119,7 +119,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       mem += busses.memUsage(bc);
       if (mem <= MAX_LED_MEMORY) busses.add(bc);
     }
-    strip.finalizeInit(ledCount, skipFirstLed);
+    strip.finalizeInit(ledCount);
   }
   if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
