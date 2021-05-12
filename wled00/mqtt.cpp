@@ -62,7 +62,19 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     DEBUG_PRINTLN(F("no payload -> leave"));
     return;
   }
-  DEBUG_PRINTLN(payload);
+  char* payloadStr;
+  bool alloc = false;
+  // check if payload is 0-terminated
+  if (payload[len-1] == '\0') {
+    payloadStr = payload;
+  } else {
+    payloadStr = new char[len+1];
+    strncpy(payloadStr, payload, len);
+    payloadStr[len] = '\0';
+    alloc = true;
+  }
+  if (payloadStr == nullptr) return; //no mem
+  DEBUG_PRINTLN(payloadStr);
 
   size_t topicPrefixLen = strlen(mqttDeviceTopic);
   if (strncmp(topic, mqttDeviceTopic, topicPrefixLen) == 0) {
@@ -73,7 +85,8 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
       topic += topicPrefixLen;
     } else {
       // Non-Wled Topic used here. Probably a usermod subscribed to this topic.
-      usermods.onMqttMessage(topic, payload);
+      usermods.onMqttMessage(topic, payloadStr);
+      if (alloc) delete[] payloadStr;
       return;
     }
   }
@@ -81,25 +94,26 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   //Prefix is stripped from the topic at this point
 
   if (strcmp_P(topic, PSTR("/col")) == 0) {
-    colorFromDecOrHexString(col, (char*)payload);
+    colorFromDecOrHexString(col, (char*)payloadStr);
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
     if (payload[0] == '{') { //JSON API
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-      deserializeJson(doc, payload);
+      deserializeJson(doc, payloadStr);
       deserializeState(doc.as<JsonObject>());
     } else { //HTTP API
       String apireq = "win&";
-      apireq += (char*)payload;
+      apireq += (char*)payloadStr;
       handleSet(nullptr, apireq);
     }
   } else if (strlen(topic) != 0) {
     // non standard topic, check with usermods
-    usermods.onMqttMessage(topic, payload);
+    usermods.onMqttMessage(topic, payloadStr);
   } else {
     // topmost topic (just wled/MAC)
-    parseMQTTBriPayload(payload);
+    parseMQTTBriPayload(payloadStr);
   }
+  if (alloc) delete[] payloadStr;
 }
 
 
