@@ -311,6 +311,22 @@ void getSettingsJS(byte subPage, char* dest)
       #ifdef WLED_DEBUG
         oappend(SET_F(",1")); // debug output (TX) pin
       #endif
+      #ifdef ARDUINO_ARCH_ESP32
+        if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
+      #endif
+      //TODO: add reservations for Ethernet shield pins
+      #ifdef WLED_USE_ETHERNET
+      /*
+      if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
+        ethernet_settings es = ethernetBoards[ethernetType];
+        if (es.eth_power>0) pinManager.allocatePin(es.eth_power);
+        if (es.eth_mdc>0) pinManager.allocatePin(es.eth_mdc);
+        if (es.eth_mdio>0) pinManager.allocatePin(es.eth_mdio);
+        //if (es.eth_type>0) pinManager.allocatePin(es.eth_type);
+        //if (es.eth_clk_mode>0) pinManager.allocatePin(es.eth_clk_mode);
+      }
+      */
+      #endif
     }
     oappend(SET_F("];"));
 
