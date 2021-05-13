@@ -405,9 +405,9 @@ class FourLineDisplayUsermod : public Usermod {
             if (!insideQuotes || (qComma != knownMode)) break;
             lineBuffer[printedChars++] = singleJsonSymbol;
         }
-        if ((qComma > knownMode) || (printedChars > getCols()-2) || printedChars > sizeof(lineBuffer)-2) break;
+        if ((qComma > knownMode) || (printedChars >= getCols()-2) || printedChars >= sizeof(lineBuffer)-2) break;
       }
-      for (;printedChars < getCols()-2 || printedChars > sizeof(lineBuffer)-2; printedChars++) lineBuffer[printedChars]=' ';
+      for (;printedChars < getCols()-2 && printedChars < sizeof(lineBuffer)-2; printedChars++) lineBuffer[printedChars]=' ';
       lineBuffer[printedChars] = 0;
       drawString(2, row*lineHeight, lineBuffer);
     }
