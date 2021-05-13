@@ -48,11 +48,11 @@ public:
   /**
    * Enable/Disable the PIR sensor
    */
-  void EnablePIRsensor(bool enable) { m_PIRenabled = enable; }
+  void EnablePIRsensor(bool en) { enabled = en; }
   /**
    * Get PIR sensor enabled/disabled state
    */
-  bool PIRsensorEnabled() { return m_PIRenabled; }
+  bool PIRsensorEnabled() { return enabled; }
 
 private:
   // PIR sensor pin
@@ -64,9 +64,9 @@ private:
   // off timer start time
   uint32_t m_offTimerStart = 0;
   // current PIR sensor pin state
-  byte m_PIRsensorPinState = LOW;
-  // PIR sensor enabled - ISR attached
-  bool m_PIRenabled = true;
+  byte sensorPinState = LOW;
+  // PIR sensor enabled
+  bool enabled = true;
   // status of initialisation
   bool initDone = false;
   // on and off presets
@@ -87,16 +87,6 @@ private:
   static const char _offPreset[];
   static const char _nightTime[];
   static const char _mqttOnly[];
-
-  /**
-   * return or change if new PIR sensor state is available
-   */
-  static volatile bool newPIRsensorState(bool changeState = false, bool newState = false);
-
-  /**
-   * PIR sensor state has changed
-   */
-  static void IRAM_ATTR ISR_PIRstateChange();
 
   /**
    * check if it is daytime
@@ -159,10 +149,11 @@ private:
    */
   bool updatePIRsensorState()
   {
-    if (newPIRsensorState()) {
-      m_PIRsensorPinState = digitalRead(PIRsensorPin);
+    bool pinState = digitalRead(PIRsensorPin);
+    if (pinState != sensorPinState) {
+      sensorPinState = pinState; // change previous state
 
-      if (m_PIRsensorPinState == HIGH) {
+      if (sensorPinState == HIGH) {
         m_offTimerStart = 0;
         if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(true);
         publishMqtt("on");
@@ -170,7 +161,6 @@ private:
         // start switch off timer
         m_offTimerStart = millis();
       }
-      newPIRsensorState(true, false);
       return true;
     }
     return false;
@@ -183,7 +173,7 @@ private:
   {
     if (m_offTimerStart > 0 && millis() - m_offTimerStart > m_switchOffDelay)
     {
-      if (m_PIRenabled == true)
+      if (enabled == true)
       {
         if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(false);
         publishMqtt("off");
@@ -206,15 +196,13 @@ public:
     // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
     if (!pinManager.allocatePin(PIRsensorPin,false)) {
       PIRsensorPin = -1;  // allocation failed
-      m_PIRenabled = false;
+      enabled = false;
       DEBUG_PRINTLN(F("PIRSensorSwitch pin allocation failed."));
     } else {
       // PIR Sensor mode INPUT_PULLUP
       pinMode(PIRsensorPin, INPUT_PULLUP);
-      if (m_PIRenabled) {
-        // assign interrupt function and set CHANGE mode
-        attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
-        newPIRsensorState(true, false);
+      if (enabled) {
+        sensorPinState = digitalRead(PIRsensorPin);
       }
     }
     initDone = true;
@@ -253,7 +241,7 @@ public:
     JsonObject user = root["u"];
     if (user.isNull()) user = root.createNestedObject("u");
 
-    if (m_PIRenabled)
+    if (enabled)
     {
       // off timer
       String uiDomString = F("PIR <i class=\"icons\">&#xe325;</i>");
@@ -319,7 +307,7 @@ public:
   void addToConfig(JsonObject &root)
   {
     JsonObject top = root.createNestedObject(FPSTR(_name));
-    top[FPSTR(_enabled)]   = m_PIRenabled;
+    top[FPSTR(_enabled)]   = enabled;
     top[FPSTR(_switchOffDelay)] = m_switchOffDelay / 1000;
     top["pin"]             = PIRsensorPin;
     top[FPSTR(_onPreset)]  = m_onPreset;
@@ -335,7 +323,7 @@ public:
    */
   void readFromConfig(JsonObject &root)
   {
-    bool oldEnabled = m_PIRenabled;
+    bool oldEnabled = enabled;
     int8_t oldPin = PIRsensorPin;
 
     JsonObject top = root[FPSTR(_name)];
@@ -347,11 +335,11 @@ public:
 
     if (top[FPSTR(_enabled)] != nullptr) {
       if (top[FPSTR(_enabled)].is<bool>()) {
-        m_PIRenabled = top[FPSTR(_enabled)].as<bool>(); // reading from cfg.json
+        enabled = top[FPSTR(_enabled)].as<bool>(); // reading from cfg.json
       } else {
         // change from settings page
         String str = top[FPSTR(_enabled)]; // checkbox -> off or on
-        m_PIRenabled = (bool)(str!="off"); // off is guaranteed to be present
+        enabled = (bool)(str!="off"); // off is guaranteed to be present
       }
     }
 
@@ -391,11 +379,7 @@ public:
       // reading config prior to setup()
       DEBUG_PRINTLN(F("PIR config loaded."));
     } else {
-      if (oldPin != PIRsensorPin || oldEnabled != m_PIRenabled) {
-        if (oldEnabled) {
-          // remove old ISR if disabling usermod
-          detachInterrupt(oldPin);
-        }
+      if (oldPin != PIRsensorPin || oldEnabled != enabled) {
         // check if pin is OK
         if (oldPin != PIRsensorPin && oldPin >= 0) {
           // if we are changing pin in settings page
@@ -406,12 +390,11 @@ public:
           } else {
             // allocation failed
             PIRsensorPin = -1;
-            m_PIRenabled = false;
+            enabled = false;
           }
         }
-        if (m_PIRenabled) {
-          attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
-          newPIRsensorState(true, false);
+        if (enabled) {
+          sensorPinState = digitalRead(PIRsensorPin);
         }
         DEBUG_PRINTLN(F("PIR config (re)loaded."));
       }
@@ -427,21 +410,6 @@ public:
     return USERMOD_ID_PIRSWITCH;
   }
 };
-
-//////////////////////////////////////////////////////
-// PIRsensorSwitch static method implementations
-
-volatile bool PIRsensorSwitch::newPIRsensorState(bool changeState, bool newState)
-{
-  static volatile bool s_PIRsensorState = false;
-  if (changeState) s_PIRsensorState = newState;
-  return s_PIRsensorState;
-}
-
-void IRAM_ATTR PIRsensorSwitch::ISR_PIRstateChange()
-{
-  newPIRsensorState(true, true);
-}
 
 // strings to reduce flash memory usage (used more than twice)
 const char PIRsensorSwitch::_name[]           PROGMEM = "PIRsensorSwitch";
