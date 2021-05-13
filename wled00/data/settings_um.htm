@@ -3,14 +3,15 @@
 <head lang="en">
     <meta charset="utf-8">
     <meta name="viewport" content="width=500">
-    <title>UI Settings</title>
+    <title>Usermod Settings</title>
     <script>
     var d = document;
     var umCfg = {};
     var pins = [6,7,8,9,10,11];
-    var pinO = ["reserved","reserved","reserved","reserved","reserved","reserved"], owner;
+    var pinO = ["rsvd","rsvd","rsvd","rsvd","rsvd","rsvd"], owner;
     var loc = false, locip;
     var urows;
+    var numM = 0;
     function gId(s) { return d.getElementById(s); }
     function isO(i) { return (i && typeof i === 'object' && !Array.isArray(i)); }
     function H() { window.open("https://github.com/Aircoookie/WLED/wiki/Settings#usermod-settings"); }
@@ -24,7 +25,9 @@
                 localStorage.setItem('locIp', locip);
             }
         }
-        ldS();
+        GetV();
+        if (numM > 0 || locip) ldS();
+        else gId("um").innerHTML = "No Usermods installed.";
     }
     function check(o,k) {
         var n = o.name.replace("[]","").substr(-3);
@@ -99,11 +102,8 @@
                     urows += `<hr><h3>${k}</h3>`;
                     addField(k,'unknown',o);
                 }
-                if (urows==="")
-                    urows = "No Usermods configuration found.<br>Press <i>Save</i> to initialize defaults.";
-            } else {
-                urows = "Usermods configuration not found.<br>Most likely no Usermods exist.<br>Press <i>Save</i> to initialize defaults.";
             }
+            if (urows==="") urows = "Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults.";
             gId("um").innerHTML = urows;
         })
         .catch(function (error) {

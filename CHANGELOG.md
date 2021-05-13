@@ -2,6 +2,16 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2105120
+
+-   Fixed possibility of non-0-terminated MQTT payloads
+-   Fixed two warnings regarding integer comparison
+
+#### Build 2105112
+
+-   Usermod settings page no usermods message
+-   Lowered min speed for Drip effect
+
 #### Build 2105111
 
 -   Fixed various Codacy code style and logic issues
