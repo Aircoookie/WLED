@@ -75,7 +75,6 @@ ethernet_settings ethernetBoards[] = {
     ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
   }
 };
-
 #endif
 
 // turns all LEDs off and restarts ESP
@@ -278,7 +277,8 @@ void WLED::loop()
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
     #ifdef ARDUINO_ARCH_ESP32
     if (psramFound()) {
-      DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024/1024); DEBUG_PRINTLN("M");
+      DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
+      DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
     } else
       DEBUG_PRINTLN(F("No PSRAM"));
     #endif
@@ -323,6 +323,25 @@ void WLED::setup()
   DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
+
+  #ifdef ARDUINO_ARCH_ESP32
+    if (psramFound()) {
+      pinManager.allocatePin(16); // GPIO16 reserved for SPI RAM
+      pinManager.allocatePin(17); // GPIO17 reserved for SPI RAM
+    }
+/*
+    #ifdef WLED_USE_ETHERNET
+    if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
+      ethernet_settings es = ethernetBoards[ethernetType];
+      if (es.eth_power>0) pinManager.allocatePin(es.eth_power);
+      if (es.eth_mdc>0) pinManager.allocatePin(es.eth_mdc);
+      if (es.eth_mdio>0) pinManager.allocatePin(es.eth_mdio);
+      //if (es.eth_type>0) pinManager.allocatePin(es.eth_type);
+      //if (es.eth_clk_mode>0) pinManager.allocatePin(es.eth_clk_mode);
+    }
+    #endif
+*/
+  #endif
 
   //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());

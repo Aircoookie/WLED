@@ -581,6 +581,9 @@ void serializeInfo(JsonObject root)
   #endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
+  #ifdef ARDUINO_ARCH_ESP32
+  if (psramFound()) root[F("psram")] = ESP.getFreePsram();
+  #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
 
   usermods.addToJsonInfo(root);

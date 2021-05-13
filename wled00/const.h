@@ -242,7 +242,7 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 9216
 #else
-  #define JSON_BUFFER_SIZE 16384
+  #define JSON_BUFFER_SIZE 20480
 #endif
 
 // Maximum size of node map (list of other WLED instances)

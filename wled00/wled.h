@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2105112
+#define VERSION 2105131
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -112,6 +112,26 @@
 #define ARDUINOJSON_DECODE_UNICODE 0
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
+
+// ESP32-WROVER features SPI RAM (aka PSRAM) which can be allocated using ps_malloc()
+// we can create custom PSRAMDynamicJsonDocument to use such feature (replacing DynamicJsonDocument)
+// The following is a construct to enable code to compile without it.
+// There is a code thet will still not use PSRAM though:
+//    AsyncJsonResponse is a derived class that implements DynamicJsonDocument (AsyncJson-v6.h)
+#ifdef ARDUINO_ARCH_ESP32
+struct PSRAM_Allocator {
+  void* allocate(size_t size) {
+    if (psramFound()) return ps_malloc(size); // use PSRAM if it exists
+    else              return malloc(size);    // fallback
+  }
+  void deallocate(void* pointer) {
+    free(pointer);
+  }
+};
+using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
+#else
+#define PSRAMDynamicJsonDocument DynamicJsonDocument
+#endif
 
 #include "fcn_declare.h"
 #include "html_ui.h"

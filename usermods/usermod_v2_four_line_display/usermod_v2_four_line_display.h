@@ -313,11 +313,7 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       // Update last known values.
-      #if defined(ESP8266)
       knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
-      #else
-      knownSsid = WiFi.SSID();
-      #endif
       knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
       knownBrightness = bri;
       knownMode = strip.getMode();
