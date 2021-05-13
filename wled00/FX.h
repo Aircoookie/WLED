@@ -330,7 +330,13 @@ class WS2812FX {
         if (data && _dataLen == len) return true; //already allocated
         deallocateData();
         if (WS2812FX::instance->_usedSegmentData + len > MAX_SEGMENT_DATA) return false; //not enough memory
-        data = new (std::nothrow) byte[len];
+        // if possible use SPI RAM on ESP32
+        #ifdef ARDUINO_ARCH_ESP32
+        if (psramFound())
+          data = (byte*) ps_malloc(len);
+        else
+        #endif
+          data = (byte*) malloc(len);
         if (!data) return false; //allocation failed
         WS2812FX::instance->_usedSegmentData += len;
         _dataLen = len;
@@ -338,7 +344,7 @@ class WS2812FX {
         return true;
       }
       void deallocateData(){
-        delete[] data;
+        free(data);
         data = nullptr;
         WS2812FX::instance->_usedSegmentData -= _dataLen;
         _dataLen = 0;
