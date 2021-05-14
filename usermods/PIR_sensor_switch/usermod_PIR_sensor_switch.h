@@ -139,7 +139,7 @@ private:
       char subuf[64];
       strcpy(subuf, mqttDeviceTopic);
       strcat_P(subuf, PSTR("/motion"));
-      mqtt->publish(subuf, 0, true, state);
+      mqtt->publish(subuf, 0, false, state);
     }
   }
 

@@ -52,24 +52,23 @@ void onMqttConnect(bool sessionPresent)
 }
 
 
-void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+void onMqttMessage(char* topic, char* payload0, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
 
   DEBUG_PRINT(F("MQTT msg: "));
   DEBUG_PRINTLN(topic);
 
   // paranoia check to avoid npe if no payload
-  if (payload==nullptr) {
+  if (payload0==nullptr) {
     DEBUG_PRINTLN(F("no payload -> leave"));
     return;
   }
-  DEBUG_PRINTLN(payload);
 
   // payload is not always null terminated
-  char *payload0 = new char[len+1];
-  if (payload0==nullptr) return;  // out of memory
-  strncpy(payload0,payload,len);
-  payload0[len] = '\0';
-  DEBUG_PRINTLN(payload0);
+  char *payload = new char[len+1];
+  if (payload==nullptr) return;  // out of memory
+  strncpy(payload,payload0,len);
+  payload[len] = '\0';
+  DEBUG_PRINTLN(payload);
 
   size_t topicPrefixLen = strlen(mqttDeviceTopic);
   if (strncmp(topic, mqttDeviceTopic, topicPrefixLen) == 0) {
@@ -80,8 +79,8 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
       topic += topicPrefixLen;
     } else {
       // Non-Wled Topic used here. Probably a usermod subscribed to this topic.
-      usermods.onMqttMessage(topic, payload0);
-      delete[] payload0;
+      usermods.onMqttMessage(topic, payload);
+      delete[] payload;
       return;
     }
   }
@@ -89,26 +88,26 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   //Prefix is stripped from the topic at this point
 
   if (strcmp_P(topic, PSTR("/col")) == 0) {
-    colorFromDecOrHexString(col, payload0);
+    colorFromDecOrHexString(col, payload);
     colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
-    if (payload0[0] == '{') { //JSON API
+    if (payload[0] == '{') { //JSON API
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-      deserializeJson(doc, payload0);
+      deserializeJson(doc, payload);
       deserializeState(doc.as<JsonObject>());
     } else { //HTTP API
       String apireq = "win&";
-      apireq += payload0;
+      apireq += payload;
       handleSet(nullptr, apireq);
     }
   } else if (strlen(topic) != 0) {
     // non standard topic, check with usermods
-    usermods.onMqttMessage(topic, payload0);
+    usermods.onMqttMessage(topic, payload);
   } else {
     // topmost topic (just wled/MAC)
-    parseMQTTBriPayload(payload0);
+    parseMQTTBriPayload(payload);
   }
-  delete[] payload0;
+  delete[] payload;
 }
 
 
@@ -124,22 +123,22 @@ void publishMqtt()
   sprintf_P(s, PSTR("%u"), bri);
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/g"));
-  mqtt->publish(subuf, 0, true, s);
+  mqtt->publish(subuf, 0, false, s);  // do not retain message
 
   sprintf_P(s, PSTR("#%06X"), (col[3] << 24) | (col[0] << 16) | (col[1] << 8) | (col[2]));
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/c"));
-  mqtt->publish(subuf, 0, true, s);
+  mqtt->publish(subuf, 0, false, s);  // do not retain message
 
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/status"));
-  mqtt->publish(subuf, 0, true, "online");
+  mqtt->publish(subuf, 0, false, "online"); // do not retain message
 
   char apires[1024];
   XML_response(nullptr, apires);
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/v"));
-  mqtt->publish(subuf, 0, true, apires);
+  mqtt->publish(subuf, 0, false, apires); // do not retain message
 }
 
 

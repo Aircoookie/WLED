@@ -56,7 +56,7 @@ class MultiRelay : public Usermod {
       if (WLED_MQTT_CONNECTED){
         char subuf[64];
         sprintf_P(subuf, PSTR("%s/relay/%d"), mqttDeviceTopic, relay);
-        mqtt->publish(subuf, 0, true, state);
+        mqtt->publish(subuf, 0, false, state);
       }
     }
 
@@ -88,7 +88,7 @@ class MultiRelay : public Usermod {
         DEBUG_PRINTLN("Relays: HTML API");
         String janswer;
         String error = "";
-        int params = request->params();
+        //int params = request->params();
         janswer = F("{\"NoOfRelays\":");
         janswer += String(MULTI_RELAY_MAX_RELAYS) + ",";
 
