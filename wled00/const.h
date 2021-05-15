@@ -32,35 +32,36 @@
 #endif
 
 //Usermod IDs
-#define USERMOD_ID_RESERVED       0            //Unused. Might indicate no usermod present
-#define USERMOD_ID_UNSPECIFIED    1            //Default value for a general user mod that does not specify a custom ID
-#define USERMOD_ID_EXAMPLE        2            //Usermod "usermod_v2_example.h"
-#define USERMOD_ID_TEMPERATURE    3            //Usermod "usermod_temperature.h"
-#define USERMOD_ID_FIXNETSERVICES 4            //Usermod "usermod_Fix_unreachable_netservices.h"
-#define USERMOD_ID_PIRSWITCH      5            //Usermod "usermod_PIR_sensor_switch.h"
-#define USERMOD_ID_IMU            6            //Usermod "usermod_mpu6050_imu.h"
-#define USERMOD_ID_FOUR_LINE_DISP 7            //Usermod "usermod_v2_four_line_display.h 
-#define USERMOD_ID_ROTARY_ENC_UI  8            //Usermod "usermod_v2_rotary_encoder_ui.h"
-#define USERMOD_ID_AUTO_SAVE      9            //Usermod "usermod_v2_auto_save.h"
-#define USERMOD_ID_DHT           10            //Usermod "usermod_dht.h"
-#define USERMOD_ID_MODE_SORT     11            //Usermod "usermod_v2_mode_sort.h"
-#define USERMOD_ID_VL53L0X       12            //Usermod "usermod_vl53l0x_gestures.h"
-#define USERMOD_ID_MULTI_RELAY  101            //Usermod "usermod_multi_relay.h"
+#define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
+#define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
+#define USERMOD_ID_EXAMPLE                2     //Usermod "usermod_v2_example.h"
+#define USERMOD_ID_TEMPERATURE            3     //Usermod "usermod_temperature.h"
+#define USERMOD_ID_FIXNETSERVICES         4     //Usermod "usermod_Fix_unreachable_netservices.h"
+#define USERMOD_ID_PIRSWITCH              5     //Usermod "usermod_PIR_sensor_switch.h"
+#define USERMOD_ID_IMU                    6     //Usermod "usermod_mpu6050_imu.h"
+#define USERMOD_ID_FOUR_LINE_DISP         7     //Usermod "usermod_v2_four_line_display.h 
+#define USERMOD_ID_ROTARY_ENC_UI          8     //Usermod "usermod_v2_rotary_encoder_ui.h"
+#define USERMOD_ID_AUTO_SAVE              9     //Usermod "usermod_v2_auto_save.h"
+#define USERMOD_ID_DHT                   10     //Usermod "usermod_dht.h"
+#define USERMOD_ID_MODE_SORT             11     //Usermod "usermod_v2_mode_sort.h"
+#define USERMOD_ID_VL53L0X               12     //Usermod "usermod_vl53l0x_gestures.h"
+#define USERMOD_ID_MULTI_RELAY           13     //Usermod "usermod_multi_relay.h"
+#define USERMOD_ID_ANIMATED_STAIRCASE    14     //Usermod "Animated_Staircase.h"
 
 //Access point behavior
-#define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
-#define AP_BEHAVIOR_NO_CONN       1            //Open when no connection (either after boot or if connection is lost)
-#define AP_BEHAVIOR_ALWAYS        2            //Always open
-#define AP_BEHAVIOR_BUTTON_ONLY   3            //Only when button pressed for 6 sec
+#define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
+#define AP_BEHAVIOR_NO_CONN               1     //Open when no connection (either after boot or if connection is lost)
+#define AP_BEHAVIOR_ALWAYS                2     //Always open
+#define AP_BEHAVIOR_BUTTON_ONLY           3     //Only when button pressed for 6 sec
 
 //Notifier callMode 
-#define NOTIFIER_CALL_MODE_INIT           0    //no updates on init, can be used to disable updates
+#define NOTIFIER_CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
 #define NOTIFIER_CALL_MODE_DIRECT_CHANGE  1
 #define NOTIFIER_CALL_MODE_BUTTON         2
 #define NOTIFIER_CALL_MODE_NOTIFICATION   3
 #define NOTIFIER_CALL_MODE_NIGHTLIGHT     4
 #define NOTIFIER_CALL_MODE_NO_NOTIFY      5
-#define NOTIFIER_CALL_MODE_FX_CHANGED     6    //no longer used
+#define NOTIFIER_CALL_MODE_FX_CHANGED     6     //no longer used
 #define NOTIFIER_CALL_MODE_HUE            7
 #define NOTIFIER_CALL_MODE_PRESET_CYCLE   8
 #define NOTIFIER_CALL_MODE_BLYNK          9
