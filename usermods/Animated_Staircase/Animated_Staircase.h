@@ -496,21 +496,17 @@ class Animated_Staircase : public Usermod {
         staircase = root.createNestedObject("u");
       }
 
-      JsonArray usermodEnabled = staircase.createNestedArray(F("Staircase enabled"));  // name
+      JsonArray usermodEnabled = staircase.createNestedArray(F("Staircase"));  // name
+      String btn = F("<button class=\"btn infobtn\" onclick=\"requestJson({staircase:{enabled:");
       if (enabled) {
-        usermodEnabled.add("yes");                             // value
-  /*
-        JsonArray segmentDelay = staircase.createNestedArray(F("Delay between stairs"));  // name
-        segmentDelay.add(segment_delay_ms);                       // value
-        segmentDelay.add("ms");                        // unit
-
-        JsonArray onTime = staircase.createNestedArray(F("Power-off stairs after"));  // name
-        onTime.add(on_time_ms / 1000);                              // value
-        onTime.add("s");                                     // unit
-  */
+        btn += F("false}});loadInfo();\">");
+        btn += F("enabled");
       } else {
-        usermodEnabled.add("no");                              // value
+        btn += F("true}});loadInfo();\">");
+        btn += F("disabled");
       }
+      btn += F("</button>");
+      usermodEnabled.add(btn);                             // value
     }
 };
 
