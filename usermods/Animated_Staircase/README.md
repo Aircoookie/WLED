@@ -119,6 +119,7 @@ curl -X POST -H "Content-Type: application/json" \
 ```
 **MQTT**
 You can publish a message with either `up` or `down` on topic `/swipe` to trigger animation.
+You can also use `on` or `off` for enabling or disabling usermod.
 
 Have fun with this usermod.<br/>
 www.rolfje.com

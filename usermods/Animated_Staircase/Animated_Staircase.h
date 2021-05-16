@@ -350,6 +350,12 @@ class Animated_Staircase : public Usermod {
         } else if (action == "down") {
           topSensorWrite = true;
           return true;
+        } else if (action == "on") {
+          enable(true);
+          return true;
+        } else if (action == "off") {
+          enable(false);
+          return true;
         }
       }
       return false;
@@ -499,10 +505,10 @@ class Animated_Staircase : public Usermod {
       JsonArray usermodEnabled = staircase.createNestedArray(F("Staircase"));  // name
       String btn = F("<button class=\"btn infobtn\" onclick=\"requestJson({staircase:{enabled:");
       if (enabled) {
-        btn += F("false}});loadInfo();\">");
+        btn += F("false}},false,false);loadInfo();\">");
         btn += F("enabled");
       } else {
-        btn += F("true}});loadInfo();\">");
+        btn += F("true}},false,false);loadInfo();\">");
         btn += F("disabled");
       }
       btn += F("</button>");
