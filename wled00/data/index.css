@@ -223,11 +223,13 @@ button {
 
 .top button {
 	padding: var(--tbp);
+	margin: 0;
 }
 
 .bot button {
 	padding: var(--bbp);
 	width:25%;
+	margin: 0;
 }
 
 .tab button:hover {
@@ -558,7 +560,7 @@ input[type=range]::-moz-range-thumb {
 	background-color: var(--c-3);
 	color: var(--c-d);
 	cursor: pointer;
-	border: 0px solid var(--c-f);
+	border: 1px solid var(--c-3);
 	border-radius: 25px;
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
@@ -959,7 +961,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .lstI.sticky {
-	top: 99px;
+	top: 98px;
 }
 
 .lstIcontent {
@@ -1087,11 +1089,21 @@ input[type="text"].fnd:not(:placeholder-shown) {
 	}
 }
 
-@media all and (max-width: 685px) {
+@media all and (max-width: 540px) {
 	.top button {
 		width: 16.6%;
 		padding: 8px 0 4px 0;
 	}
+}
+
+@media all and (min-width: 541px) and (max-width: 719px) {
+	.top button {
+		width: 14.2%;
+		padding: 8px 0 4px 0;
+	}
+}
+
+@media all and (max-width: 719px) {
 	.hd {
 		display: none !important;
 	}
@@ -1101,9 +1113,15 @@ input[type="text"].fnd:not(:placeholder-shown) {
 	}
 }
 
+@media all and (max-width: 798px) {
+	#buttonNodes {
+		display: none;
+	}
+}
+
 @media all and (max-width: 1249px) {
-	#buttonPcm, #buttonNodes {
-	display: none;
+	#buttonPcm {
+		display: none;
 	}
 }
 

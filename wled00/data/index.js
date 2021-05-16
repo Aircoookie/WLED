@@ -534,7 +534,7 @@ function loadInfo(callback=null)
 		syncTglRecv = json.str;
 		maxSeg = json.leds.maxseg;
 		pmt = json.fs.pmt;
-		gId('buttonNodes').style.display = (json.ndc > 0 && window.innerWidth > 770) ? "block":"none";
+		gId('buttonNodes').style.display = showNodes() ? "block":"none";
 		populateInfo(json);
 		if (callback) callback();
 	})
@@ -958,7 +958,7 @@ function updateUI(scrollto=false)
 	gId('buttonPower').className = (isOn) ? "active":"";
 	gId('buttonNl').className = (nlA) ? "active":"";
 	gId('buttonSync').className = (syncSend) ? "active":"";
-	gId('buttonNodes').style.display = (lastinfo.ndc > 0 && window.innerWidth > 770) ? "block":"none";
+	gId('buttonNodes').style.display = showNodes() ? "block":"none";
 
 	updateSelectedPalette(scrollto);
 	updateSelectedFx(scrollto);
@@ -1819,10 +1819,14 @@ function move(e)
 	x0 = null;
 }
 
+function showNodes() {
+	return (lastinfo.ndc > 0 && (w > 797 || (w > 539 && w < 720)));
+}
+
 function size()
 {
 	w = window.innerWidth;
-	gId('buttonNodes').style.display = (lastinfo.ndc > 0 && w > 770) ? "block":"none";
+	gId('buttonNodes').style.display = showNodes() ? "block":"none";
 	var h = gId('top').clientHeight;
 	sCol('--th', h + "px");
 	sCol('--bh', gId('bot').clientHeight + "px");
