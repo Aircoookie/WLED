@@ -272,7 +272,7 @@ public:
         uiDomString += (offSeconds);
         infoArr.add(uiDomString + F("s"));
       } else {
-        infoArr.add(F("inactive"));
+        infoArr.add(sensorPinState ? F("sensor on") : F("inactive"));
       }
     } else {
       String uiDomString = F("PIR sensor");
