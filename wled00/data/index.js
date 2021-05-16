@@ -487,7 +487,7 @@ function populatePresets(fromls)
 
 		cn += `<div class="seg pres" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-		cn += `<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
+		cn += `<div class="pname" onclick="setPreset(${i})">${pName(i)}</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
@@ -608,7 +608,14 @@ function populateSegments(s)
 	<div class="segname" onclick="selSegEx(${i})">
 		${inst.n ? inst.n : "Segment "+i}
 	</div>
-	<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
+	<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i><br>
+	<div class="segpwr">
+		<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
+		<div class="sliderwrap il sws">
+			<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+			<div class="sliderdisplay"></div>
+		</div>
+	</div>
 	<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/><br>
 		<table class="segt">
@@ -631,11 +638,6 @@ function populateSegments(s)
 			</tr>
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
-		<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
-		<div class="sliderwrap il sws">
-			<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
-			<div class="sliderdisplay"></div>
-		</div>
 		<i class="icons e-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
 		<label class="check revchkl">
 			Reverse direction
@@ -1305,11 +1307,7 @@ ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 
 function makePUtil()
 {
-	gId('putil').innerHTML = `<div class="seg pres">
-<div class="segname newseg">
-	New preset</div>
-<div class="segin expanded">
-${makeP(0)}</div></div>`;
+	gId('putil').innerHTML = `<div class="seg pres"><div class="pname newseg">New preset</div><div class="segin expanded">${makeP(0)}</div></div>`;
 	updateTrail(gId('p0p'));
 	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i);
 }

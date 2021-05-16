@@ -525,11 +525,11 @@ input[type=range]::-moz-range-thumb {
 }
 
 .sws {
-	width: 212px;
+	width: 220px;
 }
 
 .sis {
-	width: 192px !important;
+	width: 210px !important;
 }
 
 .hd {
@@ -687,7 +687,7 @@ input[type=number]::-webkit-outer-spin-button {
 	margin: 3px 0 6px 0 !important;
 }
 
-.segname {
+.segname, .pname {
 	position: absolute;
 	top: 0px;
 	left: 50%;
@@ -695,13 +695,22 @@ input[type=number]::-webkit-outer-spin-button {
 	transform: translateX(-50%);
 	white-space: nowrap;
 	cursor: pointer;
+	text-align: center;
 }
-
+/*
+.segname {
+	padding: 7px 0;
+	font-size: 11px;
+}
+*/
 .pname {
 	width: 208px;
-	text-align: center;
 	overflow: hidden;
 	text-overflow: clip;
+}
+
+.segpwr {
+	margin: 8px 0 0;
 }
 
 .pid {
@@ -890,7 +899,7 @@ input[type=number]::-webkit-outer-spin-button {
 	position: relative;
 	display: inline-block;
 	padding: 8px;
-	margin: 6px 0;
+	margin: 3px 0;
 	width: 260px;
 	font-size: 19px;
 	background-color: var(--c-2);
@@ -1024,7 +1033,7 @@ input[type="text"].fnd:not(:placeholder-shown) {
 .segin {
 	padding: 8px 8px 4px 8px;
 	display: none;
-	margin: 24px 0 0;
+	/*margin: 24px 0 0;*/
 }
 
 .expanded {
