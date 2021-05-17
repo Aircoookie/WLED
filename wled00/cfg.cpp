@@ -103,7 +103,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (length==0) continue;
       uint8_t colorOrder = (int)elm[F("order")];
       //only use skip from the first strip (this shouldn't have been in ins obj. but remains here for compatibility)
-      if (s==0) skipFirstLed = elm[F("skip")];
+      uint8_t skipFirst = elm[F("skip")];
       uint16_t start = elm[F("start")] | 0;
       if (start >= ledCount) continue;
       //limit length of strip if it would exceed total configured LEDs
@@ -115,11 +115,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       //refresh is required to remain off if at least one of the strips requires the refresh.
       strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(ledType);
       s++;
-      BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed);
+      BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
       mem += busses.memUsage(bc);
       if (mem <= MAX_LED_MEMORY) busses.add(bc);
     }
-    strip.finalizeInit(ledCount, skipFirstLed);
+    strip.finalizeInit(ledCount);
   }
   if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
@@ -488,7 +488,7 @@ void serializeConfig() {
     for (uint8_t i = 0; i < nPins; i++) ins_pin.add(pins[i]);
     ins[F("order")] = bus->getColorOrder();
     ins["rev"] = bus->reversed;
-    ins[F("skip")] = (skipFirstLed && s == 0) ? 1 : 0;
+    ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType();
   }
 

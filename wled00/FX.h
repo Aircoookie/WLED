@@ -581,7 +581,7 @@ class WS2812FX {
     }
 
     void
-      finalizeInit(uint16_t countPixels, bool skipFirst),
+      finalizeInit(uint16_t countPixels),
       service(void),
       blur(uint8_t),
       fill(uint32_t),
@@ -813,7 +813,6 @@ class WS2812FX {
     void handle_palette(void);
 
     bool
-      _skipFirstMode,
       _triggered;
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element

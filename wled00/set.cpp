@@ -85,7 +85,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     //TODO remove all busses, but not in this system call
     //busses->removeAll();
 
-    uint8_t colorOrder, type;
+    strip.isRgbw = false;
+    uint8_t colorOrder, type, skip;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
@@ -96,6 +97,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char lt[4] = "LT"; lt[2] = 48+s; lt[3] = 0; //strip type
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
+      char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN("No data."); break;
       }
@@ -105,8 +107,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
-      //if (isRgbw(type)) strip.isRgbw = true; //30fps
-      //strip.isRgbw = true;
+      strip.isRgbw = strip.isRgbw || BusManager::isRgbw(type);
+      skip = request->hasArg(sl) ? LED_SKIP_AMOUNT : 0;
       
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
         length = request->arg(lc).toInt();
@@ -118,9 +120,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : 0;
 
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv));
-      //if (BusManager::isRgbw(type)) strip.isRgbw = true; //20fps
-      //strip.isRgbw = true;
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
       doInitBusses = true;
     }
 
@@ -181,7 +181,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     t = request->arg(F("PB")).toInt();
     if (t >= 0 && t < 4) strip.paletteBlend = t;
-    skipFirstLed = request->hasArg(F("SL"));
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
   }

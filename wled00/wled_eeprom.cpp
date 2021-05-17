@@ -317,7 +317,7 @@ void loadSettingsFromEEPROM()
   notifyMacro = EEPROM.read(2201);
 
   strip.rgbwMode = EEPROM.read(2203);
-  skipFirstLed = EEPROM.read(2204);
+  //skipFirstLed = EEPROM.read(2204);
 
   if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))
   {
