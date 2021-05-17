@@ -34,7 +34,7 @@
  */
 uint16_t WS2812FX::mode_static(void) {
   fill(SEGCOLOR(0));
-  return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : 380; //update faster if in transition
+  return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : 350; //update faster if in transition
 }
 
 
@@ -1467,8 +1467,8 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
   }
 
   byte stp = prog; // % 256
-  uint32_t color = 0;
   for(uint16_t i = 0; i < SEGLEN; i++) {
+    uint32_t color;
     if (stage == 2) {
       color = color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), color2, stp);
     } else if (stage == 1) {
@@ -3085,7 +3085,7 @@ uint16_t WS2812FX::mode_drip(void)
 
   numDrops = 1 + (SEGMENT.intensity >> 6);
 
-  float gravity = -0.001 - (SEGMENT.speed/50000.0);
+  float gravity = -0.0005 - (SEGMENT.speed/50000.0);
   gravity *= SEGLEN;
   int sourcedrop = 12;
 

@@ -11,12 +11,24 @@
 #define DEFAULT_OTA_PASS    "wledota"
 
 //increase if you need more
-#define WLED_MAX_USERMODS 4
+#ifndef WLED_MAX_USERMODS
+  #ifdef ESP8266
+    #define WLED_MAX_USERMODS 4
+  #else
+    #define WLED_MAX_USERMODS 6
+  #endif
+#endif
 
-#ifdef ESP8266
-#define WLED_MAX_BUSSES 3
-#else
-#define WLED_MAX_BUSSES 10
+#ifndef WLED_MAX_BUSSES
+  #ifdef ESP8266
+    #define WLED_MAX_BUSSES 3
+  #else
+    #ifdef CONFIG_IDF_TARGET_ESP32S2
+      #define WLED_MAX_BUSSES 5
+    #else
+      #define WLED_MAX_BUSSES 10
+    #endif
+  #endif
 #endif
 
 //Usermod IDs
@@ -33,6 +45,7 @@
 #define USERMOD_ID_DHT           10            //Usermod "usermod_dht.h"
 #define USERMOD_ID_MODE_SORT     11            //Usermod "usermod_v2_mode_sort.h"
 #define USERMOD_ID_VL53L0X       12            //Usermod "usermod_vl53l0x_gestures.h"
+#define USERMOD_ID_MULTI_RELAY  101            //Usermod "usermod_multi_relay.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
@@ -116,10 +129,10 @@
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
 
-#define IS_DIGITAL(t) (t & 0x10) //digital are 16-31 and 48-63
-#define IS_PWM(t)     (t > 40 && t < 46)
-#define NUM_PWM_PINS(t) (t - 40) //for analog PWM 41-45 only
-#define IS_2PIN(t)      (t > 47)
+#define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
+#define IS_PWM(t)     ((t) > 40 && (t) < 46)
+#define NUM_PWM_PINS(t) ((t) - 40) //for analog PWM 41-45 only
+#define IS_2PIN(t)      ((t) > 47)
 
 //Color orders
 #define COL_ORDER_GRB             0           //GRB(w),defaut
@@ -241,7 +254,11 @@
 
 //this is merely a default now and can be changed at runtime
 #ifndef LEDPIN
-#define LEDPIN 2
+#ifdef ESP8266
+  #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
+#else
+  #define LEDPIN 16   // alligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
+#endif
 #endif
 
 #ifdef WLED_ENABLE_DMX
