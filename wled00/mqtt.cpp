@@ -132,7 +132,7 @@ void publishMqtt()
 
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/status"));
-  mqtt->publish(subuf, 0, false, "online"); // do not retain message
+  mqtt->publish(subuf, 0, true, "online"); // do not retain message
 
   char apires[1024];
   XML_response(nullptr, apires);
