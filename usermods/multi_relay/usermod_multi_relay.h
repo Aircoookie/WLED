@@ -56,7 +56,7 @@ class MultiRelay : public Usermod {
       if (WLED_MQTT_CONNECTED){
         char subuf[64];
         sprintf_P(subuf, PSTR("%s/relay/%d"), mqttDeviceTopic, relay);
-        mqtt->publish(subuf, 0, true, state);
+        mqtt->publish(subuf, 0, false, state);
       }
     }
 
@@ -88,7 +88,7 @@ class MultiRelay : public Usermod {
         DEBUG_PRINTLN("Relays: HTML API");
         String janswer;
         String error = "";
-        int params = request->params();
+        //int params = request->params();
         janswer = F("{\"NoOfRelays\":");
         janswer += String(MULTI_RELAY_MAX_RELAYS) + ",";
 
@@ -281,7 +281,7 @@ class MultiRelay : public Usermod {
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      */
     void loop() {
-      if (!enabled) return;
+      if (!enabled || strip.isUpdating()) return;
 
       static unsigned long lastUpdate = 0;
       if (millis() - lastUpdate < 200) return;  // update only 5 times/s

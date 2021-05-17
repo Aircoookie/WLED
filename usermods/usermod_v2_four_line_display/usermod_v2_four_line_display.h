@@ -313,11 +313,7 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       // Update last known values.
-      #if defined(ESP8266)
       knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
-      #else
-      knownSsid = WiFi.SSID();
-      #endif
       knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
       knownBrightness = bri;
       knownMode = strip.getMode();
@@ -409,9 +405,9 @@ class FourLineDisplayUsermod : public Usermod {
             if (!insideQuotes || (qComma != knownMode)) break;
             lineBuffer[printedChars++] = singleJsonSymbol;
         }
-        if ((qComma > knownMode) || (printedChars > getCols()-2) || printedChars > sizeof(lineBuffer)-2) break;
+        if ((qComma > knownMode) || (printedChars >= getCols()-2) || printedChars >= sizeof(lineBuffer)-2) break;
       }
-      for (;printedChars < getCols()-2 || printedChars > sizeof(lineBuffer)-2; printedChars++) lineBuffer[printedChars]=' ';
+      for (;printedChars < getCols()-2 && printedChars < sizeof(lineBuffer)-2; printedChars++) lineBuffer[printedChars]=' ';
       lineBuffer[printedChars] = 0;
       drawString(2, row*lineHeight, lineBuffer);
     }

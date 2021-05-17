@@ -1,8 +1,6 @@
 #pragma once
 
 #include "wled.h"
-
-//#include <DallasTemperature.h> //DS18B20
 #include "OneWire.h"
 
 //Pin defaults for QuinLed Dig-Uno if not overriden
@@ -164,9 +162,9 @@ class UsermodTemperature : public Usermod {
             // the DallasTemperature library returns -127C or -196.6F when problem
             // reading the sensor
             strcat_P(subuf, PSTR("/temperature"));
-            mqtt->publish(subuf, 0, true, String(temperature).c_str());
+            mqtt->publish(subuf, 0, false, String(temperature).c_str());
             strcat_P(subuf, PSTR("_f"));
-            mqtt->publish(subuf, 0, true, String((float)temperature * 1.8f + 32).c_str());
+            mqtt->publish(subuf, 0, false, String((float)temperature * 1.8f + 32).c_str());
           } else {
             // publish something else to indicate status?
           }

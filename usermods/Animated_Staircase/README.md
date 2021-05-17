@@ -56,9 +56,6 @@ or remove them and put everything on one line.
 | Setting          | Description                                                   | Default |
 |------------------|---------------------------------------------------------------|---------|
 | enabled          | Enable or disable the usermod                                 | true    |
-| segment-delay-ms | Delay (milliseconds) between switching on/off each step       | 150     |
-| on-time-s        | Time (seconds) the stairs stay lit after last detection       | 5       |
-| bottom-echo-us   | Detection range of ultrasonic sensor                          | 1749    |
 | bottom-sensor    | Manually trigger a down to up animation via API               | false   | 
 | top-sensor       | Manually trigger an up to down animation via API              | false   |
 
@@ -72,8 +69,6 @@ The staircase settings and sensor states are inside the WLED status element:
     "state": {
         "staircase": {
             "enabled": true,
-            "segment-delay-ms": 150,
-            "on-time-s": 5,
             "bottom-sensor": false,
             "tops-ensor": false
         },
@@ -94,58 +89,16 @@ curl -X POST -H "Content-Type: application/json" \
 
 To enable the usermod again, use `"enabled":true`.
 
-### Changing animation parameters
-To change the delay between the steps to (for example) 100 milliseconds and the on-time to
-10 seconds:
+Alternatively you can use _Usermod_ Settings page where you can change other parameters as well.
 
-```bash
-curl -X POST -H "Content-Type: application/json" \
-     -d '{"staircase":{"segment-delay-ms":100,"on-time-s":10}}' \
-     xxx.xxx.xxx.xxx/json/state
-```
+### Changing animation parameters and detection range of the ultrasonic HC-SR04 sensor
+Using _Usermod_ Settings page you can define different usermod parameters, includng sensor pins, delay between segment activation and so on.
 
-### Changing detection range of the ultrasonic HC-SR04 sensor
-When an ultrasonic sensor is enabled in `Animated_Staircase_config.h`, you'll see a 
-`bottom-echo-us` setting appear in the json api:
-
-```json
-{
-    "state": {
-        "staircase": {
-            "enabled": true,
-            "segment-delay-ms": 150,
-            "on-time-s": 5,
-            "bottom-echo-us": 1749
-        },
-}
-```
-
-If the HC-SR04 sensor detects an echo within 1749 microseconds (corresponding to ~30 cm 
-detection range from the sensor), it will trigger switching on the staircase. This setting 
-can be changed through the API with an HTTP POST:
-
-```bash
-curl -X POST -H "Content-Type: application/json" \
-     -d '{"staircase":{"bottom-echo-us":1166}}' \
-     xxx.xxx.xxx.xxx/json/state
-```
-
-Calculating the detection range can be performed as follows: The speed of sound is 343m/s at 20 
-degrees Centigrade. Since the sound has to travel back and forth, the detection range for the
-sensor in cm is (0.0343 * maxTimeUs) / 2. To get you started, please find delays and distances below:
-
-| Distance | Detection time  |
-|---------:|----------------:|
-|     5 cm |          292 uS |
-|    10 cm |          583 uS |
-|    20 cm |         1166 uS |
-|    30 cm |         1749 uS |
-|    50 cm |         2915 uS |
-|   100 cm |         5831 uS |
+When an ultrasonic sensor is enabled you can enter maximum detection distance in centimeters separately for top and bottom sensors.
 
 **Please note:** that using an HC-SR04 sensor, particularly when detecting echos at longer
 distances creates delays in the WLED software, and _might_ introduce timing hickups in your animations or
-a less responsive web interface. It is therefore advised to keep the detection time as short as possible.
+a less responsive web interface. It is therefore advised to keep the detection distance as short as possible.
 
 ### Animation triggering through the API
 Instead of stairs activation by one of the sensors, you can also trigger the animation through
@@ -164,9 +117,14 @@ curl -X POST -H "Content-Type: application/json" \
      -d '{"staircase":{"top-sensor":true}}' \
      xxx.xxx.xxx.xxx/json/state
 ```
+**MQTT**
+You can publish a message with either `up` or `down` on topic `/swipe` to trigger animation.
+You can also use `on` or `off` for enabling or disabling usermod.
 
 Have fun with this usermod.<br/>
 www.rolfje.com
+
+Modifications @blazoncek
 
 ## Change log
 2021-04
