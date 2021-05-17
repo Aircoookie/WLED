@@ -578,6 +578,14 @@ input[type=range]:active + .sliderbubble {
 .btn-p {
 	width: 216px;
 }
+.btn-xs {
+  width: 39px;
+}
+.btn-pl-add {
+  position: absolute;
+  bottom: -28px;
+  left: 95px;
+}
 
 #qcs-w {
 	margin-top: 10px;
@@ -599,6 +607,11 @@ input[type=range]:active + .sliderbubble {
 
 .cl {
 	width: 42px;
+}
+
+.sel-pl {
+  width: 200px;
+  background-position: 176px 16px;
 }
 
 select {
@@ -663,6 +676,11 @@ input[type=text] {
 .ptxt {
 	width: 200px !important;
 	margin: 26px 0 6px 12px !important;
+}
+
+.plentry {
+  margin-top: 16px;
+  position: relative;
 }
 
 .stxt {
@@ -1014,6 +1032,15 @@ input[type="text"].search:not(:placeholder-shown) {
 
 .pwarn {
 	color: red;
+}
+
+.hrz {
+  width: auto;
+  height: 2px;
+  background-color: var(--c-e);
+}
+.hrz-pl {
+  margin: 20px 0;
 }
 
 ::-webkit-scrollbar {

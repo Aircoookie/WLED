@@ -18,7 +18,7 @@ var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 var palettesData;
 var pJson = {};
-var pN = "", pI = 0;
+var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
 var cfg = {
@@ -418,9 +418,9 @@ function populatePresets(fromls)
 	var cn = "";
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
-	var added = false;
   pQL = [];
   var is = [];
+  pNum = 0;
 
 	for (var key of (arr||[]))
 	{
@@ -436,11 +436,11 @@ function populatePresets(fromls)
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
-		added = true;
+    pNum++;
 	}
 
 	d.getElementById('pcont').innerHTML = cn;
-	if (added) {
+	if (pNum > 0) {
 		if (pmtLS != pmt && pmt != 0) {
 			localStorage.setItem("wledPmt", pmt);
 			pJson["0"] = {};
@@ -1224,8 +1224,50 @@ function makePUtil() {
 	updateTrail(d.getElementById('p0p'));
 }
 
+function makePlUtil() {
+  if (pNum < 2) {
+    showToast("You need at least 2 presets to make a playlist!"); return;
+  }
+	d.getElementById('putil').innerHTML = `<div class="seg pres">
+		<div class="segname newseg">
+			New playlist</div>
+		<div class="segin expanded">
+      <div class="plentry">
+        1:
+        <select class="btn sel sel-pl" id="selectPalette">
+          <option>Mockup</option>
+          <option>Error!</option>
+        </select>
+        <div class="c">Duration <input class="noslide" type="number" max=6553.0 min=0.2 value=5.0> s
+        <button class="btn btn-i btn-xs" onclick="resetPUtil()"><i class="icons btn-icon">&#xe037;</i></button></div>
+        <div class="hrz hrz-pl" />
+        <button class="btn btn-i btn-xs btn-pl-add" onclick="resetPUtil()"><i class="icons btn-icon">&#xe18a;</i></button></div>
+      </div>
+      <label class="check revchkl">
+			  Randomize order
+			  <input type="checkbox" id="pibtgl">
+			  <span class="checkmark schk"></span>
+      </label>
+      <label class="check revchkl">
+        Repeat indefinitely
+        <input type="checkbox" id="psbtgl" checked>
+        <span class="checkmark schk"></span>
+      </label>
+      <div class="c">Repeat <input class="noslide" type="number" max=127 min=-1 value=1> times</div>
+      End preset:<br>
+      <select class="btn sel sel-pl" id="selectEnd">
+        <option>Mockup</option>
+        <option>Error!</option>
+      </select>
+      <button class="btn btn-i btn-p" onclick="saveP(0)"><i class="icons btn-icon">&#xe139;</i>Test</button>
+      <button class="btn btn-i btn-p" onclick="saveP(0)"><i class="icons btn-icon">&#xe390;</i>Save</button>
+      <button class="btn btn-p" onclick="resetPUtil()">Cancel</button>
+    </div></div>`;
+}
+
 function resetPUtil() {
-	var cn = `<button class="btn btn-s btn-i" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>Create preset</button><br>`;
+	var cn = `<button class="btn btn-s btn-i" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>Create preset</button><br>
+            <button class="btn btn-s btn-i" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i>Create playlist</button><br>`;
 	d.getElementById('putil').innerHTML = cn;
 }
 
