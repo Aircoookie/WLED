@@ -2,6 +2,30 @@
 
 This usermod-v2 modification allows the connection of multiple relays each with individual delay and on/off mode.
 
+## HTTP API
+All responses are returned as JSON. 
+
+Status Request: `http://[device-ip]/relays`
+Switch Command: `http://[device-ip]/relays?switch=1,0,1,1`   
+The number of numbers behind the switch parameter must correspond to the number of relays. The number 1 switches the relay on. The number 0 switches the relay off. 
+
+Toggle Command: `http://[device-ip]/relays?toggle=1,0,1,1`
+The number of numbers behind the parameter switch must correspond to the number of relays. The number 1 causes a toggling of the relay. The number 0 leaves the state of the device.
+
+Examples
+1. 4 relays at all, relay 2 will be toggled: `http://[device-ip]/relays?toggle=0,1,0,0`
+2. 3 relays at all, relay 1&3 will be switched on: `http://[device-ip]/relays?switch=1,0,1`
+
+## MQTT API
+
+wled/deviceMAC/relay/0/command on|off|toggle
+wled/deviceMAC/relay/1/command on|off|toggle
+
+When relay is switched it will publish a message:
+
+wled/deviceMAC/relay/0 on|off
+
+
 ## Usermod installation
 
 1. Register the usermod by adding `#include "../usermods/multi_relay/usermod_multi_relay.h"` at the top and `usermods.add(new MultiRelay());` at the bottom of `usermods_list.cpp`.
