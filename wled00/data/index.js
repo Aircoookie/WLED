@@ -1036,7 +1036,9 @@ function requestJson(command, rinfo = true, verbose = true) {
 		d.getElementById('sliderIntensity').value = i.ix;
 
 		// Effects
-		e1.querySelector(`input[name="fx"][value="${i.fx}"]`).checked = true;
+    var selFx = e1.querySelector(`input[name="fx"][value="${i.fx}"]`);
+    if (selFx) selFx.checked = true;
+    else location.reload(); //effect list is gone (e.g. if restoring tab). Reload.
 		var selElement = e1.querySelector('.selected');
 		if (selElement) {
 			selElement.classList.remove('selected')
@@ -1177,35 +1179,62 @@ function resetUtil() {
 	d.getElementById('segutil').innerHTML = cn;
 }
 
-function makeP(i) {
+function populatePlaylist() {
+  var plJson = {};
+
+}
+
+function makeP(i,pl) {
+  var content = "";
+  if (pl) content = `
+  ${makePl()}<label class="check revchkl">
+    Randomize order
+    <input type="checkbox" id="pibtgl">
+    <span class="checkmark schk"></span>
+  </label>
+  <label class="check revchkl">
+    Repeat indefinitely
+    <input type="checkbox" id="psbtgl" checked>
+    <span class="checkmark schk"></span>
+  </label>
+  <div class="c">Repeat <input class="noslide" type="number" max=127 min=-1 value=1> times</div>
+  End preset:<br>
+  <select class="btn sel sel-pl" id="selectEnd">
+    <option>Mockup</option>
+    <option>Error!</option>
+  </select>
+  <button class="btn btn-i btn-p" onclick="saveP(0)"><i class="icons btn-icon">&#xe139;</i>Test</button>`;
+
+  else content = `<label class="check revchkl">
+    ${(i>0)?"Overwrite with state":"Use current state"}
+    <input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i>0)?"":"checked"}>
+    <span class="checkmark schk"></span>
+  </label><br>
+  <div class="po2" id="p${i}o2">
+    API command<br>
+    <textarea class="noslide" id="p${i}api"></textarea>
+  </div>
+  <div class="po1" id="p${i}o1">
+    <label class="check revchkl">
+      Include brightness
+      <input type="checkbox" id="p${i}ibtgl" checked>
+      <span class="checkmark schk"></span>
+    </label>
+    <label class="check revchkl">
+      Save segment bounds
+      <input type="checkbox" id="p${i}sbtgl" checked>
+      <span class="checkmark schk"></span>
+    </label>
+  </div>`;
+
 	return `
 	<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/><br>
 	<div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
 	<div class="h">(leave empty for no Quick load button)</div>
-	<label class="check revchkl">
-		${(i>0)?"Overwrite with state":"Use current state"}
-		<input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i>0)?"":"checked"}>
-		<span class="checkmark schk"></span>
-	</label><br>
-	<div class="po2" id="p${i}o2">
-		API command<br>
-		<textarea class="noslide" id="p${i}api"></textarea>
-	</div>
-	<div class="po1" id="p${i}o1">
-		<label class="check revchkl">
-			Include brightness
-			<input type="checkbox" id="p${i}ibtgl" checked>
-			<span class="checkmark schk"></span>
-		</label>
-		<label class="check revchkl">
-			Save segment bounds
-			<input type="checkbox" id="p${i}sbtgl" checked>
-			<span class="checkmark schk"></span>
-		</label>
-	</div>
+	${content}
 	<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 	<div class="c">
-		<button class="btn btn-i btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>${(i>0)?"Save changes":"Save preset"}</button>
+		<button class="btn btn-i btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>Save ${(pl)?"playlist":(i>0)?"changes":"preset"}</button>
 		${(i>0)?'<button class="btn btn-i btn-p" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':
 						'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
 	</div>
@@ -1221,28 +1250,40 @@ function makePUtil() {
 			New preset</div>
 		<div class="segin expanded">
 		${makeP(0)}</div></div>`;
-	updateTrail(d.getElementById('p0p'));
+}
+
+function makePl(i, ps, dur) {
+  return `
+  <div class="plentry">
+    1:
+    <select class="btn sel sel-pl" id="selectPalette" value=${ps}>
+      <option>Mockup</option>
+      <option>Error!</option>
+    </select>
+    <div class="c">Duration <input class="noslide" type="number" max=6553.0 min=0.2 value=${dur}> s
+    <button class="btn btn-i btn-xs" onclick="resetPUtil()"><i class="icons btn-icon">&#xe037;</i></button></div>
+    <div class="hrz hrz-pl" />
+    <button class="btn btn-i btn-xs btn-pl-add" onclick="resetPUtil()"><i class="icons btn-icon">&#xe18a;</i></button></div>
+  </div>`;
 }
 
 function makePlUtil() {
   if (pNum < 2) {
     showToast("You need at least 2 presets to make a playlist!"); return;
   }
+  d.getElementById('putil').innerHTML = `<div class="seg pres">
+  <div class="segname newseg">
+    New playlist</div>
+  <div class="segin expanded">
+  ${makeP(0,true)}</div></div>`;
+
+  return;
 	d.getElementById('putil').innerHTML = `<div class="seg pres">
 		<div class="segname newseg">
 			New playlist</div>
 		<div class="segin expanded">
-      <div class="plentry">
-        1:
-        <select class="btn sel sel-pl" id="selectPalette">
-          <option>Mockup</option>
-          <option>Error!</option>
-        </select>
-        <div class="c">Duration <input class="noslide" type="number" max=6553.0 min=0.2 value=5.0> s
-        <button class="btn btn-i btn-xs" onclick="resetPUtil()"><i class="icons btn-icon">&#xe037;</i></button></div>
-        <div class="hrz hrz-pl" />
-        <button class="btn btn-i btn-xs btn-pl-add" onclick="resetPUtil()"><i class="icons btn-icon">&#xe18a;</i></button></div>
-      </div>
+      ${makePl()}
+      ${makePl()}
       <label class="check revchkl">
 			  Randomize order
 			  <input type="checkbox" id="pibtgl">
