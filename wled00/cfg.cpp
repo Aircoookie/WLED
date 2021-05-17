@@ -488,7 +488,7 @@ void serializeConfig() {
     for (uint8_t i = 0; i < nPins; i++) ins_pin.add(pins[i]);
     ins[F("order")] = bus->getColorOrder();
     ins["rev"] = bus->reversed;
-    ins[F("skip")] = bus->skipFirstLed();
+    ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType();
   }
 

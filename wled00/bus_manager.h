@@ -10,10 +10,6 @@
 #include "bus_wrapper.h"
 #include <Arduino.h>
 
-#define GET_BIT(var,bit)    (((var)>>(bit))&0x01)
-#define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
-#define UNSET_BIT(var,bit)  ((var)&=(~(uint16_t)(0x0001<<(bit))))
-
 //temporary struct for passing bus configuration to bus
 struct BusConfig {
   uint8_t type = TYPE_WS2812_RGB;
@@ -22,12 +18,10 @@ struct BusConfig {
   uint8_t colorOrder = COL_ORDER_GRB;
   bool reversed = false;
   uint8_t skipAmount;
-  bool rgbwOverride;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
   BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip=0) {
-    rgbwOverride = (bool) GET_BIT(busType,7);
-    type = busType & 0x7F;  // bit 7 may be/is hacked to include RGBW info (1=RGBW, 0=RGB)
-    count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
+    type = busType; count = len; start = pstart;
+    colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
     if (type > 47) nPins = 2;
     else if (type > 41 && type < 46) nPins = NUM_PWM_PINS(type);
@@ -81,7 +75,7 @@ class Bus {
     return false;
   }
 
-  virtual uint8_t skipFirstLed() {
+  virtual uint8_t skippedLeds() {
     return 0;
   }
 
@@ -124,8 +118,7 @@ class BusDigital : public Bus {
     reversed = bc.reversed;
     _skip = bc.skipAmount;    //sacrificial pixels
     _len = bc.count + _skip;
-    _rgbw = bc.rgbwOverride || Bus::isRgbw(bc.type);    // RGBW override in bit 7
-    _iType = PolyBus::getI(bc.type, _pins, nr, _rgbw);  // we may need to pass RGBW override to PolyBus::getI(9)
+    _iType = PolyBus::getI(bc.type, _pins, nr);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len);
     _valid = (_busPtr != nullptr);
@@ -184,10 +177,10 @@ class BusDigital : public Bus {
   }
 
   inline bool isRgbw() {
-    return _rgbw;
+    return (_type == TYPE_SK6812_RGBW || _type == TYPE_TM1814);
   }
 
-  inline uint8_t skipFirstLed() {
+  inline uint8_t skippedLeds() {
     return _skip;
   }
 
@@ -215,7 +208,6 @@ class BusDigital : public Bus {
   uint8_t _iType = I_NONE;
   uint16_t _len = 0;
   uint8_t _skip = 0;
-  bool _rgbw = false;
   void * _busPtr = nullptr;
 };
 
