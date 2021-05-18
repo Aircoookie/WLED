@@ -48,11 +48,11 @@ public:
   /**
    * Enable/Disable the PIR sensor
    */
-  void EnablePIRsensor(bool enable) { m_PIRenabled = enable; }
+  void EnablePIRsensor(bool en) { enabled = en; }
   /**
    * Get PIR sensor enabled/disabled state
    */
-  bool PIRsensorEnabled() { return m_PIRenabled; }
+  bool PIRsensorEnabled() { return enabled; }
 
 private:
   // PIR sensor pin
@@ -64,39 +64,68 @@ private:
   // off timer start time
   uint32_t m_offTimerStart = 0;
   // current PIR sensor pin state
-  byte m_PIRsensorPinState = LOW;
-  // PIR sensor enabled - ISR attached
-  bool m_PIRenabled = true;
+  byte sensorPinState = LOW;
+  // PIR sensor enabled
+  bool enabled = true;
   // status of initialisation
   bool initDone = false;
+  // on and off presets
+  uint8_t m_onPreset = 0;
+  uint8_t m_offPreset = 0;
+  // flag to indicate that PIR sensor should activate WLED during nighttime only
+  bool m_nightTimeOnly = false;
+  // flag to send MQTT message only (assuming it is enabled)
+  bool m_mqttOnly = false;
+
+  unsigned long lastLoop = 0;
 
   // strings to reduce flash memory usage (used more than twice)
   static const char _name[];
   static const char _switchOffDelay[];
   static const char _enabled[];
+  static const char _onPreset[];
+  static const char _offPreset[];
+  static const char _nightTime[];
+  static const char _mqttOnly[];
 
   /**
-   * return or change if new PIR sensor state is available
+   * check if it is daytime
+   * if sunrise/sunset is not defined (no NTP or lat/lon) default to nighttime
    */
-  static volatile bool newPIRsensorState(bool changeState = false, bool newState = false);
+  bool isDayTime() {
+    bool isDayTime = false;
+    updateLocalTime();
+    uint8_t hr = hour(localTime);
+    uint8_t mi = minute(localTime);
 
-  /**
-   * PIR sensor state has changed
-   */
-  static void IRAM_ATTR ISR_PIRstateChange();
+    if (sunrise && sunset) {
+      if (hour(sunrise)<hr && hour(sunset)>hr) {
+        isDayTime = true;
+      } else {
+        if (hour(sunrise)==hr && minute(sunrise)<mi) {
+          isDayTime = true;
+        }
+        if (hour(sunset)==hr && minute(sunset)>mi) {
+          isDayTime = true;
+        }
+      }
+    }
+    return isDayTime;
+  }
 
   /**
    * switch strip on/off
    */
   void switchStrip(bool switchOn)
   {
-    if (switchOn && bri == 0)
-    {
+    if (switchOn && m_onPreset) {
+      applyPreset(m_onPreset);
+    } else if (!switchOn && m_offPreset) {
+      applyPreset(m_offPreset);
+    } else if (switchOn && bri == 0) {
       bri = briLast;
       colorUpdated(NotifyUpdateMode);
-    }
-    else if (!switchOn && bri != 0)
-    {
+    } else if (!switchOn && bri != 0) {
       briLast = bri;
       bri = 0;
       colorUpdated(NotifyUpdateMode);
@@ -110,7 +139,7 @@ private:
       char subuf[64];
       strcpy(subuf, mqttDeviceTopic);
       strcat_P(subuf, PSTR("/motion"));
-      mqtt->publish(subuf, 0, true, state);
+      mqtt->publish(subuf, 0, false, state);
     }
   }
 
@@ -120,22 +149,18 @@ private:
    */
   bool updatePIRsensorState()
   {
-    if (newPIRsensorState())
-    {
-      m_PIRsensorPinState = digitalRead(PIRsensorPin);
+    bool pinState = digitalRead(PIRsensorPin);
+    if (pinState != sensorPinState) {
+      sensorPinState = pinState; // change previous state
 
-      if (m_PIRsensorPinState == HIGH)
-      {
+      if (sensorPinState == HIGH) {
         m_offTimerStart = 0;
-        switchStrip(true);
+        if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(true);
         publishMqtt("on");
-      }
-      else if (bri != 0)
-      {
+      } else /*if (bri != 0)*/ {
         // start switch off timer
         m_offTimerStart = millis();
       }
-      newPIRsensorState(true, false);
       return true;
     }
     return false;
@@ -148,9 +173,9 @@ private:
   {
     if (m_offTimerStart > 0 && millis() - m_offTimerStart > m_switchOffDelay)
     {
-      if (m_PIRenabled == true)
+      if (enabled == true)
       {
-        switchStrip(false);
+        if (!m_mqttOnly && (!m_nightTimeOnly || (m_nightTimeOnly && !isDayTime()))) switchStrip(false);
         publishMqtt("off");
       }
       m_offTimerStart = 0;
@@ -171,14 +196,13 @@ public:
     // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
     if (!pinManager.allocatePin(PIRsensorPin,false)) {
       PIRsensorPin = -1;  // allocation failed
-      m_PIRenabled = false;
+      enabled = false;
       DEBUG_PRINTLN(F("PIRSensorSwitch pin allocation failed."));
     } else {
       // PIR Sensor mode INPUT_PULLUP
       pinMode(PIRsensorPin, INPUT_PULLUP);
-      if (m_PIRenabled) {
-        // assign interrupt function and set CHANGE mode
-        attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
+      if (enabled) {
+        sensorPinState = digitalRead(PIRsensorPin);
       }
     }
     initDone = true;
@@ -197,6 +221,11 @@ public:
    */
   void loop()
   {
+    // only check sensors 10x/s
+    unsigned long now = millis();
+    if (now - lastLoop < 100) return;
+    lastLoop = now;
+
     if (!updatePIRsensorState()) {
       handleOffTimer();
     }
@@ -210,38 +239,10 @@ public:
   void addToJsonInfo(JsonObject &root)
   {
     JsonObject user = root["u"];
-    if (user.isNull())
-      user = root.createNestedObject("u");
-/*
-    JsonArray infoArr = user.createNestedArray(F("<i class=\"icons\">&#xe08f;</i> PIR sensor state")); //name
-    String uiDomString = F("<button class=\"btn infobtn\" onclick=\"requestJson({PIRenabled:");
-    String sensorStateInfo;
+    if (user.isNull()) user = root.createNestedObject("u");
 
-    // PIR sensor state
-    if (m_PIRenabled)
+    if (enabled)
     {
-      uiDomString += "false";
-      sensorStateInfo = (m_PIRsensorPinState != LOW ? FPSTR(F("active")) : FPSTR(F("inactive"))); //value
-    }
-    else
-    {
-      uiDomString += "true";
-      sensorStateInfo = F("Disabled!");
-    }
-    uiDomString += F("});return false;\">");
-    uiDomString += sensorStateInfo;
-    uiDomString += F("</button>");
-    infoArr.add(uiDomString); //value
-*/
-    if (m_PIRenabled)
-    {
-/*
-      JsonArray infoArr = user.createNestedArray(F("PIR switch-off timer after")); //name
-      String uiDomString = F("<input type=\"number\" min=\"1\" max=\"720\" value=\"");
-      uiDomString += (m_switchOffDelay / 60000);
-      uiDomString += F("\" onchange=\"requestJson({PIRoffSec:parseInt(this.value)*60});\">min");
-      infoArr.add(uiDomString);
-*/
       // off timer
       String uiDomString = F("PIR <i class=\"icons\">&#xe325;</i>");
       JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
@@ -271,66 +272,34 @@ public:
         uiDomString += (offSeconds);
         infoArr.add(uiDomString + F("s"));
       } else {
-        infoArr.add(F("inactive"));
+        infoArr.add(sensorPinState ? F("sensor on") : F("inactive"));
       }
+    } else {
+      String uiDomString = F("PIR sensor");
+      JsonArray infoArr = user.createNestedArray(uiDomString);
+      infoArr.add(F("disabled"));
     }
   }
 
   /**
    * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
    * Values in the state object may be modified by connected clients
-   * Add "PIRenabled" to json state. This can be used to disable/enable the sensor.
-   * Add "PIRoffSec" to json state. This can be used to adjust <m_switchOffDelay> milliseconds.
    */
+/*
   void addToJsonState(JsonObject &root)
   {
-    root[FPSTR(_enabled)] = m_PIRenabled;
-    root[FPSTR(_switchOffDelay)] = (m_switchOffDelay / 1000);
   }
+*/
 
   /**
    * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
    * Values in the state object may be modified by connected clients
-   * Read "PIRenabled" from json state and switch enable/disable the PIR sensor.
-   * Read "PIRoffSec" from json state and adjust <m_switchOffDelay> milliseconds.
    */
+/*
   void readFromJsonState(JsonObject &root)
   {
-    if (root[FPSTR(_switchOffDelay)] != nullptr) {
-      m_switchOffDelay = (1000 * max(60UL, min(43200UL, root[FPSTR(_switchOffDelay)].as<unsigned long>())));
-    }
-/*
-    if (root["pin"] != nullptr) {
-      int8_t pin = (int)root["pin"];
-      // check if pin is OK
-      if (pin != PIRsensorPin && pin>=0 && pinManager.allocatePin(pin,false)) {
-        // deallocate old pin
-        pinManager.deallocatePin(PIRsensorPin);
-        // PIR Sensor mode INPUT_PULLUP
-        pinMode(pin, INPUT_PULLUP);
-        if (m_PIRenabled)
-        {
-          // remove old ISR
-          detachInterrupt(PIRsensorPin);
-          // assign interrupt function and set CHANGE mode
-          attachInterrupt(digitalPinToInterrupt(pin), ISR_PIRstateChange, CHANGE);
-          newPIRsensorState(true, true);
-        }
-        PIRsensorPin = pin;
-      }
-    }
-
-    if (root[FPSTR(_enabled)] != nullptr) {
-      if (root[FPSTR(_enabled)] && !m_PIRenabled && PIRsensorPin >= 0) {
-        attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
-        newPIRsensorState(true, true);
-      } else if (m_PIRenabled && PIRsensorPin >= 0) {
-        detachInterrupt(PIRsensorPin);
-      }
-      m_PIRenabled = root[FPSTR(_enabled)];
-    }
-*/
   }
+*/
 
   /**
    * provide the changeable values
@@ -338,9 +307,13 @@ public:
   void addToConfig(JsonObject &root)
   {
     JsonObject top = root.createNestedObject(FPSTR(_name));
-    top[FPSTR(_enabled)] = m_PIRenabled;
+    top[FPSTR(_enabled)]   = enabled;
     top[FPSTR(_switchOffDelay)] = m_switchOffDelay / 1000;
-    top["pin"] = PIRsensorPin;
+    top["pin"]             = PIRsensorPin;
+    top[FPSTR(_onPreset)]  = m_onPreset;
+    top[FPSTR(_offPreset)] = m_offPreset;
+    top[FPSTR(_nightTime)] = m_nightTimeOnly;
+    top[FPSTR(_mqttOnly)]  = m_mqttOnly;
     DEBUG_PRINTLN(F("PIR config saved."));
   }
 
@@ -350,7 +323,7 @@ public:
    */
   void readFromConfig(JsonObject &root)
   {
-    bool oldEnabled = m_PIRenabled;
+    bool oldEnabled = enabled;
     int8_t oldPin = PIRsensorPin;
 
     JsonObject top = root[FPSTR(_name)];
@@ -362,11 +335,11 @@ public:
 
     if (top[FPSTR(_enabled)] != nullptr) {
       if (top[FPSTR(_enabled)].is<bool>()) {
-        m_PIRenabled = top[FPSTR(_enabled)].as<bool>(); // reading from cfg.json
+        enabled = top[FPSTR(_enabled)].as<bool>(); // reading from cfg.json
       } else {
         // change from settings page
         String str = top[FPSTR(_enabled)]; // checkbox -> off or on
-        m_PIRenabled = (bool)(str!="off"); // off is guaranteed to be present
+        enabled = (bool)(str!="off"); // off is guaranteed to be present
       }
     }
 
@@ -374,15 +347,39 @@ public:
       m_switchOffDelay = (top[FPSTR(_switchOffDelay)].as<int>() * 1000);
     }
 
+    if (top[FPSTR(_onPreset)] != nullptr) {
+      m_onPreset = max(0,min(250,top[FPSTR(_onPreset)].as<int>()));
+    }
+
+    if (top[FPSTR(_offPreset)] != nullptr) {
+      m_offPreset = max(0,min(250,top[FPSTR(_offPreset)].as<int>()));
+    }
+
+    if (top[FPSTR(_nightTime)] != nullptr) {
+      if (top[FPSTR(_nightTime)].is<bool>()) {
+        m_nightTimeOnly = top[FPSTR(_nightTime)].as<bool>(); // reading from cfg.json
+      } else {
+        // change from settings page
+        String str = top[FPSTR(_nightTime)]; // checkbox -> off or on
+        m_nightTimeOnly = (bool)(str!="off"); // off is guaranteed to be present
+      }
+    }
+
+    if (top[FPSTR(_mqttOnly)] != nullptr) {
+      if (top[FPSTR(_mqttOnly)].is<bool>()) {
+        m_mqttOnly = top[FPSTR(_mqttOnly)].as<bool>(); // reading from cfg.json
+      } else {
+        // change from settings page
+        String str = top[FPSTR(_mqttOnly)]; // checkbox -> off or on
+        m_mqttOnly = (bool)(str!="off"); // off is guaranteed to be present
+      }
+    }
+
     if (!initDone) {
       // reading config prior to setup()
       DEBUG_PRINTLN(F("PIR config loaded."));
     } else {
-      if (oldPin != PIRsensorPin || oldEnabled != m_PIRenabled) {
-        if (oldEnabled) {
-          // remove old ISR if disabling usermod
-          detachInterrupt(oldPin);
-        }
+      if (oldPin != PIRsensorPin || oldEnabled != enabled) {
         // check if pin is OK
         if (oldPin != PIRsensorPin && oldPin >= 0) {
           // if we are changing pin in settings page
@@ -393,12 +390,11 @@ public:
           } else {
             // allocation failed
             PIRsensorPin = -1;
-            m_PIRenabled = false;
+            enabled = false;
           }
         }
-        if (m_PIRenabled) {
-          attachInterrupt(digitalPinToInterrupt(PIRsensorPin), ISR_PIRstateChange, CHANGE);
-          newPIRsensorState(true, true);
+        if (enabled) {
+          sensorPinState = digitalRead(PIRsensorPin);
         }
         DEBUG_PRINTLN(F("PIR config (re)loaded."));
       }
@@ -415,25 +411,11 @@ public:
   }
 };
 
-//////////////////////////////////////////////////////
-// PIRsensorSwitch static method implementations
-
-volatile bool PIRsensorSwitch::newPIRsensorState(bool changeState, bool newState)
-{
-  static volatile bool s_PIRsensorState = false;
-  if (changeState)
-  {
-    s_PIRsensorState = newState;
-  }
-  return s_PIRsensorState;
-}
-
-void IRAM_ATTR PIRsensorSwitch::ISR_PIRstateChange()
-{
-  newPIRsensorState(true, true);
-}
-
 // strings to reduce flash memory usage (used more than twice)
 const char PIRsensorSwitch::_name[]           PROGMEM = "PIRsensorSwitch";
 const char PIRsensorSwitch::_enabled[]        PROGMEM = "PIRenabled";
 const char PIRsensorSwitch::_switchOffDelay[] PROGMEM = "PIRoffSec";
+const char PIRsensorSwitch::_onPreset[]       PROGMEM = "on-preset";
+const char PIRsensorSwitch::_offPreset[]      PROGMEM = "off-preset";
+const char PIRsensorSwitch::_nightTime[]      PROGMEM = "nighttime-only";
+const char PIRsensorSwitch::_mqttOnly[]       PROGMEM = "mqtt-only";

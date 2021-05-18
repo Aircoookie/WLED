@@ -62,17 +62,10 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     DEBUG_PRINTLN(F("no payload -> leave"));
     return;
   }
-  char* payloadStr;
-  bool alloc = false;
-  // check if payload is 0-terminated
-  if (payload[len-1] == '\0') {
-    payloadStr = payload;
-  } else {
-    payloadStr = new char[len+1];
-    strncpy(payloadStr, payload, len);
-    payloadStr[len] = '\0';
-    alloc = true;
-  }
+  //make a copy of the payload to 0-terminate it
+  char* payloadStr = new char[len+1];
+  strncpy(payloadStr, payload, len);
+  payloadStr[len] = '\0';
   if (payloadStr == nullptr) return; //no mem
   DEBUG_PRINTLN(payloadStr);
 
@@ -86,7 +79,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     } else {
       // Non-Wled Topic used here. Probably a usermod subscribed to this topic.
       usermods.onMqttMessage(topic, payloadStr);
-      if (alloc) delete[] payloadStr;
+      delete[] payloadStr;
       return;
     }
   }
@@ -113,7 +106,7 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     // topmost topic (just wled/MAC)
     parseMQTTBriPayload(payloadStr);
   }
-  if (alloc) delete[] payloadStr;
+  delete[] payloadStr;
 }
 
 

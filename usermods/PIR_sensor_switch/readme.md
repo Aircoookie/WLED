@@ -9,9 +9,7 @@ The LED strip is switched [using a relay](https://github.com/Aircoookie/WLED/wik
 
 ## Webinterface
 
-The info page in the web interface shows the items below
-- the remaining time of the off timer. 
-**I recommend to deactivate the sensor before an OTA update and activate it again afterwards**.
+The info page in the web interface shows the remaining time of the off timer. 
 
 ## Sensor connection
 
@@ -63,7 +61,10 @@ void registerUsermods()
 
 ## API to enable/disable the PIR sensor from outside. For example from another usermod.
 
-To query or change the PIR sensor state the methods `bool PIRsensorEnabled()` and `void EnablePIRsensor(bool enable)` are available. 
+To query or change the PIR sensor state the methods `bool PIRsensorEnabled()` and `void EnablePIRsensor(bool enable)` are available.
+
+When the PIR sensor state changes an MQTT message is broadcasted with topic `wled/deviceMAC/motion` and message `on` or `off`.
+Usermod can also be configured to just send MQTT message and not change WLED state using settings page as well as responding to motion only during nighttime (assuming NTP and lattitude/longitude are set to determine sunrise/sunset times).
 
 ### There are two options to get access to the usermod instance:
 

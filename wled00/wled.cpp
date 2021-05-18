@@ -256,7 +256,7 @@ void WLED::loop()
       strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(busConfigs[i]->type));
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
-    strip.finalizeInit(ledCount, skipFirstLed);
+    strip.finalizeInit(ledCount);
     yield();
     serializeConfig();
   }
@@ -405,7 +405,7 @@ void WLED::beginStrip()
   if (ledCount > MAX_LEDS || ledCount == 0)
     ledCount = 30;
 
-  strip.finalizeInit(ledCount, skipFirstLed);
+  strip.finalizeInit(ledCount);
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 

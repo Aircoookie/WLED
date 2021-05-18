@@ -166,6 +166,8 @@ bool deserializeState(JsonObject root)
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
 
+  if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
+
   int tr = root[F("transition")] | -1;
   if (tr >= 0)
   {
