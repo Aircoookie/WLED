@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>Sync Settings</title>
 <script>var d=document;
-function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}
+function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}
+function B(){window.open("./","_self");}
 function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.DA.value == 1) d.Sf.DA.value = 0; if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
                else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
 function SP(){var p = d.Sf.DI.value; d.getElementById("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}

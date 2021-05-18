@@ -31,7 +31,7 @@
         tmout = setTimeout(update, 250);
         return;
       }
-      fetch('/json/live')
+      fetch('./json/live')
       .then(res => {
         if (!res.ok) {
           clearTimeout(tmout);

@@ -22,7 +22,10 @@
   <div id="canv" />
   <script>
     console.info("Live-Preview websocket opening");
-    var socket = new WebSocket("ws://"+document.location.host+"/ws");
+
+    var wsprot = document.location.protocol == "https:" ? "wss" : ws;
+    var socket = new WebSocket(wsprot + "://" + document.location.host +
+                                window.location.pathname + "/../ws");
 
     socket.onopen = function () {
       console.info("Live-Preview websocket is opened");
