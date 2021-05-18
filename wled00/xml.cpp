@@ -323,6 +323,8 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('v',SET_F("AW"),strip.rgbwMode);
 
+    sappend('c',SET_F("EO"),enforceOff);
+
     sappend('c',SET_F("BO"),turnOnAtBoot);
     sappend('v',SET_F("BP"),bootPreset);
 

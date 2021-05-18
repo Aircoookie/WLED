@@ -183,6 +183,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t >= 0 && t < 4) strip.paletteBlend = t;
     t = request->arg(F("BF")).toInt();
     if (t > 0) briMultiplier = t;
+    enforceOff = request->hasArg(F("EO"));
   }
 
   //UI

@@ -141,8 +141,9 @@ Linear (always wrap)</option><option value="2">Linear (never wrap)</option>
 Auto-calculate white channel from RGB:<br><select name="AW"><option value="0">
 None</option><option value="1">Brighter</option><option value="2">Accurate
 </option><option value="3">Dual</option><option value="4">Legacy</option>
-</select><br></span><hr><button type="button" onclick="B()">Back</button><button
- type="submit">Save</button></form></body></html>)=====";
+</select><br></span><span>Enforce off state <input type="checkbox" name="EO">
+<br></span><hr><button type="button" onclick="B()">Back</button><button 
+type="submit">Save</button></form></body></html>)=====";
 
 
 #ifdef WLED_ENABLE_DMX

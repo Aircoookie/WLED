@@ -76,6 +76,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(ledCount, hw_led[F("total")]);
   if (ledCount > MAX_LEDS) ledCount = MAX_LEDS;
 
+  CJSON(enforceOff, hw_led[F("eoff")]);
+
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
@@ -470,6 +472,7 @@ void serializeConfig() {
 
   JsonObject hw_led = hw.createNestedObject("led");
   hw_led[F("total")] = ledCount;
+  hw_led[F("eoff")] = enforceOff;
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
   hw_led[F("rgbwm")] = strip.rgbwMode;
