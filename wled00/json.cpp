@@ -166,7 +166,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (icol.isNull()) break;
 
           byte sz = icol.size();
-          if (sz == 0 && sz > 4) break;
+          if (sz == 0 || sz > 4) break;
 
           int rgbw[] = {0,0,0,0};
           copyArray(icol, rgbw);
@@ -197,6 +197,8 @@ bool deserializeState(JsonObject root)
 
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
+
+  if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
 
   int tr = root[F("transition")] | -1;
   if (tr >= 0)
@@ -798,19 +800,22 @@ void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI)
   const String& url = request->url();
   if      (url.indexOf("state") > 0) subJson = 1;
   else if (url.indexOf("info")  > 0) subJson = 2;
-  else if (url.indexOf("si") > 0)    subJson = 3;
+  else if (url.indexOf("si")    > 0) subJson = 3;
   else if (url.indexOf("nodes") > 0) subJson = 4;
-  else if (url.indexOf("palx") > 0)  subJson = 5;
+  else if (url.indexOf("palx")  > 0) subJson = 5;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
   }
-  else if (url.indexOf(F("eff"))   > 0) {
+  else if (url.indexOf(F("eff")) > 0) {
     request->send_P(200, "application/json", JSON_mode_names);
     return;
   }
-  else if (url.indexOf("pal")   > 0) {
+  else if (url.indexOf("pal") > 0) {
     request->send_P(200, "application/json", JSON_palette_names);
+    return;
+  }
+  else if (url.indexOf("cfg") > 0 && handleFileRead(request, "/cfg.json")) {
     return;
   }
   else if (url.length() > 6) { //not just /json

@@ -612,6 +612,7 @@ class WS2812FX {
 
     bool
       isRgbw = false,
+      isOffRefreshRequred = false, //periodic refresh is required for the strip to remain off.
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,

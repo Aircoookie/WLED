@@ -85,6 +85,7 @@ void initServer()
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
     uint8_t vAPI = 1;
+    bool isConfig = false;
     { //scope JsonDocument so it releases its buffer
       DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
       DeserializationError error = deserializeJson(jsonBuffer, (uint8_t*)(request->_tempObject));
@@ -92,16 +93,26 @@ void initServer()
       if (error || root.isNull()) {
         request->send(400, "application/json", F("{\"error\":9}")); return;
       }
+      const String& url = request->url();
+      isConfig = url.indexOf("cfg") > -1;
+      if (!isConfig) {
         if (root.containsKey("rev"))
         {
           vAPI = root["rev"] | 1;
         }
-      fileDoc = &jsonBuffer;  // used for applying presets (presets.cpp)
-      verboseResponse = deserializeState(root);
-      fileDoc = nullptr;
+        fileDoc = &jsonBuffer;  // used for applying presets (presets.cpp)
+        verboseResponse = deserializeState(root);
+        fileDoc = nullptr;
+      } else {
+        verboseResponse = deserializeConfig(root); //use verboseResponse to determine whether cfg change should be saved immediately
+      }
     }
-    if (verboseResponse) { //if JSON contains "v"
-      serveJson(request,vAPI); return; 
+    if (verboseResponse) {
+      if (!isConfig) {
+        serveJson(request,vAPI); return; //if JSON contains "v"
+      } else {
+        serializeConfig(); //Save new settings to FS
+      }
     } 
     request->send(200, "application/json", F("{\"success\":true}"));
   });

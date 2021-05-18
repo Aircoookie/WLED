@@ -2,6 +2,36 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2105171
+
+-   Always copy MQTT payloads to prevent non-0-terminated strings
+-   Updated ArduinoJson to 6.18.0
+-   Added experimental support for `{"on":"t"}` to toggle on/off state via JSON
+
+#### Build 2105120
+
+-   Fixed possibility of non-0-terminated MQTT payloads
+-   Fixed two warnings regarding integer comparison
+
+#### Build 2105112
+
+-   Usermod settings page no usermods message
+-   Lowered min speed for Drip effect
+
+#### Build 2105111
+
+-   Fixed various Codacy code style and logic issues
+
+#### Build 2105110
+
+-   Added Usermod settings page and configurable usermods (PR #1951)
+-   Added experimental `/json/cfg` endpoint for changing settings from JSON (see #1944, not part of official API)
+
+#### Build 2105070
+
+-   Fixed not turning on after pressing "Off" on IR remote twice (#1950)
+-   Fixed OTA update file selection from Android app (TODO: file type verification in JS, since android can't deal with accept='.bin' attribute)
+
 #### Build 2104220
 
 -   Version bump to 0.12.1-b1 "Hikari"

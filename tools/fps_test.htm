@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>WLED frame rate test tool</title>
+    <style>
+        body {
+            background-color: #222;
+            color: #fff;
+            font-family: Helvetica, Verdana, sans-serif;
+        }
+        input {
+            background-color: #333;
+            color: #fff;
+        }
+        #ip {
+            width: 100px;
+        }
+        #secs {
+            width: 36px;
+        }
+        #csva {
+            position: absolute;
+            top: -100px; /*gtfo*/
+        }
+        button {
+            background-color: #333;
+            color: #fff;
+        }
+        table, th, td {
+            border: 1px solid #aaa;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        .red {
+            color: #d20;
+        }
+    </style>
+    <script>
+        var gotfx = false, running = false;
+        var pos = 0, prev = 0, min = 999, max = 0, fpslist = [], names = [], names_checked = [];
+        var to;
+        function S() {
+            document.getElementById('ip').value = localStorage.getItem('locIpFps');
+            if (document.getElementById('ip').value) req(false);
+        }
+        function loadC() {
+            hide(false);
+            var list = localStorage.getItem('fpsFxSelection');
+            if (!list) return;
+            list = JSON.parse(list);
+            var chks = document.querySelectorAll('.fxcheck');
+            for (let i = 0; i < chks.length; i++) {
+               if (i < list.length) chks[i].checked = list[i];
+            }
+        }
+        function saveC() {
+            var list = [];
+            var chks = document.querySelectorAll('.fxcheck');
+            for (let i = 0; i < chks.length; i++) {
+                list.push(chks[i].checked);
+            }
+            localStorage.setItem('fpsFxSelection', JSON.stringify(list));
+        }
+        function setC(c) {
+            hide(false);
+            var chks = document.querySelectorAll('.fxcheck');
+            for (let i = 0; i < chks.length; i++) {
+                chks[i].checked = (c == 255);
+            }
+            if (c == 1 && chks.length > 100) {
+                chks[1].checked = true;  //Blink
+                chks[15].checked = true; //Running
+                chks[16].checked = true; //Saw
+                chks[37].checked = true; //Running 2
+                chks[44].checked = true; //Tetrix
+                chks[63].checked = true; //Pride 2015
+                chks[74].checked = true; //Colortwinkles
+                chks[101].checked = true;//Pacifica
+            }
+        }
+        function hide(h) {
+            var trs = document.querySelectorAll('.trs');
+            var chks = document.querySelectorAll('.fxcheck');
+            for (let i = 0; i < trs.length; i++) {
+                trs[i].style.display = (h && !chks[i].checked) ? "none":"table-row";
+            }
+        }
+        function run(init) {
+            if (init) {
+                running = !running;
+                document.getElementById('runbtn').innerText = running ? 'Stop':'Run';
+                if (running) {pos = 0; prev = -1; min = 999; max = 0; fpslist = []; names_checked = []; hide(true);}
+                clearTimeout(to);
+                if (!running) {req({seg:{fx:0},v:true,stop:true}); return;}
+            }
+            if (!gotfx) {req(false); return;}
+            var chks = document.querySelectorAll('.fxcheck');
+            var fpsb = document.querySelectorAll('.fps');
+            if (prev >= 0) {pos++};
+            if (pos >= chks.length) {run(true); return;} //end
+            while (!chks[pos].checked) {
+                fpsb[pos].innerText = "-";
+                pos++;
+                if (pos >= chks.length) {run(true); return;} //end
+            }
+            names_checked.push(names[pos]);
+            var extra = {};
+            try {
+                extra = JSON.parse(document.getElementById('ej').value);
+            } catch (e) {
+
+            }
+            var cmd = {seg:{fx:pos},v:true};
+            Object.assign(cmd, extra);
+            req(cmd);
+        }
+        function req(command) {
+            var ip = document.getElementById('ip').value;
+            if (!ip) {alert("Please enter WLED IP"); return;}
+            if (ip != localStorage.getItem('locIpFps')) localStorage.setItem('locIpFps', document.getElementById('ip').value);
+            var url = command ? `http://${ip}/json/si` : `http://${ip}/json/effects`;
+            var type = command ? 'post':'get';
+            var req = undefined;
+            if (command)
+            {
+                req = JSON.stringify(command);
+            }
+            fetch
+            (url, {
+                method: type,
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8"
+                },
+                body: req
+            })
+            .then(res => {
+                if (!res.ok) {
+                    alert('Data malfunction');
+                }
+                return res.json();
+            })
+            .then(json => {
+                if (!json) {
+                    alert('Empty response'); return;
+                }
+                if (!command) {
+                    names = json;
+                    var tblc = '';
+                    for (let i = 0; i < json.length; i++) {
+		                tblc += `<tr class="trs"><td><input type="checkbox" class="fxcheck" /></td><td>${i}</td><td>${json[i]}</td><td class="fps"></td></tr>`
+	                }
+                    var tbl = `<table>
+                        <tr>
+                            <th>Test?</th><th>ID</th><th>Effect Name</th><th>FPS</th>
+                        </tr>
+                        ${tblc}
+                    </table>`;
+                    document.getElementById('tablecon').innerHTML = tbl;
+                    setC(1);
+                    loadC();
+                    gotfx = true;
+                    document.getElementById('runbtn').innerText = "Run";
+                } else {
+                    if (!json.info) return;
+                    document.getElementById('leds').innerText = json.info.leds.count;
+                    document.getElementById('seg').innerText = json.state.seg[0].len;
+                    document.getElementById('bri').innerText = json.state.bri;
+                    if (prev >= 0) {
+                        var lastfps = parseInt(json.info.leds.fps); //previous FX
+                        if (lastfps < min) min = lastfps;
+                        if (lastfps > max) max = lastfps;
+                        fpslist.push(lastfps);
+                        var sum = 0;
+                        for (let i = 0; i < fpslist.length; i++) {
+                            sum += fpslist[i];
+                        }
+                        sum /= fpslist.length;
+                        document.getElementById('fps_min').innerText = min;
+                        document.getElementById('fps_max').innerText = max;
+                        document.getElementById('fps_avg').innerText = Math.round(sum*10)/10;
+                        var fpsb = document.querySelectorAll('.fps');
+                        fpsb[prev].innerHTML = lastfps;
+                    }
+                    prev = pos;
+                    var delay = parseInt(document.getElementById('secs').value)*1000;
+                    delay = Math.min(Math.max(delay, 2000), 15000)
+                    if (!command.stop) to = setTimeout(run,delay);
+                }
+            })
+            .catch(function (error) {
+		        alert('Comms malfunction');
+		        console.log(error);
+	        });
+        }
+        function csv(n) {
+            var txt = "";
+            for (let i = 0; i < fpslist.length; i++) {
+                if (!n) txt += names_checked[i] + ',';
+                txt += fpslist[i]; txt += "\n";
+            }
+            document.getElementById('csva').value = txt;
+            var copyText = document.getElementById('csva');
+
+            copyText.select();
+            copyText.setSelectionRange(0, 999999);
+            document.execCommand("copy");
+        }
+    </script>
+</head>
+<body onload="S()">
+    <h2>Starship monitoring dashboard</h2>
+    (or rather just a WLED frame rate tester lol)<br><br>
+    IP: <input id="ip" /><br>
+    Time per effect: <input type=number id=secs value=5 max=15 min=2 />s<br>
+    Effects to test:
+    <button type="button" onclick="setC(255)">All</button>
+    <button type="button" onclick="setC(1)">Selection 1</button>
+    <button type="button" onclick="setC(0)">None</button>
+    <button type="button" onclick="loadC()">Get LS</button>
+    <button type="button" class="red" onclick="saveC()">Save to LS</button><br>
+    Extra JSON: <input id="ej" /><br>
+
+    <button type="button" onclick="run(true)" id="runbtn">Fetch FX list</button><br>
+    LEDs: <span id="leds">-</span>, Seg: <span id="seg">-</span>, Bri: <span id="bri">-</span><br>
+    FPS min: <span id="fps_min">-</span>, max: <span id="fps_max">-</span>, avg: <span id="fps_avg">-</span><br><br>
+    <div id="tablecon">
+    </div><br>
+    <button type="button" onclick="csv(false)">Copy csv to clipboard</button>
+    <button type="button" onclick="csv(true)">Copy csv (FPS only)</button>
+    <textarea id=csva></textarea>
+</body>
+</html>

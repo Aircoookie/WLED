@@ -63,7 +63,7 @@ class Bus {
     return _start;
   }
 
-  void setStart(uint16_t start) {
+  inline void setStart(uint16_t start) {
     _start = start;
   }
 
@@ -81,7 +81,7 @@ class Bus {
     return false;
   }
 
-  virtual uint8_t skipFirstLed() {
+  virtual uint8_t skippedLeds() {
     return 0;
   }
 
@@ -184,10 +184,10 @@ class BusDigital : public Bus {
   }
 
   inline bool isRgbw() {
-    return _rgbw;
+    return (_rgbw || _type == TYPE_SK6812_RGBW || _type == TYPE_TM1814);
   }
 
-  inline uint8_t skipFirstLed() {
+  inline uint8_t skippedLeds() {
     return _skip;
   }
 
@@ -449,6 +449,11 @@ class BusManager {
   // a workaround
   static inline bool isRgbw(uint8_t type) {
     return Bus::isRgbw(type);
+  }
+
+  //Return true if the strip requires a refresh to stay off.
+  static bool isOffRefreshRequred(uint8_t type) {
+    return type == TYPE_TM1814;
   }
 
   private:

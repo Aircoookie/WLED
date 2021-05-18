@@ -55,13 +55,12 @@ bool bufferedFind(const char *target, bool fromStart = true) {
   size_t targetLen = strlen(target);
 
   size_t index = 0;
-  uint16_t bufsize = 0, count = 0;
   byte buf[FS_BUFSIZE];
   if (fromStart) f.seek(0);
 
   while (f.position() < f.size() -1) {
-    bufsize = f.read(buf, FS_BUFSIZE);
-    count = 0;
+    uint16_t bufsize = f.read(buf, FS_BUFSIZE);
+    uint16_t count = 0;
     while (count < bufsize) {
       if(buf[count] != target[index])
       index = 0; // reset index if any char does not match
@@ -97,13 +96,12 @@ bool bufferedFindSpace(uint16_t targetLen, bool fromStart = true) {
   if (!f || !f.size()) return false;
 
   uint16_t index = 0;
-  uint16_t bufsize = 0, count = 0;
   byte buf[FS_BUFSIZE];
   if (fromStart) f.seek(0);
 
   while (f.position() < f.size() -1) {
-    bufsize = f.read(buf, FS_BUFSIZE);
-    count = 0;
+    uint16_t bufsize = f.read(buf, FS_BUFSIZE);
+    uint16_t count = 0;
     
     while (count < bufsize) {
       if(buf[count] == ' ') {
@@ -140,13 +138,12 @@ bool bufferedFindObjectEnd() {
   if (!f || !f.size()) return false;
 
   uint16_t objDepth = 0; //num of '{' minus num of '}'. return once 0
-  uint16_t bufsize = 0, count = 0;
   //size_t start = f.position();
   byte buf[FS_BUFSIZE];
 
   while (f.position() < f.size() -1) {
-    bufsize = f.read(buf, FS_BUFSIZE);
-    count = 0;
+    uint16_t bufsize = f.read(buf, FS_BUFSIZE);
+    uint16_t count = 0;
     
     while (count < bufsize) {
       if (buf[count] == '{') objDepth++;
