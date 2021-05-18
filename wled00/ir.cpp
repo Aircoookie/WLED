@@ -163,7 +163,13 @@ void decodeIR(uint32_t code)
   if (decodeIRCustom(code)) return;
   if      (code > 0xFFFFFF) return; //invalid code
   switch (irEnabled) {
-    case 1: decodeIR24OLD(code); break;  // white 24-key remote (old) - it sends 0xFF0000 values
+    case 1: 
+      if (code > 0xF80000) {
+        decodeIR24OLD(code);            // white 24-key remote (old) - it sends 0xFF0000 values
+      } else {
+        decodeIR24(code);               // 24-key remote - 0xF70000 to 0xF80000
+      }
+      break;
     case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
     case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
     case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
