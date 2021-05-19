@@ -163,7 +163,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   } else {
     //TODO: fix JSON API call (and new install)
   }
-  CJSON(touchThreshold,hw[F("btn")][F("touch-thershold")]);
+  CJSON(touchThreshold,hw[F("btn")][F("tt")]);
 
 /*
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
