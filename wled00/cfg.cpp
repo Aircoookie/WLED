@@ -131,10 +131,41 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
   DEBUG_PRINTLN(F("  Done LEDs."));
 
+  // read multiple button configuration
+  JsonArray hw_btn_ins = hw[F("btn")][F("ins")];
+  if (!hw_btn_ins.isNull()) {
+    uint8_t s = 0;
+    for (JsonObject btn : hw_btn_ins) {
+      CJSON(buttonType[s], btn["type"]);
+      int8_t pin = btn[F("pin")][0] | -1;
+      if (pin > -1) {
+        if (pinManager.allocatePin(pin,false)) {
+          btnPin[s] = pin;
+          pinMode(btnPin[s], INPUT_PULLUP);
+        } else {
+          btnPin[s] = -1;
+        }
+      }
+      JsonArray hw_btn_ins_0_macros = btn[F("macros")];
+      CJSON(macroButton[s], hw_btn_ins_0_macros[0]);
+      CJSON(macroLongPress[s],hw_btn_ins_0_macros[1]);
+      CJSON(macroDoublePress[s], hw_btn_ins_0_macros[2]);
+      if (++s >= WLED_MAX_BUTTONS) break; // max buttons reached
+    }
+    // clear remaining buttons
+    for (; s<WLED_MAX_BUTTONS; s++) {
+      btnPin[s]           = -1;
+      buttonType[s]       = BTN_TYPE_NONE;
+      macroButton[s]      = 0;
+      macroLongPress[s]   = 0;
+      macroDoublePress[s] = 0;
+    }
+  }
+/*
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonType, hw_btn_ins_0["type"]);
   int hw_btn_pin = hw_btn_ins_0[F("pin")][0] | -2; //-2 = not present in doc, keep current. -1 = disable
-  if (hw_btn_pin > -2) {
+  if (hw_btn_pin > -1) {
     if (pinManager.allocatePin(hw_btn_pin,false)) {
       btnPin = hw_btn_pin;
       pinMode(btnPin, INPUT_PULLUP);
@@ -147,7 +178,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(macroButton, hw_btn_ins_0_macros[0]);
   CJSON(macroLongPress,hw_btn_ins_0_macros[1]);
   CJSON(macroDoublePress, hw_btn_ins_0_macros[2]);
-
+*/
   #ifndef WLED_DISABLE_INFRARED
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
@@ -509,21 +540,28 @@ void serializeConfig() {
     ins[F("rgbw")] = bus->isRgbw();
   }
 
+  // button(s)
   JsonObject hw_btn = hw.createNestedObject("btn");
-
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
-  // button BTNPIN
   JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
-  hw_btn_ins_0["type"] = buttonType;
-
+  hw_btn_ins_0["type"] = buttonType[0];
   JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
-  hw_btn_ins_0_pin.add(btnPin);
+  hw_btn_ins_0_pin.add(btnPin[0]);
 
-  JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
-  hw_btn_ins_0_macros.add(macroButton);
-  hw_btn_ins_0_macros.add(macroLongPress);
-  hw_btn_ins_0_macros.add(macroDoublePress);
+  // additional buttons
+  for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) {
+    if (btnPin[i]<0) continue;
+    JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
+    hw_btn_ins_0["type"] = buttonType[i];
+    JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
+    hw_btn_ins_0_pin.add(btnPin[i]);
+
+    JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
+    hw_btn_ins_0_macros.add(macroButton[i]);
+    hw_btn_ins_0_macros.add(macroLongPress[i]);
+    hw_btn_ins_0_macros.add(macroDoublePress[i]);
+  }
 
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir["pin"] = irPin;

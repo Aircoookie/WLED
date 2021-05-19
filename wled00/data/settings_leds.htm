@@ -14,6 +14,7 @@
 		{
 			window.open("/settings","_self");
     }
+    function gId(n){return d.getElementById(n);}
     function off(n){
       d.getElementsByName(n)[0].value = -1;
     }
@@ -48,32 +49,32 @@
 		function S(){GetV();setABL();}
     function enABL()
     {
-      var en = d.getElementById('able').checked;
+      var en = gId('able').checked;
       d.Sf.LA.value = (en) ? laprev:0;
-      d.getElementById('abl').style.display = (en) ? 'inline':'none';
-      d.getElementById('psu2').style.display = (en) ? 'inline':'none';
+      gId('abl').style.display = (en) ? 'inline':'none';
+      gId('psu2').style.display = (en) ? 'inline':'none';
       if (d.Sf.LA.value > 0) setABL();
     }
     function enLA()
     {
       var val = d.Sf.LAsel.value;
       d.Sf.LA.value = val;
-      d.getElementById('LAdis').style.display = (val == 50) ? 'inline':'none';
+      gId('LAdis').style.display = (val == 50) ? 'inline':'none';
       UI();
     }
     function setABL()
     {
-      d.getElementById('able').checked = true;
+      gId('able').checked = true;
       d.Sf.LAsel.value = 50;
       switch (parseInt(d.Sf.LA.value)) {
-        case 0: d.getElementById('able').checked = false; enABL(); break;
+        case 0: gId('able').checked = false; enABL(); break;
         case 30: d.Sf.LAsel.value = 30; break;
         case 35: d.Sf.LAsel.value = 35; break;
         case 55: d.Sf.LAsel.value = 55; break;
         case 255: d.Sf.LAsel.value = 255; break;
-        default: d.getElementById('LAdis').style.display = 'inline';
+        default: gId('LAdis').style.display = 'inline';
       }
-      d.getElementById('m1').innerHTML = maxM;
+      gId('m1').innerHTML = maxM;
       d.getElementsByName("Sf")[0].addEventListener("submit", trySubmit);
       UI();
     }
@@ -100,7 +101,7 @@
 		{
       var isRGBW = false, memu = 0;
 
-      d.getElementById('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
+      gId('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
 
 	    if (d.Sf.LA.value == 255) laprev = 12;
 	    else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
@@ -110,8 +111,8 @@
         if (s[i].name.substring(0,2)=="LT") {
           n=s[i].name.substring(2);
           var type = parseInt(s[i].value,10);
-          d.getElementById("p0d"+n).innerHTML = (type > 49) ? "Data:" : (type >41) ? "Pins:" : "Pin:";
-          d.getElementById("p1d"+n).innerHTML = (type > 49) ? "Clk:" : "";
+          gId("p0d"+n).innerHTML = (type > 49) ? "Data:" : (type >41) ? "Pins:" : "Pin:";
+          gId("p1d"+n).innerHTML = (type > 49) ? "Clk:" : "";
           var LK = d.getElementsByName("L1"+n)[0];
 
           memu += getMem(type, d.getElementsByName("LC"+n)[0].value, d.getElementsByName("L0"+n)[0].value);
@@ -129,17 +130,17 @@
               LK.value="";
             }
           }
-          d.getElementById("ls"+n).readOnly = !(type > 31 && type < 48);  // not analog
-          d.getElementById("LC").readOnly = !(type > 31 && type < 48);    // not analog
+          gId("ls"+n).readOnly = !(type > 31 && type < 48);  // not analog
+          gId("LC").readOnly = !(type > 31 && type < 48);    // not analog
           if (change) {
-//            d.getElementById("ew"+n).checked = (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
-            d.getElementById("ls"+n).value = n+1;
+//            gId("ew"+n).checked = (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
+            gId("ls"+n).value = n+1;
           }
-//          d.getElementById("ew"+n).onclick = (type > 31 && type < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
-//          isRGBW |= d.getElementById("ew"+n).checked;
+//          gId("ew"+n).onclick = (type > 31 && type < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
+//          isRGBW |= gId("ew"+n).checked;
           isRGBW |= (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
-          d.getElementById("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
-          d.getElementById("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
+          gId("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
+          gId("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
         }
       }
 
@@ -156,7 +157,7 @@
         if (nm=="LC" && LCs[i].name !== "LC") {
           var n=LCs[i].name.substring(2);
           var c=parseInt(LCs[i].value,10);
-          if(d.getElementById("ls"+n).readOnly) d.getElementById("ls"+n).value=sLC;
+          if(gId("ls"+n).readOnly) gId("ls"+n).value=sLC;
           if(c){sLC+=c;if(c>maxLC)maxLC=c;}
           continue;
         }
@@ -178,18 +179,18 @@
           }
       }
 
-      if (d.getElementById("LC").readOnly) d.getElementsByName("LC")[0].value = sLC;
+      if (gId("LC").readOnly) d.getElementsByName("LC")[0].value = sLC;
       if (d.activeElement == d.getElementsByName("LC")[0]) {
         var o = d.getElementsByClassName("iST");
         var i = o.length;
         if (i == 1) d.getElementsByName("LC0")[0].value = d.getElementsByName("LC")[0].value;
       }
-      d.getElementById('m0').innerHTML = memu;
+      gId('m0').innerHTML = memu;
       bquot = memu / maxM * 100;
-      d.getElementById('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
-      d.getElementById('ledwarning').style.display = (sLC > maxPB || maxLC > 800 || bquot > 80) ? 'inline':'none';
-      d.getElementById('ledwarning').style.color = (sLC > maxPB || maxLC > maxPB || bquot > 100) ? 'red':'orange';
-      d.getElementById('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>WARNING: Using over ${maxM}B!</b>)` : "") : "800 LEDs per pin";
+      gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
+      gId('ledwarning').style.display = (sLC > maxPB || maxLC > 800 || bquot > 80) ? 'inline':'none';
+      gId('ledwarning').style.color = (sLC > maxPB || maxLC > maxPB || bquot > 100) ? 'red':'orange';
+      gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>WARNING: Using over ${maxM}B!</b>)` : "") : "800 LEDs per pin";
 
       var val = Math.ceil((100 + sLC * laprev)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
@@ -210,8 +211,8 @@
       var s2 = "(for most effects, ~";
       s2 += val2;
       s2 += "A is enough)<br>";
-			d.getElementById('psu').innerHTML = s;
-      d.getElementById('psu2').innerHTML = isWS2815 ? "" : s2;
+			gId('psu').innerHTML = s;
+      gId('psu2').innerHTML = isWS2815 ? "" : s2;
     }
     function lastEnd(i) {
       if (i<1) return 0;
@@ -221,14 +222,14 @@
     }
     function addLEDs(n)
     {
-      if (n>1) {maxB=n; d.getElementById("+").style.display="inline"; return;}
+      if (n>1) {maxB=n; gId("+").style.display="inline"; return;}
 
       var o = d.getElementsByClassName("iST");
       var i = o.length;
 
       if ((n==1 && i>=maxB) || (n==-1 && i==0)) return;
 
-      var f = d.getElementById("mLC");
+      var f = gId("mLC");
       if (n==1) {
 // npm run build has trouble minimizing spaces inside string
         var cn = `<div class="iST">
@@ -277,15 +278,28 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
         o[--i].remove();--i;
       }
 
-      d.getElementById("+").style.display = (i<maxB-1) ? "inline":"none";
-      d.getElementById("-").style.display = (i>0) ? "inline":"none";
+      gId("+").style.display = (i<maxB-1) ? "inline":"none";
+      gId("-").style.display = (i>0) ? "inline":"none";
 
       UI();
+    }
+    function addBtn(i,p,t) {
+      var c = gId("btns").innerHTML;
+      var bt = "BT" + i;
+      var be = "BE" + i;
+      c += `Button ${i} pin: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" value="${p}">`;
+      c += `<select name="${bt}">`
+      c += `<option name="${be}" value="0" ${t==0?"selected":""}>Disabled</option>`;
+      c += `<option name="${be}" value="2" ${t==2?"selected":""}>Pushbutton</option>`;
+      c += `<option name="${be}" value="4" ${t==4?"selected":""}>Switch</option>`;
+      c += `</select>`;
+      c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
+      gId("btns").innerHTML = c;
     }
 		function GetV()
 		{
       //values injected by server while sending HTML
-      //maxM=5000;maxPB=1536;d.um_p=[1,6,7,8,9,10,11];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.SL.checked=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;d.Sf.BT.value=-1;d.Sf.IR.value=-1;d.Sf.AX.value=-1;
+      //maxM=5000;maxPB=1536;d.um_p=[1,6,7,8,9,10,11];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;addBtn(0,0,2);addBtn(1,3,4);addBtn(2,-1,0);d.Sf.IR.value=-1;
     }
 	</script>
 	<style>
@@ -338,10 +352,20 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       &#9888; You might run into stability or lag issues.<br>
       Use less than <span id="wreason">800 LEDs per pin</span> for the best experience!<br>
     </div><hr style="width:260px">
-    Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><span style="cursor: pointer;" onclick="off('BT')">&nbsp;&#215;</span><br>
-    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
-    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
-    Active high <input type="checkbox" name="RM">
+    <div id="btns"></div>
+    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><select name="IT">
+    <option value="0">Remote disabled</option>
+    <option value="1">24-key RGB</option>
+    <option value="2">24-key with CT</option>
+    <option value="3">40-key blue</option>
+    <option value="4">44-key RGB</option>
+    <option value="5">21-key RGB</option>
+    <option value="6">6-key black</option>
+    <option value="7">9-key red</option>
+    <option value="8">JSON remote</option>
+    </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
+    <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
+    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
@@ -374,7 +398,6 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 			<option value="2">Linear (never wrap)</option>
 			<option value="3">None (not recommended)</option>
 		</select><br>
-    <!--Skip first LED: <input type="checkbox" name="SL"><br-->
     <span class="wc">
       Auto-calculate white channel from RGB:<br>
       <select name="AW">

@@ -81,7 +81,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
     #endif
-    if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
+    for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++)
+      if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s]))
+        pinManager.deallocatePin(btnPin[s]);
 
     strip.isRgbw = false;
     uint8_t colorOrder, type, skip;
@@ -135,6 +137,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     } else {
       irPin = -1;
     }
+    irEnabled = request->arg(F("IT")).toInt();
     #endif
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
@@ -145,12 +148,20 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     rlyMde = (bool)request->hasArg(F("RM"));
 
-    int hw_btn_pin = request->arg(F("BT")).toInt();
-    if (pinManager.allocatePin(hw_btn_pin,false)) {
-      btnPin = hw_btn_pin;
-      pinMode(btnPin, INPUT_PULLUP);
-    } else {
-      btnPin = -1;
+    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+      char bt[4] = "BT"; bt[2] = 48+i; bt[3] = 0; // button pin
+      char be[4] = "BE"; be[2] = 48+i; be[3] = 0; // button type
+      //if (request->hasArg(bt)) {
+        int hw_btn_pin = request->arg(bt).toInt();
+        if (pinManager.allocatePin(hw_btn_pin,false)) {
+          btnPin[i] = hw_btn_pin;
+          pinMode(btnPin[i], INPUT_PULLUP);
+          buttonType[i] = request->arg(be).toInt();
+        } else {
+          btnPin[i] = -1;
+          buttonType[i] = BTN_TYPE_NONE;
+        }
+      //}
     }
 
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
@@ -195,8 +206,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //SYNC
   if (subPage == 4)
   {
-    buttonType = request->arg(F("BT")).toInt();
-    irEnabled = request->arg(F("IR")).toInt();
+    //buttonType = request->arg(F("BT")).toInt();
+    //irEnabled = request->arg(F("IR")).toInt();
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
     t = request->arg(F("U2")).toInt();
@@ -324,11 +335,16 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     macroAlexaOn = request->arg(F("A0")).toInt();
     macroAlexaOff = request->arg(F("A1")).toInt();
-    macroButton = request->arg(F("MP")).toInt();
-    macroLongPress = request->arg(F("ML")).toInt();
     macroCountdown = request->arg(F("MC")).toInt();
     macroNl = request->arg(F("MN")).toInt();
-    macroDoublePress = request->arg(F("MD")).toInt();
+    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+      char mp[4] = "MP"; mp[2] = 48+i; mp[3] = 0; // short
+      char ml[4] = "ML"; ml[2] = 48+i; ml[3] = 0; // long
+      char md[4] = "MD"; md[2] = 48+i; md[3] = 0; // double
+      macroButton[i] = request->arg(mp).toInt();
+      macroLongPress[i] = request->arg(ml).toInt();
+      macroDoublePress[i] = request->arg(md).toInt();
+    }
 
     char k[3]; k[2] = 0;
     for (int i = 0; i<10; i++)
