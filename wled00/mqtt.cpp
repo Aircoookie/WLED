@@ -122,22 +122,22 @@ void publishMqtt()
   sprintf_P(s, PSTR("%u"), bri);
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/g"));
-  mqtt->publish(subuf, 0, false, s);  // do not retain message
+  mqtt->publish(subuf, 0, true, s);         // retain message
 
   sprintf_P(s, PSTR("#%06X"), (col[3] << 24) | (col[0] << 16) | (col[1] << 8) | (col[2]));
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/c"));
-  mqtt->publish(subuf, 0, false, s);  // do not retain message
+  mqtt->publish(subuf, 0, true, s);         // retain message
 
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/status"));
-  mqtt->publish(subuf, 0, false, "online"); // do not retain message
+  mqtt->publish(subuf, 0, true, "online");  // retain message for a LWT
 
-  char apires[1024];
+  char apires[1024];                        // allocating 1024 bytes from stack can be risky
   XML_response(nullptr, apires);
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/v"));
-  mqtt->publish(subuf, 0, false, apires); // do not retain message
+  mqtt->publish(subuf, 0, false, apires);   // do not retain message
 }
 
 
@@ -167,7 +167,7 @@ bool initMqtt()
 
   strcpy(mqttStatusTopic, mqttDeviceTopic);
   strcat_P(mqttStatusTopic, PSTR("/status"));
-  mqtt->setWill(mqttStatusTopic, 0, true, "offline");
+  mqtt->setWill(mqttStatusTopic, 0, true, "offline"); // LWT message
   mqtt->setKeepAlive(MQTT_KEEP_ALIVE_TIME);
   mqtt->connect();
   return true;
