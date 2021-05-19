@@ -570,7 +570,7 @@ void serializeConfig() {
     hw_btn_ins_0_macros.add(macroLongPress[i]);
     hw_btn_ins_0_macros.add(macroDoublePress[i]);
   }
-  hw_btn[F("touch-threshold")] = touchThreshold;
+  hw_btn[F("tt")] = touchThreshold;
 
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir["pin"] = irPin;
