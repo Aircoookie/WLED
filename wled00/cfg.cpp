@@ -163,6 +163,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   } else {
     //TODO: fix JSON API call (and new install)
   }
+  CJSON(touchThreshold,hw[F("btn")][F("touch-thershold")]);
+
 /*
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
   CJSON(buttonType, hw_btn_ins_0["type"]);
@@ -568,6 +570,7 @@ void serializeConfig() {
     hw_btn_ins_0_macros.add(macroLongPress[i]);
     hw_btn_ins_0_macros.add(macroDoublePress[i]);
   }
+  hw_btn[F("touch-threshold")] = touchThreshold;
 
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir["pin"] = irPin;

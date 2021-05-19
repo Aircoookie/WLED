@@ -288,10 +288,11 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       var bt = "BT" + i;
       var be = "BE" + i;
       c += `Button ${i} pin: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" value="${p}">`;
-      c += `<select name="${bt}">`
-      c += `<option name="${be}" value="0" ${t==0?"selected":""}>Disabled</option>`;
-      c += `<option name="${be}" value="2" ${t==2?"selected":""}>Pushbutton</option>`;
-      c += `<option name="${be}" value="4" ${t==4?"selected":""}>Switch</option>`;
+      c += `<select name="${be}">`
+      c += `<option value="0" ${t==0?"selected":""}>Disabled</option>`;
+      c += `<option value="2" ${t==2?"selected":""}>Pushbutton</option>`;
+      c += `<option value="4" ${t==4?"selected":""}>Switch</option>`;
+      c += `<option value="6" ${t==6?"selected":""}>Touch</option>`;
       c += `</select>`;
       c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
       gId("btns").innerHTML = c;
@@ -353,6 +354,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       Use less than <span id="wreason">800 LEDs per pin</span> for the best experience!<br>
     </div><hr style="width:260px">
     <div id="btns"></div>
+    Touch threshold: <input type="number" min="0" max="100" name="TT" required><br>
     IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><select name="IT">
     <option value="0">Remote disabled</option>
     <option value="1">24-key RGB</option>

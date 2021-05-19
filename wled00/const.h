@@ -159,6 +159,7 @@
 #define BTN_TYPE_PUSH_ACT_HIGH    3 //not implemented
 #define BTN_TYPE_SWITCH           4
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
+#define BTN_TYPE_TOUCH            6
 
 //Ethernet board types
 #define WLED_NUM_ETH_TYPES        5

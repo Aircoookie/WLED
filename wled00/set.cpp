@@ -163,6 +163,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         }
       //}
     }
+    touchThreshold = request->arg(F("TT")).toInt();
 
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
