@@ -160,6 +160,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       macroLongPress[s]   = 0;
       macroDoublePress[s] = 0;
     }
+  } else {
+    //TODO: fix JSON API call (and new install)
   }
 /*
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
@@ -548,6 +550,10 @@ void serializeConfig() {
   hw_btn_ins_0["type"] = buttonType[0];
   JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
   hw_btn_ins_0_pin.add(btnPin[0]);
+  JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
+  hw_btn_ins_0_macros.add(macroButton[0]);
+  hw_btn_ins_0_macros.add(macroLongPress[0]);
+  hw_btn_ins_0_macros.add(macroDoublePress[0]);
 
   // additional buttons
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) {
