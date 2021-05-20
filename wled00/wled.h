@@ -113,6 +113,26 @@
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "src/dependencies/json/ArduinoJson-v6.h"
 
+// ESP32-WROVER features SPI RAM (aka PSRAM) which can be allocated using ps_malloc()
+// we can create custom PSRAMDynamicJsonDocument to use such feature (replacing DynamicJsonDocument)
+// The following is a construct to enable code to compile without it.
+// There is a code thet will still not use PSRAM though:
+//    AsyncJsonResponse is a derived class that implements DynamicJsonDocument (AsyncJson-v6.h)
+#ifdef ARDUINO_ARCH_ESP32
+struct PSRAM_Allocator {
+  void* allocate(size_t size) {
+    if (psramFound()) return ps_malloc(size); // use PSRAM if it exists
+    else              return malloc(size);    // fallback
+  }
+  void deallocate(void* pointer) {
+    free(pointer);
+  }
+};
+using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
+#else
+#define PSRAMDynamicJsonDocument DynamicJsonDocument
+#endif
+
 #include "fcn_declare.h"
 #include "html_ui.h"
 #include "html_settings.h"
@@ -188,9 +208,9 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 // Hardware CONFIG (only changeble HERE, not at runtime)
 // LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
 #ifndef BTNPIN
-WLED_GLOBAL int8_t btnPin _INIT(0);
+WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({0});
 #else
-WLED_GLOBAL int8_t btnPin _INIT(BTNPIN);
+WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({BTNPIN});
 #endif
 #ifndef RLYPIN
 WLED_GLOBAL int8_t rlyPin _INIT(12);
@@ -204,7 +224,7 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
 #ifndef IRPIN
-WLED_GLOBAL int8_t irPin _INIT(4);
+WLED_GLOBAL int8_t irPin _INIT(-1);
 #else
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 #endif
@@ -259,7 +279,7 @@ WLED_GLOBAL NodesMap Nodes;
 WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
-WLED_GLOBAL byte buttonType     _INIT(BTN_TYPE_PUSH);
+WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]  _INIT({BTN_TYPE_PUSH});
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
@@ -279,9 +299,11 @@ WLED_GLOBAL bool notifyTwice  _INIT(false);                       // notificatio
 WLED_GLOBAL bool alexaEnabled _INIT(false);                       // enable device discovery by Amazon Echo
 WLED_GLOBAL char alexaInvocationName[33] _INIT("Light");          // speech control name of device. Choose something voice-to-text can understand
 
+#ifndef WLED_DISABLE_BLYNK
 WLED_GLOBAL char blynkApiKey[36] _INIT("");                       // Auth token for Blynk server. If empty, no connection will be made
 WLED_GLOBAL char blynkHost[33] _INIT("blynk-cloud.com");          // Default Blynk host
 WLED_GLOBAL uint16_t blynkPort _INIT(80);                         // Default Blynk port
+#endif
 
 WLED_GLOBAL uint16_t realtimeTimeoutMs _INIT(2500);               // ms timeout of realtime mode before returning to normal mode
 WLED_GLOBAL int arlsOffset _INIT(0);                              // realtime LED offset
@@ -311,6 +333,7 @@ WLED_GLOBAL char mqttPass[41] _INIT("");                   // optional: password
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
 WLED_GLOBAL uint16_t mqttPort _INIT(1883);
 
+#ifndef WLED_DISABLE_HUESYNC
 WLED_GLOBAL bool huePollingEnabled _INIT(false);           // poll hue bridge for light state
 WLED_GLOBAL uint16_t huePollIntervalMs _INIT(2500);        // low values (< 1sec) may cause lag but offer quicker response
 WLED_GLOBAL char hueApiKey[47] _INIT("api");               // key token will be obtained from bridge
@@ -319,6 +342,7 @@ WLED_GLOBAL IPAddress hueIP _INIT_N(((0, 0, 0, 0))); // IP address of the bridge
 WLED_GLOBAL bool hueApplyOnOff _INIT(true);
 WLED_GLOBAL bool hueApplyBri _INIT(true);
 WLED_GLOBAL bool hueApplyColor _INIT(true);
+#endif
 
 // Time CONFIG
 WLED_GLOBAL bool ntpEnabled _INIT(false);         // get internet time. Only required if you use clock overlays or time-activated macros
@@ -333,8 +357,10 @@ WLED_GLOBAL byte analogClock12pixel _INIT(0);               // The pixel in your
 WLED_GLOBAL bool analogClockSecondsTrail _INIT(false);      // Display seconds as trail of LEDs instead of a single pixel
 WLED_GLOBAL bool analogClock5MinuteMarks _INIT(false);      // Light pixels at every 5-minute position
 
+#ifndef WLED_DISABLE_CRONIXIE
 WLED_GLOBAL char cronixieDisplay[7] _INIT("HHMMSS");        // Cronixie Display mask. See wled13_cronixie.ino
 WLED_GLOBAL bool cronixieBacklight _INIT(true);             // Allow digits to be back-illuminated
+#endif
 
 WLED_GLOBAL bool countdownMode _INIT(false);                         // Clock will count down towards date
 WLED_GLOBAL byte countdownYear _INIT(20), countdownMonth _INIT(1);   // Countdown target date, year is last two digits
@@ -344,7 +370,9 @@ WLED_GLOBAL byte countdownMin  _INIT(0) , countdownSec   _INIT(0);
 WLED_GLOBAL byte macroNl   _INIT(0);        // after nightlight delay over
 WLED_GLOBAL byte macroCountdown _INIT(0);
 WLED_GLOBAL byte macroAlexaOn _INIT(0), macroAlexaOff _INIT(0);
-WLED_GLOBAL byte macroButton _INIT(0), macroLongPress _INIT(0), macroDoublePress _INIT(0);
+WLED_GLOBAL byte macroButton[WLED_MAX_BUTTONS]        _INIT({0});
+WLED_GLOBAL byte macroLongPress[WLED_MAX_BUTTONS]     _INIT({0});
+WLED_GLOBAL byte macroDoublePress[WLED_MAX_BUTTONS]   _INIT({0});
 
 // Security CONFIG
 WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
@@ -405,10 +433,11 @@ WLED_GLOBAL byte briLast _INIT(128);          // brightness before turned off. U
 WLED_GLOBAL byte whiteLast _INIT(128);        // white channel before turned off. Used for toggle function
 
 // button
-WLED_GLOBAL bool buttonPressedBefore _INIT(false);
-WLED_GLOBAL bool buttonLongPressed _INIT(false);
-WLED_GLOBAL unsigned long buttonPressedTime _INIT(0);
-WLED_GLOBAL unsigned long buttonWaitTime _INIT(0);
+WLED_GLOBAL bool buttonPressedBefore[WLED_MAX_BUTTONS]        _INIT({false});
+WLED_GLOBAL bool buttonLongPressed[WLED_MAX_BUTTONS]          _INIT({false});
+WLED_GLOBAL unsigned long buttonPressedTime[WLED_MAX_BUTTONS] _INIT({0});
+WLED_GLOBAL unsigned long buttonWaitTime[WLED_MAX_BUTTONS]    _INIT({0});
+WLED_GLOBAL byte touchThreshold                               _INIT(TOUCH_THRESHOLD);
 
 // notifications
 WLED_GLOBAL bool notifyDirectDefault _INIT(notifyDirect);

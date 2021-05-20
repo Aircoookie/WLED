@@ -93,7 +93,7 @@ void loadSettingsFromEEPROM()
 
   notifyButton = EEPROM.read(230);
   notifyTwice = EEPROM.read(231);
-  buttonType = EEPROM.read(232) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
+  buttonType[0] = EEPROM.read(232) ? BTN_TYPE_PUSH : BTN_TYPE_NONE;
 
   staticIP[0] = EEPROM.read(234);
   staticIP[1] = EEPROM.read(235);
@@ -157,6 +157,7 @@ void loadSettingsFromEEPROM()
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
   
   if (lastEEPROMversion > 4) {
+    #ifndef WLED_DISABLE_HUESYNC
     huePollingEnabled = EEPROM.read(2048);
     //hueUpdatingEnabled = EEPROM.read(2049);
     for (int i = 2050; i < 2054; ++i)
@@ -172,6 +173,7 @@ void loadSettingsFromEEPROM()
     hueApplyBri = EEPROM.read(2104);
     hueApplyColor = EEPROM.read(2105);
     huePollLightId = EEPROM.read(2106);
+    #endif
   }
   if (lastEEPROMversion > 5) {
     overlayMin = EEPROM.read(2150);
@@ -188,18 +190,20 @@ void loadSettingsFromEEPROM()
     countdownSec = EEPROM.read(2161);
     setCountdown();
 
+    #ifndef WLED_DISABLE_CRONIXIE
     readStringFromEEPROM(2165, cronixieDisplay, 6);
     cronixieBacklight = EEPROM.read(2171);
+    #endif
 
     //macroBoot = EEPROM.read(2175);
     macroAlexaOn = EEPROM.read(2176);
     macroAlexaOff = EEPROM.read(2177);
-    macroButton = EEPROM.read(2178);
-    macroLongPress = EEPROM.read(2179);
+    macroButton[0] = EEPROM.read(2178);
+    macroLongPress[0] = EEPROM.read(2179);
     macroCountdown = EEPROM.read(2180);
     macroNl = EEPROM.read(2181);
-    macroDoublePress = EEPROM.read(2182);
-    if (macroDoublePress > 16) macroDoublePress = 0;
+    macroDoublePress[0] = EEPROM.read(2182);
+    if (macroDoublePress[0] > 16) macroDoublePress[0] = 0;
   }
 
   if (lastEEPROMversion > 6)
@@ -237,7 +241,7 @@ void loadSettingsFromEEPROM()
 
   if (lastEEPROMversion > 9)
   {
-    strip.setColorOrder(EEPROM.read(383));
+    //strip.setColorOrder(EEPROM.read(383));
     irEnabled = EEPROM.read(385);
     strip.ablMilliampsMax = EEPROM.read(387) + ((EEPROM.read(388) << 8) & 0xFF00);
   } else if (lastEEPROMversion > 1) //ABL is off by default when updating from version older than 0.8.2
@@ -343,8 +347,10 @@ void loadSettingsFromEEPROM()
   //custom macro memory (16 slots/ each 64byte)
   //1024-2047 reserved
 
+  #ifndef WLED_DISABLE_BLYNK
   readStringFromEEPROM(2220, blynkApiKey, 35);
   if (strlen(blynkApiKey) < 25) blynkApiKey[0] = 0;
+  #endif
 
   #ifdef WLED_ENABLE_DMX
   // DMX (2530 - 2549)2535
@@ -417,10 +423,10 @@ void deEEP() {
           for (byte j = 0; j < numChannels; j++) colX.add(EEPROM.read(memloc + j));
         }
         
-        segObj[F("fx")]  = EEPROM.read(i+10);
+        segObj["fx"]  = EEPROM.read(i+10);
         segObj[F("sx")]  = EEPROM.read(i+11);
         segObj[F("ix")]  = EEPROM.read(i+16);
-        segObj[F("pal")] = EEPROM.read(i+17);
+        segObj["pal"] = EEPROM.read(i+17);
       } else {
         WS2812FX::Segment* seg = strip.getSegments();
         memcpy(seg, EEPROM.getDataPtr() +i+2, 240);
