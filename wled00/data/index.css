@@ -509,6 +509,17 @@ input[type=range]:active + .sliderbubble {
 	transform: translateX(-50%);
 }
 
+input[type=range]:disabled,
+input[type=range]:disabled::-moz-range-track,
+input[type=range]:disabled::-webkit-slider-runnable-track
+{
+	color: var(--c-8);
+}
+input[type=range]:disabled::-moz-range-thumb,
+input[type=range]:disabled::-webkit-slider-thumb  {
+	background: var(--c-8);
+}
+
 #wwrap {
 	display: none;
 }
@@ -854,6 +865,18 @@ input[type=number]::-webkit-outer-spin-button {
 
 .check input:checked ~ .checkmark:after, .radio input:checked ~ .radiomark:after {
 	display: block;
+}
+
+#briLock {
+	display: none;
+}
+
+#briLock ~ label::before {
+	content: 'U';
+}
+
+#briLock:checked ~ label::before {
+	content: 'L';
 }
 
 .check .checkmark:after {

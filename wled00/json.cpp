@@ -161,7 +161,13 @@ bool deserializeState(JsonObject root)
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
 
-  bri = root["bri"] | bri;
+  if (root.containsKey("briLock")) {
+    briLock = root["briLock"];
+  }
+  if (!briLock)
+  {
+    bri = root["bri"] | bri;
+  }
 
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
@@ -353,6 +359,9 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root["on"] = (bri > 0);
     root["bri"] = briLast;
     root[F("transition")] = transitionDelay/100; //in 100ms
+    if (!forPreset) {
+      root["briLock"] = briLock;
+    }
   }
 
   if (!forPreset) {

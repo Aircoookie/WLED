@@ -399,6 +399,7 @@ WLED_GLOBAL unsigned long lastOnTime _INIT(0);
 WLED_GLOBAL bool offMode _INIT(!turnOnAtBoot);
 WLED_GLOBAL byte bri _INIT(briS);
 WLED_GLOBAL byte briOld _INIT(0);
+WLED_GLOBAL bool briLock _INIT(false);        // prevents brightness change when loading presets
 WLED_GLOBAL byte briT _INIT(0);
 WLED_GLOBAL byte briIT _INIT(0);
 WLED_GLOBAL byte briLast _INIT(128);          // brightness before turned off. Used for toggle function
