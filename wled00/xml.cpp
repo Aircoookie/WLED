@@ -392,8 +392,16 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("PB"),strip.paletteBlend);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);
-    sappend('v',SET_F("BT"),btnPin);
+    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+      oappend(SET_F("addBtn("));
+      oappend(itoa(i,nS,10));  oappend(",");
+      oappend(itoa(btnPin[i],nS,10)); oappend(",");
+      oappend(itoa(buttonType[i],nS,10));
+      oappend(SET_F(");"));
+    }
+    sappend('v',SET_F("TT"),touchThreshold);
     sappend('v',SET_F("IR"),irPin);
+    sappend('v',SET_F("IT"),irEnabled);
   }
 
   if (subPage == 3)
@@ -404,8 +412,8 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 4)
   {
-    sappend('v',SET_F("BT"),buttonType);
-    sappend('v',SET_F("IR"),irEnabled);
+    //sappend('v',SET_F("BT"),buttonType);
+    //sappend('v',SET_F("IR"),irEnabled);
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
@@ -521,11 +529,19 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('v',SET_F("A0"),macroAlexaOn);
     sappend('v',SET_F("A1"),macroAlexaOff);
-    sappend('v',SET_F("MP"),macroButton);
-    sappend('v',SET_F("ML"),macroLongPress);
     sappend('v',SET_F("MC"),macroCountdown);
     sappend('v',SET_F("MN"),macroNl);
-    sappend('v',SET_F("MD"),macroDoublePress);
+    //sappend('v',SET_F("MP"),macroButton);
+    //sappend('v',SET_F("ML"),macroLongPress);
+    //sappend('v',SET_F("MD"),macroDoublePress);
+    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+      oappend(SET_F("addRow("));
+      oappend(itoa(i,tm,10));  oappend(",");
+      oappend(itoa(macroButton[i],tm,10)); oappend(",");
+      oappend(itoa(macroLongPress[i],tm,10)); oappend(",");
+      oappend(itoa(macroDoublePress[i],tm,10));
+      oappend(SET_F(");"));
+    }
 
     char k[4];
     k[2] = 0; //Time macros

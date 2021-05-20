@@ -31,6 +31,14 @@
   #endif
 #endif
 
+#ifndef WLED_MAX_BUTTONS
+  #ifdef ESP8266
+    #define WLED_MAX_BUTTONS 2
+  #else
+    #define WLED_MAX_BUTTONS 4
+  #endif
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
@@ -151,6 +159,7 @@
 #define BTN_TYPE_PUSH_ACT_HIGH    3 //not implemented
 #define BTN_TYPE_SWITCH           4
 #define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
+#define BTN_TYPE_TOUCH            6
 
 //Ethernet board types
 #define WLED_NUM_ETH_TYPES        5

@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.12.2-bl2
+   @version 0.12.2-bl3
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2105191
+#define VERSION 2105201
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -208,9 +208,9 @@ WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 // Hardware CONFIG (only changeble HERE, not at runtime)
 // LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
 #ifndef BTNPIN
-WLED_GLOBAL int8_t btnPin _INIT(0);
+WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({0});
 #else
-WLED_GLOBAL int8_t btnPin _INIT(BTNPIN);
+WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({BTNPIN});
 #endif
 #ifndef RLYPIN
 WLED_GLOBAL int8_t rlyPin _INIT(12);
@@ -279,7 +279,7 @@ WLED_GLOBAL NodesMap Nodes;
 WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
 
-WLED_GLOBAL byte buttonType     _INIT(BTN_TYPE_PUSH);
+WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]  _INIT({BTN_TYPE_PUSH});
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
@@ -370,7 +370,9 @@ WLED_GLOBAL byte countdownMin  _INIT(0) , countdownSec   _INIT(0);
 WLED_GLOBAL byte macroNl   _INIT(0);        // after nightlight delay over
 WLED_GLOBAL byte macroCountdown _INIT(0);
 WLED_GLOBAL byte macroAlexaOn _INIT(0), macroAlexaOff _INIT(0);
-WLED_GLOBAL byte macroButton _INIT(0), macroLongPress _INIT(0), macroDoublePress _INIT(0);
+WLED_GLOBAL byte macroButton[WLED_MAX_BUTTONS]        _INIT({0});
+WLED_GLOBAL byte macroLongPress[WLED_MAX_BUTTONS]     _INIT({0});
+WLED_GLOBAL byte macroDoublePress[WLED_MAX_BUTTONS]   _INIT({0});
 
 // Security CONFIG
 WLED_GLOBAL bool otaLock     _INIT(false);  // prevents OTA firmware updates without password. ALWAYS enable if system exposed to any public networks
@@ -431,10 +433,11 @@ WLED_GLOBAL byte briLast _INIT(128);          // brightness before turned off. U
 WLED_GLOBAL byte whiteLast _INIT(128);        // white channel before turned off. Used for toggle function
 
 // button
-WLED_GLOBAL bool buttonPressedBefore _INIT(false);
-WLED_GLOBAL bool buttonLongPressed _INIT(false);
-WLED_GLOBAL unsigned long buttonPressedTime _INIT(0);
-WLED_GLOBAL unsigned long buttonWaitTime _INIT(0);
+WLED_GLOBAL bool buttonPressedBefore[WLED_MAX_BUTTONS]        _INIT({false});
+WLED_GLOBAL bool buttonLongPressed[WLED_MAX_BUTTONS]          _INIT({false});
+WLED_GLOBAL unsigned long buttonPressedTime[WLED_MAX_BUTTONS] _INIT({0});
+WLED_GLOBAL unsigned long buttonWaitTime[WLED_MAX_BUTTONS]    _INIT({0});
+WLED_GLOBAL byte touchThreshold                               _INIT(TOUCH_THRESHOLD);
 
 // notifications
 WLED_GLOBAL bool notifyDirectDefault _INIT(notifyDirect);

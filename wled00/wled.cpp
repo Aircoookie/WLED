@@ -470,8 +470,8 @@ void WLED::beginStrip()
   if (rlyPin>=0) digitalWrite(rlyPin, (bri ? rlyMde : !rlyMde));
 
   // disable button if it is "pressed" unintentionally
-  if (btnPin>=0 && buttonType == BTN_TYPE_PUSH && isButtonPressed())
-    buttonType = BTN_TYPE_NONE;
+  //if (btnPin>=0 && buttonType == BTN_TYPE_PUSH && isButtonPressed())
+  //  buttonType = BTN_TYPE_NONE;
 }
 
 void WLED::initAP(bool resetAP)

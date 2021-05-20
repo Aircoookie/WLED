@@ -6,105 +6,124 @@
 
 #define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
 
-void shortPressAction()
+void shortPressAction(uint8_t b)
 {
-  if (!macroButton)
+  if (!macroButton[b])
   {
     toggleOnOff();
     colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
   } else {
-    applyPreset(macroButton);
+    applyPreset(macroButton[b]);
   }
 }
 
-bool isButtonPressed()
+bool isButtonPressed(uint8_t i)
 {
-  if (btnPin>=0 && digitalRead(btnPin) == LOW) return true;
-  #ifdef TOUCHPIN
-    if (touchRead(TOUCHPIN) <= TOUCH_THRESHOLD) return true;
-  #endif
+  if (btnPin[i]<0) return false;
+  switch (buttonType[i]) {
+    case BTN_TYPE_NONE:
+    case BTN_TYPE_RESERVED:
+      break;
+    case BTN_TYPE_PUSH:
+    case BTN_TYPE_SWITCH:
+      if (digitalRead(btnPin[i]) == LOW) return true;
+      break;
+    case BTN_TYPE_PUSH_ACT_HIGH:
+    case BTN_TYPE_SWITCH_ACT_HIGH:
+      if (digitalRead(btnPin[i]) == HIGH) return true;
+      break;
+    case BTN_TYPE_TOUCH:
+      #ifdef ARDUINO_ARCH_ESP32
+      if (touchRead(btnPin[i]) <= touchThreshold) return true;
+      DEBUG_PRINT(F("Touch value: "));
+      DEBUG_PRINTLN(touchRead(btnPin[i]));
+      #endif
+      break;
+  }
   return false;
 }
 
 
-void handleSwitch()
+void handleSwitch(uint8_t b)
 {
-  if (buttonPressedBefore != isButtonPressed()) {
-    buttonPressedTime = millis();
-    buttonPressedBefore = !buttonPressedBefore;
+  if (buttonPressedBefore[b] != isButtonPressed(b)) {
+    buttonPressedTime[b] = millis();
+    buttonPressedBefore[b] = !buttonPressedBefore[b];
   }
 
-  if (buttonLongPressed == buttonPressedBefore) return;
+  if (buttonLongPressed[b] == buttonPressedBefore[b]) return;
     
-  if (millis() - buttonPressedTime > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
-    if (buttonPressedBefore) { //LOW, falling edge, switch closed
-      if (macroButton) applyPreset(macroButton);
+  if (millis() - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
+    if (buttonPressedBefore[b]) { //LOW, falling edge, switch closed
+      if (macroButton[b]) applyPreset(macroButton[b]);
       else { //turn on
         if (!bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
       } 
     } else { //HIGH, rising edge, switch opened
-      if (macroLongPress) applyPreset(macroLongPress);
+      if (macroLongPress[b]) applyPreset(macroLongPress[b]);
       else { //turn off
         if (bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
       } 
     }
-    buttonLongPressed = buttonPressedBefore; //save the last "long term" switch state
+    buttonLongPressed[b] = buttonPressedBefore[b]; //save the last "long term" switch state
   }
 }
 
 
 void handleButton()
 {
-  if (btnPin<0 || buttonType < BTN_TYPE_PUSH) return;
+  for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
+    if (btnPin[b]<0 || !(buttonType[b] > BTN_TYPE_NONE)) continue;
 
 
-  if (buttonType == BTN_TYPE_SWITCH) { //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NO gpio0)
-    handleSwitch(); return;
-  }
+    if (buttonType[b] == BTN_TYPE_SWITCH) { //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
+      handleSwitch(b); continue;
+    }
 
-  //momentary button logic
-  if (isButtonPressed()) //pressed
-  {
-    if (!buttonPressedBefore) buttonPressedTime = millis();
-    buttonPressedBefore = true;
-
-    if (millis() - buttonPressedTime > 600) //long press
+    //momentary button logic
+    if (isButtonPressed(b)) //pressed
     {
-      if (!buttonLongPressed) 
-      {
-        if (macroLongPress) {applyPreset(macroLongPress);}
-        else _setRandomColor(false,true);
+      if (!buttonPressedBefore[b]) buttonPressedTime[b] = millis();
+      buttonPressedBefore[b] = true;
 
-        buttonLongPressed = true;
+      if (millis() - buttonPressedTime[b] > 600) //long press
+      {
+        if (!buttonLongPressed[b]) 
+        {
+          if (macroLongPress[b]) {applyPreset(macroLongPress[b]);}
+          else _setRandomColor(false,true);
+
+          buttonLongPressed[b] = true;
+        }
       }
     }
-  }
-  else if (!isButtonPressed() && buttonPressedBefore) //released
-  {
-    long dur = millis() - buttonPressedTime;
-    if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore = false; return;} //too short "press", debounce
-    bool doublePress = buttonWaitTime;
-    buttonWaitTime = 0;
-
-    if (dur > 6000) //long press
+    else if (!isButtonPressed(b) && buttonPressedBefore[b]) //released
     {
-      WLED::instance().initAP(true);
-    }
-    else if (!buttonLongPressed) { //short press
-      if (macroDoublePress)
-      {
-        if (doublePress) applyPreset(macroDoublePress);
-        else buttonWaitTime = millis();
-      } else shortPressAction();
-    }
-    buttonPressedBefore = false;
-    buttonLongPressed = false;
-  }
+      long dur = millis() - buttonPressedTime[b];
+      if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore[b] = false; continue;} //too short "press", debounce
+      bool doublePress = buttonWaitTime[b];
+      buttonWaitTime[b] = 0;
 
-  if (buttonWaitTime && millis() - buttonWaitTime > 450 && !buttonPressedBefore)
-  {
-    buttonWaitTime = 0;
-    shortPressAction();
+      if (dur > 6000 && b==0) //long press on button 0
+      {
+        WLED::instance().initAP(true);
+      }
+      else if (!buttonLongPressed[b]) { //short press
+        if (macroDoublePress[b])
+        {
+          if (doublePress) applyPreset(macroDoublePress[b]);
+          else buttonWaitTime[b] = millis();
+        } else shortPressAction(b);
+      }
+      buttonPressedBefore[b] = false;
+      buttonLongPressed[b] = false;
+    }
+
+    if (buttonWaitTime[b] && millis() - buttonWaitTime[b] > 450 && !buttonPressedBefore[b])
+    {
+      buttonWaitTime[b] = 0;
+      shortPressAction(b);
+    }
   }
 }
 
