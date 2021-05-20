@@ -2,6 +2,13 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2105200
+
+-   Fixed WS281x output on ESP32
+-   Fixed potential out-of-bounds write in MQTT
+-   Fixed IR pin not changeable if IR disabled
+-   Fixed XML API <wv> containing -1 on Manual only RGBW mode (see #888, #1783)
+
 #### Build 2105171
 
 -   Always copy MQTT payloads to prevent non-0-terminated strings

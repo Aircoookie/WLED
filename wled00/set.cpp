@@ -78,9 +78,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     int t = 0;
 
     if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
-    #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
-    #endif
     if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
     //TODO remove all busses, but not in this system call
     //busses->removeAll();
@@ -128,14 +126,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t > 0 && t <= MAX_LEDS) ledCount = t;
 
     // upate other pins
-    #ifndef WLED_DISABLE_INFRARED
     int hw_ir_pin = request->arg(F("IR")).toInt();
     if (pinManager.isPinOk(hw_ir_pin) && pinManager.allocatePin(hw_ir_pin,false)) {
       irPin = hw_ir_pin;
     } else {
       irPin = -1;
     }
-    #endif
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
     if (pinManager.allocatePin(hw_rly_pin,true)) {
