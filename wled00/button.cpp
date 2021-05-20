@@ -20,11 +20,26 @@ void shortPressAction(uint8_t b)
 bool isButtonPressed(uint8_t i)
 {
   if (btnPin[i]<0) return false;
-  //TODO: this may need switch statement (for inverted buttons)
-  #ifdef ARDUINO_ARCH_ESP32
-  if (buttonType[i]==BTN_TYPE_TOUCH && touchRead(btnPin[i]) <= touchThreshold) return true; else
-  #endif
-  if (digitalRead(btnPin[i]) == LOW) return true;
+  switch (buttonType[i]) {
+    case BTN_TYPE_NONE:
+    case BTN_TYPE_RESERVED:
+      break;
+    case BTN_TYPE_PUSH:
+    case BTN_TYPE_SWITCH:
+      if (digitalRead(btnPin[i]) == LOW) return true;
+      break;
+    case BTN_TYPE_PUSH_ACT_HIGH:
+    case BTN_TYPE_SWITCH_ACT_HIGH:
+      if (digitalRead(btnPin[i]) == HIGH) return true;
+      break;
+    case BTN_TYPE_TOUCH:
+      #ifdef ARDUINO_ARCH_ESP32
+      if (touchRead(btnPin[i]) <= touchThreshold) return true;
+      DEBUG_PRINT(F("Touch value: "));
+      DEBUG_PRINTLN(touchRead(btnPin[i]));
+      #endif
+      break;
+  }
   return false;
 }
 

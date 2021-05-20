@@ -161,9 +161,18 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       macroDoublePress[s] = 0;
     }
   } else {
-    //TODO: fix JSON API call (and new install)
+    // new install/missing configuration (button 0 has defaults)
+    if (fromFS)
+      for (uint8_t s=1; s<WLED_MAX_BUTTONS; s++) {
+        btnPin[s]           = -1;
+        buttonType[s]       = BTN_TYPE_NONE;
+        macroButton[s]      = 0;
+        macroLongPress[s]   = 0;
+        macroDoublePress[s] = 0;
+      }
   }
   CJSON(touchThreshold,hw[F("btn")][F("tt")]);
+  DEBUG_PRINTLN(F("  Done buttons."));
 
 /*
   JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
@@ -546,8 +555,10 @@ void serializeConfig() {
 
   // button(s)
   JsonObject hw_btn = hw.createNestedObject("btn");
+  hw_btn["max"] = WLED_MAX_BUTTONS; // just information about max number of buttons (not actually used)
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
+  // there is always at least one button
   JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
   hw_btn_ins_0["type"] = buttonType[0];
   JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
@@ -559,13 +570,12 @@ void serializeConfig() {
 
   // additional buttons
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) {
-    if (btnPin[i]<0) continue;
-    JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
+    //if (btnPin[i]<0) continue;
+    hw_btn_ins_0 = hw_btn_ins.createNestedObject();
     hw_btn_ins_0["type"] = buttonType[i];
-    JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
+    hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
     hw_btn_ins_0_pin.add(btnPin[i]);
-
-    JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
+    hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
     hw_btn_ins_0_macros.add(macroButton[i]);
     hw_btn_ins_0_macros.add(macroLongPress[i]);
     hw_btn_ins_0_macros.add(macroDoublePress[i]);

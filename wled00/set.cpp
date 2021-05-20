@@ -151,17 +151,15 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       char bt[4] = "BT"; bt[2] = 48+i; bt[3] = 0; // button pin
       char be[4] = "BE"; be[2] = 48+i; be[3] = 0; // button type
-      //if (request->hasArg(bt)) {
-        int hw_btn_pin = request->arg(bt).toInt();
-        if (pinManager.allocatePin(hw_btn_pin,false)) {
-          btnPin[i] = hw_btn_pin;
-          pinMode(btnPin[i], INPUT_PULLUP);
-          buttonType[i] = request->arg(be).toInt();
-        } else {
-          btnPin[i] = -1;
-          buttonType[i] = BTN_TYPE_NONE;
-        }
-      //}
+      int hw_btn_pin = request->arg(bt).toInt();
+      if (pinManager.allocatePin(hw_btn_pin,false)) {
+        btnPin[i] = hw_btn_pin;
+        pinMode(btnPin[i], INPUT_PULLUP);
+        buttonType[i] = request->arg(be).toInt();
+      } else {
+        btnPin[i] = -1;
+        buttonType[i] = BTN_TYPE_NONE;
+      }
     }
     touchThreshold = request->arg(F("TT")).toInt();
 
@@ -342,7 +340,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char mp[4] = "MP"; mp[2] = 48+i; mp[3] = 0; // short
       char ml[4] = "ML"; ml[2] = 48+i; ml[3] = 0; // long
       char md[4] = "MD"; md[2] = 48+i; md[3] = 0; // double
-      macroButton[i] = request->arg(mp).toInt();
+      //if (!request->hasArg(mp)) break;
+      macroButton[i] = request->arg(mp).toInt();      // these will default to 0 if not present
       macroLongPress[i] = request->arg(ml).toInt();
       macroDoublePress[i] = request->arg(md).toInt();
     }
