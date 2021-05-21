@@ -64,7 +64,7 @@
 void WS2812FX::finalizeInit(void)
 {
   RESET_RUNTIME;
-  isRgbw = false;
+  isRgbw = isOffRefreshRequred = false;
 
   //if busses failed to load, add default (fresh install, FS issue, ...)
   if (busses.getNumBusses() == 0) {
@@ -90,7 +90,10 @@ void WS2812FX::finalizeInit(void)
     Bus *bus = busses.getBus(i);
     if (bus == nullptr) continue;
     if (_length+bus->getLength() > MAX_LEDS) break;
+    //RGBW mode is enabled if at least one of the strips is RGBW
     isRgbw |= bus->isRgbw();
+    //refresh is required to remain off if at least one of the strips requires the refresh.
+    isOffRefreshRequred |= BusManager::isOffRefreshRequred(bus->getType());
     _length += bus->getLength();
   }
   ledCount = _length; // or we can use busses.getTotalLength()

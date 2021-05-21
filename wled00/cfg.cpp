@@ -69,8 +69,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   noWifiSleep = !noWifiSleep;
   //int wifi_phy = doc[F("wifi")][F("phy")]; //force phy mode n?
 
-  DEBUG_PRINTLN(F("  Done network."));
-
   JsonObject hw = doc[F("hw")];
 
   // initialize LED pins and lengths prior to other HW
@@ -89,7 +87,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   if (fromFS || !ins.isNull()) {
     uint8_t s = 0;  // bus iterator
-    strip.isRgbw = false;
     busses.removeAll();
     uint32_t mem = 0;
     for (JsonObject elm : ins) {
@@ -112,24 +109,17 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint8_t skipFirst = elm[F("skip")];
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
-      //RGBW mode is enabled if at least one of the strips is RGBW
-  //    if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
-  //    strip.isRgbw |= (bool)elm[F("rgbw")];
-      strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(ledType));
-      //refresh is required to remain off if at least one of the strips requires the refresh.
-      strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(ledType);
+      //if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
       s++;
       lC += length;
       BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
       mem += BusManager::memUsage(bc);
-      DEBUG_PRINT(F("  Adding bus no. "));
-      DEBUG_PRINTLN(busses.getNumBusses());
       if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
     }
+    // finalization done in beginStrip()
     //strip.finalizeInit();
   }
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
-  DEBUG_PRINTLN(F("  Done LEDs."));
 
   // read multiple button configuration
   JsonArray hw_btn_ins = hw[F("btn")][F("ins")];
@@ -138,13 +128,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     for (JsonObject btn : hw_btn_ins) {
       CJSON(buttonType[s], btn["type"]);
       int8_t pin = btn[F("pin")][0] | -1;
-      if (pin > -1) {
-        if (pinManager.allocatePin(pin,false)) {
-          btnPin[s] = pin;
-          pinMode(btnPin[s], INPUT_PULLUP);
-        } else {
-          btnPin[s] = -1;
-        }
+      if (pin > -1 && pinManager.allocatePin(pin,false)) {
+        btnPin[s] = pin;
+        pinMode(btnPin[s], INPUT_PULLUP);
+      } else {
+        btnPin[s] = -1;
       }
       JsonArray hw_btn_ins_0_macros = btn[F("macros")];
       CJSON(macroButton[s], hw_btn_ins_0_macros[0]);
@@ -172,26 +160,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
   }
   CJSON(touchThreshold,hw[F("btn")][F("tt")]);
-  DEBUG_PRINTLN(F("  Done buttons."));
 
-/*
-  JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
-  CJSON(buttonType, hw_btn_ins_0["type"]);
-  int hw_btn_pin = hw_btn_ins_0[F("pin")][0] | -2; //-2 = not present in doc, keep current. -1 = disable
-  if (hw_btn_pin > -1) {
-    if (pinManager.allocatePin(hw_btn_pin,false)) {
-      btnPin = hw_btn_pin;
-      pinMode(btnPin, INPUT_PULLUP);
-    } else {
-      btnPin = -1;
-    }
-  }
-
-  JsonArray hw_btn_ins_0_macros = hw_btn_ins_0[F("macros")];
-  CJSON(macroButton, hw_btn_ins_0_macros[0]);
-  CJSON(macroLongPress,hw_btn_ins_0_macros[1]);
-  CJSON(macroDoublePress, hw_btn_ins_0_macros[2]);
-*/
   #ifndef WLED_DISABLE_INFRARED
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
@@ -217,7 +186,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (relay.containsKey("rev")) {
     rlyMde = !relay["rev"];
   }
-  DEBUG_PRINTLN(F("  Done HW."));
 
   //int hw_status_pin = hw[F("status")]["pin"]; // -1
 
@@ -570,7 +538,6 @@ void serializeConfig() {
 
   // additional buttons
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) {
-    //if (btnPin[i]<0) continue;
     hw_btn_ins_0 = hw_btn_ins.createNestedObject();
     hw_btn_ins_0["type"] = buttonType[i];
     hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");

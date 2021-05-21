@@ -30,7 +30,7 @@ struct BusConfig {
     count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
     if (type > 47) nPins = 2;
-    else if (type > 41 && type < 46) nPins = NUM_PWM_PINS(type);
+    else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 };
@@ -222,13 +222,9 @@ class BusDigital : public Bus {
 class BusPwm : public Bus {
   public:
   BusPwm(BusConfig &bc) : Bus(bc.type, bc.start) {
+    _valid = false;
     if (!IS_PWM(bc.type)) return;
     uint8_t numPins = NUM_PWM_PINS(bc.type);
-
-    #ifdef WLED_DEBUG
-    Serial.print(F("Init: Number of pins="));
-    Serial.println(numPins);
-    #endif
 
     #ifdef ESP8266
     analogWriteRange(255);  //same range as one RGB channel
@@ -243,8 +239,7 @@ class BusPwm : public Bus {
     for (uint8_t i = 0; i < numPins; i++) {
       _pins[i] = bc.pins[i];
       if (!pinManager.allocatePin(_pins[i])) {
-        //deallocatePins(); return;
-        _pins[i] = 255; break;
+        _pins[i] = 255; return;
       }
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
@@ -280,10 +275,12 @@ class BusPwm : public Bus {
 
   //does no index check
   uint32_t getPixelColor(uint16_t pix) {
+    if (!_valid) return 0;
     return ((_data[3] << 24) | (_data[0] << 16) | (_data[1] << 8) | (_data[2]));
   }
 
   void show() {
+    if (!_valid) return;
     uint8_t numPins = NUM_PWM_PINS(_type);
     for (uint8_t i = 0; i < numPins; i++) {
       uint8_t scaled = (_data[i] * _bri) / 255;
