@@ -72,11 +72,10 @@ void handleAnalog(uint8_t b)
 {
   static uint8_t oldRead[WLED_MAX_BUTTONS];
   #ifdef ESP8266
-    #define ANALOGPIN A0
+  uint8_t aRead = analogRead(A0) >> 2; // convert 10bit read to 8bit
   #else
-    #define ANALOGPIN btnPin[b]
+  uint8_t aRead = analogRead(btnPin[b]) >> 4; // convert 12bit read to 8bit
   #endif
-  uint8_t aRead = analogRead(ANALOGPIN) >> 4; // convert 12bit read to 8bit
 
   if (oldRead[b] == aRead) return;  // no change in reading
 
