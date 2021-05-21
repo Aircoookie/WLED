@@ -76,11 +76,11 @@
       }
     }
 	function addRow(i,p,l,d) {
-		var t = gId("macros");	// table
-        var rCnt = t.rows.length;   // get the number of rows.
-        var tr = t.insertRow(rCnt); // table row.
+		var t = gId("macros");
+        var rCnt = t.rows.length;
+        var tr = t.insertRow(rCnt);
 
-		var td = document.createElement('td');          // TABLE DEFINITION.
+		var td = document.createElement('td');
 		td = tr.insertCell(0);
 		td.innerHTML = `Button ${i}:`;
 		td = tr.insertCell(1);
@@ -93,7 +93,6 @@
 	function GetV()
 	{
 		//values injected by server while sending HTML
-		addRow(0,23,4,0);
 	}
 	</script>
 	<style>
@@ -176,7 +175,7 @@
 					<td>short<br>on-&gt;off</td>
 					<td>long<br>off-&gt;on</td>
 					<td>double<br>N/A</td>
-			</tr>
+				</tr>
 			</thead>
 			<tbody>
 			</tbody>

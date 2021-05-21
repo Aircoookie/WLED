@@ -35,8 +35,6 @@ bool isButtonPressed(uint8_t i)
     case BTN_TYPE_TOUCH:
       #ifdef ARDUINO_ARCH_ESP32
       if (touchRead(btnPin[i]) <= touchThreshold) return true;
-      DEBUG_PRINT(F("Touch value: "));
-      DEBUG_PRINTLN(touchRead(btnPin[i]));
       #endif
       break;
   }
@@ -70,13 +68,53 @@ void handleSwitch(uint8_t b)
 }
 
 
+void handleAnalog(uint8_t b)
+{
+  static uint8_t oldRead[WLED_MAX_BUTTONS];
+  #ifdef ESP8266
+    #define ANALOGPIN A0
+  #else
+    #define ANALOGPIN btnPin[b]
+  #endif
+  uint8_t aRead = analogRead(ANALOGPIN) >> 4; // convert 12bit read to 8bit
+
+  if (oldRead[b] == aRead) return;  // no change in reading
+
+  // if no macro for "short press" and "long press" is defined use brightness control
+  if (!macroButton[b] && !macroLongPress[b]) {
+    // if "double press" macro is 250 or greater use global brightness
+    if (macroDoublePress[b]>=250) {
+      // if change in analog read was detected change global brightness
+      bri = aRead;
+    } else {
+      // otherwise use "double press" for segment selection
+      //uint8_t mainSeg = strip.getMainSegmentId();
+      WS2812FX::Segment& seg = strip.getSegment(macroDoublePress[b]);
+      if (aRead == 0) {
+        seg.setOption(SEG_OPTION_ON, 0, macroDoublePress[b]); // off
+      } else {
+        seg.setOpacity(aRead, macroDoublePress[b]);
+        seg.setOption(SEG_OPTION_ON, 1, macroDoublePress[b]);
+      }
+    }
+  } else {
+    //TODO:
+    // we can either trigger a preset depending on the level (between short and long entries)
+    // or use it for RGBW direct control
+  }
+  colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
+}
+
 void handleButton()
 {
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
     if (btnPin[b]<0 || !(buttonType[b] > BTN_TYPE_NONE)) continue;
 
+    if (buttonType[b] == BTN_TYPE_ANALOG) {   // button is not a button but a potentiometer
+      handleAnalog(b); continue;
+    }
 
-    if (buttonType[b] == BTN_TYPE_SWITCH) { //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
+    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_SWITCH_ACT_HIGH) { //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
       handleSwitch(b); continue;
     }
 
