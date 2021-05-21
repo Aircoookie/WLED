@@ -45,6 +45,8 @@
 #define USERMOD_ID_DHT           10            //Usermod "usermod_dht.h"
 #define USERMOD_ID_MODE_SORT     11            //Usermod "usermod_v2_mode_sort.h"
 #define USERMOD_ID_VL53L0X       12            //Usermod "usermod_vl53l0x_gestures.h"
+#define USERMOD_ID_RTC           13            //Usermod "usermod_rtc.h"
+#define USERMOD_ID_ELEKSTUBE_IPS 14            //Usermod "usermod_elekstube_ips.h"
 #define USERMOD_ID_MULTI_RELAY  101            //Usermod "usermod_multi_relay.h"
 #define USERMOD_ID_ANIMATED_STAIRCASE 102      //Usermod "Animated_Staircase.h"
 
