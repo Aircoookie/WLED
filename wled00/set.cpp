@@ -78,9 +78,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     int t = 0;
 
     if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
-    #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
-    #endif
     for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++)
       if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s]))
         pinManager.deallocatePin(btnPin[s]);

@@ -64,9 +64,9 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   }
   //make a copy of the payload to 0-terminate it
   char* payloadStr = new char[len+1];
+  if (payloadStr == nullptr) return; //no mem
   strncpy(payloadStr, payload, len);
   payloadStr[len] = '\0';
-  if (payloadStr == nullptr) return; //no mem
   DEBUG_PRINTLN(payloadStr);
 
   size_t topicPrefixLen = strlen(mqttDeviceTopic);

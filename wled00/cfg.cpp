@@ -165,7 +165,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
   CJSON(touchThreshold,hw[F("btn")][F("tt")]);
 
-  #ifndef WLED_DISABLE_INFRARED
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
     if (pinManager.allocatePin(hw_ir_pin,false)) {
@@ -174,7 +173,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       irPin = -1;
     }
   }
-  #endif
   CJSON(irEnabled, hw["ir"]["type"]);
 
   JsonObject relay = hw[F("relay")];
@@ -555,7 +553,7 @@ void serializeConfig() {
 
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir["pin"] = irPin;
-  hw_ir["type"] = irEnabled;  // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
+  hw_ir[F("type")] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
 
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
   hw_relay["pin"] = rlyPin;

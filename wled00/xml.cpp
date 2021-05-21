@@ -51,7 +51,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappend(SET_F("</ix><fp>"));
   oappendi(effectPalette);
   oappend(SET_F("</fp><wv>"));
-  if (strip.rgbwMode) {
+  if (strip.isRgbw) {
    oappendi(col[3]);
   } else {
    oappend("-1");
