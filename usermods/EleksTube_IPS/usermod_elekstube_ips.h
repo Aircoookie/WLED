@@ -2,6 +2,8 @@
 #include "TFTs.h"
 #include "wled.h"
 
+//Large parts of the code are from https://github.com/SmittyHalibut/EleksTubeHAX
+
 class ElekstubeIPSUsermod : public Usermod {
   private:
     TFTs tfts;

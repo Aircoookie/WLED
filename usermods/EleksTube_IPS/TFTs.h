@@ -39,10 +39,7 @@ private:
 
   //// BEGIN STOLEN CODE
 
-  bool drawBmp(const char *filename, int16_t x, int16_t y) {
-    // Nothing to do.
-    if ((x >= width()) || (y >= height())) return(true);
-
+  bool drawBmp(const char *filename) {
     fs::File bmpFS;
 
     // Open requested file on SD card
@@ -85,6 +82,9 @@ private:
       return(false);
     }
 
+    //draw img that is shorter than 240pix into the center
+    int16_t y = (height() - h) /2;
+
     bool oldSwapBytes = getSwapBytes();
     setSwapBytes(true);
     bmpFS.seek(seekOffset);
@@ -108,7 +108,7 @@ private:
       }
     }
     
-    pushImage(x, y, w, h, (uint16_t *)output_buffer);
+    pushImage(0, y, w, h, (uint16_t *)output_buffer);
     setSwapBytes(oldSwapBytes);
 
     bmpFS.close();
@@ -146,7 +146,7 @@ public:
       // Filenames are no bigger than "255.bmp\0"
       char file_name[10];
       sprintf(file_name, "/%d.bmp", digits[digit]);
-      drawBmp(file_name, 0, 0);
+      drawBmp(file_name);
     }
   }
 

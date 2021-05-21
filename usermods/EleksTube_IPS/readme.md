@@ -2,7 +2,7 @@
 
 This usermod allows WLED to run on the EleksTube IPS clock.
 It enables running all WLED effects on the background SK6812 lighting, while displaying digit bitmaps on the 6 IPS screens.
-Code is largely based on https://github.com/SmittyHalibut/EleksTubeHAX by Mark Smith
+Code is largely based on https://github.com/SmittyHalibut/EleksTubeHAX by Mark Smith!
 
 Supported:
 - Display with custom bitmaps from filesystem
