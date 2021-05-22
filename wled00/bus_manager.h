@@ -239,7 +239,9 @@ class BusPwm : public Bus {
     for (uint8_t i = 0; i < numPins; i++) {
       _pins[i] = bc.pins[i];
       if (!pinManager.allocatePin(_pins[i])) {
-        _pins[i] = 255; return;
+        _pins[i] = 255;
+        deallocatePins();
+        return;
       }
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);

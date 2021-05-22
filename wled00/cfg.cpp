@@ -104,7 +104,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint16_t length = elm[F("len")];
       if (length==0 || length+lC > MAX_LEDS) continue;  // zero length or we reached max. number of LEDs, just stop
       uint16_t start = elm[F("start")] | 0;
-      if (start >= lC+length) continue; // something is very wrong :)
+      if (start > lC+length) continue; // something is very wrong :)
       uint8_t colorOrder = elm[F("order")];
       uint8_t skipFirst = elm[F("skip")];
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
@@ -117,7 +117,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
     }
     // finalization done in beginStrip()
-    //strip.finalizeInit();
   }
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
 

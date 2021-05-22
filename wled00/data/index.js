@@ -1241,11 +1241,8 @@ function makeSeg()
 		if (pend < ledCount) ns = pend;
 	}
 	var cn = `<div class="seg">
-	<div class="segname newseg">
-		New segment ${lowestUnused}
-	</div>
 	<div class="segin expanded">
-		<input type="text" class="ptxt noslide" id="seg${lowestUnused}t" autocomplete="off" maxlength=32 value="" placeholder="Enter name..."/><br>
+		<input type="text" class="ptxt noslide" id="seg${lowestUnused}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lowestUnused}"/><br>
 		<table class="segt">
 			<tr>
 				<td width="38%">Start LED</td>

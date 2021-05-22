@@ -84,7 +84,10 @@ void handleAnalog(uint8_t b)
     // if "double press" macro is 250 or greater use global brightness
     if (macroDoublePress[b]>=250) {
       // if change in analog read was detected change global brightness
-      bri = aRead;
+      if (aRead == 0)
+        toggleOnOff();
+      else
+        bri = aRead;
     } else {
       // otherwise use "double press" for segment selection
       //uint8_t mainSeg = strip.getMainSegmentId();

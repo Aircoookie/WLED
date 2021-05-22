@@ -216,7 +216,9 @@ void WLED::loop()
     yield();
 
     handleHue();
+#ifndef WLED_DISABLE_BLYNK
     handleBlynk();
+#endif
 
     yield();
 
@@ -266,7 +268,6 @@ void WLED::loop()
 
   yield();
   handleWs();
-  handleStatusLED();
 
 // DEBUG serial logging
 #ifdef WLED_DEBUG
@@ -330,6 +331,7 @@ void WLED::setup()
       pinManager.allocatePin(17); // GPIO17 reserved for SPI RAM
     }
 /*
+  TODO make reservation for Ethernet pins
     #ifdef WLED_USE_ETHERNET
     if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
       ethernet_settings es = ethernetBoards[ethernetType];
@@ -343,18 +345,12 @@ void WLED::setup()
 */
   #endif
 
-  //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
-  //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
-
 #ifdef WLED_DEBUG
   pinManager.allocatePin(1,true); // GPIO1 reserved for debug output
 #endif
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2,false);
 #endif
-//#ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
-//  pinManager.allocatePin(3,false);
-//#endif
 
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));
@@ -371,24 +367,14 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
-/*
-#if STATUSLED
-  bool lStatusLed = false;
-  for (uint8_t i=0; i<strip.numStrips; i++) {
-    if (strip.getStripPin(i)==STATUSLED) {
-      lStatusLed = true;
-      break;
-    }
-  }
-  if (!lStatusLed) pinMode(STATUSLED, OUTPUT);
-#endif
-*/
+
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
 
   DEBUG_PRINTLN(F("Usermods setup"));
   userSetup();
   usermods.setup();
+
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
@@ -717,35 +703,4 @@ void WLED::handleConnection()
       DEBUG_PRINTLN(F("Access point disabled."));
     }
   }
-}
-
-void WLED::handleStatusLED()
-{
-/*
-  #if STATUSLED
-  for (uint8_t s=0; s<strip.numStrips; s++) {
-    if (strip.getStripPin(s)==STATUSLED) {
-      return; // pin used for strip
-    }
-  }
-
-  ledStatusType = WLED_CONNECTED ? 0 : 2;
-  if (mqttEnabled && ledStatusType != 2) // Wi-Fi takes presendence over MQTT
-    ledStatusType = WLED_MQTT_CONNECTED ? 0 : 4;
-  if (ledStatusType) {
-    if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
-      ledStatusLastMillis = millis();
-      ledStatusState = ledStatusState ? 0 : 1;
-      digitalWrite(STATUSLED, ledStatusState);
-    }
-  } else {
-    #ifdef STATUSLEDINVERTED
-      digitalWrite(STATUSLED, HIGH);
-    #else
-      digitalWrite(STATUSLED, LOW);
-    #endif
-
-  }
-  #endif
-*/
 }

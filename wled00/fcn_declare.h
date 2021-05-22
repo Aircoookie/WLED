@@ -15,9 +15,11 @@ void handleAlexa();
 void onAlexaChange(EspalexaDevice* dev);
 
 //blynk.cpp
+#ifndef WLED_DISABLE_BLYNK
 void initBlynk(const char* auth, const char* host, uint16_t port);
 void handleBlynk();
 void updateBlynk();
+#endif
 
 //button.cpp
 void shortPressAction(uint8_t b=0);

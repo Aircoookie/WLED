@@ -26,14 +26,14 @@
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
         //check for pin conflicts
-        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
+        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
             if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.um_p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
             else if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].value="";LCs[i].focus();return false;}
             for (j=i+1; j<LCs.length; j++)
             {
               var n2 = LCs[j].name.substring(0,2);
-              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
+              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR")
                 if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${nm}/${n2}!`);LCs[j].value="";LCs[j].focus();return false;}
             }
           }
@@ -106,92 +106,104 @@
 	    if (d.Sf.LA.value == 255) laprev = 12;
 	    else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
 
+      // enable/disable LED fields
       var s = d.getElementsByTagName("select");
       for (i=0; i<s.length; i++) {
+        // is the field a LED type?
         if (s[i].name.substring(0,2)=="LT") {
           n=s[i].name.substring(2);
           var type = parseInt(s[i].value,10);
           gId("p0d"+n).innerHTML = (type > 49) ? "Data:" : (type >41) ? "Pins:" : "Pin:";
           gId("p1d"+n).innerHTML = (type > 49) ? "Clk:" : "";
-          var LK = d.getElementsByName("L1"+n)[0];
+          var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
-          memu += getMem(type, d.getElementsByName("LC"+n)[0].value, d.getElementsByName("L0"+n)[0].value);
+          memu += getMem(type, d.getElementsByName("LC"+n)[0].value, d.getElementsByName("L0"+n)[0].value); // calc memory
 
+          // enumerate pins
           for (p=1; p<5; p++) {
-            var LK = d.getElementsByName("L"+p+n)[0];
+            var LK = d.getElementsByName("L"+p+n)[0]; // secondary pins
             if (!LK) continue;
             if ((type>49 && p==1) || (type>41 && type < 50 && (p+40 < type))) // TYPE_xxxx values from const.h
             {
+              // display pin field
               LK.style.display = "inline";
               LK.required = true;
             } else {
+              // hide pin field
               LK.style.display = "none";
               LK.required = false;
               LK.value="";
             }
           }
-          gId("ls"+n).readOnly = !(type > 31 && type < 48);  // not analog
-          gId("LC").readOnly = !(type > 31 && type < 48);    // not analog
+//          gId("ls"+n).readOnly = !(type > 31 && type < 48);  // if analog, allow editing LED start
+//          gId("LC").readOnly = !(type > 31 && type < 48);    // if analog, allow editing total LED count
           if (change) {
 //            gId("ew"+n).checked = (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
-            gId("ls"+n).value = n+1;
+            gId("ls"+n).value = n+1;  // set LED start
+            if (type > 31 && type < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
           }
 //          gId("ew"+n).onclick = (type > 31 && type < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
 //          isRGBW |= gId("ew"+n).checked;
           isRGBW |= (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
-          gId("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
-          gId("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
+          gId("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";  // hide reverse, skip 1st & count for analog
+          gId("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";    // change analog start description
         }
       }
-
+      // display white channel calculation method
       var myC = d.querySelectorAll('.wc'),
 			l = myC.length;
 			for (i = 0; i < l; i++) {
 				myC[i].style.display = (isRGBW) ? 'inline':'none';
 			}
-
+      // check for pin conflicts
       var LCs = d.getElementsByTagName("input");
       var sLC = 0, maxLC = 0;
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
+        // do we have a led count field but not total led count
         if (nm=="LC" && LCs[i].name !== "LC") {
           var n=LCs[i].name.substring(2);
           var c=parseInt(LCs[i].value,10);
-          if(gId("ls"+n).readOnly) gId("ls"+n).value=sLC;
-          if(c){sLC+=c;if(c>maxLC)maxLC=c;}
+          /*if(gId("ls"+n).readOnly)*/ gId("ls"+n).value=sLC; // update led start field
+          if(c){sLC+=c;if(c>maxLC)maxLC=c;} // increase led count
           continue;
         }
+        // do we have led pins for digital leds
         if (nm=="L0" || nm=="L1") {
           var lc=d.getElementsByName("LC"+LCs[i].name.substring(2))[0];
-          lc.max=maxPB;
+          lc.max=maxPB; // update max led count value
         }
-        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
+        // for pins check conflicts
+        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
-            var p = [];
-            if (d.um_p && Array.isArray(d.um_p)) for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]);
+            var p = []; // used pin array
+            if (d.um_p && Array.isArray(d.um_p)) for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]); // fill with reservations
             for (j=0; j<LCs.length; j++) {
               if (i==j) continue;
               var n2 = LCs[j].name.substring(0,2);
-              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
-                if (LCs[j].value!="" && LCs[j].value!="-1") p.push(parseInt(LCs[j].value,10));
+              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR")
+                if (LCs[j].value!="" && LCs[j].value!="-1") p.push(parseInt(LCs[j].value,10));  // add current pin
             }
+            // now check for conflicts
             if (p.some((e)=>e==parseInt(LCs[i].value,10))) LCs[i].style.color="red"; else LCs[i].style.color="#fff";
           }
       }
-
+      // update total led count
       if (gId("LC").readOnly) d.getElementsByName("LC")[0].value = sLC;
+      // if we are changing total led count update led count for 1st strip
       if (d.activeElement == d.getElementsByName("LC")[0]) {
         var o = d.getElementsByClassName("iST");
         var i = o.length;
         if (i == 1) d.getElementsByName("LC0")[0].value = d.getElementsByName("LC")[0].value;
       }
+      // memory usage and warnings
       gId('m0').innerHTML = memu;
       bquot = memu / maxM * 100;
       gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
       gId('ledwarning').style.display = (sLC > maxPB || maxLC > 800 || bquot > 80) ? 'inline':'none';
       gId('ledwarning').style.color = (sLC > maxPB || maxLC > maxPB || bquot > 100) ? 'red':'orange';
       gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>WARNING: Using over ${maxM}B!</b>)` : "") : "800 LEDs per pin";
-
+      // calculate power
       var val = Math.ceil((100 + sLC * laprev)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
 			var s = "";
@@ -265,7 +277,7 @@ Color Order:
 <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
 <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
 <br>
-<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="${lastEnd(i)}" required />&nbsp;
+<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="${lastEnd(i)}" readonly required />&nbsp;
 <div id="dig${i}" style="display:inline">
 Count: <input type="number" name="LC${i}" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br>
 Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
@@ -295,7 +307,6 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       c += `<option value="4" ${t==4?"selected":""}>Switch</option>`;
       c += `<option value="5" ${t==4?"selected":""}>Switch inverted</option>`;
       c += `<option value="6" ${t==6?"selected":""}>Touch</option>`;
-      c += `<option value="7" ${t==7?"selected":""}>Analog</option>`;
       c += `</select>`;
       c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
       gId("btns").innerHTML = c;
