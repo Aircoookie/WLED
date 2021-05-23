@@ -104,13 +104,13 @@ void handleAnalog(uint8_t b)
     // we can either trigger a preset depending on the level (between short and long entries)
     // or use it for RGBW direct control
   }
-  colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
+  colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
 }
 
 void handleButton()
 {
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
-    if (btnPin[b]<0 || !(buttonType[b] > BTN_TYPE_NONE)) continue;
+    if (btnPin[b]<0 || buttonType[b] == BTN_TYPE_NONE) continue;
 
     if (buttonType[b] == BTN_TYPE_ANALOG) {   // button is not a button but a potentiometer
       handleAnalog(b); continue;
