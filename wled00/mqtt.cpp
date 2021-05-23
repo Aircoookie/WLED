@@ -137,7 +137,7 @@ void publishMqtt()
   XML_response(nullptr, apires);
   strcpy(subuf, mqttDeviceTopic);
   strcat_P(subuf, PSTR("/v"));
-  mqtt->publish(subuf, 0, true, apires);
+  mqtt->publish(subuf, 0, false, apires);
 }
 
 
