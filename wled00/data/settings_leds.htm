@@ -305,8 +305,9 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       c += `<option value="2" ${t==2?"selected":""}>Pushbutton</option>`;
       c += `<option value="2" ${t==3?"selected":""}>Push inverted</option>`;
       c += `<option value="4" ${t==4?"selected":""}>Switch</option>`;
-      c += `<option value="5" ${t==4?"selected":""}>Switch inverted</option>`;
+      c += `<option value="5" ${t==5?"selected":""}>Switch inverted</option>`;
       c += `<option value="6" ${t==6?"selected":""}>Touch</option>`;
+      c += `<option value="7" ${t==7?"selected":""}>Analog</option>`;
       c += `</select>`;
       c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
       gId("btns").innerHTML = c;
