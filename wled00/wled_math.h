@@ -64,6 +64,7 @@ float asin_t(float x) {
 #define C ((HALF_PI/2) - A - B)
 
 float atan_t(float x) {
+  if (x>1) return atan(x);
   float xx = x * x;
   return ((A*xx + B)*xx + C)*x;
 }
