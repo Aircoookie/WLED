@@ -221,7 +221,7 @@ void WLED::loop()
 
     yield();
 
-    if (!offMode || strip.isOffRefreshRequred)
+    if (!offMode || strip.isOffRefreshRequred || enforceOff)
       strip.service();
 #ifdef ESP8266
     else if (!noWifiSleep)
