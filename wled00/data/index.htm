@@ -32,6 +32,9 @@
 			<p class="hd">Brightness</p>
 			<div class="il">
 				<i class="icons slider-icon" onclick="tglTheme()">&#xe2a6;</i>
+				<input type="checkbox" id="briLock" onchange="setBriLock(this)">
+				<label class="icons" for="briLock" alt="Lock brightness"></label>
+				
 				<div class="sliderwrap il">
 					<input id="sliderBri" onchange="setBri()" oninput="updateTrail(this)" max="255" min="1" type="range" value="128" />
 					<div class="sliderdisplay"></div>

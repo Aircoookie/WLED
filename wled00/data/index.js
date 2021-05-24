@@ -997,6 +997,8 @@ function requestJson(command, rinfo = true, verbose = true) {
 
 		isOn = s.on;
 		d.getElementById('sliderBri').value= s.bri;
+		d.getElementById('sliderBri').disabled = s.briLock;
+		d.getElementById('briLock').checked = s.briLock;
 		nlA = s.nl.on;
 		nlDur = s.nl.dur;
 		nlTar = s.nl.tbri;
@@ -1333,6 +1335,13 @@ function setPalette(paletteId = null)
 function setBri() {
 	var obj = {"bri": parseInt(d.getElementById('sliderBri').value)};
 	obj.transition = parseInt(d.getElementById('cyctt').value*10);
+	requestJson(obj);
+}
+
+function setBriLock()
+{
+	var lock = d.getElementById('briLock').checked;
+	var obj = {"briLock": lock};
 	requestJson(obj);
 }
 
