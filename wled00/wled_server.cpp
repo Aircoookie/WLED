@@ -300,7 +300,7 @@ String msgProcessor(const String& var)
       messageBody += F(")</script>");
     } else if (optt == 253)
     {
-      messageBody += F("<br><br><form action=/settings><button class=\"bt\" type=submit>Back</button></form>"); //button to settings
+      messageBody += F("<br><br><form action='..'><button class=\"bt\" type=submit>Back</button></form>"); //button to settings
     } else if (optt == 254)
     {
       messageBody += F("<br><br><button type=\"button\" class=\"bt\" onclick=\"B()\">Back</button>");
@@ -333,7 +333,7 @@ String settingsProcessor(const String& var)
   #ifdef WLED_ENABLE_DMX
 
   if (var == "DMXMENU") {
-    return String(F("<form action=/settings/dmx><button type=submit>DMX Output</button></form>"));
+    return String(F("<form action=./settings/dmx><button type=submit>DMX Output</button></form>"));
   }
   
   #endif

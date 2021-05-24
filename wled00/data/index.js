@@ -360,7 +360,7 @@ function presetError(empty)
 
 function loadPresets()
 {
-	var url = '/presets.json';
+	var url = './presets.json';
 	if (loc) {
 		url = `http://${locip}/presets.json`;
 	}
@@ -764,7 +764,7 @@ function populateNodes(i,n)
 
 function loadNodes()
 {
-	var url = '/json/nodes';
+	var url = './json/nodes';
 	if (loc) {
 		url = `http://${locip}/json/nodes`;
 	}
@@ -906,7 +906,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 	var e1 = d.getElementById('fxlist');
 	var e2 = d.getElementById('selectPalette');
 
-	var url = rinfo ? '/json/si': (command ? '/json/state':'/json');
+	var url = rinfo ? './json/si': (command ? './json/state':'./json');
 	if (loc) {
 		url = `http://${locip}${url}`;
 	}
@@ -1121,7 +1121,7 @@ function toggleSync() {
 function toggleLiveview() {
 	isLv = !isLv;
 	d.getElementById('liveview').style.display = (isLv) ? "block":"none";
-	var url = loc ? `http://${locip}/liveview`:"/liveview";
+	var url = loc ? `http://${locip}/liveview`:"./liveview";
 	d.getElementById('liveview').src = (isLv) ? url:"about:blank";
 	d.getElementById('buttonSr').className = (isLv) ? "active":"";
 	size();
@@ -1597,7 +1597,7 @@ function loadPalettesData()
 
 function getPalettesData(page, callback)
 {
-	var url = `/json/palx?page=${page}`;
+	var url = `./json/palx?page=${page}`;
 	if (loc) {
 		url = `http://${locip}${url}`;
 	}
