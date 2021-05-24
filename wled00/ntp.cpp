@@ -192,16 +192,21 @@ bool checkNTPResponse()
     Toki::Time arrived  = toki.fromNTP(pbuf + 32);
     Toki::Time departed = toki.fromNTP(pbuf + 40);
     //basic half roundtrip estimation
-    uint32_t offset = (ntpPacketReceivedTime - ntpPacketSentTime - toki.msDifference(arrived, departed)) >> 1;
-    offset += millis() - ntpPacketReceivedTime +1;
+    uint32_t serverDelay = toki.msDifference(arrived, departed);
+    uint32_t offset = (ntpPacketReceivedTime - ntpPacketSentTime - serverDelay) >> 1;
+    toki.printTime(departed);
     toki.adjust(departed, offset);
     toki.setTime(departed);
+    Serial.print("Arrived: ");
+    toki.printTime(arrived);
+    Serial.print("Time: ");
+    toki.printTime(departed);
     Serial.print("Roundtrip: ");
     Serial.println(ntpPacketReceivedTime - ntpPacketSentTime);
     Serial.print("Offset: ");
     Serial.println(offset);
-    Serial.print("Time: ");
-    toki.printTime(toki.getTime());
+    Serial.print("Serverdelay: ");
+    Serial.println(serverDelay);
  
     DEBUG_PRINT(F("Unix time = "));
     uint32_t epoch = toki.second();

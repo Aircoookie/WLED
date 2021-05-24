@@ -62,7 +62,7 @@ class Toki {
       if (!unix) return {0,0};
       unix -= YEARS_70; //NTP begins 1900, Unix 1970
 
-      unsigned long frac = word(timestamp[5], timestamp[6]); //65536ths of a second
+      unsigned long frac = word(timestamp[4], timestamp[5]); //65536ths of a second
       frac = (frac*1000) >> 16; //convert to ms
       return {unix, (uint16_t)frac};
     }
@@ -96,11 +96,11 @@ class Toki {
     void adjust(Time&t, int32_t offset) {
       int32_t secs = offset /1000;
       int32_t ms = offset - secs*1000;
-      t.sec += offset /1000;
+      t.sec += secs;
       int32_t nms = t.ms + ms;
       if (nms > 1000) {nms -= 1000; t.sec++;}
       if (nms < 0) {nms += 1000; t.sec--;}
-      t.ms += nms;
+      t.ms = nms;
     }
 
     Time getTime() {
