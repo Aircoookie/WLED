@@ -31,8 +31,6 @@ typedef unsigned long time_t;
 // but at least this hack lets us define C++ functions as intended.  Hopefully
 // nothing too terrible will result from overriding the C library header?!
 extern "C++" {
-typedef enum {timeNotSet, timeNeedsSync, timeSet
-}  timeStatus_t ;
 
 typedef enum {
     dowInvalid, dowSunday, dowMonday, dowTuesday, dowWednesday, dowThursday, dowFriday, dowSaturday
@@ -116,10 +114,11 @@ int     month();           // the month now  (Jan is month 1)
 int     month(time_t t);   // the month for the given time
 int     year();            // the full four digit year: (2009, 2010 etc) 
 int     year(time_t t);    // the year for the given time
+uint16_t millisecond();    // the millisecond now
 
 time_t now();              // return the current time as seconds since Jan 1 1970 
-void    setTime(time_t t);
-void    setTime(int hr,int min,int sec,int day, int month, int yr);
+void    setTime(time_t t, uint16_t ms = 0);
+void    setTime(int hr,int min,int sec,int day, int month, int yr, uint16_t ms = 0);
 time_t	getUnixTime(int hr,int min,int sec,int day, int month, int yr); //added by Aircoookie to get epoch time
 void    adjustTime(long adjustment);
 
@@ -129,13 +128,8 @@ char* monthStr(uint8_t month);
 char* dayStr(uint8_t day);
 char* monthShortStr(uint8_t month);
 char* dayShortStr(uint8_t day);
-	
-/* time sync functions	*/
-timeStatus_t timeStatus(); // indicates if time has been set and recently synchronized
-void    setSyncProvider( getExternalTime getTimeFunction); // identify the external time provider
-void    setSyncInterval(time_t interval); // set the number of seconds between re-sync
 
-/* low level functions to convert to and from system time                     */
+/* low level functions to convert to and from system time */
 void breakTime(time_t time, tmElements_t &tm);  // break time_t into elements
 time_t makeTime(tmElements_t &tm);  // convert time elements into time_t
 

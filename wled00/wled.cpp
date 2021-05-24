@@ -177,6 +177,8 @@ void WiFiEvent(WiFiEvent_t event)
 
 void WLED::loop()
 {
+  toki.millisecond();
+  toki.setTick();
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
   handleSerial();
@@ -287,6 +289,7 @@ void WLED::loop()
   }
   loops++;
 #endif        // WLED_DEBUG
+  toki.resetTick();
 }
 
 void WLED::setup()

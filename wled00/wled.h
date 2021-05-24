@@ -90,6 +90,7 @@
 #include <SPIFFSEditor.h>
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
+#include "src/dependencies/toki/Toki.h"
 
 #ifndef WLED_DISABLE_ALEXA
   #define ESPALEXA_ASYNC
@@ -516,6 +517,7 @@ WLED_GLOBAL float longitude _INIT(0.0);
 WLED_GLOBAL float latitude _INIT(0.0);
 WLED_GLOBAL time_t sunrise _INIT(0);
 WLED_GLOBAL time_t sunset _INIT(0);
+WLED_GLOBAL Toki toki _INIT(Toki());
 
 // Temp buffer
 WLED_GLOBAL char* obuf;

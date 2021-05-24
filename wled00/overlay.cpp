@@ -21,13 +21,16 @@ void initCronixie()
 
 void handleOverlays()
 {
-  if (millis() - overlayRefreshedTime > overlayRefreshMs)
+  if (toki.isTick())
   {
     initCronixie();
     updateLocalTime();
     checkTimers();
     checkCountdown();
-    if (overlayCurrent == 3) _overlayCronixie();//Diamex cronixie clock kit
+    if (overlayCurrent == 3) {
+      _overlayCronixie();//Diamex cronixie clock kit
+      strip.trigger();
+    }
     overlayRefreshedTime = millis();
   }
 }

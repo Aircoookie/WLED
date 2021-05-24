@@ -183,20 +183,30 @@ bool checkNTPResponse()
 {
   int cb = ntpUdp.parsePacket();
   if (cb) {
+    uint32_t ntpPacketReceivedTime = millis();
     DEBUG_PRINT(F("NTP recv, l="));
     DEBUG_PRINTLN(cb);
     byte pbuf[NTP_PACKET_SIZE];
     ntpUdp.read(pbuf, NTP_PACKET_SIZE); // read the packet into the buffer
 
-    unsigned long highWord = word(pbuf[40], pbuf[41]);
-    unsigned long lowWord = word(pbuf[42], pbuf[43]);
-    if (highWord == 0 && lowWord == 0) return false;
-    
-    unsigned long secsSince1900 = highWord << 16 | lowWord;
+    Toki::Time arrived  = toki.fromNTP(pbuf + 32);
+    Toki::Time departed = toki.fromNTP(pbuf + 40);
+    //basic half roundtrip estimation
+    uint32_t offset = (ntpPacketReceivedTime - ntpPacketSentTime - toki.msDifference(arrived, departed)) >> 1;
+    offset += millis() - ntpPacketReceivedTime +1;
+    toki.adjust(departed, offset);
+    toki.setTime(departed);
+    Serial.print("Roundtrip: ");
+    Serial.println(ntpPacketReceivedTime - ntpPacketSentTime);
+    Serial.print("Offset: ");
+    Serial.println(offset);
+    Serial.print("Time: ");
+    toki.printTime(toki.getTime());
  
     DEBUG_PRINT(F("Unix time = "));
-    unsigned long epoch = secsSince1900 - 2208988799UL; //subtract 70 years -1sec (on avg. more precision)
-    setTime(epoch);
+    uint32_t epoch = toki.second();
+    if (epoch == 0) return false;
+    setTime(epoch); //legacy
     DEBUG_PRINTLN(epoch);
     if (countdownTime - now() > 0) countdownOverTriggered = false;
     // if time changed re-calculate sunrise/sunset
@@ -210,7 +220,7 @@ bool checkNTPResponse()
 void updateLocalTime()
 {
   if (currentTimezone != tzCurrent) updateTimezone();
-  unsigned long tmc = now()+ utcOffsetSecs;
+  unsigned long tmc = toki.second()+ utcOffsetSecs;
   localTime = tz->toLocal(tmc);
 }
 

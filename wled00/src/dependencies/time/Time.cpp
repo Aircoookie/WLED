@@ -37,7 +37,6 @@
 
 static tmElements_t tm;          // a cache of time elements
 static time_t cacheTime;   // the time the cache was updated
-static uint32_t syncInterval = 300;  // time sync will be attempted after this many seconds
 
 void refreshCache(time_t t) {
   if (t != cacheTime) {
@@ -234,18 +233,9 @@ time_t makeTime(tmElements_t &tm){
 /*=====================================================*/	
 /* Low level system time functions  */
 
-static uint32_t sysTime = 0;
+static uint32_t sysTime = 0; //seconds
+static uint16_t sysMillis = 0;
 static uint32_t prevMillis = 0;
-static uint32_t nextSyncTime = 0;
-static timeStatus_t Status = timeNotSet;
-
-getExternalTime getTimePtr;  // pointer to external sync function
-//setExternalTime setTimePtr; // not used in this version
-
-#ifdef TIME_DRIFT_INFO   // define this to get drift data
-time_t sysUnsyncedTime = 0; // the time sysTime unadjusted by sync  
-#endif
-
 
 time_t now() {
 	// calculate number of seconds passed since last call to now()
@@ -253,33 +243,18 @@ time_t now() {
 		// millis() and prevMillis are both unsigned ints thus the subtraction will always be the absolute value of the difference
     sysTime++;
     prevMillis += 1000;	
-#ifdef TIME_DRIFT_INFO
-    sysUnsyncedTime++; // this can be compared to the synced time to measure long term drift     
-#endif
   }
-  if (nextSyncTime <= sysTime) {
-    if (getTimePtr != 0) {
-      time_t t = getTimePtr();
-      if (t != 0) {
-        setTime(t);
-      } else {
-        nextSyncTime = sysTime + syncInterval;
-        Status = (Status == timeNotSet) ?  timeNotSet : timeNeedsSync;
-      }
-    }
-  }  
+
   return (time_t)sysTime;
 }
 
-void setTime(time_t t) { 
-#ifdef TIME_DRIFT_INFO
- if(sysUnsyncedTime == 0) 
-   sysUnsyncedTime = t;   // store the time of the first call to set a valid Time   
-#endif
+uint16_t millisecond() { // the millisecond (0-999) now
+  return (sysMillis - millis()) % 1000;
+}
 
-  sysTime = (uint32_t)t;  
-  nextSyncTime = (uint32_t)t + syncInterval;
-  Status = timeSet;
+void setTime(time_t t, uint16_t ms) { 
+  sysTime = (uint32_t)t;
+  sysMillis = ms;
   prevMillis = millis();  // restart counting from now (thanks to Korman for this fix)
 }
 
@@ -299,27 +274,10 @@ time_t getUnixTime(int hr,int min,int sec,int dy, int mnth, int yr){
   return makeTime(tm);
 }
 
-void setTime(int hr,int min,int sec,int dy, int mnth, int yr){
- setTime(getUnixTime(hr,min,sec,dy,mnth,yr));
+void setTime(int hr,int min,int sec,int dy, int mnth, int yr, uint16_t ms){
+ setTime(getUnixTime(hr,min,sec,dy,mnth,yr), ms);
 }
 
 void adjustTime(long adjustment) {
   sysTime += adjustment;
-}
-
-// indicates if time has been set and recently synchronized
-timeStatus_t timeStatus() {
-  now(); // required to actually update the status
-  return Status;
-}
-
-void setSyncProvider( getExternalTime getTimeFunction){
-  getTimePtr = getTimeFunction;  
-  nextSyncTime = sysTime;
-  now(); // this will sync the clock
-}
-
-void setSyncInterval(time_t interval){ // set the number of seconds between re-sync
-  syncInterval = (uint32_t)interval;
-  nextSyncTime = sysTime + syncInterval;
 }
