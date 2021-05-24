@@ -211,6 +211,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject if_sync = interfaces[F("sync")];
   CJSON(udpPort, if_sync[F("port0")]); // 21324
   CJSON(udpPort2, if_sync[F("port1")]); // 65506
+  CJSON(enableHyperionColorCorrection, if_sync[F("correction")]);
+  CJSON(hyperionHSVSaturation, if_sync[F("hsvsaturation")]);
+  CJSON(hyperionHSVValue, if_sync[F("hsvvalue")]);
 
   JsonObject if_sync_recv = if_sync["recv"];
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
@@ -557,6 +560,9 @@ void serializeConfig() {
   JsonObject if_sync = interfaces.createNestedObject("sync");
   if_sync[F("port0")] = udpPort;
   if_sync[F("port1")] = udpPort2;
+  if_sync[F("correction")] = enableHyperionColorCorrection;
+  if_sync[F("hsvsaturation")] = hyperionHSVSaturation;
+  if_sync[F("hsvvalue")] = hyperionHSVValue;
 
   JsonObject if_sync_recv = if_sync.createNestedObject("recv");
   if_sync_recv["bri"] = receiveNotificationBrightness;
