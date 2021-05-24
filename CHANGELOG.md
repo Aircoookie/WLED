@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2105230
+
+-   No longer retain MQTT `/v` topic to alleviate storage loads on MQTT broker
+-   Fixed Sunrise calculation (atan_t approx. used outside of value range)
+
 #### Build 2105200
 
 -   Fixed WS281x output on ESP32
