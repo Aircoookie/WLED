@@ -5,6 +5,8 @@
 /*
  * Acquires time from NTP server
  */
+//#define WLED_DEBUG_NTP
+
 Timezone* tz;
 
 #define TZ_UTC                  0
@@ -182,44 +184,46 @@ void sendNTPPacket()
 bool checkNTPResponse()
 {
   int cb = ntpUdp.parsePacket();
-  if (cb) {
-    uint32_t ntpPacketReceivedTime = millis();
-    DEBUG_PRINT(F("NTP recv, l="));
-    DEBUG_PRINTLN(cb);
-    byte pbuf[NTP_PACKET_SIZE];
-    ntpUdp.read(pbuf, NTP_PACKET_SIZE); // read the packet into the buffer
+  if (!cb) return false;
 
-    Toki::Time arrived  = toki.fromNTP(pbuf + 32);
-    Toki::Time departed = toki.fromNTP(pbuf + 40);
-    //basic half roundtrip estimation
-    uint32_t serverDelay = toki.msDifference(arrived, departed);
-    uint32_t offset = (ntpPacketReceivedTime - ntpPacketSentTime - serverDelay) >> 1;
-    toki.printTime(departed);
-    toki.adjust(departed, offset);
-    toki.setTime(departed);
-    Serial.print("Arrived: ");
-    toki.printTime(arrived);
-    Serial.print("Time: ");
-    toki.printTime(departed);
-    Serial.print("Roundtrip: ");
-    Serial.println(ntpPacketReceivedTime - ntpPacketSentTime);
-    Serial.print("Offset: ");
-    Serial.println(offset);
-    Serial.print("Serverdelay: ");
-    Serial.println(serverDelay);
- 
-    DEBUG_PRINT(F("Unix time = "));
-    uint32_t epoch = toki.second();
-    if (epoch == 0) return false;
-    setTime(epoch); //legacy
-    DEBUG_PRINTLN(epoch);
-    if (countdownTime - now() > 0) countdownOverTriggered = false;
-    // if time changed re-calculate sunrise/sunset
-    updateLocalTime();
-    calculateSunriseAndSunset();
-    return true;
-  }
-  return false;
+  uint32_t ntpPacketReceivedTime = millis();
+  DEBUG_PRINT(F("NTP recv, l="));
+  DEBUG_PRINTLN(cb);
+  byte pbuf[NTP_PACKET_SIZE];
+  ntpUdp.read(pbuf, NTP_PACKET_SIZE); // read the packet into the buffer
+
+  Toki::Time arrived  = toki.fromNTP(pbuf + 32);
+  Toki::Time departed = toki.fromNTP(pbuf + 40);
+  if (departed.sec == 0) return false;
+  //basic half roundtrip estimation
+  uint32_t serverDelay = toki.msDifference(arrived, departed);
+  uint32_t offset = (ntpPacketReceivedTime - ntpPacketSentTime - serverDelay) >> 1;
+  #ifdef WLED_DEBUG_NTP
+  //the time the packet departed the NTP server
+  toki.printTime(departed);
+  #endif
+
+  toki.adjust(departed, offset);
+  toki.setTime(departed);
+
+  #ifdef WLED_DEBUG_NTP
+  Serial.print("Arrived: ");
+  toki.printTime(arrived);
+  Serial.print("Time: ");
+  toki.printTime(departed);
+  Serial.print("Roundtrip: ");
+  Serial.println(ntpPacketReceivedTime - ntpPacketSentTime);
+  Serial.print("Offset: ");
+  Serial.println(offset);
+  Serial.print("Serverdelay: ");
+  Serial.println(serverDelay);
+  #endif
+
+  if (countdownTime - toki.second() > 0) countdownOverTriggered = false;
+  // if time changed re-calculate sunrise/sunset
+  updateLocalTime();
+  calculateSunriseAndSunset();
+  return true;
 }
 
 void updateLocalTime()
@@ -249,13 +253,13 @@ void setCountdown()
 {
   if (currentTimezone != tzCurrent) updateTimezone();
   countdownTime = tz->toUTC(getUnixTime(countdownHour, countdownMin, countdownSec, countdownDay, countdownMonth, countdownYear));
-  if (countdownTime - now() > 0) countdownOverTriggered = false;
+  if (countdownTime - toki.second() > 0) countdownOverTriggered = false;
 }
 
 //returns true if countdown just over
 bool checkCountdown()
 {
-  unsigned long n = now();
+  unsigned long n = toki.second();
   if (countdownMode) localTime = countdownTime - n + utcOffsetSecs;
   if (n > countdownTime) {
     if (countdownMode) localTime = n - countdownTime + utcOffsetSecs;

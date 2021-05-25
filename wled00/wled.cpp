@@ -272,7 +272,7 @@ void WLED::loop()
   if (millis() - debugTime > 9999) {
     DEBUG_PRINTLN("---DEBUG INFO---");
     DEBUG_PRINT("Runtime: ");       DEBUG_PRINTLN(millis());
-    DEBUG_PRINT("Unix time: ");     DEBUG_PRINTLN(now());
+    DEBUG_PRINT("Unix time: ");     toki.printTime(toki.getTime());
     DEBUG_PRINT("Free heap: ");     DEBUG_PRINTLN(ESP.getFreeHeap());
     DEBUG_PRINT("Wifi state: ");    DEBUG_PRINTLN(WiFi.status());
 

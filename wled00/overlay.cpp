@@ -82,9 +82,9 @@ void _overlayAnalogClock()
 
 void _overlayAnalogCountdown()
 {
-  if ((unsigned long)now() < countdownTime)
+  if ((unsigned long)toki.second() < countdownTime)
   {
-    long diff = countdownTime - now();
+    long diff = countdownTime - toki.second();
     double pval = 60;
     if (diff > 31557600L) //display in years if more than 365 days
     {
