@@ -17,11 +17,6 @@
 #define USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL 60000
 #endif
 
-// how many seconds after boot to take first measurement, 20 seconds
-#ifndef USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT
-#define USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT 20000
-#endif
-
 class UsermodTemperature : public Usermod {
 
   private:
@@ -34,7 +29,7 @@ class UsermodTemperature : public Usermod {
     bool degC = true;
     unsigned long readingInterval = USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL;
     // set last reading as "40 sec before boot", so first reading is taken after 20 sec
-    unsigned long lastMeasurement = UINT32_MAX - (USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL - USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT);
+    unsigned long lastMeasurement = UINT32_MAX - USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL;
     // last time requestTemperatures was called
     // used to determine when we can read the sensors temperature
     // we have to wait at least 93.75 ms after requestTemperatures() is called
@@ -42,10 +37,6 @@ class UsermodTemperature : public Usermod {
     float temperature = -100; // default to -100, DS18B20 only goes down to -50C
     // indicates requestTemperatures has been called but the sensor measurement is not complete
     bool waitingForConversion = false;
-    // flag to indicate we have finished the first readTemperature call
-    // allows this library to report to the user how long until the first
-    // measurement
-    bool readTemperatureComplete = false;
     // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
     // temperature if flashed to a board without a sensor attached
     bool disabled = false;
@@ -67,7 +58,7 @@ class UsermodTemperature : public Usermod {
       for (i=2; i < 8; i++) oneWire->read();  // read unused bytes  
       result = (data[1]<<8) | data[0];
       result >>= 4;           // 9-bit precision accurate to 1°C (/16)
-      if (data[1]&0x80) result |= 0xF000;     // fix negative value
+      if (data[1]&0x80) result |= 0x8000;     // fix negative value
       //if (data[0]&0x08) ++result;
       oneWire->reset();
       oneWire->write(0xCC);   // skip ROM
@@ -86,7 +77,6 @@ class UsermodTemperature : public Usermod {
       temperature = readDallas();
       lastMeasurement = millis();
       waitingForConversion = false;
-      readTemperatureComplete = true;
       DEBUG_PRINTF("Read temperature %2.1f.\n", temperature);
     }
 
@@ -196,14 +186,6 @@ class UsermodTemperature : public Usermod {
 
       JsonArray temp = user.createNestedArray(FPSTR(_name));
       //temp.add(F("Loaded."));
-
-      if (!readTemperatureComplete) {
-        // if we haven't read the sensor yet, let the user know
-        // that we are still waiting for the first measurement
-        temp.add((USERMOD_DALLASTEMPERATURE_FIRST_MEASUREMENT_AT - millis()) / 1000);
-        temp.add(F(" sec until read"));
-        return;
-      }
 
       if (temperature <= -100) {
         temp.add(0);

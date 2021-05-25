@@ -75,7 +75,7 @@ void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
 //ir.cpp
-bool decodeIRCustom(uint32_t code);
+//bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
 void changeEffectSpeed(int8_t amount);

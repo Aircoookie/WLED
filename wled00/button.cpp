@@ -41,7 +41,6 @@ bool isButtonPressed(uint8_t i)
   return false;
 }
 
-
 void handleSwitch(uint8_t b)
 {
   if (buttonPressedBefore[b] != isButtonPressed(b)) {
@@ -67,52 +66,63 @@ void handleSwitch(uint8_t b)
   }
 }
 
-
 void handleAnalog(uint8_t b)
 {
   static uint8_t oldRead[WLED_MAX_BUTTONS];
   #ifdef ESP8266
-  uint8_t aRead = analogRead(A0) >> 2; // convert 10bit read to 8bit
+  uint16_t aRead = analogRead(A0) >> 5; // convert 10bit read to 5bit (remove noise)
   #else
-  uint8_t aRead = analogRead(btnPin[b]) >> 4; // convert 12bit read to 8bit
+  uint16_t aRead = analogRead(btnPin[b]) >> 7; // convert 12bit read to 5bit (remove noise)
   #endif
 
   if (oldRead[b] == aRead) return;  // no change in reading
+  oldRead[b] = aRead;
 
   // if no macro for "short press" and "long press" is defined use brightness control
   if (!macroButton[b] && !macroLongPress[b]) {
     // if "double press" macro is 250 or greater use global brightness
-    if (macroDoublePress[b]>=250) {
+    if (macroDoublePress[b] >= 250) {
       // if change in analog read was detected change global brightness
-      if (aRead == 0)
-        toggleOnOff();
-      else
-        bri = aRead;
+      if (aRead == 0) {
+        briLast = bri;
+        bri = 0;
+      } else{
+        bri = aRead << 3;
+      }
     } else {
       // otherwise use "double press" for segment selection
       //uint8_t mainSeg = strip.getMainSegmentId();
       WS2812FX::Segment& seg = strip.getSegment(macroDoublePress[b]);
       if (aRead == 0) {
-        seg.setOption(SEG_OPTION_ON, 0, macroDoublePress[b]); // off
+        seg.setOption(SEG_OPTION_ON, 0); // off
       } else {
-        seg.setOpacity(aRead, macroDoublePress[b]);
-        seg.setOption(SEG_OPTION_ON, 1, macroDoublePress[b]);
+        seg.setOpacity(aRead << 3, macroDoublePress[b]);
+        seg.setOption(SEG_OPTION_ON, 1);
       }
+      // this will notify clients of update (websockets,mqtt,etc)
+      //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
+      // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
+      updateInterfaces(NOTIFIER_CALL_MODE_BUTTON);
     }
   } else {
     //TODO:
     // we can either trigger a preset depending on the level (between short and long entries)
     // or use it for RGBW direct control
   }
+  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
+  // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
   colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
 }
 
 void handleButton()
 {
+  static unsigned long lastRead = 0UL;
+
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
     if (btnPin[b]<0 || buttonType[b] == BTN_TYPE_NONE) continue;
 
-    if (buttonType[b] == BTN_TYPE_ANALOG) {   // button is not a button but a potentiometer
+    if (buttonType[b] == BTN_TYPE_ANALOG && millis() - lastRead > 250) {   // button is not a button but a potentiometer
+      if (b+1 == WLED_MAX_BUTTONS) lastRead = millis();
       handleAnalog(b); continue;
     }
 

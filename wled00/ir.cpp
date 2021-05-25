@@ -77,6 +77,9 @@ void presetFallback(int8_t presetID, int8_t effectID, int8_t paletteID)
   }
 }
 
+/*
+ * This is no longer needed due to JSON IR mod
+ *
 //Add what your custom IR codes should trigger here. Guide: https://github.com/Aircoookie/WLED/wiki/Infrared-Control
 //IR codes themselves can be defined directly after "case" or in "ir_codes.h"
 bool decodeIRCustom(uint32_t code)
@@ -92,6 +95,7 @@ bool decodeIRCustom(uint32_t code)
   if (code != IRCUSTOM_MACRO1) colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //don't update color again if we apply macro, it already does it
   return true;
 }
+*/
 
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
@@ -160,30 +164,27 @@ void decodeIR(uint32_t code)
     return;
   }
   lastValidCode = 0; irTimesRepeated = 0;
-  if (decodeIRCustom(code)) return;
+//  if (decodeIRCustom(code)) return;
   if      (code > 0xFFFFFF) return; //invalid code
-  //else if (code > 0xF70000 && code < 0xF80000) decodeIR24(code); //is in 24-key remote range
-  //else if (code > 0xFF0000) {
   switch (irEnabled) {
     case 1:
       if (code > 0xF80000) {
-        decodeIR24OLD(code);             // white 24-key remote (old) - it sends 0xFF0000 values
+        decodeIR24OLD(code);            // white 24-key remote (old) - it sends 0xFF0000 values
       } else {
-        decodeIR24(code);                //is in 24-key remote range
+        decodeIR24(code);               //is in 24-key remote range
       }
       break;
-    case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
-    case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
-    case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
-    case 5: decodeIR21(code);    break;  // white 21-key remote  
-    case 6: decodeIR6(code);     break;  // black 6-key learning remote defaults: "CH" controls brightness,
-                                          // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
-                                          // sets bright plain white
+    case 2: decodeIR24CT(code); break;  // white 24-key remote with CW, WW, CT+ and CT- keys
+    case 3: decodeIR40(code);   break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
+    case 4: decodeIR44(code);   break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
+    case 5: decodeIR21(code);   break;  // white 21-key remote  
+    case 6: decodeIR6(code);    break;  // black 6-key learning remote defaults: "CH" controls brightness,
+                                        // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
+                                        // sets bright plain white
     case 7: decodeIR9(code);    break;
-    case 8: decodeIRJson(code); break;   // any remote configurable with ir.json file
+    case 8: decodeIRJson(code); break;  // any remote configurable with ir.json file
     default: return;
   }
-  //}
 
   if (nightlightActive && bri == 0) nightlightActive = false;
   colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
@@ -569,7 +570,7 @@ void decodeIRJson(uint32_t code)
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  sprintf_P(objKey, PSTR("\"0x%X\":"), code);
+  sprintf_P(objKey, PSTR("\"0x%lX\":"), code);
 
   errorFlag = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_PLOAD;
   fdo = irDoc.as<JsonObject>();
@@ -642,9 +643,7 @@ void handleIR()
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )
         {
-          Serial.print("IR recv\r\n0x");
-          Serial.println((uint32_t)results.value, HEX);
-          Serial.println();
+          DEBUG_PRINTF("IR recv: 0x%lX\n", (uint32_t)results.value);
         }
         decodeIR(results.value);
         irrecv->resume();

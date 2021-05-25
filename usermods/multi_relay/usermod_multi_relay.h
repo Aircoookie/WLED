@@ -35,7 +35,7 @@ class MultiRelay : public Usermod {
     // switch timer start time
     uint32_t _switchTimerStart = 0;
     // old brightness
-    uint8_t _oldBrightness = 0;
+    bool _oldBrightness = 0;
 
     // usermod enabled
     bool enabled = false;  // needs to be configured (no default config)
@@ -265,7 +265,7 @@ class MultiRelay : public Usermod {
           _relay[i].active = false;
         }
       }
-      _oldBrightness = bri;
+      _oldBrightness = (bool)bri;
       initDone = true;
     }
 
@@ -288,8 +288,8 @@ class MultiRelay : public Usermod {
       lastUpdate = millis();
 
       //set relay when LEDs turn on
-      if (_oldBrightness != bri) {
-        _oldBrightness = bri;
+      if (_oldBrightness != (bool)bri) {
+        _oldBrightness = (bool)bri;
         _switchTimerStart = millis();
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin>=0) _relay[i].active = true;

@@ -648,7 +648,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       nightlightActive = false; //always disable nightlight when toggling
     }
   }
-
   #endif
 
   //set hue
