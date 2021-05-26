@@ -127,6 +127,7 @@ bool initMqtt();
 void publishMqtt();
 
 //ntp.cpp
+void handleTime();
 void handleNetworkTime();
 void sendNTPPacket();
 bool checkNTPResponse();    

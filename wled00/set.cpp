@@ -825,7 +825,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) //sets backlight
   {
     cronixieBacklight = (req.charAt(pos+3) != '0');
-    overlayRefreshedTime = 0;
   }
   #endif
 

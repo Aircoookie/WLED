@@ -135,6 +135,21 @@ void updateTimezone() {
   tz = new Timezone(tcrDaylight, tcrStandard);
 }
 
+void handleTime() {
+  handleNetworkTime();
+  
+  toki.millisecond();
+  toki.setTick();
+
+  if (toki.isTick()) //true only in the first loop after a new second started
+  {
+    updateLocalTime();
+    checkTimers();
+    checkCountdown();
+    handleOverlays();
+  }
+}
+
 void handleNetworkTime()
 {
   if (ntpEnabled && ntpConnected && millis() - ntpLastSyncTime > 50000000L && WLED_CONNECTED)

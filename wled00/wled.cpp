@@ -177,8 +177,8 @@ void WiFiEvent(WiFiEvent_t event)
 
 void WLED::loop()
 {
-  toki.millisecond();
-  toki.setTick();
+  handleTime();
+
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
   handleSerial();
@@ -193,10 +193,8 @@ void WLED::loop()
   yield();
   handleIO();
   handleIR();
-  handleNetworkTime();
   handleAlexa();
 
-  handleOverlays();
   yield();
 
   if (doReboot)
