@@ -179,9 +179,7 @@ class FourLineDisplayUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (millis() - lastUpdate < (clockMode?1000:refreshRate)) {
-        return;
-      }
+      if (millis() - lastUpdate < (clockMode?1000:refreshRate) || strip.isUpdating()) return;
       lastUpdate = millis();
 
       redraw(false);

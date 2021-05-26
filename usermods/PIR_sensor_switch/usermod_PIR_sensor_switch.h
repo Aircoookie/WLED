@@ -222,9 +222,8 @@ public:
   void loop()
   {
     // only check sensors 10x/s
-    unsigned long now = millis();
-    if (now - lastLoop < 100) return;
-    lastLoop = now;
+    if (millis() - lastLoop < 100 || strip.isUpdating()) return;
+    lastLoop = millis();
 
     if (!updatePIRsensorState()) {
       handleOffTimer();

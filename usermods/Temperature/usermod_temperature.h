@@ -27,6 +27,9 @@ class UsermodTemperature : public Usermod {
     int8_t temperaturePin = TEMPERATURE_PIN;
     // measurement unit (true==°C, false==°F)
     bool degC = true;
+    // using parasite power on the sensor
+    bool parasite = false;
+    // how often do we read from sensor?
     unsigned long readingInterval = USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL;
     // set last reading as "40 sec before boot", so first reading is taken after 20 sec
     unsigned long lastMeasurement = UINT32_MAX - USERMOD_DALLASTEMPERATURE_MEASUREMENT_INTERVAL;
@@ -45,25 +48,24 @@ class UsermodTemperature : public Usermod {
     static const char _name[];
     static const char _enabled[];
     static const char _readInterval[];
+    static const char _parasite[];
 
     //Dallas sensor quick (& dirty) reading. Credit to - Author: Peter Scargill, August 17th, 2013
-    int16_t readDallas() {
+    float readDallas() {
       byte i;
       byte data[2];
-      int16_t result;         // raw data from sensor
-      oneWire->reset();
-      oneWire->write(0xCC);   // skip ROM
-      oneWire->write(0xBE);   // read (temperature) from EEPROM
+      int16_t result;                         // raw data from sensor
+      if (!oneWire->reset()) return -127.0f;  // send reset command and fail fast
+      oneWire->skip();                        // skip ROM
+      oneWire->write(0xBE);                   // read (temperature) from EEPROM
       for (i=0; i < 2; i++) data[i] = oneWire->read();  // first 2 bytes contain temperature
       for (i=2; i < 8; i++) oneWire->read();  // read unused bytes  
-      result = (data[1]<<8) | data[0];
-      result >>= 4;           // 9-bit precision accurate to 1°C (/16)
-      if (data[1]&0x80) result |= 0x8000;     // fix negative value
-      //if (data[0]&0x08) ++result;
+      result = (data[1]<<4) | (data[0]>>4);   // we only need whole part, we will add fraction when returning
+      if (data[1]&0x80) result |= 0xFF00;     // fix negative value
       oneWire->reset();
-      oneWire->write(0xCC);   // skip ROM
-      oneWire->write(0x44,0); // request new temperature reading (without parasite power)
-      return result;
+      oneWire->skip();                        // skip ROM
+      oneWire->write(0x44,parasite);          // request new temperature reading (without parasite power)
+      return (float)result + ((data[0]&0x0008) ? 0.5f : 0.0f);
     }
 
     void requestTemperatures() {
@@ -225,6 +227,7 @@ class UsermodTemperature : public Usermod {
       top["pin"]  = temperaturePin;     // usermodparam
       top["degC"] = degC;  // usermodparam
       top[FPSTR(_readInterval)] = readingInterval / 1000;
+      top[FPSTR(_parasite)] = parasite;
       DEBUG_PRINTLN(F("Temperature config saved."));
     }
 
@@ -253,7 +256,14 @@ class UsermodTemperature : public Usermod {
           degC = (bool)(str!="off"); // off is guaranteed to be present
         }
         readingInterval = min(120,max(10,top[FPSTR(_readInterval)].as<int>())) * 1000;  // convert to ms
-        DEBUG_PRINTLN(F("Temperature config (re)loaded."));
+        if (top[FPSTR(_parasite)].is<bool>()) {
+          // reading from cfg.json
+          parasite = top[FPSTR(_parasite)].as<bool>();
+        } else {
+          // new configuration from set.cpp
+          String str = top[FPSTR(_parasite)]; // checkbox -> off or on
+          parasite = (bool)(str!="off"); // off is guaranteed to be present
+        }
       } else {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
       }
@@ -261,7 +271,9 @@ class UsermodTemperature : public Usermod {
       if (!initDone) {
         // first run: reading from cfg.json
         temperaturePin = newTemperaturePin;
+        DEBUG_PRINTLN(F("Temperature config loaded."));
       } else {
+        DEBUG_PRINTLN(F("Temperature config re-loaded."));
         // changing paramters from settings page
         if (newTemperaturePin != temperaturePin) {
           // deallocate pin and release memory
@@ -284,3 +296,4 @@ class UsermodTemperature : public Usermod {
 const char UsermodTemperature::_name[]         PROGMEM = "Temperature";
 const char UsermodTemperature::_enabled[]      PROGMEM = "enabled";
 const char UsermodTemperature::_readInterval[] PROGMEM = "read-interval-s";
+const char UsermodTemperature::_parasite[]     PROGMEM = "parasite-pwr";
