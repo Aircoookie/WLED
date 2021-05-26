@@ -570,7 +570,7 @@ void decodeIRJson(uint32_t code)
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  sprintf_P(objKey, PSTR("\"0x%lX\":"), code);
+  sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 
   errorFlag = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_PLOAD;
   fdo = irDoc.as<JsonObject>();
@@ -643,7 +643,7 @@ void handleIR()
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )
         {
-          DEBUG_PRINTF("IR recv: 0x%lX\n", (uint32_t)results.value);
+          DEBUG_PRINTF("IR recv: 0x%lX\n", (unsigned long)results.value);
         }
         decodeIR(results.value);
         irrecv->resume();

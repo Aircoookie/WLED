@@ -238,8 +238,9 @@ class UsermodTemperature : public Usermod {
       // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
       JsonObject top = root[FPSTR(_name)];
       int8_t newTemperaturePin = temperaturePin;
+      if (top.isNull()) return;
 
-      if (!top.isNull() && top["pin"] != nullptr) {
+      if (top["pin"] != nullptr) {
         if (top[FPSTR(_enabled)].is<bool>()) {
           disabled = !top[FPSTR(_enabled)].as<bool>();
         } else {
@@ -247,6 +248,9 @@ class UsermodTemperature : public Usermod {
           disabled = (bool)(str=="off"); // off is guaranteed to be present
         }
         newTemperaturePin = min(39,max(-1,top["pin"].as<int>()));
+      }
+
+      if (top["degC"] != nullptr) {
         if (top["degC"].is<bool>()) {
           // reading from cfg.json
           degC = top["degC"].as<bool>();
@@ -255,7 +259,13 @@ class UsermodTemperature : public Usermod {
           String str = top["degC"]; // checkbox -> off or on
           degC = (bool)(str!="off"); // off is guaranteed to be present
         }
+      }
+
+      if (top[FPSTR(_readInterval)] != nullptr) {
         readingInterval = min(120,max(10,top[FPSTR(_readInterval)].as<int>())) * 1000;  // convert to ms
+      }
+
+      if (top[FPSTR(_parasite)] != nullptr) {
         if (top[FPSTR(_parasite)].is<bool>()) {
           // reading from cfg.json
           parasite = top[FPSTR(_parasite)].as<bool>();
@@ -264,8 +274,6 @@ class UsermodTemperature : public Usermod {
           String str = top[FPSTR(_parasite)]; // checkbox -> off or on
           parasite = (bool)(str!="off"); // off is guaranteed to be present
         }
-      } else {
-        DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
       }
 
       if (!initDone) {
