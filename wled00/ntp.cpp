@@ -437,12 +437,13 @@ void calculateSunriseAndSunset() {
 //time from JSON and HTTP API
 void setTimeFromAPI(uint32_t timein) {
   if (timein == 0 || timein == UINT32_MAX) return;
-  time_t prev = toki.second();
+  uint32_t prev = toki.second();
   //only apply if more accurate or there is a significant difference to the "more accurate" time source
-  if (toki.getTimeSource() > TOKI_TS_JSON && abs(timein - prev) < 60L) return;
+  uint32_t diff = (timein > prev) ? timein - prev : prev - timein;
+  if (toki.getTimeSource() > TOKI_TS_JSON && diff < 60U) return;
 
   toki.setTime(timein, TOKI_NO_MS_ACCURACY, TOKI_TS_JSON);
-  if (abs(timein - prev) > 60L) {
+  if (diff >= 60U) {
     updateLocalTime();
     calculateSunriseAndSunset();
   }
