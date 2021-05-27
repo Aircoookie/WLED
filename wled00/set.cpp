@@ -790,7 +790,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));
   if (pos > 0) {
-    toki.setTime(getNumVal(&req, pos),toki.millisecond());
+    setTimeFromAPI(getNumVal(&req, pos));
   }
 
   //set countdown goal (unix timestamp)

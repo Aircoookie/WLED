@@ -138,6 +138,7 @@ void setCountdown();
 byte weekdayMondayFirst();
 void checkTimers();
 void calculateSunriseAndSunset();
+void setTimeFromAPI(uint32_t timein);
 
 //overlay.cpp
 void initCronixie();

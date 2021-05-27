@@ -210,14 +210,7 @@ bool deserializeState(JsonObject root)
 
   unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
-    time_t prev = toki.second();
-    if (millis() - ntpLastSyncTime > 50000000L) {
-      toki.setTime(timein,toki.millisecond());
-      if (abs(timein - prev) > 60L) {
-        updateLocalTime();
-        calculateSunriseAndSunset();
-      }
-    }
+    setTimeFromAPI(timein);
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
 

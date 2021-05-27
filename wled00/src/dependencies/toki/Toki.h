@@ -25,7 +25,21 @@
 
 #define YEARS_70 2208988800UL
 
-//3:13 24.05.2012 ==>  2021-4-29, 06:41:37.
+#define TOKI_NO_MS_ACCURACY 1000
+
+//Time source. Sub-100 is second accuracy, higher ms accuracy. Higher value generally means more accurate
+#define TOKI_TS_NONE      0 //unsynced (e.g. just after boot)
+#define TOKI_TS_UDP       5 //synced via UDP from an instance whose time source is unsynced
+#define TOKI_TS_BAD      10 //synced from a time source less than about +- 2s accurate
+#define TOKI_TS_UDP_SEC  20 //synced via UDP from an instance whose time source is set from RTC/JSON
+#define TOKI_TS_SEC      40 //general second-accurate time source
+#define TOKI_TS_RTC      60 //second-accurate real time clock
+#define TOKI_TS_JSON     70 //synced second-accurate from a client via JSON-API
+
+#define TOKI_TS_UDP_NTP 110 //synced via UDP from an instance whose time source is NTP
+#define TOKI_TS_MS      120 //general better-than-second accuracy time source
+#define TOKI_TS_NTP     150 //NTP time, simple round trip estimation. Depending on network, mostly +- 50ms accurate
+#define TOKI_TS_NTP_P   170 //NTP time with multi-step sync, higher accuracy. Not implemented in WLED
 
 class Toki {
   typedef enum {
@@ -42,16 +56,22 @@ class Toki {
     uint32_t fullSecondMillis = 0;
     uint32_t unix = 0;
     TickT tick = TickT::inactive;
+    uint8_t timeSrc = TOKI_TS_NONE;
 
   public:
-    void setTime(Time t) {
+    void setTime(Time t, uint8_t timeSource = TOKI_TS_MS) {
       fullSecondMillis = millis() - t.ms;
       unix = t.sec;
+      timeSrc = timeSource;
     }
 
-    void setTime(uint32_t sec, uint16_t ms) {
+    void setTime(uint32_t sec, uint16_t ms=TOKI_NO_MS_ACCURACY, uint8_t timeSource = TOKI_TS_MS) {
+      if (ms >= TOKI_NO_MS_ACCURACY) {
+        ms = millisecond(); //just keep current ms if not provided
+        if (timeSource > 99) timeSource = TOKI_TS_SEC; //lies
+      }
       Time t = {sec, ms};
-      setTime(t);
+      setTime(t, timeSource);
     }
 
     Time fromNTP(byte *timestamp) { //ntp timestamp is 8 bytes, 4 bytes second and 4 bytes sub-second fraction
@@ -108,6 +128,10 @@ class Toki {
       t.ms = millisecond();
       t.sec = unix;
       return t;
+    }
+
+    uint8_t getTimeSource() {
+      return timeSrc;
     }
 
     void setTick() {

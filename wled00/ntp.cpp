@@ -219,7 +219,7 @@ bool checkNTPResponse()
   #endif
 
   toki.adjust(departed, offset);
-  toki.setTime(departed);
+  toki.setTime(departed, TOKI_TS_NTP);
 
   #ifdef WLED_DEBUG_NTP
   Serial.print("Arrived: ");
@@ -432,4 +432,19 @@ void calculateSunriseAndSunset() {
       sunset = 0;
     }
   }
+}
+
+//time from JSON and HTTP API
+void setTimeFromAPI(uint32_t timein) {
+  if (timein == 0 || timein == UINT32_MAX) return;
+  time_t prev = toki.second();
+  //only apply if more accurate or there is a significant difference to the "more accurate" time source
+  if (toki.getTimeSource() > TOKI_TS_JSON && abs(timein - prev) < 60L) return;
+
+  toki.setTime(timein, TOKI_NO_MS_ACCURACY, TOKI_TS_JSON);
+  if (abs(timein - prev) > 60L) {
+    updateLocalTime();
+    calculateSunriseAndSunset();
+  }
+  if (presetsModifiedTime == 0) presetsModifiedTime = timein;
 }

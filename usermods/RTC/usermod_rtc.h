@@ -14,7 +14,7 @@ class RTCUsermod : public Usermod {
     void setup() {
       time_t rtcTime = RTC.get();
       if (rtcTime) {
-        toki.setTime(rtcTime,0);
+        toki.setTime(rtcTime,TOKI_NO_MS_ACCURACY,TOKI_TS_RTC);
         updateLocalTime();
       } else {
         if (!RTC.chipPresent()) disabled = true; //don't waste time if H/W error
