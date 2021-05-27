@@ -708,7 +708,11 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
 
   //set effect parameters
-  if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) presetCyclingEnabled = false;
+  if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) {
+    presetCyclingEnabled = false;
+    // it may be a good idea to also stop playlist if effect has changed
+    unloadPlaylist();
+  }
   updateVal(&req, "SX=", &effectSpeed);
   updateVal(&req, "IX=", &effectIntensity);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);

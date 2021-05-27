@@ -70,9 +70,9 @@ void handleAnalog(uint8_t b)
 {
   static uint8_t oldRead[WLED_MAX_BUTTONS];
   #ifdef ESP8266
-  uint16_t aRead = analogRead(A0) >> 5; // convert 10bit read to 5bit (remove noise)
+  uint16_t aRead = analogRead(A0) >> 4; // convert 10bit read to 6bit (remove noise/reduce range & frequency of UI updates)
   #else
-  uint16_t aRead = analogRead(btnPin[b]) >> 7; // convert 12bit read to 5bit (remove noise)
+  uint16_t aRead = analogRead(btnPin[b]) >> 6; // convert 12bit read to 6bit (remove noise/reduce range & frequency of UI updates)
   #endif
 
   if (oldRead[b] == aRead) return;  // no change in reading
@@ -80,14 +80,41 @@ void handleAnalog(uint8_t b)
 
   // if no macro for "short press" and "long press" is defined use brightness control
   if (!macroButton[b] && !macroLongPress[b]) {
-    // if "double press" macro is 250 or greater use global brightness
+    // if "double press" macro defines which option to change
     if (macroDoublePress[b] >= 250) {
-      // if change in analog read was detected change global brightness
+      // global brightness
       if (aRead == 0) {
         briLast = bri;
         bri = 0;
       } else{
-        bri = aRead << 3;
+        bri = aRead << 2;
+      }
+    } else if (macroDoublePress[b] == 249) {
+      // effect speed
+      effectSpeed = aRead << 2;
+      effectChanged = true;
+      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isSelected()) continue;
+        seg.speed = effectSpeed;
+      }
+    } else if (macroDoublePress[b] == 248) {
+      // effect intensity
+      effectIntensity = aRead << 2;
+      effectChanged = true;
+      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isSelected()) continue;
+        seg.intensity = effectIntensity;
+      }
+    } else if (macroDoublePress[b] == 247) {
+      // selected palette
+      effectPalette = map(aRead, 0, 63, 0, strip.getPaletteCount()-1);
+      effectChanged = true;
+      for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
+        WS2812FX::Segment& seg = strip.getSegment(i);
+        if (!seg.isSelected()) continue;
+        seg.palette = effectPalette;
       }
     } else {
       // otherwise use "double press" for segment selection

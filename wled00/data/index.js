@@ -1304,7 +1304,7 @@ ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 
 function makePUtil()
 {
-	gId('putil').innerHTML = `<div class="seg pres"><div class="pname newseg">New preset</div><div class="segin expanded">${makeP(0)}</div></div>`;
+	gId('putil').innerHTML = `<div class="seg pres"><div class="segin expanded">${makeP(0)}</div></div>`;
 	updateTrail(gId('p0p'));
 	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i);
 }
