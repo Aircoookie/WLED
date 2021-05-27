@@ -224,7 +224,10 @@ void initServer()
     //make API CORS compatible
     if (request->method() == HTTP_OPTIONS)
     {
-      request->send(200); return;
+      AsyncWebServerResponse *response = request->beginResponse(200);
+      response->addHeader(F("Access-Control-Max-Age"), F("7200"));
+      request->send(response);
+      return;
     }
     
     if(handleSet(request, request->url())) return;
