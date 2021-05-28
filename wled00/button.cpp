@@ -148,7 +148,11 @@ void handleButton()
   static unsigned long lastRead = 0UL;
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
+    #ifdef ESP8266
+    if ((btnPin[b]<0 && buttonType[b] != BTN_TYPE_ANALOG) || buttonType[b] == BTN_TYPE_NONE) continue;
+    #else
     if (btnPin[b]<0 || buttonType[b] == BTN_TYPE_NONE) continue;
+    #endif
 
     if (buttonType[b] == BTN_TYPE_ANALOG && millis() - lastRead > 250) {   // button is not a button but a potentiometer
       if (b+1 == WLED_MAX_BUTTONS) lastRead = millis();
