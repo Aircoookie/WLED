@@ -49,7 +49,7 @@
 //#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 
 #ifndef PIXEL_COUNTS
-  #define PIXEL_COUNTS 30
+  #define PIXEL_COUNTS DEFAULT_LED_COUNT
 #endif
 
 #ifndef DATA_PINS

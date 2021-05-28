@@ -61,6 +61,14 @@
 #include "../usermods/multi_relay/usermod_multi_relay.h"
 #endif
 
+#ifdef USERMOD_RTC
+#include "../usermods/RTC/usermod_rtc.h"
+#endif
+
+#ifdef USERMOD_ELEKSTUBE_IPS
+#include "../usermods/EleksTube_IPS/usermod_elekstube_ips.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -117,5 +125,13 @@ void registerUsermods()
 
   #ifdef USERMOD_MULTI_RELAY
   usermods.add(new MultiRelay());
+  #endif
+
+  #ifdef USERMOD_RTC
+  usermods.add(new RTCUsermod());
+  #endif
+
+  #ifdef USERMOD_ELEKSTUBE_IPS
+  usermods.add(new ElekstubeIPSUsermod());
   #endif
 }

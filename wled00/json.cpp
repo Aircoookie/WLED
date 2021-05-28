@@ -270,6 +270,10 @@ bool deserializeState(JsonObject root)
     }
   }
 
+  if (root["nx"].is<const char*>()) {
+    strncpy(cronixieDisplay, root["nx"], 6);
+  }
+
   usermods.readFromJsonState(root);
 
   int ps = root[F("psave")] | -1;
