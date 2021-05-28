@@ -70,10 +70,12 @@ void handleAnalog(uint8_t b)
 {
   static uint8_t oldRead[WLED_MAX_BUTTONS];
   #ifdef ESP8266
-  uint16_t aRead = analogRead(A0) >> 4; // convert 10bit read to 6bit (remove noise/reduce range & frequency of UI updates)
+  uint16_t aRead = analogRead(A0) >> 2; // convert 10bit read to 8bit
   #else
-  uint16_t aRead = analogRead(btnPin[b]) >> 6; // convert 12bit read to 6bit (remove noise/reduce range & frequency of UI updates)
+  uint16_t aRead = analogRead(btnPin[b]) >> 4; // convert 12bit read to 8bit
   #endif
+  // remove noise & reduce frequency of UI updates
+  aRead &= 0xFC;
 
   if (oldRead[b] == aRead) return;  // no change in reading
   oldRead[b] = aRead;
@@ -87,11 +89,11 @@ void handleAnalog(uint8_t b)
         briLast = bri;
         bri = 0;
       } else{
-        bri = aRead << 2;
+        bri = aRead;
       }
     } else if (macroDoublePress[b] == 249) {
       // effect speed
-      effectSpeed = aRead << 2;
+      effectSpeed = aRead;
       effectChanged = true;
       for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
@@ -100,7 +102,7 @@ void handleAnalog(uint8_t b)
       }
     } else if (macroDoublePress[b] == 248) {
       // effect intensity
-      effectIntensity = aRead << 2;
+      effectIntensity = aRead;
       effectChanged = true;
       for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
@@ -109,7 +111,7 @@ void handleAnalog(uint8_t b)
       }
     } else if (macroDoublePress[b] == 247) {
       // selected palette
-      effectPalette = map(aRead, 0, 63, 0, strip.getPaletteCount()-1);
+      effectPalette = map(aRead, 0, 252, 0, strip.getPaletteCount()-1);
       effectChanged = true;
       for (uint8_t i = 0; i < strip.getMaxSegments(); i++) {
         WS2812FX::Segment& seg = strip.getSegment(i);
@@ -123,7 +125,7 @@ void handleAnalog(uint8_t b)
       if (aRead == 0) {
         seg.setOption(SEG_OPTION_ON, 0); // off
       } else {
-        seg.setOpacity(aRead << 3, macroDoublePress[b]);
+        seg.setOpacity(aRead, macroDoublePress[b]);
         seg.setOption(SEG_OPTION_ON, 1);
       }
       // this will notify clients of update (websockets,mqtt,etc)
@@ -146,7 +148,11 @@ void handleButton()
   static unsigned long lastRead = 0UL;
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
+    #ifdef ESP8266
+    if ((btnPin[b]<0 && buttonType[b] != BTN_TYPE_ANALOG) || buttonType[b] == BTN_TYPE_NONE) continue;
+    #else
     if (btnPin[b]<0 || buttonType[b] == BTN_TYPE_NONE) continue;
+    #endif
 
     if (buttonType[b] == BTN_TYPE_ANALOG && millis() - lastRead > 250) {   // button is not a button but a potentiometer
       if (b+1 == WLED_MAX_BUTTONS) lastRead = millis();
