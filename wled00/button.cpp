@@ -74,6 +74,9 @@ void handleAnalog(uint8_t b)
   #else
   uint16_t aRead = analogRead(btnPin[b]) >> 4; // convert 12bit read to 8bit
   #endif
+
+  if (buttonType[b] == BTN_TYPE_ANALOG_INVERTED) aRead = 255 - aRead;
+
   // remove noise & reduce frequency of UI updates
   aRead &= 0xFC;
 
@@ -149,12 +152,12 @@ void handleButton()
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
     #ifdef ESP8266
-    if ((btnPin[b]<0 && buttonType[b] != BTN_TYPE_ANALOG) || buttonType[b] == BTN_TYPE_NONE) continue;
+    if ((btnPin[b]<0 && !(buttonType[b] == BTN_TYPE_ANALOG) || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) || buttonType[b] == BTN_TYPE_NONE) continue;
     #else
     if (btnPin[b]<0 || buttonType[b] == BTN_TYPE_NONE) continue;
     #endif
 
-    if (buttonType[b] == BTN_TYPE_ANALOG && millis() - lastRead > 250) {   // button is not a button but a potentiometer
+    if ((buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) && millis() - lastRead > 250) {   // button is not a button but a potentiometer
       if (b+1 == WLED_MAX_BUTTONS) lastRead = millis();
       handleAnalog(b); continue;
     }
