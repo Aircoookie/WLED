@@ -103,14 +103,23 @@ class Toki {
       return unix;
     }
 
-    uint32_t msDifference(Time &t0, Time &t1) {
+    //gets the absolute difference between two timestamps in milliseconds
+    uint32_t msDifference(const Time &t0, const Time &t1) {
       bool t1BiggerSec = (t1.sec > t0.sec);
       uint32_t secDiff = (t1BiggerSec) ? t1.sec - t0.sec : t0.sec - t1.sec;
       uint32_t t0ms = t0.ms, t1ms = t1.ms;
-      if (t1BiggerSec) t1ms += secDiff;
-      else t0ms += secDiff;
+      if (t1BiggerSec) t1ms += secDiff*1000;
+      else t0ms += secDiff*1000;
       uint32_t msDiff = (t1ms > t0ms) ? t1ms - t0ms : t0ms - t1ms;
       return msDiff;
+    }
+
+    //return true if t1 is later than t0
+    bool isLater(const Time &t0, const Time &t1) {
+      if (t1.sec > t0.sec) return true;
+      if (t1.sec < t0.sec) return false;
+      if (t1.ms  > t0.ms) return true;
+      return false;
     }
 
     void adjust(Time&t, int32_t offset) {
@@ -139,7 +148,7 @@ class Toki {
     }
 
     void resetTick() {
-      tick = TickT::inactive;
+      if (tick == TickT::active) tick = TickT::inactive;
     }
 
     bool isTick() {

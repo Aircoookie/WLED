@@ -245,6 +245,7 @@ void handleNotifications()
       }
     }
 
+    bool timebaseUpdated = false;
     //apply effects from notification
     if (version < 200 && (receiveNotificationEffects || !someSel))
     {
@@ -258,21 +259,32 @@ void handleNotifications()
         t += PRESUMED_NETWORK_DELAY; //adjust trivially for network delay
         t -= millis();
         strip.timebase = t;
+        timebaseUpdated = true;
       }
     }
 
     //adjust system time, but only if sender is more accurate than self
-    if (version > 7 && udpIn[29] > toki.getTimeSource())
+    if (version > 7)
     {
       Toki::Time tm;
       tm.sec = (udpIn[30] << 24) | (udpIn[31] << 16) | (udpIn[32] << 8) | (udpIn[33]);
       tm.ms = (udpIn[34] << 8) | (udpIn[35]);
-      toki.adjust(tm, PRESUMED_NETWORK_DELAY); //adjust trivially for network delay
-      uint8_t ts = TOKI_TS_UDP;
-      if (udpIn[29] > 99) ts = TOKI_TS_UDP_NTP;
-      else if (udpIn[29] >= TOKI_TS_SEC) ts = TOKI_TS_UDP_SEC;
-      toki.setTime(tm, ts);
-      //TODO: even receive this if own time source is better, to offset network delay from timebase
+      if (udpIn[29] > toki.getTimeSource()) { //if sender's time source is more accurate
+        toki.adjust(tm, PRESUMED_NETWORK_DELAY); //adjust trivially for network delay
+        uint8_t ts = TOKI_TS_UDP;
+        if (udpIn[29] > 99) ts = TOKI_TS_UDP_NTP;
+        else if (udpIn[29] >= TOKI_TS_SEC) ts = TOKI_TS_UDP_SEC;
+        toki.setTime(tm, ts);
+      } else if (timebaseUpdated && toki.getTimeSource() > 99) { //if we both have good times, get a more accurate timebase
+        Toki::Time myTime = toki.getTime();
+        uint32_t diff = toki.msDifference(tm, myTime);
+        strip.timebase -= PRESUMED_NETWORK_DELAY; //no need to presume, use difference between NTP times at send and receive points
+        if (toki.isLater(tm, myTime)) {
+          strip.timebase += diff;
+        } else {
+          strip.timebase -= diff;
+        }
+      }
     }
     
     if (version > 3)

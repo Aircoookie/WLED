@@ -1,6 +1,7 @@
 #ifndef TFTS_H
 #define TFTS_H
 
+#include "wled.h"
 #include <FS.h>
 
 #include <TFT_eSPI.h>
@@ -92,9 +93,10 @@ private:
     uint16_t padding = (4 - ((w * 3) & 3)) & 3;
     uint8_t lineBuffer[w * 3 + padding];
     
+    uint8_t serviceStrip = (!realtimeMode || realtimeOverride) ? 7 : 0;
     // row is decremented as the BMP image is drawn bottom up
     for (row = h-1; row >= 0; row--) {
-      if (row & 0b00000111 == 7) strip.service(); //still refresh backlight to mitigate stutter every few rows
+      if ((row & 0b00000111) == serviceStrip) strip.service(); //still refresh backlight to mitigate stutter every few rows
       bmpFS.read(lineBuffer, sizeof(lineBuffer));
       uint8_t*  bptr = lineBuffer;
       
