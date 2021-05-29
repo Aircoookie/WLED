@@ -279,7 +279,7 @@ void WLED::loop()
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     DEBUG_PRINTLN(now());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
-    #ifdef ARDUINO_ARCH_ESP32
+    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound()) {
       DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
       DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
@@ -328,7 +328,7 @@ void WLED::setup()
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
 
-  #ifdef ARDUINO_ARCH_ESP32
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound()) {
       pinManager.allocatePin(16); // GPIO16 reserved for SPI RAM
       pinManager.allocatePin(17); // GPIO17 reserved for SPI RAM
@@ -360,18 +360,11 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
-/*
+
 #if STATUSLED
-  bool lStatusLed = false;
-  for (uint8_t i=0; i<strip.numStrips; i++) {
-    if (strip.getStripPin(i)==STATUSLED) {
-      lStatusLed = true;
-      break;
-    }
-  }
-  if (!lStatusLed) pinMode(STATUSLED, OUTPUT);
+  if (!pinManager.isPinAllocated(STATUSLED)) pinMode(STATUSLED, OUTPUT);
 #endif
-*/
+
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
 
@@ -385,14 +378,11 @@ void WLED::setup()
   WiFi.onEvent(WiFiEvent);
   #endif
 
-#ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
+  #ifdef WLED_ENABLE_ADALIGHT
   if (!pinManager.isPinAllocated(3)) {
     Serial.println(F("Ada"));
-    pinManager.allocatePin(3,false);
-  } else {
-    DEBUG_PRINTLN(F("ADALight disabled due to GPIO3 being used."));
   }
-#endif
+  #endif
 
   // generate module IDs
   escapedMac = WiFi.macAddress();
@@ -714,13 +704,8 @@ void WLED::handleConnection()
 
 void WLED::handleStatusLED()
 {
-/*
   #if STATUSLED
-  for (uint8_t s=0; s<strip.numStrips; s++) {
-    if (strip.getStripPin(s)==STATUSLED) {
-      return; // pin used for strip
-    }
-  }
+  if (pinManager.isPinAllocated(STATUSLED)) return; //lower priority if something else uses the same pin
 
   ledStatusType = WLED_CONNECTED ? 0 : 2;
   if (mqttEnabled && ledStatusType != 2) // Wi-Fi takes presendence over MQTT
@@ -740,5 +725,4 @@ void WLED::handleStatusLED()
 
   }
   #endif
-*/
 }

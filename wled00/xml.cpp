@@ -286,30 +286,11 @@ void getSettingsJS(byte subPage, char* dest)
       #ifdef WLED_ENABLE_DMX
         oappend(SET_F(",2")); // DMX hardcoded pin
       #endif
-      #ifdef WLED_ENABLE_ADALIGHT
-      // inform settings page that pin 3 is used by ADALights if not aleready used by strip (previous setup)
-      // NOTE: this will prohibit pin 3 use on new installs
-      {
-        bool pin3used = false;
-        for (uint8_t s=0; s < busses.getNumBusses(); s++) {
-          Bus* bus = busses.getBus(s);
-          uint8_t pins[5];
-          uint8_t nPins = bus->getPins(pins);
-          for (uint8_t i = 0; i < nPins; i++) {
-            if (pins[i] == 3) {
-              pin3used = true;
-              break;
-            }
-          }
-          if (pin3used) break;
-        }
-        if (!pin3used && pinManager.isPinAllocated(3)) oappend(SET_F(",3")); // ADALight (RX) pin
-      }
-      #endif
+      //Adalight / Serial in requires pin 3 to be unused. However, Serial input can not be prevented by WLED
       #ifdef WLED_DEBUG
         oappend(SET_F(",1")); // debug output (TX) pin
       #endif
-      #ifdef ARDUINO_ARCH_ESP32
+      #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
         if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
       #endif
       //TODO: add reservations for Ethernet shield pins
