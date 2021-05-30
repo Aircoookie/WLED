@@ -299,7 +299,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       var c = gId("btns").innerHTML;
       var bt = "BT" + i;
       var be = "BE" + i;
-      c += `Button ${i} pin: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" value="${p}">`;
+      c += `Button ${i} pin: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" style="width:35px" value="${p}">`;
       c += `<select name="${be}">`
       c += `<option value="0" ${t==0?"selected":""}>Disabled</option>`;
       c += `<option value="2" ${t==2?"selected":""}>Pushbutton</option>`;
@@ -371,7 +371,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     </div><hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" min="0" max="100" name="TT" required><br>
-    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><select name="IT">
+    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()" style="width:35px"><select name="IT">
     <option value="0">Remote disabled</option>
     <option value="1">24-key RGB</option>
     <option value="2">24-key with CT</option>
@@ -383,7 +383,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     <option value="8">JSON remote</option>
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
     <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
-    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
+    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()" style="width:35px"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
