@@ -79,9 +79,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
     if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
-    if (btnPin>=0 && pinManager.isPinAllocated(btnPin)) pinManager.deallocatePin(btnPin);
-    //TODO remove all busses, but not in this system call
-    //busses->removeAll();
+    for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++)
+      if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s]))
+        pinManager.deallocatePin(btnPin[s]);
 
     strip.isRgbw = false;
     uint8_t colorOrder, type, skip;
@@ -97,7 +97,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       if (!request->hasArg(lp)) {
-        DEBUG_PRINTLN("No data."); break;
+        DEBUG_PRINTLN(F("No data.")); break;
       }
       for (uint8_t i = 0; i < 5; i++) {
         lp[1] = 48+i;
@@ -107,7 +107,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       type = request->arg(lt).toInt();
       strip.isRgbw = strip.isRgbw || BusManager::isRgbw(type);
       skip = request->hasArg(sl) ? LED_SKIP_AMOUNT : 0;
-      
+
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
         length = request->arg(lc).toInt();
       } else {
@@ -127,11 +127,12 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     // upate other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();
-    if (pinManager.isPinOk(hw_ir_pin) && pinManager.allocatePin(hw_ir_pin,false)) {
+    if (pinManager.allocatePin(hw_ir_pin,false)) {
       irPin = hw_ir_pin;
     } else {
       irPin = -1;
     }
+    irEnabled = request->arg(F("IT")).toInt();
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
     if (pinManager.allocatePin(hw_rly_pin,true)) {
@@ -141,13 +142,20 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     }
     rlyMde = (bool)request->hasArg(F("RM"));
 
-    int hw_btn_pin = request->arg(F("BT")).toInt();
-    if (pinManager.allocatePin(hw_btn_pin,false)) {
-      btnPin = hw_btn_pin;
-      pinMode(btnPin, INPUT_PULLUP);
-    } else {
-      btnPin = -1;
+    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+      char bt[4] = "BT"; bt[2] = 48+i; bt[3] = 0; // button pin
+      char be[4] = "BE"; be[2] = 48+i; be[3] = 0; // button type
+      int hw_btn_pin = request->arg(bt).toInt();
+      if (pinManager.allocatePin(hw_btn_pin,false)) {
+        btnPin[i] = hw_btn_pin;
+        pinMode(btnPin[i], INPUT_PULLUP);
+        buttonType[i] = request->arg(be).toInt();
+      } else {
+        btnPin[i] = -1;
+        buttonType[i] = BTN_TYPE_NONE;
+      }
     }
+    touchThreshold = request->arg(F("TT")).toInt();
 
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
@@ -191,8 +199,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //SYNC
   if (subPage == 4)
   {
-    buttonType = request->arg(F("BT")).toInt();
-    irEnabled = request->arg(F("IR")).toInt();
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
     t = request->arg(F("U2")).toInt();
@@ -234,6 +240,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     alexaEnabled = request->hasArg(F("AL"));
     strlcpy(alexaInvocationName, request->arg(F("AI")).c_str(), 33);
 
+    #ifndef WLED_DISABLE_BLYNK
     strlcpy(blynkHost, request->arg("BH").c_str(), 33);
     t = request->arg(F("BP")).toInt();
     if (t > 0) blynkPort = t;
@@ -241,6 +248,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (request->hasArg("BK") && !request->arg("BK").equals(F("Hidden"))) {
       strlcpy(blynkApiKey, request->arg("BK").c_str(), 36); initBlynk(blynkApiKey, blynkHost, blynkPort);
     }
+    #endif
 
     #ifdef WLED_ENABLE_MQTT
     mqttEnabled = request->hasArg(F("MQ"));
@@ -303,8 +311,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClock5MinuteMarks = request->hasArg(F("O5"));
     analogClockSecondsTrail = request->hasArg(F("OS"));
 
+    #ifndef WLED_DISABLE_CRONIXIE
     strcpy(cronixieDisplay,request->arg(F("CX")).c_str());
     cronixieBacklight = request->hasArg(F("CB"));
+    #endif
     countdownMode = request->hasArg(F("CE"));
     countdownYear = request->arg(F("CY")).toInt();
     countdownMonth = request->arg(F("CI")).toInt();
@@ -316,11 +326,17 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     macroAlexaOn = request->arg(F("A0")).toInt();
     macroAlexaOff = request->arg(F("A1")).toInt();
-    macroButton = request->arg(F("MP")).toInt();
-    macroLongPress = request->arg(F("ML")).toInt();
     macroCountdown = request->arg(F("MC")).toInt();
     macroNl = request->arg(F("MN")).toInt();
-    macroDoublePress = request->arg(F("MD")).toInt();
+    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+      char mp[4] = "MP"; mp[2] = 48+i; mp[3] = 0; // short
+      char ml[4] = "ML"; ml[2] = 48+i; ml[3] = 0; // long
+      char md[4] = "MD"; md[2] = 48+i; md[3] = 0; // double
+      //if (!request->hasArg(mp)) break;
+      macroButton[i] = request->arg(mp).toInt();      // these will default to 0 if not present
+      macroLongPress[i] = request->arg(ml).toInt();
+      macroDoublePress[i] = request->arg(md).toInt();
+    }
 
     char k[3]; k[2] = 0;
     for (int i = 0; i<10; i++)
@@ -790,14 +806,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));
   if (pos > 0) {
-    setTime(getNumVal(&req, pos));
+    setTimeFromAPI(getNumVal(&req, pos));
   }
 
   //set countdown goal (unix timestamp)
   pos = req.indexOf(F("CT="));
   if (pos > 0) {
     countdownTime = getNumVal(&req, pos);
-    if (countdownTime - now() > 0) countdownOverTriggered = false;
+    if (countdownTime - toki.second() > 0) countdownOverTriggered = false;
   }
 
   pos = req.indexOf(F("LO="));
@@ -825,7 +841,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) //sets backlight
   {
     cronixieBacklight = (req.charAt(pos+3) != '0');
-    overlayRefreshedTime = 0;
   }
   #endif
 

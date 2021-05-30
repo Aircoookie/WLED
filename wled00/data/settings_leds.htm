@@ -14,71 +14,74 @@
 		{
 			window.open("/settings","_self");
     }
+    function gId(n){return d.getElementById(n);}
     function off(n){
       d.getElementsByName(n)[0].value = -1;
     }
     function bLimits(b,p,m) {
       maxB = b; maxM = m; maxPB = p;
     }
-    function trySubmit(event) {
-      event.preventDefault();
+    function pinsOK() {
       var LCs = d.getElementsByTagName("input");
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
-
         //check for pin conflicts
-        if (nm=="L0" || nm=="L1" || nm=="RL" || nm=="BT" || nm=="IR" || nm=="AX")
+        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
-            if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].focus();return;}
-            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert("Usermod pin conflict!");LCs[i].focus();return;}
+            if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.um_p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
+            else if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].value="";LCs[i].focus();return false;}
             for (j=i+1; j<LCs.length; j++)
             {
               var n2 = LCs[j].name.substring(0,2);
-              if (n2=="L0" || n2=="L1" || n2=="RL" || n2=="BT" || n2=="IR" || n2=="AX")
-                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert("Pin conflict!");LCs[i].focus();return;}
+              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR")
+                if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${nm}/${n2}!`);LCs[j].value="";LCs[j].focus();return false;}
             }
           }
       }
-      if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += " Consider using an ESP32."; alert(msg); return;}
+      return true;
+    }
+    function trySubmit(e) {
+      e.preventDefault();
+      if (!pinsOK()) {e.stopPropagation();return false;} // Prevent form submission and contact with server
+      if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg);}
       if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
-      if (d.Sf.reportValidity()) d.Sf.submit();
     }
 		function S(){GetV();setABL();}
     function enABL()
     {
-      var en = d.getElementById('able').checked;
+      var en = gId('able').checked;
       d.Sf.LA.value = (en) ? laprev:0;
-      d.getElementById('abl').style.display = (en) ? 'inline':'none';
-      d.getElementById('psu2').style.display = (en) ? 'inline':'none';
+      gId('abl').style.display = (en) ? 'inline':'none';
+      gId('psu2').style.display = (en) ? 'inline':'none';
       if (d.Sf.LA.value > 0) setABL();
     }
     function enLA()
     {
       var val = d.Sf.LAsel.value;
       d.Sf.LA.value = val;
-      d.getElementById('LAdis').style.display = (val == 50) ? 'inline':'none';
+      gId('LAdis').style.display = (val == 50) ? 'inline':'none';
       UI();
     }
     function setABL()
     {
-      d.getElementById('able').checked = true;
+      gId('able').checked = true;
       d.Sf.LAsel.value = 50;
       switch (parseInt(d.Sf.LA.value)) {
-        case 0: d.getElementById('able').checked = false; enABL(); break;
+        case 0: gId('able').checked = false; enABL(); break;
         case 30: d.Sf.LAsel.value = 30; break;
         case 35: d.Sf.LAsel.value = 35; break;
         case 55: d.Sf.LAsel.value = 55; break;
         case 255: d.Sf.LAsel.value = 255; break;
-        default: d.getElementById('LAdis').style.display = 'inline';
+        default: gId('LAdis').style.display = 'inline';
       }
-      d.getElementById('m1').innerHTML = maxM;
+      gId('m1').innerHTML = maxM;
+      d.getElementsByName("Sf")[0].addEventListener("submit", trySubmit);
       UI();
     }
     //returns mem usage
     function getMem(type, len, p0) {
-      //len = parseInt(len);
       if (type < 32) {
-        if (maxM < 10000 && p0 ==3) { //8266 DMA uses 5x the mem
+        if (maxM < 10000 && p0==3) {    //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
           return len*15;
         } else if (maxM >= 10000) //ESP32 RMT uses double buffer?
@@ -93,22 +96,22 @@
       if (type == 44 || type == 45) return len*4; //RGBW
       return len*3;
     }
-		function UI()
+		function UI(change=false)
 		{
       var isRGBW = false, memu = 0;
-      
-      d.getElementById('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
-	  
+
+      gId('ampwarning').style.display = (d.Sf.MA.value > 7200) ? 'inline':'none';
+
 	    if (d.Sf.LA.value == 255) laprev = 12;
 	    else if (d.Sf.LA.value > 0) laprev = d.Sf.LA.value;
-      
+
       var s = d.getElementsByTagName("select");
       for (i=0; i<s.length; i++) {
         if (s[i].name.substring(0,2)=="LT") {
           n=s[i].name.substring(2);
-          var type = s[i].value;
-          d.getElementById("p0d"+n).innerHTML = (type > 49) ? "Data pin:" : (type >41) ? "Pins:" : "Pin:";
-          d.getElementById("p1d"+n).innerHTML = (type > 49) ? "Clk:" : "";
+          var type = parseInt(s[i].value,10);
+          gId("p0d"+n).innerHTML = (type > 49) ? "Data:" : (type >41) ? "Pins:" : "Pin:";
+          gId("p1d"+n).innerHTML = (type > 49) ? "Clk:" : "";
           var LK = d.getElementsByName("L1"+n)[0];
 
           memu += getMem(type, d.getElementsByName("LC"+n)[0].value, d.getElementsByName("L0"+n)[0].value);
@@ -127,8 +130,8 @@
             }
           }
           if (type == 30 || type == 31 || (type > 40 && type < 46 && type != 43)) isRGBW = true;
-          d.getElementById("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
-          d.getElementById("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
+          gId("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
+          gId("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
         }
       }
 
@@ -148,17 +151,37 @@
       var sLC = 0, maxLC = 0;
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
-        if (nm=="LC" && LCs[i].name != "LC") {var c = parseInt(LCs[i].value,10); if (c) {sLC+=c; if (c>maxLC) maxLC = c;} continue;}
+        if (nm=="LC" && LCs[i].name !== "LC") {
+          var n=LCs[i].name.substring(2);
+          var c=parseInt(LCs[i].value,10);
+          if(gId("ls"+n).readOnly) gId("ls"+n).value=sLC;
+          if(c){sLC+=c;if(c>maxLC)maxLC=c;}
+          continue;
+        }
+        if (nm=="L0" || nm=="L1") {
+          var lc=d.getElementsByName("LC"+LCs[i].name.substring(2))[0];
+          lc.max=maxPB;
+        }
+        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
+          if (LCs[i].value!="" && LCs[i].value!="-1") {
+            var p = [];
+            if (d.um_p && Array.isArray(d.um_p)) for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]);
+            for (j=0; j<LCs.length; j++) {
+              if (i==j) continue;
+              var n2 = LCs[j].name.substring(0,2);
+              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR")
+                if (LCs[j].value!="" && LCs[j].value!="-1") p.push(parseInt(LCs[j].value,10));
+            }
+            if (p.some((e)=>e==parseInt(LCs[i].value,10))) LCs[i].style.color="red"; else LCs[i].style.color="#fff";
+          }
       }
 
-      d.getElementById('m0').innerHTML = memu;
+      gId('m0').innerHTML = memu;
       bquot = memu / maxM * 100;
-      d.getElementById('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? bquot > 90 ? "red":"orange":"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
-      d.getElementById('ledwarning').style.display = (maxLC > 800 || bquot > 80) ? 'inline':'none';
-      //TODO add warning "Recommended pins on ESP8266 are 1 and 2 (3 only with low LED count)"
-      //TODO add overmemory warning
-      //TODO block disallowed pins 6-11
-      d.getElementById('wreason').innerHTML = (bquot > 80) ? "than 60%% of max. LED memory" : "800 LEDs per pin";
+      gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
+      gId('ledwarning').style.display = (sLC > maxPB || maxLC > 800 || bquot > 80) ? 'inline':'none';
+      gId('ledwarning').style.color = (sLC > maxPB || maxLC > maxPB || bquot > 100) ? 'red':'orange';
+      gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>WARNING: Using over ${maxM}B!</b>)` : "") : "800 LEDs per pin";
 
       //var val = Math.ceil((100 + d.Sf.LC.value * laprev)/500)/2;
       var val = Math.ceil((100 + sLC * laprev)/500)/2;
@@ -180,8 +203,8 @@
       var s2 = "(for most effects, ~";
       s2 += val2;
       s2 += "A is enough)<br>";
-			d.getElementById('psu').innerHTML = s;
-      d.getElementById('psu2').innerHTML = isWS2815 ? "" : s2;
+			gId('psu').innerHTML = s;
+      gId('psu2').innerHTML = isWS2815 ? "" : s2;
     }
     function lastEnd(i) {
       if (i<1) return 0;
@@ -191,70 +214,88 @@
     }
     function addLEDs(n)
     {
-      if (n>1) {maxB=n; d.getElementById("+").style.display="inline"; return;}
+      if (n>1) {maxB=n; gId("+").style.display="inline"; return;}
 
       var o = d.getElementsByClassName("iST");
       var i = o.length;
 
       if ((n==1 && i>=maxB) || (n==-1 && i==0)) return;
 
-      var f = d.getElementById("mLC");
+      var f = gId("mLC");
       if (n==1) {
+// npm run build has trouble minimizing spaces inside string
         var cn = `<div class="iST">
-          ${i>0?'<hr style="width:260px">':''}
-          ${i+1}:
-          <select name="LT${i}" onchange="UI()">
-            <option value="22">WS281x</option>
-            <option value="30">SK6812 RGBW</option>
-            <option value="31">TM1814</option>
-            <option value="24">400kHz</option>
-            <option value="50">WS2801</option>
-            <option value="51">APA102</option>
-            <option value="52">LPD8806</option>
-            <option value="53">P9813</option>
-            <option value="41">PWM White</option>
-            <option value="42">PWM WWCW</option>
-            <option value="43">PWM RGB</option>
-            <option value="44">PWM RGBW</option>
-            <option value="45">PWM RGBWC</option>
-          </select>&nbsp;
-          Color Order:
-          <select name="CO${i}">
-            <option value="0">GRB</option>
-            <option value="1">RGB</option>
-            <option value="2">BRG</option>
-            <option value="3">RBG</option>
-            <option value="4">BGR</option>
-            <option value="5">GBR</option>
-          </select><br>
-          <span id="p0d${i}">Pin:</span> <input type="number" name="L0${i}" min="0" max="40" required style="width:35px" oninput="UI()"/>
-          <span id="p1d${i}">Clock:</span> <input type="number" name="L1${i}" min="0" max="40" style="width:35px"/>
-          <span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="40" style="width:35px"/>
-          <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="40" style="width:35px"/>
-          <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="40" style="width:35px"/>
-          <br>
-          <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" min="0" max="8191" value="${lastEnd(i)}" required />&nbsp;
-          <div id="dig${i}" style="display:inline">
-          Count: <input type="number" name="LC${i}" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br>
-          Skip 1<sup>st</sup> LED: <input id="sl${i}" type="checkbox" name="SL${i}">&nbsp;
-          </div>
-          Reverse: <input type="checkbox" name="CV${i}"><br>
-        </div>`;
+${i>0?'<hr style="width:260px">':''}
+${i+1}:
+<select name="LT${i}" onchange="UI()">
+<option value="22">WS281x</option>
+<option value="30">SK6812 RGBW</option>
+<option value="31">TM1814</option>
+<option value="24">400kHz</option>
+<option value="50">WS2801</option>
+<option value="51">APA102</option>
+<option value="52">LPD8806</option>
+<option value="53">P9813</option>
+<option value="41">PWM White</option>
+<option value="42">PWM WWCW</option>
+<option value="43">PWM RGB</option>
+<option value="44">PWM RGBW</option>
+<option value="45">PWM RGBWC</option>
+</select>&nbsp;
+Color Order:
+<select name="CO${i}">
+<option value="0">GRB</option>
+<option value="1">RGB</option>
+<option value="2">BRG</option>
+<option value="3">RBG</option>
+<option value="4">BGR</option>
+<option value="5">GBR</option>
+</select><br>
+<span id="p0d${i}">Pin:</span> <input type="number" name="L0${i}" min="0" max="40" required style="width:35px" onchange="UI()"/>
+<span id="p1d${i}">Clock:</span> <input type="number" name="L1${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
+<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
+<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
+<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="40" style="width:35px" onchange="UI()"/>
+<br>
+<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="${lastEnd(i)}" required />&nbsp;
+<div id="dig${i}" style="display:inline">
+Count: <input type="number" name="LC${i}" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br>
+Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
+&nbsp;Skip 1<sup>st</sup> LED: <input id="sl${i}" type="checkbox" name="SL${i}"><br>
+</div>
+</div>`;
         f.insertAdjacentHTML("beforeend", cn);
       }
       if (n==-1) {
         o[--i].remove();--i;
       }
 
-      d.getElementById("+").style.display = (i<maxB-1) ? "inline":"none";
-      d.getElementById("-").style.display = (i>0) ? "inline":"none";
+      gId("+").style.display = (i<maxB-1) ? "inline":"none";
+      gId("-").style.display = (i>0) ? "inline":"none";
 
       UI();
+    }
+    function addBtn(i,p,t) {
+      var c = gId("btns").innerHTML;
+      var bt = "BT" + i;
+      var be = "BE" + i;
+      c += `Button ${i} pin: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" style="width:35px" value="${p}">&nbsp;`;
+      c += `<select name="${be}">`
+      c += `<option value="0" ${t==0?"selected":""}>Disabled</option>`;
+      c += `<option value="2" ${t==2?"selected":""}>Pushbutton</option>`;
+      c += `<option value="2" ${t==3?"selected":""}>Push inverted</option>`;
+      c += `<option value="4" ${t==4?"selected":""}>Switch</option>`;
+      c += `<option value="5" ${t==4?"selected":""}>Switch inverted</option>`;
+      c += `<option value="6" ${t==6?"selected":""}>Touch</option>`;
+      c += `<option value="7" ${t==7?"selected":""}>Analog</option>`;
+      c += `</select>`;
+      c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
+      gId("btns").innerHTML = c;
     }
 		function GetV()
 		{
       //values injected by server while sending HTML
-      //d.um_p=[];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RV.checked=0;d.Sf.SL.checked=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;d.Sf.BT.value=-1;d.Sf.IR.value=-1;d.Sf.AX.value=-1;
+      //maxM=5000;maxPB=1536;d.um_p=[1,6,7,8,9,10,11];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;addBtn(0,0,2);addBtn(1,3,4);addBtn(2,-1,0);d.Sf.IR.value=-1;
     }
 	</script>
 	<style>
@@ -262,39 +303,39 @@
 	</style>
 </head>
 <body onload="S()">
-	<form id="form_s" name="Sf" method="post" onsubmit="trySubmit(event)">
+	<form id="form_s" name="Sf" method="post">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
     <h2>LED &amp; Hardware setup</h2>
-    Total LED count: <input name="LC" type="number" min="1" max="8192" oninput="UI()" required><br>
-  <i>Recommended power supply for brightest white:</i><br>
-  <b><span id="psu">?</span></b><br>
-  <span id="psu2"><br></span>
-  <br>
-  Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
-  <div id="abl">
-    Maximum Current: <input name="MA" type="number" min="250" max="65000" oninput="UI()" required> mA<br>
-    <div id="ampwarning" style="color: orange; display: none;">
-      &#9888; Your power supply provides high current.<br>
-      To improve the safety of your setup,<br>
-      please use thick cables,<br>
-      multiple power injection points and a fuse!<br>
+    Total LED count: <input name="LC" id="LC" type="number" min="1" max="8192" oninput="UI()" required><br>
+    <i>Recommended power supply for brightest white:</i><br>
+    <b><span id="psu">?</span></b><br>
+    <span id="psu2"><br></span>
+    <br>
+    Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
+    <div id="abl">
+      Maximum Current: <input name="MA" type="number" min="250" max="65000" oninput="UI()" required> mA<br>
+      <div id="ampwarning" style="color: orange; display: none;">
+        &#9888; Your power supply provides high current.<br>
+        To improve the safety of your setup,<br>
+        please use thick cables,<br>
+        multiple power injection points and a fuse!<br>
+      </div>
+      <i>Automatically limits brightness to stay close to the limit.<br>
+      Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
+      If you are using an external power supply, enter its rating.<br>
+      (Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
+      LED voltage (Max. current for a single LED):<br>
+      <select name="LAsel" onchange="enLA()">
+        <option value="55" selected>5V default (55mA)</option>
+        <option value="35">5V efficient (35mA)</option>
+        <option value="30">12V (30mA)</option>
+        <option value="255">WS2815 (12mA)</option>
+        <option value="50">Custom</option>
+      </select><br>
+      <span id="LAdis" style="display: none;">Custom max. current per LED: <input name="LA" type="number" min="0" max="255" id="la" oninput="UI()" required> mA<br></span>
+      <i>Keep at default if you are unsure about your type of LEDs.</i><br>
     </div>
-    <i>Automatically limits brightness to stay close to the limit.<br>
-    Keep at &lt;1A if powering LEDs directly from the ESP 5V pin!<br>
-    If you are using an external power supply, enter its rating.<br>
-    (Current estimated usage: <span class="pow">unknown</span>)</i><br><br>
-    LED voltage (Max. current for a single LED):<br>
-    <select name="LAsel" onchange="enLA()">
-      <option value="55" selected>5V default (55mA)</option>
-      <option value="35">5V efficient (35mA)</option>
-      <option value="30">12V (30mA)</option>
-      <option value="255">WS2815 (12mA)</option>
-      <option value="50">Custom</option>
-    </select><br>
-    <span id="LAdis" style="display: none;">Custom max. current per LED: <input name="LA" type="number" min="0" max="255" id="la" oninput="UI()" required> mA<br></span>
-    <i>Keep at default if you are unsure about your type of LEDs.</i><br>
-  </div>
     <h3>Hardware setup</h3>
     <div id="mLC">LED outputs:</div>
     <button type="button" id="+" onclick="addLEDs(1)" style="display:none;border-radius:20px;height:36px;">+</button>
@@ -304,11 +345,22 @@
     <div id="ledwarning" style="color: orange; display: none;">
       &#9888; You might run into stability or lag issues.<br>
       Use less than <span id="wreason">800 LEDs per pin</span> for the best experience!<br>
-    </div>
-    Button pin: <input type="number" min="-1" max="40" name="BT" onchange="UI()"><span style="cursor: pointer;" onclick="off('BT')">&nbsp;&#215;</span><br>
-    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()"><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
-    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
-    Active high <input type="checkbox" name="RM">
+    </div><hr style="width:260px">
+    <div id="btns"></div>
+    Touch threshold: <input type="number" min="0" max="100" name="TT" required><br>
+    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()" style="width:35px">&nbsp;<select name="IT">
+    <option value="0">Remote disabled</option>
+    <option value="1">24-key RGB</option>
+    <option value="2">24-key with CT</option>
+    <option value="3">40-key blue</option>
+    <option value="4">44-key RGB</option>
+    <option value="5">21-key RGB</option>
+    <option value="6">6-key black</option>
+    <option value="7">9-key red</option>
+    </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
+    <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
+    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()" style="width:35px"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
+    <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
     Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>

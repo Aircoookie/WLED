@@ -1036,7 +1036,10 @@ function requestJson(command, rinfo = true, verbose = true) {
 		d.getElementById('sliderIntensity').value = i.ix;
 
 		// Effects
-		e1.querySelector(`input[name="fx"][value="${i.fx}"]`).checked = true;
+    var selFx = e1.querySelector(`input[name="fx"][value="${i.fx}"]`);
+    if (selFx) selFx.checked = true;
+    else location.reload(); //effect list is gone (e.g. if restoring tab). Reload.
+    
 		var selElement = e1.querySelector('.selected');
 		if (selElement) {
 			selElement.classList.remove('selected')

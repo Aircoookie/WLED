@@ -20,8 +20,8 @@ void handleBlynk();
 void updateBlynk();
 
 //button.cpp
-void shortPressAction();
-bool isButtonPressed();
+void shortPressAction(uint8_t b=0);
+bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
 
@@ -127,6 +127,7 @@ bool initMqtt();
 void publishMqtt();
 
 //ntp.cpp
+void handleTime();
 void handleNetworkTime();
 void sendNTPPacket();
 bool checkNTPResponse();    
@@ -137,6 +138,7 @@ void setCountdown();
 byte weekdayMondayFirst();
 void checkTimers();
 void calculateSunriseAndSunset();
+void setTimeFromAPI(uint32_t timein);
 
 //overlay.cpp
 void initCronixie();
