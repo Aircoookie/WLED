@@ -118,6 +118,9 @@ void handleAnalog(uint8_t b)
         if (!seg.isSelected()) continue;
         seg.palette = effectPalette;
       }
+    } else if (macroDoublePress[b] == 200) {
+      // primary color, hue, full saturation
+      colorHStoRGB(aRead*256,255,col);
     } else {
       // otherwise use "double press" for segment selection
       //uint8_t mainSeg = strip.getMainSegmentId();
