@@ -4,8 +4,9 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define WLEDPACKETSIZE 29
+#define WLEDPACKETSIZE 36
 #define UDP_IN_MAXSIZE 1472
+#define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
 void notify(byte callMode, bool followUp)
 {
@@ -37,8 +38,8 @@ void notify(byte callMode, bool followUp)
   //compatibilityVersionByte: 
   //0: old 1: supports white 2: supports secondary color
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
-  //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 
-  udpOut[11] = 7; 
+  //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 8: supports sys time sync, 36 byte packet
+  udpOut[11] = 8; 
   udpOut[12] = colSec[0];
   udpOut[13] = colSec[1];
   udpOut[14] = colSec[2];
@@ -59,6 +60,18 @@ void notify(byte callMode, bool followUp)
   udpOut[26] = (t >> 16) & 0xFF;
   udpOut[27] = (t >>  8) & 0xFF;
   udpOut[28] = (t >>  0) & 0xFF;
+
+  //sync system time
+  udpOut[29] = toki.getTimeSource();
+  Toki::Time tm = toki.getTime();
+  uint32_t unix = tm.sec;
+  udpOut[30] = (unix >> 24) & 0xFF;
+  udpOut[31] = (unix >> 16) & 0xFF;
+  udpOut[32] = (unix >>  8) & 0xFF;
+  udpOut[33] = (unix >>  0) & 0xFF;
+  uint16_t ms = tm.ms;
+  udpOut[34] = (ms >> 8) & 0xFF;
+  udpOut[35] = (ms >> 0) & 0xFF;
   
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
@@ -204,6 +217,9 @@ void handleNotifications()
     //ignore notification if received within a second after sending a notification ourselves
     if (millis() - notificationSentTime < 1000) return;
     if (udpIn[1] > 199) return; //do not receive custom versions
+
+    //compatibilityVersionByte: 
+    byte version = udpIn[11];
     
     bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
     //apply colors from notification
@@ -212,40 +228,66 @@ void handleNotifications()
       col[0] = udpIn[3];
       col[1] = udpIn[4];
       col[2] = udpIn[5];
-      if (udpIn[11] > 0) //sending module's white val is intended
+      if (version > 0) //sending module's white val is intended
       {
         col[3] = udpIn[10];
-        if (udpIn[11] > 1)
+        if (version > 1)
         {
           colSec[0] = udpIn[12];
           colSec[1] = udpIn[13];
           colSec[2] = udpIn[14];
           colSec[3] = udpIn[15];
         }
-        if (udpIn[11] > 5)
-        {
-          uint32_t t = (udpIn[25] << 24) | (udpIn[26] << 16) | (udpIn[27] << 8) | (udpIn[28]);
-          t += 2;
-          t -= millis();
-          strip.timebase = t;
-        }
-        if (udpIn[11] > 6)
+        if (version > 6)
         {
           strip.setColor(2, udpIn[20], udpIn[21], udpIn[22], udpIn[23]); //tertiary color
         }
       }
     }
 
+    bool timebaseUpdated = false;
     //apply effects from notification
-    if (udpIn[11] < 200 && (receiveNotificationEffects || !someSel))
+    if (version < 200 && (receiveNotificationEffects || !someSel))
     {
       if (udpIn[8] < strip.getModeCount()) effectCurrent = udpIn[8];
       effectSpeed   = udpIn[9];
-      if (udpIn[11] > 2) effectIntensity = udpIn[16];
-      if (udpIn[11] > 4 && udpIn[19] < strip.getPaletteCount()) effectPalette = udpIn[19];
+      if (version > 2) effectIntensity = udpIn[16];
+      if (version > 4 && udpIn[19] < strip.getPaletteCount()) effectPalette = udpIn[19];
+      if (version > 5)
+      {
+        uint32_t t = (udpIn[25] << 24) | (udpIn[26] << 16) | (udpIn[27] << 8) | (udpIn[28]);
+        t += PRESUMED_NETWORK_DELAY; //adjust trivially for network delay
+        t -= millis();
+        strip.timebase = t;
+        timebaseUpdated = true;
+      }
+    }
+
+    //adjust system time, but only if sender is more accurate than self
+    if (version > 7)
+    {
+      Toki::Time tm;
+      tm.sec = (udpIn[30] << 24) | (udpIn[31] << 16) | (udpIn[32] << 8) | (udpIn[33]);
+      tm.ms = (udpIn[34] << 8) | (udpIn[35]);
+      if (udpIn[29] > toki.getTimeSource()) { //if sender's time source is more accurate
+        toki.adjust(tm, PRESUMED_NETWORK_DELAY); //adjust trivially for network delay
+        uint8_t ts = TOKI_TS_UDP;
+        if (udpIn[29] > 99) ts = TOKI_TS_UDP_NTP;
+        else if (udpIn[29] >= TOKI_TS_SEC) ts = TOKI_TS_UDP_SEC;
+        toki.setTime(tm, ts);
+      } else if (timebaseUpdated && toki.getTimeSource() > 99) { //if we both have good times, get a more accurate timebase
+        Toki::Time myTime = toki.getTime();
+        uint32_t diff = toki.msDifference(tm, myTime);
+        strip.timebase -= PRESUMED_NETWORK_DELAY; //no need to presume, use difference between NTP times at send and receive points
+        if (toki.isLater(tm, myTime)) {
+          strip.timebase += diff;
+        } else {
+          strip.timebase -= diff;
+        }
+      }
     }
     
-    if (udpIn[11] > 3)
+    if (version > 3)
     {
       transitionDelayTemp = ((udpIn[17] << 0) & 0xFF) + ((udpIn[18] << 8) & 0xFF00);
     }

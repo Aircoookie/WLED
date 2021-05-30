@@ -69,13 +69,13 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 
     writeObjectToFileUsingId("/presets.json", index, fileDoc);
   }
-  presetsModifiedTime = now(); //unix time
+  presetsModifiedTime = toki.second(); //unix time
   updateFSInfo();
 }
 
 void deletePreset(byte index) {
   StaticJsonDocument<24> empty;
   writeObjectToFileUsingId("/presets.json", index, &empty);
-  presetsModifiedTime = now(); //unix time
+  presetsModifiedTime = toki.second(); //unix time
   updateFSInfo();
 }

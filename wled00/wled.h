@@ -90,6 +90,7 @@
 #include <SPIFFSEditor.h>
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
+#include "src/dependencies/toki/Toki.h"
 
 #ifndef WLED_DISABLE_ALEXA
   #define ESPALEXA_ASYNC
@@ -354,7 +355,7 @@ WLED_GLOBAL bool useAMPM _INIT(false);            // 12h/24h clock format
 WLED_GLOBAL byte currentTimezone _INIT(0);        // Timezone ID. Refer to timezones array in wled10_ntp.ino
 WLED_GLOBAL int utcOffsetSecs _INIT(0);           // Seconds to offset from UTC before timzone calculation
 
-WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
+WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clock 3: cronixie
 WLED_GLOBAL byte overlayMin _INIT(0), overlayMax _INIT(ledCount - 1);   // boundaries of overlay mode
 
 WLED_GLOBAL byte analogClock12pixel _INIT(0);               // The pixel in your strip where "midnight" would be
@@ -476,13 +477,9 @@ WLED_GLOBAL bool hueStoreAllowed _INIT(false), hueNewKey _INIT(false);
 
 // overlays
 WLED_GLOBAL byte overlayCurrent _INIT(overlayDefault);
-WLED_GLOBAL byte overlaySpeed _INIT(200);
-WLED_GLOBAL unsigned long overlayRefreshMs _INIT(200);
-WLED_GLOBAL unsigned long overlayRefreshedTime;
 
 // cronixie
-WLED_GLOBAL byte dP[] _INIT_N(({ 0, 0, 0, 0, 0, 0 }));
-WLED_GLOBAL bool cronixieInit _INIT(false);
+WLED_GLOBAL byte dP[] _INIT_N(({ 255, 255, 255, 255, 255, 255 }));
 
 // countdown
 WLED_GLOBAL unsigned long countdownTime _INIT(1514764800L);
@@ -545,6 +542,7 @@ WLED_GLOBAL float longitude _INIT(0.0);
 WLED_GLOBAL float latitude _INIT(0.0);
 WLED_GLOBAL time_t sunrise _INIT(0);
 WLED_GLOBAL time_t sunset _INIT(0);
+WLED_GLOBAL Toki toki _INIT(Toki());
 
 // Temp buffer
 WLED_GLOBAL char* obuf;

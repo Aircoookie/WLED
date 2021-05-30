@@ -14,7 +14,7 @@ class RTCUsermod : public Usermod {
     void setup() {
       time_t rtcTime = RTC.get();
       if (rtcTime) {
-        setTime(rtcTime);
+        toki.setTime(rtcTime,TOKI_NO_MS_ACCURACY,TOKI_TS_RTC);
         updateLocalTime();
       } else {
         if (!RTC.chipPresent()) disabled = true; //don't waste time if H/W error
@@ -22,11 +22,9 @@ class RTCUsermod : public Usermod {
     }
 
     void loop() {
-      if (!disabled && millis() - lastTime > 500) {
-        time_t t = now();
+      if (!disabled && toki.isTick()) {
+        time_t t = toki.second();
         if (t != RTC.get()) RTC.set(t); //set RTC to NTP/UI-provided value
-
-        lastTime = millis();
       }
     }
 

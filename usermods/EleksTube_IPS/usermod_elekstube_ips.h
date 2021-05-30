@@ -40,19 +40,16 @@ class ElekstubeIPSUsermod : public Usermod {
     void setup() {
       tfts.begin();
       tfts.fillScreen(TFT_BLACK);
-      tfts.setTextColor(TFT_WHITE, TFT_BLACK);
-      tfts.setCursor(0, 0, 2);
-      tfts.println("<STARTUP>");
+
+      for (int8_t i = 5; i >= 0; i--) {
+        tfts.setDigit(i, 255, TFTs::force); //turn all off
+      }
     }
 
     void loop() {
-      if (lastTime == 0) {
-        tfts.fillScreen(TFT_BLACK);
-        updateClockDisplay(TFTs::force);
-      }
-      if (millis() - lastTime > 100) {
+      if (toki.isTick()) {
+        updateLocalTime();
         updateClockDisplay();
-        lastTime = millis();
       }
     }
 

@@ -176,6 +176,7 @@ void WiFiEvent(WiFiEvent_t event)
 
 void WLED::loop()
 {
+  handleTime();
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
   handleSerial();
@@ -190,10 +191,8 @@ void WLED::loop()
   yield();
   handleIO();
   handleIR();
-  handleNetworkTime();
   handleAlexa();
 
-  handleOverlays();
   yield();
 
   if (doReboot)
@@ -277,7 +276,7 @@ void WLED::loop()
   if (millis() - debugTime > 9999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
-    DEBUG_PRINT(F("Unix time: "));     DEBUG_PRINTLN(now());
+    DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
     #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound()) {
@@ -301,6 +300,7 @@ void WLED::loop()
   }
   loops++;
 #endif        // WLED_DEBUG
+  toki.resetTick();
 }
 
 void WLED::setup()

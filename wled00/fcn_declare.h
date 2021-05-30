@@ -127,6 +127,7 @@ bool initMqtt();
 void publishMqtt();
 
 //ntp.cpp
+void handleTime();
 void handleNetworkTime();
 void sendNTPPacket();
 bool checkNTPResponse();    
@@ -137,6 +138,7 @@ void setCountdown();
 byte weekdayMondayFirst();
 void checkTimers();
 void calculateSunriseAndSunset();
+void setTimeFromAPI(uint32_t timein);
 
 //overlay.cpp
 void initCronixie();

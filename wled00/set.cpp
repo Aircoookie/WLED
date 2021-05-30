@@ -806,14 +806,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));
   if (pos > 0) {
-    setTime(getNumVal(&req, pos));
+    setTimeFromAPI(getNumVal(&req, pos));
   }
 
   //set countdown goal (unix timestamp)
   pos = req.indexOf(F("CT="));
   if (pos > 0) {
     countdownTime = getNumVal(&req, pos);
-    if (countdownTime - now() > 0) countdownOverTriggered = false;
+    if (countdownTime - toki.second() > 0) countdownOverTriggered = false;
   }
 
   pos = req.indexOf(F("LO="));
@@ -841,7 +841,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) //sets backlight
   {
     cronixieBacklight = (req.charAt(pos+3) != '0');
-    overlayRefreshedTime = 0;
   }
   #endif
 
