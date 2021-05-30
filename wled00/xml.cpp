@@ -256,27 +256,53 @@ void getSettingsJS(byte subPage, char* dest)
   if (subPage == 2) {
     char nS[8];
 
-    // add usermod pins as d.um_p array (TODO: usermod config shouldn't use state. instead we should load "um" object from cfg.json)
-    /*DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-    JsonObject mods = doc.createNestedObject(F("mods"));
-    usermods.addToJsonState(mods);
+    // add reserved and usermod pins as d.um_p array
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
+    JsonObject mods = doc.createNestedObject(F("um"));
+    usermods.addToConfig(mods);
+    oappend(SET_F("d.um_p=["));
     if (!mods.isNull()) {
       uint8_t i=0;
-      oappend(SET_F("d.um_p=["));
       for (JsonPair kv : mods) {
-        if (strncmp_P(kv.key().c_str(),PSTR("pin_"),4) == 0) {
-          if (i++) oappend(SET_F(","));
-          oappend(itoa((int)kv.value(),nS,10));
+        if (!kv.value().isNull()) {
+          // element is an JsonObject
+          JsonObject obj = kv.value();
+          if (obj["pin"] != nullptr) {
+            if (obj["pin"].is<JsonArray>()) {
+              JsonArray pins = obj["pin"].as<JsonArray>();
+              for (JsonVariant pv : pins) {
+                if (i++) oappend(SET_F(","));
+                oappendi(pv.as<int>());
+              }
+            } else {
+              if (i++) oappend(SET_F(","));
+              oappendi(obj["pin"].as<int>());
+            }
+          }
         }
       }
-      oappend(SET_F("];"));
-    }*/
+      if (i) oappend(SET_F(","));
+      oappend(SET_F("6,7,8,9,10,11")); // flash memory pins
+      #ifdef WLED_ENABLE_DMX
+        oappend(SET_F(",2")); // DMX hardcoded pin
+      #endif
+      //Adalight / Serial in requires pin 3 to be unused. However, Serial input can not be prevented by WLED
+      #ifdef WLED_DEBUG
+        oappend(SET_F(",1")); // debug output (TX) pin
+      #endif
+      #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+        if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
+      #endif
+      //TODO: add reservations for Ethernet shield pins
+      #ifdef WLED_USE_ETHERNET
+      #endif
+    }
+    oappend(SET_F("];"));
 
+    // set limits
     oappend(SET_F("bLimits("));
-    oappend(itoa(WLED_MAX_BUSSES,nS,10));
-    oappend(",");
-    oappend(itoa(MAX_LEDS_PER_BUS,nS,10));
-    oappend(",");
+    oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
+    oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10));
     oappend(SET_F(");"));
 
@@ -286,7 +312,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('v',SET_F("LC"),ledCount);
 
-    for (uint8_t s=0; s < busses.getNumBusses(); s++){
+    for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
@@ -320,7 +346,6 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     sappend('v',SET_F("CA"),briS);
-
     sappend('v',SET_F("AW"),strip.rgbwMode);
 
     sappend('c',SET_F("BO"),turnOnAtBoot);
@@ -338,8 +363,16 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('i',SET_F("PB"),strip.paletteBlend);
     sappend('v',SET_F("RL"),rlyPin);
     sappend('c',SET_F("RM"),rlyMde);
-    sappend('v',SET_F("BT"),btnPin);
+    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+      oappend(SET_F("addBtn("));
+      oappend(itoa(i,nS,10));  oappend(",");
+      oappend(itoa(btnPin[i],nS,10)); oappend(",");
+      oappend(itoa(buttonType[i],nS,10));
+      oappend(SET_F(");"));
+    }
+    sappend('v',SET_F("TT"),touchThreshold);
     sappend('v',SET_F("IR"),irPin);
+    sappend('v',SET_F("IT"),irEnabled);
   }
 
   if (subPage == 3)
@@ -350,8 +383,6 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 4)
   {
-    sappend('v',SET_F("BT"),buttonType);
-    sappend('v',SET_F("IR"),irEnabled);
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
@@ -381,8 +412,10 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("AI"),alexaInvocationName);
     sappend('c',SET_F("SA"),notifyAlexa);
     sappends('s',SET_F("BK"),(char*)((blynkEnabled)?SET_F("Hidden"):""));
+    #ifndef WLED_DISABLE_BLYNK
     sappends('s',SET_F("BH"),blynkHost);
     sappend('v',SET_F("BP"),blynkPort);
+    #endif
 
     #ifdef WLED_ENABLE_MQTT
     sappend('c',SET_F("MQ"),mqttEnabled);
@@ -451,8 +484,10 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("OM"),analogClock12pixel);
     sappend('c',SET_F("OS"),analogClockSecondsTrail);
     sappend('c',SET_F("O5"),analogClock5MinuteMarks);
+    #ifndef WLED_DISABLE_CRONIXIE
     sappends('s',SET_F("CX"),cronixieDisplay);
     sappend('c',SET_F("CB"),cronixieBacklight);
+    #endif
     sappend('c',SET_F("CE"),countdownMode);
     sappend('v',SET_F("CY"),countdownYear);
     sappend('v',SET_F("CI"),countdownMonth);
@@ -463,11 +498,16 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('v',SET_F("A0"),macroAlexaOn);
     sappend('v',SET_F("A1"),macroAlexaOff);
-    sappend('v',SET_F("MP"),macroButton);
-    sappend('v',SET_F("ML"),macroLongPress);
     sappend('v',SET_F("MC"),macroCountdown);
     sappend('v',SET_F("MN"),macroNl);
-    sappend('v',SET_F("MD"),macroDoublePress);
+    for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+      oappend(SET_F("addRow("));
+      oappend(itoa(i,tm,10));  oappend(",");
+      oappend(itoa(macroButton[i],tm,10)); oappend(",");
+      oappend(itoa(macroLongPress[i],tm,10)); oappend(",");
+      oappend(itoa(macroDoublePress[i],tm,10));
+      oappend(SET_F(");"));
+    }
 
     char k[4];
     k[2] = 0; //Time macros

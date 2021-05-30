@@ -31,39 +31,47 @@
   #endif
 #endif
 
+#ifndef WLED_MAX_BUTTONS
+  #ifdef ESP8266
+    #define WLED_MAX_BUTTONS 2
+  #else
+    #define WLED_MAX_BUTTONS 4
+  #endif
+#endif
+
 //Usermod IDs
-#define USERMOD_ID_RESERVED       0            //Unused. Might indicate no usermod present
-#define USERMOD_ID_UNSPECIFIED    1            //Default value for a general user mod that does not specify a custom ID
-#define USERMOD_ID_EXAMPLE        2            //Usermod "usermod_v2_example.h"
-#define USERMOD_ID_TEMPERATURE    3            //Usermod "usermod_temperature.h"
-#define USERMOD_ID_FIXNETSERVICES 4            //Usermod "usermod_Fix_unreachable_netservices.h"
-#define USERMOD_ID_PIRSWITCH      5            //Usermod "usermod_PIR_sensor_switch.h"
-#define USERMOD_ID_IMU            6            //Usermod "usermod_mpu6050_imu.h"
-#define USERMOD_ID_FOUR_LINE_DISP 7            //Usermod "usermod_v2_four_line_display.h 
-#define USERMOD_ID_ROTARY_ENC_UI  8            //Usermod "usermod_v2_rotary_encoder_ui.h"
-#define USERMOD_ID_AUTO_SAVE      9            //Usermod "usermod_v2_auto_save.h"
-#define USERMOD_ID_DHT           10            //Usermod "usermod_dht.h"
-#define USERMOD_ID_MODE_SORT     11            //Usermod "usermod_v2_mode_sort.h"
-#define USERMOD_ID_VL53L0X       12            //Usermod "usermod_vl53l0x_gestures.h"
-#define USERMOD_ID_RTC           13            //Usermod "usermod_rtc.h"
-#define USERMOD_ID_ELEKSTUBE_IPS 14            //Usermod "usermod_elekstube_ips.h"
-#define USERMOD_ID_MULTI_RELAY  101            //Usermod "usermod_multi_relay.h"
-#define USERMOD_ID_ANIMATED_STAIRCASE 102      //Usermod "Animated_Staircase.h"
+#define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
+#define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
+#define USERMOD_ID_EXAMPLE                2     //Usermod "usermod_v2_example.h"
+#define USERMOD_ID_TEMPERATURE            3     //Usermod "usermod_temperature.h"
+#define USERMOD_ID_FIXNETSERVICES         4     //Usermod "usermod_Fix_unreachable_netservices.h"
+#define USERMOD_ID_PIRSWITCH              5     //Usermod "usermod_PIR_sensor_switch.h"
+#define USERMOD_ID_IMU                    6     //Usermod "usermod_mpu6050_imu.h"
+#define USERMOD_ID_FOUR_LINE_DISP         7     //Usermod "usermod_v2_four_line_display.h 
+#define USERMOD_ID_ROTARY_ENC_UI          8     //Usermod "usermod_v2_rotary_encoder_ui.h"
+#define USERMOD_ID_AUTO_SAVE              9     //Usermod "usermod_v2_auto_save.h"
+#define USERMOD_ID_DHT                   10     //Usermod "usermod_dht.h"
+#define USERMOD_ID_MODE_SORT             11     //Usermod "usermod_v2_mode_sort.h"
+#define USERMOD_ID_VL53L0X               12     //Usermod "usermod_vl53l0x_gestures.h"
+#define USERMOD_ID_MULTI_RELAY           13     //Usermod "usermod_multi_relay.h"
+#define USERMOD_ID_ANIMATED_STAIRCASE    14     //Usermod "Animated_Staircase.h"
+#define USERMOD_ID_RTC                   15     //Usermod "usermod_rtc.h"
+#define USERMOD_ID_ELEKSTUBE_IPS         16     //Usermod "usermod_elekstube_ips.h"
 
 //Access point behavior
-#define AP_BEHAVIOR_BOOT_NO_CONN  0            //Open AP when no connection after boot
-#define AP_BEHAVIOR_NO_CONN       1            //Open when no connection (either after boot or if connection is lost)
-#define AP_BEHAVIOR_ALWAYS        2            //Always open
-#define AP_BEHAVIOR_BUTTON_ONLY   3            //Only when button pressed for 6 sec
+#define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
+#define AP_BEHAVIOR_NO_CONN               1     //Open when no connection (either after boot or if connection is lost)
+#define AP_BEHAVIOR_ALWAYS                2     //Always open
+#define AP_BEHAVIOR_BUTTON_ONLY           3     //Only when button pressed for 6 sec
 
 //Notifier callMode 
-#define NOTIFIER_CALL_MODE_INIT           0    //no updates on init, can be used to disable updates
+#define NOTIFIER_CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
 #define NOTIFIER_CALL_MODE_DIRECT_CHANGE  1
 #define NOTIFIER_CALL_MODE_BUTTON         2
 #define NOTIFIER_CALL_MODE_NOTIFICATION   3
 #define NOTIFIER_CALL_MODE_NIGHTLIGHT     4
 #define NOTIFIER_CALL_MODE_NO_NOTIFY      5
-#define NOTIFIER_CALL_MODE_FX_CHANGED     6    //no longer used
+#define NOTIFIER_CALL_MODE_FX_CHANGED     6     //no longer used
 #define NOTIFIER_CALL_MODE_HUE            7
 #define NOTIFIER_CALL_MODE_PRESET_CYCLE   8
 #define NOTIFIER_CALL_MODE_BLYNK          9
@@ -150,9 +158,11 @@
 #define BTN_TYPE_NONE             0
 #define BTN_TYPE_RESERVED         1
 #define BTN_TYPE_PUSH             2
-#define BTN_TYPE_PUSH_ACT_HIGH    3 //not implemented
+#define BTN_TYPE_PUSH_ACT_HIGH    3
 #define BTN_TYPE_SWITCH           4
-#define BTN_TYPE_SWITCH_ACT_HIGH  5 //not implemented
+#define BTN_TYPE_SWITCH_ACT_HIGH  5
+#define BTN_TYPE_TOUCH            6
+#define BTN_TYPE_ANALOG           7
 
 //Ethernet board types
 #define WLED_NUM_ETH_TYPES        5
@@ -205,7 +215,7 @@
 // maximum number of LEDs - more than 1500 LEDs (or 500 DMA "LEDPIN 3" driven ones) will cause a low memory condition on ESP8266
 #ifndef MAX_LEDS
 #ifdef ESP8266
-#define MAX_LEDS 8192 //rely on memory limit to limit this to 1600 LEDs
+#define MAX_LEDS 1664 // can't rely on memory limit to limit this to 1600 LEDs
 #else
 #define MAX_LEDS 8192
 #endif
@@ -245,7 +255,7 @@
 #ifdef ESP8266
   #define JSON_BUFFER_SIZE 9216
 #else
-  #define JSON_BUFFER_SIZE 16384
+  #define JSON_BUFFER_SIZE 20480
 #endif
 
 // Maximum size of node map (list of other WLED instances)
