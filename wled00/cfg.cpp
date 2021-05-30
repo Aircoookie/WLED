@@ -62,7 +62,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonArray ap_ip = ap["ip"];
   for (byte i = 0; i < 4; i++) {
     apIP[i] = ap_ip;
-  }*/
+  }
+  */
 
   noWifiSleep = doc[F("wifi")][F("sleep")] | !noWifiSleep; // inverted
   noWifiSleep = !noWifiSleep;
@@ -89,13 +90,12 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     for (JsonObject elm : ins) {
       if (s >= WLED_MAX_BUSSES) break;
       uint8_t pins[5] = {255, 255, 255, 255, 255};
-      JsonArray pinArr = elm[F("pin")];
+      JsonArray pinArr = elm["pin"];
       if (pinArr.size() == 0) continue;
       pins[0] = pinArr[0];
       uint8_t i = 0;
       for (int p : pinArr) {
-        pins[i] = p;
-        i++;
+        pins[i++] = p;
         if (i>4) break;
       }
 
@@ -123,22 +123,47 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
   if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
-  JsonObject hw_btn_ins_0 = hw[F("btn")][F("ins")][0];
-  CJSON(buttonType, hw_btn_ins_0["type"]);
-  int hw_btn_pin = hw_btn_ins_0[F("pin")][0] | -2; //-2 = not present in doc, keep current. -1 = disable
-  if (hw_btn_pin > -2) {
-    if (pinManager.allocatePin(hw_btn_pin,false)) {
-      btnPin = hw_btn_pin;
-      pinMode(btnPin, INPUT_PULLUP);
-    } else {
-      btnPin = -1;
+  // read multiple button configuration
+  JsonArray hw_btn_ins = hw[F("btn")][F("ins")];
+  if (!hw_btn_ins.isNull()) {
+    uint8_t s = 0;
+    for (JsonObject btn : hw_btn_ins) {
+      CJSON(buttonType[s], btn["type"]);
+      int8_t pin = btn[F("pin")][0] | -1;
+      if (pin > -1) {
+        if (pinManager.allocatePin(pin,false)) {
+          btnPin[s] = pin;
+          pinMode(btnPin[s], INPUT_PULLUP);
+        } else {
+          btnPin[s] = -1;
+        }
+      }
+      JsonArray hw_btn_ins_0_macros = btn[F("macros")];
+      CJSON(macroButton[s], hw_btn_ins_0_macros[0]);
+      CJSON(macroLongPress[s],hw_btn_ins_0_macros[1]);
+      CJSON(macroDoublePress[s], hw_btn_ins_0_macros[2]);
+      if (++s >= WLED_MAX_BUTTONS) break; // max buttons reached
     }
+    // clear remaining buttons
+    for (; s<WLED_MAX_BUTTONS; s++) {
+      btnPin[s]           = -1;
+      buttonType[s]       = BTN_TYPE_NONE;
+      macroButton[s]      = 0;
+      macroLongPress[s]   = 0;
+      macroDoublePress[s] = 0;
+    }
+  } else {
+    // new install/missing configuration (button 0 has defaults)
+    if (fromFS)
+      for (uint8_t s=1; s<WLED_MAX_BUTTONS; s++) {
+        btnPin[s]           = -1;
+        buttonType[s]       = BTN_TYPE_NONE;
+        macroButton[s]      = 0;
+        macroLongPress[s]   = 0;
+        macroDoublePress[s] = 0;
+      }
   }
-
-  JsonArray hw_btn_ins_0_macros = hw_btn_ins_0[F("macros")];
-  CJSON(macroButton, hw_btn_ins_0_macros[0]);
-  CJSON(macroLongPress,hw_btn_ins_0_macros[1]);
-  CJSON(macroDoublePress, hw_btn_ins_0_macros[2]);
+  CJSON(touchThreshold,hw[F("btn")][F("tt")]);
 
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
@@ -164,7 +189,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     rlyMde = !relay["rev"];
   }
 
-  //int hw_status_pin = hw[F("status")][F("pin")]; // -1
+  //int hw_status_pin = hw[F("status")]["pin"]; // -1
 
   JsonObject light = doc[F("light")];
   CJSON(briMultiplier, light[F("scale-bri")]);
@@ -179,7 +204,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonObject light_tr = light[F("tr")];
   CJSON(fadeTransition, light_tr[F("mode")]);
-  int tdd = light_tr[F("dur")] | -1;
+  int tdd = light_tr["dur"] | -1;
   if (tdd >= 0) transitionDelayDefault = tdd * 100;
   CJSON(strip.paletteFade, light_tr["pal"]);
 
@@ -203,7 +228,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(presetCycleMin, def_cy[F("range")][0]);
   CJSON(presetCycleMax, def_cy[F("range")][1]);
 
-  tdd = def_cy[F("dur")] | -1;
+  tdd = def_cy["dur"] | -1;
   if (tdd > 0) presetCycleTime = tdd;
 
   JsonObject interfaces = doc["if"];
@@ -255,6 +280,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(macroAlexaOn, interfaces[F("va")][F("macros")][0]);
   CJSON(macroAlexaOff, interfaces[F("va")][F("macros")][1]);
 
+#ifndef WLED_DISABLE_BLYNK
   const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
   tdd = strnlen(apikey, 36);
   if (tdd > 20 || tdd == 0)
@@ -263,7 +289,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject if_blynk = interfaces["blynk"];
   getStringFromJson(blynkHost, if_blynk[F("host")], 33);
   CJSON(blynkPort, if_blynk["port"]);
+#endif
 
+#ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   CJSON(mqttEnabled, if_mqtt["en"]);
   getStringFromJson(mqttServer, if_mqtt[F("broker")], 33);
@@ -274,7 +302,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   getStringFromJson(mqttDeviceTopic, if_mqtt[F("topics")][F("device")], 33); // "wled/test"
   getStringFromJson(mqttGroupTopic, if_mqtt[F("topics")][F("group")], 33); // ""
+#endif
 
+#ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces[F("hue")];
   CJSON(huePollingEnabled, if_hue["en"]);
   CJSON(huePollLightId, if_hue["id"]);
@@ -290,6 +320,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   for (byte i = 0; i < 4; i++)
     CJSON(hueIP[i], if_hue_ip[i]);
+#endif
 
   JsonObject if_ntp = interfaces[F("ntp")];
   CJSON(ntpEnabled, if_ntp["en"]);
@@ -306,7 +337,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(countdownMode, ol[F("cntdwn")]);
   if (prev != overlayDefault) overlayCurrent = overlayDefault;
 
-  CJSON(overlayMin, ol[F("min")]);
+  CJSON(overlayMin, ol["min"]);
   CJSON(overlayMax, ol[F("max")]);
   CJSON(analogClock12pixel, ol[F("o12pix")]);
   CJSON(analogClock5MinuteMarks, ol[F("o5m")]);
@@ -331,7 +362,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     if (it > 9) break;
     if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset 
     CJSON(timerHours[it], timer[F("hour")]);
-    CJSON(timerMinutes[it], timer[F("min")]);
+    CJSON(timerMinutes[it], timer["min"]);
     CJSON(timerMacro[it], timer[F("macro")]);
 
     byte dowPrev =  timerWeekday[it];
@@ -377,6 +408,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
   #endif
 
+  DEBUG_PRINTLN(F("Starting usermod config."));
   JsonObject usermods_settings = doc["um"];
   if (!usermods_settings.isNull()) usermods.readFromConfig(usermods_settings);
 
@@ -490,21 +522,34 @@ void serializeConfig() {
     ins["type"] = bus->getType();
   }
 
+  // button(s)
   JsonObject hw_btn = hw.createNestedObject("btn");
-
+  hw_btn["max"] = WLED_MAX_BUTTONS; // just information about max number of buttons (not actually used)
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
-  // button BTNPIN
+  // there is always at least one button
   JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
-  hw_btn_ins_0["type"] = buttonType;
-
+  hw_btn_ins_0["type"] = buttonType[0];
   JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
-  hw_btn_ins_0_pin.add(btnPin);
-
+  hw_btn_ins_0_pin.add(btnPin[0]);
   JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
-  hw_btn_ins_0_macros.add(macroButton);
-  hw_btn_ins_0_macros.add(macroLongPress);
-  hw_btn_ins_0_macros.add(macroDoublePress);
+  hw_btn_ins_0_macros.add(macroButton[0]);
+  hw_btn_ins_0_macros.add(macroLongPress[0]);
+  hw_btn_ins_0_macros.add(macroDoublePress[0]);
+
+  // additional buttons
+  for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) {
+    //if (btnPin[i]<0) continue;
+    hw_btn_ins_0 = hw_btn_ins.createNestedObject();
+    hw_btn_ins_0["type"] = buttonType[i];
+    hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
+    hw_btn_ins_0_pin.add(btnPin[i]);
+    hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
+    hw_btn_ins_0_macros.add(macroButton[i]);
+    hw_btn_ins_0_macros.add(macroLongPress[i]);
+    hw_btn_ins_0_macros.add(macroDoublePress[i]);
+  }
+  hw_btn[F("tt")] = touchThreshold;
 
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir["pin"] = irPin;
@@ -527,12 +572,12 @@ void serializeConfig() {
 
   JsonObject light_tr = light.createNestedObject("tr");
   light_tr[F("mode")] = fadeTransition;
-  light_tr[F("dur")] = transitionDelayDefault / 100;
+  light_tr["dur"] = transitionDelayDefault / 100;
   light_tr["pal"] = strip.paletteFade;
 
   JsonObject light_nl = light.createNestedObject("nl");
   light_nl[F("mode")] = nightlightMode;
-  light_nl[F("dur")] = nightlightDelayMinsDefault;
+  light_nl["dur"] = nightlightDelayMinsDefault;
   light_nl[F("tbri")] = nightlightTargetBri;
   light_nl[F("macro")] = macroNl;
 
@@ -549,7 +594,7 @@ void serializeConfig() {
     JsonArray def_cy_range = def_cy.createNestedArray(F("range"));
     def_cy_range.add(presetCycleMin);
     def_cy_range.add(presetCycleMax);
-    def_cy[F("dur")] = presetCycleTime;
+    def_cy["dur"] = presetCycleTime;
   }
 
   JsonObject interfaces = doc.createNestedObject("if");
@@ -561,7 +606,7 @@ void serializeConfig() {
   JsonObject if_sync_recv = if_sync.createNestedObject("recv");
   if_sync_recv["bri"] = receiveNotificationBrightness;
   if_sync_recv["col"] = receiveNotificationColor;
-  if_sync_recv[F("fx")] = receiveNotificationEffects;
+  if_sync_recv["fx"] = receiveNotificationEffects;
 
   JsonObject if_sync_send = if_sync.createNestedObject("send");
   if_sync_send[F("dir")] = notifyDirect;
@@ -596,11 +641,15 @@ void serializeConfig() {
   JsonArray if_va_macros = if_va.createNestedArray("macros");
   if_va_macros.add(macroAlexaOn);
   if_va_macros.add(macroAlexaOff);
+
+#ifndef WLED_DISABLE_BLYNK
   JsonObject if_blynk = interfaces.createNestedObject("blynk");
   if_blynk[F("token")] = strlen(blynkApiKey) ? "Hidden":"";
   if_blynk[F("host")] = blynkHost;
   if_blynk["port"] = blynkPort;
+#endif
 
+#ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["en"] = mqttEnabled;
   if_mqtt[F("broker")] = mqttServer;
@@ -612,7 +661,9 @@ void serializeConfig() {
   JsonObject if_mqtt_topics = if_mqtt.createNestedObject(F("topics"));
   if_mqtt_topics[F("device")] = mqttDeviceTopic;
   if_mqtt_topics[F("group")] = mqttGroupTopic;
+#endif
 
+#ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces.createNestedObject("hue");
   if_hue["en"] = huePollingEnabled;
   if_hue["id"] = huePollLightId;
@@ -627,6 +678,7 @@ void serializeConfig() {
   for (byte i = 0; i < 4; i++) {
     if_hue_ip.add(hueIP[i]);
   }
+#endif
 
   JsonObject if_ntp = interfaces.createNestedObject("ntp");
   if_ntp["en"] = ntpEnabled;
@@ -641,7 +693,7 @@ void serializeConfig() {
   ol[F("clock")] = overlayDefault;
   ol[F("cntdwn")] = countdownMode;
 
-  ol[F("min")] = overlayMin;
+  ol["min"] = overlayMin;
   ol[F("max")] = overlayMax;
   ol[F("o12pix")] = analogClock12pixel;
   ol[F("o5m")] = analogClock5MinuteMarks;
@@ -662,7 +714,7 @@ void serializeConfig() {
     JsonObject timers_ins0 = timers_ins.createNestedObject();
     timers_ins0["en"] = (timerWeekday[i] & 0x01);
     timers_ins0[F("hour")] = timerHours[i];
-    timers_ins0[F("min")] = timerMinutes[i];
+    timers_ins0["min"] = timerMinutes[i];
     timers_ins0[F("macro")] = timerMacro[i];
     timers_ins0[F("dow")] = timerWeekday[i] >> 1;
   }
@@ -684,7 +736,6 @@ void serializeConfig() {
   for (byte i = 0; i < 15; i++)
     dmx_fixmap.add(DMXFixtureMap[i]);
   #endif
-  //}
 
   JsonObject usermods_settings = doc.createNestedObject("um");
   usermods.addToConfig(usermods_settings);
@@ -711,15 +762,21 @@ bool deserializeConfigSec() {
 
   JsonObject interfaces = doc["if"];
 
+#ifndef WLED_DISABLE_BLYNK
   const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
   int tdd = strnlen(apikey, 36);
   if (tdd > 20 || tdd == 0)
     getStringFromJson(blynkApiKey, apikey, 36);
+#endif
 
+#ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
   getStringFromJson(mqttPass, if_mqtt["psk"], 41);
+#endif
 
+#ifndef WLED_DISABLE_HUESYNC
   getStringFromJson(hueApiKey, interfaces[F("hue")][F("key")], 47);
+#endif
 
   JsonObject ota = doc["ota"];
   getStringFromJson(otaPass, ota[F("pwd")], 33);
@@ -746,12 +803,18 @@ void serializeConfigSec() {
   ap["psk"] = apPass;
 
   JsonObject interfaces = doc.createNestedObject("if");
+#ifndef WLED_DISABLE_BLYNK
   JsonObject if_blynk = interfaces.createNestedObject("blynk");
   if_blynk[F("token")] = blynkApiKey;
+#endif
+#ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces.createNestedObject("mqtt");
   if_mqtt["psk"] = mqttPass;
+#endif
+#ifndef WLED_DISABLE_HUESYNC
   JsonObject if_hue = interfaces.createNestedObject("hue");
   if_hue[F("key")] = hueApiKey;
+#endif
 
   JsonObject ota = doc.createNestedObject("ota");
   ota[F("pwd")] = otaPass;

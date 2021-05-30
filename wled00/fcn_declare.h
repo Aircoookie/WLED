@@ -20,8 +20,8 @@ void handleBlynk();
 void updateBlynk();
 
 //button.cpp
-void shortPressAction();
-bool isButtonPressed();
+void shortPressAction(uint8_t b=0);
+bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
 
