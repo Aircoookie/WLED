@@ -263,9 +263,11 @@ bool deserializeState(JsonObject root)
     }
   }
 
-  if (root["nx"].is<const char*>()) {
-    strncpy(cronixieDisplay, root["nx"], 6);
-  }
+  #ifndef WLED_DISABLE_CRONIXIE
+    if (root["nx"].is<const char*>()) {
+      strncpy(cronixieDisplay, root["nx"], 6);
+    }
+  #endif
 
   usermods.readFromJsonState(root);
 
