@@ -6,6 +6,8 @@
 
 #define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
 
+static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
+
 void shortPressAction(uint8_t b)
 {
   if (!macroButton[b])
@@ -14,6 +16,13 @@ void shortPressAction(uint8_t b)
     colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
   } else {
     applyPreset(macroButton[b]);
+  }
+
+  // publish MQTT message
+  if (WLED_MQTT_CONNECTED) {
+    char subuf[64];
+    sprintf_P(subuf, PSTR(_mqtt_topic_button), mqttDeviceTopic, (int)b);
+    mqtt->publish(subuf, 0, false, "short");
   }
 }
 
@@ -62,6 +71,14 @@ void handleSwitch(uint8_t b)
         if (bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
       } 
     }
+
+    // publish MQTT message
+    if (WLED_MQTT_CONNECTED) {
+      char subuf[64];
+      sprintf_P(subuf, PSTR(_mqtt_topic_button), mqttDeviceTopic, (int)b);
+      mqtt->publish(subuf, 0, false, buttonPressedBefore[b] ^ (buttonType[b]==BTN_TYPE_SWITCH_ACT_HIGH) ? "on" : "off");
+    }
+
     buttonLongPressed[b] = buttonPressedBefore[b]; //save the last "long term" switch state
   }
 }
@@ -135,8 +152,6 @@ void handleAnalog(uint8_t b)
         seg.setOption(SEG_OPTION_ON, 1);
       }
       // this will notify clients of update (websockets,mqtt,etc)
-      //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
-      // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
       updateInterfaces(NOTIFIER_CALL_MODE_BUTTON);
     }
   } else {
@@ -144,8 +159,6 @@ void handleAnalog(uint8_t b)
     // we can either trigger a preset depending on the level (between short and long entries)
     // or use it for RGBW direct control
   }
-  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
-  // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
   colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
 }
 
@@ -182,6 +195,13 @@ void handleButton()
           if (macroLongPress[b]) {applyPreset(macroLongPress[b]);}
           else _setRandomColor(false,true);
 
+          // publish MQTT message
+          if (WLED_MQTT_CONNECTED) {
+            char subuf[64];
+            sprintf_P(subuf, PSTR(_mqtt_topic_button), mqttDeviceTopic, (int)b);
+            mqtt->publish(subuf, 0, false, "long");
+          }
+
           buttonLongPressed[b] = true;
         }
       }
@@ -200,8 +220,16 @@ void handleButton()
       else if (!buttonLongPressed[b]) { //short press
         if (macroDoublePress[b])
         {
-          if (doublePress) applyPreset(macroDoublePress[b]);
-          else buttonWaitTime[b] = millis();
+          if (doublePress) {
+            applyPreset(macroDoublePress[b]);
+  
+            // publish MQTT message
+            if (WLED_MQTT_CONNECTED) {
+              char subuf[64];
+              sprintf_P(subuf, PSTR(_mqtt_topic_button), mqttDeviceTopic, (int)b);
+              mqtt->publish(subuf, 0, false, "double");
+            }
+          } else buttonWaitTime[b] = millis();
         } else shortPressAction(b);
       }
       buttonPressedBefore[b] = false;
