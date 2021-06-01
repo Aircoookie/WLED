@@ -451,6 +451,7 @@ function populatePresets(fromls)
       let i = is[a];
       if (expanded[i+100]) expand(i+100, true);
     }
+		makePlSel(arr);
 	} else { presetError(true); }
 	updatePA();
 	populateQL();
@@ -487,8 +488,8 @@ function populateInfo(i)
 	${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
 	${inforow("Uptime",getRuntimeStr(i.uptime))}
 	${inforow("Free heap",heap," kB")}
-  ${inforow("Estimated current",pwru)}
-  ${inforow("Frames / second",i.leds.fps)}
+  	${inforow("Estimated current",pwru)}
+  	${inforow("Frames / second",i.leds.fps)}
 	${inforow("MAC address",i.mac)}
 	${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
 	${inforow("Environment",i.arch + " " + i.core + " (" + i.lwip + ")")}
@@ -1179,15 +1180,59 @@ function resetUtil() {
 	d.getElementById('segutil').innerHTML = cn;
 }
 
-function populatePlaylist() {
-  var plJson = {};
+var plJson = {	
+	"ps": [26, 20, 18, 20],	
+	"dur": [30, 22, 10, 50],	
+	"transition": 0,	
+	"repeat": 10,	
+	"end": 21	
+}; //temp example
 
+var plSelContent = "";
+function makePlSel(arr) {
+	plSelContent = "";
+	for (var i = 0; i < arr.length; i++) {
+		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
+		plSelContent += `<option value=${arr[i][0]}>${n}</option>`
+	}
+}
+
+function addPl(i) {
+	plJson.ps.splice(i+1,0,1);
+	plJson.dur.splice(i+1,0,50);
+	//plEntries();
+	makePlUtil();
+}
+
+function delPl(i) {
+	if (plJson.ps.length < 2) {resetPUtil(); return;}
+	plJson.ps.splice(i,1);
+	plJson.dur.splice(i,1);
+	//plEntries();
+	makePlUtil();
+}
+
+function plePs(i,field) {
+	plJson.ps[i] = field.value;
+}
+
+function pleDur(i,field) {
+	if (field.validity.valid)
+		plJson.dur[i] = field.value*10;
+}
+
+function plEntries() {
+	var content = "";
+	for (var i = 0; i < plJson.ps.length; i++) {
+		content += makePlEntry(i, plJson.ps[i], plJson.dur[i]);
+	}
+	return content;
 }
 
 function makeP(i,pl) {
   var content = "";
   if (pl) content = `
-  ${makePl()}<label class="check revchkl">
+  ${plEntries()}<label class="check revchkl">
     Randomize order
     <input type="checkbox" id="pibtgl">
     <span class="checkmark schk"></span>
@@ -1199,9 +1244,9 @@ function makeP(i,pl) {
   </label>
   <div class="c">Repeat <input class="noslide" type="number" max=127 min=-1 value=1> times</div>
   End preset:<br>
-  <select class="btn sel sel-pl" id="selectEnd">
-    <option>Mockup</option>
-    <option>Error!</option>
+  <select class="btn sel sel-ple" id="selectEnd" data-val=0>
+		<option value=0>None</option>
+    ${plSelContent}
   </select>
   <button class="btn btn-i btn-p" onclick="saveP(0)"><i class="icons btn-icon">&#xe139;</i>Test</button>`;
 
@@ -1235,7 +1280,7 @@ function makeP(i,pl) {
 	<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 	<div class="c">
 		<button class="btn btn-i btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>Save ${(pl)?"playlist":(i>0)?"changes":"preset"}</button>
-		${(i>0)?'<button class="btn btn-i btn-p" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':
+		${(i>0)?'<button class="btn btn-i btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':
 						'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
 	</div>
 	<div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn">
@@ -1252,19 +1297,19 @@ function makePUtil() {
 		${makeP(0)}</div></div>`;
 }
 
-function makePl(i, ps, dur) {
+function makePlEntry(i, ps, dur) {
   return `
   <div class="plentry">
-    1:
-    <select class="btn sel sel-pl" id="selectPalette" value=${ps}>
-      <option>Mockup</option>
-      <option>Error!</option>
+    ${i+1}:
+    <select class="btn sel sel-pl" id="pl${i}sel" onchange="plePs(${i},this)" data-val=${ps}>
+			${plSelContent}
     </select>
-    <div class="c">Duration <input class="noslide" type="number" max=6553.0 min=0.2 value=${dur}> s
-    <button class="btn btn-i btn-xs" onclick="resetPUtil()"><i class="icons btn-icon">&#xe037;</i></button></div>
+    <div class="c">Duration <input class="noslide" type="number" oninput="pleDur(${i},this)" max=6553.0 min=0.2 step=0.1 value=${dur/10.0}> s
+    <button class="btn btn-i btn-xs" onclick="delPl(${i})"><i class="icons btn-icon">&#xe037;</i></button></div>
     <div class="hrz hrz-pl" />
-    <button class="btn btn-i btn-xs btn-pl-add" onclick="resetPUtil()"><i class="icons btn-icon">&#xe18a;</i></button></div>
+    <button class="btn btn-i btn-xs btn-pl-add" onclick="addPl(${i})"><i class="icons btn-icon">&#xe18a;</i></button></div>
   </div>`;
+	//Transition <input class="noslide" type="number" max=65.0 min=0.0 step=0.1 value=${0.2}> s
 }
 
 function makePlUtil() {
@@ -1276,34 +1321,11 @@ function makePlUtil() {
     New playlist</div>
   <div class="segin expanded">
   ${makeP(0,true)}</div></div>`;
-
-  return;
-	d.getElementById('putil').innerHTML = `<div class="seg pres">
-		<div class="segname newseg">
-			New playlist</div>
-		<div class="segin expanded">
-      ${makePl()}
-      ${makePl()}
-      <label class="check revchkl">
-			  Randomize order
-			  <input type="checkbox" id="pibtgl">
-			  <span class="checkmark schk"></span>
-      </label>
-      <label class="check revchkl">
-        Repeat indefinitely
-        <input type="checkbox" id="psbtgl" checked>
-        <span class="checkmark schk"></span>
-      </label>
-      <div class="c">Repeat <input class="noslide" type="number" max=127 min=-1 value=1> times</div>
-      End preset:<br>
-      <select class="btn sel sel-pl" id="selectEnd">
-        <option>Mockup</option>
-        <option>Error!</option>
-      </select>
-      <button class="btn btn-i btn-p" onclick="saveP(0)"><i class="icons btn-icon">&#xe139;</i>Test</button>
-      <button class="btn btn-i btn-p" onclick="saveP(0)"><i class="icons btn-icon">&#xe390;</i>Save</button>
-      <button class="btn btn-p" onclick="resetPUtil()">Cancel</button>
-    </div></div>`;
+	
+	var sels = d.getElementsByClassName("sel");
+	for (var i of sels) {
+		if (i.dataset.val) i.value = i.dataset.val;
+	}
 }
 
 function resetPUtil() {
@@ -1503,10 +1525,17 @@ function saveP(i) {
 }
 
 function delP(i) {
-	var obj = {"pdel": i};
-	requestJson(obj);
-	delete pJson[i];
-	populatePresets();
+	var bt = d.getElementById(`p${i}del`);
+	if (bt.dataset.cnf == 1) {
+		var obj = {"pdel": i};
+		requestJson(obj);
+		delete pJson[i];
+		populatePresets();
+	} else {
+		bt.style.color = "#f00";
+		bt.innerHTML = "<i class='icons btn-icon'>&#xe037;</i>Confirm delete";
+		bt.dataset.cnf = 1;
+	}
 }
 
 function selectSlot(b) {

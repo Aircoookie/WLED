@@ -614,6 +614,11 @@ input[type=range]:active + .sliderbubble {
   background-position: 176px 16px;
 }
 
+.sel-ple {
+	width: 216px;
+  background-position: 192px 16px;
+}
+
 select {
 	-webkit-appearance: none;
 	-moz-appearance: none;
