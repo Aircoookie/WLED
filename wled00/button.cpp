@@ -76,7 +76,7 @@ void handleSwitch(uint8_t b)
     if (WLED_MQTT_CONNECTED) {
       char subuf[64];
       sprintf_P(subuf, PSTR(_mqtt_topic_button), mqttDeviceTopic, (int)b);
-      mqtt->publish(subuf, 0, false, buttonPressedBefore[b] ^ (buttonType[b]==BTN_TYPE_SWITCH_ACT_HIGH) ? "on" : "off");
+      mqtt->publish(subuf, 0, false, (buttonPressedBefore[b] ^ (buttonType[b]==BTN_TYPE_SWITCH_ACT_HIGH)) ? "on" : "off");
     }
 
     buttonLongPressed[b] = buttonPressedBefore[b]; //save the last "long term" switch state
