@@ -21,7 +21,7 @@ void shortPressAction(uint8_t b)
   // publish MQTT message
   if (WLED_MQTT_CONNECTED) {
     char subuf[64];
-    sprintf_P(subuf, PSTR(_mqtt_topic_button), mqttDeviceTopic, (int)b);
+    sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
     mqtt->publish(subuf, 0, false, "short");
   }
 }
@@ -60,7 +60,7 @@ void handleSwitch(uint8_t b)
   if (buttonLongPressed[b] == buttonPressedBefore[b]) return;
     
   if (millis() - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
-    if (buttonPressedBefore[b]) { //LOW, falling edge, switch closed
+    if (buttonPressedBefore[b] ^ (buttonType[b]==BTN_TYPE_SWITCH_ACT_HIGH)) { //LOW, falling edge, switch closed
       if (macroButton[b]) applyPreset(macroButton[b]);
       else { //turn on
         if (!bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
@@ -75,7 +75,7 @@ void handleSwitch(uint8_t b)
     // publish MQTT message
     if (WLED_MQTT_CONNECTED) {
       char subuf[64];
-      sprintf_P(subuf, PSTR(_mqtt_topic_button), mqttDeviceTopic, (int)b);
+      sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
       mqtt->publish(subuf, 0, false, (buttonPressedBefore[b] ^ (buttonType[b]==BTN_TYPE_SWITCH_ACT_HIGH)) ? "on" : "off");
     }
 
@@ -198,7 +198,7 @@ void handleButton()
           // publish MQTT message
           if (WLED_MQTT_CONNECTED) {
             char subuf[64];
-            sprintf_P(subuf, PSTR(_mqtt_topic_button), mqttDeviceTopic, (int)b);
+            sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
             mqtt->publish(subuf, 0, false, "long");
           }
 
@@ -226,7 +226,7 @@ void handleButton()
             // publish MQTT message
             if (WLED_MQTT_CONNECTED) {
               char subuf[64];
-              sprintf_P(subuf, PSTR(_mqtt_topic_button), mqttDeviceTopic, (int)b);
+              sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
               mqtt->publish(subuf, 0, false, "double");
             }
           } else buttonWaitTime[b] = millis();
