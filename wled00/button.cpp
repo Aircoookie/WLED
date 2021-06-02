@@ -39,6 +39,7 @@ bool isButtonPressed(uint8_t i)
       break;
     case BTN_TYPE_PUSH_ACT_HIGH:
     case BTN_TYPE_SWITCH_ACT_HIGH:
+    case BTN_TYPE_PIR_SENSOR:
       if (digitalRead(btnPin[i]) == HIGH) return true;
       break;
     case BTN_TYPE_TOUCH:
@@ -52,6 +53,7 @@ bool isButtonPressed(uint8_t i)
 
 void handleSwitch(uint8_t b)
 {
+  // isButtonPressed() handles inverted/noninverted logic
   if (buttonPressedBefore[b] != isButtonPressed(b)) {
     buttonPressedTime[b] = millis();
     buttonPressedBefore[b] = !buttonPressedBefore[b];
@@ -60,12 +62,12 @@ void handleSwitch(uint8_t b)
   if (buttonLongPressed[b] == buttonPressedBefore[b]) return;
     
   if (millis() - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
-    if (buttonPressedBefore[b] ^ (buttonType[b]==BTN_TYPE_SWITCH_ACT_HIGH)) { //LOW, falling edge, switch closed
+    if (!buttonPressedBefore[b]) { // on -> off
       if (macroButton[b]) applyPreset(macroButton[b]);
       else { //turn on
         if (!bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
       } 
-    } else { //HIGH, rising edge, switch opened
+    } else {  // off -> on
       if (macroLongPress[b]) applyPreset(macroLongPress[b]);
       else { //turn off
         if (bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
@@ -75,8 +77,9 @@ void handleSwitch(uint8_t b)
     // publish MQTT message
     if (WLED_MQTT_CONNECTED) {
       char subuf[64];
-      sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
-      mqtt->publish(subuf, 0, false, (buttonPressedBefore[b] ^ (buttonType[b]==BTN_TYPE_SWITCH_ACT_HIGH)) ? "on" : "off");
+      if (buttonType[b] == BTN_TYPE_PIR_SENSOR) sprintf_P(subuf, PSTR("%s/motion/%d"), mqttDeviceTopic, (int)b);
+      else sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+      mqtt->publish(subuf, 0, false, !buttonPressedBefore[b] ? "off" : "on");
     }
 
     buttonLongPressed[b] = buttonPressedBefore[b]; //save the last "long term" switch state
@@ -178,7 +181,8 @@ void handleButton()
       handleAnalog(b); continue;
     }
 
-    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_SWITCH_ACT_HIGH) { //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
+    //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
+    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_SWITCH_ACT_HIGH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
       handleSwitch(b); continue;
     }
 
