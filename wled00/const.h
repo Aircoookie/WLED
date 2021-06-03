@@ -158,11 +158,10 @@
 #define BTN_TYPE_PUSH             2
 #define BTN_TYPE_PUSH_ACT_HIGH    3
 #define BTN_TYPE_SWITCH           4
-#define BTN_TYPE_SWITCH_ACT_HIGH  5
+#define BTN_TYPE_PIR_SENSOR       5
 #define BTN_TYPE_TOUCH            6
 #define BTN_TYPE_ANALOG           7
 #define BTN_TYPE_ANALOG_INVERTED  8
-#define BTN_TYPE_PIR_SENSOR       9
 
 //Ethernet board types
 #define WLED_NUM_ETH_TYPES        5
