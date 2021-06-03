@@ -14,6 +14,10 @@
 #include "../usermods/Temperature/usermod_temperature.h"
 #endif
 
+#ifdef USERMOD_SN_PHOTORESISTOR
+#include "../usermods/SN_Photoresistor/usermod_sn_photoresistor.h"
+#endif
+
 //#include "usermod_v2_empty.h"
 
 #ifdef USERMOD_BUZZER
@@ -77,17 +81,21 @@ void registerUsermods()
    * \/ \/ \/
    */
   //usermods.add(new MyExampleUsermod());
-  
+
   #ifdef USERMOD_DALLASTEMPERATURE
   usermods.add(new UsermodTemperature());
   #endif
-  
+
+  #ifdef USERMOD_SN_PHOTORESISTOR
+  usermods.add(new Usermod_SN_Photoresistor());
+  #endif
+
   //usermods.add(new UsermodRenameMe());
-  
+
   #ifdef USERMOD_BUZZER
   usermods.add(new BuzzerUsermod());
   #endif
-  
+
   #ifdef USERMOD_BME280
   usermods.add(new UsermodBME280());
   #endif
