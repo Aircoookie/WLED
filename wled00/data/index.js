@@ -432,7 +432,7 @@ function populatePresets(fromls)
 
     cn += `<div class="seg pres" id="p${i}o">`;
     if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-    cn += `<div class="segname pname" onclick="setPreset(${i})">${pName(i)}</div>
+    cn += `<div class="segname pname" onclick="setPreset(${i})">${(pJson[i].playlist && pJson[i].playlist.ps)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
@@ -1004,11 +1004,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 		nlFade = s.nl.fade;
 		syncSend = s.udpn.send;
 		currentPreset = s.ps;
-		d.getElementById('cyToggle').checked = (s.pl >= 0);
-		d.getElementById('cycs').value = s.ccnf.min;
-		d.getElementById('cyce').value = s.ccnf.max;
-		d.getElementById('cyct').value = s.ccnf.time /10;
-		d.getElementById('cyctt').value = s.transition /10;
+		d.getElementById('tt').value = s.transition /10;
 
 		var selc=0; var ind=0;
 		populateSegments(s);
@@ -1092,7 +1088,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 function togglePower() {
 	isOn = !isOn;
 	var obj = {"on": isOn};
-	obj.transition = parseInt(d.getElementById('cyctt').value*10);
+	obj.transition = parseInt(d.getElementById('tt').value*10);
 	requestJson(obj);
 }
 
@@ -1184,7 +1180,8 @@ var plJson = {
 	"ps": [26, 20, 18, 20],	
 	"dur": [30, 22, 10, 50],	
 	"transition": 0,	
-	"repeat": 10,	
+	"repeat": 10,
+	"r": false,
 	"end": 21	
 }; //temp example
 
@@ -1193,32 +1190,54 @@ function makePlSel(arr) {
 	plSelContent = "";
 	for (var i = 0; i < arr.length; i++) {
 		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
+		if (arr[i][1].playlist && arr[i][1].playlist.ps) continue;
 		plSelContent += `<option value=${arr[i][0]}>${n}</option>`
+	}
+}
+
+var plEDiv;
+
+function refreshPlE() {
+	if (plEDiv) plEDiv.innerHTML = plEntries();
+	var sels = d.getElementsByClassName("sel");
+	for (var i of sels) {
+		if (i.dataset.val) i.value = i.dataset.val;
 	}
 }
 
 function addPl(i) {
 	plJson.ps.splice(i+1,0,1);
 	plJson.dur.splice(i+1,0,50);
-	//plEntries();
-	makePlUtil();
+	refreshPlE();
 }
 
 function delPl(i) {
 	if (plJson.ps.length < 2) {resetPUtil(); return;}
 	plJson.ps.splice(i,1);
 	plJson.dur.splice(i,1);
-	//plEntries();
-	makePlUtil();
+	refreshPlE();
 }
 
 function plePs(i,field) {
-	plJson.ps[i] = field.value;
+	plJson.ps[i] = parseInt(field.value);
 }
 
 function pleDur(i,field) {
 	if (field.validity.valid)
-		plJson.dur[i] = field.value*10;
+		plJson.dur[i] = parseInt(field.value)*10;
+}
+
+function plR() {
+	plJson.r = d.getElementById('plrtgl').checked;
+	if (d.getElementById('plrptgl').checked) { //infinite
+		plJson.repeat = 0;
+		delete plJson.end;
+		d.getElementById('plo1').style.display = "none";
+	} else {
+		plJson.repeat = parseInt(d.getElementById('plrp').value);
+		plJson.end = parseInt(d.getElementById('selEnd').value);
+		d.getElementById('plo1').style.display = "block";
+	}
 }
 
 function plEntries() {
@@ -1231,25 +1250,29 @@ function plEntries() {
 
 function makeP(i,pl) {
   var content = "";
-  if (pl) content = `
-  ${plEntries()}<label class="check revchkl">
+  if (pl) {
+		var rep = plJson.repeat ? plJson.repeat : 0;
+		content = `
+  <div id="ple"></div><label class="check revchkl">
     Randomize order
-    <input type="checkbox" id="pibtgl">
+    <input type="checkbox" id="plrtgl" onchange="plR()" ${plJson.r?"checked":""}>
     <span class="checkmark schk"></span>
   </label>
   <label class="check revchkl">
     Repeat indefinitely
-    <input type="checkbox" id="psbtgl" checked>
+    <input type="checkbox" id="plrptgl" onchange="plR()" ${rep?"":"checked"}>
     <span class="checkmark schk"></span>
   </label>
-  <div class="c">Repeat <input class="noslide" type="number" max=127 min=-1 value=1> times</div>
+	<div id="plo1" style="display:${rep?"block":"none"}">
+  <div class="c">Repeat <input class="noslide" type="number" id="plrp" oninput="plR()" max=127 min=0 value=${rep>0?rep:1}> times</div>
   End preset:<br>
-  <select class="btn sel sel-ple" id="selectEnd" data-val=0>
+  <select class="btn sel sel-ple" id="selEnd" onchange="plR()" data-val=${plJson.end?plJson.end:0}>
 		<option value=0>None</option>
     ${plSelContent}
   </select>
-  <button class="btn btn-i btn-p" onclick="saveP(0)"><i class="icons btn-icon">&#xe139;</i>Test</button>`;
-
+	</div>
+  <button class="btn btn-i btn-p" onclick="testPl()"><i class='icons btn-icon'>&#xe139;</i>Test</button>`;
+	}
   else content = `<label class="check revchkl">
     ${(i>0)?"Overwrite with state":"Use current state"}
     <input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i>0)?"":"checked"}>
@@ -1279,7 +1302,7 @@ function makeP(i,pl) {
 	${content}
 	<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 	<div class="c">
-		<button class="btn btn-i btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>Save ${(pl)?"playlist":(i>0)?"changes":"preset"}</button>
+		<button class="btn btn-i btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save ${(pl)?"playlist":(i>0)?"changes":"preset"}</button>
 		${(i>0)?'<button class="btn btn-i btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':
 						'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
 	</div>
@@ -1304,7 +1327,7 @@ function makePlEntry(i, ps, dur) {
     <select class="btn sel sel-pl" id="pl${i}sel" onchange="plePs(${i},this)" data-val=${ps}>
 			${plSelContent}
     </select>
-    <div class="c">Duration <input class="noslide" type="number" oninput="pleDur(${i},this)" max=6553.0 min=0.2 step=0.1 value=${dur/10.0}> s
+    <div class="c">Duration <input class="noslide" type="number" oninput="pleDur(${i},this)" max=6553.0 min=0.2 step=0.1 value=${dur/10.0}>s
     <button class="btn btn-i btn-xs" onclick="delPl(${i})"><i class="icons btn-icon">&#xe037;</i></button></div>
     <div class="hrz hrz-pl" />
     <button class="btn btn-i btn-xs btn-pl-add" onclick="addPl(${i})"><i class="icons btn-icon">&#xe18a;</i></button></div>
@@ -1322,15 +1345,13 @@ function makePlUtil() {
   <div class="segin expanded">
   ${makeP(0,true)}</div></div>`;
 	
-	var sels = d.getElementsByClassName("sel");
-	for (var i of sels) {
-		if (i.dataset.val) i.value = i.dataset.val;
-	}
+	plEDiv = d.getElementById('ple');
+	refreshPlE();
 }
 
 function resetPUtil() {
 	var cn = `<button class="btn btn-s btn-i" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>Create preset</button><br>
-            <button class="btn btn-s btn-i" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i>Create playlist</button><br>`;
+            <button class="btn btn-s btn-i" onclick="makePlUtil()"><i class='icons btn-icon'>&#xe139;</i>Create playlist</button><br>`;
 	d.getElementById('putil').innerHTML = cn;
 }
 
@@ -1437,7 +1458,7 @@ function setPalette(paletteId = null)
 
 function setBri() {
 	var obj = {"bri": parseInt(d.getElementById('sliderBri').value)};
-	obj.transition = parseInt(d.getElementById('cyctt').value*10);
+	obj.transition = parseInt(d.getElementById('tt').value*10);
 	requestJson(obj);
 }
 
@@ -1456,17 +1477,6 @@ function setLor(i) {
 	requestJson(obj);
 }
 
-function toggleCY() {
-	var obj = {"pl" : -1};
-	if (d.getElementById('cyToggle').checked)
-	{
-		obj = {"pl": 0, "ccnf": {"min": parseInt(d.getElementById('cycs').value), "max": parseInt(d.getElementById('cyce').value), "time": parseInt(d.getElementById('cyct').value*10)}};
-		obj.transition = parseInt(d.getElementById('cyctt').value*10);
-	}
-
-	requestJson(obj);
-}
-
 function setPreset(i) {
 	var obj = {"ps": i};
 
@@ -1475,33 +1485,38 @@ function setPreset(i) {
 	requestJson(obj);
 }
 
-function saveP(i) {
+function saveP(i,pl) {
 	pI = parseInt(d.getElementById(`p${i}id`).value);
 	if (!pI || pI < 1) pI = (i>0) ? i : getLowestUnusedP();
 	pN = d.getElementById(`p${i}txt`).value;
-	if (pN == "") pN = "Preset " + pI;
+	console.log(pN);
+	if (pN == "") pN = (pl?"Playlist ":"Preset ") + pI;
 	var obj = {};
-	if (!d.getElementById(`p${i}cstgl`).checked) {
-		var raw = d.getElementById(`p${i}api`).value;
-		try {
-			obj = JSON.parse(raw);
-		} catch (e) {
-			obj.win = raw;
-			if (raw.length < 2) {
-				d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please enter your API command first";
-				return;
-			} else if (raw.indexOf('{') > -1) {
-				d.getElementById(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
-				return;
-			} else if (raw.indexOf("Please") == 0) {
-        d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
-				return;
-      }
-		}
-		obj.o = true;
+	if (pl) {
+		obj.playlist = plJson;
 	} else {
-		obj.ib = d.getElementById(`p${i}ibtgl`).checked;
-		obj.sb = d.getElementById(`p${i}sbtgl`).checked;
+		if (!d.getElementById(`p${i}cstgl`).checked) {
+			var raw = d.getElementById(`p${i}api`).value;
+			try {
+				obj = JSON.parse(raw);
+			} catch (e) {
+				obj.win = raw;
+				if (raw.length < 2) {
+					d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please enter your API command first";
+					return;
+				} else if (raw.indexOf('{') > -1) {
+					d.getElementById(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
+					return;
+				} else if (raw.indexOf("Please") == 0) {
+					d.getElementById(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
+					return;
+				}
+			}
+			obj.o = true;
+		} else {
+			obj.ib = d.getElementById(`p${i}ibtgl`).checked;
+			obj.sb = d.getElementById(`p${i}sbtgl`).checked;
+		}
 	}
 	obj.psave = pI; obj.n = pN;
 	var pQN = d.getElementById(`p${i}ql`).value;
@@ -1509,7 +1524,7 @@ function saveP(i) {
 
   showToast("Saving " + pN +" (" + pI + ")");
 	requestJson(obj);
-	if (obj.o) {
+	if (pl || obj.o) {
 		pJson[pI] = obj;
     delete pJson[pI].psave;
     delete pJson[pI].o;
@@ -1635,7 +1650,7 @@ function setColor(sr) {
 	}
 	updateHex();
 	updateRgb();
-	obj.transition = parseInt(d.getElementById('cyctt').value*10);
+	obj.transition = parseInt(d.getElementById('tt').value*10);
 	requestJson(obj);
 }
 
