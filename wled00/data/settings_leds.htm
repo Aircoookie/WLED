@@ -18,6 +18,16 @@
     function off(n){
       d.getElementsByName(n)[0].value = -1;
     }
+    var timeout;
+    function showToast(text, error = false)
+    {
+      var x = gId("toast");
+      x.innerHTML = text;
+      x.className = error ? "error":"show";
+      clearTimeout(timeout);
+      x.style.animation = 'none';
+      timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+    }
     function bLimits(b,p,m) {
       maxB = b; maxM = m; maxPB = p;
     }
@@ -317,8 +327,8 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     }
     function uploadFile() {
       var req = new XMLHttpRequest();
-      //req.addEventListener('load', function(){console.log(this.responseText);});
-      req.addEventListener('error', function(e){console.error(e.stack);});
+      req.addEventListener('load', function(){showToast(this.responseText)});
+      req.addEventListener('error', function(e){showToast(e.stack,true);});
       req.open("POST", "/upload");
       var formData = new FormData();
       formData.append("data", d.Sf.data.files[0], "/ir.json");
@@ -337,7 +347,6 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 	</style>
 </head>
 <body onload="S()">
-  <div style="display:hidden;"><form id="fileUL" name="fUL" method="POST" enctype="multipart/form-data" action="/upload" target="asFr"><iframe id="asFr" name="asFr" height="0" width="0" frameborder="0"></iframe></form></div>
 	<form id="form_s" name="Sf" method="post">
     <div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
@@ -397,6 +406,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     <option value="8">JSON remote</option>
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile();"><br></div>
+    <div id="toast"></div>
     <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
     Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()" style="width:35px"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
