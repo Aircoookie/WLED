@@ -15,6 +15,19 @@ bool isIp(String str) {
   return true;
 }
 
+void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+  if(!index){
+      request->_tempFile = WLED_FS.open(filename, "w");
+  }
+  if (len) {
+    request->_tempFile.write(data,len);
+  }
+  if(final){
+    request->_tempFile.close();
+    request->send(200, "text/plain", F("File Uploaded!"));
+  }
+}
+
 bool captivePortal(AsyncWebServerRequest *request)
 {
   if (ON_STA_FILTER(request)) return false; //only serve captive in AP mode
@@ -141,7 +154,12 @@ void initServer()
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
     });
-    
+
+  server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {},
+        [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data,
+                      size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
+  );
+
   //if OTA is allowed
   if (!otaLock){
     #ifdef WLED_ENABLE_FS_EDITOR
