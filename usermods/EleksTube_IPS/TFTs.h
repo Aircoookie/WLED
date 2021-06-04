@@ -33,12 +33,41 @@ private:
   }
 
   uint16_t output_buffer[TFT_HEIGHT][TFT_WIDTH];
+  
 
   // These BMP functions are stolen directly from the TFT_SPIFFS_BMP example in the TFT_eSPI library.
   // Unfortunately, they aren't part of the library itself, so I had to copy them.
   // I've modified drawBmp to buffer the whole image at once instead of doing it line-by-line.
 
   //// BEGIN STOLEN CODE
+
+  bool drawBin(const char *filename) {
+    fs::File bmpFS;
+
+
+    // Open requested file on SD card
+    bmpFS = WLED_FS.open(filename, "r");
+
+    if (!bmpFS)
+    {
+      Serial.print(F("File not found: "));
+      Serial.println(filename);
+      return(false);
+    }
+
+    bool oldSwapBytes = getSwapBytes();
+    setSwapBytes(true);
+
+    bmpFS.read((uint8_t *) output_buffer,64800);
+
+    pushImage(0, 0,  135, 240, (uint16_t *)output_buffer);
+
+    setSwapBytes(oldSwapBytes);
+
+    bmpFS.close();
+
+    return(true);
+  }
 
   bool drawBmp(const char *filename) {
     fs::File bmpFS;
@@ -48,7 +77,8 @@ private:
 
     if (!bmpFS)
     {
-      Serial.println(F("File not found"));
+      Serial.print(F("File not found: "));
+      Serial.println(filename);
       return(false);
     }
 
@@ -148,7 +178,12 @@ public:
       // Filenames are no bigger than "255.bmp\0"
       char file_name[10];
       sprintf(file_name, "/%d.bmp", digits[digit]);
-      drawBmp(file_name);
+      if (WLED_FS.exists(file_name)) {
+        drawBmp(file_name);
+      } else {
+        sprintf(file_name, "/%d.bin", digits[digit]);
+        drawBin(file_name);
+      }
     }
   }
 
