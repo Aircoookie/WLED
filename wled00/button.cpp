@@ -96,7 +96,7 @@ void handleAnalog(uint8_t b)
 
   if (buttonType[b] == BTN_TYPE_ANALOG_INVERTED) aRead = 255 - aRead;
 
-  // remove noise & reduce frequency of UI updates
+  // remove noise & reduce frequency of UI updates (3*13mV)
   aRead &= 0xFC;
 
   if (oldRead[b] == aRead) return;  // no change in reading
