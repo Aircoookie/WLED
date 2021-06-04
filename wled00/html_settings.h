@@ -354,7 +354,7 @@ Timed-Light-Over Presets: <input name="MN" type="number" min="0" max="250"
 required><br><h3>Button actions</h3><table style="margin:0 auto" id="macros">
 <thead><tr><td>push<br>switch</td><td>short<br>on-&gt;off</td><td>long<br>
 off-&gt;on</td><td>double<br>N/A</td></tr></thead><tbody></tbody></table><div>
-For analog button set <i>duble</i> to:<ul><li>250=global brightness</li><li>
+For analog button set <i>double</i> to:<ul><li>250=global brightness</li><li>
 249=effect speed</li><li>248=effect intensity</li><li>247=palette</li><li>
 200=primary color hue</li><li>0..32=segment X opacity</li></ul>More details: <a 
 href="https://github.com/Aircoookie/WLED/wiki/Macros#analog-button" 

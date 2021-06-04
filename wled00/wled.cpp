@@ -442,13 +442,14 @@ void WLED::beginStrip()
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
-  if (bootPreset > 0) {
-    applyPreset(bootPreset);
-  } else if (turnOnAtBoot) {
+  if (turnOnAtBoot) {
     if (briS > 0) bri = briS;
     else if (bri == 0) bri = 128;
   } else {
     briLast = briS; bri = 0;
+  }
+  if (bootPreset > 0) {
+    applyPreset(bootPreset);
   }
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
