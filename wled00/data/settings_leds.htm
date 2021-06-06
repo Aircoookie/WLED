@@ -325,13 +325,13 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
       gId("btns").innerHTML = c;
     }
-    function uploadFile() {
+    function uploadFile(name) {
       var req = new XMLHttpRequest();
       req.addEventListener('load', function(){showToast(this.responseText)});
       req.addEventListener('error', function(e){showToast(e.stack,true);});
       req.open("POST", "/upload");
       var formData = new FormData();
-      formData.append("data", d.Sf.data.files[0], "/ir.json");
+      formData.append("data", d.Sf.data.files[0], name);
       req.send(formData);
       d.Sf.data.value = '';
       return false;
@@ -342,9 +342,8 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       //maxM=5000;maxPB=1536;d.um_p=[1,6,7,8,9,10,11];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;addBtn(0,0,2);addBtn(1,3,4);addBtn(2,-1,0);d.Sf.IR.value=-1;
     }
 	</script>
-	<style>
-		@import url("style.css");
-	</style>
+	<style>@import url("/style.css");</style>
+	<link href="/skin.css" rel="stylesheet">
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
@@ -405,7 +404,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     <option value="7">9-key red</option>
     <option value="8">JSON remote</option>
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
-    <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile();"><br></div>
+    <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/ir.json');"><br></div>
     <div id="toast"></div>
     <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
     Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()" style="width:35px"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>

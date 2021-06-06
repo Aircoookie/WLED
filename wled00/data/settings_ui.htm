@@ -54,7 +54,16 @@
 			}
 			tar[pList[len-1]] = val;
 		}
-
+		var timeout;
+		function showToast(text, error = false)
+		{
+			var x = gId("toast");
+			x.innerHTML = text;
+			x.className = error ? "error":"show";
+			clearTimeout(timeout);
+			x.style.animation = 'none';
+			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+		}
 		function addRec(s, path = "", label = null)
 		{
 			var str = "";
@@ -180,12 +189,21 @@
 				gId("theme_bg_random").checked = false;
 			}
 		}
-
+		function uploadFile(name) {
+			var req = new XMLHttpRequest();
+			req.addEventListener('load', function(){showToast(this.responseText)});
+			req.addEventListener('error', function(e){showToast(e.stack,true);});
+			req.open("POST", "/upload");
+			var formData = new FormData();
+			formData.append("data", d.Sf.data.files[0], name);
+			req.send(formData);
+			d.Sf.data.value = '';
+			return false;
+	    }
 		function GetV(){var d=document;}
 	</script>
-	<style>
-		@import url("style.css");
-	</style>
+	<style>@import url("/style.css");</style>
+	<link href="/skin.css" rel="stylesheet">
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
@@ -217,6 +235,8 @@
 		<span class="l">BG image URL</span>: <input id="theme_bg_url" class="agi" oninput="checkRandomBg()"><br>
 		<span class="l">Random BG image</span>: <input type="checkbox" id="theme_bg_random" class="agi cb" onchange="setRandomBg()"><br>
 		<input id="theme_base" class="agi" style="display:none">
+		<div id="skin">Skinning CSS: <input type="file" name="data" accept=".css"> <input type="button" value="Upload" onclick="uploadFile('/skin.css');"><br></div>
+		<div id="toast"></div>
 		<hr><button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button>
 	</form>
 </body>

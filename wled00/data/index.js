@@ -173,6 +173,21 @@ function loadBg(iUrl)
 	});
 }
 
+function loadSkinCSS(cId)
+{
+	if (!gId(cId))	// chack if element exists
+	{
+		var h  = document.getElementsByTagName('head')[0];
+		var l  = document.createElement('link');
+		l.id   = cId;
+		l.rel  = 'stylesheet';
+		l.type = 'text/css';
+		l.href = '/skin.css';
+		l.media = 'all';
+		h.appendChild(l);
+	}
+}
+
 function onLoad()
 {
 	if (window.location.protocol == "file:") {
@@ -191,6 +206,7 @@ function onLoad()
 
 	applyCfg();
 	loadBg(cfg.theme.bg.url);
+	loadSkinCSS('skinCss');
 
 	var cd = gId('csl').children;
 	for (var i = 0; i < cd.length; i++) cd[i].style.backgroundColor = "rgb(0, 0, 0)";
@@ -263,7 +279,6 @@ function showToast(text, error = false)
 	x.className = error ? "error":"show";
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-//	x.style.animation = null;
 	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 }
 
@@ -431,7 +446,6 @@ function loadFX(callback = null)
 	.then(json => {
 		eJson = Object.entries(json);
 		populateEffects();
-//		updateUI();
 		if (callback) callback();
 	})
 	.catch(function (error) {
@@ -985,15 +999,6 @@ function updateSelectedPalette(scrollto=false)
 
 	var selectedPalette = parent.querySelector(`.lstI[data-id="${selectedPal}"]`);
 	if (selectedPalette) parent.querySelector(`.lstI[data-id="${selectedPal}"]`).classList.add('selected');
-
-/*
-	if (scrollto && selectedPalette) {
-		selectedPalette.scrollIntoView({
-			behavior: 'smooth',
-			block: 'center',
-		});
-	}
-*/
 }
 
 function updateSelectedFx(scrollto=false)
@@ -1008,14 +1013,6 @@ function updateSelectedFx(scrollto=false)
 
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
 	if (selectedEffect) selectedEffect.classList.add('selected');
-/*
-	if (scrollto && selectedEffect) {
-		selectedEffect.scrollIntoView({
-			behavior: 'smooth',
-			block: 'center',
-		});
-	}
-*/
 }
 
 function displayRover(i,s)
@@ -1135,22 +1132,6 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 			return;
 		}
 		var s = json.state ? json.state : json;
-/*
-		if (!command || rinfo) {
-//			if (!rinfo) {
-//				pmt = json.info.fs.pmt;
-//				populatePresets(true);
-//				pmtLast = pmt;
-//			}
-			var info = json.info;
-			pmt = info.fs.pmt;
-//			if (!command && pmt != pmtLast) setTimeout(loadPresets,99);
-			pmtLast = pmt;
-			lastinfo = info;
-//			if (isInfo) populateInfo(info);
-//			if (!rinfo) loadPalettesData();
-		}
-*/
 		if (!handleJson(s)) {
 			showToast('No Segments!', true);
 			updateUI(false);

@@ -3,7 +3,7 @@ body {
   text-align: center;
   background: #222;
   color: #fff;
-  line-height: 200%;
+  line-height: 200%%; /* %% because of AsyncWebServer */
   margin: 0;
 }
 hr {
