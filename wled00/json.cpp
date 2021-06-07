@@ -131,8 +131,6 @@ void deserializeSegment(JsonObject elem, byte it)
       effectSpeed = elem[F("sx")] | effectSpeed;
       effectIntensity = elem[F("ix")] | effectIntensity;
       effectPalette = elem["pal"] | effectPalette;
-      // it may be a good idea to also stop playlist if effect has changed
-      unloadPlaylist();
     } else { //permanent
       byte fx = elem["fx"] | seg.mode;
       if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
