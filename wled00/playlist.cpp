@@ -10,6 +10,7 @@ typedef struct PlaylistEntry {
   uint16_t tr;
 } ple;
 
+bool     playlistEndless = false;
 int8_t   playlistRepeat = 1;
 byte     playlistEndPreset = 0;
 byte    *playlistEntries = nullptr;
@@ -92,6 +93,9 @@ void loadPlaylist(JsonObject playlistObj) {
   playlistRepeat = playlistObj[F("repeat")] | 0;
   playlistEndPreset = playlistObj[F("end")] | 0;
 
+  playlistEndless = playlistRepeat < 1;
+  if (playlistEndless && playlistRepeat==0) playlistRepeat = 1; // it will never decrement
+
   currentPlaylist = 0; //TODO here we need the preset ID where the playlist is saved
 }
 
@@ -112,9 +116,8 @@ void handlePlaylist() {
     }
     // playlist roll-over
     if (!playlistIndex) {
-      if (playlistRepeat > 0) {// playlistRepeat < 0 => endless loop with shuffling presets
-        playlistRepeat--; // decrease repeat count on each index reset
-      } else {
+      if (!playlistEndless) playlistRepeat--; // decrease repeat count on each index reset if not an endless playlist
+      if (playlistRepeat < 0) {// playlistRepeat < 0 => endless loop with shuffling presets
         shufflePlaylist();  // shuffle playlist and start over
       }
     }
