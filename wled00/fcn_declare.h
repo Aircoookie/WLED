@@ -100,8 +100,8 @@ void handleIR();
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "FX.h"
 
-void deserializeSegment(JsonObject elem, byte it);
-bool deserializeState(JsonObject root);
+void deserializeSegment(JsonObject elem, byte it, bool fromPlaylist = false);
+bool deserializeState(JsonObject root, bool fromPlaylist = false);
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true, uint8_t versionAPI = 1);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
@@ -160,7 +160,7 @@ void loadPlaylist(JsonObject playlistObject);
 void handlePlaylist();
 
 //presets.cpp
-bool applyPreset(byte index);
+bool applyPreset(byte index, bool fromPlaylist = false);
 void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 void deletePreset(byte index);
 

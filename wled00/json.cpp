@@ -6,7 +6,7 @@
  * JSON API (De)serialization
  */
 
-void deserializeSegment(JsonObject elem, byte it)
+void deserializeSegment(JsonObject elem, byte it, bool fromPlaylist)
 {
   byte id = elem["id"] | it;
   if (id < strip.getMaxSegments())
@@ -127,6 +127,8 @@ void deserializeSegment(JsonObject elem, byte it)
 
     //temporary, strip object gets updated via colorUpdated()
     if (id == strip.getMainSegmentId()) {
+      // it may be a good idea to also stop playlist if effect has changed
+      if (!fromPlaylist && !elem["fx"].isNull()) unloadPlaylist();
       effectCurrent = elem["fx"] | effectCurrent;
       effectSpeed = elem[F("sx")] | effectSpeed;
       effectIntensity = elem[F("ix")] | effectIntensity;
@@ -188,7 +190,7 @@ void deserializeSegment(JsonObject elem, byte it)
   }
 }
 
-bool deserializeState(JsonObject root)
+bool deserializeState(JsonObject root, bool fromPlaylist)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
@@ -284,20 +286,20 @@ bool deserializeState(JsonObject root)
         {
           if (lowestActive == 99) lowestActive = s;
           if (sg.isSelected()) {
-            deserializeSegment(segVar, s);
+            deserializeSegment(segVar, s, fromPlaylist);
             didSet = true;
           }
         }
       }
-      if (!didSet && lowestActive < strip.getMaxSegments()) deserializeSegment(segVar, lowestActive);
+      if (!didSet && lowestActive < strip.getMaxSegments()) deserializeSegment(segVar, lowestActive, fromPlaylist);
     } else { //set only the segment with the specified ID
-      deserializeSegment(segVar, id);
+      deserializeSegment(segVar, id, fromPlaylist);
     }
   } else {
     JsonArray segs = segVar.as<JsonArray>();
     for (JsonObject elem : segs)
     {
-      deserializeSegment(elem, it);
+      deserializeSegment(elem, it, fromPlaylist);
       it++;
     }
   }

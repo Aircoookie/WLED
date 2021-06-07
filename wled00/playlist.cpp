@@ -127,6 +127,6 @@ void handlePlaylist() {
     jsonTransitionOnce = true;
     transitionDelayTemp = playlistEntries[playlistIndex].tr * 100;
     playlistEntryDur = playlistEntries[playlistIndex].dur;
-    applyPreset(playlistEntries[playlistIndex].preset);
+    applyPreset(playlistEntries[playlistIndex].preset, true);
   }
 }
