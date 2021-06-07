@@ -35,6 +35,7 @@ void shufflePlaylist() {
   DEBUG_PRINTLN(F("Playlist shuffle."));
 }
 
+
 void unloadPlaylist() {
   if (playlistEntries != nullptr) {
     delete[] playlistEntries;
@@ -45,6 +46,7 @@ void unloadPlaylist() {
   DEBUG_PRINTLN(F("Playlist unloaded."));
 }
 
+
 void loadPlaylist(JsonObject playlistObj) {
   unloadPlaylist();
   
@@ -52,6 +54,7 @@ void loadPlaylist(JsonObject playlistObj) {
   playlistLen = presets.size();
   if (playlistLen == 0) return;
   if (playlistLen > 100) playlistLen = 100;
+
   playlistEntries = new PlaylistEntry[playlistLen];
   if (playlistEntries == nullptr) return;
 
@@ -70,7 +73,7 @@ void loadPlaylist(JsonObject playlistObj) {
   } else {
     for (int dur : durations) {
       if (it >= playlistLen) break;
-      playlistEntries[it].dur = dur;
+      playlistEntries[it].dur = (dur > 0) ? dur : presetCycleTime;
       it++;
     }
   }
@@ -117,16 +120,13 @@ void handlePlaylist() {
     // playlist roll-over
     if (!playlistIndex) {
       // playlistRepeat < 0 => endless loop
-      if (playlistRepeat > 0) playlistRepeat--; // decrease repeat count on each index reset if not an endless playlist
-      if (playlistRepeat < -1) {  // playlistRepeat < -1 => with shuffling presets
-        shufflePlaylist();  // shuffle playlist and start over
-      }
+      if (playlistRepeat >  0) playlistRepeat--;  // decrease repeat count on each index reset if not an endless playlist
+      if (playlistRepeat < -1) shufflePlaylist(); // shuffle playlist and start over
     }
 
     jsonTransitionOnce = true;
     transitionDelayTemp = playlistEntries[playlistIndex].tr * 100;
     playlistEntryDur = playlistEntries[playlistIndex].dur;
-    if (playlistEntryDur == 0) playlistEntryDur = 10;
     applyPreset(playlistEntries[playlistIndex].preset);
   }
 }
