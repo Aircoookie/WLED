@@ -41,6 +41,7 @@ private:
 
   //// BEGIN STOLEN CODE
 
+  // Draw directly from file stored in RGB565 format
   bool drawBin(const char *filename) {
     fs::File bmpFS;
 
@@ -55,14 +56,25 @@ private:
       return(false);
     }
 
-    bool oldSwapBytes = getSwapBytes();
-    setSwapBytes(true);
+    size_t sz = bmpFS.size();
+    if (sz <= 64800)
+    {
+      bool oldSwapBytes = getSwapBytes();
+      setSwapBytes(true);
 
-    bmpFS.read((uint8_t *) output_buffer,64800);
+      int16_t h = sz / (135 * 2);
 
-    pushImage(0, 0,  135, 240, (uint16_t *)output_buffer);
+      //draw img that is shorter than 240pix into the center
+      int16_t y = (height() - h) /2;
 
-    setSwapBytes(oldSwapBytes);
+      bmpFS.read((uint8_t *) output_buffer,sz);
+
+      if (!realtimeMode || realtimeOverride) strip.service();
+
+      pushImage(0, y, 135, h, (uint16_t *)output_buffer);
+
+      setSwapBytes(oldSwapBytes);
+    }
 
     bmpFS.close();
 

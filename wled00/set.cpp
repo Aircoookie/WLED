@@ -833,7 +833,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   
   pos = req.indexOf(F("NX=")); //sets digits to code
   if (pos > 0) {
-    strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
+    strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 7);
     setCronixie();
   }
 
