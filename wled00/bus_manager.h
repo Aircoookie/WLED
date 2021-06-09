@@ -24,7 +24,7 @@ struct BusConfig {
     colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
     if (type > 47) nPins = 2;
-    else if (type > 41 && type < 46) nPins = NUM_PWM_PINS(type);
+    else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
 };

@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2105200
+#define VERSION 2106070
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -249,7 +249,12 @@ WLED_GLOBAL byte apBehavior _INIT(AP_BEHAVIOR_BOOT_NO_CONN);       // access poi
 WLED_GLOBAL IPAddress staticIP      _INIT_N(((  0,   0,  0,  0))); // static IP of ESP
 WLED_GLOBAL IPAddress staticGateway _INIT_N(((  0,   0,  0,  0))); // gateway (router) IP
 WLED_GLOBAL IPAddress staticSubnet  _INIT_N(((255, 255, 255, 0))); // most common subnet in home networks
-WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
+#ifdef ARDUINO_ARCH_ESP32
+WLED_GLOBAL bool noWifiSleep _INIT(true);                          // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
+#else
+WLED_GLOBAL bool noWifiSleep _INIT(false);
+#endif
+
 #ifdef WLED_USE_ETHERNET
   #ifdef WLED_ETH_DEFAULT                                          // default ethernet board type if specified
     WLED_GLOBAL int ethernetType _INIT(WLED_ETH_DEFAULT);          // ethernet board type

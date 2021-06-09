@@ -237,7 +237,11 @@
 // string temp buffer (now stored in stack locally)
 #define OMAX 2048
 
-#define E131_MAX_UNIVERSE_COUNT 9
+#ifdef WLED_USE_ETHERNET
+#define E131_MAX_UNIVERSE_COUNT 20
+#else
+#define E131_MAX_UNIVERSE_COUNT 10
+#endif
 
 #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
 
