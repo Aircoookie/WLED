@@ -304,6 +304,10 @@ function pName(i) {
 	return n;
 }
 
+function isPlaylist(i) {
+	return pJson[i].playlist && pJson[i].playlist.ps;
+}
+
 function papiVal(i) {
 	if (!pJson[i]) return "";
 	var o = Object.assign({},pJson[i]);
@@ -432,7 +436,7 @@ function populatePresets(fromls)
 
     cn += `<div class="seg pres" id="p${i}o">`;
     if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-    cn += `<div class="segname pname" onclick="setPreset(${i})">${(pJson[i].playlist && pJson[i].playlist.ps)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
+    cn += `<div class="segname pname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
@@ -1069,7 +1073,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 					errstr = "Not enough space to save preset!";
 					break;
 				case 12:
-					errstr = "The requested preset does not exist.";
+					errstr = "Preset not found.";
 					break;
 				case 19:
 					errstr = "A filesystem error has occured.";
@@ -1303,8 +1307,8 @@ function makeP(i,pl) {
 	<div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 	<div class="c">
 		<button class="btn btn-i btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save ${(pl)?"playlist":(i>0)?"changes":"preset"}</button>
-		${(i>0)?'<button class="btn btn-i btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':
-						'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
+		${(i>0)?'<button class="btn btn-i btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete '+(pl?"playlist":"preset"):
+						'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
 	</div>
 	<div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn">
 
@@ -1494,6 +1498,7 @@ function saveP(i,pl) {
 	var obj = {};
 	if (pl) {
 		obj.playlist = plJson;
+		obj.o = true;
 	} else {
 		if (!d.getElementById(`p${i}cstgl`).checked) {
 			var raw = d.getElementById(`p${i}api`).value;
@@ -1787,11 +1792,18 @@ function expand(i,a)
 		var p = i-100;
 		d.getElementById(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
 		if (d.getElementById('seg' +i).innerHTML == "") {
-      d.getElementById('seg' +i).innerHTML = makeP(p);
-      var papi = papiVal(p);
-      d.getElementById(`p${p}api`).value = papi;
-      if (papi.indexOf("Please") == 0) d.getElementById(`p${p}cstgl`).checked = true;
-      tglCs(p);
+			if (isPlaylist(p)) {
+				plJson = pJson[p].playlist;
+				d.getElementById('seg' +i).innerHTML = makeP(p,true);
+				plEDiv = d.getElementById('ple');
+				refreshPlE();
+			} else {
+      	d.getElementById('seg' +i).innerHTML = makeP(p);
+				var papi = papiVal(p);
+				d.getElementById(`p${p}api`).value = papi;
+				if (papi.indexOf("Please") == 0) d.getElementById(`p${p}cstgl`).checked = true;
+				tglCs(p);
+			}
 		}
 	}
 }
