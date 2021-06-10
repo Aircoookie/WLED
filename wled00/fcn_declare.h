@@ -97,8 +97,8 @@ void handleIR();
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "FX.h"
 
-void deserializeSegment(JsonObject elem, byte it);
-bool deserializeState(JsonObject root);
+void deserializeSegment(JsonObject elem, byte it, byte presetId = 0);
+bool deserializeState(JsonObject root, byte presetId = 0);
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
@@ -155,7 +155,7 @@ void _drawOverlayCronixie();
 //playlist.cpp
 void shufflePlaylist();
 void unloadPlaylist();
-void loadPlaylist(JsonObject playlistObject);
+void loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
 
 //presets.cpp
