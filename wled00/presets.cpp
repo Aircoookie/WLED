@@ -14,7 +14,7 @@ bool applyPreset(byte index)
     #ifdef WLED_DEBUG_FS
       serializeJson(*fileDoc, Serial);
     #endif
-    deserializeState(fdo);
+    deserializeState(fdo, index);
   } else {
     DEBUGFS_PRINTLN(F("Make read buf"));
     DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
@@ -24,7 +24,7 @@ bool applyPreset(byte index)
     #ifdef WLED_DEBUG_FS
       serializeJson(fDoc, Serial);
     #endif
-    deserializeState(fdo);
+    deserializeState(fdo, index);
   }
 
   if (!errorFlag) {
@@ -35,6 +35,7 @@ bool applyPreset(byte index)
   return false;
 }
 
+//persist=false is not currently honored
 void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
   if (index == 0 || index > 250) return;

@@ -192,6 +192,9 @@
 #define SEG_OPTION_FREEZE         5            //Segment contents will not be refreshed
 #define SEG_OPTION_TRANSITIONAL   7
 
+//Playlist option byte
+#define PL_OPTION_SHUFFLE      0x01
+
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
 #define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
