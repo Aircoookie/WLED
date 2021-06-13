@@ -231,6 +231,8 @@ class FourLineDisplayUsermod : public Usermod {
      * or if forceRedraw).
      */
     void redraw(bool forceRedraw) {
+      static bool showName = false;
+
       if (type==NONE) return;
       if (overlayUntil > 0) {
         if (millis() >= overlayUntil) {
@@ -274,6 +276,15 @@ class FourLineDisplayUsermod : public Usermod {
         } else if (displayTurnedOff && clockMode) {
           showTime();
         } else if ((millis() - lastRedraw)/1000%3 == 0) {
+          // alternate IP address and server name
+          String serverName = serverDescription;
+          if (serverName != String("WLED")) {
+            showName = !showName;
+            for (uint8_t i=serverName.length(); i<getCols()-1; i++) serverName += ' ';
+            //drawGlyph(0, lineHeight, 68, u8x8_font_open_iconic_embedded_1x1); // wifi icon
+            if (showName) drawString(1, lineHeight, serverName.c_str());
+            else          drawString(1, lineHeight, ((WiFi.localIP()).toString()).c_str());
+          }
           // change 4th line every 3s
           switch (lineFourType) {
             case FLD_LINE_4_BRIGHTNESS:
@@ -322,7 +333,7 @@ class FourLineDisplayUsermod : public Usermod {
       // Do the actual drawing
 
       // First row with Wifi name
-      drawGlyph(0, 0, 80, u8x8_font_open_iconic_embedded_1x1); // wifi icon
+      drawGlyph(0, 0, 80, u8x8_font_open_iconic_embedded_1x1); // home icon
       String ssidString = knownSsid.substring(0, getCols() > 1 ? getCols() - 2 : 0);
       drawString(1, 0, ssidString.c_str());
       // Print `~` char to indicate that SSID is longer, than our display
@@ -331,7 +342,7 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       // Second row with IP or Psssword
-      drawGlyph(0, lineHeight, 68, u8x8_font_open_iconic_embedded_1x1); // home icon
+      drawGlyph(0, lineHeight, 68, u8x8_font_open_iconic_embedded_1x1); // wifi icon
       // Print password in AP mode and if led is OFF.
       if (apActive && bri == 0) {
         drawString(1, lineHeight, apPass);
