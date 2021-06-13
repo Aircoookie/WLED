@@ -2,6 +2,12 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2106140
+
+-   Updated main logo
+-   Reduced flash usage by 0.8kB by using 8-bit instead of 32-bit PNGs for welcome and 404 pages
+-   Added a check to stop Alexa reporting an error if state set by macro differs from the expected state
+
 #### Build 2106100
 
 -   Added support for multiple buttons with various types (PR #1977)
