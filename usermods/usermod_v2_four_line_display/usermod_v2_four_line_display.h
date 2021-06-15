@@ -54,11 +54,12 @@
 #define LINE_BUFFER_SIZE            16+1
 
 typedef enum {
-  FLD_LINE_4_BRIGHTNESS = 0,
-  FLD_LINE_4_EFFECT_SPEED,
-  FLD_LINE_4_EFFECT_INTENSITY,
-  FLD_LINE_4_MODE,
-  FLD_LINE_4_PALETTE
+  FLD_LINE_BRIGHTNESS = 0,
+  FLD_LINE_EFFECT_SPEED,
+  FLD_LINE_EFFECT_INTENSITY,
+  FLD_LINE_MODE,
+  FLD_LINE_PALETTE,
+  FLD_LINE_TIME
 } Line4Type;
 
 typedef enum {
@@ -87,9 +88,6 @@ class FourLineDisplayUsermod : public Usermod {
     bool sleepMode = true;          // allow screen sleep?
     bool clockMode = false;         // display clock
 
-    // needRedraw marks if redraw is required to prevent often redrawing.
-    bool needRedraw = true;
-
     // Next variables hold the previous known values to determine if redraw is
     // required.
     String knownSsid = "";
@@ -106,7 +104,7 @@ class FourLineDisplayUsermod : public Usermod {
     unsigned long lastUpdate = 0;
     unsigned long lastRedraw = 0;
     unsigned long overlayUntil = 0;
-    Line4Type lineFourType = FLD_LINE_4_BRIGHTNESS;
+    Line4Type lineType = FLD_LINE_BRIGHTNESS;
     // Set to 2 or 3 to mark lines 2 or 3. Other values ignored.
     byte markLineNum = 0;
 
@@ -232,10 +230,11 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void redraw(bool forceRedraw) {
       static bool showName = false;
+      unsigned long now = millis();
 
       if (type==NONE) return;
       if (overlayUntil > 0) {
-        if (millis() >= overlayUntil) {
+        if (now >= overlayUntil) {
           // Time to display the overlay has elapsed.
           overlayUntil = 0;
           forceRedraw = true;
@@ -247,83 +246,62 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       // Check if values which are shown on display changed from the last time.
-      if (forceRedraw) {
-        needRedraw = true;
-      } else if (((apActive) ? String(apSSID) : WiFi.SSID()) != knownSsid) {
-        needRedraw = true;
-      } else if (knownIp != (apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP())) {
-        needRedraw = true;
-      } else if (knownBrightness != bri) {
-        needRedraw = true;
-      } else if (knownEffectSpeed != effectSpeed) {
-        needRedraw = true;
-      } else if (knownEffectIntensity != effectIntensity) {
-        needRedraw = true;
-      } else if (knownMode != strip.getMode()) {
-        needRedraw = true;
-      } else if (knownPalette != strip.getSegment(0).palette) {
-        needRedraw = true;
-      }
-
-      if (!needRedraw) {
+      if (forceRedraw ||
+          (((apActive) ? String(apSSID) : WiFi.SSID()) != knownSsid) ||
+          (knownIp != (apActive ? IPAddress(4, 3, 2, 1) : Network.localIP())) ||
+          (knownBrightness != bri) ||
+          (knownEffectSpeed != effectSpeed) ||
+          (knownEffectIntensity != effectIntensity) ||
+          (knownMode != strip.getMode()) ||
+          (knownPalette != strip.getSegment(0).palette)) {
+        knownHour = 99; // force time update
+        clear();
+      } else if (sleepMode && !displayTurnedOff && ((now - lastRedraw)/1000)%5 == 0) {
+        // change line every 5s
+        showName = !showName;
+        switch (lineType) {
+          case FLD_LINE_BRIGHTNESS:
+            lineType = FLD_LINE_EFFECT_SPEED;
+            break;
+          case FLD_LINE_MODE:
+            lineType = FLD_LINE_BRIGHTNESS;
+            break;
+          case FLD_LINE_PALETTE:
+            lineType = clockMode ? FLD_LINE_MODE : FLD_LINE_BRIGHTNESS;
+            break;
+          case FLD_LINE_EFFECT_SPEED:
+            lineType = FLD_LINE_EFFECT_INTENSITY;
+            break;
+          case FLD_LINE_EFFECT_INTENSITY:
+            lineType = FLD_LINE_PALETTE;
+            break;
+          default:
+            lineType = FLD_LINE_MODE;
+            break;
+        }
+        knownHour = 99; // force time update
+      } else {
         // Nothing to change.
         // Turn off display after 3 minutes with no change.
         if(sleepMode && !displayTurnedOff && (millis() - lastRedraw > screenTimeout)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
-          knownHour = 99; // force screen clear
+          clear(); // force screen clear
           sleepOrClock(true);
         } else if (displayTurnedOff && clockMode) {
           showTime();
-        } else if ((millis() - lastRedraw)/1000%3 == 0) {
-          // alternate IP address and server name
-          String serverName = serverDescription;
-          if (serverName != String("WLED")) {
-            showName = !showName;
-            for (uint8_t i=serverName.length(); i<getCols()-1; i++) serverName += ' ';
-            //drawGlyph(0, lineHeight, 68, u8x8_font_open_iconic_embedded_1x1); // wifi icon
-            if (showName) drawString(1, lineHeight, serverName.c_str());
-            else          drawString(1, lineHeight, ((WiFi.localIP()).toString()).c_str());
-          }
-          // change 4th line every 3s
-          switch (lineFourType) {
-            case FLD_LINE_4_BRIGHTNESS:
-              setLineFourType(FLD_LINE_4_EFFECT_SPEED);
-              break;
-            case FLD_LINE_4_MODE:
-              setLineFourType(FLD_LINE_4_BRIGHTNESS);
-              break;
-            case FLD_LINE_4_PALETTE:
-              setLineFourType(clockMode ? FLD_LINE_4_MODE : FLD_LINE_4_BRIGHTNESS);
-              break;
-            case FLD_LINE_4_EFFECT_SPEED:
-              setLineFourType(FLD_LINE_4_EFFECT_INTENSITY);
-              break;
-            case FLD_LINE_4_EFFECT_INTENSITY:
-              setLineFourType(FLD_LINE_4_PALETTE);
-              break;
-            default:
-              break;
-          }
-          drawLineFour();
         }
         return;
-      } else {
-        knownHour = 99; // force time display
-        clear();
       }
 
-      needRedraw = false;
-      lastRedraw = millis();
+      if (((now - lastRedraw)/1000)%5 != 0) lastRedraw = now;
       
-      if (displayTurnedOff) {
-        // Turn the display back on
-        sleepOrClock(false);
-      }
+      // Turn the display back on
+      if (displayTurnedOff) sleepOrClock(false);
 
       // Update last known values.
       knownSsid = apActive ? WiFi.softAPSSID() : WiFi.SSID();
-      knownIp = apActive ? IPAddress(4, 3, 2, 1) : WiFi.localIP();
+      knownIp = apActive ? IPAddress(4, 3, 2, 1) : Network.localIP();
       knownBrightness = bri;
       knownMode = strip.getMode();
       knownPalette = strip.getSegment(0).palette;
@@ -347,41 +325,50 @@ class FourLineDisplayUsermod : public Usermod {
       if (apActive && bri == 0) {
         drawString(1, lineHeight, apPass);
       } else {
-        drawString(1, lineHeight, (knownIp.toString()).c_str());
+        // alternate IP address and server name
+        String serverName = serverDescription;
+        if (serverName != String("WLED")) {
+          for (uint8_t i=serverName.length(); i<getCols()-1; i++) serverName += ' ';
+          //drawGlyph(0, lineHeight, 68, u8x8_font_open_iconic_embedded_1x1); // wifi icon
+          if (showName) drawString(1, lineHeight, serverName.c_str());
+          else          drawString(1, lineHeight, (knownIp.toString()).c_str());
+        }
       }
 
-      // Third row with mode name or current time
-      if (clockMode) showTime(false);
-      else           showCurrentEffectOrPalette(knownMode, JSON_mode_names, 2);
-
-      // Fourth row
-      drawLineFour();
+      // draw third and fourth row
+      drawLine(2, clockMode ? lineType : FLD_LINE_MODE);
+      drawLine(3, clockMode ? FLD_LINE_TIME : lineType);
 
       drawGlyph(0, 2*lineHeight, 66 + (bri > 0 ? 3 : 0), u8x8_font_open_iconic_weather_2x2); // sun/moon icon
       //if (markLineNum>1) drawGlyph(2, markLineNum*lineHeight, 66, u8x8_font_open_iconic_arrow_1x1); // arrow icon
     }
 
-    void drawLineFour() {
+    void drawLine(uint8_t line, Line4Type lineType) {
       char lineBuffer[LINE_BUFFER_SIZE];
-      switch(lineFourType) {
-        case FLD_LINE_4_BRIGHTNESS:
+      switch(lineType) {
+        case FLD_LINE_BRIGHTNESS:
           sprintf_P(lineBuffer, PSTR("Brightness %3d"), bri);
-          drawString(2, 3*lineHeight, lineBuffer);
+          drawString(2, line*lineHeight, lineBuffer);
           break;
-        case FLD_LINE_4_EFFECT_SPEED:
+        case FLD_LINE_EFFECT_SPEED:
           sprintf_P(lineBuffer, PSTR("FX Speed   %3d"), effectSpeed);
-          drawString(2, 3*lineHeight, lineBuffer);
+          drawString(2, line*lineHeight, lineBuffer);
           break;
-        case FLD_LINE_4_EFFECT_INTENSITY:
+        case FLD_LINE_EFFECT_INTENSITY:
           sprintf_P(lineBuffer, PSTR("FX Intens. %3d"), effectIntensity);
-          drawString(2, 3*lineHeight, lineBuffer);
+          drawString(2, line*lineHeight, lineBuffer);
           break;
-        case FLD_LINE_4_MODE:
-          showCurrentEffectOrPalette(knownMode, JSON_mode_names, 3);
+        case FLD_LINE_MODE:
+          showCurrentEffectOrPalette(knownMode, JSON_mode_names, line);
           break;
-        case FLD_LINE_4_PALETTE:
+        case FLD_LINE_PALETTE:
+          showCurrentEffectOrPalette(knownPalette, JSON_palette_names, line);
+          break;
+        case FLD_LINE_TIME:
+          showTime(false);
+          break;
         default:
-          showCurrentEffectOrPalette(knownPalette, JSON_palette_names, 3);
+          // unknown type, do nothing
           break;
       }
     }
@@ -457,23 +444,6 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     /**
-     * Specify what data should be defined on line 4
-     * (the last line).
-     */
-    void setLineFourType(Line4Type newLineFourType) {
-      if (newLineFourType == FLD_LINE_4_BRIGHTNESS || 
-          newLineFourType == FLD_LINE_4_EFFECT_SPEED || 
-          newLineFourType == FLD_LINE_4_EFFECT_INTENSITY || 
-          newLineFourType == FLD_LINE_4_MODE ||
-          newLineFourType == FLD_LINE_4_PALETTE) {
-        lineFourType = newLineFourType;
-      } else {
-        // Unknown value
-        lineFourType = FLD_LINE_4_BRIGHTNESS;
-      }
-    }
-
-    /**
      * Line 3 or 4 (last two lines) can be marked with an
      * arrow in the first column. Pass 2 or 3 to this to
      * specify which line to mark with an arrow.
@@ -496,8 +466,7 @@ class FourLineDisplayUsermod : public Usermod {
         if (clockMode) showTime();
         else           setPowerSave(1);
         displayTurnedOff = true;
-      }
-      else {
+      } else {
         setPowerSave(0);
         displayTurnedOff = false;
       }
@@ -513,13 +482,13 @@ class FourLineDisplayUsermod : public Usermod {
 
       updateLocalTime();
       byte minuteCurrent = minute(localTime);
-      byte hourCurrent = hour(localTime);
+      byte hourCurrent   = hour(localTime);
       byte secondCurrent = second(localTime);
       if (knownMinute == minuteCurrent && knownHour == hourCurrent) {
         // Time hasn't changed.
         if (!fullScreen) return;
       } else {
-        if (fullScreen) clear();
+        //if (fullScreen) clear();
       }
       knownMinute = minuteCurrent;
       knownHour = hourCurrent;
@@ -529,7 +498,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (fullScreen)
         draw2x2String(DATE_INDENT, lineHeight==1 ? 0 : lineHeight, lineBuffer); // adjust for 8 line displays
       else
-        drawString(2, lineHeight*2, lineBuffer);
+        drawString(2, lineHeight*3, lineBuffer);
 
       byte showHour = hourCurrent;
       boolean isAM = false;
@@ -553,11 +522,12 @@ class FourLineDisplayUsermod : public Usermod {
       if (fullScreen) {
         draw2x2String(TIME_INDENT+2, lineHeight*2, lineBuffer);
         sprintf_P(lineBuffer, PSTR("%02d"), secondCurrent);
-        if (!useAMPM) drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
+        if (useAMPM) drawString(12+(fullScreen?0:2), lineHeight*2, (isAM ? "AM" : "PM"), true);
+        else         drawString(12, lineHeight*2+1, lineBuffer, true); // even with double sized rows print seconds in 1 line
       } else {
-        drawString(9+(useAMPM?0:2), lineHeight*2, lineBuffer);
+        drawString(9+(useAMPM?0:2), lineHeight*3, lineBuffer);
+        if (useAMPM) drawString(12+(fullScreen?0:2), lineHeight*3, (isAM ? "AM" : "PM"), true);
       }
-      if (useAMPM) drawString(12+(fullScreen?0:2), lineHeight*2, (isAM ? "AM" : "PM"), true);
     }
 
     /*
@@ -640,7 +610,7 @@ class FourLineDisplayUsermod : public Usermod {
         } else {
           String str = top[FPSTR(_flip)]; // checkbox -> off or on
           flip = (bool)(str!="off"); // off is guaranteed to be present
-          needRedraw |= true;
+          needsRedraw |= true;
         }
         contrast      = top[FPSTR(_contrast)].as<int>();
         refreshRate   = top[FPSTR(_refreshRate)].as<int>() * 1000;
@@ -650,14 +620,14 @@ class FourLineDisplayUsermod : public Usermod {
         } else {
           String str = top[FPSTR(_sleepMode)]; // checkbox -> off or on
           sleepMode = (bool)(str!="off"); // off is guaranteed to be present
-          needRedraw |= true;
+          needsRedraw |= true;
         }
         if (top[FPSTR(_clockMode)].is<bool>()) {
           clockMode   = top[FPSTR(_clockMode)].as<bool>();
         } else {
           String str = top[FPSTR(_clockMode)]; // checkbox -> off or on
           clockMode = (bool)(str!="off"); // off is guaranteed to be present
-          needRedraw |= true;
+          needsRedraw |= true;
         }
         DEBUG_PRINTLN(F("4 Line Display config (re)loaded."));
       } else {
@@ -687,7 +657,7 @@ class FourLineDisplayUsermod : public Usermod {
             type = newType;
           lineHeight = type==SSD1306 ? 1 : 2;
           setup();
-          needRedraw |= true;
+          needsRedraw |= true;
         }
         setContrast(contrast);
         setFlipMode(flip);
