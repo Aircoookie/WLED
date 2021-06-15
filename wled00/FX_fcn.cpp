@@ -964,7 +964,7 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
   }
 
   uint8_t paletteIndex = i;
-  if (mapping) paletteIndex = (i*255)/(SEGLEN -1);
+  if (mapping && SEGLEN > 1) paletteIndex = (i*255)/(SEGLEN -1);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
   fastled_col = ColorFromPalette( currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);
