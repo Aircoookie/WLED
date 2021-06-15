@@ -76,11 +76,11 @@
       }
     }
 	function addRow(i,p,l,d) {
-		var t = gId("macros");
-        var rCnt = t.rows.length;
-        var tr = t.insertRow(rCnt);
+		var t = gId("macros");	// table
+        var rCnt = t.rows.length;   // get the number of rows.
+        var tr = t.insertRow(rCnt); // table row.
 
-		var td = document.createElement('td');
+		var td = document.createElement('td');          // TABLE DEFINITION.
 		td = tr.insertCell(0);
 		td.innerHTML = `Button ${i}:`;
 		td = tr.insertCell(1);
@@ -179,17 +179,7 @@
 			<tbody>
 			</tbody>
 		</table>
-		<div>For analog button set <i>double</i> to:
-			<ul>
-				<li>250=global brightness</li>
-				<li>249=effect speed</li>
-				<li>248=effect intensity</li>
-				<li>247=palette</li>
-				<li>200=primary color hue</li>
-				<li>0..32=segment X opacity</li>
-			</ul>
-			More details: <a href="https://github.com/Aircoookie/WLED/wiki/Macros#analog-button" target="_blank">Analog Button setup</a>
-		</div>
+		<a href="https://github.com/Aircoookie/WLED/wiki/Macros#analog-button" target="_blank">Analog Button setup</a>
 		<h3>Time-controlled presets</h3>
     <div style="display: inline-block">
     <table id="TMT">

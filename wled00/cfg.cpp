@@ -160,7 +160,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
   CJSON(touchThreshold,hw[F("btn")][F("tt")]);
 
-  #ifndef WLED_DISABLE_INFRARED
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
     if (pinManager.allocatePin(hw_ir_pin,false)) {
@@ -169,7 +168,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       irPin = -1;
     }
   }
-  #endif
   CJSON(irEnabled, hw["ir"]["type"]);
 
   JsonObject relay = hw[F("relay")];

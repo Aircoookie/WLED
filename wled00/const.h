@@ -47,7 +47,7 @@
 #define USERMOD_ID_FIXNETSERVICES         4     //Usermod "usermod_Fix_unreachable_netservices.h"
 #define USERMOD_ID_PIRSWITCH              5     //Usermod "usermod_PIR_sensor_switch.h"
 #define USERMOD_ID_IMU                    6     //Usermod "usermod_mpu6050_imu.h"
-#define USERMOD_ID_FOUR_LINE_DISP         7     //Usermod "usermod_v2_four_line_display.h 
+#define USERMOD_ID_FOUR_LINE_DISP         7     //Usermod "usermod_v2_four_line_display.h
 #define USERMOD_ID_ROTARY_ENC_UI          8     //Usermod "usermod_v2_rotary_encoder_ui.h"
 #define USERMOD_ID_AUTO_SAVE              9     //Usermod "usermod_v2_auto_save.h"
 #define USERMOD_ID_DHT                   10     //Usermod "usermod_dht.h"
@@ -55,6 +55,9 @@
 #define USERMOD_ID_VL53L0X               12     //Usermod "usermod_vl53l0x_gestures.h"
 #define USERMOD_ID_MULTI_RELAY           13     //Usermod "usermod_multi_relay.h"
 #define USERMOD_ID_ANIMATED_STAIRCASE    14     //Usermod "Animated_Staircase.h"
+#define USERMOD_ID_RTC                   15     //Usermod "usermod_rtc.h"
+#define USERMOD_ID_ELEKSTUBE_IPS         16     //Usermod "usermod_elekstube_ips.h"
+#define USERMOD_ID_SN_PHOTORESISTOR      17     //Usermod "usermod_sn_photoresistor.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -62,7 +65,7 @@
 #define AP_BEHAVIOR_ALWAYS                2     //Always open
 #define AP_BEHAVIOR_BUTTON_ONLY           3     //Only when button pressed for 6 sec
 
-//Notifier callMode 
+//Notifier callMode
 #define NOTIFIER_CALL_MODE_INIT           0     //no updates on init, can be used to disable updates
 #define NOTIFIER_CALL_MODE_DIRECT_CHANGE  1
 #define NOTIFIER_CALL_MODE_BUTTON         2
@@ -79,7 +82,7 @@
 #define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
 #define RGBW_MODE_AUTO_BRIGHTER   1            //New algorithm. Adds as much white as the darkest RGBW channel
 #define RGBW_MODE_AUTO_ACCURATE   2            //New algorithm. Adds as much white as the darkest RGBW channel and subtracts this amount from each RGB channel
-#define RGBW_MODE_DUAL            3            //Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)  
+#define RGBW_MODE_DUAL            3            //Manual slider + auto calculation. Automatically calculates only if manual slider is set to off (0)
 #define RGBW_MODE_LEGACY          4            //Old floating algorithm. Too slow for realtime and palette support
 
 //realtime modes
@@ -190,6 +193,9 @@
 #define SEG_OPTION_FREEZE         5            //Segment contents will not be refreshed
 #define SEG_OPTION_TRANSITIONAL   7
 
+//Playlist option byte
+#define PL_OPTION_SHUFFLE      0x01
+
 // WLED Error modes
 #define ERR_NONE         0  // All good :)
 #define ERR_EEP_COMMIT   2  // Could not commit to EEPROM (wrong flash layout?)
@@ -235,7 +241,11 @@
 // string temp buffer (now stored in stack locally)
 #define OMAX 2048
 
-#define E131_MAX_UNIVERSE_COUNT 9
+#ifdef WLED_USE_ETHERNET
+#define E131_MAX_UNIVERSE_COUNT 20
+#else
+#define E131_MAX_UNIVERSE_COUNT 10
+#endif
 
 #define ABL_MILLIAMPS_DEFAULT 850  // auto lower brightness to stay close to milliampere limit
 

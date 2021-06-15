@@ -412,8 +412,6 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 4)
   {
-    //sappend('v',SET_F("BT"),buttonType);
-    //sappend('v',SET_F("IR"),irEnabled);
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
     sappend('c',SET_F("RB"),receiveNotificationBrightness);
@@ -531,9 +529,6 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('v',SET_F("A1"),macroAlexaOff);
     sappend('v',SET_F("MC"),macroCountdown);
     sappend('v',SET_F("MN"),macroNl);
-    //sappend('v',SET_F("MP"),macroButton);
-    //sappend('v',SET_F("ML"),macroLongPress);
-    //sappend('v',SET_F("MD"),macroDoublePress);
     for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
       oappend(SET_F("addRow("));
       oappend(itoa(i,tm,10));  oappend(",");

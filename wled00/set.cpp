@@ -78,9 +78,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     int t = 0;
 
     if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
-    #ifndef WLED_DISABLE_INFRARED
     if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
-    #endif
     for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++)
       if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s]))
         pinManager.deallocatePin(btnPin[s]);
@@ -127,7 +125,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     ledCount = request->arg(F("LC")).toInt();
 
     // upate other pins
-    #ifndef WLED_DISABLE_INFRARED
     int hw_ir_pin = request->arg(F("IR")).toInt();
     if (pinManager.allocatePin(hw_ir_pin,false)) {
       irPin = hw_ir_pin;
@@ -135,7 +132,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       irPin = -1;
     }
     irEnabled = request->arg(F("IT")).toInt();
-    #endif
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
     if (pinManager.allocatePin(hw_rly_pin,true)) {
@@ -202,8 +198,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   //SYNC
   if (subPage == 4)
   {
-    //buttonType = request->arg(F("BT")).toInt();
-    //irEnabled = request->arg(F("IR")).toInt();
     int t = request->arg(F("UP")).toInt();
     if (t > 0) udpPort = t;
     t = request->arg(F("U2")).toInt();
@@ -814,14 +808,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));
   if (pos > 0) {
-    setTime(getNumVal(&req, pos));
+    setTimeFromAPI(getNumVal(&req, pos));
   }
 
   //set countdown goal (unix timestamp)
   pos = req.indexOf(F("CT="));
   if (pos > 0) {
     countdownTime = getNumVal(&req, pos);
-    if (countdownTime - now() > 0) countdownOverTriggered = false;
+    if (countdownTime - toki.second() > 0) countdownOverTriggered = false;
   }
 
   pos = req.indexOf(F("LO="));
@@ -841,7 +835,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   
   pos = req.indexOf(F("NX=")); //sets digits to code
   if (pos > 0) {
-    strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 6);
+    strlcpy(cronixieDisplay, req.substring(pos + 3, pos + 9).c_str(), 7);
     setCronixie();
   }
 
@@ -849,7 +843,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (pos > 0) //sets backlight
   {
     cronixieBacklight = (req.charAt(pos+3) != '0');
-    overlayRefreshedTime = 0;
   }
   #endif
 

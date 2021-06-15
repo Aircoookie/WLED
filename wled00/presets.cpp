@@ -4,17 +4,17 @@
  * Methods to handle saving and loading presets to/from the filesystem
  */
 
-bool applyPreset(byte index, bool fromPlaylist)
+bool applyPreset(byte index)
 {
   if (index == 0) return false;
-  if (fileDoc) {  // from POST "/json" handler (wled_server.cpp)
+  if (fileDoc) {
     errorFlag = readObjectFromFileUsingId("/presets.json", index, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = fileDoc->as<JsonObject>();
     if (fdo["ps"] == index) fdo.remove("ps"); //remove load request for same presets to prevent recursive crash
     #ifdef WLED_DEBUG_FS
       serializeJson(*fileDoc, Serial);
     #endif
-    deserializeState(fdo, fromPlaylist);
+    deserializeState(fdo, index);
   } else {
     DEBUGFS_PRINTLN(F("Make read buf"));
     DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
@@ -24,7 +24,7 @@ bool applyPreset(byte index, bool fromPlaylist)
     #ifdef WLED_DEBUG_FS
       serializeJson(fDoc, Serial);
     #endif
-    deserializeState(fdo, fromPlaylist);
+    deserializeState(fdo, index);
   }
 
   if (!errorFlag) {
@@ -35,6 +35,7 @@ bool applyPreset(byte index, bool fromPlaylist)
   return false;
 }
 
+//persist=false is not currently honored
 void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
   if (index == 0 || index > 250) return;
@@ -55,6 +56,7 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
     DEBUGFS_PRINTLN(F("Reuse recv buffer"));
     sObj.remove(F("psave"));
     sObj.remove(F("v"));
+
     if (!sObj["o"]) {
       DEBUGFS_PRINTLN(F("Save current state"));
       serializeState(sObj, true, sObj["ib"], sObj["sb"]);
@@ -68,13 +70,13 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 
     writeObjectToFileUsingId("/presets.json", index, fileDoc);
   }
-  presetsModifiedTime = now(); //unix time
+  presetsModifiedTime = toki.second(); //unix time
   updateFSInfo();
 }
 
 void deletePreset(byte index) {
   StaticJsonDocument<24> empty;
   writeObjectToFileUsingId("/presets.json", index, &empty);
-  presetsModifiedTime = now(); //unix time
+  presetsModifiedTime = toki.second(); //unix time
   updateFSInfo();
 }

@@ -1032,6 +1032,8 @@ function cmpP(a, b)
 function handleJson(s)
 {
 	if (!s) return false;
+	var e1 = gId('fxlist');
+	var e2 = gId('selectPalette');
 
 	isOn = s.on;
 	gId('sliderBri').value= s.bri;
@@ -1084,6 +1086,28 @@ function handleJson(s)
 	selectedPal = i.pal;
 	selectedFx = i.fx;
 
+/*/--- AC addition ---//
+// unfortunately this will trigger JSON request loop due to onchange event on input elements
+// and it may not be necessary with websockes
+
+	// Effects
+	var selFx = e1.querySelector(`input[name="fx"][value="${i.fx}"]`);
+	if (selFx) selFx.checked = true;
+	else location.reload(); //effect list is gone (e.g. if restoring tab). Reload.
+
+	var selElement = e1.querySelector('.selected');
+	if (selElement) selElement.classList.remove('selected');
+	var selectedEffect = e1.querySelector(`.lstI[data-id="${i.fx}"]`);
+	if (selectedEffect) selectedEffect.classList.add('selected');
+
+	// Palettes
+	var selPa = e2.querySelector(`input[name="palette"][value="${i.pal}"]`);
+	if (selPa) selPa.checked = true;
+	selElement = e2.querySelector('.selected');
+	if (selElement) selElement.classList.remove('selected');
+	e2.querySelector(`.lstI[data-id="${i.pal}"]`).classList.add('selected');
+//--- AC addition ---/*/
+
 	displayRover(lastinfo, s);
 	clearErrorToast();
 
@@ -1097,9 +1121,6 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
-	var e1 = gId('fxlist');
-	var e2 = gId('selectPalette');
-
 	var url = (loc?`http://${locip}`:'') + (rinfo ? '/json/si': (command ? '/json/state':'/json/si'));
 
 	var type = command ? 'post':'get';

@@ -176,6 +176,7 @@ void WiFiEvent(WiFiEvent_t event)
 
 void WLED::loop()
 {
+  handleTime();
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
   handleSerial();
@@ -190,10 +191,8 @@ void WLED::loop()
   yield();
   handleIO();
   handleIR();
-  handleNetworkTime();
   handleAlexa();
 
-  handleOverlays();
   yield();
 
   if (doReboot)
@@ -246,6 +245,7 @@ void WLED::loop()
     // refresh WLED nodes list
     refreshNodeList();
     if (nodeBroadcastEnabled) sendSysInfoUDP();
+    yield();
   }
 
   //LED settings have been saved, re-init busses
@@ -274,9 +274,9 @@ void WLED::loop()
   if (millis() - debugTime > 9999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
-    DEBUG_PRINT(F("Unix time: "));     DEBUG_PRINTLN(now());
+    DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
     DEBUG_PRINT(F("Free heap: "));     DEBUG_PRINTLN(ESP.getFreeHeap());
-    #ifdef ARDUINO_ARCH_ESP32
+    #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound()) {
       DEBUG_PRINT(F("Total PSRAM: "));    DEBUG_PRINT(ESP.getPsramSize()/1024); DEBUG_PRINTLN("kB");
       DEBUG_PRINT(F("Free PSRAM: "));     DEBUG_PRINT(ESP.getFreePsram()/1024); DEBUG_PRINTLN("kB");
@@ -298,6 +298,7 @@ void WLED::loop()
   }
   loops++;
 #endif        // WLED_DEBUG
+  toki.resetTick();
 }
 
 void WLED::setup()
@@ -325,31 +326,21 @@ void WLED::setup()
   DEBUG_PRINTLN(ESP.getFreeHeap());
   registerUsermods();
 
-  #ifdef ARDUINO_ARCH_ESP32
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound()) {
       pinManager.allocatePin(16); // GPIO16 reserved for SPI RAM
       pinManager.allocatePin(17); // GPIO17 reserved for SPI RAM
     }
-/*
-  TODO make reservation for Ethernet pins
-    #ifdef WLED_USE_ETHERNET
-    if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-      ethernet_settings es = ethernetBoards[ethernetType];
-      if (es.eth_power>0) pinManager.allocatePin(es.eth_power);
-      if (es.eth_mdc>0) pinManager.allocatePin(es.eth_mdc);
-      if (es.eth_mdio>0) pinManager.allocatePin(es.eth_mdio);
-      //if (es.eth_type>0) pinManager.allocatePin(es.eth_type);
-      //if (es.eth_clk_mode>0) pinManager.allocatePin(es.eth_clk_mode);
-    }
-    #endif
-*/
   #endif
+
+  //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
+  //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
 #ifdef WLED_DEBUG
   pinManager.allocatePin(1,true); // GPIO1 reserved for debug output
 #endif
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
-  pinManager.allocatePin(2,false);
+  pinManager.allocatePin(2);
 #endif
 
   bool fsinit = false;
@@ -374,7 +365,6 @@ void WLED::setup()
   DEBUG_PRINTLN(F("Usermods setup"));
   userSetup();
   usermods.setup();
-
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
@@ -382,14 +372,14 @@ void WLED::setup()
   WiFi.onEvent(WiFiEvent);
   #endif
 
-#ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
+  #ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
   if (!pinManager.isPinAllocated(3)) {
     Serial.println(F("Ada"));
     pinManager.allocatePin(3,false);
   } else {
     DEBUG_PRINTLN(F("ADALight disabled due to GPIO3 being used."));
   }
-#endif
+  #endif
 
   // generate module IDs
   escapedMac = WiFi.macAddress();

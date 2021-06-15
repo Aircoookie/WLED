@@ -100,8 +100,8 @@ void handleIR();
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "FX.h"
 
-void deserializeSegment(JsonObject elem, byte it, bool fromPlaylist = false);
-bool deserializeState(JsonObject root, bool fromPlaylist = false);
+void deserializeSegment(JsonObject elem, byte it, byte presetId = 0);
+bool deserializeState(JsonObject root, byte presetId = 0);
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true, uint8_t versionAPI = 1);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
@@ -130,6 +130,7 @@ bool initMqtt();
 void publishMqtt();
 
 //ntp.cpp
+void handleTime();
 void handleNetworkTime();
 void sendNTPPacket();
 bool checkNTPResponse();    
@@ -140,6 +141,7 @@ void setCountdown();
 byte weekdayMondayFirst();
 void checkTimers();
 void calculateSunriseAndSunset();
+void setTimeFromAPI(uint32_t timein);
 
 //overlay.cpp
 void initCronixie();
@@ -156,11 +158,11 @@ void _drawOverlayCronixie();
 //playlist.cpp
 void shufflePlaylist();
 void unloadPlaylist();
-void loadPlaylist(JsonObject playlistObject);
+void loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
 
 //presets.cpp
-bool applyPreset(byte index, bool fromPlaylist = false);
+bool applyPreset(byte index);
 void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 void deletePreset(byte index);
 

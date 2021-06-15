@@ -6,7 +6,7 @@
  * JSON API (De)serialization
  */
 
-void deserializeSegment(JsonObject elem, byte it, bool fromPlaylist)
+void deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   byte id = elem["id"] | it;
   if (id < strip.getMaxSegments())
@@ -127,15 +127,18 @@ void deserializeSegment(JsonObject elem, byte it, bool fromPlaylist)
 
     //temporary, strip object gets updated via colorUpdated()
     if (id == strip.getMainSegmentId()) {
-      // it may be a good idea to also stop playlist if effect has changed
-      if (!fromPlaylist && !elem["fx"].isNull()) unloadPlaylist();
-      effectCurrent = elem["fx"] | effectCurrent;
+      byte effectPrev = effectCurrent;
+      effectCurrent = elem[F("fx")] | effectCurrent;
+      if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
       effectSpeed = elem[F("sx")] | effectSpeed;
       effectIntensity = elem[F("ix")] | effectIntensity;
       effectPalette = elem["pal"] | effectPalette;
     } else { //permanent
-      byte fx = elem["fx"] | seg.mode;
-      if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
+      byte fx = elem[F("fx")] | seg.mode;
+      if (fx != seg.mode && fx < strip.getModeCount()) {
+        strip.setMode(id, fx);
+        if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+      }
       seg.speed = elem[F("sx")] | seg.speed;
       seg.intensity = elem[F("ix")] | seg.intensity;
       seg.palette = elem["pal"] | seg.palette;
@@ -190,7 +193,7 @@ void deserializeSegment(JsonObject elem, byte it, bool fromPlaylist)
   }
 }
 
-bool deserializeState(JsonObject root, bool fromPlaylist)
+bool deserializeState(JsonObject root, byte presetId)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
@@ -202,12 +205,15 @@ bool deserializeState(JsonObject root, bool fromPlaylist)
 
   if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
 
-  int tr = root[F("transition")] | -1;
-  if (tr >= 0)
-  {
-    transitionDelay = tr;
-    transitionDelay *= 100;
-    transitionDelayTemp = transitionDelay;
+  int tr = -1;
+  if (!presetId || currentPlaylist < 0) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
+    tr = root[F("transition")] | -1;
+    if (tr >= 0)
+    {
+      transitionDelay = tr;
+      transitionDelay *= 100;
+      transitionDelayTemp = transitionDelay;
+    }
   }
 
   tr = root[F("tt")] | -1;
@@ -244,14 +250,7 @@ bool deserializeState(JsonObject root, bool fromPlaylist)
 
   unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
-    time_t prev = now();
-    if (millis() - ntpLastSyncTime > 50000000L) {
-      setTime(timein);
-      if (abs(now() - prev) > 60L) {
-        updateLocalTime();
-        calculateSunriseAndSunset();
-      }
-    }
+    setTimeFromAPI(timein);
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
 
@@ -286,23 +285,29 @@ bool deserializeState(JsonObject root, bool fromPlaylist)
         {
           if (lowestActive == 99) lowestActive = s;
           if (sg.isSelected()) {
-            deserializeSegment(segVar, s, fromPlaylist);
+            deserializeSegment(segVar, s, presetId);
             didSet = true;
           }
         }
       }
-      if (!didSet && lowestActive < strip.getMaxSegments()) deserializeSegment(segVar, lowestActive, fromPlaylist);
+      if (!didSet && lowestActive < strip.getMaxSegments()) deserializeSegment(segVar, lowestActive, presetId);
     } else { //set only the segment with the specified ID
-      deserializeSegment(segVar, id, fromPlaylist);
+      deserializeSegment(segVar, it, presetId);
     }
   } else {
     JsonArray segs = segVar.as<JsonArray>();
     for (JsonObject elem : segs)
     {
-      deserializeSegment(elem, it, fromPlaylist);
+      deserializeSegment(elem, it, presetId);
       it++;
     }
   }
+
+  #ifndef WLED_DISABLE_CRONIXIE
+    if (root["nx"].is<const char*>()) {
+      strncpy(cronixieDisplay, root["nx"], 6);
+    }
+  #endif
 
   usermods.readFromJsonState(root);
 
@@ -320,7 +325,11 @@ bool deserializeState(JsonObject root, bool fromPlaylist)
       deletePreset(ps);
     }
     ps = root["ps"] | -1; //load preset (clears state request!)
-    if (ps >= 0) {applyPreset(ps); return stateResponse;}
+    if (ps >= 0) {
+      if (!presetId) unloadPlaylist(); //stop playlist if preset changed manually
+      applyPreset(ps);
+      return stateResponse;
+    }
 
     //HTTP API commands
     const char* httpwin = root["win"];
@@ -333,7 +342,7 @@ bool deserializeState(JsonObject root, bool fromPlaylist)
 
   JsonObject playlist = root[F("playlist")];
   if (!playlist.isNull()) {
-    loadPlaylist(playlist);
+    loadPlaylist(playlist, presetId);
     noNotification = true; //do not notify both for this request and the first playlist entry
   }
 
@@ -349,7 +358,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     root[F("start")] = seg.start;
     root["stop"] = seg.stop;
   }
-	if (!forPreset)  root[F("len")] = seg.stop - seg.start;
+	if (!forPreset) root[F("len")] = seg.stop - seg.start;
   root[F("grp")] = seg.grouping;
   root[F("spc")] = seg.spacing;
   root["on"] = seg.getOption(SEG_OPTION_ON);

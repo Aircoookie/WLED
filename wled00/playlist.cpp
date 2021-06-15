@@ -5,18 +5,24 @@
  */
 
 typedef struct PlaylistEntry {
-  uint8_t preset;
-  uint16_t dur;
-  uint16_t tr;
+  uint8_t preset; //ID of the preset to apply
+  uint16_t dur;   //Duration of the entry (in tenths of seconds)
+  uint16_t tr;    //Duration of the transition TO this entry (in tenths of seconds)
 } ple;
 
-bool           playlistEndless = false;
-int8_t         playlistRepeat = 1;
-byte           playlistEndPreset = 0;
+byte           playlistRepeat = 1;        //how many times to repeat the playlist (0 = infinitely)
+byte           playlistEndPreset = 0;     //what preset to apply after playlist end (0 = stay on last preset)
+byte           playlistOptions = 0;       //bit 0: shuffle playlist after each iteration. bits 1-7 TBD
+
 PlaylistEntry *playlistEntries = nullptr;
-byte           playlistLen;
+byte           playlistLen;               //number of playlist entries
 int8_t         playlistIndex = -1;
-uint16_t       playlistEntryDur = 0;
+uint16_t       playlistEntryDur = 0;      //duration of the current entry in tenths of seconds
+
+//values we need to keep about the parent playlist while inside sub-playlist
+//int8_t         parentPlaylistIndex = -1;
+//byte           parentPlaylistRepeat = 0;
+//byte           parentPlaylistPresetId = 0; //for re-loading
 
 
 void shufflePlaylist() {
@@ -42,12 +48,12 @@ void unloadPlaylist() {
     playlistEntries = nullptr;
   }
   currentPlaylist = playlistIndex = -1;
-  playlistLen = playlistEntryDur = 0;
+  playlistLen = playlistEntryDur = playlistOptions = 0;
   DEBUG_PRINTLN(F("Playlist unloaded."));
 }
 
 
-void loadPlaylist(JsonObject playlistObj) {
+void loadPlaylist(JsonObject playlistObj, byte presetId) {
   unloadPlaylist();
   
   JsonArray presets = playlistObj["ps"];
@@ -68,12 +74,12 @@ void loadPlaylist(JsonObject playlistObj) {
   it = 0;
   JsonArray durations = playlistObj["dur"];
   if (durations.isNull()) {
-    playlistEntries[0].dur = playlistObj["dur"] | 100;
+    playlistEntries[0].dur = playlistObj["dur"] | 100; //10 seconds as fallback
     it = 1;
   } else {
     for (int dur : durations) {
       if (it >= playlistLen) break;
-      playlistEntries[it].dur = (dur > 0) ? dur : presetCycleTime;
+      playlistEntries[it].dur = (dur > 1) ? dur : 100;
       it++;
     }
   }
@@ -93,12 +99,19 @@ void loadPlaylist(JsonObject playlistObj) {
   }
   for (int i = it; i < playlistLen; i++) playlistEntries[i].tr = playlistEntries[it -1].tr;
 
-  playlistRepeat = playlistObj[F("repeat")] | 0;
+  int rep = playlistObj[F("repeat")];
+  bool shuffle = false;
+  if (rep < 0) { //support negative values as infinite + shuffle
+    rep = 0; shuffle = true;
+  }
+
+  playlistRepeat = rep;
+  if (playlistRepeat > 0) playlistRepeat++; //add one extra repetition immediately since it will be deducted on first start
   playlistEndPreset = playlistObj[F("end")] | 0;
+  shuffle = shuffle || playlistObj["r"];
+  if (shuffle) playlistOptions += PL_OPTION_SHUFFLE;
 
-  if (playlistRepeat <= 0) playlistRepeat--; // make it endless (-2 == endless & random)
-
-  currentPlaylist = 0; //TODO here we need the preset ID where the playlist is saved
+  currentPlaylist = presetId;
   DEBUG_PRINTLN(F("Playlist loaded."));
 }
 
@@ -112,21 +125,21 @@ void handlePlaylist() {
 
     ++playlistIndex %= playlistLen; // -1 at 1st run (limit to playlistLen)
 
-    if (!playlistRepeat && !playlistIndex) { //stop if repeat == 0 and restart of playlist
-      unloadPlaylist();
-      if (playlistEndPreset) applyPreset(playlistEndPreset);
-      return;
-    }
     // playlist roll-over
     if (!playlistIndex) {
-      // playlistRepeat < 0 => endless loop
-      if (playlistRepeat >  0) playlistRepeat--;  // decrease repeat count on each index reset if not an endless playlist
-      if (playlistRepeat < -1) shufflePlaylist(); // shuffle playlist and start over
+      if (playlistRepeat == 1) { //stop if all repetitions are done
+        unloadPlaylist();
+        if (playlistEndPreset) applyPreset(playlistEndPreset);
+        return;
+      }
+      if (playlistRepeat > 1) playlistRepeat--; // decrease repeat count on each index reset if not an endless playlist
+      // playlistRepeat == 0: endless loop
+      if (playlistOptions & PL_OPTION_SHUFFLE) shufflePlaylist(); // shuffle playlist and start over
     }
 
     jsonTransitionOnce = true;
     transitionDelayTemp = playlistEntries[playlistIndex].tr * 100;
     playlistEntryDur = playlistEntries[playlistIndex].dur;
-    applyPreset(playlistEntries[playlistIndex].preset, true);
+    applyPreset(playlistEntries[playlistIndex].preset);
   }
 }

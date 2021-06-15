@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2106151
+#define VERSION 2106152
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -90,6 +90,7 @@
 #include <SPIFFSEditor.h>
 #include "src/dependencies/time/TimeLib.h"
 #include "src/dependencies/timezone/Timezone.h"
+#include "src/dependencies/toki/Toki.h"
 
 #ifndef WLED_DISABLE_ALEXA
   #define ESPALEXA_ASYNC
@@ -118,7 +119,7 @@
 // The following is a construct to enable code to compile without it.
 // There is a code thet will still not use PSRAM though:
 //    AsyncJsonResponse is a derived class that implements DynamicJsonDocument (AsyncJson-v6.h)
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
 struct PSRAM_Allocator {
   void* allocate(size_t size) {
     if (psramFound()) return ps_malloc(size); // use PSRAM if it exists
@@ -244,7 +245,12 @@ WLED_GLOBAL byte apBehavior _INIT(AP_BEHAVIOR_BOOT_NO_CONN);       // access poi
 WLED_GLOBAL IPAddress staticIP      _INIT_N(((  0,   0,  0,  0))); // static IP of ESP
 WLED_GLOBAL IPAddress staticGateway _INIT_N(((  0,   0,  0,  0))); // gateway (router) IP
 WLED_GLOBAL IPAddress staticSubnet  _INIT_N(((255, 255, 255, 0))); // most common subnet in home networks
-WLED_GLOBAL bool noWifiSleep _INIT(false);                         // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
+#ifdef ARDUINO_ARCH_ESP32
+WLED_GLOBAL bool noWifiSleep _INIT(true);                          // disabling modem sleep modes will increase heat output and power usage, but may help with connection issues
+#else
+WLED_GLOBAL bool noWifiSleep _INIT(false);
+#endif
+
 #ifdef WLED_USE_ETHERNET
   #ifdef WLED_ETH_DEFAULT                                          // default ethernet board type if specified
     WLED_GLOBAL int ethernetType _INIT(WLED_ETH_DEFAULT);          // ethernet board type
@@ -350,7 +356,7 @@ WLED_GLOBAL bool useAMPM _INIT(false);            // 12h/24h clock format
 WLED_GLOBAL byte currentTimezone _INIT(0);        // Timezone ID. Refer to timezones array in wled10_ntp.ino
 WLED_GLOBAL int utcOffsetSecs _INIT(0);           // Seconds to offset from UTC before timzone calculation
 
-WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clocl 3: cronixie
+WLED_GLOBAL byte overlayDefault _INIT(0);                               // 0: no overlay 1: analog clock 2: single-digit clock 3: cronixie
 WLED_GLOBAL byte overlayMin _INIT(0), overlayMax _INIT(ledCount - 1);   // boundaries of overlay mode
 
 WLED_GLOBAL byte analogClock12pixel _INIT(0);               // The pixel in your strip where "midnight" would be
@@ -472,13 +478,9 @@ WLED_GLOBAL bool hueStoreAllowed _INIT(false), hueNewKey _INIT(false);
 
 // overlays
 WLED_GLOBAL byte overlayCurrent _INIT(overlayDefault);
-WLED_GLOBAL byte overlaySpeed _INIT(200);
-WLED_GLOBAL unsigned long overlayRefreshMs _INIT(200);
-WLED_GLOBAL unsigned long overlayRefreshedTime;
 
 // cronixie
-WLED_GLOBAL byte dP[] _INIT_N(({ 0, 0, 0, 0, 0, 0 }));
-WLED_GLOBAL bool cronixieInit _INIT(false);
+WLED_GLOBAL byte dP[] _INIT_N(({ 255, 255, 255, 255, 255, 255 }));
 
 // countdown
 WLED_GLOBAL unsigned long countdownTime _INIT(1514764800L);
@@ -541,6 +543,7 @@ WLED_GLOBAL float longitude _INIT(0.0);
 WLED_GLOBAL float latitude _INIT(0.0);
 WLED_GLOBAL time_t sunrise _INIT(0);
 WLED_GLOBAL time_t sunset _INIT(0);
+WLED_GLOBAL Toki toki _INIT(Toki());
 
 // Temp buffer
 WLED_GLOBAL char* obuf;

@@ -42,30 +42,24 @@ uint16_t WS2812FX::mode_static(void) {
  * Blink/strobe function
  * Alternate between color1 and color2
  * if(strobe == true) then create a strobe effect
- * NOTE: Maybe re-rework without timer
  */
 uint16_t WS2812FX::blink(uint32_t color1, uint32_t color2, bool strobe, bool do_palette) {
-  uint16_t stateTime = SEGENV.aux1;
   uint32_t cycleTime = (255 - SEGMENT.speed)*20;
-  uint32_t onTime = 0;
-  uint32_t offTime = cycleTime;
-
-  if (!strobe) {
-    onTime = (cycleTime * SEGMENT.intensity) >> 8;
-    offTime = cycleTime - onTime;
+  uint32_t onTime = FRAMETIME;
+  if (!strobe) onTime += ((cycleTime * SEGMENT.intensity) >> 8);
+  cycleTime += FRAMETIME*2;
+  uint32_t it = now / cycleTime;
+  uint32_t rem = now % cycleTime;
+  
+  bool on = false;
+  if (it != SEGENV.step //new iteration, force on state for one frame, even if set time is too brief
+      || rem <= onTime) { 
+    on = true;
   }
   
-  stateTime = ((SEGENV.aux0 & 1) == 0) ? onTime : offTime;
-  stateTime += 20;
-    
-  if (now - SEGENV.step > stateTime)
-  {
-    SEGENV.aux0++;
-    SEGENV.aux1 = stateTime;
-    SEGENV.step = now;
-  }
+  SEGENV.step = it; //save previous iteration
 
-  uint32_t color = ((SEGENV.aux0 & 1) == 0) ? color1 : color2;
+  uint32_t color = on ? color1 : color2;
   if (color == color1 && do_palette)
   {
     for(uint16_t i = 0; i < SEGLEN; i++) {
