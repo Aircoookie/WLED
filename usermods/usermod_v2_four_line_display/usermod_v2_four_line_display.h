@@ -294,6 +294,7 @@ class FourLineDisplayUsermod : public Usermod {
         return;
       }
 
+      // do not update lastRedraw marker if just switching row contenet
       if (((now - lastRedraw)/1000)%5 != 0) lastRedraw = now;
       
       // Turn the display back on
@@ -326,13 +327,12 @@ class FourLineDisplayUsermod : public Usermod {
         drawString(1, lineHeight, apPass);
       } else {
         // alternate IP address and server name
-        String serverName = serverDescription;
-        if (serverName != String("WLED")) {
-          for (uint8_t i=serverName.length(); i<getCols()-1; i++) serverName += ' ';
-          //drawGlyph(0, lineHeight, 68, u8x8_font_open_iconic_embedded_1x1); // wifi icon
-          if (showName) drawString(1, lineHeight, serverName.c_str());
-          else          drawString(1, lineHeight, (knownIp.toString()).c_str());
+        String secondLine = knownIp.toString();
+        if (showName && strcmp(serverDescription, "WLED") != 0) {
+          secondLine = serverDescription;
         }
+        for (uint8_t i=secondLine.length(); i<getCols()-1; i++) secondLine += ' ';
+        drawString(1, lineHeight, secondLine.c_str());
       }
 
       // draw third and fourth row
