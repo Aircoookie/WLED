@@ -331,7 +331,7 @@ class WS2812FX {
         deallocateData();
         if (WS2812FX::instance->_usedSegmentData + len > MAX_SEGMENT_DATA) return false; //not enough memory
         // if possible use SPI RAM on ESP32
-        #ifdef ARDUINO_ARCH_ESP32
+        #ifdef ARDUINO_ARCH_ESP32 && defined(WLED_USE_PSRAM)
         if (psramFound())
           data = (byte*) ps_malloc(len);
         else

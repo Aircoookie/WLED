@@ -311,7 +311,7 @@ void getSettingsJS(byte subPage, char* dest)
       #ifdef WLED_DEBUG
         oappend(SET_F(",1")); // debug output (TX) pin
       #endif
-      #ifdef ARDUINO_ARCH_ESP32
+      #ifdef ARDUINO_ARCH_ESP32 && defined(WLED_USE_PSRAM)
         if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
       #endif
       //TODO: add reservations for Ethernet shield pins

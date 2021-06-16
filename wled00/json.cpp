@@ -594,7 +594,7 @@ void serializeInfo(JsonObject root)
   #endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
-  #ifdef ARDUINO_ARCH_ESP32
+  #ifdef ARDUINO_ARCH_ESP32 && defined(WLED_USE_PSRAM)
   if (psramFound()) root[F("psram")] = ESP.getFreePsram();
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
