@@ -2,6 +2,10 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2106170
+
+-   Optimized JSON buffer usage (pre-serialized color arrays)
+
 #### Build 2106140
 
 -   Updated main logo

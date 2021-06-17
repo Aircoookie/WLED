@@ -330,24 +330,38 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 
 	JsonArray colarr = root.createNestedArray("col");
 
+  char colstr[70]; //max len 68 (5 chan, all 255)
+  obuf = colstr; olen = 0;
+  oappend("[");
+
 	for (uint8_t i = 0; i < 3; i++)
 	{
-		JsonArray colX = colarr.createNestedArray();
+    oappend("[");
+
     if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
     {
-      if (i == 0) {
-        colX.add(col[0]); colX.add(col[1]); colX.add(col[2]); if (strip.isRgbw) colX.add(col[3]);
-      } else {
-         colX.add(colSec[0]); colX.add(colSec[1]); colX.add(colSec[2]); if (strip.isRgbw) colX.add(colSec[3]);
+      byte* c = (i == 0)? col:colSec;
+
+      oappendi(c[0]); oappend(",");
+      oappendi(c[1]); oappend(",");
+      oappendi(c[2]);
+      if (strip.isRgbw) {
+        oappend(","); oappendi(c[3]);
       }
     } else {
-  		colX.add((seg.colors[i] >> 16) & 0xFF);
-  		colX.add((seg.colors[i] >> 8) & 0xFF);
-  		colX.add((seg.colors[i]) & 0xFF);
-  		if (strip.isRgbw)
-  			colX.add((seg.colors[i] >> 24) & 0xFF);
+  		oappendi((seg.colors[i] >> 16) & 0xFF); oappend(",");
+  		oappendi((seg.colors[i] >> 8) & 0xFF); oappend(",");
+  		oappendi((seg.colors[i]) & 0xFF);
+  		if (strip.isRgbw) {
+  			oappend(","); oappendi((seg.colors[i] >> 24) & 0xFF);
+      }
     }
+
+    oappend("]");
+    if (i < 2) oappend(",");
 	}
+  oappend("]");
+  root["col"] = serialized(colstr);
 
 	root[F("fx")]  = seg.mode;
 	root[F("sx")]  = seg.speed;
@@ -789,6 +803,9 @@ void serveJson(AsyncWebServerRequest* request)
         doc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
       }
   }
+
+  DEBUG_PRINT("JSON buffer size: ");
+  DEBUG_PRINTLN(doc.memoryUsage());
 
   response->setLength();
   request->send(response);
