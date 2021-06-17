@@ -145,6 +145,7 @@
 #define WLED_ETH_ESP32_POE        2
 #define WLED_ETH_WESP32           3
 #define WLED_ETH_QUINLED          4
+#define WLED_ETH_TWILIGHTLORD     5
 
 //Hue error codes
 #define HUE_ERROR_INACTIVE        0
