@@ -456,7 +456,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   // use rev:2 API if more than 12 segments on ESP8266
   uint8_t tooMany = 0;
   for(uint8_t i=0; i < strip.getMaxSegments(); i++) if ((strip.getSegment(i)).isActive()) tooMany++;
-  if (tooMany>12)
+  if (tooMany<13)
   #endif
     root.remove("rev"); // remove API revision if ESP32 or ESP8266 with less than 13 segments
   uint8_t versionAPI = root["rev"] | 1;
@@ -594,7 +594,7 @@ void serializeInfo(JsonObject root)
   #endif
 
   root[F("freeheap")] = ESP.getFreeHeap();
-  #ifdef ARDUINO_ARCH_ESP32 && defined(WLED_USE_PSRAM)
+  #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) root[F("psram")] = ESP.getFreePsram();
   #endif
   root[F("uptime")] = millis()/1000 + rolloverMillis*4294967;
