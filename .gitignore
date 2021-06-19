@@ -14,3 +14,4 @@
 .clang-format
 node_modules
 .idea
+.direnv

@@ -85,7 +85,7 @@ public:
         if (m_pD2D && (999000000L != ntpLastSyncTime))
         {
             // to prevent needing to import all the timezone stuff from other modules, work completely in UTC
-            time_t timeUTC = now();
+            time_t timeUTC = toki.second();
             tmElements_t tmNow;
             breakTime(timeUTC, tmNow);
             int nCurMinute = tmNow.Minute;

@@ -27,10 +27,6 @@
 #include "FX.h"
 #include "palettes.h"
 
-#ifndef PWM_INDEX
-#define PWM_INDEX 0
-#endif
-
 /*
   Custom per-LED mapping has moved!
 
@@ -47,25 +43,48 @@
   19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]
 */
 
-//do not call this method from system context (network callback)
-void WS2812FX::finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst)
-{
-  if (supportWhite == _useRgbw && countPixels == _length && _skipFirstMode == skipFirst) return;
-  RESET_RUNTIME;
-  _useRgbw = supportWhite;
-  _length = countPixels;
-  _skipFirstMode = skipFirst;
+//factory defaults LED setup
+//#define PIXEL_COUNTS 30, 30, 30, 30
+//#define DATA_PINS 16, 1, 3, 4
+//#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 
+#ifndef PIXEL_COUNTS
+  #define PIXEL_COUNTS DEFAULT_LED_COUNT
+#endif
+
+#ifndef DATA_PINS
+  #define DATA_PINS LEDPIN
+#endif
+
+#ifndef DEFAULT_LED_TYPE
+  #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
+#endif
+
+//do not call this method from system context (network callback)
+void WS2812FX::finalizeInit(uint16_t countPixels)
+{
+  RESET_RUNTIME;
+  _length = countPixels;
   _lengthRaw = _length;
-  if (_skipFirstMode) {
-    _lengthRaw += LED_SKIP_AMOUNT;
-  }
 
   //if busses failed to load, add default (FS issue...)
   if (busses.getNumBusses() == 0) {
-    uint8_t defPin[] = {LEDPIN};
-    BusConfig defCfg = BusConfig(TYPE_WS2812_RGB, defPin, 0, _lengthRaw, COL_ORDER_GRB);
-    busses.add(defCfg);
+    const uint8_t defDataPins[] = {DATA_PINS};
+    const uint16_t defCounts[] = {PIXEL_COUNTS};
+    const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));
+    const uint8_t defNumCounts = ((sizeof defCounts)   / (sizeof defCounts[0]));
+    uint16_t prevLen = 0;
+    for (uint8_t i = 0; i < defNumBusses; i++) {
+      uint8_t defPin[] = {defDataPins[i]};
+      uint16_t start = prevLen;
+      uint16_t count = _lengthRaw;
+      if (defNumBusses > 1 && defNumCounts) {
+        count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
+      }
+      prevLen += count;
+      BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB);
+      busses.add(defCfg);
+    }
   }
   
   deserializeMap();
@@ -145,8 +164,6 @@ void WS2812FX::setPixelColor(uint16_t n, uint32_t c) {
   setPixelColor(n, r, g, b, w);
 }
 
-#define REV(i) (_length - 1 - (i))
-
 //used to map from segment index to physical pixel, taking into account grouping, offsets, reverse and mirroring
 uint16_t WS2812FX::realPixelIndex(uint16_t i) {
   int16_t iGroup = i * SEGMENT.groupLength();
@@ -162,8 +179,6 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
   }
 
   realIndex += SEGMENT.start;
-  /* Reverse the whole string */
-  if (reverseMode) realIndex = REV(realIndex);
 
   return realIndex;
 }
@@ -171,7 +186,7 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   //auto calculate white channel value if enabled
-  if (_useRgbw) {
+  if (isRgbw) {
     if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || (w == 0 && (rgbwMode == RGBW_MODE_DUAL || rgbwMode == RGBW_MODE_LEGACY)))
     {
       //white value is set to lowest RGB channel
@@ -184,7 +199,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
   }
   
-  uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
 
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
@@ -196,37 +210,26 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
 
-    /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
-    bool reversed = reverseMode ^ IS_REVERSE;
+    bool reversed = IS_REVERSE;
     uint16_t realIndex = realPixelIndex(i);
 
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
-      int16_t indexSet = realIndex + (reversed ? -j : j);
-      int16_t indexSetRev = indexSet;
-      if (reverseMode) indexSetRev = REV(indexSet);
-      if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
-      if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) {
-        busses.setPixelColor(indexSet + skip, col);
+      int indexSet = realIndex + (reversed ? -j : j);
+      if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
         if (IS_MIRROR) { //set the corresponding mirrored pixel
-          if (reverseMode) {
-            busses.setPixelColor(REV(SEGMENT.start) - indexSet + skip + REV(SEGMENT.stop) + 1, col);
-          } else {
-            busses.setPixelColor(SEGMENT.stop - indexSet + skip + SEGMENT.start - 1, col);
-          }
+          uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
+          if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
+          busses.setPixelColor(indexMir, col);
         }
+        if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
+        busses.setPixelColor(indexSet, col);
       }
     }
   } else { //live data, etc.
-    if (reverseMode) i = REV(i);
     if (i < customMappingSize) i = customMappingTable[i];
     
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
-    busses.setPixelColor(i + skip, col);
-  }
-  if (skip && i == 0) {
-    for (uint16_t j = 0; j < skip; j++) {
-      busses.setPixelColor(j, BLACK);
-    }
+    busses.setPixelColor(i, col);
   }
 }
 
@@ -276,21 +279,22 @@ void WS2812FX::show(void) {
 
     for (uint16_t i = 0; i < _length; i++) //sum up the usage of each LED
     {
-      RgbwColor c = busses.getPixelColor(i);
+      uint32_t c = busses.getPixelColor(i);
+      byte r = c >> 16, g = c >> 8, b = c, w = c >> 24;
 
       if(useWackyWS2815PowerModel)
       {
         // ignore white component on WS2815 power calculation
-        powerSum += (MAX(MAX(c.R,c.G),c.B)) * 3;
+        powerSum += (MAX(MAX(r,g),b)) * 3;
       }
       else 
       {
-        powerSum += (c.R + c.G + c.B + c.W);
+        powerSum += (r + g + b + w);
       }
     }
 
 
-    if (_useRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    if (isRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
     {
       powerSum *= 3;
       powerSum = powerSum >> 2; //same as /= 4
@@ -498,8 +502,6 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   i = realPixelIndex(i);
   
   if (i < customMappingSize) i = customMappingTable[i];
-
-  if (_skipFirstMode) i += LED_SKIP_AMOUNT;
   
   if (i >= _lengthRaw) return 0;
   
@@ -752,6 +754,12 @@ uint16_t WS2812FX::triwave16(uint16_t in)
   return 0xFFFF - (in - 0x8000)*2;
 }
 
+uint8_t WS2812FX::sin_gap(uint16_t in) {
+  if (in & 0x100) return 0;
+  //if (in > 255) return 0;
+  return sin8(in + 192); //correct phase shift of sine so that it starts and stops at 0
+}
+
 /*
  * Generates a tristate square wave w/ attac & decay 
  * @param x input value 0-255
@@ -956,7 +964,7 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
   }
 
   uint8_t paletteIndex = i;
-  if (mapping) paletteIndex = (i*255)/(SEGLEN -1);
+  if (mapping && SEGLEN > 1) paletteIndex = (i*255)/(SEGLEN -1);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
   fastled_col = ColorFromPalette( currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);

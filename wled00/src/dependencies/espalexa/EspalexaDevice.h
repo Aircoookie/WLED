@@ -40,6 +40,8 @@ public:
   uint8_t getId();
   EspalexaDeviceProperty getLastChangedProperty();
   uint8_t getValue();
+  uint8_t getLastValue(); //last value that was not off (1-255)
+  bool    getState();
   uint8_t getPercent();
   uint8_t getDegrees();
   uint16_t getHue();
@@ -59,6 +61,7 @@ public:
   void setId(uint8_t id);
   void setPropertyChanged(EspalexaDeviceProperty p);
   void setValue(uint8_t bri);
+  void setState(bool onoff);
   void setPercent(uint8_t perc);
   void setName(String name);
   void setColor(uint16_t ct);
@@ -67,8 +70,6 @@ public:
   void setColor(uint8_t r, uint8_t g, uint8_t b);
   
   void doCallback();
-  
-  uint8_t getLastValue(); //last value that was not off (1-255)
 };
 
 #endif

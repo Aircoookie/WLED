@@ -42,7 +42,7 @@ const size_t numBrightnessSteps = sizeof(brightnessSteps) / sizeof(uint8_t);
 void incBrightness()
 {
   // dumb incremental search is efficient enough for so few items
-  for (int index = 0; index < numBrightnessSteps; ++index)
+  for (uint8_t index = 0; index < numBrightnessSteps; ++index)
   {
     if (brightnessSteps[index] > bri)
     {
@@ -227,7 +227,7 @@ void decodeIR24(uint32_t code)
   switch (code) {
     case IR24_BRIGHTER  : incBrightness();                  break;
     case IR24_DARKER    : decBrightness();                  break;
-    case IR24_OFF       : briLast = bri; bri = 0;           break;
+    case IR24_OFF    : if (bri > 0) briLast = bri; bri = 0; break;
     case IR24_ON        : bri = briLast;                    break;
     case IR24_RED       : colorFromUint32(COLOR_RED);       break;
     case IR24_REDDISH   : colorFromUint32(COLOR_REDDISH);   break;
@@ -259,7 +259,7 @@ void decodeIR24OLD(uint32_t code)
   switch (code) {
     case IR24_OLD_BRIGHTER  : incBrightness();                     break;
     case IR24_OLD_DARKER    : decBrightness();                     break;
-    case IR24_OLD_OFF       : briLast = bri; bri = 0;              break;
+    case IR24_OLD_OFF       : if (bri > 0) briLast = bri; bri = 0; break;
     case IR24_OLD_ON        : bri = briLast;                       break;
     case IR24_OLD_RED       : colorFromUint32(COLOR_RED);          break;
     case IR24_OLD_REDDISH   : colorFromUint32(COLOR_REDDISH);      break;
@@ -292,7 +292,7 @@ void decodeIR24CT(uint32_t code)
   switch (code) {
     case IR24_CT_BRIGHTER   : incBrightness();                     break;
     case IR24_CT_DARKER     : decBrightness();                     break;
-    case IR24_CT_OFF        : briLast = bri; bri = 0;              break;
+    case IR24_CT_OFF        : if (bri > 0) briLast = bri; bri = 0; break;
     case IR24_CT_ON         : bri = briLast;                       break;
     case IR24_CT_RED        : colorFromUint32(COLOR_RED);          break;
     case IR24_CT_REDDISH    : colorFromUint32(COLOR_REDDISH);      break;
@@ -327,7 +327,7 @@ void decodeIR40(uint32_t code)
   switch (code) {
     case IR40_BPLUS        : incBrightness();                                            break;
     case IR40_BMINUS       : decBrightness();                                            break;
-    case IR40_OFF          : briLast = bri; bri = 0;                                     break;
+    case IR40_OFF          : if (bri > 0) briLast = bri; bri = 0;                        break;
     case IR40_ON           : bri = briLast;                                              break;
     case IR40_RED          : colorFromUint24(COLOR_RED);                                 break;
     case IR40_REDDISH      : colorFromUint24(COLOR_REDDISH);                             break;
@@ -345,19 +345,19 @@ void decodeIR40(uint32_t code)
     case IR40_MAGENTA      : colorFromUint24(COLOR_MAGENTA);                             break;
     case IR40_PINK         : colorFromUint24(COLOR_PINK);                                break;
     case IR40_WARMWHITE2   : {
-      if (useRGBW) {        colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
+      if (strip.isRgbw) {        colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
       else                  colorFromUint24(COLOR_WARMWHITE2);                       }   break;
     case IR40_WARMWHITE    : {
-      if (useRGBW) {        colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
+      if (strip.isRgbw) {        colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
       else                  colorFromUint24(COLOR_WARMWHITE);                        }   break;
     case IR40_WHITE        : {
-      if (useRGBW) {        colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }    
+      if (strip.isRgbw) {        colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }    
       else                  colorFromUint24(COLOR_NEUTRALWHITE);                     }   break;
     case IR40_COLDWHITE    : {
-      if (useRGBW) {        colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
+      if (strip.isRgbw) {        colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
       else                  colorFromUint24(COLOR_COLDWHITE);                        }   break;
     case IR40_COLDWHITE2    : {
-      if (useRGBW) {        colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }   
+      if (strip.isRgbw) {        colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }   
       else                  colorFromUint24(COLOR_COLDWHITE2);                       }   break;
     case IR40_WPLUS        : relativeChangeWhite(10);                                    break;
     case IR40_WMINUS       : relativeChangeWhite(-10, 5);                                break;
@@ -384,7 +384,7 @@ void decodeIR44(uint32_t code)
   switch (code) {
     case IR44_BPLUS       : incBrightness();                                            break;
     case IR44_BMINUS      : decBrightness();                                            break;
-    case IR44_OFF         : briLast = bri; bri = 0;                                     break;
+    case IR44_OFF         : if (bri > 0) briLast = bri; bri = 0;                        break;
     case IR44_ON          : bri = briLast;                                              break;
     case IR44_RED         : colorFromUint24(COLOR_RED);                                 break;
     case IR44_REDDISH     : colorFromUint24(COLOR_REDDISH);                             break;
@@ -402,21 +402,21 @@ void decodeIR44(uint32_t code)
     case IR44_MAGENTA     : colorFromUint24(COLOR_MAGENTA);                             break;
     case IR44_PINK        : colorFromUint24(COLOR_PINK);                                break;
     case IR44_WHITE       : {
-      if (useRGBW) {
+      if (strip.isRgbw) {
         if (col[3] > 0) col[3] = 0; 
         else {              colorFromUint32(COLOR2_NEUTRALWHITE); effectCurrent = 0; }
       } else                colorFromUint24(COLOR_NEUTRALWHITE);                     }  break;
     case IR44_WARMWHITE2  : {
-      if (useRGBW) {        colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
+      if (strip.isRgbw) {        colorFromUint32(COLOR2_WARMWHITE2);   effectCurrent = 0; }    
       else                  colorFromUint24(COLOR_WARMWHITE2);                       }  break;
     case IR44_WARMWHITE   : {
-      if (useRGBW) {        colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
+      if (strip.isRgbw) {        colorFromUint32(COLOR2_WARMWHITE);    effectCurrent = 0; }    
       else                  colorFromUint24(COLOR_WARMWHITE);                        }  break;
     case IR44_COLDWHITE   : {
-      if (useRGBW) {        colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
+      if (strip.isRgbw) {        colorFromUint32(COLOR2_COLDWHITE);    effectCurrent = 0; }   
       else                  colorFromUint24(COLOR_COLDWHITE);                        }  break;
     case IR44_COLDWHITE2  : {
-      if (useRGBW) {        colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }    
+      if (strip.isRgbw) {        colorFromUint32(COLOR2_COLDWHITE2);   effectCurrent = 0; }    
       else                  colorFromUint24(COLOR_COLDWHITE2);                       }  break;
     case IR44_REDPLUS     : relativeChange(&effectCurrent,  1, 0, MODE_COUNT);          break;
     case IR44_REDMINUS    : relativeChange(&effectCurrent, -1, 0);                      break;
@@ -447,7 +447,7 @@ void decodeIR21(uint32_t code)
     switch (code) {
     case IR21_BRIGHTER:  incBrightness();                  break;
     case IR21_DARKER:    decBrightness();                  break;
-    case IR21_OFF:       briLast = bri; bri = 0;           break;
+    case IR21_OFF:    if (bri > 0) briLast = bri; bri = 0; break;
     case IR21_ON:        bri = briLast;                    break;
     case IR21_RED:       colorFromUint32(COLOR_RED);       break;
     case IR21_REDDISH:   colorFromUint32(COLOR_REDDISH);   break;

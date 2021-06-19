@@ -48,9 +48,6 @@
 #define MAX(a,b) ((a)>(b)?(a):(b))
 #endif
 
-/* Disable effects with high flash memory usage (currently TV simulator) - saves 18.5kB */
-//#define WLED_DISABLE_FX_HIGH_FLASH_USE
-
 /* Not used in all effects yet */
 #define WLED_FPS         42
 #define FRAMETIME        (1000/WLED_FPS)
@@ -78,7 +75,7 @@
 #define SEGENV           _segment_runtimes[_segment_index]
 #define SEGLEN           _virtualSegmentLength
 #define SEGACT           SEGMENT.stop
-#define SPEED_FORMULA_L  5 + (50*(255 - SEGMENT.speed))/SEGLEN
+#define SPEED_FORMULA_L  5U + (50U*(255U - SEGMENT.speed))/SEGLEN
 #define RESET_RUNTIME    memset(_segment_runtimes, 0, sizeof(_segment_runtimes))
 
 // some common colors
@@ -168,7 +165,7 @@
 #define FX_MODE_POLICE_ALL              49
 #define FX_MODE_TWO_DOTS                50
 #define FX_MODE_TWO_AREAS               51
-#define FX_MODE_CIRCUS_COMBUSTUS        52
+#define FX_MODE_RUNNING_DUAL            52
 #define FX_MODE_HALLOWEEN               53
 #define FX_MODE_TRICOLOR_CHASE          54
 #define FX_MODE_TRICOLOR_WIPE           55
@@ -505,7 +502,7 @@ class WS2812FX {
       _mode[FX_MODE_POLICE_ALL]              = &WS2812FX::mode_police_all;
       _mode[FX_MODE_TWO_DOTS]                = &WS2812FX::mode_two_dots;
       _mode[FX_MODE_TWO_AREAS]               = &WS2812FX::mode_two_areas;
-      _mode[FX_MODE_CIRCUS_COMBUSTUS]        = &WS2812FX::mode_circus_combustus;
+      _mode[FX_MODE_RUNNING_DUAL]            = &WS2812FX::mode_running_dual;
       _mode[FX_MODE_HALLOWEEN]               = &WS2812FX::mode_halloween;
       _mode[FX_MODE_TRICOLOR_CHASE]          = &WS2812FX::mode_tricolor_chase;
       _mode[FX_MODE_TRICOLOR_WIPE]           = &WS2812FX::mode_tricolor_wipe;
@@ -584,7 +581,7 @@ class WS2812FX {
     }
 
     void
-      finalizeInit(bool supportWhite, uint16_t countPixels, bool skipFirst),
+      finalizeInit(uint16_t countPixels),
       service(void),
       blur(uint8_t),
       fill(uint32_t),
@@ -604,12 +601,12 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
-      setRgbwPwm(void),
       setColorOrder(uint8_t co),
       setPixelSegment(uint8_t n);
 
     bool
-      reverseMode = false,      //is the entire LED strip reversed?
+      isRgbw = false,
+      isOffRefreshRequred = false, //periodic refresh is required for the strip to remain off.
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,
@@ -637,6 +634,7 @@ class WS2812FX {
       getColorOrder(void),
       gamma8(uint8_t),
       gamma8_cal(uint8_t, float),
+      sin_gap(uint16_t),
       get_random_wheel_index(uint8_t);
 
     int8_t
@@ -730,7 +728,7 @@ class WS2812FX {
       mode_police_all(void),
       mode_two_dots(void),
       mode_two_areas(void),
-      mode_circus_combustus(void),
+      mode_running_dual(void),
       mode_bicolor_chase(void),
       mode_tricolor_chase(void),
       mode_tricolor_wipe(void),
@@ -815,8 +813,6 @@ class WS2812FX {
     void handle_palette(void);
 
     bool
-      _useRgbw = false,
-      _skipFirstMode,
       _triggered;
 
     mode_ptr _mode[MODE_COUNT]; // SRAM footprint: 4 bytes per element
@@ -831,7 +827,7 @@ class WS2812FX {
       dynamic(bool),
       scan(bool),
       theater_chase(uint32_t, uint32_t, bool),
-      running_base(bool),
+      running_base(bool,bool),
       larson_scanner(bool),
       sinelon_base(bool,bool),
       dissolve(uint32_t),
@@ -886,7 +882,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Sparkle","Sparkle Dark","Sparkle+","Strobe","Strobe Rainbow","Strobe Mega","Blink Rainbow","Android","Chase","Chase Random",
 "Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Aurora","Stream",
 "Scanner","Lighthouse","Fireworks","Rain","Tetrix","Fire Flicker","Gradient","Loading","Police","Police All",
-"Two Dots","Two Areas","Circus","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
+"Two Dots","Two Areas","Running Dual","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
 "Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
 "Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",

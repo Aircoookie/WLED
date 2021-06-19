@@ -1,4 +1,4 @@
-# Rotary Encoder UI Usermod
+# I2C 4 Line Display Usermod
 
 First, thanks to the authors of the ssd11306_i2c_oled_u8g2 mod.
 
@@ -19,13 +19,11 @@ This file should be placed in the same directory as `platformio.ini`.
 
 ### Define Your Options
 
-* `USERMOD_FOUR_LINE_DISLAY`   - define this to have this the Four Line Display mod included wled00\usermods_list.cpp - also tells Rotary Encoder usermod, if installed, that the display is available
+* `USERMOD_FOUR_LINE_DISPLAY`  - define this to have this the Four Line Display mod included wled00\usermods_list.cpp - also tells Rotary Encoder usermod, if installed, that the display is available
 * `FLD_PIN_SCL`                - The display SCL pin, defaults to 5
 * `FLD_PIN_SDA`                - The display SDA pin, defaults to 4
-* `FLIP_MODE`                  - Set to 0 or 1
-* `LINE_HEIGHT`                - Set to 1 or 2
 
-There are other `#define` values in the Usermod that might be of interest.
+All of the parameters can be configured using Usermods settings page, inluding GPIO pins.
 
 ### PlatformIO requirements
 
@@ -37,3 +35,5 @@ UI usermod folder for how to include these using `platformio_override.ini`.
 
 2021-02
 * First public release
+2021-04
+* Adaptation for runtime configuration.

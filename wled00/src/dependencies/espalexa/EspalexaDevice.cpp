@@ -65,6 +65,11 @@ uint8_t EspalexaDevice::getValue()
   return _val;
 }
 
+bool EspalexaDevice::getState()
+{
+  return _val;
+}
+
 uint8_t EspalexaDevice::getPercent()
 {
   uint16_t perc = _val * 100;
@@ -111,7 +116,7 @@ uint32_t EspalexaDevice::getKelvin()
 uint32_t EspalexaDevice::getRGB()
 {
   if (_rgb != 0) return _rgb; //color has not changed
-  byte rgb[4]{0, 0, 0, 0}; 
+  byte rgb[4]{0, 0, 0, 0};
   
   if (_mode == EspalexaColorMode::none) return 0;
 
@@ -275,6 +280,16 @@ void EspalexaDevice::setValue(uint8_t val)
     _val_last = val;
   }
   _val = val;
+}
+
+void EspalexaDevice::setState(bool onoff)
+{
+  if (onoff) 
+  {
+    setValue(_val_last);
+  } else {
+    setValue(0);
+  }
 }
 
 void EspalexaDevice::setPercent(uint8_t perc)

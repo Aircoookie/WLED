@@ -50,14 +50,14 @@ void setAllLeds() {
   {
     strip.setBrightness(scaledBri(briT));
   }
-  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY)
+  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY)
   {
     colorRGBtoRGBW(col);
     colorRGBtoRGBW(colSec);
   }
   strip.setColor(0, col[0], col[1], col[2], col[3]);
   strip.setColor(1, colSec[0], colSec[1], colSec[2], colSec[3]);
-  if (useRGBW && strip.rgbwMode == RGBW_MODE_LEGACY)
+  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY)
   {
     col[3] = 0; colSec[3] = 0;
   }
@@ -101,7 +101,7 @@ void colorUpdated(int callMode)
   //Notifier: apply received FX to selected segments only if actually receiving FX
   if (someSel) strip.applyToAllSelected = receiveNotificationEffects;
 
-  bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette);
+  bool fxChanged = strip.setEffectConfig(effectCurrent, effectSpeed, effectIntensity, effectPalette) || effectChanged;
   bool colChanged = colorChanged();
 
   //Notifier: apply received color to selected segments only if actually receiving color
@@ -109,6 +109,7 @@ void colorUpdated(int callMode)
 
   if (fxChanged || colChanged)
   {
+    effectChanged = false;
     if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
     if (isPreset) {isPreset = false;}
         else {currentPreset = -1;}

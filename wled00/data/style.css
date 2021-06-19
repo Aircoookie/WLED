@@ -18,6 +18,7 @@ button {
   font-size: 20px;
   margin: 8px;
   margin-top: 12px;
+  cursor: pointer;
 }
 .helpB {
   text-align: left;
