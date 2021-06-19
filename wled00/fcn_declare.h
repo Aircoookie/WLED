@@ -105,7 +105,7 @@ bool deserializeState(JsonObject root, byte presetId = 0);
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
-void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI = 1);
+void serveJson(AsyncWebServerRequest* request);
 bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient = 0);
 
 //led.cpp

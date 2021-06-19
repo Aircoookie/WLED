@@ -353,8 +353,6 @@ bool deserializeState(JsonObject root, byte presetId)
 
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
-  uint8_t versionAPI = root["ver"] | 1;
-
 	root["id"] = id;
   if (segmentBounds) {
     root[F("start")] = seg.start;
@@ -369,43 +367,27 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 
   if (seg.name != nullptr) root["n"] = String(seg.name);
 
-	JsonArray colarr = root.createNestedArray("col");
-/*
-  if (versionAPI>1) {
-    // if we want to sqeeze a few more segments on 8266 we need to use v2 experimental API
-    for (uint8_t i = 0; i < 3; i++)
+  // to conserve RAM we will serialize the col array manually
+  // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
+  char colstr[70]; colstr[0] = '['; colstr[1] = '\0';  //max len 68 (5 chan, all 255)
+  const char *format = strip.isRgbw ? PSTR("[%u,%u,%u,%u]") : PSTR("[%u,%u,%u]");
+  for (uint8_t i = 0; i < 3; i++)
+  {
+    byte segcol[4]; byte* c = segcol;
+    if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
     {
-      if (id==strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
-        if (i==0) colarr.add((unsigned long)((col[0]<<16) | (col[1]<<8) | col[2] | (strip.isRgbw?col[3]<<24:0)));
-        else      colarr.add((unsigned long)((colSec[0]<<16) | (colSec[1]<<8) | colSec[2] | (strip.isRgbw?colSec[3]<<24:0)));
-      else
-        colarr.add((unsigned long)seg.colors[i]);
+      c = (i == 0)? col:colSec;
+    } else {
+      segcol[0] = (byte)(seg.colors[i] >> 16); segcol[1] = (byte)(seg.colors[i] >> 8);
+      segcol[2] = (byte)(seg.colors[i]);       segcol[3] = (byte)(seg.colors[i] >> 24);
     }
-  } else {
-*/
-    // to conserve RAM we will serialize the col array manually
-    // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
-    char colstr[70] = "[";  //max len 68 (5 chan, all 255)
-    for (uint8_t i = 0; i < 3; i++)
-    {
-      char tmpcol[22];
-      if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
-      {
-        byte* c = (i == 0)? col:colSec;
-        if (strip.isRgbw) sprintf_P(tmpcol, PSTR("[%d,%d,%d,%d]"), c[0], c[1], c[2], c[3]);
-        else              sprintf_P(tmpcol, PSTR("[%d,%d,%d]"),    c[0], c[1], c[2]);
-      } else {
-        uint32_t c = seg.colors[i];
-        if (strip.isRgbw) sprintf_P(tmpcol, PSTR("[%d,%d,%d,%d]"), (c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF, (c >> 24) & 0xFF);
-        else              sprintf_P(tmpcol, PSTR("[%d,%d,%d]"),    (c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF);
-      }
-      strcat(colstr, i<2 ? strcat_P(tmpcol, PSTR(",")) : tmpcol);
-    }
-    strcat_P(colstr, PSTR("]"));
-    root["col"] = serialized(colstr);
-/*
-	}
-*/
+    char tmpcol[22];
+    sprintf_P(tmpcol, format, (unsigned)c[0], (unsigned)c[1], (unsigned)c[2], (unsigned)c[3]);
+    strcat(colstr, i<2 ? strcat_P(tmpcol, PSTR(",")) : tmpcol);
+  }
+  strcat_P(colstr, PSTR("]"));
+  root["col"] = serialized(colstr);
+
 	root["fx"]  = seg.mode;
 	root[F("sx")]  = seg.speed;
 	root[F("ix")]  = seg.intensity;
@@ -816,7 +798,7 @@ void serializeNodes(JsonObject root)
   }
 }
 
-void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI)
+void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
   const String& url = request->url();
@@ -851,7 +833,6 @@ void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI)
   switch (subJson)
   {
     case 1: //state
-      if (versionAPI>1) doc["rev"] = (int)versionAPI;
       serializeState(doc); break;
     case 2: //info
       serializeInfo(doc); break;
@@ -861,7 +842,6 @@ void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI)
       serializePalettes(doc, request); break;
     default: //all
       JsonObject state = doc.createNestedObject("state");
-      if (versionAPI>1) state["rev"] = (int)versionAPI;
       serializeState(state);
       JsonObject info = doc.createNestedObject("info");
       serializeInfo(info);
@@ -872,7 +852,7 @@ void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI)
       }
   }
 
-  DEBUG_PRINTF("JSON buffer size: %ld for request: %d\n", doc.memoryUsage(), subJson);
+  DEBUG_PRINTF("JSON buffer size: %u for request: %d\n", doc.memoryUsage(), subJson);
 
   response->setLength();
   request->send(response);

@@ -52,7 +52,7 @@ var cpick = new iro.ColorPicker("#picker", {
   ]
 });
 
-function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson({'v':true,'rev':2},false);}
+function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson({'v':true},false);}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 function gId(c) {return d.getElementById(c);}
 
@@ -175,7 +175,7 @@ function loadBg(iUrl)
 
 function loadSkinCSS(cId)
 {
-	if (!gId(cId))	// chack if element exists
+	if (!gId(cId))	// check if element exists
 	{
 		var h  = document.getElementsByTagName('head')[0];
 		var l  = document.createElement('link');
@@ -223,7 +223,7 @@ function onLoad()
 		loadFX(function() {
 			loadPresets(function() {
 				loadInfo(function() {
-					requestJson({'v':true,'rev':2}, false, true);
+					requestJson({'v':true}, false, true);
 				});
 			});
 		});
@@ -245,7 +245,7 @@ function onLoad()
 	// Create UI update WS handler
 	myWS = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
     myWS.onopen = function () {
-		myWS.send("{'v':true,'rev':2}");
+		myWS.send("{'v':true}");
 	}
 	myWS.onmessage = function(event) {
 		var json = JSON.parse(event.data);
@@ -1104,7 +1104,6 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 	if (command)
 	{
 		command.v = verbose;
-		command.rev = 2;
 		command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
 	}

@@ -97,7 +97,6 @@ void initServer()
 
   AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/json", [](AsyncWebServerRequest *request) {
     bool verboseResponse = false;
-    uint8_t vAPI = 1;
     bool isConfig = false;
     { //scope JsonDocument so it releases its buffer
       DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
@@ -109,10 +108,6 @@ void initServer()
       const String& url = request->url();
       isConfig = url.indexOf("cfg") > -1;
       if (!isConfig) {
-        if (root.containsKey("rev"))
-        {
-          vAPI = root["rev"] | 1;
-        }
         fileDoc = &jsonBuffer;  // used for applying presets (presets.cpp)
         verboseResponse = deserializeState(root);
         fileDoc = nullptr;
@@ -122,7 +117,7 @@ void initServer()
     }
     if (verboseResponse) {
       if (!isConfig) {
-        serveJson(request,vAPI); return; //if JSON contains "v"
+        serveJson(request); return; //if JSON contains "v"
       } else {
         serializeConfig(); //Save new settings to FS
       }
