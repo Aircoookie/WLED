@@ -271,7 +271,7 @@ void WLED::loop()
 
 // DEBUG serial logging
 #ifdef WLED_DEBUG
-  if (millis() - debugTime > 9999) {
+  if (millis() - debugTime > 59999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());

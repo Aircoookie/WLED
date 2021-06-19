@@ -46,13 +46,15 @@
       var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Preset</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";
       for (i=0;i<8;i++)
       {
-        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" class=\"small\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" class=\"small\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" class=\"small\" type=\"number\" min=\"0\" max=\"250\"></td>";
+        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" class=\"small\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" class=\"small\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" class=\"med\" type=\"number\" min=\"0\" max=\"250\"></td>";
         for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";
+		ih+="</tr>";
       }
-	  ih+="<tr><td><input name=\"W8\" id=\"W8\" type=\"number\" style=\"display:none\"><input id=\"W80\" type=\"checkbox\"></td><td>Sunrise<input name=\"H8\" class=\"small\" value=\"255\" type=\"hidden\"></td><td><input name=\"N8\" class=\"small\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T8\" class=\"small\" type=\"number\" min=\"0\" max=\"250\"></td>";
+	  ih+="<tr><td><input name=\"W8\" id=\"W8\" type=\"number\" style=\"display:none\"><input id=\"W80\" type=\"checkbox\"></td><td>Sunrise<input name=\"H8\" class=\"small\" value=\"255\" type=\"hidden\"></td><td><input name=\"N8\" class=\"small\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T8\" class=\"med\" type=\"number\" min=\"0\" max=\"250\"></td>";
       for (j=1;j<8;j++) ih+="<td><input id=\"W8"+j+"\" type=\"checkbox\"></td>";
-      ih+="<tr><td><input name=\"W9\" id=\"W9\" type=\"number\" style=\"display:none\"><input id=\"W90\" type=\"checkbox\"></td><td>Sunset<input name=\"H9\" class=\"small\" value=\"255\" type=\"hidden\"></td><td><input name=\"N9\" class=\"small\" type=\"number\" min=\"-59\" max=\"59\"><td><input name=\"T9\" class=\"small\" type=\"number\" min=\"0\" max=\"250\"></td>";
+	  ih+="</tr><tr><td><input name=\"W9\" id=\"W9\" type=\"number\" style=\"display:none\"><input id=\"W90\" type=\"checkbox\"></td><td>Sunset<input name=\"H9\" class=\"small\" value=\"255\" type=\"hidden\"></td><td><input name=\"N9\" class=\"small\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T9\" class=\"med\" type=\"number\" min=\"0\" max=\"250\"></td>";
       for (j=1;j<8;j++) ih+="<td><input id=\"W9"+j+"\" type=\"checkbox\"></td>";
+	  ih+="</tr>";
       gId("TMT").innerHTML=ih;
     }
     function FC()
@@ -84,11 +86,11 @@
 		td = tr.insertCell(0);
 		td.innerHTML = `Button ${i}:`;
 		td = tr.insertCell(1);
-		td.innerHTML = `<input name="MP${i}" type="number" min="0" max="250" value="${p}" required>`;
+		td.innerHTML = `<input name="MP${i}" type="number" class=\"med\" min="0" max="250" value="${p}" required>`;
 		td = tr.insertCell(2);
-		td.innerHTML = `<input name="ML${i}" type="number" min="0" max="250" value="${l}" required>`;
+		td.innerHTML = `<input name="ML${i}" type="number" class=\"med\" min="0" max="250" value="${l}" required>`;
 		td = tr.insertCell(3);
-		td.innerHTML = `<input name="MD${i}" type="number" min="0" max="250" value="${d}" required>`;
+		td.innerHTML = `<input name="MD${i}" type="number" class=\"med\" min="0" max="250" value="${d}" required>`;
 	}
 	function GetV()
 	{
@@ -132,8 +134,8 @@
 		</select><br>
 		UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 		Current local time is <span class="times">unknown</span>.<br>
-		Latitude (N): <input name="LT" type="number" min="-66.6" max="66.6" step="0.01">
-		Longitude (E): <input name="LN" type="number" min="-180" max="180" step="0.01">
+		Latitude (N): <input name="LT" type="number" class="big" min="-66.6" max="66.6" step="0.01">
+		Longitude (E): <input name="LN" type="number" class="big" min="-180" max="180" step="0.01">
 		<div id="sun" class="times"></div>
 		<h3>Clock</h3>
 		Clock Overlay:

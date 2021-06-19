@@ -45,7 +45,10 @@ input[type="number"] {
   margin: 2px;
 }
 input[type="number"].big {
-  width: 80px;
+  width: 70px;
+}
+input[type="number"].med {
+  width: 55px;
 }
 input[type="number"].small {
   width: 40px;

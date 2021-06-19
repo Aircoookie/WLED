@@ -269,7 +269,7 @@
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
-  #define WLED_MAX_NODES 15
+  #define WLED_MAX_NODES 24
 #else
   #define WLED_MAX_NODES 150
 #endif

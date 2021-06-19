@@ -64,7 +64,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         int rgbw[] = {0,0,0,0};
         bool colValid = false;
         if (colarr[i].is<unsigned long>()) {
-          // unsigned long RGBW
+          // unsigned long RGBW (@blazoncek v2 experimental API implementation)
           uint32_t colX = colarr[i];
           rgbw[0] = (colX >> 16) & 0xFF;
           rgbw[1] = (colX >>  8) & 0xFF;
@@ -351,8 +351,10 @@ bool deserializeState(JsonObject root, byte presetId)
   return stateResponse;
 }
 
-void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds, uint8_t versionAPI)
+void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset, bool segmentBounds)
 {
+  uint8_t versionAPI = root["ver"] | 1;
+
 	root["id"] = id;
   if (segmentBounds) {
     root[F("start")] = seg.start;
@@ -368,8 +370,9 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   if (seg.name != nullptr) root["n"] = String(seg.name);
 
 	JsonArray colarr = root.createNestedArray("col");
-
+/*
   if (versionAPI>1) {
+    // if we want to sqeeze a few more segments on 8266 we need to use v2 experimental API
     for (uint8_t i = 0; i < 3; i++)
     {
       if (id==strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
@@ -379,26 +382,30 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
         colarr.add((unsigned long)seg.colors[i]);
     }
   } else {
+*/
+    // to conserve RAM we will serialize the col array manually
+    // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
+    char colstr[70] = "[";  //max len 68 (5 chan, all 255)
     for (uint8_t i = 0; i < 3; i++)
     {
-      JsonArray colX = colarr.createNestedArray();
+      char tmpcol[22];
       if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
       {
-        if (i == 0) {
-          colX.add(col[0]); colX.add(col[1]); colX.add(col[2]); if (strip.isRgbw) colX.add(col[3]);
-        } else {
-          colX.add(colSec[0]); colX.add(colSec[1]); colX.add(colSec[2]); if (strip.isRgbw) colX.add(colSec[3]);
-        }
+        byte* c = (i == 0)? col:colSec;
+        if (strip.isRgbw) sprintf_P(tmpcol, PSTR("[%d,%d,%d,%d]"), c[0], c[1], c[2], c[3]);
+        else              sprintf_P(tmpcol, PSTR("[%d,%d,%d]"),    c[0], c[1], c[2]);
       } else {
-        colX.add((seg.colors[i] >> 16) & 0xFF);
-        colX.add((seg.colors[i] >> 8) & 0xFF);
-        colX.add((seg.colors[i]) & 0xFF);
-        if (strip.isRgbw)
-          colX.add((seg.colors[i] >> 24) & 0xFF);
+        uint32_t c = seg.colors[i];
+        if (strip.isRgbw) sprintf_P(tmpcol, PSTR("[%d,%d,%d,%d]"), (c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF, (c >> 24) & 0xFF);
+        else              sprintf_P(tmpcol, PSTR("[%d,%d,%d]"),    (c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF);
       }
+      strcat(colstr, i<2 ? strcat_P(tmpcol, PSTR(",")) : tmpcol);
     }
+    strcat_P(colstr, PSTR("]"));
+    root["col"] = serialized(colstr);
+/*
 	}
-
+*/
 	root["fx"]  = seg.mode;
 	root[F("sx")]  = seg.speed;
 	root[F("ix")]  = seg.intensity;
@@ -451,25 +458,29 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
   root[F("mainseg")] = strip.getMainSegmentId();
 
+/*
   // the following is an UGLY construct that does the job
   #ifdef ESP8266
-  // use rev:2 API if more than 12 segments on ESP8266
+  // use rev:2 API if more than 16 segments on ESP8266
   uint8_t tooMany = 0;
   for(uint8_t i=0; i < strip.getMaxSegments(); i++) if ((strip.getSegment(i)).isActive()) tooMany++;
-  if (tooMany<13)
+  if (tooMany<17)
   #endif
     root.remove("rev"); // remove API revision if ESP32 or ESP8266 with less than 13 segments
+*/
   uint8_t versionAPI = root["rev"] | 1;
 
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++)
   {
     WS2812FX::Segment sg = strip.getSegment(s);
-    // TODO: add logic to stop at 12 segments if using versionAPI==1 on ESP8266
+    // TODO: add logic to stop at 16 segments if using versionAPI==1 on ESP8266
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();
-      serializeSegment(seg0, sg, s, forPreset, segmentBounds, versionAPI);
+      if (versionAPI>1) seg0["ver"] = versionAPI; // temporary hack segment
+      serializeSegment(seg0, sg, s, forPreset, segmentBounds);
+      if (versionAPI>1) seg[0].remove("ver"); // remove hack
     } else if (forPreset && segmentBounds) { //disable segments not part of preset
       JsonObject seg0 = seg.createNestedObject();
       seg0["stop"] = 0;
@@ -860,6 +871,8 @@ void serveJson(AsyncWebServerRequest* request, uint8_t versionAPI)
         doc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
       }
   }
+
+  DEBUG_PRINTF("JSON buffer size: %ld for request: %d\n", doc.memoryUsage(), subJson);
 
   response->setLength();
   request->send(response);
