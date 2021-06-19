@@ -37,7 +37,7 @@
 #define ENCODER_SW_PIN 13
 #endif
 
-#ifndef USERMOD_FOUR_LINE_DISLAY
+#ifndef USERMOD_FOUR_LINE_DISPLAY
 // These constants won't be defined if we aren't using FourLineDisplay.
 #define FLD_LINE_3_BRIGHTNESS       0
 #define FLD_LINE_3_EFFECT_SPEED     0
@@ -62,7 +62,7 @@ private:
   unsigned char button_state = HIGH;
   unsigned char prev_button_state = HIGH;
   
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
   FourLineDisplayUsermod *display;
 #else
   void* display = nullptr;
@@ -96,7 +96,7 @@ public:
     modes_alpha_indexes = modeSortUsermod->getModesAlphaIndexes();
     palettes_alpha_indexes = modeSortUsermod->getPalettesAlphaIndexes();
 
-#ifdef USERMOD_FOUR_LINE_DISLAY    
+#ifdef USERMOD_FOUR_LINE_DISPLAY    
     // This Usermod uses FourLineDisplayUsermod for the best experience.
     // But it's optional. But you want it.
     display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
@@ -248,7 +248,7 @@ public:
   }
 
   boolean changeState(const char *stateName, byte lineThreeMode, byte markedLine) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display != nullptr) {
       if (display->wakeDisplay()) {
         // Throw away wake up input
@@ -272,7 +272,7 @@ public:
   }
 
   void changeBrightness(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -288,7 +288,7 @@ public:
   }
 
   void changeEffect(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -305,7 +305,7 @@ public:
   }
 
   void changeEffectSpeed(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -321,7 +321,7 @@ public:
   }
 
   void changeEffectIntensity(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -337,7 +337,7 @@ public:
   }
 
   void changePalette(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
