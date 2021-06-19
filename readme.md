@@ -37,6 +37,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 - MQTT  
 - Blynk IoT  
 - E1.31, Art-Net, DDP and TPM2.net
+- [diyHue](https://github.com/diyhue/diyHue) (Wled is supported by diyHue, including Hue Sync Entertainment under udp. Thanks to [Gregory Mallios](https://github.com/gmallios))
 - [Hyperion](https://github.com/hyperion-project/hyperion.ng)
 - UDP realtime  
 - Alexa voice control (including dimming and color)  

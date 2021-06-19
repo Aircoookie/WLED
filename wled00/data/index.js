@@ -898,8 +898,11 @@ function cmpP(a, b) {
 }
 
 var jsonTimeout;
+var reqsLegal = false;
+
 function requestJson(command, rinfo = true, verbose = true) {
 	d.getElementById('connind').style.backgroundColor = "#a90";
+  if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
@@ -959,6 +962,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 
 				populateEffects(json.effects);
 				populatePalettes(json.palettes);
+        reqsLegal = true;
 			}
 
 			var info = json.info;
@@ -1036,7 +1040,10 @@ function requestJson(command, rinfo = true, verbose = true) {
 		d.getElementById('sliderIntensity').value = i.ix;
 
 		// Effects
-		e1.querySelector(`input[name="fx"][value="${i.fx}"]`).checked = true;
+    var selFx = e1.querySelector(`input[name="fx"][value="${i.fx}"]`);
+    if (selFx) selFx.checked = true;
+    else location.reload(); //effect list is gone (e.g. if restoring tab). Reload.
+    
 		var selElement = e1.querySelector('.selected');
 		if (selElement) {
 			selElement.classList.remove('selected')

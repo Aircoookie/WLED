@@ -20,13 +20,14 @@ void handleBlynk();
 void updateBlynk();
 
 //button.cpp
-void shortPressAction();
-bool isButtonPressed();
+void shortPressAction(uint8_t b=0);
+bool isButtonPressed(uint8_t b=0);
 void handleButton();
 void handleIO();
 
 //cfg.cpp
-void deserializeConfig();
+bool deserializeConfig(JsonObject doc, bool fromFS = false);
+void deserializeConfigFromFS();
 bool deserializeConfigSec();
 void serializeConfig();
 void serializeConfigSec();
@@ -96,8 +97,8 @@ void handleIR();
 #include "src/dependencies/json/AsyncJson-v6.h"
 #include "FX.h"
 
-void deserializeSegment(JsonObject elem, byte it);
-bool deserializeState(JsonObject root);
+void deserializeSegment(JsonObject elem, byte it, byte presetId = 0);
+bool deserializeState(JsonObject root, byte presetId = 0);
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
@@ -126,6 +127,7 @@ bool initMqtt();
 void publishMqtt();
 
 //ntp.cpp
+void handleTime();
 void handleNetworkTime();
 void sendNTPPacket();
 bool checkNTPResponse();    
@@ -136,6 +138,7 @@ void setCountdown();
 byte weekdayMondayFirst();
 void checkTimers();
 void calculateSunriseAndSunset();
+void setTimeFromAPI(uint32_t timein);
 
 //overlay.cpp
 void initCronixie();
@@ -150,8 +153,9 @@ void _overlayCronixie();
 void _drawOverlayCronixie();
 
 //playlist.cpp
+void shufflePlaylist();
 void unloadPlaylist();
-void loadPlaylist(JsonObject playlistObject);
+void loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
 
 //presets.cpp
@@ -186,6 +190,8 @@ class Usermod {
     virtual void readFromJsonState(JsonObject& obj) {}
     virtual void addToConfig(JsonObject& obj) {}
     virtual void readFromConfig(JsonObject& obj) {}
+    virtual void onMqttConnect(bool sessionPresent) {}
+    virtual bool onMqttMessage(char* topic, char* payload) { return false; }
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
 };
 
@@ -206,7 +212,8 @@ class UsermodManager {
 
     void addToConfig(JsonObject& obj);
     void readFromConfig(JsonObject& obj);
-
+    void onMqttConnect(bool sessionPresent);
+    bool onMqttMessage(char* topic, char* payload);
     bool add(Usermod* um);
     Usermod* lookup(uint16_t mod_id);
     byte getModCount();

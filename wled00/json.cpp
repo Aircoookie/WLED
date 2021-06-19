@@ -6,7 +6,7 @@
  * JSON API (De)serialization
  */
 
-void deserializeSegment(JsonObject elem, byte it)
+void deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   byte id = elem["id"] | it;
   if (id < strip.getMaxSegments())
@@ -95,16 +95,21 @@ void deserializeSegment(JsonObject elem, byte it)
 
     //temporary, strip object gets updated via colorUpdated()
     if (id == strip.getMainSegmentId()) {
+      byte effectPrev = effectCurrent;
       effectCurrent = elem[F("fx")] | effectCurrent;
+      if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
       effectSpeed = elem[F("sx")] | effectSpeed;
       effectIntensity = elem[F("ix")] | effectIntensity;
-      effectPalette = elem[F("pal")] | effectPalette;
+      effectPalette = elem["pal"] | effectPalette;
     } else { //permanent
       byte fx = elem[F("fx")] | seg.mode;
-      if (fx != seg.mode && fx < strip.getModeCount()) strip.setMode(id, fx);
+      if (fx != seg.mode && fx < strip.getModeCount()) {
+        strip.setMode(id, fx);
+        if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+      }
       seg.speed = elem[F("sx")] | seg.speed;
       seg.intensity = elem[F("ix")] | seg.intensity;
-      seg.palette = elem[F("pal")] | seg.palette;
+      seg.palette = elem["pal"] | seg.palette;
     }
 
     JsonArray iarr = elem[F("i")]; //set individual LEDs
@@ -134,7 +139,7 @@ void deserializeSegment(JsonObject elem, byte it)
           if (icol.isNull()) break;
 
           byte sz = icol.size();
-          if (sz == 0 && sz > 4) break;
+          if (sz == 0 || sz > 4) break;
 
           int rgbw[] = {0,0,0,0};
           copyArray(icol, rgbw);
@@ -156,7 +161,7 @@ void deserializeSegment(JsonObject elem, byte it)
   }
 }
 
-bool deserializeState(JsonObject root)
+bool deserializeState(JsonObject root, byte presetId)
 {
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
@@ -166,12 +171,17 @@ bool deserializeState(JsonObject root)
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
 
-  int tr = root[F("transition")] | -1;
-  if (tr >= 0)
-  {
-    transitionDelay = tr;
-    transitionDelay *= 100;
-    transitionDelayTemp = transitionDelay;
+  if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
+
+  int tr = -1;
+  if (!presetId || currentPlaylist < 0) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
+    tr = root[F("transition")] | -1;
+    if (tr >= 0)
+    {
+      transitionDelay = tr;
+      transitionDelay *= 100;
+      transitionDelayTemp = transitionDelay;
+    }
   }
 
   tr = root[F("tt")] | -1;
@@ -208,14 +218,7 @@ bool deserializeState(JsonObject root)
 
   unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
-    time_t prev = now();
-    if (millis() - ntpLastSyncTime > 50000000L) {
-      setTime(timein);
-      if (abs(now() - prev) > 60L) {
-        updateLocalTime();
-        calculateSunriseAndSunset();
-      }
-    }
+    setTimeFromAPI(timein);
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
 
@@ -250,23 +253,29 @@ bool deserializeState(JsonObject root)
         {
           if (lowestActive == 99) lowestActive = s;
           if (sg.isSelected()) {
-            deserializeSegment(segVar, s);
+            deserializeSegment(segVar, s, presetId);
             didSet = true;
           }
         }
       }
-      if (!didSet && lowestActive < strip.getMaxSegments()) deserializeSegment(segVar, lowestActive);
+      if (!didSet && lowestActive < strip.getMaxSegments()) deserializeSegment(segVar, lowestActive, presetId);
     } else { //set only the segment with the specified ID
-      deserializeSegment(segVar, it);
+      deserializeSegment(segVar, it, presetId);
     }
   } else {
     JsonArray segs = segVar.as<JsonArray>();
     for (JsonObject elem : segs)
     {
-      deserializeSegment(elem, it);
+      deserializeSegment(elem, it, presetId);
       it++;
     }
   }
+
+  #ifndef WLED_DISABLE_CRONIXIE
+    if (root["nx"].is<const char*>()) {
+      strncpy(cronixieDisplay, root["nx"], 6);
+    }
+  #endif
 
   usermods.readFromJsonState(root);
 
@@ -279,7 +288,11 @@ bool deserializeState(JsonObject root)
       deletePreset(ps);
     }
     ps = root["ps"] | -1; //load preset (clears state request!)
-    if (ps >= 0) {applyPreset(ps); return stateResponse;}
+    if (ps >= 0) {
+      if (!presetId) unloadPlaylist(); //stop playlist if preset changed manually
+      applyPreset(ps);
+      return stateResponse;
+    }
 
     //HTTP API commands
     const char* httpwin = root["win"];
@@ -292,7 +305,7 @@ bool deserializeState(JsonObject root)
 
   JsonObject playlist = root[F("playlist")];
   if (!playlist.isNull()) {
-    loadPlaylist(playlist);
+    loadPlaylist(playlist, presetId);
     noNotification = true; //do not notify both for this request and the first playlist entry
   }
 
@@ -308,7 +321,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     root[F("start")] = seg.start;
     root["stop"] = seg.stop;
   }
-	if (!forPreset)  root[F("len")] = seg.stop - seg.start;
+	if (!forPreset) root[F("len")] = seg.stop - seg.start;
   root[F("grp")] = seg.grouping;
   root[F("spc")] = seg.spacing;
   root["on"] = seg.getOption(SEG_OPTION_ON);
@@ -317,29 +330,43 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 
 	JsonArray colarr = root.createNestedArray("col");
 
+  char colstr[70]; //max len 68 (5 chan, all 255)
+  obuf = colstr; olen = 0;
+  oappend("[");
+
 	for (uint8_t i = 0; i < 3; i++)
 	{
-		JsonArray colX = colarr.createNestedArray();
+    oappend("[");
+
     if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
     {
-      if (i == 0) {
-        colX.add(col[0]); colX.add(col[1]); colX.add(col[2]); if (strip.isRgbw) colX.add(col[3]);
-      } else {
-         colX.add(colSec[0]); colX.add(colSec[1]); colX.add(colSec[2]); if (strip.isRgbw) colX.add(colSec[3]);
+      byte* c = (i == 0)? col:colSec;
+
+      oappendi(c[0]); oappend(",");
+      oappendi(c[1]); oappend(",");
+      oappendi(c[2]);
+      if (strip.isRgbw) {
+        oappend(","); oappendi(c[3]);
       }
     } else {
-  		colX.add((seg.colors[i] >> 16) & 0xFF);
-  		colX.add((seg.colors[i] >> 8) & 0xFF);
-  		colX.add((seg.colors[i]) & 0xFF);
-  		if (strip.isRgbw)
-  			colX.add((seg.colors[i] >> 24) & 0xFF);
+  		oappendi((seg.colors[i] >> 16) & 0xFF); oappend(",");
+  		oappendi((seg.colors[i] >> 8) & 0xFF); oappend(",");
+  		oappendi((seg.colors[i]) & 0xFF);
+  		if (strip.isRgbw) {
+  			oappend(","); oappendi((seg.colors[i] >> 24) & 0xFF);
+      }
     }
+
+    oappend("]");
+    if (i < 2) oappend(",");
 	}
+  oappend("]");
+  root["col"] = serialized(colstr);
 
 	root[F("fx")]  = seg.mode;
 	root[F("sx")]  = seg.speed;
 	root[F("ix")]  = seg.intensity;
-	root[F("pal")] = seg.palette;
+	root["pal"] = seg.palette;
 	root[F("sel")] = seg.isSelected();
 	root["rev"] = seg.getOption(SEG_OPTION_REVERSED);
   root[F("mi")]  = seg.getOption(SEG_OPTION_MIRROR);
@@ -549,6 +576,13 @@ void serializeInfo(JsonObject root)
   root[F("brand")] = "WLED";
   root[F("product")] = F("FOSS");
   root["mac"] = escapedMac;
+  char s[16] = "";
+  if (Network.isConnected())
+  {
+    IPAddress localIP = Network.localIP();
+    sprintf(s, "%d.%d.%d.%d", localIP[0], localIP[1], localIP[2], localIP[3]);
+  }
+  root["ip"] = s;
 }
 
 void setPaletteColors(JsonArray json, CRGBPalette16 palette)
@@ -722,19 +756,22 @@ void serveJson(AsyncWebServerRequest* request)
   const String& url = request->url();
   if      (url.indexOf("state") > 0) subJson = 1;
   else if (url.indexOf("info")  > 0) subJson = 2;
-  else if (url.indexOf("si") > 0) subJson = 3;
+  else if (url.indexOf("si")    > 0) subJson = 3;
   else if (url.indexOf("nodes") > 0) subJson = 4;
-  else if (url.indexOf("palx") > 0) subJson = 5;
+  else if (url.indexOf("palx")  > 0) subJson = 5;
   else if (url.indexOf("live")  > 0) {
     serveLiveLeds(request);
     return;
   }
-  else if (url.indexOf(F("eff"))   > 0) {
+  else if (url.indexOf(F("eff")) > 0) {
     request->send_P(200, "application/json", JSON_mode_names);
     return;
   }
-  else if (url.indexOf(F("pal"))   > 0) {
+  else if (url.indexOf("pal") > 0) {
     request->send_P(200, "application/json", JSON_palette_names);
+    return;
+  }
+  else if (url.indexOf("cfg") > 0 && handleFileRead(request, "/cfg.json")) {
     return;
   }
   else if (url.length() > 6) { //not just /json
@@ -766,6 +803,9 @@ void serveJson(AsyncWebServerRequest* request)
         doc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
       }
   }
+
+  DEBUG_PRINT("JSON buffer size: ");
+  DEBUG_PRINTLN(doc.memoryUsage());
 
   response->setLength();
   request->send(response);
