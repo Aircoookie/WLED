@@ -54,27 +54,29 @@
 		Hide AP name: <input type="checkbox" name="AH"><br>
 		AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63" pattern="(.{8,63})|()" title="Empty or min. 8 characters"><br>
 		Access Point WiFi channel: <input name="AC" type="number" min="1" max="13" required><br>
-    AP opens:
-    <select name="AB">
-    <option value="0">No connection after boot</option>
-    <option value="1">Disconnected</option>
-    <option value="2">Always</option>
-    <option value="3">Never (not recommended)</option></select><br>
+		AP opens:
+		<select name="AB">
+		<option value="0">No connection after boot</option>
+		<option value="1">Disconnected</option>
+		<option value="2">Always</option>
+		<option value="3">Never (not recommended)</option></select><br>
 		AP IP: <span class="sip"> Not active </span><br>
 		<h3>Experimental</h3>
 		Disable WiFi sleep: <input type="checkbox" name="WS"><br>
 		<i>Can help with connectivity issues.<br>
-    Do not enable if WiFi is working correctly, increases power consumption.</i>
-    <div id="ethd">
+		Do not enable if WiFi is working correctly, increases power consumption.</i>
+		<div id="ethd">
 		<h3>Ethernet Type</h3>
 		<select name="ETH">
-		<option value="0">None</option>
-		<option value="2">ESP32-POE</option>
-		<option value="4">QuinLED-ESP32</option>
-		<option value="4">TwilightLord-ESP32</option>
-		<option value="3">WESP32</option>
-		<option value="1">WT32-ETH01</option>
-    </select><br><br></div>
+			<option value="0">None</option>
+			<option value="2">ESP32-POE</option>
+			<option value="6">ESP32Deux</option>
+			<option value="4">QuinLED-ESP32</option>
+			<option value="5">TwilightLord-ESP32</option>
+			<option value="3">WESP32</option>
+			<option value="1">WT32-ETH01</option>
+		</select><br><br>
+		</div>
 		<hr>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
 	</form>

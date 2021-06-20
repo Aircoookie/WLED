@@ -1,4 +1,5 @@
 #include "wled.h"
+#include "wled_ethernet.h"
 
 /*
  * Sending XML status files to client
@@ -273,12 +274,16 @@ void getSettingsJS(byte subPage, char* dest)
             if (obj["pin"].is<JsonArray>()) {
               JsonArray pins = obj["pin"].as<JsonArray>();
               for (JsonVariant pv : pins) {
-                if (i++) oappend(SET_F(","));
-                oappendi(pv.as<int>());
+                if (pv.as<int>() > -1) {
+                  if (i++) oappend(SET_F(","));
+                  oappendi(pv.as<int>());
+                }
               }
             } else {
-              if (i++) oappend(SET_F(","));
-              oappendi(obj["pin"].as<int>());
+              if (obj["pin"].as<int>() > -1) {
+                if (i++) oappend(SET_F(","));
+                oappendi(obj["pin"].as<int>());
+              }
             }
           }
         }
@@ -314,18 +319,25 @@ void getSettingsJS(byte subPage, char* dest)
       #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
         if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
       #endif
-      //TODO: add reservations for Ethernet shield pins
       #ifdef WLED_USE_ETHERNET
-      /*
       if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
         ethernet_settings es = ethernetBoards[ethernetType];
-        if (es.eth_power>0) pinManager.allocatePin(es.eth_power);
-        if (es.eth_mdc>0) pinManager.allocatePin(es.eth_mdc);
-        if (es.eth_mdio>0) pinManager.allocatePin(es.eth_mdio);
-        //if (es.eth_type>0) pinManager.allocatePin(es.eth_type);
-        //if (es.eth_clk_mode>0) pinManager.allocatePin(es.eth_clk_mode);
+        if (es.eth_power>0) { oappend(","); oappend(itoa(es.eth_power,nS,10)); }
+        if (es.eth_mdc>0)   { oappend(","); oappend(itoa(es.eth_mdc,nS,10)); }
+        if (es.eth_mdio>0)  { oappend(","); oappend(itoa(es.eth_mdio,nS,10)); }
+        switch (es.eth_clk_mode) {
+          case ETH_CLOCK_GPIO0_IN:
+          case ETH_CLOCK_GPIO0_OUT:
+            oappend(SET_F(",0"));
+            break;
+          case ETH_CLOCK_GPIO16_OUT:
+            oappend(SET_F(",16"));
+            break;
+          case ETH_CLOCK_GPIO17_OUT:
+            oappend(SET_F(",17"));
+            break;
+        }
       }
-      */
       #endif
     }
     oappend(SET_F("];"));

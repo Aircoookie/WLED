@@ -66,7 +66,9 @@ typedef enum {
   NONE = 0,
   SSD1306,    // U8X8_SSD1306_128X32_UNIVISION_HW_I2C
   SH1106,     // U8X8_SH1106_128X64_WINSTAR_HW_I2C
-  SSD1306_64  // U8X8_SSD1306_128X64_NONAME_HW_I2C
+  SSD1306_64, // U8X8_SSD1306_128X64_NONAME_HW_I2C
+  SSD1305,    // U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C
+  SSD1305_64  // U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C
 } DisplayType;
 
 class FourLineDisplayUsermod : public Usermod {
@@ -155,6 +157,22 @@ class FourLineDisplayUsermod : public Usermod {
           else
           #endif
             u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          break;
+        case SSD1305:
+          #ifdef ESP8266
+          if (!(sclPin==5 && sdaPin==4))
+            u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_NONAME_SW_I2C(sclPin, sdaPin); // SCL, SDA, reset
+          else
+          #endif
+            u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          break;
+        case SSD1305_64:
+          #ifdef ESP8266
+          if (!(sclPin==5 && sdaPin==4))
+            u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_SW_I2C(sclPin, sdaPin); // SCL, SDA, reset
+          else
+          #endif
+            u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
           break;
         default:
           u8x8 = nullptr;

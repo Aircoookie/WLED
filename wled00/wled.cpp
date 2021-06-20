@@ -1,5 +1,6 @@
 #define WLED_DEFINE_GLOBAL_VARS //only in one source file, wled.cpp!
 #include "wled.h"
+#include "wled_ethernet.h"
 #include <Arduino.h>
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_DISABLE_BROWNOUT_DET)
@@ -16,16 +17,6 @@ WLED::WLED()
 }
 
 #ifdef WLED_USE_ETHERNET
-// settings for various ethernet boards
-typedef struct EthernetSettings {
-  uint8_t        eth_address;
-  int            eth_power;
-  int            eth_mdc;
-  int            eth_mdio;
-  eth_phy_type_t eth_type;
-  eth_clock_mode_t eth_clk_mode;
-} ethernet_settings;
-
 ethernet_settings ethernetBoards[] = {
   // None
   {
@@ -73,6 +64,26 @@ ethernet_settings ethernetBoards[] = {
     18,			              // eth_mdio,
     ETH_PHY_LAN8720,      // eth_type,
     ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
+  },
+
+  // TwilightLord-ESP32 Ethernet Shield
+  {
+    0,			              // eth_address,
+    5,			              // eth_power,
+    23,			              // eth_mdc,
+    18,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
+  },
+
+  // ESP3DEUXQuattro
+  {
+    1,                 // eth_address, 
+    -1,                // eth_power, 
+    23,                // eth_mdc, 
+    18,                // eth_mdio, 
+    ETH_PHY_LAN8720,   // eth_type,
+    ETH_CLOCK_GPIO17_OUT // eth_clk_mode
   }
 };
 #endif
