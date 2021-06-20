@@ -130,7 +130,7 @@ class FourLineDisplayUsermod : public Usermod {
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
     void setup() {
-      if (type==NONE) return;
+      if (type == NONE) return;
       if (!pinManager.allocatePin(sclPin)) { sclPin = -1; type = NONE; return;}
       if (!pinManager.allocatePin(sdaPin)) { pinManager.deallocatePin(sclPin); sclPin = sdaPin = -1; type = NONE; return; }
       switch (type) {
@@ -141,6 +141,7 @@ class FourLineDisplayUsermod : public Usermod {
           else
           #endif
             u8x8 = (U8X8 *) new U8X8_SSD1306_128X32_UNIVISION_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          lineHeight = 1;
           break;
         case SH1106:
           #ifdef ESP8266
@@ -149,6 +150,7 @@ class FourLineDisplayUsermod : public Usermod {
           else
           #endif
             u8x8 = (U8X8 *) new U8X8_SH1106_128X64_WINSTAR_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          lineHeight = 2;
           break;
         case SSD1306_64:
           #ifdef ESP8266
@@ -157,6 +159,7 @@ class FourLineDisplayUsermod : public Usermod {
           else
           #endif
             u8x8 = (U8X8 *) new U8X8_SSD1306_128X64_NONAME_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          lineHeight = 2;
           break;
         case SSD1305:
           #ifdef ESP8266
@@ -165,6 +168,7 @@ class FourLineDisplayUsermod : public Usermod {
           else
           #endif
             u8x8 = (U8X8 *) new U8X8_SSD1305_128X32_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          lineHeight = 1;
           break;
         case SSD1305_64:
           #ifdef ESP8266
@@ -173,6 +177,7 @@ class FourLineDisplayUsermod : public Usermod {
           else
           #endif
             u8x8 = (U8X8 *) new U8X8_SSD1305_128X64_ADAFRUIT_HW_I2C(U8X8_PIN_NONE, sclPin, sdaPin); // Pins are Reset, SCL, SDA
+          lineHeight = 2;
           break;
         default:
           u8x8 = nullptr;
@@ -657,13 +662,10 @@ class FourLineDisplayUsermod : public Usermod {
         sclPin = newScl;
         sdaPin = newSda;
         type = newType;
-        lineHeight = type==SSD1306 ? 1 : 2;
       } else {
         // changing paramters from settings page
         if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
-          if (type==SSD1306)    delete (static_cast<U8X8*>(u8x8));
-          if (type==SH1106)     delete (static_cast<U8X8*>(u8x8));
-          if (type==SSD1306_64) delete (static_cast<U8X8*>(u8x8));
+          if (type != NONE) delete (static_cast<U8X8*>(u8x8));
           pinManager.deallocatePin(sclPin);
           pinManager.deallocatePin(sdaPin);
           sclPin = newScl;
@@ -673,7 +675,6 @@ class FourLineDisplayUsermod : public Usermod {
             return;
           } else
             type = newType;
-          lineHeight = type==SSD1306 ? 1 : 2;
           setup();
           needsRedraw |= true;
         }
