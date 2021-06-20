@@ -237,7 +237,6 @@ function onLoad()
 	if (localStorage.getItem('pcm') == "true") togglePcMode(true);
 	var sls = d.querySelectorAll('input[type="range"]');
 	for (var sl of sls) {
-		//sl.addEventListener('input', updateBubble, true);
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
@@ -1085,13 +1084,15 @@ function handleJson(s)
 	selectedPal = i.pal;
 	selectedFx = i.fx;
 
+	//if (!gId('fxlist').querySelector(`input[name="fx"][value="${i.fx}"]`)) location.reload(); //effect list is gone (e.g. if restoring tab). Reload.
+
 	displayRover(lastinfo, s);
 	clearErrorToast();
 
 	return true;
 }
 
-var jsonTimeout, refreshTimer;
+var jsonTimeout;
 function requestJson(command, rinfo = true, verbose = true, callback = null)
 {
 	gId('connind').style.backgroundColor = "#a90";
