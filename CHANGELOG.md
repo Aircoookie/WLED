@@ -2,6 +2,10 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2106200
+
+-   Added 2 Ethernet boards and split Ethernet configs into separate file
+
 #### Build 2106180
 
 -   Fixed DOS on Chrome tab restore causing reboot
