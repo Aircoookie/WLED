@@ -60,12 +60,15 @@
   #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 #endif
 
+#if MAX_NUM_SEGMENTS < WLED_MAX_BUSSES
+  #error "Max segments must be at least max number of busses!"
+#endif
+
 //do not call this method from system context (network callback)
 void WS2812FX::finalizeInit(uint16_t countPixels)
 {
   RESET_RUNTIME;
   _length = countPixels;
-  _lengthRaw = _length;
 
   //if busses failed to load, add default (FS issue...)
   if (busses.getNumBusses() == 0) {
@@ -77,7 +80,7 @@ void WS2812FX::finalizeInit(uint16_t countPixels)
     for (uint8_t i = 0; i < defNumBusses; i++) {
       uint8_t defPin[] = {defDataPins[i]};
       uint16_t start = prevLen;
-      uint16_t count = _lengthRaw;
+      uint16_t count = _length;
       if (defNumBusses > 1 && defNumCounts) {
         count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       }
@@ -89,22 +92,44 @@ void WS2812FX::finalizeInit(uint16_t countPixels)
   
   deserializeMap();
 
-  //make segment 0 cover the entire strip
-  _segments[0].start = 0;
-  _segments[0].stop = _length;
+  uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
+  uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
 
   setBrightness(_brightness);
 
-  #ifdef ESP8266
+  //TODO make sure segments are only refreshed when bus config actually changed (new settings page)
+  //make one segment per bus
+  uint8_t s = 0;
   for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
     Bus* b = busses.getBus(i);
+
+    segStarts[s] = b->getStart();
+    segStops[s] = segStarts[s] + b->getLength();
+
+    //check for overlap with previous segments
+    for (uint8_t j = 0; j < s; j++) {
+      if (segStops[j] > segStarts[s] && segStarts[j] < segStops[s]) {
+        //segments overlap, merge
+        segStarts[j] = min(segStarts[s],segStarts[j]);
+        segStops [j] = max(segStops [s],segStops [j]); segStops[s] = 0;
+        s--;
+      }
+    }
+    s++;
+
+    #ifdef ESP8266
     if ((!IS_DIGITAL(b->getType()) || IS_2PIN(b->getType()))) continue;
     uint8_t pins[5];
     b->getPins(pins);
     BusDigital* bd = static_cast<BusDigital*>(b);
     if (pins[0] == 3) bd->reinit();
+    #endif
   }
-  #endif
+
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+    _segments[i].start = segStarts[i];
+    _segments[i].stop  = segStops [i];
+  }
 }
 
 void WS2812FX::service() {
@@ -503,7 +528,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   
   if (i < customMappingSize) i = customMappingTable[i];
   
-  if (i >= _lengthRaw) return 0;
+  if (i >= _length) return 0;
   
   return busses.getPixelColor(i);
 }
