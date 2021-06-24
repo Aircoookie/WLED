@@ -133,13 +133,28 @@ class MyExampleUsermod : public Usermod {
      * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
+     * 
+     * Return true in case your config was complete, or false if you'd like WLED to save your defaults to disk
+     * 
+     * This function is guaranteed to be called on boot, but could also be called every time settings are updated
      */
-    void readFromConfig(JsonObject& root)
+    bool readFromConfig(JsonObject& root)
     {
-      JsonObject top = root["top"];
+      userVar0 = 42; //set your variables to their boot default value (this can also be done when declaring the variable)
+
+      JsonObject top = root["exampleUsermod"];
       if (!top.isNull()) {
-        userVar0 = top["great"] | 42; //The value right of the pipe "|" is the default value in case your setting was not present in cfg.json (e.g. first boot)
+        bool configComplete = true;
+
+        //check if value is there
+        if (top.containsKey("great")) {
+          //convert value to the correct type
+          userVar0 = top["great"].as<int>(); 
+        } else configComplete = false;
+
+        if (configComplete) return true;
       }
+      return false;
     }
 
    

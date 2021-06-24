@@ -410,7 +410,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   DEBUG_PRINTLN(F("Starting usermod config."));
   JsonObject usermods_settings = doc["um"];
-  if (!usermods_settings.isNull()) usermods.readFromConfig(usermods_settings);
+  if (!usermods_settings.isNull()) {
+    bool allComplete = usermods.readFromConfig(usermods_settings);
+    if (!allComplete && fromFS) serializeConfig();
+  }
 
   if (fromFS) return false;
   doReboot = doc[F("rb")] | doReboot;
@@ -418,11 +421,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 }
 
 void deserializeConfigFromFS() {
-  bool fromeep = false;
   bool success = deserializeConfigSec();
   if (!success) { //if file does not exist, try reading from EEPROM
     deEEPSettings();
-    fromeep = true;
+    return;
   }
 
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);
@@ -431,7 +433,7 @@ void deserializeConfigFromFS() {
 
   success = readObjectFromFile("/cfg.json", nullptr, &doc);
   if (!success) { //if file does not exist, try reading from EEPROM
-    if (!fromeep) deEEPSettings();
+    deEEPSettings();
     return;
   }
 
