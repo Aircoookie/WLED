@@ -249,10 +249,12 @@ class UsermodTemperature : public Usermod {
     /**
      * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
      */
-    void readFromConfig(JsonObject &root) {
+    bool readFromConfig(JsonObject &root) {
       // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
       JsonObject top = root[FPSTR(_name)];
       int8_t newTemperaturePin = temperaturePin;
+
+      bool configComplete = true;
 
       if (!top.isNull() && top["pin"] != nullptr) {
         if (top[FPSTR(_enabled)].is<bool>()) {
@@ -274,13 +276,14 @@ class UsermodTemperature : public Usermod {
         DEBUG_PRINTLN(F("Temperature config (re)loaded."));
       } else {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
+        configComplete = false;
       }
 
       if (!initDone) {
         // first run: reading from cfg.json
         temperaturePin = newTemperaturePin;
       } else {
-        // changing paramters from settings page
+        // changing parameters from settings page
         if (newTemperaturePin != temperaturePin) {
           // deallocate pin and release memory
           delete oneWire;
@@ -290,6 +293,7 @@ class UsermodTemperature : public Usermod {
           setup();
         }
       }
+      return configComplete;
     }
 
     uint16_t getId()

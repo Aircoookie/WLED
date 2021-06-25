@@ -82,18 +82,6 @@ class StairwayWipeUsermod : public Usermod {
       //if (root["bri"] == 255) Serial.println(F("Don't burn down your garage!"));
     }
 
-    void addToConfig(JsonObject& root)
-    {
-      JsonObject top = root.createNestedObject("exampleUsermod");
-      top["great"] = userVar0; //save this var persistently whenever settings are saved
-    }
-
-    void readFromConfig(JsonObject& root)
-    {
-      JsonObject top = root["top"];
-      userVar0 = top["great"] | 42; //The value right of the pipe "|" is the default value in case your setting was not present in cfg.json (e.g. first boot)
-    }
-
     uint16_t getId()
     {
       return USERMOD_ID_EXAMPLE;

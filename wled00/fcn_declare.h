@@ -189,7 +189,7 @@ class Usermod {
     virtual void addToJsonInfo(JsonObject& obj) {}
     virtual void readFromJsonState(JsonObject& obj) {}
     virtual void addToConfig(JsonObject& obj) {}
-    virtual void readFromConfig(JsonObject& obj) {}
+    virtual bool readFromConfig(JsonObject& obj) { return true; } //Heads up! readFromConfig() now needs to return a bool
     virtual void onMqttConnect(bool sessionPresent) {}
     virtual bool onMqttMessage(char* topic, char* payload) { return false; }
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
@@ -211,7 +211,7 @@ class UsermodManager {
     void readFromJsonState(JsonObject& obj);
 
     void addToConfig(JsonObject& obj);
-    void readFromConfig(JsonObject& obj);
+    bool readFromConfig(JsonObject& obj);
     void onMqttConnect(bool sessionPresent);
     bool onMqttMessage(char* topic, char* payload);
     bool add(Usermod* um);

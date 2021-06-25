@@ -29,7 +29,6 @@ bool applyPreset(byte index)
 
   if (!errorFlag) {
     currentPreset = index;
-    isPreset = true;
     return true;
   }
   return false;

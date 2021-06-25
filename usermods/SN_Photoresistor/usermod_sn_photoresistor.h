@@ -169,7 +169,7 @@ public:
   /**
      * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
      */
-  void readFromConfig(JsonObject &root)
+  bool readFromConfig(JsonObject &root)
   {
     // we look for JSON object.
     JsonObject top = root[FPSTR(_name)];
@@ -196,7 +196,9 @@ public:
     else
     {
       DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
+      return false;
     }
+    return true;
   }
 };
 
