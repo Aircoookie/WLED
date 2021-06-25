@@ -427,13 +427,15 @@ class Animated_Staircase : public Usermod {
     /*
     * Reads the configuration to internal flash memory before setup() is called.
     */
-    void readFromConfig(JsonObject& root) {
+    bool readFromConfig(JsonObject& root) {
       bool oldUseUSSensorTop = useUSSensorTop;
       bool oldUseUSSensorBottom = useUSSensorBottom;
       int8_t oldTopAPin = topPIRorTriggerPin;
       int8_t oldTopBPin = topEchoPin;
       int8_t oldBottomAPin = bottomPIRorTriggerPin;
       int8_t oldBottomBPin = bottomEchoPin;
+
+      bool configComplete = true;
 
       JsonObject staircase = root[FPSTR(_name)];
       if (!staircase.isNull()) {
@@ -468,6 +470,7 @@ class Animated_Staircase : public Usermod {
         bottomMaxDist         = min(150,max(30,staircase[FPSTR(_bottomEchoCm)].as<int>()));  // max distance ~1.5m (a lag of 9ms may be expected)
       } else {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
+        configComplete = false;
       }
       if (!initDone) {
         // first run: reading from cfg.json
@@ -490,6 +493,7 @@ class Animated_Staircase : public Usermod {
         }
         if (changed) setup();
       }
+      return configComplete;
     }
 
     /*

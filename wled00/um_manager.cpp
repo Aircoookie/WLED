@@ -13,7 +13,13 @@ void UsermodManager::addToJsonState(JsonObject& obj)    { for (byte i = 0; i < n
 void UsermodManager::addToJsonInfo(JsonObject& obj)     { for (byte i = 0; i < numMods; i++) ums[i]->addToJsonInfo(obj); }
 void UsermodManager::readFromJsonState(JsonObject& obj) { for (byte i = 0; i < numMods; i++) ums[i]->readFromJsonState(obj); }
 void UsermodManager::addToConfig(JsonObject& obj)       { for (byte i = 0; i < numMods; i++) ums[i]->addToConfig(obj); }
-void UsermodManager::readFromConfig(JsonObject& obj)    { for (byte i = 0; i < numMods; i++) ums[i]->readFromConfig(obj); }
+bool UsermodManager::readFromConfig(JsonObject& obj)    { 
+  bool allComplete = true;
+  for (byte i = 0; i < numMods; i++) {
+    if (!ums[i]->readFromConfig(obj)) allComplete = false;
+  }
+  return allComplete;
+}
 void UsermodManager::onMqttConnect(bool sessionPresent) { for (byte i = 0; i < numMods; i++) ums[i]->onMqttConnect(sessionPresent); }
 bool UsermodManager::onMqttMessage(char* topic, char* payload) {
   for (byte i = 0; i < numMods; i++) if (ums[i]->onMqttMessage(topic, payload)) return true;

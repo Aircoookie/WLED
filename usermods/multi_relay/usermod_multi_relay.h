@@ -348,11 +348,11 @@ class MultiRelay : public Usermod {
      * restore the changeable values
      * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
      */
-    void readFromConfig(JsonObject &root) {
+    bool readFromConfig(JsonObject &root) {
       int8_t oldPin[MULTI_RELAY_MAX_RELAYS];
 
       JsonObject top = root[FPSTR(_name)];
-      if (top.isNull()) return;
+      if (top.isNull()) return false;
 
       if (top[FPSTR(_enabled)] != nullptr) {
         if (top[FPSTR(_enabled)].is<bool>()) {
@@ -413,6 +413,7 @@ class MultiRelay : public Usermod {
         }
         DEBUG_PRINTLN(F("MultiRelay config (re)loaded."));
       }
+      return true;
     }
 
     /**

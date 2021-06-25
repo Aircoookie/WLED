@@ -60,6 +60,10 @@
   #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 #endif
 
+#if MAX_NUM_SEGMENTS < WLED_MAX_BUSSES
+  #error "Max segments must be at least max number of busses!"
+#endif
+
 //do not call this method from system context (network callback)
 void WS2812FX::finalizeInit(void)
 {

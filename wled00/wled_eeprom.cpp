@@ -479,5 +479,9 @@ void deEEPSettings() {
   loadSettingsFromEEPROM();
   EEPROM.end();
 
+  //call readFromConfig() with an empty object so that usermods can initialize to defaults prior to saving
+  JsonObject empty = JsonObject();
+  usermods.readFromConfig(empty);
+
   serializeConfig();
 }

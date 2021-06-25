@@ -617,11 +617,13 @@ class FourLineDisplayUsermod : public Usermod {
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
      */
-    void readFromConfig(JsonObject& root) {
+    bool readFromConfig(JsonObject& root) {
       bool needsRedraw    = false;
       DisplayType newType = type;
       int8_t newScl       = sclPin;
       int8_t newSda       = sdaPin;
+
+      bool configComplete = true;
 
       JsonObject top = root[FPSTR(_name)];
       if (!top.isNull() && top["pin"] != nullptr) {
@@ -655,6 +657,7 @@ class FourLineDisplayUsermod : public Usermod {
         DEBUG_PRINTLN(F("4 Line Display config (re)loaded."));
       } else {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
+        configComplete = false;
       }
 
       if (!initDone) {
@@ -672,7 +675,7 @@ class FourLineDisplayUsermod : public Usermod {
           sdaPin = newSda;
           if (newScl<0 || newSda<0) {
             type = NONE;
-            return;
+            return configComplete;
           } else
             type = newType;
           setup();
@@ -682,6 +685,7 @@ class FourLineDisplayUsermod : public Usermod {
         setFlipMode(flip);
         if (needsRedraw && !wakeDisplay()) redraw(true);
       }
+      return configComplete;
     }
 
     /*

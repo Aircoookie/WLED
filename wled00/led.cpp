@@ -111,8 +111,7 @@ void colorUpdated(int callMode)
   {
     effectChanged = false;
     if (realtimeTimeout == UINT32_MAX) realtimeTimeout = 0;
-    if (isPreset) {isPreset = false;}
-        else {currentPreset = -1;}
+    currentPreset = -1; //something changed, so we are no longer in the preset
         
     notify(callMode);
     

@@ -320,13 +320,13 @@ public:
    * restore the changeable values
    * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
    */
-  void readFromConfig(JsonObject &root)
+  bool readFromConfig(JsonObject &root)
   {
     bool oldEnabled = enabled;
     int8_t oldPin = PIRsensorPin;
 
     JsonObject top = root[FPSTR(_name)];
-    if (top.isNull()) return;
+    if (top.isNull()) return false;
 
     if (top["pin"] != nullptr) {
       PIRsensorPin = min(39,max(-1,top["pin"].as<int>())); // check bounds
@@ -398,6 +398,8 @@ public:
         DEBUG_PRINTLN(F("PIR config (re)loaded."));
       }
     }
+
+    return true;
   }
 
   /**

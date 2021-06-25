@@ -198,14 +198,16 @@ class AutoSaveUsermod : public Usermod {
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
      */
-    void readFromConfig(JsonObject& root) {
+    bool readFromConfig(JsonObject& root) {
       // we look for JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
       JsonObject top = root[FPSTR(_name)];
       if (top.isNull()) {
         DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
-        return;
+        return false;
       }
       
+      bool configComplete = true;
+
       if (top[FPSTR(_autoSaveEnabled)].is<bool>()) {
         // reading from cfg.json
         enabled = top[FPSTR(_autoSaveEnabled)].as<bool>();
@@ -225,6 +227,7 @@ class AutoSaveUsermod : public Usermod {
         applyAutoSaveOnBoot = (bool)(str!="off"); // off is guaranteed to be present
       }
       DEBUG_PRINTLN(F("Autosave config (re)loaded."));
+      return true;
   }
 
     /*

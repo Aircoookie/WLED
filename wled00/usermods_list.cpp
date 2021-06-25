@@ -9,7 +9,8 @@
  * || || ||
  * \/ \/ \/
  */
-//#include "usermod_v2_example.h"
+//#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
+
 #ifdef USERMOD_DALLASTEMPERATURE
 #include "../usermods/Temperature/usermod_temperature.h"
 #endif
