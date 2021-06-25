@@ -2,6 +2,10 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2106250
+
+-   Fixed preset only disabling on second effect/color change
+
 #### Build 2106241
 
 -   BREAKING: Added ability for usermods to force a config save if config incomplete. `readFromConfig()` needs to return a `bool` to indicate if the config is complete
