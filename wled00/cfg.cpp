@@ -12,6 +12,32 @@ void getStringFromJson(char* dest, const char* src, size_t len) {
   if (src != nullptr) strlcpy(dest, src, len);
 }
 
+bool getBoolFromJsonKey(const JsonVariant& element, bool &destination) {
+  if (element.isNull()) {
+    DEBUG_PRINTLN(F("element.isNull()"));
+    return false;
+  }
+  if(element.is<bool>()) {
+    destination = element.as<bool>();
+    DEBUG_PRINTLN(F("element.is<bool>()"));
+    return true;
+  } else {
+    String str = element; // checkbox -> off or on
+    destination = (bool)(str!="off"); // off is guaranteed to be present
+    DEBUG_PRINTLN(F("!element.is<bool>()"));
+    return true;
+  }
+}
+
+bool getBoolFromJsonKey(const JsonVariant& element, bool &destination, const bool defaultValue) {
+  if(!getBoolFromJsonKey(element, destination)) {
+    destination = defaultValue;
+    return false;
+  }
+
+  return true;
+}
+
 bool deserializeConfig(JsonObject doc, bool fromFS) {
   //int rev_major = doc["rev"][0]; // 1
   //int rev_minor = doc["rev"][1]; // 0

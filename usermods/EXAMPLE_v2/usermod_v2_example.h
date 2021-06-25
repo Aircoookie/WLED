@@ -25,6 +25,15 @@ class MyExampleUsermod : public Usermod {
   private:
     //Private class members. You can declare variables and functions only accessible to your usermod here
     unsigned long lastTime = 0;
+    bool testBool;
+    int testInt;
+    long testLong;
+    unsigned long testULong;
+    float testFloat;
+    double testDouble;
+    String testString;
+    char testCharArray[255]; 
+
   public:
     //Functions called by WLED
 
@@ -123,6 +132,14 @@ class MyExampleUsermod : public Usermod {
     {
       JsonObject top = root.createNestedObject("exampleUsermod");
       top["great"] = userVar0; //save this var persistently whenever settings are saved
+      top["testBool"] = testBool;
+      top["testInt"] = testInt;
+      top["testLong"] = testLong;
+      top["testULong"] = testULong;
+      top["testFloat"] = testFloat;
+      top["testDouble"] = testDouble;
+      top["testString"] = testString;
+      //top["testCharArray"] = testCharArray;
     }
 
 
@@ -140,21 +157,45 @@ class MyExampleUsermod : public Usermod {
      */
     bool readFromConfig(JsonObject& root)
     {
+#if 1
       userVar0 = 42; //set your variables to their boot default value (this can also be done when declaring the variable)
+                    // TODO: "(this can also be done when declaring the variable)" doesn't cover edge cases like purposely deleting config to get back to defaults without a reboot
+      testBool = false;
+      testInt = 42;
+      testLong = -42424242;
+      testULong = 42424242;
+      testFloat = 42.42;
+      testDouble = 42.4242424242;
+      testString = "Forty-Two";
+      //testCharArray[255] = "Forty-Two"; // TODO: test this type
 
       JsonObject top = root["exampleUsermod"];
-      if (!top.isNull()) {
-        bool configComplete = true;
 
-        //check if value is there
-        if (top.containsKey("great")) {
-          //convert value to the correct type
-          userVar0 = top["great"].as<int>(); 
-        } else configComplete = false;
+      bool configComplete = !top.isNull();
+      configComplete &= getValueFromJsonKey(top["great"], userVar0);
+      configComplete &= getBoolFromJsonKey(top["testBool"], testBool);
+      configComplete &= getValueFromJsonKey(top["testInt"], testInt);
+      configComplete &= getValueFromJsonKey(top["testLong"], testLong);
+      configComplete &= getValueFromJsonKey(top["testULong"], testULong);
+      configComplete &= getValueFromJsonKey(top["testFloat"], testFloat);
+      configComplete &= getValueFromJsonKey(top["testDouble"], testDouble);
+      configComplete &= getValueFromJsonKey(top["testString"], testString);
+      //configComplete &= getValueFromJsonKey(top["testCharArray"], testCharArray);
+#else
+      JsonObject top = root["exampleUsermod"];
 
-        if (configComplete) return true;
-      }
-      return false;
+      bool configComplete = !top.isNull();
+      configComplete &= getValueFromJsonKey(top["great"], userVar0, (short unsigned int)42);
+      configComplete &= getBoolFromJsonKey(top["testBool"], testBool, false);
+      configComplete &= getValueFromJsonKey(top["testInt"], testInt, (int)42);
+      configComplete &= getValueFromJsonKey(top["testLong"], testLong, -42424242L);
+      configComplete &= getValueFromJsonKey(top["testULong"], testULong, 42424242UL);
+      configComplete &= getValueFromJsonKey(top["testFloat"], testFloat, 42.42f);
+      configComplete &= getValueFromJsonKey(top["testDouble"], testDouble, 42.4242424242d);
+      configComplete &= getValueFromJsonKey(top["testString"], testString, String("Forty-Two"));
+      //configComplete &= getValueFromJsonKey(top["testCharArray"], testCharArray);
+#endif
+      return configComplete;
     }
 
    
