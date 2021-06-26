@@ -403,6 +403,7 @@ button {
 
 #imgw {
 	display: inline-block;
+	margin: 8px;
 }
 
 #kv, #kn {
@@ -433,7 +434,7 @@ img {
 .wi {
 	image-rendering: pixelated;
 	image-rendering: crisp-edges;
-	width: 200px;
+	width: 210px;
 }
 
 @keyframes fadein {
