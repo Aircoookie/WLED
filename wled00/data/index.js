@@ -527,34 +527,37 @@ function populateSegments(s)
 			</div>
 			<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 			<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
-			<table class="segt">
-				<tr>
-					<td class="segtd">Start LED</td>
-					<td class="segtd">Stop LED</td>
-				</tr>
-				<tr>
-					<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
-					<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(${i})"></td>
-				</tr>
-			</table>
-			<table class="segt">
-				<tr>
-					<td class="segtd">Grouping</td>
-					<td class="segtd">Spacing</td>
-				</tr>
-				<tr>
-					<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
-					<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
-				</tr>
-			</table>
-			<div class="h bp" id="seg${i}len"></div>
-			<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
-			<div class="sliderwrap il sws">
-				<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
-				<div class="sliderdisplay"></div>
-			</div>
+				<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
+				<div class="sliderwrap il sws">
+					<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<table class="infot">
+					<tr>
+						<td class="segtd">Start LED</td>
+						<td class="segtd">Stop LED</td>
+						<td class="segtd">Offset</td>
+					</tr>
+					<tr>
+						<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}of" type="number" min="0" max="${ledCount-1}" value="${inst.of}" oninput="updateLen(${i})"></td>
+					</tr>
+				</table>
+				<table class="infot">
+					<tr>
+						<td class="segtd">Grouping</td>
+						<td class="segtd">Spacing</td>
+						<td class="segtd">Apply</td>
+					</tr>
+					<tr>
+						<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+					</tr>
+				</table>
+				<div class="h bp" id="seg${i}len"></div>
 				<i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i>
-				<i class="icons e-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
+				<button class="btn btn-i btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 				<label class="check revchkl">
 					Reverse direction
 					<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
@@ -903,8 +906,11 @@ function cmpP(a, b) {
 }
 
 var jsonTimeout;
+var reqsLegal = false;
+
 function requestJson(command, rinfo = true, verbose = true) {
 	d.getElementById('connind').style.backgroundColor = "#a90";
+	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
@@ -964,6 +970,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 
 				populateEffects(json.effects);
 				populatePalettes(json.palettes);
+				reqsLegal = true;
 			}
 
 			var info = json.info;
@@ -1168,7 +1175,7 @@ function makeSeg() {
 						<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(${lowestUnused})"></td>
 					</tr>
 				</table>
-				<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
+				<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LED${ledCount - ns >1 ? "s":""}</div>
 				<i class="icons e-icon cnf cnf-s half" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused}); resetUtil();">&#xe390;</i>
 			</div>
 		</div>`;
@@ -1392,8 +1399,10 @@ function setSeg(s){
 	{
 		var grp = parseInt(d.getElementById(`seg${s}grp`).value);
 		var spc = parseInt(d.getElementById(`seg${s}spc`).value);
+		var ofs = parseInt(d.getElementById(`seg${s}of` ).value);
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
+		obj.seg.of  = ofs;
 	}
 	requestJson(obj);
 }
@@ -1557,7 +1566,7 @@ function testPl(i,bt) {
 		return;
 	}
 	bt.dataset.test = 1;
-	bt.innerHTML = "<i class='icons btn-icon'>&#xe139;</i>Stop"; //TODO correct icon
+	bt.innerHTML = "<i class='icons btn-icon'>&#xe38f;</i>Stop";
 	var obj = {};
 	obj.playlist = plJson[i];
 	requestJson(obj);

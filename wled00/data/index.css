@@ -768,9 +768,9 @@ input[type=number]::-webkit-outer-spin-button {
 
 .cnf-s {
 	position: absolute;
-	top: 66px;
-	right: 28px;
-	padding: 43px 6px;
+	top: 168px;
+	right: 23px;
+	padding: 7.5px 22px;
 }
 
 .pwr {
