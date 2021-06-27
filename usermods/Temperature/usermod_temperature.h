@@ -260,7 +260,7 @@ class UsermodTemperature : public Usermod {
         temperaturePin = newTemperaturePin;
         DEBUG_PRINTLN(F(" config loaded."));
       } else {
-        // changing paramters from settings page
+        // changing parameters from settings page
         if (newTemperaturePin != temperaturePin) {
           // deallocate pin and release memory
           delete oneWire;

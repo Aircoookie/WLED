@@ -470,7 +470,7 @@ class Animated_Staircase : public Usermod {
         // first run: reading from cfg.json
         DEBUG_PRINTLN(F(" config loaded."));
       } else {
-        // changing paramters from settings page
+        // changing parameters from settings page
         DEBUG_PRINTLN(F(" config (re)loaded."));
         bool changed = false;
         if ((oldUseUSSensorTop != useUSSensorTop) ||
