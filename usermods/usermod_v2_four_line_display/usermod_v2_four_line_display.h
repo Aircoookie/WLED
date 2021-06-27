@@ -676,7 +676,7 @@ class FourLineDisplayUsermod : public Usermod {
           sdaPin = newSda;
           if (newScl<0 || newSda<0) {
             type = NONE;
-            return;
+            return true;
           } else
             type = newType;
           lineHeight = type==SSD1306 ? 1 : 2;
