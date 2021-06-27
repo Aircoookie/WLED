@@ -23,8 +23,12 @@
 //class name. Use something descriptive and leave the ": public Usermod" part :)
 class MyExampleUsermod : public Usermod {
   private:
+    // sample usermod default value for variable (you can also use constructor)
+    int userVar0 = 42;
+
     //Private class members. You can declare variables and functions only accessible to your usermod here
     unsigned long lastTime = 0;
+
   public:
     //Functions called by WLED
 
@@ -140,21 +144,14 @@ class MyExampleUsermod : public Usermod {
      */
     bool readFromConfig(JsonObject& root)
     {
-      userVar0 = 42; //set your variables to their boot default value (this can also be done when declaring the variable)
-
+      //set defaults for variables when declaring the variable (class definition or constructor)
       JsonObject top = root["exampleUsermod"];
-      if (!top.isNull()) {
-        bool configComplete = true;
+      if (!top.isNull()) return false;
 
-        //check if value is there
-        if (top.containsKey("great")) {
-          //convert value to the correct type
-          userVar0 = top["great"].as<int>(); 
-        } else configComplete = false;
+      userVar0 = top["great"] | userVar0; 
 
-        if (configComplete) return true;
-      }
-      return false;
+      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+      return true;
     }
 
    
