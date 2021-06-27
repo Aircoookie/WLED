@@ -527,10 +527,12 @@ function populateSegments(s)
 			</div>
 			<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 			<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
+				<div class="sbs">
 				<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
 				<div class="sliderwrap il sws">
 					<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
 					<div class="sliderdisplay"></div>
+				</div>
 				</div>
 				<table class="infot">
 					<tr>
@@ -553,10 +555,10 @@ function populateSegments(s)
 					<tr>
 						<td class="segtd"><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
 						<td class="segtd"><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i></td>
 					</tr>
 				</table>
-				<div class="h bp" id="seg${i}len"></div>
-				<i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i>
+				<div class="h" id="seg${i}len"></div>
 				<button class="btn btn-i btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 				<label class="check revchkl">
 					Reverse direction
@@ -1342,8 +1344,17 @@ function makePlEntry(p,i) {
     <select class="btn sel sel-pl" onchange="plePs(${p},${i},this)" data-val=${plJson[p].ps[i]}>
 			${plSelContent}
     </select>
-    <div class="c">Duration <input class="noslide" type="number" oninput="pleDur(${p},${i},this)" max=6553.0 min=0.2 step=0.1 value=${plJson[p].dur[i]/10.0}>s
-    <button class="btn btn-i btn-xs" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div>
+		<table class="segt">
+			<tr>
+				<td class="segtd">Duration</td>
+				<td class="segtd">Transition</td>
+			</tr>
+			<tr>
+				<td class="segtd"><input class="noslide segn" type="number" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value=${plJson[p].dur[i]/10.0}></td>
+				<td class="segtd"><input class="noslide segn" type="number" min="0" max="${ledCount}" value="${ledCount}" oninput="updateLen(${0})"></td>
+			</tr>
+		</table>
+    <button class="btn btn-i btn-xs btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div>
     <div class="hrz hrz-pl" />
     <button class="btn btn-i btn-xs btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></div>
   </div>`;

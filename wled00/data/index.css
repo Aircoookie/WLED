@@ -524,12 +524,16 @@ input[type=range]:active + .sliderbubble {
 	position: relative;
 }
 
+.sbs {
+	margin: 0px -20px 5px -6px;
+}
+
 .sws {
-	width: 212px;
+	width: 230px;
 }
 
 .sis {
-	width: 192px !important;
+	width: 214px !important;
 }
 
 .hd {
@@ -587,8 +591,13 @@ input[type=range]:active + .sliderbubble {
 }
 .btn-pl-add {
   position: absolute;
-  bottom: -28px;
-  left: 95px;
+  bottom: -29px;
+  left: 94px;
+}
+.btn-pl-del {
+	position: absolute;
+	right: 2px;
+	bottom: -3px;
 }
 
 #qcs-w {
@@ -768,7 +777,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .cnf-s {
 	position: absolute;
-	top: 168px;
+	top: 172px;
 	right: 23px;
 	padding: 7.5px 22px;
 }
@@ -1050,6 +1059,7 @@ input[type="text"].search:not(:placeholder-shown) {
 }
 .hrz-pl {
   margin: 20px 0;
+	position: relative;
 }
 
 ::-webkit-scrollbar {
