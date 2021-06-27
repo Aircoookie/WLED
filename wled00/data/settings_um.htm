@@ -65,7 +65,7 @@
         if (isO(o)) {
             for (const [s,v] of Object.entries(o)) {
                 // possibility to nest objects (only 1 level)
-                if (f!=='unknown' && !k.includes("_")) addField(k+"_"+f,s,v);
+                if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
                 else addField(k,s,v);
             }
         } else if (Array.isArray(o)) {
@@ -76,28 +76,31 @@
             var t,c;
             switch (typeof o) {
                 case "boolean":
-                    t = "checkbox"; c = o ? `checked value="on"` : ""; break;
+                    t = "checkbox"; c = o ? `checked value="true"` : "";
+                    break;
                 case "number":
+                    c = `value="${o}"`;
                     if (isF(o)) {
-                        c = `value="${parseFloat(o)}" step="0.01"`;
+                        c += ` step="0.01" class="xxl"`;
                         t = "float";
                     } else {
-                        c = `value="${parseInt(o,10)}"`;
-                        if (f==="pin") c += ' max="39" min="-1"';
+                        if (f.substr(-3)==="pin") c += ' max="39" min="-1" class="small"';
+                        else c += ` class="big"`;
                         t = "int";
                     }
                     break;
-                case "string":
-                    t = "text"; c = `value="${o}"`; break;
+//                case "string":
+//                    t = "text"; c = `value="${o}" style="width:150px;"`; break;
                 default:
-                    t = "text"; c = `value="${o}"`; break;
+                    t = "text"; c = `value="${o}" style="width:150px;"`;
+                    break;
             }
-            if (k.includes("_")) urows += k.substr(k.indexOf("_")+1);
+            if (k.includes(":")) urows += k.substr(k.indexOf(":")+1);
             urows += ` ${f}: `;
             // https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
-            if (t=="checkbox") urows += `<input type="hidden" name="${k}_${f}${a?"[]":""}" value="off">`;
-            else if (!a)       urows += `<input type="hidden" name="${k}_${f}${a?"[]":""}" value="${t}">`;
-            urows += `<input type="${t==="float"||t==="int"?"number":t}" name="${k}_${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf("_")+1)}')"><br>`;
+            if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
+            else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
+            urows += `<input type="${t==="float"||t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
         }
     }
     function ldS() {

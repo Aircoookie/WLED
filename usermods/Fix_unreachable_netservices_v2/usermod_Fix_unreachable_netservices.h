@@ -155,6 +155,7 @@ Delay <input type=\"number\" min=\"5\" max=\"300\" value=\"";
     if (top.isNull()) return false;
     m_pingDelayMs = top["PingDelayMs"] | m_pingDelayMs;
     m_pingDelayMs = max(5000UL, min(18000000UL, m_pingDelayMs));
+    // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
     return true;
   }
 

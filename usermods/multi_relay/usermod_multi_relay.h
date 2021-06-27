@@ -347,55 +347,36 @@ class MultiRelay : public Usermod {
     /**
      * restore the changeable values
      * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+     * 
+     * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
     bool readFromConfig(JsonObject &root) {
       int8_t oldPin[MULTI_RELAY_MAX_RELAYS];
 
       JsonObject top = root[FPSTR(_name)];
-      if (top.isNull()) return false;
-
-      if (top[FPSTR(_enabled)] != nullptr) {
-        if (top[FPSTR(_enabled)].is<bool>()) {
-          enabled = top[FPSTR(_enabled)].as<bool>(); // reading from cfg.json
-        } else {
-          // change from settings page
-          String str = top[FPSTR(_enabled)]; // checkbox -> off or on
-          enabled = (bool)(str!="off"); // off is guaranteed to be present
-        }
+      if (top.isNull()) {
+        DEBUG_PRINT(FPSTR(_name));
+        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+        return false;
       }
+
+      enabled = top[FPSTR(_enabled)] | enabled;
 
       for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         String parName = FPSTR(_relay_str); parName += "-"; parName += i; parName += "-";
-
-        oldPin[i] = _relay[i].pin;
-        if (top[parName+"pin"] != nullptr) _relay[i].pin = min(39,max(-1,top[parName+"pin"].as<int>()));
-
-        if (top[parName+FPSTR(_activeHigh)] != nullptr) {
-          if (top[parName+FPSTR(_activeHigh)].is<bool>()) {
-            _relay[i].mode = top[parName+FPSTR(_activeHigh)].as<bool>(); // reading from cfg.json
-          } else {
-            // change from settings page
-            String str = top[parName+FPSTR(_activeHigh)]; // checkbox -> off or on
-            _relay[i].mode = (bool)(str!="off"); // off is guaranteed to be present
-          }
-        }
-
-        if (top[parName+FPSTR(_external)] != nullptr) {
-          if (top[parName+FPSTR(_external)].is<bool>()) {
-            _relay[i].external = top[parName+FPSTR(_external)].as<bool>(); // reading from cfg.json
-          } else {
-            // change from settings page
-            String str = top[parName+FPSTR(_external)]; // checkbox -> off or on
-            _relay[i].external = (bool)(str!="off"); // off is guaranteed to be present
-          }
-        }
-
-        _relay[i].delay = min(600,max(0,abs(top[parName+FPSTR(_delay_str)].as<int>())));
+        oldPin[i]          = _relay[i].pin;
+        _relay[i].pin      = top[parName+"pin"] | _relay[i].pin;
+//        _relay[i].pin      = min(39,max(-1,(int)_relay[i].pin)); // bounds checking
+        _relay[i].mode     = top[parName+FPSTR(_activeHigh)] | _relay[i].mode;
+        _relay[i].external = top[parName+FPSTR(_external)]   | _relay[i].external;
+        _relay[i].delay    = top[parName+FPSTR(_delay_str)]  | _relay[i].delay;
+        _relay[i].delay    = min(600,max(0,abs((int)_relay[i].delay))); // bounds checking max 10min
       }
 
+      DEBUG_PRINT(FPSTR(_name));
       if (!initDone) {
         // reading config prior to setup()
-        DEBUG_PRINTLN(F("MultiRelay config loaded."));
+        DEBUG_PRINTLN(F(" config loaded."));
       } else {
         // deallocate all pins 1st
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++)
@@ -411,8 +392,9 @@ class MultiRelay : public Usermod {
           }
           _relay[i].active = false;
         }
-        DEBUG_PRINTLN(F("MultiRelay config (re)loaded."));
+        DEBUG_PRINTLN(F(" config (re)loaded."));
       }
+      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return true;
     }
 

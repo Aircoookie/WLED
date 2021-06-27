@@ -42,7 +42,7 @@ class UsermodTemperature : public Usermod {
     bool waitingForConversion = false;
     // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
     // temperature if flashed to a board without a sensor attached
-    bool disabled = false;
+    bool enabled = true;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -110,23 +110,23 @@ class UsermodTemperature : public Usermod {
       // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
       if (!pinManager.allocatePin(temperaturePin,false)) {
         temperaturePin = -1;  // allocation failed
-        disabled = true;
+        enabled = false;
         DEBUG_PRINTLN(F("Temperature pin allocation failed."));
       } else {
-        if (!disabled) {
+        if (enabled) {
           // config says we are enabled
           oneWire = new OneWire(temperaturePin);
           if (!oneWire->reset())
-            disabled = true;   // resetting 1-Wire bus yielded an error
+            enabled = false;   // resetting 1-Wire bus yielded an error
           else
-            while ((disabled=!findSensor()) && retries--) delay(25); // try to find sensor
+            while ((enabled=findSensor()) && retries--) delay(25); // try to find sensor
         }
       }
       initDone = true;
     }
 
     void loop() {
-      if (disabled || strip.isUpdating()) return;
+      if (!enabled || strip.isUpdating()) return;
 
       unsigned long now = millis();
 
@@ -181,7 +181,7 @@ class UsermodTemperature : public Usermod {
      */
     void addToJsonInfo(JsonObject& root) {
       // dont add temperature to info if we are disabled
-      if (disabled) return;
+      if (!enabled) return;
 
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
@@ -223,7 +223,7 @@ class UsermodTemperature : public Usermod {
     void addToConfig(JsonObject &root) {
       // we add JSON object: {"Temperature": {"pin": 0, "degC": true}}
       JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
-      top[FPSTR(_enabled)] = !disabled;
+      top[FPSTR(_enabled)] = enabled;
       top["pin"]  = temperaturePin;     // usermodparam
       top["degC"] = degC;  // usermodparam
       top[FPSTR(_readInterval)] = readingInterval / 1000;
@@ -233,57 +233,34 @@ class UsermodTemperature : public Usermod {
 
     /**
      * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+     *
+     * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
     bool readFromConfig(JsonObject &root) {
       // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
-      JsonObject top = root[FPSTR(_name)];
       int8_t newTemperaturePin = temperaturePin;
-      if (top.isNull()) return true;
 
-      bool configComplete = true;
-      if (top["pin"] != nullptr) {
-        if (top[FPSTR(_enabled)].is<bool>()) {
-          disabled = !top[FPSTR(_enabled)].as<bool>();
-        } else {
-          String str = top[FPSTR(_enabled)]; // checkbox -> off or on
-          disabled = (bool)(str=="off"); // off is guaranteed to be present
-        }
-        newTemperaturePin = min(39,max(-1,top["pin"].as<int>()));
+      JsonObject top = root[FPSTR(_name)];
+      if (top.isNull()) {
+        DEBUG_PRINT(FPSTR(_name));
+        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+        return false;
       }
 
-      if (top["degC"] != nullptr) {
-        if (top["degC"].is<bool>()) {
-          // reading from cfg.json
-          degC = top["degC"].as<bool>();
-        } else {
-          // new configuration from set.cpp
-          String str = top["degC"]; // checkbox -> off or on
-          degC = (bool)(str!="off"); // off is guaranteed to be present
-        }
-      }
+      enabled           = top[FPSTR(_enabled)] | enabled;
+      newTemperaturePin = top["pin"] | newTemperaturePin;
+//      newTemperaturePin = min(33,max(-1,(int)newTemperaturePin)); // bounds check
+      degC              = top["degC"] | degC;
+      readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;
+      readingInterval   = min(120,max(10,(int)readingInterval)) * 1000;  // convert to ms
+      parasite          = top[FPSTR(_parasite)] | parasite;
 
-      if (top[FPSTR(_readInterval)] != nullptr) {
-        readingInterval = min(120,max(10,top[FPSTR(_readInterval)].as<int>())) * 1000;  // convert to ms
-      }
-
-      if (top[FPSTR(_parasite)] != nullptr) {
-        if (top[FPSTR(_parasite)].is<bool>()) {
-          // reading from cfg.json
-          parasite = top[FPSTR(_parasite)].as<bool>();
-        } else {
-          // new configuration from set.cpp
-          String str = top[FPSTR(_parasite)]; // checkbox -> off or on
-          parasite = (bool)(str!="off"); // off is guaranteed to be present
-        }
-      }
-
+      DEBUG_PRINT(FPSTR(_name));
       if (!initDone) {
         // first run: reading from cfg.json
         temperaturePin = newTemperaturePin;
-        DEBUG_PRINTLN(F("Temperature config loaded."));
+        DEBUG_PRINTLN(F(" config loaded."));
       } else {
-        DEBUG_PRINTLN(F("Temperature config re-loaded."));
-        configComplete = false;
         // changing paramters from settings page
         if (newTemperaturePin != temperaturePin) {
           // deallocate pin and release memory
@@ -293,8 +270,10 @@ class UsermodTemperature : public Usermod {
           // initialise
           setup();
         }
+        DEBUG_PRINTLN(F(" config (re)loaded."));
       }
-      return configComplete;
+      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+      return true;
     }
 
     uint16_t getId()

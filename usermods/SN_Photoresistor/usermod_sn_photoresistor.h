@@ -173,31 +173,22 @@ public:
   {
     // we look for JSON object.
     JsonObject top = root[FPSTR(_name)];
-
-    if (!top.isNull())
-    {
-      if (top[FPSTR(_enabled)].is<bool>())
-      {
-        disabled = !top[FPSTR(_enabled)].as<bool>();
-      }
-      else
-      {
-        String str = top[FPSTR(_enabled)]; // checkbox -> off or on
-        disabled = (bool)(str == "off");   // off is guaranteed to be present
-      };
-
-      readingInterval = min(120, max(10, top[FPSTR(_readInterval)].as<int>())) * 1000; // convert to ms
-      referenceVoltage = top[FPSTR(_referenceVoltage)].as<float>();
-      resistorValue = top[FPSTR(_resistorValue)].as<float>();
-      adcPrecision = top[FPSTR(_adcPrecision)].as<float>();
-      offset = top[FPSTR(_offset)].as<int>();
-      DEBUG_PRINTLN(F("Photoresistor config (re)loaded."));
-    }
-    else
-    {
-      DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
+    if (top.isNull()) {
+      DEBUG_PRINT(FPSTR(_name));
+      DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
       return false;
     }
+
+    disabled         = !(top[FPSTR(_enabled)] | !disabled);
+    readingInterval  = (top[FPSTR(_readInterval)] | readingInterval/1000) * 1000; // convert to ms
+    referenceVoltage = top[FPSTR(_referenceVoltage)] | referenceVoltage;
+    resistorValue    = top[FPSTR(_resistorValue)] | resistorValue;
+    adcPrecision     = top[FPSTR(_adcPrecision)] | adcPrecision;
+    offset           = top[FPSTR(_offset)] | offset;
+    DEBUG_PRINT(FPSTR(_name));
+    DEBUG_PRINTLN(F(" config (re)loaded."));
+
+    // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
     return true;
   }
 };

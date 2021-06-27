@@ -623,48 +623,30 @@ class FourLineDisplayUsermod : public Usermod {
       int8_t newScl       = sclPin;
       int8_t newSda       = sdaPin;
 
-      bool configComplete = true;
-
       JsonObject top = root[FPSTR(_name)];
-      if (!top.isNull() && top["pin"] != nullptr) {
-        newScl        = top["pin"][0];
-        newSda        = top["pin"][1];
-        newType       = top["type"];
-        if (top[FPSTR(_flip)].is<bool>()) {
-          flip        = top[FPSTR(_flip)].as<bool>();
-        } else {
-          String str = top[FPSTR(_flip)]; // checkbox -> off or on
-          flip = (bool)(str!="off"); // off is guaranteed to be present
-          needsRedraw |= true;
-        }
-        contrast      = top[FPSTR(_contrast)].as<int>();
-        refreshRate   = top[FPSTR(_refreshRate)].as<int>() * 1000;
-        screenTimeout = top[FPSTR(_screenTimeOut)].as<int>() * 1000;
-        if (top[FPSTR(_sleepMode)].is<bool>()) {
-          sleepMode   = top[FPSTR(_sleepMode)].as<bool>();
-        } else {
-          String str = top[FPSTR(_sleepMode)]; // checkbox -> off or on
-          sleepMode = (bool)(str!="off"); // off is guaranteed to be present
-          needsRedraw |= true;
-        }
-        if (top[FPSTR(_clockMode)].is<bool>()) {
-          clockMode   = top[FPSTR(_clockMode)].as<bool>();
-        } else {
-          String str = top[FPSTR(_clockMode)]; // checkbox -> off or on
-          clockMode = (bool)(str!="off"); // off is guaranteed to be present
-          needsRedraw |= true;
-        }
-        DEBUG_PRINTLN(F("4 Line Display config (re)loaded."));
-      } else {
-        DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
-        configComplete = false;
+      if (top.isNull()) {
+        DEBUG_PRINT(FPSTR(_name));
+        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+        return false;
       }
 
+      newScl        = top["pin"][0] | newScl;
+      newSda        = top["pin"][1] | newSda;
+      newType       = top["type"] | newType;
+      flip          = top[FPSTR(_flip)] | flip;
+      contrast      = top[FPSTR(_contrast)] | contrast;
+      refreshRate   = (top[FPSTR(_refreshRate)] | refreshRate/1000) * 1000;
+      screenTimeout = (top[FPSTR(_screenTimeOut)] | screenTimeout/1000) * 1000;
+      sleepMode     = top[FPSTR(_sleepMode)] | sleepMode;
+      clockMode     = top[FPSTR(_clockMode)] | clockMode;
+
+      DEBUG_PRINT(FPSTR(_name));
       if (!initDone) {
         // first run: reading from cfg.json
         sclPin = newScl;
         sdaPin = newSda;
         type = newType;
+        DEBUG_PRINTLN(F(" config loaded."));
       } else {
         // changing paramters from settings page
         if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
@@ -675,17 +657,18 @@ class FourLineDisplayUsermod : public Usermod {
           sdaPin = newSda;
           if (newScl<0 || newSda<0) {
             type = NONE;
-            return configComplete;
-          } else
-            type = newType;
+            return true;
+          } else type = newType;
           setup();
           needsRedraw |= true;
         }
         setContrast(contrast);
         setFlipMode(flip);
         if (needsRedraw && !wakeDisplay()) redraw(true);
+        DEBUG_PRINTLN(F(" config (re)loaded."));
       }
-      return configComplete;
+      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+      return true;
     }
 
     /*

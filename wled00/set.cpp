@@ -430,8 +430,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       String value = request->arg(i);
 
       // POST request parameters are combined as <usermodname>_<usermodparameter>
-      uint8_t umNameEnd = name.indexOf("_");
-      if (umNameEnd<1) break;  // parameter does not contain "_" or on 1st place -> wrong
+      int umNameEnd = name.indexOf(":");
+      if (umNameEnd<1) break;  // parameter does not contain ":" or on 1st place -> wrong
 
       JsonObject mod = um[name.substring(0,umNameEnd)]; // get a usermod JSON object
       if (mod.isNull()) {
@@ -441,17 +441,19 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       DEBUG_PRINT(":");
       name = name.substring(umNameEnd+1); // remove mod name from string
 
-      // if the resulting name still contains "_" this means nested object
+      // if the resulting name still contains ":" this means nested object
       JsonObject subObj;
-      uint8_t umSubObj = name.indexOf("_");
+      int umSubObj = name.indexOf(":");
+      DEBUG_PRINTF("(%d):",umSubObj);
       if (umSubObj>0) {
-        subObj = mod[name.substring(0,umSubObj-1)];
+        subObj = mod[name.substring(0,umSubObj)];
         if (subObj.isNull())
-          subObj = mod.createNestedObject(name.substring(0,umSubObj-1));
+          subObj = mod.createNestedObject(name.substring(0,umSubObj));
         name = name.substring(umSubObj+1); // remove nested object name from string
       } else {
         subObj = mod;
       }
+      DEBUG_PRINT(name);
 
       // check if parameters represent array
       if (name.endsWith("[]")) {
@@ -464,7 +466,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           subObj[name].add(value.toInt());
           j++;
         }
-        DEBUG_PRINT(name);
         DEBUG_PRINT("[");
         DEBUG_PRINT(j);
         DEBUG_PRINT("] = ");
@@ -472,11 +473,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       } else {
         // we are using a hidden field with the same name as our parameter (!before the actual parameter!)
         // to describe the type of parameter (text,float,int), for boolean patameters the first field contains "off"
-        // so checkboxes have one or two fields (first is always "off", existence of second depends on checkmark and may be "on")
+        // so checkboxes have one or two fields (first is always "false", existence of second depends on checkmark and may be "true")
         if (subObj[name].isNull()) {
           // the first occurence of the field describes the parameter type (used in next loop)
-          if (value == "off") subObj[name] = false; // checkboxes may have only one field
-          else                subObj[name] = value;
+          if (value == "false") subObj[name] = false; // checkboxes may have only one field
+          else                  subObj[name] = value;
         } else {
           String type = subObj[name].as<String>();  // get previously stored value as a type
           if (subObj[name].is<bool>()) subObj[name] = true;   // checkbox/boolean
@@ -484,11 +485,13 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           else if (type == "int")      subObj[name] = value.toInt();
           else                         subObj[name] = value;  // text fields
         }
-        DEBUG_PRINT(name);
         DEBUG_PRINT(" = ");
         DEBUG_PRINTLN(value);
       }
     }
+    #ifdef WLED_DEBUG
+    serializeJson(um,Serial);
+    #endif
     usermods.readFromConfig(um);  // force change of usermod parameters
   }
 
