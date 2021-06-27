@@ -3,7 +3,7 @@ body {
   text-align: center;
   background: #222;
   color: #fff;
-  line-height: 200%;
+  line-height: 200%%; /* %% because of AsyncWebServer */
   margin: 0;
 }
 hr {
@@ -31,8 +31,38 @@ input {
   font-family: Verdana, sans-serif;
   border: 0.5ch solid #333;
 }
+input[type="text"] {
+  font-size: medium;
+}
 input[type="number"] {
   width: 4em;
+  font-size: medium;
+  margin: 2px;
+}
+input[type="number"].xxl {
+  width: 100px;
+}
+input[type="number"].big {
+  width: 85px;
+}
+input[type="number"].med {
+  width: 55px;
+}
+input[type="number"].small {
+  width: 40px;
+}
+select {
+  margin: 2px;
+  font-size: medium;
+}
+input[type="checkbox"] {
+  /* Double-sized Checkboxes */
+  -ms-transform: scale(2); /* IE */
+  -moz-transform: scale(2); /* FF */
+  -webkit-transform: scale(2); /* Safari and Chrome */
+  -o-transform: scale(2); /* Opera */
+  transform: scale(2);
+  margin-right: 10px;
 }
 select {
   background: #333;
