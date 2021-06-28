@@ -311,6 +311,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClock5MinuteMarks = request->hasArg(F("O5"));
     analogClockSecondsTrail = request->hasArg(F("OS"));
 
+    digitalLedPerSegment = request->arg(F("DL")).toInt();
+    digitalColon = request->arg(F("DC")).toInt();
+
     #ifndef WLED_DISABLE_CRONIXIE
     strcpy(cronixieDisplay,request->arg(F("CX")).c_str());
     cronixieBacklight = request->hasArg(F("CB"));
