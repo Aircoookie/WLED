@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2106250
+#define VERSION 2106290
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -206,8 +206,7 @@ WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
 WLED_GLOBAL char apPass[65]  _INIT(DEFAULT_AP_PASS);
 WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
-// Hardware CONFIG (only changeble HERE, not at runtime)
-// LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
+// Hardware and pin config
 #ifndef BTNPIN
 WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({0});
 #else
