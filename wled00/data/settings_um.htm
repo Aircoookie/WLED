@@ -73,24 +73,22 @@
                 addField(k,f,o[j],true);
             }
         } else {
-            var t,c;
-            switch (typeof o) {
+            var c, t = typeof o;
+            switch (t) {
                 case "boolean":
-                    t = "checkbox"; c = o ? `checked value="true"` : "";
+                    t = "checkbox"; c = 'value="true"' + (o ? ' checked' : '');
                     break;
                 case "number":
                     c = `value="${o}"`;
-                    if (isF(o)) {
-                        c += ` step="0.01" class="xxl"`;
-                        t = "float";
-                    } else {
-                        if (f.substr(-3)==="pin") c += ' max="39" min="-1" class="small"';
-                        else c += ` class="big"`;
+                    if (f.substr(-3)==="pin") {
+                        c += ' max="39" min="-1" style="width:40px;"';
                         t = "int";
+                    } else {
+                        c += ' step="0.00001" style="width:80px;"';
                     }
                     break;
                 default:
-                    t = "text"; c = `value="${o}" style="width:150px;"`;
+                    t = "text"; c = `value="${o}" style="width:250px;"`;
                     break;
             }
             if (k.includes(":")) urows += k.substr(k.indexOf(":")+1);
@@ -98,7 +96,7 @@
             // https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
             if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
             else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
-            urows += `<input type="${t==="float"||t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
+            urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
         }
     }
     function ldS() {
