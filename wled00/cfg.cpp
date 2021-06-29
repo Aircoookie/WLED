@@ -297,7 +297,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(mqttServer, if_mqtt[F("broker")], 33);
   CJSON(mqttPort, if_mqtt["port"]); // 1883
   getStringFromJson(mqttUser, if_mqtt[F("user")], 41);
-  getStringFromJson(mqttPass, if_mqtt["psk"], 41); //normally not present due to security
+  getStringFromJson(mqttPass, if_mqtt["psk"], 65); //normally not present due to security
   getStringFromJson(mqttClientID, if_mqtt[F("cid")], 41);
 
   getStringFromJson(mqttDeviceTopic, if_mqtt[F("topics")][F("device")], 33); // "wled/test"
@@ -773,7 +773,7 @@ bool deserializeConfigSec() {
 
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
-  getStringFromJson(mqttPass, if_mqtt["psk"], 41);
+  getStringFromJson(mqttPass, if_mqtt["psk"], 65);
 #endif
 
 #ifndef WLED_DISABLE_HUESYNC

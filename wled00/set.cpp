@@ -256,7 +256,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg(F("MQPORT")).toInt();
     if (t > 0) mqttPort = t;
     strlcpy(mqttUser, request->arg(F("MQUSER")).c_str(), 41);
-    if (!isAsterisksOnly(request->arg(F("MQPASS")).c_str(), 41)) strlcpy(mqttPass, request->arg(F("MQPASS")).c_str(), 41);
+    if (!isAsterisksOnly(request->arg(F("MQPASS")).c_str(), 41)) strlcpy(mqttPass, request->arg(F("MQPASS")).c_str(), 65);
     strlcpy(mqttClientID, request->arg(F("MQCID")).c_str(), 41);
     strlcpy(mqttDeviceTopic, request->arg(F("MD")).c_str(), 33);
     strlcpy(mqttGroupTopic, request->arg(F("MG")).c_str(), 33);
