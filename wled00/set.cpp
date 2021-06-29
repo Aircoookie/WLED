@@ -480,17 +480,20 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           else                  subObj[name] = value;
         } else {
           String type = subObj[name].as<String>();  // get previously stored value as a type
-          if (subObj[name].is<bool>()) subObj[name] = true;   // checkbox/boolean
-          else if (type == "float")    subObj[name] = value.toDouble();
-          else if (type == "int")      subObj[name] = value.toInt();
-          else                         subObj[name] = value;  // text fields
+          if (subObj[name].is<bool>())   subObj[name] = true;   // checkbox/boolean
+          else if (type == "number") {
+            value.replace(",",".");      // just in case conversion
+            if (value.indexOf(".") >= 0) subObj[name] = value.toFloat();  // we do have a float
+            else                         subObj[name] = value.toInt();    // we may have an int
+          } else if (type == "int")      subObj[name] = value.toInt();
+          else                           subObj[name] = value;  // text fields
         }
         DEBUG_PRINT(" = ");
         DEBUG_PRINTLN(value);
       }
     }
     #ifdef WLED_DEBUG
-    serializeJson(um,Serial);
+    serializeJson(um,Serial); DEBUG_PRINTLN();
     #endif
     usermods.readFromConfig(um);  // force change of usermod parameters
   }

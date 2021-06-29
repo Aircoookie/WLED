@@ -56,7 +56,7 @@ input[type="number"].big {
 input[type="number"].med {
   width: 55px;
 }
-input[type="number"].small {
+input[type="number"].sml {
   width: 40px;
 }
 select {

@@ -36,14 +36,15 @@
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
         //check for pin conflicts
-        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
+        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="L5" || nm=="L6" || nm=="L7" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
             if (d.um_p && d.um_p.some((e)=>e==parseInt(LCs[i].value,10))) {alert(`Sorry, pins ${JSON.stringify(d.um_p)} can't be used.`);LCs[i].value="";LCs[i].focus();return false;}
             else if (LCs[i].value > 5 && LCs[i].value < 12) {alert("Sorry, pins 6-11 can not be used.");LCs[i].value="";LCs[i].focus();return false;}
+            else if (!(nm == "IR" || nm=="BT") && LCs[i].value > 33) {alert("Sorry, pins >33 are input only.");LCs[i].value="";LCs[i].focus();return false;}
             for (j=i+1; j<LCs.length; j++)
             {
               var n2 = LCs[j].name.substring(0,2);
-              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR")
+              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="L5" || n2=="L6" || n2=="L7" || n2=="RL" || n2=="BT" || n2=="IR")
                 if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${nm}/${n2}!`);LCs[j].value="";LCs[j].focus();return false;}
             }
           }
@@ -124,8 +125,8 @@
         if (s[i].name.substring(0,2)=="LT") {
           n=s[i].name.substring(2);
           var type = parseInt(s[i].value,10);
-          gId("p0d"+n).innerHTML = (type > 49) ? "Data:" : (type >41) ? "Pins:" : "Pin:";
-          gId("p1d"+n).innerHTML = (type > 49) ? "Clk:" : "";
+          gId("p0d"+n).innerHTML = (type > 49) ? "Data GPIO:" : (type >41) ? "GPIOs:" : "GPIO:";
+          gId("p1d"+n).innerHTML = (type > 49) ? "Clk GPIO:" : "";
           var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
           memu += getMem(type, d.getElementsByName("LC"+n)[0].value, d.getElementsByName("L0"+n)[0].value); // calc memory
@@ -146,8 +147,6 @@
               LK.value="";
             }
           }
-//          gId("ls"+n).readOnly = !(type > 31 && type < 48);  // if analog, allow editing LED start
-//          gId("LC").readOnly = !(type > 31 && type < 48);    // if analog, allow editing total LED count
           if (change) {
 //            gId("ew"+n).checked = (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
             gId("ls"+n).value = n+1;  // set LED start
@@ -185,18 +184,18 @@
           lc.max=maxPB; // update max led count value
         }
         // for pins check conflicts
-        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
+        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="L5" || nm=="L6" || nm=="L7" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
             var p = []; // used pin array
             if (d.um_p && Array.isArray(d.um_p)) for (k=0;k<d.um_p.length;k++) p.push(d.um_p[k]); // fill with reservations
             for (j=0; j<LCs.length; j++) {
               if (i==j) continue;
               var n2 = LCs[j].name.substring(0,2);
-              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR")
+              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="L5" || n2=="L6" || n2=="L7" || n2=="RL" || n2=="BT" || n2=="IR")
                 if (LCs[j].value!="" && LCs[j].value!="-1") p.push(parseInt(LCs[j].value,10));  // add current pin
             }
             // now check for conflicts
-            if (p.some((e)=>e==parseInt(LCs[i].value,10))) LCs[i].style.color="red"; else LCs[i].style.color="#fff";
+            if (p.some((e)=>e==parseInt(LCs[i].value,10))) LCs[i].style.color="red"; else LCs[i].style.color=parseInt(LCs[i].value,10)>33?"orange":"#fff";
           }
       }
       // update total led count
@@ -213,7 +212,7 @@
       gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
       gId('ledwarning').style.display = (sLC > maxPB || maxLC > 800 || bquot > 80) ? 'inline':'none';
       gId('ledwarning').style.color = (sLC > maxPB || maxLC > maxPB || bquot > 100) ? 'red':'orange';
-      gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>WARNING: Using over ${maxM}B!</b>)` : "") : "800 LEDs per pin";
+      gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>WARNING: Using over ${maxM}B!</b>)` : "") : "800 LEDs per GPIO";
       // calculate power
       var val = Math.ceil((100 + sLC * laprev)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
@@ -283,11 +282,11 @@ Color Order:
 <option value="4">BGR</option>
 <option value="5">GBR</option>
 </select><br>
-<span id="p0d${i}">Pin:</span> <input type="number" name="L0${i}" min="0" max="40" required style="width:40px" onchange="UI()"/>
-<span id="p1d${i}">Clock:</span> <input type="number" name="L1${i}" min="0" max="40" style="width:40px" onchange="UI()"/>
-<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="40" style="width:40px" onchange="UI()"/>
-<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="40" style="width:40px" onchange="UI()"/>
-<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="40" style="width:40px" onchange="UI()"/>
+<span id="p0d${i}">GPIO:</span><input type="number" name="L0${i}" min="0" max="33" required class="sml" onchange="UI()"/>
+<span id="p1d${i}"></span><input type="number" name="L1${i}" min="0" max="33" class="sml" onchange="UI()"/>
+<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="33" class="sml" onchange="UI()"/>
+<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="33" class="sml" onchange="UI()"/>
+<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="33" class="sml" onchange="UI()"/>
 <br>
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="${lastEnd(i)}" readonly required />&nbsp;
 <div id="dig${i}" style="display:inline">
@@ -311,7 +310,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       var c = gId("btns").innerHTML;
       var bt = "BT" + i;
       var be = "BE" + i;
-      c += `Button ${i} pin: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" style="width:40px" value="${p}">`;
+      c += `Button ${i} GPIO: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" class="sml" value="${p}">`;
       c += `<select name="${be}">`
       c += `<option value="0" ${t==0?"selected":""}>Disabled</option>`;
       c += `<option value="2" ${t==2?"selected":""}>Pushbutton</option>`;
@@ -339,10 +338,10 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 		function GetV()
 		{
       //values injected by server while sending HTML
-      //maxM=5000;maxPB=1536;d.um_p=[1,6,7,8,9,10,11];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;addBtn(0,0,2);addBtn(1,3,4);addBtn(2,-1,0);d.Sf.IR.value=-1;
+      //maxM=5000;maxPB=1536;d.um_p=[1,6,7,8,9,10,11];addLEDs(5);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;addBtn(0,0,2);addBtn(1,3,4);addBtn(2,-1,0);d.Sf.IR.value=-1;
     }
 	</script>
-	<style>@import url("/style.css");</style>
+	<style>@import url("style.css");</style>
 	<link href="/skin.css" rel="stylesheet">
 </head>
 <body onload="S()">
@@ -393,7 +392,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     </div><hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" min="0" max="100" name="TT" required><br>
-    IR pin: <input type="number" min="-1" max="40" name="IR" onchange="UI()" style="width:40px"><select name="IT" onchange="UI()">
+    IR GPIO: <input type="number" min="-1" max="40" name="IR" onchange="UI()" class="sml"><select name="IT" onchange="UI()">
     <option value="0">Remote disabled</option>
     <option value="1">24-key RGB</option>
     <option value="2">24-key with CT</option>
@@ -407,7 +406,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/ir.json');"><br></div>
     <div id="toast"></div>
     <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
-    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()" style="width:40px"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
+    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()" class="sml"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>

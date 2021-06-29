@@ -156,6 +156,20 @@ function loadBg(iUrl)
 			[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
 			[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
 		];
+		fetch("./holidays.json", {
+			method: 'get'
+		})
+		.then(res => {
+			//if (!res.ok) showErrorToast();
+			return res.json();
+		})
+		.then(json => {
+			if (Array.isArray(json)) hol = json;
+			//TODO: do some parsing first
+		})
+		.catch(function (error) {
+			console.log("holidays.json does not contain array of holidays.");
+		});
 		for (var i=0; i<hol.length; i++) {
 			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
 			var hs = new Date(yr,hol[i][1],hol[i][2]);
