@@ -323,18 +323,6 @@ void loadSettingsFromEEPROM()
   strip.rgbwMode = EEPROM.read(2203);
   //skipFirstLed = EEPROM.read(2204);
 
-  if (EEPROM.read(2210) || EEPROM.read(2211) || EEPROM.read(2212))
-  {
-    presetCyclingEnabled = EEPROM.read(2205);
-    presetCycleTime = EEPROM.read(2206) + ((EEPROM.read(2207) << 8) & 0xFF00);
-    if (lastEEPROMversion < 21) presetCycleTime /= 100; //was stored in ms, now is in tenths of a second
-    presetCycleMin = EEPROM.read(2208);
-    presetCycleMax = EEPROM.read(2209);
-    //was presetApplyBri = EEPROM.read(2210);
-    //was presetApplyCol = EEPROM.read(2211);
-    //was presetApplyFx = EEPROM.read(2212);
-  }
-
   bootPreset = EEPROM.read(389);
   wifiLock = EEPROM.read(393);
   utcOffsetSecs = EEPROM.read(394) + ((EEPROM.read(395) << 8) & 0xFF00);

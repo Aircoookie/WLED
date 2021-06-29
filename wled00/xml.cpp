@@ -61,7 +61,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappend(SET_F("</ws><ps>"));
   oappendi((currentPreset < 1) ? 0:currentPreset);
   oappend(SET_F("</ps><cy>"));
-  oappendi(presetCyclingEnabled);
+  oappendi(currentPlaylist > 0);
   oappend(SET_F("</cy><ds>"));
   oappend(serverDescription);
   if (realtimeMode)

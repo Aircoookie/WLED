@@ -296,19 +296,6 @@ void handleNightlight()
     }
     nightlightActiveOld = false;
   }
-
-  //also handle preset cycle here
-  if (presetCyclingEnabled && (millis() - presetCycledTime > (100*presetCycleTime)))
-  {
-    presetCycledTime = millis();
-    if (bri == 0 || nightlightActive) return;
-
-    if (presetCycCurr < presetCycleMin || presetCycCurr > presetCycleMax) presetCycCurr = presetCycleMin;
-    applyPreset(presetCycCurr); //this handles colorUpdated() for us
-    presetCycCurr++;
-    if (presetCycCurr > 250) presetCycCurr = 1;
-    interfaceUpdateCallMode = 0; //disable updates to MQTT and Blynk
-  }
 }
 
 //utility for FastLED to use our custom timer

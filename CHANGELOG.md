@@ -5,6 +5,8 @@
 #### Build 2106300
 
 -   Version bump to 0.13.0-b0 "Toki"
+-   BREAKING: Removed preset cycle (use playlists)
+-   BREAKING: Removed `nl.fade`, `leds.pin` and `ccnf` from JSON API
 -   Added playlist editor UI
 -   Reordered segment UI and added offset field
 -   Raised maximum MQTT password length to 64 (closes #1373)

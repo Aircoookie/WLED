@@ -197,19 +197,10 @@ bool deserializeState(JsonObject root, byte presetId)
 
   tr = root[F("tb")] | -1;
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
-  
-  int cy = root[F("pl")] | -2;
-  if (cy > -2) presetCyclingEnabled = (cy >= 0);
-  JsonObject ccnf = root["ccnf"];
-  presetCycleMin = ccnf[F("min")] | presetCycleMin;
-  presetCycleMax = ccnf[F("max")] | presetCycleMax;
-  tr = ccnf[F("time")] | -1;
-  if (tr >= 2) presetCycleTime = tr;
 
   JsonObject nl = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
-  nightlightMode      = nl[F("fade")] | nightlightMode; //deprecated, remove for v0.13.0
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
@@ -375,20 +366,13 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     if (errorFlag) root[F("error")] = errorFlag;
 
     root[F("ps")] = currentPreset;
-    root[F("pl")] = (presetCyclingEnabled) ? 0: -1;
+    root[F("pl")] = currentPlaylist;
 
     usermods.addToJsonState(root);
-
-    //temporary for preset cycle
-    JsonObject ccnf = root.createNestedObject("ccnf");
-    ccnf[F("min")] = presetCycleMin;
-    ccnf[F("max")] = presetCycleMax;
-    ccnf[F("time")] = presetCycleTime;
 
     JsonObject nl = root.createNestedObject("nl");
     nl["on"] = nightlightActive;
     nl[F("dur")] = nightlightDelayMins;
-    nl[F("fade")] = (nightlightMode > NL_MODE_SET); //deprecated
     nl[F("mode")] = nightlightMode;
     nl[F("tbri")] = nightlightTargetBri;
     if (nightlightActive) {
@@ -451,9 +435,6 @@ void serializeInfo(JsonObject root)
   leds[F("count")] = ledCount;
   leds[F("rgbw")] = strip.isRgbw;
   leds[F("wv")] = strip.isRgbw && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
-  JsonArray leds_pin = leds.createNestedArray("pin");
-  leds_pin.add(LEDPIN);
-
   leds[F("pwr")] = strip.currentMilliamps;
   leds[F("fps")] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;

@@ -164,7 +164,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     briS = request->arg(F("CA")).toInt();
 
-    saveCurrPresetCycConf = request->hasArg(F("PC"));
     turnOnAtBoot = request->hasArg(F("BO"));
     t = request->arg(F("BP")).toInt();
     if (t <= 250) bootPreset = t;
@@ -611,36 +610,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
   strip.setSegment(selectedSeg, startI, stopI, grpI, spcI);
 
-   //set presets
-  pos = req.indexOf(F("P1=")); //sets first preset for cycle
-  if (pos > 0) presetCycleMin = getNumVal(&req, pos);
-
-  pos = req.indexOf(F("P2=")); //sets last preset for cycle
-  if (pos > 0) presetCycleMax = getNumVal(&req, pos);
-
-  //preset cycle
-  pos = req.indexOf(F("CY="));
-  if (pos > 0)
-  {
-    char cmd = req.charAt(pos+3);
-    if (cmd == '2') presetCyclingEnabled = !presetCyclingEnabled;
-    else presetCyclingEnabled = (cmd != '0');
-    presetCycCurr = presetCycleMin;
-  }
-
-  pos = req.indexOf(F("PT=")); //sets cycle time in ms
-  if (pos > 0) {
-    int v = getNumVal(&req, pos);
-    if (v > 100) presetCycleTime = v/100;
-  }
-
   pos = req.indexOf(F("PS=")); //saves current in preset
   if (pos > 0) savePreset(getNumVal(&req, pos));
 
   //apply preset
-  if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
-    applyPreset(presetCycCurr);
-  }
+  pos = req.indexOf(F("PL="));
+  if (pos > 0) applyPreset(getNumVal(&req, pos));
 
   //set brightness
   updateVal(&req, "&A=", &bri);
@@ -733,7 +708,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
 
   //set effect parameters
-  if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) presetCyclingEnabled = false;
+  if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) unloadPlaylist();
   updateVal(&req, "SX=", &effectSpeed);
   updateVal(&req, "IX=", &effectIntensity);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);

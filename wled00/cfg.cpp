@@ -222,15 +222,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(turnOnAtBoot, def["on"]); // true
   CJSON(briS, def["bri"]); // 128
 
-  JsonObject def_cy = def[F("cy")];
-  CJSON(presetCyclingEnabled, def_cy["on"]);
-
-  CJSON(presetCycleMin, def_cy[F("range")][0]);
-  CJSON(presetCycleMax, def_cy[F("range")][1]);
-
-  tdd = def_cy["dur"] | -1;
-  if (tdd > 0) presetCycleTime = tdd;
-
   JsonObject interfaces = doc["if"];
 
   JsonObject if_sync = interfaces[F("sync")];
@@ -587,17 +578,6 @@ void serializeConfig() {
   def[F("ps")] = bootPreset;
   def["on"] = turnOnAtBoot;
   def["bri"] = briS;
-
-  //to be removed once preset cycles are presets
-  if (saveCurrPresetCycConf) {
-    JsonObject def_cy = def.createNestedObject("cy");
-    def_cy["on"] = presetCyclingEnabled;
-
-    JsonArray def_cy_range = def_cy.createNestedArray(F("range"));
-    def_cy_range.add(presetCycleMin);
-    def_cy_range.add(presetCycleMax);
-    def_cy["dur"] = presetCycleTime;
-  }
 
   JsonObject interfaces = doc.createNestedObject("if");
 
