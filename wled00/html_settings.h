@@ -119,36 +119,36 @@ max="40" name="IR" onchange="UI()" style="width:35px">&nbsp;<select name="IT">
 <option value="2">24-key with CT</option><option value="3">40-key blue</option>
 <option value="4">44-key RGB</option><option value="5">21-key RGB</option>
 <option value="6">6-key black</option><option value="7">9-key red</option>
-</select><span style="cursor:pointer" onclick='off("IR")'>&nbsp;&#215;</span>
-<br><a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" 
-target="_blank">IR info</a><br>Relay pin: <input type="number" min="-1" 
-max="40" name="RL" onchange="UI()" style="width:35px"> Invert <input 
-type="checkbox" name="RM"><span style="cursor:pointer" onclick='off("RL")'>
-&nbsp;&#215;</span><br><hr style="width:260px"><h3>Defaults</h3>
-Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
-Default brightness: <input name="CA" type="number" min="0" max="255" required>
- (0-255)<br><br>Apply preset <input name="BP" type="number" min="0" max="250" 
-required> at boot (0 uses defaults)<br><br>Use Gamma correction for color: 
-<input type="checkbox" name="GC"> (strongly recommended)<br>
-Use Gamma correction for brightness: <input type="checkbox" name="GB">
- (not recommended)<br><br>Brightness factor: <input name="BF" type="number" 
-min="1" max="255" required> %<h3>Transitions</h3>Crossfade: <input 
-type="checkbox" name="TF"><br>Transition Time: <input name="TD" maxlength="5" 
-size="2"> ms<br>Enable Palette transitions: <input type="checkbox" name="PF">
-<h3>Timed light</h3>Default Duration: <input name="TL" type="number" min="1" 
-max="255" required> min<br>Default Target brightness: <input name="TB" 
-type="number" min="0" max="255" required><br>Mode: <select name="TW"><option 
-value="0">Wait and set</option><option value="1">Fade</option><option value="2">
-Fade Color</option><option value="3">Sunrise</option></select><h3>Advanced</h3>
-Palette blending: <select name="PB"><option value="0">Linear (wrap if moving)
-</option><option value="1">Linear (always wrap)</option><option value="2">
-Linear (never wrap)</option><option value="3">None (not recommended)</option>
-</select><br><span class="wc">Auto-calculate white channel from RGB:<br><select 
-name="AW"><option value="0">None</option><option value="1">Brighter</option>
-<option value="2">Accurate</option><option value="3">Dual</option><option 
-value="4">Legacy</option></select><br></span><hr><button type="button" 
-onclick="B()">Back</button><button type="submit">Save</button></form></body>
-</html>)=====";
+<option value="8">JSON remote</option></select><span style="cursor:pointer" 
+onclick='off("IR")'>&nbsp;&#215;</span><br><a 
+href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">
+IR info</a><br>Relay pin: <input type="number" min="-1" max="40" name="RL" 
+onchange="UI()" style="width:35px"> Invert <input type="checkbox" name="RM">
+<span style="cursor:pointer" onclick='off("RL")'>&nbsp;&#215;</span><br><hr 
+style="width:260px"><h3>Defaults</h3>Turn LEDs on after power up/reset: <input 
+type="checkbox" name="BO"><br>Default brightness: <input name="CA" 
+type="number" min="0" max="255" required> (0-255)<br><br>Apply preset <input 
+name="BP" type="number" min="0" max="250" required> at boot (0 uses defaults)
+<br><br>Use Gamma correction for color: <input type="checkbox" name="GC">
+ (strongly recommended)<br>Use Gamma correction for brightness: <input 
+type="checkbox" name="GB"> (not recommended)<br><br>Brightness factor: <input 
+name="BF" type="number" min="1" max="255" required> %<h3>Transitions</h3>
+Crossfade: <input type="checkbox" name="TF"><br>Transition Time: <input 
+name="TD" maxlength="5" size="2"> ms<br>Enable Palette transitions: <input 
+type="checkbox" name="PF"><h3>Timed light</h3>Default Duration: <input 
+name="TL" type="number" min="1" max="255" required> min<br>
+Default Target brightness: <input name="TB" type="number" min="0" max="255" 
+required><br>Mode: <select name="TW"><option value="0">Wait and set</option>
+<option value="1">Fade</option><option value="2">Fade Color</option><option 
+value="3">Sunrise</option></select><h3>Advanced</h3>Palette blending: <select 
+name="PB"><option value="0">Linear (wrap if moving)</option><option value="1">
+Linear (always wrap)</option><option value="2">Linear (never wrap)</option>
+<option value="3">None (not recommended)</option></select><br><span class="wc">
+Auto-calculate white channel from RGB:<br><select name="AW"><option value="0">
+None</option><option value="1">Brighter</option><option value="2">Accurate
+</option><option value="3">Dual</option><option value="4">Legacy</option>
+</select><br></span><hr><button type="button" onclick="B()">Back</button><button
+ type="submit">Save</button></form></body></html>)=====";
 
 
 #ifdef WLED_ENABLE_DMX
