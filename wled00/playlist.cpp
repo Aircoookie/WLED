@@ -117,7 +117,7 @@ void loadPlaylist(JsonObject playlistObj, byte presetId) {
 
 
 void handlePlaylist() {
-  if (currentPlaylist < 0 || playlistEntries == nullptr || presetCyclingEnabled) return;
+  if (currentPlaylist < 0 || playlistEntries == nullptr) return;
 
   if (millis() - presetCycledTime > (100*playlistEntryDur)) {
     presetCycledTime = millis();

@@ -61,7 +61,7 @@ void XML_response(AsyncWebServerRequest *request, char* dest)
   oappend(SET_F("</ws><ps>"));
   oappendi((currentPreset < 1) ? 0:currentPreset);
   oappend(SET_F("</ps><cy>"));
-  oappendi(presetCyclingEnabled);
+  oappendi(currentPlaylist > 0);
   oappend(SET_F("</cy><ds>"));
   oappend(serverDescription);
   if (realtimeMode)
@@ -158,13 +158,24 @@ void sappends(char stype, const char* key, char* val)
 {
   switch(stype)
   {
-    case 's': //string (we can interpret val as char*)
+    case 's': { //string (we can interpret val as char*)
       oappend("d.Sf.");
       oappend(key);
       oappend(".value=\"");
-      oappend(val);
+      //convert "%" to "%%" to make EspAsyncWebServer happy
+      char buf[130];
+      uint8_t len = strlen(val) +1;
+      uint8_t s = 0;
+      for (uint8_t i = 0; i < len; i++) {
+        buf[i+s] = val[i];
+        if (val[i] == '%') {
+          s++; buf[i+s] = '%';
+        }
+      }
+
+      oappend(buf);
       oappend("\";");
-      break;
+      break; }
     case 'm': //message
       oappend(SET_F("d.getElementsByClassName"));
       oappend(key);

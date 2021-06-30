@@ -41,11 +41,17 @@ input[type="number"].xxl {
 input[type="number"].big {
   width: 85px;
 }
+input[type="number"].xmed {
+  width: 60px;
+}
 input[type="number"].med {
   width: 55px;
 }
 input[type="number"].small {
-  width: 40px;
+  width: 42px;
+}
+input[type="number"].tiny {
+  width: 35px;
 }
 input[type="checkbox"] {
   transform: scale(1.5);

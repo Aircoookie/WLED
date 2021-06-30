@@ -402,9 +402,8 @@ button {
 }
 
 #imgw {
-	width: 200px;
-	height: 55px;
 	display: inline-block;
+	margin: 8px;
 }
 
 #kv, #kn {
@@ -430,6 +429,12 @@ button {
 img {
 	max-width: 100%;
 	max-height: 100%;
+}
+
+.wi {
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
+	width: 210px;
 }
 
 @keyframes fadein {
@@ -519,12 +524,16 @@ input[type=range]:active + .sliderbubble {
 	position: relative;
 }
 
+.sbs {
+	margin: 0px -20px 5px -6px;
+}
+
 .sws {
-	width: 212px;
+	width: 230px;
 }
 
 .sis {
-	width: 192px !important;
+	width: 214px !important;
 }
 
 .hd {
@@ -561,12 +570,11 @@ input[type=range]:active + .sliderbubble {
 }
 
 .btn-s {
-	padding: 9px;
 	width: 276px;
 	background-color: var(--c-2);
 }
 .btn-i {
-	padding-bottom: 3px;
+	padding-bottom: 4px;
 }
 .btn-icon {
 	margin: 0px 8px 4px 0;
@@ -577,6 +585,19 @@ input[type=range]:active + .sliderbubble {
 }
 .btn-p {
 	width: 216px;
+}
+.btn-xs {
+  width: 39px;
+}
+.btn-pl-add {
+  position: absolute;
+  bottom: -29px;
+  left: 94px;
+}
+.btn-pl-del {
+	position: absolute;
+	right: 2px;
+	bottom: -3px;
 }
 
 #qcs-w {
@@ -599,6 +620,16 @@ input[type=range]:active + .sliderbubble {
 
 .cl {
 	width: 42px;
+}
+
+.sel-pl {
+  width: 200px;
+  background-position: 176px 16px;
+}
+
+.sel-ple {
+	width: 216px;
+  background-position: 192px 16px;
 }
 
 select {
@@ -663,6 +694,11 @@ input[type=text] {
 .ptxt {
 	width: 200px !important;
 	margin: 26px 0 6px 12px !important;
+}
+
+.plentry {
+  margin-top: 16px;
+  position: relative;
 }
 
 .stxt {
@@ -741,9 +777,9 @@ input[type=number]::-webkit-outer-spin-button {
 
 .cnf-s {
 	position: absolute;
-	top: 66px;
-	right: 28px;
-	padding: 43px 6px;
+	top: 173px;
+	right: 23px;
+	padding: 7px 22px;
 }
 
 .pwr {
@@ -1014,6 +1050,16 @@ input[type="text"].search:not(:placeholder-shown) {
 
 .pwarn {
 	color: red;
+}
+
+.hrz {
+  width: auto;
+  height: 2px;
+  background-color: var(--c-e);
+}
+.hrz-pl {
+  margin: 20px 0;
+	position: relative;
 }
 
 ::-webkit-scrollbar {

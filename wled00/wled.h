@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.12.1-b1
+   @version 0.13.0-b0
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2106250
+#define VERSION 2106302
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -200,14 +200,13 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 // Global Variable definitions
 WLED_GLOBAL char versionString[] _INIT(TOSTRING(WLED_VERSION));
-#define WLED_CODENAME "Hikari"
+#define WLED_CODENAME "Toki"
 
 // AP and OTA default passwords (for maximum security change them!)
 WLED_GLOBAL char apPass[65]  _INIT(DEFAULT_AP_PASS);
 WLED_GLOBAL char otaPass[33] _INIT(DEFAULT_OTA_PASS);
 
-// Hardware CONFIG (only changeble HERE, not at runtime)
-// LED strip pin, button pin and IR pin changeable in NpbWrapper.h!
+// Hardware and pin config
 #ifndef BTNPIN
 WLED_GLOBAL int8_t btnPin[WLED_MAX_BUTTONS] _INIT({0});
 #else
@@ -339,7 +338,7 @@ WLED_GLOBAL char mqttDeviceTopic[33] _INIT("");            // main MQTT topic (i
 WLED_GLOBAL char mqttGroupTopic[33] _INIT("wled/all");     // second MQTT topic (for example to group devices)
 WLED_GLOBAL char mqttServer[33] _INIT("");                 // both domains and IPs should work (no SSL)
 WLED_GLOBAL char mqttUser[41] _INIT("");                   // optional: username for MQTT auth
-WLED_GLOBAL char mqttPass[41] _INIT("");                   // optional: password for MQTT auth
+WLED_GLOBAL char mqttPass[65] _INIT("");                   // optional: password for MQTT auth
 WLED_GLOBAL char mqttClientID[41] _INIT("");               // override the client ID
 WLED_GLOBAL uint16_t mqttPort _INIT(1883);
 
@@ -501,14 +500,8 @@ WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 25
 // blynk
 WLED_GLOBAL bool blynkEnabled _INIT(false);
 
-// preset cycling
-WLED_GLOBAL bool presetCyclingEnabled _INIT(false);
-WLED_GLOBAL byte presetCycleMin _INIT(1), presetCycleMax _INIT(5);
-WLED_GLOBAL uint16_t presetCycleTime _INIT(12);
+//playlists
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
-WLED_GLOBAL byte presetCycCurr _INIT(presetCycleMin);
-WLED_GLOBAL bool saveCurrPresetCycConf _INIT(false);
-
 WLED_GLOBAL int16_t currentPlaylist _INIT(0);
 
 // realtime
