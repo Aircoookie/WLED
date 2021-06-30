@@ -2,6 +2,10 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2106302
+
+-   Fixed settings page broken by using "%" in input fields
+
 #### Build 2106301
 
 -   Fixed a problem with disabled buttons reverting to pin 0 causing conflict
