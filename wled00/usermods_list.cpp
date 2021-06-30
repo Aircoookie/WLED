@@ -9,9 +9,14 @@
  * || || ||
  * \/ \/ \/
  */
-//#include "usermod_v2_example.h"
+//#include "../usermods/EXAMPLE_v2/usermod_v2_example.h"
+
 #ifdef USERMOD_DALLASTEMPERATURE
 #include "../usermods/Temperature/usermod_temperature.h"
+#endif
+
+#ifdef USERMOD_SN_PHOTORESISTOR
+#include "../usermods/SN_Photoresistor/usermod_sn_photoresistor.h"
 #endif
 
 //#include "usermod_v2_empty.h"
@@ -61,6 +66,14 @@
 #include "../usermods/multi_relay/usermod_multi_relay.h"
 #endif
 
+#ifdef USERMOD_RTC
+#include "../usermods/RTC/usermod_rtc.h"
+#endif
+
+#ifdef USERMOD_ELEKSTUBE_IPS
+#include "../usermods/EleksTube_IPS/usermod_elekstube_ips.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -69,17 +82,21 @@ void registerUsermods()
    * \/ \/ \/
    */
   //usermods.add(new MyExampleUsermod());
-  
+
   #ifdef USERMOD_DALLASTEMPERATURE
   usermods.add(new UsermodTemperature());
   #endif
-  
+
+  #ifdef USERMOD_SN_PHOTORESISTOR
+  usermods.add(new Usermod_SN_Photoresistor());
+  #endif
+
   //usermods.add(new UsermodRenameMe());
-  
+
   #ifdef USERMOD_BUZZER
   usermods.add(new BuzzerUsermod());
   #endif
-  
+
   #ifdef USERMOD_BME280
   usermods.add(new UsermodBME280());
   #endif
@@ -117,5 +134,13 @@ void registerUsermods()
 
   #ifdef USERMOD_MULTI_RELAY
   usermods.add(new MultiRelay());
+  #endif
+
+  #ifdef USERMOD_RTC
+  usermods.add(new RTCUsermod());
+  #endif
+
+  #ifdef USERMOD_ELEKSTUBE_IPS
+  usermods.add(new ElekstubeIPSUsermod());
   #endif
 }

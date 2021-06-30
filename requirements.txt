@@ -44,7 +44,7 @@ starlette==0.14.2
     # via platformio
 tabulate==0.8.9
     # via platformio
-urllib3==1.26.4
+urllib3==1.26.5
     # via requests
 uvicorn==0.13.4
     # via platformio

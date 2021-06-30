@@ -33,12 +33,12 @@ class AutoSaveUsermod : public Usermod {
     bool enabled = true;
 
     // configurable parameters
-    unsigned long autoSaveAfterSec = 15;  // 15s by default
+    uint16_t autoSaveAfterSec = 15;       // 15s by default
     uint8_t autoSavePreset = 250;         // last possible preset
     bool applyAutoSaveOnBoot = false;     // do we load auto-saved preset on boot?
 
     // If we've detected the need to auto save, this will be non zero.
-    unsigned long autoSaveAfter = 0;
+    uint16_t autoSaveAfter = 0;
 
     uint8_t knownBrightness = 0;
     uint8_t knownEffectSpeed = 0;
@@ -97,7 +97,7 @@ class AutoSaveUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (!autoSaveAfterSec || !enabled) return;  // setting 0 as autosave seconds disables autosave
+      if (!autoSaveAfterSec || !enabled || strip.isUpdating()) return;  // setting 0 as autosave seconds disables autosave
 
       unsigned long now = millis();
       uint8_t currentMode = strip.getMode();
@@ -197,34 +197,29 @@ class AutoSaveUsermod : public Usermod {
      * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
+     * 
+     * The function should return true if configuration was successfully loaded or false if there was no configuration.
      */
-    void readFromConfig(JsonObject& root) {
-      // we look for JSON object: {"Autosave": {"autoSaveAfterSec": 10, "autoSavePreset": 99}}
+    bool readFromConfig(JsonObject& root) {
+      // we look for JSON object: {"Autosave": {"enabled": true, "autoSaveAfterSec": 10, "autoSavePreset": 250, ...}}
       JsonObject top = root[FPSTR(_name)];
       if (top.isNull()) {
-        DEBUG_PRINTLN(F("No config found. (Using defaults.)"));
-        return;
+        DEBUG_PRINT(FPSTR(_name));
+        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+        return false;
       }
-      
-      if (top[FPSTR(_autoSaveEnabled)].is<bool>()) {
-        // reading from cfg.json
-        enabled = top[FPSTR(_autoSaveEnabled)].as<bool>();
-      } else {
-        // reading from POST message
-        String str = top[FPSTR(_autoSaveEnabled)]; // checkbox -> off or on
-        enabled = (bool)(str!="off"); // off is guaranteed to be present
-      }
-      autoSaveAfterSec = min(3600,max(10,top[FPSTR(_autoSaveAfterSec)].as<int>()));
-      autoSavePreset   = min(250,max(100,top[FPSTR(_autoSavePreset)].as<int>()));
-      if (top[FPSTR(_autoSaveApplyOnBoot)].is<bool>()) {
-        // reading from cfg.json
-        applyAutoSaveOnBoot = top[FPSTR(_autoSaveApplyOnBoot)].as<bool>();
-      } else {
-        // reading from POST message
-        String str = top[FPSTR(_autoSaveApplyOnBoot)]; // checkbox -> off or on
-        applyAutoSaveOnBoot = (bool)(str!="off"); // off is guaranteed to be present
-      }
-      DEBUG_PRINTLN(F("Autosave config (re)loaded."));
+
+      enabled             = top[FPSTR(_autoSaveEnabled)] | enabled;
+      autoSaveAfterSec    = top[FPSTR(_autoSaveAfterSec)] | autoSaveAfterSec;
+      autoSaveAfterSec    = (uint16_t) min(3600,max(10,(int)autoSaveAfterSec)); // bounds checking
+      autoSavePreset      = top[FPSTR(_autoSavePreset)] | autoSavePreset;
+      autoSavePreset      = (uint8_t) min(250,max(100,(int)autoSavePreset)); // bounds checking
+      applyAutoSaveOnBoot = top[FPSTR(_autoSaveApplyOnBoot)] | applyAutoSaveOnBoot;
+      DEBUG_PRINT(FPSTR(_name));
+      DEBUG_PRINTLN(F(" config (re)loaded."));
+
+      // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+      return true;
   }
 
     /*

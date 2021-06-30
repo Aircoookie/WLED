@@ -2,6 +2,81 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2106302
+
+-   Fixed settings page broken by using "%" in input fields
+
+#### Build 2106301
+
+-   Fixed a problem with disabled buttons reverting to pin 0 causing conflict
+
+#### Build 2106300
+
+-   Version bump to 0.13.0-b0 "Toki"
+-   BREAKING: Removed preset cycle (use playlists)
+-   BREAKING: Removed `nl.fade`, `leds.pin` and `ccnf` from JSON API
+-   Added playlist editor UI
+-   Reordered segment UI and added offset field
+-   Raised maximum MQTT password length to 64 (closes #1373)
+
+#### Build 2106290
+
+-   Added Offset to segments, allows shifting the LED considered first within a segment
+-   Added `of` property to seg object in JSON API to set offset
+-   Usermod settings improvements (PR #2043, PR #2045)
+
+#### Build 2106250
+
+-   Fixed preset only disabling on second effect/color change
+
+#### Build 2106241
+
+-   BREAKING: Added ability for usermods to force a config save if config incomplete. `readFromConfig()` needs to return a `bool` to indicate if the config is complete
+-   Updated usermods implementing `readFromConfig()`
+-   Auto-create segments based on configured busses
+
+#### Build 2106200
+
+-   Added 2 Ethernet boards and split Ethernet configs into separate file
+
+#### Build 2106180
+
+-   Fixed DOS on Chrome tab restore causing reboot
+
+#### Build 2106170
+
+-   Optimized JSON buffer usage (pre-serialized color arrays)
+
+#### Build 2106140
+
+-   Updated main logo
+-   Reduced flash usage by 0.8kB by using 8-bit instead of 32-bit PNGs for welcome and 404 pages
+-   Added a check to stop Alexa reporting an error if state set by macro differs from the expected state
+
+#### Build 2106100
+
+-   Added support for multiple buttons with various types (PR #1977)
+-   Fixed infinite playlists (PR #2020)
+-   Added `r` to playlist object, allows for shuffle regardless of the `repeat` value
+-   Improved accuracy of NTP time sync
+-   Added possibility for WLED UDP sync to sync system time
+-   Improved UDP sync accuracy, if both sender and receiver are NTP synced
+-   Fixed a cache issue with restored tabs
+-   Cache CORS request
+-   Disable WiFi sleep by default on ESP32
+
+#### Build 2105230
+
+-   No longer retain MQTT `/v` topic to alleviate storage loads on MQTT broker
+-   Fixed Sunrise calculation (atan_t approx. used outside of value range)
+
+#### Build 2105200
+
+-   Fixed WS281x output on ESP32
+-   Fixed potential out-of-bounds write in MQTT
+-   Fixed IR pin not changeable if IR disabled
+-   Fixed XML API <wv> containing -1 on Manual only RGBW mode (see #888, #1783)
+
 #### Build 2105171
 
 -   Always copy MQTT payloads to prevent non-0-terminated strings

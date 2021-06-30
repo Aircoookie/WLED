@@ -29,7 +29,10 @@
         if (numM > 0 || locip) ldS();
         else gId("um").innerHTML = "No Usermods installed.";
     }
-    function check(o,k) {
+    // https://stackoverflow.com/questions/3885817/how-do-i-check-that-a-number-is-float-or-integer
+    function isF(n) { return n === +n && n !== (n|0); }
+    function isI(n) { return n === +n && n === (n|0); }
+    function check(o,k) {   // input object, pin owner key
         var n = o.name.replace("[]","").substr(-3);
         if (o.type=="number" && n.substr(0,3)=="pin") {
             for (var i=0; i<pins.length; i++) {
@@ -58,30 +61,42 @@
             }
         }
     }
-    function addField(k,f,o,a=false) {
+    function addField(k,f,o,a=false) {  //key, field, (sub)object, isArray
         if (isO(o)) {
             for (const [s,v] of Object.entries(o)) {
-                addField(k,s,v);
+                // possibility to nest objects (only 1 level)
+                if (f!=='unknown' && !k.includes(":")) addField(k+":"+f,s,v);
+                else addField(k,s,v);
             }
         } else if (Array.isArray(o)) {
             for (var j=0; j<o.length; j++) {
                 addField(k,f,o[j],true);
             }
         } else {
-            var t,c;
-            switch (typeof o) {
+            var c, t = typeof o;
+            switch (t) {
                 case "boolean":
-                    t = "checkbox"; c = o ? `checked value="on"` : ""; break;
+                    t = "checkbox"; c = 'value="true"' + (o ? ' checked' : '');
+                    break;
                 case "number":
-                    t = "number"; c = `value="${parseInt(o,10)}"`; break;
-                case "string":
-                    t = "text"; c = `value="${o}"`; break;
+                    c = `value="${o}"`;
+                    if (f.substr(-3)==="pin") {
+                        c += ' max="39" min="-1" style="width:40px;"';
+                        t = "int";
+                    } else {
+                        c += ' step="0.00001" style="width:80px;"';
+                    }
+                    break;
                 default:
-                    t = "text"; c = `value="${o}"`; break;
+                    t = "text"; c = `value="${o}" style="width:250px;"`;
+                    break;
             }
+            if (k.includes(":")) urows += k.substr(k.indexOf(":")+1);
+            urows += ` ${f}: `;
             // https://stackoverflow.com/questions/11657123/posting-both-checked-and-unchecked-checkboxes
-            if (t=="checkbox") urows += `<input type="hidden" name="${k}_${f}${a?"[]":""}" value="off">`;
-            urows += `${f}: <input type="${t}" name="${k}_${f}${a?"[]":""}" ${c} oninput="check(this,'${k}')"><br>`;
+            if (t=="checkbox") urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="false">`;
+            else if (!a)       urows += `<input type="hidden" name="${k}:${f}${a?"[]":""}" value="${t}">`;
+            urows += `<input type="${t==="int"?"number":t}" name="${k}:${f}${a?"[]":""}" ${c} oninput="check(this,'${k.substr(k.indexOf(":")+1)}')"><br>`;
         }
     }
     function ldS() {

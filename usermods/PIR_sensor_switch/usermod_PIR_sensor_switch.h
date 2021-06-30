@@ -222,9 +222,8 @@ public:
   void loop()
   {
     // only check sensors 10x/s
-    unsigned long now = millis();
-    if (now - lastLoop < 100) return;
-    lastLoop = now;
+    if (millis() - lastLoop < 100 || strip.isUpdating()) return;
+    lastLoop = millis();
 
     if (!updatePIRsensorState()) {
       handleOffTimer();
@@ -320,64 +319,40 @@ public:
   /**
    * restore the changeable values
    * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+   *
+   * The function should return true if configuration was successfully loaded or false if there was no configuration.
    */
-  void readFromConfig(JsonObject &root)
+  bool readFromConfig(JsonObject &root)
   {
     bool oldEnabled = enabled;
     int8_t oldPin = PIRsensorPin;
 
     JsonObject top = root[FPSTR(_name)];
-    if (top.isNull()) return;
-
-    if (top["pin"] != nullptr) {
-      PIRsensorPin = min(39,max(-1,top["pin"].as<int>())); // check bounds
+    if (top.isNull()) {
+      DEBUG_PRINT(FPSTR(_name));
+      DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+      return false;
     }
 
-    if (top[FPSTR(_enabled)] != nullptr) {
-      if (top[FPSTR(_enabled)].is<bool>()) {
-        enabled = top[FPSTR(_enabled)].as<bool>(); // reading from cfg.json
-      } else {
-        // change from settings page
-        String str = top[FPSTR(_enabled)]; // checkbox -> off or on
-        enabled = (bool)(str!="off"); // off is guaranteed to be present
-      }
-    }
+    PIRsensorPin = top["pin"] | PIRsensorPin;
 
-    if (top[FPSTR(_switchOffDelay)] != nullptr) {
-      m_switchOffDelay = (top[FPSTR(_switchOffDelay)].as<int>() * 1000);
-    }
+    enabled = top[FPSTR(_enabled)] | enabled;
 
-    if (top[FPSTR(_onPreset)] != nullptr) {
-      m_onPreset = max(0,min(250,top[FPSTR(_onPreset)].as<int>()));
-    }
+    m_switchOffDelay = (top[FPSTR(_switchOffDelay)] | m_switchOffDelay/1000) * 1000;
 
-    if (top[FPSTR(_offPreset)] != nullptr) {
-      m_offPreset = max(0,min(250,top[FPSTR(_offPreset)].as<int>()));
-    }
+    m_onPreset = top[FPSTR(_onPreset)] | m_onPreset;
+    m_onPreset = max(0,min(250,(int)m_onPreset));
 
-    if (top[FPSTR(_nightTime)] != nullptr) {
-      if (top[FPSTR(_nightTime)].is<bool>()) {
-        m_nightTimeOnly = top[FPSTR(_nightTime)].as<bool>(); // reading from cfg.json
-      } else {
-        // change from settings page
-        String str = top[FPSTR(_nightTime)]; // checkbox -> off or on
-        m_nightTimeOnly = (bool)(str!="off"); // off is guaranteed to be present
-      }
-    }
+    m_offPreset = top[FPSTR(_offPreset)] | m_offPreset;
+    m_offPreset = max(0,min(250,(int)m_offPreset));
 
-    if (top[FPSTR(_mqttOnly)] != nullptr) {
-      if (top[FPSTR(_mqttOnly)].is<bool>()) {
-        m_mqttOnly = top[FPSTR(_mqttOnly)].as<bool>(); // reading from cfg.json
-      } else {
-        // change from settings page
-        String str = top[FPSTR(_mqttOnly)]; // checkbox -> off or on
-        m_mqttOnly = (bool)(str!="off"); // off is guaranteed to be present
-      }
-    }
+    m_nightTimeOnly = top[FPSTR(_nightTime)] | m_nightTimeOnly;
+    m_mqttOnly      = top[FPSTR(_mqttOnly)] | m_mqttOnly;
 
+    DEBUG_PRINT(FPSTR(_name));
     if (!initDone) {
       // reading config prior to setup()
-      DEBUG_PRINTLN(F("PIR config loaded."));
+      DEBUG_PRINTLN(F(" config loaded."));
     } else {
       if (oldPin != PIRsensorPin || oldEnabled != enabled) {
         // check if pin is OK
@@ -396,9 +371,11 @@ public:
         if (enabled) {
           sensorPinState = digitalRead(PIRsensorPin);
         }
-        DEBUG_PRINTLN(F("PIR config (re)loaded."));
       }
+      DEBUG_PRINTLN(F(" config (re)loaded."));
     }
+    // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+    return true;
   }
 
   /**
