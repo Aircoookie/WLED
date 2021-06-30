@@ -1,0 +1,119 @@
+{
+  "desc": "21-key",
+  "0xFFA25D": {
+    "label": "On",
+    "pos": "1x1",
+    "cmd": "T=1"
+  },
+  "0xFF629D": {
+    "label": "Off",
+    "pos": "1x2",
+    "cmd": "T=0"
+  },
+  "0xFFE21D": {
+    "label": "Flash",
+    "pos": "1x3",
+    "cmnt": "Cycle Effects",
+    "cmd": "CY=0&FX=~"
+  },
+  "0xFF22DD": {
+    "label": "Strobe",
+    "pos": "2x1",
+    "cmnt": "Sinelon Dual",
+    "cmd": "CY=0&FX=93"
+  },
+  "0xFF02FD": {
+    "label": "Fade",
+    "pos": "2x2",
+    "cmnt": "Rain",
+    "cmd": "CY=0&FX=43"
+  },
+  "0xFFC23D": {
+    "label": "Smooth",
+    "pos": "2x3",
+    "cmnt": "Aurora",
+    "cmd": "CY=0&FX=38"
+  },
+  "0xFFE01F": {
+    "label": "Bright +",
+    "pos": "3x1",
+    "cmd": "A=~16"
+  },
+  "0xFFA857": {
+    "label": "Bright -",
+    "pos": "3x2",
+    "cmd": "A=~-16"
+  },
+  "0xFF906F": {
+    "label": "White",
+    "pos": "3x3",
+    "cmd": "FP=5&CL=hFFFFFF&C2=hFFFFFF&C3=hA8A8A8"
+  },
+  "0xFF6897": {
+    "label": "Red",
+    "pos": "4x1",
+    "cmnt": "Lava",
+    "cmd": "FP=8"
+  },
+  "0xFF9867": {
+    "label": "Green",
+    "pos": "4x2",
+    "cmnt": "Forest",
+    "cmd": "FP=10"
+  },
+  "0xFFB04F": {
+    "label": "Blue",
+    "pos": "4x3",
+    "cmnt": "Breeze",
+    "cmd": "FP=15"
+  },
+  "0xFF30CF": {
+    "label": "Tomato",
+    "pos": "5x1",
+    "cmd": "FP=5&CL=hFF6347&C2=hFFBF47&C3=hA85859"
+  },
+  "0xFF18E7": {
+    "label": "LightGreen",
+    "pos": "5x2",
+    "cmnt": "Rivendale",
+    "cmd": "FP=14"
+  },
+  "0xFF7A85": {
+    "label": "SkyBlue",
+    "pos": "5x3",
+    "cmnt": "Ocean",
+    "cmd": "FP=9"
+  },
+  "0xFF10EF": {
+    "label": "Orange",
+    "pos": "6x1",
+    "cmnt": "Orangery",
+    "cmd": "FP=47"
+  },
+  "0xFF38C7": {
+    "label": "Aqua",
+    "pos": "6x2",
+    "cmd": "FP=5&CL=hFFFF&C2=h7FFF&C3=h39A895"
+  },
+  "0xFF5AA5": {
+    "label": "Purple",
+    "pos": "6x3",
+    "cmd": "FP=5&CL=h663399&C2=h993399&C3=h473864"
+  },
+  "0xFF42BD": {
+    "label": "Yellow",
+    "pos": "7x1",
+    "cmd": "FP=5&CL=hFFFF00&C2=hFFC800&C3=hFDFFDE"
+  },
+  "0xFF4AB5": {
+    "label": "Cyan",
+    "pos": "7x2",
+    "cmnt": "Beech",
+    "cmd": "FP=22"
+  },
+  "0xFF52AD": {
+    "label": "Pink",
+    "pos": "7x3",
+    "cmd": "FP=5&CL=hFFC0CB&C2=hFFD4C0&C3=hA88C96"
+  }
+}
