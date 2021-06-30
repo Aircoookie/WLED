@@ -23,7 +23,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(serverDescription, id[F("name")], 33);
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
 
-  JsonObject nw_ins_0 = doc["nw"][F("ins")][0];
+  JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientSSID, nw_ins_0[F("ssid")], 33);
   //int nw_ins_0_pskl = nw_ins_0[F("pskl")];
   //The WiFi PSK is normally not contained in the regular file for security reasons.
@@ -129,14 +129,12 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     uint8_t s = 0;
     for (JsonObject btn : hw_btn_ins) {
       CJSON(buttonType[s], btn["type"]);
-      int8_t pin = btn[F("pin")][0] | -1;
-      if (pin > -1) {
-        if (pinManager.allocatePin(pin,false)) {
-          btnPin[s] = pin;
-          pinMode(btnPin[s], INPUT_PULLUP);
-        } else {
-          btnPin[s] = -1;
-        }
+      int8_t pin = btn["pin"][0] | -1;
+      if (pin > -1 && pinManager.allocatePin(pin,false)) {
+        btnPin[s] = pin;
+        pinMode(btnPin[s], INPUT_PULLUP);
+      } else {
+        btnPin[s] = -1;
       }
       JsonArray hw_btn_ins_0_macros = btn[F("macros")];
       CJSON(macroButton[s], hw_btn_ins_0_macros[0]);
@@ -736,7 +734,7 @@ bool deserializeConfigSec() {
   bool success = readObjectFromFile("/wsec.json", nullptr, &doc);
   if (!success) return false;
 
-  JsonObject nw_ins_0 = doc["nw"][F("ins")][0];
+  JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientPass, nw_ins_0["psk"], 65);
 
   JsonObject ap = doc["ap"];
