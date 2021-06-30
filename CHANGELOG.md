@@ -2,6 +2,25 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2106301
+
+-   Fixed a problem with disabled buttons reverting to pin 0 causing conflict
+
+#### Build 2106300
+
+-   Version bump to 0.13.0-b0 "Toki"
+-   BREAKING: Removed preset cycle (use playlists)
+-   BREAKING: Removed `nl.fade`, `leds.pin` and `ccnf` from JSON API
+-   Added playlist editor UI
+-   Reordered segment UI and added offset field
+-   Raised maximum MQTT password length to 64 (closes #1373)
+
+#### Build 2106290
+
+-   Added Offset to segments, allows shifting the LED considered first within a segment
+-   Added `of` property to seg object in JSON API to set offset
+-   Usermod settings improvements (PR #2043, PR #2045)
+
 #### Build 2106250
 
 -   Fixed preset only disabling on second effect/color change

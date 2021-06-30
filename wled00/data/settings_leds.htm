@@ -183,7 +183,6 @@
       gId('ledwarning').style.color = (sLC > maxPB || maxLC > maxPB || bquot > 100) ? 'red':'orange';
       gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>WARNING: Using over ${maxM}B!</b>)` : "") : "800 LEDs per pin";
 
-      //var val = Math.ceil((100 + d.Sf.LC.value * laprev)/500)/2;
       var val = Math.ceil((100 + sLC * laprev)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
 			var s = "";
@@ -209,6 +208,8 @@
     function lastEnd(i) {
       if (i<1) return 0;
       v = parseInt(d.getElementsByName("LS"+(i-1))[0].value) + parseInt(d.getElementsByName("LC"+(i-1))[0].value);
+      var type = parseInt(d.getElementsByName("LT"+(i-1))[0].value);
+      if (type > 31 && type < 48) v = 1; //PWM busses
       if (isNaN(v)) return 0;
       return v;
     }
@@ -365,8 +366,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
     Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>
     Apply preset <input name="BP" type="number" min="0" max="250" required> at boot (0 uses defaults)
-    <br>- <i>or</i> -<br>
-    Set current preset cycle setting as boot default: <input type="checkbox" name="PC"><br><br>
+    <br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
 		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
 		Brightness factor: <input name="BF" type="number" min="1" max="255" required> %

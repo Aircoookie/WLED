@@ -164,7 +164,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     briS = request->arg(F("CA")).toInt();
 
-    saveCurrPresetCycConf = request->hasArg(F("PC"));
     turnOnAtBoot = request->hasArg(F("BO"));
     t = request->arg(F("BP")).toInt();
     if (t <= 250) bootPreset = t;
@@ -256,7 +255,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg(F("MQPORT")).toInt();
     if (t > 0) mqttPort = t;
     strlcpy(mqttUser, request->arg(F("MQUSER")).c_str(), 41);
-    if (!isAsterisksOnly(request->arg(F("MQPASS")).c_str(), 41)) strlcpy(mqttPass, request->arg(F("MQPASS")).c_str(), 41);
+    if (!isAsterisksOnly(request->arg(F("MQPASS")).c_str(), 41)) strlcpy(mqttPass, request->arg(F("MQPASS")).c_str(), 65);
     strlcpy(mqttClientID, request->arg(F("MQCID")).c_str(), 41);
     strlcpy(mqttDeviceTopic, request->arg(F("MD")).c_str(), 33);
     strlcpy(mqttGroupTopic, request->arg(F("MG")).c_str(), 33);
@@ -481,17 +480,20 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
           else                  subObj[name] = value;
         } else {
           String type = subObj[name].as<String>();  // get previously stored value as a type
-          if (subObj[name].is<bool>()) subObj[name] = true;   // checkbox/boolean
-          else if (type == "float")    subObj[name] = value.toDouble();
-          else if (type == "int")      subObj[name] = value.toInt();
-          else                         subObj[name] = value;  // text fields
+          if (subObj[name].is<bool>())   subObj[name] = true;   // checkbox/boolean
+          else if (type == "number") {
+            value.replace(",",".");      // just in case conversion
+            if (value.indexOf(".") >= 0) subObj[name] = value.toFloat();  // we do have a float
+            else                         subObj[name] = value.toInt();    // we may have an int
+          } else if (type == "int")      subObj[name] = value.toInt();
+          else                           subObj[name] = value;  // text fields
         }
         DEBUG_PRINT(" = ");
         DEBUG_PRINTLN(value);
       }
     }
     #ifdef WLED_DEBUG
-    serializeJson(um,Serial);
+    serializeJson(um,Serial); DEBUG_PRINTLN();
     #endif
     usermods.readFromConfig(um);  // force change of usermod parameters
   }
@@ -608,36 +610,12 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
   strip.setSegment(selectedSeg, startI, stopI, grpI, spcI);
 
-   //set presets
-  pos = req.indexOf(F("P1=")); //sets first preset for cycle
-  if (pos > 0) presetCycleMin = getNumVal(&req, pos);
-
-  pos = req.indexOf(F("P2=")); //sets last preset for cycle
-  if (pos > 0) presetCycleMax = getNumVal(&req, pos);
-
-  //preset cycle
-  pos = req.indexOf(F("CY="));
-  if (pos > 0)
-  {
-    char cmd = req.charAt(pos+3);
-    if (cmd == '2') presetCyclingEnabled = !presetCyclingEnabled;
-    else presetCyclingEnabled = (cmd != '0');
-    presetCycCurr = presetCycleMin;
-  }
-
-  pos = req.indexOf(F("PT=")); //sets cycle time in ms
-  if (pos > 0) {
-    int v = getNumVal(&req, pos);
-    if (v > 100) presetCycleTime = v/100;
-  }
-
   pos = req.indexOf(F("PS=")); //saves current in preset
   if (pos > 0) savePreset(getNumVal(&req, pos));
 
   //apply preset
-  if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
-    applyPreset(presetCycCurr);
-  }
+  pos = req.indexOf(F("PL="));
+  if (pos > 0) applyPreset(getNumVal(&req, pos));
 
   //set brightness
   updateVal(&req, "&A=", &bri);
@@ -730,7 +708,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
 
   //set effect parameters
-  if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) presetCyclingEnabled = false;
+  if (updateVal(&req, "FX=", &effectCurrent, 0, strip.getModeCount()-1)) unloadPlaylist();
   updateVal(&req, "SX=", &effectSpeed);
   updateVal(&req, "IX=", &effectIntensity);
   updateVal(&req, "FP=", &effectPalette, 0, strip.getPaletteCount()-1);
