@@ -2,6 +2,10 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107021
+
+-   Added WebSockets support to UI
+
 #### Build 2107020
 
 -   Send websockets on every state change
