@@ -455,11 +455,8 @@ void WLED::beginStrip()
   colorUpdated(NOTIFIER_CALL_MODE_INIT);
 
   // init relay pin
-  if (rlyPin>=0) digitalWrite(rlyPin, (bri ? rlyMde : !rlyMde));
-
-  // disable button if it is "pressed" unintentionally
-  //if (btnPin>=0 && buttonType == BTN_TYPE_PUSH && isButtonPressed())
-  //  buttonType = BTN_TYPE_NONE;
+  if (rlyPin>=0)
+    digitalWrite(rlyPin, (rlyMde ? bri : !bri));
 }
 
 void WLED::initAP(bool resetAP)

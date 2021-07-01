@@ -50,14 +50,20 @@ input[type="number"] {
 input[type="number"].xxl {
   width: 100px;
 }
-input[type="number"].big {
+input[type="number"].xl {
   width: 85px;
 }
-input[type="number"].med {
+input[type="number"].l {
+  width: 60px;
+}
+input[type="number"].m {
   width: 55px;
 }
-input[type="number"].sml {
-  width: 40px;
+input[type="number"].s {
+  width: 42px;
+}
+input[type="number"].xs {
+  width: 35px;
 }
 select {
   margin: 2px;

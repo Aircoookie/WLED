@@ -167,22 +167,22 @@ void decodeIR(uint32_t code)
 //  if (decodeIRCustom(code)) return;
   if      (code > 0xFFFFFF) return; //invalid code
   switch (irEnabled) {
-    case 1:
+    case 1: 
       if (code > 0xF80000) {
         decodeIR24OLD(code);            // white 24-key remote (old) - it sends 0xFF0000 values
       } else {
-        decodeIR24(code);               //is in 24-key remote range
+        decodeIR24(code);               // 24-key remote - 0xF70000 to 0xF80000
       }
       break;
-    case 2: decodeIR24CT(code); break;  // white 24-key remote with CW, WW, CT+ and CT- keys
-    case 3: decodeIR40(code);   break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
-    case 4: decodeIR44(code);   break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
-    case 5: decodeIR21(code);   break;  // white 21-key remote  
-    case 6: decodeIR6(code);    break;  // black 6-key learning remote defaults: "CH" controls brightness,
-                                        // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
-                                        // sets bright plain white
+    case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
+    case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
+    case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
+    case 5: decodeIR21(code);    break;  // white 21-key remote  
+    case 6: decodeIR6(code);     break;  // black 6-key learning remote defaults: "CH" controls brightness,
+                                          // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
+                                          // sets bright plain white
     case 7: decodeIR9(code);    break;
-    case 8: decodeIRJson(code); break;  // any remote configurable with ir.json file
+    case 8: decodeIRJson(code); break;   // any remote configurable with ir.json file
     default: return;
   }
 
@@ -537,8 +537,8 @@ void decodeIR9(uint32_t code)
   lastValidCode = code;
 }
 
+
 /*
-Code by Scott R Bailey @ https://github.com/scottrbailey
 This allows users to customize IR actions without the need to edit C code and compile.
 From the https://github.com/Aircoookie/WLED/wiki/Infrared-Control page, download the starter 
 ir.json file that corresponds to the number of buttons on your remote.
