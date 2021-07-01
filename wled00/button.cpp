@@ -6,6 +6,8 @@
 
 #define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
 
+static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
+
 void shortPressAction(uint8_t b)
 {
   if (!macroButton[b])
@@ -14,6 +16,13 @@ void shortPressAction(uint8_t b)
     colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
   } else {
     applyPreset(macroButton[b]);
+  }
+
+  // publish MQTT message
+  if (WLED_MQTT_CONNECTED) {
+    char subuf[64];
+    sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+    mqtt->publish(subuf, 0, false, "short");
   }
 }
 
@@ -29,7 +38,7 @@ bool isButtonPressed(uint8_t i)
       if (digitalRead(btnPin[i]) == LOW) return true;
       break;
     case BTN_TYPE_PUSH_ACT_HIGH:
-    case BTN_TYPE_SWITCH_ACT_HIGH:
+    case BTN_TYPE_PIR_SENSOR:
       if (digitalRead(btnPin[i]) == HIGH) return true;
       break;
     case BTN_TYPE_TOUCH:
@@ -43,6 +52,7 @@ bool isButtonPressed(uint8_t i)
 
 void handleSwitch(uint8_t b)
 {
+  // isButtonPressed() handles inverted/noninverted logic
   if (buttonPressedBefore[b] != isButtonPressed(b)) {
     buttonPressedTime[b] = millis();
     buttonPressedBefore[b] = !buttonPressedBefore[b];
@@ -51,17 +61,26 @@ void handleSwitch(uint8_t b)
   if (buttonLongPressed[b] == buttonPressedBefore[b]) return;
     
   if (millis() - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
-    if (buttonPressedBefore[b]) { //LOW, falling edge, switch closed
+    if (!buttonPressedBefore[b]) { // on -> off
       if (macroButton[b]) applyPreset(macroButton[b]);
       else { //turn on
         if (!bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
       } 
-    } else { //HIGH, rising edge, switch opened
+    } else {  // off -> on
       if (macroLongPress[b]) applyPreset(macroLongPress[b]);
       else { //turn off
         if (bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
       } 
     }
+
+    // publish MQTT message
+    if (WLED_MQTT_CONNECTED) {
+      char subuf[64];
+      if (buttonType[b] == BTN_TYPE_PIR_SENSOR) sprintf_P(subuf, PSTR("%s/motion/%d"), mqttDeviceTopic, (int)b);
+      else sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+      mqtt->publish(subuf, 0, false, !buttonPressedBefore[b] ? "off" : "on");
+    }
+
     buttonLongPressed[b] = buttonPressedBefore[b]; //save the last "long term" switch state
   }
 }
@@ -74,6 +93,9 @@ void handleAnalog(uint8_t b)
   #else
   uint16_t aRead = analogRead(btnPin[b]) >> 4; // convert 12bit read to 8bit
   #endif
+
+  if (buttonType[b] == BTN_TYPE_ANALOG_INVERTED) aRead = 255 - aRead;
+
   // remove noise & reduce frequency of UI updates
   aRead &= 0xFC;
 
@@ -132,8 +154,6 @@ void handleAnalog(uint8_t b)
         seg.setOption(SEG_OPTION_ON, 1);
       }
       // this will notify clients of update (websockets,mqtt,etc)
-      //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
-      // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
       updateInterfaces(NOTIFIER_CALL_MODE_BUTTON);
     }
   } else {
@@ -141,8 +161,6 @@ void handleAnalog(uint8_t b)
     // we can either trigger a preset depending on the level (between short and long entries)
     // or use it for RGBW direct control
   }
-  //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
-  // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
   colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
 }
 
@@ -152,17 +170,18 @@ void handleButton()
 
   for (uint8_t b=0; b<WLED_MAX_BUTTONS; b++) {
     #ifdef ESP8266
-    if ((btnPin[b]<0 && buttonType[b] != BTN_TYPE_ANALOG) || buttonType[b] == BTN_TYPE_NONE) continue;
+    if ((btnPin[b]<0 && !(buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED)) || buttonType[b] == BTN_TYPE_NONE) continue;
     #else
     if (btnPin[b]<0 || buttonType[b] == BTN_TYPE_NONE) continue;
     #endif
 
-    if (buttonType[b] == BTN_TYPE_ANALOG && millis() - lastRead > 250) {   // button is not a button but a potentiometer
+    if ((buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) && millis() - lastRead > 250) {   // button is not a button but a potentiometer
       if (b+1 == WLED_MAX_BUTTONS) lastRead = millis();
       handleAnalog(b); continue;
     }
 
-    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_SWITCH_ACT_HIGH) { //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
+    //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
+    if (buttonType[b] == BTN_TYPE_SWITCH || buttonType[b] == BTN_TYPE_PIR_SENSOR) {
       handleSwitch(b); continue;
     }
 
@@ -178,6 +197,13 @@ void handleButton()
         {
           if (macroLongPress[b]) {applyPreset(macroLongPress[b]);}
           else _setRandomColor(false,true);
+
+          // publish MQTT message
+          if (WLED_MQTT_CONNECTED) {
+            char subuf[64];
+            sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+            mqtt->publish(subuf, 0, false, "long");
+          }
 
           buttonLongPressed[b] = true;
         }
@@ -197,8 +223,16 @@ void handleButton()
       else if (!buttonLongPressed[b]) { //short press
         if (macroDoublePress[b])
         {
-          if (doublePress) applyPreset(macroDoublePress[b]);
-          else buttonWaitTime[b] = millis();
+          if (doublePress) {
+            applyPreset(macroDoublePress[b]);
+  
+            // publish MQTT message
+            if (WLED_MQTT_CONNECTED) {
+              char subuf[64];
+              sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+              mqtt->publish(subuf, 0, false, "double");
+            }
+          } else buttonWaitTime[b] = millis();
         } else shortPressAction(b);
       }
       buttonPressedBefore[b] = false;
