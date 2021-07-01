@@ -260,9 +260,9 @@ function onLoad()
 
 	// Create UI update WS handler
 	myWS = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
-    myWS.onopen = function () {
-		myWS.send("{'v':true}");
-	}
+//    myWS.onopen = function () {
+//		myWS.send("{'v':true}");
+//	}
 	myWS.onmessage = function(event) {
 		var json = JSON.parse(event.data);
 		if (handleJson(json.state)) updateUI(true);
@@ -1067,11 +1067,7 @@ function handleJson(s)
 	nlFade = s.nl.fade;
 	syncSend = s.udpn.send;
 	currentPreset = s.ps;
-	gId('cyToggle').checked = (s.pl >= 0);
-	gId('cycs').value = s.ccnf.min;
-	gId('cyce').value = s.ccnf.max;
-	gId('cyct').value = s.ccnf.time/10;
-	gId('cyctt').value = s.transition/10;
+	gId('tt').value = s.transition/10;
 
 	var selc=0; var ind=0;
 	populateSegments(s);
@@ -1410,8 +1406,8 @@ ${plSelContent}
 </div>
 <div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
-	<button class="btn btn-i btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save ${(pl)?"playlist":(i>0)?"changes":"preset"}</button>
-	${(i>0)?'<button class="btn btn-i btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete '+(pl?"playlist":"preset"):'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
+	<button class="btn btn-i btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
+	${(i>0)?'<button class="btn btn-i btn-pl-del" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>':'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
 </div>
 <div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn"></div>
 ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
@@ -1421,7 +1417,7 @@ function makePUtil()
 {
 	gId('putil').innerHTML = `<div class="seg pres"><div class="segin expanded">${makeP(0)}</div></div>`;
 //	updateTrail(gId('p0p'));
-	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i);
+	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded presets
 }
 
 function makePlEntry(p,i) {
@@ -1937,6 +1933,15 @@ function expand(i,a)
 	if (!a) expanded[i] = !expanded[i];
 	seg.style.display = (expanded[i]) ? "block":"none";
 	gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
+
+	if (expanded[i]) gId(i<100?'segutil':'putil').classList.remove("staytop");
+	else gId(i<100?'segutil':'putil').classList.add("staytop");
+
+	if (expanded[i]) seg.parentElement.scrollIntoView({
+		behavior: 'smooth',
+		block: 'start',
+	});
+
 	if (i < 100) return; //no preset, we are done
 
 	var p = i-100;
@@ -1961,12 +1966,6 @@ function expand(i,a)
 	gId(`p${p}api`).value = papi;
 	if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = true;
 	tglCs(p);
-
-	seg = seg.parentElement;
-	if (expanded[i]) seg.scrollIntoView({
-		behavior: 'smooth',
-		block: 'center',
-	});
 }
 
 function unfocusSliders()

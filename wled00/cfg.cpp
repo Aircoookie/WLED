@@ -121,7 +121,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
 
   // read multiple button configuration
-  JsonArray hw_btn_ins = hw[F("btn")][F("ins")];
+  JsonArray hw_btn_ins = hw[F("btn")]["ins"];
   if (!hw_btn_ins.isNull()) {
     uint8_t s = 0;
     for (JsonObject btn : hw_btn_ins) {
@@ -342,7 +342,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(macroCountdown, cntdwn[F("macro")]);
   setCountdown();
 
-  JsonArray timers = tm[F("ins")];
+  JsonArray timers = tm["ins"];
   uint8_t it = 0;
   for (JsonObject timer : timers) {
     if (it > 9) break;
