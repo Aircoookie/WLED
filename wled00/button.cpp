@@ -19,7 +19,7 @@ void shortPressAction(uint8_t b)
   }
 
   // publish MQTT message
-  if (WLED_MQTT_CONNECTED) {
+  if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
     char subuf[64];
     sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
     mqtt->publish(subuf, 0, false, "short");
@@ -74,7 +74,7 @@ void handleSwitch(uint8_t b)
     }
 
     // publish MQTT message
-    if (WLED_MQTT_CONNECTED) {
+    if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
       char subuf[64];
       if (buttonType[b] == BTN_TYPE_PIR_SENSOR) sprintf_P(subuf, PSTR("%s/motion/%d"), mqttDeviceTopic, (int)b);
       else sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
@@ -199,7 +199,7 @@ void handleButton()
           else _setRandomColor(false,true);
 
           // publish MQTT message
-          if (WLED_MQTT_CONNECTED) {
+          if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
             char subuf[64];
             sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
             mqtt->publish(subuf, 0, false, "long");
@@ -227,7 +227,7 @@ void handleButton()
             applyPreset(macroDoublePress[b]);
   
             // publish MQTT message
-            if (WLED_MQTT_CONNECTED) {
+            if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
               char subuf[64];
               sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
               mqtt->publish(subuf, 0, false, "double");

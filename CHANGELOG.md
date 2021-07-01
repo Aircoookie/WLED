@@ -2,6 +2,10 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107011
+
+-   Added MQTT button feedback option (PR #2011)
+
 #### Build 2107010
 
 -   Added JSON IR codes (PR #1941)
