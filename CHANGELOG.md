@@ -2,6 +2,12 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107010
+
+-   Added JSON IR codes (PR #1941)
+-   Adjusted the width of WiFi and LED settings input fields
+-   Fixed a minor visual issue with slider trail not reaching thumb on low values
+
 #### Build 2106302
 
 -   Fixed settings page broken by using "%" in input fields

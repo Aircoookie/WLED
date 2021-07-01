@@ -803,8 +803,9 @@ function updateTrail(e, slidercol)
 {
 	if (e==null) return;
 	var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
-	var progress = e.value * 100 / max;
-	progress = parseInt(progress);
+	var perc = e.value * 100 / max;
+	perc = parseInt(perc);
+  if (perc < 50) perc += 2;
 	var scol;
 	switch (slidercol) {
 	case 1: scol = "#f00"; break;
@@ -812,7 +813,7 @@ function updateTrail(e, slidercol)
 	case 3: scol = "#00f"; break;
 	default: scol = "var(--c-f)";
 	}
-	var val = `linear-gradient(90deg, ${scol} ${progress}%, var(--c-4) ${progress}%)`;
+	var val = `linear-gradient(90deg, ${scol} ${perc}%, var(--c-4) ${perc}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 }
 
