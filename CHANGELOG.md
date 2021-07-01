@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107020
+
+-   Send websockets on every state change
+-   Improved Aurora effect
+
 #### Build 2107011
 
 -   Added MQTT button feedback option (PR #2011)

@@ -41,7 +41,8 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 
           verboseResponse = deserializeState(root);
         }
-        if (verboseResponse || millis() - lastInterfaceUpdate < 1900) sendDataWs(client); //update if it takes longer than 100ms until next "broadcast"
+        //update if it takes longer than 300ms until next "broadcast"
+        if (verboseResponse && (millis() - lastInterfaceUpdate < 1700 || !interfaceUpdateCallMode)) sendDataWs(client);
       }
     } else {
       //message is comprised of multiple frames or the frame is split into multiple packets
