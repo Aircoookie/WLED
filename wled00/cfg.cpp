@@ -217,15 +217,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(turnOnAtBoot, def["on"]); // true
   CJSON(briS, def["bri"]); // 128
 
-  JsonObject def_cy = def[F("cy")];
-  CJSON(presetCyclingEnabled, def_cy["on"]);
-
-  CJSON(presetCycleMin, def_cy[F("range")][0]);
-  CJSON(presetCycleMax, def_cy[F("range")][1]);
-
-  tdd = def_cy["dur"] | -1;
-  if (tdd > 0) presetCycleTime = tdd;
-
   JsonObject interfaces = doc["if"];
 
   JsonObject if_sync = interfaces[F("sync")];
@@ -292,7 +283,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(mqttServer, if_mqtt[F("broker")], 33);
   CJSON(mqttPort, if_mqtt["port"]); // 1883
   getStringFromJson(mqttUser, if_mqtt[F("user")], 41);
-  getStringFromJson(mqttPass, if_mqtt["psk"], 41); //normally not present due to security
+  getStringFromJson(mqttPass, if_mqtt["psk"], 65); //normally not present due to security
   getStringFromJson(mqttClientID, if_mqtt[F("cid")], 41);
 
   getStringFromJson(mqttDeviceTopic, if_mqtt[F("topics")][F("device")], 33); // "wled/test"
@@ -583,17 +574,6 @@ void serializeConfig() {
   def["on"] = turnOnAtBoot;
   def["bri"] = briS;
 
-  //to be removed once preset cycles are presets
-  if (saveCurrPresetCycConf) {
-    JsonObject def_cy = def.createNestedObject("cy");
-    def_cy["on"] = presetCyclingEnabled;
-
-    JsonArray def_cy_range = def_cy.createNestedArray(F("range"));
-    def_cy_range.add(presetCycleMin);
-    def_cy_range.add(presetCycleMax);
-    def_cy["dur"] = presetCycleTime;
-  }
-
   JsonObject interfaces = doc.createNestedObject("if");
 
   JsonObject if_sync = interfaces.createNestedObject("sync");
@@ -768,7 +748,7 @@ bool deserializeConfigSec() {
 
 #ifdef WLED_ENABLE_MQTT
   JsonObject if_mqtt = interfaces["mqtt"];
-  getStringFromJson(mqttPass, if_mqtt["psk"], 41);
+  getStringFromJson(mqttPass, if_mqtt["psk"], 65);
 #endif
 
 #ifndef WLED_DISABLE_HUESYNC

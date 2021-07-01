@@ -426,8 +426,8 @@ class Animated_Staircase : public Usermod {
 
     /*
     * Reads the configuration to internal flash memory before setup() is called.
-     * 
-     * The function should return true if configuration was successfully loaded or false if there was no configuration.
+    * 
+    * The function should return true if configuration was successfully loaded or false if there was no configuration.
     */
     bool readFromConfig(JsonObject& root) {
       bool oldUseUSSensorTop = useUSSensorTop;
@@ -474,7 +474,7 @@ class Animated_Staircase : public Usermod {
         // first run: reading from cfg.json
         DEBUG_PRINTLN(F(" config loaded."));
       } else {
-        // changing paramters from settings page
+        // changing parameters from settings page
         DEBUG_PRINTLN(F(" config (re)loaded."));
         bool changed = false;
         if ((oldUseUSSensorTop != useUSSensorTop) ||

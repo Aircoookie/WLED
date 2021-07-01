@@ -167,8 +167,8 @@ public:
   }
 
   /**
-     * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
-     */
+  * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+  */
   bool readFromConfig(JsonObject &root)
   {
     // we look for JSON object.

@@ -137,7 +137,7 @@ button {
 
 .segt TD {
 	text-align: center;
-	text-transform: uppercase;
+	/*text-transform: uppercase;*/
 	font-size: 14px;
 	vertical-align: middle;
 }
@@ -407,9 +407,8 @@ button {
 }
 
 #imgw {
-	width: 200px;
-	height: 55px;
 	display: inline-block;
+	margin: 8px;
 }
 
 #kv, #kn {
@@ -435,6 +434,12 @@ button {
 img {
 	max-width: 100%;
 	max-height: 100%;
+}
+
+.wi {
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
+	width: 210px;
 }
 
 @keyframes fadein {
@@ -526,6 +531,10 @@ input[type=range]::-moz-range-thumb {
 	position: relative;
 }
 
+.sbs {
+	margin: 0px -20px 5px -6px;
+}
+
 .sws {
 	width: 220px;
 }
@@ -554,7 +563,7 @@ input[type=range]::-moz-range-thumb {
 
 .btn {
 	padding: 8px;
-	margin: 10px;
+	margin: 10px 4px;
 	width: 230px;
 	font-size: 19px;
 	background-color: var(--c-3);
@@ -568,12 +577,11 @@ input[type=range]::-moz-range-thumb {
 }
 
 .btn-s {
-	padding: 9px;
 	width: 276px;
 	background-color: var(--c-2);
 }
 .btn-i {
-	padding-bottom: 3px;
+	padding-bottom: 4px;
 }
 .btn-icon {
 	margin: 0px 8px 4px 0;
@@ -584,6 +592,18 @@ input[type=range]::-moz-range-thumb {
 }
 .btn-p {
 	width: 80%;
+	margin: 5px;
+}
+.btn-xs, .btn-pl-del, .btn-pl-add {
+	width: 42px;
+}
+.btn-pl-del, .btn-pl-add {
+	margin: 0;
+}
+.btn-pl-add {
+	position: relative;
+	bottom: 20px;
+	left: 101px;
 }
 
 #qcs-w {
@@ -602,6 +622,15 @@ input[type=range]::-moz-range-thumb {
 #hexw {
 	margin-top: 5px;
 	display: none;
+}
+.sel-pl {
+  width: 200px;
+  background-position: 176px 16px;
+}
+
+.sel-ple {
+	width: 216px;
+  background-position: 192px 16px;
 }
 /*
 .cl {
@@ -670,6 +699,11 @@ input[type=text] {
 .ptxt {
 	width: 216px !important;
 	margin: 6px !important;
+}
+
+.plentry {
+  margin-top: 6px;
+  position: relative;
 }
 
 .stxt {
@@ -751,13 +785,19 @@ input[type=number]::-webkit-outer-spin-button {
 	color: var(--c-f);
 	cursor: pointer;
 	background: var(--c-3);
-	border-radius: 5px;
-	padding: 42px 8px;
+	border-radius: 25px;
+	padding: 8px;
 	margin: -8px 0 0;
 }
 
 .cnf-s {
+/*
 	padding: 8px;
+	position: absolute;
+	top: 173px;
+	right: 23px;
+	padding: 7px 22px;
+*/
 }
 
 .pwr {
@@ -1053,6 +1093,16 @@ input[type="text"].fnd:not(:placeholder-shown) {
 
 .pwarn {
 	color: red;
+}
+
+.hrz {
+	width: auto;
+	height: 2px;
+	background-color: var(--c-e);
+}
+.hrz-pl {
+	margin: 20px 0;
+	position: relative;
 }
 
 ::-webkit-scrollbar {

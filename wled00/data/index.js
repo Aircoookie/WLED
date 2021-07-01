@@ -15,6 +15,8 @@ var currentPreset = -1;
 var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0;
+var tr = 7;
+var pNum = 0;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 var palettesData;
@@ -55,6 +57,7 @@ var cpick = new iro.ColorPicker("#picker", {
 function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson({'v':true},false);}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 function gId(c) {return d.getElementById(c);}
+function gEBCN(c) {return d.getElementsByClassName(c);}
 
 function applyCfg()
 {
@@ -244,7 +247,7 @@ function onLoad()
 	});
 	resetUtil();
 	updateUI(true);
-	
+
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
 	gId("cv").style.opacity=0;
@@ -268,7 +271,7 @@ function onLoad()
 
 function updateTablinks(tabI)
 {
-	var tablinks = d.getElementsByClassName("tablinks");
+	var tablinks = gEBCN("tablinks");
 	for (var i of tablinks) i.className = i.className.replace(" active", "");
 	if (pcMode) return;
 	tablinks[tabI].className += " active";
@@ -340,6 +343,11 @@ function pName(i)
 	var n = "Preset " + i;
 	if (pJson && pJson[i] && pJson[i].n) n = pJson[i].n;
 	return n;
+}
+
+function isPlaylist(i)
+{
+	return pJson[i].playlist && pJson[i].playlist.ps;
 }
 
 function papiVal(i)
@@ -500,10 +508,9 @@ function populatePresets(fromls)
 	var cn = "";
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
-	var added = false;
 	pQL = [];
 	var is = [];
-
+	pNum = 0;
 	for (var key of (arr||[]))
 	{
 		if (!isObject(key[1])) continue;
@@ -514,15 +521,15 @@ function populatePresets(fromls)
 
 		cn += `<div class="seg pres" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-		cn += `<div class="pname" onclick="setPreset(${i})">${pName(i)}</div>
+		cn += `<div class="pname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
 		</div><br>`;
-		added = true;
+    	pNum++;
 	}
 
 	gId('pcont').innerHTML = cn;
-	if (added) {
+	if (pNum > 0) {
 		if (pmtLS != pmt && pmt != 0) {
 			localStorage.setItem("wledPmt", pmt);
 			pJson["0"] = {};
@@ -533,6 +540,7 @@ function populatePresets(fromls)
 			let i = is[a];
 			if (expanded[i+100]) expand(i+100, true);
 		}
+		makePlSel(arr);
 	} else { presetError(true); }
 	updatePA(true);
 	populateQL();
@@ -591,7 +599,7 @@ function populateInfo(i)
 		}
 	}
 	var vcn = "Kuuhaku";
-	if (i.ver.startsWith("0.12.")) vcn = "Hikari";
+	if (i.ver.startsWith("0.13.")) vcn = "Toki";
 	if (i.ver.includes("-bl")) vcn = "Ryujin";
 	if (i.cn) vcn = i.cn;
 
@@ -645,27 +653,32 @@ function populateSegments(s)
 	</div>
 	<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
 		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/><br>
-		<table class="segt">
-			<tr>
-				<td width="38%">Start LED</td>
-				<td width="38%">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
-			</tr>
-			<tr>
-				<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
-				<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
-				<td rowspan="3"><i class="icons e-icon cnf" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i></td>
-			</tr>
-			<tr>
-				<td>Grouping</td>
-				<td>Spacing</td>
-			</tr>
-			<tr>
-				<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
-				<td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
-			</tr>
+		<table class="infot segt">
+		<tr>
+			<td>Start LED</td>
+			<td>${cfg.comp.seglen?"LED count":"Stop LED"}</td>
+			<td>Offset</td>
+		</tr>
+		<tr>
+			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}of" type="number" min="0" max="${ledCount-1}" value="${inst.of}" oninput="updateLen(${i})"></td>
+		</tr>
+		</table>
+		<table class="infot segt">
+		<tr>
+			<td>Grouping</td>
+			<td>Spacing</td>
+			<td>Apply</td>
+		</tr>
+		<tr>
+			<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
+			<td><i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i></td>
+		</tr>
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
-		<i class="icons e-icon del" id="segd${i}" onclick="delSeg(${i})">&#xe037;</i>
+		<button class="btn btn-i btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 		<label class="check revchkl">
 			Reverse direction
 			<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
@@ -712,7 +725,7 @@ function bname(o)
 	if (o.name=="WLED") return o.ip;
 	return o.name;
 }
-  
+
 function populateNodes(i,n)
 {
 	var cn="";
@@ -737,7 +750,7 @@ function populateNodes(i,n)
 	</table>`;
 	gId('kn').innerHTML = cn;
 }
-  
+
 function loadNodes()
 {
 	var url = (loc?`http://${locip}`:'') + '/json/nodes';
@@ -799,7 +812,7 @@ function populatePalettes()
 		"id": 0,
 		"name": "Default",
 	});
-	
+
 	var paletteHtml = "";
 	for (let i = 0; i < palettes.length; i++) {
 		let previewCss = genPalPrevCss(palettes[i].id);
@@ -877,7 +890,7 @@ function genPalPrevCss(id)
 		if (index === false) {
 			index = j / paletteData.length * 100;
 		}
-		
+
 		gradient.push(`rgb(${r},${g},${b}) ${index}%`);
 	}
 
@@ -953,11 +966,11 @@ function updateLen(s)
 
 function updatePA(scrollto=false)
 {
-	var ps = d.getElementsByClassName("seg");
+	var ps = gEBCN("seg");
 	for (let i = 0; i < ps.length; i++) {
 		ps[i].style.backgroundColor = "var(--c-2)";
 	}
-	ps = d.getElementsByClassName("psts");
+	ps = gEBCN("psts");
 	for (let i = 0; i < ps.length; i++) {
 		ps[i].style.backgroundColor = "var(--c-2)";
 	}
@@ -1068,7 +1081,7 @@ function handleJson(s)
 	}
 	var i=s.seg[selc];
 	if (!i) return false; // no segments!
-	
+
 	selColors = i.col;
 	var cd = gId('csl').children;
 	for (let e = cd.length-1; e >= 0; e--)
@@ -1175,7 +1188,7 @@ function togglePower()
 {
 	isOn = !isOn;
 	var obj = {"on": isOn};
-	obj.transition = parseInt(gId('cyctt').value*10);
+	obj.transition = parseInt(gId('tt').value*10);
 	requestJson(obj, false, noWS);
 }
 
@@ -1259,52 +1272,196 @@ function resetUtil()
 	gId('segutil').innerHTML = '<button class="btn btn-s btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>';
 }
 
-function makeP(i)
-{
+var plJson = {"0":{
+	"ps": [0],
+	"dur": [100],
+	"transition": [-1],	//to be inited to default transition dur
+	"repeat": 0,
+	"r": false,
+	"end": 0
+}};
+
+var plSelContent = "";
+function makePlSel(arr) {
+	plSelContent = "";
+	for (var i = 0; i < arr.length; i++) {
+		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
+		if (arr[i][1].playlist && arr[i][1].playlist.ps) continue; //remove playlists, sub-playlists not yet supported
+		plSelContent += `<option value=${arr[i][0]}>${n}</option>`
+	}
+}
+
+function refreshPlE(p) {
+	var plEDiv = gId(`ple${p}`);
+	if (!plEDiv) return;
+	var content = "";
+	for (var i = 0; i < plJson[p].ps.length; i++) {
+		content += makePlEntry(p,i);
+	}
+	content += `<div class="hrz hrz-pl"><button class="btn btn-i btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></div>`;
+	plEDiv.innerHTML = content;
+	var dels = plEDiv.getElementsByClassName("btn-pl-del");
+	if (dels.length < 2 && p > 0) dels[0].style.display = "none";
+
+	var sels = gId(`seg${p+100}`).getElementsByClassName("sel");
+	for (var i of sels) {
+		if (i.dataset.val) {
+			if (parseInt(i.dataset.val) > 0) i.value = i.dataset.val;
+			else plJson[p].ps[i.dataset.index] = parseInt(i.value);
+		}
+	}
+}
+
+//p: preset ID, i: ps index
+function addPl(p,i) {
+	plJson[p].ps.splice(i+1,0,0);
+	plJson[p].dur.splice(i+1,0,plJson[p].dur[i]);
+	plJson[p].transition.splice(i+1,0,plJson[p].transition[i]);
+	refreshPlE(p);
+}
+
+function delPl(p,i) {
+	if (plJson[p].ps.length < 2) {if (p == 0) resetPUtil(); return;}
+	plJson[p].ps.splice(i,1);
+	plJson[p].dur.splice(i,1);
+	plJson[p].transition.splice(i,1);
+	refreshPlE(p);
+}
+
+function plePs(p,i,field) {
+	plJson[p].ps[i] = parseInt(field.value);
+}
+
+function pleDur(p,i,field) {
+	if (field.validity.valid)
+		plJson[p].dur[i] = Math.floor(field.value*10);
+}
+
+function pleTr(p,i,field) {
+	if (field.validity.valid)
+		plJson[p].transition[i] = Math.floor(field.value*10);
+}
+
+function plR(p) {
+	var pl = plJson[p];
+	pl.r = gId(`pl${p}rtgl`).checked;
+	if (gId(`pl${p}rptgl`).checked) { //infinite
+		pl.repeat = 0;
+		delete pl.end;
+		gId(`pl${p}o1`).style.display = "none";
+	} else {
+		pl.repeat = parseInt(gId(`pl${p}rp`).value);
+		pl.end = parseInt(gId(`pl${p}selEnd`).value);
+		gId(`pl${p}o1`).style.display = "block";
+	}
+}
+
+function makeP(i,pl) {
+	var content = "";
+	if (pl) {
+		var rep = plJson[i].repeat ? plJson[i].repeat : 0;
+		content = 
+`<div id="ple${i}"></div><label class="check revchkl">Shuffle
+	<input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r?"checked":""}>
+	<span class="checkmark schk"></span>
+</label>
+<label class="check revchkl">Repeat indefinitely
+	<input type="checkbox" id="pl${i}rptgl" onchange="plR(${i})" ${rep?"":"checked"}>
+	<span class="checkmark schk"></span>
+</label>
+<div id="pl${i}o1" style="display:${rep?"block":"none"}">
+<div class="c">Repeat <input class="noslide" type="number" id="pl${i}rp" oninput="plR(${i})" max=127 min=0 value=${rep>0?rep:1}> times</div>
+End preset:<br>
+<select class="btn sel sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
+	<option value=0>None</option>
+${plSelContent}
+</select>
+</div>
+<div class="c"><button class="btn btn-i btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
+	} else
+		content =
+`<label class="check revchkl">
+	Include brightness
+	<input type="checkbox" id="p${i}ibtgl" checked>
+	<span class="checkmark schk"></span>
+</label>
+<label class="check revchkl">
+	Save segment bounds
+	<input type="checkbox" id="p${i}sbtgl" checked>
+	<span class="checkmark schk"></span>
+</label>`;
+
 	return `<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/><br>
 <div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
 <div class="h">(leave empty for no Quick load button)</div>
+<div ${pl&&i==0?"style='display:none'":""}>
 <label class="check revchkl">
-	${(i>0)?"Overwrite with state":"Use current state"}
-	<input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i>0)?"":"checked"}>
-	<span class="checkmark schk"></span>
-</label><br>
+    ${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
+    <input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
+    <span class="checkmark schk"></span>
+  </label><br>
+</div>
 <div class="po2" id="p${i}o2">
-	API command<br>
-	<textarea class="noslide" id="p${i}api"></textarea>
+    API command<br>
+    <textarea class="noslide" id="p${i}api"></textarea>
 </div>
 <div class="po1" id="p${i}o1">
-	<label class="check revchkl">
-		Include brightness
-		<input type="checkbox" id="p${i}ibtgl" checked>
-		<span class="checkmark schk"></span>
-	</label>
-	<label class="check revchkl">
-		Save segment bounds
-		<input type="checkbox" id="p${i}sbtgl" checked>
-		<span class="checkmark schk"></span>
-	</label>
+	${content}
 </div>
 <div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
-	<button class="btn btn-p" onclick="saveP(${i})"><i class="icons btn-icon">&#xe390;</i>${(i>0)?"Save changes":"Save preset"}</button>
-	${(i>0)?'<button class="btn btn-p" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete preset</button>':'<button class="btn btn-p" onclick="resetPUtil()">Cancel</button>'}
+	<button class="btn btn-i btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save ${(pl)?"playlist":(i>0)?"changes":"preset"}</button>
+	${(i>0)?'<button class="btn btn-i btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete '+(pl?"playlist":"preset"):'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
 </div>
-<div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn">
-</div>
+<div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn"></div>
 ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 }
 
 function makePUtil()
 {
 	gId('putil').innerHTML = `<div class="seg pres"><div class="segin expanded">${makeP(0)}</div></div>`;
-	updateTrail(gId('p0p'));
+//	updateTrail(gId('p0p'));
 	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i);
+}
+
+function makePlEntry(p,i) {
+  return `
+  <div class="plentry">
+  	${i>0?'<div class="hrz"></div>':''}
+  	${i+1}:
+    <select class="btn sel sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
+		${plSelContent}
+    </select>
+	<table class="segt">
+		<tr>
+			<td width="35%">Duration (s)</td>
+			<td width="40%">Transition (s)</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td><input class="noslide segn" type="number" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}"></td>
+			<td><input class="noslide segn" type="number" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value="${plJson[p].transition[i]/10.0}"></td>
+			<td><button class="btn btn-i btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div></td>
+		</tr>
+	</table>
+  </div>`;
+}
+
+function makePlUtil()
+{
+	if (pNum < 2) {
+		showToast("You need at least 2 presets to make a playlist!"); //return;
+	}
+	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
+	gId('putil').innerHTML = `<div class="seg pres"><div class="segin expanded" id="seg100">${makeP(0,true)}</div></div>`;
+	refreshPlE(0);
 }
 
 function resetPUtil()
 {
-	gId('putil').innerHTML = `<button class="btn btn-s btn-i" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>Create preset</button><br>`;
+	var cn = `<button class="btn btn-s btn-i" style="width:226px;" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button>`+
+             `<button class="btn btn-i btn-xs" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i></button><br>`;
+	gId('putil').innerHTML = cn;
 }
 
 function tglCs(i)
@@ -1339,8 +1496,10 @@ function setSeg(s)
 	{
 		var grp = parseInt(gId(`seg${s}grp`).value);
 		var spc = parseInt(gId(`seg${s}spc`).value);
+		var ofs = parseInt(gId(`seg${s}of` ).value);
 		obj.seg.grp = grp;
 		obj.seg.spc = spc;
+		obj.seg.of  = ofs;
 	}
 	requestJson(obj, false);
 }
@@ -1417,7 +1576,7 @@ function setPalette(paletteId = null)
 function setBri()
 {
 	var obj = {"bri": parseInt(gId('sliderBri').value)};
-	obj.transition = parseInt(gId('cyctt').value*10);
+	obj.transition = parseInt(gId('tt').value*10);
 	requestJson(obj, false, noWS);
 }
 
@@ -1439,18 +1598,6 @@ function setLor(i)
 	requestJson(obj, false, noWS);
 }
 
-function toggleCY()
-{
-	var obj = {"pl" : -1};
-	if (gId('cyToggle').checked)
-	{
-		obj = {"pl": 0, "ccnf": {"min": parseInt(gId('cycs').value), "max": parseInt(gId('cyce').value), "time": parseInt(gId('cyct').value*10)}};
-		obj.transition = parseInt(gId('cyctt').value*10);
-	}
-
-	requestJson(obj, false, noWS);
-}
-
 function setPreset(i)
 {
 	var obj = {"ps": i};
@@ -1458,12 +1605,12 @@ function setPreset(i)
 	requestJson(obj, false, noWS);
 }
 
-function saveP(i)
+function saveP(i,pl)
 {
 	pI = parseInt(gId(`p${i}id`).value);
 	if (!pI || pI < 1) pI = (i>0) ? i : getLowestUnusedP();
 	pN = gId(`p${i}txt`).value;
-	if (pN == "") pN = "Preset " + pI;
+	if (pN == "") pN = (pl?"Playlist ":"Preset ") + pI;
 	var obj = {};
 	if (!gId(`p${i}cstgl`).checked) {
 		var raw = gId(`p${i}api`).value;
@@ -1484,9 +1631,15 @@ function saveP(i)
 		}
 		obj.o = true;
 	} else {
-		obj.ib = gId(`p${i}ibtgl`).checked;
-		obj.sb = gId(`p${i}sbtgl`).checked;
+		if (pl) {
+			obj.playlist = plJson[i];
+			obj.o = true;
+		} else {
+			obj.ib = gId(`p${i}ibtgl`).checked;
+			obj.sb = gId(`p${i}sbtgl`).checked;
+		}
 	}
+
 	obj.psave = pI; obj.n = pN;
 	var pQN = gId(`p${i}ql`).value;
 	if (pQN.length > 0) obj.ql = pQN;
@@ -1508,12 +1661,36 @@ function saveP(i)
 	resetPUtil();
 }
 
-function delP(i)
-{
-	var obj = {"pdel": i};
+function testPl(i,bt) {
+	if (bt.dataset.test == 1) {
+		bt.dataset.test = 0;
+		bt.innerHTML = "<i class='icons btn-icon'>&#xe139;</i>Test";
+		stopPl();
+		return;
+	}
+	bt.dataset.test = 1;
+	bt.innerHTML = "<i class='icons btn-icon'>&#xe38f;</i>Stop";
+	var obj = {};
+	obj.playlist = plJson[i];
 	requestJson(obj, false, noWS);
-	delete pJson[i];
-	populatePresets();
+}
+
+function stopPl() {
+	requestJson({playlist:{}}, false, noWS)
+}
+
+function delP(i) {
+	var bt = gId(`p${i}del`);
+	if (bt.dataset.cnf == 1) {
+		var obj = {"pdel": i};
+		requestJson(obj, false, noWS);
+		delete pJson[i];
+		populatePresets();
+	} else {
+		bt.style.color = "#f00";
+		bt.innerHTML = "<i class='icons btn-icon'>&#xe037;</i>Confirm delete";
+		bt.dataset.cnf = 1;
+	}
 }
 
 function selectSlot(b)
@@ -1615,7 +1792,7 @@ function setColor(sr)
 	}
 	updateHex();
 	updateRgb();
-	obj.transition = parseInt(gId('cyctt').value*10);
+	obj.transition = parseInt(gId('tt').value*10);
 	requestJson(obj, false, noWS);
 }
 
@@ -1707,7 +1884,7 @@ function getPalettesData(page, callback)
 
 function search(f,l=null)
 {
-	f.nextElementSibling.style.display=(f.value!=='')?'block':'none'; 
+	f.nextElementSibling.style.display=(f.value!=='')?'block':'none';
 	if (!l) return;
 	var el = gId(l).querySelectorAll('.lstI');
 	for (i = 0; i < el.length; i++) {
@@ -1726,24 +1903,66 @@ function clean(c)
 	i.dispatchEvent(new Event('input'));
 }
 
+//make sure "dur" and "transition" are arrays with at least the length of "ps"
+function formatArr(pl) {
+	var l = pl.ps.length;
+	if (!Array.isArray(pl.dur)) {
+		var v = pl.dur;
+		if (isNaN(v)) v = 100;
+		pl.dur = [v];
+	}
+	var l2 = pl.dur.length;
+	if (l2 < l)
+	{
+		for (var i = 0; i < l - l2; i++)
+			pl.dur.push(pl.dur[l2-1]);
+	}
+
+	if (!Array.isArray(pl.transition)) {
+		var v = pl.transition;
+		if (isNaN(v)) v = tr;
+		pl.transition = [v];
+	}
+	var l2 = pl.transition.length;
+	if (l2 < l)
+	{
+		for (var i = 0; i < l - l2; i++)
+			pl.transition.push(pl.transition[l2-1]);
+	}
+}
+
 function expand(i,a)
 {
 	var seg = gId('seg' +i);
 	if (!a) expanded[i] = !expanded[i];
 	seg.style.display = (expanded[i]) ? "block":"none";
 	gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
-	if (i > 100) { //presets
-		var p = i-100;
-		gId(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
-		if (seg.innerHTML == "") {
-			seg.innerHTML = makeP(p);
-			var papi = papiVal(p);
-			gId(`p${p}api`).value = papi;
-			if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = true;
-			tglCs(p);
-		}
-		seg = seg.parentElement;
+	if (i < 100) return; //no preset, we are done
+
+	var p = i-100;
+	gId(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
+	if (seg.innerHTML !== "") return;
+
+	if (isPlaylist(p)) {
+		plJson[p] = pJson[p].playlist;
+		//make sure all keys are present in plJson[p]
+		formatArr(plJson[p]);
+		if (isNaN(plJson[p].repeat)) plJson[p].repeat = 0;
+		if (!plJson[p].r) plJson[p].r = false;
+		if (isNaN(plJson[p].end)) plJson[p].end = 0;
+
+		seg.innerHTML = makeP(p,true);
+		refreshPlE(p);
+	} else {
+		seg.innerHTML = makeP(p);
 	}
+
+	var papi = papiVal(p);
+	gId(`p${p}api`).value = papi;
+	if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = true;
+	tglCs(p);
+
+	seg = seg.parentElement;
 	if (expanded[i]) seg.scrollIntoView({
 		behavior: 'smooth',
 		block: 'center',
@@ -1782,7 +2001,7 @@ function lock(e)
 	if (l.contains('noslide') || hasIroClass(l) || hasIroClass(pl)) return;
 
 	x0 = unify(e).clientX;
-	scrollS = d.getElementsByClassName("tabcontent")[iSlide].scrollTop;
+	scrollS = gEBCN("tabcontent")[iSlide].scrollTop;
 
 	_C.classList.toggle('smooth', !(locked = true));
 }
@@ -1798,7 +2017,7 @@ function move(e)
 	if((clientX != 0) &&
 		(iSlide > 0 || s < 0) && (iSlide < N - 1 || s > 0) &&
 		f > 0.12 &&
-		d.getElementsByClassName("tabcontent")[iSlide].scrollTop == scrollS)
+		gEBCN("tabcontent")[iSlide].scrollTop == scrollS)
 	{
 		_C.style.setProperty('--i', iSlide -= s);
 		f = 1 - f;

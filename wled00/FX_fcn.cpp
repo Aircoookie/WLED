@@ -224,16 +224,25 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 
     /* Set all the pixels in the group */
     uint16_t realIndex = realPixelIndex(i);
+    uint16_t len = SEGMENT.length();
 
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
       uint16_t indexSet = realIndex + (IS_REVERSE ? -j : j);
       if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
         if (IS_MIRROR) { //set the corresponding mirrored pixel
-          uint16_t indexMir = SEGMENT.stop + SEGMENT.start - indexSet - 1;
+          uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
+          /* offset/phase */
+          indexMir += SEGMENT.offset;
+          if (indexMir >= SEGMENT.stop) indexMir -= len;
+
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
           busses.setPixelColor(indexMir, col);
         }
-		    if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
+        /* offset/phase */
+        indexSet += SEGMENT.offset;
+        if (indexSet >= SEGMENT.stop) indexSet -= len;
+
+        if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
         busses.setPixelColor(indexSet, col);
       }
     }
@@ -511,6 +520,12 @@ uint32_t WS2812FX::getColor(void) {
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   i = realPixelIndex(i);
+
+  if (SEGLEN) {
+    /* offset/phase */
+    i += SEGMENT.offset;
+    if (i >= SEGMENT.stop) i -= SEGMENT.length();
+  }
   
   if (i < customMappingSize) i = customMappingTable[i];
   if (i >= _length) return 0;

@@ -648,7 +648,7 @@ class FourLineDisplayUsermod : public Usermod {
         type = newType;
         DEBUG_PRINTLN(F(" config loaded."));
       } else {
-        // changing paramters from settings page
+        // changing parameters from settings page
         if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
           if (type != NONE) delete (static_cast<U8X8*>(u8x8));
           pinManager.deallocatePin(sclPin);

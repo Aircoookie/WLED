@@ -273,7 +273,7 @@ class UsermodTemperature : public Usermod {
         DEBUG_PRINTLN(F(" config (re)loaded."));
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return true;
+      return !top[FPSTR(_parasite)].isNull();
     }
 
     uint16_t getId()
