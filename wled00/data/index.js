@@ -1266,6 +1266,7 @@ function makeSeg()
 function resetUtil()
 {
 	gId('segutil').innerHTML = '<button class="btn btn-s btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>';
+	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
 }
 
 var plJson = {"0":{
@@ -1294,7 +1295,7 @@ function refreshPlE(p) {
 	for (var i = 0; i < plJson[p].ps.length; i++) {
 		content += makePlEntry(p,i);
 	}
-	content += `<div class="hrz hrz-pl"><button class="btn btn-i btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></div>`;
+	content += `<div class="hrz"></div>`;
 	plEDiv.innerHTML = content;
 	var dels = plEDiv.getElementsByClassName("btn-pl-del");
 	if (dels.length < 2 && p > 0) dels[0].style.display = "none";
@@ -1357,21 +1358,21 @@ function makeP(i,pl) {
 	if (pl) {
 		var rep = plJson[i].repeat ? plJson[i].repeat : 0;
 		content = 
-`<div id="ple${i}"></div><label class="check revchkl">Shuffle
-	<input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r?"checked":""}>
+`<div id="ple${i}" style="margin-top:10px;"></div><label class="check revchkl">Shuffle
+	<input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r||rep<0?"checked":""}>
 	<span class="checkmark schk"></span>
 </label>
 <label class="check revchkl">Repeat indefinitely
-	<input type="checkbox" id="pl${i}rptgl" onchange="plR(${i})" ${rep?"":"checked"}>
+	<input type="checkbox" id="pl${i}rptgl" onchange="plR(${i})" ${rep>0?"":"checked"}>
 	<span class="checkmark schk"></span>
 </label>
-<div id="pl${i}o1" style="display:${rep?"block":"none"}">
+<div id="pl${i}o1" style="display:${rep>0?"block":"none"}">
 <div class="c">Repeat <input class="noslide" type="number" id="pl${i}rp" oninput="plR(${i})" max=127 min=0 value=${rep>0?rep:1}> times</div>
-End preset:<br>
-<select class="btn sel sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
+<div class="sel">End preset:<br>
+<select class="sel sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
 	<option value=0>None</option>
 ${plSelContent}
-</select>
+</select></div>
 </div>
 <div class="c"><button class="btn btn-i btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
 	} else
@@ -1416,31 +1417,28 @@ ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 function makePUtil()
 {
 	gId('putil').innerHTML = `<div class="seg pres"><div class="segin expanded">${makeP(0)}</div></div>`;
-//	updateTrail(gId('p0p'));
-	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded presets
+	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
 }
 
 function makePlEntry(p,i) {
-  return `
-  <div class="plentry">
-  	${i>0?'<div class="hrz"></div>':''}
-  	${i+1}:
-    <select class="btn sel sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
-		${plSelContent}
-    </select>
+  return `<div class="plentry">
+  	<div class="hrz"></div>
 	<table class="segt">
 		<tr>
-			<td width="35%">Duration (s)</td>
-			<td width="40%">Transition (s)</td>
-			<td></td>
+			<td width="80%" colspan=2>
+			    <select class="sel sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
+				${plSelContent}
+				</select>
+			</td>
+			<td><button class="btn btn-i btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
 		</tr>
 		<tr>
-			<td><input class="noslide segn" type="number" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}"></td>
-			<td><input class="noslide segn" type="number" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value="${plJson[p].transition[i]/10.0}"></td>
+			<td width="40%"><input class="noslide segn" type="number" placeholder="Duration" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}">s</td>
+			<td width="40%"><input class="noslide segn" type="number" placeholder="Transition" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value="${plJson[p].transition[i]/10.0}">s</td>
 			<td><button class="btn btn-i btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div></td>
 		</tr>
 	</table>
-  </div>`;
+</div>`;
 }
 
 function makePlUtil()
