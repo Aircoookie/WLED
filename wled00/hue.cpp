@@ -161,7 +161,7 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
           hueColormode = 1;
         } else //hs mode
         {
-          hueHue = root[F("hue")];
+          hueHue = root["hue"];
           hueSat = root[F("sat")];
           hueColormode = 2;
         }

@@ -474,6 +474,7 @@ void getSettingsJS(byte subPage, char* dest)
     sappends('s',SET_F("MQCID"),mqttClientID);
     sappends('s',SET_F("MD"),mqttDeviceTopic);
     sappends('s',SET_F("MG"),mqttGroupTopic);
+    sappend('c',SET_F("BM"),buttonPublishMqtt);
     #endif
 
     #ifndef WLED_DISABLE_HUESYNC

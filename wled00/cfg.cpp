@@ -121,7 +121,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
 
   // read multiple button configuration
-  JsonArray hw_btn_ins = hw[F("btn")]["ins"];
+  JsonObject btn_obj = hw["btn"];
+  JsonArray hw_btn_ins = btn_obj[F("ins")];
   if (!hw_btn_ins.isNull()) {
     uint8_t s = 0;
     for (JsonObject btn : hw_btn_ins) {
@@ -133,7 +134,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       } else {
         btnPin[s] = -1;
       }
-      JsonArray hw_btn_ins_0_macros = btn[F("macros")];
+      JsonArray hw_btn_ins_0_macros = btn["macros"];
       CJSON(macroButton[s], hw_btn_ins_0_macros[0]);
       CJSON(macroLongPress[s],hw_btn_ins_0_macros[1]);
       CJSON(macroDoublePress[s], hw_btn_ins_0_macros[2]);
@@ -158,7 +159,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         macroDoublePress[s] = 0;
       }
   }
-  CJSON(touchThreshold,hw[F("btn")][F("tt")]);
+  CJSON(touchThreshold,btn_obj[F("tt")]);
+  CJSON(buttonPublishMqtt,btn_obj["mqtt"]);
 
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
@@ -190,8 +192,8 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(briMultiplier, light[F("scale-bri")]);
   CJSON(strip.paletteBlend, light[F("pal-mode")]);
 
-  float light_gc_bri = light[F("gc")]["bri"];
-  float light_gc_col = light[F("gc")]["col"]; // 2.8
+  float light_gc_bri = light["gc"]["bri"];
+  float light_gc_col = light["gc"]["col"]; // 2.8
   if (light_gc_bri > 1.5) strip.gammaCorrectBri = true;
   else if (light_gc_bri > 0.5) strip.gammaCorrectBri = false;
   if (light_gc_col > 1.5) strip.gammaCorrectCol = true;
@@ -210,7 +212,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (nightlightDelayMinsDefault != prev) nightlightDelayMins = nightlightDelayMinsDefault;
 
   CJSON(nightlightTargetBri, light_nl[F("tbri")]);
-  CJSON(macroNl, light_nl[F("macro")]);
+  CJSON(macroNl, light_nl["macro"]);
 
   JsonObject def = doc[F("def")];
   CJSON(bootPreset, def[F("ps")]);
@@ -234,10 +236,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   prev = notifyDirectDefault;
   CJSON(notifyDirectDefault, if_sync_send[F("dir")]);
   if (notifyDirectDefault != prev) notifyDirect = notifyDirectDefault;
-  CJSON(notifyButton, if_sync_send[F("btn")]);
-  CJSON(notifyAlexa, if_sync_send[F("va")]);
-  CJSON(notifyHue, if_sync_send[F("hue")]);
-  CJSON(notifyMacro, if_sync_send[F("macro")]);
+  CJSON(notifyButton, if_sync_send["btn"]);
+  CJSON(notifyAlexa, if_sync_send["va"]);
+  CJSON(notifyHue, if_sync_send["hue"]);
+  CJSON(notifyMacro, if_sync_send["macro"]);
   CJSON(notifyTwice, if_sync_send[F("twice")]);
 
   JsonObject if_nodes = interfaces["nodes"];
@@ -261,10 +263,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(arlsDisableGammaCorrection, if_live[F("no-gc")]); // false
   CJSON(arlsOffset, if_live[F("offset")]); // 0
 
-  CJSON(alexaEnabled, interfaces[F("va")][F("alexa")]); // false
+  CJSON(alexaEnabled, interfaces["va"][F("alexa")]); // false
 
-  CJSON(macroAlexaOn, interfaces[F("va")][F("macros")][0]);
-  CJSON(macroAlexaOff, interfaces[F("va")][F("macros")][1]);
+  CJSON(macroAlexaOn, interfaces["va"]["macros"][0]);
+  CJSON(macroAlexaOff, interfaces["va"]["macros"][1]);
 
 #ifndef WLED_DISABLE_BLYNK
   const char* apikey = interfaces["blynk"][F("token")] | "Hidden";
@@ -291,7 +293,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 #endif
 
 #ifndef WLED_DISABLE_HUESYNC
-  JsonObject if_hue = interfaces[F("hue")];
+  JsonObject if_hue = interfaces["hue"];
   CJSON(huePollingEnabled, if_hue["en"]);
   CJSON(huePollLightId, if_hue["id"]);
   tdd = if_hue[F("iv")] | -1;
@@ -339,7 +341,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(countdownHour,  cntdwn_goal[3]);
   CJSON(countdownMin,   cntdwn_goal[4]);
   CJSON(countdownSec,   cntdwn_goal[5]);
-  CJSON(macroCountdown, cntdwn[F("macro")]);
+  CJSON(macroCountdown, cntdwn["macro"]);
   setCountdown();
 
   JsonArray timers = tm["ins"];
@@ -349,7 +351,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     if (it<8 && timer[F("hour")]==255) it=8;  // hour==255 -> sunrise/sunset 
     CJSON(timerHours[it], timer[F("hour")]);
     CJSON(timerMinutes[it], timer["min"]);
-    CJSON(timerMacro[it], timer[F("macro")]);
+    CJSON(timerMacro[it], timer["macro"]);
 
     byte dowPrev =  timerWeekday[it];
     //note: act is currently only 0 or 1.
@@ -538,6 +540,7 @@ void serializeConfig() {
     hw_btn_ins_0_macros.add(macroDoublePress[i]);
   }
   hw_btn[F("tt")] = touchThreshold;
+  hw_btn["mqtt"] = buttonPublishMqtt;
 
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir["pin"] = irPin;
@@ -567,7 +570,7 @@ void serializeConfig() {
   light_nl[F("mode")] = nightlightMode;
   light_nl["dur"] = nightlightDelayMinsDefault;
   light_nl[F("tbri")] = nightlightTargetBri;
-  light_nl[F("macro")] = macroNl;
+  light_nl["macro"] = macroNl;
 
   JsonObject def = doc.createNestedObject("def");
   def[F("ps")] = bootPreset;
@@ -587,10 +590,10 @@ void serializeConfig() {
 
   JsonObject if_sync_send = if_sync.createNestedObject("send");
   if_sync_send[F("dir")] = notifyDirect;
-  if_sync_send[F("btn")] = notifyButton;
-  if_sync_send[F("va")] = notifyAlexa;
-  if_sync_send[F("hue")] = notifyHue;
-  if_sync_send[F("macro")] = notifyMacro;
+  if_sync_send["btn"] = notifyButton;
+  if_sync_send["va"] = notifyAlexa;
+  if_sync_send["hue"] = notifyHue;
+  if_sync_send["macro"] = notifyMacro;
   if_sync_send[F("twice")] = notifyTwice;
 
   JsonObject if_nodes = interfaces.createNestedObject("nodes");
@@ -682,7 +685,7 @@ void serializeConfig() {
   JsonArray goal = cntdwn.createNestedArray(F("goal"));
   goal.add(countdownYear); goal.add(countdownMonth); goal.add(countdownDay);
   goal.add(countdownHour); goal.add(countdownMin); goal.add(countdownSec);
-  cntdwn[F("macro")] = macroCountdown;
+  cntdwn["macro"] = macroCountdown;
 
   JsonArray timers_ins = timers.createNestedArray("ins");
 
@@ -692,7 +695,7 @@ void serializeConfig() {
     timers_ins0["en"] = (timerWeekday[i] & 0x01);
     timers_ins0[F("hour")] = timerHours[i];
     timers_ins0["min"] = timerMinutes[i];
-    timers_ins0[F("macro")] = timerMacro[i];
+    timers_ins0["macro"] = timerMacro[i];
     timers_ins0[F("dow")] = timerWeekday[i] >> 1;
   }
 
@@ -752,7 +755,7 @@ bool deserializeConfigSec() {
 #endif
 
 #ifndef WLED_DISABLE_HUESYNC
-  getStringFromJson(hueApiKey, interfaces[F("hue")][F("key")], 47);
+  getStringFromJson(hueApiKey, interfaces["hue"][F("key")], 47);
 #endif
 
   JsonObject ota = doc["ota"];

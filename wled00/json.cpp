@@ -9,11 +9,14 @@
 void deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   byte id = elem["id"] | it;
-  if (id < strip.getMaxSegments())
-  {
-    WS2812FX::Segment& seg = strip.getSegment(id);
-    uint16_t start = elem[F("start")] | seg.start;
-    int stop = elem["stop"] | -1;
+  if (id >= strip.getMaxSegments()) return;
+
+  WS2812FX::Segment& seg = strip.getSegment(id);
+  //WS2812FX::Segment prev;
+  //prev = seg; //make a backup so we can tell if something changed
+
+  uint16_t start = elem[F("start")] | seg.start;
+  int stop = elem["stop"] | -1;
 
     if (elem["n"]) {
       // name field exists
@@ -38,64 +41,64 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       }
     }
 
-    if (stop < 0) {
-      uint16_t len = elem[F("len")];
-      stop = (len > 0) ? start + len : seg.stop;
-    }
-    uint16_t grp = elem[F("grp")] | seg.grouping;
-    uint16_t spc = elem[F("spc")] | seg.spacing;
-    strip.setSegment(id, start, stop, grp, spc);
-    seg.offset = elem[F("of")] | seg.offset;
-    if (stop > start && seg.offset > stop - start -1) seg.offset = stop - start -1;
+  if (stop < 0) {
+    uint16_t len = elem[F("len")];
+    stop = (len > 0) ? start + len : seg.stop;
+  }
+  uint16_t grp = elem[F("grp")] | seg.grouping;
+  uint16_t spc = elem[F("spc")] | seg.spacing;
+  strip.setSegment(id, start, stop, grp, spc);
+  seg.offset = elem[F("of")] | seg.offset;
+  if (stop > start && seg.offset > stop - start -1) seg.offset = stop - start -1;
 
-    int segbri = elem["bri"] | -1;
-    if (segbri == 0) {
-      seg.setOption(SEG_OPTION_ON, 0, id);
-    } else if (segbri > 0) {
-      seg.setOpacity(segbri, id);
-      seg.setOption(SEG_OPTION_ON, 1, id);
-    }
+  int segbri = elem["bri"] | -1;
+  if (segbri == 0) {
+    seg.setOption(SEG_OPTION_ON, 0, id);
+  } else if (segbri > 0) {
+    seg.setOpacity(segbri, id);
+    seg.setOption(SEG_OPTION_ON, 1, id);
+  }
+
+  seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON), id);
   
-    seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON), id);
-    
-    JsonArray colarr = elem["col"];
-    if (!colarr.isNull())
+  JsonArray colarr = elem["col"];
+  if (!colarr.isNull())
+  {
+    for (uint8_t i = 0; i < 3; i++)
     {
-      for (uint8_t i = 0; i < 3; i++)
-      {
-        int rgbw[] = {0,0,0,0};
-        bool colValid = false;
-        if (colarr[i].is<unsigned long>()) {
-          // unsigned long RGBW (@blazoncek v2 experimental API implementation)
-          uint32_t colX = colarr[i];
-          rgbw[0] = (colX >> 16) & 0xFF;
-          rgbw[1] = (colX >>  8) & 0xFF;
-          rgbw[2] = (colX      ) & 0xFF;
-          rgbw[3] = (colX >> 24) & 0xFF;
-          colValid = true;
-        } else {
-          JsonArray colX = colarr[i];
-          if (colX.isNull()) {
-            byte brgbw[] = {0,0,0,0};
-            const char* hexCol = colarr[i];
-            if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
-              int kelvin = colarr[i] | -1;
-              if (kelvin <  0) continue;
-              if (kelvin == 0) seg.setColor(i, 0, id);
-              if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
-              colValid = true;
-            } else { //HEX string, e.g. "FFAA00"
-              colValid = colorFromHexString(brgbw, hexCol);
-            }
-            for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
-          } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
-            byte sz = colX.size();
-            if (sz == 0) continue; //do nothing on empty array
-            byte cp = copyArray(colX, rgbw, 4);      
-            if (cp == 1 && rgbw[0] == 0) 
-              seg.setColor(i, 0, id);
+      int rgbw[] = {0,0,0,0};
+      bool colValid = false;
+      if (colarr[i].is<unsigned long>()) {
+        // unsigned long RGBW (@blazoncek v2 experimental API implementation)
+        uint32_t colX = colarr[i];
+        rgbw[0] = (colX >> 16) & 0xFF;
+        rgbw[1] = (colX >>  8) & 0xFF;
+        rgbw[2] = (colX      ) & 0xFF;
+        rgbw[3] = (colX >> 24) & 0xFF;
+        colValid = true;
+      } else {
+        JsonArray colX = colarr[i];
+        if (colX.isNull()) {
+          byte brgbw[] = {0,0,0,0};
+          const char* hexCol = colarr[i];
+          if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
+            int kelvin = colarr[i] | -1;
+            if (kelvin <  0) continue;
+            if (kelvin == 0) seg.setColor(i, 0, id);
+            if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
             colValid = true;
+          } else { //HEX string, e.g. "FFAA00"
+            colValid = colorFromHexString(brgbw, hexCol);
           }
+          for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+        } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
+          byte sz = colX.size();
+          if (sz == 0) continue; //do nothing on empty array
+
+          byte cp = copyArray(colX, rgbw, 4);      
+          if (cp == 1 && rgbw[0] == 0) 
+            seg.setColor(i, 0, id);
+          colValid = true;
         }
 
         if (!colValid) continue;
@@ -109,90 +112,90 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         }
       }
     }
-
-    // lx parser
-    #ifdef WLED_ENABLE_LOXONE
-    int lx = elem[F("lx")] | -1;
-    if (lx > 0) {
-      parseLxJson(lx, id, false);
-    }
-    int ly = elem[F("ly")] | -1;
-    if (ly > 0) {
-      parseLxJson(ly, id, true);
-    }
-    #endif
-
-    //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
-    seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
-    seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
-    seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
-
-    //temporary, strip object gets updated via colorUpdated()
-    if (id == strip.getMainSegmentId()) {
-      byte effectPrev = effectCurrent;
-      effectCurrent = elem[F("fx")] | effectCurrent;
-      if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
-      effectSpeed = elem[F("sx")] | effectSpeed;
-      effectIntensity = elem[F("ix")] | effectIntensity;
-      effectPalette = elem["pal"] | effectPalette;
-    } else { //permanent
-      byte fx = elem[F("fx")] | seg.mode;
-      if (fx != seg.mode && fx < strip.getModeCount()) {
-        strip.setMode(id, fx);
-        if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
-      }
-      seg.speed = elem[F("sx")] | seg.speed;
-      seg.intensity = elem[F("ix")] | seg.intensity;
-      seg.palette = elem["pal"] | seg.palette;
-    }
-
-    JsonArray iarr = elem[F("i")]; //set individual LEDs
-    if (!iarr.isNull()) {
-      strip.setPixelSegment(id);
-
-      //freeze and init to black
-      if (!seg.getOption(SEG_OPTION_FREEZE)) {
-        seg.setOption(SEG_OPTION_FREEZE, true);
-        strip.fill(0);
-      }
-
-      uint16_t start = 0, stop = 0;
-      byte set = 0; //0 nothing set, 1 start set, 2 range set
-
-      for (uint16_t i = 0; i < iarr.size(); i++) {
-        if(iarr[i].is<JsonInteger>()) {
-          if (!set) {
-            start = iarr[i];
-            set = 1;
-          } else {
-            stop = iarr[i];
-            set = 2;
-          }
-        } else {
-          JsonArray icol = iarr[i];
-          if (icol.isNull()) break;
-
-          byte sz = icol.size();
-          if (sz == 0 || sz > 4) break;
-
-          int rgbw[] = {0,0,0,0};
-          copyArray(icol, rgbw);
-
-          if (set < 2) stop = start + 1;
-          for (uint16_t i = start; i < stop; i++) {
-            strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
-          }
-          if (!set) start++;
-          set = 0;
-        }
-      }
-      strip.setPixelSegment(255);
-      strip.trigger();
-    } else { //return to regular effect
-      seg.setOption(SEG_OPTION_FREEZE, false);
-    }
-
   }
+
+  // lx parser
+  #ifdef WLED_ENABLE_LOXONE
+  int lx = elem[F("lx")] | -1;
+  if (lx > 0) {
+    parseLxJson(lx, id, false);
+  }
+  int ly = elem[F("ly")] | -1;
+  if (ly > 0) {
+    parseLxJson(ly, id, true);
+  }
+  #endif
+
+  //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
+  seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
+  seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
+  seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
+
+  //temporary, strip object gets updated via colorUpdated()
+  if (id == strip.getMainSegmentId()) {
+    byte effectPrev = effectCurrent;
+    effectCurrent = elem[F("fx")] | effectCurrent;
+    if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
+    effectSpeed = elem[F("sx")] | effectSpeed;
+    effectIntensity = elem[F("ix")] | effectIntensity;
+    effectPalette = elem["pal"] | effectPalette;
+  } else { //permanent
+    byte fx = elem[F("fx")] | seg.mode;
+    if (fx != seg.mode && fx < strip.getModeCount()) {
+      strip.setMode(id, fx);
+      if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
+    }
+    seg.speed = elem[F("sx")] | seg.speed;
+    seg.intensity = elem[F("ix")] | seg.intensity;
+    seg.palette = elem["pal"] | seg.palette;
+  }
+
+  JsonArray iarr = elem[F("i")]; //set individual LEDs
+  if (!iarr.isNull()) {
+    strip.setPixelSegment(id);
+
+    //freeze and init to black
+    if (!seg.getOption(SEG_OPTION_FREEZE)) {
+      seg.setOption(SEG_OPTION_FREEZE, true);
+      strip.fill(0);
+    }
+
+    uint16_t start = 0, stop = 0;
+    byte set = 0; //0 nothing set, 1 start set, 2 range set
+
+    for (uint16_t i = 0; i < iarr.size(); i++) {
+      if(iarr[i].is<JsonInteger>()) {
+        if (!set) {
+          start = iarr[i];
+          set = 1;
+        } else {
+          stop = iarr[i];
+          set = 2;
+        }
+      } else {
+        JsonArray icol = iarr[i];
+        if (icol.isNull()) break;
+
+        byte sz = icol.size();
+        if (sz == 0 || sz > 4) break;
+
+        int rgbw[] = {0,0,0,0};
+        copyArray(icol, rgbw);
+
+        if (set < 2) stop = start + 1;
+        for (uint16_t i = start; i < stop; i++) {
+          strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+        }
+        if (!set) start++;
+        set = 0;
+      }
+    }
+    strip.setPixelSegment(255);
+    strip.trigger();
+  } else { //return to regular effect
+    seg.setOption(SEG_OPTION_FREEZE, false);
+  }
+  return; // seg.hasChanged(prev);
 }
 
 bool deserializeState(JsonObject root, byte presetId)
@@ -337,6 +340,8 @@ bool deserializeState(JsonObject root, byte presetId)
   if (!playlist.isNull()) {
     loadPlaylist(playlist, presetId);
     noNotification = true; //do not notify both for this request and the first playlist entry
+  } else {
+    interfaceUpdateCallMode = NOTIFIER_CALL_MODE_WS_SEND;
   }
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);

@@ -193,16 +193,16 @@ public:
    */
   void setup()
   {
-    // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-    if (!pinManager.allocatePin(PIRsensorPin,false)) {
-      PIRsensorPin = -1;  // allocation failed
-      enabled = false;
-      DEBUG_PRINTLN(F("PIRSensorSwitch pin allocation failed."));
-    } else {
-      // PIR Sensor mode INPUT_PULLUP
-      pinMode(PIRsensorPin, INPUT_PULLUP);
-      if (enabled) {
+    if (enabled) {
+      // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
+      if (PIRsensorPin >= 0 && pinManager.allocatePin(PIRsensorPin,false)) {
+        // PIR Sensor mode INPUT_PULLUP
+        pinMode(PIRsensorPin, INPUT_PULLUP);
         sensorPinState = digitalRead(PIRsensorPin);
+      } else {
+        if (PIRsensorPin >= 0) DEBUG_PRINTLN(F("PIRSensorSwitch pin allocation failed."));
+        PIRsensorPin = -1;  // allocation failed
+        enabled = false;
       }
     }
     initDone = true;
@@ -221,8 +221,8 @@ public:
    */
   void loop()
   {
-    // only check sensors 10x/s
-    if (millis() - lastLoop < 100 || strip.isUpdating()) return;
+    // only check sensors 4x/s
+    if (!enabled || millis() - lastLoop < 250 || strip.isUpdating()) return;
     lastLoop = millis();
 
     if (!updatePIRsensorState()) {

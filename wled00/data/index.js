@@ -7,7 +7,7 @@ var selColors;
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
-var nlFade = false;
+var nlMode = false;
 var selectedFx = 0;
 var selectedPal = 0;
 var csel = 0;
@@ -16,19 +16,18 @@ var lastUpdate = 0;
 var segCount = 0, ledCount = 0, lowestUnused = 0, maxSeg = 0, lSeg = 0;
 var pcMode = false, pcModeA = false, lastw = 0;
 var tr = 7;
-var pNum = 0;
 var d = document;
 const ranges = RangeTouch.setup('input[type="range"]', {});
 var palettesData;
 var pJson = {}, eJson = {}, lJson = {};
-var pN = "", pI = 0;
+var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
+var ws, noWS = false;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true, seglen:false}
 };
-var myWS, noWS = false;
 
 var cpick = new iro.ColorPicker("#picker", {
 	width: 260,
@@ -256,16 +255,6 @@ function onLoad()
 	for (var sl of sls) {
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
-	}
-
-	// Create UI update WS handler
-	myWS = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
-//    myWS.onopen = function () {
-//		myWS.send("{'v':true}");
-//	}
-	myWS.onmessage = function(event) {
-		var json = JSON.parse(event.data);
-		if (handleJson(json.state)) updateUI(true);
 	}
 }
 
@@ -557,6 +546,7 @@ function loadInfo(callback=null)
 		return res.json();
 	})
 	.then(json => {
+		clearErrorToast();
 		lastinfo = json;
 		var name = json.name;
 		gId('namelabel').innerHTML = name;
@@ -569,8 +559,11 @@ function loadInfo(callback=null)
 		syncTglRecv = json.str;
 		maxSeg = json.leds.maxseg;
 		pmt = json.fs.pmt;
-		gId('buttonNodes').style.display = showNodes() ? "block":"none";
+		showNodes();
 		populateInfo(json);
+		// Create UI update WS handler
+		if (!ws && json.ws > -1) setTimeout(makeWS,1000);
+		reqsLegal = true;
 		if (callback) callback();
 	})
 	.catch(function (error) {
@@ -813,10 +806,10 @@ function populatePalettes()
 		"name": "Default",
 	});
 
-	var paletteHtml = "";
+	var html = "";
 	for (let i = 0; i < palettes.length; i++) {
 		let previewCss = genPalPrevCss(palettes[i].id);
-		paletteHtml += generateListItemHtml(
+		html += generateListItemHtml(
 			'palette',
 		    palettes[i].id,
             palettes[i].name,
@@ -825,12 +818,12 @@ function populatePalettes()
         );
 	}
 
-	gId('selectPalette').innerHTML=paletteHtml;
+	gId('pallist').innerHTML=html;
 }
 
 function redrawPalPrev()
 {
-	let palettes = d.querySelectorAll('#selectPalette .lstI');
+	let palettes = d.querySelectorAll('#pallist .lstI');
 	for (let i = 0; i < palettes.length; i++) {
 		let id = palettes[i].dataset.id;
 		let lstPrev = palettes[i].querySelector('.lstIprev');
@@ -899,10 +892,10 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
 {
-    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}">
+    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" onClick="${clickAction}()">
 	<label class="radio schkl">
 		&nbsp;
-		<input type="radio" value="${id}" name="${listName}" onChange="${clickAction}()">
+		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark schk"></span>
 	</label>
 	<div class="lstIcontent" onClick="${clickAction}(${id})">
@@ -918,8 +911,9 @@ function updateTrail(e, slidercol)
 {
 	if (e==null) return;
 	var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
-	var progress = e.value * 100 / max;
-	progress = parseInt(progress);
+	var perc = e.value * 100 / max;
+	perc = parseInt(perc);
+	if (perc < 50) perc += 2;
 	var scol;
 	switch (slidercol) {
 		case 1: scol = "#f00"; break;
@@ -927,7 +921,7 @@ function updateTrail(e, slidercol)
 		case 3: scol = "#00f"; break;
 		default: scol = "var(--c-f)";
 	}
-	var val = `linear-gradient(90deg, ${scol} ${progress}%, var(--c-4) ${progress}%)`;
+	var val = `linear-gradient(90deg, ${scol} ${perc}%, var(--c-4) ${perc}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 	var bubble = e.parentNode.parentNode.getElementsByTagName('output')[0];
 	if (bubble) bubble.innerHTML = e.value;
@@ -993,12 +987,12 @@ function updatePA(scrollto=false)
 
 function updateUI(scrollto=false)
 {
-	noWS = (!myWS || myWS.readyState === WebSocket.CLOSED);
+	noWS = (!ws || ws.readyState === WebSocket.CLOSED);
 
 	gId('buttonPower').className = (isOn) ? "active":"";
 	gId('buttonNl').className = (nlA) ? "active":"";
 	gId('buttonSync').className = (syncSend) ? "active":"";
-	gId('buttonNodes').style.display = showNodes() ? "block":"none";
+	showNodes();
 
 	updateSelectedPalette(scrollto);
 	updateSelectedFx(scrollto);
@@ -1016,7 +1010,7 @@ function updateUI(scrollto=false)
 
 function updateSelectedPalette(scrollto=false)
 {
-	var parent = gId('selectPalette');
+	var parent = gId('pallist');
 	var selPaletteInput = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
 	if (selPaletteInput) selPaletteInput.checked = true;
 
@@ -1030,7 +1024,6 @@ function updateSelectedPalette(scrollto=false)
 function updateSelectedFx(scrollto=false)
 {
 	var parent = gId('fxlist');
-
 	var selEffectInput = parent.querySelector(`input[name="fx"][value="${selectedFx}"]`);
 	if (selEffectInput) selEffectInput.checked = true;
 
@@ -1055,7 +1048,34 @@ function cmpP(a, b)
 	return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
-function handleJson(s)
+function makeWS() {
+	if (ws) return;
+	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
+	ws.onmessage = function(event) {
+		clearTimeout(jsonTimeout);
+		jsonTimeout = null;
+		clearErrorToast();
+	  	gId('connind').style.backgroundColor = "#079";
+		var json = JSON.parse(event.data);
+		var info = json.info;
+		if (info) {
+			lastinfo = info;
+			showNodes();
+			if (isInfo) {
+				populateInfo(info);
+			}
+		}
+		var s = json.state ? json.state : json;
+		displayRover(info, s);
+		readState(s);
+	};
+	ws.onclose = function(event) {
+		gId('connind').style.backgroundColor = "#831";
+		ws = null;
+	}
+}
+
+function readState(s,command=false)
 {
 	if (!s) return false;
 
@@ -1076,8 +1096,12 @@ function handleJson(s)
 		if(s.seg[i].sel) {selc = ind; break;} ind++;
 	}
 	var i=s.seg[selc];
-	if (!i) return false; // no segments!
-
+	if (!i) {
+		showToast('No Segments!', true);
+		updateUI();
+		return;
+	}
+  
 	selColors = i.col;
 	var cd = gId('csl').children;
 	for (let e = cd.length-1; e >= 0; e--)
@@ -1104,21 +1128,37 @@ function handleJson(s)
 	gId('sliderSpeed').value = i.sx;
 	gId('sliderIntensity').value = i.ix;
 
+	if (s.error && s.error != 0) {
+	  var errstr = "";
+	  switch (s.error) {
+		case 10:
+		  errstr = "Could not mount filesystem!";
+		  break;
+		case 11:
+		  errstr = "Not enough space to save preset!";
+		  break;
+		case 12:
+		  errstr = "Preset not found.";
+		  break;
+		case 19:
+		  errstr = "A filesystem error has occured.";
+		  break;
+		}
+	  showToast('Error ' + s.error + ": " + errstr, true);
+	}
+
 	selectedPal = i.pal;
 	selectedFx = i.fx;
-
-	//if (!gId('fxlist').querySelector(`input[name="fx"][value="${i.fx}"]`)) location.reload(); //effect list is gone (e.g. if restoring tab). Reload.
-
-	displayRover(lastinfo, s);
-	clearErrorToast();
-
-	return true;
+	updateUI(true);
 }
 
 var jsonTimeout;
+var reqsLegal = false;
+
 function requestJson(command, rinfo = true, verbose = true, callback = null)
 {
 	gId('connind').style.backgroundColor = "#a90";
+	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
@@ -1131,6 +1171,12 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 		command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
 	}
+
+	if ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN) {
+		ws.send(req?req:'{"v":true}');
+		return;
+	}
+
 	fetch(url, {
 		method: type,
 		headers: {
@@ -1153,24 +1199,8 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 			return;
 		}
 		var s = json.state ? json.state : json;
-		if (!handleJson(s)) {
-			showToast('No Segments!', true);
-			updateUI(false);
-			if (callback) callback();
-			return;
-		}
-
-		if (s.error && s.error != 0) {
-      		var errstr = "";
-      		switch (s.error) {
-				case 10: errstr = "Could not mount filesystem!"; break;
-				case 11: errstr = "Not enough space to save preset!"; break;
-				case 12: errstr = "The requested preset does not exist."; break;
-				case 19: errstr = "A filesystem error has occured."; break;
-      		}
-      		showToast('Error ' + s.error + ": " + errstr, true);
-    	}
-        updateUI(true);
+		readState(s);
+		reqsLegal = true;
 		if (callback) callback();
 	})
 	.catch(function (error) {
@@ -1191,8 +1221,12 @@ function togglePower()
 function toggleNl()
 {
 	nlA = !nlA;
-	if (nlA) showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlFade ? "over":"after"} ${nlDur} minutes.`);
-	else showToast('Timer deactivated.');
+	if (nlA)
+	{
+		showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlMode ? "over":"after"} ${nlDur} minutes.`);
+	} else {
+		showToast('Timer deactivated.');
+	}
 	var obj = {"nl": {"on": nlA}};
 	requestJson(obj, false);
 }
@@ -1291,7 +1325,7 @@ function makePlSel(arr) {
 function refreshPlE(p) {
 	var plEDiv = gId(`ple${p}`);
 	if (!plEDiv) return;
-	var content = "";
+	var content = "<div class=\"c\">Playlist entries</div>";
 	for (var i = 0; i < plJson[p].ps.length; i++) {
 		content += makePlEntry(p,i);
 	}
@@ -1408,7 +1442,7 @@ ${plSelContent}
 <div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
 	<button class="btn btn-i btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
-	${(i>0)?'<button class="btn btn-i btn-pl-del" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>':'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
+	${(i>0)?'<button class="btn btn-i btn-pl-del" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete':'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
 </div>
 <div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn"></div>
 ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
@@ -1431,6 +1465,11 @@ function makePlEntry(p,i) {
 				</select>
 			</td>
 			<td><button class="btn btn-i btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
+		</tr>
+		<tr>
+			<td class="h">Duration</td>
+			<td class="h">Transition</td>
+			<td class="h">#${i+1}</td>
 		</tr>
 		<tr>
 			<td width="40%"><input class="noslide segn" type="number" placeholder="Duration" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}">s</td>
@@ -1555,14 +1594,15 @@ function setX(ind = null)
 function setPalette(paletteId = null)
 {
 	if (paletteId === null) {
-		paletteId = parseInt(d.querySelector('#selectPalette input[name="palette"]:checked').value);
+		paletteId = parseInt(d.querySelector('#pallist input[name="palette"]:checked').value);
 	} else {
-		d.querySelector(`#selectPalette input[name="palette"][value="${paletteId}`).checked = true;
+		d.querySelector(`#pallist input[name="palette"][value="${paletteId}`).checked = true;
 	}
-	var selElement = d.querySelector('#selectPalette .selected');
-	if (selElement) selElement.classList.remove('selected');
-
-	d.querySelector(`#selectPalette .lstI[data-id="${paletteId}"]`).classList.add('selected');
+	var selElement = d.querySelector('#pallist .selected');
+	if (selElement) {
+		selElement.classList.remove('selected')
+	}
+	d.querySelector(`#pallist .lstI[data-id="${paletteId}"]`).classList.add('selected');
 	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj, false, noWS);
 }
@@ -2026,13 +2066,13 @@ function move(e)
 }
 
 function showNodes() {
-	return (lastinfo.ndc > 0 && (w > 797 || (w > 539 && w < 720)));
+	gId('buttonNodes').style.display = (lastinfo.ndc > 0 && (w > 797 || (w > 539 && w < 720))) ? "block":"none";
 }
 
 function size()
 {
 	w = window.innerWidth;
-	gId('buttonNodes').style.display = showNodes() ? "block":"none";
+	showNodes();
 	var h = gId('top').clientHeight;
 	sCol('--th', h + "px");
 	sCol('--bh', gId('bot').clientHeight + "px");

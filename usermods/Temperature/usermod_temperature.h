@@ -107,19 +107,20 @@ class UsermodTemperature : public Usermod {
 
     void setup() {
       int retries = 10;
-      // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-      if (!pinManager.allocatePin(temperaturePin,false)) {
-        temperaturePin = -1;  // allocation failed
-        enabled = false;
-        DEBUG_PRINTLN(F("Temperature pin allocation failed."));
-      } else {
-        if (enabled) {
-          // config says we are enabled
+      if (enabled) {
+        // config says we are enabled
+        DEBUG_PRINTLN(F("Allocating temperature pin..."));
+        // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
+        if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin)) {
           oneWire = new OneWire(temperaturePin);
           if (!oneWire->reset())
             enabled = false;   // resetting 1-Wire bus yielded an error
           else
             while ((enabled=findSensor()) && retries--) delay(25); // try to find sensor
+        } else {
+          if (temperaturePin >= 0) DEBUG_PRINTLN(F("Temperature pin allocation failed."));
+          temperaturePin = -1;  // allocation failed
+          enabled = false;
         }
       }
       initDone = true;

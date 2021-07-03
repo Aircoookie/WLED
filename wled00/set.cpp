@@ -258,6 +258,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strlcpy(mqttClientID, request->arg(F("MQCID")).c_str(), 41);
     strlcpy(mqttDeviceTopic, request->arg(F("MD")).c_str(), 33);
     strlcpy(mqttGroupTopic, request->arg(F("MG")).c_str(), 33);
+    buttonPublishMqtt = request->hasArg(F("BM"));
     #endif
 
     #ifndef WLED_DISABLE_HUESYNC
@@ -550,13 +551,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   DEBUG_PRINTLN(req);
 
   strip.applyToAllSelected = false;
-  //snapshot to check if request changed values later, temporary.
-  byte prevCol[4] = {col[0], col[1], col[2], col[3]};
-  byte prevColSec[4] = {colSec[0], colSec[1], colSec[2], colSec[3]};
-  byte prevEffect = effectCurrent;
-  byte prevSpeed = effectSpeed;
-  byte prevIntensity = effectIntensity;
-  byte prevPalette = effectPalette;
 
   //segment select (sets main segment)
   byte prevMain = strip.getMainSegmentId();
@@ -615,6 +609,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   //apply preset
   pos = req.indexOf(F("PL="));
   if (pos > 0) applyPreset(getNumVal(&req, pos));
+
+  //snapshot to check if request changed values later, temporary.
+  byte prevCol[4] = {col[0], col[1], col[2], col[3]};
+  byte prevColSec[4] = {colSec[0], colSec[1], colSec[2], colSec[3]};
+  byte prevEffect = effectCurrent;
+  byte prevSpeed = effectSpeed;
+  byte prevIntensity = effectIntensity;
+  byte prevPalette = effectPalette;
 
   //set brightness
   updateVal(&req, "&A=", &bri);

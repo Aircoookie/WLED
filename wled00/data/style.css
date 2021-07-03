@@ -54,16 +54,16 @@ input[type="number"].xl {
   width: 85px;
 }
 input[type="number"].l {
-  width: 60px;
+  width: 63px;
 }
 input[type="number"].m {
-  width: 55px;
+  width: 56px;
 }
 input[type="number"].s {
-  width: 42px;
+  width: 49px;
 }
 input[type="number"].xs {
-  width: 35px;
+  width: 42px;
 }
 select {
   margin: 2px;

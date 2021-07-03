@@ -140,6 +140,10 @@ button {
 	padding: 0;
 	vertical-align: middle;
 }
+.segt TD.h {
+	font-size: 13px;
+	padding: 2px 0 0;
+}
 
 .keytd {
 	text-align: left;
@@ -573,6 +577,8 @@ input[type=range]::-moz-range-thumb {
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
+	overflow: clip;
+	text-overflow: clip;
 }
 
 .btn-s {
@@ -595,9 +601,11 @@ input[type=range]::-moz-range-thumb {
 }
 .btn-xs, .btn-pl-del, .btn-pl-add {
 	width: 42px;
+	height: 42px;
 }
 .btn-pl-del, .btn-pl-add {
 	margin: 0;
+	white-space: nowrap;
 }
 #qcs-w {
 	margin-top: 10px;
@@ -975,13 +983,13 @@ input[type=number]::-webkit-outer-spin-button {
 	z-index: 1;
 }
 
-#selectPalette .lstI.selected {
-	top: 80px;
-	bottom: 0;
+#pallist .lstI.selected {
+	top: 27px;
+	bottom: -11px;
 }
 
-#selectPalette .lstI.sticky {
-	top: 40px;
+#pallist .lstI.sticky {
+	top: -11px;
 }
 
 .lstI.sticky {

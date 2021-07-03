@@ -92,7 +92,6 @@
     }
     //returns mem usage
     function getMem(type, len, p0) {
-      //len = parseInt(len);
       if (type < 32) {
         if (maxM < 10000 && p0==3) {    //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
@@ -154,7 +153,7 @@
           }
 //          gId("ew"+n).onclick = (type > 31 && type < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
 //          isRGBW |= gId("ew"+n).checked;
-          isRGBW |= (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
+          isRGBW |= (type == 30 || type == 31 || (type > 40 && type < 46 && type != 43)); // RGBW checkbox, TYPE_xxxx values from const.h
           gId("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";  // hide reverse, skip 1st & count for analog
           gId("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";    // change analog start description
         }
@@ -240,6 +239,8 @@
     function lastEnd(i) {
       if (i<1) return 0;
       v = parseInt(d.getElementsByName("LS"+(i-1))[0].value) + parseInt(d.getElementsByName("LC"+(i-1))[0].value);
+      var type = parseInt(d.getElementsByName("LT"+(i-1))[0].value);
+      if (type > 31 && type < 48) v = 1; //PWM busses
       if (isNaN(v)) return 0;
       return v;
     }
@@ -288,9 +289,9 @@ Color Order:
 <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="33" class="s" onchange="UI()"/>
 <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="33" class="s" onchange="UI()"/>
 <br>
-<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="${lastEnd(i)}" readonly required />&nbsp;
+<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l" min="0" max="8191" value="${lastEnd(i)}" readonly required />&nbsp;
 <div id="dig${i}" style="display:inline">
-Count: <input type="number" name="LC${i}" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br>
+Count: <input type="number" name="LC${i}" class="l" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br>
 Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
 &nbsp;Skip 1<sup>st</sup> LED: <input id="sl${i}" type="checkbox" name="SL${i}"><br>
 </div>
@@ -358,7 +359,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     <br>
     Enable automatic brightness limiter: <input type="checkbox" name="ABen" onchange="enABL()" id="able"><br>
     <div id="abl">
-      Maximum Current: <input name="MA" type="number" min="250" max="65000" oninput="UI()" required> mA<br>
+      Maximum Current: <input name="MA" type="number" class="l" min="250" max="65000" oninput="UI()" required> mA<br>
       <div id="ampwarning" style="color: orange; display: none;">
         &#9888; Your power supply provides high current.<br>
         To improve the safety of your setup,<br>
@@ -393,37 +394,36 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     <div id="btns"></div>
     Touch threshold: <input type="number" min="0" max="100" name="TT" required><br>
     IR GPIO: <input type="number" min="-1" max="40" name="IR" onchange="UI()" class="s"><select name="IT" onchange="UI()">
-    <option value="0">Remote disabled</option>
-    <option value="1">24-key RGB</option>
-    <option value="2">24-key with CT</option>
-    <option value="3">40-key blue</option>
-    <option value="4">44-key RGB</option>
-    <option value="5">21-key RGB</option>
-    <option value="6">6-key black</option>
-    <option value="7">9-key red</option>
-    <option value="8">JSON remote</option>
+    <option value=0>Remote disabled</option>
+    <option value=1>24-key RGB</option>
+    <option value=2>24-key with CT</option>
+    <option value=3>40-key blue</option>
+    <option value=4>44-key RGB</option>
+    <option value=5>21-key RGB</option>
+    <option value=6>6-key black</option>
+    <option value=7>9-key red</option>
+    <option value=8>JSON remote</option>
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/ir.json');"><br></div>
     <div id="toast"></div>
     <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
-    Relay pin: <input type="number" min="-1" max="40" name="RL" onchange="UI()" class="s"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
+    Relay pin: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="s"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>
-    Default brightness: <input name="CA" type="number" min="0" max="255" required> (0-255)<br><br>
-    Apply preset <input name="BP" type="number" min="0" max="250" required> at boot (0 uses defaults)
-    <br>- <i>or</i> -<br>
-    Set current preset cycle setting as boot default: <input type="checkbox" name="PC"><br><br>
+    Default brightness: <input name="CA" type="number" class="m" min="0" max="255" required> (0-255)<br><br>
+    Apply preset <input name="BP" type="number" class="m" min="0" max="250" required> at boot (0 uses defaults)
+    <br><br>
 		Use Gamma correction for color: <input type="checkbox" name="GC"> (strongly recommended)<br>
 		Use Gamma correction for brightness: <input type="checkbox" name="GB"> (not recommended)<br><br>
-		Brightness factor: <input name="BF" type="number" min="1" max="255" required> %
+		Brightness factor: <input name="BF" type="number" class="m" min="1" max="255" required> %
 		<h3>Transitions</h3>
 		Crossfade: <input type="checkbox" name="TF"><br>
-		Transition Time: <input name="TD" maxlength="5" size="2"> ms<br>
+		Transition Time: <input name="TD" type="number" class="xl" min="0" max="65500"> ms<br>
 		Enable Palette transitions: <input type="checkbox" name="PF">
 		<h3>Timed light</h3>
-		Default Duration: <input name="TL" type="number" min="1" max="255" required> min<br>
-		Default Target brightness: <input name="TB" type="number" min="0" max="255" required><br>
+		Default Duration: <input name="TL" type="number" class="m" min="1" max="255" required> min<br>
+		Default Target brightness: <input name="TB" type="number" class="m" min="0" max="255" required><br>
 		Mode:
     <select name="TW">
 			<option value="0">Wait and set</option>
