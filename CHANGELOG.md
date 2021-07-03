@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107040
+
+-   Playlist entries are now more compact
+-   Added the possibility to enter negative numbers for segment offset
+
 #### Build 2107021
 
 -   Added WebSockets support to UI
