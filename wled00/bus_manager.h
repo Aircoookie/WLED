@@ -120,7 +120,7 @@ class BusDigital : public Bus {
     _len = bc.count + _skip;
     _iType = PolyBus::getI(bc.type, _pins, nr);
     if (_iType == I_NONE) return;
-    _busPtr = PolyBus::create(_iType, _pins, _len);
+    _busPtr = PolyBus::create(_iType, _pins, _len, nr);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
     //Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
