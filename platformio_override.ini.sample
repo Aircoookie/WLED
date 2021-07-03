@@ -14,6 +14,7 @@ platform_packages = ${common.platform_packages}
 board_build.ldscript = ${common.ldscript_1m128k}
 build_unflags = ${common.build_unflags}
 build_flags = ${common.build_flags_esp8266}
+lib_deps = ${esp8266.lib_deps}
 ; *********************************************************************
 ; *** Use custom settings from file my_config.h
    -DWLED_USE_MY_CONFIG
