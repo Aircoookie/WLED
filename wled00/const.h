@@ -77,6 +77,7 @@
 #define NOTIFIER_CALL_MODE_PRESET_CYCLE   8
 #define NOTIFIER_CALL_MODE_BLYNK          9
 #define NOTIFIER_CALL_MODE_ALEXA         10
+#define NOTIFIER_CALL_MODE_WS_SEND       11     //special call mode, not for notifier, updates websocket only
 
 //RGB to RGBW conversion mode
 #define RGBW_MODE_MANUAL_ONLY     0            //No automatic white channel calculation. Manual white channel slider
@@ -161,9 +162,10 @@
 #define BTN_TYPE_PUSH             2
 #define BTN_TYPE_PUSH_ACT_HIGH    3
 #define BTN_TYPE_SWITCH           4
-#define BTN_TYPE_SWITCH_ACT_HIGH  5
+#define BTN_TYPE_PIR_SENSOR       5
 #define BTN_TYPE_TOUCH            6
 #define BTN_TYPE_ANALOG           7
+#define BTN_TYPE_ANALOG_INVERTED  8
 
 //Ethernet board types
 #define WLED_NUM_ETH_TYPES        7
@@ -193,6 +195,14 @@
 #define SEG_OPTION_NONUNITY       4            //Indicates that the effect does not use FRAMETIME or needs getPixelColor
 #define SEG_OPTION_FREEZE         5            //Segment contents will not be refreshed
 #define SEG_OPTION_TRANSITIONAL   7
+
+//Segment differs return byte
+#define SEG_DIFFERS_BRI        0x01
+#define SEG_DIFFERS_OPT        0x02
+#define SEG_DIFFERS_COL        0x04
+#define SEG_DIFFERS_FX         0x08
+#define SEG_DIFFERS_BOUNDS     0x10
+#define SEG_DIFFERS_GSO        0x20
 
 //Playlist option byte
 #define PL_OPTION_SHUFFLE      0x01

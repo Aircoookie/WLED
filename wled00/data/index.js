@@ -7,7 +7,7 @@ var selColors;
 var expanded = [false];
 var powered = [true];
 var nlDur = 60, nlTar = 0;
-var nlFade = false;
+var nlMode = false;
 var selectedFx = 0;
 var csel = 0;
 var currentPreset = -1;
@@ -22,6 +22,8 @@ var pJson = {};
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
+var ws, useWs = false;
+var fxlist = d.getElementById('fxlist'), pallist = d.getElementById('pallist');
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true}
@@ -619,7 +621,7 @@ function populateEffects(effects)
 		);
 	}
 
-	d.getElementById('fxlist').innerHTML=html;
+	fxlist.innerHTML=html;
 }
 
 function populatePalettes(palettes)
@@ -653,12 +655,12 @@ function populatePalettes(palettes)
         );
 	}
 
-	d.getElementById('selectPalette').innerHTML=html;
+	pallist.innerHTML=html;
 }
 
 function redrawPalPrev()
 {
-	let palettes = d.querySelectorAll('#selectPalette .lstI');
+	let palettes = d.querySelectorAll('#pallist .lstI');
 	for (let i = 0; i < palettes.length; i++) {
 		let id = palettes[i].dataset.id;
 		let lstPrev = palettes[i].querySelector('.lstIprev');
@@ -803,8 +805,9 @@ function updateTrail(e, slidercol)
 {
 	if (e==null) return;
 	var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
-	var progress = e.value * 100 / max;
-	progress = parseInt(progress);
+	var perc = e.value * 100 / max;
+	perc = parseInt(perc);
+  if (perc < 50) perc += 2;
 	var scol;
 	switch (slidercol) {
 	case 1: scol = "#f00"; break;
@@ -812,7 +815,7 @@ function updateTrail(e, slidercol)
 	case 3: scol = "#00f"; break;
 	default: scol = "var(--c-f)";
 	}
-	var val = `linear-gradient(90deg, ${scol} ${progress}%, var(--c-4) ${progress}%)`;
+	var val = `linear-gradient(90deg, ${scol} ${perc}%, var(--c-4) ${perc}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 }
 
@@ -908,6 +911,117 @@ function cmpP(a, b) {
   return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
 }
 
+function makeWS() {
+  if (ws) return;
+  ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
+  ws.onmessage = function(event) {
+    clearTimeout(jsonTimeout);
+		jsonTimeout = null;
+		clearErrorToast();
+    d.getElementById('connind').style.backgroundColor = "#079";
+		var json = JSON.parse(event.data);
+    var info = json.info;
+    d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
+    lastinfo = info;
+    if (isInfo) {
+      populateInfo(info);
+    }
+    s = json.state;
+    displayRover(info, s);
+		readState(json.state);
+	};
+  ws.onclose = function(event) {
+    d.getElementById('connind').style.backgroundColor = "#831";
+  }
+}
+
+function readState(s,command=false) {
+  isOn = s.on;
+  d.getElementById('sliderBri').value= s.bri;
+  nlA = s.nl.on;
+  nlDur = s.nl.dur;
+  nlTar = s.nl.tbri;
+  nlMode = s.nl.mode;
+  syncSend = s.udpn.send;
+  currentPreset = s.ps;
+  tr = s.transition;
+  d.getElementById('tt').value = tr/10;
+
+  var selc=0; var ind=0;
+  populateSegments(s);
+  for (let i = 0; i < (s.seg||[]).length; i++)
+  {
+    if(s.seg[i].sel) {selc = ind; break;} ind++;
+  }
+  var i=s.seg[selc];
+  if (!i) {
+    showToast('No Segments!', true);
+    updateUI();
+    return;
+  }
+  
+  selColors = i.col;
+  var cd = d.getElementById('csl').children;
+  for (let e = 2; e >= 0; e--)
+  {
+    cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
+    if (isRgbw) whites[e] = parseInt(i.col[e][3]);
+    selectSlot(csel);
+  }
+  d.getElementById('sliderSpeed').value = whites[csel];
+
+  d.getElementById('sliderSpeed').value = i.sx;
+  d.getElementById('sliderIntensity').value = i.ix;
+
+  // Effects
+  var selFx = fxlist.querySelector(`input[name="fx"][value="${i.fx}"]`);
+  if (selFx) selFx.checked = true;
+  else location.reload(); //effect list is gone (e.g. if restoring tab). Reload.
+
+  var selElement = fxlist.querySelector('.selected');
+  if (selElement) {
+    selElement.classList.remove('selected')
+  }
+  var selectedEffect = fxlist.querySelector(`.lstI[data-id="${i.fx}"]`);
+  selectedEffect.classList.add('selected');
+  selectedFx = i.fx;
+
+  // Palettes
+  pallist.querySelector(`input[name="palette"][value="${i.pal}"]`).checked = true;
+  selElement = pallist.querySelector('.selected');
+  if (selElement) {
+    selElement.classList.remove('selected')
+  }
+  pallist.querySelector(`.lstI[data-id="${i.pal}"]`).classList.add('selected');
+
+  if (!command) {
+    selectedEffect.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    });
+  }
+
+  if (s.error && s.error != 0) {
+    var errstr = "";
+    switch (s.error) {
+      case 10:
+        errstr = "Could not mount filesystem!";
+        break;
+      case 11:
+        errstr = "Not enough space to save preset!";
+        break;
+      case 12:
+        errstr = "Preset not found.";
+        break;
+      case 19:
+        errstr = "A filesystem error has occured.";
+        break;
+      }
+    showToast('Error ' + s.error + ": " + errstr, true);
+  }
+  updateUI();
+}
+
 var jsonTimeout;
 var reqsLegal = false;
 
@@ -917,8 +1031,6 @@ function requestJson(command, rinfo = true, verbose = true) {
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	var req = null;
-	var e1 = d.getElementById('fxlist');
-	var e2 = d.getElementById('selectPalette');
 
 	var url = rinfo ? '/json/si': (command ? '/json/state':'/json');
 	if (loc) {
@@ -931,8 +1043,13 @@ function requestJson(command, rinfo = true, verbose = true) {
     command.v = verbose;
     command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
-		//console.log(req);
 	}
+
+  if ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(req?req:'{"v":true}');
+    return;
+  }
+
 	fetch
 	(url, {
 		method: type,
@@ -960,8 +1077,8 @@ function requestJson(command, rinfo = true, verbose = true) {
 		}
 		var s = json;
 		
-		if (!command || rinfo) {
-			if (!rinfo) {
+		if (!command || rinfo) { //we have info object
+			if (!rinfo) { //entire JSON (on load)
 				pmt = json.info.fs.pmt;
 				if (pmt != pmtLS || pmt == 0) {
 					setTimeout(loadPresets,99);
@@ -994,6 +1111,7 @@ function requestJson(command, rinfo = true, verbose = true) {
 			syncTglRecv = info.str;
       maxSeg = info.leds.maxseg;
 			pmt = info.fs.pmt;
+      if (!ws && info.ws > -1) setTimeout(makeWS,1000);
 
 			if (!command && pmt != pmtLast) {
 				setTimeout(loadPresets,99);
@@ -1010,90 +1128,7 @@ function requestJson(command, rinfo = true, verbose = true) {
       if (!rinfo) loadPalettesData();
 		}
 
-		isOn = s.on;
-		d.getElementById('sliderBri').value= s.bri;
-		nlA = s.nl.on;
-		nlDur = s.nl.dur;
-		nlTar = s.nl.tbri;
-		nlFade = s.nl.fade;
-		syncSend = s.udpn.send;
-		currentPreset = s.ps;
-		tr = s.transition;
-		d.getElementById('tt').value = tr/10;
-
-		var selc=0; var ind=0;
-		populateSegments(s);
-		for (let i = 0; i < (s.seg||[]).length; i++)
-		{
-			if(s.seg[i].sel) {selc = ind; break;} ind++;
-		}
-		var i=s.seg[selc];
-		if (!i) {
-			showToast('No Segments!', true);
-			updateUI();
-			return;
-		}
-		
-		selColors = i.col;
-		var cd = d.getElementById('csl').children;
-		for (let e = 2; e >= 0; e--)
-		{
-			cd[e].style.backgroundColor = "rgb(" + i.col[e][0] + "," + i.col[e][1] + "," + i.col[e][2] + ")";
-			if (isRgbw) whites[e] = parseInt(i.col[e][3]);
-			selectSlot(csel);
-		}
-		d.getElementById('sliderSpeed').value = whites[csel];
-
-		d.getElementById('sliderSpeed').value = i.sx;
-		d.getElementById('sliderIntensity').value = i.ix;
-
-		// Effects
-    var selFx = e1.querySelector(`input[name="fx"][value="${i.fx}"]`);
-    if (selFx) selFx.checked = true;
-    else location.reload(); //effect list is gone (e.g. if restoring tab). Reload.
-
-		var selElement = e1.querySelector('.selected');
-		if (selElement) {
-			selElement.classList.remove('selected')
-		}
-		var selectedEffect = e1.querySelector(`.lstI[data-id="${i.fx}"]`);
-		selectedEffect.classList.add('selected');
-		selectedFx = i.fx;
-
-		// Palettes
-		e2.querySelector(`input[name="palette"][value="${i.pal}"]`).checked = true;
-		selElement = e2.querySelector('.selected');
-		if (selElement) {
-			selElement.classList.remove('selected')
-		}
-		e2.querySelector(`.lstI[data-id="${i.pal}"]`).classList.add('selected');
-
-		if (!command) {
-			selectedEffect.scrollIntoView({
-				behavior: 'smooth',
-				block: 'nearest',
-			});
-		}
-
-		if (s.error && s.error != 0) {
-      		var errstr = "";
-      		switch (s.error) {
-				case 10:
-					errstr = "Could not mount filesystem!";
-					break;
-				case 11:
-					errstr = "Not enough space to save preset!";
-					break;
-				case 12:
-					errstr = "Preset not found.";
-					break;
-				case 19:
-					errstr = "A filesystem error has occured.";
-					break;
-      		}
-      		showToast('Error ' + s.error + ": " + errstr, true);
-    	}
-		updateUI();
+    readState(s,command);
 	})
 	.catch(function (error) {
 		showToast(error, true);
@@ -1112,7 +1147,7 @@ function toggleNl() {
 	nlA = !nlA;
 	if (nlA)
 	{
-		showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlFade ? "over":"after"} ${nlDur} minutes.`);
+		showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlMode ? "over":"after"} ${nlDur} minutes.`);
 	} else {
 		showToast('Timer deactivated.');
 	}
@@ -1482,15 +1517,15 @@ function setX(ind = null) {
 function setPalette(paletteId = null)
 {
 	if (paletteId === null) {
-		paletteId = parseInt(d.querySelector('#selectPalette input[name="palette"]:checked').value);
+		paletteId = parseInt(d.querySelector('#pallist input[name="palette"]:checked').value);
 	} else {
-		d.querySelector(`#selectPalette input[name="palette"][value="${paletteId}`).checked = true;
+		d.querySelector(`#pallist input[name="palette"][value="${paletteId}`).checked = true;
 	}
-	var selElement = d.querySelector('#selectPalette .selected');
+	var selElement = d.querySelector('#pallist .selected');
 	if (selElement) {
 		selElement.classList.remove('selected')
 	}
-	d.querySelector(`#selectPalette .lstI[data-id="${paletteId}"]`).classList.add('selected');
+	d.querySelector(`#pallist .lstI[data-id="${paletteId}"]`).classList.add('selected');
 	var obj = {"seg": {"pal": paletteId}};
 	requestJson(obj);
 }

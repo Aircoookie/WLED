@@ -115,7 +115,7 @@ void colorUpdated(int callMode)
         
     notify(callMode);
     
-    //set flag to update blynk and mqtt
+    //set flag to update blynk, ws and mqtt
     interfaceUpdateCallMode = callMode;
   } else {
     if (nightlightActive && !nightlightActiveOld && 
@@ -180,6 +180,11 @@ void colorUpdated(int callMode)
 void updateInterfaces(uint8_t callMode)
 {
   sendDataWs();
+  if (callMode == NOTIFIER_CALL_MODE_WS_SEND) {
+    lastInterfaceUpdate = millis();
+    return;
+  }
+  
   #ifndef WLED_DISABLE_ALEXA
   if (espalexaDevice != nullptr && callMode != NOTIFIER_CALL_MODE_ALEXA) {
     espalexaDevice->setValue(bri);

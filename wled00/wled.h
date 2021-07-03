@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2106302
+#define VERSION 2107021
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -442,6 +442,7 @@ WLED_GLOBAL byte briLast _INIT(128);          // brightness before turned off. U
 WLED_GLOBAL byte whiteLast _INIT(128);        // white channel before turned off. Used for toggle function
 
 // button
+WLED_GLOBAL bool buttonPublishMqtt                            _INIT(false);
 WLED_GLOBAL bool buttonPressedBefore[WLED_MAX_BUTTONS]        _INIT({false});
 WLED_GLOBAL bool buttonLongPressed[WLED_MAX_BUTTONS]          _INIT({false});
 WLED_GLOBAL unsigned long buttonPressedTime[WLED_MAX_BUTTONS] _INIT({0});

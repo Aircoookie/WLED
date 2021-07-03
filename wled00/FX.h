@@ -320,6 +320,27 @@ class WS2812FX {
           vLength = (vLength + 1) /2;  // divide by 2 if mirror, leave at least a single LED
         return vLength;
       }
+      uint8_t differs(Segment& b) {
+        uint8_t d = 0;
+        if (start != b.start)         d |= SEG_DIFFERS_BOUNDS;
+        if (stop != b.stop)           d |= SEG_DIFFERS_BOUNDS;
+        if (offset != b.offset)       d |= SEG_DIFFERS_GSO;
+        if (grouping != b.grouping)   d |= SEG_DIFFERS_GSO;
+        if (spacing != b.spacing)     d |= SEG_DIFFERS_GSO;
+        if (opacity != b.opacity)     d |= SEG_DIFFERS_BRI;
+        if (mode != b.mode)           d |= SEG_DIFFERS_FX;
+        if (speed != b.speed)         d |= SEG_DIFFERS_FX;
+        if (intensity != b.intensity) d |= SEG_DIFFERS_FX;
+        if (palette != b.palette)     d |= SEG_DIFFERS_FX;
+
+        if ((options & 0b00101111) != (b.options & 0b00101111)) d |= SEG_DIFFERS_OPT;
+        for (uint8_t i = 0; i < NUM_COLORS; i++)
+        {
+          if (colors[i] != b.colors[i]) d |= SEG_DIFFERS_COL;
+        }
+
+        return d;
+      }
     } segment;
 
   // segment runtime parameters
@@ -613,7 +634,6 @@ class WS2812FX {
       gammaCorrectBri = false,
       gammaCorrectCol = true,
       applyToAllSelected = true,
-      segmentsAreIdentical(Segment* a, Segment* b),
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p),
       // return true if the strip is being sent pixel updates
       isUpdating(void);
