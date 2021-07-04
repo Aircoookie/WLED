@@ -552,13 +552,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   DEBUG_PRINTLN(req);
 
   strip.applyToAllSelected = false;
-  //snapshot to check if request changed values later, temporary.
-  byte prevCol[4] = {col[0], col[1], col[2], col[3]};
-  byte prevColSec[4] = {colSec[0], colSec[1], colSec[2], colSec[3]};
-  byte prevEffect = effectCurrent;
-  byte prevSpeed = effectSpeed;
-  byte prevIntensity = effectIntensity;
-  byte prevPalette = effectPalette;
 
   //segment select (sets main segment)
   byte prevMain = strip.getMainSegmentId();
@@ -624,6 +617,14 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
     applyPreset(presetCycCurr);
   }
+
+  //snapshot to check if request changed values later, temporary.
+  byte prevCol[4] = {col[0], col[1], col[2], col[3]};
+  byte prevColSec[4] = {colSec[0], colSec[1], colSec[2], colSec[3]};
+  byte prevEffect = effectCurrent;
+  byte prevSpeed = effectSpeed;
+  byte prevIntensity = effectIntensity;
+  byte prevPalette = effectPalette;
 
   //set brightness
   updateVal(&req, "&A=", &bri);
