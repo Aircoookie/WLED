@@ -330,7 +330,7 @@ button {
 }
 
 .first {
-	margin-top: 18px !important;
+	margin-top: 10px;
 }
 
 #toast {
@@ -603,6 +603,9 @@ input[type=range]::-moz-range-thumb {
 	width: 42px;
 	height: 42px;
 }
+.btn-xs {
+	margin: 2px 0 0 0;
+}
 .btn-pl-del, .btn-pl-add {
 	margin: 0;
 	white-space: nowrap;
@@ -642,6 +645,7 @@ input[type=range]::-moz-range-thumb {
 }
 .sel-pl {
 	width: 165px;
+	background-position: 141px 16px;
 }
 .sel-ple {
 	width: 100%;
@@ -691,10 +695,6 @@ input[type=text] {
 .ptxt {
 	width: 216px !important;
 	margin: 6px !important;
-}
-
-.plentry {
-  position: relative;
 }
 
 .stxt {
@@ -1089,12 +1089,8 @@ input[type="text"].fnd:not(:placeholder-shown) {
 .hrz {
 	width: auto;
 	height: 2px;
-	background-color: var(--c-e);
+	background-color: var(--c-b);
 	margin: 3px 0;
-}
-.hrz-pl {
-	margin: 20px 0;
-	position: relative;
 }
 
 ::-webkit-scrollbar {

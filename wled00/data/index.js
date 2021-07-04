@@ -405,8 +405,11 @@ function loadPresets(callback = null)
 		return res.json();
 	})
 	.then(json => {
+		clearErrorToast();
 		pJson = json;
 		populatePresets();
+		// Create UI update WS handler
+		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
 		if (callback) callback();
 	})
 	.catch(function (error) {
@@ -429,9 +432,11 @@ function loadPalettes(callback = null)
 		return res.json();
 	})
 	.then(json => {
+		clearErrorToast();
 		lJson = Object.entries(json);
 		populatePalettes();
-//		updateUI();
+		// Create UI update WS handler
+		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
 		if (callback) callback();
 	})
 	.catch(function (error) {
@@ -655,7 +660,7 @@ function populateSegments(s)
 		<tr>
 			<td><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
 			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
-			<td><input class="noslide segn" id="seg${i}of" type="number" min="0" max="${ledCount-1}" value="${inst.of}" oninput="updateLen(${i})"></td>
+			<td><input class="noslide segn" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
 		</tr>
 		</table>
 		<table class="infot segt">
@@ -737,9 +742,9 @@ function populateNodes(i,n)
 	}
 	if (i.ndc < 0) cn += `Instance List is disabled.`;
 	else if (nnodes == 0) cn += `No other instances found.`;
-		cn += `<table class="infot">
-		${urows}
-		${inforow("Current instance:",i.name)}
+	cn += `<table class="infot">
+	${urows}
+	${inforow("Current instance:",i.name)}
 	</table>`;
 	gId('kn').innerHTML = cn;
 }
@@ -755,7 +760,10 @@ function loadNodes()
 		return res.json();
 	})
 	.then(json => {
+		clearErrorToast();
 		populateNodes(lastinfo, json);
+		// Create UI update WS handler
+		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
 	})
 	.catch(function (error) {
 		showToast(error, true);
@@ -1201,6 +1209,8 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 		var s = json.state ? json.state : json;
 		readState(s);
 		reqsLegal = true;
+		// Create UI update WS handler
+		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
 		if (callback) callback();
 	})
 	.catch(function (error) {
@@ -1325,7 +1335,7 @@ function makePlSel(arr) {
 function refreshPlE(p) {
 	var plEDiv = gId(`ple${p}`);
 	if (!plEDiv) return;
-	var content = "<div class=\"c\">Playlist entries</div>";
+	var content = "<div class=\"first c\">Playlist entries</div>";
 	for (var i = 0; i < plJson[p].ps.length; i++) {
 		content += makePlEntry(p,i);
 	}
@@ -1458,24 +1468,24 @@ function makePlEntry(p,i) {
   return `<div class="plentry">
   	<div class="hrz"></div>
 	<table class="segt">
-		<tr>
-			<td width="80%" colspan=2>
-			    <select class="sel sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
-				${plSelContent}
-				</select>
-			</td>
-			<td><button class="btn btn-i btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
-		</tr>
-		<tr>
-			<td class="h">Duration</td>
-			<td class="h">Transition</td>
-			<td class="h">#${i+1}</td>
-		</tr>
-		<tr>
-			<td width="40%"><input class="noslide segn" type="number" placeholder="Duration" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}">s</td>
-			<td width="40%"><input class="noslide segn" type="number" placeholder="Transition" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value="${plJson[p].transition[i]/10.0}">s</td>
-			<td><button class="btn btn-i btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div></td>
-		</tr>
+	<tr>
+		<td width="80%" colspan=2>
+			<select class="sel sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
+			${plSelContent}
+			</select>
+		</td>
+		<td><button class="btn btn-i btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
+	</tr>
+	<tr>
+		<td class="h">Duration</td>
+		<td class="h">Transition</td>
+		<td class="h">#${i+1}</td>
+	</tr>
+	<tr>
+		<td width="40%"><input class="noslide segn" type="number" placeholder="Duration" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}">s</td>
+		<td width="40%"><input class="noslide segn" type="number" placeholder="Transition" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value="${plJson[p].transition[i]/10.0}">s</td>
+		<td><button class="btn btn-i btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div></td>
+	</tr>
 	</table>
 </div>`;
 }
