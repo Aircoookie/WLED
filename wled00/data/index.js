@@ -408,8 +408,7 @@ function loadPresets(callback = null)
 		clearErrorToast();
 		pJson = json;
 		populatePresets();
-		// Create UI update WS handler
-		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
+		reconnectWS();
 		if (callback) callback();
 	})
 	.catch(function (error) {
@@ -435,8 +434,7 @@ function loadPalettes(callback = null)
 		clearErrorToast();
 		lJson = Object.entries(json);
 		populatePalettes();
-		// Create UI update WS handler
-		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
+		reconnectWS();
 		if (callback) callback();
 	})
 	.catch(function (error) {
@@ -566,8 +564,7 @@ function loadInfo(callback=null)
 		pmt = json.fs.pmt;
 		showNodes();
 		populateInfo(json);
-		// Create UI update WS handler
-		if (!ws && json.ws > -1) setTimeout(makeWS,1000);
+		reconnectWS();
 		reqsLegal = true;
 		if (callback) callback();
 	})
@@ -762,8 +759,7 @@ function loadNodes()
 	.then(json => {
 		clearErrorToast();
 		populateNodes(lastinfo, json);
-		// Create UI update WS handler
-		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
+		reconnectWS();
 	})
 	.catch(function (error) {
 		showToast(error, true);
@@ -1083,6 +1079,10 @@ function makeWS() {
 	}
 }
 
+function reconnectWS() {// Create UI update WS handler
+	if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
+}
+
 function readState(s,command=false)
 {
 	if (!s) return false;
@@ -1209,8 +1209,7 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 		var s = json.state ? json.state : json;
 		readState(s);
 		reqsLegal = true;
-		// Create UI update WS handler
-		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
+		reconnectWS();
 		if (callback) callback();
 	})
 	.catch(function (error) {
