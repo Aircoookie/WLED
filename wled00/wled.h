@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2107040
+#define VERSION 2107041
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -504,6 +504,9 @@ WLED_GLOBAL bool blynkEnabled _INIT(false);
 //playlists
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL int16_t currentPlaylist _INIT(0);
+//still used for "PL=~" HTTP API command
+WLED_GLOBAL byte presetCycleMin _INIT(1), presetCycleMax _INIT(5);
+WLED_GLOBAL byte presetCycCurr _INIT(presetCycleMin);
 
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
