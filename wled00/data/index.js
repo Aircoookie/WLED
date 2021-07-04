@@ -546,7 +546,7 @@ function populateSegments(s)
 					<tr>
 						<td class="segtd"><input class="noslide segn" id="seg${i}s" type="number" min="0" max="${ledCount-1}" value="${inst.start}" oninput="updateLen(${i})"></td>
 						<td class="segtd"><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount}" value="${inst.stop}" oninput="updateLen(${i})"></td>
-						<td class="segtd"><input class="noslide segn" id="seg${i}of" type="number" min="0" max="${ledCount-1}" value="${inst.of}" oninput="updateLen(${i})"></td>
+						<td class="segtd"><input class="noslide segn" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
 					</tr>
 				</table>
 				<table class="infot">
@@ -1315,6 +1315,7 @@ function makeP(i,pl) {
   if (pl) {
 		var rep = plJson[i].repeat ? plJson[i].repeat : 0;
 		content = `
+  <div class="first c">Playlist Entries</div>
   <div id="ple${i}"></div><label class="check revchkl">
     Shuffle
     <input type="checkbox" id="pl${i}rtgl" onchange="plR(${i})" ${plJson[i].r?"checked":""}>
@@ -1387,23 +1388,15 @@ function makePUtil() {
 function makePlEntry(p,i) {
   return `
   <div class="plentry">
-    ${i+1}:
     <select class="btn sel sel-pl" onchange="plePs(${p},${i},this)" data-val=${plJson[p].ps[i]} data-index=${i}>
 			${plSelContent}
     </select>
-		<table class="segt">
-			<tr>
-				<td class="segtd">Duration</td>
-				<td class="segtd">Transition</td>
-			</tr>
-			<tr>
-				<td class="segtd"><input class="noslide segn" type="number" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value=${plJson[p].dur[i]/10.0}></td>
-				<td class="segtd"><input class="noslide segn" type="number" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value=${plJson[p].transition[i]/10.0}> s</td>
-			</tr>
-		</table>
-    <button class="btn btn-i btn-xs btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div>
-    <div class="hrz hrz-pl" />
-    <button class="btn btn-i btn-xs btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></div>
+		<button class="btn btn-i btn-xs btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button>
+		<div class="h plnl">Duration</div><div class="h plnl">Transition</div><div class="h pli">#${i+1}</div><br>
+		<input class="noslide pln" type="number" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value=${plJson[p].dur[i]/10.0}>
+		<input class="noslide pln" type="number" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value=${plJson[p].transition[i]/10.0}> s
+		<button class="btn btn-i btn-xs btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button>
+    <div class="hrz"></div>
   </div>`;
 }
 
