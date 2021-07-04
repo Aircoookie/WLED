@@ -177,7 +177,6 @@ class PolyBus {
       case I_8266_DM_TM1_4: beginTM1814<B_8266_DM_TM1_4*>(busPtr); break;
       case I_8266_BB_TM1_4: beginTM1814<B_8266_BB_TM1_4*>(busPtr); break;
       case I_HS_DOT_3: (static_cast<B_HS_DOT_3*>(busPtr))->Begin(); break;
-      case I_HS_DOT_4: (static_cast<B_HS_DOT_4*>(busPtr))->Begin(); break;
       case I_HS_LPD_3: (static_cast<B_HS_LPD_3*>(busPtr))->Begin(); break;
       case I_HS_WS1_3: (static_cast<B_HS_WS1_3*>(busPtr))->Begin(); break;
       case I_HS_P98_3: (static_cast<B_HS_P98_3*>(busPtr))->Begin(); break;
