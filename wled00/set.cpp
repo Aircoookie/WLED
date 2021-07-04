@@ -606,9 +606,16 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("PS=")); //saves current in preset
   if (pos > 0) savePreset(getNumVal(&req, pos));
 
+  pos = req.indexOf(F("P1=")); //sets first preset for cycle
+  if (pos > 0) presetCycleMin = getNumVal(&req, pos);
+
+  pos = req.indexOf(F("P2=")); //sets last preset for cycle
+  if (pos > 0) presetCycleMax = getNumVal(&req, pos);
+
   //apply preset
-  pos = req.indexOf(F("PL="));
-  if (pos > 0) applyPreset(getNumVal(&req, pos));
+  if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
+    applyPreset(presetCycCurr);
+  }
 
   //snapshot to check if request changed values later, temporary.
   byte prevCol[4] = {col[0], col[1], col[2], col[3]};

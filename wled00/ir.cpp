@@ -584,16 +584,16 @@ void decodeIRJson(uint32_t code)
     {
       if (cmdStr.startsWith("!")) {
         // call limited set of C functions
-        if (cmdStr == F("!incBrightness")) {
+        if (cmdStr.startsWith(F("!incBri"))) {
           lastValidCode = code;
           incBrightness();
-        } else if (cmdStr == F("!decBrightness")) {
+        } else if (cmdStr.startsWith(F("!decBri"))) {
           lastValidCode = code;
           decBrightness();
-        } else if (cmdStr == F("!presetFallback")) {
-          uint8_t p1 = fdo[F("PL")] ? fdo[F("PL")] : 1;
-          uint8_t p2 = fdo[F("FX")] ? fdo[F("FX")] : random8(100);
-          uint8_t p3 = fdo[F("FP")] ? fdo[F("FP")] : 0;
+        } else if (cmdStr.startsWith(F("!presetF"))) { //!presetFallback
+          uint8_t p1 = fdo["PL"] ? fdo["PL"] : 1;
+          uint8_t p2 = fdo["FX"] ? fdo["FX"] : random8(100);
+          uint8_t p3 = fdo["FP"] ? fdo["FP"] : 0;
           presetFallback(p1, p2, p3);
         }
       } else {
@@ -602,7 +602,8 @@ void decodeIRJson(uint32_t code)
         {
           // repeatable action
           lastValidCode = code;
-        } if (effectCurrent == 0 && cmdStr.indexOf(F("FP=")) > -1) {
+        }
+        if (effectCurrent == 0 && cmdStr.indexOf("FP=") > -1) {
           // setting palette but it wont show because effect is solid
           effectCurrent = FX_MODE_GRADIENT;
         }
@@ -613,7 +614,10 @@ void decodeIRJson(uint32_t code)
       }        
     } else if (!jsonCmdObj.isNull()) {
       // command is JSON object
+      //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
+      fileDoc = &irDoc;
       deserializeState(jsonCmdObj);
+      fileDoc = nullptr;
     }
   }
 }

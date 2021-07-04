@@ -710,6 +710,23 @@ input[type=number]::-webkit-outer-spin-button {
 	-webkit-appearance: none;
 }
 
+.pln {
+	border-radius: 25px !important;
+	width: 67px !important;
+	margin: 0 2px 8px 0 !important;
+	text-align: center;
+}
+.plnl {
+	width: 86px;
+	margin: 0 2px 0 0;
+	display: inline-block;
+}
+.pli {
+	width: 38px;
+	margin: 0 0 0 29px;
+	display: inline-block;
+}
+
 .segn {
 	margin: 3px 0 6px 0 !important;
 	text-align: right;

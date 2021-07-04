@@ -128,7 +128,7 @@ class BusDigital : public Bus {
     _rgbw = bc.rgbwOverride || Bus::isRgbw(type);  // RGBW override in bit 7
     _iType = PolyBus::getI(type, _pins, nr, _rgbw);
     if (_iType == I_NONE) return;
-    _busPtr = PolyBus::create(_iType, _pins, _len);
+    _busPtr = PolyBus::create(_iType, _pins, _len, nr);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
   };
