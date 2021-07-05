@@ -33,9 +33,8 @@ void serializeConfig();
 void serializeConfigSec();
 
 template<typename DestType>
-bool getValueFromJsonKey(const JsonVariant& element, DestType& destination) {
+bool getJsonValue(const JsonVariant& element, DestType& destination) {
   if (element.isNull()) {
-    Serial.println("element.isNull()");
     return false;
   }
 
@@ -44,8 +43,8 @@ bool getValueFromJsonKey(const JsonVariant& element, DestType& destination) {
 }
 
 template<typename DestType, typename DefaultType>
-bool getValueFromJsonKey(const JsonVariant& element, DestType& destination, const DefaultType defaultValue) {
-  if(!getValueFromJsonKey(element, destination)) {
+bool getJsonValue(const JsonVariant& element, DestType& destination, const DefaultType defaultValue) {
+  if(!getJsonValue(element, destination)) {
     destination = defaultValue;
     return false;
   }

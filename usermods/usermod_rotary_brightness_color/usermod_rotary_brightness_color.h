@@ -158,7 +158,7 @@ public:
 
   /* 
    * This example uses a more robust method of checking for missing values in the config, and setting back to defaults:
-   * - The getValueFromJsonKey() function copies the value to the variable only if the key requested is present, returning false with no copy if the value isn't present
+   * - The getJsonValue() function copies the value to the variable only if the key requested is present, returning false with no copy if the value isn't present
    * - configComplete is used to return false if any value is missing, not just if the main object is missing
    * - The defaults are loaded every time readFromConfig() is run, not just once after boot
    * 
@@ -179,10 +179,10 @@ public:
     JsonObject top = root["rotEncBrightness"];
 
     bool configComplete = !top.isNull();
-    configComplete &= getValueFromJsonKey(top["fadeAmount"], fadeAmount);
-    configComplete &= getValueFromJsonKey(top["pin"][0], pins[0]);
-    configComplete &= getValueFromJsonKey(top["pin"][1], pins[1]);
-    configComplete &= getValueFromJsonKey(top["pin"][2], pins[2]);
+    configComplete &= getJsonValue(top["fadeAmount"], fadeAmount);
+    configComplete &= getJsonValue(top["pin"][0], pins[0]);
+    configComplete &= getJsonValue(top["pin"][1], pins[1]);
+    configComplete &= getJsonValue(top["pin"][2], pins[2]);
 
     return configComplete;
   }

@@ -27,13 +27,15 @@ class MyExampleUsermod : public Usermod {
     unsigned long lastTime = 0;
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
-    bool testBool = 42;
-    int testInt = false;
-    long testLong = -42424242;
+    bool testBool = false;
     unsigned long testULong = 42424242;
     float testFloat = 42.42;
     String testString = "Forty-Two";
-    int8_t testPins[2] = {-1, -1};
+
+    // These config variables have defaults set inside readFromConfig()
+    int testInt;
+    long testLong;
+    int8_t testPins[2];
 
   public:
     //Functions called by WLED
@@ -168,86 +170,41 @@ class MyExampleUsermod : public Usermod {
 
     /*
      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
-     * This is called by WLED when settings are loaded (currently this only happens once immediately after boot)
+     * This is called by WLED when settings are loaded (currently this only happens immediately after boot, or after saving on the Usermod Settings page)
      * 
      * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
-     *
-     * See usermode_rotary_brightness_color.h for a more robust example that handles missing config/upgrades better
      * 
      * Return true in case the config values returned from Usermod Settings were complete, or false if you'd like WLED to save your defaults to disk (so any missing values are editable in Usermod Settings)
+     * 
+     * getJsonValue() returns false if the value is missing, or copies the value into the variable provided and returns true if the value is present
+     * The configComplete variable is true only if the "exampleUsermod" object and all values are present.  If any values are missing, WLED will know to call addToConfig() to save them
      * 
      * This function is guaranteed to be called on boot, but could also be called every time settings are updated
      */
     bool readFromConfig(JsonObject& root)
     {
+      // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
+      // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
+
       JsonObject top = root["exampleUsermod"];
 
-      // Option 1: AC's proposed default
-#if 0
-      // if the "exampleUsermod" object is missing, return false so WLED knows to add it (by calling addToConfig())
-      if(top.isNull())
-        return false;
-
-      userVar0 = top["great"] | userVar0; // the ArduinoJson | operator only sets userVar0 if the value for "great" is present, otherwise it's left at the default (userVar0 = userVar0)
-      testBool = top["testBool"] | testBool;
-      testInt = top["testInt"] | testInt;
-      testLong = top["testLong"] | testLong;
-      testULong = top["testULong"] | testULong;
-      testFloat = top["testFloat"] | testFloat;
-      testString = top["testString"] | testString;
-      testPins[0] = top["pin"][0] | testPins[0];
-      testPins[1] = top["pin"][1] | testPins[1];
-
-      // this optional check looks for any single missing key-value pair, so it can be added back (by calling addToConfig())
-      if(top["great"].isNull() || top["testBool"].isNull() || top["testInt"].isNull() || 
-        top["testLong"].isNull() || top["testULong"].isNull() || top["testFloat"].isNull() || 
-        top["testString"].isNull() || top["pin"][0].isNull() || top["pin"][1].isNull())
-        return false;
-
-      return true;
-#else
-      // Option 2: Louis's proposed default (seems cleaner and robust)
-#if 1
       bool configComplete = !top.isNull();
 
-      configComplete &= getValueFromJsonKey(top["great"], userVar0);
-      configComplete &= getValueFromJsonKey(top["testBool"], testBool);
-      configComplete &= getValueFromJsonKey(top["testInt"], testInt);
-      configComplete &= getValueFromJsonKey(top["testLong"], testLong);
-      configComplete &= getValueFromJsonKey(top["testULong"], testULong);
-      configComplete &= getValueFromJsonKey(top["testFloat"], testFloat);
-      configComplete &= getValueFromJsonKey(top["testString"], testString);
-      configComplete &= getValueFromJsonKey(top["pin"][0], testPins[0]);
-      configComplete &= getValueFromJsonKey(top["pin"][1], testPins[1]);
+      configComplete &= getJsonValue(top["great"], userVar0);
+      configComplete &= getJsonValue(top["testBool"], testBool);
+      configComplete &= getJsonValue(top["testULong"], testULong);
+      configComplete &= getJsonValue(top["testFloat"], testFloat);
+      configComplete &= getJsonValue(top["testString"], testString);
+
+      // A 3-argument getJsonValue() assigns the 3rd argument as a default value if the Json value is missing
+      configComplete &= getJsonValue(top["testInt"], testInt, 42);  
+      configComplete &= getJsonValue(top["testLong"], testLong, -42424242);
+      configComplete &= getJsonValue(top["pin"][0], testPins[0], -1);
+      configComplete &= getJsonValue(top["pin"][1], testPins[1], -1);
 
       return configComplete;
-
-      //Option 3: Hybrid, using wrapper function but not checking return value at same time
-#else
-      if(top.isNull())
-        return false;
-
-      getValueFromJsonKey(top["great"], userVar0);
-      getValueFromJsonKey(top["testBool"], testBool);
-      getValueFromJsonKey(top["testInt"], testInt);
-      getValueFromJsonKey(top["testLong"], testLong);
-      getValueFromJsonKey(top["testULong"], testULong);
-      getValueFromJsonKey(top["testFloat"], testFloat);
-      getValueFromJsonKey(top["testString"], testString);
-      getValueFromJsonKey(top["pin"][0], testPins[0]);
-      getValueFromJsonKey(top["pin"][1], testPins[1]);
-
-      // this optional check looks for any single missing key-value pair, so it can be added back (by calling addToConfig())
-      if(top["great"].isNull() || top["testBool"].isNull() || top["testInt"].isNull() || 
-        top["testLong"].isNull() || top["testULong"].isNull() || top["testFloat"].isNull() || 
-        top["testString"].isNull() || top["pin"][0].isNull() || top["pin"][1].isNull())
-        return false;
-
-      return true;  
-#endif
-#endif
     }
 
    
