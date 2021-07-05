@@ -31,8 +31,6 @@ void deserializeConfigFromFS();
 bool deserializeConfigSec();
 void serializeConfig();
 void serializeConfigSec();
-bool getBoolFromJsonKey(const JsonVariant& element, bool &destination);
-bool getBoolFromJsonKey(const JsonVariant& element, bool &destination, const bool defaultValue);
 
 template<typename DestType>
 bool getValueFromJsonKey(const JsonVariant& element, DestType& destination) {
@@ -45,8 +43,8 @@ bool getValueFromJsonKey(const JsonVariant& element, DestType& destination) {
   return true;
 }
 
-template<typename DestType>
-bool getValueFromJsonKey(const JsonVariant& element, DestType& destination, const DestType defaultValue) {
+template<typename DestType, typename DefaultType>
+bool getValueFromJsonKey(const JsonVariant& element, DestType& destination, const DefaultType defaultValue) {
   if(!getValueFromJsonKey(element, destination)) {
     destination = defaultValue;
     return false;
