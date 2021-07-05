@@ -3519,7 +3519,7 @@ uint16_t WS2812FX::mode_twinkleup(void) {                 // A very short twinkl
     uint8_t ranstart = random8();                         // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
     uint8_t pixBri = sin8(ranstart + 16 * now/(256-SEGMENT.speed));
     if (random8() > SEGMENT.intensity) pixBri = 0;
-    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*20, false, PALETTE_SOLID_WRAP, 0), pixBri));
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(random8()+now/100, false, PALETTE_SOLID_WRAP, 0), pixBri));
   }
 
   return FRAMETIME;
@@ -3957,7 +3957,6 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
 */
 
 //CONFIG
-#define BACKLIGHT 5
 #define W_MAX_COUNT 20            //Number of simultaneous waves
 #define W_MAX_SPEED 6             //Higher number, higher speed
 #define W_WIDTH_FACTOR 6          //Higher number, smaller waves
@@ -4082,9 +4081,13 @@ uint16_t WS2812FX::mode_aurora(void) {
     }
   }
 
+  uint8_t backlight = 1; //dimmer backlight if less active colors
+  if (SEGCOLOR(0)) backlight++;
+  if (SEGCOLOR(1)) backlight++;
+  if (SEGCOLOR(2)) backlight++;
   //Loop through LEDs to determine color
   for(int i = 0; i < SEGLEN; i++) {    
-    CRGB mixedRgb = CRGB(BACKLIGHT, BACKLIGHT, BACKLIGHT);
+    CRGB mixedRgb = CRGB(backlight, backlight, backlight);
 
     //For each LED we must check each wave if it is "active" at this position.
     //If there are multiple waves active on a LED we multiply their values.
@@ -4096,7 +4099,7 @@ uint16_t WS2812FX::mode_aurora(void) {
       }
     }
 
-    setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2], BACKLIGHT);
+    setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2]);
   }
   
   return FRAMETIME;

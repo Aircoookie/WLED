@@ -1010,23 +1010,6 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
   return crgb_to_col(fastled_col);
 }
 
-//@returns `true` if color, mode, speed, intensity and palette match
-bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
-{
-  //if (a->start != b->start) return false;
-  //if (a->stop != b->stop) return false;
-  for (uint8_t i = 0; i < NUM_COLORS; i++)
-  {
-    if (a->colors[i] != b->colors[i]) return false;
-  }
-  if (a->mode != b->mode) return false;
-  if (a->speed != b->speed) return false;
-  if (a->intensity != b->intensity) return false;
-  if (a->palette != b->palette) return false;
-  //if (a->getOption(SEG_OPTION_REVERSED) != b->getOption(SEG_OPTION_REVERSED)) return false;
-  return true;
-}
-
 
 //load custom mapping table from JSON file
 void WS2812FX::deserializeMap(void) {

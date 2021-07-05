@@ -68,6 +68,14 @@ void decBrightness()
   }
 }
 
+// apply preset or fallback to a effect and palette if it doesn't exist
+void presetFallback(int8_t presetID, int8_t effectID, int8_t paletteID) 
+{
+  if (!applyPreset(presetID)) { 
+    effectCurrent = effectID;      
+    effectPalette = paletteID;
+  }
+}
 
 //Add what your custom IR codes should trigger here. Guide: https://github.com/Aircoookie/WLED/wiki/Infrared-Control
 //IR codes themselves can be defined directly after "case" or in "ir_codes.h"
@@ -84,8 +92,6 @@ bool decodeIRCustom(uint32_t code)
   if (code != IRCUSTOM_MACRO1) colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //don't update color again if we apply macro, it already does it
   return true;
 }
-
-
 
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
@@ -156,24 +162,28 @@ void decodeIR(uint32_t code)
   lastValidCode = 0; irTimesRepeated = 0;
   if (decodeIRCustom(code)) return;
   if      (code > 0xFFFFFF) return; //invalid code
-  else if (code > 0xF70000 && code < 0xF80000) decodeIR24(code); //is in 24-key remote range
-  else if (code > 0xFF0000) {
-    switch (irEnabled) {
-      case 1: decodeIR24OLD(code); break;  // white 24-key remote (old) - it sends 0xFF0000 values
-      case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
-      case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
-      case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
-      case 5: decodeIR21(code);    break;  // white 21-key remote  
-      case 6: decodeIR6(code);     break;  // black 6-key learning remote defaults: "CH" controls brightness,
-                                           // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
-                                           // sets bright plain white
-      case 7: decodeIR9(code);    break;
-      default: return;
-    }
+  switch (irEnabled) {
+    case 1: 
+      if (code > 0xF80000) {
+        decodeIR24OLD(code);            // white 24-key remote (old) - it sends 0xFF0000 values
+      } else {
+        decodeIR24(code);               // 24-key remote - 0xF70000 to 0xF80000
+      }
+      break;
+    case 2: decodeIR24CT(code);  break;  // white 24-key remote with CW, WW, CT+ and CT- keys
+    case 3: decodeIR40(code);    break;  // blue  40-key remote with 25%, 50%, 75% and 100% keys
+    case 4: decodeIR44(code);    break;  // white 44-key remote with color-up/down keys and DIY1 to 6 keys 
+    case 5: decodeIR21(code);    break;  // white 21-key remote  
+    case 6: decodeIR6(code);     break;  // black 6-key learning remote defaults: "CH" controls brightness,
+                                          // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
+                                          // sets bright plain white
+    case 7: decodeIR9(code);    break;
+    case 8: decodeIRJson(code); break;   // any remote configurable with ir.json file
+    default: return;
   }
+
   if (nightlightActive && bri == 0) nightlightActive = false;
   colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
-  //code <= 0xF70000 also invalid
 }
 
 void applyRepeatActions(){
@@ -219,8 +229,11 @@ void applyRepeatActions(){
       nightlightStartTime = millis();
       colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
     }
+    else if (irEnabled == 8) 
+    {
+      decodeIRJson(lastValidCode);
+    }
 }
-
 
 void decodeIR24(uint32_t code)
 {
@@ -286,7 +299,6 @@ void decodeIR24OLD(uint32_t code)
   lastValidCode = code;
 }
 
-
 void decodeIR24CT(uint32_t code)
 {
   switch (code) {
@@ -320,7 +332,6 @@ void decodeIR24CT(uint32_t code)
   }
   lastValidCode = code;
 }
-
 
 void decodeIR40(uint32_t code)
 {
@@ -522,6 +533,91 @@ void decodeIR9(uint32_t code)
   lastValidCode = code;
 }
 
+
+/*
+This allows users to customize IR actions without the need to edit C code and compile.
+From the https://github.com/Aircoookie/WLED/wiki/Infrared-Control page, download the starter 
+ir.json file that corresponds to the number of buttons on your remote.
+Many of the remotes with the same number of buttons emit the same codes, but will have
+different labels or colors. Once you edit the ir.json file, upload it to your controller
+using the /edit page.
+
+Each key should be the hex encoded IR code. The "cmd" property should be the HTTP API 
+or JSON API command to execute on button press. If the command contains a relative change (SI=~16),
+it will register as a repeatable command. If the command doesn't contain a "~" but is repeatable, add "rpt" property
+set to true. Other properties are ignored but having labels and positions can assist with editing
+the json file.
+
+Sample:
+{
+  "0xFF629D": {"cmd": "T=2", "rpt": true, "label": "Toggle on/off"},  // HTTP command
+  "0xFF9867": {"cmd": "A=~16", "label": "Inc brightness"},            // HTTP command with incrementing
+  "0xFF38C7": {"cmd": {"bri": 10}, "label": "Dim to 10"},             // JSON command
+  "0xFF22DD": {"cmd": "!presetFallback", "PL": 1, "FX": 16, "FP": 6,  // Custom command
+               "label": "Preset 1, fallback to Saw - Party if not found"},
+}
+*/
+void decodeIRJson(uint32_t code) 
+{
+  char objKey[10];
+  const char* cmd;
+  String cmdStr;
+  DynamicJsonDocument irDoc(JSON_BUFFER_SIZE);
+  JsonObject fdo;
+  JsonObject jsonCmdObj;
+
+  sprintf(objKey, "\"0x%X\":", code);
+
+  errorFlag = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  fdo = irDoc.as<JsonObject>();
+  lastValidCode = 0;
+  if (!errorFlag) 
+  {
+    cmd = fdo["cmd"];
+    cmdStr = String(cmd);
+    jsonCmdObj = fdo["cmd"];
+    if (!cmdStr.isEmpty()) 
+    {
+      if (cmdStr.startsWith("!")) {
+        // call limited set of C functions
+        if (cmdStr.startsWith(F("!incBri"))) {
+          lastValidCode = code;
+          incBrightness();
+        } else if (cmdStr.startsWith(F("!decBri"))) {
+          lastValidCode = code;
+          decBrightness();
+        } else if (cmdStr.startsWith(F("!presetF"))) { //!presetFallback
+          uint8_t p1 = fdo["PL"] ? fdo["PL"] : 1;
+          uint8_t p2 = fdo["FX"] ? fdo["FX"] : random8(100);
+          uint8_t p3 = fdo["FP"] ? fdo["FP"] : 0;
+          presetFallback(p1, p2, p3);
+        }
+      } else {
+        // HTTP API command
+        if (cmdStr.indexOf("~") || fdo["rpt"]) 
+        {
+          // repeatable action
+          lastValidCode = code;
+        }
+        if (effectCurrent == 0 && cmdStr.indexOf("FP=") > -1) {
+          // setting palette but it wont show because effect is solid
+          effectCurrent = FX_MODE_GRADIENT;
+        }
+        if (!cmdStr.startsWith("win&")) {
+          cmdStr = "win&" + cmdStr;
+        }
+        handleSet(nullptr, cmdStr, false); 
+      }        
+    } else if (!jsonCmdObj.isNull()) {
+      // command is JSON object
+      //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
+      fileDoc = &irDoc;
+      deserializeState(jsonCmdObj);
+      fileDoc = nullptr;
+    }
+  }
+}
+
 void initIR()
 {
   if (irEnabled > 0)
@@ -530,7 +626,6 @@ void initIR()
     irrecv->enableIRIn();
   }
 }
-
 
 void handleIR()
 {

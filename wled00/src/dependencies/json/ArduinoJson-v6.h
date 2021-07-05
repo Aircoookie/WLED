@@ -7,183 +7,199 @@
 #ifdef __cplusplus
 
 #if __cplusplus >= 201103L
-#define ARDUINOJSON_HAS_LONG_LONG 1
-#define ARDUINOJSON_HAS_NULLPTR 1
-#define ARDUINOJSON_HAS_RVALUE_REFERENCES 1
+#  define ARDUINOJSON_HAS_LONG_LONG 1
+#  define ARDUINOJSON_HAS_RVALUE_REFERENCES 1
 #else
-#define ARDUINOJSON_HAS_LONG_LONG 0
-#define ARDUINOJSON_HAS_NULLPTR 0
-#define ARDUINOJSON_HAS_RVALUE_REFERENCES 0
+#  define ARDUINOJSON_HAS_LONG_LONG 0
+#  define ARDUINOJSON_HAS_RVALUE_REFERENCES 0
+#endif
+#ifndef ARDUINOJSON_HAS_NULLPTR
+#  if __cplusplus >= 201103L
+#    define ARDUINOJSON_HAS_NULLPTR 1
+#  else
+#    define ARDUINOJSON_HAS_NULLPTR 0
+#  endif
 #endif
 #if defined(_MSC_VER) && !ARDUINOJSON_HAS_LONG_LONG
-#define ARDUINOJSON_HAS_INT64 1
+#  define ARDUINOJSON_HAS_INT64 1
 #else
-#define ARDUINOJSON_HAS_INT64 0
+#  define ARDUINOJSON_HAS_INT64 0
 #endif
 #ifndef ARDUINOJSON_EMBEDDED_MODE
-#if defined(ARDUINO)                /* Arduino*/                 \
-    || defined(__IAR_SYSTEMS_ICC__) /* IAR Embedded Workbench */ \
-    || defined(__XC)                /* MPLAB XC compiler */      \
-    || defined(__ARMCC_VERSION)     /* Keil ARM Compiler */      \
-    || defined(__AVR)               /* Atmel AVR8/GNU C Compiler */
-#define ARDUINOJSON_EMBEDDED_MODE 1
-#else
-#define ARDUINOJSON_EMBEDDED_MODE 0
-#endif
+#  if defined(ARDUINO)                /* Arduino*/                 \
+      || defined(__IAR_SYSTEMS_ICC__) /* IAR Embedded Workbench */ \
+      || defined(__XC)                /* MPLAB XC compiler */      \
+      || defined(__ARMCC_VERSION)     /* Keil ARM Compiler */      \
+      || defined(__AVR)               /* Atmel AVR8/GNU C Compiler */
+#    define ARDUINOJSON_EMBEDDED_MODE 1
+#  else
+#    define ARDUINOJSON_EMBEDDED_MODE 0
+#  endif
 #endif
 #if !defined(ARDUINOJSON_ENABLE_STD_STREAM) && defined(__has_include)
-#if __has_include(<istream>) && \
+#  if __has_include(<istream>) && \
     __has_include(<ostream>) && \
     !defined(min) && \
     !defined(max)
-#define ARDUINOJSON_ENABLE_STD_STREAM 1
-#else
-#define ARDUINOJSON_ENABLE_STD_STREAM 0
-#endif
+#    define ARDUINOJSON_ENABLE_STD_STREAM 1
+#  else
+#    define ARDUINOJSON_ENABLE_STD_STREAM 0
+#  endif
 #endif
 #if !defined(ARDUINOJSON_ENABLE_STD_STRING) && defined(__has_include)
-#if __has_include(<string>) && !defined(min) && !defined(max)
-#define ARDUINOJSON_ENABLE_STD_STRING 1
-#else
-#define ARDUINOJSON_ENABLE_STD_STRING 0
+#  if __has_include(<string>) && !defined(min) && !defined(max)
+#    define ARDUINOJSON_ENABLE_STD_STRING 1
+#  else
+#    define ARDUINOJSON_ENABLE_STD_STRING 0
+#  endif
 #endif
+#ifndef ARDUINOJSON_ENABLE_STRING_VIEW
+#  ifdef __has_include
+#    if __has_include(<string_view>) && __cplusplus >= 201703L
+#      define ARDUINOJSON_ENABLE_STRING_VIEW 1
+#    endif
+#  endif
+#endif
+#ifndef ARDUINOJSON_ENABLE_STRING_VIEW
+#  define ARDUINOJSON_ENABLE_STRING_VIEW 0
 #endif
 #if ARDUINOJSON_EMBEDDED_MODE
-#ifndef ARDUINOJSON_USE_DOUBLE
-#define ARDUINOJSON_USE_DOUBLE 0
-#endif
-#ifndef ARDUINOJSON_USE_LONG_LONG
-#define ARDUINOJSON_USE_LONG_LONG 0
-#endif
-#ifndef ARDUINOJSON_ENABLE_STD_STRING
-#define ARDUINOJSON_ENABLE_STD_STRING 0
-#endif
-#ifndef ARDUINOJSON_ENABLE_STD_STREAM
-#define ARDUINOJSON_ENABLE_STD_STREAM 0
-#endif
-#ifndef ARDUINOJSON_DEFAULT_NESTING_LIMIT
-#define ARDUINOJSON_DEFAULT_NESTING_LIMIT 10
-#endif
-#ifndef ARDUINOJSON_SLOT_OFFSET_SIZE
-#if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 2
-#define ARDUINOJSON_SLOT_OFFSET_SIZE 1
-#else
-#define ARDUINOJSON_SLOT_OFFSET_SIZE 2
-#endif
-#endif
+#  ifndef ARDUINOJSON_USE_DOUBLE
+#    define ARDUINOJSON_USE_DOUBLE 0
+#  endif
+#  ifndef ARDUINOJSON_USE_LONG_LONG
+#    define ARDUINOJSON_USE_LONG_LONG 0
+#  endif
+#  ifndef ARDUINOJSON_ENABLE_STD_STRING
+#    define ARDUINOJSON_ENABLE_STD_STRING 0
+#  endif
+#  ifndef ARDUINOJSON_ENABLE_STD_STREAM
+#    define ARDUINOJSON_ENABLE_STD_STREAM 0
+#  endif
+#  ifndef ARDUINOJSON_DEFAULT_NESTING_LIMIT
+#    define ARDUINOJSON_DEFAULT_NESTING_LIMIT 10
+#  endif
+#  ifndef ARDUINOJSON_SLOT_OFFSET_SIZE
+#    if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 2
+#      define ARDUINOJSON_SLOT_OFFSET_SIZE 1
+#    else
+#      define ARDUINOJSON_SLOT_OFFSET_SIZE 2
+#    endif
+#  endif
 #else  // ARDUINOJSON_EMBEDDED_MODE
-#ifndef ARDUINOJSON_USE_DOUBLE
-#define ARDUINOJSON_USE_DOUBLE 1
-#endif
-#ifndef ARDUINOJSON_USE_LONG_LONG
-#if ARDUINOJSON_HAS_LONG_LONG || ARDUINOJSON_HAS_INT64
-#define ARDUINOJSON_USE_LONG_LONG 1
-#else
-#define ARDUINOJSON_USE_LONG_LONG 0
-#endif
-#endif
-#ifndef ARDUINOJSON_ENABLE_STD_STRING
-#define ARDUINOJSON_ENABLE_STD_STRING 1
-#endif
-#ifndef ARDUINOJSON_ENABLE_STD_STREAM
-#define ARDUINOJSON_ENABLE_STD_STREAM 1
-#endif
-#ifndef ARDUINOJSON_DEFAULT_NESTING_LIMIT
-#define ARDUINOJSON_DEFAULT_NESTING_LIMIT 50
-#endif
-#ifndef ARDUINOJSON_SLOT_OFFSET_SIZE
-#define ARDUINOJSON_SLOT_OFFSET_SIZE 4
-#endif
+#  ifndef ARDUINOJSON_USE_DOUBLE
+#    define ARDUINOJSON_USE_DOUBLE 1
+#  endif
+#  ifndef ARDUINOJSON_USE_LONG_LONG
+#    if ARDUINOJSON_HAS_LONG_LONG || ARDUINOJSON_HAS_INT64
+#      define ARDUINOJSON_USE_LONG_LONG 1
+#    else
+#      define ARDUINOJSON_USE_LONG_LONG 0
+#    endif
+#  endif
+#  ifndef ARDUINOJSON_ENABLE_STD_STRING
+#    define ARDUINOJSON_ENABLE_STD_STRING 1
+#  endif
+#  ifndef ARDUINOJSON_ENABLE_STD_STREAM
+#    define ARDUINOJSON_ENABLE_STD_STREAM 1
+#  endif
+#  ifndef ARDUINOJSON_DEFAULT_NESTING_LIMIT
+#    define ARDUINOJSON_DEFAULT_NESTING_LIMIT 50
+#  endif
+#  ifndef ARDUINOJSON_SLOT_OFFSET_SIZE
+#    define ARDUINOJSON_SLOT_OFFSET_SIZE 4
+#  endif
 #endif  // ARDUINOJSON_EMBEDDED_MODE
 #ifdef ARDUINO
 #include <Arduino.h>
-#ifndef ARDUINOJSON_ENABLE_ARDUINO_STRING
-#define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
-#endif
-#ifndef ARDUINOJSON_ENABLE_ARDUINO_STREAM
-#define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
-#endif
-#ifndef ARDUINOJSON_ENABLE_ARDUINO_PRINT
-#define ARDUINOJSON_ENABLE_ARDUINO_PRINT 1
-#endif
+#  ifndef ARDUINOJSON_ENABLE_ARDUINO_STRING
+#    define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
+#  endif
+#  ifndef ARDUINOJSON_ENABLE_ARDUINO_STREAM
+#    define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
+#  endif
+#  ifndef ARDUINOJSON_ENABLE_ARDUINO_PRINT
+#    define ARDUINOJSON_ENABLE_ARDUINO_PRINT 1
+#  endif
 #else  // ARDUINO
-#ifndef ARDUINOJSON_ENABLE_ARDUINO_STRING
-#define ARDUINOJSON_ENABLE_ARDUINO_STRING 0
-#endif
-#ifndef ARDUINOJSON_ENABLE_ARDUINO_STREAM
-#define ARDUINOJSON_ENABLE_ARDUINO_STREAM 0
-#endif
-#ifndef ARDUINOJSON_ENABLE_ARDUINO_PRINT
-#define ARDUINOJSON_ENABLE_ARDUINO_PRINT 0
-#endif
+#  ifndef ARDUINOJSON_ENABLE_ARDUINO_STRING
+#    define ARDUINOJSON_ENABLE_ARDUINO_STRING 0
+#  endif
+#  ifndef ARDUINOJSON_ENABLE_ARDUINO_STREAM
+#    define ARDUINOJSON_ENABLE_ARDUINO_STREAM 0
+#  endif
+#  ifndef ARDUINOJSON_ENABLE_ARDUINO_PRINT
+#    define ARDUINOJSON_ENABLE_ARDUINO_PRINT 0
+#  endif
 #endif  // ARDUINO
 #ifndef ARDUINOJSON_ENABLE_PROGMEM
-#if defined(PROGMEM) && defined(pgm_read_byte) && defined(pgm_read_dword) && \
-    defined(pgm_read_ptr) && defined(pgm_read_float)
-#define ARDUINOJSON_ENABLE_PROGMEM 1
-#else
-#define ARDUINOJSON_ENABLE_PROGMEM 0
-#endif
+#  if defined(PROGMEM) && defined(pgm_read_byte) && defined(pgm_read_dword) && \
+      defined(pgm_read_ptr) && defined(pgm_read_float)
+#    define ARDUINOJSON_ENABLE_PROGMEM 1
+#  else
+#    define ARDUINOJSON_ENABLE_PROGMEM 0
+#  endif
 #endif
 #ifndef ARDUINOJSON_DECODE_UNICODE
-#define ARDUINOJSON_DECODE_UNICODE 1
+#  define ARDUINOJSON_DECODE_UNICODE 1
 #endif
 #ifndef ARDUINOJSON_ENABLE_COMMENTS
-#define ARDUINOJSON_ENABLE_COMMENTS 0
+#  define ARDUINOJSON_ENABLE_COMMENTS 0
 #endif
 #ifndef ARDUINOJSON_ENABLE_NAN
-#define ARDUINOJSON_ENABLE_NAN 0
+#  define ARDUINOJSON_ENABLE_NAN 0
 #endif
 #ifndef ARDUINOJSON_ENABLE_INFINITY
-#define ARDUINOJSON_ENABLE_INFINITY 0
+#  define ARDUINOJSON_ENABLE_INFINITY 0
 #endif
 #ifndef ARDUINOJSON_POSITIVE_EXPONENTIATION_THRESHOLD
-#define ARDUINOJSON_POSITIVE_EXPONENTIATION_THRESHOLD 1e7
+#  define ARDUINOJSON_POSITIVE_EXPONENTIATION_THRESHOLD 1e7
 #endif
 #ifndef ARDUINOJSON_NEGATIVE_EXPONENTIATION_THRESHOLD
-#define ARDUINOJSON_NEGATIVE_EXPONENTIATION_THRESHOLD 1e-5
+#  define ARDUINOJSON_NEGATIVE_EXPONENTIATION_THRESHOLD 1e-5
 #endif
 #ifndef ARDUINOJSON_LITTLE_ENDIAN
-#if defined(_MSC_VER) ||                                                      \
-    (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) || \
-    defined(__LITTLE_ENDIAN__) || defined(__i386) || defined(__x86_64)
-#define ARDUINOJSON_LITTLE_ENDIAN 1
-#else
-#define ARDUINOJSON_LITTLE_ENDIAN 0
-#endif
+#  if defined(_MSC_VER) ||                           \
+      (defined(__BYTE_ORDER__) &&                    \
+       __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) || \
+      defined(__LITTLE_ENDIAN__) || defined(__i386) || defined(__x86_64)
+#    define ARDUINOJSON_LITTLE_ENDIAN 1
+#  else
+#    define ARDUINOJSON_LITTLE_ENDIAN 0
+#  endif
 #endif
 #ifndef ARDUINOJSON_ENABLE_ALIGNMENT
-#if defined(__AVR)
-#define ARDUINOJSON_ENABLE_ALIGNMENT 0
-#else
-#define ARDUINOJSON_ENABLE_ALIGNMENT 1
-#endif
+#  if defined(__AVR)
+#    define ARDUINOJSON_ENABLE_ALIGNMENT 0
+#  else
+#    define ARDUINOJSON_ENABLE_ALIGNMENT 1
+#  endif
 #endif
 #ifndef ARDUINOJSON_TAB
-#define ARDUINOJSON_TAB "  "
+#  define ARDUINOJSON_TAB "  "
 #endif
 #ifndef ARDUINOJSON_ENABLE_STRING_DEDUPLICATION
-#define ARDUINOJSON_ENABLE_STRING_DEDUPLICATION 1
+#  define ARDUINOJSON_ENABLE_STRING_DEDUPLICATION 1
 #endif
 #ifndef ARDUINOJSON_STRING_BUFFER_SIZE
-#define ARDUINOJSON_STRING_BUFFER_SIZE 32
+#  define ARDUINOJSON_STRING_BUFFER_SIZE 32
 #endif
 #ifndef ARDUINOJSON_DEBUG
-#ifdef __PLATFORMIO_BUILD_DEBUG__
-#define ARDUINOJSON_DEBUG 1
-#else
-#define ARDUINOJSON_DEBUG 0
-#endif
+#  ifdef __PLATFORMIO_BUILD_DEBUG__
+#    define ARDUINOJSON_DEBUG 1
+#  else
+#    define ARDUINOJSON_DEBUG 0
+#  endif
 #endif
 #if ARDUINOJSON_HAS_NULLPTR && defined(nullptr)
-#error nullptr is defined as a macro. Remove the faulty #define or #undef nullptr
+#  error nullptr is defined as a macro. Remove the faulty #define or #undef nullptr
 #endif
 #if !ARDUINOJSON_DEBUG
-#ifdef __clang__
-#pragma clang system_header
-#elif defined __GNUC__
-#pragma GCC system_header
-#endif
+#  ifdef __clang__
+#    pragma clang system_header
+#  elif defined __GNUC__
+#    pragma GCC system_header
+#  endif
 #endif
 #define ARDUINOJSON_EXPAND6(a, b, c, d, e, f) a, b, c, d, e, f
 #define ARDUINOJSON_EXPAND9(a, b, c, d, e, f, g, h, i) a, b, c, d, e, f, g, h, i
@@ -212,29 +228,29 @@
 #define ARDUINOJSON_HEX_DIGIT_1111() F
 #define ARDUINOJSON_HEX_DIGIT_(A, B, C, D) ARDUINOJSON_HEX_DIGIT_##A##B##C##D()
 #define ARDUINOJSON_HEX_DIGIT(A, B, C, D) ARDUINOJSON_HEX_DIGIT_(A, B, C, D)
-#define ARDUINOJSON_VERSION "6.18.0"
+#define ARDUINOJSON_VERSION "6.18.1"
 #define ARDUINOJSON_VERSION_MAJOR 6
 #define ARDUINOJSON_VERSION_MINOR 18
-#define ARDUINOJSON_VERSION_REVISION 0
+#define ARDUINOJSON_VERSION_REVISION 1
 #ifndef ARDUINOJSON_NAMESPACE
-#define ARDUINOJSON_NAMESPACE                                                  \
-  ARDUINOJSON_CONCAT4(                                                         \
-      ARDUINOJSON_CONCAT4(ArduinoJson, ARDUINOJSON_VERSION_MAJOR,              \
-                          ARDUINOJSON_VERSION_MINOR,                           \
-                          ARDUINOJSON_VERSION_REVISION),                       \
-      _,                                                                       \
-      ARDUINOJSON_HEX_DIGIT(ARDUINOJSON_ENABLE_PROGMEM,                        \
-                            ARDUINOJSON_USE_LONG_LONG, ARDUINOJSON_USE_DOUBLE, \
-                            ARDUINOJSON_ENABLE_STRING_DEDUPLICATION),          \
-      ARDUINOJSON_HEX_DIGIT(                                                   \
-          ARDUINOJSON_ENABLE_NAN, ARDUINOJSON_ENABLE_INFINITY,                 \
-          ARDUINOJSON_ENABLE_COMMENTS, ARDUINOJSON_DECODE_UNICODE))
+#  define ARDUINOJSON_NAMESPACE                                               \
+    ARDUINOJSON_CONCAT4(                                                      \
+        ARDUINOJSON_CONCAT4(ArduinoJson, ARDUINOJSON_VERSION_MAJOR,           \
+                            ARDUINOJSON_VERSION_MINOR,                        \
+                            ARDUINOJSON_VERSION_REVISION),                    \
+        _,                                                                    \
+        ARDUINOJSON_HEX_DIGIT(                                                \
+            ARDUINOJSON_ENABLE_PROGMEM, ARDUINOJSON_USE_LONG_LONG,            \
+            ARDUINOJSON_USE_DOUBLE, ARDUINOJSON_ENABLE_STRING_DEDUPLICATION), \
+        ARDUINOJSON_HEX_DIGIT(                                                \
+            ARDUINOJSON_ENABLE_NAN, ARDUINOJSON_ENABLE_INFINITY,              \
+            ARDUINOJSON_ENABLE_COMMENTS, ARDUINOJSON_DECODE_UNICODE))
 #endif
 #if ARDUINOJSON_DEBUG
 #include <assert.h>
-#define ARDUINOJSON_ASSERT(X) assert(X)
+#  define ARDUINOJSON_ASSERT(X) assert(X)
 #else
-#define ARDUINOJSON_ASSERT(X) ((void)0)
+#  define ARDUINOJSON_ASSERT(X) ((void)0)
 #endif
 #include <stddef.h>
 namespace ARDUINOJSON_NAMESPACE {
@@ -345,22 +361,27 @@ struct Max<X, Y, false> {
   static const size_t value = Y;
 };
 }  // namespace ARDUINOJSON_NAMESPACE
+#include <string.h>
 #include <stdint.h>
 namespace ARDUINOJSON_NAMESPACE {
-template <int Bits>
-struct int_t;
-template <>
-struct int_t<8> {
-  typedef int8_t type;
-};
-template <>
-struct int_t<16> {
-  typedef int16_t type;
-};
-template <>
-struct int_t<32> {
-  typedef int32_t type;
-};
+inline int safe_strcmp(const char* a, const char* b) {
+  if (a == b)
+    return 0;
+  if (!a)
+    return -1;
+  if (!b)
+    return 1;
+  return strcmp(a, b);
+}
+inline int safe_strncmp(const char* a, const char* b, size_t n) {
+  if (a == b)
+    return 0;
+  if (!a)
+    return -1;
+  if (!b)
+    return 1;
+  return strncmp(a, b, n);
+}
 template <bool Condition, class TrueType, class FalseType>
 struct conditional {
   typedef TrueType type;
@@ -418,8 +439,8 @@ template <typename T>
 struct is_const<const T> : true_type {};
 }  // namespace ARDUINOJSON_NAMESPACE
 #ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4244)
+#  pragma warning(push)
+#  pragma warning(disable : 4244)
 #endif
 #ifdef __ICCARM__
 #pragma diag_suppress=Pa093
@@ -437,41 +458,58 @@ struct is_convertible {
 };
 }  // namespace ARDUINOJSON_NAMESPACE
 #ifdef _MSC_VER
-#pragma warning(pop)
+#  pragma warning(pop)
 #endif
 #ifdef __ICCARM__
 #pragma diag_default=Pa093
 #endif
 namespace ARDUINOJSON_NAMESPACE {
-template <typename>
-struct is_floating_point : false_type {};
-template <>
-struct is_floating_point<float> : true_type {};
-template <>
-struct is_floating_point<double> : true_type {};
 template <typename T, typename U>
 struct is_same : false_type {};
 template <typename T>
 struct is_same<T, T> : true_type {};
 template <typename T>
-struct is_integral {
-  static const bool value =
-      is_same<T, signed char>::value || is_same<T, unsigned char>::value ||
-      is_same<T, signed short>::value || is_same<T, unsigned short>::value ||
-      is_same<T, signed int>::value || is_same<T, unsigned int>::value ||
-      is_same<T, signed long>::value || is_same<T, unsigned long>::value ||
-#if ARDUINOJSON_HAS_LONG_LONG
-      is_same<T, signed long long>::value ||
-      is_same<T, unsigned long long>::value ||
-#endif
-#if ARDUINOJSON_HAS_INT64
-      is_same<T, signed __int64>::value ||
-      is_same<T, unsigned __int64>::value ||
-#endif
-      is_same<T, char>::value || is_same<T, bool>::value;
+struct remove_cv {
+  typedef T type;
 };
 template <typename T>
-struct is_integral<const T> : is_integral<T> {};
+struct remove_cv<const T> {
+  typedef T type;
+};
+template <typename T>
+struct remove_cv<volatile T> {
+  typedef T type;
+};
+template <typename T>
+struct remove_cv<const volatile T> {
+  typedef T type;
+};
+template <class T>
+struct is_floating_point
+    : integral_constant<
+          bool,  //
+          is_same<float, typename remove_cv<T>::type>::value ||
+              is_same<double, typename remove_cv<T>::type>::value> {};
+template <typename T>
+struct is_integral : integral_constant<bool,
+    is_same<typename remove_cv<T>::type, signed char>::value ||
+    is_same<typename remove_cv<T>::type, unsigned char>::value ||
+    is_same<typename remove_cv<T>::type, signed short>::value ||
+    is_same<typename remove_cv<T>::type, unsigned short>::value ||
+    is_same<typename remove_cv<T>::type, signed int>::value ||
+    is_same<typename remove_cv<T>::type, unsigned int>::value ||
+    is_same<typename remove_cv<T>::type, signed long>::value ||
+    is_same<typename remove_cv<T>::type, unsigned long>::value ||
+#if ARDUINOJSON_HAS_LONG_LONG
+    is_same<typename remove_cv<T>::type, signed long long>::value ||
+    is_same<typename remove_cv<T>::type, unsigned long long>::value ||
+#endif
+#if ARDUINOJSON_HAS_INT64
+    is_same<typename remove_cv<T>::type, signed __int64>::value ||
+    is_same<typename remove_cv<T>::type, unsigned __int64>::value ||
+#endif
+    is_same<typename remove_cv<T>::type, char>::value ||
+    is_same<typename remove_cv<T>::type, bool>::value> {};
 template <typename T>
 struct is_enum {
   static const bool value = is_convertible<T, int>::value &&
@@ -482,50 +520,34 @@ template <typename T>
 struct is_pointer : false_type {};
 template <typename T>
 struct is_pointer<T*> : true_type {};
-template <typename>
-struct is_signed : false_type {};
-template <>
-struct is_signed<char> : true_type {};
-template <>
-struct is_signed<signed char> : true_type {};
-template <>
-struct is_signed<signed short> : true_type {};
-template <>
-struct is_signed<signed int> : true_type {};
-template <>
-struct is_signed<signed long> : true_type {};
-template <>
-struct is_signed<float> : true_type {};
-template <>
-struct is_signed<double> : true_type {};
+template <typename T>
+struct is_signed : integral_constant<bool, 
+    is_same<typename remove_cv<T>::type, char>::value ||
+    is_same<typename remove_cv<T>::type, signed char>::value ||
+    is_same<typename remove_cv<T>::type, signed short>::value ||
+    is_same<typename remove_cv<T>::type, signed int>::value ||
+    is_same<typename remove_cv<T>::type, signed long>::value ||
 #if ARDUINOJSON_HAS_LONG_LONG
-template <>
-struct is_signed<signed long long> : true_type {};
+    is_same<typename remove_cv<T>::type, signed long long>::value ||
 #endif
 #if ARDUINOJSON_HAS_INT64
-template <>
-struct is_signed<signed __int64> : true_type {};
+    is_same<typename remove_cv<T>::type, signed __int64>::value ||
 #endif
-template <typename>
-struct is_unsigned : false_type {};
-template <>
-struct is_unsigned<bool> : true_type {};
-template <>
-struct is_unsigned<unsigned char> : true_type {};
-template <>
-struct is_unsigned<unsigned short> : true_type {};
-template <>
-struct is_unsigned<unsigned int> : true_type {};
-template <>
-struct is_unsigned<unsigned long> : true_type {};
+    is_same<typename remove_cv<T>::type, float>::value ||
+    is_same<typename remove_cv<T>::type, double>::value> {};
+template <typename T>
+struct is_unsigned : integral_constant<bool,
+    is_same<typename remove_cv<T>::type, unsigned char>::value ||
+    is_same<typename remove_cv<T>::type, unsigned short>::value ||
+    is_same<typename remove_cv<T>::type, unsigned int>::value ||
+    is_same<typename remove_cv<T>::type, unsigned long>::value ||
 #if ARDUINOJSON_HAS_INT64
-template <>
-struct is_unsigned<unsigned __int64> : true_type {};
+    is_same<typename remove_cv<T>::type, unsigned __int64>::value ||
 #endif
 #if ARDUINOJSON_HAS_LONG_LONG
-template <>
-struct is_unsigned<unsigned long long> : true_type {};
+    is_same<typename remove_cv<T>::type, unsigned long long>::value ||
 #endif
+    is_same<typename remove_cv<T>::type, bool>::value> {};
 template <typename T>
 struct type_identity {
   typedef T type;
@@ -578,10 +600,365 @@ template <typename T>
 struct remove_reference<T&> {
   typedef T type;
 };
+template <typename>
+struct IsString : false_type {};
+template <typename T>
+struct IsString<const T> : IsString<T> {};
+template <typename T>
+struct IsString<T&> : IsString<T> {};
+namespace storage_policies {
+struct store_by_address {};
+struct store_by_copy {};
+struct decide_at_runtime {};
+}  // namespace storage_policies
+class ConstRamStringAdapter {
+ public:
+  ConstRamStringAdapter(const char* str = 0) : _str(str) {}
+  int compare(const char* other) const {
+    return safe_strcmp(_str, other);
+  }
+  bool equals(const char* expected) const {
+    return compare(expected) == 0;
+  }
+  bool isNull() const {
+    return !_str;
+  }
+  size_t size() const {
+    if (!_str)
+      return 0;
+    return strlen(_str);
+  }
+  const char* data() const {
+    return _str;
+  }
+  typedef storage_policies::store_by_address storage_policy;
+ protected:
+  const char* _str;
+};
+template <>
+struct IsString<const char*> : true_type {};
+template <int N>
+struct IsString<const char[N]> : true_type {};
+inline ConstRamStringAdapter adaptString(const char* str) {
+  return ConstRamStringAdapter(str);
+}
+class RamStringAdapter : public ConstRamStringAdapter {
+ public:
+  RamStringAdapter(const char* str) : ConstRamStringAdapter(str) {}
+  void copyTo(char* p, size_t n) const {
+    memcpy(p, _str, n);
+  }
+  typedef ARDUINOJSON_NAMESPACE::storage_policies::store_by_copy storage_policy;
+};
+template <typename TChar>
+inline RamStringAdapter adaptString(const TChar* str) {
+  return RamStringAdapter(reinterpret_cast<const char*>(str));
+}
+inline RamStringAdapter adaptString(char* str) {
+  return RamStringAdapter(str);
+}
+template <typename TChar>
+struct IsString<TChar*> {
+  static const bool value = sizeof(TChar) == 1;
+};
+template <>
+struct IsString<void*> {
+  static const bool value = false;
+};
+class SizedRamStringAdapter {
+ public:
+  SizedRamStringAdapter(const char* str, size_t n) : _str(str), _size(n) {}
+  int compare(const char* other) const {
+    return safe_strncmp(_str, other, _size);
+  }
+  bool equals(const char* expected) const {
+    return compare(expected) == 0;
+  }
+  bool isNull() const {
+    return !_str;
+  }
+  void copyTo(char* p, size_t n) const {
+    memcpy(p, _str, n);
+  }
+  size_t size() const {
+    return _size;
+  }
+  typedef storage_policies::store_by_copy storage_policy;
+ private:
+  const char* _str;
+  size_t _size;
+};
+template <typename TChar>
+inline SizedRamStringAdapter adaptString(const TChar* str, size_t size) {
+  return SizedRamStringAdapter(reinterpret_cast<const char*>(str), size);
+}
+}  // namespace ARDUINOJSON_NAMESPACE
+#if ARDUINOJSON_ENABLE_STD_STRING
+#include <string>
+namespace ARDUINOJSON_NAMESPACE {
+template <typename TString>
+class StdStringAdapter {
+ public:
+  StdStringAdapter(const TString& str) : _str(&str) {}
+  void copyTo(char* p, size_t n) const {
+    memcpy(p, _str->c_str(), n);
+  }
+  bool isNull() const {
+    return false;
+  }
+  int compare(const char* other) const {
+    if (!other)
+      return 1;
+    return _str->compare(other);
+  }
+  bool equals(const char* expected) const {
+    if (!expected)
+      return false;
+    return *_str == expected;
+  }
+  size_t size() const {
+    return _str->size();
+  }
+  typedef storage_policies::store_by_copy storage_policy;
+ private:
+  const TString* _str;
+};
+template <typename TCharTraits, typename TAllocator>
+struct IsString<std::basic_string<char, TCharTraits, TAllocator> > : true_type {
+};
+template <typename TCharTraits, typename TAllocator>
+inline StdStringAdapter<std::basic_string<char, TCharTraits, TAllocator> >
+adaptString(const std::basic_string<char, TCharTraits, TAllocator>& str) {
+  return StdStringAdapter<std::basic_string<char, TCharTraits, TAllocator> >(
+      str);
+}
+}  // namespace ARDUINOJSON_NAMESPACE
+#endif
+#if ARDUINOJSON_ENABLE_STRING_VIEW
+#include <string_view>
+namespace ARDUINOJSON_NAMESPACE {
+class StringViewAdapter {
+ public:
+  StringViewAdapter(std::string_view str) : _str(str) {}
+  void copyTo(char* p, size_t n) const {
+    memcpy(p, _str.data(), n);
+  }
+  bool isNull() const {
+    return false;
+  }
+  int compare(const char* other) const {
+    if (!other)
+      return 1;
+    return _str.compare(other);
+  }
+  bool equals(const char* expected) const {
+    if (!expected)
+      return false;
+    return _str == expected;
+  }
+  size_t size() const {
+    return _str.size();
+  }
+  typedef storage_policies::store_by_copy storage_policy;
+ private:
+  std::string_view _str;
+};
+template <>
+struct IsString<std::string_view> : true_type {};
+inline StringViewAdapter adaptString(const std::string_view& str) {
+  return StringViewAdapter(str);
+}
+}  // namespace ARDUINOJSON_NAMESPACE
+#endif
+#if ARDUINOJSON_ENABLE_ARDUINO_STRING
+namespace ARDUINOJSON_NAMESPACE {
+class ArduinoStringAdapter {
+ public:
+  ArduinoStringAdapter(const ::String& str) : _str(&str) {}
+  void copyTo(char* p, size_t n) const {
+    memcpy(p, _str->c_str(), n);
+  }
+  bool isNull() const {
+    return !_str->c_str();
+  }
+  int compare(const char* other) const {
+    const char* me = _str->c_str();
+    return safe_strcmp(me, other);
+  }
+  bool equals(const char* expected) const {
+    return compare(expected) == 0;
+  }
+  size_t size() const {
+    return _str->length();
+  }
+  typedef storage_policies::store_by_copy storage_policy;
+ private:
+  const ::String* _str;
+};
+template <>
+struct IsString< ::String> : true_type {};
+template <>
+struct IsString< ::StringSumHelper> : true_type {};
+inline ArduinoStringAdapter adaptString(const ::String& str) {
+  return ArduinoStringAdapter(str);
+}
+}  // namespace ARDUINOJSON_NAMESPACE
+#endif
+#if ARDUINOJSON_ENABLE_PROGMEM
+namespace ARDUINOJSON_NAMESPACE {
+struct pgm_p {
+  pgm_p(const char* p) : address(p) {}
+  const char* address;
+};
+}  // namespace ARDUINOJSON_NAMESPACE
+#ifndef strlen_P
+inline size_t strlen_P(ARDUINOJSON_NAMESPACE::pgm_p s) {
+  const char* p = s.address;
+  ARDUINOJSON_ASSERT(p != NULL);
+  while (pgm_read_byte(p)) p++;
+  return size_t(p - s.address);
+}
+#endif
+#ifndef strncmp_P
+inline int strncmp_P(const char* a, ARDUINOJSON_NAMESPACE::pgm_p b, size_t n) {
+  const char* s1 = a;
+  const char* s2 = b.address;
+  ARDUINOJSON_ASSERT(s1 != NULL);
+  ARDUINOJSON_ASSERT(s2 != NULL);
+  while (n-- > 0) {
+    char c1 = *s1++;
+    char c2 = static_cast<char>(pgm_read_byte(s2++));
+    if (c1 < c2)
+      return -1;
+    if (c1 > c2)
+      return 1;
+    if (c1 == 0 /* and c2 as well */)
+      return 0;
+  }
+  return 0;
+}
+#endif
+#ifndef strcmp_P
+inline int strcmp_P(const char* a, ARDUINOJSON_NAMESPACE::pgm_p b) {
+  const char* s1 = a;
+  const char* s2 = b.address;
+  ARDUINOJSON_ASSERT(s1 != NULL);
+  ARDUINOJSON_ASSERT(s2 != NULL);
+  for (;;) {
+    char c1 = *s1++;
+    char c2 = static_cast<char>(pgm_read_byte(s2++));
+    if (c1 < c2)
+      return -1;
+    if (c1 > c2)
+      return 1;
+    if (c1 == 0 /* and c2 as well */)
+      return 0;
+  }
+}
+#endif
+#ifndef memcpy_P
+inline void* memcpy_P(void* dst, ARDUINOJSON_NAMESPACE::pgm_p src, size_t n) {
+  uint8_t* d = reinterpret_cast<uint8_t*>(dst);
+  const char* s = src.address;
+  ARDUINOJSON_ASSERT(d != NULL);
+  ARDUINOJSON_ASSERT(s != NULL);
+  while (n-- > 0) {
+    *d++ = pgm_read_byte(s++);
+  }
+  return dst;
+}
+#endif
+namespace ARDUINOJSON_NAMESPACE {
+class FlashStringAdapter {
+ public:
+  FlashStringAdapter(const __FlashStringHelper* str) : _str(str) {}
+  int compare(const char* other) const {
+    if (!other && !_str)
+      return 0;
+    if (!_str)
+      return -1;
+    if (!other)
+      return 1;
+    return -strcmp_P(other, reinterpret_cast<const char*>(_str));
+  }
+  bool equals(const char* expected) const {
+    return compare(expected) == 0;
+  }
+  bool isNull() const {
+    return !_str;
+  }
+  void copyTo(char* p, size_t n) const {
+    memcpy_P(p, reinterpret_cast<const char*>(_str), n);
+  }
+  size_t size() const {
+    if (!_str)
+      return 0;
+    return strlen_P(reinterpret_cast<const char*>(_str));
+  }
+  typedef storage_policies::store_by_copy storage_policy;
+ private:
+  const __FlashStringHelper* _str;
+};
+inline FlashStringAdapter adaptString(const __FlashStringHelper* str) {
+  return FlashStringAdapter(str);
+}
+template <>
+struct IsString<const __FlashStringHelper*> : true_type {};
+class SizedFlashStringAdapter {
+ public:
+  SizedFlashStringAdapter(const __FlashStringHelper* str, size_t sz)
+      : _str(str), _size(sz) {}
+  int compare(const char* other) const {
+    if (!other && !_str)
+      return 0;
+    if (!_str)
+      return -1;
+    if (!other)
+      return 1;
+    return -strncmp_P(other, reinterpret_cast<const char*>(_str), _size);
+  }
+  bool equals(const char* expected) const {
+    return compare(expected) == 0;
+  }
+  bool isNull() const {
+    return !_str;
+  }
+  void copyTo(char* p, size_t n) const {
+    memcpy_P(p, reinterpret_cast<const char*>(_str), n);
+  }
+  size_t size() const {
+    return _size;
+  }
+  typedef storage_policies::store_by_copy storage_policy;
+ private:
+  const __FlashStringHelper* _str;
+  size_t _size;
+};
+inline SizedFlashStringAdapter adaptString(const __FlashStringHelper* str,
+                                           size_t sz) {
+  return SizedFlashStringAdapter(str, sz);
+}
+}  // namespace ARDUINOJSON_NAMESPACE
+#endif
+namespace ARDUINOJSON_NAMESPACE {
+template <int Bits>
+struct int_t;
+template <>
+struct int_t<8> {
+  typedef int8_t type;
+};
+template <>
+struct int_t<16> {
+  typedef int16_t type;
+};
+template <>
+struct int_t<32> {
+  typedef int32_t type;
+};
 }  // namespace ARDUINOJSON_NAMESPACE
 #ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4310)
+#  pragma warning(push)
+#  pragma warning(disable : 4310)
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 template <typename T, typename Enable = void>
@@ -607,14 +984,9 @@ struct numeric_limits<
 };
 }  // namespace ARDUINOJSON_NAMESPACE
 #ifdef _MSC_VER
-#pragma warning(pop)
+#  pragma warning(pop)
 #endif
 namespace ARDUINOJSON_NAMESPACE {
-namespace storage_policies {
-struct store_by_address {};
-struct store_by_copy {};
-struct decide_at_runtime {};
-}  // namespace storage_policies
 #if ARDUINOJSON_USE_DOUBLE
 typedef double Float;
 #else
@@ -629,13 +1001,13 @@ typedef unsigned long UInt;
 #endif
 }  // namespace ARDUINOJSON_NAMESPACE
 #if ARDUINOJSON_HAS_LONG_LONG && !ARDUINOJSON_USE_LONG_LONG
-#define ARDUINOJSON_ASSERT_INTEGER_TYPE_IS_SUPPORTED(T)                  \
-  static_assert(sizeof(T) <= sizeof(ARDUINOJSON_NAMESPACE::Integer),     \
-                "To use 64-bit integers with ArduinoJson, you must set " \
-                "ARDUINOJSON_USE_LONG_LONG to 1. See "                   \
-                "https://arduinojson.org/v6/api/config/use_long_long/");
+#  define ARDUINOJSON_ASSERT_INTEGER_TYPE_IS_SUPPORTED(T)                  \
+    static_assert(sizeof(T) <= sizeof(ARDUINOJSON_NAMESPACE::Integer),     \
+                  "To use 64-bit integers with ArduinoJson, you must set " \
+                  "ARDUINOJSON_USE_LONG_LONG to 1. See "                   \
+                  "https://arduinojson.org/v6/api/config/use_long_long/");
 #else
-#define ARDUINOJSON_ASSERT_INTEGER_TYPE_IS_SUPPORTED(T)
+#  define ARDUINOJSON_ASSERT_INTEGER_TYPE_IS_SUPPORTED(T)
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 enum {
@@ -749,7 +1121,6 @@ class VariantSlot {
   }
 };
 }  // namespace ARDUINOJSON_NAMESPACE
-#include <string.h>
 #define JSON_STRING_SIZE(SIZE) (SIZE + 1)
 namespace ARDUINOJSON_NAMESPACE {
 class MemoryPool {
@@ -765,7 +1136,7 @@ class MemoryPool {
     ARDUINOJSON_ASSERT(isAligned(_end));
   }
   void* buffer() {
-    return _begin;
+    return _begin;  // NOLINT(clang-analyzer-unix.Malloc)
   }
   size_t capacity() const {
     return size_t(_end - _begin);
@@ -784,7 +1155,7 @@ class MemoryPool {
     if (str.isNull())
       return 0;
 #if ARDUINOJSON_ENABLE_STRING_DEDUPLICATION
-    const char* existingCopy = findString(str.begin());
+    const char* existingCopy = findString(str);
     if (existingCopy)
       return existingCopy;
 #endif
@@ -802,7 +1173,7 @@ class MemoryPool {
   }
   const char* saveStringFromFreeZone(size_t len) {
 #if ARDUINOJSON_ENABLE_STRING_DEDUPLICATION
-    const char* dup = findString(_left);
+    const char* dup = findString(adaptString(_left));
     if (dup)
       return dup;
 #endif
@@ -853,14 +1224,11 @@ class MemoryPool {
     ARDUINOJSON_ASSERT(isAligned(_right));
   }
 #if ARDUINOJSON_ENABLE_STRING_DEDUPLICATION
-  template <typename TIterator>
-  const char* findString(TIterator str) {
+  template <typename TAdaptedString>
+  const char* findString(const TAdaptedString& str) {
     for (char* next = _begin; next < _left; ++next) {
-      char* begin = next;
-      for (TIterator it = str; *it == *next; ++it) {
-        if (*next++ == 0)
-          return begin;
-      }
+      if (str.equals(next))
+        return next;
       while (*next) ++next;
     }
     return 0;
@@ -891,368 +1259,6 @@ class MemoryPool {
   char *_begin, *_left, *_right, *_end;
   bool _overflowed;
 };
-inline int safe_strcmp(const char* a, const char* b) {
-  if (a == b)
-    return 0;
-  if (!a)
-    return -1;
-  if (!b)
-    return 1;
-  return strcmp(a, b);
-}
-inline int safe_strncmp(const char* a, const char* b, size_t n) {
-  if (a == b)
-    return 0;
-  if (!a)
-    return -1;
-  if (!b)
-    return 1;
-  return strncmp(a, b, n);
-}
-template <typename>
-struct IsString : false_type {};
-template <typename T>
-struct IsString<const T> : IsString<T> {};
-template <typename T>
-struct IsString<T&> : IsString<T> {};
-class ConstRamStringAdapter {
- public:
-  ConstRamStringAdapter(const char* str = 0) : _str(str) {}
-  int compare(const char* other) const {
-    return safe_strcmp(_str, other);
-  }
-  bool equals(const char* expected) const {
-    return compare(expected) == 0;
-  }
-  bool isNull() const {
-    return !_str;
-  }
-  size_t size() const {
-    if (!_str)
-      return 0;
-    return strlen(_str);
-  }
-  const char* data() const {
-    return _str;
-  }
-  const char* begin() const {
-    return _str;
-  }
-  typedef storage_policies::store_by_address storage_policy;
- protected:
-  const char* _str;
-};
-template <>
-struct IsString<const char*> : true_type {};
-template <int N>
-struct IsString<const char[N]> : true_type {};
-inline ConstRamStringAdapter adaptString(const char* str) {
-  return ConstRamStringAdapter(str);
-}
-class RamStringAdapter : public ConstRamStringAdapter {
- public:
-  RamStringAdapter(const char* str) : ConstRamStringAdapter(str) {}
-  void copyTo(char* p, size_t n) const {
-    memcpy(p, _str, n);
-  }
-  typedef ARDUINOJSON_NAMESPACE::storage_policies::store_by_copy storage_policy;
-};
-template <typename TChar>
-inline RamStringAdapter adaptString(const TChar* str) {
-  return RamStringAdapter(reinterpret_cast<const char*>(str));
-}
-inline RamStringAdapter adaptString(char* str) {
-  return RamStringAdapter(str);
-}
-template <typename TChar>
-struct IsString<TChar*> {
-  static const bool value = sizeof(TChar) == 1;
-};
-template <>
-struct IsString<void*> {
-  static const bool value = false;
-};
-class SizedRamStringAdapter {
- public:
-  SizedRamStringAdapter(const char* str, size_t n) : _str(str), _size(n) {}
-  int compare(const char* other) const {
-    return safe_strncmp(_str, other, _size);
-  }
-  bool equals(const char* expected) const {
-    return compare(expected) == 0;
-  }
-  bool isNull() const {
-    return !_str;
-  }
-  void copyTo(char* p, size_t n) const {
-    memcpy(p, _str, n);
-  }
-  size_t size() const {
-    return _size;
-  }
-  const char* begin() const {
-    return _str;
-  }
-  typedef storage_policies::store_by_copy storage_policy;
- private:
-  const char* _str;
-  size_t _size;
-};
-template <typename TChar>
-inline SizedRamStringAdapter adaptString(const TChar* str, size_t size) {
-  return SizedRamStringAdapter(reinterpret_cast<const char*>(str), size);
-}
-}  // namespace ARDUINOJSON_NAMESPACE
-#if ARDUINOJSON_ENABLE_STD_STRING
-#include <string>
-namespace ARDUINOJSON_NAMESPACE {
-template <typename TString>
-class StdStringAdapter {
- public:
-  StdStringAdapter(const TString& str) : _str(&str) {}
-  void copyTo(char* p, size_t n) const {
-    memcpy(p, _str->c_str(), n);
-  }
-  bool isNull() const {
-    return false;
-  }
-  int compare(const char* other) const {
-    if (!other)
-      return 1;
-    return _str->compare(other);
-  }
-  bool equals(const char* expected) const {
-    if (!expected)
-      return false;
-    return *_str == expected;
-  }
-  size_t size() const {
-    return _str->size();
-  }
-  const char* begin() const {
-    return _str->c_str();
-  }
-  typedef storage_policies::store_by_copy storage_policy;
- private:
-  const TString* _str;
-};
-template <typename TCharTraits, typename TAllocator>
-struct IsString<std::basic_string<char, TCharTraits, TAllocator> > : true_type {
-};
-template <typename TCharTraits, typename TAllocator>
-inline StdStringAdapter<std::basic_string<char, TCharTraits, TAllocator> >
-adaptString(const std::basic_string<char, TCharTraits, TAllocator>& str) {
-  return StdStringAdapter<std::basic_string<char, TCharTraits, TAllocator> >(
-      str);
-}
-}  // namespace ARDUINOJSON_NAMESPACE
-#endif
-#if ARDUINOJSON_ENABLE_ARDUINO_STRING
-namespace ARDUINOJSON_NAMESPACE {
-class ArduinoStringAdapter {
- public:
-  ArduinoStringAdapter(const ::String& str) : _str(&str) {}
-  void copyTo(char* p, size_t n) const {
-    memcpy(p, _str->c_str(), n);
-  }
-  bool isNull() const {
-    return !_str->c_str();
-  }
-  int compare(const char* other) const {
-    const char* me = _str->c_str();
-    return safe_strcmp(me, other);
-  }
-  bool equals(const char* expected) const {
-    return compare(expected) == 0;
-  }
-  size_t size() const {
-    return _str->length();
-  }
-  const char* begin() const {
-    return _str->c_str();
-  }
-  typedef storage_policies::store_by_copy storage_policy;
- private:
-  const ::String* _str;
-};
-template <>
-struct IsString< ::String> : true_type {};
-template <>
-struct IsString< ::StringSumHelper> : true_type {};
-inline ArduinoStringAdapter adaptString(const ::String& str) {
-  return ArduinoStringAdapter(str);
-}
-}  // namespace ARDUINOJSON_NAMESPACE
-#endif
-#if ARDUINOJSON_ENABLE_PROGMEM
-namespace ARDUINOJSON_NAMESPACE {
-struct pgm_p {
-  pgm_p(const char* p) : address(p) {}
-  const char* address;
-};
-}  // namespace ARDUINOJSON_NAMESPACE
-#ifndef strlen_P
-inline size_t strlen_P(ARDUINOJSON_NAMESPACE::pgm_p s) {
-  const char* p = s.address;
-  ARDUINOJSON_ASSERT(p != NULL);
-  while (pgm_read_byte(p)) p++;
-  return size_t(p - s.address);
-}
-#endif
-#ifndef strncmp_P
-inline int strncmp_P(const char* a, ARDUINOJSON_NAMESPACE::pgm_p b, size_t n) {
-  const char* s1 = a;
-  const char* s2 = b.address;
-  ARDUINOJSON_ASSERT(s1 != NULL);
-  ARDUINOJSON_ASSERT(s2 != NULL);
-  while (n-- > 0) {
-    char c1 = *s1++;
-    char c2 = static_cast<char>(pgm_read_byte(s2++));
-    if (c1 < c2)
-      return -1;
-    if (c1 > c2)
-      return 1;
-    if (c1 == 0 /* and c2 as well */)
-      return 0;
-  }
-  return 0;
-}
-#endif
-#ifndef strcmp_P
-inline int strcmp_P(const char* a, ARDUINOJSON_NAMESPACE::pgm_p b) {
-  const char* s1 = a;
-  const char* s2 = b.address;
-  ARDUINOJSON_ASSERT(s1 != NULL);
-  ARDUINOJSON_ASSERT(s2 != NULL);
-  for (;;) {
-    char c1 = *s1++;
-    char c2 = static_cast<char>(pgm_read_byte(s2++));
-    if (c1 < c2)
-      return -1;
-    if (c1 > c2)
-      return 1;
-    if (c1 == 0 /* and c2 as well */)
-      return 0;
-  }
-}
-#endif
-#ifndef memcpy_P
-inline void* memcpy_P(void* dst, ARDUINOJSON_NAMESPACE::pgm_p src, size_t n) {
-  uint8_t* d = reinterpret_cast<uint8_t*>(dst);
-  const char* s = src.address;
-  ARDUINOJSON_ASSERT(d != NULL);
-  ARDUINOJSON_ASSERT(s != NULL);
-  while (n-- > 0) {
-    *d++ = pgm_read_byte(s++);
-  }
-  return dst;
-}
-#endif
-namespace ARDUINOJSON_NAMESPACE {
-class FlashStringIterator {
- public:
-  explicit FlashStringIterator(const __FlashStringHelper* ptr)
-      : _ptr(reinterpret_cast<const char*>(ptr)) {}
-  explicit FlashStringIterator(const char* ptr) : _ptr(ptr) {}
-  FlashStringIterator operator+(ptrdiff_t d) const {
-    return FlashStringIterator(_ptr + d);
-  }
-  ptrdiff_t operator-(FlashStringIterator other) const {
-    return _ptr - other._ptr;
-  }
-  FlashStringIterator operator++(int) {
-    return FlashStringIterator(_ptr++);
-  }
-  FlashStringIterator operator++() {
-    return FlashStringIterator(++_ptr);
-  }
-  bool operator!=(FlashStringIterator other) const {
-    return _ptr != other._ptr;
-  }
-  char operator*() const {
-    return char(pgm_read_byte(_ptr));
-  }
- private:
-  const char* _ptr;
-};
-class FlashStringAdapter {
- public:
-  FlashStringAdapter(const __FlashStringHelper* str) : _str(str) {}
-  int compare(const char* other) const {
-    if (!other && !_str)
-      return 0;
-    if (!_str)
-      return -1;
-    if (!other)
-      return 1;
-    return -strcmp_P(other, reinterpret_cast<const char*>(_str));
-  }
-  bool equals(const char* expected) const {
-    return compare(expected) == 0;
-  }
-  bool isNull() const {
-    return !_str;
-  }
-  void copyTo(char* p, size_t n) const {
-    memcpy_P(p, reinterpret_cast<const char*>(_str), n);
-  }
-  size_t size() const {
-    if (!_str)
-      return 0;
-    return strlen_P(reinterpret_cast<const char*>(_str));
-  }
-  FlashStringIterator begin() const {
-    return FlashStringIterator(_str);
-  }
-  typedef storage_policies::store_by_copy storage_policy;
- private:
-  const __FlashStringHelper* _str;
-};
-inline FlashStringAdapter adaptString(const __FlashStringHelper* str) {
-  return FlashStringAdapter(str);
-}
-template <>
-struct IsString<const __FlashStringHelper*> : true_type {};
-class SizedFlashStringAdapter {
- public:
-  SizedFlashStringAdapter(const __FlashStringHelper* str, size_t sz)
-      : _str(str), _size(sz) {}
-  int compare(const char* other) const {
-    if (!other && !_str)
-      return 0;
-    if (!_str)
-      return -1;
-    if (!other)
-      return 1;
-    return -strncmp_P(other, reinterpret_cast<const char*>(_str), _size);
-  }
-  bool equals(const char* expected) const {
-    return compare(expected) == 0;
-  }
-  bool isNull() const {
-    return !_str;
-  }
-  void copyTo(char* p, size_t n) const {
-    memcpy_P(p, reinterpret_cast<const char*>(_str), n);
-  }
-  size_t size() const {
-    return _size;
-  }
-  FlashStringIterator begin() const {
-    return FlashStringIterator(_str);
-  }
-  typedef storage_policies::store_by_copy storage_policy;
- private:
-  const __FlashStringHelper* _str;
-  size_t _size;
-};
-inline SizedFlashStringAdapter adaptString(const __FlashStringHelper* str,
-                                           size_t sz) {
-  return SizedFlashStringAdapter(str, sz);
-}
-}  // namespace ARDUINOJSON_NAMESPACE
-#endif
-namespace ARDUINOJSON_NAMESPACE {
 template <typename T>
 class SerializedValue {
  public:
@@ -1300,13 +1306,13 @@ inline SerializedValue<TChar*> serialized(TChar* p, size_t n) {
 }
 }  // namespace ARDUINOJSON_NAMESPACE
 #if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wconversion"
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wconversion"
 #elif defined(__GNUC__)
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-#pragma GCC diagnostic push
-#endif
-#pragma GCC diagnostic ignored "-Wconversion"
+#  if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+#    pragma GCC diagnostic push
+#  endif
+#  pragma GCC diagnostic ignored "-Wconversion"
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 template <typename TOut, typename TIn>
@@ -1348,7 +1354,18 @@ canConvertNumber(TIn) {
 }
 template <typename TOut, typename TIn>
 typename enable_if<is_integral<TIn>::value && is_signed<TIn>::value &&
-                       is_integral<TOut>::value && is_unsigned<TOut>::value,
+                       is_integral<TOut>::value && is_unsigned<TOut>::value &&
+                       sizeof(TOut) >= sizeof(TIn),
+                   bool>::type
+canConvertNumber(TIn value) {
+  if (value < 0)
+    return false;
+  return TOut(value) <= numeric_limits<TOut>::highest();
+}
+template <typename TOut, typename TIn>
+typename enable_if<is_integral<TIn>::value && is_signed<TIn>::value &&
+                       is_integral<TOut>::value && is_unsigned<TOut>::value &&
+                       sizeof(TOut) < sizeof(TIn),
                    bool>::type
 canConvertNumber(TIn value) {
   if (value < 0)
@@ -1369,18 +1386,18 @@ TOut convertNumber(TIn value) {
 }
 }  // namespace ARDUINOJSON_NAMESPACE
 #if defined(__clang__)
-#pragma clang diagnostic pop
+#  pragma clang diagnostic pop
 #elif defined(__GNUC__)
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-#pragma GCC diagnostic pop
-#endif
+#  if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+#    pragma GCC diagnostic pop
+#  endif
 #endif
 #if defined(__GNUC__)
-#if __GNUC__ >= 7
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#pragma GCC diagnostic ignored "-Wuninitialized"
-#endif
+#  if __GNUC__ >= 7
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#    pragma GCC diagnostic ignored "-Wuninitialized"
+#  endif
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 class VariantData {
@@ -1388,7 +1405,7 @@ class VariantData {
   uint8_t _flags;
  public:
   void init() {
-    _flags = 0;
+    _flags = VALUE_IS_NULL;
   }
   template <typename TVisitor>
   typename TVisitor::result_type accept(TVisitor &visitor) const {
@@ -1658,9 +1675,9 @@ class VariantData {
 };
 }  // namespace ARDUINOJSON_NAMESPACE
 #if defined(__GNUC__)
-#if __GNUC__ >= 8
-#pragma GCC diagnostic pop
-#endif
+#  if __GNUC__ >= 8
+#    pragma GCC diagnostic pop
+#  endif
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 template <typename TAdaptedString>
@@ -1714,43 +1731,45 @@ template <typename T>
 struct IsVisitable<T &> : IsVisitable<T> {};
 template <typename T, typename Enable = void>
 struct Converter;
+template <typename T1, typename T2>
+class InvalidConversion;  // Error here? See https://arduinojson.org/v6/invalid-conversion/
 }  // namespace ARDUINOJSON_NAMESPACE
 #ifdef _MSC_VER  // Visual Studio
-#define FORCE_INLINE  // __forceinline causes C4714 when returning std::string
-#define NO_INLINE __declspec(noinline)
-#ifndef ARDUINOJSON_DEPRECATED
-#define ARDUINOJSON_DEPRECATED(msg) __declspec(deprecated(msg))
-#endif
+#  define FORCE_INLINE  // __forceinline causes C4714 when returning std::string
+#  define NO_INLINE __declspec(noinline)
+#  ifndef ARDUINOJSON_DEPRECATED
+#    define ARDUINOJSON_DEPRECATED(msg) __declspec(deprecated(msg))
+#  endif
 #elif defined(__GNUC__)  // GCC or Clang
-#define FORCE_INLINE __attribute__((always_inline))
-#define NO_INLINE __attribute__((noinline))
-#ifndef ARDUINOJSON_DEPRECATED
-#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
-#define ARDUINOJSON_DEPRECATED(msg) __attribute__((deprecated(msg)))
-#else
-#define ARDUINOJSON_DEPRECATED(msg) __attribute__((deprecated))
-#endif
-#endif
+#  define FORCE_INLINE __attribute__((always_inline))
+#  define NO_INLINE __attribute__((noinline))
+#  ifndef ARDUINOJSON_DEPRECATED
+#    if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#      define ARDUINOJSON_DEPRECATED(msg) __attribute__((deprecated(msg)))
+#    else
+#      define ARDUINOJSON_DEPRECATED(msg) __attribute__((deprecated))
+#    endif
+#  endif
 #else  // Other compilers
-#define FORCE_INLINE
-#define NO_INLINE
-#ifndef ARDUINOJSON_DEPRECATED
-#define ARDUINOJSON_DEPRECATED(msg)
-#endif
+#  define FORCE_INLINE
+#  define NO_INLINE
+#  ifndef ARDUINOJSON_DEPRECATED
+#    define ARDUINOJSON_DEPRECATED(msg)
+#  endif
 #endif
 #if __cplusplus >= 201103L
-#define NOEXCEPT noexcept
+#  define NOEXCEPT noexcept
 #else
-#define NOEXCEPT throw()
+#  define NOEXCEPT throw()
 #endif
 #if defined(__has_attribute)
-#if __has_attribute(no_sanitize)
-#define ARDUINOJSON_NO_SANITIZE(check) __attribute__((no_sanitize(check)))
+#  if __has_attribute(no_sanitize)
+#    define ARDUINOJSON_NO_SANITIZE(check) __attribute__((no_sanitize(check)))
+#  else
+#    define ARDUINOJSON_NO_SANITIZE(check)
+#  endif
 #else
-#define ARDUINOJSON_NO_SANITIZE(check)
-#endif
-#else
-#define ARDUINOJSON_NO_SANITIZE(check)
+#  define ARDUINOJSON_NO_SANITIZE(check)
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 template <typename TVisitor>
@@ -2168,11 +2187,9 @@ class VariantRef : public VariantRefBase<VariantData>,
   FORCE_INLINE bool set(const T &value) const {
     return Converter<T>::toJson(value, *this);
   }
-  FORCE_INLINE bool ARDUINOJSON_DEPRECATED(
+  bool ARDUINOJSON_DEPRECATED(
       "Support for char is deprecated, use int8_t or uint8_t instead")
-      set(char value) const {
-    return set<signed char>(value);
-  }
+      set(char value) const;
   template <typename T>
   FORCE_INLINE bool set(T *value) const {
     return Converter<T *>::toJson(value, *this);
@@ -2359,6 +2376,8 @@ struct Converter<VariantRef> {
   static VariantRef fromJson(VariantRef src) {
     return src;
   }
+  static InvalidConversion<VariantConstRef, VariantRef> fromJson(
+      VariantConstRef);
   static bool checkJson(VariantRef src) {
     VariantData *data = getData(src);
     return !!data;
@@ -2580,6 +2599,11 @@ class ArrayRef : public ArrayRefBase<CollectionData>,
       return;
     _data->removeElement(index);
   }
+  void clear() const {
+    if (!_data)
+      return;
+    _data->clear();
+  }
  private:
   MemoryPool* _pool;
 };
@@ -2606,6 +2630,7 @@ struct Converter<ArrayRef> {
     MemoryPool* pool = getPool(src);
     return ArrayRef(pool, data != 0 ? data->asArray() : 0);
   }
+  static InvalidConversion<VariantConstRef, ArrayRef> fromJson(VariantConstRef);
   static bool checkJson(VariantConstRef) {
     return false;
   }
@@ -3004,6 +3029,8 @@ struct Converter<ObjectRef> {
     MemoryPool* pool = getPool(src);
     return ObjectRef(pool, data != 0 ? data->asObject() : 0);
   }
+  static InvalidConversion<VariantConstRef, ObjectRef> fromJson(
+      VariantConstRef);
   static bool checkJson(VariantConstRef) {
     return false;
   }
@@ -3031,8 +3058,8 @@ struct VariantTo<VariantRef> {
 };
 }  // namespace ARDUINOJSON_NAMESPACE
 #ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4522)
+#  pragma warning(push)
+#  pragma warning(disable : 4522)
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 template <typename TArray>
@@ -3158,11 +3185,11 @@ class ElementProxy : public VariantOperators<ElementProxy<TArray> >,
 };
 }  // namespace ARDUINOJSON_NAMESPACE
 #ifdef _MSC_VER
-#pragma warning(pop)
+#  pragma warning(pop)
 #endif
 #ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4522)
+#  pragma warning(push)
+#  pragma warning(disable : 4522)
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 template <typename TObject, typename TStringRef>
@@ -3292,7 +3319,7 @@ class MemberProxy : public VariantOperators<MemberProxy<TObject, TStringRef> >,
 };
 }  // namespace ARDUINOJSON_NAMESPACE
 #ifdef _MSC_VER
-#pragma warning(pop)
+#  pragma warning(pop)
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 class JsonDocument : public Visitable {
@@ -3311,7 +3338,7 @@ class JsonDocument : public Visitable {
   }
   void clear() {
     _pool.clear();
-    _data.setNull();
+    _data.init();
   }
   template <typename T>
   bool is() {
@@ -3489,13 +3516,13 @@ class JsonDocument : public Visitable {
   }
  protected:
   JsonDocument() : _pool(0, 0) {
-    _data.setNull();
+    _data.init();
   }
   JsonDocument(MemoryPool pool) : _pool(pool) {
-    _data.setNull();
+    _data.init();
   }
   JsonDocument(char* buf, size_t capa) : _pool(buf, capa) {
-    _data.setNull();
+    _data.init();
   }
   ~JsonDocument() {}
   void replacePool(MemoryPool pool) {
@@ -4491,22 +4518,22 @@ typename enable_if<is_same<T, uint32_t>::value, T>::type pgm_read(
   return pgm_read_dword(p);
 }
 }  // namespace ARDUINOJSON_NAMESPACE
-#ifndef ARDUINOJSON_DEFINE_STATIC_ARRAY
-#define ARDUINOJSON_DEFINE_STATIC_ARRAY(type, name, value) \
-  static type const name[] PROGMEM = value;
-#endif
-#ifndef ARDUINOJSON_READ_STATIC_ARRAY
-#define ARDUINOJSON_READ_STATIC_ARRAY(type, name, index) \
-  pgm_read<type>(name + index)
-#endif
+#  ifndef ARDUINOJSON_DEFINE_STATIC_ARRAY
+#    define ARDUINOJSON_DEFINE_STATIC_ARRAY(type, name, value) \
+      static type const name[] PROGMEM = value;
+#  endif
+#  ifndef ARDUINOJSON_READ_STATIC_ARRAY
+#    define ARDUINOJSON_READ_STATIC_ARRAY(type, name, index) \
+      pgm_read<type>(name + index)
+#  endif
 #else  // i.e. ARDUINOJSON_ENABLE_PROGMEM == 0
-#ifndef ARDUINOJSON_DEFINE_STATIC_ARRAY
-#define ARDUINOJSON_DEFINE_STATIC_ARRAY(type, name, value) \
-  static type const name[] = value;
-#endif
-#ifndef ARDUINOJSON_READ_STATIC_ARRAY
-#define ARDUINOJSON_READ_STATIC_ARRAY(type, name, index) name[index]
-#endif
+#  ifndef ARDUINOJSON_DEFINE_STATIC_ARRAY
+#    define ARDUINOJSON_DEFINE_STATIC_ARRAY(type, name, value) \
+      static type const name[] = value;
+#  endif
+#  ifndef ARDUINOJSON_READ_STATIC_ARRAY
+#    define ARDUINOJSON_READ_STATIC_ARRAY(type, name, index) name[index]
+#  endif
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 template <typename T, size_t = sizeof(T)>
@@ -4898,6 +4925,9 @@ inline VariantConstRef operator|(VariantConstRef preferedValue,
                                  VariantConstRef defaultValue) {
   return preferedValue ? preferedValue : defaultValue;
 }
+inline bool VariantRef::set(char value) const {
+  return set<signed char>(value);
+}
 }  // namespace ARDUINOJSON_NAMESPACE
 #if ARDUINOJSON_ENABLE_STD_STREAM
 #include <ostream>
@@ -5274,8 +5304,7 @@ class StringCopier {
  private:
   MemoryPool* _pool;
   char* _ptr;
-  size_t _size;
-  size_t _capacity;
+  size_t _size, _capacity;
 };
 class StringMover {
  public:
@@ -5408,7 +5437,7 @@ class Latch {
     _loaded = true;
   }
   TReader _reader;
-  char _current;
+  char _current;  // NOLINT(clang-analyzer-optin.cplusplus.UninitializedObject)
   bool _loaded;
 #if ARDUINOJSON_DEBUG
   bool _ended;
@@ -5416,10 +5445,10 @@ class Latch {
 };
 }  // namespace ARDUINOJSON_NAMESPACE
 #if defined(__GNUC__)
-#if __GNUC__ >= 7
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
+#  if __GNUC__ >= 7
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#  endif
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 namespace Utf16 {
@@ -5431,7 +5460,7 @@ inline bool isLowSurrogate(uint16_t codeunit) {
 }
 class Codepoint {
  public:
-  Codepoint() : _highSurrogate(0) {}
+  Codepoint() : _highSurrogate(0), _codepoint(0) {}
   bool append(uint16_t codeunit) {
     if (isHighSurrogate(codeunit)) {
       _highSurrogate = codeunit & 0x3FF;
@@ -5455,9 +5484,9 @@ class Codepoint {
 }  // namespace Utf16
 }  // namespace ARDUINOJSON_NAMESPACE
 #if defined(__GNUC__)
-#if __GNUC__ >= 8
-#pragma GCC diagnostic pop
-#endif
+#  if __GNUC__ >= 8
+#    pragma GCC diagnostic pop
+#  endif
 #endif
 namespace ARDUINOJSON_NAMESPACE {
 namespace Utf8 {
@@ -6220,7 +6249,6 @@ class TextFormatter {
   }
  protected:
   CountingDecorator<TWriter> _writer;
-  size_t _length;
  private:
   TextFormatter &operator=(const TextFormatter &);  // cannot be assigned
 };
@@ -6312,10 +6340,10 @@ class Writer< ::String, void> {
     flush();
   }
   size_t write(uint8_t c) {
-    ARDUINOJSON_ASSERT(_size < bufferCapacity);
-    _buffer[_size++] = static_cast<char>(c);
     if (_size + 1 >= bufferCapacity)
-      flush();
+      if (flush() != 0)
+        return 0;
+    _buffer[_size++] = static_cast<char>(c);
     return 1;
   }
   size_t write(const uint8_t *s, size_t n) {
@@ -6324,13 +6352,14 @@ class Writer< ::String, void> {
     }
     return n;
   }
- private:
-  void flush() {
+  size_t flush() {
     ARDUINOJSON_ASSERT(_size < bufferCapacity);
     _buffer[_size] = 0;
-    *_destination += _buffer;
-    _size = 0;
+    if (_destination->concat(_buffer))
+      _size = 0;
+    return _size;
   }
+ private:
   ::String *_destination;
   char _buffer[bufferCapacity];
   size_t _size;
@@ -6638,7 +6667,6 @@ class MsgPackDeserializer {
     return _foundSomething ? _error : DeserializationError::EmptyInput;
   }
  private:
-  MsgPackDeserializer &operator=(const MsgPackDeserializer &);
   bool invalidInput() {
     _error = DeserializationError::InvalidInput;
     return false;
