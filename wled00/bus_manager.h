@@ -114,13 +114,13 @@ class BusDigital : public Bus {
   BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
     uint8_t type = bc.type;
     if (!IS_DIGITAL(type) || !bc.count) return;
+    if (!pinManager.allocatePin(bc.pins[0])) return;
     _pins[0] = bc.pins[0];
-    if (!pinManager.allocatePin(_pins[0])) return;
     if (IS_2PIN(type)) {
-      _pins[1] = bc.pins[1];
-      if (!pinManager.allocatePin(_pins[1])) {
+      if (!pinManager.allocatePin(bc.pins[1])) {
         cleanup(); return;
       }
+      _pins[1] = bc.pins[1];
     }
     reversed = bc.reversed;
     _skip = bc.skipAmount;    //sacrificial pixels
@@ -197,11 +197,11 @@ class BusDigital : public Bus {
 
   void cleanup() {
     PolyBus::cleanup(_busPtr, _iType);
+    pinManager.deallocatePin(_pins[0]);
+    pinManager.deallocatePin(_pins[1]);
     _iType = I_NONE;
     _valid = false;
     _busPtr = nullptr;
-    pinManager.deallocatePin(_pins[0]);
-    pinManager.deallocatePin(_pins[1]);
   }
 
   ~BusDigital() {
@@ -237,12 +237,11 @@ class BusPwm : public Bus {
     #endif
 
     for (uint8_t i = 0; i < numPins; i++) {
-      _pins[i] = bc.pins[i];
-      if (!pinManager.allocatePin(_pins[i])) {
-        _pins[i] = 255;
+      if (!pinManager.allocatePin(bc.pins[i])) {
         deallocatePins();
         return;
       }
+      _pins[i] = bc.pins[i];
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
       #else
