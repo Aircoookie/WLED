@@ -204,6 +204,9 @@
       s2 += "A is enough)<br>";
 			gId('psu').innerHTML = s;
       gId('psu2').innerHTML = isWS2815 ? "" : s2;
+      // Update Total LED count field to be total of summed LED strips
+      // assuming all other checks pass
+      gId('LC').value = sLC;
     }
     function lastEnd(i) {
       if (i<1) return 0;
