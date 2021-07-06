@@ -32,6 +32,27 @@ bool deserializeConfigSec();
 void serializeConfig();
 void serializeConfigSec();
 
+template<typename DestType>
+bool getJsonValue(const JsonVariant& element, DestType& destination) {
+  if (element.isNull()) {
+    return false;
+  }
+
+  destination = element.as<DestType>();
+  return true;
+}
+
+template<typename DestType, typename DefaultType>
+bool getJsonValue(const JsonVariant& element, DestType& destination, const DefaultType defaultValue) {
+  if(!getJsonValue(element, destination)) {
+    destination = defaultValue;
+    return false;
+  }
+
+  return true;
+}
+
+
 //colors.cpp
 void colorFromUint32(uint32_t in, bool secondary = false);
 void colorFromUint24(uint32_t in, bool secondary = false);
@@ -190,7 +211,7 @@ class Usermod {
     virtual void addToJsonInfo(JsonObject& obj) {}
     virtual void readFromJsonState(JsonObject& obj) {}
     virtual void addToConfig(JsonObject& obj) {}
-    virtual bool readFromConfig(JsonObject& obj) { return true; } //Heads up! readFromConfig() now needs to return a bool
+    virtual bool readFromConfig(JsonObject& obj) { return true; } // Note as of 2021-06 readFromConfig() now needs to return a bool, see usermod_v2_example.h
     virtual void onMqttConnect(bool sessionPresent) {}
     virtual bool onMqttMessage(char* topic, char* payload) { return false; }
     virtual uint16_t getId() {return USERMOD_ID_UNSPECIFIED;}
