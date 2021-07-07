@@ -2,6 +2,8 @@
 
 This usermod-v2 adds support for the awesome RGB Rotary Encoder Board by Adam Zeloof / "Isotope Engineering" to control the overall brightness of your WLED instance: https://github.com/isotope-engineering/RGB-Encoder-Board. A great DIY rotary encoder with 20 tiny SK6805 / "NeoPixel Nano" LEDs.
 
+https://user-images.githubusercontent.com/3090131/124680599-0180ab80-dec7-11eb-9065-a6d08ebe0287.mp4
+
 ## Credits
 The actual / original code that does the different LED modes is from Adam Zeloof. So I don't take credit for these. But I ported it to WLED, which involved replacing the LED library he used (because, guess what, WLED already has one; so no need to add another one, but use whatever WLED uses), plus the rotary encoder library, because that one was not compatible with ESP, only Arduino.
 So it was quite more work than I hoped, but I got there eventually :)
