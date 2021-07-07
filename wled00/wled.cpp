@@ -442,38 +442,39 @@ void WLED::initConnection()
     bool s = true;
     byte pinsAllocated[4] { 255, 255, 255, 255 };
 
-    if (s && allocatePin((byte)es.eth_address)) {
+
+    if (s && pinManager.allocatePin((byte)es.eth_address)) {
       pinsAllocated[0] = (byte)es.eth_address;
     } else {
       s = false;
     }
-    if (s && allocatePin((byte)es.eth_power)) {
+    if (s && pinManager.allocatePin((byte)es.eth_power)) {
       pinsAllocated[1] = (byte)es.eth_power;
     } else {
       s = false;
     }
-    if (s && allocatePin((byte)es.mdc)) {
+    if (s && pinManager.allocatePin((byte)es.eth_mdc)) {
       pinsAllocated[2] = (byte)es.eth_mdc;
     } else {
       s = false;
     }
-    if (s && allocatePin((byte)es.mdio)) {
+    if (s && pinManager.allocatePin((byte)es.eth_mdio)) {
       pinsAllocated[2] = (byte)es.eth_mdio;
     } else {
       s = false;
     }
     switch(es.eth_clk_mode) {
-      ETH_CLOCK_GPIO0_IN:
-        s = allocatePin(0, false);
+      case ETH_CLOCK_GPIO0_IN:
+        s = pinManager.allocatePin(0, false);
         break;
-      ETH_CLOCK_GPIO0_OUT:
-        s = allocatePin(0);
+      case ETH_CLOCK_GPIO0_OUT:
+        s = pinManager.allocatePin(0);
         break;
-      ETH_CLOCK_GPIO16_OUT:
-        s = allocatePin(16);
+      case ETH_CLOCK_GPIO16_OUT:
+        s = pinManager.allocatePin(16);
         break;
-      ETH_CLOCK_GPIO17_OUT:
-        s = allocatePin(16);
+      case ETH_CLOCK_GPIO17_OUT:
+        s = pinManager.allocatePin(16);
         break;
       default:
         s = false;
@@ -492,7 +493,7 @@ void WLED::initConnection()
     } else {
       // de-allocate only those pins allocated before the failure
       for (byte p : pinsAllocated) {
-        deallocatePin(p);
+        pinManager.deallocatePin(p);
       }
     }
   }

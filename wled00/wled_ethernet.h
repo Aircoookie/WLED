@@ -20,8 +20,16 @@ ethernet_settings ethernetBoards[] = {
   // WT32-EHT01
   // Please note, from my testing only these pins work for LED outputs:
   //   IO2, IO4, IO12, IO14, IO15
-  // These pins do not appear to work from my testing:
-  //   IO35, IO36, IO39
+  // Pins IO34 through IO39 are input-only on ESP32, so
+  // the following exposed pins won't work to drive WLEDs
+  //   IO35(*), IO36, IO39
+  // The following pins are also exposed via the headers,
+  // and likely can be used as general purpose IO:
+  //   IO05(*), IO32 (CFG), IO33 (485_EN), IO33 (TXD)
+  //
+  //   (*) silkscreen on board revision v1.2 may be wrong:
+  //       IO5 silkscreen on v1.2 says IO35
+  //       IO35 silkscreen on v1.2 says RXD
   {
     1,                 // eth_address, 
     16,                // eth_power, 
