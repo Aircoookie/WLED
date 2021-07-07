@@ -20,18 +20,18 @@ class RgbRotaryEncoderUsermod : public Usermod
     int8_t ledIo = 3; // GPIO to control the LEDs
     int8_t eaIo = 15; // "ea" from RGB Encoder Board
     int8_t ebIo = 32; // "eb" from RGB Encoder Board
-    uint8_t stepsPerClick = 4; // How many "steps" your rotary encoder does per click. This varies per rotary encoder
+    byte stepsPerClick = 4; // How many "steps" your rotary encoder does per click. This varies per rotary encoder
     /* This could vary per rotary encoder: Usually rotary encoders have 20 "clicks".
       If yours has less/more, adjust this to: 100% = 20 LEDs * incrementPerClick */
-    uint8_t incrementPerClick = 5;
+    byte incrementPerClick = 5;
     byte ledMode = 3;
-    uint8_t ledBrightness = 64;
+    byte ledBrightness = 64;
 
     // This is all needed to calculate the brightness, rotary position, etc.
-    const int minPos = 5; // minPos is not zero, because if we want to turn the LEDs off, we use the built-in button ;)
-    const int maxPos = 100; // maxPos=100, like 100%
-    const int numLeds = 20;
-    int lastKnownPos = 0;
+    const byte minPos = 5; // minPos is not zero, because if we want to turn the LEDs off, we use the built-in button ;)
+    const byte maxPos = 100; // maxPos=100, like 100%
+    const byte numLeds = 20;
+    byte lastKnownPos = 0;
 
     byte currentColors[3];
     byte lastKnownBri = 0;
@@ -59,7 +59,7 @@ class RgbRotaryEncoderUsermod : public Usermod
 
     void initLedBus()
     {
-      uint8_t _pins[5] = {(uint8_t)ledIo, 255, 255, 255, 255};
+      byte _pins[5] = {(byte)ledIo, 255, 255, 255, 255};
       BusConfig busCfg = BusConfig(TYPE_WS2812_RGB, _pins, 0, numLeds, COL_ORDER_GRB, false, 0);
 
       ledBus = new BusDigital(busCfg, WLED_MAX_BUSSES - 1);
@@ -140,7 +140,7 @@ class RgbRotaryEncoderUsermod : public Usermod
     }
 
   public:
-    static int currentPos;
+    static byte currentPos;
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -259,9 +259,9 @@ class RgbRotaryEncoderUsermod : public Usermod
       int8_t oldEaIo =  eaIo;
       int8_t oldEbIo =  ebIo;
       byte oldLedMode = ledMode;
-      uint8_t oldStepsPerClick = stepsPerClick;
-      uint8_t oldIncrementPerClick = incrementPerClick;
-      uint8_t oldLedBrightness = ledBrightness;
+      byte oldStepsPerClick = stepsPerClick;
+      byte oldIncrementPerClick = incrementPerClick;
+      byte oldLedBrightness = ledBrightness;
 
       // A 3-argument getJsonValue() assigns the 3rd argument as a default value if the Json value is missing
       getJsonValue(top[FPSTR(_enabled)], enabled);
@@ -324,7 +324,7 @@ class RgbRotaryEncoderUsermod : public Usermod
     //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
 };
 
-int RgbRotaryEncoderUsermod::currentPos = 5;
+byte RgbRotaryEncoderUsermod::currentPos = 5;
 // strings to reduce flash memory usage (used more than twice)
 const char RgbRotaryEncoderUsermod::_name[]              PROGMEM = "RGB-Rotary-Encoder";
 const char RgbRotaryEncoderUsermod::_enabled[]           PROGMEM = "Enabled";
