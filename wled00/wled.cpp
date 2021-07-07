@@ -474,7 +474,7 @@ void WLED::initConnection()
     }
 
     if (s) {
-      ETH.begin(
+      s = ETH.begin(
         (uint8_t) es.eth_address, 
         (int)     es.eth_power, 
         (int)     es.eth_mdc, 
@@ -482,8 +482,10 @@ void WLED::initConnection()
         (eth_phy_type_t)   es.eth_type,
         (eth_clock_mode_t) es.eth_clk_mode
       );
-    } else {
-      DEBUG_PRINTLN(F("Ethernet not enabled - failure allocating pins."));
+    }
+    
+    if (!s) {
+      DEBUG_PRINTLN(F("Ethernet init failed"));
       // de-allocate only those pins allocated before the failure
       for (byte p : pinsAllocated) {
         pinManager.deallocatePin(p);
