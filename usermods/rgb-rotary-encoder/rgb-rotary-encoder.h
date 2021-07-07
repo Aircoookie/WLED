@@ -332,12 +332,12 @@ class RgbRotaryEncoderUsermod : public Usermod
 
 int RgbRotaryEncoderUsermod::currentPos = 5;
 // strings to reduce flash memory usage (used more than twice)
-const char RgbRotaryEncoderUsermod::_name[]              PROGMEM = "RGB Rotary Encoder";
+const char RgbRotaryEncoderUsermod::_name[]              PROGMEM = "RGB-Rotary-Encoder";
 const char RgbRotaryEncoderUsermod::_enabled[]           PROGMEM = "Enabled";
-const char RgbRotaryEncoderUsermod::_ledIo[]             PROGMEM = "LED pin";
-const char RgbRotaryEncoderUsermod::_eaIo[]              PROGMEM = "ea pin";
-const char RgbRotaryEncoderUsermod::_ebIo[]              PROGMEM = "eb pin";
-const char RgbRotaryEncoderUsermod::_ledMode[]           PROGMEM = "LED Mode";
-const char RgbRotaryEncoderUsermod::_ledBrightness[]     PROGMEM = "LED Brightness";
-const char RgbRotaryEncoderUsermod::_stepsPerClick[]     PROGMEM = "Steps per Click";
-const char RgbRotaryEncoderUsermod::_incrementPerClick[] PROGMEM = "Increment per Click";
+const char RgbRotaryEncoderUsermod::_ledIo[]             PROGMEM = "LED-pin";
+const char RgbRotaryEncoderUsermod::_eaIo[]              PROGMEM = "ea-pin";
+const char RgbRotaryEncoderUsermod::_ebIo[]              PROGMEM = "eb-pin";
+const char RgbRotaryEncoderUsermod::_ledMode[]           PROGMEM = "LED-Mode";
+const char RgbRotaryEncoderUsermod::_ledBrightness[]     PROGMEM = "LED-Brightness";
+const char RgbRotaryEncoderUsermod::_stepsPerClick[]     PROGMEM = "Steps-per-Click";
+const char RgbRotaryEncoderUsermod::_incrementPerClick[] PROGMEM = "Increment-per-Click";
