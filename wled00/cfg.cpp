@@ -156,8 +156,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     if (fromFS) {
       // relies upon only being called once with fromFS == true, which is currently true.
       uint8_t s = 0;
-      int8_t pin = btnPin[0]; // initialized to #define value BTNPIN, or zero if not defined(!)
-      if (pinManager.allocatePin(pin,false)) {
+      if (pinManager.allocatePin(btnPin[0],false)) { // initialized to #define value BTNPIN, or zero if not defined(!)
         ++s; // do not clear default button if allocated successfully 
       }
       for (; s<WLED_MAX_BUTTONS; s++) {
