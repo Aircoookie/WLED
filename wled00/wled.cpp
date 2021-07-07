@@ -442,19 +442,13 @@ void WLED::initConnection()
     bool s = true;
     byte pinsAllocated[4] { 255, 255, 255, 255 };
 
-
-    if (s && pinManager.allocatePin((byte)es.eth_address)) {
-      pinsAllocated[0] = (byte)es.eth_address;
-    } else {
-      s = false;
-    }
     if (s && pinManager.allocatePin((byte)es.eth_power)) {
-      pinsAllocated[1] = (byte)es.eth_power;
+      pinsAllocated[0] = (byte)es.eth_power;
     } else {
       s = false;
     }
     if (s && pinManager.allocatePin((byte)es.eth_mdc)) {
-      pinsAllocated[2] = (byte)es.eth_mdc;
+      pinsAllocated[1] = (byte)es.eth_mdc;
     } else {
       s = false;
     }
@@ -466,15 +460,19 @@ void WLED::initConnection()
     switch(es.eth_clk_mode) {
       case ETH_CLOCK_GPIO0_IN:
         s = pinManager.allocatePin(0, false);
+        pinsAllocated[3] = 0;
         break;
       case ETH_CLOCK_GPIO0_OUT:
         s = pinManager.allocatePin(0);
+        pinsAllocated[3] = 0;
         break;
       case ETH_CLOCK_GPIO16_OUT:
         s = pinManager.allocatePin(16);
+        pinsAllocated[3] = 16;
         break;
       case ETH_CLOCK_GPIO17_OUT:
-        s = pinManager.allocatePin(16);
+        s = pinManager.allocatePin(17);
+        pinsAllocated[3] = 17;
         break;
       default:
         s = false;
