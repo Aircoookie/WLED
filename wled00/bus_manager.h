@@ -107,15 +107,13 @@ class BusDigital : public Bus {
   public:
   BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
-    uint8_t pin = bc.pins[0];
-    if (!pinManager.allocatePin(pin)) return;
-    _pins[0] = pin;
+    if (!pinManager.allocatePin(bc.pins[0])) return;
+    _pins[0] = bc.pins[0];
     if (IS_2PIN(bc.type)) {
-      pin = bc.pins[1];
-      if (!pinManager.allocatePin(pin)) {
+      if (!pinManager.allocatePin(bc.pins[1])) {
         cleanup(); return;
       }
-      _pins[1] = pin;
+      _pins[1] = bc.pins[1];
     }
     reversed = bc.reversed;
     _skip = bc.skipAmount;    //sacrificial pixels
