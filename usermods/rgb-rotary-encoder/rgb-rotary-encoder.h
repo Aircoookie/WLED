@@ -116,7 +116,6 @@ class RgbRotaryEncoderUsermod : public Usermod
       if (ebIo != -1) {
         pinManager.deallocatePin(ebIo);
       }
-      ledIo = -1;
 
       delete rotaryEncoder;
       delete ledBus;
@@ -255,6 +254,7 @@ class RgbRotaryEncoderUsermod : public Usermod
         return false;
       }
 
+      bool oldEnabled = enabled;
       int8_t oldLedIo = ledIo;
       int8_t oldEaIo =  eaIo;
       int8_t oldEbIo =  ebIo;
@@ -263,7 +263,6 @@ class RgbRotaryEncoderUsermod : public Usermod
       byte oldIncrementPerClick = incrementPerClick;
       byte oldLedBrightness = ledBrightness;
 
-      // A 3-argument getJsonValue() assigns the 3rd argument as a default value if the Json value is missing
       getJsonValue(top[FPSTR(_enabled)], enabled);
       getJsonValue(top[FPSTR(_ledIo)], ledIo);
       getJsonValue(top[FPSTR(_eaIo)], eaIo);
@@ -274,8 +273,16 @@ class RgbRotaryEncoderUsermod : public Usermod
       ledBrightness = top[FPSTR(_ledBrightness)] > 0 && top[FPSTR(_ledBrightness)] <= 255 ? top[FPSTR(_ledBrightness)] : ledBrightness;
 
       if (!initDone) {
-        // first run: reading from cfg.json
-      } else {
+        // First run: reading from cfg.json
+        // Nothing to do here, will be all done in setup() 
+      }
+      // Mod was disabled, so run setup()
+      else if (enabled && enabled != oldEnabled) {
+        DEBUG_PRINTF("[%s] Usermod has been re-enabled\n", _name);
+        setup();
+      }
+      // Config has been changed, so adopt to changes
+      else {
         if (!enabled) {
           DEBUG_PRINTF("[%s] Usermod has been disabled\n", _name);
           cleanup();
