@@ -18,18 +18,18 @@ ESP32:
 ```
 [env:custom_esp32dev_usermod_rgb_encoder_board]
 extends = env:esp32dev
-build_flags = ${common.build_flags_esp32} -D RGB_ROTARY_ENCODER
-lib_deps = ${env.lib_deps}
+build_flags = ${common.build_flags_esp32} -D WLED_RELEASE_NAME=ESP32 -D RGB_ROTARY_ENCODER
+lib_deps = ${esp32.lib_deps}
     lennarthennigs/ESP Rotary@^1.5.0
 ```
 
 ESP8266 / D1 Mini:
 ```
-[env:custom_d1_mini_usermod_dallas_temperature_C_multi_relay]
+[env:custom_d1_mini_usermod_rgb_encoder_board]
 extends = env:d1_mini
 build_flags = ${common.build_flags_esp8266} -D RGB_ROTARY_ENCODER
-lib_deps = ${env.lib_deps}
-    lennarthennigs/ESP Rotary@^1.5.0    
+lib_deps = ${esp8266.lib_deps}
+    lennarthennigs/ESP Rotary@^1.5.0
 ```
 
 ## How to connect the board to your ESP
