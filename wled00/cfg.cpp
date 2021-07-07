@@ -1,4 +1,5 @@
 #include "wled.h"
+#include "wled_ethernet.h"
 
 /*
  * Serializes and parses the cfg.json and wsec.json settings files, stored in internal FS.
@@ -56,6 +57,24 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc[F("eth")];
   CJSON(ethernetType, ethernet["type"]);
+  // allocate ethernet pins
+  if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
+    if (ethernetBoards[ethernetType].eth_power>=0)    pinManager.allocatePin(ethernetBoards[ethernetType].eth_power);
+    if (ethernetBoards[ethernetType].eth_mdc>=0)      pinManager.allocatePin(ethernetBoards[ethernetType].eth_mdc);
+    if (ethernetBoards[ethernetType].eth_mdio>=0)     pinManager.allocatePin(ethernetBoards[ethernetType].eth_mdio);
+    switch (ethernetBoards[ethernetType].eth_clk_mode) {
+      case ETH_CLOCK_GPIO0_IN:
+      case ETH_CLOCK_GPIO0_OUT:
+        pinManager.allocatePin(0);
+        break;
+      case ETH_CLOCK_GPIO16_OUT:
+        pinManager.allocatePin(16);
+        break;
+      case ETH_CLOCK_GPIO17_OUT:
+        pinManager.allocatePin(17);
+        break;
+    }
+  }
   #endif
 
   /*
@@ -484,6 +503,24 @@ void serializeConfig() {
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc.createNestedObject("eth");
   ethernet["type"] = ethernetType;
+  if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
+    JsonArray pins = ethernet.createNestedArray("pin");
+    if (ethernetBoards[ethernetType].eth_power>=0)    pins.add(ethernetBoards[ethernetType].eth_power);
+    if (ethernetBoards[ethernetType].eth_mdc>=0)      pins.add(ethernetBoards[ethernetType].eth_mdc);
+    if (ethernetBoards[ethernetType].eth_mdio>=0)     pins.add(ethernetBoards[ethernetType].eth_mdio);
+    switch (ethernetBoards[ethernetType].eth_clk_mode) {
+      case ETH_CLOCK_GPIO0_IN:
+      case ETH_CLOCK_GPIO0_OUT:
+        pins.add(0);
+        break;
+      case ETH_CLOCK_GPIO16_OUT:
+        pins.add(16);
+        break;
+      case ETH_CLOCK_GPIO17_OUT:
+        pins.add(17);
+        break;
+    }
+  }
   #endif
 
   JsonObject hw = doc.createNestedObject("hw");

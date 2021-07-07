@@ -324,11 +324,10 @@ void getSettingsJS(byte subPage, char* dest)
       #endif
       #ifdef WLED_USE_ETHERNET
       if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-        ethernet_settings es = ethernetBoards[ethernetType];
-        if (es.eth_power>0) { oappend(","); oappend(itoa(es.eth_power,nS,10)); }
-        if (es.eth_mdc>0)   { oappend(","); oappend(itoa(es.eth_mdc,nS,10)); }
-        if (es.eth_mdio>0)  { oappend(","); oappend(itoa(es.eth_mdio,nS,10)); }
-        switch (es.eth_clk_mode) {
+        if (ethernetBoards[ethernetType].eth_power>=0) { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_power,nS,10)); }
+        if (ethernetBoards[ethernetType].eth_mdc>=0)   { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdc,nS,10)); }
+        if (ethernetBoards[ethernetType].eth_mdio>=0)  { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdio,nS,10)); }
+        switch (ethernetBoards[ethernetType].eth_clk_mode) {
           case ETH_CLOCK_GPIO0_IN:
           case ETH_CLOCK_GPIO0_OUT:
             oappend(SET_F(",0"));
