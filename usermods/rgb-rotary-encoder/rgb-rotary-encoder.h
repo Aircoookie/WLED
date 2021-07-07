@@ -263,12 +263,12 @@ class RgbRotaryEncoderUsermod : public Usermod
       uint8_t oldLedBrightness = ledBrightness;
 
       // A 3-argument getJsonValue() assigns the 3rd argument as a default value if the Json value is missing
-      getJsonValue(top[FPSTR(_enabled)], enabled, enabled);
-      getJsonValue(top[FPSTR(_ledIo)], ledIo, ledIo);
-      getJsonValue(top[FPSTR(_eaIo)], eaIo, eaIo);
-      getJsonValue(top[FPSTR(_ebIo)], ebIo, ebIo);
-      getJsonValue(top[FPSTR(_stepsPerClick)], stepsPerClick, stepsPerClick);
-      getJsonValue(top[FPSTR(_incrementPerClick)], incrementPerClick, incrementPerClick);
+      getJsonValue(top[FPSTR(_enabled)], enabled);
+      getJsonValue(top[FPSTR(_ledIo)], ledIo);
+      getJsonValue(top[FPSTR(_eaIo)], eaIo);
+      getJsonValue(top[FPSTR(_ebIo)], ebIo);
+      getJsonValue(top[FPSTR(_stepsPerClick)], stepsPerClick);
+      getJsonValue(top[FPSTR(_incrementPerClick)], incrementPerClick);
       ledMode = top[FPSTR(_ledMode)] > 0 && top[FPSTR(_ledMode)] < 4 ? top[FPSTR(_ledMode)] : ledMode;
       ledBrightness = top[FPSTR(_ledBrightness)] > 0 && top[FPSTR(_ledBrightness)] <= 255 ? top[FPSTR(_ledBrightness)] : ledBrightness;
 
