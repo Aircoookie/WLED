@@ -116,6 +116,7 @@ class RgbRotaryEncoderUsermod : public Usermod
       if (ebIo != -1) {
         pinManager.deallocatePin(ebIo);
       }
+      ledIo = -1;
 
       delete rotaryEncoder;
       delete ledBus;
@@ -277,14 +278,7 @@ class RgbRotaryEncoderUsermod : public Usermod
       } else {
         if (!enabled) {
           DEBUG_PRINTF("[%s] Usermod has been disabled\n", _name);
-          delete ledBus;
-          ledIo = -1;
-
-          pinManager.deallocatePin(oldEaIo);
-          eaIo = -1;
-          pinManager.deallocatePin(oldEbIo);
-          ebIo = -1;
-          delete rotaryEncoder;
+          cleanup();
         }
         else {
           DEBUG_PRINTF("[%s] Usermod is enabled\n", _name);
