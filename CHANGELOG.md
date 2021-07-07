@@ -2,6 +2,12 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107070
+
+-   More robust initial resource loading in UI
+-   Fixed preset saving over websocket
+-   Alpha ESP32 S2 support (filesystem does not work) (PR #2067)
+
 #### Build 2107041
 
 -   Restored support for "PL=~" mistakenly removed in 2106300

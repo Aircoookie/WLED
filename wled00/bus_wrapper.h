@@ -670,10 +670,11 @@ class PolyBus {
       uint8_t offset = 0; //0 = RMT (num 0-7) 8 = I2S0 9 = I2S1
       #ifndef CONFIG_IDF_TARGET_ESP32S2
       if (num > 9) return I_NONE;
-      #else
-      if (num > 8) return I_NONE;
-      #endif
       if (num > 7) offset = num -7;
+      #else //ESP32 S2 only has 4 RMT channels
+      if (num > 5) return I_NONE;
+      if (num > 4) offset = num -4;
+      #endif
       switch (busType) {
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
