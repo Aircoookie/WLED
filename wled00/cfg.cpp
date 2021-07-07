@@ -153,14 +153,21 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     }
   } else {
     // new install/missing configuration (button 0 has defaults)
-    if (fromFS)
-      for (uint8_t s=1; s<WLED_MAX_BUTTONS; s++) {
+    if (fromFS) {
+      // relies upon only being called once with fromFS == true, which is currently true.
+      uint8_t s = 0;
+      int8_t pin = btnPin[0]; // initialized to #define value BTNPIN, or zero if not defined(!)
+      if (pinManager.allocatePin(pin,false)) {
+        ++s; // do not clear default button if allocated successfully 
+      }
+      for (; s<WLED_MAX_BUTTONS; s++) {
         btnPin[s]           = -1;
         buttonType[s]       = BTN_TYPE_NONE;
         macroButton[s]      = 0;
         macroLongPress[s]   = 0;
         macroDoublePress[s] = 0;
       }
+    }
   }
   CJSON(touchThreshold,btn_obj[F("tt")]);
   CJSON(buttonPublishMqtt,btn_obj["mqtt"]);
