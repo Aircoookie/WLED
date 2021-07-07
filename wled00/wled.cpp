@@ -442,20 +442,14 @@ void WLED::initConnection()
     bool s = true;
     byte pinsAllocated[4] { 255, 255, 255, 255 };
 
-    if (s && pinManager.allocatePin((byte)es.eth_power)) {
+    if (s && (s = pinManager.allocatePin((byte)es.eth_power))) {
       pinsAllocated[0] = (byte)es.eth_power;
-    } else {
-      s = false;
     }
-    if (s && pinManager.allocatePin((byte)es.eth_mdc)) {
+    if (s && (s = pinManager.allocatePin((byte)es.eth_mdc))) {
       pinsAllocated[1] = (byte)es.eth_mdc;
-    } else {
-      s = false;
     }
-    if (s && pinManager.allocatePin((byte)es.eth_mdio)) {
+    if (s && (s = pinManager.allocatePin((byte)es.eth_mdio))) {
       pinsAllocated[2] = (byte)es.eth_mdio;
-    } else {
-      s = false;
     }
     switch(es.eth_clk_mode) {
       case ETH_CLOCK_GPIO0_IN:
@@ -489,6 +483,7 @@ void WLED::initConnection()
         (eth_clock_mode_t) es.eth_clk_mode
       );
     } else {
+      DEBUG_PRINTLN(F("Ethernet not enabled - failure allocating pins."));
       // de-allocate only those pins allocated before the failure
       for (byte p : pinsAllocated) {
         pinManager.deallocatePin(p);
