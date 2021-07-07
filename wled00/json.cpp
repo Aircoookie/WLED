@@ -209,6 +209,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
 bool deserializeState(JsonObject root, byte presetId)
 {
+  DEBUG_PRINTLN(F("Deserializing state"));
+
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
 
@@ -323,14 +325,17 @@ bool deserializeState(JsonObject root, byte presetId)
 
   int ps = root[F("psave")] | -1;
   if (ps > 0) {
+    DEBUG_PRINTLN(F("Saving preset"));
     savePreset(ps, true, nullptr, root);
   } else {
     ps = root[F("pdel")] | -1; //deletion
     if (ps > 0) {
+      DEBUG_PRINTLN(F("Deleting preset"));
       deletePreset(ps);
     }
     ps = root["ps"] | -1; //load preset (clears state request!)
     if (ps >= 0) {
+      DEBUG_PRINTLN(F("Applying preset"));
       if (!presetId) unloadPlaylist(); //stop playlist if preset changed manually
       applyPreset(ps);
       return stateResponse;
@@ -441,18 +446,6 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
 
   root[F("mainseg")] = strip.getMainSegmentId();
 
-/*
-  // the following is an UGLY construct that does the job
-  #ifdef ESP8266
-  // use rev:2 API if more than 16 segments on ESP8266
-  uint8_t tooMany = 0;
-  for(uint8_t i=0; i < strip.getMaxSegments(); i++) if ((strip.getSegment(i)).isActive()) tooMany++;
-  if (tooMany<17)
-  #endif
-    root.remove("rev"); // remove API revision if ESP32 or ESP8266 with less than 13 segments
-*/
-  uint8_t versionAPI = root["rev"] | 1;
-
   JsonArray seg = root.createNestedArray("seg");
   for (byte s = 0; s < strip.getMaxSegments(); s++)
   {
@@ -461,9 +454,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();
-      if (versionAPI>1) seg0["ver"] = versionAPI; // temporary hack segment
       serializeSegment(seg0, sg, s, forPreset, segmentBounds);
-      if (versionAPI>1) seg[0].remove("ver"); // remove hack
     } else if (forPreset && segmentBounds) { //disable segments not part of preset
       JsonObject seg0 = seg.createNestedObject();
       seg0["stop"] = 0;

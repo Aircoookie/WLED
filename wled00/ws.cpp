@@ -34,11 +34,18 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           JsonObject root = jsonBuffer.as<JsonObject>();
           if (error || root.isNull()) return;
 
+          #ifdef WLED_DEBUG
+            DEBUG_PRINTLN(F("Serialized WS:"));
+            serializeJson(root,Serial);
+            DEBUG_PRINTLN();
+          #endif
           if (root.containsKey("lv"))
           {
             wsLiveClientId = root["lv"] ? client->id() : 0;
           }
+          fileDoc = &jsonBuffer;  // used for applying presets (presets.cpp)
           verboseResponse = deserializeState(root);
+          fileDoc = nullptr;
         }
         //update if it takes longer than 300ms until next "broadcast"
         if (verboseResponse && (millis() - lastInterfaceUpdate < 1700 || !interfaceUpdateCallMode)) sendDataWs(client);

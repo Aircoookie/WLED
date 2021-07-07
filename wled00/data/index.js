@@ -1068,7 +1068,8 @@ function makeWS() {
 			if (isInfo) {
 				populateInfo(info);
 			}
-		}
+		} else
+			info = lastinfo;
 		var s = json.state ? json.state : json;
 		displayRover(info, s);
 		readState(s);

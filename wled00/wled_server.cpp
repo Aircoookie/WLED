@@ -108,6 +108,11 @@ void initServer()
       const String& url = request->url();
       isConfig = url.indexOf("cfg") > -1;
       if (!isConfig) {
+        #ifdef WLED_DEBUG
+          DEBUG_PRINTLN(F("Serialized HTTP"));
+          serializeJson(root,Serial);
+          DEBUG_PRINTLN();
+        #endif
         fileDoc = &jsonBuffer;  // used for applying presets (presets.cpp)
         verboseResponse = deserializeState(root);
         fileDoc = nullptr;
