@@ -85,7 +85,7 @@ charset="utf-8"><meta name="theme-color" content="#222222"><title>
 WLED Live Preview</title><style>
 body{margin:0}#canv{background:#000;filter:brightness(175%);width:100%;height:100%;position:absolute}
 </style></head><body><div id="canv"><script>
-console.info("Live-Preview websocket opening");var socket=new WebSocket("ws://"+document.location.host+"/ws");function updatePreview(e){var o="linear-gradient(90deg,",n=e.length;for(i=0;i<n;i++){var r=e[i];r.length>6&&(r=r.substring(2)),o+="#"+r,i<n-1&&(o+=",")}o+=")",document.getElementById("canv").style.background=o}socket.onopen=function(){console.info("Live-Preview websocket is opened"),socket.send("{'lv':true,'rev':2}")},socket.onclose=function(){console.info("Live-Preview websocket is closing")},socket.onerror=function(e){console.error("Live-Preview websocket error:",e)},socket.onmessage=function(e){try{var o=JSON.parse(e.data);o&&o.leds&&requestAnimationFrame((function(){updatePreview(o.leds)}))}catch(e){console.error("Live-Preview websocket error:",e)}}
+function updatePreview(e){var n="linear-gradient(90deg,",o=e.length;for(i=0;i<o;i++){var t=e[i];t.length>6&&(t=t.substring(2)),n+="#"+t,i<o-1&&(n+=",")}n+=")",document.getElementById("canv").style.background=n}function getLiveJson(e){try{var n=JSON.parse(e.data);n&&n.leds&&requestAnimationFrame((function(){updatePreview(n.leds)}))}catch(e){console.error("Live-Preview ws error:",e)}}var ws=top.window.ws;ws&&ws.readyState===WebSocket.OPEN?(console.info("Use top WS for peek"),ws.send("{'lv':true}")):(console.info("Peek ws opening"),(ws=new WebSocket("ws://"+document.location.host+"/ws")).onopen=function(){console.info("Peek WS opened"),ws.send("{'lv':true}")}),ws.addEventListener("message",getLiveJson)
 </script></body></html>)=====";
 
 

@@ -23,7 +23,7 @@ var pJson = {}, eJson = {}, lJson = {};
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
-var ws, noWS = false;
+var ws;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true, seglen:false}
@@ -239,7 +239,7 @@ function onLoad()
 		loadFX(function() {
 			loadPresets(function() {
 				loadInfo(function() {
-					requestJson({'v':true}, false, true);
+					requestJson({'v':true}, false);
 				});
 			});
 		});
@@ -253,6 +253,7 @@ function onLoad()
 	if (localStorage.getItem('pcm') == "true") togglePcMode(true);
 	var sls = d.querySelectorAll('input[type="range"]');
 	for (var sl of sls) {
+		//sl.addEventListener('input', updateBubble, true);
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
@@ -395,6 +396,20 @@ function presetError(empty)
 
 function loadPresets(callback = null)
 {
+	//1st boot (because there is a callback)
+	if (callback && pmt == pmtLS && pmt > 0) {
+		//we have a copy of the presets in local storage and don't need to fetch another one
+		populatePresets(true);
+		pmtLast = pmt;
+		callback();
+		return;
+	}
+
+	//afterwards
+	if (!callback && pmt == pmtLast) return;
+
+	pmtLast = pmt;
+
 	var url = (loc?`http://${locip}`:'') + '/presets.json';
 
 	fetch(url, {
@@ -415,7 +430,10 @@ function loadPresets(callback = null)
 		showToast(error, true);
 		console.log(error);
 		presetError(false);
-		if (callback) callback();
+		//if (callback) callback();
+	})
+	.finally(() => {
+		if (callback) setTimeout(callback,99);
 	});
 }
 
@@ -1056,11 +1074,13 @@ function makeWS() {
 	if (ws) return;
 	ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
 	ws.onmessage = function(event) {
+		var json = JSON.parse(event.data);
+		if (json.leds) return; //liveview packet
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
 		clearErrorToast();
 	  	gId('connind').style.backgroundColor = "#079";
-		var json = JSON.parse(event.data);
+		// json object should contain json.info AND json.state (but may not)
 		var info = json.info;
 		if (info) {
 			lastinfo = info;
@@ -1164,7 +1184,7 @@ function readState(s,command=false)
 var jsonTimeout;
 var reqsLegal = false;
 
-function requestJson(command, rinfo = true, verbose = true, callback = null)
+function requestJson(command, rinfo = true)
 {
 	gId('connind').style.backgroundColor = "#a90";
 	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
@@ -1173,15 +1193,18 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 	var req = null;
 	var url = (loc?`http://${locip}`:'') + (rinfo ? '/json/si': (command ? '/json/state':'/json/si'));
 
+	var useWs = ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN);
+
 	var type = command ? 'post':'get';
 	if (command)
 	{
-		command.v = verbose;
+		command.v = true; // force complete /json/si API response
 		command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
+		if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 	}
 
-	if ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN) {
+	if (useWs) {
 		ws.send(req?req:'{"v":true}');
 		return;
 	}
@@ -1203,20 +1226,15 @@ function requestJson(command, rinfo = true, verbose = true, callback = null)
 		clearErrorToast();
 		gId('connind').style.backgroundColor = "#070";
 		if (!json) { showToast('Empty response', true); return; }
-		if (json.success) {
-			if (callback) callback();
-			return;
-		}
+		if (json.success) return;
 		var s = json.state ? json.state : json;
 		readState(s);
 		reqsLegal = true;
 		reconnectWS();
-		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
-		if (callback) callback();
 	});
 }
 
@@ -1225,7 +1243,7 @@ function togglePower()
 	isOn = !isOn;
 	var obj = {"on": isOn};
 	obj.transition = parseInt(gId('tt').value*10);
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function toggleNl()
@@ -1258,6 +1276,7 @@ function toggleLiveview()
 	var url = (loc?`http://${locip}`:'') + "/liveview";
 	gId('liveview').src = (isLv) ? url:"about:blank";
 	gId('buttonSr').className = (isLv) ? "active":"";
+	if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
 	size();
 }
 
@@ -1598,7 +1617,7 @@ function setX(ind = null)
 	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
 
 	var obj = {"seg": {"fx": parseInt(ind)}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setPalette(paletteId = null)
@@ -1614,39 +1633,39 @@ function setPalette(paletteId = null)
 	}
 	d.querySelector(`#pallist .lstI[data-id="${paletteId}"]`).classList.add('selected');
 	var obj = {"seg": {"pal": paletteId}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setBri()
 {
 	var obj = {"bri": parseInt(gId('sliderBri').value)};
 	obj.transition = parseInt(gId('tt').value*10);
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setSpeed()
 {
 	var obj = {"seg": {"sx": parseInt(gId('sliderSpeed').value)}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setIntensity()
 {
 	var obj = {"seg": {"ix": parseInt(gId('sliderIntensity').value)}};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setLor(i)
 {
 	var obj = {"lor": i};
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function setPreset(i)
 {
 	var obj = {"ps": i};
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function saveP(i,pl)
@@ -1689,7 +1708,7 @@ function saveP(i,pl)
 	if (pQN.length > 0) obj.ql = pQN;
 
 	showToast("Saving " + pN +" (" + pI + ")");
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 	if (obj.o) {
 		pJson[pI] = obj;
 		delete pJson[pI].psave;
@@ -1716,18 +1735,18 @@ function testPl(i,bt) {
 	bt.innerHTML = "<i class='icons btn-icon'>&#xe38f;</i>Stop";
 	var obj = {};
 	obj.playlist = plJson[i];
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 function stopPl() {
-	requestJson({playlist:{}}, false, noWS)
+	requestJson({playlist:{}}, false)
 }
 
 function delP(i) {
 	var bt = gId(`p${i}del`);
 	if (bt.dataset.cnf == 1) {
 		var obj = {"pdel": i};
-		requestJson(obj, false, noWS);
+		requestJson(obj, false);
 		delete pJson[i];
 		populatePresets();
 	} else {
@@ -1837,7 +1856,7 @@ function setColor(sr)
 	updateHex();
 	updateRgb();
 	obj.transition = parseInt(gId('tt').value*10);
-	requestJson(obj, false, noWS);
+	requestJson(obj, false);
 }
 
 var hc = 0;
@@ -1875,7 +1894,7 @@ function rSegs()
 	requestJson(obj, false);
 }
 
-function loadPalettesData()
+function loadPalettesData(callback = null)
 {
 	if (palettesData) return;
 	const lsKey = "wledPalx";
@@ -1885,6 +1904,8 @@ function loadPalettesData()
 			palettesDataJson = JSON.parse(palettesDataJson);
 			if (palettesDataJson && palettesDataJson.vid == lastinfo.vid) {
 				palettesData = palettesDataJson.p;
+				//redrawPalPrev() //?
+				if (callback) callback();
 				return;
 			}
 		} catch (e) {}
@@ -1897,6 +1918,7 @@ function loadPalettesData()
 			vid: lastinfo.vid
 		}));
 		redrawPalPrev();
+		if (callback) setTimeout(callback, 99); //go on to connect websocket
 	});
 }
 
@@ -1922,7 +1944,6 @@ function getPalettesData(page, callback)
 	.catch(function(error) {
 		showToast(error, true);
 		console.log(error);
-		presetError(false);
 	});
 }
 

@@ -125,10 +125,8 @@
 #endif
 
 //APA102
-#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpiMethod> // hardware SPI
-#define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod>    // soft SPI
-#define B_HS_DOT_4 NeoPixelBrightnessBus<DotStarLbgrFeature,DotStarSpiMethod> // HW SPI, RGBW mode?
-#define B_SS_DOT_4 NeoPixelBrightnessBus<DotStarLbgrFeature,DotStarMethod>    // soft SPI, RGBW mode?
+#define B_HS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarSpiMethod> //hardware SPI
+#define B_SS_DOT_3 NeoPixelBrightnessBus<DotStarBgrFeature, DotStarMethod>    //soft SPI
 
 //LPD8806
 #define B_HS_LPD_3 NeoPixelBrightnessBus<Lpd8806GrbFeature, Lpd8806SpiMethod>
@@ -666,7 +664,7 @@ class PolyBus {
       #ifndef CONFIG_IDF_TARGET_ESP32S2
       if (num > 9) return I_NONE;
       if (num > 7) offset = num -7;
-      #else
+      #else //ESP32 S2 only has 4 RMT channels
       if (num > 5) return I_NONE;
       if (num > 4) offset = num -4;
       #endif
