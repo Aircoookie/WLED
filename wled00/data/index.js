@@ -22,7 +22,7 @@ var pJson = {};
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
-var ws, useWs = false;
+var ws;
 var fxlist = d.getElementById('fxlist'), pallist = d.getElementById('pallist');
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
@@ -932,11 +932,12 @@ function makeWS() {
   if (ws) return;
   ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
   ws.onmessage = function(event) {
+    var json = JSON.parse(event.data);
+    if (json.leds) return; //liveview packet
     clearTimeout(jsonTimeout);
 		jsonTimeout = null;
 		clearErrorToast();
     d.getElementById('connind').style.backgroundColor = "#079";
-		var json = JSON.parse(event.data);
     var info = json.info;
     d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
     lastinfo = info;
@@ -1054,15 +1055,18 @@ function requestJson(command, rinfo = true) {
 		url = `http://${locip}${url}`;
 	}
 
+  var useWs = ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN);
+
 	var type = command ? 'post':'get';
 	if (command)
 	{
     command.v = true; //get complete API response
     command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
+    if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 	}
 
-  if ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN) {
+  if (useWs) {
     ws.send(req?req:'{"v":true}');
     return;
   }
@@ -1187,6 +1191,7 @@ function toggleLiveview() {
 	var url = loc ? `http://${locip}/liveview`:"/liveview";
 	d.getElementById('liveview').src = (isLv) ? url:"about:blank";
 	d.getElementById('buttonSr').className = (isLv) ? "active":"";
+  if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
 	size();
 }
 

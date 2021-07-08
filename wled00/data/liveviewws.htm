@@ -21,18 +21,6 @@
 <body>
   <div id="canv" />
   <script>
-    console.info("Live-Preview websocket opening");
-    var socket = new WebSocket("ws://"+document.location.host+"/ws");
-
-    socket.onopen = function () {
-      console.info("Live-Preview websocket is opened");
-      socket.send("{'lv':true}");
-    }
-
-    socket.onclose = function () { console.info("Live-Preview websocket is closing"); }
-
-    socket.onerror = function (event) { console.error("Live-Preview websocket error:", event); }
-
     function updatePreview(leds) {
       var str = "linear-gradient(90deg,";
       var len = leds.length;        
@@ -46,7 +34,7 @@
       document.getElementById("canv").style.background = str;
     }
 
-    socket.onmessage = function (event) {
+    function getLiveJson(event) {
       try {
         var json = JSON.parse(event.data);
         if (json && json.leds) {
@@ -54,9 +42,23 @@
         } 
       }
       catch (err) {
-        console.error("Live-Preview websocket error:",err);
-      }      
+        console.error("Live-Preview ws error:",err);
+      } 
     }
+
+    var ws = top.window.ws;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      console.info("Use top WS for peek");
+      ws.send("{'lv':true}");
+    } else {
+      console.info("Peek ws opening");
+      ws = new WebSocket("ws://"+document.location.host+"/ws");
+      ws.onopen = function () {
+        console.info("Peek WS opened");
+        ws.send("{'lv':true}");
+      }
+    }
+    ws.addEventListener('message',getLiveJson);
   </script>
 </body>
 </html>
