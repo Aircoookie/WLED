@@ -312,10 +312,10 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     loadPlaylist(playlist, presetId);
     noNotification = true; //do not notify both for this request and the first playlist entry
   } else {
-    interfaceUpdateCallMode = NOTIFIER_CALL_MODE_WS_SEND;
+    interfaceUpdateCallMode = CALL_MODE_WS_SEND;
   }
 
-  colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : callMode);
+  colorUpdated(noNotification ? CALL_MODE_NO_NOTIFY : callMode);
 
   return stateResponse;
 }

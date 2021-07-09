@@ -387,14 +387,14 @@ void WLED::beginStrip()
   strip.setShowCallback(handleOverlayDraw);
 
   if (bootPreset > 0) {
-    applyPreset(bootPreset, NOTIFIER_CALL_MODE_INIT);
+    applyPreset(bootPreset, CALL_MODE_INIT);
   } else if (turnOnAtBoot) {
     if (briS > 0) bri = briS;
     else if (bri == 0) bri = 128;
   } else {
     briLast = briS; bri = 0;
   }
-  colorUpdated(NOTIFIER_CALL_MODE_INIT);
+  colorUpdated(CALL_MODE_INIT);
 
   // init relay pin
   if (rlyPin>=0)

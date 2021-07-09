@@ -58,7 +58,7 @@ private:
   // PIR sensor pin
   int8_t PIRsensorPin = PIR_SENSOR_PIN;
   // notification mode for colorUpdated()
-  const byte NotifyUpdateMode = NOTIFIER_CALL_MODE_NO_NOTIFY; // NOTIFIER_CALL_MODE_DIRECT_CHANGE
+  const byte NotifyUpdateMode = CALL_MODE_NO_NOTIFY; // CALL_MODE_DIRECT_CHANGE
   // delay before switch off after the sensor state goes LOW
   uint32_t m_switchOffDelay = 600000; // 10min
   // off timer start time

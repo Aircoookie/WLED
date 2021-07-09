@@ -138,8 +138,8 @@ public:
         }
         //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
         // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
-        colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
-        updateInterfaces(NOTIFIER_CALL_MODE_BUTTON);
+        colorUpdated(CALL_MODE_BUTTON);
+        updateInterfaces(CALL_MODE_BUTTON);
       }
       Enc_A_prev = Enc_A;     // Store value of A for next time
       loopTime = currentTime; // Updates loopTime

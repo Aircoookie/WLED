@@ -71,7 +71,7 @@ void decBrightness()
 // apply preset or fallback to a effect and palette if it doesn't exist
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) 
 {
-  if (!applyPreset(presetID, NOTIFIER_CALL_MODE_BUTTON)) { 
+  if (!applyPreset(presetID, CALL_MODE_BUTTON)) { 
     effectCurrent = effectID;      
     effectPalette = paletteID;
   }
@@ -85,11 +85,11 @@ bool decodeIRCustom(uint32_t code)
   {
     //just examples, feel free to modify or remove
     case IRCUSTOM_ONOFF : toggleOnOff(); break;
-    case IRCUSTOM_MACRO1 : applyPreset(1, NOTIFIER_CALL_MODE_BUTTON); break;
+    case IRCUSTOM_MACRO1 : applyPreset(1, CALL_MODE_BUTTON); break;
 
     default: return false;
   }
-  if (code != IRCUSTOM_MACRO1) colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //don't update color again if we apply macro, it already does it
+  if (code != IRCUSTOM_MACRO1) colorUpdated(CALL_MODE_BUTTON); //don't update color again if we apply macro, it already does it
   return true;
 }
 
@@ -183,51 +183,51 @@ void decodeIR(uint32_t code)
   }
 
   if (nightlightActive && bri == 0) nightlightActive = false;
-  colorUpdated(NOTIFIER_CALL_MODE_BUTTON); //for notifier, IR is considered a button input
+  colorUpdated(CALL_MODE_BUTTON); //for notifier, IR is considered a button input
 }
 
 void applyRepeatActions(){
   
     if (lastRepeatableAction == ACTION_BRIGHT_UP)
     { 
-      incBrightness(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      incBrightness(); colorUpdated(CALL_MODE_BUTTON);
     }
     else if (lastRepeatableAction == ACTION_BRIGHT_DOWN )
     {
-      decBrightness(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      decBrightness(); colorUpdated(CALL_MODE_BUTTON);
     }
 
     if (lastRepeatableAction == ACTION_SPEED_UP)
     { 
-      changeEffectSpeed(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
     }
     else if (lastRepeatableAction == ACTION_SPEED_DOWN )
     {
-      changeEffectSpeed(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      changeEffectSpeed(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
     }
 
     if (lastRepeatableAction == ACTION_INTENSITY_UP)
     { 
-      changeEffectIntensity(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
     }
     else if (lastRepeatableAction == ACTION_INTENSITY_DOWN )
     {
-      changeEffectIntensity(lastRepeatableValue); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      changeEffectIntensity(lastRepeatableValue); colorUpdated(CALL_MODE_BUTTON);
     }
 
     if (lastValidCode == IR40_WPLUS)
     { 
-      relativeChangeWhite(10); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      relativeChangeWhite(10); colorUpdated(CALL_MODE_BUTTON);
     }
     else if (lastValidCode == IR40_WMINUS)
     {
-      relativeChangeWhite(-10, 5); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      relativeChangeWhite(-10, 5); colorUpdated(CALL_MODE_BUTTON);
     }
     else if ((lastValidCode == IR24_ON || lastValidCode == IR40_ON) && irTimesRepeated > 7 )
     {
       nightlightActive = true;
       nightlightStartTime = millis();
-      colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
+      colorUpdated(CALL_MODE_BUTTON);
     }
     else if (irEnabled == 8) 
     {
@@ -612,7 +612,7 @@ void decodeIRJson(uint32_t code)
       // command is JSON object
       //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
       fileDoc = &irDoc;
-      deserializeState(jsonCmdObj, NOTIFIER_CALL_MODE_BUTTON);
+      deserializeState(jsonCmdObj, CALL_MODE_BUTTON);
       fileDoc = nullptr;
     }
   }

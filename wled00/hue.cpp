@@ -10,7 +10,7 @@ void handleHue()
 {
   if (hueReceived)
   {
-    colorUpdated(NOTIFIER_CALL_MODE_HUE); hueReceived = false;
+    colorUpdated(CALL_MODE_HUE); hueReceived = false;
     if (hueStoreAllowed && hueNewKey)
     {
       serializeConfigSec(); //save api key

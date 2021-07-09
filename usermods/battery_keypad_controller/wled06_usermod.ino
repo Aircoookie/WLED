@@ -54,46 +54,46 @@ void userLoop()
             switch (myKey) {
                 case '1':
                     applyPreset(1);
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case '2':
                     applyPreset(2);
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case '3':
                     applyPreset(3);
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case '4':
                     applyPreset(4);
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case '5':
                     applyPreset(5);
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case '6':
                     applyPreset(6);
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case 'A':
                     applyPreset(7);
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case 'B':
                     applyPreset(8);
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
 
                 case '7':
                     effectCurrent += 1;
                     if (effectCurrent >= MODE_COUNT) effectCurrent = 0;
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case '*':
                     effectCurrent -= 1;
                     if (effectCurrent < 0) effectCurrent = (MODE_COUNT-1);
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
 
                 case '8':
@@ -102,7 +102,7 @@ void userLoop()
                     } else if (effectSpeed < 255) {
                         effectSpeed += 1;
                     }
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case '0':
                     if (effectSpeed > 15) {
@@ -110,7 +110,7 @@ void userLoop()
                     } else if (effectSpeed > 0) {
                         effectSpeed -= 1;
                     }
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
 
                 case '9':
@@ -119,7 +119,7 @@ void userLoop()
                     } else if (effectIntensity < 255) {
                         effectIntensity += 1;
                     }
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case '#':
                     if (effectIntensity > 15) {
@@ -127,18 +127,18 @@ void userLoop()
                     } else if (effectIntensity > 0) {
                         effectIntensity -= 1;
                     }
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
 
                 case 'C':
                     effectPalette += 1;
                     if (effectPalette >= 50) effectPalette = 0;
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
                 case 'D':
                     effectPalette -= 1;
                     if (effectPalette <= 0) effectPalette = 50;
-                    colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+                    colorUpdated(CALL_MODE_FX_CHANGED);
                     break;
 
             }

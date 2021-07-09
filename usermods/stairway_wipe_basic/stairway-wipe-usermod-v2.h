@@ -42,7 +42,7 @@ class StairwayWipeUsermod : public Usermod {
       if (millis() + strip.timebase > (cycleTime - 25)) { //wipe complete
         effectCurrent = FX_MODE_STATIC;
         timeStaticStart = millis();
-        colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+        colorUpdated(CALL_MODE_NOTIFICATION);
         wipeState = 2;
       }
     } else if (wipeState == 2) { //static
@@ -54,7 +54,7 @@ class StairwayWipeUsermod : public Usermod {
       #ifdef STAIRCASE_WIPE_OFF
       effectCurrent = FX_MODE_COLOR_WIPE;
       strip.timebase = 360 + (255 - effectSpeed)*75 - millis(); //make sure wipe starts fully lit
-      colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+      colorUpdated(CALL_MODE_NOTIFICATION);
       wipeState = 4;
       #else
       turnOff();
@@ -100,7 +100,7 @@ class StairwayWipeUsermod : public Usermod {
     bool doReverse = (userVar0 == 2);
     seg.setOption(1, doReverse);
 
-    colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+    colorUpdated(CALL_MODE_NOTIFICATION);
     }
 
     void turnOff()
@@ -111,7 +111,7 @@ class StairwayWipeUsermod : public Usermod {
     transitionDelayTemp = 4000; //fade out slowly
     #endif
     bri = 0;
-    colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+    colorUpdated(CALL_MODE_NOTIFICATION);
     wipeState = 0;
     userVar0 = 0;
     previousUserVar0 = 0;

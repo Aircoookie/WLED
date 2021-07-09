@@ -6,6 +6,7 @@
 
 -   Fixed presets using wrong call mode (e.g. causing buttons to send UDP under direct change type)
 -   Increased hue buffer
+-   Renamed `NOTIFIER_CALL_MODE_` to `CALL_MODE_`
 
 #### Build 2107090
 

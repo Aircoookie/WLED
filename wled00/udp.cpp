@@ -13,14 +13,14 @@ void notify(byte callMode, bool followUp)
   if (!udpConnected) return;
   switch (callMode)
   {
-    case NOTIFIER_CALL_MODE_INIT:          return;
-    case NOTIFIER_CALL_MODE_DIRECT_CHANGE: if (!notifyDirect) return; break;
-    case NOTIFIER_CALL_MODE_BUTTON:        if (!notifyButton) return; break;
-    case NOTIFIER_CALL_MODE_NIGHTLIGHT:    if (!notifyDirect) return; break;
-    case NOTIFIER_CALL_MODE_HUE:           if (!notifyHue)    return; break;
-    case NOTIFIER_CALL_MODE_PRESET_CYCLE:  if (!notifyDirect) return; break;
-    case NOTIFIER_CALL_MODE_BLYNK:         if (!notifyDirect) return; break;
-    case NOTIFIER_CALL_MODE_ALEXA:         if (!notifyAlexa)  return; break;
+    case CALL_MODE_INIT:          return;
+    case CALL_MODE_DIRECT_CHANGE: if (!notifyDirect) return; break;
+    case CALL_MODE_BUTTON:        if (!notifyButton) return; break;
+    case CALL_MODE_NIGHTLIGHT:    if (!notifyDirect) return; break;
+    case CALL_MODE_HUE:           if (!notifyHue)    return; break;
+    case CALL_MODE_PRESET_CYCLE:  if (!notifyDirect) return; break;
+    case CALL_MODE_BLYNK:         if (!notifyDirect) return; break;
+    case CALL_MODE_ALEXA:         if (!notifyAlexa)  return; break;
     default: return;
   }
   byte udpOut[WLEDPACKETSIZE];
@@ -296,7 +296,7 @@ void handleNotifications()
     if (nightlightActive) nightlightDelayMins = udpIn[7];
     
     if (receiveNotificationBrightness || !someSel) bri = udpIn[2];
-    colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);
+    colorUpdated(CALL_MODE_NOTIFICATION);
     return;
   }
 
