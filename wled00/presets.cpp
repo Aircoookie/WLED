@@ -4,7 +4,7 @@
  * Methods to handle saving and loading presets to/from the filesystem
  */
 
-bool applyPreset(byte index)
+bool applyPreset(byte index, byte callMode)
 {
   if (index == 0) return false;
   if (fileDoc) {
@@ -14,7 +14,7 @@ bool applyPreset(byte index)
     #ifdef WLED_DEBUG_FS
       serializeJson(*fileDoc, Serial);
     #endif
-    deserializeState(fdo, index);
+    deserializeState(fdo, callMode, index);
   } else {
     DEBUGFS_PRINTLN(F("Make read buf"));
     DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
@@ -24,7 +24,7 @@ bool applyPreset(byte index)
     #ifdef WLED_DEBUG_FS
       serializeJson(fDoc, Serial);
     #endif
-    deserializeState(fdo, index);
+    deserializeState(fdo, callMode, index);
   }
 
   if (!errorFlag) {

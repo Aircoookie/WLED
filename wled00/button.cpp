@@ -15,7 +15,7 @@ void shortPressAction(uint8_t b)
     toggleOnOff();
     colorUpdated(NOTIFIER_CALL_MODE_BUTTON);
   } else {
-    applyPreset(macroButton[b]);
+    applyPreset(macroButton[b], NOTIFIER_CALL_MODE_BUTTON);
   }
 
   // publish MQTT message
@@ -62,12 +62,12 @@ void handleSwitch(uint8_t b)
     
   if (millis() - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
     if (!buttonPressedBefore[b]) { // on -> off
-      if (macroButton[b]) applyPreset(macroButton[b]);
+      if (macroButton[b]) applyPreset(macroButton[b], NOTIFIER_CALL_MODE_BUTTON);
       else { //turn on
         if (!bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
       } 
     } else {  // off -> on
-      if (macroLongPress[b]) applyPreset(macroLongPress[b]);
+      if (macroLongPress[b]) applyPreset(macroLongPress[b], NOTIFIER_CALL_MODE_BUTTON);
       else { //turn off
         if (bri) {toggleOnOff(); colorUpdated(NOTIFIER_CALL_MODE_BUTTON);}
       } 
@@ -195,7 +195,7 @@ void handleButton()
       {
         if (!buttonLongPressed[b]) 
         {
-          if (macroLongPress[b]) {applyPreset(macroLongPress[b]);}
+          if (macroLongPress[b]) {applyPreset(macroLongPress[b], NOTIFIER_CALL_MODE_BUTTON);}
           else _setRandomColor(false,true);
 
           // publish MQTT message
@@ -224,7 +224,7 @@ void handleButton()
         if (macroDoublePress[b])
         {
           if (doublePress) {
-            applyPreset(macroDoublePress[b]);
+            applyPreset(macroDoublePress[b], NOTIFIER_CALL_MODE_BUTTON);
   
             // publish MQTT message
             if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {

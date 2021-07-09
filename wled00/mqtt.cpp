@@ -93,7 +93,9 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
     if (payload[0] == '{') { //JSON API
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
       deserializeJson(doc, payloadStr);
+      fileDoc = &doc;
       deserializeState(doc.as<JsonObject>());
+      fileDoc = nullptr;
     } else { //HTTP API
       String apireq = "win&";
       apireq += (char*)payloadStr;

@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107091
+
+-   Fixed presets using wrong call mode (e.g. causing buttons to send UDP under direct change type)
+-   Increased hue buffer
+
 #### Build 2107090
 
 -   Busses extend total configured LEDs if required

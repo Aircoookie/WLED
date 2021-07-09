@@ -47,7 +47,7 @@ void onAlexaChange(EspalexaDevice* dev)
         colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
       }
     } else {
-      applyPreset(macroAlexaOn);
+      applyPreset(macroAlexaOn, NOTIFIER_CALL_MODE_ALEXA);
       if (bri == 0) espalexaDevice->setValue(briLast); //stop Alexa from complaining if macroAlexaOn does not actually turn on
     }
   } else if (m == EspalexaDeviceProperty::off)
@@ -61,7 +61,7 @@ void onAlexaChange(EspalexaDevice* dev)
         colorUpdated(NOTIFIER_CALL_MODE_ALEXA);
       }
     } else {
-      applyPreset(macroAlexaOff);
+      applyPreset(macroAlexaOff, NOTIFIER_CALL_MODE_ALEXA);
       if (bri != 0) espalexaDevice->setValue(0); //stop Alexa from complaining if macroAlexaOff does not actually turn off
     }
   } else if (m == EspalexaDeviceProperty::bri)
