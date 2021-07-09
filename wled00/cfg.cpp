@@ -85,6 +85,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   if (fromFS || !ins.isNull()) {
     uint8_t s = 0; //bus iterator
     strip.isRgbw = false;
+    strip.isOffRefreshRequred = false;
     busses.removeAll();
     uint32_t mem = 0;
     for (JsonObject elm : ins) {
@@ -99,25 +100,23 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         if (i>4) break;
       }
 
-      uint16_t length = elm[F("len")];
-      if (length==0) continue;
+      uint16_t length = elm[F("len")] | 1;
       uint8_t colorOrder = (int)elm[F("order")];
-      //only use skip from the first strip (this shouldn't have been in ins obj. but remains here for compatibility)
       uint8_t skipFirst = elm[F("skip")];
       uint16_t start = elm[F("start")] | 0;
-      if (start >= ledCount) continue;
-      //limit length of strip if it would exceed total configured LEDs
-      if (start + length > ledCount) length = ledCount - start;
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
-      //RGBW mode is enabled if at least one of the strips is RGBW
-      strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(ledType));
-      //refresh is required to remain off if at least one of the strips requires the refresh.
-      strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(ledType);
-      s++;
+
       BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
-      mem += busses.memUsage(bc);
-      if (mem <= MAX_LED_MEMORY) busses.add(bc);
+      if (bc.adjustBounds(ledCount)) {
+        //RGBW mode is enabled if at least one of the strips is RGBW
+        strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(ledType));
+        //refresh is required to remain off if at least one of the strips requires the refresh.
+        strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(ledType);
+        s++;
+        mem += busses.memUsage(bc);
+        if (mem <= MAX_LED_MEMORY) busses.add(bc);
+      }
     }
     strip.finalizeInit(ledCount);
   }
@@ -153,7 +152,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     }
   } else {
     // new install/missing configuration (button 0 has defaults)
-    if (fromFS)
+    if (fromFS) 
       for (uint8_t s=1; s<WLED_MAX_BUTTONS; s++) {
         btnPin[s]           = -1;
         buttonType[s]       = BTN_TYPE_NONE;
@@ -482,7 +481,7 @@ void serializeConfig() {
 
   JsonObject wifi = doc.createNestedObject("wifi");
   wifi[F("sleep")] = !noWifiSleep;
-  wifi[F("phy")] = 1;
+  //wifi[F("phy")] = 1;
 
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc.createNestedObject("eth");
@@ -520,28 +519,18 @@ void serializeConfig() {
   hw_btn["max"] = WLED_MAX_BUTTONS; // just information about max number of buttons (not actually used)
   JsonArray hw_btn_ins = hw_btn.createNestedArray("ins");
 
-  // there is always at least one button
-  JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
-  hw_btn_ins_0["type"] = buttonType[0];
-  JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
-  hw_btn_ins_0_pin.add(btnPin[0]);
-  JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
-  hw_btn_ins_0_macros.add(macroButton[0]);
-  hw_btn_ins_0_macros.add(macroLongPress[0]);
-  hw_btn_ins_0_macros.add(macroDoublePress[0]);
-
-  // additional buttons
-  for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) {
-    //if (btnPin[i]<0) continue;
-    hw_btn_ins_0 = hw_btn_ins.createNestedObject();
+  // configuration for all buttons
+  for (uint8_t i=0; i<WLED_MAX_BUTTONS; i++) {
+    JsonObject hw_btn_ins_0 = hw_btn_ins.createNestedObject();
     hw_btn_ins_0["type"] = buttonType[i];
-    hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
+    JsonArray hw_btn_ins_0_pin = hw_btn_ins_0.createNestedArray("pin");
     hw_btn_ins_0_pin.add(btnPin[i]);
-    hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
+    JsonArray hw_btn_ins_0_macros = hw_btn_ins_0.createNestedArray("macros");
     hw_btn_ins_0_macros.add(macroButton[i]);
     hw_btn_ins_0_macros.add(macroLongPress[i]);
     hw_btn_ins_0_macros.add(macroDoublePress[i]);
   }
+
   hw_btn[F("tt")] = touchThreshold;
   hw_btn["mqtt"] = buttonPublishMqtt;
 

@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107090
+
+-   Busses extend total configured LEDs if required
+-   Fixed extra button pins defaulting to 0 on first boot
+
 #### Build 2107080
 
 -   Made Peek use the main websocket connection instead of opening a second one
