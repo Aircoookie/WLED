@@ -119,13 +119,13 @@ class BusDigital : public Bus {
   public:
   BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
+    if (!pinManager.allocatePin(bc.pins[0])) return;
     _pins[0] = bc.pins[0];
-    if (!pinManager.allocatePin(_pins[0])) return;
     if (IS_2PIN(bc.type)) {
-      _pins[1] = bc.pins[1];
-      if (!pinManager.allocatePin(_pins[1])) {
+      if (!pinManager.allocatePin(bc.pins[1])) {
         cleanup(); return;
       }
+      _pins[1] = bc.pins[1];
     }
     reversed = bc.reversed;
     _skip = bc.skipAmount;    //sacrificial pixels
@@ -241,10 +241,11 @@ class BusPwm : public Bus {
     #endif
 
     for (uint8_t i = 0; i < numPins; i++) {
-      _pins[i] = bc.pins[i];
-      if (!pinManager.allocatePin(_pins[i])) {
+      uint8_t currentPin = bc.pins[i];
+      if (!pinManager.allocatePin(currentPin)) {
         deallocatePins(); return;
       }
+      _pins[i] = currentPin; // store only after allocatePin() succeeds
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
       #else

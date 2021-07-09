@@ -446,14 +446,60 @@ void WLED::initConnection()
   // Only initialize ethernet board if not NONE
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     ethernet_settings es = ethernetBoards[ethernetType];
-    ETH.begin(
-      (uint8_t) es.eth_address, 
-      (int)     es.eth_power, 
-      (int)     es.eth_mdc, 
-      (int)     es.eth_mdio, 
-      (eth_phy_type_t)   es.eth_type,
-      (eth_clock_mode_t) es.eth_clk_mode
-    );
+    // Use PinManager to ensure pins are available for
+    // ethernet AND to prevent other uses of these pins.
+    bool s = true;
+    byte pinsAllocated[4] { 255, 255, 255, 255 };
+
+    if (s && (s = pinManager.allocatePin((byte)es.eth_power))) {
+      pinsAllocated[0] = (byte)es.eth_power;
+    }
+    if (s && (s = pinManager.allocatePin((byte)es.eth_mdc))) {
+      pinsAllocated[1] = (byte)es.eth_mdc;
+    }
+    if (s && (s = pinManager.allocatePin((byte)es.eth_mdio))) {
+      pinsAllocated[2] = (byte)es.eth_mdio;
+    }
+    switch(es.eth_clk_mode) {
+      case ETH_CLOCK_GPIO0_IN:
+        s = pinManager.allocatePin(0, false);
+        pinsAllocated[3] = 0;
+        break;
+      case ETH_CLOCK_GPIO0_OUT:
+        s = pinManager.allocatePin(0);
+        pinsAllocated[3] = 0;
+        break;
+      case ETH_CLOCK_GPIO16_OUT:
+        s = pinManager.allocatePin(16);
+        pinsAllocated[3] = 16;
+        break;
+      case ETH_CLOCK_GPIO17_OUT:
+        s = pinManager.allocatePin(17);
+        pinsAllocated[3] = 17;
+        break;
+      default:
+        s = false;
+        break;
+    }
+
+    if (s) {
+      s = ETH.begin(
+        (uint8_t) es.eth_address, 
+        (int)     es.eth_power, 
+        (int)     es.eth_mdc, 
+        (int)     es.eth_mdio, 
+        (eth_phy_type_t)   es.eth_type,
+        (eth_clock_mode_t) es.eth_clk_mode
+      );
+    }
+    
+    if (!s) {
+      DEBUG_PRINTLN(F("Ethernet init failed"));
+      // de-allocate only those pins allocated before the failure
+      for (byte p : pinsAllocated) {
+        pinManager.deallocatePin(p);
+      }
+    }
   }
 #endif
 
