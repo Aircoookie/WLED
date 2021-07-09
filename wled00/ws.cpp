@@ -16,7 +16,6 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   if(type == WS_EVT_CONNECT){
     //client connected
     sendDataWs(client);
-    //client->ping();
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
@@ -24,7 +23,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
     //data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
     if(info->final && info->index == 0 && info->len == len){
-      //the whole message is in a single frame and we got all of it's data (max. 1450byte)
+      //the whole message is in a single frame and we got all of its data (max. 1450byte)
       if(info->opcode == WS_TEXT)
       {
         bool verboseResponse = false;
@@ -37,9 +36,11 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           if (root.containsKey("lv"))
           {
             wsLiveClientId = root["lv"] ? client->id() : 0;
+          } else {
+            fileDoc = &jsonBuffer;
+            verboseResponse = deserializeState(root);
+            fileDoc = nullptr;
           }
-
-          verboseResponse = deserializeState(root);
         }
         //update if it takes longer than 300ms until next "broadcast"
         if (verboseResponse && (millis() - lastInterfaceUpdate < 1700 || !interfaceUpdateCallMode)) sendDataWs(client);

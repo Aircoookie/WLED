@@ -195,10 +195,17 @@ void WLED::loop()
     strip.isRgbw = false;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
-      mem += busses.memUsage(*busConfigs[i]);
-      if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
-      //if (BusManager::isRgbw(busConfigs[i]->type)) strip.isRgbw = true;
-      strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(busConfigs[i]->type));
+      
+      if (busConfigs[i]->adjustBounds(ledCount)) {
+        mem += busses.memUsage(*busConfigs[i]);
+        if (mem <= MAX_LED_MEMORY) {
+          busses.add(*busConfigs[i]);
+          //RGBW mode is enabled if at least one of the strips is RGBW
+          strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(busConfigs[i]->type));
+          //refresh is required to remain off if at least one of the strips requires the refresh.
+          strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(busConfigs[i]->type);
+        }
+      }
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
     strip.finalizeInit(ledCount);
@@ -283,6 +290,8 @@ void WLED::setup()
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2);
 #endif
+
+  for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
   bool fsinit = false;
   DEBUGFS_PRINTLN(F("Mount FS"));

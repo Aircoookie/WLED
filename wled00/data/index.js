@@ -22,7 +22,7 @@ var pJson = {};
 var pN = "", pI = 0, pNum = 0;
 var pmt = 1, pmtLS = 0, pmtLast = 0;
 var lastinfo = {};
-var ws, useWs = false;
+var ws;
 var fxlist = d.getElementById('fxlist'), pallist = d.getElementById('pallist');
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
@@ -365,8 +365,22 @@ function presetError(empty)
 	if (hasBackup) d.getElementById('bck').value = bckstr;
 }
 
-function loadPresets()
+function loadPresets(callback = null)
 {
+	//1st boot (because there is a callback)
+	if (callback && pmt == pmtLS && pmt > 0) {
+		//we have a copy of the presets in local storage and don't need to fetch another one
+		populatePresets(true);
+		pmtLast = pmt;
+		callback();
+		return;
+	}
+
+	//afterwards
+	if (!callback && pmt == pmtLast) return;
+
+	pmtLast = pmt;
+
 	var url = '/presets.json';
 	if (loc) {
 		url = `http://${locip}/presets.json`;
@@ -390,6 +404,9 @@ function loadPresets()
 		showToast(error, true);
 		console.log(error);
 		presetError(false);
+	})
+	.finally(() => {
+		if (callback) setTimeout(callback,99);
 	});
 }
 
@@ -915,11 +932,12 @@ function makeWS() {
   if (ws) return;
   ws = new WebSocket('ws://'+(loc?locip:window.location.hostname)+'/ws');
   ws.onmessage = function(event) {
+    var json = JSON.parse(event.data);
+    if (json.leds) return; //liveview packet
     clearTimeout(jsonTimeout);
 		jsonTimeout = null;
 		clearErrorToast();
     d.getElementById('connind').style.backgroundColor = "#079";
-		var json = JSON.parse(event.data);
     var info = json.info;
     d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
     lastinfo = info;
@@ -1025,7 +1043,7 @@ function readState(s,command=false) {
 var jsonTimeout;
 var reqsLegal = false;
 
-function requestJson(command, rinfo = true, verbose = true) {
+function requestJson(command, rinfo = true) {
 	d.getElementById('connind').style.backgroundColor = "#a90";
   if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
 	lastUpdate = new Date();
@@ -1037,15 +1055,18 @@ function requestJson(command, rinfo = true, verbose = true) {
 		url = `http://${locip}${url}`;
 	}
 
+  var useWs = ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN);
+
 	var type = command ? 'post':'get';
 	if (command)
 	{
-    command.v = verbose;
+    command.v = true; //get complete API response
     command.time = Math.floor(Date.now() / 1000);
 		req = JSON.stringify(command);
+    if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 	}
 
-  if ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN) {
+  if (useWs) {
     ws.send(req?req:'{"v":true}');
     return;
   }
@@ -1079,17 +1100,18 @@ function requestJson(command, rinfo = true, verbose = true) {
 		
 		if (!command || rinfo) { //we have info object
 			if (!rinfo) { //entire JSON (on load)
-				pmt = json.info.fs.pmt;
-				if (pmt != pmtLS || pmt == 0) {
-					setTimeout(loadPresets,99);
-				}
-				else {
-					populatePresets(true);
-				}
-				pmtLast = pmt;
-
 				populateEffects(json.effects);
 				populatePalettes(json.palettes);
+
+				//load palette previews, presets, and open websocket sequentially
+				setTimeout(function(){
+					loadPresets(function(){
+						loadPalettesData(function(){
+							if (!ws && json.info.ws > -1) makeWS();
+						});
+					});
+				},25);
+				
         reqsLegal = true;
 			}
 
@@ -1111,12 +1133,9 @@ function requestJson(command, rinfo = true, verbose = true) {
 			syncTglRecv = info.str;
       maxSeg = info.leds.maxseg;
 			pmt = info.fs.pmt;
-      if (!ws && info.ws > -1) setTimeout(makeWS,1000);
 
-			if (!command && pmt != pmtLast) {
-				setTimeout(loadPresets,99);
-			}
-			pmtLast = pmt;
+			if (!command && rinfo) setTimeout(loadPresets, 99);
+
       d.getElementById('buttonNodes').style.display = (info.ndc > 0 && window.innerWidth > 770) ? "block":"none";
 			lastinfo = info;
 			if (isInfo) {
@@ -1124,8 +1143,6 @@ function requestJson(command, rinfo = true, verbose = true) {
 			}
 			s = json.state;
 			displayRover(info, s);
-
-      if (!rinfo) loadPalettesData();
 		}
 
     readState(s,command);
@@ -1174,6 +1191,7 @@ function toggleLiveview() {
 	var url = loc ? `http://${locip}/liveview`:"/liveview";
 	d.getElementById('liveview').src = (isLv) ? url:"about:blank";
 	d.getElementById('buttonSr').className = (isLv) ? "active":"";
+  if (!isLv && ws && ws.readyState === WebSocket.OPEN) ws.send('{"lv":false}');
 	size();
 }
 
@@ -1784,7 +1802,7 @@ function rSegs()
 	requestJson(obj);
 }
 
-function loadPalettesData()
+function loadPalettesData(callback = null)
 {
 	if (palettesData) return;
 	const lsKey = "wledPalx";
@@ -1795,6 +1813,8 @@ function loadPalettesData()
 			var d = new Date();
 			if (palettesDataJson && palettesDataJson.vid == lastinfo.vid) {
 				palettesData = palettesDataJson.p;
+				//redrawPalPrev() //?
+				if (callback) callback();
 				return;
 			}
 		} catch (e) {}
@@ -1807,6 +1827,7 @@ function loadPalettesData()
 			vid: lastinfo.vid
 		}));
 		redrawPalPrev();
+		if (callback) setTimeout(callback, 99); //go on to connect websocket
 	});
 }
 
@@ -1840,7 +1861,6 @@ function getPalettesData(page, callback)
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
-		presetError(false);
 	});
 }
 

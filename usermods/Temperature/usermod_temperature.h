@@ -42,6 +42,8 @@ class UsermodTemperature : public Usermod {
     bool waitingForConversion = false;
     // flag set at startup if DS18B20 sensor not found, avoids trying to keep getting
     // temperature if flashed to a board without a sensor attached
+    bool sensorFound = false;
+
     bool enabled = true;
 
     // strings to reduce flash memory usage (used more than twice)
@@ -87,7 +89,9 @@ class UsermodTemperature : public Usermod {
       uint8_t deviceAddress[8] = {0,0,0,0,0,0,0,0};
       // find out if we have DS18xxx sensor attached
       oneWire->reset_search();
+      delay(10);
       while (oneWire->search(deviceAddress)) {
+        DEBUG_PRINTLN(F("Found something..."));
         if (oneWire->crc8(deviceAddress, 7) == deviceAddress[7]) {
           switch (deviceAddress[0]) {
             case 0x10:  // DS18S20
@@ -107,21 +111,23 @@ class UsermodTemperature : public Usermod {
 
     void setup() {
       int retries = 10;
-      // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-      if (!pinManager.allocatePin(temperaturePin,false)) {
-        temperaturePin = -1;  // allocation failed
-        enabled = false;
-        DEBUG_PRINTLN(F("Temperature pin allocation failed."));
-      } else {
-        if (enabled) {
-          // config says we are enabled
+      if (enabled) {
+        // config says we are enabled
+        DEBUG_PRINTLN(F("Allocating temperature pin..."));
+        // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
+        if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin)) {
           oneWire = new OneWire(temperaturePin);
           if (!oneWire->reset())
-            enabled = false;   // resetting 1-Wire bus yielded an error
+            sensorFound = false;   // resetting 1-Wire bus yielded an error
           else
-            while ((enabled=findSensor()) && retries--) delay(25); // try to find sensor
+            while ((sensorFound=findSensor()) && retries--) delay(25); // try to find sensor
+        } else {
+          if (temperaturePin >= 0) DEBUG_PRINTLN(F("Temperature pin allocation failed."));
+          temperaturePin = -1;  // allocation failed
+          sensorFound = false;
         }
       }
+      lastMeasurement = millis() - readingInterval + 10000;
       initDone = true;
     }
 
@@ -189,7 +195,7 @@ class UsermodTemperature : public Usermod {
       JsonArray temp = user.createNestedArray(FPSTR(_name));
       //temp.add(F("Loaded."));
 
-      if (temperature <= -100) {
+      if (temperature <= -100.0 || (!sensorFound && temperature == -1.0)) {
         temp.add(0);
         temp.add(F(" Sensor Error!"));
         return;
@@ -249,6 +255,7 @@ class UsermodTemperature : public Usermod {
 
       enabled           = top[FPSTR(_enabled)] | enabled;
       newTemperaturePin = top["pin"] | newTemperaturePin;
+//      newTemperaturePin = min(33,max(-1,(int)newTemperaturePin)); // bounds check
       degC              = top["degC"] | degC;
       readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;
       readingInterval   = min(120,max(10,(int)readingInterval)) * 1000;  // convert to ms
@@ -260,8 +267,10 @@ class UsermodTemperature : public Usermod {
         temperaturePin = newTemperaturePin;
         DEBUG_PRINTLN(F(" config loaded."));
       } else {
-        // changing parameters from settings page
+        DEBUG_PRINTLN(F(" config (re)loaded."));
+        // changing paramters from settings page
         if (newTemperaturePin != temperaturePin) {
+          DEBUG_PRINTLN(F("Re-init temperature."));
           // deallocate pin and release memory
           delete oneWire;
           pinManager.deallocatePin(temperaturePin);
@@ -269,7 +278,6 @@ class UsermodTemperature : public Usermod {
           // initialise
           setup();
         }
-        DEBUG_PRINTLN(F(" config (re)loaded."));
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return !top[FPSTR(_parasite)].isNull();
