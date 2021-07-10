@@ -110,13 +110,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   //temporary, strip object gets updated via colorUpdated()
   if (id == strip.getMainSegmentId()) {
     byte effectPrev = effectCurrent;
-    effectCurrent = elem[F("fx")] | effectCurrent;
+    effectCurrent = elem["fx"] | effectCurrent;
     if (!presetId && effectCurrent != effectPrev) unloadPlaylist(); //stop playlist if active and FX changed manually
     effectSpeed = elem[F("sx")] | effectSpeed;
     effectIntensity = elem[F("ix")] | effectIntensity;
     effectPalette = elem["pal"] | effectPalette;
   } else { //permanent
-    byte fx = elem[F("fx")] | seg.mode;
+    byte fx = elem["fx"] | seg.mode;
     if (fx != seg.mode && fx < strip.getModeCount()) {
       strip.setMode(id, fx);
       if (!presetId) unloadPlaylist(); //stop playlist if active and FX changed manually
@@ -148,15 +148,19 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
           stop = iarr[i];
           set = 2;
         }
-      } else {
-        JsonArray icol = iarr[i];
-        if (icol.isNull()) break;
-
-        byte sz = icol.size();
-        if (sz == 0 || sz > 4) break;
-
+      } else { //color
         int rgbw[] = {0,0,0,0};
-        copyArray(icol, rgbw);
+        JsonArray icol = iarr[i];
+        if (!icol.isNull()) { //array, e.g. [255,0,0]
+          byte sz = icol.size();
+          if (sz > 0 || sz < 5) copyArray(icol, rgbw);
+        } else { //hex string, e.g. "FF0000"
+          byte brgbw[] = {0,0,0,0};
+          const char* hexCol = iarr[i];
+          if (colorFromHexString(brgbw, hexCol)) {
+            for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+          }
+        }
 
         if (set < 2) stop = start + 1;
         for (uint16_t i = start; i < stop; i++) {
@@ -171,7 +175,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   } else { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);
   }
-  return; // seg.hasChanged(prev);
+  return; // seg.differs(prev);
 }
 
 bool deserializeState(JsonObject root, byte callMode, byte presetId)
@@ -214,6 +218,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
+  getJsonValue(nl[F("tbri")], nightlightTargetBri);
 
   JsonObject udpn = root["udpn"];
   notifyDirect         = udpn["send"] | notifyDirect;
@@ -358,7 +363,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   strcat(colstr,"]");
   root["col"] = serialized(colstr);
 
-	root[F("fx")]  = seg.mode;
+	root["fx"]  = seg.mode;
 	root[F("sx")]  = seg.speed;
 	root[F("ix")]  = seg.intensity;
 	root["pal"] = seg.palette;

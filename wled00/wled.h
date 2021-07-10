@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.13.0-b1
+   @version 0.13.0-b2
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2107091
+#define VERSION 2107100
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -503,7 +503,7 @@ WLED_GLOBAL bool blynkEnabled _INIT(false);
 
 //playlists
 WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
-WLED_GLOBAL int16_t currentPlaylist _INIT(0);
+WLED_GLOBAL int16_t currentPlaylist _INIT(-1);
 //still used for "PL=~" HTTP API command
 WLED_GLOBAL byte presetCycleMin _INIT(1), presetCycleMax _INIT(5);
 WLED_GLOBAL byte presetCycCurr _INIT(presetCycleMin);

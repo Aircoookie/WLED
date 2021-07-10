@@ -1062,6 +1062,11 @@ function requestJson(command, rinfo = true) {
 	{
     command.v = true; //get complete API response
     command.time = Math.floor(Date.now() / 1000);
+    var t = d.getElementById('tt');
+    if (t.validity.valid) {
+      var tn = parseInt(t.value*10);
+      if (tn != tr) command.transition = tn;
+    }
 		req = JSON.stringify(command);
     if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 	}
@@ -1156,7 +1161,6 @@ function requestJson(command, rinfo = true) {
 function togglePower() {
 	isOn = !isOn;
 	var obj = {"on": isOn};
-	obj.transition = parseInt(d.getElementById('tt').value*10);
 	requestJson(obj);
 }
 
@@ -1543,7 +1547,6 @@ function setPalette(paletteId = null)
 
 function setBri() {
 	var obj = {"bri": parseInt(d.getElementById('sliderBri').value)};
-	obj.transition = parseInt(d.getElementById('tt').value*10);
 	requestJson(obj);
 }
 
@@ -1756,7 +1759,6 @@ function setColor(sr) {
 	}
 	updateHex();
 	updateRgb();
-	obj.transition = parseInt(d.getElementById('tt').value*10);
 	requestJson(obj);
 }
 
