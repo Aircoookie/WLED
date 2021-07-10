@@ -1437,7 +1437,7 @@ function makeP(i,pl) {
 ${plSelContent}
 </select></div>
 </div>
-<div class="c"><button class="btn btn-i btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
+<div class="c"><button class="btn btn-i" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
 	} else
 		content =
 `<label class="check revchkl">
@@ -1521,7 +1521,7 @@ function makePlUtil()
 
 function resetPUtil()
 {
-	var cn = `<button class="btn btn-s btn-i" style="width:226px;" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button>`+
+	var cn = `<button class="btn btn-s btn-i" style="width:230px;margin-left:0;" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button>`+
              `<button class="btn btn-i btn-xs" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i></button><br>`;
 	gId('putil').innerHTML = cn;
 }
