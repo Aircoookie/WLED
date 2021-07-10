@@ -156,9 +156,9 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         col[3]        = e131_data[DMXAddress+11]; //white
         colSec[3]     = e131_data[DMXAddress+12];
       }
-      transitionDelayTemp = 0;                        // act fast
-      colorUpdated(NOTIFIER_CALL_MODE_NOTIFICATION);  // don't send UDP
-      return;                                         // don't activate realtime live mode
+      transitionDelayTemp = 0;               // act fast
+      colorUpdated(CALL_MODE_NOTIFICATION);  // don't send UDP
+      return;                                // don't activate realtime live mode
       break;
 
     case DMX_MODE_MULTIPLE_DRGB:

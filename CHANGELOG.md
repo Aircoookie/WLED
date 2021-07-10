@@ -2,6 +2,17 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107091
+
+-   Fixed presets using wrong call mode (e.g. causing buttons to send UDP under direct change type)
+-   Increased hue buffer
+-   Renamed `NOTIFIER_CALL_MODE_` to `CALL_MODE_`
+
+#### Build 2107090
+
+-   Busses extend total configured LEDs if required
+-   Fixed extra button pins defaulting to 0 on first boot
+
 #### Build 2107080
 
 -   Made Peek use the main websocket connection instead of opening a second one

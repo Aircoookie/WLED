@@ -123,7 +123,7 @@ class Animated_Staircase : public Usermod {
         // Always mark segments as "transitional", we are animating the staircase
         segments->setOption(SEG_OPTION_TRANSITIONAL, 1, 1);
       }
-      colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
+      colorUpdated(CALL_MODE_DIRECT_CHANGE);
     }
 
     /*
@@ -298,7 +298,7 @@ class Animated_Staircase : public Usermod {
           }
           segments->setOption(SEG_OPTION_ON, 1, 1);
         }
-        colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
+        colorUpdated(CALL_MODE_DIRECT_CHANGE);
         DEBUG_PRINTLN(F("Animated Staircase disabled."));
       }
       enabled = enable;

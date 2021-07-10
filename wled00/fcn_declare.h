@@ -122,7 +122,7 @@ void handleIR();
 #include "FX.h"
 
 void deserializeSegment(JsonObject elem, byte it, byte presetId = 0);
-bool deserializeState(JsonObject root, byte presetId = 0);
+bool deserializeState(JsonObject root, byte callMode = CALL_MODE_DIRECT_CHANGE, byte presetId = 0);
 void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool forPreset = false, bool segmentBounds = true);
 void serializeState(JsonObject root, bool forPreset = false, bool includeBri = true, bool segmentBounds = true);
 void serializeInfo(JsonObject root);
@@ -183,7 +183,7 @@ void loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
 
 //presets.cpp
-bool applyPreset(byte index);
+bool applyPreset(byte index, byte callMode = CALL_MODE_DIRECT_CHANGE);
 void savePreset(byte index, bool persist = true, const char* pname = nullptr, JsonObject saveobj = JsonObject());
 void deletePreset(byte index);
 

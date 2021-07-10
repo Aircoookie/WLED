@@ -33,6 +33,18 @@ struct BusConfig {
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
+
+  //validates start and length and extends total if needed
+  bool adjustBounds(uint16_t& total) {
+    if (!count) count = 1;
+    if (count > MAX_LEDS_PER_BUS) count = MAX_LEDS_PER_BUS;
+    if (start >= MAX_LEDS) return false;
+    //limit length of strip if it would exceed total permissible LEDs
+    if (start + count > MAX_LEDS) count = MAX_LEDS - start;
+    //extend total count accordingly
+    if (start + count > total) total = start + count;
+    return true;
+  }
 };
 
 //parent class of BusDigital and BusPwm
@@ -112,11 +124,10 @@ class Bus {
 class BusDigital : public Bus {
   public:
   BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
-    uint8_t type = bc.type;
-    if (!IS_DIGITAL(type) || !bc.count) return;
+    if (!IS_DIGITAL(bc.type) || !bc.count) return;
     if (!pinManager.allocatePin(bc.pins[0])) return;
     _pins[0] = bc.pins[0];
-    if (IS_2PIN(type)) {
+    if (IS_2PIN(bc.type)) {
       if (!pinManager.allocatePin(bc.pins[1])) {
         cleanup(); return;
       }
@@ -125,8 +136,8 @@ class BusDigital : public Bus {
     reversed = bc.reversed;
     _skip = bc.skipAmount;    //sacrificial pixels
     _len = bc.count + _skip;
-    _rgbw = bc.rgbwOverride || Bus::isRgbw(type);  // RGBW override in bit 7
-    _iType = PolyBus::getI(type, _pins, nr, _rgbw);
+    _rgbw = bc.rgbwOverride || Bus::isRgbw(bc.type);  // RGBW override in bit 7
+    _iType = PolyBus::getI(bc.type, _pins, nr, _rgbw);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len, nr);
     _valid = (_busPtr != nullptr);
@@ -237,11 +248,11 @@ class BusPwm : public Bus {
     #endif
 
     for (uint8_t i = 0; i < numPins; i++) {
-      if (!pinManager.allocatePin(bc.pins[i])) {
-        deallocatePins();
-        return;
+      uint8_t currentPin = bc.pins[i];
+      if (!pinManager.allocatePin(currentPin)) {
+        deallocatePins(); return;
       }
-      _pins[i] = bc.pins[i];
+      _pins[i] = currentPin; // store only after allocatePin() succeeds
       #ifdef ESP8266
       pinMode(_pins[i], OUTPUT);
       #else

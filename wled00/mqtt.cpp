@@ -15,7 +15,7 @@ void parseMQTTBriPayload(char* payload)
     uint8_t in = strtoul(payload, NULL, 10);
     if (in == 0 && bri > 0) briLast = bri;
     bri = in;
-    colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
+    colorUpdated(CALL_MODE_DIRECT_CHANGE);
   }
 }
 
@@ -88,12 +88,14 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
 
   if (strcmp_P(topic, PSTR("/col")) == 0) {
     colorFromDecOrHexString(col, (char*)payloadStr);
-    colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
+    colorUpdated(CALL_MODE_DIRECT_CHANGE);
   } else if (strcmp_P(topic, PSTR("/api")) == 0) {
     if (payload[0] == '{') { //JSON API
       DynamicJsonDocument doc(JSON_BUFFER_SIZE);
       deserializeJson(doc, payloadStr);
+      fileDoc = &doc;
       deserializeState(doc.as<JsonObject>());
+      fileDoc = nullptr;
     } else { //HTTP API
       String apireq = "win&";
       apireq += (char*)payloadStr;
