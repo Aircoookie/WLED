@@ -19,7 +19,7 @@
 #define HTTP_HDR_ACCESS_CONTROL_MAX_AGE "Access-Control-Max-Age"
 #define HTTP_HDR_CACHE_CONTROL "Cache-Control"
 #define HTTP_HDR_CONTENT_TYPE "Content-Type"
-#define HTTP_HDR_CONTENT_ENCODING "Content_Encoding"
+#define HTTP_HDR_CONTENT_ENCODING "Content-Encoding"
 #define HTTP_HDR_ETAG "Etag"
 #define HTTP_HDR_IF_NONE_MATCH "If-None-Match"
 #define HTTP_HDR_HOST "Host"
