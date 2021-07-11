@@ -226,7 +226,7 @@ void initServer()
     if (request->method() == HTTP_OPTIONS)
     {
       AsyncWebServerResponse *response = request->beginResponse(HTTP_STATUS_OK);
-      response->addHeader(F("Access-Control-Max-Age"), F("7200"));
+      response->addHeader(F(HTTP_HDR_ACCESS_CONTROL_MAX_AGE), F("7200"));
       request->send(response);
       return;
     }

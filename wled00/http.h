@@ -16,6 +16,7 @@
 #define HTTP_HDR_ACCESS_CONTROL_ALLOW_METHODS "Access-Control-Allow-Methods"
 #define HTTP_HDR_ACCESS_CONTROL_ALLOW_ORIGIN "Access-Control-Allow-Origin"
 #define HTTP_HDR_ACCESS_CONTROL_ALLOW_HEADERS "Access-Control-Allow-Headers"
+#define HTTP_HDR_ACCESS_CONTROL_MAX_AGE "Access-Control-Max-Age"
 #define HTTP_HDR_CACHE_CONTROL "Cache-Control"
 #define HTTP_HDR_CONTENT_TYPE "Content-Type"
 #define HTTP_HDR_CONTENT_ENCODING "Content_Encoding"
