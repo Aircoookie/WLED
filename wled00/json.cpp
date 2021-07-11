@@ -218,7 +218,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
-  getJsonValue(nl[F("tbri")], nightlightTargetBri);
 
   JsonObject udpn = root["udpn"];
   notifyDirect         = udpn["send"] | notifyDirect;
@@ -313,9 +312,9 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   }
 
   JsonObject playlist = root[F("playlist")];
-  if (!playlist.isNull()) {
-    loadPlaylist(playlist, presetId);
-    noNotification = true; //do not notify both for this request and the first playlist entry
+  if (!playlist.isNull() && loadPlaylist(playlist, presetId)) {
+    //do not notify here, because the first playlist entry will do
+    noNotification = true;
   } else {
     interfaceUpdateCallMode = CALL_MODE_WS_SEND;
   }

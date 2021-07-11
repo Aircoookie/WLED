@@ -2,6 +2,14 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2107100
+
+-   Version bump to 0.13.0-b2 "Toki"
+-   Accept hex color strings in individual LED API
+-   Fixed transition property not applying unless power/bri/color changed next
+-   Moved transition field below segments (temporarily)
+-   Reduced unneeded websockets pushes
+
 #### Build 2107091
 
 -   Fixed presets using wrong call mode (e.g. causing buttons to send UDP under direct change type)
