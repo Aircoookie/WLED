@@ -236,7 +236,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject if_sync_recv = if_sync["recv"];
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
   CJSON(receiveNotificationColor, if_sync_recv["col"]);
-  CJSON(receiveNotificationEffects, if_sync_recv[F("fx")]);
+  CJSON(receiveNotificationEffects, if_sync_recv["fx"]);
   //! following line might be a problem if called after boot
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
 

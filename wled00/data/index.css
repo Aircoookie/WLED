@@ -612,6 +612,9 @@ input[type=range]:active + .sliderbubble {
 	margin-top: 5px;
 	display: none;
 }
+#tt {
+  text-align: center;
+}
 
 .cl {
 	width: 42px;
@@ -653,7 +656,7 @@ input[type=number], input[type=text] {
 	background: var(--c-3);
 	color: var(--c-f);
 	border: 0px solid white;
-	border-radius: 5px;
+	border-radius: 25px;
 	padding: 8px;
 	margin: 6px 6px 6px 0;
 	font-size: 19px;
@@ -683,7 +686,6 @@ textarea {
 
 input[type=text] {
 	width: 100px;
-	border-radius: 25px;
 	text-align: center;
 }
 
@@ -706,7 +708,6 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .pln {
-	border-radius: 25px !important;
 	width: 67px !important;
 	margin: 0 2px 8px 0 !important;
 	text-align: center;
@@ -723,6 +724,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .segn {
+  border-radius: 5px !important;
 	margin: 3px 0 6px 0 !important;
 }
 
