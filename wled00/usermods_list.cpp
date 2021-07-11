@@ -82,6 +82,10 @@
 #include "../usermods/rgb-rotary-encoder/rgb-rotary-encoder.h"
 #endif
 
+#ifdef MQTT_STREAM
+#include "../usermods/mqtt_stream/mqtt_stream.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -158,5 +162,9 @@ void registerUsermods()
 
   #ifdef RGB_ROTARY_ENCODER
   usermods.add(new RgbRotaryEncoderUsermod());
+  #endif
+
+  #ifdef MQTT_STREAM
+  usermods.add(new UsermodMqttStream());
   #endif
 }
