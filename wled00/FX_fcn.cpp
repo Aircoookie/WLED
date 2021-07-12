@@ -1085,4 +1085,8 @@ uint32_t WS2812FX::gamma32(uint32_t color)
   return ((w << 24) | (r << 16) | (g << 8) | (b));
 }
 
+void WS2812FX::initWasm() {
+  wasmfx.init();
+}
+
 WS2812FX* WS2812FX::instance = nullptr;

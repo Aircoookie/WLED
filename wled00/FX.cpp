@@ -42,14 +42,22 @@ uint16_t WS2812FX::mode_static(void) {
  * Custom mode. Executes WebAssembly fx() function
  */
 uint16_t WS2812FX::mode_custom(void) {
-  wasm.call();
+  wasmfx.run();
   return FRAMETIME;
 }
 
 
 //testing TEMP
 uint16_t WS2812FX::mode_benchmark(void) {
-  wasm.call();
+  uint32_t i=(now/4);
+  uint32_t c=0;
+  while(c<SEGLEN){
+    uint32_t v=i%256;
+    setPixelColor(c,v,v/2,0);
+    c++;
+    i=(i+SEGMENT.speed/16+1);
+  }
+
   return FRAMETIME;
 }
 

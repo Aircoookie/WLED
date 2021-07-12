@@ -313,6 +313,7 @@ void WLED::setup()
   if (!pinManager.isPinAllocated(STATUSLED)) pinMode(STATUSLED, OUTPUT);
 #endif
 
+  wasmfx.init();
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
 

@@ -249,6 +249,25 @@ void userSetup();
 void userConnected();
 void userLoop();
 
+//wasm.cpp
+void wasmInit();
+void wasmRun();
+
+class WASMFX {
+  public:
+  void init() {
+    wasmInit();
+  }
+
+  void run() {
+    wasmRun();
+  }
+
+  uint32_t now();
+  uint32_t speed();
+  uint32_t intensity();
+};
+
 //wled_eeprom.cpp
 void applyMacro(byte index);
 void deEEP();

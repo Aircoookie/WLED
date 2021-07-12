@@ -630,7 +630,8 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
       setColorOrder(uint8_t co),
-      setPixelSegment(uint8_t n);
+      setPixelSegment(uint8_t n),
+      initWasm(void);
 
     bool
       isRgbw = false,
@@ -898,7 +899,7 @@ class WS2812FX {
 
     ColorTransition transitions[MAX_NUM_TRANSITIONS]; //12 bytes per element
     friend class ColorTransition;
-    friend class WASMVM;
+    friend class WASMFX;
 
     uint16_t
       realPixelIndex(uint16_t i),
@@ -918,7 +919,7 @@ const char JSON_mode_names[] PROGMEM = R"=====([
 "Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
 "Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
 "Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth"
+"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth","Custom","Benchmark"
 ])=====";
 
 
