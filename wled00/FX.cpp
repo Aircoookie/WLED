@@ -39,6 +39,23 @@ uint16_t WS2812FX::mode_static(void) {
 
 
 /*
+ * Custom mode. Executes WebAssembly fx() function
+ */
+uint16_t WS2812FX::mode_custom(void) {
+  wasm.call();
+  return FRAMETIME;
+}
+
+
+//testing TEMP
+uint16_t WS2812FX::mode_benchmark(void) {
+  wasm.call();
+  return FRAMETIME;
+}
+
+
+
+/*
  * Blink/strobe function
  * Alternate between color1 and color2
  * if(strobe == true) then create a strobe effect
