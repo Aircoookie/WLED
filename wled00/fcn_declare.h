@@ -266,6 +266,8 @@ class WASMFX {
   uint32_t now();
   uint32_t speed();
   uint32_t intensity();
+  uint32_t len();
+  void set(uint32_t i, uint32_t r, uint32_t g, uint32_t b);
 };
 
 //wled_eeprom.cpp

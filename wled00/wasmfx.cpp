@@ -11,3 +11,7 @@ uint32_t WASMFX::speed() {
 uint32_t WASMFX::intensity() {
   return strip._segments[strip._segment_index].intensity;
 }
+
+uint32_t WASMFX::len() {
+  return strip._virtualSegmentLength;
+}
