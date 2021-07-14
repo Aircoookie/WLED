@@ -9,7 +9,7 @@ body {
 hr {
   border-color: #666;
 }
-button {
+button, .btn {
   background: #333;
   color: #fff;
   font-family: Verdana, sans-serif;
@@ -21,6 +21,7 @@ button {
   padding: 8px 12px;
   min-width: 48px;
   cursor: pointer;
+  text-decoration: none;
 }
 .toprow {
   top: 0;

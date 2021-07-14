@@ -5,6 +5,7 @@
 	<meta charset="utf-8">
 	<title>Misc Settings</title>
 	<script>
+		var d = document;
 		function H()
 		{
 			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings");
@@ -17,6 +18,34 @@
 		{
 			window.open("/update","_self");
 		}
+		function gId(s)
+		{
+			return d.getElementById(s);
+		}
+		function isObject(item) {
+			return (item && typeof item === 'object' && !Array.isArray(item));
+		}
+		var timeout;
+		function showToast(text, error = false)
+		{
+			var x = gId("toast");
+			x.innerHTML = text;
+			x.className = error ? "error":"show";
+			clearTimeout(timeout);
+			x.style.animation = 'none';
+			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+		}
+		function uploadFile(name) {
+			var req = new XMLHttpRequest();
+			req.addEventListener('load', function(){showToast(this.responseText)});
+			req.addEventListener('error', function(e){showToast(e.stack,true);});
+			req.open("POST", "/upload");
+			var formData = new FormData();
+			formData.append("data", d.Sf.data.files[0], name);
+			req.send(formData);
+			d.Sf.data.value = '';
+			return false;
+	    }
 		function GetV()
 		{
 			//values injected by server while sending HTML
@@ -44,6 +73,10 @@
 		Factory reset: <input type="checkbox" name="RS"><br>
 		All settings and presets will be erased.<br><br>
 		HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
+		<hr>
+		<a class="btn" href="/presets.json" target="_blank">Backup presets</a><br>
+		<div id="presets">Restore presets:<input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/presets.json');"><br></div>
+		<hr>
 		<h3>Software Update</h3>
 		<button type="button" onclick="U()">Manual OTA Update</button><br>
 		Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
@@ -54,6 +87,7 @@
 		(c) 2016-2021 Christian Schwinne <br>
 		<i>Licensed under the <a href="https://github.com/Aircoookie/WLED/blob/master/LICENSE" target="_blank">MIT license</a></i><br><br>
 		Server message: <span class="sip"> Response error! </span><hr>
+		<div id="toast"></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 	</form>
 </body>

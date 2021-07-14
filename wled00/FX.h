@@ -53,7 +53,7 @@
 /* each segment uses 52 bytes of SRAM memory, so if you're application fails because of
   insufficient memory, decreasing MAX_NUM_SEGMENTS may help */
 #ifdef ESP8266
-  #define MAX_NUM_SEGMENTS    24
+  #define MAX_NUM_SEGMENTS    18
   /* How many color transitions can run at once */
   #define MAX_NUM_TRANSITIONS  8
   /* How much data bytes all segments combined may allocate */
