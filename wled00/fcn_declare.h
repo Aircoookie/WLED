@@ -179,7 +179,7 @@ void _drawOverlayCronixie();
 //playlist.cpp
 void shufflePlaylist();
 void unloadPlaylist();
-void loadPlaylist(JsonObject playlistObject, byte presetId = 0);
+int16_t loadPlaylist(JsonObject playlistObject, byte presetId = 0);
 void handlePlaylist();
 
 //presets.cpp

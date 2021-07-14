@@ -1200,6 +1200,11 @@ function requestJson(command, rinfo = true)
 	{
 		command.v = true; // force complete /json/si API response
 		command.time = Math.floor(Date.now() / 1000);
+		var t = d.getElementById('tt');
+		if (t.validity.valid) {
+			var tn = parseInt(t.value*10);
+			if (tn != tr) command.transition = tn;
+		}
 		req = JSON.stringify(command);
 		if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 	}
@@ -1242,7 +1247,6 @@ function togglePower()
 {
 	isOn = !isOn;
 	var obj = {"on": isOn};
-	obj.transition = parseInt(gId('tt').value*10);
 	requestJson(obj, false);
 }
 
@@ -1639,7 +1643,6 @@ function setPalette(paletteId = null)
 function setBri()
 {
 	var obj = {"bri": parseInt(gId('sliderBri').value)};
-	obj.transition = parseInt(gId('tt').value*10);
 	requestJson(obj, false);
 }
 
@@ -1855,7 +1858,6 @@ function setColor(sr)
 	}
 	updateHex();
 	updateRgb();
-	obj.transition = parseInt(gId('tt').value*10);
 	requestJson(obj, false);
 }
 

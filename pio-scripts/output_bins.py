@@ -32,7 +32,7 @@ def bin_rename_copy(source, target, env):
 
     release_name = _get_cpp_define_value(env, "WLED_RELEASE_NAME")
 
-    if release_name and os.getenv("WLED_RELEASE"):
+    if release_name:
         _create_dirs(["release"])
         version = _get_cpp_define_value(env, "WLED_VERSION")
         release_file = "{}release{}WLED_{}_{}.bin".format(OUTPUT_DIR, os.path.sep, version, release_name)
