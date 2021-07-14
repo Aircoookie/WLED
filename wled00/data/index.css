@@ -643,6 +643,12 @@ input[type=range]::-moz-range-thumb {
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
 }
+#tt {
+  text-align: center;
+}
+.cl {
+	width: 42px;
+}
 .sel-pl {
 	width: 165px;
 	background-position: 141px 16px;
