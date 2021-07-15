@@ -156,7 +156,7 @@ function loadBg(iUrl)
 	let bg = document.getElementById('bg');
 	let img = document.createElement("img");
 	img.src = iUrl;
-	if (iUrl == "") {
+	if (iUrl == "" || iUrl === "https://picsum.photos/1920/1080") {
 		var today = new Date();
 		for (var i=0; i<hol.length; i++) {
 			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];

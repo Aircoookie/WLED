@@ -376,7 +376,10 @@ void updateFSInfo() {
 
 //Un-comment any file types you need
 String getContentType(AsyncWebServerRequest* request, String filename){
-  if(request->hasArg("download")) return "application/octet-stream";
+  if(request->hasArg("download")) {
+    request->addHeader(F("Content-Disposition"), F("Attachment"));
+    return "application/octet-stream";
+  }
   else if(filename.endsWith(".htm")) return "text/html";
   else if(filename.endsWith(".html")) return "text/html";
   else if(filename.endsWith(".css")) return "text/css";

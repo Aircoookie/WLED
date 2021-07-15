@@ -35,15 +35,15 @@
 			x.style.animation = 'none';
 			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 		}
-		function uploadFile(name) {
+		function uploadFile(fO,name) {
 			var req = new XMLHttpRequest();
 			req.addEventListener('load', function(){showToast(this.responseText)});
 			req.addEventListener('error', function(e){showToast(e.stack,true);});
 			req.open("POST", "/upload");
 			var formData = new FormData();
-			formData.append("data", d.Sf.data.files[0], name);
+			formData.append("data", fO.files[0], name);
 			req.send(formData);
-			d.Sf.data.value = '';
+			fO.value = '';
 			return false;
 	    }
 		function GetV()
@@ -74,8 +74,8 @@
 		All settings and presets will be erased.<br><br>
 		HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
 		<hr>
-		<a class="btn" href="/presets.json" target="_blank">Backup presets</a><br>
-		<div id="presets">Restore presets:<input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/presets.json');"><br></div>
+		<a class="btn" href="/presets.json?download" target="download-frame">Backup presets</a><br>
+		<div id="presets">Restore presets:<input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/presets.json');"><br></div>
 		<hr>
 		<h3>Software Update</h3>
 		<button type="button" onclick="U()">Manual OTA Update</button><br>
@@ -90,5 +90,6 @@
 		<div id="toast"></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save & Reboot</button>
 	</form>
+	<iframe name=download-frame style='display:none;'></iframe>
 </body>
 </html>
