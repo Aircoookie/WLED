@@ -76,10 +76,15 @@
 		<hr>
 		<a class="btn" href="/presets.json?download" target="download-frame">Backup presets</a><br>
 		<div id="presets">Restore presets:<input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/presets.json');"><br></div>
+		<a class="btn" href="/cfg.json?download" target="download-frame">Backup configuration</a><br>
+		<div id="presets">Restore configuration:<input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/cfg.json');"><br></div>
+		<div style="color: #f21;">WARNING!<br>Restoring presets/configuration will OVERWRITE current presets/configuration.<br>
+		Incorrect configuration may require factory reset or re-flashing of ESP.</div>
 		<hr>
 		<h3>Software Update</h3>
 		<button type="button" onclick="U()">Manual OTA Update</button><br>
 		Enable ArduinoOTA: <input type="checkbox" name="AO"><br>
+		<hr>
 		<h3>About</h3>
 		<a href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a> version ##VERSION##<!-- Autoreplaced from package.json --><br><br>
 		<a href="https://github.com/Aircoookie/WLED/wiki/Contributors-and-credits" target="_blank">Contributors, dependencies and special thanks</a><br>
