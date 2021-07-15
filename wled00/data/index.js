@@ -207,7 +207,7 @@ function onLoad()
 	resetPUtil();
 
 	applyCfg();
-	if (cfg.theme.bg.url=="") {
+	if (cfg.theme.bg.url=="" || cfg.theme.bg.url === "https://picsum.photos/1920/1080") {
 		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {
 			method: 'get'
 		})
@@ -428,7 +428,7 @@ function loadPresets(callback = null)
 		pJson = json;
 		populatePresets();
 		reconnectWS();
-		if (callback) callback();
+//		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
