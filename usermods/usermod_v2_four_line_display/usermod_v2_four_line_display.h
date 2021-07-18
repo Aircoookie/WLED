@@ -396,10 +396,8 @@ class FourLineDisplayUsermod : public Usermod {
           showCurrentEffectOrPalette(knownPalette, JSON_palette_names, line);
           break;
         case FLD_LINE_TIME:
-          showTime(false);
-          break;
         default:
-          // unknown type, do nothing
+          showTime(false);
           break;
       }
     }
@@ -472,6 +470,10 @@ class FourLineDisplayUsermod : public Usermod {
       if (line1) drawString(0, 1*lineHeight, line1);
       if (line2) drawString(0, 2*lineHeight, line2);
       overlayUntil = millis() + showHowLong;
+    }
+
+    void setLineType(byte lT) {
+      lineType = (Line4Type) lT;
     }
 
     /**

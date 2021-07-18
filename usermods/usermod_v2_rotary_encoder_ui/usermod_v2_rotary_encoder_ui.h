@@ -39,10 +39,11 @@
 
 #ifndef USERMOD_FOUR_LINE_DISPLAY
 // These constants won't be defined if we aren't using FourLineDisplay.
-#define FLD_LINE_3_BRIGHTNESS       0
-#define FLD_LINE_3_EFFECT_SPEED     0
-#define FLD_LINE_3_EFFECT_INTENSITY 0
-#define FLD_LINE_3_PALETTE          0
+#define FLD_LINE_BRIGHTNESS       0
+#define FLD_LINE_MODE             0
+#define FLD_LINE_EFFECT_SPEED     0
+#define FLD_LINE_EFFECT_INTENSITY 0
+#define FLD_LINE_PALETTE          0
 #endif
 
 
@@ -101,7 +102,7 @@ public:
     // But it's optional. But you want it.
     display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
     if (display != nullptr) {
-      display->setLineThreeType(FLD_LINE_3_BRIGHTNESS);
+      display->setLineType(FLD_LINE_BRIGHTNESS);
       display->setMarkLine(3);
     }
 #endif
@@ -153,19 +154,19 @@ public:
           if (display != nullptr) {
             switch(newState) {
               case 0:
-                changedState = changeState("Brightness", FLD_LINE_3_BRIGHTNESS, 3);
+                changedState = changeState("Brightness", FLD_LINE_BRIGHTNESS, 3);
                 break;
               case 1:
-                changedState = changeState("Select FX", FLD_LINE_3_EFFECT_SPEED, 2);
+                changedState = changeState("Select FX", FLD_LINE_MODE, 2);
                 break;
               case 2:
-                changedState = changeState("FX Speed", FLD_LINE_3_EFFECT_SPEED, 3);
+                changedState = changeState("FX Speed", FLD_LINE_EFFECT_SPEED, 3);
                 break;
               case 3:
-                changedState = changeState("FX Intensity", FLD_LINE_3_EFFECT_INTENSITY, 3);
+                changedState = changeState("FX Intensity", FLD_LINE_EFFECT_INTENSITY, 3);
                 break;
               case 4:
-                changedState = changeState("Palette", FLD_LINE_3_PALETTE, 3);
+                changedState = changeState("Palette", FLD_LINE_PALETTE, 3);
                 break;
             }
           }
@@ -231,7 +232,7 @@ public:
   void findCurrentEffectAndPalette() {
     currentEffectAndPaleeteInitialized = true;
     for (uint8_t i = 0; i < strip.getModeCount(); i++) {
-      byte value = modes_alpha_indexes[i];
+      //byte value = modes_alpha_indexes[i];
       if (modes_alpha_indexes[i] == effectCurrent) {
         effectCurrentIndex = i;
         break;
@@ -239,7 +240,7 @@ public:
     }
 
     for (uint8_t i = 0; i < strip.getPaletteCount(); i++) {
-      byte value = palettes_alpha_indexes[i];
+      //byte value = palettes_alpha_indexes[i];
       if (palettes_alpha_indexes[i] == strip.getSegment(0).palette) {
         effectPaletteIndex = i;
         break;
@@ -255,7 +256,7 @@ public:
         return false;
       }
       display->overlay("Mode change", stateName, 1500);
-      display->setLineThreeType(lineThreeMode);
+      display->setLineType(lineThreeMode);
       display->setMarkLine(markedLine);
     }
   #endif
