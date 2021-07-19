@@ -28,6 +28,13 @@ var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true}
 };
+var hol = [
+	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
+	[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
+	[2022,3,17,2,"https://aircoookie.github.io/easter.png"],
+	[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
+	[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
+];
 
 var cpick = new iro.ColorPicker("#picker", {
 	width: 260,
@@ -158,13 +165,6 @@ function loadBg(iUrl) {
 	img.src = iUrl;
 	if (iUrl == "") {
 		var today = new Date();
-		var hol = [
-			[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
-			[0,2,17,1,"https://images.alphacoders.com/491/491123.jpg"], // st. Patrick's day
-			[2022,3,17,2,"https://aircoookie.github.io/easter.png"],
-			[2023,3,9,2,"https://aircoookie.github.io/easter.png"],
-			[2024,2,31,2,"https://aircoookie.github.io/easter.png"]
-		];
 		for (var i=0; i<hol.length; i++) {
 			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
 			var hs = new Date(yr,hol[i][1],hol[i][2]);
@@ -180,6 +180,21 @@ function loadBg(iUrl) {
 		bg.style.backgroundImage = `url(${img.src})`;
 		img = null;
 	});
+}
+
+function loadSkinCSS(cId)
+{
+	if (!gId(cId))	// check if element exists
+	{
+		var h  = document.getElementsByTagName('head')[0];
+		var l  = document.createElement('link');
+		l.id   = cId;
+		l.rel  = 'stylesheet';
+		l.type = 'text/css';
+		l.href = (loc?`http://${locip}`:'.') + '/skin.css';
+		l.media = 'all';
+		h.appendChild(l);
+	}
 }
 
 function onLoad() {
@@ -198,7 +213,26 @@ function onLoad() {
 	resetPUtil();
 
 	applyCfg();
-	loadBg(cfg.theme.bg.url);
+	if (cfg.theme.bg.url=="" || cfg.theme.bg.url === "https://picsum.photos/1920/1080") {
+		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {	// may be loaded from external source
+			method: 'get'
+		})
+		.then(res => {
+			//if (!res.ok) showErrorToast();
+			return res.json();
+		})
+		.then(json => {
+			if (Array.isArray(json)) hol = json;
+			//TODO: do some parsing first
+			loadBg(cfg.theme.bg.url);
+		})
+		.catch(function (error) {
+			loadBg(cfg.theme.bg.url);
+			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
+		});
+	} else
+		loadBg(cfg.theme.bg.url);
+	loadSkinCSS('skinCss');
 
 	var cd = d.getElementById('csl').children;
 	for (var i = 0; i < cd.length; i++) {
