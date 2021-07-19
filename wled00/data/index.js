@@ -243,7 +243,7 @@ function onLoad()
 		loadFX(function() {
 			loadPresets(function() {
 				loadInfo(function() {
-					requestJson({'v':true}, false);
+					requestJson({'v':true});
 				});
 			});
 		});
@@ -508,8 +508,6 @@ function populateQL()
 			}
 		}
 		if (it != 0) cn+= '<br>';
-
-		cn += `<p class="labels">All presets</p>`;
 	}
 	gId('pql').innerHTML = cn;
 }
@@ -519,7 +517,7 @@ function populatePresets(fromls)
 	if (fromls) pJson = JSON.parse(localStorage.getItem("wledP"));
 	if (!pJson) {pJson={};return};
 	delete pJson["0"];
-	var cn = "";
+	var cn = `<p class="labels">All presets</p>`;
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
 	pQL = [];
@@ -1105,7 +1103,7 @@ function makeWS() {
 }
 
 function reconnectWS() {// Create UI update WS handler
-	if (!ws && lastinfo.ws > -1) setTimeout(makeWS,1000);
+	if (!ws && lastinfo.ws > -1) setTimeout(makeWS,500);
 }
 
 function readState(s,command=false)
@@ -1188,20 +1186,19 @@ function readState(s,command=false)
 var jsonTimeout;
 var reqsLegal = false;
 
-function requestJson(command, rinfo = true)
+function requestJson(command)
 {
 	gId('connind').style.backgroundColor = "#a90";
 	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
 	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
+	if (!command) command = {'v':true};
 	var req = null;
-	var url = (loc?`http://${locip}`:'') + (rinfo ? '/json/si': (command ? '/json/state':'/json/si'));
-
-	var useWs = ((command || rinfo) && ws && ws.readyState === WebSocket.OPEN);
-
+	var url = (loc?`http://${locip}`:'') + '/json/state';
+	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
-	if (command)
-	{
+//	if (command)
+//	{
 		command.v = true; // force complete /json/si API response
 		command.time = Math.floor(Date.now() / 1000);
 		var t = d.getElementById('tt');
@@ -1211,7 +1208,7 @@ function requestJson(command, rinfo = true)
 		}
 		req = JSON.stringify(command);
 		if (req.length > 1000) useWs = false; //do not send very long requests over websocket
-	}
+//	}
 
 	if (useWs) {
 		ws.send(req?req:'{"v":true}');
@@ -1251,7 +1248,7 @@ function togglePower()
 {
 	isOn = !isOn;
 	var obj = {"on": isOn};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function toggleNl()
@@ -1264,7 +1261,7 @@ function toggleNl()
 		showToast('Timer deactivated.');
 	}
 	var obj = {"nl": {"on": nlA}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function toggleSync()
@@ -1274,7 +1271,7 @@ function toggleSync()
 	else showToast('This light and other lights in the network will no longer sync.');
 	var obj = {"udpn": {"send": syncSend}};
 	if (syncTglRecv) obj.udpn.recv = syncSend;
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function toggleLiveview()
@@ -1545,14 +1542,14 @@ function selSegEx(s)
 {
 	var obj = {"seg":[]};
 	for (let i=0; i<=lSeg; i++) obj.seg.push({"sel":(i==s)?true:false});
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function selSeg(s)
 {
 	var sel = gId(`seg${s}sel`).checked;
 	var obj = {"seg": {"id": s, "sel": sel}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setSeg(s)
@@ -1571,7 +1568,7 @@ function setSeg(s)
 		obj.seg.spc = spc;
 		obj.seg.of  = ofs;
 	}
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function delSeg(s)
@@ -1583,33 +1580,33 @@ function delSeg(s)
 	expanded[s] = false;
 	segCount--;
 	var obj = {"seg": {"id": s, "stop": 0}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setRev(s)
 {
 	var rev = gId(`seg${s}rev`).checked;
 	var obj = {"seg": {"id": s, "rev": rev}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setMi(s)
 {
 	var mi = gId(`seg${s}mi`).checked;
 	var obj = {"seg": {"id": s, "mi": mi}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setSegPwr(s)
 {
 	var obj = {"seg": {"id": s, "on": !powered[s]}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setSegBri(s)
 {
 	var obj = {"seg": {"id": s, "bri": parseInt(gId(`seg${s}bri`).value)}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setX(ind = null)
@@ -1625,7 +1622,7 @@ function setX(ind = null)
 	d.querySelector(`#fxlist .lstI[data-id="${ind}"]`).classList.add('selected');
 
 	var obj = {"seg": {"fx": parseInt(ind)}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setPalette(paletteId = null)
@@ -1641,38 +1638,38 @@ function setPalette(paletteId = null)
 	}
 	d.querySelector(`#pallist .lstI[data-id="${paletteId}"]`).classList.add('selected');
 	var obj = {"seg": {"pal": paletteId}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setBri()
 {
 	var obj = {"bri": parseInt(gId('sliderBri').value)};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setSpeed()
 {
 	var obj = {"seg": {"sx": parseInt(gId('sliderSpeed').value)}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setIntensity()
 {
 	var obj = {"seg": {"ix": parseInt(gId('sliderIntensity').value)}};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setLor(i)
 {
 	var obj = {"lor": i};
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function setPreset(i)
 {
 	var obj = {"ps": i};
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function saveP(i,pl)
@@ -1715,7 +1712,7 @@ function saveP(i,pl)
 	if (pQN.length > 0) obj.ql = pQN;
 
 	showToast("Saving " + pN +" (" + pI + ")");
-	requestJson(obj, false);
+	requestJson(obj);
 	if (obj.o) {
 		pJson[pI] = obj;
 		delete pJson[pI].psave;
@@ -1742,18 +1739,18 @@ function testPl(i,bt) {
 	bt.innerHTML = "<i class='icons btn-icon'>&#xe38f;</i>Stop";
 	var obj = {};
 	obj.playlist = plJson[i];
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function stopPl() {
-	requestJson({playlist:{}}, false)
+	requestJson({playlist:{}})
 }
 
 function delP(i) {
 	var bt = gId(`p${i}del`);
 	if (bt.dataset.cnf == 1) {
 		var obj = {"pdel": i};
-		requestJson(obj, false);
+		requestJson(obj);
 		delete pJson[i];
 		populatePresets();
 	} else {
@@ -1862,7 +1859,7 @@ function setColor(sr)
 	}
 	updateHex();
 	updateRgb();
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 var hc = 0;
@@ -1897,7 +1894,7 @@ function rSegs()
 	bt.innerHTML = "Reset segments";
 	var obj = {"seg":[{"start":0,"stop":ledCount,"sel":true}]};
 	for (let i=1; i<=lSeg; i++) obj.seg.push({"stop":0});
-	requestJson(obj, false);
+	requestJson(obj);
 }
 
 function loadPalettesData(callback = null)
@@ -2012,35 +2009,36 @@ function expand(i,a)
 	if (expanded[i]) gId(i<100?'segutil':'putil').classList.remove("staytop");
 	else gId(i<100?'segutil':'putil').classList.add("staytop");
 
-	if (expanded[i]) seg.parentElement.scrollIntoView({
-		behavior: 'smooth',
-		block: 'start',
-	});
+	if (i >= 100) {
+		var p = i-100;
+		gId(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
 
-	if (i < 100) return; //no preset, we are done
+		if (seg.innerHTML === "") {
+			if (isPlaylist(p)) {
+				plJson[p] = pJson[p].playlist;
+				//make sure all keys are present in plJson[p]
+				formatArr(plJson[p]);
+				if (isNaN(plJson[p].repeat)) plJson[p].repeat = 0;
+				if (!plJson[p].r) plJson[p].r = false;
+				if (isNaN(plJson[p].end)) plJson[p].end = 0;
 
-	var p = i-100;
-	gId(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
-	if (seg.innerHTML !== "") return;
+				seg.innerHTML = makeP(p,true);
+				refreshPlE(p);
+			} else {
+				seg.innerHTML = makeP(p);
+			}
 
-	if (isPlaylist(p)) {
-		plJson[p] = pJson[p].playlist;
-		//make sure all keys are present in plJson[p]
-		formatArr(plJson[p]);
-		if (isNaN(plJson[p].repeat)) plJson[p].repeat = 0;
-		if (!plJson[p].r) plJson[p].r = false;
-		if (isNaN(plJson[p].end)) plJson[p].end = 0;
-
-		seg.innerHTML = makeP(p,true);
-		refreshPlE(p);
-	} else {
-		seg.innerHTML = makeP(p);
+			var papi = papiVal(p);
+			gId(`p${p}api`).value = papi;
+			if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = true;
+			tglCs(p);
+		}
 	}
 
-	var papi = papiVal(p);
-	gId(`p${p}api`).value = papi;
-	if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = true;
-	tglCs(p);
+	seg.parentElement.scrollIntoView({
+		behavior: 'smooth',
+		block: (expanded[i]?'start':'center'),
+	});
 }
 
 function unfocusSliders()

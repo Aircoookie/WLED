@@ -401,7 +401,7 @@ onclick='uploadFile(d.Sf.data,"/presets.json")'><br></div><a class="btn"
 href="/cfg.json?download" target="download-frame">Backup configuration</a><br>
 <div id="presets">Restore configuration:<input type="file" name="data2" 
 accept=".json"> <input type="button" value="Upload" 
-onclick='uploadFile(d.Sf.data2,"/cfg.json")'><br></div><div style="color:#f21">
+onclick='uploadFile(d.Sf.data2,"/cfg.json")'><br></div><div style="color:#fa0">
 WARNING!<br>
 Restoring presets/configuration will OVERWRITE current presets/configuration.
 <br>Incorrect configuration may require factory reset or re-flashing of ESP.

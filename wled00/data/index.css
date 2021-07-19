@@ -1007,12 +1007,12 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 #pallist .lstI.selected {
-	top: 27px;
-	bottom: -11px;
+	top: 80px;
+	bottom: 0;
 }
 
 #pallist .lstI.sticky {
-	top: -11px;
+	top: 40px;
 }
 
 .lstI.sticky {
