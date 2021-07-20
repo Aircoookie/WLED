@@ -133,6 +133,7 @@ class FourLineDisplayUsermod : public Usermod {
       if (type == NONE) return;
       if (!pinManager.allocatePin(sclPin)) { sclPin = -1; type = NONE; return;}
       if (!pinManager.allocatePin(sdaPin)) { pinManager.deallocatePin(sclPin); sclPin = sdaPin = -1; type = NONE; return; }
+      DEBUG_PRINTLN(F("Allocating display."));
       switch (type) {
         case SSD1306:
           #ifdef ESP8266
@@ -184,12 +185,19 @@ class FourLineDisplayUsermod : public Usermod {
           type = NONE;
           return;
       }
-      (static_cast<U8X8*>(u8x8))->begin();
+      initDone = true;
+      if (u8x8 != nullptr) {
+        DEBUG_PRINTLN(F("Starting display."));
+        (static_cast<U8X8*>(u8x8))->begin();
+      } else {
+        DEBUG_PRINTLN(F("Display init failed."));
+        type = NONE;
+        return;
+      }
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
       drawString(0, 0, "Loading...");
-      initDone = true;
     }
 
     // gets called every time WiFi is (re-)connected. Initialize own network
@@ -388,10 +396,8 @@ class FourLineDisplayUsermod : public Usermod {
           showCurrentEffectOrPalette(knownPalette, JSON_palette_names, line);
           break;
         case FLD_LINE_TIME:
-          showTime(false);
-          break;
         default:
-          // unknown type, do nothing
+          showTime(false);
           break;
       }
     }
@@ -464,6 +470,10 @@ class FourLineDisplayUsermod : public Usermod {
       if (line1) drawString(0, 1*lineHeight, line1);
       if (line2) drawString(0, 2*lineHeight, line2);
       overlayUntil = millis() + showHowLong;
+    }
+
+    void setLineType(byte lT) {
+      lineType = (Line4Type) lT;
     }
 
     /**
@@ -648,6 +658,7 @@ class FourLineDisplayUsermod : public Usermod {
         type = newType;
         DEBUG_PRINTLN(F(" config loaded."));
       } else {
+        DEBUG_PRINTLN(F(" config (re)loaded."));
         // changing parameters from settings page
         if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
           if (type != NONE) delete (static_cast<U8X8*>(u8x8));
@@ -665,7 +676,6 @@ class FourLineDisplayUsermod : public Usermod {
         setContrast(contrast);
         setFlipMode(flip);
         if (needsRedraw && !wakeDisplay()) redraw(true);
-        DEBUG_PRINTLN(F(" config (re)loaded."));
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return true;
