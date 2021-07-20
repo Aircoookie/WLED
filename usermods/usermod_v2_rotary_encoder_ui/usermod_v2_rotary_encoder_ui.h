@@ -56,10 +56,10 @@ private:
   int fadeAmount = 10;             // Amount to change every step (brightness)
   unsigned long currentTime;
   unsigned long loopTime;
-  const int pinA = ENCODER_DT_PIN;     // DT from encoder
-  const int pinB = ENCODER_CLK_PIN;    // CLK from encoder
-  const int pinC = ENCODER_SW_PIN;     // SW from encoder
-  unsigned char select_state = 0;      // 0: brightness, 1: effect, 2: effect speed
+  int8_t pinA = ENCODER_DT_PIN;       // DT from encoder
+  int8_t pinB = ENCODER_CLK_PIN;      // CLK from encoder
+  int8_t pinC = ENCODER_SW_PIN;       // SW from encoder
+  unsigned char select_state = 0;     // 0: brightness, 1: effect, 2: effect speed
   unsigned char button_state = HIGH;
   unsigned char prev_button_state = HIGH;
   
@@ -80,6 +80,16 @@ private:
   uint8_t effectCurrentIndex = 0;
   uint8_t effectPaletteIndex = 0;
 
+  bool initDone = false;
+  bool enabled = true;
+
+  // strings to reduce flash memory usage (used more than twice)
+  static const char _name[];
+  static const char _enabled[];
+  static const char _DT_pin[];
+  static const char _CLK_pin[];
+  static const char _SW_pin[];
+
 public:
   /*
      * setup() is called once at boot. WiFi is not yet connected at this point.
@@ -87,6 +97,10 @@ public:
      */
   void setup()
   {
+    if (!pinManager.allocatePin(pinA)) { enabled = false; return;}
+    if (!pinManager.allocatePin(pinB)) { pinManager.deallocatePin(pinA); enabled = false; return; }
+    if (!pinManager.allocatePin(pinC)) { pinManager.deallocatePin(pinA); pinManager.deallocatePin(pinB); enabled = false; return; }
+
     pinMode(pinA, INPUT_PULLUP);
     pinMode(pinB, INPUT_PULLUP);
     pinMode(pinC, INPUT_PULLUP);
@@ -106,6 +120,8 @@ public:
       display->setMarkLine(3);
     }
 #endif
+
+    initDone = true;
   }
 
   /*
@@ -129,6 +145,8 @@ public:
      */
   void loop()
   {
+    if (!enabled) return;
+
     currentTime = millis(); // get the current elapsed time
 
     // Initialize effectCurrentIndex and effectPaletteIndex to
@@ -387,8 +405,71 @@ public:
      */
   void readFromJsonState(JsonObject &root)
   {
-    userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
+    //userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
     //if (root["bri"] == 255) Serial.println(F("Don't burn down your garage!"));
+  }
+
+  /**
+   * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
+   */
+  void addToConfig(JsonObject &root) {
+    // we add JSON object: {"Rotary-Encoder":{"DT-pin":12,"CLK-pin":14,"SW-pin":13}}
+    JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
+    top[FPSTR(_enabled)] = enabled;
+    top[FPSTR(_DT_pin)]  = pinA;
+    top[FPSTR(_CLK_pin)] = pinB;
+    top[FPSTR(_SW_pin)]  = pinC;
+    DEBUG_PRINTLN(F("Rotary Encoder config saved."));
+  }
+
+  /**
+   * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+   *
+   * The function should return true if configuration was successfully loaded or false if there was no configuration.
+   */
+  bool readFromConfig(JsonObject &root) {
+    // we look for JSON object: {"Rotary-Encoder":{"DT-pin":12,"CLK-pin":14,"SW-pin":13}}
+    JsonObject top = root[FPSTR(_name)];
+    if (top.isNull()) {
+      DEBUG_PRINT(FPSTR(_name));
+      DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+      return false;
+    }
+    int8_t newDTpin  = pinA;
+    int8_t newCLKpin = pinB;
+    int8_t newSWpin  = pinC;
+
+    enabled   = top[FPSTR(_enabled)] | enabled;
+    newDTpin  = top[FPSTR(_DT_pin)]  | newDTpin;
+    newCLKpin = top[FPSTR(_CLK_pin)] | newCLKpin;
+    newSWpin  = top[FPSTR(_SW_pin)]  | newSWpin;
+
+    DEBUG_PRINT(FPSTR(_name));
+    if (!initDone) {
+      // first run: reading from cfg.json
+      pinA = newDTpin;
+      pinB = newCLKpin;
+      pinC = newSWpin;
+      DEBUG_PRINTLN(F(" config loaded."));
+    } else {
+      DEBUG_PRINTLN(F(" config (re)loaded."));
+      // changing parameters from settings page
+      if (pinA!=newDTpin || pinB!=newCLKpin || pinC!=newSWpin) {
+        pinManager.deallocatePin(pinA);
+        pinManager.deallocatePin(pinB);
+        pinManager.deallocatePin(pinC);
+        pinA = newDTpin;
+        pinB = newCLKpin;
+        pinC = newSWpin;
+        if (pinA<0 || pinB<0 || pinC<0) {
+          enabled = false;
+          return true;
+        }
+        setup();
+      }
+    }
+    // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+    return !top[FPSTR(_enabled)].isNull();
   }
 
   /*
@@ -400,3 +481,10 @@ public:
     return USERMOD_ID_ROTARY_ENC_UI;
   }
 };
+
+// strings to reduce flash memory usage (used more than twice)
+const char RotaryEncoderUIUsermod::_name[]     PROGMEM = "Rotary-Encoder";
+const char RotaryEncoderUIUsermod::_enabled[]  PROGMEM = "enabled";
+const char RotaryEncoderUIUsermod::_DT_pin[]   PROGMEM = "DT-pin";
+const char RotaryEncoderUIUsermod::_CLK_pin[]  PROGMEM = "CLK-pin";
+const char RotaryEncoderUIUsermod::_SW_pin[]   PROGMEM = "SW-pin";
