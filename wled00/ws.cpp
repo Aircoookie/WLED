@@ -90,6 +90,7 @@ void sendDataWs(AsyncWebSocketClient * client)
   if (!ws.count()) return;
   AsyncWebSocketMessageBuffer * buffer;
 
+  DEBUG_PRINTLN(F("Sending WS data."));
   { //scope JsonDocument so it releases its buffer
     DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     JsonObject state = doc.createNestedObject("state");
