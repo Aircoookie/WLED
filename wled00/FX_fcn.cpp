@@ -144,6 +144,7 @@ void WS2812FX::service() {
 
     // reset the segment runtime data if needed, called before isActive to ensure deleted
     // segment's buffers are cleared
+    if (SEGENV.isResetRequired()) wasmfx.end();
     SEGENV.resetIfRequired();
 
     if (!SEGMENT.isActive()) continue;
@@ -1083,10 +1084,6 @@ uint32_t WS2812FX::gamma32(uint32_t color)
   g = gammaT[g];
   b = gammaT[b];
   return ((w << 24) | (r << 16) | (g << 8) | (b));
-}
-
-void WS2812FX::initWasm() {
-  wasmfx.init();
 }
 
 WS2812FX* WS2812FX::instance = nullptr;

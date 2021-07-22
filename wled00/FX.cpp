@@ -42,6 +42,7 @@ uint16_t WS2812FX::mode_static(void) {
  * Custom mode. Executes WebAssembly fx() function
  */
 uint16_t WS2812FX::mode_custom(void) {
+  if (SEGENV.call == 0) wasmfx.init();
   wasmfx.run();
   return FRAMETIME;
 }

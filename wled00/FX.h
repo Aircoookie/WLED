@@ -380,10 +380,14 @@ class WS2812FX {
        */
       void resetIfRequired() {
         if (_requiresReset) {
-          next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0; 
+          next_time = 0; step = 0; call = 0; aux0 = 0; aux1 = 0;
           deallocateData();
           _requiresReset = false;
         }
+      }
+
+      bool isResetRequired() {
+        return _requiresReset;
       }
 
       /** 
@@ -630,8 +634,7 @@ class WS2812FX {
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
       setColorOrder(uint8_t co),
-      setPixelSegment(uint8_t n),
-      initWasm(void);
+      setPixelSegment(uint8_t n);
 
     bool
       isRgbw = false,

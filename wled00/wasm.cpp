@@ -222,10 +222,6 @@ void wasm_task(void*)
     if (result) FATAL("Func", result);
     
     Serial.println(F("WASM init success!"));
-
-    // Should not arrive here
-
-    //while (true) {}
 }
 
 void wasmInit()
@@ -261,10 +257,16 @@ void wasmRun() {
     Serial.print(info.message);
     Serial.println(")");
     if (info.file && strlen(info.file) && info.line) {
-        Serial.print("At ");
-        Serial.print(info.file);
-        Serial.print(":");
-        Serial.println(info.line);
+      Serial.print("At ");
+      Serial.print(info.file);
+      Serial.print(":");
+      Serial.println(info.line);
     }
+  }
 }
+
+void wasmEnd() {
+  if (module) m3_FreeModule(module); module = nullptr;
+  if (runtime) m3_FreeRuntime(runtime); runtime = nullptr;
+  if (env) m3_FreeEnvironment(env); env = nullptr;
 }

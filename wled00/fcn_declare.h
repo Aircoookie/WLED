@@ -252,6 +252,7 @@ void userLoop();
 //wasm.cpp
 void wasmInit();
 void wasmRun();
+void wasmEnd();
 
 class WASMFX {
   public:
@@ -261,6 +262,10 @@ class WASMFX {
 
   void run() {
     wasmRun();
+  }
+
+  void end() {
+    wasmEnd();
   }
 
   uint32_t now();
