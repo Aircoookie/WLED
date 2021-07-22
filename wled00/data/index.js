@@ -39,8 +39,8 @@ var hol = [
 var cpick = new iro.ColorPicker("#picker", {
 	width: 260,
 	wheelLightness: false,
-  wheelAngle: 90,
-  layout: [
+	wheelAngle: 90,
+	layout: [
     {
       component: iro.ui.Wheel,
       options: {}
@@ -212,17 +212,17 @@ function onLoad()
 			method: 'get'
 		})
 		.then(res => {
-			//if (!res.ok) showErrorToast();
 			return res.json();
 		})
 		.then(json => {
 			if (Array.isArray(json)) hol = json;
 			//TODO: do some parsing first
-			loadBg(cfg.theme.bg.url);
 		})
-		.catch(function (error) {
-			loadBg(cfg.theme.bg.url);
+		.catch(function(error){
 			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
+		})
+		.finally(function(){
+			loadBg(cfg.theme.bg.url);
 		});
 	} else
 		loadBg(cfg.theme.bg.url);
@@ -461,7 +461,6 @@ function loadPalettes(callback = null)
 	})
 	.catch(function (error) {
 		showToast(error, true);
-		console.log(error);
 		presetError(false);
 		if (callback) callback();
 	});
@@ -479,13 +478,13 @@ function loadFX(callback = null)
 		return res.json();
 	})
 	.then(json => {
+		clearErrorToast();
 		eJson = Object.entries(json);
 		populateEffects();
 		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
-		console.log(error);
 		presetError(false);
 		if (callback) callback();
 	});
@@ -1154,7 +1153,7 @@ function readState(s,command=false)
 		if (isRgbw) whites[e] = parseInt(w);
 		selectSlot(csel);
 	}
-	gId('sliderSpeed').value = whites[csel];
+	gId('sliderW').value = whites[csel];
 
 	gId('sliderSpeed').value = i.sx;
 	gId('sliderIntensity').value = i.ix;
