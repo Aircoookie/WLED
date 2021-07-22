@@ -986,7 +986,7 @@ function readState(s,command=false) {
     if (isRgbw) whites[e] = parseInt(i.col[e][3]);
     selectSlot(csel);
   }
-  d.getElementById('sliderSpeed').value = whites[csel];
+  d.getElementById('sliderW').value = whites[csel];
 
   d.getElementById('sliderSpeed').value = i.sx;
   d.getElementById('sliderIntensity').value = i.ix;
