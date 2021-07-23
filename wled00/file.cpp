@@ -379,7 +379,7 @@ String getContentType(AsyncWebServerRequest* request, String filename){
   if(request->hasArg("download")) return "application/octet-stream";
   else if(filename.endsWith(".htm")) return "text/html";
   else if(filename.endsWith(".html")) return "text/html";
-//  else if(filename.endsWith(".css")) return "text/css";
+  else if(filename.endsWith(".css")) return "text/css";
 //  else if(filename.endsWith(".js")) return "application/javascript";
   else if(filename.endsWith(".json")) return "application/json";
   else if(filename.endsWith(".png")) return "image/png";

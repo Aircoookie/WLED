@@ -17,7 +17,7 @@ button, .btn {
   display: inline-block;
   font-size: 20px;
   margin: 12px 8px 8px;
-  padding: 8px 12px;
+  /*padding: 8px 12px;*/
   min-width: 48px;
   cursor: pointer;
   text-decoration: none;
@@ -33,12 +33,8 @@ input {
   font-family: Verdana, sans-serif;
   border: 0.5ch solid #333;
 }
-input[type="text"] {
-  font-size: medium;
-}
 input[type="number"] {
   width: 4em;
-  font-size: medium;
   margin: 2px;
 }
 input[type="number"].xxl {
@@ -58,10 +54,6 @@ input[type="number"].s {
 }
 input[type="number"].xs {
   width: 42px;
-}
-select {
-  margin: 2px;
-  font-size: medium;
 }
 input[type="checkbox"] {
   transform: scale(1.5);

@@ -184,7 +184,7 @@ function loadBg(iUrl) {
 
 function loadSkinCSS(cId)
 {
-	if (!gId(cId))	// check if element exists
+	if (!d.getElementById(cId))	// check if element exists
 	{
 		var h  = document.getElementsByTagName('head')[0];
 		var l  = document.createElement('link');
@@ -224,12 +224,13 @@ function onLoad() {
 		.then(json => {
 			if (Array.isArray(json)) hol = json;
 			//TODO: do some parsing first
-			loadBg(cfg.theme.bg.url);
 		})
 		.catch(function (error) {
-			loadBg(cfg.theme.bg.url);
 			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
-		});
+		})
+    .finally(function(){
+      loadBg(cfg.theme.bg.url);
+    });
 	} else
 		loadBg(cfg.theme.bg.url);
 	loadSkinCSS('skinCss');
@@ -591,7 +592,7 @@ function populateSegments(s)
 				<table class="infot">
 					<tr>
 						<td class="segtd">Start LED</td>
-						<td class="segtd">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
+						<td class="segtd">${cfg.comp.seglen?"Length":"Stop LED"}</td>
 						<td class="segtd">Offset</td>
 					</tr>
 					<tr>
@@ -1264,7 +1265,7 @@ function makeSeg() {
 				<table class="segt">
 					<tr>
 						<td class="segtd">Start LED</td>
-						<td class="segtd">${cfg.comp.seglen?"LED count":"Stop LED"}</td>
+						<td class="segtd">${cfg.comp.seglen?"Length":"Stop LED"}</td>
 					</tr>
 					<tr>
 						<td class="segtd"><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
