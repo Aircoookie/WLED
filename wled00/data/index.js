@@ -1668,6 +1668,7 @@ function setLor(i)
 function setPreset(i)
 {
 	var obj = {"ps": i};
+	if (isPlaylist(i)) obj.on = true;
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
 	requestJson(obj);
 }
