@@ -1116,7 +1116,8 @@ function readState(s,command=false)
 	nlTar = s.nl.tbri;
 	nlFade = s.nl.fade;
 	syncSend = s.udpn.send;
-	currentPreset = s.ps;
+	if (s.pl<0)	currentPreset = s.ps;
+	else currentPreset = s.pl;
 	gId('tt').value = s.transition/10;
 
 	var selc=0; var ind=0;
