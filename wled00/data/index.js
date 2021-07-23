@@ -27,7 +27,7 @@ var fxlist = d.getElementById('fxlist'), pallist = d.getElementById('pallist');
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
 	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
-          labels:true, pcmbot:false, pid:true, seglen:false, css:false, hdays:false}
+          labels:true, pcmbot:false, pid:true, seglen:false, css:true, hdays:false}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
