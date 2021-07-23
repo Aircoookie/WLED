@@ -17,10 +17,12 @@ button, .btn {
   display: inline-block;
   font-size: 20px;
   margin: 12px 8px 8px;
-  /*padding: 8px 12px;*/
-  min-width: 48px;
+  padding: 1px 6px;
   cursor: pointer;
   text-decoration: none;
+}
+.lnk {
+  border: 0;
 }
 .helpB {
   text-align: left;

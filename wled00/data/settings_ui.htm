@@ -20,7 +20,9 @@
 					},
 				"pcmbot": "Show bottom tab bar in PC mode",
 				"pid": "Show preset IDs",
-				"seglen": "Set segment length instead of stop LED"
+				"seglen": "Set segment length instead of stop LED",
+        "css": "Enable custom CSS",
+        "hdays": "Enable custom Holidays list"
 			},
 			"theme":{
 				"alpha": {
@@ -202,7 +204,7 @@
 	    }
 		function GetV(){var d=document;}
 	</script>
-	<style>@import url("/style.css");</style>
+	<style>@import url("style.css");</style>
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
@@ -234,8 +236,10 @@
 		<span class="l">BG image URL</span>: <input id="theme_bg_url" class="agi" oninput="checkRandomBg()"><br>
 		<span class="l">Random BG image</span>: <input type="checkbox" id="theme_bg_random" class="agi cb" onchange="setRandomBg()"><br>
 		<input id="theme_base" class="agi" style="display:none">
-		<div id="skin">Skinning CSS: <input type="file" name="data" accept=".css"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/skin.css');"><br></div>
-		<div id="holidays">Holidays: <input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/holidays.json');"><br></div>
+    <span class="l"></span>: <input type="checkbox" id="comp_css" class="agi cb"><br>
+		<div id="skin">Custom CSS: <input type="file" name="data" accept=".css"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/skin.css');"><br></div>
+		<span class="l"></span>: <input type="checkbox" id="comp_hdays" class="agi cb"><br>
+    <div id="holidays">Holidays: <input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/holidays.json');"><br></div>
 		<div id="toast"></div>
 		<hr><button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button>
 	</form>

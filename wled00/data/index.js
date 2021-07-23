@@ -26,7 +26,8 @@ var ws;
 var fxlist = d.getElementById('fxlist'), pallist = d.getElementById('pallist');
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
-	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true, seglen:false}
+	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
+          labels:true, pcmbot:false, pid:true, seglen:false, css:false, hdays:false}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -213,7 +214,7 @@ function onLoad() {
 	resetPUtil();
 
 	applyCfg();
-	if (cfg.theme.bg.url=="" || cfg.theme.bg.url === "https://picsum.photos/1920/1080") {
+	if (cfg.comp.hdays) { //load custom holiday list
 		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {	// may be loaded from external source
 			method: 'get'
 		})
@@ -233,7 +234,7 @@ function onLoad() {
     });
 	} else
 		loadBg(cfg.theme.bg.url);
-	loadSkinCSS('skinCss');
+	if (cfg.comp.css) loadSkinCSS('skinCss');
 
 	var cd = d.getElementById('csl').children;
 	for (var i = 0; i < cd.length; i++) {
@@ -246,7 +247,7 @@ function onLoad() {
 		setColor(1);
 	});
 	pmtLS = localStorage.getItem('wledPmt');
-	setTimeout(function(){requestJson(null, false);}, 25);
+	setTimeout(function(){requestJson(null, false);}, 50);
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
 	d.getElementById("cv").style.opacity=0;
@@ -696,13 +697,12 @@ function populatePalettes(palettes)
 	var html = `<div class="searchbar"><input type="text" class="search" placeholder="Search" oninput="search(this)" />
   <i class="icons search-cancel-icon" onclick="cancelSearch(this)">&#xe38f;</i></div>`;
 	for (let i = 0; i < palettes.length; i++) {
-		let previewCss = genPalPrevCss(palettes[i].id);
 		html += generateListItemHtml(
 			'palette',
 		    palettes[i].id,
             palettes[i].name,
             'setPalette',
-			`<div class="lstIprev" style="${previewCss}"></div>`,
+			`<div class="lstIprev" style="${genPalPrevCss(palettes[i].id)}"></div>`,
 			palettes[i].class,
         );
 	}
@@ -728,7 +728,6 @@ function genPalPrevCss(id)
 		return;
 	}
 	var paletteData = palettesData[id];
-	var previewCss = "";
 
 	if (!paletteData) {
 		return 'display: none';
