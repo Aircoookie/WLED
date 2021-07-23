@@ -474,6 +474,7 @@ void serializeInfo(JsonObject root)
     case REALTIME_MODE_ARTNET:   root["lm"] = F("Art-Net"); break;
     case REALTIME_MODE_TPM2NET:  root["lm"] = F("tpm2.net"); break;
     case REALTIME_MODE_DDP:      root["lm"] = F("DDP"); break;
+    case REALTIME_MODE_OPC:      root["lm"] = F("Open Pixel Control"); break;
   }
 
   if (realtimeIP[0] == 0)

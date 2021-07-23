@@ -37,6 +37,7 @@
 #ifndef WLED_DISABLE_WEBSOCKETS
   #define WLED_ENABLE_WEBSOCKETS
 #endif
+#define WLED_ENABLE_OPC
 
 #define WLED_ENABLE_FS_EDITOR      // enable /edit page for editing FS content. Will also be disabled with OTA lock
 
@@ -398,6 +399,14 @@ WLED_GLOBAL uint16_t userVar0 _INIT(0), userVar1 _INIT(0); //available for use i
   WLED_GLOBAL uint16_t DMXGap _INIT(10);          // gap between the fixtures. makes addressing easier because you don't have to memorize odd numbers when climbing up onto a rig.
   WLED_GLOBAL uint16_t DMXStart _INIT(10);        // start address of the first fixture
   WLED_GLOBAL uint16_t DMXStartLED _INIT(0);      // LED from which DMX fixtures start
+#endif
+
+#ifdef WLED_ENABLE_OPC //opc test support
+  WLED_GLOBAL AsyncClient* clientServed _INIT(nullptr);
+  WLED_GLOBAL AsyncServer* opcServer _INIT(nullptr);
+  WLED_GLOBAL uint16_t opcDataLen _INIT(0);
+  WLED_GLOBAL cbuf* opcCircularBufPtr _INIT(nullptr);
+  WLED_GLOBAL bool opcParserWaitingForData _INIT(false);
 #endif
 
 // internal global variable declarations
