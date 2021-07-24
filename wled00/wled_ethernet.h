@@ -3,11 +3,6 @@
 
 #ifdef WLED_USE_ETHERNET
 #include "pin_manager.h"
-// settings for various ethernet boards
-// typedef struct PinManagerPinType {
-//   byte pin;
-//   byte isOutput;
-// } managed_pin_type;
 
 // The following pins are neither configurable nor
 // can they be re-assigned through IOMUX / GPIO matrix.
