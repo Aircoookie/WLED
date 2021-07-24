@@ -5,6 +5,11 @@
  */
 #include <Arduino.h>
 
+typedef struct PinManagerPinType {
+  byte pin;
+  byte isOutput;
+} managed_pin_type;
+
 class PinManagerClass {
   private:
   #ifdef ESP8266
@@ -23,6 +28,22 @@ class PinManagerClass {
   byte allocateLedc(byte channels);
   void deallocateLedc(byte pos, byte channels);
   #endif
+  inline void PinManagerClass::deallocatePin(managed_pin_type mpt)
+  {
+    deallocatePin(mpt.pin);
+  }
+  inline bool PinManagerClass::allocatePin(managed_pin_type mpt)
+  {
+    return allocatePin(mpt.pin, mpt.isOutput);
+  }
+  inline bool PinManagerClass::isPinAllocated(managed_pin_type mpt)
+  {
+    return isPinAllocated(mpt.pin);
+  }
+  inline bool PinManagerClass::isPinOk(managed_pin_type mpt)
+  {
+    return isPinOk(mpt.pin);
+  }
 };
 
 extern PinManagerClass pinManager;
