@@ -446,40 +446,75 @@ void WLED::initConnection()
   // Only initialize ethernet board if not NONE
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     ethernet_settings es = ethernetBoards[ethernetType];
+
+    // actual array of pins is larger than those listed in ethernet_settings:
+    typedef struct Esp32EthernetPinDetail {
+      byte pin;
+      byte isInputOnly;
+    } esp32_ethernet_pin_detail;
+    const esp32_ethernet_pin_detail constantPinsForESP32[6] = {
+      { 21, false }, // Constant for ESP32, RMII_EMAC_TX_EN
+      { 19, false }, // Constant for ESP32, RMII_EMAC_TXD0
+      { 22, false }, // Constant for ESP32, RMII_EMAC_TXD1
+      { 25, true  }, // Constant for ESP32, RMII_EMAC_RXD0
+      { 26, true  }, // Constant for ESP32, RMII_EMAC_RXD1
+      { 27, false }, // Constant for ESP32, RMII_EMAC_CRS_DV
+    };
+
     // Use PinManager to ensure pins are available for
     // ethernet AND to prevent other uses of these pins.
     bool s = true;
-    byte pinsAllocated[4] { 255, 255, 255, 255 };
+    int idx = 0;
+    
+    // This must be large enough for both constant and configurable pins
+    byte pinsAllocated[12] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
 
+    // First ensure the non-configurable pins can be reserved...
+    for (esp32_ethernet_pin_detail details : constantPinsForESP32) {
+      if (s && (s = pinManager.allocatePin(details.pin, details.isInputOnly))) { 
+        pinsAllocated[idx] = 21;
+        idx++;
+      }
+    }
+    // then allocate the pins whose configuration changes...
     if (s && (s = pinManager.allocatePin((byte)es.eth_power))) {
-      pinsAllocated[0] = (byte)es.eth_power;
+      pinsAllocated[idx] = (byte)es.eth_power;
+      idx++;
     }
     if (s && (s = pinManager.allocatePin((byte)es.eth_mdc))) {
-      pinsAllocated[1] = (byte)es.eth_mdc;
+      pinsAllocated[idx] = (byte)es.eth_mdc;
+      idx++;
     }
     if (s && (s = pinManager.allocatePin((byte)es.eth_mdio))) {
-      pinsAllocated[2] = (byte)es.eth_mdio;
+      pinsAllocated[idx] = (byte)es.eth_mdio;
+      idx++;
     }
-    switch(es.eth_clk_mode) {
-      case ETH_CLOCK_GPIO0_IN:
-        s = pinManager.allocatePin(0, false);
-        pinsAllocated[3] = 0;
-        break;
-      case ETH_CLOCK_GPIO0_OUT:
-        s = pinManager.allocatePin(0);
-        pinsAllocated[3] = 0;
-        break;
-      case ETH_CLOCK_GPIO16_OUT:
-        s = pinManager.allocatePin(16);
-        pinsAllocated[3] = 16;
-        break;
-      case ETH_CLOCK_GPIO17_OUT:
-        s = pinManager.allocatePin(17);
-        pinsAllocated[3] = 17;
-        break;
-      default:
-        s = false;
-        break;
+    if (s) {
+      switch(es.eth_clk_mode) {
+        case ETH_CLOCK_GPIO0_IN:
+          s = pinManager.allocatePin(0, false);
+          pinsAllocated[idx] = 0;
+          idx++;
+          break;
+        case ETH_CLOCK_GPIO0_OUT:
+          s = pinManager.allocatePin(0);
+          pinsAllocated[idx] = 0;
+          idx++;
+          break;
+        case ETH_CLOCK_GPIO16_OUT:
+          s = pinManager.allocatePin(16);
+          pinsAllocated[idx] = 16;
+          idx++;
+          break;
+        case ETH_CLOCK_GPIO17_OUT:
+          s = pinManager.allocatePin(17);
+          pinsAllocated[idx] = 17;
+          idx++;
+          break;
+        default:
+          s = false;
+          break;
+      }
     }
 
     if (s) {
