@@ -447,20 +447,6 @@ void WLED::initConnection()
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     ethernet_settings es = ethernetBoards[ethernetType];
 
-    // actual array of pins is larger than those listed in ethernet_settings:
-    typedef struct Esp32EthernetPinDetail {
-      byte pin;
-      byte isOutput;
-    } esp32_ethernet_pin_detail;
-    const esp32_ethernet_pin_detail constantPinsForESP32[6] = {
-      { 21, true  }, // Constant for ESP32, RMII_EMAC_TX_EN
-      { 19, true  }, // Constant for ESP32, RMII_EMAC_TXD0
-      { 22, true  }, // Constant for ESP32, RMII_EMAC_TXD1
-      { 25, false }, // Constant for ESP32, RMII_EMAC_RXD0
-      { 26, false }, // Constant for ESP32, RMII_EMAC_RXD1
-      { 27, true  }, // Constant for ESP32, RMII_EMAC_CRS_DV
-    };
-
     // Use PinManager to ensure pins are available for
     // ethernet AND to prevent other uses of these pins.
     bool s = true;
@@ -470,9 +456,9 @@ void WLED::initConnection()
     byte pinsAllocated[12] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
 
     // First ensure the non-configurable pins can be reserved...
-    for (esp32_ethernet_pin_detail details : constantPinsForESP32) {
-      if (s && (s = pinManager.allocatePin(details.pin, details.isOutput))) { 
-        pinsAllocated[idx] = 21;
+    for (managed_pin_type mpt : esp32_nonconfigurable_ethernet_pins) {
+      if (s && (s = pinManager.allocatePin(mpt))) { 
+        pinsAllocated[idx] = mpt.pin;
         idx++;
       }
     }
