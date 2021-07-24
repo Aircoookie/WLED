@@ -28,6 +28,10 @@ class PinManagerClass {
   byte allocateLedc(byte channels);
   void deallocateLedc(byte pos, byte channels);
   #endif
+  // Allocates all pins, or none of the pins, in the array
+  // This should simplify error condition handling in clients
+  // that need more than one pin to work correctly, such as
+  // ethernet, rotary encoders, and the like.
   bool allocateMultiplePins(const managed_pin_type * mpt, byte arrayElementCount);
   inline void deallocatePin(managed_pin_type mpt)
   {
