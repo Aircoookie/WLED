@@ -447,80 +447,51 @@ void WLED::initConnection()
   if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
     ethernet_settings es = ethernetBoards[ethernetType];
 
-    // Use PinManager to ensure pins are available for
-    // ethernet AND to prevent other uses of these pins.
-    bool s = true;
-    int idx = 0;
-    
-    // This must be large enough for both constant (6) and configurable (5) pins
-    byte pinsAllocated[12] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
-
-    // First ensure the non-configurable pins can be reserved...
-    for (managed_pin_type mpt : esp32_nonconfigurable_ethernet_pins) {
-      if (s && (s = pinManager.allocatePin(mpt))) { 
-        pinsAllocated[idx] = mpt.pin;
-        idx++;
-      }
-    }
-    // then allocate the pins whose configuration changes...
-    if (s && (s = pinManager.allocatePin((byte)es.eth_power))) {
-      pinsAllocated[idx] = (byte)es.eth_power;
-      idx++;
-    }
-    if (s && (s = pinManager.allocatePin((byte)es.eth_mdc))) {
-      pinsAllocated[idx] = (byte)es.eth_mdc;
-      idx++;
-    }
-    if (s && (s = pinManager.allocatePin((byte)es.eth_mdio))) {
-      pinsAllocated[idx] = (byte)es.eth_mdio;
-      idx++;
-    }
-    if (s) {
-      switch(es.eth_clk_mode) {
-        case ETH_CLOCK_GPIO0_IN:
-          s = pinManager.allocatePin(0, false);
-          pinsAllocated[idx] = 0;
-          idx++;
-          break;
-        case ETH_CLOCK_GPIO0_OUT:
-          s = pinManager.allocatePin(0);
-          pinsAllocated[idx] = 0;
-          idx++;
-          break;
-        case ETH_CLOCK_GPIO16_OUT:
-          s = pinManager.allocatePin(16);
-          pinsAllocated[idx] = 16;
-          idx++;
-          break;
-        case ETH_CLOCK_GPIO17_OUT:
-          s = pinManager.allocatePin(17);
-          pinsAllocated[idx] = 17;
-          idx++;
-          break;
-        default:
-          s = false;
-          break;
-      }
+    managed_pin_type pinsToAllocate[10] = {
+      // first six pins are non-configurable
+      esp32_nonconfigurable_ethernet_pins[0],
+      esp32_nonconfigurable_ethernet_pins[1],
+      esp32_nonconfigurable_ethernet_pins[2],
+      esp32_nonconfigurable_ethernet_pins[3],
+      esp32_nonconfigurable_ethernet_pins[4],
+      esp32_nonconfigurable_ethernet_pins[5],
+      { (byte)es.eth_mdc,   true },  // [6] = MDC  is output and mandatory
+      { (byte)es.eth_mdio,  true },  // [7] = MDIO is bidirectional and mandatory
+      { 0xFE, false },               // [8] = replaced with eth_clk_mode, mandatory
+      { (byte)es.eth_power, true },  // [9] = optional pin
+    };
+    if (es.eth_clk_mode == ETH_CLOCK_GPIO0_IN) {
+      pinsToAllocate[8].pin = 0;
+      pinsToAllocate[8].isOutput = false;
+    } else if (es.eth_clk_mode == ETH_CLOCK_GPIO0_OUT) {
+      pinsToAllocate[8].pin = 0;
+      pinsToAllocate[8].isOutput = true;
+    } else if (es.eth_clk_mode == ETH_CLOCK_GPIO16_OUT) {
+      pinsToAllocate[8].pin = 16;
+      pinsToAllocate[8].isOutput = true;
+    } else if (es.eth_clk_mode == ETH_CLOCK_GPIO17_OUT) {
+      pinsToAllocate[8].pin = 17;
+      pinsToAllocate[8].isOutput = true;
     }
 
-    if (s) {
-      s = ETH.begin(
-        (uint8_t) es.eth_address, 
-        (int)     es.eth_power, 
-        (int)     es.eth_mdc, 
-        (int)     es.eth_mdio, 
-        (eth_phy_type_t)   es.eth_type,
-        (eth_clock_mode_t) es.eth_clk_mode
-      );
-    }
-    
-    if (!s) {
+    if (!pinManager.allocateMultiplePins(pinsToAllocate, 10)) {
+      DEBUG_PRINTLN(F("Failed to allocate ethernet pins"));
+    } else if (!ETH.begin(
+                  (uint8_t) es.eth_address, 
+                  (int)     es.eth_power, 
+                  (int)     es.eth_mdc, 
+                  (int)     es.eth_mdio, 
+                  (eth_phy_type_t)   es.eth_type,
+                  (eth_clock_mode_t) es.eth_clk_mode
+                  ))
+    {
       DEBUG_PRINTLN(F("Ethernet init failed"));
-      // de-allocate only those pins allocated before the failure
-      for (byte p : pinsAllocated) {
+      // de-allocate the allocated pins
+      for (managed_pin_type p : pinsToAllocate) {
         pinManager.deallocatePin(p);
       }
     }
+    
   }
 #endif
 
