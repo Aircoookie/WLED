@@ -452,7 +452,7 @@ void WLED::initConnection()
     bool s = true;
     int idx = 0;
     
-    // This must be large enough for both constant and configurable pins
+    // This must be large enough for both constant (6) and configurable (5) pins
     byte pinsAllocated[12] { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 };
 
     // First ensure the non-configurable pins can be reserved...
