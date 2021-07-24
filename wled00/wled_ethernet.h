@@ -2,7 +2,25 @@
 #define WLED_ETHERNET_H
 
 #ifdef WLED_USE_ETHERNET
+#include "pin_manager.h"
 // settings for various ethernet boards
+// typedef struct PinManagerPinType {
+//   byte pin;
+//   byte isOutput;
+// } managed_pin_type;
+
+// The following pins are neither configurable nor
+// can they be re-assigned through IOMUX / GPIO matrix.
+// See https://docs.espressif.com/projects/esp-idf/en/latest/esp32/hw-reference/esp32/get-started-ethernet-kit-v1.1.html#ip101gri-phy-interface
+const managed_pin_type esp32_nonconfigurable_ethernet_pins[6] = {
+    { 21, true  }, // RMII EMAC TX EN
+    { 19, true  }, // RMII EMAC TXD0
+    { 22, true  }, // RMII EMAC TXD1
+    { 25, false }, // RMII EMAC RXD0
+    { 26, false }, // RMII EMAC RXD1
+    { 27, true  }, // RMII EMAC CRS_DV
+};
+
 typedef struct EthernetSettings {
   uint8_t        eth_address;
   int            eth_power;
@@ -11,6 +29,9 @@ typedef struct EthernetSettings {
   eth_phy_type_t eth_type;
   eth_clock_mode_t eth_clk_mode;
 } ethernet_settings;
+
+
+
 
 ethernet_settings ethernetBoards[] = {
   // None
