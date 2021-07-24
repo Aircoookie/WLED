@@ -472,7 +472,7 @@ void WLED::initConnection()
     // First ensure the non-configurable pins can be reserved...
     for (esp32_ethernet_pin_detail details : constantPinsForESP32) {
       if (s && (s = pinManager.allocatePin(details.pin, details.isOutput))) { 
-        pinsAllocated[idx] = 21;
+        pinsAllocated[idx] = details.pin;
         idx++;
       }
     }
