@@ -450,15 +450,15 @@ void WLED::initConnection()
     // actual array of pins is larger than those listed in ethernet_settings:
     typedef struct Esp32EthernetPinDetail {
       byte pin;
-      byte isInputOnly;
+      byte isOutput;
     } esp32_ethernet_pin_detail;
     const esp32_ethernet_pin_detail constantPinsForESP32[6] = {
-      { 21, false }, // Constant for ESP32, RMII_EMAC_TX_EN
-      { 19, false }, // Constant for ESP32, RMII_EMAC_TXD0
-      { 22, false }, // Constant for ESP32, RMII_EMAC_TXD1
-      { 25, true  }, // Constant for ESP32, RMII_EMAC_RXD0
-      { 26, true  }, // Constant for ESP32, RMII_EMAC_RXD1
-      { 27, false }, // Constant for ESP32, RMII_EMAC_CRS_DV
+      { 21, true  }, // Constant for ESP32, RMII_EMAC_TX_EN
+      { 19, true  }, // Constant for ESP32, RMII_EMAC_TXD0
+      { 22, true  }, // Constant for ESP32, RMII_EMAC_TXD1
+      { 25, false }, // Constant for ESP32, RMII_EMAC_RXD0
+      { 26, false }, // Constant for ESP32, RMII_EMAC_RXD1
+      { 27, true  }, // Constant for ESP32, RMII_EMAC_CRS_DV
     };
 
     // Use PinManager to ensure pins are available for
@@ -471,7 +471,7 @@ void WLED::initConnection()
 
     // First ensure the non-configurable pins can be reserved...
     for (esp32_ethernet_pin_detail details : constantPinsForESP32) {
-      if (s && (s = pinManager.allocatePin(details.pin, details.isInputOnly))) { 
+      if (s && (s = pinManager.allocatePin(details.pin, details.isOutput))) { 
         pinsAllocated[idx] = 21;
         idx++;
       }
