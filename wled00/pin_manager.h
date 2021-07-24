@@ -28,6 +28,7 @@ class PinManagerClass {
   byte allocateLedc(byte channels);
   void deallocateLedc(byte pos, byte channels);
   #endif
+  bool allocateMultiplePins(const managed_pin_type * mpt, byte arrayElementCount);
   inline void deallocatePin(managed_pin_type mpt)
   {
     deallocatePin(mpt.pin);

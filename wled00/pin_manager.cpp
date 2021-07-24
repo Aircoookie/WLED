@@ -1,6 +1,37 @@
 #include "pin_manager.h"
 #include "wled.h"
 
+bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount)
+{
+  // first verify the pins are OK and not already allocated
+  for (int i = 0; i < arrayElementCount; i++) {
+    if (mptArray[i].pin == 0xFF) {
+      // allow callers to include -1 value as non-requested pin
+      // as this can greatly simplify configuration arrays
+      continue;
+    }
+    if (!isPinOk(mptArray[i].pin, mptArray[i].isOutput)) {
+      return false;
+    }
+    if (isPinAllocated(mptArray[i].pin)) {
+      return false;
+    }
+  }
+
+  // all pins are available .. track each one
+  for (int i = 0; i < arrayElementCount; i++) {
+    if (mptArray[i].pin == 0xFF) {
+      // allow callers to include -1 value as non-requested pin
+      // as this can greatly simplify configuration arrays
+      continue;
+    }
+    byte by = mptArray[i].pin >> 3;
+    byte bi = mptArray[i].pin - 8*by;
+    bitWrite(pinAlloc[by], bi, true);
+  }
+  return true;
+}
+
 void PinManagerClass::deallocatePin(byte gpio)
 {
   if (!isPinOk(gpio, false)) return;
