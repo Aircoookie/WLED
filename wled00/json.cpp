@@ -416,7 +416,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   }
 
   if (!forPreset) {
-    if (errorFlag) root[F("error")] = errorFlag;
+    if (errorFlag) {root[F("error")] = errorFlag; errorFlag = ERR_NONE;}
 
     root[F("ps")] = currentPreset;
     root[F("pl")] = currentPlaylist;

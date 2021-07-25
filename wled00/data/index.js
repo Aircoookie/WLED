@@ -242,9 +242,10 @@ function onLoad()
 		loadPalettesData();
 		loadFX(function() {
 			loadPresets(function() {
-				loadInfo(function() {
-					requestJson({'v':true});
-				});
+				makeWS();
+//				loadInfo(function() {
+//					requestJson({'v':true});
+//				});
 			});
 		});
 	});
@@ -260,6 +261,11 @@ function onLoad()
 		//sl.addEventListener('input', updateBubble, true);
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
+	}
+
+	// Check for UI update WS handler
+	if (!ws || ws.readyState !== WebSocket.OPEN) {
+		setTimeout(function(){loadInfo(function(){requestJson({'v':true});})},250)
 	}
 }
 
@@ -292,7 +298,15 @@ function showToast(text, error = false)
 	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
 }
 
-function showErrorToast() {showToast('Connection to light failed!', true);}
+function showErrorToast()
+{
+	if (ws && ws.readyState === WebSocket.OPEN) {
+		ws.close();
+		ws = null;
+	}
+	showToast('Connection to light failed!', true);
+}
+
 function clearErrorToast() {gId("toast").className = gId("toast").className.replace("error", "");}
 
 function getRuntimeStr(rt)
@@ -1010,7 +1024,7 @@ function updatePA(scrollto=false)
 
 function updateUI(scrollto=false)
 {
-	noWS = (!ws || ws.readyState === WebSocket.CLOSED);
+//	noWS = (!ws || ws.readyState === WebSocket.CLOSED);
 
 	gId('buttonPower').className = (isOn) ? "active":"";
 	gId('buttonNl').className = (nlA) ? "active":"";
@@ -1079,12 +1093,24 @@ function makeWS() {
 		if (json.leds) return; //liveview packet
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
+		lastUpdate = new Date();
 		clearErrorToast();
 	  	gId('connind').style.backgroundColor = "#079";
 		// json object should contain json.info AND json.state (but may not)
 		var info = json.info;
 		if (info) {
+			var name = info.name;
 			lastinfo = info;
+			gId('namelabel').innerHTML = name;
+			//if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+			if (info.live) name = "(Live) " + name;
+			if (loc) name = "(L) " + name;
+			d.title     = name;
+			isRgbw      = info.leds.wv;
+			ledCount    = info.leds.count;
+			syncTglRecv = info.str;
+			maxSeg      = info.leds.maxseg;
+			pmt         = info.fs.pmt;
 			showNodes();
 			if (isInfo) {
 				populateInfo(info);
@@ -1098,6 +1124,10 @@ function makeWS() {
 	ws.onclose = function(event) {
 		gId('connind').style.backgroundColor = "#831";
 		ws = null;
+	}
+	ws.onopen = function(event) {
+		ws.send("{'v':true}");
+		reqsLegal = true;
 	}
 }
 
@@ -1171,6 +1201,9 @@ function readState(s,command=false)
 		case 12:
 		  errstr = "Preset not found.";
 		  break;
+		case 13:
+		  errstr = "Missing IR.json.";
+		  break;
 		case 19:
 		  errstr = "A filesystem error has occured.";
 		  break;
@@ -1190,7 +1223,6 @@ function requestJson(command)
 {
 	gId('connind').style.backgroundColor = "#a90";
 	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
-	lastUpdate = new Date();
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	if (!command) command = {'v':true};
 	var req = null;
@@ -1211,6 +1243,7 @@ function requestJson(command)
 //	}
 
 	if (useWs) {
+
 		ws.send(req?req:'{"v":true}');
 		return;
 	}
@@ -1229,6 +1262,7 @@ function requestJson(command)
 	.then(json => {
 		clearTimeout(jsonTimeout);
 		jsonTimeout = null;
+		lastUpdate = new Date();
 		clearErrorToast();
 		gId('connind').style.backgroundColor = "#070";
 		if (!json) { showToast('Empty response', true); return; }

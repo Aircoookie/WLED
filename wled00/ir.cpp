@@ -572,7 +572,7 @@ void decodeIRJson(uint32_t code)
 
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 
-  errorFlag = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  errorFlag = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_IRLOAD;
   fdo = irDoc.as<JsonObject>();
   lastValidCode = 0;
   if (!errorFlag) 

@@ -29,6 +29,9 @@ button, .btn {
   background-color:#222;
   z-index:1;
 }
+.lnk {
+  border: 0;
+}
 .helpB {
   text-align: left;
   position: absolute;
