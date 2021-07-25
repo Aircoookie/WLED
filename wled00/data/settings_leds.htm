@@ -18,6 +18,16 @@
     function off(n){
       d.getElementsByName(n)[0].value = -1;
     }
+    var timeout;
+    function showToast(text, error = false)
+    {
+      var x = gId("toast");
+      x.innerHTML = text;
+      x.className = error ? "error":"show";
+      clearTimeout(timeout);
+      x.style.animation = 'none';
+      timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+    }
     function bLimits(b,p,m) {
       maxB = b; maxM = m; maxPB = p;
     }
@@ -204,6 +214,7 @@
       s2 += "A is enough)<br>";
 			gId('psu').innerHTML = s;
       gId('psu2').innerHTML = isWS2815 ? "" : s2;
+      gId("json").style.display = d.Sf.IT.value==8 ? "" : "none";
     }
     function lastEnd(i) {
       if (i<1) return 0;
@@ -294,6 +305,17 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
       c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
       gId("btns").innerHTML = c;
     }
+    function uploadFile(name) {
+      var req = new XMLHttpRequest();
+      req.addEventListener('load', function(){showToast(this.responseText)});
+      req.addEventListener('error', function(e){showToast(e.stack,true);});
+      req.open("POST", "/upload");
+      var formData = new FormData();
+      formData.append("data", d.Sf.data.files[0], name);
+      req.send(formData);
+      d.Sf.data.value = '';
+      return false;
+    }
 		function GetV()
 		{
       //values injected by server while sending HTML
@@ -350,7 +372,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     </div><hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
-    IR pin: <input type="number" class="xs" min="-1" max="40" name="IR" onchange="UI()">&nbsp;<select name="IT">
+    IR pin: <input type="number" class="xs" min="-1" max="40" name="IR" onchange="UI()">&nbsp;<select name="IT" onchange="UI()">
     <option value=0>Remote disabled</option>
     <option value=1>24-key RGB</option>
     <option value=2>24-key with CT</option>
@@ -361,6 +383,8 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     <option value=7>9-key red</option>
     <option value=8>JSON remote</option>
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
+    <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/ir.json');"><br></div>
+    <div id="toast"></div>
     <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
     Relay pin: <input type="number" class="xs" min="-1" max="33" name="RL" onchange="UI()"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
@@ -404,7 +428,7 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
         <option value=4>Legacy</option>
       </select>
     <br></span><hr>
-		<button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+    <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
 </body>
 </html>

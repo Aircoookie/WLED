@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head lang="en">
-  <meta charset="utf-8">
+	<meta charset="utf-8">
 	<meta name="viewport" content="width=500">
 	<title>UI Settings</title>
 	<script>
@@ -10,16 +10,19 @@
 		var sett = null;
 		var l = {
 			"comp":{
-			"labels":"Show button labels",
-			"colors":{
-				"LABEL":"Color selection methods",
-				"picker": "Color Wheel",
-				"rgb": "RGB sliders",
-				"quick": "Quick color selectors",
-				"hex": "HEX color input"
-			},
-      "pcmbot": "Show bottom tab bar in PC mode",
-      "pid": "Show preset IDs"
+				"labels":"Show button labels",
+				"colors":{
+					"LABEL":"Color selection methods",
+					"picker": "Color Wheel",
+					"rgb": "RGB sliders",
+					"quick": "Quick color selectors",
+					"hex": "HEX color input"
+					},
+				"pcmbot": "Show bottom tab bar in PC mode",
+				"pid": "Show preset IDs",
+				"seglen": "Set segment length instead of stop LED",
+        "css": "Enable custom CSS",
+        "hdays": "Enable custom Holidays list"
 			},
 			"theme":{
 				"alpha": {
@@ -34,7 +37,6 @@
 					"bg":"BG HEX color"
 				}
 			}
-			
 		};
 		function gId(s)
 		{
@@ -52,10 +54,18 @@
 				if( !tar[elem] ) tar[elem] = {}
 				tar = tar[elem];
 			}
-
 			tar[pList[len-1]] = val;
 		}
-
+		var timeout;
+		function showToast(text, error = false)
+		{
+			var x = gId("toast");
+			x.innerHTML = text;
+			x.className = error ? "error":"show";
+			clearTimeout(timeout);
+			x.style.animation = 'none';
+			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+		}
 		function addRec(s, path = "", label = null)
 		{
 			var str = "";
@@ -181,12 +191,20 @@
 				gId("theme_bg_random").checked = false;
 			}
 		}
-
+		function uploadFile(fO,name) {
+			var req = new XMLHttpRequest();
+			req.addEventListener('load', function(){showToast(this.responseText)});
+			req.addEventListener('error', function(e){showToast(e.stack,true);});
+			req.open("POST", "/upload");
+			var formData = new FormData();
+			formData.append("data", fO.files[0], name);
+			req.send(formData);
+			fO.value = '';
+			return false;
+	    }
 		function GetV(){var d=document;}
 	</script>
-	<style>
-		@import url("style.css");
-	</style>
+	<style>@import url("style.css");</style>
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
@@ -198,7 +216,7 @@
 		</div>
 		<h2>Web Setup</h2>
 		Server description: <input name="DS" maxlength="32"><br>
-    Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
+    	Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
 		<i>The following UI customization settings are unique both to the WLED device and this browser.<br>
 		You will need to set them again if using a different browser, device or WLED IP address.<br>
 		Refresh the main UI to apply changes.</i><br>
@@ -207,8 +225,9 @@
 		
 		<h3>UI Appearance</h3>
 		<span class="l"></span>: <input type="checkbox" id="comp_labels" class="agi cb"><br>
-    <span class="l"></span>: <input type="checkbox" id="comp_pcmbot" class="agi cb"><br>
-    <span class="l"></span>: <input type="checkbox" id="comp_pid" class="agi cb"><br>
+    	<span class="l"></span>: <input type="checkbox" id="comp_pcmbot" class="agi cb"><br>
+    	<span class="l"></span>: <input type="checkbox" id="comp_pid" class="agi cb"><br>
+    	<span class="l"></span>: <input type="checkbox" id="comp_seglen" class="agi cb"><br>
 		I hate dark mode: <input type="checkbox" id="dm" onchange="UI()"><br>
 		<span id="idonthateyou" style="display:none"><i>Why would you? </i>&#x1F97A;<br></span>
 		<span class="l"></span>: <input type="number" min=0.0 max=1.0 step=0.01 id="theme_alpha_tab" class="agi"><br>
@@ -217,6 +236,11 @@
 		<span class="l">BG image URL</span>: <input id="theme_bg_url" class="agi" oninput="checkRandomBg()"><br>
 		<span class="l">Random BG image</span>: <input type="checkbox" id="theme_bg_random" class="agi cb" onchange="setRandomBg()"><br>
 		<input id="theme_base" class="agi" style="display:none">
+    <span class="l"></span>: <input type="checkbox" id="comp_css" class="agi cb"><br>
+		<div id="skin">Custom CSS: <input type="file" name="data" accept=".css"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/skin.css');"><br></div>
+		<span class="l"></span>: <input type="checkbox" id="comp_hdays" class="agi cb"><br>
+    <div id="holidays">Holidays: <input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/holidays.json');"><br></div>
+		<div id="toast"></div>
 		<hr><button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button>
 	</form>
 </body>

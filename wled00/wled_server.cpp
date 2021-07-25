@@ -15,6 +15,22 @@ bool isIp(String str) {
   return true;
 }
 
+void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final){
+  if(!index){
+    request->_tempFile = WLED_FS.open(filename, "w");
+    DEBUG_PRINT("Uploading ");
+    DEBUG_PRINTLN(filename);
+    if (filename == "/presets.json") presetsModifiedTime = toki.second();
+  }
+  if (len) {
+    request->_tempFile.write(data,len);
+  }
+  if(final){
+    request->_tempFile.close();
+    request->send(200, "text/plain", F("File Uploaded!"));
+  }
+}
+
 bool captivePortal(AsyncWebServerRequest *request)
 {
   if (ON_STA_FILTER(request)) return false; //only serve captive in AP mode
@@ -95,7 +111,12 @@ void initServer()
       const String& url = request->url();
       isConfig = url.indexOf("cfg") > -1;
       if (!isConfig) {
-        fileDoc = &jsonBuffer;
+        #ifdef WLED_DEBUG
+          DEBUG_PRINTLN(F("Serialized HTTP"));
+          serializeJson(root,Serial);
+          DEBUG_PRINTLN();
+        #endif
+        fileDoc = &jsonBuffer;  // used for applying presets (presets.cpp)
         verboseResponse = deserializeState(root);
         fileDoc = nullptr;
       } else {
@@ -136,7 +157,12 @@ void initServer()
   server.on("/teapot", HTTP_GET, [](AsyncWebServerRequest *request){
     serveMessage(request, 418, F("418. I'm a teapot."), F("(Tangible Embedded Advanced Project Of Twinkling)"), 254);
     });
-    
+
+  server.on("/upload", HTTP_POST, [](AsyncWebServerRequest *request) {},
+        [](AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data,
+                      size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
+  );
+
   //if OTA is allowed
   if (!otaLock){
     #ifdef WLED_ENABLE_FS_EDITOR
@@ -197,15 +223,15 @@ void initServer()
   }
 
 
-    #ifdef WLED_ENABLE_DMX
-    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
-    });
-    #else
-    server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
-      serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
-    });
-    #endif
+  #ifdef WLED_ENABLE_DMX
+  server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/html", PAGE_dmxmap     , dmxProcessor);
+  });
+  #else
+  server.on("/dmxmap", HTTP_GET, [](AsyncWebServerRequest *request){
+    serveMessage(request, 501, "Not implemented", F("DMX support is not enabled in this build."), 254);
+  });
+  #endif
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     if (captivePortal(request)) return;
     serveIndexOrWelcome(request);
@@ -261,7 +287,13 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
 
 void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
 {
+  #ifndef WLED_DEBUG
+  //this header name is misleading, "no-cache" will not disable cache,
+  //it just revalidates on every load using the "If-None-Match" header with the last ETag value
   response->addHeader(F("Cache-Control"),"no-cache");
+  #else
+  response->addHeader(F("Cache-Control"),"no-store,max-age=0"); // prevent caching if debug build
+  #endif
   response->addHeader(F("ETag"), String(VERSION));
 }
 
@@ -275,7 +307,6 @@ void serveIndex(AsyncWebServerRequest* request)
 
   response->addHeader(F("Content-Encoding"),"gzip");
   setStaticContentCacheHeaders(response);
-  
   request->send(response);
 }
 
