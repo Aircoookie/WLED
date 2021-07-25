@@ -1,7 +1,7 @@
 #include "pin_manager.h"
 #include "wled.h"
 
-bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount)
+bool PinManagerClass::_allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount)
 {
   // first verify the pins are OK and not already allocated
   for (int i = 0; i < arrayElementCount; i++) {
@@ -41,7 +41,37 @@ void PinManagerClass::deallocatePin(byte gpio)
   bitWrite(pinAlloc[by], bi, false);
 }
 
-bool PinManagerClass::allocatePin(byte gpio, bool output)
+bool PinManagerClass::_allocatePinDebug(byte gpio, bool output, char const * file, int line)
+{
+  if (_allocatePin(gpio, output)) {
+    DEBUG_PRINT(F("PIN ALLOC: IO")); DEBUG_PRINT(gpio);
+    DEBUG_PRINT(F(" allocated from file ")); DEBUG_PRINT(file);
+    DEBUG_PRINT(F(" at line ")); DEBUG_PRINTLN(line);
+    return true;
+  } else {
+    return false;
+  }
+}
+bool PinManagerClass::_allocateMultiplePinsDebug(const managed_pin_type * mptArray, byte arrayElementCount, char const * file, int line)
+{
+  if (_allocateMultiplePins(mptArray, arrayElementCount)) {
+    DEBUG_PRINT(F("PIN ALLOC: Multiple IOs allocated from file ")); DEBUG_PRINT(file);
+    DEBUG_PRINT(F(" at line ")); DEBUG_PRINTLN(line);
+    DEBUG_PRINT(F("           "));
+    for (int i = 0; i < arrayElementCount; i++) {
+      if (i>0) { DEBUG_PRINT(F(", ")); }
+      DEBUG_PRINT(mptArray[i].pin);
+    }
+    DEBUG_PRINTLN();
+    return true;
+  } else {
+    return false;
+  }
+
+}
+
+
+bool PinManagerClass::_allocatePin(byte gpio, bool output)
 {
   if (!isPinOk(gpio, output)) return false;
   if (isPinAllocated(gpio)) {

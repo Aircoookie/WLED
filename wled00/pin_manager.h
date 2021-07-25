@@ -10,6 +10,24 @@ typedef struct PinManagerPinType {
   byte isOutput;
 } managed_pin_type;
 
+#if DEBUG
+  // Allocates a single pin.
+  #define ALLOCATE_PIN(gpio, output) pinManager._allocatePinDebug(gpio, output, __FILE__, __LINE__)
+  // Allocates all pins, or none of the pins, in the array
+  // This should simplify error condition handling in clients
+  // that need more than one pin to work correctly, such as
+  // ethernet, rotary encoders, and the like.
+  #define ALLOCATE_MULTIPLE_PINS(mptArray,arrayElementCount) pinManager._allocateMultiplePinsDebug(mptArray, arrayElementCount, __FILE__, __LINE__)
+#else
+  // Allocates a single pin.
+  #define ALLOCATE_PIN(gpio, output) pinManager._allocatePin(gpio, output)
+  // Allocates all pins, or none of the pins, in the array
+  // This should simplify error condition handling in clients
+  // that need more than one pin to work correctly, such as
+  // ethernet, rotary encoders, and the like.
+  #define ALLOCATE_MULTIPLE_PINS(mptArray,arrayElementCount) pinManager._allocateMultiplePins(mptArray, arrayElementCount)
+#endif
+
 class PinManagerClass {
   private:
   #ifdef ESP8266
@@ -21,25 +39,23 @@ class PinManagerClass {
 
   public:
   void deallocatePin(byte gpio);
-  bool allocatePin(byte gpio, bool output = true);
+
+  bool _allocatePinDebug(byte gpio, bool output, char const * file, int line);
+  bool _allocateMultiplePinsDebug(const managed_pin_type * mptArray, byte arrayElementCount, char const * file, int line);
+  bool _allocatePin(byte gpio, bool output);
+  
+  [[deprecated("Replaced by macro ALLOCATE_PIN(gpio, output), for improved debugging")]]
+  inline bool allocatePin(byte gpio, bool output = true) { return _allocatePin(gpio, output); }
   bool isPinAllocated(byte gpio);
   bool isPinOk(byte gpio, bool output = true);
   #ifdef ARDUINO_ARCH_ESP32
   byte allocateLedc(byte channels);
   void deallocateLedc(byte pos, byte channels);
   #endif
-  // Allocates all pins, or none of the pins, in the array
-  // This should simplify error condition handling in clients
-  // that need more than one pin to work correctly, such as
-  // ethernet, rotary encoders, and the like.
-  bool allocateMultiplePins(const managed_pin_type * mpt, byte arrayElementCount);
+  bool _allocateMultiplePins(const managed_pin_type * mpt, byte arrayElementCount);
   inline void deallocatePin(managed_pin_type mpt)
   {
     deallocatePin(mpt.pin);
-  }
-  inline bool allocatePin(managed_pin_type mpt)
-  {
-    return allocatePin(mpt.pin, mpt.isOutput);
   }
   inline bool isPinAllocated(managed_pin_type mpt)
   {

@@ -276,8 +276,8 @@ void WLED::setup()
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
     if (psramFound()) {
-      pinManager.allocatePin(16); // GPIO16 reserved for SPI RAM
-      pinManager.allocatePin(17); // GPIO17 reserved for SPI RAM
+      ALLOCATE_PIN(16, true); // GPIO16 reserved for SPI RAM
+      ALLOCATE_PIN(17, true); // GPIO17 reserved for SPI RAM
     }
   #endif
 
@@ -285,10 +285,10 @@ void WLED::setup()
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
 #ifdef WLED_DEBUG
-  pinManager.allocatePin(1,true); // GPIO1 reserved for debug output
+  ALLOCATE_PIN(1, true); // GPIO1 reserved for debug output
 #endif
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
-  pinManager.allocatePin(2);
+  ALLOCATE_PIN(2, true);
 #endif
 
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
@@ -443,8 +443,17 @@ void WLED::initConnection()
   #endif
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
-  // Only initialize ethernet board if not NONE
-  if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
+  static bool successfullyConfiguredEthernet = false;
+  if ((!successfullyConfiguredEthernet) && (ethernetType != WLED_ETH_NONE)) {
+    DEBUG_PRINT(F("initC: Attempting ETH config: ")); DEBUG_PRINTLN(ethernetType);
+  }
+
+  // Ethernet initialization should only succeed once -- else reboot required
+  if ((!successfullyConfiguredEthernet) &&
+      (ethernetType != WLED_ETH_NONE) &&
+      (ethernetType < WLED_NUM_ETH_TYPES)
+      )
+  {
     ethernet_settings es = ethernetBoards[ethernetType];
 
     managed_pin_type pinsToAllocate[10] = {
@@ -474,8 +483,24 @@ void WLED::initConnection()
       pinsToAllocate[8].isOutput = true;
     }
 
-    if (!pinManager.allocateMultiplePins(pinsToAllocate, 10)) {
-      DEBUG_PRINTLN(F("Failed to allocate ethernet pins"));
+    if (!ALLOCATE_MULTIPLE_PINS(pinsToAllocate, 10)) {
+      DEBUG_PRINTLN(F("initC: Failed to allocate ethernet pins"));
+
+      #if DEBUG
+      for (int i = 0; i < 10; i++) {
+        managed_pin_type mpt = pinsToAllocate[i];
+        DEBUG_PRINT(F("intiC: --> pins[")); DEBUG_PRINT(i);
+        DEBUG_PRINT(F("0] ==> pin = ")); DEBUG_PRINT(mpt.pin);
+        DEBUG_PRINT(F(", isOutput = ")); DEBUG_PRINTLN(mpt.isOutput);
+        if (ALLOCATE_MULTIPLE_PINS(&mpt, 1)) {
+          DEBUG_PRINT(F("           successfully allocated pin ")); DEBUG_PRINTLN(mpt.pin);
+          pinManager.deallocatePin(mpt);
+        } else {
+          DEBUG_PRINT(F("           failed to allocate pin ")); DEBUG_PRINTLN(mpt.pin);
+        }
+      }
+      #endif // DEBUG
+
     } else if (!ETH.begin(
                   (uint8_t) es.eth_address, 
                   (int)     es.eth_power, 
@@ -485,11 +510,16 @@ void WLED::initConnection()
                   (eth_clock_mode_t) es.eth_clk_mode
                   ))
     {
-      DEBUG_PRINTLN(F("Ethernet init failed"));
+      DEBUG_PRINTLN(F("initC: ETH.begin() failed"));
       // de-allocate the allocated pins
       for (managed_pin_type p : pinsToAllocate) {
         pinManager.deallocatePin(p);
       }
+    }
+    else
+    {
+      successfullyConfiguredEthernet = true;
+      DEBUG_PRINTLN(F("initC: --> **** Ethernet successfully configured! ***"));
     }
     
   }
@@ -501,7 +531,7 @@ void WLED::initConnection()
 #endif
 
   if (staticIP[0] != 0 && staticGateway[0] != 0) {
-    WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(8, 8, 8, 8));
+    WiFi.config(staticIP, staticGateway, staticSubnet, IPAddress(1, 1, 1, 1));
   } else {
     WiFi.config(0U, 0U, 0U);
   }

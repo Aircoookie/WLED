@@ -127,7 +127,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     // upate other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();
-    if (pinManager.allocatePin(hw_ir_pin,false)) {
+    if (ALLOCATE_PIN(hw_ir_pin,false)) {
       irPin = hw_ir_pin;
     } else {
       irPin = -1;
@@ -135,7 +135,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     irEnabled = request->arg(F("IT")).toInt();
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
-    if (pinManager.allocatePin(hw_rly_pin,true)) {
+    if (ALLOCATE_PIN(hw_rly_pin,true)) {
       rlyPin = hw_rly_pin;
     } else {
       rlyPin = -1;
@@ -146,7 +146,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char bt[4] = "BT"; bt[2] = 48+i; bt[3] = 0; // button pin
       char be[4] = "BE"; be[2] = 48+i; be[3] = 0; // button type
       int hw_btn_pin = request->arg(bt).toInt();
-      if (pinManager.allocatePin(hw_btn_pin,false)) {
+      if (ALLOCATE_PIN(hw_btn_pin,false)) {
         btnPin[i] = hw_btn_pin;
         pinMode(btnPin[i], INPUT_PULLUP);
         buttonType[i] = request->arg(be).toInt();

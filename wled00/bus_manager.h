@@ -119,10 +119,10 @@ class BusDigital : public Bus {
   public:
   BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
-    if (!pinManager.allocatePin(bc.pins[0])) return;
+    if (!ALLOCATE_PIN(bc.pins[0], true)) return;
     _pins[0] = bc.pins[0];
     if (IS_2PIN(bc.type)) {
-      if (!pinManager.allocatePin(bc.pins[1])) {
+      if (!ALLOCATE_PIN(bc.pins[1], true)) {
         cleanup(); return;
       }
       _pins[1] = bc.pins[1];
@@ -242,7 +242,7 @@ class BusPwm : public Bus {
 
     for (uint8_t i = 0; i < numPins; i++) {
       uint8_t currentPin = bc.pins[i];
-      if (!pinManager.allocatePin(currentPin)) {
+      if (!ALLOCATE_PIN(currentPin, true)) {
         deallocatePins(); return;
       }
       _pins[i] = currentPin; // store only after allocatePin() succeeds
