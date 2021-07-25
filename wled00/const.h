@@ -289,6 +289,8 @@
 #ifndef LEDPIN
 #ifdef ESP8266
   #define LEDPIN 2    // GPIO2 (D4) on Wemod D1 mini compatible boards
+#elif defined(WLED_USE_ETHERNET)
+  #define LEDPIN 32   // Avoids conflict with ethernet pins on all currently supported boards
 #else
   #define LEDPIN 16   // alligns with GPIO2 (D4) on Wemos D1 mini32 compatible boards
 #endif
