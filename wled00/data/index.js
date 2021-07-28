@@ -303,6 +303,7 @@ function showErrorToast()
 	if (ws && ws.readyState === WebSocket.OPEN) {
 		ws.close();
 		ws = null;
+		setTimeout(makeWS,500);
 	}
 	showToast('Connection to light failed!', true);
 }
@@ -1128,6 +1129,7 @@ function makeWS() {
 	ws.onopen = function(event) {
 		ws.send("{'v':true}");
 		reqsLegal = true;
+		clearErrorToast();
 	}
 }
 
