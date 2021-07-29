@@ -60,7 +60,7 @@ var cpick = new iro.ColorPicker("#picker", {
   ]
 });
 
-function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson({'v':true},false);}
+function handleVisibilityChange() {if (!d.hidden && new Date () - lastUpdate > 3000) requestJson();}
 function sCol(na, col) {d.documentElement.style.setProperty(na, col);}
 function gId(c) {return d.getElementById(c);}
 function gEBCN(c) {return d.getElementsByClassName(c);}
@@ -156,6 +156,7 @@ function loadBg(iUrl)
 	let bg = document.getElementById('bg');
 	let img = document.createElement("img");
 	img.src = iUrl;
+/*
 	if (iUrl == "" || iUrl === "https://picsum.photos/1920/1080") {
 		var today = new Date();
 		for (var i=0; i<hol.length; i++) {
@@ -166,6 +167,7 @@ function loadBg(iUrl)
 			if (today>=hs && today<he) img.src = hol[i][4];
 		}
 	}
+*/
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
 		if (isNaN(a)) a = 0.6;
@@ -208,6 +210,7 @@ function onLoad()
 
 	applyCfg();
 	if (cfg.theme.bg.url=="" || cfg.theme.bg.url === "https://picsum.photos/1920/1080") {
+		var iUrl = cfg.theme.bg.url;
 		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {
 			method: 'get'
 		})
@@ -221,8 +224,16 @@ function onLoad()
 		.catch(function(error){
 			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
 		})
-		.finally(function(){
-			loadBg(cfg.theme.bg.url);
+		.finally(()=>{
+			var today = new Date();
+			for (var i=0; i<hol.length; i++) {
+				var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
+				var hs = new Date(yr,hol[i][1],hol[i][2]);
+				var he = new Date(hs);
+				he.setDate(he.getDate() + hol[i][3]);
+				if (today>=hs && today<he) iUrl = hol[i][4];
+			}
+			if (iUrl !== "") loadBg(iUrl);
 		});
 	} else
 		loadBg(cfg.theme.bg.url);
@@ -238,14 +249,11 @@ function onLoad()
 	pmtLS = localStorage.getItem('wledPmt');
 
 	// Load initial data
-	loadPalettes(function() {
+	loadPalettes(()=>{
 		loadPalettesData();
-		loadFX(function() {
-			loadPresets(function() {
-				makeWS();
-//				loadInfo(function() {
-//					requestJson({'v':true});
-//				});
+		loadFX(()=>{
+			loadPresets(()=>{
+				loadInfo(requestJson);
 			});
 		});
 	});
@@ -261,11 +269,6 @@ function onLoad()
 		//sl.addEventListener('input', updateBubble, true);
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
-	}
-
-	// Check for UI update WS handler
-	if (!ws || ws.readyState !== WebSocket.OPEN) {
-		setTimeout(function(){loadInfo(function(){requestJson({'v':true});})},250)
 	}
 }
 
@@ -301,9 +304,10 @@ function showToast(text, error = false)
 function showErrorToast()
 {
 	if (ws && ws.readyState === WebSocket.OPEN) {
+		// if we received a timeout force WS reconnect
 		ws.close();
 		ws = null;
-		setTimeout(makeWS,500);
+		if (lastinfo.ws > -1) setTimeout(makeWS,500);
 	}
 	showToast('Connection to light failed!', true);
 }
@@ -442,16 +446,13 @@ function loadPresets(callback = null)
 		clearErrorToast();
 		pJson = json;
 		populatePresets();
-		reconnectWS();
-//		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
 		presetError(false);
-		//if (callback) callback();
 	})
-	.finally(() => {
+	.finally(()=>{
 		if (callback) setTimeout(callback,99);
 	});
 }
@@ -471,12 +472,12 @@ function loadPalettes(callback = null)
 		clearErrorToast();
 		lJson = Object.entries(json);
 		populatePalettes();
-		reconnectWS();
-		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		presetError(false);
+	})
+	.finally(()=>{
 		if (callback) callback();
 	});
 }
@@ -496,11 +497,12 @@ function loadFX(callback = null)
 		clearErrorToast();
 		eJson = Object.entries(json);
 		populateEffects();
-		if (callback) callback();
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		presetError(false);
+	})
+	.finally(()=>{
 		if (callback) callback();
 	});
 }
@@ -597,14 +599,15 @@ function loadInfo(callback=null)
 		maxSeg = json.leds.maxseg;
 		pmt = json.fs.pmt;
 		showNodes();
-		populateInfo(json);
-		reconnectWS();
+		if (isInfo) populateInfo(json);
 		reqsLegal = true;
-		if (callback) callback();
+		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,500);
 	})
 	.catch(function (error) {
 		showToast(error, true);
 		console.log(error);
+	})
+	.finally(()=>{
 		if (callback) callback();
 	});
 }
@@ -793,7 +796,6 @@ function loadNodes()
 	.then(json => {
 		clearErrorToast();
 		populateNodes(lastinfo, json);
-		reconnectWS();
 	})
 	.catch(function (error) {
 		showToast(error, true);
@@ -1025,8 +1027,6 @@ function updatePA(scrollto=false)
 
 function updateUI(scrollto=false)
 {
-//	noWS = (!ws || ws.readyState === WebSocket.CLOSED);
-
 	gId('buttonPower').className = (isOn) ? "active":"";
 	gId('buttonNl').className = (nlA) ? "active":"";
 	gId('buttonSync').className = (syncSend) ? "active":"";
@@ -1113,9 +1113,7 @@ function makeWS() {
 			maxSeg      = info.leds.maxseg;
 			pmt         = info.fs.pmt;
 			showNodes();
-			if (isInfo) {
-				populateInfo(info);
-			}
+			if (isInfo) populateInfo(info);
 		} else
 			info = lastinfo;
 		var s = json.state ? json.state : json;
@@ -1131,10 +1129,6 @@ function makeWS() {
 		reqsLegal = true;
 		clearErrorToast();
 	}
-}
-
-function reconnectWS() {// Create UI update WS handler
-	if (!ws && lastinfo.ws > -1) setTimeout(makeWS,500);
 }
 
 function readState(s,command=false)
@@ -1221,7 +1215,7 @@ function readState(s,command=false)
 var jsonTimeout;
 var reqsLegal = false;
 
-function requestJson(command)
+function requestJson(command=null)
 {
 	gId('connind').style.backgroundColor = "#a90";
 	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
@@ -1231,21 +1225,18 @@ function requestJson(command)
 	var url = (loc?`http://${locip}`:'') + '/json/state';
 	var useWs = (ws && ws.readyState === WebSocket.OPEN);
 	var type = command ? 'post':'get';
-//	if (command)
-//	{
-		command.v = true; // force complete /json/si API response
-		command.time = Math.floor(Date.now() / 1000);
-		var t = d.getElementById('tt');
-		if (t.validity.valid) {
-			var tn = parseInt(t.value*10);
-			if (tn != tr) command.transition = tn;
-		}
-		req = JSON.stringify(command);
-		if (req.length > 1000) useWs = false; //do not send very long requests over websocket
-//	}
+
+	command.v = true; // force complete /json/si API response
+	command.time = Math.floor(Date.now() / 1000);
+	var t = d.getElementById('tt');
+	if (t.validity.valid) {
+		var tn = parseInt(t.value*10);
+		if (tn != tr) command.transition = tn;
+	}
+	req = JSON.stringify(command);
+	if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 
 	if (useWs) {
-
 		ws.send(req?req:'{"v":true}');
 		return;
 	}
@@ -1272,7 +1263,6 @@ function requestJson(command)
 		var s = json.state ? json.state : json;
 		readState(s);
 		reqsLegal = true;
-		reconnectWS();
 	})
 	.catch(function (error) {
 		showToast(error, true);
