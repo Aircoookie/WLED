@@ -46,6 +46,11 @@
 			fO.value = '';
 			return false;
 	    }
+		function clearLS()
+		{
+			localStorage.removeItem('wledP');
+			localStorage.removeItem('wledPmt');
+		}
 		function GetV()
 		{
 			//values injected by server while sending HTML
@@ -75,7 +80,7 @@
 		HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
 		<h3>Backup & Restore</h3>
 		<a class="btn lnk" href="/presets.json?download" target="download-frame">Backup presets</a><br>
-		<div id="presets">Restore presets:<input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/presets.json');"><br></div>
+		<div id="presets">Restore presets:<input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/presets.json');clearLS();"><br></div>
 		<a class="btn lnk" href="/cfg.json?download" target="download-frame">Backup configuration</a><br>
 		<div id="presets">Restore configuration:<input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/cfg.json');"><br></div>
 		<div style="color: #fa0;">&#9888; Restoring presets/configuration will OVERWRITE your current presets/configuration.<br>
