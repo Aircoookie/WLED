@@ -1311,7 +1311,7 @@ function refreshPlE(p) {
 	}
 	plEDiv.innerHTML = content;
 	var dels = plEDiv.getElementsByClassName("btn-pl-del");
-	if (dels.length < 2 && p > 0) dels[0].style.display = "none";
+	if (dels.length < 2) dels[0].style.display = "none";
 
 	var sels = d.getElementById(`seg${p+100}`).getElementsByClassName("sel");
 	for (var i of sels) {
@@ -1331,7 +1331,7 @@ function addPl(p,i) {
 }
 
 function delPl(p,i) {
-	if (plJson[p].ps.length < 2) {if (p == 0) resetPUtil(); return;}
+	if (plJson[p].ps.length < 2) return;
 	plJson[p].ps.splice(i,1);
 	plJson[p].dur.splice(i,1);
 	plJson[p].transition.splice(i,1);

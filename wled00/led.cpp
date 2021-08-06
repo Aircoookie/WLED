@@ -46,10 +46,6 @@ byte scaledBri(byte in)
 
 
 void setAllLeds() {
-  if (!realtimeMode || !arlsForceMaxBri)
-  {
-    strip.setBrightness(scaledBri(briT));
-  }
   if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY)
   {
     colorRGBtoRGBW(col);
@@ -60,6 +56,10 @@ void setAllLeds() {
   if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY)
   {
     col[3] = 0; colSec[3] = 0;
+  }
+  if (!realtimeMode || !arlsForceMaxBri)
+  {
+    strip.setBrightness(scaledBri(briT));
   }
 }
 
@@ -142,7 +142,6 @@ void colorUpdated(int callMode)
   }
   if (briT == 0)
   {
-    //setLedsStandard(true); //do not color transition if starting from off!
     if (callMode != CALL_MODE_NOTIFICATION) resetTimebase(); //effect start from beginning
   }
 

@@ -2,6 +2,19 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2108050
+
+-   Fixed undesirable color transition from Orange to boot preset color on first boot
+-   Removed misleading Delete button on new playlist with one entry
+-   Updated NeoPixelBus to 2.6.7 and AsyncTCP to 1.1.1
+
+#### Build 2107230
+
+-   Added skinning (extra custom CSS) (PR #2084)
+-   Added presets/config backup/restore (PR #2084)
+-   Added option for using length instead of Stop LED in UI (PR #2048)
+-   Added custom `holidays.json` holiday list (PR #2048)
+
 #### Build 2107100
 
 -   Version bump to 0.13.0-b2 "Toki"
