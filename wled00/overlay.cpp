@@ -359,7 +359,7 @@ void _drawOverlayCronixie()
 }
 
 #else // WLED_DISABLE_CRONIXIE
-byte getSameCodeLength(char code, int index, char const cronixieDisplay[]) {}
+byte getSameCodeLength(char code, int index, char const cronixieDisplay[]) { return 0; }
 void setCronixie() {}
 void _overlayCronixie() {}
 void _drawOverlayCronixie() {}
