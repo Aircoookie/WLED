@@ -20,7 +20,7 @@ typedef struct PinManagerPinType {
  *     17 bytes on ESP8266
  *     40 bytes on ESP32
  */
-enum struct PinOwner : uint32_t {
+enum struct PinOwner : uint8_t {
   None          = 0,            // default == legacy == unspecified owner
   // High bit is set for all built-in pin owners
   // StatusLED  -- THIS SHOULD NEVER BE ALLOCATED -- see handleStatusLED()
