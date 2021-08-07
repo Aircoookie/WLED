@@ -130,9 +130,18 @@ class FourLineDisplayUsermod : public Usermod {
     // gets called once at boot. Do all initialization that doesn't depend on
     // network here
     void setup() {
-      if (type == NONE) return;
-      if (!pinManager.allocatePin(sclPin)) { sclPin = -1; type = NONE; return;}
-      if (!pinManager.allocatePin(sdaPin)) { pinManager.deallocatePin(sclPin); sclPin = sdaPin = -1; type = NONE; return; }
+      if (type == NONE) {
+        sclPin = -1;
+        sdaPin = -1;
+        return;
+      }
+      PinManagerPinType pins[2] = { { sclPin, true }, { sdaPin, true} };
+      if (!ALLOCATE_MULTIPLE_PINS(pins, 2, PinOwner::UM_FourLineDisplay)) {
+        sclPin = -1;
+        sdaPin = -1;
+        type = NONE;
+        return;
+      }
       DEBUG_PRINTLN(F("Allocating display."));
       switch (type) {
         case SSD1306:
@@ -182,18 +191,20 @@ class FourLineDisplayUsermod : public Usermod {
           break;
         default:
           u8x8 = nullptr;
+      }
+      if (nullptr == u8x8) {
+          DEBUG_PRINTLN(F("Display init failed."));
+          DEALLOCATE_PIN(sclPin, PinOwner::UM_FourLineDisplay);
+          DEALLOCATE_PIN(sdaPin, PinOwner::UM_FourLineDisplay);
+          sclPin = -1;
+          sdaPin = -1;
           type = NONE;
           return;
       }
+
       initDone = true;
-      if (u8x8 != nullptr) {
-        DEBUG_PRINTLN(F("Starting display."));
-        (static_cast<U8X8*>(u8x8))->begin();
-      } else {
-        DEBUG_PRINTLN(F("Display init failed."));
-        type = NONE;
-        return;
-      }
+      DEBUG_PRINTLN(F("Starting display."));
+      (static_cast<U8X8*>(u8x8))->begin(); // why a static cast here?  variable is of this type...
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
@@ -661,17 +672,19 @@ class FourLineDisplayUsermod : public Usermod {
         DEBUG_PRINTLN(F(" config (re)loaded."));
         // changing parameters from settings page
         if (sclPin!=newScl || sdaPin!=newSda || type!=newType) {
-          if (type != NONE) delete (static_cast<U8X8*>(u8x8));
-          pinManager.deallocatePin(sclPin);
-          pinManager.deallocatePin(sdaPin);
+          if (u8x8 != nullptr) {
+            delete (static_cast<U8X8*>(u8x8));
+            u8x8 = nullptr;
+          }
+          DEALLOCATE_PIN(sclPin, PinOwner::UM_FourLineDisplay);
+          DEALLOCATE_PIN(sdaPin, PinOwner::UM_FourLineDisplay);
           sclPin = newScl;
           sdaPin = newSda;
-          if (newScl<0 || newSda<0) {
-            type = NONE;
-            return true;
-          } else type = newType;
+          type   = newType;
           setup();
-          needsRedraw |= true;
+          if (sclPin >= 0 && sdaPin >= 0) {
+            needsRedraw |= true;
+          }
         }
         setContrast(contrast);
         setFlipMode(flip);

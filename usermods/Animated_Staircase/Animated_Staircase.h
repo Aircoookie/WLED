@@ -306,22 +306,26 @@ class Animated_Staircase : public Usermod {
 
   public:
     void setup() {
+      // standardize invalid pin numbers to -1
+      if (topPIRorTriggerPin    < 0) topPIRorTriggerPin    = -1;
+      if (topEchoPin            < 0) topEchoPin            = -1;
+      if (bottomPIRorTriggerPin < 0) bottomPIRorTriggerPin = -1;
+      if (bottomEchoPin         < 0) bottomEchoPin         = -1;
       // allocate pins
-      if (topPIRorTriggerPin >= 0) {
-        if (!pinManager.allocatePin(topPIRorTriggerPin,useUSSensorTop))
-          topPIRorTriggerPin = -1;
-      }
-      if (topEchoPin >= 0) {
-        if (!pinManager.allocatePin(topEchoPin,false))
-          topEchoPin = -1;
-      }
-      if (bottomPIRorTriggerPin >= 0) {
-        if (!pinManager.allocatePin(bottomPIRorTriggerPin,useUSSensorBottom))
-          bottomPIRorTriggerPin = -1;
-      }
-      if (bottomEchoPin >= 0) {
-        if (!pinManager.allocatePin(bottomEchoPin,false))
-          bottomEchoPin = -1;
+      PinManagerPinType pins[4] = {
+        { topPIRorTriggerPin, useUSSensorTop },
+        { topEchoPin, false },
+        { bottomPIRorTriggerPin, useUSSensorBottom },
+        { bottomEchoPin, false },
+      };
+      // NOTE: this *WILL* return TRUE if all the pins are set to -1.
+      //       this is *BY DESIGN*.
+      if (!ALLOCATE_MULTIPLE_PINS(pins, 4, PinOwner::UM_AnimatedStaircase)) {
+        topPIRorTriggerPin = -1;
+        topEchoPin = -1;
+        bottomPIRorTriggerPin = -1;
+        bottomEchoPin = -1;
+        enabled = false;
       }
       enable(enabled);
       initDone = true;
@@ -480,10 +484,10 @@ class Animated_Staircase : public Usermod {
             (oldBottomAPin != bottomPIRorTriggerPin) ||
             (oldBottomBPin != bottomEchoPin)) {
           changed = true;
-          pinManager.deallocatePin(oldTopAPin);
-          pinManager.deallocatePin(oldTopBPin);
-          pinManager.deallocatePin(oldBottomAPin);
-          pinManager.deallocatePin(oldBottomBPin);
+          DEALLOCATE_PIN(oldTopAPin, PinOwner::UM_AnimatedStaircase);
+          DEALLOCATE_PIN(oldTopBPin, PinOwner::UM_AnimatedStaircase);
+          DEALLOCATE_PIN(oldBottomAPin, PinOwner::UM_AnimatedStaircase);
+          DEALLOCATE_PIN(oldBottomBPin, PinOwner::UM_AnimatedStaircase);
         }
         if (changed) setup();
       }
