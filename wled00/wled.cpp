@@ -105,10 +105,11 @@ void WiFiEvent(WiFiEvent_t event)
       break;
     case SYSTEM_EVENT_ETH_DISCONNECTED:
       DEBUG_PRINT(F("ETH Disconnected"));
-      // BUGBUG -- Is it appropriate to mess with WiFi when ethernet was disconnected?
-      //           Even if necessary in the past, ethernet is now only configured once,
-      //           during initial setup.  Until it's initialized, this event shouldn't
-      //           occur. If it is, why need to do anything here?
+      // This doesn't really affect ethernet per se,
+      // as it's only configured once.  Rather, it
+      // may be necessary to reconnect the WiFi when
+      // ethernet disconnects, as a way to provide
+      // alternative access to the device.
       forceReconnect = true;
       break;
 #endif
