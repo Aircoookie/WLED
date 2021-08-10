@@ -285,12 +285,14 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
 
 void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
 {
+  char tmp[12];
   #ifndef WLED_DEBUG
   response->addHeader(F("Cache-Control"),"max-age=604800");     // 7 day caching
   #else
   response->addHeader(F("Cache-Control"),"no-store,max-age=0"); // prevent caching if debug build
   #endif
-  response->addHeader(F("ETag"), String(VERSION));
+  sprintf_P(tmp, PSTR("%8d-%02x"), VERSION, cacheInvalidate);
+  response->addHeader(F("ETag"), tmp);
 }
 
 void serveIndex(AsyncWebServerRequest* request)
