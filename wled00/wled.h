@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2107311
+#define VERSION 2108091
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -136,6 +136,9 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 #include "fcn_declare.h"
 #include "html_ui.h"
+#ifndef WLED_DISABLE_SIMPLE_UI
+#include "html_simple.h"
+#endif
 #include "html_settings.h"
 #include "html_other.h"
 #include "FX.h"
@@ -278,6 +281,7 @@ WLED_GLOBAL byte briMultiplier _INIT(100);          // % of brightness to set (t
 // User Interface CONFIG
 WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
+WLED_GLOBAL bool simplifiedUI          _INIT(false);   // enable simplified UI
 
 // Sync CONFIG
 WLED_GLOBAL NodesMap Nodes;

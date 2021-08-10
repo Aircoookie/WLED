@@ -6,7 +6,7 @@
 	<title>UI Settings</title>
 	<script>
 		var d = document;
-		var initial_ds, initial_st;
+		var initial_ds, initial_st, initial_su;
 		var sett = null;
 		var l = {
 			"comp":{
@@ -148,7 +148,7 @@
 		
 		function Save() {
 			SetLS();
-			if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st) d.Sf.submit();
+			if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st || d.Sf.SU.checked != initial_su) d.Sf.submit();
 		}
 		
 		function S()
@@ -156,6 +156,7 @@
 			GetV(); 
 			initial_ds = d.Sf.DS.value;
 			initial_st = d.Sf.ST.checked;
+			initial_su = d.Sf.SU.checked;
 			GetLS();
 		}
 		function H()
@@ -202,7 +203,7 @@
 	    }
 		function GetV(){var d=document;}
 	</script>
-	<style>@import url("/style.css");</style>
+	<style>@import url("style.css");</style>
 	<link href="/skin.css" rel="stylesheet">
 </head>
 <body onload="S()">
@@ -216,6 +217,7 @@
 		<h2>Web Setup</h2>
 		Server description: <input name="DS" maxlength="32"><br>
     	Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
+    	Enable simplified UI: <input type="checkbox" name="SU"><br>
 		<i>The following UI customization settings are unique both to the WLED device and this browser.<br>
 		You will need to set them again if using a different browser, device or WLED IP address.<br>
 		Refresh the main UI to apply changes.</i><br>

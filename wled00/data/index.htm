@@ -24,7 +24,7 @@
 			<button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><p class="tab-label">Sync</p></button>
 			<button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">Peek</p></button>
 			<button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><p class="tab-label">Info</p></button>
-			<button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button></div>
+			<button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button>
 			<button onclick="window.location.href='/settings';"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
 			<button id="buttonPcm" onclick="togglePcMode(true)"><i class="icons">&#xe23d;</i><p class="tab-label">PC Mode</p></button>
 		</div>
@@ -164,10 +164,10 @@
 	</div>
 
 	<div id="Segments" class="tabcontent">
-		<div id="segutil" class="staytop">
-		</div>
 		<div id="segcont">
 			Loading...
+		</div>
+		<div id="segutil" class="staybot">
 		</div>
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
@@ -175,7 +175,7 @@
 		<p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s</p>
 	</div>
 
-	<div id="Favorites" class="tabcontent">
+	<div id="Presets" class="tabcontent">
 		<div id="putil" class="staytop">
 		</div>
 		<div id="pql">
@@ -190,7 +190,7 @@
 	<button class="tablinks" onclick="openTab(0)"><i class="icons">&#xe2b3;</i><p class="tab-label">Colors</p></button>
 	<button class="tablinks" onclick="openTab(1)"><i class="icons">&#xe23d;</i><p class="tab-label">Effects</p></button>
 	<button class="tablinks" onclick="openTab(2)"><i class="icons">&#xe34b;</i><p class="tab-label">Segments</p></button>
-	<button class="tablinks" onclick="openTab(3)"><i class="icons">&#xe04c;</i><p class="tab-label">Favorites</p></button>
+	<button class="tablinks" onclick="openTab(3)"><i class="icons">&#xe04c;</i><p class="tab-label">Presets</p></button>
 	<!--button class="tablinks" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button-->
 </div>
 

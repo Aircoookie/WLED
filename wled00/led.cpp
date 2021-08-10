@@ -46,10 +46,6 @@ byte scaledBri(byte in)
 
 
 void setAllLeds() {
-  if (!realtimeMode || !arlsForceMaxBri)
-  {
-    strip.setBrightness(scaledBri(briT));
-  }
   if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY)
   {
     colorRGBtoRGBW(col);
@@ -60,6 +56,10 @@ void setAllLeds() {
   if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY)
   {
     col[3] = 0; colSec[3] = 0;
+  }
+  if (!realtimeMode || !arlsForceMaxBri)
+  {
+    strip.setBrightness(scaledBri(briT));
   }
 }
 

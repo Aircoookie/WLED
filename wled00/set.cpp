@@ -192,6 +192,9 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     strlcpy(serverDescription, request->arg(F("DS")).c_str(), 33);
     syncToggleReceive = request->hasArg(F("ST"));
+  #ifndef WLED_DISABLE_SIMPLE_UI
+    simplifiedUI = request->hasArg(F("SU"));
+  #endif
   }
 
   //SYNC

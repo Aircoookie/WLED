@@ -422,6 +422,7 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappends('s',SET_F("DS"),serverDescription);
     sappend('c',SET_F("ST"),syncToggleReceive);
+    sappend('c',SET_F("SU"),simplifiedUI);
   }
 
   if (subPage == 4)

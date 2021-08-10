@@ -16,13 +16,14 @@ bool isIp(String str) {
 }
 
 void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
-  if(!index){
-      request->_tempFile = WLED_FS.open(filename, "w");
+  if (!index) {
+    request->_tempFile = WLED_FS.open(filename, "w");
+    if (filename == "/presets.json") presetsModifiedTime = toki.second();
   }
   if (len) {
     request->_tempFile.write(data,len);
   }
-  if(final){
+  if (final) {
     request->_tempFile.close();
     request->send(200, "text/plain", F("File Uploaded!"));
   }
@@ -298,7 +299,13 @@ void serveIndex(AsyncWebServerRequest* request)
 
   if (handleIfNoneMatchCacheHeader(request)) return;
 
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
+  AsyncWebServerResponse *response;
+#ifndef WLED_DISABLE_SIMPLE_UI
+  if (simplifiedUI)
+    response = request->beginResponse_P(200, "text/html", PAGE_simple, PAGE_simple_L);
+  else
+#endif
+    response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 
   response->addHeader(F("Content-Encoding"),"gzip");
   setStaticContentCacheHeaders(response);

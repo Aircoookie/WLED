@@ -512,18 +512,11 @@ function populateQL()
 {
 	var cn = "";
 	if (pQL.length > 0) {
+		pQL.sort((a,b) => (a[0]>b[0]));
 		cn += `<p class="labels">Quick load</p>`;
-
-		var it = 0;
 		for (var key of (pQL||[])) {
-			cn += `<button class="xxs btn psts" id="p${key[0]}qlb" onclick="setPreset(${key[0]});">${key[1]}</button>`;
-			it++;
-			if (it > 4) {
-				it = 0;
-				cn += '<br>';
-			}
+			cn += `<button class="xxs btn psts" id="p${key[0]}qlb" title="${key[2]?key[2]:''}" onclick="setPreset(${key[0]});">${key[1]}</button>`;
 		}
-		if (it != 0) cn+= '<br>';
 	}
 	gId('pql').innerHTML = cn;
 }
@@ -544,15 +537,15 @@ function populatePresets(fromls)
 		if (!isObject(key[1])) continue;
 		let i = parseInt(key[0]);
 		var qll = key[1].ql;
-		if (qll) pQL.push([i, qll]);
+		if (qll) pQL.push([i, qll, pName(i)]);
 		is.push(i);
 
-		cn += `<div class="seg pres" id="p${i}o">`;
+		cn += `<div class="pres" id="p${i}o">`;
 		if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
 		cn += `<div class="pname" onclick="setPreset(${i})">${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}${pName(i)}</div>
 			<i class="icons e-icon flr ${expanded[i+100] ? "exp":""}" id="sege${i+100}" onclick="expand(${i+100})">&#xe395;</i>
 			<div class="segin" id="seg${i+100}"></div>
-		</div><br>`;
+		</div>`;
     	pNum++;
 	}
 
@@ -667,7 +660,7 @@ function populateSegments(s)
 		if (i > lSeg) lSeg = i;
 
 		cn += `<div class="seg">
-	<label class="check schkl" style="position:absolute">
+	<label class="check schkl">
 		&nbsp;
 		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
 		<span class="checkmark schk"></span>
@@ -675,16 +668,16 @@ function populateSegments(s)
 	<div class="segname" onclick="selSegEx(${i})">
 		${inst.n ? inst.n : "Segment "+i}
 	</div>
-	<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i><br>
+	<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 	<div class="segpwr">
 		<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
-		<div class="sliderwrap il sws">
-			<input id="seg${i}bri" class="noslide sis" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+		<div class="sliderwrap il">
+			<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
 			<div class="sliderdisplay"></div>
 		</div>
 	</div>
 	<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
-		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/><br>
+		<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 		<table class="infot segt">
 		<tr>
 			<td>Start LED</td>
@@ -696,8 +689,6 @@ function populateSegments(s)
 			<td><input class="noslide segn" id="seg${i}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?inst.start:0)}" value="${inst.stop-(cfg.comp.seglen?inst.start:0)}" oninput="updateLen(${i})"></td>
 			<td><input class="noslide segn" id="seg${i}of" type="number" value="${inst.of}" oninput="updateLen(${i})"></td>
 		</tr>
-		</table>
-		<table class="infot segt">
 		<tr>
 			<td>Grouping</td>
 			<td>Spacing</td>
@@ -706,7 +697,7 @@ function populateSegments(s)
 		<tr>
 			<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
 			<td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
-			<td><i class="icons e-icon cnf cnf-s" id="segc${i}" onclick="setSeg(${i})">&#xe390;</i></td>
+			<td><button class="btn btn-i btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>
 		</tr>
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
@@ -722,7 +713,7 @@ function populateSegments(s)
 			<span class="checkmark schk"></span>
 		</label>
 	</div>
-</div><br>`;
+</div>`;
 	}
 
 	gId('segcont').innerHTML = cn;
@@ -942,8 +933,8 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
 		<span class="lstIname">
 			${name}
 		</span>
-		${extraHtml}
 	</div>
+	${extraHtml}
 </div>`;
 }
 
@@ -1000,13 +991,13 @@ function updateLen(s)
 
 function updatePA(scrollto=false)
 {
-	var ps = gEBCN("seg");
+	var ps = gEBCN("pres");
 	for (let i = 0; i < ps.length; i++) {
-		ps[i].style.backgroundColor = "var(--c-2)";
+		ps[i].style.backgroundColor = "";
 	}
 	ps = gEBCN("psts");
 	for (let i = 0; i < ps.length; i++) {
-		ps[i].style.backgroundColor = "var(--c-2)";
+		ps[i].style.backgroundColor = "";
 	}
 	if (currentPreset > 0) {
 		var acv = gId(`p${currentPreset}o`);
@@ -1083,7 +1074,9 @@ function displayRover(i,s)
 function cmpP(a, b)
 {
 	if (!a[1].n) return (a[0] > b[0]);
-	return a[1].n.localeCompare(b[1].n,undefined, {numeric: true});
+	// playlists follow presets
+	var name = (a[1].playlist ? '~' : ' ') + a[1].n;
+	return name.localeCompare((b[1].playlist ? '~' : ' ') + b[1].n, undefined, {numeric: true});
 }
 
 function makeWS() {
@@ -1145,6 +1138,7 @@ function readState(s,command=false)
 	if (s.pl<0)	currentPreset = s.ps;
 	else currentPreset = s.pl;
 	gId('tt').value = s.transition/10;
+	if (s.tdd >= 0) tr = s.tdd/10;
 
 	var selc=0; var ind=0;
 	populateSegments(s);
@@ -1229,7 +1223,7 @@ function requestJson(command=null)
 	command.v = true; // force complete /json/si API response
 	command.time = Math.floor(Date.now() / 1000);
 	var t = d.getElementById('tt');
-	if (t.validity.valid) {
+	if (command.transition===null && t.validity.valid) {
 		var tn = parseInt(t.value*10);
 		if (tn != tr) command.transition = tn;
 	}
@@ -1336,9 +1330,13 @@ function makeSeg()
 		var pend = parseInt(gId(`seg${lowestUnused -1}e`).value,10) + (cfg.comp.seglen?parseInt(gId(`seg${lowestUnused -1}s`).value,10):0);
 		if (pend < ledCount) ns = pend;
 	}
+	gId('segutil').scrollIntoView({
+		behavior: 'smooth',
+		block: 'start',
+	});
 	var cn = `<div class="seg">
 	<div class="segin expanded">
-		<input type="text" class="ptxt noslide" id="seg${lowestUnused}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lowestUnused}"/><br>
+		<input type="text" class="ptxt noslide" id="seg${lowestUnused}t" autocomplete="off" maxlength=32 value="" placeholder="New segment ${lowestUnused}"/>
 		<table class="segt">
 			<tr>
 				<td width="38%">Start LED</td>
@@ -1347,7 +1345,7 @@ function makeSeg()
 			<tr>
 				<td><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
 				<td><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})"></td>
-				<td><i class="icons e-icon cnf cnf-s" id="segc${lowestUnused}" onclick="setSeg(${lowestUnused});resetUtil();">&#xe390;</i></td>
+				<td><button class="btn btn-i btn-xs" onclick="setSeg(${lowestUnused});resetUtil();"><i class="icons bth-icon" id="segc${lowestUnused}">&#xe390;</i></button></td>
 			</tr>
 		</table>
 		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
@@ -1359,7 +1357,7 @@ function makeSeg()
 
 function resetUtil()
 {
-	gId('segutil').innerHTML = '<button class="btn btn-s btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button><br>';
+	gId('segutil').innerHTML = '<button class="btn btn-s btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button>';
 	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
 }
 
@@ -1392,7 +1390,8 @@ function refreshPlE(p) {
 	content += `<div class="hrz"></div>`;
 	plEDiv.innerHTML = content;
 	var dels = plEDiv.getElementsByClassName("btn-pl-del");
-	if (dels.length < 2 && p > 0) dels[0].style.display = "none";
+//	if (dels.length < 2 && p > 0) dels[0].style.display = "none";
+	if (dels.length < 2) dels[0].style.display = "none";
 
 	var sels = gId(`seg${p+100}`).getElementsByClassName("sel");
 	for (var i of sels) {
@@ -1412,7 +1411,8 @@ function addPl(p,i) {
 }
 
 function delPl(p,i) {
-	if (plJson[p].ps.length < 2) {if (p == 0) resetPUtil(); return;}
+//	if (plJson[p].ps.length < 2) {if (p == 0) resetPUtil(); return;}
+	if (plJson[p].ps.length < 2) return;
 	plJson[p].ps.splice(i,1);
 	plJson[p].dur.splice(i,1);
 	plJson[p].transition.splice(i,1);
@@ -1482,7 +1482,7 @@ ${plSelContent}
 	<span class="checkmark schk"></span>
 </label>`;
 
-	return `<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/><br>
+	return `<input type="text" class="ptxt noslide" id="p${i}txt" autocomplete="off" maxlength=32 value="${(i>0)?pName(i):""}" placeholder="Enter name..."/>
 <div class="c">Quick load label: <input type="text" class="stxt noslide" maxlength=2 value="${qlName(i)}" id="p${i}ql" autocomplete="off"/></div>
 <div class="h">(leave empty for no Quick load button)</div>
 <div ${pl&&i==0?"style='display:none'":""}>
@@ -1490,7 +1490,7 @@ ${plSelContent}
     ${pl?"Show playlist editor":(i>0)?"Overwrite with state":"Use current state"}
     <input type="checkbox" id="p${i}cstgl" onchange="tglCs(${i})" ${(i==0||pl)?"checked":""}>
     <span class="checkmark schk"></span>
-  </label><br>
+  </label>
 </div>
 <div class="po2" id="p${i}o2">
     API command<br>
@@ -1502,7 +1502,7 @@ ${plSelContent}
 <div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
 	<button class="btn btn-i btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
-	${(i>0)?'<button class="btn btn-i btn-pl-del" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete':'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
+	${(i>0)?'<button class="btn btn-i btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete':'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
 </div>
 <div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn"></div>
 ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
@@ -1510,21 +1510,26 @@ ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
 
 function makePUtil()
 {
-	gId('putil').innerHTML = `<div class="seg pres"><div class="segin expanded">${makeP(0)}</div></div>`;
+	gId('putil').classList.remove("staytop");
+	gId('putil').scrollIntoView({
+		behavior: 'smooth',
+		block: 'start',
+	});
+	gId('putil').innerHTML = `<div class="pres"><div class="segin expanded">${makeP(0)}</div></div>`;
 	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
 }
 
 function makePlEntry(p,i) {
   return `<div class="plentry">
   	<div class="hrz"></div>
-	<table class="segt">
+	<table>
 	<tr>
 		<td width="80%" colspan=2>
 			<select class="sel sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
 			${plSelContent}
 			</select>
 		</td>
-		<td><button class="btn btn-i btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
+		<td class="c"><button class="btn btn-i btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
 	</tr>
 	<tr>
 		<td class="h">Duration</td>
@@ -1532,9 +1537,9 @@ function makePlEntry(p,i) {
 		<td class="h">#${i+1}</td>
 	</tr>
 	<tr>
-		<td width="40%"><input class="noslide segn" type="number" placeholder="Duration" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}">s</td>
-		<td width="40%"><input class="noslide segn" type="number" placeholder="Transition" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value="${plJson[p].transition[i]/10.0}">s</td>
-		<td><button class="btn btn-i btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div></td>
+		<td class="c" width="40%"><input class="noslide segn" type="number" placeholder="Duration" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}">s</td>
+		<td class="c" width="40%"><input class="noslide segn" type="number" placeholder="Transition" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value="${plJson[p].transition[i]/10.0}">s</td>
+		<td class="c"><button class="btn btn-i btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div></td>
 	</tr>
 	</table>
 </div>`;
@@ -1546,14 +1551,20 @@ function makePlUtil()
 		showToast("You need at least 2 presets to make a playlist!"); //return;
 	}
 	if (plJson[0].transition[0] < 0) plJson[0].transition[0] = tr;
-	gId('putil').innerHTML = `<div class="seg pres"><div class="segin expanded" id="seg100">${makeP(0,true)}</div></div>`;
+	gId('putil').classList.remove("staytop");
+	gId('putil').scrollIntoView({
+		behavior: 'smooth',
+		block: 'start',
+	});
+	gId('putil').innerHTML = `<div class="pres"><div class="segin expanded" id="seg100">${makeP(0,true)}</div></div>`;
 	refreshPlE(0);
 }
 
 function resetPUtil()
 {
-	var cn = `<button class="btn btn-s btn-i" style="width:230px;margin-left:0;" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button>`+
-             `<button class="btn btn-i btn-xs" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i></button><br>`;
+	gId('putil').classList.add("staytop");
+	var cn = `<button class="btn btn-s btn-n" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button>`+
+             `<button class="btn btn-i btn-xs" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i></button>`;
 	gId('putil').innerHTML = cn;
 }
 
@@ -1753,6 +1764,7 @@ function saveP(i,pl)
 	}
 	populatePresets();
 	resetPUtil();
+	if (i>0) expand(pI+100);	// collapse edited preset or expand created preset.
 }
 
 function testPl(i,bt) {
@@ -1782,7 +1794,7 @@ function delP(i) {
 		populatePresets();
 	} else {
 		bt.style.color = "#f00";
-		bt.innerHTML = "<i class='icons btn-icon'>&#xe037;</i>Confirm delete";
+		bt.innerHTML = "<i class='icons btn-icon'>&#xe037;</i>Delete!";
 		bt.dataset.cnf = 1;
 	}
 }
@@ -2033,8 +2045,8 @@ function expand(i,a)
 	seg.style.display = (expanded[i]) ? "block":"none";
 	gId('sege' +i).style.transform = (expanded[i]) ? "rotate(180deg)":"rotate(0deg)";
 
-	if (expanded[i]) gId(i<100?'segutil':'putil').classList.remove("staytop");
-	else gId(i<100?'segutil':'putil').classList.add("staytop");
+	if (expanded[i]) gId(i<100?'segutil':'putil').classList.remove(i<100?"staybot":"staytop");
+	else gId(i<100?'segutil':'putil').classList.add(i<100?"staybot":"staytop");
 
 	if (i >= 100) {
 		var p = i-100;

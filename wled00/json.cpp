@@ -413,6 +413,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
     root["on"] = (bri > 0);
     root["bri"] = briLast;
     root[F("transition")] = transitionDelay/100; //in 100ms
+    root[F("tdd")] = transitionDelayDefault/100; //in 100ms
   }
 
   if (!forPreset) {
