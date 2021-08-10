@@ -258,7 +258,7 @@ class MultiRelay : public Usermod {
       // pins retrieved from cfg.json (readFromConfig()) prior to running setup()
       for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
         if (_relay[i].pin<0) continue;
-        if (!ALLOCATE_PIN(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
+        if (!pinManager.allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
           _relay[i].pin = -1;  // allocation failed
         } else {
           switchRelay(i, _relay[i].state = (bool)bri);
@@ -380,11 +380,11 @@ class MultiRelay : public Usermod {
         // deallocate all pins 1st
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++)
           if (oldPin[i]>=0) {
-            DEALLOCATE_PIN(oldPin[i], PinOwner::UM_MultiRelay);
+            pinManager.deallocatePin(oldPin[i], PinOwner::UM_MultiRelay);
           }
         // allocate new pins
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-          if (_relay[i].pin>=0 && ALLOCATE_PIN(_relay[i].pin, true, PinOwner::UM_MultiRelay)) {
+          if (_relay[i].pin>=0 && pinManager.allocatePin(_relay[i].pin, true, PinOwner::UM_MultiRelay)) {
             if (!_relay[i].external) {
               switchRelay(i, _relay[i].state = (bool)bri);
             }

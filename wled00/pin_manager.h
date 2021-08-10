@@ -56,18 +56,6 @@ enum struct PinOwner : uint8_t {
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 
-// Allocates a single pin, with an owner tag.
-// De-allocation requires the same owner tag (or override)
-#define ALLOCATE_PIN(gpio, output, tag)     pinManager._allocatePin(gpio, output, tag)
-// Allocates all the pins, or allocates none of the pins, with owner tag.
-// Provided to simplify error condition handling in clients 
-// using more than one pin, such as I2C, SPI, rotary encoders,
-// ethernet, etc..
-#define ALLOCATE_MULTIPLE_PINS(mptArray, arrayElementCount, tag) pinManager._allocateMultiplePins(mptArray, arrayElementCount, tag)
-// De-allocates a single pin
-#define DEALLOCATE_PIN(gpio, tag) pinManager._deallocatePin(gpio, tag)
-
-
 class PinManagerClass {
   private:
   #ifdef ESP8266
@@ -80,18 +68,25 @@ class PinManagerClass {
   #endif
 
   public:
-  bool _deallocatePin(byte gpio, PinOwner tag);
-  bool _allocatePin(byte gpio, bool output, PinOwner tag);
-  bool _allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag );
+  // De-allocates a single pin
+  bool deallocatePin(byte gpio, PinOwner tag);
+  // Allocates a single pin, with an owner tag.
+  // De-allocation requires the same owner tag (or override)
+  bool allocatePin(byte gpio, bool output, PinOwner tag);
+  // Allocates all the pins, or allocates none of the pins, with owner tag.
+  // Provided to simplify error condition handling in clients 
+  // using more than one pin, such as I2C, SPI, rotary encoders,
+  // ethernet, etc..
+  bool allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag );
 
   #if !defined(ESP8266) // ESP8266 compiler doesn't understand deprecated attribute
-  [[deprecated("Replaced by macro ALLOCATE_PIN(gpio, output), for improved debugging")]]
+  [[deprecated("Replaced by three-parameter allocatePin(gpio, output, ownerTag), for improved debugging")]]
   #endif
-  inline bool allocatePin(byte gpio, bool output = true) { return _allocatePin(gpio, output, PinOwner::None); }
+  inline bool allocatePin(byte gpio, bool output = true) { return allocatePin(gpio, output, PinOwner::None); }
   #if !defined(ESP8266) // ESP8266 compiler doesn't understand deprecated attribute
-  [[deprecated("Replaced by macro DEALLOCATE_PIN(gpio), for improved debugging")]]
+  [[deprecated("Replaced by three-parameter deallocatePin(gpio, output, ownerTag), for improved debugging")]]
   #endif
-  inline void deallocatePin(byte gpio) { _deallocatePin(gpio, PinOwner::None); }
+  inline void deallocatePin(byte gpio) { deallocatePin(gpio, PinOwner::None); }
 
   bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None);
   bool isPinOk(byte gpio, bool output = true);

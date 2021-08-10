@@ -98,7 +98,7 @@ public:
   void setup()
   {
     PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
-    if (!ALLOCATE_MULTIPLE_PINS(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
+    if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
       // BUG: configuring this usermod with conflicting pins
       //      will cause it to de-allocate pins it does not own
       //      (at second config)
@@ -463,9 +463,9 @@ public:
       DEBUG_PRINTLN(F(" config (re)loaded."));
       // changing parameters from settings page
       if (pinA!=newDTpin || pinB!=newCLKpin || pinC!=newSWpin) {
-        DEALLOCATE_PIN(pinA, PinOwner::UM_RotaryEncoderUI);
-        DEALLOCATE_PIN(pinB, PinOwner::UM_RotaryEncoderUI);
-        DEALLOCATE_PIN(pinC, PinOwner::UM_RotaryEncoderUI);
+        pinManager.deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
+        pinManager.deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
+        pinManager.deallocatePin(pinC, PinOwner::UM_RotaryEncoderUI);
         pinA = newDTpin;
         pinB = newCLKpin;
         pinC = newSWpin;

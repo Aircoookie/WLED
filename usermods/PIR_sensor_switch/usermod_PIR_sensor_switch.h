@@ -200,7 +200,7 @@ public:
   {
     if (enabled) {
       // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-      if (PIRsensorPin >= 0 && ALLOCATE_PIN(PIRsensorPin, false, PinOwner::UM_PIR)) {
+      if (PIRsensorPin >= 0 && pinManager.allocatePin(PIRsensorPin, false, PinOwner::UM_PIR)) {
         // PIR Sensor mode INPUT_PULLUP
         pinMode(PIRsensorPin, INPUT_PULLUP);
         sensorPinState = digitalRead(PIRsensorPin);
@@ -368,8 +368,8 @@ public:
         if (oldPin != PIRsensorPin && oldPin >= 0) {
           // if we are changing pin in settings page
           // deallocate old pin
-          DEALLOCATE_PIN(oldPin, PinOwner::UM_PIR);
-          if (ALLOCATE_PIN(PIRsensorPin, false, PinOwner::UM_PIR)) {
+          pinManager.deallocatePin(oldPin, PinOwner::UM_PIR);
+          if (pinManager.allocatePin(PIRsensorPin, false, PinOwner::UM_PIR)) {
             pinMode(PIRsensorPin, INPUT_PULLUP);
           } else {
             // allocation failed

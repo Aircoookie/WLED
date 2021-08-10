@@ -1,8 +1,6 @@
 #include "pin_manager.h"
 #include "wled.h"
 
-/// Debug wrappers with __FILE__ and __LINE__ output, for debug builds.
-/// These should end up fully optimized away on non-debug builds.
 static void DebugPrintOwnerTag(PinOwner tag)
 {
   uint32_t q = static_cast<uint8_t>(tag);
@@ -14,7 +12,7 @@ static void DebugPrintOwnerTag(PinOwner tag)
 }
 
 /// Actual allocation/deallocation routines
-bool PinManagerClass::_deallocatePin(byte gpio, PinOwner tag)
+bool PinManagerClass::deallocatePin(byte gpio, PinOwner tag)
 {
   if (gpio == 0xFF) return true;           // explicitly allow clients to free -1 as a no-op
   if (!isPinOk(gpio, false)) return false; // but return false for any other invalid pin
@@ -36,7 +34,7 @@ bool PinManagerClass::_deallocatePin(byte gpio, PinOwner tag)
   ownerTag[gpio] = PinOwner::None;
   return true;
 }
-bool PinManagerClass::_allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag)
+bool PinManagerClass::allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag)
 {
   bool shouldFail = false;
   // first verify the pins are OK and not already allocated
@@ -81,7 +79,7 @@ bool PinManagerClass::_allocateMultiplePins(const managed_pin_type * mptArray, b
   }
   return true;
 }
-bool PinManagerClass::_allocatePin(byte gpio, bool output, PinOwner tag)
+bool PinManagerClass::allocatePin(byte gpio, bool output, PinOwner tag)
 {
   if (!isPinOk(gpio, output)) return false;
   if (isPinAllocated(gpio)) {

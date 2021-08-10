@@ -136,7 +136,7 @@ class FourLineDisplayUsermod : public Usermod {
         return;
       }
       PinManagerPinType pins[2] = { { sclPin, true }, { sdaPin, true} };
-      if (!ALLOCATE_MULTIPLE_PINS(pins, 2, PinOwner::UM_FourLineDisplay)) {
+      if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::UM_FourLineDisplay)) {
         sclPin = -1;
         sdaPin = -1;
         type = NONE;
@@ -194,8 +194,8 @@ class FourLineDisplayUsermod : public Usermod {
       }
       if (nullptr == u8x8) {
           DEBUG_PRINTLN(F("Display init failed."));
-          DEALLOCATE_PIN(sclPin, PinOwner::UM_FourLineDisplay);
-          DEALLOCATE_PIN(sdaPin, PinOwner::UM_FourLineDisplay);
+          pinManager.deallocatePin(sclPin, PinOwner::UM_FourLineDisplay);
+          pinManager.deallocatePin(sdaPin, PinOwner::UM_FourLineDisplay);
           sclPin = -1;
           sdaPin = -1;
           type = NONE;
@@ -676,8 +676,8 @@ class FourLineDisplayUsermod : public Usermod {
             delete (static_cast<U8X8*>(u8x8));
             u8x8 = nullptr;
           }
-          DEALLOCATE_PIN(sclPin, PinOwner::UM_FourLineDisplay);
-          DEALLOCATE_PIN(sdaPin, PinOwner::UM_FourLineDisplay);
+          pinManager.deallocatePin(sclPin, PinOwner::UM_FourLineDisplay);
+          pinManager.deallocatePin(sdaPin, PinOwner::UM_FourLineDisplay);
           sclPin = newScl;
           sdaPin = newSda;
           type   = newType;

@@ -115,7 +115,7 @@ class UsermodTemperature : public Usermod {
         // config says we are enabled
         DEBUG_PRINTLN(F("Allocating temperature pin..."));
         // pin retrieved from cfg.json (readFromConfig()) prior to running setup()
-        if (temperaturePin >= 0 && ALLOCATE_PIN(temperaturePin, true, PinOwner::UM_Temperature)) {
+        if (temperaturePin >= 0 && pinManager.allocatePin(temperaturePin, true, PinOwner::UM_Temperature)) {
           oneWire = new OneWire(temperaturePin);
           if (!oneWire->reset()) {
             sensorFound = false;   // resetting 1-Wire bus yielded an error
@@ -278,7 +278,7 @@ class UsermodTemperature : public Usermod {
           DEBUG_PRINTLN(F("Re-init temperature."));
           // deallocate pin and release memory
           delete oneWire;
-          DEALLOCATE_PIN(temperaturePin, PinOwner::UM_Temperature);
+          pinManager.deallocatePin(temperaturePin, PinOwner::UM_Temperature);
           temperaturePin = newTemperaturePin;
           // initialise
           setup();

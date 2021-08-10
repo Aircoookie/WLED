@@ -280,10 +280,10 @@ void WLED::setup()
   registerUsermods();
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
-    if (psramFound()) {
-      // GPIO16/GPIO17 reserved for SPI RAM
-      managed_pin_type pins[2] = { {16, true}, {17, true} };
-      ALLOCATE_MULTIPLE_PINS(pins, 2, PinOwner::SPI_RAM);
+  if (psramFound()) {
+    // GPIO16/GPIO17 reserved for SPI RAM
+    managed_pin_type pins[2] = { {16, true}, {17, true} };
+    pinManager.allocateMultiplePins(pins, 2, PinOwner::SPI_RAM);
   }
   #endif
 
@@ -291,10 +291,10 @@ void WLED::setup()
   //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
 
 #ifdef WLED_DEBUG
-  ALLOCATE_PIN(1, true, PinOwner::DebugOut); // GPIO1 reserved for debug output
+  pinManager.allocatePin(1, true, PinOwner::DebugOut); // GPIO1 reserved for debug output
 #endif
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
-  ALLOCATE_PIN(2, true, PinOwner::DMX);
+  pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
 
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
@@ -501,7 +501,7 @@ bool WLED::initEthernet()
     return false;
   }
 
-  if (!ALLOCATE_MULTIPLE_PINS(pinsToAllocate, 10, PinOwner::Ethernet)) {
+  if (!pinManager.allocateMultiplePins(pinsToAllocate, 10, PinOwner::Ethernet)) {
     DEBUG_PRINTLN(F("initE: Failed to allocate ethernet pins"));
     return false;
   }
@@ -517,7 +517,7 @@ bool WLED::initEthernet()
     DEBUG_PRINTLN(F("initC: ETH.begin() failed"));
     // de-allocate the allocated pins
     for (managed_pin_type mpt : pinsToAllocate) {
-      DEALLOCATE_PIN(mpt.pin, PinOwner::Ethernet);
+      pinManager.deallocatePin(mpt.pin, PinOwner::Ethernet);
     }
     return false;
   }
