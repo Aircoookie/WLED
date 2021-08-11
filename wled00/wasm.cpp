@@ -8,7 +8,7 @@
 // For (most) devices that cannot allocate a 64KiB wasm page
 #define WASM_MEMORY_LIMIT   4096
 
-unsigned char app_wasm[] = {
+/*unsigned char app_wasm[] = {
   0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x0f, 0x03, 0x60,
   0x00, 0x01, 0x7f, 0x60, 0x04, 0x7f, 0x7f, 0x7f, 0x7f, 0x00, 0x60, 0x00,
   0x00, 0x02, 0x2b, 0x04, 0x03, 0x6c, 0x65, 0x64, 0x03, 0x6e, 0x6f, 0x77,
@@ -26,8 +26,8 @@ unsigned char app_wasm[] = {
   0x20, 0x10, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x4d, 0x61, 0x70, 0x70,
   0x69, 0x6e, 0x67, 0x55, 0x52, 0x4c, 0x0e, 0x2e, 0x2f, 0x61, 0x70, 0x70,
   0x2e, 0x77, 0x61, 0x73, 0x6d, 0x2e, 0x6d, 0x61, 0x70
-};
-unsigned int app_wasm_len = 201;
+};*/
+//unsigned int app_wasm_len = 201;
 
 
 
@@ -195,6 +195,9 @@ IM3Runtime runtime;
 IM3Module module;
 IM3Function fu;
 
+uint32_t app_wasm_len = 8192; //max bin size
+uint8_t* app_wasm = nullptr;
+
 void wasm_task(void*)
 {
     result = m3Err_none;
@@ -209,8 +212,23 @@ void wasm_task(void*)
     runtime->memoryLimit = WASM_MEMORY_LIMIT;
 #endif
 
+    if (!readToBuffer("/fx.wasm", &app_wasm, &app_wasm_len)) {
+      result = "fload";
+      return;
+    }
+
+    //Serial.println(app_wasm_len);
+    //Serial.println((uint32_t)app_wasm);
+
+    if (app_wasm == nullptr) {
+      result = "npr";
+      return;
+    }
+
     result = m3_ParseModule (env, &module, app_wasm, app_wasm_len);
     if (result) FATAL("Prs", result);
+
+    delete[] app_wasm;
 
     result = m3_LoadModule (runtime, module);
     if (result) FATAL("Load", result);
@@ -241,7 +259,8 @@ void wasmInit()
 void wasmRun() {
   if (result) {
     //Serial.println(F("You fucked up... Majorly..."));
-    Serial.println("If only...");
+    Serial.print("If only... ");
+    Serial.println(result);
     //Serial.println("That could save us🥺");
     return;
   }
@@ -266,7 +285,9 @@ void wasmRun() {
 }
 
 void wasmEnd() {
-  if (module) m3_FreeModule(module); module = nullptr;
+  //if (module) m3_FreeModule(module); module = nullptr;
+  Serial.println("F");
   if (runtime) m3_FreeRuntime(runtime); runtime = nullptr;
   if (env) m3_FreeEnvironment(env); env = nullptr;
+  Serial.println("F later");
 }

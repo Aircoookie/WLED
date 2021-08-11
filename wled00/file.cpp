@@ -409,3 +409,21 @@ bool handleFileRead(AsyncWebServerRequest* request, String path){
   }
   return false;
 }
+
+//provide maximum buffer size in len variable
+//if this returns true, the buffer array must be deleted by the caller
+bool readToBuffer(const char* file, uint8_t** buf, uint32_t* len) {
+  Serial.println("opening file");
+  File f = WLED_FS.open(file,"r");
+  if (!f) return false;
+  uint32_t sz = f.size();
+  Serial.println(sz);
+  if (!sz || sz > *len) {f.close(); return false;}
+  *buf = new uint8_t[sz];
+  if (!*buf) {f.close(); return false;}
+  *len = sz;
+  f.read(*buf, sz);
+  f.close();
+  Serial.println("done");
+  return true;
+}

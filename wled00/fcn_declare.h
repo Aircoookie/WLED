@@ -82,6 +82,7 @@ bool writeObjectToFileUsingId(const char* file, uint16_t id, JsonDocument* conte
 bool writeObjectToFile(const char* file, const char* key, JsonDocument* content);
 bool readObjectFromFileUsingId(const char* file, uint16_t id, JsonDocument* dest);
 bool readObjectFromFile(const char* file, const char* key, JsonDocument* dest);
+bool readToBuffer(const char* file, uint8_t** buf, uint32_t* len);
 void updateFSInfo();
 void closeFile();
 
