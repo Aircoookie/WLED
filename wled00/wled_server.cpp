@@ -26,6 +26,7 @@ void handleUpload(AsyncWebServerRequest *request, String filename, size_t index,
   if (final) {
     request->_tempFile.close();
     request->send(200, "text/plain", F("File Uploaded!"));
+    cacheInvalidate++;
   }
 }
 
@@ -286,6 +287,7 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
 void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
 {
   char tmp[12];
+  // https://medium.com/@codebyamir/a-web-developers-guide-to-browser-caching-cc41f3b73e7c
   #ifndef WLED_DEBUG
   response->addHeader(F("Cache-Control"),"max-age=604800");     // 7 day caching
   #else

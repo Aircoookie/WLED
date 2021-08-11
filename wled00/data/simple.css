@@ -472,6 +472,12 @@ input[type=range]::-moz-range-thumb {
 	border: 1px solid var(--c-4);
 }
 
+.btn-xs {
+	width: 42px;
+	height: 42px;
+	margin: 4px;
+}
+
 #fxBtn, #palBtn {
 	background-color: var(--c-2);
 	border: 1px solid var(--c-2);
@@ -485,10 +491,6 @@ input[type=range]::-moz-range-thumb {
 	margin-right: 8px;
 	vertical-align: middle;
 	display: inline-block;
-}
-
-.btna-icon {
-	margin: 0px;
 }
 
 .qcs {
@@ -546,16 +548,23 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .xxs {
+	border: 2px solid var(--c-e) !important;
 	width: 44px;
-	margin: 6px;
+	height: 44px;
+	margin: 5px;
+	text-shadow: -1px -1px 0 var(--c-6), 1px -1px 0 var(--c-6), -1px 1px 0 var(--c-6), 1px 1px 0 var(--c-6);
+}
+
+.xxs-w {
+	border-width: 4px !important;
+	margin: 2px;
+	width: 50px;
+	height: 50px;
 }
 
 .psts {
-	background-color: var(--c-3);
 	color: var(--c-f);
-	cursor: pointer;
-	padding: 2px 0 0 0;
-	height: 44px;
+	margin: 6px;
 }
 
 .pwr {

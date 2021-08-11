@@ -515,7 +515,7 @@ function populateQL()
 		pQL.sort((a,b) => (a[0]>b[0]));
 		cn += `<p class="labels">Quick load</p>`;
 		for (var key of (pQL||[])) {
-			cn += `<button class="xxs btn psts" id="p${key[0]}qlb" title="${key[2]?key[2]:''}" onclick="setPreset(${key[0]});">${key[1]}</button>`;
+			cn += `<button class="btn btn-xs psts" id="p${key[0]}qlb" title="${key[2]?key[2]:''}" onclick="setPreset(${key[0]});">${key[1]}</button>`;
 		}
 	}
 	gId('pql').innerHTML = cn;
@@ -759,7 +759,7 @@ function populateNodes(i,n)
 		for (var x=0;x<n.nodes.length;x++) {
 			var o = n.nodes[x];
 			if (o.name) {
-				var url = `<button class="btn btna-icon tab" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				var url = `<button class="btn tab" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
 				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
 				nnodes++;
 			}
@@ -1804,13 +1804,15 @@ function selectSlot(b)
 	csel = b;
 	var cd = gId('csl').children;
 	for (let i = 0; i < cd.length; i++) {
-		cd[i].style.border="2px solid var(--c-e)";
-		cd[i].style.margin="5px";
-		cd[i].style.width="42px";
+		//cd[i].style.borderWidth="2px";
+		//cd[i].style.margin="5px";
+		//cd[i].style.width="42px";
+		cd[i].classList.remove('xxs-w');
 	}
-	cd[csel].style.border="5px solid var(--c-e)";
-	cd[csel].style.margin="2px";
-	cd[csel].style.width="50px";
+	//cd[csel].style.borderWidth="5px";
+	//cd[csel].style.margin="2px";
+	//cd[csel].style.width="50px";
+	cd[csel].classList.add('xxs-w');
 	cpick.color.set(cd[csel].style.backgroundColor);
 	gId('sliderW').value = whites[csel];
 	updateTrail(gId('sliderW'));

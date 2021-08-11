@@ -164,21 +164,20 @@ button {
 	font-size: small;
 }
 
-.slider-icon
-{
+.slider-icon {
 	transform: translate(6px,3px);
-	color: var(--c-d);
 }
 
-.e-icon
-{
+.e-icon {
 	transform: translateY(3px);
-	color: var(--c-d);
 }
 
 .sel-icon {
-	cursor: pointer;
 	transform: translateX(3px);
+}
+
+.e-icon, .sel-icon, .slider-icon {
+	cursor: pointer;
 	color: var(--c-d);
 }
 
@@ -595,16 +594,13 @@ input[type=range]::-moz-range-thumb {
 }
 .btn-i {}
 .btn-icon {
-	margin: -4px 8px 0 0;
+	margin: -4px 4px 0 0;
 	vertical-align: middle;
 	display: inline-block;
 }
-.btna-icon {
-	margin: 0px;
-}
 .btn-n {
 	width: 230px;
-	margin-right: 8px;
+	margin: 0 8px 10px 0;
 }
 .btn-p {
 	width: 120px;
@@ -763,16 +759,23 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .xxs {
-	width: 40px;
-	margin: 6px;
+	border: 2px solid var(--c-e) !important;
+	width: 44px;
+	height: 44px;
+	margin: 5px;
+	text-shadow: -1px -1px 0 var(--c-6), 1px -1px 0 var(--c-6), -1px 1px 0 var(--c-6), 1px 1px 0 var(--c-6);
+}
+
+.xxs-w {
+	border-width: 5px !important;
+	margin: 2px;
+	width: 50px;
+	height: 50px;
 }
 
 .psts {
-	background-color: var(--c-3);
 	color: var(--c-f);
-	cursor: pointer;
-	padding: 2px 0 0 0;
-	height: 40px;
+	margin: 4px;
 }
 
 .pwr {
@@ -954,16 +957,20 @@ input[type=number]::-webkit-outer-spin-button {
 
 .lstI.selected {
 	background: var(--c-5);
-	top: 142px;
+	top: 0;
 	bottom: 0;
-}
-
-.lstI.sticky {
-	top: 100px;
 }
 
 .lstI.sticky, .lstI.selected {
 	z-index: 1;
+}
+
+#fxlist .lstI.sticky {
+	top: 99px;
+}
+
+#fxlist .lstI.selected {
+	top: 142px;
 }
 
 #pallist .lstI.selected {
