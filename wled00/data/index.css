@@ -621,13 +621,17 @@ input[type=range]::-moz-range-thumb {
 	margin-top: 10px;
 }
 .qcs {
-	padding: 14px;
 	margin: 2px;
 	border-radius: 14px;
 	display: inline-block;
+	width: 28px;
+	height: 28px;
+	line-height: 28px;
 }
 .qcsb {
-	padding: 13px;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
 	border: 1px solid var(--c-f);
 }
 #hexw {
@@ -763,7 +767,6 @@ input[type=number]::-webkit-outer-spin-button {
 	width: 44px;
 	height: 44px;
 	margin: 5px;
-	text-shadow: -1px -1px 0 var(--c-6), 1px -1px 0 var(--c-6), -1px 1px 0 var(--c-6), 1px 1px 0 var(--c-6);
 }
 
 .xxs-w {
@@ -771,6 +774,10 @@ input[type=number]::-webkit-outer-spin-button {
 	margin: 2px;
 	width: 50px;
 	height: 50px;
+}
+
+.qcs, .xss {
+	text-shadow: -1px -1px 0 var(--c-6), 1px -1px 0 var(--c-6), -1px 1px 0 var(--c-6), 1px 1px 0 var(--c-6);
 }
 
 .psts {

@@ -27,7 +27,7 @@
             <button id="buttonBri" onclick="tglBri()"><i class="icons">&#xe2a6;</i><p class="tab-label">Brightness</p></button>
 		</div>
 		<div id="briwrap">
-			<p class="labels hd">Global brightness</p>
+			<p class="label hd">Global brightness</p>
 			<div class="il">
 				<i class="icons slider-icon" onclick="tglTheme()">&#xe2a6;</i>
 				<div class="sliderwrap il">
@@ -45,7 +45,7 @@
         <div id="picker" class="center"></div>
 
         <div id="wwrap" class="center">
-			<p class="labels h">White channel</p>
+			<p class="label h">White channel</p>
             <i class="icons slider-icon" id="wht" title="White channel">&#xe333;</i>
 			<div class="sliderwrap il">
 				<input id="sliderW" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
@@ -65,7 +65,7 @@
 			<div class="qcs" onclick="pC('#0000ff');" title="Blue" style="background-color:#0000ff;"></div>
 			<div class="qcs" onclick="pC('#00ffc8');" title="Cyan" style="background-color:#00ffc8;"></div>
 			<div class="qcs" onclick="pC('#08ff00');" title="Green" style="background-color:#08ff00;"></div>
-			<div class="qcs" onclick="pC('rnd');" title="Random" style="background-color:var(--c-3); padding: 4px 8px; transform: translateY(-10px);">R</div>
+			<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
 		</div>
 		<div id="csl" class="center" style="display: none;">
 			<button class="xxs btn" onclick="selectSlot(0);">1</button>
@@ -78,12 +78,12 @@
 		</div>
 
 		<div id="QuickLoad" class="center">
-			<p class="labels h">Quick Load</p>
+			<p class="label h">Quick Load</p>
         	<div id="pql"></div>
 		</div>
 
 		<div id="Presets" class="center" style="display:none;">
-        	<p class="labels h">Presets</p>
+        	<p class="label h">Presets</p>
 			<div class="fnd">
 				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this)" />
 				<span onclick="clean(this)" class="icons">&#xe38f;</span>
@@ -93,9 +93,9 @@
 		</div>
 
 		<div id="Effects" class="center">
-			<p class="labels h">Effect</p>
-			<!--p class="labels h">Effect speed</p-->
-			<div>
+			<p class="label h">Effect</p>
+			<!--p class="label h">Effect speed</p-->
+			<div title="Effect speed">
 				<i class="icons slider-icon">&#xe325;</i>
 				<div class="sliderwrap il">
 					<input id="sliderSpeed" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
@@ -103,8 +103,8 @@
 				</div>
 				<output class="sliderbubble"></output>
 			</div>
-			<!--p class="labels h">Effect intensity</p-->
-			<div>
+			<!--p class="label h">Effect intensity</p-->
+			<div title="Effect intensity">
 				<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
 				<div class="sliderwrap il">
 					<input id="sliderIntensity" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />

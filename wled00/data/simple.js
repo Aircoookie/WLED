@@ -75,6 +75,8 @@ function applyCfg()
 	var l = cfg.comp.labels; //l = false;
 	var e = d.querySelectorAll('.tab-label');
 	for (var i=0; i<e.length; i++) e[i].style.display = l ? "block":"none";
+	e = d.querySelectorAll('.label');
+	for (var i=0; i<e.length; i++) e[i].style.display = l ? "block":"none";
 	e = d.querySelector('.hd');
 	e.style.display = l ? "block":"none";
 	//sCol('--tbp',l ? "14px 14px 10px 14px":"10px 22px 4px 22px");
@@ -226,7 +228,7 @@ async function onLoad()
 
 	// Load initial data
 	loadPalettes(()=>{
-		loadPalettesData();
+		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadPresets(()=>{
 				loadInfo(requestJson);
@@ -432,7 +434,7 @@ function populatePresets()
 {
 	if (!pJson) {pJson={};return};
 	delete pJson["0"];
-	var cn = ""; //`<p class="labels">All presets</p>`;
+	var cn = ""; //`<p class="label">All presets</p>`;
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
 	pQL = [];
@@ -548,7 +550,7 @@ function populateSegments(s)
 			if (i > lSeg) lSeg = i;
 
 			cn +=
-`${inst.n && cfg.comp.labels ? '<div class="labels h">'+inst.n+'</div>' : ''}
+`<div class="label h">${(inst.n&&inst.n!=='')?inst.n:('Segment '+y)}</div>
 <div>
 	<i class="icons pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})" title="${inst.n}">&#xe08f;</i>
 	<div id="sliderSeg${i}Bri" class="sliderwrap il">
@@ -826,7 +828,7 @@ function updateUI(scrollto=false)
 	redrawPalPrev();
 
 	var l = cfg.comp.labels; //l = false;
-	var e = d.querySelectorAll('.labels');
+	var e = d.querySelectorAll('.label');
 	for (var i=0; i<e.length; i++) e[i].style.display = l ? "block":"none";
 }
 
@@ -1221,8 +1223,7 @@ function loadPalettesData(callback = null)
 			palettesDataJson = JSON.parse(palettesDataJson);
 			if (palettesDataJson && palettesDataJson.vid == lastinfo.vid) {
 				palettesData = palettesDataJson.p;
-				//redrawPalPrev() //TODO!
-				if (callback) callback();
+				if (callback) callback(); //redrawPalPrev()
 				return;
 			}
 		} catch (e) {}
@@ -1234,8 +1235,7 @@ function loadPalettesData(callback = null)
 			p: palettesData,
 			vid: lastinfo.vid
 		}));
-		//redrawPalPrev();
-		if (callback) setTimeout(callback, 99); //go on to connect websocket
+		if (callback) setTimeout(callback, 99); //redrawPalPrev()
 	});
 }
 
