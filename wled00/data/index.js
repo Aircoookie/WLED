@@ -989,7 +989,7 @@ function updatePA(scrollto=false)
 	if (currentPreset > 0) {
 		var acv = gId(`p${currentPreset}o`);
 		if (acv && !expanded[currentPreset+100]) {
-			acv.classList.add('selected');;
+			acv.classList.add('selected');
 			if (scrollto) {
 				// scroll selected preset into view (on WS refresh)
 				acv.scrollIntoView({
@@ -999,7 +999,7 @@ function updatePA(scrollto=false)
 			}
 		}
 		acv = gId(`p${currentPreset}qlb`);
-		if (acv) acv.classList.add('selected');;
+		if (acv) acv.classList.add('selected');
 	}
 }
 

@@ -604,6 +604,10 @@ input[type=number]::-webkit-outer-spin-button {
 	min-height: 24px;
 }
 
+.selected { /* has to be after .lstI */
+	background: var(--c-5);
+}
+
 .lstI:hover {
     background: var(--c-4);
 }
@@ -614,10 +618,6 @@ input[type=number]::-webkit-outer-spin-button {
     padding-bottom: 10px;
 }
 */
-.lstI.selected {
-	background: var(--c-5);
-}
-
 .lstIcontent {
 	width: 100%;
 	vertical-align: middle;

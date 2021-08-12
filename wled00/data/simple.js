@@ -446,7 +446,7 @@ function populatePresets()
 		if (qll) pQL.push([i, qll, pName(i)]);
 		is.push(i);
 
-		cn += `<div class="lstI c" id="p${i}o" onclick="setPreset(${i})">`;
+		cn += `<div class="lstI c pres" id="p${i}o" onclick="setPreset(${i})">`;
 		//if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
 		cn += `${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}<span class="lstIname">${pName(i)}</span></div>`;
     	pNum++;
@@ -785,17 +785,19 @@ function toggleBubble(e)
 
 function updatePA(scrollto=false)
 {
-	var ps = gEBCN("psts");	// quick load
+	var ps = gEBCN("pres");
 	for (let i = 0; i < ps.length; i++) {
-		ps[i].style.backgroundColor = "var(--c-2)";
+		ps[i].classList.remove('selected');;
+	}
+	ps = gEBCN("psts");
+	for (let i = 0; i < ps.length; i++) {
+		ps[i].classList.remove('selected');;
 	}
 	if (currentPreset > 0) {
         var acv = gId(`p${currentPreset}o`);
-		if (acv) {
-			acv.style.background = "var(--c-6)";
-		}
+		if (acv) acv.classList.add('selected');
 		acv = gId(`p${currentPreset}qlb`);
-		if (acv) acv.style.background = "var(--c-6)";
+		if (acv) acv.classList.add('selected');
     }
 }
 
