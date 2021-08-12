@@ -156,18 +156,6 @@ function loadBg(iUrl)
 	let bg = document.getElementById('bg');
 	let img = document.createElement("img");
 	img.src = iUrl;
-/*
-	if (iUrl == "" || iUrl === "https://picsum.photos/1920/1080") {
-		var today = new Date();
-		for (var i=0; i<hol.length; i++) {
-			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
-			var hs = new Date(yr,hol[i][1],hol[i][2]);
-			var he = new Date(hs);
-			he.setDate(he.getDate() + hol[i][3]);
-			if (today>=hs && today<he) img.src = hol[i][4];
-		}
-	}
-*/
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
 		if (isNaN(a)) a = 0.6;
@@ -250,7 +238,7 @@ function onLoad()
 
 	// Load initial data
 	loadPalettes(()=>{
-		loadPalettesData();
+		loadPalettesData(redrawPalPrev);
 		loadFX(()=>{
 			loadPresets(()=>{
 				loadInfo(requestJson);
@@ -855,11 +843,10 @@ function populatePalettes()
 function redrawPalPrev()
 {
 	let palettes = d.querySelectorAll('#pallist .lstI');
-	for (let i = 0; i < palettes.length; i++) {
-		let id = palettes[i].dataset.id;
-		let lstPrev = palettes[i].querySelector('.lstIprev');
-		if (lstPrev) {
-			lstPrev.style = genPalPrevCss(id);
+	for (var pal of (palettes||[])) {
+		let lP = pal.querySelector('.lstIprev');
+		if (lP) {
+			lP.style = genPalPrevCss(pal.dataset.id);
 		}
 	}
 }
@@ -993,16 +980,16 @@ function updatePA(scrollto=false)
 {
 	var ps = gEBCN("pres");
 	for (let i = 0; i < ps.length; i++) {
-		ps[i].style.backgroundColor = "";
+		ps[i].classList.remove('selected');;
 	}
 	ps = gEBCN("psts");
 	for (let i = 0; i < ps.length; i++) {
-		ps[i].style.backgroundColor = "";
+		ps[i].classList.remove('selected');;
 	}
 	if (currentPreset > 0) {
 		var acv = gId(`p${currentPreset}o`);
 		if (acv && !expanded[currentPreset+100]) {
-			acv.style.background = "var(--c-6)";
+			acv.classList.add('selected');;
 			if (scrollto) {
 				// scroll selected preset into view (on WS refresh)
 				acv.scrollIntoView({
@@ -1012,7 +999,7 @@ function updatePA(scrollto=false)
 			}
 		}
 		acv = gId(`p${currentPreset}qlb`);
-		if (acv) acv.style.background = "var(--c-6)";
+		if (acv) acv.classList.add('selected');;
 	}
 }
 
@@ -1172,8 +1159,8 @@ function readState(s,command=false)
 		}
 		cd[e].style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
 		if (isRgbw) whites[e] = parseInt(w);
-		selectSlot(csel);
 	}
+	selectSlot(csel);
 	gId('sliderW').value = whites[csel];
 
 	gId('sliderSpeed').value = i.sx;
@@ -1203,6 +1190,7 @@ function readState(s,command=false)
 
 	selectedPal = i.pal;
 	selectedFx = i.fx;
+	redrawPalPrev();	// if any color changed (random palette did at least)
 	updateUI(true);
 }
 
@@ -1804,21 +1792,14 @@ function selectSlot(b)
 	csel = b;
 	var cd = gId('csl').children;
 	for (let i = 0; i < cd.length; i++) {
-		//cd[i].style.borderWidth="2px";
-		//cd[i].style.margin="5px";
-		//cd[i].style.width="42px";
 		cd[i].classList.remove('xxs-w');
 	}
-	//cd[csel].style.borderWidth="5px";
-	//cd[csel].style.margin="2px";
-	//cd[csel].style.width="50px";
 	cd[csel].classList.add('xxs-w');
 	cpick.color.set(cd[csel].style.backgroundColor);
 	gId('sliderW').value = whites[csel];
 	updateTrail(gId('sliderW'));
 	updateHex();
 	updateRgb();
-	redrawPalPrev();
 }
 
 var lasth = 0;
@@ -1854,12 +1835,10 @@ function updateHex()
 	var w = whites[csel];
 	if (w > 0) str += w.toString(16);
 	gId('hexc').value = str;
-	gId('hexcnf').style.backgroundColor = "var(--c-3)";
 }
 
 function hexEnter()
 {
-	gId('hexcnf').style.backgroundColor = "var(--c-6)";
 	if(event.keyCode == 13) fromHex();
 }
 
@@ -1942,14 +1921,13 @@ function loadPalettesData(callback = null)
 {
 	if (palettesData) return;
 	const lsKey = "wledPalx";
-	var palettesDataJson = localStorage.getItem(lsKey);
-	if (palettesDataJson) {
+	var lsPalData = localStorage.getItem(lsKey);
+	if (lsPalData) {
 		try {
-			palettesDataJson = JSON.parse(palettesDataJson);
-			if (palettesDataJson && palettesDataJson.vid == lastinfo.vid) {
-				palettesData = palettesDataJson.p;
-				//redrawPalPrev() //?
-				if (callback) callback();
+			lsPalData = JSON.parse(lsPalData);
+			if (lsPalData && lsPalData.vid == lastinfo.vid) {
+				palettesData = lsPalData.p;
+				if (callback) callback(); 	// redrawPalPrev()
 				return;
 			}
 		} catch (e) {}
@@ -1961,8 +1939,7 @@ function loadPalettesData(callback = null)
 			p: palettesData,
 			vid: lastinfo.vid
 		}));
-		redrawPalPrev();
-		if (callback) setTimeout(callback, 99); //go on to connect websocket
+		if (callback) setTimeout(callback, 99); //redrawPalPrev()
 	});
 }
 
@@ -2052,8 +2029,7 @@ function expand(i,a)
 
 	if (i >= 100) {
 		var p = i-100;
-		gId(`p${p}o`).style.background = (expanded[i] || p != currentPreset)?"var(--c-2)":"var(--c-6)";
-
+		gId(`p${p}o`).classList.toggle('expand');
 		if (seg.innerHTML === "") {
 			if (isPlaylist(p)) {
 				plJson[p] = pJson[p].playlist;
@@ -2073,7 +2049,8 @@ function expand(i,a)
 			gId(`p${p}api`).value = papi;
 			if (papi.indexOf("Please") == 0) gId(`p${p}cstgl`).checked = true;
 			tglCs(p);
-		}
+		} else
+			seg.innerHTML = "";
 	}
 
 	seg.parentElement.scrollIntoView({
