@@ -114,7 +114,9 @@ function cTheme(light) {
 	sCol('--c-c','#333');
 	sCol('--c-e','#111');
 	sCol('--c-d','#222');
-	sCol('--c-r','#c42');
+	sCol('--c-r','#c21');
+	sCol('--c-g','#2c1');
+	sCol('--c-l','#26c');
 	sCol('--c-o','rgba(204, 204, 204, 0.9)');
 	sCol('--c-sb','#0003'); sCol('--c-sbh','#0006');
 	sCol('--c-tb','rgba(204, 204, 204, var(--t-b))');
@@ -134,7 +136,9 @@ function cTheme(light) {
 	sCol('--c-c','#ccc');
 	sCol('--c-e','#eee');
 	sCol('--c-d','#ddd');
-	sCol('--c-r','#831');
+	sCol('--c-r','#e42');
+	sCol('--c-g','#4e2');
+	sCol('--c-l','#48a');
 	sCol('--c-o','rgba(34, 34, 34, 0.9)');
 	sCol('--c-sb','#fff3'); sCol('--c-sbh','#fff5');
 	sCol('--c-tb','rgba(34, 34, 34, var(--t-b))');
@@ -250,7 +254,7 @@ async function onLoad()
 var timeout;
 function showToast(text, error = false)
 {
-	if (error) gId('connind').style.backgroundColor = "#831";
+	if (error) gId('connind').style.backgroundColor = "var(--c-r)";
 	var x = gId("toast");
 	x.innerHTML = text;
 	x.className = error ? "error":"show";
@@ -850,7 +854,7 @@ function makeWS() {
 		jsonTimeout = null;
 		lastUpdate = new Date();
 		clearErrorToast();
-	  	gId('connind').style.backgroundColor = "#079";
+	  	gId('connind').style.backgroundColor = "var(--c-l)";
 		// json object should contain json.info AND json.state (but may not)
 		var info = json.info;
 		if (info) {
@@ -873,7 +877,7 @@ function makeWS() {
 		readState(s);
 	};
 	ws.onclose = function(event) {
-		gId('connind').style.backgroundColor = "#831";
+		gId('connind').style.backgroundColor = "var(--c-r)";
 		ws = null;
 	}
 	ws.onopen = function(event) {
@@ -969,7 +973,7 @@ var reqsLegal = false;
 
 function requestJson(command=null)
 {
-	gId('connind').style.backgroundColor = "#a90";
+	gId('connind').style.backgroundColor = "var(--c-r)";
 	if (command && !reqsLegal) return; //stop post requests from chrome onchange event on page restore
 	if (!jsonTimeout) jsonTimeout = setTimeout(showErrorToast, 3000);
 	if (!command) command = {'v':true};
@@ -1005,7 +1009,7 @@ function requestJson(command=null)
 		jsonTimeout = null;
 		lastUpdate = new Date();
 		clearErrorToast();
-		gId('connind').style.backgroundColor = "#070";
+		gId('connind').style.backgroundColor = "var(--c-g)";
 		if (!json) { showToast('Empty response', true); return; }
 		if (json.success) return;
 		var s = json.state ? json.state : json;
