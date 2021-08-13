@@ -564,7 +564,7 @@ input[type=number]::-webkit-outer-spin-button {
 	height: 50px;
 }
 
-.qcs, .xss {
+.qcs, .xxs {
 	text-shadow: -1px -1px 0 var(--c-6), 1px -1px 0 var(--c-6), -1px 1px 0 var(--c-6), 1px 1px 0 var(--c-6);
 }
 
