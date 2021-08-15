@@ -549,7 +549,6 @@ function populateInfo(i)
 	${inforow("Uptime",getRuntimeStr(i.uptime))}
 	${inforow("Free heap",heap," kB")}
   	${inforow("Estimated current",pwru)}
-	${ "battery" in i ? inforow("Battery level",i.battery.level," %") : ''}
   	${inforow("Frames / second",i.leds.fps)}
 	${inforow("MAC address",i.mac)}
 	${inforow("Filesystem",i.fs.u + "/" + i.fs.t + " kB (" +Math.round(i.fs.u*100/i.fs.t) + "%)")}
