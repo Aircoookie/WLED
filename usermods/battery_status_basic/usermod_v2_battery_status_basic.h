@@ -120,14 +120,13 @@ class UsermodBatteryBasic : public Usermod {
      */
     void addToJsonInfo(JsonObject& root)
     {
-      JsonObject battery = root[F("battery")];
-      if (battery.isNull()) battery = root.createNestedObject("battery");
+      
+      JsonObject user = root["u"];
+      if (user.isNull()) user = root.createNestedObject("u");
 
-      battery["rawValue"] = rawValue;
-      battery["voltage"] = voltage;
-      battery["level"] = batteryLevel;
-      battery["minBatteryVoltage"] = minBatteryVoltage;
-      battery["maxBatteryVoltage"] = maxBatteryVoltage;
+      JsonArray battery = user.createNestedArray("Battery level");
+      battery.add(batteryLevel);
+      battery.add(F(" %"));
     }
 
 
