@@ -22,8 +22,10 @@
 
 
 // default for 18650 battery
+// https://batterybro.com/blogs/18650-wholesale-battery-reviews/18852515-when-to-recycle-18650-batteries-and-how-to-start-a-collection-center-in-your-vape-shop
+// Discharge voltage: 2.5 volt + .1 for personal safety
 #ifndef USERMOD_BATTERY_MIN_VOLTAGE
-  #define USERMOD_BATTERY_MIN_VOLTAGE 3.6
+  #define USERMOD_BATTERY_MIN_VOLTAGE 2.6
 #endif
 
 #ifndef USERMOD_BATTERY_MAX_VOLTAGE
