@@ -7,7 +7,7 @@ You can see the battery level in the `info modal` right under the `estimated cur
 For this to work the positive side of the (18650) battery must be connected to pin `A0` of the d1mini/esp8266 with a 100k ohm resistor (see [Useful Links](#useful-links)).
 
 <p align="center">
-  <img width="400" src="assets/usermod_battery_level_info_modal.png">
+  <img width="400" src="assets/battery_level_info_modal.png">
 </p>
 
 ## Installation
