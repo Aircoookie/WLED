@@ -6,7 +6,7 @@
 
 
 // pin defaults
-#ifndef TEMPERATURE_PIN
+#ifndef BATTERY_MEASUREMENT_PIN
   #ifdef ARDUINO_ARCH_ESP32
     #define BATTERY_MEASUREMENT_PIN A0
   #else //ESP8266 boards
