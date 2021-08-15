@@ -689,11 +689,11 @@ function populateSegments(s)
 		<tr>
 			<td><input class="noslide segn" id="seg${i}grp" type="number" min="1" max="255" value="${inst.grp}" oninput="updateLen(${i})"></td>
 			<td><input class="noslide segn" id="seg${i}spc" type="number" min="0" max="255" value="${inst.spc}" oninput="updateLen(${i})"></td>
-			<td><button class="btn btn-i btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>
+			<td><button class="btn btn-xs" onclick="setSeg(${i})"><i class="icons btn-icon" id="segc${i}">&#xe390;</i></button></td>
 		</tr>
 		</table>
 		<div class="h bp" id="seg${i}len"></div>
-		<button class="btn btn-i btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
+		<button class="btn btn-xs del" id="segd${i}" onclick="delSeg(${i})"><i class="icons btn-icon">&#xe037;</i></button>
 		<label class="check revchkl">
 			Reverse direction
 			<input type="checkbox" id="seg${i}rev" onchange="setRev(${i})" ${inst.rev ? "checked":""}>
@@ -751,7 +751,7 @@ function populateNodes(i,n)
 		for (var x=0;x<n.nodes.length;x++) {
 			var o = n.nodes[x];
 			if (o.name) {
-				var url = `<button class="btn tab" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				var url = `<button class="btn infobtn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
 				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
 				nnodes++;
 			}
@@ -1337,7 +1337,7 @@ function makeSeg()
 			<tr>
 				<td><input class="noslide segn" id="seg${lowestUnused}s" type="number" min="0" max="${ledCount-1}" value="${ns}" oninput="updateLen(${lowestUnused})"></td>
 				<td><input class="noslide segn" id="seg${lowestUnused}e" type="number" min="0" max="${ledCount-(cfg.comp.seglen?ns:0)}" value="${ledCount-(cfg.comp.seglen?ns:0)}" oninput="updateLen(${lowestUnused})"></td>
-				<td><button class="btn btn-i btn-xs" onclick="setSeg(${lowestUnused});resetUtil();"><i class="icons bth-icon" id="segc${lowestUnused}">&#xe390;</i></button></td>
+				<td><button class="btn btn-xs" onclick="setSeg(${lowestUnused});resetUtil();"><i class="icons bth-icon" id="segc${lowestUnused}">&#xe390;</i></button></td>
 			</tr>
 		</table>
 		<div class="h" id="seg${lowestUnused}len">${ledCount - ns} LEDs</div>
@@ -1349,7 +1349,7 @@ function makeSeg()
 
 function resetUtil()
 {
-	gId('segutil').innerHTML = '<button class="btn btn-s btn-i" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button>';
+	gId('segutil').innerHTML = '<button class="btn btn-s" onclick="makeSeg()"><i class="icons btn-icon">&#xe18a;</i>Add segment</button>';
 	for (var i=0; i<expanded.length; i++) if (expanded[i]) expand(i); // collapse all expanded elements
 }
 
@@ -1460,7 +1460,7 @@ function makeP(i,pl) {
 ${plSelContent}
 </select></div>
 </div>
-<div class="c"><button class="btn btn-i" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
+<div class="c"><button class="btn btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
 	} else
 		content =
 `<label class="check revchkl">
@@ -1493,8 +1493,8 @@ ${plSelContent}
 </div>
 <div class="c">Save to ID <input class="noslide" id="p${i}id" type="number" oninput="checkUsed(${i})" max=250 min=1 value=${(i>0)?i:getLowestUnusedP()}></div>
 <div class="c">
-	<button class="btn btn-i btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
-	${(i>0)?'<button class="btn btn-i btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete':'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
+	<button class="btn btn-p" onclick="saveP(${i},${pl})"><i class="icons btn-icon">&#xe390;</i>Save</button>
+	${(i>0)?'<button class="btn btn-p" id="p'+i+'del" onclick="delP('+i+')"><i class="icons btn-icon">&#xe037;</i>Delete':'<button class="btn btn-p" onclick="resetPUtil()">Cancel'}</button>
 </div>
 <div class="pwarn ${(i>0)?"bp":""} c" id="p${i}warn"></div>
 ${(i>0)? ('<div class="h">ID ' +i+ '</div>'):""}`;
@@ -1521,7 +1521,7 @@ function makePlEntry(p,i) {
 			${plSelContent}
 			</select>
 		</td>
-		<td class="c"><button class="btn btn-i btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
+		<td class="c"><button class="btn btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
 	</tr>
 	<tr>
 		<td class="h">Duration</td>
@@ -1531,7 +1531,7 @@ function makePlEntry(p,i) {
 	<tr>
 		<td class="c" width="40%"><input class="noslide segn" type="number" placeholder="Duration" max=6553.0 min=0.2 step=0.1 oninput="pleDur(${p},${i},this)" value="${plJson[p].dur[i]/10.0}">s</td>
 		<td class="c" width="40%"><input class="noslide segn" type="number" placeholder="Transition" max=65.0 min=0.0 step=0.1 oninput="pleTr(${p},${i},this)" value="${plJson[p].transition[i]/10.0}">s</td>
-		<td class="c"><button class="btn btn-i btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div></td>
+		<td class="c"><button class="btn btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button></div></td>
 	</tr>
 	</table>
 </div>`;
@@ -1555,8 +1555,8 @@ function makePlUtil()
 function resetPUtil()
 {
 	gId('putil').classList.add("staytop");
-	var cn = `<button class="btn btn-s btn-n" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button>`+
-             `<button class="btn btn-i btn-xs" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i></button>`;
+	var cn = `<button class="btn btn-n" onclick="makePUtil()"><i class="icons btn-icon">&#xe18a;</i>New&nbsp;preset</button>`+
+             `<button class="btn btn-xs" onclick="makePlUtil()"><i class="icons btn-icon">&#xe139;</i></button>`;
 	gId('putil').innerHTML = cn;
 }
 

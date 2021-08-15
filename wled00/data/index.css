@@ -154,12 +154,10 @@ button {
 
 .keytd {
 	text-align: left;
-	padding-bottom: 8px;
 }
 
 .valtd {
 	text-align: right;
-	padding-bottom: 8px;
 }
 
 .valtd i {
@@ -435,8 +433,8 @@ button {
 	display: inline-block;
 }
 
-#kn td {
-  padding-bottom: 12px;
+#kv td {
+  padding-bottom: 8px;
 }
 
 #lv {
@@ -591,10 +589,9 @@ input[type=range]::-moz-range-thumb {
 	background-color: var(--c-3);
 }
 .btn-s {
-	width: 276px;
+	width: 100%;
 	margin: 0 0 10px;
 }
-.btn-i {}
 .btn-icon {
 	margin: -4px 4px 0 0;
 	vertical-align: middle;
