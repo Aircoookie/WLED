@@ -43,32 +43,29 @@ class UsermodBatteryBasic : public Usermod {
     float minBatteryVoltage = USERMOD_BATTERY_MIN_VOLTAGE;
     // battery max. voltage
     float maxBatteryVoltage = USERMOD_BATTERY_MAX_VOLTAGE;
+    // raw analog reading 0 - 1024
     float rawValue = 0.0;
     // calculated voltage            
     float voltage = 0.0;
     // mapped battery level based on voltage
     long batteryLevel = 0;
+
+
+    // strings to reduce flash memory usage (used more than twice)
+    static const char _name[];
+    static const char _readInterval[];
     
-    /*
-    // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
-    bool testBool = false;
-    unsigned long testULong = 42424242;
-    float testFloat = 42.42;
-    String testString = "Forty-Two";
 
-    // These config variables have defaults set inside readFromConfig()
-    int testInt;
-    long testLong;
-    int8_t testPins[2];
-    */
-
-  public:
-    //Functions called by WLED
-
+    // custom map function
     // https://forum.arduino.cc/t/floating-point-using-map-function/348113/2
     double mapf(double x, double in_min, double in_max, double out_min, double out_max) {
       return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
+
+
+
+  public:
+    //Functions called by WLED
 
     /*
      * setup() is called once at boot. WiFi is not yet connected at this point.
@@ -104,7 +101,7 @@ class UsermodBatteryBasic : public Usermod {
         // calculate the voltage     
         voltage = (rawValue / 1024.0) * maxBatteryVoltage ;
 
-        // translate battery voltage to a percentage
+        // translate battery voltage into percentage
         /*
           the standard "map" function doesn't work
           https://www.arduino.cc/reference/en/language/functions/math/map/ <-- notes and warnings at the bottom
@@ -150,9 +147,11 @@ class UsermodBatteryBasic : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
+    /*
     void readFromJsonState(JsonObject& root)
     {
     }
+    */
 
 
     /*
@@ -192,19 +191,22 @@ class UsermodBatteryBasic : public Usermod {
      */
     void addToConfig(JsonObject& root)
     {
+      // created JSON object: 
       /*
-      JsonObject top = root.createNestedObject("exampleUsermod");
-      top["great"] = userVar0; //save these vars persistently whenever settings are saved
-      top["testBool"] = testBool;
-      top["testInt"] = testInt;
-      top["testLong"] = testLong;
-      top["testULong"] = testULong;
-      top["testFloat"] = testFloat;
-      top["testString"] = testString;
-      JsonArray pinArray = top.createNestedArray("pin");
-      pinArray.add(testPins[0]);
-      pinArray.add(testPins[1]);
+      {
+        "Battery-Level": {
+          "minBatteryVoltage": 2.6, 
+          "maxBatteryVoltage": 4.2,
+          "read-interval-ms": 30000  
+        }
+      }
       */ 
+      JsonObject battery = root.createNestedObject(FPSTR(_name)); // usermodname
+      battery["minBatteryVoltage"] = minBatteryVoltage;           // usermodparam
+      battery["maxBatteryVoltage"] = maxBatteryVoltage;           // usermodparam
+      battery[FPSTR(_readInterval)] = readingInterval;
+
+      DEBUG_PRINTLN(F("Battery config saved."));
     }
 
 
@@ -225,27 +227,32 @@ class UsermodBatteryBasic : public Usermod {
      */
     bool readFromConfig(JsonObject& root)
     {
-      // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
-      // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
+      // created JSON object: 
       /*
-      JsonObject top = root["exampleUsermod"];
+      {
+        "BatteryLevel": {
+          "minBatteryVoltage": 2.6, 
+          "maxBatteryVoltage": 4.2,
+          "read-interval-ms": 30000  
+        }
+      }
+      */ 
+      JsonObject battery = root[FPSTR(_name)];
+      if (battery.isNull()) {
+        DEBUG_PRINT(FPSTR(_name));
+        DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+        return false;
+      }
 
-      bool configComplete = !top.isNull();
+      minBatteryVoltage   = battery["minBatteryVoltage"] | minBatteryVoltage;
+      //minBatteryVoltage = min(12.0f, (int)readingInterval);
+      maxBatteryVoltage   = battery["maxBatteryVoltage"] | maxBatteryVoltage;
+      //maxBatteryVoltage = min(14.4f, max(3.3f,(int)readingInterval));
+      readingInterval     = battery["read-interval-ms"] | readingInterval;
 
-      configComplete &= getJsonValue(top["great"], userVar0);
-      configComplete &= getJsonValue(top["testBool"], testBool);
-      configComplete &= getJsonValue(top["testULong"], testULong);
-      configComplete &= getJsonValue(top["testFloat"], testFloat);
-      configComplete &= getJsonValue(top["testString"], testString);
+      DEBUG_PRINT(FPSTR(_name));
 
-      // A 3-argument getJsonValue() assigns the 3rd argument as a default value if the Json value is missing
-      configComplete &= getJsonValue(top["testInt"], testInt, 42);  
-      configComplete &= getJsonValue(top["testLong"], testLong, -42424242);
-      configComplete &= getJsonValue(top["pin"][0], testPins[0], -1);
-      configComplete &= getJsonValue(top["pin"][1], testPins[1], -1);
-
-      return configComplete;
-      */
+      return !battery[FPSTR(_readInterval)].isNull();
     }
 
    
@@ -258,3 +265,7 @@ class UsermodBatteryBasic : public Usermod {
       return USERMOD_ID_BATTERY_STATUS_BASIC;
     }
 };
+
+// strings to reduce flash memory usage (used more than twice)
+const char UsermodBatteryBasic::_name[]         PROGMEM = "Battery-Level";
+const char UsermodBatteryBasic::_readInterval[] PROGMEM = "read-interval-ms";

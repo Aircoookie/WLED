@@ -22,7 +22,7 @@ define `USERMOD_BATTERY_STATUS_BASIC` in `my_config.h`
 * `USERMOD_BATTERY_MIN_VOLTAGE`                    - minimum voltage of the Battery used, default is 2.6 (18650 battery standard)
 * `USERMOD_BATTERY_MAX_VOLTAGE`                    - maximum voltage of the Battery used, default is 4.2 (18650 battery standard)
 
-Currently the parameters cannot be changed during runtime, this 'feature' will be added soon.
+All parameters can be configured at runtime using Usermods settings page.
 
 ## Important :warning:
 * Make sure you know your battery specification ! not every battery is the same !
@@ -37,8 +37,8 @@ Currently the parameters cannot be changed during runtime, this 'feature' will b
 | **Discharge voltage**             | **2,5V**        | `USERMOD_BATTERY_MIN_VOLTAGE` |
 | Max. discharge current (constant) | 10A (10000mA)   |                               |
 | max. charging current             | 1.7A (1700mA)   |                               |
-| ...                               |                 |                               |
-| ..                                |                 |                               |
+| ...                               | ...             | ...                           |
+| ..                                | ..              | ..                            |
 
 Specification from:  [Molicel INR18650-M35A, 3500mAh 10A Lithium-ion battery, 3.6V - 3.7V](https://www.akkuteile.de/lithium-ionen-akkus/18650/molicel/molicel-inr18650-m35a-3500mah-10a-lithium-ionen-akku-3-6v-3-7v_100833)
 
