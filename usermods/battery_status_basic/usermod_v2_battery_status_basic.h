@@ -6,11 +6,25 @@
 
 
 // pin defaults
-#ifndef BATTERY_MEASUREMENT_PIN
+// for the esp32 it is best to use the ADC1: GPIO32 - GPIO39
+// https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/adc.html
+#ifndef USERMOD_BATTERY_MEASUREMENT_PIN
   #ifdef ARDUINO_ARCH_ESP32
-    #define BATTERY_MEASUREMENT_PIN A0
+    #define USERMOD_BATTERY_MEASUREMENT_PIN 32
   #else //ESP8266 boards
-    #define BATTERY_MEASUREMENT_PIN A0
+    #define USERMOD_BATTERY_MEASUREMENT_PIN A0
+  #endif
+#endif
+
+// esp32 has a 12bit adc resolution
+// esp8266 only 10bit
+#ifndef USERMOD_BATTERY_ADC_PRECISION
+  #ifdef ARDUINO_ARCH_ESP32
+    // 12 bits
+    #define USERMOD_BATTERY_ADC_PRECISION 4095.0
+  #else
+    // 10 bits
+    #define USERMOD_BATTERY_ADC_PRECISION 1024.0
   #endif
 #endif
 
@@ -32,10 +46,11 @@
   #define USERMOD_BATTERY_MAX_VOLTAGE 4.2
 #endif
 
-class UsermodBatteryBasic : public Usermod {
+class UsermodBatteryBasic : public Usermod 
+{
   private:
     // battery pin can be defined in my_config.h
-    int8_t batteryPin = BATTERY_MEASUREMENT_PIN;
+    int8_t batteryPin = USERMOD_BATTERY_MEASUREMENT_PIN;
     // how often to read the battery voltage
     unsigned long readingInterval = USERMOD_BATTERY_MEASUREMENT_INTERVAL;
     unsigned long lastTime = 0;
@@ -43,12 +58,16 @@ class UsermodBatteryBasic : public Usermod {
     float minBatteryVoltage = USERMOD_BATTERY_MIN_VOLTAGE;
     // battery max. voltage
     float maxBatteryVoltage = USERMOD_BATTERY_MAX_VOLTAGE;
-    // raw analog reading 0 - 1024
+    // 0 - 1024 for esp8266 (10-bit resolution)
+    // 0 - 4095 for esp32 (Default is 12-bit resolution)
+    float adcPrecision = USERMOD_BATTERY_ADC_PRECISION;
+    // raw analog reading 
     float rawValue = 0.0;
     // calculated voltage            
     float voltage = 0.0;
     // mapped battery level based on voltage
     long batteryLevel = 0;
+    bool initDone = false;
 
 
     // strings to reduce flash memory usage (used more than twice)
@@ -58,7 +77,8 @@ class UsermodBatteryBasic : public Usermod {
 
     // custom map function
     // https://forum.arduino.cc/t/floating-point-using-map-function/348113/2
-    double mapf(double x, double in_min, double in_max, double out_min, double out_max) {
+    double mapf(double x, double in_min, double in_max, double out_min, double out_max) 
+    {
       return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
@@ -71,8 +91,23 @@ class UsermodBatteryBasic : public Usermod {
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup() {
-      pinMode(batteryPin, INPUT);
+    void setup() 
+    {
+      #ifdef ARDUINO_ARCH_ESP32
+        DEBUG_PRINTLN(F("Allocating battery pin..."));
+        if (batteryPin >= 0 && pinManager.allocatePin(batteryPin, false)) 
+        {
+          DEBUG_PRINTLN(F("Battery pin allocation succeeded."));
+        } else {
+          if (batteryPin >= 0) DEBUG_PRINTLN(F("Battery pin allocation failed."));
+          batteryPin = -1;  // allocation failed
+        }
+      #else //ESP8266 boards have only one analog input pin A0
+
+        pinMode(batteryPin, INPUT);
+      #endif
+
+      initDone = true;
     }
 
 
@@ -80,7 +115,8 @@ class UsermodBatteryBasic : public Usermod {
      * connected() is called every time the WiFi is (re)connected
      * Use it to initialize network interfaces
      */
-    void connected() {
+    void connected() 
+    {
       //Serial.println("Connected to WiFi!");
     }
 
@@ -89,7 +125,10 @@ class UsermodBatteryBasic : public Usermod {
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      * 
      */
-    void loop() {
+    void loop() 
+    {
+      if(strip.isUpdating()) return;
+
       unsigned long now = millis();
 
       // check the battery level every USERMOD_BATTERY_MEASUREMENT_INTERVAL (ms)
@@ -99,12 +138,12 @@ class UsermodBatteryBasic : public Usermod {
         rawValue = analogRead(batteryPin);
 
         // calculate the voltage     
-        voltage = (rawValue / 1024.0) * maxBatteryVoltage ;
+        voltage = (rawValue / adcPrecision) * maxBatteryVoltage ;
 
         // translate battery voltage into percentage
         /*
           the standard "map" function doesn't work
-          https://www.arduino.cc/reference/en/language/functions/math/map/ <-- notes and warnings at the bottom
+          https://www.arduino.cc/reference/en/language/functions/math/map/  notes and warnings at the bottom
         */
         batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100);
 
@@ -194,6 +233,7 @@ class UsermodBatteryBasic : public Usermod {
       /*
       {
         "Battery-Level": {
+          "pin": "A0",              <--- only when using esp32 boards
           "minBatteryVoltage": 2.6, 
           "maxBatteryVoltage": 4.2,
           "read-interval-ms": 30000  
@@ -201,6 +241,9 @@ class UsermodBatteryBasic : public Usermod {
       }
       */ 
       JsonObject battery = root.createNestedObject(FPSTR(_name)); // usermodname
+      #ifdef ARDUINO_ARCH_ESP32
+        battery["pin"] = batteryPin;                              // usermodparam
+      #endif
       battery["minBatteryVoltage"] = minBatteryVoltage;           // usermodparam
       battery["maxBatteryVoltage"] = maxBatteryVoltage;           // usermodparam
       battery[FPSTR(_readInterval)] = readingInterval;
@@ -226,30 +269,63 @@ class UsermodBatteryBasic : public Usermod {
      */
     bool readFromConfig(JsonObject& root)
     {
-      // created JSON object: 
+      // looking for JSON object: 
       /*
       {
         "BatteryLevel": {
+          "pin": "A0",              <--- only when using esp32 boards
           "minBatteryVoltage": 2.6, 
           "maxBatteryVoltage": 4.2,
           "read-interval-ms": 30000  
         }
       }
-      */ 
+      */
+      #ifdef ARDUINO_ARCH_ESP32
+        int8_t newBatteryPin = batteryPin;
+      #endif
+
       JsonObject battery = root[FPSTR(_name)];
-      if (battery.isNull()) {
+      if (battery.isNull()) 
+      {
         DEBUG_PRINT(FPSTR(_name));
         DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
         return false;
       }
 
+      #ifdef ARDUINO_ARCH_ESP32
+        newBatteryPin     = battery["pin"] | newBatteryPin;
+      #endif
       minBatteryVoltage   = battery["minBatteryVoltage"] | minBatteryVoltage;
       //minBatteryVoltage = min(12.0f, (int)readingInterval);
       maxBatteryVoltage   = battery["maxBatteryVoltage"] | maxBatteryVoltage;
       //maxBatteryVoltage = min(14.4f, max(3.3f,(int)readingInterval));
       readingInterval     = battery["read-interval-ms"] | readingInterval;
+      readingInterval     = max(3000, (int)readingInterval); // minimum repetition is >5000ms (5s)
 
       DEBUG_PRINT(FPSTR(_name));
+
+      #ifdef ARDUINO_ARCH_ESP32
+        if (!initDone) 
+        {
+          // first run: reading from cfg.json
+          newBatteryPin = batteryPin;
+          DEBUG_PRINTLN(F(" config loaded."));
+        } 
+        else 
+        {
+          DEBUG_PRINTLN(F(" config (re)loaded."));
+
+          // changing paramters from settings page
+          if (newBatteryPin != batteryPin) 
+          {
+            // deallocate pin
+            pinManager.deallocatePin(batteryPin);
+            batteryPin = newBatteryPin;
+            // initialise
+            setup();
+          }
+        }
+      #endif
 
       return !battery[FPSTR(_readInterval)].isNull();
     }
@@ -266,5 +342,5 @@ class UsermodBatteryBasic : public Usermod {
 };
 
 // strings to reduce flash memory usage (used more than twice)
-const char UsermodBatteryBasic::_name[]         PROGMEM = "Battery-Level";
+const char UsermodBatteryBasic::_name[]         PROGMEM = "Battery-level";
 const char UsermodBatteryBasic::_readInterval[] PROGMEM = "read-interval-ms";
