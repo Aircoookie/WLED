@@ -249,6 +249,15 @@
 #define MAX_LEDS_PER_BUS 4096
 #endif
 
+#ifndef MAX_WASM_BIN_SIZE
+#define MAX_WASM_BIN_SIZE 8192
+#endif
+
+#define WASM_STATE_UNLOADED 0
+#define WASM_STATE_READY    1
+#define WASM_STATE_STALE    2
+#define WASM_STATE_ERROR    3
+
 // string temp buffer (now stored in stack locally)
 #define OMAX 2048
 

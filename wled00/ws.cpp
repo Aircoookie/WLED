@@ -19,12 +19,12 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
-  } else if(type == WS_EVT_DATA){
+  } else if(type == WS_EVT_DATA) {
     //data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
-    if(info->final && info->index == 0 && info->len == len){
+    if(info->opcode == WS_TEXT) {
       //the whole message is in a single frame and we got all of its data (max. 1450byte)
-      if(info->opcode == WS_TEXT)
+      if(info->final && info->index == 0 && info->len == len)
       {
         bool verboseResponse = false;
         { //scope JsonDocument so it releases its buffer
@@ -51,8 +51,27 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
         }
         //update if it takes longer than 300ms until next "broadcast"
         if (verboseResponse && (millis() - lastInterfaceUpdate < 1700 || !interfaceUpdateCallMode)) sendDataWs(client);
+      } else {
+        if((info->index + len) == info->len){
+          if(info->final){
+            client->text(F("{\"error\":9}")); //we do not handle split packets right now
+          }
+        }
       }
-    } else {
+    } else if (info->opcode == WS_BINARY){ //wasm custom FX binary
+      if (len > MAX_WASM_BIN_SIZE) return;
+      if(info->index == 0){
+        delete[] wasm_buffer;
+        wasm_buffer = new uint8_t[len];
+      }
+
+      if (info->index + info->len <= len) {
+        memcpy(wasm_buffer + info->index, data, info->len);
+      }
+
+      if (info->final) {
+        //reload WASM on the next frame
+      }
       //message is comprised of multiple frames or the frame is split into multiple packets
       //if(info->index == 0){
         //if (!wsFrameBuffer && len < 4096) wsFrameBuffer = new uint8_t[4096];
@@ -63,13 +82,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 
       //}
 
-      if((info->index + len) == info->len){
-        if(info->final){
-          if(info->message_opcode == WS_TEXT) {
-            client->text(F("{\"error\":9}")); //we do not handle split packets right now
-          }
-        }
-      }
+      
     }
   } else if(type == WS_EVT_ERROR){
     //error was received from the other end

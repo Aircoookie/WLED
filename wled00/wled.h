@@ -144,7 +144,6 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #include "NodeStruct.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
-//#include "wasmfx.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
@@ -591,6 +590,8 @@ WLED_GLOBAL bool doInitBusses _INIT(false);
 
 // WASM
 WLED_GLOBAL WASMFX wasmfx _INIT(WASMFX());
+WLED_GLOBAL uint8_t* wasm_buffer _INIT(nullptr);
+WLED_GLOBAL byte wasm_state _INIT(WASM_STATE_UNLOADED);
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());

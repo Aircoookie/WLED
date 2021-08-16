@@ -195,7 +195,7 @@ IM3Runtime runtime;
 IM3Module module;
 IM3Function fu;
 
-uint32_t app_wasm_len = 8192; //max bin size
+uint32_t app_wasm_len = MAX_WASM_BIN_SIZE;
 uint8_t* app_wasm = nullptr;
 
 void wasm_task(void*)
