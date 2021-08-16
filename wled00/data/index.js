@@ -559,6 +559,21 @@ function populatePresets(fromls)
 	populateQL();
 }
 
+function parseInfo() {
+	var li   = lastinfo;
+	var name = li.name;
+	gId('namelabel').innerHTML = name;
+//		if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
+	if (li.live) name = "(Live) " + name;
+	if (loc)     name = "(L) " + name;
+	d.title     = name;
+	isRgbw      = li.leds.wv;
+	ledCount    = li.leds.count;
+	syncTglRecv = li.str;
+	maxSeg      = li.leds.maxseg;
+	pmt         = li.fs.pmt;
+}
+
 function loadInfo(callback=null)
 {
 	var url = (loc?`http://${locip}`:'') + '/json/info';
@@ -572,17 +587,7 @@ function loadInfo(callback=null)
 	.then(json => {
 		clearErrorToast();
 		lastinfo = json;
-		var name = json.name;
-		gId('namelabel').innerHTML = name;
-//		if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-		if (json.live) name = "(Live) " + name;
-		if (loc) name = "(L) " + name;
-		d.title = name;
-		isRgbw = json.leds.wv;
-		ledCount = json.leds.count;
-		syncTglRecv = json.str;
-		maxSeg = json.leds.maxseg;
-		pmt = json.fs.pmt;
+		parseInfo();
 		showNodes();
 		if (isInfo) populateInfo(json);
 		reqsLegal = true;
@@ -1082,26 +1087,16 @@ function makeWS() {
 		clearErrorToast();
 	  	gId('connind').style.backgroundColor = "var(--c-l)";
 		// json object should contain json.info AND json.state (but may not)
-		var info = json.info;
-		if (info) {
-			var name = info.name;
-			lastinfo = info;
-			gId('namelabel').innerHTML = name;
-			//if (name === "Dinnerbone") d.documentElement.style.transform = "rotate(180deg)";
-			if (info.live) name = "(Live) " + name;
-			if (loc) name = "(L) " + name;
-			d.title     = name;
-			isRgbw      = info.leds.wv;
-			ledCount    = info.leds.count;
-			syncTglRecv = info.str;
-			maxSeg      = info.leds.maxseg;
-			pmt         = info.fs.pmt;
+		var i = json.info;
+		if (i) {
+			lastinfo = i;
+			parseInfo();
 			showNodes();
-			if (isInfo) populateInfo(info);
+			if (isInfo) populateInfo(i);
 		} else
-			info = lastinfo;
+			i = lastinfo;
 		var s = json.state ? json.state : json;
-		displayRover(info, s);
+		displayRover(i, s);
 		readState(s);
 	};
 	ws.onclose = function(event) {

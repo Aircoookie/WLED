@@ -93,8 +93,8 @@ button {
 #namelabel {
 	position: fixed;
 	bottom: calc(var(--bh) + 6px);
-	right: 4px;
-	color: var(--c-6);
+	right: 6px;
+	color: var(--c-b);
 	cursor: pointer;
 	writing-mode: vertical-rl;
 }
@@ -577,6 +577,8 @@ input[type=range]::-moz-range-thumb {
 	transition-duration: 0.3s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
+	backface-visibility: hidden;
+	transform:translate3d(0,0,0);
 	overflow: clip;
 	text-overflow: clip;
 }
@@ -652,6 +654,8 @@ input[type=range]::-moz-range-thumb {
 	transition-duration: 0.5s;
 	-webkit-backface-visibility: hidden;
 	-webkit-transform:translate3d(0,0,0);
+	backface-visibility: hidden;
+	transform:translate3d(0,0,0);
 }
 #tt {
   text-align: center;
@@ -775,8 +779,8 @@ input[type=number]::-webkit-outer-spin-button {
 	height: 50px;
 }
 
-.qcs, .xxs {
-	text-shadow: -1px -1px 0 var(--c-6), 1px -1px 0 var(--c-6), -1px 1px 0 var(--c-6), 1px 1px 0 var(--c-6);
+.qcs, .xxs, #namelabel {
+	text-shadow: -1px -1px 0 var(--c-4), 1px -1px 0 var(--c-4), -1px 1px 0 var(--c-4), 1px 1px 0 var(--c-4);
 }
 
 .psts {
