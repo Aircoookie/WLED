@@ -26,6 +26,12 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       //the whole message is in a single frame and we got all of its data (max. 1450byte)
       if(info->opcode == WS_TEXT)
       {
+        if (len > 0 && len < 10 && data[0] == 'p') {
+          //application layer ping/pong heartbeat.
+          //client-side socket layer ping packets are unresponded (investigate)
+          client->text(F("pong"));
+          return;
+        }
         bool verboseResponse = false;
         { //scope JsonDocument so it releases its buffer
           DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
