@@ -33,7 +33,9 @@
 #endif
 //#define WLED_ENABLE_ADALIGHT     // saves 500b only (uses GPIO3 (RX) for serial)
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
-#define WLED_ENABLE_LOXONE         // uses 1.2kb
+#ifndef WLED_DISABLE_LOXONE
+  #define WLED_ENABLE_LOXONE       // uses 1.2kb
+#endif
 #ifndef WLED_DISABLE_WEBSOCKETS
   #define WLED_ENABLE_WEBSOCKETS
 #endif
