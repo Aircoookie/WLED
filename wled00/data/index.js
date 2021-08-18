@@ -26,7 +26,8 @@ var lastinfo = {};
 var ws;
 var cfg = {
 	theme:{base:"dark", bg:{url:""}, alpha:{bg:0.6,tab:0.8}, color:{bg:""}},
-	comp :{colors:{picker: true, rgb: false, quick: true, hex: false}, labels:true, pcmbot:false, pid:true, seglen:false}
+	comp :{colors:{picker: true, rgb: false, quick: true, hex: false},
+          labels:true, pcmbot:false, pid:true, seglen:false, css:true, hdays:false}
 };
 var hol = [
 	[0,11,24,4,"https://aircoookie.github.io/xmas.png"], // christmas
@@ -169,6 +170,19 @@ function loadBg(iUrl)
 	});
 }
 
+function getHdayBg()
+{
+	var today = new Date();
+	for (var i=0; i<hol.length; i++) {
+		var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
+		var hs = new Date(yr,hol[i][1],hol[i][2]);
+		var he = new Date(hs);
+		he.setDate(he.getDate() + hol[i][3]);
+		if (today>=hs && today<he) return hol[i][4];
+	}
+	return "";
+}
+
 function loadSkinCSS(cId)
 {
 	if (!gId(cId))	// check if element exists
@@ -201,35 +215,33 @@ function onLoad()
 	resetPUtil();
 
 	applyCfg();
-	if (cfg.theme.bg.url=="" || cfg.theme.bg.url === "https://picsum.photos/1920/1080") {
-		var iUrl = cfg.theme.bg.url;
-		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {
-			method: 'get'
-		})
-		.then(res => {
-			return res.json();
-		})
-		.then(json => {
-			if (Array.isArray(json)) hol = json;
-			//TODO: do some parsing first
-		})
-		.catch(function(error){
-			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
-		})
-		.finally(()=>{
-			var today = new Date();
-			for (var i=0; i<hol.length; i++) {
-				var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
-				var hs = new Date(yr,hol[i][1],hol[i][2]);
-				var he = new Date(hs);
-				he.setDate(he.getDate() + hol[i][3]);
-				if (today>=hs && today<he) iUrl = hol[i][4];
-			}
-			if (iUrl !== "") loadBg(iUrl);
-		});
+	var iUrl = cfg.theme.bg.url;
+	if (iUrl==="" || iUrl==="https://picsum.photos/1920/1080") {
+		if (cfg.comp.hdays) {
+			fetch((loc?`http://${locip}`:'.') + "/holidays.json", {
+				method: 'get'
+			})
+			.then(res => {
+				return res.json();
+			})
+			.then(json => {
+				if (Array.isArray(json)) hol = json;
+				//TODO: do some parsing first
+			})
+			.catch(function(error){
+				console.log("holidays.json does not contain array of holidays. Defaults loaded.");
+			})
+			.finally(()=>{
+				iUrl = getHdayBg();
+				if (iUrl!=="") loadBg(iUrl);
+			});
+		} else {
+			iUrl = getHdayBg();
+			if (iUrl!=="") loadBg(iUrl);
+		}
 	} else
-		loadBg(cfg.theme.bg.url);
-	loadSkinCSS('skinCss');
+		loadBg(iUrl);
+	if (cfg.comp.css) loadSkinCSS('skinCss');
 
 	var cd = gId('csl').children;
 	for (var i = 0; i < cd.length; i++) cd[i].style.backgroundColor = "rgb(0, 0, 0)";
@@ -1210,7 +1222,7 @@ function requestJson(command=null)
 	command.v = true; // force complete /json/si API response
 	command.time = Math.floor(Date.now() / 1000);
 	var t = d.getElementById('tt');
-	if (command.transition===null && t.validity.valid) {
+	if (t.validity.valid && command.transition==null) {
 		var tn = parseInt(t.value*10);
 		if (tn != tr) command.transition = tn;
 	}
