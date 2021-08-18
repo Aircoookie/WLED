@@ -2,6 +2,11 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2108180
+
+-   Fixed JSON IR remote not working with codes greater than 0xFFFFFF (fixes #2135)
+-   Fixed transition 0 edge case
+
 #### Build 2108170
 
 -   Added application level pong websockets reply (#2139)
