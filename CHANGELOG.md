@@ -2,6 +2,216 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2108180
+
+-   Fixed JSON IR remote not working with codes greater than 0xFFFFFF (fixes #2135)
+-   Fixed transition 0 edge case
+
+#### Build 2108170
+
+-   Added application level pong websockets reply (#2139)
+-   Use AsyncTCP 1.0.3 as it mitigates the flickering issue from 0.13.0-b2
+-   Fixed transition manually updated in preset overriden by field value
+
+#### Build 2108050
+
+-   Fixed undesirable color transition from Orange to boot preset color on first boot
+-   Removed misleading Delete button on new playlist with one entry
+-   Updated NeoPixelBus to 2.6.7 and AsyncTCP to 1.1.1
+
+#### Build 2107230
+
+-   Added skinning (extra custom CSS) (PR #2084)
+-   Added presets/config backup/restore (PR #2084)
+-   Added option for using length instead of Stop LED in UI (PR #2048)
+-   Added custom `holidays.json` holiday list (PR #2048)
+
+#### Build 2107100
+
+-   Version bump to 0.13.0-b2 "Toki"
+-   Accept hex color strings in individual LED API
+-   Fixed transition property not applying unless power/bri/color changed next
+-   Moved transition field below segments (temporarily)
+-   Reduced unneeded websockets pushes
+
+#### Build 2107091
+
+-   Fixed presets using wrong call mode (e.g. causing buttons to send UDP under direct change type)
+-   Increased hue buffer
+-   Renamed `NOTIFIER_CALL_MODE_` to `CALL_MODE_`
+
+#### Build 2107090
+
+-   Busses extend total configured LEDs if required
+-   Fixed extra button pins defaulting to 0 on first boot
+
+#### Build 2107080
+
+-   Made Peek use the main websocket connection instead of opening a second one
+-   Temperature usermod fix (from @blazoncek's dev branch)
+
+#### Build 2107070
+
+-   More robust initial resource loading in UI
+-   Added `getJsonValue()` for usermod config parsing (PR #2061)
+-   Fixed preset saving over websocket
+-   Alpha ESP32 S2 support (filesystem does not work) (PR #2067)
+
+#### Build 2107042
+
+-   Updated ArduinoJson to 6.18.1
+-   Improved Twinkleup effect
+-   Fixed preset immediately deselecting when set via HTTP API `PL=`
+
+#### Build 2107041
+
+-   Restored support for "PL=~" mistakenly removed in 2106300
+-   JSON IR improvements
+
+#### Build 2107040
+
+-   Playlist entries are now more compact
+-   Added the possibility to enter negative numbers for segment offset
+
+#### Build 2107021
+
+-   Added WebSockets support to UI
+
+#### Build 2107020
+
+-   Send websockets on every state change
+-   Improved Aurora effect
+
+#### Build 2107011
+
+-   Added MQTT button feedback option (PR #2011)
+
+#### Build 2107010
+
+-   Added JSON IR codes (PR #1941)
+-   Adjusted the width of WiFi and LED settings input fields
+-   Fixed a minor visual issue with slider trail not reaching thumb on low values
+
+#### Build 2106302
+
+-   Fixed settings page broken by using "%" in input fields
+
+#### Build 2106301
+
+-   Fixed a problem with disabled buttons reverting to pin 0 causing conflict
+
+#### Build 2106300
+
+-   Version bump to 0.13.0-b0 "Toki"
+-   BREAKING: Removed preset cycle (use playlists)
+-   BREAKING: Removed `nl.fade`, `leds.pin` and `ccnf` from JSON API
+-   Added playlist editor UI
+-   Reordered segment UI and added offset field
+-   Raised maximum MQTT password length to 64 (closes #1373)
+
+#### Build 2106290
+
+-   Added Offset to segments, allows shifting the LED considered first within a segment
+-   Added `of` property to seg object in JSON API to set offset
+-   Usermod settings improvements (PR #2043, PR #2045)
+
+#### Build 2106250
+
+-   Fixed preset only disabling on second effect/color change
+
+#### Build 2106241
+
+-   BREAKING: Added ability for usermods to force a config save if config incomplete. `readFromConfig()` needs to return a `bool` to indicate if the config is complete
+-   Updated usermods implementing `readFromConfig()`
+-   Auto-create segments based on configured busses
+
+#### Build 2106200
+
+-   Added 2 Ethernet boards and split Ethernet configs into separate file
+
+#### Build 2106180
+
+-   Fixed DOS on Chrome tab restore causing reboot
+
+#### Build 2106170
+
+-   Optimized JSON buffer usage (pre-serialized color arrays)
+
+#### Build 2106140
+
+-   Updated main logo
+-   Reduced flash usage by 0.8kB by using 8-bit instead of 32-bit PNGs for welcome and 404 pages
+-   Added a check to stop Alexa reporting an error if state set by macro differs from the expected state
+
+#### Build 2106100
+
+-   Added support for multiple buttons with various types (PR #1977)
+-   Fixed infinite playlists (PR #2020)
+-   Added `r` to playlist object, allows for shuffle regardless of the `repeat` value
+-   Improved accuracy of NTP time sync
+-   Added possibility for WLED UDP sync to sync system time
+-   Improved UDP sync accuracy, if both sender and receiver are NTP synced
+-   Fixed a cache issue with restored tabs
+-   Cache CORS request
+-   Disable WiFi sleep by default on ESP32
+
+#### Build 2105230
+
+-   No longer retain MQTT `/v` topic to alleviate storage loads on MQTT broker
+-   Fixed Sunrise calculation (atan_t approx. used outside of value range)
+
+#### Build 2105200
+
+-   Fixed WS281x output on ESP32
+-   Fixed potential out-of-bounds write in MQTT
+-   Fixed IR pin not changeable if IR disabled
+-   Fixed XML API <wv> containing -1 on Manual only RGBW mode (see #888, #1783)
+
+#### Build 2105171
+
+-   Always copy MQTT payloads to prevent non-0-terminated strings
+-   Updated ArduinoJson to 6.18.0
+-   Added experimental support for `{"on":"t"}` to toggle on/off state via JSON
+
+#### Build 2105120
+
+-   Fixed possibility of non-0-terminated MQTT payloads
+-   Fixed two warnings regarding integer comparison
+
+#### Build 2105112
+
+-   Usermod settings page no usermods message
+-   Lowered min speed for Drip effect
+
+#### Build 2105111
+
+-   Fixed various Codacy code style and logic issues
+
+#### Build 2105110
+
+-   Added Usermod settings page and configurable usermods (PR #1951)
+-   Added experimental `/json/cfg` endpoint for changing settings from JSON (see #1944, not part of official API)
+
+#### Build 2105070
+
+-   Fixed not turning on after pressing "Off" on IR remote twice (#1950)
+-   Fixed OTA update file selection from Android app (TODO: file type verification in JS, since android can't deal with accept='.bin' attribute)
+
+#### Build 2104220
+
+-   Version bump to 0.12.1-b1 "Hikari"
+-   Release and build script improvements (PR #1844)
+
+#### Build 2104211
+
+-   Replace default TV simulator effect with the version that saves 18k of flash and appears visually identical
+
+#### Build 2104210
+
+-   Added `tb` to JSON state, allowing setting the timebase (set tb=0 to start e.g. wipe effect from the beginning). Receive only.
+-   Slightly raised Solid mode refresh rate to work with LEDs (TM1814) that require refresh rates of at least 2fps
+-   Added sunrise and sunset calculation to the backup JSON time source
+
 #### Build 2104151
 
 -   `NUM_STRIPS` no longer required with compile-time strip defaults

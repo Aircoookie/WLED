@@ -49,7 +49,7 @@
 //#define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 
 #ifndef PIXEL_COUNTS
-  #define PIXEL_COUNTS 30
+  #define PIXEL_COUNTS DEFAULT_LED_COUNT
 #endif
 
 #ifndef DATA_PINS
@@ -60,17 +60,15 @@
   #define DEFAULT_LED_TYPE TYPE_WS2812_RGB
 #endif
 
+#if MAX_NUM_SEGMENTS < WLED_MAX_BUSSES
+  #error "Max segments must be at least max number of busses!"
+#endif
+
 //do not call this method from system context (network callback)
-void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
+void WS2812FX::finalizeInit(uint16_t countPixels)
 {
   RESET_RUNTIME;
   _length = countPixels;
-  _skipFirstMode = skipFirst;
-
-  _lengthRaw = _length;
-  if (_skipFirstMode) {
-    _lengthRaw += LED_SKIP_AMOUNT;
-  }
 
   //if busses failed to load, add default (FS issue...)
   if (busses.getNumBusses() == 0) {
@@ -82,7 +80,7 @@ void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
     for (uint8_t i = 0; i < defNumBusses; i++) {
       uint8_t defPin[] = {defDataPins[i]};
       uint16_t start = prevLen;
-      uint16_t count = _lengthRaw;
+      uint16_t count = _length;
       if (defNumBusses > 1 && defNumCounts) {
         count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       }
@@ -94,22 +92,44 @@ void WS2812FX::finalizeInit(uint16_t countPixels, bool skipFirst)
   
   deserializeMap();
 
-  //make segment 0 cover the entire strip
-  _segments[0].start = 0;
-  _segments[0].stop = _length;
+  uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
+  uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
 
   setBrightness(_brightness);
 
-  #ifdef ESP8266
+  //TODO make sure segments are only refreshed when bus config actually changed (new settings page)
+  //make one segment per bus
+  uint8_t s = 0;
   for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
     Bus* b = busses.getBus(i);
+
+    segStarts[s] = b->getStart();
+    segStops[s] = segStarts[s] + b->getLength();
+
+    //check for overlap with previous segments
+    for (uint8_t j = 0; j < s; j++) {
+      if (segStops[j] > segStarts[s] && segStarts[j] < segStops[s]) {
+        //segments overlap, merge
+        segStarts[j] = min(segStarts[s],segStarts[j]);
+        segStops [j] = max(segStops [s],segStops [j]); segStops[s] = 0;
+        s--;
+      }
+    }
+    s++;
+
+    #ifdef ESP8266
     if ((!IS_DIGITAL(b->getType()) || IS_2PIN(b->getType()))) continue;
     uint8_t pins[5];
     b->getPins(pins);
     BusDigital* bd = static_cast<BusDigital*>(b);
     if (pins[0] == 3) bd->reinit();
+    #endif
   }
-  #endif
+
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+    _segments[i].start = segStarts[i];
+    _segments[i].stop  = segStops [i];
+  }
 }
 
 void WS2812FX::service() {
@@ -204,7 +224,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
   }
   
-  uint16_t skip = _skipFirstMode ? LED_SKIP_AMOUNT : 0;
   if (SEGLEN) {//from segment
 
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
@@ -216,32 +235,35 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
 
-    /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
     bool reversed = IS_REVERSE;
     uint16_t realIndex = realPixelIndex(i);
+    uint16_t len = SEGMENT.length();
 
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
       int indexSet = realIndex + (reversed ? -j : j);
       if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
         if (IS_MIRROR) { //set the corresponding mirrored pixel
           uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
+          /* offset/phase */
+          indexMir += SEGMENT.offset;
+          if (indexMir >= SEGMENT.stop) indexMir -= len;
+
           if (indexMir < customMappingSize) indexMir = customMappingTable[indexMir];
-          busses.setPixelColor(indexMir + skip, col);
+          busses.setPixelColor(indexMir, col);
         }
+        /* offset/phase */
+          indexSet += SEGMENT.offset;
+          if (indexSet >= SEGMENT.stop) indexSet -= len;
+
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
-        busses.setPixelColor(indexSet + skip, col);
+        busses.setPixelColor(indexSet, col);
       }
     }
   } else { //live data, etc.
     if (i < customMappingSize) i = customMappingTable[i];
     
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
-    busses.setPixelColor(i + skip, col);
-  }
-  if (skip && i == 0) {
-    for (uint16_t j = 0; j < skip; j++) {
-      busses.setPixelColor(j, BLACK);
-    }
+    busses.setPixelColor(i, col);
   }
 }
 
@@ -512,12 +534,14 @@ uint32_t WS2812FX::getColor(void) {
 uint32_t WS2812FX::getPixelColor(uint16_t i)
 {
   i = realPixelIndex(i);
+
+  if (SEGLEN) {
+    /* offset/phase */
+    i += SEGMENT.offset;
+    if (i >= SEGMENT.stop) i -= SEGMENT.length();
+  }
   
   if (i < customMappingSize) i = customMappingTable[i];
-
-  if (_skipFirstMode) i += LED_SKIP_AMOUNT;
-  
-  if (i >= _lengthRaw) return 0;
   
   return busses.getPixelColor(i);
 }
@@ -978,29 +1002,12 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
   }
 
   uint8_t paletteIndex = i;
-  if (mapping) paletteIndex = (i*255)/(SEGLEN -1);
+  if (mapping && SEGLEN > 1) paletteIndex = (i*255)/(SEGLEN -1);
   if (!wrap) paletteIndex = scale8(paletteIndex, 240); //cut off blend at palette "end"
   CRGB fastled_col;
   fastled_col = ColorFromPalette( currentPalette, paletteIndex, pbri, (paletteBlend == 3)? NOBLEND:LINEARBLEND);
 
   return crgb_to_col(fastled_col);
-}
-
-//@returns `true` if color, mode, speed, intensity and palette match
-bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
-{
-  //if (a->start != b->start) return false;
-  //if (a->stop != b->stop) return false;
-  for (uint8_t i = 0; i < NUM_COLORS; i++)
-  {
-    if (a->colors[i] != b->colors[i]) return false;
-  }
-  if (a->mode != b->mode) return false;
-  if (a->speed != b->speed) return false;
-  if (a->intensity != b->intensity) return false;
-  if (a->palette != b->palette) return false;
-  //if (a->getOption(SEG_OPTION_REVERSED) != b->getOption(SEG_OPTION_REVERSED)) return false;
-  return true;
 }
 
 

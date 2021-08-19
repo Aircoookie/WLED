@@ -34,7 +34,7 @@
  */
 uint16_t WS2812FX::mode_static(void) {
   fill(SEGCOLOR(0));
-  return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : 500; //update faster if in transition
+  return (SEGMENT.getOption(SEG_OPTION_TRANSITIONAL)) ? FRAMETIME : 350; //update faster if in transition
 }
 
 
@@ -42,30 +42,24 @@ uint16_t WS2812FX::mode_static(void) {
  * Blink/strobe function
  * Alternate between color1 and color2
  * if(strobe == true) then create a strobe effect
- * NOTE: Maybe re-rework without timer
  */
 uint16_t WS2812FX::blink(uint32_t color1, uint32_t color2, bool strobe, bool do_palette) {
-  uint16_t stateTime = SEGENV.aux1;
   uint32_t cycleTime = (255 - SEGMENT.speed)*20;
-  uint32_t onTime = 0;
-  uint32_t offTime = cycleTime;
-
-  if (!strobe) {
-    onTime = (cycleTime * SEGMENT.intensity) >> 8;
-    offTime = cycleTime - onTime;
+  uint32_t onTime = FRAMETIME;
+  if (!strobe) onTime += ((cycleTime * SEGMENT.intensity) >> 8);
+  cycleTime += FRAMETIME*2;
+  uint32_t it = now / cycleTime;
+  uint32_t rem = now % cycleTime;
+  
+  bool on = false;
+  if (it != SEGENV.step //new iteration, force on state for one frame, even if set time is too brief
+      || rem <= onTime) { 
+    on = true;
   }
   
-  stateTime = ((SEGENV.aux0 & 1) == 0) ? onTime : offTime;
-  stateTime += 20;
-    
-  if (now - SEGENV.step > stateTime)
-  {
-    SEGENV.aux0++;
-    SEGENV.aux1 = stateTime;
-    SEGENV.step = now;
-  }
+  SEGENV.step = it; //save previous iteration
 
-  uint32_t color = ((SEGENV.aux0 & 1) == 0) ? color1 : color2;
+  uint32_t color = on ? color1 : color2;
   if (color == color1 && do_palette)
   {
     for(uint16_t i = 0; i < SEGLEN; i++) {
@@ -1467,8 +1461,8 @@ uint16_t WS2812FX::mode_tricolor_fade(void)
   }
 
   byte stp = prog; // % 256
-  uint32_t color = 0;
   for(uint16_t i = 0; i < SEGLEN; i++) {
+    uint32_t color;
     if (stage == 2) {
       color = color_blend(color_from_palette(i, true, PALETTE_SOLID_WRAP, 2), color2, stp);
     } else if (stage == 1) {
@@ -3085,7 +3079,7 @@ uint16_t WS2812FX::mode_drip(void)
 
   numDrops = 1 + (SEGMENT.intensity >> 6);
 
-  float gravity = -0.001 - (SEGMENT.speed/50000.0);
+  float gravity = -0.0005 - (SEGMENT.speed/50000.0);
   gravity *= SEGLEN;
   int sourcedrop = 12;
 
@@ -3525,7 +3519,7 @@ uint16_t WS2812FX::mode_twinkleup(void) {                 // A very short twinkl
     uint8_t ranstart = random8();                         // The starting value (aka brightness) for each pixel. Must be consistent each time through the loop for this to work.
     uint8_t pixBri = sin8(ranstart + 16 * now/(256-SEGMENT.speed));
     if (random8() > SEGMENT.intensity) pixBri = 0;
-    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(i*20, false, PALETTE_SOLID_WRAP, 0), pixBri));
+    setPixelColor(i, color_blend(SEGCOLOR(1), color_from_palette(random8()+now/100, false, PALETTE_SOLID_WRAP, 0), pixBri));
   }
 
   return FRAMETIME;
@@ -3852,18 +3846,13 @@ typedef struct TvSim {
 } tvSim;
 
 
-#ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
-  #include "tv_colors.h"
-  #define  numTVPixels (sizeof(tv_colors) / 2)  // 2 bytes per Pixel (5/6/5)
-#endif
-
 /*
   TV Simulator
   Modified and adapted to WLED by Def3nder, based on "Fake TV Light for Engineers" by Phillip Burgess https://learn.adafruit.com/fake-tv-light-for-engineers/arduino-sketch
 */
 uint16_t WS2812FX::mode_tv_simulator(void) {
   uint16_t nr, ng, nb, r, g, b, i, hue;
-  uint8_t  hi, lo, r8, g8, b8, sat, bri, j;
+  uint8_t  sat, bri, j;
 
   if (!SEGENV.allocateData(sizeof(tvSim))) return mode_static(); //allocation failed
   TvSim* tvSimulator = reinterpret_cast<TvSim*>(SEGENV.data);
@@ -3876,35 +3865,6 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
     tvSimulator->sliderValues = i;
     SEGENV.aux1 = 0;
   }
-
-  #ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
-  /*
-   * this code uses the real color data from tv_colos.h 
-   */
-
-    // initialize start of the TV-Colors
-    if (SEGENV.aux1 == 0) { 
-      tvSimulator->pixelNum = ((uint8_t)random8(18)) * numTVPixels / 18; // Begin at random movie (18 in total)
-      SEGENV.aux1 = 1;
-    }
-    
-    // Read next 16-bit (5/6/5) color
-    hi = pgm_read_byte(&tv_colors[tvSimulator->pixelNum * 2    ]);
-    lo = pgm_read_byte(&tv_colors[tvSimulator->pixelNum * 2 + 1]);
-    
-    // Expand to 24-bit (8/8/8)
-    r8 = (hi & 0xF8) | (hi >> 5);
-    g8 = ((hi << 5) & 0xff) | ((lo & 0xE0) >> 3) | ((hi & 0x06) >> 1);
-    b8 = ((lo << 3) & 0xff) | ((lo & 0x1F) >> 2);
-
-    // Apply gamma correction, further expand to 16/16/16
-    nr = (uint8_t)gamma8(r8) * 257; // New R/G/B
-    ng = (uint8_t)gamma8(g8) * 257;
-    nb = (uint8_t)gamma8(b8) * 257;
-  #else
-  /*
-   * this code calculates the color to be used and save 18k of flash memory
-   */
 
     // create a new sceene
     if (((millis() - tvSimulator->sceeneStart) >= tvSimulator->sceeneDuration) || SEGENV.aux1 == 0) {
@@ -3950,16 +3910,9 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
     nr = (uint8_t)gamma8(tvSimulator->actualColorR) * 257; // New R/G/B
     ng = (uint8_t)gamma8(tvSimulator->actualColorG) * 257;
     nb = (uint8_t)gamma8(tvSimulator->actualColorB) * 257;
-  #endif
 
   if (SEGENV.aux0 == 0) {  // initialize next iteration 
     SEGENV.aux0 = 1;
-    
-    #ifndef WLED_DISABLE_FX_HIGH_FLASH_USE
-      // increase color-index for next loop
-      tvSimulator->pixelNum++;
-      if (tvSimulator->pixelNum >= numTVPixels) tvSimulator->pixelNum = 0;
-    #endif
 
     // randomize total duration and fade duration for the actual color
     tvSimulator->totalTime = random16(250, 2500);                   // Semi-random pixel-to-pixel time
@@ -4004,7 +3957,6 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
 */
 
 //CONFIG
-#define BACKLIGHT 5
 #define W_MAX_COUNT 20            //Number of simultaneous waves
 #define W_MAX_SPEED 6             //Higher number, higher speed
 #define W_WIDTH_FACTOR 6          //Higher number, smaller waves
@@ -4129,9 +4081,13 @@ uint16_t WS2812FX::mode_aurora(void) {
     }
   }
 
+  uint8_t backlight = 1; //dimmer backlight if less active colors
+  if (SEGCOLOR(0)) backlight++;
+  if (SEGCOLOR(1)) backlight++;
+  if (SEGCOLOR(2)) backlight++;
   //Loop through LEDs to determine color
   for(int i = 0; i < SEGLEN; i++) {    
-    CRGB mixedRgb = CRGB(BACKLIGHT, BACKLIGHT, BACKLIGHT);
+    CRGB mixedRgb = CRGB(backlight, backlight, backlight);
 
     //For each LED we must check each wave if it is "active" at this position.
     //If there are multiple waves active on a LED we multiply their values.
@@ -4143,7 +4099,7 @@ uint16_t WS2812FX::mode_aurora(void) {
       }
     }
 
-    setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2], BACKLIGHT);
+    setPixelColor(i, mixedRgb[0], mixedRgb[1], mixedRgb[2]);
   }
   
   return FRAMETIME;

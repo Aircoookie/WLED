@@ -16,7 +16,6 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   if(type == WS_EVT_CONNECT){
     //client connected
     sendDataWs(client);
-    //client->ping();
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
@@ -24,9 +23,15 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
     //data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
     if(info->final && info->index == 0 && info->len == len){
-      //the whole message is in a single frame and we got all of it's data (max. 1450byte)
+      //the whole message is in a single frame and we got all of its data (max. 1450byte)
       if(info->opcode == WS_TEXT)
       {
+        if (len > 0 && len < 10 && data[0] == 'p') {
+          //application layer ping/pong heartbeat.
+          //client-side socket layer ping packets are unresponded (investigate)
+          client->text(F("pong"));
+          return;
+        }
         bool verboseResponse = false;
         { //scope JsonDocument so it releases its buffer
           DynamicJsonDocument jsonBuffer(JSON_BUFFER_SIZE);
@@ -34,14 +39,24 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           JsonObject root = jsonBuffer.as<JsonObject>();
           if (error || root.isNull()) return;
 
-          if (root.containsKey("lv"))
+          if (root["v"] && root.size() == 1) {
+            //if the received value is just "{"v":true}", send only to this client
+            verboseResponse = true;
+          } else if (root.containsKey("lv"))
           {
             wsLiveClientId = root["lv"] ? client->id() : 0;
+          } else {
+            fileDoc = &jsonBuffer;
+            verboseResponse = deserializeState(root);
+            fileDoc = nullptr;
+            if (!interfaceUpdateCallMode) {
+              //special case, only on playlist load, avoid sending twice in rapid succession
+              if (millis() - lastInterfaceUpdate > 1700) verboseResponse = false;
+            }
           }
-
-          verboseResponse = deserializeState(root);
         }
-        if (verboseResponse || millis() - lastInterfaceUpdate < 1900) sendDataWs(client); //update if it takes longer than 100ms until next "broadcast"
+        //update if it takes longer than 300ms until next "broadcast"
+        if (verboseResponse && (millis() - lastInterfaceUpdate < 1700 || !interfaceUpdateCallMode)) sendDataWs(client);
       }
     } else {
       //message is comprised of multiple frames or the frame is split into multiple packets

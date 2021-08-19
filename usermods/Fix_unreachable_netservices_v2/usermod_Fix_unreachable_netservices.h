@@ -149,11 +149,14 @@ Delay <input type=\"number\" min=\"5\" max=\"300\" value=\"";
   /**
    * restore the changeable values
    */
-  void readFromConfig(JsonObject &root)
+  bool readFromConfig(JsonObject &root)
   {
     JsonObject top = root["FixUnreachableNetServices"];
+    if (top.isNull()) return false;
     m_pingDelayMs = top["PingDelayMs"] | m_pingDelayMs;
     m_pingDelayMs = max(5000UL, min(18000000UL, m_pingDelayMs));
+    // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+    return true;
   }
 
   /**
