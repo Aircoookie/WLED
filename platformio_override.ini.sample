@@ -12,9 +12,9 @@ board = esp01_1m
 platform = ${common.platform_wled_default}
 platform_packages = ${common.platform_packages}
 board_build.ldscript = ${common.ldscript_1m128k}
+lib_deps = ${esp8266.lib_deps}
 build_unflags = ${common.build_unflags}
 build_flags = ${common.build_flags_esp8266}
-lib_deps = ${esp8266.lib_deps}
 ; *********************************************************************
 ; *** Use custom settings from file my_config.h
    -DWLED_USE_MY_CONFIG
@@ -44,4 +44,4 @@ lib_deps = ${esp8266.lib_deps}
 ; configure the settings in the UI as follows (hard):
 ;   for the Magic Home LED Controller use PWM pins 5,12,13,15
 ;   for the H801 controller use PINs 15,13,12,14 (W2 = 04)
-;   for the BW-LT11 controller use PINs 12,4,14,5 
+;   for the BW-LT11 controller use PINs 12,4,14,5

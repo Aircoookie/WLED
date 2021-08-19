@@ -2,6 +2,30 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2108180
+
+-   Fixed JSON IR remote not working with codes greater than 0xFFFFFF (fixes #2135)
+-   Fixed transition 0 edge case
+
+#### Build 2108170
+
+-   Added application level pong websockets reply (#2139)
+-   Use AsyncTCP 1.0.3 as it mitigates the flickering issue from 0.13.0-b2
+-   Fixed transition manually updated in preset overriden by field value
+
+#### Build 2108050
+
+-   Fixed undesirable color transition from Orange to boot preset color on first boot
+-   Removed misleading Delete button on new playlist with one entry
+-   Updated NeoPixelBus to 2.6.7 and AsyncTCP to 1.1.1
+
+#### Build 2107230
+
+-   Added skinning (extra custom CSS) (PR #2084)
+-   Added presets/config backup/restore (PR #2084)
+-   Added option for using length instead of Stop LED in UI (PR #2048)
+-   Added custom `holidays.json` holiday list (PR #2048)
+
 #### Build 2107100
 
 -   Version bump to 0.13.0-b2 "Toki"

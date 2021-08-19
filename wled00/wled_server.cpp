@@ -15,9 +15,11 @@ bool isIp(String str) {
   return true;
 }
 
-void handleUpload(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final){
+void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final){
   if (!index) {
     request->_tempFile = WLED_FS.open(filename, "w");
+    DEBUG_PRINT("Uploading ");
+    DEBUG_PRINTLN(filename);
     if (filename == "/presets.json") presetsModifiedTime = toki.second();
   }
   if (len) {
@@ -289,7 +291,9 @@ void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
   char tmp[12];
   // https://medium.com/@codebyamir/a-web-developers-guide-to-browser-caching-cc41f3b73e7c
   #ifndef WLED_DEBUG
-  response->addHeader(F("Cache-Control"),"max-age=604800");     // 7 day caching
+  //this header name is misleading, "no-cache" will not disable cache,
+  //it just revalidates on every load using the "If-None-Match" header with the last ETag value
+  response->addHeader(F("Cache-Control"),"no-cache");
   #else
   response->addHeader(F("Cache-Control"),"no-store,max-age=0"); // prevent caching if debug build
   #endif

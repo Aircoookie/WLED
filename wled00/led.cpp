@@ -142,7 +142,6 @@ void colorUpdated(int callMode)
   }
   if (briT == 0)
   {
-    //setLedsStandard(true); //do not color transition if starting from off!
     if (callMode != CALL_MODE_NOTIFICATION) resetTimebase(); //effect start from beginning
   }
 

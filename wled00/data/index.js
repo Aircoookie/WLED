@@ -161,6 +161,16 @@ function loadBg(iUrl)
 	let bg = document.getElementById('bg');
 	let img = document.createElement("img");
 	img.src = iUrl;
+	if (iUrl == "" || iUrl==="https://picsum.photos/1920/1080") {
+		var today = new Date();
+		for (var i=0; i<hol.length; i++) {
+			var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
+			var hs = new Date(yr,hol[i][1],hol[i][2]);
+			var he = new Date(hs);
+			he.setDate(he.getDate() + hol[i][3]);
+			if (today>=hs && today<=he)	img.src = hol[i][4];
+		}
+	}
 	img.addEventListener('load', (event) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
 		if (isNaN(a)) a = 0.6;
@@ -168,19 +178,6 @@ function loadBg(iUrl)
 		bg.style.backgroundImage = `url(${img.src})`;
 		img = null;
 	});
-}
-
-function getHdayBg()
-{
-	var today = new Date();
-	for (var i=0; i<hol.length; i++) {
-		var yr = hol[i][0]==0 ? today.getFullYear() : hol[i][0];
-		var hs = new Date(yr,hol[i][1],hol[i][2]);
-		var he = new Date(hs);
-		he.setDate(he.getDate() + hol[i][3]);
-		if (today>=hs && today<he) return hol[i][4];
-	}
-	return "";
 }
 
 function loadSkinCSS(cId)
@@ -215,32 +212,26 @@ function onLoad()
 	resetPUtil();
 
 	applyCfg();
-	var iUrl = cfg.theme.bg.url;
-	if (iUrl==="" || iUrl==="https://picsum.photos/1920/1080") {
-		if (cfg.comp.hdays) {
-			fetch((loc?`http://${locip}`:'.') + "/holidays.json", {
-				method: 'get'
-			})
-			.then(res => {
-				return res.json();
-			})
-			.then(json => {
-				if (Array.isArray(json)) hol = json;
-				//TODO: do some parsing first
-			})
-			.catch(function(error){
-				console.log("holidays.json does not contain array of holidays. Defaults loaded.");
-			})
-			.finally(()=>{
-				iUrl = getHdayBg();
-				if (iUrl!=="") loadBg(iUrl);
-			});
-		} else {
-			iUrl = getHdayBg();
-			if (iUrl!=="") loadBg(iUrl);
-		}
+	if (cfg.comp.hdays) { //load custom holiday list
+		fetch((loc?`http://${locip}`:'.') + "/holidays.json", {	// may be loaded from external source
+			method: 'get'
+		})
+		.then(res => {
+			//if (!res.ok) showErrorToast();
+			return res.json();
+		})
+		.then(json => {
+			if (Array.isArray(json)) hol = json;
+			//TODO: do some parsing first
+		})
+		.catch(function (error) {
+			console.log("holidays.json does not contain array of holidays. Defaults loaded.");
+		})
+		.finally(function(){
+			loadBg(cfg.theme.bg.url);
+		});
 	} else
-		loadBg(iUrl);
+		loadBg(cfg.theme.bg.url);
 	if (cfg.comp.css) loadSkinCSS('skinCss');
 
 	var cd = gId('csl').children;
@@ -843,18 +834,17 @@ function populatePalettes()
 
 	palettes.unshift({
 		"id": 0,
-		"name": "Default",
+		"name": "Default"
 	});
 
 	var html = "";
 	for (let i = 0; i < palettes.length; i++) {
-		let previewCss = genPalPrevCss(palettes[i].id);
 		html += generateListItemHtml(
 			'palette',
 		    palettes[i].id,
             palettes[i].name,
             'setPalette',
-            `<div class="lstIprev" style="${previewCss}"></div>`
+			`<div class="lstIprev" style="${genPalPrevCss(palettes[i].id)}"></div>`
         );
 	}
 
@@ -877,7 +867,6 @@ function genPalPrevCss(id)
 	if (!palettesData) return;
 
 	var paletteData = palettesData[id];
-	var previewCss = "";
 
 	if (!paletteData) return 'display: none';
 
@@ -1389,7 +1378,6 @@ function refreshPlE(p) {
 	content += `<div class="hrz"></div>`;
 	plEDiv.innerHTML = content;
 	var dels = plEDiv.getElementsByClassName("btn-pl-del");
-//	if (dels.length < 2 && p > 0) dels[0].style.display = "none";
 	if (dels.length < 2) dels[0].style.display = "none";
 
 	var sels = gId(`seg${p+100}`).getElementsByClassName("sel");
@@ -1410,7 +1398,6 @@ function addPl(p,i) {
 }
 
 function delPl(p,i) {
-//	if (plJson[p].ps.length < 2) {if (p == 0) resetPUtil(); return;}
 	if (plJson[p].ps.length < 2) return;
 	plJson[p].ps.splice(i,1);
 	plJson[p].dur.splice(i,1);

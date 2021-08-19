@@ -31,39 +31,39 @@ action="/settings/sec"><button type="submit">Security & Updates</button></form>
 const char PAGE_settings_wifi[] PROGMEM = R"=====(<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta 
 name="viewport" content="width=500"><title>WiFi Settings</title><script>
 function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#wifi-settings")}function B(){window.open("/settings","_self")}function GetV() {var d=document;
-%CSS%%SCSS%<link href="/skin.css" 
-rel="stylesheet"></head><body onload="GetV()"><form id="form_s" name="Sf" 
-method="post"><div class="toprow"><div class="helpB"><button type="button" 
-onclick="H()">?</button></div><button type="button" onclick="B()">Back</button>
-<button type="submit">Save & Connect</button><hr></div><h2>WiFi setup</h2><h3>
-Connect to existing network</h3>Network name (SSID, empty to not connect):<br>
-<input name="CS" maxlength="32"><br>Network password:<br><input type="password" 
-name="CP" maxlength="63"><br>Static IP (leave at 0.0.0.0 for DHCP):<br><input 
-name="I0" type="number" class="s" min="0" max="255" required> . <input 
-name="I1" type="number" class="s" min="0" max="255" required> . <input 
-name="I2" type="number" class="s" min="0" max="255" required> . <input 
-name="I3" type="number" class="s" min="0" max="255" required><br>Static gateway:
-<br><input name="G0" type="number" class="s" min="0" max="255" required> . 
-<input name="G1" type="number" class="s" min="0" max="255" required> . <input 
-name="G2" type="number" class="s" min="0" max="255" required> . <input 
-name="G3" type="number" class="s" min="0" max="255" required><br>
-Static subnet mask:<br><input name="S0" type="number" class="s" min="0" 
-max="255" required> . <input name="S1" type="number" class="s" min="0" 
-max="255" required> . <input name="S2" type="number" class="s" min="0" 
-max="255" required> . <input name="S3" type="number" class="s" min="0" 
-max="255" required><br>mDNS address (leave empty for no mDNS):<br>http:// <input
- name="CM" maxlength="32"> .local<br>Client IP: <span class="sip">Not connected
-</span><br><h3>Configure Access Point</h3>AP SSID (leave empty for no AP):<br>
-<input name="AS" maxlength="32"><br>Hide AP name: <input type="checkbox" 
-name="AH"><br>AP password (leave empty for open):<br><input type="password" 
-name="AP" maxlength="63" pattern="(.{8,63})|()" 
-title="Empty or min. 8 characters"><br>Access Point WiFi channel: <input 
-name="AC" type="number" class="xs" min="1" max="13" required><br>AP opens: 
-<select name="AB"><option value="0">No connection after boot</option><option 
-value="1">Disconnected</option><option value="2">Always</option><option 
-value="3">Never (not recommended)</option></select><br>AP IP: <span class="sip">
-Not active</span><br><h3>Experimental</h3>Disable WiFi sleep: <input 
-type="checkbox" name="WS"><br><i>Can help with connectivity issues.<br>
+%CSS%%SCSS%</head><body onload="GetV()">
+<form id="form_s" name="Sf" method="post"><div class="toprow"><div 
+class="helpB"><button type="button" onclick="H()">?</button></div><button 
+type="button" onclick="B()">Back</button><button type="submit">Save & Connect
+</button><hr></div><h2>WiFi setup</h2><h3>Connect to existing network</h3>
+Network name (SSID, empty to not connect):<br><input name="CS" maxlength="32">
+<br>Network password:<br><input type="password" name="CP" maxlength="63"><br>
+Static IP (leave at 0.0.0.0 for DHCP):<br><input name="I0" type="number" 
+class="s" min="0" max="255" required> . <input name="I1" type="number" 
+class="s" min="0" max="255" required> . <input name="I2" type="number" 
+class="s" min="0" max="255" required> . <input name="I3" type="number" 
+class="s" min="0" max="255" required><br>Static gateway:<br><input name="G0" 
+type="number" class="s" min="0" max="255" required> . <input name="G1" 
+type="number" class="s" min="0" max="255" required> . <input name="G2" 
+type="number" class="s" min="0" max="255" required> . <input name="G3" 
+type="number" class="s" min="0" max="255" required><br>Static subnet mask:<br>
+<input name="S0" type="number" class="s" min="0" max="255" required> . <input 
+name="S1" type="number" class="s" min="0" max="255" required> . <input 
+name="S2" type="number" class="s" min="0" max="255" required> . <input 
+name="S3" type="number" class="s" min="0" max="255" required><br>
+mDNS address (leave empty for no mDNS):<br>http:// <input name="CM" 
+maxlength="32"> .local<br>Client IP: <span class="sip">Not connected</span><br>
+<h3>Configure Access Point</h3>AP SSID (leave empty for no AP):<br><input 
+name="AS" maxlength="32"><br>Hide AP name: <input type="checkbox" name="AH"><br>
+AP password (leave empty for open):<br><input type="password" name="AP" 
+maxlength="63" pattern="(.{8,63})|()" title="Empty or min. 8 characters"><br>
+Access Point WiFi channel: <input name="AC" type="number" class="xs" min="1" 
+max="13" required><br>AP opens: <select name="AB"><option value="0">
+No connection after boot</option><option value="1">Disconnected</option><option 
+value="2">Always</option><option value="3">Never (not recommended)</option>
+</select><br>AP IP: <span class="sip">Not active</span><br><h3>Experimental</h3>
+Disable WiFi sleep: <input type="checkbox" name="WS"><br><i>
+Can help with connectivity issues.<br>
 Do not enable if WiFi is working correctly, increases power consumption.</i><div
  id="ethd"><h3>Ethernet Type</h3><select name="ETH"><option value="0">None
 </option><option value="2">ESP32-POE</option><option value="6">ESP32Deux
@@ -162,15 +162,15 @@ Accurate</option><option value="3">Dual</option><option value="4">Legacy
 const char PAGE_settings_dmx[] PROGMEM = R"=====(<!DOCTYPE html><html lang="en"><head><meta name="viewport" content="width=500">
 <meta charset="utf-8"><title>DMX Settings</title><script>
 function GCH(n){for(d=document,d.getElementById("dmxchannels").innerHTML+="",i=0;i<n;i++)d.getElementById("dmxchannels").innerHTML+="<span id=CH"+(i+1)+"s >Channel "+(i+1)+": <select name=CH"+(i+1)+' id="CH'+(i+1)+'"><option value=0>Set to 0</option><option value=1>Red</option><option value=2>Green</option><option value=3>Blue</option><option value=4>White</option><option value=5>Shutter (Brightness)</option><option value=6>Set to 255</option></select></span><br />\n'}function mMap(){for(d=document,numCh=document.Sf.CN.value,numGap=document.Sf.CG.value,parseInt(numCh)>parseInt(numGap)?d.getElementById("gapwarning").style.display="block":d.getElementById("gapwarning").style.display="none",i=0;i<15;i++)i>=numCh?(d.getElementById("CH"+(i+1)+"s").style.opacity="0.5",d.getElementById("CH"+(i+1)).disabled=!0):(d.getElementById("CH"+(i+1)+"s").style.opacity="1",d.getElementById("CH"+(i+1)).disabled=!1)}function S(){GCH(15),GetV(),mMap()}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/DMX")}function B(){window.history.back()}function GetV() {var d=document;
-%CSS%%SCSS%<link href="/skin.css" 
-rel="stylesheet"></head><body onload="S()"><form id="form_s" name="Sf" 
-method="post"><div class="toprow"><div class="helpB"><button type="button" 
-onclick="H()">?</button></div><button type="button" onclick="B()">Back</button>
-<button type="submit">Save</button><hr></div><h2>
-Imma firin ma lazer (if it has DMX support)</h2>Proxy Universe <input name="PU" 
-type="number" min="0" max="63999" required> from E1.31 to DMX (0=disabled)<br>
-<i>This will disable the LED data output to DMX configurable below</i><br><br>
-<i>Number of fixtures is taken from LED config page</i><br>
+%CSS%%SCSS%</head><body onload="S()">
+<form id="form_s" name="Sf" method="post"><div class="toprow"><div 
+class="helpB"><button type="button" onclick="H()">?</button></div><button 
+type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+</div><h2>Imma firin ma lazer (if it has DMX support)</h2>Proxy Universe <input 
+name="PU" type="number" min="0" max="63999" required>
+ from E1.31 to DMX (0=disabled)<br><i>
+This will disable the LED data output to DMX configurable below</i><br><br><i>
+Number of fixtures is taken from LED config page</i><br>
 Channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" 
 maxlength="2" onchange="mMap()"><br>Start channel: <input type="number" min="1" 
 max="512" name="CS" maxlength="2"><br>Spacing between start channels: <input 
@@ -193,13 +193,13 @@ const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
 const char PAGE_settings_ui[] PROGMEM = R"=====(<!DOCTYPE html><html><head lang="en"><meta charset="utf-8"><meta 
 name="viewport" content="width=500"><title>UI Settings</title><script>
 var initial_ds,initial_st,initial_su,timeout,d=document,sett=null,l={comp:{labels:"Show button labels",colors:{LABEL:"Color selection methods",picker:"Color Wheel",rgb:"RGB sliders",quick:"Quick color selectors",hex:"HEX color input"},pcmbot:"Show bottom tab bar in PC mode",pid:"Show preset IDs",seglen:"Set segment length instead of stop LED",css:"Enable custom CSS",hdays:"Enable custom Holidays list"},theme:{alpha:{bg:"Background opacity",tab:"Button opacity"},bg:{url:"BG image URL",random:"Random BG image"},color:{bg:"BG HEX color"}}};function gId(e){return d.getElementById(e)}function isObject(e){return e&&"object"==typeof e&&!Array.isArray(e)}function set(e,t,i){for(var n=t,s=e.split("_"),o=s.length,a=0;a<o-1;a++){var l=s[a];n[l]||(n[l]={}),n=n[l]}n[s[o-1]]=i}function showToast(e,t=!1){var i=gId("toast");i.innerHTML=e,i.className=t?"error":"show",clearTimeout(timeout),i.style.animation="none",timeout=setTimeout((function(){i.className=i.className.replace("show","")}),2900)}function addRec(e,t="",n=null){var s="";for(i in e){var o=t+(t?"_":"")+i;if(isObject(e[i]))n&&n[i]&&n[i].LABEL&&(s+=`<h3>${n[i].LABEL}</h3>`),s+=addRec(e[i],o,n?n[i]:null);else{var a=o;if(n&&n[i]?a=n[i]:e[i+"LABEL"]&&(a=e[i+"LABEL"]),i.indexOf("LABEL")>0)continue;var l=typeof e[i];gId(o)?("boolean"===l?gId(o).checked=e[i]:gId(o).value=e[i],gId(o).previousElementSibling.matches(".l")&&(gId(o).previousElementSibling.innerHTML=a)):"boolean"===l?s+=`${a}: <input class="agi cb" type="checkbox" id=${o} ${e[i]?"checked":""}><br>`:"number"===l?s+=`${a}: <input class="agi" type="number" id=${o} value=${e[i]}><br>`:"string"===l&&(s+=`${a}:<br><input class="agi" id=${o} value=${e[i]}><br>`)}}return s}function genForm(e){var t;t=addRec(e,"",l),gId("gen").innerHTML=t}function GetLS(){(sett=localStorage.getItem("wledUiCfg"))||(gId("lserr").style.display="inline");try{sett=JSON.parse(sett)}catch(e){sett={},gId("lserr").style.display="inline",gId("lserr").innerHTML="&#9888; Settings JSON parsing failed. ("+e+")"}genForm(sett),gId("dm").checked="light"===gId("theme_base").value}function SetLS(){for(var e=d.querySelectorAll(".agi"),t=0;t<e.length;t++){var i=e[t],n=i.classList.contains("cb")?i.checked:i.value;set(i.id,sett,n),console.log(`${i.id} set to ${n}`)}try{localStorage.setItem("wledUiCfg",JSON.stringify(sett)),gId("lssuc").style.display="inline"}catch(i){gId("lssuc").style.display="none",gId("lserr").style.display="inline",gId("lserr").innerHTML="&#9888; Settings JSON saving failed. ("+i+")"}}function Save(){SetLS(),d.Sf.DS.value==initial_ds&&d.Sf.ST.checked==initial_st&&d.Sf.SU.checked==initial_su||d.Sf.submit()}function S(){GetV(),initial_ds=d.Sf.DS.value,initial_st=d.Sf.ST.checked,initial_su=d.Sf.SU.checked,GetLS()}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#user-interface-settings")}function B(){window.open("/settings","_self")}function UI(){gId("idonthateyou").style.display=gId("dm").checked?"inline":"none";var e=gId("theme_base");e&&(e.value=gId("dm").checked?"light":"dark")}function setRandomBg(){gId("theme_bg_random").checked?gId("theme_bg_url").value="https://picsum.photos/1920/1080":gId("theme_bg_url").value=""}function checkRandomBg(){"https://picsum.photos/1920/1080"===gId("theme_bg_url").value?gId("theme_bg_random").checked=!0:gId("theme_bg_random").checked=!1}function uploadFile(e,t){var i=new XMLHttpRequest;i.addEventListener("load",(function(){showToast(this.responseText)})),i.addEventListener("error",(function(e){showToast(e.stack,!0)})),i.open("POST","/upload");var n=new FormData;return n.append("data",e.files[0],t),i.send(n),e.value="",!1}function GetV() {var d=document;
-%CSS%%SCSS%<link href="/skin.css" 
-rel="stylesheet"></head><body onload="S()"><form id="form_s" name="Sf" 
-method="post"><div class="toprow"><div class="helpB"><button type="button" 
-onclick="H()">?</button></div><button type="button" onclick="B()">Back</button>
-<button type="button" onclick="Save()">Save</button><br><span id="lssuc" 
-style="color:green;display:none">&#10004; Local UI settings saved!</span> <span 
-id="lserr" style="color:red;display:none">
+%CSS%%SCSS%</head><body onload="S()"><form
+ id="form_s" name="Sf" method="post"><div class="toprow"><div class="helpB">
+<button type="button" onclick="H()">?</button></div><button type="button" 
+onclick="B()">Back</button><button type="button" onclick="Save()">Save</button>
+<br><span id="lssuc" style="color:green;display:none">
+&#10004; Local UI settings saved!</span> <span id="lserr" 
+style="color:red;display:none">
 &#9888; Could not access local storage. Make sure it is enabled in your browser.
 </span><hr></div><h2>Web Setup</h2>Server description: <input name="DS" 
 maxlength="32"><br>Sync button toggles both send and receive: <input 
@@ -239,20 +239,20 @@ type="button" onclick="Save()">Save</button></form></body></html>)=====";
 const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html><html lang="en"><head><meta name="viewport" content="width=500">
 <meta charset="utf-8"><title>Sync Settings</title><script>
 var d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings")}function B(){window.open("/settings","_self")}function adj(){6454==d.Sf.DI.value?(1==d.Sf.DA.value&&(d.Sf.DA.value=0),1==d.Sf.EU.value&&(d.Sf.EU.value=0)):5568==d.Sf.DI.value&&(0==d.Sf.DA.value&&(d.Sf.DA.value=1),0==d.Sf.EU.value&&(d.Sf.EU.value=1))}function SP(){var e=d.Sf.DI.value;d.getElementById("xp").style.display=e>0?"none":"block",e>0&&(d.Sf.EP.value=e)}function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568:d.Sf.DI.value=5568;break;case 6454:d.Sf.DI.value=6454;break;case 4048:d.Sf.DI.value=4048}SP()}function S(){GetV(),SetVal()}function GetV() {
-%CSS%%SCSS%<link href="/skin.css" 
-rel="stylesheet"></head><body onload="S()"><form id="form_s" name="Sf" 
-method="post"><div class="toprow"><div class="helpB"><button type="button" 
-onclick="H()">?</button></div><button type="button" onclick="B()">Back</button>
-<button type="submit">Save</button><hr></div><h2>Sync setup</h2><h3>
-WLED Broadcast</h3>UDP Port: <input name="UP" type="number" min="1" max="65535" 
-class="d5" required><br>2nd Port: <input name="U2" type="number" min="1" 
-max="65535" class="d5" required><br>Receive: <input type="checkbox" name="RB">
-Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" 
-name="RX">Effects<br>Send notifications on direct change: <input 
-type="checkbox" name="SD"><br>Send notifications on button press or IR: <input 
-type="checkbox" name="SB"><br>Send Alexa notifications: <input type="checkbox" 
-name="SA"><br>Send Philips Hue change notifications: <input type="checkbox" 
-name="SH"><br>Send Macro notifications: <input type="checkbox" name="SM"><br>
+%CSS%%SCSS%</head><body onload="S()">
+<form id="form_s" name="Sf" method="post"><div class="toprow"><div 
+class="helpB"><button type="button" onclick="H()">?</button></div><button 
+type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+</div><h2>Sync setup</h2><h3>WLED Broadcast</h3>UDP Port: <input name="UP" 
+type="number" min="1" max="65535" class="d5" required><br>2nd Port: <input 
+name="U2" type="number" min="1" max="65535" class="d5" required><br>Receive: 
+<input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">
+Color, and <input type="checkbox" name="RX">Effects<br>
+Send notifications on direct change: <input type="checkbox" name="SD"><br>
+Send notifications on button press or IR: <input type="checkbox" name="SB"><br>
+Send Alexa notifications: <input type="checkbox" name="SA"><br>
+Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>
+Send Macro notifications: <input type="checkbox" name="SM"><br>
 Send notifications twice: <input type="checkbox" name="S2"><br><i>
 Reboot required to apply changes.</i><h3>Instance List</h3>
 Enable instance list: <input type="checkbox" name="NL"><br>
@@ -319,47 +319,46 @@ type="submit">Save</button></form></body></html>)=====";
 const char PAGE_settings_time[] PROGMEM = R"=====(<!DOCTYPE html><html lang="en"><head><meta name="viewport" content="width=500">
 <meta charset="utf-8"><title>Time Settings</title><script>
 var d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#time-settings")}function B(){window.open("/settings","_self")}function S(){BTa(),GetV(),Cs(),FC()}function gId(t){return d.getElementById(t)}function Cs(){gId("cac").style.display="none",gId("coc").style.display="block",gId("ccc").style.display="none",gId("ca").selected&&(gId("cac").style.display="block"),gId("cc").selected&&(gId("coc").style.display="none",gId("ccc").style.display="block"),gId("cn").selected&&(gId("coc").style.display="none")}function BTa(){var t="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Preset</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";for(i=0;i<8;i++){for(t+='<tr><td><input name="W'+i+'" id="W'+i+'" type="number" style="display:none"><input id="W'+i+'0" type="checkbox"></td><td><input name="H'+i+'" class="sml" type="number" min="0" max="24"></td><td><input name="N'+i+'" class="sml" type="number" min="0" max="59"></td><td><input name="T'+i+'" class="med" type="number" min="0" max="250"></td>',j=1;j<8;j++)t+='<td><input id="W'+i+j+'" type="checkbox"></td>';t+="</tr>"}for(t+='<tr><td><input name="W8" id="W8" type="number" style="display:none"><input id="W80" type="checkbox"></td><td>Sunrise<input name="H8" class="sml" value="255" type="hidden"></td><td><input name="N8" class="sml" type="number" min="-59" max="59"></td><td><input name="T8" class="med" type="number" min="0" max="250"></td>',j=1;j<8;j++)t+='<td><input id="W8'+j+'" type="checkbox"></td>';for(t+='</tr><tr><td><input name="W9" id="W9" type="number" style="display:none"><input id="W90" type="checkbox"></td><td>Sunset<input name="H9" class="sml" value="255" type="hidden"></td><td><input name="N9" class="sml" type="number" min="-59" max="59"></td><td><input name="T9" class="med" type="number" min="0" max="250"></td>',j=1;j<8;j++)t+='<td><input id="W9'+j+'" type="checkbox"></td>';t+="</tr>",gId("TMT").innerHTML=t}function FC(){for(j=0;j<8;j++)for(i=0;i<10;i++)gId("W"+i+j).checked=gId("W"+i).value>>j&1}function Wd(){for(a=[0,0,0,0,0,0,0,0,0,0],i=0;i<10;i++){for(m=1,j=0;j<8;j++)a[i]+=gId("W"+i+j).checked*m,m*=2;gId("W"+i).value=a[i]}}function addRow(t,e,n,i){var d=gId("macros"),s=d.rows.length,c=d.insertRow(s);document.createElement("td");c.insertCell(0).innerHTML=`Button ${t}:`,c.insertCell(1).innerHTML=`<input name="MP${t}" type="number" class="m" min="0" max="250" value="${e}" required>`,c.insertCell(2).innerHTML=`<input name="ML${t}" type="number" class="m" min="0" max="250" value="${n}" required>`,c.insertCell(3).innerHTML=`<input name="MD${t}" type="number" class="m" min="0" max="250" value="${i}" required>`}function GetV() {
-%CSS%%SCSS%<link href="/skin.css" 
-rel="stylesheet"></head><body onload="S()"><form id="form_s" name="Sf" 
-method="post" onsubmit="Wd()"><div class="toprow"><div class="helpB"><button 
-type="button" onclick="H()">?</button></div><button type="button" onclick="B()">
-Back</button><button type="submit">Save</button><hr></div><h2>Time setup</h2>
-Get time from NTP server: <input type="checkbox" name="NT"><br><input name="NS" 
-maxlength="32"><br>Use 24h format: <input type="checkbox" name="CF"><br>
-Time zone: <select name="TZ"><option value="0" selected="selected">GMT(UTC)
-</option><option value="1">GMT/BST</option><option value="2">CET/CEST</option>
-<option value="3">EET/EEST</option><option value="4">US-EST/EDT</option><option 
-value="5">US-CST/CDT</option><option value="6">US-MST/MDT</option><option 
-value="7">US-AZ</option><option value="8">US-PST/PDT</option><option value="9">
-CST(AWST)</option><option value="10">JST(KST)</option><option value="11">
-AEST/AEDT</option><option value="12">NZST/NZDT</option><option value="13">
-North Korea</option><option value="14">IST (India)</option><option value="15">
-CA-Saskatchewan</option><option value="16">ACST</option><option value="17">
-ACST/ACDT</option><option value="18">HST (Hawaii)</option></select><br>
-UTC offset: <input name="UO" type="number" min="-65500" max="65500" required>
- seconds (max. 18 hours)<br>Current local time is <span class="times">unknown
-</span>.<br>Latitude (N): <input name="LT" type="number" class="xl" min="-66.6" 
-max="66.6" step="0.01"> Longitude (E): <input name="LN" type="number" 
-class="xl" min="-180" max="180" step="0.01"><div id="sun" class="times"></div>
-<h3>Clock</h3>Clock Overlay: <select name="OL" onchange="Cs()"><option 
-value="0" id="cn" selected="selected">None</option><option value="1" id="ca">
-Analog Clock</option><option value="2">Single Digit Clock</option><option 
-value="3" id="cc">Cronixie Clock</option></select><br><div id="coc">First LED: 
-<input name="O1" type="number" min="0" max="255" required> Last LED: <input 
-name="O2" type="number" min="0" max="255" required><br><div id="cac">12h LED: 
-<input name="OM" type="number" min="0" max="255" required><br>Show 5min marks: 
-<input type="checkbox" name="O5"><br></div>Seconds (as trail): <input 
-type="checkbox" name="OS"><br></div><div id="ccc">Cronixie Display: <input 
-name="CX" maxlength="6"><br>Cronixie Backlight: <input type="checkbox" 
-name="CB"><br></div>Countdown Mode: <input type="checkbox" name="CE"><br>
-Countdown Goal:<br>Year: 20 <input name="CY" class="small" type="number" 
-min="0" max="99" required> Month: <input name="CI" class="small" type="number" 
-min="1" max="12" required> Day: <input name="CD" class="small" type="number" 
-min="1" max="31" required><br>Hour: <input name="CH" class="small" 
-type="number" min="0" max="23" required> Minute: <input name="CM" class="small" 
-type="number" min="0" max="59" required> Second: <input name="CS" class="small" 
-type="number" min="0" max="59" required><br><h3>Macro presets</h3><b>
-Macros have moved!</b><br><i>
+%CSS%%SCSS%</head><body onload="S()">
+<form id="form_s" name="Sf" method="post" onsubmit="Wd()"><div class="toprow">
+<div class="helpB"><button type="button" onclick="H()">?</button></div><button 
+type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+</div><h2>Time setup</h2>Get time from NTP server: <input type="checkbox" 
+name="NT"><br><input name="NS" maxlength="32"><br>Use 24h format: <input 
+type="checkbox" name="CF"><br>Time zone: <select name="TZ"><option value="0" 
+selected="selected">GMT(UTC)</option><option value="1">GMT/BST</option><option 
+value="2">CET/CEST</option><option value="3">EET/EEST</option><option value="4">
+US-EST/EDT</option><option value="5">US-CST/CDT</option><option value="6">
+US-MST/MDT</option><option value="7">US-AZ</option><option value="8">US-PST/PDT
+</option><option value="9">CST(AWST)</option><option value="10">JST(KST)
+</option><option value="11">AEST/AEDT</option><option value="12">NZST/NZDT
+</option><option value="13">North Korea</option><option value="14">IST (India)
+</option><option value="15">CA-Saskatchewan</option><option value="16">ACST
+</option><option value="17">ACST/ACDT</option><option value="18">HST (Hawaii)
+</option></select><br>UTC offset: <input name="UO" type="number" min="-65500" 
+max="65500" required> seconds (max. 18 hours)<br>Current local time is <span 
+class="times">unknown</span>.<br>Latitude (N): <input name="LT" type="number" 
+class="xl" min="-66.6" max="66.6" step="0.01"> Longitude (E): <input name="LN" 
+type="number" class="xl" min="-180" max="180" step="0.01"><div id="sun" 
+class="times"></div><h3>Clock</h3>Clock Overlay: <select name="OL" 
+onchange="Cs()"><option value="0" id="cn" selected="selected">None</option>
+<option value="1" id="ca">Analog Clock</option><option value="2">
+Single Digit Clock</option><option value="3" id="cc">Cronixie Clock</option>
+</select><br><div id="coc">First LED: <input name="O1" type="number" min="0" 
+max="255" required> Last LED: <input name="O2" type="number" min="0" max="255" 
+required><br><div id="cac">12h LED: <input name="OM" type="number" min="0" 
+max="255" required><br>Show 5min marks: <input type="checkbox" name="O5"><br>
+</div>Seconds (as trail): <input type="checkbox" name="OS"><br></div><div 
+id="ccc">Cronixie Display: <input name="CX" maxlength="6"><br>
+Cronixie Backlight: <input type="checkbox" name="CB"><br></div>Countdown Mode: 
+<input type="checkbox" name="CE"><br>Countdown Goal:<br>Year: 20 <input 
+name="CY" class="small" type="number" min="0" max="99" required> Month: <input 
+name="CI" class="small" type="number" min="1" max="12" required> Day: <input 
+name="CD" class="small" type="number" min="1" max="31" required><br>Hour: <input
+ name="CH" class="small" type="number" min="0" max="23" required> Minute: <input
+ name="CM" class="small" type="number" min="0" max="59" required> Second: <input
+ name="CS" class="small" type="number" min="0" max="59" required><br><h3>
+Macro presets</h3><b>Macros have moved!</b><br><i>
 Presets now also can be used as macros to save both JSON and HTTP API commands.
 <br>Just enter the preset id below!</i> <i>
 Use 0 for the default action instead of a preset</i><br>Alexa On/Off Preset: 
@@ -380,7 +379,7 @@ type="button" onclick="B()">Back</button><button type="submit">Save</button>
 // Autogenerated from wled00/data/settings_sec.htm, do not edit!!
 const char PAGE_settings_sec[] PROGMEM = R"=====(<!DOCTYPE html><html lang="en"><head><meta name="viewport" content="width=500">
 <meta charset="utf-8"><title>Misc Settings</title><script>
-var timeout,d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings")}function B(){window.open("/settings","_self")}function U(){window.open("/update","_self")}function gId(e){return d.getElementById(e)}function isObject(e){return e&&"object"==typeof e&&!Array.isArray(e)}function showToast(e,t=!1){var o=gId("toast");o.innerHTML=e,o.className=t?"error":"show",clearTimeout(timeout),o.style.animation="none",timeout=setTimeout((function(){o.className=o.className.replace("show","")}),2900)}function uploadFile(e,t){var o=new XMLHttpRequest;o.addEventListener("load",(function(){showToast(this.responseText)})),o.addEventListener("error",(function(e){showToast(e.stack,!0)})),o.open("POST","/upload");var n=new FormData;return n.append("data",e.files[0],t),o.send(n),e.value="",!1}function clearLS(){localStorage.removeItem("wledP"),localStorage.removeItem("wledPmt")}function GetV() {var d=document;
+var timeout,d=document;function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#security-settings")}function B(){window.open("/settings","_self")}function U(){window.open("/update","_self")}function gId(t){return d.getElementById(t)}function isObject(t){return t&&"object"==typeof t&&!Array.isArray(t)}function showToast(t,e=!1){var n=gId("toast");n.innerHTML=t,n.className=e?"error":"show",clearTimeout(timeout),n.style.animation="none",timeout=setTimeout((function(){n.className=n.className.replace("show","")}),2900)}function uploadFile(t,e){var n=new XMLHttpRequest;n.addEventListener("load",(function(){showToast(this.responseText)})),n.addEventListener("error",(function(t){showToast(t.stack,!0)})),n.open("POST","/upload");var o=new FormData;return o.append("data",t.files[0],e),n.send(o),t.value="",!1}function GetV() {var d=document;
 %CSS%%SCSS%<link href="/skin.css" 
 rel="stylesheet"></head><body onload="GetV()"><form id="form_s" name="Sf" 
 method="post"><div class="toprow"><div class="helpB"><button type="button" 
@@ -397,19 +396,21 @@ Disable OTA when not in use, otherwise an attacker can reflash device software!
 <br><br>Factory reset: <input type="checkbox" name="RS"><br>
 All settings and presets will be erased.<br><br>
 HTTP traffic is unencrypted. An attacker in the same network can intercept form data!
-<h3>Backup & Restore</h3><a class="btn lnk" href="/presets.json?download" 
-target="download-frame">Backup presets</a><br><div id="presets">Restore presets:
-<input type="file" name="data" accept=".json"> <input type="button" 
-value="Upload" onclick='uploadFile(d.Sf.data,"/presets.json"),clearLS()'><br>
-</div><a class="btn lnk" href="/cfg.json?download" target="download-frame">
-Backup configuration</a><br><div id="presets">Restore configuration:<input 
-type="file" name="data2" accept=".json"> <input type="button" value="Upload" 
-onclick='uploadFile(d.Sf.data2,"/cfg.json")'><br></div><div style="color:#fa0">
+<hr><h3>Software Update</h3><button type="button" onclick="U()">
+Manual OTA Update</button><br>Enable ArduinoOTA: <input type="checkbox" 
+name="AO"><br><h3>Backup & Restore</h3><a class="btn lnk" 
+href="/presets.json?download" target="download-frame">Backup presets</a><br>
+<div>Restore presets<br><input type="file" name="data" accept=".json"> <input 
+type="button" value="Upload" onclick='uploadFile(d.Sf.data,"/presets.json")'>
+<br></div><br><a class="btn lnk" href="/cfg.json?download" 
+target="download-frame">Backup configuration</a><br><div>Restore configuration
+<br><input type="file" name="data2" accept=".json"> <input type="button" 
+value="Upload" onclick='uploadFile(d.Sf.data2,"/cfg.json")'><br></div><div 
+style="color:#fa0">
 &#9888; Restoring presets/configuration will OVERWRITE your current presets/configuration.
-<br>Incorrect configuration may require factory reset or re-flashing of ESP.
-</div>For security reasons, passwords are not backed up.<hr><h3>Software Update
-</h3><button type="button" onclick="U()">Manual OTA Update</button><br>
-Enable ArduinoOTA: <input type="checkbox" name="AO"><br><hr><h3>About</h3><a 
+<br>
+Incorrect configuration may require a factory reset or re-flashing of your ESP.
+</div>For security reasons, passwords are not backed up.<h3>About</h3><a 
 href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>
  version 0.13.0-bl3<br><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/Contributors-and-credits" 
@@ -427,14 +428,14 @@ name="download-frame" style="display:none"></iframe></body></html>)=====";
 const char PAGE_settings_um[] PROGMEM = R"=====(<!DOCTYPE html><html><head lang="en"><meta charset="utf-8"><meta 
 name="viewport" content="width=500"><title>Usermod Settings</title><script>
 var owner,locip,urows,d=document,umCfg={},pins=[6,7,8,9,10,11],pinO=["rsvd","rsvd","rsvd","rsvd","rsvd","rsvd"],loc=!1,numM=0;function gId(e){return d.getElementById(e)}function isO(e){return e&&"object"==typeof e&&!Array.isArray(e)}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#usermod-settings")}function B(){window.open("/settings","_self")}function S(){"file:"==window.location.protocol&&(loc=!0,(locip=localStorage.getItem("locIp"))||(locip=prompt("File Mode. Please enter WLED IP!"),localStorage.setItem("locIp",locip))),GetV(),numM>0||locip?ldS():gId("um").innerHTML="No Usermods installed."}function isF(e){return e===+e&&e!==(0|e)}function isI(e){return e===+e&&e===(0|e)}function check(e,n){var i=e.name.replace("[]","").substr(-3);if("number"==e.type&&"pin"==i.substr(0,3))for(var s=0;s<pins.length;s++)if(n!=pinO[s]){if(e.value==pins[s]||e.value<-1||e.value>39){e.style.color="red";break}e.style.color=e.value>33?"orange":"#fff"}}function getPins(e){if(isO(e))for(const[i,s]of Object.entries(e))if(isO(s))owner=i,getPins(s);else if("pin"==i.replace("[]","").substr(-3))if(Array.isArray(s))for(var n=0;n<s.length;n++)s[n]>=0&&(pins.push(s[n]),pinO.push(owner));else s>=0&&(pins.push(s),pinO.push(owner));else if(Array.isArray(s))for(n=0;n<s.length;n++)getPins(s[n])}function addField(e,n,i,s=!1){if(isO(i))for(const[s,t]of Object.entries(i))"unknown"===n||e.includes(":")?addField(e,s,t):addField(e+":"+n,s,t);else if(Array.isArray(i))for(var t=0;t<i.length;t++)addField(e,n,i[t],!0);else{var o,r=typeof i;switch(r){case"boolean":r="checkbox",o='value="true"'+(i?" checked":"");break;case"number":o=`value="${i}"`,"pin"===n.substr(-3)?(o+=' max="39" min="-1" class="s"',r="int"):o+=' step="any" class="xxl"';break;default:r="text",o=`value="${i}" style="width:250px;"`}e.includes(":")&&(urows+=e.substr(e.indexOf(":")+1)),urows+=` ${n}: `,"checkbox"==r?urows+=`<input type="hidden" name="${e}:${n}${s?"[]":""}" value="false">`:s||(urows+=`<input type="hidden" name="${e}:${n}${s?"[]":""}" value="${r}">`),urows+=`<input type="${"int"===r?"number":r}" name="${e}:${n}${s?"[]":""}" ${o} oninput="check(this,'${e.substr(e.indexOf(":")+1)}')"><br>`}}function ldS(){fetch((loc?"http://"+locip:"")+"/cfg.json",{method:"get"}).then(e=>(e.ok||(gId("lserr").style.display="inline"),e.json())).then(e=>{if(umCfg=e.um,getPins(e),urows="",isO(umCfg))for(const[e,n]of Object.entries(umCfg))urows+=`<hr><h3>${e}</h3>`,addField(e,"unknown",n);""===urows&&(urows="Usermods configuration not found.<br>Press <i>Save</i> to initialize defaults."),gId("um").innerHTML=urows}).catch((function(e){gId("lserr").style.display="inline",console.log(e)}))}function svS(e){e.preventDefault(),console.log(d.Sf),d.Sf.checkValidity()&&d.Sf.submit()}function GetV() {var d=document;
-%CSS%%SCSS%<link href="/skin.css" 
-rel="stylesheet"></head><body onload="S()"><form id="form_s" name="Sf" 
-method="post" onsubmit="svS(event)"><div class="toprow"><div class="helpB">
-<button type="button" onclick="H()">?</button></div><button type="button" 
-onclick="B()">Back</button><button type="submit">Save</button><br><span 
-id="lssuc" style="color:green;display:none">&#10004; Configuration saved!</span>
- <span id="lserr" style="color:red;display:none">
-&#9888; Could not load configuration.</span><hr></div><h2>Usermod Setup</h2><div
- id="um">Loading settings...</div><hr><button type="button" onclick="B()">Back
-</button><button type="submit">Save</button></form></body></html>)=====";
+%CSS%%SCSS%</head><body onload="S()">
+<form id="form_s" name="Sf" method="post" onsubmit="svS(event)"><div 
+class="toprow"><div class="helpB"><button type="button" onclick="H()">?</button>
+</div><button type="button" onclick="B()">Back</button><button type="submit">
+Save</button><br><span id="lssuc" style="color:green;display:none">
+&#10004; Configuration saved!</span> <span id="lserr" 
+style="color:red;display:none">&#9888; Could not load configuration.</span><hr>
+</div><h2>Usermod Setup</h2><div id="um">Loading settings...</div><hr><button 
+type="button" onclick="B()">Back</button><button type="submit">Save</button>
+</form></body></html>)=====";
 
