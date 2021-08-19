@@ -232,9 +232,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject if_sync = interfaces[F("sync")];
   CJSON(udpPort, if_sync[F("port0")]); // 21324
   CJSON(udpPort2, if_sync[F("port1")]); // 65506
-  CJSON(enableHyperionColorCorrection, if_sync[F("correction")]);
-  CJSON(hyperionHSVSaturation, if_sync[F("hsvsaturation")]);
-  CJSON(hyperionHSVValue, if_sync[F("hsvvalue")]);
 
   JsonObject if_sync_recv = if_sync["recv"];
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
@@ -273,6 +270,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(arlsForceMaxBri, if_live[F("maxbri")]);
   CJSON(arlsDisableGammaCorrection, if_live[F("no-gc")]); // false
   CJSON(arlsOffset, if_live[F("offset")]); // 0
+
+  CJSON(liveHSVCorrection, if_live[F("corr")]);
+  CJSON(liveHSVSaturation, if_live[F("hsvsat")]);
+  CJSON(liveHSVValue, if_live[F("hsvval")]);
 
   CJSON(alexaEnabled, interfaces["va"][F("alexa")]); // false
 
@@ -583,9 +584,6 @@ void serializeConfig() {
   JsonObject if_sync = interfaces.createNestedObject("sync");
   if_sync[F("port0")] = udpPort;
   if_sync[F("port1")] = udpPort2;
-  if_sync[F("correction")] = enableHyperionColorCorrection;
-  if_sync[F("hsvsaturation")] = hyperionHSVSaturation;
-  if_sync[F("hsvvalue")] = hyperionHSVValue;
 
   JsonObject if_sync_recv = if_sync.createNestedObject("recv");
   if_sync_recv["bri"] = receiveNotificationBrightness;
@@ -614,10 +612,14 @@ void serializeConfig() {
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
   if_live_dmx[F("addr")] = DMXAddress;
   if_live_dmx[F("mode")] = DMXMode;
+
   if_live[F("timeout")] = realtimeTimeoutMs / 100;
   if_live[F("maxbri")] = arlsForceMaxBri;
   if_live[F("no-gc")] = arlsDisableGammaCorrection;
   if_live[F("offset")] = arlsOffset;
+  if_live[F("corr")] = liveHSVCorrection;
+  if_live[F("hsvsat")] = liveHSVSaturation;
+  if_live[F("hsvval")] = liveHSVValue;
 
   JsonObject if_va = interfaces.createNestedObject("va");
   if_va[F("alexa")] = alexaEnabled;

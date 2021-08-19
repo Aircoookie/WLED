@@ -93,23 +93,30 @@ void colorRGBtoHSV(byte red, byte green, byte blue, float& hue, float& saturatio
   hue = 0;
   if (max != min)
   {
-    if (max == rd)
-    {
-      hue = (gd - bd) / d + (gd < bd ? 6 : 0);
-    }
-    else if (max == gd)
-    {
-      hue = (bd - rd) / d + 2;
-    }
-    else if (max == bd)
-    {
-      hue = (rd - gd) / d + 4;
-    }
+    if      (max == rd) hue = (gd - bd) / d + (gd < bd ? 6 : 0);
+    else if (max == gd) hue = (bd - rd) / d + 2;
+    else if (max == bd) hue = (rd - gd) / d + 4;
     hue /= 6;
   }
 }
 
+#define SATURATION_THRESHOLD 0.1
+#define MAX_HSV_VALUE 1
+#define MAX_HSV_SATURATION  1
 
+//corrects the realtime colors. 10 is the unchanged saturation/value
+//this feature might cause slowdowns with large LED counts
+void correctColors(byte r, byte g, byte b, byte* rgb) {
+  float hsv[3] = { 0,0,0 };
+  colorRGBtoHSV(r, g,b , hsv[0], hsv[1], hsv[2]);
+  float saturated = hsv[1] > SATURATION_THRESHOLD ?
+    hsv[1] * ((float)liveHSVSaturation / 10) : hsv[1];
+  float saturation = saturated < MAX_HSV_SATURATION ? saturated : MAX_HSV_SATURATION;
+
+  float valued = hsv[2] * ((float)liveHSVValue/10);
+  float value = valued < MAX_HSV_VALUE ? valued : MAX_HSV_VALUE;
+  colorHSVtoRGB(hsv[0], saturation, value, rgb[0], rgb[1], rgb[2]);
+}
 
 void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
 {

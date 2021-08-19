@@ -8,22 +8,6 @@
 #define UDP_IN_MAXSIZE 1472
 #define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
-#define SATURATION_THRESHOLD 0.1
-#define MAX_HSV_VALUE 1
-#define MAX_HSV_SATURATION  1
-
-void correctColors(byte r, byte g, byte b, byte* rgb) {
-  float hsv[3] = { 0,0,0 };
-  colorRGBtoHSV(r, g,b , hsv[0], hsv[1], hsv[2]);
-  float saturated = hsv[1] > SATURATION_THRESHOLD ?
-    hsv[1] * ((float)hyperionHSVSaturation / 10) : hsv[1];
-  float saturation = saturated < MAX_HSV_SATURATION ? saturated : MAX_HSV_SATURATION;
-
-  float valued = hsv[2] * ((float)hyperionHSVValue/10);
-  float value = valued < MAX_HSV_VALUE ? valued : MAX_HSV_VALUE;
-  colorHSVtoRGB(hsv[0], saturation, value, rgb[0], rgb[1], rgb[2]);
-}
-
 void notify(byte callMode, bool followUp)
 {
   if (!udpConnected) return;
@@ -176,13 +160,7 @@ void handleNotifications()
       uint16_t id = 0;
       for (uint16_t i = 0; i < packetSize -2; i += 3)
       {
-        if (enableHyperionColorCorrection) {
-          byte correctedColors[3] = {0,0,0};
-          correctColors(lbuf[i], lbuf[i+1], lbuf[i+2],correctedColors);
-          setRealtimePixel(id, correctedColors[0], correctedColors[1], correctedColors[2], 0);
-        } else {
-          setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
-        }
+        setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
         id++; if (id >= ledCount) break;
       }
       strip.show();
@@ -348,13 +326,7 @@ void handleNotifications()
     {
       if (id < ledCount)
       {
-        if (enableHyperionColorCorrection) {
-          byte correctedColors[3] = {0,0,0};
-          correctColors(udpIn[i], udpIn[i+1], udpIn[i+2],correctedColors);
-          setRealtimePixel(id, correctedColors[0], correctedColors[1], correctedColors[2], 0);
-        } else {
-          setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-        }
+        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
         id++;
       }
       else break;
@@ -387,26 +359,14 @@ void handleNotifications()
     {
       for (uint16_t i = 2; i < packetSize -3; i += 4)
       {
-        if (enableHyperionColorCorrection) {
-          byte correctedColors[3] = {0,0,0};
-          correctColors(udpIn[i+1], udpIn[i+2], udpIn[i+3],correctedColors);
-          setRealtimePixel(udpIn[i], correctedColors[0], correctedColors[1], correctedColors[2], 0);
-        } else {
-          setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
-        }
+        setRealtimePixel(udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3], 0);
       }
     } else if (udpIn[0] == 2) //drgb
     {
       uint16_t id = 0;
       for (uint16_t i = 2; i < packetSize -2; i += 3)
       {
-        if (enableHyperionColorCorrection) {
-          byte correctedColors[3] = {0,0,0};
-          correctColors(udpIn[i], udpIn[i+1], udpIn[i+2],correctedColors);
-          setRealtimePixel(id, correctedColors[0], correctedColors[1], correctedColors[2], 0);
-        } else {
-          setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-        }
+        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
 
         id++; if (id >= ledCount) break;
       }
@@ -415,13 +375,7 @@ void handleNotifications()
       uint16_t id = 0;
       for (uint16_t i = 2; i < packetSize -3; i += 4)
       {
-        if (enableHyperionColorCorrection) {
-          byte correctedColors[3] = {0,0,0};
-          correctColors(udpIn[i], udpIn[i+1], udpIn[i+2],correctedColors);
-          setRealtimePixel(id, correctedColors[0], correctedColors[1], correctedColors[2], udpIn[i+3]);
-        } else {
-          setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-        }
+        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
         
         id++; if (id >= ledCount) break;
       }
@@ -430,14 +384,8 @@ void handleNotifications()
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (uint16_t i = 4; i < packetSize -2; i += 3)
       {
-          if (id >= ledCount) break;
-        if (enableHyperionColorCorrection) {
-          byte correctedColors[3] = {0,0,0};
-          correctColors(udpIn[i], udpIn[i+1], udpIn[i+2],correctedColors);
-          setRealtimePixel(id, correctedColors[0], correctedColors[1], correctedColors[2], 0);
-        } else {
-          setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
-        }
+        if (id >= ledCount) break;
+        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
         id++;
       }
     } else if (udpIn[0] == 5) //dnrgbw
@@ -445,14 +393,8 @@ void handleNotifications()
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (uint16_t i = 4; i < packetSize -2; i += 4)
       {
-          if (id >= ledCount) break;
-        if (enableHyperionColorCorrection) {
-          byte correctedColors[3] = {0,0,0};
-          correctColors(udpIn[i], udpIn[i+1], udpIn[i+2],correctedColors);
-          setRealtimePixel(id, correctedColors[0], correctedColors[1], correctedColors[2], udpIn[i+3]);
-        } else {
-          setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
-        }
+        if (id >= ledCount) break;
+        setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
         id++;
       }
     }
@@ -481,6 +423,11 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
   uint16_t pix = i + arlsOffset;
   if (pix < ledCount)
   {
+    if (liveHSVCorrection) {
+      byte correctedColors[3] = {0,0,0};
+      correctColors(r, g, b, correctedColors);
+      r = correctedColors[0]; g = correctedColors[1]; b = correctedColors[2];
+    }
     if (!arlsDisableGammaCorrection && strip.gammaCorrectCol)
     {
       strip.setPixelColor(pix, strip.gamma8(r), strip.gamma8(g), strip.gamma8(b), strip.gamma8(w));
