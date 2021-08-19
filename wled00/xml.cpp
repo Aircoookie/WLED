@@ -479,7 +479,18 @@ void getSettingsJS(byte subPage, char* dest)
     sappend('c',SET_F("ES"),e131SkipOutOfSequence);
     sappend('c',SET_F("EM"),e131Multicast);
     sappend('v',SET_F("EU"),e131Universe);
-    sappend('v',SET_F("DA"),DMXAddress);
+    for (int i = 0; i < DMX_MAX_FIXTURE_COUNT; ++i) {
+      char f[6] = {'D','M','X','0','A'};
+      f[3] = '0' + i;
+      f[4] = 'U';
+      sappend('v', f, DMXFixtures[i].start_universe);
+      f[4] = 'A';
+      sappend('v', f, DMXFixtures[i].start_address);
+      f[4] = 'L';
+      sappend('v', f, DMXFixtures[i].start_led);
+      f[4] = 'C';
+      sappend('v', f, DMXFixtures[i].led_count);
+    }
     sappend('v',SET_F("DM"),DMXMode);
     sappend('v',SET_F("ET"),realtimeTimeoutMs);
     sappend('c',SET_F("FB"),arlsForceMaxBri);

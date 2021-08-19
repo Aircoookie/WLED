@@ -266,7 +266,15 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject if_live_dmx = if_live[F("dmx")];
   CJSON(e131Universe, if_live_dmx[F("uni")]);
   CJSON(e131SkipOutOfSequence, if_live_dmx[F("seqskip")]);
-  CJSON(DMXAddress, if_live_dmx[F("addr")]);
+
+  JsonArray dmx_fixtures = if_live_dmx[F("fixtures")];
+  for (auto i = 0; i != dmx_fixtures.size(); ++i) {
+    JsonObject fixture = dmx_fixtures[i];
+    CJSON(DMXFixtures[i].start_universe, fixture[F("uni")]);
+    CJSON(DMXFixtures[i].start_address, fixture[F("addr")]);
+    CJSON(DMXFixtures[i].start_led, fixture[F("led")]);
+    CJSON(DMXFixtures[i].led_count, fixture[F("count")]);
+  }
   CJSON(DMXMode, if_live_dmx[F("mode")]);
 
   tdd = if_live[F("timeout")] | -1;
@@ -650,7 +658,15 @@ void serializeConfig() {
   JsonObject if_live_dmx = if_live.createNestedObject("dmx");
   if_live_dmx[F("uni")] = e131Universe;
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
-  if_live_dmx[F("addr")] = DMXAddress;
+
+  JsonArray dmx_fixtures = if_live_dmx.createNestedArray("fixtures");
+  for (int i = 0; i < DMX_MAX_FIXTURE_COUNT; ++i) {
+    JsonObject fixture = dmx_fixtures.createNestedObject();
+    fixture[F("uni")] = DMXFixtures[i].start_universe;
+    fixture[F("addr")] = DMXFixtures[i].start_address;
+    fixture[F("led")] = DMXFixtures[i].start_led;
+    fixture[F("count")] = DMXFixtures[i].led_count;
+  }
   if_live_dmx[F("mode")] = DMXMode;
 
   if_live[F("timeout")] = realtimeTimeoutMs / 100;

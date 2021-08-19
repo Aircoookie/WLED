@@ -26,7 +26,7 @@ void handleDDPPacket(e131_packet_t* p) {
   }
 
   uint32_t start = htonl(p->channelOffset) /3;
-  start += DMXAddress /3;
+  start += DMXFixtures[0].start_address /3;
   uint16_t stop = start + htons(p->dataLen) /3;
   uint8_t* data = p->data;
   uint16_t c = 0;
@@ -86,8 +86,6 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
   // only listen for universes we're handling & allocated memory
   if (uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
 
-  uint8_t previousUniverses = uni - e131Universe;
-
   if (e131SkipOutOfSequence)
     if (seq < e131LastSequenceNumber[uni-e131Universe] && seq > 20 && e131LastSequenceNumber[uni-e131Universe] < 250){
       DEBUG_PRINT("skipping E1.31 frame (last seq=");
@@ -112,6 +110,8 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       break;
 
     case DMX_MODE_SINGLE_RGB:
+    {
+      const uint16_t DMXAddress = DMXFixtures[0].start_address;
       if (uni != e131Universe) return;
       if (dmxChannels-DMXAddress+1 < 3) return;
       realtimeLock(realtimeTimeoutMs, mde);
@@ -120,8 +120,11 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       for (uint16_t i = 0; i < totalLen; i++)
         setRealtimePixel(i, e131_data[DMXAddress+0], e131_data[DMXAddress+1], e131_data[DMXAddress+2], wChannel);
       break;
+    }
 
     case DMX_MODE_SINGLE_DRGB:
+    {
+      const uint16_t DMXAddress = DMXFixtures[0].start_address;
       if (uni != e131Universe) return;
       if (dmxChannels-DMXAddress+1 < 4) return;
       realtimeLock(realtimeTimeoutMs, mde);
@@ -135,8 +138,11 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       for (uint16_t i = 0; i < totalLen; i++)
         setRealtimePixel(i, e131_data[DMXAddress+1], e131_data[DMXAddress+2], e131_data[DMXAddress+3], wChannel);
       break;
+    }
 
     case DMX_MODE_EFFECT:
+    {
+      const uint16_t DMXAddress = DMXFixtures[0].start_address;
       if (uni != e131Universe) return;
       if (dmxChannels-DMXAddress+1 < 11) return;
       if (DMXOldDimmer != e131_data[DMXAddress+0]) {
@@ -163,6 +169,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
       colorUpdated(CALL_MODE_NOTIFICATION);  // don't send UDP
       return;                                // don't activate realtime live mode
       break;
+    }
 
     case DMX_MODE_MULTIPLE_DRGB:
     case DMX_MODE_MULTIPLE_RGB:
@@ -172,32 +179,37 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP, byte protocol){
         bool is4Chan = (DMXMode == DMX_MODE_MULTIPLE_RGBW);
         const uint16_t dmxChannelsPerLed = is4Chan ? 4 : 3;
         const uint16_t ledsPerUniverse = is4Chan ? MAX_4_CH_LEDS_PER_UNIVERSE : MAX_3_CH_LEDS_PER_UNIVERSE;
+        const uint16_t dmxChannelsUsedPerUniverse = dmxChannelsPerLed * ledsPerUniverse;
         if (realtimeOverride) return;
-        uint16_t previousLeds, dmxOffset;
-        if (previousUniverses == 0) {
-          if (dmxChannels-DMXAddress < 1) return;
-          dmxOffset = DMXAddress;
-          previousLeds = 0;
-          // First DMX address is dimmer in DMX_MODE_MULTIPLE_DRGB mode.
-          if (DMXMode == DMX_MODE_MULTIPLE_DRGB) {
-            strip.setBrightness(e131_data[dmxOffset++]);
-          }
-        } else {
-          // All subsequent universes start at the first channel.
-          dmxOffset = (protocol == P_ARTNET) ? 0 : 1;
-          uint16_t ledsInFirstUniverse = (MAX_CHANNELS_PER_UNIVERSE - DMXAddress) / dmxChannelsPerLed;
-          previousLeds = ledsInFirstUniverse + (previousUniverses - 1) * ledsPerUniverse;
-        }
-        uint16_t ledsTotal = previousLeds + (dmxChannels - dmxOffset +1) / dmxChannelsPerLed;
-        if (!is4Chan) {
-          for (uint16_t i = previousLeds; i < ledsTotal; i++) {
-            setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], 0);
-            dmxOffset+=3;
-          }
-        } else {
-          for (uint16_t i = previousLeds; i < ledsTotal; i++) {
-            setRealtimePixel(i, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], e131_data[dmxOffset+3]);
-            dmxOffset+=4;
+
+        // Find fixtures to which this packet applies (there may be more than one)
+        for (uint16_t fixture_idx = 0; fixture_idx < DMX_MAX_FIXTURE_COUNT; ++fixture_idx) {
+          DMXFixture const *fixture = &DMXFixtures[fixture_idx];
+          const uint16_t dmxUniverseEnd = fixture->start_universe + ((fixture->start_address + fixture->led_count*dmxChannelsPerLed - 1) + (dmxChannelsUsedPerUniverse - 1))/dmxChannelsUsedPerUniverse - 1;
+          if (uni >= fixture->start_universe && uni <= dmxUniverseEnd) {
+            // Ignore fixtures with zero LEDs
+            if (fixture->led_count == 0)
+              continue;
+
+            uint16_t dmxOffset = ((uni == fixture->start_universe) ? fixture->start_address : 0) + ((protocol == P_ARTNET) ? 0 : 1);
+            if (dmxChannels - dmxOffset < 1) {
+              DEBUG_PRINTF("Offset (%d) larger than packet contents (%d)\n", dmxOffset, dmxChannels);
+              continue;
+            }
+
+            // First DMX address is dimmer in DMX_MODE_MULTIPLE_DRGB mode.
+            if ((uni == fixture->start_universe) && (DMXMode == DMX_MODE_MULTIPLE_DRGB)) {
+              DEBUG_PRINTLN("Using dimmer channel");
+              strip.setBrightness(e131_data[dmxOffset++]);
+            }
+
+            uint16_t ledIdx = fixture->start_led + (((uni - fixture->start_universe)*ledsPerUniverse) - fixture->start_address/dmxChannelsPerLed);
+            uint16_t ledEnd = min(fixture->start_led + fixture->led_count, ledIdx + static_cast<uint16_t>(dmxChannels / dmxChannelsPerLed));
+            while (dmxOffset < dmxChannels && ledIdx < ledEnd) {
+              setRealtimePixel(ledIdx, e131_data[dmxOffset], e131_data[dmxOffset+1], e131_data[dmxOffset+2], is4Chan ? e131_data[dmxOffset+3] : 0);
+              dmxOffset += dmxChannelsPerLed;
+              ledIdx++;
+            }
           }
         }
         break;

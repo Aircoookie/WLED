@@ -237,8 +237,22 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t > 0) e131Port = t;
     t = request->arg(F("EU")).toInt();
     if (t >= 0  && t <= 63999) e131Universe = t;
-    t = request->arg(F("DA")).toInt();
-    if (t >= 0  && t <= 510) DMXAddress = t;
+    for (int i = 0; i < DMX_MAX_FIXTURE_COUNT; ++i) {
+      char f[6] = {'D','M','X','0','A'};
+      f[3] = '0' + i;
+      f[4] = 'U';
+      t = request->arg(f).toInt();
+      if (t >= 0 && t <= 63999) DMXFixtures[i].start_universe = t;
+      f[4] = 'A';
+      t = request->arg(f).toInt();
+      if (t >= 0 && t <= 510) DMXFixtures[i].start_address = t;
+      f[4] = 'L';
+      t = request->arg(f).toInt();
+      if (t >= 0 && t < MAX_LEDS) DMXFixtures[i].start_led = t;
+      f[4] = 'C';
+      t = request->arg(f).toInt();
+      if (t >= 0 && t <= MAX_LEDS) DMXFixtures[i].led_count = t;
+    }
     t = request->arg(F("DM")).toInt();
     if (t >= DMX_MODE_DISABLED && t <= DMX_MODE_MULTIPLE_RGBW) DMXMode = t;
     t = request->arg(F("ET")).toInt();
