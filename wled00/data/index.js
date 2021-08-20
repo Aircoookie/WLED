@@ -1125,7 +1125,6 @@ function readState(s,command=false)
 	if (s.pl<0)	currentPreset = s.ps;
 	else currentPreset = s.pl;
 	gId('tt').value = s.transition/10;
-	if (s.tdd >= 0) tr = s.tdd/10;
 
 	var selc=0; var ind=0;
 	populateSegments(s);
