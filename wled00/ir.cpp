@@ -161,7 +161,11 @@ void decodeIR(uint32_t code)
   }
   lastValidCode = 0; irTimesRepeated = 0;
   if (decodeIRCustom(code)) return;
-  if      (code > 0xFFFFFF) return; //invalid code
+  if (irEnabled == 8) { // any remote configurable with ir.json file
+    decodeIRJson(code);
+    return;
+  }
+  if (code > 0xFFFFFF) return; //invalid code
   switch (irEnabled) {
     case 1: 
       if (code > 0xF80000) {
@@ -178,7 +182,7 @@ void decodeIR(uint32_t code)
                                           // "VOL +" controls effect, "VOL -" controls colour/palette, "MUTE" 
                                           // sets bright plain white
     case 7: decodeIR9(code);    break;
-    case 8: decodeIRJson(code); break;   // any remote configurable with ir.json file
+    //case 8: return; // ir.json file, handled above switch statement
     default: return;
   }
 

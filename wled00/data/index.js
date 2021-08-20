@@ -1097,7 +1097,7 @@ function requestJson(command, rinfo = true) {
     command.v = true; //get complete API response
     command.time = Math.floor(Date.now() / 1000);
     var t = d.getElementById('tt');
-    if (t.validity.valid) {
+    if (t.validity.valid && command.transition===undefined) {
       var tn = parseInt(t.value*10);
       if (tn != tr) command.transition = tn;
     }

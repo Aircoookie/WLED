@@ -2,6 +2,17 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2108180
+
+-   Fixed JSON IR remote not working with codes greater than 0xFFFFFF (fixes #2135)
+-   Fixed transition 0 edge case
+
+#### Build 2108170
+
+-   Added application level pong websockets reply (#2139)
+-   Use AsyncTCP 1.0.3 as it mitigates the flickering issue from 0.13.0-b2
+-   Fixed transition manually updated in preset overriden by field value
+
 #### Build 2108050
 
 -   Fixed undesirable color transition from Orange to boot preset color on first boot

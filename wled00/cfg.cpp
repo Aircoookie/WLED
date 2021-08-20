@@ -274,6 +274,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(arlsDisableGammaCorrection, if_live[F("no-gc")]); // false
   CJSON(arlsOffset, if_live[F("offset")]); // 0
 
+  CJSON(liveHSVCorrection, if_live[F("corr")]);
+  CJSON(liveHSVSaturation, if_live[F("hsvsat")]);
+  CJSON(liveHSVValue, if_live[F("hsvval")]);
+
   CJSON(alexaEnabled, interfaces["va"][F("alexa")]); // false
 
   CJSON(macroAlexaOn, interfaces["va"]["macros"][0]);
@@ -613,10 +617,14 @@ void serializeConfig() {
   if_live_dmx[F("seqskip")] = e131SkipOutOfSequence;
   if_live_dmx[F("addr")] = DMXAddress;
   if_live_dmx[F("mode")] = DMXMode;
+
   if_live[F("timeout")] = realtimeTimeoutMs / 100;
   if_live[F("maxbri")] = arlsForceMaxBri;
   if_live[F("no-gc")] = arlsDisableGammaCorrection;
   if_live[F("offset")] = arlsOffset;
+  if_live[F("corr")] = liveHSVCorrection;
+  if_live[F("hsvsat")] = liveHSVSaturation;
+  if_live[F("hsvval")] = liveHSVValue;
 
   JsonObject if_va = interfaces.createNestedObject("va");
   if_va[F("alexa")] = alexaEnabled;
