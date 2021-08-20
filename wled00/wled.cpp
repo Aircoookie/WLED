@@ -271,6 +271,7 @@ void WLED::loop()
       mem += BusManager::memUsage(*busConfigs[i]);
       if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
 /*
+      // this is done in strip.finalizeInit()
       if (busConfigs[i]->adjustBounds(ledCount)) {
         mem += busses.memUsage(*busConfigs[i]);
         if (mem <= MAX_LED_MEMORY) {

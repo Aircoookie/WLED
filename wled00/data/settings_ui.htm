@@ -147,6 +147,13 @@
 				gId('lserr').innerHTML = "&#9888; Settings JSON saving failed. (" + e + ")";
 			}
 		}
+
+		function cLS()
+		{
+			localStorage.removeItem('wledP');
+			localStorage.removeItem('wledPmt');
+			localStorage.removeItem('wledPalx');
+		}
 		
 		function Save() {
 			SetLS();
@@ -243,6 +250,7 @@
 		<span class="l"></span>: <input type="checkbox" id="comp_hdays" class="agi cb"><br>
 		<div id="holidays">Holidays: <input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/holidays.json');"><br></div>
 		<div id="toast"></div>
+		<hr><button type="button" onclick="cLS()">Clear local storage</button>
 		<hr><button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button>
 	</form>
 </body>
