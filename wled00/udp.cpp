@@ -161,7 +161,6 @@ void handleNotifications()
       for (uint16_t i = 0; i < packetSize -2; i += 3)
       {
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
-        
         id++; if (id >= ledCount) break;
       }
       strip.show();
@@ -385,7 +384,7 @@ void handleNotifications()
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (uint16_t i = 4; i < packetSize -2; i += 3)
       {
-          if (id >= ledCount) break;
+        if (id >= ledCount) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], 0);
         id++;
       }
@@ -394,7 +393,7 @@ void handleNotifications()
       uint16_t id = ((udpIn[3] << 0) & 0xFF) + ((udpIn[2] << 8) & 0xFF00);
       for (uint16_t i = 4; i < packetSize -2; i += 4)
       {
-          if (id >= ledCount) break;
+        if (id >= ledCount) break;
         setRealtimePixel(id, udpIn[i], udpIn[i+1], udpIn[i+2], udpIn[i+3]);
         id++;
       }
@@ -424,6 +423,11 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
   uint16_t pix = i + arlsOffset;
   if (pix < ledCount)
   {
+    if (liveHSVCorrection) {
+      byte correctedColors[3] = {0,0,0};
+      correctColors(r, g, b, correctedColors);
+      r = correctedColors[0]; g = correctedColors[1]; b = correctedColors[2];
+    }
     if (!arlsDisableGammaCorrection && strip.gammaCorrectCol)
     {
       strip.setPixelColor(pix, strip.gamma8(r), strip.gamma8(g), strip.gamma8(b), strip.gamma8(w));
