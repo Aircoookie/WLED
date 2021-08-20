@@ -313,6 +313,12 @@ class FourLineDisplayUsermod : public Usermod {
       (static_cast<U8X8*>(u8x8))->setPowerSave(save);
     }
 
+    void center(String &line, uint8_t width) {
+      int len = line.length();
+      if (len<width) for (byte i=(width-len)/2; i>0; i--) line = ' ' + line;
+      for (byte i=line.length(); i<width; i++) line += ' ';
+    }
+
     /**
      * Redraw the screen (but only if things have changed
      * or if forceRedraw).
@@ -399,13 +405,14 @@ class FourLineDisplayUsermod : public Usermod {
       knownEffectIntensity = effectIntensity;
 
       // Do the actual drawing
-
+      String line;
       // First row with Wifi name
       drawGlyph(0, 0, 80, u8x8_font_open_iconic_embedded_1x1); // home icon
-      String ssidString = knownSsid.substring(0, getCols() > 1 ? getCols() - 2 : 0);
-      drawString(1, 0, ssidString.c_str());
+      line = knownSsid.substring(0, getCols() > 1 ? getCols() - 2 : 0);
+      center(line, getCols()-2);
+      drawString(1, 0, line.c_str());
       // Print `~` char to indicate that SSID is longer, than our display
-      if (knownSsid.length() > getCols()) {
+      if (knownSsid.length() > getCols()-1) {
         drawString(getCols() - 1, 0, "~");
       }
 
@@ -416,12 +423,12 @@ class FourLineDisplayUsermod : public Usermod {
         drawString(1, lineHeight, apPass);
       } else {
         // alternate IP address and server name
-        String secondLine = knownIp.toString();
+        line = knownIp.toString();
         if (showName && strcmp(serverDescription, "WLED") != 0) {
-          secondLine = serverDescription;
+          line = serverDescription;
         }
-        for (uint8_t i=secondLine.length(); i<getCols()-1; i++) secondLine += ' ';
-        drawString(1, lineHeight, secondLine.c_str());
+        center(line, getCols()-1);
+        drawString(1, lineHeight, line.c_str());
       }
 
       // draw third and fourth row
