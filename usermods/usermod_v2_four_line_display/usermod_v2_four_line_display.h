@@ -168,7 +168,6 @@ class FourLineDisplayUsermod : public Usermod {
     // network here
     void setup() {
       if (type == NONE) return;
-      bool allocated = false;
       byte i;
       if (type == SSD1306_SPI || type == SSD1306_SPI64) {
         PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true}, { ioPin[2], true }, { ioPin[3], true}, { ioPin[4], true }};
