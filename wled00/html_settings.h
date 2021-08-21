@@ -245,10 +245,23 @@ class="helpB"><button type="button" onclick="H()">?</button></div><button
 type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 </div><h2>Sync setup</h2><h3>WLED Broadcast</h3>UDP Port: <input name="UP" 
 type="number" min="1" max="65535" class="d5" required><br>2nd Port: <input 
-name="U2" type="number" min="1" max="65535" class="d5" required><br>Receive: 
-<input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">
-Color, and <input type="checkbox" name="RX">Effects<br>
-Send notifications on direct change: <input type="checkbox" name="SD"><br>
+name="U2" type="number" min="1" max="65535" class="d5" required><br><br><table 
+style="margin:0 auto"><tr><td>Sync groups</td><td>1</td><td>2</td><td>3</td><td>
+4</td><td>5</td><td>6</td><td>7</td><td>8</td></tr><tr><td>Send:</td><td><input 
+type="checkbox" id="G1" name="G1"></td><td><input type="checkbox" id="G2" 
+name="G2"></td><td><input type="checkbox" id="G3" name="G3"></td><td><input 
+type="checkbox" id="G4" name="G4"></td><td><input type="checkbox" id="G5" 
+name="G5"></td><td><input type="checkbox" id="G6" name="G6"></td><td><input 
+type="checkbox" id="G7" name="G7"></td><td><input type="checkbox" id="G8" 
+name="G8"></td></tr><tr><td>Receive:</td><td><input type="checkbox" id="R1" 
+name="R1"></td><td><input type="checkbox" id="R2" name="R2"></td><td><input 
+type="checkbox" id="R3" name="R3"></td><td><input type="checkbox" id="R4" 
+name="R4"></td><td><input type="checkbox" id="R5" name="R5"></td><td><input 
+type="checkbox" id="R6" name="R6"></td><td><input type="checkbox" id="R7" 
+name="R7"></td><td><input type="checkbox" id="R8" name="R8"></td></tr></table>
+<br>Receive: <input type="checkbox" name="RB">Brightness, <input 
+type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects
+<br>Send notifications on direct change: <input type="checkbox" name="SD"><br>
 Send notifications on button press or IR: <input type="checkbox" name="SB"><br>
 Send Alexa notifications: <input type="checkbox" name="SA"><br>
 Send Philips Hue change notifications: <input type="checkbox" name="SH"><br>

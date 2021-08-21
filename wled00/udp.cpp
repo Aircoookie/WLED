@@ -4,7 +4,7 @@
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
  */
 
-#define WLEDPACKETSIZE 36
+#define WLEDPACKETSIZE 37
 #define UDP_IN_MAXSIZE 1472
 #define PRESUMED_NETWORK_DELAY 3 //how many ms could it take on avg to reach the receiver? This will be added to transmitted times
 
@@ -39,7 +39,8 @@ void notify(byte callMode, bool followUp)
   //0: old 1: supports white 2: supports secondary color
   //3: supports FX intensity, 24 byte packet 4: supports transitionDelay 5: sup palette
   //6: supports timebase syncing, 29 byte packet 7: supports tertiary color 8: supports sys time sync, 36 byte packet
-  udpOut[11] = 8; 
+  //9: supports sync groups, 37 byte packet
+  udpOut[11] = 9; 
   udpOut[12] = colSec[0];
   udpOut[13] = colSec[1];
   udpOut[14] = colSec[2];
@@ -72,6 +73,9 @@ void notify(byte callMode, bool followUp)
   uint16_t ms = tm.ms;
   udpOut[34] = (ms >> 8) & 0xFF;
   udpOut[35] = (ms >> 0) & 0xFF;
+
+  //sync groups
+  udpOut[36] = syncGroups & 0xFF;
   
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
@@ -223,6 +227,9 @@ void handleNotifications()
 
     //compatibilityVersionByte: 
     byte version = udpIn[11];
+
+    // if we are not part of any sync group ignore message
+    if (version > 8 && !(receiveGroups & udpIn[36])) return;
     
     bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
     //apply colors from notification
