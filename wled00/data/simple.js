@@ -69,9 +69,9 @@ function applyCfg()
 	var bg = cfg.theme.color.bg;
 	if (bg) sCol('--c-1', bg);
 	var ccfg = cfg.comp.colors;
-	gId('picker').style.display = "none"; // ccfg.picker ? "block":"none";
+	//gId('picker').style.display = "none"; // ccfg.picker ? "block":"none";
 	//gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
-	gId('qcs-w').style.display = "block"; // ccfg.quick ? "block":"none";
+	gId('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels; //l = false;
 	var e = d.querySelectorAll('.tab-label');
 	for (var i=0; i<e.length; i++) e[i].style.display = l ? "block":"none";
@@ -556,7 +556,12 @@ function populateSegments(s)
 			cn +=
 `<div class="label h">${(inst.n&&inst.n!=='')?inst.n:('Segment '+y)}</div>
 <div>
-	<i class="icons pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})" title="${inst.n}">&#xe08f;</i>
+	<label class="check schkl">
+		&nbsp;
+		<input type="checkbox" id="seg${i}sel" onchange="selSeg(${i})" ${inst.sel ? "checked":""}>
+		<span class="checkmark schk"></span>
+	</label>
+	<i class="icons slider-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})" title="${inst.n}">&#xe08f;</i>
 	<div id="sliderSeg${i}Bri" class="sliderwrap il">
 		<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
 		<div class="sliderdisplay"></div>
@@ -1055,7 +1060,8 @@ function tglBri(b=null)
 
 function tglCP()
 {
-	var p = gId(`picker`).style.display === "block";
+//	var p = gId(`picker`).style.display === "block";
+	var p = gId('buttonCP').className === "active";
 	gId('buttonCP').className = !p ? "active":"";
 	gId('picker').style.display = !p ? "block":"none";
 	var csl = gId(`csl`).style.display === "block";
@@ -1069,6 +1075,13 @@ function tglCs(i)
 	var pss = gId(`p${i}cstgl`).checked;
 	gId(`p${i}o1`).style.display = pss? "block" : "none";
 	gId(`p${i}o2`).style.display = !pss? "block" : "none";
+}
+
+function selSeg(s)
+{
+	var sel = gId(`seg${s}sel`).checked;
+	var obj = {"seg": {"id": s, "sel": sel}};
+	requestJson(obj);
 }
 
 function tglPalDropdown()

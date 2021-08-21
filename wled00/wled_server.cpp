@@ -4,6 +4,9 @@
  * Integrated HTTP web server page declarations
  */
 
+bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request);
+void setStaticContentCacheHeaders(AsyncWebServerResponse *response);
+
 //Is this an IP?
 bool isIp(String str) {
   for (size_t i = 0; i < str.length(); i++) {
@@ -164,6 +167,15 @@ void initServer()
                       size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
   );
 
+  server.on("/simple.htm", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleFileRead(request, "/simple.htm")) return;
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_simple, PAGE_simple_L);
+    response->addHeader(F("Content-Encoding"),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+  });
+  
   //if OTA is allowed
   if (!otaLock){
     #ifdef WLED_ENABLE_FS_EDITOR

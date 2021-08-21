@@ -157,7 +157,7 @@ button:hover {
 
 .slider-icon
 {
-	transform: translate(6px,3px);
+	transform: translate(4px,3px);
 	color: var(--c-d);
 }
 
@@ -352,17 +352,17 @@ img {
 
 .sliderwrap {
 	height: 30px;
-	width: 240px;
+	width: 220px;
 	position: relative;
 }
 
 .sliderdisplay {
 	content:'';
 	position: absolute;
-	top: 13px; bottom: 13px;
-	left: 10px; right: 10px;
+	top: 14px; bottom: 12px;
+	left: 4px; right: 4px;
 	background: var(--c-4);
-	border-radius: 17px;
+	border-radius: 4px;
 	pointer-events: none;
 	z-index: -1;
 }
@@ -374,12 +374,13 @@ img {
 	border-radius: 10px;
 	background: var(--c-3);
 	color: var(--c-f);
-	padding: 4px 4px 2px;
+	padding: 4px;
 	font-size: 14px;
 	right: 5px;
 	transition: visibility 0.25s ease, opacity 0.25s ease;
 	opacity: 0;
 	visibility: hidden;
+	margin: 0 0 0 4px;
 }
 
 output.sliderbubbleshow {
@@ -393,9 +394,9 @@ output.sliderbubbleshow {
 
 input[type=range] {
 	-webkit-appearance: none;
-	width: 220px;
-	padding: 0px;
-	margin: 0px 10px 0px 10px;
+	width: 100%;
+	padding: 0;
+	margin: 0;
 	background-color: transparent;
 	cursor: pointer;
 }
@@ -411,7 +412,7 @@ input[type=range]::-webkit-slider-runnable-track {
 input[type=range]::-webkit-slider-thumb {
 	height: 16px;
 	width: 16px;
-	border-radius: 17px;
+	border-radius: 8px;
 	background: var(--c-f);
 	cursor: pointer;
 	-webkit-appearance: none;
@@ -426,7 +427,7 @@ input[type=range]::-moz-range-thumb {
 	border: 0px solid rgba(0, 0, 0, 0);
 	height: 16px;
 	width: 16px;
-	border-radius: 17px;
+	border-radius: 8px;
 	background: var(--c-f);
 	transform: translateY(7px);
 }
@@ -446,6 +447,7 @@ input[type=range]::-moz-range-thumb {
 #picker {
 	margin: 10px auto;
 	width: 260px;
+	display: none;
 }
 
 #rgbwrap {
@@ -577,12 +579,93 @@ input[type=number]::-webkit-outer-spin-button {
 
 .pwr {
 	color: var(--c-6);
-	transform: translate(2px, 3px);
+	/*transform: translate(2px, 3px);*/
 	cursor: pointer;
 }
 
 .act {
 	color: var(--c-f);
+}
+
+.check, .radio {
+	display: inline-block;
+	position: relative;
+	cursor: pointer;
+	text-align: center;
+}
+
+.schkl {
+	padding: 2px 2px 2px 16px;
+	margin: 0;
+}
+
+.check input, .radio input {
+	position: absolute;
+	opacity: 0;
+	cursor: pointer;
+	height: 0;
+	width: 0;
+}
+
+.checkmark, .radiomark {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	background-color: var(--c-3);
+	border: 1px solid var(--c-2);
+}
+
+.radiomark {
+	height: 24px;
+	width: 24px;
+	border-radius: 50%;
+}
+
+.checkmark {
+	height: 25px;
+	width: 25px;
+	border-radius: 10px;
+}
+
+.check:hover input ~ .checkmark {
+	background-color: var(--c-4);
+}
+
+.check input:checked ~ .checkmark {
+	background-color: var(--c-6);
+}
+
+.checkmark:after, .radiomark:after {
+	content: "";
+	position: absolute;
+	display: none;
+}
+
+.check input:checked ~ .checkmark:after, .radio input:checked ~ .radiomark:after {
+	display: block;
+}
+
+.check .checkmark:after {
+	left: 9px;
+	top: 5px;
+	width: 5px;
+	height: 10px;
+	border: solid var(--c-f);
+	border-width: 0 3px 3px 0;
+	-webkit-transform: rotate(45deg);
+	-ms-transform: rotate(45deg);
+	transform: rotate(45deg);
+}
+
+.radio .radiomark:after {
+	width: 12px;
+	height: 12px;
+	top: 50%;
+	left: 50%;
+	margin: -6px;
+	border-radius: 50%;
+	background: var(--c-f);
 }
 
 .h {

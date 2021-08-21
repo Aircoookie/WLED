@@ -44,16 +44,6 @@
     <div class="tabcontent">
         <div id="picker" class="center"></div>
 
-        <div id="wwrap" class="center">
-			<p class="label h">White channel</p>
-            <i class="icons slider-icon" id="wht" title="White channel">&#xe333;</i>
-			<div class="sliderwrap il">
-				<input id="sliderW" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
-			</div>
-            <output class="sliderbubble"></output>
-		</div>
-
         <div id="qcs-w" class="center">
 			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
 			<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
@@ -71,6 +61,16 @@
 			<button class="xxs btn" onclick="selectSlot(0);">1</button>
 			<button class="xxs btn" onclick="selectSlot(1);">2</button>
 			<button class="xxs btn" onclick="selectSlot(2);">3</button>
+		</div>
+
+        <div id="wwrap" class="center">
+			<p class="label h">White channel</p>
+            <i class="icons slider-icon" id="wht" title="White channel">&#xe333;</i>
+			<div class="sliderwrap il">
+				<input id="sliderW" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+				<div class="sliderdisplay"></div>
+			</div>
+            <output class="sliderbubble"></output>
 		</div>
 
 		<div id="Segments" class="center">
