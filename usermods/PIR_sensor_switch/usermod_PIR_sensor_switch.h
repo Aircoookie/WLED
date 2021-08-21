@@ -122,6 +122,7 @@ private:
    */
   void switchStrip(bool switchOn)
   {
+    if (m_offOnly && bri && (switchOn || (!PIRtriggered && !switchOn))) return;
     PIRtriggered = switchOn;
     if (switchOn && m_onPreset) {
       applyPreset(m_onPreset);
@@ -227,7 +228,7 @@ public:
   void loop()
   {
     // only check sensors 4x/s
-    if (!enabled || millis() - lastLoop < 250 || strip.isUpdating() || (m_offOnly && bri && !PIRtriggered)) return;
+    if (!enabled || millis() - lastLoop < 250 || strip.isUpdating()) return;
     lastLoop = millis();
 
     if (!updatePIRsensorState()) {
