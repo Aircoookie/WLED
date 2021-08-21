@@ -298,6 +298,8 @@ WLED_GLOBAL bool liveHSVCorrection _INIT(false);
 WLED_GLOBAL uint16_t liveHSVSaturation _INIT(13);
 WLED_GLOBAL uint16_t liveHSVValue _INIT(10);
 
+WLED_GLOBAL uint8_t syncGroups    _INIT(0xFF);                    // sync groups this instance syncs (bit mapped)
+WLED_GLOBAL uint8_t receiveGroups _INIT(0xFF);                    // sync receive groups this instance belongs to (bit mapped)
 WLED_GLOBAL bool receiveNotificationBrightness _INIT(true);       // apply brightness from incoming notifications
 WLED_GLOBAL bool receiveNotificationColor      _INIT(true);       // apply color
 WLED_GLOBAL bool receiveNotificationEffects    _INIT(true);       // apply effects setup
