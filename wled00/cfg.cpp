@@ -237,7 +237,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(receiveNotificationBrightness, if_sync_recv["bri"]);
   CJSON(receiveNotificationColor, if_sync_recv["col"]);
   CJSON(receiveNotificationEffects, if_sync_recv["fx"]);
-  CJSON(receiveGroups, if_sync_recv[F("groups")]);
+  CJSON(receiveGroups, if_sync_recv["grp"]);
   //! following line might be a problem if called after boot
   receiveNotifications = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
 
@@ -250,7 +250,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(notifyHue, if_sync_send["hue"]);
   CJSON(notifyMacro, if_sync_send["macro"]);
   CJSON(notifyTwice, if_sync_send[F("twice")]);
-  CJSON(syncGroups, if_sync_send[F("groups")]);
+  CJSON(syncGroups, if_sync_send["grp"]);
 
   JsonObject if_nodes = interfaces["nodes"];
   CJSON(nodeListEnabled, if_nodes[F("list")]);
@@ -591,7 +591,7 @@ void serializeConfig() {
   if_sync_recv["bri"] = receiveNotificationBrightness;
   if_sync_recv["col"] = receiveNotificationColor;
   if_sync_recv["fx"] = receiveNotificationEffects;
-  if_sync_recv[F("groups")] = receiveGroups;
+  if_sync_recv["grp"] = receiveGroups;
 
   JsonObject if_sync_send = if_sync.createNestedObject("send");
   if_sync_send[F("dir")] = notifyDirect;
@@ -600,7 +600,7 @@ void serializeConfig() {
   if_sync_send["hue"] = notifyHue;
   if_sync_send["macro"] = notifyMacro;
   if_sync_send[F("twice")] = notifyTwice;
-  if_sync_send[F("groups")] = syncGroups;
+  if_sync_send["grp"] = syncGroups;
 
   JsonObject if_nodes = interfaces.createNestedObject("nodes");
   if_nodes[F("list")] = nodeListEnabled;

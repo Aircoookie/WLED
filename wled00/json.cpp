@@ -22,7 +22,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     uint16_t len = elem[F("len")];
     stop = (len > 0) ? start + len : seg.stop;
   }
-  uint16_t grp = elem[F("grp")] | seg.grouping;
+  uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
   strip.setSegment(id, start, stop, grp, spc);
 
@@ -332,7 +332,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     root["stop"] = seg.stop;
   }
 	if (!forPreset) root[F("len")] = seg.stop - seg.start;
-  root[F("grp")] = seg.grouping;
+  root["grp"] = seg.grouping;
   root[F("spc")] = seg.spacing;
   root[F("of")] = seg.offset;
   root["on"] = seg.getOption(SEG_OPTION_ON);
