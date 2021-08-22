@@ -1517,7 +1517,7 @@ uint16_t WS2812FX::mode_random_chase(void)
   return FRAMETIME;
 }
 
-
+//7 bytes
 typedef struct Oscillator {
   int16_t pos;
   int8_t  size;
@@ -2136,10 +2136,14 @@ typedef struct Ripple {
   uint16_t pos;
 } ripple;
 
+#ifdef ESP8266
+  #define MAX_RIPPLES   56
+#else
+  #define MAX_RIPPLES  100
+#endif
 uint16_t WS2812FX::ripple_base(bool rainbow)
 {
-  uint16_t maxRipples = 1 + (SEGLEN >> 2);
-  if (maxRipples > 100) maxRipples = 100;
+  uint16_t maxRipples = min(1 + (SEGLEN >> 2), MAX_RIPPLES);  // 56 max for 18 segment ESP8266
   uint16_t dataSize = sizeof(ripple) * maxRipples;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -2207,6 +2211,7 @@ uint16_t WS2812FX::ripple_base(bool rainbow)
   }
   return FRAMETIME;
 }
+#undef MAX_RIPPLES
 
 uint16_t WS2812FX::mode_ripple(void) {
   return ripple_base(false);
@@ -2650,7 +2655,7 @@ typedef struct Spark {
 */
 uint16_t WS2812FX::mode_popcorn(void) {
   //allocate segment data
-  uint16_t maxNumPopcorn = 24; 
+  uint16_t maxNumPopcorn = 22; // max 22 on 18 segment ESP8266
   uint16_t dataSize = sizeof(spark) * maxNumPopcorn;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   
@@ -2709,7 +2714,7 @@ uint16_t WS2812FX::candle(bool multi)
   if (multi)
   {
     //allocate segment data
-    uint16_t dataSize = (SEGLEN -1) *3;
+    uint16_t dataSize = (SEGLEN -1) *3; // max length of segment on 18 segment ESP8266 is 75 pixels
     if (!SEGENV.allocateData(dataSize)) return candle(false); //allocation failed
   }
 
@@ -2796,9 +2801,14 @@ uint16_t WS2812FX::mode_candle_multi()
 / based on the video: https://www.reddit.com/r/arduino/comments/c3sd46/i_made_this_fireworks_effect_for_my_led_strips/
 / Speed sets frequency of new starbursts, intensity is the intensity of the burst
 */
-#define STARBURST_MAX_FRAG 12
-
-//each needs 64 byte
+#ifdef ESP8266
+  #define STARBURST_MAX_FRAG   4
+  #define STARBURST_MAX_STARS  6
+#else
+  #define STARBURST_MAX_FRAG  10
+  #define STARBURST_MAX_STARS 11
+#endif
+//each needs 18+STARBURST_MAX_FRAG*4 bytes
 typedef struct particle {
   CRGB     color;
   uint32_t birth  =0;
@@ -2810,7 +2820,7 @@ typedef struct particle {
 
 uint16_t WS2812FX::mode_starburst(void) {
   uint8_t numStars = 1 + (SEGLEN >> 3);
-  if (numStars > 11) numStars = 11; // allowing for more segments
+  if (numStars > STARBURST_MAX_STARS) numStars = STARBURST_MAX_STARS; // 11 * 58 * 32 = 19k (ESP32), 6 * 34 * 18 = 4k (ESP8266)
   uint16_t dataSize = sizeof(star) * numStars;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -2911,18 +2921,22 @@ uint16_t WS2812FX::mode_starburst(void) {
   }
   return FRAMETIME;
 }
-
+#undef STARBURST_MAX_FRAG
+#undef STARBURST_MAX_STARS
 
 /*
  * Exploding fireworks effect
  * adapted from: http://www.anirama.com/1000leds/1d-fireworks/
  */
-
+#ifdef ESP8266
+  #define MAX_SPARKS 20 // number of fragments
+#else
+  #define MAX_SPARKS 58 // number of fragments
+#endif
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
   //allocate segment data
-  uint16_t numSparks = 2 + (SEGLEN >> 2); 
-  if (numSparks > 80) numSparks = 80;
+  uint16_t numSparks = min(2 + (SEGLEN >> 2), MAX_SPARKS);  // max 58 for 32 segment ESP32, 20 for 18 segment ESP8266
   uint16_t dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
@@ -3025,6 +3039,7 @@ uint16_t WS2812FX::mode_exploding_fireworks(void)
   
   return FRAMETIME;  
 }
+#undef MAX_SPARKS
 
 
 /*
@@ -3107,6 +3122,7 @@ uint16_t WS2812FX::mode_drip(void)
  * Tetris or Stacking (falling bricks) Effect
  * by Blaz Kristan (https://github.com/blazoncek, https://blaz.at/home)
  */
+//12 bytes
 typedef struct Tetris {
   float    pos;
   float    speed;
@@ -3500,7 +3516,7 @@ uint16_t WS2812FX::mode_noisepal(void) {                                    // S
   uint16_t scale = 15 + (SEGMENT.intensity >> 2); //default was 30
   //#define scale 30
 
-  uint16_t dataSize = sizeof(CRGBPalette16) * 2; //allocate space for 2 Palettes
+  uint16_t dataSize = sizeof(CRGBPalette16) * 2; //allocate space for 2 Palettes (2 * 16 * 3 = 96 bytes)
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
   CRGBPalette16* palettes = reinterpret_cast<CRGBPalette16*>(SEGENV.data);
@@ -3613,7 +3629,7 @@ uint16_t WS2812FX::mode_chunchun(void)
   return FRAMETIME;
 }
 
-
+//13 bytes
 typedef struct Spotlight {
   float speed;
   uint8_t colorIdx;
@@ -3630,6 +3646,11 @@ typedef struct Spotlight {
 #define SPOT_TYPE_3X_DOT      4
 #define SPOT_TYPE_4X_DOT      5
 #define SPOT_TYPES_COUNT      6
+#ifdef ESP8266
+  #define SPOT_MAX_COUNT 17          //Number of simultaneous waves
+#else
+  #define SPOT_MAX_COUNT 49          //Number of simultaneous waves
+#endif
 
 /*
  * Spotlights moving back and forth that cast dancing shadows.
@@ -3640,7 +3661,7 @@ typedef struct Spotlight {
  */
 uint16_t WS2812FX::mode_dancing_shadows(void)
 {
-  uint8_t numSpotlights = map(SEGMENT.intensity, 0, 255, 2, 50);
+  uint8_t numSpotlights = map(SEGMENT.intensity, 0, 255, 2, SPOT_MAX_COUNT);  // 49 on 32 segment ESP32, 17 on 18 segment ESP8266
   bool initialize = SEGENV.aux0 != numSpotlights;
   SEGENV.aux0 = numSpotlights;
 
@@ -3779,7 +3800,7 @@ uint16_t WS2812FX::mode_washing_machine(void) {
   Modified, originally by Mark Kriegsman https://gist.github.com/kriegsman/1f7ccbbfa492a73c015e
 */
 uint16_t WS2812FX::mode_blends(void) {
-  uint16_t dataSize = sizeof(uint32_t) * SEGLEN;
+  uint16_t dataSize = sizeof(uint32_t) * SEGLEN;  // max segment length of 56 pixels on 18 segment ESP8266
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   uint32_t* pixels = reinterpret_cast<uint32_t*>(SEGENV.data);
   uint8_t blendSpeed = map(SEGMENT.intensity, 0, UINT8_MAX, 10, 128);
@@ -3794,6 +3815,11 @@ uint16_t WS2812FX::mode_blends(void) {
   return FRAMETIME;
 }
 
+/*
+  TV Simulator
+  Modified and adapted to WLED by Def3nder, based on "Fake TV Light for Engineers" by Phillip Burgess https://learn.adafruit.com/fake-tv-light-for-engineers/arduino-sketch
+*/
+//43 bytes
 typedef struct TvSim {
   uint32_t totalTime = 0;
   uint32_t fadeTime  = 0;
@@ -3814,11 +3840,6 @@ typedef struct TvSim {
   uint16_t pb = 0;
 } tvSim;
 
-
-/*
-  TV Simulator
-  Modified and adapted to WLED by Def3nder, based on "Fake TV Light for Engineers" by Phillip Burgess https://learn.adafruit.com/fake-tv-light-for-engineers/arduino-sketch
-*/
 uint16_t WS2812FX::mode_tv_simulator(void) {
   uint16_t nr, ng, nb, r, g, b, i, hue;
   uint8_t  sat, bri, j;
@@ -3926,10 +3947,15 @@ uint16_t WS2812FX::mode_tv_simulator(void) {
 */
 
 //CONFIG
-#define W_MAX_COUNT 20            //Number of simultaneous waves
+#ifdef ESP8266
+  #define W_MAX_COUNT  9          //Number of simultaneous waves
+#else
+  #define W_MAX_COUNT 20          //Number of simultaneous waves
+#endif
 #define W_MAX_SPEED 6             //Higher number, higher speed
 #define W_WIDTH_FACTOR 6          //Higher number, smaller waves
 
+//24 bytes
 class AuroraWave {
   private:
     uint16_t ttl;
@@ -4024,10 +4050,10 @@ uint16_t WS2812FX::mode_aurora(void) {
 
   if(SEGENV.aux0 != SEGMENT.intensity || SEGENV.call == 0) {
     //Intensity slider changed or first call
-    SEGENV.aux1 = ((float)SEGMENT.intensity / 255) * W_MAX_COUNT;
+    SEGENV.aux1 = map(SEGMENT.intensity, 0, 255, 2, W_MAX_COUNT);
     SEGENV.aux0 = SEGMENT.intensity;
 
-    if(!SEGENV.allocateData(sizeof(AuroraWave) * SEGENV.aux1)) {
+    if(!SEGENV.allocateData(sizeof(AuroraWave) * SEGENV.aux1)) { // 26 on 32 segment ESP32, 9 on 18 segment ESP8266
       return mode_static(); //allocation failed
     }
 
