@@ -168,14 +168,13 @@ class FourLineDisplayUsermod : public Usermod {
     // network here
     void setup() {
       if (type == NONE) return;
-      bool allocated = false;
       byte i;
       if (type == SSD1306_SPI || type == SSD1306_SPI64) {
-        for (i=0; i<5; i++) if (!pinManager.allocatePin(ioPin[i])) { allocated=true; break; }
-        if (i<5 && allocated) { for (byte i=0; i<5; i++) pinManager.deallocatePin(ioPin[i]); type=NONE; return; }
+        PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true}, { ioPin[2], true }, { ioPin[3], true}, { ioPin[4], true }};
+        if (!pinManager.allocateMultiplePins(pins, 5, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
       } else {
-        for (i=0; i<2; i++) if (!pinManager.allocatePin(ioPin[i])) { allocated=true; break; }
-        if (i<2 && allocated) { for (byte i=0; i<5; i++) pinManager.deallocatePin(ioPin[i]); type=NONE; return; }
+        PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true} };
+        if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
       }
       DEBUG_PRINTLN(F("Allocating display."));
       switch (type) {
@@ -240,18 +239,20 @@ class FourLineDisplayUsermod : public Usermod {
           break;
         default:
           u8x8 = nullptr;
+      }
+      if (nullptr == u8x8) {
+          DEBUG_PRINTLN(F("Display init failed."));
+          pinManager.deallocatePin(sclPin, PinOwner::UM_FourLineDisplay);
+          pinManager.deallocatePin(sdaPin, PinOwner::UM_FourLineDisplay);
+          sclPin = -1;
+          sdaPin = -1;
           type = NONE;
           return;
       }
+
       initDone = true;
-      if (u8x8 != nullptr) {
-        DEBUG_PRINTLN(F("Starting display."));
-        (static_cast<U8X8*>(u8x8))->begin();
-      } else {
-        DEBUG_PRINTLN(F("Display init failed."));
-        type = NONE;
-        return;
-      }
+      DEBUG_PRINTLN(F("Starting display."));
+      (static_cast<U8X8*>(u8x8))->begin(); // why a static cast here?  variable is of this type...
       setFlipMode(flip);
       setContrast(contrast); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       setPowerSave(0);
@@ -727,7 +728,7 @@ class FourLineDisplayUsermod : public Usermod {
         if (pinsChanged || type!=newType) {
           if (type != NONE) delete (static_cast<U8X8*>(u8x8));
           for (byte i=0; i<5; i++) {
-            if (ioPin[i]>=0) pinManager.deallocatePin(ioPin[i]);
+            if (ioPin[i]>=0) pinManager.deallocatePin(ioPin[i], PinOwner::UM_FourLineDisplay);
             ioPin[i] = newPin[i];
           }
           if (ioPin[0]<0 || ioPin[1]<0) { // data & clock must be > -1
@@ -735,7 +736,9 @@ class FourLineDisplayUsermod : public Usermod {
             return true;
           } else type = newType;
           setup();
-          needsRedraw |= true;
+          if (sclPin >= 0 && sdaPin >= 0) {
+            needsRedraw |= true;
+          }
         }
         setContrast(contrast);
         setFlipMode(flip);

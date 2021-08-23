@@ -54,6 +54,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     #ifdef WLED_USE_ETHERNET
     ethernetType = request->arg(F("ETH")).toInt();
+    WLED::instance().initEthernet();
     #endif
 
     char k[3]; k[2] = 0;
@@ -77,11 +78,17 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
   {
     int t = 0;
 
-    if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin)) pinManager.deallocatePin(rlyPin);
-    if (irPin>=0 && pinManager.isPinAllocated(irPin)) pinManager.deallocatePin(irPin);
-    for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++)
-      if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s]))
-        pinManager.deallocatePin(btnPin[s]);
+    if (rlyPin>=0 && pinManager.isPinAllocated(rlyPin, PinOwner::Relay)) {
+       pinManager.deallocatePin(rlyPin, PinOwner::Relay);
+    }
+    if (irPin>=0 && pinManager.isPinAllocated(irPin, PinOwner::IR)) {
+       pinManager.deallocatePin(irPin, PinOwner::IR);
+    }
+    for (uint8_t s=0; s<WLED_MAX_BUTTONS; s++) {
+      if (btnPin[s]>=0 && pinManager.isPinAllocated(btnPin[s], PinOwner::Button)) {
+        pinManager.deallocatePin(btnPin[s], PinOwner::Button);
+      }
+    }
 
     strip.isRgbw = false;
     uint8_t colorOrder, type, skip;
@@ -127,7 +134,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     // upate other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();
-    if (pinManager.allocatePin(hw_ir_pin,false)) {
+    if (pinManager.allocatePin(hw_ir_pin,false, PinOwner::IR)) {
       irPin = hw_ir_pin;
     } else {
       irPin = -1;
@@ -135,7 +142,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     irEnabled = request->arg(F("IT")).toInt();
 
     int hw_rly_pin = request->arg(F("RL")).toInt();
-    if (pinManager.allocatePin(hw_rly_pin,true)) {
+    if (pinManager.allocatePin(hw_rly_pin,true, PinOwner::Relay)) {
       rlyPin = hw_rly_pin;
     } else {
       rlyPin = -1;
@@ -146,7 +153,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char bt[4] = "BT"; bt[2] = 48+i; bt[3] = 0; // button pin
       char be[4] = "BE"; be[2] = 48+i; be[3] = 0; // button type
       int hw_btn_pin = request->arg(bt).toInt();
-      if (pinManager.allocatePin(hw_btn_pin,false)) {
+      if (pinManager.allocatePin(hw_btn_pin,false,PinOwner::Button)) {
         btnPin[i] = hw_btn_pin;
         pinMode(btnPin[i], INPUT_PULLUP);
         buttonType[i] = request->arg(be).toInt();

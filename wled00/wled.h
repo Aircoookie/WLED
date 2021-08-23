@@ -594,12 +594,6 @@ WLED_GLOBAL bool doInitBusses _INIT(false);
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
-// Status LED
-#if STATUSLED
-  WLED_GLOBAL unsigned long ledStatusLastMillis _INIT(0);
-  WLED_GLOBAL unsigned short ledStatusType _INIT(0); // current status type - corresponds to number of blinks per second
-  WLED_GLOBAL bool ledStatusState _INIT(0); // the current LED state
-#endif
 
 // enable additional debug output
 #ifdef WLED_DEBUG
@@ -663,6 +657,7 @@ public:
 
   void beginStrip();
   void handleConnection();
+  bool initEthernet(); // result is informational
   void initAP(bool resetAP = false);
   void initConnection();
   void initInterfaces();
