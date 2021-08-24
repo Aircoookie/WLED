@@ -47,10 +47,8 @@ void relativeChangeWhite(int8_t amount, byte lowerBoundary)
   col[3] = new_val;
 }
 
-void colorHSVtoRGB(float hue, float saturation, float value, byte& red, byte& green, byte& blue)
+void colorHSVtoRGB(float hue, float saturation, float value, byte& r, byte& g, byte& b)
 {
-  float r = red, g  = green, b = blue;
-
   uint8_t i = hue * 6.0;
   float f = hue * 6.0 - i;
   value *= 255.0;
@@ -59,17 +57,13 @@ void colorHSVtoRGB(float hue, float saturation, float value, byte& red, byte& gr
   float t = value * (1.0 - (1.0 - f) * saturation);
 
   switch (i % 6) {
-    case 0: r = value, g = t, b = p; break;
-    case 1: r = q, g = value, b = p; break;
-    case 2: r = p, g = value, b = t; break;
-    case 3: r = p, g = q, b = value; break;
-    case 4: r = t, g = p, b = value; break;
-    case 5: r = value, g = p, b = q; break;
+    case 0: r = value, g = t,     b = p;     break;
+    case 1: r = q,     g = value, b = p;     break;
+    case 2: r = p,     g = value, b = t;     break;
+    case 3: r = p,     g = q,     b = value; break;
+    case 4: r = t,     g = p,     b = value; break;
+    case 5: r = value, g = p,     b = q;     break;
   }
-
-  red = r;
-  green = g;
-  blue = b;
 }
 
 void colorRGBtoHSV(byte red, byte green, byte blue, float& hue, float& saturation, float& value)
@@ -100,9 +94,9 @@ void colorRGBtoHSV(byte red, byte green, byte blue, float& hue, float& saturatio
 //this feature might cause slowdowns with large LED counts
 void correctColors(byte r, byte g, byte b, byte* rgb) {
   float hsv[3] = { 0,0,0 };
-  colorRGBtoHSV(r, g,b , hsv[0], hsv[1], hsv[2]);
+  colorRGBtoHSV(r, g, b, hsv[0], hsv[1], hsv[2]);
   float saturated = hsv[1] > SATURATION_THRESHOLD ?
-    hsv[1] * ((float)liveHSVSaturation / 10) : hsv[1];
+  hsv[1] * ((float)liveHSVSaturation / 10) : hsv[1];
   float saturation = saturated < MAX_HSV_SATURATION ? saturated : MAX_HSV_SATURATION;
 
   float valued = hsv[2] * ((float)liveHSVValue/10);

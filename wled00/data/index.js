@@ -294,6 +294,7 @@ function showToast(text, error = false)
 	clearTimeout(timeout);
 	x.style.animation = 'none';
 	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+	if (error) console.log(text);
 }
 
 function showErrorToast()
