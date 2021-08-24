@@ -169,16 +169,16 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       strip.fill(0);
     }
 
-    uint16_t start = 0, stop = 0;
+    //uint16_t start = 0, stop = 0;
     byte set = 0; //0 nothing set, 1 start set, 2 range set
 
     for (uint16_t i = 0; i < iarr.size(); i++) {
       if(iarr[i].is<JsonInteger>()) {
         if (!set) {
-          start = iarr[i];
+          //start = iarr[i];
           set = 1;
         } else {
-          stop = iarr[i];
+          //stop = iarr[i];
           set = 2;
         }
       } else { //color

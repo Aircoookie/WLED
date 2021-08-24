@@ -49,54 +49,46 @@ void relativeChangeWhite(int8_t amount, byte lowerBoundary)
 
 void colorHSVtoRGB(float hue, float saturation, float value, byte& red, byte& green, byte& blue)
 {
-  float r, g, b;
+  float r = red, g  = green, b = blue;
 
-  auto i = static_cast<int>(hue * 6);
-  auto f = hue * 6 - i;
-  auto p = value * (1 - saturation);
-  auto q = value * (1 - f * saturation);
-  auto t = value * (1 - (1 - f) * saturation);
+  uint8_t i = hue * 6.0;
+  float f = hue * 6.0 - i;
+  value *= 255.0;
+  float p = value * (1.0 - saturation);
+  float q = value * (1.0 - f * saturation);
+  float t = value * (1.0 - (1.0 - f) * saturation);
 
-  switch (i % 6)
-  {
-  case 0: r = value, g = t, b = p;
-    break;
-  case 1: r = q, g = value, b = p;
-    break;
-  case 2: r = p, g = value, b = t;
-    break;
-  case 3: r = p, g = q, b = value;
-    break;
-  case 4: r = t, g = p, b = value;
-    break;
-  case 5: r = value, g = p, b = q;
-    break;
+  switch (i % 6) {
+    case 0: r = value, g = t, b = p; break;
+    case 1: r = q, g = value, b = p; break;
+    case 2: r = p, g = value, b = t; break;
+    case 3: r = p, g = q, b = value; break;
+    case 4: r = t, g = p, b = value; break;
+    case 5: r = value, g = p, b = q; break;
   }
 
-  red = static_cast<uint8_t>(r * 255);
-  green = static_cast<uint8_t>(g * 255);
-  blue = static_cast<uint8_t>(b * 255);
+  red = r;
+  green = g;
+  blue = b;
 }
 
 void colorRGBtoHSV(byte red, byte green, byte blue, float& hue, float& saturation, float& value)
 {
-  auto rd = static_cast<float>(red) / 255;
-  auto gd = static_cast<float>(green) / 255;
-  auto bd = static_cast<float>(blue) / 255;
-  auto max = std::max({ rd, gd, bd }), min = std::min({ rd, gd, bd });
+  float rd = red/255.0, gd = green/255.0, bd = blue/255.0;
+  float max = std::max({ rd, gd, bd }), min = std::min({ rd, gd, bd });
 
   value = max;
 
-  auto d = max - min;
-  saturation = max == 0 ? 0 : d / max;
+  float d = max - min;
+  saturation = max == 0.0 ? 0.0 : d / max;
 
   hue = 0;
   if (max != min)
   {
-    if      (max == rd) hue = (gd - bd) / d + (gd < bd ? 6 : 0);
-    else if (max == gd) hue = (bd - rd) / d + 2;
-    else if (max == bd) hue = (rd - gd) / d + 4;
-    hue /= 6;
+    if      (max == rd) hue = (gd - bd) / d + (gd < bd ? 6.0 : 0.0);
+    else if (max == gd) hue = (bd - rd) / d + 2.0;
+    else if (max == bd) hue = (rd - gd) / d + 4.0;
+    hue /= 6.0;
   }
 }
 

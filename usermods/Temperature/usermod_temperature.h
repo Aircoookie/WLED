@@ -81,7 +81,9 @@ class UsermodTemperature : public Usermod {
       temperature = readDallas();
       lastMeasurement = millis();
       waitingForConversion = false;
-      DEBUG_PRINTF("Read temperature %2.1f.\n", temperature);
+      //DEBUG_PRINTF("Read temperature %2.1f.\n", temperature); // does not work properly on 8266
+      DEBUG_PRINT(F("Read temperature "));
+      DEBUG_PRINTLN(temperature);
     }
 
     bool findSensor() {

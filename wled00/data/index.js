@@ -805,7 +805,7 @@ function populateEffects()
 
 	effects.unshift({
 		"id": 0,
-		"name": "Solid",
+		"name": "Solid"
 	});
 
 	for (let i = 0; i < effects.length; i++) {
