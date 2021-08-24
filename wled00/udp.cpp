@@ -11,6 +11,7 @@
 void notify(byte callMode, bool followUp)
 {
   if (!udpConnected) return;
+  if (!syncGroups) return;
   switch (callMode)
   {
     case CALL_MODE_INIT:          return;
@@ -75,7 +76,7 @@ void notify(byte callMode, bool followUp)
   udpOut[35] = (ms >> 0) & 0xFF;
 
   //sync groups
-  udpOut[36] = syncGroups & 0xFF;
+  udpOut[36] = syncGroups;
   
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());

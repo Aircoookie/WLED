@@ -396,14 +396,9 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
+    sappend('v',SET_F("GS"),syncGroups);
+    sappend('v',SET_F("GR"),receiveGroups);
 
-    char k[3]; k[2] = 0;
-    for (int i = 0; i<8; i++)
-    {
-      k[1] = 49+i; //ascii 1,2,3,...
-      k[0] = 'G'; sappend('c',k,(syncGroups>>i)&0x01);
-      k[0] = 'R'; sappend('c',k,(receiveGroups>>i)&0x01);
-    }
     sappend('c',SET_F("HX"),liveHSVCorrection);
     sappend('v',SET_F("HS"),liveHSVSaturation);
     sappend('v',SET_F("HV"),liveHSVValue);

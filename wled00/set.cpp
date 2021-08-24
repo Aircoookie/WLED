@@ -203,13 +203,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     t = request->arg(F("U2")).toInt();
     if (t > 0) udpPort2 = t;
 
-    char k[3]; k[2] = 0;
-    syncGroups = receiveGroups = 0;
-    for (uint8_t i=0; i<8; i++) {
-      k[1] = 49+i;  // char '1','2',...
-      k[0] = 'G';    syncGroups |= request->hasArg(k)<<i;
-      k[0] = 'R'; receiveGroups |= request->hasArg(k)<<i;
-    }
+    syncGroups = request->arg(F("GS")).toInt();
+    receiveGroups = request->arg(F("GR")).toInt();
 
     receiveNotificationBrightness = request->hasArg(F("RB"));
     receiveNotificationColor = request->hasArg(F("RC"));
