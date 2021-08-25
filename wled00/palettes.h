@@ -631,7 +631,7 @@ const byte temperature_gp[] PROGMEM = {
   240,  80,  3,  3,
   255,  80,  3,  3};
 
-  const byte Aurora2[] PROGMEM = {
+  const byte Aurora2_gp[] PROGMEM = {
       0,  17, 177,  13,    //Greenish
      64, 121, 242,   5,    //Greenish
     128,  25, 173, 121,    //Turquoise
@@ -644,7 +644,7 @@ const byte temperature_gp[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 12 bytes of program space.
 
-const byte Retro_Clown[] PROGMEM = {
+const byte retro_clown_gp[] PROGMEM = {
     0, 227,101,  3,
   117, 194, 18, 19,
   255,  92,  8,192};
@@ -654,7 +654,7 @@ const byte Retro_Clown[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 20 bytes of program space.
 
-const byte Candy[] PROGMEM = {
+const byte candy_gp[] PROGMEM = {
     0, 229,227,  1,
    15, 227,101,  3,
   142,  40,  1, 80,
@@ -666,7 +666,7 @@ const byte Candy[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 8 bytes of program space.
 
-const byte Toxy_Reaf[] PROGMEM = {
+const byte toxy_reaf_gp[] PROGMEM = {
     0,   1,221, 53,
   255,  73,  3,178};
 
@@ -675,7 +675,7 @@ const byte Toxy_Reaf[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 16 bytes of program space.
 
-const byte  Fairy_Reaf[] PROGMEM = {
+const byte  fairy_reaf_gp[] PROGMEM = {
     0, 184,  1,128,
   160,   1,193,182,
   219, 153,227,190,
@@ -686,7 +686,7 @@ const byte  Fairy_Reaf[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 36 bytes of program space.
 
-const byte Semi_Blue[] PROGMEM = {
+const byte semi_blue_gp[] PROGMEM = {
     0,   0,  0,  0,
    12,   1,  1,  3,
    53,   8,  1, 22,
@@ -702,7 +702,7 @@ const byte Semi_Blue[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 32 bytes of program space.
 
-const byte Pink_Candy[] PROGMEM = {
+const byte pink_candy_gp[] PROGMEM = {
     0, 255,255,255,
    45,   7, 12,255,
   112, 227,  1,127,
@@ -717,7 +717,7 @@ const byte Pink_Candy[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 16 bytes of program space.
 
-const byte Red_Reaf[] PROGMEM = {
+const byte red_reaf_gp[] PROGMEM = {
     0,   3, 13, 43,
   104,  78,141,240,
   188, 255,  0,  0,
@@ -727,9 +727,10 @@ const byte Red_Reaf[] PROGMEM = {
 // Gradient palette "bhw2_23_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_23.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Red & Flash in SR
 // Size: 28 bytes of program space.
 
-const byte Red_n_Flash[] PROGMEM = {
+const byte aqua_flash_gp[] PROGMEM = {
     0,   0,  0,  0,
    66,  57,227,233,
    96, 255,255,  8,
@@ -741,9 +742,10 @@ const byte Red_n_Flash[] PROGMEM = {
 // Gradient palette "bhw2_xc_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_xc.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
+// YBlue in SR
 // Size: 28 bytes of program space.
 
-const byte YBlue[] PROGMEM = {
+const byte yelblu_hot_gp[] PROGMEM = {
     0,   4,  2,  9,
    58,  16,  0, 47,
   122,  24,  0, 16,
@@ -757,7 +759,7 @@ const byte YBlue[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 24 bytes of program space.
 
-const byte Lite_Light[] PROGMEM = {
+const byte lite_light_gp[] PROGMEM = {
     0,   0,  0,  0,
     9,   1,  1,  1,
    40,   5,  5,  6,
@@ -768,9 +770,10 @@ const byte Lite_Light[] PROGMEM = {
 // Gradient palette "bhw2_22_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw2/tn/bhw2_22.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Pink Plasma in SR
 // Size: 20 bytes of program space.
 
-const byte Pink_Plasma[] PROGMEM = {
+const byte red_flash_gp[] PROGMEM = {
     0,   0,  0,  0,
    99, 227,  1,  1,
   130, 249,199, 95,
@@ -782,7 +785,7 @@ const byte Pink_Plasma[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 32 bytes of program space.
 
-const byte Blink_Red[] PROGMEM = {
+const byte blink_red_gp[] PROGMEM = {
     0,   1,  1,  1,
    43,   4,  1, 11,
    76,  10,  1,  3,
@@ -795,9 +798,10 @@ const byte Blink_Red[] PROGMEM = {
 // Gradient palette "bhw3_52_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw3/tn/bhw3_52.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Yellow2Blue in SR
 // Size: 28 bytes of program space.
 
-const byte Yellow2Blue[] PROGMEM = {
+const byte red_shift_gp[] PROGMEM = {
     0,  31,  1, 27,
    45,  34,  1, 16,
    99, 137,  5,  9,
@@ -809,9 +813,10 @@ const byte Yellow2Blue[] PROGMEM = {
 // Gradient palette "bhw4_097_gp", originally from
 // http://soliton.vm.bytemark.co.uk/pub/cpt-city/bhw/bhw4/tn/bhw4_097.png.index.html
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
+// Yellow2Red in SR
 // Size: 44 bytes of program space.
 
-const byte Yellow2Red[] PROGMEM = {
+const byte red_tide_gp[] PROGMEM = {
     0, 247,  5,  0,
    28, 255, 67,  1,
    43, 234, 88, 11,
@@ -829,7 +834,7 @@ const byte Yellow2Red[] PROGMEM = {
 // converted for FastLED with gammas (2.6, 2.2, 2.5)
 // Size: 40 bytes of program space.
 
-const byte Candy2[] PROGMEM = {
+const byte candy2_gp[] PROGMEM = {
     0,  39, 33, 34,
    25,   4,  6, 15,
    48,  49, 29, 22,
@@ -888,22 +893,22 @@ const byte* const gGradientPalettes[] PROGMEM = {
   C9_2_gp,                      //52-39 C9 2
   C9_new_gp,                    //53-40 C9 New
   temperature_gp,               //54-41 Temperature
-  Aurora2,                      //55-42 Aurora 2
-  Retro_Clown,                  //56-43 Retro Clown
-  Candy,                        //57-44 Candy
-  Toxy_Reaf,                    //58-45 Toxy Reaf
-  Fairy_Reaf,                   //59-46 Fairy Reaf
-  Semi_Blue,                    //60-47 Semi Blue
-  Pink_Candy,                   //61-48 Pink Candy
-  Red_Reaf,                     //62-49 Red Reaf
-  Red_n_Flash,                  //63-50 Red & Flash
-  YBlue,                        //64-51 YBlue
-  Lite_Light,                   //65-52 Lite Light
-  Pink_Plasma,                  //66-53 Pink Plasma
-  Blink_Red,                    //67-54 Blink Red
-  Yellow2Blue,                  //68-55 Yellow 2 Blue
-  Yellow2Red,                   //69-56 Yellow 2 Red
-  Candy2                        //70-57 Candy2
+  Aurora2_gp,                   //55-42 Aurora 2
+  retro_clown_gp,               //56-43 Retro Clown
+  candy_gp,                     //57-44 Candy
+  toxy_reaf_gp,                 //58-45 Toxy Reaf
+  fairy_reaf_gp,                //59-46 Fairy Reaf
+  semi_blue_gp,                 //60-47 Semi Blue
+  pink_candy_gp,                //61-48 Pink Candy
+  red_reaf_gp,                  //62-49 Red Reaf
+  aqua_flash_gp,                //63-50 Aqua Flash
+  yelblu_hot_gp,                //64-51 Yelblu Hot
+  lite_light_gp,                //65-52 Lite Light
+  red_flash_gp,                 //66-53 Red Flash
+  blink_red_gp,                 //67-54 Blink Red
+  red_shift_gp,                 //68-55 Red Shift
+  red_tide_gp,                  //69-56 Red Tide
+  candy2_gp                     //70-57 Candy2
 };
 
 #endif
