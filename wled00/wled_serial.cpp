@@ -32,12 +32,33 @@ void handleSerial()
   while (Serial.available() > 0)
   {
     yield();
-    byte next = Serial.read();
+    byte next = Serial.peek();
     switch (state) {
       case AdaState::Header_A:
         if (next == 'A') state = AdaState::Header_d;
         else if (next == 0xC9) { //TPM2 start byte
           state = AdaState::TPM2_Header_Type;
+        }
+        else if (next == '{') { //JSON API
+          bool verboseResponse = false;
+          {
+            DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+            Serial.setTimeout(100);
+            DeserializationError error = deserializeJson(doc, Serial);
+            if (error) return;
+            fileDoc = &doc;
+            verboseResponse = deserializeState(doc.as<JsonObject>());
+            fileDoc = nullptr;
+          }
+          if (verboseResponse) {
+            DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+            JsonObject state = doc.createNestedObject("state");
+            serializeState(state);
+            JsonObject info  = doc.createNestedObject("info");
+            serializeInfo(info);
+
+            serializeJson(doc, Serial);
+          }
         }
         break;
       case AdaState::Header_d:
@@ -98,6 +119,7 @@ void handleSerial()
         }
         break;
     }
+    Serial.read(); //discard the byte
   }
   #endif
 }
