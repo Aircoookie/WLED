@@ -1,18 +1,44 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>Sync Settings</title>
 <script>var d=document;
+function gId(s)
+{
+  return d.getElementById(s);
+}
 function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}
 function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.DA.value == 1) d.Sf.DA.value = 0; if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
                else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
-function SP(){var p = d.Sf.DI.value; d.getElementById("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
-function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; }; SP();}
+function FC()
+{
+  for(j=0;j<8;j++)
+  {
+    gId("G"+(j+1)).checked=gId("GS").value>>j&1;
+    gId("R"+(j+1)).checked=gId("GR").value>>j&1;
+  }
+}
+function GC()
+{
+  var a=0, b=0;
+
+  var m=1;
+  for(j=0;j<8;j++)
+  {
+    a+=gId("G"+(j+1)).checked*m;
+    b+=gId("R"+(j+1)).checked*m;
+    m*=2;
+  }
+  gId("GS").value=a;
+  gId("GR").value=b;
+}
+function SP(){var p = d.Sf.DI.value; gId("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
+function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; }; SP();FC();}
 function S(){GetV();SetVal();}
 function GetV(){var d=document;}
 </script>
 <style>@import url("/style.css");</style>
 </head>
 <body onload="S()">
-<form id="form_s" name="Sf" method="post">
+<form id="form_s" name="Sf" method="post" onsubmit="GC()">
 <div class="toprow">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
@@ -21,6 +47,8 @@ function GetV(){var d=document;}
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" type="number" min="1" max="65535" class="d5" required><br>
 2nd Port: <input name="U2" type="number" min="1" max="65535" class="d5" required><br><br>
+<input name="GS" id="GS" type="number" style="display: none;"> <!-- hidden inputs for bitwise group checkboxes -->
+<input name="GR" id="GR" type="number" style="display: none;">
 <table style="margin: 0 auto;">
     <tr>
         <td>Sync groups</td>

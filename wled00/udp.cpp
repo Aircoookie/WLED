@@ -11,6 +11,7 @@
 void notify(byte callMode, bool followUp)
 {
   if (!udpConnected) return;
+  if (!syncGroups) return;
   switch (callMode)
   {
     case CALL_MODE_INIT:          return;
@@ -75,7 +76,7 @@ void notify(byte callMode, bool followUp)
   udpOut[35] = (ms >> 0) & 0xFF;
 
   //sync groups
-  udpOut[36] = syncGroups & 0xFF;
+  udpOut[36] = syncGroups;
   
   IPAddress broadcastIp;
   broadcastIp = ~uint32_t(Network.subnetMask()) | uint32_t(Network.gatewayIP());
@@ -229,7 +230,10 @@ void handleNotifications()
     byte version = udpIn[11];
 
     // if we are not part of any sync group ignore message
-    if (version > 8 && !(receiveGroups & udpIn[36])) return;
+    if (version < 9 || version > 199) {
+      // legacy senders are treated as if sending in sync group 1 only
+      if (!(receiveGroups & 0x01)) return;
+    } else if (!(receiveGroups & udpIn[36])) return;
     
     bool someSel = (receiveNotificationBrightness || receiveNotificationColor || receiveNotificationEffects);
     //apply colors from notification
@@ -274,7 +278,7 @@ void handleNotifications()
     }
 
     //adjust system time, but only if sender is more accurate than self
-    if (version > 7)
+    if (version > 7 && version < 200)
     {
       Toki::Time tm;
       tm.sec = (udpIn[30] << 24) | (udpIn[31] << 16) | (udpIn[32] << 8) | (udpIn[33]);
