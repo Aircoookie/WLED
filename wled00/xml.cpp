@@ -544,6 +544,11 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(" (build "));
     oappendi(VERSION);
     oappend(SET_F(")\";"));
+#ifdef WLED_DEBUG_NET
+    sappend('c',SET_F("NDE"),netDebugPrintEnabled);
+    sappends('s',SET_F("NDH"),netDebugPrintHost);
+    sappend('v',SET_F("NDP"),netDebugPrintPort);
+#endif
   }
   
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled

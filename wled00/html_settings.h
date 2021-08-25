@@ -404,7 +404,10 @@ onclick='uploadFile(d.Sf.data2,"/cfg.json")'><br></div><div style="color:#fa0">
 &#9888; Restoring presets/configuration will OVERWRITE your current presets/configuration.
 <br>
 Incorrect configuration may require a factory reset or re-flashing of your ESP.
-</div>For security reasons, passwords are not backed up.<h3>About</h3><a 
+</div>For security reasons, passwords are not backed up.<h3>
+Network Debug Logging</h3>Log to network: <input type="checkbox" name="NDE"><br>
+Network logging host: <input type="text" name="NDH"><br>Network logging port: 
+<input type="number" name="NDP"><br><h3>About</h3><a 
 href="https://github.com/Aircoookie/WLED/" target="_blank">WLED</a>
  version 0.13.0-b2<br><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/Contributors-and-credits" 

@@ -227,6 +227,7 @@
     <ClCompile Include="wled_eeprom.cpp" />
     <ClCompile Include="wled_server.cpp" />
     <ClCompile Include="xml.cpp" />
+    <ClCompile Include="net_debug.cpp" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>

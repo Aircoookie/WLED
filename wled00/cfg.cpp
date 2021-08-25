@@ -404,6 +404,13 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   }
   #endif
 
+  #ifdef WLED_DEBUG_NET
+  JsonObject netDebugPrint = doc["netdebug"];
+  CJSON(netDebugPrintEnabled, netDebugPrint[F("enabled")]);
+  getStringFromJson(netDebugPrintHost, netDebugPrint[F("host")], 33);
+  CJSON(netDebugPrintPort, netDebugPrint[F("port")]);
+  #endif
+
   DEBUG_PRINTLN(F("Starting usermod config."));
   JsonObject usermods_settings = doc["um"];
   if (!usermods_settings.isNull()) {

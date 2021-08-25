@@ -387,6 +387,18 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       wifiLock = request->hasArg(F("OW"));
       aOtaEnabled = request->hasArg(F("AO"));
     }
+
+    #ifdef WLED_DEBUG_NET
+    netDebugPrintEnabled = request->hasArg(F("NDE"));
+    if (request->hasArg(F("NDH")))
+    {
+      strlcpy(netDebugPrintHost, request->arg(F("NDH")).c_str(), 33);
+    }
+    if (request->hasArg(F("NDP")))
+    {
+      netDebugPrintPort = request->arg(F("NDP")).toInt();
+    }
+    #endif
   }
   #ifdef WLED_ENABLE_DMX // include only if DMX is enabled
   if (subPage == 7)

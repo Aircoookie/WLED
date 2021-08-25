@@ -80,6 +80,10 @@
   #include "my_config.h"
 #endif
 
+#ifdef WLED_DEBUG_NET
+#include "net_debug.h"
+#endif
+
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
 #include <WiFiUdp.h>
@@ -599,17 +603,21 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #endif
 
 // enable additional debug output
+
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTLN(x)
+#define DEBUG_PRINTF(x...)
+
 #ifdef WLED_DEBUG
   #ifndef ESP8266
   #include <rom/rtc.h>
   #endif
+  #undef DEBUG_PRINT
+  #undef DEBUG_PRINTLN
+  #undef DEBUG_PRINTF
   #define DEBUG_PRINT(x) Serial.print(x)
   #define DEBUG_PRINTLN(x) Serial.println(x)
   #define DEBUG_PRINTF(x...) Serial.printf(x)
-#else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTLN(x)
-  #define DEBUG_PRINTF(x...)
 #endif
 
 #ifdef WLED_DEBUG_FS
@@ -620,6 +628,18 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   #define DEBUGFS_PRINT(x)
   #define DEBUGFS_PRINTLN(x)
   #define DEBUGFS_PRINTF(x...)
+#endif
+
+#ifdef WLED_DEBUG_NET
+  #undef DEBUG_PRINT
+  #undef DEBUG_PRINTLN
+  #undef DEBUG_PRINTF
+  #define DEBUG_PRINT(x) NetDebug.print(x)
+  #define DEBUG_PRINTLN(x) NetDebug.println(x)
+  #define DEBUG_PRINTF(x...) NetDebug.printf(x)
+  WLED_GLOBAL bool netDebugPrintEnabled _INIT(false);
+  WLED_GLOBAL char netDebugPrintHost[33] _INIT("");
+  WLED_GLOBAL int netDebugPrintPort _INIT(7868);
 #endif
 
 // debug macro variable definitions
