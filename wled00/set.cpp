@@ -209,6 +209,10 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     if (t > 0) udpPort = t;
     t = request->arg(F("U2")).toInt();
     if (t > 0) udpPort2 = t;
+
+    syncGroups = request->arg(F("GS")).toInt();
+    receiveGroups = request->arg(F("GR")).toInt();
+
     receiveNotificationBrightness = request->hasArg(F("RB"));
     receiveNotificationColor = request->hasArg(F("RC"));
     receiveNotificationEffects = request->hasArg(F("RX"));

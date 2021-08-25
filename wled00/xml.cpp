@@ -396,6 +396,8 @@ void getSettingsJS(byte subPage, char* dest)
   {
     sappend('v',SET_F("UP"),udpPort);
     sappend('v',SET_F("U2"),udpPort2);
+    sappend('v',SET_F("GS"),syncGroups);
+    sappend('v',SET_F("GR"),receiveGroups);
 
     sappend('c',SET_F("HX"),liveHSVCorrection);
     sappend('v',SET_F("HS"),liveHSVSaturation);
