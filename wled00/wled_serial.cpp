@@ -21,6 +21,8 @@ enum class AdaState {
 
 void handleSerial()
 {
+  if (pinManager.isPinAllocated(3)) return;
+  
   #ifdef WLED_ENABLE_ADALIGHT
   static auto state = AdaState::Header_A;
   static uint16_t count = 0;
@@ -50,7 +52,8 @@ void handleSerial()
             verboseResponse = deserializeState(doc.as<JsonObject>());
             fileDoc = nullptr;
           }
-          if (verboseResponse) {
+          //only send response if TX pin is unused for other purposes
+          if (verboseResponse && !pinManager.isPinAllocated(1)) {
             DynamicJsonDocument doc(JSON_BUFFER_SIZE);
             JsonObject state = doc.createNestedObject("state");
             serializeState(state);
