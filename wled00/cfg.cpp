@@ -64,29 +64,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   CJSON(apBehavior, ap[F("behav")]);
   
-  #ifdef WLED_USE_ETHERNET
-  JsonObject ethernet = doc[F("eth")];
-  CJSON(ethernetType, ethernet["type"]);
-  // allocate ethernet pins
-  if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-    if (ethernetBoards[ethernetType].eth_power>=0)    pinManager.allocatePin(ethernetBoards[ethernetType].eth_power);
-    if (ethernetBoards[ethernetType].eth_mdc>=0)      pinManager.allocatePin(ethernetBoards[ethernetType].eth_mdc);
-    if (ethernetBoards[ethernetType].eth_mdio>=0)     pinManager.allocatePin(ethernetBoards[ethernetType].eth_mdio);
-    switch (ethernetBoards[ethernetType].eth_clk_mode) {
-      case ETH_CLOCK_GPIO0_IN:
-      case ETH_CLOCK_GPIO0_OUT:
-        pinManager.allocatePin(0);
-        break;
-      case ETH_CLOCK_GPIO16_OUT:
-        pinManager.allocatePin(16);
-        break;
-      case ETH_CLOCK_GPIO17_OUT:
-        pinManager.allocatePin(17);
-        break;
-    }
-  }
-  #endif
-
   /*
   JsonArray ap_ip = ap["ip"];
   for (byte i = 0; i < 4; i++) {
