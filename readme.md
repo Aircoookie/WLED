@@ -1,9 +1,9 @@
 # HyperSerialWLED
 Fork of the WLED project where the Adalight USB serial protocol @115200 speed is replaced with the AWA protocol with data integrity check at @2000000 speed for use with [HyperHDR](https://github.com/awawa-dev/HyperHDR).<br/>
   
-**In the releases you can also find special version working at only 921600 in case if your serial port chip doesn't support 2Mb speed.  
+**In the releases you can also find special version working at only 921600 in case if your serial port chip doesn't support 2Mb speed.**  
   
-The project will not follow WLED releases anymore unless there is a serious reason. It's design to help you setup your LED strip. Then you should migrate to HyperSerialEsp8266 or HyperSerialESP32 because choosing fast USB solution you don't need a Wifi. So in this case those projects offer you lower power usage, less electromagnetic interference and more available resources.**
+**The project will not follow WLED releases anymore unless there is a serious reason. It's design to help you setup your LED strip. Then you should migrate to HyperSerialEsp8266 or HyperSerialESP32 because choosing fast USB solution you don't need a Wifi. So in this case those projects offer you lower power usage, less electromagnetic interference and more available resources.**
 
 Now it's possible to use HyperSerialWLED with any LED strip/pinout supported by the WLED.  
 1 For installation and configuration of WLED please refer to the WLED project: [link](https://github.com/Aircoookie/WLED)<br/>
