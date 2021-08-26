@@ -19,6 +19,13 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   //long vid = doc[F("vid")]; // 2010020
 
+  #ifdef WLED_USE_ETHERNET
+  JsonObject ethernet = doc[F("eth")];
+  CJSON(ethernetType, ethernet["type"]);
+  // NOTE: Ethernet configuration takes priority over other use of pins
+  WLED::instance().initEthernet();
+  #endif
+
   JsonObject id = doc["id"];
   getStringFromJson(cmDNS, id[F("mdns")], 33);
   getStringFromJson(serverDescription, id[F("name")], 33);
@@ -93,7 +100,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   JsonObject hw = doc[F("hw")];
 
-  // initialize LED pins and lengths prior to other HW
+  // initialize LED pins and lengths prior to other HW (except for ethernet)
   JsonObject hw_led = hw[F("led")];
 
   CJSON(ledCount, hw_led[F("total")]);
@@ -162,7 +169,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     for (JsonObject btn : hw_btn_ins) {
       CJSON(buttonType[s], btn["type"]);
       int8_t pin = btn["pin"][0] | -1;
-      if (pin > -1 && pinManager.allocatePin(pin,false)) {
+      if (pin > -1 && pinManager.allocatePin(pin, false, PinOwner::Button)) {
         btnPin[s] = pin;
         pinMode(btnPin[s], INPUT_PULLUP);
       } else {
@@ -186,8 +193,10 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
     // new install/missing configuration (button 0 has defaults)
     if (fromFS) {
       // relies upon only being called once with fromFS == true, which is currently true.
-      uint8_t s=0;
-      if (pinManager.allocatePin(btnPin[0],false)) s++; // do not clear button 0 if pin successfully allocated
+      uint8_t s = 0;
+      if (pinManager.allocatePin(btnPin[0], false, PinOwner::Button)) { // initialized to #define value BTNPIN, or zero if not defined(!)
+        ++s; // do not clear default button if allocated successfully 
+      }
       for (; s<WLED_MAX_BUTTONS; s++) {
         btnPin[s]           = -1;
         buttonType[s]       = BTN_TYPE_NONE;
@@ -202,7 +211,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   int hw_ir_pin = hw["ir"]["pin"] | -2; // 4
   if (hw_ir_pin > -2) {
-    if (pinManager.allocatePin(hw_ir_pin,false)) {
+    if (pinManager.allocatePin(hw_ir_pin, false, PinOwner::IR)) {
       irPin = hw_ir_pin;
     } else {
       irPin = -1;
@@ -213,7 +222,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject relay = hw[F("relay")];
   int hw_relay_pin = relay["pin"] | -2;
   if (hw_relay_pin > -2) {
-    if (pinManager.allocatePin(hw_relay_pin,true)) {
+    if (pinManager.allocatePin(hw_relay_pin,true, PinOwner::Relay)) {
       rlyPin = hw_relay_pin;
       pinMode(rlyPin, OUTPUT);
     } else {
@@ -469,6 +478,8 @@ void deserializeConfigFromFS() {
     return;
   }
 
+  // NOTE: This routine deserializes *and* applies the configuration
+  //       Therefore, must also initialize ethernet from this function
   deserializeConfig(doc.as<JsonObject>(), true);  
 }
 

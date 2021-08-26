@@ -13,7 +13,7 @@ class RgbRotaryEncoderUsermod : public Usermod
     BusDigital *ledBus;
     /*
     * Green - eb - Q4 - 32
-    * Red - ea - Q1 - 15
+    * Red   - ea - Q1 - 15
     * Black - sw - Q2 - 12
     */
     ESPRotary *rotaryEncoder;
@@ -39,13 +39,10 @@ class RgbRotaryEncoderUsermod : public Usermod
 
     void initRotaryEncoder()
     {
-      if (!pinManager.allocatePin(eaIo, false)) {
+      PinManagerPinType pins[2] = { { eaIo, false }, { ebIo, false } };
+      if (!pinManager.allocateMultiplePins(pins, 2, UM_RGBRotaryEncoder)) {
         eaIo = -1;
-      }
-      if (!pinManager.allocatePin(ebIo, false)) {
         ebIo = -1;
-      }
-      if (eaIo == -1 || ebIo == -1) {
         cleanup();
         return;
       }
@@ -111,10 +108,12 @@ class RgbRotaryEncoderUsermod : public Usermod
     {
       // Only deallocate pins if we allocated them ;)
       if (eaIo != -1) {
-        pinManager.deallocatePin(eaIo);
+        pinManager.deallocatePin(eaIo, PinOwner::UM_RGBRotaryEncoder);
+        eaIo = -1;
       }
       if (ebIo != -1) {
-        pinManager.deallocatePin(ebIo);
+        pinManager.deallocatePin(ebIo, PinOwner::UM_RGBRotaryEncoder);
+        ebIo = -1;
       }
 
       delete rotaryEncoder;
@@ -304,8 +303,8 @@ class RgbRotaryEncoderUsermod : public Usermod
           }
 
           if (eaIo != oldEaIo || ebIo != oldEbIo || stepsPerClick != oldStepsPerClick || incrementPerClick != oldIncrementPerClick) {
-            pinManager.deallocatePin(oldEaIo);
-            pinManager.deallocatePin(oldEbIo);
+            pinManager.deallocatePin(oldEaIo, PinOwner::UM_RGBRotaryEncoder);
+            pinManager.deallocatePin(oldEbIo, PinOwner::UM_RGBRotaryEncoder);
             
             delete rotaryEncoder;
             initRotaryEncoder();

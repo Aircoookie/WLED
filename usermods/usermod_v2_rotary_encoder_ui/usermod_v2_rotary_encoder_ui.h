@@ -76,7 +76,7 @@ private:
   unsigned char Enc_B;
   unsigned char Enc_A_prev = 0;
 
-  bool currentEffectAndPaleeteInitialized = false;
+  bool currentEffectAndPaletteInitialized = false;
   uint8_t effectCurrentIndex = 0;
   uint8_t effectPaletteIndex = 0;
 
@@ -97,9 +97,17 @@ public:
      */
   void setup()
   {
-    if (!pinManager.allocatePin(pinA)) { enabled = false; return;}
-    if (!pinManager.allocatePin(pinB)) { pinManager.deallocatePin(pinA); enabled = false; return; }
-    if (!pinManager.allocatePin(pinC)) { pinManager.deallocatePin(pinA); pinManager.deallocatePin(pinB); enabled = false; return; }
+    PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
+    if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
+      // BUG: configuring this usermod with conflicting pins
+      //      will cause it to de-allocate pins it does not own
+      //      (at second config)
+      //      This is the exact type of bug solved by pinManager
+      //      tracking the owner tags....
+      pinA = pinB = pinC = -1;
+      enabled = false;
+      return;
+    }
 
     pinMode(pinA, INPUT_PULLUP);
     pinMode(pinB, INPUT_PULLUP);
@@ -152,7 +160,7 @@ public:
     // Initialize effectCurrentIndex and effectPaletteIndex to
     // current state. We do it here as (at least) effectCurrent
     // is not yet initialized when setup is called.
-    if (!currentEffectAndPaleeteInitialized) {
+    if (!currentEffectAndPaletteInitialized) {
       findCurrentEffectAndPalette();
     }
 
@@ -248,7 +256,7 @@ public:
   }
 
   void findCurrentEffectAndPalette() {
-    currentEffectAndPaleeteInitialized = true;
+    currentEffectAndPaletteInitialized = true;
     for (uint8_t i = 0; i < strip.getModeCount(); i++) {
       //byte value = modes_alpha_indexes[i];
       if (modes_alpha_indexes[i] == effectCurrent) {
@@ -455,9 +463,9 @@ public:
       DEBUG_PRINTLN(F(" config (re)loaded."));
       // changing parameters from settings page
       if (pinA!=newDTpin || pinB!=newCLKpin || pinC!=newSWpin) {
-        pinManager.deallocatePin(pinA);
-        pinManager.deallocatePin(pinB);
-        pinManager.deallocatePin(pinC);
+        pinManager.deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
+        pinManager.deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
+        pinManager.deallocatePin(pinC, PinOwner::UM_RotaryEncoderUI);
         pinA = newDTpin;
         pinB = newCLKpin;
         pinC = newSWpin;

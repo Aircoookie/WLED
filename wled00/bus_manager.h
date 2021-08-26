@@ -125,10 +125,10 @@ class BusDigital : public Bus {
   public:
   BusDigital(BusConfig &bc, uint8_t nr) : Bus(bc.type, bc.start) {
     if (!IS_DIGITAL(bc.type) || !bc.count) return;
-    if (!pinManager.allocatePin(bc.pins[0])) return;
+    if (!pinManager.allocatePin(bc.pins[0], true, PinOwner::BusDigital)) return;
     _pins[0] = bc.pins[0];
     if (IS_2PIN(bc.type)) {
-      if (!pinManager.allocatePin(bc.pins[1])) {
+      if (!pinManager.allocatePin(bc.pins[1], true, PinOwner::BusDigital)) {
         cleanup(); return;
       }
       _pins[1] = bc.pins[1];
@@ -208,11 +208,11 @@ class BusDigital : public Bus {
 
   void cleanup() {
     PolyBus::cleanup(_busPtr, _iType);
-    pinManager.deallocatePin(_pins[0]);
-    pinManager.deallocatePin(_pins[1]);
     _iType = I_NONE;
     _valid = false;
     _busPtr = nullptr;
+    pinManager.deallocatePin(_pins[1], PinOwner::BusDigital);
+    pinManager.deallocatePin(_pins[0], PinOwner::BusDigital);
   }
 
   ~BusDigital() {
@@ -249,7 +249,7 @@ class BusPwm : public Bus {
 
     for (uint8_t i = 0; i < numPins; i++) {
       uint8_t currentPin = bc.pins[i];
-      if (!pinManager.allocatePin(currentPin)) {
+      if (!pinManager.allocatePin(currentPin, true, PinOwner::BusPwm)) {
         deallocatePins(); return;
       }
       _pins[i] = currentPin; // store only after allocatePin() succeeds
@@ -339,7 +339,7 @@ class BusPwm : public Bus {
   void deallocatePins() {
     uint8_t numPins = NUM_PWM_PINS(_type);
     for (uint8_t i = 0; i < numPins; i++) {
-      pinManager.deallocatePin(_pins[i]);
+      pinManager.deallocatePin(_pins[i], PinOwner::BusPwm);
       if (!pinManager.isPinOk(_pins[i])) continue;
       #ifdef ESP8266
       digitalWrite(_pins[i], LOW); //turn off PWM interrupt
