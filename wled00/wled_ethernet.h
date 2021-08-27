@@ -1,20 +1,9 @@
 #ifndef WLED_ETHERNET_H
 #define WLED_ETHERNET_H
 
-#ifdef WLED_USE_ETHERNET
 #include "pin_manager.h"
 
-// The following six pins are neither configurable nor
-// can they be re-assigned through IOMUX / GPIO matrix.
-// See https://docs.espressif.com/projects/esp-idf/en/latest/esp32/hw-reference/esp32/get-started-ethernet-kit-v1.1.html#ip101gri-phy-interface
-const managed_pin_type esp32_nonconfigurable_ethernet_pins[6] = {
-    { 21, true  }, // RMII EMAC TX EN  == When high, clocks the data on TXD0 and TXD1 to transmitter
-    { 19, true  }, // RMII EMAC TXD0   == First bit of transmitted data
-    { 22, true  }, // RMII EMAC TXD1   == Second bit of transmitted data
-    { 25, false }, // RMII EMAC RXD0   == First bit of received data
-    { 26, false }, // RMII EMAC RXD1   == Second bit of received data
-    { 27, true  }, // RMII EMAC CRS_DV == Carrier Sense and RX Data Valid
-};
+#ifdef WLED_USE_ETHERNET
 
 // For ESP32, the remaining five pins are at least somewhat configurable.
 // eth_address  is in range [0..31], indicates which PHY (MAC?) address should be allocated to the interface
@@ -37,7 +26,10 @@ typedef struct EthernetSettings {
   eth_clock_mode_t eth_clk_mode;
 } ethernet_settings;
 
-extern ethernet_settings ethernetBoards[];
+extern const ethernet_settings ethernetBoards[];
+
+#define WLED_ETH_RSVD_PINS_COUNT 6
+extern const managed_pin_type esp32_nonconfigurable_ethernet_pins[WLED_ETH_RSVD_PINS_COUNT];
 #endif
 
 #endif

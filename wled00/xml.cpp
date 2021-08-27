@@ -266,9 +266,8 @@ void getSettingsJS(byte subPage, char* dest)
     DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
     JsonObject mods = doc.createNestedObject(F("um"));
     usermods.addToConfig(mods);
-    oappend(SET_F("d.um_p=["));
+    oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
     if (!mods.isNull()) {
-      uint8_t i=0;
       for (JsonPair kv : mods) {
         if (!kv.value().isNull()) {
           // element is an JsonObject
@@ -277,22 +276,14 @@ void getSettingsJS(byte subPage, char* dest)
             if (obj["pin"].is<JsonArray>()) {
               JsonArray pins = obj["pin"].as<JsonArray>();
               for (JsonVariant pv : pins) {
-                if (pv.as<int>() > -1) {
-                  if (i++) oappend(SET_F(","));
-                  oappendi(pv.as<int>());
-                }
+                if (pv.as<int>() > -1) { oappend(","); oappendi(pv.as<int>()); }
               }
             } else {
-              if (obj["pin"].as<int>() > -1) {
-                if (i++) oappend(SET_F(","));
-                oappendi(obj["pin"].as<int>());
-              }
+              if (obj["pin"].as<int>() > -1) { oappend(","); oappendi(obj["pin"].as<int>()); }
             }
           }
         }
       }
-      if (i) oappend(SET_F(","));
-      oappend(SET_F("6,7,8,9,10,11")); // flash memory pins
       #ifdef WLED_ENABLE_DMX
         oappend(SET_F(",2")); // DMX hardcoded pin
       #endif
@@ -324,9 +315,10 @@ void getSettingsJS(byte subPage, char* dest)
       #endif
       #ifdef WLED_USE_ETHERNET
       if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
-        if (ethernetBoards[ethernetType].eth_power>=0) { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_power,nS,10)); }
-        if (ethernetBoards[ethernetType].eth_mdc>=0)   { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdc,nS,10)); }
-        if (ethernetBoards[ethernetType].eth_mdio>=0)  { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdio,nS,10)); }
+        for (uint8_t p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) { oappend(","); oappend(itoa(esp32_nonconfigurable_ethernet_pins[p].pin,nS,10)); }
+        if (ethernetBoards[ethernetType].eth_power>=0)     { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_power,nS,10)); }
+        if (ethernetBoards[ethernetType].eth_mdc>=0)       { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdc,nS,10)); }
+        if (ethernetBoards[ethernetType].eth_mdio>=0)      { oappend(","); oappend(itoa(ethernetBoards[ethernetType].eth_mdio,nS,10)); }
         switch (ethernetBoards[ethernetType].eth_clk_mode) {
           case ETH_CLOCK_GPIO0_IN:
           case ETH_CLOCK_GPIO0_OUT:

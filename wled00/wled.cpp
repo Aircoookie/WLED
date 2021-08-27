@@ -8,16 +8,20 @@
 #include "soc/rtc_cntl_reg.h"
 #endif
 
-/*
- * Main WLED class implementation. Mostly initialization and connection logic
- */
-
-WLED::WLED()
-{
-}
-
 #ifdef WLED_USE_ETHERNET
-ethernet_settings ethernetBoards[] = {
+// The following six pins are neither configurable nor
+// can they be re-assigned through IOMUX / GPIO matrix.
+// See https://docs.espressif.com/projects/esp-idf/en/latest/esp32/hw-reference/esp32/get-started-ethernet-kit-v1.1.html#ip101gri-phy-interface
+const managed_pin_type esp32_nonconfigurable_ethernet_pins[WLED_ETH_RSVD_PINS_COUNT] = {
+    { 21, true  }, // RMII EMAC TX EN  == When high, clocks the data on TXD0 and TXD1 to transmitter
+    { 19, true  }, // RMII EMAC TXD0   == First bit of transmitted data
+    { 22, true  }, // RMII EMAC TXD1   == Second bit of transmitted data
+    { 25, false }, // RMII EMAC RXD0   == First bit of received data
+    { 26, false }, // RMII EMAC RXD1   == Second bit of received data
+    { 27, true  }, // RMII EMAC CRS_DV == Carrier Sense and RX Data Valid
+};
+
+const ethernet_settings ethernetBoards[] = {
   // None
   {
   },
@@ -78,15 +82,23 @@ ethernet_settings ethernetBoards[] = {
 
   // ESP3DEUXQuattro
   {
-    1,                 // eth_address, 
-    -1,                // eth_power, 
-    23,                // eth_mdc, 
-    18,                // eth_mdio, 
-    ETH_PHY_LAN8720,   // eth_type,
-    ETH_CLOCK_GPIO17_OUT // eth_clk_mode
+    1,                    // eth_address, 
+    -1,                   // eth_power, 
+    23,                   // eth_mdc, 
+    18,                   // eth_mdio, 
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT  // eth_clk_mode
   }
 };
 #endif
+
+/*
+ * Main WLED class implementation. Mostly initialization and connection logic
+ */
+
+WLED::WLED()
+{
+}
 
 // turns all LEDs off and restarts ESP
 void WLED::reset()
