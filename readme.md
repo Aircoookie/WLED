@@ -1,6 +1,8 @@
 # HyperSerialWLED
 Fork of the WLED project where the Adalight USB serial protocol @115200 speed is replaced with the AWA protocol with data integrity check at @2000000 speed for use with [HyperHDR](https://github.com/awawa-dev/HyperHDR).<br/>
-  
+
+**:warning: WARNING for ESP8266 users: although WLED 0.12 allows pin-out redefinition, still the only hardware available SPI pins for APA102/SK9822/HD107 are: GPIO13 (MOSI, usually D7) and GPIO14 (SCLK/CLOCK, usually D5) :warning:**
+
 **In the releases you can also find special version working at only 921600 in case if your serial port chip doesn't support 2Mb speed.**  
   
 **The project will not follow WLED releases anymore unless there is a serious reason. It's designed to help you to setup your LED strip. Then you should migrate to HyperSerialEsp8266 or HyperSerialESP32 because when choosing fast USB solution you don't need a Wifi. So in this case those projects offer you lower power usage, less electromagnetic interference and more available resources.**
