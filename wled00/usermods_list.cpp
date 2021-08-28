@@ -86,6 +86,10 @@
 #include "../usermods/rgb-rotary-encoder/rgb-rotary-encoder.h"
 #endif
 
+#ifdef USERMOD_ST7789_DISPLAY
+#include "../usermods/ST7789_display/ST7789_Display.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -166,5 +170,9 @@ void registerUsermods()
 
   #ifdef RGB_ROTARY_ENCODER
   usermods.add(new RgbRotaryEncoderUsermod());
+  #endif
+
+  #ifdef USERMOD_ST7789_DISPLAY
+  usermods.add(new St7789DisplayUsermod());
   #endif
 }

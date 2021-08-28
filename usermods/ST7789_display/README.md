@@ -2,11 +2,14 @@
 
 This usermod allow to use 240x240 display to display following:
 
+* current date and time;
 * Network SSID;
 * IP address;
+* WiFi signal strength;
 * Brightness;
 * Chosen effect;
 * Chosen palette;
+* effect speed and intensity;
 * Estimated current in mA;
 
 ## Hardware
@@ -46,27 +49,29 @@ Add lines to section:
 default_envs = esp32dev
 build_flags = ${common.build_flags_esp32}
   -D USERMOD_ST7789_DISPLAY
-
+    -DUSER_SETUP_LOADED=1
+    -DST7789_DRIVER=1
+    -DTFT_WIDTH=240
+    -DTFT_HEIGHT=240
+    -DCGRAM_OFFSET=1
+    -DTFT_MOSI=21
+    -DTFT_SCLK=22
+    -DTFT_DC=27
+    -DTFT_RST=26
+    -DTFT_BL=14
+    -DLOAD_GLCD=1
+    ;optional for WROVER
+    ;-DCONFIG_SPIRAM_SUPPORT=1
 ```
 
 Save the `platformio.ini` file.  Once this is saved, the required library files should be automatically downloaded for modifications in a later step.
 
 ### TFT_eSPI Library Adjustments
 
-We need to modify a file in the `TFT_eSPI` library. If you followed the directions to modify and save the `platformio.ini` file above, the `User_Setup_Select.h` file can be found in the `/.pio/libdeps/esp32dev/TFT_eSPI` folder.
+If you are not using PlatformIO you need to modify a file in the `TFT_eSPI` library. If you followed the directions to modify and save the `platformio.ini` file above, the `Setup24_ST7789.h` file can be found in the `/.pio/libdeps/esp32dev/TFT_eSPI/User_Setups/` folder.
 
-Modify the  `User_Setup_Select.h` file as follows:
+Edit `Setup_ST7789.h` file and uncomment nad changep GPIO pin numbers in lines containing `TFT_MOSI`, `TFT_SCLK`, `TFT_RST`, `TFT_DC`.
 
-* Comment out the following line (which is the 'default' setup file):
+Modify the `User_Setup_Select.h` by uncommentig the line containing `#include <User_Setups/Setup24_ST7789.h>` and commenting out line containing `#include <User_Setup.h>`.
 
-```ini
-//#include <User_Setup.h>           // Default setup is root library folder
-```
-
-* Add following line:
-
-```ini
-#include <User_Setups/Setup_ST7789_Display.h>    // Setup file for ESP32 ST7789V SPI bus TFT
-```
-
-* Copy file `"Setup_ST7789_Display.h"` from usermod folder to `/.pio/libdeps/esp32dev/TFT_eSPI/User_Setups`
+If your display includes backlight enable pin, #define TFT_BL with backlight enable GPIO number.
