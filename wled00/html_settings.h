@@ -254,8 +254,8 @@ Send Macro notifications: <input type="checkbox" name="SM"><br>
 Send notifications twice: <input type="checkbox" name="S2"><br><i>
 Reboot required to apply changes.</i><h3>Instance List</h3>
 Enable instance list: <input type="checkbox" name="NL"><br>
-Make this instance discoverable: <input type="checkbox" name="NB"><h3>Realtime
-</h3>Receive UDP realtime: <input type="checkbox" name="RD"><br><br><i>
+Make this instance discoverable: <input type="checkbox" name="NB"><br><h3>
+Realtime</h3>Receive UDP realtime: <input type="checkbox" name="RD"><br><br><i>
 Network DMX input</i><br>Type: <select name="DI" onchange="SP(),adj()"><option 
 value="5568">E1.31 (sACN)</option><option value="6454">Art-Net</option><option 
 value="4048">DDP</option><option value="0" selected="selected">Custom port
@@ -275,12 +275,9 @@ E1.31 info</a><br>Timeout: <input name="ET" type="number" min="1" max="65000"
 required> ms<br>Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
 Realtime LED offset: <input name="WO" type="number" min="-255" max="255" 
-required><br><br>Realtime HSV color correction: <input type="checkbox" 
-name="HX"><br>Saturation (1-30): <input name="HS" type="number" min="1" 
-max="30" value="1" step="1"><br>Value (1-60): <input name="HV" type="number" 
-min="1" max="60" value="10" step="1"><h3>Alexa Voice Assistant</h3>
-Emulate Alexa device: <input type="checkbox" name="AL"><br>
-Alexa invocation name: <input name="AI" maxlength="32"><h3>Blynk</h3><b>
+required><h3>Alexa Voice Assistant</h3>Emulate Alexa device: <input
+type="checkbox" name="AL"><br>Alexa invocation name: <input name="AI"
+maxlength="32"><h3>Blynk</h3><b>
 Blynk, MQTT and Hue sync all connect to external hosts!<br>
 This may impact the responsiveness of the ESP8266.</b><br>
 For best results, only use one of these services at a time.<br>
