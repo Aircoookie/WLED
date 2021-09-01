@@ -728,6 +728,12 @@ void serializeConfig() {
     dmx_fixmap.add(DMXFixtureMap[i]);
   #endif
 
+  JsonArray pinOwners = doc.createNestedArray("pinowners");
+  for (byte pin = 0; pin < TOTAL_GPIO_COUNT; pin++) {
+    PinOwner tag = pinManager.currentPinOwner(pin);
+    pinOwners.add(tag);
+  }
+
   JsonObject usermods_settings = doc.createNestedObject("um");
   usermods.addToConfig(usermods_settings);
 

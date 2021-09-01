@@ -56,6 +56,20 @@ enum struct PinOwner : uint8_t {
 };
 static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must be zero, so default array initialization works as expected");
 
+// wled00/cfg.cpp:734:22:   required from here
+// wled00/src/dependencies/json/ArduinoJson-v6.h:4115:25:
+// error: no matching function for call to 'convertToJson(const PinOwner&, ArduinoJson6181_90::VariantRef&)'
+//      return convertToJson(src, dst); // Error here? See https://arduinojson.org/v6/unsupported-set/
+//
+// PROBLEM: Header problems if I try to include headers to have the ArduinoJson::VariantRef type defined here.
+//   CHEAT: Use a template to avoid this, as it won't be instantiated until later, where it's used and the
+//          ArduinoJson::VariantRef type is already defined.
+template <typename T>
+bool convertToJson(const PinOwner src, /*ArduinoJson*/ T dst) {
+  static_assert(sizeof(int) > sizeof(uint8_t), "PinOwner: Review convertToJson() for potential truncation");
+  return dst.set(static_cast<const int>(src));
+}
+
 class PinManagerClass {
   private:
   static constexpr const size_t BytesForPinAlloc = (TOTAL_GPIO_COUNT / 8) + ((TOTAL_GPIO_COUNT % 8) ? 1 : 0);
