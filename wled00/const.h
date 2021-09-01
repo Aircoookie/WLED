@@ -39,6 +39,16 @@
   #endif
 #endif
 
+#if defined(ARDUINO_ARCH_ESP32S2) // also defines ARDUINO_ARCH_ESP32, so check this first
+#define TOTAL_GPIO_COUNT 40
+#elif defined(ARDUINO_ARCH_ESP32) // also defines ARDUINO_ARCH_ESP32, so check this first
+#define TOTAL_GPIO_COUNT 40
+#elif defined(ESP8266)
+#define TOTAL_GPIO_COUNT 17
+#else
+#error "Must define TOTAL_GPIO_COUNT for platform in const.h"
+#endif
+
 //Usermod IDs
 #define USERMOD_ID_RESERVED               0     //Unused. Might indicate no usermod present
 #define USERMOD_ID_UNSPECIFIED            1     //Default value for a general user mod that does not specify a custom ID
