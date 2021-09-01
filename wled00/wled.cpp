@@ -338,6 +338,7 @@ void WLED::setup()
 
   #ifdef WLED_ENABLE_ADALIGHT
   if (!pinManager.isPinAllocated(3)) {
+    // TODO: Should this be reserved for Ada?  Serial input pin?  Else, doesn't appear in pin ownership list....
     Serial.println(F("Ada"));
   }
   #endif

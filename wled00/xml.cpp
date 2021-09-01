@@ -10,7 +10,7 @@
 //build XML response to HTTP /win API request
 void XML_response(AsyncWebServerRequest *request, char* dest)
 {
-  char sbuf[(dest == nullptr)?1024:1]; //allocate local buffer if none passed
+  char sbuf[(dest == nullptr)?1024:1]; // allocate local buffer if none passed ... (GCC extension to have variable-sized stack array)
   obuf = (dest == nullptr)? sbuf:dest;
 
   olen = 0;
@@ -186,11 +186,21 @@ void sappends(char stype, const char* key, char* val)
   }
 }
 
+void addPinOwners() {
+  for (byte pin = 0; pin < TOTAL_GPIO_COUNT; pin++) {
+    PinOwner tag = pinManager.currentPinOwner(pin);
+    if (pin > 0) {
+      oappend(SET_F(","));
+    }
+    static_assert(sizeof(int) > sizeof(PinOwner), "Review ... output may truncate");
+    oappendi(static_cast<int>(tag));
+  }
+}
 
 //get values for settings form in javascript
 void getSettingsJS(byte subPage, char* dest)
 {
-  //0: menu 1: wifi 2: leds 3: ui 4: sync 5: time 6: sec
+  //0: menu, 1: wifi, 2: leds, 3: ui, 4: sync, 5: time, 6: sec, 7: DMX, 8: usermods
   DEBUG_PRINT(F("settings resp"));
   DEBUG_PRINTLN(subPage);
   obuf = dest;
@@ -271,6 +281,14 @@ void getSettingsJS(byte subPage, char* dest)
     DynamicJsonDocument doc(JSON_BUFFER_SIZE/2);
     JsonObject mods = doc.createNestedObject(F("um"));
     usermods.addToConfig(mods);
+
+    // By using the pin manager, all pins that are currently owned
+    // are exposed via a common API.  Zero == unallocated, value
+    // corresponds to the current owner's value (see enum in pinmanager.h)
+    oappend(SET_F("d.pinOwners=["));
+    addPinOwners();
+    oappend(SET_F("];"));
+
     oappend(SET_F("d.um_p=["));
     if (!mods.isNull()) {
       uint8_t i=0;
@@ -301,11 +319,8 @@ void getSettingsJS(byte subPage, char* dest)
       #ifdef WLED_DEBUG
         oappend(SET_F(",1")); // debug output (TX) pin
       #endif
-      #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
+      #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM) // can be removed ... now included in pinOwners[]
         if (psramFound()) oappend(SET_F(",16,17")); // GPIO16 & GPIO17 reserved for SPI RAM
-      #endif
-      //TODO: add reservations for Ethernet shield pins
-      #ifdef WLED_USE_ETHERNET
       #endif
     }
     oappend(SET_F("];"));
@@ -581,6 +596,10 @@ void getSettingsJS(byte subPage, char* dest)
 
   if (subPage == 8) //usermods
   {
+    oappend(SET_F("pinOwners=["));
+    addPinOwners();
+    oappend(SET_F("];"));
+
     oappend(SET_F("numM="));
     oappendi(usermods.getModCount());
     oappend(";");
