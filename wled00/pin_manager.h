@@ -4,7 +4,7 @@
  * Registers pins so there is no attempt for two interfaces to use the same pin
  */
 #include <Arduino.h>
-#include "const.h" // for USERMOD_* values
+#include "const.h" // for USERMOD_* values, total gpio count
 
 typedef struct PinManagerPinType {
   int8_t  pin;
@@ -58,13 +58,13 @@ static_assert(0u == static_cast<uint8_t>(PinOwner::None), "PinOwner::None must b
 
 class PinManagerClass {
   private:
-  #ifdef ESP8266
-  uint8_t pinAlloc[3] = {0x00, 0x00, 0x00}; //24bit, 1 bit per pin, we use first 17bits
-  PinOwner ownerTag[17] = { PinOwner::None };
-  #else
-  uint8_t pinAlloc[5] = {0x00, 0x00, 0x00, 0x00, 0x00}; //40bit, 1 bit per pin, we use all bits
+  static constexpr const size_t BytesForPinAlloc = (TOTAL_GPIO_COUNT / 8) + ((TOTAL_GPIO_COUNT % 8) ? 1 : 0);
+  uint8_t pinAlloc[BytesForPinAlloc] {};  // 1 bit per pin
+  PinOwner ownerTag[TOTAL_GPIO_COUNT] {}; // zero-init == PinOwner::None; verified by static_assert above
+
+  #if defined(ARDUINO_ARCH_ESP32) // this is defined for both ESP32 and ESP32S2
+  static_assert(BytesForPinAlloc == 5, "Change in bytes for tracking pin allocation");
   uint8_t ledcAlloc[2] = {0x00, 0x00}; //16 LEDC channels
-  PinOwner ownerTag[40] = { PinOwner::None };
   #endif
 
   public:
