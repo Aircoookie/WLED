@@ -11,6 +11,13 @@ static void DebugPrintOwnerTag(PinOwner tag)
   }
 }
 
+// for serialization purposes
+PinOwner PinManagerClass::currentPinOwner(byte gpio)
+{
+  if (gpio >= TOTAL_GPIO_COUNT) return PinOwner::None;
+  return ownerTag[gpio];
+}
+
 /// Actual allocation/deallocation routines
 bool PinManagerClass::deallocatePin(byte gpio, PinOwner tag)
 {

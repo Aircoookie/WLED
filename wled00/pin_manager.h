@@ -78,6 +78,8 @@ class PinManagerClass {
   // using more than one pin, such as I2C, SPI, rotary encoders,
   // ethernet, etc..
   bool allocateMultiplePins(const managed_pin_type * mptArray, byte arrayElementCount, PinOwner tag );
+  // Per request, exposing pin ownership so can output via JSON/XML
+  PinOwner currentPinOwner(byte gpio);
 
   #if !defined(ESP8266) // ESP8266 compiler doesn't understand deprecated attribute
   [[deprecated("Replaced by three-parameter allocatePin(gpio, output, ownerTag), for improved debugging")]]
