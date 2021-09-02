@@ -29,7 +29,7 @@
 #endif
 
 
-// the frequency to check the battery, 1 minute
+// the frequency to check the battery, 30 sec
 #ifndef USERMOD_BATTERY_MEASUREMENT_INTERVAL
   #define USERMOD_BATTERY_MEASUREMENT_INTERVAL 30000
 #endif
@@ -53,7 +53,8 @@ class UsermodBatteryBasic : public Usermod
     int8_t batteryPin = USERMOD_BATTERY_MEASUREMENT_PIN;
     // how often to read the battery voltage
     unsigned long readingInterval = USERMOD_BATTERY_MEASUREMENT_INTERVAL;
-    unsigned long lastTime = 0;
+    unsigned long nextReadTime = 0;
+    unsigned long lastReadTime = 0;
     // battery min. voltage
     float minBatteryVoltage = USERMOD_BATTERY_MIN_VOLTAGE;
     // battery max. voltage
@@ -68,6 +69,7 @@ class UsermodBatteryBasic : public Usermod
     // mapped battery level based on voltage
     long batteryLevel = 0;
     bool initDone = false;
+    bool initializing = true;
 
 
     // strings to reduce flash memory usage (used more than twice)
@@ -80,6 +82,19 @@ class UsermodBatteryBasic : public Usermod
     double mapf(double x, double in_min, double in_max, double out_min, double out_max) 
     {
       return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+    float truncate(float val, byte dec) 
+    {
+      float x = val * pow(10, dec);
+      float y = round(x);
+      float z = x - y;
+      if ((int)z == 5)
+      {
+          y++;
+      }
+      x = y / pow(10, dec);
+      return x;
     }
 
 
@@ -107,6 +122,9 @@ class UsermodBatteryBasic : public Usermod
         pinMode(batteryPin, INPUT);
       #endif
 
+      nextReadTime = millis() + readingInterval;
+      lastReadTime = millis();
+
       initDone = true;
     }
 
@@ -129,26 +147,38 @@ class UsermodBatteryBasic : public Usermod
     {
       if(strip.isUpdating()) return;
 
-      unsigned long now = millis();
-
       // check the battery level every USERMOD_BATTERY_MEASUREMENT_INTERVAL (ms)
-      if (now - lastTime >= readingInterval) {
+      if (millis() < nextReadTime) return;
 
-        // read battery raw input
-        rawValue = analogRead(batteryPin);
 
-        // calculate the voltage     
-        voltage = (rawValue / adcPrecision) * maxBatteryVoltage ;
+      nextReadTime = millis() + readingInterval;
+      lastReadTime = millis();
+      initializing = false;
 
-        // translate battery voltage into percentage
-        /*
-          the standard "map" function doesn't work
-          https://www.arduino.cc/reference/en/language/functions/math/map/  notes and warnings at the bottom
-        */
-        batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100);
+      // read battery raw input
+      rawValue = analogRead(batteryPin);
 
-        lastTime = now;
+      // calculate the voltage     
+      voltage = (rawValue / adcPrecision) * maxBatteryVoltage ;
+      // check if voltage is within specified voltage range
+      voltage = voltage<minBatteryVoltage||voltage>maxBatteryVoltage?-1.0f:voltage;
+
+      // translate battery voltage into percentage
+      /*
+        the standard "map" function doesn't work
+        https://www.arduino.cc/reference/en/language/functions/math/map/  notes and warnings at the bottom
+      */
+      batteryLevel = mapf(voltage, minBatteryVoltage, maxBatteryVoltage, 0, 100);
+
+
+      // SmartHome stuff
+      if (WLED_MQTT_CONNECTED) {
+        char subuf[64];
+        strcpy(subuf, mqttDeviceTopic);
+        strcat_P(subuf, PSTR("/voltage"));
+        mqtt->publish(subuf, 0, false, String(voltage).c_str());
       }
+
     }
 
 
@@ -163,9 +193,31 @@ class UsermodBatteryBasic : public Usermod
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      JsonArray battery = user.createNestedArray("Battery level");
-      battery.add(batteryLevel);
-      battery.add(F(" %"));
+      // info modal display names
+      JsonArray batteryPercentage = user.createNestedArray("Battery level");
+      JsonArray batteryVoltage = user.createNestedArray("Battery voltage");
+
+      if (initializing) {
+        batteryPercentage.add((nextReadTime - millis()) / 1000);
+        batteryPercentage.add(" sec");
+        batteryVoltage.add((nextReadTime - millis()) / 1000);
+        batteryVoltage.add(" sec");
+        return;
+      }
+
+      if(batteryLevel < 0) {
+        batteryPercentage.add(F("invalid"));
+      } else {
+        batteryPercentage.add(batteryLevel);
+      }
+      batteryPercentage.add(F(" %"));
+
+      if(voltage < 0) {
+        batteryVoltage.add(F("invalid"));
+      } else {
+        batteryVoltage.add(truncate(voltage, 2));
+      }
+      batteryVoltage.add(F(" V"));
     }
 
 
