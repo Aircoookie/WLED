@@ -1179,7 +1179,7 @@ function readState(s,command=false)
 		  errstr = "Preset not found.";
 		  break;
 		case 13:
-		  errstr = "Missing IR.json.";
+		  errstr = "Missing ir.json.";
 		  break;
 		case 19:
 		  errstr = "A filesystem error has occured.";

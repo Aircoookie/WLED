@@ -71,9 +71,11 @@ void decBrightness()
 // apply preset or fallback to a effect and palette if it doesn't exist
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) 
 {
+  byte prevError = errorFlag;
   if (!applyPreset(presetID, CALL_MODE_BUTTON)) { 
     effectCurrent = effectID;      
     effectPalette = paletteID;
+    errorFlag = prevError; //clear error 12 from non-existent preset
   }
 }
 
@@ -167,6 +169,7 @@ void decodeIR(uint32_t code)
   //if (decodeIRCustom(code)) return;
   if (irEnabled == 8) { // any remote configurable with ir.json file
     decodeIRJson(code);
+    colorUpdated(CALL_MODE_BUTTON);
     return;
   }
   if (code > 0xFFFFFF) return; //invalid code
@@ -568,24 +571,31 @@ Sample:
 void decodeIRJson(uint32_t code) 
 {
   char objKey[10];
-  const char* cmd;
   String cmdStr;
   DynamicJsonDocument irDoc(JSON_BUFFER_SIZE);
-  JsonObject fdo;
-  JsonObject jsonCmdObj;
+  JsonObject fdo = irDoc.createNestedObject("cmd");
 
+  lastValidCode = 0;
   sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 
+  // attempt to read command from ir.json
+  // this may fail for two reasons: ir.json does not exist or IR code not found
+  // if the IR code is not found readObjectFromFile() will clean() irDoc JSON document
+  // so we can differentiate between the two
   errorFlag = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_IRLOAD;
-  fdo = irDoc.as<JsonObject>();
-  lastValidCode = 0;
-  if (!errorFlag) 
-  {
-    cmd = fdo["cmd"];
-    cmdStr = String(cmd);
-    jsonCmdObj = fdo["cmd"];
-    if (!cmdStr.isEmpty()) 
-    {
+  if (irDoc["cmd"].isNull()) {
+    errorFlag = ERR_NONE;
+    return;
+  }
+  if (!errorFlag) {
+
+    fdo = irDoc.as<JsonObject>();
+
+    JsonObject jsonCmdObj = fdo["cmd"];
+    cmdStr = fdo["cmd"].as<String>();
+
+    if (!cmdStr.isEmpty()) {
+
       if (cmdStr.startsWith("!")) {
         // call limited set of C functions
         if (cmdStr.startsWith(F("!incBri"))) {
