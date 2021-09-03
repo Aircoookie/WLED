@@ -7,8 +7,11 @@
 #include "const.h" // for USERMOD_* values, total gpio count
 
 typedef struct PinManagerPinType {
-  int8_t  pin;
-  uint8_t isOutput;
+  int8_t  pin {-1};
+  uint8_t isOutput {true};
+  PinManagerPinType(int8_t pin, uint8_t isOutput) : pin(pin), isOutput(isOutput) {}
+  PinManagerPinType(int8_t pin) : pin(pin), isOutput(true) {}
+  PinManagerPinType() : pin(-1), isOutput(true) {}
 } managed_pin_type;
 
 /*
