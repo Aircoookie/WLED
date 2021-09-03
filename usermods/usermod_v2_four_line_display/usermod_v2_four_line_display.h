@@ -168,13 +168,15 @@ class FourLineDisplayUsermod : public Usermod {
     // network here
     void setup() {
       if (type == NONE) return;
-      byte i;
-      if (type == SSD1306_SPI || type == SSD1306_SPI64) {
-        PinManagerPinType pins[5] = { { ioPin[0], true }, { ioPin[1], true}, { ioPin[2], true }, { ioPin[3], true}, { ioPin[4], true }};
-        if (!pinManager.allocateMultiplePins(pins, 5, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
-      } else {
-        PinManagerPinType pins[2] = { { ioPin[0], true }, { ioPin[1], true} };
-        if (!pinManager.allocateMultiplePins(pins, 2, PinOwner::UM_FourLineDisplay)) { type=NONE; return; }
+      PinManagerPinType pins[5];
+      auto pinCount = (type == SSD1306_SPI || type == SSD1306_SPI64) ? 2 : 5;
+      for (auto i = 0; i < pinCount; i++) {
+        pins[i].pin = ioPin[i];
+        pins[i].isOutput = true;
+      }
+      if (!pinManager.allocateMultiplePins(pins, 5, PinOwner::UM_FourLineDisplay)) {
+        type=NONE;
+        return;
       }
       DEBUG_PRINTLN(F("Allocating display."));
       switch (type) {
@@ -242,10 +244,9 @@ class FourLineDisplayUsermod : public Usermod {
       }
       if (nullptr == u8x8) {
           DEBUG_PRINTLN(F("Display init failed."));
-          pinManager.deallocatePin(sclPin, PinOwner::UM_FourLineDisplay);
-          pinManager.deallocatePin(sdaPin, PinOwner::UM_FourLineDisplay);
-          sclPin = -1;
-          sdaPin = -1;
+          for (auto i = 0; i < 5; i++) {
+            pinManager.deallocatePin(pins[0].pin, PinOwner::UM_FourLineDisplay);
+          }
           type = NONE;
           return;
       }
@@ -724,25 +725,37 @@ class FourLineDisplayUsermod : public Usermod {
         DEBUG_PRINTLN(F(" config (re)loaded."));
         // changing parameters from settings page
         bool pinsChanged = false;
-        for (byte i=0; i<5; i++) if (ioPin[i] != newPin[i]) { pinsChanged = true; break; }
-        if (pinsChanged || type!=newType) {
-          if (type != NONE) delete (static_cast<U8X8*>(u8x8));
+        for (byte i=0; i<5; i++) {
+          if (ioPin[i] != newPin[i]) {
+            pinsChanged = true; break;
+          }
+        }
+        if (pinsChanged || type != newType) {
+          if (type != NONE) {
+            delete (static_cast<U8X8*>(u8x8));
+          }
           for (byte i=0; i<5; i++) {
-            if (ioPin[i]>=0) pinManager.deallocatePin(ioPin[i], PinOwner::UM_FourLineDisplay);
+            if (ioPin[i]>=0) {
+              pinManager.deallocatePin(ioPin[i], PinOwner::UM_FourLineDisplay);
+            }
             ioPin[i] = newPin[i];
           }
           if (ioPin[0]<0 || ioPin[1]<0) { // data & clock must be > -1
             type = NONE;
             return true;
-          } else type = newType;
+          } else {
+            type = newType;
+          }
           setup();
-          if (sclPin >= 0 && sdaPin >= 0) {
+          if (type != NONE) {
             needsRedraw |= true;
           }
         }
         setContrast(contrast);
         setFlipMode(flip);
-        if (needsRedraw && !wakeDisplay()) redraw(true);
+        if (needsRedraw && !wakeDisplay()) {
+          redraw(true);
+        }
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
       return !(top["pin"][2]).isNull();
