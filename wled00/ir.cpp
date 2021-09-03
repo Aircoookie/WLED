@@ -596,7 +596,7 @@ void decodeIRJson(uint32_t code)
           decBrightness();
         } else if (cmdStr.startsWith(F("!presetF"))) { //!presetFallback
           uint8_t p1 = fdo["PL"] ? fdo["PL"] : 1;
-          uint8_t p2 = fdo["FX"] ? fdo["FX"] : random8(100);
+          uint8_t p2 = fdo["FX"] ? fdo["FX"] : random8(MODE_COUNT);
           uint8_t p3 = fdo["FP"] ? fdo["FP"] : 0;
           presetFallback(p1, p2, p3);
         }
