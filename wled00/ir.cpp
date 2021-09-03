@@ -71,9 +71,11 @@ void decBrightness()
 // apply preset or fallback to a effect and palette if it doesn't exist
 void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID) 
 {
+  byte prevError = errorFlag;
   if (!applyPreset(presetID, CALL_MODE_BUTTON)) { 
     effectCurrent = effectID;      
     effectPalette = paletteID;
+    errorFlag = prevError; //clear error 12 from non-existent preset
   }
 }
 
@@ -566,16 +568,17 @@ void decodeIRJson(uint32_t code)
   char objKey[10];
   const char* cmd;
   String cmdStr;
+  byte irError;
   DynamicJsonDocument irDoc(JSON_BUFFER_SIZE);
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
   sprintf(objKey, "\"0x%X\":", code);
 
-  errorFlag = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_PLOAD;
+  irError = readObjectFromFile("/ir.json", objKey, &irDoc) ? ERR_NONE : ERR_FS_PLOAD;
   fdo = irDoc.as<JsonObject>();
   lastValidCode = 0;
-  if (!errorFlag) 
+  if (!irError) 
   {
     cmd = fdo["cmd"];
     cmdStr = String(cmd);
