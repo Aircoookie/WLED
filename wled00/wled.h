@@ -28,13 +28,24 @@
 //#define WLED_DISABLE_CRONIXIE    // saves 3kb
 //#define WLED_DISABLE_HUESYNC     // saves 4kb
 //#define WLED_DISABLE_INFRARED    // there is no pin left for this on ESP8266-01, saves 12kb
-#ifndef WLED_DISABLE_MQTT
+
+#if defined(WLED_DISABLE_MQTT) && defined(WLED_ENABLE_MQTT)
+  #error "Conflicting configuration: both WLED_DISABLE_MQTT and WLED_ENABLE_MQTT defined"
+#elif !defined(WLED_DISABLE_MQTT) && !defined(WLED_ENABLE_MQTT)
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
-#define WLED_ENABLE_ADALIGHT       // saves 500b only
+
+#if !defined(WLED_ENABLE_ADALIGHT)
+  #define WLED_ENABLE_ADALIGHT       // saves 500b only
+#endif
+
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
+
 #define WLED_ENABLE_LOXONE         // uses 1.2kb
-#ifndef WLED_DISABLE_WEBSOCKETS
+
+#if defined(WLED_DISABLE_WEBSOCKETS) && defined(WLED_ENABLE_WEBSOCKETS)
+  #error "Conflicting configuration: both WLED_DISABLE_WEBSOCKETS and WLED_ENABLE_WEBSOCKETS defined"
+#elif !defined(WLED_DISABLE_WEBSOCKETS) && !defined(WLED_ENABLE_WEBSOCKETS)
   #define WLED_ENABLE_WEBSOCKETS
 #endif
 
