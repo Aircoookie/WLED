@@ -161,8 +161,7 @@ void handleNotifications()
       for (uint16_t i = 0; i < packetSize -2; i += 3)
       {
         setRealtimePixel(id, lbuf[i], lbuf[i+1], lbuf[i+2], 0);
-        id++;
-        if (id >= ledCount) break;
+        id++; if (id >= ledCount) break;
       }
       strip.show();
       return;
