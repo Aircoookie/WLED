@@ -19,6 +19,8 @@ enum class AdaState {
   TPM2_Header_CountLo
 };
 
+#define MAX_LIVE_LEDS 180 // used for 'l' led serial output
+
 void handleSerial()
 {
   if (pinManager.isPinAllocated(3)) return;
@@ -35,92 +37,160 @@ void handleSerial()
   {
     yield();
     byte next = Serial.peek();
-    switch (state) {
-      case AdaState::Header_A:
-        if (next == 'A') state = AdaState::Header_d;
-        else if (next == 0xC9) { //TPM2 start byte
-          state = AdaState::TPM2_Header_Type;
-        }
-        else if (next == '{') { //JSON API
-          bool verboseResponse = false;
-          {
-            DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-            Serial.setTimeout(100);
-            DeserializationError error = deserializeJson(doc, Serial);
-            if (error) return;
-            fileDoc = &doc;
-            verboseResponse = deserializeState(doc.as<JsonObject>());
-            fileDoc = nullptr;
-          }
-          //only send response if TX pin is unused for other purposes
-          if (verboseResponse && !pinManager.isPinAllocated(1)) {
-            DynamicJsonDocument doc(JSON_BUFFER_SIZE);
-            JsonObject state = doc.createNestedObject("state");
-            serializeState(state);
-            JsonObject info  = doc.createNestedObject("info");
-            serializeInfo(info);
 
-            serializeJson(doc, Serial);
-          }
-        }
-        break;
-      case AdaState::Header_d:
-        if (next == 'd') state = AdaState::Header_a;
-        else             state = AdaState::Header_A;
-        break;
-      case AdaState::Header_a:
-        if (next == 'a') state = AdaState::Header_CountHi;
-        else             state = AdaState::Header_A;
-        break;
-      case AdaState::Header_CountHi:
-        pixel = 0;
-        count = next * 0x100;
-        check = next;
-        state = AdaState::Header_CountLo;
-        break;
-      case AdaState::Header_CountLo:
-        count += next + 1;
-        check = check ^ next ^ 0x55;
-        state = AdaState::Header_CountCheck;
-        break;
-      case AdaState::Header_CountCheck:
-        if (check == next) state = AdaState::Data_Red;
-        else               state = AdaState::Header_A;
-        break;
-      case AdaState::TPM2_Header_Type:
-        state = AdaState::Header_A; //(unsupported) TPM2 command or invalid type
-        if (next == 0xDA) state = AdaState::TPM2_Header_CountHi; //TPM2 data
-        else if (next == 0xAA) Serial.write(0xAC); //TPM2 ping
-        break;
-      case AdaState::TPM2_Header_CountHi:
-        pixel = 0;
-        count = (next * 0x100) /3;
-        state = AdaState::TPM2_Header_CountLo;
-        break;
-      case AdaState::TPM2_Header_CountLo:
-        count += next /3;
-        state = AdaState::Data_Red;
-        break;
-      case AdaState::Data_Red:
-        red   = next;
-        state = AdaState::Data_Green;
-        break;
-      case AdaState::Data_Green:
-        green = next;
-        state = AdaState::Data_Blue;
-        break;
-      case AdaState::Data_Blue:
-        byte blue  = next;
-        if (!realtimeOverride) setRealtimePixel(pixel++, red, green, blue, 0);
-        if (--count > 0) state = AdaState::Data_Red;
-        else {
-          if (!realtimeMode && bri == 0) strip.setBrightness(briLast);
-          realtimeLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
+    if (next == 'a') //JSON API Read all
+    {
+      if (!pinManager.isPinAllocated(1))
+      {
+        DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+        JsonObject state = doc.createNestedObject("state");
+        serializeState(state);
+        JsonObject info = doc.createNestedObject("info");
+        serializeInfo(info);
+        doc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
+        doc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
 
-          if (!realtimeOverride) strip.show();
-          state = AdaState::Header_A;
+        serializeJson(doc, Serial);
+      }
+    }
+    else if (next == 's')
+    { //JSON API Read
+      if (!pinManager.isPinAllocated(1))
+      {
+        DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+        JsonObject state = doc.createNestedObject("state");
+        serializeState(state);
+
+        serializeJson(doc, Serial);
+      }
+    }
+    else if (next == 'i')
+    {
+      if (!pinManager.isPinAllocated(1))
+      {
+        DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+        JsonObject info = doc.createNestedObject("info");
+        serializeInfo(info);
+
+        serializeJson(doc, Serial);
+      }
+    }
+    else if (next == 'l')
+    {
+      if (!pinManager.isPinAllocated(1))
+      {
+        DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+
+        uint16_t used = ledCount;
+        uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
+        char buffer[2000];
+        strcpy_P(buffer, PSTR("{\"leds\":["));
+        obuf = buffer;
+        olen = 9;
+
+        for (uint16_t i= 0; i < used; i += n)
+        {
+          olen += sprintf(obuf + olen, "\"%06X\",", strip.getPixelColor(i) & 0xFFFFFF);
         }
-        break;
+        olen -= 1;
+        oappend((const char*)F("],\"n\":"));
+        oappendi(n);
+        oappend("}");
+
+        doc[F("leds")]  = serialized(obuf);
+
+        serializeJson(doc, Serial);
+      }
+    }
+    else
+    {
+      switch (state) {
+        case AdaState::Header_A:
+          if (next == 'A') state = AdaState::Header_d;
+          else if (next == 0xC9) { //TPM2 start byte
+            state = AdaState::TPM2_Header_Type;
+          }
+          else if (next == '{') { //JSON API
+            bool verboseResponse = false;
+            {
+              DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+              Serial.setTimeout(100);
+              DeserializationError error = deserializeJson(doc, Serial);
+              if (error) return;
+              fileDoc = &doc;
+              verboseResponse = deserializeState(doc.as<JsonObject>());
+              fileDoc = nullptr;
+            }
+            //only send response if TX pin is unused for other purposes
+            if (verboseResponse && !pinManager.isPinAllocated(1)) {
+              DynamicJsonDocument doc(JSON_BUFFER_SIZE);
+              JsonObject state = doc.createNestedObject("state");
+              serializeState(state);
+              JsonObject info  = doc.createNestedObject("info");
+              serializeInfo(info);
+
+              serializeJson(doc, Serial);
+            }
+          }
+          break;
+        case AdaState::Header_d:
+          if (next == 'd') state = AdaState::Header_a;
+          else             state = AdaState::Header_A;
+          break;
+        case AdaState::Header_a:
+          if (next == 'a') state = AdaState::Header_CountHi;
+          else             state = AdaState::Header_A;
+          break;
+        case AdaState::Header_CountHi:
+          pixel = 0;
+          count = next * 0x100;
+          check = next;
+          state = AdaState::Header_CountLo;
+          break;
+        case AdaState::Header_CountLo:
+          count += next + 1;
+          check = check ^ next ^ 0x55;
+          state = AdaState::Header_CountCheck;
+          break;
+        case AdaState::Header_CountCheck:
+          if (check == next) state = AdaState::Data_Red;
+          else               state = AdaState::Header_A;
+          break;
+        case AdaState::TPM2_Header_Type:
+          state = AdaState::Header_A; //(unsupported) TPM2 command or invalid type
+          if (next == 0xDA) state = AdaState::TPM2_Header_CountHi; //TPM2 data
+          else if (next == 0xAA) Serial.write(0xAC); //TPM2 ping
+          break;
+        case AdaState::TPM2_Header_CountHi:
+          pixel = 0;
+          count = (next * 0x100) /3;
+          state = AdaState::TPM2_Header_CountLo;
+          break;
+        case AdaState::TPM2_Header_CountLo:
+          count += next /3;
+          state = AdaState::Data_Red;
+          break;
+        case AdaState::Data_Red:
+          red   = next;
+          state = AdaState::Data_Green;
+          break;
+        case AdaState::Data_Green:
+          green = next;
+          state = AdaState::Data_Blue;
+          break;
+        case AdaState::Data_Blue:
+          byte blue  = next;
+          if (!realtimeOverride) setRealtimePixel(pixel++, red, green, blue, 0);
+          if (--count > 0) state = AdaState::Data_Red;
+          else {
+            if (!realtimeMode && bri == 0) strip.setBrightness(briLast);
+            realtimeLock(realtimeTimeoutMs, REALTIME_MODE_ADALIGHT);
+
+            if (!realtimeOverride) strip.show();
+            state = AdaState::Header_A;
+          }
+          break;
+      }
     }
     Serial.read(); //discard the byte
   }
