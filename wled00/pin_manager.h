@@ -7,8 +7,8 @@
 #include "const.h" // for USERMOD_* values
 
 typedef struct PinManagerPinType {
-  int8_t  pin;
-  uint8_t isOutput;
+  int8_t pin;
+  bool   isOutput;
 } managed_pin_type;
 
 /*
@@ -87,7 +87,9 @@ class PinManagerClass {
   #endif
   inline void deallocatePin(byte gpio) { deallocatePin(gpio, PinOwner::None); }
 
+  // will return true for reserved pins
   bool isPinAllocated(byte gpio, PinOwner tag = PinOwner::None);
+  // will return false for reserved pins
   bool isPinOk(byte gpio, bool output = true);
 
   #ifdef ARDUINO_ARCH_ESP32
