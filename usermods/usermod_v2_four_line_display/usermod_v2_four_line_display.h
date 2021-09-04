@@ -169,8 +169,8 @@ class FourLineDisplayUsermod : public Usermod {
     void setup() {
       if (type == NONE) return;
       PinManagerPinType pins[5];
-      auto pinCount = (type == SSD1306_SPI || type == SSD1306_SPI64) ? 2 : 5;
-      for (auto i = 0; i < pinCount; i++) {
+      uint8_t pinCount = (type == SSD1306_SPI || type == SSD1306_SPI64) ? 2 : 5;
+      for (uint8_t i = 0; i < pinCount; i++) {
         pins[i].pin = ioPin[i];
         pins[i].isOutput = true;
       }
