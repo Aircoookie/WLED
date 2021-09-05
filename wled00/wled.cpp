@@ -278,6 +278,8 @@ void WLED::setup()
   DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
 
+  pinManager.allocatePin(1, true,  PinOwner::Serial);
+  pinManager.allocatePin(3, false, PinOwner::Serial);
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
     // GPIO16/GPIO17 reserved for SPI RAM
@@ -293,9 +295,6 @@ void WLED::setup()
     }
   }
 
-#ifdef WLED_DEBUG
-  pinManager.allocatePin(1, true, PinOwner::DebugOut); // GPIO1 reserved for debug output
-#endif
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
@@ -348,9 +347,7 @@ void WLED::setup()
 
   #ifdef WLED_ENABLE_ADALIGHT
   if (!pinManager.isPinAllocated(3)) {
-    // allow failure for pin allocations (may be used by debug)
-    // TODO: consider if/how DEBUG builds should work with AdaLight enabled
-    pinManager.allocatePin(1, true,  PinOwner::AdaLight);
+    // ??? allow failure for pin allocations (may be used by debug)
     pinManager.allocatePin(3, false, PinOwner::AdaLight);
     Serial.println(F("Ada"));
   }
