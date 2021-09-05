@@ -277,7 +277,6 @@ void WLED::setup()
 #endif
   DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
-  registerUsermods();
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
@@ -287,8 +286,12 @@ void WLED::setup()
   }
   #endif
 
-  //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
-  //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
+  if (true) {
+    // GPIO6 .. GPIO11 reserved for internal flash
+    for (byte pin = 6; pin <= 11; pin++) {
+      pinManager.allocatePin(pin, true, PinOwner::InternalFlash);
+    }
+  }
 
 #ifdef WLED_DEBUG
   pinManager.allocatePin(1, true, PinOwner::DebugOut); // GPIO1 reserved for debug output
@@ -296,6 +299,13 @@ void WLED::setup()
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
+
+  registerUsermods();
+
+
+  //DEBUG_PRINT(F("LEDs inited. heap usage ~"));
+  //DEBUG_PRINTLN(heapPreAlloc - ESP.getFreeHeap());
+
 
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 

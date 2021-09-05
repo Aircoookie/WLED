@@ -38,6 +38,8 @@ enum struct PinOwner : uint8_t {
   DebugOut      = 0x89,   // 'Dbg'  == debug output always IO1
   DMX           = 0x8A,   // 'DMX'  == hard-coded to IO2
   AdaLight      = 0x8B,
+  InternalFlash = 0x8C,   // Pins 6-11 on ESP32, ESP8266 are used for internal flash....
+  
   // Use UserMod IDs from const.h here
   UM_Unspecified       = USERMOD_ID_UNSPECIFIED,        // 0x01
   UM_RGBRotaryEncoder  = USERMOD_ID_UNSPECIFIED,        // 0x01 // No define in const.h for this user module -- consider adding?
