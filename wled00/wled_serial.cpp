@@ -51,6 +51,7 @@ void handleSerial()
         doc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
 
         serializeJson(doc, Serial);
+        Serial.println();
       }
     }
     else if (next == 's')
@@ -62,6 +63,7 @@ void handleSerial()
         serializeState(state);
 
         serializeJson(doc, Serial);
+        Serial.println();
       }
     }
     else if (next == 'i')
@@ -73,6 +75,7 @@ void handleSerial()
         serializeInfo(info);
 
         serializeJson(doc, Serial);
+        Serial.println();
       }
     }
     else if (next == 'l')
@@ -97,9 +100,10 @@ void handleSerial()
         oappendi(n);
         oappend("}");
 
-        doc[F("leds")]  = serialized(obuf);
+        doc.set(serialized(obuf));
 
         serializeJson(doc, Serial);
+        Serial.println();
       }
     }
     else
