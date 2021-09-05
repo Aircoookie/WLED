@@ -39,7 +39,6 @@ enum struct PinOwner : uint8_t {
   DMX           = 0x8A,   // 'DMX'  == hard-coded to IO2
   AdaLight      = 0x8B,
   InternalFlash = 0x8C,   // Pins 6-11 on ESP32, ESP8266 are used for internal flash....
-  Serial        = 0x8D,
   
   // Use UserMod IDs from const.h here
   UM_Unspecified       = USERMOD_ID_UNSPECIFIED,        // 0x01
