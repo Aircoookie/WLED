@@ -2,6 +2,12 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2108250
+
+-   Added Sync groups (PR #2150)
+-   Added JSON API over Serial support
+-   Live color correction (PR #1902)
+
 #### Build 2108180
 
 -   Fixed JSON IR remote not working with codes greater than 0xFFFFFF (fixes #2135)

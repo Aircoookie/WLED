@@ -900,7 +900,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     WS2812FX::Segment& seg = strip.getSegment(i);
     if (!seg.isSelected()) continue;
     if (effectCurrent != prevEffect) {
-      seg.mode = effectCurrent;
+      strip.setMode(i, effectCurrent);
       effectChanged = true;
     }
     if (effectSpeed != prevSpeed) {
