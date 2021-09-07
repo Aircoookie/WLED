@@ -853,7 +853,7 @@ class WS2812FX {
       chase(uint32_t, uint32_t, uint32_t, bool),
       gradient_base(bool),
       ripple_base(bool),
-      police_base(uint32_t, uint32_t, bool),
+      police_base(uint32_t, uint32_t, uint16_t),
       running(uint32_t, uint32_t, bool theatre=false),
       tricolor_chase(uint32_t, uint32_t),
       twinklefox_base(bool),

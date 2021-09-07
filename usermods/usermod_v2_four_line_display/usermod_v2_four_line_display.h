@@ -347,7 +347,6 @@ class FourLineDisplayUsermod : public Usermod {
           (knownMode != strip.getMode()) ||
           (knownPalette != strip.getSegment(0).palette)) {
         knownHour = 99; // force time update
-        clear();
       } else if (sleepMode && !displayTurnedOff && ((now - lastRedraw)/1000)%5 == 0) {
         // change line every 5s
         showName = !showName;
@@ -528,7 +527,6 @@ class FourLineDisplayUsermod : public Usermod {
       }
 
       // Print the overlay
-      clear();
       if (line1) drawString(0, 1*lineHeight, line1);
       if (line2) drawString(0, 2*lineHeight, line2);
       overlayUntil = millis() + showHowLong;
@@ -562,6 +560,7 @@ class FourLineDisplayUsermod : public Usermod {
         else           setPowerSave(1);
         displayTurnedOff = true;
       } else {
+        clear();
         setPowerSave(0);
         displayTurnedOff = false;
       }
@@ -582,8 +581,6 @@ class FourLineDisplayUsermod : public Usermod {
       if (knownMinute == minuteCurrent && knownHour == hourCurrent) {
         // Time hasn't changed.
         if (!fullScreen) return;
-      } else {
-        //if (fullScreen) clear();
       }
       knownMinute = minuteCurrent;
       knownHour = hourCurrent;

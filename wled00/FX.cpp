@@ -1216,44 +1216,17 @@ uint16_t WS2812FX::mode_loading(void) {
 
 
 //American Police Light with all LEDs Red and Blue 
-uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2, bool all)
+uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2, uint16_t width)
 {
-  uint16_t counter = now * ((SEGMENT.speed >> 2) +1);
-  uint16_t idexR = (counter * SEGLEN) >> 16;
-  if (idexR >= SEGLEN) idexR = 0;
-
-  uint16_t topindex = SEGLEN >> 1;
-  uint16_t idexB = (idexR > topindex) ? idexR - topindex : idexR + topindex;
-  if (SEGENV.call == 0) SEGENV.aux0 = idexR;
-  if (idexB >= SEGLEN) idexB = 0; //otherwise overflow on odd number of LEDs
-
-  if (all) { //different algo, ensuring immediate fill
-    if (idexB > idexR) {
-      fill(color2);
-      for (uint16_t i = idexR; i < idexB; i++) setPixelColor(i, color1);
-    } else {
-      fill(color1);
-      for (uint16_t i = idexB; i < idexR; i++) setPixelColor(i, color2);
-    } 
-  } else { //regular dot-only mode
-    uint8_t size = 1 + (SEGMENT.intensity >> 3);
-    if (size > SEGLEN/2) size = 1+ SEGLEN/2;
-    for (uint8_t i=0; i <= size; i++) {
-      setPixelColor(idexR+i, color1);
-      setPixelColor(idexB+i, color2);
-    }
-    if (SEGENV.aux0 != idexR) {
-      uint8_t gap = (SEGENV.aux0 < idexR)? idexR - SEGENV.aux0:SEGLEN - SEGENV.aux0 + idexR;
-      for (uint8_t i = 0; i <= gap ; i++) {
-        if ((idexR - i) < 0) idexR = SEGLEN-1 + i;
-        if ((idexB - i) < 0) idexB = SEGLEN-1 + i;
-        setPixelColor(idexR-i, color1);
-        setPixelColor(idexB-i, color2);
-      }
-      SEGENV.aux0 = idexR;
-    }
-  }
+  uint32_t it = now / map(SEGMENT.speed, 0, 255, 96, 12);
+  uint16_t offset = it % SEGLEN;
   
+  for (uint16_t i = 0; i < width; i++) {
+    uint16_t indexR = (offset + i) % SEGLEN;
+    uint16_t indexB = (offset + i + (SEGLEN>>1)) % SEGLEN;
+    setPixelColor(indexR, color1);
+    setPixelColor(indexB, color2);
+  }
   return FRAMETIME;
 }
 
@@ -1261,23 +1234,22 @@ uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2, bool all)
 //American Police Light with all LEDs Red and Blue 
 uint16_t WS2812FX::mode_police_all()
 {
-  return police_base(RED, BLUE, true);
+  return police_base(RED, BLUE, (SEGLEN>>1));
 }
 
 
 //Police Lights Red and Blue 
 uint16_t WS2812FX::mode_police()
 {
-  fill(SEGCOLOR(1));
-
-  return police_base(RED, BLUE, false);
+  fill(BLACK);
+  return police_base(RED, BLUE, (1 + ((SEGLEN*SEGMENT.intensity)>>9)));
 }
 
 
 //Police All with custom colors
 uint16_t WS2812FX::mode_two_areas()
 {
-  return police_base(SEGCOLOR(0), SEGCOLOR(1), true);
+  return police_base(SEGCOLOR(0), SEGCOLOR(1), (SEGLEN>>1));
 }
 
 
@@ -1287,7 +1259,7 @@ uint16_t WS2812FX::mode_two_dots()
   fill(SEGCOLOR(2));
   uint32_t color2 = (SEGCOLOR(1) == SEGCOLOR(2)) ? SEGCOLOR(0) : SEGCOLOR(1);
 
-  return police_base(SEGCOLOR(0), color2, false);
+  return police_base(SEGCOLOR(0), color2, 1);
 }
 
 
@@ -1295,21 +1267,20 @@ uint16_t WS2812FX::mode_two_dots()
  * Tricolor chase function
  */
 uint16_t WS2812FX::tricolor_chase(uint32_t color1, uint32_t color2) {
-  uint32_t cycleTime = 50 + (255 - SEGMENT.speed)*2;
-  uint32_t it = now / cycleTime;
-  uint8_t width = (1 + SEGMENT.intensity/32) * 3; //value of 1-8 for each colour
-  uint8_t index = it % width;
+  uint32_t cycleTime = 50 + ((255 - SEGMENT.speed)<<1);
+  uint32_t it = now / cycleTime;  // iterator
+  uint8_t width = (1 + (SEGMENT.intensity>>4)); // value of 1-16 for each colour
+  uint8_t index = it % (width*3);
   
-  for(uint16_t i = 0; i < SEGLEN; i++, index++) {
-    if(index > width-1) index = 0;
+  for (uint16_t i = 0; i < SEGLEN; i++, index++) {
+    if (index > (width*3)-1) index = 0;
 
     uint32_t color = color1;
-    if(index > width*2/3-1) color = color_from_palette(i, true, PALETTE_SOLID_WRAP, 1);
-    else if(index > width/3-1) color = color2;
+    if (index > (width<<1)-1) color = color_from_palette(i, true, PALETTE_SOLID_WRAP, 1);
+    else if (index > width-1) color = color2;
 
     setPixelColor(SEGLEN - i -1, color);
   }
-
   return FRAMETIME;
 }
 
