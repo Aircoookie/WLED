@@ -1218,9 +1218,11 @@ uint16_t WS2812FX::mode_loading(void) {
 //American Police Light with all LEDs Red and Blue 
 uint16_t WS2812FX::police_base(uint32_t color1, uint32_t color2, uint16_t width)
 {
-  uint32_t it = now / map(SEGMENT.speed, 0, 255, 96, 12);
+  uint16_t delay = 1 + (FRAMETIME<<3) / SEGLEN;  // longer segments should change faster
+  uint32_t it = now / map(SEGMENT.speed, 0, 255, delay<<4, delay);
   uint16_t offset = it % SEGLEN;
   
+  if (!width) width = 1;
   for (uint16_t i = 0; i < width; i++) {
     uint16_t indexR = (offset + i) % SEGLEN;
     uint16_t indexB = (offset + i + (SEGLEN>>1)) % SEGLEN;
@@ -1242,7 +1244,7 @@ uint16_t WS2812FX::mode_police_all()
 uint16_t WS2812FX::mode_police()
 {
   fill(SEGCOLOR(1));
-  return police_base(RED, BLUE, (1 + ((SEGLEN*SEGMENT.intensity)>>9))); // max width is half the strip
+  return police_base(RED, BLUE, ((SEGLEN*(SEGMENT.intensity+1))>>9)); // max width is half the strip
 }
 
 
@@ -1250,7 +1252,7 @@ uint16_t WS2812FX::mode_police()
 uint16_t WS2812FX::mode_two_areas()
 {
   fill(SEGCOLOR(2));
-  return police_base(SEGCOLOR(0), SEGCOLOR(1), (1 + ((SEGLEN*SEGMENT.intensity)>>9))); // max width is half the strip
+  return police_base(SEGCOLOR(0), SEGCOLOR(1), ((SEGLEN*(SEGMENT.intensity+1))>>9)); // max width is half the strip
 }
 
 
@@ -1260,7 +1262,7 @@ uint16_t WS2812FX::mode_two_dots()
   fill(SEGCOLOR(2));
   uint32_t color2 = (SEGCOLOR(1) == SEGCOLOR(2)) ? SEGCOLOR(0) : SEGCOLOR(1);
 
-  return police_base(SEGCOLOR(0), color2, (1 + ((SEGLEN*SEGMENT.intensity)>>9))); // max width is half the strip
+  return police_base(SEGCOLOR(0), color2, ((SEGLEN*(SEGMENT.intensity+1))>>9)); // max width is half the strip
 }
 
 
