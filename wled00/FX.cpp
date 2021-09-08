@@ -1241,15 +1241,16 @@ uint16_t WS2812FX::mode_police_all()
 //Police Lights Red and Blue 
 uint16_t WS2812FX::mode_police()
 {
-  fill(BLACK);
-  return police_base(RED, BLUE, (1 + ((SEGLEN*SEGMENT.intensity)>>9)));
+  fill(SEGCOLOR(1));
+  return police_base(RED, BLUE, (1 + ((SEGLEN*SEGMENT.intensity)>>9))); // max width is half the strip
 }
 
 
 //Police All with custom colors
 uint16_t WS2812FX::mode_two_areas()
 {
-  return police_base(SEGCOLOR(0), SEGCOLOR(1), (SEGLEN>>1));
+  fill(SEGCOLOR(2));
+  return police_base(SEGCOLOR(0), SEGCOLOR(1), (1 + ((SEGLEN*SEGMENT.intensity)>>9))); // max width is half the strip
 }
 
 
@@ -1259,7 +1260,7 @@ uint16_t WS2812FX::mode_two_dots()
   fill(SEGCOLOR(2));
   uint32_t color2 = (SEGCOLOR(1) == SEGCOLOR(2)) ? SEGCOLOR(0) : SEGCOLOR(1);
 
-  return police_base(SEGCOLOR(0), color2, 1);
+  return police_base(SEGCOLOR(0), color2, (1 + ((SEGLEN*SEGMENT.intensity)>>9))); // max width is half the strip
 }
 
 
