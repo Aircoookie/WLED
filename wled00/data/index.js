@@ -579,10 +579,11 @@ function populateSegments(s)
 				<span class="checkmark schk"></span>
 			</label>
 			<div class="segname" onclick="selSegEx(${i})">
-				Segment ${i}
+				${inst.n ? inst.n : "Segment "+i}
 			</div>
 			<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 			<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
+				<input type="text" class="ptxt noslide" id="seg${i}t" autocomplete="off" maxlength=32 value="${inst.n?inst.n:""}" placeholder="Enter name..."/>
 				<div class="sbs">
 				<i class="icons e-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})">&#xe08f;</i>
 				<div class="sliderwrap il sws">
@@ -1498,10 +1499,11 @@ function selSeg(s){
 }
 
 function setSeg(s){
+	var name  = d.getElementById(`seg${s}t`).value;
 	var start = parseInt(d.getElementById(`seg${s}s`).value);
 	var stop	= parseInt(d.getElementById(`seg${s}e`).value);
 	if (stop <= start) {delSeg(s); return;}
-	var obj = {"seg": {"id": s, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
+	var obj = {"seg": {"id": s, "n": name, "start": start, "stop": (cfg.comp.seglen?start:0)+stop}};
 	if (d.getElementById(`seg${s}grp`))
 	{
 		var grp = parseInt(d.getElementById(`seg${s}grp`).value);

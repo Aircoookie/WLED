@@ -23,7 +23,7 @@
 
   Modified heavily for WLED
 */
-
+#include "wled.h"
 #include "FX.h"
 #include "palettes.h"
 
@@ -40,7 +40,7 @@
   another example. Switches direction every 5 LEDs.
   {"map":[
   0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14,
-  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]
+  19, 18, 17, 16, 15, 20, 21, 22, 23, 24, 29, 28, 27, 26, 25]}
 */
 
 //factory defaults LED setup
@@ -197,14 +197,13 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
   int16_t realIndex = iGroup;
   if (IS_REVERSE) {
     if (IS_MIRROR) {
-      realIndex = (SEGMENT.length() -1) / 2 - iGroup;  //only need to index half the pixels
+      realIndex = (SEGMENT.length() - 1) / 2 - iGroup;  //only need to index half the pixels
     } else {
-      realIndex = SEGMENT.length() - iGroup - 1;
+      realIndex = (SEGMENT.length() - 1) - iGroup;
     }
   }
 
   realIndex += SEGMENT.start;
-
   return realIndex;
 }
 
@@ -225,7 +224,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
   }
   
   if (SEGLEN) {//from segment
-
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
     if (_bri_t < 255) {  
       r = scale8(r, _bri_t);
@@ -235,12 +233,12 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
 
-    bool reversed = IS_REVERSE;
+    /* Set all the pixels in the group */
     uint16_t realIndex = realPixelIndex(i);
     uint16_t len = SEGMENT.length();
 
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
-      int indexSet = realIndex + (reversed ? -j : j);
+      uint16_t indexSet = realIndex + (IS_REVERSE ? -j : j);
       if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {
         if (IS_MIRROR) { //set the corresponding mirrored pixel
           uint16_t indexMir = SEGMENT.stop - indexSet + SEGMENT.start - 1;
@@ -252,8 +250,8 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
           busses.setPixelColor(indexMir, col);
         }
         /* offset/phase */
-          indexSet += SEGMENT.offset;
-          if (indexSet >= SEGMENT.stop) indexSet -= len;
+        indexSet += SEGMENT.offset;
+        if (indexSet >= SEGMENT.stop) indexSet -= len;
 
         if (indexSet < customMappingSize) indexSet = customMappingTable[indexSet];
         busses.setPixelColor(indexSet, col);
@@ -261,7 +259,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     }
   } else { //live data, etc.
     if (i < customMappingSize) i = customMappingTable[i];
-    
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
     busses.setPixelColor(i, col);
   }
@@ -542,6 +539,7 @@ uint32_t WS2812FX::getPixelColor(uint16_t i)
   }
   
   if (i < customMappingSize) i = customMappingTable[i];
+  if (i >= _length) return 0;
   
   return busses.getPixelColor(i);
 }
@@ -563,14 +561,14 @@ uint32_t WS2812FX::getLastShow(void) {
   return _lastShow;
 }
 
-//TODO these need to be on a per-strip basis
-uint8_t WS2812FX::getColorOrder(void) {
-  return COL_ORDER_GRB;
-}
-
-void WS2812FX::setColorOrder(uint8_t co) {
-  //bus->SetColorOrder(co);
-}
+// there is no longer any need for these two
+//uint8_t WS2812FX::getColorOrder(void) {
+//  return COL_ORDER_GRB;
+//}
+//
+//void WS2812FX::setColorOrder(uint8_t co) {
+//  //bus->SetColorOrder(co);
+//}
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing) {
   if (n >= MAX_NUM_SEGMENTS) return;
@@ -607,6 +605,7 @@ void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping,
 }
 
 void WS2812FX::resetSegments() {
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) if (_segments[i].name) delete _segments[i].name;
   mainSegment = 0;
   memset(_segments, 0, sizeof(_segments));
   //memset(_segment_runtimes, 0, sizeof(_segment_runtimes));
@@ -633,6 +632,25 @@ void WS2812FX::resetSegments() {
     _segment_runtimes[i].reset();
   }
   _segment_runtimes[0].reset();
+}
+
+void WS2812FX::populateDefaultSegments() {
+  uint16_t length = 0;
+  for (uint8_t i=0; i<busses.getNumBusses(); i++) {
+    Bus *bus = busses.getBus(i);
+    if (bus == nullptr) continue;
+    _segments[i].start = bus->getStart();
+    length += bus->getLength();
+    _segments[i].stop = _segments[i].start + bus->getLength();
+    _segments[i].mode = DEFAULT_MODE;
+    _segments[i].colors[0] = DEFAULT_COLOR;
+    _segments[i].speed = DEFAULT_SPEED;
+    _segments[i].intensity = DEFAULT_INTENSITY;
+    _segments[i].grouping = 1;
+    _segments[i].setOption(SEG_OPTION_SELECTED, 1);
+    _segments[i].setOption(SEG_OPTION_ON, 1);
+    _segments[i].opacity = 255;
+  }
 }
 
 //After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)
@@ -1012,18 +1030,33 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
 
 
 //load custom mapping table from JSON file
-void WS2812FX::deserializeMap(void) {
-  if (!WLED_FS.exists("/ledmap.json")) return;
+void WS2812FX::deserializeMap(uint8_t n) {
+  String fileName = String(F("/ledmap"));
+  if (n) fileName += String(n);
+  fileName += String(F(".json"));
+  bool isFile = WLED_FS.exists(fileName);
+
+  if (!isFile) {
+    // erase custom mapping if selecting nonexistent ledmap.json (n==0)
+    if (!n && customMappingTable != nullptr) {
+      customMappingSize = 0;
+      delete[] customMappingTable;
+      customMappingTable = nullptr;
+    }
+    return;
+  }
+
   DynamicJsonDocument doc(JSON_BUFFER_SIZE);  // full sized buffer for larger maps
+  DEBUG_PRINT(F("Reading LED map from "));
+  DEBUG_PRINTLN(fileName);
 
-  DEBUG_PRINTLN(F("Reading LED map from /ledmap.json..."));
+  if (!readObjectFromFile(fileName.c_str(), nullptr, &doc)) return; //if file does not exist just exit
 
-  if (!readObjectFromFile("/ledmap.json", nullptr, &doc)) return; //if file does not exist just exit
-
+  // erase old custom ledmap
   if (customMappingTable != nullptr) {
+    customMappingSize = 0;
     delete[] customMappingTable;
     customMappingTable = nullptr;
-    customMappingSize = 0;
   }
 
   JsonArray map = doc[F("map")];
