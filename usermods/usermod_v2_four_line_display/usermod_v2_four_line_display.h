@@ -408,7 +408,7 @@ class FourLineDisplayUsermod : public Usermod {
       center(line, getCols()-2);
       drawString(1, 0, line.c_str());
       // Print `~` char to indicate that SSID is longer, than our display
-      if (knownSsid.length() > getCols()-1) {
+      if (knownSsid.length() > (int)getCols()-1) {
         drawString(getCols() - 1, 0, "~");
       }
 
