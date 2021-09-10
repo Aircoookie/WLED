@@ -113,7 +113,8 @@ id="dbar"
 style="display:inline-block;width:100px;height:10px;border-radius:20px"></div>
 <br><div id="ledwarning" style="color:orange;display:none">
 &#9888; You might run into stability or lag issues.<br>Use less than <span 
-id="wreason">800 LEDs per pin</span> for the best experience!<br></div><hr 
+id="wreason">800 LEDs per pin</span> for the best experience!<br></div>
+Make a segment for each output: <input type="checkbox" name="MS"><br><hr 
 style="width:260px"><div id="btns"></div>Touch threshold: <input type="number" 
 class="s" min="0" max="100" name="TT" required><br>IR pin: <input type="number" 
 class="xs" min="-1" max="40" name="IR" onchange="UI()">&nbsp;<select name="IT" 

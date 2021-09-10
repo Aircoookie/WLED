@@ -202,6 +202,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject light = doc[F("light")];
   CJSON(briMultiplier, light[F("scale-bri")]);
   CJSON(strip.paletteBlend, light[F("pal-mode")]);
+  CJSON(autoSegments, light[F("aseg")]);
 
   float light_gc_bri = light["gc"]["bri"];
   float light_gc_col = light["gc"]["col"]; // 2.8
@@ -565,6 +566,7 @@ void serializeConfig() {
   JsonObject light = doc.createNestedObject(F("light"));
   light[F("scale-bri")] = briMultiplier;
   light[F("pal-mode")] = strip.paletteBlend;
+  light[F("aseg")] = autoSegments;
 
   JsonObject light_gc = light.createNestedObject("gc");
   light_gc["bri"] = (strip.gammaCorrectBri) ? 2.8 : 1.0;

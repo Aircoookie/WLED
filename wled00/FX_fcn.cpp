@@ -98,24 +98,25 @@ void WS2812FX::finalizeInit(uint16_t countPixels)
   setBrightness(_brightness);
 
   //TODO make sure segments are only refreshed when bus config actually changed (new settings page)
-  //make one segment per bus
   uint8_t s = 0;
   for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
     Bus* b = busses.getBus(i);
 
-    segStarts[s] = b->getStart();
-    segStops[s] = segStarts[s] + b->getLength();
+    if (autoSegments) { //make one segment per bus
+      segStarts[s] = b->getStart();
+      segStops[s] = segStarts[s] + b->getLength();
 
-    //check for overlap with previous segments
-    for (uint8_t j = 0; j < s; j++) {
-      if (segStops[j] > segStarts[s] && segStarts[j] < segStops[s]) {
-        //segments overlap, merge
-        segStarts[j] = min(segStarts[s],segStarts[j]);
-        segStops [j] = max(segStops [s],segStops [j]); segStops[s] = 0;
-        s--;
+      //check for overlap with previous segments
+      for (uint8_t j = 0; j < s; j++) {
+        if (segStops[j] > segStarts[s] && segStarts[j] < segStops[s]) {
+          //segments overlap, merge
+          segStarts[j] = min(segStarts[s],segStarts[j]);
+          segStops [j] = max(segStops [s],segStops [j]); segStops[s] = 0;
+          s--;
+        }
       }
+      s++;
     }
-    s++;
 
     #ifdef ESP8266
     if ((!IS_DIGITAL(b->getType()) || IS_2PIN(b->getType()))) continue;
@@ -126,9 +127,29 @@ void WS2812FX::finalizeInit(uint16_t countPixels)
     #endif
   }
 
-  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-    _segments[i].start = segStarts[i];
-    _segments[i].stop  = segStops [i];
+  if (autoSegments) {
+    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+      _segments[i].start = segStarts[i];
+      _segments[i].stop  = segStops [i];
+    }
+  } else {
+    //expand the main seg to the entire length, but only if there are no other segments
+    uint8_t mainSeg = getMainSegmentId();
+    bool isMultipleSegs = false;
+    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+    {
+      if (i != mainSeg && _segments[i].isActive()) isMultipleSegs = true;
+    }
+    if (!isMultipleSegs) {
+      _segments[mainSeg].start = 0; _segments[mainSeg].stop = _length;
+    } else {
+      //there are multiple segments, leave them, but prune length to total
+      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+      {
+        if (_segments[i].start > _length) _segments[i].stop = 0;
+        if (_segments[i].stop > _length) _segments[i].stop = _length;
+      }
+    }
   }
 }
 
