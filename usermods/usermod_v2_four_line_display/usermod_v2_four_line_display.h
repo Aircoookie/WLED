@@ -346,7 +346,8 @@ class FourLineDisplayUsermod : public Usermod {
           (knownEffectIntensity != effectIntensity) ||
           (knownMode != strip.getMode()) ||
           (knownPalette != strip.getSegment(0).palette)) {
-        knownHour = 99; // force time update
+        knownHour = 99;   // force time update
+        lastRedraw = now; // update lastRedraw marker
       } else if (sleepMode && !displayTurnedOff && ((now - lastRedraw)/1000)%5 == 0) {
         // change line every 5s
         showName = !showName;
@@ -371,13 +372,13 @@ class FourLineDisplayUsermod : public Usermod {
             break;
         }
         knownHour = 99; // force time update
+        // do not update lastRedraw marker if just switching row contenet
       } else {
         // Nothing to change.
         // Turn off display after 3 minutes with no change.
         if(sleepMode && !displayTurnedOff && (millis() - lastRedraw > screenTimeout)) {
           // We will still check if there is a change in redraw()
           // and turn it back on if it changed.
-          clear(); // force screen clear
           sleepOrClock(true);
         } else if (displayTurnedOff && clockMode) {
           showTime();
@@ -385,9 +386,6 @@ class FourLineDisplayUsermod : public Usermod {
         return;
       }
 
-      // do not update lastRedraw marker if just switching row contenet
-      if (((now - lastRedraw)/1000)%5 != 0) lastRedraw = now;
-      
       // Turn the display back on
       if (displayTurnedOff) sleepOrClock(false);
 
@@ -522,13 +520,23 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void overlay(const char* line1, const char *line2, long showHowLong) {
       if (displayTurnedOff) {
-        // Turn the display back on
+        // Turn the display back on (includes clear())
         sleepOrClock(false);
+      } else {
+        clear();
       }
 
       // Print the overlay
-      if (line1) drawString(0, 1*lineHeight, line1);
-      if (line2) drawString(0, 2*lineHeight, line2);
+      if (line1) {
+        String buf = line1;
+        center(buf, getCols());
+        drawString(0, 1*lineHeight, buf.c_str());
+      }
+      if (line2) {
+        String buf = line2;
+        center(buf, getCols());
+        drawString(0, 2*lineHeight, buf.c_str());
+      }
       overlayUntil = millis() + showHowLong;
     }
 
@@ -555,12 +563,12 @@ class FourLineDisplayUsermod : public Usermod {
      * Enable sleep (turn the display off) or clock mode.
      */
     void sleepOrClock(bool enabled) {
+      clear();
       if (enabled) {
         if (clockMode) showTime();
         else           setPowerSave(1);
         displayTurnedOff = true;
       } else {
-        clear();
         setPowerSave(0);
         displayTurnedOff = false;
       }

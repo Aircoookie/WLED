@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2109071
+#define VERSION 2109111
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -566,7 +566,7 @@ WLED_GLOBAL JsonDocument* fileDoc;
 WLED_GLOBAL bool doCloseFile _INIT(false);
 
 // presets
-WLED_GLOBAL int16_t currentPreset _INIT(-1);
+WLED_GLOBAL int8_t currentPreset _INIT(-1);
 
 WLED_GLOBAL byte errorFlag _INIT(0);
 
@@ -628,7 +628,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   WLED_GLOBAL unsigned long debugTime _INIT(0);
   WLED_GLOBAL int lastWifiState _INIT(3);
   WLED_GLOBAL unsigned long wifiStateChangedTime _INIT(0);
-  WLED_GLOBAL int loops _INIT(0);
+  WLED_GLOBAL unsigned long loops _INIT(0);
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32

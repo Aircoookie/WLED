@@ -204,6 +204,10 @@ void WiFiEvent(WiFiEvent_t event)
 
 void WLED::loop()
 {
+  #ifdef WLED_DEBUG
+  static unsigned long maxUsermodMillis = 0;
+  #endif
+
   handleTime();
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
@@ -214,7 +218,15 @@ void WLED::loop()
   handleDMX();
 #endif
   userLoop();
+
+  #ifdef WLED_DEBUG
+  unsigned long usermodMillis = millis();
+  #endif
   usermods.loop();
+  #ifdef WLED_DEBUG
+  usermodMillis = millis() - usermodMillis;
+  if (usermodMillis > maxUsermodMillis) maxUsermodMillis = usermodMillis;
+  #endif
 
   yield();
   handleIO();
@@ -312,7 +324,7 @@ void WLED::loop()
 
 // DEBUG serial logging
 #ifdef WLED_DEBUG
-  if (millis() - debugTime > 59999) {
+  if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
@@ -324,17 +336,19 @@ void WLED::loop()
     } else
       DEBUG_PRINTLN(F("No PSRAM"));
     #endif
-    DEBUG_PRINT(F("Wifi state: "));    DEBUG_PRINTLN(WiFi.status());
+    DEBUG_PRINT(F("Wifi state: "));      DEBUG_PRINTLN(WiFi.status());
 
     if (WiFi.status() != lastWifiState) {
       wifiStateChangedTime = millis();
     }
     lastWifiState = WiFi.status();
-    DEBUG_PRINT(F("State time: "));    DEBUG_PRINTLN(wifiStateChangedTime);
-    DEBUG_PRINT(F("NTP last sync: ")); DEBUG_PRINTLN(ntpLastSyncTime);
-    DEBUG_PRINT(F("Client IP: "));     DEBUG_PRINTLN(Network.localIP());
-    DEBUG_PRINT(F("Loops/sec: "));     DEBUG_PRINTLN(loops / 10);
+    DEBUG_PRINT(F("State time: "));      DEBUG_PRINTLN(wifiStateChangedTime);
+    DEBUG_PRINT(F("NTP last sync: "));   DEBUG_PRINTLN(ntpLastSyncTime);
+    DEBUG_PRINT(F("Client IP: "));       DEBUG_PRINTLN(Network.localIP());
+    DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 60);
+    DEBUG_PRINT(F("Max UM time[ms]: ")); DEBUG_PRINTLN(maxUsermodMillis);
     loops = 0;
+    maxUsermodMillis = 0;
     debugTime = millis();
   }
   loops++;

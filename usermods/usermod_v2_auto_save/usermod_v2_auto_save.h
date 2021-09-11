@@ -38,7 +38,7 @@ class AutoSaveUsermod : public Usermod {
     bool applyAutoSaveOnBoot = false;     // do we load auto-saved preset on boot?
 
     // If we've detected the need to auto save, this will be non zero.
-    uint16_t autoSaveAfter = 0;
+    unsigned long autoSaveAfter = 0;
 
     uint8_t knownBrightness = 0;
     uint8_t knownEffectSpeed = 0;
@@ -104,7 +104,7 @@ class AutoSaveUsermod : public Usermod {
      * Da loop.
      */
     void loop() {
-      if (!autoSaveAfterSec || !enabled || strip.isUpdating()) return;  // setting 0 as autosave seconds disables autosave
+      if (!autoSaveAfterSec || !enabled || strip.isUpdating() || currentPreset>0) return;  // setting 0 as autosave seconds disables autosave
 
       unsigned long now = millis();
       uint8_t currentMode = strip.getMode();
