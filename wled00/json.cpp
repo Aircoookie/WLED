@@ -15,31 +15,33 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   //WS2812FX::Segment prev;
   //prev = seg; //make a backup so we can tell if something changed
 
-  uint16_t start = elem[F("start")] | seg.start;
+  uint16_t start = elem["start"] | seg.start;
   int stop = elem["stop"] | -1;
 
-    if (elem["n"]) {
-      // name field exists
-      String name = elem["n"];
-      if (name.length()) {
-        if (seg.name) delete seg.name;
-        seg.name = new char[name.length()+1];
-        strcpy(seg.name, name.c_str());
-      } else {
-        // but is empty
-        elem.remove("n");
-        if (seg.name) {
-          delete seg.name;
-          seg.name = nullptr;
-        }
-      }
-    } else if (elem[F("start")] || elem["stop"]) {
-      // clearing or setting segment without name field
-      if (seg.name) {
-        delete seg.name;
-        seg.name = nullptr;
-      }
+  if (elem["n"]) {
+    // name field exists
+    if (seg.name) { //clear old name
+      delete[] seg.name;
+      seg.name = nullptr;
     }
+
+    const char * name = elem["n"].as<const char*>();
+    size_t len = 0;
+    if (name != nullptr) len = strlen(name);
+    if (len > 0 && len < 33) {
+      seg.name = new char[len+1];
+      if (seg.name) strlcpy(seg.name, name, 33);
+    } else {
+      // but is empty (already deleted above)
+      elem.remove("n");
+    }
+  } else if (elem["start"] || elem["stop"]) {
+    // clearing or setting segment without name field
+    if (seg.name) {
+      delete[] seg.name;
+      seg.name = nullptr;
+    }
+  }
 
   if (stop < 0) {
     uint16_t len = elem[F("len")];
@@ -351,7 +353,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 {
 	root["id"] = id;
   if (segmentBounds) {
-    root[F("start")] = seg.start;
+    root["start"] = seg.start;
     root["stop"] = seg.stop;
   }
 	if (!forPreset) root[F("len")] = seg.stop - seg.start;
@@ -362,7 +364,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
 
-  if (seg.name != nullptr) root["n"] = String(seg.name);
+  if (seg.name != nullptr) root["n"] = seg.name;
 
   char colstr[70]; colstr[0] = '['; colstr[1] = '\0'; //max len 68 (5 chan, all 255)
 
