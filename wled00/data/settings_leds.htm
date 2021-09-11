@@ -389,7 +389,9 @@ Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
     <div id="ledwarning" style="color: orange; display: none;">
       &#9888; You might run into stability or lag issues.<br>
       Use less than <span id="wreason">800 LEDs per pin</span> for the best experience!<br>
-    </div><hr style="width:260px">
+    </div>
+    Make a segment for each output: <input type="checkbox" name="MS"> <br>
+    <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" min="0" max="100" name="TT" required><br>
     IR GPIO: <input type="number" min="-1" max="40" name="IR" onchange="UI()" class="s"><select name="IT" onchange="UI()">

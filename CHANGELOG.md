@@ -2,6 +2,13 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2109100
+
+-   Added an auto create segments per bus setting
+-   Added 15 new palettes from SR branch (PR #2134)
+-   Fixed segment runtime not reset on FX change via HTTP API
+-   Changed AsyncTCP dependency to pbolduc fork v1.2.0
+
 #### Build 2108250
 
 -   Added Sync groups (PR #2150)

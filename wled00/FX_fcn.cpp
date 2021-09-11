@@ -100,12 +100,9 @@ void WS2812FX::finalizeInit(void)
     isOffRefreshRequred |= BusManager::isOffRefreshRequred(bus->getType());
     _length += bus->getLength();
   }
-  ledCount = _length; // or we can use busses.getTotalLength()
-/*
-  //make segment 0 cover the entire strip
-  _segments[0].start = 0;
-  _segments[0].stop = _length;
-*/
+  ledCount = _length;
+
+  // We will create default segments im populateDefaultSegments()
 
   setBrightness(_brightness);
 
@@ -626,20 +623,33 @@ void WS2812FX::resetSegments() {
 
 void WS2812FX::populateDefaultSegments() {
   uint16_t length = 0;
-  for (uint8_t i=0; i<busses.getNumBusses(); i++) {
-    Bus *bus = busses.getBus(i);
-    if (bus == nullptr) continue;
-    _segments[i].start = bus->getStart();
-    length += bus->getLength();
-    _segments[i].stop = _segments[i].start + bus->getLength();
-    _segments[i].mode = DEFAULT_MODE;
-    _segments[i].colors[0] = DEFAULT_COLOR;
-    _segments[i].speed = DEFAULT_SPEED;
-    _segments[i].intensity = DEFAULT_INTENSITY;
-    _segments[i].grouping = 1;
-    _segments[i].setOption(SEG_OPTION_SELECTED, 1);
-    _segments[i].setOption(SEG_OPTION_ON, 1);
-    _segments[i].opacity = 255;
+  if (autoSegments) {
+    for (uint8_t i=0; i<busses.getNumBusses(); i++) {
+      Bus *bus = busses.getBus(i);
+      if (bus == nullptr) continue;
+      _segments[i].start = bus->getStart();
+      length += bus->getLength();
+      _segments[i].stop = _segments[i].start + bus->getLength();
+      _segments[i].mode = DEFAULT_MODE;
+      _segments[i].colors[0] = DEFAULT_COLOR;
+      _segments[i].speed = DEFAULT_SPEED;
+      _segments[i].intensity = DEFAULT_INTENSITY;
+      _segments[i].grouping = 1;
+      _segments[i].setOption(SEG_OPTION_SELECTED, 1);
+      _segments[i].setOption(SEG_OPTION_ON, 1);
+      _segments[i].opacity = 255;
+    }
+  } else {
+    _segments[0].start = 0;
+    _segments[0].stop = _length;
+    _segments[0].mode = DEFAULT_MODE;
+    _segments[0].colors[0] = DEFAULT_COLOR;
+    _segments[0].speed = DEFAULT_SPEED;
+    _segments[0].intensity = DEFAULT_INTENSITY;
+    _segments[0].grouping = 1;
+    _segments[0].setOption(SEG_OPTION_SELECTED, 1);
+    _segments[0].setOption(SEG_OPTION_ON, 1);
+    _segments[0].opacity = 255;
   }
 }
 
