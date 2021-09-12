@@ -2117,7 +2117,7 @@ typedef struct Ripple {
 #endif
 uint16_t WS2812FX::ripple_base(bool rainbow)
 {
-  uint16_t maxRipples = min(1 + (SEGLEN >> 2), MAX_RIPPLES);  // 56 max for 18 segment ESP8266
+  uint16_t maxRipples = min(1 + (SEGLEN >> 2), MAX_RIPPLES);  // 56 max for 16 segment ESP8266
   uint16_t dataSize = sizeof(ripple) * maxRipples;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -2629,7 +2629,7 @@ typedef struct Spark {
 */
 uint16_t WS2812FX::mode_popcorn(void) {
   //allocate segment data
-  uint16_t maxNumPopcorn = 22; // max 22 on 18 segment ESP8266
+  uint16_t maxNumPopcorn = 22; // max 22 on 16 segment ESP8266
   uint16_t dataSize = sizeof(spark) * maxNumPopcorn;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   
@@ -2688,7 +2688,7 @@ uint16_t WS2812FX::candle(bool multi)
   if (multi)
   {
     //allocate segment data
-    uint16_t dataSize = (SEGLEN -1) *3; // max length of segment on 18 segment ESP8266 is 75 pixels
+    uint16_t dataSize = (SEGLEN -1) *3; // max length of segment on 16 segment ESP8266 is 75 pixels
     if (!SEGENV.allocateData(dataSize)) return candle(false); //allocation failed
   }
 
@@ -2793,8 +2793,7 @@ typedef struct particle {
 } star;
 
 uint16_t WS2812FX::mode_starburst(void) {
-  uint8_t numStars = 1 + (SEGLEN >> 3);
-  if (numStars > STARBURST_MAX_STARS) numStars = STARBURST_MAX_STARS; // 11 * 58 * 32 = 19k (ESP32), 6 * 34 * 18 = 4k (ESP8266)
+  uint8_t  numStars = min(1 + (SEGLEN >> 3), STARBURST_MAX_STARS); // 11 * 58 * 32 = 19k (ESP32), 6 * 34 * 16 = 3.2k (ESP8266)
   uint16_t dataSize = sizeof(star) * numStars;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -2903,14 +2902,14 @@ uint16_t WS2812FX::mode_starburst(void) {
  * adapted from: http://www.anirama.com/1000leds/1d-fireworks/
  */
 #ifdef ESP8266
-  #define MAX_SPARKS 20 // number of fragments
+  #define MAX_SPARKS 20 // number of fragments (11 bytes per fragment)
 #else
   #define MAX_SPARKS 58 // number of fragments
 #endif
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
   //allocate segment data
-  uint16_t numSparks = min(2 + (SEGLEN >> 2), MAX_SPARKS);  // max 58 for 32 segment ESP32, 20 for 18 segment ESP8266
+  uint16_t numSparks = min(2 + (SEGLEN >> 2), MAX_SPARKS);  // max 58 for 32 segment ESP32, 20 for 16 segment ESP8266
   uint16_t dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
@@ -3635,7 +3634,7 @@ typedef struct Spotlight {
  */
 uint16_t WS2812FX::mode_dancing_shadows(void)
 {
-  uint8_t numSpotlights = map(SEGMENT.intensity, 0, 255, 2, SPOT_MAX_COUNT);  // 49 on 32 segment ESP32, 17 on 18 segment ESP8266
+  uint8_t numSpotlights = map(SEGMENT.intensity, 0, 255, 2, SPOT_MAX_COUNT);  // 49 on 32 segment ESP32, 17 on 16 segment ESP8266
   bool initialize = SEGENV.aux0 != numSpotlights;
   SEGENV.aux0 = numSpotlights;
 
@@ -3774,7 +3773,7 @@ uint16_t WS2812FX::mode_washing_machine(void) {
   Modified, originally by Mark Kriegsman https://gist.github.com/kriegsman/1f7ccbbfa492a73c015e
 */
 uint16_t WS2812FX::mode_blends(void) {
-  uint16_t dataSize = sizeof(uint32_t) * SEGLEN;  // max segment length of 56 pixels on 18 segment ESP8266
+  uint16_t dataSize = sizeof(uint32_t) * SEGLEN;  // max segment length of 56 pixels on 16 segment ESP8266
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   uint32_t* pixels = reinterpret_cast<uint32_t*>(SEGENV.data);
   uint8_t blendSpeed = map(SEGMENT.intensity, 0, UINT8_MAX, 10, 128);
@@ -4027,7 +4026,7 @@ uint16_t WS2812FX::mode_aurora(void) {
     SEGENV.aux1 = map(SEGMENT.intensity, 0, 255, 2, W_MAX_COUNT);
     SEGENV.aux0 = SEGMENT.intensity;
 
-    if(!SEGENV.allocateData(sizeof(AuroraWave) * SEGENV.aux1)) { // 26 on 32 segment ESP32, 9 on 18 segment ESP8266
+    if(!SEGENV.allocateData(sizeof(AuroraWave) * SEGENV.aux1)) { // 26 on 32 segment ESP32, 9 on 16 segment ESP8266
       return mode_static(); //allocation failed
     }
 
