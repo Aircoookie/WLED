@@ -18,28 +18,27 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   uint16_t start = elem[F("start")] | seg.start;
   int stop = elem["stop"] | -1;
 
-    if (elem["n"]) {
-      // name field exists
-      String name = elem["n"];
-      if (name.length()) {
-        if (seg.name) delete seg.name;
-        seg.name = new char[name.length()+1];
-        strcpy(seg.name, name.c_str());
-      } else {
-        // but is empty
-        elem.remove("n");
-        if (seg.name) {
-          delete seg.name;
-          seg.name = nullptr;
-        }
-      }
-    } else if (elem[F("start")] || elem["stop"]) {
-      // clearing or setting segment without name field
-      if (seg.name) {
-        delete seg.name;
-        seg.name = nullptr;
-      }
+  if (elem["n"]) {
+    // name field exists
+    if (seg.name) {
+      delete[] seg.name;
+      seg.name = nullptr;
     }
+    String name = elem["n"];
+    if (name.length()) {
+      seg.name = new char[name.length()+1];
+      if (seg.name != nullptr) strcpy(seg.name, name.c_str());
+    } else {
+      // but is empty
+      elem.remove("n");
+    }
+  } else if (elem[F("start")] || elem["stop"]) {
+    // clearing or setting segment without name field
+    if (seg.name) {
+      delete[] seg.name;
+      seg.name = nullptr;
+    }
+  }
 
   if (stop < 0) {
     uint16_t len = elem[F("len")];
