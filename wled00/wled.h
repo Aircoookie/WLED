@@ -299,9 +299,6 @@ WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
 WLED_GLOBAL uint16_t udpPort    _INIT(21324); // WLED notifier default port
 WLED_GLOBAL uint16_t udpPort2   _INIT(65506); // WLED notifier supplemental port
 WLED_GLOBAL uint16_t udpRgbPort _INIT(19446); // Hyperion port
-WLED_GLOBAL bool liveHSVCorrection _INIT(false);
-WLED_GLOBAL uint16_t liveHSVSaturation _INIT(13);
-WLED_GLOBAL uint16_t liveHSVValue _INIT(10);
 
 WLED_GLOBAL uint8_t syncGroups    _INIT(0x01);                    // sync groups this instance syncs (bit mapped)
 WLED_GLOBAL uint8_t receiveGroups _INIT(0x01);                    // sync receive groups this instance belongs to (bit mapped)

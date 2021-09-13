@@ -434,11 +434,6 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
   uint16_t pix = i + arlsOffset;
   if (pix < ledCount)
   {
-    if (liveHSVCorrection) {
-      byte correctedColors[3] = {0,0,0};
-      correctColors(r, g, b, correctedColors);
-      r = correctedColors[0]; g = correctedColors[1]; b = correctedColors[2];
-    }
     if (!arlsDisableGammaCorrection && strip.gammaCorrectCol)
     {
       strip.setPixelColor(pix, strip.gamma8(r), strip.gamma8(g), strip.gamma8(b), strip.gamma8(w));
