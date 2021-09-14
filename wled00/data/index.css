@@ -695,6 +695,10 @@ input[type=text] {
 }
 
 .stxt {
+	margin-top: 6px !important;
+}
+
+.qltxt {
 	width: 50px !important;
 }
 
@@ -787,7 +791,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .cnf-s {
 	position: absolute;
-	top: 173px;
+	top: 223px;
 	right: 23px;
 	padding: 7px 22px;
 }
@@ -804,7 +808,7 @@ input[type=number]::-webkit-outer-spin-button {
 
 .half {
 	padding: 7.5px;
-	top: 64px;
+	top: 113px;
 }
 
 .del {
