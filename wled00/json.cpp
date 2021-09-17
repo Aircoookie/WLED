@@ -17,6 +17,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   uint16_t start = elem["start"] | seg.start;
   int stop = elem["stop"] | -1;
+  if (stop < 0) {
+    uint16_t len = elem[F("len")];
+    stop = (len > 0) ? start + len : seg.stop;
+  }
 
   if (elem["n"]) {
     // name field exists
@@ -35,7 +39,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       // but is empty (already deleted above)
       elem.remove("n");
     }
-  } else if (elem["start"] || elem["stop"]) {
+  } else if (start != seg.start || stop != seg.stop) {
     // clearing or setting segment without name field
     if (seg.name) {
       delete[] seg.name;
@@ -43,10 +47,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
   }
 
-  if (stop < 0) {
-    uint16_t len = elem[F("len")];
-    stop = (len > 0) ? start + len : seg.stop;
-  }
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
   strip.setSegment(id, start, stop, grp, spc);
@@ -364,7 +364,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
 
-  if (seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
+  if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
 
   char colstr[70]; colstr[0] = '['; colstr[1] = '\0'; //max len 68 (5 chan, all 255)
 
