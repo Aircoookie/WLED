@@ -364,7 +364,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
 
-  if (seg.name != nullptr) root["n"] = seg.name;
+  if (seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
 
   char colstr[70]; colstr[0] = '['; colstr[1] = '\0'; //max len 68 (5 chan, all 255)
 
@@ -682,37 +682,37 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
           curPalette.add("r");
         break;
       case 2: //primary color only
-        curPalette.add(F("c1"));
+        curPalette.add("c1");
         break;
       case 3: //primary + secondary
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c2");
+        curPalette.add("c2");
         break;
       case 4: //primary + secondary + tertiary
-        curPalette.add(F("c3"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c1"));
+        curPalette.add("c3");
+        curPalette.add("c2");
+        curPalette.add("c1");
         break;
       case 5: {//primary + secondary (+tert if not off), more distinct
       
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c1"));
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c2");
+        curPalette.add("c2");
+        curPalette.add("c2");
+        curPalette.add("c2");
+        curPalette.add("c2");
+        curPalette.add("c3");
+        curPalette.add("c3");
+        curPalette.add("c3");
+        curPalette.add("c3");
+        curPalette.add("c3");
+        curPalette.add("c1");
         break;}
       case 6: //Party colors
         setPaletteColors(curPalette, PartyColors_p);

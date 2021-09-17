@@ -2910,7 +2910,7 @@ uint16_t WS2812FX::mode_starburst(void) {
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
   //allocate segment data
-  uint16_t numSparks = min(2 + (SEGLEN >> 2), MAX_SPARKS);  // max 58 for 32 segment ESP32, 20 for 18 segment ESP8266
+  uint16_t numSparks = min(2 + (SEGLEN >> 1), MAX_SPARKS);  // max 58 for 32 segment ESP32, 20 for 18 segment ESP8266
   uint16_t dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
 
