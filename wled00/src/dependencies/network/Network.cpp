@@ -3,12 +3,12 @@
 IPAddress NetworkClass::localIP()
 {
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
-  if (ETH.localIP()[0] != 0) {
-    return ETH.localIP();
-  }
+  IPAddress ipAddress = ETH.localIP();
+#else
+  IPAddress ipAddress = WiFi.localIP();
 #endif
-  if (WiFi.localIP()[0] != 0) {
-    return WiFi.localIP();
+  if (ipAddress[0] != 0) {
+    return ipAddress;
   }
   return INADDR_NONE;
 }

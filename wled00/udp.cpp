@@ -120,6 +120,8 @@ void sendTPM2Ack() {
 
 void handleNotifications()
 {
+  IPAddress localIP;
+
   //send second notification if enabled
   if(udpConnected && notificationTwoRequired && millis()-notificationSentTime > 250){
     notify(notificationSentCallMode,true);
@@ -175,9 +177,10 @@ void handleNotifications()
 
   if (!(receiveNotifications || receiveDirect)) return;
   
+  localIP = Network.localIP();
   //notifier and UDP realtime
   if (!packetSize || packetSize > UDP_IN_MAXSIZE) return;
-  if (!isSupp && notifierUdp.remoteIP() == Network.localIP()) return; //don't process broadcasts we send ourselves
+  if (!isSupp && notifierUdp.remoteIP() == localIP) return; //don't process broadcasts we send ourselves
 
   uint8_t udpIn[packetSize +1];
   uint16_t len;
@@ -186,7 +189,7 @@ void handleNotifications()
 
   // WLED nodes info notifications
   if (isSupp && udpIn[0] == 255 && udpIn[1] == 1 && len >= 40) {
-    if (!nodeListEnabled || notifier2Udp.remoteIP() == Network.localIP()) return;
+    if (!nodeListEnabled || notifier2Udp.remoteIP() == localIP) return;
 
     uint8_t unit = udpIn[39];
     NodesMap::iterator it = Nodes.find(unit);

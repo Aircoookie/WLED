@@ -591,13 +591,14 @@ void WLED::initConnection()
 
 void WLED::initInterfaces()
 {
+  IPAddress ipAddress = Network.localIP();
   DEBUG_PRINTLN(F("Init STA interfaces"));
 
 #ifndef WLED_DISABLE_HUESYNC
   if (hueIP[0] == 0) {
-    hueIP[0] = Network.localIP()[0];
-    hueIP[1] = Network.localIP()[1];
-    hueIP[2] = Network.localIP()[2];
+    hueIP[0] = ipAddress[0];
+    hueIP[1] = ipAddress[1];
+    hueIP[2] = ipAddress[2];
   }
 #endif
 
