@@ -180,7 +180,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     fadeTransition = request->hasArg(F("TF"));
     t = request->arg(F("TD")).toInt();
-    if (t > 0) transitionDelay = t;
+    if (t >= 0) transitionDelay = t;
     transitionDelayDefault = t;
     strip.paletteFade = request->hasArg(F("PF"));
 

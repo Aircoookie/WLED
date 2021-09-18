@@ -102,9 +102,9 @@
 		<p class="labels"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 		<div class="il">
 			<div class="staytop fnd">
-				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pallist')" onfocus="search(this)" />
-				<span onclick="clean(this)" class="icons">&#xe38f;</span>
-				<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pallist')" onfocus="search(this,'pallist')" />
+				<i class="icons clear-icon" onclick="clean(this)">&#xe38f;</i>
+				<i class="icons search-icon">&#xe0a1;</i>
 			</div>
 			<div id="pallist" class="list">
 				<div class="lstI" data-id="0">
@@ -153,9 +153,9 @@
 		<div class="il">
 			<p class="labels">Effect mode</p>
 			<div class="staytop fnd" id="staytop2">
-				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this)" />
-				<span onclick="clean(this);" class="icons">&#xe38f;</span>
-				<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist')" />
+				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
+				<i class="icons search-icon">&#xe0a1;</i>
 			</div>
 			<div id="fxlist" class="list">
 				Loading...
@@ -172,7 +172,7 @@
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
 		</div>
-		<p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s</p>
+		<!--p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s</p-->
 	</div>
 
 	<div id="Presets" class="tabcontent">

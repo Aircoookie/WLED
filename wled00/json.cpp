@@ -17,22 +17,29 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   uint16_t start = elem[F("start")] | seg.start;
   int stop = elem["stop"] | -1;
+  if (stop < 0) {
+    uint16_t len = elem[F("len")];
+    stop = (len > 0) ? start + len : seg.stop;
+  }
 
   if (elem["n"]) {
     // name field exists
-    if (seg.name) {
+    if (seg.name) { //clear old name
       delete[] seg.name;
       seg.name = nullptr;
     }
-    String name = elem["n"];
-    if (name.length()) {
-      seg.name = new char[name.length()+1];
-      if (seg.name != nullptr) strcpy(seg.name, name.c_str());
+
+    const char * name = elem["n"].as<const char*>();
+    size_t len = 0;
+    if (name != nullptr) len = strlen(name);
+    if (len > 0 && len < 33) {
+      seg.name = new char[len+1];
+      if (seg.name) strlcpy(seg.name, name, 33);
     } else {
-      // but is empty
+      // but is empty (already deleted above)
       elem.remove("n");
     }
-  } else if (elem[F("start")] || elem["stop"]) {
+  } else if (start != seg.start || stop != seg.stop) {
     // clearing or setting segment without name field
     if (seg.name) {
       delete[] seg.name;
@@ -40,10 +47,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
   }
 
-  if (stop < 0) {
-    uint16_t len = elem[F("len")];
-    stop = (len > 0) ? start + len : seg.stop;
-  }
   uint16_t grp = elem["grp"] | seg.grouping;
   uint16_t spc = elem[F("spc")] | seg.spacing;
   strip.setSegment(id, start, stop, grp, spc);
@@ -227,14 +230,6 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       transitionDelayTemp = transitionDelay;
     }
   }
-
-  tr = root[F("tt")] | -1;
-  if (tr >= 0)
-  {
-    transitionDelayTemp = tr;
-    transitionDelayTemp *= 100;
-    jsonTransitionOnce = true;
-  }
   strip.setTransition(transitionDelayTemp);
 
   tr = root[F("tb")] | -1;
@@ -374,7 +369,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
 
-  if (seg.name != nullptr) root["n"] = String(seg.name);
+  if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name);
 
   // to conserve RAM we will serialize the col array manually
   // this will reduce RAM footprint from ~300 bytes to 84 bytes per segment
@@ -703,37 +698,37 @@ void serializePalettes(JsonObject root, AsyncWebServerRequest* request)
           curPalette.add("r");
         break;
       case 2: //primary color only
-        curPalette.add(F("c1"));
+        curPalette.add("c1");
         break;
       case 3: //primary + secondary
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c2");
+        curPalette.add("c2");
         break;
       case 4: //primary + secondary + tertiary
-        curPalette.add(F("c3"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c1"));
+        curPalette.add("c3");
+        curPalette.add("c2");
+        curPalette.add("c1");
         break;
       case 5: {//primary + secondary (+tert if not off), more distinct
       
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c1"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c2"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c3"));
-        curPalette.add(F("c1"));
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c1");
+        curPalette.add("c2");
+        curPalette.add("c2");
+        curPalette.add("c2");
+        curPalette.add("c2");
+        curPalette.add("c2");
+        curPalette.add("c3");
+        curPalette.add("c3");
+        curPalette.add("c3");
+        curPalette.add("c3");
+        curPalette.add("c3");
+        curPalette.add("c1");
         break;}
       case 6: //Party colors
         setPaletteColors(curPalette, PartyColors_p);

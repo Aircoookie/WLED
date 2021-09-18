@@ -1125,7 +1125,6 @@ function readState(s,command=false)
 	syncSend = s.udpn.send;
 	if (s.pl<0)	currentPreset = s.ps;
 	else currentPreset = s.pl;
-	gId('tt').value = s.transition/10;
 
 	var selc=0; var ind=0;
 	populateSegments(s);
@@ -1210,11 +1209,13 @@ function requestJson(command=null)
 
 	command.v = true; // force complete /json/si API response
 	command.time = Math.floor(Date.now() / 1000);
-	var t = d.getElementById('tt');
+/*
+	var t = d.gId('tt');
 	if (t.validity.valid && command.transition==null) {
 		var tn = parseInt(t.value*10);
 		if (tn != tr) command.transition = tn;
 	}
+*/
 	req = JSON.stringify(command);
 	if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 
@@ -1559,6 +1560,12 @@ function tglCs(i)
 	var pss = gId(`p${i}cstgl`).checked;
 	gId(`p${i}o1`).style.display = pss? "block" : "none";
 	gId(`p${i}o2`).style.display = !pss? "block" : "none";
+}
+
+function tglSegn(s)
+{
+  d.gId(`seg${s}t`).style.display =
+    (window.getComputedStyle(d.gId(`seg${s}t`)).display === "none") ? "inline":"none";
 }
 
 function selSegEx(s)
