@@ -170,12 +170,15 @@ onclick="H()">?</button></div><button type="button" onclick="B()">Back</button>
 <button type="submit">Save</button><hr><h2>
 Imma firin ma lazer (if it has DMX support)</h2>Proxy Universe <input name="PU" 
 type="number" min="0" max="63999" required> from E1.31 to DMX (0=disabled)<br>
-<i>This will disable the LED data output to DMX configurable below</i><br><br>
-<i>Number of fixtures is taken from LED config page</i><br>
-Channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" 
-maxlength="2" onchange="mMap()"><br>Start channel: <input type="number" min="1" 
-max="512" name="CS" maxlength="2"><br>Spacing between start channels: <input 
-type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap()"> [ <a 
+<i>
+If this is set to zero, arriving realtime data will be handled normally and passed to your fixture(s) as configured below. If nonzero, arriving realtime data in the specified universe will be sent directly over DMX exactly how it is received.
+</i><br><br><i>
+Number of fixtures is taken from LED config page. To control white channel independently, pick an RGBW LED config.
+</i><br>Channels per fixture (15 max): <input type="number" min="1" max="15" 
+name="CN" maxlength="2" onchange="mMap()"><br>Start channel: <input 
+type="number" min="1" max="512" name="CS" maxlength="2"><br>
+Spacing between start channels: <input type="number" min="1" max="512" 
+name="CG" maxlength="2" onchange="mMap()"> [ <a 
 href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">
 info</a> ]<br><div id="gapwarning" style="color:orange;display:none">
 WARNING: Channel gap is lower than channels per fixture.<br>

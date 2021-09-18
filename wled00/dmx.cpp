@@ -11,8 +11,8 @@
 
 void handleDMX()
 {
-  // don't act, when in DMX Proxy mode
-  if (e131ProxyUniverse != 0) return;
+  // don't act, when in DMX Proxy mode if getting DMX packets
+  if (e131ProxyUniverse != 0 && realtimeMode) return;
 
   // TODO: calculate brightness manually if no shutter channel is set
 
