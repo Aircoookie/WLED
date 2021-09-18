@@ -233,10 +233,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyMacro = request->hasArg(F("SM"));
     notifyTwice = request->hasArg(F("S2"));
 
-    liveHSVCorrection = request->hasArg(F("HX"));
-    liveHSVSaturation = request->arg(F("HS")).toInt();
-    liveHSVValue = request->arg(F("HV")).toInt();
-
     nodeListEnabled = request->hasArg(F("NL"));
     if (!nodeListEnabled) Nodes.clear();
     nodeBroadcastEnabled = request->hasArg(F("NB"));
