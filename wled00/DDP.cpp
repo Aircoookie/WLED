@@ -62,7 +62,7 @@ void copyRgbwToRgb(byte *destination, byte *source, uint16_t length) {
 uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, byte *rgbwData) {
 
     WiFiUDP ddpUdp;
-    
+
     // calclate the number of UDP packets we need to send
     uint16_t channelCount = busLength * 3;
     uint16_t packetCount = channelCount / DDP_CHANNELS_PER_PACKET;
@@ -120,4 +120,7 @@ uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, byte *rgbwData) 
 
         channel += packetSize;
     }
+
+    free(buffer);
+    return 0;
 }
