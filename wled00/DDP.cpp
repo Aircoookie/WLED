@@ -57,15 +57,15 @@ uint8_t* copyRgbwToRgb(uint8_t *destination, uint8_t *source, uint16_t length) {
 // Send real time DDP UDP updates to the specified client
 //
 // client - the IP address to send to
-// busLength - the number of pixels
-// rgbwData - a buffer of at least busLength*4 bytes long
+// length - the number of pixels
+// rgbwData - a buffer of at least length*4 bytes long
 //
-uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, uint8_t *rgbwData) {
+uint8_t realtimeBrodacast(IPAddress client, uint8_t *rgbwData, uint16_t length) {
 
     WiFiUDP ddpUdp;
 
     // calclate the number of UDP packets we need to send
-    uint16_t channelCount = busLength * 3;
+    uint16_t channelCount = length * 3; // 1 channel for every R,G,B value
     uint16_t packetCount = channelCount / DDP_CHANNELS_PER_PACKET;
     if (channelCount % DDP_CHANNELS_PER_PACKET) {
         packetCount++;
@@ -73,7 +73,7 @@ uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, uint8_t *rgbwDat
 
     // allocate a buffer for the UDP packet
     size_t bufferSize = (DDP_HEADER_LEN + DDP_CHANNELS_PER_PACKET) * sizeof(uint8_t);
-    uint8_t* buffer = (byte*)malloc(bufferSize);
+    uint8_t* buffer = (uint8_t*)malloc(bufferSize);
     if (!buffer) {
         return 1;
     }
@@ -86,12 +86,7 @@ uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, uint8_t *rgbwDat
     buffer[3] = DDP_ID_DISPLAY;
 
     // there are 3 channels per RGB pixel
-    int channel = 0; // TODO: allow specifying the start channel
-
-    // if we need to split
-    // 
-    //
-
+    uint16_t channel = 0; // TODO: allow specifying the start channel
 
     for (uint16_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
 
