@@ -2,18 +2,18 @@
 
 IPAddress NetworkClass::localIP()
 {
-  IPAddress ipAddress;
+  IPAddress localIP;
 #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_ETHERNET)
-  ipAddress = ETH.localIP();
-  if (ipAddress[0] != 0) {
-    return ipAddress;
+  localIP = ETH.localIP();
+  if (localIP[0] != 0) {
+    return localIP;
   }
 #endif
-  ipAddress = WiFi.localIP();
-  if (ipAddress[0] != 0) {
-    return ipAddress;
+  localIP = WiFi.localIP();
+  if (localIP[0] != 0) {
+    return localIP;
   }
-  
+
   return INADDR_NONE;
 }
 
