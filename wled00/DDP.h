@@ -1,0 +1,4 @@
+#define DDP_PORT 4048
+
+#define DDP_PUSH_FLAG 0x01
+#define DDP_TIMECODE_FLAG 0x10
