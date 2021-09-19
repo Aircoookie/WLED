@@ -179,6 +179,52 @@ void sappends(char stype, const char* key, char* val)
   }
 }
 
+void extractPin(JsonObject &obj, const char *key) {
+  if (obj[key].is<JsonArray>()) {
+    JsonArray pins = obj[key].as<JsonArray>();
+    for (JsonVariant pv : pins) {
+      if (pv.as<int>() > -1) { oappend(","); oappendi(pv.as<int>()); }
+    }
+  } else {
+    if (obj[key].as<int>() > -1) { oappend(","); oappendi(obj[key].as<int>()); }
+  }
+}
+
+// oappens used pins by recursively scanning JsonObject
+void fillUMPins(JsonObject &mods)
+{
+  for (JsonPair kv : mods) {
+    // kv.key() is usermod name or subobject key
+    // kv.value() is object itself
+    JsonObject obj = kv.value();
+    if (!obj.isNull()) {
+      // element is an JsonObject
+      if (!obj["pin"].isNull()) {
+        extractPin(obj, "pin");
+      } else {
+        // scan keys (just one level deep as is possible with usermods)
+        for (JsonPair so : obj) {
+          const char *key = so.key().c_str();
+          if (strstr(key, "pin")) {
+            // we found a key containing "pin" substring
+            if (strlen(strstr(key, "pin")) == 3) {
+              // and it is at the end, we found another pin
+              extractPin(obj, key);
+              continue;
+            }
+          }
+          if (!obj[so.key()].is<JsonObject>()) continue;
+          JsonObject subObj = obj[so.key()];
+          if (!subObj["pin"].isNull()) {
+            // get pins from subobject
+            extractPin(subObj, "pin");
+          }
+        }
+      }
+    }
+  }
+}
+
 
 //get values for settings form in javascript
 void getSettingsJS(byte subPage, char* dest)
@@ -268,22 +314,7 @@ void getSettingsJS(byte subPage, char* dest)
     usermods.addToConfig(mods);
     oappend(SET_F("d.um_p=[6,7,8,9,10,11"));
     if (!mods.isNull()) {
-      for (JsonPair kv : mods) {
-        if (!kv.value().isNull()) {
-          // element is an JsonObject
-          JsonObject obj = kv.value();
-          if (obj["pin"] != nullptr) {
-            if (obj["pin"].is<JsonArray>()) {
-              JsonArray pins = obj["pin"].as<JsonArray>();
-              for (JsonVariant pv : pins) {
-                if (pv.as<int>() > -1) { oappend(","); oappendi(pv.as<int>()); }
-              }
-            } else {
-              if (obj["pin"].as<int>() > -1) { oappend(","); oappendi(obj["pin"].as<int>()); }
-            }
-          }
-        }
-      }
+      fillUMPins(mods);
       #ifdef WLED_ENABLE_DMX
         oappend(SET_F(",2")); // DMX hardcoded pin
       #endif
