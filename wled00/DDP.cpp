@@ -4,6 +4,7 @@
 ** 
 **     realtimeBrodacast(IPAddress client, uint16_t busLength, byte rgbwData[busLength][4]);
 **
+** http://www.3waylabs.com/ddp/
 */
 
 #include <Arduino.h>
@@ -32,24 +33,24 @@
 // 
 // copies a 4 byte rgbw buffer to a 3 byte rgb buffer (skipping the w channel)
 // 
-// destination - the buffer to write to
-// source - the buffer to read from
-// length - the number of 4 byte channels in the source buffer
-// 
-void copyRgbwToRgb(byte *destination, byte *source, uint16_t length) {
-
-    uint16_t destinationOffset = 0;
-    uint16_t sourceOffset = 0;
+// Parameters:
+//   destination - the buffer to write to must be able to hold length*3 bytes
+//   source - the buffer to read from
+//   length - the number of 4 byte channels in the source buffer
+// Returns:
+//   the pointer in the source where we have copied up to
+//
+uint8_t* copyRgbwToRgb(uint8_t *destination, uint8_t *source, uint16_t length) {
     
-    for (uint16_t offset = 0; offset < length; offset++)
+    while (length--)
     {
-        destination[destinationOffset+0] = source[sourceOffset+0];
-        destination[destinationOffset+1] = source[sourceOffset+1];
-        destination[destinationOffset+2] = source[sourceOffset+2];
-
-        destinationOffset += 3;
-        sourceOffset += 4;
+        *(destination++) = *(source++); // R
+        *(destination++) = *(source++); // G
+        *(destination++) = *(source++); // B
+        source++; // W
     }
+
+    return source;
 }
 
 //
@@ -59,7 +60,7 @@ void copyRgbwToRgb(byte *destination, byte *source, uint16_t length) {
 // busLength - the number of pixels
 // rgbwData - a buffer of at least busLength*4 bytes long
 //
-uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, byte *rgbwData) {
+uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, uint8_t *rgbwData) {
 
     WiFiUDP ddpUdp;
 
@@ -71,8 +72,8 @@ uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, byte *rgbwData) 
     }
 
     // allocate a buffer for the UDP packet
-    size_t bufferSize = DDP_HEADER_LEN + DDP_CHANNELS_PER_PACKET ;
-    byte* buffer = (byte*)malloc(bufferSize);
+    size_t bufferSize = (DDP_HEADER_LEN + DDP_CHANNELS_PER_PACKET) * sizeof(uint8_t);
+    uint8_t* buffer = (byte*)malloc(bufferSize);
     if (!buffer) {
         return 1;
     }
@@ -87,13 +88,19 @@ uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, byte *rgbwData) 
     // there are 3 channels per RGB pixel
     int channel = 0; // TODO: allow specifying the start channel
 
-    for (int packetIndex = 0; packetIndex < packetCount; packetIndex++) {
+    // if we need to split
+    // 
+    //
+
+
+    for (uint16_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
 
         // how much data is after the header
         uint16_t packetSize = DDP_CHANNELS_PER_PACKET;
 
-        if (packetIndex == (packetCount -1)) {
+        if (currentPacket == (packetCount - 1)) {
             // last packet, set the push flag
+            // TODO: determine if we want to send an empty push packet to each destination after sending the pixel data
             buffer[0] = DDP_FLAGS1_VER1 | DDP_FLAGS1_PUSH;
 
             if (channelCount % DDP_CHANNELS_PER_PACKET) {
@@ -101,18 +108,18 @@ uint8_t realtimeBrodacast(IPAddress client, uint16_t busLength, byte *rgbwData) 
             }
         }
 
-        //offset
+        // data offset in bytes, 32-bit number, MSB first
         buffer[4] = (channel & 0xFF000000) >> 24;
         buffer[5] = (channel & 0xFF0000) >> 16;
         buffer[6] = (channel & 0xFF00) >> 8;
         buffer[7] = (channel & 0xFF);
 
-        //size
+        // data length in bytes, 16-bit number, MSB first
         buffer[8] = (packetSize & 0xFF00) >> 8;
         buffer[9] = packetSize & 0xFF;
 
-        // copy the data into our buffer
-        copyRgbwToRgb(&buffer[DDP_HEADER_LEN], rgbwData, busLength);
+        // copy the data from the source buffer into our pack
+        rgbwData = copyRgbwToRgb(&buffer[DDP_HEADER_LEN], rgbwData, packetSize);
 
         ddpUdp.beginPacket(client, DDP_PORT);
         ddpUdp.write(buffer, packetSize);
