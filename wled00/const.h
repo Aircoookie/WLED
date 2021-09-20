@@ -122,6 +122,8 @@
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
+#define TYPE_VIRTUAL_RGB          2            //virtual RGB bus (master broadcast bus)
+#define TYPE_VIRTUAL_RGBW         3            //virtual RGBW bus (master broadcast bus)
 //Digital types (data pin only) (16-31)
 #define TYPE_WS2812_1CH          20            //white-only chips
 #define TYPE_WS2812_WWA          21            //amber + warm + cold white
@@ -233,7 +235,7 @@
 // maximum number of LEDs - more than 1500 LEDs (or 500 DMA "LEDPIN 3" driven ones) will cause a low memory condition on ESP8266
 #ifndef MAX_LEDS
 #ifdef ESP8266
-#define MAX_LEDS 1664 // can't rely on memory limit to limit this to 1600 LEDs
+#define MAX_LEDS 1200 // can't rely on memory limit to limit this to 1200 LEDs
 #else
 #define MAX_LEDS 8192
 #endif
@@ -241,14 +243,14 @@
 
 #ifndef MAX_LED_MEMORY
 #ifdef ESP8266
-#define MAX_LED_MEMORY 5000
+#define MAX_LED_MEMORY 4000
 #else
 #define MAX_LED_MEMORY 64000
 #endif
 #endif
 
 #ifndef MAX_LEDS_PER_BUS
-#define MAX_LEDS_PER_BUS 4096
+#define MAX_LEDS_PER_BUS 2048   // may not be enough for fast LEDs (i.e. APA102)
 #endif
 
 // string temp buffer (now stored in stack locally)
@@ -282,7 +284,7 @@
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
-  #define WLED_MAX_NODES 15
+  #define WLED_MAX_NODES 24
 #else
   #define WLED_MAX_NODES 150
 #endif
@@ -302,10 +304,6 @@
   #define LEDPIN 3
   #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 3."
 #endif
-#endif
-
-#ifndef DEFAULT_LED_COUNT
-  #define DEFAULT_LED_COUNT 30
 #endif
 
 #endif

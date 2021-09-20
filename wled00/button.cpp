@@ -10,10 +10,11 @@ static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize fl
 
 void shortPressAction(uint8_t b)
 {
-  if (!macroButton[b])
-  {
-    toggleOnOff();
-    colorUpdated(CALL_MODE_BUTTON);
+  if (!macroButton[b]) {
+    switch (b) {
+      case 0: toggleOnOff(); colorUpdated(CALL_MODE_BUTTON); break;
+      default: ++effectCurrent %= strip.getModeCount(); colorUpdated(CALL_MODE_BUTTON); break;
+    }
   } else {
     applyPreset(macroButton[b], CALL_MODE_BUTTON);
   }
@@ -23,6 +24,44 @@ void shortPressAction(uint8_t b)
     char subuf[64];
     sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
     mqtt->publish(subuf, 0, false, "short");
+  }
+}
+
+void longPressAction(uint8_t b)
+{
+  if (!macroLongPress[b]) {
+    switch (b) {
+      case 0: _setRandomColor(false,true); break;
+      default: bri += 8; colorUpdated(CALL_MODE_BUTTON); buttonPressedTime[b] = millis(); break; // repeatable action
+    }
+  } else {
+    applyPreset(macroLongPress[b], CALL_MODE_BUTTON);
+  }
+
+  // publish MQTT message
+  if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
+    char subuf[64];
+    sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+    mqtt->publish(subuf, 0, false, "long");
+  }
+}
+
+void doublePressAction(uint8_t b)
+{
+  if (!macroDoublePress[b]) {
+    switch (b) {
+      case 0: toggleOnOff(); colorUpdated(CALL_MODE_BUTTON); break;
+      default: ++effectPalette %= strip.getPaletteCount(); colorUpdated(CALL_MODE_BUTTON); break;
+    }
+  } else {
+    applyPreset(macroDoublePress[b], CALL_MODE_BUTTON);
+  }
+
+  // publish MQTT message
+  if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
+    char subuf[64];
+    sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
+    mqtt->publish(subuf, 0, false, "double");
   }
 }
 
@@ -186,61 +225,43 @@ void handleButton()
     }
 
     //momentary button logic
-    if (isButtonPressed(b)) //pressed
-    {
+    if (isButtonPressed(b)) { //pressed
+
       if (!buttonPressedBefore[b]) buttonPressedTime[b] = millis();
       buttonPressedBefore[b] = true;
 
-      if (millis() - buttonPressedTime[b] > 600) //long press
-      {
-        if (!buttonLongPressed[b]) 
-        {
-          if (macroLongPress[b]) {applyPreset(macroLongPress[b], CALL_MODE_BUTTON);}
-          else _setRandomColor(false,true);
-
-          // publish MQTT message
-          if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
-            char subuf[64];
-            sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
-            mqtt->publish(subuf, 0, false, "long");
-          }
-
-          buttonLongPressed[b] = true;
+      if (millis() - buttonPressedTime[b] > 600) { //long press
+        if (!buttonLongPressed[b]) longPressAction(b);
+        else if (b) { // repeatable action (~3 times per s) on button > 0
+          longPressAction(b);
+          buttonPressedTime[b] = millis() - 300; // 300ms
         }
+        buttonLongPressed[b] = true;
       }
-    }
-    else if (!isButtonPressed(b) && buttonPressedBefore[b]) //released
-    {
+
+    } else if (!isButtonPressed(b) && buttonPressedBefore[b]) { //released
+
       long dur = millis() - buttonPressedTime[b];
       if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore[b] = false; continue;} //too short "press", debounce
-      bool doublePress = buttonWaitTime[b];
+      bool doublePress = buttonWaitTime[b]; //did we have short press before?
       buttonWaitTime[b] = 0;
 
-      if (dur > 6000 && b==0) //long press on button 0
-      {
+      if (b == 0 && dur > 6000) { //long press on button 0 (when released)
         WLED::instance().initAP(true);
-      }
-      else if (!buttonLongPressed[b]) { //short press
-        if (macroDoublePress[b])
-        {
-          if (doublePress) {
-            applyPreset(macroDoublePress[b], CALL_MODE_BUTTON);
-  
-            // publish MQTT message
-            if (buttonPublishMqtt && WLED_MQTT_CONNECTED) {
-              char subuf[64];
-              sprintf_P(subuf, _mqtt_topic_button, mqttDeviceTopic, (int)b);
-              mqtt->publish(subuf, 0, false, "double");
-            }
-          } else buttonWaitTime[b] = millis();
-        } else shortPressAction(b);
+      } else if (!buttonLongPressed[b]) { //short press
+        // if this is second release within 350ms it is a double press (buttonWaitTime!=0)
+        if (doublePress) {
+          doublePressAction(b);
+        } else  {
+          buttonWaitTime[b] = millis();
+        }
       }
       buttonPressedBefore[b] = false;
       buttonLongPressed[b] = false;
     }
 
-    if (buttonWaitTime[b] && millis() - buttonWaitTime[b] > 450 && !buttonPressedBefore[b])
-    {
+    // if 450ms elapsed since last press/release it is a short press
+    if (buttonWaitTime[b] && millis() - buttonWaitTime[b] > 350 && !buttonPressedBefore[b]) {
       buttonWaitTime[b] = 0;
       shortPressAction(b);
     }

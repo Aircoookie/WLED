@@ -458,11 +458,15 @@ class Animated_Staircase : public Usermod {
 
       useUSSensorTop     = top[FPSTR(_useTopUltrasoundSensor)] | useUSSensorTop;
       topPIRorTriggerPin = top[FPSTR(_topPIRorTrigger_pin)] | topPIRorTriggerPin;
+//      topPIRorTriggerPin = min(33,max(-1,(int)topPIRorTriggerPin)); // bounds check
       topEchoPin         = top[FPSTR(_topEcho_pin)] | topEchoPin;
+//      topEchoPin         = min(39,max(-1,(int)topEchoPin)); // bounds check
 
       useUSSensorBottom     = top[FPSTR(_useBottomUltrasoundSensor)] | useUSSensorBottom;
       bottomPIRorTriggerPin = top[FPSTR(_bottomPIRorTrigger_pin)] | bottomPIRorTriggerPin;
+//      bottomPIRorTriggerPin = min(33,max(-1,(int)bottomPIRorTriggerPin)); // bounds check
       bottomEchoPin         = top[FPSTR(_bottomEcho_pin)] | bottomEchoPin;
+//      bottomEchoPin         = min(39,max(-1,(int)bottomEchoPin)); // bounds check
 
       topMaxDist    = top[FPSTR(_topEchoCm)] | topMaxDist;
       topMaxDist    = min(150,max(30,(int)topMaxDist));     // max distnace ~1.5m (a lag of 9ms may be expected)

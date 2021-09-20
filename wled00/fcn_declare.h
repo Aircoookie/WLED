@@ -15,9 +15,11 @@ void handleAlexa();
 void onAlexaChange(EspalexaDevice* dev);
 
 //blynk.cpp
+#ifndef WLED_DISABLE_BLYNK
 void initBlynk(const char* auth, const char* host, uint16_t port);
 void handleBlynk();
 void updateBlynk();
+#endif
 
 //button.cpp
 void shortPressAction(uint8_t b=0);
@@ -94,7 +96,7 @@ void sendHuePoll();
 void onHueData(void* arg, AsyncClient* client, void *data, size_t len);
 
 //ir.cpp
-bool decodeIRCustom(uint32_t code);
+//bool decodeIRCustom(uint32_t code);
 void applyRepeatActions();
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary = 0, byte higherBoundary = 0xFF);
 void changeEffectSpeed(int8_t amount);
@@ -195,6 +197,7 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte 
 
 //udp.cpp
 void notify(byte callMode, bool followUp=false);
+void realtimeBoroadcast(IPAddress client, uint16_t length, byte *buffer, bool isRGBW);
 void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
@@ -224,14 +227,11 @@ class UsermodManager {
 
   public:
     void loop();
-
     void setup();
     void connected();
-
     void addToJsonState(JsonObject& obj);
     void addToJsonInfo(JsonObject& obj);
     void readFromJsonState(JsonObject& obj);
-
     void addToConfig(JsonObject& obj);
     bool readFromConfig(JsonObject& obj);
     void onMqttConnect(bool sessionPresent);

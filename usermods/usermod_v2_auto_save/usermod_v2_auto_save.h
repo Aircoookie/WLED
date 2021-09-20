@@ -65,6 +65,7 @@ class AutoSaveUsermod : public Usermod {
         month(localTime), day(localTime),
         hour(localTime), minute(localTime), second(localTime));
       savePreset(autoSavePreset, true, presetNameBuffer);
+      cacheInvalidate++;  // force reload of presets
     }
 
     void inline displayOverlay() {

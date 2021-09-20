@@ -3,12 +3,12 @@
 /*
    Main sketch, global variable declarations
    @title WLED project sketch
-   @version 0.13.0-b2
+   @version 0.13.0-bl2
    @author Christian Schwinne
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2109100
+#define VERSION 2109191
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -31,9 +31,11 @@
 #ifndef WLED_DISABLE_MQTT
   #define WLED_ENABLE_MQTT         // saves 12kb
 #endif
-#define WLED_ENABLE_ADALIGHT       // saves 500b only
+//#define WLED_ENABLE_ADALIGHT     // saves 500b only (uses GPIO3 (RX) for serial)
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
-#define WLED_ENABLE_LOXONE         // uses 1.2kb
+#ifndef WLED_DISABLE_LOXONE
+  #define WLED_ENABLE_LOXONE       // uses 1.2kb
+#endif
 #ifndef WLED_DISABLE_WEBSOCKETS
   #define WLED_ENABLE_WEBSOCKETS
 #endif
@@ -136,6 +138,9 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 
 #include "fcn_declare.h"
 #include "html_ui.h"
+#ifndef WLED_DISABLE_SIMPLE_UI
+#include "html_simple.h"
+#endif
 #include "html_settings.h"
 #include "html_other.h"
 #include "FX.h"
@@ -225,11 +230,7 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
 #ifndef IRPIN
-  #ifdef WLED_DISABLE_INFRARED
-  WLED_GLOBAL int8_t irPin _INIT(-1);
-  #else
-  WLED_GLOBAL int8_t irPin _INIT(4);
-  #endif
+WLED_GLOBAL int8_t irPin _INIT(-1);
 #else
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 #endif
@@ -264,9 +265,9 @@ WLED_GLOBAL bool noWifiSleep _INIT(false);
 #endif
 
 // LED CONFIG
-WLED_GLOBAL uint16_t ledCount _INIT(DEFAULT_LED_COUNT);   // overcurrent prevented by ABL
-WLED_GLOBAL bool turnOnAtBoot _INIT(true);                // turn on LEDs at power-up
-WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load after power-up
+WLED_GLOBAL uint16_t ledCount _INIT(0);           // overcurrent prevented by ABL (filled in cfg.cpp, set.cpp or FX_fcn.cpp)
+WLED_GLOBAL bool turnOnAtBoot _INIT(true);        // turn on LEDs at power-up
+WLED_GLOBAL byte bootPreset   _INIT(0);           // save preset to load after power-up
 
 //if true, a segment per bus will be created on boot and LED settings save
 //if false, only one segment spanning the total LEDs is created,
@@ -288,6 +289,8 @@ WLED_GLOBAL byte briMultiplier _INIT(100);          // % of brightness to set (t
 // User Interface CONFIG
 WLED_GLOBAL char serverDescription[33] _INIT("WLED");  // Name of module
 WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a single button for sync should toggle send+receive if this is true, only send otherwise
+WLED_GLOBAL bool simplifiedUI          _INIT(false);   // enable simplified UI
+WLED_GLOBAL byte cacheInvalidate       _INIT(0);       // used to invalidate browser cache when switching from regular to simplified UI
 
 // Sync CONFIG
 WLED_GLOBAL NodesMap Nodes;
@@ -566,7 +569,7 @@ WLED_GLOBAL JsonDocument* fileDoc;
 WLED_GLOBAL bool doCloseFile _INIT(false);
 
 // presets
-WLED_GLOBAL int16_t currentPreset _INIT(-1);
+WLED_GLOBAL int8_t currentPreset _INIT(-1);
 
 WLED_GLOBAL byte errorFlag _INIT(0);
 
@@ -599,7 +602,6 @@ WLED_GLOBAL bool doInitBusses _INIT(false);
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 
-
 // enable additional debug output
 #ifdef WLED_DEBUG
   #ifndef ESP8266
@@ -629,7 +631,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   WLED_GLOBAL unsigned long debugTime _INIT(0);
   WLED_GLOBAL int lastWifiState _INIT(3);
   WLED_GLOBAL unsigned long wifiStateChangedTime _INIT(0);
-  WLED_GLOBAL int loops _INIT(0);
+  WLED_GLOBAL unsigned long loops _INIT(0);
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
@@ -666,6 +668,5 @@ public:
   void initAP(bool resetAP = false);
   void initConnection();
   void initInterfaces();
-  void handleStatusLED();
 };
 #endif        // WLED_H

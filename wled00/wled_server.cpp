@@ -4,6 +4,9 @@
  * Integrated HTTP web server page declarations
  */
 
+bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request);
+void setStaticContentCacheHeaders(AsyncWebServerResponse *response);
+
 //Is this an IP?
 bool isIp(String str) {
   for (size_t i = 0; i < str.length(); i++) {
@@ -16,7 +19,7 @@ bool isIp(String str) {
 }
 
 void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final){
-  if(!index){
+  if (!index) {
     request->_tempFile = WLED_FS.open(filename, "w");
     DEBUG_PRINT("Uploading ");
     DEBUG_PRINTLN(filename);
@@ -25,9 +28,10 @@ void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t
   if (len) {
     request->_tempFile.write(data,len);
   }
-  if(final){
+  if (final) {
     request->_tempFile.close();
     request->send(200, "text/plain", F("File Uploaded!"));
+    cacheInvalidate++;
   }
 }
 
@@ -163,6 +167,15 @@ void initServer()
                       size_t len, bool final) {handleUpload(request, filename, index, data, len, final);}
   );
 
+  server.on("/simple.htm", HTTP_GET, [](AsyncWebServerRequest *request){
+    if (handleFileRead(request, "/simple.htm")) return;
+    if (handleIfNoneMatchCacheHeader(request)) return;
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_simple, PAGE_simple_L);
+    response->addHeader(F("Content-Encoding"),"gzip");
+    setStaticContentCacheHeaders(response);
+    request->send(response);
+  });
+  
   //if OTA is allowed
   if (!otaLock){
     #ifdef WLED_ENABLE_FS_EDITOR
@@ -287,6 +300,8 @@ bool handleIfNoneMatchCacheHeader(AsyncWebServerRequest* request)
 
 void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
 {
+  char tmp[12];
+  // https://medium.com/@codebyamir/a-web-developers-guide-to-browser-caching-cc41f3b73e7c
   #ifndef WLED_DEBUG
   //this header name is misleading, "no-cache" will not disable cache,
   //it just revalidates on every load using the "If-None-Match" header with the last ETag value
@@ -294,7 +309,8 @@ void setStaticContentCacheHeaders(AsyncWebServerResponse *response)
   #else
   response->addHeader(F("Cache-Control"),"no-store,max-age=0"); // prevent caching if debug build
   #endif
-  response->addHeader(F("ETag"), String(VERSION));
+  sprintf_P(tmp, PSTR("%8d-%02x"), VERSION, cacheInvalidate);
+  response->addHeader(F("ETag"), tmp);
 }
 
 void serveIndex(AsyncWebServerRequest* request)
@@ -303,7 +319,13 @@ void serveIndex(AsyncWebServerRequest* request)
 
   if (handleIfNoneMatchCacheHeader(request)) return;
 
-  AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
+  AsyncWebServerResponse *response;
+#ifndef WLED_DISABLE_SIMPLE_UI
+  if (simplifiedUI)
+    response = request->beginResponse_P(200, "text/html", PAGE_simple, PAGE_simple_L);
+  else
+#endif
+    response = request->beginResponse_P(200, "text/html", PAGE_index, PAGE_index_L);
 
   response->addHeader(F("Content-Encoding"),"gzip");
   setStaticContentCacheHeaders(response);

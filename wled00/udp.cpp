@@ -91,6 +91,12 @@ void notify(byte callMode, bool followUp)
 }
 
 
+void realtimeBoroadcast(IPAddress client, uint16_t length, byte *buffer, bool isRGBW)
+{
+
+}
+
+
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
   if (!realtimeMode && !realtimeOverride){
@@ -102,6 +108,10 @@ void realtimeLock(uint32_t timeoutMs, byte md)
 
   realtimeTimeout = millis() + timeoutMs;
   if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
+  // if strip is off (bri==0) and not already in RTM
+  if (bri == 0 && !realtimeMode) {
+    strip.setBrightness(scaledBri(briLast));
+  }
   realtimeMode = md;
 
   if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
@@ -567,7 +577,7 @@ uint8_t* copyRgbwToRgb(uint8_t *destination, uint8_t *source, uint16_t length) {
 // buffer - a buffer of at least length*4 bytes long
 // isRGBW - true if the buffer contains 4 components per pixel
 //
-void realtimeBoroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
+void realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
 
     WiFiUDP ddpUdp;
 

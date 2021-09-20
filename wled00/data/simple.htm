@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+	<meta charset="utf-8">
+	<meta name="theme-color" content="#222222">
+	<meta content="yes" name="apple-mobile-web-app-capable">
+	<link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAGACGAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAQAAAAEAgGAAAAH/P/YQAAAE1JREFUOI1j/P//PwOxgNGeAUMxE9G6cQCKDWAhpADZ2f8PMjBS3QW08QK20KaZC2gfC9hCnqouoNgARgY7zMxAyNlUdQHlXiAlO2MDAD63EVqNHAe0AAAAAElFTkSuQmCC"/>
+	<title>WLED</title>
+	<script>function feedback(){}</script>
+	<link rel="stylesheet" href="simple.css">
+</head>
+<body onload="onLoad()">
+
+<div id="cv" class="overlay">Loading WLED UI...</div>
+<noscript><div class="overlay" style="opacity:1;">Sorry, WLED UI needs JavaScript!</div></noscript>
+<div id="bg"></div>
+
+<div class="wrapper" id="top">
+	<div class="tab top">
+		<div class="btnwrap">
+			<button id="buttonPower" onclick="togglePower()"><i class="icons">&#xe08f;</i><p class="tab-label">Power</p></button>
+			<button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><p class="tab-label">Info</p></button>
+			<button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button></div>
+			<button onclick="window.location.href='/settings';"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
+            <button id="buttonCP" onclick="tglCP()"><i class="icons">&#xe2b3;</i><p class="tab-label">Expand</p></button>
+            <button id="buttonBri" onclick="tglBri()"><i class="icons">&#xe2a6;</i><p class="tab-label">Brightness</p></button>
+		</div>
+		<div id="briwrap">
+			<p class="label hd">Global brightness</p>
+			<div class="il">
+				<i class="icons slider-icon" onclick="tglTheme()">&#xe2a6;</i>
+				<div class="sliderwrap il">
+					<input id="sliderBri" onchange="setBri()" oninput="updateTrail(this)" max="255" min="1" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class ="container">
+    <div class="tabcontent">
+        <div id="picker" class="center"></div>
+
+        <div id="qcs-w" class="center">
+			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
+			<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
+			<div class="qcs" onclick="pC('#ffc800');" title="Yellow" style="background-color:#ffc800;"></div>
+			<div class="qcs" onclick="pC('#ffe0a0');" title="Warm White" style="background-color:#ffe0a0;"></div>
+			<div class="qcs" onclick="pC('#ffffff');" title="White" style="background-color:#ffffff;"></div>
+			<div class="qcs qcsb" onclick="pC('#000000');" title="Black" style="background-color:#000000;"></div><br>
+			<div class="qcs" onclick="pC('#ff00ff');" title="Pink" style="background-color:#ff00ff;"></div>
+			<div class="qcs" onclick="pC('#0000ff');" title="Blue" style="background-color:#0000ff;"></div>
+			<div class="qcs" onclick="pC('#00ffc8');" title="Cyan" style="background-color:#00ffc8;"></div>
+			<div class="qcs" onclick="pC('#08ff00');" title="Green" style="background-color:#08ff00;"></div>
+			<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
+		</div>
+		<div id="csl" class="center" style="display: none;">
+			<button class="xxs btn" onclick="selectSlot(0);">1</button>
+			<button class="xxs btn" onclick="selectSlot(1);">2</button>
+			<button class="xxs btn" onclick="selectSlot(2);">3</button>
+		</div>
+
+        <div id="wwrap" class="center">
+			<p class="label h">White channel</p>
+            <i class="icons slider-icon" id="wht" title="White channel">&#xe333;</i>
+			<div class="sliderwrap il">
+				<input id="sliderW" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+				<div class="sliderdisplay"></div>
+			</div>
+            <output class="sliderbubble"></output>
+		</div>
+
+		<div id="Segments" class="center">
+			<div id="segcont"></div>
+		</div>
+
+		<div id="QuickLoad" class="center">
+			<p class="label h">Quick Load</p>
+        	<div id="pql"></div>
+		</div>
+
+		<div id="Presets" class="center" style="display:none;">
+        	<p class="label h">Presets</p>
+			<div class="fnd">
+				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this)" />
+				<span onclick="clean(this)" class="icons">&#xe38f;</span>
+				<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+			</div>
+			<div id="pcont" class="list"></div>
+		</div>
+
+		<div id="Effects" class="center">
+			<p class="label h">Effect</p>
+			<!--p class="label h">Effect speed</p-->
+			<div title="Effect speed">
+				<i class="icons slider-icon">&#xe325;</i>
+				<div class="sliderwrap il">
+					<input id="sliderSpeed" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
+			</div>
+			<!--p class="label h">Effect intensity</p-->
+			<div title="Effect intensity">
+				<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
+				<div class="sliderwrap il">
+					<input id="sliderIntensity" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
+			</div>
+			<div style="padding-bottom:20px;">
+				<div onclick="tglFxDropdown()" class="c btn" id="fxBtn"><i class="icons">&#xe0e8;</i> Solid</div>
+				<div onclick="tglPalDropdown()" class="c btn" id="palBtn"><i class="icons">&#xe2b3;</i>Default</div>
+				<div id="fxDropdown" class="dd-content">
+					<div class="fnd">
+						<input type="text" class="fnd" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this)" />
+						<span onclick="clean(this)" class="icons">&#xe38f;</span>
+						<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+					</div>
+					<div id="fxlist" class="list">
+						<div class="lstI" data-id="0" onClick="setX(0)"><a href="#0" onClick="setX(0)">Solid</a></div>
+					</div>
+				</div>
+				<div id="palDropdown" class="dd-content">
+					<div class="fnd">
+						<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pallist')" onfocus="search(this)" />
+						<span onclick="clean(this)" class="icons">&#xe38f;</span>
+						<div class="icons"><svg xmlns='http://www.w3.org/2000/svg' class='fndIcn'><circle cx='8' cy='8' r='6' /><line x1='12' y1='12' x2='24' y2='12' transform='rotate(45,12,12)' /></svg></div>
+					</div>
+					<div id="pallist" class="list">
+						<div class="lstI" data-id="0" onClick="setPalette(0)"><a href="#0" onClick="setPalette(0)">Default</a><div class="lstIprev"></div></div>
+					</div>
+				</div>
+				<br>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div id="connind"></div>
+<div id="toast"></div>
+<div id="namelabel" onclick="toggleNodes()"></div>
+
+<div id="info" class="modal">
+	<div id="imgw">
+		<img class="wi" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAFCAYAAAC5Fuf5AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABbSURBVChTlY9bDoAwDMNW7n9nwCipytQN4Z8tbrTHmDmF4oPzyldwRqp1SSdnV/NuZuzqerAByxXznBw3igkeFEfXyUuhK/yFM0CxJfyqXZEOc6/Sr9/bf7uIC5Nwd7orMvAPAAAAAElFTkSuQmCC" />
+	</div><br>
+	<div id="kv">Loading...</div><br>
+	<button class="btn infobtn" onclick="loadInfo()">Refresh</button>
+	<button class="btn infobtn" onclick="toggleInfo()">Close Info</button><br>
+	<button class="btn infobtn" onclick="toggleNodes()">Instance List</button>
+	<button class="btn infobtn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button><br>
+	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the WLED community</span>
+</div>
+
+<div id="nodes" class="modal">
+	<div id="ndlt">WLED instances</div>
+	<div id="kn">Loading...</div><br>
+	<button class="btn infobtn" onclick="loadNodes()">Refresh</button>
+	<button class="btn infobtn" onclick="toggleNodes()">Close list</button><br>
+</div>
+
+<i id="roverstar" class="icons huge" onclick="setLor(0)">&#xe410;</i><br>
+<script src="iro.js"></script>
+<script src="rangetouch.js"></script>
+<script src="simple.js"></script>
+</body>
+</html>

@@ -35,11 +35,14 @@ function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 556
 function S(){GetV();SetVal();}
 function GetV(){var d=document;}
 </script>
-<style>@import url("style.css");</style></head>
+<style>@import url("/style.css");</style>
+</head>
 <body onload="S()">
 <form id="form_s" name="Sf" method="post" onsubmit="GC()">
+<div class="toprow">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+</div>
 <h2>Sync setup</h2>
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" type="number" min="1" max="65535" class="d5" required><br>

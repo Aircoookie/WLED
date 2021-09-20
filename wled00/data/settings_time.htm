@@ -46,13 +46,15 @@
       var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Preset</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";
       for (i=0;i<8;i++)
       {
-        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" type=\"number\" min=\"0\" max=\"250\"></td>";
+        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" class=\"sml\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" class=\"sml\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" class=\"med\" type=\"number\" min=\"0\" max=\"250\"></td>";
         for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";
+		ih+="</tr>";
       }
-	  ih+="<tr><td><input name=\"W8\" id=\"W8\" type=\"number\" style=\"display:none\"><input id=\"W80\" type=\"checkbox\"></td><td>Sunrise<input name=\"H8\" value=\"255\" type=\"hidden\"></td><td><input name=\"N8\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T8\" type=\"number\" min=\"0\" max=\"250\"></td>";
+	  ih+="<tr><td><input name=\"W8\" id=\"W8\" type=\"number\" style=\"display:none\"><input id=\"W80\" type=\"checkbox\"></td><td>Sunrise<input name=\"H8\" class=\"sml\" value=\"255\" type=\"hidden\"></td><td><input name=\"N8\" class=\"sml\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T8\" class=\"med\" type=\"number\" min=\"0\" max=\"250\"></td>";
       for (j=1;j<8;j++) ih+="<td><input id=\"W8"+j+"\" type=\"checkbox\"></td>";
-      ih+="<tr><td><input name=\"W9\" id=\"W9\" type=\"number\" style=\"display:none\"><input id=\"W90\" type=\"checkbox\"></td><td>Sunset<input name=\"H9\" value=\"255\" type=\"hidden\"></td><td><input name=\"N9\" type=\"number\" min=\"-59\" max=\"59\"><td><input name=\"T9\" type=\"number\" min=\"0\" max=\"250\"></td>";
+	  ih+="</tr><tr><td><input name=\"W9\" id=\"W9\" type=\"number\" style=\"display:none\"><input id=\"W90\" type=\"checkbox\"></td><td>Sunset<input name=\"H9\" class=\"sml\" value=\"255\" type=\"hidden\"></td><td><input name=\"N9\" class=\"sml\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T9\" class=\"med\" type=\"number\" min=\"0\" max=\"250\"></td>";
       for (j=1;j<8;j++) ih+="<td><input id=\"W9"+j+"\" type=\"checkbox\"></td>";
+	  ih+="</tr>";
       gId("TMT").innerHTML=ih;
     }
     function FC()
@@ -84,25 +86,25 @@
 		td = tr.insertCell(0);
 		td.innerHTML = `Button ${i}:`;
 		td = tr.insertCell(1);
-		td.innerHTML = `<input name="MP${i}" type="number" min="0" max="250" value="${p}" required>`;
+		td.innerHTML = `<input name="MP${i}" type="number" class="m" min="0" max="250" value="${p}" required>`;
 		td = tr.insertCell(2);
-		td.innerHTML = `<input name="ML${i}" type="number" min="0" max="250" value="${l}" required>`;
+		td.innerHTML = `<input name="ML${i}" type="number" class="m" min="0" max="250" value="${l}" required>`;
 		td = tr.insertCell(3);
-		td.innerHTML = `<input name="MD${i}" type="number" min="0" max="250" value="${d}" required>`;
+		td.innerHTML = `<input name="MD${i}" type="number" class="m" min="0" max="250" value="${d}" required>`;
 	}
 	function GetV()
 	{
 		//values injected by server while sending HTML
 	}
 	</script>
-	<style>
-		@import url("style.css");
-	</style>
+	<style>@import url("/style.css");</style>
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post" onsubmit="Wd()">
+		<div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+		</div>
 		<h2>Time setup</h2>
 		Get time from NTP server: <input type="checkbox" name="NT"><br>
     <input name="NS" maxlength="32"><br>
@@ -131,8 +133,8 @@
 		</select><br>
 		UTC offset: <input name="UO" type="number" min="-65500" max="65500" required> seconds (max. 18 hours)<br>
 		Current local time is <span class="times">unknown</span>.<br>
-		Latitude (N): <input name="LT" type="number" min="-66.6" max="66.6" step="0.01">
-		Longitude (E): <input name="LN" type="number" min="-180" max="180" step="0.01">
+		Latitude (N): <input name="LT" type="number" class="xl" min="-66.6" max="66.6" step="0.01">
+		Longitude (E): <input name="LN" type="number" class="xl" min="-180" max="180" step="0.01">
 		<div id="sun" class="times"></div>
 		<h3>Clock</h3>
 		Clock Overlay:
@@ -155,8 +157,8 @@
 		</div>
 		Countdown Mode: <input type="checkbox" name="CE"><br>
 		Countdown Goal:<br>
-		Year: 20 <input name="CY" type="number" min="0" max="99" required> Month: <input name="CI" type="number" min="1" max="12" required> Day: <input name="CD" type="number" min="1" max="31" required><br>
-		Hour: <input name="CH" type="number" min="0" max="23" required> Minute: <input name="CM" type="number" min="0" max="59" required> Second: <input name="CS" type="number" min="0" max="59" required><br>
+		Year: 20 <input name="CY" class="small" type="number" min="0" max="99" required> Month: <input name="CI" class="small" type="number" min="1" max="12" required> Day: <input name="CD" class="small" type="number" min="1" max="31" required><br>
+		Hour: <input name="CH" class="small" type="number" min="0" max="23" required> Minute: <input name="CM" class="small" type="number" min="0" max="59" required> Second: <input name="CS" class="small" type="number" min="0" max="59" required><br>
 		<h3>Macro presets</h3>
     	<b>Macros have moved!</b><br>
     	<i>Presets now also can be used as macros to save both JSON and HTTP API commands.<br>

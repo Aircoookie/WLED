@@ -8,6 +8,90 @@
 #include "soc/rtc_cntl_reg.h"
 #endif
 
+#ifdef WLED_USE_ETHERNET
+// The following six pins are neither configurable nor
+// can they be re-assigned through IOMUX / GPIO matrix.
+// See https://docs.espressif.com/projects/esp-idf/en/latest/esp32/hw-reference/esp32/get-started-ethernet-kit-v1.1.html#ip101gri-phy-interface
+const managed_pin_type esp32_nonconfigurable_ethernet_pins[WLED_ETH_RSVD_PINS_COUNT] = {
+    { 21, true  }, // RMII EMAC TX EN  == When high, clocks the data on TXD0 and TXD1 to transmitter
+    { 19, true  }, // RMII EMAC TXD0   == First bit of transmitted data
+    { 22, true  }, // RMII EMAC TXD1   == Second bit of transmitted data
+    { 25, false }, // RMII EMAC RXD0   == First bit of received data
+    { 26, false }, // RMII EMAC RXD1   == Second bit of received data
+    { 27, true  }, // RMII EMAC CRS_DV == Carrier Sense and RX Data Valid
+};
+
+const ethernet_settings ethernetBoards[] = {
+  // None
+  {
+  },
+  
+  // WT32-EHT01
+  // Please note, from my testing only these pins work for LED outputs:
+  //   IO2, IO4, IO12, IO14, IO15
+  // These pins do not appear to work from my testing:
+  //   IO35, IO36, IO39
+  {
+    1,                 // eth_address, 
+    16,                // eth_power, 
+    23,                // eth_mdc, 
+    18,                // eth_mdio, 
+    ETH_PHY_LAN8720,   // eth_type,
+    ETH_CLOCK_GPIO0_IN // eth_clk_mode
+  },
+
+  // ESP32-POE
+  {
+     0,                  // eth_address, 
+    12,                  // eth_power, 
+    23,                  // eth_mdc, 
+    18,                  // eth_mdio, 
+    ETH_PHY_LAN8720,     // eth_type,
+    ETH_CLOCK_GPIO17_OUT // eth_clk_mode
+  },
+
+   // WESP32
+  {
+    0,			              // eth_address,
+    -1,			              // eth_power,
+    16,			              // eth_mdc,
+    17,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO0_IN	  // eth_clk_mode
+  },
+
+  // QuinLed-ESP32-Ethernet
+  {
+    0,			              // eth_address,
+    5,			              // eth_power,
+    23,			              // eth_mdc,
+    18,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
+  },
+
+  // TwilightLord-ESP32 Ethernet Shield
+  {
+    0,			              // eth_address,
+    5,			              // eth_power,
+    23,			              // eth_mdc,
+    18,			              // eth_mdio,
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT	// eth_clk_mode
+  },
+
+  // ESP3DEUXQuattro
+  {
+    1,                    // eth_address, 
+    -1,                   // eth_power, 
+    23,                   // eth_mdc, 
+    18,                   // eth_mdio, 
+    ETH_PHY_LAN8720,      // eth_type,
+    ETH_CLOCK_GPIO17_OUT  // eth_clk_mode
+  }
+};
+#endif
+
 /*
  * Main WLED class implementation. Mostly initialization and connection logic
  */
@@ -120,6 +204,10 @@ void WiFiEvent(WiFiEvent_t event)
 
 void WLED::loop()
 {
+  #ifdef WLED_DEBUG
+  static unsigned long maxUsermodMillis = 0;
+  #endif
+
   handleTime();
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
@@ -130,7 +218,15 @@ void WLED::loop()
   handleDMX();
 #endif
   userLoop();
+
+  #ifdef WLED_DEBUG
+  unsigned long usermodMillis = millis();
+  #endif
   usermods.loop();
+  #ifdef WLED_DEBUG
+  usermodMillis = millis() - usermodMillis;
+  if (usermodMillis > maxUsermodMillis) maxUsermodMillis = usermodMillis;
+  #endif
 
   yield();
   handleIO();
@@ -159,7 +255,9 @@ void WLED::loop()
     yield();
 
     handleHue();
+#ifndef WLED_DISABLE_BLYNK
     handleBlynk();
+#endif
 
     yield();
 
@@ -197,10 +295,12 @@ void WLED::loop()
     DEBUG_PRINTLN(F("Re-init busses."));
     busses.removeAll();
     uint32_t mem = 0;
-    strip.isRgbw = false;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
-      
+      mem += BusManager::memUsage(*busConfigs[i]);
+      if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
+/*
+      // this is done in strip.finalizeInit()
       if (busConfigs[i]->adjustBounds(ledCount)) {
         mem += busses.memUsage(*busConfigs[i]);
         if (mem <= MAX_LED_MEMORY) {
@@ -211,20 +311,20 @@ void WLED::loop()
           strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(busConfigs[i]->type);
         }
       }
+*/
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
-    strip.finalizeInit(ledCount);
+    strip.finalizeInit();
     yield();
     serializeConfig();
   }
-  
+
   yield();
   handleWs();
-  handleStatusLED();
 
 // DEBUG serial logging
 #ifdef WLED_DEBUG
-  if (millis() - debugTime > 9999) {
+  if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
@@ -236,17 +336,19 @@ void WLED::loop()
     } else
       DEBUG_PRINTLN(F("No PSRAM"));
     #endif
-    DEBUG_PRINT(F("Wifi state: "));    DEBUG_PRINTLN(WiFi.status());
+    DEBUG_PRINT(F("Wifi state: "));      DEBUG_PRINTLN(WiFi.status());
 
     if (WiFi.status() != lastWifiState) {
       wifiStateChangedTime = millis();
     }
     lastWifiState = WiFi.status();
-    DEBUG_PRINT(F("State time: "));    DEBUG_PRINTLN(wifiStateChangedTime);
-    DEBUG_PRINT(F("NTP last sync: ")); DEBUG_PRINTLN(ntpLastSyncTime);
-    DEBUG_PRINT(F("Client IP: "));     DEBUG_PRINTLN(Network.localIP());
-    DEBUG_PRINT(F("Loops/sec: "));     DEBUG_PRINTLN(loops / 10);
+    DEBUG_PRINT(F("State time: "));      DEBUG_PRINTLN(wifiStateChangedTime);
+    DEBUG_PRINT(F("NTP last sync: "));   DEBUG_PRINTLN(ntpLastSyncTime);
+    DEBUG_PRINT(F("Client IP: "));       DEBUG_PRINTLN(Network.localIP());
+    DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 60);
+    DEBUG_PRINT(F("Max UM time[ms]: ")); DEBUG_PRINTLN(maxUsermodMillis);
     loops = 0;
+    maxUsermodMillis = 0;
     debugTime = millis();
   }
   loops++;
@@ -315,14 +417,6 @@ void WLED::setup()
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
 
-#if STATUSLED
-  if (!pinManager.isPinAllocated(STATUSLED)) {
-    // NOTE: Special case: The status LED should *NOT* be allocated.
-    //       See comments in handleStatusLed().
-    pinMode(STATUSLED, OUTPUT);
-  }
-#endif
-
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
 
@@ -336,9 +430,12 @@ void WLED::setup()
   WiFi.onEvent(WiFiEvent);
   #endif
 
-  #ifdef WLED_ENABLE_ADALIGHT
+  #ifdef WLED_ENABLE_ADALIGHT // reserve GPIO3 (RX) pin for ADALight
   if (!pinManager.isPinAllocated(3)) {
     Serial.println(F("Ada"));
+    pinManager.allocatePin(3,false);
+  } else {
+    DEBUG_PRINTLN(F("ADALight disabled due to GPIO3 being used."));
   }
   #endif
 
@@ -388,21 +485,19 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
-
-  if (ledCount > MAX_LEDS || ledCount == 0)
-    ledCount = 30;
-
-  strip.finalizeInit(ledCount);
+  strip.finalizeInit(); // busses created during deserializeConfig()
+  strip.populateDefaultSegments();
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
-  if (bootPreset > 0) {
-    applyPreset(bootPreset, CALL_MODE_INIT);
-  } else if (turnOnAtBoot) {
+  if (turnOnAtBoot) {
     if (briS > 0) bri = briS;
     else if (bri == 0) bri = 128;
   } else {
     briLast = briS; bri = 0;
+  }
+  if (bootPreset > 0) {
+    applyPreset(bootPreset, CALL_MODE_INIT);
   }
   colorUpdated(CALL_MODE_INIT);
 
@@ -725,40 +820,4 @@ void WLED::handleConnection()
       DEBUG_PRINTLN(F("Access point disabled."));
     }
   }
-}
-
-// If status LED pin is allocated for other uses, does nothing
-// else blink at 1Hz when WLED_CONNECTED is false (no WiFi, ?? no Ethernet ??)
-// else blink at 2Hz when MQTT is enabled but not connected
-// else turn the status LED off
-void WLED::handleStatusLED()
-{
-  #if STATUSLED
-  static unsigned long ledStatusLastMillis = 0;
-  static unsigned short ledStatusType = 0; // current status type - corresponds to number of blinks per second
-  static bool ledStatusState = 0; // the current LED state
-
-  if (pinManager.isPinAllocated(STATUSLED)) {
-    return; //lower priority if something else uses the same pin
-  }
-
-  ledStatusType = WLED_CONNECTED ? 0 : 2;
-  if (mqttEnabled && ledStatusType != 2) { // Wi-Fi takes precendence over MQTT
-    ledStatusType = WLED_MQTT_CONNECTED ? 0 : 4;
-  }
-  if (ledStatusType) {
-    if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
-      ledStatusLastMillis = millis();
-      ledStatusState = ledStatusState ? 0 : 1;
-      digitalWrite(STATUSLED, ledStatusState);
-    }
-  } else {
-    #ifdef STATUSLEDINVERTED
-      digitalWrite(STATUSLED, HIGH);
-    #else
-      digitalWrite(STATUSLED, LOW);
-    #endif
-
-  }
-  #endif
 }

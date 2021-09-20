@@ -190,8 +190,10 @@ void updateInterfaces(uint8_t callMode)
     espalexaDevice->setColor(col[0], col[1], col[2]);
   }
   #endif
+  #ifndef WLED_DISABLE_BLYNK
   if (callMode != CALL_MODE_BLYNK && 
       callMode != CALL_MODE_NO_NOTIFY) updateBlynk();
+  #endif
   doPublishMqtt = true;
   lastInterfaceUpdate = millis();
 }
@@ -285,7 +287,9 @@ void handleNightlight()
           setLedsStandard();
         }
       }
+      #ifndef WLED_DISABLE_BLYNK
       updateBlynk();
+      #endif
       if (macroNl > 0)
         applyPreset(macroNl);
       nightlightActiveOld = false;

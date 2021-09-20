@@ -16,9 +16,11 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
   if(type == WS_EVT_CONNECT){
     //client connected
     sendDataWs(client);
+    DEBUG_PRINTLN(F("WS client connected."));
   } else if(type == WS_EVT_DISCONNECT){
     //client disconnected
     if (client->id() == wsLiveClientId) wsLiveClientId = 0;
+    DEBUG_PRINTLN(F("WS client disconnected."));
   } else if(type == WS_EVT_DATA){
     //data packet
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
@@ -39,6 +41,11 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           JsonObject root = jsonBuffer.as<JsonObject>();
           if (error || root.isNull()) return;
 
+          #ifdef WLED_DEBUG
+            DEBUG_PRINT(F("Incoming WS: "));
+            serializeJson(root,Serial);
+            DEBUG_PRINTLN();
+          #endif
           if (root["v"] && root.size() == 1) {
             //if the received value is just "{"v":true}", send only to this client
             verboseResponse = true;
@@ -76,12 +83,15 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
           }
         }
       }
+      DEBUG_PRINTLN(F("WS multipart message."));
     }
   } else if(type == WS_EVT_ERROR){
     //error was received from the other end
+    DEBUG_PRINTLN(F("WS error."));
 
   } else if(type == WS_EVT_PONG){
     //pong message was received (in response to a ping request maybe)
+    DEBUG_PRINTLN(F("WS pong."));
 
   }
 }
@@ -100,13 +110,22 @@ void sendDataWs(AsyncWebSocketClient * client)
     size_t len = measureJson(doc);
     buffer = ws.makeBuffer(len);
     if (!buffer) return; //out of memory
-
+/*
+    #ifdef WLED_DEBUG
+      DEBUG_PRINT(F("Outgoing WS: "));
+      serializeJson(doc,Serial);
+      DEBUG_PRINTLN();
+    #endif
+*/
     serializeJson(doc, (char *)buffer->get(), len +1);
   } 
+  DEBUG_PRINT(F("Sending WS data "));
   if (client) {
     client->text(buffer);
+    DEBUG_PRINTLN(F("to a single client."));
   } else {
     ws.textAll(buffer);
+    DEBUG_PRINTLN(F("to multiple clients."));
   }
 }
 

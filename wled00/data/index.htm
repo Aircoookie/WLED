@@ -23,10 +23,10 @@
 			<button id="buttonNl" onclick="toggleNl()"><i class="icons">&#xe2a2;</i><p class="tab-label">Timer</p></button>
 			<button id="buttonSync" onclick="toggleSync()"><i class="icons">&#xe116;</i><p class="tab-label">Sync</p></button>
 			<button id="buttonSr" onclick="toggleLiveview()"><i class="icons">&#xe410;</i><p class="tab-label">Peek</p></button>
-		  <button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><p class="tab-label">Info</p></button>
-      <button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button></div>
-			<button onclick="window.location.href = '/settings';"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
-		  <button id="buttonPcm" onclick="togglePcMode(true)"><i class="icons">&#xe23d;</i><p class="tab-label">PC Mode</p></button>
+			<button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><p class="tab-label">Info</p></button>
+			<button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button>
+			<button onclick="window.location.href='/settings';"><i class="icons">&#xe0a2;</i><p class="tab-label">Config</p></button>
+			<button id="buttonPcm" onclick="togglePcMode(true)"><i class="icons">&#xe23d;</i><p class="tab-label">PC Mode</p></button>
 		</div>
 		<div id="briwrap">
 			<p class="hd">Brightness</p>
@@ -36,6 +36,7 @@
 					<input id="sliderBri" onchange="setBri()" oninput="updateTrail(this)" max="255" min="1" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
+				<output class="sliderbubble"></output>
 			</div>
 		</div>
 		<iframe id="liveview" src="about:blank"></iframe>
@@ -46,17 +47,26 @@
 	<div id="Colors" class="tabcontent">
 		<div id="picker" class="noslide"></div>
 		<div id="rgbwrap">
-			<div class="sliderwrap il">
-				<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+			<div id="rwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+			<div id="gwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div><br>
-			<div class="sliderwrap il">
-				<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
-				<div class="sliderdisplay"></div>
+			<div id="bwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<output class="sliderbubble"></output>
 			</div><br>
 		</div>
 		<div id="wwrap">
@@ -64,6 +74,7 @@
 			<div class="sliderwrap il">
 				<input id="sliderW" class="noslide" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
+				<output class="sliderbubble"></output>
 			</div>
 		</div>
 		<div id="qcs-w">
@@ -77,28 +88,30 @@
 			<div class="qcs" onclick="pC('#0000ff');" title="Blue" style="background-color:#0000ff;"></div>
 			<div class="qcs" onclick="pC('#00ffc8');" title="Cyan" style="background-color:#00ffc8;"></div>
 			<div class="qcs" onclick="pC('#08ff00');" title="Green" style="background-color:#08ff00;"></div>
-			<div class="qcs" onclick="pC('rnd');" title="Random" style="background-color:var(--c-3); padding: 4px 8px; transform: translateY(-10px);">R</div>
+			<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
 		</div>
 		<div id="csl">
-			<button class="xxs cl btn" onclick="selectSlot(0);">1</button>
-			<button class="xxs cl btn" onclick="selectSlot(1);">2</button>
-			<button class="xxs cl btn" onclick="selectSlot(2);">3</button>
+			<button class="btn xxs" onclick="selectSlot(0);">1</button>
+			<button class="btn xxs" onclick="selectSlot(1);">2</button>
+			<button class="btn xxs" onclick="selectSlot(2);">3</button>
 		</div>
 		<div id="hexw">
 			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
-			<button id="hexcnf" class="xxs btn" onclick="fromHex();"><i class="icons btna-icon">&#xe390;</i></button>
+			<button id="hexcnf" class="btn btn-xs" onclick="fromHex();"><i class="icons btn-icon">&#xe390;</i></button>
 		</div>
-		<p class="labels">
-			<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i>
-			Color palette
-		</p>
+		<p class="labels"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 		<div class="il">
+			<div class="staytop fnd">
+				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pallist')" onfocus="search(this,'pallist')" />
+				<i class="icons clear-icon" onclick="clean(this)">&#xe38f;</i>
+				<i class="icons search-icon">&#xe0a1;</i>
+			</div>
 			<div id="pallist" class="list">
 				<div class="lstI" data-id="0">
-					<label class="check schkl">
+					<label class="radio schkl">
 						&nbsp;
 						<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
-						<span class="checkmark schk"></span>
+						<span class="radiomark schk"></span>
 					</label>
 					<div class="lstIcontent">
 						<span class="lstIname">
@@ -120,26 +133,33 @@
 
 	<div id="Effects" class="tabcontent">
 		<p class="labels">Effect speed</p>
-		<div class="staytop">
+		<div class="staytop" id="staytop">
 			<i class="icons slider-icon">&#xe325;</i>
 			<div class="sliderwrap il">
 				<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<output class="sliderbubble hidden"></output>
 				<div class="sliderdisplay"></div>
 			</div>
+			<output class="sliderbubble"></output>
 		</div>
 		<p class="labels">Effect intensity</p>
 		<div class="staytop" id="staytop1">
 			<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
 			<div class="sliderwrap il">
 				<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
-				<output class="sliderbubble hidden"></output>
 				<div class="sliderdisplay"></div>
 			</div>
+			<output class="sliderbubble"></output>
 		</div>
-		<p class="labels">Effect mode</p>
-		<div id="fxlist" class="list">
-			Loading...
+		<div class="il">
+			<p class="labels">Effect mode</p>
+			<div class="staytop fnd" id="staytop2">
+				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist')" />
+				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
+				<i class="icons search-icon">&#xe0a1;</i>
+			</div>
+			<div id="fxlist" class="list">
+				Loading...
+			</div>
 		</div>
 	</div>
 
@@ -147,21 +167,18 @@
 		<div id="segcont">
 			Loading...
 		</div>
-		<div id="segutil">
-
+		<div id="segutil" class="staybot">
 		</div>
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
 		</div>
-    <p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s</p>
+		<!--p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s</p-->
 	</div>
 
 	<div id="Presets" class="tabcontent">
-		<div id="putil">
-
+		<div id="putil" class="staytop">
 		</div>
 		<div id="pql">
-
 		</div>
 		<div id="pcont">
 			Loading...
@@ -183,19 +200,19 @@
 	<div id="imgw">
 		<img class="wi" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAFCAYAAAC5Fuf5AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABbSURBVChTlY9bDoAwDMNW7n9nwCipytQN4Z8tbrTHmDmF4oPzyldwRqp1SSdnV/NuZuzqerAByxXznBw3igkeFEfXyUuhK/yFM0CxJfyqXZEOc6/Sr9/bf7uIC5Nwd7orMvAPAAAAAElFTkSuQmCC" />
 	</div><br>
-<div id="kv">Loading...</div><br>
-<button class="btn infobtn" onclick="requestJson(null)">Refresh</button>
-<button class="btn infobtn" onclick="toggleInfo()">Close Info</button><br>
-<button class="btn infobtn" onclick="toggleNodes()">Instance List</button>
-<button class="btn infobtn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button><br>
-<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the WLED community</span>
+	<div id="kv">Loading...</div><br>
+	<button class="btn infobtn" onclick="loadInfo()">Refresh</button>
+	<button class="btn infobtn" onclick="toggleInfo()">Close Info</button><br>
+	<button class="btn infobtn" onclick="toggleNodes()">Instance List</button>
+	<button class="btn infobtn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button><br>
+	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the WLED community</span>
 </div>
 
 <div id="nodes" class="modal">
-  <div id="ndlt">WLED instances</div>
-  <div id="kn">Loading...</div><br>
-  <button class="btn infobtn" onclick="loadNodes()">Refresh</button>
-  <button class="btn infobtn" onclick="toggleNodes()">Close list</button><br>
+	<div id="ndlt">WLED instances</div>
+	<div id="kn">Loading...</div><br>
+	<button class="btn infobtn" onclick="loadNodes()">Refresh</button>
+	<button class="btn infobtn" onclick="toggleNodes()">Close list</button><br>
 </div>
 
 <div id="rover" class="modal">

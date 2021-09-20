@@ -101,7 +101,7 @@ void onHueData(void* arg, AsyncClient* client, void *data, size_t len)
       hueError = HUE_ERROR_JSON_PARSING; return;
     }
     
-    int hueErrorCode = root[0][F("error")][F("type")];
+    int hueErrorCode = root[0][F("error")]["type"];
     if (hueErrorCode)//hue bridge returned error
     {
       hueError = hueErrorCode;

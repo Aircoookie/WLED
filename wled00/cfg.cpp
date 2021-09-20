@@ -1,4 +1,5 @@
 #include "wled.h"
+#include "wled_ethernet.h"
 
 /*
  * Serializes and parses the cfg.json and wsec.json settings files, stored in internal FS.
@@ -29,6 +30,9 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   getStringFromJson(cmDNS, id[F("mdns")], 33);
   getStringFromJson(serverDescription, id[F("name")], 33);
   getStringFromJson(alexaInvocationName, id[F("inv")], 33);
+#ifndef WLED_DISABLE_SIMPLE_UI
+  CJSON(simplifiedUI, id[F("sui")]);
+#endif
 
   JsonObject nw_ins_0 = doc["nw"]["ins"][0];
   getStringFromJson(clientSSID, nw_ins_0[F("ssid")], 33);
@@ -60,7 +64,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   CJSON(apBehavior, ap[F("behav")]);
   
-
   /*
   JsonArray ap_ip = ap["ip"];
   for (byte i = 0; i < 4; i++) {
@@ -79,16 +82,16 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   CJSON(ledCount, hw_led[F("total")]);
   if (ledCount > MAX_LEDS) ledCount = MAX_LEDS;
+  uint16_t lC = 0;
 
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonArray ins = hw_led["ins"];
+
   if (fromFS || !ins.isNull()) {
-    uint8_t s = 0; //bus iterator
-    strip.isRgbw = false;
-    strip.isOffRefreshRequred = false;
+    uint8_t s = 0;  // bus iterator
     busses.removeAll();
     uint32_t mem = 0;
     for (JsonObject elm : ins) {
@@ -104,12 +107,20 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
 
       uint16_t length = elm[F("len")] | 1;
+      if (length==0 || length+lC > MAX_LEDS) continue;  // zero length or we reached max. number of LEDs, just stop
       uint8_t colorOrder = (int)elm[F("order")];
       uint8_t skipFirst = elm[F("skip")];
       uint16_t start = elm[F("start")] | 0;
+      if (start > lC+length) continue; // something is very wrong :)
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
-
+      //if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
+      s++;
+      lC += length;
+      BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+      mem += BusManager::memUsage(bc);
+      if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
+/*
       BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
       if (bc.adjustBounds(ledCount)) {
         //RGBW mode is enabled if at least one of the strips is RGBW
@@ -120,9 +131,11 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
         mem += busses.memUsage(bc);
         if (mem <= MAX_LED_MEMORY) busses.add(bc);
       }
+*/
     }
-    strip.finalizeInit(ledCount);
+    // finalization done in beginStrip()
   }
+  if (lC > ledCount) ledCount = lC; // fix incorrect total length (honour analog setup)
   if (hw_led["rev"]) busses.getBus(0)->reversed = true; //set 0.11 global reversed setting for first bus
 
   // read multiple button configuration
@@ -461,6 +474,7 @@ void serializeConfig() {
   id[F("mdns")] = cmDNS;
   id[F("name")] = serverDescription;
   id[F("inv")] = alexaInvocationName;
+  id[F("sui")] = simplifiedUI;
 
   JsonObject nw = doc.createNestedObject("nw");
 
@@ -500,6 +514,25 @@ void serializeConfig() {
   #ifdef WLED_USE_ETHERNET
   JsonObject ethernet = doc.createNestedObject("eth");
   ethernet["type"] = ethernetType;
+  if (ethernetType != WLED_ETH_NONE && ethernetType < WLED_NUM_ETH_TYPES) {
+    JsonArray pins = ethernet.createNestedArray("pin");
+    for (uint8_t p=0; p<WLED_ETH_RSVD_PINS_COUNT; p++) pins.add(esp32_nonconfigurable_ethernet_pins[p].pin);
+    if (ethernetBoards[ethernetType].eth_power>=0)     pins.add(ethernetBoards[ethernetType].eth_power);
+    if (ethernetBoards[ethernetType].eth_mdc>=0)       pins.add(ethernetBoards[ethernetType].eth_mdc);
+    if (ethernetBoards[ethernetType].eth_mdio>=0)      pins.add(ethernetBoards[ethernetType].eth_mdio);
+    switch (ethernetBoards[ethernetType].eth_clk_mode) {
+      case ETH_CLOCK_GPIO0_IN:
+      case ETH_CLOCK_GPIO0_OUT:
+        pins.add(0);
+        break;
+      case ETH_CLOCK_GPIO16_OUT:
+        pins.add(16);
+        break;
+      case ETH_CLOCK_GPIO17_OUT:
+        pins.add(17);
+        break;
+    }
+  }
   #endif
 
   JsonObject hw = doc.createNestedObject("hw");
@@ -526,6 +559,7 @@ void serializeConfig() {
     ins["rev"] = bus->reversed;
     ins[F("skip")] = bus->skippedLeds();
     ins["type"] = bus->getType();
+    ins[F("rgbw")] = bus->isRgbw();
   }
 
   // button(s)
@@ -550,7 +584,7 @@ void serializeConfig() {
 
   JsonObject hw_ir = hw.createNestedObject("ir");
   hw_ir["pin"] = irPin;
-  hw_ir[F("type")] = irEnabled;              // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
+  hw_ir["type"] = irEnabled;  // the byte 'irEnabled' does contain the IR-Remote Type ( 0=disabled )
 
   JsonObject hw_relay = hw.createNestedObject(F("relay"));
   hw_relay["pin"] = rlyPin;

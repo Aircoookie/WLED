@@ -6,7 +6,7 @@
 	<title>UI Settings</title>
 	<script>
 		var d = document;
-		var initial_ds, initial_st;
+		var initial_ds, initial_st, initial_su;
 		var sett = null;
 		var l = {
 			"comp":{
@@ -21,8 +21,8 @@
 				"pcmbot": "Show bottom tab bar in PC mode",
 				"pid": "Show preset IDs",
 				"seglen": "Set segment length instead of stop LED",
-        "css": "Enable custom CSS",
-        "hdays": "Enable custom Holidays list"
+				"css": "Enable custom CSS",
+		        "hdays": "Enable custom Holidays list"
 			},
 			"theme":{
 				"alpha": {
@@ -147,10 +147,18 @@
 				gId('lserr').innerHTML = "&#9888; Settings JSON saving failed. (" + e + ")";
 			}
 		}
+
+		function cLS()
+		{
+			localStorage.removeItem('wledP');
+			localStorage.removeItem('wledPmt');
+			localStorage.removeItem('wledPalx');
+			showToast("Cleared.");
+		}
 		
 		function Save() {
 			SetLS();
-			if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st) d.Sf.submit();
+			if (d.Sf.DS.value != initial_ds || d.Sf.ST.checked != initial_st || d.Sf.SU.checked != initial_su) d.Sf.submit();
 		}
 		
 		function S()
@@ -158,6 +166,7 @@
 			GetV(); 
 			initial_ds = d.Sf.DS.value;
 			initial_st = d.Sf.ST.checked;
+			initial_su = d.Sf.SU.checked;
 			GetLS();
 		}
 		function H()
@@ -208,7 +217,7 @@
 </head>
 <body onload="S()">
 	<form id="form_s" name="Sf" method="post">
-		<div style="position:sticky;top:0;background-color:#222;">
+		<div class="toprow">
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button><br>
 		<span id="lssuc" style="color:green; display:none">&#10004; Local UI settings saved!</span>
@@ -217,6 +226,7 @@
 		<h2>Web Setup</h2>
 		Server description: <input name="DS" maxlength="32"><br>
     	Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
+    	Enable simplified UI: <input type="checkbox" name="SU"><br>
 		<i>The following UI customization settings are unique both to the WLED device and this browser.<br>
 		You will need to set them again if using a different browser, device or WLED IP address.<br>
 		Refresh the main UI to apply changes.</i><br>
@@ -236,11 +246,12 @@
 		<span class="l">BG image URL</span>: <input id="theme_bg_url" class="agi" oninput="checkRandomBg()"><br>
 		<span class="l">Random BG image</span>: <input type="checkbox" id="theme_bg_random" class="agi cb" onchange="setRandomBg()"><br>
 		<input id="theme_base" class="agi" style="display:none">
-    <span class="l"></span>: <input type="checkbox" id="comp_css" class="agi cb"><br>
+		<span class="l"></span>: <input type="checkbox" id="comp_css" class="agi cb"><br>
 		<div id="skin">Custom CSS: <input type="file" name="data" accept=".css"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data,'/skin.css');"><br></div>
 		<span class="l"></span>: <input type="checkbox" id="comp_hdays" class="agi cb"><br>
-    <div id="holidays">Holidays: <input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/holidays.json');"><br></div>
+		<div id="holidays">Holidays: <input type="file" name="data2" accept=".json"> <input type="button" value="Upload" onclick="uploadFile(d.Sf.data2,'/holidays.json');"><br></div>
 		<div id="toast"></div>
+		<hr><button type="button" onclick="cLS()">Clear local storage</button>
 		<hr><button type="button" onclick="B()">Back</button><button type="button" onclick="Save()">Save</button>
 	</form>
 </body>

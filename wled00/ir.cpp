@@ -79,6 +79,9 @@ void presetFallback(uint8_t presetID, uint8_t effectID, uint8_t paletteID)
   }
 }
 
+/*
+ * This is no longer needed due to JSON IR mod
+ *
 //Add what your custom IR codes should trigger here. Guide: https://github.com/Aircoookie/WLED/wiki/Infrared-Control
 //IR codes themselves can be defined directly after "case" or in "ir_codes.h"
 bool decodeIRCustom(uint32_t code)
@@ -94,6 +97,7 @@ bool decodeIRCustom(uint32_t code)
   if (code != IRCUSTOM_MACRO1) colorUpdated(CALL_MODE_BUTTON); //don't update color again if we apply macro, it already does it
   return true;
 }
+*/
 
 void relativeChange(byte* property, int8_t amount, byte lowerBoundary, byte higherBoundary)
 {
@@ -162,9 +166,10 @@ void decodeIR(uint32_t code)
     return;
   }
   lastValidCode = 0; irTimesRepeated = 0;
-  if (decodeIRCustom(code)) return;
+  //if (decodeIRCustom(code)) return;
   if (irEnabled == 8) { // any remote configurable with ir.json file
     decodeIRJson(code);
+    colorUpdated(CALL_MODE_BUTTON);
     return;
   }
   if (code > 0xFFFFFF) return; //invalid code
@@ -566,14 +571,17 @@ Sample:
 void decodeIRJson(uint32_t code) 
 {
   char objKey[10];
-  const char* cmd;
   String cmdStr;
   DynamicJsonDocument irDoc(JSON_BUFFER_SIZE);
   JsonObject fdo;
   JsonObject jsonCmdObj;
 
-  sprintf(objKey, "\"0x%X\":", code);
+  sprintf_P(objKey, PSTR("\"0x%lX\":"), (unsigned long)code);
 
+  // attempt to read command from ir.json
+  // this may fail for two reasons: ir.json does not exist or IR code not found
+  // if the IR code is not found readObjectFromFile() will clean() irDoc JSON document
+  // so we can differentiate between the two
   readObjectFromFile("/ir.json", objKey, &irDoc);
   fdo = irDoc.as<JsonObject>();
   lastValidCode = 0;
@@ -583,8 +591,7 @@ void decodeIRJson(uint32_t code)
     return;
   }
 
-  cmd = fdo["cmd"]; //string
-  cmdStr = String(cmd);
+  cmdStr = fdo["cmd"].as<String>();;
   jsonCmdObj = fdo["cmd"]; //object
 
   if (!cmdStr.isEmpty()) 
@@ -617,8 +624,8 @@ void decodeIRJson(uint32_t code)
       if (!cmdStr.startsWith("win&")) {
         cmdStr = "win&" + cmdStr;
       }
-      handleSet(nullptr, cmdStr, false); 
-    }        
+      handleSet(nullptr, cmdStr, false);
+    }
   } else if (!jsonCmdObj.isNull()) {
     // command is JSON object
     //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
@@ -653,9 +660,7 @@ void handleIR()
       {
         if (results.value != 0) // only print results if anything is received ( != 0 )
         {
-          Serial.print("IR recv\r\n0x");
-          Serial.println((uint32_t)results.value, HEX);
-          Serial.println();
+          DEBUG_PRINTF("IR recv: 0x%lX\n", (unsigned long)results.value);
         }
         decodeIR(results.value);
         irrecv->resume();

@@ -383,11 +383,6 @@ class PolyBus {
     uint8_t w = c >> 24;
     RgbwColor col;
 
-    //TODO make color order override possible on a per-strip basis
-    #ifdef COLOR_ORDER_OVERRIDE
-    if (pix >= COO_MIN && pix < COO_MAX) co = COO_ORDER;
-    #endif
-
     //reorder channels to selected order
     switch (co)
     {
@@ -559,10 +554,6 @@ class PolyBus {
       case I_SS_P98_3: col = (static_cast<B_SS_P98_3*>(busPtr))->GetPixelColor(pix); break;
     }
     
-    #ifdef COLOR_ORDER_OVERRIDE
-    if (pix >= COO_MIN && pix < COO_MAX) co = COO_ORDER;
-    #endif
-
     switch (co)
     {
       //                    W               G              R               B
@@ -632,14 +623,17 @@ class PolyBus {
   }
 
   //gives back the internal type index (I_XX_XXX_X above) for the input 
-  static uint8_t getI(uint8_t busType, uint8_t* pins, uint8_t num = 0) {
+  static uint8_t getI(uint8_t busType, uint8_t* pins, uint8_t num = 0, bool isRGBW = false) {
     if (!IS_DIGITAL(busType)) return I_NONE;
     if (IS_2PIN(busType)) { //SPI LED chips
       bool isHSPI = false;
       #ifdef ESP8266
       if (pins[0] == P_8266_HS_MOSI && pins[1] == P_8266_HS_CLK) isHSPI = true;
       #else
-        if(!num) isHSPI = true; // temporary hack to limit use of hardware SPI to a single SPI peripheral: only allow ESP32 hardware serial on segment 0
+      // temporary hack to limit use of hardware SPI to a single SPI peripheral: only allow ESP32 hardware serial on segment 0
+      if (!num) isHSPI = true;
+      //if (num==0 && pins[0] == P_32_VS_MOSI && pins[1] == P_32_VS_CLK) isHSPI = true; // no nultiplexing, up to 80MHz clock
+      //if (num==1 && pins[0] == P_32_HS_MOSI && pins[1] == P_32_HS_CLK) isHSPI = true;
       #endif
       uint8_t t = I_NONE;
       switch (busType) {
@@ -658,9 +652,8 @@ class PolyBus {
       switch (busType) {
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
-          return I_8266_U0_NEO_3 + offset;
         case TYPE_SK6812_RGBW:
-          return I_8266_U0_NEO_4 + offset;
+          return (isRGBW ? I_8266_U0_NEO_4 : I_8266_U0_NEO_3) + offset;
         case TYPE_WS2811_400KHZ:
           return I_8266_U0_400_3 + offset;
         case TYPE_TM1814:
@@ -678,9 +671,10 @@ class PolyBus {
       switch (busType) {
         case TYPE_WS2812_RGB:
         case TYPE_WS2812_WWA:
-          return I_32_RN_NEO_3 + offset;
+//          return I_32_RN_NEO_3 + offset;
         case TYPE_SK6812_RGBW:
-          return I_32_RN_NEO_4 + offset;
+//          return I_32_RN_NEO_4 + offset;
+          return (isRGBW ? I_32_RN_NEO_4 : I_32_RN_NEO_3) + offset;
         case TYPE_WS2811_400KHZ:
           return I_32_RN_400_3 + offset;
         case TYPE_TM1814:
