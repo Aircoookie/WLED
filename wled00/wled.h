@@ -144,6 +144,7 @@ using PSRAMDynamicJsonDocument = BasicJsonDocument<PSRAM_Allocator>;
 #include "NodeStruct.h"
 #include "pin_manager.h"
 #include "bus_manager.h"
+#include "udp.h"
 
 #ifndef CLIENT_SSID
   #define CLIENT_SSID DEFAULT_CLIENT_SSID
