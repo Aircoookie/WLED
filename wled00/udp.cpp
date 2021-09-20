@@ -564,9 +564,10 @@ uint8_t* copyRgbwToRgb(uint8_t *destination, uint8_t *source, uint16_t length) {
 //
 // client - the IP address to send to
 // length - the number of pixels
-// rgbwData - a buffer of at least length*4 bytes long
+// buffer - a buffer of at least length*4 bytes long
+// isRGBW - true if the buffer contains 4 components per pixel
 //
-uint8_t realtimeBrodacast(IPAddress client, uint8_t *rgbwData, uint16_t length) {
+void realtimeBrodacast(IPAddress client, uint8_t *buffer, uint16_t length, bool isRGBW) {
 
     WiFiUDP ddpUdp;
 
@@ -578,25 +579,25 @@ uint8_t realtimeBrodacast(IPAddress client, uint8_t *rgbwData, uint16_t length) 
     }
 
     // allocatea buffer on the stack for the UDP packet
-    uint8_t buffer[DDP_HEADER_LEN + DDP_CHANNELS_PER_PACKET] = { 0 };
+    uint8_t packet[DDP_HEADER_LEN + DDP_CHANNELS_PER_PACKET] = { 0 };
 
     // set common header values
-    buffer[0] = DDP_FLAGS1_VER1;
-    buffer[2] = 1;
-    buffer[3] = DDP_ID_DISPLAY;
+    packet[0] = DDP_FLAGS1_VER1;
+    packet[2] = 1;
+    packet[3] = DDP_ID_DISPLAY;
 
     // there are 3 channels per RGB pixel
     uint16_t channel = 0; // TODO: allow specifying the start channel
 
     for (uint16_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
 
-        // how much data is after the header
+        // the amount of data is AFTER the header
         uint16_t packetSize = DDP_CHANNELS_PER_PACKET;
 
         if (currentPacket == (packetCount - 1)) {
             // last packet, set the push flag
             // TODO: determine if we want to send an empty push packet to each destination after sending the pixel data
-            buffer[0] = DDP_FLAGS1_VER1 | DDP_FLAGS1_PUSH;
+            packet[0] = DDP_FLAGS1_VER1 | DDP_FLAGS1_PUSH;
 
             if (channelCount % DDP_CHANNELS_PER_PACKET) {
                 packetSize = channelCount % DDP_CHANNELS_PER_PACKET;
@@ -604,24 +605,30 @@ uint8_t realtimeBrodacast(IPAddress client, uint8_t *rgbwData, uint16_t length) 
         }
 
         // data offset in bytes, 32-bit number, MSB first
-        buffer[4] = (channel & 0xFF000000) >> 24;
-        buffer[5] = (channel & 0xFF0000) >> 16;
-        buffer[6] = (channel & 0xFF00) >> 8;
-        buffer[7] = (channel & 0xFF);
+        packet[4] = (channel & 0xFF000000) >> 24;
+        packet[5] = (channel & 0xFF0000) >> 16;
+        packet[6] = (channel & 0xFF00) >> 8;
+        packet[7] = (channel & 0xFF);
 
         // data length in bytes, 16-bit number, MSB first
-        buffer[8] = (packetSize & 0xFF00) >> 8;
-        buffer[9] = packetSize & 0xFF;
+        packet[8] = (packetSize & 0xFF00) >> 8;
+        packet[9] = packetSize & 0xFF;
 
-        // copy the data from the source buffer into our pack
-        rgbwData = copyRgbwToRgb(&buffer[DDP_HEADER_LEN], rgbwData, packetSize);
-
-        ddpUdp.beginPacket(client, DDP_PORT);
-        ddpUdp.write(buffer, packetSize);
-        ddpUdp.endPacket();
+        if (isRGBW) {
+          // copy the data from the source buffer into our packet
+          buffer = copyRgbwToRgb(&packet[DDP_HEADER_LEN], buffer, packetSize);
+          ddpUdp.beginPacket(client, DDP_PORT);
+          ddpUdp.write(packet, DDP_HEADER_LEN + packetSize);
+          ddpUdp.endPacket();
+        } else {
+          // write the rgb values directly from the user supplied buffer
+          ddpUdp.beginPacket(client, DDP_PORT);
+          ddpUdp.write(packet, DDP_HEADER_LEN);
+          ddpUdp.write(buffer, packetSize);
+          ddpUdp.endPacket();
+          buffer += packetSize; // advance the buffer over the written bytes
+        }
 
         channel += packetSize;
     }
-
-    return 0;
 }

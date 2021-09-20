@@ -26,14 +26,10 @@ void sendSysInfoUDP();
 // Send real time DDP UDP updates to the specified client
 //
 //   client - the IP address to send to
-//   rgbwData - a buffer of at least length*4 bytes long
+//   buffer - a buffer of at least length*3 or length*4 bytes long
 //   length - the number of pixels
-//
-// Returns
-//    0 - Ok
-//    1 - could not allocate buffer
-//
-uint8_t realtimeBrodacast(IPAddress client, uint8_t *rgbwData, uint16_t length);
+//   isRGBW - true if the buffer contains 4 components per pixel
+void realtimeBrodacast(IPAddress client, uint8_t *buffer, uint16_t length, bool isRGBW);
 
 #define DDP_PORT 4048
 
