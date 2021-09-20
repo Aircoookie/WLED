@@ -353,6 +353,86 @@ class BusPwm : public Bus {
   }
 };
 
+
+class BusVirtual : public Bus {
+  public:
+    BusVirtual(BusConfig &bc) : Bus(bc.type, bc.start) {
+      _valid = false;
+      _data = (byte *)malloc(bc.count * (_rgbw ? 4 : 3));
+      if (_data == nullptr) return;
+      memset(_data, 0, bc.count * (_rgbw ? 4 : 3));
+      _len = bc.count;
+      //_rgbw = bc.rgbwOverride;  // RGBW override in bit 7 or can have a special type
+      _rgbw = _type == TYPE_VIRTUAL_RGBW;
+      _colorOrder = bc.colorOrder;
+      _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
+      _broadcastLock = false;
+      _valid = true;
+    };
+
+  void setPixelColor(uint16_t pix, uint32_t c) {
+    if (!_valid || pix >= _len) return;
+    _data[pix]   = 0xFF & (c >> 16);
+    _data[pix+1] = 0xFF & (c >>  8);
+    _data[pix+2] = 0xFF & (c      );
+    if (_rgbw) _data[pix+3] = 0xFF & (c >> 24);
+  }
+
+  uint32_t getPixelColor(uint16_t pix) {
+    if (!_valid || pix >= _len) return 0;
+    return ((_rgbw?(_data[pix+3] << 24):0) | (_data[pix] << 16) | (_data[pix+1] << 8) | (_data[pix+2]));
+  }
+
+  void show() {
+    if (!_valid || _broadcastLock) return;
+    _broadcastLock = true;
+    realtimeBoroadcast(_client, _len, _data, _rgbw);
+    _broadcastLock = false;
+  }
+
+  inline bool canShow() {
+    return !_broadcastLock;
+  }
+
+  inline void setBrightness(uint8_t b) {
+    // not sure if this is correctly implemented
+    for (uint16_t pix=0; pix<_len; pix++) {
+      _data[pix  ] = scale8(_data[pix  ], b);
+      _data[pix+1] = scale8(_data[pix+1], b);
+      _data[pix+2] = scale8(_data[pix+2], b);
+      if (_rgbw) _data[pix+3] = scale8(_data[pix+3], b);
+    }
+  }
+
+  inline bool isRgbw() {
+    return _rgbw;
+  }
+
+  inline uint16_t getLength() {
+    return _len;
+  }
+
+  void cleanup() {
+    _type = I_NONE;
+    _valid = false;
+    if (_data != nullptr) free(_data);
+    _data = nullptr;
+  }
+
+  ~BusVirtual() {
+    cleanup();
+  }
+
+  private:
+    IPAddress _client;
+    uint16_t  _len = 0;
+    uint8_t   _colorOrder;
+    bool      _rgbw;
+    bool      _broadcastLock;
+    byte*     _data;
+};
+
+
 class BusManager {
   public:
   BusManager() {
@@ -363,7 +443,9 @@ class BusManager {
   static uint32_t memUsage(BusConfig &bc) {
     uint8_t type = bc.type;
     uint16_t len = bc.count;
-    if (type < 32) {
+    if (type < 4) {
+      return len * (type+1);
+    } else if (type < 32) {
       #ifdef ESP8266
         if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
@@ -384,7 +466,9 @@ class BusManager {
   
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (IS_DIGITAL(bc.type)) {
+    if (bc.type>1 && bc.type<4) {
+      busses[numBusses] = new BusVirtual(bc);
+    } else if (IS_DIGITAL(bc.type)) {
       busses[numBusses] = new BusDigital(bc, numBusses);
     } else {
       busses[numBusses] = new BusPwm(bc);

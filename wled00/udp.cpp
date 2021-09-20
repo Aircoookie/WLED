@@ -90,6 +90,12 @@ void notify(byte callMode, bool followUp)
 }
 
 
+void realtimeBoroadcast(IPAddress client, uint16_t length, byte *buffer, bool isRGBW)
+{
+
+}
+
+
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
   if (!realtimeMode && !realtimeOverride){

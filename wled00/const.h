@@ -122,6 +122,8 @@
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
+#define TYPE_VIRTUAL_RGB          2            //virtual RGB bus (master broadcast bus)
+#define TYPE_VIRTUAL_RGBW         3            //virtual RGBW bus (master broadcast bus)
 //Digital types (data pin only) (16-31)
 #define TYPE_WS2812_1CH          20            //white-only chips
 #define TYPE_WS2812_WWA          21            //amber + warm + cold white
