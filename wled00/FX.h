@@ -274,8 +274,8 @@ class WS2812FX {
       }*/
       void setOption(uint8_t n, bool val, uint8_t segn = 255)
       {
-        //bool prevOn = false;
-        //if (n == SEG_OPTION_ON) prevOn = getOption(SEG_OPTION_ON);
+        bool prevOn = false;
+        if (n == SEG_OPTION_ON) prevOn = getOption(SEG_OPTION_ON);
         if (val) {
           options |= 0x01 << n;
         } else
@@ -283,13 +283,13 @@ class WS2812FX {
           options &= ~(0x01 << n);
         }
         //transitions on segment on/off don't work correctly at this point
-        /*if (n == SEG_OPTION_ON && segn < MAX_NUM_SEGMENTS && getOption(SEG_OPTION_ON) != prevOn) {
-          if (getOption(SEG_OPTION_ON)) {
+        if (n == SEG_OPTION_ON && segn < MAX_NUM_SEGMENTS && val != prevOn) {
+          if (val) {
             ColorTransition::startTransition(0, colors[0], instance->_transitionDur, segn, 0);
           } else {
             ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
           }
-        }*/
+        }
       }
       bool getOption(uint8_t n)
       {
@@ -473,6 +473,7 @@ class WS2812FX {
         uint8_t segn = segment & 0x3F;
         if (segn >= MAX_NUM_SEGMENTS) return 0;
         uint8_t briNew = instance->_segments[segn].opacity;
+        if (!instance->_segments[segn].getOption(SEG_OPTION_ON)) briNew = 0; //NEW
         uint32_t prog = progress() + 1;
         return ((briNew * prog) + (briOld * (0x10000 - prog))) >> 16;
       }

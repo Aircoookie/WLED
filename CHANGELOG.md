@@ -2,6 +2,12 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2109200
+
+-   Added segment names (PR #2184)
+-   Improved Police and other effects (PR #2184)
+-   Reverted PR #1902 (Live color correction - will be implemented as usermod) (PR #2175)
+
 #### Build 2109100
 
 -   Added an auto create segments per bus setting
