@@ -29,7 +29,7 @@ void sendSysInfoUDP();
 //   buffer - a buffer of at least length*3 or length*4 bytes long
 //   length - the number of pixels
 //   isRGBW - true if the buffer contains 4 components per pixel
-void realtimeBrodacast(IPAddress client, uint8_t *buffer, uint16_t length, bool isRGBW);
+void realtimeBoroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW);
 
 #define DDP_PORT 4048
 

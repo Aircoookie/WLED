@@ -567,7 +567,7 @@ uint8_t* copyRgbwToRgb(uint8_t *destination, uint8_t *source, uint16_t length) {
 // buffer - a buffer of at least length*4 bytes long
 // isRGBW - true if the buffer contains 4 components per pixel
 //
-void realtimeBrodacast(IPAddress client, uint8_t *buffer, uint16_t length, bool isRGBW) {
+void realtimeBoroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
 
     WiFiUDP ddpUdp;
 
