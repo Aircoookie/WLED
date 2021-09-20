@@ -66,6 +66,10 @@
   #define MAX_SEGMENT_DATA  20480
 #endif
 
+/* How much data bytes each segment should max allocate to leave enough space for other segments,
+  assuming each segment uses the same amount of data. 256 for ESP8266, 640 for ESP32. */
+#define FAIR_DATA_PER_SEG (MAX_SEGMENT_DATA / MAX_NUM_SEGMENTS)
+
 #define LED_SKIP_AMOUNT  1
 #define MIN_SHOW_DELAY  15
 
@@ -657,6 +661,7 @@ class WS2812FX {
       getModeCount(void),
       getPaletteCount(void),
       getMaxSegments(void),
+      getActiveSegmentsNum(void),
       //getFirstSelectedSegment(void),
       getMainSegmentId(void),
       gamma8(uint8_t),
