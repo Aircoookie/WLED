@@ -129,25 +129,20 @@ void WS2812FX::finalizeInit(uint16_t countPixels)
 
   if (autoSegments) {
     for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-      _segments[i].start = segStarts[i];
-      _segments[i].stop  = segStops [i];
+      setSegment(i, segStarts[i], segStops[i]);
     }
   } else {
     //expand the main seg to the entire length, but only if there are no other segments
     uint8_t mainSeg = getMainSegmentId();
-    bool isMultipleSegs = false;
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-    {
-      if (i != mainSeg && _segments[i].isActive()) isMultipleSegs = true;
-    }
-    if (!isMultipleSegs) {
-      _segments[mainSeg].start = 0; _segments[mainSeg].stop = _length;
+    
+    if (getActiveSegmentsNum() < 2) {
+      setSegment(mainSeg, 0, _length);
     } else {
       //there are multiple segments, leave them, but prune length to total
       for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
       {
-        if (_segments[i].start > _length) _segments[i].stop = 0;
-        if (_segments[i].stop > _length) _segments[i].stop = _length;
+        if (_segments[i].start >= _length) setSegment(i, 0, 0);
+        if (_segments[i].stop  >  _length) setSegment(i, _segments[i].start, _length);
       }
     }
   }
@@ -543,6 +538,15 @@ uint8_t WS2812FX::getMainSegmentId(void) {
     if (_segments[i].isActive()) return i;
   }
   return 0;
+}
+
+uint8_t WS2812FX::getActiveSegmentsNum(void) {
+  uint8_t c = 0;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isActive()) c++;
+  }
+  return c;
 }
 
 uint32_t WS2812FX::getColor(void) {
