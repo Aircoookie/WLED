@@ -386,7 +386,7 @@ class BusVirtual : public Bus {
   void show() {
     if (!_valid || _broadcastLock) return;
     _broadcastLock = true;
-    realtimeBoroadcast(_client, _len, _data, _rgbw);
+    realtimeBroadcast(_client, _len, _data, _rgbw);
     _broadcastLock = false;
   }
 

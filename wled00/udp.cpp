@@ -90,13 +90,6 @@ void notify(byte callMode, bool followUp)
   notificationTwoRequired = (followUp)? false:notifyTwice;
 }
 
-
-void realtimeBoroadcast(IPAddress client, uint16_t length, byte *buffer, bool isRGBW)
-{
-
-}
-
-
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
   if (!realtimeMode && !realtimeOverride){
@@ -546,24 +539,29 @@ void sendSysInfoUDP()
 // 1440 channels per packet
 #define DDP_CHANNELS_PER_PACKET 1440 // 480 leds
 
-// 
-// copies a 4 byte rgbw buffer to a 3 byte rgb buffer (skipping the w channel)
-// 
-// Parameters:
-//   destination - the buffer to write to must be able to hold length*3 bytes
-//   source - the buffer to read from
-//   length - the number of 4 byte channels in the source buffer
-// Returns:
-//   the pointer in the source where we have copied up to
-//
-uint8_t* copyRgbwToRgb(uint8_t *destination, uint8_t *source, uint16_t length) {
-    
+
+uint8_t *writeRgbwTo(WiFiUDP ddpUdp, uint8_t *source, uint16_t length) {
+    // Note: WiFiUDP.write(buffer, size) is just a wrapper around WiFiUDP.write(byte)
+    //       No benefit to copy to another buffer
     while (length--)
     {
-        *(destination++) = *(source++); // R
-        *(destination++) = *(source++); // G
-        *(destination++) = *(source++); // B
-        source++; // W
+      ddpUdp.write(*(source++)); // R
+      ddpUdp.write(*(source++)); // G
+      ddpUdp.write(*(source++)); // B
+      source++; // W
+    }
+
+    return source;
+}
+
+uint8_t *writeRgbTo(WiFiUDP ddpUdp, uint8_t *source, uint16_t length) {
+    // Note: WiFiUDP.write(buffer, size) is just a wrapper around WiFiUDP.write(byte)
+    //       No benefit to copy to another buffer
+    while (length--)
+    {
+      ddpUdp.write(*(source++)); // R
+      ddpUdp.write(*(source++)); // G
+      ddpUdp.write(*(source++)); // B
     }
 
     return source;
@@ -577,7 +575,12 @@ uint8_t* copyRgbwToRgb(uint8_t *destination, uint8_t *source, uint16_t length) {
 // buffer - a buffer of at least length*4 bytes long
 // isRGBW - true if the buffer contains 4 components per pixel
 //
-void realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
+uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
+
+    // function to write the bytes into WiFiUDP
+    uint8_t *(*writeTo)(WiFiUDP, uint8_t *, uint16_t) = isRGBW
+      ? &writeRgbwTo
+      : &writeRgbTo;
 
     WiFiUDP ddpUdp;
 
@@ -589,7 +592,7 @@ void realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool 
     }
 
     // allocatea buffer on the stack for the UDP packet
-    uint8_t packet[DDP_HEADER_LEN + DDP_CHANNELS_PER_PACKET] = { 0 };
+    uint8_t packet[DDP_HEADER_LEN] = { 0 };
 
     // set common header values
     packet[0] = DDP_FLAGS1_VER1;
@@ -624,21 +627,21 @@ void realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool 
         packet[8] = (packetSize & 0xFF00) >> 8;
         packet[9] = packetSize & 0xFF;
 
-        if (isRGBW) {
-          // copy the data from the source buffer into our packet
-          buffer = copyRgbwToRgb(&packet[DDP_HEADER_LEN], buffer, packetSize);
-          ddpUdp.beginPacket(client, DDP_PORT);
-          ddpUdp.write(packet, DDP_HEADER_LEN + packetSize);
-          ddpUdp.endPacket();
-        } else {
-          // write the rgb values directly from the user supplied buffer
-          ddpUdp.beginPacket(client, DDP_PORT);
-          ddpUdp.write(packet, DDP_HEADER_LEN);
-          ddpUdp.write(buffer, packetSize);
-          ddpUdp.endPacket();
-          buffer += packetSize; // advance the buffer over the written bytes
+        int rc = ddpUdp.beginPacket(client, DDP_PORT);
+        if (rc == 0) {            
+          return 1; // problem
+        }
+        // write the header
+        ddpUdp.write(packet, DDP_HEADER_LEN + packetSize);
+        // write the colors, and adjust buffer to point at end of data written
+        buffer = (*writeTo)(ddpUdp, buffer, packetSize);
+        rc = ddpUdp.endPacket();
+        if (rc == 0) {            
+          return 1; // problem
         }
 
         channel += packetSize;
     }
+
+    return 0;
 }
