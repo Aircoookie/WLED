@@ -37,7 +37,7 @@
         var nm = LCs[i].name.substring(0,2);
         // ignore IP address
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
-          var n =s[i].name.substring(2);
+          var n = LCs[i].name.substring(2);
           var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
           if (t==2 || t==3) continue;
         }
@@ -50,13 +50,14 @@
             for (j=i+1; j<LCs.length; j++)
             {
               var n2 = LCs[j].name.substring(0,2);
-              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR")
+              if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR") {
                 if (n2.substring(0,1)==="L") {
                   var m  = LCs[j].name.substring(2);
                   var t2 = parseInt(d.getElementsByName("LT"+m)[0].value, 10);
                   if (t2==2 || t2==3) continue;
                 }
                 if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${LCs[i].name}/${LCs[j].name}!`);LCs[j].value="";LCs[j].focus();return false;}
+              }
             }
           }
       }
@@ -205,7 +206,14 @@
         // ignore IP address
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
           var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
-          if (t==2 || t==3) continue;
+          if (t==2 || t==3) {
+            LCs[i].max = 255;
+            LCs[i].min = 0;
+            continue;
+          } else {
+            LCs[i].max = 33;
+            LCs[i].min = -1;
+          }
         }
         // check for pin conflicts
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")

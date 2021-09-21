@@ -10,6 +10,20 @@
 #include "bus_wrapper.h"
 #include <Arduino.h>
 
+// enable additional debug output
+#ifdef WLED_DEBUG
+  #ifndef ESP8266
+  #include <rom/rtc.h>
+  #endif
+  #define DEBUG_PRINT(x) Serial.print(x)
+  #define DEBUG_PRINTLN(x) Serial.println(x)
+  #define DEBUG_PRINTF(x...) Serial.printf(x)
+#else
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINTF(x...)
+#endif
+
 #define GET_BIT(var,bit)    (((var)>>(bit))&0x01)
 #define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
 #define UNSET_BIT(var,bit)  ((var)&=(~(uint16_t)(0x0001<<(bit))))
@@ -29,7 +43,8 @@ struct BusConfig {
     type = busType & 0x7F;  // bit 7 may be/is hacked to include RGBW info (1=RGBW, 0=RGB)
     count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
-    if (type > 47) nPins = 2;
+    if (type == 2 || type == 3) nPins = 4;
+    else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
@@ -402,6 +417,13 @@ class BusVirtual : public Bus {
       _data[pix+2] = scale8(_data[pix+2], b);
       if (_rgbw) _data[pix+3] = scale8(_data[pix+3], b);
     }
+  }
+
+  uint8_t getPins(uint8_t* pinArray) {
+    for (uint8_t i = 0; i < 4; i++) {
+      pinArray[i] = _client[i];
+    }
+    return 4;
   }
 
   inline bool isRgbw() {

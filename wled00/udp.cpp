@@ -558,6 +558,21 @@ uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bo
     if (channelCount % DDP_CHANNELS_PER_PACKET) {
         packetCount++;
     }
+    DEBUG_PRINT(F("RT: "));
+    DEBUG_PRINT(client[0]);
+    DEBUG_PRINT(".");
+    DEBUG_PRINT(client[1]);
+    DEBUG_PRINT(".");
+    DEBUG_PRINT(client[2]);
+    DEBUG_PRINT(".");
+    DEBUG_PRINT(client[3]);
+    DEBUG_PRINT(" (");
+    DEBUG_PRINT(length);
+    DEBUG_PRINTLN(")");
+    DEBUG_PRINT("Channels: ");
+    DEBUG_PRINTLN(channelCount);
+    DEBUG_PRINT("Packets: ");
+    DEBUG_PRINTLN(packetCount);
 
     // there are 3 channels per RGB pixel
     uint16_t channel = 0; // TODO: allow specifying the start channel
@@ -567,9 +582,13 @@ uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bo
     for (uint16_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
         if (sequenceNumber > 15) sequenceNumber = 0;
 
+        DEBUG_PRINTLN(F("Opening UDP."));
+return 0;
+// the following will reboot ESP since when 1st called WiFi is not yet connected
+
         int rc = ddpUdp.beginPacket(client, DDP_PORT);
         if (rc == 0) {           
-          //DEBUG_PRINTLN("WiFiUDP.beginPacket returned an error");
+          DEBUG_PRINTLN(F("WiFiUDP.beginPacket returned an error"));
           return 1; // problem
         }
 
@@ -586,6 +605,7 @@ uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bo
             }
         }
 
+        DEBUG_PRINTLN(F("Preparing packet."));
         // write the header
         /*0*/ddpUdp.write(flags);
         /*1*/ddpUdp.write(sequenceNumber++ & 0xF);
@@ -609,9 +629,10 @@ uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bo
           if (isRGBW) bufferOffset++;
         }
 
+        DEBUG_PRINTLN(F("Sending packet."));
         rc = ddpUdp.endPacket();
         if (rc == 0) {            
-          //DEBUG_PRINTLN("WiFiUDP.endPacket returned an error");
+          DEBUG_PRINTLN("WiFiUDP.endPacket returned an error");
           return 1; // problem
         }
 
