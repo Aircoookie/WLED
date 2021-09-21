@@ -141,8 +141,7 @@
           }
           if (type == 30 || type == 31 || (type > 40 && type < 46 && type != 43)) isRGBW = true;
           gId("dig"+n+"c").style.display = (type > 40 && type < 48) ? "none":"inline";  // hide count for analog
-          gId("dig"+n+"r").style.display = (type == 2 || type == 3) ? "none":"inline";  // hide reversed for virtual
-          gId("dig"+n+"s").style.display = (type == 2 || type == 3 || (type > 40 && type < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
+          gId("dig"+n+"s").style.display = (type > 40 && type < 48) ? "none":"inline";  // hide skip 1st for virtual & analog
           gId("rev"+n).innerHTML = (type > 40 && type < 48) ? "Inverted":"Reverse (rotated 180°)";  // change reverse text for analog
           gId("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
         }
