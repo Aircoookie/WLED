@@ -140,7 +140,10 @@
             }
           }
           if (type == 30 || type == 31 || (type > 40 && type < 46 && type != 43)) isRGBW = true;
-          gId("dig"+n).style.display = (type > 31 && type < 48) ? "none":"inline";
+          gId("dig"+n+"c").style.display = (type > 40 && type < 48) ? "none":"inline";  // hide count for analog
+          gId("dig"+n+"r").style.display = (type == 2 || type == 3) ? "none":"inline";  // hide reversed for virtual
+          gId("dig"+n+"s").style.display = (type == 2 || type == 3 || (type > 40 && type < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
+          gId("rev"+n).innerHTML = (type > 40 && type < 48) ? "Inverted":"Reverse (rotated 180°)";  // change reverse text for analog
           gId("psd"+n).innerHTML = (type > 31 && type < 48) ? "Index:":"Start:";
         }
       }
@@ -270,11 +273,10 @@ Color Order:
 <span id="p4d${i}"></span><input type="number" class="xs" name="L4${i}" min="0" max="33" onchange="UI()"/>
 <br>
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" min="0" max="8191" value="${lastEnd(i)}" required />&nbsp;
-<div id="dig${i}" style="display:inline">
-Count: <input type="number" name="LC${i}" min="0" max="${maxPB}" value="1" required oninput="UI()" /><br>
-Reverse (rotated 180°): <input type="checkbox" name="CV${i}">
-&nbsp;Skip 1<sup>st</sup> LED: <input id="sl${i}" type="checkbox" name="SL${i}"><br>
-</div>
+<div id="dig${i}c" style="display:inline">Count: <input type="number" name="LC${i}" class="l" min="0" max="${maxPB}" value="1" required oninput="UI()" /></div>
+<br>
+<div id="dig${i}r" style="display:inline"><span id="rev${i}">Reverse</span>: <input type="checkbox" name="CV${i}"></div>&nbsp;
+<div id="dig${i}s" style="display:inline">Skip 1<sup>st</sup> LED: <input id="sl${i}" type="checkbox" name="SL${i}"></div>
 </div>`;
         f.insertAdjacentHTML("beforeend", cn);
       }
