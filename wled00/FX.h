@@ -279,20 +279,22 @@ class WS2812FX {
       void setOption(uint8_t n, bool val, uint8_t segn = 255)
       {
         bool prevOn = false;
-        if (n == SEG_OPTION_ON) prevOn = getOption(SEG_OPTION_ON);
+        if (n == SEG_OPTION_ON) {
+          prevOn = getOption(SEG_OPTION_ON);
+          if (!val && prevOn) { //fade off
+            ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
+          }
+        }
+
         if (val) {
           options |= 0x01 << n;
         } else
         {
           options &= ~(0x01 << n);
         }
-        //transitions on segment on/off don't work correctly at this point
-        if (n == SEG_OPTION_ON && segn < MAX_NUM_SEGMENTS && val != prevOn) {
-          if (val) {
-            ColorTransition::startTransition(0, colors[0], instance->_transitionDur, segn, 0);
-          } else {
-            ColorTransition::startTransition(opacity, colors[0], instance->_transitionDur, segn, 0);
-          }
+
+        if (n == SEG_OPTION_ON && val && !prevOn) { //fade on
+          ColorTransition::startTransition(0, colors[0], instance->_transitionDur, segn, 0);
         }
       }
       bool getOption(uint8_t n)
@@ -413,6 +415,7 @@ class WS2812FX {
       static void startTransition(uint8_t oldBri, uint32_t oldCol, uint16_t dur, uint8_t segn, uint8_t slot) {
         if (segn >= MAX_NUM_SEGMENTS || slot >= NUM_COLORS || dur == 0) return;
         if (instance->_brightness == 0) return; //do not need transitions if master bri is off
+        if (!instance->_segments[segn].getOption(SEG_OPTION_ON)) return; //not if segment is off either
         uint8_t tIndex = 0xFF; //none found
         uint16_t tProgression = 0;
         uint8_t s = segn + (slot << 6); //merge slot and segment into one byte
@@ -441,7 +444,8 @@ class WS2812FX {
         ColorTransition& t = instance->transitions[tIndex];
         if (t.segment == s) //this is an active transition on the same segment+color
         {
-          t.briOld = t.currentBri();
+          bool wasTurningOff = (oldBri == 0);
+          t.briOld = t.currentBri(wasTurningOff);
           t.colorOld = t.currentColor(oldCol);
         } else {
           t.briOld = oldBri;
@@ -473,11 +477,11 @@ class WS2812FX {
       uint32_t currentColor(uint32_t colorNew) {
         return instance->color_blend(colorOld, colorNew, progress(true), true);
       }
-      uint8_t currentBri() {
+      uint8_t currentBri(bool turningOff = false) {
         uint8_t segn = segment & 0x3F;
         if (segn >= MAX_NUM_SEGMENTS) return 0;
         uint8_t briNew = instance->_segments[segn].opacity;
-        if (!instance->_segments[segn].getOption(SEG_OPTION_ON)) briNew = 0; //NEW
+        if (!instance->_segments[segn].getOption(SEG_OPTION_ON) || turningOff) briNew = 0;
         uint32_t prog = progress() + 1;
         return ((briNew * prog) + (briOld * (0x10000 - prog))) >> 16;
       }

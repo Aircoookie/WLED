@@ -2,11 +2,18 @@
 
 ### Builds after release 0.12.0
 
-#### Build 2109200
+#### Build 2109220
 
+-   Version bump to 0.13.0-b3 "Toki"
 -   Added segment names (PR #2184)
 -   Improved Police and other effects (PR #2184)
 -   Reverted PR #1902 (Live color correction - will be implemented as usermod) (PR #2175)
+-   Added transitions for segment on/off
+-   Improved number of sparks/stars in Fireworks effect with low number of segments
+-   Fixed segment name edit pencil disappearing with request
+-   Fixed color transition active even if the segment is off
+-   Disallowed file upload with OTA lock active
+-   Fixed analog invert option missing (PR #2219)
 
 #### Build 2109100
 

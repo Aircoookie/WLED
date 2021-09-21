@@ -580,7 +580,7 @@ function populateSegments(s)
 			</label>
 			<div class="segname">
 				<div class="segntxt" onclick="selSegEx(${i})">${inst.n ? inst.n : "Segment "+i}</div>
-        <i class="icons edit-icon" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
+        <i class="icons edit-icon ${expanded[i] ? "expanded":""}" id="seg${i}nedit" onclick="tglSegn(${i})">&#xe2c6;</i>
 			</div>
 			<i class="icons e-icon flr ${expanded[i] ? "exp":""}" id="sege${i}" onclick="expand(${i})">&#xe395;</i>
 			<div class="segin ${expanded[i] ? "expanded":""}" id="seg${i}">
@@ -1260,7 +1260,7 @@ function makeSeg() {
 	var cn = `<div class="seg">
 			<div class="segname newseg">
 				New segment ${lowestUnused}
-        <i class="icons edit-icon" style="display: inline;" onclick="tglSegn(${lowestUnused})">&#xe2c6;</i>
+        <i class="icons edit-icon expanded" onclick="tglSegn(${lowestUnused})">&#xe2c6;</i>
 			</div>
 			<br>
 			<div class="segin expanded">
