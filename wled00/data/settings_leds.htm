@@ -35,6 +35,12 @@
       var LCs = d.getElementsByTagName("input");
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);
+        // ignore IP address
+        if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
+          var n =s[i].name.substring(2);
+          var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
+          if (t==2 || t==3) continue;
+        }
         //check for pin conflicts
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
           if (LCs[i].value!="" && LCs[i].value!="-1") {
@@ -45,6 +51,11 @@
             {
               var n2 = LCs[j].name.substring(0,2);
               if (n2=="L0" || n2=="L1" || n2=="L2" || n2=="L3" || n2=="L4" || n2=="RL" || n2=="BT" || n2=="IR")
+                if (n2.substring(0,1)==="L") {
+                  var m  = LCs[j].name.substring(2);
+                  var t2 = parseInt(d.getElementsByName("LT"+m)[0].value, 10);
+                  if (t2==2 || t2==3) continue;
+                }
                 if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${LCs[i].name}/${LCs[j].name}!`);LCs[j].value="";LCs[j].focus();return false;}
             }
           }
@@ -91,21 +102,24 @@
       UI();
     }
     //returns mem usage
-    function getMem(type, len, p0) {
-      if (type < 32) {
+    function getMem(t, len, p0) {
+      if (t==2 || t==3) {
+        return len*(t+1);
+      }
+      if (t < 32) {
         if (maxM < 10000 && p0==3) {    //8266 DMA uses 5x the mem
-          if (type > 29) return len*20; //RGBW
+          if (t > 29) return len*20; //RGBW
           return len*15;
         } else if (maxM >= 10000) //ESP32 RMT uses double buffer?
         {
-          if (type > 29) return len*8; //RGBW
+          if (t > 29) return len*8; //RGBW
           return len*6;
         }
-        if (type > 29) return len*4; //RGBW
+        if (t > 29) return len*4; //RGBW
         return len*3;
       }
-      if (type > 31 && type < 48) return 5;
-      if (type == 44 || type == 45) return len*4; //RGBW
+      if (t > 31 && t < 48) return 5;
+      if (t == 44 || t == 45) return len*4; //RGBW
       return len*3;
     }
 		function UI(change=false)
@@ -122,19 +136,19 @@
       for (i=0; i<s.length; i++) {
         // is the field a LED type?
         if (s[i].name.substring(0,2)=="LT") {
-          n=s[i].name.substring(2);
-          var type = parseInt(s[i].value,10);
-          gId("p0d"+n).innerHTML = (type == 2 || type == 3) ? "IP address:" : (type > 49) ? "Data GPIO:" : (type >41) ? "GPIOs:" : "GPIO:";
-          gId("p1d"+n).innerHTML = (type > 49) ? "Clk GPIO:" : "";
+          var n = s[i].name.substring(2);
+          var t = parseInt(s[i].value,10);
+          gId("p0d"+n).innerHTML = (t == 2 || t == 3) ? "IP address:" : (t > 49) ? "Data GPIO:" : (t >41) ? "GPIOs:" : "GPIO:";
+          gId("p1d"+n).innerHTML = (t > 49) ? "Clk GPIO:" : "";
           var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
-          memu += getMem(type, d.getElementsByName("LC"+n)[0].value, d.getElementsByName("L0"+n)[0].value); // calc memory
+          memu += getMem(t, d.getElementsByName("LC"+n)[0].value, d.getElementsByName("L0"+n)[0].value); // calc memory
 
           // enumerate pins
           for (p=1; p<5; p++) {
             var LK = d.getElementsByName("L"+p+n)[0]; // secondary pins
             if (!LK) continue;
-            if (((type == 2 || type == 3) && p<4) || (type>49 && p==1) || (type>41 && type < 50 && (p+40 < type))) // TYPE_xxxx values from const.h
+            if (((t == 2 || t == 3) && p<4) || (t>49 && p==1) || (t>41 && t < 50 && (p+40 < t))) // TYPE_xxxx values from const.h
             {
               // display pin field
               LK.style.display = "inline";
@@ -148,20 +162,20 @@
           }
           if (change) {
 //            // blazoncek experimental extension
-//            gId("ew"+n).checked = (type == 30 || type == 31 || type == 44 || type == 45); // RGBW checkbox, TYPE_xxxx values from const.h
+//            gId("ew"+n).checked = (t == 30 || t == 31 || t == 44 || t == 45); // RGBW checkbox, TYPE_xxxx values from const.h
             gId("ls"+n).value = n+1;  // set LED start
-            if (type > 31 && type < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
+            if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
           }
 //          // blazoncek experimental extension
-//          gId("ew"+n).onclick = (type > 31 && type < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
+//          gId("ew"+n).onclick = (t > 31 && t < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
 //          isRGBW |= gId("ew"+n).checked;
-          isRGBW |= (type == 30 || type == 31 || (type > 40 && type < 46 && type != 43)); // RGBW checkbox, TYPE_xxxx values from const.h
-          gId("co"+n).style.display = (type == 2 || type == 3 || type == 41 || type == 42) ? "none":"inline";  // hide color order for PWM W & WW/CW
-          gId("dig"+n+"c").style.display = (type > 40 && type < 48) ? "none":"inline";  // hide count for analog
-          gId("dig"+n+"r").style.display = (type == 2 || type == 3) ? "none":"inline";  // hide reversed for virtual
-          gId("dig"+n+"s").style.display = (type == 2 || type == 3 || (type > 40 && type < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
-          gId("rev"+n).innerHTML = (type > 40 && type < 48) ? "Inverted":"Reverse (rotated 180°)";  // change reverse text for analog
-          gId("psd"+n).innerHTML = (type > 40 && type < 48) ? "Index:":"Start:";    // change analog start description
+          isRGBW |= (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43)); // RGBW checkbox, TYPE_xxxx values from const.h
+          gId("co"+n).style.display = (t == 2 || t == 3 || t == 41 || t == 42) ? "none":"inline";  // hide color order for PWM W & WW/CW
+          gId("dig"+n+"c").style.display = (t > 40 && t < 48) ? "none":"inline";  // hide count for analog
+          gId("dig"+n+"r").style.display = (t == 2 || t == 3) ? "none":"inline";  // hide reversed for virtual
+          gId("dig"+n+"s").style.display = (t == 2 || t == 3 || (t > 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
+          gId("rev"+n).innerHTML = (t > 40 && t < 48) ? "Inverted":"Reverse (rotated 180°)";  // change reverse text for analog
+          gId("psd"+n).innerHTML = (t > 40 && t < 48) ? "Index:":"Start:";    // change analog start description
         }
       }
       // display white channel calculation method
@@ -190,8 +204,8 @@
         }
         // ignore IP address
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
-          var type = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
-          if (type==2 || type==3) continue;
+          var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
+          if (t==2 || t==3) continue;
         }
         // check for pin conflicts
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
@@ -256,8 +270,8 @@
     function lastEnd(i) {
       if (i<1) return 0;
       v = parseInt(d.getElementsByName("LS"+(i-1))[0].value) + parseInt(d.getElementsByName("LC"+(i-1))[0].value);
-      var type = parseInt(d.getElementsByName("LT"+(i-1))[0].value);
-      if (type > 31 && type < 48) v = 1; //PWM busses
+      var t = parseInt(d.getElementsByName("LT"+(i-1))[0].value);
+      if (t > 31 && t < 48) v = 1; //PWM busses
       if (isNaN(v)) return 0;
       return v;
     }
