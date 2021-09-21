@@ -539,34 +539,6 @@ void sendSysInfoUDP()
 // 1440 channels per packet
 #define DDP_CHANNELS_PER_PACKET 1440 // 480 leds
 
-
-uint8_t *writeRgbwTo(WiFiUDP ddpUdp, uint8_t *source, uint16_t length) {
-    // Note: WiFiUDP.write(buffer, size) is just a wrapper around WiFiUDP.write(byte)
-    //       No benefit to copy to another buffer
-    while (length--)
-    {
-      ddpUdp.write(*(source++)); // R
-      ddpUdp.write(*(source++)); // G
-      ddpUdp.write(*(source++)); // B
-      source++; // W
-    }
-
-    return source;
-}
-
-uint8_t *writeRgbTo(WiFiUDP ddpUdp, uint8_t *source, uint16_t length) {
-    // Note: WiFiUDP.write(buffer, size) is just a wrapper around WiFiUDP.write(byte)
-    //       No benefit to copy to another buffer
-    while (length--)
-    {
-      ddpUdp.write(*(source++)); // R
-      ddpUdp.write(*(source++)); // G
-      ddpUdp.write(*(source++)); // B
-    }
-
-    return source;
-}
-
 //
 // Send real time DDP UDP updates to the specified client
 //
@@ -576,11 +548,6 @@ uint8_t *writeRgbTo(WiFiUDP ddpUdp, uint8_t *source, uint16_t length) {
 // isRGBW - true if the buffer contains 4 components per pixel
 //
 uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
-
-    // function to write the bytes into WiFiUDP
-    uint8_t *(*writeTo)(WiFiUDP, uint8_t *, uint16_t) = isRGBW
-      ? &writeRgbwTo
-      : &writeRgbTo;
 
     WiFiUDP ddpUdp;
 
@@ -592,25 +559,28 @@ uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bo
     }
 
     // allocatea buffer on the stack for the UDP packet
-    uint8_t packet[DDP_HEADER_LEN] = { 0 };
+    uint8_t header[DDP_HEADER_LEN] = { 0 };
 
     // set common header values
-    packet[0] = DDP_FLAGS1_VER1;
-    packet[2] = 1;
-    packet[3] = DDP_ID_DISPLAY;
+    header[0] = DDP_FLAGS1_VER1;
+    header[2] = 1;
+    header[3] = DDP_ID_DISPLAY;
 
     // there are 3 channels per RGB pixel
     uint16_t channel = 0; // TODO: allow specifying the start channel
+    // the current position in the buffer 
+    uint16_t bufferOffset = 0;
+
 
     for (uint16_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
 
-        // the amount of data is AFTER the header
+        // the amount of data is AFTER the header in the current packet
         uint16_t packetSize = DDP_CHANNELS_PER_PACKET;
 
         if (currentPacket == (packetCount - 1)) {
             // last packet, set the push flag
             // TODO: determine if we want to send an empty push packet to each destination after sending the pixel data
-            packet[0] = DDP_FLAGS1_VER1 | DDP_FLAGS1_PUSH;
+            header[0] = DDP_FLAGS1_VER1 | DDP_FLAGS1_PUSH;
 
             if (channelCount % DDP_CHANNELS_PER_PACKET) {
                 packetSize = channelCount % DDP_CHANNELS_PER_PACKET;
@@ -618,25 +588,33 @@ uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bo
         }
 
         // data offset in bytes, 32-bit number, MSB first
-        packet[4] = (channel & 0xFF000000) >> 24;
-        packet[5] = (channel & 0xFF0000) >> 16;
-        packet[6] = (channel & 0xFF00) >> 8;
-        packet[7] = (channel & 0xFF);
+        header[4] = (channel & 0xFF000000) >> 24;
+        header[5] = (channel & 0xFF0000) >> 16;
+        header[6] = (channel & 0xFF00) >> 8;
+        header[7] = (channel & 0xFF);
 
         // data length in bytes, 16-bit number, MSB first
-        packet[8] = (packetSize & 0xFF00) >> 8;
-        packet[9] = packetSize & 0xFF;
+        header[8] = (packetSize & 0xFF00) >> 8;
+        header[9] = packetSize & 0xFF;
 
         int rc = ddpUdp.beginPacket(client, DDP_PORT);
-        if (rc == 0) {            
+        if (rc == 0) {           
+          //DEBUG_PRINTLN("WiFiUDP.beginPacket returned an error");
           return 1; // problem
         }
         // write the header
-        ddpUdp.write(packet, DDP_HEADER_LEN + packetSize);
-        // write the colors, and adjust buffer to point at end of data written
-        buffer = (*writeTo)(ddpUdp, buffer, packetSize);
+        ddpUdp.write(header, DDP_HEADER_LEN);
+        // write the colors, the write write(const uint8_t *buffer, size_t size) 
+        // function is just a loop internally too
+        for (uint16_t i = 0; i < packetSize; i += 3) {
+          ddpUdp.write(buffer[bufferOffset++]); // R
+          ddpUdp.write(buffer[bufferOffset++]); // G
+          ddpUdp.write(buffer[bufferOffset++]); // B
+          if (isRGBW) bufferOffset++;
+        }
         rc = ddpUdp.endPacket();
         if (rc == 0) {            
+          //DEBUG_PRINTLN("WiFiUDP.endPacket returned an error");
           return 1; // problem
         }
 
