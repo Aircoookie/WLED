@@ -543,8 +543,9 @@ void sendSysInfoUDP()
 #define DDP_CHANNELS_PER_PACKET 1440 // 480 leds
 
 //
-// Send real time DDP UDP updates to the specified client
+// Send real time UDP updates to the specified client
 //
+// type   - protocol type (1=DDP, 2=E1.31, 3=ArtNet)
 // client - the IP address to send to
 // length - the number of pixels
 // buffer - a buffer of at least length*4 bytes long
@@ -552,26 +553,32 @@ void sendSysInfoUDP()
 
 uint8_t sequenceNumber = 0; // this needs to be shared across all outputs
 
-uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
-    WiFiUDP ddpUdp;
+uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
+  if (!interfacesInited) return 1;  // network not initialised
 
+  DEBUG_PRINT(F("Net client: "));
+  DEBUG_PRINT(client[0]);
+  DEBUG_PRINT(".");
+  DEBUG_PRINT(client[1]);
+  DEBUG_PRINT(".");
+  DEBUG_PRINT(client[2]);
+  DEBUG_PRINT(".");
+  DEBUG_PRINT(client[3]);
+  DEBUG_PRINT(" (");
+  DEBUG_PRINT(length);
+  DEBUG_PRINTLN(")");
+
+  WiFiUDP ddpUdp;
+
+  switch (type) {
+    case 0: // DDP
+    {
     // calclate the number of UDP packets we need to send
     uint16_t channelCount = length * 3; // 1 channel for every R,G,B value
     uint16_t packetCount = channelCount / DDP_CHANNELS_PER_PACKET;
     if (channelCount % DDP_CHANNELS_PER_PACKET) {
         packetCount++;
     }
-    DEBUG_PRINT(F("RT: "));
-    DEBUG_PRINT(client[0]);
-    DEBUG_PRINT(".");
-    DEBUG_PRINT(client[1]);
-    DEBUG_PRINT(".");
-    DEBUG_PRINT(client[2]);
-    DEBUG_PRINT(".");
-    DEBUG_PRINT(client[3]);
-    DEBUG_PRINT(" (");
-    DEBUG_PRINT(length);
-    DEBUG_PRINTLN(")");
     DEBUG_PRINT("Channels: ");
     DEBUG_PRINTLN(channelCount);
     DEBUG_PRINT("Packets: ");
@@ -586,8 +593,8 @@ uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bo
         if (sequenceNumber > 15) sequenceNumber = 0;
 
         DEBUG_PRINTLN(F("Opening UDP."));
-return 0;
-// the following will reboot ESP since when 1st called WiFi is not yet connected
+//return 0;
+// the following will reboot ESP if WiFi is not yet connected
 
         int rc = ddpUdp.beginPacket(client, DDP_PORT);
         if (rc == 0) {           
@@ -641,6 +648,15 @@ return 0;
 
         channel += packetSize;
     }
+    }
 
-    return 0;
+    case 1: //E1.31
+    {
+    }
+
+    case 2: //ArtNet
+    {
+    }
+  }
+  return 0;
 }

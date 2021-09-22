@@ -369,16 +369,16 @@ class BusPwm : public Bus {
 };
 
 
-class BusVirtual : public Bus {
+class BusNetwork : public Bus {
   public:
-    BusVirtual(BusConfig &bc) : Bus(bc.type, bc.start) {
+    BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start) {
       _valid = false;
       _data = (byte *)malloc(bc.count * (_rgbw ? 4 : 3));
       if (_data == nullptr) return;
       memset(_data, 0, bc.count * (_rgbw ? 4 : 3));
       _len = bc.count;
+      _rgbw = false;
       //_rgbw = bc.rgbwOverride;  // RGBW override in bit 7 or can have a special type
-      _rgbw = _type == TYPE_VIRTUAL_RGBW;
       _colorOrder = bc.colorOrder;
       _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
       _broadcastLock = false;
@@ -399,9 +399,16 @@ class BusVirtual : public Bus {
   }
 
   void show() {
+    uint8_t type;
     if (!_valid || _broadcastLock) return;
     _broadcastLock = true;
-    realtimeBroadcast(_client, _len, _data, _rgbw);
+    switch (_type) {
+      case TYPE_NET_ARTNET_RGB: type = 2; break;
+      case TYPE_NET_E131_RGB:   type = 1; break;
+      case TYPE_NET_DDP_RGB:
+      default:                  type = 0; break;
+    }
+    realtimeBroadcast(type, _client, _len, _data, _rgbw);
     _broadcastLock = false;
   }
 
@@ -441,7 +448,7 @@ class BusVirtual : public Bus {
     _data = nullptr;
   }
 
-  ~BusVirtual() {
+  ~BusNetwork() {
     cleanup();
   }
 
@@ -465,9 +472,7 @@ class BusManager {
   static uint32_t memUsage(BusConfig &bc) {
     uint8_t type = bc.type;
     uint16_t len = bc.count;
-    if (type < 4) {
-      return len * (type+1);
-    } else if (type < 32) {
+    if (type > 15 && type < 32) {
       #ifdef ESP8266
         if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
@@ -483,13 +488,13 @@ class BusManager {
 
     if (type > 31 && type < 48) return 5;
     if (type == 44 || type == 45) return len*4; //RGBW
-    return len*3;
+    return len*3; //RGB
   }
   
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (bc.type>1 && bc.type<4) {
-      busses[numBusses] = new BusVirtual(bc);
+    if (bc.type>=10 && bc.type<=15) {
+      busses[numBusses] = new BusNetwork(bc);
     } else if (IS_DIGITAL(bc.type)) {
       busses[numBusses] = new BusDigital(bc, numBusses);
     } else {

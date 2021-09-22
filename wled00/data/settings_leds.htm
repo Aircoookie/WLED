@@ -39,7 +39,7 @@
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
           var n = LCs[i].name.substring(2);
           var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
-          if (t==2 || t==3) continue;
+          if (t<16) continue;
         }
         //check for pin conflicts
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3" || nm=="L4" || nm=="RL" || nm=="BT" || nm=="IR")
@@ -54,7 +54,7 @@
                 if (n2.substring(0,1)==="L") {
                   var m  = LCs[j].name.substring(2);
                   var t2 = parseInt(d.getElementsByName("LT"+m)[0].value, 10);
-                  if (t2==2 || t2==3) continue;
+                  if (t2<16) continue;
                 }
                 if (LCs[j].value!="" && LCs[i].value==LCs[j].value) {alert(`Pin conflict between ${LCs[i].name}/${LCs[j].name}!`);LCs[j].value="";LCs[j].focus();return false;}
               }
@@ -107,7 +107,7 @@
       if (t==2 || t==3) {
         return len*(t+1);
       }
-      if (t < 32) {
+      if (t > 15 && t < 32) {
         if (maxM < 10000 && p0==3) {    //8266 DMA uses 5x the mem
           if (t > 29) return len*20; //RGBW
           return len*15;
@@ -139,7 +139,7 @@
         if (s[i].name.substring(0,2)=="LT") {
           var n = s[i].name.substring(2);
           var t = parseInt(s[i].value,10);
-          gId("p0d"+n).innerHTML = (t == 2 || t == 3) ? "IP address:" : (t > 49) ? "Data GPIO:" : (t >41) ? "GPIOs:" : "GPIO:";
+          gId("p0d"+n).innerHTML = (t>=10 && t<=15) ? "IP address:" : (t > 49) ? "Data GPIO:" : (t >41) ? "GPIOs:" : "GPIO:";
           gId("p1d"+n).innerHTML = (t > 49) ? "Clk GPIO:" : "";
           var LK = d.getElementsByName("L1"+n)[0]; // clock pin
 
@@ -149,7 +149,7 @@
           for (p=1; p<5; p++) {
             var LK = d.getElementsByName("L"+p+n)[0]; // secondary pins
             if (!LK) continue;
-            if (((t == 2 || t == 3) && p<4) || (t>49 && p==1) || (t>41 && t < 50 && (p+40 < t))) // TYPE_xxxx values from const.h
+            if (((t>=10 && t<=15) && p<4) || (t>49 && p==1) || (t>41 && t < 50 && (p+40 < t))) // TYPE_xxxx values from const.h
             {
               // display pin field
               LK.style.display = "inline";
@@ -171,10 +171,10 @@
 //          gId("ew"+n).onclick = (t > 31 && t < 48) ? (function(){return false}) : (function(){});  // prevent change for analog
 //          isRGBW |= gId("ew"+n).checked;
           isRGBW |= (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43)); // RGBW checkbox, TYPE_xxxx values from const.h
-          gId("co"+n).style.display = (t == 2 || t == 3 || t == 41 || t == 42) ? "none":"inline";  // hide color order for PWM W & WW/CW
+          gId("co"+n).style.display = (t<16 || t == 41 || t == 42) ? "none":"inline";  // hide color order for PWM W & WW/CW
           gId("dig"+n+"c").style.display = (t > 40 && t < 48) ? "none":"inline";  // hide count for analog
-          gId("dig"+n+"r").style.display = (t == 2 || t == 3) ? "none":"inline";  // hide reversed for virtual
-          gId("dig"+n+"s").style.display = (t == 2 || t == 3 || (t > 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
+          gId("dig"+n+"r").style.display = (t<16) ? "none":"inline";  // hide reversed for virtual
+          gId("dig"+n+"s").style.display = (t<16 || (t > 40 && t < 48)) ? "none":"inline";  // hide skip 1st for virtual & analog
           gId("rev"+n).innerHTML = (t > 40 && t < 48) ? "Inverted":"Reverse (rotated 180°)";  // change reverse text for analog
           gId("psd"+n).innerHTML = (t > 40 && t < 48) ? "Index:":"Start:";    // change analog start description
         }
@@ -206,10 +206,10 @@
         // ignore IP address
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
           var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
-          if (t==2 || t==3) {
+          if (t<16) {
             LCs[i].max = 255;
             LCs[i].min = 0;
-            continue;
+            continue; // do not check conflicts
           } else {
             LCs[i].max = 33;
             LCs[i].min = -1;
@@ -227,7 +227,7 @@
                 if (n2.substring(0,1)==="L") {
                   var m  = LCs[j].name.substring(2);
                   var t2 = parseInt(d.getElementsByName("LT"+m)[0].value, 10);
-                  if (t2==2 || t2==3) continue;
+                  if (t2<16) continue;
                 }
                 if (LCs[j].value!="" && LCs[j].value!="-1") p.push(parseInt(LCs[j].value,10));  // add current pin
               }
@@ -312,8 +312,9 @@ ${i+1}:
 <option value="43">PWM RGB</option>
 <option value="44">PWM RGBW</option>
 <option value="45">PWM RGBWC</option>
-<option value="2">Virtual RGB</option>
-<option value="3">Virtual RGBW</option>
+<option value="10">DDP RGB (network)</option>
+<option value="11">E1.31 RGB (network)</option>
+<option value="12">ArtNet RGB (network)</option>
 </select>&nbsp;
 <div id="co${i}" style="display:inline">Color Order:
 <select name="CO${i}">
