@@ -110,7 +110,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (length==0 || length+lC > MAX_LEDS) continue;  // zero length or we reached max. number of LEDs, just stop
       uint8_t colorOrder = (int)elm[F("order")];
       uint8_t skipFirst = elm[F("skip")];
-      uint16_t start = elm[F("start")] | 0;
+      uint16_t start = elm["start"] | 0;
       if (start > lC+length) continue; // something is very wrong :)
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
@@ -411,7 +411,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject dmx = doc["dmx"];
   CJSON(DMXChannels, dmx[F("chan")]);
   CJSON(DMXGap,dmx[F("gap")]);
-  CJSON(DMXStart, dmx[F("start")]);
+  CJSON(DMXStart, dmx["start"]);
   CJSON(DMXStartLED,dmx[F("start-led")]);
 
   JsonArray dmx_fixmap = dmx[F("fixmap")];
@@ -549,7 +549,7 @@ void serializeConfig() {
     Bus *bus = busses.getBus(s);
     if (!bus || bus->getLength()==0) break;
     JsonObject ins = hw_led_ins.createNestedObject();
-    ins[F("start")] = bus->getStart();
+    ins["start"] = bus->getStart();
     ins[F("len")] = bus->getLength();
     JsonArray ins_pin = ins.createNestedArray("pin");
     uint8_t pins[5];
@@ -753,7 +753,7 @@ void serializeConfig() {
   JsonObject dmx = doc.createNestedObject("dmx");
   dmx[F("chan")] = DMXChannels;
   dmx[F("gap")] = DMXGap;
-  dmx[F("start")] = DMXStart;
+  dmx["start"] = DMXStart;
   dmx[F("start-led")] = DMXStartLED;
 
   JsonArray dmx_fixmap = dmx.createNestedArray(F("fixmap"));

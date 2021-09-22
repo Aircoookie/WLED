@@ -15,7 +15,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   //WS2812FX::Segment prev;
   //prev = seg; //make a backup so we can tell if something changed
 
-  uint16_t start = elem[F("start")] | seg.start;
+  uint16_t start = elem["start"] | seg.start;
   int stop = elem["stop"] | -1;
   if (stop < 0) {
     uint16_t len = elem[F("len")];
@@ -70,7 +70,9 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     seg.setOption(SEG_OPTION_ON, 1, id);
   }
 
-  seg.setOption(SEG_OPTION_ON, elem["on"] | seg.getOption(SEG_OPTION_ON), id);
+  bool on = elem["on"] | seg.getOption(SEG_OPTION_ON);
+  if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
+  seg.setOption(SEG_OPTION_ON, on, id);
   
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
@@ -358,7 +360,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
 {
 	root["id"] = id;
   if (segmentBounds) {
-    root[F("start")] = seg.start;
+    root["start"] = seg.start;
     root["stop"] = seg.stop;
   }
 	if (!forPreset) root[F("len")] = seg.stop - seg.start;

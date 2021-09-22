@@ -2629,7 +2629,7 @@ typedef struct Spark {
 */
 uint16_t WS2812FX::mode_popcorn(void) {
   //allocate segment data
-  uint16_t maxNumPopcorn = 22; // max 22 on 16 segment ESP8266
+  uint16_t maxNumPopcorn = 21; // max 21 on 16 segment ESP8266
   uint16_t dataSize = sizeof(spark) * maxNumPopcorn;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
   
@@ -2688,7 +2688,7 @@ uint16_t WS2812FX::candle(bool multi)
   if (multi)
   {
     //allocate segment data
-    uint16_t dataSize = (SEGLEN -1) *3; // max length of segment on 16 segment ESP8266 is 75 pixels
+    uint16_t dataSize = (SEGLEN -1) *3; //max. 1365 pixels (ESP8266)
     if (!SEGENV.allocateData(dataSize)) return candle(false); //allocation failed
   }
 
@@ -2776,13 +2776,11 @@ uint16_t WS2812FX::mode_candle_multi()
 / Speed sets frequency of new starbursts, intensity is the intensity of the burst
 */
 #ifdef ESP8266
-  #define STARBURST_MAX_FRAG   4
-  #define STARBURST_MAX_STARS  6
+  #define STARBURST_MAX_FRAG   8 //52 bytes / star
 #else
-  #define STARBURST_MAX_FRAG  10
-  #define STARBURST_MAX_STARS 11
+  #define STARBURST_MAX_FRAG  10 //60 bytes / star
 #endif
-//each needs 18+STARBURST_MAX_FRAG*4 bytes
+//each needs 20+STARBURST_MAX_FRAG*4 bytes
 typedef struct particle {
   CRGB     color;
   uint32_t birth  =0;
@@ -2793,7 +2791,14 @@ typedef struct particle {
 } star;
 
 uint16_t WS2812FX::mode_starburst(void) {
-  uint8_t  numStars = min(1 + (SEGLEN >> 3), STARBURST_MAX_STARS); // 11 * 58 * 32 = 19k (ESP32), 6 * 34 * 16 = 3.2k (ESP8266)
+  uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
+  uint8_t segs = getActiveSegmentsNum();
+  if (segs <= (MAX_NUM_SEGMENTS /2)) maxData *= 2; //ESP8266: 512 if <= 8 segs ESP32: 1280 if <= 16 segs
+  if (segs <= (MAX_NUM_SEGMENTS /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
+  uint16_t maxStars = maxData / sizeof(star); //ESP8266: max. 4/9/19 stars/seg, ESP32: max. 10/21/42 stars/seg
+
+  uint8_t numStars = 1 + (SEGLEN >> 3);
+  if (numStars > maxStars) numStars = maxStars;
   uint16_t dataSize = sizeof(star) * numStars;
 
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
@@ -2895,23 +2900,28 @@ uint16_t WS2812FX::mode_starburst(void) {
   return FRAMETIME;
 }
 #undef STARBURST_MAX_FRAG
-#undef STARBURST_MAX_STARS
 
 /*
  * Exploding fireworks effect
  * adapted from: http://www.anirama.com/1000leds/1d-fireworks/
  */
-#ifdef ESP8266
-  #define MAX_SPARKS 20 // number of fragments (11 bytes per fragment)
-#else
-  #define MAX_SPARKS 58 // number of fragments
-#endif
 uint16_t WS2812FX::mode_exploding_fireworks(void)
 {
   //allocate segment data
-  uint16_t numSparks = min(2 + (SEGLEN >> 1), MAX_SPARKS);  // max 58 for 32 segment ESP32, 20 for 16 segment ESP8266
+  uint16_t maxData = FAIR_DATA_PER_SEG; //ESP8266: 256 ESP32: 640
+  uint8_t segs = getActiveSegmentsNum();
+  if (segs <= (MAX_NUM_SEGMENTS /2)) maxData *= 2; //ESP8266: 512 if <= 8 segs ESP32: 1280 if <= 16 segs
+  if (segs <= (MAX_NUM_SEGMENTS /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
+  int maxSparks = maxData / sizeof(spark); //ESP8266: max. 21/42/85 sparks/seg, ESP32: max. 53/106/213 sparks/seg
+
+  uint16_t numSparks = min(2 + (SEGLEN >> 1), maxSparks);
   uint16_t dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize)) return mode_static(); //allocation failed
+
+  if (dataSize != SEGENV.aux1) { //reset to flare if sparks were reallocated
+    SEGENV.aux0 = 0;
+    SEGENV.aux1 = dataSize;
+  }
 
   fill(BLACK);
   

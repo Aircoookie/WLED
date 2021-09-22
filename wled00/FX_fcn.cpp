@@ -510,6 +510,15 @@ uint8_t WS2812FX::getMainSegmentId(void) {
   return 0;
 }
 
+uint8_t WS2812FX::getActiveSegmentsNum(void) {
+  uint8_t c = 0;
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].isActive()) c++;
+  }
+  return c;
+}
+
 uint32_t WS2812FX::getColor(void) {
   return _segments[getMainSegmentId()].colors[0];
 }
@@ -547,15 +556,6 @@ WS2812FX::Segment* WS2812FX::getSegments(void) {
 uint32_t WS2812FX::getLastShow(void) {
   return _lastShow;
 }
-
-// there is no longer any need for these two
-//uint8_t WS2812FX::getColorOrder(void) {
-//  return COL_ORDER_GRB;
-//}
-//
-//void WS2812FX::setColorOrder(uint8_t co) {
-//  //bus->SetColorOrder(co);
-//}
 
 void WS2812FX::setSegment(uint8_t n, uint16_t i1, uint16_t i2, uint8_t grouping, uint8_t spacing) {
   if (n >= MAX_NUM_SEGMENTS) return;
@@ -1035,9 +1035,10 @@ uint32_t WS2812FX::color_from_palette(uint16_t i, bool mapping, bool wrap, uint8
 
 //load custom mapping table from JSON file
 void WS2812FX::deserializeMap(uint8_t n) {
-  String fileName = String(F("/ledmap"));
-  if (n) fileName += String(n);
-  fileName += String(F(".json"));
+  char fileName[32];
+  strcpy_P(fileName, PSTR("/ledmap"));
+  if (n) sprintf(fileName +7, "%d", n);
+  strcat(fileName, ".json");
   bool isFile = WLED_FS.exists(fileName);
 
   if (!isFile) {
@@ -1054,7 +1055,7 @@ void WS2812FX::deserializeMap(uint8_t n) {
   DEBUG_PRINT(F("Reading LED map from "));
   DEBUG_PRINTLN(fileName);
 
-  if (!readObjectFromFile(fileName.c_str(), nullptr, &doc)) return; //if file does not exist just exit
+  if (!readObjectFromFile(fileName, nullptr, &doc)) return; //if file does not exist just exit
 
   // erase old custom ledmap
   if (customMappingTable != nullptr) {
