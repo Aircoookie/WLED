@@ -419,11 +419,11 @@ button {
 	overflow: auto;
 }
 
-#info {
+#info, #nodes {
 	z-index: 3;
 }
 
-#rover, #nodes {
+#rover {
 	z-index: 2;
 }
 
