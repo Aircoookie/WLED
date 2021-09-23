@@ -15,10 +15,10 @@
 
 #define modd(x, y) ((x) - (int)((x) / (y)) * (y))
 
-float cos_t(float x)
+float cos_t(float phi)
 {
-  x = modd(x, TWO_PI);
-  char sign = 1;
+  float x = modd(phi, TWO_PI);
+  int8_t sign = 1;
   if (x > PI)
   {
       x -= PI;
@@ -28,7 +28,7 @@ float cos_t(float x)
 
   float res = sign * (1 - ((xx) / (2)) + ((xx * xx) / (24)) - ((xx * xx * xx) / (720)) + ((xx * xx * xx * xx) / (40320)) - ((xx * xx * xx * xx * xx) / (3628800)) + ((xx * xx * xx * xx * xx * xx) / (479001600)));
   #ifdef WLED_DEBUG_MATH
-  Serial.printf("cos: %f,%f\n",res,cos(x));
+  Serial.printf("cos: %f,%f,%f,(%f)\n",phi,res,cos(x),res-cos(x));
   #endif
   return res;
 }
@@ -36,7 +36,7 @@ float cos_t(float x)
 float sin_t(float x) {
   float res =  cos_t(HALF_PI - x);
   #ifdef WLED_DEBUG_MATH
-  Serial.printf("sin: %f,%f\n",res,sin(x));
+  Serial.printf("sin: %f,%f,%f,(%f)\n",x,res,sin(x),res-sin(x));
   #endif
   return res;
 }
@@ -46,7 +46,7 @@ float tan_t(float x) {
   if (c==0.0) return 0;
   float res = sin_t(x) / c;
   #ifdef WLED_DEBUG_MATH
-  Serial.printf("tan: %f,%f\n",res,tan(x));
+  Serial.printf("tan: %f,%f,%f,(%f)\n",x,res,tan(x),res-tan(x));
   #endif
   return res;
 }
@@ -67,7 +67,7 @@ float acos_t(float x) {
   ret = ret - 2 * negate * ret;
   float res = negate * PI + ret;
   #ifdef WLED_DEBUG_MATH
-  Serial.printf("acos,%f,%f,%f\n",x,res,acos(x));
+  Serial.printf("acos: %f,%f,%f,(%f)\n",x,res,acos(x),res-acos(x));
   #endif
   return res;
 }
@@ -75,7 +75,7 @@ float acos_t(float x) {
 float asin_t(float x) {
   float res = HALF_PI - acos_t(x);
   #ifdef WLED_DEBUG_MATH
-  Serial.printf("asin,%f,%f,%f\n",x,res,asin(x));
+  Serial.printf("asin: %f,%f,%f,(%f)\n",x,res,asin(x),res-asin(x));
   #endif
   return res;
 }
@@ -121,7 +121,7 @@ float floor_t(float x) {
   int val = x;
   if (neg) val--;
   #ifdef WLED_DEBUG_MATH
-  Serial.printf("floor: %f,%f\n",val,floor(x));
+  Serial.printf("floor: %f,%f,%f\n",x,(float)val,floor(x));
   #endif
   return val;
 }
@@ -130,7 +130,7 @@ float fmod_t(float num, float denom) {
   int tquot = num / denom;
   float res = num - tquot * denom;
   #ifdef WLED_DEBUG_MATH
-  Serial.printf("fmod: %f,%f\n",res,fmod(num,denom));
+  Serial.printf("fmod: %f,%f,(%f)\n",res,fmod(num,denom),res-fmod(num,denom));
   #endif
   return res;
 }
