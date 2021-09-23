@@ -707,6 +707,7 @@ void WLED::initInterfaces()
 #endif
 
   strip.service();
+
   // Set up mDNS responder:
   if (strlen(cmDNS) > 0) {
   #ifndef WLED_DISABLE_OTA
@@ -749,13 +750,15 @@ unsigned long heapTime = 0;
 
 void WLED::handleConnection()
 {
-  if (millis() < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
+  unsigned long now = millis();
+
+  if (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
     return;
   if (lastReconnectAttempt == 0)
     initConnection();
 
   // reconnect WiFi to clear stale allocations if heap gets too low
-  if (millis() - heapTime > 5000) {
+  if (now - heapTime > 5000) {
     uint32_t heap = ESP.getFreeHeap();
     if (heap < JSON_BUFFER_SIZE+512 && lastHeap < JSON_BUFFER_SIZE+512) {
       DEBUG_PRINT(F("Heap too low! "));
@@ -763,7 +766,7 @@ void WLED::handleConnection()
       forceReconnect = true;
     }
     lastHeap = heap;
-    heapTime = millis();
+    heapTime = now;
   }
 
   byte stac = 0;
@@ -783,7 +786,7 @@ void WLED::handleConnection()
         if (stac)
           WiFi.disconnect();        // disable search so that AP can work
         else
-          initConnection();        // restart search
+          initConnection();         // restart search
       }
     }
   }
@@ -801,9 +804,9 @@ void WLED::handleConnection()
       interfacesInited = false;
       initConnection();
     }
-    if (millis() - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED)
+    if (now - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED)
       initConnection();
-    if (!apActive && millis() - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN))
+    if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN))
       initAP();
   } else if (!interfacesInited) {        // newly connected
     DEBUG_PRINTLN("");

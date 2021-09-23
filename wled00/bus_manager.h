@@ -10,6 +10,20 @@
 #include "bus_wrapper.h"
 #include <Arduino.h>
 
+// enable additional debug output
+#ifdef WLED_DEBUG
+  #ifndef ESP8266
+  #include <rom/rtc.h>
+  #endif
+  #define DEBUG_PRINT(x) Serial.print(x)
+  #define DEBUG_PRINTLN(x) Serial.println(x)
+  #define DEBUG_PRINTF(x...) Serial.printf(x)
+#else
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINTF(x...)
+#endif
+
 #define GET_BIT(var,bit)    (((var)>>(bit))&0x01)
 #define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
 #define UNSET_BIT(var,bit)  ((var)&=(~(uint16_t)(0x0001<<(bit))))
@@ -29,7 +43,8 @@ struct BusConfig {
     type = busType & 0x7F;  // bit 7 may be/is hacked to include RGBW info (1=RGBW, 0=RGB)
     count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
-    if (type > 47) nPins = 2;
+    if (type >= 10 || type <= 15) nPins = 4;
+    else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
@@ -353,6 +368,103 @@ class BusPwm : public Bus {
   }
 };
 
+
+class BusNetwork : public Bus {
+  public:
+    BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start) {
+      _valid = false;
+      _data = (byte *)malloc(bc.count * (_rgbw ? 4 : 3));
+      if (_data == nullptr) return;
+      memset(_data, 0, bc.count * (_rgbw ? 4 : 3));
+      _len = bc.count;
+      _rgbw = false;
+      //_rgbw = bc.rgbwOverride;  // RGBW override in bit 7 or can have a special type
+      _colorOrder = bc.colorOrder;
+      _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
+      _broadcastLock = false;
+      _valid = true;
+    };
+
+  void setPixelColor(uint16_t pix, uint32_t c) {
+    if (!_valid || pix >= _len) return;
+    uint16_t offset = pix*(_rgbw?4:3);
+    _data[offset]   = 0xFF & (c >> 16);
+    _data[offset+1] = 0xFF & (c >>  8);
+    _data[offset+2] = 0xFF & (c      );
+    if (_rgbw) _data[offset+3] = 0xFF & (c >> 24);
+  }
+
+  uint32_t getPixelColor(uint16_t pix) {
+    if (!_valid || pix >= _len) return 0;
+    uint16_t offset = pix*(_rgbw?4:3);
+    return ((_rgbw?(_data[offset+3] << 24):0) | (_data[offset] << 16) | (_data[offset+1] << 8) | (_data[offset+2]));
+  }
+
+  void show() {
+    uint8_t type;
+    if (!_valid || _broadcastLock) return;
+    _broadcastLock = true;
+    switch (_type) {
+      case TYPE_NET_ARTNET_RGB: type = 2; break;
+      case TYPE_NET_E131_RGB:   type = 1; break;
+      case TYPE_NET_DDP_RGB:
+      default:                  type = 0; break;
+    }
+    realtimeBroadcast(type, _client, _len, _data, _rgbw);
+    _broadcastLock = false;
+  }
+
+  inline bool canShow() {
+    return !_broadcastLock;
+  }
+
+  inline void setBrightness(uint8_t b) {
+    // not sure if this is correctly implemented
+    for (uint16_t pix=0; pix<_len; pix++) {
+      uint16_t offset = pix*(_rgbw?4:3);
+      _data[offset  ] = scale8(_data[offset  ], b);
+      _data[offset+1] = scale8(_data[offset+1], b);
+      _data[offset+2] = scale8(_data[offset+2], b);
+      if (_rgbw) _data[offset+3] = scale8(_data[offset+3], b);
+    }
+  }
+
+  uint8_t getPins(uint8_t* pinArray) {
+    for (uint8_t i = 0; i < 4; i++) {
+      pinArray[i] = _client[i];
+    }
+    return 4;
+  }
+
+  inline bool isRgbw() {
+    return _rgbw;
+  }
+
+  inline uint16_t getLength() {
+    return _len;
+  }
+
+  void cleanup() {
+    _type = I_NONE;
+    _valid = false;
+    if (_data != nullptr) free(_data);
+    _data = nullptr;
+  }
+
+  ~BusNetwork() {
+    cleanup();
+  }
+
+  private:
+    IPAddress _client;
+    uint16_t  _len = 0;
+    uint8_t   _colorOrder;
+    bool      _rgbw;
+    bool      _broadcastLock;
+    byte*     _data;
+};
+
+
 class BusManager {
   public:
   BusManager() {
@@ -363,7 +475,7 @@ class BusManager {
   static uint32_t memUsage(BusConfig &bc) {
     uint8_t type = bc.type;
     uint16_t len = bc.count;
-    if (type < 32) {
+    if (type > 15 && type < 32) {
       #ifdef ESP8266
         if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
@@ -379,12 +491,14 @@ class BusManager {
 
     if (type > 31 && type < 48) return 5;
     if (type == 44 || type == 45) return len*4; //RGBW
-    return len*3;
+    return len*3; //RGB
   }
   
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (IS_DIGITAL(bc.type)) {
+    if (bc.type>=10 && bc.type<=15) {
+      busses[numBusses] = new BusNetwork(bc);
+    } else if (IS_DIGITAL(bc.type)) {
       busses[numBusses] = new BusDigital(bc, numBusses);
     } else {
       busses[numBusses] = new BusPwm(bc);

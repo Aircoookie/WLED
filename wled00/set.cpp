@@ -601,9 +601,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   }
 
   uint16_t startI = mainseg.start;
-  uint16_t stopI = mainseg.stop;
-  uint8_t grpI = mainseg.grouping;
-  uint16_t spcI = mainseg.spacing;
+  uint16_t stopI  = mainseg.stop;
+  uint8_t  grpI   = mainseg.grouping;
+  uint16_t spcI   = mainseg.spacing;
   pos = req.indexOf(F("&S=")); //segment start
   if (pos > 0) {
     startI = getNumVal(&req, pos);
@@ -622,6 +622,30 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     spcI = getNumVal(&req, pos);
   }
   strip.setSegment(selectedSeg, startI, stopI, grpI, spcI);
+
+  pos = req.indexOf(F("RV=")); //Segment reverse
+  if (pos > 0) mainseg.setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
+
+  pos = req.indexOf(F("MI=")); //Segment mirror
+  if (pos > 0) mainseg.setOption(SEG_OPTION_MIRROR, req.charAt(pos+3) != '0');
+
+  pos = req.indexOf(F("SB=")); //Segment brightness/opacity
+  if (pos > 0) {
+    byte segbri = getNumVal(&req, pos);
+    mainseg.setOption(SEG_OPTION_ON, segbri, selectedSeg);
+    if (segbri) {
+      mainseg.setOpacity(segbri, selectedSeg);
+    }
+  }
+
+  pos = req.indexOf(F("SW=")); //segment power
+  if (pos > 0) {
+    switch (getNumVal(&req, pos)) {
+      case 0: mainseg.setOption(SEG_OPTION_ON, false); break;
+      case 1: mainseg.setOption(SEG_OPTION_ON, true); break;
+      default: mainseg.setOption(SEG_OPTION_ON, !mainseg.getOption(SEG_OPTION_ON)); break;
+    }
+  }
 
   pos = req.indexOf(F("PS=")); //saves current in preset
   if (pos > 0) savePreset(getNumVal(&req, pos));
@@ -713,7 +737,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       strip.applyToAllSelected = true;
       strip.setColor(2, t[0], t[1], t[2], t[3]);
     } else {
-      strip.getSegment(selectedSeg).setColor(2,((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24)), selectedSeg);
+      mainseg.setColor(2,((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24)), selectedSeg);
     }
   }
 
@@ -816,24 +840,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   pos = req.indexOf(F("TT="));
   if (pos > 0) transitionDelay = getNumVal(&req, pos);
-
-  //Segment reverse
-  pos = req.indexOf(F("RV="));
-  if (pos > 0) strip.getSegment(selectedSeg).setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
-
-  //Segment reverse
-  pos = req.indexOf(F("MI="));
-  if (pos > 0) strip.getSegment(selectedSeg).setOption(SEG_OPTION_MIRROR, req.charAt(pos+3) != '0');
-
-  //Segment brightness/opacity
-  pos = req.indexOf(F("SB="));
-  if (pos > 0) {
-    byte segbri = getNumVal(&req, pos);
-    strip.getSegment(selectedSeg).setOption(SEG_OPTION_ON, segbri, selectedSeg);
-    if (segbri) {
-      strip.getSegment(selectedSeg).setOpacity(segbri, selectedSeg);
-    }
-  }
 
   //set time (unix timestamp)
   pos = req.indexOf(F("ST="));
