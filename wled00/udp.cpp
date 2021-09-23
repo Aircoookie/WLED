@@ -1,5 +1,4 @@
 #include "wled.h"
-#include "src/dependencies/json/ArduinoJson-v6.h"
 
 /*
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
