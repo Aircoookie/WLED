@@ -396,7 +396,8 @@ class BusNetwork : public Bus {
 
   uint32_t getPixelColor(uint16_t pix) {
     if (!_valid || pix >= _len) return 0;
-    return ((_rgbw?(_data[pix+3] << 24):0) | (_data[pix] << 16) | (_data[pix+1] << 8) | (_data[pix+2]));
+    uint16_t offset = pix*(_rgbw?4:3);
+    return ((_rgbw?(_data[offset+3] << 24):0) | (_data[offset] << 16) | (_data[offset+1] << 8) | (_data[offset+2]));
   }
 
   void show() {
@@ -420,10 +421,11 @@ class BusNetwork : public Bus {
   inline void setBrightness(uint8_t b) {
     // not sure if this is correctly implemented
     for (uint16_t pix=0; pix<_len; pix++) {
-      _data[pix  ] = scale8(_data[pix  ], b);
-      _data[pix+1] = scale8(_data[pix+1], b);
-      _data[pix+2] = scale8(_data[pix+2], b);
-      if (_rgbw) _data[pix+3] = scale8(_data[pix+3], b);
+      uint16_t offset = pix*(_rgbw?4:3);
+      _data[offset  ] = scale8(_data[offset  ], b);
+      _data[offset+1] = scale8(_data[offset+1], b);
+      _data[offset+2] = scale8(_data[offset+2], b);
+      if (_rgbw) _data[offset+3] = scale8(_data[offset+3], b);
     }
   }
 
