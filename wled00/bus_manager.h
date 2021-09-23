@@ -387,10 +387,11 @@ class BusNetwork : public Bus {
 
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (!_valid || pix >= _len) return;
-    _data[pix]   = 0xFF & (c >> 16);
-    _data[pix+1] = 0xFF & (c >>  8);
-    _data[pix+2] = 0xFF & (c      );
-    if (_rgbw) _data[pix+3] = 0xFF & (c >> 24);
+    uint16_t offset = pix*(_rgbw?4:3);
+    _data[offset]   = 0xFF & (c >> 16);
+    _data[offset+1] = 0xFF & (c >>  8);
+    _data[offset+2] = 0xFF & (c      );
+    if (_rgbw) _data[offset+3] = 0xFF & (c >> 24);
   }
 
   uint32_t getPixelColor(uint16_t pix) {
