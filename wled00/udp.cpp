@@ -576,7 +576,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
       for (uint16_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
         if (sequenceNumber > 15) sequenceNumber = 0;
 
-        if (!ddpUdp.beginPacket(client, DDP_PORT)) {           
+        if (!ddpUdp.beginPacket(client, DDP_DEFAULT_PORT)) {  // port defined in ESPAsyncE131.h
           DEBUG_PRINTLN(F("WiFiUDP.beginPacket returned an error"));
           return 1; // problem
         }
