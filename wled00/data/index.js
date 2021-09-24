@@ -1704,7 +1704,7 @@ function setLor(i)
 function setPreset(i)
 {
 	var obj = {"ps": i};
-	if (isPlaylist(i)) obj.on = true;
+	if (isPlaylist(i)) obj.on = true;	//force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
 	requestJson(obj);
 }
@@ -1737,6 +1737,7 @@ function saveP(i,pl)
 	} else {
 		if (pl) {
 			obj.playlist = plJson[i];
+			obj.on = true;
 			obj.o = true;
 		} else {
 			obj.ib = gId(`p${i}ibtgl`).checked;
@@ -1777,6 +1778,7 @@ function testPl(i,bt) {
 	bt.innerHTML = "<i class='icons btn-icon'>&#xe38f;</i>Stop";
 	var obj = {};
 	obj.playlist = plJson[i];
+	obj.on = true;
 	requestJson(obj);
 }
 
