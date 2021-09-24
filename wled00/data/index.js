@@ -1612,9 +1612,8 @@ function setLor(i) {
 
 function setPreset(i) {
 	var obj = {"ps": i};
-
+	if (isPlaylist(i)) obj.on = true;	//force on
 	showToast("Loading preset " + pName(i) +" (" + i + ")");
-
 	requestJson(obj);
 }
 
@@ -1647,6 +1646,7 @@ function saveP(i,pl) {
 	} else {
 		if (pl) {
 			obj.playlist = plJson[i];
+			obj.on = true;
 			obj.o = true;
 		} else {
 			obj.ib = d.getElementById(`p${i}ibtgl`).checked;
@@ -1662,10 +1662,10 @@ function saveP(i,pl) {
 	requestJson(obj);
 	if (obj.o) {
 		pJson[pI] = obj;
-    delete pJson[pI].psave;
-    delete pJson[pI].o;
-    delete pJson[pI].v;
-    delete pJson[pI].time;
+		delete pJson[pI].psave;
+		delete pJson[pI].o;
+		delete pJson[pI].v;
+		delete pJson[pI].time;
 	} else {
 		pJson[pI] = {"n":pN, "win":"Please refresh the page to see this newly saved command."};
 		if (obj.win) pJson[pI].win = obj.win;
@@ -1686,6 +1686,7 @@ function testPl(i,bt) {
 	bt.innerHTML = "<i class='icons btn-icon'>&#xe38f;</i>Stop";
 	var obj = {};
 	obj.playlist = plJson[i];
+	obj.on = true;
 	requestJson(obj);
 }
 
