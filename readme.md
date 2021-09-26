@@ -49,7 +49,7 @@ A fast and feature-rich implementation of an ESP8266/ESP32 webserver to control 
 
 ## 📲 Quick start guide and documentation
 
-See the [wiki](https://github.com/Aircoookie/WLED/wiki)!
+See the [documentation on our official site](https://kno.wled.ge)!
 
 [On this page](https://github.com/Aircoookie/WLED/wiki/Learning-the-ropes) you can find excellent tutorials made by the community and helpful tools to help you get your new lamp up and running!
 
