@@ -373,12 +373,22 @@ class BusNetwork : public Bus {
   public:
     BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start) {
       _valid = false;
+      /*
+      switch (bc.type) {
+        case TYPE_NET_ARTNET_RGB:
+        case TYPE_NET_E131_RGB:
+        case TYPE_NET_DDP_RGB:
+        default:
+          _rgbw = false;
+          break;
+      }
+      */
+      _rgbw = false;
+      //_rgbw |= bc.rgbwOverride;  // RGBW override in bit 7 or can have a special type
       _data = (byte *)malloc(bc.count * (_rgbw ? 4 : 3));
       if (_data == nullptr) return;
       memset(_data, 0, bc.count * (_rgbw ? 4 : 3));
       _len = bc.count;
-      _rgbw = false;
-      //_rgbw = bc.rgbwOverride;  // RGBW override in bit 7 or can have a special type
       _colorOrder = bc.colorOrder;
       _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
       _broadcastLock = false;
@@ -392,6 +402,13 @@ class BusNetwork : public Bus {
     _data[offset+1] = 0xFF & (c >>  8);
     _data[offset+2] = 0xFF & (c      );
     if (_rgbw) _data[offset+3] = 0xFF & (c >> 24);
+    /*
+    // not using double buffer
+    _data[offset]   = scale8(0xFF & (c >> 16), _bri);
+    _data[offset+1] = scale8(0xFF & (c >>  8), _bri);
+    _data[offset+2] = scale8(0xFF & (c      ), _bri);
+    if (_rgbw) _data[offset+3] = scale8(0xFF & (c >> 24), _bri);
+    */
   }
 
   uint32_t getPixelColor(uint16_t pix) {
@@ -410,7 +427,22 @@ class BusNetwork : public Bus {
       case TYPE_NET_DDP_RGB:
       default:                  type = 0; break;
     }
-    realtimeBroadcast(type, _client, _len, _data, _rgbw);
+    // apply brightness to second buffer
+    byte *_data2 = (byte *)malloc(_len * (_rgbw ? 4 : 3));
+    if (_data2 == nullptr) {
+      // but display original buffer if memory allocation failed
+      realtimeBroadcast(type, _client, _len, _data, _rgbw);
+    } else {
+      for (uint16_t pix=0; pix<_len; pix++) {
+        uint16_t offset = pix*(_rgbw?4:3);
+        _data2[offset  ] = scale8(_data[offset  ], _bri);
+        _data2[offset+1] = scale8(_data[offset+1], _bri);
+        _data2[offset+2] = scale8(_data[offset+2], _bri);
+        if (_rgbw) _data2[offset+3] = scale8(_data[offset+3], _bri);
+      }
+      realtimeBroadcast(type, _client, _len, _data2, _rgbw);
+      free(_data2);
+    }
     _broadcastLock = false;
   }
 
@@ -419,14 +451,7 @@ class BusNetwork : public Bus {
   }
 
   inline void setBrightness(uint8_t b) {
-    // not sure if this is correctly implemented
-    for (uint16_t pix=0; pix<_len; pix++) {
-      uint16_t offset = pix*(_rgbw?4:3);
-      _data[offset  ] = scale8(_data[offset  ], b);
-      _data[offset+1] = scale8(_data[offset+1], b);
-      _data[offset+2] = scale8(_data[offset+2], b);
-      if (_rgbw) _data[offset+3] = scale8(_data[offset+3], b);
-    }
+    _bri = b;
   }
 
   uint8_t getPins(uint8_t* pinArray) {
@@ -459,6 +484,7 @@ class BusNetwork : public Bus {
     IPAddress _client;
     uint16_t  _len = 0;
     uint8_t   _colorOrder;
+    uint8_t   _bri = 255;
     bool      _rgbw;
     bool      _broadcastLock;
     byte*     _data;
