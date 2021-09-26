@@ -322,7 +322,7 @@ void WLED::loop()
   yield();
   handleWs();
 
-// DEBUG serial logging
+// DEBUG serial logging (every 30s)
 #ifdef WLED_DEBUG
   if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
@@ -345,7 +345,7 @@ void WLED::loop()
     DEBUG_PRINT(F("State time: "));      DEBUG_PRINTLN(wifiStateChangedTime);
     DEBUG_PRINT(F("NTP last sync: "));   DEBUG_PRINTLN(ntpLastSyncTime);
     DEBUG_PRINT(F("Client IP: "));       DEBUG_PRINTLN(Network.localIP());
-    DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 60);
+    DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 30);
     DEBUG_PRINT(F("Max UM time[ms]: ")); DEBUG_PRINTLN(maxUsermodMillis);
     loops = 0;
     maxUsermodMillis = 0;
@@ -379,7 +379,6 @@ void WLED::setup()
 #endif
   DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
-  registerUsermods();
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
@@ -398,6 +397,9 @@ void WLED::setup()
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
+
+  DEBUG_PRINTLN(F("Registering usermods ..."));
+  registerUsermods();
 
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
@@ -423,6 +425,7 @@ void WLED::setup()
   DEBUG_PRINTLN(F("Usermods setup"));
   userSetup();
   usermods.setup();
+
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
@@ -686,10 +689,10 @@ void WLED::initConnection()
 
 void WLED::initInterfaces()
 {
-  IPAddress ipAddress = Network.localIP();
   DEBUG_PRINTLN(F("Init STA interfaces"));
 
 #ifndef WLED_DISABLE_HUESYNC
+  IPAddress ipAddress = Network.localIP();
   if (hueIP[0] == 0) {
     hueIP[0] = ipAddress[0];
     hueIP[1] = ipAddress[1];
@@ -744,12 +747,11 @@ void WLED::initInterfaces()
   wasConnected = true;
 }
 
-byte stacO = 0;
-uint32_t lastHeap;
-unsigned long heapTime = 0;
-
 void WLED::handleConnection()
 {
+  static byte stacO = 0;
+  static uint32_t lastHeap = UINT32_MAX;
+  static unsigned long heapTime = 0;
   unsigned long now = millis();
 
   if (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
