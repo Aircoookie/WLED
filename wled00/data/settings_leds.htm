@@ -104,9 +104,7 @@
     }
     //returns mem usage
     function getMem(t, len, p0) {
-      if (t==2 || t==3) {
-        return len*(t+1);
-      }
+      if (t >= 10 && t <= 12) return len*6; // double buffer for network UDP bus
       if (t > 15 && t < 32) {
         if (maxM < 10000 && p0==3) {    //8266 DMA uses 5x the mem
           if (t > 29) return len*20; //RGBW
