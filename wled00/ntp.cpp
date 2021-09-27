@@ -29,6 +29,7 @@ Timezone* tz;
 #define TZ_AUSTRALIA_NORTHERN  16
 #define TZ_AUSTRALIA_SOUTHERN  17
 #define TZ_HAWAII              18
+#define TZ_NOVOSIBIRSK         19
 #define TZ_INIT               255
 
 byte tzCurrent = TZ_INIT; //uninitialized
@@ -126,6 +127,11 @@ void updateTimezone() {
     }
     case TZ_HAWAII : {
       tcrDaylight = {Last, Sun, Mar, 1, -600};   //HST =  UTC - 10 hours
+      tcrStandard = tcrDaylight;
+      break;
+    }
+    case TZ_NOVOSIBIRSK : {
+      tcrDaylight = {Last, Sun, Mar, 1, 420};     //CST = UTC + 7 hours
       tcrStandard = tcrDaylight;
       break;
     }
