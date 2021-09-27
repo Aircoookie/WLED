@@ -420,7 +420,7 @@ void calculateSunriseAndSunset() {
       // there is a sunrise
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
-      sunrise = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
+      sunrise = tz->toLocal(mktime(&tim_0) + utcOffsetSecs);
       DEBUG_PRINTF("Sunrise: %02d:%02d\n", hour(sunrise), minute(sunrise));
     } else {
       sunrise = 0;
@@ -431,7 +431,7 @@ void calculateSunriseAndSunset() {
       // there is a sunset
       tim_0.tm_hour = minUTC / 60;
       tim_0.tm_min = minUTC % 60;
-      sunset = tz->toLocal(mktime(&tim_0) - utcOffsetSecs);
+      sunset = tz->toLocal(mktime(&tim_0) + utcOffsetSecs);
       DEBUG_PRINTF("Sunset: %02d:%02d\n", hour(sunset), minute(sunset));
     } else {
       sunset = 0;
