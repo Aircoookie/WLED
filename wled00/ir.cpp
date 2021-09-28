@@ -618,7 +618,8 @@ void decodeIRJson(uint32_t code)
         cmdStr = "win&" + cmdStr;
       }
       handleSet(nullptr, cmdStr, false); 
-    }        
+    }
+    colorUpdated(CALL_MODE_BUTTON);
   } else if (!jsonCmdObj.isNull()) {
     // command is JSON object
     //allow applyPreset() to reuse JSON buffer, or it would alloc. a second buffer and run out of mem.
