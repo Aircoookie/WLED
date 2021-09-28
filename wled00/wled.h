@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2109261
+#define VERSION 2109281
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -87,6 +87,7 @@
 #include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
+  #define NO_OTA_PORT
   #include <ArduinoOTA.h>
 #endif
 #include <SPIFFSEditor.h>

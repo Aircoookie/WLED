@@ -713,12 +713,10 @@ void WLED::initInterfaces()
 
   // Set up mDNS responder:
   if (strlen(cmDNS) > 0) {
-  #ifndef WLED_DISABLE_OTA
-    if (!aOtaEnabled) //ArduinoOTA begins mDNS for us if enabled
-      MDNS.begin(cmDNS);
-  #else
+    // "end" must be called before "begin" is called a 2nd time
+    // see https://github.com/esp8266/Arduino/issues/7213
+    MDNS.end();
     MDNS.begin(cmDNS);
-  #endif
 
     DEBUG_PRINTLN(F("mDNS started"));
     MDNS.addService("http", "tcp", 80);

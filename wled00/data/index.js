@@ -629,7 +629,7 @@ function populateInfo(i)
 	if (i.ver.includes("-bl")) vcn = "Ryujin";
 	if (i.cn) vcn = i.cn;
 
-	cn += `v${i.ver} "${vcn}"<br><br><table class="infot">
+	cn += `v${i.ver} "${vcn}"<br><br><table>
 ${urows}
 ${inforow("Build",i.vid)}
 ${inforow("Signal strength",i.wifi.signal +"% ("+ i.wifi.rssi, " dBm)")}
@@ -760,7 +760,7 @@ function populateNodes(i,n)
 		for (var x=0;x<n.nodes.length;x++) {
 			var o = n.nodes[x];
 			if (o.name) {
-				var url = `<button class="btn infobtn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
 				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
 				nnodes++;
 			}
@@ -768,9 +768,9 @@ function populateNodes(i,n)
 	}
 	if (i.ndc < 0) cn += `Instance List is disabled.`;
 	else if (nnodes == 0) cn += `No other instances found.`;
-	cn += `<table class="infot">
-	${urows}
+	cn += `<table>
 	${inforow("Current instance:",i.name)}
+	${urows}
 	</table>`;
 	gId('kn').innerHTML = cn;
 }

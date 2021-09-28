@@ -128,11 +128,6 @@ button {
 	font-size: 42px;
 }
 
-.infot {
-	table-layout: fixed;
-	width: 100%;
-}
-
 .segt, .plentry TABLE {
 	table-layout: fixed;
 	width: 100%;
@@ -455,12 +450,22 @@ button {
 }
 
 #kv, #kn {
-	max-width: 490px;
+	/*max-width: 490px;*/
 	display: inline-block;
 }
 
-#kv td {
+#info table, #nodes table {
+	table-layout: fixed;
+	width: 490px;
+	margin: auto;
+}
+
+#info td, #nodes td {
   padding-bottom: 8px;
+}
+
+#info .btn, #nodes .btn {
+	margin: 0;
 }
 
 #lv {
@@ -1130,13 +1135,16 @@ input[type="text"].fnd:hover {
 
 @media all and (max-width: 335px) {
 	.sliderbubble {
-    display: none;
-  }
+    	display: none;
+  	}
 }
 
 @media all and (max-width: 550px) and (min-width: 374px) {
-	.infobtn {
+	#info .btn, #nodes .btn {
 		width: 155px;
+	}
+	#info table, #nodes table {
+		width: 320px;
 	}
 }
 
