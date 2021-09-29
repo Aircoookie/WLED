@@ -328,26 +328,7 @@ void getSettingsJS(byte subPage, char* dest)
       oappend(SET_F(",2")); // DMX hardcoded pin
     #endif
 
-    #ifdef WLED_ENABLE_ADALIGHT
-    // inform settings page that pin 3 is used by ADALights if not aleready used by strip (previous setup)
-    // NOTE: this will prohibit pin 3 use on new installs
-    {
-      bool pin3used = false;
-      for (uint8_t s=0; s < busses.getNumBusses(); s++) {
-        Bus* bus = busses.getBus(s);
-        uint8_t pins[5];
-        uint8_t nPins = bus->getPins(pins);
-        for (uint8_t i = 0; i < nPins; i++) {
-          if (pins[i] == 3) {
-            pin3used = true;
-            break;
-          }
-        }
-        if (pin3used) break;
-      }
-      if (!pin3used && pinManager.isPinAllocated(3)) oappend(SET_F(",3")); // ADALight (RX) pin
-    }
-    #endif
+    //Note: Using pin 3 (RX) disables Adalight / Serial JSON
 
     #ifdef WLED_DEBUG
       oappend(SET_F(",1")); // debug output (TX) pin
