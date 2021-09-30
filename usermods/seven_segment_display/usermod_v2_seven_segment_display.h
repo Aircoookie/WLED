@@ -5,20 +5,224 @@
 
 
 class SevenSegmentDisplay : public Usermod {
+
+  #define WLED_SS_BUFFLEN 6
   private:
     //Private class members. You can declare variables and functions only accessible to your usermod here
-    unsigned long lastTime = 0;
+    unsigned long lastRefresh = 0;
+    char ssDisplayBuffer[WLED_SS_BUFFLEN+1]; //Runtime buffer of what should be displayed.
+    char ssCharacterMask[36] = {0x77,0x11,0x6B,0x3B,0x1D,0x3E,0x7E,0x13,0x7F,0x1F,0x5F,0x7B,0x66,0x79,0x6E,0x4E,0x76,0x5D,0x44,0x71,0x5E,0x64,0x27,0x58,0x77,0x4F,0x1F,0x48,0x3E,0x6C,0x75,0x25,0x7D,0x2A,0x3D,0x6B};
+    int ssDisplayMessageIdx = 0;         //Position of the start of the message to be physically displayed.
+
 
     // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
-    bool testBool = false;
-    unsigned long testULong = 42424242;
-    float testFloat = 42.42;
-    String testString = "Forty-Two";
+    unsigned long resfreshTime = 497;
+    byte ssLEDPerSegment = 1;                            //The number of LEDs in each segment of the 7 seg (total per digit is 7 * ssLedPerSegment)
+    byte ssLEDPerPeriod = 1;                              //A Period will have 1x and a Colon will have 2x
+    int ssStartLED = 0;                                  //The pixel that the display starts at. 
+    //  HH - 0-23. hh - 1-12, kk - 1-24 hours
+    //  MM or mm - 0-59 minutes
+    //  SS or ss = 0-59 seconds
+    //  : for a colon
+    //  All others for alpha numeric, (will be blank when displaying time)
+    char ssDisplayMask[WLED_SS_BUFFLEN+1] = "HHMMSS";  //Physical Display Mask, this should reflect physical equipment.
+    // ssDisplayConfig
+    //           -------
+    //         /   A   /          0 - EDCGFAB
+    //        / F     / B         1 - EDCBAFG
+    //       /       /            2 - GCDEFAB
+    //       -------              3 - GBAFEDC
+    //     /   G   /              4 - FABGEDC
+    //    / E     / C             5 - FABCDEG
+    //   /       /
+    //   -------
+    //      D
+    byte ssDisplayConfig = 5;            //Physical configuration of the Seven segment display
+    char ssDisplayMessage[50] = "ABCDEF";//Message that can scroll across the display
+    bool ssDoDisplayMessage = 1;         //If not, display time. 
+    int ssDisplayMessageTime = 10;       //Length of time to display message before returning to time, in seconds. <0 would be indefinite. High Select of ssDisplayMessageTime and time to finish current scroll
+    int ssScrollSpeed = 500;             //Time between advancement of extended message scrolling, in milliseconds.
 
-    // These config variables have defaults set inside readFromConfig()
-    int testInt;
-    long testLong;
-    int8_t testPins[2];
+
+
+    void _overlaySevenSegmentProcess()
+    {
+      //Do time for now.
+      if(!ssDoDisplayMessage)
+      {
+        //Format the ssDisplayBuffer based on ssDisplayMask
+        for(int index = 0; index < WLED_SS_BUFFLEN; index++)
+        {
+          //Only look for time formatting if there are at least 2 characters left in the buffer.
+          if((index < WLED_SS_BUFFLEN - 1) && (ssDisplayMask[index] == ssDisplayMask[index + 1]))
+          {
+            int timeVar = 0;
+            switch(ssDisplayMask[index])
+            {
+              case 'h':
+                timeVar = hourFormat12(localTime);
+                break;
+              case 'H':
+                timeVar = hour(localTime);
+                break;
+              case 'k':
+                timeVar = hour(localTime) + 1;
+                break;
+              case 'M':
+              case 'm':
+                timeVar = minute(localTime);
+                break;
+              case 'S':
+              case 's':
+                timeVar = second(localTime);
+                break;
+
+            }
+
+            //Only want to leave a blank in the hour formatting. 
+            if((ssDisplayMask[index] == 'h' || ssDisplayMask[index] == 'H' || ssDisplayMask[index] == 'k') && timeVar < 10)
+              ssDisplayBuffer[index] = ' ';
+            else
+              ssDisplayBuffer[index] = 0x30 + (timeVar / 10);
+            ssDisplayBuffer[index + 1] = 0x30 + (timeVar % 10);  
+
+            //Need to increment the index because of the second digit.
+            index++;
+          }
+          else 
+          {
+            ssDisplayBuffer[index] = (ssDisplayMask[index] == ':' ? ':' : ' ');
+          }
+        }
+      }
+      else
+      {
+        /* This will handle displaying a message and the scrolling of the message if its longer than the buffer length */
+        //TODO: Progress message starting point depending on display length, message length, display time, etc...
+
+        //Display message
+        for(int index = 0; index < WLED_SS_BUFFLEN; index++){
+          ssDisplayBuffer[index] = ssDisplayMessage[ssDisplayMessageIdx+index];
+        }
+      }
+    }
+    
+    void _overlaySevenSegmentDraw()
+    {
+      
+      //Start pixels at ssStartLED, Use ssLEDPerSegment, ssLEDPerPeriod, ssDisplayBuffer
+      int indexLED = 0;
+      for(int indexBuffer = 0; indexBuffer < WLED_SS_BUFFLEN; indexBuffer++)
+      {
+        if(ssDisplayBuffer[indexBuffer] == 0) break;
+        else if(ssDisplayBuffer[indexBuffer] == '.')
+        {
+          //Won't ever turn off LED lights for a period. (or will we?)
+          indexLED += ssLEDPerPeriod; 
+          continue;
+        }
+        else if(ssDisplayBuffer[indexBuffer] == ':')
+        {
+          //Turn off colon if odd second?
+          indexLED += ssLEDPerPeriod * 2;
+        }
+        else if(ssDisplayBuffer[indexBuffer] == ' ')
+        {
+          //Turn off all 7 segments.
+          _overlaySevenSegmentLEDOutput(0, indexLED);
+          indexLED += ssLEDPerSegment * 7;
+        }
+        else
+        {
+          //Turn off correct segments.
+          _overlaySevenSegmentLEDOutput(_overlaySevenSegmentGetCharMask(ssDisplayBuffer[indexBuffer]), indexLED);
+          indexLED += ssLEDPerSegment * 7;
+        }
+        
+      }
+
+    }
+
+    void _overlaySevenSegmentLEDOutput(char mask, int indexLED)
+    {
+      for(char index = 0; index < 7; index++)
+      {
+        if((mask & (0x40 >> index)) != (0x40 >> index))
+        {
+          for(int numPerSeg = 0; numPerSeg < ssLEDPerSegment;  numPerSeg++)
+          {
+            strip.setPixelColor(indexLED, 0x000000);
+          }
+        }
+        indexLED += ssLEDPerSegment;
+      }
+    }
+
+    char _overlaySevenSegmentGetCharMask(char var)
+    {
+      //ssCharacterMask
+      if(var > 0x60) //Essentially a "toLower" call. 
+        var -= 0x20;
+      if(var > 0x9) //Meaning it is a non-numeric
+          var -= 0x07;
+      var -= 0x30; //Shift ascii down to start numeric 0 at index 0.
+      
+      char mask = ssCharacterMask[var];
+    /*
+      0 - EDCGFAB
+      1 - EDCBAFG
+      2 - GCDEFAB
+      3 - GBAFEDC
+      4 - FABGEDC
+      5 - FABCDEG
+      */
+      switch(ssDisplayConfig)
+      {
+        case 1:
+          mask = _overlaySevenSegmentSwapBits(mask, 0, 3, 1);
+          mask = _overlaySevenSegmentSwapBits(mask, 1, 2, 1);
+          break;
+        case 2:
+          mask = _overlaySevenSegmentSwapBits(mask, 3, 6, 1);
+          mask = _overlaySevenSegmentSwapBits(mask, 4, 5, 1);
+          break;
+        case 3:
+          mask = _overlaySevenSegmentSwapBits(mask, 0, 4, 3);
+          mask = _overlaySevenSegmentSwapBits(mask, 3, 6, 1);
+          mask = _overlaySevenSegmentSwapBits(mask, 4, 5, 1);
+          break;
+        case 4:
+          mask = _overlaySevenSegmentSwapBits(mask, 0, 4, 3);
+          break;
+        case 5:
+          mask = _overlaySevenSegmentSwapBits(mask, 0, 4, 3);
+          mask = _overlaySevenSegmentSwapBits(mask, 0, 3, 1);
+          mask = _overlaySevenSegmentSwapBits(mask, 1, 2, 1);
+          break;
+      }
+      return mask;
+    }
+
+    char _overlaySevenSegmentSwapBits(char x, char p1, char p2, char n)
+    {
+        /* Move all bits of first set to rightmost side */
+        char set1 = (x >> p1) & ((1U << n) - 1);
+    
+        /* Move all bits of second set to rightmost side */
+        char set2 = (x >> p2) & ((1U << n) - 1);
+    
+        /* Xor the two sets */
+        char Xor = (set1 ^ set2);
+    
+        /* Put the Xor bits back to their original positions */
+        Xor = (Xor << p1) | (Xor << p2);
+    
+        /* Xor the 'Xor' with the original number so that the 
+        two sets are swapped */
+        char result = x ^ Xor;
+    
+        return result;
+    }  
 
   public:
     //Functions called by WLED
@@ -42,10 +246,14 @@ class SevenSegmentDisplay : public Usermod {
      *    Instead, use a timer check as shown here.
      */
     void loop() {
-      if (millis() - lastTime > 1000) {
-        //Serial.println("I'm alive!");
-        lastTime = millis();
+      if (millis() - lastRefresh > resfreshTime) {
+        _overlaySevenSegmentProcess();
+        lastRefresh = millis();
       }
+    }
+
+    void handleOverlayDraw(){
+      _overlaySevenSegmentDraw();
     }
 
 void onMqttConnect(bool sessionPresent)
@@ -242,6 +450,5 @@ bool onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
       return USERMOD_ID_SEVEN_SEGMENT_DISPLAY;
     }
 
-   //More methods can be added in the future, this example will then be extended.
-   //Your usermod will remain compatible as it does not need to implement all methods from the Usermod base class!
+  
 };
