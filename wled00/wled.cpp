@@ -537,6 +537,7 @@ void WLED::initAP(bool resetAP)
       udp2Connected = notifier2Udp.begin(udpPort2);
     }
     e131.begin(false, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
+    ddp.begin(false, DDP_DEFAULT_PORT);
 
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
@@ -739,6 +740,7 @@ void WLED::initInterfaces()
   initBlynk(blynkApiKey, blynkHost, blynkPort);
 #endif
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
+  ddp.begin(false, DDP_DEFAULT_PORT);
   reconnectHue();
   initMqtt();
   interfacesInited = true;

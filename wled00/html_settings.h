@@ -277,18 +277,18 @@ Make this instance discoverable: <input type="checkbox" name="NB"><h3>Realtime
 </h3>Receive UDP realtime: <input type="checkbox" name="RD"><br><br><i>
 Network DMX input</i><br>Type: <select name="DI" onchange="SP(),adj()"><option 
 value="5568">E1.31 (sACN)</option><option value="6454">Art-Net</option><option 
-value="4048">DDP</option><option value="0" selected="selected">Custom port
-</option></select><br><div id="xp">Port: <input name="EP" type="number" min="1" 
-max="65535" value="5568" class="d5" required><br></div>Multicast: <input 
-type="checkbox" name="EM"><br>Start universe: <input name="EU" type="number" 
-min="0" max="63999" required><br><i>Reboot required.</i> Check out <a 
-href="https://github.com/LedFx/LedFx" target="_blank">LedFx</a>!<br>
-Skip out-of-sequence packets: <input type="checkbox" name="ES"><br>
-DMX start address: <input name="DA" type="number" min="0" max="510" required>
-<br>DMX mode: <select name="DM"><option value="0">Disabled</option><option 
-value="1">Single RGB</option><option value="2">Single DRGB</option><option 
-value="3">Effect</option><option value="4">Multi RGB</option><option value="5">
-Dimmer + Multi RGB</option><option value="6">Multi RGBW</option></select><br><a 
+value="0" selected="selected">Custom port</option></select><br><div id="xp">
+Port: <input name="EP" type="number" min="1" max="65535" value="5568" 
+class="d5" required><br></div>Multicast: <input type="checkbox" name="EM"><br>
+Start universe: <input name="EU" type="number" min="0" max="63999" required><br>
+<i>Reboot required.</i> Check out <a href="https://github.com/LedFx/LedFx" 
+target="_blank">LedFx</a>!<br>Skip out-of-sequence packets: <input 
+type="checkbox" name="ES"><br>DMX start address: <input name="DA" type="number" 
+min="0" max="510" required><br>DMX mode: <select name="DM"><option value="0">
+Disabled</option><option value="1">Single RGB</option><option value="2">
+Single DRGB</option><option value="3">Effect</option><option value="4">Multi RGB
+</option><option value="5">Dimmer + Multi RGB</option><option value="6">
+Multi RGBW</option></select><br><a 
 href="https://github.com/Aircoookie/WLED/wiki/E1.31-DMX" target="_blank">
 E1.31 info</a><br>Timeout: <input name="ET" type="number" min="1" max="65000" 
 required> ms<br>Force max brightness: <input type="checkbox" name="FB"><br>
