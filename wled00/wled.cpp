@@ -120,6 +120,10 @@ void WiFiEvent(WiFiEvent_t event)
 
 void WLED::loop()
 {
+  #ifdef WLED_DEBUG
+  static unsigned long maxUsermodMillis = 0;
+  #endif
+
   handleTime();
   handleIR();        // 2nd call to function needed for ESP32 to return valid results -- should be good for ESP8266, too
   handleConnection();
@@ -130,7 +134,15 @@ void WLED::loop()
   handleDMX();
 #endif
   userLoop();
+
+  #ifdef WLED_DEBUG
+  unsigned long usermodMillis = millis();
+  #endif
   usermods.loop();
+  #ifdef WLED_DEBUG
+  usermodMillis = millis() - usermodMillis;
+  if (usermodMillis > maxUsermodMillis) maxUsermodMillis = usermodMillis;
+  #endif
 
   yield();
   handleIO();
@@ -159,7 +171,9 @@ void WLED::loop()
     yield();
 
     handleHue();
+#ifndef WLED_DISABLE_BLYNK
     handleBlynk();
+#endif
 
     yield();
 
@@ -217,14 +231,14 @@ void WLED::loop()
     yield();
     serializeConfig();
   }
-  
+
   yield();
   handleWs();
   handleStatusLED();
 
-// DEBUG serial logging
+// DEBUG serial logging (every 30s)
 #ifdef WLED_DEBUG
-  if (millis() - debugTime > 9999) {
+  if (millis() - debugTime > 29999) {
     DEBUG_PRINTLN(F("---DEBUG INFO---"));
     DEBUG_PRINT(F("Runtime: "));       DEBUG_PRINTLN(millis());
     DEBUG_PRINT(F("Unix time: "));     toki.printTime(toki.getTime());
@@ -236,17 +250,19 @@ void WLED::loop()
     } else
       DEBUG_PRINTLN(F("No PSRAM"));
     #endif
-    DEBUG_PRINT(F("Wifi state: "));    DEBUG_PRINTLN(WiFi.status());
+    DEBUG_PRINT(F("Wifi state: "));      DEBUG_PRINTLN(WiFi.status());
 
     if (WiFi.status() != lastWifiState) {
       wifiStateChangedTime = millis();
     }
     lastWifiState = WiFi.status();
-    DEBUG_PRINT(F("State time: "));    DEBUG_PRINTLN(wifiStateChangedTime);
-    DEBUG_PRINT(F("NTP last sync: ")); DEBUG_PRINTLN(ntpLastSyncTime);
-    DEBUG_PRINT(F("Client IP: "));     DEBUG_PRINTLN(Network.localIP());
-    DEBUG_PRINT(F("Loops/sec: "));     DEBUG_PRINTLN(loops / 10);
+    DEBUG_PRINT(F("State time: "));      DEBUG_PRINTLN(wifiStateChangedTime);
+    DEBUG_PRINT(F("NTP last sync: "));   DEBUG_PRINTLN(ntpLastSyncTime);
+    DEBUG_PRINT(F("Client IP: "));       DEBUG_PRINTLN(Network.localIP());
+    DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 30);
+    DEBUG_PRINT(F("Max UM time[ms]: ")); DEBUG_PRINTLN(maxUsermodMillis);
     loops = 0;
+    maxUsermodMillis = 0;
     debugTime = millis();
   }
   loops++;
@@ -277,7 +293,6 @@ void WLED::setup()
 #endif
   DEBUG_PRINT(F("heap "));
   DEBUG_PRINTLN(ESP.getFreeHeap());
-  registerUsermods();
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
@@ -296,6 +311,9 @@ void WLED::setup()
 #ifdef WLED_USE_DMX //reserve GPIO2 as hardcoded DMX pin
   pinManager.allocatePin(2, true, PinOwner::DMX);
 #endif
+
+  DEBUG_PRINTLN(F("Registering usermods ..."));
+  registerUsermods();
 
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
@@ -329,6 +347,7 @@ void WLED::setup()
   DEBUG_PRINTLN(F("Usermods setup"));
   userSetup();
   usermods.setup();
+
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
   WiFi.persistent(false);
@@ -396,13 +415,14 @@ void WLED::beginStrip()
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
-  if (bootPreset > 0) {
-    applyPreset(bootPreset, CALL_MODE_INIT);
-  } else if (turnOnAtBoot) {
+  if (turnOnAtBoot) {
     if (briS > 0) bri = briS;
     else if (bri == 0) bri = 128;
   } else {
     briLast = briS; bri = 0;
+  }
+  if (bootPreset > 0) {
+    applyPreset(bootPreset, CALL_MODE_INIT);
   }
   colorUpdated(CALL_MODE_INIT);
 
@@ -439,6 +459,7 @@ void WLED::initAP(bool resetAP)
       udp2Connected = notifier2Udp.begin(udpPort2);
     }
     e131.begin(false, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
+    ddp.begin(false, DDP_DEFAULT_PORT);
 
     dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
     dnsServer.start(53, "*", WiFi.softAPIP());
@@ -591,10 +612,10 @@ void WLED::initConnection()
 
 void WLED::initInterfaces()
 {
-  IPAddress ipAddress = Network.localIP();
   DEBUG_PRINTLN(F("Init STA interfaces"));
 
 #ifndef WLED_DISABLE_HUESYNC
+  IPAddress ipAddress = Network.localIP();
   if (hueIP[0] == 0) {
     hueIP[0] = ipAddress[0];
     hueIP[1] = ipAddress[1];
@@ -612,14 +633,13 @@ void WLED::initInterfaces()
 #endif
 
   strip.service();
+
   // Set up mDNS responder:
   if (strlen(cmDNS) > 0) {
-  #ifndef WLED_DISABLE_OTA
-    if (!aOtaEnabled) //ArduinoOTA begins mDNS for us if enabled
-      MDNS.begin(cmDNS);
-  #else
+    // "end" must be called before "begin" is called a 2nd time
+    // see https://github.com/esp8266/Arduino/issues/7213
+    MDNS.end();
     MDNS.begin(cmDNS);
-  #endif
 
     DEBUG_PRINTLN(F("mDNS started"));
     MDNS.addService("http", "tcp", 80);
@@ -642,25 +662,27 @@ void WLED::initInterfaces()
   initBlynk(blynkApiKey, blynkHost, blynkPort);
 #endif
   e131.begin(e131Multicast, e131Port, e131Universe, E131_MAX_UNIVERSE_COUNT);
+  ddp.begin(false, DDP_DEFAULT_PORT);
   reconnectHue();
   initMqtt();
   interfacesInited = true;
   wasConnected = true;
 }
 
-byte stacO = 0;
-uint32_t lastHeap;
-unsigned long heapTime = 0;
-
 void WLED::handleConnection()
 {
-  if (millis() < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
+  static byte stacO = 0;
+  static uint32_t lastHeap = UINT32_MAX;
+  static unsigned long heapTime = 0;
+  unsigned long now = millis();
+
+  if (now < 2000 && (!WLED_WIFI_CONFIGURED || apBehavior == AP_BEHAVIOR_ALWAYS))
     return;
   if (lastReconnectAttempt == 0)
     initConnection();
 
   // reconnect WiFi to clear stale allocations if heap gets too low
-  if (millis() - heapTime > 5000) {
+  if (now - heapTime > 5000) {
     uint32_t heap = ESP.getFreeHeap();
     if (heap < JSON_BUFFER_SIZE+512 && lastHeap < JSON_BUFFER_SIZE+512) {
       DEBUG_PRINT(F("Heap too low! "));
@@ -668,7 +690,7 @@ void WLED::handleConnection()
       forceReconnect = true;
     }
     lastHeap = heap;
-    heapTime = millis();
+    heapTime = now;
   }
 
   byte stac = 0;
@@ -688,7 +710,7 @@ void WLED::handleConnection()
         if (stac)
           WiFi.disconnect();        // disable search so that AP can work
         else
-          initConnection();        // restart search
+          initConnection();         // restart search
       }
     }
   }
@@ -706,9 +728,9 @@ void WLED::handleConnection()
       interfacesInited = false;
       initConnection();
     }
-    if (millis() - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED)
+    if (now - lastReconnectAttempt > ((stac) ? 300000 : 20000) && WLED_WIFI_CONFIGURED)
       initConnection();
-    if (!apActive && millis() - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN))
+    if (!apActive && now - lastReconnectAttempt > 12000 && (!wasConnected || apBehavior == AP_BEHAVIOR_NO_CONN))
       initAP();
   } else if (!interfacesInited) {        // newly connected
     DEBUG_PRINTLN("");

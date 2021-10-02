@@ -10,6 +10,20 @@
 #include "bus_wrapper.h"
 #include <Arduino.h>
 
+// enable additional debug output
+#ifdef WLED_DEBUG
+  #ifndef ESP8266
+  #include <rom/rtc.h>
+  #endif
+  #define DEBUG_PRINT(x) Serial.print(x)
+  #define DEBUG_PRINTLN(x) Serial.println(x)
+  #define DEBUG_PRINTF(x...) Serial.printf(x)
+#else
+  #define DEBUG_PRINT(x)
+  #define DEBUG_PRINTLN(x)
+  #define DEBUG_PRINTF(x...)
+#endif
+
 //temporary struct for passing bus configuration to bus
 struct BusConfig {
   uint8_t type = TYPE_WS2812_RGB;
@@ -23,7 +37,8 @@ struct BusConfig {
     type = busType; count = len; start = pstart;
     colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
-    if (type > 47) nPins = 2;
+    if (type >= 10 && type <= 15) nPins = 4;
+    else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
   }
@@ -74,7 +89,7 @@ class Bus {
   }
 
   virtual uint16_t getLength() {
-    return 1;
+    return 1; // is this ok? shouldn't it be 0 in virtual function?
   }
 
   virtual void setColorOrder() {}
@@ -135,7 +150,7 @@ class BusDigital : public Bus {
     _busPtr = PolyBus::create(_iType, _pins, _len, nr);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
-    //Serial.printf("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
+    DEBUG_PRINTF("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
   };
 
   inline void show() {
@@ -201,7 +216,7 @@ class BusDigital : public Bus {
   }
 
   void cleanup() {
-    //Serial.println("Digital Cleanup");
+    DEBUG_PRINTLN("Digital Cleanup");
     PolyBus::cleanup(_busPtr, _iType);
     _iType = I_NONE;
     _valid = false;
@@ -227,6 +242,7 @@ class BusDigital : public Bus {
 class BusPwm : public Bus {
   public:
   BusPwm(BusConfig &bc) : Bus(bc.type, bc.start) {
+    _valid = false;
     if (!IS_PWM(bc.type)) return;
     uint8_t numPins = NUM_PWM_PINS(bc.type);
 
@@ -280,10 +296,12 @@ class BusPwm : public Bus {
 
   //does no index check
   uint32_t getPixelColor(uint16_t pix) {
+    if (!_valid) return 0;
     return ((_data[3] << 24) | (_data[0] << 16) | (_data[1] << 8) | (_data[2]));
   }
 
   void show() {
+    if (!_valid) return;
     uint8_t numPins = NUM_PWM_PINS(_type);
     for (uint8_t i = 0; i < numPins; i++) {
       uint8_t scaled = (_data[i] * _bri) / 255;
@@ -328,19 +346,146 @@ class BusPwm : public Bus {
   void deallocatePins() {
     uint8_t numPins = NUM_PWM_PINS(_type);
     for (uint8_t i = 0; i < numPins; i++) {
+      pinManager.deallocatePin(_pins[i], PinOwner::BusPwm);
       if (!pinManager.isPinOk(_pins[i])) continue;
       #ifdef ESP8266
       digitalWrite(_pins[i], LOW); //turn off PWM interrupt
       #else
       if (_ledcStart < 16) ledcDetachPin(_pins[i]);
       #endif
-      pinManager.deallocatePin(_pins[i], PinOwner::BusPwm);
     }
     #ifdef ARDUINO_ARCH_ESP32
     pinManager.deallocateLedc(_ledcStart, numPins);
     #endif
   }
 };
+
+
+class BusNetwork : public Bus {
+  public:
+    BusNetwork(BusConfig &bc) : Bus(bc.type, bc.start) {
+      _valid = false;
+//      switch (bc.type) {
+//        case TYPE_NET_ARTNET_RGB:
+//          _rgbw = false;
+//          _UDPtype = 2;
+//          break;
+//        case TYPE_NET_E131_RGB:
+//          _rgbw = false;
+//          _UDPtype = 1;
+//          break;
+//        case TYPE_NET_DDP_RGB:
+//          _rgbw = false;
+//          _UDPtype = 0;
+//          break;
+//        default:
+          _rgbw = false;
+          _UDPtype = bc.type - TYPE_NET_DDP_RGB;
+//          break;
+//      }
+      _UDPchannels = _rgbw ? 4 : 3;
+      //_rgbw |= bc.rgbwOverride;  // RGBW override in bit 7 or can have a special type
+      _data = (byte *)malloc(bc.count * _UDPchannels);
+      if (_data == nullptr) return;
+      memset(_data, 0, bc.count * _UDPchannels);
+      _len = bc.count;
+      _colorOrder = bc.colorOrder;
+      _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
+      _broadcastLock = false;
+      _valid = true;
+      _data2 = (byte *)malloc(_len * _UDPchannels);
+    };
+
+  void setPixelColor(uint16_t pix, uint32_t c) {
+    if (!_valid || pix >= _len) return;
+    uint16_t offset = pix * _UDPchannels;
+    _data[offset]   = 0xFF & (c >> 16);
+    _data[offset+1] = 0xFF & (c >>  8);
+    _data[offset+2] = 0xFF & (c      );
+    if (_rgbw) _data[offset+3] = 0xFF & (c >> 24);
+  }
+
+  uint32_t getPixelColor(uint16_t pix) {
+    if (!_valid || pix >= _len) return 0;
+    uint16_t offset = pix * _UDPchannels;
+    // behave as NeoPixelBus
+    return (
+      (_rgbw ? (scale8(_data[offset+3], _bri) << 24) : 0)
+      | (scale8(_data[offset]  , _bri) << 16)
+      | (scale8(_data[offset+1], _bri) <<  8)
+      | (scale8(_data[offset+2], _bri)      )
+    );
+  }
+
+  void show() {
+    if (!_valid || !canShow()) return;
+    _broadcastLock = true;
+    // apply brightness to second buffer
+    if (_data2 == nullptr) {
+      // but display original buffer if memory allocation failed
+      realtimeBroadcast(_UDPtype, _client, _len, _data, _rgbw);
+    } else {
+      for (uint16_t pix=0; pix<_len; pix++) {
+        uint16_t offset = pix * _UDPchannels;
+        _data2[offset  ] = scale8(_data[offset  ], _bri);
+        _data2[offset+1] = scale8(_data[offset+1], _bri);
+        _data2[offset+2] = scale8(_data[offset+2], _bri);
+        if (_rgbw) _data2[offset+3] = scale8(_data[offset+3], _bri);
+      }
+      realtimeBroadcast(_UDPtype, _client, _len, _data2, _rgbw);
+    }
+    _broadcastLock = false;
+  }
+
+  inline bool canShow() {
+    // this should be a return value from UDP routine if it is still sending data out
+    return !_broadcastLock;
+  }
+
+  inline void setBrightness(uint8_t b) {
+    _bri = b;
+  }
+
+  uint8_t getPins(uint8_t* pinArray) {
+    for (uint8_t i = 0; i < 4; i++) {
+      pinArray[i] = _client[i];
+    }
+    return 4;
+  }
+
+  inline bool isRgbw() {
+    return _rgbw;
+  }
+
+  inline uint16_t getLength() {
+    return _len;
+  }
+
+  void cleanup() {
+    _type = I_NONE;
+    _valid = false;
+    if (_data != nullptr) free(_data);
+    _data = nullptr;
+    if (_data2 != nullptr) free(_data2);
+    _data2 = nullptr;
+  }
+
+  ~BusNetwork() {
+    cleanup();
+  }
+
+  private:
+    IPAddress _client;
+    uint16_t  _len = 0;
+    uint8_t   _colorOrder;
+    uint8_t   _bri = 255;
+    uint8_t   _UDPtype;
+    uint8_t   _UDPchannels;
+    bool      _rgbw;
+    bool      _broadcastLock;
+    byte     *_data, *_data2;
+};
+
 
 class BusManager {
   public:
@@ -352,7 +497,7 @@ class BusManager {
   static uint32_t memUsage(BusConfig &bc) {
     uint8_t type = bc.type;
     uint16_t len = bc.count;
-    if (type < 32) {
+    if (type > 15 && type < 32) {
       #ifdef ESP8266
         if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
@@ -365,15 +510,17 @@ class BusManager {
         return len*6;
       #endif
     }
-
-    if (type > 31 && type < 48) return 5;
+    if (type >= 10 && type <= 15) return len*6; // double buffer for network
+    if (type > 31 && type < 48)   return 5;
     if (type == 44 || type == 45) return len*4; //RGBW
     return len*3;
   }
   
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (IS_DIGITAL(bc.type)) {
+    if (bc.type>=10 && bc.type<=15) {
+      busses[numBusses] = new BusNetwork(bc);
+    } else if (IS_DIGITAL(bc.type)) {
       busses[numBusses] = new BusDigital(bc, numBusses);
     } else {
       busses[numBusses] = new BusPwm(bc);
@@ -444,6 +591,7 @@ class BusManager {
     return len;
   }
 
+  // a workaround
   static inline bool isRgbw(uint8_t type) {
     return Bus::isRgbw(type);
   }

@@ -195,6 +195,7 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte 
 
 //udp.cpp
 void notify(byte callMode, bool followUp=false);
+uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, bool isRGBW=false);
 void realtimeLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC);
 void handleNotifications();
 void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
@@ -224,14 +225,11 @@ class UsermodManager {
 
   public:
     void loop();
-
     void setup();
     void connected();
-
     void addToJsonState(JsonObject& obj);
     void addToJsonInfo(JsonObject& obj);
     void readFromJsonState(JsonObject& obj);
-
     void addToConfig(JsonObject& obj);
     bool readFromConfig(JsonObject& obj);
     void onMqttConnect(bool sessionPresent);
