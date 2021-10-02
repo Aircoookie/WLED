@@ -252,23 +252,21 @@ class UsermodTemperature : public Usermod {
     bool readFromConfig(JsonObject &root) {
       // we look for JSON object: {"Temperature": {"pin": 0, "degC": true}}
       int8_t newTemperaturePin = temperaturePin;
+      DEBUG_PRINT(FPSTR(_name));
 
       JsonObject top = root[FPSTR(_name)];
       if (top.isNull()) {
-        DEBUG_PRINT(FPSTR(_name));
         DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
         return false;
       }
 
       enabled           = top[FPSTR(_enabled)] | enabled;
       newTemperaturePin = top["pin"] | newTemperaturePin;
-//      newTemperaturePin = min(33,max(-1,(int)newTemperaturePin)); // bounds check
       degC              = top["degC"] | degC;
       readingInterval   = top[FPSTR(_readInterval)] | readingInterval/1000;
       readingInterval   = min(120,max(10,(int)readingInterval)) * 1000;  // convert to ms
       parasite          = top[FPSTR(_parasite)] | parasite;
 
-      DEBUG_PRINT(FPSTR(_name));
       if (!initDone) {
         // first run: reading from cfg.json
         temperaturePin = newTemperaturePin;
