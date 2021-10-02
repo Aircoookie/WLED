@@ -89,7 +89,7 @@ class Bus {
   }
 
   virtual uint16_t getLength() {
-    return 1; // is this ok? shouldn't it be 0 in virtual function?
+    return 1;
   }
 
   virtual void setColorOrder() {}
