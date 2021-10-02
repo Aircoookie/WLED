@@ -7,11 +7,13 @@
 class SevenSegmentDisplay : public Usermod {
 
   #define WLED_SS_BUFFLEN 6
+  #define REFRESHTIME 497
   private:
     //Private class members. You can declare variables and functions only accessible to your usermod here
     unsigned long lastRefresh = 0;
+    unsigned long lastCharacterStep = 0;
     char ssDisplayBuffer[WLED_SS_BUFFLEN+1]; //Runtime buffer of what should be displayed.
-    char ssCharacterMask[36] = {0x77,0x11,0x6B,0x3B,0x1D,0x3E,0x7E,0x13,0x7F,0x1F,0x5F,0x7B,0x66,0x79,0x6E,0x4E,0x76,0x5D,0x44,0x71,0x5E,0x64,0x27,0x58,0x77,0x4F,0x1F,0x48,0x3E,0x6C,0x75,0x25,0x7D,0x2A,0x3D,0x6B};
+    char ssCharacterMask[36] = {0x77,0x11,0x6B,0x3B,0x1D,0x3E,0x7E,0x13,0x7F,0x1F,0x5F,0x7C,0x66,0x79,0x6E,0x4E,0x76,0x5D,0x44,0x71,0x5E,0x64,0x27,0x58,0x77,0x4F,0x1F,0x48,0x3E,0x6C,0x75,0x25,0x7D,0x2A,0x3D,0x6B};
     int ssDisplayMessageIdx = 0;         //Position of the start of the message to be physically displayed.
 
 
@@ -20,13 +22,14 @@ class SevenSegmentDisplay : public Usermod {
     byte ssLEDPerSegment = 1;                            //The number of LEDs in each segment of the 7 seg (total per digit is 7 * ssLedPerSegment)
     byte ssLEDPerPeriod = 1;                              //A Period will have 1x and a Colon will have 2x
     int ssStartLED = 0;                                  //The pixel that the display starts at. 
-    //  HH - 0-23. hh - 1-12, kk - 1-24 hours
+    /*  HH - 0-23. hh - 1-12, kk - 1-24 hours
     //  MM or mm - 0-59 minutes
     //  SS or ss = 0-59 seconds
     //  : for a colon
     //  All others for alpha numeric, (will be blank when displaying time)
+    */
     char ssDisplayMask[WLED_SS_BUFFLEN+1] = "HHMMSS";  //Physical Display Mask, this should reflect physical equipment.
-    // ssDisplayConfig
+    /* ssDisplayConfig
     //           -------
     //         /   A   /          0 - EDCGFAB
     //        / F     / B         1 - EDCBAFG
@@ -37,15 +40,15 @@ class SevenSegmentDisplay : public Usermod {
     //   /       /
     //   -------
     //      D
+    */
     byte ssDisplayConfig = 5;            //Physical configuration of the Seven segment display
-    char ssDisplayMessage[50] = "ABCDEF";//Message that can scroll across the display
-    bool ssDoDisplayMessage = 1;         //If not, display time. 
-    int ssDisplayMessageTime = 10;       //Length of time to display message before returning to time, in seconds. <0 would be indefinite. High Select of ssDisplayMessageTime and time to finish current scroll
-    int ssScrollSpeed = 500;             //Time between advancement of extended message scrolling, in milliseconds.
+    char ssDisplayMessage[50] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";//Message that can scroll across the display
+    bool ssDoDisplayMessage = false;         //If not, display time. 
+    unsigned long ssScrollSpeed = 1000;             //Time between advancement of extended message scrolling, in milliseconds.
 
 
 
-    void _overlaySevenSegmentProcess()
+    unsigned long _overlaySevenSegmentProcess()
     {
       //Do time for now.
       if(!ssDoDisplayMessage)
@@ -94,16 +97,33 @@ class SevenSegmentDisplay : public Usermod {
             ssDisplayBuffer[index] = (ssDisplayMask[index] == ':' ? ':' : ' ');
           }
         }
+        return REFRESHTIME;
       }
       else
       {
         /* This will handle displaying a message and the scrolling of the message if its longer than the buffer length */
         //TODO: Progress message starting point depending on display length, message length, display time, etc...
 
+        //Increase the displayed message index to progress it one character.
+        ssDisplayMessageIdx++;
+
+        //Check to see if the message has scrolled completely
+        size_t len = strlen(ssDisplayMessage); //really should grab this when the message is set. TODO
+        if(ssDisplayMessageIdx > len)
+        {
+          //If it has displayed the whole message and the display time has exceeded, go back to clock.
+          ssDisplayMessageIdx = 0;
+          ssDoDisplayMessage = false;
+          return REFRESHTIME;
+        }
         //Display message
         for(int index = 0; index < WLED_SS_BUFFLEN; index++){
-          ssDisplayBuffer[index] = ssDisplayMessage[ssDisplayMessageIdx+index];
+          if(ssDisplayMessageIdx + index < len)
+            ssDisplayBuffer[index] = ssDisplayMessage[ssDisplayMessageIdx+index];
+          else
+            ssDisplayBuffer[index] = ' ';
         }
+        return ssScrollSpeed;
       }
     }
     
@@ -163,7 +183,7 @@ class SevenSegmentDisplay : public Usermod {
       //ssCharacterMask
       if(var > 0x60) //Essentially a "toLower" call. 
         var -= 0x20;
-      if(var > 0x9) //Meaning it is a non-numeric
+      if(var > 0x39) //Meaning it is a non-numeric
           var -= 0x07;
       var -= 0x30; //Shift ascii down to start numeric 0 at index 0.
       
@@ -237,17 +257,10 @@ class SevenSegmentDisplay : public Usermod {
 
     /*
      * loop() is called continuously. Here you can check for events, read sensors, etc.
-     * 
-     * Tips:
-     * 1. You can use "if (WLED_CONNECTED)" to check for a successful network connection.
-     *    Additionally, "if (WLED_MQTT_CONNECTED)" is available to check for a connection to an MQTT broker.
-     * 
-     * 2. Try to avoid using the delay() function. NEVER use delays longer than 10 milliseconds.
-     *    Instead, use a timer check as shown here.
      */
     void loop() {
       if (millis() - lastRefresh > resfreshTime) {
-        _overlaySevenSegmentProcess();
+        resfreshTime = _overlaySevenSegmentProcess();
         lastRefresh = millis();
       }
     }
