@@ -1,4 +1,5 @@
 #include "wled.h"
+#include "src/dependencies/json/ArduinoJson-v6.h"
 
 /*
  * UDP sync notifier / Realtime / Hyperion / TPM2.NET
@@ -89,7 +90,6 @@ void notify(byte callMode, bool followUp)
   notificationTwoRequired = (followUp)? false:notifyTwice;
 }
 
-
 void realtimeLock(uint32_t timeoutMs, byte md)
 {
   if (!realtimeMode && !realtimeOverride){
@@ -101,6 +101,10 @@ void realtimeLock(uint32_t timeoutMs, byte md)
 
   realtimeTimeout = millis() + timeoutMs;
   if (timeoutMs == 255001 || timeoutMs == 65000) realtimeTimeout = UINT32_MAX;
+  // if strip is off (bri==0) and not already in RTM
+  if (bri == 0 && !realtimeMode) {
+    strip.setBrightness(scaledBri(briLast));
+  }
   realtimeMode = md;
 
   if (arlsForceMaxBri && !realtimeOverride) strip.setBrightness(scaledBri(255));
@@ -513,4 +517,109 @@ void sendSysInfoUDP()
   notifier2Udp.beginPacket(broadcastIP, udpPort2);
   notifier2Udp.write(data, sizeof(data));
   notifier2Udp.endPacket();
+}
+
+
+/*********************************************************************************************\
+ * Art-Net, DDP, E131 output - work in progress
+\*********************************************************************************************/
+
+#define DDP_HEADER_LEN 10
+#define DDP_SYNCPACKET_LEN 10
+
+#define DDP_FLAGS1_VER 0xc0  // version mask
+#define DDP_FLAGS1_VER1 0x40 // version=1
+#define DDP_FLAGS1_PUSH 0x01
+#define DDP_FLAGS1_QUERY 0x02
+#define DDP_FLAGS1_REPLY 0x04
+#define DDP_FLAGS1_STORAGE 0x08
+#define DDP_FLAGS1_TIME 0x10
+
+#define DDP_ID_DISPLAY 1
+#define DDP_ID_CONFIG 250
+#define DDP_ID_STATUS 251
+
+// 1440 channels per packet
+#define DDP_CHANNELS_PER_PACKET 1440 // 480 leds
+
+//
+// Send real time DDP UDP updates to the specified client
+//
+// client - the IP address to send to
+// length - the number of pixels
+// buffer - a buffer of at least length*4 bytes long
+// isRGBW - true if the buffer contains 4 components per pixel
+
+uint8_t sequenceNumber = 0; // this needs to be shared across all outputs
+
+uint8_t realtimeBroadcast(IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
+    WiFiUDP ddpUdp;
+
+    // calclate the number of UDP packets we need to send
+    uint16_t channelCount = length * 3; // 1 channel for every R,G,B value
+    uint16_t packetCount = channelCount / DDP_CHANNELS_PER_PACKET;
+    if (channelCount % DDP_CHANNELS_PER_PACKET) {
+        packetCount++;
+    }
+
+    // there are 3 channels per RGB pixel
+    uint16_t channel = 0; // TODO: allow specifying the start channel
+    // the current position in the buffer 
+    uint16_t bufferOffset = 0;
+
+    for (uint16_t currentPacket = 0; currentPacket < packetCount; currentPacket++) {
+        if (sequenceNumber > 15) sequenceNumber = 0;
+
+        int rc = ddpUdp.beginPacket(client, DDP_PORT);
+        if (rc == 0) {           
+          //DEBUG_PRINTLN("WiFiUDP.beginPacket returned an error");
+          return 1; // problem
+        }
+
+        // the amount of data is AFTER the header in the current packet
+        uint16_t packetSize = DDP_CHANNELS_PER_PACKET;
+
+        uint8_t flags = DDP_FLAGS1_VER1;
+        if (currentPacket == (packetCount - 1)) {
+            // last packet, set the push flag
+            // TODO: determine if we want to send an empty push packet to each destination after sending the pixel data
+            flags = DDP_FLAGS1_VER1 | DDP_FLAGS1_PUSH;
+            if (channelCount % DDP_CHANNELS_PER_PACKET) {
+                packetSize = channelCount % DDP_CHANNELS_PER_PACKET;
+            }
+        }
+
+        // write the header
+        /*0*/ddpUdp.write(flags);
+        /*1*/ddpUdp.write(sequenceNumber++ & 0xF);
+        /*2*/ddpUdp.write(0);
+        /*3*/ddpUdp.write(DDP_ID_DISPLAY);
+        // data offset in bytes, 32-bit number, MSB first
+        /*4*/ddpUdp.write((channel & 0xFF000000) >> 24);
+        /*5*/ddpUdp.write((channel & 0x00FF0000) >> 16);
+        /*6*/ddpUdp.write((channel & 0x0000FF00) >> 8);
+        /*7*/ddpUdp.write((channel & 0x000000FF));
+        // data length in bytes, 16-bit number, MSB first
+        /*8*/ddpUdp.write((packetSize & 0xFF00) >> 8);
+        /*9*/ddpUdp.write(packetSize & 0xFF);
+
+        // write the colors, the write write(const uint8_t *buffer, size_t size) 
+        // function is just a loop internally too
+        for (uint16_t i = 0; i < packetSize; i += 3) {
+          ddpUdp.write(buffer[bufferOffset++]); // R
+          ddpUdp.write(buffer[bufferOffset++]); // G
+          ddpUdp.write(buffer[bufferOffset++]); // B
+          if (isRGBW) bufferOffset++;
+        }
+
+        rc = ddpUdp.endPacket();
+        if (rc == 0) {            
+          //DEBUG_PRINTLN("WiFiUDP.endPacket returned an error");
+          return 1; // problem
+        }
+
+        channel += packetSize;
+    }
+
+    return 0;
 }
