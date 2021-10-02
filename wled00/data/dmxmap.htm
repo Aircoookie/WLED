@@ -16,11 +16,7 @@
   }
   DMXMap = "";
   for (i=0;i<512;i++) {
-    isstart = "";
-    if ((i+1) % 10 == 0) {
-      isstart="S"
-    }
-    DMXMap += "<div class=\"anytype " + isstart + " type" + dmxchans[i] + "\">" + String(i+1) + "<br />" + dmxlabels[dmxchans[i]] + "</div>";
+    DMXMap += "<div class=\"anytype type" + dmxchans[i] + "\">" + String(i+1) + "<br />" + dmxlabels[dmxchans[i]] + "</div>";
   }
   document.getElementById("map").innerHTML = DMXMap;
 }</script>

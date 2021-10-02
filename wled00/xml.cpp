@@ -190,7 +190,7 @@ void extractPin(JsonObject &obj, const char *key) {
   }
 }
 
-// oappens used pins by recursively scanning JsonObject
+// oappend used pins by scanning JsonObject (1 level deep)
 void fillUMPins(JsonObject &mods)
 {
   for (JsonPair kv : mods) {

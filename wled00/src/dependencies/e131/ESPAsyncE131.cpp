@@ -101,7 +101,7 @@ void ESPAsyncE131::parsePacket(AsyncUDPPacket _packet) {
   bool error = false;
   uint8_t protocol = P_E131;
 
-  sbuff = reinterpret_cast<e131_packet_t *>(_packet.data());
+  e131_packet_t *sbuff = reinterpret_cast<e131_packet_t *>(_packet.data());
 	
 	//E1.31 packet identifier ("ACS-E1.17")
   if (memcmp(sbuff->acn_id, ESPAsyncE131::ACN_ID, sizeof(sbuff->acn_id)))

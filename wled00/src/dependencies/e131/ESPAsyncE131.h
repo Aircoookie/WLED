@@ -163,7 +163,6 @@ class ESPAsyncE131 {
     static const uint32_t VECTOR_FRAME = 2;
     static const uint8_t VECTOR_DMP = 2;
 
-    e131_packet_t   *sbuff;     // Pointer to scratch packet buffer
     AsyncUDP        udp;        // AsyncUDP
 
     // Internal Initializers
