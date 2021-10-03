@@ -23,7 +23,9 @@
 #include "../usermods/SN_Photoresistor/usermod_sn_photoresistor.h"
 #endif
 
-//#include "usermod_v2_empty.h"
+#ifdef USERMOD_PWM_FAN
+#include "../usermods/PWM_fan/usermod_PWM_fan.h"
+#endif
 
 #ifdef USERMOD_BUZZER
 #include "../usermods/buzzer/usermod_v2_buzzer.h"
@@ -115,7 +117,9 @@ void registerUsermods()
   usermods.add(new Usermod_SN_Photoresistor());
   #endif
 
-  //usermods.add(new UsermodRenameMe());
+  #ifdef USERMOD_PWM_FAN
+  usermods.add(new PWMFanUsermod());
+  #endif
 
   #ifdef USERMOD_BUZZER
   usermods.add(new BuzzerUsermod());
