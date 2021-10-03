@@ -322,7 +322,7 @@ ${i+1}:
 <option value="5">GBR</option>
 </select></div>
 <br>
-<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="UI();startsDirty[${i}]=true;" required />&nbsp;
+<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
 <div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div>
 <br>
 <span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="33" required class="xs" onchange="UI()"/>

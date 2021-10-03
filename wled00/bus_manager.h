@@ -408,12 +408,11 @@ class BusNetwork : public Bus {
   uint32_t getPixelColor(uint16_t pix) {
     if (!_valid || pix >= _len) return 0;
     uint16_t offset = pix * _UDPchannels;
-    // behave as NeoPixelBus
     return (
-      (_rgbw ? (scale8(_data[offset+3], _bri) << 24) : 0)
-      | (scale8(_data[offset]  , _bri) << 16)
-      | (scale8(_data[offset+1], _bri) <<  8)
-      | (scale8(_data[offset+2], _bri)      )
+      (_rgbw ? (_data[offset+3] << 24) : 0)
+      | (_data[offset]   << 16)
+      | (_data[offset+1] <<  8)
+      | (_data[offset+2]      )
     );
   }
 
@@ -549,7 +548,6 @@ class BusManager {
       uint16_t bstart = b->getStart();
       if (pix < bstart || pix >= bstart + b->getLength()) continue;
       busses[i]->setPixelColor(pix - bstart, c);
-      break;
     }
   }
 
