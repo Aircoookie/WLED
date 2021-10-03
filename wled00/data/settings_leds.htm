@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=500">
 	<title>LED Settings</title>
 	<script>
-    var d=document,laprev=55,maxB=1,maxM=5000,maxPB=4096,bquot=0; //maximum bytes for LED allocation: 5kB for 8266, 32kB for 32
+    var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
 		function H()
 		{
 			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");
@@ -28,8 +28,8 @@
       x.style.animation = 'none';
       timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
     }
-    function bLimits(b,p,m) {
-      maxB = b; maxM = m; maxPB = p;
+    function bLimits(b,p,m,l) {
+      maxB = b; maxM = m; maxPB = p; maxL = l;
     }
     function pinsOK() {
       var LCs = d.getElementsByTagName("input");
@@ -160,7 +160,6 @@
             }
           }
           if (change) {
-            gId("ls"+n).value = n+1;  // set LED start
             if (t > 31 && t < 48) d.getElementsByName("LC"+n)[0].value = 1; // for sanity change analog count just to 1 LED
           }
           isRGBW |= (t == 30 || t == 31 || (t > 40 && t < 46 && t != 43)); // RGBW checkbox, TYPE_xxxx values from const.h
@@ -180,15 +179,21 @@
 			}
       // check for pin conflicts
       var LCs = d.getElementsByTagName("input");
-      var sLC = 0, maxLC = 0;
+      var sLC = 0, sPC = 0, maxLC = 0;
       for (i=0; i<LCs.length; i++) {
         var nm = LCs[i].name.substring(0,2);  // field name
         var n  = LCs[i].name.substring(2);    // bus number
-        // do we have a led count field but not total led count
-        if (nm=="LC" && LCs[i].name !== "LC") {
+        // do we have a led count field
+        if (nm=="LC") {
           var c=parseInt(LCs[i].value,10);
-          gId("ls"+n).value=sLC; // update led start field
-          if(c){sLC+=c;if(c>maxLC)maxLC=c;} // increase led count
+          //gId("ls"+n).value=sLC; // update led start field (TODO except if it has been manually changed)
+          if(c){
+            var s = parseInt(gId("ls"+n).value);
+            if (s+c > sLC) sLC = s+c;
+            if(c>maxLC)maxLC=c;
+            var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
+            if (t>16) sPC+=c; //virtual out busses do not count towards physical LEDs
+          } // increase led count
           continue;
         }
         // do we have led pins for digital leds
@@ -196,7 +201,7 @@
           var lc=d.getElementsByName("LC"+n)[0];
           lc.max=maxPB; // update max led count value
         }
-        // ignore IP address
+        // ignore IP address (stored in pins for virtual busses)
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
           var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
           if (t<16) {
@@ -230,22 +235,18 @@
           }
       }
       // update total led count
-      if (gId("LC").readOnly) d.getElementsByName("LC")[0].value = sLC;
-      // if we are changing total led count update led count for 1st strip
-      if (d.activeElement == d.getElementsByName("LC")[0]) {
-        var o = d.getElementsByClassName("iST");
-        var i = o.length;
-        if (i == 1) d.getElementsByName("LC0")[0].value = d.getElementsByName("LC")[0].value;
-      }
+      gId("lc").textContent = sLC;
+      gId("pc").textContent = (sLC == sPC) ? "":"(" + sPC + " physical)";
+
       // memory usage and warnings
       gId('m0').innerHTML = memu;
       bquot = memu / maxM * 100;
       gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
       gId('ledwarning').style.display = (sLC > maxPB || maxLC > 800 || bquot > 80) ? 'inline':'none';
       gId('ledwarning').style.color = (sLC > maxPB || maxLC > maxPB || bquot > 100) ? 'red':'orange';
-      gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>WARNING: Using over ${maxM}B!</b>)` : "") : "800 LEDs per GPIO";
+      gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>ERROR: Using over ${maxM}B!</b>)` : "") : "800 LEDs per output";
       // calculate power
-      var val = Math.ceil((100 + sLC * laprev)/500)/2;
+      var val = Math.ceil((100 + sPC * laprev)/500)/2;
 			val = (val > 5) ? Math.ceil(val) : val;
 			var s = "";
       var is12V = (d.Sf.LAsel.value == 30);
@@ -259,7 +260,7 @@
 				s += val;
 				s += "A supply connected to LEDs";
 			}
-      var val2 = Math.ceil((100 + sLC * laprev)/1500)/2;
+      var val2 = Math.ceil((100 + sPC * laprev)/1500)/2;
       val2 = (val2 > 5) ? Math.ceil(val2) : val2;
       var s2 = "(for most effects, ~";
       s2 += val2;
@@ -319,14 +320,14 @@ ${i+1}:
 <option value="5">GBR</option>
 </select></div>
 <br>
-<span id="p0d${i}">GPIO:</span><input type="number" name="L0${i}" min="0" max="33" required class="xs" onchange="UI()"/>
+<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l" min="0" max="8191" value="${lastEnd(i)}" onchange="UI()" required />&nbsp;
+<div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div>
+<br>
+<span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="33" required class="xs" onchange="UI()"/>
 <span id="p1d${i}"></span><input type="number" name="L1${i}" min="0" max="33" class="xs" onchange="UI()"/>
 <span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="33" class="xs" onchange="UI()"/>
 <span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="33" class="xs" onchange="UI()"/>
 <span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="33" class="xs" onchange="UI()"/>
-<br>
-<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l" min="0" max="8191" value="${lastEnd(i)}" disabled readonly required />&nbsp;
-<div id="dig${i}c" style="display:inline">Count: <input type="number" name="LC${i}" class="l" min="0" max="${maxPB}" value="1" required oninput="UI()" /></div>
 <br>
 <div id="dig${i}r" style="display:inline"><span id="rev${i}">Reversed</span>: <input type="checkbox" name="CV${i}"></div>&nbsp;
 <div id="dig${i}s" style="display:inline">Skip 1<sup>st</sup> LED: <input id="sl${i}" type="checkbox" name="SL${i}"></div>
@@ -348,7 +349,7 @@ ${i+1}:
       var bt = "BT" + i;
       var be = "BE" + i;
       c += `Button ${i} GPIO: <input type="number" min="-1" max="40" name="${bt}" onchange="UI()" class="xs" value="${p}">`;
-      c += `<select name="${be}">`
+      c += `&nbsp;<select name="${be}">`
       c += `<option value="0" ${t==0?"selected":""}>Disabled</option>`;
       c += `<option value="2" ${t==2?"selected":""}>Pushbutton</option>`;
       c += `<option value="3" ${t==3?"selected":""}>Push inverted</option>`;
@@ -375,7 +376,7 @@ ${i+1}:
 		function GetV()
 		{
       //values injected by server while sending HTML
-      //maxM=5000;maxPB=1536;d.um_p=[1,6,7,8,9,10,11];addLEDs(3);d.Sf.LC.value=250;addLEDs(1);d.Sf.L00.value=2;d.Sf.L10.value=0;d.Sf.LC0.value=250;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=0;d.Sf.LS0.checked=0;d.Sf.MA.value=5400;d.Sf.LA.value=55;d.getElementsByClassName("pow")[0].innerHTML="350mA";d.Sf.CA.value=40;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=3;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=64;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=12;d.Sf.RM.checked=0;addBtn(0,0,2);addBtn(1,3,4);addBtn(2,-1,0);d.Sf.IR.value=-1;
+      //d.um_p=[6,7,8,9,10,11];bLimits(3,4096,4000,1664);d.Sf.MS.checked=0;addLEDs(1);d.Sf.L00.value=2;d.Sf.LC0.value=29;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=12;d.Sf.CV0.checked=0;d.Sf.SL0.checked=0;d.Sf.MA.value=850;d.Sf.LA.value=0;d.Sf.CA.value=56;d.Sf.AW.value=3;d.Sf.BO.checked=1;d.Sf.BP.value=80;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=100;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=0;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=12;d.Sf.RM.checked=1;addBtn(0,0,0);addBtn(1,-1,0);d.Sf.TT.value=32;d.Sf.IR.value=-1;d.Sf.IT.value=0;
     }
 	</script>
 	<style>
@@ -387,7 +388,7 @@ ${i+1}:
 		<div class="helpB"><button type="button" onclick="H()">?</button></div>
 		<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
     <h2>LED &amp; Hardware setup</h2>
-    Total LED count: <input name="LC" id="LC" type="number" min="1" max="8192" oninput="UI()" disabled required readonly><br>
+    Total LEDs: <span id="lc">?</span> <span id="pc"></span><br>
     <i>Recommended power supply for brightest white:</i><br>
     <b><span id="psu">?</span></b><br>
     <span id="psu2"><br></span>
@@ -425,10 +426,10 @@ ${i+1}:
     <div id="dbar" style="display:inline-block; width: 100px; height: 10px; border-radius: 20px;"></div><br>
     <div id="ledwarning" style="color: orange; display: none;">
       &#9888; You might run into stability or lag issues.<br>
-      Use less than <span id="wreason">800 LEDs per pin</span> for the best experience!<br>
+      Use less than <span id="wreason">800 LEDs per output</span> for the best experience!<br>
     </div>
-    <hr style="width:260px">
     Make a segment for each output: <input type="checkbox" name="MS"> <br>
+    <!--Custom bus start indices: <input type="checkbox" id="cs"> <br>-->
     <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
@@ -446,7 +447,7 @@ ${i+1}:
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/ir.json');"><br></div>
     <div id="toast"></div>
     <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
-    Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
+    Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
 		Turn LEDs on after power up/reset: <input type="checkbox" name="BO"><br>

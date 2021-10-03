@@ -365,14 +365,10 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F("bLimits("));
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
-    oappend(itoa(MAX_LED_MEMORY,nS,10));
+    oappend(itoa(MAX_LED_MEMORY,nS,10)); oappend(",");
+    oappend(itoa(MAX_LEDS,nS,10)); oappend(",");
     oappend(SET_F(");"));
 
-    oappend(SET_F("d.Sf.LC.max=")); //TODO Formula for max LEDs on ESP8266 depending on types. 500 DMA or 1500 UART (about 4kB mem usage)
-    oappendi(MAX_LEDS);
-    oappend(";");
-
-    sappend('v',SET_F("LC"),ledCount);
     sappend('c',SET_F("MS"),autoSegments);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {

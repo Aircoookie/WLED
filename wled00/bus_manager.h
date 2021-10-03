@@ -37,7 +37,7 @@ struct BusConfig {
     type = busType; count = len; start = pstart;
     colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
-    if (type >= 10 && type <= 15) nPins = 4;
+    if (type >= 10 && type <= 15) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
