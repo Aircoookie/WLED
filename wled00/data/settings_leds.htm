@@ -6,7 +6,8 @@
 	<title>LED Settings</title>
 	<script>
     var d=document,laprev=55,maxB=1,maxM=4000,maxPB=4096,maxL=1333,maxLbquot=0; //maximum bytes for LED allocation: 4kB for 8266, 32kB for 32
-		function H()
+		var customStarts=false,startsDirty=[];
+    function H()
 		{
 			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");
 		}
@@ -70,7 +71,7 @@
       if (bquot > 100) {var msg = "Too many LEDs for me to handle!"; if (maxM < 10000) msg += "\n\rConsider using an ESP32."; alert(msg);}
       if (d.Sf.checkValidity()) d.Sf.submit(); //https://stackoverflow.com/q/37323914
     }
-		function S(){GetV();setABL();}
+		function S(){GetV();checkSi();setABL();}
     function enABL()
     {
       var en = gId('able').checked;
@@ -186,12 +187,13 @@
         // do we have a led count field
         if (nm=="LC") {
           var c=parseInt(LCs[i].value,10);
-          //gId("ls"+n).value=sLC; // update led start field (TODO except if it has been manually changed)
+          if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC;
+          gId("ls"+n).disabled = !customStarts;
           if(c){
             var s = parseInt(gId("ls"+n).value);
             if (s+c > sLC) sLC = s+c;
             if(c>maxLC)maxLC=c;
-            var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
+            var t = parseInt(d.getElementsByName("LT"+n)[0].value); // LED type SELECT
             if (t>16) sPC+=c; //virtual out busses do not count towards physical LEDs
           } // increase led count
           continue;
@@ -203,7 +205,7 @@
         }
         // ignore IP address (stored in pins for virtual busses)
         if (nm=="L0" || nm=="L1" || nm=="L2" || nm=="L3") {
-          var t = parseInt(d.getElementsByName("LT"+n)[0].value, 10); // LED type SELECT
+          var t = parseInt(d.getElementsByName("LT"+n)[0].value); // LED type SELECT
           if (t<16) {
             LCs[i].max = 255;
             LCs[i].min = 0;
@@ -320,7 +322,7 @@ ${i+1}:
 <option value="5">GBR</option>
 </select></div>
 <br>
-<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l" min="0" max="8191" value="${lastEnd(i)}" onchange="UI()" required />&nbsp;
+<span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="UI();startsDirty[${i}]=true;" required />&nbsp;
 <div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div>
 <br>
 <span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="33" required class="xs" onchange="UI()"/>
@@ -361,6 +363,23 @@ ${i+1}:
       c += `</select>`;
       c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
       gId("btns").innerHTML = c;
+    }
+    function tglSi() {
+      customStarts = !customStarts;
+      if (!customStarts) startsDirty = []; //set all starts to clean
+      UI();
+    }
+    function checkSi() { //on load, checks whether there are custom start fields
+      var cs = false;
+      for (var i=1; i < d.getElementsByClassName("iST").length; i++) {
+        var v = parseInt(gId("ls"+(i-1)).value) + parseInt(d.getElementsByName("LC"+(i-1))[0].value);
+        if (v != parseInt(gId("ls"+i).value)) {cs = true; startsDirty[i] = true;}
+      }
+      if (parseInt(gId("ls0").value) != 0) {cs = true; startsDirty[0] = true;}
+      if (cs) {
+        gId("si").checked = true;
+        tglSi();
+      }
     }
     function uploadFile(name) {
       var req = new XMLHttpRequest();
@@ -428,8 +447,9 @@ ${i+1}:
       &#9888; You might run into stability or lag issues.<br>
       Use less than <span id="wreason">800 LEDs per output</span> for the best experience!<br>
     </div>
+    <hr style="width:260px">
     Make a segment for each output: <input type="checkbox" name="MS"> <br>
-    <!--Custom bus start indices: <input type="checkbox" id="cs"> <br>-->
+    Custom bus start indices: <input type="checkbox" onchange="tglSi()" id="si"> <br>
     <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
