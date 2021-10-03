@@ -6,7 +6,7 @@
 
 #include "wled.h"
 
-// PWM code curtesy of @KlausMu
+// PWM & tacho code curtesy of @KlausMu
 // https://github.com/KlausMu/esp32-fan-controller/tree/main/src
 // adapted for WLED usermod by @blazoncek
 
@@ -44,7 +44,7 @@ class PWMFanUsermod : public Usermod {
     // configurable parameters
     int8_t  tachoPin          = -1;
     int8_t  pwmPin            = -1;
-    uint8_t tachoUpdateSec    = 5;
+    uint8_t tachoUpdateSec    = 30;
     float   targetTemperature = 25.0;
 
     // strings to reduce flash memory usage (used more than twice)
@@ -205,6 +205,7 @@ class PWMFanUsermod : public Usermod {
      * Below it is shown how this could be used for e.g. a light sensor
      */
     void addToJsonInfo(JsonObject& root) {
+      if (tachoPin < 0) return;
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
       JsonArray data = user.createNestedArray(FPSTR(_name));
