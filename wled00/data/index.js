@@ -270,9 +270,9 @@ function onLoad()
 function updateTablinks(tabI)
 {
 	var tablinks = gEBCN("tablinks");
-	for (var i of tablinks) i.className = i.className.replace(" active", "");
+	for (var i of tablinks) i.classList.remove("active");
 	if (pcMode) return;
-	tablinks[tabI].className += " active";
+	tablinks[tabI].classList.add("active");
 }
 
 function openTab(tabI, force = false)
@@ -290,10 +290,10 @@ function showToast(text, error = false)
 	if (error) gId('connind').style.backgroundColor = "var(--c-r)";
 	var x = gId("toast");
 	x.innerHTML = text;
-	x.className = error ? "error":"show";
+	x.classList.add(error ? "error":"show");
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+	timeout = setTimeout(function(){ x.classList.remove("show"); }, 2900);
 	if (error) console.log(text);
 }
 
