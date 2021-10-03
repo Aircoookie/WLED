@@ -1568,12 +1568,6 @@ function tglSegn(s)
     (window.getComputedStyle(d.gId(`seg${s}t`)).display === "none") ? "inline":"none";
 }
 
-function tglSegn(s)
-{
-  d.getElementById(`seg${s}t`).style.display =
-    (window.getComputedStyle(d.getElementById(`seg${s}t`)).display === "none") ? "inline":"none";
-}
-
 function selSegEx(s)
 {
 	var obj = {"seg":[]};
