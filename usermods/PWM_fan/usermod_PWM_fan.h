@@ -81,6 +81,7 @@ class PWMFanUsermod : public Usermod {
       detachInterrupt(digitalPinToInterrupt(tachoPin)); 
       // calculate rpm
       last_rpm = counter_rpm * (60 / numberOfInterrupsInOneSingleRotation);
+      last_rpm /= tachoUpdateSec;
       // reset counter
       counter_rpm = 0; 
       // store milliseconds when tacho was measured the last time
