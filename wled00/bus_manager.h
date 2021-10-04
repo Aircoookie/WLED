@@ -393,7 +393,6 @@ class BusNetwork : public Bus {
       _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
       _broadcastLock = false;
       _valid = true;
-      _data2 = (byte *)malloc(_len * _UDPchannels);
     };
 
   void setPixelColor(uint16_t pix, uint32_t c) {
@@ -419,20 +418,7 @@ class BusNetwork : public Bus {
   void show() {
     if (!_valid || !canShow()) return;
     _broadcastLock = true;
-    // apply brightness to second buffer
-    if (_data2 == nullptr) {
-      // but display original buffer if memory allocation failed
-      realtimeBroadcast(_UDPtype, _client, _len, _data, _rgbw);
-    } else {
-      for (uint16_t pix=0; pix<_len; pix++) {
-        uint16_t offset = pix * _UDPchannels;
-        _data2[offset  ] = scale8(_data[offset  ], _bri);
-        _data2[offset+1] = scale8(_data[offset+1], _bri);
-        _data2[offset+2] = scale8(_data[offset+2], _bri);
-        if (_rgbw) _data2[offset+3] = scale8(_data[offset+3], _bri);
-      }
-      realtimeBroadcast(_UDPtype, _client, _len, _data2, _rgbw);
-    }
+    realtimeBroadcast(_UDPtype, _client, _len, _data, _bri, _rgbw);
     _broadcastLock = false;
   }
 
@@ -465,8 +451,6 @@ class BusNetwork : public Bus {
     _valid = false;
     if (_data != nullptr) free(_data);
     _data = nullptr;
-    if (_data2 != nullptr) free(_data2);
-    _data2 = nullptr;
   }
 
   ~BusNetwork() {
@@ -482,7 +466,7 @@ class BusNetwork : public Bus {
     uint8_t   _UDPchannels;
     bool      _rgbw;
     bool      _broadcastLock;
-    byte     *_data, *_data2;
+    byte     *_data;
 };
 
 
