@@ -43,7 +43,7 @@ struct BusConfig {
     type = busType & 0x7F;  // bit 7 may be/is hacked to include RGBW info (1=RGBW, 0=RGB)
     count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
-    if (type >= 10 || type <= 15) nPins = 4;
+    if (type >= 10 && type <= 15) nPins = 4;  // IP address stored in pins
     else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
@@ -401,7 +401,6 @@ class BusNetwork : public Bus {
       _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
       _broadcastLock = false;
       _valid = true;
-      _data2 = (byte *)malloc(_len * _UDPchannels);
     };
 
   void setPixelColor(uint16_t pix, uint32_t c) {
@@ -416,32 +415,18 @@ class BusNetwork : public Bus {
   uint32_t getPixelColor(uint16_t pix) {
     if (!_valid || pix >= _len) return 0;
     uint16_t offset = pix * _UDPchannels;
-    // behave as NeoPixelBus
     return (
-      (_rgbw ? (scale8(_data[offset+3], _bri) << 24) : 0)
-      | (scale8(_data[offset]  , _bri) << 16)
-      | (scale8(_data[offset+1], _bri) <<  8)
-      | (scale8(_data[offset+2], _bri)      )
+      (_rgbw ? (_data[offset+3] << 24) : 0)
+      | (_data[offset]   << 16)
+      | (_data[offset+1] <<  8)
+      | (_data[offset+2]      )
     );
   }
 
   void show() {
     if (!_valid || !canShow()) return;
     _broadcastLock = true;
-    // apply brightness to second buffer
-    if (_data2 == nullptr) {
-      // but display original buffer if memory allocation failed
-      realtimeBroadcast(_UDPtype, _client, _len, _data, _rgbw);
-    } else {
-      for (uint16_t pix=0; pix<_len; pix++) {
-        uint16_t offset = pix * _UDPchannels;
-        _data2[offset  ] = scale8(_data[offset  ], _bri);
-        _data2[offset+1] = scale8(_data[offset+1], _bri);
-        _data2[offset+2] = scale8(_data[offset+2], _bri);
-        if (_rgbw) _data2[offset+3] = scale8(_data[offset+3], _bri);
-      }
-      realtimeBroadcast(_UDPtype, _client, _len, _data2, _rgbw);
-    }
+    realtimeBroadcast(_UDPtype, _client, _len, _data, _bri, _rgbw);
     _broadcastLock = false;
   }
 
@@ -474,8 +459,6 @@ class BusNetwork : public Bus {
     _valid = false;
     if (_data != nullptr) free(_data);
     _data = nullptr;
-    if (_data2 != nullptr) free(_data2);
-    _data2 = nullptr;
   }
 
   ~BusNetwork() {
@@ -491,7 +474,7 @@ class BusNetwork : public Bus {
     uint8_t   _UDPchannels;
     bool      _rgbw;
     bool      _broadcastLock;
-    byte     *_data, *_data2;
+    byte     *_data;
 };
 
 

@@ -552,7 +552,7 @@ void sendSysInfoUDP()
 
 uint8_t sequenceNumber = 0; // this needs to be shared across all outputs
 
-uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, bool isRGBW)  {
+uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8_t *buffer, uint8_t bri, bool isRGBW)  {
   if (!interfacesInited) return 1;  // network not initialised
 
   WiFiUDP ddpUdp;
@@ -610,9 +610,9 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         // write the colors, the write write(const uint8_t *buffer, size_t size) 
         // function is just a loop internally too
         for (uint16_t i = 0; i < packetSize; i += 3) {
-          ddpUdp.write(buffer[bufferOffset++]); // R
-          ddpUdp.write(buffer[bufferOffset++]); // G
-          ddpUdp.write(buffer[bufferOffset++]); // B
+          ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // R
+          ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // G
+          ddpUdp.write(scale8(buffer[bufferOffset++], bri)); // B
           if (isRGBW) bufferOffset++;
         }
 
