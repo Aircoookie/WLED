@@ -26,11 +26,6 @@ class PWMFanUsermod : public Usermod {
 
     bool initDone = false;
     bool enabled = true;
-
-    const int numberOfInterrupsInOneSingleRotation = 2;     // Number of interrupts ESP32 sees on tacho signal on a single fan rotation. All the fans I've seen trigger two interrups.
-    const int pwmMinimumValue                      = 120;
-    const int pwmStep                              = 10;
-
     unsigned long msLastTachoMeasurement = 0;
     uint16_t last_rpm = 0;
     #ifdef ARDUINO_ARCH_ESP32
@@ -46,6 +41,8 @@ class PWMFanUsermod : public Usermod {
     int8_t  pwmPin            = -1;
     uint8_t tachoUpdateSec    = 30;
     float   targetTemperature = 25.0;
+    uint8_t minPWMValuePct    = 50;
+    uint8_t numberOfInterrupsInOneSingleRotation = 2;     // Number of interrupts ESP32 sees on tacho signal on a single fan rotation. All the fans I've seen trigger two interrups.
 
     // strings to reduce flash memory usage (used more than twice)
     static const char _name[];
@@ -54,6 +51,8 @@ class PWMFanUsermod : public Usermod {
     static const char _pwmPin[];
     static const char _temperature[];
     static const char _tachoUpdateSec[];
+    static const char _minPWMValuePct[];
+    static const char _IRQperRotation[];
 
     void initTacho(void) {
       if (tachoPin < 0 || !pinManager.allocatePin(tachoPin, false, PinOwner::UM_Unspecified)){
@@ -146,24 +145,26 @@ class PWMFanUsermod : public Usermod {
       float difftemp = temp - targetTemperature;
       // Default to run fan at full speed.
       int newPWMvalue = 255;
+      int pwmStep = ((100 - minPWMValuePct) * newPWMvalue) / (7*100);
+      int pwmMinimumValue = (minPWMValuePct * newPWMvalue) / 100;
 
       if ((temp == NAN) || (temp <= 0.0)) {
         DEBUG_PRINTLN(F("WARNING: no temperature value available. Cannot do temperature control. Will set PWM fan to 255."));
       } else if (difftemp <= 0.0) {
         // Temperature is below target temperature. Run fan at minimum speed.
-        newPWMvalue = pwmMinimumValue; 
+        newPWMvalue = pwmMinimumValue;
       } else if (difftemp <= 0.5) {
-        newPWMvalue = 140;
+        newPWMvalue = pwmMinimumValue + pwmStep;
       } else if (difftemp <= 1.0) {
-        newPWMvalue = 160;
+        newPWMvalue = pwmMinimumValue + 2*pwmStep;
       } else if (difftemp <= 1.5) {
-        newPWMvalue = 180;
+        newPWMvalue = pwmMinimumValue + 3*pwmStep;
       } else if (difftemp <= 2.0) {
-        newPWMvalue = 200;
+        newPWMvalue = pwmMinimumValue + 4*pwmStep;
       } else if (difftemp <= 2.5) {
-        newPWMvalue = 220;
+        newPWMvalue = pwmMinimumValue + 5*pwmStep;
       } else if (difftemp <= 3.0) {
-        newPWMvalue = 240;
+        newPWMvalue = pwmMinimumValue + 6*pwmStep;
       }
       updateFanSpeed(newPWMvalue);
     }
@@ -250,6 +251,8 @@ class PWMFanUsermod : public Usermod {
       top[FPSTR(_tachoPin)]       = tachoPin;
       top[FPSTR(_tachoUpdateSec)] = tachoUpdateSec;
       top[FPSTR(_temperature)]    = targetTemperature;
+      top[FPSTR(_minPWMValuePct)] = minPWMValuePct;
+      top[FPSTR(_IRQperRotation)] = numberOfInterrupsInOneSingleRotation;
       DEBUG_PRINTLN(F("Autosave config saved."));
     }
 
@@ -280,6 +283,10 @@ class PWMFanUsermod : public Usermod {
       tachoUpdateSec    = top[FPSTR(_tachoUpdateSec)] | tachoUpdateSec;
       tachoUpdateSec    = (uint8_t) max(1,(int)tachoUpdateSec); // bounds checking
       targetTemperature = top[FPSTR(_temperature)] | targetTemperature;
+      minPWMValuePct    = top[FPSTR(_minPWMValuePct)] | minPWMValuePct;
+      minPWMValuePct    = (uint8_t) min(100,max(0,(int)minPWMValuePct)); // bounds checking
+      numberOfInterrupsInOneSingleRotation = top[FPSTR(_IRQperRotation)] | numberOfInterrupsInOneSingleRotation;
+      numberOfInterrupsInOneSingleRotation = (uint8_t) max(1,(int)numberOfInterrupsInOneSingleRotation); // bounds checking
 
       if (!initDone) {
         // first run: reading from cfg.json
@@ -302,7 +309,7 @@ class PWMFanUsermod : public Usermod {
       }
 
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[FPSTR(_enabled)].isNull();
+      return !top[FPSTR(_IRQperRotation)].isNull();
   }
 
     /*
@@ -321,3 +328,5 @@ const char PWMFanUsermod::_tachoPin[]       PROGMEM = "tacho-pin";
 const char PWMFanUsermod::_pwmPin[]         PROGMEM = "PWM-pin";
 const char PWMFanUsermod::_temperature[]    PROGMEM = "target-temp-C";
 const char PWMFanUsermod::_tachoUpdateSec[] PROGMEM = "tacho-update-s";
+const char PWMFanUsermod::_minPWMValuePct[] PROGMEM = "min-PWM-percent";
+const char PWMFanUsermod::_IRQperRotation[] PROGMEM = "IRQs-per-rotation";
