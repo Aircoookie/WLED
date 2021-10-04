@@ -30,10 +30,10 @@
 		{
 			var x = gId("toast");
 			x.innerHTML = text;
-			x.className = error ? "error":"show";
+			x.classList.add(error ? "error":"show");
 			clearTimeout(timeout);
 			x.style.animation = 'none';
-			timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+			timeout = setTimeout(function(){ x.classList.remove("show"); }, 2900);
 		}
 		function uploadFile(fO,name) {
 			var req = new XMLHttpRequest();

@@ -260,7 +260,7 @@ function showToast(text, error = false)
 	x.className = error ? "error":"show";
 	clearTimeout(timeout);
 	x.style.animation = 'none';
-	timeout = setTimeout(function(){ x.className = x.className.replace("show", ""); }, 2900);
+	timeout = setTimeout(function(){ x.classList.remove("show"); }, 2900);
 }
 
 function showErrorToast()
