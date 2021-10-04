@@ -180,7 +180,7 @@ class PWMFanUsermod : public Usermod {
       #endif
       initTacho();
       initPWMfan();
-      updateFanSpeed(pwmMinimumValue);
+      updateFanSpeed((minPWMValuePct * 255) / 100);
       initDone = true;
     }
 
