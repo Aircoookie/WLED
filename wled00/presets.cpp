@@ -7,8 +7,11 @@
 bool applyPreset(byte index, byte callMode)
 {
   if (index == 0) return false;
+
+  const char *filename = index < 255 ? "/presets.json" : "/tmp.json";
+
   if (fileDoc) {
-    errorFlag = readObjectFromFileUsingId("/presets.json", index, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    errorFlag = readObjectFromFileUsingId(filename, index, fileDoc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = fileDoc->as<JsonObject>();
     if (fdo["ps"] == index) fdo.remove("ps"); //remove load request for same presets to prevent recursive crash
     #ifdef WLED_DEBUG_FS
@@ -18,7 +21,7 @@ bool applyPreset(byte index, byte callMode)
   } else {
     DEBUGFS_PRINTLN(F("Make read buf"));
     DynamicJsonDocument fDoc(JSON_BUFFER_SIZE);
-    errorFlag = readObjectFromFileUsingId("/presets.json", index, &fDoc) ? ERR_NONE : ERR_FS_PLOAD;
+    errorFlag = readObjectFromFileUsingId(filename, index, &fDoc) ? ERR_NONE : ERR_FS_PLOAD;
     JsonObject fdo = fDoc.as<JsonObject>();
     if (fdo["ps"] == index) fdo.remove("ps");
     #ifdef WLED_DEBUG_FS
@@ -28,18 +31,19 @@ bool applyPreset(byte index, byte callMode)
   }
 
   if (!errorFlag) {
-    currentPreset = index;
+    if (index < 255) currentPreset = index;
     return true;
   }
   return false;
 }
 
-//persist=false is not currently honored
 void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
 {
-  if (index == 0 || index > 250) return;
+  if (index == 0 || (index > 250 && persist) || (index<255 && !persist)) return;
   bool docAlloc = (fileDoc != nullptr);
   JsonObject sObj = saveobj;
+
+  const char *filename = persist ? "/presets.json" : "/tmp.json";
 
   if (!docAlloc) {
     DEBUGFS_PRINTLN(F("Allocating saving buffer"));
@@ -48,9 +52,9 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
     if (pname) sObj["n"] = pname;
     DEBUGFS_PRINTLN(F("Save current state"));
     serializeState(sObj, true);
-    currentPreset = index;
+    if (persist) currentPreset = index;
 
-    writeObjectToFileUsingId("/presets.json", index, &lDoc);
+    writeObjectToFileUsingId(filename, index, &lDoc);
   } else { //from JSON API
     DEBUGFS_PRINTLN(F("Reuse recv buffer"));
     sObj.remove(F("psave"));
@@ -59,7 +63,7 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
     if (!sObj["o"]) {
       DEBUGFS_PRINTLN(F("Save current state"));
       serializeState(sObj, true, sObj["ib"], sObj["sb"]);
-      currentPreset = index;
+      if (persist) currentPreset = index;
     }
     sObj.remove("o");
     sObj.remove("ib");
@@ -67,9 +71,9 @@ void savePreset(byte index, bool persist, const char* pname, JsonObject saveobj)
     sObj.remove(F("error"));
     sObj.remove(F("time"));
 
-    writeObjectToFileUsingId("/presets.json", index, fileDoc);
+    writeObjectToFileUsingId(filename, index, fileDoc);
   }
-  presetsModifiedTime = toki.second(); //unix time
+  if (persist) presetsModifiedTime = toki.second(); //unix time
   updateFSInfo();
 }
 
