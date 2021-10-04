@@ -97,24 +97,49 @@ typedef enum {
 } DisplayType;
 
 /*
-  Fontname: benji_custom_icons_2x
-  Copyright: 
+  Fontname: benji_custom_icons_1x
+  Copyright:
   Glyphs: 1/1
   BBX Build Mode: 3
-  * 2x2 custom icons that are not available in the U8X8 library
-  * 64 = custom palette
+  * 4 = custom palette
 */
-const uint8_t u8x8_font_benji_custom_icons_2x2[37] U8X8_FONT_SECTION("u8x8_font_benji_custom_icons_2x2") = 
-  "@@\2\2\360\370\234\236\376\363\363\377\377\363\363\376><\370\360\3\17\77yy\377\377\377\377\317\17\17"
-  "\17\17\7\3";
+const uint8_t u8x8_font_benji_custom_icons_1x1[13] U8X8_FONT_SECTION("u8x8_font_benji_custom_icons_1x1") = 
+ "\4\4\1\1<n\372\377\275\277\26\34";
+
+/*
+  Fontname: benji_custom_icons_2x
+  Copyright: 
+  Glyphs: 8/8
+  BBX Build Mode: 3
+  // all the icons uses are consolidated into a single library to simplify code
+  // these are just the required icons stripped from the U8x8 libraries in addition to a few new custom icons
+  * 1 = sun
+  * 2 = skip forward
+  * 3 = fire
+  * 4 = custom palette
+  * 5 = puzzle piece
+  * 6 = moon
+  * 7 = brush
+  * 8 = custom saturation
+*/
+const uint8_t u8x8_font_benji_custom_icons_2x2[261] U8X8_FONT_SECTION("u8x8_font_benji_custom_icons_2x2") = 
+  "\1\10\2\2\200\200\14\14\300\340\360\363\363\360\340\300\14\14\200\200\1\1\60\60\3\7\17\317\317\17\7\3"
+  "\60\60\1\1\374\370\360\340\340\300\200\0\374\370\360\340\340\300\200\0\77\37\17\7\7\3\1\0\77\37\17\7"
+  "\7\3\1\0\0\200\340\360\377\376\374\360\0\0\300\200\0\0\0\0\17\77\177\377\17\7\301\340\370\374\377\377"
+  "\377|\0\0\360\370\234\236\376\363\363\377\377\363\363\376><\370\360\3\17\77yy\377\377\377\377\317\17\17"
+  "\17\17\7\3\360\360\360\360\366\377\377\366\360\360\360\360\0\0\0\0\377\377\377\377\237\17\17\237\377\377\377\377"
+  "\6\17\17\6\340\370\374\376\377\340\200\0\0\0\0\0\0\0\0\0\3\17\37\77\177\177\177\377\376|||"
+  "\70\30\14\0\0\0\0\0\0\0\0``\360\370|<\36\7\2\0\300\360\376\377\177\77\36\0\1\1\0"
+  "\0\0\0\0\200\200\14\14\300\340\360\363\363\360\340\300\14\14\200\200\1\1\60\60\3\4\10\310\310\10\4\3"
+  "\60\60\1\1";
 
 /*
   Fontname: benji_custom_icons_6x
   Copyright: 
   Glyphs: 8/8
   BBX Build Mode: 3
-  * 6x6 icons take up a lot of memory, theres not enough momory for the required librries
-  * these are just the ruquired icons stripped for the U8x8 libraries in addition to a few new custom icons
+  // 6x6 icons libraries take up a lot of memory thus all the icons uses are consolidated into a single library
+  // these are just the required icons stripped from the U8x8 libraries in addition to a few new custom icons
   * 1 = sun
   * 2 = skip forward
   * 3 = fire
@@ -569,11 +594,20 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     void draw2x2GlyphIcons(){
-      drawGlyph(1, 0, 69,            u8x8_font_open_iconic_weather_2x2, true);//brightness icon
-      drawGlyph(5, 0, 72,               u8x8_font_open_iconic_play_2x2, true);//speed icon
-      drawGlyph(9, 0, 78,              u8x8_font_open_iconic_thing_2x2, true);//intensity icon
-      drawGlyph(14, 2*lineHeight, 64,  u8x8_font_benji_custom_icons_2x2,true);//palette icon
-      drawGlyph(14, 3*lineHeight, 70,   u8x8_font_open_iconic_thing_2x2,true);//effect icon
+      if(lineHeight == 2){
+        drawGlyph(1, 0, 1,             u8x8_font_benji_custom_icons_2x2, true);//brightness icon
+        drawGlyph(5, 0, 2,             u8x8_font_benji_custom_icons_2x2, true);//speed icon
+        drawGlyph(9, 0, 3,             u8x8_font_benji_custom_icons_2x2, true);//intensity icon
+        drawGlyph(14, 2*lineHeight, 4, u8x8_font_benji_custom_icons_2x2, true);//palette icon
+        drawGlyph(14, 3*lineHeight, 5, u8x8_font_benji_custom_icons_2x2, true);//effect icon
+      }
+      else{
+        drawGlyph(2, 0, 69,           u8x8_font_open_iconic_weather_1x1);//brightness icon
+        drawGlyph(6, 0, 72,              u8x8_font_open_iconic_play_1x1);//speed icon
+        drawGlyph(10, 0, 78,            u8x8_font_open_iconic_thing_1x1);//intensity icon
+        drawGlyph(15, 2*lineHeight, 4, u8x8_font_benji_custom_icons_1x1);//palette icon
+        drawGlyph(15, 3*lineHeight, 70, u8x8_font_open_iconic_thing_1x1);//effect icon
+      }
     }
 
     void drawStatusIcons(){
@@ -606,17 +640,19 @@ class FourLineDisplayUsermod : public Usermod {
           char lineBuffer[MAX_JSON_CHARS];
           char smallBuffer1[MAX_MODE_LINE_SPACE];
           char smallBuffer2[MAX_MODE_LINE_SPACE];
+          char smallBuffer3[MAX_MODE_LINE_SPACE+1];
           uint8_t qComma = 0;
           bool insideQuotes = false;
           bool spaceHit = false;
           uint8_t printedChars = 0;
           uint8_t smallChars1 = 0;
           uint8_t smallChars2 = 0;
+          uint8_t smallChars3 = 0;
           uint8_t totalCount = 0;
           char singleJsonSymbol;
 
           // Find the mode name in JSON
-          for (size_t i = 0; i < strlen_P(qstring); i++) {
+          for (size_t i = 0; i < strlen_P(qstring); i++) {       //find and get the full text for printing
             singleJsonSymbol = pgm_read_byte_near(qstring + i);
             if (singleJsonSymbol == '\0') break;
             switch (singleJsonSymbol) {
@@ -636,34 +672,47 @@ class FourLineDisplayUsermod : public Usermod {
             if ((qComma > inputEffPal)) break;
           }
           
-          if(printedChars < (MAX_MODE_LINE_SPACE)){
-              for (;printedChars < (MAX_MODE_LINE_SPACE-1); printedChars++) {lineBuffer[printedChars]=' '; }
-              lineBuffer[printedChars] = 0;
-              drawString(1, row*lineHeight, lineBuffer);
-              lastRedraw = millis();
-          }else{ 
-            for (uint8_t i = 0; i < printedChars; i++){
-                switch (lineBuffer[i]){
-                case ' ':
-                  if(i > 4 && !spaceHit) {
-                    spaceHit = true;
-                    break;}
-                  if(!spaceHit) smallBuffer1[smallChars1++] = lineBuffer[i];
-                  if (spaceHit) smallBuffer2[smallChars2++] = lineBuffer[i];
-                  break;
-                default:
-                  if(!spaceHit) smallBuffer1[smallChars1++] = lineBuffer[i];
-                  if (spaceHit) smallBuffer2[smallChars2++] = lineBuffer[i];
-                  break;
+          if(lineHeight ==2){                                    // use this code for 8 line display
+            if(printedChars < (MAX_MODE_LINE_SPACE)){            // use big font if the text fits
+                for (;printedChars < (MAX_MODE_LINE_SPACE-1); printedChars++) {lineBuffer[printedChars]=' '; }
+                lineBuffer[printedChars] = 0;
+                drawString(1, row*lineHeight, lineBuffer);
+                lastRedraw = millis();
+            }else{                                               // for long names divide the text into 2 lines and print them small
+              for (uint8_t i = 0; i < printedChars; i++){
+                  switch (lineBuffer[i]){
+                  case ' ':
+                    if(i > 4 && !spaceHit) {
+                      spaceHit = true;
+                      break;}
+                    if(!spaceHit) smallBuffer1[smallChars1++] = lineBuffer[i];
+                    if (spaceHit) smallBuffer2[smallChars2++] = lineBuffer[i];
+                    break;
+                  default:
+                    if(!spaceHit) smallBuffer1[smallChars1++] = lineBuffer[i];
+                    if (spaceHit) smallBuffer2[smallChars2++] = lineBuffer[i];
+                    break;
+                  }
                 }
-              }
-            for (; smallChars1 < (MAX_MODE_LINE_SPACE-1); smallChars1++) smallBuffer1[smallChars1]=' ';
-              smallBuffer1[smallChars1] = 0;
-              drawString(1, row*lineHeight, smallBuffer1, true);
-            for (; smallChars2 < (MAX_MODE_LINE_SPACE-1); smallChars2++) smallBuffer2[smallChars2]=' '; 
-              smallBuffer2[smallChars2] = 0;
-              drawString(1, row*lineHeight+1, smallBuffer2, true);
-              lastRedraw = millis();
+              for (; smallChars1 < (MAX_MODE_LINE_SPACE-1); smallChars1++) smallBuffer1[smallChars1]=' ';
+                smallBuffer1[smallChars1] = 0;
+                drawString(1, row*lineHeight, smallBuffer1, true);
+              for (; smallChars2 < (MAX_MODE_LINE_SPACE-1); smallChars2++) smallBuffer2[smallChars2]=' '; 
+                smallBuffer2[smallChars2] = 0;
+                drawString(1, row*lineHeight+1, smallBuffer2, true);
+                lastRedraw = millis();
+            }
+          }
+          else{                                             // use this code for 4 ling displays
+            if (printedChars > MAX_MODE_LINE_SPACE) printedChars = MAX_MODE_LINE_SPACE;
+            for (uint8_t i = 0; i < printedChars; i++){
+              smallBuffer3[smallChars3++] = lineBuffer[i];
+            }
+            
+            for (; smallChars3 < (MAX_MODE_LINE_SPACE); smallChars3++) smallBuffer3[smallChars3]=' ';
+                smallBuffer3[smallChars3] = 0;
+                drawString(1, row*lineHeight, smallBuffer3, true);
+                lastRedraw = millis();
           }
          }
     }
@@ -686,9 +735,9 @@ class FourLineDisplayUsermod : public Usermod {
     }
 
     /**
-     * Allows you to show up to two lines as overlay for a
+     * Allows you to show one line and a glyph as overlay for a
      * period of time.
-     * Clears the screen and prints on the middle two lines.
+     * Clears the screen and prints.
      */
     void overlay(const char* line1, long showHowLong, byte glyphType) {
           if (displayTurnedOff) {
@@ -698,7 +747,10 @@ class FourLineDisplayUsermod : public Usermod {
 
           // Print the overlay
           clear();
-          if (glyphType > 0)drawGlyph(5, 0, glyphType, u8x8_font_benji_custom_icons_6x6, true);
+          if (glyphType > 0){
+          if ( lineHeight == 2) drawGlyph(5, 0, glyphType, u8x8_font_benji_custom_icons_6x6, true);
+          else drawGlyph(7, lineHeight, glyphType, u8x8_font_benji_custom_icons_2x2, true);
+          }
           if (line1) drawString(0, 3*lineHeight, line1);
           overlayUntil = millis() + showHowLong;
     }
