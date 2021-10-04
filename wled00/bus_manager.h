@@ -493,7 +493,6 @@ class BusManager {
         return len*6;
       #endif
     }
-    if (type >= 10 && type <= 15) return len*6; // double buffer for network
     if (type > 31 && type < 48)   return 5;
     if (type == 44 || type == 45) return len*4; //RGBW
     return len*3;
