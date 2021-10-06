@@ -37,7 +37,7 @@ struct BusConfig {
     type = busType; count = len; start = pstart;
     colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
-    if (type >= 10 && type <= 15) nPins = 4; //virtual network bus. 4 "pins" store IP address
+    if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
     else if (type > 47) nPins = 2;
     else if (type > 40 && type < 46) nPins = NUM_PWM_PINS(type);
     for (uint8_t i = 0; i < nPins; i++) pins[i] = ppins[i];
@@ -150,7 +150,7 @@ class BusDigital : public Bus {
     _busPtr = PolyBus::create(_iType, _pins, _len, nr);
     _valid = (_busPtr != nullptr);
     _colorOrder = bc.colorOrder;
-    DEBUG_PRINTF("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, len, type, pins[0],pins[1],_iType);
+    DEBUG_PRINTF("Successfully inited strip %u (len %u) with type %u and pins %u,%u (itype %u)\n",nr, _len, bc.type, _pins[0],_pins[1],_iType);
   };
 
   inline void show() {
@@ -319,6 +319,7 @@ class BusPwm : public Bus {
   }
 
   uint8_t getPins(uint8_t* pinArray) {
+    if (!_valid) return 0;
     uint8_t numPins = NUM_PWM_PINS(_type);
     for (uint8_t i = 0; i < numPins; i++) pinArray[i] = _pins[i];
     return numPins;
@@ -389,7 +390,7 @@ class BusNetwork : public Bus {
       if (_data == nullptr) return;
       memset(_data, 0, bc.count * _UDPchannels);
       _len = bc.count;
-      _colorOrder = bc.colorOrder;
+      //_colorOrder = bc.colorOrder;
       _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
       _broadcastLock = false;
       _valid = true;
@@ -460,7 +461,7 @@ class BusNetwork : public Bus {
   private:
     IPAddress _client;
     uint16_t  _len = 0;
-    uint8_t   _colorOrder;
+    //uint8_t   _colorOrder;
     uint8_t   _bri = 255;
     uint8_t   _UDPtype;
     uint8_t   _UDPchannels;
@@ -480,7 +481,7 @@ class BusManager {
   static uint32_t memUsage(BusConfig &bc) {
     uint8_t type = bc.type;
     uint16_t len = bc.count;
-    if (type > 15 && type < 32) {
+    if (type < 32) {
       #ifdef ESP8266
         if (bc.pins[0] == 3) { //8266 DMA uses 5x the mem
           if (type > 29) return len*20; //RGBW
@@ -500,7 +501,7 @@ class BusManager {
   
   int add(BusConfig &bc) {
     if (numBusses >= WLED_MAX_BUSSES) return -1;
-    if (bc.type>=10 && bc.type<=15) {
+    if (bc.type >= TYPE_NET_DDP_RGB && bc.type < 96) {
       busses[numBusses] = new BusNetwork(bc);
     } else if (IS_DIGITAL(bc.type)) {
       busses[numBusses] = new BusDigital(bc, numBusses);

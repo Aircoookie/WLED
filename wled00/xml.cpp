@@ -366,7 +366,7 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(itoa(WLED_MAX_BUSSES,nS,10));  oappend(",");
     oappend(itoa(MAX_LEDS_PER_BUS,nS,10)); oappend(",");
     oappend(itoa(MAX_LED_MEMORY,nS,10)); oappend(",");
-    oappend(itoa(MAX_LEDS,nS,10)); oappend(",");
+    oappend(itoa(MAX_LEDS,nS,10));
     oappend(SET_F(");"));
 
     sappend('c',SET_F("MS"),autoSegments);
@@ -385,7 +385,7 @@ void getSettingsJS(byte subPage, char* dest)
       uint8_t nPins = bus->getPins(pins);
       for (uint8_t i = 0; i < nPins; i++) {
         lp[1] = 48+i;
-        if (pinManager.isPinOk(pins[i]) || bus->getType()<=15) sappend('v',lp,pins[i]);
+        if (pinManager.isPinOk(pins[i]) || bus->getType()>=TYPE_NET_DDP_RGB) sappend('v',lp,pins[i]);
       }
       sappend('v',lc,bus->getLength());
       sappend('v',lt,bus->getType());

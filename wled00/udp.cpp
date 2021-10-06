@@ -617,7 +617,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         }
 
         if (!ddpUdp.endPacket()) {            
-          DEBUG_PRINTLN("WiFiUDP.endPacket returned an error");
+          DEBUG_PRINTLN(F("WiFiUDP.endPacket returned an error"));
           return 1; // problem
         }
 

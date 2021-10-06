@@ -112,20 +112,20 @@
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 #define DMX_MODE_MULTIPLE_RGBW    6            //every LED is addressed with its own RGBW (ledCount * 4 channels)
 
-//Light capability byte (unused) 0bRRCCTTTT
+//Light capability byte (unused) 0bRCCCTTTT
 //bits 0/1/2/3: specifies a type of LED driver. A single "driver" may have different chip models but must have the same protocol/behavior
-//bits 4/5: specifies the class of LED driver - 0b00 (dec. 0-15)  unconfigured/reserved
-//                                            - 0b01 (dec. 16-31) digital (data pin only)
-//                                            - 0b10 (dec. 32-47) analog (PWM)
-//                                            - 0b11 (dec. 48-63) digital (data + clock / SPI)
-//bits 6/7 are reserved and set to 0b00
+//bits 4/5/6: specifies the class of LED driver - 0b000 (dec. 0-15)  unconfigured/reserved
+//                                              - 0b001 (dec. 16-31) digital (data pin only)
+//                                              - 0b010 (dec. 32-47) analog (PWM)
+//                                              - 0b011 (dec. 48-63) digital (data + clock / SPI)
+//                                              - 0b100 (dec. 64-79) unused/reserved
+//                                              - 0b101 (dec. 80-95) digital (data + clock / SPI)
+//                                              - 0b110 (dec. 96-111) unused/reserved
+//                                              - 0b111 (dec. 112-127) unused/reserved
+//bit 7 is reserved and set to 0
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
-//network types (master broadcast) (10-15)
-#define TYPE_NET_DDP_RGB         10            //network DDP RGB bus (master broadcast bus)
-#define TYPE_NET_E131_RGB        11            //network E131 RGB bus (master broadcast bus)
-#define TYPE_NET_ARTNET_RGB      12            //network ArtNet RGB bus (master broadcast bus)
 //Digital types (data pin only) (16-31)
 #define TYPE_WS2812_1CH          20            //white-only chips
 #define TYPE_WS2812_WWA          21            //amber + warm + cold white
@@ -146,6 +146,10 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
+//Network types (master broadcast) (80-95)
+#define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
+#define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus)
+#define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus)
 
 #define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
 #define IS_PWM(t)     ((t) > 40 && (t) < 46)
