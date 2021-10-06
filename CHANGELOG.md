@@ -2,6 +2,13 @@
 
 ### Builds after release 0.12.0
 
+#### Build 2110060
+
+-   Added virtual network DDP busses (PR #2245)
+-   Allow playlist as end preset in playlist
+-   Improved bus start field UX
+-   Pin reservations improvements (PR #2214)
+
 #### Build 2109220
 
 -   Version bump to 0.13.0-b3 "Toki"
