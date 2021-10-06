@@ -47,7 +47,8 @@ void unloadPlaylist() {
     delete[] playlistEntries;
     playlistEntries = nullptr;
   }
-  currentPlaylist = playlistIndex = -1;
+  currentPlaylist = 0;
+  playlistIndex = -1;
   playlistLen = playlistEntryDur = playlistOptions = 0;
   DEBUG_PRINTLN(F("Playlist unloaded."));
 }
@@ -118,7 +119,8 @@ int16_t loadPlaylist(JsonObject playlistObj, byte presetId) {
 
 
 void handlePlaylist() {
-  if (currentPlaylist < 0 || playlistEntries == nullptr) return;
+  static unsigned long presetCycledTime = 0;
+  if (!currentPlaylist || playlistEntries == nullptr) return;
 
   if (millis() - presetCycledTime > (100*playlistEntryDur)) {
     presetCycledTime = millis();

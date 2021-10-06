@@ -223,7 +223,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
 
   int tr = -1;
-  if (!presetId || currentPlaylist < 0) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
+  if (!presetId || !currentPlaylist) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
     tr = root[F("transition")] | -1;
     if (tr >= 0)
     {
@@ -415,8 +415,8 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   if (!forPreset) {
     if (errorFlag) {root[F("error")] = errorFlag; errorFlag = ERR_NONE;}
 
-    root[F("ps")] = currentPreset;
-    root[F("pl")] = currentPlaylist;
+    root[F("ps")] = currentPreset>0 ? currentPreset : -1;
+    root[F("pl")] = currentPlaylist>0 ? currentPlaylist : -1;
 
     usermods.addToJsonState(root);
 

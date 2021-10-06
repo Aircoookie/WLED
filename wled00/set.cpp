@@ -650,6 +650,9 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   pos = req.indexOf(F("PS=")); //saves current in preset
   if (pos > 0) savePreset(getNumVal(&req, pos));
 
+  byte presetCycleMin = 1;
+  byte presetCycleMax = 5;
+  byte presetCycCurr;
   pos = req.indexOf(F("P1=")); //sets first preset for cycle
   if (pos > 0) presetCycleMin = getNumVal(&req, pos);
 
