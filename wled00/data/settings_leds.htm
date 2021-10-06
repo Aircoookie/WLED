@@ -9,7 +9,7 @@
 		var customStarts=false,startsDirty=[];
     function H()
 		{
-			window.open("https://github.com/Aircoookie/WLED/wiki/Settings#led-settings");
+			window.open("https://kno.wled.ge/features/settings/#led-settings");
 		}
 		function B()
 		{
@@ -360,8 +360,8 @@ ${i+1}:
       c += `<span style="cursor: pointer;" onclick="off('${bt}')">&nbsp;&#215;</span><br>`;
       gId("btns").innerHTML = c;
     }
-    function tglSi() {
-      customStarts = !customStarts;
+    function tglSi(cs) {
+      customStarts = cs;
       if (!customStarts) startsDirty = []; //set all starts to clean
       UI();
     }
@@ -373,9 +373,7 @@ ${i+1}:
       }
       if (parseInt(gId("ls0").value) != 0) {cs = true; startsDirty[0] = true;}
       gId("si").checked = cs;
-      if (cs) {
-        tglSi();
-      }
+      tglSi(cs);
     }
     function uploadFile(name) {
       var req = new XMLHttpRequest();
@@ -445,7 +443,7 @@ ${i+1}:
     </div>
     <hr style="width:260px">
     Make a segment for each output: <input type="checkbox" name="MS"> <br>
-    Custom bus start indices: <input type="checkbox" onchange="tglSi()" id="si"> <br>
+    Custom bus start indices: <input type="checkbox" onchange="tglSi(this.checked)" id="si"> <br>
     <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>
@@ -462,7 +460,7 @@ ${i+1}:
     </select><span style="cursor: pointer;" onclick="off('IR')">&nbsp;&#215;</span><br>
     <div id="json" style="display:none;">JSON file: <input type="file" name="data" accept=".json"> <input type="button" value="Upload" onclick="uploadFile('/ir.json');"><br></div>
     <div id="toast"></div>
-    <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a><br>
+    <a href="https://kno.wled.ge/interfaces/infrared/" target="_blank">IR info</a><br>
     Relay GPIO: <input type="number" min="-1" max="33" name="RL" onchange="UI()" class="xs"> Invert <input type="checkbox" name="RM"><span style="cursor: pointer;" onclick="off('RL')">&nbsp;&#215;</span><br>
     <hr style="width:260px">
 		<h3>Defaults</h3>
