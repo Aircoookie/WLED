@@ -557,7 +557,6 @@ function populatePresets(fromls)
 			let i = is[a];
 			if (expanded[i+100]) expand(i+100, true);
 		}
-		makePlSel(arr);
 	} else { presetError(true); }
 	updatePA(true);
 	populateQL();
@@ -1359,14 +1358,15 @@ var plJson = {"0":{
 	"end": 0
 }};
 
-var plSelContent = "";
-function makePlSel(arr) {
-	plSelContent = "";
+function makePlSel(incPl=false) {
+	var plSelContent = "";
+	var arr = Object.entries(pJson);
 	for (var i = 0; i < arr.length; i++) {
 		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
-		if (arr[i][1].playlist && arr[i][1].playlist.ps) continue; //remove playlists, sub-playlists not yet supported
+		if (!incPl && arr[i][1].playlist && arr[i][1].playlist.ps) continue; //remove playlists, sub-playlists not yet supported
 		plSelContent += `<option value=${arr[i][0]}>${n}</option>`
 	}
+	return plSelContent;
 }
 
 function refreshPlE(p) {
@@ -1452,7 +1452,7 @@ function makeP(i,pl) {
 <div class="sel">End preset:<br>
 <select class="sel sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
 	<option value=0>None</option>
-${plSelContent}
+${makePlSel(true)}
 </select></div>
 </div>
 <div class="c"><button class="btn btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button></div>`;
@@ -1513,7 +1513,7 @@ function makePlEntry(p,i) {
 	<tr>
 		<td width="80%" colspan=2>
 			<select class="sel sel-pl" onchange="plePs(${p},${i},this)" data-val="${plJson[p].ps[i]}" data-index="${i}">
-			${plSelContent}
+			${makePlSel()}
 			</select>
 		</td>
 		<td class="c"><button class="btn btn-pl-add" onclick="addPl(${p},${i})"><i class="icons btn-icon">&#xe18a;</i></button></td>
