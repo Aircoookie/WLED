@@ -652,7 +652,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
 
   byte presetCycleMin = 1;
   byte presetCycleMax = 5;
-  byte presetCycCurr;
+
   pos = req.indexOf(F("P1=")); //sets first preset for cycle
   if (pos > 0) presetCycleMin = getNumVal(&req, pos);
 

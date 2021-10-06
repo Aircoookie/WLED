@@ -514,6 +514,8 @@ WLED_GLOBAL bool blynkEnabled _INIT(false);
 
 //playlists
 WLED_GLOBAL byte currentPlaylist _INIT(0);
+//still used for "PL=~" HTTP API command
+WLED_GLOBAL byte presetCycCurr _INIT(0);
 
 // realtime
 WLED_GLOBAL byte realtimeMode _INIT(REALTIME_MODE_INACTIVE);
