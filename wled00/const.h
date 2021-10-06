@@ -113,13 +113,17 @@
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 #define DMX_MODE_MULTIPLE_RGBW    6            //every LED is addressed with its own RGBW (ledCount * 4 channels)
 
-//Light capability byte (unused) 0bRRCCTTTT
+//Light capability byte (unused) 0bRCCCTTTT
 //bits 0/1/2/3: specifies a type of LED driver. A single "driver" may have different chip models but must have the same protocol/behavior
-//bits 4/5: specifies the class of LED driver - 0b00 (dec. 0-15)  unconfigured/reserved
-//                                            - 0b01 (dec. 16-31) digital (data pin only)
-//                                            - 0b10 (dec. 32-47) analog (PWM)
-//                                            - 0b11 (dec. 48-63) digital (data + clock / SPI)
-//bits 6/7 are reserved and set to 0b00
+//bits 4/5/6: specifies the class of LED driver - 0b000 (dec. 0-15)  unconfigured/reserved
+//                                              - 0b001 (dec. 16-31) digital (data pin only)
+//                                              - 0b010 (dec. 32-47) analog (PWM)
+//                                              - 0b011 (dec. 48-63) digital (data + clock / SPI)
+//                                              - 0b100 (dec. 64-79) unused/reserved
+//                                              - 0b101 (dec. 80-95) digital (data + clock / SPI)
+//                                              - 0b110 (dec. 96-111) unused/reserved
+//                                              - 0b111 (dec. 112-127) unused/reserved
+//bit 7 is reserved and set to 0
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
@@ -143,6 +147,10 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
+//Network types (master broadcast) (80-95)
+#define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
+#define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus)
+#define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus)
 
 #define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
 #define IS_PWM(t)     ((t) > 40 && (t) < 46)
@@ -242,7 +250,7 @@
 
 #ifndef MAX_LED_MEMORY
 #ifdef ESP8266
-#define MAX_LED_MEMORY 5000
+#define MAX_LED_MEMORY 4000
 #else
 #define MAX_LED_MEMORY 64000
 #endif
@@ -283,7 +291,7 @@
 
 // Maximum size of node map (list of other WLED instances)
 #ifdef ESP8266
-  #define WLED_MAX_NODES 15
+  #define WLED_MAX_NODES 24
 #else
   #define WLED_MAX_NODES 150
 #endif

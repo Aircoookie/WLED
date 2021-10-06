@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2109220
+#define VERSION 2110021
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -33,7 +33,9 @@
 #endif
 #define WLED_ENABLE_ADALIGHT       // saves 500b only
 //#define WLED_ENABLE_DMX          // uses 3.5kb (use LEDPIN other than 2)
-#define WLED_ENABLE_LOXONE         // uses 1.2kb
+#ifndef WLED_DISABLE_LOXONE
+  #define WLED_ENABLE_LOXONE       // uses 1.2kb
+#endif
 #ifndef WLED_DISABLE_WEBSOCKETS
   #define WLED_ENABLE_WEBSOCKETS
 #endif
@@ -85,6 +87,7 @@
 #include <WiFiUdp.h>
 #include <DNSServer.h>
 #ifndef WLED_DISABLE_OTA
+  #define NO_OTA_PORT
   #include <ArduinoOTA.h>
 #endif
 #include <SPIFFSEditor.h>
@@ -224,11 +227,7 @@ WLED_GLOBAL bool rlyMde _INIT(true);
 WLED_GLOBAL bool rlyMde _INIT(RLYMDE);
 #endif
 #ifndef IRPIN
-  #ifdef WLED_DISABLE_INFRARED
-  WLED_GLOBAL int8_t irPin _INIT(-1);
-  #else
-  WLED_GLOBAL int8_t irPin _INIT(4);
-  #endif
+WLED_GLOBAL int8_t irPin _INIT(-1);
 #else
 WLED_GLOBAL int8_t irPin _INIT(IRPIN);
 #endif
@@ -565,7 +564,7 @@ WLED_GLOBAL JsonDocument* fileDoc;
 WLED_GLOBAL bool doCloseFile _INIT(false);
 
 // presets
-WLED_GLOBAL int16_t currentPreset _INIT(-1);
+WLED_GLOBAL byte currentPreset _INIT(0);
 
 WLED_GLOBAL byte errorFlag _INIT(0);
 
@@ -587,6 +586,7 @@ WLED_GLOBAL AsyncMqttClient* mqtt _INIT(NULL);
 WLED_GLOBAL WiFiUDP notifierUdp, rgbUdp, notifier2Udp;
 WLED_GLOBAL WiFiUDP ntpUdp;
 WLED_GLOBAL ESPAsyncE131 e131 _INIT_N(((handleE131Packet)));
+WLED_GLOBAL ESPAsyncE131 ddp  _INIT_N(((handleE131Packet)));
 WLED_GLOBAL bool e131NewData _INIT(false);
 
 // led fx library object
@@ -597,7 +597,6 @@ WLED_GLOBAL bool doInitBusses _INIT(false);
 
 // Usermod manager
 WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
-
 
 // enable additional debug output
 #ifdef WLED_DEBUG
@@ -628,7 +627,7 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
   WLED_GLOBAL unsigned long debugTime _INIT(0);
   WLED_GLOBAL int lastWifiState _INIT(3);
   WLED_GLOBAL unsigned long wifiStateChangedTime _INIT(0);
-  WLED_GLOBAL int loops _INIT(0);
+  WLED_GLOBAL unsigned long loops _INIT(0);
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32

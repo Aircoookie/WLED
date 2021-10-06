@@ -128,11 +128,11 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
+      if (!doInitBusses) ledCount = 1;
       doInitBusses = true;
+      uint16_t totalNew = start + length;
+      if (totalNew > ledCount && totalNew <= MAX_LEDS) ledCount = totalNew; //total is end of last bus (where start + len is max.)
     }
-
-    t = request->arg(F("LC")).toInt();
-    if (t > 0 && t <= MAX_LEDS) ledCount = t;
 
     // upate other pins
     int hw_ir_pin = request->arg(F("IR")).toInt();

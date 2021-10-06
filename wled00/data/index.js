@@ -506,12 +506,12 @@ function populatePresets(fromls)
 			pJson["0"] = {};
 			localStorage.setItem("wledP", JSON.stringify(pJson));
 		}
-    pmtLS = pmt;
-    for (var a = 0; a < is.length; a++) {
-      let i = is[a];
-      if (expanded[i+100]) expand(i+100, true);
-    }
-		makePlSel(arr);
+		pmtLS = pmt;
+		for (var a = 0; a < is.length; a++) {
+		let i = is[a];
+		if (expanded[i+100]) expand(i+100, true);
+		}
+		//makePlSel(arr);
 	} else { presetError(true); }
 	updatePA();
 	populateQL();
@@ -1296,14 +1296,16 @@ var plJson = {"0":{
 	"end": 0	
 }};
 
-var plSelContent = "";
-function makePlSel(arr) {
-	plSelContent = "";
+//var plSelContent = "";
+function makePlSel(incPl=false) {
+	var plSelContent = "";
+	var arr = Object.entries(pJson);
 	for (var i = 0; i < arr.length; i++) {
 		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
-		if (arr[i][1].playlist && arr[i][1].playlist.ps) continue; //remove playlists, sub-playlists not yet supported
+		if (!incPl && arr[i][1].playlist && arr[i][1].playlist.ps) continue; //remove playlists, sub-playlists not yet supported
 		plSelContent += `<option value=${arr[i][0]}>${n}</option>`
 	}
+	return plSelContent;
 }
 
 function refreshPlE(p) {
@@ -1391,7 +1393,7 @@ function makeP(i,pl) {
   End preset:<br>
   <select class="btn sel sel-ple" id="pl${i}selEnd" onchange="plR(${i})" data-val=${plJson[i].end?plJson[i].end:0}>
 		<option value=0>None</option>
-    ${plSelContent}
+    ${makePlSel(true)}
   </select>
 	</div>
   <button class="btn btn-i btn-p" onclick="testPl(${i}, this)"><i class='icons btn-icon'>&#xe139;</i>Test</button>`;
@@ -1449,7 +1451,7 @@ function makePlEntry(p,i) {
   return `
   <div class="plentry">
     <select class="btn sel sel-pl" onchange="plePs(${p},${i},this)" data-val=${plJson[p].ps[i]} data-index=${i}>
-			${plSelContent}
+		${makePlSel()}
     </select>
 		<button class="btn btn-i btn-xs btn-pl-del" onclick="delPl(${p},${i})"><i class="icons btn-icon">&#xe037;</i></button>
 		<div class="h plnl">Duration</div><div class="h plnl">Transition</div><div class="h pli">#${i+1}</div><br>
