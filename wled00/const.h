@@ -127,10 +127,6 @@
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
-//network types (master broadcast) (10-15)
-#define TYPE_NET_DDP_RGB         10            //network DDP RGB bus (master broadcast bus)
-#define TYPE_NET_E131_RGB        11            //network E131 RGB bus (master broadcast bus)
-#define TYPE_NET_ARTNET_RGB      12            //network ArtNet RGB bus (master broadcast bus)
 //Digital types (data pin only) (16-31)
 #define TYPE_WS2812_1CH          20            //white-only chips
 #define TYPE_WS2812_WWA          21            //amber + warm + cold white
