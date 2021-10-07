@@ -8,7 +8,7 @@
  */
 
 // version code in format yymmddb (b = daily build)
-#define VERSION 2110070
+#define VERSION 2110071
 
 //uncomment this if you have a "my_config.h" file you'd like to use
 //#define WLED_USE_MY_CONFIG
@@ -513,7 +513,7 @@ WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 25
 WLED_GLOBAL bool blynkEnabled _INIT(false);
 
 //playlists
-WLED_GLOBAL byte currentPlaylist _INIT(0);
+WLED_GLOBAL int16_t currentPlaylist _INIT(-1);
 //still used for "PL=~" HTTP API command
 WLED_GLOBAL byte presetCycCurr _INIT(0);
 
