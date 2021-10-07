@@ -114,24 +114,13 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       if (start > lC+length) continue; // something is very wrong :)
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
-      //if ((bool)elm[F("rgbw")]) SET_BIT(ledType,7); else UNSET_BIT(ledType,7);  // hack bit 7 to indicate RGBW (as an override if necessary)
+      bool refresh = elm["ref"] | false;
+      ledType |= refresh << 7;  // hack bit 7 to indicate strip requires off refresh
       s++;
       lC += length;
       BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
       mem += BusManager::memUsage(bc);
       if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
-/*
-      BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
-      if (bc.adjustBounds(ledCount)) {
-        //RGBW mode is enabled if at least one of the strips is RGBW
-        strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(ledType));
-        //refresh is required to remain off if at least one of the strips requires the refresh.
-        strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(ledType);
-        s++;
-        mem += busses.memUsage(bc);
-        if (mem <= MAX_LED_MEMORY) busses.add(bc);
-      }
-*/
     }
     // finalization done in beginStrip()
   }
@@ -559,7 +548,8 @@ void serializeConfig() {
     ins[F("order")] = bus->getColorOrder();
     ins["rev"] = bus->reversed;
     ins[F("skip")] = bus->skippedLeds();
-    ins["type"] = bus->getType();
+    ins["type"] = bus->getType() & 0x7F;;
+    ins["ref"] = bus->isOffRefreshRequired();
     ins[F("rgbw")] = bus->isRgbw();
   }
 

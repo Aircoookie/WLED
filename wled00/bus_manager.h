@@ -36,11 +36,11 @@ struct BusConfig {
   uint8_t colorOrder;
   bool reversed;
   uint8_t skipAmount;
-  bool rgbwOverride;
+  bool refreshReq;
   uint8_t pins[5] = {LEDPIN, 255, 255, 255, 255};
   BusConfig(uint8_t busType, uint8_t* ppins, uint16_t pstart, uint16_t len = 1, uint8_t pcolorOrder = COL_ORDER_GRB, bool rev = false, uint8_t skip = 0) {
-    rgbwOverride = (bool) GET_BIT(busType,7);
-    type = busType & 0x7F;  // bit 7 may be/is hacked to include RGBW info (1=RGBW, 0=RGB)
+    refreshReq = (bool) GET_BIT(busType,7);
+    type = busType & 0x7F;  // bit 7 may be/is hacked to include refresh info (1=refresh in off state, 0=no refresh)
     count = len; start = pstart; colorOrder = pcolorOrder; reversed = rev; skipAmount = skip;
     uint8_t nPins = 1;
     if (type >= TYPE_NET_DDP_RGB && type < 96) nPins = 4; //virtual network bus. 4 "pins" store IP address
@@ -126,6 +126,10 @@ class Bus {
     return false;
   }
 
+  inline bool isOffRefreshRequired() {
+    return _needsRefresh;
+  }
+
   bool reversed = false;
 
   protected:
@@ -133,6 +137,7 @@ class Bus {
   uint8_t _bri = 255;
   uint16_t _start = 0;
   bool _valid = false;
+  bool _needsRefresh = false;
 };
 
 
@@ -149,9 +154,10 @@ class BusDigital : public Bus {
       _pins[1] = bc.pins[1];
     }
     reversed = bc.reversed;
+    _needsRefresh = bc.refreshReq || bc.type == TYPE_TM1814;
     _skip = bc.skipAmount;    //sacrificial pixels
     _len = bc.count + _skip;
-    _rgbw = bc.rgbwOverride || Bus::isRgbw(bc.type);  // RGBW override in bit 7
+    _rgbw = Bus::isRgbw(bc.type);
     _iType = PolyBus::getI(bc.type, _pins, nr, _rgbw);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len, nr);
@@ -586,11 +592,6 @@ class BusManager {
   // a workaround
   static inline bool isRgbw(uint8_t type) {
     return Bus::isRgbw(type);
-  }
-
-  //Return true if the strip requires a refresh to stay off.
-  static bool isOffRefreshRequred(uint8_t type) {
-    return type == TYPE_TM1814;
   }
 
   private:

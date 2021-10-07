@@ -97,7 +97,7 @@ void WS2812FX::finalizeInit(void)
     //RGBW mode is enabled if at least one of the strips is RGBW
     isRgbw |= bus->isRgbw();
     //refresh is required to remain off if at least one of the strips requires the refresh.
-    isOffRefreshRequred |= BusManager::isOffRefreshRequred(bus->getType());
+    isOffRefreshRequred |= bus->isOffRefreshRequired();
     _length += bus->getLength();
   }
   ledCount = _length;

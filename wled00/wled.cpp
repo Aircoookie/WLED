@@ -299,19 +299,6 @@ void WLED::loop()
       if (busConfigs[i] == nullptr) break;
       mem += BusManager::memUsage(*busConfigs[i]);
       if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
-/*
-      // this is done in strip.finalizeInit()
-      if (busConfigs[i]->adjustBounds(ledCount)) {
-        mem += busses.memUsage(*busConfigs[i]);
-        if (mem <= MAX_LED_MEMORY) {
-          busses.add(*busConfigs[i]);
-          //RGBW mode is enabled if at least one of the strips is RGBW
-          strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(busConfigs[i]->type));
-          //refresh is required to remain off if at least one of the strips requires the refresh.
-          strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(busConfigs[i]->type);
-        }
-      }
-*/
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
     strip.finalizeInit();

@@ -104,7 +104,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char ls[4] = "LS"; ls[2] = 48+s; ls[3] = 0; //strip start LED
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
-      //char ew[4] = "EW"; ew[2] = 48+s; ew[3] = 0; //strip RGBW override
+      char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN(F("No data.")); break;
       }
@@ -114,7 +114,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         pins[i] = (request->arg(lp).length() > 0) ? request->arg(lp).toInt() : 255;
       }
       type = request->arg(lt).toInt();
-      //if (request->hasArg(ew)) SET_BIT(type,7); else UNSET_BIT(type,7); // hack bit 7 to indicate RGBW (as a LED type override if necessary)
+      type |= request->hasArg(rf) << 7; // off refresh override
       skip = request->hasArg(sl) ? LED_SKIP_AMOUNT : 0;
 
       colorOrder = request->arg(co).toInt();
@@ -513,9 +513,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
         DEBUG_PRINTLN(value);
       }
     }
-    #ifdef WLED_DEBUG
-    serializeJson(um,Serial); DEBUG_PRINTLN();
-    #endif
     usermods.readFromConfig(um);  // force change of usermod parameters
   }
 
