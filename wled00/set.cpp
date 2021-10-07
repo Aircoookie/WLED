@@ -525,17 +525,16 @@ int getNumVal(const String* req, uint16_t pos)
 }
 
 
-//helper to get int value at a position in string
-bool updateVal(const String* req, const char* key, byte* val, byte minv, byte maxv)
+//helper to get int value with in/decrementing support via ~ syntax
+void parseNumber(const char* str, byte* val, byte minv, byte maxv)
 {
-  int pos = req->indexOf(key);
-  if (pos < 1) return false;
-
-  if (req->charAt(pos+3) == '~') {
-    int out = getNumVal(req, pos+1);
+  if (str[0] == 'r') {*val = random8(minv,maxv); return;}
+  if (str[0] == '~') {
+    int out = atoi(str +1);
     if (out == 0)
     {
-      if (req->charAt(pos+4) == '-')
+      if (str[1] == '0') return;
+      if (str[1] == '-')
       {
         *val = (*val <= minv)? maxv : *val -1;
       } else {
@@ -549,8 +548,17 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv, byte ma
     }
   } else
   {
-    *val = getNumVal(req, pos);
+    *val = atoi(str);
   }
+}
+
+
+bool updateVal(const String* req, const char* key, byte* val, byte minv, byte maxv)
+{
+  int pos = req->indexOf(key);
+  if (pos < 1) return false;
+  if (req->length() < (unsigned int)(pos + 4)) return false;
+  parseNumber(req->c_str() + pos +3, val, minv, maxv);
   return true;
 }
 

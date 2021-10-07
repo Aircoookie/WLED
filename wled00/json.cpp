@@ -6,6 +6,18 @@
  * JSON API (De)serialization
  */
 
+void getVal(JsonVariant elem, byte* val, byte vmin=0, byte vmax=255) {
+  if (elem.is<int>()) {
+    *val = elem;
+  } else if (elem.is<const char*>()) {
+    const char* str = elem;
+    //int out = 0;
+    size_t len = strlen(str);
+    if (len == 0 || len > 5) return;
+    parseNumber(str, val, vmin, vmax);
+  }
+}
+
 void deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   byte id = elem["id"] | it;
@@ -210,7 +222,8 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
 
-  bri = root["bri"] | bri;
+  //bri = root["bri"] | bri;
+  getVal(root["bri"], &bri);
 
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
