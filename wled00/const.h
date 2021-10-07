@@ -59,7 +59,7 @@
 #define USERMOD_ID_ELEKSTUBE_IPS         16     //Usermod "usermod_elekstube_ips.h"
 #define USERMOD_ID_SN_PHOTORESISTOR      17     //Usermod "usermod_sn_photoresistor.h"
 #define USERMOD_ID_BATTERY_STATUS_BASIC  18     //Usermod "usermod_v2_battery_status_basic.h"
-#define USERMOD_ID_PWM_FAN               19     //Usermod "usermod-PWM-fan.h"
+#define USERMOD_ID_PWM_FAN               19     //Usermod "usermod_PWM_fan.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -113,13 +113,17 @@
 #define DMX_MODE_MULTIPLE_DRGB    5            //every LED is addressed with its own RGB and share a master dimmer (ledCount * 3 + 1 channels)
 #define DMX_MODE_MULTIPLE_RGBW    6            //every LED is addressed with its own RGBW (ledCount * 4 channels)
 
-//Light capability byte (unused) 0bRRCCTTTT
+//Light capability byte (unused) 0bRCCCTTTT
 //bits 0/1/2/3: specifies a type of LED driver. A single "driver" may have different chip models but must have the same protocol/behavior
-//bits 4/5: specifies the class of LED driver - 0b00 (dec. 0-15)  unconfigured/reserved
-//                                            - 0b01 (dec. 16-31) digital (data pin only)
-//                                            - 0b10 (dec. 32-47) analog (PWM)
-//                                            - 0b11 (dec. 48-63) digital (data + clock / SPI)
-//bits 6/7 are reserved and set to 0b00
+//bits 4/5/6: specifies the class of LED driver - 0b000 (dec. 0-15)  unconfigured/reserved
+//                                              - 0b001 (dec. 16-31) digital (data pin only)
+//                                              - 0b010 (dec. 32-47) analog (PWM)
+//                                              - 0b011 (dec. 48-63) digital (data + clock / SPI)
+//                                              - 0b100 (dec. 64-79) unused/reserved
+//                                              - 0b101 (dec. 80-95) digital (data + clock / SPI)
+//                                              - 0b110 (dec. 96-111) unused/reserved
+//                                              - 0b111 (dec. 112-127) unused/reserved
+//bit 7 is reserved and set to 0
 
 #define TYPE_NONE                 0            //light is not configured
 #define TYPE_RESERVED             1            //unused. Might indicate a "virtual" light
@@ -147,6 +151,10 @@
 #define TYPE_APA102              51
 #define TYPE_LPD8806             52
 #define TYPE_P9813               53
+//Network types (master broadcast) (80-95)
+#define TYPE_NET_DDP_RGB         80            //network DDP RGB bus (master broadcast bus)
+#define TYPE_NET_E131_RGB        81            //network E131 RGB bus (master broadcast bus)
+#define TYPE_NET_ARTNET_RGB      82            //network ArtNet RGB bus (master broadcast bus)
 
 #define IS_DIGITAL(t) ((t) & 0x10) //digital are 16-31 and 48-63
 #define IS_PWM(t)     ((t) > 40 && (t) < 46)

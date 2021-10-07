@@ -544,7 +544,7 @@ void sendSysInfoUDP()
 //
 // Send real time UDP updates to the specified client
 //
-// type   - protocol type (1=DDP, 2=E1.31, 3=ArtNet)
+// type   - protocol type (0=DDP, 1=E1.31, 2=ArtNet)
 // client - the IP address to send to
 // length - the number of pixels
 // buffer - a buffer of at least length*4 bytes long
@@ -617,7 +617,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, uint8
         }
 
         if (!ddpUdp.endPacket()) {            
-          DEBUG_PRINTLN("WiFiUDP.endPacket returned an error");
+          DEBUG_PRINTLN(F("WiFiUDP.endPacket returned an error"));
           return 1; // problem
         }
 

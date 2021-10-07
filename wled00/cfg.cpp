@@ -276,6 +276,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject if_live = interfaces["live"];
   CJSON(receiveDirect, if_live["en"]);
   CJSON(e131Port, if_live["port"]); // 5568
+  if (e131Port == DDP_DEFAULT_PORT) e131Port = E131_DEFAULT_PORT; // prevent double DDP port allocation
   CJSON(e131Multicast, if_live[F("mc")]);
 
   JsonObject if_live_dmx = if_live[F("dmx")];

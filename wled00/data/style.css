@@ -43,6 +43,9 @@ input {
   font-family: Verdana, sans-serif;
   border: 0.5ch solid #333;
 }
+input:disabled {
+  color: #888;
+}
 input[type="text"] {
   font-size: medium;
 }
@@ -58,23 +61,23 @@ input[type="number"].xl {
   width: 85px;
 }
 input[type="number"].l {
-  width: 63px;
+  width: 65px;
 }
 input[type="number"].m {
-  width: 56px;
+  width: 59px;
 }
 input[type="number"].s {
-  width: 49px;
+  width: 52px;
 }
 input[type="number"].xs {
-  width: 42px;
+  width: 46px;
 }
 select {
   margin: 2px;
   font-size: medium;
 }
 input[type="checkbox"] {
-  transform: scale(2);
+  transform: scale(1.5);
   margin-right: 10px;
 }
 select {

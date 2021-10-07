@@ -1564,8 +1564,7 @@ function tglCs(i)
 
 function tglSegn(s)
 {
-  d.gId(`seg${s}t`).style.display =
-    (window.getComputedStyle(d.gId(`seg${s}t`)).display === "none") ? "inline":"none";
+	d.gId(`seg${s}t`).style.display = (window.getComputedStyle(d.gId(`seg${s}t`)).display === "none") ? "inline":"none";
 }
 
 function selSegEx(s)
