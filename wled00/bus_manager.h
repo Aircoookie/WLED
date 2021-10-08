@@ -157,8 +157,7 @@ class BusDigital : public Bus {
     _needsRefresh = bc.refreshReq || bc.type == TYPE_TM1814;
     _skip = bc.skipAmount;    //sacrificial pixels
     _len = bc.count + _skip;
-    _rgbw = Bus::isRgbw(bc.type);
-    _iType = PolyBus::getI(bc.type, _pins, nr, _rgbw);
+    _iType = PolyBus::getI(bc.type, _pins, nr);
     if (_iType == I_NONE) return;
     _busPtr = PolyBus::create(_iType, _pins, _len, nr);
     _valid = (_busPtr != nullptr);
@@ -217,7 +216,7 @@ class BusDigital : public Bus {
   }
 
   inline bool isRgbw() {
-    return (_rgbw || _type == TYPE_SK6812_RGBW || _type == TYPE_TM1814);
+    return Bus::isRgbw(_type);
   }
 
   inline uint8_t skippedLeds() {
@@ -229,7 +228,7 @@ class BusDigital : public Bus {
   }
 
   void cleanup() {
-    DEBUG_PRINTLN(F("Digital Cleanup"));
+    DEBUG_PRINTLN(F("Digital Cleanup."));
     PolyBus::cleanup(_busPtr, _iType);
     _iType = I_NONE;
     _valid = false;
@@ -248,7 +247,6 @@ class BusDigital : public Bus {
   uint8_t _iType = I_NONE;
   uint16_t _len = 0;
   uint8_t _skip = 0;
-  bool _rgbw = false;
   void * _busPtr = nullptr;
 };
 
@@ -342,7 +340,7 @@ class BusPwm : public Bus {
   }
 
   bool isRgbw() {
-    return (_type > TYPE_ONOFF && _type <= TYPE_ANALOG_5CH && _type != TYPE_ANALOG_3CH);
+    return Bus::isRgbw(_type);
   }
 
   inline void cleanup() {
@@ -529,7 +527,7 @@ class BusManager {
 
   //do not call this method from system context (network callback)
   void removeAll() {
-    //Serial.println("Removing all.");
+    DEBUG_PRINTLN(F("Removing all."));
     //prevents crashes due to deleting busses while in use. 
     while (!canAllShow()) yield();
     for (uint8_t i = 0; i < numBusses; i++) delete busses[i];
@@ -587,11 +585,6 @@ class BusManager {
     uint16_t len = 0;
     for (uint8_t i=0; i<numBusses; i++ ) len += busses[i]->getLength();
     return len;
-  }
-
-  // a workaround
-  static inline bool isRgbw(uint8_t type) {
-    return Bus::isRgbw(type);
   }
 
   private:
