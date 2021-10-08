@@ -411,7 +411,7 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   if (!forPreset) {
     if (errorFlag) root[F("error")] = errorFlag;
 
-    root[F("ps")] = currentPreset;
+    root[F("ps")] = (currentPreset > 0) ? currentPreset : -1;
     root[F("pl")] = currentPlaylist;
 
     usermods.addToJsonState(root);
