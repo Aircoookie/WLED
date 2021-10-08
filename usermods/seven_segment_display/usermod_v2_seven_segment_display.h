@@ -2,34 +2,37 @@
 
 #include "wled.h"
 
+class SevenSegmentDisplay : public Usermod
+{
 
+#define WLED_SS_BUFFLEN 6
+#define REFRESHTIME 497
+private:
+  //Runtime variables.
+  unsigned long lastRefresh = 0;
+  unsigned long lastCharacterStep = 0;
+  //char ssDisplayBuffer[WLED_SS_BUFFLEN+1]; //Runtime buffer of what should be displayed.
+  String ssDisplayBuffer = "";
+  char ssCharacterMask[36] = {0x77, 0x11, 0x6B, 0x3B, 0x1D, 0x3E, 0x7E, 0x13, 0x7F, 0x1F, 0x5F, 0x7C, 0x66, 0x79, 0x6E, 0x4E, 0x76, 0x5D, 0x44, 0x71, 0x5E, 0x64, 0x27, 0x58, 0x77, 0x4F, 0x1F, 0x48, 0x3E, 0x6C, 0x75, 0x25, 0x7D, 0x2A, 0x3D, 0x6B};
+  int ssDisplayMessageIdx = 0; //Position of the start of the message to be physically displayed.
+  bool ssDoDisplayTime = true;
+  int ssVirtualDisplayMessageIdxStart = 0;
+  int ssVirtualDisplayMessageIdxEnd = 0;
+  unsigned long resfreshTime = 497;
 
-class SevenSegmentDisplay : public Usermod {
-
-  #define WLED_SS_BUFFLEN 6
-  #define REFRESHTIME 497
-  private:
-    //Private class members. You can declare variables and functions only accessible to your usermod here
-    unsigned long lastRefresh = 0;
-    unsigned long lastCharacterStep = 0;
-    char ssDisplayBuffer[WLED_SS_BUFFLEN+1]; //Runtime buffer of what should be displayed.
-    char ssCharacterMask[36] = {0x77,0x11,0x6B,0x3B,0x1D,0x3E,0x7E,0x13,0x7F,0x1F,0x5F,0x7C,0x66,0x79,0x6E,0x4E,0x76,0x5D,0x44,0x71,0x5E,0x64,0x27,0x58,0x77,0x4F,0x1F,0x48,0x3E,0x6C,0x75,0x25,0x7D,0x2A,0x3D,0x6B};
-    int ssDisplayMessageIdx = 0;         //Position of the start of the message to be physically displayed.
-
-
-    // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
-    unsigned long resfreshTime = 497;
-    byte ssLEDPerSegment = 1;                            //The number of LEDs in each segment of the 7 seg (total per digit is 7 * ssLedPerSegment)
-    byte ssLEDPerPeriod = 1;                              //A Period will have 1x and a Colon will have 2x
-    int ssStartLED = 0;                                  //The pixel that the display starts at. 
-    /*  HH - 0-23. hh - 1-12, kk - 1-24 hours
+  // set your config variables to their boot default value (this can also be done in readFromConfig() or a constructor if you prefer)
+  int ssLEDPerSegment = 1; //The number of LEDs in each segment of the 7 seg (total per digit is 7 * ssLedPerSegment)
+  int ssLEDPerPeriod = 1;  //A Period will have 1x and a Colon will have 2x
+  int ssStartLED = 0;       //The pixel that the display starts at.
+  /*  HH - 0-23. hh - 1-12, kk - 1-24 hours
     //  MM or mm - 0-59 minutes
     //  SS or ss = 0-59 seconds
     //  : for a colon
     //  All others for alpha numeric, (will be blank when displaying time)
     */
-    char ssDisplayMask[WLED_SS_BUFFLEN+1] = "HHMMSS";  //Physical Display Mask, this should reflect physical equipment.
-    /* ssDisplayConfig
+  //char ssDisplayMask[WLED_SS_BUFFLEN+1] = "HHMMSS";  //Physical Display Mask, this should reflect physical equipment.
+  String ssDisplayMask = "HHMMSS";
+  /* ssDisplayConfig
     //           -------
     //         /   A   /          0 - EDCGFAB
     //        / F     / B         1 - EDCBAFG
@@ -41,153 +44,153 @@ class SevenSegmentDisplay : public Usermod {
     //   -------
     //      D
     */
-    byte ssDisplayConfig = 5;            //Physical configuration of the Seven segment display
-    char ssDisplayMessage[50] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";//Message that can scroll across the display
-    bool ssDoDisplayMessage = false;         //If not, display time. 
-    unsigned long ssScrollSpeed = 1000;             //Time between advancement of extended message scrolling, in milliseconds.
+  int ssDisplayConfig = 5; //Physical configuration of the Seven segment display
+  String ssDisplayMessage = "testing123";
+  bool ssTimeEnabled = true;          //If not, display message.
+  unsigned long ssScrollSpeed = 1000; //Time between advancement of extended message scrolling, in milliseconds.
 
-
-
-    unsigned long _overlaySevenSegmentProcess()
+  unsigned long _overlaySevenSegmentProcess()
+  {
+    //Do time for now.
+    if (ssDoDisplayTime)
     {
-      //Do time for now.
-      if(!ssDoDisplayMessage)
+      //Format the ssDisplayBuffer based on ssDisplayMask
+      int displayMaskLen = static_cast<int>(ssDisplayMask.length());
+      for (int index = 0; index < displayMaskLen; index++)
       {
-        //Format the ssDisplayBuffer based on ssDisplayMask
-        for(int index = 0; index < WLED_SS_BUFFLEN; index++)
+        //Only look for time formatting if there are at least 2 characters left in the buffer.
+        if ((index < displayMaskLen - 1) && (ssDisplayMask[index] == ssDisplayMask[index + 1]))
         {
-          //Only look for time formatting if there are at least 2 characters left in the buffer.
-          if((index < WLED_SS_BUFFLEN - 1) && (ssDisplayMask[index] == ssDisplayMask[index + 1]))
+          int timeVar = 0;
+          switch (ssDisplayMask[index])
           {
-            int timeVar = 0;
-            switch(ssDisplayMask[index])
-            {
-              case 'h':
-                timeVar = hourFormat12(localTime);
-                break;
-              case 'H':
-                timeVar = hour(localTime);
-                break;
-              case 'k':
-                timeVar = hour(localTime) + 1;
-                break;
-              case 'M':
-              case 'm':
-                timeVar = minute(localTime);
-                break;
-              case 'S':
-              case 's':
-                timeVar = second(localTime);
-                break;
-
-            }
-
-            //Only want to leave a blank in the hour formatting. 
-            if((ssDisplayMask[index] == 'h' || ssDisplayMask[index] == 'H' || ssDisplayMask[index] == 'k') && timeVar < 10)
-              ssDisplayBuffer[index] = ' ';
-            else
-              ssDisplayBuffer[index] = 0x30 + (timeVar / 10);
-            ssDisplayBuffer[index + 1] = 0x30 + (timeVar % 10);  
-
-            //Need to increment the index because of the second digit.
-            index++;
+          case 'h':
+            timeVar = hourFormat12(localTime);
+            break;
+          case 'H':
+            timeVar = hour(localTime);
+            break;
+          case 'k':
+            timeVar = hour(localTime) + 1;
+            break;
+          case 'M':
+          case 'm':
+            timeVar = minute(localTime);
+            break;
+          case 'S':
+          case 's':
+            timeVar = second(localTime);
+            break;
           }
-          else 
-          {
-            ssDisplayBuffer[index] = (ssDisplayMask[index] == ':' ? ':' : ' ');
-          }
-        }
-        return REFRESHTIME;
-      }
-      else
-      {
-        /* This will handle displaying a message and the scrolling of the message if its longer than the buffer length */
-        //TODO: Progress message starting point depending on display length, message length, display time, etc...
 
-        //Increase the displayed message index to progress it one character.
-        ssDisplayMessageIdx++;
-
-        //Check to see if the message has scrolled completely
-        size_t len = strlen(ssDisplayMessage); //really should grab this when the message is set. TODO
-        if(ssDisplayMessageIdx > len)
-        {
-          //If it has displayed the whole message and the display time has exceeded, go back to clock.
-          ssDisplayMessageIdx = 0;
-          ssDoDisplayMessage = false;
-          return REFRESHTIME;
-        }
-        //Display message
-        for(int index = 0; index < WLED_SS_BUFFLEN; index++){
-          if(ssDisplayMessageIdx + index < len)
-            ssDisplayBuffer[index] = ssDisplayMessage[ssDisplayMessageIdx+index];
-          else
+          //Only want to leave a blank in the hour formatting.
+          if ((ssDisplayMask[index] == 'h' || ssDisplayMask[index] == 'H' || ssDisplayMask[index] == 'k') && timeVar < 10)
             ssDisplayBuffer[index] = ' ';
-        }
-        return ssScrollSpeed;
-      }
-    }
-    
-    void _overlaySevenSegmentDraw()
-    {
-      
-      //Start pixels at ssStartLED, Use ssLEDPerSegment, ssLEDPerPeriod, ssDisplayBuffer
-      int indexLED = 0;
-      for(int indexBuffer = 0; indexBuffer < WLED_SS_BUFFLEN; indexBuffer++)
-      {
-        if(ssDisplayBuffer[indexBuffer] == 0) break;
-        else if(ssDisplayBuffer[indexBuffer] == '.')
-        {
-          //Won't ever turn off LED lights for a period. (or will we?)
-          indexLED += ssLEDPerPeriod; 
-          continue;
-        }
-        else if(ssDisplayBuffer[indexBuffer] == ':')
-        {
-          //Turn off colon if odd second?
-          indexLED += ssLEDPerPeriod * 2;
-        }
-        else if(ssDisplayBuffer[indexBuffer] == ' ')
-        {
-          //Turn off all 7 segments.
-          _overlaySevenSegmentLEDOutput(0, indexLED);
-          indexLED += ssLEDPerSegment * 7;
+          else
+            ssDisplayBuffer[index] = 0x30 + (timeVar / 10);
+          ssDisplayBuffer[index + 1] = 0x30 + (timeVar % 10);
+
+          //Need to increment the index because of the second digit.
+          index++;
         }
         else
         {
-          //Turn off correct segments.
-          _overlaySevenSegmentLEDOutput(_overlaySevenSegmentGetCharMask(ssDisplayBuffer[indexBuffer]), indexLED);
-          indexLED += ssLEDPerSegment * 7;
+          ssDisplayBuffer[index] = (ssDisplayMask[index] == ':' ? ':' : ' ');
         }
-        
       }
-
+      return REFRESHTIME;
     }
-
-    void _overlaySevenSegmentLEDOutput(char mask, int indexLED)
+    else
     {
-      for(char index = 0; index < 7; index++)
+      /* This will handle displaying a message and the scrolling of the message if its longer than the buffer length */
+
+      //Check to see if the message has scrolled completely
+      int len = static_cast<int>(ssDisplayMessage.length());
+      if (ssDisplayMessageIdx > len)
       {
-        if((mask & (0x40 >> index)) != (0x40 >> index))
-        {
-          for(int numPerSeg = 0; numPerSeg < ssLEDPerSegment;  numPerSeg++)
-          {
-            strip.setPixelColor(indexLED, 0x000000);
-          }
-        }
-        indexLED += ssLEDPerSegment;
+        //If it has scrolled the whole message, reset it. 
+        setSevenSegmentMessage(ssDisplayMessage);
+        return REFRESHTIME;
+      }
+      //Display message
+      int displayMaskLen = static_cast<int>(ssDisplayMask.length());
+      for (int index = 0; index < displayMaskLen; index++)
+      {
+        if (ssDisplayMessageIdx + index < len && ssDisplayMessageIdx + index >= 0)
+          ssDisplayBuffer[index] = ssDisplayMessage[ssDisplayMessageIdx + index];
+        else
+          ssDisplayBuffer[index] = ' ';
+      }
+
+      //Increase the displayed message index to progress it one character if the length exceeds the display length.
+      if (len > displayMaskLen)
+        ssDisplayMessageIdx++;
+
+      return ssScrollSpeed;
+    }
+  }
+
+  void _overlaySevenSegmentDraw()
+  {
+
+    //Start pixels at ssStartLED, Use ssLEDPerSegment, ssLEDPerPeriod, ssDisplayBuffer
+    int indexLED = 0;
+    int displayMaskLen = static_cast<int>(ssDisplayMask.length());
+    for (int indexBuffer = 0; indexBuffer < displayMaskLen; indexBuffer++)
+    {
+      if (ssDisplayBuffer[indexBuffer] == 0)
+        break;
+      else if (ssDisplayBuffer[indexBuffer] == '.')
+      {
+        //Won't ever turn off LED lights for a period. (or will we?)
+        indexLED += ssLEDPerPeriod;
+        continue;
+      }
+      else if (ssDisplayBuffer[indexBuffer] == ':')
+      {
+        //Turn off colon if odd second?
+        indexLED += ssLEDPerPeriod * 2;
+      }
+      else if (ssDisplayBuffer[indexBuffer] == ' ')
+      {
+        //Turn off all 7 segments.
+        _overlaySevenSegmentLEDOutput(0, indexLED);
+        indexLED += ssLEDPerSegment * 7;
+      }
+      else
+      {
+        //Turn off correct segments.
+        _overlaySevenSegmentLEDOutput(_overlaySevenSegmentGetCharMask(ssDisplayBuffer[indexBuffer]), indexLED);
+        indexLED += ssLEDPerSegment * 7;
       }
     }
+  }
 
-    char _overlaySevenSegmentGetCharMask(char var)
+  void _overlaySevenSegmentLEDOutput(char mask, int indexLED)
+  {
+    for (char index = 0; index < 7; index++)
     {
-      //ssCharacterMask
-      if(var > 0x60) //Essentially a "toLower" call. 
-        var -= 0x20;
-      if(var > 0x39) //Meaning it is a non-numeric
-          var -= 0x07;
-      var -= 0x30; //Shift ascii down to start numeric 0 at index 0.
-      
-      char mask = ssCharacterMask[var];
+      if ((mask & (0x40 >> index)) != (0x40 >> index))
+      {
+        for (int numPerSeg = 0; numPerSeg < ssLEDPerSegment; numPerSeg++)
+        {
+          strip.setPixelColor(indexLED, 0x000000);
+        }
+      }
+      indexLED += ssLEDPerSegment;
+    }
+  }
+
+  char _overlaySevenSegmentGetCharMask(char var)
+  {
+    //ssCharacterMask
+    if (var > 0x60) //Essentially a "toLower" call.
+      var -= 0x20;
+    if (var > 0x39) //Meaning it is a non-numeric
+      var -= 0x07;
+    var -= 0x30; //Shift ascii down to start numeric 0 at index 0.
+
+    char mask = ssCharacterMask[static_cast<int>(var)];
     /*
       0 - EDCGFAB
       1 - EDCBAFG
@@ -196,272 +199,276 @@ class SevenSegmentDisplay : public Usermod {
       4 - FABGEDC
       5 - FABCDEG
       */
-      switch(ssDisplayConfig)
-      {
-        case 1:
-          mask = _overlaySevenSegmentSwapBits(mask, 0, 3, 1);
-          mask = _overlaySevenSegmentSwapBits(mask, 1, 2, 1);
-          break;
-        case 2:
-          mask = _overlaySevenSegmentSwapBits(mask, 3, 6, 1);
-          mask = _overlaySevenSegmentSwapBits(mask, 4, 5, 1);
-          break;
-        case 3:
-          mask = _overlaySevenSegmentSwapBits(mask, 0, 4, 3);
-          mask = _overlaySevenSegmentSwapBits(mask, 3, 6, 1);
-          mask = _overlaySevenSegmentSwapBits(mask, 4, 5, 1);
-          break;
-        case 4:
-          mask = _overlaySevenSegmentSwapBits(mask, 0, 4, 3);
-          break;
-        case 5:
-          mask = _overlaySevenSegmentSwapBits(mask, 0, 4, 3);
-          mask = _overlaySevenSegmentSwapBits(mask, 0, 3, 1);
-          mask = _overlaySevenSegmentSwapBits(mask, 1, 2, 1);
-          break;
-      }
-      return mask;
-    }
-
-    char _overlaySevenSegmentSwapBits(char x, char p1, char p2, char n)
+    switch (ssDisplayConfig)
     {
-        /* Move all bits of first set to rightmost side */
-        char set1 = (x >> p1) & ((1U << n) - 1);
-    
-        /* Move all bits of second set to rightmost side */
-        char set2 = (x >> p2) & ((1U << n) - 1);
-    
-        /* Xor the two sets */
-        char Xor = (set1 ^ set2);
-    
-        /* Put the Xor bits back to their original positions */
-        Xor = (Xor << p1) | (Xor << p2);
-    
-        /* Xor the 'Xor' with the original number so that the 
+    case 1:
+      mask = _overlaySevenSegmentSwapBits(mask, 0, 3, 1);
+      mask = _overlaySevenSegmentSwapBits(mask, 1, 2, 1);
+      break;
+    case 2:
+      mask = _overlaySevenSegmentSwapBits(mask, 3, 6, 1);
+      mask = _overlaySevenSegmentSwapBits(mask, 4, 5, 1);
+      break;
+    case 3:
+      mask = _overlaySevenSegmentSwapBits(mask, 0, 4, 3);
+      mask = _overlaySevenSegmentSwapBits(mask, 3, 6, 1);
+      mask = _overlaySevenSegmentSwapBits(mask, 4, 5, 1);
+      break;
+    case 4:
+      mask = _overlaySevenSegmentSwapBits(mask, 0, 4, 3);
+      break;
+    case 5:
+      mask = _overlaySevenSegmentSwapBits(mask, 0, 4, 3);
+      mask = _overlaySevenSegmentSwapBits(mask, 0, 3, 1);
+      mask = _overlaySevenSegmentSwapBits(mask, 1, 2, 1);
+      break;
+    }
+    return mask;
+  }
+
+  char _overlaySevenSegmentSwapBits(char x, char p1, char p2, char n)
+  {
+    /* Move all bits of first set to rightmost side */
+    char set1 = (x >> p1) & ((1U << n) - 1);
+
+    /* Move all bits of second set to rightmost side */
+    char set2 = (x >> p2) & ((1U << n) - 1);
+
+    /* Xor the two sets */
+    char Xor = (set1 ^ set2);
+
+    /* Put the Xor bits back to their original positions */
+    Xor = (Xor << p1) | (Xor << p2);
+
+    /* Xor the 'Xor' with the original number so that the 
         two sets are swapped */
-        char result = x ^ Xor;
+    char result = x ^ Xor;
+
+    return result;
+  }
+  void _publishMQTTint(const char* subTopic, int value)
+  {
+    char buffer[64];
+    char valBuffer[12];
+    sprintf_P(buffer, PSTR("%s/sevenSeg/%s"), mqttDeviceTopic, subTopic);
+    sprintf_P(valBuffer, PSTR("%d"), value);
+    mqtt->publish(buffer, 2, true, valBuffer);
+  }
+  void _publishMQTTstr(const char*  subTopic, String Value)
+  {
+    char buffer[64];
+    sprintf_P(buffer, PSTR("%s/sevenSeg/%s"), mqttDeviceTopic, subTopic);
+    mqtt->publish(buffer, 2, true, Value.c_str(), Value.length());
+  }
+  void _updateMQTT()
+  {
+    _publishMQTTint(PSTR("perSegment"), ssLEDPerSegment);
+    _publishMQTTint(PSTR("perPeriod"), ssLEDPerPeriod);
+    _publishMQTTint(PSTR("startIdx"), ssStartLED);
+    _publishMQTTint(PSTR("displayCfg"), ssDisplayConfig);
+    _publishMQTTint(PSTR("timeEnable"), ssTimeEnabled);
+    _publishMQTTint(PSTR("scrollSpd"), ssScrollSpeed);
+
+    _publishMQTTstr(PSTR("displayMask"), ssDisplayMask);
+    _publishMQTTstr(PSTR("displayMsg"), ssDisplayMessage);
+  }
+
+  void _handleMQTT(char *topic, char *payload)
+  {
+    if(strcmp_P(topic, PSTR("perSegment"))==0)
+    {
+      ssLEDPerSegment = strtol(payload, NULL, 10);
+      _publishMQTTint(topic, ssLEDPerSegment);
+      return;
+    }
+    if(strcmp_P(topic, PSTR("perPeriod"))==0)
+    {
+      ssLEDPerPeriod = strtol(payload, NULL, 10);
+      _publishMQTTint(topic, ssLEDPerPeriod);
+      return;
+    }
+    if(strcmp_P(topic, PSTR("startIdx"))==0)
+    {
+      ssStartLED = strtol(payload, NULL, 10);
+      _publishMQTTint(topic, ssStartLED);
+      return;
+    }
+    if(strcmp_P(topic, PSTR("displayCfg"))==0)
+    {
+      ssDisplayConfig = strtol(payload, NULL, 10);
+      _publishMQTTint(topic, ssDisplayConfig);
+      return;
+    }
+    if(strcmp_P(topic, PSTR("timeEnable"))==0)
+    {
+      ssTimeEnabled = strtol(payload, NULL, 10);
+      ssDoDisplayTime = ssTimeEnabled;
+      _publishMQTTint(topic, ssTimeEnabled);
+      return;
+    }
+    if(strcmp_P(topic, PSTR("scrollSpd"))==0)
+    {
+      ssScrollSpeed = strtol(payload, NULL, 10);
+      _publishMQTTint(topic, ssScrollSpeed);
+      return;
+    }
+    if(strcmp_P(topic, PSTR("displayMask"))==0)
+    {
+      ssDisplayMask = String(payload);
+      ssDisplayBuffer = ssDisplayMask;
+      _publishMQTTstr(topic, ssDisplayMask);
+      return;
+    }
+    if(strcmp_P(topic, PSTR("displayMsg"))==0)
+    {
+      setSevenSegmentMessage(String(payload));
+      return;
+    }
+  }
+
+public:
+  void setSevenSegmentMessage(String message)
+  {
+    //If the message isn't blank display it otherwise show time, if enabled.
+    if (message.length() < 1 || message == "~")
+      ssDoDisplayTime = ssTimeEnabled;
+    else
+      ssDoDisplayTime = false;
+
+    //Determine is the message is longer than the display, if it is configure it to scroll the message.
+    if (message.length() > ssDisplayMask.length())
+      ssDisplayMessageIdx = -ssDisplayMask.length();
+    else
+      ssDisplayMessageIdx = 0;
     
-        return result;
-    }  
+    //If the message isn't the same, update runtime/mqtt (most calls will be resetting message scroll)
+    if(!ssDisplayMessage.equals(message))
+    {
+      _publishMQTTstr(PSTR("displayMsg"), message);
+      ssDisplayMessage = message;
+    }
+  }
+  //Functions called by WLED
 
-  public:
-    //Functions called by WLED
-
-    /*
+  /*
      * setup() is called once at boot. WiFi is not yet connected at this point.
      * You can use it to initialize variables, sensors or similar.
      */
-    void setup() {
-      //Serial.println("Hello from my usermod!");
-    }
+  void setup()
+  {
+    ssDisplayBuffer = ssDisplayMask;
+  }
 
-    /*
+  /*
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      */
-    void loop() {
-      if (millis() - lastRefresh > resfreshTime) {
-        resfreshTime = _overlaySevenSegmentProcess();
-        lastRefresh = millis();
+  void loop()
+  {
+    if (millis() - lastRefresh > resfreshTime)
+    {
+      //In theory overlaySevenSegmentProcess should return the amount of time until it changes next.
+      //So we should be okay to trigger the stripi on every process loop.
+      resfreshTime = _overlaySevenSegmentProcess();
+      lastRefresh = millis();
+      strip.trigger();
+    }
+  }
+
+  void handleOverlayDraw()
+  {
+    _overlaySevenSegmentDraw();
+  }
+
+  void onMqttConnect(bool sessionPresent)
+  {
+    char subBuffer[48];
+    if (mqttDeviceTopic[0] != 0)
+    {
+      _updateMQTT();
+      //subscribe for sevenseg messages on the device topic
+      sprintf_P(subBuffer, PSTR("%s/sevenSeg/+/set"), mqttDeviceTopic);
+      mqtt->subscribe(subBuffer, 2);
+    }
+
+    if (mqttGroupTopic[0] != 0)
+    {
+      //subcribe for sevenseg messages on the group topic
+      sprintf_P(subBuffer, PSTR("%s/sevenSeg/+/set"), mqttGroupTopic);
+      mqtt->subscribe(subBuffer, 2);
+    }
+  }
+
+  bool onMqttMessage(char *topic, char *payload)
+  {
+    //If topic beings iwth sevenSeg cut it off, otherwise not our message.
+    size_t topicPrefixLen = strlen_P(PSTR("/sevenSeg/"));
+    if (strncmp_P(topic, PSTR("/sevenSeg/"), topicPrefixLen) == 0)
+      topic += topicPrefixLen;
+    else
+      return false;
+    //We only care if the topic ends with /set
+    size_t topicLen = strlen(topic);
+    if (topicLen > 4 &&
+        topic[topicLen - 4] == '/' &&
+        topic[topicLen - 3] == 's' &&
+        topic[topicLen - 2] == 'e' &&
+        topic[topicLen - 1] == 't')
+    {
+      //Trim /set and handle it
+      topic[topicLen - 4] = '\0';
+      _handleMQTT(topic, payload);
+     
+    }
+    return true;
+  }
+
+  void addToConfig(JsonObject& root)
+  {
+    JsonObject top = root[FPSTR("sevenseg")];
+      if (top.isNull()) {
+        top = root.createNestedObject(FPSTR("sevenseg"));
       }
-    }
+    top[FPSTR("perSegment")] = ssLEDPerSegment;
+    top[FPSTR("perPeriod")] = ssLEDPerPeriod;
+    top[FPSTR("startIdx")] = ssStartLED;
+    top[FPSTR("displayMask")] = ssDisplayMask;
+    top[FPSTR("displayCfg")] = ssDisplayConfig;
+    top[FPSTR("displayMsg")] = ssDisplayMessage;
+    top[FPSTR("timeEnable")] = ssTimeEnabled;
+    top[FPSTR("scrollSpd")] = ssScrollSpeed;
+  }
 
-    void handleOverlayDraw(){
-      _overlaySevenSegmentDraw();
-    }
+  bool readFromConfig(JsonObject& root)
+  {
+    JsonObject top = root[FPSTR("sevenseg")];
 
-// void onMqttConnect(bool sessionPresent)
-// {
-//     if (mqttDeviceTopic[0] == 0)
-//         return;
+    bool configComplete = !top.isNull();
 
-//     for (int pinNr = 0; pinNr < NUM_SWITCH_PINS; pinNr++) {
-//         char buf[128];
-//         StaticJsonDocument<1024> json;
-//         sprintf(buf, "%s Switch %d", serverDescription, pinNr + 1);
-//         json[F("name")] = buf;
+    //if sevenseg section doesn't exist return
+    if(!configComplete) return configComplete;
 
-//         sprintf(buf, "%s/switch/%d", mqttDeviceTopic, pinNr);
-//         json["~"] = buf;
-//         strcat(buf, "/set");
-//         mqtt->subscribe(buf, 0);
+    configComplete &= getJsonValue(top[FPSTR("perSegment")], ssLEDPerSegment);
+    configComplete &= getJsonValue(top[FPSTR("perPeriod")], ssLEDPerPeriod);
+    configComplete &= getJsonValue(top[FPSTR("startIdx")], ssStartLED);
+    configComplete &= getJsonValue(top[FPSTR("displayMask")], ssDisplayMask);
+    configComplete &= getJsonValue(top[FPSTR("displayCfg")], ssDisplayConfig);
 
-//         json[F("stat_t")] = "~/state";
-//         json[F("cmd_t")] = "~/set";
-//         json[F("pl_off")] = F("OFF");
-//         json[F("pl_on")] = F("ON");
+    String newDisplayMessage;
+    configComplete &= getJsonValue(top[FPSTR("displayMsg")], newDisplayMessage);
+    setSevenSegmentMessage(newDisplayMessage);
 
-//         char uid[16];
-//         sprintf(uid, "%s_sw%d", escapedMac.c_str(), pinNr);
-//         json[F("unique_id")] = uid;
+    configComplete &= getJsonValue(top[FPSTR("timeEnable")], ssTimeEnabled);
+    configComplete &= getJsonValue(top[FPSTR("scrollSpd")], ssScrollSpeed);
 
-//         strcpy(buf, mqttDeviceTopic);
-//         strcat(buf, "/status");
-//         json[F("avty_t")] = buf;
-//         json[F("pl_avail")] = F("online");
-//         json[F("pl_not_avail")] = F("offline");
-//         //TODO: dev
-//         sprintf(buf, "homeassistant/switch/%s/config", uid);
-//         char json_str[1024];
-//         size_t payload_size = serializeJson(json, json_str);
-//         mqtt->publish(buf, 0, true, json_str, payload_size);
-//         updateState(pinNr);
-//     }
-// }
+    return configComplete;
+  }
 
-// bool onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
-// {
-//     //Note: Payload is not necessarily null terminated. Check "len" instead.
-//     for (int pinNr = 0; pinNr < NUM_SWITCH_PINS; pinNr++) {
-//         char buf[64];
-//         sprintf(buf, "%s/switch/%d/set", mqttDeviceTopic, pinNr);
-//         if (strcmp(topic, buf) == 0) {
-//             //Any string starting with "ON" is interpreted as ON, everything else as OFF
-//             setState(pinNr, len >= 2 && payload[0] == 'O' && payload[1] == 'N');
-//             return true;
-//         }
-//     }
-// }
-
-//     /*
-//      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
-//      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
-//      * Below it is shown how this could be used for e.g. a light sensor
-//      */
-//     /*
-//     void addToJsonInfo(JsonObject& root)
-//     {
-//       int reading = 20;
-//       //this code adds "u":{"Light":[20," lux"]} to the info object
-//       JsonObject user = root["u"];
-//       if (user.isNull()) user = root.createNestedObject("u");
-
-//       JsonArray lightArr = user.createNestedArray("Light"); //name
-//       lightArr.add(reading); //value
-//       lightArr.add(" lux"); //unit
-//     }
-//     */
-
-
-//     /*
-//      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
-//      * Values in the state object may be modified by connected clients
-//      */
-//     void addToJsonState(JsonObject& root)
-//     {
-//       //root["user0"] = userVar0;
-//     }
-
-
-//     /*
-//      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
-//      * Values in the state object may be modified by connected clients
-//      */
-//     void readFromJsonState(JsonObject& root)
-//     {
-//       userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
-//       //if (root["bri"] == 255) Serial.println(F("Don't burn down your garage!"));
-//     }
-
-
-//     /*
-//      * addToConfig() can be used to add custom persistent settings to the cfg.json file in the "um" (usermod) object.
-//      * It will be called by WLED when settings are actually saved (for example, LED settings are saved)
-//      * If you want to force saving the current state, use serializeConfig() in your loop().
-//      * 
-//      * CAUTION: serializeConfig() will initiate a filesystem write operation.
-//      * It might cause the LEDs to stutter and will cause flash wear if called too often.
-//      * Use it sparingly and always in the loop, never in network callbacks!
-//      * 
-//      * addToConfig() will make your settings editable through the Usermod Settings page automatically.
-//      *
-//      * Usermod Settings Overview:
-//      * - Numeric values are treated as floats in the browser.
-//      *   - If the numeric value entered into the browser contains a decimal point, it will be parsed as a C float
-//      *     before being returned to the Usermod.  The float data type has only 6-7 decimal digits of precision, and
-//      *     doubles are not supported, numbers will be rounded to the nearest float value when being parsed.
-//      *     The range accepted by the input field is +/- 1.175494351e-38 to +/- 3.402823466e+38.
-//      *   - If the numeric value entered into the browser doesn't contain a decimal point, it will be parsed as a
-//      *     C int32_t (range: -2147483648 to 2147483647) before being returned to the usermod.
-//      *     Overflows or underflows are truncated to the max/min value for an int32_t, and again truncated to the type
-//      *     used in the Usermod when reading the value from ArduinoJson.
-//      * - Pin values can be treated differently from an integer value by using the key name "pin"
-//      *   - "pin" can contain a single or array of integer values
-//      *   - On the Usermod Settings page there is simple checking for pin conflicts and warnings for special pins
-//      *     - Red color indicates a conflict.  Yellow color indicates a pin with a warning (e.g. an input-only pin)
-//      *   - Tip: use int8_t to store the pin value in the Usermod, so a -1 value (pin not set) can be used
-//      *
-//      * See usermod_v2_auto_save.h for an example that saves Flash space by reusing ArduinoJson key name strings
-//      * 
-//      * If you need a dedicated settings page with custom layout for your Usermod, that takes a lot more work.  
-//      * You will have to add the setting to the HTML, xml.cpp and set.cpp manually.
-//      * See the WLED Soundreactive fork (code and wiki) for reference.  https://github.com/atuline/WLED
-//      * 
-//      * I highly recommend checking out the basics of ArduinoJson serialization and deserialization in order to use custom settings!
-//      */
-//     void addToConfig(JsonObject& root)
-//     {
-//       JsonObject top = root.createNestedObject("exampleUsermod");
-//       top["great"] = userVar0; //save these vars persistently whenever settings are saved
-//       top["testBool"] = testBool;
-//       top["testInt"] = testInt;
-//       top["testLong"] = testLong;
-//       top["testULong"] = testULong;
-//       top["testFloat"] = testFloat;
-//       top["testString"] = testString;
-//       JsonArray pinArray = top.createNestedArray("pin");
-//       pinArray.add(testPins[0]);
-//       pinArray.add(testPins[1]); 
-//     }
-
-
-//     /*
-//      * readFromConfig() can be used to read back the custom settings you added with addToConfig().
-//      * This is called by WLED when settings are loaded (currently this only happens immediately after boot, or after saving on the Usermod Settings page)
-//      * 
-//      * readFromConfig() is called BEFORE setup(). This means you can use your persistent values in setup() (e.g. pin assignments, buffer sizes),
-//      * but also that if you want to write persistent values to a dynamic buffer, you'd need to allocate it here instead of in setup.
-//      * If you don't know what that is, don't fret. It most likely doesn't affect your use case :)
-//      * 
-//      * Return true in case the config values returned from Usermod Settings were complete, or false if you'd like WLED to save your defaults to disk (so any missing values are editable in Usermod Settings)
-//      * 
-//      * getJsonValue() returns false if the value is missing, or copies the value into the variable provided and returns true if the value is present
-//      * The configComplete variable is true only if the "exampleUsermod" object and all values are present.  If any values are missing, WLED will know to call addToConfig() to save them
-//      * 
-//      * This function is guaranteed to be called on boot, but could also be called every time settings are updated
-//      */
-//     bool readFromConfig(JsonObject& root)
-//     {
-//       // default settings values could be set here (or below using the 3-argument getJsonValue()) instead of in the class definition or constructor
-//       // setting them inside readFromConfig() is slightly more robust, handling the rare but plausible use case of single value being missing after boot (e.g. if the cfg.json was manually edited and a value was removed)
-
-//       JsonObject top = root["exampleUsermod"];
-
-//       bool configComplete = !top.isNull();
-
-//       configComplete &= getJsonValue(top["great"], userVar0);
-//       configComplete &= getJsonValue(top["testBool"], testBool);
-//       configComplete &= getJsonValue(top["testULong"], testULong);
-//       configComplete &= getJsonValue(top["testFloat"], testFloat);
-//       configComplete &= getJsonValue(top["testString"], testString);
-
-//       // A 3-argument getJsonValue() assigns the 3rd argument as a default value if the Json value is missing
-//       configComplete &= getJsonValue(top["testInt"], testInt, 42);  
-//       configComplete &= getJsonValue(top["testLong"], testLong, -42424242);
-//       configComplete &= getJsonValue(top["pin"][0], testPins[0], -1);
-//       configComplete &= getJsonValue(top["pin"][1], testPins[1], -1);
-
-//       return configComplete;
-//     }
-
-   
-//     /*
-//      * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
-//      * This could be used in the future for the system to determine whether your usermod is installed.
-//      */
-//     uint16_t getId()
-//     {
-//       return USERMOD_ID_SEVEN_SEGMENT_DISPLAY;
-//     }
-
-  
+  /*
+     * getId() allows you to optionally give your V2 usermod an unique ID (please define it in const.h!).
+     * This could be used in the future for the system to determine whether your usermod is installed.
+     */
+  uint16_t getId()
+  {
+    return USERMOD_ID_SEVEN_SEGMENT_DISPLAY;
+  }
 };
