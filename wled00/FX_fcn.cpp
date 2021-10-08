@@ -65,25 +65,22 @@
 #endif
 
 //do not call this method from system context (network callback)
-void WS2812FX::finalizeInit(uint16_t countPixels)
+void WS2812FX::finalizeInit(void)
 {
   RESET_RUNTIME;
-  _length = countPixels;
+  isRgbw = isOffRefreshRequred = false;
 
-  //if busses failed to load, add default (FS issue...)
+  //if busses failed to load, add default (fresh install, FS issue, ...)
   if (busses.getNumBusses() == 0) {
     const uint8_t defDataPins[] = {DATA_PINS};
     const uint16_t defCounts[] = {PIXEL_COUNTS};
     const uint8_t defNumBusses = ((sizeof defDataPins) / (sizeof defDataPins[0]));
     const uint8_t defNumCounts = ((sizeof defCounts)   / (sizeof defCounts[0]));
     uint16_t prevLen = 0;
-    for (uint8_t i = 0; i < defNumBusses; i++) {
+    for (uint8_t i = 0; i < defNumBusses && i < WLED_MAX_BUSSES; i++) {
       uint8_t defPin[] = {defDataPins[i]};
       uint16_t start = prevLen;
-      uint16_t count = _length;
-      if (defNumBusses > 1 && defNumCounts) {
-        count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
-      }
+      uint16_t count = (i < defNumCounts) ? defCounts[i] : defCounts[i>0?i-1:0];
       prevLen += count;
       BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB);
       busses.add(defCfg);
@@ -92,60 +89,29 @@ void WS2812FX::finalizeInit(uint16_t countPixels)
   
   deserializeMap();
 
-  uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
-  uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
-
-  setBrightness(_brightness);
-
-  //TODO make sure segments are only refreshed when bus config actually changed (new settings page)
-  uint8_t s = 0;
-  for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
-    Bus* b = busses.getBus(i);
-
-    if (autoSegments) { //make one segment per bus
-      segStarts[s] = b->getStart();
-      segStops[s] = segStarts[s] + b->getLength();
-
-      //check for overlap with previous segments
-      for (uint8_t j = 0; j < s; j++) {
-        if (segStops[j] > segStarts[s] && segStarts[j] < segStops[s]) {
-          //segments overlap, merge
-          segStarts[j] = min(segStarts[s],segStarts[j]);
-          segStops [j] = max(segStops [s],segStops [j]); segStops[s] = 0;
-          s--;
-        }
-      }
-      s++;
-    }
-
+  _length = 0;
+  for (uint8_t i=0; i<busses.getNumBusses(); i++) {
+    Bus *bus = busses.getBus(i);
+    if (bus == nullptr) continue;
+    if (_length+bus->getLength() > MAX_LEDS) break;
+    //RGBW mode is enabled if at least one of the strips is RGBW
+    isRgbw |= bus->isRgbw();
+    //refresh is required to remain off if at least one of the strips requires the refresh.
+    isOffRefreshRequred |= bus->isOffRefreshRequired();
+    _length += bus->getLength();
     #ifdef ESP8266
-    if ((!IS_DIGITAL(b->getType()) || IS_2PIN(b->getType()))) continue;
+    if ((!IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType()))) continue;
     uint8_t pins[5];
-    b->getPins(pins);
-    BusDigital* bd = static_cast<BusDigital*>(b);
+    if (!bus->getPins(pins)) continue;
+    BusDigital* bd = static_cast<BusDigital*>(bus);
     if (pins[0] == 3) bd->reinit();
     #endif
   }
+  ledCount = _length;
 
-  if (autoSegments) {
-    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
-      setSegment(i, segStarts[i], segStops[i]);
-    }
-  } else {
-    //expand the main seg to the entire length, but only if there are no other segments
-    uint8_t mainSeg = getMainSegmentId();
-    
-    if (getActiveSegmentsNum() < 2) {
-      setSegment(mainSeg, 0, _length);
-    } else {
-      //there are multiple segments, leave them, but prune length to total
-      for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
-      {
-        if (_segments[i].start >= _length) setSegment(i, 0, 0);
-        if (_segments[i].stop  >  _length) setSegment(i, _segments[i].start, _length);
-      }
-    }
-  }
+  // We will create default segments im populateDefaultSegments()
+
+  setBrightness(_brightness);
 }
 
 void WS2812FX::service() {
@@ -656,20 +622,33 @@ void WS2812FX::resetSegments() {
 
 void WS2812FX::populateDefaultSegments() {
   uint16_t length = 0;
-  for (uint8_t i=0; i<busses.getNumBusses(); i++) {
-    Bus *bus = busses.getBus(i);
-    if (bus == nullptr) continue;
-    _segments[i].start = bus->getStart();
-    length += bus->getLength();
-    _segments[i].stop = _segments[i].start + bus->getLength();
-    _segments[i].mode = DEFAULT_MODE;
-    _segments[i].colors[0] = DEFAULT_COLOR;
-    _segments[i].speed = DEFAULT_SPEED;
-    _segments[i].intensity = DEFAULT_INTENSITY;
-    _segments[i].grouping = 1;
-    _segments[i].setOption(SEG_OPTION_SELECTED, 1);
-    _segments[i].setOption(SEG_OPTION_ON, 1);
-    _segments[i].opacity = 255;
+  if (autoSegments) {
+    for (uint8_t i=0; i<busses.getNumBusses(); i++) {
+      Bus *bus = busses.getBus(i);
+      if (bus == nullptr) continue;
+      _segments[i].start = bus->getStart();
+      length += bus->getLength();
+      _segments[i].stop = _segments[i].start + bus->getLength();
+      _segments[i].mode = DEFAULT_MODE;
+      _segments[i].colors[0] = DEFAULT_COLOR;
+      _segments[i].speed = DEFAULT_SPEED;
+      _segments[i].intensity = DEFAULT_INTENSITY;
+      _segments[i].grouping = 1;
+      _segments[i].setOption(SEG_OPTION_SELECTED, 1);
+      _segments[i].setOption(SEG_OPTION_ON, 1);
+      _segments[i].opacity = 255;
+    }
+  } else {
+    _segments[0].start = 0;
+    _segments[0].stop = _length;
+    _segments[0].mode = DEFAULT_MODE;
+    _segments[0].colors[0] = DEFAULT_COLOR;
+    _segments[0].speed = DEFAULT_SPEED;
+    _segments[0].intensity = DEFAULT_INTENSITY;
+    _segments[0].grouping = 1;
+    _segments[0].setOption(SEG_OPTION_SELECTED, 1);
+    _segments[0].setOption(SEG_OPTION_ON, 1);
+    _segments[0].opacity = 255;
   }
 }
 

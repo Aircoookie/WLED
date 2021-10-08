@@ -211,23 +211,13 @@ void WLED::loop()
     DEBUG_PRINTLN(F("Re-init busses."));
     busses.removeAll();
     uint32_t mem = 0;
-    strip.isRgbw = false;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
-      
-      if (busConfigs[i]->adjustBounds(ledCount)) {
-        mem += busses.memUsage(*busConfigs[i]);
-        if (mem <= MAX_LED_MEMORY) {
-          busses.add(*busConfigs[i]);
-          //RGBW mode is enabled if at least one of the strips is RGBW
-          strip.isRgbw = (strip.isRgbw || BusManager::isRgbw(busConfigs[i]->type));
-          //refresh is required to remain off if at least one of the strips requires the refresh.
-          strip.isOffRefreshRequred |= BusManager::isOffRefreshRequred(busConfigs[i]->type);
-        }
-      }
+      mem += BusManager::memUsage(*busConfigs[i]);
+      if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
-    strip.finalizeInit(ledCount);
+    strip.finalizeInit();
     yield();
     serializeConfig();
   }
@@ -407,11 +397,8 @@ void WLED::setup()
 void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
-
-  if (ledCount > MAX_LEDS || ledCount == 0)
-    ledCount = 30;
-
-  strip.finalizeInit(ledCount);
+  strip.finalizeInit(); // busses created during deserializeConfig()
+  strip.populateDefaultSegments();
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 
@@ -748,40 +735,4 @@ void WLED::handleConnection()
       DEBUG_PRINTLN(F("Access point disabled."));
     }
   }
-}
-
-// If status LED pin is allocated for other uses, does nothing
-// else blink at 1Hz when WLED_CONNECTED is false (no WiFi, ?? no Ethernet ??)
-// else blink at 2Hz when MQTT is enabled but not connected
-// else turn the status LED off
-void WLED::handleStatusLED()
-{
-  #if STATUSLED
-  static unsigned long ledStatusLastMillis = 0;
-  static unsigned short ledStatusType = 0; // current status type - corresponds to number of blinks per second
-  static bool ledStatusState = 0; // the current LED state
-
-  if (pinManager.isPinAllocated(STATUSLED)) {
-    return; //lower priority if something else uses the same pin
-  }
-
-  ledStatusType = WLED_CONNECTED ? 0 : 2;
-  if (mqttEnabled && ledStatusType != 2) { // Wi-Fi takes precendence over MQTT
-    ledStatusType = WLED_MQTT_CONNECTED ? 0 : 4;
-  }
-  if (ledStatusType) {
-    if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
-      ledStatusLastMillis = millis();
-      ledStatusState = ledStatusState ? 0 : 1;
-      digitalWrite(STATUSLED, ledStatusState);
-    }
-  } else {
-    #ifdef STATUSLEDINVERTED
-      digitalWrite(STATUSLED, HIGH);
-    #else
-      digitalWrite(STATUSLED, LOW);
-    #endif
-
-  }
-  #endif
 }
