@@ -5,8 +5,38 @@ import { lang } from './cfg_lang.js'
 (function () {
 	'use strict';
 	
-	var d = document,
+	var readyfn = [],
+		loadedfn = [],
+		domready = false,
+		jsonpcount = 0,
+		d = document,
 		w = window;
+		
+	// Fire any function calls on ready event
+	function fireReady() {
+		var i;
+		domready = true;
+		for (i = 0; i < readyfn.length; i += 1) {
+			readyfn[i]();
+		}
+		readyfn = [];
+	}
+
+	// Fire any function calls on loaded event
+	function fireLoaded() {
+		var i;
+		for (i = 0; i < loadedfn.length; i += 1) {
+			loadedfn[i]();
+		}
+		loadedfn = [];
+	}
+
+	// Check DOM ready, page loaded
+	if (d.addEventListener) {
+		// Standards
+		d.addEventListener('DOMContentLoaded', fireReady, false);
+		w.addEventListener('load', fireLoaded, false);
+	}	
 
 	// Loop through node array
 	function nodeLoop(fn, nodes) {
@@ -43,6 +73,31 @@ import { lang } from './cfg_lang.js'
 		// Only attach nodes if not JSON
 		cb = json ? {} : nodes;
 		
+		// Public functions
+
+		// Fire on DOM ready
+		cb.ready = function (fn) {
+			if (fn) {
+				if (domready) {
+					fn();
+					return cb;
+				} else {
+					readyfn.push(fn);
+				}
+			}
+		};
+		// Fire on page loaded
+		cb.loaded = function (fn) {
+			if (fn) {
+				if (pageloaded) {
+					fn();
+					return cb;
+				} else {
+					loadedfn.push(fn);
+				}
+			}
+		};
+		
 		// Executes a function on nodes
 		cb.each = function (fn) {
 			if (typeof fn === 'function') {
@@ -70,7 +125,7 @@ function setLabel(elm) {
 
 //startup, called on page load
 function S() {
-  $('.l').each(setLabel); //populate labels
+  
 }
 
 //toggle between hidden and 100% width (screen < ? px) 
@@ -80,4 +135,5 @@ function menu() {
 
 }
 
-S();
+//populate labels when to dom is ready but before it is rendered
+$().ready( function() { $('.l').each(setLabel); } );
