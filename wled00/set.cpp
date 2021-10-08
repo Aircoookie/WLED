@@ -532,11 +532,10 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv, byte ma
     int out = getNumVal(req, pos+1);
     if (out == 0)
     {
-      if (req->charAt(pos+4) == '-')
-      {
-        *val = (*val <= minv)? maxv : *val -1;
+      if (req->charAt(pos+4) == '-') {
+        *val = min((int)maxv, max((int)minv, (int)(*val -1)));
       } else {
-        *val = (*val >= maxv)? minv : *val +1;
+        *val = min((int)maxv, max((int)minv, (int)(*val +1)));
       }
     } else {
       out += *val;
