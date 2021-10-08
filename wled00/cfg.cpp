@@ -461,7 +461,6 @@ void serializeConfig() {
   id[F("mdns")] = cmDNS;
   id[F("name")] = serverDescription;
   id[F("inv")] = alexaInvocationName;
-  id[F("sui")] = simplifiedUI;
 
   JsonObject nw = doc.createNestedObject("nw");
 

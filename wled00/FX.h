@@ -619,7 +619,7 @@ class WS2812FX {
     }
 
     void
-      finalizeInit(uint16_t countPixels),
+      finalizeInit(),
       service(void),
       blur(uint8_t),
       fill(uint32_t),
