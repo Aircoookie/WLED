@@ -1,8 +1,7 @@
 //This file contains just the JSON definition for translatable strings.
 //A JSON file should be auto-embedded in cfg.js in the future, replacing this file
 
-var lang = 
-{
+export const lang = {
   "labels":{
     "h-cfg":" ",
 

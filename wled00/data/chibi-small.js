@@ -1,7 +1,4 @@
-
-import { lang } from './cfg_lang.js'
-
-// minimal version of chibi - todo convert to module exporting '$' and remove from this file
+// minimal version of chibi - todo convert to module exporting '$'.
 (function () {
 	'use strict';
 	
@@ -61,23 +58,3 @@ import { lang } from './cfg_lang.js'
 	w.$ = wled;
 
 }());
-
-function setLabel(elm) {
-	const id = elm.id;
-	const label = lang.labels[id];
-	elm.textContent = label ? label : id;
-}
-
-//startup, called on page load
-function S() {
-  $('.l').each(setLabel); //populate labels
-}
-
-//toggle between hidden and 100% width (screen < ? px) 
-//toggle between icons-only and 100% width (screen < ?? px)
-//toggle between icons-only and ? px (screen >= ?? px)
-function menu() {
-
-}
-
-S();
