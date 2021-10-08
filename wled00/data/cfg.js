@@ -8,6 +8,7 @@ import { lang } from './cfg_lang.js'
 	var readyfn = [],
 		loadedfn = [],
 		domready = false,
+		pageloaded = false,		
 		jsonpcount = 0,
 		d = document,
 		w = window;
@@ -25,6 +26,7 @@ import { lang } from './cfg_lang.js'
 	// Fire any function calls on loaded event
 	function fireLoaded() {
 		var i;
+		pageloaded = true;
 		for (i = 0; i < loadedfn.length; i += 1) {
 			loadedfn[i]();
 		}
