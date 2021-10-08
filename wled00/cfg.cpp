@@ -1,4 +1,5 @@
 #include "wled.h"
+#include "wled_ethernet.h"
 
 /*
  * Serializes and parses the cfg.json and wsec.json settings files, stored in internal FS.
