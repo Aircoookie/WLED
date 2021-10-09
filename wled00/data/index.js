@@ -1360,6 +1360,7 @@ var plJson = {"0":{
 
 function makePlSel(incPl=false) {
 	var plSelContent = "";
+	delete pJson["0"];	// remove filler preset
 	var arr = Object.entries(pJson);
 	for (var i = 0; i < arr.length; i++) {
 		var n = arr[i][1].n ? arr[i][1].n : "Preset " + arr[i][0];
