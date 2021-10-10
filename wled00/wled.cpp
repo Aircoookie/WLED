@@ -209,15 +209,23 @@ void WLED::loop()
   if (doInitBusses) {
     doInitBusses = false;
     DEBUG_PRINTLN(F("Re-init busses."));
+    bool aligned = strip.checkSegmentAlignment(); //see if old segments match old bus(ses)
     busses.removeAll();
     uint32_t mem = 0;
+    ledCount = 1;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
       if (busConfigs[i] == nullptr) break;
       mem += BusManager::memUsage(*busConfigs[i]);
-      if (mem <= MAX_LED_MEMORY) busses.add(*busConfigs[i]);
+      if (mem <= MAX_LED_MEMORY) {
+        uint16_t totalNew = busConfigs[i]->start + busConfigs[i]->count;
+        if (totalNew > ledCount && totalNew <= MAX_LEDS) ledCount = totalNew; //total is end of last bus (where start + len is max.)
+        busses.add(*busConfigs[i]);
+      }
       delete busConfigs[i]; busConfigs[i] = nullptr;
     }
     strip.finalizeInit();
+    if (aligned) strip.makeAutoSegments();
+    else strip.fixInvalidSegments();
     yield();
     serializeConfig();
   }
@@ -398,7 +406,7 @@ void WLED::beginStrip()
 {
   // Initialize NeoPixel Strip and button
   strip.finalizeInit(); // busses created during deserializeConfig()
-  strip.populateDefaultSegments();
+  strip.makeAutoSegments();
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
 

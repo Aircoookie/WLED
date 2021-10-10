@@ -80,7 +80,7 @@ void WS2812FX::finalizeInit(void)
     for (uint8_t i = 0; i < defNumBusses && i < WLED_MAX_BUSSES; i++) {
       uint8_t defPin[] = {defDataPins[i]};
       uint16_t start = prevLen;
-      uint16_t count = (i < defNumCounts) ? defCounts[i] : defCounts[i>0?i-1:0];
+      uint16_t count = defCounts[(i < defNumCounts) ? i : defNumCounts -1];
       prevLen += count;
       BusConfig defCfg = BusConfig(DEFAULT_LED_TYPE, defPin, start, count, COL_ORDER_GRB);
       busses.add(defCfg);
@@ -93,12 +93,13 @@ void WS2812FX::finalizeInit(void)
   for (uint8_t i=0; i<busses.getNumBusses(); i++) {
     Bus *bus = busses.getBus(i);
     if (bus == nullptr) continue;
-    if (_length+bus->getLength() > MAX_LEDS) break;
+    if (bus->getStart() + bus->getLength() > MAX_LEDS) break;
     //RGBW mode is enabled if at least one of the strips is RGBW
     isRgbw |= bus->isRgbw();
     //refresh is required to remain off if at least one of the strips requires the refresh.
     isOffRefreshRequred |= bus->isOffRefreshRequired();
-    _length += bus->getLength();
+    uint16_t busEnd = bus->getStart() + bus->getLength();
+    if (busEnd > _length) _length = busEnd;
     #ifdef ESP8266
     if ((!IS_DIGITAL(bus->getType()) || IS_2PIN(bus->getType()))) continue;
     uint8_t pins[5];
@@ -109,7 +110,7 @@ void WS2812FX::finalizeInit(void)
   }
   ledCount = _length;
 
-  // We will create default segments im populateDefaultSegments()
+  //segments are created in makeAutoSegments();
 
   setBrightness(_brightness);
 }
@@ -620,36 +621,67 @@ void WS2812FX::resetSegments() {
   _segment_runtimes[0].reset();
 }
 
-void WS2812FX::populateDefaultSegments() {
-  uint16_t length = 0;
-  if (autoSegments) {
-    for (uint8_t i=0; i<busses.getNumBusses(); i++) {
-      Bus *bus = busses.getBus(i);
-      if (bus == nullptr) continue;
-      _segments[i].start = bus->getStart();
-      length += bus->getLength();
-      _segments[i].stop = _segments[i].start + bus->getLength();
-      _segments[i].mode = DEFAULT_MODE;
-      _segments[i].colors[0] = DEFAULT_COLOR;
-      _segments[i].speed = DEFAULT_SPEED;
-      _segments[i].intensity = DEFAULT_INTENSITY;
-      _segments[i].grouping = 1;
-      _segments[i].setOption(SEG_OPTION_SELECTED, 1);
-      _segments[i].setOption(SEG_OPTION_ON, 1);
-      _segments[i].opacity = 255;
+void WS2812FX::makeAutoSegments() {
+  uint16_t segStarts[MAX_NUM_SEGMENTS] = {0};
+  uint16_t segStops [MAX_NUM_SEGMENTS] = {0};
+
+  if (autoSegments) { //make one segment per bus
+    uint8_t s = 0;
+    for (uint8_t i = 0; i < busses.getNumBusses(); i++) {
+      Bus* b = busses.getBus(i);
+
+      segStarts[s] = b->getStart();
+      segStops[s] = segStarts[s] + b->getLength();
+
+      //check for overlap with previous segments
+      for (uint8_t j = 0; j < s; j++) {
+        if (segStops[j] > segStarts[s] && segStarts[j] < segStops[s]) {
+          //segments overlap, merge
+          segStarts[j] = min(segStarts[s],segStarts[j]);
+          segStops [j] = max(segStops [s],segStops [j]); segStops[s] = 0;
+          s--;
+        }
+      }
+      s++;
+    }
+    for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++) {
+      setSegment(i, segStarts[i], segStops[i]);
     }
   } else {
-    _segments[0].start = 0;
-    _segments[0].stop = _length;
-    _segments[0].mode = DEFAULT_MODE;
-    _segments[0].colors[0] = DEFAULT_COLOR;
-    _segments[0].speed = DEFAULT_SPEED;
-    _segments[0].intensity = DEFAULT_INTENSITY;
-    _segments[0].grouping = 1;
-    _segments[0].setOption(SEG_OPTION_SELECTED, 1);
-    _segments[0].setOption(SEG_OPTION_ON, 1);
-    _segments[0].opacity = 255;
+    //expand the main seg to the entire length, but only if there are no other segments
+    uint8_t mainSeg = getMainSegmentId();
+    
+    if (getActiveSegmentsNum() < 2) {
+      setSegment(mainSeg, 0, _length);
+    }
   }
+
+  fixInvalidSegments();
+}
+
+void WS2812FX::fixInvalidSegments() {
+  //make sure no segment is longer than total (sanity check)
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].start >= _length) setSegment(i, 0, 0); 
+    if (_segments[i].stop  >  _length) setSegment(i, _segments[i].start, _length);
+  }
+}
+
+//true if all segments align with a bus, or if a segment covers the total length
+bool WS2812FX::checkSegmentAlignment() {
+  for (uint8_t i = 0; i < MAX_NUM_SEGMENTS; i++)
+  {
+    if (_segments[i].start >= _segments[i].stop) continue; //inactive segment
+    bool aligned = false;
+    for (uint8_t b = 0; b<busses.getNumBusses(); b++) {
+      Bus *bus = busses.getBus(b);
+      if (_segments[i].start == bus->getStart() && _segments[i].stop == bus->getStart() + bus->getLength()) aligned = true;
+    }
+    if (_segments[i].start == 0 && _segments[i].stop == _length) aligned = true;
+    if (!aligned) return false;
+  }
+  return true;
 }
 
 //After this function is called, setPixelColor() will use that segment (offsets, grouping, ... will apply)

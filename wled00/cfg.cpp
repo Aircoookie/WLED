@@ -80,13 +80,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   CJSON(ledCount, hw_led[F("total")]);
   if (ledCount > MAX_LEDS) ledCount = MAX_LEDS;
-  uint16_t lC = 0;
 
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
 
   JsonArray ins = hw_led["ins"];
+
+  uint16_t lC = 0;
 
   if (fromFS || !ins.isNull()) {
     uint8_t s = 0;  // bus iterator
@@ -105,17 +106,17 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
 
       uint16_t length = elm[F("len")] | 1;
-      if (length==0 || length+lC > MAX_LEDS) continue;  // zero length or we reached max. number of LEDs, just stop
       uint8_t colorOrder = (int)elm[F("order")];
       uint8_t skipFirst = elm[F("skip")];
       uint16_t start = elm["start"] | 0;
-      if (start > lC+length) continue; // something is very wrong :)
+      if (length==0 || start + length > MAX_LEDS) continue; // zero length or we reached max. number of LEDs, just stop
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
       ledType |= refresh << 7;  // hack bit 7 to indicate strip requires off refresh
       s++;
-      lC += length;
+      uint16_t busEnd = start + length;
+      if (busEnd > lC) lC = busEnd;
       BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
       mem += BusManager::memUsage(bc);
       if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()

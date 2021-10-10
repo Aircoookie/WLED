@@ -636,7 +636,8 @@ class WS2812FX {
       trigger(void),
       setSegment(uint8_t n, uint16_t start, uint16_t stop, uint8_t grouping = 0, uint8_t spacing = 0),
       resetSegments(),
-      populateDefaultSegments(),
+      makeAutoSegments(),
+      fixInvalidSegments(),
       setPixelColor(uint16_t n, uint32_t c),
       setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0),
       show(void),
@@ -650,6 +651,7 @@ class WS2812FX {
       gammaCorrectCol = true,
       applyToAllSelected = true,
       setEffectConfig(uint8_t m, uint8_t s, uint8_t i, uint8_t p),
+      checkSegmentAlignment(void),
       // return true if the strip is being sent pixel updates
       isUpdating(void);
 
