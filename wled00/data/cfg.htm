@@ -6,18 +6,65 @@
     <meta charset="utf-8">
     <meta name="theme-color" content="#222222">
     <link rel="stylesheet" href="cfg.css">
+    <script src="cfg_lang.js"></script>
 </head>
 
 <body>
     <div id="header">
         <div class="e-icon"><i class="icons">&#xe90a;</i></div>
-        <div class="l e-label" id="h-cfg"></div>
+        <div class="l e-label l10n" id="h-cfg"></div>
         <div class="btn save">
             <div class="b-icon"><i class="icons">&#xe905;</i></div>
-            <div class="l b-label" id="b-save"></div>
+            <div class="l b-label l10n" id="b-save">Save</div>
         </div>
     </div>
-    <div id="menu"></div>
+    <div id="menu">
+        <div class="entry"><div class="e-icon"><i class="icons">&#xe90c;</i></div><div class="l e-label l10n" id="e-nw">Network</div></div>
+        <div class="entry"><div class="e-icon"><i class="icons">&#xe90a;</i></div><div class="l e-label l10n" id="e-hw">Hardware</div></div>
+        <div class="entry"><div class="e-icon"><i class="icons">&#xe904;</i></div><div class="l e-label l10n" id="e-ui">Customization</div></div>
+        <div class="entry"><div class="e-icon"><i class="icons">&#xe906;</i></div><div class="l e-label l10n" id="e-if">Interfaces</div></div>
+        <div class="entry"><div class="e-icon"><i class="icons">&#xe90b;</i></div><div class="l e-label l10n" id="e-tm">Schedules</div></div>
+        <div class="entry"><div class="e-icon"><i class="icons">&#xe90a;</i></div><div class="l e-label l10n" id="e-dx">DMX Out</div></div>
+        <div class="entry"><div class="e-icon"><i class="icons">&#xe903;</i></div><div class="l e-label l10n" id="e-sr">Sound Reactive</div></div>
+        <div class="entry"><div class="e-icon"><i class="icons">&#xe907;</i></div><div class="l e-label l10n" id="e-um">Usermods</div></div>
+        <div class="entry"><div class="e-icon"><i class="icons">&#xe909;</i></div><div class="l e-label l10n" id="e-ab">About</div></div>
+    </div>
+    <div id="content">
+        <!-- simulate sections for each menu item -->
+        <div id="nw">
+            <h2 class="l10n">Network</h2>
+        </div>
+        <div id="hw">
+            <h2 class="l10n">Hardware</h2>
+        </div>
+        <div id="ui">
+            <h2 class="l10n">Customization</h2>
+        </div>
+        <div id="if">
+            <h2 class="l10n">Interfaces</h2>
+        </div>
+        <div id="tm">
+            <h2 class="l10n">Schedules</h2>
+        </div>
+        <div id="sr">
+            <h2 class="l10n">Sound Reactive</h2>
+        </div>
+        <div id="um">
+            <h2 class="l10n">Usermods</h2>
+        </div>
+        <div id="dx">
+            <h2 class="l10n">DMX Out</h2>
+        </div>
+        <div id="ab">
+            <h2 class="l10n">About</h2>
+        </div>
+        <div id="up">
+            <h2 class="l10n">Update</h2>
+        </div>
+        <div id="rb">
+            <h2 class="l10n">Reboot</h2>
+        </div>
+    </div>
     <script src="cfg.js" type="module"></script>
 </body>
 

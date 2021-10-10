@@ -110,7 +110,8 @@ function dom(selector) {
         return dom(nodes.pop());
     };
 
-    self.htmlAppend = function(value) {
+    // append html before end of the of the tag
+    self.append = function(value) {
         if (value) {
             nodeLoop(function(elm) {
                 elm.insertAdjacentHTML('beforeend', value);
