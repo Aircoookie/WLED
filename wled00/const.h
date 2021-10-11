@@ -60,6 +60,7 @@
 #define USERMOD_ID_SN_PHOTORESISTOR      17     //Usermod "usermod_sn_photoresistor.h"
 #define USERMOD_ID_BATTERY_STATUS_BASIC  18     //Usermod "usermod_v2_battery_status_basic.h"
 #define USERMOD_ID_PWM_FAN               19     //Usermod "usermod_PWM_fan.h"
+#define USERMOD_ID_BH1750                20     //Usermod "usermod_bh1750.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
@@ -239,10 +240,10 @@
 
 #define NTP_PACKET_SIZE 48
 
-// maximum number of LEDs - more than 1500 LEDs (or 500 DMA "LEDPIN 3" driven ones) will cause a low memory condition on ESP8266
+//maximum number of rendered LEDs - this does not have to match max. physical LEDs, e.g. if there are virtual busses 
 #ifndef MAX_LEDS
 #ifdef ESP8266
-#define MAX_LEDS 1200 // can't rely on memory limit to limit this to 1200 LEDs
+#define MAX_LEDS 1664 //can't rely on memory limit to limit this to 1600 LEDs
 #else
 #define MAX_LEDS 8192
 #endif
@@ -311,6 +312,10 @@
   #define LEDPIN 3
   #warning "Pin conflict compiling with DMX and LEDs on pin 2. The default LED pin has been changed to pin 3."
 #endif
+#endif
+
+#ifndef DEFAULT_LED_COUNT
+  #define DEFAULT_LED_COUNT 30
 #endif
 
 #endif

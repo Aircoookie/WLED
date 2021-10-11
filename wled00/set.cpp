@@ -128,10 +128,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
       busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
-      if (!doInitBusses) ledCount = 1;
       doInitBusses = true;
-      uint16_t totalNew = start + length;
-      if (totalNew > ledCount && totalNew <= MAX_LEDS) ledCount = totalNew; //total is end of last bus (where start + len is max.)
     }
 
     // upate other pins
@@ -539,11 +536,10 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv, byte ma
     int out = getNumVal(req, pos+1);
     if (out == 0)
     {
-      if (req->charAt(pos+4) == '-')
-      {
-        *val = (*val <= minv)? maxv : *val -1;
+      if (req->charAt(pos+4) == '-') {
+        *val = min((int)maxv, max((int)minv, (int)(*val -1)));
       } else {
-        *val = (*val >= maxv)? minv : *val +1;
+        *val = min((int)maxv, max((int)minv, (int)(*val +1)));
       }
     } else {
       out += *val;
@@ -585,7 +581,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
     if (t < strip.getMaxSegments()) selectedSeg = t;
   }
 
-  WS2812FX::Segment& mainseg = strip.getSegment(selectedSeg);
+  WS2812FX::Segment& selseg = strip.getSegment(selectedSeg);
   pos = req.indexOf(F("SV=")); //segment selected
   if (pos > 0) {
     byte t = getNumVal(&req, pos);
@@ -595,13 +591,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
         strip.getSegment(i).setOption(SEG_OPTION_SELECTED, 0);
       }
     }
-    mainseg.setOption(SEG_OPTION_SELECTED, t);
+    selseg.setOption(SEG_OPTION_SELECTED, t);
   }
 
-  uint16_t startI = mainseg.start;
-  uint16_t stopI  = mainseg.stop;
-  uint8_t  grpI   = mainseg.grouping;
-  uint16_t spcI   = mainseg.spacing;
+  uint16_t startI = selseg.start;
+  uint16_t stopI  = selseg.stop;
+  uint8_t  grpI   = selseg.grouping;
+  uint16_t spcI   = selseg.spacing;
   pos = req.indexOf(F("&S=")); //segment start
   if (pos > 0) {
     startI = getNumVal(&req, pos);
@@ -622,26 +618,26 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
   strip.setSegment(selectedSeg, startI, stopI, grpI, spcI);
 
   pos = req.indexOf(F("RV=")); //Segment reverse
-  if (pos > 0) mainseg.setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
+  if (pos > 0) selseg.setOption(SEG_OPTION_REVERSED, req.charAt(pos+3) != '0');
 
   pos = req.indexOf(F("MI=")); //Segment mirror
-  if (pos > 0) mainseg.setOption(SEG_OPTION_MIRROR, req.charAt(pos+3) != '0');
+  if (pos > 0) selseg.setOption(SEG_OPTION_MIRROR, req.charAt(pos+3) != '0');
 
   pos = req.indexOf(F("SB=")); //Segment brightness/opacity
   if (pos > 0) {
     byte segbri = getNumVal(&req, pos);
-    mainseg.setOption(SEG_OPTION_ON, segbri, selectedSeg);
+    selseg.setOption(SEG_OPTION_ON, segbri, selectedSeg);
     if (segbri) {
-      mainseg.setOpacity(segbri, selectedSeg);
+      selseg.setOpacity(segbri, selectedSeg);
     }
   }
 
   pos = req.indexOf(F("SW=")); //segment power
   if (pos > 0) {
     switch (getNumVal(&req, pos)) {
-      case 0: mainseg.setOption(SEG_OPTION_ON, false); break;
-      case 1: mainseg.setOption(SEG_OPTION_ON, true); break;
-      default: mainseg.setOption(SEG_OPTION_ON, !mainseg.getOption(SEG_OPTION_ON)); break;
+      case 0: selseg.setOption(SEG_OPTION_ON, false); break;
+      case 1: selseg.setOption(SEG_OPTION_ON, true); break;
+      default: selseg.setOption(SEG_OPTION_ON, !selseg.getOption(SEG_OPTION_ON)); break;
     }
   }
 
@@ -738,7 +734,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       strip.applyToAllSelected = true;
       strip.setColor(2, t[0], t[1], t[2], t[3]);
     } else {
-      mainseg.setColor(2,((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24)), selectedSeg);
+      selseg.setColor(2,((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24)), selectedSeg); // defined above (SS=)
     }
   }
 
