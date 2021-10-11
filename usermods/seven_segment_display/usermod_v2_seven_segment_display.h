@@ -43,7 +43,7 @@ private:
     //      D
     */
   int ssDisplayConfig = 5; //Physical configuration of the Seven segment display
-  String ssDisplayMessage = "testing123";
+  String ssDisplayMessage = "~";
   bool ssTimeEnabled = true;         //If not, display message.
   unsigned int ssScrollSpeed = 1000; //Time between advancement of extended message scrolling, in milliseconds.
 
@@ -273,7 +273,7 @@ private:
       
     char buffer[64];
     char valBuffer[12];
-    sprintf_P(buffer, PSTR("%s/sevenSeg/%S"), mqttDeviceTopic, subTopic);
+    sprintf_P(buffer, PSTR("%s/%S/%S"), mqttDeviceTopic, _str_sevenSeg, subTopic);
     sprintf_P(valBuffer, PSTR("%d"), value);
     mqtt->publish(buffer, 2, true, valBuffer);
   }
@@ -282,7 +282,7 @@ private:
   {
     if(mqtt == NULL) return;
     char buffer[64];
-    sprintf_P(buffer, PSTR("%s/sevenSeg/%S"), mqttDeviceTopic, subTopic);
+    sprintf_P(buffer, PSTR("%s/%S/%S"), mqttDeviceTopic, _str_sevenSeg, subTopic);
     mqtt->publish(buffer, 2, true, Value.c_str(), Value.length());
   }
 
@@ -399,14 +399,14 @@ public:
     {
       _updateMQTT();
       //subscribe for sevenseg messages on the device topic
-      sprintf_P(subBuffer, PSTR("%s/sevenSeg/+/set"), mqttDeviceTopic);
+      sprintf_P(subBuffer, PSTR("%s/%S/+/set"), mqttDeviceTopic, _str_sevenSeg);
       mqtt->subscribe(subBuffer, 2);
     }
 
     if (mqttGroupTopic[0] != 0)
     {
       //subcribe for sevenseg messages on the group topic
-      sprintf_P(subBuffer, PSTR("%s/sevenSeg/+/set"), mqttGroupTopic);
+      sprintf_P(subBuffer, PSTR("%s/%S/+/set"), mqttGroupTopic, _str_sevenSeg);
       mqtt->subscribe(subBuffer, 2);
     }
   }
