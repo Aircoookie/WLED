@@ -4,29 +4,6 @@
  * Receives client input
  */
 
-void _setRandomColor(bool _sec,bool fromButton)
-{
-  lastRandomIndex = strip.get_random_wheel_index(lastRandomIndex);
-  if (_sec){
-    colorHStoRGB(lastRandomIndex*256,255,colSec);
-  } else {
-    colorHStoRGB(lastRandomIndex*256,255,col);
-  }
-  if (fromButton) colorUpdated(2);
-}
-
-
-bool isAsterisksOnly(const char* str, byte maxLen)
-{
-  for (byte i = 0; i < maxLen; i++) {
-    if (str[i] == 0) break;
-    if (str[i] != '*') return false;
-  }
-  //at this point the password contains asterisks only
-  return (str[0] != 0); //false on empty string
-}
-
-
 //called upon POST settings form submit
 void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 {

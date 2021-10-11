@@ -456,26 +456,6 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   }
 }
 
-//by https://github.com/tzapu/WiFiManager/blob/master/WiFiManager.cpp
-int getSignalQuality(int rssi)
-{
-    int quality = 0;
-
-    if (rssi <= -100)
-    {
-        quality = 0;
-    }
-    else if (rssi >= -50)
-    {
-        quality = 100;
-    }
-    else
-    {
-        quality = 2 * (rssi + 100);
-    }
-    return quality;
-}
-
 void serializeInfo(JsonObject root)
 {
   root[F("ver")] = versionString;

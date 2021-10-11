@@ -1,17 +1,6 @@
 #include "src/dependencies/timezone/Timezone.h"
 #include "wled.h"
-#ifndef WLED_USE_REAL_MATH
-  #include "wled_math.h"
-#else
-  #define sin_t sin
-  #define cos_t cos
-  #define tan_t tan
-  #define asin_t asin
-  #define acos_t acos
-  #define atan_t atan
-  #define fmod_t fmod
-  #define floor_t floor
-#endif
+#include "fcn_declare.h"
 
 /*
  * Acquires time from NTP server

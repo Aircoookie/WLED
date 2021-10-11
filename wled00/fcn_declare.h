@@ -206,6 +206,10 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w);
 void refreshNodeList();
 void sendSysInfoUDP();
 
+//network.cpp
+int getSignalQuality(int rssi);
+void WiFiEvent(WiFiEvent_t event);
+
 //um_manager.cpp
 class Usermod {
   public:
@@ -251,11 +255,42 @@ void userSetup();
 void userConnected();
 void userLoop();
 
+//util.cpp
+bool oappend(const char* txt); // append new c string to temp buffer efficiently
+bool oappendi(int i);          // append new number to temp buffer efficiently
+void sappend(char stype, const char* key, int val);
+void sappends(char stype, const char* key, char* val);
+void prepareHostname(char* hostname);
+void _setRandomColor(bool _sec, bool fromButton);
+bool isAsterisksOnly(const char* str, byte maxLen);
+
 //wled_eeprom.cpp
 void applyMacro(byte index);
 void deEEP();
 void deEEPSettings();
 void clearEEPROM();
+
+//wled_math.cpp
+#ifndef WLED_USE_REAL_MATH
+  float cos_t(float phi);
+  float sin_t(float x);
+  float tan_t(float x);
+  float acos_t(float x);
+  float asin_t(float x);
+  float atan_t(float x);
+  float floor_t(float x);
+  float fmod_t(float num, float denom);
+#else
+  #include <math.h>
+  #define sin_t sin
+  #define cos_t cos
+  #define tan_t tan
+  #define asin_t asin
+  #define acos_t acos
+  #define atan_t atan
+  #define fmod_t fmod
+  #define floor_t floor
+#endif
 
 //wled_serial.cpp
 void handleSerial();
@@ -280,8 +315,6 @@ void sendDataWs(AsyncWebSocketClient * client = nullptr);
 //xml.cpp
 void XML_response(AsyncWebServerRequest *request, char* dest = nullptr);
 void URL_response(AsyncWebServerRequest *request);
-void sappend(char stype, const char* key, int val);
-void sappends(char stype, const char* key, char* val);
 void getSettingsJS(byte subPage, char* dest);
 
 #endif
