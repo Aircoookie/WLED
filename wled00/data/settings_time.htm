@@ -43,16 +43,16 @@
 	}
     function BTa()
     {
-      var ih="<tr><th>Active</th><th>Hour</th><th>Minute</th><th>Preset</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";
+      var ih="<tr><th>En.</th><th>Hour</th><th>Minute</th><th>Preset</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>";
       for (i=0;i<8;i++)
       {
-        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"number\" style=\"display:none\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" class=\"sml\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" class=\"sml\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" class=\"med\" type=\"number\" min=\"0\" max=\"250\"></td>";
+        ih+="<tr><td><input name=\"W"+i+"\" id=\"W"+i+"\" type=\"hidden\"><input id=\"W"+i+"0\" type=\"checkbox\"></td><td><input name=\"H"+i+"\" class=\"xs\" type=\"number\" min=\"0\" max=\"24\"></td><td><input name=\"N"+i+"\" class=\"xs\" type=\"number\" min=\"0\" max=\"59\"></td><td><input name=\"T"+i+"\" class=\"s\" type=\"number\" min=\"0\" max=\"250\"></td>";
         for (j=1;j<8;j++) ih+="<td><input id=\"W"+i+j+"\" type=\"checkbox\"></td>";
 		ih+="</tr>";
       }
-	  ih+="<tr><td><input name=\"W8\" id=\"W8\" type=\"number\" style=\"display:none\"><input id=\"W80\" type=\"checkbox\"></td><td>Sunrise<input name=\"H8\" class=\"sml\" value=\"255\" type=\"hidden\"></td><td><input name=\"N8\" class=\"sml\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T8\" class=\"med\" type=\"number\" min=\"0\" max=\"250\"></td>";
+	  ih+="<tr><td><input name=\"W8\" id=\"W8\" type=\"hidden\"><input id=\"W80\" type=\"checkbox\"></td><td>Sunrise<input name=\"H8\" value=\"255\" type=\"hidden\"></td><td><input name=\"N8\" class=\"xs\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T8\" class=\"s\" type=\"number\" min=\"0\" max=\"250\"></td>";
       for (j=1;j<8;j++) ih+="<td><input id=\"W8"+j+"\" type=\"checkbox\"></td>";
-	  ih+="</tr><tr><td><input name=\"W9\" id=\"W9\" type=\"number\" style=\"display:none\"><input id=\"W90\" type=\"checkbox\"></td><td>Sunset<input name=\"H9\" class=\"sml\" value=\"255\" type=\"hidden\"></td><td><input name=\"N9\" class=\"sml\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T9\" class=\"med\" type=\"number\" min=\"0\" max=\"250\"></td>";
+	  ih+="</tr><tr><td><input name=\"W9\" id=\"W9\" type=\"hidden\"><input id=\"W90\" type=\"checkbox\"></td><td>Sunset<input name=\"H9\" value=\"255\" type=\"hidden\"></td><td><input name=\"N9\" class=\"xs\" type=\"number\" min=\"-59\" max=\"59\"></td><td><input name=\"T9\" class=\"s\" type=\"number\" min=\"0\" max=\"250\"></td>";
       for (j=1;j<8;j++) ih+="<td><input id=\"W9"+j+"\" type=\"checkbox\"></td>";
 	  ih+="</tr>";
       gId("TMT").innerHTML=ih;
@@ -159,16 +159,16 @@
 		</div>
 		Countdown Mode: <input type="checkbox" name="CE"><br>
 		Countdown Goal:<br>
-		Year: 20 <input name="CY" class="small" type="number" min="0" max="99" required> Month: <input name="CI" class="small" type="number" min="1" max="12" required> Day: <input name="CD" class="small" type="number" min="1" max="31" required><br>
-		Hour: <input name="CH" class="small" type="number" min="0" max="23" required> Minute: <input name="CM" class="small" type="number" min="0" max="59" required> Second: <input name="CS" class="small" type="number" min="0" max="59" required><br>
+		Year: 20 <input name="CY" class="xs" type="number" min="0" max="99" required> Month: <input name="CI" class="xs" type="number" min="1" max="12" required> Day: <input name="CD" class="xs" type="number" min="1" max="31" required><br>
+		Hour: <input name="CH" class="xs" type="number" min="0" max="23" required> Minute: <input name="CM" class="xs" type="number" min="0" max="59" required> Second: <input name="CS" class="xs" type="number" min="0" max="59" required><br>
 		<h3>Macro presets</h3>
     	<b>Macros have moved!</b><br>
     	<i>Presets now also can be used as macros to save both JSON and HTTP API commands.<br>
     	Just enter the preset id below!</i>
 		<i>Use 0 for the default action instead of a preset</i><br>
-		Alexa On/Off Preset: <input name="A0" type="number" min="0" max="250" required> <input name="A1" type="number" min="0" max="250" required><br>
-		Countdown-Over Preset: <input name="MC" type="number" min="0" max="250" required><br>
-		Timed-Light-Over Presets: <input name="MN" type="number" min="0" max="250" required><br>
+		Alexa On/Off Preset: <input name="A0" class="m" type="number" min="0" max="250" required> <input name="A1" class="m" type="number" min="0" max="250" required><br>
+		Countdown-Over Preset: <input name="MC" class="m" type="number" min="0" max="250" required><br>
+		Timed-Light-Over Presets: <input name="MN" class="m" type="number" min="0" max="250" required><br>
 		<h3>Button actions</h3>
 		<table style="margin: 0 auto;" id="macros">
 			<thead>

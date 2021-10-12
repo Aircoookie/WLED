@@ -326,11 +326,11 @@ ${i+1}:
 <span id="psd${i}">Start:</span> <input type="number" name="LS${i}" id="ls${i}" class="l starts" min="0" max="8191" value="${lastEnd(i)}" oninput="startsDirty[${i}]=true;UI();" required />&nbsp;
 <div id="dig${i}c" style="display:inline">Length: <input type="number" name="LC${i}" class="l" min="1" max="${maxPB}" value="1" required oninput="UI()" /></div>
 <br>
-<span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="33" required class="xs" onchange="UI()"/>
-<span id="p1d${i}"></span><input type="number" name="L1${i}" min="0" max="33" class="xs" onchange="UI()"/>
-<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="33" class="xs" onchange="UI()"/>
-<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="33" class="xs" onchange="UI()"/>
-<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="33" class="xs" onchange="UI()"/>
+<span id="p0d${i}">GPIO:</span> <input type="number" name="L0${i}" min="0" max="33" required class="s" onchange="UI()"/>
+<span id="p1d${i}"></span><input type="number" name="L1${i}" min="0" max="33" class="s" onchange="UI()"/>
+<span id="p2d${i}"></span><input type="number" name="L2${i}" min="0" max="33" class="s" onchange="UI()"/>
+<span id="p3d${i}"></span><input type="number" name="L3${i}" min="0" max="33" class="s" onchange="UI()"/>
+<span id="p4d${i}"></span><input type="number" name="L4${i}" min="0" max="33" class="s" onchange="UI()"/>
 <div id="dig${i}r" style="display:inline"><br><span id="rev${i}">Reversed</span>: <input type="checkbox" name="CV${i}"></div>
 <div id="dig${i}s" style="display:inline"><br>Skip 1<sup>st</sup> LED: <input id="sl${i}" type="checkbox" name="SL${i}"></div>
 <div id="dig${i}f" style="display:inline"><br>Off Refresh: <input id="rf${i}" type="checkbox" name="RF${i}">&nbsp;</div>
