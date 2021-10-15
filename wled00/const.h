@@ -62,6 +62,7 @@
 #define USERMOD_ID_PWM_FAN               19     //Usermod "usermod_PWM_fan.h"
 #define USERMOD_ID_BH1750                20     //Usermod "usermod_bh1750.h"
 #define USERMOD_ID_SEVEN_SEGMENT_DISPLAY 21     //Usermod "usermod_v2_seven_segment_display.h"
+#define USERMOD_ID_QUINLED_AN_PENTA      22     //Usermod "quinled-an-penta.h"
 
 //Access point behavior
 #define AP_BEHAVIOR_BOOT_NO_CONN          0     //Open AP when no connection after boot
