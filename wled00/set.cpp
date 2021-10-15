@@ -226,7 +226,8 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
     nodeListEnabled = request->hasArg(F("NL"));
     if (!nodeListEnabled) Nodes.clear();
-    nodeBroadcastEnabled = request->hasArg(F("NB"));
+    nodeBroadcastEnabled = request->hasArg(F("NB")); //hear
+    
 
     receiveDirect = request->hasArg(F("RD"));
     e131SkipOutOfSequence = request->hasArg(F("ES"));

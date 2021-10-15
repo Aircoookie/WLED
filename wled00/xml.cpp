@@ -460,6 +460,7 @@ void getSettingsJS(byte subPage, char* dest)
 
     sappend('c',SET_F("NL"),nodeListEnabled);
     sappend('c',SET_F("NB"),nodeBroadcastEnabled);
+    sappends('s',SET_F("SN"),specialSearchNodes); //watch char* vs char[] here
 
     sappend('c',SET_F("RD"),receiveDirect);
     sappend('v',SET_F("EP"),e131Port);

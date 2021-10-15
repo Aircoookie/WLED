@@ -200,7 +200,10 @@ void WLED::loop()
     yield();
     // refresh WLED nodes list
     refreshNodeList();
-    if (nodeBroadcastEnabled) sendSysInfoUDP();
+    if (nodeBroadcastEnabled) {
+      sendSysInfoUDP();
+      // add for loop here
+    }
     yield();
   }
 
@@ -214,7 +217,8 @@ void WLED::loop()
     uint32_t mem = 0;
     ledCount = 1;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
-      if (busConfigs[i] == nullptr) break;
+      if (busConfigs[i] == nullptr) b
+      reak;
       mem += BusManager::memUsage(*busConfigs[i]);
       if (mem <= MAX_LED_MEMORY) {
         uint16_t totalNew = busConfigs[i]->start + busConfigs[i]->count;

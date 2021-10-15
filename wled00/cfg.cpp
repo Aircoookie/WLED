@@ -260,6 +260,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   JsonObject if_nodes = interfaces["nodes"];
   CJSON(nodeListEnabled, if_nodes[F("list")]);
   CJSON(nodeBroadcastEnabled, if_nodes[F("bcast")]);
+  CJSON(specialSearchNodes, if_nodes[F("cusnodes")]);
 
   JsonObject if_live = interfaces["live"];
   CJSON(receiveDirect, if_live["en"]);
@@ -631,6 +632,7 @@ void serializeConfig() {
   JsonObject if_nodes = interfaces.createNestedObject("nodes");
   if_nodes[F("list")] = nodeListEnabled;
   if_nodes[F("bcast")] = nodeBroadcastEnabled;
+  if_nodes[F("cusnodes")] = specialSearchNodes;
 
   JsonObject if_live = interfaces.createNestedObject("live");
   if_live["en"] = receiveDirect;
