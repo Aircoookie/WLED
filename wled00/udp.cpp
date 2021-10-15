@@ -452,7 +452,7 @@ void setRealtimePixel(uint16_t i, byte r, byte g, byte b, byte w)
 /*********************************************************************************************\
    Refresh aging for remote units, drop if too old...
 \*********************************************************************************************/
-void refreshNodeList()
+void refreshNodeList() /* this function */
 {
   for (NodesMap::iterator it = Nodes.begin(); it != Nodes.end();) {
     bool mustRemove = true;
@@ -474,7 +474,7 @@ void refreshNodeList()
 /*********************************************************************************************\
    Broadcast system info to other nodes. (to update node lists)
 \*********************************************************************************************/
-void sendSysInfoUDP()
+void sendSysInfoUDP(int o1 = 255, int o2 = 255, int o3 = 255, int o4 = 255)
 {
   if (!udp2Connected) return;
 
@@ -512,7 +512,7 @@ void sendSysInfoUDP()
   for (byte i=0; i<sizeof(uint32_t); i++)
     data[40+i] = (build>>(8*i)) & 0xFF;
 
-  IPAddress broadcastIP(255, 255, 255, 255);
+  IPAddress broadcastIP(o1, o2, o3, o4);
   notifier2Udp.beginPacket(broadcastIP, udpPort2);
   notifier2Udp.write(data, sizeof(data));
   notifier2Udp.endPacket();
