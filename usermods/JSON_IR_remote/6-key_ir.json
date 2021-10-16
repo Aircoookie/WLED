@@ -1,0 +1,38 @@
+{
+  "desc": "6-key",
+  "0xFF0FF0": {
+    "label": "Power",
+    "pos": "1x1",
+    "cmd": "T=2"
+  },
+  "0xFF8F70": {
+    "label": "Channel +",
+    "pos": "2x1",
+    "cmnt": "Cycle palette up",
+    "cmd": "FP=~"
+  },
+  "0xFF4FB0": {
+    "label": "Channel -",
+    "pos": "3x1",
+    "cmnt": "Cycle palette down",
+    "cmd": "FP=~-"
+  },
+  "0xFFCF30": {
+    "label": "Volume +",
+    "pos": "4x1",
+    "cmnt": "Brighten",
+    "cmd": "A=~16"
+  },
+  "0xFF2FD0": {
+    "label": "Volume -",
+    "pos": "5x1",
+    "cmnt": "Dim",
+    "cmd": "A=~-16"
+  },
+  "0xFFAF50": {
+    "label": "Mute",
+    "pos": "6x1",
+    "cmnt": "Cycle effects",
+    "cmd": "CY=0&FX=~"
+  }
+}

@@ -37,12 +37,13 @@
 #define ENCODER_SW_PIN 13
 #endif
 
-#ifndef USERMOD_FOUR_LINE_DISLAY
+#ifndef USERMOD_FOUR_LINE_DISPLAY
 // These constants won't be defined if we aren't using FourLineDisplay.
-#define FLD_LINE_3_BRIGHTNESS       0
-#define FLD_LINE_3_EFFECT_SPEED     0
-#define FLD_LINE_3_EFFECT_INTENSITY 0
-#define FLD_LINE_3_PALETTE          0
+#define FLD_LINE_BRIGHTNESS       0
+#define FLD_LINE_MODE             0
+#define FLD_LINE_EFFECT_SPEED     0
+#define FLD_LINE_EFFECT_INTENSITY 0
+#define FLD_LINE_PALETTE          0
 #endif
 
 
@@ -55,14 +56,14 @@ private:
   int fadeAmount = 10;             // Amount to change every step (brightness)
   unsigned long currentTime;
   unsigned long loopTime;
-  const int pinA = ENCODER_DT_PIN;     // DT from encoder
-  const int pinB = ENCODER_CLK_PIN;    // CLK from encoder
-  const int pinC = ENCODER_SW_PIN;     // SW from encoder
-  unsigned char select_state = 0;      // 0: brightness, 1: effect, 2: effect speed
+  int8_t pinA = ENCODER_DT_PIN;       // DT from encoder
+  int8_t pinB = ENCODER_CLK_PIN;      // CLK from encoder
+  int8_t pinC = ENCODER_SW_PIN;       // SW from encoder
+  unsigned char select_state = 0;     // 0: brightness, 1: effect, 2: effect speed
   unsigned char button_state = HIGH;
   unsigned char prev_button_state = HIGH;
   
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
   FourLineDisplayUsermod *display;
 #else
   void* display = nullptr;
@@ -75,9 +76,19 @@ private:
   unsigned char Enc_B;
   unsigned char Enc_A_prev = 0;
 
-  bool currentEffectAndPaleeteInitialized = false;
+  bool currentEffectAndPaletteInitialized = false;
   uint8_t effectCurrentIndex = 0;
   uint8_t effectPaletteIndex = 0;
+
+  bool initDone = false;
+  bool enabled = true;
+
+  // strings to reduce flash memory usage (used more than twice)
+  static const char _name[];
+  static const char _enabled[];
+  static const char _DT_pin[];
+  static const char _CLK_pin[];
+  static const char _SW_pin[];
 
 public:
   /*
@@ -86,6 +97,18 @@ public:
      */
   void setup()
   {
+    PinManagerPinType pins[3] = { { pinA, false }, { pinB, false }, { pinC, false } };
+    if (!pinManager.allocateMultiplePins(pins, 3, PinOwner::UM_RotaryEncoderUI)) {
+      // BUG: configuring this usermod with conflicting pins
+      //      will cause it to de-allocate pins it does not own
+      //      (at second config)
+      //      This is the exact type of bug solved by pinManager
+      //      tracking the owner tags....
+      pinA = pinB = pinC = -1;
+      enabled = false;
+      return;
+    }
+
     pinMode(pinA, INPUT_PULLUP);
     pinMode(pinB, INPUT_PULLUP);
     pinMode(pinC, INPUT_PULLUP);
@@ -96,15 +119,17 @@ public:
     modes_alpha_indexes = modeSortUsermod->getModesAlphaIndexes();
     palettes_alpha_indexes = modeSortUsermod->getPalettesAlphaIndexes();
 
-#ifdef USERMOD_FOUR_LINE_DISLAY    
+#ifdef USERMOD_FOUR_LINE_DISPLAY    
     // This Usermod uses FourLineDisplayUsermod for the best experience.
     // But it's optional. But you want it.
     display = (FourLineDisplayUsermod*) usermods.lookup(USERMOD_ID_FOUR_LINE_DISP);
     if (display != nullptr) {
-      display->setLineThreeType(FLD_LINE_3_BRIGHTNESS);
+      display->setLineType(FLD_LINE_BRIGHTNESS);
       display->setMarkLine(3);
     }
 #endif
+
+    initDone = true;
   }
 
   /*
@@ -128,12 +153,14 @@ public:
      */
   void loop()
   {
+    if (!enabled) return;
+
     currentTime = millis(); // get the current elapsed time
 
     // Initialize effectCurrentIndex and effectPaletteIndex to
     // current state. We do it here as (at least) effectCurrent
     // is not yet initialized when setup is called.
-    if (!currentEffectAndPaleeteInitialized) {
+    if (!currentEffectAndPaletteInitialized) {
       findCurrentEffectAndPalette();
     }
 
@@ -153,19 +180,19 @@ public:
           if (display != nullptr) {
             switch(newState) {
               case 0:
-                changedState = changeState("Brightness", FLD_LINE_3_BRIGHTNESS, 3);
+                changedState = changeState("Brightness", FLD_LINE_BRIGHTNESS, 3);
                 break;
               case 1:
-                changedState = changeState("Select FX", FLD_LINE_3_EFFECT_SPEED, 2);
+                changedState = changeState("Select FX", FLD_LINE_MODE, 2);
                 break;
               case 2:
-                changedState = changeState("FX Speed", FLD_LINE_3_EFFECT_SPEED, 3);
+                changedState = changeState("FX Speed", FLD_LINE_EFFECT_SPEED, 3);
                 break;
               case 3:
-                changedState = changeState("FX Intensity", FLD_LINE_3_EFFECT_INTENSITY, 3);
+                changedState = changeState("FX Intensity", FLD_LINE_EFFECT_INTENSITY, 3);
                 break;
               case 4:
-                changedState = changeState("Palette", FLD_LINE_3_PALETTE, 3);
+                changedState = changeState("Palette", FLD_LINE_PALETTE, 3);
                 break;
             }
           }
@@ -229,9 +256,9 @@ public:
   }
 
   void findCurrentEffectAndPalette() {
-    currentEffectAndPaleeteInitialized = true;
+    currentEffectAndPaletteInitialized = true;
     for (uint8_t i = 0; i < strip.getModeCount(); i++) {
-      byte value = modes_alpha_indexes[i];
+      //byte value = modes_alpha_indexes[i];
       if (modes_alpha_indexes[i] == effectCurrent) {
         effectCurrentIndex = i;
         break;
@@ -239,7 +266,7 @@ public:
     }
 
     for (uint8_t i = 0; i < strip.getPaletteCount(); i++) {
-      byte value = palettes_alpha_indexes[i];
+      //byte value = palettes_alpha_indexes[i];
       if (palettes_alpha_indexes[i] == strip.getSegment(0).palette) {
         effectPaletteIndex = i;
         break;
@@ -248,14 +275,14 @@ public:
   }
 
   boolean changeState(const char *stateName, byte lineThreeMode, byte markedLine) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display != nullptr) {
       if (display->wakeDisplay()) {
         // Throw away wake up input
         return false;
       }
       display->overlay("Mode change", stateName, 1500);
-      display->setLineThreeType(lineThreeMode);
+      display->setLineType(lineThreeMode);
       display->setMarkLine(markedLine);
     }
   #endif
@@ -267,12 +294,12 @@ public:
 
     //call for notifier -> 0: init 1: direct change 2: button 3: notification 4: nightlight 5: other (No notification)
     // 6: fx changed 7: hue 8: preset cycle 9: blynk 10: alexa
-    colorUpdated(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
-    updateInterfaces(NOTIFIER_CALL_MODE_DIRECT_CHANGE);
+    colorUpdated(CALL_MODE_DIRECT_CHANGE);
+    updateInterfaces(CALL_MODE_DIRECT_CHANGE);
   }
 
   void changeBrightness(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -288,7 +315,7 @@ public:
   }
 
   void changeEffect(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -305,7 +332,7 @@ public:
   }
 
   void changeEffectSpeed(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -321,7 +348,7 @@ public:
   }
 
   void changeEffectIntensity(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -337,7 +364,7 @@ public:
   }
 
   void changePalette(bool increase) {
-#ifdef USERMOD_FOUR_LINE_DISLAY
+#ifdef USERMOD_FOUR_LINE_DISPLAY
     if (display && display->wakeDisplay()) {
       // Throw away wake up input
       return;
@@ -386,8 +413,71 @@ public:
      */
   void readFromJsonState(JsonObject &root)
   {
-    userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
+    //userVar0 = root["user0"] | userVar0; //if "user0" key exists in JSON, update, else keep old value
     //if (root["bri"] == 255) Serial.println(F("Don't burn down your garage!"));
+  }
+
+  /**
+   * addToConfig() (called from set.cpp) stores persistent properties to cfg.json
+   */
+  void addToConfig(JsonObject &root) {
+    // we add JSON object: {"Rotary-Encoder":{"DT-pin":12,"CLK-pin":14,"SW-pin":13}}
+    JsonObject top = root.createNestedObject(FPSTR(_name)); // usermodname
+    top[FPSTR(_enabled)] = enabled;
+    top[FPSTR(_DT_pin)]  = pinA;
+    top[FPSTR(_CLK_pin)] = pinB;
+    top[FPSTR(_SW_pin)]  = pinC;
+    DEBUG_PRINTLN(F("Rotary Encoder config saved."));
+  }
+
+  /**
+   * readFromConfig() is called before setup() to populate properties from values stored in cfg.json
+   *
+   * The function should return true if configuration was successfully loaded or false if there was no configuration.
+   */
+  bool readFromConfig(JsonObject &root) {
+    // we look for JSON object: {"Rotary-Encoder":{"DT-pin":12,"CLK-pin":14,"SW-pin":13}}
+    JsonObject top = root[FPSTR(_name)];
+    if (top.isNull()) {
+      DEBUG_PRINT(FPSTR(_name));
+      DEBUG_PRINTLN(F(": No config found. (Using defaults.)"));
+      return false;
+    }
+    int8_t newDTpin  = pinA;
+    int8_t newCLKpin = pinB;
+    int8_t newSWpin  = pinC;
+
+    enabled   = top[FPSTR(_enabled)] | enabled;
+    newDTpin  = top[FPSTR(_DT_pin)]  | newDTpin;
+    newCLKpin = top[FPSTR(_CLK_pin)] | newCLKpin;
+    newSWpin  = top[FPSTR(_SW_pin)]  | newSWpin;
+
+    DEBUG_PRINT(FPSTR(_name));
+    if (!initDone) {
+      // first run: reading from cfg.json
+      pinA = newDTpin;
+      pinB = newCLKpin;
+      pinC = newSWpin;
+      DEBUG_PRINTLN(F(" config loaded."));
+    } else {
+      DEBUG_PRINTLN(F(" config (re)loaded."));
+      // changing parameters from settings page
+      if (pinA!=newDTpin || pinB!=newCLKpin || pinC!=newSWpin) {
+        pinManager.deallocatePin(pinA, PinOwner::UM_RotaryEncoderUI);
+        pinManager.deallocatePin(pinB, PinOwner::UM_RotaryEncoderUI);
+        pinManager.deallocatePin(pinC, PinOwner::UM_RotaryEncoderUI);
+        pinA = newDTpin;
+        pinB = newCLKpin;
+        pinC = newSWpin;
+        if (pinA<0 || pinB<0 || pinC<0) {
+          enabled = false;
+          return true;
+        }
+        setup();
+      }
+    }
+    // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
+    return !top[FPSTR(_enabled)].isNull();
   }
 
   /*
@@ -399,3 +489,10 @@ public:
     return USERMOD_ID_ROTARY_ENC_UI;
   }
 };
+
+// strings to reduce flash memory usage (used more than twice)
+const char RotaryEncoderUIUsermod::_name[]     PROGMEM = "Rotary-Encoder";
+const char RotaryEncoderUIUsermod::_enabled[]  PROGMEM = "enabled";
+const char RotaryEncoderUIUsermod::_DT_pin[]   PROGMEM = "DT-pin";
+const char RotaryEncoderUIUsermod::_CLK_pin[]  PROGMEM = "CLK-pin";
+const char RotaryEncoderUIUsermod::_SW_pin[]   PROGMEM = "SW-pin";

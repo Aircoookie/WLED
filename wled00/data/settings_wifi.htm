@@ -31,20 +31,20 @@
 		Network name (SSID, empty to not connect): <br><input name="CS" maxlength="32"><br>
 		Network password: <br> <input type="password" name="CP" maxlength="63"><br>
 		Static IP (leave at 0.0.0.0 for DHCP):<br>
-		<input name="I0" type="number" min="0" max="255" required> .
-		<input name="I1" type="number" min="0" max="255" required> .
-		<input name="I2" type="number" min="0" max="255" required> .
-		<input name="I3" type="number" min="0" max="255" required><br>
+		<input name="I0" type="number" class="s" min="0" max="255" required> .
+		<input name="I1" type="number" class="s" min="0" max="255" required> .
+		<input name="I2" type="number" class="s" min="0" max="255" required> .
+		<input name="I3" type="number" class="s" min="0" max="255" required><br>
 		Static gateway:<br>
-		<input name="G0" type="number" min="0" max="255" required> .
-		<input name="G1" type="number" min="0" max="255" required> .
-		<input name="G2" type="number" min="0" max="255" required> .
-		<input name="G3" type="number" min="0" max="255" required><br>
+		<input name="G0" type="number" class="s" min="0" max="255" required> .
+		<input name="G1" type="number" class="s" min="0" max="255" required> .
+		<input name="G2" type="number" class="s" min="0" max="255" required> .
+		<input name="G3" type="number" class="s" min="0" max="255" required><br>
 		Static subnet mask:<br>
-		<input name="S0" type="number" min="0" max="255" required> .
-		<input name="S1" type="number" min="0" max="255" required> .
-		<input name="S2" type="number" min="0" max="255" required> .
-		<input name="S3" type="number" min="0" max="255" required><br>
+		<input name="S0" type="number" class="s" min="0" max="255" required> .
+		<input name="S1" type="number" class="s" min="0" max="255" required> .
+		<input name="S2" type="number" class="s" min="0" max="255" required> .
+		<input name="S3" type="number" class="s" min="0" max="255" required><br>
 		mDNS address (leave empty for no mDNS):<br/>
 		http:// <input name="CM" maxlength="32"> .local<br>
 		Client IP: <span class="sip"> Not connected </span> <br>
@@ -52,7 +52,7 @@
 		AP SSID (leave empty for no AP):<br> <input name="AS" maxlength="32"><br>
 		Hide AP name: <input type="checkbox" name="AH"><br>
 		AP password (leave empty for open):<br> <input type="password" name="AP" maxlength="63" pattern="(.{8,63})|()" title="Empty or min. 8 characters"><br>
-		Access Point WiFi channel: <input name="AC" type="number" min="1" max="13" required><br>
+		Access Point WiFi channel: <input name="AC" type="number" class="xs" min="1" max="13" required><br>
     AP opens:
     <select name="AB">
     <option value="0">No connection after boot</option>
@@ -69,7 +69,9 @@
 		<select name="ETH">
 		<option value="0">None</option>
     <option value="2">ESP32-POE</option>
+    <option value="6">ESP32Deux</option>
     <option value="4">QuinLED-ESP32</option>
+    <option value="5">TwilightLord-ESP32</option>
     <option value="3">WESP32</option>
 		<option value="1">WT32-ETH01</option>
     </select><br><br></div>

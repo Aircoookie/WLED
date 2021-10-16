@@ -3,22 +3,26 @@ body {
   text-align: center;
   background: #222;
   color: #fff;
-  line-height: 200%;
+  line-height: 200%%; /* %% because of AsyncWebServer */
   margin: 0;
 }
 hr {
   border-color: #666;
 }
-button {
+button, .btn {
   background: #333;
   color: #fff;
   font-family: Verdana, sans-serif;
   border: 0.3ch solid #333;
   display: inline-block;
   font-size: 20px;
-  margin: 8px;
-  margin-top: 12px;
+  margin: 12px 8px 8px;
+  padding: 1px 6px;
   cursor: pointer;
+  text-decoration: none;
+}
+.lnk {
+  border: 0;
 }
 .helpB {
   text-align: left;
@@ -31,8 +35,34 @@ input {
   font-family: Verdana, sans-serif;
   border: 0.5ch solid #333;
 }
+input:disabled {
+  color: #888;
+}
 input[type="number"] {
   width: 4em;
+  margin: 2px;
+}
+input[type="number"].xxl {
+  width: 100px;
+}
+input[type="number"].xl {
+  width: 85px;
+}
+input[type="number"].l {
+  width: 63px;
+}
+input[type="number"].m {
+  width: 56px;
+}
+input[type="number"].s {
+  width: 49px;
+}
+input[type="number"].xs {
+  width: 42px;
+}
+input[type="checkbox"] {
+  transform: scale(1.5);
+  margin-right: 10px;
 }
 select {
   background: #333;
@@ -45,4 +75,33 @@ td {
 }
 .d5 {
   width: 4.5em !important;
+}
+
+#toast {
+	opacity: 0;
+	background-color: #444;
+	border-radius: 5px;
+	bottom: 64px;
+	color: #fff;
+	font-size: 17px;
+	padding: 16px;
+	pointer-events: none;
+	position: fixed;
+	text-align: center;
+	z-index: 5;
+	transform: translateX(-50%%); /* %% because of AsyncWebServer */
+  max-width: 90%%; /* %% because of AsyncWebServer */
+	left: 50%%; /* %% because of AsyncWebServer */
+}
+
+#toast.show {
+	opacity: 1;
+	background-color: #264;
+	animation: fadein 0.5s, fadein 0.5s 2.5s reverse;
+}
+
+#toast.error {
+	opacity: 1;
+	background-color: #b21;
+	animation: fadein 0.5s;
 }

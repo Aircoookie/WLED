@@ -1,38 +1,87 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>Sync Settings</title>
 <script>var d=document;
+function gId(s)
+{
+  return d.getElementById(s);
+}
 function H(){window.open("https://github.com/Aircoookie/WLED/wiki/Settings#sync-settings");}function B(){window.open("/settings","_self");}
 function adj(){if (d.Sf.DI.value == 6454) {if (d.Sf.DA.value == 1) d.Sf.DA.value = 0; if (d.Sf.EU.value == 1) d.Sf.EU.value = 0;}
                else if (d.Sf.DI.value == 5568) {if (d.Sf.DA.value == 0) d.Sf.DA.value = 1; if (d.Sf.EU.value == 0) d.Sf.EU.value = 1;} }
-function SP(){var p = d.Sf.DI.value; d.getElementById("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
-function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; }; SP();}
+function FC()
+{
+  for(j=0;j<8;j++)
+  {
+    gId("G"+(j+1)).checked=gId("GS").value>>j&1;
+    gId("R"+(j+1)).checked=gId("GR").value>>j&1;
+  }
+}
+function GC()
+{
+  var a=0, b=0;
+
+  var m=1;
+  for(j=0;j<8;j++)
+  {
+    a+=gId("G"+(j+1)).checked*m;
+    b+=gId("R"+(j+1)).checked*m;
+    m*=2;
+  }
+  gId("GS").value=a;
+  gId("GR").value=b;
+}
+function SP(){var p = d.Sf.DI.value; gId("xp").style.display = (p > 0)?"none":"block"; if (p > 0) d.Sf.EP.value = p;}
+function SetVal(){switch(parseInt(d.Sf.EP.value)){case 5568: d.Sf.DI.value = 5568; break; case 6454: d.Sf.DI.value = 6454; break; case 4048: d.Sf.DI.value = 4048; break; }; SP();FC();}
 function S(){GetV();SetVal();}
 function GetV(){var d=document;}
 </script>
 <style>@import url("style.css");</style></head>
 <body onload="S()">
-<form id="form_s" name="Sf" method="post">
+<form id="form_s" name="Sf" method="post" onsubmit="GC()">
 <div class="helpB"><button type="button" onclick="H()">?</button></div>
 <button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
 <h2>Sync setup</h2>
-<h3>Button setup</h3>
-On/Off button enabled: <input type="checkbox" name="BT"><br>
-Infrared remote:
-<select name=IR>
-<option value=0>Disabled</option>
-<option value=1>24-key RGB</option>
-<option value=2>24-key with CT</option>
-<option value=3>40-key blue</option>
-<option value=4>44-key RGB</option>
-<option value=5>21-key RGB</option>
-<option value=6>6-key black</option>
-<option value=7>9-key red</option>
-</select><br>
-<a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" type="number" min="1" max="65535" class="d5" required><br>
-2nd Port: <input name="U2" type="number" min="1" max="65535" class="d5" required><br>
-Receive <input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects<br>
+2nd Port: <input name="U2" type="number" min="1" max="65535" class="d5" required><br><br>
+<input name="GS" id="GS" type="number" style="display: none;"> <!-- hidden inputs for bitwise group checkboxes -->
+<input name="GR" id="GR" type="number" style="display: none;">
+<table style="margin: 0 auto;">
+    <tr>
+        <td>Sync groups</td>
+        <td>1</td>
+        <td>2</td>
+        <td>3</td>
+        <td>4</td>
+        <td>5</td>
+        <td>6</td>
+        <td>7</td>
+        <td>8</td>
+    </tr>
+    <tr>
+        <td>Send:</td>
+        <td><input type="checkbox" id="G1" name="G1"></td>
+        <td><input type="checkbox" id="G2" name="G2"></td>
+        <td><input type="checkbox" id="G3" name="G3"></td>
+        <td><input type="checkbox" id="G4" name="G4"></td>
+        <td><input type="checkbox" id="G5" name="G5"></td>
+        <td><input type="checkbox" id="G6" name="G6"></td>
+        <td><input type="checkbox" id="G7" name="G7"></td>
+        <td><input type="checkbox" id="G8" name="G8"></td>
+    </tr>
+    <tr>
+        <td>Receive:</td>
+        <td><input type="checkbox" id="R1" name="R1"></td>
+        <td><input type="checkbox" id="R2" name="R2"></td>
+        <td><input type="checkbox" id="R3" name="R3"></td>
+        <td><input type="checkbox" id="R4" name="R4"></td>
+        <td><input type="checkbox" id="R5" name="R5"></td>
+        <td><input type="checkbox" id="R6" name="R6"></td>
+        <td><input type="checkbox" id="R7" name="R7"></td>
+        <td><input type="checkbox" id="R8" name="R8"></td>
+    </tr>
+</table><br>
+Receive: <input type="checkbox" name="RB">Brightness, <input type="checkbox" name="RC">Color, and <input type="checkbox" name="RX">Effects<br>
 Send notifications on direct change: <input type="checkbox" name="SD"><br>
 Send notifications on button press or IR: <input type="checkbox" name="SB"><br>
 Send Alexa notifications: <input type="checkbox" name="SA"><br>
@@ -42,7 +91,7 @@ Send notifications twice: <input type="checkbox" name="S2"><br>
 <i>Reboot required to apply changes. </i>
 <h3>Instance List</h3>
 Enable instance list: <input type="checkbox" name="NL"><br>
-Make this instance discoverable: <input type="checkbox" name="NB"><br>
+Make this instance discoverable: <input type="checkbox" name="NB">
 <h3>Realtime</h3>
 Receive UDP realtime: <input type="checkbox" name="RD"><br><br>
 <i>Network DMX input</i><br>
@@ -50,7 +99,6 @@ Type:
 <select name=DI onchange="SP(); adj();">
 <option value=5568>E1.31 (sACN)</option>
 <option value=6454>Art-Net</option>
-<option value=4048>DDP</option>
 <option value=0 selected>Custom port</option>
 </select><br>
 <div id=xp>Port: <input name="EP" type="number" min="1" max="65535" value="5568" class="d5" required><br></div>
@@ -93,10 +141,11 @@ Port: <input name="MQPORT" type="number" min="1" max="65535" class="d5"><br>
 <b>The MQTT credentials are sent over an unsecured connection.<br>
 Never use the MQTT password for another service!</b><br>
 Username: <input name="MQUSER" maxlength="40"><br>
-Password: <input type="password" name="MQPASS" maxlength="40"><br>
+Password: <input type="password" name="MQPASS" maxlength="64"><br>
 Client ID: <input name="MQCID" maxlength="40"><br>
 Device Topic: <input name="MD" maxlength="32"><br>
 Group Topic: <input name="MG" maxlength="32"><br>
+Publish on button press: <input type="checkbox" name="BM"><br>
 <i>Reboot required to apply changes. </i><a href="https://github.com/Aircoookie/WLED/wiki/MQTT" target="_blank">MQTT info</a>
 <h3>Philips Hue</h3>
 <i>You can find the bridge IP and the light number in the 'About' section of the hue app.</i><br>

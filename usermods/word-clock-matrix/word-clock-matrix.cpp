@@ -64,13 +64,13 @@ void hourChime()
 {
   //strip.resetSegments();
   selectWordSegments(true);
-  colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+  colorUpdated(CALL_MODE_FX_CHANGED);
   savePreset(13, false);
   selectWordSegments(false);
   //strip.getSegment(0).setOption(0, true);
   strip.getSegment(0).setOption(2, true);
   applyPreset(12);
-  colorUpdated(NOTIFIER_CALL_MODE_FX_CHANGED);
+  colorUpdated(CALL_MODE_FX_CHANGED);
 }
 
 void displayTime(byte hour, byte minute)
