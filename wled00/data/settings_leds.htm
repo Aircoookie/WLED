@@ -390,6 +390,69 @@ ${i+1}:
       d.Sf.data.value = '';
       return false;
     }
+    // https://stackoverflow.com/questions/7346563/loading-local-json-file
+    function loadCfg(o) {
+      var f, fr;
+
+      if (typeof window.FileReader !== 'function') {
+        alert("The file API isn't supported on this browser yet.");
+        return;
+      }
+
+      if (!o.files) {
+        alert("This browser doesn't seem to support the `files` property of file inputs.");
+      } else if (!o.files[0]) {
+        alert("Please select a file before clicking 'Load'");
+      } else {
+        f = o.files[0];
+        fr = new FileReader();
+        fr.onload = receivedText;
+        fr.readAsText(f);
+      }
+      d.Sf.data2.value = '';
+
+      function receivedText(e) {
+        let lines = e.target.result;
+        var c = JSON.parse(lines); 
+        if (c.hw) {
+          //console.log(c.hw);
+          if (c.hw.led) {
+            for (var i=0; i<10; i++) addLEDs(-1);
+            var l = c.hw.led;
+            l.ins.forEach((v,i,a)=>{
+              addLEDs(1);
+              for (var j=0; j<v.pin.length; j++) {
+                console.log(`L${j}${i}`);
+                d.getElementsByName(`L${j}${i}`)[0].value = v.pin[j];
+              }
+              d.getElementsByName("LT"+i)[0].value = v.type;
+              d.getElementsByName("LS"+i)[0].value = v.start;
+              d.getElementsByName("LC"+i)[0].value = v.len;
+              d.getElementsByName("CO"+i)[0].value = v.order;
+              d.getElementsByName("SL"+i)[0].checked = v.skip;
+              d.getElementsByName("RF"+i)[0].checked = v.ref;
+              d.getElementsByName("CV"+i)[0].checked = v.rev;
+            });
+          }
+          if (c.hw.btn) {
+            var b = c.hw.btn;
+            b.ins.forEach((v,i,a)=>{
+              addBtn(i,v.pin[0],v.type);
+            });
+            d.getElementsByName("TT")[0].value = b.tt;
+          }
+          if (c.hw.ir) {
+            d.getElementsByName("IR")[0].value = c.hw.ir.pin;
+            d.getElementsByName("IT")[0].value = c.hw.ir.type;
+          }
+          if (c.hw.relay) {
+            d.getElementsByName("RL")[0].value = c.hw.relay.pin;
+            d.getElementsByName("RM")[0].checked = c.hw.relay.inv;
+          }
+          UI();
+        }
+      }
+    }
 		function GetV()
 		{
       //values injected by server while sending HTML
@@ -507,7 +570,10 @@ ${i+1}:
         <option value=3>Dual</option>
         <option value=4>Legacy</option>
       </select>
-    <br></span><hr>
+    <br></span>
+    <hr style="width:260px">
+    <div id="cfg">Config template: <input type="file" name="data2" accept=".json"> <input type="button" value="Apply" onclick="loadCfg(d.Sf.data2);"><br></div>
+    <hr>
     <button type="button" onclick="B()">Back</button><button type="submit">Save</button>
 	</form>
 </body>
