@@ -49,33 +49,41 @@
 		<div id="rgbwrap">
 			<div id="rwrap" class="il">
 				<div class="sliderwrap il">
-					<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
+					<input id="sliderR" class="noslide" onchange="fromRgb()" xoninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
-				<output class="sliderbubble"></output>
+				<!--output class="sliderbubble"></output-->
 			</div><br>
 			<div id="gwrap" class="il">
 				<div class="sliderwrap il">
-					<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
+					<input id="sliderG" class="noslide" onchange="fromRgb()" xoninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
-				<output class="sliderbubble"></output>
+				<!--output class="sliderbubble"></output-->
 			</div><br>
 			<div id="bwrap" class="il">
 				<div class="sliderwrap il">
-					<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
+					<input id="sliderB" class="noslide" onchange="fromRgb()" xoninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
-				<output class="sliderbubble"></output>
+				<!--output class="sliderbubble"></output-->
 			</div><br>
 		</div>
 		<div id="wwrap">
-			<p class="labels">White channel</p>
-			<div class="sliderwrap il">
-				<input id="sliderW" class="noslide" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+			<p class="labels hd">White channel</p>
+			<div id="whibri" class="sliderwrap il">
+				<input id="sliderW" class="noslide" onchange="setColor(0)" xoninput="updateTrail(this,4)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
-				<output class="sliderbubble"></output>
 			</div>
+			<!--output class="sliderbubble"></output-->
+		</div>
+		<div id="wbal">
+			<p class="labels hd">White balance</p>
+			<div class="sliderwrap il">
+				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" xoninput="updateTrail(this,5)" max="255" min="0" type="range" value="128" />
+				<div class="sliderdisplay"></div>
+			</div>
+			<!--output class="sliderbubble"></output-->
 		</div>
 		<div id="qcs-w">
 			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
@@ -201,28 +209,32 @@
 		<img class="wi" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAFCAYAAAC5Fuf5AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABbSURBVChTlY9bDoAwDMNW7n9nwCipytQN4Z8tbrTHmDmF4oPzyldwRqp1SSdnV/NuZuzqerAByxXznBw3igkeFEfXyUuhK/yFM0CxJfyqXZEOc6/Sr9/bf7uIC5Nwd7orMvAPAAAAAElFTkSuQmCC" />
 	</div><br>
 	<div id="kv">Loading...</div><br>
-	<table>
+	<div>
+	<!--table>
 		<tr>
-			<td class="keytd"><button class="btn" onclick="loadInfo()">Refresh</button></td>
-			<td class="valtd"><button class="btn" onclick="toggleInfo()">Close Info</button></td>
+			<td class="keytd"--><button class="btn" onclick="loadInfo()">Refresh</button><!--/td>
+			<td class="valtd"--><button class="btn" onclick="toggleInfo()">Close Info</button><!--/td>
 		</tr>
 		<tr>
-			<td class="keytd"><button class="btn" onclick="toggleNodes()">Instance List</button></td>
-			<td class="valtd"><button class="btn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button></td>
+			<td class="keytd"--><button class="btn" onclick="toggleNodes()">Instance List</button><!--/td>
+			<td class="valtd"--><button class="btn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button><!--/td>
 		</tr>
-	</table><br>
+	</table-->
+	</div><br>
 	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the WLED community</span>
 </div>
 
 <div id="nodes" class="modal">
 	<div id="ndlt">WLED instances</div>
 	<div id="kn">Loading...</div><br>
-	<table>
+	<div>
+	<!--table>
 		<tr>
-			<td class="keytd"><button class="btn infobtn" onclick="loadNodes()">Refresh</button></td>
-			<td class="valtd"><button class="btn infobtn" onclick="toggleNodes()">Close list</button></td>
+			<td class="keytd"--><button class="btn infobtn" onclick="loadNodes()">Refresh</button><!--/td>
+			<td class="valtd"--><button class="btn infobtn" onclick="toggleNodes()">Close list</button><!--/td>
 		</tr>
-	</table><br>
+	</table-->
+	</div><br>
 </div>
 
 <div id="rover" class="modal">

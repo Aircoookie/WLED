@@ -36,6 +36,9 @@ void WLED::loop()
 {
   #ifdef WLED_DEBUG
   static unsigned long maxUsermodMillis = 0;
+  static uint16_t avgUsermodMillis = 0;
+  static unsigned long maxStripMillis = 0;
+  static uint16_t avgStripMillis = 0;
   #endif
 
   handleTime();
@@ -55,6 +58,7 @@ void WLED::loop()
   usermods.loop();
   #ifdef WLED_DEBUG
   usermodMillis = millis() - usermodMillis;
+  avgUsermodMillis += usermodMillis;
   if (usermodMillis > maxUsermodMillis) maxUsermodMillis = usermodMillis;
   #endif
 
@@ -91,12 +95,20 @@ void WLED::loop()
 
     yield();
 
+    #ifdef WLED_DEBUG
+    unsigned long stripMillis = millis();
+    #endif
     if (!offMode || strip.isOffRefreshRequred)
       strip.service();
 #ifdef ESP8266
     else if (!noWifiSleep)
       delay(1); //required to make sure ESP enters modem sleep (see #1184)
 #endif
+    #ifdef WLED_DEBUG
+    stripMillis = millis() - stripMillis;
+    avgStripMillis += stripMillis;
+    if (stripMillis > maxStripMillis) maxStripMillis = stripMillis;
+    #endif
   }
   yield();
 #ifdef ESP8266
@@ -171,9 +183,13 @@ void WLED::loop()
     DEBUG_PRINT(F("NTP last sync: "));   DEBUG_PRINTLN(ntpLastSyncTime);
     DEBUG_PRINT(F("Client IP: "));       DEBUG_PRINTLN(Network.localIP());
     DEBUG_PRINT(F("Loops/sec: "));       DEBUG_PRINTLN(loops / 30);
-    DEBUG_PRINT(F("Max UM time[ms]: ")); DEBUG_PRINTLN(maxUsermodMillis);
+    DEBUG_PRINT(F("UM time[ms]: "));     DEBUG_PRINT(avgUsermodMillis/loops); DEBUG_PRINT("/");DEBUG_PRINTLN(maxUsermodMillis);
+    DEBUG_PRINT(F("Strip time[ms]: "));  DEBUG_PRINT(avgStripMillis/loops); DEBUG_PRINT("/"); DEBUG_PRINTLN(maxStripMillis);
     loops = 0;
     maxUsermodMillis = 0;
+    maxStripMillis = 0;
+    avgUsermodMillis = 0;
+    avgStripMillis = 0;
     debugTime = millis();
   }
   loops++;

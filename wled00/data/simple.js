@@ -45,7 +45,7 @@ var cpick = new iro.ColorPicker("#picker", {
     {
       component: iro.ui.Slider,
       options: { sliderType: 'value' }
-    },
+    }/*,
     {
       component: iro.ui.Slider,
       options: {
@@ -53,7 +53,7 @@ var cpick = new iro.ColorPicker("#picker", {
         minTemperature: 2100,
         maxTemperature: 10000
       }
-    }
+    }*/
   ]
 });
 
@@ -70,7 +70,7 @@ function applyCfg()
 	if (bg) sCol('--c-1', bg);
 	var ccfg = cfg.comp.colors;
 	//gId('picker').style.display = "none"; // ccfg.picker ? "block":"none";
-	//gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
+	gId('rgbwrap').style.display = ccfg.rgb ? "block":"none";
 	gId('qcs-w').style.display = ccfg.quick ? "block":"none";
 	var l = cfg.comp.labels; //l = false;
 	var e = d.querySelectorAll('.tab-label');
@@ -239,7 +239,7 @@ async function onLoad()
 			});
 		});
 	});
-	updateUI(true);
+	//updateUI(true);
 
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
@@ -458,7 +458,7 @@ function populatePresets()
     	pNum++;
 	}
 	gId('pcont').innerHTML = cn;
-	updatePA(true);
+	updatePA();
 	populateQL();
 }
 
@@ -768,22 +768,14 @@ function generateListItemHtml(id, name, clickAction, extraHtml = '')
     return `<div class="lstI c" data-id="${id}" onClick="${clickAction}(${id})"><span class="lstIname">${name}</span>${extraHtml}</div>`;
 }
 
-function updateTrail(e, slidercol)
+function updateTrail(e)
 {
 	if (e==null) return;
 	var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
 	var perc = e.value * 100 / max;
 	perc = parseInt(perc);
 	if (perc < 50) perc += 2;
-	var scol;
-	switch (slidercol) {
-		case 1: scol = "#f00"; break;
-		case 2: scol = "#0f0"; break;
-		case 3: scol = "#00f"; break;
-		default: scol = "var(--c-f)";
-	}
-	var val = `linear-gradient(90deg, ${scol} ${perc}%, var(--c-4) ${perc}%)`;
-	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
+	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = `linear-gradient(90deg, var(--c-f) ${perc}%, var(--c-4) ${perc}%)`;
 	var bubble = e.parentNode.parentNode.getElementsByTagName('output')[0];
 	if (bubble) bubble.innerHTML = e.value;
 }
@@ -794,7 +786,7 @@ function toggleBubble(e)
 	bubble.classList.toggle('sliderbubbleshow');
 }
 
-function updatePA(scrollto=false)
+function updatePA()
 {
 	var ps = gEBCN("pres");
 	for (let i = 0; i < ps.length; i++) {
@@ -812,7 +804,7 @@ function updatePA(scrollto=false)
     }
 }
 
-function updateUI(scrollto=false)
+function updateUI()
 {
 	gId('buttonPower').className = (isOn) ? "active":"";
 
@@ -830,11 +822,12 @@ function updateUI(scrollto=false)
 	updateTrail(gId('sliderBri'));
 	updateTrail(gId('sliderSpeed'));
 	updateTrail(gId('sliderIntensity'));
-	updateTrail(gId('sliderW'));
 	if (isRgbw) gId('wwrap').style.display = "block";
+	gId("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
 
-	updatePA(scrollto);
+	updatePA(true);
 	redrawPalPrev();
+	updateRgb();
 
 	var l = cfg.comp.labels; //l = false;
 	var e = d.querySelectorAll('.label');
@@ -942,6 +935,7 @@ function readState(s,command=false)
 		selectSlot(csel);
 	}
 	gId('sliderW').value = whites[csel];
+	if (i.cct && i.cct>=0) gId("sliderA").value = i.cct;
 
 	gId('sliderSpeed').value = i.sx;
 	gId('sliderIntensity').value = i.ix;
@@ -970,7 +964,7 @@ function readState(s,command=false)
 
 	selectedPal = i.pal;
 	selectedFx = i.fx;
-	updateUI(true);
+	updateUI();
 }
 
 var jsonTimeout;
@@ -1060,10 +1054,10 @@ function tglBri(b=null)
 
 function tglCP()
 {
-//	var p = gId(`picker`).style.display === "block";
 	var p = gId('buttonCP').className === "active";
 	gId('buttonCP').className = !p ? "active":"";
 	gId('picker').style.display = !p ? "block":"none";
+	gId('rgbwrap').style.display = !p ? "block":"none";
 	var csl = gId(`csl`).style.display === "block";
 	gId('csl').style.display = !csl ? "block":"none";
 	var ps = gId(`Presets`).style.display === "block";
@@ -1176,7 +1170,6 @@ function selectSlot(b)
 	cd[csel].classList.add('xxs-w');
 	cpick.color.set(cd[csel].style.backgroundColor);
 	gId('sliderW').value = whites[csel];
-	updateTrail(gId('sliderW'));
 	redrawPalPrev();
 }
 
@@ -1195,6 +1188,23 @@ function pC(col)
 	setColor(0);
 }
 
+function updateRgb()
+{
+	var s,col = cpick.color.rgb;
+	s = gId('sliderR').value = col.r;
+	s = gId('sliderG').value = col.g;
+	s = gId('sliderB').value = col.b;
+}
+
+function fromRgb()
+{
+	var r = gId('sliderR').value;
+	var g = gId('sliderG').value;
+	var b = gId('sliderB').value;
+	cpick.color.set(`rgb(${r},${g},${b})`);
+	setColor(0);
+}
+
 function setColor(sr)
 {
 	var cd = gId('csl').children;
@@ -1209,6 +1219,12 @@ function setColor(sr)
 	} else if (csel == 2) {
 		obj = {"seg": {"col": [[],[],[col.r, col.g, col.b, whites[csel]]]}};
 	}
+	requestJson(obj);
+}
+
+function setBalance(b)
+{
+	var obj = {"seg": {"cct": parseInt(b)}};
 	requestJson(obj);
 }
 

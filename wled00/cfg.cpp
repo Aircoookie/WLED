@@ -86,6 +86,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
   CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
+  CJSON(allowCCT, hw_led["cct"]);
 
   JsonArray ins = hw_led["ins"];
 
@@ -534,6 +535,7 @@ void serializeConfig() {
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
   hw_led[F("rgbwm")] = strip.rgbwMode;
+  hw_led["cct"] = allowCCT;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
 
@@ -550,7 +552,7 @@ void serializeConfig() {
     ins[F("order")] = bus->getColorOrder();
     ins["rev"] = bus->reversed;
     ins[F("skip")] = bus->skippedLeds();
-    ins["type"] = bus->getType() & 0x7F;;
+    ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
     ins[F("rgbw")] = bus->isRgbw();
   }

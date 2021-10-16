@@ -42,9 +42,7 @@
 
 <div class ="container">
     <div class="tabcontent">
-        <div id="picker" class="center"></div>
-
-        <div id="qcs-w" class="center">
+		<div id="qcs-w" class="center">
 			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
 			<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
 			<div class="qcs" onclick="pC('#ffc800');" title="Yellow" style="background-color:#ffc800;"></div>
@@ -63,14 +61,48 @@
 			<button class="xxs btn" onclick="selectSlot(2);">3</button>
 		</div>
 
+        <div id="picker" class="center"></div>
+
+		<div id="rgbwrap" class="center">
+			<div id="rwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderR" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<!--output class="sliderbubble"></output-->
+			</div><br>
+			<div id="gwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderG" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<!--output class="sliderbubble"></output-->
+			</div><br>
+			<div id="bwrap" class="il">
+				<div class="sliderwrap il">
+					<input id="sliderB" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
+					<div class="sliderdisplay"></div>
+				</div>
+				<!--output class="sliderbubble"></output-->
+			</div><br>
+		</div>
+
         <div id="wwrap" class="center">
-			<p class="label h">White channel</p>
-            <i class="icons slider-icon" id="wht" title="White channel">&#xe333;</i>
+			<p class="label hd">White channel</p>
+            <!--i class="icons slider-icon" id="wht" title="White channel">&#xe333;</i-->
 			<div class="sliderwrap il">
-				<input id="sliderW" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+				<input id="sliderW" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
-            <output class="sliderbubble"></output>
+            <!--output class="sliderbubble"></output-->
+		</div>
+		<div id="wbal">
+			<p class="labels hd">White balance</p>
+			<div class="sliderwrap il">
+				<input id="sliderA" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
+				<div class="sliderdisplay"></div>
+			</div>
+			<!--output class="sliderbubble"></output-->
 		</div>
 
 		<div id="Segments" class="center">

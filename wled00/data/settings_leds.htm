@@ -188,13 +188,13 @@
         var n  = LCs[i].name.substring(2);    // bus number
         // do we have a led count field
         if (nm=="LC") {
-          var c=parseInt(LCs[i].value,10);
-          if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC;
-          gId("ls"+n).disabled = !customStarts;
+          var c=parseInt(LCs[i].value,10); //get LED gount
+          if (!customStarts || !startsDirty[n]) gId("ls"+n).value=sLC; //update start value
+          gId("ls"+n).disabled = !customStarts; //enable/disable field editing
           if(c){
-            var s = parseInt(gId("ls"+n).value);
-            if (s+c > sLC) sLC = s+c;
-            if(c>maxLC)maxLC=c;
+            var s = parseInt(gId("ls"+n).value); //start value
+            if (s+c > sLC) sLC = s+c; //update total count
+            if(c>maxLC)maxLC=c; //max per output
             var t = parseInt(d.getElementsByName("LT"+n)[0].value); // LED type SELECT
             if (t<80) sPC+=c; //virtual out busses do not count towards physical LEDs
           } // increase led count
@@ -247,8 +247,8 @@
       gId('m0').innerHTML = memu;
       bquot = memu / maxM * 100;
       gId('dbar').style.background = `linear-gradient(90deg, ${bquot > 60 ? (bquot > 90 ? "red":"orange"):"#ccc"} 0 ${bquot}%%, #444 ${bquot}%% 100%%)`;
-      gId('ledwarning').style.display = (sLC > maxPB || maxLC > 800 || bquot > 80) ? 'inline':'none';
-      gId('ledwarning').style.color = (sLC > maxPB || maxLC > maxPB || bquot > 100) ? 'red':'orange';
+      gId('ledwarning').style.display = (maxLC > Math.min(maxPB,800) || bquot > 80) ? 'inline':'none';
+      gId('ledwarning').style.color = (maxLC > Math.max(maxPB,800) || bquot > 100) ? 'red':'orange';
       gId('wreason').innerHTML = (bquot > 80) ? "80% of max. LED memory" +(bquot>100 ? ` (<b>ERROR: Using over ${maxM}B!</b>)` : "") : "800 LEDs per output";
       // calculate power
       var val = Math.ceil((100 + sPC * laprev)/500)/2;
@@ -448,6 +448,7 @@ ${i+1}:
     <hr style="width:260px">
     Make a segment for each output: <input type="checkbox" name="MS"> <br>
     Custom bus start indices: <input type="checkbox" onchange="tglSi(this.checked)" id="si"> <br>
+    Allow WB correction:  <input type="checkbox" name="CCT"> <br>
     <hr style="width:260px">
     <div id="btns"></div>
     Touch threshold: <input type="number" class="s" min="0" max="100" name="TT" required><br>

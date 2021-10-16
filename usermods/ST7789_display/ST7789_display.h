@@ -92,7 +92,7 @@ class St7789DisplayUsermod : public Usermod {
         updateLocalTime();
         byte minuteCurrent = minute(localTime);
         byte hourCurrent   = hour(localTime);
-        byte secondCurrent = second(localTime);
+        //byte secondCurrent = second(localTime);
         knownMinute = minuteCurrent;
         knownHour = hourCurrent;
 
@@ -140,7 +140,7 @@ class St7789DisplayUsermod : public Usermod {
     void setup()
     {
         PinManagerPinType pins[] = { { TFT_MOSI, true }, { TFT_MISO, false}, { TFT_SCLK, true }, { TFT_CS, true}, { TFT_DC, true}, { TFT_RST, true }, { TFT_BL, true } };
-        if (!pinManager.allocateMultiplePins(pins, 5, PinOwner::UM_FourLineDisplay)) { return; }
+        if (!pinManager.allocateMultiplePins(pins, 7, PinOwner::UM_FourLineDisplay)) { return; }
 
         tft.init();
         tft.setRotation(0);  //Rotation here is set up for the text to be readable with the port on the left. Use 1 to flip.
@@ -364,19 +364,14 @@ class St7789DisplayUsermod : public Usermod {
      * Creating an "u" object allows you to add custom key/value pairs to the Info section of the WLED web UI.
      * Below it is shown how this could be used for e.g. a light sensor
      */
-    /*
     void addToJsonInfo(JsonObject& root)
     {
-      int reading = 20;
-      //this code adds "u":{"Light":[20," lux"]} to the info object
       JsonObject user = root["u"];
       if (user.isNull()) user = root.createNestedObject("u");
 
-      JsonArray lightArr = user.createNestedArray("Light"); //name
-      lightArr.add(reading); //value
-      lightArr.add(" lux"); //unit
+      JsonArray lightArr = user.createNestedArray("ST7789"); //name
+      lightArr.add(F("installed")); //unit
     }
-    */
 
 
     /*

@@ -166,7 +166,7 @@
 #define FX_MODE_GRADIENT                46
 #define FX_MODE_LOADING                 47
 #define FX_MODE_POLICE                  48
-#define FX_MODE_POLICE_ALL              49
+#define FX_MODE_POLICE_ALL              49  // candidate for removal
 #define FX_MODE_TWO_DOTS                50
 #define FX_MODE_TWO_AREAS               51
 #define FX_MODE_RUNNING_DUAL            52
@@ -247,7 +247,7 @@ class WS2812FX {
   
   // segment parameters
   public:
-    typedef struct Segment { // 29 (32 in memory?) bytes
+    typedef struct Segment { // 30 (33 in memory?) bytes
       uint16_t start;
       uint16_t stop; //segment invalid if stop == 0
       uint16_t offset;
@@ -259,6 +259,7 @@ class WS2812FX {
       uint8_t grouping, spacing;
       uint8_t opacity;
       uint32_t colors[NUM_COLORS];
+      uint8_t cct; //0==2000K, 255==10160K
       char *name;
       bool setColor(uint8_t slot, uint32_t c, uint8_t segn) { //returns true if changed
         if (slot >= NUM_COLORS || segn >= MAX_NUM_SEGMENTS) return false;

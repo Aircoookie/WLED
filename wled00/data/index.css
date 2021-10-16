@@ -456,16 +456,22 @@ button {
 
 #info table, #nodes table {
 	table-layout: fixed;
-	width: 490px;
-	margin: auto;
+	width: 100%;
 }
 
 #info td, #nodes td {
   padding-bottom: 8px;
 }
 
-#info .btn, #nodes .btn {
+#info .btn {
+	margin: 5px;
+}
+#info table .btn, #nodes table .btn {
 	margin: 0;
+}
+#info div, #nodes div {
+	width: 490px;
+	margin: 0 auto;
 }
 
 #lv {
@@ -498,13 +504,28 @@ img {
 .sliderdisplay {
 	content:'';
 	position: absolute;
-	top: 13px; bottom: 13px;
-	left: 10px; right: 10px;
+	top: 13px; left: 8px; right: 8px;
+	height: 4px;
 	background: var(--c-4);
-	border-radius: 17px;
+	border-radius: 16px;
 	pointer-events: none;
 	z-index: -1;
 }
+#rwrap .sliderdisplay,
+#gwrap .sliderdisplay,
+#bwrap .sliderdisplay,
+#wwrap .sliderdisplay,
+#wbal .sliderdisplay {
+	height: 28px;
+	top: 0; bottom: 0;
+	left: 0; right: 0;
+	/*border: 1px solid var(--c-b);*/
+}
+#rwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #f00); }
+#gwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #0f0); }
+#bwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #00f); }
+#wwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #fff); }
+#wbal .sliderdisplay  { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #d4e0ff); }
 
 .sliderbubble {
 	width: 24px;
@@ -515,7 +536,7 @@ img {
 	color: var(--c-f);
 	padding: 4px 4px 2px;
 	font-size: 14px;
-	right: 5px;
+	right: 3px;
 	transition: visibility 0.25s ease, opacity 0.25s ease;
 	opacity: 0;
 	visibility: hidden;
@@ -532,11 +553,19 @@ output.sliderbubbleshow {
 
 input[type=range] {
 	-webkit-appearance: none;
-	width: 220px;
-	padding: 0px;
-	margin: 0px 10px 0px 10px;
+	width: 100%;
+	padding: 0;
+	margin: 0;
 	background-color: transparent;
 	cursor: pointer;
+}
+#rwrap input[type=range],
+#gwrap input[type=range],
+#bwrap input[type=range],
+#wwrap input[type=range],
+#wbal input[type=range] {
+	width: 252px;
+	margin: 0;
 }
 input[type=range]:focus {
 	outline: none;
@@ -550,7 +579,7 @@ input[type=range]::-webkit-slider-runnable-track {
 input[type=range]::-webkit-slider-thumb {
 	height: 16px;
 	width: 16px;
-	border-radius: 17px;
+	border-radius: 50%;
 	background: var(--c-f);
 	cursor: pointer;
 	-webkit-appearance: none;
@@ -565,18 +594,43 @@ input[type=range]::-moz-range-thumb {
 	border: 0px solid rgba(0, 0, 0, 0);
 	height: 16px;
 	width: 16px;
-	border-radius: 17px;
+	border-radius: 50%;
 	background: var(--c-f);
-	transform: translateY(7px);
+	transform: translateY(5px);
 }
-#wwrap {
-	display: none;
+#rwrap input[type=range]::-webkit-slider-thumb,
+#gwrap input[type=range]::-webkit-slider-thumb,
+#bwrap input[type=range]::-webkit-slider-thumb,
+#wwrap input[type=range]::-webkit-slider-thumb,
+#wbal input[type=range]::-webkit-slider-thumb {
+	height: 18px;
+	width: 18px;
+	border: 2px solid #000;
+	margin-top: 5px;
+}
+#rwrap input[type=range]::-moz-range-thumb,
+#gwrap input[type=range]::-moz-range-thumb,
+#bwrap input[type=range]::-moz-range-thumb,
+#wwrap input[type=range]::-moz-range-thumb,
+#wbal input[type=range]::-moz-range-thumb {
+	border: 2px solid var(--c-1);
+}
+#wwrap, #wbal {
+	display: block;
 }
 
 .sliderwrap {
 	height: 30px;
-	width: 240px;
+	width: 230px;
 	position: relative;
+}
+#rwrap .sliderwrap,
+#gwrap .sliderwrap,
+#bwrap .sliderwrap,
+#wwrap .sliderwrap,
+#wbal .sliderwrap {
+	width: 260px;
+	margin: 10px 0 0;
 }
 
 .hd {
@@ -589,7 +643,7 @@ input[type=range]::-moz-range-thumb {
 }
 
 #picker {
-	margin: 10px auto;
+	margin: 10px auto 0;
 	width: 260px;
 }
 
@@ -1141,9 +1195,9 @@ input[type="text"].fnd:hover {
 
 @media all and (max-width: 550px) and (min-width: 374px) {
 	#info .btn, #nodes .btn {
-		width: 155px;
+		width: 150px;
 	}
-	#info table, #nodes table {
+	#info div, #nodes div {
 		width: 320px;
 	}
 }

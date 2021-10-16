@@ -67,6 +67,7 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
   if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
+//get RGB values from color temperature in K (https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html)
 void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
 {
   float r = 0, g = 0, b = 0;
@@ -84,7 +85,7 @@ void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
     g = round(288.1221695283 * pow((temp - 60), -0.0755148492));
     b = 255;
   } 
-  g += 15; //mod by Aircoookie, a bit less accurate but visibly less pinkish
+  //g += 15; //mod by Aircoookie, a bit less accurate but visibly less pinkish
   rgb[0] = (uint8_t) constrain(r, 0, 255);
   rgb[1] = (uint8_t) constrain(g, 0, 255);
   rgb[2] = (uint8_t) constrain(b, 0, 255);
@@ -243,4 +244,25 @@ void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_M
   if (high < 0.1f) return;
   float sat = 100.0f * ((high - low) / high);;   // maximum saturation is 100  (corrected from 255)
   rgb[3] = (byte)((255.0f - sat) / 255.0f * (rgb[0] + rgb[1] + rgb[2]) / 3);
+}
+
+// adjust RGB values based on color temperature in K (range [2800-10200]) (https://en.wikipedia.org/wiki/Color_balance)
+void colorBalanceFromKelvin(uint16_t kelvin, byte *rgb)
+{
+  byte rgbw[4] = {0,0,0,0};
+  colorKtoRGB(kelvin, rgbw);  // convert Kelvin to RGB
+  rgb[0] = ((uint16_t) rgbw[0] * rgb[0]) / 255; // correct R
+  rgb[1] = ((uint16_t) rgbw[1] * rgb[1]) / 255; // correct G
+  rgb[2] = ((uint16_t) rgbw[2] * rgb[2]) / 255; // correct B
+}
+
+uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)
+{
+  byte rgbw[4] = {0,0,0,0};
+  colorKtoRGB(kelvin, rgbw);  // convert Kelvin to RGB
+  rgbw[0] = ((uint16_t) rgbw[0] * ((rgb>>16) & 0xFF)) / 255; // correct R
+  rgbw[1] = ((uint16_t) rgbw[1] * ((rgb>> 8) & 0xFF)) / 255; // correct G
+  rgbw[2] = ((uint16_t) rgbw[2] * ((rgb    ) & 0xFF)) / 255; // correct B
+  rgbw[3] =                       ((rgb>>24) & 0xFF);
+  return colorFromRgbw(rgbw);
 }

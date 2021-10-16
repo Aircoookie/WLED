@@ -49,15 +49,15 @@ var cpick = new iro.ColorPicker("#picker", {
     {
       component: iro.ui.Slider,
       options: { sliderType: 'value' }
-    },
+    }/*,
     {
       component: iro.ui.Slider,
       options: {
         sliderType: 'kelvin',
-        minTemperature: 2100,
-        maxTemperature: 10000
+        minTemperature: 2000,
+        maxTemperature: 10160
       }
-    }
+    }*/
   ]
 });
 
@@ -253,7 +253,6 @@ function onLoad()
 		});
 	});
 	resetUtil();
-	updateUI(true);
 
 	d.addEventListener("visibilitychange", handleVisibilityChange, false);
 	size();
@@ -392,7 +391,7 @@ function presetError(empty)
 		if (bckstr.length > 10) hasBackup = true;
 	} catch (e) {}
 
-	var cn = `<div class="seg c">`;
+	var cn = `<div class="seg c" style="padding:8px;">`;
 	if (empty)
 		cn += `You have no presets yet!`;
 	else
@@ -593,6 +592,7 @@ function loadInfo(callback=null)
 		parseInfo();
 		showNodes();
 		if (isInfo) populateInfo(json);
+		updateUI();
 		reqsLegal = true;
 		if (!ws && lastinfo.ws > -1) setTimeout(makeWS,500);
 	})
@@ -949,7 +949,10 @@ function updateTrail(e, slidercol)
 		case 3: scol = "#00f"; break;
 		default: scol = "var(--c-f)";
 	}
-	var val = `linear-gradient(90deg, ${scol} ${perc}%, var(--c-4) ${perc}%)`;
+	var g = `${scol} ${perc}%, var(--c-4) ${perc}%`;
+	if (slidercol==4) g = `#000 0%, #fff`;
+	if (slidercol==5) g = `#ff8f1f 0%, #fff 50%, #d4e0ff`;
+	var val = `linear-gradient(90deg, ${g})`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 	var bubble = e.parentNode.parentNode.getElementsByTagName('output')[0];
 	if (bubble) bubble.innerHTML = e.value;
@@ -1013,28 +1016,30 @@ function updatePA(scrollto=false)
 	}
 }
 
-function updateUI(scrollto=false)
+function updateUI()
 {
 	gId('buttonPower').className = (isOn) ? "active":"";
 	gId('buttonNl').className = (nlA) ? "active":"";
 	gId('buttonSync').className = (syncSend) ? "active":"";
 	showNodes();
 
-	updateSelectedPalette(scrollto);
-	updateSelectedFx(scrollto);
+	updateSelectedPalette();
+	updateSelectedFx();
 
 	updateTrail(gId('sliderBri'));
 	updateTrail(gId('sliderSpeed'));
 	updateTrail(gId('sliderIntensity'));
-	updateTrail(gId('sliderW'));
+	//updateTrail(gId('sliderW'),4);
+	//updateTrail(gId('sliderA'),5);
 	if (isRgbw) gId('wwrap').style.display = "block";
+	gId("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
 
-	updatePA(scrollto);
+	updatePA(true);
 	updateHex();
 	updateRgb();
 }
 
-function updateSelectedPalette(scrollto=false)
+function updateSelectedPalette()
 {
 	var parent = gId('pallist');
 	var selPaletteInput = parent.querySelector(`input[name="palette"][value="${selectedPal}"]`);
@@ -1047,7 +1052,7 @@ function updateSelectedPalette(scrollto=false)
 	if (selectedPalette) parent.querySelector(`.lstI[data-id="${selectedPal}"]`).classList.add('selected');
 }
 
-function updateSelectedFx(scrollto=false)
+function updateSelectedFx()
 {
 	var parent = gId('fxlist');
 	var selEffectInput = parent.querySelector(`input[name="fx"][value="${selectedFx}"]`);
@@ -1160,6 +1165,7 @@ function readState(s,command=false)
 	}
 	selectSlot(csel);
 	gId('sliderW').value = whites[csel];
+	if (i.cct && i.cct>=0) gId("sliderA").value = i.cct;
 
 	gId('sliderSpeed').value = i.sx;
 	gId('sliderIntensity').value = i.ix;
@@ -1189,7 +1195,7 @@ function readState(s,command=false)
 	selectedPal = i.pal;
 	selectedFx = i.fx;
 	redrawPalPrev();	// if any color changed (random palette did at least)
-	updateUI(true);
+	updateUI();
 }
 
 var jsonTimeout;
@@ -1804,7 +1810,7 @@ function selectSlot(b)
 	cd[csel].classList.add('xxs-w');
 	cpick.color.set(cd[csel].style.backgroundColor);
 	gId('sliderW').value = whites[csel];
-	updateTrail(gId('sliderW'));
+	//updateTrail(gId('sliderW'),4);
 	updateHex();
 	updateRgb();
 }
@@ -1826,13 +1832,10 @@ function pC(col)
 
 function updateRgb()
 {
-	var col = cpick.color.rgb;
-	var s = gId('sliderR');
-	s.value = col.r; updateTrail(s,1);
-	s = gId('sliderG');
-	s.value = col.g; updateTrail(s,2);
-	s = gId('sliderB');
-	s.value = col.b; updateTrail(s,3);
+	var s,col = cpick.color.rgb;
+	s = gId('sliderR').value = col.r; //updateTrail(s,1);
+	s = gId('sliderG').value = col.g; //updateTrail(s,2);
+	s = gId('sliderB').value = col.b; //updateTrail(s,3);
 }
 
 function updateHex()
@@ -1886,6 +1889,12 @@ function setColor(sr)
 	}
 	updateHex();
 	updateRgb();
+	requestJson(obj);
+}
+
+function setBalance(b)
+{
+	var obj = {"seg": {"cct": parseInt(b)}};
 	requestJson(obj);
 }
 

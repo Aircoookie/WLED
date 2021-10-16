@@ -74,6 +74,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on, id);
   
+  seg.cct = elem["cct"] | seg.cct;
+
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
   {
@@ -96,6 +98,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
           const char* hexCol = colarr[i];
           if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
             int kelvin = colarr[i] | -1;
+            //kelvin = map(seg.cct, 0, 255, 2800, 10200)
             if (kelvin <  0) continue;
             if (kelvin == 0) seg.setColor(i, 0, id);
             if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
@@ -370,6 +373,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root["on"] = seg.getOption(SEG_OPTION_ON);
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
+  root["cct"] = seg.cct;
 
   if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name);
 
@@ -466,6 +470,17 @@ void serializeInfo(JsonObject root)
   leds[F("count")] = ledCount;
   leds[F("rgbw")] = strip.isRgbw;
   leds[F("wv")] = strip.isRgbw && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
+  leds["cct"] = allowCCT;
+  for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
+    Bus *bus = busses.getBus(s);
+    if (!bus || bus->getLength()==0) break;
+    switch (bus->getType() & 0x7F) {
+      case TYPE_ANALOG_5CH:
+      case TYPE_ANALOG_2CH:
+        leds["cct"] = true;
+        break;
+    }
+  }
 
   JsonArray leds_pin = leds.createNestedArray("pin");
   for (uint8_t s=0; s<busses.getNumBusses(); s++) {

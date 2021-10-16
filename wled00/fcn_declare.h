@@ -71,6 +71,9 @@ void colorFromDecOrHexString(byte* rgb, char* in);
 bool colorFromHexString(byte* rgb, const char* in);
 void colorRGBtoRGBW(byte* rgb); //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_MODE_LEGACY)
 
+void colorBalanceFromKelvin(uint16_t kelvin, byte *rgb);
+uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb);
+
 //dmx.cpp
 void initDMX();
 void handleDMX();
