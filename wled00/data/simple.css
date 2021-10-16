@@ -77,7 +77,12 @@ body {
 
 p {
 	margin: 10px 0 2px 0;
+}
+a, p, a:visited {
 	color: var(--c-d);
+}
+a, a:visited {
+	text-decoration: none;
 }
 
 button {
@@ -284,11 +289,11 @@ button:hover {
 	overflow: auto;
 }
 
-#info {
+#info, #nodes {
 	z-index: 3;
 }
 
-#rover, #nodes {
+#rover {
 	z-index: 2;
 }
 
@@ -320,8 +325,29 @@ button:hover {
 }
 
 #kv, #kn {
-	max-width: 490px;
+	/*max-width: 490px;*/
 	display: inline-block;
+}
+
+#info table, #nodes table {
+	table-layout: fixed;
+	width: 100%;
+}
+
+#info td, #nodes td {
+  padding-bottom: 8px;
+}
+
+#info .btn {
+	margin: 5px;
+}
+#info table .btn, #nodes table .btn {
+	margin: 0;
+	width: 230px;
+}
+#info div, #nodes div {
+	width: 490px;
+	margin: 0 auto;
 }
 
 #kn td {
@@ -875,8 +901,11 @@ input[type="text"].fnd:not(:placeholder-shown), input[type="text"].fnd:hover {
 }
 
 @media all and (max-width: 550px) and (min-width: 374px) {
-	.infobtn {
-		width: 160px;
+	#info .btn, #nodes .btn {
+		width: 150px;
+	}
+	#info div, #nodes div {
+		width: 320px;
 	}
 }
 
