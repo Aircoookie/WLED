@@ -33,7 +33,7 @@ class QuinLEDAnPentaUsermod : public Usermod
     bool oledUseProgressBars = false;
     byte oledMaxPage = 3;
     byte oledCurrentPage = 3; // Start with the network page to help identifying the IP
-    byte oledSecondsPerPage = 3;
+    byte oledSecondsPerPage = 10;
     unsigned long oledLogoDrawn = 0;
     unsigned long oledLastTimeUpdated = 0;
     unsigned long oledLastTimePageChange = 0;
@@ -62,7 +62,7 @@ class QuinLEDAnPentaUsermod : public Usermod
 
     bool isAnPentaLedPin(int8_t pin)
     {
-      for(int i = 0; i <= 4; i++)
+      for(int8_t i = 0; i <= 4; i++)
       {
         if(anPentaPins[i] == pin)
           return true;
@@ -72,16 +72,16 @@ class QuinLEDAnPentaUsermod : public Usermod
 
     void getCurrentUsedLedPins()
     {
-      for (int lp = 0; lp <= 4; lp++) currentLedPins[lp] = 0;
+      for (int8_t lp = 0; lp <= 4; lp++) currentLedPins[lp] = 0;
       byte numBusses = busses.getNumBusses();
       byte numUsedPins = 0;
 
-      for (int b = 0; b < numBusses; b++) {
+      for (int8_t b = 0; b < numBusses; b++) {
         Bus* curBus = busses.getBus(b);
         if (curBus != nullptr) {
           uint8_t pins[5] = {0, 0, 0, 0, 0};
           byte numPins = curBus->getPins(pins);
-          for (int p = 0; p < numPins; p++) {
+          for (int8_t p = 0; p < numPins; p++) {
             if (isAnPentaLedPin(pins[p])) {
               currentLedPins[numUsedPins] = pins[p];
               numUsedPins++;
@@ -90,7 +90,7 @@ class QuinLEDAnPentaUsermod : public Usermod
         }
       }
 
-      for (int lp = 0; lp <= 4; lp++) DEBUG_PRINTF("[%s] LED #%d: %d\n", _name, lp+1, currentLedPins[lp]);
+      for (int8_t lp = 0; lp <= 4; lp++) DEBUG_PRINTF("[%s] LED #%d: %d\n", _name, lp+1, currentLedPins[lp]);
     }
 
 
@@ -199,11 +199,6 @@ class QuinLEDAnPentaUsermod : public Usermod
       enabled = false;
     }
 
-    int getPercentageForBrightness(byte brightness)
-    {
-      return int(((float)brightness / (float)255) * 100);
-    }
-
     byte oledGetNextPage() {
       return oledCurrentPage + 1 <= oledMaxPage ? oledCurrentPage + 1 : 1;
     }
@@ -238,8 +233,8 @@ class QuinLEDAnPentaUsermod : public Usermod
 
             byte oledRow = 31;
             byte drawnLines = 0;
-            for (int app = 0; app <= 4; app++) {
-              for (int clp = 0; clp <= 4; clp++) {
+            for (int8_t app = 0; app <= 4; app++) {
+              for (int8_t clp = 0; clp <= 4; clp++) {
                 if (anPentaPins[app] == currentLedPins[clp]) {
                   char charCurrentLedcReads[17];
                   sprintf(charCurrentLedcReads, "LED %d:", app+1);
@@ -320,8 +315,15 @@ class QuinLEDAnPentaUsermod : public Usermod
     static const char _enabled[];
     static const char _oledEnabled[];
     static const char _oledUseProgressBars[];
+    static const char _oledSecondsPerPage[];
     static const char _shtEnabled[];
     static const unsigned char quinLedLogo[];
+
+
+    static int8_t getPercentageForBrightness(byte brightness)
+    {
+      return int(((float)brightness / (float)255) * 100);
+    }
 
 
     /*
@@ -436,6 +438,7 @@ class QuinLEDAnPentaUsermod : public Usermod
       top[FPSTR(_enabled)] = enabled;
       top[FPSTR(_oledEnabled)] = oledEnabled;
       top[FPSTR(_oledUseProgressBars)] = oledUseProgressBars;
+      top[FPSTR(_oledSecondsPerPage)] = oledSecondsPerPage;
       top[FPSTR(_shtEnabled)] = shtEnabled;
 
       // Update LED pins on config save
@@ -462,6 +465,7 @@ class QuinLEDAnPentaUsermod : public Usermod
       getJsonValue(top[FPSTR(_enabled)], enabled);
       getJsonValue(top[FPSTR(_oledEnabled)], oledEnabled);
       getJsonValue(top[FPSTR(_oledUseProgressBars)], oledUseProgressBars);
+      getJsonValue(top[FPSTR(_oledSecondsPerPage)], oledSecondsPerPage);
       getJsonValue(top[FPSTR(_shtEnabled)], shtEnabled);
 
       if (!initDone) {
@@ -541,6 +545,7 @@ const char QuinLEDAnPentaUsermod::_name[]                PROGMEM = "QuinLED-An-P
 const char QuinLEDAnPentaUsermod::_enabled[]             PROGMEM = "Enabled";
 const char QuinLEDAnPentaUsermod::_oledEnabled[]         PROGMEM = "Enable-OLED";
 const char QuinLEDAnPentaUsermod::_oledUseProgressBars[] PROGMEM = "OLED-Use-Progress-Bars";
+const char QuinLEDAnPentaUsermod::_oledSecondsPerPage[]  PROGMEM = "OLED-Seconds-Per-Page";
 const char QuinLEDAnPentaUsermod::_shtEnabled[]          PROGMEM = "Enable-SHT30-Temp-Humidity-Sensor";
 // Other strings
 
