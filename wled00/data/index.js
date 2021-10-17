@@ -1014,7 +1014,7 @@ function updateUI()
 	updateTrail(gId('sliderBri'));
 	updateTrail(gId('sliderSpeed'));
 	updateTrail(gId('sliderIntensity'));
-	if (isRgbw) gId('wwrap').style.display = "block";
+	gId('wwrap').style.display = (isRgbw) ? "block":"none";
 	gId("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
 
 	updatePA();

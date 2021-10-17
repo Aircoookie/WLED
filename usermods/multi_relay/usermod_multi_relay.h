@@ -284,7 +284,7 @@ class MultiRelay : public Usermod {
       if (!enabled || strip.isUpdating()) return;
 
       static unsigned long lastUpdate = 0;
-      if (millis() - lastUpdate < 200) return;  // update only 5 times/s
+      if (millis() - lastUpdate < 100) return;  // update only 10 times/s
       lastUpdate = millis();
 
       //set relay when LEDs turn on
