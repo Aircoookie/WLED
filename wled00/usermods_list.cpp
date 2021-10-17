@@ -100,6 +100,10 @@
 #include "../usermods/ST7789_display/ST7789_Display.h"
 #endif
 
+#ifdef USERMOD_SEVEN_SEGMENT
+#include "../usermods/seven_segment_display/usermod_v2_seven_segment_display.h"
+#endif
+
 void registerUsermods()
 {
 /*
@@ -186,5 +190,9 @@ void registerUsermods()
 
   #ifdef USERMOD_ST7789_DISPLAY
   usermods.add(new St7789DisplayUsermod());
+  #endif
+  
+  #ifdef USERMOD_SEVEN_SEGMENT
+  usermods.add(new SevenSegmentDisplay());
   #endif
 }
