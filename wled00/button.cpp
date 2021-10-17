@@ -214,6 +214,8 @@ void handleButton()
     if (btnPin[b]<0 || buttonType[b] == BTN_TYPE_NONE) continue;
     #endif
 
+    if (usermods.handleButton(b)) continue; // did usermod handle buttons
+
     if ((buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) && millis() - lastRead > 250) {   // button is not a button but a potentiometer
       if (b+1 == WLED_MAX_BUTTONS) lastRead = millis();
       handleAnalog(b); continue;
