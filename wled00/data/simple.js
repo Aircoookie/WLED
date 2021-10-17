@@ -1171,6 +1171,7 @@ function selectSlot(b)
 	cpick.color.set(cd[csel].style.backgroundColor);
 	gId('sliderW').value = whites[csel];
 	redrawPalPrev();
+	updateRgb();
 }
 
 var lasth = 0;

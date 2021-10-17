@@ -402,29 +402,25 @@ ${i+1}:
       if (!o.files) {
         alert("This browser doesn't seem to support the `files` property of file inputs.");
       } else if (!o.files[0]) {
-        alert("Please select a file before clicking 'Load'");
+        alert("Please select a JSON file before clicking 'Apply'");
       } else {
         f = o.files[0];
         fr = new FileReader();
         fr.onload = receivedText;
         fr.readAsText(f);
       }
-      d.Sf.data2.value = '';
+      o.value = '';
 
       function receivedText(e) {
         let lines = e.target.result;
         var c = JSON.parse(lines); 
         if (c.hw) {
-          //console.log(c.hw);
           if (c.hw.led) {
             for (var i=0; i<10; i++) addLEDs(-1);
             var l = c.hw.led;
             l.ins.forEach((v,i,a)=>{
               addLEDs(1);
-              for (var j=0; j<v.pin.length; j++) {
-                console.log(`L${j}${i}`);
-                d.getElementsByName(`L${j}${i}`)[0].value = v.pin[j];
-              }
+              for (var j=0; j<v.pin.length; j++) d.getElementsByName(`L${j}${i}`)[0].value = v.pin[j];
               d.getElementsByName("LT"+i)[0].value = v.type;
               d.getElementsByName("LS"+i)[0].value = v.start;
               d.getElementsByName("LC"+i)[0].value = v.len;
@@ -436,6 +432,7 @@ ${i+1}:
           }
           if (c.hw.btn) {
             var b = c.hw.btn;
+            if (Array.isArray(b.ins)) gId("btns").innerHTML = "";
             b.ins.forEach((v,i,a)=>{
               addBtn(i,v.pin[0],v.type);
             });
@@ -457,6 +454,7 @@ ${i+1}:
 		{
       //values injected by server while sending HTML
       //d.um_p=[6,7,8,9,10,11,1];bLimits(3,4096,4000,1664);d.Sf.MS.checked=1;addLEDs(1);d.Sf.L00.value=2;d.Sf.LC0.value=30;d.Sf.LT0.value=22;d.Sf.CO0.value=0;d.Sf.LS0.value=15;d.Sf.CV0.checked=1;d.Sf.SL0.checked=0;addLEDs(1);d.Sf.L01.value=10;d.Sf.L11.value=10;d.Sf.L21.value=1;d.Sf.L31.value=10;d.Sf.LC1.value=60;d.Sf.LT1.value=80;d.Sf.CO1.value=1;d.Sf.LS1.value=0;d.Sf.CV1.checked=0;d.Sf.SL1.checked=0;d.Sf.MA.value=850;d.Sf.LA.value=0;d.Sf.CA.value=56;d.Sf.AW.value=3;d.Sf.BO.checked=1;d.Sf.BP.value=80;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=0;d.Sf.BF.value=100;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=0;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=12;d.Sf.RM.checked=1;addBtn(0,0,0);addBtn(1,-1,0);d.Sf.TT.value=32;d.Sf.IR.value=-1;d.Sf.IT.value=0;
+      //d.um_p=[6,7,8,9,10,11,14,15,13,1,21,19,22,25,26,27,5,23,18,17];bLimits(10,2048,64000,8192);d.Sf.MS.checked=1;d.Sf.CCT.checked=0;addLEDs(1);d.Sf.L00.value=192;d.Sf.L10.value=168;d.Sf.L20.value=0;d.Sf.L30.value=61;d.Sf.LC0.value=421;d.Sf.LT0.value=80;d.Sf.CO0.value=1;d.Sf.LS0.value=0;d.Sf.CV0.checked=0;d.Sf.SL0.checked=0;d.Sf.RF0.checked=0;d.Sf.MA.value=850;d.Sf.LA.value=0;d.Sf.CA.value=127;d.Sf.AW.value=3;d.Sf.BO.checked=0;d.Sf.BP.value=0;d.Sf.GB.checked=0;d.Sf.GC.checked=1;d.Sf.TF.checked=1;d.Sf.TD.value=700;d.Sf.PF.checked=1;d.Sf.BF.value=100;d.Sf.TB.value=0;d.Sf.TL.value=60;d.Sf.TW.value=1;d.Sf.PB.selectedIndex=0;d.Sf.RL.value=-1;d.Sf.RM.checked=1;addBtn(0,-1,0);addBtn(1,-1,0);addBtn(2,-1,0);addBtn(3,-1,0);d.Sf.TT.value=32;d.Sf.IR.value=-1;d.Sf.IT.value=8;
     }
 	</script>
 	<style>@import url("style.css");</style>

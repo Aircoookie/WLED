@@ -158,8 +158,8 @@ function cTheme(light) {
 
 function loadBg(iUrl)
 {
-	let bg = document.getElementById('bg');
-	let img = document.createElement("img");
+	let bg = gId('bg');
+	let img = d.createElement("img");
 	img.src = iUrl;
 	if (iUrl == "" || iUrl==="https://picsum.photos/1920/1080") {
 		var today = new Date();
@@ -171,7 +171,7 @@ function loadBg(iUrl)
 			if (today>=hs && today<=he)	img.src = hol[i][4];
 		}
 	}
-	img.addEventListener('load', (event) => {
+	img.addEventListener('load', (e) => {
 		var a = parseFloat(cfg.theme.alpha.bg);
 		if (isNaN(a)) a = 0.6;
 		bg.style.opacity = a;
@@ -184,8 +184,8 @@ function loadSkinCSS(cId)
 {
 	if (!gId(cId))	// check if element exists
 	{
-		var h  = document.getElementsByTagName('head')[0];
-		var l  = document.createElement('link');
+		var h  = d.getElementsByTagName('head')[0];
+		var l  = d.createElement('link');
 		l.id   = cId;
 		l.rel  = 'stylesheet';
 		l.type = 'text/css';
@@ -260,7 +260,6 @@ function onLoad()
 	if (localStorage.getItem('pcm') == "true") togglePcMode(true);
 	var sls = d.querySelectorAll('input[type="range"]');
 	for (var sl of sls) {
-		//sl.addEventListener('input', updateBubble, true);
 		sl.addEventListener('touchstart', toggleBubble);
 		sl.addEventListener('touchend', toggleBubble);
 	}
@@ -557,7 +556,7 @@ function populatePresets(fromls)
 			if (expanded[i+100]) expand(i+100, true);
 		}
 	} else { presetError(true); }
-	updatePA(true);
+	updatePA();
 	populateQL();
 }
 
@@ -735,9 +734,7 @@ function populateSegments(s)
 function btype(b)
 {
 	switch (b) {
-		case 2:
 		case 32: return "ESP32";
-		case 1:
 		case 82: return "ESP8266";
 	}
 	return "?";
@@ -935,33 +932,23 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
 </div>`;
 }
 
-function updateTrail(e, slidercol)
+function updateTrail(e)
 {
 	if (e==null) return;
 	var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
 	var perc = e.value * 100 / max;
 	perc = parseInt(perc);
 	if (perc < 50) perc += 2;
-	var scol;
-	switch (slidercol) {
-		case 1: scol = "#f00"; break;
-		case 2: scol = "#0f0"; break;
-		case 3: scol = "#00f"; break;
-		default: scol = "var(--c-f)";
-	}
-	var g = `${scol} ${perc}%, var(--c-4) ${perc}%`;
-	if (slidercol==4) g = `#000 0%, #fff`;
-	if (slidercol==5) g = `#ff8f1f 0%, #fff 50%, #d4e0ff`;
-	var val = `linear-gradient(90deg, ${g})`;
+	var val = `linear-gradient(90deg, var(--c-f) ${perc}%, var(--c-4) ${perc}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
-	var bubble = e.parentNode.parentNode.getElementsByTagName('output')[0];
-	if (bubble) bubble.innerHTML = e.value;
+	var b = e.parentNode.parentNode.getElementsByTagName('output')[0];
+	if (b) b.innerHTML = e.value;
 }
 
 function toggleBubble(e)
 {
-	var bubble = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
-	bubble.classList.toggle('sliderbubbleshow');
+	var b = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
+	b.classList.toggle('sliderbubbleshow');
 }
 
 function updateLen(s)
@@ -989,7 +976,7 @@ function updateLen(s)
 	gId(`seg${s}len`).innerHTML = out;
 }
 
-function updatePA(scrollto=false)
+function updatePA()
 {
 	var ps = gEBCN("pres");
 	for (let i = 0; i < ps.length; i++) {
@@ -1003,13 +990,11 @@ function updatePA(scrollto=false)
 		var acv = gId(`p${currentPreset}o`);
 		if (acv && !expanded[currentPreset+100]) {
 			acv.classList.add('selected');
-			if (scrollto) {
-				// scroll selected preset into view (on WS refresh)
-				acv.scrollIntoView({
-					behavior: 'smooth',
-					block: 'center',
-				});
-			}
+			// scroll selected preset into view (on WS refresh)
+			acv.scrollIntoView({
+				behavior: 'smooth',
+				block: 'center',
+			});
 		}
 		acv = gId(`p${currentPreset}qlb`);
 		if (acv) acv.classList.add('selected');
@@ -1029,12 +1014,10 @@ function updateUI()
 	updateTrail(gId('sliderBri'));
 	updateTrail(gId('sliderSpeed'));
 	updateTrail(gId('sliderIntensity'));
-	//updateTrail(gId('sliderW'),4);
-	//updateTrail(gId('sliderA'),5);
 	if (isRgbw) gId('wwrap').style.display = "block";
 	gId("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
 
-	updatePA(true);
+	updatePA();
 	updateHex();
 	updateRgb();
 }
@@ -1154,7 +1137,7 @@ function readState(s,command=false)
 			b = i.col[e][2];
 			if (isRgbw) w = i.col[e][3];
 		} else {
-			// unsigned long RGBW (@blazoncek v2 experimental API implementation)
+			// unsigned long RGBW (@blazoncek v2 experimental API implementation, obsolete & will be removed)
 			r = (i.col[e]>>16) & 0xFF;
 			g = (i.col[e]>> 8) & 0xFF;
 			b = (i.col[e]    ) & 0xFF;
@@ -1810,7 +1793,6 @@ function selectSlot(b)
 	cd[csel].classList.add('xxs-w');
 	cpick.color.set(cd[csel].style.backgroundColor);
 	gId('sliderW').value = whites[csel];
-	//updateTrail(gId('sliderW'),4);
 	updateHex();
 	updateRgb();
 }
@@ -1833,9 +1815,9 @@ function pC(col)
 function updateRgb()
 {
 	var s,col = cpick.color.rgb;
-	s = gId('sliderR').value = col.r; //updateTrail(s,1);
-	s = gId('sliderG').value = col.g; //updateTrail(s,2);
-	s = gId('sliderB').value = col.b; //updateTrail(s,3);
+	s = gId('sliderR').value = col.r;
+	s = gId('sliderG').value = col.g;
+	s = gId('sliderB').value = col.b;
 }
 
 function updateHex()
