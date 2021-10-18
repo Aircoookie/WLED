@@ -200,7 +200,6 @@ class MultiRelay : public Usermod {
       pinMode(_relay[relay].pin, OUTPUT);
       digitalWrite(_relay[relay].pin, mode ? !_relay[relay].mode : _relay[relay].mode);
       publishMqtt(mode ? "on" : "off", relay);
-      yield();
     }
 
     /**
@@ -288,6 +287,7 @@ class MultiRelay : public Usermod {
      * loop() is called continuously. Here you can check for events, read sensors, etc.
      */
     void loop() {
+      yield();
       if (!enabled || strip.isUpdating()) return;
 
       static unsigned long lastUpdate = 0;
@@ -312,6 +312,7 @@ class MultiRelay : public Usermod {
      * Replicating button.cpp
      */
     bool handleButton(uint8_t b) {
+      yield();
       if (buttonType[b] == BTN_TYPE_NONE || buttonType[b] == BTN_TYPE_RESERVED || buttonType[b] == BTN_TYPE_PIR_SENSOR || buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) {
         return false;
       }
