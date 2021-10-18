@@ -6,6 +6,8 @@
   #define MULTI_RELAY_MAX_RELAYS 4
 #endif
 
+#define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
+
 #define ON  true
 #define OFF false
 
@@ -23,6 +25,7 @@ typedef struct relay_t {
   bool state;
   bool external;
   uint16_t delay;
+  int8_t button;
 } Relay;
 
 
@@ -49,6 +52,7 @@ class MultiRelay : public Usermod {
     static const char _delay_str[];
     static const char _activeHigh[];
     static const char _external[];
+    static const char _button[];
 
 
     void publishMqtt(const char* state, int relay) {
@@ -170,6 +174,7 @@ class MultiRelay : public Usermod {
         _relay[i].active   = false;
         _relay[i].state    = false;
         _relay[i].external = false;
+        _relay[i].button   = -1;
       }
     }
     /**
@@ -195,6 +200,7 @@ class MultiRelay : public Usermod {
       pinMode(_relay[relay].pin, OUTPUT);
       digitalWrite(_relay[relay].pin, mode ? !_relay[relay].mode : _relay[relay].mode);
       publishMqtt(mode ? "on" : "off", relay);
+      yield();
     }
 
     /**
@@ -261,7 +267,8 @@ class MultiRelay : public Usermod {
         if (!pinManager.allocatePin(_relay[i].pin,true, PinOwner::UM_MultiRelay)) {
           _relay[i].pin = -1;  // allocation failed
         } else {
-          switchRelay(i, offMode);
+          if (!_relay[i].external) _relay[i].state = offMode;
+          switchRelay(i, _relay[i].state);
           _relay[i].active = false;
         }
       }
@@ -292,13 +299,97 @@ class MultiRelay : public Usermod {
         _oldMode = offMode;
         _switchTimerStart = millis();
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
-          if (_relay[i].pin>=0) _relay[i].active = true;
+          if (_relay[i].pin>=0 && !_relay[i].external) _relay[i].active = true;
         }
       }
 
       handleOffTimer();
     }
 
+    /**
+     * handleButton() can be used to override default button behaviour. Returning true
+     * will prevent button working in a default way.
+     * Replicating button.cpp
+     */
+    bool handleButton(uint8_t b) {
+      if (buttonType[b] == BTN_TYPE_NONE || buttonType[b] == BTN_TYPE_RESERVED || buttonType[b] == BTN_TYPE_PIR_SENSOR || buttonType[b] == BTN_TYPE_ANALOG || buttonType[b] == BTN_TYPE_ANALOG_INVERTED) {
+        return false;
+      }
+
+      bool handled = false;
+      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+        if (_relay[i].button == b) {
+          handled = true;
+        }
+      }
+      if (!handled) return false;
+
+      unsigned long now = millis();
+
+      //button is not momentary, but switch. This is only suitable on pins whose on-boot state does not matter (NOT gpio0)
+      if (buttonType[b] == BTN_TYPE_SWITCH) {
+        //handleSwitch(b);
+        if (buttonPressedBefore[b] != isButtonPressed(b)) {
+          buttonPressedTime[b] = now;
+          buttonPressedBefore[b] = !buttonPressedBefore[b];
+        }
+
+        if (buttonLongPressed[b] == buttonPressedBefore[b]) return handled;
+          
+        if (now - buttonPressedTime[b] > WLED_DEBOUNCE_THRESHOLD) { //fire edge event only after 50ms without change (debounce)
+          for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+            if (_relay[i].pin>=0 && _relay[i].button == b) {
+              switchRelay(i, buttonPressedBefore[b]);
+              buttonLongPressed[b] = buttonPressedBefore[b]; //save the last "long term" switch state
+            }
+          }
+        }
+        return handled;
+      }
+
+      //momentary button logic
+      if (isButtonPressed(b)) { //pressed
+
+        if (!buttonPressedBefore[b]) buttonPressedTime[b] = now;
+        buttonPressedBefore[b] = true;
+
+        if (now - buttonPressedTime[b] > 600) { //long press
+          buttonLongPressed[b] = true;
+        }
+
+      } else if (!isButtonPressed(b) && buttonPressedBefore[b]) { //released
+
+        long dur = now - buttonPressedTime[b];
+        if (dur < WLED_DEBOUNCE_THRESHOLD) {
+          buttonPressedBefore[b] = false;
+          return handled;
+        } //too short "press", debounce
+        bool doublePress = buttonWaitTime[b]; //did we have short press before?
+        buttonWaitTime[b] = 0;
+
+        if (!buttonLongPressed[b]) { //short press
+          // if this is second release within 350ms it is a double press (buttonWaitTime!=0)
+          if (doublePress) {
+            //doublePressAction(b);
+          } else  {
+            buttonWaitTime[b] = now;
+          }
+        }
+        buttonPressedBefore[b] = false;
+        buttonLongPressed[b] = false;
+      }
+      // if 450ms elapsed since last press/release it is a short press
+      if (buttonWaitTime[b] && now - buttonWaitTime[b] > 350 && !buttonPressedBefore[b]) {
+        buttonWaitTime[b] = 0;
+        for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+          if (_relay[i].pin>=0 && _relay[i].button == b) {
+            toggleRelay(i);
+          }
+        }
+      }
+      return handled;
+    }
+  
     /**
      * addToJsonInfo() can be used to add custom entries to the /json/info part of the JSON API.
      */
@@ -310,6 +401,26 @@ class MultiRelay : public Usermod {
 
         JsonArray infoArr = user.createNestedArray(F("Number of relays")); //name
         infoArr.add(String(getActiveRelayCount()));
+
+        String uiDomString;
+        for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+          if (_relay[i].pin<0 || !_relay[i].external) continue;
+          uiDomString = F("<button class=\"btn\" onclick=\"requestJson({");
+          uiDomString += FPSTR(_name);
+          uiDomString += F(":{");
+          uiDomString += FPSTR(_relay_str);
+          uiDomString += F(":");
+          uiDomString += i;
+          uiDomString += F(",on:");
+          uiDomString += _relay[i].state ? "false" : "true";
+          uiDomString += F("}});loadInfo();\">");
+          uiDomString += F("Relay ");
+          uiDomString += i;
+          uiDomString += F(" <i class=\"icons\">&#xe08f;</i></button>");
+          JsonArray infoArr = user.createNestedArray(uiDomString); // timer value
+
+          infoArr.add(_relay[i].state ? "on" : "off");
+        }
       }
     }
 
@@ -324,8 +435,15 @@ class MultiRelay : public Usermod {
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void readFromJsonState(JsonObject &root) {
-    //}
+    void readFromJsonState(JsonObject &root) {
+      if (!initDone || !enabled) return;  // prevent crash on boot applyPreset()
+      JsonObject usermod = root[FPSTR(_name)];
+      if (!usermod.isNull()) {
+        if (usermod["on"].is<bool>() && usermod[FPSTR(_relay_str)].is<int>() && usermod[FPSTR(_relay_str)].as<int>()>=0) {
+          switchRelay(usermod[FPSTR(_relay_str)].as<int>(), usermod["on"].as<bool>());
+        }
+      }
+    }
 
     /**
      * provide the changeable values
@@ -341,6 +459,7 @@ class MultiRelay : public Usermod {
         relay[FPSTR(_activeHigh)] = _relay[i].mode;
         relay[FPSTR(_delay_str)]  = _relay[i].delay;
         relay[FPSTR(_external)]   = _relay[i].external;
+        relay[FPSTR(_button)]     = _relay[i].button;
       }
       DEBUG_PRINTLN(F("MultiRelay config saved."));
     }
@@ -370,6 +489,7 @@ class MultiRelay : public Usermod {
         _relay[i].mode     = top[parName][FPSTR(_activeHigh)] | _relay[i].mode;
         _relay[i].external = top[parName][FPSTR(_external)]   | _relay[i].external;
         _relay[i].delay    = top[parName][FPSTR(_delay_str)]  | _relay[i].delay;
+        _relay[i].button   = top[parName][FPSTR(_button)]     | _relay[i].button;
         // begin backwards compatibility (beta) remove when 0.13 is released
         parName += '-';
         _relay[i].pin      = top[parName+"pin"] | _relay[i].pin;
@@ -394,7 +514,7 @@ class MultiRelay : public Usermod {
         for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
           if (_relay[i].pin>=0 && pinManager.allocatePin(_relay[i].pin, true, PinOwner::UM_MultiRelay)) {
             if (!_relay[i].external) {
-              switchRelay(i, _relay[i].state = (bool)bri);
+              switchRelay(i, offMode);
             }
           } else {
             _relay[i].pin = -1;
@@ -404,7 +524,7 @@ class MultiRelay : public Usermod {
         DEBUG_PRINTLN(F(" config (re)loaded."));
       }
       // use "return !top["newestParameter"].isNull();" when updating Usermod with new features
-      return !top[F("relay-0")]["pin"].isNull();
+      return !top[F("relay-0")][FPSTR(_button)].isNull();
     }
 
     /**
@@ -424,3 +544,4 @@ const char MultiRelay::_relay_str[]  PROGMEM = "relay";
 const char MultiRelay::_delay_str[]  PROGMEM = "delay-s";
 const char MultiRelay::_activeHigh[] PROGMEM = "active-high";
 const char MultiRelay::_external[]   PROGMEM = "external";
+const char MultiRelay::_button[]     PROGMEM = "button";
