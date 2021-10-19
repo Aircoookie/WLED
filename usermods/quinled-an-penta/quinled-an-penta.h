@@ -9,6 +9,7 @@ class QuinLEDAnPentaUsermod : public Usermod
 {
   private:
     bool enabled = false;
+    bool firstRunDone = false;
     bool initDone = false;
     U8G2 *oledDisplay = nullptr;
     SHT *sht30TempHumidSensor;
@@ -89,8 +90,6 @@ class QuinLEDAnPentaUsermod : public Usermod
           }
         }
       }
-
-      for (int8_t lp = 0; lp <= 4; lp++) DEBUG_PRINTF("[%s] LED #%d: %d\n", _name, lp+1, currentLedPins[lp]);
     }
 
 
@@ -199,7 +198,8 @@ class QuinLEDAnPentaUsermod : public Usermod
       enabled = false;
     }
 
-    byte oledGetNextPage() {
+    byte oledGetNextPage()
+    {
       return oledCurrentPage + 1 <= oledMaxPage ? oledCurrentPage + 1 : 1;
     }
 
@@ -347,6 +347,8 @@ class QuinLEDAnPentaUsermod : public Usermod
 
         initDone = true;
       }
+
+      firstRunDone = true;
     }
 
     /*
@@ -361,7 +363,7 @@ class QuinLEDAnPentaUsermod : public Usermod
       */
     void loop()
     {
-      if (!enabled || strip.isUpdating()) return;
+      if (!enabled || !initDone || strip.isUpdating()) return;
 
       if (isShtReady()) {
         if (millis() - shtLastTimeUpdated > 30000 && !shtDataRequested) {
@@ -468,31 +470,23 @@ class QuinLEDAnPentaUsermod : public Usermod
       getJsonValue(top[FPSTR(_oledSecondsPerPage)], oledSecondsPerPage);
       getJsonValue(top[FPSTR(_shtEnabled)], shtEnabled);
 
-      if (!initDone) {
-        // First run: reading from cfg.json
-        // Nothing to do here, will be all done in setup() 
+      // First run: reading from cfg.json, nothing to do here, will be all done in setup()
+      if (!firstRunDone) {
+        DEBUG_PRINTF("[%s] First run, nothing to do\n", _name);
       }
-      // Mod was disabled, so run setup()
-      else if (enabled && enabled != oldEnabled) {
-        DEBUG_PRINTF("[%s] Usermod has been re-enabled\n", _name);
-        setup();
+      // Check if mod has been en-/disabled
+      else if (enabled != oldEnabled) {
+        enabled ? setup() : cleanup();
+        DEBUG_PRINTF("[%s] Usermod has been en-/disabled\n", _name);
       }
       // Config has been changed, so adopt to changes
-      else {
-        if (!enabled) {
-          DEBUG_PRINTF("[%s] Usermod has been disabled\n", _name);
-          cleanup();
+      else if (enabled) {
+        if (oldOledEnabled != oledEnabled) {
+          oledEnabled ? initOledDisplay() : cleanupOledDisplay();
         }
-        else {
-          DEBUG_PRINTF("[%s] Usermod is enabled\n", _name);
 
-          if (oldOledEnabled != oledEnabled) {
-            oledEnabled ? initOledDisplay() : cleanupOledDisplay();
-          }
-
-          if (oldShtEnabled != shtEnabled) {
-            shtEnabled ? initSht30TempHumiditySensor() : cleanupSht30TempHumiditySensor();
-          }
+        if (oldShtEnabled != shtEnabled) {
+          shtEnabled ? initSht30TempHumiditySensor() : cleanupSht30TempHumiditySensor();
         }
 
         DEBUG_PRINTF("[%s] Config (re)loaded\n", _name);
