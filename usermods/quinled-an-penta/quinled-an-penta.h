@@ -23,10 +23,13 @@ class QuinLEDAnPentaUsermod : public Usermod
     String lastKnownSsid;
     IPAddress currentIp;
     IPAddress lastKnownIp;
+
+    // Brightness / LEDC vars
     byte lastKnownBri = 0;
+    int8_t currentBussesNumPins[5] = {0, 0, 0, 0, 0};
     int8_t currentLedPins[5] = {0, 0, 0, 0, 0};
-    uint32_t currentLedcReads[5] = {0, 0, 0, 0, 0};
-    uint32_t lastKnownLedcReads[5] = {0, 0, 0, 0, 0};
+    uint8_t currentLedcReads[5] = {0, 0, 0, 0, 0};
+    uint8_t lastKnownLedcReads[5] = {0, 0, 0, 0, 0};
 
     // OLED vars
     bool oledEnabled = false;
@@ -81,12 +84,35 @@ class QuinLEDAnPentaUsermod : public Usermod
         Bus* curBus = busses.getBus(b);
         if (curBus != nullptr) {
           uint8_t pins[5] = {0, 0, 0, 0, 0};
-          byte numPins = curBus->getPins(pins);
-          for (int8_t p = 0; p < numPins; p++) {
+          currentBussesNumPins[b] = curBus->getPins(pins);
+          for (int8_t p = 0; p < currentBussesNumPins[b]; p++) {
             if (isAnPentaLedPin(pins[p])) {
               currentLedPins[numUsedPins] = pins[p];
               numUsedPins++;
             }
+          }
+        }
+      }
+    }
+
+    void getCurrentLedcValues()
+    {
+      byte numBusses = busses.getNumBusses();
+      byte numLedc = 0;
+
+      for (int8_t b = 0; b < numBusses; b++) {
+        Bus* curBus = busses.getBus(b);
+        if (curBus != nullptr) {
+          uint32_t curPixColor = curBus->getPixelColor(0);
+          uint8_t _data[5] = {255, 255, 255, 255, 255};
+          _data[3] = curPixColor >> 24;
+          _data[0] = curPixColor >> 16;
+          _data[1] = curPixColor >> 8;
+          _data[2] = curPixColor;
+
+          for (uint8_t i = 0; i < currentBussesNumPins[b]; i++) {
+            currentLedcReads[numLedc] = (_data[i] * bri) / 255;
+            numLedc++;
           }
         }
       }
@@ -389,7 +415,9 @@ class QuinLEDAnPentaUsermod : public Usermod
           switch (oledCurrentPage) {
             case 1:
               lastKnownBri = bri;
-              currentLedcReads[0] = ledcRead(0); currentLedcReads[1] = ledcRead(1); currentLedcReads[2] = ledcRead(2); currentLedcReads[3] = ledcRead(3); currentLedcReads[4] = ledcRead(4);
+              // Probably causes lag to always do ledcRead(), so rather re-do the math, 'cause we can't easily get it...
+              // currentLedcReads[0] = ledcRead(0); currentLedcReads[1] = ledcRead(1); currentLedcReads[2] = ledcRead(2); currentLedcReads[3] = ledcRead(3); currentLedcReads[4] = ledcRead(4);
+              getCurrentLedcValues();
 
               if (bri != lastKnownBri || lastKnownLedcReads[0] != currentLedcReads[0] || lastKnownLedcReads[1] != currentLedcReads[1] || lastKnownLedcReads[2] != currentLedcReads[2]
                   || lastKnownLedcReads[3] != currentLedcReads[3] || lastKnownLedcReads[4] != currentLedcReads[4]) {
