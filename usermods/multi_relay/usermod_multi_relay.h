@@ -443,6 +443,13 @@ class MultiRelay : public Usermod {
         if (usermod["on"].is<bool>() && usermod[FPSTR(_relay_str)].is<int>() && usermod[FPSTR(_relay_str)].as<int>()>=0) {
           switchRelay(usermod[FPSTR(_relay_str)].as<int>(), usermod["on"].as<bool>());
         }
+      } else if (root[FPSTR(_name)].is<JsonArray>()) {
+        JsonArray relays = root[FPSTR(_name)].as<JsonArray>();
+        for (JsonVariant r : relays) {
+          if (r["on"].is<bool>() && r[FPSTR(_relay_str)].is<int>() && r[FPSTR(_relay_str)].as<int>()>=0) {
+            switchRelay(r[FPSTR(_relay_str)].as<int>(), r["on"].as<bool>());
+          }
+        }
       }
     }
 
