@@ -270,6 +270,7 @@ WLED_GLOBAL byte bootPreset   _INIT(0);                   // save preset to load
 //if false, only one segment spanning the total LEDs is created,
 //but not on LED settings save if there is more than one segment currently
 WLED_GLOBAL bool autoSegments _INIT(false);
+WLED_GLOBAL bool allowCCT _INIT(false);           //CCT color correction
 
 WLED_GLOBAL byte col[]    _INIT_N(({ 255, 160, 0, 0 }));  // current RGB(W) primary color. col[] should be updated if you want to change the color.
 WLED_GLOBAL byte colSec[] _INIT_N(({ 0, 0, 0, 0 }));      // current RGB(W) secondary color
@@ -508,7 +509,6 @@ WLED_GLOBAL byte timerWeekday[] _INIT_N(({ 255, 255, 255, 255, 255, 255, 255, 25
 WLED_GLOBAL bool blynkEnabled _INIT(false);
 
 //playlists
-WLED_GLOBAL unsigned long presetCycledTime _INIT(0);
 WLED_GLOBAL int16_t currentPlaylist _INIT(-1);
 //still used for "PL=~" HTTP API command
 WLED_GLOBAL byte presetCycCurr _INIT(0);
@@ -637,10 +637,9 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 
-// append new c string to temp buffer efficiently
-bool oappend(const char* txt);
-// append new number to temp buffer efficiently
-bool oappendi(int i);
+//macro to convert F to const
+#define SET_F(x)  (const char*)F(x)
+
 
 class WLED {
 public:

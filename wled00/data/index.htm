@@ -47,22 +47,29 @@
 		<div id="picker" class="noslide"></div>
 		<div id="rgbwrap">
 			<div class="sliderwrap il">
-				<input id="sliderR" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,1)" max="255" min="0" type="range" value="128" />
+				<input id="sliderR" class="noslide" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div><br>
 			<div class="sliderwrap il">
-				<input id="sliderG" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,2)" max="255" min="0" type="range" value="128" />
+				<input id="sliderG" class="noslide" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div><br>
 			<div class="sliderwrap il">
-				<input id="sliderB" class="noslide" onchange="fromRgb()" oninput="updateTrail(this,3)" max="255" min="0" type="range" value="128" />
+				<input id="sliderB" class="noslide" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div><br>
 		</div>
 		<div id="wwrap">
 			<p class="labels">White channel</p>
 			<div class="sliderwrap il">
-				<input id="sliderW" class="noslide" onchange="setColor(0)" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
+				<input id="sliderW" class="noslide" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
+				<div class="sliderdisplay"></div>
+			</div>
+		</div>
+		<div id="wbal">
+			<p class="labels">White balance</p>
+			<div class="sliderwrap il">
+				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
 		</div>
@@ -98,7 +105,7 @@
 					<label class="check schkl">
 						&nbsp;
 						<input type="radio" value="${palettes[i].id}" name="palette" onChange="setPalette()">
-						<span class="checkmark schk"></span>
+						<span class="radiomark schk"></span>
 					</label>
 					<div class="lstIcontent">
 						<span class="lstIname">

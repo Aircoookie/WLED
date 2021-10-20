@@ -51,7 +51,7 @@ var cpick = new iro.ColorPicker("#picker", {
       options: {
         sliderType: 'value'
       }
-    },
+    }/*,
     {
       component: iro.ui.Slider,
       options: {
@@ -59,7 +59,7 @@ var cpick = new iro.ColorPicker("#picker", {
         minTemperature: 2100,
         maxTemperature: 10000
       }
-    }
+    }*/
   ]
 });
 
@@ -854,21 +854,14 @@ function loadNodes()
 	});
 }
 
-function updateTrail(e, slidercol)
+function updateTrail(e)
 {
 	if (e==null) return;
 	var max = e.hasAttribute('max') ? e.attributes.max.value : 255;
 	var perc = e.value * 100 / max;
 	perc = parseInt(perc);
   if (perc < 50) perc += 2;
-	var scol;
-	switch (slidercol) {
-	case 1: scol = "#f00"; break;
-	case 2: scol = "#0f0"; break;
-	case 3: scol = "#00f"; break;
-	default: scol = "var(--c-f)";
-	}
-	var val = `linear-gradient(90deg, ${scol} ${perc}%, var(--c-4) ${perc}%)`;
+	var val = `linear-gradient(90deg, var(--c-f) ${perc}%, var(--c-4) ${perc}%)`;
 	e.parentNode.getElementsByClassName('sliderdisplay')[0].style.background = val;
 }
 
@@ -939,8 +932,8 @@ function updateUI()
 	updateTrail(d.getElementById('sliderBri'));
 	updateTrail(d.getElementById('sliderSpeed'));
 	updateTrail(d.getElementById('sliderIntensity'));
-	updateTrail(d.getElementById('sliderW'));
-	if (isRgbw) d.getElementById('wwrap').style.display = "block";
+	d.getElementById('wwrap').style.display = (isRgbw) ? "block":"none";
+	d.getElementById("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
 
 	updatePA();
 	updateHex();
@@ -1023,6 +1016,7 @@ function readState(s,command=false) {
     selectSlot(csel);
   }
   d.getElementById('sliderW').value = whites[csel];
+  if (i.cct && i.cct>=0) d.getElementById("sliderA").value = i.cct;
 
   d.getElementById('sliderSpeed').value = i.sx;
   d.getElementById('sliderIntensity').value = i.ix;
@@ -1560,6 +1554,11 @@ function setSegBri(s){
 	requestJson(obj);
 }
 
+function setBalance(b)
+{
+	var obj = {"seg": {"cct": parseInt(b)}};
+	requestJson(obj);
+}
 function setX(ind = null) {
 	if (ind === null) {
 		ind = parseInt(d.querySelector('#fxlist input[name="fx"]:checked').value);
@@ -1723,7 +1722,6 @@ function selectSlot(b) {
 	cd[csel].style.width="50px";
 	cpick.color.set(cd[csel].style.backgroundColor);
 	d.getElementById('sliderW').value = whites[csel];
-	updateTrail(d.getElementById('sliderW'));
 	updateHex();
 	updateRgb();
 	redrawPalPrev();
@@ -1748,12 +1746,9 @@ function pC(col)
 function updateRgb()
 {
 	var col = cpick.color.rgb;
-	var s = d.getElementById('sliderR');
-	s.value = col.r; updateTrail(s,1);
-	s = d.getElementById('sliderG');
-	s.value = col.g; updateTrail(s,2);
-	s = d.getElementById('sliderB');
-	s.value = col.b; updateTrail(s,3);
+	d.getElementById('sliderR').value = col.r;
+	d.getElementById('sliderG').value = col.g;
+	d.getElementById('sliderB').value = col.b;
 }
 
 function updateHex()

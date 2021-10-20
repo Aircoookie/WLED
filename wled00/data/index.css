@@ -467,6 +467,22 @@ img {
 	z-index: -1;
 }
 
+#rwrap .sliderdisplay,
+#gwrap .sliderdisplay,
+#bwrap .sliderdisplay,
+#wwrap .sliderdisplay,
+#wbal .sliderdisplay {
+	height: 28px;
+	top: 0; bottom: 0;
+	left: 0; right: 0;
+	/*border: 1px solid var(--c-b);*/
+}
+#rwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #f00); }
+#gwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #0f0); }
+#bwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #00f); }
+#wwrap .sliderdisplay { background: linear-gradient(90deg, #000 0%, #fff); }
+#wbal .sliderdisplay  { background: linear-gradient(90deg, #ff8f1f 0%, #fff 50%, #d4e0ff); }
+
 .sliderbubble {
     width: 36px;
     line-height: 24px;
@@ -491,6 +507,14 @@ input[type=range] {
 	margin: 0px 10px 0px 10px;
 	background-color: transparent;
 	cursor: pointer;
+}
+#rwrap input[type=range],
+#gwrap input[type=range],
+#bwrap input[type=range],
+#wwrap input[type=range],
+#wbal input[type=range] {
+	width: 252px;
+	margin: 0;
 }
 input[type=range]:focus {
 	outline: none;
@@ -527,8 +551,24 @@ input[type=range]:active + .sliderbubble {
 	display: inline;
 	transform: translateX(-50%);
 }
-
-#wwrap {
+#rwrap input[type=range]::-webkit-slider-thumb,
+#gwrap input[type=range]::-webkit-slider-thumb,
+#bwrap input[type=range]::-webkit-slider-thumb,
+#wwrap input[type=range]::-webkit-slider-thumb,
+#wbal input[type=range]::-webkit-slider-thumb {
+	height: 18px;
+	width: 18px;
+	border: 2px solid #000;
+	margin-top: 5px;
+}
+#rwrap input[type=range]::-moz-range-thumb,
+#gwrap input[type=range]::-moz-range-thumb,
+#bwrap input[type=range]::-moz-range-thumb,
+#wwrap input[type=range]::-moz-range-thumb,
+#wbal input[type=range]::-moz-range-thumb {
+	border: 2px solid var(--c-1);
+}
+#wwrap, #wbal {
 	display: none;
 }
 
@@ -536,6 +576,14 @@ input[type=range]:active + .sliderbubble {
 	height: 30px;
 	width: 240px;
 	position: relative;
+}
+#rwrap .sliderwrap,
+#gwrap .sliderwrap,
+#bwrap .sliderwrap,
+#wwrap .sliderwrap,
+#wbal .sliderwrap {
+	width: 260px;
+	margin: 10px 0 0;
 }
 
 .sbs {
