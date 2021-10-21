@@ -270,8 +270,44 @@ type="checkbox" name="SD"><br>Send notifications on button press or IR: <input
 type="checkbox" name="SB"><br>Send Alexa notifications: <input type="checkbox" 
 name="SA"><br>Send Philips Hue change notifications: <input type="checkbox" 
 name="SH"><br>Send Macro notifications: <input type="checkbox" name="SM"><br>
-Send notifications twice: <input type="checkbox" name="S2"><br><i>
-Reboot required to apply changes.</i><h3>Instance List</h3>
+Send notifications twice: <input type="checkbox" name="S2"><br>10 optional 
+IPs of other WLED devices to specifically search for when syncing: <br><input 
+name="0A" type="number" class="d5" min="0" max="255"> . <input name="0B" 
+type="number" class="d5" min="0" max="255"> . <input name="0C" type="number" 
+class="d5" min="0" max="255"> . <input name="0D" type="number" class="d5" 
+min="0" max="255"><br><input name="1A" type="number" class="d5" min="0" 
+max="255"> . <input name="1B" type="number" class="d5" min="0" 
+max="255"> . <input name="1C" type="number" class="d5" min="0" 
+max="255"> . <input name="1D" type="number" class="d5" min="0" max="255"><br>
+<input name="2A" type="number" class="d5" min="0" max="255"> . <input name="2B"
+ type="number" class="d5" min="0" max="255"> . <input name="2C" type="number" 
+class="d5" min="0" max="255"> . <input name="2D" type="number" class="d5" 
+min="0" max="255"><br><input name="3A" type="number" class="d5" min="0" 
+max="255"> . <input name="3B" type="number" class="d5" min="0" 
+max="255"> . <input name="3C" type="number" class="d5" min="0" 
+max="255"> . <input name="3D" type="number" class="d5" min="0" max="255"><br>
+<input name="4A" type="number" class="d5" min="0" max="255"> . <input name="4B"
+ type="number" class="d5" min="0" max="255"> . <input name="4C" type="number" 
+class="d5" min="0" max="255"> . <input name="4D" type="number" class="d5" 
+min="0" max="255"><br><input name="5A" type="number" class="d5" min="0" 
+max="255"> . <input name="5B" type="number" class="d5" min="0" 
+max="255"> . <input name="5C" type="number" class="d5" min="0" 
+max="255"> . <input name="5D" type="number" class="d5" min="0" max="255"><br>
+<input name="6A" type="number" class="d5" min="0" max="255"> . <input name="6B"
+ type="number" class="d5" min="0" max="255"> . <input name="6C" type="number" 
+class="d5" min="0" max="255"> . <input name="6D" type="number" class="d5" 
+min="0" max="255"><br><input name="7A" type="number" class="d5" min="0" 
+max="255"> . <input name="7B" type="number" class="d5" min="0" 
+max="255"> . <input name="7C" type="number" class="d5" min="0" 
+max="255"> . <input name="7D" type="number" class="d5" min="0" max="255"><br>
+<input name="8A" type="number" class="d5" min="0" max="255"> . <input name="8B"
+ type="number" class="d5" min="0" max="255"> . <input name="8C" type="number" 
+class="d5" min="0" max="255"> . <input name="8D" type="number" class="d5" 
+min="0" max="255"><br><input name="9A" type="number" class="d5" min="0" 
+max="255"> . <input name="9B" type="number" class="d5" min="0" 
+max="255"> . <input name="9C" type="number" class="d5" min="0" 
+max="255"> . <input name="9D" type="number" class="d5" min="0" max="255"><br>
+<i>Reboot required to apply changes.</i><h3>Instance List</h3>
 Enable instance list: <input type="checkbox" name="NL"><br>
 Make this instance discoverable: <input type="checkbox" name="NB"><h3>Realtime
 </h3>Receive UDP realtime: <input type="checkbox" name="RD"><br><br><i>
