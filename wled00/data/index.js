@@ -1856,12 +1856,13 @@ function fromRgb()
 	setColor(0);
 }
 
+// sets color from picker: 0=all, 1=leaving picker/HSV, 2=ignore white channel
 function setColor(sr)
 {
-	var cd = gId('csl').children;
-	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') cpick.color.setChannel('hsv', 'v', 100);
+	var cd = gId('csl').children; // color slots
+	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0,0,0)') cpick.color.setChannel('hsv', 'v', 100);
 	cd[csel].style.backgroundColor = cpick.color.rgbString;
-	if (sr != 2) whites[csel] = gId('sliderW').value;
+	if (sr != 2) whites[csel] = parseInt(gId('sliderW').value);
 	var col = cpick.color.rgb;
 	var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
 	if (csel == 1) {

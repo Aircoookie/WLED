@@ -277,11 +277,12 @@ class BusPwm : public Bus {
       case TYPE_ANALOG_2CH: //warm white + cold white
         // perhaps a non-linear adjustment would be in order. need to test
         _data[1] = (w * cct) / 255;
-        _data[0] = 255 - _data[1]; // or (w * (255-cct)) / 255;
+        _data[0] = (w * (255-cct)) / 255;
         break;
       case TYPE_ANALOG_5CH: //RGB + warm white + cold white
         // perhaps a non-linear adjustment would be in order. need to test
-        _data[4] = (w * cct) / 255; w = 255 - w; // or (w * (255-cct)) / 255;
+        _data[4] = (w * cct) / 255;
+        w = (w * (255-cct)) / 255;
       case TYPE_ANALOG_4CH: //RGBW
         _data[3] = w;
       case TYPE_ANALOG_3CH: //standard dumb RGB

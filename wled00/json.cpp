@@ -83,49 +83,39 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     {
       int rgbw[] = {0,0,0,0};
       bool colValid = false;
-      if (colarr[i].is<unsigned long>()) {
-        // unsigned long RGBW (@blazoncek v2 experimental API implementation)
-        uint32_t colX = colarr[i];
-        rgbw[0] = (colX >> 16) & 0xFF;
-        rgbw[1] = (colX >>  8) & 0xFF;
-        rgbw[2] = (colX      ) & 0xFF;
-        rgbw[3] = (colX >> 24) & 0xFF;
-        colValid = true;
-      } else {
-        JsonArray colX = colarr[i];
-        if (colX.isNull()) {
-          byte brgbw[] = {0,0,0,0};
-          const char* hexCol = colarr[i];
-          if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
-            int kelvin = colarr[i] | -1;
-            //kelvin = map(seg.cct, 0, 255, 2800, 10200)
-            if (kelvin <  0) continue;
-            if (kelvin == 0) seg.setColor(i, 0, id);
-            if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
-            colValid = true;
-          } else { //HEX string, e.g. "FFAA00"
-            colValid = colorFromHexString(brgbw, hexCol);
-          }
-          for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
-        } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
-          byte sz = colX.size();
-          if (sz == 0) continue; //do nothing on empty array
-
-          byte cp = copyArray(colX, rgbw, 4);      
-          if (cp == 1 && rgbw[0] == 0) 
-            seg.setColor(i, 0, id);
+      JsonArray colX = colarr[i];
+      if (colX.isNull()) {
+        byte brgbw[] = {0,0,0,0};
+        const char* hexCol = colarr[i];
+        if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
+          int kelvin = colarr[i] | -1;
+          //kelvin = map(seg.cct, 0, 255, 2800, 10200)
+          if (kelvin <  0) continue;
+          if (kelvin == 0) seg.setColor(i, 0, id);
+          if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
           colValid = true;
+        } else { //HEX string, e.g. "FFAA00"
+          colValid = colorFromHexString(brgbw, hexCol);
         }
+        for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
+      } else { //Array of ints (RGB or RGBW color), e.g. [255,160,0]
+        byte sz = colX.size();
+        if (sz == 0) continue; //do nothing on empty array
 
-        if (!colValid) continue;
-        if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
-        {
-          if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
-          if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
-        } else { //normal case, apply directly to segment
-          seg.setColor(i, ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF))), id);
-          if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
-        }
+        byte cp = copyArray(colX, rgbw, 4);      
+        if (cp == 1 && rgbw[0] == 0) 
+          seg.setColor(i, 0, id);
+        colValid = true;
+      }
+
+      if (!colValid) continue;
+      if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
+      {
+        if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
+        if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
+      } else { //normal case, apply directly to segment
+        seg.setColor(i, ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF))), id);
+        if (seg.mode == FX_MODE_STATIC) strip.trigger(); //instant refresh
       }
     }
   }
