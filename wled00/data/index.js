@@ -1814,10 +1814,10 @@ function pC(col)
 
 function updateRgb()
 {
-	var s,col = cpick.color.rgb;
-	s = gId('sliderR').value = col.r;
-	s = gId('sliderG').value = col.g;
-	s = gId('sliderB').value = col.b;
+	var col = cpick.color.rgb;
+	gId('sliderR').value = col.r;
+	gId('sliderG').value = col.g;
+	gId('sliderB').value = col.b;
 }
 
 function updateHex()
