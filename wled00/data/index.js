@@ -1554,11 +1554,6 @@ function setSegBri(s){
 	requestJson(obj);
 }
 
-function setBalance(b)
-{
-	var obj = {"seg": {"cct": parseInt(b)}};
-	requestJson(obj);
-}
 function setX(ind = null) {
 	if (ind === null) {
 		ind = parseInt(d.querySelector('#fxlist input[name="fx"]:checked').value);
@@ -1792,7 +1787,7 @@ function setColor(sr) {
 	var cd = d.getElementById('csl').children;
 	if (sr == 1 && cd[csel].style.backgroundColor == 'rgb(0, 0, 0)') cpick.color.setChannel('hsv', 'v', 100);
 	cd[csel].style.backgroundColor = cpick.color.rgbString;
-	if (sr != 2) whites[csel] = d.getElementById('sliderW').value;
+	if (sr != 2) whites[csel] = parseInt(d.getElementById('sliderW').value);
 	var col = cpick.color.rgb;
 	var obj = {"seg": {"col": [[col.r, col.g, col.b, whites[csel]],[],[]]}};
 	if (csel == 1) {
@@ -1802,6 +1797,12 @@ function setColor(sr) {
 	}
 	updateHex();
 	updateRgb();
+	requestJson(obj);
+}
+
+function setBalance(b)
+{
+	var obj = {"seg": {"cct": parseInt(b)}};
 	requestJson(obj);
 }
 
