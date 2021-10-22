@@ -239,7 +239,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   JsonObject udpn = root["udpn"];
   notifyDirect         = udpn["send"] | notifyDirect;
   receiveNotifications = udpn["recv"] | receiveNotifications;
-  bool noNotification  = udpn[F("nn")]; //send no notification just for this request
+  if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
 
   unsigned long timein = root[F("time")] | UINT32_MAX; //backup time source if NTP not synced
   if (timein != UINT32_MAX) {
@@ -339,12 +339,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   JsonObject playlist = root[F("playlist")];
   if (!playlist.isNull() && loadPlaylist(playlist, presetId)) {
     //do not notify here, because the first playlist entry will do
-    noNotification = true;
+    if (root["on"].isNull()) callMode = CALL_MODE_NO_NOTIFY;
+    else callMode = CALL_MODE_DIRECT_CHANGE;  // possible bugfix for playlist only containing HTTP API preset FX=~
   } else {
     interfaceUpdateCallMode = CALL_MODE_WS_SEND;
   }
 
-  colorUpdated(noNotification ? CALL_MODE_NO_NOTIFY : callMode);
+  colorUpdated(callMode);
 
   return stateResponse;
 }
