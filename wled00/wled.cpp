@@ -202,7 +202,13 @@ void WLED::loop()
     refreshNodeList();
     if (nodeBroadcastEnabled) {
       sendSysInfoUDP();
-      // add for loop here
+      
+      for (uint8_t i = 0; i < 10; i++) {
+        // check that ips are valid
+        if (specialSearchNodes[i][0] >= 0 && specialSearchNodes[i][0] < 255) && (specialSearchNodes[i][1] >= 0 && specialSearchNodes[i][1] < 255 && specialSearchNodes[i][2] >= 0 && specialSearchNodes[i][2] < 255 && specialSearchNodes[i][3] >= 0 && specialSearchNodes[i][3] < 255) {
+          sendSysInfoUDP(specialSearchNodes[i][0], specialSearchNodes[i][1], specialSearchNodes[i][2], specialSearchNodes[i][3]);
+        }
+      }
     }
     yield();
   }
@@ -217,8 +223,7 @@ void WLED::loop()
     uint32_t mem = 0;
     ledCount = 1;
     for (uint8_t i = 0; i < WLED_MAX_BUSSES; i++) {
-      if (busConfigs[i] == nullptr) b
-      reak;
+      if (busConfigs[i] == nullptr) break;
       mem += BusManager::memUsage(*busConfigs[i]);
       if (mem <= MAX_LED_MEMORY) {
         uint16_t totalNew = busConfigs[i]->start + busConfigs[i]->count;

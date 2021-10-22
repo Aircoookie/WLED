@@ -291,7 +291,18 @@ WLED_GLOBAL bool syncToggleReceive     _INIT(false);   // UIs which only have a 
 WLED_GLOBAL NodesMap Nodes;
 WLED_GLOBAL bool nodeListEnabled _INIT(true);
 WLED_GLOBAL bool nodeBroadcastEnabled _INIT(true);
-WLED_GLOBAL char specialSearchNodes[75] _INIT(""); //74 chars should fit 5 ipaddresses; extract this out later
+WLED_GLOBAL int specialSearchNodes[10][4] _INIT_N({
+  {-1, -1, -1, -1}, 
+  {-1, -1, -1, -1},
+  {-1, -1, -1, -1},
+  {-1, -1, -1, -1},
+  {-1, -1, -1, -1},
+  {-1, -1, -1, -1},
+  {-1, -1, -1, -1},
+  {-1, -1, -1, -1},
+  {-1, -1, -1, -1},
+  {-1, -1, -1, -1}
+});
 
 WLED_GLOBAL byte buttonType[WLED_MAX_BUTTONS]  _INIT({BTN_TYPE_PUSH});
 WLED_GLOBAL byte irEnabled      _INIT(0);     // Infrared receiver
