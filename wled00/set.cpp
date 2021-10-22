@@ -516,9 +516,9 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv, byte ma
     {
       // we only have ~ (and perhaps -)
       if (req->charAt(pos+4) == '-') {
-        *val = (int)(*val -1) < (int)minv ? maxv : (*val -1);
+        *val = (int)(*val -1) < (int)minv ? maxv : min((int)maxv,(*val -1));
       } else {
-        *val = (int)(*val +1) > (int)maxv ? minv : (*val +1);
+        *val = (int)(*val +1) > (int)maxv ? minv : max((int)minv,(*val +1));
       }
     } else {
       out += *val;
