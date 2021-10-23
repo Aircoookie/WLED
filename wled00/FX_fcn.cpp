@@ -194,19 +194,52 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
   //auto calculate white channel value if enabled
   if (isRgbw) {
-    if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || (w == 0 && (rgbwMode == RGBW_MODE_DUAL || rgbwMode == RGBW_MODE_LEGACY)))
-    {
-      //white value is set to lowest RGB channel
-      //thank you to @Def3nder!
-      w = r < g ? (r < b ? r : b) : (g < b ? g : b);
-    } else if (rgbwMode == RGBW_MODE_AUTO_ACCURATE && w == 0)
-    {
-      w = r < g ? (r < b ? r : b) : (g < b ? g : b);
-      r -= w; g -= w; b -= w;
+    switch (rgbwMode) {
+      case RGBW_MODE_MANUAL_ONLY:
+        break;
+      default:
+        //white value is set to lowest RGB channel
+        //thank you to @Def3nder!
+        if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || w == 0) w = r < g ? (r < b ? r : b) : (g < b ? g : b);
+        if (rgbwMode == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; }
+        break;
     }
   }
   
   if (SEGLEN) {//from segment
+    uint16_t realIndex = realPixelIndex(i);
+    uint16_t len = SEGMENT.length();
+
+    // determine if we can do white balance and accurate W calc
+    // NOTE & TODO: does not work correctly with custom mapping if map spans different strips
+    int16_t cct = -1;
+    for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
+      Bus *bus = busses.getBus(b);
+      if (bus == nullptr || !bus->containsPixel(realIndex)) continue;
+      //if (bus == nullptr || bus->getStart()<realIndex || bus->getStart()+bus->getLength()>realIndex) continue;
+      uint8_t busType = bus->getType();
+/*
+      // if we are in accurate white calculation mode subtract W but only for RGBW strip
+      if (rgbwMode == RGBW_MODE_AUTO_ACCURATE
+        && ( busType == TYPE_SK6812_RGBW
+          || busType == TYPE_TM1814
+          || busType == TYPE_ANALOG_1CH
+          || busType == TYPE_ANALOG_2CH
+          || busType == TYPE_ANALOG_4CH
+          || busType == TYPE_ANALOG_5CH )
+        ) {
+        // this will produce a bug (some out of bounds/mem leak error)
+        // causing loop() no longer being executed.
+        //r -= w; g -= w; b -= w;
+      }
+*/
+      if (allowCCT
+        || busType == TYPE_ANALOG_2CH
+        || busType == TYPE_ANALOG_5CH) {
+        if (cct<0) cct = SEGMENT.cct;
+      }
+    }
+
     //color_blend(getpixel, col, _bri_t); (pseudocode for future blending of segments)
     if (_bri_t < 255) {  
       r = scale8(r, _bri_t);
@@ -217,20 +250,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
     uint32_t col = ((w << 24) | (r << 16) | (g << 8) | (b));
 
     /* Set all the pixels in the group */
-    uint16_t realIndex = realPixelIndex(i);
-    uint16_t len = SEGMENT.length();
-
-    // determine if we can do white balance
-    int16_t cct = -1;
-    for (uint8_t b = 0; b < busses.getNumBusses(); b++) {
-      Bus *bus = busses.getBus(b);
-      if (bus == nullptr || !bus->containsPixel(realIndex)) continue;
-      if (allowCCT || bus->getType() == TYPE_ANALOG_2CH || bus->getType() == TYPE_ANALOG_5CH) {
-        cct = SEGMENT.cct;
-        break;
-      }
-    }
-
     for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
       uint16_t indexSet = realIndex + (IS_REVERSE ? -j : j);
       if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) {

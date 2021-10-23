@@ -83,17 +83,17 @@ class Bus {
     virtual void     setBrightness(uint8_t b) {};
     virtual void     cleanup() {};
     virtual uint8_t  getPins(uint8_t* pinArray) { return 0; }
-    virtual uint16_t getLength() { return 1; }
+    inline  uint16_t getLength() { return _len; }
     virtual void     setColorOrder() {}
     virtual uint8_t  getColorOrder() { return COL_ORDER_RGB; }
     virtual uint8_t  skippedLeds() { return 0; }
 
-    inline uint16_t  getStart() { return _start; }
-    inline void      setStart(uint16_t start) { _start = start; }
-    inline uint8_t   getType() { return _type; }
-    inline bool      isOk() { return _valid; }
-    inline bool      isOffRefreshRequired() { return _needsRefresh; }
-    inline bool      containsPixel(uint16_t pix) { return pix >= _start; }
+    inline  uint16_t getStart() { return _start; }
+    inline  void     setStart(uint16_t start) { _start = start; }
+    inline  uint8_t  getType() { return _type; }
+    inline  bool     isOk() { return _valid; }
+    inline  bool     isOffRefreshRequired() { return _needsRefresh; }
+            bool     containsPixel(uint16_t pix) { return pix >= _start && pix < _start+_len; }
 
     virtual bool isRgbw() { return false; }
     static  bool isRgbw(uint8_t type) {
@@ -108,6 +108,7 @@ class Bus {
     uint8_t  _type = TYPE_NONE;
     uint8_t  _bri = 255;
     uint16_t _start = 0;
+    uint16_t _len = 1;
     bool     _valid = false;
     bool     _needsRefresh = false;
 };
@@ -222,7 +223,6 @@ class BusDigital : public Bus {
   uint8_t _colorOrder = COL_ORDER_GRB;
   uint8_t _pins[2] = {255, 255};
   uint8_t _iType = I_NONE;
-  uint16_t _len = 0;
   uint8_t _skip = 0;
   void * _busPtr = nullptr;
 };
@@ -271,11 +271,12 @@ class BusPwm : public Bus {
     uint8_t w = c >> 24;
 
     switch (_type) {
-      case TYPE_ANALOG_1CH: //one channel (white), use highest RGBW value
-        _data[0] = max(r, max(g, max(b, w)));
+      case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
+        _data[0] = w; //max(r, max(g, max(b, w)));
         break;
       case TYPE_ANALOG_2CH: //warm white + cold white
         // perhaps a non-linear adjustment would be in order. need to test
+        //w = max(r, max(g, max(b, w)));
         _data[1] = (w * cct) / 255;
         _data[0] = (w * (255-cct)) / 255;
         break;
@@ -305,7 +306,7 @@ class BusPwm : public Bus {
       case TYPE_ANALOG_3CH: //standard dumb RGB
       case TYPE_ANALOG_4CH: //standard dumb RGBW
       case TYPE_ANALOG_5CH: //we'll want the white handling from 2CH here + RGB
-        _data[0] = r; _data[1] = g; _data[2] = b; _data[3] = w; _data[4] = 0; break;
+        _data[0] = r; _data[1] = g; _data[2] = b; _data[3] = w; _data[4] = w; break;
     }
   }
 
@@ -402,12 +403,10 @@ class BusNetwork : public Bus {
 //          break;
 //      }
       _UDPchannels = _rgbw ? 4 : 3;
-      //_rgbw |= bc.rgbwOverride;  // RGBW override in bit 7 or can have a special type
       _data = (byte *)malloc(bc.count * _UDPchannels);
       if (_data == nullptr) return;
       memset(_data, 0, bc.count * _UDPchannels);
       _len = bc.count;
-      //_colorOrder = bc.colorOrder;
       _client = IPAddress(bc.pins[0],bc.pins[1],bc.pins[2],bc.pins[3]);
       _broadcastLock = false;
       _valid = true;
@@ -482,8 +481,6 @@ class BusNetwork : public Bus {
 
   private:
     IPAddress _client;
-    uint16_t  _len = 0;
-    //uint8_t   _colorOrder;
     uint8_t   _bri = 255;
     uint8_t   _UDPtype;
     uint8_t   _UDPchannels;
