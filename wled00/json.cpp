@@ -460,15 +460,21 @@ void serializeInfo(JsonObject root)
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = ledCount;
   leds[F("rgbw")] = strip.isRgbw;
-  leds[F("wv")] = strip.isRgbw && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
+  leds[F("wv")] = false;
   leds["cct"] = allowCCT;
   for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
     Bus *bus = busses.getBus(s);
-    if (!bus || bus->getLength()==0) break;
-    switch (bus->getType() & 0x7F) {
+    if (bus == nullptr || bus->getLength()==0) break;
+    switch (bus->getType()) {
       case TYPE_ANALOG_5CH:
       case TYPE_ANALOG_2CH:
         leds["cct"] = true;
+        break;
+    }
+    switch (bus->getAutoWhiteMode()) {
+      case RGBW_MODE_MANUAL_ONLY:
+      case RGBW_MODE_DUAL:
+        if (bus->isRgbw()) leds[F("wv")] = true;
         break;
     }
   }

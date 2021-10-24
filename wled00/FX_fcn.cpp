@@ -192,20 +192,6 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
-  //auto calculate white channel value if enabled
-  if (isRgbw) {
-    switch (rgbwMode) {
-      case RGBW_MODE_MANUAL_ONLY:
-        break;
-      default:
-        //white value is set to lowest RGB channel
-        //thank you to @Def3nder!
-        if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || w == 0) w = r < g ? (r < b ? r : b) : (g < b ? g : b);
-        if (rgbwMode == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; }
-        break;
-    }
-  }
-  
   if (SEGLEN) {//from segment
     uint16_t realIndex = realPixelIndex(i);
     uint16_t len = SEGMENT.length();
@@ -218,21 +204,6 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       if (bus == nullptr || !bus->containsPixel(realIndex)) continue;
       //if (bus == nullptr || bus->getStart()<realIndex || bus->getStart()+bus->getLength()>realIndex) continue;
       uint8_t busType = bus->getType();
-/*
-      // if we are in accurate white calculation mode subtract W but only for RGBW strip
-      if (rgbwMode == RGBW_MODE_AUTO_ACCURATE
-        && ( busType == TYPE_SK6812_RGBW
-          || busType == TYPE_TM1814
-          || busType == TYPE_ANALOG_1CH
-          || busType == TYPE_ANALOG_2CH
-          || busType == TYPE_ANALOG_4CH
-          || busType == TYPE_ANALOG_5CH )
-        ) {
-        // this will produce a bug (some out of bounds/mem leak error)
-        // causing loop() no longer being executed.
-        //r -= w; g -= w; b -= w;
-      }
-*/
       if (allowCCT
         || busType == TYPE_ANALOG_2CH
         || busType == TYPE_ANALOG_5CH) {

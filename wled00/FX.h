@@ -658,7 +658,6 @@ class WS2812FX {
 
     uint8_t
       mainSegment = 0,
-      rgbwMode = RGBW_MODE_DUAL,
       paletteFade = 0,
       paletteBlend = 0,
       milliampsPerLed = 55,

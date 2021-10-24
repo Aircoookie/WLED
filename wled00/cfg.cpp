@@ -85,7 +85,7 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
 
   CJSON(strip.ablMilliampsMax, hw_led[F("maxpwr")]);
   CJSON(strip.milliampsPerLed, hw_led[F("ledma")]);
-  CJSON(strip.rgbwMode, hw_led[F("rgbwm")]);
+  uint8_t rgbwMode = hw_led[F("rgbwm")] | RGBW_MODE_DUAL; // use global setting (legacy)
   CJSON(allowCCT, hw_led["cct"]);
 
   JsonArray ins = hw_led["ins"];
@@ -115,13 +115,14 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       uint16_t start = elm["start"] | 0;
       if (length==0 || start + length > MAX_LEDS) continue; // zero length or we reached max. number of LEDs, just stop
       uint8_t ledType = elm["type"] | TYPE_WS2812_RGB;
+      uint8_t awMode = elm[F("rgbwm")] | rgbwMode;
       bool reversed = elm["rev"];
       bool refresh = elm["ref"] | false;
       ledType |= refresh << 7;  // hack bit 7 to indicate strip requires off refresh
       s++;
       uint16_t busEnd = start + length;
       if (busEnd > lC) lC = busEnd;
-      BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst);
+      BusConfig bc = BusConfig(ledType, pins, start, length, colorOrder, reversed, skipFirst, awMode);
       mem += BusManager::memUsage(bc);
       if (mem <= MAX_LED_MEMORY && busses.getNumBusses() <= WLED_MAX_BUSSES) busses.add(bc);  // finalization will be done in WLED::beginStrip()
     }
@@ -534,7 +535,6 @@ void serializeConfig() {
   hw_led[F("total")] = ledCount;
   hw_led[F("maxpwr")] = strip.ablMilliampsMax;
   hw_led[F("ledma")] = strip.milliampsPerLed;
-  hw_led[F("rgbwm")] = strip.rgbwMode;
   hw_led["cct"] = allowCCT;
 
   JsonArray hw_led_ins = hw_led.createNestedArray("ins");
@@ -555,6 +555,7 @@ void serializeConfig() {
     ins["type"] = bus->getType() & 0x7F;
     ins["ref"] = bus->isOffRefreshRequired();
     ins[F("rgbw")] = bus->isRgbw();
+    ins[F("rgbwm")] = bus->getAutoWhiteMode();
   }
 
   // button(s)
