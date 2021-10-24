@@ -195,8 +195,8 @@ IM3Runtime runtime;
 IM3Module module;
 IM3Function fu;
 
-uint32_t app_wasm_len = MAX_WASM_BIN_SIZE;
-uint8_t* app_wasm = nullptr;
+//uint32_t app_wasm_len = MAX_WASM_BIN_SIZE;
+//uint8_t* app_wasm = nullptr;
 
 void wasm_task(void*)
 {
@@ -212,23 +212,28 @@ void wasm_task(void*)
     runtime->memoryLimit = WASM_MEMORY_LIMIT;
 #endif
 
-    if (!readToBuffer("/fx.wasm", &app_wasm, &app_wasm_len)) {
-      result = "fload";
-      return;
+    if (wasm_buffer) { //from websockets
+      //app_wasm_len = wasm_buffer_len;
+    } else { //from filesystem (fx.wasm)
+      wasm_buffer_len = MAX_WASM_BIN_SIZE;
+      if (!readToBuffer("/fx.wasm", &wasm_buffer, &wasm_buffer_len)) {
+        result = "fload";
+        return;
+      }
     }
 
     //Serial.println(app_wasm_len);
     //Serial.println((uint32_t)app_wasm);
 
-    if (app_wasm == nullptr) {
+    if (wasm_buffer == nullptr) {
       result = "npr";
       return;
     }
 
-    result = m3_ParseModule (env, &module, app_wasm, app_wasm_len);
+    result = m3_ParseModule (env, &module, wasm_buffer, wasm_buffer_len);
     if (result) FATAL("Prs", result);
 
-    delete[] app_wasm;
+    delete[] wasm_buffer; wasm_buffer = nullptr; wasm_buffer_len = 0;
 
     result = m3_LoadModule (runtime, module);
     if (result) FATAL("Load", result);
@@ -240,10 +245,12 @@ void wasm_task(void*)
     if (result) FATAL("Func", result);
     
     Serial.println(F("WASM init success!"));
+    wasm_state = WASM_STATE_READY;
 }
 
 void wasmInit()
 {
+  if (runtime || env) wasmEnd();
   //Serial.println("\nWasm3 v" M3_VERSION " (" M3_ARCH "), build " __DATE__ " " __TIME__);
 /*
 #ifdef ESP32
@@ -257,11 +264,16 @@ void wasmInit()
 }
 
 void wasmRun() {
+  //re-init after wasm_buffer refresh
+  if (wasm_state == WASM_STATE_STALE) wasmInit();
+
+  if (wasm_state != WASM_STATE_READY) return;
   if (result) {
     //Serial.println(F("You fucked up... Majorly..."));
     Serial.print("If only... ");
     Serial.println(result);
     //Serial.println("That could save us🥺");
+    wasm_state = WASM_STATE_ERROR;
     return;
   }
 
@@ -281,6 +293,7 @@ void wasmRun() {
       Serial.print(":");
       Serial.println(info.line);
     }
+    wasm_state = WASM_STATE_ERROR;
   }
 }
 
@@ -290,4 +303,5 @@ void wasmEnd() {
   if (runtime) m3_FreeRuntime(runtime); runtime = nullptr;
   if (env) m3_FreeEnvironment(env); env = nullptr;
   Serial.println("F later");
+  wasm_state = WASM_STATE_UNLOADED;
 }

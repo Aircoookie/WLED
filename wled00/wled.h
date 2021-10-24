@@ -591,6 +591,7 @@ WLED_GLOBAL bool doInitBusses _INIT(false);
 // WASM
 WLED_GLOBAL WASMFX wasmfx _INIT(WASMFX());
 WLED_GLOBAL uint8_t* wasm_buffer _INIT(nullptr);
+WLED_GLOBAL uint32_t wasm_buffer_len _INIT(0);
 WLED_GLOBAL byte wasm_state _INIT(WASM_STATE_UNLOADED);
 
 // Usermod manager

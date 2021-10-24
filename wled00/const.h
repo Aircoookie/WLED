@@ -254,9 +254,9 @@
 #endif
 
 #define WASM_STATE_UNLOADED 0
-#define WASM_STATE_READY    1
-#define WASM_STATE_STALE    2
-#define WASM_STATE_ERROR    3
+#define WASM_STATE_READY    1 //wasm runtime allocated
+#define WASM_STATE_STALE    2 //inited, but wasm_buffer has updated. Runtime re-init required.
+#define WASM_STATE_ERROR    3 //runtime wasm error
 
 // string temp buffer (now stored in stack locally)
 #define OMAX 2048

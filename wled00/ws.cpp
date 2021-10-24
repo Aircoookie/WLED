@@ -63,6 +63,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
       if(info->index == 0){
         delete[] wasm_buffer;
         wasm_buffer = new uint8_t[len];
+        wasm_buffer_len = len;
       }
 
       if (info->index + info->len <= len) {
@@ -71,6 +72,7 @@ void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventTyp
 
       if (info->final) {
         //reload WASM on the next frame
+        wasm_state = WASM_STATE_STALE;
       }
       //message is comprised of multiple frames or the frame is split into multiple packets
       //if(info->index == 0){
