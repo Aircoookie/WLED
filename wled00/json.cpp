@@ -6,6 +6,21 @@
  * JSON API (De)serialization
  */
 
+bool getVal(JsonVariant elem, byte* val, byte vmin=0, byte vmax=255) {
+  if (elem.is<int>()) {
+    *val = elem;
+    return true;
+  } else if (elem.is<const char*>()) {
+    const char* str = elem;
+    //int out = 0;
+    size_t len = strlen(str);
+    if (len == 0 || len > 5) return;
+    parseNumber(str, val, vmin, vmax);
+    return true;
+  }
+  return false; //key does not exist
+}
+
 void deserializeSegment(JsonObject elem, byte it, byte presetId)
 {
   byte id = elem["id"] | it;
@@ -62,12 +77,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   }
   if (stop > start && seg.offset > len -1) seg.offset = len -1;
 
-  int segbri = elem["bri"] | -1;
-  if (segbri == 0) {
-    seg.setOption(SEG_OPTION_ON, 0, id);
-  } else if (segbri > 0) {
-    seg.setOpacity(segbri, id);
-    seg.setOption(SEG_OPTION_ON, 1, id);
+  byte segbri = 0;
+  if (getVal(elem["bri"], &segbri)) {
+    if (segbri > 0) seg.setOpacity(segbri, id);
+    seg.setOption(SEG_OPTION_ON, segbri, id);
   }
 
   bool on = elem["on"] | seg.getOption(SEG_OPTION_ON);
@@ -210,7 +223,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   strip.applyToAllSelected = false;
   bool stateResponse = root[F("v")] | false;
 
-  bri = root["bri"] | bri;
+  getVal(root["bri"], &bri);
 
   bool on = root["on"] | (bri > 0);
   if (!on != !bri) toggleOnOff();
