@@ -137,7 +137,7 @@ class QuinLEDAnPentaUsermod : public Usermod
       }
 
       oledDisplay->begin();
-      oledDisplay->setBusClock(4000000);
+      // oledDisplay->setBusClock(4000000);
       oledDisplay->setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
       oledDisplay->setPowerSave(0);
       oledDisplay->setFont(u8g2_font_chroma48medium8_8r);
@@ -403,8 +403,8 @@ class QuinLEDAnPentaUsermod : public Usermod
         if (shtDataRequested) {
           if (sht30TempHumidSensor->dataReady()) {
             if (sht30TempHumidSensor->readData()) {
-            shtCurrentTemp = sht30TempHumidSensor->getTemperature();
-            shtCurrentHumidity = sht30TempHumidSensor->getHumidity();
+              shtCurrentTemp = sht30TempHumidSensor->getTemperature();
+              shtCurrentHumidity = sht30TempHumidSensor->getHumidity();
               shtReadDataSuccess = true;
             }
             else {
@@ -545,9 +545,9 @@ class QuinLEDAnPentaUsermod : public Usermod
       if (shtLastTimeUpdated == 0 || !shtReadDataSuccess) {
         jsonTemp.add(0);
         jsonHumidity.add(0);
-      if (shtLastTimeUpdated == 0) {
-        jsonTemp.add(" Not read yet");
-        jsonHumidity.add(" Not read yet");
+        if (shtLastTimeUpdated == 0) {
+          jsonTemp.add(" Not read yet");
+          jsonHumidity.add(" Not read yet");
         }
         else {
           jsonTemp.add(" Error");
