@@ -548,7 +548,13 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
     }
   } else
   {
-    *val = atoi(str);
+    byte p1 = atoi(str);
+    const char* str2 = strchr(str,'~');
+    if (str2) {
+      byte p2 = atoi(str2+1);
+    } else {
+      *val = p1;
+    }
   }
 }
 
