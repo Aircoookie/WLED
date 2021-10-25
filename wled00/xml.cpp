@@ -370,9 +370,11 @@ void getSettingsJS(byte subPage, char* dest)
     oappend(SET_F(");"));
 
     sappend('c',SET_F("MS"),autoSegments);
+    sappend('c',SET_F("CCT"),allowCCT);
 
     for (uint8_t s=0; s < busses.getNumBusses(); s++) {
       Bus* bus = busses.getBus(s);
+      if (bus == nullptr) continue;
       char lp[4] = "L0"; lp[2] = 48+s; lp[3] = 0; //ascii 0-9 //strip data pin
       char lc[4] = "LC"; lc[2] = 48+s; lc[3] = 0; //strip length
       char co[4] = "CO"; co[2] = 48+s; co[3] = 0; //strip color order
@@ -381,6 +383,7 @@ void getSettingsJS(byte subPage, char* dest)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //off refresh
+      char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white channel calculation
       oappend(SET_F("addLEDs(1);"));
       uint8_t pins[5];
       uint8_t nPins = bus->getPins(pins);
@@ -395,6 +398,7 @@ void getSettingsJS(byte subPage, char* dest)
       sappend('c',cv,bus->reversed);
       sappend('c',sl,bus->skippedLeds());
       sappend('c',rf,bus->isOffRefreshRequired());
+      sappend('v',aw,bus->getAutoWhiteMode());
     }
     sappend('v',SET_F("MA"),strip.ablMilliampsMax);
     sappend('v',SET_F("LA"),strip.milliampsPerLed);
@@ -407,7 +411,6 @@ void getSettingsJS(byte subPage, char* dest)
     }
 
     sappend('v',SET_F("CA"),briS);
-    sappend('v',SET_F("AW"),strip.rgbwMode);
 
     sappend('c',SET_F("BO"),turnOnAtBoot);
     sappend('v',SET_F("BP"),bootPreset);

@@ -64,7 +64,6 @@ void colorHStoRGB(uint16_t hue, byte sat, byte* rgb) //hue, sat to rgb
     case 4: rgb[0]=t,rgb[1]=p,rgb[2]=255;break;
     case 5: rgb[0]=255,rgb[1]=p,rgb[2]=q;
   }
-  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 void colorKtoRGB(uint16_t kelvin, byte* rgb) //white spectrum to rgb, calc
@@ -111,7 +110,6 @@ void colorCTtoRGB(uint16_t mired, byte* rgb) //white spectrum to rgb, bins
   } else {
     rgb[0]=237;rgb[1]=255;rgb[2]=239;//150
   }
-  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 #ifndef WLED_DISABLE_HUESYNC
@@ -169,7 +167,6 @@ void colorXYtoRGB(float x, float y, byte* rgb) //coordinates to rgb (https://www
   rgb[0] = 255.0*r;
   rgb[1] = 255.0*g;
   rgb[2] = 255.0*b;
-  if (strip.isRgbw && strip.rgbwMode == RGBW_MODE_LEGACY) colorRGBtoRGBW(col);
 }
 
 void colorRGBtoXY(byte* rgb, float* xy) //rgb to coordinates (https://www.developers.meethue.com/documentation/color-conversions-rgb-xy)
@@ -243,4 +240,25 @@ void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_M
   if (high < 0.1f) return;
   float sat = 100.0f * ((high - low) / high);;   // maximum saturation is 100  (corrected from 255)
   rgb[3] = (byte)((255.0f - sat) / 255.0f * (rgb[0] + rgb[1] + rgb[2]) / 3);
+}
+
+// adjust RGB values based on color temperature in K (range [2800-10200]) (https://en.wikipedia.org/wiki/Color_balance)
+void colorBalanceFromKelvin(uint16_t kelvin, byte *rgb)
+{
+  byte rgbw[4] = {0,0,0,0};
+  colorKtoRGB(kelvin, rgbw);  // convert Kelvin to RGB
+  rgb[0] = ((uint16_t) rgbw[0] * rgb[0]) / 255; // correct R
+  rgb[1] = ((uint16_t) rgbw[1] * rgb[1]) / 255; // correct G
+  rgb[2] = ((uint16_t) rgbw[2] * rgb[2]) / 255; // correct B
+}
+
+uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)
+{
+  byte rgbw[4] = {0,0,0,0};
+  colorKtoRGB(kelvin, rgbw);  // convert Kelvin to RGB
+  rgbw[0] = ((uint16_t) rgbw[0] * ((rgb>>16) & 0xFF)) / 255; // correct R
+  rgbw[1] = ((uint16_t) rgbw[1] * ((rgb>> 8) & 0xFF)) / 255; // correct G
+  rgbw[2] = ((uint16_t) rgbw[2] * ((rgb    ) & 0xFF)) / 255; // correct B
+  rgbw[3] =                       ((rgb>>24) & 0xFF);
+  return colorFromRgbw(rgbw);
 }

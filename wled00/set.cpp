@@ -90,7 +90,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       }
     }
 
-    uint8_t colorOrder, type, skip;
+    uint8_t colorOrder, type, skip, awMode;
     uint16_t length, start;
     uint8_t pins[5] = {255, 255, 255, 255, 255};
 
@@ -106,6 +106,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       char cv[4] = "CV"; cv[2] = 48+s; cv[3] = 0; //strip reverse
       char sl[4] = "SL"; sl[2] = 48+s; sl[3] = 0; //skip 1st LED
       char rf[4] = "RF"; rf[2] = 48+s; rf[3] = 0; //refresh required
+      char aw[4] = "AW"; aw[2] = 48+s; aw[3] = 0; //auto white calculate mode
       if (!request->hasArg(lp)) {
         DEBUG_PRINTLN(F("No data.")); break;
       }
@@ -117,7 +118,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
       type = request->arg(lt).toInt();
       type |= request->hasArg(rf) << 7; // off refresh override
       skip = request->hasArg(sl) ? LED_SKIP_AMOUNT : 0;
-
+      awMode = request->arg(aw).toInt();
       colorOrder = request->arg(co).toInt();
       start = (request->hasArg(ls)) ? request->arg(ls).toInt() : t;
       if (request->hasArg(lc) && request->arg(lc).toInt() > 0) {
@@ -128,7 +129,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
 
       // actual finalization is done in WLED::loop() (removing old busses and adding new)
       if (busConfigs[s] != nullptr) delete busConfigs[s];
-      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip);
+      busConfigs[s] = new BusConfig(type, pins, start, length, colorOrder, request->hasArg(cv), skip, awMode);
       doInitBusses = true;
     }
 
@@ -167,8 +168,6 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     strip.ablMilliampsMax = request->arg(F("MA")).toInt();
     strip.milliampsPerLed = request->arg(F("LA")).toInt();
     
-    strip.rgbwMode = request->arg(F("AW")).toInt();
-
     briS = request->arg(F("CA")).toInt();
 
     turnOnAtBoot = request->hasArg(F("BO"));
@@ -530,10 +529,11 @@ bool updateVal(const String* req, const char* key, byte* val, byte minv, byte ma
     int out = getNumVal(req, pos+1);
     if (out == 0)
     {
+      // we only have ~ (and perhaps -)
       if (req->charAt(pos+4) == '-') {
-        *val = min((int)maxv, max((int)minv, (int)(*val -1)));
+        *val = (int)(*val -1) < (int)minv ? maxv : min((int)maxv,(*val -1));
       } else {
-        *val = min((int)maxv, max((int)minv, (int)(*val +1)));
+        *val = (int)(*val +1) > (int)maxv ? minv : max((int)minv,(*val +1));
       }
     } else {
       out += *val;

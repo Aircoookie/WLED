@@ -637,9 +637,10 @@ WLED_GLOBAL UsermodManager usermods _INIT(UsermodManager());
 #define WLED_WIFI_CONFIGURED (strlen(clientSSID) >= 1 && strcmp(clientSSID, DEFAULT_CLIENT_SSID) != 0)
 #define WLED_MQTT_CONNECTED (mqtt != nullptr && mqtt->connected())
 
-//macro to convert F to const
-#define SET_F(x)  (const char*)F(x)
-
+// append new c string to temp buffer efficiently
+bool oappend(const char* txt);
+// append new number to temp buffer efficiently
+bool oappendi(int i);
 
 class WLED {
 public:

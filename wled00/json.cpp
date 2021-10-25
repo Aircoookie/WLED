@@ -74,6 +74,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on, id);
   
+  seg.cct = elem["cct"] | seg.cct;
+
   JsonArray colarr = elem["col"];
   if (!colarr.isNull())
   {
@@ -314,6 +316,11 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   usermods.readFromJsonState(root);
 
+  int8_t ledmap = root[F("ledmap")] | -1;
+  if (ledmap >= 0) {
+    strip.deserializeMap(ledmap);
+  }
+
   int ps = root[F("psave")] | -1;
   if (ps > 0) {
     savePreset(ps, true, nullptr, root);
@@ -365,6 +372,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root["on"] = seg.getOption(SEG_OPTION_ON);
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
+  root["cct"] = seg.cct;
 
   if (segmentBounds && seg.name != nullptr) root["n"] = reinterpret_cast<const char *>(seg.name); //not good practice, but decreases required JSON buffer
 
@@ -480,7 +488,24 @@ void serializeInfo(JsonObject root)
   JsonObject leds = root.createNestedObject("leds");
   leds[F("count")] = ledCount;
   leds[F("rgbw")] = strip.isRgbw;
-  leds[F("wv")] = strip.isRgbw && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
+  leds[F("wv")] = false;
+  leds["cct"] = allowCCT;
+  for (uint8_t s = 0; s < busses.getNumBusses(); s++) {
+    Bus *bus = busses.getBus(s);
+    if (bus == nullptr || bus->getLength()==0) break;
+    switch (bus->getType()) {
+      case TYPE_ANALOG_5CH:
+      case TYPE_ANALOG_2CH:
+        leds["cct"] = true;
+        break;
+    }
+    switch (bus->getAutoWhiteMode()) {
+      case RGBW_MODE_MANUAL_ONLY:
+      case RGBW_MODE_DUAL:
+        if (bus->isRgbw()) leds[F("wv")] = true;
+        break;
+    }
+  }
   leds[F("pwr")] = strip.currentMilliamps;
   leds[F("fps")] = strip.getFps();
   leds[F("maxpwr")] = (strip.currentMilliamps)? strip.ablMilliampsMax : 0;
