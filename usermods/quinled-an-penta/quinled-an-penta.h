@@ -45,13 +45,14 @@ class QuinLEDAnPentaUsermod : public Usermod
     // SHT30 vars
     bool shtEnabled = false;
     bool shtInitDone = false;
+    bool shtReadDataSuccess = false;
     byte shtI2cAddress = 0x44;
     unsigned long shtLastTimeUpdated = 0;
     bool shtDataRequested = false;
-    float shtCurrentTemp = -1;
-    float shtLastKnownTemp;
-    float shtCurrentHumidity = -1;
-    float shtLastKnownHumidity;
+    float shtCurrentTemp = 0;
+    float shtLastKnownTemp = 0;
+    float shtCurrentHumidity = 0;
+    float shtLastKnownHumidity = 0;
 
     // Pin/IO vars
     const int8_t anPentaPins[5] = {14, 13, 12, 4, 2};
@@ -284,11 +285,11 @@ class QuinLEDAnPentaUsermod : public Usermod
           case 2:
           {
             byte oledRow = 23;
-            if (isShtReady()) {
+            if (isShtReady() && shtReadDataSuccess) {
               char charshtCurrentTemp[17];
-              sprintf(charshtCurrentTemp, "Temp: %.02f", shtCurrentTemp);
+              sprintf(charshtCurrentTemp, "Temp: %.01f°C", shtCurrentTemp);
               char charshtCurrentHumidity[17];
-              sprintf(charshtCurrentHumidity, "Humidity: %.02f", shtCurrentHumidity);
+              sprintf(charshtCurrentHumidity, "Humidity: %.01fRH", shtCurrentHumidity);
 
               oledDisplay->drawStr(0, 23, charshtCurrentTemp);
               oledDisplay->drawStr(0, 31, charshtCurrentHumidity);
@@ -401,8 +402,14 @@ class QuinLEDAnPentaUsermod : public Usermod
 
         if (shtDataRequested) {
           if (sht30TempHumidSensor->dataReady()) {
+            if (sht30TempHumidSensor->readData()) {
             shtCurrentTemp = sht30TempHumidSensor->getTemperature();
             shtCurrentHumidity = sht30TempHumidSensor->getHumidity();
+              shtReadDataSuccess = true;
+            }
+            else {
+              shtReadDataSuccess = false;
+            }
 
             shtDataRequested = false;
           }
@@ -535,11 +542,17 @@ class QuinLEDAnPentaUsermod : public Usermod
       JsonArray jsonTemp = user.createNestedArray("Temperature");
       JsonArray jsonHumidity = user.createNestedArray("Humidity");
 
-      if (shtLastTimeUpdated == 0) {
+      if (shtLastTimeUpdated == 0 || !shtReadDataSuccess) {
         jsonTemp.add(0);
-        jsonTemp.add(" Not read yet");
         jsonHumidity.add(0);
+      if (shtLastTimeUpdated == 0) {
+        jsonTemp.add(" Not read yet");
         jsonHumidity.add(" Not read yet");
+        }
+        else {
+          jsonTemp.add(" Error");
+          jsonHumidity.add(" Error");
+        }
 
         return;
       }
