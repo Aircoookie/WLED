@@ -429,8 +429,25 @@ class MultiRelay : public Usermod {
      * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
      * Values in the state object may be modified by connected clients
      */
-    //void addToJsonState(JsonObject &root) {
-    //}
+    void addToJsonState(JsonObject &root) {
+      if (!initDone || !enabled) return;  // prevent crash on boot applyPreset()
+      JsonObject multiRelay = root[FPSTR(_name)];
+      if (multiRelay.isNull()) {
+        multiRelay = root.createNestedObject(FPSTR(_name));
+      }
+      #if MULTI_RELAY_MAX_RELAYS > 1
+      JsonArray rel_arr = multiRelay.createNestedArray(F("relays"));
+      for (uint8_t i=0; i<MULTI_RELAY_MAX_RELAYS; i++) {
+        if (_relay[i].pin < 0) continue;
+        JsonObject relay = rel_arr.createNestedObject();
+        relay[FPSTR(_relay_str)] = i;
+        relay[F("state")] = _relay[i].state;
+      }
+      #else
+      multiRelay[FPSTR(_relay_str)] = 0;
+      multiRelay[F("state")] = _relay[0].state;
+      #endif
+    }
 
     /**
      * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).

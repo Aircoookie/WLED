@@ -19,7 +19,7 @@ Examples
 ## JSON API
 You can switch relay state using the following JSON object transmitted to: `http://[device-ip]/json`
 
-Switch relay 0 on: `{MultiRelay:{relay:0,on:true}}`
+Switch relay 0 on: `{"MultiRelay":{"relay":0,"on":true}}`
 Switch relay4 3 & 4 off: `{"MultiRelay":[{"relay":2,"on":false},{"relay":3,"on":false}]}`
 
 ## MQTT API
