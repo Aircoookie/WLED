@@ -166,16 +166,16 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
       strip.fill(0);
     }
 
-    //uint16_t start = 0, stop = 0;
+    uint16_t start = 0, stop = 0;
     byte set = 0; //0 nothing set, 1 start set, 2 range set
 
     for (uint16_t i = 0; i < iarr.size(); i++) {
       if(iarr[i].is<JsonInteger>()) {
         if (!set) {
-          //start = iarr[i];
+          start = iarr[i];
           set = 1;
         } else {
-          //stop = iarr[i];
+          stop = iarr[i];
           set = 2;
         }
       } else { //color
@@ -191,6 +191,13 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
             for (uint8_t c = 0; c < 4; c++) rgbw[c] = brgbw[c];
           }
         }
+
+        if (set < 2) stop = start + 1;
+        for (uint16_t i = start; i < stop; i++) {
+          strip.setPixelColor(i, rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
+        }
+        if (!set) start++;
+        set = 0;
       }
     }
     strip.setPixelSegment(255);
@@ -224,6 +231,14 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
       transitionDelay *= 100;
       transitionDelayTemp = transitionDelay;
     }
+  }
+
+  tr = root[F("tt")] | -1;
+  if (tr >= 0)
+  {
+    transitionDelayTemp = tr;
+    transitionDelayTemp *= 100;
+    jsonTransitionOnce = true;
   }
   strip.setTransition(transitionDelayTemp);
 

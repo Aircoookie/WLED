@@ -109,7 +109,6 @@ bool deserializeConfig(JsonObject doc, bool fromFS) {
       }
 
       uint16_t length = elm[F("len")] | 1;
-      if (length==0 || length+lC > MAX_LEDS) continue;  // zero length or we reached max. number of LEDs, just stop
       uint8_t colorOrder = (int)elm[F("order")];
       uint8_t skipFirst = elm[F("skip")];
       uint16_t start = elm["start"] | 0;
