@@ -712,7 +712,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply)
       strip.applyToAllSelected = true;
       strip.setColor(2, t[0], t[1], t[2], t[3]);
     } else {
-      selseg.setColor(2,((t[0] << 16) + (t[1] << 8) + t[2] + (t[3] << 24)), selectedSeg); // defined above (SS=)
+      selseg.setColor(2, RGBW32(t[0], t[1], t[2], t[3]), selectedSeg); // defined above (SS=)
     }
   }
 

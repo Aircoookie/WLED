@@ -89,7 +89,6 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
         const char* hexCol = colarr[i];
         if (hexCol == nullptr) { //Kelvin color temperature (or invalid), e.g 2400
           int kelvin = colarr[i] | -1;
-          //kelvin = map(seg.cct, 0, 255, 2800, 10200)
           if (kelvin <  0) continue;
           if (kelvin == 0) seg.setColor(i, 0, id);
           if (kelvin >  0) colorKtoRGB(kelvin, brgbw);
@@ -223,7 +222,7 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   if (root["on"].is<const char*>() && root["on"].as<const char*>()[0] == 't') toggleOnOff();
 
   int tr = -1;
-  if (!presetId || !currentPlaylist) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
+  if (!presetId || currentPlaylist < 0) { //do not apply transition time from preset if playlist active, as it would override playlist transition times
     tr = root[F("transition")] | -1;
     if (tr >= 0)
     {
@@ -394,8 +393,10 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
     {
       c = (i == 0)? col:colSec;
     } else {
-      segcol[0] = (byte)(seg.colors[i] >> 16); segcol[1] = (byte)(seg.colors[i] >> 8);
-      segcol[2] = (byte)(seg.colors[i]);       segcol[3] = (byte)(seg.colors[i] >> 24);
+      segcol[0] = R(seg.colors[i]);
+      segcol[1] = G(seg.colors[i]);
+      segcol[2] = B(seg.colors[i]);
+      segcol[3] = W(seg.colors[i]);
     }
     char tmpcol[22];
     sprintf_P(tmpcol, format, (unsigned)c[0], (unsigned)c[1], (unsigned)c[2], (unsigned)c[3]);
@@ -454,7 +455,6 @@ void serializeState(JsonObject root, bool forPreset, bool includeBri, bool segme
   for (byte s = 0; s < strip.getMaxSegments(); s++)
   {
     WS2812FX::Segment sg = strip.getSegment(s);
-    // TODO: add logic to stop at 16 segments if using versionAPI==1 on ESP8266
     if (sg.isActive())
     {
       JsonObject seg0 = seg.createNestedObject();

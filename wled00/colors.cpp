@@ -6,36 +6,25 @@
 
 void colorFromUint32(uint32_t in, bool secondary)
 {
-  if (secondary) {
-    colSec[3] = in >> 24 & 0xFF;
-    colSec[0] = in >> 16 & 0xFF;
-    colSec[1] = in >> 8  & 0xFF;
-    colSec[2] = in       & 0xFF;
-  } else {
-    col[3] = in >> 24 & 0xFF;
-    col[0] = in >> 16 & 0xFF;
-    col[1] = in >> 8  & 0xFF;
-    col[2] = in       & 0xFF;
-  }
+  byte *_col = secondary ? colSec : col;
+  _col[0] = R(in);
+  _col[1] = G(in);
+  _col[2] = B(in);
+  _col[3] = W(in);
 }
 
 //load a color without affecting the white channel
 void colorFromUint24(uint32_t in, bool secondary)
 {
-  if (secondary) {
-    colSec[0] = in >> 16 & 0xFF;
-    colSec[1] = in >> 8  & 0xFF;
-    colSec[2] = in       & 0xFF;
-  } else {
-    col[0] = in >> 16 & 0xFF;
-    col[1] = in >> 8  & 0xFF;
-    col[2] = in       & 0xFF;
-  }
+  byte *_col = secondary ? colSec : col;
+  _col[0] = R(in);
+  _col[1] = G(in);
+  _col[2] = B(in);
 }
 
 //store color components in uint32_t
 uint32_t colorFromRgbw(byte* rgbw) {
-  return (rgbw[0] << 16) + (rgbw[1] << 8) + rgbw[2] + (rgbw[3] << 24);
+  return RGBW32(rgbw[0], rgbw[1], rgbw[2], rgbw[3]);
 }
 
 //relatively change white brightness, minumum A=5
@@ -195,10 +184,10 @@ void colorFromDecOrHexString(byte* rgb, char* in)
     c = strtoul(in, NULL, 10);
   }
 
-  rgb[3] = (c >> 24) & 0xFF;
-  rgb[0] = (c >> 16) & 0xFF;
-  rgb[1] = (c >>  8) & 0xFF;
-  rgb[2] =  c        & 0xFF;
+  rgb[0] = R(c);
+  rgb[1] = G(c);
+  rgb[2] = B(c);
+  rgb[3] = W(c);
 }
 
 //contrary to the colorFromDecOrHexString() function, this uses the more standard RRGGBB / RRGGBBWW order
@@ -210,14 +199,14 @@ bool colorFromHexString(byte* rgb, const char* in) {
   uint32_t c = strtoul(in, NULL, 16);
 
   if (inputSize == 6) {
-    rgb[0] = (c >> 16) & 0xFF;
-    rgb[1] = (c >>  8) & 0xFF;
-    rgb[2] =  c        & 0xFF;
+    rgb[0] = (c >> 16);
+    rgb[1] = (c >>  8);
+    rgb[2] =  c       ;
   } else {
-    rgb[0] = (c >> 24) & 0xFF;
-    rgb[1] = (c >> 16) & 0xFF;
-    rgb[2] = (c >>  8) & 0xFF;
-    rgb[3] =  c        & 0xFF;
+    rgb[0] = (c >> 24);
+    rgb[1] = (c >> 16);
+    rgb[2] = (c >>  8);
+    rgb[3] =  c       ;
   }
   return true;
 }
@@ -234,15 +223,16 @@ float maxf (float v, float w)
   return v;
 }
 
+/*
 uint32_t colorRGBtoRGBW(uint32_t c)
 {
   byte rgb[4];
-  rgb[0] = c >> 16;
-  rgb[1] = c >>  8;
-  rgb[2] = c      ;
-  rgb[3] = c >> 24;
+  rgb[0] = R(c);
+  rgb[1] = G(c);
+  rgb[2] = B(c);
+  rgb[3] = W(c);
   colorRGBtoRGBW(rgb);
-  return ((rgb[3] << 24) | (rgb[0] << 16) | (rgb[1] << 8) | (rgb[2]));
+  return RGBW32(rgb[0], rgb[1], rgb[2], rgb[3]);
 }
 
 void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_MODE_LEGACY)
@@ -253,6 +243,7 @@ void colorRGBtoRGBW(byte* rgb) //rgb to rgbw (http://codewelt.com/rgbw). (RGBW_M
   float sat = 100.0f * ((high - low) / high);;   // maximum saturation is 100  (corrected from 255)
   rgb[3] = (byte)((255.0f - sat) / 255.0f * (rgb[0] + rgb[1] + rgb[2]) / 3);
 }
+*/
 
 // adjust RGB values based on color temperature in K (range [2800-10200]) (https://en.wikipedia.org/wiki/Color_balance)
 void colorBalanceFromKelvin(uint16_t kelvin, byte *rgb)
@@ -268,9 +259,9 @@ uint32_t colorBalanceFromKelvin(uint16_t kelvin, uint32_t rgb)
 {
   byte rgbw[4] = {0,0,0,0};
   colorKtoRGB(kelvin, rgbw);  // convert Kelvin to RGB
-  rgbw[0] = ((uint16_t) rgbw[0] * ((rgb>>16) & 0xFF)) / 255; // correct R
-  rgbw[1] = ((uint16_t) rgbw[1] * ((rgb>> 8) & 0xFF)) / 255; // correct G
-  rgbw[2] = ((uint16_t) rgbw[2] * ((rgb    ) & 0xFF)) / 255; // correct B
-  rgbw[3] =                       ((rgb>>24) & 0xFF);
+  rgbw[0] = ((uint16_t) rgbw[0] * R(rgb)) / 255; // correct R
+  rgbw[1] = ((uint16_t) rgbw[1] * G(rgb)) / 255; // correct G
+  rgbw[2] = ((uint16_t) rgbw[2] * B(rgb)) / 255; // correct B
+  rgbw[3] =                       W(rgb);
   return colorFromRgbw(rgbw);
 }

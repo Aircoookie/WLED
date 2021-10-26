@@ -32,6 +32,13 @@ void colorRGBtoRGBW(byte* rgb);
 #define SET_BIT(var,bit)    ((var)|=(uint16_t)(0x0001<<(bit)))
 #define UNSET_BIT(var,bit)  ((var)&=(~(uint16_t)(0x0001<<(bit))))
 
+//color mangling macros
+#define RGBW32(r,g,b,w) (uint32_t((byte(w) << 24) | (byte(r) << 16) | (byte(g) << 8) | (byte(b))))
+#define R(c) (byte((c) >> 16))
+#define G(c) (byte((c) >> 8))
+#define B(c) (byte(c))
+#define W(c) (byte((c) >> 24))
+
 //temporary struct for passing bus configuration to bus
 struct BusConfig {
   uint8_t type = TYPE_WS2812_RGB;
@@ -120,24 +127,15 @@ class Bus {
       switch (_autoWhiteMode) {
         case RGBW_MODE_MANUAL_ONLY:
           break;
-        case RGBW_MODE_LEGACY:
-          byte rgb[4];
-          rgb[0] = c >> 16;
-          rgb[1] = c >>  8;
-          rgb[2] = c      ;
-          rgb[3] = c >> 24;
-          colorRGBtoRGBW(rgb);
-          c = ((rgb[3] << 24) | (rgb[0] << 16) | (rgb[1] << 8) | (rgb[2]));
-          break;
         default:
           //white value is set to lowest RGB channel, thank you to @Def3nder!
-          uint8_t r = c >> 16;
-          uint8_t g = c >>  8;
-          uint8_t b = c      ;
-          uint8_t w = c >> 24;
+          uint8_t r = R(c);
+          uint8_t g = G(c);
+          uint8_t b = B(c);
+          uint8_t w = W(c);
           if (_autoWhiteMode == RGBW_MODE_AUTO_BRIGHTER || w == 0) w = r < g ? (r < b ? r : b) : (g < b ? g : b);
           if (_autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; }
-          c = ((w << 24) | (r << 16) | (g << 8) | (b));
+          c = RGBW32(r, g, b, w);
           break;
       }
       return c;
@@ -294,10 +292,10 @@ class BusPwm : public Bus {
     if (pix != 0 || !_valid) return; //only react to first pixel
     c = colorBalanceFromKelvin(2000+(cct<<5), c); // color correction from CCT (w remains unchanged)
     if (getAutoWhiteMode() != RGBW_MODE_MANUAL_ONLY) c = autoWhiteCalc(c);
-    uint8_t r = c >> 16;
-    uint8_t g = c >>  8;
-    uint8_t b = c      ;
-    uint8_t w = c >> 24;
+    uint8_t r = R(c);
+    uint8_t g = G(c);
+    uint8_t b = B(c);
+    uint8_t w = W(c);
 
     switch (_type) {
       case TYPE_ANALOG_1CH: //one channel (white), relies on auto white calculation
@@ -324,10 +322,10 @@ class BusPwm : public Bus {
   void setPixelColor(uint16_t pix, uint32_t c) {
     if (pix != 0 || !_valid) return; //only react to first pixel
     if (getAutoWhiteMode() != RGBW_MODE_MANUAL_ONLY) c = autoWhiteCalc(c);
-    uint8_t r = c >> 16;
-    uint8_t g = c >>  8;
-    uint8_t b = c      ;
-    uint8_t w = c >> 24;
+    uint8_t r = R(c);
+    uint8_t g = G(c);
+    uint8_t b = B(c);
+    uint8_t w = W(c);
 
     switch (_type) {
       case TYPE_ANALOG_1CH: //one channel (white), use highest RGBW value
@@ -343,7 +341,7 @@ class BusPwm : public Bus {
   //does no index check
   uint32_t getPixelColor(uint16_t pix) {
     if (!_valid) return 0;
-    return ((_data[3] << 24) | (_data[0] << 16) | (_data[1] << 8) | (_data[2]));
+    return RGBW32(_data[0], _data[1], _data[2], _data[3]);
   }
 
   void show() {
@@ -442,10 +440,10 @@ class BusNetwork : public Bus {
     if (!_valid || pix >= _len) return;
     if (getAutoWhiteMode() != RGBW_MODE_MANUAL_ONLY) c = autoWhiteCalc(c);
     uint16_t offset = pix * _UDPchannels;
-    _data[offset]   = 0xFF & (c >> 16);
-    _data[offset+1] = 0xFF & (c >>  8);
-    _data[offset+2] = 0xFF & (c      );
-    if (_rgbw) _data[offset+3] = 0xFF & (c >> 24);
+    _data[offset]   = R(c);
+    _data[offset+1] = G(c);
+    _data[offset+2] = B(c);
+    if (_rgbw) _data[offset+3] = W(c);
   }
 
   void setPixelColor(uint16_t pix, uint32_t c, uint8_t cct) {
@@ -456,12 +454,7 @@ class BusNetwork : public Bus {
   uint32_t getPixelColor(uint16_t pix) {
     if (!_valid || pix >= _len) return 0;
     uint16_t offset = pix * _UDPchannels;
-    return (
-      (_rgbw ? (_data[offset+3] << 24) : 0)
-      | (_data[offset]   << 16)
-      | (_data[offset+1] <<  8)
-      | (_data[offset+2]      )
-    );
+    return RGBW32(_data[offset], _data[offset+1], _data[offset+2], _rgbw ? (_data[offset+3] << 24) : 0);
   }
 
   void show() {

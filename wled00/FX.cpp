@@ -1150,10 +1150,10 @@ uint16_t WS2812FX::mode_fire_flicker(void) {
   uint32_t it = now / cycleTime;
   if (SEGENV.step == it) return FRAMETIME;
   
-  byte w = (SEGCOLOR(0) >> 24) & 0xFF;
-  byte r = (SEGCOLOR(0) >> 16) & 0xFF;
-  byte g = (SEGCOLOR(0) >>  8) & 0xFF;
-  byte b = (SEGCOLOR(0)        & 0xFF);
+  byte w = (SEGCOLOR(0) >> 24);
+  byte r = (SEGCOLOR(0) >> 16);
+  byte g = (SEGCOLOR(0) >>  8);
+  byte b = (SEGCOLOR(0)      );
   byte lum = (SEGMENT.palette == 0) ? MAX(w, MAX(r, MAX(g, b))) : 255;
   lum /= (((256-SEGMENT.intensity)/16)+1);
   for(uint16_t i = 0; i < SEGLEN; i++) {
