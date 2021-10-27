@@ -124,21 +124,15 @@ class Bus {
     uint8_t  _autoWhiteMode = 0;
   
     uint32_t autoWhiteCalc(uint32_t c) {
-      switch (_autoWhiteMode) {
-        case RGBW_MODE_MANUAL_ONLY:
-          break;
-        default:
-          //white value is set to lowest RGB channel, thank you to @Def3nder!
-          uint8_t r = R(c);
-          uint8_t g = G(c);
-          uint8_t b = B(c);
-          uint8_t w = W(c);
-          if (_autoWhiteMode == RGBW_MODE_AUTO_BRIGHTER || w == 0) w = r < g ? (r < b ? r : b) : (g < b ? g : b);
-          if (_autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; }
-          c = RGBW32(r, g, b, w);
-          break;
-      }
-      return c;
+      if (_autoWhiteMode == RGBW_MODE_MANUAL_ONLY) return c;
+      uint8_t r = R(c);
+      uint8_t g = G(c);
+      uint8_t b = B(c);
+      uint8_t w = W(c);
+      // ignore auto-white calculation if w>0 and mode DUAL (DUAL behaves as BRIGHTER if w==0)
+      if (!(w > 0 && _autoWhiteMode == RGBW_MODE_DUAL)) w = r < g ? (r < b ? r : b) : (g < b ? g : b);
+      if (_autoWhiteMode == RGBW_MODE_AUTO_ACCURATE) { r -= w; g -= w; b -= w; }  // subtract w in ACCURATE mode
+      return RGBW32(r, g, b, w);
     }
 };
 
