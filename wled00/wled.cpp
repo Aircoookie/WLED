@@ -158,6 +158,7 @@ void WLED::loop()
 
   yield();
   handleWs();
+  handleStatusLED();
 
 // DEBUG serial logging (every 30s)
 #ifdef WLED_DEBUG
@@ -259,6 +260,14 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Reading config"));
   deserializeConfigFromFS();
+
+#if STATUSLED
+  if (!pinManager.isPinAllocated(STATUSLED)) {
+    // NOTE: Special case: The status LED should *NOT* be allocated.
+    //       See comments in handleStatusLed().
+    pinMode(STATUSLED, OUTPUT);
+  }
+#endif
 
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
