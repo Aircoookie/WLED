@@ -257,6 +257,26 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
     if (presetsModifiedTime == 0) presetsModifiedTime = timein;
   }
 
+  JsonVariant tpm2Var = root["tpm2"];
+  if (tpm2Var.is<JsonObject>())
+  {
+    const char *recording_path = tpm2Var["file"].as<const char *>();
+    if(recording_path) {
+      int id = -1; 
+
+      JsonVariant segVar = tpm2Var["seg"];
+      if(segVar) { // playback on segments
+        if     (segVar.is<JsonObject>() ) { id = segVar["id"] | -1; }  // passed as json object        
+        else if(segVar.is<JsonInteger>()) { id = segVar; }             // passed as integer        
+        else
+          DEBUG_PRINTLN("TPM2: 'seg' either as integer or as json with 'id':'integer'");
+        };         
+
+        WS2812FX::Segment sg = strip.getSegment(id);
+        loadRecording(recording_path, sg.start, sg.stop);             
+    } 
+  }    
+
   doReboot = root[F("rb")] | doReboot;
 
   realtimeOverride = root[F("lor")] | realtimeOverride;
@@ -494,15 +514,17 @@ void serializeInfo(JsonObject root)
   root["live"] = (bool)realtimeMode;
 
   switch (realtimeMode) {
-    case REALTIME_MODE_INACTIVE: root["lm"] = ""; break;
-    case REALTIME_MODE_GENERIC:  root["lm"] = ""; break;
-    case REALTIME_MODE_UDP:      root["lm"] = F("UDP"); break;
-    case REALTIME_MODE_HYPERION: root["lm"] = F("Hyperion"); break;
-    case REALTIME_MODE_E131:     root["lm"] = F("E1.31"); break;
-    case REALTIME_MODE_ADALIGHT: root["lm"] = F("USB Adalight/TPM2"); break;
-    case REALTIME_MODE_ARTNET:   root["lm"] = F("Art-Net"); break;
-    case REALTIME_MODE_TPM2NET:  root["lm"] = F("tpm2.net"); break;
-    case REALTIME_MODE_DDP:      root["lm"] = F("DDP"); break;
+    case REALTIME_MODE_INACTIVE:   root["lm"] = ""; break;
+    case REALTIME_MODE_GENERIC:    root["lm"] = ""; break;
+    case REALTIME_MODE_UDP:        root["lm"] = F("UDP"); break;
+    case REALTIME_MODE_HYPERION:   root["lm"] = F("Hyperion"); break;
+    case REALTIME_MODE_E131:       root["lm"] = F("E1.31"); break;
+    case REALTIME_MODE_ADALIGHT:   root["lm"] = F("USB Adalight/TPM2"); break;
+    case REALTIME_MODE_ARTNET:     root["lm"] = F("Art-Net"); break;
+    case REALTIME_MODE_TPM2NET:    root["lm"] = F("tpm2.net"); break;
+    case REALTIME_MODE_DDP:        root["lm"] = F("DDP"); break;
+    case REALTIME_MODE_TPM2RECORD: root["lm"] = F("TPM2 Recording (ROM)");
+    break;
   }
 
   if (realtimeIP[0] == 0)

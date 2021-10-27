@@ -193,6 +193,10 @@ bool handleSet(AsyncWebServerRequest *request, const String& req, bool apply=tru
 int getNumVal(const String* req, uint16_t pos);
 bool updateVal(const String* req, const char* key, byte* val, byte minv=0, byte maxv=255);
 
+//tpm2record.cpp
+void loadRecording(const char *filepath, uint16_t startLed = -1, uint16_t stopLed = -1);
+void handlePlayRecording();
+
 //udp.cpp
 void notify(byte callMode, bool followUp=false);
 uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, byte *buffer, uint8_t bri=255, bool isRGBW=false);

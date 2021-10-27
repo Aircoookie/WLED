@@ -183,6 +183,8 @@ void WLED::loop()
     else if (!noWifiSleep)
       delay(1); //required to make sure ESP enters modem sleep (see #1184)
 #endif
+  } else {
+    handlePlayRecording();
   }
   yield();
 #ifdef ESP8266
