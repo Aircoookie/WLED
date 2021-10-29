@@ -522,6 +522,7 @@ int getNumVal(const String* req, uint16_t pos)
 //helper to get int value with in/decrementing support via ~ syntax
 void parseNumber(const char* str, byte* val, byte minv, byte maxv)
 {
+  if (str == nullptr || str[0] == '\0') return;
   if (str[0] == 'r') {*val = random8(minv,maxv); return;}
   if (str[0] == '~') {
     int out = atoi(str +1);
@@ -530,9 +531,9 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
       if (str[1] == '0') return;
       if (str[1] == '-')
       {
-        *val = (int)(*val -1) < (int)minv ? maxv : min((int)maxv,(*val -1));
+        *val = (int)(*val -1) < (int)minv ? maxv : min((int)maxv,(*val -1)); //-1, wrap around
       } else {
-        *val = (int)(*val +1) > (int)maxv ? minv : max((int)minv,(*val +1));
+        *val = (int)(*val +1) > (int)maxv ? minv : max((int)minv,(*val +1)); //+1, wrap around
       }
     } else {
       out += *val;
@@ -543,9 +544,11 @@ void parseNumber(const char* str, byte* val, byte minv, byte maxv)
   } else
   {
     byte p1 = atoi(str);
-    const char* str2 = strchr(str,'~');
+    const char* str2 = strchr(str,'~'); //min/max range (for preset cycle, e.g. "1~5~")
     if (str2) {
       byte p2 = atoi(str2+1);
+      while (isdigit((str2+1)[0])) str2++;
+      parseNumber(str2+1, val, p1, p2);
     } else {
       *val = p1;
     }

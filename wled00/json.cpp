@@ -12,9 +12,8 @@ bool getVal(JsonVariant elem, byte* val, byte vmin=0, byte vmax=255) {
     return true;
   } else if (elem.is<const char*>()) {
     const char* str = elem;
-    //int out = 0;
     size_t len = strlen(str);
-    if (len == 0 || len > 5) return;
+    if (len == 0 || len > 10) return false;
     parseNumber(str, val, vmin, vmax);
     return true;
   }
@@ -327,18 +326,18 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
 
   usermods.readFromJsonState(root);
 
-  int ps = root[F("psave")] | -1;
+  byte ps = root[F("psave")];
   if (ps > 0) {
     savePreset(ps, true, nullptr, root);
   } else {
-    ps = root[F("pdel")] | -1; //deletion
+    ps = root[F("pdel")]; //deletion
     if (ps > 0) {
       deletePreset(ps);
     }
-    ps = root["ps"] | -1; //load preset (clears state request!)
-    if (ps >= 0) {
+
+    if (getVal(root["ps"], &presetCycCurr, 1, 5)) { //load preset (clears state request!)
       if (!presetId) unloadPlaylist(); //stop playlist if preset changed manually
-      applyPreset(ps, callMode);
+      applyPreset(presetCycCurr, callMode);
       return stateResponse;
     }
 
