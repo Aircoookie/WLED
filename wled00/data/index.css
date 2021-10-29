@@ -621,7 +621,7 @@ input[type=range]::-moz-range-thumb {
 	border: 2px solid var(--c-1);
 }
 #wwrap, #wbal {
-	display: block;
+	display: none;
 }
 
 .sliderwrap {
