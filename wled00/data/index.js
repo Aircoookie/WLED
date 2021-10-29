@@ -917,13 +917,13 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
 {
-    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" onClick="${clickAction}()">
-	<label class="radio schkl">
+    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" onClick="${clickAction}(${id})">
+	<label class="radio schkl" onclick="event.preventDefault()">
 		&nbsp;
 		<input type="radio" value="${id}" name="${listName}">
 		<span class="radiomark schk"></span>
 	</label>
-	<div class="lstIcontent" onClick="${clickAction}(${id})">
+	<div class="lstIcontent">
 		<span class="lstIname">
 			${name}
 		</span>
@@ -1016,6 +1016,16 @@ function updateUI()
 	updateTrail(gId('sliderIntensity'));
 	gId('wwrap').style.display = (isRgbw) ? "block":"none";
 	gId("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
+
+	if (selectedFx===0) {
+		gId("csl-1").style.display = "none";
+		gId("csl-2").style.display = "none";
+		gId("palw").style.display  = "none";
+	} else {
+		gId("csl-1").style.display = "inline-block";
+		gId("csl-2").style.display = "inline-block";
+		gId("palw").style.display  = "inline-block";
+	}
 
 	updatePA();
 	updateHex();
@@ -1113,6 +1123,9 @@ function readState(s,command=false)
 	if (s.pl<0)	currentPreset = s.ps;
 	else currentPreset = s.pl;
 
+	tr = s.transition;
+	d.gId('tt').value = tr/10;
+  
 	var selc=0; var ind=0;
 	populateSegments(s);
 	for (let i = 0; i < (s.seg||[]).length; i++)
@@ -1197,13 +1210,13 @@ function requestJson(command=null)
 
 	command.v = true; // force complete /json/si API response
 	command.time = Math.floor(Date.now() / 1000);
-/*
+
 	var t = d.gId('tt');
 	if (t.validity.valid && command.transition==null) {
 		var tn = parseInt(t.value*10);
 		if (tn != tr) command.transition = tn;
 	}
-*/
+
 	req = JSON.stringify(command);
 	if (req.length > 1000) useWs = false; //do not send very long requests over websocket
 

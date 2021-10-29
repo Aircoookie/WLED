@@ -99,16 +99,16 @@
 			<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
 		</div>
 		<div id="csl">
-			<button class="btn xxs" onclick="selectSlot(0);">1</button>
-			<button class="btn xxs" onclick="selectSlot(1);">2</button>
-			<button class="btn xxs" onclick="selectSlot(2);">3</button>
+			<button id="csl-0" class="btn xxs" onclick="selectSlot(0);">1</button>
+			<button id="csl-1" class="btn xxs" onclick="selectSlot(1);">2</button>
+			<button id="csl-2" class="btn xxs" onclick="selectSlot(2);">3</button>
 		</div>
 		<div id="hexw">
 			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="btn btn-xs" onclick="fromHex();"><i class="icons btn-icon">&#xe390;</i></button>
 		</div>
-		<p class="labels"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
-		<div class="il">
+		<div id="palw" class="il">
+			<p class="labels"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 			<div class="staytop fnd">
 				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pallist')" onfocus="search(this,'pallist')" />
 				<i class="icons clear-icon" onclick="clean(this)">&#xe38f;</i>
@@ -180,7 +180,7 @@
 		<div id="segutil2">
 			<button class="btn btn-s" id="rsbtn" onclick="rSegs()">Reset segments</button>
 		</div>
-		<!--p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s</p-->
+		<p>Transition: <input id="tt" class="noslide" type="number" min="0" max="65.5" step="0.1" value="0.7">s</p>
 	</div>
 
 	<div id="Presets" class="tabcontent">
