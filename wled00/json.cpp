@@ -12,7 +12,7 @@ bool getVal(JsonVariant elem, byte* val, byte vmin=0, byte vmax=255) {
     return true;
   } else if (elem.is<const char*>()) {
     const char* str = elem;
-    size_t len = strlen(str);
+    size_t len = strnlen(str, 12);
     if (len == 0 || len > 10) return false;
     parseNumber(str, val, vmin, vmax);
     return true;
