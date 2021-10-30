@@ -479,6 +479,7 @@ void sendSysInfoUDP()
   if (!udp2Connected) return;
 
   IPAddress ip = Network.localIP();
+  if (!ip || ip == IPAddress(255,255,255,255)) ip = IPAddress(4,3,2,1);
 
   // TODO: make a nice struct of it and clean up
   //  0: 1 byte 'binary token 255'
