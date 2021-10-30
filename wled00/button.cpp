@@ -5,6 +5,10 @@
  */
 
 #define WLED_DEBOUNCE_THRESHOLD 50 //only consider button input of at least 50ms as valid (debouncing)
+#define WLED_LONG_PRESS 600 //long press if button is released after held for at least 600ms
+#define WLED_DOUBLE_PRESS 350 //double press if another press within 350ms after a short press
+#define WLED_LONG_REPEATED_ACTION 300 //how often a repeated action (e.g. dimming) is fired on long press on button IDs >0
+#define WLED_LONG_AP 6000 //how long the button needs to be held to activate WLED-AP
 
 static const char _mqtt_topic_button[] PROGMEM = "%s/button/%d";  // optimize flash usage
 
@@ -50,7 +54,7 @@ void doublePressAction(uint8_t b)
 {
   if (!macroDoublePress[b]) {
     switch (b) {
-      case 0: toggleOnOff(); colorUpdated(CALL_MODE_BUTTON); break;
+      //case 0: toggleOnOff(); colorUpdated(CALL_MODE_BUTTON); break; //instant short press on button 0 if no macro set
       default: ++effectPalette %= strip.getPaletteCount(); colorUpdated(CALL_MODE_BUTTON); break;
     }
   } else {
@@ -232,11 +236,11 @@ void handleButton()
       if (!buttonPressedBefore[b]) buttonPressedTime[b] = millis();
       buttonPressedBefore[b] = true;
 
-      if (millis() - buttonPressedTime[b] > 600) { //long press
+      if (millis() - buttonPressedTime[b] > WLED_LONG_PRESS) { //long press
         if (!buttonLongPressed[b]) longPressAction(b);
-        else if (b) { // repeatable action (~3 times per s) on button > 0
+        else if (b) { //repeatable action (~3 times per s) on button > 0
           longPressAction(b);
-          buttonPressedTime[b] = millis() - 300; // 300ms
+          buttonPressedTime[b] = millis() - WLED_LONG_REPEATED_ACTION; //300ms
         }
         buttonLongPressed[b] = true;
       }
@@ -245,25 +249,28 @@ void handleButton()
 
       long dur = millis() - buttonPressedTime[b];
       if (dur < WLED_DEBOUNCE_THRESHOLD) {buttonPressedBefore[b] = false; continue;} //too short "press", debounce
-      bool doublePress = buttonWaitTime[b]; //did we have short press before?
+      bool doublePress = buttonWaitTime[b]; //did we have a short press before?
       buttonWaitTime[b] = 0;
 
-      if (b == 0 && dur > 6000) { //long press on button 0 (when released)
+      if (b == 0 && dur > WLED_LONG_AP) { //long press on button 0 (when released)
         WLED::instance().initAP(true);
       } else if (!buttonLongPressed[b]) { //short press
-        // if this is second release within 350ms it is a double press (buttonWaitTime!=0)
-        if (doublePress) {
-          doublePressAction(b);
-        } else  {
-          buttonWaitTime[b] = millis();
+        if (b == 0 && !macroDoublePress[b]) { //don't wait for double press on button 0 if no double press macro set
+          shortPressAction(b);
+        } else { //double press if less than 350 ms between current press and previous short press release (buttonWaitTime!=0)
+          if (doublePress) {
+            doublePressAction(b);
+          } else {
+            buttonWaitTime[b] = millis();
+          }
         }
       }
       buttonPressedBefore[b] = false;
       buttonLongPressed[b] = false;
     }
 
-    // if 450ms elapsed since last press/release it is a short press
-    if (buttonWaitTime[b] && millis() - buttonWaitTime[b] > 350 && !buttonPressedBefore[b]) {
+    //if 350ms elapsed since last short press release it is a short press
+    if (buttonWaitTime[b] && millis() - buttonWaitTime[b] > WLED_DOUBLE_PRESS && !buttonPressedBefore[b]) {
       buttonWaitTime[b] = 0;
       shortPressAction(b);
     }
