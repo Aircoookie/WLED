@@ -490,7 +490,7 @@ void serializeInfo(JsonObject root)
   //root[F("cn")] = WLED_CODENAME;
 
   JsonObject leds = root.createNestedObject("leds");
-  leds[F("count")] = ledCount;
+  leds[F("count")] = strip.getLengthTotal();
   leds[F("rgbw")] = strip.isRgbw;
   leds[F("wv")] = strip.isRgbw && (strip.rgbwMode == RGBW_MODE_MANUAL_ONLY || strip.rgbwMode == RGBW_MODE_DUAL); //should a white channel slider be displayed?
   leds[F("pwr")] = strip.currentMilliamps;
@@ -853,7 +853,7 @@ bool serveLiveLeds(AsyncWebServerRequest* request, uint32_t wsClient)
     #endif
   }
 
-  uint16_t used = ledCount;
+  uint16_t used = strip.getLengthTotal();
   uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
   char buffer[2000];
   strcpy_P(buffer, PSTR("{\"leds\":["));
