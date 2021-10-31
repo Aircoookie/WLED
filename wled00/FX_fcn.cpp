@@ -108,7 +108,6 @@ void WS2812FX::finalizeInit(void)
     if (pins[0] == 3) bd->reinit();
     #endif
   }
-  ledCount = _length;
 
   //segments are created in makeAutoSegments();
 
