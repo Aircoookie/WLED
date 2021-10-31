@@ -73,7 +73,10 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
   bool on = elem["on"] | seg.getOption(SEG_OPTION_ON);
   if (elem["on"].is<const char*>() && elem["on"].as<const char*>()[0] == 't') on = !on;
   seg.setOption(SEG_OPTION_ON, on, id);
-  
+  bool frz = elem["frz"] | seg.getOption(SEG_OPTION_FREEZE);
+  if (elem["frz"].is<const char*>() && elem["frz"].as<const char*>()[0] == 't') frz = !seg.getOption(SEG_OPTION_FREEZE);
+  seg.setOption(SEG_OPTION_FREEZE, frz, id);
+
   seg.cct = elem["cct"] | seg.cct;
 
   JsonArray colarr = elem["col"];
@@ -133,7 +136,7 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
 
   //if (pal != seg.palette && pal < strip.getPaletteCount()) strip.setPalette(pal);
   seg.setOption(SEG_OPTION_SELECTED, elem[F("sel")] | seg.getOption(SEG_OPTION_SELECTED));
-  seg.setOption(SEG_OPTION_REVERSED, elem["rev"] | seg.getOption(SEG_OPTION_REVERSED));
+  seg.setOption(SEG_OPTION_REVERSED, elem["rev"]    | seg.getOption(SEG_OPTION_REVERSED));
   seg.setOption(SEG_OPTION_MIRROR  , elem[F("mi")]  | seg.getOption(SEG_OPTION_MIRROR  ));
 
   //temporary, strip object gets updated via colorUpdated()
@@ -201,7 +204,8 @@ void deserializeSegment(JsonObject elem, byte it, byte presetId)
     }
     strip.setPixelSegment(255);
     strip.trigger();
-  } else { //return to regular effect
+// this is now handled using the "frz" toggle.
+  } else if (!elem["frz"] && iarr.isNull()) { //return to regular effect
     seg.setOption(SEG_OPTION_FREEZE, false);
   }
   return; // seg.differs(prev);
@@ -244,13 +248,13 @@ bool deserializeState(JsonObject root, byte callMode, byte presetId)
   tr = root[F("tb")] | -1;
   if (tr >= 0) strip.timebase = ((uint32_t)tr) - millis();
 
-  JsonObject nl = root["nl"];
+  JsonObject nl       = root["nl"];
   nightlightActive    = nl["on"]      | nightlightActive;
   nightlightDelayMins = nl[F("dur")]  | nightlightDelayMins;
   nightlightMode      = nl[F("mode")] | nightlightMode;
   nightlightTargetBri = nl[F("tbri")] | nightlightTargetBri;
 
-  JsonObject udpn = root["udpn"];
+  JsonObject udpn      = root["udpn"];
   notifyDirect         = udpn["send"] | notifyDirect;
   receiveNotifications = udpn["recv"] | receiveNotifications;
   if ((bool)udpn[F("nn")]) callMode = CALL_MODE_NO_NOTIFY; //send no notification just for this request
@@ -376,6 +380,7 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id, bool fo
   root[F("spc")] = seg.spacing;
   root[F("of")] = seg.offset;
   root["on"] = seg.getOption(SEG_OPTION_ON);
+  root["frz"] = seg.getOption(SEG_OPTION_FREEZE);
   byte segbri = seg.opacity;
   root["bri"] = (segbri) ? segbri : 255;
   root["cct"] = seg.cct;
@@ -791,6 +796,37 @@ void serializeNodes(JsonObject root)
   }
 }
 
+void serializeSRNames(JsonVariant arr, const char *qstring) {
+  String lineBuffer;
+  bool insideQuotes = false;
+  char singleJsonSymbol;
+
+  // Find the mode name in JSON
+  for (size_t i = 0; i < strlen_P(qstring); i++) {
+    singleJsonSymbol = pgm_read_byte_near(qstring + i);
+    if (singleJsonSymbol == '\0') break;
+    switch (singleJsonSymbol) {
+      case '"':
+        insideQuotes = !insideQuotes;
+        break;
+      case '[':
+        break;
+      case ']':
+      case ',':
+        if (lineBuffer.length() > 0) {
+          uint8_t endPos = lineBuffer.indexOf('@');
+          if (endPos>0) arr.add(lineBuffer.substring(0,endPos));
+          else          arr.add(lineBuffer);
+          lineBuffer.clear();
+        }
+        break;
+      default:
+        if (!insideQuotes) break;
+        lineBuffer += singleJsonSymbol;
+    }
+  }
+}
+
 void serveJson(AsyncWebServerRequest* request)
 {
   byte subJson = 0;
@@ -805,6 +841,7 @@ void serveJson(AsyncWebServerRequest* request)
     return;
   }
   else if (url.indexOf(F("eff")) > 0) {
+    // this is going to serve raw effect names which will include WLED-SR extensions in names
     request->send_P(200, "application/json", JSON_mode_names);
     return;
   }
@@ -840,7 +877,9 @@ void serveJson(AsyncWebServerRequest* request)
       serializeInfo(info);
       if (subJson != 3)
       {
-        doc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
+        //doc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
+        JsonArray effects = doc.createNestedArray(F("effects"));
+        serializeSRNames(effects, JSON_mode_names); // remove WLED-SR extensions from effect names
         doc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
       }
   }

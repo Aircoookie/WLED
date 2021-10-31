@@ -907,20 +907,147 @@ class WS2812FX {
       transitionProgress(uint8_t tNr);
 };
 
-//10 names per line
+// WLEDSR: extensions
+// Technical notes
+// ===============
+// If an effect name is followed by an @, slider and color control is effective.
+// See setSliderAndColorControl in index.js for implementation
+// If not effective then:
+//      - For AC effects (id<128) 2 sliders and 3 colors and the palette will be shown
+//      - For SR effects (id>128) 5 sliders and 3 colors and the palette will be shown
+// If effective (@)
+//      - a ; seperates slider controls (left) from color controls (middle) and palette control (right)
+//      - if left, middle or right is empty no controls are shown
+//      - a , seperates slider controls (max 5) or color controls (max 3). Palette has only one value
+//      - a ! means that the default is used.
+//             - For sliders: Effect speeds, Effect intensity, Custom 1, Custom 2, Custom 3
+//             - For colors: Fx color, Background color, Custom
+//             - For palette: prompt Color palette
+//
+// Note: If palette is on and no colors are specified 1,2 and 3 is shown in each color circle.
+//       If a color is specified, the 1,2 or 3 is replaced by that specification.
+// Note: Effects can override default pattern behaviour
+//       - FadeToBlack can override the background setting
+//       - Defining SEGCOL(<i>) can override a specific palette using these values (e.g. Color Gradient)
 const char JSON_mode_names[] PROGMEM = R"=====([
-"Solid","Blink","Breathe","Wipe","Wipe Random","Random Colors","Sweep","Dynamic","Colorloop","Rainbow",
-"Scan","Scan Dual","Fade","Theater","Theater Rainbow","Running","Saw","Twinkle","Dissolve","Dissolve Rnd",
-"Sparkle","Sparkle Dark","Sparkle+","Strobe","Strobe Rainbow","Strobe Mega","Blink Rainbow","Android","Chase","Chase Random",
-"Chase Rainbow","Chase Flash","Chase Flash Rnd","Rainbow Runner","Colorful","Traffic Light","Sweep Random","Running 2","Aurora","Stream",
-"Scanner","Lighthouse","Fireworks","Rain","Tetrix","Fire Flicker","Gradient","Loading","Police","Police All",
-"Two Dots","Two Areas","Running Dual","Halloween","Tri Chase","Tri Wipe","Tri Fade","Lightning","ICU","Multi Comet",
-"Scanner Dual","Stream 2","Oscillate","Pride 2015","Juggle","Palette","Fire 2012","Colorwaves","Bpm","Fill Noise",
-"Noise 1","Noise 2","Noise 3","Noise 4","Colortwinkles","Lake","Meteor","Meteor Smooth","Railway","Ripple",
-"Twinklefox","Twinklecat","Halloween Eyes","Solid Pattern","Solid Pattern Tri","Spots","Spots Fade","Glitter","Candle","Fireworks Starburst",
-"Fireworks 1D","Bouncing Balls","Sinelon","Sinelon Dual","Sinelon Rainbow","Popcorn","Drip","Plasma","Percent","Ripple Rainbow",
-"Heartbeat","Pacifica","Candle Multi", "Solid Glitter","Sunrise","Phased","Twinkleup","Noise Pal", "Sine","Phased Noise",
-"Flow","Chunchun","Dancing Shadows","Washing Machine","Candy Cane","Blends","TV Simulator","Dynamic Smooth"
+"Solid",
+"Blink@;!;!",
+"Breathe@Speed;,!;!",
+"Wipe",
+"Wipe Random",
+"Random Colors",
+"Sweep",
+"Dynamic",
+"Colorloop",
+"Rainbow",
+"Scan@!,# of dots;,!,?;!",
+"Scan Dual@!,# of dots;,!,?;!",
+"Fade",
+"Theater",
+"Theater Rainbow",
+"Running",
+"Saw",
+"Twinkle",
+"Dissolve",
+"Dissolve Rnd",
+"Sparkle",
+"Sparkle Dark",
+"Sparkle+",
+"Strobe",
+"Strobe Rainbow",
+"Strobe Mega",
+"Blink Rainbow",
+"Android",
+"Chase",
+"Chase Random",
+"Chase Rainbow",
+"Chase Flash",
+"Chase Flash Rnd",
+"Rainbow Runner",
+"Colorful",
+"Traffic Light",
+"Sweep Random",
+"Running 2",
+"Aurora",
+"Stream",
+"Scanner",
+"Lighthouse",
+"Fireworks",
+"Rain",
+"Tetrix@Speed,Width;Fx,BG,;!",
+"Fire Flicker",
+"Gradient",
+"Loading",
+"Police",
+"Police All",
+"Two Dots",
+"Two Areas",
+"Running Dual",
+"Halloween",
+"Tri Chase",
+"Tri Wipe",
+"Tri Fade",
+"Lightning",
+"ICU",
+"Multi Comet",
+"Scanner Dual",
+"Stream 2",
+"Oscillate",
+"Pride 2015",
+"Juggle",
+"Palette",
+"Fire 2012",
+"Colorwaves",
+"Bpm",
+"Fill Noise",
+"Noise 1",
+"Noise 2",
+"Noise 3",
+"Noise 4",
+"Colortwinkles",
+"Lake",
+"Meteor",
+"Meteor Smooth",
+"Railway",
+"Ripple",
+"Twinklefox",
+"Twinklecat",
+"Halloween Eyes",
+"Solid Pattern",
+"Solid Pattern Tri",
+"Spots",
+"Spots Fade",
+"Glitter",
+"Candle",
+"Fireworks Starburst",
+"Fireworks 1D@Gravity,Firing side;;!",
+"Bouncing Balls",
+"Sinelon",
+"Sinelon Dual",
+"Sinelon Rainbow",
+"Popcorn",
+"Drip@Gravity,# of drips;!,!;!",
+"Plasma",
+"Percent",
+"Ripple Rainbow",
+"Heartbeat",
+"Pacifica",
+"Candle Multi",
+"Solid Glitter",
+"Sunrise",
+"Phased",
+"Twinkleup@Speed,Intensity,Min;,!;!",
+"Noise Pal",
+"Sine",
+"Phased Noise",
+"Flow",
+"Chunchun",
+"Dancing Shadows",
+"Washing Machine",
+"Candy Cane",
+"Blends",
+"TV Simulator",
+"Dynamic Smooth"
 ])=====";
 
 

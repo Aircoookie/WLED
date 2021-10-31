@@ -52,21 +52,18 @@
 					<input id="sliderR" class="noslide" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
-				<!--output class="sliderbubble"></output-->
 			</div><br>
 			<div id="gwrap" class="il">
 				<div class="sliderwrap il">
 					<input id="sliderG" class="noslide" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
-				<!--output class="sliderbubble"></output-->
 			</div><br>
 			<div id="bwrap" class="il">
 				<div class="sliderwrap il">
 					<input id="sliderB" class="noslide" onchange="fromRgb()" max="255" min="0" type="range" value="128" />
 					<div class="sliderdisplay"></div>
 				</div>
-				<!--output class="sliderbubble"></output-->
 			</div><br>
 		</div>
 		<div id="wwrap">
@@ -75,7 +72,6 @@
 				<input id="sliderW" class="noslide" onchange="setColor(0)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
-			<!--output class="sliderbubble"></output-->
 		</div>
 		<div id="wbal">
 			<p class="labels hd">White balance</p>
@@ -83,7 +79,6 @@
 				<input id="sliderA" class="noslide" onchange="setBalance(this.value)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
-			<!--output class="sliderbubble"></output-->
 		</div>
 		<div id="qcs-w">
 			<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
@@ -99,16 +94,17 @@
 			<div class="qcs" onclick="pC('rnd');" title="Random" style="background:linear-gradient(to right, red, orange, yellow, green, blue, purple);transform: translateY(-11px);">R</div>
 		</div>
 		<div id="csl">
-			<button id="csl-0" class="btn xxs" onclick="selectSlot(0);">1</button>
-			<button id="csl-1" class="btn xxs" onclick="selectSlot(1);">2</button>
-			<button id="csl-2" class="btn xxs" onclick="selectSlot(2);">3</button>
+			<button id="csl0" class="btn xxs" onclick="selectSlot(0);">1</button>
+			<button id="csl1" class="btn xxs" onclick="selectSlot(1);">2</button>
+			<button id="csl2" class="btn xxs" onclick="selectSlot(2);">3</button>
 		</div>
+		<p class="labels h" id="cslLabel"></p>
 		<div id="hexw">
 			<input id="hexc" type="text" class="noslide" onkeydown="hexEnter(this)" autocomplete="off" maxlength="8" />
 			<button id="hexcnf" class="btn btn-xs" onclick="fromHex();"><i class="icons btn-icon">&#xe390;</i></button>
 		</div>
 		<div id="palw" class="il">
-			<p class="labels"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
+			<p class="labels" id="pall"><i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette</p>
 			<div class="staytop fnd">
 				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pallist')" onfocus="search(this,'pallist')" />
 				<i class="icons clear-icon" onclick="clean(this)">&#xe38f;</i>
@@ -140,17 +136,17 @@
 	</div>
 
 	<div id="Effects" class="tabcontent">
-		<p class="labels">Effect speed</p>
-		<div class="staytop" id="staytop">
-			<i class="icons slider-icon">&#xe325;</i>
+		<p class="labels" id="sliderLabel0">Effect speed</p>
+		<div class="staytop" id="slider0">
+			<i class="icons slider-icon" onclick="tglFreeze()">&#xe325;</i>
 			<div class="sliderwrap il">
 				<input id="sliderSpeed" class="noslide" onchange="setSpeed()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
 				<div class="sliderdisplay"></div>
 			</div>
 			<output class="sliderbubble"></output>
 		</div>
-		<p class="labels">Effect intensity</p>
-		<div class="staytop" id="staytop1">
+		<p class="labels" id="sliderLabel1">Effect intensity</p>
+		<div class="staytop" id="slider1">
 			<i class="icons slider-icon" onclick="tglLabels()">&#xe409;</i>
 			<div class="sliderwrap il">
 				<input id="sliderIntensity" class="noslide" onchange="setIntensity()" oninput="updateTrail(this)" max="255" min="0" type="range" value="128" />
@@ -158,9 +154,36 @@
 			</div>
 			<output class="sliderbubble"></output>
 		</div>
+		<p class="labels" id="sliderLabel2">Custom 1</p>
+		<div class="staytop" id="slider2">
+			<i class="icons slider-icon">&#xe410;</i>
+			<div class="sliderwrap il">
+				<input id="sliderC1" class="noslide" onchange="setFFT1()" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+				<div class="sliderdisplay"></div>
+			</div>
+			<output class="sliderbubble"></output>
+		</div>
+		<p class="labels" id="sliderLabel3">Custom 2</p>
+		<div class="staytop" id="slider3">
+			<i class="icons slider-icon">&#xe410;</i>
+			<div class="sliderwrap il">
+				<input id="sliderC2" class="noslide" onchange="setFFT2()" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+				<div class="sliderdisplay"></div>
+			</div>
+			<output class="sliderbubble"></output>
+		</div>
+		<p class="labels" id="sliderLabel4">Custom 3</p>
+		<div class="staytop" id="slider4">
+			<i class="icons slider-icon">&#xe410;</i>
+			<div class="sliderwrap il">
+				<input id="sliderC3" class="noslide" onchange="setFFT3()" oninput="updateTrail(this)" max="255" min="0" type="range" value="6" />
+				<div class="sliderdisplay"></div>
+			</div>
+			<output class="sliderbubble"></output>
+		</div>
 		<div class="il">
-			<p class="labels">Effect mode</p>
-			<div class="staytop fnd" id="staytop2">
+			<p class="labels" id="modeLabel">Effect mode</p>
+			<div class="staytop fnd" id="fxFind">
 				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'fxlist')" onfocus="search(this,'fxlist')" />
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
 				<i class="icons search-icon">&#xe0a1;</i>

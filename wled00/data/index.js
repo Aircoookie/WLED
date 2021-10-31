@@ -10,6 +10,7 @@ var nlDur = 60, nlTar = 0;
 var nlMode = false;
 var selectedFx = 0;
 var selectedPal = 0;
+var sliderControl = ""; //WLEDSR: used by togglePcMode
 var csel = 0;
 var currentPreset = -1;
 var lastUpdate = 0;
@@ -731,66 +732,6 @@ function populateSegments(s)
 	gId('rsbtn').style.display = (segCount > 1) ? "inline":"none";
 }
 
-function btype(b)
-{
-	switch (b) {
-		case 32: return "ESP32";
-		case 82: return "ESP8266";
-	}
-	return "?";
-}
-
-function bname(o)
-{
-	if (o.name=="WLED") return o.ip;
-	return o.name;
-}
-
-function populateNodes(i,n)
-{
-	var cn="";
-	var urows="";
-	var nnodes = 0;
-	if (n.nodes) {
-		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
-		for (var x=0;x<n.nodes.length;x++) {
-			var o = n.nodes[x];
-			if (o.name) {
-				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
-				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
-				nnodes++;
-			}
-		}
-	}
-	if (i.ndc < 0) cn += `Instance List is disabled.`;
-	else if (nnodes == 0) cn += `No other instances found.`;
-	cn += `<table>
-	${inforow("Current instance:",i.name)}
-	${urows}
-	</table>`;
-	gId('kn').innerHTML = cn;
-}
-
-function loadNodes()
-{
-	var url = (loc?`http://${locip}`:'') + '/json/nodes';
-	fetch(url, {
-		method: 'get'
-	})
-	.then(res => {
-		if (!res.ok) showToast('Could not load Node list!', true);
-		return res.json();
-	})
-	.then(json => {
-		clearErrorToast();
-		populateNodes(lastinfo, json);
-	})
-	.catch(function (error) {
-		showToast(error, true);
-		console.log(error);
-	});
-}
-
 function populateEffects()
 {
     var effects = eJson;
@@ -802,16 +743,27 @@ function populateEffects()
 
 	effects.unshift({
 		"id": 0,
-		"name": "Solid"
+		"name": "Solid@;!;"
 	});
 
 	for (let i = 0; i < effects.length; i++) {
-		html += generateListItemHtml(
-			'fx',
-			effects[i].id,
-			effects[i].name,
-			'setX'
-		);
+		// WLEDSR: add slider and color control to setX (used by requestjson)
+		if (effects[i].name.indexOf("Reserved") < 0) {
+			var posAt = effects[i].name.indexOf("@");
+			var extra = '';
+			if (posAt > 0)
+				extra = effects[i].name.substr(posAt);
+			else
+				posAt = 999;
+			html += generateListItemHtml(
+				'fx',
+				effects[i].id,
+				effects[i].name.substr(0,posAt),
+				'setX',
+				'','',
+				extra
+			);
+		}
 	}
 
 	gId('fxlist').innerHTML=html;
@@ -894,15 +846,15 @@ function genPalPrevCss(id)
 		} else {
 			if (selColors) {
 				let e = element[1] - 1;
-				if (Array.isArray(selColors[e])) {
+				//if (Array.isArray(selColors[e])) {
 					r = selColors[e][0];
 					g = selColors[e][1];
 					b = selColors[e][2];
-				} else {
-					r = (selColors[e]>>16) & 0xFF;
-					g = (selColors[e]>> 8) & 0xFF;
-					b = (selColors[e]    ) & 0xFF;
-				}
+				//} else {
+				//	r = (selColors[e]>>16) & 0xFF;
+				//	g = (selColors[e]>> 8) & 0xFF;
+				//	b = (selColors[e]    ) & 0xFF;
+				//}
 			}
 		}
 		if (index === false) {
@@ -915,9 +867,9 @@ function genPalPrevCss(id)
 	return `background: linear-gradient(to right,${gradient.join()});`;
 }
 
-function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
+function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraClass = '', extraPar = '')
 {
-    return `<div class="lstI${id==0?' sticky':''}" data-id="${id}" onClick="${clickAction}(${id})">
+    return `<div class="lstI${id==0?' sticky':''} ${extraClass}" data-id="${id}" onClick="${clickAction}(${id},'${extraPar}')">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		&nbsp;
 		<input type="radio" value="${id}" name="${listName}">
@@ -930,6 +882,66 @@ function generateListItemHtml(listName, id, name, clickAction, extraHtml = '')
 	</div>
 	${extraHtml}
 </div>`;
+}
+
+function btype(b)
+{
+	switch (b) {
+		case 32: return "ESP32";
+		case 82: return "ESP8266";
+	}
+	return "?";
+}
+
+function bname(o)
+{
+	if (o.name=="WLED") return o.ip;
+	return o.name;
+}
+
+function populateNodes(i,n)
+{
+	var cn="";
+	var urows="";
+	var nnodes = 0;
+	if (n.nodes) {
+		n.nodes.sort((a,b) => (a.name).localeCompare(b.name));
+		for (var x=0;x<n.nodes.length;x++) {
+			var o = n.nodes[x];
+			if (o.name) {
+				var url = `<button class="btn" title="${o.ip}" onclick="location.assign('http://${o.ip}');">${bname(o)}</button>`;
+				urows += inforow(url,`${btype(o.type)}<br><i>${o.vid==0?"N/A":o.vid}</i>`);
+				nnodes++;
+			}
+		}
+	}
+	if (i.ndc < 0) cn += `Instance List is disabled.`;
+	else if (nnodes == 0) cn += `No other instances found.`;
+	cn += `<table>
+	${inforow("Current instance:",i.name)}
+	${urows}
+	</table>`;
+	gId('kn').innerHTML = cn;
+}
+
+function loadNodes()
+{
+	var url = (loc?`http://${locip}`:'') + '/json/nodes';
+	fetch(url, {
+		method: 'get'
+	})
+	.then(res => {
+		if (!res.ok) showToast('Could not load Node list!', true);
+		return res.json();
+	})
+	.then(json => {
+		clearErrorToast();
+		populateNodes(lastinfo, json);
+	})
+	.catch(function (error) {
+		showToast(error, true);
+		console.log(error);
+	});
 }
 
 function updateTrail(e)
@@ -1014,18 +1026,13 @@ function updateUI()
 	updateTrail(gId('sliderBri'));
 	updateTrail(gId('sliderSpeed'));
 	updateTrail(gId('sliderIntensity'));
+
+	updateTrail(gId('sliderC1'));
+	updateTrail(gId('sliderC2'));
+	updateTrail(gId('sliderC3'));
+
 	gId('wwrap').style.display = (isRgbw) ? "block":"none";
 	gId("wbal").style.display = (lastinfo.leds.cct) ? "block":"none";
-
-	if (selectedFx===0) {
-		gId("csl-1").style.display = "none";
-		gId("csl-2").style.display = "none";
-		gId("palw").style.display  = "none";
-	} else {
-		gId("csl-1").style.display = "inline-block";
-		gId("csl-2").style.display = "inline-block";
-		gId("palw").style.display  = "inline-block";
-	}
 
 	updatePA();
 	updateHex();
@@ -1055,7 +1062,20 @@ function updateSelectedFx()
 	if (selElement) selElement.classList.remove('selected');
 
 	var selectedEffect = parent.querySelector(`.lstI[data-id="${selectedFx}"]`);
-	if (selectedEffect) selectedEffect.classList.add('selected');
+	if (selectedEffect) {
+		selectedEffect.classList.add('selected');
+
+		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
+		sliderControl = selectedEffect.outerHTML.replace(/&amp;/g, "&");
+		var posAt = sliderControl.indexOf("@");
+		if (posAt > 0) {
+			sliderControl = sliderControl.substring(posAt);
+			var posAt = sliderControl.indexOf(')"');
+			sliderControl = sliderControl.substring(0,posAt-1);
+		} else
+			sliderControl = "";
+		setSliderAndColorControl(selectedFx, sliderControl);
+	}
 }
 
 function displayRover(i,s)
@@ -1124,7 +1144,7 @@ function readState(s,command=false)
 	else currentPreset = s.pl;
 
 	tr = s.transition;
-	d.gId('tt').value = tr/10;
+	gId('tt').value = tr/10;
   
 	var selc=0; var ind=0;
 	populateSegments(s);
@@ -1144,18 +1164,18 @@ function readState(s,command=false)
 	for (let e = cd.length-1; e >= 0; e--)
 	{
 		var r,g,b,w;
-		if (Array.isArray(i.col[e])) {
+		//if (Array.isArray(i.col[e])) {
 			r = i.col[e][0];
 			g = i.col[e][1];
 			b = i.col[e][2];
 			if (isRgbw) w = i.col[e][3];
-		} else {
-			// unsigned long RGBW (@blazoncek v2 experimental API implementation, obsolete & will be removed)
-			r = (i.col[e]>>16) & 0xFF;
-			g = (i.col[e]>> 8) & 0xFF;
-			b = (i.col[e]    ) & 0xFF;
-			if (isRgbw) w = (i.col[e] >> 24) & 0xFF;
-		}
+		//} else {
+		//	// unsigned long RGBW (@blazoncek v2 experimental API implementation, obsolete & will be removed)
+		//	r = (i.col[e]>>16) & 0xFF;
+		//	g = (i.col[e]>> 8) & 0xFF;
+		//	b = (i.col[e]    ) & 0xFF;
+		//	if (isRgbw) w = (i.col[e] >> 24) & 0xFF;
+		//}
 		cd[e].style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
 		if (isRgbw) whites[e] = parseInt(w);
 	}
@@ -1165,6 +1185,10 @@ function readState(s,command=false)
 
 	gId('sliderSpeed').value = i.sx;
 	gId('sliderIntensity').value = i.ix;
+
+	gId('sliderC1').value  = i.f1x ? i.f1x : 0;
+	gId('sliderC2').value  = i.f2x ? i.f2x : 0;
+	gId('sliderC3').value  = i.f3x ? i.f3x : 0;
 
 	if (s.error && s.error != 0) {
 	  var errstr = "";
@@ -1194,6 +1218,99 @@ function readState(s,command=false)
 	updateUI();
 }
 
+// WLEDSR: control HTML elements for Slider and Color Control
+function setSliderAndColorControl(idx, extra)
+{
+	var topPosition = 0;
+  	var controlDefined = (extra.substr(0,1) == "@")?true:false;
+	extra = extra.substr(1);
+	var extras = (extra == '')?[]:extra.split(";");
+	var slOnOff = (extras.length==0 || extras[0]=='')?[]:extras[0].split(",");
+	var coOnOff = (extras.length<2  || extras[1]=='')?[]:extras[1].split(",");
+	var paOnOff = (extras.length<3  || extras[2]=='')?[]:extras[2].split(",");
+  
+	// set html slider items on/off
+	var nSliders = (gId("Effects").children.length - 1) / 2; // p (label) & div for each slider + FX list
+	for (let i=0; i<nSliders; i++) {
+		var slider = gId("slider" + i);
+		var label = gId("sliderLabel" + i);
+		// if (not controlDefined and for AC speed or intensity and for SR alle sliders) or slider has a value
+		if ((!controlDefined && i < ((idx<128)?2:nSliders)) || (slOnOff.length>i && slOnOff[i] != "")) {
+			label.style.display = "block";
+			if (slOnOff.length>i && slOnOff[i]!="!") label.innerHTML = slOnOff[i];
+			else if (i==0)                           label.innerHTML = "Effect speed";
+			else if (i==1)                           label.innerHTML = "Effect intensity";
+			else                                     label.innerHTML = "Custom" + (i-1);
+			label.style.top = "auto";
+			slider.style.display = "block";
+			slider.style.top = topPosition + "px";
+			topPosition += 28; // increase top position for the next control
+			slider.setAttribute('title',label.innerHTML);
+		} else {
+			// disable label and slider
+			slider.style.display = "none";
+			label.style.display = "none";
+		}
+	}
+	if (topPosition>0) topPosition += 2;
+  
+	// set top position of the effect list
+	gId("fxFind").style.top = topPosition + "px";
+	topPosition += 42;
+	var fxList = gId("fxlist");
+	for (var i=0; i<fxList.children.length; i++) fxList.children[i].style.top = null; // remove top
+	var selected = fxList.querySelector('.selected');
+	var sticky = fxList.querySelector('.sticky');
+	if (sticky) {
+		sticky.style.top = topPosition + "px";
+		topPosition += 42;
+	}
+	if (selected && !selected.style.top) { // is the sticky element also selected one?
+		selected.style.top = topPosition + "px";
+	}
+
+	// set html color items on/off
+	var cslLabel = '';
+	var sep = '';
+	for (let i=0; i<gId("csl").children.length; i++) {
+		var btn = gId("csl" + i);
+		// if no controlDefined or coOnOff has a value
+		if (coOnOff.length>i && coOnOff[i] != "") {
+			btn.style.display = "inline";
+			if (coOnOff.length>i && coOnOff[i] != "!") {
+				var abbreviation = coOnOff[i].substr(0,2);
+				btn.innerHTML = abbreviation;
+				if (abbreviation != coOnOff[i]) {
+					cslLabel += sep + abbreviation + '=' + coOnOff[i];
+					sep = ', ';
+				}
+			}
+			else if (i==0) btn.innerHTML = "Fx";
+			else if (i==1) btn.innerHTML = "Bg";
+			else btn.innerHTML = "Cs";
+		} else if (!controlDefined || paOnOff.length>0) { // if no controls or palette then all buttons should be shown for color 1..3 palettes
+			btn.style.display = "inline";
+			btn.innerHTML = `${i+1}`;
+		} else {
+			btn.style.display = "none";
+		}
+	}
+	gId("cslLabel").innerHTML = cslLabel;
+  
+	// set palette on/off
+	var palw = gId("palw"); // wrapper
+	var pall = gId("pall");	// list
+	// if not controlDefined or palette has a value
+	if ((!controlDefined) || (paOnOff.length>0 && paOnOff[0]!="")) {
+		palw.style.display = "inline-block";
+		if (paOnOff.length>0 && paOnOff[0] != "!") pall.innerHTML = paOnOff[0];
+		else                                       pall.innerHTML = '<i class="icons sel-icon" onclick="tglHex()">&#xe2b3;</i> Color palette';
+	} else {
+		// disable label and slider
+		palw.style.display = "none";
+	}
+}
+
 var jsonTimeout;
 var reqsLegal = false;
 
@@ -1211,7 +1328,7 @@ function requestJson(command=null)
 	command.v = true; // force complete /json/si API response
 	command.time = Math.floor(Date.now() / 1000);
 
-	var t = d.gId('tt');
+	var t = gId('tt');
 	if (t.validity.valid && command.transition==null) {
 		var tn = parseInt(t.value*10);
 		if (tn != tr) command.transition = tn;
@@ -1638,6 +1755,13 @@ function setSegPwr(s)
 function setSegBri(s)
 {
 	var obj = {"seg": {"id": s, "bri": parseInt(gId(`seg${s}bri`).value)}};
+	requestJson(obj);
+}
+
+function tglFreeze(s=null)
+{
+	var obj = {"seg": {"frz": "t"}}; // toggle
+	if (s!==null) obj.id = s;
 	requestJson(obj);
 }
 

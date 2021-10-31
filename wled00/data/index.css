@@ -357,21 +357,25 @@ button {
 	bottom: 0;
 }
 
-#staytop, #staytop1 {
+#slider0, #slider1, #slider2, #slider3, #slider4 {
 	background: var(--c-2);
 	width: 310px;
 	margin: auto;
 	border-radius: 15px;
 }
-
-#staytop1 {
+#sliderLabel2, #sliderLabel3, #sliderLabel4,
+#slider2, #slider3, #slider4 {
+	display: none;
+}
+/*
+#slider1 {
 	top: 28px;
 }
 
-#staytop2 {
+#fxFind {
 	top: 58px;
 }
-
+*/
 .first {
 	margin-top: 10px;
 }
@@ -1078,18 +1082,20 @@ input[type=number]::-webkit-outer-spin-button {
 .lstI.sticky, .lstI.selected {
 	z-index: 1;
 }
-
+/*
 #fxlist .lstI.selected {
 	top: 142px;
 }
-
+*/
 #pallist .lstI.selected {
 	top: 84px;
 }
 /* must be after .selected */
+/*
 #fxlist .lstI.sticky {
 	top: 99px;
 }
+*/
 #pallist .lstI.sticky {
 	top: 42px;
 }
