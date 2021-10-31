@@ -869,7 +869,7 @@ function genPalPrevCss(id)
 
 function generateListItemHtml(listName, id, name, clickAction, extraHtml = '', extraClass = '', extraPar = '')
 {
-    return `<div class="lstI${id==0?' sticky':''} ${extraClass}" data-id="${id}" onClick="${clickAction}(${id},'${extraPar}')">
+    return `<div class="lstI${id==0?' sticky':''} ${extraClass}" data-id="${id}" data-opt="${extraPar}" onClick="${clickAction}(${id})">
 	<label class="radio schkl" onclick="event.preventDefault()">
 		&nbsp;
 		<input type="radio" value="${id}" name="${listName}">
@@ -1066,14 +1066,7 @@ function updateSelectedFx()
 		selectedEffect.classList.add('selected');
 
 		// WLEDSR: extract the Slider and color control string from the HTML element and set it.
-		sliderControl = selectedEffect.outerHTML.replace(/&amp;/g, "&");
-		var posAt = sliderControl.indexOf("@");
-		if (posAt > 0) {
-			sliderControl = sliderControl.substring(posAt);
-			var posAt = sliderControl.indexOf(')"');
-			sliderControl = sliderControl.substring(0,posAt-1);
-		} else
-			sliderControl = "";
+		sliderControl = selectedEffect.dataset.opt.replace(/&amp;/g, "&");
 		setSliderAndColorControl(selectedFx, sliderControl);
 	}
 }

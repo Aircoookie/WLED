@@ -653,9 +653,15 @@ function populateEffects()
 		"name": "Solid",
 	});
 	for (let i = 0; i < effects.length; i++) {
+		var posAt = effects[i].name.indexOf("@");
+		var extra = '';
+		if (posAt > 0)
+			extra = effects[i].name.substr(posAt);
+		else
+			posAt = 999;
 		html += generateListItemHtml(
 			effects[i].id,
-			effects[i].name,
+			effects[i].name.substr(0,posAt),
 			'setEffect'
 		);
 	}
@@ -737,15 +743,15 @@ function genPalPrevCss(id)
 		} else {
 			if (selColors) {
 				let e = element[1] - 1;
-				if (Array.isArray(selColors[e])) {
+				//if (Array.isArray(selColors[e])) {
 					r = selColors[e][0];
 					g = selColors[e][1];
 					b = selColors[e][2];
-				} else {
-					r = (selColors[e]>>16) & 0xFF;
-					g = (selColors[e]>> 8) & 0xFF;
-					b = (selColors[e]    ) & 0xFF;
-				}
+				//} else {
+				//	r = (selColors[e]>>16) & 0xFF;
+				//	g = (selColors[e]>> 8) & 0xFF;
+				//	b = (selColors[e]    ) & 0xFF;
+				//}
 			}
 		}
 		if (index === false) {
@@ -918,18 +924,18 @@ function readState(s,command=false)
 	for (let e = cd.length-1; e >= 0; e--)
 	{
 		var r,g,b,w;
-		if (Array.isArray(i.col[e])) {
+		//if (Array.isArray(i.col[e])) {
 			r = i.col[e][0];
 			g = i.col[e][1];
 			b = i.col[e][2];
 			if (isRgbw) w = i.col[e][3];
-		} else {
-			// unsigned long RGBW (@blazoncek v2 experimental API implementation)
-			r = (i.col[e]>>16) & 0xFF;
-			g = (i.col[e]>> 8) & 0xFF;
-			b = (i.col[e]    ) & 0xFF;
-			if (isRgbw) w = (i.col[e] >> 24) & 0xFF;
-		}
+		//} else {
+		//	// unsigned long RGBW (@blazoncek v2 experimental API implementation)
+		//	r = (i.col[e]>>16) & 0xFF;
+		//	g = (i.col[e]>> 8) & 0xFF;
+		//	b = (i.col[e]    ) & 0xFF;
+		//	if (isRgbw) w = (i.col[e] >> 24) & 0xFF;
+		//}
 		cd[e].style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
 		if (isRgbw) whites[e] = parseInt(w);
 		selectSlot(csel);
