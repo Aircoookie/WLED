@@ -796,7 +796,9 @@ void serializeNodes(JsonObject root)
   }
 }
 
-void serializeSRNames(JsonVariant arr, const char *qstring) {
+// deserializes mode names string into JsonArray
+// also removes WLED-SR extensions (@...) from deserialised names
+void deserializeModeNames(JsonArray arr, const char *qstring) {
   String lineBuffer;
   bool insideQuotes = false;
   char singleJsonSymbol;
@@ -825,6 +827,39 @@ void serializeSRNames(JsonVariant arr, const char *qstring) {
         lineBuffer += singleJsonSymbol;
     }
   }
+}
+
+// extracts effect mode (or palette) name from names serialized string
+// caller must provide large enough buffer!
+void extractModeName(uint8_t mode, const char *src, char *dest, uint8_t maxLen)
+{
+  uint8_t qComma = 0;
+  bool insideQuotes = false;
+  uint8_t printedChars = 0;
+  char singleJsonSymbol;
+
+  // Find the mode name in JSON
+  for (size_t i = 0; i < strlen_P(src); i++) {
+    singleJsonSymbol = pgm_read_byte_near(src + i);
+    if (singleJsonSymbol == '\0') break;
+    switch (singleJsonSymbol) {
+      case '"':
+        insideQuotes = !insideQuotes;
+        break;
+      case '[':
+      case ']':
+        break;
+      case ',':
+        qComma++;
+      default:
+        if (!insideQuotes || (qComma != mode)) break;
+        dest[printedChars++] = singleJsonSymbol;
+    }
+    if ((qComma > mode) || (printedChars >= maxLen)) break;
+  }
+  dest[printedChars] = '\0';
+  char *p = strchr(dest,'@');
+  if (p != nullptr) *p = '\0';
 }
 
 void serveJson(AsyncWebServerRequest* request)
@@ -879,7 +914,7 @@ void serveJson(AsyncWebServerRequest* request)
       {
         //doc[F("effects")]  = serialized((const __FlashStringHelper*)JSON_mode_names);
         JsonArray effects = doc.createNestedArray(F("effects"));
-        serializeSRNames(effects, JSON_mode_names); // remove WLED-SR extensions from effect names
+        deserializeModeNames(effects, JSON_mode_names); // remove WLED-SR extensions from effect names
         doc[F("palettes")] = serialized((const __FlashStringHelper*)JSON_palette_names);
       }
   }

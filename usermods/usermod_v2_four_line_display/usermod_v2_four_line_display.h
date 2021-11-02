@@ -470,30 +470,8 @@ class FourLineDisplayUsermod : public Usermod {
      */
     void showCurrentEffectOrPalette(int knownMode, const char *qstring, uint8_t row) {
       char lineBuffer[LINE_BUFFER_SIZE];
-      uint8_t qComma = 0;
-      bool insideQuotes = false;
-      uint8_t printedChars = 0;
-      char singleJsonSymbol;
-
-      // Find the mode name in JSON
-      for (size_t i = 0; i < strlen_P(qstring); i++) {
-        singleJsonSymbol = pgm_read_byte_near(qstring + i);
-        if (singleJsonSymbol == '\0') break;
-        switch (singleJsonSymbol) {
-          case '"':
-            insideQuotes = !insideQuotes;
-            break;
-          case '[':
-          case ']':
-            break;
-          case ',':
-            qComma++;
-          default:
-            if (!insideQuotes || (qComma != knownMode)) break;
-            lineBuffer[printedChars++] = singleJsonSymbol;
-        }
-        if ((qComma > knownMode) || (printedChars >= getCols()-2) || printedChars >= sizeof(lineBuffer)-2) break;
-      }
+      extractModeName(knownMode, qstring, lineBuffer, LINE_BUFFER_SIZE-1);
+      uint8_t printedChars = strlen(lineBuffer);
       for (;printedChars < getCols()-2 && printedChars < sizeof(lineBuffer)-2; printedChars++) lineBuffer[printedChars]=' ';
       lineBuffer[printedChars] = 0;
       drawString(2, row*lineHeight, lineBuffer);

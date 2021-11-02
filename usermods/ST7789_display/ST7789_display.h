@@ -285,33 +285,9 @@ class St7789DisplayUsermod : public Usermod {
         // mode name
         tft.setTextColor(TFT_CYAN);
         tft.setCursor(0, 144);
-        uint8_t qComma = 0;
-        bool insideQuotes = false;
-        uint8_t printedChars = 0;
-        char singleJsonSymbol;
-        // Find the mode name in JSON
-        for (size_t i = 0; i < strlen_P(JSON_mode_names); i++)
-        {
-            singleJsonSymbol = pgm_read_byte_near(JSON_mode_names + i);
-            switch (singleJsonSymbol)
-            {
-                case '"':
-                insideQuotes = !insideQuotes;
-            break;
-            case '[':
-            case ']':
-            break;
-            case ',':
-            qComma++;
-            default:
-                if (!insideQuotes || (qComma != knownMode))
-                break;
-            tft.print(singleJsonSymbol);
-            printedChars++;
-            }
-        if ((qComma > knownMode) || (printedChars > tftcharwidth - 1))
-        break;
-        }
+        char lineBuffer[tftcharwidth+1];
+        extractModeName(knownMode, JSON_mode_names, lineBuffer, tftcharwidth);
+        tft.print(lineBuffer);
 
         // palette name
         tft.setTextColor(TFT_YELLOW);
